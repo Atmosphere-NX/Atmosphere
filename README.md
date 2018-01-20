@@ -1,4 +1,4 @@
-Atmosphere-NX
+Atmosphère-NX
 =====
 
 ![License](https://img.shields.io/badge/License-GPLv2-blue.svg)
