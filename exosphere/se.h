@@ -18,7 +18,7 @@ void clear_aes_keyslot(unsigned int keyslot);
 void clear_rsa_keyslot(unsigned int keyslot);
 
 void set_aes_keyslot(unsigned int keyslot, const char *key, unsigned int key_size);
-void crypt_data_into_keyslot(unsigned int keyslot, )
+void crypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_src, const char *wrapped_key, unsigned int wrapped_key_size);
 void set_rsa_keyslot(unsigned int keyslot, const char *modulus, unsigned int modulus_size, const char *exp, unsigned int exp_size);
 void set_aes_keyslot_iv(unsigned int keyslot, const char *iv, unsigned int iv_size);
 void set_se_ctr(const unsigned int *ctr);
