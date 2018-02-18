@@ -2,6 +2,7 @@
 
 #include "utils.h"
 #include "smc_api.h"
+#include "smc_user.h"
 #include "se.h"
 
 #define SMC_USER_HANDLERS 0x13
@@ -93,10 +94,10 @@ smc_table_t g_smc_tables[2] = {
 };
 
 int g_is_smc_in_progress = 0;
-uint32_t (*g_smc_callback)(uint64_t, uint64_t) = NULL;
+uint32_t (*g_smc_callback)(void *, uint64_t) = NULL;
 uint64_t g_smc_callback_key = 0;
 
-uint64_t try_set_smc_callback(uint32_t (*callback)(uint64_t, uint64_t)) {
+uint64_t try_set_smc_callback(uint32_t (*callback)(void *, uint64_t)) {
     uint64_t key;
     /* TODO: Atomics... */
     if (g_smc_callback_key) {
@@ -158,7 +159,7 @@ uint32_t smc_wrapper_sync(smc_args_t *args, uint32_t (*handler)(smc_args_t *)) {
     return result;
 }
 
-uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), uint32_t (*callback)(uint64_t, uint64_t)) {
+uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), uint32_t (*callback)(void *, uint64_t)) {
     uint32_t result;
     uint64_t key;
     /* TODO: Make g_is_smc_in_progress atomic. */
@@ -181,4 +182,46 @@ uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), 
     }
     g_is_smc_in_progress = 0;
     return result;
+}
+
+uint32_t smc_check_status(smc_args_t *args) {
+    if (g_smc_callback_key == 0) {
+        return 4;
+    }
+    
+    if (args->X[1] != g_smc_callback_key) {
+        return 5;
+    }
+    
+    args->X[1] = g_smc_callback(NULL, 0);
+    
+    g_smc_callback_key = 0;
+    return 0;
+}
+
+uint32_t smc_get_result(smc_args_t *) {
+    uint32_t status;
+    unsigned char result_buf[0x400];
+    if (g_smc_callback_key == 0) {
+        return 4;
+    }
+    
+    if (args->X[1] != g_smc_callback_key) {
+        return 5;
+    }
+    
+    /* Check result size */
+    if (args->X[3] > 0x400) {
+        return 2;
+    }
+    
+    args->X[1] = g_smc_callback(result_buf, args->X[3]);
+    g_smc_callback_key = 0;
+    
+    /* TODO: Copy result from result_buf into output in args->X[2] */
+    return 0;
+}
+
+uint32_t smc_load_aes_key(smc_args_t *args) {
+    smc_wrapper_sync(args, user_load_aes_key);
 }
