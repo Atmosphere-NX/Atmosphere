@@ -213,17 +213,17 @@ invalidate_dcache_range:
     ret
 
 /*
- * void __asm_invalidate_icache_all(void) (-> invalidate_icache_all)
+ * void __asm_invalidate_icache_all(void) (-> invalidate_icache_inner_shareable)
  *
  * invalidate all icache entries.
  */
-.section    .text.invalidate_icache_all, "ax", %progbits
-.type       invalidate_icache_all, %function
-.global     invalidate_icache_all
-invalidate_icache_all:
-    dsb sy
+.section    .text.invalidate_icache_inner_shareable, "ax", %progbits
+.type       invalidate_icache_inner_shareable, %function
+.global     invalidate_icache_inner_shareable
+invalidate_icache_inner_shareable:
+    dsb ish
     isb
-    ic  iallu
-    dsb sy
+    ic  ialluis
+    dsb ish
     isb
     ret
