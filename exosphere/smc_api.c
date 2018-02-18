@@ -2,6 +2,7 @@
 
 #include "utils.h"
 #include "smc_api.h"
+#include "se.h"
 
 #define SMC_USER_HANDLERS 0x13
 #define SMC_PRIV_HANDLERS 0x9
@@ -92,6 +93,29 @@ smc_table_t g_smc_tables[2] = {
 };
 
 int g_is_smc_in_progress = 0;
+uint32_t (*g_smc_callback)(uint64_t, uint64_t) = NULL;
+uint64_t g_smc_callback_key = 0;
+
+uint64_t try_set_smc_callback(uint32_t (*callback)(uint64_t, uint64_t)) {
+    uint64_t key;
+    /* TODO: Atomics... */
+    if (g_smc_callback_key) {
+        return 0;
+    }
+    
+    /* TODO: Keyslot defines. */
+    se_generate_random(0xB, &key, sizeof(uint64_t));
+    g_smc_callback_key = key;
+    g_smc_callback = callback;
+    return key;
+}
+
+void clear_smc_callback(uint64_t key) {
+    /* TODO: Atomics... */
+    if (g_smc_callback_key == key) {
+        g_smc_callback_key = 0;
+    }
+}
 
 void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     unsigned char smc_id;
@@ -134,4 +158,27 @@ uint32_t smc_wrapper_sync(smc_args_t *args, uint32_t (*handler)(smc_args_t *)) {
     return result;
 }
 
-uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), uint32_t (*callback)(void, void));
+uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), uint32_t (*callback)(uint64_t, uint64_t)) {
+    uint32_t result;
+    uint64_t key;
+    /* TODO: Make g_is_smc_in_progress atomic. */
+    if (g_is_smc_in_progress) {
+        return 3;
+    }
+    g_is_smc_in_progress = 1;
+    if ((key = try_set_smc_callback(callback)) != 0) {
+        result = handler(args);
+        if (result == 0) {
+            /* Pass the status check key back to userland. */
+            args->X[1] = key;
+        } else {
+            /* No status to check. */
+            clear_smc_callback(key);
+        }
+    } else {
+        /* smcCheckStatus needs to be called. */
+        result = 3;
+    }
+    g_is_smc_in_progress = 0;
+    return result;
+}

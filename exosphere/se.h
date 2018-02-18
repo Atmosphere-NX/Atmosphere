@@ -108,6 +108,8 @@ void set_se_ctr(const char *ctr);
 void se_crypt_aes(unsigned int keyslot, unsigned char *dst, unsigned int dst_size, const unsigned char *src, unsigned int src_size, unsigned int config, unsigned int mode, unsigned int (*callback)(void));
 void se_exp_mod(unsigned int keyslot, unsigned char *buf, unsigned int size, unsigned int (*callback)(void));
 
+void se_generate_random(unsigned int keyslot, unsigned char *dst, unsigned int size);
+
 /* TODO: SE context save API, consider extending AES API for secure world vs non-secure world operations. */
 /* In particular, smc_crypt_aes takes in raw DMA lists, and we need to support that. */
 
