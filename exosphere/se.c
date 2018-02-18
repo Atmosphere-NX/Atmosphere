@@ -7,7 +7,7 @@ void trigger_se_rsa_op(void *buf, unsigned int size);
 void trigger_se_aes_op(unsigned int op, char *dst, unsigned int dst_size, const unsigned char *src, unsigned int src_size);
 
 /* Globals for driver. */
-security_engine_t *g_security_engine;
+volatile security_engine_t *g_security_engine;
 
 unsigned int (*g_se_callback)(void);
 
@@ -17,6 +17,11 @@ unsigned int g_se_exp_sizes[KEYSLOT_RSA_MAX];
 /* Set the global security engine pointer. */
 void set_security_engine_address(security_engine_t *security_engine) {
     g_security_engine = security_engine;
+}
+
+/* Get the global security engine pointer. */
+security_engine_t *get_security_engine_address(void) {
+    return g_security_engine;
 }
 
 void set_security_engine_callback(unsigned int (*callback)(void)) {

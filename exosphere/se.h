@@ -92,7 +92,8 @@ typedef struct security_engine {
 
 
 
-void set_security_engine_address(void *security_engine);
+void set_security_engine_address(security_engine_t *security_engine);
+security_engine_t *get_security_engine_address(void);
 
 void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags);
 void set_rsa_keyslot_flags(unsigned int keyslot, unsigned int flags);

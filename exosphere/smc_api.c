@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include "utils.h"
+#include "cpu_context.h"
 #include "smc_api.h"
 #include "smc_user.h"
 #include "se.h"
@@ -223,5 +224,23 @@ uint32_t smc_get_result(smc_args_t *) {
 }
 
 uint32_t smc_load_aes_key(smc_args_t *args) {
-    smc_wrapper_sync(args, user_load_aes_key);
+    return smc_wrapper_sync(args, user_load_aes_key);
+}
+
+
+uint32_t smc_cpu_on(smc_args_t *args) {
+    return cpu_on((uint32_t)args->X[1], args->X[2], args->X[3]);
+}
+
+uint32_t smc_cpu_off(smc_args_t *args) {
+    return cpu_off();
+}
+
+/* Wrapper for cpu_suspend */
+uint32_t cpu_suspend_wrapper(smc_args_t *args) {
+    return cpu_suspend(args->X[1], args->X[2], args->X[3]);
+}
+
+uint32_t smc_cpu_suspend(smc_args_t *args) {
+    return smc_wrapper_sync(args, cpu_suspend_wrapper);
 }
