@@ -6,10 +6,8 @@
 #include "se.h"
 
 uint32_t user_load_aes_key(smc_args_t *args) {
-    unsigned char sealed_kek[0x10];
-    unsigned char wrapped_key[0x10];
-    uint64_t *p_sealed_kek = (uint64_t *)(&sealed_kek[0]);
-    uint64_t *p_wrapped_key = (uint64_t *)(&wrapped_key[0]);
+    uint64_t sealed_kek[2];
+    uint64_t wrapped_key[2];
     
     uint32_t keyslot = (uint32_t)args->X[1];
     if (keyslot > 3) {
@@ -17,10 +15,10 @@ uint32_t user_load_aes_key(smc_args_t *args) {
     }
     
     /* Copy keydata */
-    p_sealed_kek[0] = args->X[2];
-    p_sealed_kek[1] = args->X[3];
-    p_wrapped_key[0] = args->X[4];
-    p_wrapped_key[1] = args->X[5];
+    sealed_kek[0] = args->X[2];
+    sealed_kek[1] = args->X[3];
+    wrapped_key[0] = args->X[4];
+    wrapped_key[1] = args->X[5];
     
     /* TODO: Unseal the kek. */
     set_aes_keyslot(9, sealed_kek, 0x10);

@@ -1,6 +1,9 @@
 #ifndef EXOSPHERE_SE_H
 #define EXOSPHERE_SE_H
 
+#include <stdint.h>
+#include <stddef.h>
+
 /* Exosphere driver for the Tegra X1 security engine. */
 
 #define KEYSLOT_AES_MAX 0x10
@@ -100,16 +103,16 @@ void set_rsa_keyslot_flags(unsigned int keyslot, unsigned int flags);
 void clear_aes_keyslot(unsigned int keyslot);
 void clear_rsa_keyslot(unsigned int keyslot);
 
-void set_aes_keyslot(unsigned int keyslot, const unsigned char *key, unsigned int key_size);
-void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_src, const unsigned char *wrapped_key, unsigned int wrapped_key_size);
-void set_rsa_keyslot(unsigned int keyslot, const unsigned char *modulus, unsigned int modulus_size, const unsigned char *exp, unsigned int exp_size);
-void set_aes_keyslot_iv(unsigned int keyslot, const unsigned char *iv, unsigned int iv_size);
-void set_se_ctr(const char *ctr);
+void set_aes_keyslot(unsigned int keyslot, const void *key, size_t key_size);
+void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_src, const void *wrapped_key, size_t wrapped_key_size);
+void set_rsa_keyslot(unsigned int keyslot, const void *modulus, size_t modulus_size, const void *exponent, size_t exp_size);
+void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size);
+void set_se_ctr(const void *ctr);
 
-void se_crypt_aes(unsigned int keyslot, unsigned char *dst, unsigned int dst_size, const unsigned char *src, unsigned int src_size, unsigned int config, unsigned int mode, unsigned int (*callback)(void));
-void se_exp_mod(unsigned int keyslot, unsigned char *buf, unsigned int size, unsigned int (*callback)(void));
+void se_crypt_aes(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, unsigned int config, unsigned int mode, unsigned int (*callback)(void));
+void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*callback)(void));
 
-void se_generate_random(unsigned int keyslot, unsigned char *dst, unsigned int size);
+void se_generate_random(unsigned int keyslot, void *dst, size_t size);
 
 /* TODO: SE context save API, consider extending AES API for secure world vs non-secure world operations. */
 /* In particular, smc_crypt_aes takes in raw DMA lists, and we need to support that. */
