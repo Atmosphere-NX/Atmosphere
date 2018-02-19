@@ -180,6 +180,8 @@ uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), 
         if (result == 0) {
             /* Pass the status check key back to userland. */
             args->X[1] = key;
+            /* Early return, leaving g_is_smc_in_progress == 1 */
+            return result;
         } else {
             /* No status to check. */
             clear_smc_callback(key);
@@ -246,6 +248,21 @@ uint32_t smc_get_result(smc_args_t *) {
 uint32_t smc_load_aes_key(smc_args_t *args) {
     return smc_wrapper_sync(args, user_load_aes_key);
 }
+
+uint32_t smc_crypt_aes_status_check(void *buf, uint64_t size) {
+    /* Buf and size are unused. */
+    if (get_crypt_aes_done() == 0) {
+        return 3;
+    }
+    /* smc_crypt_aes is done now. */
+    g_is_smc_in_progress = 0;
+    return 0;
+}
+
+uint32_t smc_crypt_aes(smc_args_t *args) {
+    return smc_wrapper_async(args, user_crypt_aes, smc_crypt_aes_status_check);
+}
+
 
 
 uint32_t smc_cpu_on(smc_args_t *args) {

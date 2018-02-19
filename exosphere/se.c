@@ -222,6 +222,9 @@ void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr,
     /* Set the callback, for after the async operation. */
     set_security_engine_callback(callback);
     
+    /* Enable SE Interrupt firing for async op. */
+    g_security_engine->INT_ENABLE_REG = 0x10;
+    
     /* Setup Input/Output lists */
     g_security_engine->IN_LL_ADDR_REG = in_ll_paddr;
     g_security_engine->OUT_LL_ADDR_REG = out_ll_paddr;
@@ -284,6 +287,9 @@ void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*cal
     g_security_engine->RSA_EXP_SIZE_REG = g_se_exp_sizes[keyslot] >> 2;
 
     set_security_engine_callback(callback);
+    
+    /* Enable SE Interrupt firing for async op. */
+    g_security_engine->INT_ENABLE_REG = 0x10;
 
     flush_dcache_range(stack_buf, stack_buf + KEYSIZE_RSA_MAX);
     trigger_se_rsa_op(stack_buf, size);
