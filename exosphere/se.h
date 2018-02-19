@@ -75,8 +75,8 @@ typedef struct security_engine {
   unsigned int _0x41C;
   unsigned int RSA_KEYTABLE_ADDR;
   unsigned int RSA_KEYTABLE_DATA;
-  unsigned int RSA_OUTPUT;
-  unsigned char _0x42C[0x3D4];
+  unsigned char RSA_OUTPUT[0x100];
+  unsigned char _0x528[0x2D8];
   unsigned int FLAGS_REG;
   unsigned int ERR_STATUS_REG;
   unsigned int _0x808;
@@ -88,15 +88,29 @@ typedef struct security_engine {
   unsigned char _0x820[0x17E0];
 } security_engine_t;
 
+typedef struct {
+    uint32_t address;
+    uint32_t size;
+} se_addr_info_t;
+
+typedef struct {
+    uint32_t num_entries; /* Set to total entries - 1 */
+    se_addr_info_t addr_info; /* This should really be an array...but for our use case it works. */
+} se_ll_t;
+
 /* TODO: Define constants for the C driver. */
 
 
 /* WIP, API subject to change. */
 
 
+/* This function MUST be registered to fire on the appropriate interrupt. */
+void se_operation_completed(void);
 
 void set_security_engine_address(security_engine_t *security_engine);
 security_engine_t *get_security_engine_address(void);
+
+void se_check_for_error(void);
 
 void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags);
 void set_rsa_keyslot_flags(unsigned int keyslot, unsigned int flags);
@@ -110,7 +124,11 @@ void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size);
 void set_se_ctr(const void *ctr);
 
 void se_crypt_aes(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, unsigned int config, unsigned int mode, unsigned int (*callback)(void));
+
+
 void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*callback)(void));
+
+void se_get_exp_mod_output(void *buf, size_t size);
 
 void se_generate_random(unsigned int keyslot, void *dst, size_t size);
 

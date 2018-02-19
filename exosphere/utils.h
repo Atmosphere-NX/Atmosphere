@@ -6,6 +6,8 @@
 
 void panic(void);
 
+uint32_t get_physical_address(void *vaddr);
+
 static inline uint32_t read32le(const void *dword, size_t offset) {
     return *(uint32_t *)((uintptr_t)dword + offset);
 }
