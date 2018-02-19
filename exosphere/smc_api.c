@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include "utils.h"
+#include "configitem.h"
 #include "cpu_context.h"
 #include "smc_api.h"
 #include "smc_user.h"
@@ -129,6 +130,12 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
         panic();
     }
     
+    /* Validate core is appropriate for handler. */
+    if (handler_id == SMC_HANDLER_USER && get_core_id() != 3) {
+        /* USER SMCs must be called via svcCallSecureMonitor on core 3 (where spl runs) */
+        panic();
+    }
+    
     /* Validate sub-handler index */
     if ((smc_id = (unsigned char)args->X[0]) >= g_smc_tables[handler_id].num_handlers) {
         panic();
@@ -182,6 +189,19 @@ uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), 
         result = 3;
     }
     g_is_smc_in_progress = 0;
+    return result;
+}
+
+uint32_t smc_set_config(smc_args_t *args) {
+    /* Actual value presumed in X3 on hardware. */
+    return configitem_set((enum ConfigItem)args->X[1], args->X[3]);
+}
+
+uint32_t smc_get_config(smc_args_t *args) {
+    uint64_t out_item = 0;
+    uint32_t result;
+    result = configitem_get((enum ConfigItem)args->X[1], &out_item);
+    args->X[1] = out_item;
     return result;
 }
 

@@ -17,7 +17,7 @@ static inline uint32_t read32be(const unsigned char *dword, size_t offset) {
 static inline unsigned int get_core_id(void) {
     unsigned int core_id;
     __asm__ __volatile__ ("mrs %0, MPIDR_EL1" : "=r"(core_id));
-    return core_id;
+    return core_id & 3;
 }
 
 #endif
