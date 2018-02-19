@@ -28,7 +28,8 @@
 #define DST_SRK (3 << DST_SHIFT)
 #define DST_RSAREG (4 << DST_SHIFT)
 
-
+#define HASH_DISABLE (0x0)
+#define HASH_ENABLE (0x1)
 
 #define OP_ABORT 0
 #define OP_START 1
@@ -123,11 +124,17 @@ void set_rsa_keyslot(unsigned int keyslot, const void *modulus, size_t modulus_s
 void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size);
 void set_se_ctr(const void *ctr);
 
+
+/* AES API */
+void se_aes_ctr_crypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *ctr, unsigned int (*callback)(void));
+void se_aes_cbc_encrypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *iv, unsigned int (*callback)(void));
+void se_aes_cbc_decrypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *iv, unsigned int (*callback)(void));
+
+
 void se_crypt_aes(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, unsigned int config, unsigned int mode, unsigned int (*callback)(void));
 
 
 void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*callback)(void));
-
 void se_get_exp_mod_output(void *buf, size_t size);
 
 void se_generate_random(unsigned int keyslot, void *dst, size_t size);

@@ -16,6 +16,7 @@ unsigned int (*g_se_callback)(void);
 unsigned int g_se_modulus_sizes[KEYSLOT_RSA_MAX];
 unsigned int g_se_exp_sizes[KEYSLOT_RSA_MAX];
 
+
 /* Initialize a SE linked list. */
 void ll_init(se_ll_t *ll, void *buffer, size_t size) {
     ll->num_entries = 0; /* 1 Entry. */
@@ -192,8 +193,77 @@ void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_sr
     trigger_se_aes_op(OP_START, NULL, 0, wrapped_key, wrapped_key_size);
 }
 
+void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, unsigned int crypt_config, int encrypt, unsigned int (*callback)(void)) {
+    if (g_security_engine == NULL || keyslot >= KEYSLOT_AES_MAX) {
+        panic();
+    }
+    
+    if (size == 0) {
+        return;
+    }
+    
+    /* Setup Config register. */
+    encrypt &= 1;
+    if (encrypt) {
+        g_security_engine->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY);
+    } else {
+        g_security_engine->CONFIG_REG = (ALG_AES_DEC | DST_MEMORY);
+    }
+    
+    /* Setup Crypto register. */
+    g_security_engine->CRYPTO_REG = crypt_config | (keyslot << 24) | (encrypt << 8);
+    
+    /* Mark this encryption as insecure -- this makes the SE not a secure busmaster. */
+    g_security_engine->CRYPTO_REG |= 0x80000000;
+    
+    /* Appropriate number of blocks. */
+    g_security_engine->BLOCK_COUNT_REG = (size >> 4) - 1;
+    
+    /* Set the callback, for after the async operation. */
+    set_security_engine_callback(callback);
+    
+    /* Setup Input/Output lists */
+    g_security_engine->IN_LL_ADDR_REG = in_ll_paddr;
+    g_security_engine->OUT_LL_ADDR_REG = out_ll_paddr;
+    
+    /* Set registers for operation. */
+    g_security_engine->ERR_STATUS_REG = g_security_engine->ERR_STATUS_REG;
+    g_security_engine->INT_STATUS_REG = g_security_engine->INT_STATUS_REG;
+    g_security_engine->OPERATION_REG = 1;
+    
+    /* Ensure writes go through. */
+    __asm__ __volatile__ ("dsb ish" : : : "memory");
+}
 
-void se_crypt_aes(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, unsigned int config, unsigned int mode, unsigned int (*callback)(void));
+void se_aes_ctr_crypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *ctr, unsigned int (*callback)(void)) {
+    if (g_security_engine == NULL) {
+        panic();
+    }
+    
+    /* Unknown what this write does, but official code writes it for CTR mode. */
+    g_security_engine->_0x80C = 1;
+    set_se_ctr(ctr);
+    se_aes_crypt_insecure_internal(keyslot, out_ll_paddr, in_ll_paddr, size, 0x81E, 1, callback);
+}
+
+void se_aes_cbc_encrypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *iv, unsigned int (*callback)(void)) {
+    if (g_security_engine == NULL) {
+        panic();
+    }
+    
+    set_aes_keyslot_iv(keyslot, iv, 0x10);
+    se_aes_crypt_insecure_internal(keyslot, out_ll_paddr, in_ll_paddr, size, 0x44, 1, callback);
+}
+
+void se_aes_cbc_decrypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *iv, unsigned int (*callback)(void)) {
+    if (g_security_engine == NULL) {
+        panic();
+    }
+    
+    set_aes_keyslot_iv(keyslot, iv, 0x10);
+    se_aes_crypt_insecure_internal(keyslot, out_ll_paddr, in_ll_paddr, size, 0x66, 0, callback);
+}
+
 
 void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*callback)(void)) {
     uint8_t stack_buf[KEYSIZE_RSA_MAX];
