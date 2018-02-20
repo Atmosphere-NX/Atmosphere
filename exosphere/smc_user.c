@@ -268,6 +268,65 @@ uint32_t user_crypt_aes(smc_args_t *args) {
     return result;
 }
 
+uint32_t user_generate_specific_aes_key(smc_args_t *args) {
+    uint64_t wrapped_key[2];
+    uint8_t key[0x10];
+    unsigned int master_key_rev;
+    int should_mask;
+    
+    wrapped_key[0] = args->X[1];
+    wrapped_key[1] = args->X[2];
+    if (args->X[4] > MASTERKEY_REVISION_MAX) {
+        return 2;
+    }
+    master_key_rev = (unsigned int)(args->X[4]);
+    if (args->X[3] > 1) {
+        return 2;
+    }
+    should_mask = (int)(args->X[3]);
+    
+    unsigned int keyslot;
+    
+    /* Behavior changed in 4.0.0. */
+    if (mkey_get_revision() >= 4) {
+        if (master_key_rev >= 2) {
+            keyslot = KEYSLOT_SWITCH_DEVICEKEY; /* New device key, 4.x. */
+        } else {
+            keyslot = KEYSLOT_SWITCH_4XOLDDEVICEKEY; /* Old device key, 4.x. */
+        }
+    } else {
+        keyslot = KEYSLOT_SWITCH_DEVICEKEY;
+    }
+    
+    if (0 /* TODO: GET_BOOTROM_PATCH_VERSION < 0x7F */) {
+        /* On dev units, use a fixed "all-zeroes" seed. */
+        /* Yes, this data really is all-zero in actual TrustZone .rodata. */
+        uint8_t dev_specific_aes_key_source[0x10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        uint8_t dev_specific_aes_key_ctr[0x10] = {0x3C, 0xD5, 0x92, 0xEC, 0x68, 0x31, 0x4A, 0x06, 0xD4, 0x1B, 0x0C, 0xD9, 0xF6, 0x2E, 0xD9, 0xE9};
+        uint8_t dev_specific_aes_key_mask[0x10] = {0xAC, 0xCA, 0x9A, 0xCA, 0xFF, 0x2E, 0xB9, 0x22, 0xCC, 0x1F, 0x4F, 0xAD, 0xDD, 0x77, 0x21, 0x1E};
+        
+        cache_flush(key, key + 0x10);
+        se_aes_ctr_crypt(keyslot, key, 0x10, dev_specific_aes_key_source, 0x10, dev_specific_aes_key_ctr, 0x10);
+        cache_flush(key, key + 0x10);
+        
+        if (should_mask) {
+            for (unsigned int i = 0; i < 0x10; i++) {
+                key[i] ^= dev_specific_aes_key_mask[i];
+            }
+        }
+    } else {
+        /* On retail, standard kek->key decryption. */
+        uint8_t retail_specific_aes_key_source[0x10] = {0xE2, 0xD6, 0xB8, 0x7A, 0x11, 0x9C, 0xB8, 0x80, 0xE8, 0x22, 0x88, 0x8A, 0x46, 0xFB, 0xA1, 0x95};
+        decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, keyslot, retail_specific_aes_key_source, 0x10);
+        se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_TEMPKEY, key, 0x10, wrapped_key, 0x10);
+    }
+    
+    
+    args->X[1] = key[0];
+    args->X[2] = key[1];
+    return 0;
+}
+
 uint32_t user_compute_cmac(smc_args_t *args) {
     uint32_t keyslot = (uint32_t)args->X[1];
     void *user_address = (void *)args->X[2];
@@ -293,6 +352,49 @@ uint32_t user_compute_cmac(smc_args_t *args) {
     args->X[1] = result_cmac[0];
     args->X[2] = result_cmac[1];
     
+    return 0;
+}
+
+uint32_t user_load_rsa_private_key(smc_args_t *args) {
+    uint64_t sealed_kek[2];
+    uint64_t wrapped_key[2];
+    int is_personalized;
+    
+    uint8_t user_data[0x400];
+    void *user_address;
+    size_t size;
+    upage_ref_t page_ref;
+
+    
+    /* Copy keydata */
+    sealed_kek[0] = args->X[1];
+    sealed_kek[1] = args->X[2];
+    if (args->X[3] > 1) {
+        return 2;
+    }
+    is_personalized = (int)args->X[3];
+    user_address = (void *)args->X[4];
+    size = = (size_t)args->X[5];
+    wrapped_key[0] = args->X[6];
+    wrapped_key[1] = args->X[7];
+    
+    if (is_personalized && size != 0x240) {
+        return 2;
+    }
+    if (!is_personalized && (size != 0x220 /* TODO: || GET_BOOTROM_PATCH_VERSION >= 0x7F */)) {
+        return 2;
+    }
+    
+    if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
+        return 2;
+    }
+    
+    /* Ensure that our private key is 0x100 bytes. */
+    if (gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSATICKET, is_personalized) < 0x100) {
+        return 2;
+    }
+    
+    memcpy(g_rsa_private_exponent, user_data, 0x100);
     return 0;
 }
 
@@ -326,7 +428,7 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     if (is_personalized && size < 0x31) {
         return 2;
     }
-    if (!is_personalized && (size < 0x11 /* || GET_BOOTROM_PATCH_VERSION >= 0x7F */)) {
+    if (!is_personalized && (size < 0x11 /* TODO: || GET_BOOTROM_PATCH_VERSION >= 0x7F */)) {
         return 2;
     }
     
@@ -345,6 +447,57 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     }
 
     args->X[1] = out_size;
+    return 0;
+}
+
+uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
+    uint64_t sealed_kek[2];
+    uint64_t wrapped_key[2];
+    int is_personalized;
+    
+    uint8_t user_data[0x400];
+    void *user_address;
+    size_t size;
+    upage_ref_t page_ref;
+
+    
+    /* Copy keydata */
+    sealed_kek[0] = args->X[1];
+    sealed_kek[1] = args->X[2];
+    if (args->X[3] > 1) {
+        return 2;
+    }
+    is_personalized = (int)args->X[3];
+    user_address = (void *)args->X[4];
+    size = = (size_t)args->X[5];
+    wrapped_key[0] = args->X[6];
+    wrapped_key[1] = args->X[7];
+    
+    if (is_personalized && size != 0x130) {
+        return 2;
+    }
+    if (!is_personalized && (size != 0x110 /* TODO: || GET_BOOTROM_PATCH_VERSION >= 0x7F */)) {
+        return 2;
+    }
+    
+    if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
+        return 2;
+    }
+    
+    size_t out_size;
+    
+    /* Ensure that our key is non-zero bytes. */
+    if ((out_size = gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSAOAEP, is_personalized)) == 0) {
+        return 2;
+    }
+    
+    /* Copy key to global. */
+    if (out_size <= 0x100) {
+        memcpy(g_rsa_oaep_exponent, user_data, out_size);
+    } else {
+        memcpy(g_rsa_oaep_exponent, user_data, 0x100);
+    }
+    
     return 0;
 }
 

@@ -305,12 +305,24 @@ uint32_t smc_crypt_aes(smc_args_t *args) {
     return smc_wrapper_async(args, user_crypt_aes, smc_crypt_aes_status_check);
 }
 
+uint32_t smc_generate_specific_aes_key(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_generate_specific_aes_key);
+}
+
 uint32_t smc_compute_cmac(smc_args_t *args) {
     return smc_wrapper_sync(args, user_compute_cmac);
 }
 
+uint32_t smc_load_rsa_private_key(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_load_rsa_private_key);
+}
+
 uint32_t smc_decrypt_rsa_private_key(smc_args_t *args) {
     return smc_wrapper_sync(args, user_decrypt_rsa_private_key);
+}
+
+uint32_t smc_load_rsa_oaep_key(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_load_rsa_oaep_key);
 }
 
 uint32_t smc_rsa_oaep(smc_args_t *args) {
