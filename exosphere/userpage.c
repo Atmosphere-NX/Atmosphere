@@ -12,13 +12,13 @@ int upage_init(upage_ref_t *upage, void *user_address) {
     upage->secure_page = 0ULL;
     
     if (g_secure_page_user_address != NULL) {
-        /* Different ASLR'd address indicate SPL was rebooted. Panic. */
+        /* Different physical address indicate SPL was rebooted, or another process got access to svcCallSecureMonitor. Panic. */
         if (g_secure_page_user_address != upage->user_page) {
             panic();
         }
         upage->secure_page = SECURE_USER_PAGE_ADDR;
     } else {
-        /* Official (weak) validation for SPL's ASLR'd address. */
+        /* Weakly validate SPL's physically random address is in DRAM. */
         if (upage->user_page >> 31) {
             g_secure_page_user_address = upage->user_page;
             /* TODO: Map this page into the MMU and invalidate the TLB. */
