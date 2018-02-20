@@ -1,7 +1,14 @@
-.align      4
+.align      6
 .section    .text.cold.start, "ax", %progbits
 .global     __start_cold
 __start_cold:
+    /* Nintendo copy-pasted https://github.com/ARM-software/arm-trusted-firmware/blob/master/plat/nvidia/tegra/common/aarch64/tegra_helpers.S#L312 */
+        /*
+        * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+        *
+        * SPDX-License-Identifier: BSD-3-Clause
+        */
+    /* The following comments are mine. */
     /* mask all interrupts */
     msr daifset, daif
 
@@ -25,6 +32,10 @@ __start_cold:
     bic  x0, x0, #1
     msr  cpuactlr_el1, x0
 
+.rept 7
+    nop                     /* wait long enough for the write to cpuactlr_el1 to have completed */
+.endr
+
     /* if the OS lock is set, disable it and request a warm reset */
     mrs  x0, oslsr_el1
     ands x0, x0, #2
@@ -39,7 +50,13 @@ __start_cold:
     msr  rmr_el3, x0
     isb
     dsb
-    wfi
+    /* Nintendo forgot to copy-paste the branch instruction below. */
+    _reset_wfi:
+        wfi
+        b _reset_wfi
+.rept 65
+    nop                     /* guard against speculative excecution */
+.endr
 
     _set_lock_and_sp:
     /* set the OS lock */

@@ -417,7 +417,7 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     }
     is_personalized = (int)args->X[3];
     user_address = (void *)args->X[4];
-    size = = (size_t)args->X[5];
+    size = (size_t)args->X[5];
     wrapped_key[0] = args->X[6];
     wrapped_key[1] = args->X[7];
     
