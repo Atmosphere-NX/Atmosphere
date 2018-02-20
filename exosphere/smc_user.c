@@ -126,11 +126,11 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
     
     uint64_t is_recovery_boot = configitem_is_recovery_boot();
     
-    /* Mask 2 is only allowed when booted normally. */
+    /* Mask 2 is only allowed when booted from recovery. */
     if (mask_id == 2 && is_recovery_boot == 0) {
         return 2;
     }
-    /* Mask 1 is only allowed when booted from recovery. */
+    /* Mask 1 is only allowed when booted normally. */
     if (mask_id == 1 && is_recovery_boot != 0) {
         return 2;
     }
