@@ -138,10 +138,10 @@ void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const vo
 void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 
+/* Hash API */
+void se_calculate_sha256(void *dst, const void *src, size_t src_size);
 
-void se_crypt_aes(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, unsigned int config, unsigned int mode, unsigned int (*callback)(void));
-
-
+/* RSA API */
 void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*callback)(void));
 void se_get_exp_mod_output(void *buf, size_t size);
 

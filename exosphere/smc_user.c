@@ -6,6 +6,7 @@
 #include "smc_user.h"
 #include "se.h"
 #include "userpage.h"
+#include "titlekey.h"
 
 /* Globals. */
 int g_crypt_aes_done = 0;
@@ -187,9 +188,7 @@ uint32_t user_rsa_oaep(smc_args_t *args) {
     uint8_t input[0x100];
     
     upage_ref_t page_ref;
-        
-    size_t exponent_size = (size_t)args->X[4];
-    
+            
     void *user_input = (void *)args->X[1];
     void *user_modulus = (void *)args->X[2];
 
@@ -210,4 +209,82 @@ uint32_t user_rsa_oaep(smc_args_t *args) {
     se_exp_mod(0, input, 0x100, exp_mod_done_handler);
     
     return 0;
+}
+
+uint32_t user_unwrap_rsa_wrapped_titlekey(smc_args_t *args) {
+    uint8_t modulus[0x100];
+    uint8_t wrapped_key[0x100];
+    
+    upage_ref_t page_ref;
+            
+    void *user_wrapped_key = (void *)args->X[1];
+    void *user_modulus = (void *)args->X[2];
+    unsigned int master_key_rev = (unsigned int)args->X[7];
+    
+    /* TODO: Validate Master Key Revision. */
+
+    /* Copy user data into secure memory. */
+    if (upage_init(&page_ref, user_wrapped_key) == 0) {
+        return 2;
+    }
+    if (user_copy_to_secure(&page_ref, wrapped_key, user_wrapped_key, 0x100) == 0) {
+        return 2;
+    }
+    if (user_copy_to_secure(&page_ref, modulus, user_modulus, 0x100) == 0) {
+        return 2;
+    }
+    
+    set_exp_mod_done(0);
+    
+    /* Expected salt occupies args->X[3] to args->X[6]. */
+    tkey_set_expected_salt(&args->X[3]);
+    
+    tkey_set_master_key_rev(master_key_rev);
+    
+    /* Hardcode RSA keyslot 0. */
+    set_rsa_keyslot(0, modulus, 0x100, g_rsa_private_exponent, 0x100);
+    se_exp_mod(0, wrapped_key, 0x100, exp_mod_done_handler);
+    
+    return 0;
+
+}
+
+uint32_t user_load_titlekey(smc_args_t *args) {
+    uint64_t sealed_titlekey[2];
+    
+    uint32_t keyslot = (uint32_t)args->X[1];
+    if (keyslot > 3) {
+        return 2;
+    }
+    
+    /* Copy keydata */
+    sealed_titlekey[0] = args->X[2];
+    sealed_titlekey[1] = args->X[3];
+    
+    /* Unseal the key. */
+    tkey_unseal(keyslot, sealed_titlekey, 0x10);
+    return 0;
+
+}
+
+uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
+    uint64_t aes_wrapped_titlekey[2];
+    uint8_t titlekey[0x10];
+    uint64_t sealed_titlekey[2];
+    
+    aes_wrapped_titlekey[0] = args->X[1];
+    aes_wrapped_titlekey[1] = args->X[2];
+    unsigned int master_key_rev = (unsigned int)args->X[3];
+    
+    
+    /* TODO: Validate Master Key Revision. */
+    tkey_set_master_key_rev(master_key_rev);
+    
+    
+    tkey_aes_unwrap(titlekey, 0x10, aes_wrapped_titlekey, 0x10);
+    tkey_seal(sealed_titlekey, 0x10, titlekey, 0x10);
+    
+    args->X[1] = sealed_titlekey[0];
+    args->X[2] = sealed_titlekey[1];
+
 }

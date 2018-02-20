@@ -7,6 +7,7 @@
 #include "smc_user.h"
 #include "se.h"
 #include "userpage.h"
+#include "titlekey.h"
 
 #define SMC_USER_HANDLERS 0x13
 #define SMC_PRIV_HANDLERS 0x9
@@ -305,7 +306,49 @@ uint32_t smc_rsa_oaep(smc_args_t *args) {
     return smc_wrapper_async(args, user_rsa_oaep, smc_exp_mod_get_result);
 }
 
+uint32_t smc_unwrap_rsa_wrapped_titlekey_get_result(void *buf, uint64_t size) {
+    uint64_t *p_sealed_key = (uint64_t *)buf;
+    uint8_t rsa_wrapped_titlekey[0x100];
+    uint8_t aes_wrapped_titlekey[0x10];
+    uint8_t titlekey[0x10];
+    uint64_t sealed_titlekey[2];
+    if (get_exp_mod_done() != 1) {
+        return 3;
+    }
+    
+    if (size != 0x10) {
+        return 2;
+    }
+    
+    se_get_exp_mod_output(wrapped_titlekey, 0x100);
+    if (tkey_rsa_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) != 0x10) {
+        /* Failed to extract RSA wrapped key. */
+        g_is_smc_in_progress = 0;
+        return 2;
+    }
+    
+    tkey_aes_unwrap(titlekey, 0x10, aes_wrapped_titlekey, 0x10);
+    tkey_seal(sealed_titlekey, 0x10, titlekey, 0x10);
+    
+    p_sealed_key[0] = sealed_titlekey[0];
+    p_sealed_key[1] = sealed_titlekey[1];
+    
+    /* smc_unwrap_aes_wrapped_titlekey is done now. */
+    g_is_smc_in_progress = 0;
+    return 0;
+}
 
+uint32_t smc_unwrap_rsa_wrapped_titlekey(smc_args_t *args) {
+    return smc_wrapper_async(args, user_unwrap_rsa_wrapped_titlekey, smc_unwrap_rsa_wrapped_titlekey_get_result);
+}
+
+uint32_t smc_load_titlekey(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_load_titlekey);
+}
+
+uint32_t smc_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_unwrap_aes_wrapped_titlekey);
+}
 
 uint32_t smc_cpu_on(smc_args_t *args) {
     return cpu_on((uint32_t)args->X[1], args->X[2], args->X[3]);
