@@ -296,6 +296,58 @@ uint32_t user_compute_cmac(smc_args_t *args) {
     return 0;
 }
 
+uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
+    uint64_t sealed_kek[2];
+    uint64_t wrapped_key[2];
+    int is_personalized;
+    
+    uint8_t user_data[0x400];
+    void *user_address;
+    size_t size;
+    upage_ref_t page_ref;
+
+    
+    /* Copy keydata */
+    sealed_kek[0] = args->X[1];
+    sealed_kek[1] = args->X[2];
+    if (args->X[3] > 1) {
+        return 2;
+    }
+    is_personalized = (int)args->X[3];
+    user_address = (void *)args->X[4];
+    size = = (size_t)args->X[5];
+    wrapped_key[0] = args->X[6];
+    wrapped_key[1] = args->X[7];
+    
+    if (size > 0x240) {
+        return 2;
+    }
+    
+    if (is_personalized && size < 0x31) {
+        return 2;
+    }
+    if (!is_personalized && (size < 0x11 /* || GET_BOOTROM_PATCH_VERSION >= 0x7F */)) {
+        return 2;
+    }
+    
+    if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
+        return 2;
+    }
+    
+    size_t out_size;
+    
+    if ((out_size = gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSAPRIVATE, is_personalized)) == 0) {
+        return 2;
+    }
+    
+    if (secure_copy_to_user(&page_ref, user_address, user_data, size) == 0) {
+        return 2;
+    }
+
+    args->X[1] = out_size;
+    return 0;
+}
+
 uint32_t user_rsa_oaep(smc_args_t *args) {
     uint8_t modulus[0x100];
     uint8_t input[0x100];

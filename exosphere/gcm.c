@@ -112,7 +112,7 @@ static void ghash(void *dst, const void *data, size_t data_size, const void *j_b
 
 
 /* This function is a doozy. It decrypts and validates a (non-standard) AES-GCM wrapped keypair. */
-size_t gcm_decrypt_key(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *sealed_kek, size_t kek_size, const void *wrapped_key, size_t key_size, unsigned int usecase, int is_personalized) {
+size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_size, const void *sealed_kek, size_t kek_size, const void *wrapped_key, size_t key_size, unsigned int usecase, int is_personalized) {
     if (is_personalized == 0) {
         /* Devkit keys use a different keyformat without a MAC/Device ID. */
         if (src_size <= 0x10 || src_size - 0x10 > dst_size) {
