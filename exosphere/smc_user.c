@@ -1,9 +1,11 @@
 #include <stdint.h>
 
 #include "utils.h"
+#include "cache.h"
 #include "smc_api.h"
 #include "smc_user.h"
 #include "se.h"
+#include "userpage.h"
 
 /* Globals. */
 int g_crypt_aes_done = 0;
@@ -87,4 +89,32 @@ uint32_t user_crypt_aes(smc_args_t *args) {
     }
     
     return result;
+}
+
+uint32_t user_compute_cmac(smc_args_t *args) {
+    uint32_t keyslot = (uint32_t)args->X[1];
+    void *user_address = (void *)args->X[2];
+    size_t size = (size_t)args->X[3];
+        
+    uint8_t user_data[0x400];
+    uint64_t result_cmac[2];
+    upage_ref_t page_ref;
+    
+    /* Validate keyslot and size. */
+    if (keyslot > 3 || args->X[3] > 0x400) {
+        return 2;
+    }
+    
+    if (upage_init(&page_ref, (void *)user_address) == 0 || user_copy_to_secure() == 0) {
+        return 2;
+    }
+    
+    flush_dcache_range(user_data, user_data + size);
+    se_compute_aes_128_cmac(keyslot, result_cmac, 0x10, user_data, size);
+    
+    /* Copy CMAC out. */
+    args->X[1] = result_cmac[0];
+    args->X[2] = result_cmac[1];
+    
+    return 0;
 }
