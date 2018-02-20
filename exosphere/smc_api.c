@@ -6,6 +6,7 @@
 #include "smc_api.h"
 #include "smc_user.h"
 #include "se.h"
+#include "userpage.h"
 
 #define SMC_USER_HANDLERS 0x13
 #define SMC_PRIV_HANDLERS 0x9
@@ -225,6 +226,10 @@ uint32_t smc_check_status(smc_args_t *args) {
 uint32_t smc_get_result(smc_args_t *) {
     uint32_t status;
     unsigned char result_buf[0x400];
+    upage_ref_t page_ref;
+    
+    void *user_address = (void *)args->X[2];
+    
     if (g_smc_callback_key == 0) {
         return 4;
     }
@@ -241,7 +246,16 @@ uint32_t smc_get_result(smc_args_t *) {
     args->X[1] = g_smc_callback(result_buf, args->X[3]);
     g_smc_callback_key = 0;
     
-    /* TODO: Copy result from result_buf into output in args->X[2] */
+    /* Initialize page reference. */
+    if (upage_init(&page_ref, user_address) == 0) {
+        return 2;
+    }
+
+    /* Copy result output back to user. */
+    if (secure_copy_to_user(&page_ref, user_address, result_buf, (size_t)args->X[3]) == 0) {
+        return 2;
+    }
+    
     return 0;
 }
 
