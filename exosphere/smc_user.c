@@ -105,7 +105,7 @@ uint32_t user_compute_cmac(smc_args_t *args) {
         return 2;
     }
     
-    if (upage_init(&page_ref, (void *)user_address) == 0 || user_copy_to_secure() == 0) {
+    if (upage_init(&page_ref, (void *)user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
         return 2;
     }
     
