@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define BIT(x)  (1u   << (x))
+#define BITL(x) (1ull << (x))
+
 void panic(void);
 
 uint32_t get_physical_address(void *vaddr);
