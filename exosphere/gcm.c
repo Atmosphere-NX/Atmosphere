@@ -148,7 +148,9 @@ int gcm_decrypt_key(unsigned int keyslot, void *dst, size_t dst_size, const void
     uint8_t j_block[0x10];
     ghash(j_block, src, 0x10, NULL, 0);
     
-    /* MAC = GHASH(CTR) ^ ENCRYPT(J) */
+    /* MAC = GHASH(PLAINTEXT) ^ ENCRYPT(J) */
+    /* Note: That MAC is calculated over plaintext is non-standard. */
+    /* It is supposed to be over the ciphertext. */
     uint8_t calc_mac[0x10];
     ghash(calc_mac, dst, src_size - 0x20, j_block, 1);
     
