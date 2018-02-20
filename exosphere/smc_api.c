@@ -108,8 +108,7 @@ uint64_t try_set_smc_callback(uint32_t (*callback)(void *, uint64_t)) {
         return 0;
     }
     
-    /* TODO: Keyslot defines. */
-    se_generate_random(0xB, &key, sizeof(uint64_t));
+    se_generate_random(KEYSLOT_SWITCH_RNGKEY, &key, sizeof(uint64_t));
     g_smc_callback_key = key;
     g_smc_callback = callback;
     return key;
