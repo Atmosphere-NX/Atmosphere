@@ -13,6 +13,15 @@ uint32_t configitem_set(enum ConfigItem item, uint64_t value) {
     g_battery_profile = ((int)(value != 0)) & 1;
 }
 
+uint64_t configitem_is_recovery_boot(void) {
+    uint64_t is_recovery_boot;
+    if (configitem_get(CONFIGITEM_ISRECOVERYBOOT, &is_recovery_boot) != 0) {
+        panic();
+    }
+    
+    return is_recovery_boot;
+}
+
 uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue) {
     uint32_t result = 0;
     switch (item) {

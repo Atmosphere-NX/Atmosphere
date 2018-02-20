@@ -12,8 +12,8 @@
 #define KEYSLOT_SWITCH_MASTERKEY 0xC
 #define KEYSLOT_SWITCH_DEVICEKEY 0xD
 
-/* This key was added in 4.0.0. */
-#define KEYSLOT_SWITCH_NEWDEVICEKEY 0xF
+/* This keyslot was added in 4.0.0. */
+#define KEYSLOT_SWITCH_4XOLDDEVICEKEY 0xF
 
 #define KEYSLOT_AES_MAX 0x10
 #define KEYSLOT_RSA_MAX 0x2

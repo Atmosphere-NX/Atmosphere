@@ -279,6 +279,10 @@ uint32_t smc_exp_mod(smc_args_t *args) {
     return smc_wrapper_async(args, user_exp_mod, smc_exp_mod_get_result);
 }
 
+uint32_t smc_generate_aes_kek(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_generate_aes_kek);
+}
+
 uint32_t smc_load_aes_key(smc_args_t *args) {
     return smc_wrapper_sync(args, user_load_aes_key);
 }
@@ -327,7 +331,7 @@ uint32_t smc_unwrap_rsa_wrapped_titlekey_get_result(void *buf, uint64_t size) {
     }
     
     tkey_aes_unwrap(titlekey, 0x10, aes_wrapped_titlekey, 0x10);
-    tkey_seal(sealed_titlekey, 0x10, titlekey, 0x10);
+    seal_titlekey(sealed_titlekey, 0x10, titlekey, 0x10);
     
     p_sealed_key[0] = sealed_titlekey[0];
     p_sealed_key[1] = sealed_titlekey[1];

@@ -23,4 +23,6 @@ enum ConfigItem {
 uint32_t configitem_set(enum ConfigItem item, uint64_t value);
 uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue);
 
+uint64_t configitem_is_recovery_boot(void);
+
 #endif
