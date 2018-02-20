@@ -279,6 +279,10 @@ uint32_t smc_exp_mod(smc_args_t *args) {
     return smc_wrapper_async(args, user_exp_mod, smc_exp_mod_get_result);
 }
 
+uint32_t smc_get_random_bytes_for_user(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_get_random_bytes);
+}
+
 uint32_t smc_generate_aes_kek(smc_args_t *args) {
     return smc_wrapper_sync(args, user_generate_aes_kek);
 }
@@ -368,4 +372,31 @@ uint32_t cpu_suspend_wrapper(smc_args_t *args) {
 
 uint32_t smc_cpu_suspend(smc_args_t *args) {
     return smc_wrapper_sync(args, cpu_suspend_wrapper);
+}
+
+uint32_t smc_get_random_bytes_for_priv(smc_args_t *args) {
+    /* This is an interesting SMC. */
+    /* The kernel must NEVER be unable to get random bytes, if it needs them */
+    /* As such: */
+    
+    uint32_t result;
+    
+    /* TODO: Make atomic. */
+    if (g_is_smc_in_progress == 0) {
+        g_is_smc_in_progress = 1;
+        /* If the kernel isn't denied service by a usermode SMC, generate fresh random bytes. */
+        result = user_get_random_bytes(args);
+        /* Also, refill our cache while we have the chance in case we get denied later. */
+        randomcache_refill();
+        g_is_smc_in_progress = 0;
+    } else {
+        if (args->X[1] > 0x38) {
+            return 2;
+        }
+        /* Retrieve bytes from the cache. */
+        size_t num_bytes = (size_t)args->X[1];
+        randomcache_getbytes(&args->X[1], num_bytes);
+        result = 0;
+    }
+    return result;
 }

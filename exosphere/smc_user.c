@@ -75,6 +75,22 @@ uint32_t user_exp_mod(smc_args_t *args) {
     return 0;
 }
 
+uint32_t user_get_random_bytes(smc_args_t *args) {
+    uint8_t random_bytes[0x40];
+    if (args->X[1] > 0x38) {
+        return 2;
+    }
+    
+    size_t size = (size_t)args->X[1];
+    
+    flush_dcache_range(random_bytes, random_bytes + size);
+    se_generate_random(KEYSLOT_SWITCH_RNGKEY, random_bytes, size);
+    flush_dcache_range(random_bytes, random_bytes + size);
+    
+    memcpy(&args->X[1], random_bytes, size);
+    return 0;
+}
+
 uint32_t user_generate_aes_kek(smc_args_t *args) {
     uint64_t wrapped_kek[2];
     uint8_t kek_source[0x10];
