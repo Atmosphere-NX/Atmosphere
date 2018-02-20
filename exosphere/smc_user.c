@@ -335,8 +335,8 @@ uint32_t user_unwrap_rsa_wrapped_titlekey(smc_args_t *args) {
     
     set_exp_mod_done(0);
     
-    /* Expected salt occupies args->X[3] to args->X[6]. */
-    tkey_set_expected_salt(&args->X[3]);
+    /* Expected db prefix occupies args->X[3] to args->X[6]. */
+    tkey_set_expected_db_prefix(&args->X[3]);
     
     tkey_set_master_key_rev(master_key_rev);
     

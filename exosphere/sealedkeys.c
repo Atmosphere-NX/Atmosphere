@@ -9,7 +9,7 @@ const uint8_t g_titlekey_seal_key_source[0x10] = {
 };
 
 
-const uint8_t g_sealed_key_sources[CRYPTOUSECASE_MAX][0x10] = {
+const uint8_t g_seal_key_sources[CRYPTOUSECASE_MAX][0x10] = {
     {0xF4, 0x0C, 0x16, 0x26, 0x0D, 0x46, 0x3B, 0xE0, 0x8C, 0x6A, 0x56, 0xE5, 0x82, 0xD4, 0x1B, 0xF6},
     {0x7F, 0x54, 0x2C, 0x98, 0x1E, 0x54, 0x18, 0x3B, 0xBA, 0x63, 0xBD, 0x4C, 0x13, 0x5B, 0xF1, 0x06},
     {0xC7, 0x3F, 0x73, 0x60, 0xB7, 0xB9, 0x9D, 0x74, 0x0A, 0xF8, 0x35, 0x60, 0x1A, 0x18, 0x74, 0x63},
@@ -51,7 +51,7 @@ void seal_key(void *dst, size_t dst_size, const void *src, size_t src_size, unsi
     }
     
     
-    seal_key_internal(dst, src, g_sealed_key_sources[usecase]);
+    seal_key_internal(dst, src, g_seal_key_sources[usecase]);
 }
 
 void unseal_key(unsigned int keyslot, const void *src, size_t src_size, unsigned int usecase) {
@@ -59,5 +59,5 @@ void unseal_key(unsigned int keyslot, const void *src, size_t src_size, unsigned
         panic();
     }
     
-    seal_key_internal(dst, src, g_sealed_key_sources[usecase]);
+    seal_key_internal(dst, src, g_seal_key_sources[usecase]);
 }
