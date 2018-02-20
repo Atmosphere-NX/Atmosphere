@@ -11,6 +11,9 @@
 int g_crypt_aes_done = 0;
 int g_exp_mod_done = 0;
 
+uint8_t g_rsa_oaep_exponent[0x100];
+uint8_t g_rsa_private_exponent[0x100];
+
 
 void set_exp_mod_done(int done) {
     g_exp_mod_done = done & 1;
@@ -175,6 +178,36 @@ uint32_t user_compute_cmac(smc_args_t *args) {
     /* Copy CMAC out. */
     args->X[1] = result_cmac[0];
     args->X[2] = result_cmac[1];
+    
+    return 0;
+}
+
+uint32_t user_rsa_oaep(smc_args_t *args) {
+    uint8_t modulus[0x100];
+    uint8_t input[0x100];
+    
+    upage_ref_t page_ref;
+        
+    size_t exponent_size = (size_t)args->X[4];
+    
+    void *user_input = (void *)args->X[1];
+    void *user_modulus = (void *)args->X[2];
+
+    /* Copy user data into secure memory. */
+    if (upage_init(&page_ref, user_input) == 0) {
+        return 2;
+    }
+    if (user_copy_to_secure(&page_ref, input, user_input, 0x100) == 0) {
+        return 2;
+    }
+    if (user_copy_to_secure(&page_ref, modulus, user_modulus, 0x100) == 0) {
+        return 2;
+    }
+    
+    set_exp_mod_done(0);
+    /* Hardcode RSA keyslot 0. */
+    set_rsa_keyslot(0, modulus, 0x100, g_rsa_oaep_exponent, 0x100);
+    se_exp_mod(0, input, 0x100, exp_mod_done_handler);
     
     return 0;
 }

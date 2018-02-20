@@ -301,6 +301,10 @@ uint32_t smc_compute_cmac(smc_args_t *args) {
     return smc_wrapper_sync(args, user_compute_cmac);
 }
 
+uint32_t smc_rsa_oaep(smc_args_t *args) {
+    return smc_wrapper_async(args, user_rsa_oaep, smc_exp_mod_get_result);
+}
+
 
 
 uint32_t smc_cpu_on(smc_args_t *args) {
