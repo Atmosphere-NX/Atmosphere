@@ -259,13 +259,33 @@ uint32_t smc_get_result(smc_args_t *) {
     return 0;
 }
 
+uint32_t smc_exp_mod_get_result(void *buf, uint64_t size) {
+    if (get_exp_mod_done() != 1) {
+        return 3;
+    }
+    
+    if (size != 0x100) {
+        return 2;
+    }
+    
+    se_get_exp_mod_output(buf, 0x100);
+    
+    /* smc_exp_mod is done now. */
+    g_is_smc_in_progress = 0;
+    return 0;
+}
+
+uint32_t smc_exp_mod(smc_args_t *args) {
+    return smc_wrapper_async(args, user_exp_mod, smc_exp_mod_get_result);
+}
+
 uint32_t smc_load_aes_key(smc_args_t *args) {
     return smc_wrapper_sync(args, user_load_aes_key);
 }
 
 uint32_t smc_crypt_aes_status_check(void *buf, uint64_t size) {
     /* Buf and size are unused. */
-    if (get_crypt_aes_done() == 0) {
+    if (get_crypt_aes_done() != 1) {
         return 3;
     }
     /* smc_crypt_aes is done now. */

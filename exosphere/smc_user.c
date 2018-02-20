@@ -9,6 +9,64 @@
 
 /* Globals. */
 int g_crypt_aes_done = 0;
+int g_exp_mod_done = 0;
+
+
+void set_exp_mod_done(int done) {
+    g_exp_mod_done = done & 1;
+}
+
+int get_exp_mod_done(void) {
+    return g_exp_mod_done;
+}
+
+uint32_t exp_mod_done_handler(void) {  
+    set_exp_mod_done(1);
+    
+    se_trigger_interrupt();
+    
+    return 0;
+}
+
+uint32_t user_exp_mod(smc_args_t *args) {
+    uint8_t modulus[0x100];
+    uint8_t exponent[0x100];
+    uint8_t input[0x100];
+    
+    upage_ref_t page_ref;
+    
+    /* Validate size. */
+    if (args->X[4] == 0 || args->X[4] > 0x100 || (args->X[4] & 3) != 0) {
+        return 2;
+    }
+    
+    size_t exponent_size = (size_t)args->X[4];
+    
+    void *user_input = (void *)args->X[1];
+    void *user_exponent = (void *)args->X[2];
+    void *user_modulus = (void *)args->X[3];
+
+    /* Copy user data into secure memory. */
+    if (upage_init(&page_ref, user_input) == 0) {
+        return 2;
+    }
+    if (user_copy_to_secure(&page_ref, input, user_input, 0x100) == 0) {
+        return 2;
+    }
+    if (user_copy_to_secure(&page_ref, exponent, user_exponent, exponent_size) == 0) {
+        return 2;
+    }    
+    if (user_copy_to_secure(&page_ref, modulus, user_modulus, 0x100) == 0) {
+        return 2;
+    }
+    
+    set_exp_mod_done(0);
+    /* Hardcode RSA keyslot 0. */
+    set_rsa_keyslot(0, modulus, 0x100, exponent, exponent_size);
+    se_exp_mod(0, input, 0x100, exp_mod_done_handler);
+    
+    return 0;
+}
 
 uint32_t user_load_aes_key(smc_args_t *args) {
     uint64_t sealed_kek[2];
@@ -47,7 +105,9 @@ uint32_t crypt_aes_done_handler(void) {
     
     set_crypt_aes_done(1);
     
-    /* TODO: Manually trigger an SE interrupt (0x2C) */
+    se_trigger_interrupt();
+    
+    return 0;
 }
 
 uint32_t user_crypt_aes(smc_args_t *args) {
@@ -105,7 +165,7 @@ uint32_t user_compute_cmac(smc_args_t *args) {
         return 2;
     }
     
-    if (upage_init(&page_ref, (void *)user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
+    if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
         return 2;
     }
     

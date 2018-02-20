@@ -112,6 +112,7 @@ void set_security_engine_address(security_engine_t *security_engine);
 security_engine_t *get_security_engine_address(void);
 
 void se_check_for_error(void);
+void se_trigger_interrupt(void);
 
 void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags);
 void set_rsa_keyslot_flags(unsigned int keyslot, unsigned int flags);
