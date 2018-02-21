@@ -158,7 +158,7 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
     unsigned int keyslot;
     if (is_personalized) {
         /* Behavior changed in 4.0.0. */
-        if (mkey_get_revision() >= 4) {
+        if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
             if (master_key_rev >= 1) {
                 keyslot = KEYSLOT_SWITCH_DEVICEKEY; /* New device key, 4.x. */
             } else {
@@ -288,7 +288,7 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
     unsigned int keyslot;
     
     /* Behavior changed in 4.0.0. */
-    if (mkey_get_revision() >= 4) {
+    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
         if (master_key_rev >= 2) {
             keyslot = KEYSLOT_SWITCH_DEVICEKEY; /* New device key, 4.x. */
         } else {

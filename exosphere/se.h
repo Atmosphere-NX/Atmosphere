@@ -13,6 +13,8 @@
 #define KEYSLOT_SWITCH_DEVICEKEY 0xD
 
 /* This keyslot was added in 4.0.0. */
+#define KEYSLOT_SWITCH_4XNEWDEVICEKEYGENKEY 0xD
+#define KEYSLOT_SWITCH_4XNEWCONSOLEKEYGENKEY 0xE
 #define KEYSLOT_SWITCH_4XOLDDEVICEKEY 0xF
 
 #define KEYSLOT_AES_MAX 0x10
@@ -75,7 +77,11 @@ typedef struct security_engine {
   unsigned int _0x328;
   unsigned int _0x32C;
   unsigned int CRYPTO_KEYTABLE_DST_REG;
-  unsigned char _0x334[0xCC];
+  unsigned char _0x334[0xC];
+  unsigned int RNG_CONFIG_REG;
+  unsigned int RNG_SRC_CONFIG_REG;
+  unsigned int RNG_RESEED_INTERVAL_REG;
+  unsigned char _0x34C[0xB4];
   unsigned int RSA_CONFIG;
   unsigned int RSA_KEY_SIZE_REG;
   unsigned int RSA_EXP_SIZE_REG;
@@ -123,6 +129,9 @@ security_engine_t *get_security_engine_address(void);
 void se_check_for_error(void);
 void se_trigger_interrupt(void);
 
+void se_verify_flags_cleared(void);
+void se_clear_interrupts(void);
+
 void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags);
 void set_rsa_keyslot_flags(unsigned int keyslot, unsigned int flags);
 void clear_aes_keyslot(unsigned int keyslot);
@@ -154,6 +163,8 @@ void se_calculate_sha256(void *dst, const void *src, size_t src_size);
 void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*callback)(void));
 void se_get_exp_mod_output(void *buf, size_t size);
 
+/* RNG API */
+void se_initialize_rng(unsigned int keyslot);
 void se_generate_random(unsigned int keyslot, void *dst, size_t size);
 
 /* TODO: SE context save API, consider extending AES API for secure world vs non-secure world operations. */

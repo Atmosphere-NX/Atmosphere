@@ -82,7 +82,7 @@ __init_cold:
     msr  spsel, #0
     ldr  x20, =__pk2_load_stack_top__
     mov  sp, x20
-    bl   loadPk2
+    bl   load_package2
     ldr  x20, =__cold_init_stack_top__
     mov  sp, x20
     b    coldboot_main

@@ -62,6 +62,17 @@ void se_operation_completed(void) {
     }
 }
 
+
+void se_verify_flags_cleared(void) {
+    if (g_security_engine == NULL || g_security_engine->FLAGS_REG & 3) {
+        panic();
+    }
+}
+
+void se_clear_interrupts(void) {
+    /* TODO */
+}
+
 /* Set the flags for an AES keyslot. */
 void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags) {
     if (g_security_engine == NULL || keyslot >= KEYSLOT_AES_MAX) {
