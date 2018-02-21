@@ -163,8 +163,79 @@ int validate_package2_metadata(package2_meta_t *metadata) {
         return 0;
     }
     
-    /* TODO: Validate size, sections. */
+    /* Package2 size, version number is stored XORed in header CTR. */
+    /* Nintendo, what the fuck? */
+    uint32_t package_size = metadata->ctr_dwords[0] ^ metadata->ctr_dwords[2] ^ metadata->ctr_dwords[3];
+    uint8_t header_version = (uint8_t)((metadata->ctr_dwords[1] ^ (metadata->ctr_dwords[1] >> 16) ^ (metadata->ctr_dwords[1] >> 24)) & 0xFF);
+    
+    /* Ensure package isn't too big or too small. */
+    if (package_size <= sizeof(package2_header_t) || package_size > PACKAGE2_SIZE_MAX - sizeof(package2_header_t)) {
+        return 0;
+    }
+    
+    /* Validate that we're working with a header we know how to handle. */
+    if (header_version > MASTERKEY_REVISION_MAX) {
+        return 0;
+    }
+    
+    /* Require aligned entrypoint. */
+    if (metadata->entrypoint & 3) {
+        return 0;
+    }
+    
+    /* Validate section size sanity. */
+    if (metadata->section_sizes[0] + metadata->section_sizes[1] + metadata->section_sizes[2] + sizeof(package2_header_t) != package_size) {
+        return 0;
+    }
+    
+    int entrypoint_found = 0;
+    
+    /* Header has space for 4 sections, but only 3 are validated/potentially loaded on hardware. */
+    for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
+        /* Validate section size alignment. */
+        if (metadata->section_sizes[section] & 3) {
+            return 0;
+        }
         
+        /* Validate section does not overflow. */
+        if (check_32bit_additive_overflow(metadata->section_offsets[section], metadata->section_sizes[section])) {
+            return 0;
+        }
+        
+        /* Check for entrypoint presence. */
+        uint32_t section_end = metadata->section_offsets[section] + metadata->section_sizes[section];
+        if (metadata->section_offsets[section] <= metadata->entrypoint && metadata->entrypoint < section_end) {
+            entrypoint_found = 1;
+        }
+        
+        /* Ensure no overlap with later sections. */
+        for (unsigned int later_section = section + 1; later_section < PACKAGE2_SECTION_MAX; later_section++) {
+            uint32_t later_section_end = metadata->section_offsets[later_section] + metadata->section_sizes[later_section];
+            if (overlaps(metadata->section_offsets[section], section_end, metadata->section_offsets[later_section], later_section_end)) {
+                return 0;
+            }
+        }
+        
+        /* Validate section hashes. */
+        void *section_data = (void *)((uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS + sizeof(package2_header_t) + metadata->section_offsets[section]);
+        uint8_t calculated_hash[0x20];
+        se_calculate_sha256(calculated_hash, section_data, metadata->section_sizes[section]);
+        if (memcmp(calculated_hash, metadata->section_hashes[section], sizeof(metadata->section_hashes[section])) != 0) {
+            return 0;
+        }
+    }
+    
+    /* Ensure that entrypoint is present in one of our sections. */
+    if (!entrypoint_found) {
+        return 0;
+    }
+    
+    /* Perform version checks. */
+    /* We will be compatible with all package2s released before current, but not newer ones. */
+    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_400_CURRENT) {
+        return 0;
+    }
+     
     return 1;
 }
 
@@ -191,6 +262,73 @@ uint32_t decrypt_and_validate_header(package2_header_t *header) {
         panic();  
     }
     return 0;
+}
+
+void load_package2_sections(package2_meta_t *metadata, uint32_t master_key_rev) {
+    /* By default, copy data directly from where NX_BOOTLOADER puts it. */
+    void *load_buf = NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS;
+    
+    /* Check whether any of our sections overlap this region. If they do, we must relocate and copy from elsewhere. */
+    int needs_relocation = 0;
+    for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
+        uint64_t section_start = DRAM_BASE_PHYSICAL + (uint64_t)metadata->section_offsets[section];
+        uint64_t section_end = section_start + (uint64_t)metadata->section_sizes[section];
+        if (overlaps(section_start, section_end, (uint64_t)(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS), (uint64_t)(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS) + PACKAGE2_SIZE_MAX)) {
+            needs_relocation = 1;
+        }
+    }
+    if (needs_relocation) {
+        /* This code should *always* succeed in finding a carveout within four loops, */
+        /* due to the section size limit, and section number limit. */
+        /* However, Nintendo tries past that and panics after 8 loops. */
+        /* We will replicate this behavior. */
+        int found_safe_carveout = 0;
+        uint64_t potential_base_start = DRAM_BASE_PHYSICAL;
+        uint64_t potential_base_end = potential_base_start + PACKAGE2_SIZE_MAX;
+        for (unsigned int i = 0; i < 8; i++) {
+            int is_safe = 1;
+            for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
+                uint64_t section_start = DRAM_BASE_PHYSICAL + (uint64_t)metadata->section_offsets[section];
+                uint64_t section_end = section_start + (uint64_t)metadata->section_sizes[section];
+                if (overlaps(section_start, section_end, potential_base_start, potential_base_end)) {
+                    is_safe = 0;
+                }
+            }
+            found_safe_carveout |= is_safe;
+            if (found_safe_carveout) {
+                break;
+            }
+            potential_base_start += PACKAGE2_SIZE_MAX;
+            potential_base_end += PACKAGE2_SIZE_MAX;
+        }
+        if (!found_safe_carveout) {
+            panic();
+        }
+        /* Relocate to new carveout. */
+        memcpy((void *)potential_base_start, load_buf, PACKAGE2_SIZE_MAX);
+        memset(load_buf, 0, PACKAGE2_SIZE_MAX);
+        load_buf = (void *)potential_base_start;
+    }
+    
+    /* Copy each section to its appropriate location, decrypting if necessary. */
+    for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {        
+        if (metadata->section_sizes[section] == 0) {
+            continue;
+        }
+        
+        void *dst_start = (void *)(DRAM_BASE_PHYSICAL + (uint64_t)metadata->section_offsets[section]);
+        void *src_start = load_buf + sizeof(package2_header_t) + metadata->section_offsets[section];
+        size_t size = (size_t)metadata->section_sizes[section];
+        
+        if (bootconfig_is_package2_plaintext()) {
+            memcpy(dst_start, src_start, size);
+        } else {
+            package2_crypt_ctr(master_key_rev, dst_start, size, src_start, size, metadata->ctr, 0x10);
+        }
+    }
+    
+    /* Clear the encrypted package2 from memory. */
+    memset(load_buf, 0, PACKAGE2_SIZE_MAX);
 }
 
 /* This function is called during coldboot crt0, and validates a package2. */
@@ -248,8 +386,19 @@ void load_package2(void) {
     
     /* Decrypt header, get key revision required. */
     uint32_t package2_mkey_rev = decrypt_and_validate_header(&header);
+        
+    /* Load Package2 Sections. */
+    load_package2_sections(&header->metadata, package2_mkey_rev);
     
-    /* TODO: Load Package2 Sections. */
+    /* Clean up cache. */
+    flush_dcache_all();
+    invalidate_icache_inner_shareable();
+    
+    /* Set CORE0 entrypoint for Package2. */
+    set_core_entrypoint_and_context_id(0, DRAM_BASE_PHYSICAL + header.metadata.entrypoint, 0);
+    
+    /* TODO: Nintendo clears 0x1F01FA7D0 to 0x1F01FA7E8. What does this do? Does it remove the identity mapping page tables? */ 
+    tlb_invalidate_all();
     
     /* Synchronize with NX BOOTLOADER. */
     if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == NX_BOOTLOADER_STATE_LOADED_PACKAGE2) {
@@ -257,5 +406,7 @@ void load_package2(void) {
             wait(1);
         }
     }
+    
+    /* TODO: MISC register 0x1F0098C00 |= 0x2000;
     
 }

@@ -44,7 +44,7 @@ typedef struct {
 
 #define NUM_CPU_CORES 4
 
-void set_core_entrypoint_and_context_id(uint64_t entrypoint_addr, uint64_t context_id);
+void set_core_entrypoint_and_context_id(uint32_t core, uint64_t entrypoint_addr, uint64_t context_id);
 
 uint32_t cpu_on(uint32_t core, uint64_t entrypoint_addr, uint64_t context_id);
 uint32_t cpu_off(void);

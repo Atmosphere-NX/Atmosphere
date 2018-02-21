@@ -19,6 +19,21 @@ static inline uint32_t read32be(const unsigned char *dword, size_t offset) {
     return __builtin_bswap32(read32le(dword, offset));
 }
 
+static __attribute__((noinline)) int check_32bit_additive_overflow(uint32_t a, uint32_t b) {
+    uint64_t x = (uint64_t)a + (uint64_t)b;
+    return x > (uint64_t)(UINT32_MAX);
+}
+
+static __attribute__((noinline)) int overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be)
+{
+    if(as <= bs && bs <= ae)
+        return 1;
+    if(bs <= as && as <= be)
+        return 1;
+    return 0;
+}
+
+
 static inline unsigned int get_core_id(void) {
     unsigned int core_id;
     __asm__ __volatile__ ("mrs %0, MPIDR_EL1" : "=r"(core_id));
