@@ -278,9 +278,10 @@ void load_package2_sections(package2_meta_t *metadata, uint32_t master_key_rev) 
         }
     }
     if (needs_relocation) {
-        /* This code should *always* succeed in finding a carveout within four loops, */
+        /* This code should *always* succeed in finding a carveout within seven loops, */
         /* due to the section size limit, and section number limit. */
-        /* However, Nintendo tries past that and panics after 8 loops. */
+        /* However, Nintendo tries panics after 8 loops if a safe section is not found. */
+        /* This should never be the case, mathematically. */
         /* We will replicate this behavior. */
         int found_safe_carveout = 0;
         uint64_t potential_base_start = DRAM_BASE_PHYSICAL;
@@ -409,4 +410,5 @@ void load_package2(void) {
     
     /* TODO: MISC register 0x1F0098C00 |= 0x2000;
     
+    /* TODO: Update SCR_EL3 depending on value in Bootconfig. */     
 }
