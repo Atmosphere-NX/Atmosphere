@@ -6,6 +6,7 @@
 
 /* Exosphere driver for the Tegra X1 security engine. */
 
+#define KEYSLOT_SWITCH_PACKAGE2KEY 0x8
 #define KEYSLOT_SWITCH_TEMPKEY 0x9
 #define KEYSLOT_SWITCH_SESSIONKEY 0xA
 #define KEYSLOT_SWITCH_RNGKEY 0xB
