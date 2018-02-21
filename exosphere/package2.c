@@ -37,7 +37,7 @@ void setup_se(void) {
     security_engine_t *p_security_engine = get_security_engine_address();
     p_security_engine->_0x4 = 0;
     p_security_engine->AES_KEY_READ_DISABLE_REG = 0;
-    p_security_engine->RSA_KEY_READ_SAIBEL_REG = 0;
+    p_security_engine->RSA_KEY_READ_DISABLE_REG = 0;
     p_security_engine->_0x0 &= 0xFFFFFFFB;
     
     /* Currently unknown what each flag does. */
