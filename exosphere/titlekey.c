@@ -6,13 +6,13 @@
 #include "masterkey.h"
 #include "se.h"
 
-uint64_t g_tkey_expected_db_prefix[4];
+uint64_t g_tkey_expected_label_hash[4];
 unsigned int g_tkey_master_key_rev = MASTERKEY_REVISION_MAX;
 
 /* Set the expected db prefix. */
-void tkey_set_expected_db_prefix(uint64_t *db_prefix) {
+void tkey_set_expected_label_hash(uint64_t *label_hash) {
     for (unsigned int i = 0; i < 4; i++) {
-        g_tkey_expected_db_prefix[i] = db_prefix[i];
+        g_tkey_expected_label_hash[i] = label_hash[i];
     }
 }
 
@@ -61,20 +61,19 @@ void calculate_mgf1_and_xor(void *masked, size_t masked_size, const void *seed, 
     }
 }
 
-size_t tkey_rsa_unwrap(void *dst, size_t dst_size, void *src, size_t src_size) {
+size_t tkey_rsa_oaep_unwrap(void *dst, size_t dst_size, void *src, size_t src_size) {
     if (src_size != 0x100) {
         panic();
     }
     
-    /* RSA Wrapped titlekeys butcher the RSA-PSS primitives. */
+    /* RSA Wrapped titlekeys use RSA-OAEP. */
     /* Message is of the form prefix || maskedSalt || maskedDB. */
     /* maskedSalt = salt ^ MGF1(maskedDB) */
     /* maskedDB = DB ^ MGF1(salt) */
     /* Salt is random and not validated in any way. */
-    /* DB is of the form expected_prefix || 00....01 || wrapped_titlekey. */
-    /* expected_prefix is, in practice, a constant in es .rodata. */
+    /* DB is of the form label_hash || 00....01 || wrapped_titlekey. */
+    /* label_hash is, in practice, a constant in es .rodata. */
     /* I have no idea why Nintendo did this, it should be either nonconstant (in tik) or in tz .rodata. */
-    /* However, to keep their API we have to put up with their bizarre choices... */
     
     uint8_t *message = (uint8_t *)src;
     
@@ -87,8 +86,8 @@ size_t tkey_rsa_unwrap(void *dst, size_t dst_size, void *src, size_t src_size) {
     uint8_t *salt = message + 1;
     uint8_t *db = message + 0x21;
     
-    /* This will be passed to smc_unwrap_rsa_wrapped_titlekey. */
-    uint8_t *expected_db_prefix = (uint8_t *)(&g_tkey_expected_db_prefix[0]);
+    /* This will be passed to smc_unwrap_rsa_oaep_wrapped_titlekey. */
+    uint8_t *expected_label_hash = (uint8_t *)(&g_tkey_expected_label_hash[0]);
     
     /* Unmask the salt. */
     calculate_mgf1_and_xor(salt, 0x20, db, 0xDF);
@@ -97,7 +96,7 @@ size_t tkey_rsa_unwrap(void *dst, size_t dst_size, void *src, size_t src_size) {
     
     /* Validate expected salt. */
     for (unsigned int i = 0; i < 0x20; i++) {
-        if (expected_db_prefix[i] != db[i]) {
+        if (expected_label_hash[i] != db[i]) {
             return 0;
         }
     }

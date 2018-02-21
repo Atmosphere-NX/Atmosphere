@@ -15,8 +15,8 @@
 int g_crypt_aes_done = 0;
 int g_exp_mod_done = 0;
 
+uint8_t g_secure_exp_mod_exponent[0x100];
 uint8_t g_rsa_oaep_exponent[0x100];
-uint8_t g_rsa_private_exponent[0x100];
 
 
 void set_exp_mod_done(int done) {
@@ -355,7 +355,7 @@ uint32_t user_compute_cmac(smc_args_t *args) {
     return 0;
 }
 
-uint32_t user_load_rsa_private_key(smc_args_t *args) {
+uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     uint64_t sealed_kek[2];
     uint64_t wrapped_key[2];
     int is_personalized;
@@ -390,11 +390,11 @@ uint32_t user_load_rsa_private_key(smc_args_t *args) {
     }
     
     /* Ensure that our private key is 0x100 bytes. */
-    if (gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSATICKET, is_personalized) < 0x100) {
+    if (gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSAOAEP, is_personalized) < 0x100) {
         return 2;
     }
     
-    memcpy(g_rsa_private_exponent, user_data, 0x100);
+    memcpy(g_rsa_oaep_exponent, user_data, 0x100);
     return 0;
 }
 
@@ -450,7 +450,7 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     return 0;
 }
 
-uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
+uint32_t user_load_secure_exp_mod_key(smc_args_t *args) {
     uint64_t sealed_kek[2];
     uint64_t wrapped_key[2];
     int is_personalized;
@@ -487,21 +487,21 @@ uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     size_t out_size;
     
     /* Ensure that our key is non-zero bytes. */
-    if ((out_size = gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSAOAEP, is_personalized)) == 0) {
+    if ((out_size = gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_SECUREEXPMOD, is_personalized)) == 0) {
         return 2;
     }
     
     /* Copy key to global. */
     if (out_size <= 0x100) {
-        memcpy(g_rsa_oaep_exponent, user_data, out_size);
+        memcpy(g_secure_exp_mod_exponent, user_data, out_size);
     } else {
-        memcpy(g_rsa_oaep_exponent, user_data, 0x100);
+        memcpy(g_secure_exp_mod_exponent, user_data, 0x100);
     }
     
     return 0;
 }
 
-uint32_t user_rsa_oaep(smc_args_t *args) {
+uint32_t user_secure_exp_mod(smc_args_t *args) {
     uint8_t modulus[0x100];
     uint8_t input[0x100];
     
@@ -523,13 +523,13 @@ uint32_t user_rsa_oaep(smc_args_t *args) {
     
     set_exp_mod_done(0);
     /* Hardcode RSA keyslot 0. */
-    set_rsa_keyslot(0, modulus, 0x100, g_rsa_oaep_exponent, 0x100);
+    set_rsa_keyslot(0, modulus, 0x100, g_secure_exp_mod_exponent, 0x100);
     se_exp_mod(0, input, 0x100, exp_mod_done_handler);
     
     return 0;
 }
 
-uint32_t user_unwrap_rsa_wrapped_titlekey(smc_args_t *args) {
+uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
     uint8_t modulus[0x100];
     uint8_t wrapped_key[0x100];
     
@@ -556,13 +556,13 @@ uint32_t user_unwrap_rsa_wrapped_titlekey(smc_args_t *args) {
     
     set_exp_mod_done(0);
     
-    /* Expected db prefix occupies args->X[3] to args->X[6]. */
-    tkey_set_expected_db_prefix(&args->X[3]);
+    /* Expected label_hash occupies args->X[3] to args->X[6]. */
+    tkey_set_expected_label_hash(&args->X[3]);
     
     tkey_set_master_key_rev(master_key_rev);
     
     /* Hardcode RSA keyslot 0. */
-    set_rsa_keyslot(0, modulus, 0x100, g_rsa_private_exponent, 0x100);
+    set_rsa_keyslot(0, modulus, 0x100, g_rsa_oaep_exponent, 0x100);
     se_exp_mod(0, wrapped_key, 0x100, exp_mod_done_handler);
     
     return 0;

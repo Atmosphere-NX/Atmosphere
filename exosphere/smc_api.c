@@ -24,11 +24,11 @@ uint32_t smc_load_aes_key(smc_args_t *args);
 uint32_t smc_crypt_aes(smc_args_t *args);
 uint32_t smc_generate_specific_aes_key(smc_args_t *args);
 uint32_t smc_compute_cmac(smc_args_t *args);
-uint32_t smc_load_rsa_private_key(smc_args_t *args);
-uint32_t smc_decrypt_rsa_private_key(smc_args_t *args);
 uint32_t smc_load_rsa_oaep_key(smc_args_t *args);
-uint32_t smc_rsa_oaep(smc_args_t *args);
-uint32_t smc_unwrap_rsa_wrapped_titlekey(smc_args_t *args);
+uint32_t smc_decrypt_rsa_private_key(smc_args_t *args);
+uint32_t smc_load_secure_exp_mod_key(smc_args_t *args);
+uint32_t smc_secure_exp_mod(smc_args_t *args);
+uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args);
 uint32_t smc_load_titlekey(smc_args_t *args);
 uint32_t smc_unwrap_aes_wrapped_titlekey(smc_args_t *args);
 
@@ -65,11 +65,11 @@ smc_table_entry_t g_smc_user_table[SMC_USER_HANDLERS] = {
     {0xC3000009, smc_crypt_aes},
     {0xC300000A, smc_generate_specific_aes_key},
     {0xC300040B, smc_compute_cmac},
-    {0xC300100C, smc_load_rsa_private_key},
+    {0xC300100C, smc_load_rsa_oaep_key},
     {0xC300100D, smc_decrypt_rsa_private_key},
-    {0xC300100E, smc_load_rsa_oaep_key},
-    {0xC300060F, smc_rsa_oaep},
-    {0xC3000610, smc_unwrap_rsa_wrapped_titlekey},
+    {0xC300100E, smc_load_secure_exp_mod_key},
+    {0xC300060F, smc_secure_exp_mod},
+    {0xC3000610, smc_unwrap_rsa_oaep_wrapped_titlekey},
     {0xC3000011, smc_load_titlekey},
     {0xC3000012, smc_unwrap_aes_wrapped_titlekey}
 };
@@ -313,23 +313,23 @@ uint32_t smc_compute_cmac(smc_args_t *args) {
     return smc_wrapper_sync(args, user_compute_cmac);
 }
 
-uint32_t smc_load_rsa_private_key(smc_args_t *args) {
-    return smc_wrapper_sync(args, user_load_rsa_private_key);
+uint32_t smc_load_rsa_oaep_key(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_load_rsa_oaep_key);
 }
 
 uint32_t smc_decrypt_rsa_private_key(smc_args_t *args) {
     return smc_wrapper_sync(args, user_decrypt_rsa_private_key);
 }
 
-uint32_t smc_load_rsa_oaep_key(smc_args_t *args) {
-    return smc_wrapper_sync(args, user_load_rsa_oaep_key);
+uint32_t smc_load_secure_exp_mod_key(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_load_secure_exp_mod_key);
 }
 
-uint32_t smc_rsa_oaep(smc_args_t *args) {
-    return smc_wrapper_async(args, user_rsa_oaep, smc_exp_mod_get_result);
+uint32_t smc_secure_exp_mod(smc_args_t *args) {
+    return smc_wrapper_async(args, user_secure_exp_mod, smc_exp_mod_get_result);
 }
 
-uint32_t smc_unwrap_rsa_wrapped_titlekey_get_result(void *buf, uint64_t size) {
+uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t size) {
     uint64_t *p_sealed_key = (uint64_t *)buf;
     uint8_t rsa_wrapped_titlekey[0x100];
     uint8_t aes_wrapped_titlekey[0x10];
@@ -344,8 +344,8 @@ uint32_t smc_unwrap_rsa_wrapped_titlekey_get_result(void *buf, uint64_t size) {
     }
     
     se_get_exp_mod_output(wrapped_titlekey, 0x100);
-    if (tkey_rsa_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) != 0x10) {
-        /* Failed to extract RSA wrapped key. */
+    if (tkey_rsa_oaep_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) != 0x10) {
+        /* Failed to extract RSA OAEP wrapped key. */
         g_is_smc_in_progress = 0;
         return 2;
     }
@@ -356,13 +356,13 @@ uint32_t smc_unwrap_rsa_wrapped_titlekey_get_result(void *buf, uint64_t size) {
     p_sealed_key[0] = sealed_titlekey[0];
     p_sealed_key[1] = sealed_titlekey[1];
     
-    /* smc_unwrap_aes_wrapped_titlekey is done now. */
+    /* smc_unwrap_rsa_oaep_wrapped_titlekey is done now. */
     g_is_smc_in_progress = 0;
     return 0;
 }
 
-uint32_t smc_unwrap_rsa_wrapped_titlekey(smc_args_t *args) {
-    return smc_wrapper_async(args, user_unwrap_rsa_wrapped_titlekey, smc_unwrap_rsa_wrapped_titlekey_get_result);
+uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
+    return smc_wrapper_async(args, user_unwrap_rsa_oaep_wrapped_titlekey, smc_unwrap_rsa_oaep_wrapped_titlekey_get_result);
 }
 
 uint32_t smc_load_titlekey(smc_args_t *args) {
