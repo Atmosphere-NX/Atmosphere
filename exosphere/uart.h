@@ -16,5 +16,7 @@ void *get_uart_address(void); /* This is inlined in uart.c */
 
 void uart_initialize(uint16_t divider);
 void uart_transmit_char(char ch);
+void uart_transmit_str(const char *str);
+void uart_transmit_hex(uint32_t value);
 
 #endif

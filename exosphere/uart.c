@@ -31,3 +31,16 @@ void uart_transmit_char(char ch) {
 
     UART_THR_DLAB_0_0 = ch;
 }
+
+void uart_transmit_str(const char *str) {
+    while (*str) {
+        uart_transmit_char(*str++);
+    }
+}
+
+void uart_transmit_hex(uint32_t value) {
+    for (unsigned int i = 0; i < 8; i++) {
+        uint32_t nibble = (value >> (28 - i * 4)) & 0xF;
+        uart_transmit_char("0123456789ABCDEF"[nibble]);
+    }
+}
