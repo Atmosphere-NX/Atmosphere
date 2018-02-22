@@ -2,7 +2,7 @@
 
 #include "utils.h"
 #include "cache.h"
-#incoude "configitem.h"
+#include "configitem.h"
 #include "masterkey.h"
 #include "smc_api.h"
 #include "smc_user.h"
