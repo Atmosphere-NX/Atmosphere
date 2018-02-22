@@ -58,8 +58,8 @@ void setup_se(void) {
     
     /* Setup new device key, if necessary. */
     if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
-        const uint8_t 4x_new_devicekey_source[0x10] = {0x8B, 0x4E, 0x1C, 0x22, 0x42, 0x07, 0xC8, 0x73, 0x56, 0x94, 0x08, 0x8B, 0xCC, 0x47, 0x0F, 0x5D};
-        se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_4XNEWDEVICEKEYGENKEY, work_buffer, 0x10, 4x_new_devicekey_source, 0x10);
+        const uint8_t new_devicekey_source_4x[0x10] = {0x8B, 0x4E, 0x1C, 0x22, 0x42, 0x07, 0xC8, 0x73, 0x56, 0x94, 0x08, 0x8B, 0xCC, 0x47, 0x0F, 0x5D};
+        se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_4XNEWDEVICEKEYGENKEY, work_buffer, 0x10, new_devicekey_source_4x, 0x10);
         decrypt_data_into_keyslot(KEYSLOT_SWITCH_DEVICEKEY, KEYSLOT_SWITCH_4XNEWCONSOLEKEYGENKEY, work_buffer, 0x10);
         clear_aes_keyslot(KEYSLOT_SWITCH_4XNEWCONSOLEKEYGENKEY);
         set_aes_keyslot_flags(KEYSLOT_SWITCH_DEVICEKEY, 0xFF);
