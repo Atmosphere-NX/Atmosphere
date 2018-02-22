@@ -90,8 +90,61 @@ void setup_boot_config(void) {
     }
 }
 
-int rsa_pss_verify(const void *signature, size_t signature_size, const void *modulus, size_t modulus_size, const void *data, size_t data_size) {
-    /* TODO: Implement RSA-PSS, using security engine for exponentiation. */
+int rsa2048_pss_verify(const void *signature, size_t signature_size, const void *modulus, size_t modulus_size, const void *data, size_t data_size) {
+    uint8_t message[RSA_2048_BYTES];
+    uint8_t h_buf[0x24];
+    
+    /* Hardcode RSA with keyslot 0. */
+    const uint8_t public_exponent[4] = {0x00, 0x01, 0x00, 0x01};
+    set_rsa_keyslot(0, modulus, modulus_size, public_exponent, sizeof(public_exponent));
+    se_synchronous_exp_mod(0, message, sizeof(message), signature, signature_size);
+    
+    
+    /* Validate sanity byte. */
+    if (message[RSA_2048_BYTES - 1] != 0xBC) {
+        return 0;
+    }
+    
+    /* Copy Salt into MGF1 Hash Buffer. */
+    memset(h_buf, 0, sizeof(h_buf));
+    memcpy(h_buf, message + RSA_2048_BYTES - 0x20 - 0x1, 0x20);
+    
+    /* Decrypt maskedDB (via inline MGF1). */
+    uint8_t seed = 0;
+    uint8_t mgf1_buf[0x20];
+    for (unsigned int ofs = 0; ofs < RSA_2048_BYTES - 0x20 - 1; ofs += 0x20) {
+        h_buf[sizeof(h_buf) - 1] = seed++;
+        flush_dcache_range(h_buf, h_buf + sizeof(h_buf));
+        se_calculate_sha256(mgf1_buf, h_buf, sizeof(h_buf));
+        for (unsigned int i = ofs; i < ofs + 0x20 && i < RSA_2048_BYTES - 0x20 - 1; i++) {
+            message[i] ^= mgf1_buf[i - ofs];
+        }
+    }
+    
+    /* Constant lmask for rsa-2048-pss. */
+    message[0] &= 0x7F; 
+
+    /* Validate DB is of the form 0000...0001. */
+    for (unsigned int i = 0; i < RSA_2048_BYTES - 0x20 - 0x20 - 1 - 1; i++) {
+        if (message[i] != 0) {
+            return false;
+        }
+    }   
+    if (message[RSA_2048_BYTES - 0x20 - 0x20 - 1 - 1] != 1) {
+        return false;
+    }
+
+    /* Check hash correctness. */
+    uint8_t validate_buf[8 + 0x20 + 0x20];
+    uint8_t validate_hash[0x20];
+    
+    memset(validate_buf, 0, sizeof(validate_buf));
+    flush_dcache_range((uint8_t *)data, (uint8_t *)data + data_size);
+    se_calculate_sha256(&validate_buf[8], data, data_size);
+    memcpy(&validate_buf[0x28], &m_buf[RSA_2048_BYTES - 0x20 - 0x20 - 1], 0x20);
+    flush_dcache_range(validate_buf, validate_buf + sizeof(validate_buf));
+    se_calculate_sha256(validate_hash, validate_buf, sizeof(validate_buf));
+    return memcmp(h_buf, validate_hash, 0x20) == 0;
 }
 
 void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
@@ -153,7 +206,7 @@ void verify_header_signature(package2_header_t *header) {
     }
     
     /* This is normally only allowed on dev units, but we'll allow it anywhere. */
-    if (bootconfig_is_package2_unsigned() == 0 && rsa_pss_verify(header->signature, 0x100, modulus, 0x100, header->encrypted_header, 0x100) == 0) {
+    if (bootconfig_is_package2_unsigned() == 0 && rsa2048_pss_verify(header->signature, 0x100, modulus, 0x100, header->encrypted_header, 0x100) == 0) {
         panic();
     }
 }
@@ -324,7 +377,7 @@ void load_package2_sections(package2_meta_t *metadata, uint32_t master_key_rev) 
         if (bootconfig_is_package2_plaintext()) {
             memcpy(dst_start, src_start, size);
         } else {
-            package2_crypt_ctr(master_key_rev, dst_start, size, src_start, size, metadata->ctr, 0x10);
+            package2_crypt_ctr(master_key_rev, dst_start, size, src_start, size, metadata->section_ctrs[section], 0x10);
         }
     }
     

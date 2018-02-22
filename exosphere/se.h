@@ -49,6 +49,7 @@
 #define OP_CTX_SAVE 3
 #define OP_RESTART_IN 4
 
+#define RSA_2048_BYTES 0x100
 
 typedef struct security_engine {
   unsigned int _0x0;
@@ -163,6 +164,7 @@ void se_calculate_sha256(void *dst, const void *src, size_t src_size);
 /* RSA API */
 void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*callback)(void));
 void se_get_exp_mod_output(void *buf, size_t size);
+void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 
 /* RNG API */
 void se_initialize_rng(unsigned int keyslot);
