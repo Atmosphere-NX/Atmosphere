@@ -2,7 +2,7 @@
 
 #include "utils.h"
 #include "cache.h"
-#incoude "configitem.h"
+#include "configitem.h"
 #include "masterkey.h"
 #include "smc_api.h"
 #include "smc_user.h"
@@ -374,7 +374,7 @@ uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     }
     is_personalized = (int)args->X[3];
     user_address = (void *)args->X[4];
-    size = = (size_t)args->X[5];
+    size = (size_t)args->X[5];
     wrapped_key[0] = args->X[6];
     wrapped_key[1] = args->X[7];
     
@@ -469,7 +469,7 @@ uint32_t user_load_secure_exp_mod_key(smc_args_t *args) {
     }
     is_personalized = (int)args->X[3];
     user_address = (void *)args->X[4];
-    size = = (size_t)args->X[5];
+    size = (size_t)args->X[5];
     wrapped_key[0] = args->X[6];
     wrapped_key[1] = args->X[7];
     
