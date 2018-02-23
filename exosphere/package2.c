@@ -443,7 +443,7 @@ void load_package2(void) {
     uint32_t package2_mkey_rev = decrypt_and_validate_header(&header);
         
     /* Load Package2 Sections. */
-    load_package2_sections(&header->metadata, package2_mkey_rev);
+    load_package2_sections(&header.metadata, package2_mkey_rev);
     
     /* Clean up cache. */
     flush_dcache_all();
