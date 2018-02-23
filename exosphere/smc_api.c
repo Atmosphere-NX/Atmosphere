@@ -229,7 +229,7 @@ uint32_t smc_check_status(smc_args_t *args) {
     return 0;
 }
 
-uint32_t smc_get_result(smc_args_t *) {
+uint32_t smc_get_result(smc_args_t *args) {
     uint32_t status;
     unsigned char result_buf[0x400];
     upage_ref_t page_ref;
