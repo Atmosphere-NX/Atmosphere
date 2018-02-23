@@ -335,7 +335,7 @@ void se_get_exp_mod_output(void *buf, size_t size) {
     }
     
     uint32_t *p_out = ((uint32_t *)buf) + num_dwords - 1;
-    uint32_t out_ofs = 0;
+    uint32_t offset = 0;
     
     /* Copy endian swapped output. */
     while (num_dwords) {
