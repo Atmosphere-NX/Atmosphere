@@ -15,9 +15,8 @@ typedef struct {
 void bootconfig_load_and_verify(const bootconfig_t *bootconfig);
 void bootconfig_clear(void);
 
-
 /* Actual configuration getters. */
-int bootconfig_is_package2_plaintext(void);
-void bootconfig_is_package2_unsigned(void);
+bool bootconfig_is_package2_plaintext(void);
+bool bootconfig_is_package2_unsigned(void);
 
 #endif

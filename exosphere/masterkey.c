@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "utils.h"
@@ -5,7 +6,7 @@
 #include "se.h"
 
 unsigned int g_mkey_revision = 0;
-int g_determined_mkey_revision = 0;
+bool g_determined_mkey_revision = false;
 
 uint8_t g_old_masterkeys[MASTERKEY_REVISION_MAX][0x10];
 
@@ -20,9 +21,9 @@ const uint8_t mkey_vectors[MASTERKEY_REVISION_MAX][0x10] =
     {0x0A, 0x0D, 0xDF, 0x34, 0x22, 0x06, 0x6C, 0xA4, 0xE6, 0xB1, 0xEC, 0x71, 0x85, 0xCA, 0x4E, 0x07}, /* Master key 02 encrypted with Master key 03. */
 };
 
-int check_mkey_revision(unsigned int revision) {
+bool check_mkey_revision(unsigned int revision) {
     uint8_t final_vector[0x10];
-    
+
     unsigned int check_keyslot = KEYSLOT_SWITCH_MASTERKEY;
     if (revision > 0) {
         /* Generate old master key array. */
@@ -32,24 +33,24 @@ int check_mkey_revision(unsigned int revision) {
             check_keyslot = KEYSLOT_SWITCH_TEMPKEY;
         }
     }
-    
+
     se_aes_ecb_decrypt_block(check_keyslot, final_vector, 0x10, mkey_vectors[0], 0x10);
     for (unsigned int i = 0; i < 0x10; i++) {
         if (final_vector[i] != 0) {
-            return 0;
+            return false;
         }
     }
-    return 1;
+    return true;
 }
 
 void mkey_detect_revision(void) {
-    if (g_determined_mkey_revision == 1) {
+    if (g_determined_mkey_revision) {
         panic();
     }
     
     for (unsigned int rev = 0; rev < MASTERKEY_REVISION_MAX; rev++) {
         if (check_mkey_revision(rev)) {
-            g_determined_mkey_revision = 1;
+            g_determined_mkey_revision = true;
             g_mkey_revision = rev;
             break;
         }
@@ -58,28 +59,28 @@ void mkey_detect_revision(void) {
     /* We must have determined the master key, or we're not running on a Switch. */
     /* TODO: When panic is implemented, make this a really distinctive color. */
     /* Maybe bright red? */
-    if (g_determined_mkey_revision == 0) {
+    if (!g_determined_mkey_revision) {
         panic();
     }
 }
 
 unsigned int mkey_get_revision(void) {
-    if (g_determined_mkey_revision == 0) {
+    if (!g_determined_mkey_revision) {
         panic();
     }
-    
+
     return g_mkey_revision;
 }
 
 unsigned int mkey_get_keyslot(unsigned int revision) {
-    if (g_determined_mkey_revision == 0 || revision >= MASTERKEY_REVISION_MAX) {
+    if (!g_determined_mkey_revision || revision >= MASTERKEY_REVISION_MAX) {
         panic();
     }
-    
+
     if (revision > g_mkey_revision) {
         panic();
     }
-    
+
     if (revision == g_mkey_revision) {
         return KEYSLOT_SWITCH_MASTERKEY;
     } else {

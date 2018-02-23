@@ -56,7 +56,7 @@ static void gf128_mul(uint8_t *dst, const uint8_t *x, const uint8_t *y) {
 
 
 /* Performs an AES-GCM GHASH operation over the data into dst. */
-static void ghash(void *dst, const void *data, size_t data_size, const void *j_block, int encrypt) {
+static void ghash(void *dst, const void *data, size_t data_size, const void *j_block, bool encrypt) {
     uint8_t x[0x10];
     uint8_t h[0x10];
 
@@ -112,7 +112,7 @@ static void ghash(void *dst, const void *data, size_t data_size, const void *j_b
 
 
 /* This function is a doozy. It decrypts and validates a (non-standard) AES-GCM wrapped keypair. */
-size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_size, const void *sealed_kek, size_t kek_size, const void *wrapped_key, size_t key_size, unsigned int usecase, int is_personalized) {
+size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_size, const void *sealed_kek, size_t kek_size, const void *wrapped_key, size_t key_size, unsigned int usecase, bool is_personalized) {
     if (is_personalized == 0) {
         /* Devkit keys use a different keyformat without a MAC/Device ID. */
         if (src_size <= 0x10 || src_size - 0x10 > dst_size) {
@@ -132,20 +132,20 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
     se_aes_ctr_crypt(KEYSLOT_SWITCH_TEMPKEY, dst, dst_size, src + 0x10, src_size - 0x10, src, 0x10);
 
 
-    if (is_personalized == 0) {
+    if (!is_personalized) {
         /* Devkit non-personalized keys have no further authentication. */
         return src_size - 0x10;
     }
 
     /* J = GHASH(CTR); */
     uint8_t j_block[0x10];
-    ghash(j_block, src, 0x10, NULL, 0);
+    ghash(j_block, src, 0x10, NULL, false);
 
     /* MAC = GHASH(PLAINTEXT) ^ ENCRYPT(J) */
     /* Note: That MAC is calculated over plaintext is non-standard. */
     /* It is supposed to be over the ciphertext. */
     uint8_t calc_mac[0x10];
-    ghash(calc_mac, dst, src_size - 0x20, j_block, 1);
+    ghash(calc_mac, dst, src_size - 0x20, j_block, true);
 
     /* Const-time memcmp. */
     int different = 0;

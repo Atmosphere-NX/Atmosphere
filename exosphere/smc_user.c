@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "utils.h"
@@ -12,26 +13,26 @@
 #include "titlekey.h"
 
 /* Globals. */
-int g_crypt_aes_done = 0;
-int g_exp_mod_done = 0;
+bool g_crypt_aes_done = false;
+bool g_exp_mod_done = false;
 
 uint8_t g_secure_exp_mod_exponent[0x100];
 uint8_t g_rsa_oaep_exponent[0x100];
 
 
-void set_exp_mod_done(int done) {
-    g_exp_mod_done = done & 1;
+void set_exp_mod_done(bool done) {
+    g_exp_mod_done = done;
 }
 
-int get_exp_mod_done(void) {
+bool get_exp_mod_done(void) {
     return g_exp_mod_done;
 }
 
-uint32_t exp_mod_done_handler(void) {  
-    set_exp_mod_done(1);
-    
+uint32_t exp_mod_done_handler(void) {
+    set_exp_mod_done(true);
+
     se_trigger_interrupt();
-    
+
     return 0;
 }
 
@@ -67,7 +68,7 @@ uint32_t user_exp_mod(smc_args_t *args) {
         return 2;
     }
     
-    set_exp_mod_done(0);
+    set_exp_mod_done(false);
     /* Hardcode RSA keyslot 0. */
     set_rsa_keyslot(0, modulus, 0x100, exponent, exponent_size);
     se_exp_mod(0, input, 0x100, exp_mod_done_handler);
@@ -122,16 +123,16 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
     uint8_t usecase = (uint8_t)((packed_options >> 5) & 3);
     
     /* Switched the output based on whether it should be console unique. */
-    int is_personalized = (int)(packed_options & 1);
+    bool is_personalized = (int)(packed_options & 1);
     
-    uint64_t is_recovery_boot = configitem_is_recovery_boot();
+    bool is_recovery_boot = configitem_is_recovery_boot();
     
     /* Mask 2 is only allowed when booted from recovery. */
-    if (mask_id == 2 && is_recovery_boot == 0) {
+    if (mask_id == 2 && !is_recovery_boot) {
         return 2;
     }
     /* Mask 1 is only allowed when booted normally. */
-    if (mask_id == 1 && is_recovery_boot != 0) {
+    if (mask_id == 1 && is_recovery_boot) {
         return 2;
     }
     
@@ -209,21 +210,21 @@ uint32_t user_load_aes_key(smc_args_t *args) {
 }
 
 
-void set_crypt_aes_done(int done) {
-    g_crypt_aes_done = done & 1;
+void set_crypt_aes_done(bool done) {
+    g_crypt_aes_done = done;
 }
 
-int get_crypt_aes_done(void) {
+bool get_crypt_aes_done(void) {
     return g_crypt_aes_done;
 }
 
 uint32_t crypt_aes_done_handler(void) {
     se_check_for_error();
-    
-    set_crypt_aes_done(1);
-    
+
+    set_crypt_aes_done(true);
+
     se_trigger_interrupt();
-    
+
     return 0;
 }
 
@@ -243,7 +244,7 @@ uint32_t user_crypt_aes(smc_args_t *args) {
         panic();
     }
     
-    set_crypt_aes_done(0);
+    set_crypt_aes_done(false);
 
     uint64_t result = 0;
     switch (mode) {
@@ -272,7 +273,7 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
     uint64_t wrapped_key[2];
     uint8_t key[0x10];
     unsigned int master_key_rev;
-    int should_mask;
+    bool should_mask;
     
     wrapped_key[0] = args->X[1];
     wrapped_key[1] = args->X[2];
@@ -283,7 +284,7 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
     if (args->X[3] > 1) {
         return 2;
     }
-    should_mask = (int)(args->X[3]);
+    should_mask = args->X[3] != 0;
     
     unsigned int keyslot;
     
@@ -358,7 +359,7 @@ uint32_t user_compute_cmac(smc_args_t *args) {
 uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     uint64_t sealed_kek[2];
     uint64_t wrapped_key[2];
-    int is_personalized;
+    bool is_personalized;
     
     uint8_t user_data[0x400];
     void *user_address;
@@ -372,7 +373,7 @@ uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     if (args->X[3] > 1) {
         return 2;
     }
-    is_personalized = (int)args->X[3];
+    is_personalized = args->X[3] != 0;
     user_address = (void *)args->X[4];
     size = (size_t)args->X[5];
     wrapped_key[0] = args->X[6];
@@ -401,7 +402,7 @@ uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
 uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     uint64_t sealed_kek[2];
     uint64_t wrapped_key[2];
-    int is_personalized;
+    bool is_personalized;
     
     uint8_t user_data[0x400];
     void *user_address;
@@ -415,7 +416,7 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     if (args->X[3] > 1) {
         return 2;
     }
-    is_personalized = (int)args->X[3];
+    is_personalized = args->X[3] != 0;
     user_address = (void *)args->X[4];
     size = (size_t)args->X[5];
     wrapped_key[0] = args->X[6];
@@ -453,7 +454,7 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
 uint32_t user_load_secure_exp_mod_key(smc_args_t *args) {
     uint64_t sealed_kek[2];
     uint64_t wrapped_key[2];
-    int is_personalized;
+    bool is_personalized;
     
     uint8_t user_data[0x400];
     void *user_address;
@@ -467,7 +468,7 @@ uint32_t user_load_secure_exp_mod_key(smc_args_t *args) {
     if (args->X[3] > 1) {
         return 2;
     }
-    is_personalized = (int)args->X[3];
+    is_personalized = args->X[3] != 0;
     user_address = (void *)args->X[4];
     size = (size_t)args->X[5];
     wrapped_key[0] = args->X[6];
@@ -521,7 +522,7 @@ uint32_t user_secure_exp_mod(smc_args_t *args) {
         return 2;
     }
     
-    set_exp_mod_done(0);
+    set_exp_mod_done(false);
     /* Hardcode RSA keyslot 0. */
     set_rsa_keyslot(0, modulus, 0x100, g_secure_exp_mod_exponent, 0x100);
     se_exp_mod(0, input, 0x100, exp_mod_done_handler);
@@ -554,7 +555,7 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
         return 2;
     }
     
-    set_exp_mod_done(0);
+    set_exp_mod_done(false);
     
     /* Expected label_hash occupies args->X[3] to args->X[6]. */
     tkey_set_expected_label_hash(&args->X[3]);

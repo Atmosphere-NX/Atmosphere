@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "utils.h"
@@ -90,7 +91,7 @@ void setup_boot_config(void) {
     }
 }
 
-int rsa2048_pss_verify(const void *signature, size_t signature_size, const void *modulus, size_t modulus_size, const void *data, size_t data_size) {
+bool rsa2048_pss_verify(const void *signature, size_t signature_size, const void *modulus, size_t modulus_size, const void *data, size_t data_size) {
     uint8_t message[RSA_2048_BYTES];
     uint8_t h_buf[0x24];
     
@@ -102,7 +103,7 @@ int rsa2048_pss_verify(const void *signature, size_t signature_size, const void 
     
     /* Validate sanity byte. */
     if (message[RSA_2048_BYTES - 1] != 0xBC) {
-        return 0;
+        return false;
     }
     
     /* Copy Salt into MGF1 Hash Buffer. */
@@ -211,85 +212,85 @@ void verify_header_signature(package2_header_t *header) {
     }
 }
 
-int validate_package2_metadata(package2_meta_t *metadata) {
+bool validate_package2_metadata(package2_meta_t *metadata) {
     if (metadata->magic != MAGIC_PK21) {
-        return 0;
+        return false;
     }
-    
+
     /* Package2 size, version number is stored XORed in header CTR. */
     /* Nintendo, what the fuck? */
     uint32_t package_size = metadata->ctr_dwords[0] ^ metadata->ctr_dwords[2] ^ metadata->ctr_dwords[3];
     uint8_t header_version = (uint8_t)((metadata->ctr_dwords[1] ^ (metadata->ctr_dwords[1] >> 16) ^ (metadata->ctr_dwords[1] >> 24)) & 0xFF);
-    
+
     /* Ensure package isn't too big or too small. */
     if (package_size <= sizeof(package2_header_t) || package_size > PACKAGE2_SIZE_MAX - sizeof(package2_header_t)) {
-        return 0;
+        return false;
     }
-    
+
     /* Validate that we're working with a header we know how to handle. */
     if (header_version > MASTERKEY_REVISION_MAX) {
-        return 0;
+        return false;
     }
-    
+
     /* Require aligned entrypoint. */
     if (metadata->entrypoint & 3) {
-        return 0;
+        return false;
     }
-    
+
     /* Validate section size sanity. */
     if (metadata->section_sizes[0] + metadata->section_sizes[1] + metadata->section_sizes[2] + sizeof(package2_header_t) != package_size) {
-        return 0;
+        return false;
     }
-    
-    int entrypoint_found = 0;
-    
+
+    bool entrypoint_found = false;
+
     /* Header has space for 4 sections, but only 3 are validated/potentially loaded on hardware. */
     for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
         /* Validate section size alignment. */
         if (metadata->section_sizes[section] & 3) {
-            return 0;
+            return false;
         }
-        
+
         /* Validate section does not overflow. */
         if (check_32bit_additive_overflow(metadata->section_offsets[section], metadata->section_sizes[section])) {
-            return 0;
+            return false;
         }
-        
+
         /* Check for entrypoint presence. */
         uint32_t section_end = metadata->section_offsets[section] + metadata->section_sizes[section];
         if (metadata->section_offsets[section] <= metadata->entrypoint && metadata->entrypoint < section_end) {
-            entrypoint_found = 1;
+            entrypoint_found = true;
         }
-        
+
         /* Ensure no overlap with later sections. */
         for (unsigned int later_section = section + 1; later_section < PACKAGE2_SECTION_MAX; later_section++) {
             uint32_t later_section_end = metadata->section_offsets[later_section] + metadata->section_sizes[later_section];
             if (overlaps(metadata->section_offsets[section], section_end, metadata->section_offsets[later_section], later_section_end)) {
-                return 0;
+                return false;
             }
         }
-        
+
         /* Validate section hashes. */
         void *section_data = (void *)((uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS + sizeof(package2_header_t) + metadata->section_offsets[section]);
         uint8_t calculated_hash[0x20];
         se_calculate_sha256(calculated_hash, section_data, metadata->section_sizes[section]);
         if (memcmp(calculated_hash, metadata->section_hashes[section], sizeof(metadata->section_hashes[section])) != 0) {
-            return 0;
+            return false;
         }
     }
-    
+
     /* Ensure that entrypoint is present in one of our sections. */
     if (!entrypoint_found) {
-        return 0;
+        return false;
     }
-    
+
     /* Perform version checks. */
     /* We will be compatible with all package2s released before current, but not newer ones. */
     if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_400_CURRENT) {
-        return 0;
+        return false;
     }
-     
-    return 1;
+
+    return true;
 }
 
 /* Decrypts package2 header, and returns the master key revision required. */
@@ -322,12 +323,12 @@ void load_package2_sections(package2_meta_t *metadata, uint32_t master_key_rev) 
     void *load_buf = NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS;
     
     /* Check whether any of our sections overlap this region. If they do, we must relocate and copy from elsewhere. */
-    int needs_relocation = 0;
+    bool needs_relocation = false;
     for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
         uint64_t section_start = DRAM_BASE_PHYSICAL + (uint64_t)metadata->section_offsets[section];
         uint64_t section_end = section_start + (uint64_t)metadata->section_sizes[section];
         if (overlaps(section_start, section_end, (uint64_t)(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS), (uint64_t)(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS) + PACKAGE2_SIZE_MAX)) {
-            needs_relocation = 1;
+            needs_relocation = true;
         }
     }
     if (needs_relocation) {
@@ -336,7 +337,7 @@ void load_package2_sections(package2_meta_t *metadata, uint32_t master_key_rev) 
         /* However, Nintendo tries panics after 8 loops if a safe section is not found. */
         /* This should never be the case, mathematically. */
         /* We will replicate this behavior. */
-        int found_safe_carveout = 0;
+        bool found_safe_carveout = false;
         uint64_t potential_base_start = DRAM_BASE_PHYSICAL;
         uint64_t potential_base_end = potential_base_start + PACKAGE2_SIZE_MAX;
         for (unsigned int i = 0; i < 8; i++) {
