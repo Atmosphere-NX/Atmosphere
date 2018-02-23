@@ -3,8 +3,12 @@
 #include "utils.h"
 #include "configitem.h"
 #include "cpu_context.h"
+#include "masterkey.h"
 #include "mc.h"
 #include "mmu.h"
+#include "pmc.h"
+#include "randomcache.h"
+#include "sealedkeys.h"
 #include "smc_api.h"
 #include "smc_user.h"
 #include "se.h"
@@ -225,7 +229,7 @@ uint32_t smc_check_status(smc_args_t *args) {
     return 0;
 }
 
-uint32_t smc_get_result(smc_args_t *) {
+uint32_t smc_get_result(smc_args_t *args) {
     uint32_t status;
     unsigned char result_buf[0x400];
     upage_ref_t page_ref;
@@ -345,7 +349,7 @@ uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t siz
         return 2;
     }
     
-    se_get_exp_mod_output(wrapped_titlekey, 0x100);
+    se_get_exp_mod_output(rsa_wrapped_titlekey, 0x100);
     if (tkey_rsa_oaep_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) != 0x10) {
         /* Failed to extract RSA OAEP wrapped key. */
         g_is_smc_in_progress = false;
@@ -440,7 +444,7 @@ uint32_t smc_read_write_register(smc_args_t *args) {
         } else {
             return 2;
         }
-    } else if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT && devices[MMIO_DEVID_MC].paddr <= address && address < devices[MMIO_DEVID_MC].paddr + devices[MMIO_DEVID_MC].size) {
+    } else if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT && devices[MMIO_DEVID_MC].pa <= address && address < devices[MMIO_DEVID_MC].pa + devices[MMIO_DEVID_MC].size) {
         /* Memory Controller RW supported only on 4.0.0+ */
         const uint8_t mc_whitelist[0x68] = {0x9F, 0x31, 0x30, 0x00, 0xF0, 0xFF, 0xF7, 0x01, 0xCD, 0xFE, 0xC0, 0xFE, 0x00, 0x00, 0x00, 0x00, 0x03, 0x40, 0x73, 0x3E, 0x2F, 0x00, 0x00, 0x6E, 0x30, 0x05, 0x06, 0xB0, 0x71, 0xC8, 0x43, 0x04, 0x80, 0x1F, 0x08, 0x80, 0x03, 0x00, 0x0E, 0x00, 0x08, 0x00, 0xE0, 0x00, 0x0E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0xF0, 0x03, 0x03, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x31, 0x00, 0x40, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0xE4, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x00, 0xFE, 0x0F, 0x01, 0x00, 0x80, 0x00, 0x00, 0x08, 0x00, 0x00};
         uint32_t offset = (uint32_t)(address - 0x70019000ULL);
