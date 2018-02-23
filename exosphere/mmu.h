@@ -250,7 +250,7 @@ static inline void mmio_map_all_devices(uintptr_t *mmu_l3_tbl) {
 
 static inline void mmio_unmap_all_devices(uintptr_t *mmu_l3_tbl) {
     for(size_t i = 0, offset = 0; i < sizeof(devices) / sizeof(devices[0]); i++) {
-        mmu_unmap_page_range(mmu_l3_tbl, MMIO_BASE + offset, devices[i].pa, devices[i].size);
+        mmu_unmap_range(3, mmu_l3_tbl, MMIO_BASE + offset, devices[i].size);
 
         offset += devices[i].size;
         offset += 0x1000; /* insert guard page */
