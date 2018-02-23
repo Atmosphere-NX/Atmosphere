@@ -1,7 +1,6 @@
 #include "i2c.h"
 #include "timer.h"
 
-/* Load hardware config for I2C4. */
 void i2c_load_config(void) {
     /* Set MSTR_CONFIG_LOAD, TIMEOUT_CONFIG_LOAD, undocumented bit. */
     I2C_I2C_CONFIG_LOAD_0 = 0x25;
@@ -15,7 +14,6 @@ void i2c_load_config(void) {
     }
 }
 
-/* Initialize I2C4. */
 void i2c_init(void) {
     /* Setup divisor, and clear the bus. */
     I2C_I2C_CLK_DIVISOR_REGISTER_0 = 0x50001;
@@ -40,7 +38,6 @@ void i2c_init(void) {
     I2C_INTERRUPT_STATUS_REGISTER_0 = int_status;
 }
 
-/* Writes a value to an i2c device. */
 int i2c_write(unsigned int device, uint32_t val, unsigned int num_bytes) {
     if (num_bytes > 4) {
         return 0;
@@ -69,14 +66,12 @@ int i2c_write(unsigned int device, uint32_t val, unsigned int num_bytes) {
     return (I2C_I2C_STATUS_0 & 7) == 0;
 }
 
-/* Writes a byte val to reg for given device. */
 int i2c_send_byte_command(unsigned int device, unsigned char reg, unsigned char b) {
     uint32_t val = (reg) | (b << 8);
     /* Write 1 byte (reg) + 1 byte (value) */
     return i2c_write(device, val, 2);
 }
 
-/* Actually reset device 27. This might turn off the screen? */
 int i2c_send_reset_cmd(void) {
     /* Write 00 to Device 27 Reg 00. */
     return i2c_send_byte_command(27, 0, 0);
