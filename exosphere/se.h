@@ -40,6 +40,10 @@
 #define DST_SRK (3 << DST_SHIFT)
 #define DST_RSAREG (4 << DST_SHIFT)
 
+#define ENCMODE_SHIFT (24)
+#define DECMODE_SHIFT (16)
+#define ENCMODE_SHA256 (5 << ENCMODE_SHIFT)
+
 #define HASH_DISABLE (0x0)
 #define HASH_ENABLE (0x1)
 
@@ -64,8 +68,18 @@ typedef struct security_engine {
   unsigned int OUT_LL_ADDR_REG;
   unsigned int _0x28;
   unsigned int _0x2C;
-  unsigned char HASH_OUTPUT[0x10];
-  unsigned char reserved0x40[0x240];
+  unsigned char HASH_RESULT_REG[0x20];
+  unsigned char _0x50[0x1B0];
+  unsigned int SHA_CONFIG_REG;
+  unsigned int SHA_MSG_LENGTH_REG;
+  unsigned int _0x20C;
+  unsigned int _0x210;
+  unsigned int SHA_MSG_LEFT_REG;
+  unsigned int _0x218;
+  unsigned int _0x21C;
+  unsigned int _0x220;
+  unsigned int _0x224;
+  unsigned char _0x228[0x5C];
   unsigned int AES_KEY_READ_DISABLE_REG;
   unsigned int AES_KEYSLOT_FLAGS[0x10];
   unsigned char _0x2C4[0x3C];
@@ -171,7 +185,6 @@ void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, co
 void se_initialize_rng(unsigned int keyslot);
 void se_generate_random(unsigned int keyslot, void *dst, size_t size);
 
-/* TODO: SE context save API, consider extending AES API for secure world vs non-secure world operations. */
-/* In particular, smc_crypt_aes takes in raw DMA lists, and we need to support that. */
+/* TODO: SE context save API. */
 
 #endif /* EXOSPHERE_SE_H */

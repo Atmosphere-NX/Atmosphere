@@ -332,6 +332,29 @@ void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*cal
     while (!(g_security_engine->INT_STATUS_REG & 2)) { /* Wait a while */ }
 }
 
+void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
+    uint8_t stack_buf[KEYSIZE_RSA_MAX];
+    
+    if (g_security_engine == NULL || keyslot >= KEYSLOT_RSA_MAX || src_size > KEYSIZE_RSA_MAX || dst_size > KEYSIZE_RSA_MAX) {
+        panic();
+    }
+
+    /* Endian swap the input. */
+    for (size_t i = size; i > 0; i--) {
+        stack_buf[i] = *((uint8_t *)buf + size - i);
+    }
+    
+    g_security_engine->CONFIG_REG = (ALG_RSA | DST_RSAREG);
+    g_security_engine->RSA_CONFIG = keyslot << 24;
+    g_security_engine->RSA_KEY_SIZE_REG = (g_se_modulus_sizes[keyslot] >> 6) - 1;
+    g_security_engine->RSA_EXP_SIZE_REG = g_se_exp_sizes[keyslot] >> 2;
+
+    
+    flush_dcache_range(stack_buf, stack_buf + KEYSIZE_RSA_MAX);
+    trigger_se_blocking_op(1, NULL, 0, stack_buf, src_size);
+    se_get_exp_mod_output(dst, dst_size);
+}
+
 void se_get_exp_mod_output(void *buf, size_t size) {
     size_t num_dwords = (size >> 2);
     if (num_dwords < 1) {
@@ -529,7 +552,7 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
     
     /* Copy output CMAC. */
     for (unsigned int i = 0; i < (cmac_size >> 2); i++) {
-        ((uint32_t *)cmac)[i] = read32le(g_security_engine->HASH_OUTPUT, i << 2);
+        ((uint32_t *)cmac)[i] = read32le(g_security_engine->HASH_RESULT_REG, i << 2);
     }
 }
 
@@ -540,4 +563,69 @@ void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size,
     se_compute_aes_cmac(keyslot, cmac, cmac_size, data, data_size, 0x202);
 }
 
+/* SHA256 Implementation. */
+void se_calculate_sha256(void *dst, const void *src, size_t src_size) {
+    if (g_security_engine == NULL) {
+        panic();
+    }
+    
+    /* Setup config for SHA256, size = BITS(src_size) */
+    g_security_engine->CONFIG_REG = (ENCMODE_SHA256 | ALG_SHA | DST_HASHREG);
+    g_security_engine->SHA_CONFIG_REG = 1;
+    g_security_engine->SHA_MSG_LENGTH_REG = (unsigned int)(src_size << 3);
+    g_security_engine->_0x20C = 0;
+    g_security_engine->_0x210 = 0;
+    g_security_engine->SHA_MSG_LEFT_REG = 0;
+    g_security_engine->_0x218 = (unsigned int)(src_size << 3);
+    g_security_engine->_0x21C = 0;
+    g_security_engine->_0x220 = 0;
+    g_security_engine->_0x224 = 0;
+    
+    /* Trigger the operation. */
+    trigger_se_blocking_op(1, NULL, 0, src, src_size);
+    
+    /* Copy output hash. */
+    for (unsigned int i = 0; i < (0x20 >> 2); i++) {
+        ((uint32_t *)dst)[i] = read32be(g_security_engine->HASH_RESULT_REG, i << 2);
+    }
+}
 
+/* RNG API */
+void se_initialize_rng(unsigned int keyslot) {
+    if (g_security_engine == NULL || keyslot >= KEYSLOT_AES_MAX) {
+        panic();
+    }
+    
+    /* To initialize the RNG, we'll perform an RNG operation into an output buffer. */
+    /* This will be discarded, when done. */
+    uint8_t output_buf[0x10];
+    
+    g_security_engine->RNG_SRC_CONFIG_REG = 3; /* Entropy enable + Entropy lock enable */
+    g_security_engine->RNG_RESEED_INTERVAL_REG = 70001;
+    g_security_engine->CONFIG_REG = (ALG_RNG | DST_MEMORY);
+    g_security_engine->CRYPTO_REG = (keyslot << 24) | 0x108;
+    g_security_engine->RNG_CONFIG_REG = 5;
+    g_security_engine->BLOCK_COUNT_REG = 0;
+    trigger_se_blocking_op(1, output_buf, 0x10, NULL, 0);
+}
+
+void se_generate_random(unsigned int keyslot, void *dst, size_t size) {
+    if (g_security_engine == NULL || keyslot >= KEYSLOT_AES_MAX) {
+        panic();
+    }
+    
+    uint32_t num_blocks = size >> 4;
+    size_t aligned_size = num_blocks << 4;
+    g_security_engine->CONFIG_REG = (ALG_RNG | DST_MEMORY);
+    g_security_engine->CRYPTO_REG = (keyslot << 24) | 0x108;
+    g_security_engine->RNG_CONFIG_REG = 4;
+    
+    if (num_blocks >= 1) {
+        g_security_engine->BLOCK_COUNT_REG = num_blocks - 1;
+        trigger_se_blocking_op(1, dst, aligned_size, NULL, 0);
+    }
+    if (size > aligned_size) {
+        se_perform_aes_block_operation(dst + aligned_size, size - aligned_size, NULL, 0);
+    }
+
+}
