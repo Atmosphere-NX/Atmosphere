@@ -1,8 +1,8 @@
 #ifndef EXOSPHERE_CFG_ITEM_H
 #define EXOSPHERE_CFG_ITEM_H
 
+#include <stdbool.h>
 #include <stdint.h>
-
 
 enum ConfigItem {
     CONFIGITEM_DISABLEPROGRAMVERIFICATION = 1,
@@ -23,7 +23,7 @@ enum ConfigItem {
 uint32_t configitem_set(enum ConfigItem item, uint64_t value);
 uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue);
 
-uint64_t configitem_is_recovery_boot(void);
-uint64_t configitem_is_retail(void);
+bool configitem_is_recovery_boot(void);
+bool configitem_is_retail(void);
 
 #endif

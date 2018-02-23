@@ -214,7 +214,7 @@ void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_sr
     trigger_se_aes_op(OP_START, NULL, 0, wrapped_key, wrapped_key_size);
 }
 
-void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, unsigned int crypt_config, int encrypt, unsigned int (*callback)(void)) {
+void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, unsigned int crypt_config, bool encrypt, unsigned int (*callback)(void)) {
     if (keyslot >= KEYSLOT_AES_MAX) {
         panic();
     }
@@ -224,7 +224,6 @@ void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr,
     }
     
     /* Setup Config register. */
-    encrypt &= 1;
     if (encrypt) {
         SECURITY_ENGINE->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY);
     } else {
@@ -263,17 +262,17 @@ void se_aes_ctr_crypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint
     /* Unknown what this write does, but official code writes it for CTR mode. */
     SECURITY_ENGINE->_0x80C = 1;
     set_se_ctr(ctr);
-    se_aes_crypt_insecure_internal(keyslot, out_ll_paddr, in_ll_paddr, size, 0x81E, 1, callback);
+    se_aes_crypt_insecure_internal(keyslot, out_ll_paddr, in_ll_paddr, size, 0x81E, true, callback);
 }
 
 void se_aes_cbc_encrypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *iv, unsigned int (*callback)(void)) {
     set_aes_keyslot_iv(keyslot, iv, 0x10);
-    se_aes_crypt_insecure_internal(keyslot, out_ll_paddr, in_ll_paddr, size, 0x44, 1, callback);
+    se_aes_crypt_insecure_internal(keyslot, out_ll_paddr, in_ll_paddr, size, 0x44, true, callback);
 }
 
 void se_aes_cbc_decrypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *iv, unsigned int (*callback)(void)) {    
     set_aes_keyslot_iv(keyslot, iv, 0x10);
-    se_aes_crypt_insecure_internal(keyslot, out_ll_paddr, in_ll_paddr, size, 0x66, 0, callback);
+    se_aes_crypt_insecure_internal(keyslot, out_ll_paddr, in_ll_paddr, size, 0x66, false, callback);
 }
 
 

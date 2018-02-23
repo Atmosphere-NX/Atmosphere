@@ -19,10 +19,10 @@ uint32_t user_load_titlekey(smc_args_t *args);
 uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args);
 
 
-void set_crypt_aes_done(int done);
-int get_crypt_aes_done(void);
+void set_crypt_aes_done(bool done);
+bool get_crypt_aes_done(void);
 
-void set_exp_mod_done(int done);
-int get_exp_mod_done(void);
+void set_exp_mod_done(bool done);
+bool get_exp_mod_done(void);
 
 #endif

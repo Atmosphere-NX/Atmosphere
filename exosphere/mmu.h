@@ -1,6 +1,7 @@
 #ifndef EXOSPHERE_MMU_H
 #define EXOSPHERE_MMU_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 #include "utils.h"

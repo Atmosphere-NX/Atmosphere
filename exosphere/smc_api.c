@@ -97,7 +97,7 @@ smc_table_t g_smc_tables[2] = {
     }
 };
 
-int g_is_smc_in_progress = 0;
+bool g_is_smc_in_progress = false;
 uint32_t (*g_smc_callback)(void *, uint64_t) = NULL;
 uint64_t g_smc_callback_key = 0;
 
@@ -162,9 +162,9 @@ uint32_t smc_wrapper_sync(smc_args_t *args, uint32_t (*handler)(smc_args_t *)) {
     if (g_is_smc_in_progress) {
         return 3;
     }
-    g_is_smc_in_progress = 1;
+    g_is_smc_in_progress = true;
     result = handler(args);
-    g_is_smc_in_progress = 0;
+    g_is_smc_in_progress = false;
     return result;
 }
 
@@ -191,7 +191,7 @@ uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), 
         /* smcCheckStatus needs to be called. */
         result = 3;
     }
-    g_is_smc_in_progress = 0;
+    g_is_smc_in_progress = false;
     return result;
 }
 
@@ -271,7 +271,7 @@ uint32_t smc_exp_mod_get_result(void *buf, uint64_t size) {
     se_get_exp_mod_output(buf, 0x100);
     
     /* smc_exp_mod is done now. */
-    g_is_smc_in_progress = 0;
+    g_is_smc_in_progress = false;
     return 0;
 }
 
@@ -297,7 +297,7 @@ uint32_t smc_crypt_aes_status_check(void *buf, uint64_t size) {
         return 3;
     }
     /* smc_crypt_aes is done now. */
-    g_is_smc_in_progress = 0;
+    g_is_smc_in_progress = false;
     return 0;
 }
 
@@ -346,7 +346,7 @@ uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t siz
     se_get_exp_mod_output(wrapped_titlekey, 0x100);
     if (tkey_rsa_oaep_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) != 0x10) {
         /* Failed to extract RSA OAEP wrapped key. */
-        g_is_smc_in_progress = 0;
+        g_is_smc_in_progress = false;
         return 2;
     }
     
@@ -357,7 +357,7 @@ uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t siz
     p_sealed_key[1] = sealed_titlekey[1];
     
     /* smc_unwrap_rsa_oaep_wrapped_titlekey is done now. */
-    g_is_smc_in_progress = 0;
+    g_is_smc_in_progress = false;
     return 0;
 }
 
@@ -394,18 +394,11 @@ uint32_t smc_get_random_bytes_for_priv(smc_args_t *args) {
     /* This is an interesting SMC. */
     /* The kernel must NEVER be unable to get random bytes, if it needs them */
     /* As such: */
-    
+
     uint32_t result;
-    
+
     /* TODO: Make atomic. */
-    if (g_is_smc_in_progress == 0) {
-        g_is_smc_in_progress = 1;
-        /* If the kernel isn't denied service by a usermode SMC, generate fresh random bytes. */
-        result = user_get_random_bytes(args);
-        /* Also, refill our cache while we have the chance in case we get denied later. */
-        randomcache_refill();
-        g_is_smc_in_progress = 0;
-    } else {
+    if (g_is_smc_in_progress) {
         if (args->X[1] > 0x38) {
             return 2;
         }
@@ -413,6 +406,13 @@ uint32_t smc_get_random_bytes_for_priv(smc_args_t *args) {
         size_t num_bytes = (size_t)args->X[1];
         randomcache_getbytes(&args->X[1], num_bytes);
         result = 0;
+    } else {
+        g_is_smc_in_progress = true;
+        /* If the kernel isn't denied service by a usermode SMC, generate fresh random bytes. */
+        result = user_get_random_bytes(args);
+        /* Also, refill our cache while we have the chance in case we get denied later. */
+        randomcache_refill();
+        g_is_smc_in_progress = false;
     }
     return result;
 }
