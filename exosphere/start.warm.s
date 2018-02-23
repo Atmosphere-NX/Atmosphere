@@ -49,7 +49,7 @@ __start_warm:
     mov  x0, #3
     msr  rmr_el3, x0
     isb
-    dsb
+    dsb  sy
     /* Nintendo forgot to copy-paste the branch instruction below. */
     _reset_wfi:
         wfi
