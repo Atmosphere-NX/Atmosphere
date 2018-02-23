@@ -10,7 +10,7 @@ __start_warm:
         */
     /* The following comments are mine. */
     /* mask all interrupts */
-    msr daifset, daif
+    msr daifset, 0b1111
 
     /*
         Enable invalidates of branch target buffer, then flush
