@@ -443,7 +443,7 @@ void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, 
     /* Set configuration high (256-bit vs 128-bit) based on parameter. */
     SECURITY_ENGINE->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY) | (config_high << 16);
     SECURITY_ENGINE->CRYPTO_REG = keyslot << 24;
-    se_perform_aes_block_operation(1, dst, 0x10, src, 0x10);
+    se_perform_aes_block_operation(dst, 0x10, src, 0x10);
 
 }
 
@@ -463,7 +463,7 @@ void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, 
     
     SECURITY_ENGINE->CONFIG_REG = (ALG_AES_DEC | DST_MEMORY);
     SECURITY_ENGINE->CRYPTO_REG = keyslot << 24;
-    se_perform_aes_block_operation(1, dst, 0x10, src, 0x10);
+    se_perform_aes_block_operation(dst, 0x10, src, 0x10);
 }
 
 void shift_left_xor_rb(uint8_t *key) {
