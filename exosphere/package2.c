@@ -307,7 +307,7 @@ uint32_t decrypt_and_validate_header(package2_header_t *header) {
             memcpy(metadata.ctr, header->metadata.ctr, sizeof(header->metadata.ctr));
             /* See if this is the correct key. */
             if (validate_package2_metadata(&metadata)) {
-                memcpy(&header->metadata, metadata, sizeof(package2_meta_t));
+                header->metadata = metadata;
                 break;
             }
         }
