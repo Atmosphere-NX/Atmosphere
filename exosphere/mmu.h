@@ -101,7 +101,7 @@
 #define TCR_IRGN_WBNWA      (3 << 8)
 #define TCR_IRGN_MASK       (3 << 8)
 #define TCR_ORGN_NC         (0 << 10)
-#define TCR_ORGN_WBNWA      (1 << 10)
+#define TCR_ORGN_WBWA       (1 << 10)
 #define TCR_ORGN_WT         (2 << 10)
 #define TCR_ORGN_WBNWA      (3 << 10)
 #define TCR_ORGN_MASK       (3 << 10)
@@ -128,7 +128,7 @@ static inline void mmu_init_table(uintptr_t *tbl, size_t num_entries) {
     They do not invalidate the TLB, which must be done separately.
 */
 
-static inline void mmu_compute_index(unsigned int level, uintptr_t base_addr) {
+static inline unsigned int mmu_compute_index(unsigned int level, uintptr_t base_addr) {
     return (base_addr >> MMU_Lx_SHIFT(level)) & MMU_Lx_MASK(level);
 }
 
