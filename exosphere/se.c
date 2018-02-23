@@ -313,8 +313,8 @@ void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, co
     }
 
     /* Endian swap the input. */
-    for (size_t i = size; i > 0; i--) {
-        stack_buf[i] = *((uint8_t *)buf + size - i);
+    for (size_t i = src_size; i > 0; i--) {
+        stack_buf[i] = *((uint8_t *)src + src_size - i);
     }
     
     SECURITY_ENGINE->CONFIG_REG = (ALG_RSA | DST_RSAREG);
@@ -335,7 +335,7 @@ void se_get_exp_mod_output(void *buf, size_t size) {
     }
     
     uint32_t *p_out = ((uint32_t *)buf) + num_dwords - 1;
-    uint32_t out_ofs = 0;
+    uint32_t offset = 0;
     
     /* Copy endian swapped output. */
     while (num_dwords) {
@@ -416,7 +416,7 @@ void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const vo
     SECURITY_ENGINE->_0x80C = 1;
     SECURITY_ENGINE->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY);
     SECURITY_ENGINE->CRYPTO_REG = (keyslot << 24) | 0x91E;
-    set_se_ctr(ctr, ctr_size);
+    set_se_ctr(ctr);
     
     /* Handle any aligned blocks. */
     size_t aligned_size = (size_t)num_blocks << 4;
@@ -443,7 +443,7 @@ void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, 
     /* Set configuration high (256-bit vs 128-bit) based on parameter. */
     SECURITY_ENGINE->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY) | (config_high << 16);
     SECURITY_ENGINE->CRYPTO_REG = keyslot << 24;
-    se_perform_aes_block_operation(1, dst, 0x10, src, 0x10);
+    se_perform_aes_block_operation(dst, 0x10, src, 0x10);
 
 }
 
@@ -463,7 +463,7 @@ void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, 
     
     SECURITY_ENGINE->CONFIG_REG = (ALG_AES_DEC | DST_MEMORY);
     SECURITY_ENGINE->CRYPTO_REG = keyslot << 24;
-    se_perform_aes_block_operation(1, dst, 0x10, src, 0x10);
+    se_perform_aes_block_operation(dst, 0x10, src, 0x10);
 }
 
 void shift_left_xor_rb(uint8_t *key) {
