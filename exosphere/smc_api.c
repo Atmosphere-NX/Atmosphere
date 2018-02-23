@@ -349,7 +349,7 @@ uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t siz
         return 2;
     }
     
-    se_get_exp_mod_output(wrapped_titlekey, 0x100);
+    se_get_exp_mod_output(rsa_wrapped_titlekey, 0x100);
     if (tkey_rsa_oaep_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) != 0x10) {
         /* Failed to extract RSA OAEP wrapped key. */
         g_is_smc_in_progress = false;
