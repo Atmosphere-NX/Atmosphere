@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "cpu_context.h"
 #include "utils.h"
 #include "pmc.h"
 
