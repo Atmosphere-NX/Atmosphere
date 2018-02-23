@@ -52,7 +52,7 @@ void randomcache_refill(void) {
             }
         } else { /* g_random_cache_low > high_plus_one */
             randomcache_refill_segment(high_plus_one, g_random_cache_low - high_plus_one);
-            g_random_cache_high - g_random_cache_low - 1;
+            g_random_cache_high = g_random_cache_low - 1;
         }
     }
 }
