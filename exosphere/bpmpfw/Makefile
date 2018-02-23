@@ -12,24 +12,23 @@ dir_source := src
 dir_build := build
 dir_out := out
 
-ASFLAGS := 
+ARCH := -march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
+
+ASFLAGS := -g $(ARCH)
 
 CFLAGS = \
-	-Iinclude \
-	-Iinclude/compat \
-	-march=armv8-a \
-	-mlittle-endian \
-	-fno-stack-protector \
-	-fno-common \
-	-fno-builtin \
-    -fno-inline \
-	-ffreestanding \
-	-std=gnu99 \
+	$(ARCH) \
+	-g \
+	-O2 \
+	-ffunction-sections \
+	-fdata-sections \
+	-fomit-frame-pointer \
+	-fno-inline \
+	-std=gnu11 \
 	-Werror \
-	-Wall \
-	-Wno-error=unused-variable
-    
-LDFLAGS := -nostartfiles -Wl,--nmagic
+	-Wall
+
+LDFLAGS = -g $(ARCH) -nostartfiles -nostdlib -Wl,--nmagic,--gc-sections
 
 objects = $(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
           $(patsubst $(dir_source)/%.c, $(dir_build)/%.o, \
@@ -59,4 +58,4 @@ $(dir_build)/%.o: $(dir_source)/%.c
 
 $(dir_build)/%.o: $(dir_source)/%.s
 	@mkdir -p "$(@D)"
-	$(COMPILE.s) $(OUTPUT_OPTION) $<
+	$(COMPILE.c) -x assembler-with-cpp $(OUTPUT_OPTION) $<
