@@ -462,7 +462,7 @@ void load_package2(void) {
         }
     }
     
-    /* TODO: MISC register 0x1F0098C00 |= 0x2000;
+    /* TODO: MISC register 0x1F0098C00 |= 0x2000; */
     
     /* TODO: Update SCR_EL3 depending on value in Bootconfig. */     
 }
