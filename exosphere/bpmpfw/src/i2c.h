@@ -27,19 +27,8 @@
 
 #define I2C_I2C_CONFIG_LOAD_0                MAKE_I2C_REG(0x08C)
 
-/* Initialize I2C4. */
 void i2c_init(void);
 
-/* Load hardware config for I2C4. */
-void i2c_load_config(void);
-
-/* Actually reset device 27. This might turn off the screen? */
 int i2c_send_reset_cmd(void);
-
-/* Writes a value to an i2c device. */
-int i2c_write(unsigned int device, uint32_t val, unsigned int num_bytes);
-
-/* Writes a byte val to reg for given device. */
-int i2c_send_byte_command(unsigned int device, unsigned char reg, unsigned char b);
 
 #endif
