@@ -165,7 +165,7 @@ static inline void mmu_map_page_range(uintptr_t *tbl, uintptr_t base_addr, uintp
 static inline void mmu_unmap_range(unsigned int level, uintptr_t *tbl, uintptr_t base_addr, uintptr_t phys_addr, size_t size) {
     size = (size >> MMU_Lx_SHIFT(level)) << MMU_Lx_SHIFT(level);
     for(size_t offset = 0; offset < size; offset += MMU_Lx_SHIFT(level)) {
-        mmu_unmap(level, tbl, base_addr + offset, phys_addr + offset);
+        mmu_unmap(level, tbl, base_addr + offset);
     }
 }
 
