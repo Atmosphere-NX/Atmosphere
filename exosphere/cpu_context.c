@@ -1,7 +1,8 @@
 #include <stdint.h>
 #include "cpu_context.h"
-#include "utils.h"
 #include "pmc.h"
+#include "timers.h"
+#include "utils.h"
 
 saved_cpu_context_t g_cpu_contexts[NUM_CPU_CORES] = {0};
 
