@@ -142,7 +142,7 @@ bool rsa2048_pss_verify(const void *signature, size_t signature_size, const void
     memset(validate_buf, 0, sizeof(validate_buf));
     flush_dcache_range((uint8_t *)data, (uint8_t *)data + data_size);
     se_calculate_sha256(&validate_buf[8], data, data_size);
-    memcpy(&validate_buf[0x28], &m_buf[RSA_2048_BYTES - 0x20 - 0x20 - 1], 0x20);
+    memcpy(&validate_buf[0x28], &message[RSA_2048_BYTES - 0x20 - 0x20 - 1], 0x20);
     flush_dcache_range(validate_buf, validate_buf + sizeof(validate_buf));
     se_calculate_sha256(validate_hash, validate_buf, sizeof(validate_buf));
     return memcmp(h_buf, validate_hash, 0x20) == 0;
