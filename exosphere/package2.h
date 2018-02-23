@@ -5,9 +5,12 @@
 
 #include <stdint.h>
 #include "bootconfig.h"
+#include "mmu.h"
 
 /* Physaddr 0x40002EF8 */
-#define MAILBOX_NX_BOOTLOADER_SETUP_STATE (*((volatile uint32_t *)(0x1F009FEF8ULL)))
+#define MAILBOX_NX_BOOTLOADER_BASE (mmio_get_device_address(MMIO_DEVID_NXBOOTLOADER_MAILBOX))
+
+#define MAILBOX_NX_BOOTLOADER_SETUP_STATE (*((volatile uint32_t *)(MAILBOX_NX_BOOTLOADER_BASE + 0xEF8ULL)))
 
 #define NX_BOOTLOADER_STATE_INIT 0
 #define NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG 1
@@ -15,7 +18,7 @@
 #define NX_BOOTLOADER_STATE_FINISHED 3 
 
 /* Physaddr 0x40002EFC */
-#define MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE (*((volatile uint32_t *)(0x1F009FEFCULL)))
+#define MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE (*((volatile uint32_t *)(MAILBOX_NX_BOOTLOADER_BASE + 0xEFCULL)))
 
 #define NX_BOOTLOADER_BOOTCONFIG_POINTER ((void *)(0x4003D000ULL))
 
