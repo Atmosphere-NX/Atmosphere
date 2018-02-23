@@ -416,7 +416,7 @@ void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const vo
     SECURITY_ENGINE->_0x80C = 1;
     SECURITY_ENGINE->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY);
     SECURITY_ENGINE->CRYPTO_REG = (keyslot << 24) | 0x91E;
-    set_se_ctr(ctr, ctr_size);
+    set_se_ctr(ctr);
     
     /* Handle any aligned blocks. */
     size_t aligned_size = (size_t)num_blocks << 4;
