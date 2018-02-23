@@ -101,7 +101,7 @@
 #define TCR_IRGN_WBNWA      (3 << 8)
 #define TCR_IRGN_MASK       (3 << 8)
 #define TCR_ORGN_NC         (0 << 10)
-#define TCR_ORGN_WBNWA      (1 << 10)
+#define TCR_ORGN_WBWA       (1 << 10)
 #define TCR_ORGN_WT         (2 << 10)
 #define TCR_ORGN_WBNWA      (3 << 10)
 #define TCR_ORGN_MASK       (3 << 10)
