@@ -221,7 +221,7 @@ static const struct {
 
 static inline uintptr_t mmio_get_device_address(unsigned int device_id) {
     size_t offset = 0;
-    for(unsigned int i = 0; i < devid; i++) {
+    for(unsigned int i = 0; i < device_id; i++) {
         offset += devices[i].size;
         offset += 0x1000; /* guard page */
     }
