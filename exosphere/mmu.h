@@ -166,7 +166,7 @@ static inline void mmu_map_page_range(uintptr_t *tbl, uintptr_t base_addr, uintp
 static inline void mmu_unmap_range(unsigned int level, uintptr_t *tbl, uintptr_t base_addr, uintptr_t phys_addr, size_t size) {
     size = (size >> MMU_Lx_SHIFT(level)) << MMU_Lx_SHIFT(level);
     for(size_t offset = 0; offset < size; offset += MMU_Lx_SHIFT(level)) {
-        mmu_unmap(level, tbl, base_addr + offset, phys_addr + offset);
+        mmu_unmap(level, tbl, base_addr + offset);
     }
 }
 
@@ -251,7 +251,7 @@ static inline void mmio_map_all_devices(uintptr_t *mmu_l3_tbl) {
 
 static inline void mmio_unmap_all_devices(uintptr_t *mmu_l3_tbl) {
     for(size_t i = 0, offset = 0; i < sizeof(devices) / sizeof(devices[0]); i++) {
-        mmu_unmap_page_range(mmu_l3_tbl, MMIO_BASE + offset, devices[i].pa, devices[i].size);
+        mmu_unmap_range(3, mmu_l3_tbl, MMIO_BASE + offset, devices[i].size);
 
         offset += devices[i].size;
         offset += 0x1000; /* insert guard page */
