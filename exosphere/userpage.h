@@ -12,8 +12,8 @@ typedef struct {
 
 int upage_init(upage_ref_t *user_page, void *user_address);
 
-void user_copy_to_secure(upage_ref_t *user_page, void *secure_dst, void *user_src, size_t size);
-void secure_copy_to_user(upage_ref_t *user_page, void *user_dst, void *secure_src, size_t size);
+int user_copy_to_secure(upage_ref_t *user_page, void *secure_dst, void *user_src, size_t size);
+int secure_copy_to_user(upage_ref_t *user_page, void *user_dst, void *secure_src, size_t size);
 
 static inline uint64_t get_page_for_address(void *address) {
     return ((uint64_t)(address)) & 0xFFFFFFFFFFFFF000ULL;
