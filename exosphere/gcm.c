@@ -66,7 +66,7 @@ static void ghash(void *dst, const void *data, size_t data_size, const void *j_b
     memset(x, 0, 0x10);
 
     /* H = aes_ecb_encrypt(zeroes) */
-    se_aes_ecb_encrypt_block(KEYSLOT_SWITCH_TEMPKEY, h, 0x10, x, 0x10);
+    se_aes_128_ecb_encrypt_block(KEYSLOT_SWITCH_TEMPKEY, h, 0x10, x, 0x10);
 
     size_t total_size = data_size;
 
@@ -100,7 +100,7 @@ static void ghash(void *dst, const void *data, size_t data_size, const void *j_b
 
     /* If final output block, XOR with encrypted J block. */
     if (encrypt) {
-        se_aes_ecb_encrypt_block(KEYSLOT_SWITCH_TEMPKEY, h, 0x10, j_block, 0x10);
+        se_aes_128_ecb_encrypt_block(KEYSLOT_SWITCH_TEMPKEY, h, 0x10, j_block, 0x10);
         for (unsigned int i = 0; i < 0x10; i++) {
             x[i] ^= h[i];
         }

@@ -18,7 +18,7 @@ const uint8_t g_seal_key_sources[CRYPTOUSECASE_MAX][0x10] = {
 
 void seal_key_internal(void *dst, const void *src, const uint8_t *seal_key_source) {
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, KEYSLOT_SWITCH_SESSIONKEY, seal_key_source, 0x10);
-    se_aes_ecb_encrypt_block(KEYSLOT_SWITCH_TEMPKEY, dst, 0x10, src, 0x10);
+    se_aes_128_ecb_encrypt_block(KEYSLOT_SWITCH_TEMPKEY, dst, 0x10, src, 0x10);
 }
 
 void unseal_key_internal(unsigned int keyslot, const void *src, const uint8_t *seal_key_source) {

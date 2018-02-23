@@ -64,7 +64,7 @@ typedef struct security_engine {
   unsigned int OUT_LL_ADDR_REG;
   unsigned int _0x28;
   unsigned int _0x2C;
-  unsigned char cmacOutput[0x10];
+  unsigned char HASH_OUTPUT[0x10];
   unsigned char reserved0x40[0x240];
   unsigned int AES_KEY_READ_DISABLE_REG;
   unsigned int AES_KEYSLOT_FLAGS[0x10];
@@ -152,10 +152,11 @@ void se_aes_cbc_encrypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, ui
 void se_aes_cbc_decrypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *iv, unsigned int (*callback)(void));
 
 /* Secure AES API */
-void se_compute_aes_128_cmac(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
-void se_compute_aes_256_cmac(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
+void se_compute_aes_128_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size);
+void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size);
+void se_aes_128_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
+void se_aes_256_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size);
-void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 
 /* Hash API */

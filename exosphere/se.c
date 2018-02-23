@@ -63,6 +63,20 @@ void se_operation_completed(void) {
 }
 
 
+void se_check_for_error(void) {
+    if (g_security_engine == NULL) {
+        panic();
+    }
+    
+    if (g_security_engine->INT_STATUS_REG & 0x10000 || g_security_engine->FLAGS_REG & 3 || g_security_engine->ERR_STATUS_REG) {
+        panic();
+    }
+}
+
+void se_trigger_intrrupt(void) {
+    /* TODO */
+}
+
 void se_verify_flags_cleared(void) {
     if (g_security_engine == NULL || g_security_engine->FLAGS_REG & 3) {
         panic();
@@ -168,7 +182,6 @@ void set_rsa_keyslot(unsigned int keyslot, const void  *modulus, size_t modulus_
     g_se_exp_sizes[keyslot] = exp_size;
 }
 
-
 void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size) {
     if (g_security_engine == NULL || keyslot >= KEYSLOT_AES_MAX || iv_size > 0x10) {
         panic();
@@ -177,6 +190,17 @@ void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size) {
     for (size_t i = 0; i < (iv_size >> 2); i++) {
         g_security_engine->AES_KEYTABLE_ADDR = (keyslot << 4) | 8 | i;
         g_security_engine->AES_KEYTABLE_DATA = read32le(iv, 4 * i);
+    }
+}
+
+void clear_aes_keyslot_iv(unsigned int keyslot) {
+    if (g_security_engine == NULL || keyslot >= KEYSLOT_AES_MAX) {
+        panic();
+    }
+    
+    for (size_t i = 0; i < (0x10 >> 2); i++) {
+        g_security_engine->AES_KEYTABLE_ADDR = (keyslot << 4) | 8;
+        g_security_engine->AES_KEYTABLE_DATA = 0;
     }
 }
 
@@ -362,12 +386,158 @@ void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const v
     se_check_for_error();
 }
 
-void se_check_for_error(void) {
-    if (g_security_engine == NULL) {
+
+/* Secure AES Functionality. */
+void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    uint8_t block[0x10];
+
+    if (g_security_engine == NULL || src_size > sizeof(block) || dst_size > sizeof(block)) {
         panic();
     }
     
-    if (g_security_engine->INT_STATUS_REG & 0x10000 || g_security_engine->FLAGS_REG & 3 || g_security_engine->ERR_STATUS_REG) {
+    /* Load src data into block. */
+    memset(block, 0, sizeof(block));
+    memcpy(block, src, src_size);
+    flush_dcache_range(block, block + sizeof(block));
+    
+    /* Trigger AES operation. */
+    g_security_engine->BLOCK_COUNT_REG = 0;
+    trigger_se_blocking_op(1, block, sizeof(block), block, sizeof(block));
+    
+    /* Copy output data into dst. */
+    flush_dcache_range(block, block + sizeof(block));
+    memcpy(dst, block, dst_size);
+}
+
+void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
+    if (g_security_engine == NULL || keyslot >= KEYSLOT_AES_MAX || ctr_size != 0x10) {
         panic();
     }
+    
+    unsigned int num_blocks = src_size >> 4;
+    
+    /* Unknown what this write does, but official code writes it for CTR mode. */
+    g_security_engine->_0x80C = 1;
+    g_security_engine->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY);
+    g_security_engine->CRYPTO_REG = (keyslot << 24) | 0x91E;
+    set_se_ctr(ctr, ctr_size);
+    
+    /* Handle any aligned blocks. */
+    size_t aligned_size = (size_t)num_blocks << 4;
+    if (aligned_size) {
+        g_security_engine->BLOCK_COUNT_REG = num_blocks - 1;
+        trigger_se_blocking_op(1, dst, dst_size, src, aligned_size);
+    }
+    
+    /* Handle final, unaligned block. */
+    if (aligned_size < dst_size && aligned_size < src_size) {
+        size_t last_block_size = dst_size - aligned_size;
+        if (src_size < dst_size) {
+            last_block_size = src_size - aligned_size;
+        }
+        se_perform_aes_block_operation(dst + aligned_size, last_block_size, src + aligned_size, src - aligned_size);
+    }
 }
+
+void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, unsigned int config_high) {
+    if (g_security_engine == NULL || keyslot >= KEYSLOT_AES_MAX || dst_size != 0x10 || src_size != 0x10) {
+        panic();
+    }
+    
+    /* Set configuration high (256-bit vs 128-bit) based on parameter. */
+    g_security_engine->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY) | (config_high << 16);
+    g_security_engine->CRYPTO_REG = keyslot << 24;
+    se_perform_aes_block_operation(1, dst, 0x10, src, 0x10);
+
+}
+
+void se_aes_128_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
+    se_aes_ecb_encrypt_block(keyslot, dst, dst_size, src, src_size, 0);
+}
+
+void se_aes_256_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
+    se_aes_ecb_encrypt_block(keyslot, dst, dst_size, src, src_size, 0x202);
+}
+
+
+void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
+    if (g_security_engine == NULL || keyslot >= KEYSLOT_AES_MAX || dst_size != 0x10 || src_size != 0x10) {
+        panic();
+    }
+    
+    g_security_engine->CONFIG_REG = (ALG_AES_DEC | DST_MEMORY);
+    g_security_engine->CRYPTO_REG = keyslot << 24;
+    se_perform_aes_block_operation(1, dst, 0x10, src, 0x10);
+}
+
+void shift_left_xor_rb(uint8_t *key) {
+    uint8_t prev_high_bit = 0;
+    for (unsigned int i = 0xF; i >= 0; i--) {
+        uint8_t cur_byte = key[i];
+        key[i] = (cur_byte << 1) | (prev_high_bit);
+        prev_high_bit = cur_byte >> 7; 
+    }
+    if (prev_high_bit) {
+        key[0xF] ^= 0x87;
+    }
+}
+
+void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size, unsigned int config_high) {
+    if (g_security_engine == NULL || keyslot >= KEYSLOT_AES_MAX) {
+        panic();
+    }
+    
+    /* Generate the derived key, to be XOR'd with final output block. */
+    uint8_t derived_key[0x10];
+    memset(derived_key, 0, sizeof(derived_key));
+    se_aes_128_ecb_encrypt_block(keyslot, derived_key, sizeof(derived_key), derived_key, sizeof(derived_key));
+    shift_left_xor_rb(derived_key);
+    if (data_size & 0xF) {
+        shift_left_xor_rb(derived_key);
+    }
+    
+    g_security_engine->CONFIG_REG = (ALG_AES_ENC | DST_HASHREG) | (config_high << 16);
+    g_security_engine->CRYPTO_REG = (keyslot << 24) | (0x145);
+    clear_aes_keyslot_iv(keyslot);
+    
+    unsigned int num_blocks = (data_size + 0xF) >> 4;
+    /* Handle aligned blocks. */
+    if (num_blocks > 1) {
+        g_security_engine->BLOCK_COUNT_REG = num_blocks - 2;
+        trigger_se_blocking_op(1, NULL, 0, data, data_size);
+        g_security_engine->CRYPTO_REG |= 0x80;
+    }
+    
+    /* Create final block. */
+    uint8_t last_block[0x10];
+    memset(last_block, 0, sizeof(last_block));
+    if (data_size & 0xF) {
+        
+        memcpy(last_block, data + (data_size & ~0xF), data_size & 0xF);
+        last_block[data_size & 0xF] = 0x80; /* Last block = data || 100...0 */
+    } else if (data_size >= 0x10) {
+        memcpy(last_block, data + data_size - 0x10, 0x10);
+    }
+    
+    for (unsigned int i = 0; i < 0x10; i++) {
+        last_block[i] ^= derived_key[i];
+    }
+    
+    /* Perform last operation. */
+    flush_dcache_range(last_block, last_block + sizeof(last_block));
+    trigger_se_blocking_op(1, NULL, 0, last_block, sizeof(last_block));
+    
+    /* Copy output CMAC. */
+    for (unsigned int i = 0; i < (cmac_size >> 2); i++) {
+        ((uint32_t *)cmac)[i] = read32le(g_security_engine->HASH_OUTPUT, i << 2);
+    }
+}
+
+void se_compute_aes_128_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size) {
+    se_compute_aes_cmac(keyslot, cmac, cmac_size, data, data_size, 0);
+}
+void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size) {
+    se_compute_aes_cmac(keyslot, cmac, cmac_size, data, data_size, 0x202);
+}
+
+
