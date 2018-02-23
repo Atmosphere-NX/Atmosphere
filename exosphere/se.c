@@ -372,7 +372,7 @@ void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const v
     
     /* Set the LLs. */
     SECURITY_ENGINE->IN_LL_ADDR_REG = get_physical_address(&in_ll);
-    g_security_enging->OUT_LL_ADDR_REG = get_physical_address(&out_ll);
+    SECURITY_ENGINE->OUT_LL_ADDR_REG = get_physical_address(&out_ll);
     
     /* Set registers for operation. */
     SECURITY_ENGINE->ERR_STATUS_REG = SECURITY_ENGINE->ERR_STATUS_REG;
