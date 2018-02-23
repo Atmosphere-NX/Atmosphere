@@ -148,9 +148,10 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
     ghash(calc_mac, dst, src_size - 0x20, j_block, 1);
 
     /* Const-time memcmp. */
+    const uint8_t *src_bytes = src;
     int different = 0;
     for (unsigned int i = 0; i < 0x10; i++) {
-        different |= src[src_size - 0x10  + i] ^ calc_mac[i];
+        different |= src_bytes[src_size - 0x10  + i] ^ calc_mac[i];
     }
     if (different) {
         return 0;
