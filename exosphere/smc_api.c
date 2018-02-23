@@ -3,6 +3,8 @@
 #include "utils.h"
 #include "configitem.h"
 #include "cpu_context.h"
+#include "mc.h"
+#include "mmu.h"
 #include "smc_api.h"
 #include "smc_user.h"
 #include "se.h"
@@ -477,4 +479,30 @@ uint32_t smc_read_write_register(smc_args_t *args) {
     }
     
     return 2;
+}
+
+
+uint32_t smc_configure_carveout(smc_args_t *args) {
+    if (args->X[0] > 1) {
+        return 2;
+    }
+    
+    unsigned int carveout_id = (unsigned int)args->X[1];
+    uint64_t address = args->X[2];
+    uint64_t size = args->X[3];
+    
+    /* Ensure carveout isn't too big. */
+    if (size > KERNEL_CARVEOUT_SIZE_MAX) {
+        return 2;
+    }
+    
+    /* Configuration is one-shot, and cannot be done multiple times. */
+    static bool configured_carveouts[2] = {false, false};
+    if (configured_carveouts[carveout_id]) {
+        return 2;
+    }
+    
+    configure_kernel_carveout(carveout_id + 4, address, size);
+    configured_carveouts[carveout_id] = true;
+    return 0;
 }
