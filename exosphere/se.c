@@ -469,9 +469,9 @@ void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, 
 
 void shift_left_xor_rb(uint8_t *key) {
     uint8_t prev_high_bit = 0;
-    for (unsigned int i = 0xF; i >= 0; i--) {
-        uint8_t cur_byte = key[i];
-        key[i] = (cur_byte << 1) | (prev_high_bit);
+    for (unsigned int i = 0; i < 0x10; i++) {
+        uint8_t cur_byte = key[0xF - i];
+        key[0xF - i] = (cur_byte << 1) | (prev_high_bit);
         prev_high_bit = cur_byte >> 7; 
     }
     if (prev_high_bit) {
