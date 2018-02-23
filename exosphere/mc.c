@@ -4,7 +4,7 @@
 #include "mc.h"
 
 volatile security_carveout_t *get_carveout_by_id(unsigned int carveout) {
-    if (CARVEOUT_ID_MIN <= carveout <= CARVEOUT_ID_MAX) {
+    if (CARVEOUT_ID_MIN <= carveout && carveout <= CARVEOUT_ID_MAX) {
          return (volatile security_carveout_t *)(MC_BASE + 0xC08ULL + 0x50 * (carveout - CARVEOUT_ID_MIN));
     }
     panic();
