@@ -139,7 +139,6 @@ typedef struct {
 /* This function MUST be registered to fire on the appropriate interrupt. */
 void se_operation_completed(void);
 
-void set_security_engine_address(security_engine_t *security_engine);
 security_engine_t *get_security_engine_address(void);
 
 void se_check_for_error(void);

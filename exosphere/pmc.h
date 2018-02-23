@@ -2,13 +2,13 @@
 #define EXOSPHERE_PMC_H
 
 #include <stdint.h>
+#include "mmu.h"
 
 /* Exosphere register definitions for the Tegra X1 PMC. */
 
-void set_pmc_address(void *pmc_base);
-void *get_pmc_address(void); /* This is inlined in pmc.c */
+#define PMC_BASE (mmio_get_device_address(MMIO_DEVID_RTC_PMC) + 0x400ULL)
 
-#define APBDEV_PMC_PWRGATE_TOGGLE_0 (*((volatile uint32_t *)(get_pmc_address() + 0x430)))
-#define APBDEV_PMC_PWRGATE_STATUS_0 (*((volatile uint32_t *)(get_pmc_address() + 0x438)))
+#define APBDEV_PMC_PWRGATE_TOGGLE_0 (*((volatile uint32_t *)(PMC_BASE + 0x30)))
+#define APBDEV_PMC_PWRGATE_STATUS_0 (*((volatile uint32_t *)(PMC_BASE + 0x38)))
 
 #endif

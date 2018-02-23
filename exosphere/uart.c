@@ -1,15 +1,5 @@
 #include "uart.h"
 
-volatile void *g_uart_registers = NULL;
-
-void set_uart_address(void *uart_base) {
-    g_uart_registers = uart_base;
-}
-
-inline void *get_uart_address(void) {
-    return g_uart_registers;
-}
-
 void uart_initialize(uint16_t divider) {
     /* Setup UART in 16450 mode. We assume the relevant UART clock has been enabled. */
 
