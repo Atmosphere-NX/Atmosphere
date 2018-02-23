@@ -313,8 +313,8 @@ void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, co
     }
 
     /* Endian swap the input. */
-    for (size_t i = size; i > 0; i--) {
-        stack_buf[i] = *((uint8_t *)buf + size - i);
+    for (size_t i = src_size; i > 0; i--) {
+        stack_buf[i] = *((uint8_t *)src + src_size - i);
     }
     
     SECURITY_ENGINE->CONFIG_REG = (ALG_RSA | DST_RSAREG);
