@@ -158,7 +158,7 @@ static inline void mmu_map_block_range(unsigned int level, uintptr_t *tbl, uintp
 static inline void mmu_map_page_range(uintptr_t *tbl, uintptr_t base_addr, uintptr_t phys_addr, size_t size, uint64_t attrs) {
     size = (size >> MMU_Lx_SHIFT(3)) << MMU_Lx_SHIFT(3);
     for(size_t offset = 0; offset < size; offset += MMU_Lx_SHIFT(3)) {
-        mmu_map_page(base_addr + offset, phys_addr + offset, attrs);
+        mmu_map_page(tbl, base_addr + offset, phys_addr + offset, attrs);
     }
 }
 
