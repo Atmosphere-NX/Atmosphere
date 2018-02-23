@@ -416,3 +416,65 @@ uint32_t smc_get_random_bytes_for_priv(smc_args_t *args) {
     }
     return result;
 }
+
+uint32_t smc_read_write_register(smc_args_t *args) {
+    uint64_t address = args->X[1];
+    uint32_t mask = (uint32_t)(args->X[2]);
+    uint32_t value = (uint32_t)(args->X[3]);
+    volatile uint32_t *p_mmio = NULL;
+    /* Address must be aligned. */
+    if (address & 3) {
+        return 2;
+    }
+    /* Check for PMC registers. */
+    if (0x7000E400ULL <= address && address <= 0x7000EFFFULL) {
+        const uint8_t pmc_whitelist[0x28] = {0xB9, 0xF9, 0x07, 0x00, 0x00, 0x00, 0x80, 0x03, 0x00, 0x00, 0x00, 0x17, 0x00, 0xC4, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x40, 0x00};
+        /* Offset = Address - PMC_BASE */
+        uint32_t offset = (uint32_t)(address - 0x7000E400ULL);
+        uint32_t wl_ind = (offset >> 5);
+        /* If address is whitelisted, allow write. */
+        if (wl_ind < sizeof(pmc_whitelist) && (pmc_whitelist[wl_ind] & (1 << ((offset >> 2) & 0x7)))) {
+            p_mmio = (volatile uint32_t *)(PMC_BASE + offset);
+        } else {
+            return 2;
+        }
+    } else if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT && devices[MMIO_DEVID_MC].paddr <= address && address < devices[MMIO_DEVID_MC].paddr + devices[MMIO_DEVID_MC].size) {
+        /* Memory Controller RW supported only on 4.0.0+ */
+        const uint8_t mc_whitelist[0x68] = {0x9F, 0x31, 0x30, 0x00, 0xF0, 0xFF, 0xF7, 0x01, 0xCD, 0xFE, 0xC0, 0xFE, 0x00, 0x00, 0x00, 0x00, 0x03, 0x40, 0x73, 0x3E, 0x2F, 0x00, 0x00, 0x6E, 0x30, 0x05, 0x06, 0xB0, 0x71, 0xC8, 0x43, 0x04, 0x80, 0x1F, 0x08, 0x80, 0x03, 0x00, 0x0E, 0x00, 0x08, 0x00, 0xE0, 0x00, 0x0E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0xF0, 0x03, 0x03, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x31, 0x00, 0x40, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0xE4, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x00, 0xFE, 0x0F, 0x01, 0x00, 0x80, 0x00, 0x00, 0x08, 0x00, 0x00};
+        uint32_t offset = (uint32_t)(address - 0x70019000ULL);
+        uint32_t wl_ind = (offset >> 5);
+        /* If address is whitelisted, allow write. */
+        if (wl_ind < sizeof(mc_whitelist) && (mc_whitelist[wl_ind] & (1 << ((offset >> 2) & 0x7)))) {
+            p_mmio = (volatile uint32_t *)(mmio_get_device_address(MMIO_DEVID_MC) + offset);
+        } else {
+            /* These addresses are not allowed by the whitelist. */
+            /* They correspond to SMMU DISABLE for the BPMP, and for APB-DMA. */
+            /* However, smcReadWriteRegister returns 0 for these addresses despite not actually performing the write. */
+            /* This is "probably" to fuck with hackers who got access to smcReadWriteRegister and are trying to get */
+            /* control of the BPMP for jamais vu etc., since there's no other reason to return 0 despite failure. */
+            if (address == 0x7001923C || address == 0x70019298) {
+                return 0;
+            }
+            return 2;
+        }
+    }
+    
+    /* Perform actual write. */
+    if (p_mmio != NULL) {
+        uint32_t old_value;
+        /* Write whole value. */
+        if (mask == 0xFFFFFFFF) {
+            old_value = 0;
+        } else {
+            old_value = *p_mmio;
+        }
+        if (mask) {
+            *p_mmio = (old_value & ~mask) | (value & mask);
+        }
+        /* Return old value. */
+        args->X[1] = old_value;
+        return 0;
+    }
+    
+    return 2;
+}
