@@ -28,7 +28,7 @@ void unseal_key_internal(unsigned int keyslot, const void *src, const uint8_t *s
 
 
 void seal_titlekey(void *dst, size_t dst_size, const void *src, size_t src_size) {
-    if (usecase >= CRYPTOUSECASE_MAX || dst_size != 0x10 || src_size != 0x10) {
+    if (dst_size != 0x10 || src_size != 0x10) {
         panic();
     }
     
@@ -59,5 +59,5 @@ void unseal_key(unsigned int keyslot, const void *src, size_t src_size, unsigned
         panic();
     }
     
-    seal_key_internal(dst, src, g_seal_key_sources[usecase]);
+    unseal_key_internal(keyslot, src, g_seal_key_sources[usecase]);
 }
