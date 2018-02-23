@@ -301,7 +301,7 @@ uint32_t decrypt_and_validate_header(package2_header_t *header) {
         uint32_t mkey_rev;
         
         /* Try to decrypt for all possible master keys. */
-        for (mkey_rev = 0; i < MASTERKEY_REVISION_MAX; i++) {
+        for (mkey_rev = 0; mkey_rev < MASTERKEY_REVISION_MAX; mkey_rev++) {
             package2_crypt_ctr(mkey_rev, &metadata, sizeof(package2_meta_t), &header->metadata, sizeof(package2_meta_t), header->metadata.ctr, sizeof(header->metadata.ctr));
             /* Copy the ctr (which stores information) into the decrypted metadata. */
             memcpy(metadata.ctr, header->metadata.ctr, sizeof(header->metadata.ctr));
