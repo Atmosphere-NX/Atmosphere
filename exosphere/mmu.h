@@ -175,27 +175,27 @@ static inline void mmu_unmap_range(unsigned int level, uintptr_t *tbl, uintptr_t
 static const struct {
     uintptr_t pa;
     size_t size;
-    bool is_secure;
+    int is_secure;
 } devices[] =
 {
-    { 0x50041000, 0x1000, true  }, /* ARM Interrupt Distributor */
-    { 0x50042000, 0x2000, true  }, /* Interrupt Controller Physical CPU interface */
-    { 0x70006000, 0x1000, false }, /* UART-A */
-    { 0x60006000, 0x1000, false }, /* Clock and Reset */
-    { 0x7000E000, 0x1000, true  }, /* RTC, PMC */
-    { 0x60005000, 0x1000, true  }, /* TMRs, WDTs */
-    { 0x6000C000, 0x1000, true  }, /* System Registers */
-    { 0x70012000, 0x2000, true  }, /* SE */
-    { 0x700F0000, 0x1000, true  }, /* SYSCTR0 */
-    { 0x70019000, 0x1000, true  }, /* MC */
-    { 0x7000F000, 0x1000, true  }, /* FUSE (0x7000F800) */
-    { 0x70000000, 0x4000, true  }, /* MISC */
-    { 0x60007000, 0x1000, true  }, /* Flow Controller */
-    { 0x40002000, 0x1000, true  }, /* iRAM-A */
-    { 0x7000D000, 0x1000, true  }, /* I2C-5,6 - SPI 2B-1 to 4 */
-    { 0x6000D000, 0x1000, true  }, /* GPIO-1 - GPIO-8 */
-    { 0x7000C000, 0x1000, true  }, /* I2C-I2C4 */
-    { 0x6000F000, 0x1000, true  }, /* Exception vectors */
+    { 0x50041000, 0x1000, 1 }, /* ARM Interrupt Distributor */
+    { 0x50042000, 0x2000, 1 }, /* Interrupt Controller Physical CPU interface */
+    { 0x70006000, 0x1000, 0 }, /* UART-A */
+    { 0x60006000, 0x1000, 0 }, /* Clock and Reset */
+    { 0x7000E000, 0x1000, 1 }, /* RTC, PMC */
+    { 0x60005000, 0x1000, 1 }, /* TMRs, WDTs */
+    { 0x6000C000, 0x1000, 1 }, /* System Registers */
+    { 0x70012000, 0x2000, 1 }, /* SE */
+    { 0x700F0000, 0x1000, 1 }, /* SYSCTR0 */
+    { 0x70019000, 0x1000, 1 }, /* MC */
+    { 0x7000F000, 0x1000, 1 }, /* FUSE (0x7000F800) */
+    { 0x70000000, 0x4000, 1 }, /* MISC */
+    { 0x60007000, 0x1000, 1 }, /* Flow Controller */
+    { 0x40002000, 0x1000, 1 }, /* iRAM-A */
+    { 0x7000D000, 0x1000, 1 }, /* I2C-5,6 - SPI 2B-1 to 4 */
+    { 0x6000D000, 0x1000, 1 }, /* GPIO-1 - GPIO-8 */
+    { 0x7000C000, 0x1000, 1 }, /* I2C-I2C4 */
+    { 0x6000F000, 0x1000, 1 }, /* Exception vectors */
 };
 
 #define MMIO_DEVID_GICD                 0
