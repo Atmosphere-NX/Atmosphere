@@ -35,10 +35,6 @@ objects = $(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
           $(patsubst $(dir_source)/%.c, $(dir_build)/%.o, \
           $(call rwildcard, $(dir_source), *.s *.c)))
 
-define bin2o
-	bin2s $< | $(AS) -o $(@)
-endef
-
 .PHONY: all
 all: $(dir_out)/$(name).bin
 
@@ -51,7 +47,7 @@ $(dir_out)/$(name).bin: $(dir_build)/$(name).elf
 	@mkdir -p "$(@D)"
 	$(OBJCOPY) -S -O binary $< $@
 
-$(dir_build)/$(name).elf: $(bundled) $(objects)
+$(dir_build)/$(name).elf: $(objects)
 	$(LINK.o) -T linker.ld $(OUTPUT_OPTION) $^
 
 $(dir_build)/%.bin.o: $(dir_build)/%.bin
