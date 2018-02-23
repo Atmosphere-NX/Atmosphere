@@ -59,5 +59,5 @@ void unseal_key(unsigned int keyslot, const void *src, size_t src_size, unsigned
         panic();
     }
     
-    seal_key_internal(dst, src, g_seal_key_sources[usecase]);
+    unseal_key_internal(keyslot, src, g_seal_key_sources[usecase]);
 }
