@@ -1,9 +1,11 @@
 #include <stdint.h>
 
-#include "utils.h"
 #include "bootconfig.h"
-#include "se.h"
 #include "configitem.h"
+#include "interrupt.h"
+#include "package2.h"
+#include "se.h"
+#include "utils.h"
 
 int g_battery_profile = 0;
 
@@ -37,7 +39,7 @@ uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue) {
             /* SE is interrupt #0x2C. */
             *p_outvalue = INTERRUPT_ID_USER_SECURITY_ENGINE;
             break;
-        case CONFIGITEM_UNK04:
+        case CONFIGITEM_VERSION:
             /* Always returns maxver - 1 on hardware. */
             *p_outvalue = PACKAGE2_MAXVER_400_CURRENT - 1;
             break;
