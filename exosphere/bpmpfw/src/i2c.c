@@ -71,7 +71,7 @@ int i2c_write(unsigned int device, uint32_t val, unsigned int num_bytes) {
     }
 
     /* Return CMD1_STAT == SL1_XFER_SUCCESSFUL. */
-    return (I2C_I2C_STATUS_0 & 7) == 0;
+    return (I2C_I2C_STATUS_0 & 0xF) == 0;
 }
 
 /* Writes a byte val to reg for given device. */
