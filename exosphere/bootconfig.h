@@ -1,6 +1,7 @@
 #ifndef EXOSPHERE_BOOTCONFIG_H
 #define EXOSPHERE_BOOTCONFIG_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /* This provides management for Switch BootConfig. */
