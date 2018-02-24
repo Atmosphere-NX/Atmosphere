@@ -1,5 +1,6 @@
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <string.h>
 
 #include "utils.h"
 #include "mmu.h"
