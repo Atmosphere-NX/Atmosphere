@@ -2,7 +2,7 @@
 #define EXOSPHERE_MC_H
 
 #include <stdint.h>
-#include "mmu.h"
+#include "memory_map.h"
 
 /* Exosphere driver for the Tegra X1 Memory Controller. */
 

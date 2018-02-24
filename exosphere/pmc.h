@@ -2,7 +2,7 @@
 #define EXOSPHERE_PMC_H
 
 #include <stdint.h>
-#include "mmu.h"
+#include "memory_map.h"
 
 /* Exosphere register definitions for the Tegra X1 PMC. */
 

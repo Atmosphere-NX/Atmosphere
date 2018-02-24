@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 #include "bootconfig.h"
-#include "mmu.h"
+#include "memory_map.h"
 
 /* Physaddr 0x40002EF8 */
 #define MAILBOX_NX_BOOTLOADER_BASE (mmio_get_device_address(MMIO_DEVID_NXBOOTLOADER_MAILBOX))

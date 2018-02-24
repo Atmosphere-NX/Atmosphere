@@ -6,7 +6,7 @@
 #include "lock.h"
 #include "masterkey.h"
 #include "mc.h"
-#include "mmu.h"
+#include "memory_map.h"
 #include "pmc.h"
 #include "randomcache.h"
 #include "sealedkeys.h"

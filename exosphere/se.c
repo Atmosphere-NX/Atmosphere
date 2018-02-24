@@ -4,7 +4,8 @@
 
 #include "utils.h"
 #include "interrupt.h"
-#include "mmu.h"
+#include "se.h"
+#include "memory_map.h"
 #include "cache.h"
 #include "se.h"
 
