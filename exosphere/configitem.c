@@ -1,6 +1,8 @@
 #include <stdint.h>
 
 #include "utils.h"
+#include "bootconfig.h"
+#include "se.h"
 #include "configitem.h"
 
 int g_battery_profile = 0;
@@ -26,19 +28,18 @@ uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue) {
     uint32_t result = 0;
     switch (item) {
         case CONFIGITEM_DISABLEPROGRAMVERIFICATION:
-            /* TODO: This is loaded from BootConfig on dev units, always zero on retail. How should we support? */
-            *p_outvalue = 0;
+            *p_outvalue = (int)(bootconfig_disable_program_verification());
             break;
         case CONFIGITEM_MEMORYCONFIGURATION:
             /* TODO: Fuse driver */
             break;
         case CONFIGITEM_SECURITYENGINEIRQ:
-            /* SE is interrupt #44. */
-            *p_outvalue = 0x2C;
+            /* SE is interrupt #0x2C. */
+            *p_outvalue = INTERRUPT_ID_USER_SECURITY_ENGINE;
             break;
         case CONFIGITEM_UNK04:
-            /* Always returns 2 on hardware. */
-            *p_outvalue = 2;
+            /* Always returns maxver - 1 on hardware. */
+            *p_outvalue = PACKAGE2_MAXVER_400_CURRENT - 1;
             break;
         case CONFIGITEM_HARDWARETYPE:
             /* TODO: Fuse driver */
@@ -47,7 +48,7 @@ uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue) {
             /* TODO: Fuse driver */
             break;
         case CONFIGITEM_ISRECOVERYBOOT:
-            /* TODO: This is just a constant, hardcoded into TZ on retail. How should we support? */
+            /* TODO: This requires reading values passed to crt0 via NX_Bootloader. TBD pending crt0 implementation. */
             *p_outvalue = 0;
             break;
         case CONFIGITEM_DEVICEID:

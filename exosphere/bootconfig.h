@@ -18,5 +18,6 @@ void bootconfig_clear(void);
 /* Actual configuration getters. */
 bool bootconfig_is_package2_plaintext(void);
 bool bootconfig_is_package2_unsigned(void);
+bool bootconfig_disable_program_verification(void);
 
 #endif

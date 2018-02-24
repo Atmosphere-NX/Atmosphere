@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "utils.h"
+#include "interrupt.h"
 #include "mmu.h"
 #include "cache.h"
 #include "se.h"
@@ -65,7 +66,7 @@ void se_check_for_error(void) {
 }
 
 void se_trigger_intrrupt(void) {
-    /* TODO */
+    intr_set_pending(INTERRUPT_ID_USER_SECURITY_ENGINE);
 }
 
 void se_verify_flags_cleared(void) {
