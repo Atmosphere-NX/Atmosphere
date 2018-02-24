@@ -64,7 +64,7 @@ typedef struct {
     uint32_t FUSE_DEVICE_KEY;
     uint32_t _0xB8;
     uint32_t _0xBC;
-    uint32_t _0xC0;
+    uint32_t FUSE_RESERVED_SW;
     uint32_t FUSE_VP8_ENABLE;
     uint32_t FUSE_RESERVED_ODM[0x8];
     uint32_t _0xE8;
