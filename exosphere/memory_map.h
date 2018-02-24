@@ -56,7 +56,7 @@ static const struct {
     uintptr_t pa;
     size_t size;
     uint64_t attributes;
-} g_lp0_ciphertext_ram_sections[] = {
+} g_lp0_ciphertext_ram_segments[] = {
     { 0x8000F000, 0x01000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted SE state */
     { 0x80010000, 0x10000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted TZRAM */
 };
@@ -193,7 +193,7 @@ static inline void mmio_unmap_all_devices(uintptr_t *mmu_l3_tbl) {
 /**********************************************************************************************/
 
 static inline uintptr_t lp0_get_plaintext_ram_segment_pa(unsigned int segment_id) {
-    return g_lp0_plaintext_ram_segments[i].pa;
+    return g_lp0_plaintext_ram_segments[segment_id].pa;
 }
 
 #ifndef MEMORY_MAP_USE_IDENTIY_MAPPING
@@ -226,13 +226,13 @@ static inline void lp0_unmap_all_plaintext_ram_segments(uintptr_t *mmu_l3_tbl) {
 /**********************************************************************************************/
 
 static inline uintptr_t lp0_get_ciphertext_ram_segment_pa(unsigned int segment_id) {
-    return g_lp0_ciphertext_ram_sections[segment_id].pa;
+    return g_lp0_ciphertext_ram_segments[segment_id].pa;
 }
 
 #ifndef MEMORY_MAP_USE_IDENTIY_MAPPING
 static inline uintptr_t lp0_get_ciphertext_ram_segment_address(unsigned int segment_id) {
     size_t offset = 0;
-    for(unsigned int i = 0; i < device_id; i++) {
+    for(unsigned int i = 0; i < segment_id; i++) {
         offset += g_lp0_ciphertext_ram_segments[i].size;
     }
 
@@ -270,7 +270,7 @@ static inline uintptr_t tzram_get_segment_pa(unsigned int segment_id) {
 #ifndef MEMORY_MAP_USE_IDENTIY_MAPPING
 static inline uintptr_t tzram_get_segment_address(unsigned int segment_id) {
     size_t offset = 0;
-    for(unsigned int i = 0; i < device_id; i++) {
+    for(unsigned int i = 0; i < segment_id; i++) {
         offset += g_tzram_segments[i].increment;
     }
 
@@ -285,13 +285,13 @@ static inline uintptr_t tzram_get_segment_address(unsigned int segment_id) {
 static inline void tzram_map_all_segments(uintptr_t *mmu_l3_tbl) {
     /* Except the SPL userpage */
     for(size_t i = 0, offset = 0; i < sizeof(g_tzram_segments) / sizeof(g_tzram_segments[0]); i++) {
-        uint64_t attributes = (g_tzram_segments[i].is_code ? 0 : MMU_PTE_BLOCK_XN) | MMU_PTE_BLOCK_INNER_SHAREBLE | ATTRIB_MEMTYPE_NORMAL;
+        uint64_t attributes = (g_tzram_segments[i].is_code_segment ? 0 : MMU_PTE_BLOCK_XN) | MMU_PTE_BLOCK_INNER_SHAREBLE | ATTRIB_MEMTYPE_NORMAL;
         if(g_tzram_segments[i].map_size == 0) {
             continue; 
         }
         mmu_map_page_range(mmu_l3_tbl, TZRAM_SEGMENT_BASE + offset, 0x7C010000 + g_tzram_segments[i].tzram_offset,
                            g_tzram_segments[i].map_size, attributes);
-        offset += g_lp0_ciphertext_ram_segments[i].increment;
+        offset += g_tzram_segments[i].increment;
     }
 }
 
@@ -303,7 +303,7 @@ static inline void tzram_unmap_all_segments(uintptr_t *mmu_l3_tbl) {
         }
         mmu_unmap_range(3, mmu_l3_tbl, TZRAM_SEGMENT_BASE + offset, g_tzram_segments[i].map_size);
 
-        offset += g_lp0_ciphertext_ram_segments[i].increment;
+        offset += g_tzram_segments[i].increment;
     }
 }
 
