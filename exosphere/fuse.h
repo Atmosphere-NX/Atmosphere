@@ -99,7 +99,7 @@ typedef struct {
     uint32_t FUSE_TSENSOR_6;
     uint32_t FUSE_TSENSOR_7;
     uint32_t FUSE_OPT_PRIV_SEC_DIS;
-    uint32_t _0x168;
+    uint32_t FUSE_PKC_DISABLE;
     uint32_t _0x16C;
     uint32_t _0x170;
     uint32_t _0x174;
@@ -112,7 +112,7 @@ typedef struct {
     uint32_t _0x190;
     uint32_t _0x194;
     uint32_t _0x198;
-    uint32_t _0x19C;
+    uint32_t FUSE_DEBUG_AUTH_OVERRIDE;
     uint32_t _0x1A0;
     uint32_t _0x1A4;
     uint32_t _0x1A8;
