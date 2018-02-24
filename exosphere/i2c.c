@@ -94,7 +94,7 @@ volatile i2c_registers_t *i2c_get_registers_from_id(unsigned int id) {
         case 5:
             return I2C6_REGS;
         default:
-            panic();
+            generic_panic();
     }
     return NULL;
 }

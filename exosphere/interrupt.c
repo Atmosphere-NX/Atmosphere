@@ -74,7 +74,7 @@ void handle_registered_interrupt(void) {
         }
         /* We must have found a handler, or something went wrong. */
         if (!found_handler) {
-            panic();
+            generic_panic();
         }
     }
 }
@@ -92,7 +92,7 @@ void intr_register_handler(unsigned int id, void (*handler)(void)) {
     }
     /* Failure to register is an error condition. */
     if (!registered_handler) {
-        panic();
+        generic_panic();
     }
 }
 

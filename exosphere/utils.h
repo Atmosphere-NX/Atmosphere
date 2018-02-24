@@ -8,7 +8,8 @@
 #define BIT(x)  (1u   << (x))
 #define BITL(x) (1ull << (x))
 
-void panic(void);
+void panic(uint32_t code);
+void generic_panic(void);
 
 uint32_t get_physical_address(void *vaddr);
 

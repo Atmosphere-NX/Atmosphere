@@ -117,11 +117,11 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
     if (is_personalized == 0) {
         /* Devkit keys use a different keyformat without a MAC/Device ID. */
         if (src_size <= 0x10 || src_size - 0x10 > dst_size) {
-            panic();
+            generic_panic();
         }
     } else {
         if (src_size <= 0x30 || src_size - 0x20 > dst_size) {
-            panic();
+            generic_panic();
         }
     }
 

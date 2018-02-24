@@ -15,7 +15,7 @@ bool upage_init(upage_ref_t *upage, void *user_address) {
     if (g_secure_page_user_address != NULL) {
         /* Different physical address indicate SPL was rebooted, or another process got access to svcCallSecureMonitor. Panic. */
         if (g_secure_page_user_address != upage->user_page) {
-            panic();
+            generic_panic();
         }
         upage->secure_page = SECURE_USER_PAGE_ADDR;
     } else {

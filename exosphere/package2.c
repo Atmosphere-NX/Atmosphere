@@ -209,7 +209,7 @@ void verify_header_signature(package2_header_t *header) {
     
     /* This is normally only allowed on dev units, but we'll allow it anywhere. */
     if (bootconfig_is_package2_unsigned() == 0 && rsa2048_pss_verify(header->signature, 0x100, modulus, 0x100, header->encrypted_header, 0x100) == 0) {
-        panic();
+        generic_panic();
     }
 }
 
@@ -314,7 +314,7 @@ uint32_t decrypt_and_validate_header(package2_header_t *header) {
         }
             
         /* Ensure we successfully decrypted the header. */
-        panic();  
+        generic_panic();  
     }
     return 0;
 }
@@ -358,7 +358,7 @@ void load_package2_sections(package2_meta_t *metadata, uint32_t master_key_rev) 
             potential_base_end += PACKAGE2_SIZE_MAX;
         }
         if (!found_safe_carveout) {
-            panic();
+            generic_panic();
         }
         /* Relocate to new carveout. */
         memcpy((void *)potential_base_start, load_buf, PACKAGE2_SIZE_MAX);

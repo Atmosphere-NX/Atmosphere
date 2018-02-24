@@ -7,7 +7,7 @@ volatile security_carveout_t *get_carveout_by_id(unsigned int carveout) {
     if (CARVEOUT_ID_MIN <= carveout && carveout <= CARVEOUT_ID_MAX) {
          return (volatile security_carveout_t *)(MC_BASE + 0xC08ULL + 0x50 * (carveout - CARVEOUT_ID_MIN));
     }
-    panic();
+    generic_panic();
     return NULL;
     switch (carveout) {
         case 4: /* Kernel carveout */
@@ -15,7 +15,7 @@ volatile security_carveout_t *get_carveout_by_id(unsigned int carveout) {
         case 5: /* Unused Kernel carveout */
             return (volatile security_carveout_t *)(MC_BASE + 0xD48ULL);
         default:
-            panic();
+            generic_panic();
             return NULL;
     }
 }
@@ -83,7 +83,7 @@ void configure_default_carveouts(void) {
 
 void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint64_t size) {
     if (carveout_id != 4 && carveout_id != 5) {
-        panic();
+        generic_panic();
     }
     
     volatile security_carveout_t *carveout = get_carveout_by_id(carveout_id);

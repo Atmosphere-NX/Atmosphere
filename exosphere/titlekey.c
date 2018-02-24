@@ -19,7 +19,7 @@ void tkey_set_expected_label_hash(uint64_t *label_hash) {
 
 void tkey_set_master_key_rev(unsigned int master_key_rev) {
     if (master_key_rev >= MASTERKEY_REVISION_MAX) {
-        panic();
+        generic_panic();
     }
 }
 
@@ -28,7 +28,7 @@ void calculate_mgf1_and_xor(void *masked, size_t masked_size, const void *seed, 
     uint8_t cur_hash[0x20];
     uint8_t hash_buf[0xE4];
     if (seed_size >= 0xE0) {
-        panic();
+        generic_panic();
     }
     
     size_t hash_buf_size = seed_size + 4;
@@ -64,7 +64,7 @@ void calculate_mgf1_and_xor(void *masked, size_t masked_size, const void *seed, 
 
 size_t tkey_rsa_oaep_unwrap(void *dst, size_t dst_size, void *src, size_t src_size) {
     if (src_size != 0x100) {
-        panic();
+        generic_panic();
     }
     
     /* RSA Wrapped titlekeys use RSA-OAEP. */
@@ -139,7 +139,7 @@ size_t tkey_rsa_oaep_unwrap(void *dst, size_t dst_size, void *src, size_t src_si
 
 void tkey_aes_unwrap(void *dst, size_t dst_size, const void *src, size_t src_size) {
     if (g_tkey_master_key_rev >= MASTERKEY_REVISION_MAX || dst_size != 0x10 || src_size != 0x10) {
-        panic();
+        generic_panic();
     }
     
     const uint8_t titlekek_source[0x10] = {

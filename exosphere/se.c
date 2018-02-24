@@ -42,7 +42,7 @@ security_engine_t *get_security_engine_address(void) {
 
 void set_security_engine_callback(unsigned int (*callback)(void)) {
     if (callback == NULL || g_se_callback != NULL) {
-        panic();
+        generic_panic();
     }
     
     g_se_callback = callback;
@@ -60,7 +60,7 @@ void se_operation_completed(void) {
 
 void se_check_for_error(void) {
     if (SECURITY_ENGINE->INT_STATUS_REG & 0x10000 || SECURITY_ENGINE->FLAGS_REG & 3 || SECURITY_ENGINE->ERR_STATUS_REG) {
-        panic();
+        generic_panic();
     }
 }
 
@@ -70,7 +70,7 @@ void se_trigger_intrrupt(void) {
 
 void se_verify_flags_cleared(void) {
     if (SECURITY_ENGINE->FLAGS_REG & 3) {
-        panic();
+        generic_panic();
     }
 }
 
@@ -81,7 +81,7 @@ void se_clear_interrupts(void) {
 /* Set the flags for an AES keyslot. */
 void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags) {
     if (keyslot >= KEYSLOT_AES_MAX) {
-        panic();
+        generic_panic();
     }
     
     /* Misc flags. */
@@ -98,7 +98,7 @@ void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags) {
 /* Set the flags for an RSA keyslot. */
 void set_rsa_keyslot_flags(unsigned int keyslot, unsigned int flags) {
     if (keyslot >= KEYSLOT_RSA_MAX) {
-        panic();
+        generic_panic();
     }
     
     /* Misc flags. */
@@ -115,7 +115,7 @@ void set_rsa_keyslot_flags(unsigned int keyslot, unsigned int flags) {
 
 void clear_aes_keyslot(unsigned int keyslot) {
     if (keyslot >= KEYSLOT_AES_MAX) {
-        panic();
+        generic_panic();
     }
     
     /* Zero out the whole keyslot and IV. */
@@ -127,7 +127,7 @@ void clear_aes_keyslot(unsigned int keyslot) {
 
 void clear_rsa_keyslot(unsigned int keyslot) {
     if (keyslot >= KEYSLOT_RSA_MAX) {
-        panic();
+        generic_panic();
     }
     
     /* Zero out the whole keyslot. */
@@ -145,7 +145,7 @@ void clear_rsa_keyslot(unsigned int keyslot) {
 
 void set_aes_keyslot(unsigned int keyslot, const void *key, size_t key_size) {
     if (keyslot >= KEYSLOT_AES_MAX || key_size > KEYSIZE_AES_MAX) {
-        panic();
+        generic_panic();
     }
     
     for (size_t i = 0; i < (key_size >> 2); i++) {
@@ -156,7 +156,7 @@ void set_aes_keyslot(unsigned int keyslot, const void *key, size_t key_size) {
 
 void set_rsa_keyslot(unsigned int keyslot, const void  *modulus, size_t modulus_size, const void *exponent, size_t exp_size) {
     if (keyslot >= KEYSLOT_RSA_MAX || modulus_size > KEYSIZE_RSA_MAX || exp_size > KEYSIZE_RSA_MAX) {
-        panic();
+        generic_panic();
     }
     
     for (size_t i = 0; i < (modulus_size >> 2); i++) {
@@ -175,7 +175,7 @@ void set_rsa_keyslot(unsigned int keyslot, const void  *modulus, size_t modulus_
 
 void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size) {
     if (keyslot >= KEYSLOT_AES_MAX || iv_size > 0x10) {
-        panic();
+        generic_panic();
     }
     
     for (size_t i = 0; i < (iv_size >> 2); i++) {
@@ -186,7 +186,7 @@ void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size) {
 
 void clear_aes_keyslot_iv(unsigned int keyslot) {
     if (keyslot >= KEYSLOT_AES_MAX) {
-        panic();
+        generic_panic();
     }
     
     for (size_t i = 0; i < (0x10 >> 2); i++) {
@@ -203,7 +203,7 @@ void set_se_ctr(const void *ctr) {
 
 void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_src, const void *wrapped_key, size_t wrapped_key_size) {
     if (keyslot_dst >= KEYSLOT_AES_MAX || keyslot_src >= KEYSIZE_AES_MAX || wrapped_key_size > KEYSIZE_AES_MAX) {
-        panic();
+        generic_panic();
     }
     
     SECURITY_ENGINE->CONFIG_REG = (ALG_AES_DEC | DST_KEYTAB);
@@ -217,7 +217,7 @@ void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_sr
 
 void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, unsigned int crypt_config, bool encrypt, unsigned int (*callback)(void)) {
     if (keyslot >= KEYSLOT_AES_MAX) {
-        panic();
+        generic_panic();
     }
     
     if (size == 0) {
@@ -281,7 +281,7 @@ void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*cal
     uint8_t stack_buf[KEYSIZE_RSA_MAX];
     
     if (keyslot >= KEYSLOT_RSA_MAX || size > KEYSIZE_RSA_MAX) {
-        panic();
+        generic_panic();
     }
     
     /* Endian swap the input. */
@@ -310,7 +310,7 @@ void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, co
     uint8_t stack_buf[KEYSIZE_RSA_MAX];
     
     if (keyslot >= KEYSLOT_RSA_MAX || src_size > KEYSIZE_RSA_MAX || dst_size > KEYSIZE_RSA_MAX) {
-        panic();
+        generic_panic();
     }
 
     /* Endian swap the input. */
@@ -389,7 +389,7 @@ void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src,
     uint8_t block[0x10];
 
     if (src_size > sizeof(block) || dst_size > sizeof(block)) {
-        panic();
+        generic_panic();
     }
     
     /* Load src data into block. */
@@ -408,7 +408,7 @@ void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src,
 
 void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
     if (keyslot >= KEYSLOT_AES_MAX || ctr_size != 0x10) {
-        panic();
+        generic_panic();
     }
     
     unsigned int num_blocks = src_size >> 4;
@@ -438,7 +438,7 @@ void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const vo
 
 void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, unsigned int config_high) {
     if (keyslot >= KEYSLOT_AES_MAX || dst_size != 0x10 || src_size != 0x10) {
-        panic();
+        generic_panic();
     }
     
     /* Set configuration high (256-bit vs 128-bit) based on parameter. */
@@ -459,7 +459,7 @@ void se_aes_256_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_si
 
 void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
     if (keyslot >= KEYSLOT_AES_MAX || dst_size != 0x10 || src_size != 0x10) {
-        panic();
+        generic_panic();
     }
     
     SECURITY_ENGINE->CONFIG_REG = (ALG_AES_DEC | DST_MEMORY);
@@ -481,7 +481,7 @@ void shift_left_xor_rb(uint8_t *key) {
 
 void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size, unsigned int config_high) {
     if (keyslot >= KEYSLOT_AES_MAX) {
-        panic();
+        generic_panic();
     }
     
     /* Generate the derived key, to be XOR'd with final output block. */
@@ -563,7 +563,7 @@ void se_calculate_sha256(void *dst, const void *src, size_t src_size) {
 /* RNG API */
 void se_initialize_rng(unsigned int keyslot) {
     if (keyslot >= KEYSLOT_AES_MAX) {
-        panic();
+        generic_panic();
     }
     
     /* To initialize the RNG, we'll perform an RNG operation into an output buffer. */
@@ -581,7 +581,7 @@ void se_initialize_rng(unsigned int keyslot) {
 
 void se_generate_random(unsigned int keyslot, void *dst, size_t size) {
     if (keyslot >= KEYSLOT_AES_MAX) {
-        panic();
+        generic_panic();
     }
     
     uint32_t num_blocks = size >> 4;

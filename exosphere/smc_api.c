@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "configitem.h"
 #include "cpu_context.h"
+#include "lock.h"
 #include "masterkey.h"
 #include "mc.h"
 #include "mmu.h"
@@ -103,7 +104,17 @@ smc_table_t g_smc_tables[2] = {
     }
 };
 
-bool g_is_smc_in_progress = false;
+bool g_is_user_smc_in_progress = false;
+bool g_is_priv_smc_in_progress = false;
+
+/* Privileged SMC lock must be available to exceptions.s. */
+void set_priv_smc_in_progress(void) {
+    lock_acquire(&g_is_priv_smc_in_progress);
+}
+void clear_priv_smc_in_progress(void) {
+    lock_release(&g_is_priv_smc_in_progress);
+}
+
 uint32_t (*g_smc_callback)(void *, uint64_t) = NULL;
 uint64_t g_smc_callback_key = 0;
 
@@ -134,28 +145,28 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     
     /* Validate top-level handler. */
     if (handler_id != SMC_HANDLER_USER && handler_id != SMC_HANDLER_PRIV) {
-        panic();
+        generic_panic();
     }
     
     /* Validate core is appropriate for handler. */
     if (handler_id == SMC_HANDLER_USER && get_core_id() != 3) {
         /* USER SMCs must be called via svcCallSecureMonitor on core 3 (where spl runs) */
-        panic();
+        generic_panic();
     }
     
     /* Validate sub-handler index */
     if ((smc_id = (unsigned char)args->X[0]) >= g_smc_tables[handler_id].num_handlers) {
-        panic();
+        generic_panic();
     }
     
     /* Validate sub-handler */
     if (g_smc_tables[handler_id].handlers[smc_id].id != args->X[0]) {
-        panic();
+        generic_panic();
     }
     
     /* Validate handler. */
     if ((smc_handler = g_smc_tables[handler_id].handlers[smc_id].handler) == NULL) {
-        panic();
+        generic_panic();
     }
     
     /* Call function. */
@@ -164,30 +175,26 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
 
 uint32_t smc_wrapper_sync(smc_args_t *args, uint32_t (*handler)(smc_args_t *)) {
     uint32_t result;
-    /* TODO: Make g_is_smc_in_progress atomic. */
-    if (g_is_smc_in_progress) {
+    if (!lock_try_acquire(&g_is_user_smc_in_progress)) {
         return 3;
     }
-    g_is_smc_in_progress = true;
     result = handler(args);
-    g_is_smc_in_progress = false;
+    lock_release(&g_is_user_smc_in_progress);
     return result;
 }
 
 uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), uint32_t (*callback)(void *, uint64_t)) {
     uint32_t result;
     uint64_t key;
-    /* TODO: Make g_is_smc_in_progress atomic. */
-    if (g_is_smc_in_progress) {
+    if (!lock_try_acquire(&g_is_user_smc_in_progress)) {
         return 3;
     }
-    g_is_smc_in_progress = 1;
     if ((key = try_set_smc_callback(callback)) != 0) {
         result = handler(args);
         if (result == 0) {
             /* Pass the status check key back to userland. */
             args->X[1] = key;
-            /* Early return, leaving g_is_smc_in_progress == 1 */
+            /* Early return, leaving g_is_user_smc_in_progress locked */
             return result;
         } else {
             /* No status to check. */
@@ -197,7 +204,7 @@ uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), 
         /* smcCheckStatus needs to be called. */
         result = 3;
     }
-    g_is_smc_in_progress = false;
+    lock_release(&g_is_user_smc_in_progress);
     return result;
 }
 
@@ -277,7 +284,7 @@ uint32_t smc_exp_mod_get_result(void *buf, uint64_t size) {
     se_get_exp_mod_output(buf, 0x100);
     
     /* smc_exp_mod is done now. */
-    g_is_smc_in_progress = false;
+    lock_release(&g_is_user_smc_in_progress);
     return 0;
 }
 
@@ -303,7 +310,7 @@ uint32_t smc_crypt_aes_status_check(void *buf, uint64_t size) {
         return 3;
     }
     /* smc_crypt_aes is done now. */
-    g_is_smc_in_progress = false;
+    lock_release(&g_is_user_smc_in_progress);
     return 0;
 }
 
@@ -352,7 +359,7 @@ uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t siz
     se_get_exp_mod_output(rsa_wrapped_titlekey, 0x100);
     if (tkey_rsa_oaep_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) != 0x10) {
         /* Failed to extract RSA OAEP wrapped key. */
-        g_is_smc_in_progress = false;
+        lock_release(&g_is_user_smc_in_progress);
         return 2;
     }
     
@@ -363,7 +370,7 @@ uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t siz
     p_sealed_key[1] = sealed_titlekey[1];
     
     /* smc_unwrap_rsa_oaep_wrapped_titlekey is done now. */
-    g_is_smc_in_progress = false;
+    lock_release(&g_is_user_smc_in_progress);
     return 0;
 }
 
@@ -403,8 +410,7 @@ uint32_t smc_get_random_bytes_for_priv(smc_args_t *args) {
 
     uint32_t result;
 
-    /* TODO: Make atomic. */
-    if (g_is_smc_in_progress) {
+    if (!lock_try_acquire(&g_is_user_smc_in_progress)) {
         if (args->X[1] > 0x38) {
             return 2;
         }
@@ -413,12 +419,11 @@ uint32_t smc_get_random_bytes_for_priv(smc_args_t *args) {
         randomcache_getbytes(&args->X[1], num_bytes);
         result = 0;
     } else {
-        g_is_smc_in_progress = true;
         /* If the kernel isn't denied service by a usermode SMC, generate fresh random bytes. */
         result = user_get_random_bytes(args);
         /* Also, refill our cache while we have the chance in case we get denied later. */
         randomcache_refill();
-        g_is_smc_in_progress = false;
+        lock_release(&g_is_user_smc_in_progress);
     }
     return result;
 }

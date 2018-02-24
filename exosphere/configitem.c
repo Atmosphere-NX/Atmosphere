@@ -16,7 +16,7 @@ uint32_t configitem_set(enum ConfigItem item, uint64_t value) {
 bool configitem_is_recovery_boot(void) {
     uint64_t is_recovery_boot;
     if (configitem_get(CONFIGITEM_ISRECOVERYBOOT, &is_recovery_boot) != 0) {
-        panic();
+        generic_panic();
     }
 
     return is_recovery_boot != 0;

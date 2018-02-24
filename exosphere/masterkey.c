@@ -45,7 +45,7 @@ bool check_mkey_revision(unsigned int revision) {
 
 void mkey_detect_revision(void) {
     if (g_determined_mkey_revision) {
-        panic();
+        generic_panic();
     }
     
     for (unsigned int rev = 0; rev < MASTERKEY_REVISION_MAX; rev++) {
@@ -60,13 +60,13 @@ void mkey_detect_revision(void) {
     /* TODO: When panic is implemented, make this a really distinctive color. */
     /* Maybe bright red? */
     if (!g_determined_mkey_revision) {
-        panic();
+        generic_panic();
     }
 }
 
 unsigned int mkey_get_revision(void) {
     if (!g_determined_mkey_revision) {
-        panic();
+        generic_panic();
     }
 
     return g_mkey_revision;
@@ -74,11 +74,11 @@ unsigned int mkey_get_revision(void) {
 
 unsigned int mkey_get_keyslot(unsigned int revision) {
     if (!g_determined_mkey_revision || revision >= MASTERKEY_REVISION_MAX) {
-        panic();
+        generic_panic();
     }
 
     if (revision > g_mkey_revision) {
-        panic();
+        generic_panic();
     }
 
     if (revision == g_mkey_revision) {

@@ -10,6 +10,11 @@ typedef struct {
     uint64_t X[8];
 } smc_args_t;
 
+void set_priv_smc_in_progress(void);
+void clear_priv_smc_in_progress(void);
+
+void get_smc_core012_stack_address(void);
+
 void call_smc_handler(unsigned int handler_id, smc_args_t *args);
 
 #endif

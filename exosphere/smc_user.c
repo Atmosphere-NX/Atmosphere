@@ -243,7 +243,7 @@ uint32_t user_crypt_aes(smc_args_t *args) {
     
     size_t size = args->X[6];
     if (size & 0xF) {
-        panic();
+        generic_panic();
     }
     
     set_crypt_aes_done(false);
