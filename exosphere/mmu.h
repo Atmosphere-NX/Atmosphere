@@ -199,7 +199,7 @@ static const struct {
 };
 
 #define MMIO_DEVID_GICD                 0
-#define MMIO_DEVID_ICC                  1
+#define MMIO_DEVID_GICC                 1
 #define MMIO_DEVID_UART_A               2
 #define MMIO_DEVID_CLKRST               3
 #define MMIO_DEVID_RTC_PMC              4
