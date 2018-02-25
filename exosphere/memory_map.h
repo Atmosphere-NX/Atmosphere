@@ -47,8 +47,8 @@ static const struct {
     size_t size;
     uint64_t attributes;
 } g_lp0_entry_ram_segments[] = {
-    { 0x40020000, 0x10000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted TZRAM */
-    { 0x40003000, 0x01000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* LP0 entry code */
+    { 0x40020000, 0x10000, MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted TZRAM */
+    { 0x40003000, 0x01000, MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_DEVICE }, /* LP0 entry code */
     { 0x7C010000, 0x10000, MMU_AP_PRIV_RO   | ATTRIB_MEMTYPE_NORMAL }, /* TZRAM to encrypt */
 };
 
@@ -57,8 +57,8 @@ static const struct {
     size_t size;
     uint64_t attributes;
 } g_warmboot_ram_segments[] = {
-    { 0x8000F000, 0x01000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted SE state for bootROM */
-    { 0x80010000, 0x10000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted TZRAM for warmboot.bin */
+    { 0x8000F000, 0x01000, MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted SE state for bootROM */
+    { 0x80010000, 0x10000, MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted TZRAM for warmboot.bin */
 };
 
 static const struct {
@@ -170,7 +170,7 @@ static inline uintptr_t mmio_get_device_address(unsigned int device_id) {
 
 static inline void mmio_map_all_devices(uintptr_t *mmu_l3_tbl) {
     static const uint64_t secure_device_attributes  = MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | ATTRIB_MEMTYPE_DEVICE;
-    static const uint64_t device_attributes         = MMU_PTE_TABLE_NS | secure_device_attributes;
+    static const uint64_t device_attributes         = MMU_PTE_BLOCK_NS | secure_device_attributes;
 
     for(size_t i = 0, offset = 0; i < sizeof(g_devices) / sizeof(g_devices[0]); i++) {
         uint64_t attributes = g_devices[i].is_secure ? secure_device_attributes : device_attributes;

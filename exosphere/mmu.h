@@ -49,7 +49,7 @@
 #define MMU_PTE_TYPE_BLOCK      1
 
 /* L3 only */
-#define MMU_PTE_TYPE_PAGE       1
+#define MMU_PTE_TYPE_PAGE       3
 
 #define MMU_PTE_TABLE_PXN       BITL(59)
 #define MMU_PTE_TABLE_XN        BITL(60)
