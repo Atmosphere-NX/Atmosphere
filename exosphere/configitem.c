@@ -26,14 +26,23 @@ bool configitem_is_recovery_boot(void) {
     return is_recovery_boot != 0;
 }
 
+bool configitem_is_retail(void) {
+    uint64_t is_retail;
+    if (configitem_get(CONFIGITEM_ISRETAIL, &is_retail) != 0) {
+        generic_panic();
+    }
+
+    return is_retail != 0;
+}
+
 uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue) {
     uint32_t result = 0;
     switch (item) {
         case CONFIGITEM_DISABLEPROGRAMVERIFICATION:
             *p_outvalue = (int)(bootconfig_disable_program_verification());
             break;
-        case CONFIGITEM_MEMORYCONFIGURATION:
-            /* TODO: Fuse driver */
+        case CONFIGITEM_DRAMID:
+            *p_outvalue = fuse_get_dram_id();
             break;
         case CONFIGITEM_SECURITYENGINEIRQ:
             /* SE is interrupt #0x2C. */
@@ -44,29 +53,29 @@ uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue) {
             *p_outvalue = PACKAGE2_MAXVER_400_CURRENT - 1;
             break;
         case CONFIGITEM_HARDWARETYPE:
-            /* TODO: Fuse driver */
+            *p_outvalue = fuse_get_hardware_type();
             break;
         case CONFIGITEM_ISRETAIL:
-            /* TODO: Fuse driver */
+            *p_outvalue = fuse_get_retail_type();
             break;
         case CONFIGITEM_ISRECOVERYBOOT:
             /* TODO: This requires reading values passed to crt0 via NX_Bootloader. TBD pending crt0 implementation. */
             *p_outvalue = 0;
             break;
         case CONFIGITEM_DEVICEID:
-            /* TODO: Fuse driver */
+            *p_outvalue = fuse_get_device_id();
             break;
         case CONFIGITEM_BOOTREASON:
             /* TODO: This requires reading values passed to crt0 via NX_Bootloader. TBD pending crt0 implementation. */
             break;
         case CONFIGITEM_MEMORYARRANGE:
-            /* TODO: More BootConfig stuff. */
+            *p_outvalue = bootconfig_get_memory_arrangement();
             break;
         case CONFIGITEM_ISDEBUGMODE:
-            /* TODO: More BootConfig stuff. */
+            *p_outvalue = (int)(bootconfig_is_debug_mode());
             break;
         case CONFIGITEM_KERNELMEMORYCONFIGURATION:
-            /* TODO: More BootConfig stuff. */
+            *p_outvalue = bootconfig_get_kernel_memory_configuration();
             break;
         case CONFIGITEM_BATTERYPROFILE:
             *p_outvalue = g_battery_profile;

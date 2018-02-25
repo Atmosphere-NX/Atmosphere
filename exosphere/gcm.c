@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "utils.h"
+#include "fuse.h"
 #include "gcm.h"
 
 #include "sealedkeys.h"
@@ -158,7 +159,9 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
         return 0;
     }
 
-    /* TODO: Validate Device ID matches in blob data from fuses. */
+    if (read64le(src_bytes, src_size - 0x28) != fuse_get_device_id()) {
+        return 0;
+    }
 
     return src_size - 0x30;
 }

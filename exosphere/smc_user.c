@@ -203,7 +203,7 @@ uint32_t user_load_aes_key(smc_args_t *args) {
     wrapped_key[0] = args->X[4];
     wrapped_key[1] = args->X[5];
     
-    /* TODO: Unseal the kek. */
+    /* Unseal the kek. */
     unseal_key(KEYSLOT_SWITCH_TEMPKEY, sealed_kek, 0x10, CRYPTOUSECASE_AES);
     
     /* Unwrap the key. */
@@ -301,7 +301,7 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
         keyslot = KEYSLOT_SWITCH_DEVICEKEY;
     }
     
-    if (0 /* TODO: GET_BOOTROM_PATCH_VERSION < 0x7F */) {
+    if (fuse_get_bootrom_patch_version() < 0x7F) {
         /* On dev units, use a fixed "all-zeroes" seed. */
         /* Yes, this data really is all-zero in actual TrustZone .rodata. */
         uint8_t dev_specific_aes_key_source[0x10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -384,7 +384,7 @@ uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     if (is_personalized && size != 0x240) {
         return 2;
     }
-    if (!is_personalized && (size != 0x220 /* TODO: || GET_BOOTROM_PATCH_VERSION >= 0x7F */)) {
+    if (!is_personalized && (size != 0x220 || fuse_get_bootrom_patch_version() >= 0x7F)) {
         return 2;
     }
     
@@ -431,7 +431,7 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     if (is_personalized && size < 0x31) {
         return 2;
     }
-    if (!is_personalized && (size < 0x11 /* TODO: || GET_BOOTROM_PATCH_VERSION >= 0x7F */)) {
+    if (!is_personalized && (size < 0x11 || fuse_get_bootrom_patch_version() >= 0x7F)) {
         return 2;
     }
     
@@ -479,7 +479,7 @@ uint32_t user_load_secure_exp_mod_key(smc_args_t *args) {
     if (is_personalized && size != 0x130) {
         return 2;
     }
-    if (!is_personalized && (size != 0x110 /* TODO: || GET_BOOTROM_PATCH_VERSION >= 0x7F */)) {
+    if (!is_personalized && (size != 0x110 || fuse_get_bootrom_patch_version() >= 0x7F)) {
         return 2;
     }
     

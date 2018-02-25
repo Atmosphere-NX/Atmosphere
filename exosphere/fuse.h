@@ -176,10 +176,18 @@ void fuse_init(void);
 uint32_t fuse_hw_read(uint32_t addr);
 void fuse_hw_write(uint32_t, value, uint32_t addr);
 void fuse_hw_sense(void);
+void fuse_disable_programming(void);
+void fuse_secondary_private_key_disable(void);
 
 uint32_t fuse_get_sku_info(void);
-uint32_t fuse_get_bootrom_patch_version(void);
 uint32_t fuse_get_spare_bit(uint32_t idx);
 uint32_t fuse_get_reserved_odm(uint32_t idx);
+
+uint32_t fuse_get_bootrom_patch_version(void);
+uint64_t fuse_get_device_id(void);
+uint32_t fuse_get_dram_id(void);
+uint32_t fuse_get_hardware_type(void);
+uint32_t fuse_get_retail_type(void);
+void fuse_get_hardware_info(void *dst);
 
 #endif
