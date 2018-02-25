@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "mmu.h"
+#include "memory_map.h"
 #include "mc.h"
 
 volatile security_carveout_t *get_carveout_by_id(unsigned int carveout) {

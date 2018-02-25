@@ -37,9 +37,9 @@ static __attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_
 
 
 static inline unsigned int get_core_id(void) {
-    unsigned int core_id;
+    uint64_t core_id;
     __asm__ __volatile__ ("mrs %0, MPIDR_EL1" : "=r"(core_id));
-    return core_id & 3;
+    return (unsigned int)core_id & 3;
 }
 
 #endif

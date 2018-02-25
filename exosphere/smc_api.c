@@ -1,6 +1,8 @@
 #include <stdint.h>
 
 #include "utils.h"
+#include "memory_map.h"
+
 #include "configitem.h"
 #include "cpu_context.h"
 #include "lock.h"
@@ -106,6 +108,20 @@ smc_table_t g_smc_tables[2] = {
 
 bool g_is_user_smc_in_progress = false;
 bool g_is_priv_smc_in_progress = false;
+
+uintptr_t get_smc_core012_stack_address(void) {
+    return tzram_get_segment_address(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x1000;
+}
+
+uintptr_t get_exception_entry_core3_stack_address(unsigned int core_id) {
+    /* For core3, this is also the smc stack */
+    if (core_id == 3) {
+        return tzram_get_segment_address(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x1000;
+    }
+    else {
+        return tzram_get_segment_address(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x80 * (core_id + 1);
+    }
+}
 
 /* Privileged SMC lock must be available to exceptions.s. */
 void set_priv_smc_in_progress(void) {

@@ -8,9 +8,9 @@ tlb_invalidate_all:
     isb
     ret
 
-.section    .text.tlb_invalidate_inner_shareable, "ax", %progbits
-.type       tlb_invalidate_inner_shareable, %function
-.global     tlb_invalidate_inner_shareable
+.section    .text.tlb_invalidate_all_inner_shareable, "ax", %progbits
+.type       tlb_invalidate_all_inner_shareable, %function
+.global     tlb_invalidate_all_inner_shareable
 tlb_invalidate_all_inner_shareable:
     dsb  ish
     tlbi alle3is

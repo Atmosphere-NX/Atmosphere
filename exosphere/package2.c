@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "utils.h"
+#include "memory_map.h"
 
 #include "package2.h"
 #include "configitem.h"
@@ -12,52 +13,37 @@
 #include "randomcache.h"
 #include "timers.h"
 
-void setup_mmio_virtual_addresses(void) {
-    /* TODO: Set Timers address to 0x1F008B000. */
-    /* TODO: Set Security Engine address to 0x1F008F000. */
-    /* TODO: Set CAR address to 0x1F0087000. */
-    /* TODO: Set PMC address to 0x1F0089400. */
-    /* TODO: Set Fuse address to 0x1F0096800. */
-    /* TODO: Set Interrupt addresses to 0x1F0080000, 0x1F0082000. */
-    /* TODO: Set Flow Controller address to 0x1F009D000. */
-    /* TODO: Set UART-A address to 0x1F0085000. */
-    /* TODO: Set I2C-0 address to 0x1F00A5000. */
-    /* TODO: Set I2C-4 address to 0x1F00A1000. */
-    /* TODO: Set MISC address to 0x1F0098000. */
-    /* TODO: Set GPIO-1 address to 0x1F00A3000. */
-}
-
 /* Hardware init, sets up the RNG and SESSION keyslots, derives new DEVICE key. */
-void setup_se(void) {
+static void setup_se(void) {
     uint8_t work_buffer[0x10];
-    
+
     /* Sanity check the Security Engine. */
     se_verify_flags_cleared();
     se_clear_interrupts();
-    
+
     /* Perform some sanity initialization. */
     security_engine_t *p_security_engine = get_security_engine_address();
     p_security_engine->_0x4 = 0;
     p_security_engine->AES_KEY_READ_DISABLE_REG = 0;
     p_security_engine->RSA_KEY_READ_DISABLE_REG = 0;
     p_security_engine->_0x0 &= 0xFFFFFFFB;
-    
+
     /* Currently unknown what each flag does. */
     for (unsigned int i = 0; i < KEYSLOT_AES_MAX; i++) {
         set_aes_keyslot_flags(i, 0x15);
     }
-    
+
     for (unsigned int i = 4; i < KEYSLOT_AES_MAX; i++) {
         set_aes_keyslot_flags(i, 0x40);
     }
-    
+
     for (unsigned int i = 0; i < KEYSLOT_RSA_MAX; i++) {
         set_rsa_keyslot_flags(i, 0x41);
     }
-    
+
     /* Detect Master Key revision. */
     mkey_detect_revision();
-    
+
     /* Setup new device key, if necessary. */
     if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
         const uint8_t new_devicekey_source_4x[0x10] = {0x8B, 0x4E, 0x1C, 0x22, 0x42, 0x07, 0xC8, 0x73, 0x56, 0x94, 0x08, 0x8B, 0xCC, 0x47, 0x0F, 0x5D};
@@ -66,23 +52,23 @@ void setup_se(void) {
         clear_aes_keyslot(KEYSLOT_SWITCH_4XNEWCONSOLEKEYGENKEY);
         set_aes_keyslot_flags(KEYSLOT_SWITCH_DEVICEKEY, 0xFF);
     }
-    
+
     se_initialize_rng(KEYSLOT_SWITCH_DEVICEKEY);
-    
+
     /* Generate random data, transform with device key to get RNG key. */
     se_generate_random(KEYSLOT_SWITCH_DEVICEKEY, work_buffer, 0x10);
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_RNGKEY, KEYSLOT_SWITCH_DEVICEKEY, work_buffer, 0x10);
     set_aes_keyslot_flags(KEYSLOT_SWITCH_RNGKEY, 0xFF);
-    
+
     /* Repeat for Session key. */
     se_generate_random(KEYSLOT_SWITCH_DEVICEKEY, work_buffer, 0x10);
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_SESSIONKEY, KEYSLOT_SWITCH_DEVICEKEY, work_buffer, 0x10);
     set_aes_keyslot_flags(KEYSLOT_SWITCH_SESSIONKEY, 0xFF);
-    
+
     /* TODO: Create Test Vector, to validate keyslot data is unchanged post warmboot. */
 }
 
-void setup_boot_config(void) {
+static void setup_boot_config(void) {
     /* Load boot config only if dev unit. */
     if (configitem_is_retail()) {
         bootconfig_clear();
@@ -92,25 +78,24 @@ void setup_boot_config(void) {
     }
 }
 
-bool rsa2048_pss_verify(const void *signature, size_t signature_size, const void *modulus, size_t modulus_size, const void *data, size_t data_size) {
+static bool rsa2048_pss_verify(const void *signature, size_t signature_size, const void *modulus, size_t modulus_size, const void *data, size_t data_size) {
     uint8_t message[RSA_2048_BYTES];
     uint8_t h_buf[0x24];
-    
+
     /* Hardcode RSA with keyslot 0. */
     const uint8_t public_exponent[4] = {0x00, 0x01, 0x00, 0x01};
     set_rsa_keyslot(0, modulus, modulus_size, public_exponent, sizeof(public_exponent));
     se_synchronous_exp_mod(0, message, sizeof(message), signature, signature_size);
-    
-    
+
     /* Validate sanity byte. */
     if (message[RSA_2048_BYTES - 1] != 0xBC) {
         return false;
     }
-    
+
     /* Copy Salt into MGF1 Hash Buffer. */
     memset(h_buf, 0, sizeof(h_buf));
     memcpy(h_buf, message + RSA_2048_BYTES - 0x20 - 0x1, 0x20);
-    
+
     /* Decrypt maskedDB (via inline MGF1). */
     uint8_t seed = 0;
     uint8_t mgf1_buf[0x20];
@@ -122,7 +107,7 @@ bool rsa2048_pss_verify(const void *signature, size_t signature_size, const void
             message[i] ^= mgf1_buf[i - ofs];
         }
     }
-    
+
     /* Constant lmask for rsa-2048-pss. */
     message[0] &= 0x7F; 
 
@@ -139,7 +124,7 @@ bool rsa2048_pss_verify(const void *signature, size_t signature_size, const void
     /* Check hash correctness. */
     uint8_t validate_buf[8 + 0x20 + 0x20];
     uint8_t validate_hash[0x20];
-    
+
     memset(validate_buf, 0, sizeof(validate_buf));
     flush_dcache_range((uint8_t *)data, (uint8_t *)data + data_size);
     se_calculate_sha256(&validate_buf[8], data, data_size);
@@ -149,20 +134,20 @@ bool rsa2048_pss_verify(const void *signature, size_t signature_size, const void
     return memcmp(h_buf, validate_hash, 0x20) == 0;
 }
 
-void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
+static void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
     /* Derive package2 key. */
     const uint8_t package2_key_source[0x10] = {0xFB, 0x8B, 0x6A, 0x9C, 0x79, 0x00, 0xC8, 0x49, 0xEF, 0xD2, 0x4D, 0x85, 0x4D, 0x30, 0xA0, 0xC7};
     flush_dcache_range((uint8_t *)dst, (uint8_t *)dst + dst_size);
     flush_dcache_range((uint8_t *)src, (uint8_t *)src + src_size);
     unsigned int keyslot = mkey_get_keyslot(master_key_rev);
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_PACKAGE2KEY, keyslot, package2_key_source, 0x10);
-    
+
     /* Perform Encryption. */
     se_aes_ctr_crypt(KEYSLOT_SWITCH_PACKAGE2KEY, dst, dst_size, src, src_size, ctr, ctr_size);
 }
 
 
-void verify_header_signature(package2_header_t *header) {
+static void verify_header_signature(package2_header_t *header) {
     const uint8_t *modulus;
 
     if (configitem_is_retail()) {
@@ -206,14 +191,14 @@ void verify_header_signature(package2_header_t *header) {
         };
         modulus = package2_modulus_dev;
     }
-    
+
     /* This is normally only allowed on dev units, but we'll allow it anywhere. */
     if (bootconfig_is_package2_unsigned() == 0 && rsa2048_pss_verify(header->signature, 0x100, modulus, 0x100, header->encrypted_header, 0x100) == 0) {
         generic_panic();
     }
 }
 
-bool validate_package2_metadata(package2_meta_t *metadata) {
+static bool validate_package2_metadata(package2_meta_t *metadata) {
     if (metadata->magic != MAGIC_PK21) {
         return false;
     }
@@ -295,12 +280,12 @@ bool validate_package2_metadata(package2_meta_t *metadata) {
 }
 
 /* Decrypts package2 header, and returns the master key revision required. */
-uint32_t decrypt_and_validate_header(package2_header_t *header) {
+static uint32_t decrypt_and_validate_header(package2_header_t *header) {
     package2_meta_t metadata;
-    
+
     if (bootconfig_is_package2_plaintext() == 0) {
         uint32_t mkey_rev;
-        
+
         /* Try to decrypt for all possible master keys. */
         for (mkey_rev = 0; mkey_rev < MASTERKEY_REVISION_MAX; mkey_rev++) {
             package2_crypt_ctr(mkey_rev, &metadata, sizeof(package2_meta_t), &header->metadata, sizeof(package2_meta_t), header->metadata.ctr, sizeof(header->metadata.ctr));
@@ -312,17 +297,17 @@ uint32_t decrypt_and_validate_header(package2_header_t *header) {
                 break;
             }
         }
-            
+
         /* Ensure we successfully decrypted the header. */
         generic_panic();  
     }
     return 0;
 }
 
-void load_package2_sections(package2_meta_t *metadata, uint32_t master_key_rev) {
+static void load_package2_sections(package2_meta_t *metadata, uint32_t master_key_rev) {
     /* By default, copy data directly from where NX_BOOTLOADER puts it. */
     void *load_buf = NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS;
-    
+
     /* Check whether any of our sections overlap this region. If they do, we must relocate and copy from elsewhere. */
     bool needs_relocation = false;
     for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
@@ -365,13 +350,13 @@ void load_package2_sections(package2_meta_t *metadata, uint32_t master_key_rev) 
         memset(load_buf, 0, PACKAGE2_SIZE_MAX);
         load_buf = (void *)potential_base_start;
     }
-    
+
     /* Copy each section to its appropriate location, decrypting if necessary. */
     for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {        
         if (metadata->section_sizes[section] == 0) {
             continue;
         }
-        
+
         void *dst_start = (void *)(DRAM_BASE_PHYSICAL + (uint64_t)metadata->section_offsets[section]);
         void *src_start = load_buf + sizeof(package2_header_t) + metadata->section_offsets[section];
         size_t size = (size_t)metadata->section_sizes[section];
@@ -382,17 +367,18 @@ void load_package2_sections(package2_meta_t *metadata, uint32_t master_key_rev) 
             package2_crypt_ctr(master_key_rev, dst_start, size, src_start, size, metadata->section_ctrs[section], 0x10);
         }
     }
-    
+
     /* Clear the encrypted package2 from memory. */
     memset(load_buf, 0, PACKAGE2_SIZE_MAX);
 }
 
-/* This function is called during coldboot crt0, and validates a package2. */
+uintptr_t get_pk2ldr_stack_address(void) {
+    return tzram_get_segment_address(TZRAM_SEGMENT_ID_PK2LDR) + 0x2000;
+}
+
+/* This function is called during coldboot init, and validates a package2. */
 /* This package2 is read into memory by a concurrent BPMP bootloader. */
 void load_package2(void) {
-    /* Setup MMIO virtual pointers. */
-    setup_mmio_virtual_addresses();
-    
     /* Setup the Security Engine. */
     setup_se();
     
@@ -408,12 +394,12 @@ void load_package2(void) {
     
     /* Initialize cache'd random bytes for kernel. */
     randomcache_init();
-    
+
     /* TODO: memclear the initial copy of Exosphere running in IRAM (relocated to TZRAM by earlier code). */
-    
+
     /* Let NX Bootloader know that we're running. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 1;
-    
+
     /* Synchronize with NX BOOTLOADER. */
     if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == NX_BOOTLOADER_STATE_INIT) {
         while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG) {
@@ -423,47 +409,44 @@ void load_package2(void) {
 
     /* Load Boot Config into global. */
     setup_boot_config();
-    
+
     /* Synchronize with NX BOOTLOADER. */
     if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG) {
         while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < NX_BOOTLOADER_STATE_LOADED_PACKAGE2) {
             wait(1);
         }
     }
-    
+
     /* Load header from NX_BOOTLOADER-initialized DRAM. */
     package2_header_t header;
     flush_dcache_range((uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, (uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS + sizeof(header));
     memcpy(&header, NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, sizeof(header));
     flush_dcache_range((uint8_t *)&header, (uint8_t *)&header + sizeof(header));
-    
+
     /* Perform signature checks. */
     verify_header_signature(&header);
-    
+
     /* Decrypt header, get key revision required. */
     uint32_t package2_mkey_rev = decrypt_and_validate_header(&header);
-        
+
     /* Load Package2 Sections. */
     load_package2_sections(&header.metadata, package2_mkey_rev);
-    
+
     /* Clean up cache. */
     flush_dcache_all();
     invalidate_icache_inner_shareable();
-    
+
     /* Set CORE0 entrypoint for Package2. */
     set_core_entrypoint_and_context_id(0, DRAM_BASE_PHYSICAL + header.metadata.entrypoint, 0);
-    
-    /* TODO: Nintendo clears 0x1F01FA7D0 to 0x1F01FA7E8. What does this do? Does it remove the identity mapping page tables? */ 
-    tlb_invalidate_all();
-    
+
     /* Synchronize with NX BOOTLOADER. */
     if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == NX_BOOTLOADER_STATE_LOADED_PACKAGE2) {
         while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < NX_BOOTLOADER_STATE_FINISHED) {
             wait(1);
         }
     }
-    
+
     /* TODO: MISC register 0x1F0098C00 |= 0x2000; */
-    
-    /* TODO: Update SCR_EL3 depending on value in Bootconfig. */     
+
+    /* TODO: Update SCR_EL3 depending on value in Bootconfig. */
 }

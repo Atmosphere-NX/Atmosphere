@@ -46,8 +46,8 @@ static const struct {
     uintptr_t pa;
     size_t size;
     uint64_t attributes;
-} g_lp0_plaintext_ram_segments[] = {
-    { 0x40020000, 0x10000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* TZRAM decrypted by warmboot.bin */
+} g_lp0_entry_ram_segments[] = {
+    { 0x40020000, 0x10000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted TZRAM */
     { 0x40003000, 0x01000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* LP0 entry code */
     { 0x7C010000, 0x10000, MMU_AP_PRIV_RO   | ATTRIB_MEMTYPE_NORMAL }, /* TZRAM to encrypt */
 };
@@ -56,9 +56,9 @@ static const struct {
     uintptr_t pa;
     size_t size;
     uint64_t attributes;
-} g_lp0_ciphertext_ram_segments[] = {
-    { 0x8000F000, 0x01000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted SE state */
-    { 0x80010000, 0x10000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted TZRAM */
+} g_warmboot_ram_segments[] = {
+    { 0x8000F000, 0x01000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted SE state for bootROM */
+    { 0x80010000, 0x10000, MMU_PTE_TABLE_NS | ATTRIB_MEMTYPE_DEVICE }, /* Encrypted TZRAM for warmboot.bin */
 };
 
 static const struct {
@@ -78,8 +78,8 @@ static const struct {
 };
 
 #define MMIO_BASE                       0x1F0080000ull
-#define LP0_PLAINTEXT_RAM_SEGMENT_BASE  (MMIO_BASE + 0x000100000)
-#define LP0_CIPHERTEXT_RAM_SEGMENT_BASE (LP0_PLAINTEXT_RAM_SEGMENT_BASE + 0x000047000) /* increment seems to be arbitrary ? */
+#define LP0_ENTRY_RAM_SEGMENT_BASE      (MMIO_BASE + 0x000100000)
+#define WARMBOOT_RAM_SEGMENT_BASE       (LP0_ENTRY_RAM_SEGMENT_BASE + 0x000047000) /* increment seems to be arbitrary ? */
 #define TZRAM_SEGMENT_BASE              (MMIO_BASE + 0x0001E0000)
 
 #define MMIO_DEVID_GICD                 0
@@ -101,12 +101,12 @@ static const struct {
 #define MMIO_DEVID_DTV_I2C234           16
 #define MMIO_DEVID_EXCEPTION_VECTORS    17
 
-#define LP0_PLAINTEXT_RAM_SEGMENT_ID_DECRYPTED_TZRAM    0
-#define LP0_PLAINTEXT_RAM_SEGMENT_ID_LP0_ENTRY_CODE     1
-#define LP0_PLAINTEXT_RAM_SEGMENT_ID_CURRENT_TZRAM      2
+#define LP0_ENTRY_RAM_SEGMENT_ID_DECRYPTED_TZRAM    0
+#define LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE     1
+#define LP0_ENTRY_RAM_SEGMENT_ID_CURRENT_TZRAM      2
 
-#define LP0_CIPHERTEXT_RAM_SEGMENT_ID_SE_STATE   0
-#define LP0_CIPHERTEXT_RAM_SEGMENT_ID_TZRAM      1
+#define WARMBOOT_RAM_SEGMENT_ID_SE_STATE            0
+#define WARMBOOT_RAM_SEGMENT_ID_TZRAM               1
 
 #define TZRAM_SEGMENT_ID_WARMBOOT_CRT0_MAIN_CODE    0
 #define TZRAM_SEGMENT_ID_PK2LDR                     1
@@ -119,7 +119,7 @@ static const struct {
 
 /**********************************************************************************************/
 
-static inline uintptr_t identity_map_all(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
+static inline uintptr_t identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
     static uint64_t base_attributes = MMU_PTE_BLOCK_INNER_SHAREBLE | ATTRIB_MEMTYPE_NORMAL;
     for(size_t i = 0; i < sizeof(g_identity_mappings) / sizeof(g_identity_mappings[0]); i++) {
         uint64_t attributes = base_attributes | g_identity_mappings[i].attributes;
@@ -134,7 +134,7 @@ static inline uintptr_t identity_map_all(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l
     }
 }
 
-static inline uintptr_t identity_unmap_all(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
+static inline uintptr_t identity_unmap_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
     for(size_t i = 0; i < sizeof(g_identity_mappings) / sizeof(g_identity_mappings[0]); i++) {
         if(g_identity_mappings[i].is_block_range) {
             mmu_unmap_block_range(mmu_l1_tbl, g_identity_mappings[i].address, g_identity_mappings[i].size);
@@ -193,7 +193,7 @@ static inline void mmio_unmap_all_devices(uintptr_t *mmu_l3_tbl) {
 /**********************************************************************************************/
 
 static inline uintptr_t lp0_get_plaintext_ram_segment_pa(unsigned int segment_id) {
-    return g_lp0_plaintext_ram_segments[segment_id].pa;
+    return g_lp0_entry_ram_segments[segment_id].pa;
 }
 
 #ifndef MEMORY_MAP_USE_IDENTIY_MAPPING
@@ -207,17 +207,17 @@ static inline uintptr_t lp0_get_plaintext_ram_segment_address(unsigned int segme
 #endif
 
 static inline void lp0_map_all_plaintext_ram_segments(uintptr_t *mmu_l3_tbl) {
-    for(size_t i = 0, offset = 0; i < sizeof(g_lp0_plaintext_ram_segments) / sizeof(g_lp0_plaintext_ram_segments[0]); i++) {
-        uint64_t attributes =  MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | g_lp0_plaintext_ram_segments[i].attributes;
-        mmu_map_page_range(mmu_l3_tbl, LP0_PLAINTEXT_RAM_SEGMENT_BASE + offset, g_lp0_plaintext_ram_segments[i].pa,
-                           g_lp0_plaintext_ram_segments[i].size, attributes);
+    for(size_t i = 0, offset = 0; i < sizeof(g_lp0_entry_ram_segments) / sizeof(g_lp0_entry_ram_segments[0]); i++) {
+        uint64_t attributes =  MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | g_lp0_entry_ram_segments[i].attributes;
+        mmu_map_page_range(mmu_l3_tbl, LP0_PLAINTEXT_RAM_SEGMENT_BASE + offset, g_lp0_entry_ram_segments[i].pa,
+                           g_lp0_entry_ram_segments[i].size, attributes);
         offset += 0x10000;
     }
 }
 
 static inline void lp0_unmap_all_plaintext_ram_segments(uintptr_t *mmu_l3_tbl) {
-    for(size_t i = 0, offset = 0; i < sizeof(g_lp0_plaintext_ram_segments) / sizeof(g_lp0_plaintext_ram_segments[0]); i++) {
-        mmu_unmap_range(3, mmu_l3_tbl, LP0_PLAINTEXT_RAM_SEGMENT_BASE + offset, g_lp0_plaintext_ram_segments[i].size);
+    for(size_t i = 0, offset = 0; i < sizeof(g_lp0_entry_ram_segments) / sizeof(g_lp0_entry_ram_segments[0]); i++) {
+        mmu_unmap_range(3, mmu_l3_tbl, LP0_PLAINTEXT_RAM_SEGMENT_BASE + offset, g_lp0_entry_ram_segments[i].size);
 
         offset += 0x10000;
     }
@@ -226,14 +226,14 @@ static inline void lp0_unmap_all_plaintext_ram_segments(uintptr_t *mmu_l3_tbl) {
 /**********************************************************************************************/
 
 static inline uintptr_t lp0_get_ciphertext_ram_segment_pa(unsigned int segment_id) {
-    return g_lp0_ciphertext_ram_segments[segment_id].pa;
+    return g_warmboot_ram_segments[segment_id].pa;
 }
 
 #ifndef MEMORY_MAP_USE_IDENTIY_MAPPING
 static inline uintptr_t lp0_get_ciphertext_ram_segment_address(unsigned int segment_id) {
     size_t offset = 0;
     for(unsigned int i = 0; i < segment_id; i++) {
-        offset += g_lp0_ciphertext_ram_segments[i].size;
+        offset += g_warmboot_ram_segments[i].size;
     }
 
     return LP0_CIPHERTEXT_RAM_SEGMENT_BASE + offset;
@@ -245,19 +245,19 @@ static inline uintptr_t lp0_get_ciphertext_ram_segment_address(unsigned int segm
 #endif
 
 static inline void lp0_map_all_ciphertext_ram_segments(uintptr_t *mmu_l3_tbl) {
-    for(size_t i = 0, offset = 0; i < sizeof(g_lp0_ciphertext_ram_segments) / sizeof(g_lp0_ciphertext_ram_segments[0]); i++) {
-        uint64_t attributes =  MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | g_lp0_ciphertext_ram_segments[i].attributes;
-        mmu_map_page_range(mmu_l3_tbl, LP0_CIPHERTEXT_RAM_SEGMENT_BASE + offset, g_lp0_ciphertext_ram_segments[i].pa,
-                           g_lp0_ciphertext_ram_segments[i].size, attributes);
-        offset += g_lp0_ciphertext_ram_segments[i].size;
+    for(size_t i = 0, offset = 0; i < sizeof(g_warmboot_ram_segments) / sizeof(g_warmboot_ram_segments[0]); i++) {
+        uint64_t attributes =  MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | g_warmboot_ram_segments[i].attributes;
+        mmu_map_page_range(mmu_l3_tbl, LP0_CIPHERTEXT_RAM_SEGMENT_BASE + offset, g_warmboot_ram_segments[i].pa,
+                           g_warmboot_ram_segments[i].size, attributes);
+        offset += g_warmboot_ram_segments[i].size;
     }
 }
 
 static inline void lp0_unmap_all_ciphertext_ram_segments(uintptr_t *mmu_l3_tbl) {
-    for(size_t i = 0, offset = 0; i < sizeof(g_lp0_ciphertext_ram_segments) / sizeof(g_lp0_ciphertext_ram_segments[0]); i++) {
-        mmu_unmap_range(3, mmu_l3_tbl, LP0_CIPHERTEXT_RAM_SEGMENT_BASE + offset, g_lp0_ciphertext_ram_segments[i].size);
+    for(size_t i = 0, offset = 0; i < sizeof(g_warmboot_ram_segments) / sizeof(g_warmboot_ram_segments[0]); i++) {
+        mmu_unmap_range(3, mmu_l3_tbl, LP0_CIPHERTEXT_RAM_SEGMENT_BASE + offset, g_warmboot_ram_segments[i].size);
 
-        offset += g_lp0_ciphertext_ram_segments[i].size;
+        offset += g_warmboot_ram_segments[i].size;
     }
 }
 
@@ -297,7 +297,7 @@ static inline void tzram_map_all_segments(uintptr_t *mmu_l3_tbl) {
 
 static inline void tzram_unmap_all_segments(uintptr_t *mmu_l3_tbl) {
     /* Except the SPL userpage */
-    for(size_t i = 0, offset = 0; i < sizeof(g_lp0_ciphertext_ram_segments) / sizeof(g_lp0_ciphertext_ram_segments[0]); i++) {
+    for(size_t i = 0, offset = 0; i < sizeof(g_warmboot_ram_segments) / sizeof(g_warmboot_ram_segments[0]); i++) {
         if(g_tzram_segments[i].map_size == 0) {
             continue; 
         }
