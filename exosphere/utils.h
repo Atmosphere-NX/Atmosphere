@@ -22,7 +22,7 @@ static inline uint32_t read32be(const unsigned char *dword, size_t offset) {
 }
 
 static inline uint64_t read64le(const void *qword, size_t offset) {
-    return *(uint32_t *)((uintptr_t)dword + offset);
+    return *(uint64_t *)((uintptr_t)dword + offset);
 }
 
 static __attribute__((noinline)) bool check_32bit_additive_overflow(uint32_t a, uint32_t b) {
