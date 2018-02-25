@@ -3,6 +3,7 @@
 
 #include "utils.h"
 #include "userpage.h"
+#include "memory_map.h"
 
 uint64_t g_secure_page_user_address = NULL;
 
@@ -22,7 +23,8 @@ bool upage_init(upage_ref_t *upage, void *user_address) {
         /* Weakly validate SPL's physically random address is in DRAM. */
         if (upage->user_page >> 31) {
             g_secure_page_user_address = upage->user_page;
-            /* TODO: Map this page into the MMU and invalidate the TLB. */
+            mmu_map_page_range(mmu_l3_tbl, tzram_get_segment_address(TZRAM_SEGMENT_ID_USERPAGE), upage->user_page, 0x1000, MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | ATTRIB_MEMTYPE_NORMAL);
+            /* TODO: Invalidate the TLB to make this page readable. */
             upage->secure_page = SECURE_USER_PAGE_ADDR;
         }
     }
