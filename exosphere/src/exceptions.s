@@ -50,9 +50,6 @@
     .endif
 .endm
 
-
-
-
 /* Actual Vectors for Exosphere. */
 .global exosphere_vectors
 vector_base exosphere_vectors
@@ -69,32 +66,32 @@ vector_entry synch_sp0
 
 vector_entry irq_sp0
     b unknown_exception
-    check_vector irq_sp0
+    check_vector_size irq_sp0
 
 vector_entry fiq_sp0
     b unknown_exception
-    check_vector fiq_sp0
+    check_vector_size fiq_sp0
 
 vector_entry serror_sp0
     b unknown_exception
-    check_vector serror_sp0
+    check_vector_size serror_sp0
 
 /* Current EL, SPx */
 vector_entry synch_spx
     b unknown_exception
-    check_vector synch_spx
+    check_vector_size synch_spx
 
 vector_entry irq_spx
     b unknown_exception
-    check_vector irq_spx
+    check_vector_size irq_spx
 
 vector_entry fiq_spx
     b unknown_exception
-    check_vector fiq_spx
+    check_vector_size fiq_spx
 
 vector_entry serror_spx
     b unknown_exception
-    check_vector serror_spx
+    check_vector_size serror_spx
     
 /* Lower EL, A64 */
 vector_entry synch_a64
@@ -108,22 +105,22 @@ vector_entry synch_a64
     /* Call appropriate handler. */
     stp x29, x30, [sp, #-0x10]!
     mrs x29, mpidr_el1
-    and x29, x39, #0x3
+    and x29, x29, #0x3
     cmp x29, #0x3
     b.ne handle_core012_smc_exception
     bl handle_core3_smc_exception
     ldp x29, x30, [sp],#0x10
     eret
-    check_vector synch_a64
+    check_vector_size synch_a64
 
 vector_entry irq_a64
     b unknown_exception
-    check_vector irq_a64
+    check_vector_size irq_a64
 
 vector_entry fiq_a64
     stp x29, x30, [sp, #-0x10]!
     mrs x29, mpidr_el1
-    and x29, x39, #0x3
+    and x29, x29, #0x3
     cmp x29, #0x3
     b.ne unknown_exception
     stp x28, x29, [sp, #-0x10]!
@@ -133,7 +130,7 @@ vector_entry fiq_a64
     ldp x28, x29, [sp],#0x10
     ldp x29, x30, [sp],#0x10
     eret
-    check_vector fiq_a64
+    check_vector_size fiq_a64
 
 vector_entry serror_a64
     b unknown_exception
@@ -171,18 +168,15 @@ handle_core012_smc_exception:
     ldp x6, x7, [sp],#0x10
     ldp x29, x30, [sp],#0x10
     eret
-    .if (. - serror_a64) > (32 * 4)
-        .error "Vector exceeds 32 instructions"
-    .endif
-    
+
 /* Lower EL, A32 */
 vector_entry synch_a32
     b unknown_exception
-    check_vector synch_a32
+    check_vector_size synch_a32
 
 vector_entry irq_a32
     b unknown_exception
-    check_vector irq_a32
+    check_vector_size irq_a32
 
 vector_entry fiq_a32
     b fiq_a64
@@ -222,9 +216,6 @@ handle_fiq_exception:
     ldp x24, x25, [sp],#0x10
     ldp x29, x30, [sp],#0x10
     ret
-    .if (. - fiq_a32) > (32 * 4)
-        .error "Vector exceeds 32 instructions"
-    .endif
 
 vector_entry serror_a32
     b unknown_exception
@@ -260,6 +251,3 @@ handle_core3_smc_exception:
     ldp x16, x17, [sp],#0x10
     ldp x18, x19, [sp],#0x10
     ret
-    .if (. - serror_a32) > (32 * 4)
-        .error "Vector exceeds 32 instructions"
-    .endif

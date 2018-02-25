@@ -108,7 +108,7 @@ static const struct {
 #define WARMBOOT_RAM_SEGMENT_ID_SE_STATE            0
 #define WARMBOOT_RAM_SEGMENT_ID_TZRAM               1
 
-#define TZRAM_SEGMENT_ID_WARMBOOT_CRT0_MAIN_CODE    0
+#define TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN     0
 #define TZRAM_SEGMENT_ID_PK2LDR                     1
 #define TZRAM_SEGMENT_ID_USERPAGE                   2
 #define TZRAM_SEGMENT_ID_CORE012_STACK              3
@@ -119,12 +119,12 @@ static const struct {
 
 /**********************************************************************************************/
 
-static inline uintptr_t identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
+static inline void identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
     static uint64_t base_attributes = MMU_PTE_BLOCK_INNER_SHAREBLE | ATTRIB_MEMTYPE_NORMAL;
     for(size_t i = 0; i < sizeof(g_identity_mappings) / sizeof(g_identity_mappings[0]); i++) {
         uint64_t attributes = base_attributes | g_identity_mappings[i].attributes;
         if(g_identity_mappings[i].is_block_range) {
-            mmu_map_block_range(mmu_l1_tbl, g_identity_mappings[i].address, g_identity_mappings[i].address,
+            mmu_map_block_range(1, mmu_l1_tbl, g_identity_mappings[i].address, g_identity_mappings[i].address,
                                 g_identity_mappings[i].size, attributes);
         }
         else {
@@ -134,13 +134,13 @@ static inline uintptr_t identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr
     }
 }
 
-static inline uintptr_t identity_unmap_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
+static inline void identity_unmap_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
     for(size_t i = 0; i < sizeof(g_identity_mappings) / sizeof(g_identity_mappings[0]); i++) {
         if(g_identity_mappings[i].is_block_range) {
-            mmu_unmap_block_range(mmu_l1_tbl, g_identity_mappings[i].address, g_identity_mappings[i].size);
+            mmu_unmap_range(1, mmu_l1_tbl, g_identity_mappings[i].address, g_identity_mappings[i].size);
         }
         else {
-            mmu_unmap_page_range(mmu_l3_tbl, g_identity_mappings[i].address, g_identity_mappings[i].size);
+            mmu_unmap_range(3, mmu_l3_tbl, g_identity_mappings[i].address, g_identity_mappings[i].size);
         }
     }
 }
@@ -198,7 +198,7 @@ static inline uintptr_t lp0_get_plaintext_ram_segment_pa(unsigned int segment_id
 
 #ifndef MEMORY_MAP_USE_IDENTIY_MAPPING
 static inline uintptr_t lp0_get_plaintext_ram_segment_address(unsigned int segment_id) {
-    return LP0_PLAINTEXT_RAM_SEGMENT_BASE + 0x10000 * segment_id;
+    return LP0_ENTRY_RAM_SEGMENT_BASE + 0x10000 * segment_id;
 }
 #else
 static inline uintptr_t lp0_get_plaintext_ram_segment_address(unsigned int segment_id) {
@@ -209,7 +209,7 @@ static inline uintptr_t lp0_get_plaintext_ram_segment_address(unsigned int segme
 static inline void lp0_map_all_plaintext_ram_segments(uintptr_t *mmu_l3_tbl) {
     for(size_t i = 0, offset = 0; i < sizeof(g_lp0_entry_ram_segments) / sizeof(g_lp0_entry_ram_segments[0]); i++) {
         uint64_t attributes =  MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | g_lp0_entry_ram_segments[i].attributes;
-        mmu_map_page_range(mmu_l3_tbl, LP0_PLAINTEXT_RAM_SEGMENT_BASE + offset, g_lp0_entry_ram_segments[i].pa,
+        mmu_map_page_range(mmu_l3_tbl, LP0_ENTRY_RAM_SEGMENT_BASE + offset, g_lp0_entry_ram_segments[i].pa,
                            g_lp0_entry_ram_segments[i].size, attributes);
         offset += 0x10000;
     }
@@ -217,7 +217,7 @@ static inline void lp0_map_all_plaintext_ram_segments(uintptr_t *mmu_l3_tbl) {
 
 static inline void lp0_unmap_all_plaintext_ram_segments(uintptr_t *mmu_l3_tbl) {
     for(size_t i = 0, offset = 0; i < sizeof(g_lp0_entry_ram_segments) / sizeof(g_lp0_entry_ram_segments[0]); i++) {
-        mmu_unmap_range(3, mmu_l3_tbl, LP0_PLAINTEXT_RAM_SEGMENT_BASE + offset, g_lp0_entry_ram_segments[i].size);
+        mmu_unmap_range(3, mmu_l3_tbl, LP0_ENTRY_RAM_SEGMENT_BASE + offset, g_lp0_entry_ram_segments[i].size);
 
         offset += 0x10000;
     }
@@ -236,7 +236,7 @@ static inline uintptr_t lp0_get_ciphertext_ram_segment_address(unsigned int segm
         offset += g_warmboot_ram_segments[i].size;
     }
 
-    return LP0_CIPHERTEXT_RAM_SEGMENT_BASE + offset;
+    return WARMBOOT_RAM_SEGMENT_BASE + offset;
 }
 #else
 static inline uintptr_t lp0_get_ciphertext_ram_segment_address(unsigned int segment_id) {
@@ -247,7 +247,7 @@ static inline uintptr_t lp0_get_ciphertext_ram_segment_address(unsigned int segm
 static inline void lp0_map_all_ciphertext_ram_segments(uintptr_t *mmu_l3_tbl) {
     for(size_t i = 0, offset = 0; i < sizeof(g_warmboot_ram_segments) / sizeof(g_warmboot_ram_segments[0]); i++) {
         uint64_t attributes =  MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | g_warmboot_ram_segments[i].attributes;
-        mmu_map_page_range(mmu_l3_tbl, LP0_CIPHERTEXT_RAM_SEGMENT_BASE + offset, g_warmboot_ram_segments[i].pa,
+        mmu_map_page_range(mmu_l3_tbl, WARMBOOT_RAM_SEGMENT_BASE + offset, g_warmboot_ram_segments[i].pa,
                            g_warmboot_ram_segments[i].size, attributes);
         offset += g_warmboot_ram_segments[i].size;
     }
@@ -255,7 +255,7 @@ static inline void lp0_map_all_ciphertext_ram_segments(uintptr_t *mmu_l3_tbl) {
 
 static inline void lp0_unmap_all_ciphertext_ram_segments(uintptr_t *mmu_l3_tbl) {
     for(size_t i = 0, offset = 0; i < sizeof(g_warmboot_ram_segments) / sizeof(g_warmboot_ram_segments[0]); i++) {
-        mmu_unmap_range(3, mmu_l3_tbl, LP0_CIPHERTEXT_RAM_SEGMENT_BASE + offset, g_warmboot_ram_segments[i].size);
+        mmu_unmap_range(3, mmu_l3_tbl, WARMBOOT_RAM_SEGMENT_BASE + offset, g_warmboot_ram_segments[i].size);
 
         offset += g_warmboot_ram_segments[i].size;
     }

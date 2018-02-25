@@ -1,3 +1,5 @@
+/* For some reason GAS doesn't know about it, even with .cpu cortex-a57 */
+#define cpuactlr_el1 s3_1_c15_c2_0
 .macro      ERRATUM_INVALIDATE_BTB_AT_BOOT
 /* Nintendo copy-pasted https://github.com/ARM-software/arm-trusted-firmware/blob/master/plat/nvidia/tegra/common/aarch64/tegra_helpers.S#L312 */
         /*
@@ -36,7 +38,7 @@
     /* if the OS lock is set, disable it and request a warm reset */
     mrs  x0, oslsr_el1
     ands x0, x0, #2
-    b.eq _set_lock_and_sp
+    b.eq 2f
     mov  x0, xzr
     msr  oslar_el1, x0
 
@@ -48,14 +50,14 @@
     isb
     dsb  sy
     /* Nintendo forgot to copy-paste the branch instruction below. */
-    _reset_wfi:
+    1:
         wfi
-        b _reset_wfi
+        b 1b
 .rept 65
     nop                     /* guard against speculative excecution */
 .endr
 
-    _set_lock_and_sp:
+    2:
     /* set the OS lock */
     mov  x0, #1
     msr  oslar_el1, x0
@@ -122,7 +124,7 @@ __set_exception_entry_stack_pointer:
     /* If SPSel == 1 on entry, make sure your function doesn't use stack variables! */
     mov  x16, lr
     mrs  x17, spsel
-    msr  x0, mpidr_el1
+    mrs  x0, mpidr_el1
     and  w0, w0, #3
     bl   get_exception_entry_stack_address /* should be optimized so it doesn't make function calls */
     msr  spsel, #1
@@ -138,8 +140,8 @@ __jump_to_lower_el:
     /* x0: arg (context ID), x1: entrypoint, w2: exception level */
     msr  elr_el3, x1
 
-    mov  x1, #((0b1111 << 6) | 1) /* DAIF set and SP = SP_ELx*/
-    orr  x1, w2, lsl#2
+    mov  w1, #((0b1111 << 6) | 1) /* DAIF set and SP = SP_ELx*/
+    orr  w1, w2, w2, lsl#2
     msr  spsr_el3, x1
 
     bl __set_exception_entry_stack_pointer

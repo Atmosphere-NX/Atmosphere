@@ -6,7 +6,7 @@
 void tlb_invalidate_all(void);
 void tlb_invalidate_all_inner_shareable(void);
 
-void tlb_invalidate_page(const void *page);
+void tlb_invalidate_page(const volatile void *page);
 void tlb_invalidate_page_inner_shareable(const void *page);
 
 void flush_dcache_all(void);

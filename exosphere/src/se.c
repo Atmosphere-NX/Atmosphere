@@ -1,5 +1,3 @@
-#include <stddef.h>
-#include <stdint.h>
 #include <string.h>
 
 #include "utils.h"
@@ -27,7 +25,7 @@ void ll_init(se_ll_t *ll, void *buffer, size_t size) {
     ll->num_entries = 0; /* 1 Entry. */
     
     if (buffer != NULL) {
-        ll->addr_info.address = get_physical_address(buffer);
+        ll->addr_info.address = (uint32_t) get_physical_address(buffer);
         ll->addr_info.size = (uint32_t) size;
     } else {
         ll->addr_info.address = 0;
@@ -35,11 +33,6 @@ void ll_init(se_ll_t *ll, void *buffer, size_t size) {
     }
 
     flush_dcache_range((uint8_t *)ll, (uint8_t *)ll + sizeof(*ll));
-}
-
-/* Gets security engine pointer. */
-security_engine_t *get_security_engine_address(void) {
-    return SECURITY_ENGINE;
 }
 
 void set_security_engine_callback(unsigned int (*callback)(void)) {
@@ -66,7 +59,7 @@ void se_check_for_error(void) {
     }
 }
 
-void se_trigger_intrrupt(void) {
+void se_trigger_interrupt(void) {
     intr_set_pending(INTERRUPT_ID_USER_SECURITY_ENGINE);
 }
 
@@ -214,7 +207,7 @@ void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_sr
     SECURITY_ENGINE->CRYPTO_KEYTABLE_DST_REG = keyslot_dst << 8;
 
     flush_dcache_range(wrapped_key, (const uint8_t *)wrapped_key + wrapped_key_size);
-    trigger_se_aes_op(OP_START, NULL, 0, wrapped_key, wrapped_key_size);
+    /* TODO: trigger_se_aes_op(OP_START, NULL, 0, wrapped_key, wrapped_key_size); */
 }
 
 void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, unsigned int crypt_config, bool encrypt, unsigned int (*callback)(void)) {
@@ -232,26 +225,26 @@ void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr,
     } else {
         SECURITY_ENGINE->CONFIG_REG = (ALG_AES_DEC | DST_MEMORY);
     }
-    
+
     /* Setup Crypto register. */
     SECURITY_ENGINE->CRYPTO_REG = crypt_config | (keyslot << 24) | (encrypt << 8);
-    
+
     /* Mark this encryption as insecure -- this makes the SE not a secure busmaster. */
     SECURITY_ENGINE->CRYPTO_REG |= 0x80000000;
-    
+
     /* Appropriate number of blocks. */
     SECURITY_ENGINE->BLOCK_COUNT_REG = (size >> 4) - 1;
-    
+
     /* Set the callback, for after the async operation. */
     set_security_engine_callback(callback);
-    
+
     /* Enable SE Interrupt firing for async op. */
     SECURITY_ENGINE->INT_ENABLE_REG = 0x10;
-    
+
     /* Setup Input/Output lists */
     SECURITY_ENGINE->IN_LL_ADDR_REG = in_ll_paddr;
     SECURITY_ENGINE->OUT_LL_ADDR_REG = out_ll_paddr;
-    
+
     /* Set registers for operation. */
     SECURITY_ENGINE->ERR_STATUS_REG = SECURITY_ENGINE->ERR_STATUS_REG;
     SECURITY_ENGINE->INT_STATUS_REG = SECURITY_ENGINE->INT_STATUS_REG;
@@ -351,11 +344,11 @@ void se_get_exp_mod_output(void *buf, size_t size) {
 
 void trigger_se_rsa_op(void *buf, size_t size) {
     se_ll_t in_ll;
-    ll_init(&in_ll, buf, size);
-    
+    ll_init(&in_ll, (void *)buf, size);
+
     /* Set the input LL. */
     SECURITY_ENGINE->IN_LL_ADDR_REG = get_physical_address(&in_ll);
-    
+
     /* Set registers for operation. */
     SECURITY_ENGINE->ERR_STATUS_REG = SECURITY_ENGINE->ERR_STATUS_REG;
     SECURITY_ENGINE->INT_STATUS_REG = SECURITY_ENGINE->INT_STATUS_REG;
@@ -369,7 +362,7 @@ void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const v
     se_ll_t in_ll;
     se_ll_t out_ll;
     
-    ll_init(&in_ll, src, src_size);
+    ll_init(&in_ll, (void *)src, src_size);
     ll_init(&out_ll, dst, dst_size);
     
     /* Set the LLs. */
@@ -434,7 +427,7 @@ void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const vo
         if (src_size < dst_size) {
             last_block_size = src_size - aligned_size;
         }
-        se_perform_aes_block_operation(dst + aligned_size, last_block_size, src + aligned_size, src - aligned_size);
+        se_perform_aes_block_operation(dst + aligned_size, last_block_size, (uint8_t *)src + aligned_size, src_size - aligned_size);
     }
 }
 

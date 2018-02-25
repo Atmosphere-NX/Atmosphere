@@ -4,21 +4,22 @@
 #include "utils.h"
 #include "randomcache.h"
 #include "se.h"
+#include "cache.h"
 
 /* TrustZone maintains a cache of random for the kernel. */
 /* So that requests can still be serviced even when a */
 /* usermode SMC is in progress. */
 
-volatile uint8_t g_random_cache[0x400];
-volatile unsigned int g_random_cache_low = 0;
-volatile unsigned int g_random_cache_high = 0x3FF;
+static uint8_t g_random_cache[0x400];
+static unsigned int g_random_cache_low = 0;
+static unsigned int g_random_cache_high = 0x3FF;
 
 
 void randomcache_refill_segment(unsigned int offset, unsigned int size) {
     if (offset + size >= 0x400) {
         size = 0x400 - offset;
     }
-    
+
     flush_dcache_range(&g_random_cache[offset], &g_random_cache[offset + size]);
     se_generate_random(KEYSLOT_SWITCH_RNGKEY, &g_random_cache[offset], size);
     flush_dcache_range(&g_random_cache[offset], &g_random_cache[offset + size]);

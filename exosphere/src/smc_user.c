@@ -10,16 +10,17 @@
 #include "smc_api.h"
 #include "smc_user.h"
 #include "se.h"
+#include "fuse.h"
 #include "sealedkeys.h"
 #include "userpage.h"
 #include "titlekey.h"
 
 /* Globals. */
-bool g_crypt_aes_done = false;
-bool g_exp_mod_done = false;
+static bool g_crypt_aes_done = false;
+static bool g_exp_mod_done = false;
 
-uint8_t g_secure_exp_mod_exponent[0x100];
-uint8_t g_rsa_oaep_exponent[0x100];
+static uint8_t g_secure_exp_mod_exponent[0x100];
+static uint8_t g_rsa_oaep_exponent[0x100];
 
 
 void set_exp_mod_done(bool done) {
@@ -598,18 +599,19 @@ uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
     aes_wrapped_titlekey[0] = args->X[1];
     aes_wrapped_titlekey[1] = args->X[2];
     unsigned int master_key_rev = (unsigned int)args->X[3];
-    
-    
+
+
     if (master_key_rev >= MASTERKEY_REVISION_MAX) {
         return 2;
     }
-    
+
     tkey_set_master_key_rev(master_key_rev);
-    
-    
+
     tkey_aes_unwrap(titlekey, 0x10, aes_wrapped_titlekey, 0x10);
     seal_titlekey(sealed_titlekey, 0x10, titlekey, 0x10);
-    
+
     args->X[1] = sealed_titlekey[0];
     args->X[2] = sealed_titlekey[1];
+
+    return 0; /* FIXME: what should we return there */
 }

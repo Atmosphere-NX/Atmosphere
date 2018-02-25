@@ -10,21 +10,22 @@ struct {
     void (*handler)(void);
 } g_registered_interrupts[MAX_REGISTERED_INTERRUPTS] = { {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL} };
 
-/* Prototypes for internal (private) functions. */
-unsigned int get_interrupt_id(void);
-
+static unsigned int get_interrupt_id(void) {
+    return 0;
+    /* TODO */
+}
 
 /* Initializes the GIC. TODO: This must be called during wakeup. */
 void intr_initialize_gic(void) {
     /* Setup interrupts 0-0x1F as nonsecure with highest non-secure priority. */
     GICD_IGROUPR[0] = 0xFFFFFFFF;
     for (unsigned int i = 0; i < 0x20; i++) {
-        GICD_IPRIORITYR[i] = GIC_PRI_HIGHEST;
+        GICD_IPRIORITYR[i] = GIC_PRI_HIGHEST_NONSECURE;
     }
     
     /* Setup the GICC. */
     GICC_CTLR = 0x1D9;
-    GICC_PMR = GIC_PRI_HIGHEST;
+    GICC_PMR = GIC_PRI_HIGHEST_NONSECURE;
     GICC_BPR = 7;
 }
 
@@ -50,7 +51,7 @@ void intr_set_cpu_mask(unsigned int id, uint8_t mask) {
 
 /* Sets an interrupt's edge/level bits in the GICD. */
 void intr_set_edge_level(unsigned int id, int edge_level) {
-    GICD_ICFGR[id >> 4] = (GICD_ICFGR[id >> 4] & (~(3 << ((id & 0xF) << 1))) | (((edge_level & 1) << 1) << ((id & 0xF) << 1));
+    GICD_ICFGR[id >> 4] = GICD_ICFGR[id >> 4] & ((~(3 << ((id & 0xF) << 1))) | (((edge_level & 1) << 1) << ((id & 0xF) << 1)));
 }
 
 /* Sets an interrupt's enabled status in the GICD. */

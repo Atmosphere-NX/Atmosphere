@@ -1,5 +1,3 @@
-#include <stbool.h>
-#include <stdint.h>
 #include <string.h>
 
 #include "i2c.h"
@@ -135,7 +133,7 @@ bool i2c_send(unsigned int id, uint8_t device, uint8_t r, void *src, size_t src_
     uint32_t val = r;
     if (src_size <= 3) {
         memcpy(((uint8_t *)&val) + 1, src, src_size);
-        return i2c_write(i2c_get_registers_from_id(id), &val, src_size + 1, device);
+        return i2c_write(i2c_get_registers_from_id(id), device, &val, src_size + 1);
     } else {
         return false;
     }

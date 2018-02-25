@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "memory_map.h"
+
 /* Exosphere driver for the Tegra X1 security engine. */
 
 #define KEYSLOT_SWITCH_PACKAGE2KEY 0x8
@@ -136,13 +138,16 @@ typedef struct {
 /* WIP, API subject to change. */
 
 
+static inline volatile security_engine_t *get_security_engine_address(void) {
+    return (volatile security_engine_t *)(mmio_get_device_address(MMIO_DEVID_SE));
+}
+
 /* This function MUST be registered to fire on the appropriate interrupt. */
 void se_operation_completed(void);
 
-security_engine_t *get_security_engine_address(void);
-
 void se_check_for_error(void);
 void se_trigger_interrupt(void);
+void se_clear_interrupts(void); /* TODO */
 
 void se_verify_flags_cleared(void);
 

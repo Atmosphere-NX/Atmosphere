@@ -56,3 +56,15 @@ uint32_t cpu_on(uint32_t core, uint64_t entrypoint_addr, uint64_t context_id) {
     return 0;
 }
 
+uint32_t cpu_off(void) {
+    return 0;
+    /* TODO */
+}
+
+uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint_addr, uint64_t context_id) {
+    (void)power_state;
+    (void)entrypoint_addr;
+    (void)context_id;
+    return 0;
+    /* TODO */
+}

@@ -1,5 +1,3 @@
-#include <stbool.h>
-#include <stdint.h>
 #include <string.h>
 
 #include "fuse.h"
@@ -17,7 +15,7 @@ void fuse_wait_idle(void);
 void fuse_init(void)
 {
     fuse_make_regs_visible();
-    
+
     /* TODO: Overrides (iROM patches) and various reads happen here */
 }
 
@@ -25,7 +23,7 @@ void fuse_init(void)
 void fuse_make_regs_visible(void)
 {
     /* TODO: Replace this with a proper CLKRST driver */
-    uint32_t* misc_clk_reg = (volatile uint32_t *)mmio_get_device_address(MMIO_DEVID_CLKRST) + 0x48;
+    volatile uint32_t* misc_clk_reg = (volatile uint32_t *)mmio_get_device_address(MMIO_DEVID_CLKRST) + 0x48;
     uint32_t misc_clk_val = *misc_clk_reg;
     *misc_clk_reg = (misc_clk_val | (1 << 28));
 }
@@ -48,7 +46,7 @@ void fuse_disable_power(void)
 void fuse_wait_idle(void)
 {
     uint32_t ctrl_val = 0;
-    
+
     /* Wait for STATE_IDLE */
     while ((ctrl_val & (0xF0000)) != 0x40000)
     {
@@ -61,36 +59,36 @@ void fuse_wait_idle(void)
 uint32_t fuse_hw_read(uint32_t addr)
 {
     fuse_wait_idle();
-    
+
     /* Program the target address */
     FUSE_REGS->FUSE_REG_ADDR = addr;
-    
+
     /* Enable read operation in control register */
     uint32_t ctrl_val = FUSE_REGS->FUSE_CTRL;
     ctrl_val &= ~0x3;
     ctrl_val |= 0x1;    /* Set FUSE_READ command */
     FUSE_REGS->FUSE_CTRL = ctrl_val;
-    
+
     fuse_wait_idle();
-    
+
     return FUSE_REGS->FUSE_REG_READ;
 }
 
 /* Write a fuse in the hardware array */
-void fuse_hw_write(uint32_t, value, uint32_t addr)
+void fuse_hw_write(uint32_t value, uint32_t addr)
 {
     fuse_wait_idle();
-    
+
     /* Program the target address and value */
     FUSE_REGS->FUSE_REG_ADDR = addr;
     FUSE_REGS->FUSE_REG_WRITE = value;
-    
+
     /* Enable write operation in control register */
     uint32_t ctrl_val = FUSE_REGS->FUSE_CTRL;
     ctrl_val &= ~0x3;
     ctrl_val |= 0x2;    /* Set FUSE_WRITE command */
     FUSE_REGS->FUSE_CTRL = ctrl_val;
-    
+
     fuse_wait_idle();
 }
 
@@ -98,13 +96,13 @@ void fuse_hw_write(uint32_t, value, uint32_t addr)
 void fuse_hw_sense(void)
 {
     fuse_wait_idle();
-        
+
     /* Enable sense operation in control register */
     uint32_t ctrl_val = FUSE_REGS->FUSE_CTRL;
     ctrl_val &= ~0x3;
     ctrl_val |= 0x3;    /* Set FUSE_SENSE command */
     FUSE_REGS->FUSE_CTRL = ctrl_val;
-    
+
     fuse_wait_idle();
 }
 
@@ -135,10 +133,10 @@ uint32_t fuse_get_bootrom_patch_version(void)
 uint32_t fuse_get_spare_bit(uint32_t idx)
 {
     uint32_t spare_bit_val = 0;
-    
+
     if ((idx >= 0) && (idx < 32))
         spare_bit_val = FUSE_CHIP_REGS->FUSE_SPARE_BIT[idx];
-    
+
     return spare_bit_val;
 }
 
@@ -211,7 +209,7 @@ uint32_t fuse_get_retail_type(void) {
 /* Derive the 16-byte Hardware Info using values in the shadow cache, and copy to output buffer. */
 void fuse_get_hardware_info(void *dst) {
     uint32_t hw_info[0x4];
-    
+
     uint32_t unk_hw_fuse = FUSE_CHIP_REGS->_0x120 & 0x3F;
     uint32_t y_coord = FUSE_CHIP_REGS->FUSE_Y_COORDINATE & 0x1FF;
     uint32_t x_coord = FUSE_CHIP_REGS->FUSE_X_COORDINATE & 0x1FF;
@@ -226,6 +224,6 @@ void fuse_get_hardware_info(void *dst) {
     hw_info[1] = (uint32_t)((lot_code_0 << 26) | (lot_code_1 >> 2));
     hw_info[2] = (uint32_t)((fab_code << 26) | (lot_code_0 >> 6));
     hw_info[3] = (uint32_t)(vendor_code);
-    
+
     memcpy(dst, hw_info, 0x10);
 }

@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "utils.h"
+#include "cache.h"
 
 #include "titlekey.h"
 #include "masterkey.h"
@@ -49,8 +50,8 @@ void calculate_mgf1_and_xor(void *masked, size_t masked_size, const void *seed, 
         hash_buf[seed_size + 2] = (uint8_t)((round >> 8) & 0xFF);
         hash_buf[seed_size + 3] = (uint8_t)((round >> 0) & 0xFF);
         round++;
-        
-        cache_flush(hash_buf, hash_buf + hash_buf_size);
+
+        flush_dcache_range(hash_buf, hash_buf + hash_buf_size);
         se_calculate_sha256(cur_hash, hash_buf, hash_buf_size);
         
         for (unsigned int i = 0; i < cur_size; i++) {

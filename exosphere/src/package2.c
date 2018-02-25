@@ -1,10 +1,9 @@
-#include <stdbool.h>
-#include <stdint.h>
 #include <string.h>
 
 #include "utils.h"
 #include "memory_map.h"
 
+#include "cpu_context.h"
 #include "package2.h"
 #include "configitem.h"
 #include "se.h"
@@ -22,7 +21,7 @@ static void setup_se(void) {
     se_clear_interrupts();
 
     /* Perform some sanity initialization. */
-    security_engine_t *p_security_engine = get_security_engine_address();
+    volatile security_engine_t *p_security_engine = get_security_engine_address();
     p_security_engine->_0x4 = 0;
     p_security_engine->AES_KEY_READ_DISABLE_REG = 0;
     p_security_engine->RSA_KEY_READ_DISABLE_REG = 0;

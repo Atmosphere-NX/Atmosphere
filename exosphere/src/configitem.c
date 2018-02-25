@@ -5,6 +5,7 @@
 #include "interrupt.h"
 #include "package2.h"
 #include "se.h"
+#include "fuse.h"
 #include "utils.h"
 
 int g_battery_profile = 0;
@@ -15,6 +16,7 @@ uint32_t configitem_set(enum ConfigItem item, uint64_t value) {
     }
     
     g_battery_profile = ((int)(value != 0)) & 1;
+    return 0; /* FIXME: what should we return there */
 }
 
 bool configitem_is_recovery_boot(void) {

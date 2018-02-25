@@ -2,6 +2,7 @@
 #include "mmu.h"
 #include "memory_map.h"
 
+/*
 extern void (*__preinit_array_start[])(void);
 extern void (*__preinit_array_end[])(void);
 extern void (*__init_array_start[])(void);
@@ -11,7 +12,7 @@ extern void _init(void);
 extern uint8_t __warmboot_crt0_start__[], __warmboot_crt0_end__[], __warmboot_crt0_lma__[];
 extern uint8_t __main_start__[], __main_end__[], __main_lma__[];
 extern uint8_t __pk2ldr_start__[], __pk2ldr_end__[], __pk2ldr_lma__[];
-extern uint8_t __vectors_start__[], __vectors_end__[], __vectors_lma__[];
+extern uint8_t __vectors_start__[], __vectors_end__[], __vectors_lma__[];*/
 extern void flush_dcache_all_tzram_pa(void);
 extern void invalidate_icache_all_tzram_pa(void);
 
@@ -44,6 +45,8 @@ static void configure_ttbls(void) {
     tzram_map_all_segments(mmu_l3_tbl);
 }
 
+#if 0
+
 static void copy_lma_to_vma(unsigned int segment_id, void *lma, size_t size, bool vma_is_pa) {
     uintptr_t vma = vma_is_pa ? tzram_get_segment_pa(segment_id) : tzram_get_segment_address(segment_id);
     uintptr_t vma_offset = (uintptr_t)lma & 0xFFF;
@@ -61,6 +64,7 @@ static void __libc_init_array(void) {
     for (size_t i = 0; i < __init_array_end - __init_array_start; i++)
         __init_array_start[i]();
 }
+#endif
 
 uintptr_t get_coldboot_crt0_stack_address(void) {
     return tzram_get_segment_pa(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
@@ -68,18 +72,18 @@ uintptr_t get_coldboot_crt0_stack_address(void) {
 
 void coldboot_init(void) {
     /* TODO: Set NX BOOTLOADER clock time field */
-    copy_lma_to_vma(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN, __warmboot_crt0_lma__, __warmboot_crt0_end__ - __warmboot_crt0_start__, true);
+    /*copy_lma_to_vma(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN, __warmboot_crt0_lma__, __warmboot_crt0_end__ - __warmboot_crt0_start__, true);*/
     /* TODO: set some mmio regs, etc. */
     /* TODO: initialize DMA controllers */
     configure_ttbls();
-    copy_lma_to_vma(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN, __main_lma__, __main_end__ - __main_start__, false);
+    /*copy_lma_to_vma(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN, __main_lma__, __main_end__ - __main_start__, false);
     copy_lma_to_vma(TZRAM_SEGMENT_ID_PK2LDR, __pk2ldr_lma__, __pk2ldr_end__ - __pk2ldr_start__, false);
-    copy_lma_to_vma(TZRAM_SEGEMENT_ID_SECMON_EVT, __vectors_lma__, __vectors_end__ - __vectors_start__, false);
+    copy_lma_to_vma(TZRAM_SEGEMENT_ID_SECMON_EVT, __vectors_lma__, __vectors_end__ - __vectors_start__, false);*/
     /* TODO: set the MMU regs & tlbi & enable MMU */
 
     flush_dcache_all_tzram_pa();
     invalidate_icache_all_tzram_pa();
     /* TODO: zero-initialize the cpu context */
     /* Nintendo clears the (emtpy) pk2ldr's BSS section, but we embed it 0-filled in the binary */
-    __libc_init_array(); /* construct global objects */
+    /*__libc_init_array();  construct global objects */
 }

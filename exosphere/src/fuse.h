@@ -174,7 +174,7 @@ typedef struct {
 void fuse_init(void);
 
 uint32_t fuse_hw_read(uint32_t addr);
-void fuse_hw_write(uint32_t, value, uint32_t addr);
+void fuse_hw_write(uint32_t value, uint32_t addr);
 void fuse_hw_sense(void);
 void fuse_disable_programming(void);
 void fuse_secondary_private_key_disable(void);
