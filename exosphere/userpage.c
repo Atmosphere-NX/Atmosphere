@@ -1,65 +1,70 @@
-#include <stdint.h>
 #include <string.h>
 
 #include "utils.h"
 #include "userpage.h"
 #include "memory_map.h"
+#include "cache.h"
 
-uint64_t g_secure_page_user_address = NULL;
+static uintptr_t g_user_page_user_address = NULL;
+
+static inline uintptr_t get_page_for_address(void *address) {
+    return ((uintptr_t)(address)) & ~0xFFF;
+}
 
 /* Create a user page reference for the desired address. */
 /* Returns 1 on success, 0 on failure. */
 bool upage_init(upage_ref_t *upage, void *user_address) {
-    upage->user_page = get_page_for_address(user_address);
-    upage->secure_page = 0ULL;
+    upage->user_address = get_page_for_address(user_address);
+    upage->secure_monitor_address = 0ULL;
 
-    if (g_secure_page_user_address != NULL) {
+    if (g_user_page_user_address != NULL) {
         /* Different physical address indicate SPL was rebooted, or another process got access to svcCallSecureMonitor. Panic. */
-        if (g_secure_page_user_address != upage->user_page) {
+        if (g_user_page_user_address != upage->user_address) {
             generic_panic();
         }
-        upage->secure_page = SECURE_USER_PAGE_ADDR;
+        upage->secure_monitor_address = USER_PAGE_SECURE_MONITOR_ADDR;
     } else {
         /* Weakly validate SPL's physically random address is in DRAM. */
-        if (upage->user_page >> 31) {
-            g_secure_page_user_address = upage->user_page;
-            mmu_map_page_range(mmu_l3_tbl, tzram_get_segment_address(TZRAM_SEGMENT_ID_USERPAGE), upage->user_page, 0x1000, MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | ATTRIB_MEMTYPE_NORMAL);
-            /* TODO: Invalidate the TLB to make this page readable. */
-            upage->secure_page = SECURE_USER_PAGE_ADDR;
+        if (upage->user_address >> 31) {
+            static const userpage_attributes =  MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_NORMAL;
+            g_user_page_user_address = upage->user_address;
+            mmu_map_page(mmu_l3_tbl, USER_PAGE_SECURE_MONITOR_ADDR, upage->user_address, userpage_attributes);
+            tlb_invalidate_page_inner_shareable((void *)USER_PAGE_SECURE_MONITOR_ADDR);
+            upage->secure_monitor_address = USER_PAGE_SECURE_MONITOR_ADDR;
         }
     }
 
-    return upage->secure_page != 0ULL;
+    return upage->secure_monitor_address != 0ULL;
 }
 
 bool user_copy_to_secure(upage_ref_t *upage, void *secure_dst, void *user_src, size_t size) {
     /* Fail if the page doesn't match. */
-    if (get_page_for_address(user_src) != upage->user_page) {
+    if (get_page_for_address(user_src) != upage->user_address) {
         return false;
     }
 
     /* Fail if we go past the page boundary. */
-    if (size != 0 && get_page_for_address(user_src + size - 1) != upage->user_page) {
+    if (size != 0 && get_page_for_address(user_src + size - 1) != upage->user_address) {
         return false;
     }
 
-    void *secure_src = (void *)(upage->secure_page + ((uint64_t)user_src - upage->user_page));
+    void *secure_src = (void *)(upage->secure_monitor_address + ((uintptr_t)user_src - upage->user_address));
     memcpy(secure_dst, secure_src, size);
     return true;
 }
 
 bool secure_copy_to_user(upage_ref_t *upage, void *user_dst, void *secure_src, size_t size) {
     /* Fail if the page doesn't match. */
-    if (get_page_for_address(user_dst) != upage->user_page) {
+    if (get_page_for_address(user_dst) != upage->user_address) {
         return false;
     }
 
     /* Fail if we go past the page boundary. */
-    if (size != 0 && get_page_for_address(user_dst + size - 1) != upage->user_page) {
+    if (size != 0 && get_page_for_address(user_dst + size - 1) != upage->user_address) {
         return false;
     }
 
-    void *secure_dst = (void *)(upage->secure_page + ((uint64_t)user_dst - upage->user_page));
+    void *secure_dst = (void *)(upage->secure_monitor_address + ((uintptr_t)user_dst - upage->user_address));
     memcpy(secure_dst, secure_src, size);
     return true;
 }
