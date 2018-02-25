@@ -51,9 +51,9 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-.*/
+.**/
 
-exosphere/bpmpfw/out/
-exosphere/bpmpfw/build
-exosphere/build
-exosphere/out
+exosphere/bpmpfw/out/**
+exosphere/bpmpfw/build/**
+exosphere/build/**
+exosphere/out/**

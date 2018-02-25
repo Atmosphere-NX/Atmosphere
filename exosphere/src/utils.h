@@ -5,8 +5,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define BIT(x)  (1u   << (x))
-#define BITL(x) (1ull << (x))
+#define BIT(n)      (1u   << (n))
+#define BITL(n)     (1ull << (n))
+
+#define ALIGN(m)        __attribute__((aligned(m)))
+#define PACKED          __attribute__((packed))
+
+#define INLINE_UNROLL   __attribute__((always_inline, optimize("unroll-all-loops")))
 
 void panic(uint32_t code);
 void generic_panic(void);

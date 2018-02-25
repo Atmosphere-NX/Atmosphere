@@ -41,7 +41,7 @@ static void configure_ttbls(void) {
     identity_map_all_mappings(mmu_l1_tbl, mmu_l3_tbl);
     mmio_map_all_devices(mmu_l3_tbl);
     lp0_map_all_plaintext_ram_segments(mmu_l3_tbl);
-    lp0_map_all_ciphertext_ram_segments(mmu_l3_tbl);
+    warmboot_map_all_ram_segments(mmu_l3_tbl);
     tzram_map_all_segments(mmu_l3_tbl);
 }
 
