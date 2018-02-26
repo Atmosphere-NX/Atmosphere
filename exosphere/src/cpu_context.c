@@ -6,7 +6,7 @@
 
 static saved_cpu_context_t g_cpu_contexts[NUM_CPU_CORES] = {0};
 
-void set_core_entrypoint_and_context_id(uint32_t core, uint64_t entrypoint_addr, uint64_t argument) {
+void set_core_entrypoint_and_argument(uint32_t core, uint64_t entrypoint_addr, uint64_t argument) {
     g_cpu_contexts[core].ELR_EL3 = entrypoint_addr;
     g_cpu_contexts[core].argument = argument;
 }
@@ -22,7 +22,7 @@ uint32_t cpu_on(uint32_t core, uint64_t entrypoint_addr, uint64_t argument) {
         return 0xFFFFFFFC;
     }
     
-    set_core_entrypoint_and_context_id(core, entrypoint_addr, argument);
+    set_core_entrypoint_and_argument(core, entrypoint_addr, argument);
     
     const uint32_t status_masks[NUM_CPU_CORES] = {0x4000, 0x200, 0x400, 0x800};
     const uint32_t toggle_vals[NUM_CPU_CORES] = {0xE, 0x9, 0xA, 0xB};

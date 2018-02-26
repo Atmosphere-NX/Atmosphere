@@ -436,7 +436,7 @@ void load_package2(void) {
     invalidate_icache_inner_shareable();
 
     /* Set CORE0 entrypoint for Package2. */
-    set_core_entrypoint_and_context_id(0, DRAM_BASE_PHYSICAL + header.metadata.entrypoint, 0);
+    set_core_entrypoint_and_argument(0, DRAM_BASE_PHYSICAL + header.metadata.entrypoint, 0);
 
     /* Synchronize with NX BOOTLOADER. */
     if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == NX_BOOTLOADER_STATE_LOADED_PACKAGE2) {
