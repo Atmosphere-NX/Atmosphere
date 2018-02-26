@@ -6,7 +6,7 @@
 /* Exosphere CPU Management functionality. */
 
 typedef struct {
-  uint64_t context_id;
+  uint64_t argument;
   uint64_t ELR_EL3;
   int is_active;
   int is_saved;
@@ -44,11 +44,10 @@ typedef struct {
 
 #define NUM_CPU_CORES 4
 
-void set_core_entrypoint_and_context_id(uint32_t core, uint64_t entrypoint_addr, uint64_t context_id);
+void set_core_entrypoint_and_argument(uint32_t core, uint64_t entrypoint_addr, uint64_t argument);
 
-uint32_t cpu_on(uint32_t core, uint64_t entrypoint_addr, uint64_t context_id);
+uint32_t cpu_on(uint32_t core, uint64_t entrypoint_addr, uint64_t argument);
 uint32_t cpu_off(void); /* TODO */
-uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint_addr, uint64_t context_id); /* TODO */
 
 
 #endif

@@ -12,4 +12,8 @@
 
 void wait(uint32_t microseconds);
 
+static inline uint32_t get_time(void) {
+    return TIMERUS_CNTR_1US_0;
+}
+
 #endif

@@ -42,6 +42,12 @@ static inline unsigned int get_core_id(void) {
     return (unsigned int)core_id & 3;
 }
 
+static inline uint64_t get_debug_authentication_status(void) {
+    uint64_t debug_auth;
+    __asm__ __volatile__ ("mrs  %0, dbgauthstatus_el1" : "=r"(debug_auth));
+    return debug_auth;
+}
+
 static inline bool check_32bit_additive_overflow(uint32_t a, uint32_t b) {
     return __builtin_add_overflow_p(a, b, (uint32_t)0);
 }

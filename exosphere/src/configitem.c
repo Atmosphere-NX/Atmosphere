@@ -8,15 +8,15 @@
 #include "fuse.h"
 #include "utils.h"
 
-static int g_battery_profile = 0;
+static bool g_battery_profile = false;
 
 uint32_t configitem_set(enum ConfigItem item, uint64_t value) {
     if (item != CONFIGITEM_BATTERYPROFILE) {
         return 2;
     }
     
-    g_battery_profile = ((int)(value != 0)) & 1;
-    return 0; /* FIXME: what should we return there */
+    g_battery_profile = (value != 0);
+    return 0;
 }
 
 bool configitem_is_recovery_boot(void) {
@@ -35,6 +35,10 @@ bool configitem_is_retail(void) {
     }
 
     return is_retail != 0;
+}
+
+bool configitem_should_profile_battery(void) {
+    return g_battery_profile;
 }
 
 uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue) {
@@ -80,7 +84,7 @@ uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue) {
             *p_outvalue = bootconfig_get_kernel_memory_configuration();
             break;
         case CONFIGITEM_BATTERYPROFILE:
-            *p_outvalue = g_battery_profile;
+            *p_outvalue = (int)g_battery_profile;
             break;
         default:
             result = 2;

@@ -18,6 +18,7 @@
 #include "se.h"
 #include "userpage.h"
 #include "titlekey.h"
+#include "lp0.h"
 
 #define SMC_USER_HANDLERS 0x13
 #define SMC_PRIV_HANDLERS 0x9
