@@ -62,7 +62,8 @@ $(dir_build)/bpmpfw.bin: $(dir_bpmpfw)/out/bpmpfw.bin
 $(dir_build)/%.bin.o: $(dir_build)/%.bin
 	@$(bin2o)
 
-$(dir_build)/%.o: $(dir_source)/%.c $(dir_build)/bpmpfw.bin.o
+$(dir_build)/lpo.o: $(dir_build)/bpmpfw.bin.o
+$(dir_build)/%.o: $(dir_source)/%.c
 	@mkdir -p "$(@D)"
 	$(COMPILE.c) $(OUTPUT_OPTION) $<
 

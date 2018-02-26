@@ -7,7 +7,11 @@
 
 /* Exosphere register definitions for the Tegra X1 Flow Controller. */
 
-#define FLOW_BASE (mmio_get_device_address(MMIO_DEVID_FLOWCTRL))
+static inline uintptr_t get_flow_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_FLOWCTRL);
+}
+
+#define FLOW_BASE (get_flow_base())
 
 #define MAKE_FLOW_REG(ofs) (*((volatile uint32_t *)(FLOW_BASE + ofs)))
 

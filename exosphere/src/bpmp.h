@@ -6,7 +6,11 @@
 
 /* Exosphere register definitions for the Tegra X1 BPMP vectors. */
 
-#define BPMP_VECTOR_BASE (mmio_get_device_address(MMIO_DEVID_EXCEPTION_VECTORS))
+static inline uintptr_t get_bpmp_vector_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_EXCEPTION_VECTORS);
+}
+
+#define BPMP_VECTOR_BASE (get_bpmp_vector_base())
 
 
 #define BPMP_VECTOR_RESET          (*((volatile uint32_t *)(BPMP_VECTOR_BASE + 0x200)))
@@ -17,6 +21,5 @@
 #define BPMP_VECTOR_UNK            (*((volatile uint32_t *)(BPMP_VECTOR_BASE + 0x214)))
 #define BPMP_VECTOR_IRQ            (*((volatile uint32_t *)(BPMP_VECTOR_BASE + 0x218)))
 #define BPMP_VECTOR_FIQ            (*((volatile uint32_t *)(BPMP_VECTOR_BASE + 0x21C)))
-
 
 #endif

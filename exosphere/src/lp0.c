@@ -15,6 +15,9 @@
 #include "smc_api.h"
 #include "timers.h"
 
+extern const uint8_t bpmpfw_bin[];
+extern const uint32_t bpmpfw_bin_size;
+
 /* Save security engine, and go to sleep. */
 void save_se_and_power_down_cpu(void) {
     clear_priv_smc_in_progress();
@@ -36,7 +39,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
         uint32_t start_time = get_time();
         bool should_wait = true;
         /* TODO: This is GPIO-6 GPIO_IN_1 */
-        while ((*((volatile uint32_t *)(mmio_get_device_address(MMIO_DEVID_GPIO) + 0x634))) & 1) {
+        while ((*((volatile uint32_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_GPIO) + 0x634))) & 1) {
             if (get_time() - start_time > 50000) {
                 should_wait = false;
                 break;
@@ -89,7 +92,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     /* Prepare to boot the BPMP running our deep sleep firmware. */
     
     /* Mark PMC registers as not secure-world only, so BPMP can access them. */
-    (*((volatile uint32_t *)(mmio_get_device_address(MMIO_DEVID_MISC) + 0xC00))) &= 0xFFFFDFFF; /* TODO: macro */
+    (*((volatile uint32_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_MISC) + 0xC00))) &= 0xFFFFDFFF; /* TODO: macro */
     
     /* Setup BPMP vectors. */
     BPMP_VECTOR_RESET = 0x40003000; /* lp0_entry_firmware_crt0 */
@@ -102,7 +105,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     BPMP_VECTOR_FIQ = 0x40003004; /* Reboot. */
     
     /* TODO: Hold the BPMP in reset. */
-    uint8_t *lp0_entry_code = (uint8_t *)(lp0_get_plaintext_ram_segment_address(LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE));
+    uint8_t *lp0_entry_code = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE));
     (void)(lp0_entry_code);
     /* TODO: memcpy(lp0_entry_code, BPMP_FIRMWARE_ADDRESS, sizeof(BPMP_FIRMWARE)); */
     /* TODO: flush_dcache_range(lp0_entry_code, lp0_entry_code + sizeof(BPMP_FIRMWARE)); */
@@ -121,7 +124,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     /* TODO: save_current_core_context(); */
     /* TODO: set_current_core_inacctive(); */
     /* TODO: set_current_core_saved(true); */
-    /* TODO: call_with_stack_pointer(tzram_get_segment_address(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x1000ULL, save_se_and_power_down_cpu); */
+    /* TODO: call_with_stack_pointer(TZRAM_GET_SEGMENT_ADDR(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x1000ULL, save_se_and_power_down_cpu); */
     
     /* NOTE: This return never actually occurs. */
     return 0;
