@@ -381,17 +381,16 @@ void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const v
 
 /* Secure AES Functionality. */
 void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src, size_t src_size) {
-    uint8_t block[0x10];
+    uint8_t block[0x10] = {0};
 
     if (src_size > sizeof(block) || dst_size > sizeof(block)) {
         generic_panic();
     }
-    
+
     /* Load src data into block. */
-    memset(block, 0, sizeof(block));
     memcpy(block, src, src_size);
     flush_dcache_range(block, block + sizeof(block));
-    
+
     /* Trigger AES operation. */
     SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
     trigger_se_blocking_op(1, block, sizeof(block), block, sizeof(block));
