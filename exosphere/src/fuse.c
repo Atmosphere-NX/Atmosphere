@@ -132,23 +132,21 @@ uint32_t fuse_get_bootrom_patch_version(void)
 /* Read a spare bit register from the shadow cache */
 uint32_t fuse_get_spare_bit(uint32_t idx)
 {
-    uint32_t spare_bit_val = 0;
+    if (idx >= 32) {
+        return 0;
+    }
 
-    if ((idx >= 0) && (idx < 32))
-        spare_bit_val = FUSE_CHIP_REGS->FUSE_SPARE_BIT[idx];
-
-    return spare_bit_val;
+    return FUSE_CHIP_REGS->FUSE_SPARE_BIT[idx];
 }
 
 /* Read a reserved ODM register from the shadow cache */
 uint32_t fuse_get_reserved_odm(uint32_t idx)
 {
-    uint32_t reserved_odm_val = 0;
-    
-    if ((idx >= 0) && (idx < 8))
-        reserved_odm_val = FUSE_CHIP_REGS->FUSE_RESERVED_ODM[idx];
-    
-    return reserved_odm_val;
+    if (idx >= 8) {
+        return 0;
+    }
+
+    return FUSE_CHIP_REGS->FUSE_RESERVED_ODM[idx];
 }
 
 /* Derive the Device ID using values in the shadow cache */
