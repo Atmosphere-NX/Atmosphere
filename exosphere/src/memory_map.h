@@ -158,7 +158,7 @@ INLINE_UNROLL static inline uintptr_t mmio_get_device_pa(unsigned int device_id)
 }
 
 #ifndef MEMORY_MAP_USE_IDENTIY_MAPPING
-INLINE_UNROLL static inline const uintptr_t mmio_get_device_address(unsigned int device_id) {
+INLINE_UNROLL static inline uintptr_t mmio_get_device_address(unsigned int device_id) {
     size_t offset = 0;
     for(unsigned int i = 0; i < device_id; i++) {
         offset += g_devices[i].size;
