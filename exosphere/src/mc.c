@@ -9,15 +9,6 @@ volatile security_carveout_t *get_carveout_by_id(unsigned int carveout) {
     }
     generic_panic();
     return NULL;
-    switch (carveout) {
-        case 4: /* Kernel carveout */
-            return (volatile security_carveout_t *)(MC_BASE + 0xCF8ULL);
-        case 5: /* Unused Kernel carveout */
-            return (volatile security_carveout_t *)(MC_BASE + 0xD48ULL);
-        default:
-            generic_panic();
-            return NULL;
-    }
 }
 
 void configure_default_carveouts(void) {
