@@ -5,7 +5,7 @@
 #include "interrupt.h"
 
 /* Global of registered handlers. */
-struct {
+static struct {
     unsigned int id;
     void (*handler)(void);
 } g_registered_interrupts[MAX_REGISTERED_INTERRUPTS] = { {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL} };

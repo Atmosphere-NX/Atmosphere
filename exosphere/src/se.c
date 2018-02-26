@@ -14,10 +14,10 @@ void trigger_se_rsa_op(void *buf, size_t size);
 void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const void *src, size_t src_size);
 
 /* Globals for driver. */
-unsigned int (*g_se_callback)(void);
+static unsigned int (*g_se_callback)(void);
 
-unsigned int g_se_modulus_sizes[KEYSLOT_RSA_MAX];
-unsigned int g_se_exp_sizes[KEYSLOT_RSA_MAX];
+static unsigned int g_se_modulus_sizes[KEYSLOT_RSA_MAX];
+static unsigned int g_se_exp_sizes[KEYSLOT_RSA_MAX];
 
 
 /* Initialize a SE linked list. */

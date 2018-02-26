@@ -8,7 +8,7 @@
 #include "fuse.h"
 #include "utils.h"
 
-int g_battery_profile = 0;
+static int g_battery_profile = 0;
 
 uint32_t configitem_set(enum ConfigItem item, uint64_t value) {
     if (item != CONFIGITEM_BATTERYPROFILE) {

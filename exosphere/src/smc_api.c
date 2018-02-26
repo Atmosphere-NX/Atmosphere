@@ -61,7 +61,7 @@ typedef struct {
     uint32_t num_handlers;
 } smc_table_t;
 
-smc_table_entry_t g_smc_user_table[SMC_USER_HANDLERS] = {
+static smc_table_entry_t g_smc_user_table[SMC_USER_HANDLERS] = {
     {0, NULL},
     {0xC3000401, smc_set_config},
     {0xC3000002, smc_get_config},
@@ -83,7 +83,7 @@ smc_table_entry_t g_smc_user_table[SMC_USER_HANDLERS] = {
     {0xC3000012, smc_unwrap_aes_wrapped_titlekey}
 };
 
-smc_table_entry_t g_smc_priv_table[SMC_PRIV_HANDLERS] = {
+static smc_table_entry_t g_smc_priv_table[SMC_PRIV_HANDLERS] = {
     {0, NULL},
     {0xC4000001, smc_cpu_suspend},
     {0x84000002, smc_cpu_off},
@@ -95,7 +95,7 @@ smc_table_entry_t g_smc_priv_table[SMC_PRIV_HANDLERS] = {
     {0xC3000008, smc_read_write_register}
 };
 
-smc_table_t g_smc_tables[2] = {
+static smc_table_t g_smc_tables[2] = {
     { /* SMC_HANDLER_USER */
         g_smc_user_table,
         SMC_USER_HANDLERS

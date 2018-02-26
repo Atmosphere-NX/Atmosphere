@@ -5,15 +5,15 @@
 #include "masterkey.h"
 #include "se.h"
 
-unsigned int g_mkey_revision = 0;
-bool g_determined_mkey_revision = false;
+static unsigned int g_mkey_revision = 0;
+static bool g_determined_mkey_revision = false;
 
-uint8_t g_old_masterkeys[MASTERKEY_REVISION_MAX][0x10];
+static uint8_t g_old_masterkeys[MASTERKEY_REVISION_MAX][0x10];
 
 /* TODO: Dev keys. */
 
 /* TODO: Extend with new vectors, as needed. */
-const uint8_t mkey_vectors[MASTERKEY_REVISION_MAX][0x10] =
+static const uint8_t mkey_vectors[MASTERKEY_REVISION_MAX][0x10] =
 {
     {0x0C, 0xF0, 0x59, 0xAC, 0x85, 0xF6, 0x26, 0x65, 0xE1, 0xE9, 0x19, 0x55, 0xE6, 0xF2, 0x67, 0x3D}, /* Zeroes encrypted with Master Key 00. */
     {0x29, 0x4C, 0x04, 0xC8, 0xEB, 0x10, 0xED, 0x9D, 0x51, 0x64, 0x97, 0xFB, 0xF3, 0x4D, 0x50, 0xDD}, /* Master key 00 encrypted with Master key 01. */

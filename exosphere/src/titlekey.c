@@ -8,8 +8,8 @@
 #include "masterkey.h"
 #include "se.h"
 
-uint64_t g_tkey_expected_label_hash[4];
-unsigned int g_tkey_master_key_rev = MASTERKEY_REVISION_MAX;
+static uint64_t g_tkey_expected_label_hash[4];
+static unsigned int g_tkey_master_key_rev = MASTERKEY_REVISION_MAX;
 
 /* Set the expected db prefix. */
 void tkey_set_expected_label_hash(uint64_t *label_hash) {
