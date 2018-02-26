@@ -1,3 +1,4 @@
+#include <stdatomic.h>
 #include <stdint.h>
 
 #include "utils.h"
@@ -106,8 +107,8 @@ smc_table_t g_smc_tables[2] = {
     }
 };
 
-bool g_is_user_smc_in_progress = false;
-bool g_is_priv_smc_in_progress = false;
+static atomic_flag g_is_user_smc_in_progress = ATOMIC_FLAG_INIT;
+static atomic_flag g_is_priv_smc_in_progress = ATOMIC_FLAG_INIT;
 
 uintptr_t get_smc_core012_stack_address(void) {
     return tzram_get_segment_address(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x1000;
