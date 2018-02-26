@@ -4,7 +4,11 @@
 #include "utils.h"
 #include "memory_map.h"
 
-#define USER_PAGE_SECURE_MONITOR_ADDR (tzram_get_segment_address(TZRAM_SEGMENT_ID_USERPAGE))
+static inline uintptr_t get_user_page_secure_monitor_addr(void) {
+    return TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_USERPAGE);
+}
+
+#define USER_PAGE_SECURE_MONITOR_ADDR (get_user_page_secure_monitor_addr())
 
 typedef struct {
     uintptr_t user_address;

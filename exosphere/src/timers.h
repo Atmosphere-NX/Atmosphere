@@ -6,7 +6,11 @@
 
 /* Exosphere driver for the Tegra X1 Timers. */
 
-#define TIMERS_BASE (mmio_get_device_address(MMIO_DEVID_TMRs_WDTs))
+static inline uintptr_t get_timers_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_TMRs_WDTs);
+}
+
+#define TIMERS_BASE (get_timers_base())
 
 #define TIMERUS_CNTR_1US_0 (*((volatile uint32_t *)(TIMERS_BASE + 0x10)))
 

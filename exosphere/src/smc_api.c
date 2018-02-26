@@ -112,16 +112,16 @@ static atomic_flag g_is_user_smc_in_progress = ATOMIC_FLAG_INIT;
 static atomic_flag g_is_priv_smc_in_progress = ATOMIC_FLAG_INIT;
 
 uintptr_t get_smc_core012_stack_address(void) {
-    return tzram_get_segment_address(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x1000;
+    return TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x1000;
 }
 
 uintptr_t get_exception_entry_stack_address(unsigned int core_id) {
     /* For core3, this is also the smc stack */
     if (core_id == 3) {
-        return tzram_get_segment_address(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x1000;
+        return TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x1000;
     }
     else {
-        return tzram_get_segment_address(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x80 * (core_id + 1);
+        return TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x80 * (core_id + 1);
     }
 }
 
@@ -142,7 +142,7 @@ uint64_t try_set_smc_callback(uint32_t (*callback)(void *, uint64_t)) {
     if (g_smc_callback_key) {
         return 0;
     }
-    
+
     se_generate_random(KEYSLOT_SWITCH_RNGKEY, &key, sizeof(uint64_t));
     g_smc_callback_key = key;
     g_smc_callback = callback;
@@ -160,33 +160,33 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     unsigned char smc_id;
     unsigned int result;
     unsigned int (*smc_handler)(smc_args_t *args);
-    
+
     /* Validate top-level handler. */
     if (handler_id != SMC_HANDLER_USER && handler_id != SMC_HANDLER_PRIV) {
         generic_panic();
     }
-    
+
     /* Validate core is appropriate for handler. */
     if (handler_id == SMC_HANDLER_USER && get_core_id() != 3) {
         /* USER SMCs must be called via svcCallSecureMonitor on core 3 (where spl runs) */
         generic_panic();
     }
-    
+
     /* Validate sub-handler index */
     if ((smc_id = (unsigned char)args->X[0]) >= g_smc_tables[handler_id].num_handlers) {
         generic_panic();
     }
-    
+
     /* Validate sub-handler */
     if (g_smc_tables[handler_id].handlers[smc_id].id != args->X[0]) {
         generic_panic();
     }
-    
+
     /* Validate handler. */
     if ((smc_handler = g_smc_tables[handler_id].handlers[smc_id].handler) == NULL) {
         generic_panic();
     }
-    
+
     /* Call function. */
     args->X[0] = smc_handler(args);
     (void)result; /* FIXME: result unused */
@@ -244,13 +244,13 @@ uint32_t smc_check_status(smc_args_t *args) {
     if (g_smc_callback_key == 0) {
         return 4;
     }
-    
+
     if (args->X[1] != g_smc_callback_key) {
         return 5;
     }
-    
+
     args->X[1] = g_smc_callback(NULL, 0);
-    
+
     g_smc_callback_key = 0;
     return 0;
 }
@@ -261,7 +261,7 @@ uint32_t smc_get_result(smc_args_t *args) {
     upage_ref_t page_ref;
 
     void *user_address = (void *)args->X[2];
-    
+
     if (g_smc_callback_key == 0) {
         return 4;
     }
@@ -274,7 +274,7 @@ uint32_t smc_get_result(smc_args_t *args) {
     if (args->X[3] > 0x400) {
         return 2;
     }
-    
+
     args->X[1] = g_smc_callback(result_buf, args->X[3]);
     g_smc_callback_key = 0;
 
@@ -296,13 +296,13 @@ uint32_t smc_exp_mod_get_result(void *buf, uint64_t size) {
     if (get_exp_mod_done() != 1) {
         return 3;
     }
-    
+
     if (size != 0x100) {
         return 2;
     }
-    
+
     se_get_exp_mod_output(buf, 0x100);
-    
+
     /* smc_exp_mod is done now. */
     lock_release(&g_is_user_smc_in_progress);
     return 0;
@@ -371,24 +371,24 @@ uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t siz
     if (get_exp_mod_done() != 1) {
         return 3;
     }
-    
+
     if (size != 0x10) {
         return 2;
     }
-    
+
     se_get_exp_mod_output(rsa_wrapped_titlekey, 0x100);
     if (tkey_rsa_oaep_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) != 0x10) {
         /* Failed to extract RSA OAEP wrapped key. */
         lock_release(&g_is_user_smc_in_progress);
         return 2;
     }
-    
+
     tkey_aes_unwrap(titlekey, 0x10, aes_wrapped_titlekey, 0x10);
     seal_titlekey(sealed_titlekey, 0x10, titlekey, 0x10);
-    
+
     p_sealed_key[0] = sealed_titlekey[0];
     p_sealed_key[1] = sealed_titlekey[1];
-    
+
     /* smc_unwrap_rsa_oaep_wrapped_titlekey is done now. */
     lock_release(&g_is_user_smc_in_progress);
     return 0;
@@ -475,10 +475,10 @@ uint32_t smc_read_write_register(smc_args_t *args) {
         } else {
             return 2;
         }
-    } else if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT && mmio_get_device_pa(MMIO_DEVID_MC) <= address &&
-               address < mmio_get_device_pa(MMIO_DEVID_MC) + 0x1000) {
+    } else if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT && MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) <= address &&
+               address < MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) + MMIO_GET_DEVICE_SIZE(MMIO_DEVID_MC)) {
         /* Memory Controller RW supported only on 4.0.0+ */
-        const uint8_t mc_whitelist[0x68] = { 
+        const uint8_t mc_whitelist[0x68] = {
             0x9F, 0x31, 0x30, 0x00, 0xF0, 0xFF, 0xF7, 0x01,
             0xCD, 0xFE, 0xC0, 0xFE, 0x00, 0x00, 0x00, 0x00,
             0x03, 0x40, 0x73, 0x3E, 0x2F, 0x00, 0x00, 0x6E,
@@ -497,7 +497,7 @@ uint32_t smc_read_write_register(smc_args_t *args) {
         uint32_t wl_ind = (offset >> 5);
         /* If address is whitelisted, allow write. */
         if (wl_ind < sizeof(mc_whitelist) && (mc_whitelist[wl_ind] & (1 << ((offset >> 2) & 0x7)))) {
-            p_mmio = (volatile uint32_t *)(mmio_get_device_address(MMIO_DEVID_MC) + offset);
+            p_mmio = (volatile uint32_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_MC) + offset);
         } else {
             /* These addresses are not allowed by the whitelist. */
             /* They correspond to SMMU DISABLE for the BPMP, and for APB-DMA. */
@@ -510,7 +510,7 @@ uint32_t smc_read_write_register(smc_args_t *args) {
             return 2;
         }
     }
-    
+
     /* Perform actual write. */
     if (p_mmio != NULL) {
         uint32_t old_value;
@@ -527,7 +527,7 @@ uint32_t smc_read_write_register(smc_args_t *args) {
         args->X[1] = old_value;
         return 0;
     }
-    
+
     return 2;
 }
 
@@ -536,22 +536,22 @@ uint32_t smc_configure_carveout(smc_args_t *args) {
     if (args->X[0] > 1) {
         return 2;
     }
-    
+
     unsigned int carveout_id = (unsigned int)args->X[1];
     uint64_t address = args->X[2];
     uint64_t size = args->X[3];
-    
+
     /* Ensure carveout isn't too big. */
     if (size > KERNEL_CARVEOUT_SIZE_MAX) {
         return 2;
     }
-    
+
     /* Configuration is one-shot, and cannot be done multiple times. */
     static bool configured_carveouts[2] = {false, false};
     if (configured_carveouts[carveout_id]) {
         return 2;
     }
-    
+
     configure_kernel_carveout(carveout_id + 4, address, size);
     configured_carveouts[carveout_id] = true;
     return 0;

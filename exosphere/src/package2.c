@@ -21,7 +21,7 @@ static void setup_se(void) {
     se_clear_interrupts();
 
     /* Perform some sanity initialization. */
-    volatile security_engine_t *p_security_engine = get_security_engine_address();
+    volatile security_engine_t *p_security_engine = get_security_engine();
     p_security_engine->_0x4 = 0;
     p_security_engine->AES_KEY_READ_DISABLE_REG = 0;
     p_security_engine->RSA_KEY_READ_DISABLE_REG = 0;
@@ -108,14 +108,14 @@ static bool rsa2048_pss_verify(const void *signature, size_t signature_size, con
     }
 
     /* Constant lmask for rsa-2048-pss. */
-    message[0] &= 0x7F; 
+    message[0] &= 0x7F;
 
     /* Validate DB is of the form 0000...0001. */
     for (unsigned int i = 0; i < RSA_2048_BYTES - 0x20 - 0x20 - 1 - 1; i++) {
         if (message[i] != 0) {
             return false;
         }
-    }   
+    }
     if (message[RSA_2048_BYTES - 0x20 - 0x20 - 1 - 1] != 1) {
         return false;
     }
@@ -298,7 +298,7 @@ static uint32_t decrypt_and_validate_header(package2_header_t *header) {
         }
 
         /* Ensure we successfully decrypted the header. */
-        generic_panic();  
+        generic_panic();
     }
     return 0;
 }
@@ -351,7 +351,7 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
     }
 
     /* Copy each section to its appropriate location, decrypting if necessary. */
-    for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {        
+    for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
         if (metadata->section_sizes[section] == 0) {
             continue;
         }
@@ -359,7 +359,7 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
         void *dst_start = (void *)(DRAM_BASE_PHYSICAL + (uint64_t)metadata->section_offsets[section]);
         void *src_start = load_buf + sizeof(package2_header_t) + metadata->section_offsets[section];
         size_t size = (size_t)metadata->section_sizes[section];
-        
+
         if (bootconfig_is_package2_plaintext()) {
             memcpy(dst_start, src_start, size);
         } else {
@@ -372,7 +372,7 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
 }
 
 uintptr_t get_pk2ldr_stack_address(void) {
-    return tzram_get_segment_address(TZRAM_SEGMENT_ID_PK2LDR) + 0x2000;
+    return TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_PK2LDR) + 0x2000;
 }
 
 /* This function is called during coldboot init, and validates a package2. */
@@ -380,7 +380,7 @@ uintptr_t get_pk2ldr_stack_address(void) {
 void load_package2(void) {
     /* Setup the Security Engine. */
     setup_se();
-    
+
     /* TODO: bootup_misc_mmio(). */
     /* This func will also be called on warmboot. */
     /* And will verify stored SE Test Vector, clear keyslots, */
@@ -388,9 +388,9 @@ void load_package2(void) {
     /* Configure the GPU uCode carveout, configure the Kernel default carveouts, */
     /* Initialize the PMC secure scratch registers, initialize MISC registers, */
     /* And assign "se_operation_completed" to Interrupt 0x5A. */
-    
+
     /* TODO: Read and save BOOTREASON stored by NX_BOOTLOADER at 0x1F009FE00 */
-    
+
     /* Initialize cache'd random bytes for kernel. */
     randomcache_init();
 

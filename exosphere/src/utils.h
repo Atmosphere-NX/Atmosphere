@@ -11,7 +11,7 @@
 #define ALIGN(m)        __attribute__((aligned(m)))
 #define PACKED          __attribute__((packed))
 
-#define INLINE_UNROLL   __attribute__((always_inline, optimize("unroll-all-loops")))
+#define ALINLINE        __attribute__((always_inline))
 
 void panic(uint32_t code);
 void generic_panic(void);
@@ -21,7 +21,7 @@ static inline uintptr_t get_physical_address(const void *vaddr) {
     uintptr_t PAR;
     __asm__ __volatile__ ("at s1e3r, %0" :: "r"(vaddr));
     __asm__ __volatile__ ("mrs %0, par_el1" : "=r"(PAR));
-    return (PAR & 1) ? 0ULL : (PAR & 0x00000FFFFFFFF000ULL) | ((uintptr_t)vaddr & 0xFFF);
+    return (PAR & 1) ? 0ull : (PAR & 0x00000FFFFFFFF000ull) | ((uintptr_t)vaddr & 0xFFF);
 }
 
 static inline uint32_t read32le(const volatile void *dword, size_t offset) {

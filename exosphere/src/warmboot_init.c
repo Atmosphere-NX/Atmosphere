@@ -12,5 +12,5 @@ void invalidate_icache_all_tzram_pa(void) {
 }
 
 uintptr_t get_warmboot_crt0_stack_address(void) {
-    return tzram_get_segment_pa(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
+    return TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
 }

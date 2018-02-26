@@ -168,8 +168,15 @@ typedef struct {
     uint32_t FUSE_SPARE_BIT[0x20];
 } fuse_chip_registers_t;
 
-#define FUSE_REGS ((volatile fuse_registers_t *)(mmio_get_device_address(MMIO_DEVID_FUSE) + 0x800))
-#define FUSE_CHIP_REGS ((volatile fuse_chip_registers_t *)(mmio_get_device_address(MMIO_DEVID_FUSE) + 0x900))
+static inline volatile fuse_registers_t *get_fuse_regs(void) {
+    return (volatile fuse_registers_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_FUSE) + 0x800);
+}
+
+static inline volatile fuse_chip_registers_t *get_fuse_chip_regs(void) {
+    return (volatile fuse_chip_registers_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_FUSE) + 0x900);
+}
+#define FUSE_REGS       (get_fuse_regs())
+#define FUSE_CHIP_REGS  (get_fuse_chip_regs())
 
 void fuse_init(void);
 

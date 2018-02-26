@@ -18,7 +18,7 @@ static void shr_128(uint64_t *val) {
 /* Shifts left a little endian 128-bit value. */
 static void shl_128(uint64_t *val) {
     val[1] <<= 1;
-    val[1] |= (val[0] & (1ULL << 63)) >> 63;
+    val[1] |= (val[0] & (1ull << 63)) >> 63;
     val[0] <<= 1;
 }
 
@@ -32,7 +32,7 @@ static void gf128_mul(uint8_t *dst, const uint8_t *x, const uint8_t *y) {
     uint64_t *p_x = (uint64_t *)(&x_work[0]);
     uint64_t *p_y = (uint64_t *)(&y_work[0]);
     uint64_t *p_dst = (uint64_t *)(&dst_work[0]);
-    
+
     /* Initialize buffers. */
     for (unsigned int i = 0; i < 0x10; i++) {
         x_work[i] = x[0xF-i];

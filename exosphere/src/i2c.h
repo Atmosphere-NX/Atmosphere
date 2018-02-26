@@ -51,13 +51,20 @@ typedef struct {
     uint32_t I2C_I2C_HS_INTERFACE_TIMING_1_0;
 } i2c_registers_t;
 
+static inline uintptr_t get_i2c_dtv_234_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DTV_I2C234);
+}
 
-#define I2C1_REGS ((volatile i2c_registers_t *)(mmio_get_device_address(MMIO_DEVID_DTV_I2C234) + 0x000))
-#define I2C2_REGS ((volatile i2c_registers_t *)(mmio_get_device_address(MMIO_DEVID_DTV_I2C234) + 0x400))
-#define I2C3_REGS ((volatile i2c_registers_t *)(mmio_get_device_address(MMIO_DEVID_DTV_I2C234) + 0x500))
-#define I2C4_REGS ((volatile i2c_registers_t *)(mmio_get_device_address(MMIO_DEVID_DTV_I2C234) + 0x700))
-#define I2C5_REGS ((volatile i2c_registers_t *)(mmio_get_device_address(MMIO_DEVID_I2C56_SPI2B) + 0x000))
-#define I2C6_REGS ((volatile i2c_registers_t *)(mmio_get_device_address(MMIO_DEVID_I2C56_SPI2B) + 0x100))
+static inline uintptr_t get_i2c56_spi2b_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_I2C56_SPI2B);
+}
+
+#define I2C1_REGS ((volatile i2c_registers_t *)(get_i2c_dtv_234_base() + 0x000))
+#define I2C2_REGS ((volatile i2c_registers_t *)(get_i2c_dtv_234_base() + 0x400))
+#define I2C3_REGS ((volatile i2c_registers_t *)(get_i2c_dtv_234_base() + 0x500))
+#define I2C4_REGS ((volatile i2c_registers_t *)(get_i2c_dtv_234_base() + 0x700))
+#define I2C5_REGS ((volatile i2c_registers_t *)(get_i2c56_spi2b_base() + 0x000))
+#define I2C6_REGS ((volatile i2c_registers_t *)(get_i2c56_spi2b_base() + 0x100))
 
 void i2c_init(unsigned int id);
 

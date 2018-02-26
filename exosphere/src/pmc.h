@@ -6,7 +6,11 @@
 
 /* Exosphere register definitions for the Tegra X1 PMC. */
 
-#define PMC_BASE (mmio_get_device_address(MMIO_DEVID_RTC_PMC) + 0x400ULL)
+static inline uintptr_t get_pmc_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull;
+}
+
+#define PMC_BASE (get_pmc_base())
 
 #define APBDEV_PMC_DPD_ENABLE_0 (*((volatile uint32_t *)(PMC_BASE + 0x24)))
 

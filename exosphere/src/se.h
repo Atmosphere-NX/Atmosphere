@@ -137,10 +137,11 @@ typedef struct {
 
 /* WIP, API subject to change. */
 
-
-static inline volatile security_engine_t *get_security_engine_address(void) {
-    return (volatile security_engine_t *)(mmio_get_device_address(MMIO_DEVID_SE));
+static inline volatile security_engine_t *get_security_engine(void) {
+    return (volatile security_engine_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_SE));
 }
+
+#define SECURITY_ENGINE (get_security_engine())
 
 /* This function MUST be registered to fire on the appropriate interrupt. */
 void se_operation_completed(void);

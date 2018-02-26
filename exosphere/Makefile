@@ -58,7 +58,7 @@ $(dir_bpmpfw)/out/bpmpfw.bin: $(dir_bpmpfw)
 $(dir_build)/bpmpfw.bin: $(dir_bpmpfw)/out/bpmpfw.bin
 	@mkdir -p "$(@D)"
 	@cp $< $(@D)
- 
+
 $(dir_build)/%.bin.o: $(dir_build)/%.bin
 	@$(bin2o)
 

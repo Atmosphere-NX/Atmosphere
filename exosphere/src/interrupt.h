@@ -11,21 +11,29 @@
 #define INTERRUPT_ID_SECURITY_ENGINE 0x5A
 #define INTERRUPT_ID_USER_SECURITY_ENGINE 0x2C
 
-#define GICD_BASE  (mmio_get_device_address(MMIO_DEVID_GICD))
-#define GICC_BASE  (mmio_get_device_address(MMIO_DEVID_GICC))
+static inline uintptr_t get_gicd_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_GICD);
+}
 
-#define GICD_IGROUPR    ((volatile uint32_t *)(GICD_BASE + 0x080ULL))
-#define GICD_ISENABLER  ((volatile uint32_t *)(GICD_BASE + 0x100ULL))
-#define GICD_ISPENDR    ((volatile uint32_t *)(GICD_BASE + 0x200ULL))
-#define GICD_IPRIORITYR ((volatile uint8_t *)(GICD_BASE + 0x400ULL))
-#define GICD_ITARGETSR  ((volatile uint8_t *)(GICD_BASE + 0x800ULL))
-#define GICD_ICFGR      ((volatile uint32_t *)(GICD_BASE + 0xC00ULL))
+static inline uintptr_t get_gicc_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_GICC);
+}
 
-#define GICC_CTLR       (*((volatile uint32_t *)(GICC_BASE + 0x0000ULL)))
-#define GICC_PMR        (*((volatile uint32_t *)(GICC_BASE + 0x0004ULL)))
-#define GICC_BPR        (*((volatile uint32_t *)(GICC_BASE + 0x0008ULL)))
+#define GICD_BASE  (get_gicd_base())
+#define GICC_BASE  (get_gicc_base())
+
+#define GICD_IGROUPR    ((volatile uint32_t *)(GICD_BASE + 0x080ull))
+#define GICD_ISENABLER  ((volatile uint32_t *)(GICD_BASE + 0x100ull))
+#define GICD_ISPENDR    ((volatile uint32_t *)(GICD_BASE + 0x200ull))
+#define GICD_IPRIORITYR ((volatile uint8_t *)(GICD_BASE + 0x400ull))
+#define GICD_ITARGETSR  ((volatile uint8_t *)(GICD_BASE + 0x800ull))
+#define GICD_ICFGR      ((volatile uint32_t *)(GICD_BASE + 0xC00ull))
+
+#define GICC_CTLR       (*((volatile uint32_t *)(GICC_BASE + 0x0000ull)))
+#define GICC_PMR        (*((volatile uint32_t *)(GICC_BASE + 0x0004ull)))
+#define GICC_BPR        (*((volatile uint32_t *)(GICC_BASE + 0x0008ull)))
 #define GICC_IAR        (*((volatile uint32_t *)(GICC_BASE + 0x000CULL)))
-#define GICC_EOIR       (*((volatile uint32_t *)(GICC_BASE + 0x0010ULL)))
+#define GICC_EOIR       (*((volatile uint32_t *)(GICC_BASE + 0x0010ull)))
 
 #define GIC_PRI_HIGHEST_SECURE 0x00
 #define GIC_PRI_HIGHEST_NONSECURE 0x80

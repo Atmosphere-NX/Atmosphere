@@ -30,11 +30,11 @@ bool bootconfig_is_debug_mode(void) {
 }
 
 uint64_t bootconfig_get_memory_arrangement(void) {
-    return 0ULL;
+    return 0ull;
     /* TODO */
 }
 
 uint64_t bootconfig_get_kernel_memory_configuration(void) {
-    return 0ULL;
+    return 0ull;
     /* TODO */
 }

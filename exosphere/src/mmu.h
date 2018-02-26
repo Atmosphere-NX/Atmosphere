@@ -13,14 +13,14 @@
 
 #if MMU_GRANULE_TYPE == 0
 #define MMU_Lx_SHIFT(x) (12 + 9 * (3 - (x)))
-#define MMU_Lx_MASK(x)  (BIT(9) - 1)
+#define MMU_Lx_MASK(x)  (BITL(9) - 1)
 #elif MMU_GRANULE_TYPE == 1
 /* 64 KB, no L0 here */
 #define MMU_Lx_SHIFT(x) (16 + 13 * (3 - (x)))
-#define MMU_Lx_MASK(x)  ((x) == 1 ? (BIT(5) - 1) : (BIT(13) - 1))
+#define MMU_Lx_MASK(x)  ((x) == 1 ? (BITL(5) - 1) : (BITL(13) - 1))
 #elif MMU_GRANULE_TYPE == 2
 #define MMU_Lx_SHIFT(x) (14 + 11 * (3 - (x)))
-#define MMU_Lx_MASK(x)  ((x) == 0 ? 1 : (BIT(11) - 1))
+#define MMU_Lx_MASK(x)  ((x) == 0 ? 1 : (BITL(11) - 1))
 #endif
 
 /*
@@ -32,24 +32,24 @@
  * SPDX-License-Identifier: GPL-2.0+
  */
 
-#define MMU_MT_DEVICE_NGNRNE    0
-#define MMU_MT_DEVICE_NGNRE     1
-#define MMU_MT_DEVICE_GRE       2
-#define MMU_MT_NORMAL_NC        3
-#define MMU_MT_NORMAL           4
+#define MMU_MT_DEVICE_NGNRNE    0ull
+#define MMU_MT_DEVICE_NGNRE     1ull
+#define MMU_MT_DEVICE_GRE       2ull
+#define MMU_MT_NORMAL_NC        3ull
+#define MMU_MT_NORMAL           4ull
 
 /*
  * Hardware page table definitions.
  *
  */
 
-#define MMU_PTE_TYPE_MASK       3
-#define MMU_PTE_TYPE_FAULT      0
-#define MMU_PTE_TYPE_TABLE      3
-#define MMU_PTE_TYPE_BLOCK      1
+#define MMU_PTE_TYPE_MASK       3ull
+#define MMU_PTE_TYPE_FAULT      0ull
+#define MMU_PTE_TYPE_TABLE      3ull
+#define MMU_PTE_TYPE_BLOCK      1ull
 
 /* L3 only */
-#define MMU_PTE_TYPE_PAGE       3
+#define MMU_PTE_TYPE_PAGE       3ull
 
 #define MMU_PTE_TABLE_PXN       BITL(59)
 #define MMU_PTE_TABLE_XN        BITL(60)
@@ -59,13 +59,13 @@
 /*
  * Block
  */
-#define MMU_PTE_BLOCK_MEMTYPE(x)        ((x) << 2)
-#define MMU_PTE_BLOCK_NS                BIT(5)
-#define MMU_PTE_BLOCK_NON_SHAREABLE     (0 << 8)
-#define MMU_PTE_BLOCK_OUTER_SHAREABLE   (2 << 8)
-#define MMU_PTE_BLOCK_INNER_SHAREBLE    (3 << 8)
-#define MMU_PTE_BLOCK_AF                BIT(10)
-#define MMU_PTE_BLOCK_NG                BIT(11)
+#define MMU_PTE_BLOCK_MEMTYPE(x)        ((uint64_t)((x) << 2))
+#define MMU_PTE_BLOCK_NS                BITL(5)
+#define MMU_PTE_BLOCK_NON_SHAREABLE     (0ull << 8)
+#define MMU_PTE_BLOCK_OUTER_SHAREABLE   (2ull << 8)
+#define MMU_PTE_BLOCK_INNER_SHAREBLE    (3ull << 8)
+#define MMU_PTE_BLOCK_AF                BITL(10)
+#define MMU_PTE_BLOCK_NG                BITL(11)
 #define MMU_PTE_BLOCK_PXN               BITL(53)
 #define MMU_PTE_BLOCK_UXN               BITL(54)
 #define MMU_PTE_BLOCK_XN                MMU_PTE_BLOCK_UXN
@@ -73,24 +73,24 @@
 /*
  * AP[2:1]
  */
-#define MMU_AP_PRIV_RW                  (0 << 6)
-#define MMU_AP_RW                       (1 << 6)
-#define MMU_AP_PRIV_RO                  (2 << 6)
-#define MMU_AP_RO                       (3 << 6)
+#define MMU_AP_PRIV_RW                  (0ull << 6)
+#define MMU_AP_RW                       (1ull << 6)
+#define MMU_AP_PRIV_RO                  (2ull << 6)
+#define MMU_AP_RO                       (3ull << 6)
 
 /*
  * S2AP[2:1] (for stage2 translations; secmon doesn't use it)
  */
-#define MMU_S2AP_NONE                   (0 << 6)
-#define MMU_S2AP_RO                     (1 << 6)
-#define MMU_S2AP_WO                     (2 << 6)
-#define MMU_S2AP_RW                     (3 << 6)
+#define MMU_S2AP_NONE                   (0ull << 6)
+#define MMU_S2AP_RO                     (1ull << 6)
+#define MMU_S2AP_WO                     (2ull << 6)
+#define MMU_S2AP_RW                     (3ull << 6)
 
 /*
  * AttrIndx[2:0]
  */
-#define MMU_PMD_ATTRINDX(t)     ((t) << 2)
-#define MMU_PMD_ATTRINDX_MASK   (7 << 2)
+#define MMU_PMD_ATTRINDX(t)     ((uint64_t)((t) << 2))
+#define MMU_PMD_ATTRINDX_MASK   (7ull << 2)
 
 /*
  * TCR flags.

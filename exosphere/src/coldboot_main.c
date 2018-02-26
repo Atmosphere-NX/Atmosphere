@@ -26,8 +26,8 @@ __attribute__((used)) static void __libc_fini_array(void) {
 
 void coldboot_main(void) {
     #if 0
-    uintptr_t *mmu_l3_table = (uintptr_t *)tzram_get_segment_address(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
-    uintptr_t pk2ldr = tzram_get_segment_address(TZRAM_SEGMENT_ID_PK2LDR); 
+    uintptr_t *mmu_l3_table = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
+    uintptr_t pk2ldr = TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_PK2LDR);
 
     /* Clear and unmap pk2ldr (which is reused as exception entry stacks) */
     memset((void *)pk2ldr, 0, __pk2ldr_end__ - __pk2ldr_start__);

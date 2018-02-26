@@ -6,7 +6,11 @@
 
 /* Exosphere driver for the Tegra X1 Memory Controller. */
 
-#define MC_BASE  (mmio_get_device_address(MMIO_DEVID_MC))
+static inline uintptr_t get_mc_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_MC);
+}
+
+#define MC_BASE  (get_mc_base())
 
 #define CARVEOUT_ID_MIN 1
 #define CARVEOUT_ID_MAX 5

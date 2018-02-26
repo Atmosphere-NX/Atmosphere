@@ -8,7 +8,11 @@
 
 /* TODO: Should we bother with support UARTB-D? */
 
-#define UARTA_BASE  (mmio_get_device_address(MMIO_DEVID_UART_A))
+static inline uintptr_t get_uarta_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_UART_A);
+}
+
+#define UARTA_BASE  (get_uarta_base())
 
 #define UART_THR_DLAB_0_0 (*((volatile uint32_t *)(UARTA_BASE + 0x0)))
 #define UART_IER_DLAB_0_0 (*((volatile uint32_t *)(UARTA_BASE + 0x4)))

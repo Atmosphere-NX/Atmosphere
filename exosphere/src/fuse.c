@@ -23,7 +23,7 @@ void fuse_init(void)
 void fuse_make_regs_visible(void)
 {
     /* TODO: Replace this with a proper CLKRST driver */
-    volatile uint32_t* misc_clk_reg = (volatile uint32_t *)mmio_get_device_address(MMIO_DEVID_CLKRST) + 0x48;
+    volatile uint32_t* misc_clk_reg = (volatile uint32_t *)MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_CLKRST) + 0x48;
     uint32_t misc_clk_val = *misc_clk_reg;
     *misc_clk_reg = (misc_clk_val | (1 << 28));
 }
@@ -162,9 +162,9 @@ uint64_t fuse_get_device_id(void) {
         derived_lot_code = (derived_lot_code * 0x24) + ((lot_code >> (24 - 6*i)) & 0x3F);
     }
     derived_lot_code &= 0x03FFFFFF;
-    
+
     device_id |= y_coord << 0;
-    device_id |= x_coord << 9; 
+    device_id |= x_coord << 9;
     device_id |= wafer_id << 18;
     device_id |= derived_lot_code << 24;
     device_id |= fab_code << 50;
@@ -200,7 +200,7 @@ uint32_t fuse_get_retail_type(void) {
         return 1;
     } else if (retail_type == 3) { /* Standard dev unit, 0 | DEV_UNIT. */
         return 0;
-    } 
+    }
     return 2; /* IS_RETAIL | DEV_UNIT */
 }
 
@@ -216,7 +216,7 @@ void fuse_get_hardware_info(void *dst) {
     uint32_t lot_code_1 = FUSE_CHIP_REGS->FUSE_LOT_CODE_1 & 0x0FFFFFFF;
     uint32_t fab_code = FUSE_CHIP_REGS->FUSE_FAB_CODE & 0x3F;
     uint32_t vendor_code = FUSE_CHIP_REGS->FUSE_VENDOR_CODE & 0xF;
-    
+
     /* Hardware Info = unk_hw_fuse || Y_COORD || X_COORD || WAFER_ID || LOT_CODE || FAB_CODE || VENDOR_ID */
     hw_info[0] = (uint32_t)((lot_code_1 << 30) | (wafer_id << 24) | (x_coord << 15) | (y_coord << 6) | (unk_hw_fuse));
     hw_info[1] = (uint32_t)((lot_code_0 << 26) | (lot_code_1 >> 2));

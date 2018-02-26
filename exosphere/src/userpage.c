@@ -5,7 +5,7 @@
 #include "memory_map.h"
 #include "cache.h"
 
-static uintptr_t g_user_page_user_address = 0ULL;
+static uintptr_t g_user_page_user_address = 0ull;
 
 static inline uintptr_t get_page_for_address(void *address) {
     return ((uintptr_t)(address)) & ~0xFFFULL;
@@ -15,9 +15,9 @@ static inline uintptr_t get_page_for_address(void *address) {
 /* Returns 1 on success, 0 on failure. */
 bool upage_init(upage_ref_t *upage, void *user_address) {
     upage->user_address = get_page_for_address(user_address);
-    upage->secure_monitor_address = 0ULL;
+    upage->secure_monitor_address = 0ull;
 
-    if (g_user_page_user_address != 0ULL) {
+    if (g_user_page_user_address != 0ull) {
         /* Different physical address indicate SPL was rebooted, or another process got access to svcCallSecureMonitor. Panic. */
         if (g_user_page_user_address != upage->user_address) {
             generic_panic();
@@ -27,7 +27,7 @@ bool upage_init(upage_ref_t *upage, void *user_address) {
         /* Weakly validate SPL's physically random address is in DRAM. */
         if (upage->user_address >> 31) {
             static const uint64_t userpage_attributes =  MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_NORMAL;
-            uintptr_t *mmu_l3_tbl = (uintptr_t *)tzram_get_segment_address(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
+            uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
             g_user_page_user_address = upage->user_address;
             mmu_map_page(mmu_l3_tbl, USER_PAGE_SECURE_MONITOR_ADDR, upage->user_address, userpage_attributes);
             tlb_invalidate_page_inner_shareable((void *)USER_PAGE_SECURE_MONITOR_ADDR);
@@ -35,7 +35,7 @@ bool upage_init(upage_ref_t *upage, void *user_address) {
         }
     }
 
-    return upage->secure_monitor_address != 0ULL;
+    return upage->secure_monitor_address != 0ull;
 }
 
 bool user_copy_to_secure(upage_ref_t *upage, void *secure_dst, void *user_src, size_t size) {
