@@ -4,7 +4,7 @@
 #include "timers.h"
 #include "utils.h"
 
-saved_cpu_context_t g_cpu_contexts[NUM_CPU_CORES] = {0};
+static saved_cpu_context_t g_cpu_contexts[NUM_CPU_CORES] = {0};
 
 void set_core_entrypoint_and_context_id(uint32_t core, uint64_t entrypoint_addr, uint64_t context_id) {
     g_cpu_contexts[core].ELR_EL3 = entrypoint_addr;
