@@ -42,6 +42,8 @@ SECTIONS
     .warm_crt0 :
     {
         . = ALIGN(64);
+        __warmboot_crt0_lma__   = LOADADDR(.warm_crt0);
+        __warmboot_crt0_start__ = ABSOLUTE(.);
         KEEP (*(.warm_crt0.text*))
         KEEP (build/warmboot_init.o(.text*))
         *(.warm_crt0.rodata*)
@@ -52,25 +54,45 @@ SECTIONS
         *(.warm_crt0.bss*)
         build/warmboot_init.o(.bss*)
         . = ALIGN(64);
+        __warmboot_crt0_end__ = ABSOLUTE(.);
     } >warmboot_crt0 AT>fake
 
     .pk2ldr :
     {
         . = ALIGN(4096);
+        __pk2ldr_lma__   = LOADADDR(.pk2ldr);
+        __pk2ldr_start__ = ABSOLUTE(.);
         KEEP (build/package2.o(.text*))
         build/package2.o(.rodata*)
         build/package2.o(.data*)
         . = ALIGN(8);
         build/package2.o(.bss*)
         . = ALIGN(16);
+        __pk2ldr_end__ = ABSOLUTE(.);
     } >pk2ldr AT>fake
 
     .vectors :
     {
         . = ALIGN(2048);
+        __vectors_lma__   = LOADADDR(.vectors);
+        __vectors_start__ = ABSOLUTE(.);
         KEEP (*(.vectors*))
         . = ALIGN(16);
+        __vectors_end__ = ABSOLUTE(.);
     } >evt AT>fake
+
+    .text :
+    {
+        . = ALIGN(256);
+        __main_lma__    = LOADADDR(.text);
+        __main_start__  = ABSOLUTE(.);
+        *(.text.unlikely .text.*_unlikely .text.unlikely.*)
+        *(.text.exit .text.exit.*)
+        *(.text.startup .text.startup.*)
+        *(.text.hot .text.hot.*)
+        *(.text .stub .text.* .gnu.linkonce.t.*)
+        . = ALIGN(8);
+    } >main AT>fake
 
     .init :
     {
@@ -85,15 +107,6 @@ SECTIONS
         . = ALIGN(8);
     } >main AT>fake
 
-    .text :
-    {
-        *(.text.unlikely .text.*_unlikely .text.unlikely.*)
-        *(.text.exit .text.exit.*)
-        *(.text.startup .text.startup.*)
-        *(.text.hot .text.hot.*)
-        *(.text .stub .text.* .gnu.linkonce.t.*)
-        . = ALIGN(8);
-    } >main AT>fake
 
     .fini :
     {
@@ -108,8 +121,8 @@ SECTIONS
         . = ALIGN(8);
     } >main AT>fake
 
-    .got            : { __got_start__ = .; *(.got) *(.igot) } >main AT>fake
-    .got.plt        : { *(.got.plt)  *(.igot.plt)  __got_end__ = .;} >main AT>fake
+    .got            : { __got_start__ = ABSOLUTE(.); *(.got) *(.igot) } >main AT>fake
+    .got.plt        : { *(.got.plt)  *(.igot.plt)  __got_end__ = ABSOLUTE(.);} >main AT>fake
 
     .preinit_array :
     {
@@ -167,12 +180,12 @@ SECTIONS
             We're too lazy to clear BSS so we integrate it into .data.
             Nintendo does the same for this main segment's BSS.
         */
-        __bss_start__ = .;
+        __bss_start__ = ABSOLUTE(.);
         *(.dynbss)
         *(.bss .bss.* .gnu.linkonce.b.*)
         *(COMMON)
         . = ALIGN(8);
-        __bss_end__ = .;
+        __bss_end__ = ABSOLUTE(.);
     } >main AT>fake
 
 
@@ -192,7 +205,7 @@ SECTIONS
     .gnu.version_r     : { *(.gnu.version_r) } >main AT>fake
     .dynsym            : { *(.dynsym) } >main AT>fake
     .dynstr            : { *(.dynstr) } >main AT>fake
-    .rela.dyn          : { *(.rela.*) } >main AT>fake
+    .rela.dyn          : { *(.rela.*); __main_end__ = ABSOLUTE(.);} >main AT>fake
 
     __end__ = ABSOLUTE(.) ;
 

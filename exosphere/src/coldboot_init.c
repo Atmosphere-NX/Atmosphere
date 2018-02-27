@@ -2,17 +2,19 @@
 #include "mmu.h"
 #include "memory_map.h"
 
-/*
-extern void (*__preinit_array_start[])(void);
-extern void (*__preinit_array_end[])(void);
-extern void (*__init_array_start[])(void);
-extern void (*__init_array_end[])(void);
+extern void (*const __preinit_array_start[])(void);
+extern void (*const __preinit_array_end[])(void);
+extern void ( *const __init_array_start[])(void);
+extern void (*const __init_array_end[])(void);
 extern void _init(void);
 
-extern uint8_t __warmboot_crt0_start__[], __warmboot_crt0_end__[], __warmboot_crt0_lma__[];
-extern uint8_t __main_start__[], __main_end__[], __main_lma__[];
-extern uint8_t __pk2ldr_start__[], __pk2ldr_end__[], __pk2ldr_lma__[];
-extern uint8_t __vectors_start__[], __vectors_end__[], __vectors_lma__[];*/
+extern const uint8_t __start_cold[];
+
+extern const uint8_t __warmboot_crt0_start__[], __warmboot_crt0_end__[], __warmboot_crt0_lma__[];
+extern const uint8_t __main_start__[], __main_end__[], __main_lma__[];
+extern const uint8_t __pk2ldr_start__[], __pk2ldr_end__[], __pk2ldr_lma__[];
+extern const uint8_t __vectors_start__[], __vectors_end__[], __vectors_lma__[];
+
 extern void flush_dcache_all_tzram_pa(void);
 extern void invalidate_icache_all_tzram_pa(void);
 
@@ -102,45 +104,51 @@ static void configure_ttbls(void) {
     tzram_map_all_segments(mmu_l3_tbl);
 }
 
-#if 0
-
-static void copy_lma_to_vma(unsigned int segment_id, void *lma, size_t size, bool vma_is_pa) {
-    uintptr_t vma = vma_is_pa ? TZRAM_GET_SEGMENT_PA(segment_id) : TZRAM_GET_SEGMENT_ADDRESS(segment_id);
-    uintptr_t vma_offset = (uintptr_t)lma & 0xFFF;
+__attribute__((noinline)) static void copy_lma_to_vma(const void *vma, const void *lma, size_t size) {
     uint64_t *p_vma = (uint64_t *)vma;
-    uint64_t *p_lma = (uint64_t *)lma;
+    const uint64_t *p_lma = (const uint64_t *)((size_t)lma + __start_cold);
     for (size_t i = 0; i < size / 8; i++) {
-        p_vma[vma_offset / 8 + i] = p_lma[i];
+        p_vma[i] = p_lma[i];
     }
 }
-
-static void __libc_init_array(void) {
-    for (size_t i = 0; i < __preinit_array_end - __preinit_array_start; i++)
-        __preinit_array_start[i]();
-    _init(); /* FIXME: do we have this gcc-provided symbol if we build with -nostartfiles? */
-    for (size_t i = 0; i < __init_array_end - __init_array_start; i++)
-        __init_array_start[i]();
-}
-#endif
 
 uintptr_t get_coldboot_crt0_stack_address(void) {
     return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
 }
 
+__attribute__((target("cmodel=large"), noinline)) static void copy_warmboot_crt0(void) {
+    copy_lma_to_vma(__warmboot_crt0_start__, __warmboot_crt0_lma__, __warmboot_crt0_end__ - __warmboot_crt0_start__);
+}
+
+__attribute__((target("cmodel=large"), noinline)) static void copy_other_sections(void) {
+    copy_lma_to_vma(__main_start__, __main_lma__, __main_end__ - __main_start__);
+    copy_lma_to_vma(__pk2ldr_start__, __pk2ldr_lma__, __pk2ldr_end__ - __pk2ldr_start__);
+    copy_lma_to_vma(__vectors_start__, __vectors_lma__, __vectors_end__ - __vectors_start__);
+}
+
+__attribute__((target("cmodel=large"), noinline)) static void __libc_init_array(void) {
+    /* On the stock secmon the init array lives in crt0 rodata, but whatever... */
+    for (size_t i = 0; i < __preinit_array_end - __preinit_array_start; i++)
+        __preinit_array_start[i]();
+    //_init(); /* FIXME: do we have this gcc-provided symbol if we build with -nostartfiles? */
+    for (size_t i = 0; i < __init_array_end - __init_array_start; i++)
+        __init_array_start[i]();
+}
+
 void coldboot_init(void) {
     /* TODO: Set NX BOOTLOADER clock time field */
-    /*copy_lma_to_vma(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN, __warmboot_crt0_lma__, __warmboot_crt0_end__ - __warmboot_crt0_start__, true);*/
+    copy_warmboot_crt0();
     /* TODO: set some mmio regs, etc. */
     /* TODO: initialize DMA controllers */
     configure_ttbls();
-    /*copy_lma_to_vma(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN, __main_lma__, __main_end__ - __main_start__, false);
-    copy_lma_to_vma(TZRAM_SEGMENT_ID_PK2LDR, __pk2ldr_lma__, __pk2ldr_end__ - __pk2ldr_start__, false);
-    copy_lma_to_vma(TZRAM_SEGEMENT_ID_SECMON_EVT, __vectors_lma__, __vectors_end__ - __vectors_start__, false);*/
+    copy_other_sections();
+
     /* TODO: set the MMU regs & tlbi & enable MMU */
 
     flush_dcache_all_tzram_pa();
     invalidate_icache_all_tzram_pa();
+    /* At this point we can access the mapped segments */
     /* TODO: zero-initialize the cpu context */
     /* Nintendo clears the (emtpy) pk2ldr's BSS section, but we embed it 0-filled in the binary */
-    /*__libc_init_array();  construct global objects */
+    __libc_init_array();  /* construct global objects */
 }
