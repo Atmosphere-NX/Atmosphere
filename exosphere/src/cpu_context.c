@@ -84,9 +84,139 @@ uint32_t cpu_off(void) {
 }
 
 void save_current_core_context(void) {
-    /* TODO */
+    unsigned int current_core = get_core_id();
+    uint64_t temp_reg = 1;
+    /* Write 1 to OS lock .*/
+    __asm__ __volatile__ ("msr oslar_el1, %0" : : "r"(temp_reg));
+    
+    /* Save system registers. */
+    __asm__ __volatile__ ("mrs %0, osdtrrx_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].OSDTRRX_EL1 = (uint32_t)temp_reg;
+    __asm__ __volatile__ ("mrs %0, mdscr_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].MDSCR_EL1 = (uint32_t)temp_reg;
+    __asm__ __volatile__ ("mrs %0, oseccr_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].OSECCR_EL1 = (uint32_t)temp_reg;
+    __asm__ __volatile__ ("mrs %0, mdccint_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].MDCCINT_EL1 = (uint32_t)temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgclaimclr_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGCLAIMCLR_EL1 = (uint32_t)temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgvcr32_el2" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGVCR32_EL2 = (uint32_t)temp_reg;
+    __asm__ __volatile__ ("mrs %0, sder32_el3" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].SDER32_EL3 = (uint32_t)temp_reg;
+    __asm__ __volatile__ ("mrs %0, mdcr_el2" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].MDCR_EL2 = (uint32_t)temp_reg;
+    __asm__ __volatile__ ("mrs %0, mdcr_el3" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].MDCR_EL3 = (uint32_t)temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbvr0_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBVR0_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbcr0_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBCR0_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbvr1_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBVR1_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbcr1_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBCR1_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbvr2_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBVR2_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbcr2_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBCR2_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbvr3_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBVR3_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbcr3_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBCR3_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbvr4_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBVR4_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbcr4_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBCR4_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbvr5_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBVR5_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgbcr5_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGBCR5_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgwvr0_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGWVR0_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgwcr0_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGWCR0_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgwvr1_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGWVR1_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgwcr1_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGWCR1_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgwvr2_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGWVR2_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgwcr2_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGWCR2_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgwvr3_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGWVR3_EL1 = temp_reg;
+    __asm__ __volatile__ ("mrs %0, dbgwcr3_el1" : "=r"(temp_reg));
+    g_cpu_contexts[current_core].DBGWCR3_EL1 = temp_reg;
+
+    /* Mark context as saved. */
+    g_cpu_contexts[current_core].is_saved = 1;
 }
 
 void restore_current_core_context(void) {
-    /* TODO */
+    unsigned int current_core = get_core_id();
+    uint64_t temp_reg;
+    
+    if (g_cpu_contexts[current_core].is_saved) {
+        temp_reg = g_cpu_contexts[current_core].OSDTRRX_EL1;
+        __asm__ __volatile__ ("msr osdtrrx_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].MDSCR_EL1;
+        __asm__ __volatile__ ("msr mdscr_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].OSECCR_EL1;
+        __asm__ __volatile__ ("msr oseccr_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].MDCCINT_EL1;
+        __asm__ __volatile__ ("msr mdccint_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGCLAIMCLR_EL1;
+        __asm__ __volatile__ ("msr dbgclaimclr_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGVCR32_EL2;
+        __asm__ __volatile__ ("msr dbgvcr32_el2, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].SDER32_EL3;
+        __asm__ __volatile__ ("msr sder32_el3, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].MDCR_EL2;
+        __asm__ __volatile__ ("msr mdcr_el2, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].MDCR_EL3;
+        __asm__ __volatile__ ("msr mdcr_el3, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBVR0_EL1;
+        __asm__ __volatile__ ("msr dbgbvr0_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBCR0_EL1;
+        __asm__ __volatile__ ("msr dbgbcr0_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBVR1_EL1;
+        __asm__ __volatile__ ("msr dbgbvr1_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBCR1_EL1;
+        __asm__ __volatile__ ("msr dbgbcr1_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBVR2_EL1;
+        __asm__ __volatile__ ("msr dbgbvr2_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBCR2_EL1;
+        __asm__ __volatile__ ("msr dbgbcr2_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBVR3_EL1;
+        __asm__ __volatile__ ("msr dbgbvr3_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBCR3_EL1;
+        __asm__ __volatile__ ("msr dbgbcr3_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBVR4_EL1;
+        __asm__ __volatile__ ("msr dbgbvr4_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBCR4_EL1;
+        __asm__ __volatile__ ("msr dbgbcr4_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBVR5_EL1;
+        __asm__ __volatile__ ("msr dbgbvr5_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGBCR5_EL1;
+        __asm__ __volatile__ ("msr dbgbcr5_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGWVR0_EL1;
+        __asm__ __volatile__ ("msr dbgwvr0_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGWCR0_EL1;
+        __asm__ __volatile__ ("msr dbgwcr0_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGWVR1_EL1;
+        __asm__ __volatile__ ("msr dbgwvr1_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGWCR1_EL1;
+        __asm__ __volatile__ ("msr dbgwcr1_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGWVR2_EL1;
+        __asm__ __volatile__ ("msr dbgwvr2_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGWCR2_EL1;
+        __asm__ __volatile__ ("msr dbgwcr2_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGWVR3_EL1;
+        __asm__ __volatile__ ("msr dbgwvr3_el1, %0" : : "r"(temp_reg));
+        temp_reg = g_cpu_contexts[current_core].DBGWCR3_EL1;
+        __asm__ __volatile__ ("msr dbgwcr3_el1, %0" : : "r"(temp_reg));
+        
+        g_cpu_contexts[current_core].is_saved = 0;
+    }
 }
