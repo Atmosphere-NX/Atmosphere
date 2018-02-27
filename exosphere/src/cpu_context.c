@@ -1,5 +1,8 @@
+#include <stdbool.h>
 #include <stdint.h>
+#include "cache.h"
 #include "cpu_context.h"
+#include "flow.h"
 #include "pmc.h"
 #include "timers.h"
 #include "utils.h"
@@ -56,7 +59,34 @@ uint32_t cpu_on(uint32_t core, uint64_t entrypoint_addr, uint64_t argument) {
     return 0;
 }
 
+
+void power_down_current_core(void) {
+    unsigned int current_core = get_core_id();
+    flow_set_csr(current_core, 0);
+    flow_set_halt_events(current_core, 0);
+    flow_set_cc4_ctrl(current_core, 0);
+    save_current_core_context();
+    g_cpu_contexts[current_core].is_active = 0;
+    flush_dcache_all();
+    /* TODO: wait_for_power_off(), which writes to regs + . */
+}
+
 uint32_t cpu_off(void) {
+    if (get_core_id() == 3) {
+        power_down_current_core();
+    } else {
+         /* TODO: call_with_stack_pointer(get_powerdown_stack(), power_down_current_core); */
+    }
+    while (true) {
+        /* Wait forever. */
+    }
     return 0;
+}
+
+void save_current_core_context(void) {
+    /* TODO */
+}
+
+void restore_current_core_context(void) {
     /* TODO */
 }

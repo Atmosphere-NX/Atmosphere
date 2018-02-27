@@ -111,6 +111,10 @@ static smc_table_t g_smc_tables[2] = {
 static atomic_flag g_is_user_smc_in_progress = ATOMIC_FLAG_INIT;
 static atomic_flag g_is_priv_smc_in_progress = ATOMIC_FLAG_INIT;
 
+/* Global for smc_configure_carveout. */
+static bool g_configured_carveouts[2] = {false, false};
+
+
 uintptr_t get_smc_core012_stack_address(void) {
     return TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x1000;
 }
@@ -545,15 +549,19 @@ uint32_t smc_configure_carveout(smc_args_t *args) {
     if (size > KERNEL_CARVEOUT_SIZE_MAX) {
         return 2;
     }
+    
+    /* Ensure validity of carveout index. */
+    if (carveout_id > 1) {
+        return 2;
+    }
 
     /* Configuration is one-shot, and cannot be done multiple times. */
-    static bool configured_carveouts[2] = {false, false};
-    if (configured_carveouts[carveout_id]) {
+    if (g_configured_carveouts[carveout_id]) {
         return 2;
     }
 
     configure_kernel_carveout(carveout_id + 4, address, size);
-    configured_carveouts[carveout_id] = true;
+    g_configured_carveouts[carveout_id] = true;
     return 0;
 }
 

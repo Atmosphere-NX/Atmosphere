@@ -5,6 +5,7 @@
 #include "utils.h"
 
 #include "bpmp.h"
+#include "cache.h"
 #include "configitem.h"
 #include "flow.h"
 #include "fuse.h"
