@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
-#include "cache.h"
+#include "arm.h"
 #include "cpu_context.h"
 #include "flow.h"
 #include "pmc.h"

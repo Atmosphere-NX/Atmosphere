@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "utils.h"
-#include "cache.h"
+#include "arm.h"
 #include "configitem.h"
 #include "gcm.h"
 #include "masterkey.h"

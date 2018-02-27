@@ -8,7 +8,7 @@
 #include "configitem.h"
 #include "se.h"
 #include "masterkey.h"
-#include "cache.h"
+#include "arm.h"
 #include "randomcache.h"
 #include "timers.h"
 

@@ -2,7 +2,7 @@
 #include "utils.h"
 #include "mmu.h"
 #include "memory_map.h"
-#include "cache.h"
+#include "arm.h"
 
 extern uint8_t __pk2ldr_start__[], __pk2ldr_end__[];
 extern void __jump_to_lower_el(uint64_t arg, uintptr_t ep, unsigned int el);

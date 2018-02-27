@@ -3,7 +3,7 @@
 #include "utils.h"
 #include "userpage.h"
 #include "memory_map.h"
-#include "cache.h"
+#include "arm.h"
 
 static uintptr_t g_user_page_user_address = 0ull;
 

@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "utils.h"
-#include "cache.h"
+#include "arm.h"
 
 #include "titlekey.h"
 #include "masterkey.h"

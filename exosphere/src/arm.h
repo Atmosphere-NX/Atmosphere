@@ -1,5 +1,5 @@
-#ifndef EXOSPHERE_CACHE_H
-#define EXOSPHERE_CACHE_H
+#ifndef EXOSPHERE_ARM_H
+#define EXOSPHERE_ARM_H
 
 #include <stdint.h>
 

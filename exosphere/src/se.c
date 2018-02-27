@@ -4,7 +4,7 @@
 #include "interrupt.h"
 #include "se.h"
 #include "memory_map.h"
-#include "cache.h"
+#include "arm.h"
 #include "se.h"
 
 void trigger_se_rsa_op(void *buf, size_t size);

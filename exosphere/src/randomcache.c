@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "randomcache.h"
 #include "se.h"
-#include "cache.h"
+#include "arm.h"
 
 /* TrustZone maintains a cache of random for the kernel. */
 /* So that requests can still be serviced even when a */
