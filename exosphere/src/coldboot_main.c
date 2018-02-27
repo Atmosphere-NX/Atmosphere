@@ -5,21 +5,9 @@
 #include "cache.h"
 
 extern uint8_t __pk2ldr_start__[], __pk2ldr_end__[];
-
 extern void __jump_to_lower_el(uint64_t arg, uintptr_t ep, unsigned int el);
 
-void _init(void);
-void _fini(void);
-
 void coldboot_main(void);
-
-void _init(void) {
-    /* Stubbed. Should have been provided by gcc but we have set -nostartfiles */
-}
-
-void _fini(void) {
-    /* Stubbed. Should have been provided by gcc but we have set -nostartfiles */
-}
 
 void coldboot_main(void) {
     uintptr_t *mmu_l3_table = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);

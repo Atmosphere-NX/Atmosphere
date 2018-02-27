@@ -28,7 +28,7 @@ CFLAGS = \
 	-Werror \
 	-Wall
 
-LDFLAGS = -g $(ARCH) -nostartfiles -Wl,--nmagic,--gc-sections
+LDFLAGS = -specs=linker.specs -g $(ARCH)
 
 objects =	$(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
 			$(patsubst $(dir_source)/%.c, $(dir_build)/%.o, \
@@ -55,7 +55,7 @@ $(dir_out)/$(name).bin: $(dir_build)/$(name).elf
 	$(OBJCOPY) -S -O binary $< $@
 
 $(dir_build)/$(name).elf: $(objects)
-	$(LINK.o) -T linker.ld $(OUTPUT_OPTION) $^
+	$(LINK.o) $(OUTPUT_OPTION) $^
 
 $(dir_bpmpfw)/out/bpmpfw.bin: $(dir_bpmpfw)
 	@$(MAKE) -C $<

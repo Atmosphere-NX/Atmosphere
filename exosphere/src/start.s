@@ -77,6 +77,7 @@ __start_cold:
     msr  spsel, #0
     bl   get_coldboot_crt0_stack_address
     mov  sp, x0
+    mov  fp, #0
     bl   coldboot_init
     ldr  x16, =__jump_to_main_cold
     br   x16
@@ -91,6 +92,7 @@ __start_warm:
     msr  spsel, #0
     bl   get_warmboot_crt0_stack_address
     mov  sp, x0
+    mov  fp, #0
     bl   warmboot_init
     ldr  x16, =__jump_to_main_warm
     br   x16
@@ -100,16 +102,17 @@ __start_warm:
 __jump_to_main_cold:
     /* This is inspired by Nintendo's code but significantly different */
     bl   __set_exception_entry_stack_pointer
-
-    bl   get_pk2ldr_stack_address
-    mov  sp, x0
     /*
-        Normally Nintendo calls it in crt0, but it's fine to do that here
-        note that package2.c shouldn't have constructed objects, because we
+        Normally Nintendo calls it in crt0, but it's fine to do that here.
+        Please note that package2.c shouldn't have constructed objects, because we
         call __libc_fini_array after load_package2 has been cleared, on EL3
         to EL3 chainload.
     */
     bl   __libc_init_array
+
+    bl   get_pk2ldr_stack_address
+    mov  sp, x0
+
     bl   load_package2
 
     mov  w0, #3 /* use core3 stack temporarily */
