@@ -1,5 +1,19 @@
 /* For some reason GAS doesn't know about it, even with .cpu cortex-a57 */
 #define cpuactlr_el1 s3_1_c15_c2_0
+.macro      RESET_CORE
+    mov  x0, #(1 << 63)
+    msr  cpuactlr_el1, x0 /* disable regional clock gating */
+    isb
+    mov  x0, #3
+    msr  rmr_el3, x0
+    isb
+    dsb  sy
+    /* Nintendo forgot to copy-paste the branch instruction below. */
+    1:
+        wfi
+        b 1b
+.endm
+
 .macro      ERRATUM_INVALIDATE_BTB_AT_BOOT
 /* Nintendo copy-pasted https://github.com/ARM-software/arm-trusted-firmware/blob/master/plat/nvidia/tegra/common/aarch64/tegra_helpers.S#L312 */
         /*
@@ -42,17 +56,8 @@
     mov  x0, xzr
     msr  oslar_el1, x0
 
-    mov  x0, #(1 << 63)
-    msr  cpuactlr_el1, x0 /* disable regional clock gating */
-    isb
-    mov  x0, #3
-    msr  rmr_el3, x0
-    isb
-    dsb  sy
-    /* Nintendo forgot to copy-paste the branch instruction below. */
-    1:
-        wfi
-        b 1b
+    RESET_CORE
+
 .rept 65
     nop                     /* guard against speculative excecution */
 .endr
@@ -70,7 +75,7 @@ __start_cold:
     ERRATUM_INVALIDATE_BTB_AT_BOOT
 
     msr  spsel, #0
-    bl   get_coldboot_crt0_stack_address /* should be optimized so it doesn't make function calls */
+    bl   get_coldboot_crt0_stack_address
     mov  sp, x0
     bl   coldboot_init
     ldr  x16, =__jump_to_main_cold
@@ -84,7 +89,7 @@ __start_warm:
 
     /* For some reasons, Nintendo uses spsel, #1 here, causing issues if an exception occurs */
     msr  spsel, #0
-    bl   get_warmboot_crt0_stack_address /* should be optimized so it doesn't make function calls */
+    bl   get_warmboot_crt0_stack_address
     mov  sp, x0
     bl   warmboot_init
     ldr  x16, =__jump_to_main_warm
@@ -93,23 +98,35 @@ __start_warm:
 .align      4
 .section    .text.__jump_to_main_cold, "ax", %progbits
 __jump_to_main_cold:
+    /* This is inspired by Nintendo's code but significantly different */
     bl   __set_exception_entry_stack_pointer
 
-    bl   get_pk2ldr_stack_address 
+    bl   get_pk2ldr_stack_address
     mov  sp, x0
+    /*
+        Normally Nintendo calls it in crt0, but it's fine to do that here
+        note that package2.c shouldn't have constructed objects, because we
+        call __libc_fini_array after load_package2 has been cleared, on EL3
+        to EL3 chainload.
+    */
+    bl   __libc_init_array
     bl   load_package2
 
     mov  w0, #3 /* use core3 stack temporarily */
     bl   get_exception_entry_stack_address
     mov  sp, x0
-    b    coldboot_main
+    bl   coldboot_main
+    /* If we ever return, it's to chainload an EL3 payload */
+    bl   __libc_fini_array
+    /* Reset the core (only one is running on coldboot) */
+    RESET_CORE
 
 .section    .text.__jump_to_main_warm, "ax", %progbits
 __jump_to_main_warm:
     /* Nintendo doesn't do that here, causing issues if an exception occurs */
     bl   __set_exception_entry_stack_pointer
 
-    bl   get_pk2ldr_stack_address 
+    bl   get_pk2ldr_stack_address
     mov  sp, x0
     bl   load_package2
 
@@ -127,7 +144,7 @@ __set_exception_entry_stack_pointer:
     mrs  x17, spsel
     mrs  x0, mpidr_el1
     and  w0, w0, #3
-    bl   get_exception_entry_stack_address /* should be optimized so it doesn't make function calls */
+    bl   get_exception_entry_stack_address
     msr  spsel, #1
     mov  sp, x0
     msr  spsel, x17

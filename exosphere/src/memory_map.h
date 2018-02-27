@@ -54,7 +54,7 @@
 #define MMIO_BASE                       0x1F0080000ull
 #define LP0_ENTRY_RAM_SEGMENT_BASE      (MMIO_BASE + 0x000100000ull)
 #define WARMBOOT_RAM_SEGMENT_BASE       (LP0_ENTRY_RAM_SEGMENT_BASE + 0x000047000ull) /* increment seems to be arbitrary ? */
-#define TZRAM_SEGMENT_BASE              (MMIO_BASE + 0x0001E0000ull)
+#define TZRAM_SEGMENT_BASE              (MMIO_BASE + 0x000160000ull)
 
 #define IDENTITY_MAPPING_IRAM_CD        0
 #define IDENTITY_MAPPING_TZRAM          1

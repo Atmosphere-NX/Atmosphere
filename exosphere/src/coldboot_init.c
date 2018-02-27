@@ -2,12 +2,6 @@
 #include "mmu.h"
 #include "memory_map.h"
 
-extern void (*const __preinit_array_start[])(void);
-extern void (*const __preinit_array_end[])(void);
-extern void ( *const __init_array_start[])(void);
-extern void (*const __init_array_end[])(void);
-extern void _init(void);
-
 extern const uint8_t __start_cold[];
 
 extern const uint8_t __warmboot_crt0_start__[], __warmboot_crt0_end__[], __warmboot_crt0_lma__[];
@@ -126,15 +120,6 @@ __attribute__((target("cmodel=large"), noinline)) static void copy_other_section
     copy_lma_to_vma(__vectors_start__, __vectors_lma__, __vectors_end__ - __vectors_start__);
 }
 
-__attribute__((target("cmodel=large"), noinline)) static void __libc_init_array(void) {
-    /* On the stock secmon the init array lives in crt0 rodata, but whatever... */
-    for (size_t i = 0; i < __preinit_array_end - __preinit_array_start; i++)
-        __preinit_array_start[i]();
-    //_init(); /* FIXME: do we have this gcc-provided symbol if we build with -nostartfiles? */
-    for (size_t i = 0; i < __init_array_end - __init_array_start; i++)
-        __init_array_start[i]();
-}
-
 void coldboot_init(void) {
     /* TODO: Set NX BOOTLOADER clock time field */
     copy_warmboot_crt0();
@@ -150,5 +135,4 @@ void coldboot_init(void) {
     /* At this point we can access the mapped segments */
     /* TODO: zero-initialize the cpu context */
     /* Nintendo clears the (emtpy) pk2ldr's BSS section, but we embed it 0-filled in the binary */
-    __libc_init_array();  /* construct global objects */
 }
