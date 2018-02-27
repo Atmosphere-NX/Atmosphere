@@ -64,7 +64,7 @@
 .endm
 
 .align      6
-.section    .text.cold.start, "ax", %progbits
+.section    .cold_crt0.text.start, "ax", %progbits
 .global     __start_cold
 __start_cold:
     ERRATUM_INVALIDATE_BTB_AT_BOOT
@@ -77,7 +77,7 @@ __start_cold:
     br   x16
 
 .align      6
-.section    .text.warm.start, "ax", %progbits
+.section    .warm_crt0.text.start, "ax", %progbits
 .global     __start_warm
 __start_warm:
     ERRATUM_INVALIDATE_BTB_AT_BOOT
@@ -90,6 +90,7 @@ __start_warm:
     ldr  x16, =__jump_to_main_warm
     br   x16
 
+.align      4
 .section    .text.__jump_to_main_cold, "ax", %progbits
 __jump_to_main_cold:
     bl   __set_exception_entry_stack_pointer
