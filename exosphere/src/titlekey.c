@@ -22,6 +22,7 @@ void tkey_set_master_key_rev(unsigned int master_key_rev) {
     if (master_key_rev >= MASTERKEY_REVISION_MAX) {
         generic_panic();
     }
+    g_tkey_master_key_rev = master_key_rev;
 }
 
 /* Reference for MGF1 can be found here: https://en.wikipedia.org/wiki/Mask_generation_function#MGF1 */
