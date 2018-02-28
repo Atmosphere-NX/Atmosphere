@@ -19,6 +19,8 @@ static inline uintptr_t get_pmc_base(void) {
 
 #define APBDEV_PMC_SCRATCH0_0 (*((volatile uint32_t *)(PMC_BASE + 0x50)))
 
+#define APBDEV_PMC_CRYPTO_OP_0 (*((volatile uint32_t *)(PMC_BASE + 0xF4)))
+
 #define APBDEV_PM_0 (*((volatile uint32_t *)(PMC_BASE + 0x14)))
 #define APBDEV_PMC_WAKE2_STATUS_0 (*((volatile uint32_t *)(PMC_BASE + 0x168)))
 #define APBDEV_PMC_CNTRL2_0 (*((volatile uint32_t *)(PMC_BASE + 0x440)))
@@ -29,6 +31,9 @@ static inline uintptr_t get_pmc_base(void) {
 #define APBDEV_PMC_SECURE_SCRATCH113_0 (*((volatile uint32_t *)(PMC_BASE + 0xB1C)))
 #define APBDEV_PMC_SECURE_SCRATCH114_0 (*((volatile uint32_t *)(PMC_BASE + 0xB20)))
 #define APBDEV_PMC_SECURE_SCRATCH115_0 (*((volatile uint32_t *)(PMC_BASE + 0xB24)))
+
+#define APBDEV_PMC_SCRATCH200_0 (*((volatile uint32_t *)(PMC_BASE + 0x840)))
+
 
 
 #endif

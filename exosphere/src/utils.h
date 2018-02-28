@@ -13,8 +13,8 @@
 
 #define ALINLINE        __attribute__((always_inline))
 
-void panic(uint32_t code);
-void generic_panic(void);
+__attribute__ ((noreturn)) void panic(uint32_t code);
+__attribute__ ((noreturn)) void generic_panic(void);
 bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be);
 
 static inline uintptr_t get_physical_address(const void *vaddr) {

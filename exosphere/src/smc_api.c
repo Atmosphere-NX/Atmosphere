@@ -566,7 +566,7 @@ uint32_t smc_configure_carveout(smc_args_t *args) {
 }
 
 uint32_t smc_panic(smc_args_t *args) {
-    (void)args;
-    return 0;
-    /* TODO */
+    /* Swap RGB values from args. */
+    uint32_t color = ((args->X[1] & 0xF) << 8) | ((args->X[1] & 0xF0)) | ((args->X[1] & 0xF00) >> 8);
+    panic((color << 20) | 0x40);
 }
