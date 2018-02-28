@@ -32,11 +32,10 @@
  * SPDX-License-Identifier: GPL-2.0+
  */
 
-#define MMU_MT_DEVICE_NGNRNE    0ull
+/* Memory attributes, see set_memory_registers_enable_mmu */
+#define MMU_MT_NORMAL           0ull
 #define MMU_MT_DEVICE_NGNRE     1ull
-#define MMU_MT_DEVICE_GRE       2ull
-#define MMU_MT_NORMAL_NC        3ull
-#define MMU_MT_NORMAL           4ull
+#define MMU_MT_DEVICE_NGNRNE    2ull /* not used, also the same as Attr4-7 */
 
 /*
  * Hardware page table definitions.
@@ -112,6 +111,7 @@
 #define TCR_TG0_4K          (0 << 14)
 #define TCR_TG0_64K         (1 << 14)
 #define TCR_TG0_16K         (2 << 14)
+#define TCR_PS(x)           ((x) << 16)
 #define TCR_EPD1_DISABLE    BIT(23)
 
 #define TCR_EL1_RSVD        BIT(31)

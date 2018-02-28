@@ -4,8 +4,8 @@
 #include "mmu.h"
 #include "preprocessor.h"
 
-#define ATTRIB_MEMTYPE_NORMAL MMU_PTE_BLOCK_MEMTYPE(0)
-#define ATTRIB_MEMTYPE_DEVICE MMU_PTE_BLOCK_MEMTYPE(1)
+#define ATTRIB_MEMTYPE_NORMAL MMU_PTE_BLOCK_MEMTYPE(MMU_MT_NORMAL)
+#define ATTRIB_MEMTYPE_DEVICE MMU_PTE_BLOCK_MEMTYPE(MMU_MT_DEVICE_NGNRE)
 
 /* Identity mappings (addr, size, additional attributes, is block range) */
 #define _MMAPID0    ( 0x40020000ull, 0x20000ull,                                   0ull, false ) /* iRAM-C+D (contains the secmon's coldboot crt0) */

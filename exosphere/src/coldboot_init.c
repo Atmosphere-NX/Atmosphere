@@ -9,10 +9,10 @@ extern const uint8_t __main_start__[], __main_end__[], __main_lma__[];
 extern const uint8_t __pk2ldr_start__[], __pk2ldr_end__[], __pk2ldr_lma__[];
 extern const uint8_t __vectors_start__[], __vectors_end__[], __vectors_lma__[];
 
-extern void flush_dcache_all_tzram_pa(void);
-extern void invalidate_icache_all_tzram_pa(void);
-
-uintptr_t get_coldboot_crt0_stack_address(void);
+/* warmboot_init.c */
+void set_memory_registers_enable_mmu(void);
+void flush_dcache_all_tzram_pa(void);
+void invalidate_icache_all_tzram_pa(void);
 
 static void identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
     static const uintptr_t addrs[]      =   { TUPLE_FOLD_LEFT_0(EVAL(IDENTIY_MAPPING_ID_MAX), _MMAPID, COMMA) };
@@ -123,16 +123,15 @@ __attribute__((target("cmodel=large"), noinline)) static void copy_other_section
 void coldboot_init(void) {
     /* TODO: Set NX BOOTLOADER clock time field */
     copy_warmboot_crt0();
-    /* TODO: set some mmio regs, etc. */
-    /* TODO: initialize DMA controllers */
+    /* At this point, we can (and will) access functions located in .warm_crt0 */
+    /* TODO: initialize DMA controllers, etc. */
     configure_ttbls();
     copy_other_sections();
-
-    /* TODO: set the MMU regs & tlbi & enable MMU */
+    set_memory_registers_enable_mmu();
 
     flush_dcache_all_tzram_pa();
     invalidate_icache_all_tzram_pa();
-    /* At this point we can access the mapped segments */
+    /* At this point we can access all the mapped segments */
     /* TODO: zero-initialize the cpu context */
-    /* Nintendo clears the (emtpy) pk2ldr's BSS section, but we embed it 0-filled in the binary */
+    /* Nintendo clears the (emtpy) pk2ldr's BSS section here , but we embed it 0-filled in the binary */
 }
