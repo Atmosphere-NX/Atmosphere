@@ -142,7 +142,6 @@ uint64_t g_smc_callback_key = 0;
 
 uint64_t try_set_smc_callback(uint32_t (*callback)(void *, uint64_t)) {
     uint64_t key;
-    /* TODO: Atomics... */
     if (g_smc_callback_key) {
         return 0;
     }
@@ -154,7 +153,6 @@ uint64_t try_set_smc_callback(uint32_t (*callback)(void *, uint64_t)) {
 }
 
 void clear_smc_callback(uint64_t key) {
-    /* TODO: Atomics... */
     if (g_smc_callback_key == key) {
         g_smc_callback_key = 0;
     }
