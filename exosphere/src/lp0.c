@@ -7,6 +7,7 @@
 #include "bpmp.h"
 #include "arm.h"
 #include "configitem.h"
+#include "cpu_context.h"
 #include "flow.h"
 #include "fuse.h"
 #include "i2c.h"
@@ -121,10 +122,9 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     
     /* Save core context. */
     set_core_entrypoint_and_argument(current_core, entrypoint, argument);
-    /* TODO: save_current_core_context(); */
-    /* TODO: set_current_core_inacctive(); */
-    /* TODO: set_current_core_saved(true); */
-    /* TODO: call_with_stack_pointer(TZRAM_GET_SEGMENT_ADDR(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x1000ULL, save_se_and_power_down_cpu); */
+    save_current_core_context();
+    set_current_core_inactive(); 
+    call_with_stack_pointer(get_smc_core012_stack_address(), save_se_and_power_down_cpu);
     
     /* NOTE: This return never actually occurs. */
     return 0;

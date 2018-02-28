@@ -5,6 +5,7 @@
 #include "flow.h"
 #include "pmc.h"
 #include "timers.h"
+#include "smc_api.h"
 #include "utils.h"
 
 static saved_cpu_context_t g_cpu_contexts[NUM_CPU_CORES] = {0};
@@ -72,10 +73,11 @@ void power_down_current_core(void) {
 }
 
 uint32_t cpu_off(void) {
-    if (get_core_id() == 3) {
+    unsigned int current_core = get_core_id();
+    if (current_core == 3) {
         power_down_current_core();
     } else {
-         /* TODO: call_with_stack_pointer(get_powerdown_stack(), power_down_current_core); */
+        call_with_stack_pointer(get_exception_entry_stack_address(current_core), power_down_current_core);
     }
     while (true) {
         /* Wait forever. */
@@ -220,3 +222,13 @@ void restore_current_core_context(void) {
         g_cpu_contexts[current_core].is_saved = 0;
     }
 }
+
+
+void set_current_core_active(void) {
+    g_cpu_contexts[get_core_id()].is_active = 1;
+}
+
+void set_current_core_inactive(void) {
+    g_cpu_contexts[get_core_id()].is_active = 0;
+}
+

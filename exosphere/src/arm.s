@@ -227,3 +227,12 @@ invalidate_icache_inner_shareable:
     dsb ish
     isb
     ret
+
+    
+/* Call a function with desired stack pointer. */
+.section    .text.call_with_stack_pointer, "ax", %progbits
+.type       call_with_stack_pointer, %function
+.global     call_with_stack_pointer
+call_with_stack_pointer:
+    mov sp, x0
+    br x1
