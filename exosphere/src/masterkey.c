@@ -57,10 +57,9 @@ void mkey_detect_revision(void) {
     }
     
     /* We must have determined the master key, or we're not running on a Switch. */
-    /* TODO: When panic is implemented, make this a really distinctive color. */
-    /* Maybe bright red? */
     if (!g_determined_mkey_revision) {
-        generic_panic();
+        /* Panic in bright red. */
+        panic(0x00F00060);
     }
 }
 
