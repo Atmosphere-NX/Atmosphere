@@ -1,6 +1,7 @@
 #ifndef EXOSPHERE_SE_H
 #define EXOSPHERE_SE_H
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -58,6 +59,23 @@
 #define OP_CTX_SAVE 3
 #define OP_RESTART_IN 4
 
+#define CTX_SAVE_SRC_SHIFT 29
+#define CTX_SAVE_SRC_STICKY_BITS (0 << CTX_SAVE_SRC_SHIFT)
+#define CTX_SAVE_SRC_KEYTABLE_AES (2 << CTX_SAVE_SRC_SHIFT)
+#define CTX_SAVE_SRC_KEYTABLE_RSA (1 << CTX_SAVE_SRC_SHIFT)
+#define CTX_SAVE_SRC_MEM (4 << CTX_SAVE_SRC_SHIFT)
+#define CTX_SAVE_SRC_SRK (6 << CTX_SAVE_SRC_SHIFT)
+
+#define CTX_SAVE_KEY_LOW_BITS 0
+#define CTX_SAVE_KEY_HIGH_BITS 1
+#define CTX_SAVE_KEY_ORIGINAL_IV 2
+#define CTX_SAVE_KEY_UPDATED_IV 3
+
+#define CTX_SAVE_STICKY_BIT_INDEX_SHIFT 24
+#define CTX_SAVE_KEY_INDEX_SHIFT 8
+#define CTX_SAVE_RSA_KEY_INDEX_SHIFT 16
+#define CTX_SAVE_RSA_KEY_BLOCK_INDEX_SHIFT 12
+
 #define RSA_2048_BYTES 0x100
 
 typedef struct security_engine {
@@ -74,7 +92,9 @@ typedef struct security_engine {
   unsigned int _0x28;
   unsigned int _0x2C;
   unsigned char HASH_RESULT_REG[0x20];
-  unsigned char _0x50[0x1B0];
+  unsigned char _0x50[0x20];
+  unsigned int CONTEXT_SAVE_CONFIG_REG;
+  unsigned char _0x74[0x18C];
   unsigned int SHA_CONFIG_REG;
   unsigned int SHA_MSG_LENGTH_REG;
   unsigned int _0x20C;
@@ -124,6 +144,8 @@ typedef struct security_engine {
   unsigned int _0x81C;
   unsigned char _0x820[0x17E0];
 } security_engine_t;
+
+static_assert(sizeof(security_engine_t) == 0x2000, "Mis-defined Security Engine Registers!");
 
 typedef struct {
     uint32_t address;

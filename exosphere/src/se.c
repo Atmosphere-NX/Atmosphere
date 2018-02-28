@@ -322,7 +322,7 @@ void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, co
 
 
     flush_dcache_range(stack_buf, stack_buf + KEYSIZE_RSA_MAX);
-    trigger_se_blocking_op(1, NULL, 0, stack_buf, src_size);
+    trigger_se_blocking_op(OP_START, NULL, 0, stack_buf, src_size);
     se_get_exp_mod_output(dst, dst_size);
 }
 
@@ -395,7 +395,7 @@ void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src,
 
     /* Trigger AES operation. */
     SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
-    trigger_se_blocking_op(1, block, sizeof(block), block, sizeof(block));
+    trigger_se_blocking_op(OP_START, block, sizeof(block), block, sizeof(block));
 
     /* Copy output data into dst. */
     flush_dcache_range(block, block + sizeof(block));
@@ -419,7 +419,7 @@ void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const vo
     size_t aligned_size = (size_t)num_blocks << 4;
     if (aligned_size) {
         SECURITY_ENGINE->BLOCK_COUNT_REG = num_blocks - 1;
-        trigger_se_blocking_op(1, dst, dst_size, src, aligned_size);
+        trigger_se_blocking_op(OP_START, dst, dst_size, src, aligned_size);
     }
 
     /* Handle final, unaligned block. */
@@ -497,7 +497,7 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
     /* Handle aligned blocks. */
     if (num_blocks > 1) {
         SECURITY_ENGINE->BLOCK_COUNT_REG = num_blocks - 2;
-        trigger_se_blocking_op(1, NULL, 0, data, data_size);
+        trigger_se_blocking_op(OP_START, NULL, 0, data, data_size);
         SECURITY_ENGINE->CRYPTO_REG |= 0x80;
     }
 
@@ -518,7 +518,7 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
 
     /* Perform last operation. */
     flush_dcache_range(last_block, last_block + sizeof(last_block));
-    trigger_se_blocking_op(1, NULL, 0, last_block, sizeof(last_block));
+    trigger_se_blocking_op(OP_START, NULL, 0, last_block, sizeof(last_block));
 
     /* Copy output CMAC. */
     for (unsigned int i = 0; i < (cmac_size >> 2); i++) {
@@ -542,7 +542,7 @@ void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, co
     SECURITY_ENGINE->CRYPTO_REG = (keyslot << 24) | 0x144;
     set_aes_keyslot_iv(keyslot, iv, 0x10);
     SECURITY_ENGINE->BLOCK_COUNT_REG = (src_size >> 4) - 1;
-    trigger_se_blocking_op(1, dst, dst_size, src, src_size);
+    trigger_se_blocking_op(OP_START, dst, dst_size, src, src_size);
 }
 
 /* SHA256 Implementation. */
@@ -560,7 +560,7 @@ void se_calculate_sha256(void *dst, const void *src, size_t src_size) {
     SECURITY_ENGINE->_0x224 = 0;
 
     /* Trigger the operation. */
-    trigger_se_blocking_op(1, NULL, 0, src, src_size);
+    trigger_se_blocking_op(OP_START, NULL, 0, src, src_size);
 
     /* Copy output hash. */
     for (unsigned int i = 0; i < (0x20 >> 2); i++) {
@@ -584,7 +584,7 @@ void se_initialize_rng(unsigned int keyslot) {
     SECURITY_ENGINE->CRYPTO_REG = (keyslot << 24) | 0x108;
     SECURITY_ENGINE->RNG_CONFIG_REG = 5;
     SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
-    trigger_se_blocking_op(1, output_buf, 0x10, NULL, 0);
+    trigger_se_blocking_op(OP_START, output_buf, 0x10, NULL, 0);
 }
 
 void se_generate_random(unsigned int keyslot, void *dst, size_t size) {
@@ -600,7 +600,7 @@ void se_generate_random(unsigned int keyslot, void *dst, size_t size) {
 
     if (num_blocks >= 1) {
         SECURITY_ENGINE->BLOCK_COUNT_REG = num_blocks - 1;
-        trigger_se_blocking_op(1, dst, aligned_size, NULL, 0);
+        trigger_se_blocking_op(OP_START, dst, aligned_size, NULL, 0);
     }
     if (size > aligned_size) {
         se_perform_aes_block_operation(dst + aligned_size, size - aligned_size, NULL, 0);
@@ -635,10 +635,10 @@ void se_generate_random_key(unsigned int dst_keyslot, unsigned int rng_keyslot) 
     
     /* Generate low part of key. */
     SECURITY_ENGINE->CRYPTO_KEYTABLE_DST_REG = (dst_keyslot << 8);
-    trigger_se_blocking_op(1, NULL, 0, NULL, 0);
+    trigger_se_blocking_op(OP_START, NULL, 0, NULL, 0);
     /* Generate high part of key. */
     SECURITY_ENGINE->CRYPTO_KEYTABLE_DST_REG = (dst_keyslot << 8) | 1;
-    trigger_se_blocking_op(1, NULL, 0, NULL, 0);
+    trigger_se_blocking_op(OP_START, NULL, 0, NULL, 0);
 }
 
 void se_generate_srk(unsigned int srkgen_keyslot) {
@@ -646,7 +646,7 @@ void se_generate_srk(unsigned int srkgen_keyslot) {
     SECURITY_ENGINE->CRYPTO_REG = (srkgen_keyslot << 24) | 0x108;
     SECURITY_ENGINE->RNG_CONFIG_REG = 6;
     SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
-    trigger_se_blocking_op(1, NULL, 0, NULL, 0);
+    trigger_se_blocking_op(OP_START, NULL, 0, NULL, 0);
 }
 
 void se_encrypt_with_srk(void *dst, size_t dst_size, const void *src, size_t src_size) {
@@ -660,18 +660,86 @@ void se_encrypt_with_srk(void *dst, size_t dst_size, const void *src, size_t src
     }
     if (dst_size) {
         flush_dcache_range(aligned_out, aligned_out + 0x10);
-        trigger_se_blocking_op(3, aligned_out, dst_size, src, src_size);
+        trigger_se_blocking_op(OP_CTX_SAVE, aligned_out, dst_size, src, src_size);
         flush_dcache_range(aligned_out, aligned_out + 0x10);
         memcpy(dst, aligned_out, dst_size);
     } else {
-        trigger_se_blocking_op(3, aligned_out, 0, src, src_size);
+        trigger_se_blocking_op(OP_CTX_SAVE, aligned_out, 0, src, src_size);
     }
 }
 
 void se_save_context(unsigned int srkgen_keyslot, unsigned int rng_keyslot, void *dst) {
+    uint8_t _work_buf[0x80];
+    uint8_t *work_buf = (uint8_t *)(((uintptr_t)_work_buf + 0x7F) & ~0x3F);
+
     /* Generate the SRK (context save encryption key). */
     se_generate_random_key(srkgen_keyslot, rng_keyslot);
     se_generate_srk(srkgen_keyslot);
     
-    /* TODO: Encrypt SE context with SRK. */
+    flush_dcache_range(work_buf, work_buf + 0x10);
+    se_generate_random(rng_keyslot, work_buf, 0x10);
+    flush_dcache_range(work_buf, work_buf + 0x10);
+        
+    /* Save random initial block. */
+    SECURITY_ENGINE->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY);
+    SECURITY_ENGINE->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_MEM);
+    SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+    se_encrypt_with_srk(dst, 0x10, work_buf, 0x10);
+    
+    /* Save Sticky Bits. */
+    for (unsigned int i = 0; i < 0x2; i++) {
+        SECURITY_ENGINE->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_STICKY_BITS) | (i << CTX_SAVE_STICKY_BIT_INDEX_SHIFT);
+        SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+        se_encrypt_with_srk(dst + 0x10 + (i * 0x10), 0x10, NULL, 0);
+    }
+    
+    /* Save AES Key Table. */
+    for (unsigned int i = 0; i < KEYSLOT_AES_MAX; i++) {
+        SECURITY_ENGINE->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_KEYTABLE_AES) | (i << CTX_SAVE_KEY_INDEX_SHIFT) | (CTX_SAVE_KEY_LOW_BITS);
+        SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+        se_encrypt_with_srk(dst + 0x30 + (i * 0x20), 0x10, NULL, 0);
+        SECURITY_ENGINE->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_KEYTABLE_AES) | (i << CTX_SAVE_KEY_INDEX_SHIFT) | (CTX_SAVE_KEY_HIGH_BITS);
+        SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+        se_encrypt_with_srk(dst + 0x40 + (i * 0x20), 0x10, NULL, 0);
+    }
+    
+    /* Save AES Original IVs. */
+    for (unsigned int i = 0; i < KEYSLOT_AES_MAX; i++) {
+        SECURITY_ENGINE->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_KEYTABLE_AES) | (i << CTX_SAVE_KEY_INDEX_SHIFT) | (CTX_SAVE_KEY_ORIGINAL_IV);
+        SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+        se_encrypt_with_srk(dst + 0x230 + (i * 0x10), 0x10, NULL, 0);
+    }
+    
+    /* Save AES Updated IVs */
+    for (unsigned int i = 0; i < KEYSLOT_AES_MAX; i++) {
+        SECURITY_ENGINE->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_KEYTABLE_AES) | (i << CTX_SAVE_KEY_INDEX_SHIFT) | (CTX_SAVE_KEY_UPDATED_IV);
+        SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+        se_encrypt_with_srk(dst + 0x330 + (i * 0x10), 0x10, NULL, 0);
+    }
+    
+    /* Save RSA Keytable. */
+    uint8_t *rsa_ctx_out = (uint8_t *)dst + 0x430;
+    for (unsigned int rsa_key = 0; rsa_key < KEYSLOT_RSA_MAX; rsa_key++) {
+        for (unsigned int mod_exp = 0; mod_exp < 2; mod_exp++) {
+            for (unsigned int sub_block = 0; sub_block < 0x10; sub_block++) {
+                SECURITY_ENGINE->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_KEYTABLE_RSA) | ((2 * rsa_key + (1 - mod_exp)) << CTX_SAVE_RSA_KEY_INDEX_SHIFT) | (sub_block << CTX_SAVE_RSA_KEY_BLOCK_INDEX_SHIFT);
+                SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+                se_encrypt_with_srk(rsa_ctx_out, 0x10, NULL, 0);
+                rsa_ctx_out += 0x10;
+            }
+        }
+    }
+    
+    /* Save "Known Pattern. " */
+    static const uint8_t context_save_known_pattern[0x10] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
+    SECURITY_ENGINE->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_MEM);
+    SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+    se_encrypt_with_srk(dst + 0x830, 0x10, context_save_known_pattern, 0x10);
+    
+    /* Save SRK into PMC registers. */
+    SECURITY_ENGINE->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_SRK);
+    SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+    se_encrypt_with_srk(work_buf, 0, NULL, 0);
+    SECURITY_ENGINE->CONFIG_REG = 0;
+    se_encrypt_with_srk(work_buf, 0, NULL, 0);
 }
