@@ -1,5 +1,7 @@
 /* For some reason GAS doesn't know about it, even with .cpu cortex-a57 */
 #define cpuactlr_el1 s3_1_c15_c2_0
+#define cpuectlr_el1 s3_1_c15_c2_1
+
 .macro      RESET_CORE
     mov  x0, #(1 << 63)
     msr  cpuactlr_el1, x0 /* disable regional clock gating */
@@ -102,7 +104,7 @@ __start_warm:
 .global     __set_memory_registers
 .type       __set_memory_registers, %function
 __set_memory_registers:
-    msr  cpuactlr_el1, x2
+    msr  cpuectlr_el1, x2
     isb
     msr  scr_el3, x3
     msr  ttbr0_el3, x0
