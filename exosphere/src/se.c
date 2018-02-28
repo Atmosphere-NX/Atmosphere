@@ -534,7 +534,15 @@ void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size,
 }
 
 void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *iv) {
-    /* TODO */
+    if (keyslot >= KEYSLOT_AES_MAX || src_size < 0x10) {
+        generic_panic();
+    }
+    
+    SECURITY_ENGINE->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY) | (0x202 << 16);
+    SECURITY_ENGINE->CRYPTO_REG = (keyslot << 24) | 0x144;
+    set_aes_keyslot_iv(keyslot, iv, 0x10);
+    SECURITY_ENGINE->BLOCK_COUNT_REG = (src_size >> 4) - 1;
+    trigger_se_blocking_op(1, dst, dst_size, src, src_size);
 }
 
 /* SHA256 Implementation. */
@@ -603,13 +611,67 @@ void se_generate_random(unsigned int keyslot, void *dst, size_t size) {
 
 /* SE context save API. */
 void se_set_in_context_save_mode(bool is_context_save_mode) {
-    /* TODO */
+    uint32_t val = SECURITY_ENGINE->_0x0;
+    if (is_context_save_mode) {
+        val |= 0x10000;
+    } else {
+        val &= 0xFFFEFFFF;
+    }
+    SECURITY_ENGINE->_0x0 = val;
+    /* Perform a useless read from flags reg. */
+    (void)(SECURITY_ENGINE->FLAGS_REG);
 }
 
 void se_generate_random_key(unsigned int dst_keyslot, unsigned int rng_keyslot) {
-    /* TODO */
+    if (dst_keyslot >= KEYSLOT_AES_MAX || rng_keyslot >= KEYSLOT_AES_MAX) {
+        generic_panic();
+    }
+
+    /* Setup Config. */
+    SECURITY_ENGINE->CONFIG_REG = (ALG_RNG | DST_KEYTAB);
+    SECURITY_ENGINE->CRYPTO_REG = (rng_keyslot << 24) | 0x108;
+    SECURITY_ENGINE->RNG_CONFIG_REG = 4;
+    SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+    
+    /* Generate low part of key. */
+    SECURITY_ENGINE->CRYPTO_KEYTABLE_DST_REG = (dst_keyslot << 8);
+    trigger_se_blocking_op(1, NULL, 0, NULL, 0);
+    /* Generate high part of key. */
+    SECURITY_ENGINE->CRYPTO_KEYTABLE_DST_REG = (dst_keyslot << 8) | 1;
+    trigger_se_blocking_op(1, NULL, 0, NULL, 0);
 }
 
-void se_save_context(unsigned int srk_keyslot, unsigned int rng_keyslot, void *dst) {
-    /* TODO */
+void se_generate_srk(unsigned int srkgen_keyslot) {
+    SECURITY_ENGINE->CONFIG_REG = (ALG_RNG | DST_SRK);
+    SECURITY_ENGINE->CRYPTO_REG = (srkgen_keyslot << 24) | 0x108;
+    SECURITY_ENGINE->RNG_CONFIG_REG = 6;
+    SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
+    trigger_se_blocking_op(1, NULL, 0, NULL, 0);
+}
+
+void se_encrypt_with_srk(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    uint8_t output[0x80];
+    uint8_t *aligned_out = (uint8_t *)(((uintptr_t)output + 0x7F) & ~0x3F);
+    if (dst_size > 0x10) {
+        generic_panic();
+    }
+    if (src_size) {
+        flush_dcache_range((uint8_t *)src, (uint8_t *)src + src_size);
+    }
+    if (dst_size) {
+        flush_dcache_range(aligned_out, aligned_out + 0x10);
+        trigger_se_blocking_op(3, aligned_out, dst_size, src, src_size);
+        flush_dcache_range(aligned_out, aligned_out + 0x10);
+        memcpy(dst, aligned_out, dst_size);
+    } else {
+        trigger_se_blocking_op(3, aligned_out, 0, src, src_size);
+    }
+}
+
+void se_save_context(unsigned int srkgen_keyslot, unsigned int rng_keyslot, void *dst) {
+    /* Generate the SRK (context save encryption key). */
+    se_generate_random_key(srkgen_keyslot, rng_keyslot);
+    se_generate_srk(srkgen_keyslot);
+    
+    /* TODO: Encrypt SE context with SRK. */
 }

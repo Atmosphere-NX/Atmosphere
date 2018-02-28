@@ -60,7 +60,7 @@ void save_se_and_power_down_cpu(void) {
     uint8_t *se_state_dst = (uint8_t *)(WARMBOOT_GET_RAM_SEGMENT_ADDRESS(WARMBOOT_RAM_SEGMENT_ID_SE_STATE));
     se_check_error_status_reg();
     se_set_in_context_save_mode(true);
-    se_save_context(KEYSLOT_SWITCH_SRKKEY, KEYSLOT_SWITCH_RNGKEY, se_state_dst);
+    se_save_context(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY, se_state_dst);
     flush_dcache_range(se_state_dst, se_state_dst + 0x840);
     APBDEV_PMC_SCRATCH43_0 = (uint32_t)(WARMBOOT_GET_RAM_SEGMENT_PA(WARMBOOT_RAM_SEGMENT_ID_SE_STATE));
     se_set_in_context_save_mode(false);
