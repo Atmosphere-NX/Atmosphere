@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "mmu.h"
 #include "memory_map.h"
+#include "arm.h"
 
 extern const uint8_t __start_cold[];
 
@@ -12,8 +13,6 @@ extern const uint8_t __vectors_start__[], __vectors_end__[], __vectors_lma__[];
 
 /* warmboot_init.c */
 void set_memory_registers_enable_mmu(void);
-void flush_dcache_all_tzram_pa(void);
-void invalidate_icache_all_inner_shareable_tzram_pa(void);
 
 static void identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
     static const uintptr_t addrs[]      =   { TUPLE_FOLD_LEFT_0(EVAL(IDENTIY_MAPPING_ID_MAX), _MMAPID, COMMA) };
@@ -107,10 +106,6 @@ __attribute__((noinline)) static void copy_lma_to_vma(const void *vma, const voi
     }
 }
 
-uintptr_t get_coldboot_crt0_stack_address(void) {
-    return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
-}
-
 FAR_REACHING static void copy_warmboot_crt0(void) {
     copy_lma_to_vma(__warmboot_crt0_start__, __warmboot_crt0_lma__, __warmboot_crt0_end__ - __warmboot_crt0_start__);
 }
@@ -121,9 +116,32 @@ FAR_REACHING static void copy_other_sections(void) {
     copy_lma_to_vma(__vectors_start__, __vectors_lma__, __vectors_end__ - __vectors_start__);
 }
 
+FAR_REACHING static void set_memory_registers_enable_mmu_tzram_pa(void) {
+    volatile uintptr_t v = (uintptr_t)set_memory_registers_enable_mmu; 
+    ((void (*)(void))v)();
+}
+
+FAR_REACHING static void flush_dcache_all_tzram_pa(void) {
+    uintptr_t pa = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
+    uintptr_t main_pa = pa | ((uintptr_t)__main_start__ & 0xFFF);
+    uintptr_t v = (uintptr_t)flush_dcache_all - (uintptr_t)__main_start__ + (uintptr_t)main_pa;
+    ((void (*)(void))v)();
+}
+
+FAR_REACHING static void invalidate_icache_all_inner_shareable_tzram_pa(void) {
+    uintptr_t pa = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
+    uintptr_t main_pa = pa | ((uintptr_t)__main_start__ & 0xFFF);
+    uintptr_t v = (uintptr_t)invalidate_icache_all_inner_shareable - (uintptr_t)__main_start__ + (uintptr_t)main_pa;
+    ((void (*)(void))v)();
+}
+
 FAR_REACHING static void clear_bss(void) {
     memset((void *)__pk2ldr_bss_start__, 0, __pk2ldr_end__ - __pk2ldr_bss_start__);
     memset((void *)__main_bss_start__, 0, __main_end__ - __main_bss_start__);
+}
+
+uintptr_t get_coldboot_crt0_stack_address(void) {
+    return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
 }
 
 void coldboot_init(void) {
@@ -135,7 +153,7 @@ void coldboot_init(void) {
     /* TODO: initialize DMA controllers, etc. */
     configure_ttbls();
     copy_other_sections();
-    set_memory_registers_enable_mmu();
+    set_memory_registers_enable_mmu_tzram_pa();
 
     flush_dcache_all_tzram_pa();
     invalidate_icache_all_inner_shareable_tzram_pa();
