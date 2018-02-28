@@ -29,6 +29,11 @@ void intr_initialize_gic(void) {
     GICC_BPR = 7;
 }
 
+/* Sets GICC_CTLR to appropriate pre-sleep value. */
+void intr_prepare_gicc_for_sleep(void) {
+    GICC_CTLR = 0x1E0;
+}
+
 /* Sets an interrupt's group in the GICD. */
 void intr_set_group(unsigned int id, int group) {
     GICD_IGROUPR[id >> 5] = (GICD_IGROUPR[id >> 5] & (~(1 << (id & 0x1F)))) | ((group & 1) << (id & 0x1F));

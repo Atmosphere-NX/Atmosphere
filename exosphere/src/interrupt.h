@@ -47,6 +47,8 @@ void handle_registered_interrupt(void);
 /* Initializes the GIC. TODO: This must be called during wakeup. */
 void intr_initialize_gic(void);
 
+void intr_prepare_gicc_for_sleep(void);
+
 
 void intr_register_handler(unsigned int id, void (*handler)(void));
 void intr_set_group(unsigned int id, int group);

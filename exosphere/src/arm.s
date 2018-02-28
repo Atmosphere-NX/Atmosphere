@@ -227,7 +227,46 @@ invalidate_icache_inner_shareable:
     dsb ish
     isb
     ret
-
+    
+/* Final steps before power down. */
+.section    .text.finalize_powerdown, "ax", %progbits
+.type       finalize_powerdown, %function
+.global     finalize_powerdown
+finalize_powerdown:
+    /* All data access to Normal memory from EL0/EL1 + all Normal Memory accesses to EL0/1 stage 1 translation tables non-cacheable for all levels, unified cache. */
+    mrs x0, sctlr_el1
+    and x0, x0, #0xfffffffffffffffb
+    msr sctlr_el1, x0
+    isb
+    /* Same as above, for EL3. */
+    mrs x0, sctlr_el3
+    and x0, x0, #0xfffffffffffffffb
+    msr sctlr_el3, x0
+    isb
+    /* Disable table walk descriptor access prefetch, disable instruction prefetch, disable data prefetch. */
+    mrs x0, s3_1_c15_c2_1
+    orr x0, x0, #0x4000000000
+    and x0, x0, #0xffffffe7ffffffff
+    and x0, x0, #0xfffffffcffffffff
+    msr s3_1_c15_c2_1, x0
+    isb
+    dsb sy
+    bl flush_dcache_all
+    /* Disable receiving instruction cache/tbl maintenance operations. */
+    mrs x0, s3_1_c15_c2_1
+    and x0, x0, #0xffffffffffffffbf
+    msr s3_1_c15_c2_1, x0 
+    /* Prepare GICC */
+    bl intr_prepare_gicc_for_sleep
+    /* Set OS double lock */
+    mrs x0, osdlr_el1
+    orr x0, x0, #1
+    msr osdlr_el1, x0
+    isb
+    dsb sy
+wait_for_power_off:
+    wfi
+    b wait_for_power_off
     
 /* Call a function with desired stack pointer. */
 .section    .text.call_with_stack_pointer, "ax", %progbits

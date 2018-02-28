@@ -17,7 +17,7 @@ void invalidate_dcache_range(const void *start, const void *end);
 
 void invalidate_icache_inner_shareable(void);
 
-
+void finalize_powerdown(void);
 void call_with_stack_pointer(uintptr_t stack_pointer, void (*function)(void));
 
 #endif

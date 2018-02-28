@@ -60,7 +60,6 @@ uint32_t cpu_on(uint32_t core, uint64_t entrypoint_addr, uint64_t argument) {
     return 0;
 }
 
-
 void power_down_current_core(void) {
     unsigned int current_core = get_core_id();
     flow_set_csr(current_core, 0);
@@ -69,7 +68,7 @@ void power_down_current_core(void) {
     save_current_core_context();
     g_cpu_contexts[current_core].is_active = 0;
     flush_dcache_all();
-    /* TODO: wait_for_power_off(), which writes to regs + . */
+    finalize_powerdown();
 }
 
 uint32_t cpu_off(void) {
@@ -77,6 +76,7 @@ uint32_t cpu_off(void) {
     if (current_core == 3) {
         power_down_current_core();
     } else {
+        clear_priv_smc_in_progress();
         call_with_stack_pointer(get_exception_entry_stack_address(current_core), power_down_current_core);
     }
     while (true) {
