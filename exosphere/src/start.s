@@ -188,7 +188,7 @@ __jump_to_lower_el:
     /* x0: arg (context ID), x1: entrypoint, w2: exception level */
     msr  elr_el3, x1
 
-    mov  w1, #((0b1111 << 6) | 1) /* DAIF set and SP = SP_ELx*/
+    mov  w1, #(0b1111 << 6 | 1) /* DAIF set and SP = SP_ELx*/
     orr  w1, w2, w2, lsl#2
     msr  spsr_el3, x1
 

@@ -1,3 +1,6 @@
+#define cpuactlr_el1 s3_1_c15_c2_0
+#define cpuectlr_el1 s3_1_c15_c2_1
+
 .section    .text.tlb_invalidate_all, "ax", %progbits
 .type       tlb_invalidate_all, %function
 .global     tlb_invalidate_all
@@ -244,35 +247,44 @@ invalidate_icache_all:
 .type       finalize_powerdown, %function
 .global     finalize_powerdown
 finalize_powerdown:
-    /* All data access to Normal memory from EL0/EL1 + all Normal Memory accesses to EL0/1 stage 1 translation tables non-cacheable for all levels, unified cache. */
+    /*
+        Make all data access to Normal memory from EL0/EL1 + all Normal Memory accesses to EL0/1 stage 1 translation tables
+        non-cacheable for all levels, unified cache.
+    */
     mrs x0, sctlr_el1
-    and x0, x0, #0xfffffffffffffffb
+    bic x0, x0, #(1 << 2)
     msr sctlr_el1, x0
     isb
+
     /* Same as above, for EL3. */
     mrs x0, sctlr_el3
-    and x0, x0, #0xfffffffffffffffb
+    and x0, x0, #(1 << 2)
     msr sctlr_el3, x0
     isb
+
     /* Disable table walk descriptor access prefetch, disable instruction prefetch, disable data prefetch. */
-    mrs x0, s3_1_c15_c2_1
-    orr x0, x0, #0x4000000000
-    and x0, x0, #0xffffffe7ffffffff
-    and x0, x0, #0xfffffffcffffffff
-    msr s3_1_c15_c2_1, x0
+    mrs x0, cpuectlr_el1
+    orr x0, x0, #(1 << 38)
+    bic x0, x0, #(3 << 35)
+    bic x0, x0, #(3 << 32)
+    msr cpuectlr_el1, x0
     isb
     dsb sy
     bl flush_dcache_all
+
     /* Disable receiving instruction cache/tbl maintenance operations. */
-    mrs x0, s3_1_c15_c2_1
-    and x0, x0, #0xffffffffffffffbf
-    msr s3_1_c15_c2_1, x0
+    mrs x0, cpuectlr_el1
+    and x0, x0, #(1 << 6)
+    msr cpuectlr_el1, x0
+
     /* Prepare GICC */
     bl intr_prepare_gicc_for_sleep
+
     /* Set OS double lock */
     mrs x0, osdlr_el1
     orr x0, x0, #1
     msr osdlr_el1, x0
+
     isb
     dsb sy
 wait_for_power_off:
