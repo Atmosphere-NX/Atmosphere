@@ -7,9 +7,22 @@
 /* This provides management for Switch BootConfig. */
 
 typedef struct {
-    uint8_t unsigned_config[0x200];
+    uint8_t data[0x200];
+} bootconfig_unsigned_config_t;
+
+typedef struct {
+    uint8_t _0x0[8];
+    uint8_t package2_config;
+    uint8_t _0x9[7];
+    uint8_t hardware_info[0x10];
+    uint8_t disable_program_verification;
+    uint8_t _0x21[0xDF];
+} bootconfig_signed_config_t;
+
+typedef struct {
+    bootconfig_unsigned_config_t unsigned_config;
     uint8_t signature[0x100];
-    uint8_t signed_config[0x100];
+    bootconfig_signed_config_t signed_config;
     uint8_t unknown_config[0x240];
 } bootconfig_t;
 
