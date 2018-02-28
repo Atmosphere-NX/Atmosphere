@@ -28,6 +28,18 @@ void intr_initialize_gic(void) {
     GICC_BPR = 7;
 }
 
+/* Initializes Interrupt Groups 1-7 in the GIC. Called by pk2ldr. */
+void intr_initialize_gic_nonsecure(void) {
+    for (unsigned int i = 1; i < 8; i++) {
+        GICD_IGROUPR[i] = 0xFFFFFFFF
+    }
+    
+    for (unsigned int i = 0x20; i < 0xE0; i++) {
+        GICD_IPRIORITYR[i] = GIC_PRI_HIGHEST_NONSECURE;
+    }
+    GICD_CTLR = 1;
+}
+
 /* Sets GICC_CTLR to appropriate pre-sleep value. */
 void intr_prepare_gicc_for_sleep(void) {
     GICC_CTLR = 0x1E0;

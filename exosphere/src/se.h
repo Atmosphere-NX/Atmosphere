@@ -174,7 +174,6 @@ void se_operation_completed(void);
 void se_check_error_status_reg(void);
 void se_check_for_error(void);
 void se_trigger_interrupt(void);
-void se_clear_interrupts(void); /* TODO */
 
 void se_verify_flags_cleared(void);
 

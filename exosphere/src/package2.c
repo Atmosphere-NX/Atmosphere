@@ -18,7 +18,9 @@ static void setup_se(void) {
 
     /* Sanity check the Security Engine. */
     se_verify_flags_cleared();
-    se_clear_interrupts();
+    
+    /* Initialize Interrupts. */
+    intr_initialize_gic_nonsecure();
 
     /* Perform some sanity initialization. */
     volatile security_engine_t *p_security_engine = get_security_engine();

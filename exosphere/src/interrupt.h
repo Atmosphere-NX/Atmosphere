@@ -22,6 +22,7 @@ static inline uintptr_t get_gicc_base(void) {
 #define GICD_BASE  (get_gicd_base())
 #define GICC_BASE  (get_gicc_base())
 
+#define GICD_CTLR       (*((volatile uint32_t *)(GICD_BASE + 0x000ull)))
 #define GICD_IGROUPR    ((volatile uint32_t *)(GICD_BASE + 0x080ull))
 #define GICD_ISENABLER  ((volatile uint32_t *)(GICD_BASE + 0x100ull))
 #define GICD_ISPENDR    ((volatile uint32_t *)(GICD_BASE + 0x200ull))
@@ -46,6 +47,7 @@ void handle_registered_interrupt(void);
 
 /* Initializes the GIC. TODO: This must be called during wakeup. */
 void intr_initialize_gic(void);
+void intr_initialize_gic_nonsecure(void);
 
 void intr_prepare_gicc_for_sleep(void);
 

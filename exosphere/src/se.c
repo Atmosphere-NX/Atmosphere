@@ -71,10 +71,6 @@ void se_verify_flags_cleared(void) {
     }
 }
 
-void se_clear_interrupts(void) {
-    /* TODO */
-}
-
 /* Set the flags for an AES keyslot. */
 void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags) {
     if (keyslot >= KEYSLOT_AES_MAX) {
