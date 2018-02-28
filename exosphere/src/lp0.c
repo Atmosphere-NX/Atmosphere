@@ -107,9 +107,8 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     
     /* TODO: Hold the BPMP in reset. */
     uint8_t *lp0_entry_code = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE));
-    (void)(lp0_entry_code);
-    /* TODO: memcpy(lp0_entry_code, BPMP_FIRMWARE_ADDRESS, sizeof(BPMP_FIRMWARE)); */
-    /* TODO: flush_dcache_range(lp0_entry_code, lp0_entry_code + sizeof(BPMP_FIRMWARE)); */
+    memcpy(lp0_entry_code, bpmpfw_bin, bpmpfw_bin_size);
+    flush_dcache_range(lp0_entry_code, lp0_entry_code + bpmpfw_bin_size);
     /* TODO: Take the BPMP out of reset. */
     
     /* Start executing BPMP firmware. */
