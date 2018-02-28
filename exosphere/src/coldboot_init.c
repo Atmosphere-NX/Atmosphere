@@ -1,3 +1,4 @@
+#include <string.h>
 #include "utils.h"
 #include "mmu.h"
 #include "memory_map.h"
@@ -5,8 +6,8 @@
 extern const uint8_t __start_cold[];
 
 extern const uint8_t __warmboot_crt0_start__[], __warmboot_crt0_end__[], __warmboot_crt0_lma__[];
-extern const uint8_t __main_start__[], __main_end__[], __main_lma__[];
-extern const uint8_t __pk2ldr_start__[], __pk2ldr_end__[], __pk2ldr_lma__[];
+extern const uint8_t __main_start__[], __main_bss_start__[], __main_end__[], __main_lma__[];
+extern const uint8_t __pk2ldr_start__[], __pk2ldr_bss_start__[], __pk2ldr_end__[], __pk2ldr_lma__[];
 extern const uint8_t __vectors_start__[], __vectors_end__[], __vectors_lma__[];
 
 /* warmboot_init.c */
@@ -120,10 +121,17 @@ __attribute__((target("cmodel=large"), noinline)) static void copy_other_section
     copy_lma_to_vma(__vectors_start__, __vectors_lma__, __vectors_end__ - __vectors_start__);
 }
 
+__attribute__((target("cmodel=large"), noinline)) static void clear_bss(void) {
+    memset((void *)__pk2ldr_bss_start__, 0, __pk2ldr_end__ - __pk2ldr_bss_start__);
+    memset((void *)__main_bss_start__, 0, __main_end__ - __main_bss_start__);
+}
+
 void coldboot_init(void) {
     /* TODO: Set NX BOOTLOADER clock time field */
+
     copy_warmboot_crt0();
     /* At this point, we can (and will) access functions located in .warm_crt0 */
+
     /* TODO: initialize DMA controllers, etc. */
     configure_ttbls();
     copy_other_sections();
@@ -131,7 +139,7 @@ void coldboot_init(void) {
 
     flush_dcache_all_tzram_pa();
     invalidate_icache_all_inner_shareable_tzram_pa();
-    /* At this point we can access all the mapped segments */
-    /* TODO: zero-initialize the cpu context */
-    /* Nintendo clears the (emtpy) pk2ldr's BSS section here , but we embed it 0-filled in the binary */
+    /* At this point we can access all the mapped segments (all other functions, data...) normally */
+
+    clear_bss();
 }

@@ -68,8 +68,14 @@ SECTIONS
         build/package2.o(.rodata*)
         build/package2.o(.data*)
         . = ALIGN(8);
+    } >pk2ldr AT>fake
+
+    .pk2ldr.bss :
+    {
+        . = ALIGN(8);
+        __pk2ldr_bss_start__ = ABSOLUTE(.);
         build/package2.o(.bss*)
-        . = ALIGN(16);
+        . = ALIGN(8);
         __pk2ldr_end__ = ABSOLUTE(.);
     } >pk2ldr AT>fake
 
@@ -79,7 +85,7 @@ SECTIONS
         __vectors_lma__   = LOADADDR(.vectors);
         __vectors_start__ = ABSOLUTE(.);
         KEEP (*(.vectors*))
-        . = ALIGN(16);
+        . = ALIGN(8);
         __vectors_end__ = ABSOLUTE(.);
     } >evt AT>fake
 
@@ -178,16 +184,6 @@ SECTIONS
         *(.data .data.* .gnu.linkonce.d.*)
         CONSTRUCTORS
         . = ALIGN(8);
-        /*
-            We're too lazy to clear BSS so we integrate it into .data.
-            Nintendo does the same for this main segment's BSS.
-        */
-        __bss_start__ = ABSOLUTE(.);
-        *(.dynbss)
-        *(.bss .bss.* .gnu.linkonce.b.*)
-        *(COMMON)
-        . = ALIGN(8);
-        __bss_end__ = ABSOLUTE(.);
     } >main AT>fake
 
 
@@ -208,6 +204,17 @@ SECTIONS
     .dynsym            : { *(.dynsym) } >main AT>fake
     .dynstr            : { *(.dynstr) } >main AT>fake
     .rela.dyn          : { *(.rela.*); __main_end__ = ABSOLUTE(.);} >main AT>fake
+
+    .bss :
+    {
+        . = ALIGN(8);
+        __main_bss_start__ = ABSOLUTE(.);
+        *(.dynbss)
+        *(.bss .bss.* .gnu.linkonce.b.*)
+        *(COMMON)
+        . = ALIGN(8);
+        __main_end__ = ABSOLUTE(.);
+    } >main AT>fake
 
     __end__ = ABSOLUTE(.) ;
 
