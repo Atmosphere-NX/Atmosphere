@@ -111,17 +111,17 @@ uintptr_t get_coldboot_crt0_stack_address(void) {
     return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
 }
 
-__attribute__((target("cmodel=large"), noinline)) static void copy_warmboot_crt0(void) {
+FAR_REACHING static void copy_warmboot_crt0(void) {
     copy_lma_to_vma(__warmboot_crt0_start__, __warmboot_crt0_lma__, __warmboot_crt0_end__ - __warmboot_crt0_start__);
 }
 
-__attribute__((target("cmodel=large"), noinline)) static void copy_other_sections(void) {
+FAR_REACHING static void copy_other_sections(void) {
     copy_lma_to_vma(__main_start__, __main_lma__, __main_end__ - __main_start__);
     copy_lma_to_vma(__pk2ldr_start__, __pk2ldr_lma__, __pk2ldr_end__ - __pk2ldr_start__);
     copy_lma_to_vma(__vectors_start__, __vectors_lma__, __vectors_end__ - __vectors_start__);
 }
 
-__attribute__((target("cmodel=large"), noinline)) static void clear_bss(void) {
+FAR_REACHING static void clear_bss(void) {
     memset((void *)__pk2ldr_bss_start__, 0, __pk2ldr_end__ - __pk2ldr_bss_start__);
     memset((void *)__main_bss_start__, 0, __main_end__ - __main_bss_start__);
 }

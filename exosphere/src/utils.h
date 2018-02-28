@@ -7,11 +7,16 @@
 
 #define BIT(n)      (1u   << (n))
 #define BITL(n)     (1ull << (n))
+#define MASK(n)     (BIT(n) - 1)
+#define MASKL(n)    (BITL(n) - 1)
+#define MASK2(a,b)  (MASK(a) & ~MASK(b))
+#define MASK2L(a,b) (MASKL(a) & ~MASKL(b))
 
 #define ALIGN(m)        __attribute__((aligned(m)))
 #define PACKED          __attribute__((packed))
 
 #define ALINLINE        __attribute__((always_inline))
+#define FAR_REACHING    __attribute__((target("cmodel=large"), noinline))
 
 __attribute__ ((noreturn)) void panic(uint32_t code);
 __attribute__ ((noreturn)) void generic_panic(void);
@@ -21,7 +26,7 @@ static inline uintptr_t get_physical_address(const void *vaddr) {
     uintptr_t PAR;
     __asm__ __volatile__ ("at s1e3r, %0" :: "r"(vaddr));
     __asm__ __volatile__ ("mrs %0, par_el1" : "=r"(PAR));
-    return (PAR & 1) ? 0ull : (PAR & 0x00000FFFFFFFF000ull) | ((uintptr_t)vaddr & 0xFFF);
+    return (PAR & 1) ? 0ull : (PAR & MASK2L(40, 12)) | ((uintptr_t)vaddr & MASKL(12));
 }
 
 static inline uint32_t read32le(const volatile void *dword, size_t offset) {

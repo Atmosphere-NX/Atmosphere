@@ -13,14 +13,14 @@
 
 #if MMU_GRANULE_TYPE == 0
 #define MMU_Lx_SHIFT(x) (12 + 9 * (3 - (x)))
-#define MMU_Lx_MASK(x)  (BITL(9) - 1)
+#define MMU_Lx_MASK(x)  MASKL(9)
 #elif MMU_GRANULE_TYPE == 1
 /* 64 KB, no L0 here */
 #define MMU_Lx_SHIFT(x) (16 + 13 * (3 - (x)))
-#define MMU_Lx_MASK(x)  ((x) == 1 ? (BITL(5) - 1) : (BITL(13) - 1))
+#define MMU_Lx_MASK(x)  ((x) == 1 ? MASKL(5) : MASKL(13))
 #elif MMU_GRANULE_TYPE == 2
 #define MMU_Lx_SHIFT(x) (14 + 11 * (3 - (x)))
-#define MMU_Lx_MASK(x)  ((x) == 0 ? 1 : (BITL(11) - 1))
+#define MMU_Lx_MASK(x)  ((x) == 0 ? 1 : MASKL(11))
 #endif
 
 /*
@@ -119,7 +119,7 @@
 #define TCR_EL3_RSVD        (BIT(31) | BIT(23))
 
 static inline void mmu_init_table(uintptr_t *tbl, size_t num_entries) {
-    for(size_t i = 0; i < num_entries; i++) {
+    for(size_t i = 0; i < num_entries / 8; i++) {
         tbl[i] = MMU_PTE_TYPE_FAULT;
     }
 }
