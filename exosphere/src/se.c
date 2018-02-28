@@ -205,7 +205,7 @@ void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_sr
     SECURITY_ENGINE->CRYPTO_KEYTABLE_DST_REG = keyslot_dst << 8;
 
     flush_dcache_range(wrapped_key, (const uint8_t *)wrapped_key + wrapped_key_size);
-    /* TODO: trigger_se_aes_op(OP_START, NULL, 0, wrapped_key, wrapped_key_size); */
+    trigger_se_blocking_op(OP_START, NULL, 0, wrapped_key, wrapped_key_size);
 }
 
 void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, unsigned int crypt_config, bool encrypt, unsigned int (*callback)(void)) {

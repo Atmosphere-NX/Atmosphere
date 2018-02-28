@@ -157,8 +157,6 @@ typedef struct {
     se_addr_info_t addr_info; /* This should really be an array...but for our use case it works. */
 } se_ll_t;
 
-/* TODO: Define constants for the C driver. */
-
 
 /* WIP, API subject to change. */
 
