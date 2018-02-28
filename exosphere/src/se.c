@@ -49,6 +49,11 @@ void se_operation_completed(void) {
     }
 }
 
+void se_check_error_status_reg(void) {
+    if (SECURITY_ENGINE->ERR_STATUS_REG) {
+        generic_panic();
+    }
+}
 
 void se_check_for_error(void) {
     if (SECURITY_ENGINE->INT_STATUS_REG & 0x10000 || SECURITY_ENGINE->FLAGS_REG & 3 || SECURITY_ENGINE->ERR_STATUS_REG) {
@@ -528,6 +533,10 @@ void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size,
     se_compute_aes_cmac(keyslot, cmac, cmac_size, data, data_size, 0x202);
 }
 
+void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *iv) {
+    /* TODO */
+}
+
 /* SHA256 Implementation. */
 void se_calculate_sha256(void *dst, const void *src, size_t src_size) {
     /* Setup config for SHA256, size = BITS(src_size) */
@@ -589,4 +598,18 @@ void se_generate_random(unsigned int keyslot, void *dst, size_t size) {
         se_perform_aes_block_operation(dst + aligned_size, size - aligned_size, NULL, 0);
     }
 
+}
+
+
+/* SE context save API. */
+void se_set_in_context_save_mode(bool is_context_save_mode) {
+    /* TODO */
+}
+
+void se_generate_random_key(unsigned int dst_keyslot, unsigned int rng_keyslot) {
+    /* TODO */
+}
+
+void se_save_context(unsigned int srk_keyslot, unsigned int rng_keyslot, void *dst) {
+    /* TODO */
 }

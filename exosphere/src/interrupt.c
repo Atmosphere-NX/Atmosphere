@@ -11,8 +11,7 @@ static struct {
 } g_registered_interrupts[MAX_REGISTERED_INTERRUPTS] = { {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL} };
 
 static unsigned int get_interrupt_id(void) {
-    return 0;
-    /* TODO */
+    return GICC_IAR;
 }
 
 /* Initializes the GIC. TODO: This must be called during wakeup. */

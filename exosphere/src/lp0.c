@@ -22,8 +22,55 @@ extern const uint32_t bpmpfw_bin_size;
 
 /* Save security engine, and go to sleep. */
 void save_se_and_power_down_cpu(void) {
+    uint32_t tzram_cmac[0x4] = {0};
+    
+    uint8_t *tzram_encryption_src = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_ENCRYPTED_TZRAM));
+    uint8_t *tzram_encryption_dst = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_CURRENT_TZRAM));
+    uint8_t *tzram_store_address = (uint8_t *)(WARMBOOT_GET_RAM_SEGMENT_ADDRESS(WARMBOOT_RAM_SEGMENT_ID_TZRAM));
     clear_priv_smc_in_progress();
-    /* TODO. */
+    
+    /* Flush cache. */
+    flush_dcache_all();
+    
+    /* Encrypt and save TZRAM into DRAM using a random aes-256 key. */
+    se_generate_random_key(KEYSLOT_SWITCH_LP0TZRAMKEY, KEYSLOT_SWITCH_RNGKEY);
+    
+    flush_dcache_range(tzram_encryption_dst, tzram_encryption_dst + LP0_TZRAM_SAVE_SIZE);
+    flush_dcache_range(tzram_encryption_src, tzram_encryption_src + LP0_TZRAM_SAVE_SIZE);
+    
+    /* Use the all-zero cmac buffer as an IV. */
+    se_aes_256_cbc_encrypt(KEYSLOT_SWITCH_LP0TZRAMKEY, tzram_encryption_dst, LP0_TZRAM_SAVE_SIZE, tzram_encryption_src, LP0_TZRAM_SAVE_SIZE, tzram_cmac);
+    flush_dcache_range(tzram_encryption_dst, tzram_encryption_dst + LP0_TZRAM_SAVE_SIZE);
+    
+    /* Copy encrypted TZRAM from IRAM to DRAM. */
+    memcpy(tzram_store_address, tzram_encryption_dst, LP0_TZRAM_SAVE_SIZE);
+    flush_dcache_range(tzram_store_address, tzram_store_address + LP0_TZRAM_SAVE_SIZE);
+    
+    /* Compute CMAC. */
+    se_compute_aes_256_cmac(KEYSLOT_SWITCH_LP0TZRAMKEY, tzram_cmac, sizeof(tzram_cmac), tzram_encryption_dst, LP0_TZRAM_SAVE_SIZE);
+    
+    /* Write CMAC, lock registers. */
+    APBDEV_PMC_SECURE_SCRATCH112_0 = tzram_cmac[0];
+    APBDEV_PMC_SECURE_SCRATCH113_0 = tzram_cmac[1];
+    APBDEV_PMC_SECURE_SCRATCH114_0 = tzram_cmac[2];
+    APBDEV_PMC_SECURE_SCRATCH115_0 = tzram_cmac[3];
+    APBDEV_PMC_SEC_DISABLE8_0 = 0x550000;
+    
+    /* Save security engine state. */
+    uint8_t *se_state_dst = (uint8_t *)(WARMBOOT_GET_RAM_SEGMENT_ADDRESS(WARMBOOT_RAM_SEGMENT_ID_SE_STATE));
+    se_check_error_status_reg();
+    se_set_in_context_save_mode(true);
+    se_save_context(KEYSLOT_SWITCH_SRKKEY, KEYSLOT_SWITCH_RNGKEY, se_state_dst);
+    flush_dcache_range(se_state_dst, se_state_dst + 0x840);
+    APBDEV_PMC_SCRATCH43_0 = (uint32_t)(WARMBOOT_GET_RAM_SEGMENT_PA(WARMBOOT_RAM_SEGMENT_ID_SE_STATE));
+    se_set_in_context_save_mode(false);
+    se_check_error_status_reg();
+    
+    if (!configitem_is_retail()) {
+        /* TODO: uart_log("OYASUMI"); */
+    }
+    
+    finalize_powerdown();
 }
 
 uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argument) {

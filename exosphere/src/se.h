@@ -1,6 +1,7 @@
 #ifndef EXOSPHERE_SE_H
 #define EXOSPHERE_SE_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -8,6 +9,8 @@
 
 /* Exosphere driver for the Tegra X1 security engine. */
 
+#define KEYSLOT_SWITCH_LP0TZRAMKEY 0x2
+#define KEYSLOT_SWITCH_SRKKEY 0x8
 #define KEYSLOT_SWITCH_PACKAGE2KEY 0x8
 #define KEYSLOT_SWITCH_TEMPKEY 0x9
 #define KEYSLOT_SWITCH_SESSIONKEY 0xA
@@ -146,6 +149,7 @@ static inline volatile security_engine_t *get_security_engine(void) {
 /* This function MUST be registered to fire on the appropriate interrupt. */
 void se_operation_completed(void);
 
+void se_check_error_status_reg(void);
 void se_check_for_error(void);
 void se_trigger_interrupt(void);
 void se_clear_interrupts(void); /* TODO */
@@ -176,6 +180,7 @@ void se_aes_128_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_si
 void se_aes_256_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size);
 void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
+void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *iv);
 
 /* Hash API */
 void se_calculate_sha256(void *dst, const void *src, size_t src_size);
@@ -189,6 +194,9 @@ void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, co
 void se_initialize_rng(unsigned int keyslot);
 void se_generate_random(unsigned int keyslot, void *dst, size_t size);
 
-/* TODO: SE context save API. */
+/* SE context save API. */
+void se_set_in_context_save_mode(bool is_context_save_mode);
+void se_generate_random_key(unsigned int dst_keyslot, unsigned int rng_keyslot);
+void se_save_context(unsigned int srk_keyslot, unsigned int rng_keyslot, void *dst);
 
 #endif /* EXOSPHERE_SE_H */
