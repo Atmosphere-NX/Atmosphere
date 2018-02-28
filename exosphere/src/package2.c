@@ -19,7 +19,7 @@ static void setup_se(void) {
 
     /* Sanity check the Security Engine. */
     se_verify_flags_cleared();
-    
+
     /* Initialize Interrupts. */
     intr_initialize_gic_nonsecure();
 
@@ -380,7 +380,7 @@ void load_package2(void) {
 
     /* Clean up cache. */
     flush_dcache_all();
-    invalidate_icache_inner_shareable();
+    invalidate_icache_all_inner_shareable();
 
     /* Set CORE0 entrypoint for Package2. */
     set_core_entrypoint_and_argument(0, DRAM_BASE_PHYSICAL + header.metadata.entrypoint, 0);

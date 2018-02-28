@@ -217,17 +217,28 @@ invalidate_dcache_range:
  *
  * invalidate all icache entries.
  */
-.section    .text.invalidate_icache_inner_shareable, "ax", %progbits
-.type       invalidate_icache_inner_shareable, %function
-.global     invalidate_icache_inner_shareable
-invalidate_icache_inner_shareable:
+.section    .text.invalidate_icache_all_inner_shareable, "ax", %progbits
+.type       invalidate_icache_all_inner_shareable, %function
+.global     invalidate_icache_all_inner_shareable
+invalidate_icache_all_inner_shareable:
     dsb ish
     isb
     ic  ialluis
     dsb ish
     isb
     ret
-    
+
+.section    .text.invalidate_icache_all, "ax", %progbits
+.type       invalidate_icache_all, %function
+.global     invalidate_icache_all
+invalidate_icache_all:
+    dsb sy
+    isb
+    ic  iallu
+    dsb sy
+    isb
+    ret
+
 /* Final steps before power down. */
 .section    .text.finalize_powerdown, "ax", %progbits
 .type       finalize_powerdown, %function
@@ -255,7 +266,7 @@ finalize_powerdown:
     /* Disable receiving instruction cache/tbl maintenance operations. */
     mrs x0, s3_1_c15_c2_1
     and x0, x0, #0xffffffffffffffbf
-    msr s3_1_c15_c2_1, x0 
+    msr s3_1_c15_c2_1, x0
     /* Prepare GICC */
     bl intr_prepare_gicc_for_sleep
     /* Set OS double lock */
@@ -267,7 +278,7 @@ finalize_powerdown:
 wait_for_power_off:
     wfi
     b wait_for_power_off
-    
+
 /* Call a function with desired stack pointer. */
 .section    .text.call_with_stack_pointer, "ax", %progbits
 .type       call_with_stack_pointer, %function

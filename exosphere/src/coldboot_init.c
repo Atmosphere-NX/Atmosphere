@@ -12,7 +12,7 @@ extern const uint8_t __vectors_start__[], __vectors_end__[], __vectors_lma__[];
 /* warmboot_init.c */
 void set_memory_registers_enable_mmu(void);
 void flush_dcache_all_tzram_pa(void);
-void invalidate_icache_all_tzram_pa(void);
+void invalidate_icache_all_inner_shareable_tzram_pa(void);
 
 static void identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
     static const uintptr_t addrs[]      =   { TUPLE_FOLD_LEFT_0(EVAL(IDENTIY_MAPPING_ID_MAX), _MMAPID, COMMA) };
@@ -130,7 +130,7 @@ void coldboot_init(void) {
     set_memory_registers_enable_mmu();
 
     flush_dcache_all_tzram_pa();
-    invalidate_icache_all_tzram_pa();
+    invalidate_icache_all_inner_shareable_tzram_pa();
     /* At this point we can access all the mapped segments */
     /* TODO: zero-initialize the cpu context */
     /* Nintendo clears the (emtpy) pk2ldr's BSS section here , but we embed it 0-filled in the binary */
