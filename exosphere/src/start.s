@@ -97,6 +97,31 @@ __start_warm:
     ldr  x16, =__jump_to_main_warm
     br   x16
 
+/* Used by coldboot as well */
+.section    .warm_crt0.text.__set_memory_registers, "ax", %progbits
+.global     __set_memory_registers
+.type       __set_memory_registers, %function
+__set_memory_registers:
+    msr  cpuactlr_el1, x2
+    isb
+    msr  scr_el3, x3
+    msr  ttbr0_el3, x0
+    msr  tcr_el3, x4
+    msr  cptr_el3, x5
+    msr  mair_el3, x6
+    msr  vbar_el3, x1
+
+    /* Invalidate the entire TLB on the Inner Shareable domain */
+    isb
+    dsb  ish
+    tlbi alle3is
+    dsb  ish
+    isb
+
+    msr  sctlr_el3, x7
+    isb
+    ret
+
 .align      4
 .section    .text.__jump_to_main_cold, "ax", %progbits
 __jump_to_main_cold:

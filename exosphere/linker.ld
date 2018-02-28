@@ -27,6 +27,7 @@ SECTIONS
     .cold_crt0 :
     {
         . = ALIGN(64);
+        KEEP (*(.cold_crt0.text.start)) /* MUST be first */
         KEEP (*(.cold_crt0.text*))
         KEEP (build/coldboot_init.o(.text*))
         *(.cold_crt0.rodata*)
@@ -44,6 +45,7 @@ SECTIONS
         . = ALIGN(64);
         __warmboot_crt0_lma__   = LOADADDR(.warm_crt0);
         __warmboot_crt0_start__ = ABSOLUTE(.);
+        KEEP (*(.warm_crt0.text.start)) /* Should be first */
         KEEP (*(.warm_crt0.text*))
         KEEP (build/warmboot_init.o(.text*))
         *(.warm_crt0.rodata*)
