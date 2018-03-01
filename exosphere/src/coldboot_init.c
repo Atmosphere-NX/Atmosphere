@@ -136,8 +136,9 @@ FAR_REACHING static void invalidate_icache_all_inner_shareable_tzram_pa(void) {
 }
 
 FAR_REACHING static void clear_bss(void) {
-    memset((void *)__pk2ldr_bss_start__, 0, __pk2ldr_end__ - __pk2ldr_bss_start__);
-    memset((void *)__main_bss_start__, 0, __main_end__ - __main_bss_start__);
+    volatile uintptr_t v = (uintptr_t)memset;
+    ((void (*)(void *, int, size_t))v)((void *)__pk2ldr_bss_start__, 0, __pk2ldr_end__ - __pk2ldr_bss_start__);
+    ((void (*)(void *, int, size_t))v)((void *)__main_bss_start__, 0, __main_end__ - __main_bss_start__);
 }
 
 uintptr_t get_coldboot_crt0_stack_address(void) {
@@ -153,7 +154,10 @@ void coldboot_init(void) {
     /* TODO: initialize DMA controllers, etc. */
     configure_ttbls();
     set_memory_registers_enable_mmu_tzram_pa();
+
+
     copy_other_sections();
+      
 
     flush_dcache_all_tzram_pa();
     invalidate_icache_all_inner_shareable_tzram_pa();
