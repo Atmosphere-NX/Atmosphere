@@ -21,12 +21,26 @@
 
 static saved_cpu_context_t g_cpu_contexts[NUM_CPU_CORES] = {0};
 
-void set_core_entrypoint_and_argument(uint32_t core, uint64_t entrypoint_addr, uint64_t argument) {
+void use_core_entrypoint_and_argument(uint32_t core, uintptr_t *entrypoint_addr, uint64_t *argument) {
+    saved_cpu_context_t *ctx = &g_cpu_contexts[core];
+    if(ctx->ELR_EL3 == 0 || ctx->is_active) {
+        panic(0xFA000007); /* invalid context */
+    }
+
+    *entrypoint_addr = ctx->ELR_EL3;
+    *argument = ctx->argument;
+
+    ctx->ELR_EL3 = 0;
+    ctx->argument = 0;
+    ctx->is_active = true;
+}
+
+void set_core_entrypoint_and_argument(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
     g_cpu_contexts[core].ELR_EL3 = entrypoint_addr;
     g_cpu_contexts[core].argument = argument;
 }
 
-uint32_t cpu_on(uint32_t core, uint64_t entrypoint_addr, uint64_t argument) {
+uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
     /* Is core valid? */
     if (core >= NUM_CPU_CORES) {
         return 0xFFFFFFFE;
