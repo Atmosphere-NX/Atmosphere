@@ -10,6 +10,7 @@
 #include "interrupt.h"
 #include "masterkey.h"
 #include "arm.h"
+#include "pmc.h"
 #include "randomcache.h"
 #include "timers.h"
 
@@ -30,6 +31,8 @@ static void setup_se(void) {
     p_security_engine->RSA_KEY_READ_DISABLE_REG = 0;
     p_security_engine->_0x0 &= 0xFFFFFFFB;
 
+    
+
     /* Currently unknown what each flag does. */
     for (unsigned int i = 0; i < KEYSLOT_AES_MAX; i++) {
         set_aes_keyslot_flags(i, 0x15);
@@ -45,7 +48,7 @@ static void setup_se(void) {
 
     /* Detect Master Key revision. */
     mkey_detect_revision();
-
+    
     /* Setup new device key, if necessary. */
     if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
         const uint8_t new_devicekey_source_4x[0x10] = {0x8B, 0x4E, 0x1C, 0x22, 0x42, 0x07, 0xC8, 0x73, 0x56, 0x94, 0x08, 0x8B, 0xCC, 0x47, 0x0F, 0x5D};
@@ -140,7 +143,7 @@ static void verify_header_signature(package2_header_t *header) {
 
     /* This is normally only allowed on dev units, but we'll allow it anywhere. */
     if (bootconfig_is_package2_unsigned() == 0 && se_rsa2048_pss_verify(header->signature, 0x100, modulus, 0x100, header->encrypted_header, 0x100) == 0) {
-        generic_panic();
+        panic(0xF0000001); /* Invalid PK21 signature. */
     }
 }
 
@@ -177,6 +180,7 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
     bool entrypoint_found = false;
 
     /* Header has space for 4 sections, but only 3 are validated/potentially loaded on hardware. */
+    size_t cur_section_offset = 0;
     for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
         /* Validate section size alignment. */
         if (metadata->section_sizes[section] & 3) {
@@ -203,12 +207,17 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
         }
 
         /* Validate section hashes. */
-        void *section_data = (void *)((uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS + sizeof(package2_header_t) + metadata->section_offsets[section]);
-        uint8_t calculated_hash[0x20];
-        se_calculate_sha256(calculated_hash, section_data, metadata->section_sizes[section]);
-        if (memcmp(calculated_hash, metadata->section_hashes[section], sizeof(metadata->section_hashes[section])) != 0) {
-            return false;
+        if (metadata->section_sizes[section]) {
+            void *section_data = (void *)((uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS + sizeof(package2_header_t) + cur_section_offset);
+            uint8_t calculated_hash[0x20];
+            flush_dcache_range((uint8_t *)section_data, (uint8_t *)section_data + metadata->section_sizes[section]);
+            se_calculate_sha256(calculated_hash, section_data, metadata->section_sizes[section]);
+            if (memcmp(calculated_hash, metadata->section_hashes[section], sizeof(metadata->section_hashes[section])) != 0) {
+                return false;
+            }
+            cur_section_offset += metadata->section_sizes[section];
         }
+
     }
 
     /* Ensure that entrypoint is present in one of our sections. */
@@ -219,10 +228,10 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
     /* Perform version checks. */
     /* We will be compatible with all package2s released before current, but not newer ones. */
     if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_400_CURRENT) {
-        return false;
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 /* Decrypts package2 header, and returns the master key revision required. */
@@ -233,7 +242,7 @@ static uint32_t decrypt_and_validate_header(package2_header_t *header) {
         uint32_t mkey_rev;
 
         /* Try to decrypt for all possible master keys. */
-        for (mkey_rev = 0; mkey_rev < MASTERKEY_REVISION_MAX; mkey_rev++) {
+        for (mkey_rev = 0; mkey_rev <= mkey_get_revision(); mkey_rev++) {
             package2_crypt_ctr(mkey_rev, &metadata, sizeof(package2_meta_t), &header->metadata, sizeof(package2_meta_t), header->metadata.ctr, sizeof(header->metadata.ctr));
             /* Copy the ctr (which stores information) into the decrypted metadata. */
             memcpy(metadata.ctr, header->metadata.ctr, sizeof(header->metadata.ctr));
@@ -245,7 +254,9 @@ static uint32_t decrypt_and_validate_header(package2_header_t *header) {
         }
 
         /* Ensure we successfully decrypted the header. */
-        generic_panic();
+        if (mkey_rev > mkey_get_revision()) {   
+            panic(0xFAF00003);
+        }
     }
     return 0;
 }
@@ -296,7 +307,8 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
         memset(load_buf, 0, PACKAGE2_SIZE_MAX);
         load_buf = (void *)potential_base_start;
     }
-
+    
+    size_t cur_section_offset = 0;
     /* Copy each section to its appropriate location, decrypting if necessary. */
     for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
         if (metadata->section_sizes[section] == 0) {
@@ -304,7 +316,7 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
         }
 
         void *dst_start = (void *)(DRAM_BASE_PHYSICAL + (uint64_t)metadata->section_offsets[section]);
-        void *src_start = load_buf + sizeof(package2_header_t) + metadata->section_offsets[section];
+        void *src_start = load_buf + sizeof(package2_header_t) + cur_section_offset;
         size_t size = (size_t)metadata->section_sizes[section];
 
         if (bootconfig_is_package2_plaintext()) {
@@ -312,6 +324,7 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
         } else {
             package2_crypt_ctr(master_key_rev, dst_start, size, src_start, size, metadata->section_ctrs[section], 0x10);
         }
+        cur_section_offset += size;
     }
 
     /* Clear the encrypted package2 from memory. */
@@ -325,6 +338,7 @@ uintptr_t get_pk2ldr_stack_address(void) {
 /* This function is called during coldboot init, and validates a package2. */
 /* This package2 is read into memory by a concurrent BPMP bootloader. */
 void load_package2(void) {
+    
     /* Setup the Security Engine. */
     setup_se();
 
@@ -346,12 +360,16 @@ void load_package2(void) {
     /* Let NX Bootloader know that we're running. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 1;
 
+    /* Wait for 1 second, to allow time for NX_BOOTLOADER to draw to the screen. This is useful for debugging. */
+    wait(1000000);
+
     /* Synchronize with NX BOOTLOADER. */
     if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == NX_BOOTLOADER_STATE_INIT) {
         while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG) {
             wait(1);
         }
     }
+
 
     /* Load Boot Config into global. */
     setup_boot_config();
@@ -369,14 +387,19 @@ void load_package2(void) {
     memcpy(&header, NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, sizeof(header));
     flush_dcache_range((uint8_t *)&header, (uint8_t *)&header + sizeof(header));
 
+
     /* Perform signature checks. */
     verify_header_signature(&header);
+
 
     /* Decrypt header, get key revision required. */
     uint32_t package2_mkey_rev = decrypt_and_validate_header(&header);
 
+
     /* Load Package2 Sections. */
     load_package2_sections(&header.metadata, package2_mkey_rev);
+
+
 
     /* Clean up cache. */
     flush_dcache_all();

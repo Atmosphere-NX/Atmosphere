@@ -460,6 +460,13 @@ void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const vo
         generic_panic();
     }
 
+    if (src_size) {
+        flush_dcache_range((uint8_t *)src, (uint8_t *)src + src_size);
+    }
+    if (dst_size) {
+        flush_dcache_range((uint8_t *)dst, (uint8_t *)dst + dst_size);
+    }  
+
     unsigned int num_blocks = src_size >> 4;
 
     /* Unknown what this write does, but official code writes it for CTR mode. */
@@ -483,6 +490,10 @@ void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const vo
         }
         se_perform_aes_block_operation(dst + aligned_size, last_block_size, (uint8_t *)src + aligned_size, src_size - aligned_size);
     }
+
+    if (dst_size) {
+        flush_dcache_range((uint8_t *)dst, (uint8_t *)dst + dst_size);
+    }  
 }
 
 void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, unsigned int config_high) {
