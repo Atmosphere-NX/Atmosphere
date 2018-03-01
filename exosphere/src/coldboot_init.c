@@ -152,8 +152,8 @@ void coldboot_init(void) {
 
     /* TODO: initialize DMA controllers, etc. */
     configure_ttbls();
-    copy_other_sections();
     set_memory_registers_enable_mmu_tzram_pa();
+    copy_other_sections();
 
     flush_dcache_all_tzram_pa();
     invalidate_icache_all_inner_shareable_tzram_pa();
