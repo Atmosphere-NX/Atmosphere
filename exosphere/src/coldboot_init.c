@@ -66,7 +66,7 @@ static void tzram_map_all_segments(uintptr_t *mmu_l3_tbl) {
     static const bool is_executable[]   =   { TUPLE_FOLD_LEFT_3(EVAL(TZRAM_SEGMENT_ID_MAX), _MMAPTZS, COMMA) };
 
     for(size_t i = 0, offset = 0; i < TZRAM_SEGMENT_ID_MAX; i++) {
-        tzram_map_segment(mmu_l3_tbl, TZRAM_SEGMENT_BASE, 0x7C010000ull + offs[i], sizes[i], is_executable[i]);
+        tzram_map_segment(mmu_l3_tbl, TZRAM_SEGMENT_BASE + offset, 0x7C010000ull + offs[i], sizes[i], is_executable[i]);
         offset += increments[i];
     }
 }
