@@ -154,12 +154,12 @@ void set_rsa_keyslot(unsigned int keyslot, const void  *modulus, size_t modulus_
 
     for (size_t i = 0; i < (modulus_size >> 2); i++) {
         SECURITY_ENGINE->RSA_KEYTABLE_ADDR = (keyslot << 7) | 0x40 | i;
-        SECURITY_ENGINE->RSA_KEYTABLE_DATA = read32be(modulus, 4 * i);
+        SECURITY_ENGINE->RSA_KEYTABLE_DATA = read32be(modulus, (4 * (modulus_size >> 2)) - (4 * i) - 4);
     }
 
     for (size_t i = 0; i < (exp_size >> 2); i++) {
         SECURITY_ENGINE->RSA_KEYTABLE_ADDR = (keyslot << 7) | i;
-        SECURITY_ENGINE->RSA_KEYTABLE_DATA = read32be(exponent, 4 * i);
+        SECURITY_ENGINE->RSA_KEYTABLE_DATA = read32be(exponent, (4 * (exp_size >> 2)) - (4 * i) - 4);
     }
 
     g_se_modulus_sizes[keyslot] = modulus_size;
@@ -307,8 +307,8 @@ void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, co
     }
 
     /* Endian swap the input. */
-    for (size_t i = src_size; i > 0; i--) {
-        stack_buf[i] = *((uint8_t *)src + src_size - i);
+    for (size_t i = 0; i < src_size; i++) {
+        stack_buf[i] = *((uint8_t *)src + src_size - i - 1);
     }
 
     SECURITY_ENGINE->CONFIG_REG = (ALG_RSA | DST_RSAREG);
