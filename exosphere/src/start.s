@@ -81,6 +81,11 @@ __start_cold:
     mov  sp, x0
     mov  fp, #0
     bl   coldboot_init
+
+    adr  x0, __start_cold
+    ldr  x1, =__start_cold_addr
+    str  x0, [x1]
+
     ldr  x16, =__jump_to_main_cold
     br   x16
 
@@ -196,3 +201,33 @@ __jump_to_lower_el:
 
     isb
     eret
+
+.align      3
+.section    .cold_start.rodata.reloc_constants, "a", %progbits
+.global     __warmboot_crt0_offset
+__warmboot_crt0_offset:
+    .quad __warmboot_crt0_lma__
+
+.global     __main_offset
+__main_offset:
+    .quad __main_lma__
+
+.global     __pk2ldr_offset
+__pk2ldr_offset:
+    .quad __pk2ldr_lma__
+
+.global     __vectors_offset
+__vectors_offset:
+    .quad __vectors_lma__
+
+.align      3
+.section    .rodata.__bin_size, "a", %progbits
+.global     __bin_size
+__bin_size:
+    .quad   __end_lma__
+
+.align      3
+.section    .bss.__start_cold_addr, "w", %nobits
+.global     __start_cold_addr
+__start_cold_addr:
+    .space  8

@@ -6,10 +6,12 @@
 
 extern const uint8_t __start_cold[];
 
-extern const uint8_t __warmboot_crt0_start__[], __warmboot_crt0_end__[], __warmboot_crt0_lma__[];
-extern const uint8_t __main_start__[], __main_bss_start__[], __main_end__[], __main_lma__[];
-extern const uint8_t __pk2ldr_start__[], __pk2ldr_bss_start__[], __pk2ldr_end__[], __pk2ldr_lma__[];
-extern const uint8_t __vectors_start__[], __vectors_end__[], __vectors_lma__[];
+extern const uint8_t __warmboot_crt0_start__[], __warmboot_crt0_end__[];
+extern const uint8_t __main_start__[], __main_bss_start__[], __main_end__[];
+extern const uint8_t __pk2ldr_start__[], __pk2ldr_bss_start__[], __pk2ldr_end__[];
+extern const uint8_t __vectors_start__[], __vectors_end__[];
+
+extern const size_t __warmboot_crt0_offset, __main_offset, __pk2ldr_offset, __vectors_offset;
 
 /* warmboot_init.c */
 void set_memory_registers_enable_mmu(void);
@@ -98,22 +100,22 @@ static void configure_ttbls(void) {
     tzram_map_all_segments(mmu_l3_tbl);
 }
 
-__attribute__((noinline)) static void copy_lma_to_vma(const void *vma, const void *lma, size_t size) {
+__attribute__((noinline)) static void copy_lma_to_vma(const void *vma, size_t offset, size_t size) {
     uint64_t *p_vma = (uint64_t *)vma;
-    const uint64_t *p_lma = (const uint64_t *)((size_t)lma + __start_cold);
+    const uint64_t *p_lma = (const uint64_t *)(__start_cold + offset);
     for (size_t i = 0; i < size / 8; i++) {
         p_vma[i] = p_lma[i];
     }
 }
 
 FAR_REACHING static void copy_warmboot_crt0(void) {
-    copy_lma_to_vma(__warmboot_crt0_start__, __warmboot_crt0_lma__, __warmboot_crt0_end__ - __warmboot_crt0_start__);
+    copy_lma_to_vma(__warmboot_crt0_start__, __warmboot_crt0_offset, __warmboot_crt0_end__ - __warmboot_crt0_start__);
 }
 
 FAR_REACHING static void copy_other_sections(void) {
-    copy_lma_to_vma(__main_start__, __main_lma__, __main_end__ - __main_start__);
-    copy_lma_to_vma(__pk2ldr_start__, __pk2ldr_lma__, __pk2ldr_end__ - __pk2ldr_start__);
-    copy_lma_to_vma(__vectors_start__, __vectors_lma__, __vectors_end__ - __vectors_start__);
+    copy_lma_to_vma(__main_start__, __main_offset, __main_end__ - __main_start__);
+    copy_lma_to_vma(__pk2ldr_start__, __pk2ldr_offset, __pk2ldr_end__ - __pk2ldr_start__);
+    copy_lma_to_vma(__vectors_start__, __vectors_offset, __vectors_end__ - __vectors_start__);
 }
 
 FAR_REACHING static void set_memory_registers_enable_mmu_tzram_pa(void) {
@@ -128,10 +130,10 @@ FAR_REACHING static void flush_dcache_all_tzram_pa(void) {
     ((void (*)(void))v)();
 }
 
-FAR_REACHING static void invalidate_icache_all_inner_shareable_tzram_pa(void) {
+FAR_REACHING static void invalidate_icache_all_tzram_pa(void) {
     uintptr_t pa = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
     uintptr_t main_pa = pa | ((uintptr_t)__main_start__ & 0xFFF);
-    uintptr_t v = (uintptr_t)invalidate_icache_all_inner_shareable - (uintptr_t)__main_start__ + (uintptr_t)main_pa;
+    uintptr_t v = (uintptr_t)invalidate_icache_all - (uintptr_t)__main_start__ + (uintptr_t)main_pa;
     ((void (*)(void))v)();
 }
 
@@ -155,12 +157,10 @@ void coldboot_init(void) {
     configure_ttbls();
     set_memory_registers_enable_mmu_tzram_pa();
 
-
     copy_other_sections();
-      
 
     flush_dcache_all_tzram_pa();
-    invalidate_icache_all_inner_shareable_tzram_pa();
+    invalidate_icache_all_tzram_pa();
     /* At this point we can access all the mapped segments (all other functions, data...) normally */
 
     clear_bss();

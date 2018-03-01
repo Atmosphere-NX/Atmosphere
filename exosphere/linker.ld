@@ -214,6 +214,7 @@ SECTIONS
         *(COMMON)
         . = ALIGN(8);
         __main_end__ = ABSOLUTE(.);
+        __end_lma__  = LOADADDR(.bss) + __main_end__ - __main_bss_start__;
     } >main AT>fake
 
     __end__ = ABSOLUTE(.) ;

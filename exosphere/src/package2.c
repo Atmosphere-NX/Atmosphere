@@ -14,6 +14,9 @@
 #include "randomcache.h"
 #include "timers.h"
 
+extern void *__start_cold_addr;
+extern size_t __bin_size;
+
 /* Hardware init, sets up the RNG and SESSION keyslots, derives new DEVICE key. */
 static void setup_se(void) {
     uint8_t work_buffer[0x10];
@@ -331,6 +334,38 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
     memset(load_buf, 0, PACKAGE2_SIZE_MAX);
 }
 
+static void sync_with_nx_bootloader(int state) {
+    if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == state - 1) {
+        while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < state) {
+            wait(1);
+        }
+    }
+}
+
+static void identity_unmap_iram_cd_tzram(void) {
+    /* See also: configure_ttbls (in coldboot_init.c). */
+    uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
+    uintptr_t *mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
+    uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
+
+    mmu_unmap_range(3, mmu_l3_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_IRAM_CD), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_IRAM_CD));
+    mmu_unmap_range(3, mmu_l3_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_TZRAM), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_TZRAM));
+
+    mmu_unmap(2, mmu_l2_tbl, 0x40000000);
+    mmu_unmap(2, mmu_l2_tbl, 0x7C000000);
+
+    mmu_unmap(1, mmu_l1_tbl, 0x40000000);
+
+    tlb_invalidate_all_inner_shareable();
+}
+
+static void indentity_unmap_dram(void) {
+    uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
+
+    mmu_unmap_range(1, mmu_l1_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_DRAM), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_DRAM));
+    tlb_invalidate_all_inner_shareable();
+}
+
 uintptr_t get_pk2ldr_stack_address(void) {
     return TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_PK2LDR) + 0x2000;
 }
@@ -350,12 +385,15 @@ void load_package2(void) {
     /* Initialize the PMC secure scratch registers, initialize MISC registers, */
     /* And assign "se_operation_completed" to Interrupt 0x5A. */
 
+    /* TODO: initalize cpu context */
+
     /* TODO: Read and save BOOTREASON stored by NX_BOOTLOADER at 0x1F009FE00 */
 
     /* Initialize cache'd random bytes for kernel. */
     randomcache_init();
 
-    /* TODO: memclear the initial copy of Exosphere running in IRAM (relocated to TZRAM by earlier code). */
+    /* memclear the initial copy of Exosphere running in IRAM (relocated to TZRAM by earlier code). */
+    memset(__start_cold_addr, 0, __bin_size);
 
     /* Let NX Bootloader know that we're running. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 1;
@@ -363,23 +401,19 @@ void load_package2(void) {
     /* Wait for 1 second, to allow time for NX_BOOTLOADER to draw to the screen. This is useful for debugging. */
     wait(1000000);
 
-    /* Synchronize with NX BOOTLOADER. */
-    if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == NX_BOOTLOADER_STATE_INIT) {
-        while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG) {
-            wait(1);
-        }
-    }
 
+    /* Synchronize with NX BOOTLOADER. */
+    sync_with_nx_bootloader(NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG);
 
     /* Load Boot Config into global. */
     setup_boot_config();
 
+
     /* Synchronize with NX BOOTLOADER. */
-    if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG) {
-        while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < NX_BOOTLOADER_STATE_LOADED_PACKAGE2) {
-            wait(1);
-        }
-    }
+    sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2);
+
+    /* Remove the identity mapping for iRAM-C+D and TZRAM */
+    identity_unmap_iram_cd_tzram();
 
     /* Load header from NX_BOOTLOADER-initialized DRAM. */
     package2_header_t header;
@@ -387,35 +421,29 @@ void load_package2(void) {
     memcpy(&header, NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, sizeof(header));
     flush_dcache_range((uint8_t *)&header, (uint8_t *)&header + sizeof(header));
 
-
     /* Perform signature checks. */
     verify_header_signature(&header);
-
 
     /* Decrypt header, get key revision required. */
     uint32_t package2_mkey_rev = decrypt_and_validate_header(&header);
 
-
     /* Load Package2 Sections. */
     load_package2_sections(&header.metadata, package2_mkey_rev);
 
-
-
     /* Clean up cache. */
     flush_dcache_all();
-    invalidate_icache_all_inner_shareable();
+    invalidate_icache_all(); /* non-broadcasting */
 
     /* Set CORE0 entrypoint for Package2. */
     set_core_entrypoint_and_argument(0, DRAM_BASE_PHYSICAL + header.metadata.entrypoint, 0);
 
-    /* Synchronize with NX BOOTLOADER. */
-    if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == NX_BOOTLOADER_STATE_LOADED_PACKAGE2) {
-        while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < NX_BOOTLOADER_STATE_FINISHED) {
-            wait(1);
-        }
-    }
+    /* Remove the DRAM identity mapping. */
+    indentity_unmap_dram();
 
-    /* TODO: MISC register 0x1F0098C00 |= 0x2000; */
+    /* Synchronize with NX BOOTLOADER. */
+    sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
+
+    /* TODO: lots of boring MMIO */
 
     /* TODO: Update SCR_EL3 depending on value in Bootconfig. */
 }

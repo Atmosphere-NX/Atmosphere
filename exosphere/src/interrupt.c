@@ -8,7 +8,7 @@
 static struct {
     unsigned int id;
     void (*handler)(void);
-} g_registered_interrupts[MAX_REGISTERED_INTERRUPTS] = { {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL} };
+} g_registered_interrupts[MAX_REGISTERED_INTERRUPTS] = { {0} };
 
 static unsigned int get_interrupt_id(void) {
     return GICC_IAR;
