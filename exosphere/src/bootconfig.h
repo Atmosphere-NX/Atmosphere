@@ -3,8 +3,11 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "memory_map.h"
 
 /* This provides management for Switch BootConfig. */
+
+#define LOADED_BOOTCONFIG (get_loaded_bootconfig())
 
 typedef struct {
     uint8_t data[0x200];
@@ -23,8 +26,13 @@ typedef struct {
     bootconfig_unsigned_config_t unsigned_config;
     uint8_t signature[0x100];
     bootconfig_signed_config_t signed_config;
-    uint8_t unknown_config[0x240];
+    uint8_t unused_space[0x240]; /* remaining space in the evt page */
 } bootconfig_t;
+
+static inline bootconfig_t *get_loaded_bootconfig(void) {
+    /* this is also get_exception_entry_stack_address(2) */
+    return (bootconfig_t *)(TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x180);
+}
 
 void bootconfig_load_and_verify(const bootconfig_t *bootconfig);
 void bootconfig_clear(void);

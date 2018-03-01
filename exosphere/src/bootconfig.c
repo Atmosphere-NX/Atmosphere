@@ -8,12 +8,10 @@
 #include "fuse.h"
 #include "bootconfig.h"
 
-static bootconfig_t g_loaded_bootconfig = {0};
-
 bool bootconfig_matches_hardware_info(void) {
     uint32_t hardware_info[4];
     fuse_get_hardware_info(hardware_info);
-    return memcmp(g_loaded_bootconfig.signed_config.hardware_info, hardware_info, sizeof(hardware_info)) == 0;
+    return memcmp(LOADED_BOOTCONFIG->signed_config.hardware_info, hardware_info, sizeof(hardware_info)) == 0;
 }
 
 void bootconfig_load_and_verify(const bootconfig_t *bootconfig) {
@@ -35,49 +33,49 @@ void bootconfig_load_and_verify(const bootconfig_t *bootconfig) {
         0x04, 0xFD, 0x69, 0xEA, 0x23, 0xB4, 0x6D, 0x16, 0x21, 0x98, 0x54, 0xB4, 0xDF, 0xE6, 0xAB, 0x93,
         0x36, 0xB6, 0xD2, 0x43, 0xCF, 0x2B, 0x98, 0x1D, 0x45, 0xC9, 0xBB, 0x20, 0x42, 0xB1, 0x9D, 0x1D
     };
-    memcpy(&g_loaded_bootconfig, bootconfig, sizeof(bootconfig_t));
+    memcpy(LOADED_BOOTCONFIG, bootconfig, sizeof(bootconfig_t));
     /* TODO: Should these restrictions be loosened for Exosphere? */
     if (configitem_is_retail()
-     || se_rsa2048_pss_verify(g_loaded_bootconfig.signature, RSA_2048_BYTES, bootconfig_modulus, RSA_2048_BYTES, &g_loaded_bootconfig.signed_config, sizeof(g_loaded_bootconfig.signed_config)) != 0
+     || se_rsa2048_pss_verify(LOADED_BOOTCONFIG->signature, RSA_2048_BYTES, bootconfig_modulus, RSA_2048_BYTES, &LOADED_BOOTCONFIG->signed_config, sizeof(LOADED_BOOTCONFIG->signed_config)) != 0
      || !bootconfig_matches_hardware_info()) {
         /* Clear signed config. */
-        memset(&g_loaded_bootconfig.signed_config, 0, sizeof(g_loaded_bootconfig.signed_config));
+        memset(&LOADED_BOOTCONFIG->signed_config, 0, sizeof(LOADED_BOOTCONFIG->signed_config));
     }
 }
 
 void bootconfig_clear(void){
-    memset(&g_loaded_bootconfig, 0, sizeof(bootconfig_t));
+    memset(LOADED_BOOTCONFIG, 0, sizeof(bootconfig_t));
 }
 
 /* Actual configuration getters. */
 bool bootconfig_is_package2_plaintext(void) {
-    return (g_loaded_bootconfig.signed_config.package2_config & 1) != 0;
+    return (LOADED_BOOTCONFIG->signed_config.package2_config & 1) != 0;
 }
 
 bool bootconfig_is_package2_unsigned(void) {
-    return (g_loaded_bootconfig.signed_config.package2_config & 2) != 0;
+    return (LOADED_BOOTCONFIG->signed_config.package2_config & 2) != 0;
 }
 
 bool bootconfig_disable_program_verification(void) {
-     return g_loaded_bootconfig.signed_config.disable_program_verification != 0;
+     return LOADED_BOOTCONFIG->signed_config.disable_program_verification != 0;
 }
 
 bool bootconfig_is_debug_mode(void) {
-    return (g_loaded_bootconfig.unsigned_config.data[0x10] & 2) != 0;
+    return (LOADED_BOOTCONFIG->unsigned_config.data[0x10] & 2) != 0;
 }
 
 uint64_t bootconfig_get_memory_arrangement(void) {
     if (bootconfig_is_debug_mode()) {
         if (fuse_get_dram_id() == 4) {
-            if (g_loaded_bootconfig.unsigned_config.data[0x23]) {
-                return (uint64_t)(g_loaded_bootconfig.unsigned_config.data[0x23]);
+            if (LOADED_BOOTCONFIG->unsigned_config.data[0x23]) {
+                return (uint64_t)(LOADED_BOOTCONFIG->unsigned_config.data[0x23]);
             } else {
                 return 0x11ull;
             }
         } else {
-            if (g_loaded_bootconfig.unsigned_config.data[0x23]) {
-                if ((g_loaded_bootconfig.unsigned_config.data[0x23] & 0x30) == 0) {
-                    return (uint64_t)(g_loaded_bootconfig.unsigned_config.data[0x23]);
+            if (LOADED_BOOTCONFIG->unsigned_config.data[0x23]) {
+                if ((LOADED_BOOTCONFIG->unsigned_config.data[0x23] & 0x30) == 0) {
+                    return (uint64_t)(LOADED_BOOTCONFIG->unsigned_config.data[0x23]);
                 } else {
                     return 1ull;
                 }
@@ -94,13 +92,13 @@ uint64_t bootconfig_get_kernel_memory_configuration(void) {
     if (bootconfig_is_debug_mode()) {
         uint64_t high_val = 0;
         if (fuse_get_dram_id() == 4) {
-            if (g_loaded_bootconfig.unsigned_config.data[0x23]) {
-                high_val =  ((uint64_t)(g_loaded_bootconfig.unsigned_config.data[0x23]) >> 4) & 0x3;
+            if (LOADED_BOOTCONFIG->unsigned_config.data[0x23]) {
+                high_val =  ((uint64_t)(LOADED_BOOTCONFIG->unsigned_config.data[0x23]) >> 4) & 0x3;
             } else {
                 high_val = 0x1;
             }
         }
-        return (high_val << 16) | (((uint64_t)(g_loaded_bootconfig.unsigned_config.data[0x21])) << 8) | ((uint64_t)(g_loaded_bootconfig.unsigned_config.data[0x11]));
+        return (high_val << 16) | (((uint64_t)(LOADED_BOOTCONFIG->unsigned_config.data[0x21])) << 8) | ((uint64_t)(LOADED_BOOTCONFIG->unsigned_config.data[0x11]));
     } else {
         return 0ull;
     }
