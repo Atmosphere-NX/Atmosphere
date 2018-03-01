@@ -249,7 +249,7 @@ static uint32_t decrypt_and_validate_header(package2_header_t *header) {
             /* See if this is the correct key. */
             if (validate_package2_metadata(&metadata)) {
                 header->metadata = metadata;
-                break;
+                return mkey_rev;
             }
         }
 
