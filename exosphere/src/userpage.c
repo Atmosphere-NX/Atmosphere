@@ -24,8 +24,8 @@ bool upage_init(upage_ref_t *upage, void *user_address) {
         }
         upage->secure_monitor_address = USER_PAGE_SECURE_MONITOR_ADDR;
     } else {
-        /* Weakly validate SPL's physically random address is in DRAM. */
-        if (upage->user_address >> 31) {
+        /* Validate SPL's physically random address (must be in DRAM (supports up to 6GB, retail console have 4GB) and page-aligned). */
+        if ((upage->user_address - 0x80000000ull) < (6ull << 30) && ((uintptr_t)user_address & 0xFFF) == 0) {
             static const uint64_t userpage_attributes =  MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_NORMAL;
             uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
             g_user_page_user_address = upage->user_address;
