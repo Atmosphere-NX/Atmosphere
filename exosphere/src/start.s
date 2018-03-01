@@ -203,7 +203,7 @@ __jump_to_lower_el:
     eret
 
 .align      3
-.section    .cold_start.rodata.reloc_constants, "a", %progbits
+.section    .cold_crt0.rodata.reloc_constants, "a", %progbits
 .global     __warmboot_crt0_offset
 __warmboot_crt0_offset:
     .quad __warmboot_crt0_lma__
