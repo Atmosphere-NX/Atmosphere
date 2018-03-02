@@ -340,18 +340,27 @@ static void sync_with_nx_bootloader(int state) {
     }
 }
 
-static void identity_unmap_iram_cd(void) {
+static void identity_unmap_iram_cd_tzram(void) {
     /* See also: configure_ttbls (in coldboot_init.c). */
-    uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
-    uintptr_t *mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
-    uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
+    uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
+    uintptr_t *mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
+    uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
 
     mmu_unmap_range(3, mmu_l3_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_IRAM_CD), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_IRAM_CD));
+    mmu_unmap_range(3, mmu_l3_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_TZRAM), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_TZRAM));
 
     mmu_unmap(2, mmu_l2_tbl, 0x40000000);
+    mmu_unmap(2, mmu_l2_tbl, 0x7C000000);
 
     mmu_unmap(1, mmu_l1_tbl, 0x40000000);
 
+    tlb_invalidate_all_inner_shareable();
+}
+
+static void indentity_unmap_dram(void) {
+    uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
+
+    mmu_unmap_range(1, mmu_l1_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_DRAM), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_DRAM));
     tlb_invalidate_all_inner_shareable();
 }
 
@@ -399,8 +408,8 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* Synchronize with NX BOOTLOADER. */
     sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2);
 
-    /* Remove the identity mapping for iRAM-C+D */
-    identity_unmap_iram_cd();
+    /* Remove the identity mapping for iRAM-C+D & TZRAM */
+    identity_unmap_iram_cd_tzram();
 
     /* Load header from NX_BOOTLOADER-initialized DRAM. */
     package2_header_t header;
@@ -424,8 +433,8 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* Set CORE0 entrypoint for Package2. */
     set_core_entrypoint_and_argument(0, DRAM_BASE_PHYSICAL + header.metadata.entrypoint, 0);
 
-    /* Remove the DRAM identity mapping. TODO: Should we bother? */
-    /* indentity_unmap_dram(); */
+    /* Remove the DRAM identity mapping. */
+    indentity_unmap_dram();
 
     /* Synchronize with NX BOOTLOADER. */
     sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
