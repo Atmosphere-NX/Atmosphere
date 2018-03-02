@@ -16,7 +16,6 @@
 #define PACKED          __attribute__((packed))
 
 #define ALINLINE        __attribute__((always_inline))
-#define FAR_REACHING    __attribute__((target("cmodel=large"), noinline))
 
 /* Custom stuff below */
 

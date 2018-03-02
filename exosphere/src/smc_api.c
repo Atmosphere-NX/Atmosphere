@@ -6,7 +6,7 @@
 
 #include "configitem.h"
 #include "cpu_context.h"
-#include "lock.h"
+#include "synchronization.h"
 #include "masterkey.h"
 #include "mc.h"
 #include "memory_map.h"
