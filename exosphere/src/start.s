@@ -81,10 +81,12 @@ __start_cold:
     mov  sp, x0
     mov  fp, #0
 
-    adr x19, g_coldboot_crt0_relocation_list
+    adr x0, g_coldboot_crt0_relocation_list
     adr x1, g_coldboot_crt0_main_func_list
-    mov  x0, x19
     bl   coldboot_init
+    adr x0, g_coldboot_crt0_relocation_list
+    ldr x1, =__start_reloc_list_addr
+    str x0, [x1]
 
     ldr  x16, =__jump_to_main_cold
     br   x16
@@ -148,6 +150,8 @@ __jump_to_main_cold:
     bl   get_pk2ldr_stack_address
     mov  sp, x0
 
+    ldr x1, =__start_reloc_list_addr
+    ldr x0, [x1]
     bl   load_package2
 
     mov  w0, #3 /* use core3 stack temporarily */
@@ -240,3 +244,9 @@ g_warmboot_crt0_main_func_list:
     .quad   set_memory_registers_enable_mmu
     .quad   flush_dcache_all
     .quad   invalidate_icache_all
+
+.align      3
+.section    .bss.__start_reloc_list_addr, "w", %nobits
+.global     __start_reloc_list_addr
+__start_reloc_list_addr:
+    .space  8
