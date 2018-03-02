@@ -74,7 +74,8 @@ static void setup_se(void) {
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_SESSIONKEY, KEYSLOT_SWITCH_DEVICEKEY, work_buffer, 0x10);
     set_aes_keyslot_flags(KEYSLOT_SWITCH_SESSIONKEY, 0xFF);
 
-    /* TODO: Create Test Vector, to validate keyslot data is unchanged post warmboot. */
+    /* Generate test vector for our keys. */
+    se_generate_stored_vector();
 }
 
 static void setup_boot_config(void) {
@@ -452,6 +453,6 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* TODO: Update SCR_EL3 depending on value in Bootconfig. */
 
     if (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE) {
-        panic(0xFFF00001);
+        panic(0x7A700001);
     }
 }

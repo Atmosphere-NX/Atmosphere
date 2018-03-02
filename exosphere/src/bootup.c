@@ -16,12 +16,11 @@
 void bootup_misc_mmio(void) {
     /* Initialize Fuse registers. */
     fuse_init();
-    
+
     /* Verify Security Engine sanity. */
     se_set_in_context_save_mode(false);
     /* TODO: se_verify_keys_unreadable(); */
     se_validate_stored_vector();
-
 
     for (unsigned int i = 0; i < KEYSLOT_SWITCH_SESSIONKEY; i++) {
         clear_aes_keyslot(i);
