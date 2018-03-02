@@ -12,6 +12,7 @@ static inline uintptr_t get_bpmp_vector_base(void) {
 
 #define BPMP_VECTOR_BASE (get_bpmp_vector_base())
 
+#define EVP_CPU_RESET_VECTOR_0     (*((volatile uint32_t *)(BPMP_VECTOR_BASE + 0x100)))
 
 #define BPMP_VECTOR_RESET          (*((volatile uint32_t *)(BPMP_VECTOR_BASE + 0x200)))
 #define BPMP_VECTOR_UNDEF          (*((volatile uint32_t *)(BPMP_VECTOR_BASE + 0x204)))

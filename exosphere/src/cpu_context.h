@@ -2,6 +2,7 @@
 #define EXOSPHERE_CPU_CTX_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /* Exosphere CPU Management functionality. */
 
@@ -47,6 +48,7 @@ typedef struct {
 void save_current_core_context(void);
 void restore_current_core_context(void);
 
+void set_core_is_active(uint32_t core, bool is_active);
 void set_current_core_active(void);
 void set_current_core_inactive(void);
 

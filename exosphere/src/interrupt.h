@@ -9,6 +9,7 @@
 
 #define MAX_REGISTERED_INTERRUPTS 4
 #define INTERRUPT_ID_SECURITY_ENGINE 0x5A
+#define INTERRUPT_ID_ACTIVITY_MONITOR_4X 0x4D
 #define INTERRUPT_ID_USER_SECURITY_ENGINE 0x2C
 
 static inline uintptr_t get_gicd_base(void) {

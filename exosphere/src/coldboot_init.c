@@ -126,6 +126,10 @@ void coldboot_init_dma_controllers(void) {
     /* SYSCTR0_CNTCR_0 = ENABLE | HALT_ON_DEBUG (write-once init) */
     (*((volatile uint32_t *)(0x700F0000))) = 3;
 
+    /* Set some unknown registers in HOST1X. */
+    (*((volatile uint32_t *)(0x500038F8))) &= 0xFFFFFFFE;
+    (*((volatile uint32_t *)(0x50003300))) = 0;
+
     /* AHB_MASTER_SWID_0 */
     (*((volatile uint32_t *)(0x6000C018))) = 0;
 

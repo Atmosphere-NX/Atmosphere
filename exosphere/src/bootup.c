@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "utils.h"
 #include "bootup.h"
@@ -7,11 +8,19 @@
 #include "flow.h"
 #include "pmc.h"
 #include "mc.h"
+#include "car.h"
 #include "se.h"
 #include "masterkey.h"
 #include "configitem.h"
 #include "timers.h"
 #include "misc.h"
+#include "bpmp.h"
+#include "sysreg.h"
+#include "interrupt.h"
+#include "cpu_context.h"
+#include "actmon.h"
+
+static bool g_has_booted_up = false;
 
 void bootup_misc_mmio(void) {
     /* Initialize Fuse registers. */
@@ -32,6 +41,12 @@ void bootup_misc_mmio(void) {
     se_initialize_rng(KEYSLOT_SWITCH_RNGKEY);
     se_generate_random_key(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY);
     se_generate_srk(KEYSLOT_SWITCH_SRKGENKEY);
+
+    /* TODO: Why does this DRAM write occur? */
+    if (!g_has_booted_up && mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+        /* 4.x writes this magic number into DRAM. Why? */
+        (*(volatile uint32_t *)(0x8005FFFC)) = 0xC0EDBBCC;
+    }
 
     /* Todo: What? */
     MAKE_TIMERS_REG(0x1A4) = 0xF1E0;
@@ -82,10 +97,70 @@ void bootup_misc_mmio(void) {
     APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = sec_disable_1;
     APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = sec_disable_2;
 
+    /* TODO: What are these MC reg writes? */
+    MAKE_MC_REG(0x228) = 0xFFFFFFFF;
+    MAKE_MC_REG(0x22C) = 0xFFFFFFFF;
+    MAKE_MC_REG(0x230) = 0xFFFFFFFF;
+    MAKE_MC_REG(0x234) = 0xFFFFFFFF;
+    MAKE_MC_REG(0xB98) = 0xFFFFFFFF;
+    MAKE_MC_REG(0x038) = 0;
+    MAKE_MC_REG(0x03C) = 0;
+    MAKE_MC_REG(0x0E0) = 0;
+    MAKE_MC_REG(0x0E4) = 0;
+    MAKE_MC_REG(0x0E8) = 0;
+    MAKE_MC_REG(0x0EC) = 0;
+    MAKE_MC_REG(0x0F0) = 0;
+    MAKE_MC_REG(0x0F4) = 0;
+    MAKE_MC_REG(0x020) = 0;
+    MAKE_MC_REG(0x014) = 0x30000030;
+    MAKE_MC_REG(0x018) = 0x2800003F;
+    MAKE_MC_REG(0x034) = 0;
+    MAKE_MC_REG(0x030) = 0;
+    MAKE_MC_REG(0x010) = 0;
 
-    /* TODO */
-    /* Initialize the PMC secure scratch registers, initialize MISC registers, */
+    /* Clear RESET Vector, setup CPU Secure Boot RESET Vectors. */
+    uint32_t reset_vec = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
+    EVP_CPU_RESET_VECTOR_0 = 0;
+    SB_AA64_RESET_LOW_0 = reset_vec | 1;
+    SB_AA64_RESET_HIGH_0 = 0;
+
+    /* Lock Non-Secure writes to Secure Boot RESET Vector. */
+    SB_CSR_0 = 2;
+    
+    /* Setup PMC Secure Scratch RESET Vector for warmboot. */
+    APBDEV_PMC_SECURE_SCRATCH34_0 = reset_vec;
+    APBDEV_PMC_SECURE_SCRATCH35_0 = 0;
+    APBDEV_PMC_SEC_DISABLE3_0 = 0x500000;
+
+    /* Setup FIQs. */
+    
+
     /* And assign "se_operation_completed" to Interrupt 0x5A. */
+    intr_set_priority(INTERRUPT_ID_SECURITY_ENGINE, 0);
+    intr_set_group(INTERRUPT_ID_SECURITY_ENGINE, 0);
+    intr_set_enabled(INTERRUPT_ID_SECURITY_ENGINE, 1);
+    intr_set_cpu_mask(INTERRUPT_ID_SECURITY_ENGINE, 8);
+    intr_set_edge_level(INTERRUPT_ID_SECURITY_ENGINE, 0);
+    intr_set_priority(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
+    intr_set_group(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
+    intr_set_enabled(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 1);
+    intr_set_cpu_mask(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 8);
+    intr_set_edge_level(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
+
+    if (!g_has_booted_up) {
+        intr_register_handler(INTERRUPT_ID_SECURITY_ENGINE, se_operation_completed);
+        intr_register_handler(INTERRUPT_ID_ACTIVITY_MONITOR_4X, actmon_interrupt_handler);
+        for (unsigned int core = 1; core < NUM_CPU_CORES; core++) {
+            set_core_is_active(core, false);
+        }
+        g_has_booted_up = true;
+    } else if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT) {
+        /* TODO: What are these MC reg writes? */
+        MAKE_MC_REG(0x65C) = 0xFFFFF000;
+        MAKE_MC_REG(0x660) = 0;
+        MAKE_MC_REG(0x964) |= 1;
+        CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
+    }
 }
 
 void setup_4x_mmio(void) {

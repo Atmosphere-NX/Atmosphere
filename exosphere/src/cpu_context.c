@@ -157,11 +157,15 @@ void restore_current_core_context(void) {
     }
 }
 
+void set_core_is_active(uint32_t core, bool is_active) {
+    g_cpu_contexts[core].is_active = (is_active) ? 1 : 0;
+}
+
 void set_current_core_active(void) {
-    g_cpu_contexts[get_core_id()].is_active = 1;
+    set_core_is_active(get_core_id(), true);
 }
 
 void set_current_core_inactive(void) {
-    g_cpu_contexts[get_core_id()].is_active = 0;
+    set_core_is_active(get_core_id(), false);
 }
 

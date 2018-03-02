@@ -35,5 +35,10 @@ static inline uintptr_t get_pmc_base(void) {
 #define APBDEV_PMC_SCRATCH200_0 (*((volatile uint32_t *)(PMC_BASE + 0x840)))
 
 
+#define APBDEV_PMC_SEC_DISABLE3_0 (*((volatile uint32_t *)(PMC_BASE + 0x2D8)))
+#define APBDEV_PMC_SECURE_SCRATCH34_0 (*((volatile uint32_t *)(PMC_BASE + 0x368)))
+#define APBDEV_PMC_SECURE_SCRATCH35_0 (*((volatile uint32_t *)(PMC_BASE + 0x36C)))
+
+
 
 #endif
