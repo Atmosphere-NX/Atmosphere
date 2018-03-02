@@ -335,34 +335,23 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
 }
 
 static void sync_with_nx_bootloader(int state) {
-    if (MAILBOX_NX_BOOTLOADER_SETUP_STATE == state - 1) {
-        while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < state) {
-            wait(1);
-        }
+    while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < state) {
+        wait(100);
     }
 }
 
-static void identity_unmap_iram_cd_tzram(void) {
+static void identity_unmap_iram_cd(void) {
     /* See also: configure_ttbls (in coldboot_init.c). */
     uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
     uintptr_t *mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
     uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
 
     mmu_unmap_range(3, mmu_l3_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_IRAM_CD), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_IRAM_CD));
-    mmu_unmap_range(3, mmu_l3_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_TZRAM), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_TZRAM));
 
     mmu_unmap(2, mmu_l2_tbl, 0x40000000);
-    mmu_unmap(2, mmu_l2_tbl, 0x7C000000);
 
     mmu_unmap(1, mmu_l1_tbl, 0x40000000);
 
-    tlb_invalidate_all_inner_shareable();
-}
-
-static void indentity_unmap_dram(void) {
-    uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
-
-    mmu_unmap_range(1, mmu_l1_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_DRAM), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_DRAM));
     tlb_invalidate_all_inner_shareable();
 }
 
@@ -373,9 +362,10 @@ uintptr_t get_pk2ldr_stack_address(void) {
 /* This function is called during coldboot init, and validates a package2. */
 /* This package2 is read into memory by a concurrent BPMP bootloader. */
 void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
-    
     /* Setup the Security Engine. */
     setup_se();
+
+    wait(1000);
 
     /* TODO: bootup_misc_mmio(). */
     /* This func will also be called on warmboot. */
@@ -388,19 +378,17 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* TODO: initalize cpu context */
 
     /* TODO: Read and save BOOTREASON stored by NX_BOOTLOADER at 0x1F009FE00 */
-
+    
     /* Initialize cache'd random bytes for kernel. */
     randomcache_init();
-
+    
     /* memclear the initial copy of Exosphere running in IRAM (relocated to TZRAM by earlier code). */
     memset((void *)reloc_list->reloc_base, 0, reloc_list->loaded_bin_size);
-
     /* Let NX Bootloader know that we're running. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 1;
 
     /* Wait for 1 second, to allow time for NX_BOOTLOADER to draw to the screen. This is useful for debugging. */
     wait(1000000);
-
 
     /* Synchronize with NX BOOTLOADER. */
     sync_with_nx_bootloader(NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG);
@@ -408,12 +396,11 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* Load Boot Config into global. */
     setup_boot_config();
 
-
     /* Synchronize with NX BOOTLOADER. */
     sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2);
 
-    /* Remove the identity mapping for iRAM-C+D and TZRAM */
-    identity_unmap_iram_cd_tzram();
+    /* Remove the identity mapping for iRAM-C+D */
+    identity_unmap_iram_cd();
 
     /* Load header from NX_BOOTLOADER-initialized DRAM. */
     package2_header_t header;
@@ -434,11 +421,15 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     flush_dcache_all();
     invalidate_icache_all(); /* non-broadcasting */
 
+    /* TODO: Update SCR_EL3 depending on value in Bootconfig. */
+
     /* Set CORE0 entrypoint for Package2. */
     set_core_entrypoint_and_argument(0, DRAM_BASE_PHYSICAL + header.metadata.entrypoint, 0);
 
-    /* Remove the DRAM identity mapping. */
-    indentity_unmap_dram();
+    /* Remove the DRAM identity mapping. TODO: Should we bother? */
+    /* indentity_unmap_dram(); */
+
+    /* TODO: Update SCR_EL3 depending on value in Bootconfig. */
 
     /* Synchronize with NX BOOTLOADER. */
     sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
@@ -446,4 +437,8 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* TODO: lots of boring MMIO */
 
     /* TODO: Update SCR_EL3 depending on value in Bootconfig. */
+
+    if (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE) {
+        panic(0xFFF00001);
+    }
 }
