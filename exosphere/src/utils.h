@@ -31,7 +31,7 @@ typedef struct {
         } funcs;
         uintptr_t addrs[3];
     };
-} warmboot_func_list_t;
+} boot_func_list_t;
 
 /* For coldboot */
 typedef struct {
@@ -45,7 +45,6 @@ typedef struct {
     size_t                  loaded_bin_size;
     size_t                  nb_relocs_pre_mmu_init;     /* first is always warmboot_crt0 */
     size_t                  nb_relocs_post_mmu_init;    /* first is always main segment excl. .bss */
-    warmboot_func_list_t    *func_list;
     coldboot_crt0_reloc_t   relocs[];
 } coldboot_crt0_reloc_list_t;
 

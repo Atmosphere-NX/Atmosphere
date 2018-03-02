@@ -81,8 +81,8 @@ __start_cold:
     mov  sp, x0
     mov  fp, #0
 
-    adrp x19, g_coldboot_crt0_relocation_list
-    add  x19, x19, #:lo12:g_coldboot_crt0_relocation_list
+    adr x19, g_coldboot_crt0_relocation_list
+    adr x1, g_coldboot_crt0_main_func_list
     mov  x0, x19
     bl   coldboot_init
 
@@ -212,7 +212,6 @@ __jump_to_lower_el:
 g_coldboot_crt0_relocation_list:
     .quad   0, __loaded_end_lma__  /* __start_cold, to be set & loaded size */
     .quad   1, 5                   /* number of sections to relocate/clear before & after mmu init */
-    .quad   g_warmboot_crt0_main_func_list
     /* Relocations */
     .quad   __warmboot_crt0_start__, __warmboot_crt0_end__, __warmboot_crt0_lma__
     .quad   __main_start__, __main_bss_start__, __main_lma__
@@ -221,6 +220,16 @@ g_coldboot_crt0_relocation_list:
     /* BSS clears */
     .quad   __main_bss_start__, __main_end__, 0
     .quad   __pk2ldr_bss_start__, __pk2ldr_end__, 0
+
+.align      3
+.section    .cold_crt0.data.g_coldboot_crt0_main_func_list, "aw", %progbits
+.global     g_coldboot_crt0_main_func_list
+g_coldboot_crt0_main_func_list:
+    .quad   3   /* Number of functions */
+    /* Functions */
+    .quad   set_memory_registers_enable_mmu
+    .quad   flush_dcache_all
+    .quad   invalidate_icache_all
 
 .align      3
 .section    .warm_crt0.data.g_warmboot_crt0_main_func_list, "aw", %progbits

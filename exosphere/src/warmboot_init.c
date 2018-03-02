@@ -63,6 +63,6 @@ void set_memory_registers_enable_mmu(void) {
     __set_memory_registers(ttbr0, vbar, cpuectlr, scr, tcr, cptr, mair, sctlr);
 }
 
-void warmboot_init(warmboot_func_list_t *func_list) {
+void warmboot_init(boot_func_list_t *func_list) {
     (void)func_list;
 }

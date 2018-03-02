@@ -93,15 +93,17 @@ static void configure_ttbls(void) {
     tzram_map_all_segments(mmu_l3_tbl);
 }
 
-static void translate_warmboot_func_list(coldboot_crt0_reloc_list_t *reloc_list) {
+static void translate_warmboot_func_list(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list) {
     coldboot_crt0_reloc_t *warmboot_crt0_reloc = &reloc_list->relocs[0];
     coldboot_crt0_reloc_t *main_reloc = &reloc_list->relocs[reloc_list->nb_relocs_pre_mmu_init];
 
     /* The main segment immediately follows the warmboot crt0 in TZRAM, in the same page. */
-    uintptr_t main_pa = (uintptr_t)warmboot_crt0_reloc->vma | ((uintptr_t)main_reloc->vma & ~0xFFF);
-    for(size_t i = 0; i < reloc_list->func_list->nb_funcs; i++) {
-        if(reloc_list->func_list->addrs[i] >= 0x1F0000000ull) {
-            reloc_list->func_list->addrs[i] = main_pa + reloc_list->func_list->addrs[i] - (uintptr_t)main_reloc->vma;
+
+    uintptr_t main_pa = (uintptr_t)warmboot_crt0_reloc->vma | ((uintptr_t)main_reloc->vma & 0xFFF);
+    
+    for(size_t i = 0; i < func_list->nb_funcs; i++) {
+        if(func_list->addrs[i] >= 0x1F0000000ull) {
+            func_list->addrs[i] = main_pa + func_list->addrs[i] - (uintptr_t)main_reloc->vma;
         }
     }
 }
@@ -120,30 +122,32 @@ uintptr_t get_coldboot_crt0_stack_address(void) {
     return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
 }
 
-void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list) {
+
+
+void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list) {
     /* Custom approach */
     reloc_list->reloc_base = (uintptr_t)__start_cold;
 
     /* TODO: Set NX BOOTLOADER clock time field */
-
+    
     /* This at least copies .warm_crt0 to its VMA. */
     for(size_t i = 0; i < reloc_list->nb_relocs_pre_mmu_init; i++) {
         do_relocation(reloc_list, i);
     }
     /* At this point, we can (and will) access functions located in .warm_crt0 */
-
-    translate_warmboot_func_list(reloc_list);
+    translate_warmboot_func_list(reloc_list, func_list);
 
     /* TODO: initialize DMA controllers, etc. */
     configure_ttbls();
-    reloc_list->func_list->funcs.set_memory_registers_enable_mmu();
+    func_list->funcs.set_memory_registers_enable_mmu();
 
     /* Copy or clear the remaining sections */
     for(size_t i = 0; i < reloc_list->nb_relocs_post_mmu_init; i++) {
         do_relocation(reloc_list, reloc_list->nb_relocs_pre_mmu_init + i);
     }
 
-    reloc_list->func_list->funcs.flush_dcache_all();
-    reloc_list->func_list->funcs.invalidate_icache_all();
+
+    func_list->funcs.flush_dcache_all();
+    func_list->funcs.invalidate_icache_all();
     /* At this point we can access all the mapped segments (all other functions, data...) normally */
 }
