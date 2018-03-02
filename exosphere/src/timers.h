@@ -12,6 +12,8 @@ static inline uintptr_t get_timers_base(void) {
 
 #define TIMERS_BASE (get_timers_base())
 
+#define MAKE_TIMERS_REG(n) (*((volatile uint32_t *)(TIMERS_BASE + n)))
+
 #define TIMERUS_CNTR_1US_0 (*((volatile uint32_t *)(TIMERS_BASE + 0x10)))
 
 typedef struct {

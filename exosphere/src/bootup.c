@@ -10,6 +10,7 @@
 #include "se.h"
 #include "masterkey.h"
 #include "configitem.h"
+#include "timers.h"
 #include "misc.h"
 
 void bootup_misc_mmio(void) {
@@ -20,6 +21,7 @@ void bootup_misc_mmio(void) {
     se_set_in_context_save_mode(false);
     /* TODO: se_verify_keys_unreadable(); */
     se_validate_stored_vector();
+
 
     for (unsigned int i = 0; i < KEYSLOT_SWITCH_SESSIONKEY; i++) {
         clear_aes_keyslot(i);
@@ -32,9 +34,12 @@ void bootup_misc_mmio(void) {
     se_generate_random_key(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY);
     se_generate_srk(KEYSLOT_SWITCH_SRKGENKEY);
 
+    /* Todo: What? */
+    MAKE_TIMERS_REG(0x1A4) = 0xF1E0;
+
     FLOW_CTLR_BPMP_CLUSTER_CONTROL_0 = 4; /* ACTIVE_CLUSTER_LOCK. */
     FLOW_CTLR_FLOW_DBG_QUAL_0 = 0x10000000; /* Enable FIQ2CCPLEX */
-    
+
     /* Disable Deep Power Down. */
     APBDEV_PMC_DPD_ENABLE_0 = 0;
 
