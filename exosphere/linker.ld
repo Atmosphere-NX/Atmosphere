@@ -40,25 +40,6 @@ SECTIONS
         . = ALIGN(64);
     } >fake AT>fake
 
-    .warm_crt0 :
-    {
-        . = ALIGN(64);
-        __warmboot_crt0_lma__   = LOADADDR(.warm_crt0);
-        __warmboot_crt0_start__ = ABSOLUTE(.);
-        KEEP (*(.warm_crt0.text.start)) /* Should be first */
-        KEEP (*(.warm_crt0.text*))
-        KEEP (build/warmboot_init.o(.text*))
-        *(.warm_crt0.rodata*)
-        build/warmboot_init.o(.rodata*)
-        *(.warm_crt0.data*)
-        build/warmboot_init.o(.data*)
-        . = ALIGN(8);
-        *(.warm_crt0.bss*)
-        build/warmboot_init.o(.bss*)
-        . = ALIGN(64);
-        __warmboot_crt0_end__ = ABSOLUTE(.);
-    } >warmboot_crt0 AT>fake
-
     .pk2ldr :
     {
         . = ALIGN(4096);
@@ -88,6 +69,25 @@ SECTIONS
         . = ALIGN(8);
         __vectors_end__ = ABSOLUTE(.);
     } >evt AT>fake
+
+    .warm_crt0 :
+    {
+        . = ALIGN(64);
+        __warmboot_crt0_lma__   = LOADADDR(.warm_crt0);
+        __warmboot_crt0_start__ = ABSOLUTE(.);
+        KEEP (*(.warm_crt0.text.start)) /* Should be first */
+        KEEP (*(.warm_crt0.text*))
+        KEEP (build/warmboot_init.o(.text*))
+        *(.warm_crt0.rodata*)
+        build/warmboot_init.o(.rodata*)
+        *(.warm_crt0.data*)
+        build/warmboot_init.o(.data*)
+        . = ALIGN(8);
+        *(.warm_crt0.bss*)
+        build/warmboot_init.o(.bss*)
+        . = ALIGN(64);
+        __warmboot_crt0_end__ = ABSOLUTE(.);
+    } >warmboot_crt0 AT>fake
 
     .text :
     {
@@ -208,13 +208,13 @@ SECTIONS
     .bss :
     {
         . = ALIGN(8);
-        __main_bss_start__ = ABSOLUTE(.);
+        __main_bss_start__  = ABSOLUTE(.);
+        __loaded_end_lma__  = LOADADDR(.bss);
         *(.dynbss)
         *(.bss .bss.* .gnu.linkonce.b.*)
         *(COMMON)
         . = ALIGN(8);
         __main_end__ = ABSOLUTE(.);
-        __end_lma__  = LOADADDR(.bss) + __main_end__ - __main_bss_start__;
     } >main AT>fake
 
     __end__ = ABSOLUTE(.) ;

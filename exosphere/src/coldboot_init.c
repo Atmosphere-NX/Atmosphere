@@ -6,13 +6,6 @@
 
 extern const uint8_t __start_cold[];
 
-extern const uint8_t __warmboot_crt0_start__[], __warmboot_crt0_end__[];
-extern const uint8_t __main_start__[], __main_bss_start__[], __main_end__[];
-extern const uint8_t __pk2ldr_start__[], __pk2ldr_bss_start__[], __pk2ldr_end__[];
-extern const uint8_t __vectors_start__[], __vectors_end__[];
-
-extern const size_t __warmboot_crt0_offset, __main_offset, __pk2ldr_offset, __vectors_offset;
-
 /* warmboot_init.c */
 void set_memory_registers_enable_mmu(void);
 
@@ -100,68 +93,57 @@ static void configure_ttbls(void) {
     tzram_map_all_segments(mmu_l3_tbl);
 }
 
-__attribute__((noinline)) static void copy_lma_to_vma(const void *vma, size_t offset, size_t size) {
-    uint64_t *p_vma = (uint64_t *)vma;
-    const uint64_t *p_lma = (const uint64_t *)(__start_cold + offset);
-    for (size_t i = 0; i < size / 8; i++) {
-        p_vma[i] = p_lma[i];
+static void translate_warmboot_func_list(coldboot_crt0_reloc_list_t *reloc_list) {
+    coldboot_crt0_reloc_t *warmboot_crt0_reloc = &reloc_list->relocs[0];
+    coldboot_crt0_reloc_t *main_reloc = &reloc_list->relocs[reloc_list->nb_relocs_pre_mmu_init];
+
+    /* The main segment immediately follows the warmboot crt0 in TZRAM, in the same page. */
+    uintptr_t main_pa = (uintptr_t)warmboot_crt0_reloc->vma | ((uintptr_t)main_reloc->vma & ~0xFFF);
+    for(size_t i = 0; i < reloc_list->func_list->nb_funcs; i++) {
+        if(reloc_list->func_list->addrs[i] >= 0x1F0000000ull) {
+            reloc_list->func_list->addrs[i] = main_pa + reloc_list->func_list->addrs[i] - (uintptr_t)main_reloc->vma;
+        }
     }
 }
 
-FAR_REACHING static void copy_warmboot_crt0(void) {
-    copy_lma_to_vma(__warmboot_crt0_start__, __warmboot_crt0_offset, __warmboot_crt0_end__ - __warmboot_crt0_start__);
-}
+static void do_relocation(const coldboot_crt0_reloc_list_t *reloc_list, size_t index) {
+    uint64_t *p_vma = (uint64_t *)reloc_list->relocs[index].vma;
+    const uint64_t *p_lma = (const uint64_t *)(reloc_list->reloc_base + reloc_list->relocs[index].reloc_offset);
+    size_t size = reloc_list->relocs[index].end_vma - reloc_list->relocs[index].vma;
 
-FAR_REACHING static void copy_other_sections(void) {
-    copy_lma_to_vma(__main_start__, __main_offset, __main_end__ - __main_start__);
-    copy_lma_to_vma(__pk2ldr_start__, __pk2ldr_offset, __pk2ldr_end__ - __pk2ldr_start__);
-    copy_lma_to_vma(__vectors_start__, __vectors_offset, __vectors_end__ - __vectors_start__);
-}
-
-FAR_REACHING static void set_memory_registers_enable_mmu_tzram_pa(void) {
-    volatile uintptr_t v = (uintptr_t)set_memory_registers_enable_mmu; 
-    ((void (*)(void))v)();
-}
-
-FAR_REACHING static void flush_dcache_all_tzram_pa(void) {
-    uintptr_t pa = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
-    uintptr_t main_pa = pa | ((uintptr_t)__main_start__ & 0xFFF);
-    uintptr_t v = (uintptr_t)flush_dcache_all - (uintptr_t)__main_start__ + (uintptr_t)main_pa;
-    ((void (*)(void))v)();
-}
-
-FAR_REACHING static void invalidate_icache_all_tzram_pa(void) {
-    uintptr_t pa = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
-    uintptr_t main_pa = pa | ((uintptr_t)__main_start__ & 0xFFF);
-    uintptr_t v = (uintptr_t)invalidate_icache_all - (uintptr_t)__main_start__ + (uintptr_t)main_pa;
-    ((void (*)(void))v)();
-}
-
-FAR_REACHING static void clear_bss(void) {
-    volatile uintptr_t v = (uintptr_t)memset;
-    ((void (*)(void *, int, size_t))v)((void *)__pk2ldr_bss_start__, 0, __pk2ldr_end__ - __pk2ldr_bss_start__);
-    ((void (*)(void *, int, size_t))v)((void *)__main_bss_start__, 0, __main_end__ - __main_bss_start__);
+    for(size_t i = 0; i < size / 8; i++) {
+        p_vma[i] = reloc_list->relocs[index].reloc_offset != 0 ? p_lma[i] : 0;
+    }
 }
 
 uintptr_t get_coldboot_crt0_stack_address(void) {
     return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
 }
 
-void coldboot_init(void) {
+void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list) {
+    /* Custom approach */
+    reloc_list->reloc_base = (uintptr_t)__start_cold;
+
     /* TODO: Set NX BOOTLOADER clock time field */
 
-    copy_warmboot_crt0();
+    /* This at least copies .warm_crt0 to its VMA. */
+    for(size_t i = 0; i < reloc_list->nb_relocs_pre_mmu_init; i++) {
+        do_relocation(reloc_list, i);
+    }
     /* At this point, we can (and will) access functions located in .warm_crt0 */
+
+    translate_warmboot_func_list(reloc_list);
 
     /* TODO: initialize DMA controllers, etc. */
     configure_ttbls();
-    set_memory_registers_enable_mmu_tzram_pa();
+    reloc_list->func_list->funcs.set_memory_registers_enable_mmu();
 
-    copy_other_sections();
+    /* Copy or clear the remaining sections */
+    for(size_t i = 0; i < reloc_list->nb_relocs_post_mmu_init; i++) {
+        do_relocation(reloc_list, reloc_list->nb_relocs_pre_mmu_init + i);
+    }
 
-    flush_dcache_all_tzram_pa();
-    invalidate_icache_all_tzram_pa();
+    reloc_list->func_list->funcs.flush_dcache_all();
+    reloc_list->func_list->funcs.invalidate_icache_all();
     /* At this point we can access all the mapped segments (all other functions, data...) normally */
-
-    clear_bss();
 }

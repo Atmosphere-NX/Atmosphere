@@ -3,7 +3,7 @@
 
 /* This is code responsible for validating a package2. Actual file reading is done by bootloader. */
 
-#include <stdint.h>
+#include "utils.h"
 #include "bootconfig.h"
 #include "memory_map.h"
 
@@ -77,6 +77,6 @@ typedef struct {
 } package2_header_t;
 #pragma pack(pop)
 
-void load_package2(void);
+void load_package2(coldboot_crt0_reloc_list_t *reloc_list);
 
 #endif

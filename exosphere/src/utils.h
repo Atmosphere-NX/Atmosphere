@@ -18,6 +18,37 @@
 #define ALINLINE        __attribute__((always_inline))
 #define FAR_REACHING    __attribute__((target("cmodel=large"), noinline))
 
+/* Custom stuff below */
+
+/* For warmboot (and coldboot crt0) */
+typedef struct {
+    size_t      nb_funcs;
+    union {
+        struct {
+            void (*set_memory_registers_enable_mmu)(void);
+            void (*flush_dcache_all)(void);
+            void (*invalidate_icache_all)(void);
+        } funcs;
+        uintptr_t addrs[3];
+    };
+} warmboot_func_list_t;
+
+/* For coldboot */
+typedef struct {
+    uint8_t     *vma;
+    uint8_t     *end_vma;
+    uintptr_t   reloc_offset;
+} coldboot_crt0_reloc_t;
+
+typedef struct {
+    uintptr_t               reloc_base;
+    size_t                  loaded_bin_size;
+    size_t                  nb_relocs_pre_mmu_init;     /* first is always warmboot_crt0 */
+    size_t                  nb_relocs_post_mmu_init;    /* first is always main segment excl. .bss */
+    warmboot_func_list_t    *func_list;
+    coldboot_crt0_reloc_t   relocs[];
+} coldboot_crt0_reloc_list_t;
+
 __attribute__ ((noreturn)) void panic(uint32_t code);
 __attribute__ ((noreturn)) void generic_panic(void);
 bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be);

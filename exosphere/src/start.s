@@ -80,11 +80,11 @@ __start_cold:
     bl   get_coldboot_crt0_stack_address
     mov  sp, x0
     mov  fp, #0
-    bl   coldboot_init
 
-    adr  x0, __start_cold
-    ldr  x1, =__start_cold_addr
-    str  x0, [x1]
+    adrp x19, g_coldboot_crt0_relocation_list
+    add  x19, x19, #:lo12:g_coldboot_crt0_relocation_list
+    mov  x0, x19
+    bl   coldboot_init
 
     ldr  x16, =__jump_to_main_cold
     br   x16
@@ -100,6 +100,9 @@ __start_warm:
     bl   get_warmboot_crt0_stack_address
     mov  sp, x0
     mov  fp, #0
+
+    adrp x0, g_warmboot_crt0_main_func_list
+    add  x0, x0, #:lo12:g_warmboot_crt0_main_func_list
     bl   warmboot_init
     ldr  x16, =__jump_to_main_warm
     br   x16
@@ -202,32 +205,29 @@ __jump_to_lower_el:
     isb
     eret
 
+/* Custom stuff */
 .align      3
-.section    .cold_crt0.rodata.reloc_constants, "a", %progbits
-.global     __warmboot_crt0_offset
-__warmboot_crt0_offset:
-    .quad __warmboot_crt0_lma__
-
-.global     __main_offset
-__main_offset:
-    .quad __main_lma__
-
-.global     __pk2ldr_offset
-__pk2ldr_offset:
-    .quad __pk2ldr_lma__
-
-.global     __vectors_offset
-__vectors_offset:
-    .quad __vectors_lma__
-
-.align      3
-.section    .rodata.__bin_size, "a", %progbits
-.global     __bin_size
-__bin_size:
-    .quad   __end_lma__
+.section    .cold_crt0.data.g_coldboot_crt0_relocation_list, "aw", %progbits
+.global     g_coldboot_crt0_relocation_list
+g_coldboot_crt0_relocation_list:
+    .quad   0, __loaded_end_lma__  /* __start_cold, to be set & loaded size */
+    .quad   1, 5                   /* number of sections to relocate/clear before & after mmu init */
+    .quad   g_warmboot_crt0_main_func_list
+    /* Relocations */
+    .quad   __warmboot_crt0_start__, __warmboot_crt0_end__, __warmboot_crt0_lma__
+    .quad   __main_start__, __main_bss_start__, __main_lma__
+    .quad   __pk2ldr_start__, __pk2ldr_bss_start__, __pk2ldr_lma__
+    .quad   __vectors_start__, __vectors_end__, __vectors_lma__
+    /* BSS clears */
+    .quad   __main_bss_start__, __main_end__, 0
+    .quad   __pk2ldr_bss_start__, __pk2ldr_end__, 0
 
 .align      3
-.section    .bss.__start_cold_addr, "w", %nobits
-.global     __start_cold_addr
-__start_cold_addr:
-    .space  8
+.section    .warm_crt0.data.g_warmboot_crt0_main_func_list, "aw", %progbits
+.global     g_warmboot_crt0_main_func_list
+g_warmboot_crt0_main_func_list:
+    .quad   3   /* Number of functions */
+    /* Functions */
+    .quad   set_memory_registers_enable_mmu
+    .quad   flush_dcache_all
+    .quad   invalidate_icache_all

@@ -372,7 +372,7 @@ uintptr_t get_pk2ldr_stack_address(void) {
 
 /* This function is called during coldboot init, and validates a package2. */
 /* This package2 is read into memory by a concurrent BPMP bootloader. */
-void load_package2(void) {
+void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     
     /* Setup the Security Engine. */
     setup_se();
@@ -393,7 +393,7 @@ void load_package2(void) {
     randomcache_init();
 
     /* memclear the initial copy of Exosphere running in IRAM (relocated to TZRAM by earlier code). */
-    memset(__start_cold_addr, 0, __bin_size);
+    memset((void *)reloc_list->reloc_base, 0, reloc_list->loaded_bin_size);
 
     /* Let NX Bootloader know that we're running. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 1;

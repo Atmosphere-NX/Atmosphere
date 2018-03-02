@@ -2,26 +2,9 @@
 #include "memory_map.h"
 #include "arm.h"
 
-extern const uint8_t __main_start__[];
-
 /* start.s */
 void __set_memory_registers(uintptr_t ttbr0, uintptr_t vbar, uint64_t cpuectlr, uint32_t scr,
                             uint32_t tcr, uint32_t cptr, uint64_t mair, uint32_t sctlr);
-
-/*
-FAR_REACHING static void flush_dcache_all_tzram_pa(void) {
-    uintptr_t pa = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
-    uintptr_t main_pa = pa | ((uintptr_t)__main_start__ & 0xFFF);
-    uintptr_t v = (uintptr_t)flush_dcache_all - (uintptr_t)__main_start__ + (uintptr_t)main_pa;
-    ((void (*)(void))v)();
-}
-
-FAR_REACHING static void invalidate_icache_all_inner_shareable_tzram_pa(void) {
-    uintptr_t pa = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
-    uintptr_t main_pa = pa | ((uintptr_t)__main_start__ & 0xFFF);
-    uintptr_t v = (uintptr_t)invalidate_icache_all_inner_shareable - (uintptr_t)__main_start__ + (uintptr_t)main_pa;
-    ((void (*)(void))v)();
-}*/
 
 uintptr_t get_warmboot_crt0_stack_address(void) {
     return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x800;
@@ -80,6 +63,6 @@ void set_memory_registers_enable_mmu(void) {
     __set_memory_registers(ttbr0, vbar, cpuectlr, scr, tcr, cptr, mair, sctlr);
 }
 
-void warmboot_init(void) {
-    /* TODO: Implement. */
+void warmboot_init(warmboot_func_list_t *func_list) {
+    (void)func_list;
 }
