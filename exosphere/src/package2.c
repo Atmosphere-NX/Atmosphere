@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "memory_map.h"
 
+#include "bootup.h"
 #include "cpu_context.h"
 #include "package2.h"
 #include "configitem.h"
@@ -376,13 +377,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     wait(1000);
 
-    /* TODO: bootup_misc_mmio(). */
-    /* This func will also be called on warmboot. */
-    /* And will verify stored SE Test Vector, clear keyslots, */
-    /* Generate an SRK, set the warmboot firmware location, */
-    /* Configure the GPU uCode carveout, configure the Kernel default carveouts, */
-    /* Initialize the PMC secure scratch registers, initialize MISC registers, */
-    /* And assign "se_operation_completed" to Interrupt 0x5A. */
+    bootup_misc_mmio();
 
     /* TODO: initalize cpu context */
 
@@ -406,7 +401,13 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     setup_boot_config();
 
     /* Synchronize with NX BOOTLOADER. */
-    sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2);
+    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+        sync_with_nx_bootloader(NX_BOOTLOADER_STATE_DRAM_INITIALIZED_4X);
+        /* TODO: copy_warmboot_bin_to_dram(); */
+        sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2_4X);
+    } else {
+        sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2);
+    }
 
     /* Remove the identity mapping for iRAM-C+D & TZRAM */
     identity_unmap_iram_cd_tzram();
@@ -440,6 +441,13 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
 
     /* TODO: lots of boring MMIO */
+
+    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+        sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED_4X);
+        setup_4x_mmio();
+    } else {
+        sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
+    }
 
     /* TODO: Update SCR_EL3 depending on value in Bootconfig. */
 
