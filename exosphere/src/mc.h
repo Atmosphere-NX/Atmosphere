@@ -12,6 +12,13 @@ static inline uintptr_t get_mc_base(void) {
 
 #define MC_BASE  (get_mc_base())
 
+#define MAKE_MC_REG(n) (*((volatile uint32_t *)(MC_BASE + n)))
+
+#define MC_SECURITY_CFG0_0 MAKE_MC_REG(0x070)
+#define MC_SECURITY_CFG1_0 MAKE_MC_REG(0x074)
+#define MC_SECURITY_CFG3_0 MAKE_MC_REG(0x9BC)
+
+
 #define CARVEOUT_ID_MIN 1
 #define CARVEOUT_ID_MAX 5
 

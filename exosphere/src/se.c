@@ -16,6 +16,9 @@ static unsigned int (*g_se_callback)(void);
 static unsigned int g_se_modulus_sizes[KEYSLOT_RSA_MAX];
 static unsigned int g_se_exp_sizes[KEYSLOT_RSA_MAX];
 
+static bool g_se_generated_vector = false;
+static uint8_t g_se_stored_test_vector[0x10];
+
 
 /* Initialize a SE linked list. */
 void ll_init(se_ll_t *ll, void *buffer, size_t size) {
@@ -69,6 +72,35 @@ void se_verify_flags_cleared(void) {
     if (SECURITY_ENGINE->FLAGS_REG & 3) {
         generic_panic();
     }
+}
+
+
+void se_generate_test_vector(void *vector) {
+    /* TODO: Implement real test vector generation. */
+    memset(vector, 0, 0x10);
+}
+
+void se_validate_stored_vector(void) {
+    if (!g_se_generated_vector) {
+        generic_panic();
+    }
+
+    uint8_t calc_vector[0x10];
+    se_generate_test_vector(calc_vector);
+    
+    /* Ensure nobody's messed with the security engine while we slept. */
+    if (memcmp(calc_vector, g_se_stored_test_vector, 0x10) != 0) {
+        generic_panic();
+    }
+}
+
+void se_generate_stored_vector(void) {
+    if (g_se_generated_vector) {
+        generic_panic();
+    }
+
+    se_generate_test_vector(g_se_stored_test_vector);
+    g_se_generated_vector = true;
 }
 
 /* Set the flags for an AES keyslot. */

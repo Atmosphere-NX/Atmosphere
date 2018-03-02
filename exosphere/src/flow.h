@@ -16,7 +16,9 @@ static inline uintptr_t get_flow_base(void) {
 #define MAKE_FLOW_REG(ofs) (*((volatile uint32_t *)(FLOW_BASE + ofs)))
 
 #define FLOW_CTLR_HALT_COP_EVENTS_0 MAKE_FLOW_REG(0x004)
+#define FLOW_CTLR_FLOW_DBG_QUAL_0   MAKE_FLOW_REG(0x050)
 #define FLOW_CTLR_L2FLUSH_CONTROL_0 MAKE_FLOW_REG(0x094)
+#define FLOW_CTLR_BPMP_CLUSTER_CONTROL_0 MAKE_FLOW_REG(0x098)
 
 
 static const struct {

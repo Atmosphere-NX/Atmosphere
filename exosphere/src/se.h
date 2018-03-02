@@ -173,6 +173,9 @@ void se_check_error_status_reg(void);
 void se_check_for_error(void);
 void se_trigger_interrupt(void);
 
+void se_validate_stored_vector(void);
+void se_generate_stored_vector(void);
+
 void se_verify_flags_cleared(void);
 
 void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags);
@@ -215,6 +218,7 @@ void se_initialize_rng(unsigned int keyslot);
 void se_generate_random(unsigned int keyslot, void *dst, size_t size);
 
 /* SE context save API. */
+void se_generate_srk(unsigned int srkgen_keyslot);
 void se_set_in_context_save_mode(bool is_context_save_mode);
 void se_generate_random_key(unsigned int dst_keyslot, unsigned int rng_keyslot);
 void se_save_context(unsigned int srk_keyslot, unsigned int rng_keyslot, void *dst);

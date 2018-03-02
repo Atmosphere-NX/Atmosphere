@@ -27,4 +27,6 @@ bool configitem_is_recovery_boot(void);
 bool configitem_is_retail(void);
 bool configitem_should_profile_battery(void);
 
+uint64_t configitem_get_hardware_type(void);
+
 #endif

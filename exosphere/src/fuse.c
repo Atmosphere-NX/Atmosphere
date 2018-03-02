@@ -16,6 +16,8 @@ void fuse_wait_idle(void);
 void fuse_init(void)
 {
     fuse_make_regs_visible();
+    fuse_secondary_private_key_disable();
+    fuse_disable_programming();
 
     /* TODO: Overrides (iROM patches) and various reads happen here */
 }

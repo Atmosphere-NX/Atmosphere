@@ -41,6 +41,14 @@ bool configitem_should_profile_battery(void) {
     return g_battery_profile;
 }
 
+uint64_t configitem_get_hardware_type(void) {
+    uint64_t hardware_type;
+    if (configitem_get(CONFIGITEM_HARDWARETYPE, &hardware_type) != 0) {
+        generic_panic();
+    }
+    return hardware_type;
+}
+
 uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue) {
     uint32_t result = 0;
     switch (item) {
