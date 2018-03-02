@@ -421,15 +421,11 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     flush_dcache_all();
     invalidate_icache_all(); /* non-broadcasting */
 
-    /* TODO: Update SCR_EL3 depending on value in Bootconfig. */
-
     /* Set CORE0 entrypoint for Package2. */
     set_core_entrypoint_and_argument(0, DRAM_BASE_PHYSICAL + header.metadata.entrypoint, 0);
 
     /* Remove the DRAM identity mapping. TODO: Should we bother? */
     /* indentity_unmap_dram(); */
-
-    /* TODO: Update SCR_EL3 depending on value in Bootconfig. */
 
     /* Synchronize with NX BOOTLOADER. */
     sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
