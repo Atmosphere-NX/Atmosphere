@@ -11,6 +11,9 @@
 
 #define MAKE_CAR_REG(n) (*((volatile uint32_t *)(CAR_BASE + n)))
 
+#define CLK_RST_CONTROLLER_MISC_CLK_ENB_0 MAKE_CAR_REG(0x048)
+#define CLK_RST_CONTROLLER_RST_DEVICES_H_0 MAKE_CAR_REG(0x008)
+
 #define NUM_CAR_BANKS 7
 
 typedef enum {

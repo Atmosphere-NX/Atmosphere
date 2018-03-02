@@ -4,6 +4,7 @@
 
 #include "utils.h"
 
+#include "car.h"
 #include "bpmp.h"
 #include "arm.h"
 #include "configitem.h"
@@ -81,7 +82,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     
     unsigned int current_core = get_core_id();
     
-    /* TODO: Enable clock and reset for I2C1. */
+    clkrst_reboot(CARDEVICE_I2C1);
     if (configitem_should_profile_battery() && !i2c_query_ti_charger_bit_7()) {
         /* Profile the battery. */
         i2c_set_ti_charger_bit_7();
@@ -98,7 +99,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
             wait(0x100);
         }
     }
-    /* TODO: Reset I2C1 controller. */
+    clkrst_disable(CARDEVICE_I2C1);
     
     /* Enable LP0 Wake Event Detection. */
     wait(75);
@@ -108,7 +109,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     APBDEV_PMC_WAKE2_STATUS_0 = 0xFFFFFFFF; /* Set all wake events. */
     wait(75);
     
-    /* TODO: Enable I2C5 Clock/Reset. */
+    clkrst_reboot(CARDEVICE_I2C5);
     if (fuse_get_bootrom_patch_version() >= 0x7F) {
         i2c_send_pmic_cpu_shutdown_cmd();
     }
@@ -131,8 +132,10 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
         }
     }
     
-    /* TODO: Jamais Vu mitigation #3: Ensure all relevant DMA controllers are held in reset. */
-    /* This just requires checking CLK_RST_CONTROLLER_RST_DEVICES_H_0 & mask == 0x4000004. */
+    /* Jamais Vu mitigation #3: Ensure all relevant DMA controllers are held in reset. */
+    if ((CLK_RST_CONTROLLER_RST_DEVICES_H_0 & 0x4000004) != 0x4000004) {
+        generic_panic();
+    }
     
     /* Signal to bootrom the next reset should be a warmboot. */
     APBDEV_PMC_SCRATCH0_0 = 1; 
@@ -153,11 +156,16 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     BPMP_VECTOR_IRQ = 0x40003004; /* Reboot. */
     BPMP_VECTOR_FIQ = 0x40003004; /* Reboot. */
     
-    /* TODO: Hold the BPMP in reset. */
+    /* Hold the BPMP in reset. */
+    clkrst_disable(CARDEVICE_BPMP);
+
+    /* Copy BPMP firmware. */
     uint8_t *lp0_entry_code = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE));
     memcpy(lp0_entry_code, bpmpfw_bin, bpmpfw_bin_size);
     flush_dcache_range(lp0_entry_code, lp0_entry_code + bpmpfw_bin_size);
-    /* TODO: Take the BPMP out of reset. */
+
+    /* Take the BPMP out of reset. */
+    clkrst_enable(CARDEVICE_BPMP);
     
     /* Start executing BPMP firmware. */
     FLOW_CTLR_HALT_COP_EVENTS_0 = 0;
@@ -173,6 +181,5 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     set_current_core_inactive(); 
     call_with_stack_pointer(get_smc_core012_stack_address(), save_se_and_power_down_cpu);
     
-    /* NOTE: This return never actually occurs. */
-    return 0;
+    generic_panic();
 }

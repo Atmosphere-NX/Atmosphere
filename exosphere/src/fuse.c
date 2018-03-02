@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "car.h"
 #include "fuse.h"
 #include "utils.h"
 #include "timers.h"
@@ -22,10 +23,7 @@ void fuse_init(void)
 /* Make all fuse registers visible */
 void fuse_make_regs_visible(void)
 {
-    /* TODO: Replace this with a proper CLKRST driver */
-    volatile uint32_t* misc_clk_reg = (volatile uint32_t *)MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_CLKRST) + 0x48;
-    uint32_t misc_clk_val = *misc_clk_reg;
-    *misc_clk_reg = (misc_clk_val | (1 << 28));
+    CLK_RST_CONTROLLER_MISC_CLK_ENB_0 |= BIT(28);
 }
 
 /* Enable power to the fuse hardware array */
