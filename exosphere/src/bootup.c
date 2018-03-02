@@ -19,6 +19,7 @@
 #include "interrupt.h"
 #include "cpu_context.h"
 #include "actmon.h"
+#include "syscrt0.h"
 
 static bool g_has_booted_up = false;
 
@@ -165,4 +166,35 @@ void bootup_misc_mmio(void) {
 
 void setup_4x_mmio(void) {
     /* TODO */
+}
+
+#define SET_SYSREG(reg, val) do { temp_reg = val; __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
+
+void setup_current_core_state(void) {
+    uint64_t temp_reg;
+    
+    /* Setup system registers. */
+    SET_SYSREG(actlr_el3, 0x73ull);
+    SET_SYSREG(actlr_el2, 0x73ull);
+    SET_SYSREG(hcr_el2, 0x80000000ull);
+    SET_SYSREG(dacr32_el2, 0xFFFFFFFFull);
+    SET_SYSREG(sctlr_el1, 0xC50838ull);
+    SET_SYSREG(sctlr_el2, 0x30C50838ull);
+    
+    do { __asm__ __volatile__ ("isb"); } while (false);
+    
+    SET_SYSREG(cntfrq_el0, MAKE_SYSCRT0_REG(0x20)); /* TODO: Reg name. */
+    SET_SYSREG(cnthctl_el2, 3ull);
+
+    do { __asm__ __volatile__ ("isb"); } while (false);
+
+    /* Setup Interrupts, flow. */
+    flow_clear_csr0_and_events(get_core_id());
+    intr_initialize_gic();
+    intr_set_priority(INTERRUPT_ID_1C, 0);
+    intr_set_group(INTERRUPT_ID_1C, 0);
+    intr_set_enabled(INTERRUPT_ID_1C, 1);
+
+    /* Restore current core context. */
+    restore_current_core_context();
 }

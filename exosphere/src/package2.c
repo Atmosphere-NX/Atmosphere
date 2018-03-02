@@ -380,7 +380,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     bootup_misc_mmio();
 
-    /* TODO: initalize cpu context */
+    setup_current_core_state();
 
     /* TODO: Read and save BOOTREASON stored by NX_BOOTLOADER at 0x1F009FE00 */
     
