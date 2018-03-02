@@ -441,16 +441,28 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* Synchronize with NX BOOTLOADER. */
     sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
 
-    /* TODO: lots of boring MMIO */
-
     if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED_4X);
-        setup_4x_mmio();
+        setup_4x_mmio(); /* TODO */
     } else {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
     }
 
-    /* TODO: Update SCR_EL3 depending on value in Bootconfig. */
+    /* Update SCR_EL3 depending on value in Bootconfig. */
+    do {
+        uint64_t temp_scr_el3;
+        __asm__ __volatile__ ("mrs %0, scr_el3" : "=r"(temp_scr_el3) :: "memory");
+        
+        temp_scr_el3 &= 0xFFFFFFF7;
+        
+        if (bootconfig_should_set_scr_el3_bit()) {
+            temp_scr_el3 |= 8;
+        }
+        
+        __asm__ __volatile__ ("msr scr_el3, %0" :: "r"(temp_scr_el3) : "memory");
+        
+        __asm__ __volatile__("isb");
+    } while(false);
 
     if (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE) {
         panic(0x7A700001);

@@ -17,6 +17,7 @@
 #include "se.h"
 #include "smc_api.h"
 #include "timers.h"
+#include "misc.h"
 
 extern const uint8_t bpmpfw_bin[];
 extern const uint32_t bpmpfw_bin_size;
@@ -144,7 +145,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     /* Prepare to boot the BPMP running our deep sleep firmware. */
     
     /* Mark PMC registers as not secure-world only, so BPMP can access them. */
-    (*((volatile uint32_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_MISC) + 0xC00))) &= 0xFFFFDFFF; /* TODO: macro */
+    APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 &= 0xFFFFDFFF;
     
     /* Setup BPMP vectors. */
     BPMP_VECTOR_RESET = 0x40003000; /* lp0_entry_firmware_crt0 */

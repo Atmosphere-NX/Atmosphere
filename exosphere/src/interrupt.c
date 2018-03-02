@@ -14,7 +14,7 @@ static unsigned int get_interrupt_id(void) {
     return GICC_IAR;
 }
 
-/* Initializes the GIC. TODO: This must be called during wakeup. */
+/* Initializes the GIC. This must be called during wakeup. */
 void intr_initialize_gic(void) {
     /* Setup interrupts 0-0x1F as nonsecure with highest non-secure priority. */
     GICD_IGROUPR[0] = 0xFFFFFFFF;

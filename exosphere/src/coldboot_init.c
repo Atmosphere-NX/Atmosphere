@@ -171,7 +171,6 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
     /* TODO: 4.x does slightly different init. How should we handle this? We can't detect master key revision yet. */
     coldboot_init_dma_controllers();
 
-    /* TODO: initialize DMA controllers, etc. */
     configure_ttbls();
     func_list->funcs.set_memory_registers_enable_mmu();
 

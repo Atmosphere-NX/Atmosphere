@@ -64,6 +64,10 @@ bool bootconfig_is_debug_mode(void) {
     return (LOADED_BOOTCONFIG->unsigned_config.data[0x10] & 2) != 0;
 }
 
+bool bootconfig_should_set_scr_el3_bit(void) {
+    return (LOADED_BOOTCONFIG->unsigned_config.data[0x10] & 6) != 6;
+}
+
 uint64_t bootconfig_get_memory_arrangement(void) {
     if (bootconfig_is_debug_mode()) {
         if (fuse_get_dram_id() == 4) {

@@ -47,7 +47,7 @@ static inline uintptr_t get_gicc_base(void) {
 /* To be called by FIQ handler. */
 void handle_registered_interrupt(void);
 
-/* Initializes the GIC. TODO: This must be called during wakeup. */
+/* Initializes the GIC. This must be called during wakeup. */
 void intr_initialize_gic(void);
 void intr_initialize_gic_nonsecure(void);
 
