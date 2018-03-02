@@ -463,8 +463,4 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
         
         __asm__ __volatile__("isb");
     } while(false);
-
-    if (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE) {
-        panic(0x7A700001);
-    }
 }

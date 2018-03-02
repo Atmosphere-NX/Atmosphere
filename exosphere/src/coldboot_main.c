@@ -24,5 +24,7 @@ void coldboot_main(void) {
     use_core_entrypoint_and_argument(get_core_id(), &ep, &arg);
 
     /* Nintendo jumps to EL1, we jump to EL2. Both are supported with all current packages2. */
+    /* TODO: Remove this panic() when we're ready to test Kernel handoff. */
+    panic(0x7A700001); 
     __jump_to_lower_el(arg, ep, 2);
 }
