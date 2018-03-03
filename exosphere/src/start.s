@@ -214,7 +214,7 @@ __jump_to_lower_el:
     msr  elr_el3, x1
 
     mov  w1, #(0b1111 << 6 | 1) /* DAIF set and SP = SP_ELx*/
-    orr  w1, w2, w2, lsl#2
+    orr  w1, w1, w2, lsl#2
     msr  spsr_el3, x1
 
     bl __set_exception_entry_stack_pointer

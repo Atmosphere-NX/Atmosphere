@@ -28,8 +28,8 @@ void warmboot_crt0_critical_section_enter(volatile critical_section_t *critical_
 }
 
 void set_memory_registers_enable_mmu(void) {
-    static const uintptr_t vbar  = TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800;
-    static const uintptr_t ttbr0 = vbar - 64;
+    static const uintptr_t vbar  = TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800;
+    static const uintptr_t ttbr0 = TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64;
 
     /*
         - Disable table walk descriptor access prefetch.
