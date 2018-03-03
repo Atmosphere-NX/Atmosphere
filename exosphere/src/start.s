@@ -76,6 +76,11 @@
 __start_cold:
     ERRATUM_INVALIDATE_BTB_AT_BOOT
 
+    /*
+        This coldboot crt0 doesn't enter the boot critical section in the official monitor.
+        However we'll initialize g_boot_critical_section so that it acts like core0 has entered it,
+        for it to be in .data and for safety.
+    */
     msr  spsel, #0
     bl   get_coldboot_crt0_stack_address
     mov  sp, x0
@@ -96,8 +101,22 @@ __start_cold:
 __start_warm:
     ERRATUM_INVALIDATE_BTB_AT_BOOT
 
-    /* For some reasons, Nintendo uses spsel, #1 here, causing issues if an exception occurs */
+    /* For some reasons, Nintendo uses spsel, #1 around here, causing issues if an exception occurs */
     msr  spsel, #0
+
+    /* Nintendo doesn't use anything like the following two lines, but their critical section algo is borked */
+    /* FWIW this function doesn't use a stack atm, with latest GCC, but that might change. */
+    bl   get_warmboot_crt0_stack_address_critsec_enter
+    mov  sp, x0
+    
+    /* PA(__main_start__) = __warmboot_crt0_start__ + 0x800 (refer to the linker script) */
+    ldr  x0, =g_boot_critical_section
+    ldr  x1, =__main_start__
+    sub  x0, x0, x1
+    ldr  x1, =(__start_warm + 0x800)
+    add  x0, x0, x1
+    bl   warmboot_crt0_critical_section_enter
+
     bl   get_warmboot_crt0_stack_address
     mov  sp, x0
     mov  fp, #0

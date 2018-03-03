@@ -2,12 +2,29 @@
 #include "memory_map.h"
 #include "arm.h"
 
+#include "synchronization.h"
+
 /* start.s */
 void __set_memory_registers(uintptr_t ttbr0, uintptr_t vbar, uint64_t cpuectlr, uint32_t scr,
                             uint32_t tcr, uint32_t cptr, uint64_t mair, uint32_t sctlr);
 
 uintptr_t get_warmboot_crt0_stack_address(void) {
     return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x800;
+}
+
+uintptr_t get_warmboot_crt0_stack_address_critsec_enter(void) {
+    unsigned int core_id = get_core_id();
+
+    if (core_id) {
+        return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x1000;
+    }
+    else {
+        return TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x80 * (core_id + 1);
+    }
+}
+
+void warmboot_crt0_critical_section_enter(volatile critical_section_t *critical_section) {
+    critical_section_enter(critical_section);
 }
 
 void set_memory_registers_enable_mmu(void) {

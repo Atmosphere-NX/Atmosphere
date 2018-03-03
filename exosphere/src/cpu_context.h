@@ -1,10 +1,12 @@
 #ifndef EXOSPHERE_CPU_CTX_H
 #define EXOSPHERE_CPU_CTX_H
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "utils.h"
+#include "synchronization.h"
 
 /* Exosphere CPU Management functionality. */
+
+extern critical_section_t g_boot_critical_section;
 
 typedef struct {
   uint64_t argument;
@@ -54,6 +56,7 @@ void set_current_core_inactive(void);
 
 void use_core_entrypoint_and_argument(uint32_t core, uintptr_t *entrypoint_addr, uint64_t *argument);
 void set_core_entrypoint_and_argument(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument);
+void core_jump_to_lower_el(void);
 
 uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument);
 uint32_t cpu_off(void);

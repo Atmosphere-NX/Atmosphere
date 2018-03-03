@@ -7,6 +7,7 @@
 #include "timers.h"
 #include "smc_api.h"
 #include "utils.h"
+#include "synchronization.h"
 #include "preprocessor.h"
 
 #define SAVE_SYSREG64(reg) do { __asm__ __volatile__ ("mrs %0, " #reg : "=r"(temp_reg) :: "memory"); g_cpu_contexts[current_core].reg = temp_reg; } while(false)
@@ -18,6 +19,12 @@
 #define RESTORE_SYSREG32(reg) RESTORE_SYSREG64(reg)
 #define RESTORE_BP_REG(i, _) RESTORE_SYSREG64(DBGBVR##i##_EL1); RESTORE_SYSREG64(DBGBCR##i##_EL1);
 #define RESTORE_WP_REG(i, _) RESTORE_SYSREG64(DBGBVR##i##_EL1); RESTORE_SYSREG64(DBGBCR##i##_EL1);
+
+/* start.s */
+void __attribute__((noreturn)) __jump_to_lower_el(uint64_t arg, uintptr_t ep, unsigned int el);
+
+/* See notes in start.s */
+critical_section_t g_boot_critical_section = {{{.ticket_number = 1}}};
 
 static saved_cpu_context_t g_cpu_contexts[NUM_CPU_CORES] = {0};
 
@@ -38,6 +45,22 @@ void use_core_entrypoint_and_argument(uint32_t core, uintptr_t *entrypoint_addr,
 void set_core_entrypoint_and_argument(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
     g_cpu_contexts[core].ELR_EL3 = entrypoint_addr;
     g_cpu_contexts[core].argument = argument;
+}
+
+void core_jump_to_lower_el(void) {
+    uintptr_t ep;
+    uint64_t arg;
+    unsigned int core_id = get_core_id();
+
+    use_core_entrypoint_and_argument(core_id, &ep, &arg);
+    critical_section_leave(&g_boot_critical_section);
+    flush_dcache_range(&g_boot_critical_section, (uint8_t *)&g_boot_critical_section + sizeof(g_boot_critical_section)); /* already does a dsb sy */
+    __sev();
+
+    /* Nintendo jumps to EL1, we jump to EL2. Both are supported with all current packages2. */
+    /* TODO: Remove this panic() when we're ready to test Kernel handoff. */
+    panic(0x7A700001); 
+    __jump_to_lower_el(arg, ep, 2);
 }
 
 uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
