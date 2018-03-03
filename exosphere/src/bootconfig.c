@@ -64,7 +64,7 @@ bool bootconfig_is_debug_mode(void) {
     return (LOADED_BOOTCONFIG->unsigned_config.data[0x10] & 2) != 0;
 }
 
-bool bootconfig_should_set_scr_el3_bit(void) {
+bool bootconfig_take_extabt_serror_to_el3(void) {
     return (LOADED_BOOTCONFIG->unsigned_config.data[0x10] & 6) != 6;
 }
 

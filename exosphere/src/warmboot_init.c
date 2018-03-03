@@ -20,8 +20,7 @@ uintptr_t get_warmboot_crt0_stack_address_critsec_enter(void) {
 
     if (core_id) {
         return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x1000;
-    }
-    else {
+    } else {
         return TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x80 * (core_id + 1);
     }
 }
@@ -143,7 +142,8 @@ void warmboot_init(boot_func_list_t *func_list) {
     func_list->funcs.flush_dcache_all();
     func_list->funcs.invalidate_icache_all();
 
-    if(MC_SECURITY_CFG0_0 != 0) {
+    /* On warmboot (not cpu_on) only */
+    if (MC_SECURITY_CFG0_0 != 0) {
         init_dma_controllers();
     }
 

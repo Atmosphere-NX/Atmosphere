@@ -181,6 +181,6 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     save_current_core_context();
     set_current_core_inactive(); 
     call_with_stack_pointer(get_smc_core012_stack_address(), save_se_and_power_down_cpu);
-    
+
     generic_panic();
 }

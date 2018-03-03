@@ -14,6 +14,7 @@
 #include "pmc.h"
 #include "randomcache.h"
 #include "timers.h"
+#include "bootconfig.h"
 
 extern void *__start_cold_addr;
 extern size_t __bin_size;
@@ -25,7 +26,7 @@ static void setup_se(void) {
     /* Sanity check the Security Engine. */
     se_verify_flags_cleared();
 
-    /* Initialize Interrupts. */
+    /* Initialize interrupts. */
     intr_initialize_gic_nonsecure();
 
     /* Perform some sanity initialization. */
@@ -34,8 +35,6 @@ static void setup_se(void) {
     p_security_engine->AES_KEY_READ_DISABLE_REG = 0;
     p_security_engine->RSA_KEY_READ_DISABLE_REG = 0;
     p_security_engine->_0x0 &= 0xFFFFFFFB;
-
-    
 
     /* Currently unknown what each flag does. */
     for (unsigned int i = 0; i < KEYSLOT_AES_MAX; i++) {
@@ -342,23 +341,6 @@ static void sync_with_nx_bootloader(int state) {
     }
 }
 
-static void identity_unmap_iram_cd_tzram(void) {
-    /* See also: configure_ttbls (in coldboot_init.c). */
-    uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
-    uintptr_t *mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
-    uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
-
-    mmu_unmap_range(3, mmu_l3_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_IRAM_CD), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_IRAM_CD));
-    mmu_unmap_range(3, mmu_l3_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_TZRAM), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_TZRAM));
-
-    mmu_unmap(2, mmu_l2_tbl, 0x40000000);
-    mmu_unmap(2, mmu_l2_tbl, 0x7C000000);
-
-    mmu_unmap(1, mmu_l1_tbl, 0x40000000);
-
-    tlb_invalidate_all_inner_shareable();
-}
-
 static void indentity_unmap_dram(void) {
     uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
 
@@ -410,6 +392,9 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2);
     }
 
+    /* Make PMC (2.x+), MC (4.x+) registers secure-only */
+    secure_additional_devices();
+
     /* Remove the identity mapping for iRAM-C+D & TZRAM */
     identity_unmap_iram_cd_tzram();
 
@@ -449,18 +434,5 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     }
 
     /* Update SCR_EL3 depending on value in Bootconfig. */
-    do {
-        uint64_t temp_scr_el3;
-        __asm__ __volatile__ ("mrs %0, scr_el3" : "=r"(temp_scr_el3) :: "memory");
-        
-        temp_scr_el3 &= 0xFFFFFFF7;
-        
-        if (bootconfig_should_set_scr_el3_bit()) {
-            temp_scr_el3 |= 8;
-        }
-        
-        __asm__ __volatile__ ("msr scr_el3, %0" :: "r"(temp_scr_el3) : "memory");
-        
-        __asm__ __volatile__("isb");
-    } while(false);
+    set_extabt_serror_taken_to_el3(bootconfig_take_extabt_serror_to_el3());
 }

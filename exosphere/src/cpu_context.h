@@ -50,13 +50,14 @@ typedef struct {
 void save_current_core_context(void);
 void restore_current_core_context(void);
 
+bool is_core_active(uint32_t core);
 void set_core_is_active(uint32_t core, bool is_active);
 void set_current_core_active(void);
 void set_current_core_inactive(void);
 
 void use_core_entrypoint_and_argument(uint32_t core, uintptr_t *entrypoint_addr, uint64_t *argument);
 void set_core_entrypoint_and_argument(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument);
-void core_jump_to_lower_el(void);
+void __attribute__((noreturn)) core_jump_to_lower_el(void);
 
 uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument);
 uint32_t cpu_off(void);

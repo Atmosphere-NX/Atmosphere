@@ -21,6 +21,11 @@
 #include "actmon.h"
 #include "syscrt0.h"
 
+#include "mmu.h"
+#include "arm.h"
+#include "memory_map.h"
+#include "synchronization.h"
+
 static bool g_has_booted_up = false;
 
 void bootup_misc_mmio(void) {
@@ -134,7 +139,7 @@ void bootup_misc_mmio(void) {
     APBDEV_PMC_SEC_DISABLE3_0 = 0x500000;
 
     /* Setup FIQs. */
-    
+
 
     /* And assign "se_operation_completed" to Interrupt 0x5A. */
     intr_set_priority(INTERRUPT_ID_SECURITY_ENGINE, 0);
@@ -180,13 +185,13 @@ void setup_current_core_state(void) {
     SET_SYSREG(dacr32_el2, 0xFFFFFFFFull);
     SET_SYSREG(sctlr_el1, 0xC50838ull);
     SET_SYSREG(sctlr_el2, 0x30C50838ull);
-    
-    do { __asm__ __volatile__ ("isb"); } while (false);
-    
+
+    __isb();
+
     SET_SYSREG(cntfrq_el0, MAKE_SYSCRT0_REG(0x20)); /* TODO: Reg name. */
     SET_SYSREG(cnthctl_el2, 3ull);
 
-    do { __asm__ __volatile__ ("isb"); } while (false);
+    __isb();
 
     /* Setup Interrupts, flow. */
     flow_clear_csr0_and_events(get_core_id());
@@ -197,4 +202,41 @@ void setup_current_core_state(void) {
 
     /* Restore current core context. */
     restore_current_core_context();
+}
+
+void identity_unmap_iram_cd_tzram(void) {
+    /* See also: configure_ttbls (in coldboot_init.c). */
+    uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
+    uintptr_t *mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
+    uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
+
+    mmu_unmap_range(3, mmu_l3_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_IRAM_CD), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_IRAM_CD));
+    mmu_unmap_range(3, mmu_l3_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_TZRAM), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_TZRAM));
+
+    mmu_unmap(2, mmu_l2_tbl, 0x40000000);
+    mmu_unmap(2, mmu_l2_tbl, 0x7C000000);
+
+    mmu_unmap(1, mmu_l1_tbl, 0x40000000);
+
+    tlb_invalidate_all_inner_shareable();
+}
+
+void secure_additional_devices(void) {
+    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 |= 0x2000; /* make PMC secure-only (2.x+ but see note below) */
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 |= 0X510;  /* make MC0, MC1, MCB secure-only (4.x+) */
+    } else {
+        /* TODO: Detect 1.x */
+    }
+}
+
+void set_extabt_serror_taken_to_el3(bool taken_to_el3) {
+    uint64_t temp_scr_el3;
+    __asm__ __volatile__ ("mrs %0, scr_el3" : "=r"(temp_scr_el3) :: "memory");
+
+    temp_scr_el3 &= 0xFFFFFFF7;
+    temp_scr_el3 |= taken_to_el3 ? 8 : 0;
+
+    __asm__ __volatile__ ("msr scr_el3, %0" :: "r"(temp_scr_el3) : "memory");
+    __isb();
 }

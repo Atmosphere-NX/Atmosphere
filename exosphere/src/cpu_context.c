@@ -31,7 +31,7 @@ static saved_cpu_context_t g_cpu_contexts[NUM_CPU_CORES] = {0};
 void use_core_entrypoint_and_argument(uint32_t core, uintptr_t *entrypoint_addr, uint64_t *argument) {
     saved_cpu_context_t *ctx = &g_cpu_contexts[core];
     if(ctx->ELR_EL3 == 0 || ctx->is_active) {
-        panic(0xFA000007); /* invalid context */
+        panic(0xF7F00007); /* invalid context */
     }
 
     *entrypoint_addr = ctx->ELR_EL3;
@@ -39,7 +39,7 @@ void use_core_entrypoint_and_argument(uint32_t core, uintptr_t *entrypoint_addr,
 
     ctx->ELR_EL3 = 0;
     ctx->argument = 0;
-    ctx->is_active = true;
+    ctx->is_active = 1;
 }
 
 void set_core_entrypoint_and_argument(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
@@ -47,7 +47,7 @@ void set_core_entrypoint_and_argument(uint32_t core, uintptr_t entrypoint_addr, 
     g_cpu_contexts[core].argument = argument;
 }
 
-void core_jump_to_lower_el(void) {
+void __attribute__((noreturn)) core_jump_to_lower_el(void) {
     uintptr_t ep;
     uint64_t arg;
     unsigned int core_id = get_core_id();
@@ -71,9 +71,9 @@ uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
     if (g_cpu_contexts[core].is_active) {
         return 0xFFFFFFFC;
     }
-    
+
     set_core_entrypoint_and_argument(core, entrypoint_addr, argument);
-    
+
     const uint32_t status_masks[NUM_CPU_CORES] = {0x4000, 0x200, 0x400, 0x800};
     const uint32_t toggle_vals[NUM_CPU_CORES] = {0xE, 0x9, 0xA, 0xB};
     
@@ -173,9 +173,13 @@ void restore_current_core_context(void) {
 
         EVAL(REPEAT(6, RESTORE_BP_REG, ~));
         EVAL(REPEAT(4, RESTORE_WP_REG, ~));
-        
+
         g_cpu_contexts[current_core].is_saved = 0;
     }
+}
+
+bool is_core_active(uint32_t core) {
+    return g_cpu_contexts[core].is_active != 0;
 }
 
 void set_core_is_active(uint32_t core, bool is_active) {

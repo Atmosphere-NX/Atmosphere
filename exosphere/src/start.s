@@ -188,7 +188,7 @@ __jump_to_main_warm:
     mov  w0, #0 /* use core0,1,2 stack bottom + 0x800 (VA of warmboot crt0 sp) temporarily */
     bl   get_exception_entry_stack_address
     add  sp, x0, #0x800
-    b    warmboot_main
+    bl   warmboot_main
 
 .section    .text.__set_exception_entry_stack, "ax", %progbits
 .type       __set_exception_entry_stack, %function
