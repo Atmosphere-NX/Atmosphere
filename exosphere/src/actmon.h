@@ -8,7 +8,7 @@
 /* NOTE: ACTMON registers lie in the SYSREG region! */
 #define ACTMON_BASE (SYSREG_BASE + 0x800)
 
-#define MAKE_ACTMON_REG(n) (*((volatile uint32_t *)(ACTMON_BASE + n)))
+#define MAKE_ACTMON_REG(n) MAKE_REG32(ACTMON_BASE + n)
 
 #define ACTMON_GLB_STATUS_0 MAKE_ACTMON_REG(0x000)
 #define ACTMON_COP_CTRL_0 MAKE_ACTMON_REG(0x0C0)

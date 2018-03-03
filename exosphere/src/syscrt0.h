@@ -10,7 +10,7 @@
 #define SYSCRT0_BASE  (MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_SYSCTR0))
 
 
-#define MAKE_SYSCRT0_REG(n) (*((volatile uint32_t *)(SYSCRT0_BASE + n)))
+#define MAKE_SYSCRT0_REG(n) MAKE_REG32(SYSCRT0_BASE + n)
 
 
 

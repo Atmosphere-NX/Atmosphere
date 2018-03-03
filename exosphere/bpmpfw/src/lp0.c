@@ -1,20 +1,18 @@
-#include <stdint.h>
-#include <stdbool.h>
-
+#include "utils.h"
 #include "lp0.h"
 #include "i2c.h"
 #include "pmc.h"
 #include "emc.h"
 #include "timer.h"
 
-#define CACHE_CTRL (*((volatile uint32_t *)0x50040000))
+#define CACHE_CTRL MAKE_REG32(0x50040000)
 
-#define PRI_ICTLR_COP_IER_CLR_0   (*((volatile uint32_t *)0x60004038))
-#define SEC_ICTLR_COP_IER_CLR_0   (*((volatile uint32_t *)0x60004138))
-#define TRI_ICTLR_COP_IER_CLR_0   (*((volatile uint32_t *)0x60004238))
-#define QUAD_ICTLR_COP_IER_CLR_0  (*((volatile uint32_t *)0x60004338))
-#define PENTA_ICTLR_COP_IER_CLR_0 (*((volatile uint32_t *)0x60004438))
-#define HEXA_ICTLR_COP_IER_CLR_0  (*((volatile uint32_t *)0x60004538))
+#define PRI_ICTLR_COP_IER_CLR_0   MAKE_REG32(0x60004038)
+#define SEC_ICTLR_COP_IER_CLR_0   MAKE_REG32(0x60004138)
+#define TRI_ICTLR_COP_IER_CLR_0   MAKE_REG32(0x60004238)
+#define QUAD_ICTLR_COP_IER_CLR_0  MAKE_REG32(0x60004338)
+#define PENTA_ICTLR_COP_IER_CLR_0 MAKE_REG32(0x60004438)
+#define HEXA_ICTLR_COP_IER_CLR_0  MAKE_REG32(0x60004538)
 
 void reboot(void) {
     /* Write MAIN_RST */

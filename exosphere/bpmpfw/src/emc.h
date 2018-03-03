@@ -1,7 +1,7 @@
 #ifndef EXOSPHERE_BPMPFW_EMC_H
 #define EXOSPHERE_BPMPFW_EMC_H
 
-#include <stdint.h>
+#include "utils.h"
 
 #define EMC_BASE (0x7001B000)
 
@@ -9,10 +9,10 @@
 #define EMC1_BASE (0x7001F000)
 
 
-#define MAKE_EMC_REG(ofs) ((*((volatile uint32_t *)(EMC_BASE + ofs))))
+#define MAKE_EMC_REG(ofs) (MAKE_REG32(EMC_BASE + ofs))
 
-#define MAKE_EMC0_REG(ofs) ((*((volatile uint32_t *)(EMC0_BASE + ofs))))
-#define MAKE_EMC1_REG(ofs) ((*((volatile uint32_t *)(EMC1_BASE + ofs))))
+#define MAKE_EMC0_REG(ofs) (MAKE_REG32(EMC0_BASE + ofs))
+#define MAKE_EMC1_REG(ofs) (MAKE_REG32(EMC1_BASE + ofs))
 
 #define EMC_CFG_0                    MAKE_EMC_REG(0x00C)
 
@@ -45,8 +45,6 @@
 #define EMC_PMC_SCRATCH3_0           MAKE_EMC_REG(0x448)
 
 #define EMC_FBIO_CFG7_0              MAKE_EMC_REG(0x584)
-
-
 
 void emc_put_dram_in_self_refresh_mode(void);
 

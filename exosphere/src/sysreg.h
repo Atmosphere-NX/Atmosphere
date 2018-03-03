@@ -11,8 +11,8 @@
 
 #define SB_BASE (SYSREG_BASE + 0x200)
 
-#define MAKE_SYSREG(n) (*((volatile uint32_t *)(SYSREG_BASE + n)))
-#define MAKE_SB_REG(n) (*((volatile uint32_t *)(SB_BASE + n)))
+#define MAKE_SYSREG(n) MAKE_REG32(SYSREG_BASE + n)
+#define MAKE_SB_REG(n) MAKE_REG32(SB_BASE + n)
 
 #define SB_CSR_0 MAKE_SB_REG(0x00)
 #define SB_PIROM_START_0 MAKE_SB_REG(0x04)

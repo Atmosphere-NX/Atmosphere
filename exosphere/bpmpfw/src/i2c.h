@@ -1,12 +1,12 @@
 #ifndef EXOSPHERE_BPMPFW_I2C_H
 #define EXOSPHERE_BPMPFW_I2C_H
 
-#include <stdint.h>
+#include "utils.h"
 
 /* I2C_BASE = I2C4. */
 #define I2C_BASE (0x7000D000)
 
-#define MAKE_I2C_REG(ofs) ((*((volatile uint32_t *)(I2C_BASE + ofs))))
+#define MAKE_I2C_REG(ofs) (MAKE_REG32(I2C_BASE + ofs))
 
 #define I2C_I2C_CNFG_0                       MAKE_I2C_REG(0x000)
 

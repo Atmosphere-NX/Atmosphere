@@ -13,7 +13,7 @@ static inline uintptr_t get_flow_base(void) {
 
 #define FLOW_BASE (get_flow_base())
 
-#define MAKE_FLOW_REG(ofs) (*((volatile uint32_t *)(FLOW_BASE + ofs)))
+#define MAKE_FLOW_REG(ofs) MAKE_REG32(FLOW_BASE + ofs)
 
 #define FLOW_CTLR_HALT_COP_EVENTS_0 MAKE_FLOW_REG(0x004)
 #define FLOW_CTLR_FLOW_DBG_QUAL_0   MAKE_FLOW_REG(0x050)

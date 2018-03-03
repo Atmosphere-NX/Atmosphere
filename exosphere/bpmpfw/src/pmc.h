@@ -1,11 +1,11 @@
 #ifndef EXOSPHERE_BPMPFW_PMC_H
 #define EXOSPHERE_BPMPFW_PMC_H
 
-#include <stdint.h>
+#include "utils.h"
 
 #define PMC_BASE (0x7000E400)
 
-#define MAKE_PMC_REG(ofs) ((*((volatile uint32_t *)(PMC_BASE + ofs))))
+#define MAKE_PMC_REG(ofs) (MAKE_REG32(PMC_BASE + ofs))
 
 #define APBDEV_PMC_CNTRL_0           MAKE_PMC_REG(0x000)
 

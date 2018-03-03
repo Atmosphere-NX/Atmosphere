@@ -17,6 +17,10 @@ static inline void __dsb_sy(void) {
     __asm__ __volatile__ ("dsb sy" ::: "memory");
 }
 
+static inline void __dsb_ish(void) {
+    __asm__ __volatile__ ("dsb ish" ::: "memory");
+}
+
 static inline void __dmb_sy(void) {
     __asm__ __volatile__ ("dmb sy" ::: "memory");
 }

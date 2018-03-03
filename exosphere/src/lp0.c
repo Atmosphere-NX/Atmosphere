@@ -90,7 +90,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
         uint32_t start_time = get_time();
         bool should_wait = true;
         /* TODO: This is GPIO-6 GPIO_IN_1 */
-        while ((*((volatile uint32_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_GPIO) + 0x634))) & 1) {
+        while (MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_GPIO) + 0x634) & 1) {
             if (get_time() - start_time > 50000) {
                 should_wait = false;
                 break;

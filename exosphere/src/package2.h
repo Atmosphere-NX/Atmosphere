@@ -14,7 +14,7 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
 
 #define MAILBOX_NX_BOOTLOADER_BASE (get_nx_bootloader_mailbox_base())
 
-#define MAILBOX_NX_BOOTLOADER_SETUP_STATE (*((volatile uint32_t *)(MAILBOX_NX_BOOTLOADER_BASE + 0xEF8ull)))
+#define MAILBOX_NX_BOOTLOADER_SETUP_STATE MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE + 0xEF8ull)
 
 #define NX_BOOTLOADER_STATE_INIT 0
 #define NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG 1
@@ -27,7 +27,7 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
 #define NX_BOOTLOADER_STATE_FINISHED_4X 4
 
 /* Physaddr 0x40002EFC */
-#define MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE (*((volatile uint32_t *)(MAILBOX_NX_BOOTLOADER_BASE + 0xEFCULL)))
+#define MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE + 0xEFCULL)
 
 #define NX_BOOTLOADER_BOOTCONFIG_POINTER ((void *)(0x4003D000ull))
 

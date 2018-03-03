@@ -14,11 +14,11 @@ static inline uintptr_t get_uarta_base(void) {
 
 #define UARTA_BASE  (get_uarta_base())
 
-#define UART_THR_DLAB_0_0 (*((volatile uint32_t *)(UARTA_BASE + 0x0)))
-#define UART_IER_DLAB_0_0 (*((volatile uint32_t *)(UARTA_BASE + 0x4)))
-#define UART_IIR_FCR_0 (*((volatile uint32_t *)(UARTA_BASE+ 0x8)))
-#define UART_LCR_0 (*((volatile uint32_t *)(UARTA_BASE + 0xC)))
-#define UART_LSR_0 (*((volatile uint32_t *)(UARTA_BASE + 0x14)))
+#define UART_THR_DLAB_0_0 MAKE_REG32(UARTA_BASE + 0x0)
+#define UART_IER_DLAB_0_0 MAKE_REG32(UARTA_BASE + 0x4)
+#define UART_IIR_FCR_0 MAKE_REG32(UARTA_BASE+ 0x8)
+#define UART_LCR_0 MAKE_REG32(UARTA_BASE + 0xC)
+#define UART_LSR_0 MAKE_REG32(UARTA_BASE + 0x14)
 
 void uart_initialize(uint16_t divider);
 void uart_transmit_char(char ch);

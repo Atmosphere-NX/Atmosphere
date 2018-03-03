@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "utils.h"
+#include "synchronization.h"
 #include "interrupt.h"
 #include "se.h"
 #include "memory_map.h"
@@ -281,7 +282,7 @@ void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr,
     SECURITY_ENGINE->OPERATION_REG = 1;
 
     /* Ensure writes go through. */
-    __asm__ __volatile__ ("dsb ish" : : : "memory");
+    __dsb_ish();
 }
 
 void se_aes_ctr_crypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *ctr, unsigned int (*callback)(void)) {
@@ -442,7 +443,7 @@ void trigger_se_rsa_op(void *buf, size_t size) {
     SECURITY_ENGINE->OPERATION_REG = 1;
 
     /* Ensure writes go through. */
-    __asm__ __volatile__ ("dsb ish" : : : "memory");
+    __dsb_ish();
 }
 
 void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const void *src, size_t src_size) {
