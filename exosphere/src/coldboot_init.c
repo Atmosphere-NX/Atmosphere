@@ -122,39 +122,6 @@ uintptr_t get_coldboot_crt0_stack_address(void) {
     return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
 }
 
-void coldboot_init_dma_controllers(void) {
-    /* SYSCTR0_CNTCR_0 = ENABLE | HALT_ON_DEBUG (write-once init) */
-    (*((volatile uint32_t *)(0x700F0000))) = 3;
-
-    /* Set some unknown registers in HOST1X. */
-    (*((volatile uint32_t *)(0x500038F8))) &= 0xFFFFFFFE;
-    (*((volatile uint32_t *)(0x50003300))) = 0;
-
-    /* AHB_MASTER_SWID_0 */
-    (*((volatile uint32_t *)(0x6000C018))) = 0;
-
-    /* AHB_MASTER_SWID_1 - Makes USB1/USB2 use SWID[1] */
-    (*((volatile uint32_t *)(0x6000C038))) = 0x40040;
-
-    /* APBDMA_CHANNEL_SWID_0 = ~0 (SWID = 1 for all APB-DMA channels) */
-    (*((volatile uint32_t *)(0x6002003C))) = 0xFFFFFFFF;
-
-    /* APBDMA_CHANNEL_SWID1_0 = 0 (See above) */
-    (*((volatile uint32_t *)(0x60020054))) = 0;
-
-    /* APBDMA_SECURITY_REG_0 = 0 (All APB-DMA channels non-secure) */
-    (*((volatile uint32_t *)(0x60020038))) = 0;
-
-    /* MSELECT_CONFIG_0 |= WRAP_TO_INCR_SLAVE0(APC) | WRAP_TO_INCR_SLAVE1(PCIe) | WRAP_TO_INCR_SLAVE2(GPU) */
-    (*((volatile uint32_t *)(0x50060000))) |= 0x38000000;
-
-    /* AHB_ARBITRATION_PRIORITY_CTRL_0 - Select high prio group with prio 7 */
-    (*((volatile uint32_t *)(0x6000C008))) = 0xE0000001;
-
-    /* AHB_GIZMO_TZRAM_0 |= DONT_SPLIT_AHB_WR */
-    (*((volatile uint32_t *)(0x6000C054))) = 0x80;
-}
-
 void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list, boot_func_list_t *func_list_warmboot) {
     /* Custom approach */
     reloc_list->reloc_base = (uintptr_t)__start_cold;
@@ -168,8 +135,16 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
     /* At this point, we can (and will) access functions located in .warm_crt0 */
     translate_warmboot_func_list(reloc_list, func_list);
 
-    /* TODO: 4.x does slightly different init. How should we handle this? We can't detect master key revision yet. */
-    coldboot_init_dma_controllers();
+    /*
+        From https://events.static.linuxfound.org/sites/events/files/slides/slides_17.pdf :
+        Caches may write back dirty lines at any time:
+            - To make space for new allocations
+            - Even if MMU is off
+            - Even if Cacheable accesses are disabled (caches are never 'off')
+    */
+    func_list->funcs.flush_dcache_all();
+    func_list->funcs.invalidate_icache_all();
+    func_list->funcs.init_dma_controllers();
 
     configure_ttbls();
     func_list->funcs.set_memory_registers_enable_mmu();
@@ -178,7 +153,6 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
     for(size_t i = 0; i < reloc_list->nb_relocs_post_mmu_init; i++) {
         do_relocation(reloc_list, reloc_list->nb_relocs_pre_mmu_init + i);
     }
-
 
     func_list->funcs.flush_dcache_all();
     func_list->funcs.invalidate_icache_all();

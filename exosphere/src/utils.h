@@ -24,11 +24,12 @@ typedef struct {
     size_t      nb_funcs;
     union {
         struct {
+            void (*init_dma_controllers)(void);
             void (*set_memory_registers_enable_mmu)(void);
             void (*flush_dcache_all)(void);
             void (*invalidate_icache_all)(void);
         } funcs;
-        uintptr_t addrs[3];
+        uintptr_t addrs[4];
     };
 } boot_func_list_t;
 

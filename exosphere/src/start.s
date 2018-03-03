@@ -242,8 +242,9 @@ g_coldboot_crt0_relocation_list:
 .align      3
 .global     g_coldboot_crt0_main_func_list
 g_coldboot_crt0_main_func_list:
-    .quad   3   /* Number of functions */
+    .quad   4   /* Number of functions */
     /* Functions */
+    .quad   init_dma_controllers
     .quad   set_memory_registers_enable_mmu
     .quad   flush_dcache_all
     .quad   invalidate_icache_all
