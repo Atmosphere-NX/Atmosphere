@@ -235,10 +235,10 @@ invalidate_icache_all_inner_shareable:
 .type       invalidate_icache_all, %function
 .global     invalidate_icache_all
 invalidate_icache_all:
-    dsb sy
+    dsb ish
     isb
     ic  iallu
-    dsb sy
+    dsb ish
     isb
     ret
 
