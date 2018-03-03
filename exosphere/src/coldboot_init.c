@@ -135,15 +135,8 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
     /* At this point, we can (and will) access functions located in .warm_crt0 */
     translate_warmboot_func_list(reloc_list, func_list);
 
-    /*
-        From https://events.static.linuxfound.org/sites/events/files/slides/slides_17.pdf :
-        Caches may write back dirty lines at any time:
-            - To make space for new allocations
-            - Even if MMU is off
-            - Even if Cacheable accesses are disabled (caches are never 'off')
-    */
-    func_list->funcs.flush_dcache_all();
-    func_list->funcs.invalidate_icache_all();
+    /* Initialize DMA controllers, and write to AHB_GIZMO_TZRAM. */
+    /* TZRAM accesses should work normally after this point. */
     func_list->funcs.init_dma_controllers();
 
     configure_ttbls();
