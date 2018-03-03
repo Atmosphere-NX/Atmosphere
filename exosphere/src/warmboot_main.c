@@ -19,7 +19,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
             - cpu_on
     */
     if (is_core_active(get_core_id())) {
-        panic(0xF7F00007); /* invalid CPU context */
+        panic(0xF7F00009); /* invalid CPU context */
     }
 
     /* IRAM C+D identity mapping has actually been removed on coldboot but we don't really care */
