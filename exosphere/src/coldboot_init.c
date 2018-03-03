@@ -3,11 +3,15 @@
 #include "mmu.h"
 #include "memory_map.h"
 #include "arm.h"
+#include "package2.h"
+#include "timers.h"
+
+#undef  MAILBOX_NX_BOOTLOADER_BASE
+#undef  TIMERS_BASE
+#define MAILBOX_NX_BOOTLOADER_BASE  (MMIO_GET_DEVICE_PA(MMIO_DEVID_NXBOOTLOADER_MAILBOX))
+#define TIMERS_BASE                 (MMIO_GET_DEVICE_PA(MMIO_DEVID_TMRs_WDTs))
 
 extern const uint8_t __start_cold[];
-
-/* warmboot_init.c */
-void set_memory_registers_enable_mmu(void);
 
 static void identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
     static const uintptr_t addrs[]      =   { TUPLE_FOLD_LEFT_0(EVAL(IDENTIY_MAPPING_ID_MAX), _MMAPID, COMMA) };
@@ -93,14 +97,18 @@ static void configure_ttbls(void) {
     tzram_map_all_segments(mmu_l3_tbl);
 }
 
-static void translate_warmboot_func_list(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list) {
+static void translate_func_list(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list, bool in_tzram) {
     coldboot_crt0_reloc_t *warmboot_crt0_reloc = &reloc_list->relocs[0];
     coldboot_crt0_reloc_t *main_reloc = &reloc_list->relocs[reloc_list->nb_relocs_pre_mmu_init];
 
-    /* The main segment immediately follows the warmboot crt0 in TZRAM, in the same page. */
+    uintptr_t main_pa;
+    if (in_tzram) {
+        /* The main segment immediately follows the warmboot crt0 in TZRAM, in the same page. */
+        main_pa = (uintptr_t)warmboot_crt0_reloc->vma | ((uintptr_t)main_reloc->vma & 0xFFF);
+    } else {
+        main_pa = reloc_list->reloc_base + main_reloc->reloc_offset;
+    }
 
-    uintptr_t main_pa = (uintptr_t)warmboot_crt0_reloc->vma | ((uintptr_t)main_reloc->vma & 0xFFF);
-    
     for(size_t i = 0; i < func_list->nb_funcs; i++) {
         if(func_list->addrs[i] >= 0x1F0000000ull) {
             func_list->addrs[i] = main_pa + func_list->addrs[i] - (uintptr_t)main_reloc->vma;
@@ -123,8 +131,23 @@ uintptr_t get_coldboot_crt0_stack_address(void) {
 }
 
 void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list, boot_func_list_t *func_list_warmboot) {
+    MAILBOX_NX_SECMON_BOOT_TIME = TIMERUS_CNTR_1US_0;
+
     /* Custom approach */
     reloc_list->reloc_base = (uintptr_t)__start_cold;
+    translate_func_list(reloc_list, func_list, false);
+
+    /*
+        From https://events.static.linuxfound.org/sites/events/files/slides/slides_17.pdf :
+        Caches may write back dirty lines at any time:
+            - To make space for new allocations
+            - Even if MMU is off
+            - Even if Cacheable accesses are disabled (caches are never 'off')
+
+        It should be fine to clear that here and not before.
+    */
+    func_list->funcs.flush_dcache_all();
+    func_list->funcs.invalidate_icache_all();
 
     /* TODO: Set NX BOOTLOADER clock time field */
     
@@ -133,7 +156,6 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
         do_relocation(reloc_list, i);
     }
     /* At this point, we can (and will) access functions located in .warm_crt0 */
-    translate_warmboot_func_list(reloc_list, func_list);
 
     /* Initialize DMA controllers, and write to AHB_GIZMO_TZRAM. */
     /* TZRAM accesses should work normally after this point. */
@@ -151,5 +173,5 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
     func_list->funcs.invalidate_icache_all();
     /* At this point we can access all the mapped segments (all other functions, data...) normally */
 
-    *func_list_warmboot = *func_list;
+    translate_func_list(reloc_list, func_list_warmboot, true);
 }

@@ -14,6 +14,8 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
 
 #define MAILBOX_NX_BOOTLOADER_BASE (get_nx_bootloader_mailbox_base())
 
+#define MAILBOX_NX_SECMON_BOOT_TIME       MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE + 0xE08ull)
+
 #define MAILBOX_NX_BOOTLOADER_SETUP_STATE MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE + 0xEF8ull)
 
 #define NX_BOOTLOADER_STATE_INIT 0
