@@ -70,8 +70,8 @@
     msr  oslar_el1, x0
 .endm
 
-.align      6
 .section    .cold_crt0.text.start, "ax", %progbits
+.align      6
 .global     __start_cold
 __start_cold:
     ERRATUM_INVALIDATE_BTB_AT_BOOT
@@ -81,18 +81,17 @@ __start_cold:
     mov  sp, x0
     mov  fp, #0
 
-    adr x0, g_coldboot_crt0_relocation_list
-    adr x1, g_coldboot_crt0_main_func_list
+    adr  x0, g_coldboot_crt0_relocation_list
+    mov  x19, x0
+    adr  x1, g_coldboot_crt0_main_func_list
+    ldr  x2, =g_warmboot_crt0_main_func_list
     bl   coldboot_init
-    adr x0, g_coldboot_crt0_relocation_list
-    ldr x1, =__start_reloc_list_addr
-    str x0, [x1]
 
     ldr  x16, =__jump_to_main_cold
     br   x16
 
-.align      6
 .section    .warm_crt0.text.start, "ax", %progbits
+.align      6
 .global     __start_warm
 __start_warm:
     ERRATUM_INVALIDATE_BTB_AT_BOOT
@@ -103,14 +102,14 @@ __start_warm:
     mov  sp, x0
     mov  fp, #0
 
-    adrp x0, g_warmboot_crt0_main_func_list
-    add  x0, x0, #:lo12:g_warmboot_crt0_main_func_list
+    adr  x0, g_warmboot_crt0_main_func_list
     bl   warmboot_init
     ldr  x16, =__jump_to_main_warm
     br   x16
 
 /* Used by coldboot as well */
 .section    .warm_crt0.text.__set_memory_registers, "ax", %progbits
+.align      4
 .global     __set_memory_registers
 .type       __set_memory_registers, %function
 __set_memory_registers:
@@ -134,8 +133,8 @@ __set_memory_registers:
     isb
     ret
 
-.align      4
 .section    .text.__jump_to_main_cold, "ax", %progbits
+.align      4
 __jump_to_main_cold:
     /* This is inspired by Nintendo's code but significantly different */
     bl   __set_exception_entry_stack_pointer
@@ -150,8 +149,7 @@ __jump_to_main_cold:
     bl   get_pk2ldr_stack_address
     mov  sp, x0
 
-    ldr x1, =__start_reloc_list_addr
-    ldr x0, [x1]
+    mov  x0, x19
     bl   load_package2
 
     mov  w0, #3 /* use core3 stack temporarily */
@@ -168,11 +166,7 @@ __jump_to_main_warm:
     /* Nintendo doesn't do that here, causing issues if an exception occurs */
     bl   __set_exception_entry_stack_pointer
 
-    bl   get_pk2ldr_stack_address
-    mov  sp, x0
-    bl   load_package2
-
-    mov  w0, #3 /* use core0,1,2 stack bottom + 0x800 (VA of warmboot crt0 sp) temporarily */
+    mov  w0, #0 /* use core0,1,2 stack bottom + 0x800 (VA of warmboot crt0 sp) temporarily */
     bl   get_exception_entry_stack_address
     add  sp, x0, #0x800
     b    warmboot_main
@@ -210,8 +204,8 @@ __jump_to_lower_el:
     eret
 
 /* Custom stuff */
-.align      3
 .section    .cold_crt0.data.g_coldboot_crt0_relocation_list, "aw", %progbits
+.align      3
 .global     g_coldboot_crt0_relocation_list
 g_coldboot_crt0_relocation_list:
     .quad   0, __loaded_end_lma__  /* __start_cold, to be set & loaded size */
@@ -225,8 +219,8 @@ g_coldboot_crt0_relocation_list:
     .quad   __main_bss_start__, __main_end__, 0
     .quad   __pk2ldr_bss_start__, __pk2ldr_end__, 0
 
-.align      3
 .section    .cold_crt0.data.g_coldboot_crt0_main_func_list, "aw", %progbits
+.align      3
 .global     g_coldboot_crt0_main_func_list
 g_coldboot_crt0_main_func_list:
     .quad   3   /* Number of functions */
@@ -235,18 +229,8 @@ g_coldboot_crt0_main_func_list:
     .quad   flush_dcache_all
     .quad   invalidate_icache_all
 
-.align      3
 .section    .warm_crt0.data.g_warmboot_crt0_main_func_list, "aw", %progbits
+.align      3
 .global     g_warmboot_crt0_main_func_list
 g_warmboot_crt0_main_func_list:
-    .quad   3   /* Number of functions */
-    /* Functions */
-    .quad   set_memory_registers_enable_mmu
-    .quad   flush_dcache_all
-    .quad   invalidate_icache_all
-
-.align      3
-.section    .bss.__start_reloc_list_addr, "w", %nobits
-.global     __start_reloc_list_addr
-__start_reloc_list_addr:
-    .space  8
+    .space (4 * 8)

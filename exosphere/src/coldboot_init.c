@@ -155,7 +155,7 @@ void coldboot_init_dma_controllers(void) {
     (*((volatile uint32_t *)(0x6000C054))) = 0x80;
 }
 
-void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list) {
+void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list, boot_func_list_t *func_list_warmboot) {
     /* Custom approach */
     reloc_list->reloc_base = (uintptr_t)__start_cold;
 
@@ -183,4 +183,6 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
     func_list->funcs.flush_dcache_all();
     func_list->funcs.invalidate_icache_all();
     /* At this point we can access all the mapped segments (all other functions, data...) normally */
+
+    *func_list_warmboot = *func_list;
 }
