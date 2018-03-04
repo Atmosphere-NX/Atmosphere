@@ -129,6 +129,13 @@ uintptr_t get_exception_entry_stack_address(unsigned int core_id) {
     }
 }
 
+void set_user_smc_in_progress(void) {
+    lock_acquire(&g_is_user_smc_in_progress);
+}
+void clear_user_smc_in_progress(void) {
+    lock_release(&g_is_user_smc_in_progress);
+}
+
 /* Privileged SMC lock must be available to exceptions.s. */
 void set_priv_smc_in_progress(void) {
     lock_acquire(&g_is_priv_smc_in_progress);
@@ -200,7 +207,7 @@ uint32_t smc_wrapper_sync(smc_args_t *args, uint32_t (*handler)(smc_args_t *)) {
         return 3;
     }
     result = handler(args);
-    lock_release(&g_is_user_smc_in_progress);
+    clear_user_smc_in_progress();
     return result;
 }
 
@@ -225,7 +232,7 @@ uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), 
         /* smcCheckStatus needs to be called. */
         result = 3;
     }
-    lock_release(&g_is_user_smc_in_progress);
+    clear_user_smc_in_progress();
     return result;
 }
 
@@ -306,7 +313,7 @@ uint32_t smc_exp_mod_get_result(void *buf, uint64_t size) {
     se_get_exp_mod_output(buf, 0x100);
 
     /* smc_exp_mod is done now. */
-    lock_release(&g_is_user_smc_in_progress);
+    clear_user_smc_in_progress();
     return 0;
 }
 
@@ -332,7 +339,7 @@ uint32_t smc_crypt_aes_status_check(void *buf, uint64_t size) {
         return 3;
     }
     /* smc_crypt_aes is done now. */
-    lock_release(&g_is_user_smc_in_progress);
+    clear_user_smc_in_progress();
     return 0;
 }
 
@@ -381,7 +388,7 @@ uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t siz
     se_get_exp_mod_output(rsa_wrapped_titlekey, 0x100);
     if (tkey_rsa_oaep_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) != 0x10) {
         /* Failed to extract RSA OAEP wrapped key. */
-        lock_release(&g_is_user_smc_in_progress);
+        clear_user_smc_in_progress();
         return 2;
     }
 
@@ -392,7 +399,7 @@ uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t siz
     p_sealed_key[1] = sealed_titlekey[1];
 
     /* smc_unwrap_rsa_oaep_wrapped_titlekey is done now. */
-    lock_release(&g_is_user_smc_in_progress);
+    clear_user_smc_in_progress();
     return 0;
 }
 
@@ -445,7 +452,7 @@ uint32_t smc_get_random_bytes_for_priv(smc_args_t *args) {
         result = user_get_random_bytes(args);
         /* Also, refill our cache while we have the chance in case we get denied later. */
         randomcache_refill();
-        lock_release(&g_is_user_smc_in_progress);
+        clear_user_smc_in_progress();
     }
     return result;
 }

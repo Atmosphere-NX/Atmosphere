@@ -56,12 +56,13 @@ void __attribute__((noreturn)) warmboot_main(void) {
             clkrst_disable(CARDEVICE_I2C1);
         }
 
+        clear_user_smc_in_progress();
+
         if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
             setup_4x_mmio(); /* TODO */
         }
     }
 
-    clear_priv_smc_in_progress();
     setup_current_core_state();
 
     /* Update SCR_EL3 depending on value in Bootconfig. */

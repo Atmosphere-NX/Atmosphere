@@ -10,6 +10,9 @@ typedef struct {
     uint64_t X[8];
 } smc_args_t;
 
+void set_user_smc_in_progress(void);
+void clear_user_smc_in_progress(void);
+
 void set_priv_smc_in_progress(void);
 void clear_priv_smc_in_progress(void);
 
