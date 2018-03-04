@@ -10,6 +10,9 @@
 
 #include "se.h"
 #include "mc.h"
+#include "car.h"
+#include "i2c.h"
+#include "misc.h"
 #include "interrupt.h"
 
 void __attribute__((noreturn)) warmboot_main(void) {
@@ -42,7 +45,16 @@ void __attribute__((noreturn)) warmboot_main(void) {
         /* Make PMC (2.x+), MC (4.x+) registers secure-only */
         secure_additional_devices();
 
-        /* TODO: car+clkreset stuff, some other mmio (?) */
+        if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT || configitem_get_hardware_type() == 0) {
+            /* Enable input to I2C1 */
+            PINMUX_AUX_GEN1_I2C_SCL_0 = 0x40;
+            PINMUX_AUX_GEN1_I2C_SDA_0 = 0x40;
+
+            clkrst_enable(CARDEVICE_I2C1);
+            i2c_init(0);
+            i2c_clear_ti_charger_bit_7();
+            clkrst_disable(CARDEVICE_I2C1);
+        }
 
         if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
             setup_4x_mmio(); /* TODO */

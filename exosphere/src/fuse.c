@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "timers.h"
 
+#include "masterkey.h"
 /* Prototypes for internal commands. */
 void fuse_make_regs_visible(void);
 
@@ -178,18 +179,23 @@ uint32_t fuse_get_dram_id(void) {
 
 /* Derive the Hardware Type using values in the shadow cache */
 uint32_t fuse_get_hardware_type(void) {
+    /* This function is very different between 4.x and < 4.x */
     uint32_t hardware_type = ((FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 7) & 2) | ((FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 2) & 1);
-    if (hardware_type) {
-        if (hardware_type == 1) {
+    
+    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+        static const uint32_t types[] = {0,1,4,3};
+
+        hardware_type |= ((FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 14) & 0x3C) - 1;
+        return hardware_type > 3 ? 4 : types[hardware_type];
+    } else {
+        if (hardware_type >= 1) {
+            return hardware_type > 2 ? 3 : hardware_type - 1; 
+        } else if ((FUSE_CHIP_REGS->FUSE_SPARE_BIT[9] & 1) == 0) {
             return 0;
+        } else {
+            return 3;
         }
-        if (hardware_type == 2) {
-            return 1;
-        }
-    } else if ((FUSE_CHIP_REGS->FUSE_SPARE_BIT[9] & 1) == 0) {
-        return 0;
     }
-    return 3;
 }
 
 /* Derive the Retail Type using values in the shadow cache */

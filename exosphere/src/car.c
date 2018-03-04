@@ -34,19 +34,19 @@ void clk_enable(car_device_t dev) {
     if ((special_reg = get_special_clk_reg(dev))) {
         MAKE_CAR_REG(special_reg) = get_special_clk_val(dev);
     }
-    MAKE_CAR_REG(g_clk_reg_offsets[dev >> 5]) |= BIT((dev & 0x1F));
+    MAKE_CAR_REG(g_clk_reg_offsets[dev >> 5]) |= BIT(dev & 0x1F);
 }
 
 void clk_disable(car_device_t dev) {
-    MAKE_CAR_REG(g_clk_reg_offsets[dev >> 5] + 0x004) |= BIT((dev & 0x1F));
+    MAKE_CAR_REG(g_clk_reg_offsets[dev >> 5] + 0x004) |= BIT(dev & 0x1F);
 }
 
 void rst_enable(car_device_t dev) {
-    MAKE_CAR_REG(g_rst_reg_offsets[dev >> 5]) |= BIT((dev & 0x1F));
+    MAKE_CAR_REG(g_rst_reg_offsets[dev >> 5]) |= BIT(dev & 0x1F);
 }
 
 void rst_disable(car_device_t dev) {
-    MAKE_CAR_REG(g_rst_reg_offsets[dev >> 5] + 0x004) |= BIT((dev & 0x1F));
+    MAKE_CAR_REG(g_rst_reg_offsets[dev >> 5] + 0x004) |= BIT(dev & 0x1F);
 }
 
 
