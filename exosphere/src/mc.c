@@ -66,7 +66,7 @@ void configure_default_carveouts(void) {
     /* Configure default Kernel carveouts based on 2.0.0+. */
 
     /* Configure Carveout 4 (KERNEL_BUILTINS) */
-    configure_kernel_carveout(5, 0x80060000, KERNEL_CARVEOUT_SIZE_MAX);
+    configure_kernel_carveout(4, 0x80060000, KERNEL_CARVEOUT_SIZE_MAX);
 
     /* Configure Carveout 5 (KERNEL_UNUSED) */
     configure_kernel_carveout(5, 0, 0);
