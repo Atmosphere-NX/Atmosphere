@@ -55,7 +55,7 @@ static inline void lock_release(atomic_flag *flag) {
 
 /* Try to acquire a lock. */
 static inline bool lock_try_acquire(atomic_flag *flag) {
-    return atomic_flag_test_and_set_explicit(flag, memory_order_acquire);
+    return !atomic_flag_test_and_set_explicit(flag, memory_order_acquire);
 }
 
 /*

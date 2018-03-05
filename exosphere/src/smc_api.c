@@ -129,6 +129,9 @@ uintptr_t get_exception_entry_stack_address(unsigned int core_id) {
     }
 }
 
+bool try_set_user_smc_in_progress(void) {
+    return lock_try_acquire(&g_is_user_smc_in_progress);
+}
 void set_user_smc_in_progress(void) {
     lock_acquire(&g_is_user_smc_in_progress);
 }
@@ -203,7 +206,7 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
 
 uint32_t smc_wrapper_sync(smc_args_t *args, uint32_t (*handler)(smc_args_t *)) {
     uint32_t result;
-    if (!lock_try_acquire(&g_is_user_smc_in_progress)) {
+    if (!try_set_user_smc_in_progress()) {
         return 3;
     }
     result = handler(args);
@@ -214,7 +217,7 @@ uint32_t smc_wrapper_sync(smc_args_t *args, uint32_t (*handler)(smc_args_t *)) {
 uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), uint32_t (*callback)(void *, uint64_t)) {
     uint32_t result;
     uint64_t key;
-    if (!lock_try_acquire(&g_is_user_smc_in_progress)) {
+    if (!try_set_user_smc_in_progress()) {
         return 3;
     }
     if ((key = try_set_smc_callback(callback)) != 0) {
@@ -439,7 +442,7 @@ uint32_t smc_get_random_bytes_for_priv(smc_args_t *args) {
 
     uint32_t result;
 
-    if (!lock_try_acquire(&g_is_user_smc_in_progress)) {
+    if (!try_set_user_smc_in_progress()) {
         if (args->X[1] > 0x38) {
             return 2;
         }
