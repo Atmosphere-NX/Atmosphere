@@ -10,7 +10,7 @@
 
 static bool g_battery_profile = false;
 
-uint32_t configitem_set(enum ConfigItem item, uint64_t value) {
+uint32_t configitem_set(ConfigItem item, uint64_t value) {
     if (item != CONFIGITEM_BATTERYPROFILE) {
         return 2;
     }
@@ -49,7 +49,7 @@ uint64_t configitem_get_hardware_type(void) {
     return hardware_type;
 }
 
-uint32_t configitem_get(enum ConfigItem item, uint64_t *p_outvalue) {
+uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
     uint32_t result = 0;
     switch (item) {
         case CONFIGITEM_DISABLEPROGRAMVERIFICATION:
