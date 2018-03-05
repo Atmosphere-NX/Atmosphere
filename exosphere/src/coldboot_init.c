@@ -133,6 +133,7 @@ uintptr_t get_coldboot_crt0_stack_address(void) {
 void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list, boot_func_list_t *func_list_warmboot) {
     MAILBOX_NX_SECMON_BOOT_TIME = TIMERUS_CNTR_1US_0;
 
+    boot_func_list_t func_copy = *func_list;
     /* Custom approach */
     reloc_list->reloc_base = (uintptr_t)__start_cold;
     translate_func_list(reloc_list, func_list, false);
@@ -173,5 +174,6 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
     func_list->funcs.invalidate_icache_all();
     /* At this point we can access all the mapped segments (all other functions, data...) normally */
 
+    *func_list_warmboot = func_copy;
     translate_func_list(reloc_list, func_list_warmboot, true);
 }
