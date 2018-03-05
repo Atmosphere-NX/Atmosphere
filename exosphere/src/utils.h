@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "panic_color.h"
+
 #define BIT(n)      (1u   << (n))
 #define BITL(n)     (1ull << (n))
 #define MASK(n)     (BIT(n) - 1)
@@ -52,6 +54,7 @@ typedef struct {
 
 __attribute__ ((noreturn)) void panic(uint32_t code);
 __attribute__ ((noreturn)) void generic_panic(void);
+__attribute__ ((noreturn)) void panic_predefined(uint32_t which);
 bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be);
 
 static inline uintptr_t get_physical_address(const void *vaddr) {

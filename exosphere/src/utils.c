@@ -23,6 +23,11 @@ __attribute__ ((noreturn)) void generic_panic(void) {
     panic(0xFF000006);
 }
 
+__attribute__ ((noreturn)) void panic_predefined(uint32_t which) {
+    static const uint32_t codes[0x10] = {COLOR_0, COLOR_1, COLOR_2, COLOR_3, COLOR_4, COLOR_5, COLOR_6, COLOR_7, COLOR_8, COLOR_9, COLOR_A, COLOR_B, COLOR_C, COLOR_D, COLOR_E, COLOR_F};
+    panic(codes[which & 0xF]);
+}
+
 __attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be)
 {
     if(as <= bs && bs <= ae)
