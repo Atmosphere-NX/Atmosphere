@@ -250,4 +250,5 @@ handle_core3_smc_exception:
     ldp x14, x15, [sp],#0x10
     ldp x16, x17, [sp],#0x10
     ldp x18, x19, [sp],#0x10
+    ldp x29, x30, [sp],#0x10
     ret
