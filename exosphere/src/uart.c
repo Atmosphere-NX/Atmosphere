@@ -1,4 +1,14 @@
 #include "uart.h"
+#include "misc.h"
+
+void uart_select(unsigned int id) {
+    /* This confirmation is valid for UART-A, I don't know about the other UARTs. */
+    /* Official Nintendo code (for UART-A, at least) */
+    PINMUX_AUX_UARTn_TX_0(id) = 0; /* UART */
+    PINMUX_AUX_UARTn_RX_0(id) = 0x48; /* UART, enable, pull up */
+    PINMUX_AUX_UARTn_RTS_0(id) = 0; /* UART */
+    PINMUX_AUX_UARTn_CTS_0(id) = 0x44; /* UART, enable, pull down */
+}
 
 void uart_initialize(uint16_t divider) {
     /* Setup UART in 16450 mode. We assume the relevant UART clock has been enabled. */
