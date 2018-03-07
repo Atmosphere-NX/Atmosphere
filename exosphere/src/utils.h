@@ -78,6 +78,26 @@ static inline uint64_t read64le(const volatile void *qword, size_t offset) {
     return *(uint64_t *)((uintptr_t)qword + offset);
 }
 
+static inline uint32_t read64be(const volatile void *qword, size_t offset) {
+    return __builtin_bswap64(read64le(qword, offset));
+}
+
+static inline void write32le(volatile void *dword, size_t offset, uint32_t value) {
+    *(uint32_t *)((uintptr_t)dword + offset) = value;
+}
+
+static inline void write32be(volatile void *dword, size_t offset, uint32_t value) {
+    write32le(dword, offset, __builtin_bswap32(value));
+}
+
+static inline void write64le(volatile void *qword, size_t offset, uint64_t value) {
+    *(uint64_t *)((uintptr_t)qword + offset) = value;
+}
+
+static inline void write64be(volatile void *qword, size_t offset, uint64_t value) {
+    write64le(qword, offset, __builtin_bswap64(value));
+}
+
 static inline unsigned int get_core_id(void) {
     uint64_t core_id;
     __asm__ __volatile__ ("mrs %0, mpidr_el1" : "=r"(core_id));
