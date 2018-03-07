@@ -20,6 +20,7 @@ static inline uintptr_t get_uarta_base(void) {
 #define UART_LCR_0 MAKE_REG32(UARTA_BASE + 0xC)
 #define UART_LSR_0 MAKE_REG32(UARTA_BASE + 0x14)
 
+void uart_select(unsigned int id);
 void uart_initialize(uint16_t divider);
 void uart_transmit_char(char ch);
 void uart_transmit_str(const char *str);

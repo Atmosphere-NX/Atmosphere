@@ -23,16 +23,16 @@ typedef enum {
     CARDEVICE_I2C1 = 12,
     CARDEVICE_I2C5 = 47,
     CARDEVICE_BPMP = 1
-} car_device_t;
+} CarDevice;
 
-void clk_enable(car_device_t dev);
-void clk_disable(car_device_t dev);
-void rst_enable(car_device_t dev);
-void rst_disable(car_device_t dev);
+void clk_enable(CarDevice dev);
+void clk_disable(CarDevice dev);
+void rst_enable(CarDevice dev);
+void rst_disable(CarDevice dev);
 
-void clkrst_enable(car_device_t dev);
-void clkrst_disable(car_device_t dev);
+void clkrst_enable(CarDevice dev);
+void clkrst_disable(CarDevice dev);
 
-void clkrst_reboot(car_device_t dev);
+void clkrst_reboot(CarDevice dev);
 
 #endif

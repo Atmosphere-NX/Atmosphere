@@ -241,13 +241,13 @@ uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), 
 
 uint32_t smc_set_config(smc_args_t *args) {
     /* Actual value presumed in X3 on hardware. */
-    return configitem_set((enum ConfigItem)args->X[1], args->X[3]);
+    return configitem_set((ConfigItem)args->X[1], args->X[3]);
 }
 
 uint32_t smc_get_config(smc_args_t *args) {
     uint64_t out_item = 0;
     uint32_t result;
-    result = configitem_get((enum ConfigItem)args->X[1], &out_item);
+    result = configitem_get((ConfigItem)args->X[1], &out_item);
     args->X[1] = out_item;
     return result;
 }
