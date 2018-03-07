@@ -185,7 +185,8 @@ uint32_t fuse_get_hardware_type(void) {
     if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
         static const uint32_t types[] = {0,1,4,3};
 
-        hardware_type |= ((FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 14) & 0x3C) - 1;
+        hardware_type |= (FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 14) & 0x3C;
+        hardware_type--;
         return hardware_type > 3 ? 4 : types[hardware_type];
     } else {
         if (hardware_type >= 1) {

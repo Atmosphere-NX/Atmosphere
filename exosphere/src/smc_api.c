@@ -204,8 +204,8 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     int num_called = atomic_fetch_add(&g_num_smcs_called, 1);
     
     /* DEBUG: use num_called to determine panic behavior. */
-    if (num_called == 0x30) {
-        /* panic(COLOR_F); */
+    if (num_called == 0x21A) {
+        panic(COLOR_F);
     }
 
     /* Call function. */
