@@ -545,10 +545,6 @@ uint32_t smc_read_write_register(smc_args_t *args) {
 
 
 uint32_t smc_configure_carveout(smc_args_t *args) {
-    if (args->X[0] > 1) {
-        return 2;
-    }
-
     unsigned int carveout_id = (unsigned int)args->X[1];
     uint64_t address = args->X[2];
     uint64_t size = args->X[3];
