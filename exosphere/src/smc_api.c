@@ -150,6 +150,8 @@ void clear_priv_smc_in_progress(void) {
 uint32_t (*g_smc_callback)(void *, uint64_t) = NULL;
 uint64_t g_smc_callback_key = 0;
 
+static _Atomic(int) g_num_smcs_called = 0;
+
 uint64_t try_set_smc_callback(uint32_t (*callback)(void *, uint64_t)) {
     uint64_t key;
     if (g_smc_callback_key) {
@@ -197,6 +199,13 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     /* Validate handler. */
     if ((smc_handler = g_smc_tables[handler_id].handlers[smc_id].handler) == NULL) {
         generic_panic();
+    }
+    
+    int num_called = atomic_fetch_add(&g_num_smcs_called, 1);
+    
+    /* DEBUG: use num_called to determine panic behavior. */
+    if (num_called == 0x30) {
+        /* panic(COLOR_F); */
     }
 
     /* Call function. */

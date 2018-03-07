@@ -36,3 +36,7 @@ __attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, u
         return true;
     return false;
 }
+
+uintptr_t get_iram_address_for_debug(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM);
+}

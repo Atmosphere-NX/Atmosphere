@@ -31,6 +31,7 @@
 #define _MMAPDEV15      ( 0x6000D000ull, 0x1000ull, true  ) /* GPIO-1 - GPIO-8 */
 #define _MMAPDEV16      ( 0x7000C000ull, 0x1000ull, true  ) /* I2C-I2C4 */
 #define _MMAPDEV17      ( 0x6000F000ull, 0x1000ull, true  ) /* Exception vectors */
+#define _MMAPDEV18      ( 0x40038000ull, 0x8000ull, true  ) /* DEBUG: IRAM */
 
 /* LP0 entry ram segments (addr, size, additional attributes) */
 #define _MMAPLP0ES0  ( 0x40020000ull, 0x10000ull, MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_DEVICE ) /* Encrypted TZRAM */
@@ -79,7 +80,8 @@
 #define MMIO_DEVID_GPIO                 15
 #define MMIO_DEVID_DTV_I2C234           16
 #define MMIO_DEVID_EXCEPTION_VECTORS    17
-#define MMIO_DEVID_MAX                  18
+#define MMIO_DEVID_DEBUG_IRAM           18
+#define MMIO_DEVID_MAX                  19
 
 #define LP0_ENTRY_RAM_SEGMENT_ID_ENCRYPTED_TZRAM    0
 #define LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE     1

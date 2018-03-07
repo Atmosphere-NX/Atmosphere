@@ -18,4 +18,6 @@
 #define COLOR_E 0x03000003
 #define COLOR_F 0xB6000003
 
+#define PANIC_REBOOT 0x20
+
 #endif

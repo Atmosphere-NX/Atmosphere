@@ -57,6 +57,8 @@ __attribute__ ((noreturn)) void generic_panic(void);
 __attribute__ ((noreturn)) void panic_predefined(uint32_t which);
 bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be);
 
+uintptr_t get_iram_address_for_debug(void);
+
 static inline uintptr_t get_physical_address(const void *vaddr) {
     uintptr_t PAR;
     __asm__ __volatile__ ("at s1e3r, %0" :: "r"(vaddr));
