@@ -120,9 +120,13 @@ void bootup_misc_mmio(void) {
     MAKE_MC_REG(0x020) = 0;
     MAKE_MC_REG(0x014) = 0x30000030;
     MAKE_MC_REG(0x018) = 0x2800003F;
+    (void)(MAKE_MC_REG(0x014));
     MAKE_MC_REG(0x034) = 0;
+    (void)(MAKE_MC_REG(0x014));
     MAKE_MC_REG(0x030) = 0;
-    MAKE_MC_REG(0x010) = 0;
+    (void)(MAKE_MC_REG(0x014));
+    MAKE_MC_REG(0x010) = 1;
+    (void)(MAKE_MC_REG(0x014));
 
     /* Clear RESET Vector, setup CPU Secure Boot RESET Vectors. */
     uint32_t reset_vec = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
