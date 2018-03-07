@@ -283,7 +283,7 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
 
     master_key_rev = args->X[3];
     if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT) {
-        master_key_rev &= MASK(32);
+        master_key_rev &= 0xFFFFFFFF;
     }
     if (master_key_rev > MASTERKEY_REVISION_MAX) {
         return 2;
