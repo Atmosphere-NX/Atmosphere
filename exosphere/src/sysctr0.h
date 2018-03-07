@@ -5,7 +5,7 @@
 
 #include "memory_map.h"
 
-/* Exosphere driver for the Tegra X1 SYSCRT0 Registers. */
+/* Exosphere driver for the Tegra X1 SYSCTR0 Registers. */
 
 #define SYSCTR0_BASE  (MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_SYSCTR0))
 
