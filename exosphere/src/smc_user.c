@@ -280,14 +280,19 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
 
     wrapped_key[0] = args->X[1];
     wrapped_key[1] = args->X[2];
-    if (args->X[4] > MASTERKEY_REVISION_MAX) {
+
+    master_key_rev = args->X[3];
+    if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT) {
+        master_key_rev &= MASK(32);
+    }
+    if (master_key_rev > MASTERKEY_REVISION_MAX) {
         return 2;
     }
-    master_key_rev = (unsigned int)(args->X[4]);
-    if (args->X[3] > 1) {
+
+    if (args->X[4] > 1) {
         return 2;
     }
-    should_mask = args->X[3] != 0;
+    should_mask = args->X[4] != 0;
 
     unsigned int keyslot;
 
