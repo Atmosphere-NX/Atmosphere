@@ -19,7 +19,7 @@
 #include "interrupt.h"
 #include "cpu_context.h"
 #include "actmon.h"
-#include "syscrt0.h"
+#include "sysctr0.h"
 
 #include "mmu.h"
 #include "arm.h"
@@ -136,7 +136,7 @@ void bootup_misc_mmio(void) {
 
     /* Lock Non-Secure writes to Secure Boot RESET Vector. */
     SB_CSR_0 = 2;
-    
+
     /* Setup PMC Secure Scratch RESET Vector for warmboot. */
     APBDEV_PMC_SECURE_SCRATCH34_0 = reset_vec;
     APBDEV_PMC_SECURE_SCRATCH35_0 = 0;
@@ -181,7 +181,7 @@ void setup_4x_mmio(void) {
 
 void setup_current_core_state(void) {
     uint64_t temp_reg;
-    
+
     /* Setup system registers. */
     SET_SYSREG(actlr_el3, 0x73ull);
     SET_SYSREG(actlr_el2, 0x73ull);
@@ -192,7 +192,7 @@ void setup_current_core_state(void) {
 
     __isb();
 
-    SET_SYSREG(cntfrq_el0, MAKE_SYSCRT0_REG(0x20)); /* TODO: Reg name. */
+    SET_SYSREG(cntfrq_el0, MAKE_SYSCTR0_REG(0x20)); /* TODO: Reg name. */
     SET_SYSREG(cnthctl_el2, 3ull);
 
     __isb();
