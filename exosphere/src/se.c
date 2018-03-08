@@ -216,7 +216,7 @@ void clear_aes_keyslot_iv(unsigned int keyslot) {
     }
 
     for (size_t i = 0; i < (0x10 >> 2); i++) {
-        SECURITY_ENGINE->AES_KEYTABLE_ADDR = (keyslot << 4) | 8;
+        SECURITY_ENGINE->AES_KEYTABLE_ADDR = (keyslot << 4) | 8 | i;
         SECURITY_ENGINE->AES_KEYTABLE_DATA = 0;
     }
 }
@@ -584,11 +584,14 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
     if (keyslot >= KEYSLOT_AES_MAX) {
         generic_panic();
     }
-
+    
+    if (data_size) {
+        flush_dcache_range((uint8_t *)data, (uint8_t *)data + data_size);
+    }
+    
     /* Generate the derived key, to be XOR'd with final output block. */
-    uint8_t derived_key[0x10];
-    memset(derived_key, 0, sizeof(derived_key));
-    se_aes_128_ecb_encrypt_block(keyslot, derived_key, sizeof(derived_key), derived_key, sizeof(derived_key));
+    uint8_t derived_key[0x10] = {0};
+    se_aes_ecb_encrypt_block(keyslot, derived_key, sizeof(derived_key), derived_key, sizeof(derived_key), config_high);
     shift_left_xor_rb(derived_key);
     if (data_size & 0xF) {
         shift_left_xor_rb(derived_key);
@@ -597,6 +600,7 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
     SECURITY_ENGINE->CONFIG_REG = (ALG_AES_ENC | DST_HASHREG) | (config_high << 16);
     SECURITY_ENGINE->CRYPTO_REG = (keyslot << 24) | (0x145);
     clear_aes_keyslot_iv(keyslot);
+    
 
     unsigned int num_blocks = (data_size + 0xF) >> 4;
     /* Handle aligned blocks. */
@@ -605,22 +609,22 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
         trigger_se_blocking_op(OP_START, NULL, 0, data, data_size);
         SECURITY_ENGINE->CRYPTO_REG |= 0x80;
     }
-
+    
     /* Create final block. */
-    uint8_t last_block[0x10];
-    memset(last_block, 0, sizeof(last_block));
+    uint8_t last_block[0x10] = {0};
     if (data_size & 0xF) {
         memcpy(last_block, data + (data_size & ~0xF), data_size & 0xF);
         last_block[data_size & 0xF] = 0x80; /* Last block = data || 100...0 */
     } else if (data_size >= 0x10) {
         memcpy(last_block, data + data_size - 0x10, 0x10);
     }
-
+    
     for (unsigned int i = 0; i < 0x10; i++) {
         last_block[i] ^= derived_key[i];
     }
-
+    
     /* Perform last operation. */
+    SECURITY_ENGINE->BLOCK_COUNT_REG = 0;
     flush_dcache_range(last_block, last_block + sizeof(last_block));
     trigger_se_blocking_op(OP_START, NULL, 0, last_block, sizeof(last_block));
 

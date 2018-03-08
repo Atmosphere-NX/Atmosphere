@@ -32,6 +32,8 @@ bool upage_init(upage_ref_t *upage, void *user_address) {
             mmu_map_page(mmu_l3_tbl, USER_PAGE_SECURE_MONITOR_ADDR, upage->user_address, userpage_attributes);
             tlb_invalidate_page_inner_shareable((void *)USER_PAGE_SECURE_MONITOR_ADDR);
             upage->secure_monitor_address = USER_PAGE_SECURE_MONITOR_ADDR;
+        } else {
+            generic_panic();
         }
     }
 

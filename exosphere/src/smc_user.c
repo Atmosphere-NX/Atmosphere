@@ -355,8 +355,9 @@ uint32_t user_compute_cmac(smc_args_t *args) {
     if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
         return 2;
     }
-
+    
     flush_dcache_range(user_data, user_data + size);
+
     se_compute_aes_128_cmac(keyslot, result_cmac, 0x10, user_data, size);
 
     /* Copy CMAC out. */
@@ -399,6 +400,8 @@ uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
         return 2;
     }
+    
+    flush_dcache_range(user_data, user_data + size);
 
     /* Ensure that our private key is 0x100 bytes. */
     if (gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSAOAEP, is_personalized) < 0x100) {
@@ -446,6 +449,8 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
         return 2;
     }
+    
+    flush_dcache_range(user_data, user_data + size);
 
     size_t out_size;
 
@@ -494,6 +499,8 @@ uint32_t user_load_secure_exp_mod_key(smc_args_t *args) {
     if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
         return 2;
     }
+    
+    flush_dcache_range(user_data, user_data + size);
 
     size_t out_size;
 
