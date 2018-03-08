@@ -91,7 +91,9 @@ uint32_t user_get_random_bytes(smc_args_t *args) {
     se_generate_random(KEYSLOT_SWITCH_RNGKEY, random_bytes, size);
     flush_dcache_range(random_bytes, random_bytes + size);
 
-    memcpy(&args->X[1], random_bytes, size);
+    if (size != 0) {
+        memcpy(&args->X[1], random_bytes, size);
+    }
     return 0;
 }
 

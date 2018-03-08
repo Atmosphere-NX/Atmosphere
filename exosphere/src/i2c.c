@@ -131,7 +131,9 @@ bool i2c_query(unsigned int id, uint8_t device, uint8_t r, void *dst, size_t dst
 /* Writes a value to a register over I2C. */
 bool i2c_send(unsigned int id, uint8_t device, uint8_t r, void *src, size_t src_size) {    
     uint32_t val = r;
-    if (src_size <= 3) {
+    if (src_size == 0) {
+        return true;
+    } else if (src_size <= 3) {
         memcpy(((uint8_t *)&val) + 1, src, src_size);
         return i2c_write(i2c_get_registers_from_id(id), device, &val, src_size + 1);
     } else {
@@ -143,6 +145,8 @@ bool i2c_send(unsigned int id, uint8_t device, uint8_t r, void *src, size_t src_
 bool i2c_write(volatile i2c_registers_t *regs, uint8_t device, void *src, size_t src_size) {
     if (src_size > 4) {
         return false;
+    } else if (src_size == 0) {
+        return true;
     }
 
     /* Set device for 7-bit write mode. */
@@ -172,6 +176,8 @@ bool i2c_write(volatile i2c_registers_t *regs, uint8_t device, void *src, size_t
 bool i2c_read(volatile i2c_registers_t *regs, uint8_t device, void *dst, size_t dst_size) {
     if (dst_size > 4) {
         return false;
+    } else if (dst_size == 0) {
+        return true;
     }
 
     /* Set device for 7-bit read mode. */

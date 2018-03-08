@@ -50,7 +50,9 @@ bool user_copy_to_secure(upage_ref_t *upage, void *secure_dst, void *user_src, s
     }
 
     void *secure_src = (void *)(upage->secure_monitor_address + ((uintptr_t)user_src - upage->user_address));
-    memcpy(secure_dst, secure_src, size);
+    if (size != 0) {
+        memcpy(secure_dst, secure_src, size);
+    }
     return true;
 }
 
@@ -66,6 +68,8 @@ bool secure_copy_to_user(upage_ref_t *upage, void *user_dst, void *secure_src, s
     }
 
     void *secure_dst = (void *)(upage->secure_monitor_address + ((uintptr_t)user_dst - upage->user_address));
-    memcpy(secure_dst, secure_src, size);
+    if(size != 0) {
+        memcpy(secure_dst, secure_src, size);
+    }
     return true;
 }

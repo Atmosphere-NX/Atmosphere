@@ -61,13 +61,15 @@ void randomcache_refill(void) {
 
 void randomcache_getbytes(void *dst, size_t num_bytes) {
     unsigned int low = g_random_cache_low;
-    
+    if (num_bytes == 0) {
+        return;
+    }
     memcpy(dst, &g_random_cache[low], num_bytes);
     
     unsigned int new_low = low + num_bytes;
     if (new_low + 0x38 > 0x3FF) {
         new_low = 0;
     }
-    
+
     g_random_cache_low = new_low;
 }

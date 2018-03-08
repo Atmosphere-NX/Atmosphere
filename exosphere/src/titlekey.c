@@ -34,8 +34,9 @@ void calculate_mgf1_and_xor(void *masked, size_t masked_size, const void *seed, 
     }
 
     size_t hash_buf_size = seed_size + 4;
-    memcpy(hash_buf, seed, seed_size);
-
+    if (seed_size != 0) {
+        memcpy(hash_buf, seed, seed_size);
+    }
     uint32_t round_num = 0;
 
     uint8_t *p_out = (uint8_t *)masked;

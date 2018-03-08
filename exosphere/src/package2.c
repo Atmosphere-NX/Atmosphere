@@ -323,9 +323,9 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
         void *src_start = load_buf + sizeof(package2_header_t) + cur_section_offset;
         size_t size = (size_t)metadata->section_sizes[section];
 
-        if (bootconfig_is_package2_plaintext()) {
+        if (bootconfig_is_package2_plaintext() && size != 0) {
             memcpy(dst_start, src_start, size);
-        } else {
+        } else if (size != 0) {
             package2_crypt_ctr(master_key_rev, dst_start, size, src_start, size, metadata->section_ctrs[section], 0x10);
         }
         cur_section_offset += size;

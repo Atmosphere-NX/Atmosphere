@@ -476,7 +476,9 @@ void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src,
     }
 
     /* Load src data into block. */
-    memcpy(block, src, src_size);
+    if (src_size != 0) {
+        memcpy(block, src, src_size);
+    }
     flush_dcache_range(block, block + sizeof(block));
 
     /* Trigger AES operation. */
@@ -485,7 +487,9 @@ void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src,
 
     /* Copy output data into dst. */
     flush_dcache_range(block, block + sizeof(block));
-    memcpy(dst, block, dst_size);
+    if (dst_size != 0) {
+        memcpy(dst, block, dst_size);
+    }
 }
 
 void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
@@ -602,7 +606,6 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
     uint8_t last_block[0x10];
     memset(last_block, 0, sizeof(last_block));
     if (data_size & 0xF) {
-
         memcpy(last_block, data + (data_size & ~0xF), data_size & 0xF);
         last_block[data_size & 0xF] = 0x80; /* Last block = data || 100...0 */
     } else if (data_size >= 0x10) {
