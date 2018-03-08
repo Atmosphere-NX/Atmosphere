@@ -15,7 +15,7 @@
 /* MMIO (addr, size, is secure) */
 #define _MMAPDEV0       ( 0x50041000ull, 0x1000ull, true  ) /* ARM Interrupt Distributor */
 #define _MMAPDEV1       ( 0x50042000ull, 0x2000ull, true  ) /* Interrupt Controller Physical CPU interface */
-#define _MMAPDEV2       ( 0x70006000ull, 0x1000ull, false ) /* UART-A */
+#define _MMAPDEV2       ( 0x70006000ull, 0x1000ull, false ) /* UART */
 #define _MMAPDEV3       ( 0x60006000ull, 0x1000ull, false ) /* Clock and Reset */
 #define _MMAPDEV4       ( 0x7000E000ull, 0x1000ull, true  ) /* RTC, PMC */
 #define _MMAPDEV5       ( 0x60005000ull, 0x1000ull, true  ) /* TMRs, WDTs */
@@ -64,7 +64,7 @@
 
 #define MMIO_DEVID_GICD                 0
 #define MMIO_DEVID_GICC                 1
-#define MMIO_DEVID_UART_A               2
+#define MMIO_DEVID_UART                 2
 #define MMIO_DEVID_CLKRST               3
 #define MMIO_DEVID_RTC_PMC              4
 #define MMIO_DEVID_TMRs_WDTs            5

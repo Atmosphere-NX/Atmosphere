@@ -4,17 +4,16 @@
 
 static void initialize(debug_log_device_uart_t *this) {
     if (!this->is_initialized) {
-        uart_select(0); /* UART-A */
+        uart_select(UART_A);
         clkrst_enable(CARDEVICE_UARTA);
-        uart_initialize(0 /* I don't know */);
+        uart_init(UART_A, BAUD_115200); /* is this the correct baud rate for this use-case? */
         this->is_initialized = true;
     }
 }
 
 static void write_string(debug_log_device_uart_t *this, const char *str, size_t len) {
     (void)this;
-    (void)len;
-    uart_transmit_str(str);
+    uart_send(UART_A, str, len);
 }
 
 static void finalize(debug_log_device_uart_t *this) {

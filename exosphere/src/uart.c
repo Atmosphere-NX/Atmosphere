@@ -1,46 +1,66 @@
+#include "timers.h"
 #include "uart.h"
 #include "misc.h"
 
-void uart_select(unsigned int id) {
-    /* This confirmation is valid for UART-A, I don't know about the other UARTs. */
-    /* Official Nintendo code (for UART-A, at least) */
+/* Adapted from https://github.com/nwert/hekate/blob/master/hwinit/uart.c */
+
+void uart_select(UartDevice dev) {
+    unsigned int id = (unsigned int)dev;
     PINMUX_AUX_UARTn_TX_0(id) = 0; /* UART */
     PINMUX_AUX_UARTn_RX_0(id) = 0x48; /* UART, enable, pull up */
     PINMUX_AUX_UARTn_RTS_0(id) = 0; /* UART */
     PINMUX_AUX_UARTn_CTS_0(id) = 0x44; /* UART, enable, pull down */
 }
 
-void uart_initialize(uint16_t divider) {
-    /* Setup UART in 16450 mode. We assume the relevant UART clock has been enabled. */
+void uart_init(UartDevice dev, uint32_t baud) {
+    volatile uart_t *uart = get_uart_device(dev);
 
-    /* Disable FIFO */
-    UART_IIR_FCR_0 = 0x00;
+    /* Set baud rate. */
+    uint32_t rate = (8 * baud + 408000000) / (16 * baud);
+    uart->UART_LCR = 0x80; /* Enable DLAB. */
+    uart->UART_THR_DLAB = (uint8_t)rate; /* Divisor latch LSB. */
+    uart->UART_IER_DLAB = (uint8_t)(rate >> 8); /* Divisor latch MSB. */
+    uart->UART_LCR = 0; /* Diable DLAB. */
 
-    /* Set DLAB */
-    UART_LCR_0 = 0x80;
-    UART_THR_DLAB_0_0 = (uint8_t)divider;
-    UART_IER_DLAB_0_0 = (uint8_t)(divider >> 8);
-
-    /* 8N1 mode */
-    UART_LCR_0 = 0x03;
+    /* Setup UART in fifo mode. */
+    uart->UART_IER_DLAB = 0;
+    uart->UART_IIR_FCR = 7; /* Enable and clear TX and RX FIFOs. */
+    uart->UART_LSR;
+    wait(3 * ((baud + 999999) / baud));
+    uart->UART_LCR = 3; /* Set word length 8. */
+    uart->UART_MCR = 0;
+    uart->UART_MSR = 0;
+    uart->UART_IRDA_CSR = 0;
+    uart->UART_RX_FIFO_CFG = 1;
+    uart->UART_MIE = 0;
+    uart->UART_ASR = 0;
 }
 
-void uart_transmit_char(char ch) {
-    /* Wait for THR to be empty */
-    while (!(UART_LSR_0 & 0x20)) {}
-
-    UART_THR_DLAB_0_0 = ch;
-}
-
-void uart_transmit_str(const char *str) {
-    while (*str) {
-        uart_transmit_char(*str++);
+void uart_wait_idle(UartDevice dev, uint32_t which) {
+    while (!(get_uart_device(dev)->UART_VENDOR_STATUS & which)) {
+        /* Wait */
     }
 }
 
-void uart_transmit_hex(uint32_t value) {
-    for (unsigned int i = 0; i < 8; i++) {
-        uint32_t nibble = (value >> (28 - i * 4)) & 0xF;
-        uart_transmit_char("0123456789ABCDEF"[nibble]);
+void uart_send(UartDevice dev, const void *buf, size_t len)
+{
+    volatile uart_t *uart = get_uart_device(dev);
+
+    for (size_t i = 0; i < len; i++) {
+        while (uart->UART_LSR & UART_TX_FIFO_FULL) {
+            /* Wait until the TX FIFO isn't full */
+        }
+        uart->UART_THR_DLAB = *((const uint8_t *)buf + i);
+    }
+}
+
+void uart_recv(UartDevice dev, void *buf, size_t len) {
+    volatile uart_t *uart = get_uart_device(dev);
+
+    for (size_t i = 0; i < len; i++) {
+        while (uart->UART_LSR & UART_RX_FIFO_EMPTY) {
+            /* Wait until the RX FIFO isn't empty */
+        }
+         *((uint8_t *)buf + i) = uart->UART_THR_DLAB;
     }
 }
