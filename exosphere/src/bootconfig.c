@@ -8,6 +8,8 @@
 #include "fuse.h"
 #include "bootconfig.h"
 
+static boot_reason_t g_boot_reason = {0};
+
 bool bootconfig_matches_hardware_info(void) {
     uint32_t hardware_info[4];
     fuse_get_hardware_info(hardware_info);
@@ -106,4 +108,16 @@ uint64_t bootconfig_get_kernel_memory_configuration(void) {
     } else {
         return 0ull;
     }
+}
+
+void bootconfig_load_boot_reason(volatile boot_reason_t *boot_reason) {
+    g_boot_reason = *boot_reason;
+}
+
+bool bootconfig_is_recovery_boot(void) {
+    return (g_boot_reason.is_recovery_boot != 0);
+}
+
+uint64_t bootconfig_get_boot_reason(void) {
+    return ((uint64_t)g_boot_reason.boot_reason_high << 24) | (g_boot_reason.boot_reason_low & 0xFFFFFF);
 }

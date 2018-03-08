@@ -364,7 +364,8 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     setup_current_core_state();
 
-    /* TODO: Read and save BOOTREASON stored by NX_BOOTLOADER at 0x1F009FE00 */
+    /* Save boot reason to global. */
+    bootconfig_load_boot_reason((volatile boot_reason_t *)(MAILBOX_NX_BOOTLOADER_BOOT_REASON));
     
     /* Initialize cache'd random bytes for kernel. */
     randomcache_init();

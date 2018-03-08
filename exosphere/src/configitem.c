@@ -73,14 +73,13 @@ uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
             *p_outvalue = fuse_get_retail_type();
             break;
         case CONFIGITEM_ISRECOVERYBOOT:
-            /* TODO: This requires reading values passed to crt0 via NX_Bootloader. TBD pending crt0 implementation. */
-            *p_outvalue = 0;
+            *p_outvalue = (int)(bootconfig_is_recovery_boot());
             break;
         case CONFIGITEM_DEVICEID:
             *p_outvalue = fuse_get_device_id();
             break;
         case CONFIGITEM_BOOTREASON:
-            /* TODO: This requires reading values passed to crt0 via NX_Bootloader. TBD pending crt0 implementation. */
+            *p_outvalue = bootconfig_get_boot_reason();
             break;
         case CONFIGITEM_MEMORYARRANGE:
             *p_outvalue = bootconfig_get_memory_arrangement();
