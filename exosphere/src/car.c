@@ -26,8 +26,8 @@ static inline uint32_t get_special_clk_val(CarDevice dev) {
     }
 }
 
-static uint32_t g_clk_reg_offsets[NUM_CAR_BANKS] = {0x320, 0x328, 0x330, 0x440, 0x448, 0x284, 0x29C};
-static uint32_t g_rst_reg_offsets[NUM_CAR_BANKS] = {0x300, 0x308, 0x310, 0x430, 0x438, 0x290, 0x2A8}; 
+static uint32_t g_clk_reg_offsets[NUM_CAR_BANKS] = {0x010, 0x014, 0x018, 0x360, 0x364, 0x280, 0x298};
+static uint32_t g_rst_reg_offsets[NUM_CAR_BANKS] = {0x004, 0x008, 0x00C, 0x358, 0x35C, 0x28C, 0x2A4}; 
 
 void clk_enable(CarDevice dev) {
     uint32_t special_reg;
@@ -38,7 +38,7 @@ void clk_enable(CarDevice dev) {
 }
 
 void clk_disable(CarDevice dev) {
-    MAKE_CAR_REG(g_clk_reg_offsets[dev >> 5] + 0x004) |= BIT(dev & 0x1F);
+    MAKE_CAR_REG(g_clk_reg_offsets[dev >> 5]) &= ~(BIT(dev & 0x1F));
 }
 
 void rst_enable(CarDevice dev) {
@@ -46,7 +46,7 @@ void rst_enable(CarDevice dev) {
 }
 
 void rst_disable(CarDevice dev) {
-    MAKE_CAR_REG(g_rst_reg_offsets[dev >> 5] + 0x004) |= BIT(dev & 0x1F);
+    MAKE_CAR_REG(g_rst_reg_offsets[dev >> 5]) &= ~(BIT(dev & 0x1F));
 }
 
 
@@ -62,6 +62,5 @@ void clkrst_disable(CarDevice dev) {
 
 void clkrst_reboot(CarDevice dev) {
     clkrst_disable(dev);
-    wait(100);
     clkrst_enable(dev);
 }
