@@ -7,6 +7,7 @@
 #include "se.h"
 #include "fuse.h"
 #include "utils.h"
+#include "masterkey.h"
 
 static bool g_battery_profile = false;
 
@@ -79,7 +80,12 @@ uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
             *p_outvalue = fuse_get_device_id();
             break;
         case CONFIGITEM_BOOTREASON:
-            *p_outvalue = bootconfig_get_boot_reason();
+            /* For some reason, Nintendo removed it on 4.0 */
+            if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT) {
+                *p_outvalue = bootconfig_get_boot_reason();
+            } else {
+                result = 2;
+            }
             break;
         case CONFIGITEM_MEMORYARRANGE:
             *p_outvalue = bootconfig_get_memory_arrangement();
@@ -92,6 +98,14 @@ uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
             break;
         case CONFIGITEM_BATTERYPROFILE:
             *p_outvalue = (int)g_battery_profile;
+            break;
+        case CONFIGITEM_ODM4BIT10_4X:
+            /* Added on 4.x ... where is it being used? */
+            if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+                *p_outvalue = (fuse_get_reserved_odm(4) >> 10) & 1;
+            } else {
+                result = 2;
+            }
             break;
         default:
             result = 2;
