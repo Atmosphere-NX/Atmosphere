@@ -78,7 +78,7 @@ static inline uint64_t read64le(const volatile void *qword, size_t offset) {
     return *(uint64_t *)((uintptr_t)qword + offset);
 }
 
-static inline uint32_t read64be(const volatile void *qword, size_t offset) {
+static inline uint64_t read64be(const volatile void *qword, size_t offset) {
     return __builtin_bswap64(read64le(qword, offset));
 }
 

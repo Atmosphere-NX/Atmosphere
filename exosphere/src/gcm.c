@@ -22,7 +22,6 @@ static void shl_128(uint64_t *val) {
     val[0] <<= 1;
 }
 
-
 /* Multiplies two 128-bit numbers X,Y in the GF(128) Galois Field. */
 static void gf128_mul(uint8_t *dst, const uint8_t *x, const uint8_t *y) {
     uint8_t x_work[0x10];
@@ -59,24 +58,21 @@ static void gf128_mul(uint8_t *dst, const uint8_t *x, const uint8_t *y) {
 
 /* Performs an AES-GCM GHASH operation over the data into dst. */
 static void ghash(void *dst, const void *data, size_t data_size, const void *j_block, bool encrypt) {
-    uint8_t x[0x10];
+    uint8_t x[0x10] = {0};
     uint8_t h[0x10];
 
     uint64_t *p_x = (uint64_t *)(&x[0]);
     uint64_t *p_data = (uint64_t *)data;
 
-    memset(x, 0, 0x10);
-
     /* H = aes_ecb_encrypt(zeroes) */
     se_aes_128_ecb_encrypt_block(KEYSLOT_SWITCH_TEMPKEY, h, 0x10, x, 0x10);
-
+    
     size_t total_size = data_size;
 
     while (data_size >= 0x10) {
         /* X = (X ^ current_block) * H */
         p_x[0] ^= p_data[0];
         p_x[1] ^= p_data[1];
-
         gf128_mul(x, x, h);
 
         /* Increment p_data by 0x10 bytes. */
@@ -90,16 +86,19 @@ static void ghash(void *dst, const void *data, size_t data_size, const void *j_b
     if (data_size & 0xF) {
         gf128_mul(x, x, h);
     }
+        
+    uint64_t xor_size = total_size << 3;
+    xor_size = __builtin_bswap64(xor_size);
 
     /* Due to a Nintendo bug, the wrong QWORD gets XOR'd in the "final output block" case. */
     if (encrypt) {
-        p_x[1] ^= (uint64_t)(total_size << 3);
+        p_x[0] ^= xor_size;
     } else {
-        p_x[0] ^= (uint64_t)(total_size << 3);
+        p_x[1] ^= xor_size;
     }
-
+    
     gf128_mul(x, x, h);
-
+    
     /* If final output block, XOR with encrypted J block. */
     if (encrypt) {
         se_aes_128_ecb_encrypt_block(KEYSLOT_SWITCH_TEMPKEY, h, 0x10, j_block, 0x10);
@@ -107,7 +106,6 @@ static void ghash(void *dst, const void *data, size_t data_size, const void *j_b
             x[i] ^= h[i];
         }
     }
-
     /* Copy output. */
     memcpy(dst, x, 0x10);
 }
@@ -125,19 +123,22 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
             generic_panic();
         }
     }
-
+    
+    uint8_t intermediate_buf[0x400] = {0};
+        
     /* Unwrap the key */
     unseal_key(KEYSLOT_SWITCH_TEMPKEY, sealed_kek, kek_size, usecase);
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, KEYSLOT_SWITCH_TEMPKEY, wrapped_key, key_size);
-
+    
     /* Decrypt the GCM keypair, AES-CTR with CTR = blob[:0x10]. */
-    se_aes_ctr_crypt(KEYSLOT_SWITCH_TEMPKEY, dst, dst_size, src + 0x10, src_size - 0x10, src, 0x10);
-
-
+    se_aes_ctr_crypt(KEYSLOT_SWITCH_TEMPKEY, intermediate_buf, dst_size, src + 0x10, src_size - 0x10, src, 0x10);
+    
     if (!is_personalized) {
         /* Devkit non-personalized keys have no further authentication. */
+        memcpy(dst, intermediate_buf, src_size - 0x10);
+        memset(intermediate_buf, 0, sizeof(intermediate_buf));
         return src_size - 0x10;
-    }
+    } 
 
     /* J = GHASH(CTR); */
     uint8_t j_block[0x10];
@@ -147,8 +148,8 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
     /* Note: That MAC is calculated over plaintext is non-standard. */
     /* It is supposed to be over the ciphertext. */
     uint8_t calc_mac[0x10];
-    ghash(calc_mac, dst, src_size - 0x20, j_block, true);
-
+    ghash(calc_mac, intermediate_buf, src_size - 0x20, j_block, true);
+    
     /* Const-time memcmp. */
     const uint8_t *src_bytes = src;
     int different = 0;
@@ -159,9 +160,11 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
         return 0;
     }
 
-    if (read64le(src_bytes, src_size - 0x28) != fuse_get_device_id()) {
+    if ((read64be(intermediate_buf, src_size - 0x28) & 0x00FFFFFFFFFFFFFFULL) != fuse_get_device_id()) {
         return 0;
     }
-
+        
+    memcpy(dst, intermediate_buf, src_size - 0x30);
+    memset(intermediate_buf, 0, sizeof(intermediate_buf));
     return src_size - 0x30;
 }
