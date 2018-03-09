@@ -258,7 +258,7 @@ finalize_powerdown:
 
     /* Same as above, for EL3. */
     mrs x0, sctlr_el3
-    and x0, x0, #(1 << 2)
+    bic x0, x0, #(1 << 2)
     msr sctlr_el3, x0
     isb
 
@@ -274,7 +274,7 @@ finalize_powerdown:
 
     /* Disable receiving instruction cache/tbl maintenance operations. */
     mrs x0, cpuectlr_el1
-    and x0, x0, #(1 << 6)
+    bic x0, x0, #(1 << 6)
     msr cpuectlr_el1, x0
 
     /* Prepare GICC */
