@@ -2,6 +2,7 @@
 #define EXOSPHERE_FLOW_CTLR_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "cpu_context.h"
 #include "memory_map.h"
 
@@ -36,12 +37,12 @@ static inline void flow_set_cc4_ctrl(uint32_t core, uint32_t cc4_ctrl) {
     MAKE_FLOW_REG(g_flow_core_offsets[core].CC4_COREN_CTRL_OFS) = cc4_ctrl;
 }
 
-static inline void flow_set_halt_events(uint32_t core, uint32_t halt_events) {
-    MAKE_FLOW_REG(g_flow_core_offsets[core].HALT_CPUN_EVENTS_OFS) = halt_events;
+static inline void flow_set_halt_events(uint32_t core, bool halt_events) {
+    MAKE_FLOW_REG(g_flow_core_offsets[core].HALT_CPUN_EVENTS_OFS) = (halt_events ? 0x40000F00 : 0x40000000);
 }
 
 static inline void flow_set_csr(uint32_t core, uint32_t csr) {
-    MAKE_FLOW_REG(g_flow_core_offsets[core].CPUN_CSR_OFS) = csr;
+    MAKE_FLOW_REG(g_flow_core_offsets[core].CPUN_CSR_OFS) = (0x100 << core) | (csr << 12) | 0xC001;
 }
 
 static inline void flow_clear_csr0_and_events(uint32_t core) {

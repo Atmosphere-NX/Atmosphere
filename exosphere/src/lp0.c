@@ -172,7 +172,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     FLOW_CTLR_HALT_COP_EVENTS_0 = 0;
     /* Prepare the current core for sleep. */
     flow_set_cc4_ctrl(current_core, 0);
-    flow_set_halt_events(current_core, 0);
+    flow_set_halt_events(current_core, false);
     FLOW_CTLR_L2FLUSH_CONTROL_0 = 0;
     flow_set_csr(current_core, 2);
     
