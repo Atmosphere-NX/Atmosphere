@@ -557,8 +557,10 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
     void *user_modulus = (void *)args->X[2];
     unsigned int master_key_rev = (unsigned int)args->X[7];
 
-    if (master_key_rev >= MASTERKEY_REVISION_MAX) {
+    if (mkey_get_revision() > 0 && master_key_rev >= MASTERKEY_REVISION_MAX) {
         return 2;
+    } else {
+        master_key_rev = 0;
     }
 
     /* Copy user data into secure memory. */
@@ -615,8 +617,10 @@ uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
     unsigned int master_key_rev = (unsigned int)args->X[3];
 
 
-    if (master_key_rev >= MASTERKEY_REVISION_MAX) {
+    if (mkey_get_revision() > 0 && master_key_rev >= MASTERKEY_REVISION_MAX) {
         return 2;
+    } else {
+        master_key_rev = 0;
     }
 
     tkey_set_master_key_rev(master_key_rev);

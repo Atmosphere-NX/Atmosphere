@@ -150,8 +150,6 @@ void clear_priv_smc_in_progress(void) {
 uint32_t (*g_smc_callback)(void *, uint64_t) = NULL;
 uint64_t g_smc_callback_key = 0;
 
-static _Atomic(int) g_num_smcs_called = 0;
-
 uint64_t try_set_smc_callback(uint32_t (*callback)(void *, uint64_t)) {
     uint64_t key;
     if (g_smc_callback_key) {
@@ -201,15 +199,17 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
         generic_panic();
     }
     
-    int num_called = atomic_fetch_add(&g_num_smcs_called, 1);
-    
-    /* DEBUG: use num_called to determine panic behavior. */
-    if (num_called == 0x21A) {
-        panic(COLOR_F);
-    }
-
+ 
     /* Call function. */
     args->X[0] = smc_handler(args);
+    if (args->X[0]) 
+    {
+        MAKE_REG32(get_iram_address_for_debug() + 0x4FF0) = handler_id;
+        MAKE_REG32(get_iram_address_for_debug() + 0x4FF4) = smc_id;
+        MAKE_REG32(get_iram_address_for_debug() + 0x4FF8) = get_core_id();
+        *(volatile smc_args_t *)(get_iram_address_for_debug() + 0x4F00) = *args;
+        panic(PANIC_REBOOT);
+    }
     (void)result; /* FIXME: result unused */
 }
 

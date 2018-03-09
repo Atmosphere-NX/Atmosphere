@@ -311,8 +311,8 @@ void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*cal
     }
 
     /* Endian swap the input. */
-    for (size_t i = size; i > 0; i--) {
-        stack_buf[i] = *((uint8_t *)buf + size - i);
+    for (size_t i = 0; i < size; i++) {
+        stack_buf[i] = *((uint8_t *)buf + size - i - 1);
     }
 
 
