@@ -13,6 +13,7 @@
 #include "fuse.h"
 #include "i2c.h"
 #include "lp0.h"
+#include "masterkey.h"
 #include "pmc.h"
 #include "se.h"
 #include "smc_api.h"
@@ -23,11 +24,11 @@ extern const uint8_t bpmpfw_bin[];
 extern const uint32_t bpmpfw_bin_size;
 
 /* Save security engine, and go to sleep. */
-void save_se_and_power_down_cpu(void) {
+void save_se_and_power_down_cpu(void) {   
     uint32_t tzram_cmac[0x4] = {0};
     
-    uint8_t *tzram_encryption_src = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_ENCRYPTED_TZRAM));
-    uint8_t *tzram_encryption_dst = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_CURRENT_TZRAM));
+    uint8_t *tzram_encryption_dst = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_ENCRYPTED_TZRAM));
+    uint8_t *tzram_encryption_src = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_CURRENT_TZRAM));
     uint8_t *tzram_store_address = (uint8_t *)(WARMBOOT_GET_RAM_SEGMENT_ADDRESS(WARMBOOT_RAM_SEGMENT_ID_TZRAM));
     clear_priv_smc_in_progress();
     
@@ -71,7 +72,7 @@ void save_se_and_power_down_cpu(void) {
     if (!configitem_is_retail()) {
         /* TODO: uart_log("OYASUMI"); */
     }
-    
+        
     finalize_powerdown();
 }
 
@@ -84,6 +85,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     unsigned int current_core = get_core_id();
     
     clkrst_reboot(CARDEVICE_I2C1);
+    
     if (configitem_should_profile_battery() && !i2c_query_ti_charger_bit_7()) {
         /* Profile the battery. */
         i2c_set_ti_charger_bit_7();
@@ -120,8 +122,15 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
         generic_panic();
     }
     
+    /* For debugging, make this check always pass. */
+    if ((mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT || (get_debug_authentication_status() & 3) == 3)) {
+        FLOW_CTLR_HALT_COP_EVENTS_0 = 0x50000000;
+    } else {
+        FLOW_CTLR_HALT_COP_EVENTS_0 = 0x40000000;
+    }
+        
     /* Jamais Vu mitigation #2: Ensure the BPMP is halted. */
-    if ((get_debug_authentication_status() & 3) == 3) {
+    if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT || (get_debug_authentication_status() & 3) == 3) {
         /* BPMP should just be plainly halted, in debugging conditions. */
         if (FLOW_CTLR_HALT_COP_EVENTS_0 != 0x50000000) {
             generic_panic();
