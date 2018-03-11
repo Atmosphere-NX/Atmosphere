@@ -177,12 +177,12 @@ void setup_4x_mmio(void) {
     /* TODO */
 }
 
-#define SET_SYSREG(reg, val) do { temp_reg = val; __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
-
 void setup_current_core_state(void) {
     uint64_t temp_reg;
 
     /* Setup system registers. */
+    SET_SYSREG(spsr_el3, 0b1111 << 6 | 0b1001); /* use EL2h+DAIF set initially, may be overwritten later. Not in official code */
+
     SET_SYSREG(actlr_el3, 0x73ull);
     SET_SYSREG(actlr_el2, 0x73ull);
     SET_SYSREG(hcr_el2, 0x80000000ull);

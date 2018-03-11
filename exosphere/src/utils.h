@@ -21,6 +21,8 @@
 
 #define ALINLINE        __attribute__((always_inline))
 
+#define SET_SYSREG(reg, val) do { temp_reg = (val); __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
+
 /* Custom stuff below */
 
 /* For warmboot (and coldboot crt0) */
@@ -108,6 +110,12 @@ static inline uint64_t get_debug_authentication_status(void) {
     uint64_t debug_auth;
     __asm__ __volatile__ ("mrs  %0, dbgauthstatus_el1" : "=r"(debug_auth));
     return debug_auth;
+}
+
+static inline uint32_t get_spsr(void) {
+    uint32_t spsr;
+    __asm__ __volatile__ ("mrs  %0, spsr_el3" : "=r"(spsr));
+    return spsr;
 }
 
 static inline bool check_32bit_additive_overflow(uint32_t a, uint32_t b) {

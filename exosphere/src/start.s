@@ -108,7 +108,7 @@ __start_warm:
     /* FWIW this function doesn't use a stack atm, with latest GCC, but that might change. */
     bl   get_warmboot_crt0_stack_address_critsec_enter
     mov  sp, x0
-    
+
     /* PA(__main_start__) = __warmboot_crt0_start__ + 0x800 (refer to the linker script) */
     ldr  x0, =g_boot_critical_section
     ldr  x1, =__main_start__
@@ -210,12 +210,11 @@ __set_exception_entry_stack_pointer:
 .global     __jump_to_lower_el
 .type       __jump_to_lower_el, %function
 __jump_to_lower_el:
-    /* x0: arg (context ID), x1: entrypoint, w2: exception level */
-    msr  elr_el3, x1
+    /* x0: arg (context ID), x1: entrypoint, w2: spsr */
+    mov  w2, w2
 
-    mov  w1, #(0b1111 << 6 | 1) /* DAIF set and SP = SP_ELx*/
-    orr  w1, w1, w2, lsl#2
-    msr  spsr_el3, x1
+    msr  elr_el3, x1
+    msr  spsr_el3, x2
 
     bl __set_exception_entry_stack_pointer
 

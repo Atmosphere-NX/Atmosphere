@@ -21,7 +21,7 @@
 #define RESTORE_WP_REG(i, _) RESTORE_SYSREG64(DBGBVR##i##_EL1); RESTORE_SYSREG64(DBGBCR##i##_EL1);
 
 /* start.s */
-void __attribute__((noreturn)) __jump_to_lower_el(uint64_t arg, uintptr_t ep, unsigned int el);
+void __attribute__((noreturn)) __jump_to_lower_el(uint64_t arg, uintptr_t ep, uint32_t spsr);
 
 /* See notes in start.s */
 critical_section_t g_boot_critical_section = {{{.ticket_number = 1}}};
@@ -51,14 +51,15 @@ void __attribute__((noreturn)) core_jump_to_lower_el(void) {
     uintptr_t ep;
     uint64_t arg;
     unsigned int core_id = get_core_id();
+    uint32_t spsr = get_spsr();
 
     use_core_entrypoint_and_argument(core_id, &ep, &arg);
     critical_section_leave(&g_boot_critical_section);
     flush_dcache_range(&g_boot_critical_section, (uint8_t *)&g_boot_critical_section + sizeof(g_boot_critical_section)); /* already does a dsb sy */
     __sev();
 
-    /* Nintendo jumps to EL1, we jump to EL2. Both are supported with all current packages2. */
-    __jump_to_lower_el(arg, ep, 2);
+    /* Nintendo hardcodes EL1, but we can boot fine using other EL1/EL2 modes as well */
+    __jump_to_lower_el(arg, ep, 0b1111 << 6 | (spsr & 0b1101)); /* only keep EL, SPSel, set DAIF */
 }
 
 uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
@@ -66,7 +67,7 @@ uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
     if (core >= NUM_CPU_CORES) {
         return 0xFFFFFFFE;
     }
-    
+
     /* Is core already on? */
     if (g_cpu_contexts[core].is_active) {
         return 0xFFFFFFFC;
@@ -76,11 +77,11 @@ uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
 
     const uint32_t status_masks[NUM_CPU_CORES] = {0x4000, 0x200, 0x400, 0x800};
     const uint32_t toggle_vals[NUM_CPU_CORES] = {0xE, 0x9, 0xA, 0xB};
-    
+
     /* Check if we're already in the correct state. */
     if ((APBDEV_PMC_PWRGATE_STATUS_0 & status_masks[core]) != status_masks[core]) {
         uint32_t counter = 5001;
-        
+
         /* Poll the start bit until 0 */
         while (APBDEV_PMC_PWRGATE_TOGGLE_0 & 0x100) {
             wait(1);
@@ -89,10 +90,10 @@ uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
                 return 0;
             }
         }
-        
+
         /* Program PWRGATE_TOGGLE with the START bit set to 1, selecting CE[N] */
         APBDEV_PMC_PWRGATE_TOGGLE_0 = toggle_vals[core] | 0x100;
-        
+
         /* Poll until we're in the correct state. */
         counter = 5001;
         while (counter > 0) {
@@ -148,6 +149,7 @@ void save_current_core_context(void) {
     SAVE_SYSREG32(SDER32_EL3);
     SAVE_SYSREG32(MDCR_EL2);
     SAVE_SYSREG32(MDCR_EL3);
+    SAVE_SYSREG32(SPSR_EL3);
 
     EVAL(REPEAT(6, SAVE_BP_REG, ~));
     EVAL(REPEAT(4, SAVE_WP_REG, ~));
@@ -170,6 +172,7 @@ void restore_current_core_context(void) {
         RESTORE_SYSREG32(SDER32_EL3);
         RESTORE_SYSREG32(MDCR_EL2);
         RESTORE_SYSREG32(MDCR_EL3);
+        RESTORE_SYSREG32(SPSR_EL3);
 
         EVAL(REPEAT(6, RESTORE_BP_REG, ~));
         EVAL(REPEAT(4, RESTORE_WP_REG, ~));

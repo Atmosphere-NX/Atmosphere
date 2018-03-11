@@ -23,6 +23,7 @@ typedef struct {
   uint32_t SDER32_EL3;
   uint32_t MDCR_EL2;
   uint32_t MDCR_EL3;
+  uint32_t SPSR_EL3; /* not in official code */
   uint64_t DBGBVR0_EL1;
   uint64_t DBGBCR0_EL1;
   uint64_t DBGBVR1_EL1;
