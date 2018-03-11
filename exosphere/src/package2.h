@@ -56,8 +56,6 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
 #define PACKAGE2_MINVER_302 0x6
 #define PACKAGE2_MINVER_400_CURRENT 0x7
 
-
-#pragma pack(push, 1)
 typedef struct {
     union {
         uint8_t ctr[0x10];
@@ -74,9 +72,7 @@ typedef struct {
     uint32_t section_offsets[4];
     uint8_t section_hashes[4][0x20];
 } package2_meta_t;
-#pragma pack(pop)
 
-#pragma pack(push, 1)
 typedef struct {
     uint8_t signature[0x100];
     union {
@@ -84,7 +80,6 @@ typedef struct {
         uint8_t encrypted_header[0x100];
     };
 } package2_header_t;
-#pragma pack(pop)
 
 void load_package2(coldboot_crt0_reloc_list_t *reloc_list);
 
