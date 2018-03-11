@@ -68,7 +68,7 @@ void save_se_and_power_down_cpu(void) {
     APBDEV_PMC_SCRATCH43_0 = (uint32_t)(WARMBOOT_GET_RAM_SEGMENT_PA(WARMBOOT_RAM_SEGMENT_ID_SE_STATE));
     se_set_in_context_save_mode(false);
     se_check_error_status_reg();
-    
+
     if (!configitem_is_retail()) {
         /* TODO: uart_log("OYASUMI"); */
     }
@@ -167,7 +167,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     BPMP_VECTOR_FIQ = 0x40003004; /* Reboot. */
     
     /* Hold the BPMP in reset. */
-    clkrst_disable(CARDEVICE_BPMP);
+    MAKE_CAR_REG(0x300) = 2;
 
     /* Copy BPMP firmware. */
     uint8_t *lp0_entry_code = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE));
@@ -175,7 +175,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     flush_dcache_range(lp0_entry_code, lp0_entry_code + bpmpfw_bin_size);
 
     /* Take the BPMP out of reset. */
-    clkrst_enable(CARDEVICE_BPMP);
+    MAKE_CAR_REG(0x304) = 2;
     
     /* Start executing BPMP firmware. */
     FLOW_CTLR_HALT_COP_EVENTS_0 = 0;
