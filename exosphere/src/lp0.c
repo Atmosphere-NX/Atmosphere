@@ -50,7 +50,7 @@ void save_se_and_power_down_cpu(void) {
     flush_dcache_range(tzram_store_address, tzram_store_address + LP0_TZRAM_SAVE_SIZE);
     
     /* Compute CMAC. */
-    se_compute_aes_256_cmac(KEYSLOT_SWITCH_LP0TZRAMKEY, tzram_cmac, sizeof(tzram_cmac), tzram_encryption_dst, LP0_TZRAM_SAVE_SIZE);
+    se_compute_aes_256_cmac(KEYSLOT_SWITCH_LP0TZRAMKEY, tzram_cmac, sizeof(tzram_cmac), tzram_encryption_src, LP0_TZRAM_SAVE_SIZE);
     
     /* Write CMAC, lock registers. */
     APBDEV_PMC_SECURE_SCRATCH112_0 = tzram_cmac[0];
