@@ -57,3 +57,5 @@ exosphere/bpmpfw/out/**
 exosphere/bpmpfw/build/**
 exosphere/build/**
 exosphere/out/**
+fusee/out/**
+fusee/build/**
