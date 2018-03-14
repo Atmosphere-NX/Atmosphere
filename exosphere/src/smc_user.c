@@ -283,11 +283,12 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
     wrapped_key[0] = args->X[1];
     wrapped_key[1] = args->X[2];
 
-    master_key_rev = args->X[3];
-    if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT) {
-        master_key_rev &= 0xFFFFFFFF;
+    master_key_rev = (unsigned int)args->X[3];
+    if (master_key_rev > 0) {
+        master_key_rev -= 1;
     }
-    if (master_key_rev > MASTERKEY_REVISION_MAX) {
+
+    if (master_key_rev >= MASTERKEY_REVISION_MAX) {
         return 2;
     }
 
@@ -355,7 +356,7 @@ uint32_t user_compute_cmac(smc_args_t *args) {
     if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
         return 2;
     }
-    
+
     flush_dcache_range(user_data, user_data + size);
 
     se_compute_aes_128_cmac(keyslot, result_cmac, 0x10, user_data, size);
@@ -400,7 +401,7 @@ uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
         return 2;
     }
-    
+
     flush_dcache_range(user_data, user_data + size);
 
     /* Ensure that our private key is 0x100 bytes. */
@@ -449,7 +450,7 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
         return 2;
     }
-    
+
     flush_dcache_range(user_data, user_data + size);
 
     size_t out_size;
@@ -499,7 +500,7 @@ uint32_t user_load_secure_exp_mod_key(smc_args_t *args) {
     if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
         return 2;
     }
-    
+
     flush_dcache_range(user_data, user_data + size);
 
     size_t out_size;
@@ -556,6 +557,10 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
     void *user_wrapped_key = (void *)args->X[1];
     void *user_modulus = (void *)args->X[2];
     unsigned int master_key_rev = (unsigned int)args->X[7];
+
+    if(master_key_rev > 0) {
+        master_key_rev -= 1;
+    }
 
     if (mkey_get_revision() > 0 && master_key_rev >= MASTERKEY_REVISION_MAX) {
         return 2;
@@ -616,7 +621,9 @@ uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
     aes_wrapped_titlekey[1] = args->X[2];
     unsigned int master_key_rev = (unsigned int)args->X[3];
 
-
+    if (master_key_rev > 0) {
+        master_key_rev -= 1;
+    }
     if (mkey_get_revision() > 0 && master_key_rev >= MASTERKEY_REVISION_MAX) {
         return 2;
     } else {
