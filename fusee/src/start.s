@@ -7,6 +7,10 @@
 .align 5
 .global _start
 _start:
+    /* Insert NOPs for convenience (i.e. to use Nintendo's BCTs, for example) */
+    .rept 16
+    nop
+    .endr
     /* Switch to supervisor mode, mask all interrupts, clear all flags */
     msr cpsr_cxsf, #0xDF
 
