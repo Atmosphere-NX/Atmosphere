@@ -1,4 +1,7 @@
+#include "utils.h"
+#include "hwinit.h"
+
 int main(void) {
-    /* TODO */
+    nx_hwinit();
     return 0;
 }
