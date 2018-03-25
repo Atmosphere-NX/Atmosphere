@@ -11,7 +11,7 @@
 /* TODO: Should this be at a non-static location? */
 #define MAILBOX_EXOSPHERE_CONFIG (*((volatile exosphere_config_t *)(MAILBOX_BASE + 0xE40ULL)))
 
-static exosphere_config_t g_exosphere_cfg = {MAGIC_ATMOSPHERE, EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG};
+static exosphere_config_t g_exosphere_cfg = {MAGIC_EXOSPHERE_BOOTCONFIG, EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG};
 static bool g_has_loaded_config = false;
 
 /* Read config out of IRAM, return target firmware version. */
@@ -21,7 +21,7 @@ unsigned int exosphere_load_config(void) {
     }
     g_has_loaded_config = true;
     
-    if (MAILBOX_EXOSPHERE_CONFIG.magic == MAGIC_ATMOSPHERE) {
+    if (MAILBOX_EXOSPHERE_CONFIG.magic == MAGIC_EXOSPHERE_BOOTCONFIG) {
         g_exosphere_cfg = MAILBOX_EXOSPHERE_CONFIG;
     }
     

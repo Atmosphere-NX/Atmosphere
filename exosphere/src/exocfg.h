@@ -8,8 +8,8 @@
 
 /* This serves to set configuration for *exosphere itself*, separate from the SecMon Exosphere mimics. */
 
-/* "AMS0" */
-#define MAGIC_ATMOSPHERE (0x30534D41)
+/* "XBC0" */
+#define MAGIC_EXOSPHERE_BOOTCONFIG (0x30434258)
 
 #define EXOSPHERE_TARGET_FIRMWARE_100 1
 #define EXOSPHERE_TARGET_FIRMWARE_200 2
@@ -35,7 +35,7 @@ unsigned int exosphere_load_config(void);
 unsigned int exosphere_get_target_firmware(void);
 
 static inline unsigned int exosphere_get_target_firmware_physical(void) {
-    return MAILBOX_EXOSPHERE_CONFIG_PHYS.magic == MAGIC_ATMOSPHERE ? MAILBOX_EXOSPHERE_CONFIG_PHYS.target_firmware : EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG;
+    return MAILBOX_EXOSPHERE_CONFIG_PHYS.magic == MAGIC_EXOSPHERE_BOOTCONFIG ? MAILBOX_EXOSPHERE_CONFIG_PHYS.target_firmware : EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG;
 }
 
 #endif
