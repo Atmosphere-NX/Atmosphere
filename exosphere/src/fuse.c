@@ -4,6 +4,7 @@
 #include "fuse.h"
 #include "utils.h"
 #include "timers.h"
+#include "exocfg.h"
 
 #include "masterkey.h"
 /* Prototypes for internal commands. */
@@ -150,6 +151,14 @@ uint32_t fuse_get_reserved_odm(uint32_t idx)
     return FUSE_CHIP_REGS->FUSE_RESERVED_ODM[idx];
 }
 
+uint32_t fuse_get_5x_key_generation(void) {
+    if ((fuse_get_reserved_odm(4) & 0x800) && fuse_get_reserved_odm(0) == 0x8E61ECAE && fuse_get_reserved_odm(1) == 0xF2BA3BB2) {
+        return fuse_get_reserved_odm(2) & 0x1F;
+    } else {
+        return 0;
+    }
+}
+
 /* Derive the Device ID using values in the shadow cache */
 uint64_t fuse_get_device_id(void) {
     uint64_t device_id = 0;
@@ -182,7 +191,7 @@ uint32_t fuse_get_hardware_type(void) {
     /* This function is very different between 4.x and < 4.x */
     uint32_t hardware_type = ((FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 7) & 2) | ((FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 2) & 1);
     
-    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         static const uint32_t types[] = {0,1,4,3};
 
         hardware_type |= (FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 14) & 0x3C;

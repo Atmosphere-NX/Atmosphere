@@ -7,6 +7,7 @@
 #include "masterkey.h"
 #include "bootup.h"
 #include "smc_api.h"
+#include "exocfg.h"
 
 #include "se.h"
 #include "mc.h"
@@ -45,7 +46,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
         /* Make PMC (2.x+), MC (4.x+) registers secure-only */
         secure_additional_devices();
 
-        if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT || configitem_get_hardware_type() == 0) {
+        if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400 || configitem_get_hardware_type() == 0) {
             /* Enable input to I2C1 */
             PINMUX_AUX_GEN1_I2C_SCL_0 = 0x40;
             PINMUX_AUX_GEN1_I2C_SDA_0 = 0x40;
@@ -58,9 +59,8 @@ void __attribute__((noreturn)) warmboot_main(void) {
 
         clear_user_smc_in_progress();
 
-        if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
-            setup_4x_mmio(); /* TODO */
-        }
+        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+            setup_4x_mmio();        }
     }
 
     setup_current_core_state();

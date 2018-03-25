@@ -22,6 +22,7 @@ typedef enum {
     CARDEVICE_UARTB = 7,
     CARDEVICE_I2C1 = 12,
     CARDEVICE_I2C5 = 47,
+    CARDEVICE_ACTMON = 119,
     CARDEVICE_BPMP = 1
 } CarDevice;
 

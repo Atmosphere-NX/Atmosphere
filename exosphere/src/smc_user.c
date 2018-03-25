@@ -14,14 +14,15 @@
 #include "sealedkeys.h"
 #include "userpage.h"
 #include "titlekey.h"
+#include "exocfg.h"
 
 /* Globals. */
 static bool g_crypt_aes_done = false;
 static bool g_exp_mod_done = false;
 
-static uint8_t g_secure_exp_mod_exponent[0x100];
-static uint8_t g_rsa_oaep_exponent[0x100];
+static uint8_t g_imported_exponents[4][0x100];
 
+static uint8_t g_rsausecase_to_cryptousecase[5] = {1, 2, 3, 5, 6};
 
 void set_exp_mod_done(bool done) {
     g_exp_mod_done = done;
@@ -125,12 +126,31 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
     uint8_t mask_id = (uint8_t)((packed_options >> 1) & 3);
 
     /* Switches the output based on how it will be used. */
-    uint8_t usecase = (uint8_t)((packed_options >> 5) & 3);
+    uint8_t usecase = (uint8_t)((packed_options >> 5) & (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500 ? 7 : 3));
 
     /* Switched the output based on whether it should be console unique. */
     bool is_personalized = (int)(packed_options & 1);
 
     bool is_recovery_boot = configitem_is_recovery_boot();
+    
+    /* 5.0.0+ Bounds checking. */
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+        if (is_personalized) {
+            if (master_key_rev > MASTERKEY_REVISION_500_CURRENT || ((1 << (master_key_rev + 1)) & 0x33) == 0) {
+                return 2;
+            }
+            if (mask_id > 3 || usecase >= CRYPTOUSECASE_MAX_5X) {
+                return 2;
+            }
+        } else {
+            if (usecase >= CRYPTOUSECASE_UNK6) {
+                return 2;
+            }
+            if (usecase == CRYPTOUSECASE_UNK5 && mask_id >= 4) {
+                return 2;
+            }
+        }
+    }
 
     /* Mask 2 is only allowed when booted from recovery. */
     if (mask_id == 2 && !is_recovery_boot) {
@@ -163,8 +183,10 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
 
     unsigned int keyslot;
     if (is_personalized) {
-        /* Behavior changed in 4.0.0. */
-        if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+        /* Behavior changed in 4.0.0, and in 5.0.0. */
+        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+            keyslot = devkey_get_keyslot(master_key_rev);
+        } else if (exosphere_get_target_firmware() == EXOSPHERE_TARGET_FIRMWARE_400) {
             if (master_key_rev >= 1) {
                 keyslot = KEYSLOT_SWITCH_DEVICEKEY; /* New device key, 4.x. */
             } else {
@@ -246,7 +268,17 @@ uint32_t user_crypt_aes(smc_args_t *args) {
 
     size_t size = args->X[6];
     if (size & 0xF) {
-        generic_panic();
+        return 2;
+    }
+
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+        /* Disallow dma lists outside of safe range. */
+        if (in_ll_paddr - 0x80000000 >= 0x3FF7F5) {
+            return 2;
+        }
+        if (out_ll_paddr - 0x80000000 >= 0x3FF7F5) {
+            return 2;
+        }
     }
 
     set_crypt_aes_done(false);
@@ -287,6 +319,9 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
     if (master_key_rev > 0) {
         master_key_rev -= 1;
     }
+    if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400) {
+        master_key_rev = 0;
+    }
 
     if (master_key_rev >= MASTERKEY_REVISION_MAX) {
         return 2;
@@ -299,9 +334,11 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
 
     unsigned int keyslot;
 
-    /* Behavior changed in 4.0.0. */
-    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
-        if (master_key_rev >= 2) {
+    /* Behavior changed in 5.0.0. */
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+        keyslot = devkey_get_keyslot(master_key_rev);
+    } else if (exosphere_get_target_firmware() == EXOSPHERE_TARGET_FIRMWARE_400) {
+        if (master_key_rev >= 1) {
             keyslot = KEYSLOT_SWITCH_DEVICEKEY; /* New device key, 4.x. */
         } else {
             keyslot = KEYSLOT_SWITCH_4XOLDDEVICEKEY; /* Old device key, 4.x. */
@@ -378,6 +415,10 @@ uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     size_t size;
     upage_ref_t page_ref;
 
+    /* This function no longer exists in 5.x+. */
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+        generic_panic();
+    }
 
     /* Copy keydata */
     sealed_kek[0] = args->X[1];
@@ -405,11 +446,11 @@ uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     flush_dcache_range(user_data, user_data + size);
 
     /* Ensure that our private key is 0x100 bytes. */
-    if (gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSAOAEP, is_personalized) < 0x100) {
+    if (gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSAOAEP, is_personalized, NULL) < 0x100) {
         return 2;
     }
 
-    memcpy(g_rsa_oaep_exponent, user_data, 0x100);
+    memcpy(g_imported_exponents[0], user_data, 0x100);
     return 0;
 }
 
@@ -423,6 +464,10 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     size_t size;
     upage_ref_t page_ref;
 
+    /* This function no longer exists in 5.x+. */
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+        generic_panic();
+    }
 
     /* Copy keydata */
     sealed_kek[0] = args->X[1];
@@ -455,7 +500,7 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
 
     size_t out_size;
 
-    if ((out_size = gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSAPRIVATE, is_personalized)) == 0) {
+    if ((out_size = gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_RSAPRIVATE, is_personalized, NULL)) == 0) {
         return 2;
     }
 
@@ -477,6 +522,10 @@ uint32_t user_load_secure_exp_mod_key(smc_args_t *args) {
     size_t size;
     upage_ref_t page_ref;
 
+    /* This function no longer exists in 5.x+. */
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+        generic_panic();
+    }
 
     /* Copy keydata */
     sealed_kek[0] = args->X[1];
@@ -506,15 +555,15 @@ uint32_t user_load_secure_exp_mod_key(smc_args_t *args) {
     size_t out_size;
 
     /* Ensure that our key is non-zero bytes. */
-    if ((out_size = gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_SECUREEXPMOD, is_personalized)) == 0) {
+    if ((out_size = gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, CRYPTOUSECASE_SECUREEXPMOD, is_personalized, NULL)) == 0) {
         return 2;
     }
 
     /* Copy key to global. */
     if (out_size <= 0x100) {
-        memcpy(g_secure_exp_mod_exponent, user_data, out_size);
+        memcpy(g_imported_exponents[1], user_data, out_size);
     } else {
-        memcpy(g_secure_exp_mod_exponent, user_data, 0x100);
+        memcpy(g_imported_exponents[1], user_data, 0x100);
     }
 
     return 0;
@@ -529,6 +578,23 @@ uint32_t user_secure_exp_mod(smc_args_t *args) {
     void *user_input = (void *)args->X[1];
     void *user_modulus = (void *)args->X[2];
 
+    unsigned int exponent_id = 1;
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+        switch (args->X[3]) {
+            case 0:
+                exponent_id = 1;
+                break;
+            case 1:
+                exponent_id = 2;
+                break;
+            case 2:
+                exponent_id = 3;
+                break;
+            default:
+                return 2;
+        }
+    }
+
     /* Copy user data into secure memory. */
     if (upage_init(&page_ref, user_input) == 0) {
         return 2;
@@ -542,7 +608,7 @@ uint32_t user_secure_exp_mod(smc_args_t *args) {
 
     set_exp_mod_done(false);
     /* Hardcode RSA keyslot 0. */
-    set_rsa_keyslot(0, modulus, 0x100, g_secure_exp_mod_exponent, 0x100);
+    set_rsa_keyslot(0, modulus, 0x100, g_imported_exponents[exponent_id], 0x100);
     se_exp_mod(0, input, 0x100, exp_mod_done_handler);
 
     return 0;
@@ -562,7 +628,7 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
         master_key_rev -= 1;
     }
 
-    if (mkey_get_revision() > 0 && master_key_rev >= MASTERKEY_REVISION_MAX) {
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_300 && master_key_rev >= MASTERKEY_REVISION_MAX) {
         return 2;
     } else {
         master_key_rev = 0;
@@ -587,7 +653,7 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
     tkey_set_master_key_rev(master_key_rev);
 
     /* Hardcode RSA keyslot 0. */
-    set_rsa_keyslot(0, modulus, 0x100, g_rsa_oaep_exponent, 0x100);
+    set_rsa_keyslot(0, modulus, 0x100, g_imported_exponents[0], 0x100);
     se_exp_mod(0, wrapped_key, 0x100, exp_mod_done_handler);
 
     return 0;
@@ -624,7 +690,7 @@ uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
     if (master_key_rev > 0) {
         master_key_rev -= 1;
     }
-    if (mkey_get_revision() > 0 && master_key_rev >= MASTERKEY_REVISION_MAX) {
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_300 && master_key_rev >= MASTERKEY_REVISION_MAX) {
         return 2;
     } else {
         master_key_rev = 0;
@@ -639,4 +705,146 @@ uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
     args->X[2] = sealed_titlekey[1];
 
     return 0; /* FIXME: what should we return there */
+}
+
+
+uint32_t user_encrypt_rsa_key_for_import(smc_args_t *args) {
+    uint64_t in_sealed_kek[2];
+    uint64_t out_sealed_kek[2];
+    uint64_t in_wrapped_key[2];
+    uint64_t out_wrapped_key[2];
+    uint8_t usecase;
+
+    uint8_t user_data[0x400];
+    void *user_address;
+    void *user_in_kek;
+    void *user_out_kek;
+    void *user_in_key;
+    void *user_out_key;
+    size_t size;
+    upage_ref_t page_ref;
+
+    /* Copy keydata */
+    user_in_kek = (void *)args->X[1];
+    user_out_kek = (void *)args->X[2];
+    usecase = args->X[3] & 7;
+    user_address = (void *)args->X[4];
+    size = (size_t)args->X[5];
+    user_in_key = (void *)args->X[6];
+    user_out_key = (void *)args->X[7];
+
+    if (usecase > CRYPTOUSECASE_RSAIMPORT) {
+        return 2;
+    } 
+    if (usecase == 0) {
+        if (size < 0x31 || size > 0x240) {
+            return 2;
+        }
+    } else if (size < 0x130 || size > 0x240) {
+        return 2;
+    }
+
+    if (upage_init(&page_ref, user_address) == 0
+     || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0
+     || user_copy_to_secure(&page_ref, in_sealed_kek, user_in_kek, 0x10) == 0
+     || user_copy_to_secure(&page_ref, out_sealed_kek, user_out_kek, 0x10) == 0
+     || user_copy_to_secure(&page_ref, in_wrapped_key, user_in_key, 0x10) == 0
+     || user_copy_to_secure(&page_ref, out_wrapped_key, user_out_key, 0x10) == 0) {
+        return 2;
+    }
+
+    flush_dcache_range(user_data, user_data + size);
+
+    size_t out_size;
+
+    uint8_t device_id_high;
+
+    if ((out_size = gcm_decrypt_key(user_data, size, user_data, size, in_sealed_kek, 0x10, in_wrapped_key, 0x10, CRYPTOUSECASE_RSAIMPORT, true, &device_id_high)) == 0) {
+        return 2;
+    }
+
+    gcm_encrypt_key(user_data, size, user_data, size - 0x30, out_sealed_kek, 0x10, out_wrapped_key, 0x10, g_rsausecase_to_cryptousecase[usecase], device_id_high);
+
+    if (secure_copy_to_user(&page_ref, user_address, user_data, size) == 0) {
+        return 2;
+    } 
+
+    return 0;
+}
+
+uint32_t user_decrypt_or_import_rsa_key(smc_args_t *args) {
+    uint64_t sealed_kek[2];
+    uint64_t wrapped_key[2];
+    uint8_t usecase;
+
+    uint8_t user_data[0x400];
+    void *user_address;
+    size_t size;
+    upage_ref_t page_ref;
+
+    /* This function no longer exists in 5.x+. */
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+        generic_panic();
+    }
+
+    /* Copy keydata */
+    sealed_kek[0] = args->X[1];
+    sealed_kek[1] = args->X[2];
+    usecase = args->X[3] & 7;
+    user_address = (void *)args->X[4];
+    size = (size_t)args->X[5];
+    wrapped_key[0] = args->X[6];
+    wrapped_key[1] = args->X[7];
+
+    if (usecase > CRYPTOUSECASE_RSAIMPORT) {
+        return 2;
+    } 
+    if (usecase == 0) {
+        if (size < 0x31 || size > 0x240) {
+            return 2;
+        }
+    } else if (size < 0x130 || size > 0x240) {
+        return 2;
+    }
+
+    if (upage_init(&page_ref, user_address) == 0 || user_copy_to_secure(&page_ref, user_data, user_address, size) == 0) {
+        return 2;
+    }
+
+    flush_dcache_range(user_data, user_data + size);
+
+    size_t out_size;
+
+    if ((out_size = gcm_decrypt_key(user_data, size, user_data, size, sealed_kek, 0x10, wrapped_key, 0x10, g_rsausecase_to_cryptousecase[usecase], true, NULL)) == 0) {
+        return 2;
+    }
+
+    unsigned int exponent_id;
+
+    switch (usecase) {
+        case 0:
+            if (secure_copy_to_user(&page_ref, user_address, user_data, size) == 0) {
+                return 2;
+            } 
+            return 0;
+        case 1:
+            exponent_id = 1;
+            break;
+        case 2:
+            exponent_id = 0;
+            break;
+        case 3:
+            exponent_id = 2;
+            break;
+        case 4:
+            exponent_id = 3;
+            break;
+        default:
+            generic_panic();
+    }
+
+    /* Copy key to global. */
+    memcpy(g_imported_exponents[exponent_id], user_data, 0x100);
+    return 0;
+
 }

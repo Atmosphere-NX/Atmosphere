@@ -9,6 +9,7 @@
 #include "bootconfig.h"
 
 static boot_reason_t g_boot_reason = {0};
+static uint64_t g_package2_hash_for_recovery[4] = {0};
 
 bool bootconfig_matches_hardware_info(void) {
     uint32_t hardware_info[4];
@@ -112,6 +113,16 @@ uint64_t bootconfig_get_kernel_memory_configuration(void) {
 
 void bootconfig_load_boot_reason(volatile boot_reason_t *boot_reason) {
     g_boot_reason = *boot_reason;
+}
+
+void bootconfig_set_package2_hash_for_recovery(const void *package2, size_t package2_size) {
+    se_calculate_sha256(g_package2_hash_for_recovery, package2, package2_size);
+}
+
+void bootconfig_get_package2_hash_for_recovery(uint64_t *out_hash) {
+    for (unsigned int i = 0; i < 4; i++) {
+        out_hash[i] = g_package2_hash_for_recovery[i];
+    }
 }
 
 bool bootconfig_is_recovery_boot(void) {

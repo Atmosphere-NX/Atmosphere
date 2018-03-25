@@ -190,6 +190,8 @@ uint32_t fuse_get_sku_info(void);
 uint32_t fuse_get_spare_bit(uint32_t idx);
 uint32_t fuse_get_reserved_odm(uint32_t idx);
 
+uint32_t fuse_get_5x_key_generation(void);
+
 uint32_t fuse_get_bootrom_patch_version(void);
 uint64_t fuse_get_device_id(void);
 uint32_t fuse_get_dram_id(void);

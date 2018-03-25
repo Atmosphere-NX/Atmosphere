@@ -5,6 +5,7 @@
 #include "arm.h"
 #include "package2.h"
 #include "timers.h"
+#include "exocfg.h"
 
 #undef  MAILBOX_NX_BOOTLOADER_BASE
 #undef  TIMERS_BASE
@@ -149,6 +150,7 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
     */
     func_list->funcs.flush_dcache_all();
     func_list->funcs.invalidate_icache_all();
+    
 
     /* TODO: Set NX BOOTLOADER clock time field */
     
@@ -157,10 +159,13 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
         do_relocation(reloc_list, i);
     }
     /* At this point, we can (and will) access functions located in .warm_crt0 */
+    
+    /* Set target firmware. */
+    func_list->target_firmware = exosphere_get_target_firmware_physical();
 
     /* Initialize DMA controllers, and write to AHB_GIZMO_TZRAM. */
     /* TZRAM accesses should work normally after this point. */
-    func_list->funcs.init_dma_controllers();
+    func_list->funcs.init_dma_controllers(func_list->target_firmware);
 
     configure_ttbls();
     func_list->funcs.set_memory_registers_enable_mmu();

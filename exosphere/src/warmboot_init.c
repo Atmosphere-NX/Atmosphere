@@ -3,6 +3,7 @@
 #include "mc.h"
 #include "arm.h"
 #include "synchronization.h"
+#include "exocfg.h"
 
 #undef  MC_BASE
 #define MC_BASE (MMIO_GET_DEVICE_PA(MMIO_DEVID_MC))
@@ -29,39 +30,61 @@ void warmboot_crt0_critical_section_enter(volatile critical_section_t *critical_
     critical_section_enter(critical_section);
 }
 
-void init_dma_controllers(void) {
-    /* TODO: 4.x does slightly different init. How should we handle this? We can't detect master key revision yet. */
+void init_dma_controllers(unsigned int target_firmware) {
+    if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_400) {
+        /* Set some unknown registers in HOST1X. */
+        MAKE_REG32(0x500038F8) &= 0xFFFFFFFE;
+        MAKE_REG32(0x50003300) = 0;
 
-    /* SYSCTR0_CNTCR_0 = ENABLE | HALT_ON_DEBUG (write-once init) */
-    MAKE_REG32(0x700F0000) = 3;
+        /* AHB_MASTER_SWID_0 - Enable SWID[0] for all bits. */
+        MAKE_REG32(0x6000C018) = 0xFFFFFFFF;
 
-    /* Set some unknown registers in HOST1X. */
-    MAKE_REG32(0x500038F8) &= 0xFFFFFFFE;
-    MAKE_REG32(0x50003300) = 0;
+        /* AHB_MASTER_SWID_1 */
+        MAKE_REG32(0x6000C038) = 0x0;
 
-    /* AHB_MASTER_SWID_0 */
-    MAKE_REG32(0x6000C018) = 0;
+        /* MSELECT_CONFIG_0 |= WRAP_TO_INCR_SLAVE0(APC) | WRAP_TO_INCR_SLAVE1(PCIe) | WRAP_TO_INCR_SLAVE2(GPU) */
+        MAKE_REG32(0x50060000) |= 0x38000000;
 
-    /* AHB_MASTER_SWID_1 - Makes USB1/USB2 use SWID[1] */
-    MAKE_REG32(0x6000C038) = 0x40040;
+        /* AHB_ARBITRATION_DISABLE_0 - Disables USB and USB2 from arbitration */
+        MAKE_REG32(0x6000C004) = 0x40040;
 
-    /* APBDMA_CHANNEL_SWID_0 = ~0 (SWID = 1 for all APB-DMA channels) */
-    MAKE_REG32(0x6002003C) = 0xFFFFFFFF;
+        /* AHB_ARBITRATION_PRIORITY_CTRL_0 - Select high prio group with prio 7 */
+        MAKE_REG32(0x6000C008) = 0xE0000001;
 
-    /* APBDMA_CHANNEL_SWID1_0 = 0 (See above) */
-    MAKE_REG32(0x60020054) = 0;
+        /* AHB_GIZMO_TZRAM_0 |= DONT_SPLIT_AHB_WR */
+        MAKE_REG32(0x6000C054) = 0x80;
+    } else {
+        /* SYSCTR0_CNTCR_0 = ENABLE | HALT_ON_DEBUG (write-once init) */
+        MAKE_REG32(0x700F0000) = 3;
 
-    /* APBDMA_SECURITY_REG_0 = 0 (All APB-DMA channels non-secure) */
-    MAKE_REG32(0x60020038) = 0;
+        /* Set some unknown registers in HOST1X. */
+        MAKE_REG32(0x500038F8) &= 0xFFFFFFFE;
+        MAKE_REG32(0x50003300) = 0;
 
-    /* MSELECT_CONFIG_0 |= WRAP_TO_INCR_SLAVE0(APC) | WRAP_TO_INCR_SLAVE1(PCIe) | WRAP_TO_INCR_SLAVE2(GPU) */
-    MAKE_REG32(0x50060000) |= 0x38000000;
+        /* AHB_MASTER_SWID_0 */
+        MAKE_REG32(0x6000C018) = 0;
 
-    /* AHB_ARBITRATION_PRIORITY_CTRL_0 - Select high prio group with prio 7 */
-    MAKE_REG32(0x6000C008) = 0xE0000001;
+        /* AHB_MASTER_SWID_1 - Makes USB1/USB2 use SWID[1] */
+        MAKE_REG32(0x6000C038) = 0x40040;
 
-    /* AHB_GIZMO_TZRAM_0 |= DONT_SPLIT_AHB_WR */
-    MAKE_REG32(0x6000C054) = 0x80;
+        /* APBDMA_CHANNEL_SWID_0 = ~0 (SWID = 1 for all APB-DMA channels) */
+        MAKE_REG32(0x6002003C) = 0xFFFFFFFF;
+
+        /* APBDMA_CHANNEL_SWID1_0 = 0 (See above) */
+        MAKE_REG32(0x60020054) = 0;
+
+        /* APBDMA_SECURITY_REG_0 = 0 (All APB-DMA channels non-secure) */
+        MAKE_REG32(0x60020038) = 0;
+
+        /* MSELECT_CONFIG_0 |= WRAP_TO_INCR_SLAVE0(APC) | WRAP_TO_INCR_SLAVE1(PCIe) | WRAP_TO_INCR_SLAVE2(GPU) */
+        MAKE_REG32(0x50060000) |= 0x38000000;
+
+        /* AHB_ARBITRATION_PRIORITY_CTRL_0 - Select high prio group with prio 7 */
+        MAKE_REG32(0x6000C008) = 0xE0000001;
+
+        /* AHB_GIZMO_TZRAM_0 |= DONT_SPLIT_AHB_WR */
+        MAKE_REG32(0x6000C054) = 0x80;
+    }
 }
 
 void set_memory_registers_enable_mmu(void) {
@@ -144,7 +167,7 @@ void warmboot_init(boot_func_list_t *func_list) {
 
     /* On warmboot (not cpu_on) only */
     if (MC_SECURITY_CFG3_0 == 0) {
-        init_dma_controllers();
+        init_dma_controllers(func_list->target_firmware);
     }
 
     identity_remap_tzram();

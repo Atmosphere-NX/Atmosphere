@@ -10,6 +10,7 @@ static inline uint32_t get_special_clk_reg(CarDevice dev) {
         case CARDEVICE_UARTB: return 0x17C;
         case CARDEVICE_I2C1: return 0x124;
         case CARDEVICE_I2C5: return 0x128;
+        case CARDEVICE_ACTMON: return 0x3E8;
         case CARDEVICE_BPMP: return 0;
         default: generic_panic();
     }
@@ -21,6 +22,7 @@ static inline uint32_t get_special_clk_val(CarDevice dev) {
         case CARDEVICE_UARTB: return 0;
         case CARDEVICE_I2C1: return (6 << 29);
         case CARDEVICE_I2C5: return (6 << 29);
+        case CARDEVICE_ACTMON: return (6 << 29);
         case CARDEVICE_BPMP: return 0;
         default: generic_panic();
     }

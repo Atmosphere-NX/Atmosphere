@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "arm.h"
 #include "utils.h"
 #include "fuse.h"
 #include "gcm.h"
@@ -112,7 +113,7 @@ static void ghash(void *dst, const void *data, size_t data_size, const void *j_b
 
 
 /* This function is a doozy. It decrypts and validates a (non-standard) AES-GCM wrapped keypair. */
-size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_size, const void *sealed_kek, size_t kek_size, const void *wrapped_key, size_t key_size, unsigned int usecase, bool is_personalized) {
+size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_size, const void *sealed_kek, size_t kek_size, const void *wrapped_key, size_t key_size, unsigned int usecase, bool is_personalized,  uint8_t *out_deviceid_high) {
     if (is_personalized == 0) {
         /* Devkit keys use a different keyformat without a MAC/Device ID. */
         if (src_size <= 0x10 || src_size - 0x10 > dst_size) {
@@ -163,8 +164,48 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
     if ((read64be(intermediate_buf, src_size - 0x28) & 0x00FFFFFFFFFFFFFFULL) != fuse_get_device_id()) {
         return 0;
     }
+
+    if (out_deviceid_high != NULL) {
+        *out_deviceid_high = intermediate_buf[src_size - 0x28];
+    }
         
     memcpy(dst, intermediate_buf, src_size - 0x30);
     memset(intermediate_buf, 0, sizeof(intermediate_buf));
     return src_size - 0x30;
+}
+
+void gcm_encrypt_key(void *dst, size_t dst_size, const void *src, size_t src_size, const void *sealed_kek, size_t kek_size, const void *wrapped_key, size_t key_size, unsigned int usecase, uint64_t deviceid_high) {
+    uint8_t intermediate_buf[0x400] = {0};
+    if (src_size + 0x30 > dst_size) {
+        generic_panic();
+    }
+
+    /* Unwrap the key */
+    unseal_key(KEYSLOT_SWITCH_TEMPKEY, sealed_kek, kek_size, usecase);
+    decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, KEYSLOT_SWITCH_TEMPKEY, wrapped_key, key_size);
+
+    /* Generate a random CTR. */
+    flush_dcache_range(intermediate_buf, intermediate_buf + 0x10);
+    se_generate_random(KEYSLOT_SWITCH_RNGKEY, intermediate_buf, 0x10);
+    flush_dcache_range(intermediate_buf, intermediate_buf + 0x10);
+
+    /* Write Device ID. */
+    write64be(intermediate_buf, src_size + 0x18, fuse_get_device_id() | (deviceid_high << 56));
+
+
+    /* J = GHASH(CTR); */
+    uint8_t j_block[0x10];
+    ghash(j_block, intermediate_buf, 0x10, NULL, false);
+
+    /* MAC = GHASH(PLAINTEXT) ^ ENCRYPT(J) */
+    /* Note: That MAC is calculated over plaintext is non-standard. */
+    /* It is supposed to be over the ciphertext. */
+    ghash(intermediate_buf + src_size + 0x20, intermediate_buf + 0x10, src_size + 0x10, j_block, true);
+
+    /* Encrypt the GCM keypair, AES-CTR with CTR = blob[:0x10]. */
+    se_aes_ctr_crypt(KEYSLOT_SWITCH_TEMPKEY, intermediate_buf + 0x10, src_size + 0x10, intermediate_buf + 0x10, src_size + 0x10, intermediate_buf, 0x10);
+
+    /* Copy the wrapped key out. */
+    memcpy(dst, intermediate_buf, src_size + 0x30);
+    memset(intermediate_buf, 0, sizeof(intermediate_buf));
 }

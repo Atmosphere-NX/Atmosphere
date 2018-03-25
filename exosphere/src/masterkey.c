@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "utils.h"
 #include "masterkey.h"
@@ -9,6 +10,7 @@ static unsigned int g_mkey_revision = 0;
 static bool g_determined_mkey_revision = false;
 
 static uint8_t g_old_masterkeys[MASTERKEY_REVISION_MAX][0x10];
+static uint8_t g_old_devicekeys[MASTERKEY_NUM_NEW_DEVICE_KEYS - 1][0x10];
 
 /* TODO: Dev keys. */
 
@@ -19,6 +21,7 @@ static const uint8_t mkey_vectors[MASTERKEY_REVISION_MAX][0x10] =
     {0x29, 0x4C, 0x04, 0xC8, 0xEB, 0x10, 0xED, 0x9D, 0x51, 0x64, 0x97, 0xFB, 0xF3, 0x4D, 0x50, 0xDD}, /* Master key 00 encrypted with Master key 01. */
     {0xDE, 0xCF, 0xEB, 0xEB, 0x10, 0xAE, 0x74, 0xD8, 0xAD, 0x7C, 0xF4, 0x9E, 0x62, 0xE0, 0xE8, 0x72}, /* Master key 01 encrypted with Master key 02. */
     {0x0A, 0x0D, 0xDF, 0x34, 0x22, 0x06, 0x6C, 0xA4, 0xE6, 0xB1, 0xEC, 0x71, 0x85, 0xCA, 0x4E, 0x07}, /* Master key 02 encrypted with Master key 03. */
+    {0x6E, 0x7D, 0x2D, 0xC3, 0x0F, 0x59, 0xC8, 0xFA, 0x87, 0xA8, 0x2E, 0xD5, 0x89, 0x5E, 0xF3, 0xE9}, /* Master key 03 encrypted with Master key 04. */
 };
 
 bool check_mkey_revision(unsigned int revision) {
@@ -86,5 +89,36 @@ unsigned int mkey_get_keyslot(unsigned int revision) {
         /* Load into a temp keyslot. */
         set_aes_keyslot(KEYSLOT_SWITCH_TEMPKEY, g_old_masterkeys[revision], 0x10);
         return KEYSLOT_SWITCH_TEMPKEY;
+    }
+}
+
+
+void set_old_devkey(unsigned int revision, const uint8_t *key) {
+    if (revision < MASTERKEY_REVISION_400_410 || MASTERKEY_REVISION_500_CURRENT <= revision) {
+        generic_panic();
+    }
+
+    memcpy(g_old_devicekeys[revision - MASTERKEY_REVISION_400_410], key, 0x10);
+}
+
+unsigned int devkey_get_keyslot(unsigned int revision) {
+    if (!g_determined_mkey_revision || revision >= MASTERKEY_REVISION_MAX) {
+        generic_panic();
+    }
+
+    if (revision > g_mkey_revision) {
+        generic_panic();
+    }
+
+    if (revision >= 1) {
+        if (revision == MASTERKEY_REVISION_500_CURRENT) {
+            return KEYSLOT_SWITCH_DEVICEKEY;
+        } else {
+            /* Load into a temp keyslot. */
+            set_aes_keyslot(KEYSLOT_SWITCH_TEMPKEY, g_old_devicekeys[revision - MASTERKEY_REVISION_400_410], 0x10);
+            return KEYSLOT_SWITCH_TEMPKEY;
+        }
+    } else {
+        return KEYSLOT_SWITCH_4XOLDDEVICEKEY;
     }
 }

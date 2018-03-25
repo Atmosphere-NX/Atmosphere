@@ -5,6 +5,7 @@
 #include "bootup.h"
 
 #include "fuse.h"
+#include "bpmp.h"
 #include "flow.h"
 #include "pmc.h"
 #include "mc.h"
@@ -20,6 +21,7 @@
 #include "cpu_context.h"
 #include "actmon.h"
 #include "sysctr0.h"
+#include "exocfg.h"
 
 #include "mmu.h"
 #include "arm.h"
@@ -49,7 +51,7 @@ void bootup_misc_mmio(void) {
     se_generate_srk(KEYSLOT_SWITCH_SRKGENKEY);
 
     /* TODO: Why does this DRAM write occur? */
-    if (!g_has_booted_up && mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+    if (!g_has_booted_up && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         /* 4.x writes this magic number into DRAM. Why? */
         (*(volatile uint32_t *)(0x8005FFFC)) = 0xC0EDBBCC;
     }
@@ -94,7 +96,7 @@ void bootup_misc_mmio(void) {
         /* Also mark I2C5 secure only, */
         sec_disable_1 |= 0x20000000;
     }
-    if (hardware_type != 0 && mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+    if (hardware_type != 0 && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         /* Starting on 4.x on non-dev units, mark UARTB, UARTC, SPI4, I2C3 secure only. */
         sec_disable_1 |= 0x10806000;
         /* Starting on 4.x on non-dev units, mark SDMMC1 secure only. */
@@ -164,7 +166,7 @@ void bootup_misc_mmio(void) {
             set_core_is_active(core, false);
         }
         g_has_booted_up = true;
-    } else if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT) {
+    } else if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400) {
         /* TODO: What are these MC reg writes? */
         MAKE_MC_REG(0x65C) = 0xFFFFF000;
         MAKE_MC_REG(0x660) = 0;
@@ -174,7 +176,61 @@ void bootup_misc_mmio(void) {
 }
 
 void setup_4x_mmio(void) {
-    /* TODO */
+    /* TODO: What are these MC reg writes? */
+    MAKE_MC_REG(0x65C) = 0xFFFFF000;
+    MAKE_MC_REG(0x660) = 0;
+    MAKE_MC_REG(0x964) |= 1;
+    CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
+    /* TODO: What are these PMC scratch writes? */
+    APBDEV_PMC_SECURE_SCRATCH51_0 = (APBDEV_PMC_SECURE_SCRATCH51_0 & 0xFFFF8000) | 0x4000;
+    APBDEV_PMC_SECURE_SCRATCH16_0 &= 0x3FFFFFFF;
+    APBDEV_PMC_SECURE_SCRATCH55_0 = (APBDEV_PMC_SECURE_SCRATCH55_0 & 0xFF000FFF) | 0x1000;
+    APBDEV_PMC_SECURE_SCRATCH74_0 = 0x40008000;
+    APBDEV_PMC_SECURE_SCRATCH75_0 = 0x40000;
+    APBDEV_PMC_SECURE_SCRATCH76_0 = 0x0;
+    APBDEV_PMC_SECURE_SCRATCH77_0 = 0x0;
+    APBDEV_PMC_SECURE_SCRATCH78_0 = 0x0;
+    APBDEV_PMC_SECURE_SCRATCH99_0 = 0x40008000;
+    APBDEV_PMC_SECURE_SCRATCH100_0 = 0x40000;
+    APBDEV_PMC_SECURE_SCRATCH101_0 = 0x0;
+    APBDEV_PMC_SECURE_SCRATCH102_0 = 0x0;
+    APBDEV_PMC_SECURE_SCRATCH103_0 = 0x0;
+    APBDEV_PMC_SECURE_SCRATCH39_0 = (APBDEV_PMC_SECURE_SCRATCH39_0 & 0xF8000000) | 0x88;
+    /* TODO: Do we want to bother locking the secure scratch registers? */
+    /* 4.x Jamais Vu mitigations. */
+    /* Overwrite exception vectors. */
+    BPMP_VECTOR_RESET = BPMP_MITIGATION_RESET_VAL;
+    BPMP_VECTOR_UNDEF = BPMP_MITIGATION_RESET_VAL;
+    BPMP_VECTOR_SWI = BPMP_MITIGATION_RESET_VAL;
+    BPMP_VECTOR_PREFETCH_ABORT = BPMP_MITIGATION_RESET_VAL;
+    BPMP_VECTOR_DATA_ABORT = BPMP_MITIGATION_RESET_VAL;
+    BPMP_VECTOR_UNK = BPMP_MITIGATION_RESET_VAL;
+    BPMP_VECTOR_IRQ = BPMP_MITIGATION_RESET_VAL;
+    BPMP_VECTOR_FIQ = BPMP_MITIGATION_RESET_VAL;
+    /* Disable AHB arbitration for the BPMP. */
+    AHB_ARBITRATION_DISABLE_0 |= 2;
+    /* Set SMMU for BPMP/APB-DMA to point to TZRAM. */
+    MC_SMMU_PTB_ASID_0 = 1;
+    MC_SMMU_PTB_DATA_0 = 0x70012;
+    MC_SMMU_AVPC_ASID_0 = 0x80000001;
+    MC_SMMU_PPCS1_ASID_0 = 0x80000001;
+    /* Wait for the BPMP to halt. */
+    while ((FLOW_CTLR_HALT_COP_EVENTS_0 >> 29) != 5) {
+        wait(1);
+    }
+    /* If not in a debugging context, setup the activity monitor. */
+    if ((get_debug_authentication_status() & 3) != 3) {
+        FLOW_CTLR_HALT_COP_EVENTS_0 = 0x40000000;
+        clkrst_reboot(CARDEVICE_ACTMON);
+        /* Sample every microsecond. */
+        ACTMON_GLB_PERIOD_CTRL_0 = 0x100;
+        /* Fire interrupt every wakeup. */
+        ACTMON_COP_UPPER_WMARK_0 = 0;
+        /* Cause a panic() on BPMP wakeup. */
+        actmon_set_callback(actmon_on_bpmp_wakeup);
+        /* Enable interrupt when above watermark, periodic sampling. */
+        ACTMON_COP_CTRL_0 = 0xC0040000;
+    }
 }
 
 void setup_current_core_state(void) {
@@ -226,7 +282,7 @@ void identity_unmap_iram_cd_tzram(void) {
 }
 
 void secure_additional_devices(void) {
-    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 |= 0x2000; /* make PMC secure-only (2.x+ but see note below) */
         APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 |= 0X510;  /* make MC0, MC1, MCB secure-only (4.x+) */
     } else {

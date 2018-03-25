@@ -8,6 +8,7 @@
 #include "fuse.h"
 #include "utils.h"
 #include "masterkey.h"
+#include "exocfg.h"
 
 static bool g_battery_profile = false;
 
@@ -81,7 +82,7 @@ uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
             break;
         case CONFIGITEM_BOOTREASON:
             /* For some reason, Nintendo removed it on 4.0 */
-            if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT) {
+            if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400) {
                 *p_outvalue = bootconfig_get_boot_reason();
             } else {
                 result = 2;
@@ -101,8 +102,32 @@ uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
             break;
         case CONFIGITEM_ODM4BIT10_4X:
             /* Added on 4.x ... where is it being used? */
-            if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+            if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
                 *p_outvalue = (fuse_get_reserved_odm(4) >> 10) & 1;
+            } else {
+                result = 2;
+            }
+            break;
+        case CONFIGITEM_NEWHARDWARETYPE_5X:
+            /* Added in 5.x, currently hardcoded to 0. */
+            if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+                *p_outvalue = 0;
+            } else {
+                result = 2;
+            }
+            break;
+        case CONFIGITEM_NEWKEYGENERATION_5X:
+            /* Added in 5.x. */
+            if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+                *p_outvalue = fuse_get_5x_key_generation();
+            } else {
+                result = 2;
+            }
+            break;
+        case CONFIGITEM_PACKAGE2HASH_5X:
+            /* Added in 5.x. */
+            if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500 && bootconfig_is_recovery_boot()) {
+                bootconfig_get_package2_hash_for_recovery(p_outvalue);
             } else {
                 result = 2;
             }

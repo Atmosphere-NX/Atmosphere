@@ -23,4 +23,6 @@ static inline uintptr_t get_bpmp_vector_base(void) {
 #define BPMP_VECTOR_IRQ            MAKE_REG32(BPMP_VECTOR_BASE + 0x218)
 #define BPMP_VECTOR_FIQ            MAKE_REG32(BPMP_VECTOR_BASE + 0x21C)
 
+#define BPMP_MITIGATION_RESET_VAL  0x7D000000
+
 #endif

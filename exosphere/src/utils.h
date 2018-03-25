@@ -28,9 +28,10 @@
 /* For warmboot (and coldboot crt0) */
 typedef struct {
     size_t      nb_funcs;
+    uint64_t target_firmware;
     union {
         struct {
-            void (*init_dma_controllers)(void);
+            void (*init_dma_controllers)(unsigned int);
             void (*set_memory_registers_enable_mmu)(void);
             void (*flush_dcache_all)(void);
             void (*invalidate_icache_all)(void);

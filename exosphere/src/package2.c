@@ -15,9 +15,36 @@
 #include "randomcache.h"
 #include "timers.h"
 #include "bootconfig.h"
+#include "exocfg.h"
+#include "smc_api.h"
 
 extern void *__start_cold_addr;
 extern size_t __bin_size;
+
+static void derive_new_device_keys(unsigned int keygen_keyslot) {
+    uint8_t work_buffer[0x10];
+    static const uint8_t new_device_key_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
+        {0x8B, 0x4E, 0x1C, 0x22, 0x42, 0x07, 0xC8, 0x73, 0x56, 0x94, 0x08, 0x8B, 0xCC, 0x47, 0x0F, 0x5D}, /* 4.x New Device Key Source. */
+        {0x6C, 0xEF, 0xC6, 0x27, 0x8B, 0xEC, 0x8A, 0x91, 0x99, 0xAB, 0x24, 0xAC, 0x4F, 0x1C, 0x8F, 0x1C}  /* 5.x New Device Key Source. */
+    };
+
+    static const uint8_t new_device_keygen_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
+        {0x88, 0x62, 0x34, 0x6E, 0xFA, 0xF7, 0xD8, 0x3F, 0xE1, 0x30, 0x39, 0x50, 0xF0, 0xB7, 0x5D, 0x5D}, /* 4.x New Device Keygen Source. */
+        {0x06, 0x1E, 0x7B, 0xE9, 0x6D, 0x47, 0x8C, 0x77, 0xC5, 0xC8, 0xE7, 0x94, 0x9A, 0xA8, 0x5F, 0x2E}  /* 5.x New Device Keygen Source. */
+    };
+    for (unsigned int revision = 0; revision < MASTERKEY_NUM_NEW_DEVICE_KEYS; revision++) {
+        se_aes_ecb_decrypt_block(keygen_keyslot, work_buffer, 0x10, new_device_key_sources[revision], 0x10);
+        decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, mkey_get_keyslot(0), new_device_keygen_sources[revision], 0x10);
+        if (revision < MASTERKEY_NUM_NEW_DEVICE_KEYS - 1) {
+            se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10, work_buffer, 0x10);
+            set_old_devkey(revision + MASTERKEY_REVISION_400_410, work_buffer);
+        } else {
+            decrypt_data_into_keyslot(KEYSLOT_SWITCH_DEVICEKEY, KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10);
+        }
+    }
+    set_aes_keyslot_flags(KEYSLOT_SWITCH_DEVICEKEY, 0xFF);
+    clear_aes_keyslot(keygen_keyslot);
+}
 
 /* Hardware init, sets up the RNG and SESSION keyslots, derives new DEVICE key. */
 static void setup_se(void) {
@@ -52,13 +79,18 @@ static void setup_se(void) {
     /* Detect Master Key revision. */
     mkey_detect_revision();
     
-    /* Setup new device key, if necessary. */
-    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
-        const uint8_t new_devicekey_source_4x[0x10] = {0x8B, 0x4E, 0x1C, 0x22, 0x42, 0x07, 0xC8, 0x73, 0x56, 0x94, 0x08, 0x8B, 0xCC, 0x47, 0x0F, 0x5D};
-        se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_4XNEWDEVICEKEYGENKEY, work_buffer, 0x10, new_devicekey_source_4x, 0x10);
-        decrypt_data_into_keyslot(KEYSLOT_SWITCH_DEVICEKEY, KEYSLOT_SWITCH_4XNEWCONSOLEKEYGENKEY, work_buffer, 0x10);
-        clear_aes_keyslot(KEYSLOT_SWITCH_4XNEWCONSOLEKEYGENKEY);
-        set_aes_keyslot_flags(KEYSLOT_SWITCH_DEVICEKEY, 0xFF);
+    /* Derive new device keys. */
+    switch (exosphere_get_target_firmware()) {
+        case EXOSPHERE_TARGET_FIRMWARE_100:
+        case EXOSPHERE_TARGET_FIRMWARE_200:
+        case EXOSPHERE_TARGET_FIRMWARE_300:
+            break;
+        case EXOSPHERE_TARGET_FIRMWARE_400:
+            derive_new_device_keys(KEYSLOT_SWITCH_4XNEWDEVICEKEYGENKEY);
+            break;
+        case EXOSPHERE_TARGET_FIRMWARE_500:
+            derive_new_device_keys(KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY);
+            break;
     }
 
     se_initialize_rng(KEYSLOT_SWITCH_DEVICEKEY);
@@ -149,6 +181,10 @@ static void verify_header_signature(package2_header_t *header) {
     if (bootconfig_is_package2_unsigned() == 0 && se_rsa2048_pss_verify(header->signature, 0x100, modulus, 0x100, header->encrypted_header, 0x100) == 0) {
         panic(0xF0000001); /* Invalid PK21 signature. */
     }
+}
+
+static uint32_t get_package2_size(package2_meta_t *metadata) {
+    return metadata->ctr_dwords[0] ^ metadata->ctr_dwords[2] ^ metadata->ctr_dwords[3];
 }
 
 static bool validate_package2_metadata(package2_meta_t *metadata) {
@@ -355,6 +391,9 @@ uintptr_t get_pk2ldr_stack_address(void) {
 /* This function is called during coldboot init, and validates a package2. */
 /* This package2 is read into memory by a concurrent BPMP bootloader. */
 void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
+    /* Load Exosphere-specific config. */
+    exosphere_load_config();
+        
     /* Setup the Security Engine. */
     setup_se();
 
@@ -385,7 +424,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     setup_boot_config();
 
     /* Synchronize with NX BOOTLOADER. */
-    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_DRAM_INITIALIZED_4X);
         /* TODO: copy_warmboot_bin_to_dram(); */
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2_4X);
@@ -411,6 +450,11 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* Decrypt header, get key revision required. */
     uint32_t package2_mkey_rev = decrypt_and_validate_header(&header);
 
+    /* Copy hash, if necessary. */
+    if (bootconfig_is_recovery_boot()) {
+        bootconfig_set_package2_hash_for_recovery(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, get_package2_size(&header.metadata));
+    }
+
     /* Load Package2 Sections. */
     load_package2_sections(&header.metadata, package2_mkey_rev);
 
@@ -427,12 +471,15 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* Synchronize with NX BOOTLOADER. */
     sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
 
-    if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT) {
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED_4X);
-        setup_4x_mmio(); /* TODO */
+        setup_4x_mmio();
     } else {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
     }
+    
+    /* Prepare the SMC API with version-dependent SMCs. */
+    set_version_specific_smcs();
 
     /* Update SCR_EL3 depending on value in Bootconfig. */
     set_extabt_serror_taken_to_el3(bootconfig_take_extabt_serror_to_el3());

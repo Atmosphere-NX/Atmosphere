@@ -19,6 +19,7 @@
 #include "smc_api.h"
 #include "timers.h"
 #include "misc.h"
+#include "exocfg.h"
 
 extern const uint8_t bpmpfw_bin[];
 extern const uint32_t bpmpfw_bin_size;
@@ -123,14 +124,14 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     }
     
     /* For debugging, make this check always pass. */
-    if ((mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT || (get_debug_authentication_status() & 3) == 3)) {
+    if ((exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400 || (get_debug_authentication_status() & 3) == 3)) {
         FLOW_CTLR_HALT_COP_EVENTS_0 = 0x50000000;
     } else {
         FLOW_CTLR_HALT_COP_EVENTS_0 = 0x40000000;
     }
         
     /* Jamais Vu mitigation #2: Ensure the BPMP is halted. */
-    if (mkey_get_revision() < MASTERKEY_REVISION_400_CURRENT || (get_debug_authentication_status() & 3) == 3) {
+    if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400 || (get_debug_authentication_status() & 3) == 3) {
         /* BPMP should just be plainly halted, in debugging conditions. */
         if (FLOW_CTLR_HALT_COP_EVENTS_0 != 0x50000000) {
             generic_panic();

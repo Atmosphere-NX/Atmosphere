@@ -18,6 +18,9 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args);
 uint32_t user_load_titlekey(smc_args_t *args);
 uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args);
 
+uint32_t user_encrypt_rsa_key_for_import(smc_args_t *args);
+uint32_t user_decrypt_or_import_rsa_key(smc_args_t *args);
+
 
 void set_crypt_aes_done(bool done);
 bool get_crypt_aes_done(void);

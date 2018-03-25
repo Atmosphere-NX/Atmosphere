@@ -242,6 +242,7 @@ g_coldboot_crt0_relocation_list:
 .global     g_coldboot_crt0_main_func_list
 g_coldboot_crt0_main_func_list:
     .quad   4   /* Number of functions */
+    .quad   0   /* Target firmware, overwritten in coldboot_init. */
     /* Functions */
     .quad   init_dma_controllers
     .quad   set_memory_registers_enable_mmu
@@ -252,4 +253,4 @@ g_coldboot_crt0_main_func_list:
 .align      3
 .global     g_warmboot_crt0_main_func_list
 g_warmboot_crt0_main_func_list:
-    .space (4 * 8)
+    .space (6 * 8)

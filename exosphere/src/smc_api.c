@@ -19,6 +19,7 @@
 #include "userpage.h"
 #include "titlekey.h"
 #include "lp0.h"
+#include "exocfg.h"
 
 #define SMC_USER_HANDLERS 0x13
 #define SMC_PRIV_HANDLERS 0x9
@@ -42,6 +43,10 @@ uint32_t smc_secure_exp_mod(smc_args_t *args);
 uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args);
 uint32_t smc_load_titlekey(smc_args_t *args);
 uint32_t smc_unwrap_aes_wrapped_titlekey(smc_args_t *args);
+
+/* 5.x SMC prototypes. */
+uint32_t smc_encrypt_rsa_key_for_import(smc_args_t *args);
+uint32_t smc_decrypt_or_import_rsa_key(smc_args_t *args);
 
 /* Privileged SMC prototypes */
 uint32_t smc_cpu_suspend(smc_args_t *args);
@@ -113,6 +118,32 @@ static atomic_flag g_is_priv_smc_in_progress = ATOMIC_FLAG_INIT;
 
 /* Global for smc_configure_carveout. */
 static bool g_configured_carveouts[2] = {false, false};
+
+void set_version_specific_smcs(void) {
+    switch (exosphere_get_target_firmware()) {
+        case EXOSPHERE_TARGET_FIRMWARE_100:
+            /* 1.0.0 doesn't have ConfigureCarveout or ReadWriteRegister. */
+            g_smc_priv_table[7].handler = NULL;
+            g_smc_priv_table[8].handler = NULL;
+            /* 1.0.0 doesn't have UnwrapAesWrappedTitlekey. */
+            g_smc_user_table[0x12].handler = NULL;
+            break;
+        case EXOSPHERE_TARGET_FIRMWARE_200:
+        case EXOSPHERE_TARGET_FIRMWARE_300:
+        case EXOSPHERE_TARGET_FIRMWARE_400:
+            /* Do nothing. */
+            break;
+        case EXOSPHERE_TARGET_FIRMWARE_500:
+            /* No more LoadSecureExpModKey. */
+            g_smc_user_table[0xE].handler = NULL;
+            g_smc_user_table[0xC].id = 0xC300D60C;
+            g_smc_user_table[0xC].handler = smc_encrypt_rsa_key_for_import;
+            g_smc_user_table[0xD].handler = smc_decrypt_or_import_rsa_key;
+            break;
+        default:
+            panic_predefined(0xF);
+    }
+}
 
 
 uintptr_t get_smc_core012_stack_address(void) {
@@ -427,6 +458,15 @@ uint32_t smc_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
     return smc_wrapper_sync(args, user_unwrap_aes_wrapped_titlekey);
 }
 
+uint32_t smc_encrypt_rsa_key_for_import(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_encrypt_rsa_key_for_import);
+}
+
+uint32_t smc_decrypt_or_import_rsa_key(smc_args_t *args) {
+    return smc_wrapper_sync(args, user_decrypt_or_import_rsa_key);
+}
+
+
 uint32_t smc_cpu_on(smc_args_t *args) {
     return cpu_on((uint32_t)args->X[1], args->X[2], args->X[3]);
 }
@@ -496,7 +536,7 @@ uint32_t smc_read_write_register(smc_args_t *args) {
         } else {
             return 2;
         }
-    } else if (mkey_get_revision() >= MASTERKEY_REVISION_400_CURRENT && MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) <= address &&
+    } else if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400 && MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) <= address &&
                address < MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) + MMIO_GET_DEVICE_SIZE(MMIO_DEVID_MC)) {
         /* Memory Controller RW supported only on 4.0.0+ */
         const uint8_t mc_whitelist[0x68] = {

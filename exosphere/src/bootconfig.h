@@ -47,6 +47,9 @@ void bootconfig_clear(void);
 
 void bootconfig_load_boot_reason(volatile boot_reason_t *boot_reason);
 
+void bootconfig_set_package2_hash_for_recovery(const void *package2, size_t package2_size);
+void bootconfig_get_package2_hash_for_recovery(uint64_t *out_hash);
+
 /* Actual configuration getters. */
 bool bootconfig_is_package2_plaintext(void);
 bool bootconfig_is_package2_unsigned(void);
