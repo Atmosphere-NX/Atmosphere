@@ -161,7 +161,6 @@ static inline volatile security_engine_t *get_security_engine(void) {
 #define SECURITY_ENGINE (get_security_engine())
 
 /* This function MUST be registered to fire on the appropriate interrupt. */
-void se_operation_completed(void);
 
 void se_check_error_status_reg(void);
 void se_check_for_error(void);
@@ -183,12 +182,6 @@ void set_rsa_keyslot(unsigned int keyslot, const void *modulus, size_t modulus_s
 void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size);
 void set_se_ctr(const void *ctr);
 
-
-/* Insecure AES API */
-void se_aes_ctr_crypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *ctr, unsigned int (*callback)(void));
-void se_aes_cbc_encrypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *iv, unsigned int (*callback)(void));
-void se_aes_cbc_decrypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *iv, unsigned int (*callback)(void));
-
 /* Secure AES API */
 void se_compute_aes_128_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size);
 void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size);
@@ -202,7 +195,6 @@ void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, co
 void se_calculate_sha256(void *dst, const void *src, size_t src_size);
 
 /* RSA API */
-void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*callback)(void));
 void se_get_exp_mod_output(void *buf, size_t size);
 void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 bool se_rsa2048_pss_verify(const void *signature, size_t signature_size, const void *modulus, size_t modulus_size, const void *data, size_t data_size);
@@ -210,11 +202,5 @@ bool se_rsa2048_pss_verify(const void *signature, size_t signature_size, const v
 /* RNG API */
 void se_initialize_rng(unsigned int keyslot);
 void se_generate_random(unsigned int keyslot, void *dst, size_t size);
-
-/* SE context save API. */
-void se_generate_srk(unsigned int srkgen_keyslot);
-void se_set_in_context_save_mode(bool is_context_save_mode);
-void se_generate_random_key(unsigned int dst_keyslot, unsigned int rng_keyslot);
-void se_save_context(unsigned int srk_keyslot, unsigned int rng_keyslot, void *dst);
 
 #endif /* EXOSPHERE_SE_H */
