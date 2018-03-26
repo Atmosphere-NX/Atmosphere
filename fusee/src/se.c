@@ -386,6 +386,76 @@ void shift_left_xor_rb(uint8_t *key) {
     }
 }
 
+void aes_128_xts_nintendo_get_tweak(uint8_t *tweak, size_t sector) {
+    for (int i = 0xF; i >= 0; i--) { /* Nintendo LE custom tweak... */
+        tweak[i] = (unsigned char)(sector & 0xFF);
+        sector >>= 8;
+    }
+}
+
+void aes_128_xts_nintendo_xor_with_tweak(unsigned int keyslot, size_t sector, uint8_t *dst, const uint8_t *src, size_t size) {
+    if ((size & 0xF) || size == 0) {
+        generic_panic();
+    }
+    uint8_t tweak[0x10];
+    aes_128_xts_nintendo_get_tweak(tweak, sector);
+    se_aes_128_ecb_encrypt_block(keyslot, tweak, sizeof(tweak), tweak, sizeof(tweak));
+    
+    for (unsigned int block = 0; block < (size >> 4); block++) {
+        for (unsigned int i = 0; i < 0x10; i++) {
+            dst[(block << 4) | i] = src[(block << 4) | i] ^ tweak[i];
+        }
+        shift_left_xor_rb(tweak);
+    }
+}
+
+void aes_128_xts_nintendo_crypt_sector(unsigned int keyslot_1, unsigned int keyslot_2, size_t sector, bool encrypt, void *dst, const void *src, size_t size) {
+    if ((size & 0xF) || size == 0) {
+        generic_panic();
+    }
+            
+    /* XOR. */
+    aes_128_xts_nintendo_xor_with_tweak(keyslot_2, sector, dst, src, size);
+    
+    /* Encrypt/Decrypt. */
+    if (encrypt) {
+        SECURITY_ENGINE->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY);
+        SECURITY_ENGINE->CRYPTO_REG = keyslot_1 << 24 | 0x100;
+    } else {
+        SECURITY_ENGINE->CONFIG_REG = (ALG_AES_DEC | DST_MEMORY);
+        SECURITY_ENGINE->CRYPTO_REG = keyslot_1 << 24;
+    }
+    SECURITY_ENGINE->BLOCK_COUNT_REG = (size >> 4) - 1;
+    trigger_se_blocking_op(OP_START, dst, size, src, size);
+    
+    /* XOR. */
+    aes_128_xts_nintendo_xor_with_tweak(keyslot_2, sector, dst, dst, size);
+}
+
+/* Encrypt with AES-XTS (Nintendo's custom tweak). */
+void se_aes_128_xts_nintendo_encrypt(unsigned int keyslot_1, unsigned int keyslot_2, size_t base_sector, void *dst, const void *src, size_t size, unsigned int sector_size) {
+    if ((size & 0xF) || size == 0) {
+        generic_panic();
+    }
+    size_t sector = base_sector;
+    for (size_t ofs = 0; ofs < size; ofs += sector_size) {
+        aes_128_xts_nintendo_crypt_sector(keyslot_1, keyslot_2, sector, true, dst, src, sector_size);
+        sector++;
+    }
+}
+
+/* Decrypt with AES-XTS (Nintendo's custom tweak). */
+void se_aes_128_xts_nintendo_decrypt(unsigned int keyslot_1, unsigned int keyslot_2, size_t base_sector, void *dst, const void *src, size_t size, unsigned int sector_size) {
+    if ((size & 0xF) || size == 0) {
+        generic_panic();
+    }
+    size_t sector = base_sector;
+    for (size_t ofs = 0; ofs < size; ofs += sector_size) {
+        aes_128_xts_nintendo_crypt_sector(keyslot_1, keyslot_2, sector, false, dst, src, sector_size);
+        sector++;
+    }
+}
+
 void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size, unsigned int config_high) {
     if (keyslot >= KEYSLOT_AES_MAX) {
         generic_panic();
