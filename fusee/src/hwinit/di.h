@@ -51,6 +51,6 @@ void display_end();
 void display_color_screen(u32 color);
 
 /*! Init display in full 1280x720 resolution (32bpp, line stride 768, framebuffer size = 1280*768*4 bytes). */
-u32 *display_init_framebuffer();
+u32 *display_init_framebuffer(void);
 
 #endif
