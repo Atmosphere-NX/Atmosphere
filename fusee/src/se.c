@@ -11,7 +11,7 @@ static unsigned int g_se_modulus_sizes[KEYSLOT_RSA_MAX];
 static unsigned int g_se_exp_sizes[KEYSLOT_RSA_MAX];
 
 /* Initialize a SE linked list. */
-void ll_init(se_ll_t *ll, void *buffer, size_t size) {
+void ll_init(volatile se_ll_t *ll, void *buffer, size_t size) {
     ll->num_entries = 0; /* 1 Entry. */
 
     if (buffer != NULL) {
