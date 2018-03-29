@@ -17,7 +17,8 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
     /* For now, just use NX BOOTLOADER's panic. */
     fuse_disable_programming();
     APBDEV_PMC_CRYPTO_OP_0 = 1; /* Disable all SE operations. */
-    watchdog_reboot();
+    /* TODO: watchdog_reboot(); */
+    while (1) { }
 }
 
 __attribute__ ((noreturn)) void generic_panic(void) {

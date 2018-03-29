@@ -1,0 +1,18 @@
+#ifndef FUSEE_EXOSPHERE_CONFIG_H
+#define FUSEE_EXOSPHERE_CONFIG_H
+
+/* This serves to set configuration for *exosphere itself*, separate from the SecMon Exosphere mimics. */
+
+/* "XBC0" */
+#define MAGIC_EXOSPHERE_BOOTCONFIG (0x30434258)
+
+#define EXOSPHERE_TARGET_FIRMWARE_100 1
+#define EXOSPHERE_TARGET_FIRMWARE_200 2
+#define EXOSPHERE_TARGET_FIRMWARE_300 3
+#define EXOSPHERE_TARGET_FIRMWARE_400 4
+#define EXOSPHERE_TARGET_FIRMWARE_500 5
+
+/* TODO: What should this be, for release? */
+#define EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG EXOSPHERE_TARGET_FIRMWARE_400
+
+#endif
