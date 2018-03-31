@@ -11,7 +11,7 @@ static unsigned int g_se_modulus_sizes[KEYSLOT_RSA_MAX];
 static unsigned int g_se_exp_sizes[KEYSLOT_RSA_MAX];
 
 /* Initialize a SE linked list. */
-void ll_init(volatile se_ll_t *ll, void *buffer, size_t size) {
+void NOINLINE ll_init(volatile se_ll_t *ll, void *buffer, size_t size) {
     ll->num_entries = 0; /* 1 Entry. */
 
     if (buffer != NULL) {
@@ -165,7 +165,7 @@ void set_se_ctr(const void *ctr) {
 }
 
 void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_src, const void *wrapped_key, size_t wrapped_key_size) {
-    if (keyslot_dst >= KEYSLOT_AES_MAX || keyslot_src >= KEYSIZE_AES_MAX || wrapped_key_size > KEYSIZE_AES_MAX) {
+    if (keyslot_dst >= KEYSLOT_AES_MAX || keyslot_src >= KEYSLOT_AES_MAX || wrapped_key_size > KEYSIZE_AES_MAX) {
         generic_panic();
     }
 

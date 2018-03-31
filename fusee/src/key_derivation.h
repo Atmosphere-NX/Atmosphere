@@ -14,6 +14,12 @@
 
 #define MASTERKEY_NUM_NEW_DEVICE_KEYS (MASTERKEY_REVISION_MAX - MASTERKEY_REVISION_400_410)
 
+typedef enum {
+    BisPartition_Calibration = 0,
+    BisPartition_User = 1,
+    BisPartition_System = 2
+} BisPartition_t;
+
 typedef struct {
     u8 mac[0x10];
     u8 ctr[0x10];
@@ -24,5 +30,8 @@ typedef struct {
 } nx_keyblob_t;
 
 void derive_nx_keydata(u32 target_firmware);
+void finalize_nx_keydata(u32 target_firmware);
+
+void derive_bis_key(void *dst, BisPartition_t partition_id, u32 target_firmware);
 
 #endif

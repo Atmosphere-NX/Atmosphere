@@ -19,6 +19,7 @@
 #define PACKED          __attribute__((packed))
 
 #define ALINLINE        __attribute__((always_inline))
+#define NOINLINE        __attribute__((noinline))
 
 #define SET_SYSREG(reg, val) do { temp_reg = (val); __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
 
