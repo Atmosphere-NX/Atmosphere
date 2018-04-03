@@ -7,6 +7,8 @@
 #include "hwinit/hwinit.h"
 #include "hwinit/i2c.h"
 
+#include <stdbool.h>
+
 #define UART_A 0
 #define UART_B 1
 #define UART_C 2
