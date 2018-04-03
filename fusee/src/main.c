@@ -14,6 +14,10 @@ int main(void) {
     lfb_base = display_init_framebuffer();
     video_init(lfb_base);
 
+    // Always enable the backlight _after_ the display is initialized,
+    // to avoid flickering.
+    display_enable_backlight(true);
+
     // Say hello.
     printk("Welcome to Atmosphere Fusee!\n");
     printk("Using color linear framebuffer at 0x%p!\n", lfb_base);
