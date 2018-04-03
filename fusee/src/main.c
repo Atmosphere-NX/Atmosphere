@@ -19,9 +19,10 @@ int main(void) {
     display_enable_backlight(true);
 
     // Say hello.
-    printk("Welcome to Atmosphere Fusee!\n");
+    printk("Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
     printk("Using color linear framebuffer at 0x%p!\n", lfb_base);
 
     /* Do nothing for now */
     return 0;
 }
+
