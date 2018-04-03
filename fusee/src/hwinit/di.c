@@ -183,14 +183,19 @@ void display_color_screen(u32 color)
 	GPIO_6(0x24) = GPIO_6(0x24) & 0xFFFFFFFE | 1;
 }
 
+void display_enable_backlight(bool on) {
+	GPIO_6(0x24) = GPIO_6(0x24) & 0xFFFFFFFE | !!on;
+}
+
+
 u32 *display_init_framebuffer(void)
 {
+	u32 *lfb_addr = (u32 *)0xC0000000;
+
 	//This configures the framebuffer @ 0xC0000000 with a resolution of 1280x720 (line stride 768).
 	exec_cfg((u32 *)DISPLAY_A_BASE, cfg_display_framebuffer, 32);
 
 	sleep(35000);
 
-	GPIO_6(0x24) = GPIO_6(0x24) & 0xFFFFFFFE | 1;
-
-	return (u32 *)0xC0000000;
+	return lfb_addr;
 }

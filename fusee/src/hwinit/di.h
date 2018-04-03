@@ -2,6 +2,7 @@
 #define _DI_H_
 
 #include "types.h"
+#include <stdbool.h>
 
 /*! Display registers. */
 #define _DIREG(reg) ((reg) * 4)
@@ -52,5 +53,8 @@ void display_color_screen(u32 color);
 
 /*! Init display in full 1280x720 resolution (32bpp, line stride 768, framebuffer size = 1280*768*4 bytes). */
 u32 *display_init_framebuffer(void);
+
+/*! Enable or disable the backlight. Should only be called when the screen is completely set up, to avoid flickering. */
+void display_enable_backlight(bool on);
 
 #endif
