@@ -6,12 +6,12 @@ endif
 
 include $(DEVKITARM)/base_tools
 
-name := fusee
-
 dir_source := src
-dir_build := build
 dir_out := out
 dir_exosphere := ../exosphere
+dir_main := fusee
+dir_loader := fusee-loader
+dir_stage1 := fusee-stage1
 
 ARCH := -march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
 
@@ -31,47 +31,38 @@ CFLAGS = \
 
 LDFLAGS = -specs=linker.specs -g $(ARCH)
 
-objects =	$(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
-			$(patsubst $(dir_source)/%.c, $(dir_build)/%.o, \
-			$(call rwildcard, $(dir_source), *.s *.c))) \
-			$(dir_build)/exosphere.bin.o
-
-define bin2o
-	bin2s $< | $(AS) -o $(@)
-endef
-
 .PHONY: all
-all: $(dir_out)/$(name).bin
+all: $(dir_out)
 
 .PHONY: clean
 clean:
 	@$(MAKE) -C $(dir_exosphere) clean
-	@rm -rf $(dir_build)
+	@$(MAKE) -C $(dir_main) clean
+	@$(MAKE) -C $(dir_loader) clean
+	@$(MAKE) -C $(dir_stage1) clean
 	@rm -rf $(dir_out)
 
-.PHONY: $(dir_exosphere)
+.PHONY: $(dir_exosphere) $(dir_loader) $(dir_main) $(dir_stage1)
 
-$(dir_out)/$(name).bin: $(dir_build)/$(name).elf
-	@mkdir -p "$(@D)"
-	$(OBJCOPY) -S -O binary $< $@
-
-$(dir_build)/$(name).elf: $(objects)
-	$(LINK.o) $(OUTPUT_OPTION) $^
+$(dir_out): $(dir_main) $(dir_loader) $(dir_stage1)
+	@mkdir -p "$(dir_out)"
+	@$(MAKE) -C $(dir_exosphere)
 
 $(dir_exosphere)/out/exosphere.bin: $(dir_exosphere)
 	@$(MAKE) -C $<
 
-$(dir_build)/exosphere.bin: $(dir_exosphere)/out/exosphere.bin
-	@mkdir -p "$(@D)"
-	@cp $< $(@D)
+$(dir_main):
+	@mkdir -p "$(dir_out)"
+	@$(MAKE) -C $(dir_main)
+	@cp "$(dir_main)/out/$(dir_main).bin" "out/$(dir_main).bin"
 
-$(dir_build)/%.bin.o: $(dir_build)/%.bin
-	@$(bin2o)
+$(dir_loader):
+	@mkdir -p "$(dir_out)"
+	@$(MAKE) -C $(dir_loader)
+	@cp "$(dir_loader)/out/$(dir_loader).bin" "out/$(dir_loader).bin"
 
-$(dir_build)/%.o: $(dir_source)/%.c
-	@mkdir -p "$(@D)"
-	$(COMPILE.c) $(OUTPUT_OPTION) $<
-
-$(dir_build)/%.o: $(dir_source)/%.s
-	@mkdir -p "$(@D)"
-	$(COMPILE.c) -x assembler-with-cpp $(OUTPUT_OPTION) $<
+$(dir_stage1):
+	@mkdir -p "$(dir_out)"
+	@$(MAKE) -C $(dir_stage1)
+	@cp "$(dir_stage1)/out/$(dir_stage1).bin" "out/$(dir_stage1).bin"
+    
