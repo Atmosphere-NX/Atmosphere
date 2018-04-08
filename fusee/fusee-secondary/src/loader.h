@@ -3,6 +3,6 @@
 
 typedef void (*entrypoint_t)(int argc, void **argv); 
 
-entrypoint_t load_payload(void);
+entrypoint_t load_payload(const char *bct0);
 
 #endif
