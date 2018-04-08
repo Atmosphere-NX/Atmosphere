@@ -9,9 +9,9 @@ include $(DEVKITARM)/base_tools
 dir_source := src
 dir_out := out
 dir_exosphere := ../exosphere
-dir_main := fusee
-dir_loader := fusee-loader
-dir_stage1 := fusee-stage1
+dir_main := fusee-tertiary
+dir_loader := fusee-secondary
+dir_stage1 := fusee-primary
 
 ARCH := -march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
 

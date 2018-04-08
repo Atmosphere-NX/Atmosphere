@@ -57,11 +57,11 @@ exosphere/bpmpfw/out/**
 exosphere/bpmpfw/build/**
 exosphere/build/**
 exosphere/out/**
-fusee/fusee-loader/out/**
-fusee/fusee-loader/build/**
-fusee/fusee-stage1/out/**
-fusee/fusee-stage1/build/**
-fusee/fusee/out/**
-fusee/fusee/build/**
+fusee/fusee-primary/out/**
+fusee/fusee-primary/build/**
+fusee/fusee-secondary/out/**
+fusee/fusee-secondary/build/**
+fusee/fusee-tertiary/out/**
+fusee/fusee-tertiary/build/**
 fusee/out/**
 fusee/build/**

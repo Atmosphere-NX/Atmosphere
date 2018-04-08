@@ -6,7 +6,7 @@ endif
 
 include $(DEVKITARM)/base_tools
 
-name := fusee-stage1
+name := fusee-tertiary
 
 dir_source := src
 dir_build := build
