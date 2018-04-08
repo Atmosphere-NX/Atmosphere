@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <stdint.h>
 #include "sd_utils.h"
 #include "stage2.h"
 #include "lib/printk.h"
@@ -43,6 +44,11 @@ stage2_entrypoint_t load_stage2(const char *bct0) {
         printk("Error: Failed to determine where to load stage2!\n");
         generic_panic();
     }
+    
+    printk("[DEBUG] Stage 2 Config:\n");
+    printk("    Filename:     %s\n", config.filename);
+    printk("    Load Address: 0x%08x\n", config.load_address);
+    printk("    Entrypoint:   0x%p\n", config.entrypoint);
     
     if (!read_sd_file((void *)config.load_address, 0x100000, config.filename)) {
         printk("Error: Failed to read stage2 (%s)!\n", config.filename);

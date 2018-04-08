@@ -12,11 +12,18 @@
 #define BCT0_LOAD_END_ADDRESS (uintptr_t)(0x4003F000)
 #define MAGIC_BCT0 0x30544342
 
+#define DEFAULT_BCT0_FOR_DEBUG "BCT0\n[stage1]\nstage2_file = stage2.bin\nstage2_addr = 0xFFF00000\nstage2_entrypoint = 0xCAFEBABE\n"
+
 const char *load_config(void) {
     if (!read_sd_file((void *)BCT0_LOAD_ADDRESS, BCT0_LOAD_END_ADDRESS - BCT0_LOAD_ADDRESS, "BCT.ini")) {
-        printk("Error: Failed to load BCT.ini!\n");
-        generic_panic();
+        printk("Failed to read BCT0 from SD!\n");
+        printk("[DEBUG] Using default BCT0!\n");
+        memcpy((void *)BCT0_LOAD_ADDRESS, DEFAULT_BCT0_FOR_DEBUG, sizeof(DEFAULT_BCT0_FOR_DEBUG));
+        /* TODO: Stop using default. */
+        /* printk("Error: Failed to load BCT.ini!\n");
+         * generic_panic(); */
     }
+    
     if ((*((u32 *)(BCT0_LOAD_ADDRESS))) != MAGIC_BCT0) {
         printk("Error: Unexpected magic in BCT.ini!\n");
         generic_panic();
@@ -61,6 +68,10 @@ int main(void) {
     /* Register the display as a printk provider. */
     lfb_base = display_init_framebuffer();
     video_init(lfb_base);
+    
+    /* Turn on the backlight after initializing the lfb */
+    /* to avoid flickering. */
+    display_enable_backlight(true);
     
     /* Say hello. */
     printk("Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
