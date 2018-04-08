@@ -2,8 +2,12 @@
 #include "hwinit.h"
 #include "loader.h"
 
+#include "stage2.h"
 
-int main(void) {
+/* Allow for main(int argc, void **argv) signature. */
+#pragma GCC diagnostic ignored "-Wmain"
+
+int main(int argc, void **argv) {
     entrypoint_t entrypoint;
     
     /* TODO: What other hardware init should we do here? */

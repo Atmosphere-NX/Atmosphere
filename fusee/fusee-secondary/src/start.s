@@ -15,17 +15,17 @@ _start:
     msr cpsr_cxsf, #0xDF
 
     /* Relocate ourselves if necessary */
-    ldr r0, =__start__
-    adr r1, _start
-    cmp r0, r1
+    ldr r2, =__start__
+    adr r3, _start
+    cmp r2, r3
     bne _relocation_loop_end
 
-    ldr r2, =__bss_start__
-    sub r2, r2, r0          /* size >= 32, obviously */
+    ldr r4, =__bss_start__
+    sub r4, r4, r2          /* size >= 32, obviously */
     _relocation_loop:
-        ldmia r1!, {r3-r10}
-        stmia r0!, {r3-r10}
-        subs  r2, #0x20
+        ldmia r3!, {r5-r12}
+        stmia r2!, {r5-r12}
+        subs  r4, #0x20
         bne _relocation_loop
 
     ldr r12, =_relocation_loop_end
@@ -35,6 +35,7 @@ _start:
     /* Set the stack pointer */
     ldr sp, =0x40008000
     mov fp, #0
+    stmfd sp!, {r0, r1}
 
     /* Clear .bss */
     ldr r0, =__bss_start__
@@ -50,5 +51,6 @@ _start:
     .rept 13
     CLEAR_GPR_REG_ITER
     .endr
+    ldmfd sp!, {r0, r1}
     bl  main
     b   .
