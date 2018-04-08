@@ -89,10 +89,16 @@ int main(void) {
     
     /* Setup argv. */
     memset(stage2_argv, 0, STAGE2_ARGC * sizeof(*stage2_argv));
-    stage2_argv[STAGE2_ARGV_VERSION] = &stage2_argv[STAGE2_ARGC];
-    *((u32 *)stage2_argv[STAGE2_ARGV_VERSION]) = 0;
-    stage2_argv[STAGE2_ARGV_CONFIG] = (void *)bct0;
-    stage2_argv[STAGE2_ARGV_LFB] = lfb_base;
+    stage2_argv[STAGE2_ARGV_PROGRAM_PATH] = (void *)stage2_get_program_path();
+    stage2_argv[STAGE2_ARGV_ARGUMENT_STRUCT] = &stage2_argv[STAGE2_ARGC];
+    stage2_args_t *args = (stage2_args_t *)stage2_argv[STAGE2_ARGV_ARGUMENT_STRUCT];
+    
+    /* Setup arguments struct. */
+    args->version = 0;
+    args->bct0 = bct0;
+    args->lfb = (uint32_t *)lfb_base;
+    args->console_col = video_get_col();
+    args->console_row = video_get_row();
     
     
     /* Jump to Stage 2. */

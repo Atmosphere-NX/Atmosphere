@@ -11,8 +11,9 @@
 
 int main(int argc, void **argv) {
     entrypoint_t entrypoint;
+    stage2_args_t *args;
     
-    if (argc != STAGE2_ARGC || *((u32 *)argv[STAGE2_ARGV_VERSION]) != 0) {
+    if (argc != STAGE2_ARGC || ((args = (stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT])->version != 0)) {
         generic_panic();
     }
     
@@ -20,12 +21,13 @@ int main(int argc, void **argv) {
     
     /* Setup LFB. */
     /* TODO: How can we keep the console line/offset to resume printing? */
-    video_init((u32 *)argv[STAGE2_ARGV_LFB]);
+    video_resume(args->lfb, args->console_row, args->console_col);
     
     printk("Welcome to Atmosph\xe8re Fus\xe9" "e Stage 2!\n");
+    printk("Stage 2 executing from: %s\n", (const char *)argv[STAGE2_ARGV_PROGRAM_PATH]);
     
     /* This will load all remaining binaries off of the SD. */
-    entrypoint = load_payload((const char *)argv[STAGE2_ARGV_CONFIG]);
+    entrypoint = load_payload(args->bct0);
     
     /* TODO: What do we want to do in terms of argc/argv? */
     entrypoint(0, NULL);

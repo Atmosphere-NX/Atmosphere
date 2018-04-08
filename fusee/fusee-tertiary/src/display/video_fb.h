@@ -47,7 +47,11 @@
 #define CONFIG_VIDEO_PIXEL_SIZE   4
 #define CONFIG_VIDEO_DATA_FORMAT  GDF_32BIT_X888RGB /* BGR actually, but w/e */
 
+int video_get_col(void);
+int video_get_row(void);
+
 int video_init(void *fb);
+int video_resume(void *fb, int row, int col);
 void video_puts(const char *s);
 
 #endif /*_VIDEO_FB_H_ */

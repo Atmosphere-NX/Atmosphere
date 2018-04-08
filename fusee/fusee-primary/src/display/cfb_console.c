@@ -1462,6 +1462,86 @@ static void *video_logo (void)
 
 /*****************************************************************************/
 
+int video_resume(void *videobase, int row, int col) {
+	unsigned char color8;
+
+	video_fb_address = videobase;
+#ifdef CONFIG_VIDEO_HW_CURSOR
+	video_init_hw_cursor (VIDEO_FONT_WIDTH, VIDEO_FONT_HEIGHT);
+#endif
+
+	/* Init drawing pats */
+	switch (CONFIG_VIDEO_DATA_FORMAT) {
+	case GDF__8BIT_INDEX:
+		video_set_lut (0x01, CONSOLE_FG_COL, CONSOLE_FG_COL, CONSOLE_FG_COL);
+		video_set_lut (0x00, CONSOLE_BG_COL, CONSOLE_BG_COL, CONSOLE_BG_COL);
+		fgx = 0x01010101;
+		bgx = 0x00000000;
+		break;
+	case GDF__8BIT_332RGB:
+		color8 = ((CONSOLE_FG_COL & 0xe0) |
+			  ((CONSOLE_FG_COL >> 3) & 0x1c) | CONSOLE_FG_COL >> 6);
+		fgx = (color8 << 24) | (color8 << 16) | (color8 << 8) | color8;
+		color8 = ((CONSOLE_BG_COL & 0xe0) |
+			  ((CONSOLE_BG_COL >> 3) & 0x1c) | CONSOLE_BG_COL >> 6);
+		bgx = (color8 << 24) | (color8 << 16) | (color8 << 8) | color8;
+		break;
+	case GDF_15BIT_555RGB:
+		fgx = (((CONSOLE_FG_COL >> 3) << 26) |
+		       ((CONSOLE_FG_COL >> 3) << 21) | ((CONSOLE_FG_COL >> 3) << 16) |
+		       ((CONSOLE_FG_COL >> 3) << 10) | ((CONSOLE_FG_COL >> 3) << 5) |
+		       (CONSOLE_FG_COL >> 3));
+		bgx = (((CONSOLE_BG_COL >> 3) << 26) |
+		       ((CONSOLE_BG_COL >> 3) << 21) | ((CONSOLE_BG_COL >> 3) << 16) |
+		       ((CONSOLE_BG_COL >> 3) << 10) | ((CONSOLE_BG_COL >> 3) << 5) |
+		       (CONSOLE_BG_COL >> 3));
+		break;
+	case GDF_16BIT_565RGB:
+		fgx = (((CONSOLE_FG_COL >> 3) << 27) |
+		       ((CONSOLE_FG_COL >> 2) << 21) | ((CONSOLE_FG_COL >> 3) << 16) |
+		       ((CONSOLE_FG_COL >> 3) << 11) | ((CONSOLE_FG_COL >> 2) << 5) |
+		       (CONSOLE_FG_COL >> 3));
+		bgx = (((CONSOLE_BG_COL >> 3) << 27) |
+		       ((CONSOLE_BG_COL >> 2) << 21) | ((CONSOLE_BG_COL >> 3) << 16) |
+		       ((CONSOLE_BG_COL >> 3) << 11) | ((CONSOLE_BG_COL >> 2) << 5) |
+		       (CONSOLE_BG_COL >> 3));
+		break;
+	case GDF_32BIT_X888RGB:
+		fgx = (CONSOLE_FG_COL << 16) | (CONSOLE_FG_COL << 8) | CONSOLE_FG_COL;
+		bgx = (CONSOLE_BG_COL << 16) | (CONSOLE_BG_COL << 8) | CONSOLE_BG_COL;
+		break;
+	case GDF_24BIT_888RGB:
+		fgx = (CONSOLE_FG_COL << 24) | (CONSOLE_FG_COL << 16) |
+			(CONSOLE_FG_COL << 8) | CONSOLE_FG_COL;
+		bgx = (CONSOLE_BG_COL << 24) | (CONSOLE_BG_COL << 16) |
+			(CONSOLE_BG_COL << 8) | CONSOLE_BG_COL;
+		break;
+	}
+	eorx = fgx ^ bgx;
+
+#ifdef CONFIG_VIDEO_LOGO
+	/* Plot the logo and get start point of console */
+	PRINTD ("Video: Drawing the logo ...\n");
+	video_console_address = video_logo ();
+#else
+	video_console_address = video_fb_address;
+#endif
+
+	/* Initialize the console */
+	console_col = col;
+	console_row = row;
+
+	return 0;
+}
+
+int video_get_col(void) {
+    return console_col;
+}
+
+int video_get_row(void) {
+    return console_row;
+}
+
 int video_init (void *videobase)
 {
 	unsigned char color8;

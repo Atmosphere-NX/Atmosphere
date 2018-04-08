@@ -69,9 +69,9 @@ static inline bool check_32bit_additive_overflow(uint32_t a, uint32_t b) {
     return __builtin_add_overflow_p(a, b, (uint32_t)0);
 }
 
-void panic(uint32_t code);
-void generic_panic(void);
-void panic_predefined(uint32_t which);
+__attribute__ ((noreturn)) void panic(uint32_t code);
+__attribute__ ((noreturn)) void generic_panic(void);
+__attribute__ ((noreturn)) void panic_predefined(uint32_t which);
 bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be);
 
 #endif
