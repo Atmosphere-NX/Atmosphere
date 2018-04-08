@@ -10,7 +10,7 @@
 #define STAGE2_ARGC 3
 
 
-#define STAGE2_NAME_KEY "stage2_file"
+#define STAGE2_NAME_KEY "stage2_path"
 #define STAGE2_ADDRESS_KEY "stage2_addr"
 #define STAGE2_ENTRYPOINT_KEY "stage2_entrypoint"
 

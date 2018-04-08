@@ -12,7 +12,7 @@
 #define BCT0_LOAD_END_ADDRESS (uintptr_t)(0x4003F000)
 #define MAGIC_BCT0 0x30544342
 
-#define DEFAULT_BCT0_FOR_DEBUG "BCT0\n[stage1]\nstage2_file = stage2.bin\nstage2_addr = 0xFFF00000\nstage2_entrypoint = 0xCAFEBABE\n"
+#define DEFAULT_BCT0_FOR_DEBUG "BCT0\n[stage1]\nstage2_path = stage2.bin\nstage2_addr = 0xFFF00000\nstage2_entrypoint = 0xCAFEBABE\n"
 
 const char *load_config(void) {
     if (!read_sd_file((void *)BCT0_LOAD_ADDRESS, BCT0_LOAD_END_ADDRESS - BCT0_LOAD_ADDRESS, "BCT.ini")) {
