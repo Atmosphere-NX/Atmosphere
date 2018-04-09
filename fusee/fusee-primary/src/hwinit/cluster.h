@@ -7,6 +7,6 @@
 #define FLOW_CTLR_RAM_REPAIR 0x40
 #define FLOW_CTLR_BPMP_CLUSTER_CONTROL 0x98
 
-void cluster_boot_cpu0(u64 entry, u32 ns_disable);
+void cluster_enable_cpu0(u64 entry, u32 ns_disable);
 
 #endif
