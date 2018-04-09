@@ -9,7 +9,6 @@ include $(DEVKITARM)/base_tools
 dir_source := src
 dir_out := out
 dir_exosphere := ../exosphere
-dir_main := fusee-tertiary
 dir_loader := fusee-secondary
 dir_stage1 := fusee-primary
 
@@ -37,24 +36,18 @@ all: $(dir_out)
 .PHONY: clean
 clean:
 	@$(MAKE) -C $(dir_exosphere) clean
-	@$(MAKE) -C $(dir_main) clean
 	@$(MAKE) -C $(dir_loader) clean
 	@$(MAKE) -C $(dir_stage1) clean
 	@rm -rf $(dir_out)
 
-.PHONY: $(dir_exosphere) $(dir_loader) $(dir_main) $(dir_stage1)
+.PHONY: $(dir_exosphere) $(dir_loader) $(dir_stage1)
 
-$(dir_out): $(dir_main) $(dir_loader) $(dir_stage1)
+$(dir_out): $(dir_loader) $(dir_stage1)
 	@mkdir -p "$(dir_out)"
 	@$(MAKE) -C $(dir_exosphere)
 
 $(dir_exosphere)/out/exosphere.bin: $(dir_exosphere)
 	@$(MAKE) -C $<
-
-$(dir_main):
-	@mkdir -p "$(dir_out)"
-	@$(MAKE) -C $(dir_main)
-	@cp "$(dir_main)/out/$(dir_main).bin" "out/$(dir_main).bin"
 
 $(dir_loader):
 	@mkdir -p "$(dir_out)"
