@@ -20,7 +20,6 @@ int main(int argc, void **argv) {
     /* TODO: What other hardware init should we do here? */
     
     /* Setup LFB. */
-    /* TODO: How can we keep the console line/offset to resume printing? */
     video_resume(args->lfb, args->console_row, args->console_col);
     
     printk("Welcome to Atmosph\xe8re Fus\xe9" "e Stage 2!\n");

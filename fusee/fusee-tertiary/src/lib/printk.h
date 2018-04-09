@@ -1,2 +1,0 @@
-
-void printk(char *fmt, ...);
