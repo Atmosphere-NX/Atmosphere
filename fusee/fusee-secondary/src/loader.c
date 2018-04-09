@@ -9,6 +9,12 @@
 
 const char *g_bct0 = NULL;
 
+loader_ctx_t g_loader_ctx = {0};
+
+loader_ctx_t *get_loader_ctx(void) {
+    return &g_loader_ctx;
+}
+
 static int loadlist_entry_ini_handler(void *user, const char *section, const char *name, const char *value) {
     load_file_t *load_file_ctx = (load_file_t *)user;
     uintptr_t x = 0;
@@ -67,6 +73,18 @@ void load_list_entry(const char *key) {
     
     if (!read_sd_file((void *)load_file_ctx.load_address, LOADER_FILESIZE_MAX, load_file_ctx.path)) {
         printk("Error: Failed to read %s!\n", load_file_ctx.path);
+        generic_panic();
+    }
+    
+    /* Check for special keys. */
+    if (strcmp(key, LOADER_PACKAGE2_KEY) == 0) {
+        get_loader_ctx()->package2_loadfile = load_file_ctx;
+    } else if (strcmp(key, LOADER_EXOSPHERE_KEY) == 0) {
+        get_loader_ctx()->exosphere_loadfile = load_file_ctx;
+    } else if (strcmp(key, LOADER_TSECFW_KEY) == 0) {
+        get_loader_ctx()->tsecfw_loadfile = load_file_ctx;
+    } else if (strcmp(key, LOADER_WARMBOOT_KEY) == 0) {
+        get_loader_ctx()->warmboot_loadfile = load_file_ctx;
     }
 }
 
@@ -117,7 +135,7 @@ static int loadlist_ini_handler(void *user, const char *section, const char *nam
         } else if (strcmp(name, LOADER_ENTRYPOINT_KEY) == 0) {
             /* Read in entrypoint as a hex string. */
             sscanf(value, "%x", &x);
-            loader_ctx->entrypoint = (entrypoint_t)x;
+            loader_ctx->chainload_entrypoint = (entrypoint_t)x;
         } else {
             return 0;
         }
@@ -127,21 +145,14 @@ static int loadlist_ini_handler(void *user, const char *section, const char *nam
     return 1;
 }
 
-entrypoint_t load_payload(const char *bct0) {
-    loader_ctx_t loader_ctx = {0};
+void load_payload(const char *bct0) {
+    loader_ctx_t *ctx = get_loader_ctx();
     
     /* Set BCT0 global. */
-    g_bct0 = bct0;
+    ctx->bct0 = bct0;
     
-    if (ini_parse_string(g_bct0, loadlist_ini_handler, &loader_ctx) < 0) {
+    if (ini_parse_string(ctx->bct0, loadlist_ini_handler, ctx) < 0) {
         printk("Error: Failed to parse BCT.ini!\n");
         generic_panic();
     }
-    
-    if (loader_ctx.entrypoint == NULL) {
-        printk("Error: Failed to locate stage3 entrypoint!\n");
-        generic_panic();
-    }
-    
-    return loader_ctx.entrypoint;
 }
