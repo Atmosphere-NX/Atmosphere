@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "timers.h"
 #include "splash_screen.h"
 #include "sd_utils.h"
 #include "lib/printk.h"
@@ -14,4 +15,7 @@ void display_splash_screen_bmp(const char *custom_splash_path) {
     }
     
     /* TODO: Display the splash screen. It should be a pointer to a BMP, at this point. */
+    
+    /* Display the splash screen for three seconds. */
+    wait(3000000);
 }

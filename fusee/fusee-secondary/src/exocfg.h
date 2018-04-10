@@ -12,7 +12,16 @@
 #define EXOSPHERE_TARGET_FIRMWARE_400 4
 #define EXOSPHERE_TARGET_FIRMWARE_500 5
 
-/* TODO: What should this be, for release? */
-#define EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG EXOSPHERE_TARGET_FIRMWARE_400
+#define EXOSPHERE_TARGET_FIRMWARE_MIN EXOSPHERE_TARGET_FIRMWARE_100
+#define EXOSPHERE_TARGET_FIRMWARE_MAX EXOSPHERE_TARGET_FIRMWARE_500
+
+typedef struct {
+    unsigned int magic;
+    unsigned int target_firmware;
+} exosphere_config_t;
+
+#define MAILBOX_EXOSPHERE_CONFIGURATION ((volatile exosphere_config_t *)(0x40002E40))
+
+#define EXOSPHERE_TARGETFW_KEY "target_firmware"
 
 #endif
