@@ -18,10 +18,12 @@ typedef struct {
     load_file_t exosphere_loadfile;
     load_file_t tsecfw_loadfile;
     load_file_t warmboot_loadfile;
+    char custom_splash_path[0x300];
 } loader_ctx_t;
 
 #define LOADER_ENTRYPOINT_KEY "entrypoint"
 #define LOADER_LOADLIST_KEY "loadlist"
+#define LOADER_CUSTOMSPLASH_KEY "custom_splash"
 
 #define LOADER_PACKAGE2_KEY "package2"
 #define LOADER_EXOSPHERE_KEY "exosphere"
