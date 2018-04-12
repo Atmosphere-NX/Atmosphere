@@ -53,6 +53,7 @@ void bootconfig_get_package2_hash_for_recovery(uint64_t *out_hash);
 /* Actual configuration getters. */
 bool bootconfig_is_package2_plaintext(void);
 bool bootconfig_is_package2_unsigned(void);
+void bootconfig_set_package2_plaintext_and_unsigned(void);
 bool bootconfig_disable_program_verification(void);
 bool bootconfig_is_debug_mode(void);
 

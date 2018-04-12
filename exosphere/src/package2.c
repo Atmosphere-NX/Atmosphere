@@ -267,7 +267,7 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
 
     /* Perform version checks. */
     /* We will be compatible with all package2s released before current, but not newer ones. */
-    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_400_CURRENT) {
+    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_500_CURRENT) {
         return true;
     }
 
@@ -297,6 +297,8 @@ static uint32_t decrypt_and_validate_header(package2_header_t *header) {
         if (mkey_rev > mkey_get_revision()) {   
             panic(0xFAF00003);
         }
+    } else if (!validate_package2_metadata(&header->metadata)) {
+        panic(0xFAF0003);
     }
     return 0;
 }
@@ -445,6 +447,11 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     flush_dcache_range((uint8_t *)&header, (uint8_t *)&header + sizeof(header));
 
     /* Perform signature checks. */
+    /* Special exosphere patching enable: All-zeroes signature + decrypted header implies unsigned and decrypted package2. */
+    if (header.signature[0] == 0 && memcmp(header.signature, header.signature + 1, sizeof(header.signature) - 1) == 0 && header.metadata.magic == MAGIC_PK21) {
+        bootconfig_set_package2_plaintext_and_unsigned();
+    }
+    
     verify_header_signature(&header);
 
     /* Decrypt header, get key revision required. */

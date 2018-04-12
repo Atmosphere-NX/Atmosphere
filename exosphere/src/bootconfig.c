@@ -59,6 +59,10 @@ bool bootconfig_is_package2_unsigned(void) {
     return (LOADED_BOOTCONFIG->signed_config.package2_config & 2) != 0;
 }
 
+void bootconfig_set_package2_plaintext_and_unsigned(void) {
+    LOADED_BOOTCONFIG->signed_config.package2_config |= 3;
+}
+
 bool bootconfig_disable_program_verification(void) {
      return LOADED_BOOTCONFIG->signed_config.disable_program_verification != 0;
 }
