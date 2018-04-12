@@ -27,7 +27,7 @@ ini1_header_t *stratosphere_get_ini1(void) {
 }
 
 /* Merges some number of INI1s into a single INI1. It's assumed that the INIs are in order of preference. */
-void stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num_inis) {
+size_t stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num_inis) {
     char sd_path[0x300] = {0};
     /* Validate all ini headers. */
     for (unsigned int i = 0; i < num_inis; i++) {
@@ -102,4 +102,6 @@ void stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num_i
     
     /* Copy merged INI1 to destination. */
     memcpy(dst, merged, merged->size);
+    
+    return merged->size;
 }

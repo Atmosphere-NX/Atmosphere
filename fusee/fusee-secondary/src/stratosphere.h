@@ -10,6 +10,6 @@
 
 ini1_header_t *stratosphere_get_ini1(void);
 
-void stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num_inis);
+size_t stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num_inis);
 
 #endif

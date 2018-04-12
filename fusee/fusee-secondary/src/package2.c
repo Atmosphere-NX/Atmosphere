@@ -219,7 +219,7 @@ void package2_patch_ini1(void) {
     inis_to_merge[STRATOSPHERE_INI1_PACKAGE2] = (ini1_header_t *)g_package2_sections[PACKAGE2_SECTION_INI1];
 
     /* Merge all of the INI1s. */
-    stratosphere_merge_inis(g_package2_sections[PACKAGE2_SECTION_INI1], inis_to_merge, STRATOSPHERE_INI1_MAX);   
+    g_patched_package2_header->metadata.section_sizes[PACKAGE2_SECTION_INI1] = stratosphere_merge_inis(g_package2_sections[PACKAGE2_SECTION_INI1], inis_to_merge, STRATOSPHERE_INI1_MAX);   
 }
 
 void package2_fixup_header_and_section_hashes(void) {
