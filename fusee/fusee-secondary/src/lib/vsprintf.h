@@ -20,6 +20,7 @@ struct va_format {
 unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base);
 
 int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
+int snprintf(char *buf, size_t size, const char *fmt, ...);
 int sscanf(const char *buf, const char *fmt, ...);
 
 #endif /* VSPRINTF_H */

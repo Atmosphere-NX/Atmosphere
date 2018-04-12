@@ -3,6 +3,7 @@
 #include "stratosphere.h"
 #include "sd_utils.h"
 #include "lib/printk.h"
+#include "lib/vsprintf.h"
 
 unsigned char g_stratosphere_ini1[PACKAGE2_SIZE_MAX];
 static bool g_initialized_stratosphere_ini1 = false;
@@ -68,6 +69,9 @@ void stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num_i
             if (already_loaded) {
                 continue;
             }
+            
+            /* TODO: What folder should these be read out of? */
+            snprintf(sd_path, sizeof(sd_path), "atmosph\xe8re/titles/%016llx/%016llx.kip", current_kip->title_id, current_kip->title_id);
             
             /* Try to load an override KIP from SD, if possible. */
             if (read_sd_file(current_dst_kip, remaining_size, sd_path)) {
