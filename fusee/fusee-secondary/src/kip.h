@@ -14,7 +14,7 @@ typedef struct {
     uint32_t size;
     uint32_t num_processes;
     uint32_t _0xC;
-    char kip_data[];
+    unsigned char kip_data[];
 } ini1_header_t;
 
 typedef struct {
