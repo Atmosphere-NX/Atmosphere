@@ -83,7 +83,9 @@ size_t stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num
                     printk("Error: %s has wrong Title ID!\n", sd_path);
                     generic_panic();
                 }
-                current_dst_kip += kip1_get_size_from_header(sd_kip);
+                uint64_t sd_kip_size = kip1_get_size_from_header(sd_kip);
+                remaining_size -= sd_kip_size;
+                current_dst_kip += sd_kip_size;
             } else {
                 uint64_t current_kip_size = kip1_get_size_from_header(current_kip);
                 if (current_kip_size > remaining_size) {
