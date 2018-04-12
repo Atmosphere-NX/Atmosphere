@@ -1,6 +1,7 @@
 #include "utils.h"
 #include "nxboot.h"
 #include "key_derivation.h"
+#include "package2.h"
 #include "loader.h"
 #include "splash_screen.h"
 #include "exocfg.h"
@@ -57,6 +58,9 @@ void nxboot_main(void) {
     
     /* Derive keydata. */
     derive_nx_keydata(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
+    
+    /* Patch package2, adding thermosphere + custom KIPs. */
+    package2_patch((void *)loader_ctx->package2_loadfile.load_address);
     
     /* Boot up Exosphere. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 0;
