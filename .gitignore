@@ -36,6 +36,12 @@
 *.x86_64
 *.hex
 
+# Switch Executables
+*.nso
+*.nro
+*.nacp
+*.pfs0
+
 # Debug files
 *.dSYM/
 *.su

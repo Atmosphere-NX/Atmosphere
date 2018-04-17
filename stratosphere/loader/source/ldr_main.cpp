@@ -1,6 +1,6 @@
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
 #include <malloc.h>
 
 #include <switch.h>
