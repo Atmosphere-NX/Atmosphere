@@ -65,3 +65,5 @@ fusee/fusee-tertiary/out/**
 fusee/fusee-tertiary/build/**
 fusee/out/**
 fusee/build/**
+stratosphere/loader/out/**
+stratosphere/loader/build/**
