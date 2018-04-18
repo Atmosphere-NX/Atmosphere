@@ -21,6 +21,5 @@ class WaitableManager {
         
         unsigned int get_num_signalable();       
         void add_waitable(IWaitable *waitable);
-        void delete_waitable(IWaitable *waitable);
         void process();
 };
