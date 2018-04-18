@@ -87,7 +87,7 @@ class ServiceServer : public IWaitable {
             return this->port_handle;
         }
         
-        virtual Result handle_signaled() {
+        virtual Result handle_signaled(u64 timeout) {
             /* If this server's port was signaled, accept a new session. */
             Handle session_h;
             svcAcceptSession(&session_h, this->port_handle);

@@ -12,7 +12,7 @@ class IWaitable {
         virtual void get_waitables(IWaitable **dst) = 0;
         virtual void delete_child(IWaitable *child) = 0;
         virtual Handle get_handle() = 0;
-        virtual Result handle_signaled() = 0;
+        virtual Result handle_signaled(u64 timeout) = 0;
         
         bool has_parent() {
             return this->parent_waitable != NULL;

@@ -53,8 +53,47 @@ class ServiceSession : public IWaitable {
             return this->server_handle;
         }
         
-        virtual Result handle_signaled() {
-            /* TODO */
-            return 0;
+        virtual Result handle_signaled(u64 timeout) {
+            Result rc;
+            int handle_index;
+            if (R_SUCCEEDED(rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, 0, timeout))) {
+                if (handle_index != 0) {
+                    /* TODO: Panic? */
+                }
+                u32 *cmdbuf = (u32 *)armGetTls();
+                u32 out_words = 4;
+                u32 extra_rawdata_count = 0;
+                u32 wordcount = 0;
+                Result retval = 0;
+                u32 *rawdata_start = cmdbuf;
+                
+                IpcParsedCommand r;
+                IpcCommand c;
+                
+                ipcInitialize(&c);
+                
+                retval = ipcParse(&r);
+                
+                if (R_SUCCEEDED(retval)) {
+                    rawdata_start = (u32 *)r.Raw;
+                    wordcount = r.RawSize;
+                    retval = this->service_object->dispatch(&r, &c, cmdbuf, rawdata_start[2], &rawdata_start[4], wordcount - 6, &cmdbuf[8], &extra_rawdata_count);
+                    out_words += extra_rawdata_count;
+                }
+                
+                struct {
+                    u64 magic;
+                    u64 retval;
+                } *raw;
+
+                raw = (decltype(raw))ipcPrepareHeader(&c, out_words);
+
+                raw->magic = SFCO_MAGIC;
+                raw->retval = retval;
+                
+                rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, this->server_handle, 0);
+            }
+              
+            return rc;
         }
 };

@@ -43,8 +43,8 @@ void WaitableManager::process() {
         rc = svcWaitSynchronization(&handle_index, handles.data(), handles.size(), this->timeout);
         if (R_SUCCEEDED(rc)) {
             /* Handle a signaled waitable. */
-            /* TODO: What should be done with the result here? */
-            signalables[handle_index]->handle_signaled();
+            /* TODO: What timeout should be passed here? */
+            rc = signalables[handle_index]->handle_signaled(0);
             
             for (int i = 0; i < handle_index; i++) {
                 signalables[i]->update_priority();
@@ -54,7 +54,11 @@ void WaitableManager::process() {
             for (auto & waitable : signalables) {
                 waitable->update_priority();
             }
-        } else if (rc == 0xF601) {
+        } else if (rc != 0xF601) {
+            /* TODO: Panic. When can this happen? */
+        }
+        
+        if (rc == 0xF601) {
             /* handles[handle_index] was closed! */
             
             /* Close the handle. */
@@ -73,8 +77,6 @@ void WaitableManager::process() {
             for (int i = 0; i < handle_index; i++) {
                 signalables[i]->update_priority();
             }
-        } else {
-            /* TODO: Panic. When can this happen? */
-        }
+        } 
     }
 }

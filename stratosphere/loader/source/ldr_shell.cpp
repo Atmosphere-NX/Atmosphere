@@ -2,7 +2,7 @@
 #include "ldr_shell.hpp"
 #include "ldr_launch_queue.hpp"
 
-Result ShellService::dispatch(IpcParsedCommand *r, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count) {
+Result ShellService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count) {
     
     Result rc = 0xF601;
     
