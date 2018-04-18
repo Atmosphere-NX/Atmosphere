@@ -3,9 +3,15 @@
 
 #include "iserviceobject.hpp"
 
+enum DebugMonitorServiceCmd {
+    Cmd_AddTitleToLaunchQueue = 0,
+    Cmd_ClearLaunchQueue = 1,
+    Cmd_GetNsoInfo = 2
+};
+
 class DebugMonitorService : IServiceObject {
     public:
-        void dispatch(IpcParsedCommand *r, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count);
+        Result dispatch(IpcParsedCommand *r, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count);
         
     private:
         /* Actual commands. */
