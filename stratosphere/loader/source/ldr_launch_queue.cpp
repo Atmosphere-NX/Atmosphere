@@ -4,7 +4,20 @@
 
 namespace LaunchQueue {
     static LaunchItem g_launch_queue[LAUNCH_QUEUE_SIZE];
+    
+    Result add(LaunchItem *item) {
+        if(item->arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {
+            return 0x209;
+        }
         
+        int idx = get_free_index(item->tid);
+        if(idx == LAUNCH_QUEUE_FULL)
+            return 0x409;
+        
+        g_launch_queue[idx] = *item;
+        return 0x0;
+    }
+    
     int get_index(u64 tid) {
         for(unsigned int i = 0; i < LAUNCH_QUEUE_SIZE; i++) {
             if(g_launch_queue[i].tid == tid) {
