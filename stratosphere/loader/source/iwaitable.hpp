@@ -6,7 +6,8 @@ class IWaitable {
     u64 wait_priority = 0;
     IWaitable *parent_waitable;
     public:
-        virtual ~IWaitable();
+        virtual ~IWaitable() { }
+        
         virtual unsigned int get_num_waitables() = 0;
         virtual void get_waitables(IWaitable **dst) = 0;
         virtual void delete_child(IWaitable *child) = 0;

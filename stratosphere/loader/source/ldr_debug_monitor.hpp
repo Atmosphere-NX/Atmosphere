@@ -4,9 +4,9 @@
 #include "iserviceobject.hpp"
 
 enum DebugMonitorServiceCmd {
-    Cmd_AddTitleToLaunchQueue = 0,
-    Cmd_ClearLaunchQueue = 1,
-    Cmd_GetNsoInfo = 2
+    Dmnt_Cmd_AddTitleToLaunchQueue = 0,
+    Dmnt_Cmd_ClearLaunchQueue = 1,
+    Dmnt_Cmd_GetNsoInfo = 2
 };
 
 class DebugMonitorService : IServiceObject {

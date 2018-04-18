@@ -9,7 +9,7 @@ Result DebugMonitorService::dispatch(IpcParsedCommand *r, u32 *cmd_buf, u32 cmd_
     /* TODO: Prepare SFCO. */
     
     switch ((DebugMonitorServiceCmd)cmd_id) {
-        case Cmd_AddTitleToLaunchQueue:
+        case Dmnt_Cmd_AddTitleToLaunchQueue:
             /* Validate arguments. */
             if (in_rawdata_size < 0x10 || r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 1) {
                 break;
@@ -20,7 +20,7 @@ Result DebugMonitorService::dispatch(IpcParsedCommand *r, u32 *cmd_buf, u32 cmd_
             *out_raw_data_count = 0;
             
             break;
-        case Cmd_ClearLaunchQueue:
+        case Dmnt_Cmd_ClearLaunchQueue:
             if (r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 0) {
                 break;
             }
@@ -29,7 +29,7 @@ Result DebugMonitorService::dispatch(IpcParsedCommand *r, u32 *cmd_buf, u32 cmd_
             *out_raw_data_count = 0;
             
             break;
-        case Cmd_GetNsoInfo:
+        case Dmnt_Cmd_GetNsoInfo:
             if (in_rawdata_size < 0x8 || r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 1) {
                 break;
             }

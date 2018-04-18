@@ -5,6 +5,11 @@
 
 #include <switch.h>
 
+#include "waitablemanager.hpp"
+#include "serviceserver.hpp"
+#include "ldr_debug_monitor.hpp"
+#include "ldr_shell.hpp"
+
 extern u32 __start__;
 
 u32 __nx_applet_type = AppletType_None;
@@ -28,6 +33,18 @@ void __libnx_initheap(void)
 
 int main(int argc, char **argv)
 {
+    /* TODO: What's a good timeout value to use here? */
+    WaitableManager *server_manager = new WaitableManager(U64_MAX);
+    
+    /* Add services to manager. */
+    server_manager->add_waitable(new ServiceServer<ShellService>("ldr:shel", 3));
+    server_manager->add_waitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
+    
+    /* Loop forever, servicing our services. */
+    server_manager->process();
+    
+    /* Cleanup. */
+    delete server_manager;
 	return 0;
 }
 
