@@ -45,6 +45,10 @@ void WaitableManager::process() {
             /* Handle a signaled waitable. */
             /* TODO: What should be done with the result here? */
             signalables[handle_index]->handle_signaled();
+            
+            for (int i = 0; i < handle_index; i++) {
+                signalables[i]->update_priority();
+            }
         } else if (rc == 0xEA01) {
             /* Timeout. */
             for (auto & waitable : signalables) {
@@ -64,7 +68,11 @@ void WaitableManager::process() {
                 signalables[handle_index]->get_parent()->delete_child(signalables[handle_index]);
             } else {
                 delete signalables[handle_index];
-            }    
+            }
+            
+            for (int i = 0; i < handle_index; i++) {
+                signalables[i]->update_priority();
+            }
         } else {
             /* TODO: Panic. When can this happen? */
         }
