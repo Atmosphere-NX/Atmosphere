@@ -1,6 +1,7 @@
 #pragma once
 #include <switch.h>
 #include <type_traits>
+#include <cstdio>
 
 #include "iserviceobject.hpp"
 #include "iwaitable.hpp"
@@ -70,6 +71,8 @@ class ServiceSession : public IWaitable {
                 IpcParsedCommand r;
                 IpcCommand c;
                 
+                fprintf(stderr, "Doing ServiceSession parse...\n");
+                
                 ipcInitialize(&c);
                 
                 retval = ipcParse(&r);
@@ -81,17 +84,21 @@ class ServiceSession : public IWaitable {
                     out_words += extra_rawdata_count;
                 }
                 
-                struct {
-                    u64 magic;
-                    u64 retval;
-                } *raw;
+                if (retval != 0xF601) {      
+                    struct {
+                        u64 magic;
+                        u64 retval;
+                    } *raw;
 
-                raw = (decltype(raw))ipcPrepareHeader(&c, out_words);
+                    raw = (decltype(raw))ipcPrepareHeader(&c, out_words);
 
-                raw->magic = SFCO_MAGIC;
-                raw->retval = retval;
-                
-                rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, this->server_handle, 0);
+                    raw->magic = SFCO_MAGIC;
+                    raw->retval = retval;
+                    
+                    rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, this->server_handle, 0);
+                } else {
+                    rc = retval;
+                }
             }
               
             return rc;

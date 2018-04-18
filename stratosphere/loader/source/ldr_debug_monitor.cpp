@@ -1,10 +1,13 @@
 #include <switch.h>
+#include <cstdio>
 #include "ldr_debug_monitor.hpp"
 #include "ldr_launch_queue.hpp"
 
 Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count) {
     
     Result rc = 0xF601;
+    
+    fprintf(stderr, "TLS: %p\n", armGetTls());
     
     /* TODO: Prepare SFCO. */
     
@@ -17,8 +20,8 @@ Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32
             
             rc = add_title_to_launch_queue(((u64 *)in_rawdata)[0], (const char *)r->Statics[0], r->StaticSizes[0]);
             
-            *out_raw_data_count = 0;
-            
+            *out_raw_data_count = 4;
+                        
             break;
         case Dmnt_Cmd_ClearLaunchQueue:
             if (r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 0) {
@@ -26,7 +29,7 @@ Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32
             }
             
             rc = clear_launch_queue();
-            *out_raw_data_count = 0;
+            *out_raw_data_count = 4;
             
             break;
         case Dmnt_Cmd_GetNsoInfo:

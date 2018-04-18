@@ -33,12 +33,14 @@ void __libnx_initheap(void)
 
 int main(int argc, char **argv)
 {
+    consoleDebugInit(debugDevice_SVC);
+    
     /* TODO: What's a good timeout value to use here? */
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
     
     /* Add services to manager. */
-    server_manager->add_waitable(new ServiceServer<ShellService>("ldr:shel", 3));
-    server_manager->add_waitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
+    server_manager->add_waitable(new ServiceServer<ShellService>("dbg:shel", 3));
+    server_manager->add_waitable(new ServiceServer<DebugMonitorService>("dbg:dmnt", 2));
     
     /* Loop forever, servicing our services. */
     server_manager->process();

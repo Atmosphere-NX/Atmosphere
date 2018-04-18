@@ -18,6 +18,13 @@ class IWaitable {
             return this->parent_waitable != NULL;
         }
         
+        void set_parent(IWaitable *p) {
+            if (has_parent()) {
+                /* TODO: Panic? */
+            }
+            this->parent_waitable = p;
+        }
+        
         IWaitable *get_parent() {
             return this->parent_waitable;
         }

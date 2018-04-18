@@ -1,6 +1,6 @@
 #include <switch.h>
 #include <algorithm>
-
+#include <cstdio>
 #include "ldr_launch_queue.hpp"
 
 
@@ -18,6 +18,10 @@ namespace LaunchQueue {
         
         g_launch_queue[idx].tid = tid;
         g_launch_queue[idx].arg_size = arg_size;
+        
+        fprintf(stderr, "TID: %016llx, args: %p, size: %016llx\n", tid, args, arg_size);
+        fprintf(stderr, "Args: %s\n", args);
+        
         std::copy(args, args + arg_size, g_launch_queue[idx].args);
         return 0x0;
     }

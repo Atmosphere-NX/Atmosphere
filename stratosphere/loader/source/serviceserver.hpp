@@ -19,7 +19,7 @@ class ServiceServer : public IWaitable {
     ServiceSession<T> **sessions;
     
     public:
-        ServiceServer(const char *service_name, unsigned int max_s) {
+        ServiceServer(const char *service_name, unsigned int max_s) : max_sessions(max_s) {
             if (R_FAILED(smRegisterService(&this->port_handle, service_name, false, this->max_sessions))) {
                 /* TODO: Panic. */
             }
@@ -91,8 +91,12 @@ class ServiceServer : public IWaitable {
             /* If this server's port was signaled, accept a new session. */
             Handle session_h;
             svcAcceptSession(&session_h, this->port_handle);
+            
+            fprintf(stderr, "Accept %08X -> %08X\n", this->port_handle, session_h);
+            fprintf(stderr, "Sessions: %08X/%08X\n", this->num_sessions, this->max_sessions);
 
             if (this->num_sessions >= this->max_sessions) {
+                fprintf(stderr, "Closing because of max sessions...\n");
                 svcCloseHandle(session_h);
                 return 0x10601;
             }
@@ -105,6 +109,7 @@ class ServiceServer : public IWaitable {
             }
 
             this->sessions[i] = new ServiceSession<T>(this, session_h, 0);
+            this->sessions[i]->set_parent(this);
             this->num_sessions++;
             return 0;
         }

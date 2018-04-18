@@ -1,6 +1,7 @@
 #include <switch.h>
 
 #include <algorithm>
+#include <cstdio>
 
 #include "waitablemanager.hpp"
 
@@ -44,6 +45,7 @@ void WaitableManager::process() {
         if (R_SUCCEEDED(rc)) {
             /* Handle a signaled waitable. */
             /* TODO: What timeout should be passed here? */
+                        
             rc = signalables[handle_index]->handle_signaled(0);
             
             for (int i = 0; i < handle_index; i++) {
