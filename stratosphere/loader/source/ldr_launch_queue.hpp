@@ -12,8 +12,9 @@ namespace LaunchQueue {
         u64 arg_size;
         char args[LAUNCH_QUEUE_ARG_SIZE_MAX];
     };
-
-    Result add(LaunchItem *item);
+    
+    Result add(u64 tid, const char *args, u64 arg_size);
+    Result add_item(const LaunchItem *item);
     int get_index(u64 tid);
     int get_free_index(u64 tid);
     bool contains(u64 tid);
