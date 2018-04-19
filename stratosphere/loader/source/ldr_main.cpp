@@ -4,6 +4,8 @@
 #include <malloc.h>
 
 #include <switch.h>
+#include <switch/services/lr.h>
+#include "lib/fsldr.h"
 
 #include "waitablemanager.hpp"
 #include "serviceserver.hpp"
@@ -19,8 +21,7 @@ u32 __nx_applet_type = AppletType_None;
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
 char   nx_inner_heap[INNER_HEAP_SIZE];
 
-void __libnx_initheap(void)
-{
+void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;
 	size_t size = nx_inner_heap_size;
 
@@ -30,6 +31,38 @@ void __libnx_initheap(void)
 
 	fake_heap_start = (char*)addr;
 	fake_heap_end   = (char*)addr + size;
+}
+
+void __appInit(void) {
+    Result rc;
+
+    /* Initialize services we need (TODO: SPL) */
+    rc = smInitialize();
+    if (R_FAILED(rc))
+        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
+    
+    rc = fsInitialize();
+    if (R_FAILED(rc))
+        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+    
+    rc = lrInitialize();
+    if (R_FAILED(rc))
+        fatalSimple(0xCAFE << 4 | 1);
+    
+    rc = fsldrInitialize();
+    if (R_FAILED(rc))
+        fatalSimple(0xCAFE << 4 | 2);
+
+    fsdevInit();
+}
+
+void __appExit(void) {
+    /* Cleanup services. */
+    fsdevExit();
+    fsldrExit();
+    lrExit();
+    fsExit();
+    smExit();
 }
 
 int main(int argc, char **argv)
