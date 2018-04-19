@@ -4,8 +4,6 @@
 #include <malloc.h>
 
 #include <switch.h>
-#include <switch/services/lr.h>
-#include "lib/fsldr.h"
 
 #include "waitablemanager.hpp"
 #include "serviceserver.hpp"
