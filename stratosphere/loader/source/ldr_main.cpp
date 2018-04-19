@@ -7,6 +7,7 @@
 
 #include "waitablemanager.hpp"
 #include "serviceserver.hpp"
+#include "ldr_process_manager.hpp"
 #include "ldr_debug_monitor.hpp"
 #include "ldr_shell.hpp"
 
@@ -39,6 +40,7 @@ int main(int argc, char **argv)
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
     
     /* Add services to manager. */
+    server_manager->add_waitable(new ServiceServer<ProcessManagerService>("dbg:pm", 1));
     server_manager->add_waitable(new ServiceServer<ShellService>("dbg:shel", 3));
     server_manager->add_waitable(new ServiceServer<DebugMonitorService>("dbg:dmnt", 2));
     

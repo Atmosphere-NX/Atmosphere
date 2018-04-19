@@ -6,7 +6,7 @@
 static Registration::List g_registration_list = {0};
 static u64 g_num_registered = 1;
 
-Registration::Process *get_free_process() {
+Registration::Process *Registration::get_free_process() {
     unsigned int i;
     for (i = 0; i < REGISTRATION_LIST_MAX; i++) {
         if (!g_registration_list.processes[i].in_use) {
@@ -16,7 +16,7 @@ Registration::Process *get_free_process() {
     return NULL;
 }
 
-Registration::Process *get_process(u64 index) {
+Registration::Process *Registration::get_process(u64 index) {
     unsigned int i;
     for (i = 0; !g_registration_list.processes[i].in_use || g_registration_list.processes[i].index != index; i++) {
         if (i >= REGISTRATION_LIST_MAX) {

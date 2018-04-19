@@ -4,8 +4,8 @@
 #include "iserviceobject.hpp"
 
 enum ShellServiceCmd {
-    Cmd_AddTitleToLaunchQueue = 0,
-    Cmd_ClearLaunchQueue = 1
+    Shell_Cmd_AddTitleToLaunchQueue = 0,
+    Shell_Cmd_ClearLaunchQueue = 1
 };
 
 class ShellService : IServiceObject {
