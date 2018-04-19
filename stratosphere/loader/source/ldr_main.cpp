@@ -13,13 +13,21 @@
 #include "ldr_debug_monitor.hpp"
 #include "ldr_shell.hpp"
 
-extern u32 __start__;
+extern "C" {
+    extern u32 __start__;
 
-u32 __nx_applet_type = AppletType_None;
+    u32 __nx_applet_type = AppletType_None;
 
-#define INNER_HEAP_SIZE 0x200000
-size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-char   nx_inner_heap[INNER_HEAP_SIZE];
+    #define INNER_HEAP_SIZE 0x200000
+    size_t nx_inner_heap_size = INNER_HEAP_SIZE;
+    char   nx_inner_heap[INNER_HEAP_SIZE];
+    
+    void __libnx_initheap(void);
+    void __appInit(void);
+    void __appExit(void);
+
+}
+
 
 void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;
@@ -49,10 +57,12 @@ void __appInit(void) {
     if (R_FAILED(rc))
         fatalSimple(0xCAFE << 4 | 1);
     
+    /* Disable.
     rc = fsldrInitialize();
     if (R_FAILED(rc))
         fatalSimple(0xCAFE << 4 | 2);
-
+    */
+    
     fsdevInit();
 }
 
@@ -68,7 +78,7 @@ void __appExit(void) {
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
-    
+        
     /* TODO: What's a good timeout value to use here? */
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
     
