@@ -18,6 +18,7 @@ class ServiceSession : public IWaitable {
     ServiceServer<T> *server;
     Handle server_handle;
     Handle client_handle;
+    char pointer_buffer[0x400];
     public:
         ServiceSession<T>(ServiceServer<T> *s, Handle s_h, Handle c_h) : server(s), server_handle(s_h), client_handle(c_h) {
             this->service_object = new T();
@@ -57,6 +58,13 @@ class ServiceSession : public IWaitable {
         virtual Result handle_signaled(u64 timeout) {
             Result rc;
             int handle_index;
+            
+            /* Prepare pointer buffer... */
+            IpcCommand c_for_reply;
+            ipcInitialize(&c_for_reply);
+            ipcAddRecvStatic(&c_for_reply, this->pointer_buffer, sizeof(this->pointer_buffer), 0);
+            ipcPrepareHeader(&c_for_reply, 0);
+            
             if (R_SUCCEEDED(rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, 0, timeout))) {
                 if (handle_index != 0) {
                     /* TODO: Panic? */
@@ -67,7 +75,7 @@ class ServiceSession : public IWaitable {
                 u32 wordcount = 0;
                 Result retval = 0;
                 u32 *rawdata_start = cmdbuf;
-                
+                                
                 IpcParsedCommand r;
                 IpcCommand c;
                 
@@ -76,7 +84,7 @@ class ServiceSession : public IWaitable {
                 ipcInitialize(&c);
                 
                 retval = ipcParse(&r);
-                
+                                
                 if (R_SUCCEEDED(retval)) {
                     rawdata_start = (u32 *)r.Raw;
                     wordcount = r.RawSize;

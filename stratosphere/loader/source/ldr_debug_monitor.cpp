@@ -18,6 +18,11 @@ Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32
                 break;
             }
             
+            if (r->Statics[0] == NULL) {
+                rc = 0xCE01;
+                break;
+            }
+            
             rc = add_title_to_launch_queue(((u64 *)in_rawdata)[0], (const char *)r->Statics[0], r->StaticSizes[0]);
             
             *out_raw_data_count = 4;
