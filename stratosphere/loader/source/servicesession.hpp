@@ -12,7 +12,7 @@ enum IpcControlCommand {
     IpcCtrl_Cmd_CopyFromCurrentDomain = 1,
     IpcCtrl_Cmd_CloneCurrentObject = 2,
     IpcCtrl_Cmd_QueryPointerBufferSize = 3,
-    IpcCtrl_Cmd_CloneCurrentOBjectEx = 4
+    IpcCtrl_Cmd_CloneCurrentObjectEx = 4
 };
 
 #define POINTER_BUFFER_SIZE_MAX 0xFFFF
@@ -174,7 +174,7 @@ class ServiceSession : public IWaitable {
                     *out_raw_data_count = 1;
                     rc = 0;
                     break;
-                case IpcCtrl_Cmd_CloneCurrentOBjectEx:
+                case IpcCtrl_Cmd_CloneCurrentObjectEx:
                     /* TODO */
                     break;
                 default:
