@@ -109,7 +109,7 @@ class ServiceSession : public IWaitable {
                         case IpcCommandType_Request:
                         case IpcCommandType_RequestWithContext:
                             retval = this->service_object->dispatch(&r, &c, cmdbuf, rawdata_start[2], &rawdata_start[4], wordcount - 6, &cmdbuf[8], &extra_rawdata_count);
-                    out_words += extra_rawdata_count;
+                            out_words += extra_rawdata_count;
                             break;
                         case IpcCommandType_Invalid:
                         default:
