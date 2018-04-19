@@ -138,7 +138,7 @@ class ServiceSession : public IWaitable {
                         u64 retval;
                     } *raw;
 
-                    raw = (decltype(raw))ipcPrepareHeader(&c, out_words);
+                    raw = (decltype(raw))ipcPrepareHeader(&c, out_words * 4);
 
                     raw->magic = SFCO_MAGIC;
                     raw->retval = retval;

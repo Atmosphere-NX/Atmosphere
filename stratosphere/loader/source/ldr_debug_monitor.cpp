@@ -45,7 +45,7 @@ Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32
             rc = get_nso_info(((u64 *)in_rawdata)[0], r->Statics[0], r->StaticSizes[0], out_rawdata);
             
             if (R_SUCCEEDED(rc)) {  
-                *out_raw_data_count = 4;
+                *out_raw_data_count = 1;
             } else {                
                 *out_raw_data_count = 0;
             }

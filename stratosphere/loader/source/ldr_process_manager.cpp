@@ -24,7 +24,7 @@ Result ProcessManagerService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u
             rc = register_title((Registration::TidSid *)in_rawdata, &out_index);
             if (R_SUCCEEDED(rc)) {
                 ((u64 *)out_rawdata)[0] = out_index;
-                *out_raw_data_count = 8;
+                *out_raw_data_count = 2;
             } else {
                 ((u64 *)out_rawdata)[0] = 0;
                 *out_raw_data_count = 0;
