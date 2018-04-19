@@ -7,6 +7,16 @@
 #include "iwaitable.hpp"
 #include "serviceserver.hpp"
 
+enum IpcControlCommand {
+    IpcCtrl_Cmd_ConvertCurrentObjectToDomain = 0,
+    IpcCtrl_Cmd_CopyFromCurrentDomain = 1,
+    IpcCtrl_Cmd_CloneCurrentObject = 2,
+    IpcCtrl_Cmd_QueryPointerBufferSize = 3,
+    IpcCtrl_Cmd_CloneCurrentOBjectEx = 4
+};
+
+#define POINTER_BUFFER_SIZE_MAX 0xFFFF
+
 template <typename T>
 class ServiceServer;
 
@@ -19,6 +29,9 @@ class ServiceSession : public IWaitable {
     Handle server_handle;
     Handle client_handle;
     char pointer_buffer[0x400];
+    
+    static_assert(sizeof(pointer_buffer) <= POINTER_BUFFER_SIZE_MAX, "Incorrect Size for PointerBuffer!");
+    
     public:
         ServiceSession<T>(ServiceServer<T> *s, Handle s_h, Handle c_h) : server(s), server_handle(s_h), client_handle(c_h) {
             this->service_object = new T();
@@ -89,11 +102,6 @@ class ServiceSession : public IWaitable {
                     rawdata_start = (u32 *)r.Raw;
                     wordcount = r.RawSize;
                     switch (r.CommandType) {
-                        case IpcCommandType_Control:
-                        case IpcCommandType_ControlWithContext:
-                            /* TODO: Implement HIPC Control commands. */
-                            retval = 0xF601;
-                            break;
                         case IpcCommandType_Close:
                             /* TODO: This should close the session and clean up its resources. */
                             retval = 0xF601;
@@ -109,6 +117,11 @@ class ServiceSession : public IWaitable {
                         case IpcCommandType_Request:
                         case IpcCommandType_RequestWithContext:
                             retval = this->service_object->dispatch(&r, &c, cmdbuf, rawdata_start[2], &rawdata_start[4], wordcount - 6, &cmdbuf[8], &extra_rawdata_count);
+                            out_words += extra_rawdata_count;
+                            break;
+                        case IpcCommandType_Control:
+                        case IpcCommandType_ControlWithContext:
+                            retval = this->dispatch_control_command(&r, &c, cmdbuf, rawdata_start[2], &rawdata_start[4], wordcount - 6, &cmdbuf[8], &extra_rawdata_count);
                             out_words += extra_rawdata_count;
                             break;
                         case IpcCommandType_Invalid:
@@ -136,6 +149,38 @@ class ServiceSession : public IWaitable {
                 }
             }
               
+            return rc;
+        }
+        
+        Result dispatch_control_command(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count) {
+            Result rc = 0xF601;
+            
+            /* TODO: Implement. */
+            switch ((IpcControlCommand)cmd_id) {
+                case IpcCtrl_Cmd_ConvertCurrentObjectToDomain:
+                    /* TODO */
+                    break;
+                case IpcCtrl_Cmd_CopyFromCurrentDomain:
+                    /* TODO */
+                    break;
+                case IpcCtrl_Cmd_CloneCurrentObject:
+                    /* TODO */
+                    break;
+                case IpcCtrl_Cmd_QueryPointerBufferSize:
+                    if (r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 0 || r->NumStaticsOut != 0) {
+                        break;
+                    }
+                    *out_rawdata = sizeof(this->pointer_buffer);
+                    *out_raw_data_count = 1;
+                    rc = 0;
+                    break;
+                case IpcCtrl_Cmd_CloneCurrentOBjectEx:
+                    /* TODO */
+                    break;
+                default:
+                    break;
+            }
+            
             return rc;
         }
 };
