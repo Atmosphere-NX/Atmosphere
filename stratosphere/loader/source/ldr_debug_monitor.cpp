@@ -1,7 +1,10 @@
 #include <switch.h>
 #include <cstdio>
+#include <algorithm>
+
 #include "ldr_debug_monitor.hpp"
 #include "ldr_launch_queue.hpp"
+#include "ldr_registration.hpp"
 
 Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count) {
     
@@ -64,6 +67,11 @@ Result DebugMonitorService::clear_launch_queue() {
 }
 
 Result DebugMonitorService::get_nso_info(u64 pid, void *out, size_t out_size, u32 *out_num_nsos) {
-    /* TODO, once I've defined struct NsoInfo elsewhere (in ldr_RegisteredProcesses.hpp) */
-    return 0;
+    u32 max_out = out_size / (sizeof(Registration::NsoInfo));
+    
+    Registration::NsoInfo *nso_out = (Registration::NsoInfo *)out;
+    
+    std::fill(nso_out, nso_out + max_out, (const Registration::NsoInfo){0});
+    
+    return Registration::get_nso_infos_for_process_id(nso_out, max_out, pid, out_num_nsos);
 }

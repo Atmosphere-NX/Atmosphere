@@ -26,6 +26,16 @@ Registration::Process *Registration::get_process(u64 index) {
     return &g_registration_list.processes[i];
 }
 
+Registration::Process *Registration::get_process_by_process_id(u64 pid) {
+    unsigned int i;
+    for (i = 0; !g_registration_list.processes[i].in_use || g_registration_list.processes[i].process_id != pid; i++) {
+        if (i >= REGISTRATION_LIST_MAX) {
+            return NULL;
+        }
+    }
+    return &g_registration_list.processes[i];
+}
+
 bool Registration::register_tid_sid(const TidSid *tid_sid, u64 *out_index) { 
     Registration::Process *free_process = get_free_process();
     if (free_process == NULL) {
@@ -70,11 +80,32 @@ void Registration::add_nso_info(u64 index, u64 base_address, u64 size, const uns
     
     for (unsigned int i = 0; i < NSO_INFO_MAX; i++) {
         if (!target_process->nso_infos[i].in_use) {
-            target_process->nso_infos[i].base_address = base_address;
-            target_process->nso_infos[i].size = size;
-            std::copy(build_id, build_id + sizeof(target_process->nso_infos[i].build_id), target_process->nso_infos[i].build_id);
+            target_process->nso_infos[i].info.base_address = base_address;
+            target_process->nso_infos[i].info.size = size;
+            std::copy(build_id, build_id + sizeof(target_process->nso_infos[i].info.build_id), target_process->nso_infos[i].info.build_id);
             target_process->nso_infos[i].in_use = true;
             return;
         }
     }
+}
+
+
+Result Registration::get_nso_infos_for_process_id(Registration::NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written) {
+    Registration::Process *target_process = get_process_by_process_id(process_id);
+    if (target_process == NULL) {
+        return 0x1009;
+    }
+    u32 cur = 0;
+    
+    if (max_out > 0) {
+        for (unsigned int i = 0; i < NSO_INFO_MAX && cur < max_out; i++) {
+            if (target_process->nso_infos[i].in_use) {
+                out[cur++] = target_process->nso_infos[i].info;
+            }
+        }
+    }
+    
+    *num_written = cur;
+
+    return 0;
 }
