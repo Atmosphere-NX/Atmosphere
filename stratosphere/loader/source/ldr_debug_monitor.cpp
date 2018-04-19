@@ -6,11 +6,7 @@
 Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count) {
     
     Result rc = 0xF601;
-    
-    fprintf(stderr, "TLS: %p\n", armGetTls());
-    
-    /* TODO: Prepare SFCO. */
-    
+        
     switch ((DebugMonitorServiceCmd)cmd_id) {
         case Dmnt_Cmd_AddTitleToLaunchQueue:
             /* Validate arguments. */
@@ -25,7 +21,7 @@ Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32
             
             rc = add_title_to_launch_queue(((u64 *)in_rawdata)[0], (const char *)r->Statics[0], r->StaticSizes[0]);
             
-            *out_raw_data_count = 4;
+            *out_raw_data_count = 0;
                         
             break;
         case Dmnt_Cmd_ClearLaunchQueue:
@@ -34,7 +30,7 @@ Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32
             }
             
             rc = clear_launch_queue();
-            *out_raw_data_count = 4;
+            *out_raw_data_count = 0;
             
             break;
         case Dmnt_Cmd_GetNsoInfo:

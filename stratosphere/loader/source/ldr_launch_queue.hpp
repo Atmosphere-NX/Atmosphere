@@ -6,17 +6,18 @@
 
 #define LAUNCH_QUEUE_ARG_SIZE_MAX (0x8000)
 
-namespace LaunchQueue { 
-    struct LaunchItem {
-        u64 tid;
-        u64 arg_size;
-        char args[LAUNCH_QUEUE_ARG_SIZE_MAX];
-    };
-    
-    Result add(u64 tid, const char *args, u64 arg_size);
-    Result add_item(const LaunchItem *item);
-    int get_index(u64 tid);
-    int get_free_index(u64 tid);
-    bool contains(u64 tid);
-    void clear();
-}
+class LaunchQueue { 
+    public:
+        struct LaunchItem {
+            u64 tid;
+            u64 arg_size;
+            char args[LAUNCH_QUEUE_ARG_SIZE_MAX];
+        };
+        
+        static Result add(u64 tid, const char *args, u64 arg_size);
+        static Result add_item(const LaunchItem *item);
+        static int get_index(u64 tid);
+        static int get_free_index(u64 tid);
+        static bool contains(u64 tid);
+        static void clear();
+};

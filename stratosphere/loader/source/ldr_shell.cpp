@@ -5,13 +5,16 @@
 Result ShellService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count) {
     
     Result rc = 0xF601;
-    
-    /* TODO: Prepare SFCO. */
-    
+        
     switch ((ShellServiceCmd)cmd_id) {
         case Cmd_AddTitleToLaunchQueue:
             /* Validate arguments. */
             if (in_rawdata_size < 0x10 || r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 1) {
+                break;
+            }
+            
+            if (r->Statics[0] == NULL) {
+                rc = 0xCE01;
                 break;
             }
             
