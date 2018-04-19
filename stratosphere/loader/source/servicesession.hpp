@@ -88,8 +88,35 @@ class ServiceSession : public IWaitable {
                 if (R_SUCCEEDED(retval)) {
                     rawdata_start = (u32 *)r.Raw;
                     wordcount = r.RawSize;
-                    retval = this->service_object->dispatch(&r, &c, cmdbuf, rawdata_start[2], &rawdata_start[4], wordcount - 6, &cmdbuf[8], &extra_rawdata_count);
+                    switch (r.CommandType) {
+                        case IpcCommandType_Control:
+                        case IpcCommandType_ControlWithContext:
+                            /* TODO: Implement HIPC Control commands. */
+                            retval = 0xF601;
+                            break;
+                        case IpcCommandType_Close:
+                            /* TODO: This should close the session and clean up its resources. */
+                            retval = 0xF601;
+                            break;
+                        case IpcCommandType_LegacyControl:
+                            /* TODO: What does this allow one to do? */
+                            retval = 0xF601;
+                            break;
+                        case IpcCommandType_LegacyRequest:
+                            /* TODO: What does this allow one to do? */
+                            retval = 0xF601;
+                            break;
+                        case IpcCommandType_Request:
+                        case IpcCommandType_RequestWithContext:
+                            retval = this->service_object->dispatch(&r, &c, cmdbuf, rawdata_start[2], &rawdata_start[4], wordcount - 6, &cmdbuf[8], &extra_rawdata_count);
                     out_words += extra_rawdata_count;
+                            break;
+                        case IpcCommandType_Invalid:
+                        default:
+                            retval = 0xF601;
+                            break;
+                    }
+                    
                 }
                 
                 if (retval != 0xF601) {      
