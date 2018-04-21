@@ -6,11 +6,6 @@
 #include "ldr_launch_queue.hpp"
 #include "ldr_registration.hpp"
 
-std::tuple<Result> fake_clear_launch_queue() {
-    LaunchQueue::clear();
-    return std::make_tuple(0);
-}
-
 Result DebugMonitorService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     Result rc = 0xF601;
         
@@ -44,9 +39,9 @@ std::tuple<Result> DebugMonitorService::clear_launch_queue(u64 dat) {
 std::tuple<Result, u32> DebugMonitorService::get_nso_info(u64 pid, OutPointerWithClientSize<Registration::NsoInfo> out) {
     u32 out_num_nsos = 0;
                     
-    //std::fill(out.pointer, out.pointer + out.num_elements, (const Registration::NsoInfo){0});
+    std::fill(out.pointer, out.pointer + out.num_elements, (const Registration::NsoInfo){0});
     
     Result rc = Registration::get_nso_infos_for_process_id(out.pointer, out.num_elements, pid, &out_num_nsos);
-    
+        
     return std::make_tuple(rc, out_num_nsos);
 }

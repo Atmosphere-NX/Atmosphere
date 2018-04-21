@@ -251,7 +251,7 @@ struct Validator<std::tuple<Args...>> {
         if (r.RawSize < size_in_raw_data_with_out_pointers_for_arguments<Args... >::value) {
             return 0xF601;
         }
-                
+                        
         if (r.NumBuffers != num_inoutbuffers_in_arguments<Args... >::value) {
             return 0xF601;
         }
@@ -278,7 +278,7 @@ struct Validator<std::tuple<Args...>> {
         
         size_t a_index = 0, b_index = num_inbuffers_in_arguments<Args ...>::value, x_index = 0, c_index = 0, h_index = 0;
 		size_t cur_rawdata_index = 4;
-        size_t cur_c_size_offset = 8 + size_in_raw_data_for_arguments<Args... >::value;
+        size_t cur_c_size_offset = 8 + size_in_raw_data_for_arguments<Args... >::value + (0x10 - ((uintptr_t)r.Raw - (uintptr_t)r.RawWithoutPadding));
         size_t total_c_size = 0;
                 
         if (!(ValidateIpcParsedCommandArgument<Args>(r, cur_rawdata_index, cur_c_size_offset, a_index, b_index, x_index, c_index, h_index, total_c_size) && ...)) {
@@ -303,7 +303,7 @@ struct Decoder<OutTuple, std::tuple<Args...>> {
 	static std::tuple<Args...> Decode(IpcParsedCommand& r, IpcCommand &out_c, u8 *pointer_buffer) {
         size_t a_index = 0, b_index = num_inbuffers_in_arguments<Args ...>::value, x_index = 0, c_index = 0, h_index = 0;
 		size_t cur_rawdata_index = 4;
-        size_t cur_c_size_offset = 8 + size_in_raw_data_for_arguments<Args... >::value;
+        size_t cur_c_size_offset = 8 + size_in_raw_data_for_arguments<Args... >::value + (0x10 - ((uintptr_t)r.Raw - (uintptr_t)r.RawWithoutPadding));
         size_t pointer_buffer_offset = 0;
 		return std::tuple<Args... > {
 				GetValueFromIpcParsedCommand<Args>(r, out_c, pointer_buffer, pointer_buffer_offset, cur_rawdata_index, cur_c_size_offset, a_index, b_index, x_index, c_index, h_index)
