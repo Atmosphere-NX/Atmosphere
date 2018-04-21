@@ -31,9 +31,11 @@ std::tuple<Result> ProcessManagerService::create_process() {
     return std::make_tuple(0xF601);
 }
 
-std::tuple<Result> ProcessManagerService::get_program_info() {
-    /* TODO */
-    return std::make_tuple(0xF601);
+std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info) {
+    /* Zero output. */
+    std::fill(out_program_info.pointer, out_program_info.pointer + out_program_info.num_elements, (const ProcessManagerService::ProgramInfo){0});
+    
+    return std::make_tuple(0xA09);
 }
 
 std::tuple<Result, u64> ProcessManagerService::register_title(Registration::TidSid tid_sid) {

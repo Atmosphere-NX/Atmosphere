@@ -12,13 +12,28 @@ enum ProcessManagerServiceCmd {
 };
 
 class ProcessManagerService : IServiceObject {
+    struct ProgramInfo {
+        u8 main_thread_priority;
+        u8 default_cpu_id;
+        u16 application_type;
+        u32 main_thread_stack_size;
+        u64 title_id_min;
+        u32 acid_sac_size;
+        u32 aci0_sac_size;
+        u32 acid_fac_size;
+        u32 aci0_fac_size;
+        u8 ac_buffer[0x3E0];
+    };
+    
+    static_assert(sizeof(ProcessManagerService::ProgramInfo) == 0x400, "Incorrect ProgramInfo definition.");
+    
     public:
         Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
         
     private:
         /* Actual commands. */
         std::tuple<Result> create_process();
-        std::tuple<Result> get_program_info();
+        std::tuple<Result> get_program_info(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info);
         std::tuple<Result, u64> register_title(Registration::TidSid tid_sid);
         std::tuple<Result> unregister_title(u64 index);
 };
