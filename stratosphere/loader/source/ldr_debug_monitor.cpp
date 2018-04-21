@@ -6,50 +6,23 @@
 #include "ldr_launch_queue.hpp"
 #include "ldr_registration.hpp"
 
-Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count) {
-    
+std::tuple<Result> fake_clear_launch_queue() {
+    LaunchQueue::clear();
+    return std::make_tuple(0);
+}
+
+Result DebugMonitorService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     Result rc = 0xF601;
         
     switch ((DebugMonitorServiceCmd)cmd_id) {
         case Dmnt_Cmd_AddTitleToLaunchQueue:
-            /* Validate arguments. */
-            if (in_rawdata_size < 0x10 || r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 1) {
-                break;
-            }
-            
-            if (r->Statics[0] == NULL) {
-                rc = 0xCE01;
-                break;
-            }
-            
-            rc = add_title_to_launch_queue(((u64 *)in_rawdata)[0], (const char *)r->Statics[0], r->StaticSizes[0]);
-            
-            *out_raw_data_count = 0;
-                        
+            rc = WrapIpcCommandImpl<&DebugMonitorService::add_title_to_launch_queue>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
         case Dmnt_Cmd_ClearLaunchQueue:
-            if (r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 0) {
-                break;
-            }
-            
-            rc = clear_launch_queue();
-            *out_raw_data_count = 0;
-            
+            rc = WrapIpcCommandImpl<&DebugMonitorService::clear_launch_queue>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
         case Dmnt_Cmd_GetNsoInfo:
-            if (in_rawdata_size < 0x8 || r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 1) {
-                break;
-            }
-            
-            
-            rc = get_nso_info(((u64 *)in_rawdata)[0], r->Statics[0], r->StaticSizes[0], out_rawdata);
-            
-            if (R_SUCCEEDED(rc)) {  
-                *out_raw_data_count = 1;
-            } else {                
-                *out_raw_data_count = 0;
-            }
-        
+            rc = WrapIpcCommandImpl<&DebugMonitorService::get_nso_info>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
         default:
             break;
@@ -57,21 +30,23 @@ Result DebugMonitorService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32
     return rc;
 }
 
-Result DebugMonitorService::add_title_to_launch_queue(u64 tid, const char *args, size_t args_size) {
-    return LaunchQueue::add(tid, args, args_size);
+std::tuple<Result> DebugMonitorService::add_title_to_launch_queue(u64 tid, InPointer<char> args) {
+    fprintf(stderr, "Add to launch queue: %p, %X\n", args.pointer, args.num_elements);
+    return std::make_tuple(LaunchQueue::add(tid, args.pointer, args.num_elements));
 }
 
-Result DebugMonitorService::clear_launch_queue() {
+std::tuple<Result> DebugMonitorService::clear_launch_queue(u64 dat) {
+    fprintf(stderr, "Clear launch queue: %lx\n", dat);
     LaunchQueue::clear();
-    return 0;
+    return std::make_tuple(0);
 }
 
-Result DebugMonitorService::get_nso_info(u64 pid, void *out, size_t out_size, u32 *out_num_nsos) {
-    u32 max_out = out_size / (sizeof(Registration::NsoInfo));
+std::tuple<Result, u32> DebugMonitorService::get_nso_info(u64 pid, OutPointerWithClientSize<Registration::NsoInfo> out) {
+    u32 out_num_nsos = 0;
+                    
+    //std::fill(out.pointer, out.pointer + out.num_elements, (const Registration::NsoInfo){0});
     
-    Registration::NsoInfo *nso_out = (Registration::NsoInfo *)out;
+    Result rc = Registration::get_nso_infos_for_process_id(out.pointer, out.num_elements, pid, &out_num_nsos);
     
-    std::fill(nso_out, nso_out + max_out, (const Registration::NsoInfo){0});
-    
-    return Registration::get_nso_infos_for_process_id(nso_out, max_out, pid, out_num_nsos);
+    return std::make_tuple(rc, out_num_nsos);
 }

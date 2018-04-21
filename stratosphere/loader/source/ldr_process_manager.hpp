@@ -13,12 +13,12 @@ enum ProcessManagerServiceCmd {
 
 class ProcessManagerService : IServiceObject {
     public:
-        Result dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count);
+        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
         
     private:
         /* Actual commands. */
-        Result create_process();
-        Result get_program_info();
-        Result register_title(const Registration::TidSid *tid_sid, u64 *out_index);
-        Result unregister_title(u64 index);
+        std::tuple<Result> create_process();
+        std::tuple<Result> get_program_info();
+        std::tuple<Result, u64> register_title(Registration::TidSid tid_sid);
+        std::tuple<Result> unregister_title(u64 index);
 };

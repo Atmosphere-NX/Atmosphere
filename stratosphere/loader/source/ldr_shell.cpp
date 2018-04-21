@@ -2,35 +2,16 @@
 #include "ldr_shell.hpp"
 #include "ldr_launch_queue.hpp"
 
-Result ShellService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count) {
+Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     
     Result rc = 0xF601;
         
     switch ((ShellServiceCmd)cmd_id) {
         case Shell_Cmd_AddTitleToLaunchQueue:
-            /* Validate arguments. */
-            if (in_rawdata_size < 0x10 || r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 1) {
-                break;
-            }
-            
-            if (r->Statics[0] == NULL) {
-                rc = 0xCE01;
-                break;
-            }
-            
-            rc = add_title_to_launch_queue(((u64 *)in_rawdata)[0], (const char *)r->Statics[0], r->StaticSizes[0]);
-            
-            *out_raw_data_count = 0;
-            
+            rc = WrapIpcCommandImpl<&ShellService::add_title_to_launch_queue>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
+            rc = WrapIpcCommandImpl<&ShellService::add_title_to_launch_queue>(this, r, out_c, pointer_buffer, pointer_buffer_size);
         case Shell_Cmd_ClearLaunchQueue:
-            if (r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 0) {
-                break;
-            }
-            
-            rc = clear_launch_queue();
-            *out_raw_data_count = 0;
-            
             break;
         default:
             break;
@@ -38,11 +19,13 @@ Result ShellService::dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_b
     return rc;
 }
 
-Result ShellService::add_title_to_launch_queue(u64 tid, const char *args, size_t args_size) {
-    return LaunchQueue::add(tid, args, args_size);
+std::tuple<Result> ShellService::add_title_to_launch_queue(u64 tid, InPointer<char> args) {
+    fprintf(stderr, "Add to launch queue: %p, %X\n", args.pointer, args.num_elements);
+    return std::make_tuple(LaunchQueue::add(tid, args.pointer, args.num_elements));
 }
 
-Result ShellService::clear_launch_queue() {
+std::tuple<Result> ShellService::clear_launch_queue(u64 dat) {
+    fprintf(stderr, "Clear launch queue: %lx\n", dat);
     LaunchQueue::clear();
-    return 0;
+    return std::make_tuple(0);
 }

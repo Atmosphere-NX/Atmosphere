@@ -10,10 +10,10 @@ enum ShellServiceCmd {
 
 class ShellService : IServiceObject {
     public:
-        Result dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count);
+        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
         
     private:
         /* Actual commands. */
-        Result add_title_to_launch_queue(u64 tid, const char *args, size_t args_size);
-        Result clear_launch_queue();
+        std::tuple<Result> add_title_to_launch_queue(u64 tid, InPointer<char> args);
+        std::tuple<Result> clear_launch_queue(u64 dat);
 };

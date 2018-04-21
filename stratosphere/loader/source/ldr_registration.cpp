@@ -18,20 +18,21 @@ Registration::Process *Registration::get_free_process() {
 
 Registration::Process *Registration::get_process(u64 index) {
     unsigned int i;
-    for (i = 0; !g_registration_list.processes[i].in_use || g_registration_list.processes[i].index != index; i++) {
-        if (i >= REGISTRATION_LIST_MAX) {
-            return NULL;
-        }
+    for (i = 0; i < REGISTRATION_LIST_MAX && (!g_registration_list.processes[i].in_use || g_registration_list.processes[i].index != index); i++) {
+    }
+    if (i >= REGISTRATION_LIST_MAX) {
+        return NULL;
     }
     return &g_registration_list.processes[i];
 }
 
 Registration::Process *Registration::get_process_by_process_id(u64 pid) {
     unsigned int i;
-    for (i = 0; !g_registration_list.processes[i].in_use || g_registration_list.processes[i].process_id != pid; i++) {
-        if (i >= REGISTRATION_LIST_MAX) {
-            return NULL;
-        }
+    for (i = 0; i < REGISTRATION_LIST_MAX && (!g_registration_list.processes[i].in_use || g_registration_list.processes[i].process_id != pid); i++) {
+        
+    }
+    if (i >= REGISTRATION_LIST_MAX) {
+        return NULL;
     }
     return &g_registration_list.processes[i];
 }

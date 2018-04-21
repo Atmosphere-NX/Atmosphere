@@ -3,6 +3,7 @@
 #include <type_traits>
 #include <cstdio>
 
+#include "ipc_templating.hpp"
 #include "iserviceobject.hpp"
 #include "iwaitable.hpp"
 #include "serviceserver.hpp"
@@ -83,14 +84,12 @@ class ServiceSession : public IWaitable {
                     /* TODO: Panic? */
                 }
                 u32 *cmdbuf = (u32 *)armGetTls();
-                u32 out_words = 4;
-                u32 extra_rawdata_count = 0;
-                u32 wordcount = 0;
                 Result retval = 0;
                 u32 *rawdata_start = cmdbuf;
                                 
                 IpcParsedCommand r;
                 IpcCommand c;
+                
                 
                 fprintf(stderr, "Doing ServiceSession parse...\n");
                 
@@ -100,7 +99,6 @@ class ServiceSession : public IWaitable {
                                 
                 if (R_SUCCEEDED(retval)) {
                     rawdata_start = (u32 *)r.Raw;
-                    wordcount = r.RawSize;
                     switch (r.CommandType) {
                         case IpcCommandType_Close:
                             /* TODO: This should close the session and clean up its resources. */
@@ -116,13 +114,11 @@ class ServiceSession : public IWaitable {
                             break;
                         case IpcCommandType_Request:
                         case IpcCommandType_RequestWithContext:
-                            retval = this->service_object->dispatch(&r, &c, cmdbuf, rawdata_start[2], &rawdata_start[4], wordcount - 6, &cmdbuf[8], &extra_rawdata_count);
-                            out_words += extra_rawdata_count;
+                            retval = this->service_object->dispatch(r, c, rawdata_start[2], (u8 *)this->pointer_buffer, sizeof(this->pointer_buffer));
                             break;
                         case IpcCommandType_Control:
                         case IpcCommandType_ControlWithContext:
-                            retval = this->dispatch_control_command(&r, &c, cmdbuf, rawdata_start[2], &rawdata_start[4], wordcount - 6, &cmdbuf[8], &extra_rawdata_count);
-                            out_words += extra_rawdata_count;
+                            retval = this->dispatch_control_command(r, c, rawdata_start[2]);
                             break;
                         case IpcCommandType_Invalid:
                         default:
@@ -132,17 +128,7 @@ class ServiceSession : public IWaitable {
                     
                 }
                 
-                if (retval != 0xF601) {      
-                    struct {
-                        u64 magic;
-                        u64 retval;
-                    } *raw;
-
-                    raw = (decltype(raw))ipcPrepareHeader(&c, out_words * 4);
-
-                    raw->magic = SFCO_MAGIC;
-                    raw->retval = retval;
-                    
+                if (retval != 0xF601) {                        
                     rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, this->server_handle, 0);
                 } else {
                     rc = retval;
@@ -152,30 +138,46 @@ class ServiceSession : public IWaitable {
             return rc;
         }
         
-        Result dispatch_control_command(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count) {
+        /* Control commands. */
+        std::tuple<Result> ConvertCurrentObjectToDomain() {
+            /* TODO */
+            return std::make_tuple(0xF601);
+        }
+        std::tuple<Result> CopyFromCurrentDomain() {
+            /* TODO */
+            return std::make_tuple(0xF601);
+        }
+        std::tuple<Result> CloneCurrentObject() {
+            /* TODO */
+            return std::make_tuple(0xF601);
+        }
+        std::tuple<Result, u32> QueryPointerBufferSize() {
+            return std::make_tuple(0x0, (u32)sizeof(this->pointer_buffer));
+        }
+        std::tuple<Result> CloneCurrentObjectEx() {
+            /* TODO */
+            return std::make_tuple(0xF601);
+        }
+        
+        Result dispatch_control_command(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id) {
             Result rc = 0xF601;
             
             /* TODO: Implement. */
             switch ((IpcControlCommand)cmd_id) {
                 case IpcCtrl_Cmd_ConvertCurrentObjectToDomain:
-                    /* TODO */
+                    rc = WrapIpcCommandImpl<&ServiceSession::ConvertCurrentObjectToDomain>(this, r, out_c, (u8 *)this->pointer_buffer, sizeof(this->pointer_buffer));
                     break;
                 case IpcCtrl_Cmd_CopyFromCurrentDomain:
-                    /* TODO */
+                    rc = WrapIpcCommandImpl<&ServiceSession::CopyFromCurrentDomain>(this, r, out_c, (u8 *)this->pointer_buffer, sizeof(this->pointer_buffer));
                     break;
                 case IpcCtrl_Cmd_CloneCurrentObject:
-                    /* TODO */
+                    rc = WrapIpcCommandImpl<&ServiceSession::CloneCurrentObject>(this, r, out_c, (u8 *)this->pointer_buffer, sizeof(this->pointer_buffer));
                     break;
                 case IpcCtrl_Cmd_QueryPointerBufferSize:
-                    if (r->HasPid || r->NumHandles != 0 || r->NumBuffers != 0 || r->NumStatics != 0 || r->NumStaticsOut != 0) {
-                        break;
-                    }
-                    *out_rawdata = sizeof(this->pointer_buffer);
-                    *out_raw_data_count = 1;
-                    rc = 0;
+                    rc = WrapIpcCommandImpl<&ServiceSession::QueryPointerBufferSize>(this, r, out_c, (u8 *)this->pointer_buffer, sizeof(this->pointer_buffer));
                     break;
                 case IpcCtrl_Cmd_CloneCurrentObjectEx:
-                    /* TODO */
+                    rc = WrapIpcCommandImpl<&ServiceSession::CloneCurrentObjectEx>(this, r, out_c, (u8 *)this->pointer_buffer, sizeof(this->pointer_buffer));
                     break;
                 default:
                     break;

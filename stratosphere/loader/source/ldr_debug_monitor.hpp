@@ -2,6 +2,7 @@
 #include <switch.h>
 
 #include "iserviceobject.hpp"
+#include "ldr_registration.hpp"
 
 enum DebugMonitorServiceCmd {
     Dmnt_Cmd_AddTitleToLaunchQueue = 0,
@@ -11,11 +12,11 @@ enum DebugMonitorServiceCmd {
 
 class DebugMonitorService : IServiceObject {
     public:
-        Result dispatch(IpcParsedCommand *r, IpcCommand *out_c, u32 *cmd_buf, u32 cmd_id, u32 *in_rawdata, u32 in_rawdata_size, u32 *out_rawdata, u32 *out_raw_data_count);
+        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
         
     private:
         /* Actual commands. */
-        Result add_title_to_launch_queue(u64 tid, const char *args, size_t args_size);
-        Result clear_launch_queue();
-        Result get_nso_info(u64 pid, void *out, size_t out_size, u32 *out_num_nsos);
+        std::tuple<Result> add_title_to_launch_queue(u64 tid, InPointer<char> args);
+        std::tuple<Result> clear_launch_queue(u64 dat);
+        std::tuple<Result, u32> get_nso_info(u64 pid, OutPointerWithClientSize<Registration::NsoInfo> out);
 };
