@@ -106,8 +106,13 @@ struct is_ipc_buffer {
 };
 
 template <typename T>
+struct is_ipc_handle {
+    static const size_t value = (std::is_same<T, MovedHandle>::value || std::is_same<T, CopiedHandle>::value) ? 1 : 0;
+};
+
+template <typename T>
 struct size_in_raw_data {
-    static const size_t value = (is_ipc_buffer<T>::value) ? 0 : ((sizeof(T) < sizeof(u32)) ? sizeof(u32) : (sizeof(T) + 3) & (~3));
+    static const size_t value = (is_ipc_buffer<T>::value || is_ipc_handle<T>::value) ? 0 : ((sizeof(T) < sizeof(u32)) ? sizeof(u32) : (sizeof(T) + 3) & (~3));
 };
 
 template <typename ...Args>
@@ -163,12 +168,6 @@ struct is_ipc_inoutbuffer {
 template <typename ...Args>
 struct num_inoutbuffers_in_arguments {
     static const size_t value = (is_ipc_inoutbuffer<Args>::value + ... + 0);
-};
-
-
-template <typename T>
-struct is_ipc_handle {
-    static const size_t value = (std::is_same<T, MovedHandle>::value || std::is_same<T, CopiedHandle>::value) ? 1 : 0;
 };
 
 template <typename ...Args>
@@ -329,6 +328,26 @@ constexpr size_t GetAndUpdateOffsetIntoRawData(size_t& offset) {
 	return old;
 }
 
+template<typename T>
+void EncodeValueIntoIpcMessageBeforePrepare(IpcCommand *c, T value) {
+    if constexpr (std::is_same<T, MovedHandle>::value) {
+        ipcSendHandleMove(c, value.handle);
+    } else if constexpr (std::is_same<T, CopiedHandle>::value) {
+        ipcSendHandleCopy(c, value.handle);
+    } else if constexpr (std::is_same<T, PidDescriptor>::value) {
+        ipcSendPid(c);
+    }
+}
+
+template<typename T>
+void EncodeValueIntoIpcMessageAfterPrepare(u8 *cur_out, T value) {
+    if constexpr (is_ipc_handle<T>::value || std::is_same<T, PidDescriptor>::value) {
+        /* Do nothing. */
+    } else {
+        *((T *)(cur_out)) = value;
+    }
+}
+
 template<typename... Args>
 struct Encoder<std::tuple<Args...>> {
     IpcCommand &out_command;
@@ -339,7 +358,9 @@ struct Encoder<std::tuple<Args...>> {
         
         u8 *tls = (u8 *)armGetTls();
         
-        std::fill(tls, tls + 0x100, 0x100);
+        std::fill(tls, tls + 0x100, 0x00);
+        
+        ((EncodeValueIntoIpcMessageBeforePrepare<Args>(&out_command, args)), ...);
         
         /* Remove the extra space resulting from first Result type. */
         struct {
@@ -350,14 +371,20 @@ struct Encoder<std::tuple<Args...>> {
         raw->magic = SFCO_MAGIC;
         
         u8 *raw_data = (u8 *)&raw->result;
-                
-		((*((Args *)(raw_data + GetAndUpdateOffsetIntoRawData<Args>(offset))) = (args)), ...);
         
-        if (R_FAILED(raw->result)) {
-            ipcPrepareHeader(&out_command, sizeof(raw));
+        ((EncodeValueIntoIpcMessageAfterPrepare<Args>(raw_data + GetAndUpdateOffsetIntoRawData<Args>(offset), args)), ...);
+        
+        Result rc = raw->result;
+                        
+        if (R_FAILED(rc)) {
+            std::fill(tls, tls + 0x100, 0x00);
+            ipcInitialize(&out_command);
+            raw = (decltype(raw))ipcPrepareHeader(&out_command, sizeof(raw));
+            raw->magic = SFCO_MAGIC;
+            raw->result = rc;
         }
                 
-        return raw->result;
+        return rc;
 	}
 };
 

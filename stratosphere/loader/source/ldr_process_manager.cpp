@@ -28,9 +28,10 @@ Result ProcessManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u
     return rc;
 }
 
-std::tuple<Result> ProcessManagerService::create_process() {
+std::tuple<Result, MovedHandle> ProcessManagerService::create_process(u64 flags, u64 title_id, CopiedHandle reslimit_h) {
     /* TODO */
-    return std::make_tuple(0xF601);
+    fprintf(stderr, "CreateProcess(%016lx, %016lx, %08x);\n", flags, title_id, reslimit_h.handle);
+    return std::make_tuple(0xF601, MovedHandle{0x00});
 }
 
 std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info) {
