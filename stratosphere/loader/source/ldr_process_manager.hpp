@@ -21,7 +21,7 @@ class ProcessManagerService : IServiceObject {
         u32 acid_sac_size;
         u32 aci0_sac_size;
         u32 acid_fac_size;
-        u32 aci0_fac_size;
+        u32 aci0_fah_size;
         u8 ac_buffer[0x3E0];
     };
     
@@ -36,4 +36,7 @@ class ProcessManagerService : IServiceObject {
         std::tuple<Result> get_program_info(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info);
         std::tuple<Result, u64> register_title(Registration::TidSid tid_sid);
         std::tuple<Result> unregister_title(u64 index);
+        
+        /* Utilities */
+        Result populate_program_info_buffer(ProcessManagerService::ProgramInfo *out, Registration::TidSid *tid_sid);
 };

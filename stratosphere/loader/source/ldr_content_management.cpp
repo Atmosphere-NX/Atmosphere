@@ -14,6 +14,13 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
         return rc;
     }
     
+    /* Fix up path. */
+    for (unsigned int i = 0; i < FS_MAX_PATH && path[i] != '\x00'; i++) {
+        if (path[i] == '\\') {
+            path[i] = '/';
+        }
+    }
+    
     /* Always re-initialize fsp-ldr, in case it's closed */
     if (R_FAILED(rc = fsldrInitialize())) {
         return rc;
@@ -31,7 +38,6 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
 
 Result ContentManagement::UnmountCode() {
     fsdevUnmountDevice("code");
-    serviceClose(&g_CodeFileSystem.s);
     return 0;
 }
 
@@ -76,7 +82,7 @@ Result ContentManagement::GetContentPathForTidSid(char *out_path, Registration::
     return GetContentPath(out_path, tid_sid->title_id, tid_sid->storage_id);
 }
 
-Result ContentManagement::SetContentPath(char *path, u64 tid, FsStorageId sid) {
+Result ContentManagement::SetContentPath(const char *path, u64 tid, FsStorageId sid) {
     Result rc;
     LrLocationResolver lr;
     
@@ -91,6 +97,6 @@ Result ContentManagement::SetContentPath(char *path, u64 tid, FsStorageId sid) {
     return rc;
 }
 
-Result ContentManagement::SetContentPathForTidSid(char *path, Registration::TidSid *tid_sid) {
+Result ContentManagement::SetContentPathForTidSid(const char *path, Registration::TidSid *tid_sid) {
     return SetContentPath(path, tid_sid->title_id, tid_sid->storage_id);
 }

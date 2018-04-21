@@ -2,6 +2,8 @@
 #include "ldr_process_manager.hpp"
 #include "ldr_registration.hpp"
 #include "ldr_launch_queue.hpp"
+#include "ldr_content_management.hpp"
+#include "ldr_npdm.hpp"
 
 Result ProcessManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     
@@ -32,10 +34,32 @@ std::tuple<Result> ProcessManagerService::create_process() {
 }
 
 std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info) {
+    Result rc;
+    char nca_path[FS_MAX_PATH] = {0};
     /* Zero output. */
     std::fill(out_program_info.pointer, out_program_info.pointer + out_program_info.num_elements, (const ProcessManagerService::ProgramInfo){0});
     
-    return std::make_tuple(0xA09);
+    rc = populate_program_info_buffer(out_program_info.pointer, &tid_sid);
+    
+    if (R_FAILED(rc)) {
+        return std::make_tuple(rc);
+    }
+    
+    if (tid_sid.title_id != out_program_info.pointer->title_id_min) {
+        rc = ContentManagement::GetContentPathForTidSid(nca_path, &tid_sid);
+        if (R_FAILED(rc)) {
+            return std::make_tuple(rc);
+        }
+        
+        rc = ContentManagement::SetContentPath(nca_path, out_program_info.pointer->title_id_min, tid_sid.storage_id);
+        if (R_FAILED(rc)) {
+            return std::make_tuple(rc);
+        }
+        
+        rc = LaunchQueue::add_copy(tid_sid.title_id, out_program_info.pointer->title_id_min);
+    }
+    
+    return std::make_tuple(rc);
 }
 
 std::tuple<Result, u64> ProcessManagerService::register_title(Registration::TidSid tid_sid) {
@@ -53,4 +77,75 @@ std::tuple<Result> ProcessManagerService::unregister_title(u64 index) {
     } else {
         return std::make_tuple(0x1009);
     }
+}
+
+
+Result ProcessManagerService::populate_program_info_buffer(ProcessManagerService::ProgramInfo *out, Registration::TidSid *tid_sid) {
+    NpdmUtils::NpdmInfo info;
+    Result rc;
+    
+    rc = ContentManagement::MountCodeForTidSid(tid_sid);  
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    rc = NpdmUtils::LoadNpdm(tid_sid->title_id, &info);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    ContentManagement::UnmountCode();
+    
+    out->main_thread_priority = info.header->main_thread_prio;
+    out->default_cpu_id = info.header->default_cpuid;
+    out->main_thread_stack_size = info.header->main_stack_size;
+    out->title_id_min = info.acid->title_id_range_min;
+    
+    out->acid_fac_size = info.acid->fac_size;
+    out->aci0_sac_size = info.aci0->sac_size;
+    out->aci0_fah_size = info.aci0->fah_size;
+    
+    size_t offset = 0;
+    rc = 0x19009;
+    if (offset + info.acid->sac_size < sizeof(out->ac_buffer)) {
+        out->acid_sac_size = info.acid->sac_size;
+        std::memcpy(out->ac_buffer + offset, info.acid_sac, out->acid_sac_size);
+        offset += out->acid_sac_size;
+        if (offset + info.aci0->sac_size < sizeof(out->ac_buffer)) {
+            out->aci0_sac_size = info.aci0->sac_size;
+            std::memcpy(out->ac_buffer + offset, info.aci0_sac, out->aci0_sac_size);
+            offset += out->aci0_sac_size;
+            if (offset + info.acid->fac_size < sizeof(out->ac_buffer)) {
+                out->acid_fac_size = info.acid->fac_size;
+                std::memcpy(out->ac_buffer + offset, info.acid_fac, out->acid_fac_size);
+                offset += out->acid_fac_size;
+                if (offset + info.aci0->fah_size < sizeof(out->ac_buffer)) {
+                    out->aci0_fah_size = info.aci0->fah_size;
+                    std::memcpy(out->ac_buffer + offset, info.aci0_fah, out->aci0_fah_size);
+                    offset += out->aci0_fah_size;
+                    rc = 0;
+                }
+            }
+        }
+    }
+    
+    /* Parse application type. */
+    if (R_SUCCEEDED(rc)) {
+        u32 *kac = (u32 *)info.acid_kac;
+        u32 num_entries = info.acid->kac_size / sizeof(u32);
+        out->application_type = 0;
+        for (unsigned int i = 0; i < num_entries; i++) {
+            if ((kac[i] & 0x3FFF) == 0x1FFF) {
+                u16 app_type = (kac[i] >> 14) & 7;
+                if (app_type == 1) {
+                    out->application_type |= 1;
+                } else if (app_type == 2) {
+                    out->application_type |= 2;
+                }
+            }
+        }
+    }
+    
+    
+    return rc;
 }

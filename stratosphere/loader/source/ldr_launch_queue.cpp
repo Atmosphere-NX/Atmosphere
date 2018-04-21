@@ -21,6 +21,16 @@ Result LaunchQueue::add(u64 tid, const char *args, u64 arg_size) {
     return 0x0;
 }
 
+Result LaunchQueue::add_copy(u64 tid_base, u64 tid) {
+    unsigned int idx = get_index(tid_base);
+    if (idx == LAUNCH_QUEUE_FULL) {
+        return 0x0;
+    }
+    
+    return add(tid, g_launch_queue[idx].args, g_launch_queue[idx].arg_size);
+}
+
+
 Result LaunchQueue::add_item(const LaunchItem *item) {
     if(item->arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {
         return 0x209;
