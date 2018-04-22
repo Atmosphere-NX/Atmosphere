@@ -73,3 +73,5 @@ fusee/out/**
 fusee/build/**
 stratosphere/loader/out/**
 stratosphere/loader/build/**
+stratosphere/sm/out/**
+stratosphere/sm/build/**
