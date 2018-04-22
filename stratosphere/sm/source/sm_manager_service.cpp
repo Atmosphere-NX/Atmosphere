@@ -1,5 +1,6 @@
 #include <switch.h>
 #include "sm_manager_service.hpp"
+#include "sm_registration.hpp"
 
 Result ManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     Result rc = 0xF601;
@@ -19,11 +20,9 @@ Result ManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_
 
 
 std::tuple<Result> ManagerService::register_process(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac) {
-    /* TODO */
-    return std::make_tuple(0xF601);
+    return std::make_tuple(Registration::RegisterProcess(pid, acid_sac.buffer, acid_sac.num_elements, aci0_sac.buffer, aci0_sac.num_elements));
 }
 
 std::tuple<Result> ManagerService::unregister_process(u64 pid) {
-    /* TODO */
-    return std::make_tuple(0xF601);
+    return std::make_tuple(Registration::UnregisterProcess(pid));
 }
