@@ -16,9 +16,15 @@
 void printk(char *fmt, ...)
 {
 	va_list list;
-	char buf[512];
 	va_start(list, fmt);
-	vsnprintf(buf, sizeof(buf), fmt, list);
-	video_puts(buf);
+	vprintk(fmt, list);
 	va_end(list);
+}
+
+
+void vprintk(char *fmt, va_list args)
+{
+	char buf[512];
+	vsnprintf(buf, sizeof(buf), fmt, args);
+	video_puts(buf);
 }
