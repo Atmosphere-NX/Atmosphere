@@ -8,6 +8,7 @@
 
 #include "sm_manager_service.hpp"
 #include "sm_user_service.hpp"
+#include "sm_registration.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -41,8 +42,7 @@ void __appInit(void) {
 }
 
 void __appExit(void) {
-    /* Disconnect from ourselves. */
-    smExit();
+    /* Nothing to clean up, because we're sm. */
 }
 
 int main(int argc, char **argv)
@@ -55,11 +55,13 @@ int main(int argc, char **argv)
     /* Create sm:, (and thus allow things to register to it). */
     server_manager->add_waitable(new ManagedPortServer<UserService>("sm:", 0x40));
     
-    /* Initialize, connecting to ourself. */
-    smInitialize();
+    /* Create sm:m manually. */
+    Handle smm_h;
+    if (R_FAILED(Registration::RegisterServiceForSelf(smEncodeName("sm:m"), 1, false, &smm_h))) {
+        /* TODO: Panic. */
+    }
     
-    /* Create sm:m, using libnx to talk to ourself. */
-    server_manager->add_waitable(new ServiceServer<ManagerService>("sm:m", 1));
+    server_manager->add_waitable(new ExistingPortServer<ManagerService>(smm_h, 1));
     
     /* Loop forever, servicing our services. */
     server_manager->process();

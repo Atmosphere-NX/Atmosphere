@@ -221,6 +221,44 @@ Result Registration::RegisterServiceForPid(u64 pid, u64 service, u64 max_session
     return rc;
 }
 
+Result Registration::RegisterServiceForSelf(u64 service, u64 max_sessions, bool is_light, Handle *out) {
+    u64 pid;
+    Result rc = svcGetProcessId(&pid, CUR_PROCESS_HANDLE);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    u64 service_name_len = 0;
+    while ((service >> (8 * service_name_len)) & 0xFF) {
+        service_name_len++;
+    }
+    
+    /* If the service has bytes after a null terminator, that's no good. */
+    if ((service >> (8 * service_name_len))) {
+        return 0xC15;
+    }
+        
+    if (HasService(service)) {
+        return 0x815;
+    }
+    
+    Registration::Service *free_service = GetFreeService();
+    if (free_service == NULL) {
+        return 0xA15;
+    }
+    
+    *out = 0;
+    *free_service = (const Registration::Service){0};
+    rc = svcCreatePort(out, &free_service->port_h, max_sessions, is_light, (char *)&free_service->service_name);
+    
+    if (R_SUCCEEDED(rc)) {
+        free_service->service_name = service;
+        free_service->owner_pid = pid;
+    }
+    
+    return rc;
+}
+
 Result Registration::UnregisterServiceForPid(u64 pid, u64 service) {
     if (!service) {
         return 0xC15;

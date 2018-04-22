@@ -36,5 +36,6 @@ class Registration {
         static bool HasService(u64 service);
         static Result GetServiceForPid(u64 pid, u64 service, Handle *out);
         static Result RegisterServiceForPid(u64 pid, u64 service, u64 max_sessions, bool is_light, Handle *out);
+        static Result RegisterServiceForSelf(u64 service, u64 max_sessions, bool is_light, Handle *out);
         static Result UnregisterServiceForPid(u64 pid, u64 service);
 };
