@@ -1,4 +1,3 @@
-#pragma once
 #include <switch.h>
 
 #include "ldr_process_creation.hpp"

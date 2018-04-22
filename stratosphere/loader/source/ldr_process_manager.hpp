@@ -29,7 +29,11 @@ class ProcessManagerService : IServiceObject {
     static_assert(sizeof(ProcessManagerService::ProgramInfo) == 0x400, "Incorrect ProgramInfo definition.");
     
     public:
-        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
+        virtual Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
+        virtual Result handle_deferred() {
+            /* This service will never defer. */
+            return 0;
+        }
         
     private:
         /* Actual commands. */

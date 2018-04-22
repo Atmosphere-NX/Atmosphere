@@ -1,5 +1,6 @@
 #include <switch.h>
 #include <algorithm>
+#include <stratosphere/servicesession.hpp>
 #include "sm_registration.hpp"
 
 static Registration::Process g_process_list[REGISTRATION_LIST_MAX_PROCESS] = {0};
@@ -132,6 +133,24 @@ bool Registration::HasService(u64 service) {
     return false;
 }
 
+Result Registration::GetServiceHandle(u64 service, Handle *out) {
+    Registration::Service *target_service = GetService(service);
+    if (target_service == NULL) {
+        /* Note: This defers the result until later. */
+        return RESULT_DEFER_SESSION;
+    }
+    
+    *out = 0;
+    Result rc = svcConnectToPort(out, target_service->port_h);
+    if (R_FAILED(rc)) {
+        if ((rc & 0x3FFFFF) == 0xE01) {
+            return 0x615;
+        }
+    }
+
+    return rc;
+}
+
 Result Registration::GetServiceForPid(u64 pid, u64 service, Handle *out) {
     if (!service) {
         return 0xC15;
@@ -158,20 +177,7 @@ Result Registration::GetServiceForPid(u64 pid, u64 service, Handle *out) {
         }
     }
     
-    Registration::Service *target_service = GetService(service);
-    if (target_service == NULL) {
-        /* TODO: This defers the request, somehow? Needs to be RE'd in more detail. */
-        return 0x6580A;
-    }
-    
-    *out = 0;
-    Result rc = svcConnectToPort(out, target_service->port_h);
-    if (R_FAILED(rc)) {
-        if ((rc & 0x3FFFFF) == 0xE01) {
-            return 0x615;
-        }
-    }
-    return rc;
+    return GetServiceHandle(service, out);
 }
 
 Result Registration::RegisterServiceForPid(u64 pid, u64 service, u64 max_sessions, bool is_light, Handle *out) {

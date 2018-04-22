@@ -18,6 +18,11 @@ Result ManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_
     return rc;
 }
 
+Result ManagerService::handle_deferred() {
+    /* This service is never deferrable. */
+    return 0;
+}
+
 
 std::tuple<Result> ManagerService::register_process(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac) {
     return std::make_tuple(Registration::RegisterProcess(pid, acid_sac.buffer, acid_sac.num_elements, aci0_sac.buffer, aci0_sac.num_elements));

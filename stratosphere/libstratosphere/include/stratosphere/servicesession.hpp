@@ -16,6 +16,8 @@ enum IpcControlCommand {
 };
 
 #define POINTER_BUFFER_SIZE_MAX 0xFFFF
+#define RESULT_DEFER_SESSION (0x6580A)
+
 
 template <typename T>
 class IServer;
@@ -66,6 +68,20 @@ class ServiceSession : public IWaitable {
         
         virtual Handle get_handle() {
             return this->server_handle;
+        }
+        
+        virtual void handle_deferred() {
+            Result rc = this->service_object->handle_deferred();
+            int handle_index;
+            
+            if (rc != RESULT_DEFER_SESSION) {
+                this->set_deferred(false);
+                if (rc == 0xF601) {
+                    svcCloseHandle(this->get_handle());
+                } else {
+                    rc = svcReplyAndReceive(&handle_index, &this->server_handle, 0, this->server_handle, 0);
+                }
+            }
         }
         
         virtual Result handle_signaled(u64 timeout) {
@@ -124,10 +140,15 @@ class ServiceSession : public IWaitable {
                     
                 }
                 
-                if (retval != 0xF601) {                        
-                    rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, this->server_handle, 0);
-                } else {
+                if (retval == RESULT_DEFER_SESSION) {
+                    /* Session defer. */
+                    this->set_deferred(true);
                     rc = retval;
+                } else if (retval == 0xF601) {
+                    /* Session close. */
+                    rc = retval;
+                } else {
+                    rc = svcReplyAndReceive(&handle_index, &this->server_handle, 0, this->server_handle, 0);
                 }
             }
               

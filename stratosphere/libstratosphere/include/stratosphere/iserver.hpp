@@ -90,6 +90,11 @@ class IServer : public IWaitable {
             return this->port_handle;
         }
         
+        
+        virtual void handle_deferred() {
+            /* TODO: Panic, because we can never defer a server. */
+        }
+        
         virtual Result handle_signaled(u64 timeout) {
             /* If this server's port was signaled, accept a new session. */
             Handle session_h;

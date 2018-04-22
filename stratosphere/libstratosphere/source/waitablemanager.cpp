@@ -41,7 +41,14 @@ void WaitableManager::process() {
         handles.resize(signalables.size());
         std::transform(signalables.begin(), signalables.end(), handles.begin(), [](IWaitable *w) { return w->get_handle(); });
         
-        rc = svcWaitSynchronization(&handle_index, handles.data(), handles.size(), this->timeout);
+        unsigned int num_not_deferred = 0;
+        for (auto & signalable : signalables) {
+            if (!signalable->get_deferred()) {
+                num_not_deferred++;
+            }
+        }
+        
+        rc = svcWaitSynchronization(&handle_index, handles.data(), num_not_deferred, this->timeout);
         if (R_SUCCEEDED(rc)) {
             /* Handle a signaled waitable. */
             /* TODO: What timeout should be passed here? */
@@ -79,6 +86,9 @@ void WaitableManager::process() {
             for (int i = 0; i < handle_index; i++) {
                 signalables[i]->update_priority();
             }
-        } 
+        }
+        
+        /* Do deferred callback for each waitable. */
+        std::for_each(signalables.begin() + num_not_deferred, signalables.end(), [](IWaitable *w) { w->handle_deferred(); }); 
     }
 }

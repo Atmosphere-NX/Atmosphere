@@ -1,4 +1,5 @@
 #include <switch.h>
+#include <stratosphere/servicesession.hpp>
 #include "sm_user_service.hpp"
 #include "sm_registration.hpp"
 
@@ -24,6 +25,11 @@ Result UserService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id,
     return rc;
 }
 
+Result UserService::handle_deferred() {
+    /* If we're deferred, GetService failed. */
+    return WrapDeferredIpcCommandImpl<&UserService::deferred_get_service>(this, this->deferred_service);
+}
+
 
 std::tuple<Result> UserService::initialize(PidDescriptor pid) {
     this->pid = pid.pid;
@@ -37,6 +43,16 @@ std::tuple<Result, MovedHandle> UserService::get_service(u64 service) {
     if (this->has_initialized) {
         rc = Registration::GetServiceForPid(this->pid, service, &session_h);
     }
+    /* It's possible that this will end up deferring us...take that into account. */
+    if (rc == RESULT_DEFER_SESSION) {
+        this->deferred_service = service;
+    }
+    return std::make_tuple(rc, MovedHandle{session_h});
+}
+
+std::tuple<Result, MovedHandle> UserService::deferred_get_service(u64 service) {
+    Handle session_h = 0;
+    Result rc = Registration::GetServiceHandle(service, &session_h);
     return std::make_tuple(rc, MovedHandle{session_h});
 }
 
