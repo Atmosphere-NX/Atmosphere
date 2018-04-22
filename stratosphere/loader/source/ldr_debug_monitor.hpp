@@ -1,7 +1,7 @@
 #pragma once
 #include <switch.h>
 
-#include "iserviceobject.hpp"
+#include <stratosphere/iserviceobject.hpp>
 #include "ldr_registration.hpp"
 
 enum DebugMonitorServiceCmd {

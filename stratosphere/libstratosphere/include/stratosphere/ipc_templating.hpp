@@ -1,12 +1,10 @@
 #pragma once
 #include <switch.h>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <tuple>
 #include <boost/callable_traits.hpp>
 #include <type_traits>
-#include <iomanip>
 
 /* Represents an A descriptor. */
 template <typename T>

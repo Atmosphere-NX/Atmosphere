@@ -1,7 +1,6 @@
 #pragma once
 #include <switch.h>
-
-#include "iserviceobject.hpp"
+#include <stratosphere/iserviceobject.hpp>
 
 enum ShellServiceCmd {
     Shell_Cmd_AddTitleToLaunchQueue = 0,

@@ -1,7 +1,7 @@
 #pragma once
 #include <switch.h>
+#include <stratosphere/iserviceobject.hpp>
 
-#include "iserviceobject.hpp"
 #include "ldr_registration.hpp"
 #include "ldr_process_creation.hpp"
 

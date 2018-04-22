@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 
-#include "waitablemanager.hpp"
+#include <stratosphere/waitablemanager.hpp>
 
 
 unsigned int WaitableManager::get_num_signalable() {

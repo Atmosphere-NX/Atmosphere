@@ -1,7 +1,6 @@
 #pragma once
 #include <switch.h>
 #include <type_traits>
-#include <cstdio>
 
 #include "ipc_templating.hpp"
 #include "iserviceobject.hpp"
@@ -89,10 +88,7 @@ class ServiceSession : public IWaitable {
                                 
                 IpcParsedCommand r;
                 IpcCommand c;
-                
-                
-                fprintf(stderr, "Doing ServiceSession parse...\n");
-                
+                                
                 ipcInitialize(&c);
                 
                 retval = ipcParse(&r);

@@ -92,11 +92,7 @@ class ServiceServer : public IWaitable {
             Handle session_h;
             svcAcceptSession(&session_h, this->port_handle);
             
-            fprintf(stderr, "Accept %08X -> %08X\n", this->port_handle, session_h);
-            fprintf(stderr, "Sessions: %08X/%08X\n", this->num_sessions, this->max_sessions);
-
             if (this->num_sessions >= this->max_sessions) {
-                fprintf(stderr, "Closing because of max sessions...\n");
                 svcCloseHandle(session_h);
                 return 0x10601;
             }

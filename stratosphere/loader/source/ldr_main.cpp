@@ -4,9 +4,8 @@
 #include <malloc.h>
 
 #include <switch.h>
+#include <stratosphere.hpp>
 
-#include "waitablemanager.hpp"
-#include "serviceserver.hpp"
 #include "ldr_process_manager.hpp"
 #include "ldr_debug_monitor.hpp"
 #include "ldr_shell.hpp"
