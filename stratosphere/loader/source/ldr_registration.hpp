@@ -41,6 +41,7 @@ class Registration {
         static Registration::Process *get_free_process();
         static Registration::Process *get_process(u64 index);
         static Registration::Process *get_process_by_process_id(u64 pid);
+        static Result get_registered_tid_sid(u64 index, Registration::TidSid *out);
         static bool register_tid_sid(const TidSid *tid_sid, u64 *out_index);
         static bool unregister_index(u64 index);
         static void set_process_id_and_tid_min(u64 index, u64 process_id, u64 tid_min);

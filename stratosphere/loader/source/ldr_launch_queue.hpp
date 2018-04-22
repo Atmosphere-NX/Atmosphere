@@ -14,6 +14,8 @@ class LaunchQueue {
             char args[LAUNCH_QUEUE_ARG_SIZE_MAX];
         };
         
+        static LaunchQueue::LaunchItem *get_item(u64 tid);
+        
         static Result add(u64 tid, const char *args, u64 arg_size);
         static Result add_item(const LaunchItem *item);
         static Result add_copy(u64 tid_base, u64 new_tid);

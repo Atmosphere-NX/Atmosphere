@@ -63,6 +63,18 @@ bool Registration::unregister_index(u64 index) {
     return true;
 }
 
+
+Result Registration::get_registered_tid_sid(u64 index, Registration::TidSid *out) {
+    Registration::Process *target_process = get_process(index);
+    if (target_process == NULL) {
+        return 0x1009;
+    }
+    
+    *out = target_process->tid_sid;
+    
+    return 0;
+}
+
 void Registration::set_process_id_and_tid_min(u64 index, u64 process_id, u64 tid_min) {
     Registration::Process *target_process = get_process(index);
     if (target_process == NULL) {

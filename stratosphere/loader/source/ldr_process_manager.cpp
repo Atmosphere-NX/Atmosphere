@@ -28,10 +28,30 @@ Result ProcessManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u
     return rc;
 }
 
-std::tuple<Result, MovedHandle> ProcessManagerService::create_process(u64 flags, u64 title_id, CopiedHandle reslimit_h) {
-    /* TODO */
-    fprintf(stderr, "CreateProcess(%016lx, %016lx, %08x);\n", flags, title_id, reslimit_h.handle);
-    return std::make_tuple(0xF601, MovedHandle{0x00});
+std::tuple<Result, MovedHandle> ProcessManagerService::create_process(u64 flags, u64 index, CopiedHandle reslimit_h) {
+    Result rc;
+    Registration::TidSid tid_sid;
+    LaunchQueue::LaunchItem *launch_item;
+    char nca_path[FS_MAX_PATH] = {0};
+    Handle process_h = 0;
+    
+    fprintf(stderr, "CreateProcess(%016lx, %016lx, %08x);\n", flags, index, reslimit_h.handle);
+    
+    rc = Registration::get_registered_tid_sid(index, &tid_sid);
+    if (R_FAILED(rc)) {
+        std::make_tuple(rc, MovedHandle{process_h});
+    }
+    
+    rc = ContentManagement::GetContentPathForTidSid(nca_path, &tid_sid);
+    if (R_FAILED(rc)) {
+        std::make_tuple(rc, MovedHandle{process_h});
+    }
+    
+    launch_item = LaunchQueue::get_item(tid_sid.title_id);
+    
+    rc = ProcessCreation::CreateProcess(&process_h, index, nca_path, launch_item, flags, reslimit_h.handle);
+    
+    return std::make_tuple(rc, MovedHandle{process_h});
 }
 
 std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info) {

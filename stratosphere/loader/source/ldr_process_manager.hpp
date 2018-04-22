@@ -3,6 +3,7 @@
 
 #include "iserviceobject.hpp"
 #include "ldr_registration.hpp"
+#include "ldr_process_creation.hpp"
 
 enum ProcessManagerServiceCmd {
     Pm_Cmd_CreateProcess = 0,
@@ -32,7 +33,7 @@ class ProcessManagerService : IServiceObject {
         
     private:
         /* Actual commands. */
-        std::tuple<Result, MovedHandle> create_process(u64 flags, u64 title_id, CopiedHandle reslimit_h);
+        std::tuple<Result, MovedHandle> create_process(u64 flags, u64 index, CopiedHandle reslimit_h);
         std::tuple<Result> get_program_info(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info);
         std::tuple<Result, u64> register_title(Registration::TidSid tid_sid);
         std::tuple<Result> unregister_title(u64 index);
