@@ -27,21 +27,32 @@ Result UserService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id,
 
 std::tuple<Result> UserService::initialize(PidDescriptor pid) {
     this->pid = pid.pid;
+    this->has_initialized = true;
     return std::make_tuple(0);
 }
 
 std::tuple<Result, MovedHandle> UserService::get_service(u64 service) {
     Handle session_h = 0;
-    Result rc = Registration::GetServiceForPid(this->pid, service, &session_h);
+    Result rc = 0x415;
+    if (this->has_initialized) {
+        rc = Registration::GetServiceForPid(this->pid, service, &session_h);
+    }
     return std::make_tuple(rc, MovedHandle{session_h});
 }
 
 std::tuple<Result, MovedHandle> UserService::register_service(u64 service, u8 is_light, u32 max_sessions) {
     Handle service_h = 0;
-    Result rc = Registration::RegisterServiceForPid(this->pid, service, max_sessions, is_light != 0, &service_h);
+    Result rc = 0x415;
+    if (this->has_initialized) {
+        rc = Registration::RegisterServiceForPid(this->pid, service, max_sessions, is_light != 0, &service_h);
+    }
     return std::make_tuple(rc, MovedHandle{service_h});
 }
 
 std::tuple<Result> UserService::unregister_service(u64 service) {
-    return std::make_tuple(Registration::UnregisterServiceForPid(this->pid, service));
+    Result rc = 0x415;
+    if (this->has_initialized) {
+        rc = Registration::UnregisterServiceForPid(this->pid, service);
+    }
+    return std::make_tuple(rc);
 }

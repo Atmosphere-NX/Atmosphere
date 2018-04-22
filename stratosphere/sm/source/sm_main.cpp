@@ -53,11 +53,11 @@ int main(int argc, char **argv)
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
     
     /* Create sm:, (and thus allow things to register to it). */
-    server_manager->add_waitable(new ManagedPortServer<UserService>("sm:", 0x40));
+    server_manager->add_waitable(new ManagedPortServer<UserService>("dbg:", 0x40));
     
     /* Create sm:m manually. */
     Handle smm_h;
-    if (R_FAILED(Registration::RegisterServiceForSelf(smEncodeName("sm:m"), 1, false, &smm_h))) {
+    if (R_FAILED(Registration::RegisterServiceForSelf(smEncodeName("dbg:m"), 1, false, &smm_h))) {
         /* TODO: Panic. */
     }
     

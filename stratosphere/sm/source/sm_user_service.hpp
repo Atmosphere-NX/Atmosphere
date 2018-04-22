@@ -11,12 +11,11 @@ enum UserServiceCmd {
 
 class UserService : IServiceObject {
     u64 pid;
+    bool has_initialized;
     
     public:
         Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
-        UserService() {
-            this->pid = U64_MAX;
-        }
+        UserService() : pid(U64_MAX), has_initialized(false) { }
         
     private:
         /* Actual commands. */
