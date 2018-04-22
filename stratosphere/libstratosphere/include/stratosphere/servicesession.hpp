@@ -5,7 +5,7 @@
 #include "ipc_templating.hpp"
 #include "iserviceobject.hpp"
 #include "iwaitable.hpp"
-#include "serviceserver.hpp"
+#include "iserver.hpp"
 
 enum IpcControlCommand {
     IpcCtrl_Cmd_ConvertCurrentObjectToDomain = 0,
@@ -18,14 +18,14 @@ enum IpcControlCommand {
 #define POINTER_BUFFER_SIZE_MAX 0xFFFF
 
 template <typename T>
-class ServiceServer;
+class IServer;
 
 template <typename T>
 class ServiceSession : public IWaitable {
     static_assert(std::is_base_of<IServiceObject, T>::value, "Service Objects must derive from IServiceObject");
     
     T *service_object;
-    ServiceServer<T> *server;
+    IServer<T> *server;
     Handle server_handle;
     Handle client_handle;
     char pointer_buffer[0x400];
@@ -33,7 +33,7 @@ class ServiceSession : public IWaitable {
     static_assert(sizeof(pointer_buffer) <= POINTER_BUFFER_SIZE_MAX, "Incorrect Size for PointerBuffer!");
     
     public:
-        ServiceSession<T>(ServiceServer<T> *s, Handle s_h, Handle c_h) : server(s), server_handle(s_h), client_handle(c_h) {
+        ServiceSession<T>(IServer<T> *s, Handle s_h, Handle c_h) : server(s), server_handle(s_h), client_handle(c_h) {
             this->service_object = new T();
         }
         
