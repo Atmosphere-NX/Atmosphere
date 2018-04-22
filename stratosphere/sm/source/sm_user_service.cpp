@@ -25,8 +25,8 @@ Result UserService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id,
 
 
 std::tuple<Result> UserService::initialize(PidDescriptor pid) {
-    /* TODO */
-    return std::make_tuple(0xF601);
+    this->pid = pid.pid;
+    return std::make_tuple(0);
 }
 
 std::tuple<Result, MovedHandle> UserService::get_service(u64 service) {

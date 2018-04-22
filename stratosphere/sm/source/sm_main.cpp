@@ -41,7 +41,8 @@ void __appInit(void) {
 }
 
 void __appExit(void) {
-    /* Nothing to clean up, because we're sm. */
+    /* Disconnect from ourselves. */
+    smExit();
 }
 
 int main(int argc, char **argv)
@@ -51,8 +52,13 @@ int main(int argc, char **argv)
     /* TODO: What's a good timeout value to use here? */
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
     
-    /* Add services to manager. */
+    /* Create sm:, (and thus allow things to register to it). */
     server_manager->add_waitable(new ManagedPortServer<UserService>("sm:", 0x40));
+    
+    /* Initialize, connecting to ourself. */
+    smInitialize();
+    
+    /* Create sm:m, using libnx to talk to ourself. */
     server_manager->add_waitable(new ServiceServer<ManagerService>("sm:m", 1));
     
     /* Loop forever, servicing our services. */
