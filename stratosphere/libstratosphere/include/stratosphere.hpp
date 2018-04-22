@@ -6,6 +6,7 @@
 #include "stratosphere/servicesession.hpp"
 #include "stratosphere/serviceserver.hpp"
 #include "stratosphere/managedportserver.hpp"
+#include "stratosphere/existingportserver.hpp"
 #include "stratosphere/waitablemanager.hpp"
 
 #include "stratosphere/ipc_templating.hpp"
