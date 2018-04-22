@@ -1,7 +1,6 @@
 #include <switch.h>
 
 #include <algorithm>
-#include <cstdio>
 
 #include <stratosphere/waitablemanager.hpp>
 

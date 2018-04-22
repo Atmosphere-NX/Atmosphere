@@ -17,15 +17,9 @@ class IServer : public IWaitable {
         unsigned int max_sessions;
         unsigned int num_sessions;
         ServiceSession<T> **sessions;
-        virtual Result register_self(const char *service_name) {
-            return smRegisterService(&this->port_handle, service_name, false, this->max_sessions);
-        }
     
-    public:
+    public:        
         IServer(const char *service_name, unsigned int max_s) : max_sessions(max_s) {
-            if (R_FAILED(register_self(service_name))) {
-                /* TODO: Panic. */
-            }
             this->sessions = new ServiceSession<T> *[this->max_sessions];
             for (unsigned int i = 0; i < this->max_sessions; i++) {
                 this->sessions[i] = NULL;

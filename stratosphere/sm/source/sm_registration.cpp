@@ -36,6 +36,7 @@ Registration::Service *Registration::GetFreeService() {
 bool Registration::IsValidForSac(u8 *sac, size_t sac_size, u64 service, bool is_host) {
     u8 cur_ctrl;
     u64 cur_service;
+    u64 service_for_compare;
     bool cur_is_host;
     size_t remaining = sac_size;
     while (remaining) {
@@ -51,12 +52,17 @@ bool Registration::IsValidForSac(u8 *sac, size_t sac_size, u64 service, bool is_
             cur_service |= ((u64)sac[i]) << (8 * i);
         }
         /* Check if the last byte is a wildcard ('*') */
+        service_for_compare = service;
         if (sac[cur_size - 1] == '*') {
+            u64 mask = U64_MAX;
+            for (unsigned int i = 0; i < 8 - (cur_size - 1); i++) {
+                mask >>= 8;
+            }
             /* Mask cur_service, service with 0xFF.. up until the wildcard. */
-            cur_service &= U64_MAX >> (8 * (8 - cur_size - 1));
-            service &= U64_MAX >> (8 * (8 - cur_size - 1));
+            cur_service &= mask;
+            service_for_compare &= mask;
         }
-        if (cur_service == service && (!is_host || cur_is_host)) {
+        if (cur_service == service_for_compare && (!is_host || cur_is_host)) {
             return true;
         }
         sac += cur_size;
@@ -166,7 +172,7 @@ Result Registration::GetServiceForPid(u64 pid, u64 service, Handle *out) {
         return 0xC15;
     }
     
-    if (pid >= REGISTRATION_PID_BUILTIN_MAX) {
+    if (pid >= REGISTRATION_PID_BUILTIN_MAX && service != smEncodeName("dbg:m")) {
         Registration::Process *proc = GetProcessForPid(pid);
         if (proc == NULL) {
             return 0x415;
