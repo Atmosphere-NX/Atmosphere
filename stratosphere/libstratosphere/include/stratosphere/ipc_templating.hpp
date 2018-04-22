@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <tuple>
-#include <boost/callable_traits.hpp>
+#include "../boost/callable_traits.hpp"
 #include <type_traits>
 
 /* Represents an A descriptor. */

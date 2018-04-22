@@ -10,8 +10,8 @@ Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id
         case Shell_Cmd_AddTitleToLaunchQueue:
             rc = WrapIpcCommandImpl<&ShellService::add_title_to_launch_queue>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
-            rc = WrapIpcCommandImpl<&ShellService::add_title_to_launch_queue>(this, r, out_c, pointer_buffer, pointer_buffer_size);
         case Shell_Cmd_ClearLaunchQueue:
+            rc = WrapIpcCommandImpl<&ShellService::clear_launch_queue>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
         default:
             break;
