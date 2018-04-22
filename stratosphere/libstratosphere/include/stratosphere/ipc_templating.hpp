@@ -388,7 +388,7 @@ struct Encoder<std::tuple<Args...>> {
 
 
 template<auto IpcCommandImpl, typename Class>
-Result WrapIpcCommandImpl(Class *myfancypointer, IpcParsedCommand& r, IpcCommand &out_command, u8 *pointer_buffer, size_t pointer_buffer_size) {
+Result WrapIpcCommandImpl(Class *this_ptr, IpcParsedCommand& r, IpcCommand &out_command, u8 *pointer_buffer, size_t pointer_buffer_size) {
     using InArgs = typename boost::callable_traits::args_t<decltype(IpcCommandImpl)>;
     using InArgsWithoutThis = typename pop_front<InArgs>::type;
     using OutArgs = typename boost::callable_traits::return_type_t<decltype(IpcCommandImpl)>;
@@ -405,7 +405,7 @@ Result WrapIpcCommandImpl(Class *myfancypointer, IpcParsedCommand& r, IpcCommand
     }
 
     auto args = Decoder<OutArgs, InArgsWithoutThis>::Decode(r, out_command, pointer_buffer);    
-    auto result = std::apply( [=](auto&&... args) { return (myfancypointer->*IpcCommandImpl)(args...); }, args);
+    auto result = std::apply( [=](auto&&... args) { return (this_ptr->*IpcCommandImpl)(args...); }, args);
     
     return std::apply(Encoder<OutArgs>{out_command}, result);
 }
