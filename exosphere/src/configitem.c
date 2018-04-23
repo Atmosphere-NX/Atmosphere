@@ -66,7 +66,7 @@ uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
             break;
         case CONFIGITEM_VERSION:
             /* Always returns maxver - 1 on hardware. */
-            *p_outvalue = PACKAGE2_MAXVER_400_CURRENT - 1;
+            *p_outvalue = PACKAGE2_MAXVER_400_410 - 1;
             break;
         case CONFIGITEM_HARDWARETYPE:
             *p_outvalue = fuse_get_hardware_type();
