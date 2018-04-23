@@ -78,4 +78,5 @@ class NpdmUtils {
         static_assert(sizeof(NpdmAci0) == 0x40, "Incorrectly defined NpdmAci0!");
         
         static Result LoadNpdm(u64 tid, NpdmInfo *out);
+        static Result LoadNpdmFromCache(u64 tid, NpdmInfo *out);
 };

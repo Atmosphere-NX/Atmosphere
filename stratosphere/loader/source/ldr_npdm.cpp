@@ -6,6 +6,13 @@
 
 static NpdmUtils::NpdmCache g_npdm_cache = {0};
 
+Result NpdmUtils::LoadNpdmFromCache(u64 tid, NpdmInfo *out) {
+    if (g_npdm_cache.info.title_id != tid) {
+        return LoadNpdm(tid, out);
+    }
+    *out = g_npdm_cache.info;
+    return 0;
+}
 
 Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
     Result rc;
