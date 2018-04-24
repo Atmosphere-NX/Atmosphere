@@ -86,6 +86,7 @@ class NsoUtils {
         static FILE *OpenNso(unsigned int index, u64 title_id);
         
         static bool IsNsoPresent(unsigned int index);
+        static unsigned char *GetNsoBuildId(unsigned int index);
         static Result LoadNsoHeaders(u64 title_id);
         static Result ValidateNsoLoadSet();
         static Result CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLoadExtents *extents);

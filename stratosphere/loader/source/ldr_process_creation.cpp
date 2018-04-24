@@ -92,6 +92,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     NsoUtils::NsoLoadExtents nso_extents = {0};
     Registration::Process *target_process;
     Handle process_h = 0;
+    u64 process_id = 0;
     Result rc;
     
     /* Get the process from the registration queue. */
@@ -161,24 +162,35 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     
     /* Load all NSOs into Process memory, and set permissions accordingly. */
     if (launch_item == NULL) {
-        NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, (u8 *)launch_item->args, launch_item->arg_size); 
+        rc = NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, (u8 *)launch_item->args, launch_item->arg_size); 
     } else {
-        NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, NULL, 0);    
+        rc = NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, NULL, 0);    
     }
-    /* TODO: For each NSO, call svcMapProcessMemory, load the NSO into memory there (validating it), and then svcUnmapProcessMemory. */
+    if (R_FAILED(rc)) {
+        svcCloseHandle(process_h);
+        goto CREATE_PROCESS_END;
+    }
     
-    /* TODO: svcSetProcessMemoryPermission for each memory segment in the new process. */
+    /* Update the list of registered processes with the new process. */
+    svcGetProcessId(&process_id, process_h);
+    Registration::set_process_id_and_tid_min(index, process_id, npdm_info.aci0->title_id);
+    for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
+        if (NsoUtils::IsNsoPresent(i)) {   
+            Registration::add_nso_info(index, nso_extents.nso_addresses[i], nso_extents.nso_sizes[i], NsoUtils::GetNsoBuildId(i));
+        }
+    }
     
-    /* TODO: Map and load arguments to the process, if relevant. */
-    
-    /* TODO: Update the list of registered processes with the new process. */
-    
-    rc = 0;
+    rc = 0;  
 CREATE_PROCESS_END:
     if (R_SUCCEEDED(rc)) {
         rc = ContentManagement::UnmountCode();
     } else {
         ContentManagement::UnmountCode();
+    }
+    if (R_SUCCEEDED(rc)) {
+        *out_process_h = process_h;
+    } else {
+        svcCloseHandle(process_h);
     }
     return rc;
 }

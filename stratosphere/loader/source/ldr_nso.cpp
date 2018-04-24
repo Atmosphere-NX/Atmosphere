@@ -34,6 +34,14 @@ bool NsoUtils::IsNsoPresent(unsigned int index) {
     return g_nso_present[index];
 }
 
+
+unsigned char *NsoUtils::GetNsoBuildId(unsigned int index) {
+    if (g_nso_present[index]) {
+        return g_nso_headers[index].build_id;
+    }
+    return NULL;
+}
+
 Result NsoUtils::LoadNsoHeaders(u64 title_id) {
     FILE *f_nso;
     
@@ -234,6 +242,7 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
         }
     }
     
+    /* Map in arguments. */
     if (args != NULL && args_size) {
         u64 arg_map_addr = 0;
         if (R_FAILED((rc = MapUtils::LocateSpaceForMap(&arg_map_addr, extents->args_size)))) {
@@ -259,5 +268,6 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
             return rc;
         }
     }
+    
     return rc;
 }
