@@ -91,6 +91,6 @@ class NsoUtils {
         static Result ValidateNsoLoadSet();
         static Result CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLoadExtents *extents);
         
-        static Result LoadNsoSegment(unsigned int index, unsigned int segment, FILE *f_nso, u8 *map_base);
+        static Result LoadNsoSegment(unsigned int index, unsigned int segment, FILE *f_nso, u8 *map_base, u8 *map_end);
         static Result LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLoadExtents *extents, u8 *args, u32 args_size);
 };

@@ -1,6 +1,9 @@
 #include <switch.h>
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
+#include <picosha2.hpp>
+#include "lz4.h"
 #include "ldr_nso.hpp"
 #include "ldr_map.hpp"
 #include "ldr_random.hpp"
@@ -180,9 +183,39 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
 }
 
 
-Result NsoUtils::LoadNsoSegment(unsigned int index, unsigned int segment, FILE *f_nso, u8 *map_base) {
-    /* TODO */
-    return 0xA09;
+Result NsoUtils::LoadNsoSegment(unsigned int index, unsigned int segment, FILE *f_nso, u8 *map_base, u8 *map_end) {
+    bool is_compressed = ((g_nso_headers[index].flags >> segment) & 1) != 0;
+    bool check_hash = ((g_nso_headers[index].flags >> (segment + 3)) & 1) != 0;
+    size_t out_size = g_nso_headers[index].segments[segment].decomp_size;
+    size_t size = is_compressed ? g_nso_headers[index].compressed_sizes[segment] : out_size;
+    if (size > out_size) {
+        return 0xA09;
+    }
+    if ((u32)(size | out_size) >> 31) {
+        return 0xA09;
+    }
+    
+    u8 *dst_addr = map_base + g_nso_headers[index].segments[segment].dst_offset;
+    u8 *load_addr = is_compressed ? map_end - size : dst_addr;
+    if (fread(load_addr, 1, size, f_nso) != size) {
+        return 0xA09;
+    }
+    
+    if (is_compressed) {
+        if (LZ4_decompress_safe((char *)load_addr, (char *)dst_addr, size, out_size) != (int)out_size) {
+            return 0xA09;
+        }
+    }
+    
+    if (check_hash) {
+        u8 hash[0x20] = {0};
+        picosha2::hash256(dst_addr, dst_addr + out_size, hash, hash + sizeof(hash));
+        if (std::memcmp(g_nso_headers[index].section_hashes[segment], hash, sizeof(hash))) {
+            return 0xA09;
+        }
+    }
+    
+    return 0x0;
 }
 
 Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLoadExtents *extents, u8 *args, u32 args_size) {
@@ -206,7 +239,7 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
                 return 0xA09;
             }
             for (unsigned int seg = 0; seg < 3; seg++) {
-                if (R_FAILED((rc = LoadNsoSegment(i, seg, f_nso, map_base)))) {
+                if (R_FAILED((rc = LoadNsoSegment(i, seg, f_nso, map_base, map_base + extents->nso_sizes[i])))) {
                     fclose(f_nso);
                     svcUnmapProcessMemory(map_base, process_h, extents->nso_addresses[i], extents->nso_sizes[i]);
                     return rc;
