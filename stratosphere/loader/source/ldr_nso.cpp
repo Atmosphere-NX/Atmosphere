@@ -55,11 +55,12 @@ Result NsoUtils::LoadNsoHeaders(u64 title_id) {
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         f_nso = OpenNso(i, title_id);
         if (f_nso != NULL) {
-            if (fread(&g_nso_headers[i], sizeof(NsoUtils::NsoHeader), 1, f_nso) != sizeof(NsoUtils::NsoHeader)) {
+            if (fread(&g_nso_headers[i], 1, sizeof(NsoUtils::NsoHeader), f_nso) != sizeof(NsoUtils::NsoHeader)) {
                 return 0xA09;
             }
             g_nso_present[i] = true;
             fclose(f_nso);
+            f_nso = NULL;
             continue;
         }
         if (1 < i && i < 12) {
@@ -197,6 +198,7 @@ Result NsoUtils::LoadNsoSegment(unsigned int index, unsigned int segment, FILE *
     
     u8 *dst_addr = map_base + g_nso_headers[index].segments[segment].dst_offset;
     u8 *load_addr = is_compressed ? map_end - size : dst_addr;
+    fseek(f_nso, g_nso_headers[index].segments[segment].file_offset, SEEK_SET);
     if (fread(load_addr, 1, size, f_nso) != size) {
         return 0xA09;
     }
@@ -246,6 +248,7 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
                 }
             }
             fclose(f_nso);
+            f_nso = NULL;
             /* Zero out memory before .text. */
             u64 text_base = 0, text_start = g_nso_headers[i].segments[0].dst_offset;
             std::fill(map_base + text_base, map_base + text_start, 0);

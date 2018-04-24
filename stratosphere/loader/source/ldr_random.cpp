@@ -42,7 +42,7 @@ u32 RandomUtils::GetRandomU32(u32 max) {
     return GetNext() % max;
 }
 
-u32 RandomUtils::GetRandomU64(u64 max) {
+u64 RandomUtils::GetRandomU64(u64 max) {
     u64 val = GetNext();
     val |= ((u64)GetNext()) << 32;
     return val % max;

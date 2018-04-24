@@ -144,7 +144,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     }
     
     /* Figure out where NSOs will be mapped, and how much space they (and arguments) will take up. */
-    rc = NsoUtils::CalculateNsoLoadExtents(launch_item != NULL ? launch_item->arg_size : 0, process_info.process_flags, &nso_extents);
+    rc = NsoUtils::CalculateNsoLoadExtents(process_info.process_flags, launch_item != NULL ? launch_item->arg_size : 0, &nso_extents);
     if (R_FAILED(rc)) {
         goto CREATE_PROCESS_END;
     }
@@ -153,15 +153,16 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     process_info.code_addr = nso_extents.base_address;
     process_info.code_num_pages = nso_extents.total_size + 0xFFF;
     process_info.code_num_pages >>= 12;
-    
+        
     /* Call svcCreateProcess(). */
     rc = svcCreateProcess(&process_h, &process_info, (u32 *)npdm_info.aci0_kac, npdm_info.aci0->kac_size/sizeof(u32));
     if (R_FAILED(rc)) {
         goto CREATE_PROCESS_END;
     }
     
+    
     /* Load all NSOs into Process memory, and set permissions accordingly. */
-    if (launch_item == NULL) {
+    if (launch_item != NULL) {
         rc = NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, (u8 *)launch_item->args, launch_item->arg_size); 
     } else {
         rc = NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, NULL, 0);    
