@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdio>
 #include "ldr_nso.hpp"
+#include "ldr_random.hpp"
 
 static NsoUtils::NsoHeader g_nso_headers[NSO_NUM_MAX] = {0};
 static bool g_nso_present[NSO_NUM_MAX] = {0};
@@ -118,7 +119,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
     }
     
     /* Calculate ASLR extents for address space type. */
-    u64 addspace_start, addspace_size, addspace_end;
+    u64 addspace_start, addspace_size;
     if (kernelAbove200()) {
         switch (addspace_type & 0xE) {
             case 0:
@@ -147,14 +148,13 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
             addspace_size = 0x3FE00000ULL;
         }
     }
-    addspace_end = addspace_start + addspace_size;
-    if (addspace_start + extents->total_size > addspace_end) {
+    if (extents->total_size > addspace_size) {
         return 0xD001;
     }
     
     u64 aslr_slide = 0;
     if (addspace_type & 0x20) {
-        /* TODO: Apply a random ASLR slide. */
+        aslr_slide = RandomUtils::GetRandomU64((addspace_size - extents->total_size) >> 21) << 21;
     }
     
     extents->base_address = addspace_start + aslr_slide;
