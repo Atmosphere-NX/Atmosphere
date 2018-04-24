@@ -142,7 +142,11 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     
     /* TODO: Figure out where NSOs will be mapped, and how much space they (and arguments) will take up. */
     
-    /* TODO: Call svcCreateProcessInfo(). */
+    /* Call svcCreateProcess(). */
+    rc = svcCreateProcess(out_process_h, &process_info, (u32 *)npdm_info.aci0_kac, npdm_info.aci0->kac_size/sizeof(u32));
+    if (R_FAILED(rc)) {
+        goto CREATE_PROCESS_END;
+    }
     
     /* TODO: For each NSO, call svcMapProcessMemory, load the NSO into memory there (validating it), and then svcUnmapProcessMemory. */
     
