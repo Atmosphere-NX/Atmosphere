@@ -6,14 +6,26 @@
 static NsoUtils::NsoHeader g_nso_headers[NSO_NUM_MAX] = {0};
 static bool g_nso_present[NSO_NUM_MAX] = {0};
 
-void NsoUtils::GetNsoCodePath(char *content_path, unsigned int index) {
-    std::fill(content_path, content_path + FS_MAX_PATH, 0);
-    snprintf(content_path, FS_MAX_PATH, "code:/%s", NsoUtils::GetNsoFileName(index));
+static char g_nso_path[FS_MAX_PATH] = {0};
+
+FILE *NsoUtils::OpenNsoFromExeFS(unsigned int index) {
+    std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
+    snprintf(g_nso_path, FS_MAX_PATH, "code:/%s", NsoUtils::GetNsoFileName(index));
+    return fopen(g_nso_path, "rb");
 }
 
-void NsoUtils::GetNsoSdPath(char *content_path, u64 title_id, unsigned int index) {  
-    std::fill(content_path, content_path + FS_MAX_PATH, 0);
-    snprintf(content_path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/exefs/%s", title_id, NsoUtils::GetNsoFileName(index));
+FILE *NsoUtils::OpenNsoFromSdCard(unsigned int index, u64 title_id) {  
+    std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
+    snprintf(g_nso_path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/exefs/%s", title_id, NsoUtils::GetNsoFileName(index));
+    return fopen(g_nso_path, "rb");
+}
+
+FILE *NsoUtils::OpenNso(unsigned int index, u64 title_id) {
+    FILE *f_out = OpenNsoFromSdCard(index, title_id);
+    if (f_out != NULL) {
+        return f_out;
+    }
+    return OpenNsoFromExeFS(index);
 }
 
 bool NsoUtils::IsNsoPresent(unsigned int index) {
@@ -21,7 +33,6 @@ bool NsoUtils::IsNsoPresent(unsigned int index) {
 }
 
 Result NsoUtils::LoadNsoHeaders(u64 title_id) {
-    char nso_path[FS_MAX_PATH] = {0};
     FILE *f_nso;
     
     /* Zero out the cache. */
@@ -29,17 +40,8 @@ Result NsoUtils::LoadNsoHeaders(u64 title_id) {
     std::fill(g_nso_headers, g_nso_headers + NSO_NUM_MAX, (const NsoUtils::NsoHeader &){0});
     
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
-        GetNsoSdPath(nso_path, title_id, i);
-        if ((f_nso = fopen(nso_path, "rb")) != NULL) {
-            if (fread(&g_nso_headers[i], sizeof(NsoUtils::NsoHeader), 1, f_nso) != sizeof(NsoUtils::NsoHeader)) {
-                return 0xA09;
-            }
-            g_nso_present[i] = true;
-            fclose(f_nso);
-            continue;
-        }
-        GetNsoCodePath(nso_path, i);
-        if ((f_nso = fopen(nso_path, "rb")) != NULL) {
+        f_nso = OpenNso(i, title_id);
+        if (f_nso != NULL) {
             if (fread(&g_nso_headers[i], sizeof(NsoUtils::NsoHeader), 1, f_nso) != sizeof(NsoUtils::NsoHeader)) {
                 return 0xA09;
             }

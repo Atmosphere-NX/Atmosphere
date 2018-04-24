@@ -1,5 +1,6 @@
 #pragma once
 #include <switch.h>
+#include <cstdio>
 
 #define MAGIC_NSO0 0x304F534E
 #define NSO_NUM_MAX 13
@@ -64,8 +65,9 @@ class NsoUtils {
             }
         }
         
-        static void GetNsoCodePath(char *content_path, unsigned int index);
-        static void GetNsoSdPath(char *content_path, u64 title_id, unsigned int index);
+        static FILE *OpenNsoFromExeFS(unsigned int index);
+        static FILE *OpenNsoFromSdCard(unsigned int index, u64 title_id);
+        static FILE *OpenNso(unsigned int index, u64 title_id);
         
         static bool IsNsoPresent(unsigned int index);
         static Result LoadNsoHeaders(u64 title_id);
