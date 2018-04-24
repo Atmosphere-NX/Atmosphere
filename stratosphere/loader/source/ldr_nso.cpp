@@ -49,7 +49,7 @@ Result NsoUtils::LoadNsoHeaders(u64 title_id) {
         }
         if (1 < i && i < 12) {
             /* If we failed to open a subsdk, there are no more subsdks. */
-            i = 12;
+            i = 11;
         }
     }
     
