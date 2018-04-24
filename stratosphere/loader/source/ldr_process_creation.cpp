@@ -159,6 +159,12 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
         goto CREATE_PROCESS_END;
     }
     
+    /* Load all NSOs into Process memory, and set permissions accordingly. */
+    if (launch_item == NULL) {
+        NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, (u8 *)launch_item->args, launch_item->arg_size); 
+    } else {
+        NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, NULL, 0);    
+    }
     /* TODO: For each NSO, call svcMapProcessMemory, load the NSO into memory there (validating it), and then svcUnmapProcessMemory. */
     
     /* TODO: svcSetProcessMemoryPermission for each memory segment in the new process. */

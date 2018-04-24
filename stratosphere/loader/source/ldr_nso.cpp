@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdio>
 #include "ldr_nso.hpp"
+#include "ldr_map.hpp"
 #include "ldr_random.hpp"
 
 static NsoUtils::NsoHeader g_nso_headers[NSO_NUM_MAX] = {0};
@@ -168,4 +169,71 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
     }
     
     return 0x0;
+}
+
+
+Result NsoUtils::LoadNsoSegment(unsigned int index, unsigned int segment, FILE *f_nso, u8 *map_base) {
+    /* TODO */
+    return 0xA09;
+}
+
+Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLoadExtents *extents, u8 *args, u32 args_size) {
+    Result rc = 0xA09;
+    for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
+        if (g_nso_present[i]) {
+            u64 map_addr = 0;
+            if (R_FAILED((rc = MapUtils::LocateSpaceForMap(&map_addr, extents->nso_sizes[i])))) {
+                return rc;
+            }
+            
+            u8 *map_base = (u8 *)map_addr;
+            
+            if (R_FAILED((rc = svcMapProcessMemory(map_base, process_h, extents->nso_addresses[i], extents->nso_sizes[i])))) {
+                return rc;
+            }
+            
+            FILE *f_nso = OpenNso(i, title_id);
+            if (f_nso == NULL) {
+                /* Is there a better error to return here? */
+                return 0xA09;
+            }
+            for (unsigned int seg = 0; seg < 3; seg++) {
+                if (R_FAILED((rc = LoadNsoSegment(i, seg, f_nso, map_base)))) {
+                    fclose(f_nso);
+                    svcUnmapProcessMemory(map_base, process_h, extents->nso_addresses[i], extents->nso_sizes[i]);
+                    return rc;
+                }
+            }
+            fclose(f_nso);
+            /* Zero out memory before .text. */
+            u64 text_base = 0, text_start = g_nso_headers[i].segments[0].dst_offset;
+            std::fill(map_base + text_base, map_base + text_start, 0);
+            /* Zero out memory before .rodata. */
+            u64 ro_base = text_start + g_nso_headers[i].segments[0].decomp_size, ro_start = g_nso_headers[i].segments[1].dst_offset;
+            std::fill(map_base + ro_base, map_base + ro_start, 0);
+            /* Zero out memory before .rwdata. */
+            u64 rw_base = ro_start + g_nso_headers[i].segments[1].decomp_size, rw_start = g_nso_headers[i].segments[2].dst_offset;
+            std::fill(map_base + rw_base, map_base + rw_start, 0);
+            /* Zero out .bss. */
+            u64 bss_base = rw_base + g_nso_headers[i].segments[2].decomp_size, bss_size = g_nso_headers[i].segments[2].align_or_total_size;
+            std::fill(map_base + bss_base, map_base + bss_base + bss_size, 0);
+            
+            if (R_FAILED((rc = svcUnmapProcessMemory(map_base, process_h, extents->nso_addresses[i], extents->nso_sizes[i])))) {
+                return rc;
+            }
+            
+            for (unsigned int seg = 0; seg < 3; seg++) {
+                u64 size = g_nso_headers[i].segments[seg].decomp_size;
+                size += 0xFFF;
+                size &= ~0xFFFULL;
+                const static unsigned int segment_perms[3] = {5, 1, 3};
+                if (R_FAILED((rc = svcSetProcessMemoryPermission(process_h, extents->nso_addresses[i] + g_nso_headers[i].segments[seg].dst_offset, size, segment_perms[seg])))) {
+                    return rc;
+                }
+            }
+        }
+    }
+    
+    /* TODO: Map in arguments, here. */
+    return rc;
 }
