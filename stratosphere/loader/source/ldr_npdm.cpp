@@ -377,3 +377,22 @@ Result NpdmUtils::ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32
 
     return rc;
 }
+
+u32 NpdmUtils::GetApplicationType(u32 *caps, size_t num_caps) {
+    u32 application_type = 0;
+    for (unsigned int i = 0; i < num_caps; i++) {
+        if ((caps[i] & 0x3FFF) == 0x1FFF) {
+            u16 app_type = (caps[i] >> 14) & 7;
+            if (app_type == 1) {
+                application_type |= 1;
+            } else if (app_type == 2) {
+                application_type |= 2;
+            }
+        }
+        /* After 1.0.0, allow_debug is used as bit 4. */
+        if (kernelAbove200() && (caps[i] & 0x1FFFF) == 0xFFFF) {
+            application_type |= (caps[i] >> 15) & 4;
+        }
+    }
+    return application_type;
+}

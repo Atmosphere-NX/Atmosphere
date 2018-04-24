@@ -17,7 +17,8 @@ class NpdmUtils {
             u8 _0xD;
             u8 main_thread_prio;
             u8 default_cpuid;
-            u64 _0x10;
+            u32 _0x10;
+            u32 system_resource_size;
             u32 process_category;
             u32 main_stack_size;
             char title_name[0x50];
@@ -76,6 +77,8 @@ class NpdmUtils {
         static_assert(sizeof(NpdmHeader) == 0x80, "Incorrectly defined NpdmHeader!");
         static_assert(sizeof(NpdmAcid) == 0x240, "Incorrectly defined NpdmAcid!");
         static_assert(sizeof(NpdmAci0) == 0x40, "Incorrectly defined NpdmAci0!");
+        
+        static u32 GetApplicationType(u32 *caps, size_t num_caps);
         
         static Result ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size_t num_restrict_caps, u32 *&cur_cap, size_t &caps_remaining);
         static Result ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32 *aci0_caps, size_t num_aci0_caps);

@@ -152,19 +152,7 @@ Result ProcessManagerService::populate_program_info_buffer(ProcessManagerService
     
     /* Parse application type. */
     if (R_SUCCEEDED(rc)) {
-        u32 *kac = (u32 *)info.acid_kac;
-        u32 num_entries = info.acid->kac_size / sizeof(u32);
-        out->application_type = 0;
-        for (unsigned int i = 0; i < num_entries; i++) {
-            if ((kac[i] & 0x3FFF) == 0x1FFF) {
-                u16 app_type = (kac[i] >> 14) & 7;
-                if (app_type == 1) {
-                    out->application_type |= 1;
-                } else if (app_type == 2) {
-                    out->application_type |= 2;
-                }
-            }
-        }
+        out->application_type = NpdmUtils::GetApplicationType((u32 *)info.acid_kac, info.acid->kac_size / sizeof(u32));
     }
     
     
