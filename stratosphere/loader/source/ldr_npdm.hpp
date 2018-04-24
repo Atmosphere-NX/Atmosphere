@@ -77,6 +77,9 @@ class NpdmUtils {
         static_assert(sizeof(NpdmAcid) == 0x240, "Incorrectly defined NpdmAcid!");
         static_assert(sizeof(NpdmAci0) == 0x40, "Incorrectly defined NpdmAci0!");
         
+        static Result ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size_t num_restrict_caps, u32 *&cur_cap, size_t &caps_remaining);
+        static Result ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32 *aci0_caps, size_t num_aci0_caps);
+        
         static Result LoadNpdm(u64 tid, NpdmInfo *out);
         static Result LoadNpdmFromCache(u64 tid, NpdmInfo *out);
 };

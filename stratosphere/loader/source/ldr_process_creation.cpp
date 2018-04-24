@@ -32,6 +32,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     }
     
     /* TODO: Parse and verify ACI0 kernel caps vs ACID kernel caps. */
+    rc = NpdmUtils::ValidateCapabilities((u32 *)info.acid_kac, info.acid->kac_size/sizeof(u32), (u32 *)info.aci0_kac, info.aci0->kac_size/sizeof(u32));
     
     /* TODO: Read in all NSO headers, see what NSOs are present. */
     
