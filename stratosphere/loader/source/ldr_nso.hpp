@@ -28,6 +28,15 @@ class NsoUtils {
             u8 section_hashes[3][0x20];
         };
         
+        struct NsoLoadExtents {
+            u64 base_address;
+            u64 total_size;
+            u64 args_address;
+            u64 args_size;
+            u64 nso_addresses[NSO_NUM_MAX];
+            u64 nso_sizes[NSO_NUM_MAX];
+        };
+        
         
         static_assert(sizeof(NsoHeader) == 0x100, "Incorrectly defined NsoHeader!");
         
@@ -72,4 +81,5 @@ class NsoUtils {
         static bool IsNsoPresent(unsigned int index);
         static Result LoadNsoHeaders(u64 title_id);
         static Result ValidateNsoLoadSet();
+        static Result CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLoadExtents *extents);
 };

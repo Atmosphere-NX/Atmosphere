@@ -87,3 +87,85 @@ Result NsoUtils::ValidateNsoLoadSet() {
     
     return 0x0;
 }
+
+
+Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLoadExtents *extents) {
+    *extents = (const NsoUtils::NsoLoadExtents){0};
+    /* Calculate base offsets. */
+    for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
+        if (g_nso_present[i]) {
+            extents->nso_addresses[i] = extents->total_size;
+            u32 text_end = g_nso_headers[i].segments[0].dst_offset + g_nso_headers[i].segments[0].decomp_size;
+            u32 ro_end = g_nso_headers[i].segments[1].dst_offset + g_nso_headers[i].segments[1].decomp_size;
+            u32 rw_end = g_nso_headers[i].segments[2].dst_offset + g_nso_headers[i].segments[2].decomp_size + g_nso_headers[i].segments[2].align_or_total_size;
+            extents->nso_sizes[i] = text_end;
+            if (extents->nso_sizes[i] < ro_end) {
+                extents->nso_sizes[i] = ro_end;
+            }
+            if (extents->nso_sizes[i] < rw_end) {
+                extents->nso_sizes[i] = rw_end;
+            }
+            extents->nso_sizes[i] += 0xFFF;
+            extents->nso_sizes[i] &= ~0xFFFULL;
+            extents->total_size += extents->nso_sizes[i];
+            if (args_size && !extents->args_size) {
+                extents->args_address = extents->total_size;
+                /* What the fuck? Where does 0x9007 come from? */
+                extents->args_size = (2 * args_size + 0x9007);
+                extents->args_size &= ~0xFFFULL;
+            }
+        }
+    }
+    
+    /* Calculate ASLR extents for address space type. */
+    u64 addspace_start, addspace_size, addspace_end;
+    if (kernelAbove200()) {
+        switch (addspace_type & 0xE) {
+            case 0:
+            case 4:
+                addspace_start = 0x200000ULL;
+                addspace_size = 0x3FE00000ULL;
+                break;
+            case 2:
+                addspace_start = 0x8000000ULL;
+                addspace_size = 0x78000000ULL;
+                break;
+            case 6:
+                addspace_start = 0x8000000ULL;
+                addspace_size = 0x7FF8000000ULL;
+                break;
+            default:
+                /* TODO: Panic. */
+                return 0xD001;
+        }
+    } else {
+        if (addspace_type & 2) {
+            addspace_start = 0x8000000ULL;
+            addspace_size = 0x78000000ULL;
+        } else {
+            addspace_start = 0x200000ULL;
+            addspace_size = 0x3FE00000ULL;
+        }
+    }
+    addspace_end = addspace_start + addspace_size;
+    if (addspace_start + extents->total_size > addspace_end) {
+        return 0xD001;
+    }
+    
+    u64 aslr_slide = 0;
+    if (addspace_type & 0x20) {
+        /* TODO: Apply a random ASLR slide. */
+    }
+    
+    extents->base_address = addspace_start + aslr_slide;
+    for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
+        if (g_nso_present[i]) {
+            extents->nso_addresses[i] += extents->base_address;
+        }
+    }
+    if (extents->args_address) {
+        extents->args_address += extents->base_address;
+    }
+    
+    return 0x0;
+}

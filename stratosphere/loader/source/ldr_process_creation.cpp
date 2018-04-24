@@ -89,6 +89,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
 Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nca_path, LaunchQueue::LaunchItem *launch_item, u64 arg_flags, Handle reslimit_h) {
     NpdmUtils::NpdmInfo npdm_info = {0};
     ProcessInfo process_info = {0};
+    NsoUtils::NsoLoadExtents nso_extents = {0};
     Registration::Process *target_process;
     Handle process_h = 0;
     Result rc;
@@ -141,7 +142,16 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
         goto CREATE_PROCESS_END;
     }
     
-    /* TODO: Figure out where NSOs will be mapped, and how much space they (and arguments) will take up. */
+    /* Figure out where NSOs will be mapped, and how much space they (and arguments) will take up. */
+    rc = NsoUtils::CalculateNsoLoadExtents(launch_item != NULL ? launch_item->arg_size : 0, process_info.process_flags, &nso_extents);
+    if (R_FAILED(rc)) {
+        goto CREATE_PROCESS_END;
+    }
+    
+    /* Set Address Space information in ProcessInfo. */
+    process_info.code_addr = nso_extents.base_address;
+    process_info.code_num_pages = nso_extents.total_size + 0xFFF;
+    process_info.code_num_pages >>= 12;
     
     /* Call svcCreateProcess(). */
     rc = svcCreateProcess(&process_h, &process_info, (u32 *)npdm_info.aci0_kac, npdm_info.aci0->kac_size/sizeof(u32));
