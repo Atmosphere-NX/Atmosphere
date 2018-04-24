@@ -37,6 +37,13 @@ class NsoUtils {
             u64 nso_sizes[NSO_NUM_MAX];
         };
         
+        struct NsoArgument {
+            u32 allocated_space;
+            u32 args_size;
+            u8  _0x8[0x18];
+            u8  arguments[];
+        };
+        
         
         static_assert(sizeof(NsoHeader) == 0x100, "Incorrectly defined NsoHeader!");
         

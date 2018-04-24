@@ -234,6 +234,30 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
         }
     }
     
-    /* TODO: Map in arguments, here. */
+    if (args != NULL && args_size) {
+        u64 arg_map_addr = 0;
+        if (R_FAILED((rc = MapUtils::LocateSpaceForMap(&arg_map_addr, extents->args_size)))) {
+            return rc;
+        }
+        
+        NsoArgument *arg_map_base = (NsoArgument *)arg_map_addr;
+        
+        if (R_FAILED((rc = svcMapProcessMemory(arg_map_base, process_h, extents->args_address, extents->args_size)))) {
+            return rc;
+        }
+        
+        arg_map_base->allocated_space = extents->args_size;
+        arg_map_base->args_size = args_size;
+        std::fill(arg_map_base->_0x8, arg_map_base->_0x8 + sizeof(arg_map_base->_0x8), 0);
+        std::copy(args, args + args_size, arg_map_base->arguments);
+        
+        if (R_FAILED((rc = svcUnmapProcessMemory(arg_map_base, process_h, extents->args_address, extents->args_size)))) {
+            return rc;
+        }
+        
+        if (R_FAILED((rc = svcSetProcessMemoryPermission(process_h, extents->args_address, extents->args_size, 3)))) {
+            return rc;
+        }
+    }
     return rc;
 }
