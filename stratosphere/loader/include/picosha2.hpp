@@ -37,8 +37,8 @@ THE SOFTWARE.
 #include <vector>
 
 namespace picosha2 {
-typedef unsigned long word_t;
-typedef unsigned char byte_t;
+typedef uint32_t word_t;
+typedef uint8_t byte_t;
 
 static const size_t k_digest_size = 32;
 
