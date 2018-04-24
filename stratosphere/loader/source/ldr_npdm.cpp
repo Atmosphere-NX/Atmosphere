@@ -369,7 +369,7 @@ Result NpdmUtils::ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32
     Result rc = 0;
     size_t remaining = num_aci0_caps;
     u32 *cur_cap = aci0_caps;
-    while (num_aci0_caps) {
+    while (remaining) {
         if (R_FAILED((rc = ValidateCapabilityAgainstRestrictions(acid_caps, num_acid_caps, cur_cap, remaining)))) {
             break;
         }
