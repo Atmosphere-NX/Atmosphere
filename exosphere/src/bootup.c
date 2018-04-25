@@ -85,16 +85,16 @@ void bootup_misc_mmio(void) {
 
     /* Mark registers secure world only. */
     /* Mark SATA_AUX, DTV, QSPI, SE, SATA, LA secure only. */
-	APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = SATA_AUX | DTV | QSPI | SE | SATA | LA;
+    APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = SATA_AUX | DTV | QSPI | SE | SATA | LA;
 
     /* By default, mark SPI1, SPI2, SPI3, SPI5, SPI6, I2C6 secure only. */
-	uint32_t sec_disable_1 = SPI1 | SPI2 | SPI3 | SPI5 | SPI6 | I2C6;
+    uint32_t sec_disable_1 = SPI1 | SPI2 | SPI3 | SPI5 | SPI6 | I2C6;
     /* By default, mark SDMMC3, DDS, DP2 secure only. */
     uint32_t sec_disable_2 = SDMMC3 | DDS |DP2;
     uint64_t hardware_type = configitem_get_hardware_type();
     if (hardware_type != 1) {
         /* Also mark I2C5 secure only, */
-		sec_disable_1 |= I2C4; /* TODO: It says I2C5, but the previously used 0x20000000 is I2C4 */
+        sec_disable_1 |= I2C4; /* TODO: It says I2C5, but the previously used 0x20000000 is I2C4 */
     }
     if (hardware_type != 0 && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         /* Starting on 4.x on non-dev units, mark UARTB, UARTC, SPI4, I2C3 secure only. */
