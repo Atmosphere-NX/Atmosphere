@@ -66,21 +66,29 @@ void bootup_misc_mmio(void) {
     APBDEV_PMC_DPD_ENABLE_0 = 0;
 
     /* Setup MC. */
-    /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x984) = 1;
-    MAKE_MC_REG(0x648) = 0;
-    MAKE_MC_REG(0x64C) = 0;
-    MAKE_MC_REG(0x650) = 1;
-    MAKE_MC_REG(0x670) = 0;
-    MAKE_MC_REG(0x674) = 0;
-    MAKE_MC_REG(0x678) = 1;
-    MAKE_MC_REG(0x9A0) = 0;
-    MAKE_MC_REG(0x9A4) = 0;
-    MAKE_MC_REG(0x9A8) = 0;
-    MAKE_MC_REG(0x9AC) = 1;
-    MC_SECURITY_CFG0_0 = 0;
-    MC_SECURITY_CFG1_0 = 0;
-    MC_SECURITY_CFG3_0 = 3;
+    MAKE_MC_REG(MC_REGISTER_VIDEO_PROTECT_GPU_OVERRIDE_0_0) = 1;
+
+    /* undefined in reference manual */
+    MAKE_MC_REG(MC_REGISTER_0x648) = 0;
+    MAKE_MC_REG(MC_REGISTER_0x64C) = 0;
+    MAKE_MC_REG(MC_REGISTER_0x650) = 1;
+
+    /* disable SEC carveout */
+    MAKE_MC_REG(MC_REGISTER_SEC_CARVEOUT_BOM_0) = 0;
+    MAKE_MC_REG(MC_REGISTER_SEC_CARVEOUT_SIZE_MB_0) = 0; 
+    MAKE_MC_REG(MC_REGISTER_SEC_CARVEOUT_REG_CTRL_0) = 1;
+
+    /* disable MTS carveout */
+    MAKE_MC_REG(MC_REGISTER_MTS_CARVEOUT_BOM_0) = 0;
+    MAKE_MC_REG(MC_REGISTER_MTS_CARVEOUT_SIZE_MB_0) = 0;
+    MAKE_MC_REG(MC_REGISTER_MTS_CARVEOUT_ADR_HI_0) = 0;
+    MAKE_MC_REG(MC_REGISTER_MTS_CARVEOUT_REG_CTRL_0) = 1;
+
+    /* disable security carveout - SECURITY_CFG0_0, CFG1_0, CFG3_0 */
+    MAKE_MC_REG(MC_REGISTER_SECURITY_BOM) = 0;
+    MAKE_MC_REG(MC_REGISTER_SECURITY_SIZE_MB) = 0;
+    MAKE_MC_REG(MC_REGISTER_SECURITY_BOM_HI) = 0x11;
+
     configure_default_carveouts();
 
     /* Mark registers secure world only. */
@@ -102,33 +110,45 @@ void bootup_misc_mmio(void) {
         /* Starting on 4.x on non-dev units, mark SDMMC1 secure only. */
         sec_disable_2 |= 1;
     }
+
     APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = sec_disable_1;
     APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = sec_disable_2;
 
+    /* reset translation tables to allow all */
+    MAKE_MC_REG(MC_REGISTER_SMMU_TRANSLATION_ENABLE_0_0) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_REGISTER_SMMU_TRANSLATION_ENABLE_1_0) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_REGISTER_SMMU_TRANSLATION_ENABLE_2_0) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_REGISTER_SMMU_TRANSLATION_ENABLE_3_0) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_REGISTER_SMMU_TRANSLATION_ENABLE_4_0) = 0xFFFFFFFF;
+
+    MAKE_MC_REG(MC_REGISTER_0x38) = 0;
+    MAKE_MC_REG(MC_REGISTER_0x3C) = 0;
+
+    /* disable stall calls after ring1 and ring3 requests */
+    MAKE_MC_REG(MC_REGISTER_EMEM_ARB_RING1_THROTTLE_0) = 0;
+    MAKE_MC_REG(MC_REGISTER_EMEM_ARB_RING3_THROTTLE_0) = 0;
+
+    MAKE_MC_REG(MC_REGISTER_EMEM_ARB_OVERRIDE_0) = 0; /* disable overrides */
+    MAKE_MC_REG(MC_REGISTER_EMEM_ARB_RSV_0) = 0; /*  null reserved register */
+
+    MAKE_MC_REG(MC_REGISTER_0xF0) = 0;
+
+    /* disable clock-enable overrides */
+    MAKE_MC_REG(MC_REGISTER_CLKEN_OVERRIDE_0) = 0;
+    
+    /* reset PTB, TLB and PTC */
+    MAKE_MC_REG(MC_REGISTER_SMMU_PTB_DATA_0) = 0;
+    MAKE_MC_REG(MC_REGISTER_SMMU_TLB_CONFIG_0) = 0x30000030;
+    MAKE_MC_REG(MC_REGISTER_SMMU_PTC_CONFIG_0) = 0x2800003F;
+
     /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x228) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x22C) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x230) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x234) = 0xFFFFFFFF;
-    MAKE_MC_REG(0xB98) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x038) = 0;
-    MAKE_MC_REG(0x03C) = 0;
-    MAKE_MC_REG(0x0E0) = 0;
-    MAKE_MC_REG(0x0E4) = 0;
-    MAKE_MC_REG(0x0E8) = 0;
-    MAKE_MC_REG(0x0EC) = 0;
-    MAKE_MC_REG(0x0F0) = 0;
-    MAKE_MC_REG(0x0F4) = 0;
-    MAKE_MC_REG(0x020) = 0;
-    MAKE_MC_REG(0x014) = 0x30000030;
-    MAKE_MC_REG(0x018) = 0x2800003F;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x034) = 0;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x030) = 0;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x010) = 1;
-    (void)(MAKE_MC_REG(0x014));
+    (void)(MAKE_MC_REG(MC_REGISTER_SMMU_TLB_CONFIG_0));
+    MAKE_MC_REG(MC_REGISTER_SMMU_PTC_FLUSH_0) = 0;
+    (void)(MAKE_MC_REG(MC_REGISTER_SMMU_TLB_CONFIG_0));
+    MAKE_MC_REG(MC_REGISTER_SMMU_TLB_FLUSH_0) = 0;
+    (void)(MAKE_MC_REG(MC_REGISTER_SMMU_TLB_CONFIG_0));
+    MAKE_MC_REG(MC_REGISTER_SMMU_CONFIG_0) = 0x1; /* enable SMMU */
+    (void)(MAKE_MC_REG(MC_REGISTER_SMMU_TLB_CONFIG_0));
 
     /* Clear RESET Vector, setup CPU Secure Boot RESET Vectors. */
     uint32_t reset_vec = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
@@ -168,19 +188,20 @@ void bootup_misc_mmio(void) {
         g_has_booted_up = true;
     } else if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400) {
         /* TODO: What are these MC reg writes? */
-        MAKE_MC_REG(0x65C) = 0xFFFFF000;
-        MAKE_MC_REG(0x660) = 0;
-        MAKE_MC_REG(0x964) |= 1;
+        MAKE_MC_REG(MC_REGISTER_0x65C) = 0xFFFFF000;
+        MAKE_MC_REG(MC_REGISTER_0x660) = 0;
+        MAKE_MC_REG(MC_REGISTER_IRAM_REG_CTRL_0) |= 1; /* overlap at 18.11.1.86 and 18.11.1.87 - lock write access to IRAM and EMEM registers */
         CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
     }
 }
 
 void setup_4x_mmio(void) {
     /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x65C) = 0xFFFFF000;
-    MAKE_MC_REG(0x660) = 0;
-    MAKE_MC_REG(0x964) |= 1;
+    MAKE_MC_REG(MC_REGISTER_0x65C) = 0xFFFFF000;
+    MAKE_MC_REG(MC_REGISTER_0x660) = 0;
+    MAKE_MC_REG(MC_REGISTER_IRAM_REG_CTRL_0) |= 1; /* as above, lock write access to IRAM and EMEM registers */
     CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
+
     /* TODO: What are these PMC scratch writes? */
     APBDEV_PMC_SECURE_SCRATCH51_0 = (APBDEV_PMC_SECURE_SCRATCH51_0 & 0xFFFF8000) | 0x4000;
     APBDEV_PMC_SECURE_SCRATCH16_0 &= 0x3FFFFFFF;
