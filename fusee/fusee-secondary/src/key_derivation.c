@@ -196,17 +196,15 @@ void derive_bis_key(void *dst, BisPartition_t partition_id, u32 target_firmware)
     
     static const u8 bis_kek_source[0x10] = {0x34, 0xC1, 0xA0, 0xC4, 0x82, 0x58, 0xF8, 0xB4, 0xFA, 0x9E, 0x5E, 0x6A, 0xDA, 0xFC, 0x7E, 0x4F};
 
-    const int key_source_idx = (partition_id > 2) ? 2 : partition_id;    
     switch (partition_id) {
         case BisPartition_Calibration:
-            fusee_generate_specific_aes_key(dst, key_source_for_bis[key_source_idx][0], false, target_firmware);
-            fusee_generate_specific_aes_key(dst + 0x10, key_source_for_bis[key_source_idx][1], false, target_firmware);
+            fusee_generate_specific_aes_key(dst, key_source_for_bis[partition_id][0], false, target_firmware);
+            fusee_generate_specific_aes_key(dst + 0x10, key_source_for_bis[partition_id][1], false, target_firmware);
             break;
         case BisPartition_Safe:
-        case BisPartition_User:
-        case BisPartition_System:
-            fusee_generate_personalized_aes_key_for_bis(dst, bis_kek_source, key_source_for_bis[key_source_idx][0], target_firmware);
-            fusee_generate_personalized_aes_key_for_bis(dst + 0x10, bis_kek_source, key_source_for_bis[key_source_idx][1], target_firmware);
+        case BisPartition_UserSystem:
+            fusee_generate_personalized_aes_key_for_bis(dst, bis_kek_source, key_source_for_bis[partition_id][0], target_firmware);
+            fusee_generate_personalized_aes_key_for_bis(dst + 0x10, bis_kek_source, key_source_for_bis[partition_id][1], target_firmware);
             break;
         default:
             generic_panic();
