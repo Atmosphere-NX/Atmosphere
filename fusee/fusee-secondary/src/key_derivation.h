@@ -16,7 +16,7 @@
 
 typedef enum {
     BisPartition_Calibration = 0,
-	BisPartition_Safe = 1,
+    BisPartition_Safe = 1,
     BisPartition_User = 2,
     BisPartition_System = 3
 } BisPartition_t;
