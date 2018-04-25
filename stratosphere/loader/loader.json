@@ -1,12 +1,12 @@
 {
-    "name" : "sm",
-    "title_id" : "0x0100000000000004",
-    "main_thread_stack_size" : "0x1000",
-    "main_thread_priority" : 27,
+    "name" : "Loader",
+    "title_id" : "0x0100000000000001",
+    "main_thread_stack_size" : "0x4000",
+    "main_thread_priority" : 49,
     "default_cpu_id" : 3,
     "process_category" : 1,
     "kernel_capabilities" : {
-        "handle_table_size" : 512,
+        "handle_table_size" : 128,
         "syscalls" : {
             "svcSetHeapSize"                     : "0x01",
             "svcSetMemoryPermission"             : "0x02",
@@ -56,10 +56,10 @@
             "svcReplyAndReceiveLight"            : "0x42",
             "svcReplyAndReceive"                 : "0x43",
             "svcReplyAndReceiveWithUserBuffer"   : "0x44",
-            "svcGetMemoryInfo"                   : "0x6F",
-            "svcCreatePort"                      : "0x70",
-            "svcManageNamedPort"                 : "0x71",
-            "svcConnectToPort"                   : "0x72"
+            "svcSetProcessMemoryPermission"      : "0x73",
+            "svcMapProcessMemory"                : "0x74",
+            "svcUnmapProcessMemory"              : "0x75",
+            "svcCreateProcess"                   : "0x79"
         }
     }
 }
