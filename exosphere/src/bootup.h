@@ -4,82 +4,82 @@
 #include <stdint.h>
 
 /* APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 slaves */
-enum APB_SSER0 {
-    MISC_REGS  = 1 << 1, /* PP, SC1x pads and GP registers */
-    SATA_AUX   = 1 << 2,
-    PINMUX_AUX = 1 << 3,
-    APE        = 1 << 4,
+typedef enum {
+	APB_SSER0_MISC_REGS  = 1 << 1, /* PP, SC1x pads and GP registers */
+	APB_SSER0_SATA_AUX   = 1 << 2,
+	APB_SSER0_PINMUX_AUX = 1 << 3,
+	APB_SSER0_APE        = 1 << 4,
 
-    DTV        = 1 << 6,
+	APB_SSER0_DTV        = 1 << 6,
 
-    PWM        = 1 << 8, /* PWFM */
-    QSPI       = 1 << 9,
-    CSITE      = 1 << 10, /* Core Site */
-    RTC        = 1 << 11,
+	APB_SSER0_PWM        = 1 << 8, /* PWFM */
+	APB_SSER0_QSPI       = 1 << 9,
+	APB_SSER0_CSITE      = 1 << 10, /* Core Site */
+	APB_SSER0_RTC        = 1 << 11,
 
-    PMC        = 1 << 13,
-    SE         = 1 << 14, /* Security Engine */
-    FUSE       = 1 << 15,
-    KFUSE      = 1 << 16,
+	APB_SSER0_PMC        = 1 << 13,
+	APB_SSER0_SE         = 1 << 14, /* Security Engine */
+	APB_SSER0_FUSE       = 1 << 15,
+	APB_SSER0_KFUSE      = 1 << 16,
 
-    UNUSED     = 1 << 18, /* reserved, unused but listed as accessible */
+	APB_SSER0_UNUSED     = 1 << 18, /* reserved, unused but listed as accessible */
 
-    SATA       = 1 << 20,
-    HDA        = 1 << 21,
-    LA         = 1 << 22,
-    ATOMICS    = 1 << 23,
-    CEC        = 1 << 24,
+	APB_SSER0_SATA       = 1 << 20,
+	APB_SSER0_HDA        = 1 << 21,
+	APB_SSER0_LA         = 1 << 22,
+	APB_SSER0_ATOMICS    = 1 << 23,
+	APB_SSER0_CEC        = 1 << 24,
 
     STM        = 1 << 29
-};
+} APB_SSER0;
 
 /* APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 slaves */
-enum APB_SSER1 {
-    MC0    = 1 << 4,
-    EMC0   = 1 << 5,
+typedef enum {
+	APB_SSER1_MC0    = 1 << 4,
+	APB_SSER1_EMC0   = 1 << 5,
 
-    MC1    = 1 << 8,
-    EMC1   = 1 << 9,
-    MCB    = 1 << 10,
-    EMBC   = 1 << 11,
-    UART_A = 1 << 12,
-    UART_B = 1 << 13,
-    UART_C = 1 << 14,
-    UART_D = 1 << 15,
+	APB_SSER1_MC1    = 1 << 8,
+	APB_SSER1_EMC1   = 1 << 9,
+	APB_SSER1_MCB    = 1 << 10,
+	APB_SSER1_EMBC   = 1 << 11,
+	APB_SSER1_UART_A = 1 << 12,
+	APB_SSER1_UART_B = 1 << 13,
+	APB_SSER1_UART_C = 1 << 14,
+	APB_SSER1_UART_D = 1 << 15,
 
-    SPI1   = 1 << 20,
-    SPI2   = 1 << 21,
-    SPI3   = 1 << 22,
-    SPI4   = 1 << 23,
-    SPI5   = 1 << 24,
-    SPI6   = 1 << 25,
-    I2C1   = 1 << 26,
-    I2C2   = 1 << 27,
-    I2C3   = 1 << 28,
-    I2C4   = 1 << 29,
-    DVC    = 1 << 30,
-    I2C5   = 1 << 30,
-    I2C6   = 1 << 31 /* this will show as negative because of the 32bit sign bit being set */
-};
+	APB_SSER1_SPI1   = 1 << 20,
+	APB_SSER1_SPI2   = 1 << 21,
+	APB_SSER1_SPI3   = 1 << 22,
+	APB_SSER1_SPI4   = 1 << 23,
+	APB_SSER1_SPI5   = 1 << 24,
+	APB_SSER1_SPI6   = 1 << 25,
+	APB_SSER1_I2C1   = 1 << 26,
+	APB_SSER1_I2C2   = 1 << 27,
+	APB_SSER1_I2C3   = 1 << 28,
+	APB_SSER1_I2C4   = 1 << 29,
+	APB_SSER1_DVC    = 1 << 30,
+	APB_SSER1_I2C5   = 1 << 30,
+	APB_SSER1_I2C6   = 1 << 31 /* this will show as negative because of the 32bit sign bit being set */
+} APB_SSER1;
 
 /* APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 slaves */
-enum APB_SSER2 {
-    SDMMC1      = 1 << 0,
-    SDMMC2      = 1 << 1,
-    SDMMC3      = 1 << 2,
-    SDMMC4      = 1 << 3,
+typedef enum  {
+	APB_SSER2_SDMMC1      = 1 << 0,
+	APB_SSER2_SDMMC2      = 1 << 1,
+	APB_SSER2_SDMMC3      = 1 << 2,
+	APB_SSER2_SDMMC4      = 1 << 3,
 
-    MIPIBIF     = 1 << 7, /* reserved */
-    DDS         = 1 << 8,
-    DP2         = 1 << 9,
-    SOC_THERM   = 1 << 10,
-    APB2JTAG    = 1 << 11,
-    XUSB_HOST   = 1 << 12,
-    XUSB_DEV    = 1 << 13,
-    XUSB_PADCTL = 1 << 14,
-    MIPI_CAL    = 1 << 15,
-    DVFS        = 1 << 16
-};
+	APB_SSER2_MIPIBIF     = 1 << 7, /* reserved */
+	APB_SSER2_DDS         = 1 << 8,
+	APB_SSER2_DP2         = 1 << 9,
+	APB_SSER2_SOC_THERM   = 1 << 10,
+	APB_SSER2_APB2JTAG    = 1 << 11,
+	APB_SSER2_XUSB_HOST   = 1 << 12,
+	APB_SSER2_XUSB_DEV    = 1 << 13,
+	APB_SSER2_XUSB_PADCTL = 1 << 14,
+	APB_SSER2_MIPI_CAL    = 1 << 15,
+	APB_SSER2_DVFS        = 1 << 16
+} APB_SSER2;
 
 void bootup_misc_mmio(void);
 

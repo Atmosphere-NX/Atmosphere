@@ -85,22 +85,22 @@ void bootup_misc_mmio(void) {
 
     /* Mark registers secure world only. */
     /* Mark SATA_AUX, DTV, QSPI, SE, SATA, LA secure only. */
-    APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = SATA_AUX | DTV | QSPI | SE | SATA | LA;
+    APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = APB_SSER0_SATA_AUX | APB_SSER0_DTV | APB_SSER0_QSPI | APB_SSER0_SE | APB_SSER0_SATA | APB_SSER0_LA;
 
     /* By default, mark SPI1, SPI2, SPI3, SPI5, SPI6, I2C6 secure only. */
-    uint32_t sec_disable_1 = SPI1 | SPI2 | SPI3 | SPI5 | SPI6 | I2C6;
+    uint32_t sec_disable_1 = APB_SSER1_SPI1 | APB_SSER1_SPI2 | APB_SSER1_SPI3 | APB_SSER1_SPI5 | APB_SSER1_SPI6 | APB_SSER1_I2C6;
     /* By default, mark SDMMC3, DDS, DP2 secure only. */
-    uint32_t sec_disable_2 = SDMMC3 | DDS |DP2;
+    uint32_t sec_disable_2 = APB_SSER2_SDMMC3 | APB_SSER2_DDS | APB_SSER2_DP2;
     uint64_t hardware_type = configitem_get_hardware_type();
     if (hardware_type != 1) {
         /* Also mark I2C5 secure only, */
-        sec_disable_1 |= I2C4; /* TODO: It says I2C5, but the previously used 0x20000000 is I2C4 */
+        sec_disable_1 |= APB_SSER1_I2C4; /* TODO: It says I2C5, but the previously used 0x20000000 is I2C4 */
     }
     if (hardware_type != 0 && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         /* Starting on 4.x on non-dev units, mark UARTB, UARTC, SPI4, I2C3 secure only. */
-        sec_disable_1 |= UART_B | UART_C | SPI4 | I2C3;
+        sec_disable_1 |= APB_SSER1_UART_B | APB_SSER1_UART_C | APB_SSER1_SPI4 | APB_SSER1_I2C3;
         /* Starting on 4.x on non-dev units, mark SDMMC1 secure only. */
-        sec_disable_2 |= SDMMC1;
+        sec_disable_2 |= APB_SSER2_SDMMC1;
     }
     APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = sec_disable_1;
     APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = sec_disable_2;
@@ -283,8 +283,8 @@ void identity_unmap_iram_cd_tzram(void) {
 
 void secure_additional_devices(void) {
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
-        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 |= PMC; /* make PMC secure-only (2.x+ but see note below) */
-        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 |= MC0 | MC1 | MCB;  /* make MC0, MC1, MCB secure-only (4.x+) */
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 |= APB_SSER0_PMC; /* make PMC secure-only (2.x+ but see note below) */
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 |= APB_SSER1_MC0 | APB_SSER1_MC1 | APB_SSER1_MCB;  /* make MC0, MC1, MCB secure-only (4.x+) */
     } else {
         /* TODO: Detect 1.x */
     }
