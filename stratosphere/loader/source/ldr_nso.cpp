@@ -268,6 +268,9 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
             
             for (unsigned int seg = 0; seg < 3; seg++) {
                 u64 size = g_nso_headers[i].segments[seg].decomp_size;
+                if (seg == 2) {
+                    size += g_nso_headers[i].segments[2].align_or_total_size;
+                }
                 size += 0xFFF;
                 size &= ~0xFFFULL;
                 const static unsigned int segment_perms[3] = {5, 1, 3};
