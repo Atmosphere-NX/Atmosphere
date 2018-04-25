@@ -93,8 +93,8 @@ void bootup_misc_mmio(void) {
     uint32_t sec_disable_2 = APB_SSER2_SDMMC3 | APB_SSER2_DDS | APB_SSER2_DP2;
     uint64_t hardware_type = configitem_get_hardware_type();
     if (hardware_type != 1) {
-        /* Also mark I2C5 secure only, */
-        sec_disable_1 |= APB_SSER1_I2C4; /* TODO: It says I2C5, but the previously used 0x20000000 is I2C4 */
+        /* Also mark I2C4 secure only, */
+        sec_disable_1 |= APB_SSER1_I2C4;
     }
     if (hardware_type != 0 && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         /* Starting on 4.x on non-dev units, mark UARTB, UARTC, SPI4, I2C3 secure only. */
