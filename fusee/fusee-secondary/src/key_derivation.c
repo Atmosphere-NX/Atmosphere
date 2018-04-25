@@ -195,7 +195,6 @@ void derive_bis_key(void *dst, BisPartition_t partition_id, u32 target_firmware)
     };
     
     static const u8 bis_kek_source[0x10] = {0x34, 0xC1, 0xA0, 0xC4, 0x82, 0x58, 0xF8, 0xB4, 0xFA, 0x9E, 0x5E, 0x6A, 0xDA, 0xFC, 0x7E, 0x4F};
-
     switch (partition_id) {
         case BisPartition_Calibration:
             fusee_generate_specific_aes_key(dst, key_source_for_bis[partition_id][0], false, target_firmware);
