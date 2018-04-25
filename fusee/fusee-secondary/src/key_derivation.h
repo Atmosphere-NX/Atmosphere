@@ -16,8 +16,8 @@
 
 typedef enum {
     BisPartition_Calibration = 0,
-    BisPartition_User = 1,
-    BisPartition_System = 2
+    BisPartition_Safe = 1,
+    BisPartition_UserSystem = 2
 } BisPartition_t;
 
 typedef struct {
