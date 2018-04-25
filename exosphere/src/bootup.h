@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-/* APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 slaves */
+/* 21.1.7 AP Control Registers */
+/* 21.1.7.1 APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 slaves */
 typedef enum {
     APB_SSER0_MISC_REGS  = 1 << 1, /* PP, SC1x pads and GP registers */
     APB_SSER0_SATA_AUX   = 1 << 2,
@@ -33,7 +34,7 @@ typedef enum {
     STM        = 1 << 29
 } APB_SSER0;
 
-/* APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 slaves */
+/* 21.1.7.2 APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 slaves */
 typedef enum {
     APB_SSER1_MC0    = 1 << 4,
     APB_SSER1_EMC0   = 1 << 5,
@@ -62,8 +63,8 @@ typedef enum {
     APB_SSER1_I2C6   = 1 << 31 /* this will show as negative because of the 32bit sign bit being set */
 } APB_SSER1;
 
-/* APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 slaves */
-typedef enum  {
+/* 21.1.7.3 APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 slaves */
+typedef enum {
     APB_SSER2_SDMMC1      = 1 << 0,
     APB_SSER2_SDMMC2      = 1 << 1,
     APB_SSER2_SDMMC3      = 1 << 2,
