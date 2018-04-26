@@ -25,7 +25,7 @@ class Registration {
         
         struct Process {
             bool in_use;
-            bool is_64_bit;
+            bool is_64_bit_addspace;
             u64 index;
             u64 process_id;
             u64 title_id_min;
@@ -45,7 +45,7 @@ class Registration {
         static Result get_registered_tid_sid(u64 index, Registration::TidSid *out);
         static bool register_tid_sid(const TidSid *tid_sid, u64 *out_index);
         static bool unregister_index(u64 index);
-        static void set_process_id_tid_min_and_is_64_bit(u64 index, u64 process_id, u64 tid_min, bool is_64_bit);
+        static void set_process_id_tid_min_and_is_64_bit_addspace(u64 index, u64 process_id, u64 tid_min, bool is_64_bit_addspace);
         static void add_nso_info(u64 index, u64 base_address, u64 size, const unsigned char *build_id);
         static Result get_nso_infos_for_process_id(NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written);
 };

@@ -75,7 +75,7 @@ Result Registration::get_registered_tid_sid(u64 index, Registration::TidSid *out
     return 0;
 }
 
-void Registration::set_process_id_tid_min_and_is_64_bit(u64 index, u64 process_id, u64 tid_min, bool is_64_bit) {
+void Registration::set_process_id_tid_min_and_is_64_bit_addspace(u64 index, u64 process_id, u64 tid_min, bool is_64_bit_addspace) {
     Registration::Process *target_process = get_process(index);
     if (target_process == NULL) {
         return;
@@ -83,7 +83,7 @@ void Registration::set_process_id_tid_min_and_is_64_bit(u64 index, u64 process_i
     
     target_process->process_id = process_id;
     target_process->title_id_min = tid_min;
-    target_process->is_64_bit = is_64_bit;
+    target_process->is_64_bit_addspace = is_64_bit_addspace;
 }
 
 void Registration::add_nso_info(u64 index, u64 base_address, u64 size, const unsigned char *build_id) {
