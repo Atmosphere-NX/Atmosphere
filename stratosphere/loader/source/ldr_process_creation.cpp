@@ -174,7 +174,13 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     
     /* Update the list of registered processes with the new process. */
     svcGetProcessId(&process_id, process_h);
-    Registration::set_process_id_and_tid_min(index, process_id, npdm_info.aci0->title_id);
+    bool is_64_bit;
+    if (kernelAbove200()) {
+        is_64_bit = (((npdm_info.header->mmu_flags >> 1) & 5) | 2) == 3;
+    } else {
+        is_64_bit = (npdm_info.header->mmu_flags & 0xE) == 0x2;
+    }
+    Registration::set_process_id_tid_min_and_is_64_bit(index, process_id, npdm_info.aci0->title_id, is_64_bit);
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         if (NsoUtils::IsNsoPresent(i)) {   
             Registration::add_nso_info(index, nso_extents.nso_addresses[i], nso_extents.nso_sizes[i], NsoUtils::GetNsoBuildId(i));
