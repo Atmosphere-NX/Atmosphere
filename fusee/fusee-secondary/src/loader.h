@@ -9,6 +9,7 @@ typedef struct {
     char path[0x300];
     const char *key;
     uintptr_t load_address;
+    size_t load_size;
 } load_file_t;
 
 typedef struct {

@@ -71,7 +71,9 @@ void load_list_entry(const char *key) {
         generic_panic();
     }
     
-    if (!read_sd_file((void *)load_file_ctx.load_address, LOADER_FILESIZE_MAX, load_file_ctx.path)) {
+    /* Read file off of SD. */
+    load_file_ctx.load_size = read_sd_file((void *)load_file_ctx.load_address, LOADER_FILESIZE_MAX, load_file_ctx.path);
+    if (load_file_ctx.load_size == 0) {
         printk("Error: Failed to read %s!\n", load_file_ctx.path);
         generic_panic();
     }
