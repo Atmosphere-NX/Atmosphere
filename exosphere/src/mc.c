@@ -93,3 +93,7 @@ void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint6
     carveout->flags_9 = 0;
     carveout->allowed_clients = 0x8B;
 }
+
+volatile mc_register_t *get_mc_reg() {
+    return (volatile mc_register_t *)(MC_BASE);
+}

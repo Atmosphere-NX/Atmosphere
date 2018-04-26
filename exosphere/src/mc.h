@@ -65,8 +65,8 @@ typedef struct {
     This must point to a region of the physical address map allocated to EMEM for it to be effective; the MC cannot secure address space it does not own. (In other words, this is an absolute address, not an offset.)
     Above is the list of clients with the TrustZone-security access. [18.11.1.20]
     Note that AXICIF clients will adhere to the standard AXI protocol "aprot[1]==0" indication for secure requests. */
-    uint32_t SECURITY_BOM;
-    uint32_t SECURITY_SIZE_MB; /* SECURITY_SIZE_MB is the size, in megabytes, of the secured region. If set to 0, the security check in MC is disabled */
+    uint32_t SECURITY_BOM; /* MC_SECURITY_CFG0_0 */
+    uint32_t SECURITY_SIZE_MB; /* MC_SECURITY_CFG1_0 -- SECURITY_SIZE_MB is the size, in megabytes, of the secured region. If set to 0, the security check in MC is disabled */
     uint32_t _0x78[26];
     uint32_t EMEM_ARB_RING1_THROTTLE_0;
     uint32_t EMEM_ARB_RING3_THROTTLE_0;
@@ -113,14 +113,15 @@ typedef struct {
     /* Base Address Higher Bits
     SECURITY_BOM_HI has the higher address bits beyond 32 bits of the
     base of the secured region, limited to MB granularity */
-    uint32_t SECURITY_BOM_HI;
+    uint32_t SECURITY_BOM_HI; /* MC_SECURITY_CFG3_0 */
     uint32_t _0x9C0[118];
     uint32_t SMMU_TRANSLATION_ENABLE_4_0;
-} mc_register_t;
+} mc_register_t; /* 0xB98 */
 
 volatile security_carveout_t *get_carveout_by_id(unsigned int carveout);
 void configure_default_carveouts(void);
 void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint64_t size);
 
+volatile mc_register_t *get_mc_reg();
 
 #endif
