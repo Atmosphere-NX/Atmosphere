@@ -96,7 +96,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     Result rc;
     
     /* Get the process from the registration queue. */
-    target_process = Registration::get_process(index);
+    target_process = Registration::GetProcess(index);
     if (target_process == NULL) {
         return 0x1009;
     }
@@ -180,10 +180,10 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     } else {
         is_64_bit_addspace = (npdm_info.header->mmu_flags & 0xE) == 0x2;
     }
-    Registration::set_process_id_tid_min_and_is_64_bit_addspace(index, process_id, npdm_info.aci0->title_id, is_64_bit_addspace);
+    Registration::SetProcessIdTidMinAndIs64BitAddressSpace(index, process_id, npdm_info.aci0->title_id, is_64_bit_addspace);
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         if (NsoUtils::IsNsoPresent(i)) {   
-            Registration::add_nso_info(index, nso_extents.nso_addresses[i], nso_extents.nso_sizes[i], NsoUtils::GetNsoBuildId(i));
+            Registration::AddNsoInfo(index, nso_extents.nso_addresses[i], nso_extents.nso_sizes[i], NsoUtils::GetNsoBuildId(i));
         }
     }
     

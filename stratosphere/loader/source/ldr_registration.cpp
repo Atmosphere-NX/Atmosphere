@@ -6,7 +6,7 @@
 static Registration::List g_registration_list = {0};
 static u64 g_num_registered = 1;
 
-Registration::Process *Registration::get_free_process() {
+Registration::Process *Registration::GetFreeProcess() {
     unsigned int i;
     for (i = 0; i < REGISTRATION_LIST_MAX; i++) {
         if (!g_registration_list.processes[i].in_use) {
@@ -16,7 +16,7 @@ Registration::Process *Registration::get_free_process() {
     return NULL;
 }
 
-Registration::Process *Registration::get_process(u64 index) {
+Registration::Process *Registration::GetProcess(u64 index) {
     unsigned int i;
     for (i = 0; i < REGISTRATION_LIST_MAX && (!g_registration_list.processes[i].in_use || g_registration_list.processes[i].index != index); i++) {
     }
@@ -26,7 +26,7 @@ Registration::Process *Registration::get_process(u64 index) {
     return &g_registration_list.processes[i];
 }
 
-Registration::Process *Registration::get_process_by_process_id(u64 pid) {
+Registration::Process *Registration::GetProcessByProcessId(u64 pid) {
     unsigned int i;
     for (i = 0; i < REGISTRATION_LIST_MAX && (!g_registration_list.processes[i].in_use || g_registration_list.processes[i].process_id != pid); i++) {
         
@@ -37,8 +37,8 @@ Registration::Process *Registration::get_process_by_process_id(u64 pid) {
     return &g_registration_list.processes[i];
 }
 
-bool Registration::register_tid_sid(const TidSid *tid_sid, u64 *out_index) { 
-    Registration::Process *free_process = get_free_process();
+bool Registration::RegisterTidSid(const TidSid *tid_sid, u64 *out_index) { 
+    Registration::Process *free_process = GetFreeProcess();
     if (free_process == NULL) {
         return false;
     }
@@ -52,8 +52,8 @@ bool Registration::register_tid_sid(const TidSid *tid_sid, u64 *out_index) {
     return true;
 }
 
-bool Registration::unregister_index(u64 index) {
-    Registration::Process *target_process = get_process(index);
+bool Registration::UnregisterIndex(u64 index) {
+    Registration::Process *target_process = GetProcess(index);
     if (target_process == NULL) {
         return false;
     }
@@ -64,8 +64,8 @@ bool Registration::unregister_index(u64 index) {
 }
 
 
-Result Registration::get_registered_tid_sid(u64 index, Registration::TidSid *out) {
-    Registration::Process *target_process = get_process(index);
+Result Registration::GetRegisteredTidSid(u64 index, Registration::TidSid *out) {
+    Registration::Process *target_process = GetProcess(index);
     if (target_process == NULL) {
         return 0x1009;
     }
@@ -75,8 +75,8 @@ Result Registration::get_registered_tid_sid(u64 index, Registration::TidSid *out
     return 0;
 }
 
-void Registration::set_process_id_tid_min_and_is_64_bit_addspace(u64 index, u64 process_id, u64 tid_min, bool is_64_bit_addspace) {
-    Registration::Process *target_process = get_process(index);
+void Registration::SetProcessIdTidMinAndIs64BitAddressSpace(u64 index, u64 process_id, u64 tid_min, bool is_64_bit_addspace) {
+    Registration::Process *target_process = GetProcess(index);
     if (target_process == NULL) {
         return;
     }
@@ -86,8 +86,8 @@ void Registration::set_process_id_tid_min_and_is_64_bit_addspace(u64 index, u64 
     target_process->is_64_bit_addspace = is_64_bit_addspace;
 }
 
-void Registration::add_nso_info(u64 index, u64 base_address, u64 size, const unsigned char *build_id) {
-    Registration::Process *target_process = get_process(index);
+void Registration::AddNsoInfo(u64 index, u64 base_address, u64 size, const unsigned char *build_id) {
+    Registration::Process *target_process = GetProcess(index);
     if (target_process == NULL) {
         return;
     }
@@ -104,8 +104,8 @@ void Registration::add_nso_info(u64 index, u64 base_address, u64 size, const uns
 }
 
 
-Result Registration::get_nso_infos_for_process_id(Registration::NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written) {
-    Registration::Process *target_process = get_process_by_process_id(process_id);
+Result Registration::GetNsoInfosForProcessId(Registration::NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written) {
+    Registration::Process *target_process = GetProcessByProcessId(process_id);
     if (target_process == NULL) {
         return 0x1009;
     }

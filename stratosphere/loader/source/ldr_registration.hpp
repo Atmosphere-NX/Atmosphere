@@ -4,6 +4,7 @@
 #define REGISTRATION_LIST_MAX (0x40)
 
 #define NSO_INFO_MAX (0x20)
+#define NRR_INFO_MAX (0x40)
 
 class Registration {
     public:
@@ -16,6 +17,18 @@ class Registration {
         struct NsoInfoHolder {
             bool in_use;
             NsoInfo info;
+        };
+        
+        struct NrrInfo {
+            u64 base_address;
+            u64 size;
+            u64 code_memory_address;
+            u64 address_for_loader;
+        };
+        
+        struct NrrInfoHolder {
+            bool in_use;
+            NrrInfo info;
         };
         
         struct TidSid {
@@ -31,6 +44,7 @@ class Registration {
             u64 title_id_min;
             Registration::TidSid tid_sid;
             Registration::NsoInfoHolder nso_infos[NSO_INFO_MAX];
+            Registration::NrrInfoHolder nrr_infos[NRR_INFO_MAX];
             u64 _0x730;
         };
         
@@ -39,13 +53,13 @@ class Registration {
             u64 num_processes;
         };
         
-        static Registration::Process *get_free_process();
-        static Registration::Process *get_process(u64 index);
-        static Registration::Process *get_process_by_process_id(u64 pid);
-        static Result get_registered_tid_sid(u64 index, Registration::TidSid *out);
-        static bool register_tid_sid(const TidSid *tid_sid, u64 *out_index);
-        static bool unregister_index(u64 index);
-        static void set_process_id_tid_min_and_is_64_bit_addspace(u64 index, u64 process_id, u64 tid_min, bool is_64_bit_addspace);
-        static void add_nso_info(u64 index, u64 base_address, u64 size, const unsigned char *build_id);
-        static Result get_nso_infos_for_process_id(NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written);
+        static Registration::Process *GetFreeProcess();
+        static Registration::Process *GetProcess(u64 index);
+        static Registration::Process *GetProcessByProcessId(u64 pid);
+        static Result GetRegisteredTidSid(u64 index, Registration::TidSid *out);
+        static bool RegisterTidSid(const TidSid *tid_sid, u64 *out_index);
+        static bool UnregisterIndex(u64 index);
+        static void SetProcessIdTidMinAndIs64BitAddressSpace(u64 index, u64 process_id, u64 tid_min, bool is_64_bit_addspace);
+        static void AddNsoInfo(u64 index, u64 base_address, u64 size, const unsigned char *build_id);
+        static Result GetNsoInfosForProcessId(NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written);
 };
