@@ -30,7 +30,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
     identity_unmap_iram_cd_tzram();
 
     /* On warmboot (not cpu_on) only */
-    if (MC_SECURITY_CFG3_0 == 0) {
+    if (get_mc_reg()->SECURITY_BOM_HI == 0) {
         if (!configitem_is_retail()) {
             /* TODO: uart_log("OHAYO"); */
         }
@@ -60,7 +60,8 @@ void __attribute__((noreturn)) warmboot_main(void) {
         clear_user_smc_in_progress();
 
         if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
-            setup_4x_mmio();        }
+            setup_4x_mmio();
+        }
     }
 
     setup_current_core_state();
