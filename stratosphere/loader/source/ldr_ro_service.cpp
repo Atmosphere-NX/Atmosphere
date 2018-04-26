@@ -31,27 +31,36 @@ Result RelocatableObjectsService::dispatch(IpcParsedCommand &r, IpcCommand &out_
 }
 
 
-std::tuple<Result, u64> load_nro(PidDescriptor pid, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
+std::tuple<Result, u64> RelocatableObjectsService::load_nro(PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
     /* TODO */
     return std::make_tuple(0xF601, 0);
 }
 
-std::tuple<Result> unload_nro(PidDescriptor pid, u64 nro_address) {
+std::tuple<Result> RelocatableObjectsService::unload_nro(PidDescriptor pid_desc, u64 nro_address) {
     /* TODO */
     return std::make_tuple(0xF601);
 }
 
-std::tuple<Result> load_nrr(PidDescriptor pid, u64 nrr_address, u64 nrr_size) {
+std::tuple<Result> RelocatableObjectsService::load_nrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size) {
     /* TODO */
     return std::make_tuple(0xF601);
 }
 
-std::tuple<Result> unload_nrr(PidDescriptor pid, u64 nrr_address) {
+std::tuple<Result> RelocatableObjectsService::unload_nrr(PidDescriptor pid_desc, u64 nrr_address) {
     /* TODO */
     return std::make_tuple(0xF601);
 }
 
-std::tuple<Result> initialize(PidDescriptor pid, CopiedHandle process_h) {
-    /* TODO */
-    return std::make_tuple(0xF601);
+std::tuple<Result> RelocatableObjectsService::initialize(PidDescriptor pid_desc, CopiedHandle process_h) {
+    u64 handle_pid;
+    Result rc = 0xAE09;
+    if (R_SUCCEEDED(svcGetProcessId(&handle_pid, process_h.handle)) && handle_pid == pid_desc.pid) {
+        if (this->has_initialized) {
+            svcCloseHandle(this->process_handle);
+        }
+        this->process_handle = process_h.handle;
+        this->has_initialized = true;
+        rc = 0;
+    }
+    return std::make_tuple(rc);
 }

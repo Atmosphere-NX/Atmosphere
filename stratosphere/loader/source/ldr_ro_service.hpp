@@ -26,9 +26,9 @@ class RelocatableObjectsService : IServiceObject {
         
     private:
         /* Actual commands. */
-        std::tuple<Result, u64> load_nro(PidDescriptor pid, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
-        std::tuple<Result> unload_nro(PidDescriptor pid, u64 nro_address);
-        std::tuple<Result> load_nrr(PidDescriptor pid, u64 nrr_address, u64 nrr_size);
-        std::tuple<Result> unload_nrr(PidDescriptor pid, u64 nrr_address);
-        std::tuple<Result> initialize(PidDescriptor pid, CopiedHandle process_h);
+        std::tuple<Result, u64> load_nro(PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
+        std::tuple<Result> unload_nro(PidDescriptor pid_desc, u64 nro_address);
+        std::tuple<Result> load_nrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size);
+        std::tuple<Result> unload_nrr(PidDescriptor pid_desc, u64 nrr_address);
+        std::tuple<Result> initialize(PidDescriptor pid_desc, CopiedHandle process_h);
 };
