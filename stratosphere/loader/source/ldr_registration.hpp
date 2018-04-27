@@ -23,7 +23,7 @@ class Registration {
             u64 base_address;
             u64 size;
             u64 code_memory_address;
-            u64 address_for_loader;
+            u64 loader_address;
         };
         
         struct NrrInfoHolder {
@@ -45,7 +45,7 @@ class Registration {
             Registration::TidSid tid_sid;
             Registration::NsoInfoHolder nso_infos[NSO_INFO_MAX];
             Registration::NrrInfoHolder nrr_infos[NRR_INFO_MAX];
-            u64 _0x730;
+            void *owner_ro_service;
         };
         
         struct List {
@@ -61,5 +61,6 @@ class Registration {
         static bool UnregisterIndex(u64 index);
         static void SetProcessIdTidMinAndIs64BitAddressSpace(u64 index, u64 process_id, u64 tid_min, bool is_64_bit_addspace);
         static void AddNsoInfo(u64 index, u64 base_address, u64 size, const unsigned char *build_id);
+        static Result AddNrrInfo(u64 index, u64 base_address, u64 size, u64 code_memory_address, u64 loader_address);
         static Result GetNsoInfosForProcessId(NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written);
 };

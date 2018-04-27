@@ -104,6 +104,26 @@ void Registration::AddNsoInfo(u64 index, u64 base_address, u64 size, const unsig
 }
 
 
+Result Registration::AddNrrInfo(u64 index, u64 base_address, u64 size, u64 code_memory_address, u64 loader_address) {
+    Registration::Process *target_process = GetProcess(index);
+    if (target_process == NULL) {
+        /* TODO: panic() */
+        return 0x7009;
+    }
+    
+    for (unsigned int i = 0; i < NSO_INFO_MAX; i++) {
+        if (!target_process->nrr_infos[i].in_use) {
+            target_process->nrr_infos[i].info.base_address = base_address;
+            target_process->nrr_infos[i].info.size = size;
+            target_process->nrr_infos[i].info.code_memory_address = code_memory_address;
+            target_process->nrr_infos[i].info.loader_address = loader_address;
+            return 0;
+        }
+    }
+    return 0x7009;
+}
+
+
 Result Registration::GetNsoInfosForProcessId(Registration::NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written) {
     Registration::Process *target_process = GetProcessByProcessId(process_id);
     if (target_process == NULL) {

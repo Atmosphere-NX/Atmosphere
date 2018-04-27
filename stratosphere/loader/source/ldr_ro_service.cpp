@@ -4,6 +4,7 @@
 
 #include "ldr_ro_service.hpp"
 #include "ldr_registration.hpp"
+#include "ldr_map.hpp"
 
 Result RelocatableObjectsService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     Result rc = 0xF601;
@@ -42,8 +43,34 @@ std::tuple<Result> RelocatableObjectsService::unload_nro(PidDescriptor pid_desc,
 }
 
 std::tuple<Result> RelocatableObjectsService::load_nrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size) {
-    /* TODO */
-    return std::make_tuple(0xF601);
+    Result rc;
+    Registration::Process *target_proc;    
+    if (!this->has_initialized || this->process_id != pid_desc.pid) {
+        rc = 0xAE09;
+        goto LOAD_NRR_END;
+    }
+    if (nrr_address & 0xFFF) {
+        rc = 0xA209;
+        goto LOAD_NRR_END;
+    }
+    if (nrr_address + nrr_size <= nrr_address || !nrr_size || (nrr_size & 0xFFF)) {
+        rc = 0xA409;
+        goto LOAD_NRR_END;
+    }
+    
+    target_proc = Registration::GetProcessByProcessId(pid_desc.pid);
+    if (target_proc == NULL || (target_proc->owner_ro_service != NULL && (RelocatableObjectsService *)(target_proc->owner_ro_service) != this)) {
+        rc = 0xAC09;
+        goto LOAD_NRR_END;
+    }
+    target_proc->owner_ro_service = this;
+    
+    
+    /* TODO: Implement remainder of fucntion */
+    rc = 0xDED09;
+    
+LOAD_NRR_END:
+    return std::make_tuple(rc);
 }
 
 std::tuple<Result> RelocatableObjectsService::unload_nrr(PidDescriptor pid_desc, u64 nrr_address) {
@@ -59,6 +86,7 @@ std::tuple<Result> RelocatableObjectsService::initialize(PidDescriptor pid_desc,
             svcCloseHandle(this->process_handle);
         }
         this->process_handle = process_h.handle;
+        this->process_id = handle_pid;
         this->has_initialized = true;
         rc = 0;
     }
