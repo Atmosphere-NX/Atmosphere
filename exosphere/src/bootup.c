@@ -88,7 +88,7 @@ void bootup_misc_mmio(void) {
     /* disable security carveout - SECURITY_CFG0_0, CFG1_0, CFG3_0 */
     mc_register->SECURITY_BOM = 0;
     mc_register->SECURITY_SIZE_MB = 0;
-    mc_register->SECURITY_BOM_HI = 0x11;
+    mc_register->SECURITY_BOM_HI = 3;
 
     configure_default_carveouts();
 
@@ -150,7 +150,7 @@ void bootup_misc_mmio(void) {
     (void)(mc_register->SMMU_TLB_CONFIG_0);
     mc_register->SMMU_TLB_FLUSH_0 = 0;
     (void)(mc_register->SMMU_TLB_CONFIG_0);
-    mc_register->SMMU_CONFIG_0 = 0x1; /* enable SMMU */
+    mc_register->SMMU_CONFIG_0 = 1; /* enable SMMU */
     (void)(mc_register->SMMU_TLB_CONFIG_0);
 
     /* Clear RESET Vector, setup CPU Secure Boot RESET Vectors. */
