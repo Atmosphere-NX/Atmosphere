@@ -30,12 +30,14 @@ typedef enum {
 
     /* This bit is set to 1 when a read is issued to an empty FIFO and gets cleared on register read (sticky bit until read)
     0 = NO_UNDERRUN
-    1 = UNDERRUN */
+    1 = UNDERRUN
+    */
     UART_UNDERRUN = 1 << 2,
 
     /* This bit is set to 1 when write data is issued to the TX FIFO when it is already full and gets cleared on register read (sticky bit until read)
     0 = NO_OVERRUN
-    1 = OVERRUN */
+    1 = OVERRUN
+    */
     UART_OVERRUN = 1 << 3,
 
     RX_FIFO_COUNTER = 0b111111 << 16, /* reflects number of current entries in RX FIFO */
@@ -63,7 +65,8 @@ typedef enum {
 
     /* STOP:
     0 = Transmit 1 stop bit
-    1 = Transmit 2 stop bits (receiver always checks for 1 stop bit) */
+    1 = Transmit 2 stop bits (receiver always checks for 1 stop bit)
+    */
     UART_LCR_STOP        = 1 << 2, 
     UART_LCR_PAR         = 1 << 3, /* Parity enabled */
     UART_LCR_EVEN        = 1 << 4, /* Even parity format. There will always be an even number of 1s in the binary representation (PAR = 1) */
