@@ -66,6 +66,7 @@ class AutoCloseMap {
                 if (R_FAILED(svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size))) {
                     /* TODO: panic(). */
                 }
+                this->mapped_address = NULL;
             }
         }
 };
