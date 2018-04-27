@@ -111,7 +111,7 @@ Result Registration::AddNrrInfo(u64 index, MappedCodeMemory *nrr_info) {
         return 0x7009;
     }
     
-    for (unsigned int i = 0; i < NSO_INFO_MAX; i++) {
+    for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
         if (!target_process->nrr_infos[i].IsActive()) {
             target_process->nrr_infos[i] = *nrr_info;
             return 0;
@@ -120,6 +120,21 @@ Result Registration::AddNrrInfo(u64 index, MappedCodeMemory *nrr_info) {
     return 0x7009;
 }
 
+Result Registration::RemoveNrrInfo(u64 index, u64 base_address) {
+    Registration::Process *target_process = GetProcess(index);
+    if (target_process == NULL) {
+        /* Despite the fact that this should really be a panic condition, Nintendo returns 0x1009 in this case. */
+        return 0x1009;
+    }
+    
+    for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
+        if (target_process->nrr_infos[i].IsActive() && target_process->nrr_infos[i].base_address == base_address) {
+            target_process->nrr_infos[i].Close();
+            return 0;
+        }
+    }
+    return 0xAA09;
+}
 
 Result Registration::GetNsoInfosForProcessId(Registration::NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written) {
     Registration::Process *target_process = GetProcessByProcessId(process_id);

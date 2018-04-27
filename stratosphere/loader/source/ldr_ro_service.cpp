@@ -86,8 +86,21 @@ LOAD_NRR_END:
 }
 
 std::tuple<Result> RelocatableObjectsService::unload_nrr(PidDescriptor pid_desc, u64 nrr_address) {
-    /* TODO */
-    return std::make_tuple(0xF601);
+    Registration::Process *target_proc = NULL;
+    if (!this->has_initialized || this->process_id != pid_desc.pid) {
+        return 0xAE09;
+    }
+    if (nrr_address & 0xFFF) {
+        return 0xA209;
+    }
+    
+    target_proc = Registration::GetProcessByProcessId(pid_desc.pid);
+    if (target_proc == NULL || (target_proc->owner_ro_service != NULL && (RelocatableObjectsService *)(target_proc->owner_ro_service) != this)) {
+        return 0xAC09;
+    }
+    target_proc->owner_ro_service = this;
+    
+    return Registration::RemoveNrrInfo(target_proc->index, nrr_address);
 }
 
 std::tuple<Result> RelocatableObjectsService::initialize(PidDescriptor pid_desc, CopiedHandle process_h) {
