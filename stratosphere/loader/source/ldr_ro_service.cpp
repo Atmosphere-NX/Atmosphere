@@ -34,8 +34,40 @@ Result RelocatableObjectsService::dispatch(IpcParsedCommand &r, IpcCommand &out_
 
 
 std::tuple<Result, u64> RelocatableObjectsService::load_nro(PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
-    /* TODO */
-    return std::make_tuple(0xF601, 0);
+    Result rc;
+    u64 out_address = 0;
+    Registration::Process *target_proc = NULL;
+    if (!this->has_initialized || this->process_id != pid_desc.pid) {
+        rc = 0xAE09;
+        goto LOAD_NRO_END;
+    }
+    if (nro_address & 0xFFF) {
+        rc = 0xA209;
+        goto LOAD_NRO_END;
+    }
+    if (nro_address + nro_size <= nro_address || !nro_size || (nro_size & 0xFFF)) {
+        rc = 0xA409;
+        goto LOAD_NRO_END;
+    }
+    if (bss_size && bss_address + bss_size <= bss_address) {
+        rc = 0xA409;
+        goto LOAD_NRO_END;
+    }
+    /* Ensure no overflow for combined sizes. */
+    if (U64_MAX - nro_size < bss_size) {
+        rc = 0xA409;
+        goto LOAD_NRO_END;
+    }
+    target_proc = Registration::GetProcessByProcessId(pid_desc.pid);
+    if (target_proc == NULL || (target_proc->owner_ro_service != NULL && (RelocatableObjectsService *)(target_proc->owner_ro_service) != this)) {
+        rc = 0xAC09;
+        goto LOAD_NRO_END;
+    }
+    target_proc->owner_ro_service = this;
+    
+    rc = NroUtils::LoadNro(target_proc, this->process_handle, nro_address, nro_size, bss_address, bss_size, &out_address);
+LOAD_NRO_END:
+    return std::make_tuple(rc, out_address);
 }
 
 std::tuple<Result> RelocatableObjectsService::unload_nro(PidDescriptor pid_desc, u64 nro_address) {
@@ -68,6 +100,10 @@ std::tuple<Result> RelocatableObjectsService::load_nrr(PidDescriptor pid_desc, u
     target_proc->owner_ro_service = this;
     
     if (R_FAILED((rc = nrr_info.Open(this->process_handle, target_proc->is_64_bit_addspace, nrr_address, nrr_size)))) {
+        goto LOAD_NRR_END;
+    }
+    
+    if (R_FAILED((rc = nrr_info.Map()))) {
         goto LOAD_NRR_END;
     }
     

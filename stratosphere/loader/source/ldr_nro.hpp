@@ -2,6 +2,7 @@
 #include <switch.h>
 #include <cstdio>
 
+#include "ldr_registration.hpp"
 #define MAGIC_NRO0 0x304F524E
 #define MAGIC_NRR0 0x3052524E
 
@@ -27,7 +28,29 @@ class NroUtils {
             u64 _0x348;
         };
         
+        struct NroHeader {
+            u32 entrypoint_insn;
+            u32 mod_offset;
+            u64 padding;
+            u32 magic;
+            u32 _0x14;
+            u32 nro_size;
+            u32 _0x1C;
+            u32 text_offset;
+            u32 text_size;
+            u32 ro_offset;
+            u32 ro_size;
+            u32 rw_offset;
+            u32 rw_size;
+            u32 bss_size;
+            u32 _0x3C;
+            unsigned char build_id[0x20];
+            u8 _0x60[0x20];
+        };
+        
         
         static_assert(sizeof(NrrHeader) == 0x350, "Incorrectly defined NrrHeader!");
+        static_assert(sizeof(NroHeader) == 0x80, "Incorrectly defined NroHeader!");
         static Result ValidateNrrHeader(NrrHeader *header, u64 size, u64 title_id_min);
+        static Result LoadNro(Registration::Process *target_proc, Handle process_h, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size, u64 *out_address);
 };
