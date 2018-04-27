@@ -42,8 +42,7 @@ void uart_wait_idle(UartDevice dev, UartVendorStatus status) {
     }
 }
 
-void uart_send(UartDevice dev, const void *buf, size_t len)
-{
+void uart_send(UartDevice dev, const void *buf, size_t len) {
     volatile uart_t *uart = get_uart_device(dev);
 
     for (size_t i = 0; i < len; i++) {
@@ -61,6 +60,6 @@ void uart_recv(UartDevice dev, void *buf, size_t len) {
         while (uart->UART_LSR & UART_LSR_RX_FIFO_EMPTY) {
             /* Wait until the RX FIFO isn't empty */
         }
-         *((uint8_t *)buf + i) = uart->UART_THR_DLAB;
+        *((uint8_t *)buf + i) = uart->UART_THR_DLAB;
     }
 }
