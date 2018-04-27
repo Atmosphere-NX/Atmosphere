@@ -7,8 +7,7 @@ static Registration::List g_registration_list = {0};
 static u64 g_num_registered = 1;
 
 Registration::Process *Registration::GetFreeProcess() {
-    unsigned int i;
-    for (i = 0; i < REGISTRATION_LIST_MAX; i++) {
+    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX; i++) {
         if (!g_registration_list.processes[i].in_use) {
             return &g_registration_list.processes[i];
         }
@@ -17,24 +16,30 @@ Registration::Process *Registration::GetFreeProcess() {
 }
 
 Registration::Process *Registration::GetProcess(u64 index) {
-    unsigned int i;
-    for (i = 0; i < REGISTRATION_LIST_MAX && (!g_registration_list.processes[i].in_use || g_registration_list.processes[i].index != index); i++) {
+    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX; i++) {
+        if (g_registration_list.processes[i].in_use && g_registration_list.processes[i].index == index) {
+            return &g_registration_list.processes[i];
+        }
     }
-    if (i >= REGISTRATION_LIST_MAX) {
-        return NULL;
-    }
-    return &g_registration_list.processes[i];
+    return NULL;
 }
 
 Registration::Process *Registration::GetProcessByProcessId(u64 pid) {
-    unsigned int i;
-    for (i = 0; i < REGISTRATION_LIST_MAX && (!g_registration_list.processes[i].in_use || g_registration_list.processes[i].process_id != pid); i++) {
-        
+    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX; i++) {
+        if (g_registration_list.processes[i].in_use && g_registration_list.processes[i].process_id == pid) {
+            return &g_registration_list.processes[i];
+        }
     }
-    if (i >= REGISTRATION_LIST_MAX) {
-        return NULL;
+    return NULL;
+}
+
+Registration::Process *Registration::GetProcessByRoService(void *service) {
+    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX; i++) {
+        if (g_registration_list.processes[i].in_use && g_registration_list.processes[i].owner_ro_service == service) {
+            return &g_registration_list.processes[i];
+        }
     }
-    return &g_registration_list.processes[i];
+    return NULL;
 }
 
 bool Registration::RegisterTidSid(const TidSid *tid_sid, u64 *out_index) { 
@@ -103,6 +108,17 @@ void Registration::AddNsoInfo(u64 index, u64 base_address, u64 size, const unsig
     }
 }
 
+void Registration::CloseRoService(void *service, Handle process_h) {
+    Registration::Process *target_process = GetProcessByRoService(service);
+    if (target_process == NULL) {
+        return;
+    }
+    for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
+        if (target_process->nrr_infos[i].IsActive() && target_process->nrr_infos[i].process_handle == process_h) {
+            target_process->nrr_infos[i].Close();
+        }
+    }
+}
 
 Result Registration::AddNrrInfo(u64 index, MappedCodeMemory *nrr_info) {
     Registration::Process *target_process = GetProcess(index);

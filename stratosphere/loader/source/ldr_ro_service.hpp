@@ -18,6 +18,12 @@ class RelocatableObjectsService : IServiceObject {
     bool has_initialized;
     public:
         RelocatableObjectsService() : process_handle(0), process_id(U64_MAX), has_initialized(false) { }
+        ~RelocatableObjectsService() {
+            Registration::CloseRoService(this, this->process_handle);
+            if (this->has_initialized) {
+                svcCloseHandle(this->process_handle);
+            }
+        }
         virtual Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
         virtual Result handle_deferred() {
             /* This service will never defer. */
