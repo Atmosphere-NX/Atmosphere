@@ -36,6 +36,7 @@ void uart_init(UartDevice dev, uint32_t baud) {
     uart->UART_ASR = 0;
 }
 
+/* This function blocks until the UART device (dev) is in the desired state (status). Make sure the desired state can be reached! */
 void uart_wait_idle(UartDevice dev, UartVendorStatus status) {
     while (!(get_uart_device(dev)->UART_VENDOR_STATUS & status)) {
         /* Wait */
