@@ -17,7 +17,7 @@ void uart_init(UartDevice dev, uint32_t baud) {
 
     /* Set baud rate. */
     uint32_t rate = (8 * baud + 408000000) / (16 * baud);
-    uart->UART_LCR = 0x80; /* Enable DLAB. */
+    uart->UART_LCR = UART_LCR_DLAB; /* Enable DLAB. */
     uart->UART_THR_DLAB = (uint8_t)rate; /* Divisor latch LSB. */
     uart->UART_IER_DLAB = (uint8_t)(rate >> 8); /* Divisor latch MSB. */
     uart->UART_LCR = 0; /* Diable DLAB. */
@@ -27,17 +27,17 @@ void uart_init(UartDevice dev, uint32_t baud) {
     uart->UART_IIR_FCR = 7; /* Enable and clear TX and RX FIFOs. */
     uart->UART_LSR;
     wait(3 * ((baud + 999999) / baud));
-    uart->UART_LCR = 3; /* Set word length 8. */
+    uart->UART_LCR = UART_LCR_WD_LENGTH_8; /* Set word length 8. */
     uart->UART_MCR = 0;
     uart->UART_MSR = 0;
     uart->UART_IRDA_CSR = 0;
-    uart->UART_RX_FIFO_CFG = 1;
+    uart->UART_RX_FIFO_CFG = 1; /* Set RX_FIFO trigger level */
     uart->UART_MIE = 0;
     uart->UART_ASR = 0;
 }
 
-void uart_wait_idle(UartDevice dev, uint32_t which) {
-    while (!(get_uart_device(dev)->UART_VENDOR_STATUS & which)) {
+void uart_wait_idle(UartDevice dev, UartVendorStatus status) {
+    while (!(get_uart_device(dev)->UART_VENDOR_STATUS & status)) {
         /* Wait */
     }
 }
@@ -47,7 +47,7 @@ void uart_send(UartDevice dev, const void *buf, size_t len)
     volatile uart_t *uart = get_uart_device(dev);
 
     for (size_t i = 0; i < len; i++) {
-        while (uart->UART_LSR & UART_TX_FIFO_FULL) {
+        while (uart->UART_LSR & UART_LSR_TX_FIFO_FULL) {
             /* Wait until the TX FIFO isn't full */
         }
         uart->UART_THR_DLAB = *((const uint8_t *)buf + i);
@@ -58,7 +58,7 @@ void uart_recv(UartDevice dev, void *buf, size_t len) {
     volatile uart_t *uart = get_uart_device(dev);
 
     for (size_t i = 0; i < len; i++) {
-        while (uart->UART_LSR & UART_RX_FIFO_EMPTY) {
+        while (uart->UART_LSR & UART_LSR_RX_FIFO_EMPTY) {
             /* Wait until the RX FIFO isn't empty */
         }
          *((uint8_t *)buf + i) = uart->UART_THR_DLAB;
