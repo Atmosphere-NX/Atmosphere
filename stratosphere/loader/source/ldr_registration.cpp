@@ -118,6 +118,7 @@ void Registration::CloseRoService(void *service, Handle process_h) {
             target_process->nrr_infos[i].Close();
         }
     }
+    target_process->owner_ro_service = NULL;
 }
 
 Result Registration::AddNrrInfo(u64 index, MappedCodeMemory *nrr_info) {
