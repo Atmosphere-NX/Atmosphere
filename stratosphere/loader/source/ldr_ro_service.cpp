@@ -5,6 +5,7 @@
 #include "ldr_ro_service.hpp"
 #include "ldr_registration.hpp"
 #include "ldr_map.hpp"
+#include "ldr_nro.hpp"
 
 Result RelocatableObjectsService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     Result rc = 0xF601;
@@ -44,7 +45,8 @@ std::tuple<Result> RelocatableObjectsService::unload_nro(PidDescriptor pid_desc,
 
 std::tuple<Result> RelocatableObjectsService::load_nrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size) {
     Result rc;
-    Registration::Process *target_proc;    
+    Registration::Process *target_proc = NULL;
+    MappedCodeMemory nrr_info = {0};
     if (!this->has_initialized || this->process_id != pid_desc.pid) {
         rc = 0xAE09;
         goto LOAD_NRR_END;
@@ -65,11 +67,21 @@ std::tuple<Result> RelocatableObjectsService::load_nrr(PidDescriptor pid_desc, u
     }
     target_proc->owner_ro_service = this;
     
+    if (R_FAILED((rc = nrr_info.Open(this->process_handle, target_proc->is_64_bit_addspace, nrr_address, nrr_size)))) {
+        goto LOAD_NRR_END;
+    }
     
-    /* TODO: Implement remainder of fucntion */
-    rc = 0xDED09;
+    rc = NroUtils::ValidateNrrHeader((NroUtils::NrrHeader *)nrr_info.mapped_address, nrr_size, target_proc->title_id_min);
+    if (R_SUCCEEDED(rc)) {
+        Registration::AddNrrInfo(target_proc->index, &nrr_info);
+    }
     
 LOAD_NRR_END:
+    if (R_FAILED(rc)) {
+        if (nrr_info.IsActive()) {
+            nrr_info.Close();
+        }
+    }
     return std::make_tuple(rc);
 }
 
