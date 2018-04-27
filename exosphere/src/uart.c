@@ -24,7 +24,7 @@ void uart_init(UartDevice dev, uint32_t baud) {
 
     /* Setup UART in fifo mode. */
     uart->UART_IER_DLAB = 0;
-    uart->UART_IIR_FCR = 7; /* Enable and clear TX and RX FIFOs. */
+    uart->UART_IIR_FCR = UART_FCR_FCR_EN_FIFO | UART_FCR_RX_CLR | UART_FCR_TX_CLR; /* Enable and clear TX and RX FIFOs. */
     uart->UART_LSR;
     wait(3 * ((baud + 999999) / baud));
     uart->UART_LCR = UART_LCR_WD_LENGTH_8; /* Set word length 8. */

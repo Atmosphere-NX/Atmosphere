@@ -24,6 +24,7 @@ typedef enum {
     UART_E = 4,
 } UartDevice;
 
+/* 36.3.12 UART_VENDOR_STATUS_0_0 */
 typedef enum {
     UART_TX_IDLE = 1 << 0,
     UART_RX_IDLE = 1 << 1,
@@ -44,6 +45,7 @@ typedef enum {
     TX_FIFO_COUNTER = 0b111111 << 24 /* reflects number of current entries in TX FIFO */
 } UartVendorStatus;
 
+/* 36.3.6 UART_LSR_0 */
 typedef enum {
     UART_LSR_RDR           = 1 << 0, /* Receiver Data Ready */
     UART_LSR_OVRF          = 1 << 1, /* Receiver Overrun Error */
@@ -57,6 +59,7 @@ typedef enum {
     UART_LSR_RX_FIFO_EMPTY = 1 << 9, /* Receiver FIFO empty status */
 } UartLineStatus;
 
+/* 36.3.4 UART_LCR_0 */
 typedef enum {
     UART_LCR_WD_LENGTH_5 = 0, /* word length 5 */
     UART_LCR_WD_LENGTH_6 = 1, /* word length 6 */
@@ -74,6 +77,59 @@ typedef enum {
     UART_LCR_SET_B       = 1 << 6, /* Set BREAK condition -- Transmitter sends all zeroes to indicate BREAK */
     UART_LCR_DLAB        = 1 << 7, /* Divisor Latch Access Bit (set to allow programming of the DLH, DLM Divisors) */
 } UartLineControl;
+
+/* 36.3.3 UART_IIR_FCR_0 */
+typedef enum {
+    UART_FCR_FCR_EN_FIFO = 1 << 0, /* Enable the transmit and receive FIFOs. This bit should be enabled */
+    UART_FCR_RX_CLR      = 1 << 1, /* Clears the contents of the receive FIFO and resets its counter logic to 0 (the receive shift register is not cleared or altered). This bit returns to 0 after clearing the FIFOs */
+    UART_FCR_TX_CLR      = 1 << 2, /* Clears the contents of the transmit FIFO and resets its counter logic to 0 (the transmit shift register is not cleared or altered). This bit returns to 0 after clearing the FIFOs */
+
+    /* DMA:
+    0 = DMA_MODE_0
+    1 = DMA_MODE_1
+    */
+    UART_FCR_DMA         = 1 << 3,
+
+    /* TX_TRIG
+    0 = FIFO_COUNT_GREATER_16
+    1 = FIFO_COUNT_GREATER_8
+    2 = FIFO_COUNT_GREATER_4
+    3 = FIFO_COUNT_GREATER_1
+    */
+    UART_FCR_TX_TRIG                       = 3 << 4,
+    UART_FCR_TX_TRIG_FIFO_COUNT_GREATER_16 = 0 << 4,
+    UART_FCR_TX_TRIG_FIFO_COUNT_GREATER_8  = 1 << 4,
+    UART_FCR_TX_TRIG_FIFO_COUNT_GREATER_4  = 2 << 4,
+    UART_FCR_TX_TRIG_FIFO_COUNT_GREATER_1  = 3 << 4,
+
+    /* RX_TRIG
+    0 = FIFO_COUNT_GREATER_1
+    1 = FIFO_COUNT_GREATER_4
+    2 = FIFO_COUNT_GREATER_8
+    3 = FIFO_COUNT_GREATER_16 
+    */
+    UART_FCR_RX_TRIG                       = 3 << 6,
+    UART_FCR_RX_TRIG_FIFO_COUNT_GREATER_1  = 0 << 6,
+    UART_FCR_RX_TRIG_FIFO_COUNT_GREATER_4  = 1 << 6,
+    UART_FCR_RX_TRIG_FIFO_COUNT_GREATER_8  = 2 << 6,
+    UART_FCR_RX_TRIG_FIFO_COUNT_GREATER_16 = 3 << 6,
+} UartFifoControl;
+
+/* 36.3.3 UART_IIR_FCR_0 */
+typedef enum {
+    UART_IIR_IS_STA  = 1 << 0, /* Interrupt Pending if ZERO */
+    UART_IIR_IS_PRI0 = 1 << 1, /* Encoded Interrupt ID Refer to IIR[3:0] table [36.3.3] */
+    UART_IIR_IS_PRI1 = 1 << 2, /* Encoded Interrupt ID Refer to IIR[3:0] table */
+    UART_IIR_IS_PRI2 = 1 << 3, /* Encoded Interrupt ID Refer to IIR[3:0] table */
+
+    /* FIFO Mode Status
+    0 = 16450 mode (no FIFO)
+    1 = 16550 mode (FIFO)
+    */
+    UART_IIR_EN_FIFO    = 3 << 6,
+    UART_IIR_MODE_16450 = 0 << 6,
+    UART_IIR_MODE_16550 = 1 << 6,
+} UartInterruptIdentification;
 
 typedef struct {
     /* 0x00 */ uint32_t UART_THR_DLAB;
