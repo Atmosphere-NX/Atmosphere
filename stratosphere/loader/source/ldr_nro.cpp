@@ -103,6 +103,7 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
     }
     
     Registration::AddNroToProcess(target_proc->index, &mcm_nro, &mcm_bss, nro->text_size, nro->ro_size, nro->rw_size, nro->build_id);
+    *out_address = mcm_nro.code_memory_address;
     mcm_nro.Unmap();
     mcm_bss.Unmap();
     rc = 0x0;

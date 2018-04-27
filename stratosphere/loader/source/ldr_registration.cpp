@@ -223,6 +223,29 @@ void Registration::AddNroToProcess(u64 index, MappedCodeMemory *nro, MappedCodeM
     }
 }
 
+Result Registration::RemoveNroInfo(u64 index, Handle process_h, u64 nro_heap_address) {
+    Registration::Process *target_process = GetProcess(index);
+    if (target_process == NULL) {
+        return 0xA809;
+    }
+    
+    for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
+        if (target_process->nro_infos[i].in_use && target_process->nro_infos[i].nro_heap_address == nro_heap_address) {
+            NroInfo *info = &target_process->nro_infos[i];
+            Result rc = svcUnmapProcessCodeMemory(process_h, info->base_address + info->text_size + info->ro_size + info->rw_size, info->bss_heap_address, info->bss_heap_size);
+            if (R_SUCCEEDED(rc)) {
+                rc = svcUnmapProcessCodeMemory(process_h, info->base_address + info->text_size + info->ro_size, nro_heap_address + info->text_size + info->ro_size, info->rw_size);
+                if (R_SUCCEEDED(rc)) {
+                    rc = svcUnmapProcessCodeMemory(process_h, info->base_address, nro_heap_address, info->text_size + info->ro_size);
+                }
+            }
+            target_process->nro_infos[i] = (const NroInfo ){0};
+            return rc;
+        }
+    }
+    return 0xA809;
+}
+
 Result Registration::GetNsoInfosForProcessId(Registration::NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written) {
     Registration::Process *target_process = GetProcessByProcessId(process_id);
     if (target_process == NULL) {
