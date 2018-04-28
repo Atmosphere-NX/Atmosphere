@@ -86,9 +86,9 @@ void bootup_misc_mmio(void) {
     mc_register->MTS_CARVEOUT_REG_CTRL_0 = 1;
 
     /* disable security carveout - SECURITY_CFG0_0, CFG1_0, CFG3_0 */
-    mc_register->SECURITY_BOM = 0;
-    mc_register->SECURITY_SIZE_MB = 0;
-    mc_register->SECURITY_BOM_HI = 3;
+    mc_register->SECURITY_CFG0_0 = 0;
+    mc_register->SECURITY_CFG1_0 = 0;
+    mc_register->SECURITY_CFG3_0 = 3;
 
     configure_default_carveouts();
 

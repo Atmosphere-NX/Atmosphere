@@ -30,7 +30,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
     identity_unmap_iram_cd_tzram();
 
     /* On warmboot (not cpu_on) only */
-    if (get_mc_reg()->SECURITY_BOM_HI == 0) {
+    if (get_mc_reg()->SECURITY_CFG3_0 == 0) {
         if (!configitem_is_retail()) {
             /* TODO: uart_log("OHAYO"); */
         }

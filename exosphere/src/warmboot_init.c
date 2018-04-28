@@ -166,7 +166,7 @@ void warmboot_init(boot_func_list_t *func_list) {
     func_list->funcs.invalidate_icache_all();
 
     /* On warmboot (not cpu_on) only */
-    if (MC_SECURITY_CFG3_0 == 0) {
+    if (get_mc_reg()->SECURITY_CFG3_0 == 0) {
         init_dma_controllers(func_list->target_firmware);
     }
 
