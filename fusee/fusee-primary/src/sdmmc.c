@@ -139,6 +139,13 @@ enum sdmmc_register_bits {
 
     /* Present state register */
     MMC_COMMAND_INHIBIT = 1 << 0,
+    MMC_DATA_INHIBIT    = 1 << 1,
+
+    /* Block size register */
+    MMC_DMA_BOUNDARY_MAXIMUM = (0x3 << 12),
+    MMC_DMA_BOUNDARY_512K    = (0x3 << 12),
+    MMC_DMA_BOUNDARY_16K     = (0x2 << 12),
+    MMC_TRANSFER_BLOCK_512B  = (0x1FF << 0),
 
     /* Command register */
     MMC_COMMAND_NUMBER_SHIFT = 8,
@@ -151,7 +158,8 @@ enum sdmmc_register_bits {
     MMC_TRANSFER_DMA_ENABLE = (1 << 0),
     MMC_TRANSFER_LIMIT_BLOCK_COUNT = (1 << 1),
     MMC_TRANSFER_MULTIPLE_BLOCKS = (1 << 5),
-    MMC_TRANSFER_HOST_TO_CARD = (1 << 4),
+    MMC_TRANSFER_AUTO_CMD12 = (1 <<2),
+    MMC_TRANSFER_CARD_TO_HOST = (1 << 4),
 
     /* Interrupt status */
     MMC_STATUS_COMMAND_COMPLETE = (1 << 0),
@@ -211,10 +219,37 @@ enum sdmmc_command_magic {
 
 
 /**
+ * Version magic numbers for different CSD versions.
+ */
+enum sdmmc_csd_versions {
+    MMC_CSD_VERSION1 = 0,
+    MMC_CSD_VERSION2 = 1,
+};
+
+
+/** 
+ * Positions of different fields in various CSDs.
+ * May eventually be replaced with a bitfield struct, if we use enough of the CSDs.
+ */
+enum sdmmc_csd_extents {
+
+    /* csd structure version */
+    MMC_CSD_STRUCTURE_START = 126,
+    MMC_CSD_STRUCTURE_WIDTH = 2,
+
+    /* read block length */
+    MMC_CSD_V1_READ_BL_LENGTH_START = 80,
+    MMC_CSD_V1_READ_BL_LENGTH_WIDTH = 4,
+
+};
+
+
+/**
  * Page-aligned bounce buffer to target with SDMMC DMA.
- * FIXME: size this thing
+ * If the size of this buffer is changed, the block_size
  */
 static uint8_t ALIGN(4096) sdmmc_bounce_buffer[4096 * 4];
+static const uint16_t sdmmc_bounce_dma_boundary = MMC_DMA_BOUNDARY_16K;
 
 /**
  * Debug print for SDMMC information.
@@ -534,6 +569,9 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Set SDHCI_CLOCK_CARD_EN
     regs->clock_control |= 0x04;
 
+    // Ensure we're using System DMA (SDMA) mode for DMA.
+    regs->host_control &= ~MMC_DMA_SELECT_MASK;
+
     mmc_print(mmc, "initialized.");
     return 0;
 }
@@ -560,6 +598,31 @@ static int sdmmc_wait_for_command_readiness(struct mmc *mmc)
             return 0;
     }
 }
+
+
+/**
+ * Blocks until the SD driver is ready to transmit data,
+ * or the MMC controller's timeout interval is met.
+ *
+ * @param mmc The MMC controller
+ */
+static int sdmmc_wait_for_data_readiness(struct mmc *mmc)
+{
+    uint32_t timebase = get_time();
+
+    // Wait until we either wind up ready, or until we've timed out.
+    while(true) {
+        if (get_time_since(timebase) > mmc->timeout) {
+            mmc_print(mmc, "timed out waiting for command readiness!");
+            return ETIMEDOUT;
+        }
+
+        // Wait until we're not inhibited from sending commands...
+        if (!(mmc->regs->present_state & MMC_DATA_INHIBIT))
+            return 0;
+    }
+}
+
 
 
 /**
@@ -628,14 +691,10 @@ static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks, bool is
     if (blocks) {
         mmc->regs->dma_address = (uint32_t)sdmmc_bounce_buffer;
 
-        // Ensure we're using System DMA mode for DMA.
-        mmc->regs->host_control &= ~MMC_DMA_SELECT_MASK;
-
         // Set up the DMA block size and count.
-        // FIXME: implement!
-        mmc_print(mmc, "WARNING: block size and count register needs to be set up, but CSD code isnt done yet!");
-        mmc->regs->block_size = 0;
-        mmc->regs->block_count = 0;
+        // This is synchronized with the size of our bounce buffer.
+        mmc->regs->block_size = sdmmc_bounce_dma_boundary | MMC_TRANSFER_BLOCK_512B;
+        mmc->regs->block_count = blocks;
     }
 
     // Populate the command argument.
@@ -643,15 +702,19 @@ static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks, bool is
 
     // Always use DMA mode for data, as that's what Nintendo does. :)
     if (blocks) {
-        mmc->regs->transfer_mode = MMC_TRANSFER_DMA_ENABLE | MMC_TRANSFER_LIMIT_BLOCK_COUNT ;
+        uint32_t to_write = MMC_TRANSFER_DMA_ENABLE | MMC_TRANSFER_LIMIT_BLOCK_COUNT;
 
         // If this is a multi-block datagram, indicate so.
-        if (blocks > 1)
-            mmc->regs->transfer_mode |= MMC_TRANSFER_MULTIPLE_BLOCKS;
+        // Also, configure the host to automatically stop the card when transfers are complete.
+        if (blocks > 1) {
+            to_write |= (MMC_TRANSFER_MULTIPLE_BLOCKS | MMC_TRANSFER_AUTO_CMD12);
+        }
 
-        // If this is a write, set the WRITE mode.
-        if (is_write)
-            mmc->regs->transfer_mode |= MMC_TRANSFER_HOST_TO_CARD;
+        // If this is a read, set the READ mode.
+        if (!is_write)
+            to_write |= MMC_TRANSFER_CARD_TO_HOST;
+
+        mmc->regs->transfer_mode = to_write;
     }
 
 }
@@ -675,7 +738,7 @@ static void sdmmc_prepare_command_registers(struct mmc *mmc, int blocks_to_xfer,
     if (command == CMD_STOP_TRANSMISSION)
         to_write |= MMC_COMMAND_TYPE_ABORT;
 
-    // TODO: do we want to support CRC or index checks?
+    // If this command has a data stage, include it.
     if (blocks_to_xfer)
         to_write |= MMC_COMMAND_HAS_DATA;
 
@@ -719,12 +782,18 @@ static void sdmmc_handle_command_response(struct mmc *mmc,
 {
     uint32_t *buffer = (uint32_t *)response_buffer;
 
+    // If we don't have a place to put the response,
+    // skip copying it out.
+    if (!response_buffer) {
+        return;
+    }
+
     switch(type) {
         // Easy case: we don't have a response. We don't need to do anything.
         case MMC_RESPONSE_NONE:
             break;
 
-        // If we have a 48-bit response, then we have 32 bits of response and 16 bits of CRC.
+        // If we have a 48-bit response, then we have 32 bits of response and 16 bits of CRC/command.
         // The naming is a little odd, but that's thanks to the SDMMC standard.
         case MMC_RESPONSE_LEN48:
         case MMC_RESPONSE_LEN48_CHK_BUSY:
@@ -733,13 +802,9 @@ static void sdmmc_handle_command_response(struct mmc *mmc,
             mmc_print(mmc, "response: %08x", *buffer);
             break;
 
-        // If we have a 136-bit response, we have 120 response and 16 bits of CRC.
+        // If we have a 136-bit response, we have 128 of response and 8 bits of CRC.
         // TODO: validate that this is the right format/endianness/everything
         case MMC_RESPONSE_LEN136:
-
-            // Clear the final byte of the buffer, as it won't have a full copy.
-            // (We don't copy in the CRC.):
-            buffer[3] = 0;
 
             // Copy the response to the buffer manually.
             // We avoid memcpy here, because this is volatile.
@@ -756,22 +821,17 @@ static void sdmmc_handle_command_response(struct mmc *mmc,
 
 
 /**
- * Handles copying data from the SDMMC bounce buffer to the final target buffer.
+ *  Returns the block size for a given operation on the MMC controller.
  *
- * @param blocks_to_transfer The number of SDMMC blocks to be transferred with the given command,
- *      or 0 to indicate that this command should not expect response data.
- * @param is_write True iff the given command issues data _to_ the card, instead of vice versa.
- * @param data_buffer A byte buffer that either contains the data to be sent, or which should
- *      receive data, depending on the is_write argument.
+ *  @param mmc The MMC controller for which we're quierying block size.
+ *  @param is_write True iff the given operation is a write.
  */
-static void sdmmc_handle_command_data(struct mmc *mmc, int blocks_to_transfer,
-        bool is_write, void *data_buffer)
+static uint32_t sdmmc_get_block_size(struct mmc *mmc, bool is_write)
 {
-    (void)blocks_to_transfer;
+    // FIXME: support write blocks?
     (void)is_write;
-    (void)data_buffer;
 
-    mmc_print(mmc, "WARNING: not handling command data yet -- not implemented!");
+    return (1 << mmc->read_block_order);
 }
 
 
@@ -783,7 +843,7 @@ static void sdmmc_handle_command_data(struct mmc *mmc, int blocks_to_transfer,
  * @param checks Determines which sanity checks the host controller should run.
  * @param argument The argument to the SDMMC command.
  * @param response_buffer A buffer to store the response. Should be at uint32_t for a LEN48 command,
- *      or 16 bytes for a LEN136 command.
+ *      or 16 bytes for a LEN136 command. If this arguemnt is NULL, no response will be returned.
  * @param blocks_to_transfer The number of SDMMC blocks to be transferred with the given command,
  *      or 0 to indicate that this command should not expect response data.
  * @param is_write True iff the given command issues data _to_ the card, instead of vice versa.
@@ -794,13 +854,26 @@ static void sdmmc_handle_command_data(struct mmc *mmc, int blocks_to_transfer,
  */
 static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
         enum sdmmc_response_type response_type, enum sdmmc_response_checks checks,
-        uint32_t argument, void *response_buffer, int blocks_to_transfer, 
+        uint32_t argument, void *response_buffer, uint16_t blocks_to_transfer, 
         bool is_write, void *data_buffer)
 {
+    uint32_t total_data_to_xfer = sdmmc_get_block_size(mmc, is_write) * blocks_to_transfer;
     int rc;
 
     // XXX: get rid of
     mmc_print(mmc, "issuing CMD%d", command);
+
+    // If this transfer would have us send more than we can, fail out.
+    if (total_data_to_xfer > sizeof(sdmmc_bounce_buffer)) {
+        mmc_print(mmc, "ERROR: transfer is larger than our maximum DMA transfer size!");
+        return -E2BIG;
+    }
+
+    // Sanity check: if this is a data transfer, make sure we have a data buffer...
+    if (blocks_to_transfer && !data_buffer) {
+        mmc_print(mmc, "ERROR: no data buffer provided, but this is a data transfer!");
+        return -EINVAL;
+    }
 
     // Wait until we can issue commands to the device.
     rc = sdmmc_wait_for_command_readiness(mmc);
@@ -809,8 +882,23 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
         return -EBUSY;
     }
 
+    // If this is a data command, wait until we can use the data lines.
+    if (blocks_to_transfer) {
+        rc = sdmmc_wait_for_data_readiness(mmc);
+        if (rc) {
+            mmc_print(mmc, "card not willing to accept data-commands (%d / %08x)", rc, mmc->regs->present_state);
+            return -EBUSY;
+        }
+    }
+
     // If we have data to send, prepare it.
     sdmmc_prepare_command_data(mmc, blocks_to_transfer, is_write, argument);
+
+    // If this is a write and we have data, we'll need to populate the bounce buffer before
+    // issuing the command.
+    if (blocks_to_transfer && is_write) {
+        memcpy(sdmmc_bounce_buffer, data_buffer, total_data_to_xfer);
+    }
 
     // Configure the controller to send the command.
     sdmmc_prepare_command_registers(mmc, blocks_to_transfer, command, response_type, checks);
@@ -823,12 +911,10 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     if (rc) {
         mmc_print(mmc, "failed to issue CMD%d (%d / %08x)", command, rc, mmc->regs->int_status);
         mmc_print_command_errors(mmc, rc);
+
+        sdmmc_enable_interrupts(mmc, false);
         return rc;
     }
-
-    // Disable resporting psuedo-interrupts.
-    // (This is mostly for when the GIC is brought up)
-    sdmmc_enable_interrupts(mmc, false);
 
     // Copy the response received to the output buffer, if applicable.
     sdmmc_handle_command_response(mmc, response_type, response_buffer);
@@ -839,14 +925,34 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
         // Wait for the transfer to be complete...
         mmc_print(mmc, "waiting for transfer completion...");
         rc = sdmmc_wait_for_transfer_completion(mmc);
-        if(rc) {
+        if (rc) {
             mmc_print(mmc, "failed to complete CMD%d data stage (%d)", command, rc);
+
+            sdmmc_enable_interrupts(mmc, false);
             return rc;
         }
 
-        // Copy the SDMMC result from the bounce buffer to the target buffer.
-        sdmmc_handle_command_data(mmc, blocks_to_transfer, is_write, data_buffer);
+        // If this is a read, and we've just finished a transfer, copy the data from
+        // our bounce buffer to the target data buffer.
+        if (!is_write) {
+            printk("read result (%d):\n", total_data_to_xfer);
+            for (int i = 0; i < 64; ++i) {
+
+                if(i % 8 == 0) {
+                    printk("\n");
+                }
+
+                printk("%02x ", sdmmc_bounce_buffer[i]);
+            }
+            printk("\n");
+            memcpy(data_buffer, sdmmc_bounce_buffer, total_data_to_xfer);
+        }
     }
+
+    // Disable resporting psuedo-interrupts.
+    // (This is mostly for when the GIC is brought up)
+    sdmmc_enable_interrupts(mmc, false);
+
 
     mmc_print(mmc, "CMD%d success!", command);
     return 0;
@@ -885,13 +991,15 @@ static int emmc_card_init(struct mmc *mmc)
 
     mmc_print(mmc, "setting up card as eMMC");
 
+    // We only support Switch eMMC addressing, which is alawys block-based.
+    mmc->uses_block_addressing = true;
+
     // Bring the bus out of its idle state.
     rc = sdmmc_send_simple_command(mmc, CMD_GO_IDLE_OR_INIT, MMC_RESPONSE_NONE, 0, NULL);
     if (rc) {
         mmc_print(mmc, "could not bring bus to idle!");
         return rc;
     }
-
 
     // Wait for the card to finish being busy.
     while (true) {
@@ -923,6 +1031,81 @@ static int emmc_card_init(struct mmc *mmc)
 
 
 /**
+ * Reads a collection of bits from the CSD register.
+ *
+ * @param csd An array of four uint32_ts containing the CSD.
+ * @param start The bit number to start at.
+ * @param width. The width of the relveant read.
+ *
+ * @returns the extracted bits
+ */
+static uint32_t sdmmc_extract_csd_bits(uint32_t *csd, int start, int width)
+{
+    uint32_t relevant_dword, result;
+    int offset_into_dword, bits_into_next_dword;
+
+    // Sanity check our span.
+    if ((start + width) > 128) {
+        printk("MMC ERROR: invalid CSD slice!\n");
+        return 0xFFFFFFFF;
+    }
+
+    // Figure out where the relevant range is in our CSD.
+    relevant_dword = csd[start / 32];
+    offset_into_dword = start % 32;
+
+    // Grab all the bits we can from the relevant DWORD.
+    result = relevant_dword >> offset_into_dword;
+
+    // Special case: if we spanned a word boundary, we'll
+    // need to read one word.
+    //
+    // FIXME: I'm writing this at 5AM, and this requires basic arithemtic,
+    // my greatest weakness. This is going to be stupid wrong.
+    if (offset_into_dword + width > 32) {
+        bits_into_next_dword = (offset_into_dword + width) - 32;
+
+        // Grab the next dword in the CSD...
+        relevant_dword = csd[(start / 32) + 1];
+
+        // ... mask away the bits higher than the bits we want...
+        relevant_dword &= (1 << (bits_into_next_dword)) - 1;
+
+        // .. and shift the relevant bits up to their position.
+        relevant_dword <<= (width - bits_into_next_dword);
+
+        // Finally, combine in the new word.
+        result |= relevant_dword;
+    }
+
+    return result;
+}
+
+
+/**
+ * Parses a fetched CSD per the Version 1 standard.
+ *
+ * @param mmc The MMC structure to be populated.
+ * @param csd A four-dword array containing the read CSD.
+ *
+ * @returns int 0 on success, or an error code if the CSD appears invalid
+ */
+static int sdmmc_parse_csd_version1(struct mmc *mmc, uint32_t *csd)
+{
+    // Get the maximum allowed read-block size.
+    mmc->read_block_order = sdmmc_extract_csd_bits(csd, MMC_CSD_V1_READ_BL_LENGTH_START, MMC_CSD_V1_READ_BL_LENGTH_WIDTH);
+
+    // TODO: handle other attributes
+
+    // Print a summary of the read CSD.
+    mmc_print(mmc, "CSD summary:");
+    mmc_print(mmc, "  read_block_order: %d", mmc->read_block_order);
+
+    return 0;
+}
+
+
+/**
  * Reads the active MMC card's Card Specific Data, and updates the MMC object's properties.
  *
  * @param mmc The MMC to be queired and updated.
@@ -932,15 +1115,31 @@ static int sdmmc_read_and_parse_csd(struct mmc *mmc)
 {
     int rc;
     uint32_t csd[4];
+    uint16_t csd_version;
 
+    // Request the CSD from the device.
     rc = sdmmc_send_simple_command(mmc, CMD_SEND_CSD, MMC_RESPONSE_LEN136, mmc->relative_address << 16, csd);
     if (rc) {
         mmc_print(mmc, "could not get the card's CSD!");
         return ENODEV;
     }
 
-    // FIXME: parse CSD
-    return 0;
+    // Figure out the CSD version.
+    csd_version = sdmmc_extract_csd_bits(csd, MMC_CSD_STRUCTURE_START, MMC_CSD_STRUCTURE_WIDTH);
+
+    // Handle each CSD version.
+    switch(csd_version) {
+
+        // Handle version 1 CSDs.
+        // (The Switch eMMC appears to always use ver1 CSDs.)
+        case MMC_CSD_VERSION1:
+            return sdmmc_parse_csd_version1(mmc, csd);
+
+        // For now, don't support any others.
+        default:
+            mmc_print(mmc, "ERROR: we don't currently support cards with v%d CSDs!", csd_version);
+            return ENOTTY;
+    }
 }
 
 
@@ -953,16 +1152,52 @@ static int sdmmc_read_and_parse_csd(struct mmc *mmc)
 static int sdmmc_read_and_parse_ext_csd(struct mmc *mmc)
 {
     int rc;
-    uint32_t csd[4];
+    uint8_t ext_csd[512];
 
-    // FIXME: reading the extended CSD requires us to read data; so we're not ready to do it yet
-    // FIXME: parse CSD
+    // Read the single EXT CSD block.
+    // FIXME: support block sizes other than 512B?
+    rc = sdmmc_send_command(mmc, CMD_SEND_EXT_CSD, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, 0, NULL, 1, false, ext_csd);
+    if (rc) {
+        mmc_print(mmc, "ERROR: failed to read the extended CSD!");
+        return rc;
+    }
 
-    (void)csd;
-    (void)rc;
+    // Parse the extended CSD here.
+    mmc_print(mmc, "extended CSD looks like:");
+    for (int i = 0; i < 64; ++i) {
 
-    mmc_print(mmc, "ERROR: ext-CSD reading not yet implemented");
-    return ENOSYS;
+        if(i % 8 == 0) {
+            printk("\n");
+        }
+
+        printk("%02x ", ext_csd[i]);
+    }
+
+    printk("\n");
+    return 0;
+}
+
+
+/**
+ * Decides on a block transfer sized based on the information observed,
+ * and applies it to the card.
+ */
+static int sdmmc_set_up_block_transfer_size(struct mmc *mmc)
+{
+    int rc;
+
+    // For now, we'll only ever set up 512B blocks, because
+    // 1) every card supports this, and 2) we use SDMA, which only supports up to 512B
+    mmc->read_block_order = 9;
+
+    // Inform the card of the block size we'll want to use.
+    rc = sdmmc_send_simple_command(mmc, CMD_SET_BLKLEN, MMC_RESPONSE_LEN48, 1 << mmc->read_block_order, NULL);
+    if (rc) {
+        mmc_print(mmc, "could not fetch the CID");
+        return ENODEV;
+    }
+
+    return 0;
 }
 
 
@@ -1007,6 +1242,13 @@ static int sdmmc_card_init(struct mmc *mmc)
         return EPIPE;
     }
 
+    // Determine the block size we want to work with, and then set up the size accordingly.
+    rc = sdmmc_set_up_block_transfer_size(mmc);
+    if (rc) {
+        mmc_print(mmc, "could not set up block transfer sizes! (%d)", rc);
+        return EPIPE;
+    }
+
     // Read and handle card's Extended Card Specific Data (ext-CSD).
     rc = sdmmc_read_and_parse_ext_csd(mmc);
     if (rc) {
@@ -1046,11 +1288,11 @@ static int sdmmc_handle_card_type_init(struct mmc *mmc)
 
 
 
-    /**
-     * Set up a new SDMMC driver.
-     * FIXME: clean up!
-     *
-     * @param mmc The SDMMC structure to be initiailized with the device state.
+/**
+ * Set up a new SDMMC driver.
+ * FIXME: clean up!
+ *
+ * @param mmc The SDMMC structure to be initiailized with the device state.
  * @param controler The controller description to be used; usually SWITCH_EMMC
  *      or SWTICH_MICROSD.
  */
@@ -1092,7 +1334,6 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
         return rc;
     }
 
-
     return 0;
 }
 
@@ -1102,10 +1343,25 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
  *
  * @param mmc The MMC device to work with.
  * @param buffer The output buffer to target.
- * @param sector The sector number to read.
+ * @param block The sector number to read.
  * @param count The number of sectors to read.
+ *
+ * @return 0 on success, or an error code on failure.
  */
-int sdmmc_read(struct mmc *mmc, void *buffer, uint32_t sector, unsigned int count)
+int sdmmc_read(struct mmc *mmc, void *buffer, uint32_t block, unsigned int count)
 {
-    return -1;
+    // Determine if we need to perform a single-block or multi-block read.
+    uint32_t command = (count == 1) ? CMD_READ_SINGLE_BLOCK : CMD_READ_MULTIPLE_BLOCK;
+
+    // Determine the argument, which indicates which address we're reading/writing.
+    uint32_t extent = block;
+
+    // If this card uses byte addressing rather than sector addressing,
+    // multiply by the block size.
+    if (!mmc->uses_block_addressing) {
+        extent *= sdmmc_get_block_size(mmc, false);
+    }
+
+    // Execute the relevant read.
+    return sdmmc_send_command(mmc, command, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, extent, NULL, count, false, buffer);
 }
