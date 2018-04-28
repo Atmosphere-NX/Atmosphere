@@ -162,7 +162,6 @@ enum sdmmc_register_bits {
     MMC_STATUS_COMMAND_INDEX_ERROR = (1 << 19),
 
     MMC_STATUS_ERROR_MASK =  (0xF << 16),
-    //MMC_STATUS_ERROR_MASK =  (0xE << 16),
 
     /* Host control */
     MMC_DMA_SELECT_MASK = (0x3 << 3),
@@ -195,13 +194,19 @@ enum sdmmc_command {
     CMD_SET_BLKLEN = 16,
     CMD_READ_SINGLE_BLOCK = 17,
     CMD_READ_MULTIPLE_BLOCK = 18,
+
+    CMD_APP_CMD = 55,
 };
 
 /**
  * SDMMC command argument numbers
  */
 enum sdmmc_command_magic {
-    MMC_SEND_IF_COND_MAGIC = 0xaa,
+    MMC_EMMC_OPERATING_COND_CAPACITY_MAGIC = 0x00ff8080,
+    MMC_EMMC_OPERATING_COND_CAPACITY_MASK  = 0x0fffffff,
+    MMC_EMMC_OPERATING_COND_BUSY           = (0x04 << 28),
+    MMC_EMMC_OPERATING_COND_READY          = (0x0c << 28),
+    MMC_EMMC_OPERATING_READINESS_MASK      = (0x0f << 28),
 };
 
 
@@ -307,11 +312,12 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Put SDMMC4 in reset
     car->rst_dev_l_set |= 0x8000;
 
-    // Set SDMMC4 clock source (PLLP_OUT0) and divisor (1)
-    car->clk_src[CLK_SOURCE_SDMMC4] = CLK_SOURCE_FIRST | CLK_DIVIDER_UNITY;
+    // Set SDMMC4 clock source (PLLP_OUT0) and divisor (32).
+    // We use 32 beacuse Nintendo does, and they probably know what they're doing?
+    car->clk_src[CLK_SOURCE_SDMMC4] = CLK_SOURCE_FIRST | CLK_DIVIDER_32;
 
     // Set the legacy divier used for 
-    car->clk_src_y[CLK_SOURCE_SDMMC_LEGACY] = CLK_SOURCE_FIRST | CLK_DIVIDER_UNITY;
+    car->clk_src_y[CLK_SOURCE_SDMMC_LEGACY] = CLK_SOURCE_FIRST | CLK_DIVIDER_32;
 
     // Set SDMMC4 clock enable
     car->clk_dev_l_set |= 0x8000;
@@ -339,6 +345,10 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Set trimmer value to 0x08 (SDMMC4)
     regs->vendor_clock_cntrl &= ~(0x1F000000);
     regs->vendor_clock_cntrl |= 0x08000000;
+
+    // The boootrom sets TAP_VAL to be 4.
+    // We'll do that too. FIXME: should we?
+    regs->vendor_clock_cntrl |= 0x40000;
 
     // Set SDMMC2TMC_CFG_SDMEMCOMP_VREF_SEL to 0x07
     regs->sdmemcomppadctrl &= ~(0x0F);
@@ -473,7 +483,7 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Set SDHCI_DIVIDER and SDHCI_DIVIDER_HI
     // FIXME: divider SD if necessary
     regs->clock_control &= ~(0xFFC0);
-    regs->clock_control |= (0x80 << 8); // XXX wtf is this
+    regs->clock_control |= (0x80 << 8);  // use the slowest setting, for now
     //regs->clock_control |= ((sd_divider_lo << 0x08) | (sd_divider_hi << 0x06));
 
     // HS400/HS667 modes require additional DLL calibration
@@ -838,11 +848,22 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
         sdmmc_handle_command_data(mmc, blocks_to_transfer, is_write, data_buffer);
     }
 
-    mmc_print(mmc, "command success!");
+    mmc_print(mmc, "CMD%d success!", command);
     return 0;
 }
 
-
+/**
+ * Convenience function that sends a simple SDMMC command
+ * and awaits response.  Wrapper around sdmmc_send_command.
+ *
+ * @param mmc The SDMMC device to be used to transmit the command.
+ * @param response_type The type of response to expect-- mostly specifies the length.
+ * @param argument The argument to the SDMMC command.
+ * @param response_buffer A buffer to store the response. Should be at uint32_t for a LEN48 command,
+ *      or 16 bytes for a LEN136 command.
+ *
+ * @returns 0 on success, an error number on failure
+ */
 static int sdmmc_send_simple_command(struct mmc *mmc, enum sdmmc_command command,
         enum sdmmc_response_type response_type, uint32_t argument, void *response_buffer)
 {
@@ -854,15 +875,15 @@ static int sdmmc_send_simple_command(struct mmc *mmc, enum sdmmc_command command
 }
 
 
-
 /**
- * Retrieves information about the card, and populates the MMC structure accordingly.
- * Used as part of the SDMMC initialization process.
+ * Handles eMMC-specific card initialization.
  */
-static int sdmmc_card_init(struct mmc *mmc)
+static int emmc_card_init(struct mmc *mmc)
 {
     int rc;
-    uint8_t response[17];
+    uint32_t response[4];
+
+    mmc_print(mmc, "setting up card as eMMC");
 
     // Bring the bus out of its idle state.
     rc = sdmmc_send_simple_command(mmc, CMD_GO_IDLE_OR_INIT, MMC_RESPONSE_NONE, 0, NULL);
@@ -871,16 +892,89 @@ static int sdmmc_card_init(struct mmc *mmc)
         return rc;
     }
 
-    // Check to see if this is a Version 2.0 card.
-    rc = sdmmc_send_simple_command(mmc, CMD_SEND_IF_COND, MMC_RESPONSE_LEN48, MMC_SEND_IF_COND_MAGIC, response);
-    if (rc) {
-        // If we had an error, this was a v1 card.
-        mmc_print(mmc, "handling as a v1.0 card.");
-    } else {
-        // If this responded with the appropriate magic, it's a v2 card.
-        if (response[0] == MMC_SEND_IF_COND_MAGIC)
-            mmc_print(mmc, "handling as a v2.0 card.");
+
+    // Wait for the card to finish being busy.
+    while (true) {
+
+        uint32_t response_masked;
+
+        // Ask the SD card to identify its state. It will respond with readiness and a capacity magic.
+        rc = sdmmc_send_command(mmc, CMD_SEND_OPERATING_CONDITIONS, MMC_RESPONSE_LEN48, MMC_CHECKS_NONE, 0x40000080, response, 0, 0, NULL);
+        if (rc) {
+            mmc_print(mmc, "ERROR: could not read the card's operating conditions!");
+            return rc;
+        }
+
+        // Validate that this is a valid Switch eMMC.
+        // Per the spec, any card greater than 2GiB should respond with this magic number.
+        response_masked = response[0] & MMC_EMMC_OPERATING_COND_CAPACITY_MASK;
+        if (response_masked != MMC_EMMC_OPERATING_COND_CAPACITY_MAGIC) {
+            mmc_print(mmc, "ERROR: this doesn't appear to be a valid Switch eMMC!");
+            return ENOTTY;
+        }
+
+        // If the device has just become ready, we're done!
+        response_masked = response[0] & MMC_EMMC_OPERATING_READINESS_MASK;
+        if (response_masked == MMC_EMMC_OPERATING_COND_READY) {
+            return 0;
+        }
     }
+}
+
+
+/**
+ * Reads the active MMC card's Card Specific Data, and updates the MMC object's properties.
+ *
+ * @param mmc The MMC to be queired and updated.
+ * @returns 0 on success, or an errno on failure
+ */
+static int sdmmc_read_and_parse_csd(struct mmc *mmc)
+{
+    int rc;
+    uint32_t csd[4];
+
+    rc = sdmmc_send_simple_command(mmc, CMD_SEND_CSD, MMC_RESPONSE_LEN136, mmc->relative_address << 16, csd);
+    if (rc) {
+        mmc_print(mmc, "could not get the card's CSD!");
+        return ENODEV;
+    }
+
+    // FIXME: parse CSD
+    return 0;
+}
+
+
+/**
+ * Reads the active MMC card's Card Specific Data, and updates the MMC object's properties.
+ *
+ * @param mmc The MMC to be queired and updated.
+ * @returns 0 on success, or an errno on failure
+ */
+static int sdmmc_read_and_parse_ext_csd(struct mmc *mmc)
+{
+    int rc;
+    uint32_t csd[4];
+
+    // FIXME: reading the extended CSD requires us to read data; so we're not ready to do it yet
+    // FIXME: parse CSD
+
+    (void)csd;
+    (void)rc;
+
+    mmc_print(mmc, "ERROR: ext-CSD reading not yet implemented");
+    return ENOSYS;
+}
+
+
+
+/**
+ * Retrieves information about the card, and populates the MMC structure accordingly.
+ * Used as part of the SDMMC initialization process.
+ */
+static int sdmmc_card_init(struct mmc *mmc)
+{
+    int rc;
+    uint32_t response[4];
 
     // Retreive the card ID.
     rc = sdmmc_send_simple_command(mmc, CMD_ALL_SEND_CID, MMC_RESPONSE_LEN136, 0, response);
@@ -892,21 +986,71 @@ static int sdmmc_card_init(struct mmc *mmc)
     // Store the card ID for later.
     memcpy(mmc->cid, response, sizeof(mmc->cid));
 
-    // TODO: Read and handle the CSD.
-    // TODO: Toggle the card select, so we it knows we're talking to it.
-    // TODO: Read and handle the extended CSD.
+    // Set up the card's relative address.
+    rc = sdmmc_send_simple_command(mmc, CMD_SET_RELATIVE_ADDR, MMC_RESPONSE_LEN48, mmc->relative_address << 16, response);
+    if (rc) {
+        mmc_print(mmc, "could not set the card's relative address! (%d)", rc);
+        return EPIPE;
+    }
+
+    // Read and handle card's Card Specific Data (CSD).
+    rc = sdmmc_read_and_parse_csd(mmc);
+    if (rc) {
+        mmc_print(mmc, "could not populate CSD attributes! (%d)", rc);
+        return EPIPE;
+    }
+
+    // Select our eMMC card, so it knows we're talking to it.
+    rc = sdmmc_send_simple_command(mmc, CMD_TOGGLE_CARD_SELECT, MMC_RESPONSE_LEN48, mmc->relative_address << 16, response);
+    if (rc) {
+        mmc_print(mmc, "could not select the active card for use! (%d)", rc);
+        return EPIPE;
+    }
+
+    // Read and handle card's Extended Card Specific Data (ext-CSD).
+    rc = sdmmc_read_and_parse_ext_csd(mmc);
+    if (rc) {
+        mmc_print(mmc, "could not populate extended-CSD attributes! (%d)", rc);
+        return EPIPE;
+    }
+
+    return rc;
+}
+
+
+/**
+ * Handle any speciailized initialization required by the given device type.
+ *
+ * @param mmc The device to initialize.
+ */
+static int sdmmc_handle_card_type_init(struct mmc *mmc) 
+{
+    int rc;
+
+    switch(mmc->card_type) {
+
+        // Handle initialization of eMMC cards.
+        case MMC_CARD_EMMC:
+            // FIXME: also handle MMC and SD cards that aren't eMMC
+            rc = emmc_card_init(mmc);
+            break;
+
+        default:
+            mmc_print(mmc,"initialization of this device not yet supported!");
+            rc = ENOTTY;
+            break;
+    }
 
     return rc;
 }
 
 
 
-
-/**
- * Set up a new SDMMC driver.
- * FIXME: clean up!
- *
- * @param mmc The SDMMC structure to be initiailized with the device state.
+    /**
+     * Set up a new SDMMC driver.
+     * FIXME: clean up!
+     *
+     * @param mmc The SDMMC structure to be initiailized with the device state.
  * @param controler The controller description to be used; usually SWITCH_EMMC
  *      or SWTICH_MICROSD.
  */
@@ -917,29 +1061,39 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
     // Get a reference to the registers for the relevant SDMMC controller.
     mmc->regs = sdmmc_get_regs(controller);
     mmc->name = "eMMC";
+    mmc->card_type = MMC_CARD_EMMC;
 
     // Default to a timeout of 1S.
     // FIXME: lower
     // FIXME: abstract
     mmc->timeout = 1000000;
 
+    // Default to relative address of zero.
+    mmc->relative_address = 0;
+
     // Initialize the raw SDMMC controller.
-    mmc_print(mmc, "setting up hardware");
     rc = sdmmc_hardware_init(mmc);
     if (rc) {
         mmc_print(mmc, "failed to set up controller! (%d)", rc);
         return rc;
     }
 
-    // Initialize the SDMMC card.
-    mmc_print(mmc, "setting up card");
-    rc = sdmmc_card_init(mmc);
+    // Handle the initialization that's specific to the card type.
+    rc = sdmmc_handle_card_type_init(mmc);
     if (rc) {
-        mmc_print(mmc, "failed to set up card! (%d)", rc);
+        mmc_print(mmc, "failed to set run card-specific initialization (%d)!", rc);
         return rc;
     }
 
-    return rc;
+    // Handle the initialization that's common to all card types.
+    rc = sdmmc_card_init(mmc);
+    if (rc) {
+        mmc_print(mmc, "failed to set up card (%d)!", rc);
+        return rc;
+    }
+
+
+    return 0;
 }
 
 
