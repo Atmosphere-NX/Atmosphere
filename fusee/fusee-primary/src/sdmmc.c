@@ -23,7 +23,7 @@ struct PACKED tegra_sdmmc {
     uint32_t argument;
     uint16_t transfer_mode;
     uint16_t command;
-    uint16_t response[0x8];
+    uint32_t response[0x4];
     uint32_t buffer;
     uint32_t present_state;
     uint8_t host_control;
@@ -110,6 +110,15 @@ enum sdmmc_response_type {
     MMC_RESPONSE_LEN136         = 1,
     MMC_RESPONSE_LEN48          = 2,
     MMC_RESPONSE_LEN48_CHK_BUSY = 3,
+
+};
+
+/**
+ * Lengths of SD command responses
+ */
+enum sdmmc_response_sizes {
+    /* Bytes in a LEN136 response */
+    MMC_RESPONSE_SIZE_LEN136    = 15,
 };
 
 /**
@@ -153,6 +162,7 @@ enum sdmmc_register_bits {
     MMC_STATUS_COMMAND_INDEX_ERROR = (1 << 19),
 
     MMC_STATUS_ERROR_MASK =  (0xF << 16),
+    //MMC_STATUS_ERROR_MASK =  (0xE << 16),
 
     /* Host control */
     MMC_DMA_SELECT_MASK = (0x3 << 3),
@@ -175,6 +185,7 @@ enum sdmmc_command {
     CMD_SWITCH_MODE = 6,
     CMD_TOGGLE_CARD_SELECT = 7,
     CMD_SEND_EXT_CSD = 8,
+    CMD_SEND_IF_COND = 8,
     CMD_SEND_CSD = 9,
     CMD_SEND_CID = 10, 
     CMD_STOP_TRANSMISSION = 12,
@@ -186,9 +197,17 @@ enum sdmmc_command {
     CMD_READ_MULTIPLE_BLOCK = 18,
 };
 
+/**
+ * SDMMC command argument numbers
+ */
+enum sdmmc_command_magic {
+    MMC_SEND_IF_COND_MAGIC = 0xaa,
+};
+
 
 /**
  * Page-aligned bounce buffer to target with SDMMC DMA.
+ * FIXME: size this thing
  */
 static uint8_t ALIGN(4096) sdmmc_bounce_buffer[4096 * 4];
 
@@ -283,7 +302,6 @@ static int sdmmc_hardware_init(struct mmc *mmc)
 
     mmc_print(mmc, "initializing in %s-speed mode...", is_hs400_hs667 ? "high" : "low");
 
-
     // FIXME: set up clock and reset to fetch the relevant clock register offsets
 
     // Put SDMMC4 in reset
@@ -291,6 +309,9 @@ static int sdmmc_hardware_init(struct mmc *mmc)
 
     // Set SDMMC4 clock source (PLLP_OUT0) and divisor (1)
     car->clk_src[CLK_SOURCE_SDMMC4] = CLK_SOURCE_FIRST | CLK_DIVIDER_UNITY;
+
+    // Set the legacy divier used for 
+    car->clk_src_y[CLK_SOURCE_SDMMC_LEGACY] = CLK_SOURCE_FIRST | CLK_DIVIDER_UNITY;
 
     // Set SDMMC4 clock enable
     car->clk_dev_l_set |= 0x8000;
@@ -679,21 +700,99 @@ static void sdmmc_enable_interrupts(struct mmc *mmc, bool enabled)
     }
 }
 
+/**
+ * Handle the response to an SDMMC command, copying the data
+ * from the SDMMC response holding area to the user-provided response buffer.
+ */
+static void sdmmc_handle_command_response(struct mmc *mmc,
+        enum sdmmc_response_type type, void *response_buffer)
+{
+    uint32_t *buffer = (uint32_t *)response_buffer;
+
+    switch(type) {
+        // Easy case: we don't have a response. We don't need to do anything.
+        case MMC_RESPONSE_NONE:
+            break;
+
+        // If we have a 48-bit response, then we have 32 bits of response and 16 bits of CRC.
+        // The naming is a little odd, but that's thanks to the SDMMC standard.
+        case MMC_RESPONSE_LEN48:
+        case MMC_RESPONSE_LEN48_CHK_BUSY:
+            *buffer = mmc->regs->response[0];
+
+            mmc_print(mmc, "response: %08x", *buffer);
+            break;
+
+        // If we have a 136-bit response, we have 120 response and 16 bits of CRC.
+        // TODO: validate that this is the right format/endianness/everything
+        case MMC_RESPONSE_LEN136:
+
+            // Clear the final byte of the buffer, as it won't have a full copy.
+            // (We don't copy in the CRC.):
+            buffer[3] = 0;
+
+            // Copy the response to the buffer manually.
+            // We avoid memcpy here, because this is volatile.
+            for(int i = 0; i < 4; ++i)
+                buffer[i] = mmc->regs->response[i];
+
+            mmc_print(mmc, "response: %08x%08x%08x%08x", buffer[0], buffer[1], buffer[2], buffer[3]);
+            break;
+
+        default:
+            mmc_print(mmc, "invalid response type; not handling response");
+    }
+}
+
+
+/**
+ * Handles copying data from the SDMMC bounce buffer to the final target buffer.
+ *
+ * @param blocks_to_transfer The number of SDMMC blocks to be transferred with the given command,
+ *      or 0 to indicate that this command should not expect response data.
+ * @param is_write True iff the given command issues data _to_ the card, instead of vice versa.
+ * @param data_buffer A byte buffer that either contains the data to be sent, or which should
+ *      receive data, depending on the is_write argument.
+ */
+static void sdmmc_handle_command_data(struct mmc *mmc, int blocks_to_transfer,
+        bool is_write, void *data_buffer)
+{
+    (void)blocks_to_transfer;
+    (void)is_write;
+    (void)data_buffer;
+
+    mmc_print(mmc, "WARNING: not handling command data yet -- not implemented!");
+}
 
 
 /**
  * Sends a command to the SD card, and awaits a response.
+ *
+ * @param mmc The SDMMC device to be used to transmit the command.
+ * @param response_type The type of response to expect-- mostly specifies the length.
+ * @param checks Determines which sanity checks the host controller should run.
+ * @param argument The argument to the SDMMC command.
+ * @param response_buffer A buffer to store the response. Should be at uint32_t for a LEN48 command,
+ *      or 16 bytes for a LEN136 command.
+ * @param blocks_to_transfer The number of SDMMC blocks to be transferred with the given command,
+ *      or 0 to indicate that this command should not expect response data.
+ * @param is_write True iff the given command issues data _to_ the card, instead of vice versa.
+ * @param data_buffer A byte buffer that either contains the data to be sent, or which should
+ *      receive data, depending on the is_write argument.
+ *
+ * @returns 0 on success, an error number on failure
  */
 static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
-        enum sdmmc_response_type response_type, enum sdmmc_response_checks checks, 
-        uint32_t argument, int blocks_to_transfer, bool is_write)
+        enum sdmmc_response_type response_type, enum sdmmc_response_checks checks,
+        uint32_t argument, void *response_buffer, int blocks_to_transfer, 
+        bool is_write, void *data_buffer)
 {
     int rc;
 
+    // XXX: get rid of
     mmc_print(mmc, "issuing CMD%d", command);
 
     // Wait until we can issue commands to the device.
-    mmc_print(mmc, "waiting for command readiness...");
     rc = sdmmc_wait_for_command_readiness(mmc);
     if (rc) {
         mmc_print(mmc, "card not willing to accept commands (%d / %08x)", rc, mmc->regs->present_state);
@@ -701,18 +800,15 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     }
 
     // If we have data to send, prepare it.
-    mmc_print(mmc, "preparing data...");
     sdmmc_prepare_command_data(mmc, blocks_to_transfer, is_write, argument);
 
     // Configure the controller to send the command.
-    mmc_print(mmc, "preparing command...");
     sdmmc_prepare_command_registers(mmc, blocks_to_transfer, command, response_type, checks);
 
     // Ensure we get the status response we want.
     sdmmc_enable_interrupts(mmc, true);
 
     // Wait for the command to be completed.
-    mmc_print(mmc, "waiting for command completion...");
     rc = sdmmc_wait_for_command_completion(mmc);
     if (rc) {
         mmc_print(mmc, "failed to issue CMD%d (%d / %08x)", command, rc, mmc->regs->int_status);
@@ -722,19 +818,10 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
 
     // Disable resporting psuedo-interrupts.
     // (This is mostly for when the GIC is brought up)
-    sdmmc_enable_interrupts(mmc, true);
+    sdmmc_enable_interrupts(mmc, false);
 
-
-    // TODO: copy response to an out argument, if it we have one?
-
-    // FIXME: remove, this is excessive
-    if (response_type != MMC_RESPONSE_NONE) {
-        mmc_print(mmc, "response: %04x %04x %04x %04x %04x %04x %04x %04x", 
-                mmc->regs->response[0], mmc->regs->response[1],
-                mmc->regs->response[2], mmc->regs->response[2],
-                mmc->regs->response[4], mmc->regs->response[5],
-                mmc->regs->response[6], mmc->regs->response[7]);
-    }
+    // Copy the response received to the output buffer, if applicable.
+    sdmmc_handle_command_response(mmc, response_type, response_buffer);
 
     // If we had a data stage, handle it.
     if (blocks_to_transfer) {
@@ -747,12 +834,25 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
             return rc;
         }
 
-        // TODO: copy data from the bounce buffer to the output buffer, if this was a read
+        // Copy the SDMMC result from the bounce buffer to the target buffer.
+        sdmmc_handle_command_data(mmc, blocks_to_transfer, is_write, data_buffer);
     }
 
     mmc_print(mmc, "command success!");
     return 0;
 }
+
+
+static int sdmmc_send_simple_command(struct mmc *mmc, enum sdmmc_command command,
+        enum sdmmc_response_type response_type, uint32_t argument, void *response_buffer)
+{
+    // If we don't expect a response, don't check; otherwise check everything.
+    enum sdmmc_response_checks checks = (response_type == MMC_RESPONSE_NONE) ? MMC_CHECKS_NONE : MMC_CHECKS_ALL;
+
+    // Deletegate the full checks function.
+    return sdmmc_send_command(mmc, command, response_type, checks, argument, response_buffer, 0, 0, NULL);
+}
+
 
 
 /**
@@ -762,13 +862,39 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
 static int sdmmc_card_init(struct mmc *mmc)
 {
     int rc;
+    uint8_t response[17];
 
     // Bring the bus out of its idle state.
-    rc = sdmmc_send_command(mmc, CMD_GO_IDLE_OR_INIT, MMC_RESPONSE_NONE, MMC_CHECKS_NONE, 0, 0, 0);
+    rc = sdmmc_send_simple_command(mmc, CMD_GO_IDLE_OR_INIT, MMC_RESPONSE_NONE, 0, NULL);
     if (rc) {
         mmc_print(mmc, "could not bring bus to idle!");
         return rc;
     }
+
+    // Check to see if this is a Version 2.0 card.
+    rc = sdmmc_send_simple_command(mmc, CMD_SEND_IF_COND, MMC_RESPONSE_LEN48, MMC_SEND_IF_COND_MAGIC, response);
+    if (rc) {
+        // If we had an error, this was a v1 card.
+        mmc_print(mmc, "handling as a v1.0 card.");
+    } else {
+        // If this responded with the appropriate magic, it's a v2 card.
+        if (response[0] == MMC_SEND_IF_COND_MAGIC)
+            mmc_print(mmc, "handling as a v2.0 card.");
+    }
+
+    // Retreive the card ID.
+    rc = sdmmc_send_simple_command(mmc, CMD_ALL_SEND_CID, MMC_RESPONSE_LEN136, 0, response);
+    if (rc) {
+        mmc_print(mmc, "could not fetch the CID");
+        return ENODEV;
+    }
+
+    // Store the card ID for later.
+    memcpy(mmc->cid, response, sizeof(mmc->cid));
+
+    // TODO: Read and handle the CSD.
+    // TODO: Toggle the card select, so we it knows we're talking to it.
+    // TODO: Read and handle the extended CSD.
 
     return rc;
 }
@@ -812,8 +938,6 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
         mmc_print(mmc, "failed to set up card! (%d)", rc);
         return rc;
     }
-
-
 
     return rc;
 }

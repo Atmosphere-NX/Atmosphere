@@ -13,11 +13,16 @@ struct tegra_sdmmc;
  * Primary data structure describing a Fusée MMC driver.
  */
 struct mmc {
+    /* Controller properties */
     char *name;
-
-    volatile struct tegra_sdmmc *regs;
-
     unsigned int timeout;
+
+    /* Card properties */
+    uint8_t cid[15];
+
+
+    /* Pointers to hardware structures */
+    volatile struct tegra_sdmmc *regs;
 };
 
 
