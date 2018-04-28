@@ -242,6 +242,55 @@ typedef struct {
     uint32_t SMMU_TRANSLATION_ENABLE_4_0; /* 0xB98 */
 } mc_register_t; /* 0xB98 */
 
+/* 18.11.1.6 MC_SMMU_TLB_CONFIG_0 */
+typedef enum{
+    /* Set the number of active lines.
+    Allows the TLB to be made "virtually smaller" to save power.
+    "Inactive" lines will never hit and never hold data
+    */
+    SMMU_TLB_CONFIG_ACTIVE_LINES             = 0x3F << 0,
+    SMMU_TLB_CONFIG_ROUND_ROBIN_ARBITRATION  = 1 << 28, /* When enabled, forces round robin (RR) arbitration between TLB hit and miss FIFOs */
+
+    /* Allow hits to pass misses in the TLB.
+    This value may not be changed on the fly.
+    Ideally, this should be set before enabling the SMMU.
+    At the very least, the TLB needs to be flushed and traffic through the SMMU stopped before changing this value
+    */
+    SMMU_TLB_CONFIG_HIT_UNDER_MISS           = 1 << 29,
+    SMMU_TLB_CONFIG_STATS_TEST               = 1 << 30, /* Set stats registers to all "1s" */
+    SMMU_TLB_CONFIG_STATS_ENABLE             = 1 << 31, /* Enable TLB Hit and Miss counters */
+} SMMU_TLB_CONFIG;
+
+/* 18.11.1.7 MC_SMMU_PTC_CONFIG_0 */
+typedef enum {
+    SMMU_PTC_CONFIG_INDEX_MAP    = 0x7F << 0, /* XOR pattern for tag generation */
+    SMMU_PTC_CONFIG_LINE_MASK    = 0xF << 8, /* XOR pattern for line generation */
+    SMMU_PTC_CONFIG_REQ_LIMIT    = 0xF << 24, /* Limit outstanding PTC fill requests to the DRAM */
+    SMMU_PTC_CONFIG_CACHE_ENABLE = 1 << 29, /* Enable the PTC cache */
+    SMMU_PTC_CONFIG_STATS_TEST   = 1 << 30, /* Set stats registers to all "1s" */
+    SMMU_PTC_CONFIG_STATS_ENABLE = 1 << 31 /* Enable PTC Hit and Miss counters */
+} SMMU_PTC_CONFIG;
+
+/* 18.11.1.9 MC_SMMU_PTB_DATA_0 */
+typedef enum {
+    SSM_PTB_DATA_ASID_PDE_BASE  = 0x3FFFFF << 0, /* Pointer to page of PDEs, bits [33:12] for this ASID */
+    SSM_PTB_DATA_ASID_NONSECURE = 1 << 29, /* if set, non-secure accesses are allowed for this ASID */
+    SSM_PTB_DATA_ASID_WRITABLE  = 1 << 30, /* if set, writes are allowed for this ASID */
+    SSM_PTB_DATA_ASID_READABLE  = 1 << 31 /* if set, reads are allowed for this ASID */
+} SMMU_PTB_DATA;
+
+/* 18.11.1.63 MC_SMMU_AVPC_ASID_0 */
+typedef enum {
+    SMMU_AVPC_ASID_AVPC_ASID        = 0x7F << 0, /* If translation enabled, ASID to use when va[33:32] = 0x0 */
+    SMMU_AVPC_ASID_AVPC_SMMU_ENABLE = 1 << 31 /* if set, translation is enabled for this client */
+} SMMU_AVPC_ASID;
+
+/* 18.11.1.79 MC_SMMU_PPCS1_ASID_0 */
+typedef enum{
+    SMMU_PPCS1_ASID_PPCS1_ASID        = 0x7F << 0, /* if set, translation is enabled for this client */
+    SMMU_PPCS1_ASID_PPCS1_SMMU_ENABLE = 1 << 31 /* If translation enabled, ASID to use when va[33:32] = 0x0 */
+} SMMU_PPCS1_ASID;
+
 volatile security_carveout_t *get_carveout_by_id(unsigned int carveout);
 void configure_default_carveouts(void);
 void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint64_t size);

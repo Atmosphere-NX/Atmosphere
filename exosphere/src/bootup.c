@@ -141,8 +141,8 @@ void bootup_misc_mmio(void) {
 
     /* reset PTB, TLB and PTC */
     mc_register->SMMU_PTB_DATA_0 = 0;
-    mc_register->SMMU_TLB_CONFIG_0 = 0x30000030;
-    mc_register->SMMU_PTC_CONFIG_0 = 0x2800003F;
+    mc_register->SMMU_TLB_CONFIG_0 = SMMU_TLB_CONFIG_ROUND_ROBIN_ARBITRATION | SMMU_TLB_CONFIG_HIT_UNDER_MISS | 0x30; /* reset to default - 0x30 => TLB_ACTIVE_LINES */
+    mc_register->SMMU_PTC_CONFIG_0 = SMMU_PTC_CONFIG_CACHE_ENABLE | 0x8000000 | 0x3F; /* reset to default, except PTC_LINE_MASK - 0x8000000 = 0x8 << 27 => PTC_REQ_LIMIT - 0x37 => PTC_INDEX_MAP */
 
     /* TODO: What are these MC reg writes? */
     (void)(mc_register->SMMU_TLB_CONFIG_0);
@@ -238,10 +238,10 @@ void setup_4x_mmio(void) {
     AHB_ARBITRATION_DISABLE_0 |= 2;
 
     /* Set SMMU for BPMP/APB-DMA to point to TZRAM. */
-    mc_register->SMMU_PTB_ASID_0 = 1;
-    mc_register->SMMU_PTB_DATA_0 = 0x70012;
-    mc_register->SMMU_AVPC_ASID_0 = 0x80000001;
-    mc_register->SMMU_PPCS1_ASID_0 = 0x80000001;
+    mc_register->SMMU_PTB_ASID_0 = 0x1; /* CURRENT_ASID */
+    mc_register->SMMU_PTB_DATA_0 = 0x70012; /* ASID_PDE_BASE */
+    mc_register->SMMU_AVPC_ASID_0 = SMMU_AVPC_ASID_AVPC_SMMU_ENABLE | 0x1; /* 0x1 => AVPC_ASID */
+    mc_register->SMMU_PPCS1_ASID_0 = SMMU_PPCS1_ASID_PPCS1_SMMU_ENABLE | 0x1; /* 0x1 => PPCS1_ASID */
 
     /* Wait for the BPMP to halt. */
     while ((FLOW_CTLR_HALT_COP_EVENTS_0 >> 29) != 5) {
