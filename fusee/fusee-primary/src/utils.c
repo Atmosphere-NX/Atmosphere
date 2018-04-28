@@ -6,6 +6,8 @@
 #include "panic_color.h"
 #include "timers.h"
 
+#include "hwinit/btn.h"
+
 
 __attribute__ ((noreturn)) void panic(uint32_t code) {
     /* Set Panic Code for NX_BOOTLOADER. */
@@ -17,8 +19,16 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
     /* For now, just use NX BOOTLOADER's panic. */
     fuse_disable_programming();
     APBDEV_PMC_CRYPTO_OP_0 = 1; /* Disable all SE operations. */
-    /* TODO: watchdog_reboot(); */
-    while (1) { }
+
+    /* FIXME: clean up and use this instead of replacing things */
+    while(btn_read() != BTN_POWER);
+    
+    /* Ensure we boot back into RCM, for development. */
+    APBDEV_PMC_SCRATCH0_0 = (1 << 1);
+
+    /* Reset the processor. */
+    APBDEV_PMC_CONTROL = (1 < 4);
+    while(1);
 }
 
 __attribute__ ((noreturn)) void generic_panic(void) {

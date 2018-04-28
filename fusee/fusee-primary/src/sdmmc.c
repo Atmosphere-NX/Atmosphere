@@ -113,6 +113,17 @@ enum sdmmc_response_type {
 };
 
 /**
+ * SDMMC response sanity checks
+ * see the standard for when these should be used
+ */
+enum sdmmc_response_checks {
+    MMC_CHECKS_NONE   = 0,
+    MMC_CHECKS_CRC    = (1 << 3),
+    MMC_CHECKS_INDEX  = (1 << 4),
+    MMC_CHECKS_ALL    = (1 << 4) | (1 << 3),
+};
+
+/**
  * General masks for SDMMC registers.
  */
 enum sdmmc_register_bits {
@@ -136,10 +147,18 @@ enum sdmmc_register_bits {
     /* Interrupt status */
     MMC_STATUS_COMMAND_COMPLETE = (1 << 0),
     MMC_STATUS_TRANSFER_COMPLETE = (1 << 1),
+    MMC_STATUS_COMMAND_TIMEOUT = (1 << 16),
+    MMC_STATUS_COMMAND_CRC_ERROR = (1 << 17),
+    MMC_STATUS_COMMAND_END_BIT_ERROR = (1 << 18),
+    MMC_STATUS_COMMAND_INDEX_ERROR = (1 << 19),
+
     MMC_STATUS_ERROR_MASK =  (0xF << 16),
 
     /* Host control */
     MMC_DMA_SELECT_MASK = (0x3 << 3),
+
+    /* Software reset */
+    MMC_SOFT_RESET_FULL = (1 << 0),
 };
 
 
@@ -189,6 +208,25 @@ void mmc_print(struct mmc *mmc, char *fmt, ...)
     va_end(list);
 }
 
+/**
+ * Debug: print out any errors that occurred during a command timeout
+ */
+void mmc_print_command_errors(struct mmc *mmc, int command_errno)
+{
+    if (command_errno & MMC_STATUS_COMMAND_TIMEOUT)
+        mmc_print(mmc, "ERROR: command timed out!");
+
+    if (command_errno & MMC_STATUS_COMMAND_CRC_ERROR)
+        mmc_print(mmc, "ERROR: command response had invalid CRC");
+
+    if (command_errno & MMC_STATUS_COMMAND_END_BIT_ERROR)
+        mmc_print(mmc, "error: command response had invalid end bit");
+
+    if (command_errno & MMC_STATUS_COMMAND_INDEX_ERROR)
+        mmc_print(mmc, "error: response appears not to be for the last issued command");
+
+}
+
 
 /**
  * Retreives the SDMMC register range for the given controller.
@@ -206,6 +244,27 @@ static struct tegra_sdmmc *sdmmc_get_regs(enum sdmmc_controller controller)
 }
 
 
+static int sdmmc_hardware_reset(struct mmc *mmc)
+{
+    uint32_t timebase;
+
+    // Reset the MMC controller...
+    mmc->regs->software_reset |= MMC_SOFT_RESET_FULL;
+
+    timebase = get_time();
+
+    // Wait for the SDMMC controller to come back up...
+    while(mmc->regs->software_reset & MMC_SOFT_RESET_FULL) {
+        if (get_time_since(timebase) > mmc->timeout) {
+            mmc_print(mmc, "failed to bring up SDMMC controller");
+            return ETIMEDOUT;
+        }
+    }
+
+    return 0;
+}
+
+
 /**
  *
  */
@@ -216,6 +275,8 @@ static int sdmmc_hardware_init(struct mmc *mmc)
 
     uint32_t timebase;
     bool is_timeout;
+
+    int rc;
 
     /* XXX fixme XXX */
     bool is_hs400_hs667 = false;
@@ -239,6 +300,14 @@ static int sdmmc_hardware_init(struct mmc *mmc)
 
     // Take SDMMC4 out of reset
     car->rst_dev_l_clr |= 0x8000;
+
+    // Software reset the SDMMC device
+    mmc_print(mmc, "resetting controller...");
+    rc = sdmmc_hardware_reset(mmc);
+    if (rc) {
+        mmc_print(mmc, "failed to reset!");
+        return rc;
+    }
 
     // Set IO_SPARE[19] (one cycle delay)
     regs->io_spare |= 0x80000;
@@ -322,7 +391,7 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     }
 
     // Clear upper 17 bits
-    regs->host_control2 &= ~(0xFFFE0000);
+    regs->host_control2 &= ~(0xFFFF8000);
 
     // Clear SDHCI_PROG_CLOCK_MODE
     regs->clock_control &= ~(0x20);
@@ -451,7 +520,8 @@ static int sdmmc_wait_for_command_readiness(struct mmc *mmc)
     // Wait until we either wind up ready, or until we've timed out.
     while(true) {
         if (get_time_since(timebase) > mmc->timeout) {
-            return -ETIMEDOUT;
+            mmc_print(mmc, "timed out waiting for command readiness!");
+            return ETIMEDOUT;
         }
 
         // Wait until we're not inhibited from sending commands...
@@ -472,21 +542,18 @@ static int sdmmc_wait_for_command_completion(struct mmc *mmc)
 
     // Wait until we either wind up ready, or until we've timed out.
     while(true) {
-        if (get_time_since(timebase) > mmc->timeout)
-            return -ETIMEDOUT;
+        if (get_time_since(timebase) > mmc->timeout) {
+            mmc_print(mmc, "timed out waiting for command completion!");
+            return ETIMEDOUT;
+        }
 
         // If the command completes, return that.
         if (mmc->regs->int_status & MMC_STATUS_COMMAND_COMPLETE)
             return 0;
 
-        // If the command's no longer active, and we don't have an error, use that.
-        // This is what the bootrom does?
-        if (!(mmc->regs->present_state & MMC_COMMAND_INHIBIT))
-            return 0;
-
         // If an error occurs, return it.
         if (mmc->regs->int_status & MMC_STATUS_ERROR_MASK)
-            return (mmc->regs->int_status & MMC_STATUS_ERROR_MASK) >> 16;
+            return (mmc->regs->int_status & MMC_STATUS_ERROR_MASK);
     }
 }
 
@@ -524,30 +591,37 @@ static int sdmmc_wait_for_transfer_completion(struct mmc *mmc)
  * @param blocks The total number of blocks to be transferred.
  * @param is_write True iff we're sending data _to_ the card.
  */
-static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks, bool is_write)
+static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks, bool is_write, int argument)
 {
     // Ensure we're targeting our bounce buffer.
-    mmc->regs->dma_address = (uint32_t)sdmmc_bounce_buffer;
+    if (blocks) {
+        mmc->regs->dma_address = (uint32_t)sdmmc_bounce_buffer;
 
-    // Ensure we're using System DMA mode for DMA.
-    mmc->regs->host_control &= ~MMC_DMA_SELECT_MASK;
+        // Ensure we're using System DMA mode for DMA.
+        mmc->regs->host_control &= ~MMC_DMA_SELECT_MASK;
 
-    // Set up the DMA block size and count.
-    // FIXME: implement!
-    mmc_print(mmc, "WARNING: block size and count register needs to be set up, but CSD code isnt done yet!");
-    mmc->regs->block_size = 0;
-    mmc->regs->block_count = 0;
+        // Set up the DMA block size and count.
+        // FIXME: implement!
+        mmc_print(mmc, "WARNING: block size and count register needs to be set up, but CSD code isnt done yet!");
+        mmc->regs->block_size = 0;
+        mmc->regs->block_count = 0;
+    }
+
+    // Populate the command argument.
+    mmc->regs->argument = argument;
 
     // Always use DMA mode for data, as that's what Nintendo does. :)
-    mmc->regs->transfer_mode = MMC_TRANSFER_DMA_ENABLE | MMC_TRANSFER_LIMIT_BLOCK_COUNT;
+    if (blocks) {
+        mmc->regs->transfer_mode = MMC_TRANSFER_DMA_ENABLE | MMC_TRANSFER_LIMIT_BLOCK_COUNT ;
 
-    // If this is a multi-block datagram, indicate so.
-    if (blocks > 1)
-        mmc->regs->transfer_mode |= MMC_TRANSFER_MULTIPLE_BLOCKS;
+        // If this is a multi-block datagram, indicate so.
+        if (blocks > 1)
+            mmc->regs->transfer_mode |= MMC_TRANSFER_MULTIPLE_BLOCKS;
 
-    // If this is a write, set the WRITE mode.
-    if (is_write)
-        mmc->regs->transfer_mode |= MMC_TRANSFER_HOST_TO_CARD;
+        // If this is a write, set the WRITE mode.
+        if (is_write)
+            mmc->regs->transfer_mode |= MMC_TRANSFER_HOST_TO_CARD;
+    }
 
 }
 
@@ -561,10 +635,10 @@ static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks, bool is
  * @param response_type The type of response we'll expect.
  */
 static void sdmmc_prepare_command_registers(struct mmc *mmc, int blocks_to_xfer,
-        enum sdmmc_command command, enum sdmmc_response_type response_type)
+        enum sdmmc_command command, enum sdmmc_response_type response_type, enum sdmmc_response_checks checks)
 {
     // Populate the command number 
-    uint16_t to_write = (command << MMC_COMMAND_NUMBER_SHIFT) | (response_type << MMC_COMMAND_RESPONSE_TYPE_SHIFT) | MMC_COMMAND_CHECK_NUMBER; 
+    uint16_t to_write = (command << MMC_COMMAND_NUMBER_SHIFT) | (response_type << MMC_COMMAND_RESPONSE_TYPE_SHIFT) | checks;
 
     // If this is a "stop transmitting" command, set the abort flag.
     if (command == CMD_STOP_TRANSMISSION)
@@ -580,49 +654,90 @@ static void sdmmc_prepare_command_registers(struct mmc *mmc, int blocks_to_xfer,
 }
 
 
+/**
+ * Enables or disables the SDMMC interrupts.
+ * We leave these masked, but checkt their status in their status register.
+ *
+ * @param mmc The eMMC device to work with.
+ * @param enabled True if interrupts should enabled, or false to disable them.
+ */
+static void sdmmc_enable_interrupts(struct mmc *mmc, bool enabled)
+{
+    // Get an mask that represents all interrupts.
+    uint32_t all_interrupts =
+        MMC_STATUS_COMMAND_COMPLETE | MMC_STATUS_TRANSFER_COMPLETE |
+        MMC_STATUS_ERROR_MASK;
+
+    // Clear any pending interrupts.
+    mmc->regs->int_status |= all_interrupts;
+
+    // And enable or disable the pseudo-interrupts.
+    if (enabled) {
+        mmc->regs->int_enable |= all_interrupts;
+    } else {
+        mmc->regs->int_enable &= ~all_interrupts;
+    }
+}
+
+
 
 /**
  * Sends a command to the SD card, and awaits a response.
  */
 static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
-        enum sdmmc_response_type response_type, uint32_t argument, int blocks_to_transfer, bool is_write)
+        enum sdmmc_response_type response_type, enum sdmmc_response_checks checks, 
+        uint32_t argument, int blocks_to_transfer, bool is_write)
 {
     int rc;
+
+    mmc_print(mmc, "issuing CMD%d", command);
 
     // Wait until we can issue commands to the device.
     mmc_print(mmc, "waiting for command readiness...");
     rc = sdmmc_wait_for_command_readiness(mmc);
-    if(rc) {
+    if (rc) {
         mmc_print(mmc, "card not willing to accept commands (%d / %08x)", rc, mmc->regs->present_state);
         return -EBUSY;
     }
 
-    // Populate the command argument.
-    mmc_print(mmc, "populating argument...");
-    mmc->regs->argument = argument;
-
     // If we have data to send, prepare it.
-    if (blocks_to_transfer) {
-        mmc_print(mmc, "preparing data...");
-        sdmmc_prepare_command_data(mmc, blocks_to_transfer, is_write);
-    }
+    mmc_print(mmc, "preparing data...");
+    sdmmc_prepare_command_data(mmc, blocks_to_transfer, is_write, argument);
 
     // Configure the controller to send the command.
     mmc_print(mmc, "preparing command...");
-    sdmmc_prepare_command_registers(mmc, blocks_to_transfer, command, response_type);
+    sdmmc_prepare_command_registers(mmc, blocks_to_transfer, command, response_type, checks);
+
+    // Ensure we get the status response we want.
+    sdmmc_enable_interrupts(mmc, true);
 
     // Wait for the command to be completed.
     mmc_print(mmc, "waiting for command completion...");
     rc = sdmmc_wait_for_command_completion(mmc);
-    if(rc) {
+    if (rc) {
         mmc_print(mmc, "failed to issue CMD%d (%d / %08x)", command, rc, mmc->regs->int_status);
+        mmc_print_command_errors(mmc, rc);
         return rc;
     }
 
+    // Disable resporting psuedo-interrupts.
+    // (This is mostly for when the GIC is brought up)
+    sdmmc_enable_interrupts(mmc, true);
+
+
     // TODO: copy response to an out argument, if it we have one?
 
+    // FIXME: remove, this is excessive
+    if (response_type != MMC_RESPONSE_NONE) {
+        mmc_print(mmc, "response: %04x %04x %04x %04x %04x %04x %04x %04x", 
+                mmc->regs->response[0], mmc->regs->response[1],
+                mmc->regs->response[2], mmc->regs->response[2],
+                mmc->regs->response[4], mmc->regs->response[5],
+                mmc->regs->response[6], mmc->regs->response[7]);
+    }
+
     // If we had a data stage, handle it.
-    if(blocks_to_transfer) {
+    if (blocks_to_transfer) {
 
         // Wait for the transfer to be complete...
         mmc_print(mmc, "waiting for transfer completion...");
@@ -648,15 +763,12 @@ static int sdmmc_card_init(struct mmc *mmc)
 {
     int rc;
 
-    rc = sdmmc_send_command(mmc, CMD_GO_IDLE_OR_INIT, 0, 0, 0, 0);
-    rc = sdmmc_send_command(mmc, CMD_SEND_OPERATING_CONDITIONS, MMC_RESPONSE_LEN48, 0, 0, 0);
-
-    mmc_print(mmc, "response: %08x %08x %08x %08x %08x %08x %08x %08x", 
-            mmc->regs->response[0], mmc->regs->response[1],
-            mmc->regs->response[2], mmc->regs->response[2],
-            mmc->regs->response[4], mmc->regs->response[5],
-            mmc->regs->response[6], mmc->regs->response[7]);
-
+    // Bring the bus out of its idle state.
+    rc = sdmmc_send_command(mmc, CMD_GO_IDLE_OR_INIT, MMC_RESPONSE_NONE, MMC_CHECKS_NONE, 0, 0, 0);
+    if (rc) {
+        mmc_print(mmc, "could not bring bus to idle!");
+        return rc;
+    }
 
     return rc;
 }
