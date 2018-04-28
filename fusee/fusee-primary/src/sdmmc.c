@@ -164,6 +164,7 @@ enum sdmmc_register_bits {
     /* Interrupt status */
     MMC_STATUS_COMMAND_COMPLETE = (1 << 0),
     MMC_STATUS_TRANSFER_COMPLETE = (1 << 1),
+    MMC_STATUS_DMA_INTERRUPT = (1 << 3),
     MMC_STATUS_COMMAND_TIMEOUT = (1 << 16),
     MMC_STATUS_COMMAND_CRC_ERROR = (1 << 17),
     MMC_STATUS_COMMAND_END_BIT_ERROR = (1 << 18),
@@ -671,6 +672,22 @@ static int sdmmc_wait_for_transfer_completion(struct mmc *mmc)
         if (mmc->regs->int_status & MMC_STATUS_TRANSFER_COMPLETE)
             return 0;
 
+        // Automatically traverse DMA page boundaries.
+        if (mmc->regs->int_status & MMC_STATUS_DMA_INTERRUPT) {
+
+            // The SDMMC SDMA architecture is designed to pause at page
+            // boundaries to allow for CPU-assisted scatter gather. We don't
+            // use the scatter-gather feature, but we do need to "unpause"
+            // by telling it the next DMA address.
+            //
+            // Since we're always continuing as is, we'll read the current
+            // DMA address, clear the DMA interrupt, and then write the DMA
+            // address back. This is our "unpause".
+            uint32_t address = mmc->regs->dma_address;
+            mmc->regs->int_status |= MMC_STATUS_DMA_INTERRUPT;
+            mmc->regs->dma_address = address;
+        }
+
         // If an error occurs, return it.
         if (mmc->regs->int_status & MMC_STATUS_ERROR_MASK)
             return (mmc->regs->int_status & MMC_STATUS_ERROR_MASK) >> 16;
@@ -760,7 +777,7 @@ static void sdmmc_enable_interrupts(struct mmc *mmc, bool enabled)
     // Get an mask that represents all interrupts.
     uint32_t all_interrupts =
         MMC_STATUS_COMMAND_COMPLETE | MMC_STATUS_TRANSFER_COMPLETE |
-        MMC_STATUS_ERROR_MASK;
+        MMC_STATUS_DMA_INTERRUPT | MMC_STATUS_ERROR_MASK;
 
     // Clear any pending interrupts.
     mmc->regs->int_status |= all_interrupts;
