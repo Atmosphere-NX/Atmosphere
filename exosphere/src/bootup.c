@@ -193,7 +193,7 @@ void bootup_misc_mmio(void) {
         /* TODO: What are these MC reg writes? */
         mc_register->_0x65C = 0xFFFFF000;
         mc_register->_0x660 = 0;
-        mc_register->EMEM_CFG_ACCESS_CTRL_0_AND_IRAM_REG_CTRL_0 |= 1; /* overlap at 18.11.1.86 and 18.11.1.87 - lock write access to IRAM and EMEM registers */
+        mc_register->IRAM_REG_CTRL_0 |= 1; /* lock write access to IRAM registers */
         CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
     }
 }
@@ -203,7 +203,7 @@ void setup_4x_mmio(void) {
     /* TODO: What are these MC reg writes? */
     mc_register->_0x65C = 0xFFFFF000;
     mc_register->_0x660 = 0;
-    mc_register->EMEM_CFG_ACCESS_CTRL_0_AND_IRAM_REG_CTRL_0 |= 1; /* as above, lock write access to IRAM and EMEM registers */
+    mc_register->IRAM_REG_CTRL_0 |= 1; /* lock write access to IRAM registers */
     CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
 
     /* TODO: What are these PMC scratch writes? */
