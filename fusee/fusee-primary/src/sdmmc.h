@@ -33,6 +33,9 @@ struct mmc {
     uint8_t cid[15];
     uint32_t relative_address;
 
+    uint8_t read_block_order;
+    bool uses_block_addressing;
+
     /* Pointers to hardware structures */
     volatile struct tegra_sdmmc *regs;
 };
