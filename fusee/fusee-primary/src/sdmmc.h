@@ -10,16 +10,28 @@
 struct tegra_sdmmc;
 
 /**
+ * Represents the different types of devices an MMC object
+ * can represent.
+ */
+enum mmc_card_type {
+    MMC_CARD_EMMC,
+    MMC_CARD_MMC,
+    MMC_CARD_SD,
+    MMC_CARD_CART,
+};
+
+/**
  * Primary data structure describing a Fusée MMC driver.
  */
 struct mmc {
     /* Controller properties */
     char *name;
     unsigned int timeout;
+    enum mmc_card_type card_type;
 
     /* Card properties */
     uint8_t cid[15];
-
+    uint32_t relative_address;
 
     /* Pointers to hardware structures */
     volatile struct tegra_sdmmc *regs;
