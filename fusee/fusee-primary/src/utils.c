@@ -27,7 +27,7 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
     APBDEV_PMC_SCRATCH0_0 = (1 << 1);
 
     /* Reset the processor. */
-    APBDEV_PMC_CONTROL = (1 < 4);
+    APBDEV_PMC_CONTROL = (1 << 4);
     while(1);
 }
 
