@@ -138,8 +138,10 @@ enum sdmmc_response_checks {
 enum sdmmc_register_bits {
 
     /* Present state register */
-    MMC_COMMAND_INHIBIT = 1 << 0,
-    MMC_DATA_INHIBIT    = 1 << 1,
+    MMC_COMMAND_INHIBIT      = (1 << 0),
+    MMC_DATA_INHIBIT         = (1 << 1),
+    MMC_BUFFER_WRITE_ENABLE  = (1 << 10),
+    MMC_BUFFER_READ_ENABLE   = (1 << 11),
 
     /* Block size register */
     MMC_DMA_BOUNDARY_MAXIMUM = (0x3 << 12),
@@ -662,6 +664,7 @@ static int sdmmc_wait_for_transfer_completion(struct mmc *mmc)
 {
     uint32_t timebase = get_time();
 
+
     // Wait until we either wind up ready, or until we've timed out.
     while(true) {
 
@@ -672,20 +675,10 @@ static int sdmmc_wait_for_transfer_completion(struct mmc *mmc)
         if (mmc->regs->int_status & MMC_STATUS_TRANSFER_COMPLETE)
             return 0;
 
-        // Automatically traverse DMA page boundaries.
+        // If we've hit a DMA page boundary, fault.
         if (mmc->regs->int_status & MMC_STATUS_DMA_INTERRUPT) {
-
-            // The SDMMC SDMA architecture is designed to pause at page
-            // boundaries to allow for CPU-assisted scatter gather. We don't
-            // use the scatter-gather feature, but we do need to "unpause"
-            // by telling it the next DMA address.
-            //
-            // Since we're always continuing as is, we'll read the current
-            // DMA address, clear the DMA interrupt, and then write the DMA
-            // address back. This is our "unpause".
-            uint32_t address = mmc->regs->dma_address;
-            mmc->regs->int_status |= MMC_STATUS_DMA_INTERRUPT;
-            mmc->regs->dma_address = address;
+            mmc_print(mmc, "transaction would overrun the DMA buffer!");
+            return -EFAULT;
         }
 
         // If an error occurs, return it.
@@ -696,6 +689,90 @@ static int sdmmc_wait_for_transfer_completion(struct mmc *mmc)
 
 
 /**
+ *  Returns the block size for a given operation on the MMC controller.
+ *
+ *  @param mmc The MMC controller for which we're quierying block size.
+ *  @param is_write True iff the given operation is a write.
+ */
+static uint32_t sdmmc_get_block_size(struct mmc *mmc, bool is_write)
+{
+    // FIXME: support write blocks?
+    (void)is_write;
+
+    return (1 << mmc->read_block_order);
+}
+
+
+
+/**
+ * Handles execution of a DATA stage using the CPU, rather than by using DMA.
+ *
+ * @param mmc The MMc controller to work with.
+ * @param blocks The number of blocks to work with.
+ * @param is_write True iff the data is being set _to_ the CARD.
+ * @param data_buffer The data buffer to be transmitted or populated.
+ *
+ * @return 0 on success, or an error code on failure.
+ */
+static int sdmmc_handle_cpu_transfer(struct mmc *mmc, uint16_t blocks, bool is_write, void *data_buffer)
+{
+    uint16_t blocks_remaining = blocks;
+    uint16_t bytes_remaining_in_block;
+
+    uint32_t timebase = get_time();
+
+    // Get a window that lets us work with the data buffer in 32-bit chunks.
+    uint32_t *buffer = data_buffer;
+
+    // Figure out the mask to check based on whether this is a read or a write.
+    uint32_t mask = is_write ? MMC_BUFFER_WRITE_ENABLE : MMC_BUFFER_READ_ENABLE;
+
+    // While we have blocks left to read...
+    while (blocks_remaining) {
+
+        // Get the number of bytes per block read.
+        bytes_remaining_in_block = sdmmc_get_block_size(mmc, false);
+
+        // Wait for a block read to complete.
+        while (!(mmc->regs->present_state & mask)) {
+
+            // If an error occurs, return it.
+            if (mmc->regs->int_status & MMC_STATUS_ERROR_MASK) {
+                return (mmc->regs->int_status & MMC_STATUS_ERROR_MASK);
+            }
+
+            // Check for timeout.
+            if (get_time_since(timebase) > mmc->timeout)
+                return ETIMEDOUT;
+        }
+
+        // While we've still bytes left to read.
+        while (bytes_remaining_in_block) {
+
+            // Check for timeout.
+            if (get_time_since(timebase) > mmc->timeout)
+                return ETIMEDOUT;
+
+            // Transfer the data to the relevant
+            if (is_write) {
+                mmc->regs->buffer = *buffer;
+            } else {
+                *buffer = mmc->regs->buffer;
+            }
+
+            // Advance by a register size...
+            bytes_remaining_in_block -= sizeof(mmc->regs->buffer);
+            ++buffer;
+        }
+
+        // Advice by a block...
+        --blocks_remaining;
+    }
+
+    return 0;
+}
+
+/**
  * Prepare the data-related registers for command transmission.
  *
  * @param mmc The device to be used to transmit.
@@ -704,9 +781,10 @@ static int sdmmc_wait_for_transfer_completion(struct mmc *mmc)
  */
 static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks, bool is_write, int argument)
 {
-    // Ensure we're targeting our bounce buffer.
     if (blocks) {
-        mmc->regs->dma_address = (uint32_t)sdmmc_bounce_buffer;
+        // If we're using DMA, target our bounce buffer.
+        if (mmc->use_dma)
+            mmc->regs->dma_address = (uint32_t)sdmmc_bounce_buffer;
 
         // Set up the DMA block size and count.
         // This is synchronized with the size of our bounce buffer.
@@ -719,13 +797,16 @@ static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks, bool is
 
     // Always use DMA mode for data, as that's what Nintendo does. :)
     if (blocks) {
-        uint32_t to_write = MMC_TRANSFER_DMA_ENABLE | MMC_TRANSFER_LIMIT_BLOCK_COUNT;
+        uint32_t to_write = MMC_TRANSFER_LIMIT_BLOCK_COUNT;
+
+        // If this controller should use DMA, set that up.
+        if (mmc->use_dma)
+            to_write |= MMC_TRANSFER_DMA_ENABLE;
 
         // If this is a multi-block datagram, indicate so.
         // Also, configure the host to automatically stop the card when transfers are complete.
-        if (blocks > 1) {
+        if (blocks > 1) 
             to_write |= (MMC_TRANSFER_MULTIPLE_BLOCKS | MMC_TRANSFER_AUTO_CMD12);
-        }
 
         // If this is a read, set the READ mode.
         if (!is_write)
@@ -837,20 +918,6 @@ static void sdmmc_handle_command_response(struct mmc *mmc,
 }
 
 
-/**
- *  Returns the block size for a given operation on the MMC controller.
- *
- *  @param mmc The MMC controller for which we're quierying block size.
- *  @param is_write True iff the given operation is a write.
- */
-static uint32_t sdmmc_get_block_size(struct mmc *mmc, bool is_write)
-{
-    // FIXME: support write blocks?
-    (void)is_write;
-
-    return (1 << mmc->read_block_order);
-}
-
 
 /**
  * Sends a command to the SD card, and awaits a response.
@@ -913,7 +980,7 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
 
     // If this is a write and we have data, we'll need to populate the bounce buffer before
     // issuing the command.
-    if (blocks_to_transfer && is_write) {
+    if (blocks_to_transfer && is_write && mmc->use_dma) {
         memcpy(sdmmc_bounce_buffer, data_buffer, total_data_to_xfer);
     }
 
@@ -939,37 +1006,51 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     // If we had a data stage, handle it.
     if (blocks_to_transfer) {
 
-        // Wait for the transfer to be complete...
-        mmc_print(mmc, "waiting for transfer completion...");
-        rc = sdmmc_wait_for_transfer_completion(mmc);
-        if (rc) {
-            mmc_print(mmc, "failed to complete CMD%d data stage (%d)", command, rc);
+        // If this is a DMA transfer, wait for its completion.
+        if (mmc->use_dma) {
 
-            sdmmc_enable_interrupts(mmc, false);
-            return rc;
-        }
-
-        // If this is a read, and we've just finished a transfer, copy the data from
-        // our bounce buffer to the target data buffer.
-        if (!is_write) {
-            printk("read result (%d):\n", total_data_to_xfer);
-            for (int i = 0; i < 64; ++i) {
-
-                if(i % 8 == 0) {
-                    printk("\n");
-                }
-
-                printk("%02x ", sdmmc_bounce_buffer[i]);
+            // Wait for the transfer to be complete...
+            mmc_print(mmc, "waiting for transfer completion...");
+            rc = sdmmc_wait_for_transfer_completion(mmc);
+            if (rc) {
+                mmc_print(mmc, "failed to complete CMD%d data stage via DMA (%d)", command, rc);
+                sdmmc_enable_interrupts(mmc, false);
+                return rc;
             }
-            printk("\n");
-            memcpy(data_buffer, sdmmc_bounce_buffer, total_data_to_xfer);
+
+            // If this is a read, and we've just finished a transfer, copy the data from
+            // our bounce buffer to the target data buffer.
+            if (!is_write) {
+                memcpy(data_buffer, sdmmc_bounce_buffer, total_data_to_xfer);
+            }
         }
+        // Otherwise, perform the transfer using the CPU.
+        else {
+            mmc_print(mmc, "transferring data...");
+            rc = sdmmc_handle_cpu_transfer(mmc, blocks_to_transfer, is_write, data_buffer);
+            if (rc) {
+                mmc_print(mmc, "failed to complete CMD%d data stage via CPU (%d)", command, rc);
+                sdmmc_enable_interrupts(mmc, false);
+                return rc;
+            }
+        }
+
+        // XXX: get rid of this
+        printk("read result (%d):\n", total_data_to_xfer);
+        for (int i = 0; i < 64; ++i) {
+
+            if(i % 8 == 0) {
+                printk("\n");
+            }
+
+            printk("%02x ", ((uint8_t *)data_buffer)[i]);
+        }
+        printk("\n");
     }
 
     // Disable resporting psuedo-interrupts.
     // (This is mostly for when the GIC is brought up)
     sdmmc_enable_interrupts(mmc, false);
-
 
     mmc_print(mmc, "CMD%d success!", command);
     return 0;
@@ -1217,6 +1298,15 @@ static int sdmmc_set_up_block_transfer_size(struct mmc *mmc)
     return 0;
 }
 
+/**
+ * Optimize our SDMMC transfer mode to fully utilize the bus.
+ */
+static int sdmmc_optimize_transfer_mode(struct mmc *mmc)
+{
+    // TODO: FIXME
+    return 0;
+}
+
 
 
 /**
@@ -1264,6 +1354,12 @@ static int sdmmc_card_init(struct mmc *mmc)
     if (rc) {
         mmc_print(mmc, "could not set up block transfer sizes! (%d)", rc);
         return EPIPE;
+    }
+
+    // Switch to a transfer mode that can more efficiently utilize the bus.
+    rc = sdmmc_optimize_transfer_mode(mmc);
+    if (rc) {
+        mmc_print(mmc, "could not optimize bus utlization! (%d)", rc);
     }
 
     // Read and handle card's Extended Card Specific Data (ext-CSD).
@@ -1326,6 +1422,9 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
     // FIXME: lower
     // FIXME: abstract
     mmc->timeout = 1000000;
+
+    // FIXME: make this configurable?
+    mmc->use_dma = false;
 
     // Default to relative address of zero.
     mmc->relative_address = 0;
