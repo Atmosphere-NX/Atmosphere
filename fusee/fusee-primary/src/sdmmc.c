@@ -147,7 +147,7 @@ enum sdmmc_register_bits {
     MMC_DMA_BOUNDARY_MAXIMUM = (0x3 << 12),
     MMC_DMA_BOUNDARY_512K    = (0x3 << 12),
     MMC_DMA_BOUNDARY_16K     = (0x2 << 12),
-    MMC_TRANSFER_BLOCK_512B  = (0x1FF << 0),
+    MMC_TRANSFER_BLOCK_512B  = (0x200 << 0),
 
     /* Command register */
     MMC_COMMAND_NUMBER_SHIFT = 8,
@@ -465,18 +465,6 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Clear SDHCI_PROG_CLOCK_MODE
     regs->clock_control &= ~(0x20);
 
-    // Set SDHCI_CTRL2_HOST_V4_ENABLE
-    regs->host_control2 |= 0x1000;
-
-    // SDHCI_CAN_64BIT must be set
-    if (!(regs->capabilities & 0x10000000)) {
-        mmc_print(mmc, "missing CAN_64bit capability");
-        return -1;
-    }
-
-    // Set SDHCI_CTRL2_64BIT_ENABLE
-    regs->host_control2 |= 0x2000;
-
     // Clear SDHCI_CTRL_SDMA and SDHCI_CTRL_ADMA2
     regs->host_control &= 0xE7;
     
@@ -782,13 +770,15 @@ static int sdmmc_handle_cpu_transfer(struct mmc *mmc, uint16_t blocks, bool is_w
 static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks, bool is_write, int argument)
 {
     if (blocks) {
+        uint16_t block_size = sdmmc_get_block_size(mmc, is_write);
+
         // If we're using DMA, target our bounce buffer.
         if (mmc->use_dma)
             mmc->regs->dma_address = (uint32_t)sdmmc_bounce_buffer;
 
         // Set up the DMA block size and count.
         // This is synchronized with the size of our bounce buffer.
-        mmc->regs->block_size = sdmmc_bounce_dma_boundary | MMC_TRANSFER_BLOCK_512B;
+        mmc->regs->block_size = sdmmc_bounce_dma_boundary | block_size;
         mmc->regs->block_count = blocks;
     }
 
@@ -944,9 +934,6 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     uint32_t total_data_to_xfer = sdmmc_get_block_size(mmc, is_write) * blocks_to_transfer;
     int rc;
 
-    // XXX: get rid of
-    mmc_print(mmc, "issuing CMD%d", command);
-
     // If this transfer would have us send more than we can, fail out.
     if (total_data_to_xfer > sizeof(sdmmc_bounce_buffer)) {
         mmc_print(mmc, "ERROR: transfer is larger than our maximum DMA transfer size!");
@@ -1034,18 +1021,6 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
                 return rc;
             }
         }
-
-        // XXX: get rid of this
-        printk("read result (%d):\n", total_data_to_xfer);
-        for (int i = 0; i < 64; ++i) {
-
-            if(i % 8 == 0) {
-                printk("\n");
-            }
-
-            printk("%02x ", ((uint8_t *)data_buffer)[i]);
-        }
-        printk("\n");
     }
 
     // Disable resporting psuedo-interrupts.
@@ -1303,7 +1278,7 @@ static int sdmmc_set_up_block_transfer_size(struct mmc *mmc)
  */
 static int sdmmc_optimize_transfer_mode(struct mmc *mmc)
 {
-    // TODO: FIXME
+    // FIXME: use this to setup higher data widths
     return 0;
 }
 
@@ -1419,12 +1394,10 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
     mmc->card_type = MMC_CARD_EMMC;
 
     // Default to a timeout of 1S.
-    // FIXME: lower
-    // FIXME: abstract
     mmc->timeout = 1000000;
 
-    // FIXME: make this configurable?
-    mmc->use_dma = false;
+    // Use DMA, by default.
+    mmc->use_dma = true;
 
     // Default to relative address of zero.
     mmc->relative_address = 0;
