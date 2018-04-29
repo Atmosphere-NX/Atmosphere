@@ -27,7 +27,9 @@ struct mmc {
     /* Controller properties */
     char *name;
     unsigned int timeout;
+
     enum mmc_card_type card_type;
+    bool use_dma;
 
     /* Card properties */
     uint8_t cid[15];
