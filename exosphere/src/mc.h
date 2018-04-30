@@ -96,7 +96,7 @@ typedef struct {
     uint32_t EMEM_ARB_RING3_THROTTLE_0;
     uint32_t EMEM_ARB_OVERRIDE_0;
     uint32_t EMEM_ARB_RSV_0;
-    uint32_t _0xF0[1]; /* undefined */ /* 0xF0 */
+    uint32_t _0xF0; /* unknown */ /* 0xF0 */
     uint32_t CLKEN_OVERRIDE_0;
     uint32_t _0xF8[1]; /* undefined */
     uint32_t TIMING_CONTROL_0;
