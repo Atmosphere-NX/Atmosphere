@@ -27,22 +27,22 @@ typedef enum {
 /* 36.3.12 UART_VENDOR_STATUS_0_0 */
 typedef enum {
     UART_VENDOR_STATE_TX_IDLE = 1 << 0,
-	UART_VENDOR_STATE_RX_IDLE = 1 << 1,
+    UART_VENDOR_STATE_RX_IDLE = 1 << 1,
 
     /* This bit is set to 1 when a read is issued to an empty FIFO and gets cleared on register read (sticky bit until read)
     0 = NO_UNDERRUN
     1 = UNDERRUN
     */
-	UART_VENDOR_STATE_RX_UNDERRUN = 1 << 2,
+    UART_VENDOR_STATE_RX_UNDERRUN = 1 << 2,
 
     /* This bit is set to 1 when write data is issued to the TX FIFO when it is already full and gets cleared on register read (sticky bit until read)
     0 = NO_OVERRUN
     1 = OVERRUN
     */
-	UART_VENDOR_STATE_TX_OVERRUN = 1 << 3,
+    UART_VENDOR_STATE_TX_OVERRUN = 1 << 3,
 
-	UART_VENDOR_STATE_RX_FIFO_COUNTER = 0b111111 << 16, /* reflects number of current entries in RX FIFO */
-	UART_VENDOR_STATE_TX_FIFO_COUNTER = 0b111111 << 24 /* reflects number of current entries in TX FIFO */
+    UART_VENDOR_STATE_RX_FIFO_COUNTER = 0b111111 << 16, /* reflects number of current entries in RX FIFO */
+    UART_VENDOR_STATE_TX_FIFO_COUNTER = 0b111111 << 24 /* reflects number of current entries in TX FIFO */
 } UartVendorStatus;
 
 /* 36.3.6 UART_LSR_0 */
