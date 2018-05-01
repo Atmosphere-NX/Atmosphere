@@ -156,6 +156,8 @@ int main(int argc, char **argv)
             LaunchTitle(std::get<u64>(g_additional_launch_programs[i]), 3, 0, NULL);
         }
     }
-    
-    return 0;
+       
+    while (true) {
+        svcExitProcess();
+    }
 }
