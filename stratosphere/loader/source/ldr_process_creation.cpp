@@ -153,7 +153,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     process_info.code_addr = nso_extents.base_address;
     process_info.code_num_pages = nso_extents.total_size + 0xFFF;
     process_info.code_num_pages >>= 12;
-        
+    
     /* Call svcCreateProcess(). */
     rc = svcCreateProcess(&process_h, &process_info, (u32 *)npdm_info.aci0_kac, npdm_info.aci0->kac_size/sizeof(u32));
     if (R_FAILED(rc)) {
@@ -168,7 +168,6 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
         rc = NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, NULL, 0);    
     }
     if (R_FAILED(rc)) {
-        svcCloseHandle(process_h);
         goto CREATE_PROCESS_END;
     }
     
@@ -180,7 +179,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     } else {
         is_64_bit_addspace = (npdm_info.header->mmu_flags & 0xE) == 0x2;
     }
-    Registration::SetProcessIdTidMinAndIs64BitAddressSpace(index, process_id, npdm_info.aci0->title_id, is_64_bit_addspace);
+    Registration::SetProcessIdTidAndIs64BitAddressSpace(index, process_id, npdm_info.aci0->title_id, is_64_bit_addspace);
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         if (NsoUtils::IsNsoPresent(i)) {   
             Registration::AddNsoInfo(index, nso_extents.nso_addresses[i], nso_extents.nso_sizes[i], NsoUtils::GetNsoBuildId(i));

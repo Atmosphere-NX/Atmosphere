@@ -120,7 +120,7 @@ std::tuple<Result> RelocatableObjectsService::load_nrr(PidDescriptor pid_desc, u
         goto LOAD_NRR_END;
     }
     
-    rc = NroUtils::ValidateNrrHeader((NroUtils::NrrHeader *)nrr_info.mapped_address, nrr_size, target_proc->title_id_min);
+    rc = NroUtils::ValidateNrrHeader((NroUtils::NrrHeader *)nrr_info.mapped_address, nrr_size, target_proc->title_id);
     if (R_SUCCEEDED(rc)) {
         Registration::AddNrrInfo(target_proc->index, &nrr_info);
     }

@@ -1,5 +1,6 @@
 #pragma once
 #include <switch.h>
+#include <cstdio>
 
 #include "ldr_registration.hpp"
 
@@ -83,6 +84,10 @@ class NpdmUtils {
         static Result ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size_t num_restrict_caps, u32 *&cur_cap, size_t &caps_remaining);
         static Result ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32 *aci0_caps, size_t num_aci0_caps);
         
+        
+        static FILE *OpenNpdmFromExeFS();
+        static FILE *OpenNpdmFromSdCard(u64 tid);
+        static FILE *OpenNpdm(u64 tid);
         static Result LoadNpdm(u64 tid, NpdmInfo *out);
         static Result LoadNpdmFromCache(u64 tid, NpdmInfo *out);
 };

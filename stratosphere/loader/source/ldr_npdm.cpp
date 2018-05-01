@@ -5,6 +5,7 @@
 #include "ldr_registration.hpp"
 
 static NpdmUtils::NpdmCache g_npdm_cache = {0};
+static char g_npdm_path[FS_MAX_PATH] = {0};
 
 Result NpdmUtils::LoadNpdmFromCache(u64 tid, NpdmInfo *out) {
     if (g_npdm_cache.info.title_id != tid) {
@@ -14,12 +15,33 @@ Result NpdmUtils::LoadNpdmFromCache(u64 tid, NpdmInfo *out) {
     return 0;
 }
 
+FILE *NpdmUtils::OpenNpdmFromExeFS() {
+    std::fill(g_npdm_path, g_npdm_path + FS_MAX_PATH, 0);
+    snprintf(g_npdm_path, FS_MAX_PATH, "code:/main.npdm");
+    return fopen(g_npdm_path, "rb");
+}
+
+FILE *NpdmUtils::OpenNpdmFromSdCard(u64 title_id) {  
+    std::fill(g_npdm_path, g_npdm_path + FS_MAX_PATH, 0);
+    snprintf(g_npdm_path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/exefs/main.npdm", title_id);
+    return fopen(g_npdm_path, "rb");
+}
+
+
+FILE *NpdmUtils::OpenNpdm(u64 title_id) {
+    FILE *f_out = OpenNpdmFromSdCard(title_id);
+    if (f_out != NULL) {
+        return f_out;
+    }
+    return OpenNpdmFromExeFS();
+}
+
 Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
     Result rc;
     
     g_npdm_cache.info = (const NpdmUtils::NpdmInfo){0};
     
-    FILE *f_npdm = fopen("code:/main.npdm", "rb");
+    FILE *f_npdm = OpenNpdm(tid);
     if (f_npdm == NULL) {
         /* For generic "Couldn't open the file" error, just say the file doesn't exist. */
         return 0x202;
@@ -220,10 +242,10 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                 for (size_t i = 0; i < num_restrict_caps - 1; i++) {
                     if ((restrict_caps[i] & 0x7F) == 0x3F) {
                         r_desc = restrict_caps[i] >> 7;
-                        if  ((restrict_caps[i+1] & 0x7F) != 0x3F) {
+                        if ((restrict_caps[i+1] & 0x7F) != 0x3F) {
                             break;
                         }
-                        u32 r_next_desc = restrict_caps[i++] >> 7;
+                        u32 r_next_desc = restrict_caps[++i] >> 7;
                         u32 r_base_addr = r_desc & 0xFFFFFF;
                         u32 r_base_size = r_next_desc & 0xFFFFFF;
                         /* Size check the mapping. */
@@ -329,7 +351,7 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                     r_desc = restrict_caps[i] >> 16;    
                     desc &= 0x3FF;
                     r_desc &= 0x3FF;
-                    if (desc <= r_desc) {
+                    if (desc > r_desc) {
                         break;
                     }
                     /* Valid! */

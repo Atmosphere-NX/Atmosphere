@@ -6,9 +6,8 @@
 #include "ldr_npdm.hpp"
 
 Result ProcessManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
-    
     Result rc = 0xF601;
-        
+            
     switch ((ProcessManagerServiceCmd)cmd_id) {
         case Pm_Cmd_CreateProcess:
             rc = WrapIpcCommandImpl<&ProcessManagerService::create_process>(this, r, out_c, pointer_buffer, pointer_buffer_size);
@@ -25,6 +24,7 @@ Result ProcessManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u
         default:
             break;
     }
+    
     return rc;
 }
 
@@ -51,6 +51,10 @@ std::tuple<Result, MovedHandle> ProcessManagerService::create_process(u64 flags,
     
     rc = ProcessCreation::CreateProcess(&process_h, index, nca_path, launch_item, flags, reslimit_h.handle);
     
+    if (R_SUCCEEDED(rc)) {
+        ContentManagement::SetCreatedTitle(tid_sid.title_id);
+    }
+    
     return std::make_tuple(rc, MovedHandle{process_h});
 }
 
@@ -66,20 +70,20 @@ std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid 
         return std::make_tuple(rc);
     }
     
-    if (tid_sid.title_id != out_program_info.pointer->title_id_min) {
+    if (tid_sid.title_id != out_program_info.pointer->title_id) {
         rc = ContentManagement::GetContentPathForTidSid(nca_path, &tid_sid);
         if (R_FAILED(rc)) {
             return std::make_tuple(rc);
         }
         
-        rc = ContentManagement::SetContentPath(nca_path, out_program_info.pointer->title_id_min, tid_sid.storage_id);
+        rc = ContentManagement::SetContentPath(nca_path, out_program_info.pointer->title_id, tid_sid.storage_id);
         if (R_FAILED(rc)) {
             return std::make_tuple(rc);
         }
         
-        rc = LaunchQueue::add_copy(tid_sid.title_id, out_program_info.pointer->title_id_min);
+        rc = LaunchQueue::add_copy(tid_sid.title_id, out_program_info.pointer->title_id);
     }
-    
+        
     return std::make_tuple(rc);
 }
 
@@ -120,7 +124,7 @@ Result ProcessManagerService::populate_program_info_buffer(ProcessManagerService
     out->main_thread_priority = info.header->main_thread_prio;
     out->default_cpu_id = info.header->default_cpuid;
     out->main_thread_stack_size = info.header->main_stack_size;
-    out->title_id_min = info.acid->title_id_range_min;
+    out->title_id = info.aci0->title_id;
     
     out->acid_fac_size = info.acid->fac_size;
     out->aci0_sac_size = info.aci0->sac_size;

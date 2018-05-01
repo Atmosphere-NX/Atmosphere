@@ -82,14 +82,14 @@ Result Registration::GetRegisteredTidSid(u64 index, Registration::TidSid *out) {
     return 0;
 }
 
-void Registration::SetProcessIdTidMinAndIs64BitAddressSpace(u64 index, u64 process_id, u64 tid_min, bool is_64_bit_addspace) {
+void Registration::SetProcessIdTidAndIs64BitAddressSpace(u64 index, u64 process_id, u64 tid, bool is_64_bit_addspace) {
     Registration::Process *target_process = GetProcess(index);
     if (target_process == NULL) {
         return;
     }
     
     target_process->process_id = process_id;
-    target_process->title_id_min = tid_min;
+    target_process->title_id = tid;
     target_process->is_64_bit_addspace = is_64_bit_addspace;
 }
 

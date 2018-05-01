@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
-#include <picosha2.hpp>
+#include "sha256.h"
 #include "ldr_nro.hpp"
 #include "ldr_registration.hpp"
 #include "ldr_map.hpp"
@@ -35,6 +35,7 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
     unsigned int i;
     Result rc;
     u8 nro_hash[0x20];
+    SHA256_CTX sha_ctx;
     /* Ensure there is an available NRO slot. */
     for (i = 0; i < NRO_INFO_MAX; i++) {
         if (!target_proc->nro_infos[i].in_use) {
@@ -78,7 +79,10 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
         goto LOAD_NRO_END;
     }
     
-    picosha2::hash256((u8 *)nro, (u8 *)nro + nro->nro_size, nro_hash, nro_hash + sizeof(nro_hash));
+    
+    sha256_init(&sha_ctx);
+    sha256_update(&sha_ctx, (u8 *)nro, nro->nro_size);
+    sha256_final(&sha_ctx, nro_hash);
     
     if (!Registration::IsNroHashPresent(target_proc->index, nro_hash)) {
         rc = 0x6C09;

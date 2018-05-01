@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
-#include <picosha2.hpp>
+#include "sha256.h"
 #include "lz4.h"
 #include "ldr_nso.hpp"
 #include "ldr_map.hpp"
@@ -25,12 +25,26 @@ FILE *NsoUtils::OpenNsoFromSdCard(unsigned int index, u64 title_id) {
     return fopen(g_nso_path, "rb");
 }
 
+bool NsoUtils::CheckNsoStubbed(unsigned int index, u64 title_id) {
+    std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
+    snprintf(g_nso_path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/exefs/%s.stub", title_id, NsoUtils::GetNsoFileName(index));
+    FILE *f = fopen(g_nso_path, "rb");
+    bool ret = (f != NULL);
+    if (ret) {
+        fclose(f);
+    }
+    return ret;
+}
+
 FILE *NsoUtils::OpenNso(unsigned int index, u64 title_id) {
     FILE *f_out = OpenNsoFromSdCard(index, title_id);
     if (f_out != NULL) {
         return f_out;
+    } else if (CheckNsoStubbed(index, title_id)) {
+        return NULL;
+    } else {
+        return OpenNsoFromExeFS(index);
     }
-    return OpenNsoFromExeFS(index);
 }
 
 bool NsoUtils::IsNsoPresent(unsigned int index) {
@@ -198,20 +212,28 @@ Result NsoUtils::LoadNsoSegment(unsigned int index, unsigned int segment, FILE *
     
     u8 *dst_addr = map_base + g_nso_headers[index].segments[segment].dst_offset;
     u8 *load_addr = is_compressed ? map_end - size : dst_addr;
+    
+    
     fseek(f_nso, g_nso_headers[index].segments[segment].file_offset, SEEK_SET);
     if (fread(load_addr, 1, size, f_nso) != size) {
         return 0xA09;
     }
+    
     
     if (is_compressed) {
         if (LZ4_decompress_safe((char *)load_addr, (char *)dst_addr, size, out_size) != (int)out_size) {
             return 0xA09;
         }
     }
+
     
     if (check_hash) {
         u8 hash[0x20] = {0};
-        picosha2::hash256(dst_addr, dst_addr + out_size, hash, hash + sizeof(hash));
+        SHA256_CTX sha_ctx;
+        sha256_init(&sha_ctx);
+        sha256_update(&sha_ctx, dst_addr, out_size);
+        sha256_final(&sha_ctx, hash);
+
         if (std::memcmp(g_nso_headers[index].section_hashes[segment], hash, sizeof(hash))) {
             return 0xA09;
         }
@@ -242,6 +264,7 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
                     return rc;
                 }
             }
+            
             fclose(f_nso);
             f_nso = NULL;
             /* Zero out memory before .text. */
@@ -254,7 +277,7 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
             u64 rw_base = ro_start + g_nso_headers[i].segments[1].decomp_size, rw_start = g_nso_headers[i].segments[2].dst_offset;
             std::fill(map_base + rw_base, map_base + rw_start, 0);
             /* Zero out .bss. */
-            u64 bss_base = rw_base + g_nso_headers[i].segments[2].decomp_size, bss_size = g_nso_headers[i].segments[2].align_or_total_size;
+            u64 bss_base = rw_start + g_nso_headers[i].segments[2].decomp_size, bss_size = g_nso_headers[i].segments[2].align_or_total_size;
             std::fill(map_base + bss_base, map_base + bss_base + bss_size, 0);
             
             nso_map.Close();

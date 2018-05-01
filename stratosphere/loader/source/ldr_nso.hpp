@@ -83,6 +83,7 @@ class NsoUtils {
         
         static FILE *OpenNsoFromExeFS(unsigned int index);
         static FILE *OpenNsoFromSdCard(unsigned int index, u64 title_id);
+        static bool CheckNsoStubbed(unsigned int index, u64 title_id);
         static FILE *OpenNso(unsigned int index, u64 title_id);
         
         static bool IsNsoPresent(unsigned int index);

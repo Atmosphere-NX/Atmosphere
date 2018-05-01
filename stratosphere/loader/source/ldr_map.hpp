@@ -48,7 +48,7 @@ class AutoCloseMap {
                 return rc;
             }
             
-            if (R_FAILED((rc = svcMapProcessMemory((void *)try_address, process_h, try_address, size)))) {
+            if (R_FAILED((rc = svcMapProcessMemory((void *)try_address, process_h, address, size)))) {
                 return rc;
             }
             
@@ -128,7 +128,7 @@ struct MappedCodeMemory {
             return rc;
         }
         
-        if (R_FAILED((rc = svcMapProcessMemory((void *)try_address, this->process_handle, try_address, size)))) {
+        if (R_FAILED((rc = svcMapProcessMemory((void *)try_address, this->process_handle, this->code_memory_address, size)))) {
             return rc;
         }
         
@@ -138,7 +138,7 @@ struct MappedCodeMemory {
     
     void Unmap() {
         if (this->IsMapped()) {
-            if (R_FAILED(svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size))) {
+            if (R_FAILED(svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->code_memory_address, this->size))) {
                 /* TODO: panic(). */
             }
         }

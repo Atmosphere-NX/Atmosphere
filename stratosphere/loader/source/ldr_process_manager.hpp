@@ -18,7 +18,7 @@ class ProcessManagerService : IServiceObject {
         u8 default_cpu_id;
         u16 application_type;
         u32 main_thread_stack_size;
-        u64 title_id_min;
+        u64 title_id;
         u32 acid_sac_size;
         u32 aci0_sac_size;
         u32 acid_fac_size;

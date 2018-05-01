@@ -46,7 +46,7 @@ class Registration {
             bool is_64_bit_addspace;
             u64 index;
             u64 process_id;
-            u64 title_id_min;
+            u64 title_id;
             Registration::TidSid tid_sid;
             Registration::NsoInfoHolder nso_infos[NSO_INFO_MAX];
             Registration::NroInfo nro_infos[NRO_INFO_MAX];
@@ -66,7 +66,7 @@ class Registration {
         static Result GetRegisteredTidSid(u64 index, Registration::TidSid *out);
         static bool RegisterTidSid(const TidSid *tid_sid, u64 *out_index);
         static bool UnregisterIndex(u64 index);
-        static void SetProcessIdTidMinAndIs64BitAddressSpace(u64 index, u64 process_id, u64 tid_min, bool is_64_bit_addspace);
+        static void SetProcessIdTidAndIs64BitAddressSpace(u64 index, u64 process_id, u64 tid, bool is_64_bit_addspace);
         static void AddNsoInfo(u64 index, u64 base_address, u64 size, const unsigned char *build_id);
         static void CloseRoService(void *service, Handle process_h);
         static Result AddNrrInfo(u64 index, MappedCodeMemory *nrr_info);
