@@ -4,8 +4,7 @@
 #include "sm_registration.hpp"
 
 Result UserService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
-    Result rc = 0xF601;
-        
+    Result rc = 0xF601;   
     switch ((UserServiceCmd)cmd_id) {
         case User_Cmd_Initialize:
             rc = WrapIpcCommandImpl<&UserService::initialize>(this, r, out_c, pointer_buffer, pointer_buffer_size);
@@ -27,7 +26,7 @@ Result UserService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id,
 
 Result UserService::handle_deferred() {
     /* If we're deferred, GetService failed. */
-    return WrapDeferredIpcCommandImpl<&UserService::deferred_get_service>(this, this->deferred_service);
+    return WrapDeferredIpcCommandImpl<&UserService::deferred_get_service>(this, this->deferred_service);;
 }
 
 

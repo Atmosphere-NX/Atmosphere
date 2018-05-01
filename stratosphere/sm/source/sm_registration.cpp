@@ -6,6 +6,15 @@
 static Registration::Process g_process_list[REGISTRATION_LIST_MAX_PROCESS] = {0};
 static Registration::Service g_service_list[REGISTRATION_LIST_MAX_SERVICE] = {0};
 
+u64 GetServiceNameLength(u64 service) {
+    u64 service_name_len = 0;
+    while (service & 0xFF) {
+        service_name_len++;
+        service >>= 8;
+    }
+    return service_name_len;
+}
+
 /* Utilities. */
 Registration::Process *Registration::GetProcessForPid(u64 pid) {
     for (unsigned int i = 0; i < REGISTRATION_LIST_MAX_PROCESS; i++) {
@@ -162,13 +171,10 @@ Result Registration::GetServiceForPid(u64 pid, u64 service, Handle *out) {
         return 0xC15;
     }
     
-    u64 service_name_len = 0;
-    while ((service >> (8 * service_name_len)) & 0xFF) {
-        service_name_len++;
-    }
+    u64 service_name_len = GetServiceNameLength(service);
     
     /* If the service has bytes after a null terminator, that's no good. */
-    if ((service >> (8 * service_name_len))) {
+    if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return 0xC15;
     }
     
@@ -191,13 +197,10 @@ Result Registration::RegisterServiceForPid(u64 pid, u64 service, u64 max_session
         return 0xC15;
     }
     
-    u64 service_name_len = 0;
-    while ((service >> (8 * service_name_len)) & 0xFF) {
-        service_name_len++;
-    }
+    u64 service_name_len = GetServiceNameLength(service);
     
     /* If the service has bytes after a null terminator, that's no good. */
-    if ((service >> (8 * service_name_len))) {
+    if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return 0xC15;
     }
     
@@ -240,13 +243,10 @@ Result Registration::RegisterServiceForSelf(u64 service, u64 max_sessions, bool 
         return rc;
     }
     
-    u64 service_name_len = 0;
-    while ((service >> (8 * service_name_len)) & 0xFF) {
-        service_name_len++;
-    }
+    u64 service_name_len = GetServiceNameLength(service);
     
     /* If the service has bytes after a null terminator, that's no good. */
-    if ((service >> (8 * service_name_len))) {
+    if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return 0xC15;
     }
         
@@ -276,25 +276,11 @@ Result Registration::UnregisterServiceForPid(u64 pid, u64 service) {
         return 0xC15;
     }
     
-    u64 service_name_len = 0;
-    while ((service >> (8 * service_name_len)) & 0xFF) {
-        service_name_len++;
-    }
+    u64 service_name_len = GetServiceNameLength(service);
     
     /* If the service has bytes after a null terminator, that's no good. */
-    if ((service >> (8 * service_name_len))) {
+    if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return 0xC15;
-    }
-    
-    if (pid >= REGISTRATION_PID_BUILTIN_MAX) {
-        Registration::Process *proc = GetProcessForPid(pid);
-        if (proc == NULL) {
-            return 0x415;
-        }
-        
-        if (!IsValidForSac(proc->sac, proc->sac_size, service, true)) {
-            return 0x1015;
-        }
     }
     
     Registration::Service *target_service = GetService(service);

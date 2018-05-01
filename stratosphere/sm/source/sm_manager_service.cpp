@@ -4,7 +4,6 @@
 
 Result ManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     Result rc = 0xF601;
-        
     switch ((ManagerServiceCmd)cmd_id) {
         case Manager_Cmd_RegisterProcess:
             rc = WrapIpcCommandImpl<&ManagerService::register_process>(this, r, out_c, pointer_buffer, pointer_buffer_size);
