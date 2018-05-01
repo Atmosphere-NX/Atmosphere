@@ -88,7 +88,7 @@ bool ShouldForceMaintenanceMode() {
 }
 
 static const std::tuple<u64, bool> g_additional_launch_programs[] = {
-    std::make_tuple(0x0100000000000023, true),  /* am */std::make_tuple(0x0100000000000023, true), /* am */
+    std::make_tuple(0x0100000000000023, true),  /* am */
     std::make_tuple(0x0100000000000019, true),  /* nvservices */
     std::make_tuple(0x010000000000001C, true),  /* nvnflinger */
     std::make_tuple(0x010000000000002D, true),  /* vi */
@@ -157,7 +157,5 @@ int main(int argc, char **argv)
         }
     }
        
-    while (true) {
-        svcExitProcess();
-    }
+    return 0;
 }
