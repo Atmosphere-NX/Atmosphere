@@ -70,7 +70,7 @@ void LaunchTitle(u64 title_id, u64 storage_id, u32 launch_flags, u64 *pid) {
             /* TODO: Panic(). */
             break;
         case 0xD001:
-            /* Result Limit Reached! */
+            /* Limit Reached! */
             /* TODO: Panic(). */
             break;
         default:
