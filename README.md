@@ -44,4 +44,4 @@ In no particular order, we credit the following for their invaluable contributio
 * __naehrwert__ for the [hekate](https://github.com/nwert/hekate) project and its hwinit code base.
 * __hedgeberg__ for research and hardware testing.
 * __lioncash__ for code cleanup and general improvements.
-* _All those who actively contribute to the Atmosphère repository.
+* _All those who actively contribute to the Atmosphère repository._
