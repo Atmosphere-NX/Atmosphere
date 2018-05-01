@@ -41,7 +41,7 @@ std::tuple<Result, u32> DebugMonitorService::get_nso_info(u64 pid, OutPointerWit
                     
     std::fill(out.pointer, out.pointer + out.num_elements, (const Registration::NsoInfo){0});
     
-    Result rc = Registration::get_nso_infos_for_process_id(out.pointer, out.num_elements, pid, &out_num_nsos);
+    Result rc = Registration::GetNsoInfosForProcessId(out.pointer, out.num_elements, pid, &out_num_nsos);
         
     return std::make_tuple(rc, out_num_nsos);
 }

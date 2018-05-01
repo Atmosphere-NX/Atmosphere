@@ -224,17 +224,13 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
     Result rc = 0xA09;
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         if (g_nso_present[i]) {
-            u64 map_addr = 0;
-            if (R_FAILED((rc = MapUtils::LocateSpaceForMap(&map_addr, extents->nso_sizes[i])))) {
+            AutoCloseMap nso_map;
+            if (R_FAILED((rc = nso_map.Open(process_h, extents->nso_addresses[i], extents->nso_sizes[i])))) {
                 return rc;
             }
             
-            u8 *map_base = (u8 *)map_addr;
-            
-            if (R_FAILED((rc = svcMapProcessMemory(map_base, process_h, extents->nso_addresses[i], extents->nso_sizes[i])))) {
-                return rc;
-            }
-            
+            u8 *map_base = (u8 *)nso_map.GetMappedAddress();
+                        
             FILE *f_nso = OpenNso(i, title_id);
             if (f_nso == NULL) {
                 /* Is there a better error to return here? */
@@ -243,7 +239,6 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
             for (unsigned int seg = 0; seg < 3; seg++) {
                 if (R_FAILED((rc = LoadNsoSegment(i, seg, f_nso, map_base, map_base + extents->nso_sizes[i])))) {
                     fclose(f_nso);
-                    svcUnmapProcessMemory(map_base, process_h, extents->nso_addresses[i], extents->nso_sizes[i]);
                     return rc;
                 }
             }
@@ -262,9 +257,7 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
             u64 bss_base = rw_base + g_nso_headers[i].segments[2].decomp_size, bss_size = g_nso_headers[i].segments[2].align_or_total_size;
             std::fill(map_base + bss_base, map_base + bss_base + bss_size, 0);
             
-            if (R_FAILED((rc = svcUnmapProcessMemory(map_base, process_h, extents->nso_addresses[i], extents->nso_sizes[i])))) {
-                return rc;
-            }
+            nso_map.Close();
             
             for (unsigned int seg = 0; seg < 3; seg++) {
                 u64 size = g_nso_headers[i].segments[seg].decomp_size;
@@ -283,25 +276,19 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
     
     /* Map in arguments. */
     if (args != NULL && args_size) {
-        u64 arg_map_addr = 0;
-        if (R_FAILED((rc = MapUtils::LocateSpaceForMap(&arg_map_addr, extents->args_size)))) {
+        AutoCloseMap args_map;
+        if (R_FAILED((rc = args_map.Open(process_h, extents->args_address, extents->args_size)))) {
             return rc;
         }
         
-        NsoArgument *arg_map_base = (NsoArgument *)arg_map_addr;
-        
-        if (R_FAILED((rc = svcMapProcessMemory(arg_map_base, process_h, extents->args_address, extents->args_size)))) {
-            return rc;
-        }
+        NsoArgument *arg_map_base = (NsoArgument *)args_map.GetMappedAddress();
         
         arg_map_base->allocated_space = extents->args_size;
         arg_map_base->args_size = args_size;
         std::fill(arg_map_base->_0x8, arg_map_base->_0x8 + sizeof(arg_map_base->_0x8), 0);
         std::copy(args, args + args_size, arg_map_base->arguments);
         
-        if (R_FAILED((rc = svcUnmapProcessMemory(arg_map_base, process_h, extents->args_address, extents->args_size)))) {
-            return rc;
-        }
+        args_map.Close();  
         
         if (R_FAILED((rc = svcSetProcessMemoryPermission(process_h, extents->args_address, extents->args_size, 3)))) {
             return rc;

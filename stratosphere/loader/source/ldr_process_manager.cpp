@@ -37,7 +37,7 @@ std::tuple<Result, MovedHandle> ProcessManagerService::create_process(u64 flags,
     
     fprintf(stderr, "CreateProcess(%016lx, %016lx, %08x);\n", flags, index, reslimit_h.handle);
     
-    rc = Registration::get_registered_tid_sid(index, &tid_sid);
+    rc = Registration::GetRegisteredTidSid(index, &tid_sid);
     if (R_FAILED(rc)) {
         std::make_tuple(rc, MovedHandle{process_h});
     }
@@ -85,7 +85,7 @@ std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid 
 
 std::tuple<Result, u64> ProcessManagerService::register_title(Registration::TidSid tid_sid) {
     u64 out_index = 0;
-    if (Registration::register_tid_sid(&tid_sid, &out_index)) {
+    if (Registration::RegisterTidSid(&tid_sid, &out_index)) {
         return std::make_tuple(0, out_index);
     } else {
         return std::make_tuple(0xE09, out_index);
@@ -93,7 +93,7 @@ std::tuple<Result, u64> ProcessManagerService::register_title(Registration::TidS
 }
 
 std::tuple<Result> ProcessManagerService::unregister_title(u64 index) {
-    if (Registration::unregister_index(index)) {
+    if (Registration::UnregisterIndex(index)) {
         return std::make_tuple(0);
     } else {
         return std::make_tuple(0x1009);
