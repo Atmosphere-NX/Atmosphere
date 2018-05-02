@@ -150,7 +150,7 @@ void gpio_configure_mode(enum tegra_named_gpio pin, enum tegra_gpio_mode mode);
  * Configures a given pin as either INPUT or OUPUT.
  *
  * @param pin The GPIO pin to work with, as created with TEGRA_GPIO, or a named GPIO.
- * @param direction The relevant direction.
+ * @param dir The relevant direction.
  */
 void gpio_configure_direction(enum tegra_named_gpio pin, enum tegra_gpio_direction dir);
 
@@ -159,15 +159,14 @@ void gpio_configure_direction(enum tegra_named_gpio pin, enum tegra_gpio_directi
  * Drives a relevant GPIO pin as either HIGH or LOW.
  *
  * @param pin The GPIO pin to work with, as created with TEGRA_GPIO, or a named GPIO.
- * @param mode The relevant value.
+ * @param value The relevant mode.
  */
 void gpio_write(enum tegra_named_gpio pin, enum tegra_gpio_value value);
 
 /**
- * Drives a relevant GPIO pin as either HIGH or LOW.
+ * Retrieves a relevant GPIO pin as either HIGH or LOW.
  *
  * @param pin The GPIO pin to work with, as created with TEGRA_GPIO, or a named GPIO.
- * @param mode The relevant mode.
  */
 enum tegra_gpio_value gpio_read(enum tegra_named_gpio pin);
 

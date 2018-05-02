@@ -46,7 +46,7 @@ static volatile int gpio_get_port(enum tegra_named_gpio pin)
 static volatile uint32_t gpio_get_mask(enum tegra_named_gpio pin)
 {
     uint32_t pin_number = pin & GPIO_PIN_MASK;
-    return (1 << pin_number);
+    return 1 << pin_number;
 }
 
 
@@ -55,7 +55,7 @@ static volatile uint32_t gpio_get_mask(enum tegra_named_gpio pin)
  * Performs a simple GPIO configuration operation.
  *
  * @param pin The GPIO pin to work with, as created with TEGRA_GPIO, or a named GPIO.
- * @param should_be_set True iff the relevant bit should be set; or false if it should be cleared.
+ * @param should_be_set True if the relevant bit should be set; or false if it should be cleared.
  * @param offset The offset into a gpio_bank structure 
  */
 static void gpio_simple_register_set(enum tegra_named_gpio pin, bool should_be_set, size_t offset)
@@ -69,7 +69,6 @@ static void gpio_simple_register_set(enum tegra_named_gpio pin, bool should_be_s
     int port      = gpio_get_port(pin);
     uint32_t mask = gpio_get_mask(pin);
 
-
     // Set or clear the bit, as appropriate.
     if (should_be_set)
         cluster[port] |=  mask;
@@ -79,10 +78,9 @@ static void gpio_simple_register_set(enum tegra_named_gpio pin, bool should_be_s
 
 
 /**
- * Performs a simple GPIO configuration operation.
+ * Returns the state of a GPIO pin.
  *
  * @param pin The GPIO pin to work with, as created with TEGRA_GPIO, or a named GPIO.
- * @param should_be_set True iff the relevant bit should be set; or false if it should be cleared.
  * @param offset The offset into a gpio_bank structure 
  */
 static bool gpio_simple_register_get(enum tegra_named_gpio pin, size_t offset)
@@ -117,7 +115,7 @@ void gpio_configure_mode(enum tegra_named_gpio pin, enum tegra_gpio_mode mode)
  * Configures a given pin as either INPUT or OUPUT.
  *
  * @param pin The GPIO pin to work with, as created with TEGRA_GPIO, or a named GPIO.
- * @param direction The relevant direction.
+ * @param dir The relevant direction.
  */
 void gpio_configure_direction(enum tegra_named_gpio pin, enum tegra_gpio_direction dir)
 {
@@ -129,7 +127,7 @@ void gpio_configure_direction(enum tegra_named_gpio pin, enum tegra_gpio_directi
  * Drives a relevant GPIO pin as either HIGH or LOW.
  *
  * @param pin The GPIO pin to work with, as created with TEGRA_GPIO, or a named GPIO.
- * @param mode The relevant mode.
+ * @param value The relevant mode.
  */
 void gpio_write(enum tegra_named_gpio pin, enum tegra_gpio_value value)
 {
@@ -138,12 +136,11 @@ void gpio_write(enum tegra_named_gpio pin, enum tegra_gpio_value value)
 
 
 /**
- * Drives a relevant GPIO pin as either HIGH or LOW.
+ * Retrieves a relevant GPIO pin as either HIGH or LOW.
  *
  * @param pin The GPIO pin to work with, as created with TEGRA_GPIO, or a named GPIO.
- * @param mode The relevant mode.
  */
 enum tegra_gpio_value gpio_read(enum tegra_named_gpio pin)
 {
-    return gpio_simple_register_get(pin, offsetof(struct tegra_gpio_bank, in)); 
+    return (enum tegra_gpio_value)gpio_simple_register_get(pin, offsetof(struct tegra_gpio_bank, in)); 
 }
