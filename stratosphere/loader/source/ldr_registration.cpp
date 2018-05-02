@@ -219,6 +219,7 @@ void Registration::AddNroToProcess(u64 index, MappedCodeMemory *nro, MappedCodeM
             target_process->nro_infos[i].rw_size = rw_size;
             std::copy(build_id, build_id + sizeof(target_process->nro_infos[i].build_id), target_process->nro_infos[i].build_id);
             target_process->nro_infos[i].in_use = true;
+            break;
         }
     }
 }

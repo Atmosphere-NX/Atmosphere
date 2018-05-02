@@ -30,8 +30,8 @@ Result NroUtils::ValidateNrrHeader(NrrHeader *header, u64 size, u64 title_id_min
 
 Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size, u64 *out_address) {
     NroHeader *nro;
-    MappedCodeMemory mcm_nro;
-    MappedCodeMemory mcm_bss;
+    MappedCodeMemory mcm_nro = {0};
+    MappedCodeMemory mcm_bss = {0};
     unsigned int i;
     Result rc;
     u8 nro_hash[0x20];
@@ -47,7 +47,7 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
     }
     for (i = 0; i < 0x200; i++) {
         if (R_SUCCEEDED(mcm_nro.Open(process_h, target_proc->is_64_bit_addspace, nro_heap_address, nro_heap_size))) {
-            if (R_SUCCEEDED(mcm_bss.OpenAtAddress(process_h, bss_heap_address, bss_heap_size, nro_heap_address + nro_heap_size))) {
+            if (R_SUCCEEDED(mcm_bss.OpenAtAddress(process_h, bss_heap_address, bss_heap_size, mcm_nro.code_memory_address + nro_heap_size))) {
                 break;
             } else {
                 mcm_nro.Close();

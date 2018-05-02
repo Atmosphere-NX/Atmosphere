@@ -1,4 +1,5 @@
 #include <switch.h>
+#include <cstdio>
 
 #include "ldr_map.hpp"
 #include "ldr_random.hpp"
@@ -159,7 +160,7 @@ Result MapUtils::MapCodeMemoryForProcessDeprecated(Handle process_h, bool is_64_
     if (size > addspace_size) {
         return 0x6609;
     }
-    
+        
     u64 try_address;
     for (unsigned int i = 0; i < 0x200; i++) {
         try_address = addspace_base + (RandomUtils::GetRandomU64((u64)(addspace_size - size) >> 12) << 12);

@@ -202,6 +202,7 @@ T GetValueFromIpcParsedCommand(IpcParsedCommand& r, IpcCommand& out_c, u8 *point
     } else if constexpr (is_ipc_handle<T>::value) {
         return r.Handles[h_index++];
     } else if constexpr (std::is_same<T, PidDescriptor>::value) {
+        cur_rawdata_index += sizeof(u64) / sizeof(u32);
         return PidDescriptor(r.Pid);
     } else {
         cur_rawdata_index += size_in_raw_data<T>::value / sizeof(u32);

@@ -9,7 +9,7 @@
 
 Result RelocatableObjectsService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     Result rc = 0xF601;
-        
+    
     switch ((RoServiceCmd)cmd_id) {
         case Ro_Cmd_LoadNro:
             rc = WrapIpcCommandImpl<&RelocatableObjectsService::load_nro>(this, r, out_c, pointer_buffer, pointer_buffer_size);
@@ -29,6 +29,7 @@ Result RelocatableObjectsService::dispatch(IpcParsedCommand &r, IpcCommand &out_
         default:
             break;
     }
+    
     return rc;
 }
 
@@ -92,6 +93,7 @@ std::tuple<Result> RelocatableObjectsService::load_nrr(PidDescriptor pid_desc, u
     Result rc;
     Registration::Process *target_proc = NULL;
     MappedCodeMemory nrr_info = {0};
+    
     if (!this->has_initialized || this->process_id != pid_desc.pid) {
         rc = 0xAE09;
         goto LOAD_NRR_END;
@@ -115,7 +117,7 @@ std::tuple<Result> RelocatableObjectsService::load_nrr(PidDescriptor pid_desc, u
     if (R_FAILED((rc = nrr_info.Open(this->process_handle, target_proc->is_64_bit_addspace, nrr_address, nrr_size)))) {
         goto LOAD_NRR_END;
     }
-    
+        
     if (R_FAILED((rc = nrr_info.Map()))) {
         goto LOAD_NRR_END;
     }
