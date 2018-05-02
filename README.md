@@ -18,4 +18,6 @@ In no particular order, we credit the following for their invaluable contributio
 * __naehrwert__ for the [hekate](https://github.com/nwert/hekate) project and its hwinit code base.
 * __hedgeberg__ for research and hardware testing.
 * __lioncash__ for code cleanup and general improvements.
+* __jaames__ for designing and providing Atmosphère's graphical resources.
+* Everyone who submitted entries for Atmosphère's [splash design contest](https://github.com/Atmosphere-NX/Atmosphere-splashes).
 * _All those who actively contribute to the Atmosphère repository._
