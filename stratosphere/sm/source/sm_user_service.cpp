@@ -39,6 +39,11 @@ std::tuple<Result> UserService::initialize(PidDescriptor pid) {
 std::tuple<Result, MovedHandle> UserService::get_service(u64 service) {
     Handle session_h = 0;
     Result rc = 0x415;
+#ifdef SM_ENABLE_SMHAX
+    if (!this->has_initialized) {
+        rc = Registration::GetServiceForPid(Registration::GetInitialProcessId(), service, &session_h);
+    }
+#endif
     if (this->has_initialized) {
         rc = Registration::GetServiceForPid(this->pid, service, &session_h);
     }
@@ -58,6 +63,11 @@ std::tuple<Result, MovedHandle> UserService::deferred_get_service(u64 service) {
 std::tuple<Result, MovedHandle> UserService::register_service(u64 service, u8 is_light, u32 max_sessions) {
     Handle service_h = 0;
     Result rc = 0x415;
+#ifdef SM_ENABLE_SMHAX
+    if (!this->has_initialized) {
+        rc = Registration::RegisterServiceForPid(Registration::GetInitialProcessId(), service, max_sessions, is_light != 0, &service_h);
+    }
+#endif
     if (this->has_initialized) {
         rc = Registration::RegisterServiceForPid(this->pid, service, max_sessions, is_light != 0, &service_h);
     }
@@ -66,6 +76,11 @@ std::tuple<Result, MovedHandle> UserService::register_service(u64 service, u8 is
 
 std::tuple<Result> UserService::unregister_service(u64 service) {
     Result rc = 0x415;
+#ifdef SM_ENABLE_SMHAX
+    if (!this->has_initialized) {
+        rc = Registration::UnregisterServiceForPid(Registration::GetInitialProcessId(), service);
+    }
+#endif
     if (this->has_initialized) {
         rc = Registration::UnregisterServiceForPid(this->pid, service);
     }

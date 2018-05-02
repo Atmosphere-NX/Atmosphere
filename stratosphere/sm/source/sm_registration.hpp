@@ -4,7 +4,7 @@
 #define REGISTRATION_LIST_MAX_PROCESS (0x40)
 #define REGISTRATION_LIST_MAX_SERVICE (0x100)
 #define REGISTRATION_MAX_SAC_SIZE (0x200)
-#define REGISTRATION_PID_BUILTIN_MAX 0x50
+#define REGISTRATION_INITIAL_PID_MAX 0x50
 
 class Registration {
     public:
@@ -27,6 +27,9 @@ class Registration {
         static Registration::Service *GetFreeService();
         static bool IsValidForSac(u8 *sac, size_t sac_size, u64 service, bool is_host);
         static bool ValidateSacAgainstRestriction(u8 *r_sac, size_t r_sac_size, u8 *sac, size_t sac_size);
+        static void CacheInitialProcessIdLimits();
+        static bool IsInitialProcess(u64 pid);
+        static u64 GetInitialProcessId();
         
         /* Process management. */
         static Result RegisterProcess(u64 pid, u8 *acid_sac, size_t acid_sac_size, u8 *aci0_sac, size_t aci0_sac_size);

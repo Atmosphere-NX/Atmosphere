@@ -6,6 +6,10 @@
 static Registration::Process g_process_list[REGISTRATION_LIST_MAX_PROCESS] = {0};
 static Registration::Service g_service_list[REGISTRATION_LIST_MAX_SERVICE] = {0};
 
+static u64 g_initial_process_id_low = 0;
+static u64 g_initial_process_id_high = 0;
+static bool g_determined_initial_process_ids = false;
+
 u64 GetServiceNameLength(u64 service) {
     u64 service_name_len = 0;
     while (service & 0xFF) {
@@ -107,6 +111,30 @@ bool Registration::ValidateSacAgainstRestriction(u8 *r_sac, size_t r_sac_size, u
     return true;
 }
 
+void Registration::CacheInitialProcessIdLimits() {
+    if (g_determined_initial_process_ids) {
+        return;
+    }
+    if (kernelAbove400()) {
+        svcGetSystemInfo(&g_initial_process_id_low, 2, 0, 0);
+        svcGetSystemInfo(&g_initial_process_id_high, 2, 0, 0);
+    } else {
+        g_initial_process_id_low = 0;
+        g_initial_process_id_high = REGISTRATION_INITIAL_PID_MAX;
+    }
+    g_determined_initial_process_ids = true;
+}
+
+bool Registration::IsInitialProcess(u64 pid) {
+    CacheInitialProcessIdLimits();
+    return g_initial_process_id_low <= pid && pid <= g_initial_process_id_high;
+}
+
+u64 Registration::GetInitialProcessId() {
+    CacheInitialProcessIdLimits();
+    return g_initial_process_id_low;
+}
+
 /* Process management. */
 Result Registration::RegisterProcess(u64 pid, u8 *acid_sac, size_t acid_sac_size, u8 *aci0_sac, size_t aci0_sac_size) {
     Registration::Process *proc = GetFreeProcess();
@@ -178,7 +206,7 @@ Result Registration::GetServiceForPid(u64 pid, u64 service, Handle *out) {
         return 0xC15;
     }
     
-    if (pid >= REGISTRATION_PID_BUILTIN_MAX && service != smEncodeName("dbg:m")) {
+    if (!IsInitialProcess(pid)) {
         Registration::Process *proc = GetProcessForPid(pid);
         if (proc == NULL) {
             return 0x415;
@@ -204,7 +232,7 @@ Result Registration::RegisterServiceForPid(u64 pid, u64 service, u64 max_session
         return 0xC15;
     }
     
-    if (pid >= REGISTRATION_PID_BUILTIN_MAX) {
+    if (!IsInitialProcess(pid)) {
         Registration::Process *proc = GetProcessForPid(pid);
         if (proc == NULL) {
             return 0x415;
@@ -288,7 +316,7 @@ Result Registration::UnregisterServiceForPid(u64 pid, u64 service) {
         return 0xE15;
     }
 
-    if (target_service->owner_pid != pid) {
+    if (!IsInitialProcess(pid) && target_service->owner_pid != pid) {
         return 0x1015;
     }
     
