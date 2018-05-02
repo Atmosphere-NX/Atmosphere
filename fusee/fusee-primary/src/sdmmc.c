@@ -1,16 +1,25 @@
+/**
+ * Fusée SD/MMC driver for the Switch
+ *  ~ktemkin 
+ */
+
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
 
 #include "sdmmc.h"
 #include "car.h"
+#include "pinmux.h"
 #include "timers.h"
 #include "apb_misc.h"
+#include "gpio.h"
+#include "supplies.h"
+#include "pmc.h"
+#include "pad_control.h"
 #include "lib/printk.h"
 
 #define TEGRA_SDMMC_BASE (0x700B0000)
 #define TEGRA_SDMMC_SIZE (0x200)
-
 
 
 /**
@@ -179,6 +188,10 @@ enum sdmmc_register_bits {
 
     /* Host control */
     MMC_DMA_SELECT_MASK = (0x3 << 3),
+    MMC_DMA_SELECT_SDMA = (0x0 << 3),
+    MMC_HOST_BUS_WIDTH_MASK = (1 << 1) | (1 << 5),
+    MMC_HOST_BUS_WIDTH_4BIT = (1 << 1),
+    MMC_HOST_BUS_WIDTH_8BIT = (1 << 5),
 
     /* Software reset */
     MMC_SOFT_RESET_FULL = (1 << 0),
@@ -222,7 +235,7 @@ static const char *sdmmc_command_string[] = {
     "CMD_TOGGLE_SLEEP_AWAKE",
     "CMD_SWITCH_MODE",
     "CMD_TOGGLE_CARD_SELECT",
-    "CMD_SEND_EXT_CSD",
+    "CMD_SEND_EXT_CSD/CMD_SEND_IF_COND",
     "CMD_SEND_CSD",
     "CMD_SEND_CID ",
     "<unsupported>",
@@ -270,7 +283,7 @@ enum sdmmc_switch_field {
     /* Fields */
     MMC_GROUP_ERASE_DEF = 175,
     MMC_PARTITION_CONFIG = 179,
-
+    MMC_BUS_WIDTH = 183,
 };
 
 
@@ -278,6 +291,9 @@ enum sdmmc_switch_field {
  * SDMMC command argument numbers
  */
 enum sdmmc_command_magic {
+    MMC_ENABLE_BOOT_INIT_MAGIC = 0xf0f0f0f0,
+    MMC_ENABLE_BOOT_ENABLE_MAGIC = 0xfffffffa,
+
     MMC_EMMC_OPERATING_COND_CAPACITY_MAGIC = 0x00ff8080,
 
     MMC_EMMC_OPERATING_COND_CAPACITY_MASK  = 0x0fffffff,
@@ -290,6 +306,10 @@ enum sdmmc_command_magic {
     MMC_STATUS_PROGRAMMING    = (0x7 << 9),
     MMC_STATUS_READY_FOR_DATA = (0x1 << 8),
     MMC_STATUS_CHECK_ERROR    = (~0x0206BF7F),
+
+    /* IF_COND components */
+    MMC_IF_VOLTAGE_3V3 = (1 << 8),
+    MMC_IF_CHECK_PATTERN = 0xAA,
 };
 
 
@@ -300,6 +320,7 @@ enum sdmmc_csd_versions {
     MMC_CSD_VERSION1 = 0,
     MMC_CSD_VERSION2 = 1,
 };
+
 
 
 /** 
@@ -325,8 +346,8 @@ enum sdmmc_ext_csd_extents {
     MMC_EXT_CSD_SIZE = 512,
 
     /* Hardware partition registers */
-    MMC_EXT_CSD_PARTITION_SETTING = 155,
-    MMC_EXT_CSD_PARTITIONING_COMPLETE = (1 << 0),
+    MMC_EXT_CSD_PARTITION_SETTING_COMPLETE = 155,
+    MMC_EXT_CSD_PARTITION_SETTING_COMPLETED = (1 << 0),
 
     MMC_EXT_CSD_PARTITION_ATTRIBUTE = 156,
     MMC_EXT_CSD_PARTITION_ENHANCED_ATTRIBUTE = 0x1f,
@@ -345,6 +366,9 @@ enum sdmmc_ext_csd_extents {
 
 
 };
+
+
+
 
 /* Forward declarations. */
 static int sdmmc_switch_mode(struct mmc *mmc, enum sdmmc_switch_access_mode mode, enum sdmmc_switch_field field, uint16_t value, uint32_t timeout);
@@ -432,26 +456,16 @@ static int sdmmc_hardware_reset(struct mmc *mmc)
     return 0;
 }
 
-
 /**
- * Initialize the low-level SDMMC hardware.
+ * Performs low-level initialization for SDMMC4, used for the eMMC.
  */
-static int sdmmc_hardware_init(struct mmc *mmc)
+static int sdmmc4_hardware_init(struct mmc *mmc)
 {
     volatile struct tegra_car *car = car_get_regs();
-    volatile struct tegra_sdmmc *regs = mmc->regs;
+    volatile struct tegra_padctl *padctl = padctl_get_regs();
+    (void)mmc;
 
-    uint32_t timebase;
-    bool is_timeout;
-
-    int rc;
-
-    /* XXX fixme XXX */
-    bool is_hs400_hs667 = false;
-
-    mmc_print(mmc, "initializing in %s-speed mode...", is_hs400_hs667 ? "high" : "low");
-
-    // FIXME: set up clock and reset to fetch the relevant clock register offsets
+    mmc_print(mmc, "enabling eMMC card");
 
     // Put SDMMC4 in reset
     car->rst_dev_l_set |= 0x8000;
@@ -460,7 +474,7 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // We use 32 beacuse Nintendo does, and they probably know what they're doing?
     car->clk_src[CLK_SOURCE_SDMMC4] = CLK_SOURCE_FIRST | CLK_DIVIDER_32;
 
-    // Set the legacy divier used for 
+    // Set the legacy divier used for detecting timeouts.
     car->clk_src_y[CLK_SOURCE_SDMMC_LEGACY] = CLK_SOURCE_FIRST | CLK_DIVIDER_32;
 
     // Set SDMMC4 clock enable
@@ -472,8 +486,137 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Take SDMMC4 out of reset
     car->rst_dev_l_clr |= 0x8000;
 
+    // Enable input paths for all pins.
+    padctl->sdmmc2_control |=
+        PADCTL_SDMMC4_ENABLE_DATA_IN | PADCTL_SDMMC4_ENABLE_CLK_IN | PADCTL_SDMMC4_DEEP_LOOPBACK;
+
+    return 0;
+}
+
+
+/**
+ * Performs low-level initialization for SDMMC1, used for the SD card slot.
+ */
+static int sdmmc1_hardware_init(struct mmc *mmc)
+{
+    volatile struct tegra_car *car = car_get_regs();
+    volatile struct tegra_pinmux *pinmux = pinmux_get_regs();
+    volatile struct tegra_pmc *pmc = pmc_get_regs();
+    volatile struct tegra_padctl *padctl = padctl_get_regs();
+    (void)mmc;
+
+    // Ensure the PMC is prepared for the SDMMC card to recieve power.
+    pmc->no_iopower  |= PMC_CONTROL_SDMMC1;
+    pmc->pwr_det_val |= PMC_CONTROL_SDMMC1;
+
+    // Configure the enable line for the SD card power.
+    pinmux->dmic3_clk  = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0;
+    gpio_configure_mode(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_MODE_GPIO);
+    gpio_configure_direction(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_DIRECTION_OUTPUT);
+    gpio_write(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_LEVEL_HIGH);
+
+    // Set up each of the relevant pins to be connected to output drivers,
+    // and selected for SDMMC use.
+    pinmux->sdmmc1_clk  = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT; 
+    pinmux->sdmmc1_cmd  = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
+    pinmux->sdmmc1_dat3 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
+    pinmux->sdmmc1_dat2 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
+    pinmux->sdmmc1_dat1 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
+    pinmux->sdmmc1_dat0 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
+
+    // Set up the SDMMC write protect.
+    // TODO: should this be an output, that we control?
+    pinmux->pz4 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_PULL_UP;
+
+    // Ensure we're using GPIO and not GPIO for the SD card's card detect.
+    padctl->vgpio_gpio_mux_sel &= ~PADCTL_SDMMC1_CD_SOURCE;
+    mmc_print(mmc, "mux sel is at %p", &padctl->vgpio_gpio_mux_sel);
+
+    // Set up the card detect pin as a GPIO input.
+    pinmux->pz1= PINMUX_SELECT_FUNCTION1 | PINMUX_PULL_UP | PINMUX_INPUT;
+    gpio_configure_mode(GPIO_MICROSD_CARD_DETECT, GPIO_MODE_GPIO);
+    gpio_configure_direction(GPIO_MICROSD_CARD_DETECT, GPIO_DIRECTION_INPUT);
+    udelay(100);
+
+    // Set up SD card voltages.
+    udelay(1000);
+    supply_enable(SUPPLY_MICROSD);
+    udelay(1000);
+
+    // Put SDMMC1 in reset
+    car->rst_dev_l_set |= CAR_CONTROL_SDMMC1;
+
+    // Set SDMMC1 clock source (PLLP_OUT0) and divisor (32).
+    // We use 32 beacuse Nintendo does, and they probably know what they're doing?
+    car->clk_src[CLK_SOURCE_SDMMC1] = CLK_SOURCE_FIRST | CLK_DIVIDER_32;
+
+    // Set the legacy divier used for detecting timeouts.
+    car->clk_src_y[CLK_SOURCE_SDMMC_LEGACY] = CLK_SOURCE_FIRST | CLK_DIVIDER_32;
+
+    // Set SDMMC1 clock enable
+    car->clk_dev_l_set |= CAR_CONTROL_SDMMC1;
+
+    // host_clk_delay(0x64, clk_freq) -> Delay 100 host clock cycles
+    udelay(5000);
+
+    // Take SDMMC4 out of reset
+    car->rst_dev_l_clr |= CAR_CONTROL_SDMMC1;
+
+    // Enable clock loopback.
+    padctl->sdmmc1_control |= PADCTL_SDMMC1_DEEP_LOOPBACK;
+
+    return 0;
+}
+
+
+/**
+ * Sets up the I/O and clocking resources necessary to use the given controller. 
+ */
+static int sdmmc_setup_controller_clock_and_io(struct mmc *mmc)
+{
+    // Always use the per-controller initialization functions.
+    switch(mmc->controller) {
+        case SWITCH_MICROSD:
+            return sdmmc1_hardware_init(mmc);
+        case SWITCH_EMMC:
+            return sdmmc4_hardware_init(mmc);
+        default:
+            mmc_print(mmc, "initializing an unsupport SDMMC controller!");
+            return ENODEV;
+    }
+
+    return 0;
+}
+
+
+/**
+ * Initialize the low-level SDMMC hardware.
+ * Thanks to hexkyz for this init code.
+ *
+ * FIXME: clean up the magic numbers, split into sections.
+ */
+static int sdmmc_hardware_init(struct mmc *mmc)
+{
+    volatile struct tegra_sdmmc *regs = mmc->regs;
+
+    uint32_t timebase;
+    bool is_timeout;
+
+    int rc;
+
+    // Initialize the Tegra resources necessary to use the given piece of hardware.
+    rc = sdmmc_setup_controller_clock_and_io(mmc);
+    if (rc) {
+        mmc_print(mmc, "ERROR: could not set up controller for use!");
+        return rc;
+    }
+
+    if (!sdmmc_card_present(mmc)) {
+        mmc_print(mmc, "ERROR: no card detected!");
+        return ENODEV;
+    }
+
     // Software reset the SDMMC device
-    mmc_print(mmc, "resetting controller...");
     rc = sdmmc_hardware_reset(mmc);
     if (rc) {
         mmc_print(mmc, "failed to reset!");
@@ -511,8 +654,7 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Set AUTO_CAL_START and AUTO_CAL_ENABLE
     regs->auto_cal_config |= 0xA0000000;
 
-    // Wait one second
-    udelay(1);
+    udelay(1000);
 
     // Program a timeout of 10ms
     is_timeout = false;
@@ -524,19 +666,25 @@ static int sdmmc_hardware_init(struct mmc *mmc)
         // Keep checking if timeout expired
         is_timeout = get_time_since(timebase) > 10000;
     }
-    
-    // AUTO_CAL_ACTIVE was not cleared in time
-    if (is_timeout)
-    {
-        mmc_print(mmc, "autocal timed out!");
 
-        // Set CFG2TMC_EMMC4_PAD_DRVUP_COMP and CFG2TMC_EMMC4_PAD_DRVDN_COMP
-        APB_MISC_GP_EMMC4_PAD_CFGPADCTRL_0 = ((APB_MISC_GP_EMMC4_PAD_CFGPADCTRL_0 & ~(0x3F00)) | 0x1000);
-        APB_MISC_GP_EMMC4_PAD_CFGPADCTRL_0 = ((APB_MISC_GP_EMMC4_PAD_CFGPADCTRL_0 & ~(0xFC)) | 0x40);
-        
-        // Clear AUTO_CAL_ENABLE
-        regs->auto_cal_config &= ~(0x20000000);
+    // AUTO_CAL_ACTIVE was not cleared in time
+    if (is_timeout) {
+        mmc_print(mmc, "autocal failed!");
+        return ETIMEDOUT;
     }
+
+    //
+    //if (is_timeout)
+    //{
+    //    mmc_print(mmc, "autocal timed out!");
+
+    //    // Set CFG2TMC_EMMC4_PAD_DRVUP_COMP and CFG2TMC_EMMC4_PAD_DRVDN_COMP
+    //    APB_MISC_GP_EMMC4_PAD_CFGPADCTRL_0 = ((APB_MISC_GP_EMMC4_PAD_CFGPADCTRL_0 & ~(0x3F00)) | 0x1000);
+    //    APB_MISC_GP_EMMC4_PAD_CFGPADCTRL_0 = ((APB_MISC_GP_EMMC4_PAD_CFGPADCTRL_0 & ~(0xFC)) | 0x40);
+    //    
+    //    // Clear AUTO_CAL_ENABLE
+    //    regs->auto_cal_config &= ~(0x20000000);
+    //}
 
     mmc_print(mmc, "autocal complete.");
 
@@ -571,7 +719,6 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Clear SDHCI_PROG_CLOCK_MODE
     regs->clock_control &= ~(0x20);
 
-
     // Clear SDHCI_CTRL_SDMA and SDHCI_CTRL_ADMA2
     regs->host_control &= 0xE7;
     
@@ -589,23 +736,11 @@ static int sdmmc_hardware_init(struct mmc *mmc)
 
     regs->power_control |= 0x01;
 
-    if (is_hs400_hs667)
-    {
-        // Set DQS_TRIM_VAL
-        regs->vendor_cap_overrides &= ~(0x3F00);
-        regs->vendor_cap_overrides |= 0x2800;
-    }
-
     // Clear TAP_VAL_UPDATED_BY_HW
     regs->vendor_tuning_cntrl0 &= ~(0x20000);
 
-    // Software tap value should be 0 for SDMMC4, but HS400/HS667 modes
-    // must take this value from the tuning procedure
-    uint32_t tap_value = is_hs400_hs667 ? 1 : 0;
-
     // Set TAP_VAL
     regs->vendor_clock_cntrl &= ~(0xFF0000);
-    regs->vendor_clock_cntrl |= (tap_value << 16);
 
     // Clear SDHCI_CTRL_HISPD
     regs->host_control &= 0xFB;
@@ -618,51 +753,6 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     regs->clock_control &= ~(0xFFC0);
     regs->clock_control |= (0x80 << 8);  // use the slowest setting, for now
     //regs->clock_control |= ((sd_divider_lo << 0x08) | (sd_divider_hi << 0x06));
-
-    // HS400/HS667 modes require additional DLL calibration
-    if (is_hs400_hs667)
-    {
-        // Set CALIBRATE
-        regs->vendor_dllcal_cfg |= 0x80000000;
-
-        // Program a timeout of 5ms
-        timebase = get_time();
-        is_timeout = false;
-
-        // Wait for CALIBRATE to be cleared
-        mmc_print(mmc, "starting calibration...");
-        while(regs->vendor_dllcal_cfg & 0x80000000 && !is_timeout) {
-            // Keep checking if timeout expired
-            is_timeout = get_time_since(timebase) > 5000;
-        }
-
-        // Failed to calibrate in time
-        if (is_timeout) {
-            mmc_print(mmc, "calibration failed!");
-            return -1;
-        }
-
-        mmc_print(mmc, "calibration okay.");
-
-        // Program a timeout of 10ms
-        timebase = get_time();
-        is_timeout = false;
-
-        // Wait for DLL_CAL_ACTIVE to be cleared
-        mmc_print(mmc, "waiting for calibration to finalize.... ");
-        while((regs->vendor_dllcal_cfg_sta & 0x80000000) && !is_timeout) {
-            // Keep checking if timeout expired
-            is_timeout = get_time_since(timebase) > 10000;
-        }
-
-        // Failed to calibrate in time
-        if (is_timeout) {
-            mmc_print(mmc, "calibration failed to finalize!");
-            return -1;
-        }
-
-        mmc_print(mmc, "calibration complete!");
-    }
 
     // Set SDHCI_CLOCK_CARD_EN
     regs->clock_control |= 0x04;
@@ -1126,7 +1216,7 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     // Wait for the command to be completed.
     rc = sdmmc_wait_for_command_completion(mmc);
     if (rc) {
-        mmc_print(mmc, "failed to issue CMD%d (arg=%08x, rc=%d)", command, argument, rc);
+        mmc_print(mmc, "failed to issue %s (arg=%08x, rc=%d)", sdmmc_command_string[command], argument, rc);
         mmc_print_command_errors(mmc, rc);
 
         sdmmc_enable_interrupts(mmc, false);
@@ -1201,55 +1291,6 @@ static int sdmmc_send_simple_command(struct mmc *mmc, enum sdmmc_command command
     return sdmmc_send_command(mmc, command, response_type, checks, argument, response_buffer, 0, false, false, NULL);
 }
 
-
-/**
- * Handles eMMC-specific card initialization.
- */
-static int emmc_card_init(struct mmc *mmc)
-{
-    int rc;
-    uint32_t response[4];
-
-    mmc_print(mmc, "setting up card as eMMC");
-
-    // We only support Switch eMMC addressing, which is alawys block-based.
-    mmc->uses_block_addressing = true;
-
-    // Bring the bus out of its idle state.
-    rc = sdmmc_send_simple_command(mmc, CMD_GO_IDLE_OR_INIT, MMC_RESPONSE_NONE, 0, NULL);
-    if (rc) {
-        mmc_print(mmc, "could not bring bus to idle!");
-        return rc;
-    }
-
-    // Wait for the card to finish being busy.
-    while (true) {
-
-        uint32_t response_masked;
-
-        // Ask the SD card to identify its state. It will respond with readiness and a capacity magic.
-        rc = sdmmc_send_command(mmc, CMD_SEND_OPERATING_CONDITIONS, MMC_RESPONSE_LEN48, 
-                MMC_CHECKS_NONE, 0x40000080, response, 0, false, false, NULL);
-        if (rc) {
-            mmc_print(mmc, "ERROR: could not read the card's operating conditions!");
-            return rc;
-        }
-
-        // Validate that this is a valid Switch eMMC.
-        // Per the spec, any card greater than 2GiB should respond with this magic number.
-        response_masked = response[0] & MMC_EMMC_OPERATING_COND_CAPACITY_MASK;
-        if (response_masked != MMC_EMMC_OPERATING_COND_CAPACITY_MAGIC) {
-            mmc_print(mmc, "ERROR: this doesn't appear to be a valid Switch eMMC!");
-            return ENOTTY;
-        }
-
-        // If the device has just become ready, we're done!
-        response_masked = response[0] & MMC_EMMC_OPERATING_READINESS_MASK;
-        if (response_masked == MMC_EMMC_OPERATING_COND_READY) {
-            return 0;
-        }
-    }
-}
 
 
 /**
@@ -1360,6 +1401,7 @@ static int sdmmc_read_and_parse_csd(struct mmc *mmc)
 }
 
 
+
 /**
  * Reads the active MMC card's Card Specific Data, and updates the MMC object's properties.
  *
@@ -1387,7 +1429,7 @@ static int sdmmc_read_and_parse_ext_csd(struct mmc *mmc)
     mmc->partition_support     = ext_csd[MMC_EXT_CSD_PARTITION_SUPPORT];
     mmc->partition_config      = ext_csd[MMC_EXT_CSD_PARTITION_CONFIG] & ~MMC_EXT_CSD_PARTITION_SELECT_MASK;
     mmc->partition_switch_time = ext_csd[MMC_EXT_CSD_PARTITION_SWITCH_TIME] * MMC_EXT_CSD_PARTITION_SWITCH_SCALE_US;
-    mmc->partition_setting     = ext_csd[MMC_EXT_CSD_PARTITION_SETTING];
+    mmc->partitioned           = ext_csd[MMC_EXT_CSD_PARTITION_SETTING_COMPLETE] & MMC_EXT_CSD_PARTITION_SETTING_COMPLETED;
     mmc->partition_attribute   = ext_csd[MMC_EXT_CSD_PARTITION_ATTRIBUTE];
 
     return 0;
@@ -1417,11 +1459,53 @@ static int sdmmc_set_up_block_transfer_size(struct mmc *mmc)
 }
 
 /**
+ * Switches the SDMMC card and controller to the fullest bus width possible.
+ *
+ * @param mmc The MMC controller to switch up to a full bus width.
+ */
+static int sdmmc_switch_bus_width(struct mmc *mmc, enum sdmmc_bus_width width)
+{
+    // Ask the card to adjust to the wider bus width.
+    int rc = sdmmc_switch_mode(mmc, MMC_SWITCH_EXTCSD_NORMAL,
+            MMC_BUS_WIDTH, width, mmc->timeout);
+    if (rc) {
+        mmc_print(mmc, "could not switch mode on the card side!");
+        return rc;
+    }
+
+    // And switch the bus width on our side.
+    mmc->regs->host_control &= ~MMC_HOST_BUS_WIDTH_MASK;
+    switch(width) {
+        case MMC_BUS_WIDTH_4BIT:
+            mmc->regs->host_control |= MMC_HOST_BUS_WIDTH_4BIT;
+            break;
+        case MMC_BUS_WIDTH_8BIT:
+            mmc->regs->host_control |= MMC_HOST_BUS_WIDTH_8BIT;
+            break;
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+
+/**
  * Optimize our SDMMC transfer mode to fully utilize the bus.
  */
-static int sdmmc_optimize_transfer_mode(struct mmc *mmc)
+static int mmc_optimize_transfer_mode(struct mmc *mmc)
 {
-    // FIXME: use this to setup higher data widths
+    int rc;
+
+    // Switch the device to its maximum bus width.
+    rc = sdmmc_switch_bus_width(mmc, mmc->max_bus_width);
+    if (rc) {
+        mmc_print(mmc, "could not switch the controller's bus width!");
+        return rc;
+    }
+
+    // TODO: step up into high speed modes
+    mmc_print(mmc, "now operating with a wider bus width");
     return 0;
 }
 
@@ -1432,24 +1516,26 @@ static int sdmmc_optimize_transfer_mode(struct mmc *mmc)
  */
 static int sdmmc_set_up_partitions(struct mmc *mmc)
 {
-    bool partitions_exist = mmc->partition_setting & MMC_EXT_CSD_PARTITIONING_COMPLETE;
-    bool has_enhanced_attributes = mmc->partition_attribute & MMC_EXT_CSD_PARTITION_ENHANCED_ATTRIBUTE;
-
     // If the card doesn't support partitions, fail out.
     if (!(mmc->partition_support & MMC_SUPPORTS_HARDWARE_PARTS))
         return ENOTTY;
 
     // If the card hasn't been partitioned, fail out.
     // We don't support setting up hardware partitioning.
-    if (!partitions_exist || !has_enhanced_attributes)
+    if (!mmc->partitioned) {
+        mmc_print(mmc, "NOTE: card supports partitions but is not partitioned");
         return ENOTDIR;
+    }
 
-    mmc_print(mmc, "detected a card with hardware (boot) partitions.");
+    mmc_print(mmc, "detected a card with hardware partitions.");
 
     // Use partitioning.
     return sdmmc_switch_mode(mmc, MMC_SWITCH_EXTCSD_NORMAL,
             MMC_GROUP_ERASE_DEF, MMC_EXT_CSD_ERASE_GROUP_DEF_BIT, mmc->timeout);
 }
+
+
+
 
 
 /**
@@ -1499,11 +1585,90 @@ static int sdmmc_card_init(struct mmc *mmc)
         return EPIPE;
     }
 
+    return 0;
+}
+
+
+/**
+ * Blocks until the eMMC card is fully initialized.
+ *
+ * @param mmc The MMC device that should do the waiting.
+ */
+static int sdmmc_wait_for_card_readiness(struct mmc *mmc)
+{
+    int rc;
+    uint32_t response[4];
+
+    while (true) {
+
+        uint32_t response_masked;
+
+        // Ask the SD card to identify its state. It will respond with readiness and a capacity magic.
+        rc = sdmmc_send_command(mmc, CMD_SEND_OPERATING_CONDITIONS, MMC_RESPONSE_LEN48, 
+                MMC_CHECKS_NONE, 0x40000080, response, 0, false, false, NULL);
+        if (rc) {
+            mmc_print(mmc, "ERROR: could not read the card's operating conditions!");
+            return rc;
+        }
+
+        // Validate that this is a valid Switch eMMC.
+        // Per the spec, any card greater than 2GiB should respond with this magic number.
+        response_masked = response[0] & MMC_EMMC_OPERATING_COND_CAPACITY_MASK;
+        if (response_masked != MMC_EMMC_OPERATING_COND_CAPACITY_MAGIC) {
+            mmc_print(mmc, "ERROR: this doesn't appear to be a valid Switch eMMC!");
+            return ENOTTY;
+        }
+
+        // If the device has just become ready, we're done!
+        response_masked = response[0] & MMC_EMMC_OPERATING_READINESS_MASK;
+        if (response_masked == MMC_EMMC_OPERATING_COND_READY) {
+            return 0;
+        }
+    }
+}
+
+
+/**
+ * Handles MMC-specific card initialization.
+ */
+static int sdmmc_mmc_card_init(struct mmc *mmc)
+{
+    int rc;
+
+    mmc_print(mmc, "setting up card as MMC");
+
+    // We only support Switch eMMC addressing, which is alawys block-based.
+    mmc->uses_block_addressing = true;
+
+    // Bring the bus out of its idle state.
+    rc = sdmmc_send_simple_command(mmc, CMD_GO_IDLE_OR_INIT, MMC_RESPONSE_NONE, 0, NULL);
+    if (rc) {
+        mmc_print(mmc, "could not bring bus to idle!");
+        return rc;
+    }
+
+    // Wait for the card to finish being busy.
+    rc = sdmmc_wait_for_card_readiness(mmc);
+    if (rc) {
+        mmc_print(mmc, "card failed to come up! (%d)", rc);
+        return rc;
+    }
+
+    // Run the common core card initialization.
+    rc = sdmmc_card_init(mmc);
+    if (rc) {
+        mmc_print(mmc, "failed to set up card (%d)!", rc);
+        return rc;
+    }
+
     // Switch to a transfer mode that can more efficiently utilize the bus.
-    rc = sdmmc_optimize_transfer_mode(mmc);
+    /*
+    rc = mmc_optimize_transfer_mode(mmc);
     if (rc) {
         mmc_print(mmc, "could not optimize bus utlization! (%d)", rc);
     }
+    */
+    (void)mmc_optimize_transfer_mode;
 
     // Read and handle card's Extended Card Specific Data (ext-CSD).
     rc = sdmmc_read_and_parse_ext_csd(mmc);
@@ -1515,11 +1680,73 @@ static int sdmmc_card_init(struct mmc *mmc)
     // Set up MMC card partitioning, if supported.
     rc = sdmmc_set_up_partitions(mmc);
     if (rc) {
-        mmc_print(mmc, "NOTE: card cannot be used with hardware partitions (%d)", rc);
+        mmc_print(mmc, "NOTE: card cannot be used with hardware partitions", rc);
     }
 
     return 0;
 }
+
+
+/**
+ * Evalutes a check pattern response (used with interface commands)
+ * and validates that it contains our common check pattern.
+ *
+ * @param response The response recieved after a given command.
+ * @return True iff the given response has a valid check pattern.
+ */
+static bool sdmmc_check_pattern_present(uint32_t response)
+{
+    uint32_t pattern_byte = response & 0xFF;
+    return pattern_byte == MMC_IF_CHECK_PATTERN;
+}
+
+
+
+/**
+ * Handles SD-specific card initialization.
+ */
+static int sdmmc_sd_card_init(struct mmc *mmc)
+{
+    int rc;
+    uint32_t response;
+
+    mmc_print(mmc, "setting up card as SD");
+
+    // Bring the bus out of its idle state.
+    rc = sdmmc_send_simple_command(mmc, CMD_GO_IDLE_OR_INIT, MMC_RESPONSE_NONE, 0, NULL);
+    if (rc) {
+        mmc_print(mmc, "could not bring bus to idle!");
+        return rc;
+    }
+
+    // Validate that the card can handle working with the voltages we can provide.
+    rc = sdmmc_send_simple_command(mmc, CMD_SEND_IF_COND, MMC_RESPONSE_LEN48, MMC_IF_VOLTAGE_3V3 | MMC_IF_CHECK_PATTERN, &response);
+    if (rc || !sdmmc_check_pattern_present(response)) {
+        // TODO: Maybe don't assume we _need_ 3V3 interfacing?
+        mmc_print(mmc, "card can't talk at our voltage (rc=%d, check=%02x)!", rc, response & 0xFF);
+        return rc;
+    }
+
+    // Wait for the card to finish being busy.
+    rc = sdmmc_wait_for_card_readiness(mmc);
+    if (rc) {
+        mmc_print(mmc, "card failed to come up! (%d)", rc);
+        return rc;
+    }
+
+    // Run the common core card initialization.
+    rc = sdmmc_card_init(mmc);
+    if (rc) {
+        mmc_print(mmc, "failed to set up card (%d)!", rc);
+        return rc;
+    }
+
+    // FIXME: optimize bus utilization here?
+    // is this just a call to the same routine as for eMMC?
+    return 0;
+}
+
+
 
 
 /**
@@ -1536,7 +1763,12 @@ static int sdmmc_handle_card_type_init(struct mmc *mmc)
         // Handle initialization of eMMC cards.
         case MMC_CARD_EMMC:
             // FIXME: also handle MMC and SD cards that aren't eMMC
-            rc = emmc_card_init(mmc);
+            rc = sdmmc_mmc_card_init(mmc);
+            break;
+
+        // Handle initialization of SD.
+        case MMC_CARD_SD:
+            rc = sdmmc_sd_card_init(mmc);
             break;
 
         default:
@@ -1550,55 +1782,7 @@ static int sdmmc_handle_card_type_init(struct mmc *mmc)
 
 
 
-/**
- * Set up a new SDMMC driver.
- * FIXME: clean up!
- *
- * @param mmc The SDMMC structure to be initiailized with the device state.
- * @param controler The controller description to be used; usually SWITCH_EMMC
- *      or SWTICH_MICROSD.
- */
-int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
-{
-    int rc;
 
-    // Get a reference to the registers for the relevant SDMMC controller.
-    mmc->regs = sdmmc_get_regs(controller);
-    mmc->name = "eMMC";
-    mmc->card_type = MMC_CARD_EMMC;
-
-    // Default to a timeout of 1S.
-    mmc->timeout = 1000000;
-
-    // Use DMA, by default.
-    mmc->use_dma = true;
-
-    // Default to relative address of zero.
-    mmc->relative_address = 0;
-
-    // Initialize the raw SDMMC controller.
-    rc = sdmmc_hardware_init(mmc);
-    if (rc) {
-        mmc_print(mmc, "failed to set up controller! (%d)", rc);
-        return rc;
-    }
-
-    // Handle the initialization that's specific to the card type.
-    rc = sdmmc_handle_card_type_init(mmc);
-    if (rc) {
-        mmc_print(mmc, "failed to set run card-specific initialization (%d)!", rc);
-        return rc;
-    }
-
-    // Handle the initialization that's common to all card types.
-    rc = sdmmc_card_init(mmc);
-    if (rc) {
-        mmc_print(mmc, "failed to set up card (%d)!", rc);
-        return rc;
-    }
-
-    return 0;
-}
 
 
 /**
@@ -1679,10 +1863,12 @@ static int sdmmc_switch_mode(struct mmc *mmc, enum sdmmc_switch_access_mode mode
     }
 
     // Wait until we have a sense of the card status to return.
-    rc = sdmmc_wait_for_card_ready(mmc, timeout);
-    if (rc){
-        mmc_print(mmc, "failed to talk to the card after SWITCH_MODE (%d)", rc);
-        return rc;
+    if(timeout != 0) {
+        rc = sdmmc_wait_for_card_ready(mmc, timeout);
+        if (rc){
+            mmc_print(mmc, "failed to talk to the card after SWITCH_MODE (%d)", rc);
+            return rc;
+        }
     }
 
     return 0;
@@ -1698,6 +1884,78 @@ static bool sdmmc_supports_hardware_partitions(struct mmc *mmc)
 }
 
 
+/**
+ * Populates the given MMC object with defaults for its controller.
+ *
+ * @param mmc The mmc object to populate.
+ */
+static void sdmmc_initialize_defaults(struct mmc *mmc)
+{
+    // Set up based on the controller
+    switch(mmc->controller) {
+        case SWITCH_EMMC:
+            mmc->name = "eMMC";
+            mmc->card_type = MMC_CARD_EMMC;
+            mmc->max_bus_width = MMC_BUS_WIDTH_8BIT;
+            break;
+
+        case SWITCH_MICROSD:
+            mmc->name = "uSD";
+            mmc->card_type = MMC_CARD_SD;
+            mmc->max_bus_width = MMC_BUS_WIDTH_4BIT;
+            break;
+
+        default:
+            printk("ERROR: initialization not yet writen for SDMMC%d", mmc->controller);
+            break;
+    }
+}
+
+
+/**
+ * Set up a new SDMMC driver.
+ * FIXME: clean up!
+ *
+ * @param mmc The SDMMC structure to be initiailized with the device state.
+ * @param controler The controller description to be used; usually SWITCH_EMMC
+ *      or SWTICH_MICROSD.
+ */
+int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
+{
+    int rc;
+
+    // Get a reference to the registers for the relevant SDMMC controller.
+    mmc->controller = controller;
+    mmc->regs = sdmmc_get_regs(controller);
+    sdmmc_initialize_defaults(mmc);
+
+    // Default to a timeout of 1S.
+    mmc->timeout = 1000000;
+    mmc->partition_switch_time = 1000;
+
+    // Use DMA, by default.
+    mmc->use_dma = true;
+
+    // Default to relative address of zero.
+    mmc->relative_address = 0;
+
+    // Initialize the raw SDMMC controller.
+    rc = sdmmc_hardware_init(mmc);
+    if (rc) {
+        mmc_print(mmc, "failed to set up controller! (%d)", rc);
+        return rc;
+    }
+
+    // Handle the initialization that's specific to the card type.
+    rc = sdmmc_handle_card_type_init(mmc);
+    if (rc) {
+        mmc_print(mmc, "failed to set run card-specific initialization (%d)!", rc);
+        return rc;
+    }
+
+    return 0;
+}
+
 
 /**
  * Selects the active MMC partition. Can be used to select
@@ -1710,7 +1968,7 @@ static bool sdmmc_supports_hardware_partitions(struct mmc *mmc)
  */
 int sdmmc_select_partition(struct mmc *mmc, enum sdmmc_partition partition)
 {
-    uint16_t argument = mmc->partition_config | partition;
+    uint16_t argument = partition;
     int rc;
 
     // If we're trying to access hardware partitions on a device that doesn't support them,
@@ -1720,10 +1978,13 @@ int sdmmc_select_partition(struct mmc *mmc, enum sdmmc_partition partition)
 
     // Set the PARTITION_CONFIG register to select the active partition.
     mmc_print(mmc, "switching to partition %d", partition);
-    rc = sdmmc_switch_mode(mmc, MMC_SWITCH_EXTCSD_NORMAL, MMC_PARTITION_CONFIG, argument, mmc->partition_switch_time);
+    rc = sdmmc_switch_mode(mmc, MMC_SWITCH_EXTCSD_NORMAL, MMC_PARTITION_CONFIG, argument, 0);
     if (rc) {
         mmc_print(mmc, "failed to select partition %d (%02x, rc=%d)", partition, argument, rc);
     }
+
+    mmc_print(mmc, "waiting for %d us", mmc->partition_switch_time);
+    udelay(mmc->partition_switch_time);
 
     return rc;
 }
@@ -1755,4 +2016,29 @@ int sdmmc_read(struct mmc *mmc, void *buffer, uint32_t block, unsigned int count
 
     // Execute the relevant read.
     return sdmmc_send_command(mmc, command, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, extent, NULL, count, false, true, buffer);
+}
+
+
+/**
+ * Checks to see whether an SD card is present.
+ *
+ * @mmc mmc The controller with which to check for card presence.
+ * @return true iff a card is present
+ */
+bool sdmmc_card_present(struct mmc *mmc)
+{
+    switch (mmc->controller) {
+
+        // The eMMC is always present.
+        case SWITCH_EMMC:
+            return true;
+
+        // The Switch's microSD card has a GPIO card detect pin.
+        case SWITCH_MICROSD:
+            return !gpio_read(GPIO_MICROSD_CARD_DETECT);
+
+        default:
+            mmc_print(mmc, "cannot figure out how to determine card presence!");
+            return false;
+    }
 }

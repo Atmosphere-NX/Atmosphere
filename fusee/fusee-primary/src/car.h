@@ -55,6 +55,16 @@ enum {
     CLK_DIVIDER_32         = 32,
 };
 
+
+/**
+ * Reset bits for relevant registers.
+ */
+enum {
+    CAR_CONTROL_SDMMC1 = (1 << 14),
+    CAR_CONTROL_SDMMC4 = (1 << 15),
+};
+
+
 enum {
     CLK_SOURCE_SDMMC1         = 19,
     CLK_SOURCE_SDMMC4         = 21,   /* 0x54 into the the main source block */
