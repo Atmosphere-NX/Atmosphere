@@ -115,7 +115,7 @@ void Registration::CacheInitialProcessIdLimits() {
     if (g_determined_initial_process_ids) {
         return;
     }
-    if (kernelAbove400()) {
+    if (kernelAbove500()) {
         svcGetSystemInfo(&g_initial_process_id_low, 2, 0, 0);
         svcGetSystemInfo(&g_initial_process_id_high, 2, 0, 0);
     } else {
