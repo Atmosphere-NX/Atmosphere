@@ -197,6 +197,9 @@ enum tegra_pinmux_constants {
     PINMUX_SELECT_FUNCTION1 = 1,
     PINMUX_SELECT_FUNCTION2 = 2,
     PINMUX_SELECT_FUNCTION3 = 3,
+
+    /* Drive */
+    PINMUX_DRIVE_2X = (0x1 << 13),
 };
 
 
