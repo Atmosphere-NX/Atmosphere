@@ -495,42 +495,16 @@ static int sdmmc4_hardware_init(struct mmc *mmc)
 
 
 /**
- * Performs low-level initialization for SDMMC1, used for the SD card slot.
+ * Enables power supplies for SDMMC1, used for the SD card slot.
  */
-static int sdmmc1_hardware_init(struct mmc *mmc)
+static int sdmmc1_enable_supplies(struct mmc *mmc)
 {
-    volatile struct tegra_car *car = car_get_regs();
-    volatile struct tegra_pinmux *pinmux = pinmux_get_regs();
     volatile struct tegra_pmc *pmc = pmc_get_regs();
-    volatile struct tegra_padctl *padctl = padctl_get_regs();
-    (void)mmc;
+    volatile struct tegra_pinmux *pinmux = pinmux_get_regs();
 
     // Ensure the PMC is prepared for the SDMMC card to recieve power.
     pmc->no_iopower  |= PMC_CONTROL_SDMMC1;
     pmc->pwr_det_val |= PMC_CONTROL_SDMMC1;
-
-    // Configure the enable line for the SD card power.
-    pinmux->dmic3_clk  = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0;
-    gpio_configure_mode(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_MODE_GPIO);
-    gpio_configure_direction(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_DIRECTION_OUTPUT);
-    gpio_write(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_LEVEL_HIGH);
-
-    // Set up each of the relevant pins to be connected to output drivers,
-    // and selected for SDMMC use.
-    pinmux->sdmmc1_clk  = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT; 
-    pinmux->sdmmc1_cmd  = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
-    pinmux->sdmmc1_dat3 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
-    pinmux->sdmmc1_dat2 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
-    pinmux->sdmmc1_dat1 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
-    pinmux->sdmmc1_dat0 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
-
-    // Set up the SDMMC write protect.
-    // TODO: should this be an output, that we control?
-    pinmux->pz4 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_PULL_UP;
-
-    // Ensure we're using GPIO and not GPIO for the SD card's card detect.
-    padctl->vgpio_gpio_mux_sel &= ~PADCTL_SDMMC1_CD_SOURCE;
-    mmc_print(mmc, "mux sel is at %p", &padctl->vgpio_gpio_mux_sel);
 
     // Set up the card detect pin as a GPIO input.
     pinmux->pz1= PINMUX_SELECT_FUNCTION1 | PINMUX_PULL_UP | PINMUX_INPUT;
@@ -542,6 +516,43 @@ static int sdmmc1_hardware_init(struct mmc *mmc)
     udelay(1000);
     supply_enable(SUPPLY_MICROSD);
     udelay(1000);
+
+    return 0;
+}
+
+
+/**
+ * Performs low-level initialization for SDMMC1, used for the SD card slot.
+ */
+static int sdmmc1_hardware_init(struct mmc *mmc)
+{
+    volatile struct tegra_car *car = car_get_regs();
+    volatile struct tegra_pinmux *pinmux = pinmux_get_regs();
+    volatile struct tegra_padctl *padctl = padctl_get_regs();
+    (void)mmc;
+
+    // Configure the enable line for the SD card power.
+    pinmux->dmic3_clk  = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0;
+    gpio_configure_mode(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_MODE_GPIO);
+    gpio_configure_direction(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_DIRECTION_OUTPUT);
+    gpio_write(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_LEVEL_HIGH);
+
+    // Set up each of the relevant pins to be connected to output drivers,
+    // and selected for SDMMC use.
+    pinmux->sdmmc1_clk  = PINMUX_DRIVE_2X | PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT; 
+    pinmux->sdmmc1_cmd  = PINMUX_DRIVE_2X | PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
+    pinmux->sdmmc1_dat3 = PINMUX_DRIVE_2X | PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
+    pinmux->sdmmc1_dat2 = PINMUX_DRIVE_2X | PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
+    pinmux->sdmmc1_dat1 = PINMUX_DRIVE_2X | PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
+    pinmux->sdmmc1_dat0 = PINMUX_DRIVE_2X | PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
+
+    // Set up the SDMMC write protect.
+    // TODO: should this be an output, that we control?
+    pinmux->pz4 = PINMUX_TRISTATE_PASSTHROUGH | PINMUX_SELECT_FUNCTION0 | PINMUX_PULL_UP;
+
+    // Ensure we're using GPIO and not GPIO for the SD card's card detect.
+    padctl->vgpio_gpio_mux_sel &= ~PADCTL_SDMMC1_CD_SOURCE;
+    mmc_print(mmc, "mux sel is at %p", &padctl->vgpio_gpio_mux_sel);
 
     // Put SDMMC1 in reset
     car->rst_dev_l_set |= CAR_CONTROL_SDMMC1;
@@ -589,6 +600,29 @@ static int sdmmc_setup_controller_clock_and_io(struct mmc *mmc)
 }
 
 
+
+/**
+ * Sets up the I/O and clocking resources necessary to use the given controller. 
+ */
+static int sdmmc_enable_supplies(struct mmc *mmc)
+{
+    // Always use the per-controller initialization functions.
+    switch(mmc->controller) {
+        case SWITCH_MICROSD:
+            return sdmmc1_enable_supplies(mmc);
+
+        // As a boot device, the eMMC is always on.
+        case SWITCH_EMMC:
+            return 0;
+        default:
+            mmc_print(mmc, "trying to power on an unsupported controller!");
+            return ENODEV;
+    }
+
+    return 0;
+}
+
+
 /**
  * Initialize the low-level SDMMC hardware.
  * Thanks to hexkyz for this init code.
@@ -609,11 +643,6 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     if (rc) {
         mmc_print(mmc, "ERROR: could not set up controller for use!");
         return rc;
-    }
-
-    if (!sdmmc_card_present(mmc)) {
-        mmc_print(mmc, "ERROR: no card detected!");
-        return ENODEV;
     }
 
     // Software reset the SDMMC device
@@ -759,6 +788,20 @@ static int sdmmc_hardware_init(struct mmc *mmc)
 
     // Ensure we're using System DMA (SDMA) mode for DMA.
     regs->host_control &= ~MMC_DMA_SELECT_MASK;
+
+    // Turn on the card's power supplies...
+    rc = sdmmc_enable_supplies(mmc);
+    if (rc) {
+        mmc_print(mmc, "ERROR: could power on the card!");
+        return rc;
+    }
+
+    // ... and verify that the card is there.
+    if (!sdmmc_card_present(mmc)) {
+        mmc_print(mmc, "ERROR: no card detected!");
+        return ENODEV;
+    }
+
 
     mmc_print(mmc, "initialized.");
     return 0;
