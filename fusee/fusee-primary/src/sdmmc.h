@@ -1,3 +1,8 @@
+/**
+ * Fusée SD/MMC driver for the Switch
+ *  ~ktemkin 
+ */
+
 #ifndef __FUSEE_SDMMC_H__
 #define __FUSEE_SDMMC_H__
 
@@ -5,9 +10,19 @@
 #include <stdint.h>
 #include "utils.h"
 
-
 /* Opaque pointer to the Tegra SDMMC registers */
 struct tegra_sdmmc;
+
+
+/**
+ * Bus widths supported by the SD/MMC cards.
+ */
+enum sdmmc_bus_width {
+    MMC_BUS_WIDTH_1BIT = 0,
+    MMC_BUS_WIDTH_4BIT = 1,
+    MMC_BUS_WIDTH_8BIT = 2,
+};
+
 
 /**
  * Represents the different types of devices an MMC object
@@ -20,23 +35,37 @@ enum mmc_card_type {
     MMC_CARD_CART,
 };
 
+
+/**
+ * SDMMC controllers
+ */
+enum sdmmc_controller {
+    SWITCH_MICROSD = 0,
+    SWITCH_EMMC = 3
+};
+
+
 /**
  * Primary data structure describing a Fusée MMC driver.
  */
 struct mmc {
+    enum sdmmc_controller controller;
+
     /* Controller properties */
     char *name;
     unsigned int timeout;
     enum mmc_card_type card_type;
     bool use_dma;
 
+
     /* Card properties */
     uint8_t cid[15];
     uint32_t relative_address;
+    uint8_t partitioned;
+    enum sdmmc_bus_width max_bus_width;
 
     uint8_t partition_support;
     uint8_t partition_config;
-    uint8_t partition_setting;
     uint8_t partition_attribute;
     uint32_t partition_switch_time;
 
@@ -48,13 +77,12 @@ struct mmc {
 };
 
 
+
+
 /**
- * SDMMC controllers
+ * Primary data structure describing a Fusée MMC driver.
  */
-enum sdmmc_controller {
-    SWITCH_MICROSD = 0,
-    SWITCH_EMMC = 3
-};
+struct mmc;
 
 
 /**
@@ -98,5 +126,13 @@ int sdmmc_select_partition(struct mmc *mmc, enum sdmmc_partition partition);
  */
 int sdmmc_read(struct mmc *mmc, void *buffer, uint32_t sector, unsigned int count);
 
+
+/**
+ * Checks to see whether an SD card is present.
+ *
+ * @mmc mmc The controller with which to check for card presence.
+ * @return true iff a card is present
+ */
+bool sdmmc_card_present(struct mmc *mmc);
 
 #endif
