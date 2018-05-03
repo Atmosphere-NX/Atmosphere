@@ -6,6 +6,9 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "pm_boot_mode.hpp"
+#include "pm_process_track.hpp"
+
 extern "C" {
     extern u32 __start__;
 
@@ -82,10 +85,14 @@ int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
     
+    /* Initialize and spawn the Process Tracking thread. */
+    ProcessTracking::Initialize();
+    
     /* TODO: What's a good timeout value to use here? */
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
         
     /* TODO: Create services. */
+    server_manager->add_waitable(new ServiceServer<BootModeService>("pm:bm", 4));
     
     /* Loop forever, servicing our services. */
     server_manager->process();
