@@ -21,9 +21,9 @@ u64 GetServiceNameLength(u64 service) {
 
 /* Utilities. */
 Registration::Process *Registration::GetProcessForPid(u64 pid) {
-    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX_PROCESS; i++) {
-        if (g_process_list[i].pid == pid) {
-            return &g_process_list[i];
+    for (auto &process : g_process_list) {
+        if (process.pid == pid) {
+            return &process;
         }
     }
     return NULL;
@@ -33,10 +33,10 @@ Registration::Process *Registration::GetFreeProcess() {
     return GetProcessForPid(0);
 }
 
-Registration::Service *Registration::GetService(u64 service) {
-    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX_SERVICE; i++) {
-        if (g_service_list[i].service_name == service) {
-            return &g_service_list[i];
+Registration::Service *Registration::GetService(u64 service_name) {
+    for (auto &service : g_service_list) {
+        if (service.service_name == service_name) {
+            return &service;
         }
     }
     return NULL;
