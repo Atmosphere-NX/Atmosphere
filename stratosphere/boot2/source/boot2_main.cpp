@@ -151,9 +151,9 @@ int main(int argc, char **argv)
     LaunchTitle(0x0100000000000007, 3, 0, NULL);
     
     bool maintenance = ShouldForceMaintenanceMode();
-    for (unsigned int i = 0; i < sizeof(g_additional_launch_programs) / sizeof(g_additional_launch_programs[0]); i++) {
-        if (!maintenance || std::get<bool>(g_additional_launch_programs[i])) {
-            LaunchTitle(std::get<u64>(g_additional_launch_programs[i]), 3, 0, NULL);
+    for (auto &launch_program : g_additional_launch_programs) {
+        if (!maintenance || std::get<bool>(launch_program)) {
+            LaunchTitle(std::get<u64>(launch_program), 3, 0, NULL);
         }
     }
        
