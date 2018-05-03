@@ -54,7 +54,7 @@ void load_list_entry(const char *key) {
     
     printk("Loading %s\n", key);
     
-    if (ini_parse_string(g_bct0, loadlist_entry_ini_handler, &load_file_ctx) < 0) {
+    if (ini_parse_string(get_loader_ctx()->bct0, loadlist_entry_ini_handler, &load_file_ctx) < 0) {
         printk("Error: Failed to parse BCT.ini!\n");
         generic_panic();
     }
@@ -110,20 +110,22 @@ void parse_loadlist(const char *ll) {
             /* Load the entry. */
             load_list_entry(entry);
             /* Skip to the next delimiter. */
-            for (; *p == ' ' || *p == '\t'; p++) { }
-            if (*p == '\x00') { 
-                break;
-            } else if (*p != '|') { 
+            for (; *p == ' ' || *p == '\t' || *p == '\x00'; p++) { }
+            if (*p != '|') { 
                 printk("Error: Load list is malformed!\n");
                 generic_panic();
             } else {
                 /* Skip to the next entry. */
-                for (; *p == ' ' || *p == '\t'; p++) { }
+                for (; *p == ' ' || *p == '\t' || *p == '|'; p++) { }
                 entry = p;
             }
         }
-        
+
         p++;
+        if (*p == '\x00') {
+            /* We're at the end of the line, load the last entry */
+            load_list_entry(entry);
+        }
     }
 }
 
