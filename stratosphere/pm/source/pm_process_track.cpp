@@ -10,6 +10,6 @@ void ProcessTracking::MainLoop() {
     while (true) {
         /* PM, as a sysmodule, is basically just a while loop. */
         
-        /* This is what while loop. */
+        /* This is that while loop. */
     }
 }
