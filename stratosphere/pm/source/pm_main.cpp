@@ -83,10 +83,18 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
+    Thread process_track_thread = {0};
     consoleDebugInit(debugDevice_SVC);
     
     /* Initialize and spawn the Process Tracking thread. */
     ProcessTracking::Initialize();
+    if (R_FAILED(threadCreate(&process_track_thread, &ProcessTracking::MainLoop, NULL, 0x4000, 0x15, 0))) {
+        /* TODO: Panic. */
+    }
+    if (R_FAILED(threadStart(&process_track_thread))) {
+        /* TODO: Panic. */
+    }
+    
     
     /* TODO: What's a good timeout value to use here? */
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
