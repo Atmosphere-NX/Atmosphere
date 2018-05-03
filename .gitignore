@@ -75,6 +75,8 @@ stratosphere/loader/out/**
 stratosphere/loader/build/**
 stratosphere/sm/out/**
 stratosphere/sm/build/**
+stratosphere/pm/out/**
+stratosphere/pm/build/**
 stratosphere/boot/out/**
 stratosphere/boot/build/**
 stratosphere/boot2/out/**

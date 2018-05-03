@@ -430,3 +430,25 @@ Result WrapIpcCommandImpl(Class *this_ptr, IpcParsedCommand& r, IpcCommand &out_
     
     return std::apply(Encoder<OutArgs>{out_command}, result);
 }
+
+template<auto IpcCommandImpl>
+Result WrapStaticIpcCommandImpl(IpcParsedCommand& r, IpcCommand &out_command, u8 *pointer_buffer, size_t pointer_buffer_size) {
+    using InArgs = typename boost::callable_traits::args_t<decltype(IpcCommandImpl)>;
+    using OutArgs = typename boost::callable_traits::return_type_t<decltype(IpcCommandImpl)>;
+    
+    static_assert(is_specialization_of<OutArgs, std::tuple>::value, "IpcCommandImpls must return std::tuple<Result, ...>");
+    static_assert(std::is_same_v<std::tuple_element_t<0, OutArgs>, Result>, "IpcCommandImpls must return std::tuple<Result, ...>");
+    
+    ipcInitialize(&out_command);
+
+    Result rc = Validator<InArgs>{r, pointer_buffer_size}();
+        
+    if (R_FAILED(rc)) {
+        return 0xF601;
+    }
+
+    auto args = Decoder<OutArgs, InArgs>::Decode(r, out_command, pointer_buffer);    
+    auto result = std::apply(IpcCommandImpl, args);
+    
+    return std::apply(Encoder<OutArgs>{out_command}, result);
+}
