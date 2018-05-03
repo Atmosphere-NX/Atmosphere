@@ -36,7 +36,6 @@ void __libnx_initheap(void) {
 void __appInit(void) {
     Result rc;
 
-    /* Initialize services we need (TODO: SPL) */
     rc = smInitialize();
     if (R_FAILED(rc)) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
@@ -56,11 +55,17 @@ void __appInit(void) {
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 2);
     }
+    
+    rc = splInitialize();
+    if (R_FAILED(rc))  {
+        fatalSimple(0xCAFE << 4 | 3);
+    }
 }
 
 void __appExit(void) {
     /* Cleanup services. */
     fsdevUnmountAll();
+    splExit();
     fsprExit();
     lrExit();
     fsExit();
