@@ -182,15 +182,18 @@ struct PACKED tegra_pinmux {
 enum tegra_pinmux_constants {
 
     /* Tristate (output buffer) control */
-    PINMUX_TRISTATE_PASSTHROUGH = (1 << 4),
+    PINMUX_TRISTATE = (1 << 4),
+
+    /* Park control */
+    PINMUX_PARKED = (1 << 5),
 
     /* Input control */
     PINMUX_INPUT = (1 << 6),
 
     /* Pull resistors */
-    PINMUX_PULL_NONE = 0,
-    PINMUX_PULL_DOWN = 1,
-    PINMUX_PULL_UP   = 2,
+    PINMUX_PULL_NONE = (0 << 2),
+    PINMUX_PULL_DOWN = (1 << 2),
+    PINMUX_PULL_UP   = (2 << 2),
 
     /* Function select */
     PINMUX_SELECT_FUNCTION0 = 0,

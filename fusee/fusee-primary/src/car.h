@@ -62,6 +62,7 @@ enum {
 enum {
     CAR_CONTROL_SDMMC1 = (1 << 14),
     CAR_CONTROL_SDMMC4 = (1 << 15),
+    CAR_CONTROL_SDMMC_LEGACY = (1 << 1),
 };
 
 
@@ -149,12 +150,12 @@ struct PACKED tegra_car {
     uint32_t reserved30[2];     /* _reserved_30,    0x318, 0x31c */
 
     /* _CLK_ENB_L/H/U_CLR_0 0x320 ~ 0x334 */
-    uint32_t clk_dev_l_set;
-    uint32_t clk_dev_l_clr;
-    uint32_t clk_dev_h_set;
-    uint32_t clk_dev_h_clr;
-    uint32_t clk_dev_u_set;
-    uint32_t clk_dev_u_clr;
+    uint32_t clk_enb_l_set;
+    uint32_t clk_enb_l_clr;
+    uint32_t clk_enb_h_set;
+    uint32_t clk_enb_h_clr;
+    uint32_t clk_enb_u_set;
+    uint32_t clk_enb_u_clr;
 
     uint32_t reserved31[2];     /* _reserved_31,    0x338, 0x33c */
 
