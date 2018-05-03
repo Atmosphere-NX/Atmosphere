@@ -88,44 +88,44 @@ bool ShouldForceMaintenanceMode() {
 }
 
 static const std::tuple<u64, bool> g_additional_launch_programs[] = {
-    std::make_tuple(0x0100000000000023, true),  /* am */
-    std::make_tuple(0x0100000000000019, true),  /* nvservices */
-    std::make_tuple(0x010000000000001C, true),  /* nvnflinger */
-    std::make_tuple(0x010000000000002D, true),  /* vi */
-    std::make_tuple(0x010000000000001F, true),  /* ns */
-    std::make_tuple(0x0100000000000015, true),  /* lm */
-    std::make_tuple(0x010000000000001B, true),  /* ppc */
-    std::make_tuple(0x0100000000000010, true),  /* ptm */
-    std::make_tuple(0x0100000000000013, true),  /* hid */
-    std::make_tuple(0x0100000000000014, true),  /* audio */
-    std::make_tuple(0x0100000000000029, true),  /* lbl */
-    std::make_tuple(0x0100000000000016, true),  /* wlan */
-    std::make_tuple(0x010000000000000B, true),  /* bluetooth */
-    std::make_tuple(0x0100000000000012, true),  /* bsdsockets */
-    std::make_tuple(0x010000000000000F, true),  /* nifm */
-    std::make_tuple(0x0100000000000018, true),  /* ldn */
-    std::make_tuple(0x010000000000001E, true),  /* account */
-    std::make_tuple(0x010000000000000E, false), /* friends */
-    std::make_tuple(0x0100000000000020, true),  /* nfc */
-    std::make_tuple(0x010000000000003C, true),  /* jpegdec */
-    std::make_tuple(0x0100000000000022, true),  /* capsrv */
-    std::make_tuple(0x0100000000000024, true),  /* ssl */
-    std::make_tuple(0x0100000000000025, true),  /* nim */
-    std::make_tuple(0x010000000000000C, false), /* bcat */
-    std::make_tuple(0x010000000000002B, true),  /* erpt */
-    std::make_tuple(0x0100000000000033, true),  /* es */
-    std::make_tuple(0x010000000000002E, true),  /* pctl */
-    std::make_tuple(0x010000000000002A, true),  /* btm */
-    std::make_tuple(0x0100000000000030, false), /* eupld */
-    std::make_tuple(0x0100000000000031, true),  /* glue */
-    std::make_tuple(0x0100000000000032, true),  /* eclct */
-    std::make_tuple(0x010000000000002F, false), /* npns */
-    std::make_tuple(0x0100000000000034, true),  /* fatal */
-    std::make_tuple(0x0100000000000037, true),  /* ro */
-    std::make_tuple(0x0100000000000038, true),  /* doesn't exist on retail systems */
-    std::make_tuple(0x0100000000000039, true),  /* sdb */
-    std::make_tuple(0x010000000000003A, true),  /* migration */
-    std::make_tuple(0x0100000000000035, true),  /* grc */
+    {0x0100000000000023, true},  /* am */
+    {0x0100000000000019, true},  /* nvservices */
+    {0x010000000000001C, true},  /* nvnflinger */
+    {0x010000000000002D, true},  /* vi */
+    {0x010000000000001F, true},  /* ns */
+    {0x0100000000000015, true},  /* lm */
+    {0x010000000000001B, true},  /* ppc */
+    {0x0100000000000010, true},  /* ptm */
+    {0x0100000000000013, true},  /* hid */
+    {0x0100000000000014, true},  /* audio */
+    {0x0100000000000029, true},  /* lbl */
+    {0x0100000000000016, true},  /* wlan */
+    {0x010000000000000B, true},  /* bluetooth */
+    {0x0100000000000012, true},  /* bsdsockets */
+    {0x010000000000000F, true},  /* nifm */
+    {0x0100000000000018, true},  /* ldn */
+    {0x010000000000001E, true},  /* account */
+    {0x010000000000000E, false}, /* friends */
+    {0x0100000000000020, true},  /* nfc */
+    {0x010000000000003C, true},  /* jpegdec */
+    {0x0100000000000022, true},  /* capsrv */
+    {0x0100000000000024, true},  /* ssl */
+    {0x0100000000000025, true},  /* nim */
+    {0x010000000000000C, false}, /* bcat */
+    {0x010000000000002B, true},  /* erpt */
+    {0x0100000000000033, true},  /* es */
+    {0x010000000000002E, true},  /* pctl */
+    {0x010000000000002A, true},  /* btm */
+    {0x0100000000000030, false}, /* eupld */
+    {0x0100000000000031, true},  /* glue */
+    {0x0100000000000032, true},  /* eclct */
+    {0x010000000000002F, false}, /* npns */
+    {0x0100000000000034, true},  /* fatal */
+    {0x0100000000000037, true},  /* ro */
+    {0x0100000000000038, true},  /* doesn't exist on retail systems */
+    {0x0100000000000039, true},  /* sdb */
+    {0x010000000000003A, true},  /* migration */
+    {0x0100000000000035, true},  /* grc */
 };
 
 int main(int argc, char **argv)
