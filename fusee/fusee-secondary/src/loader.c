@@ -54,7 +54,7 @@ void load_list_entry(const char *key) {
     
     printk("Loading %s\n", key);
     
-    if (ini_parse_string(g_bct0, loadlist_entry_ini_handler, &load_file_ctx) < 0) {
+    if (ini_parse_string(get_loader_ctx()->bct0, loadlist_entry_ini_handler, &load_file_ctx) < 0) {
         printk("Error: Failed to parse BCT.ini!\n");
         generic_panic();
     }
