@@ -60,11 +60,17 @@ void __appInit(void) {
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 3);
     }
+    
+    rc = ldrPmInitialize();
+    if (R_FAILED(rc))  {
+        fatalSimple(0xCAFE << 4 | 4);
+    }
 }
 
 void __appExit(void) {
     /* Cleanup services. */
     fsdevUnmountAll();
+    ldrPmExit();
     splExit();
     fsprExit();
     lrExit();
