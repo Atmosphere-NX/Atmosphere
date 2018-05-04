@@ -25,14 +25,41 @@ enum sdmmc_bus_width {
 
 
 /**
+ * Describes the voltages that the host will use to drive the SD card.
+ * CAUTION: getting these wrong can damage (especially embedded) cards!
+ */
+enum sdmmc_bus_voltage {
+   MMC_VOLTAGE_3V3 = 0b111,
+   MMC_VOLTAGE_3V0 = 0b110,
+   MMC_VOLTAGE_1V8 = 0b101,
+};
+
+
+/**
  * Represents the different types of devices an MMC object
  * can represent.
  */
-enum mmc_card_type {
+enum sdmmc_card_type {
     MMC_CARD_EMMC,
     MMC_CARD_MMC,
     MMC_CARD_SD,
     MMC_CARD_CART,
+};
+
+
+
+/**
+ * Specification versions for SD/MMC cards.
+ */
+enum sdmmc_spec_version  {
+
+    /* MMC card versions */
+    MMC_VERSION_4 = 0,
+
+    /* SD card versions */
+    SD_VERSION_1 = 1,
+    SD_VERSION_2 = 2,
+
 };
 
 
@@ -54,15 +81,16 @@ struct mmc {
     /* Controller properties */
     char *name;
     unsigned int timeout;
-    enum mmc_card_type card_type;
+    enum sdmmc_card_type card_type;
     bool use_dma;
-
 
     /* Card properties */
     uint8_t cid[15];
     uint32_t relative_address;
     uint8_t partitioned;
+    enum sdmmc_spec_version spec_version;
     enum sdmmc_bus_width max_bus_width;
+    enum sdmmc_bus_voltage operating_voltage;
 
     uint8_t partition_support;
     uint8_t partition_config;
