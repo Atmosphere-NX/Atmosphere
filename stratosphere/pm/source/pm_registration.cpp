@@ -6,6 +6,7 @@
 #include "pm_process_wait.hpp"
 
 static ProcessList g_process_list;
+static ProcessList g_dead_process_list;
 
 static HosSemaphore g_sema_finish_launch;
 
@@ -271,6 +272,20 @@ void Registration::HandleSignaledProcess(Process *process) {
         case ProcessState_Exiting:
             break;
         case ProcessState_DebugDetached:
+            if (process->flags & 8) {
+                process->flags &= ~0x30;
+                process->flags |= 0x10;
+                g_process_event->signal_event();
+            }
+            if (kernelAbove200() && process->flags & 0x80) {
+                process->flags &= ~0x180;
+                process->flags |= 0x100;
+            }
+            break;
+        case ProcessState_Crashed:
+            process->flags |= 6;
+            g_process_event->signal_event();
+            break;
         case ProcessState_Running:
             if (process->flags & 8) {
                 process->flags &= ~0x30;
@@ -278,12 +293,8 @@ void Registration::HandleSignaledProcess(Process *process) {
                 g_process_event->signal_event();
             }
             break;
-        case ProcessState_Crashed:
-            process->flags |= 6;
-            g_process_event->signal_event();
-            break;
         case ProcessState_Exited:
-            if (process->flags & 1) {
+            if (process->flags & 1 && !kernelAbove500()) {
                 g_process_event->signal_event();
             } else {
                 FinalizeExitedProcess(process);
@@ -299,6 +310,7 @@ void Registration::HandleSignaledProcess(Process *process) {
 }
 
 void Registration::FinalizeExitedProcess(Process *process) {
+    bool signal_debug_process_5x = kernelAbove500() && process->flags & 1;
     g_process_list.Lock();
     /* Unregister with FS. */
     if (R_FAILED(fsprUnregisterProgram(process->pid))) {
@@ -313,10 +325,23 @@ void Registration::FinalizeExitedProcess(Process *process) {
         /* TODO: Panic. */
     }
     
-    /* Remove. */
+    /* Close the process's handle. */
+    svcCloseHandle(process->handle);
+    
+    /* Insert into dead process list, if relevant. */
+    if (signal_debug_process_5x) {
+        g_dead_process_list.Lock();
+        g_dead_process_list.process_waiters.push_back(new ProcessWaiter(process));
+        g_dead_process_list.Unlock();
+    }
+    
+    /* Remove NOTE: This probably frees process. */
     RemoveProcessFromList(process->pid);
 
     g_process_list.Unlock();
+    if (signal_debug_process_5x) {
+        g_process_event->signal_event();
+    }
 }
 
 void Registration::AddProcessToList(Process *process) {
