@@ -71,6 +71,18 @@ enum sdmmc_controller {
     SWITCH_EMMC = 3
 };
 
+/**
+ * Write permission modes for SD cards.
+ */
+enum sdmmc_write_permission {
+    SDMMC_WRITE_DISABLED,
+    SDMMC_WRITE_ENABLED,
+
+    /* use this with the utmost caution so you don't wind up with a brick  */
+    SDMMC_WRITE_ENABLED_INCLUDING_EMMC,
+};
+
+
 
 /**
  * Primary data structure describing a Fusée MMC driver.
@@ -83,6 +95,7 @@ struct mmc {
     unsigned int timeout;
     enum sdmmc_card_type card_type;
     bool use_dma;
+    enum sdmmc_write_permission write_enable;
 
     /* Card properties */
     uint8_t cid[15];
@@ -162,6 +175,29 @@ int sdmmc_select_partition(struct mmc *mmc, enum sdmmc_partition partition);
  * @param count The number of sectors to read.
  */
 int sdmmc_read(struct mmc *mmc, void *buffer, uint32_t sector, unsigned int count);
+
+
+/**
+ * Releases the SDMMC write lockout, enabling access to the card.
+ * Note that by default, setting this to WRITE_ENABLED will not allow access to eMMC.
+ * Check the source for a third constant that can be used to enable eMMC writes.
+ *
+ * @param perms The permissions to apply-- typically WRITE_DISABLED or WRITE_ENABLED.
+ */
+void sdmmc_set_write_enable(struct mmc *mmc, enum sdmmc_write_permission perms);
+
+
+/**
+ * Writes a sector or sectors to a given SD/MMC card.
+ *
+ * @param mmc The MMC device to work with.
+ * @param buffer The input buffer to write.
+ * @param block The sector number to write from.
+ * @param count The number of sectors to write.
+ *
+ * @return 0 on success, or an error code on failure.
+ */
+int sdmmc_write(struct mmc *mmc, void *buffer, uint32_t block, unsigned int count);
 
 
 /**

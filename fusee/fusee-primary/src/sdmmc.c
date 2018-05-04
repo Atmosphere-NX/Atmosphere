@@ -241,6 +241,8 @@ enum sdmmc_command {
     CMD_SET_BLKLEN = 16,
     CMD_READ_SINGLE_BLOCK = 17,
     CMD_READ_MULTIPLE_BLOCK = 18,
+    CMD_WRITE_SINGLE_BLOCK = 24,
+    CMD_WRITE_MULTIPLE_BLOCK = 25,
 
     CMD_APP_SEND_OP_COND = 41,
     CMD_APP_COMMAND = 55,
@@ -473,6 +475,10 @@ static const char *sdmmc_get_command_string(enum sdmmc_command command)
             return "CMD_APP_COMMAND";
         case CMD_APP_SEND_OP_COND:
             return "CMD_APP_SEND_OP_COND";
+        case CMD_WRITE_SINGLE_BLOCK:
+            return "CMD_WRITE_SINGLE_BLOCK";
+        case CMD_WRITE_MULTIPLE_BLOCK:
+            return "CMD_WRITE_MULTIPLE_BLOCK";
 
         // For commands with low numbers, read them string from the relevant array.
         default:
@@ -2242,6 +2248,9 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
     // Use DMA, by default.
     mmc->use_dma = true;
 
+    // Don't allow writing unless the caller explicitly enables it.
+    mmc->write_enable = SDMMC_WRITE_DISABLED;
+
     // Default to relative address of zero.
     mmc->relative_address = 0;
 
@@ -2297,7 +2306,7 @@ int sdmmc_select_partition(struct mmc *mmc, enum sdmmc_partition partition)
 
 
 /**
- * Reads a sector or sectors from a given SD card.
+ * Reads a sector or sectors from a given SD/MMC card.
  *
  * @param mmc The MMC device to work with.
  * @param buffer The output buffer to target.
@@ -2321,6 +2330,62 @@ int sdmmc_read(struct mmc *mmc, void *buffer, uint32_t block, unsigned int count
 
     // Execute the relevant read.
     return sdmmc_send_command(mmc, command, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, extent, NULL, count, false, count > 1, buffer);
+}
+
+/**
+ * Releases the SDMMC write lockout, enabling access to the card.
+ * Note that by default, setting this to WRITE_ENABLED will not allow access to eMMC.
+ * Check the source for a third constant that can be used to enable eMMC writes.
+ *
+ * @param perms The permissions to apply-- typically WRITE_DISABLED or WRITE_ENABLED.
+ */
+void sdmmc_set_write_enable(struct mmc *mmc, enum sdmmc_write_permission perms)
+{
+    mmc->write_enable = perms;
+}
+
+
+/**
+ * Writes a sector or sectors to a given SD/MMC card.
+ *
+ * @param mmc The MMC device to work with.
+ * @param buffer The input buffer to write.
+ * @param block The sector number to write from.
+ * @param count The number of sectors to write.
+ *
+ * @return 0 on success, or an error code on failure.
+ */
+int sdmmc_write(struct mmc *mmc, void *buffer, uint32_t block, unsigned int count)
+{
+    // Sanity check variables: we're especially careful about allowing writes to the switch eMMC.
+    bool is_emmc = (mmc->controller == SWITCH_EMMC);
+    bool allow_mmc_write = (mmc->write_enable == SDMMC_WRITE_ENABLED_INCLUDING_EMMC);
+
+    uint32_t command = (count == 1) ? CMD_WRITE_SINGLE_BLOCK : CMD_WRITE_MULTIPLE_BLOCK;
+
+    // Determine the argument, which indicates which address we're reading/writing.
+    uint32_t extent = block;
+
+    // If we don't have an explict write enable, don't allow writes.
+    if (mmc->write_enable == SDMMC_WRITE_DISABLED) {
+        mmc_print(mmc, "tried to write to an external card, but write was not enabled!");
+        return EACCES;
+    }
+
+    // Explicitly protect the switch's eMMC to prevent bricks.
+    if (is_emmc && !allow_mmc_write) {
+        mmc_print(mmc, "cowardly refusing to write to the switch's eMMMC");
+        return EACCES;
+    }
+
+    // If this card uses byte addressing rather than sector addressing,
+    // multiply by the block size.
+    if (!mmc->uses_block_addressing) {
+        extent *= sdmmc_get_block_size(mmc, false);
+    }
+
+    // Execute the relevant read.
+    return sdmmc_send_command(mmc, command, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, extent, NULL, count, true, count > 1, buffer);
 }
 
 
