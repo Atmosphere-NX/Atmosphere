@@ -12,7 +12,7 @@ static int mounted_sd = 0;
 
 void save_sd_state(void **mmc, void **ff) {
     *mmc = &sd_mmc;
-    *ff = &ff;
+    *ff = &sd_fs;
 }
 void resume_sd_state(void *mmc, void *ff) {
     sd_mmc = *(struct mmc *)mmc;
