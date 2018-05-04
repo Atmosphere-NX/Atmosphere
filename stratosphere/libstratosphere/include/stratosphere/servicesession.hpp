@@ -158,22 +158,22 @@ class ServiceSession : public IWaitable {
         /* Control commands. */
         std::tuple<Result> ConvertCurrentObjectToDomain() {
             /* TODO */
-            return std::make_tuple(0xF601);
+            return {0xF601};
         }
         std::tuple<Result> CopyFromCurrentDomain() {
             /* TODO */
-            return std::make_tuple(0xF601);
+            return {0xF601};
         }
         std::tuple<Result> CloneCurrentObject() {
             /* TODO */
-            return std::make_tuple(0xF601);
+            return {0xF601};
         }
         std::tuple<Result, u32> QueryPointerBufferSize() {
-            return std::make_tuple(0x0, (u32)sizeof(this->pointer_buffer));
+            return {0x0, (u32)sizeof(this->pointer_buffer)};
         }
         std::tuple<Result> CloneCurrentObjectEx() {
             /* TODO */
-            return std::make_tuple(0xF601);
+            return {0xF601};
         }
         
         Result dispatch_control_command(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id) {

@@ -68,7 +68,7 @@ std::tuple<Result, u64> RelocatableObjectsService::load_nro(PidDescriptor pid_de
     
     rc = NroUtils::LoadNro(target_proc, this->process_handle, nro_address, nro_size, bss_address, bss_size, &out_address);
 LOAD_NRO_END:
-    return std::make_tuple(rc, out_address);
+    return {rc, out_address};
 }
 
 std::tuple<Result> RelocatableObjectsService::unload_nro(PidDescriptor pid_desc, u64 nro_address) {
@@ -133,7 +133,7 @@ LOAD_NRR_END:
             nrr_info.Close();
         }
     }
-    return std::make_tuple(rc);
+    return {rc};
 }
 
 std::tuple<Result> RelocatableObjectsService::unload_nrr(PidDescriptor pid_desc, u64 nrr_address) {
@@ -166,5 +166,5 @@ std::tuple<Result> RelocatableObjectsService::initialize(PidDescriptor pid_desc,
         this->has_initialized = true;
         rc = 0;
     }
-    return std::make_tuple(rc);
+    return {rc};
 }
