@@ -123,6 +123,15 @@ enum sdmmc_partition {
 };
 
 
+
+/**
+ * Sets the current SDMMC debugging loglevel.
+ *
+ * @param loglevel Current log level. A higher value prints more logs.
+ */
+void sdmmc_set_loglevel(int loglevel);
+
+
 /**
  * Initiailzes an SDMMC controller for use with an eMMC or SD card device.
  *
