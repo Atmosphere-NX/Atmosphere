@@ -69,7 +69,7 @@ void nxboot_main(void) {
     } else {
         MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_LOADED_PACKAGE2_4X;
     }
-    cluster_boot_cpu0(loader_ctx->exosphere_loadfile.load_address, 1);
+    cluster_enable_cpu0(loader_ctx->exosphere_loadfile.load_address, 1);
     while (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE == 0) {
         /* Wait for Exosphere to wake up. */
     }

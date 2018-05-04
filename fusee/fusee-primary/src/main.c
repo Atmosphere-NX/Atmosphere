@@ -102,6 +102,7 @@ int main(void) {
     args->lfb = (uint32_t *)lfb_base;
     args->console_col = video_get_col();
     args->console_row = video_get_row();
+    save_sd_state(&args->sd_mmc, &args->sd_fs);
     
     
     /* Jump to Stage 2. */

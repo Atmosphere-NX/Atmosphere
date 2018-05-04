@@ -26,6 +26,22 @@ static inline uint32_t get_time(void) {
     return TIMERUS_CNTR_1US_0;
 }
 
+/**
+ * Returns the number of microseconds that have passed since a given get_time().
+ */
+static inline uint32_t get_time_since(uint32_t base) {
+    return get_time() - base;
+}
+
+/**
+ * Delays for a given number of microseconds.
+ */
+static inline void udelay(unsigned usecs)
+{
+  uint32_t start = get_time();
+  while (get_time() - start < usecs) ;
+}
+
 __attribute__ ((noreturn)) void watchdog_reboot(void);
 
 #endif

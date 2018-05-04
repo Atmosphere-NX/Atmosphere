@@ -29,9 +29,8 @@ static inline uintptr_t get_physical_address(const void *addr) {
 
 static inline uint32_t read32le(const volatile void *dword, size_t offset) {
     uintptr_t addr = (uintptr_t)dword + offset;
-    uint32_t dst;
-    memcpy(&dst, (void *)addr, 4);
-    return dst;
+    volatile uint32_t *target = (uint32_t *)addr;
+    return *target;
 }
 
 static inline uint32_t read32be(const volatile void *dword, size_t offset) {
@@ -40,9 +39,8 @@ static inline uint32_t read32be(const volatile void *dword, size_t offset) {
 
 static inline uint64_t read64le(const volatile void *qword, size_t offset) {
     uintptr_t addr = (uintptr_t)qword + offset;
-    uint64_t dst;
-    memcpy(&dst, (void *)addr, 8);
-    return dst;
+    volatile uint64_t *target = (uint64_t *)addr;
+    return *target;
 }
 
 static inline uint64_t read64be(const volatile void *qword, size_t offset) {
@@ -50,7 +48,9 @@ static inline uint64_t read64be(const volatile void *qword, size_t offset) {
 }
 
 static inline void write32le(volatile void *dword, size_t offset, uint32_t value) {
-    memcpy((void *)((uintptr_t)dword + offset), &value, 4);
+    uintptr_t addr = (uintptr_t)dword + offset;
+    volatile uint32_t *target = (uint32_t *)addr;
+    *target = value;
 }
 
 static inline void write32be(volatile void *dword, size_t offset, uint32_t value) {
@@ -58,7 +58,9 @@ static inline void write32be(volatile void *dword, size_t offset, uint32_t value
 }
 
 static inline void write64le(volatile void *qword, size_t offset, uint64_t value) {
-    memcpy((void *)((uintptr_t)qword + offset), &value, 8);
+    uintptr_t addr = (uintptr_t)qword + offset;
+    volatile uint64_t *target = (uint64_t *)addr;
+    *target = value;
 }
 
 static inline void write64be(volatile void *qword, size_t offset, uint64_t value) {
@@ -69,9 +71,9 @@ static inline bool check_32bit_additive_overflow(uint32_t a, uint32_t b) {
     return __builtin_add_overflow_p(a, b, (uint32_t)0);
 }
 
-__attribute__ ((noreturn)) void panic(uint32_t code);
-__attribute__ ((noreturn)) void generic_panic(void);
-__attribute__ ((noreturn)) void panic_predefined(uint32_t which);
+void panic(uint32_t code);
+void generic_panic(void);
+void panic_predefined(uint32_t which);
 bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be);
 
 #endif

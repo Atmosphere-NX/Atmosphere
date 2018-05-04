@@ -10,6 +10,17 @@ FATFS sd_fs;
 static int initialized_sd = 0;
 static int mounted_sd = 0;
 
+void save_sd_state(void **mmc, void **ff) {
+    *mmc = &sd_mmc;
+    *ff = &ff;
+}
+void resume_sd_state(void *mmc, void *ff) {
+    sd_mmc = *(struct mmc *)mmc;
+    sd_fs = *(FATFS *)ff;
+    initialized_sd = 1;
+    mounted_sd = 1;
+}
+
 int initialize_sd(void) {
     if (initialized_sd) {
         return 1;

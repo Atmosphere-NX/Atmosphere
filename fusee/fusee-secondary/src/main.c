@@ -3,6 +3,7 @@
 #include "loader.h"
 #include "stage2.h"
 #include "nxboot.h"
+#include "sd_utils.h"
 #include "lib/printk.h"
 #include "display/video_fb.h"
 
@@ -14,12 +15,14 @@ char g_bct0[0x8000];
 #pragma GCC diagnostic ignored "-Wmain"
 
 int main(int argc, void **argv) {
-    stage2_args_t args;
+    stage2_args_t args = {0};
     loader_ctx_t *loader_ctx = get_loader_ctx();
     
     if (argc != STAGE2_ARGC || ((args = *((stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT])).version != 0)) {
         generic_panic();
     }
+    
+    resume_sd_state((struct mmc *)args.sd_mmc, (FATFS *)args.sd_fs);
     
     /* Copy the BCT0 from unsafe primary memory into our memory. */
     strncpy(g_bct0, args.bct0, sizeof(g_bct0));
@@ -34,6 +37,8 @@ int main(int argc, void **argv) {
     
     /* This will load all remaining binaries off of the SD. */
     load_payload(g_bct0);
+    
+    printk("Loaded payloads!\n");
     
     if (loader_ctx->chainload_entrypoint != NULL) {
         /* TODO: What do we want to do in terms of argc/argv? */

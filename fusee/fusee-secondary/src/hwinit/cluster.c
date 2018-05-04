@@ -52,7 +52,7 @@ int _cluster_pmc_enable_partition(u32 part, u32 toggle)
 	return 1;
 }
 
-void cluster_boot_cpu0(u64 entry, u32 ns_disable)
+void cluster_enable_cpu0(u64 entry, u32 ns_disable)
 {
 	//Set ACTIVE_CLUSER to FAST.
 	FLOW_CTLR(FLOW_CTLR_BPMP_CLUSTER_CONTROL) &= 0xFFFFFFFE;

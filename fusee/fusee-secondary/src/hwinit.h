@@ -33,6 +33,6 @@ u32 *display_init_framebuffer();
 /*! Enable or disable the backlight. Should only be called when the screen is completely set up, to avoid flickering. */
 void display_enable_backlight(bool on);
 
-void cluster_boot_cpu0(u64 entry, u32 ns_disable);
+void cluster_enable_cpu0(u64 entry, u32 ns_disable);
 
 #endif

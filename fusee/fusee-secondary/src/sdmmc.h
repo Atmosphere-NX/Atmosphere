@@ -1,134 +1,166 @@
-#ifndef FUSEE_SDMMC_H
-#define FUSEE_SDMMC_H
+/**
+ * Fusée SD/MMC driver for the Switch
+ *  ~ktemkin 
+ */
+
+#ifndef __FUSEE_SDMMC_H__
+#define __FUSEE_SDMMC_H__
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "utils.h"
 
-typedef struct {
-    uint32_t SDHCI_DMA_ADDRESS;
-    uint16_t SDHCI_BLOCK_SIZE;
-    uint16_t SDHCI_BLOCK_COUNT;
-    uint32_t SDHCI_ARGUMENT;
-    uint16_t SDHCI_TRANSFER_MODE;
-    uint16_t SDHCI_COMMAND;
-    uint16_t SDHCI_RESPONSE[0x8];
-    uint32_t SDHCI_BUFFER;
-    uint32_t SDHCI_PRESENT_STATE;
-    uint8_t SDHCI_HOST_CONTROL;
-    uint8_t SDHCI_POWER_CONTROL;
-    uint8_t SDHCI_BLOCK_GAP_CONTROL;
-    uint8_t SDHCI_WAKE_UP_CONTROL;
-    uint16_t SDHCI_CLOCK_CONTROL;
-    uint8_t SDHCI_TIMEOUT_CONTROL;
-    uint8_t SDHCI_SOFTWARE_RESET;
-    uint32_t SDHCI_INT_STATUS;
-    uint32_t SDHCI_INT_ENABLE;
-    uint32_t SDHCI_SIGNAL_ENABLE;
-    uint16_t SDHCI_ACMD12_ERR;
-    uint16_t SDHCI_HOST_CONTROL2;
-    uint32_t SDHCI_CAPABILITIES;
-    uint32_t SDHCI_CAPABILITIES_1;
-    uint32_t SDHCI_MAX_CURRENT;
-    uint32_t _0x4C;
-    uint16_t SDHCI_SET_ACMD12_ERROR;
-    uint16_t SDHCI_SET_INT_ERROR;
-    uint16_t SDHCI_ADMA_ERROR;
-    uint8_t _0x55[0x3];
-    uint32_t SDHCI_ADMA_ADDRESS;
-    uint32_t SDHCI_UPPER_ADMA_ADDRESS;
-    uint16_t SDHCI_PRESET_FOR_INIT;
-    uint16_t SDHCI_PRESET_FOR_DEFAULT;
-    uint16_t SDHCI_PRESET_FOR_HIGH;
-    uint16_t SDHCI_PRESET_FOR_SDR12;
-    uint16_t SDHCI_PRESET_FOR_SDR25;
-    uint16_t SDHCI_PRESET_FOR_SDR50;
-    uint16_t SDHCI_PRESET_FOR_SDR104;
-    uint16_t SDHCI_PRESET_FOR_DDR50;
-    uint8_t _0x70[0x3];
-    uint32_t _0x74[0x22];
-    uint16_t SDHCI_SLOT_INT_STATUS;
-    uint16_t SDHCI_HOST_VERSION;
-} sdhci_registers_t;
+/* Opaque pointer to the Tegra SDMMC registers */
+struct tegra_sdmmc;
 
-typedef struct {
-    sdhci_registers_t standard_regs;
-    uint32_t SDMMC_VENDOR_CLOCK_CNTRL;
-    uint32_t SDMMC_VENDOR_SYS_SW_CNTRL;
-    uint32_t SDMMC_VENDOR_ERR_INTR_STATUS;
-    uint32_t SDMMC_VENDOR_CAP_OVERRIDES;
-    uint32_t SDMMC_VENDOR_BOOT_CNTRL;
-    uint32_t SDMMC_VENDOR_BOOT_ACK_TIMEOUT;
-    uint32_t SDMMC_VENDOR_BOOT_DAT_TIMEOUT;
-    uint32_t SDMMC_VENDOR_DEBOUNCE_COUNT;
-    uint32_t SDMMC_VENDOR_MISC_CNTRL;
-    uint32_t SDMMC_MAX_CURRENT_OVERRIDE;
-    uint32_t SDMMC_MAX_CURRENT_OVERRIDE_HI;
-    uint32_t _0x12C[0x21];
-    uint32_t SDMMC_VENDOR_IO_TRIM_CNTRL;
-    /* Start of SDMMC2/SDMMC4 only */
-    uint32_t SDMMC_VENDOR_DLLCAL_CFG;
-    uint32_t SDMMC_VENDOR_DLL_CTRL0;
-    uint32_t SDMMC_VENDOR_DLL_CTRL1;
-    uint32_t SDMMC_VENDOR_DLLCAL_CFG_STA;
-    /* End of SDMMC2/SDMMC4 only */
-    uint32_t SDMMC_VENDOR_TUNING_CNTRL0;
-    uint32_t SDMMC_VENDOR_TUNING_CNTRL1;
-    uint32_t SDMMC_VENDOR_TUNING_STATUS0;
-    uint32_t SDMMC_VENDOR_TUNING_STATUS1;
-    uint32_t SDMMC_VENDOR_CLK_GATE_HYSTERESIS_COUNT;
-    uint32_t SDMMC_VENDOR_PRESET_VAL0;
-    uint32_t SDMMC_VENDOR_PRESET_VAL1;
-    uint32_t SDMMC_VENDOR_PRESET_VAL2;
-    uint32_t SDMMC_SDMEMCOMPPADCTRL;
-    uint32_t SDMMC_AUTO_CAL_CONFIG;
-    uint32_t SDMMC_AUTO_CAL_INTERVAL;
-    uint32_t SDMMC_AUTO_CAL_STATUS;
-    uint32_t SDMMC_IO_SPARE;
-    uint32_t SDMMC_SDMMCA_MCCIF_FIFOCTRL;
-    uint32_t SDMMC_TIMEOUT_WCOAL_SDMMCA;
-    uint32_t _0x1FC;
-} sdmmc_registers_t;
 
-static inline volatile sdmmc_registers_t *get_sdmmc1_regs(void) {
-    return (volatile sdmmc_registers_t *)(0x700B0000);
-}
+/**
+ * Bus widths supported by the SD/MMC cards.
+ */
+enum sdmmc_bus_width {
+    MMC_BUS_WIDTH_1BIT = 0,
+    MMC_BUS_WIDTH_4BIT = 1,
+    MMC_BUS_WIDTH_8BIT = 2,
+};
 
-static inline volatile sdmmc_registers_t *get_sdmmc1b_regs(void) {
-    return (volatile sdmmc_registers_t *)(0x700B0000 + 0x1000);
-}
 
-static inline volatile sdmmc_registers_t *get_sdmmc2_regs(void) {
-    return (volatile sdmmc_registers_t *)(0x700B0200);
-}
+/**
+ * Describes the voltages that the host will use to drive the SD card.
+ * CAUTION: getting these wrong can damage (especially embedded) cards!
+ */
+enum sdmmc_bus_voltage {
+   MMC_VOLTAGE_3V3 = 0b111,
+   MMC_VOLTAGE_3V0 = 0b110,
+   MMC_VOLTAGE_1V8 = 0b101,
+};
 
-static inline volatile sdmmc_registers_t *get_sdmmc2b_regs(void) {
-    return (volatile sdmmc_registers_t *)(0x700B0200 + 0x2000);
-}
 
-static inline volatile sdmmc_registers_t *get_sdmmc3_regs(void) {
-    return (volatile sdmmc_registers_t *)(0x700B0400);
-}
+/**
+ * Represents the different types of devices an MMC object
+ * can represent.
+ */
+enum sdmmc_card_type {
+    MMC_CARD_EMMC,
+    MMC_CARD_MMC,
+    MMC_CARD_SD,
+    MMC_CARD_CART,
+};
 
-static inline volatile sdmmc_registers_t *get_sdmmc3b_regs(void) {
-    return (volatile sdmmc_registers_t *)(0x700B0400 + 0x3000);
-}
 
-static inline volatile sdmmc_registers_t *get_sdmmc4_regs(void) {
-    return (volatile sdmmc_registers_t *)(0x700B0600);
-}
 
-static inline volatile sdmmc_registers_t *get_sdmmc4b_regs(void) {
-    return (volatile sdmmc_registers_t *)(0x700B0600 + 0x4000);
-}
+/**
+ * Specification versions for SD/MMC cards.
+ */
+enum sdmmc_spec_version  {
 
-#define SDMMC1_REGS       (get_sdmmc1_regs())
-#define SDMMC2_REGS       (get_sdmmc2_regs())
-#define SDMMC3_REGS       (get_sdmmc3_regs())
-#define SDMMC4_REGS       (get_sdmmc4_regs())
+    /* MMC card versions */
+    MMC_VERSION_4 = 0,
 
-void sdmmc1_init(void);
-void sdmmc2_init(void);
-void sdmmc3_init(void);
-void sdmmc4_init(void);
+    /* SD card versions */
+    SD_VERSION_1 = 1,
+    SD_VERSION_2 = 2,
+
+};
+
+
+/**
+ * SDMMC controllers
+ */
+enum sdmmc_controller {
+    SWITCH_MICROSD = 0,
+    SWITCH_EMMC = 3
+};
+
+
+/**
+ * Primary data structure describing a Fusée MMC driver.
+ */
+struct mmc {
+    enum sdmmc_controller controller;
+
+    /* Controller properties */
+    char *name;
+    unsigned int timeout;
+    enum sdmmc_card_type card_type;
+    bool use_dma;
+
+    /* Card properties */
+    uint8_t cid[15];
+    uint32_t relative_address;
+    uint8_t partitioned;
+    enum sdmmc_spec_version spec_version;
+    enum sdmmc_bus_width max_bus_width;
+    enum sdmmc_bus_voltage operating_voltage;
+
+    uint8_t partition_support;
+    uint8_t partition_config;
+    uint8_t partition_attribute;
+    uint32_t partition_switch_time;
+
+    uint8_t read_block_order;
+    bool uses_block_addressing;
+
+    /* Pointers to hardware structures */
+    volatile struct tegra_sdmmc *regs;
+};
+
+
+
+
+/**
+ * Primary data structure describing a Fusée MMC driver.
+ */
+struct mmc;
+
+
+/**
+ * Parititions supported by the Switch eMMC.
+ */
+enum sdmmc_partition {
+    MMC_PARTITION_USER  = 0,
+    MMC_PARTITION_BOOT1 = 1,
+    MMC_PARITTION_BOOT2 = 2,
+};
+
+
+/**
+ * Initiailzes an SDMMC controller for use with an eMMC or SD card device.
+ *
+ * @param mmc An (uninitialized) structure for the MMC device.
+ * @param controller The controller number to be initialized. Either SWITCH_MICROSD or SWITCH_EMMC.
+ */
+int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller);
+
+
+/**
+ * Selects the active MMC partition. Can be used to select
+ * boot partitions for access. Affects all operations going forward.
+ *
+ * @param mmc The MMC controller whose card is to be used.
+ * @param partition The partition number to be selected.
+ *
+ * @return 0 on success, or an error code on failure.
+ */
+int sdmmc_select_partition(struct mmc *mmc, enum sdmmc_partition partition);
+
+
+/**
+ * Reads a sector or sectors from a given SD card.
+ *
+ * @param mmc The MMC device to work with.
+ * @param buffer The output buffer to target.
+ * @param sector The sector number to read.
+ * @param count The number of sectors to read.
+ */
+int sdmmc_read(struct mmc *mmc, void *buffer, uint32_t sector, unsigned int count);
+
+
+/**
+ * Checks to see whether an SD card is present.
+ *
+ * @mmc mmc The controller with which to check for card presence.
+ * @return true iff a card is present
+ */
+bool sdmmc_card_present(struct mmc *mmc);
 
 #endif
