@@ -10,6 +10,7 @@
 
 #include "stratosphere/ievent.hpp"
 #include "stratosphere/systemevent.hpp"
+#include "stratosphere/hossynch.hpp"
 
 #include "stratosphere/waitablemanager.hpp"
 

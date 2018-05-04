@@ -6,7 +6,7 @@
 
 typedef Result (*EventCallback)(Handle *handles, size_t num_handles, u64 timeout);
 
-class IEvent : IWaitable {
+class IEvent : public IWaitable {
     protected:
         std::vector<Handle> handles;
         EventCallback callback;

@@ -17,7 +17,7 @@ void WaitableManager::add_waitable(IWaitable *waitable) {
     this->waitables.push_back(waitable);
 }
 
-void WaitableManager::process() {
+void WaitableManager::process_internal(bool break_on_timeout) {
     std::vector<IWaitable *> signalables;
     std::vector<Handle> handles;
     
@@ -56,6 +56,9 @@ void WaitableManager::process() {
             for (auto & waitable : signalables) {
                 waitable->update_priority();
             }
+            if (break_on_timeout) {
+                return;
+            }
         } else if (rc != 0xF601) {
             /* TODO: Panic. When can this happen? */
         }
@@ -91,4 +94,12 @@ void WaitableManager::process() {
             }
         }
     }
+}
+
+void WaitableManager::process() {
+    WaitableManager::process_internal(false);
+}
+
+void WaitableManager::process_until_timeout() {
+    WaitableManager::process_internal(true);
 }

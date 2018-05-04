@@ -8,6 +8,7 @@
 
 #include "pm_boot_mode.hpp"
 #include "pm_process_track.hpp"
+#include "pm_registration.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -59,22 +60,29 @@ void __appInit(void) {
         fatalSimple(0xCAFE << 4 | 2);
     }
     
-    rc = splInitialize();
-    if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 3);
-    }
-    
     rc = ldrPmInitialize();
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 4);
+    }
+    
+    rc = smManagerInitialize();
+    if (R_FAILED(rc))  {
+        fatalSimple(0xCAFE << 4 | 4);
+    }
+    
+    
+    rc = splInitialize();
+    if (R_FAILED(rc))  {
+        fatalSimple(0xCAFE << 4 | 5);
     }
 }
 
 void __appExit(void) {
     /* Cleanup services. */
     fsdevUnmountAll();
-    ldrPmExit();
     splExit();
+    smManagerExit();
+    ldrPmExit();
     fsprExit();
     lrExit();
     fsExit();
@@ -87,14 +95,13 @@ int main(int argc, char **argv)
     consoleDebugInit(debugDevice_SVC);
     
     /* Initialize and spawn the Process Tracking thread. */
-    ProcessTracking::Initialize();
+    Registration::InitializeSystemResources();
     if (R_FAILED(threadCreate(&process_track_thread, &ProcessTracking::MainLoop, NULL, 0x4000, 0x15, 0))) {
         /* TODO: Panic. */
     }
     if (R_FAILED(threadStart(&process_track_thread))) {
         /* TODO: Panic. */
     }
-    
     
     /* TODO: What's a good timeout value to use here? */
     WaitableManager *server_manager = new WaitableManager(U64_MAX);

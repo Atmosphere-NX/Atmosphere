@@ -6,9 +6,9 @@
 
 class WaitableManager {
     std::vector<IWaitable *> waitables;
-    
     u64 timeout;
-    
+    private:
+        void process_internal(bool break_on_timeout);
     public:
         WaitableManager(u64 t) : waitables(0), timeout(t) { }
         ~WaitableManager() {
@@ -22,4 +22,5 @@ class WaitableManager {
         unsigned int get_num_signalable();       
         void add_waitable(IWaitable *waitable);
         void process();
+        void process_until_timeout();
 };

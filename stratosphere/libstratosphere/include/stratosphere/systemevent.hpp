@@ -7,7 +7,7 @@
 #define SYSTEMEVENT_INDEX_WAITHANDLE 0
 #define SYSTEMEVENT_INDEX_SGNLHANDLE 1
 
-class SystemEvent : IEvent {
+class SystemEvent : public IEvent {
     public:
         SystemEvent(EventCallback callback) : IEvent(0, callback) {
             Handle wait_h;

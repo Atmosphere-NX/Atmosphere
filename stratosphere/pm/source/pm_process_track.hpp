@@ -3,6 +3,5 @@
 
 class ProcessTracking {
     public:
-        static void Initialize();
         static void MainLoop(void *arg);
 };
