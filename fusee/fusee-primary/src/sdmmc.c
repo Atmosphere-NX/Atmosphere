@@ -172,7 +172,9 @@ enum sdmmc_register_bits {
     MMC_TRANSFER_DMA_ENABLE = (1 << 0),
     MMC_TRANSFER_LIMIT_BLOCK_COUNT = (1 << 1),
     MMC_TRANSFER_MULTIPLE_BLOCKS = (1 << 5),
+    MMC_TRANSFER_AUTO_CMD_MASK = (0x3 << 2),
     MMC_TRANSFER_AUTO_CMD = (0x3 << 2),
+    MMC_TRANSFER_AUTO_CMD12 = (0x1 << 2),
     MMC_TRANSFER_CARD_TO_HOST = (1 << 4),
 
     /* Interrupt status */
@@ -1150,16 +1152,20 @@ static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks,
     mmc->regs->argument = argument;
 
     if (blocks) {
-        uint32_t to_write = MMC_TRANSFER_LIMIT_BLOCK_COUNT | MMC_TRANSFER_AUTO_CMD;
+        uint32_t to_write = MMC_TRANSFER_LIMIT_BLOCK_COUNT;
 
         // If this controller should use DMA, set that up.
         if (mmc->use_dma)
             to_write |= MMC_TRANSFER_DMA_ENABLE;
 
         // If this is a multi-block datagram, indicate so.
-        // Also, configure the host to automatically stop the card when transfers are complete.
         if (blocks > 1)
             to_write |= MMC_TRANSFER_MULTIPLE_BLOCKS;
+
+        // If this command should automatically terminate, set the host to
+        // terminate it after the block span is complete.
+        if (auto_terminate)
+            to_write |= MMC_TRANSFER_AUTO_CMD12;
 
         // If this is a read, set the READ mode.
         if (!is_write)
@@ -1294,6 +1300,7 @@ static int sdmmc_handle_command_response(struct mmc *mmc,
  * @param blocks_to_transfer The number of SDMMC blocks to be transferred with the given command,
  *      or 0 to indicate that this command should not expect response data.
  * @param is_write True iff the given command issues data _to_ the card, instead of vice versa.
+ * @param auto_terminate True iff the gven command needs to be terminated with e.g. CMD12 
  * @param data_buffer A byte buffer that either contains the data to be sent, or which should
  *      receive data, depending on the is_write argument.
  *
@@ -1363,7 +1370,7 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     // Copy the response received to the output buffer, if applicable.
     rc = sdmmc_handle_command_response(mmc, response_type, response_buffer);
     if (rc) {
-        mmc_print(mmc, "failed to handle CMD%d response! (%d)", rc);
+        mmc_print(mmc, "failed to handle %s response! (%d)", sdmmc_get_command_string(command), rc);
         return rc;
     }
 
@@ -1376,7 +1383,7 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
             // Wait for the transfer to be complete...
             rc = sdmmc_wait_for_transfer_completion(mmc);
             if (rc) {
-                mmc_print(mmc, "failed to complete CMD%d data stage via DMA (%d)", command, rc);
+                mmc_print(mmc, "failed to complete %s data stage via DMA (%d)", sdmmc_get_command_string(command), command, rc);
                 sdmmc_enable_interrupts(mmc, false);
                 return rc;
             }
@@ -1586,7 +1593,7 @@ static int sdmmc_read_and_parse_ext_csd(struct mmc *mmc)
 
     // Read the single EXT CSD block.
     rc = sdmmc_send_command(mmc, CMD_SEND_EXT_CSD, MMC_RESPONSE_LEN48, 
-            MMC_CHECKS_ALL, 0, NULL, 1, false, true, ext_csd);
+            MMC_CHECKS_ALL, 0, NULL, 1, false, false, ext_csd);
     if (rc) {
         mmc_print(mmc, "ERROR: failed to read the extended CSD!");
         return rc;
@@ -2301,7 +2308,6 @@ int sdmmc_select_partition(struct mmc *mmc, enum sdmmc_partition partition)
  */
 int sdmmc_read(struct mmc *mmc, void *buffer, uint32_t block, unsigned int count)
 {
-    // Determine if we need to perform a single-block or multi-block read.
     uint32_t command = (count == 1) ? CMD_READ_SINGLE_BLOCK : CMD_READ_MULTIPLE_BLOCK;
 
     // Determine the argument, which indicates which address we're reading/writing.
@@ -2314,7 +2320,7 @@ int sdmmc_read(struct mmc *mmc, void *buffer, uint32_t block, unsigned int count
     }
 
     // Execute the relevant read.
-    return sdmmc_send_command(mmc, command, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, extent, NULL, count, false, true, buffer);
+    return sdmmc_send_command(mmc, command, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, extent, NULL, count, false, count > 1, buffer);
 }
 
 
