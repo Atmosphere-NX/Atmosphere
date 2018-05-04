@@ -143,7 +143,7 @@ void Registration::HandleProcessLaunch() {
     }
     
     /* Try to create the process... */
-    if (R_FAILED((rc = ldrPmCreateProcess((launch_flags >> 2) & 3, new_process.ldr_queue_index, g_resource_limit_handles[reslimit_idx], &new_process.handle)))) {
+    if (R_FAILED((rc = ldrPmCreateProcess(LAUNCHFLAGS_ARGLOW(launch_flags) | LAUNCHFLAGS_ARGHIGH(launch_flags), new_process.ldr_queue_index, g_resource_limit_handles[reslimit_idx], &new_process.handle)))) {
         goto PROCESS_CREATION_FAILED;
     }
     
@@ -168,10 +168,13 @@ void Registration::HandleProcessLaunch() {
     if (program_info.application_type & 1) {
         new_process.flags |= 0x40;
     }
-    if (launch_flags & 1) {
+    if (kernelAbove200() && LAUNCHFLAGS_NOTIYDEBUGSPECIAL(launch_flags) && (program_info.application_type & 4)) {
+        
+    }
+    if (LAUNCHFLAGS_NOTIFYWHENEXITED(launch_flags)) {
         new_process.flags |= 1;
     }
-    if (launch_flags & 0x10) {
+    if (LAUNCHFLAGS_NOTIFYDEBUGEVENTS(launch_flags) && (!kernelAbove200() || (program_info.application_type & 4))) {
         new_process.flags |= 0x8;
     }
     
@@ -187,7 +190,7 @@ void Registration::HandleProcessLaunch() {
         g_debug_application_event->signal_event();
         g_debug_next_application = false;
         rc = 0;
-    } else if (launch_flags & 2) {
+    } else if (LAUNCHFLAGS_STARTSUSPENDED(launch_flags)) {
         rc = 0;
     } else {
         rc = svcStartProcess(new_process.handle, program_info.main_thread_priority, program_info.default_cpu_id, program_info.main_thread_stack_size);
