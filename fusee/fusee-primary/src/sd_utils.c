@@ -2,7 +2,7 @@
 #include "hwinit.h"
 #include "sdmmc.h"
 #include "lib/printk.h"
-#include "ff.h"
+#include "lib/fatfs/ff.h"
 
 /* This is used by diskio.h. */
 struct mmc sd_mmc;
@@ -51,15 +51,15 @@ size_t read_sd_file(void *dst, size_t dst_size, const char *filename) {
     if (!mounted_sd && mount_sd() == 0) {
         return 0;
     }
-    
+
     FIL f;
     if (f_open(&f, filename, FA_READ) != FR_OK) {
         return 0;
     }
-    
+
     UINT br;
     int res = f_read(&f, dst, dst_size, &br);
     f_close(&f);
-    
+
     return res == FR_OK ? (int)br : 0;
 }

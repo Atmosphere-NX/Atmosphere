@@ -3,7 +3,7 @@
 
 #include "utils.h"
 #include "sdmmc.h"
-#include "ff.h"
+#include "lib/fatfs/ff.h"
 
 void save_sd_state(void **mmc, void **ff);
 void resume_sd_state(void *mmc, void *ff);

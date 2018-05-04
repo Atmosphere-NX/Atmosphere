@@ -9,7 +9,7 @@
 
 #include <string.h>
 #include "diskio.h"		/* FatFs lower layer API */
-#include "sdmmc.h"
+#include "../../sdmmc.h"
 
 /* Global sd struct. */
 extern struct mmc sd_mmc;
