@@ -393,11 +393,11 @@ enum sdmmc_ext_csd_extents {
 };
 
 
-
-
 /* Forward declarations. */
 static int sdmmc_switch_mode(struct mmc *mmc, enum sdmmc_switch_access_mode mode, enum sdmmc_switch_field field, uint16_t value, uint32_t timeout);
 
+/* SDMMC debug enable */
+static int sdmmc_loglevel = 0;
 
 /**
  * Page-aligned bounce buffer to target with SDMMC DMA.
@@ -406,21 +406,58 @@ static int sdmmc_switch_mode(struct mmc *mmc, enum sdmmc_switch_access_mode mode
 static uint8_t ALIGN(4096) sdmmc_bounce_buffer[4096 * 4];
 static const uint16_t sdmmc_bounce_dma_boundary = MMC_DMA_BOUNDARY_16K;
 
+
 /**
- * Debug print for SDMMC information.
+ * Sets the current SDMMC debugging loglevel.
+ *
+ * @param loglevel Current log level. A higher value prints more logs.
  */
-void mmc_print(struct mmc *mmc, char *fmt, ...)
+void sdmmc_set_loglevel(int loglevel)
 {
-    va_list list;
+    sdmmc_loglevel = loglevel;
+}
 
-    // TODO: check SDMMC log level before printing
 
-    va_start(list, fmt);
+/**
+ * Internal utility function for generating debug prints at various log levels.
+ */
+static void mmc_vprint(struct mmc *mmc, char *fmt, int required_loglevel, va_list list)
+{
+    // Allow debug prints to be silenced by a negative loglevel.
+    if (sdmmc_loglevel < required_loglevel)
+        return;
+
     printk("%s: ", mmc->name);
     vprintk(fmt, list);
     printk("\n");
+}
+
+
+/**
+ * Normal SDMMC print for SDMMC information.
+ */
+static void mmc_print(struct mmc *mmc, char *fmt, ...)
+{
+    va_list list;
+
+    va_start(list, fmt);
+    mmc_vprint(mmc, fmt, 0, list);
     va_end(list);
 }
+
+
+/**
+ * Normal SDMMC print for SDMMC information.
+ */
+static void mmc_debug(struct mmc *mmc, char *fmt, ...)
+{
+    va_list list;
+
+    va_start(list, fmt);
+    mmc_vprint(mmc, fmt, 1, list);
+    va_end(list);
+}
+
 
 /**
  * @return a statically allocated string that describes the given command
@@ -508,8 +545,6 @@ static int sdmmc4_hardware_init(struct mmc *mmc)
     volatile struct tegra_car *car = car_get_regs();
     volatile struct tegra_padctl *padctl = padctl_get_regs();
     (void)mmc;
-
-    mmc_print(mmc, "enabling eMMC card");
 
     // Put SDMMC4 in reset
     car->rst_dev_l_set |= 0x8000;
@@ -863,7 +898,6 @@ static int sdmmc_hardware_init(struct mmc *mmc)
         return ENODEV;
     }
 
-    mmc_print(mmc, "initialized.");
     return 0;
 }
 
@@ -1368,7 +1402,7 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     // (This is mostly for when the GIC is brought up)
     sdmmc_enable_interrupts(mmc, false);
 
-    mmc_print(mmc, "completed %s.", sdmmc_get_command_string(command));
+    mmc_debug(mmc, "completed %s.", sdmmc_get_command_string(command));
     return 0;
 }
 
@@ -1879,7 +1913,7 @@ static int sdmmc_mmc_card_init(struct mmc *mmc)
 {
     int rc;
 
-    mmc_print(mmc, "setting up card as MMC");
+    mmc_debug(mmc, "setting up card as MMC");
 
     // Bring the bus out of its idle state.
     rc = sdmmc_send_simple_command(mmc, CMD_GO_IDLE_OR_INIT, MMC_RESPONSE_NONE, 0, NULL);
@@ -1951,7 +1985,7 @@ static int sdmmc_sd_card_init(struct mmc *mmc)
     int rc;
     uint32_t ocr, response;
 
-    mmc_print(mmc, "setting up card as SD");
+    mmc_debug(mmc, "setting up card as SD");
 
     // Bring the bus out of its idle state.
     rc = sdmmc_send_simple_command(mmc, CMD_GO_IDLE_OR_INIT, MMC_RESPONSE_NONE, 0, NULL);
