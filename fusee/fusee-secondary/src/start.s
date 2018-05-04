@@ -33,7 +33,7 @@ _start:
 
     _relocation_loop_end:
     /* Set the stack pointer */
-    ldr sp, =0x40008000
+    ldr sp, =0x40010000
     mov fp, #0
     stmfd sp!, {r0, r1}
 
@@ -43,6 +43,9 @@ _start:
     ldr r2, =__bss_end__
     sub r2, r2, r0
     bl  memset
+
+    /* Initialize the heap */
+    bl  __init_heap
 
     /* Call global constructors */
     bl  __libc_init_array
