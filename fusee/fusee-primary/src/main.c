@@ -4,6 +4,7 @@
 #include "se.h"
 #include "sd_utils.h"
 #include "stage2.h"
+#include "sdmmc.h"
 #include "lib/printk.h"
 #include "display/video_fb.h"
 
@@ -57,6 +58,8 @@ int main(void) {
     void **stage2_argv = (void **)(BCT0_LOAD_END_ADDRESS);
     const char *bct0;
     u32 *lfb_base;
+    char buf[0x400];
+    memset(buf, 0xCC, 0x400);
     
     /* Initialize DRAM. */
     /* TODO: What can be stripped out to make this minimal? */
