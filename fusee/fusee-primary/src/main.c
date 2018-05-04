@@ -85,6 +85,14 @@ int main(void) {
     printk("Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
     printk("Using color linear framebuffer at 0x%p!\n", lfb_base);
 
+#ifndef I_KNOW_WHAT_I_AM_DOING
+#error "Fusee is a work-in-progrses bootloader, and is not ready for usage yet. If you want to play with it anyway, please #define I_KNOW_WHAT_I_AM_DOING -- and recognize that we will be unable to provide support until it is ready for general usage :)"
+
+    printk("Warning: Fus\e9e is not yet completed, and not ready for general testing!\n");
+    printk("Please do not seek support for it until it is done.\n");
+    generic_panic();
+#endif
+    
     /* Try to load the SBK into the security engine, if possible. */
     /* TODO: Should this be done later? */
     load_sbk();
