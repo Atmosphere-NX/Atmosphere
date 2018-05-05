@@ -12,7 +12,7 @@ enum ShellCmd {
     Shell_Cmd_TerminateTitleId = 2,
     Shell_Cmd_GetProcessWaitEvent = 3,
     Shell_Cmd_GetProcessEventType = 4,
-    Shell_Cmd_FinalizeDeadProcess = 5,
+    Shell_Cmd_FinalizeExitedProcess = 5,
     Shell_Cmd_ClearProcessNotificationFlag = 6,
     Shell_Cmd_NotifyBootFinished = 7,
     Shell_Cmd_GetApplicationProcessId = 8,

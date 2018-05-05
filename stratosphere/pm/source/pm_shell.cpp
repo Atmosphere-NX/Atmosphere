@@ -50,7 +50,7 @@ Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id
             case Shell_Cmd_GetProcessEventType:
                 rc = WrapIpcCommandImpl<&ShellService::get_process_event_type>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                 break;
-            case Shell_Cmd_FinalizeDeadProcess:
+            case Shell_Cmd_FinalizeExitedProcess:
                 rc = WrapIpcCommandImpl<&ShellService::finalize_dead_process>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                 break;
             case Shell_Cmd_ClearProcessNotificationFlag:
@@ -78,55 +78,93 @@ Result ShellService::handle_deferred() {
 }
 
 std::tuple<Result, u64> launch_process(u64 launch_flags, Registration::TidSid tid_sid) {
-    /* TODO */
-    return {0xF601, 0};
+    u64 pid = 0;
+    Result rc = Registration::LaunchProcessByTidSid(tid_sid, launch_flags, &pid);
+    return {rc, pid};
 }
 
 std::tuple<Result> terminate_process_id(u64 pid) {
-    /* TODO */
-    return {0xF601};
+    Registration::AutoProcessListLock auto_lock;
+    
+    Registration::Process *proc = Registration::GetProcess(pid);
+    if (proc != NULL) {
+        return {svcCloseHandle(proc->handle)};
+    } else {
+        return {0x20F};
+    }
 }
 
 std::tuple<Result> terminate_title_id(u64 tid) {
-    /* TODO */
-    return {0xF601};
+    Registration::AutoProcessListLock auto_lock;
+    
+    Registration::Process *proc = Registration::GetProcessByTitleId(tid);
+    if (proc != NULL) {
+        return {svcCloseHandle(proc->handle)};
+    } else {
+        return {0x20F};
+    }
 }
 
 std::tuple<Result, CopiedHandle> get_process_wait_event() {
-    /* TODO */
-    return {0xF601, 0};
+    return {0x0, Registration::GetProcessEventHandle()};
 }
 
 std::tuple<Result, u64, u64> get_process_event_type() {
-    /* TODO */
-    return {0xF601, 0, 0};
+    u64 type, pid;
+    Registration::GetProcessEventType(&pid, &type);
+    return {0x0, type, pid};
 }
 
-std::tuple<Result> finalize_dead_process(u64 pid) {
-    /* TODO */
-    return {0xF601};
+std::tuple<Result> finalize_exited_process(u64 pid) {
+    Registration::AutoProcessListLock auto_lock;
+    
+    Registration::Process *proc = Registration::GetProcess(pid);
+    if (proc == NULL) {
+        return {0x20F};
+    } else if (proc->state != ProcessState_Exited) {
+        return {0x60F};
+    } else {
+        Registration::FinalizeExitedProcess(proc);
+        return {0x0};
+    }
 }
 
 std::tuple<Result> clear_process_notification_flag(u64 pid) {
-    /* TODO */
-    return {0xF601};
+    Registration::AutoProcessListLock auto_lock;
+    
+    Registration::Process *proc = Registration::GetProcess(pid);
+    if (proc != NULL) {
+        proc->flags &= ~2;
+        return {0x0};
+    } else {
+        return {0x20F};
+    }
 }
 
 std::tuple<Result> notify_boot_finished() {
-    u64 boot_pid;
+    u64 boot2_pid;
     if (!g_has_boot_finished) {
-        Registration::LaunchProcess(BOOT2_TITLE_ID, FsStorageId_NandSystem, 0, &boot_pid);
         g_has_boot_finished = true;
+        return {Registration::LaunchProcess(BOOT2_TITLE_ID, FsStorageId_NandSystem, 0, &boot2_pid)};
     }
     return {0};
 }
 
 std::tuple<Result, u64> get_application_process_id() {
-    /* TODO */
-    return {0xF601, 0};
+    Registration::AutoProcessListLock auto_lock;
+    
+    Registration::Process *app_proc;
+    if (Registration::HasApplicationProcess(&app_proc)) {
+        return {0, app_proc->pid};
+    }
+    return {0x20F, 0};
 }
 
 std::tuple<Result> boost_system_memory_resource_limit() {
+    if (!kernelAbove400()) {
+        return {0xF601};
+    }
+    
     /* TODO */
     return {0xF601};
 }

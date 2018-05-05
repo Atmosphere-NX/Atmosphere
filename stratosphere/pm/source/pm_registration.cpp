@@ -39,6 +39,24 @@ static u64 g_resource_limits[3][5] = {
 
 static Handle g_resource_limit_handles[3] = {0};
 
+Registration::AutoProcessListLock::AutoProcessListLock() {
+    g_process_list.Lock();
+    this->has_lock = true;
+}
+
+Registration::AutoProcessListLock::~AutoProcessListLock() {
+    if (this->has_lock) {
+        this->Unlock();
+    }
+}
+
+void Registration::AutoProcessListLock::Unlock() {
+    if (this->has_lock) {
+        g_process_list.Unlock();
+    }
+    this->has_lock = false;
+}
+
 void Registration::InitializeSystemResources() {
     g_process_event = new SystemEvent(&IEvent::PanicCallback);
     g_debug_title_event = new SystemEvent(&IEvent::PanicCallback);
@@ -124,7 +142,7 @@ void Registration::HandleProcessLaunch() {
     
     /* Get the resource limit handle, ensure that we can launch the program. */
     if ((program_info.application_type & 3) == 1) {
-        if (HasApplicationProcess()) {
+        if (HasApplicationProcess(NULL)) {
             rc = 0xA0F;
             goto HANDLE_PROCESS_LAUNCH_END;
         }
@@ -310,8 +328,8 @@ void Registration::HandleSignaledProcess(Process *process) {
 }
 
 void Registration::FinalizeExitedProcess(Process *process) {
+    AutoProcessListLock auto_lock;
     bool signal_debug_process_5x = kernelAbove500() && process->flags & 1;
-    g_process_list.Lock();
     /* Unregister with FS. */
     if (R_FAILED(fsprUnregisterProgram(process->pid))) {
         /* TODO: Panic. */
@@ -338,20 +356,20 @@ void Registration::FinalizeExitedProcess(Process *process) {
     /* Remove NOTE: This probably frees process. */
     RemoveProcessFromList(process->pid);
 
-    g_process_list.Unlock();
+    auto_lock.Unlock();
     if (signal_debug_process_5x) {
         g_process_event->signal_event();
     }
 }
 
 void Registration::AddProcessToList(Process *process) {
-    g_process_list.Lock();
+    AutoProcessListLock auto_lock;
     g_process_list.process_waiters.push_back(new ProcessWaiter(process));
-    g_process_list.Unlock();
 }
 
 void Registration::RemoveProcessFromList(u64 pid) {
-    g_process_list.Lock();
+    AutoProcessListLock auto_lock;
+    
     /* Remove process from list. */
     for (unsigned int i = 0; i < g_process_list.process_waiters.size(); i++) {
         ProcessWaiter *pw = g_process_list.process_waiters[i];
@@ -363,36 +381,120 @@ void Registration::RemoveProcessFromList(u64 pid) {
             break;
         }
     }
-    g_process_list.Unlock();
 }
 
 void Registration::SetProcessState(u64 pid, ProcessState new_state) {
-    g_process_list.Lock();
+    AutoProcessListLock auto_lock;
+    
     /* Set process state. */
-    for (unsigned int i = 0; i < g_process_list.process_waiters.size(); i++) {
-        ProcessWaiter *pw = g_process_list.process_waiters[i];
+    for (auto &pw : g_process_list.process_waiters) {
         Registration::Process *process = pw->get_process();
         if (process->pid == pid) {      
             process->state = new_state;
             break;
         }
     }
-    g_process_list.Unlock();
 }
 
-bool Registration::HasApplicationProcess() {
-    bool has_app = false;
-    g_process_list.Lock();
+bool Registration::HasApplicationProcess(Process **out) {
+    AutoProcessListLock auto_lock;
     
     for (auto &pw : g_process_list.process_waiters) {
-        if (pw->get_process()->flags & 0x40) {
-            has_app = true;
-            break;
+        Registration::Process *process = pw->get_process();
+        if (process->flags & 0x40) {
+            if (out != NULL) {
+                *out = process;
+            }
+            return true;
         }
     }
     
-    g_process_list.Unlock();
-    return has_app;
+    return false;
+}
+
+Registration::Process *Registration::GetProcess(u64 pid) {
+    AutoProcessListLock auto_lock;
+    
+    for (auto &pw : g_process_list.process_waiters) {
+        Process *p = pw->get_process();
+        if (p->pid == pid) {
+            return p;
+        }
+    }
+    
+    return NULL;
+}
+
+Registration::Process *Registration::GetProcessByTitleId(u64 tid) {
+    AutoProcessListLock auto_lock;
+    
+    for (auto &pw : g_process_list.process_waiters) {
+        Process *p = pw->get_process();
+        if (p->tid_sid.title_id == tid) {
+            return p;
+        }
+    }
+    
+    return NULL;
+}
+
+Handle Registration::GetProcessEventHandle() {
+    return g_process_event->get_handle();
+}
+
+void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
+    AutoProcessListLock auto_lock;
+    
+    for (auto &pw : g_process_list.process_waiters) {
+        Process *p = pw->get_process();
+        if (kernelAbove200() && p->state >= ProcessState_DebugDetached && p->flags & 0x100) {
+            p->flags &= ~0x100;
+            *out_pid = p->pid;
+            *out_type = kernelAbove500() ? 2 : 5;
+            return;
+        }
+        if (p->flags & 0x10) {
+            p->flags &= ~0x10;
+            *out_pid = p->pid;
+            *out_type = kernelAbove500() ? (((p->flags >> 5) & 1) | 4) : (((p->flags >> 5) & 1) + 3);
+            return;
+        }
+        if (p->flags & 2) {
+            *out_pid = p->pid;
+            *out_type = kernelAbove500() ? 3 : 1;
+            return;
+        }
+        if (!kernelAbove500() && p->flags & 1 && p->state == ProcessState_Exited) {
+            *out_pid = p->pid;
+            *out_type = 2;
+            return;
+        }
+    }
+    if (kernelAbove500()) {
+        auto_lock.Unlock();
+        g_dead_process_list.Lock();
+        if (g_dead_process_list.process_waiters.size()) {
+            ProcessWaiter *pw = g_dead_process_list.process_waiters[0];
+            Registration::Process *process = pw->get_process();
+            g_dead_process_list.process_waiters.erase(g_dead_process_list.process_waiters.begin());
+            *out_pid = process->pid;
+            *out_type = 1;
+            delete pw;
+            g_dead_process_list.Unlock();
+            return;
+        }
+        g_dead_process_list.Unlock();
+    }
+    *out_pid = 0;
+    *out_type = 0;
+}
+
+Handle Registration::GetDebugTitleEventHandle() {
+    return g_debug_title_event->get_handle();
+}
+
+Handle Registration::GetDebugApplicationEventHandle() {
+    return g_debug_application_event->get_handle();
 }
 
 void Registration::EnsureApplicationResourcesAvailable() {
