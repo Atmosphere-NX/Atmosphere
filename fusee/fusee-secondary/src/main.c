@@ -6,6 +6,7 @@
 #include "sd_utils.h"
 #include "lib/printk.h"
 #include "display/video_fb.h"
+#include "fs_dev.h"
 
 /* TODO: Add a #define for this size, somewhere. Also, primary can only actually load 0x7000. */
 char g_bct0[0x8000];
@@ -30,7 +31,9 @@ int main(int argc, void **argv) {
         generic_panic();
     }
 
-    resume_sd_state((struct mmc *)args.sd_mmc, (FATFS *)args.sd_fs);
+    resume_sd_state((struct mmc *)args.sd_mmc);
+    fsdev_mount_all();
+    fsdev_set_default_device("sdmc");
 
     /* Copy the BCT0 from unsafe primary memory into our memory. */
     strncpy(g_bct0, args.bct0, sizeof(g_bct0));
@@ -47,6 +50,9 @@ int main(int argc, void **argv) {
     load_payload(g_bct0);
 
     printk("Loaded payloads!\n");
+
+    /* Unmount everything (this causes all open files to be flushed and closed) */
+    fsdev_unmount_all();
 
     if (loader_ctx->chainload_entrypoint != NULL) {
         /* TODO: What do we want to do in terms of argc/argv? */

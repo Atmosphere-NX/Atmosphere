@@ -27,7 +27,6 @@ typedef struct {
     uint32_t console_row;
     uint32_t console_col;
     void *sd_mmc;
-    void *sd_fs;
 } stage2_args_t;
 
 const char *stage2_get_program_path(void);

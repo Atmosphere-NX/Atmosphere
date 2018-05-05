@@ -92,7 +92,7 @@ int main(void) {
     printk("Please do not seek support for it until it is done.\n");
     generic_panic();
 #endif
-    
+
     /* Try to load the SBK into the security engine, if possible. */
     /* TODO: Should this be done later? */
     load_sbk();
@@ -115,11 +115,10 @@ int main(void) {
     args->lfb = (uint32_t *)lfb_base;
     args->console_col = video_get_col();
     args->console_row = video_get_row();
-    save_sd_state(&args->sd_mmc, &args->sd_fs);
-
+    save_sd_state(&args->sd_mmc);
+    f_unmount("");
 
     /* Jump to Stage 2. */
     stage2_entrypoint(STAGE2_ARGC, stage2_argv);
     return 0;
 }
-

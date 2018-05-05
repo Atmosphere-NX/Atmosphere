@@ -3,10 +3,9 @@
 
 #include "utils.h"
 #include "sdmmc.h"
-#include "lib/fatfs/ff.h"
 
-void save_sd_state(void **mmc, void **ff);
-void resume_sd_state(void *mmc, void *ff);
+void save_sd_state(void **mmc);
+void resume_sd_state(void *mmc);
 
 size_t read_sd_file(void *dst, size_t dst_size, const char *filename);
 
