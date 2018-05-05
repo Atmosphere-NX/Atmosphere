@@ -145,7 +145,7 @@ static const std::tuple<u32, bool, bool> g_gpio_map[] = {
     {0x000000E6, false, false},  /* Port CC, Pin 6 */
 };
 
-int gpio_configure(unsigned int gpio_pad_name) {
+int gpio_configure(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
@@ -164,7 +164,7 @@ int gpio_configure(unsigned int gpio_pad_name) {
     return gpio_cnf_val;
 }
 
-int gpio_set_direction(unsigned int gpio_pad_name) {
+int gpio_set_direction(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
@@ -186,7 +186,7 @@ int gpio_set_direction(unsigned int gpio_pad_name) {
     return gpio_oe_val;
 }
 
-int gpio_set_output(unsigned int gpio_pad_name) {
+int gpio_set_output(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
@@ -263,9 +263,9 @@ int main(int argc, char **argv)
     
     /* Setup all GPIOs from 0x01 to 0x3C */
     for (unsigned int i = 1; i < MAX_GPIOS; i++) {
-        gpio_configure(i);
-        gpio_set_direction(i);
-        gpio_set_output(i);
+        gpio_configure(gpio_base_vaddr, i);
+        gpio_set_direction(gpio_base_vaddr, i);
+        gpio_set_output(gpio_base_vaddr, i);
     }
     
     /* TODO: Hardware setup, NAND repair, NotifyBootFinished */
