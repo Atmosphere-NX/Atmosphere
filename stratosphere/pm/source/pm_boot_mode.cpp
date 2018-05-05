@@ -24,10 +24,10 @@ Result BootModeService::handle_deferred() {
 }
 
 std::tuple<Result, bool> BootModeService::get_boot_mode() {
-    return std::make_tuple(0, g_is_maintenance_boot);
+    return {0, g_is_maintenance_boot};
 }
 
 std::tuple<Result> BootModeService::set_maintenance_boot() {
     g_is_maintenance_boot = true;
-    return std::make_tuple(0);
+    return {0};
 }

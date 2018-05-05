@@ -39,12 +39,12 @@ std::tuple<Result, MovedHandle> ProcessManagerService::create_process(u64 flags,
     
     rc = Registration::GetRegisteredTidSid(index, &tid_sid);
     if (R_FAILED(rc)) {
-        std::make_tuple(rc, MovedHandle{process_h});
+        return {rc, MovedHandle{process_h}};
     }
     
     rc = ContentManagement::GetContentPathForTidSid(nca_path, &tid_sid);
     if (R_FAILED(rc)) {
-        std::make_tuple(rc, MovedHandle{process_h});
+        return {rc, MovedHandle{process_h}};
     }
     
     launch_item = LaunchQueue::get_item(tid_sid.title_id);
@@ -55,7 +55,7 @@ std::tuple<Result, MovedHandle> ProcessManagerService::create_process(u64 flags,
         ContentManagement::SetCreatedTitle(tid_sid.title_id);
     }
     
-    return std::make_tuple(rc, MovedHandle{process_h});
+    return {rc, MovedHandle{process_h}};
 }
 
 std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info) {
@@ -67,40 +67,40 @@ std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid 
     rc = populate_program_info_buffer(out_program_info.pointer, &tid_sid);
     
     if (R_FAILED(rc)) {
-        return std::make_tuple(rc);
+        return {rc};
     }
     
     if (tid_sid.title_id != out_program_info.pointer->title_id) {
         rc = ContentManagement::GetContentPathForTidSid(nca_path, &tid_sid);
         if (R_FAILED(rc)) {
-            return std::make_tuple(rc);
+            return {rc};
         }
         
         rc = ContentManagement::SetContentPath(nca_path, out_program_info.pointer->title_id, tid_sid.storage_id);
         if (R_FAILED(rc)) {
-            return std::make_tuple(rc);
+            return {rc};
         }
         
         rc = LaunchQueue::add_copy(tid_sid.title_id, out_program_info.pointer->title_id);
     }
         
-    return std::make_tuple(rc);
+    return {rc};
 }
 
 std::tuple<Result, u64> ProcessManagerService::register_title(Registration::TidSid tid_sid) {
     u64 out_index = 0;
     if (Registration::RegisterTidSid(&tid_sid, &out_index)) {
-        return std::make_tuple(0, out_index);
+        return {0, out_index};
     } else {
-        return std::make_tuple(0xE09, out_index);
+        return {0xE09, out_index};
     }
 }
 
 std::tuple<Result> ProcessManagerService::unregister_title(u64 index) {
     if (Registration::UnregisterIndex(index)) {
-        return std::make_tuple(0);
+        return {0};
     } else {
-        return std::make_tuple(0x1009);
+        return {0x1009};
     }
 }
 

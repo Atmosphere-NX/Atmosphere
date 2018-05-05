@@ -33,7 +33,7 @@ Result UserService::handle_deferred() {
 std::tuple<Result> UserService::initialize(PidDescriptor pid) {
     this->pid = pid.pid;
     this->has_initialized = true;
-    return std::make_tuple(0);
+    return {0};
 }
 
 std::tuple<Result, MovedHandle> UserService::get_service(u64 service) {
@@ -51,13 +51,13 @@ std::tuple<Result, MovedHandle> UserService::get_service(u64 service) {
     if (rc == RESULT_DEFER_SESSION) {
         this->deferred_service = service;
     }
-    return std::make_tuple(rc, MovedHandle{session_h});
+    return {rc, MovedHandle{session_h}};
 }
 
 std::tuple<Result, MovedHandle> UserService::deferred_get_service(u64 service) {
     Handle session_h = 0;
     Result rc = Registration::GetServiceHandle(service, &session_h);
-    return std::make_tuple(rc, MovedHandle{session_h});
+    return {rc, MovedHandle{session_h}};
 }
 
 std::tuple<Result, MovedHandle> UserService::register_service(u64 service, u8 is_light, u32 max_sessions) {
@@ -71,7 +71,7 @@ std::tuple<Result, MovedHandle> UserService::register_service(u64 service, u8 is
     if (this->has_initialized) {
         rc = Registration::RegisterServiceForPid(this->pid, service, max_sessions, is_light != 0, &service_h);
     }
-    return std::make_tuple(rc, MovedHandle{service_h});
+    return {rc, MovedHandle{service_h}};
 }
 
 std::tuple<Result> UserService::unregister_service(u64 service) {
@@ -84,5 +84,5 @@ std::tuple<Result> UserService::unregister_service(u64 service) {
     if (this->has_initialized) {
         rc = Registration::UnregisterServiceForPid(this->pid, service);
     }
-    return std::make_tuple(rc);
+    return {rc};
 }
