@@ -1,13 +1,27 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include "utils.h"
 #include "package2.h"
 #include "stratosphere.h"
 #include "sd_utils.h"
 
-unsigned char g_stratosphere_ini1[PACKAGE2_SIZE_MAX];
+static uint8_t *g_stratosphere_ini1;
 static bool g_initialized_stratosphere_ini1 = false;
 
-unsigned char g_ini1_buffer[PACKAGE2_SIZE_MAX];
+static uint8_t *g_ini1_buffer;
+
+void stratosphere_allocate_mem(void) {
+    /* TODO call it*/
+    g_stratosphere_ini1 = (uint8_t *)malloc(PACKAGE2_SIZE_MAX);
+    g_ini1_buffer = (uint8_t *)malloc(PACKAGE2_SIZE_MAX);
+}
+
+void stratosphere_free_mem(void) {
+    /* TODO call it*/
+    free(g_stratosphere_ini1);
+    free(g_ini1_buffer);
+}
 
 ini1_header_t *stratosphere_get_ini1(void) {
     ini1_header_t *ini1_header = (ini1_header_t *)g_stratosphere_ini1;
@@ -38,7 +52,7 @@ size_t stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num
 
     uint64_t process_list[INI1_MAX_KIPS] = {0};
 
-    memset(g_ini1_buffer, 0, sizeof(g_ini1_buffer));
+    memset(g_ini1_buffer, 0, PACKAGE2_SIZE_MAX);
     ini1_header_t *merged = (ini1_header_t *)g_ini1_buffer;
     merged->magic = MAGIC_INI1;
     merged->num_processes = 0;

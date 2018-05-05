@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "utils.h"
 #include "masterkey.h"
 #include "stratosphere.h"
@@ -8,16 +9,33 @@
 
 /* Stage 2 executes from DRAM, so we have tons of space. */
 /* This *greatly* simplifies logic. */
-unsigned char g_patched_package2[PACKAGE2_SIZE_MAX];
-unsigned char g_package2_sections[PACKAGE2_SECTION_MAX][PACKAGE2_SIZE_MAX];
+static uint8_t *g_patched_package2;
+static uint8_t *g_package2_sections[PACKAGE2_SECTION_MAX];
 
-package2_header_t *g_patched_package2_header = (package2_header_t *)g_patched_package2;
+static package2_header_t *g_patched_package2_header;
 
 void package2_decrypt(void *package2_address);
 void package2_add_thermosphere_section(void);
 void package2_patch_kernel(void);
 void package2_patch_ini1(void);
 void package2_fixup_header_and_section_hashes(void);
+
+void package2_allocate_mem(void) {
+    /* TODO: call it */
+    g_patched_package2 = (uint8_t *)malloc(PACKAGE2_SIZE_MAX);
+    for(size_t i = 0; i < PACKAGE2_SECTION_MAX; i++) {
+        g_package2_sections[i] = (uint8_t *)malloc(PACKAGE2_SIZE_MAX);
+    }
+    g_patched_package2_header = (package2_header_t *)g_patched_package2;
+}
+
+void package2_free_mem(void) {
+    free(g_patched_package2);
+    for(size_t i = 0; i < PACKAGE2_SECTION_MAX; i++) {
+        free(g_package2_sections[i]);
+    }
+    g_patched_package2_header = NULL;
+}
 
 void package2_patch(void *package2_address) {
     /* First things first: Decrypt Package2. */
@@ -36,7 +54,7 @@ void package2_patch(void *package2_address) {
     package2_fixup_header_and_section_hashes();
 
     /* Relocate Package2. */
-    memcpy(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, g_patched_package2, sizeof(g_patched_package2));
+    memcpy(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, g_patched_package2, PACKAGE2_SIZE_MAX);
 }
 
 static void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
