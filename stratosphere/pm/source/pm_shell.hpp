@@ -42,7 +42,7 @@ class ShellService : IServiceObject {
         std::tuple<Result> terminate_title_id(u64 tid);
         std::tuple<Result, CopiedHandle> get_process_wait_event();
         std::tuple<Result, u64, u64> get_process_event_type();
-        std::tuple<Result> finalize_dead_process(u64 pid);
+        std::tuple<Result> finalize_exited_process(u64 pid);
         std::tuple<Result> clear_process_notification_flag(u64 pid);
         std::tuple<Result> notify_boot_finished();
         std::tuple<Result, u64> get_application_process_id();

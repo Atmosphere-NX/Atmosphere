@@ -7,6 +7,8 @@
 #include <stratosphere.hpp>
 
 #include "pm_boot_mode.hpp"
+#include "pm_info.hpp"
+#include "pm_shell.hpp"
 #include "pm_process_track.hpp"
 #include "pm_registration.hpp"
 
@@ -107,7 +109,9 @@ int main(int argc, char **argv)
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
         
     /* TODO: Create services. */
-    server_manager->add_waitable(new ServiceServer<BootModeService>("pm:bm", 4));
+    server_manager->add_waitable(new ServiceServer<ShellService>("pm:shell", 3));
+    server_manager->add_waitable(new ServiceServer<BootModeService>("pm:bm", 5));
+    server_manager->add_waitable(new ServiceServer<InformationService>("pm:info", 1));
     
     /* Loop forever, servicing our services. */
     server_manager->process();
