@@ -24,9 +24,9 @@ Result ManagerService::handle_deferred() {
 
 
 std::tuple<Result> ManagerService::register_process(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac) {
-    return std::make_tuple(Registration::RegisterProcess(pid, acid_sac.buffer, acid_sac.num_elements, aci0_sac.buffer, aci0_sac.num_elements));
+    return {Registration::RegisterProcess(pid, acid_sac.buffer, acid_sac.num_elements, aci0_sac.buffer, aci0_sac.num_elements)};
 }
 
 std::tuple<Result> ManagerService::unregister_process(u64 pid) {
-    return std::make_tuple(Registration::UnregisterProcess(pid));
+    return {Registration::UnregisterProcess(pid)};
 }

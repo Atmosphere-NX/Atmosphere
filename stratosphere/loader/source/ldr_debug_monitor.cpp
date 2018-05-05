@@ -27,13 +27,13 @@ Result DebugMonitorService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64
 
 std::tuple<Result> DebugMonitorService::add_title_to_launch_queue(u64 tid, InPointer<char> args) {
     fprintf(stderr, "Add to launch queue: %p, %X\n", args.pointer, args.num_elements);
-    return std::make_tuple(LaunchQueue::add(tid, args.pointer, args.num_elements));
+    return {LaunchQueue::add(tid, args.pointer, args.num_elements)};
 }
 
 std::tuple<Result> DebugMonitorService::clear_launch_queue(u64 dat) {
     fprintf(stderr, "Clear launch queue: %lx\n", dat);
     LaunchQueue::clear();
-    return std::make_tuple(0);
+    return {0};
 }
 
 std::tuple<Result, u32> DebugMonitorService::get_nso_info(u64 pid, OutPointerWithClientSize<Registration::NsoInfo> out) {
@@ -43,5 +43,5 @@ std::tuple<Result, u32> DebugMonitorService::get_nso_info(u64 pid, OutPointerWit
     
     Result rc = Registration::GetNsoInfosForProcessId(out.pointer, out.num_elements, pid, &out_num_nsos);
         
-    return std::make_tuple(rc, out_num_nsos);
+    return {rc, out_num_nsos};
 }

@@ -184,11 +184,17 @@ T GetValueFromIpcParsedCommand(IpcParsedCommand& r, IpcCommand& out_c, u8 *point
     const size_t old_c_size_offset = cur_c_size_offset;
     const size_t old_pointer_buffer_offset = pointer_buffer_offset;
     if constexpr (is_specialization_of<T, InBuffer>::value) {
-        return T(r.Buffers[a_index], r.BufferSizes[a_index++]);
+        const T& value{r.Buffers[a_index], r.BufferSizes[a_index]};
+        ++a_index;
+        return value;
     } else if constexpr (is_specialization_of<T, OutBuffer>::value) {
-        return T(r.Buffers[b_index], r.BufferSizes[b_index++]);
+        const T& value{r.Buffers[b_index], r.BufferSizes[b_index]};
+        ++b_index;
+        return value;
     } else if constexpr (is_specialization_of<T, InPointer>::value) {
-        return T(r.Statics[x_index], r.StaticSizes[x_index++]);
+        const T& value{r.Statics[x_index], r.StaticSizes[x_index]};
+        ++x_index;
+        return value;
     } else if constexpr (std::is_base_of<OutPointerWithServerSizeBase, T>::value) {
         T t = T(pointer_buffer + old_pointer_buffer_offset);
         ipcAddSendStatic(&out_c, pointer_buffer + old_pointer_buffer_offset, t.num_elements * sizeof(*t.pointer), c_index++);
