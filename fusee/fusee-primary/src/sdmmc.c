@@ -2139,7 +2139,7 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
             // Set up function pointers for each of our per-instance functions.
             mmc->set_up_clock_and_io = sdmmc4_set_up_clock_and_io;
             mmc->enable_supplies = sdmmc4_enable_supplies;
-            mmc->card_present = sdmmc_external_card_present;
+            mmc->card_present = sdmmc_builtin_card_present;
 
             // The EMMC controller always uses an EMMC card.
             sdmmc_apply_card_type(mmc, MMC_CARD_EMMC);
@@ -2158,6 +2158,7 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
             // Negotiation has a chance to change this, later.
             mmc->set_up_clock_and_io = sdmmc1_set_up_clock_and_io;
             mmc->enable_supplies = sdmmc1_enable_supplies;
+            mmc->card_present = sdmmc_external_card_present;
             sdmmc_apply_card_type(mmc, MMC_CARD_SD);
 
             // Start off assuming byte addressing; we'll detect and correct this
