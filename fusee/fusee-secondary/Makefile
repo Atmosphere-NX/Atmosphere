@@ -12,7 +12,7 @@ dir_source := src
 dir_build := build
 dir_out := out
 
-ARCH := -march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
+ARCH := -march=armv4t -mtune=arm7tdmi -marm
 
 ASFLAGS := -g $(ARCH)
 

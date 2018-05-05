@@ -1,9 +1,9 @@
+#include <stdio.h>
 #include "utils.h"
 #include "package2.h"
 #include "stratosphere.h"
 #include "sd_utils.h"
 #include "lib/printk.h"
-#include "lib/vsprintf.h"
 
 unsigned char g_stratosphere_ini1[PACKAGE2_SIZE_MAX];
 static bool g_initialized_stratosphere_ini1 = false;
@@ -19,9 +19,9 @@ ini1_header_t *stratosphere_get_ini1(void) {
     ini1_header->size = sizeof(ini1_header_t);
     ini1_header->num_processes = 0;
     ini1_header->_0xC = 0;
-    
+
     /* TODO: When we have processes, copy them into ini1_header->kip_data here. */
-    
+
     g_initialized_stratosphere_ini1 = true;
     return ini1_header;
 }
@@ -36,18 +36,18 @@ size_t stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num
             generic_panic();
         }
     }
-    
+
     uint64_t process_list[INI1_MAX_KIPS] = {0};
-    
+
     memset(g_ini1_buffer, 0, sizeof(g_ini1_buffer));
     ini1_header_t *merged = (ini1_header_t *)g_ini1_buffer;
     merged->magic = MAGIC_INI1;
     merged->num_processes = 0;
     merged->_0xC = 0;
     size_t remaining_size = PACKAGE2_SIZE_MAX - sizeof(ini1_header_t);
-    
+
     unsigned char *current_dst_kip = merged->kip_data;
-        
+
     /* Actually merge into the inis. */
     for (unsigned int i = 0; i < num_inis; i++) {
         uint64_t offset = 0;
@@ -57,8 +57,8 @@ size_t stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num
                 printk("Error: INI1s[%d][%d] appears not to be a KIP1!\n", i, p);
                 generic_panic();
             }
-            
-            
+
+
             bool already_loaded = false;
             for (unsigned int j = 0; j < merged->num_processes; j++) {
                 if (process_list[j] == current_kip->title_id) {
@@ -69,10 +69,10 @@ size_t stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num
             if (already_loaded) {
                 continue;
             }
-            
+
             /* TODO: What folder should these be read out of? */
             snprintf(sd_path, sizeof(sd_path), "atmosph\xe8re/titles/%016llx/%016llx.kip", current_kip->title_id, current_kip->title_id);
-            
+
             /* Try to load an override KIP from SD, if possible. */
             if (read_sd_file(current_dst_kip, remaining_size, sd_path)) {
                 kip1_header_t *sd_kip = (kip1_header_t *)(current_dst_kip);
@@ -96,14 +96,14 @@ size_t stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num
                 remaining_size -= current_kip_size;
                 current_dst_kip += current_kip_size;
             }
-            
+
             process_list[merged->num_processes++] = current_kip->title_id;
         }
     }
     merged->size = sizeof(ini1_header_t) + (uint32_t)(current_dst_kip - merged->kip_data);
-    
+
     /* Copy merged INI1 to destination. */
     memcpy(dst, merged, merged->size);
-    
+
     return merged->size;
 }

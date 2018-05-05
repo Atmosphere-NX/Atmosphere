@@ -2,9 +2,9 @@
  * Kernel print functions.
  */
 
+#include <stdio.h>
 #include "printk.h"
 
-#include "vsprintf.h"
 #include "../display/video_fb.h"
 
 /**

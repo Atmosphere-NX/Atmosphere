@@ -1,10 +1,10 @@
-#include "utils.h"
 #include <stdint.h>
+#include <stdio.h>
+#include "utils.h"
 #include "loader.h"
 #include "sd_utils.h"
 #include "stage2.h"
 #include "lib/printk.h"
-#include "lib/vsprintf.h"
 #include "lib/ini.h"
 
 const char *g_bct0 = NULL;
