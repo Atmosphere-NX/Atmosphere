@@ -1,17 +1,17 @@
+#include <stdio.h>
 #include "utils.h"
 #include "masterkey.h"
 #include "stratosphere.h"
 #include "package2.h"
 #include "kip.h"
 #include "se.h"
-#include "lib/printk.h"
 
 /* Stage 2 executes from DRAM, so we have tons of space. */
 /* This *greatly* simplifies logic. */
 unsigned char g_patched_package2[PACKAGE2_SIZE_MAX];
 unsigned char g_package2_sections[PACKAGE2_SECTION_MAX][PACKAGE2_SIZE_MAX];
 
-package2_header_t *g_patched_package2_header = (package2_header_t *)g_patched_package2; 
+package2_header_t *g_patched_package2_header = (package2_header_t *)g_patched_package2;
 
 void package2_decrypt(void *package2_address);
 void package2_add_thermosphere_section(void);
@@ -22,19 +22,19 @@ void package2_fixup_header_and_section_hashes(void);
 void package2_patch(void *package2_address) {
     /* First things first: Decrypt Package2. */
     package2_decrypt(package2_address);
-    
+
     /* Modify Package2 to add an additional thermosphere section. */
     package2_add_thermosphere_section();
-    
+
     /* Perform any patches we want to the NX kernel. */
     package2_patch_kernel();
-    
+
     /* Perform any patches we want to the INI1 (This is where our built-in sysmodules will be added.) */
     package2_patch_ini1();
-    
+
     /* Fix all necessary data in the header to accomodate for the new patches. */
     package2_fixup_header_and_section_hashes();
-    
+
     /* Relocate Package2. */
     memcpy(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, g_patched_package2, sizeof(g_patched_package2));
 }
@@ -139,7 +139,7 @@ uint32_t decrypt_and_validate_header(package2_header_t *header, bool is_plaintex
     package2_meta_t metadata;
 
     /* TODO: Also accept plaintext package2 based on bootconfig. */
-    
+
     if (!is_plaintext) {
         uint32_t mkey_rev;
 
@@ -156,7 +156,7 @@ uint32_t decrypt_and_validate_header(package2_header_t *header, bool is_plaintex
         }
 
         /* Ensure we successfully decrypted the header. */
-        if (mkey_rev > mkey_get_revision()) {   
+        if (mkey_rev > mkey_get_revision()) {
             panic(0xFAF00003);
         }
     } else if (!validate_package2_metadata(&header->metadata)) {
@@ -168,13 +168,13 @@ uint32_t decrypt_and_validate_header(package2_header_t *header, bool is_plaintex
 void package2_decrypt(void *package2_address) {
     /* TODO: Actually decrypt, and copy sections into the relevant g_package2_sections[n] */
     memcpy(g_patched_package2, NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, PACKAGE2_SIZE_MAX);
-    
+
     bool is_package2_plaintext = g_patched_package2_header->signature[0];
     is_package2_plaintext &= memcmp(g_patched_package2_header->signature, g_patched_package2_header->signature + 1, sizeof(g_patched_package2_header->signature) - 1) == 0;
     is_package2_plaintext &= g_patched_package2_header->metadata.magic == MAGIC_PK21;
-    
+
     uint32_t pk21_mkey_revision = decrypt_and_validate_header(g_patched_package2_header, is_package2_plaintext);
-    
+
     size_t cur_section_offset = 0;
     /* Copy each section to its appropriate location, decrypting if necessary. */
     for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
@@ -193,17 +193,17 @@ void package2_decrypt(void *package2_address) {
         }
         cur_section_offset += size;
     }
-    
+
     /* Clear the signature, to signal that this is a plaintext, unsigned package2. */
     memset(g_patched_package2_header->signature, 0, sizeof(g_patched_package2_header->signature));
 }
 
 void package2_add_thermosphere_section(void) {
     if (g_patched_package2_header->metadata.section_sizes[PACKAGE2_SECTION_UNUSED] != 0) {
-        printk("Error: Package2 has no unused section for Thermosph\xe8re!\n");
+        printf(u8"Error: Package2 has no unused section for Thermosphère!\n");
         generic_panic();
     }
-    
+
     /* TODO: Copy thermosphere to g_package2_sections[PACKAGE2_SECTION_UNUSED], update header size. */
 }
 
@@ -219,32 +219,32 @@ void package2_patch_ini1(void) {
     inis_to_merge[STRATOSPHERE_INI1_PACKAGE2] = (ini1_header_t *)g_package2_sections[PACKAGE2_SECTION_INI1];
 
     /* Merge all of the INI1s. */
-    g_patched_package2_header->metadata.section_sizes[PACKAGE2_SECTION_INI1] = stratosphere_merge_inis(g_package2_sections[PACKAGE2_SECTION_INI1], inis_to_merge, STRATOSPHERE_INI1_MAX);   
+    g_patched_package2_header->metadata.section_sizes[PACKAGE2_SECTION_INI1] = stratosphere_merge_inis(g_package2_sections[PACKAGE2_SECTION_INI1], inis_to_merge, STRATOSPHERE_INI1_MAX);
 }
 
 void package2_fixup_header_and_section_hashes(void) {
     size_t cur_section_offset = 0;
-    
+
     /* Copy each section to its appropriate location. */
     for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
         if (g_patched_package2_header->metadata.section_sizes[section] == 0) {
             continue;
         }
-        
+
         size_t size = (size_t)g_patched_package2_header->metadata.section_sizes[section];
         if (sizeof(package2_header_t) + cur_section_offset + size > PACKAGE2_SIZE_MAX) {
-            printk("Error: Patched Package2 is too big!\n");
+            printf("Error: Patched Package2 is too big!\n");
             generic_panic();
         }
-        
+
         /* Copy the section into the new package2. */
         memcpy(g_patched_package2 + sizeof(package2_header_t) + cur_section_offset, g_package2_sections[section], size);
         /* Fix up the hash. */
         se_calculate_sha256(g_patched_package2_header->metadata.section_hashes[section], g_package2_sections[section], size);
-        
+
         cur_section_offset += size;
     }
-    
+
     /* Fix up the size in XOR'd CTR. */
     uint32_t package_size = g_patched_package2_header->metadata.ctr_dwords[0] ^ g_patched_package2_header->metadata.ctr_dwords[2] ^ g_patched_package2_header->metadata.ctr_dwords[3];
     uint32_t new_package_size = sizeof(package2_header_t) + cur_section_offset;

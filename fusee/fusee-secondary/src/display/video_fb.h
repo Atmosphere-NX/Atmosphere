@@ -52,6 +52,7 @@ int video_get_row(void);
 
 int video_init(void *fb);
 int video_resume(void *fb, int row, int col);
+void video_putc(char c);
 void video_puts(const char *s);
 
 #endif /*_VIDEO_FB_H_ */

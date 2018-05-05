@@ -4,7 +4,6 @@
 #include "loader.h"
 #include "sd_utils.h"
 #include "stage2.h"
-#include "lib/printk.h"
 #include "lib/ini.h"
 
 const char *g_bct0 = NULL;
@@ -52,29 +51,29 @@ void load_list_entry(const char *key) {
     load_file_t load_file_ctx = {0};
     load_file_ctx.key = key;
 
-    printk("Loading %s\n", key);
+    printf("Loading %s\n", key);
 
     if (ini_parse_string(get_loader_ctx()->bct0, loadlist_entry_ini_handler, &load_file_ctx) < 0) {
-        printk("Error: Failed to parse BCT.ini!\n");
+        printf("Error: Failed to parse BCT.ini!\n");
         generic_panic();
     }
 
     if (load_file_ctx.load_address == 0 || load_file_ctx.path[0] == '\x00') {
-        printk("Error: Failed to determine where to load %s!\n", key);
+        printf("Error: Failed to determine where to load %s!\n", key);
         generic_panic();
     }
 
-    printk("Loading %s from %s to 0x%08x\n", key, load_file_ctx.path, load_file_ctx.load_address);
+    printf("Loading %s from %s to 0x%08x\n", key, load_file_ctx.path, load_file_ctx.load_address);
 
     if (!validate_load_address(load_file_ctx.load_address)) {
-        printk("Error: Load address 0x%08x is invalid!\n");
+        printf("Error: Load address 0x%08x is invalid!\n", load_file_ctx.load_address);
         generic_panic();
     }
 
     /* Read file off of SD. */
     load_file_ctx.load_size = read_sd_file((void *)load_file_ctx.load_address, LOADER_FILESIZE_MAX, load_file_ctx.path);
     if (load_file_ctx.load_size == 0) {
-        printk("Error: Failed to read %s!\n", load_file_ctx.path);
+        printf("Error: Failed to read %s!\n", load_file_ctx.path);
         generic_panic();
     }
 
@@ -91,7 +90,7 @@ void load_list_entry(const char *key) {
 }
 
 void parse_loadlist(const char *ll) {
-    printk("Parsing load list: %s\n", ll);
+    printf("Parsing load list: %s\n", ll);
 
     char load_list[0x200] = {0};
     strncpy(load_list, ll, 0x200);
@@ -112,7 +111,7 @@ void parse_loadlist(const char *ll) {
             /* Skip to the next delimiter. */
             for (; *p == ' ' || *p == '\t' || *p == '\x00'; p++) { }
             if (*p != '|') {
-                printk("Error: Load list is malformed!\n");
+                printf("Error: Load list is malformed!\n");
                 generic_panic();
             } else {
                 /* Skip to the next entry. */
@@ -158,7 +157,7 @@ void load_payload(const char *bct0) {
     ctx->bct0 = bct0;
 
     if (ini_parse_string(ctx->bct0, loadlist_ini_handler, ctx) < 0) {
-        printk("Error: Failed to parse BCT.ini!\n");
+        printf("Error: Failed to parse BCT.ini!\n");
         generic_panic();
     }
 }

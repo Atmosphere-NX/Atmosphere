@@ -1,11 +1,11 @@
+#include <stdio.h>
 #include "utils.h"
 #include "hwinit.h"
 #include "loader.h"
 #include "stage2.h"
 #include "nxboot.h"
+#include "console.h"
 #include "sd_utils.h"
-#include "lib/printk.h"
-#include "display/video_fb.h"
 #include "fs_dev.h"
 
 /* TODO: Add a #define for this size, somewhere. Also, primary can only actually load 0x7000. */
@@ -40,16 +40,16 @@ int main(int argc, void **argv) {
 
     /* TODO: What other hardware init should we do here? */
 
-    /* Setup LFB. */
-    video_resume(args.lfb, args.console_row, args.console_col);
+    /* Setup console/stdout. */
+    console_resume(args.lfb, args.console_row, args.console_col);
 
-    printk("Welcome to Atmosph\xe8re Fus\xe9" "e Stage 2!\n");
-    printk("Stage 2 executing from: %s\n", (const char *)argv[STAGE2_ARGV_PROGRAM_PATH]);
+    printf(u8"Welcome to Atmosphère Fusée Stage 2!\n");
+    printf("Stage 2 executing from: %s\n", (const char *)argv[STAGE2_ARGV_PROGRAM_PATH]);
 
     /* This will load all remaining binaries off of the SD. */
     load_payload(g_bct0);
 
-    printk("Loaded payloads!\n");
+    printf("Loaded payloads!\n");
 
     /* Unmount everything (this causes all open files to be flushed and closed) */
     fsdev_unmount_all();

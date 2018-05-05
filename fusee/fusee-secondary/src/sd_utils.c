@@ -2,8 +2,6 @@
 #include "sd_utils.h"
 #include "hwinit.h"
 #include "sdmmc.h"
-#include "lib/printk.h"
-#include "lib/fatfs/ff.h"
 
 /* This is used by diskio.h. */
 struct mmc sd_mmc;
@@ -23,7 +21,7 @@ int initialize_sd(void) {
     }
     mc_enable_ahb_redirect();
     if (sdmmc_init(&sd_mmc, SWITCH_MICROSD) == 0) {
-        printk("Initialized SD card!\n");
+        printf("Initialized SD card!\n");
         initialized_sd = 1;
     }
     return initialized_sd;

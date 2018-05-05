@@ -3,8 +3,8 @@
  *  ~ktemkin
  */
 
+#include <stdio.h>
 #include "supplies.h"
-#include "lib/printk.h"
 
 // FIXME: replace hwinit with our own code
 #include "hwinit/max7762x.h"
@@ -23,7 +23,7 @@ void supply_enable(enum switch_power_supply supply)
             return;
 
         default:
-            printk("ERROR: could not enable unknown supply %d!\n", supply);
+            printf("ERROR: could not enable unknown supply %d!\n", supply);
             return;
     }
 }
