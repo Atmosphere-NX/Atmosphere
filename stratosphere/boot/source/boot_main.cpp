@@ -145,7 +145,7 @@ static const std::tuple<u32, bool, bool> g_gpio_map[] = {
     {0x000000E6, false, false},  /* Port CC, Pin 6 */
 };
 
-int gpio_configure(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
+static int gpio_configure(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
@@ -164,7 +164,7 @@ int gpio_configure(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     return gpio_cnf_val;
 }
 
-int gpio_set_direction(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
+static int gpio_set_direction(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
@@ -186,7 +186,7 @@ int gpio_set_direction(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     return gpio_oe_val;
 }
 
-int gpio_set_output(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
+static int gpio_set_output(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
