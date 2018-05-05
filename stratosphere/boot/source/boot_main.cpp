@@ -213,12 +213,12 @@ int main(int argc, char **argv)
     consoleDebugInit(debugDevice_SVC);
     
     Result rc;
-    u64* pinmux_base_vaddr = NULL;
-    u64* gpio_base_vaddr = NULL;
-    u64* pmc_base_vaddr = NULL;
+    u64 pinmux_base_vaddr = 0;
+    u64 gpio_base_vaddr = 0;
+    u64 pmc_base_vaddr = 0;
     
     /* Map the APB MISC registers for PINMUX */
-    rc = svcQueryIoMapping(pinmux_base_vaddr, APB_MISC_BASE, 0x4000);
+    rc = svcQueryIoMapping(&pinmux_base_vaddr, APB_MISC_BASE, 0x4000);
     if (R_FAILED(rc)) {
         return rc;
     }
@@ -228,7 +228,7 @@ int main(int argc, char **argv)
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_IoError));
     
     /* Map the GPIO registers */
-    rc = svcQueryIoMapping(gpio_base_vaddr, GPIO_BASE, 0x1000);
+    rc = svcQueryIoMapping(&gpio_base_vaddr, GPIO_BASE, 0x1000);
     if (R_FAILED(rc)) {
         return rc;
     }
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
         /* TODO: svcReadWriteRegister */
     } else {        
         /* Map the PMC registers directly */
-        rc = svcQueryIoMapping(pmc_base_vaddr, PMC_BASE, 0x3000);
+        rc = svcQueryIoMapping(&pmc_base_vaddr, PMC_BASE, 0x3000);
         if (R_FAILED(rc)) {
             return rc;
         }
