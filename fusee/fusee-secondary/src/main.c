@@ -30,10 +30,10 @@ int main(int argc, void **argv) {
         generic_panic();
     }
 
-    resume_sd_state((struct mmc *)args.sd_mmc, (FATFS *)args.sd_fs);
-
     /* Copy the BCT0 from unsafe primary memory into our memory. */
     strncpy(g_bct0, args.bct0, sizeof(g_bct0));
+
+    resume_sd_state((struct mmc *)args.sd_mmc, (FATFS *)args.sd_fs);
 
     /* TODO: What other hardware init should we do here? */
 
