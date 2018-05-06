@@ -75,53 +75,52 @@ typedef struct fsdev_fsdevice_t {
     FATFS fatfs;
 } fsdev_fsdevice_t;
 
-static fsdev_fsdevice_t g_devices[10] = { 0 };
+static fsdev_fsdevice_t g_devices[FF_VOLUMES] = { 0 };
+const char *VolumeStr[FF_VOLUMES] = { 0 };
 
-/* Restrictions: 10 drives max, and **update FF_VOLUME_STRS accordingly** */
-int fsdev_mount_device(const char *name) {
+int fsdev_mount_device(const char *name, unsigned int id) {
+    fsdev_fsdevice_t *device = &g_devices[id];
+    FRESULT rc;
+    char drname[40];
+
+    if (id >= FF_VOLUMES) {
+        errno = EINVAL;
+        return -1;
+    }
     if (name[0] == '\0' || strlen(name) > 32) {
         errno = ENAMETOOLONG;
         return -1;
     }
-
-    if (FindDevice(name) != -1) {
+    if (FindDevice(name) != -1 || g_devices[id].setup) {
         errno = EEXIST; /* Device already exists */
         return -1;
     }
 
-    /* Find a free slot and use it */
-    for (size_t i = 0; i < 10; i++) {
-        if (!g_devices[i].setup) {
-            fsdev_fsdevice_t *device = &g_devices[i];
-            FRESULT rc;
-            char drname[40];
-            strcpy(drname, name);
-            strcat(drname, ":");
+    strcpy(device->name, name);
 
-            rc = f_mount(&device->fatfs, drname, 1);
+    memcpy(&device->devoptab, &g_fsdev_devoptab, sizeof(devoptab_t));
+    device->devoptab.name = device->name;
+    device->devoptab.deviceData = device;
+    VolumeStr[id] = device->name;
 
-            if (rc != FR_OK) {
-                return fsdev_convert_rc(NULL, rc);
-            }
+    strcpy(drname, name);
+    strcat(drname, ":");
 
-            strcpy(device->name, name);
+    rc = f_mount(&device->fatfs, drname, 1);
 
-            memcpy(&device->devoptab, &g_fsdev_devoptab, sizeof(devoptab_t));
-            device->devoptab.name = device->name;
-            device->devoptab.deviceData = device;
-
-            if (AddDevice(&device->devoptab) == -1) {
-                errno = ENOMEM;
-                return -1;
-            } else {
-                device->setup = true;
-                return 0;
-            }
-        }
+    if (rc != FR_OK) {
+        return fsdev_convert_rc(NULL, rc);
     }
 
-    errno = ENOMEM;
-    return -1;
+    if (AddDevice(&device->devoptab) == -1) {
+        f_unmount(drname);
+        VolumeStr[id] = NULL;
+        errno = ENOMEM;
+        return -1;
+    } else {
+        device->setup = true;
+        return 0;
+    }
 }
 
 int fsdev_set_default_device(const char *name) {
@@ -175,10 +174,11 @@ int fsdev_unmount_device(const char *name) {
 }
 
 int fsdev_mount_all(void) {
-    static const char* const volid[] = { FF_VOLUME_STRS };
+    /* Change this accordingly: */
+    static const char* const volumes[] = { "sdmc" };
 
-    for (size_t i = 0; i < sizeof(volid)/sizeof(volid[0]); i++) {
-        int ret = fsdev_mount_device(volid[i]);
+    for (size_t i = 0; i < FF_VOLUMES; i++) {
+        int ret = fsdev_mount_device(volumes[i], i);
         if (ret != 0) {
             return ret;
         }
@@ -188,10 +188,8 @@ int fsdev_mount_all(void) {
 }
 
 int fsdev_unmount_all(void) {
-    static const char* const volid[] = { FF_VOLUME_STRS };
-
-    for (size_t i = 0; i < sizeof(volid)/sizeof(volid[0]); i++) {
-        int ret = fsdev_unmount_device(volid[i]);
+    for (size_t i = 0; i < FF_VOLUMES; i++) {
+        int ret = fsdev_unmount_device(VolumeStr[i]);
         if (ret != 0) {
             return ret;
         }

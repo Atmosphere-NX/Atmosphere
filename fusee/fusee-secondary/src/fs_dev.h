@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-int fsdev_mount_device(const char *name);
+int fsdev_mount_device(const char *name, unsigned int id);
 int fsdev_set_default_device(const char *name);
 int fsdev_unmount_device(const char *name);
 
