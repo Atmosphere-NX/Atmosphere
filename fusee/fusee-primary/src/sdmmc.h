@@ -1,6 +1,6 @@
 /**
  * Fusée SD/MMC driver for the Switch
- *  ~ktemkin 
+ *  ~ktemkin
  */
 
 #ifndef __FUSEE_SDMMC_H__
@@ -130,7 +130,7 @@ struct mmc {
     enum sdmmc_controller controller;
 
     /* Controller properties */
-    char *name;
+    const char *name;
     bool use_dma;
     unsigned int timeout;
     enum tegra_named_gpio card_detect_gpio;
@@ -145,7 +145,7 @@ struct mmc {
     /* Per-card-type operations */
     int (*card_init)(struct mmc *mmc);
     int (*establish_relative_address)(struct mmc *mmc);
-    int (*switch_mode)(struct mmc *mmc, enum sdmmc_switch_access_mode mode, 
+    int (*switch_mode)(struct mmc *mmc, enum sdmmc_switch_access_mode mode,
             enum sdmmc_switch_field field, uint16_t value, uint32_t timeout);
 
     /* Card properties */

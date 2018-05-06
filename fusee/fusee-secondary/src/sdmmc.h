@@ -1,6 +1,6 @@
 /**
  * Fusée SD/MMC driver for the Switch
- *  ~ktemkin 
+ *  ~ktemkin
  */
 
 #ifndef __FUSEE_SDMMC_H__
@@ -79,7 +79,7 @@ struct mmc {
     enum sdmmc_controller controller;
 
     /* Controller properties */
-    char *name;
+    const char *name;
     unsigned int timeout;
     enum sdmmc_card_type card_type;
     bool use_dma;
