@@ -94,11 +94,8 @@ int fsdev_mount_device(const char *name) {
         if (!g_devices[i].setup) {
             fsdev_fsdevice_t *device = &g_devices[i];
             FRESULT rc;
-            char drname[40];
-            strcpy(drname, name);
-            strcat(drname, ":");
 
-            rc = f_mount(&device->fatfs, drname, 1);
+            rc = f_mount(&device->fatfs, name, 1);
 
             if (rc != FR_OK) {
                 return fsdev_convert_rc(NULL, rc);
@@ -130,7 +127,6 @@ int fsdev_set_default_device(const char *name) {
 #else
 
     int ret;
-    char drname[40];
     int devid = FindDevice(name);
 
     if (devid == -1) {
@@ -138,10 +134,7 @@ int fsdev_set_default_device(const char *name) {
         return -1;
     }
 
-    strcpy(drname, name);
-    strcat(drname, ":");
-
-    ret = fsdev_convert_rc(NULL, f_chdrive(drname));
+    ret = fsdev_convert_rc(NULL, f_chdrive(name));
 
     if (ret == 0) {
         setDefaultDevice(devid);
@@ -153,17 +146,14 @@ int fsdev_set_default_device(const char *name) {
 
 int fsdev_unmount_device(const char *name) {
     int ret;
-    char drname[40];
     int devid = FindDevice(name);
 
     if (devid == -1) {
         errno = ENOENT;
         return -1;
     }
-    strcpy(drname, name);
-    strcat(drname, ":");
 
-    ret = fsdev_convert_rc(NULL, f_unmount(drname));
+    ret = fsdev_convert_rc(NULL, f_unmount(name));
 
     if (ret == 0) {
         fsdev_fsdevice_t *device = (fsdev_fsdevice_t *)(GetDeviceOpTab(name)->deviceData);

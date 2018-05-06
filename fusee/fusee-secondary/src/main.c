@@ -31,6 +31,9 @@ int main(int argc, void **argv) {
         generic_panic();
     }
 
+    /* Setup console/stdout. */
+    console_resume(args.lfb, args.console_row, args.console_col);
+
     resume_sd_state((struct mmc *)args.sd_mmc);
     fsdev_mount_all();
     fsdev_set_default_device("sdmc");
@@ -39,9 +42,6 @@ int main(int argc, void **argv) {
     strncpy(g_bct0, args.bct0, sizeof(g_bct0));
 
     /* TODO: What other hardware init should we do here? */
-
-    /* Setup console/stdout. */
-    console_resume(args.lfb, args.console_row, args.console_col);
 
     printf(u8"Welcome to Atmosphère Fusée Stage 2!\n");
     printf("Stage 2 executing from: %s\n", (const char *)argv[STAGE2_ARGV_PROGRAM_PATH]);
