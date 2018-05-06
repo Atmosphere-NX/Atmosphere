@@ -2,7 +2,7 @@
 /  FatFs - Configuration file
 /---------------------------------------------------------------------------*/
 
-#define FFCONF_DEF 89352	/* Revision ID */
+#define FFCONF_DEF 63463	/* Revision ID */
 
 /*---------------------------------------------------------------------------/
 / Function Configurations
@@ -123,6 +123,7 @@
 /   0: ANSI/OEM in current CP (TCHAR = char)
 /   1: Unicode in UTF-16 (TCHAR = WCHAR)
 /   2: Unicode in UTF-8 (TCHAR = char)
+/   3: Unicode in UTF-32 (TCHAR = DWORD)
 /
 /  Also behavior of string I/O functions will be affected by this option.
 /  When LFN is not enabled, this option has no effect. */
@@ -168,11 +169,16 @@
 
 #define FF_STR_VOLUME_ID	1
 #define FF_VOLUME_STRS		"sdmc"
-/* FF_STR_VOLUME_ID switches string support for volume ID.
-/  When FF_STR_VOLUME_ID is set to 1, also pre-defined strings can be used as drive
-/  number in the path name. FF_VOLUME_STRS defines the drive ID strings for each
-/  logical drives. Number of items must be equal to FF_VOLUMES. Valid characters for
-/  the drive ID strings are: A-Z and 0-9. */
+/* FF_STR_VOLUME_ID switches support for volume ID in arbitrary strings.
+/  When FF_STR_VOLUME_ID is set to 1 or 2, arbitrary strings can be used as drive
+/  number in the path name. FF_VOLUME_STRS defines the volume ID strings for each
+/  logical drives. Number of items must not be less than FF_VOLUMES. Valid
+/  characters for the volume ID strings are A-Z, a-z and 0-9, however, they are
+/  compared in case-insensitive. If FF_STR_VOLUME_ID >= 1 and FF_VOLUME_STRS is
+/  not defined, a user defined volume string table needs to be defined as:
+/
+/  const char* VolumeStr[FF_VOLUMES] = {"ram","flash","sd","usb",...
+*/
 
 
 #define FF_MULTI_PARTITION	0
@@ -226,7 +232,7 @@
 
 #define FF_FS_EXFAT		1
 /* This option switches support for exFAT filesystem. (0:Disable or 1:Enable)
-/  When enable exFAT, also LFN needs to be enabled.
+/  To enable exFAT, also LFN needs to be enabled.
 /  Note that enabling exFAT discards ANSI C (C89) compatibility. */
 
 
@@ -236,7 +242,7 @@
 #define FF_NORTC_YEAR	2018
 /* The option FF_FS_NORTC switches timestamp functiton. If the system does not have
 /  any RTC function or valid timestamp is not needed, set FF_FS_NORTC = 1 to disable
-/  the timestamp function. All objects modified by FatFs will have a fixed timestamp
+/  the timestamp function. Every object modified by FatFs will have a fixed timestamp
 /  defined by FF_NORTC_MON, FF_NORTC_MDAY and FF_NORTC_YEAR in local time.
 /  To enable timestamp function (FF_FS_NORTC = 0), get_fattime() function need to be
 /  added to the project to read current time form real-time clock. FF_NORTC_MON,

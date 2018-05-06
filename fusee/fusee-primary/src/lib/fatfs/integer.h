@@ -8,9 +8,7 @@
 #ifdef _WIN32	/* FatFs development platform */
 
 #include <windows.h>
-#include <tchar.h>
 typedef unsigned __int64 QWORD;
-
 
 #else			/* Embedded platform */
 

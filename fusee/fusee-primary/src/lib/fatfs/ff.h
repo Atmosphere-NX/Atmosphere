@@ -1,8 +1,8 @@
 /*----------------------------------------------------------------------------/
-/  FatFs - Generic FAT Filesystem module  R0.13a                              /
+/  FatFs - Generic FAT Filesystem module  R0.13b                              /
 /-----------------------------------------------------------------------------/
 /
-/ Copyright (C) 2017, ChaN, all right reserved.
+/ Copyright (C) 2018, ChaN, all right reserved.
 /
 / FatFs module is an open source software. Redistribution and use of FatFs in
 / source and binary forms, with or without modification, are permitted provided
@@ -20,7 +20,7 @@
 
 
 #ifndef FF_DEFINED
-#define FF_DEFINED	89352	/* Revision ID */
+#define FF_DEFINED	63463	/* Revision ID */
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +45,12 @@ typedef struct {
 extern PARTITION VolToPart[];	/* Volume - Partition resolution table */
 #endif
 
+#if FF_STR_VOLUME_ID
+#ifndef FF_VOLUME_STRS
+extern const char* VolumeStr[FF_VOLUMES];	/* User defied volume ID */
+#endif
+#endif
+
 
 
 /* Type of path name strings on FatFs API */
@@ -60,7 +66,11 @@ typedef WCHAR TCHAR;
 typedef char TCHAR;
 #define _T(x) u8 ## x
 #define _TEXT(x) u8 ## x
-#elif FF_USE_LFN && (FF_LFN_UNICODE < 0 || FF_LFN_UNICODE > 2)
+#elif FF_USE_LFN && FF_LFN_UNICODE == 3	/* Unicode in UTF-32 encoding */
+typedef DWORD TCHAR;
+#define _T(x) U ## x
+#define _TEXT(x) U ## x
+#elif FF_USE_LFN && (FF_LFN_UNICODE < 0 || FF_LFN_UNICODE > 3)
 #error Wrong FF_LFN_UNICODE setting
 #else									/* ANSI/OEM code in SBCS/DBCS */
 typedef char TCHAR;
