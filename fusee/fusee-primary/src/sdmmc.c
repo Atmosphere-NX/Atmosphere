@@ -1,12 +1,13 @@
 /**
  * Fusée SD/MMC driver for the Switch
- *  ~ktemkin 
+ *  ~ktemkin
  */
 
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
 
+#include "lib/driver_utils.h"
 #include "sdmmc.h"
 #include "car.h"
 #include "pinmux.h"
@@ -16,7 +17,6 @@
 #include "supplies.h"
 #include "pmc.h"
 #include "pad_control.h"
-#include "lib/printk.h"
 
 #define TEGRA_SDMMC_BASE (0x700B0000)
 #define TEGRA_SDMMC_SIZE (0x200)
@@ -233,7 +233,7 @@ enum sdmmc_command {
     CMD_SEND_EXT_CSD = 8,
     CMD_SEND_IF_COND = 8,
     CMD_SEND_CSD = 9,
-    CMD_SEND_CID = 10, 
+    CMD_SEND_CID = 10,
     CMD_STOP_TRANSMISSION = 12,
     CMD_READ_STATUS = 13,
     CMD_BUS_TEST = 14,
@@ -315,7 +315,7 @@ enum sdmmc_csd_versions {
 
 
 
-/** 
+/**
  * Positions of different fields in various CSDs.
  * May eventually be replaced with a bitfield struct, if we use enough of the CSDs.
  */
@@ -764,20 +764,20 @@ static int sdmmc_hardware_init(struct mmc *mmc)
 
     // Clear PAD_E_INPUT_OR_E_PWRD (relevant for eMMC only)
     regs->sdmemcomppadctrl &= ~(0x80000000);
-    
+
     // Set SDHCI_CLOCK_INT_EN
     regs->clock_control |= 0x01;
-   
+
     // Program a timeout of 2000ms
     timebase = get_time();
     is_timeout = false;
-    
+
     // Wait for SDHCI_CLOCK_INT_STABLE to be set
     while (!(regs->clock_control & 0x02) && !is_timeout) {
         // Keep checking if timeout expired
         is_timeout = get_time_since(timebase) > 2000000;
     }
-    
+
     // Clock failed to stabilize
     if (is_timeout) {
         mmc_print(mmc, "clock never stabalized!");
@@ -814,7 +814,7 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Clear SDHCI_CTRL_HISPD
     regs->host_control &= 0xFB;
 
-    // Clear SDHCI_CTRL_VDD_180 
+    // Clear SDHCI_CTRL_VDD_180
     regs->host_control2 &= ~(0x08);
 
     // Set SDHCI_DIVIDER and SDHCI_DIVIDER_HI
@@ -919,7 +919,7 @@ static int sdmmc_wait_until_no_longer_busy(struct mmc *mmc)
  * Blocks until the SD driver has completed issuing a command.
  *
  * @param mmc The MMC controller on which to wait.
- * @param target_irq A bitmask that specifies the bits that 
+ * @param target_irq A bitmask that specifies the bits that
  *      will make this function return success
  * @param fault_conditions A bitmask that specifies the bits that
  *      will make this function return EFAULT.
@@ -927,7 +927,7 @@ static int sdmmc_wait_until_no_longer_busy(struct mmc *mmc)
  * @return 0 on sucess, EFAULT if a fault condition occurs,
  *      or an error code if a transfer failure occurs
  */
-static int sdmmc_wait_for_interrupt(struct mmc *mmc, 
+static int sdmmc_wait_for_interrupt(struct mmc *mmc,
         uint32_t target_irq, uint32_t fault_conditions)
 {
     uint32_t timebase = get_time();
@@ -1066,7 +1066,7 @@ static int sdmmc_handle_cpu_transfer(struct mmc *mmc, uint16_t blocks, bool is_w
  * @param auto_termiante True iff we should instruct the system
  *      to reclaim the data lines after a transaction.
  */
-static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks, 
+static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks,
         bool is_write, bool auto_terminate, int argument)
 {
     if (blocks) {
@@ -1122,7 +1122,7 @@ static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks,
 static void sdmmc_prepare_command_registers(struct mmc *mmc, int blocks_to_xfer,
         enum sdmmc_command command, enum sdmmc_response_type response_type, enum sdmmc_response_checks checks)
 {
-    // Populate the command number 
+    // Populate the command number
     uint16_t to_write = (command << MMC_COMMAND_NUMBER_SHIFT) | (response_type << MMC_COMMAND_RESPONSE_TYPE_SHIFT) | checks;
 
     // If this is a "stop transmitting" command, set the abort flag.
@@ -1234,7 +1234,7 @@ static int sdmmc_handle_command_response(struct mmc *mmc,
  * @param blocks_to_transfer The number of SDMMC blocks to be transferred with the given command,
  *      or 0 to indicate that this command should not expect response data.
  * @param is_write True iff the given command issues data _to_ the card, instead of vice versa.
- * @param auto_terminate True iff the gven command needs to be terminated with e.g. CMD12 
+ * @param auto_terminate True iff the gven command needs to be terminated with e.g. CMD12
  * @param data_buffer A byte buffer that either contains the data to be sent, or which should
  *      receive data, depending on the is_write argument.
  *
@@ -1242,7 +1242,7 @@ static int sdmmc_handle_command_response(struct mmc *mmc,
  */
 static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
         enum sdmmc_response_type response_type, enum sdmmc_response_checks checks,
-        uint32_t argument, void *response_buffer, uint16_t blocks_to_transfer, 
+        uint32_t argument, void *response_buffer, uint16_t blocks_to_transfer,
         bool is_write, bool auto_terminate, void *data_buffer)
 {
     uint32_t total_data_to_xfer = sdmmc_get_block_size(mmc, is_write) * blocks_to_transfer;
@@ -1525,7 +1525,7 @@ static int sdmmc_read_and_parse_ext_csd(struct mmc *mmc)
     uint8_t ext_csd[MMC_EXT_CSD_SIZE];
 
     // Read the single EXT CSD block.
-    rc = sdmmc_send_command(mmc, CMD_SEND_EXT_CSD, MMC_RESPONSE_LEN48, 
+    rc = sdmmc_send_command(mmc, CMD_SEND_EXT_CSD, MMC_RESPONSE_LEN48,
             MMC_CHECKS_ALL, 0, NULL, 1, false, false, ext_csd);
     if (rc) {
         mmc_print(mmc, "ERROR: failed to read the extended CSD!");
@@ -1762,7 +1762,7 @@ static int sdmmc_mmc_wait_for_card_readiness(struct mmc *mmc)
         uint32_t response_masked;
 
         // Ask the SD card to identify its state. It will respond with readiness and a capacity magic.
-        rc = sdmmc_send_command(mmc, CMD_SEND_OPERATING_CONDITIONS, MMC_RESPONSE_LEN48, 
+        rc = sdmmc_send_command(mmc, CMD_SEND_OPERATING_CONDITIONS, MMC_RESPONSE_LEN48,
                 MMC_CHECKS_NONE, 0x40000080, response, 0, false, false, NULL);
         if (rc) {
             mmc_print(mmc, "ERROR: could not read the card's operating conditions!");
@@ -2018,7 +2018,7 @@ static int sdmmc_wait_for_card_ready(struct mmc *mmc, uint32_t timeout)
 static int sdmmc_mmc_switch_mode(struct mmc *mmc, enum sdmmc_switch_access_mode mode, enum sdmmc_switch_field field, uint16_t value, uint32_t timeout)
 {
     // Collapse our various parameters into a single argument.
-    uint32_t argument = 
+    uint32_t argument =
         (mode  << MMC_SWITCH_ACCESS_MODE_SHIFT) |
         (field << MMC_SWITCH_FIELD_SHIFT)       |
         (value << MMC_SWITCH_VALUE_SHIFT);
@@ -2088,7 +2088,7 @@ bool sdmmc_external_card_present(struct mmc *mmc)
 }
 
 /**
- * Switches a given SDMMC Controller where 
+ * Switches a given SDMMC Controller where
  */
 static void sdmmc_apply_card_type(struct mmc *mmc, enum sdmmc_card_type type)
 {

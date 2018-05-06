@@ -3,7 +3,7 @@
  *  ~ktemkin
  */
 
-#include <stdio.h>
+#include "lib/driver_utils.h"
 #include "supplies.h"
 
 // FIXME: replace hwinit with our own code
@@ -23,7 +23,7 @@ void supply_enable(enum switch_power_supply supply)
             return;
 
         default:
-            printf("ERROR: could not enable unknown supply %d!\n", supply);
+            printk("ERROR: could not enable unknown supply %d!\n", supply);
             return;
     }
 }

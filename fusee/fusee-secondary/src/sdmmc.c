@@ -2,12 +2,11 @@
  * Fusée SD/MMC driver for the Switch
  *  ~ktemkin
  */
-#include <stdio.h>
-#include <stdarg.h>
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
 
+#include "lib/driver_utils.h"
 #include "sdmmc.h"
 #include "car.h"
 #include "pinmux.h"
@@ -427,9 +426,9 @@ static void mmc_vprint(struct mmc *mmc, char *fmt, int required_loglevel, va_lis
     if (sdmmc_loglevel < required_loglevel)
         return;
 
-    printf("%s: ", mmc->name);
-    vprintf(fmt, list);
-    printf("\n");
+    printk("%s: ", mmc->name);
+    vprintk(fmt, list);
+    printk("\n");
 }
 
 
@@ -732,7 +731,7 @@ static int sdmmc_set_up_clocking_parameters(struct mmc *mmc)
             break;
 
         default:
-            printf("ERROR: initialization not yet writen for SDMMC%d", mmc->controller);
+            printk("ERROR: initialization not yet writen for SDMMC%d", mmc->controller);
             return ENODEV;
     }
 
@@ -1480,7 +1479,7 @@ static uint32_t sdmmc_extract_csd_bits(uint32_t *csd, int start, int width)
 
     // Sanity check our span.
     if ((start + width) > 128) {
-        printf("MMC ERROR: invalid CSD slice!\n");
+        printk("MMC ERROR: invalid CSD slice!\n");
         return 0xFFFFFFFF;
     }
 
@@ -2205,7 +2204,7 @@ static void sdmmc_initialize_defaults(struct mmc *mmc)
             break;
 
         default:
-            printf("ERROR: initialization not yet writen for SDMMC%d", mmc->controller);
+            printk("ERROR: initialization not yet writen for SDMMC%d", mmc->controller);
             break;
     }
 }

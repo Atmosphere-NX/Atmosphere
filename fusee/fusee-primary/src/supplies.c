@@ -3,8 +3,8 @@
  *  ~ktemkin
  */
 
+#include "lib/driver_utils.h"
 #include "supplies.h"
-#include "lib/printk.h"
 
 // FIXME: replace hwinit with our own code
 #include "hwinit/max7762x.h"
