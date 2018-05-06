@@ -6,9 +6,7 @@
 #include "stage2.h"
 #include "lib/ini.h"
 
-const char *g_bct0 = NULL;
-
-loader_ctx_t g_loader_ctx = {0};
+static loader_ctx_t g_loader_ctx = {0};
 
 loader_ctx_t *get_loader_ctx(void) {
     return &g_loader_ctx;

@@ -9,7 +9,7 @@
 #include "fs_dev.h"
 
 /* TODO: Add a #define for this size, somewhere. Also, primary can only actually load 0x7000. */
-char g_bct0[0x8000];
+static char g_bct0[0x8000];
 
 
 /* Allow for main(int argc, void **argv) signature. */
