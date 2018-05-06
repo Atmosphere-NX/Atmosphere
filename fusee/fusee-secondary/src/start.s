@@ -2,10 +2,11 @@
     mov r\@, #0
 .endm
 
-.section .text.start
+.section .text.start, "ax", %progbits
 .arm
 .align 5
 .global _start
+.type   _start, %function
 _start:
     /* Insert NOPs for convenience (i.e. to use Nintendo's BCTs, for example) */
     .rept 16
@@ -57,3 +58,12 @@ _start:
     ldmfd sp!, {r0, r1}
     bl  main
     b   .
+
+.section .chainloader.text.start, "ax", %progbits
+.arm
+.align 5
+.global relocate_and_chainload
+.type   relocate_and_chainload, %function
+relocate_and_chainload:
+    ldr sp, =0x40010000
+    b   relocate_and_chainload_main
