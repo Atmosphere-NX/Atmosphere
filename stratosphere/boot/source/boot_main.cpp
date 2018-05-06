@@ -145,7 +145,7 @@ static const std::tuple<u32, bool, bool> g_gpio_map[] = {
     {0x000000E6, false, false},  /* Port CC, Pin 6 */
 };
 
-int gpio_configure(unsigned int gpio_pad_name) {
+static int gpio_configure(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
@@ -164,7 +164,7 @@ int gpio_configure(unsigned int gpio_pad_name) {
     return gpio_cnf_val;
 }
 
-int gpio_set_direction(unsigned int gpio_pad_name) {
+static int gpio_set_direction(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
@@ -186,7 +186,7 @@ int gpio_set_direction(unsigned int gpio_pad_name) {
     return gpio_oe_val;
 }
 
-int gpio_set_output(unsigned int gpio_pad_name) {
+static int gpio_set_output(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
@@ -213,12 +213,12 @@ int main(int argc, char **argv)
     consoleDebugInit(debugDevice_SVC);
     
     Result rc;
-    u64* pinmux_base_vaddr = NULL;
-    u64* gpio_base_vaddr = NULL;
-    u64* pmc_base_vaddr = NULL;
+    u64 pinmux_base_vaddr = 0;
+    u64 gpio_base_vaddr = 0;
+    u64 pmc_base_vaddr = 0;
     
     /* Map the APB MISC registers for PINMUX */
-    rc = svcQueryIoMapping(pinmux_base_vaddr, APB_MISC_BASE, 0x4000);
+    rc = svcQueryIoMapping(&pinmux_base_vaddr, APB_MISC_BASE, 0x4000);
     if (R_FAILED(rc)) {
         return rc;
     }
@@ -228,7 +228,7 @@ int main(int argc, char **argv)
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_IoError));
     
     /* Map the GPIO registers */
-    rc = svcQueryIoMapping(gpio_base_vaddr, GPIO_BASE, 0x1000);
+    rc = svcQueryIoMapping(&gpio_base_vaddr, GPIO_BASE, 0x1000);
     if (R_FAILED(rc)) {
         return rc;
     }
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
         /* TODO: svcReadWriteRegister */
     } else {        
         /* Map the PMC registers directly */
-        rc = svcQueryIoMapping(pmc_base_vaddr, PMC_BASE, 0x3000);
+        rc = svcQueryIoMapping(&pmc_base_vaddr, PMC_BASE, 0x3000);
         if (R_FAILED(rc)) {
             return rc;
         }
@@ -263,9 +263,9 @@ int main(int argc, char **argv)
     
     /* Setup all GPIOs from 0x01 to 0x3C */
     for (unsigned int i = 1; i < MAX_GPIOS; i++) {
-        gpio_configure(i);
-        gpio_set_direction(i);
-        gpio_set_output(i);
+        gpio_configure(gpio_base_vaddr, i);
+        gpio_set_direction(gpio_base_vaddr, i);
+        gpio_set_output(gpio_base_vaddr, i);
     }
     
     /* TODO: Hardware setup, NAND repair, NotifyBootFinished */
