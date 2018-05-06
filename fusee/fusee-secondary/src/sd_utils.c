@@ -7,14 +7,6 @@
 struct mmc sd_mmc;
 static int initialized_sd = 0;
 
-void save_sd_state(void **mmc) {
-    *mmc = &sd_mmc;
-}
-void resume_sd_state(void *mmc) {
-    sd_mmc = *(struct mmc *)mmc;
-    initialized_sd = 1;
-}
-
 int initialize_sd(void) {
     if (initialized_sd) {
         return 1;
@@ -23,6 +15,9 @@ int initialize_sd(void) {
     if (sdmmc_init(&sd_mmc, SWITCH_MICROSD) == 0) {
         printf("Initialized SD card!\n");
         initialized_sd = 1;
+    } else {
+        printf("Failed to initialize the SD card!\n");
+        return 0;
     }
     return initialized_sd;
 }

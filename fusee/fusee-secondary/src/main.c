@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
 #include "utils.h"
 #include "hwinit.h"
 #include "loader.h"
@@ -34,8 +36,10 @@ int main(int argc, void **argv) {
     /* Setup console/stdout. */
     console_resume(args.lfb, args.console_row, args.console_col);
 
-    resume_sd_state((struct mmc *)args.sd_mmc);
-    fsdev_mount_all();
+    initialize_sd();
+    if(fsdev_mount_all() == -1) {
+        perror("Failed to mount at least one FAT parition");
+    }
     fsdev_set_default_device("sdmc");
 
     /* Copy the BCT0 from unsafe primary memory into our memory. */

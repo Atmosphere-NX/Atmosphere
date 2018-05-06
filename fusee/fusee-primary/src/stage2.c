@@ -40,28 +40,28 @@ static int stage2_ini_handler(void *user, const char *section, const char *name,
 
 stage2_entrypoint_t load_stage2(const char *bct0) {
     stage2_config_t config = {0};
-    
+
     if (ini_parse_string(bct0, stage2_ini_handler, &config) < 0) {
         printk("Error: Failed to parse BCT.ini!\n");
         generic_panic();
     }
-    
+
     if (config.load_address == 0 || config.path[0] == '\x00') {
         printk("Error: Failed to determine where to load stage2!\n");
         generic_panic();
     }
-    
+
     printk("[DEBUG] Stage 2 Config:\n");
     printk("    File Path:    %s\n", config.path);
     printk("    Load Address: 0x%08x\n", config.load_address);
     printk("    Entrypoint:   0x%p\n", config.entrypoint);
-    
+
     if (!read_sd_file((void *)config.load_address, 0x100000, config.path)) {
         printk("Error: Failed to read stage2 (%s)!\n", config.path);
         generic_panic();
     }
-    
+
     strncpy(g_stage2_path, config.path, sizeof(g_stage2_path));
-    
+
     return config.entrypoint;
 }

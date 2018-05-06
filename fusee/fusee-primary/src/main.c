@@ -5,6 +5,7 @@
 #include "sd_utils.h"
 #include "stage2.h"
 #include "sdmmc.h"
+#include "lib/fatfs/ff.h"
 #include "lib/printk.h"
 #include "display/video_fb.h"
 
@@ -115,7 +116,6 @@ int main(void) {
     args->lfb = (uint32_t *)lfb_base;
     args->console_col = video_get_col();
     args->console_row = video_get_row();
-    save_sd_state(&args->sd_mmc);
     f_unmount("");
 
     /* Jump to Stage 2. */
