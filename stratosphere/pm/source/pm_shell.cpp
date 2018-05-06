@@ -1,11 +1,15 @@
 #include <switch.h>
 #include "pm_registration.hpp"
 #include "pm_shell.hpp"
+#include "pm_debug.hpp"
 
 static bool g_has_boot_finished = false;
 
 Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     Result rc = 0xF601;
+    LogForService("SHELLSRV", 8);
+    LogForService(&cmd_id, 8);
+    LogForService(armGetTls(), 0x100);
     if (kernelAbove500()) {
         switch ((ShellCmd_5X)cmd_id) {
             case Shell_Cmd_5X_LaunchProcess:
@@ -69,6 +73,12 @@ Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id
                 break;
         }
     }
+    //Log(armGetTls(), 0x100);
+    LogForService(armGetTls(), 0x100);
+    if (R_FAILED(rc)) {
+        
+        Reboot();
+    }
     return rc;
 }
 
@@ -88,7 +98,7 @@ std::tuple<Result> ShellService::terminate_process_id(u64 pid) {
     
     Registration::Process *proc = Registration::GetProcess(pid);
     if (proc != NULL) {
-        return {svcCloseHandle(proc->handle)};
+        return {svcTerminateProcess(proc->handle)};
     } else {
         return {0x20F};
     }
@@ -99,7 +109,7 @@ std::tuple<Result> ShellService::terminate_title_id(u64 tid) {
     
     Registration::Process *proc = Registration::GetProcessByTitleId(tid);
     if (proc != NULL) {
-        return {svcCloseHandle(proc->handle)};
+        return {svcTerminateProcess(proc->handle)};
     } else {
         return {0x20F};
     }

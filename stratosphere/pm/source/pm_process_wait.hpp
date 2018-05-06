@@ -2,6 +2,9 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "pm_registration.hpp"
+#include "pm_debug.hpp"
+
 class ProcessWaiter : public IWaitable {
     public:
         Registration::Process process;

@@ -8,6 +8,7 @@
 static ProcessList g_process_list;
 static ProcessList g_dead_process_list;
 
+static HosSemaphore g_sema_start_launch;
 static HosSemaphore g_sema_finish_launch;
 
 static HosMutex g_process_launch_mutex;
@@ -19,7 +20,6 @@ static std::atomic<u64> g_debug_on_launch_tid(0);
 static SystemEvent *g_process_event = NULL;
 static SystemEvent *g_debug_title_event = NULL;
 static SystemEvent *g_debug_application_event = NULL;
-static SystemEvent *g_process_launch_start_event = NULL;
 
 static const u64 g_memory_resource_limits[5][3] = {
     {0x010D00000ULL, 0x0CD500000ULL, 0x021700000ULL},
@@ -61,7 +61,6 @@ void Registration::InitializeSystemResources() {
     g_process_event = new SystemEvent(&IEvent::PanicCallback);
     g_debug_title_event = new SystemEvent(&IEvent::PanicCallback);
     g_debug_application_event = new SystemEvent(&IEvent::PanicCallback);
-    g_process_launch_start_event = new SystemEvent(&Registration::ProcessLaunchStartCallback);
     
     /* Get memory limits. */
     u64 memory_arrangement;
@@ -112,13 +111,8 @@ void Registration::InitializeSystemResources() {
     }
 }
 
-Result Registration::ProcessLaunchStartCallback(Handle *handles, size_t num_handles, u64 timeout) {
-    Registration::HandleProcessLaunch();
-    return 0;
-}
-
-IWaitable *Registration::GetProcessLaunchStartEvent() {
-    return g_process_launch_start_event;
+bool Registration::TryWaitProcessLaunchStartEvent() {
+    return g_sema_start_launch.TryWait();
 }
 
 IWaitable *Registration::GetProcessList() {
@@ -129,17 +123,19 @@ void Registration::HandleProcessLaunch() {
     LoaderProgramInfo program_info = {0};
     Result rc;
     u64 launch_flags = g_process_launch_state.launch_flags;
-    const u8 *acid_fac, *aci0_fah, *acid_sac, *aci0_sac;
     u64 *out_pid = g_process_launch_state.out_pid;
     u32 reslimit_idx;
     Process new_process = {0};
     new_process.tid_sid = g_process_launch_state.tid_sid;
-    
+    u8 *ac_buf = new u8[4 * sizeof(LoaderProgramInfo)];
+    std::fill(ac_buf, ac_buf + 4 * sizeof(LoaderProgramInfo), 0xCC);
+    u8 *acid_sac = ac_buf, *aci0_sac = acid_sac + sizeof(LoaderProgramInfo), *fac = aci0_sac + sizeof(LoaderProgramInfo), *fah = fac + sizeof(LoaderProgramInfo);
+            
     /* Check that this is a real program. */
     if (R_FAILED((rc = ldrPmGetProgramInfo(new_process.tid_sid.title_id, new_process.tid_sid.storage_id, &program_info)))) {
         goto HANDLE_PROCESS_LAUNCH_END;
     }
-    
+        
     /* Get the resource limit handle, ensure that we can launch the program. */
     if ((program_info.application_type & 3) == 1) {
         if (HasApplicationProcess(NULL)) {
@@ -155,7 +151,7 @@ void Registration::HandleProcessLaunch() {
     if (R_FAILED((rc = ldrPmRegisterTitle(new_process.tid_sid.title_id, new_process.tid_sid.storage_id, &new_process.ldr_queue_index)))) {
         goto HANDLE_PROCESS_LAUNCH_END;
     }
-    
+        
     /* Make sure the previous application is cleaned up. */
     if ((program_info.application_type & 3) == 1) {
         EnsureApplicationResourcesAvailable();
@@ -165,24 +161,24 @@ void Registration::HandleProcessLaunch() {
     if (R_FAILED((rc = ldrPmCreateProcess(LAUNCHFLAGS_ARGLOW(launch_flags) | LAUNCHFLAGS_ARGHIGH(launch_flags), new_process.ldr_queue_index, g_resource_limit_handles[reslimit_idx], &new_process.handle)))) {
         goto PROCESS_CREATION_FAILED;
     }
-    
+        
     /* Get the new process's id. */
     svcGetProcessId(&new_process.pid, new_process.handle);
-    
+        
     /* Register with FS. */
-    acid_fac = program_info.ac_buffer + program_info.acid_sac_size + program_info.aci0_sac_size;
-    aci0_fah = acid_fac + program_info.acid_fac_size;
-    if (R_FAILED((rc = fsprRegisterProgram(new_process.pid, new_process.tid_sid.title_id, new_process.tid_sid.storage_id, aci0_fah, program_info.aci0_fah_size, acid_fac, program_info.acid_fac_size)))) {
+    memcpy(fac, program_info.ac_buffer + program_info.acid_sac_size + program_info.aci0_sac_size, program_info.acid_fac_size);
+    memcpy(fah, program_info.ac_buffer + program_info.acid_sac_size + program_info.aci0_sac_size + program_info.acid_fac_size, program_info.aci0_fah_size);
+    if (R_FAILED((rc = fsprRegisterProgram(new_process.pid, new_process.tid_sid.title_id, new_process.tid_sid.storage_id, fah, program_info.aci0_fah_size, fac, program_info.acid_fac_size)))) {
         goto FS_REGISTRATION_FAILED;
     }
-    
-    /* Register with PM. */
-    acid_sac = program_info.ac_buffer;
-    aci0_sac = program_info.ac_buffer + program_info.acid_sac_size;
+        
+    /* Register with SM. */
+    memcpy(acid_sac, program_info.ac_buffer, program_info.acid_sac_size);
+    memcpy(aci0_sac, program_info.ac_buffer + program_info.acid_sac_size, program_info.aci0_sac_size);
     if (R_FAILED((rc = smManagerRegisterProcess(new_process.pid, acid_sac, program_info.acid_sac_size, aci0_sac, program_info.aci0_sac_size)))) {
         goto SM_REGISTRATION_FAILED;
     }
-    
+        
     /* Setup process flags. */
     if (program_info.application_type & 1) {
         new_process.flags |= 0x40;
@@ -213,8 +209,11 @@ void Registration::HandleProcessLaunch() {
         rc = 0;
     } else {
         rc = svcStartProcess(new_process.handle, program_info.main_thread_priority, program_info.default_cpu_id, program_info.main_thread_stack_size);
+    
         if (R_SUCCEEDED(rc)) {
             SetProcessState(new_process.pid, ProcessState_DebugDetached);
+            Log("MADENEWPROCESS", 16);
+            Log(GetProcess(new_process.pid), sizeof(Process));
         }
     }
     
@@ -243,6 +242,7 @@ HANDLE_PROCESS_LAUNCH_END:
     if (R_SUCCEEDED(rc)) {
         *out_pid = new_process.pid;
     }
+    delete ac_buf;
     g_sema_finish_launch.Signal();
 }
 
@@ -257,7 +257,7 @@ Result Registration::LaunchProcess(u64 title_id, FsStorageId storage_id, u64 lau
     g_process_launch_state.out_pid = out_pid;
     
     /* Start a launch, and wait for it to exit. */
-    g_process_launch_start_event->signal_event();
+    g_sema_start_launch.Signal();
     g_sema_finish_launch.Wait();
     
     rc = g_process_launch_state.result;
@@ -272,7 +272,10 @@ Result Registration::LaunchProcessByTidSid(TidSid tid_sid, u64 launch_flags, u64
 
 void Registration::HandleSignaledProcess(Process *process) {
     u64 tmp;
-        
+    
+    Log("PROCESSIGNALED\x00", 16);
+    Log(process, sizeof(*process));
+     
     /* Reset the signal. */
     svcResetSignal(process->handle);
     
@@ -280,6 +283,7 @@ void Registration::HandleSignaledProcess(Process *process) {
     old_state = process->state;
     svcGetProcessInfo(&tmp, process->handle, ProcessInfoType_ProcessState);
     process->state = (ProcessState)tmp;
+    Log(process, sizeof(*process));
     
     if (old_state == ProcessState_Crashed && process->state != ProcessState_Crashed) {
         process->flags &= ~0x4;
@@ -317,6 +321,7 @@ void Registration::HandleSignaledProcess(Process *process) {
             } else {
                 FinalizeExitedProcess(process);
             }
+            //Reboot();
             break;
         case ProcessState_DebugSuspended:
             if (process->flags & 8) {
@@ -454,9 +459,10 @@ void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
             return;
         }
         if (p->flags & 0x10) {
+            u64 old_flags = p->flags;
             p->flags &= ~0x10;
             *out_pid = p->pid;
-            *out_type = kernelAbove500() ? (((p->flags >> 5) & 1) | 4) : (((p->flags >> 5) & 1) + 3);
+            *out_type = kernelAbove500() ? (((old_flags >> 5) & 1) | 4) : (((old_flags >> 5) & 1) + 3);
             return;
         }
         if (p->flags & 2) {

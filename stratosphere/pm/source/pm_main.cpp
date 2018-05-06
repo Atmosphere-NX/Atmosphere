@@ -11,6 +11,7 @@
 #include "pm_shell.hpp"
 #include "pm_process_track.hpp"
 #include "pm_registration.hpp"
+#include "pm_debug.hpp"
 
 extern "C" {
     extern u32 __start__;

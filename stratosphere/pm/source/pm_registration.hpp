@@ -5,7 +5,7 @@
 #define LAUNCHFLAGS_NOTIFYWHENEXITED(flags) (flags & 1)
 #define LAUNCHFLAGS_STARTSUSPENDED(flags) (flags & (kernelAbove500() ? 0x10 : 0x2))
 #define LAUNCHFLAGS_ARGLOW(flags) (kernelAbove500() ? ((flags & 0x14) != 0x10) : (kernelAbove200() ? ((flags & 0x6) != 0x2) : ((flags >> 2) & 1)))
-#define LAUNCHFLAGS_ARGHIGH(flags) (flags & (kernelAbove500() ? 0x20 : 0x8))
+#define LAUNCHFLAGS_ARGHIGH(flags) ((flags & (kernelAbove500() ? 0x20 : 0x8)) ? 2 : 0)
 #define LAUNCHFLAGS_NOTIFYDEBUGEVENTS(flags) (flags & (kernelAbove500() ? 0x8 : 0x10))
 #define LAUNCHFLAGS_NOTIYDEBUGSPECIAL(flags) (flags & (kernelAbove500() ? 0x2 : (kernelAbove200() ? 0x20 : 0x0)))
 
@@ -41,8 +41,7 @@ class Registration {
         };
                 
         static void InitializeSystemResources();
-        static IWaitable *GetProcessLaunchStartEvent();
-        static Result ProcessLaunchStartCallback(Handle *handles, size_t num_handles, u64 timeout);
+        static bool TryWaitProcessLaunchStartEvent();
         
         static IWaitable *GetProcessList();
         static void HandleSignaledProcess(Process *process);
