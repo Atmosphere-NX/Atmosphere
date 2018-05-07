@@ -125,7 +125,6 @@ int fsdev_mount_device(const char *name, unsigned int id) {
 
 int fsdev_set_default_device(const char *name) {
     int ret;
-    char drname[40];
     int devid = FindDevice(name);
 
     if (devid == -1) {
@@ -136,6 +135,7 @@ int fsdev_set_default_device(const char *name) {
 #if FF_VOLUMES < 2
     ret = 0;
 #else
+    char drname[40];
 
     strcpy(drname, name);
     strcat(drname, ":");
@@ -295,6 +295,9 @@ static void fsdev_filinfo_to_st(struct stat *st, const FILINFO *info) {
     } else {
         st->st_mode = S_IFREG | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
     }
+
+    st->st_blksize = 512;
+    st->st_blocks = st->st_size / st->st_blksize;
 }
 
 static int fsdev_open(struct _reent *r, void *fileStruct, const char *path, int flags, int mode) {
