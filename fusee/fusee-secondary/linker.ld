@@ -7,12 +7,17 @@ MEMORY
 {
     NULL        : ORIGIN = 0x00000000, LENGTH = 0x1000
     main        : ORIGIN = 0xFFF00000, LENGTH = 0x00100000
-    low_iram    : ORIGIN = 0x40003000, LENGTH = 0x4000
+    low_iram    : ORIGIN = 0x40003000, LENGTH = 0x8000
 }
 
 SECTIONS
 {
-    PROVIDE(__start__ = 0xFFF00000);
+    PROVIDE(__start__           = 0xF0000000);
+    PROVIDE(__stack_top__       = 0x40010000);
+    PROVIDE(__stack_bottom__    = 0x4000C000);
+    PROVIDE(__heap_start__      = 0xE0000000);
+    PROVIDE(__heap_end__        = 0xF0000000);
+
     . = __start__;
     . = ALIGN(32);
 
@@ -24,18 +29,26 @@ SECTIONS
         . = ALIGN(4);
     } >main
 
-    .chainloader :
+    .chainloader_loadable :
     {
         . = ALIGN(32);
-        PROVIDE (__chainloader_start = .);
+        PROVIDE (__chainloader_start__  = .);
+        PROVIDE (__chainloader_lma__    = LOADADDR(.chainloader_loadable));
         KEEP(*(.chainloader.text.start))
         build/chainloader.o(.text*)
         build/chainloader.o(.rodata*)
         build/chainloader.o(.data*)
         . = ALIGN(8);
+
+    } >low_iram AT>main
+
+    .chainloader_bss :
+    {
+        . = ALIGN(8);
+        PROVIDE (__chainloader_bss_start__ = .);
         build/chainloader.o(.bss* COMMON)
         . = ALIGN(8);
-        PROVIDE (__chainloader_end = .);
+        PROVIDE (__chainloader_end__ = .);
     } >low_iram AT>main
 
     .text :

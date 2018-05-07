@@ -27,7 +27,8 @@ CFLAGS = \
 	-std=gnu11 \
 	-Werror \
 	-Wall \
-	-fstrict-volatile-bitfields
+	-fstrict-volatile-bitfields \
+	-DFUSEE_STAGE1_SRC
 
 LDFLAGS = -specs=linker.specs -g $(ARCH)
 

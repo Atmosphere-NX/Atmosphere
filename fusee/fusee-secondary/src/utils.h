@@ -71,9 +71,39 @@ static inline bool check_32bit_additive_overflow(uint32_t a, uint32_t b) {
     return __builtin_add_overflow_p(a, b, (uint32_t)0);
 }
 
+static inline bool check_32bit_address_loadable(uintptr_t addr) {
+    /* FWIW the bootROM forbids loading anything between 0x40000000 and 0x40010000, using it for itself... */
+    return (addr >= 0x40010000u && addr < 0x40040000u) || addr >= 0x80000000u;
+}
+
+static inline bool check_32bit_address_range_loadable(uintptr_t addr, size_t size) {
+    return
+        __builtin_add_overflow_p(addr, size, (uintptr_t)0) && /* the range doesn't overflow */
+        check_32bit_address_loadable(addr) && check_32bit_address_loadable(addr + size) && /* bounds are valid */
+        !(addr >= 0x40010000u && addr + size >= 0x40040000u) /* the range doesn't cross MMIO */
+    ;
+}
+
+bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be);
+static inline bool overlaps_a(const void *as, const void *ae, const void *bs, const void *be) {
+    return overlaps((uint64_t)(uintptr_t)as, (uint64_t)(uintptr_t)ae, (uint64_t)(uintptr_t)bs, (uint64_t)(uintptr_t)be);
+}
+
+static inline bool check_32bit_address_range_in_program(uintptr_t addr, size_t size) {
+    extern uint8_t __chainloader_start__[], __chainloader_end__[];
+    extern uint8_t __stack_bottom__[], __stack_top__[];
+    extern uint8_t __heap_start__[], __heap_end__[];
+    extern uint8_t __start__[], __end__[];
+    uint8_t *start = (uint8_t *)addr, *end = start + size;
+
+    return overlaps_a(start, end, __chainloader_start__, __chainloader_end__) ||
+    overlaps_a(start, end, __stack_bottom__, __stack_top__) ||
+    overlaps_a(start, end, __heap_start__, __heap_end__) ||
+    overlaps_a(start, end, __start__, __end__);
+}
+
 void panic(uint32_t code);
 void generic_panic(void);
 void panic_predefined(uint32_t which);
-bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be);
 
 #endif

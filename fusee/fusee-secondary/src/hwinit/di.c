@@ -188,9 +188,9 @@ void display_enable_backlight(bool on) {
 }
 
 
-u32 *display_init_framebuffer(void)
+u32 *display_init_framebuffer(void *address)
 {
-	u32 *lfb_addr = (u32 *)0xC0000000;
+	u32 *lfb_addr = (u32 *)address;
 
 	//This configures the framebuffer @ 0xC0000000 with a resolution of 1280x720 (line stride 768).
 	exec_cfg((u32 *)DISPLAY_A_BASE, cfg_display_framebuffer, 32);

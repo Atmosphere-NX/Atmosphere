@@ -28,7 +28,7 @@ void clock_enable_fuse(u32 enable);
 void display_color_screen(u32 color);
 
 /*! Init display in full 1280x720 resolution (32bpp, line stride 768, framebuffer size = 1280*768*4 bytes). */
-u32 *display_init_framebuffer();
+u32 *display_init_framebuffer(void *address);
 
 /*! Enable or disable the backlight. Should only be called when the screen is completely set up, to avoid flickering. */
 void display_enable_backlight(bool on);

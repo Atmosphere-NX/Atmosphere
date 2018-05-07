@@ -1,40 +1,50 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <malloc.h>
 #include "utils.h"
 #include "hwinit.h"
 #include "loader.h"
+#include "chainloader.h"
 #include "stage2.h"
 #include "nxboot.h"
 #include "console.h"
 #include "sd_utils.h"
 #include "fs_dev.h"
+#include "display/video_fb.h"
 
-/* TODO: Add a #define for this size, somewhere. Also, primary can only actually load 0x7000. */
-static char g_bct0[0x8000];
-
+static stage2_args_t *g_stage2_args;
 
 /* Allow for main(int argc, void **argv) signature. */
 #pragma GCC diagnostic ignored "-Wmain"
 
-void __init_heap(void) {
-    extern char* fake_heap_start;
-    extern char* fake_heap_end;
-
-    fake_heap_start = (char*)0xF0000000;
-    fake_heap_end   = (char*)0xFFF00000;
-}
-
 int main(int argc, void **argv) {
-    stage2_args_t args = {0};
     loader_ctx_t *loader_ctx = get_loader_ctx();
+    void *framebuffer = memalign(0x1000, CONFIG_VIDEO_VISIBLE_ROWS * CONFIG_VIDEO_COLS * CONFIG_VIDEO_PIXEL_SIZE);
 
-    if (argc != STAGE2_ARGC || ((args = *((stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT])).version != 0)) {
+    /* Initialize the display. */
+    display_init();
+
+    if (framebuffer == NULL) {
         generic_panic();
     }
 
-    /* Setup console/stdout. */
-    console_resume(args.lfb, args.console_row, args.console_col);
+    /* Initalize the framebuffer and console/stdout */
+    display_init_framebuffer(framebuffer);
+    console_init(framebuffer);
+
+    /* Turn on the backlight after initializing the lfb */
+    /* to avoid flickering. */
+    display_enable_backlight(true);
+
+    if (argc != STAGE2_ARGC) {
+        generic_panic();
+    }
+    g_stage2_args = (stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT];
+
+    if(g_stage2_args->version != 0) {
+        generic_panic();
+    }
 
     initialize_sd();
     if(fsdev_mount_all() == -1) {
@@ -42,29 +52,32 @@ int main(int argc, void **argv) {
     }
     fsdev_set_default_device("sdmc");
 
-    /* Copy the BCT0 from unsafe primary memory into our memory. */
-    strncpy(g_bct0, args.bct0, sizeof(g_bct0));
-
     /* TODO: What other hardware init should we do here? */
 
     printf(u8"Welcome to Atmosphère Fusée Stage 2!\n");
     printf("Stage 2 executing from: %s\n", (const char *)argv[STAGE2_ARGV_PROGRAM_PATH]);
 
     /* This will load all remaining binaries off of the SD. */
-    load_payload(g_bct0);
+    load_payload(g_stage2_args->bct0);
 
     printf("Loaded payloads!\n");
 
     /* Unmount everything (this causes all open files to be flushed and closed) */
     fsdev_unmount_all();
 
-    if (loader_ctx->chainload_entrypoint != NULL) {
-        /* TODO: What do we want to do in terms of argc/argv? */
-        loader_ctx->chainload_entrypoint(0, NULL);
+    /* Deinitialize the framebuffer and display */
+    display_enable_backlight(false);
+    display_end();
+    free(framebuffer);
+
+    if (loader_ctx->chainload_entrypoint != 0) {
+        /* TODO: What else do we want to do in terms of argc/argv? */
+        const char *path = get_loader_ctx()->file_paths[get_loader_ctx()->file_id_of_entrypoint];
+        strcpy(g_chainloader_arg_data, path);
+        relocate_and_chainload(1);
     } else {
         /* If we don't have a chainload entrypoint set, we're booting Horizon. */
         nxboot_main();
     }
     return 0;
 }
-

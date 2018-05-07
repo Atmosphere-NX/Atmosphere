@@ -8,12 +8,11 @@
 #define STAGE2_ARGV_ARGUMENT_STRUCT 1
 #define STAGE2_ARGC 2
 
+#define BCTO_MAX_SIZE 0x6000
+
 typedef struct {
     uint32_t version;
-    const char *bct0;
-    uint32_t *lfb;
-    uint32_t console_row;
-    uint32_t console_col;
+    char bct0[BCTO_MAX_SIZE];
 } stage2_args_t;
 
 #endif

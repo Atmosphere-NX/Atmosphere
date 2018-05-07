@@ -41,7 +41,7 @@ ini1_header_t *stratosphere_get_ini1(void) {
 
 /* Merges some number of INI1s into a single INI1. It's assumed that the INIs are in order of preference. */
 size_t stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num_inis) {
-    char sd_path[0x300] = {0};
+    char sd_path[0x100] = {0};
     /* Validate all ini headers. */
     for (unsigned int i = 0; i < num_inis; i++) {
         if (inis[i] == NULL || inis[i]->magic != MAGIC_INI1 || inis[i]->num_processes > INI1_MAX_KIPS) {
