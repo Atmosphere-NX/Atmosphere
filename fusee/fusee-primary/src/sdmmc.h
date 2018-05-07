@@ -105,7 +105,7 @@ enum sdmmc_switch_access_mode {
  * Offsets into the SWITCH_MODE argument.
  */
 enum sdmmc_switch_argument_offsets {
-    MMC_SWITCH_VALUE_SHIFT = 0,
+    MMC_SWITCH_VALUE_SHIFT = 8,
     MMC_SWITCH_FIELD_SHIFT = 16,
     MMC_SWITCH_ACCESS_MODE_SHIFT = 24,
 };

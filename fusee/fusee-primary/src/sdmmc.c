@@ -2251,7 +2251,7 @@ int sdmmc_select_partition(struct mmc *mmc, enum sdmmc_partition partition)
 
     // Set the PARTITION_CONFIG register to select the active partition.
     mmc_print(mmc, "switching to partition %d", partition);
-    rc = mmc->switch_mode(mmc, MMC_SWITCH_EXTCSD_NORMAL, MMC_PARTITION_CONFIG, argument, 0);
+    rc = mmc->switch_mode(mmc, MMC_SWITCH_MODE_WRITE_BYTE, MMC_PARTITION_CONFIG, argument, 0);
     if (rc) {
         mmc_print(mmc, "failed to select partition %d (%02x, rc=%d)", partition, argument, rc);
     }
