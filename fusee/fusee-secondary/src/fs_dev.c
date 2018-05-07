@@ -124,10 +124,6 @@ int fsdev_mount_device(const char *name, unsigned int id) {
 }
 
 int fsdev_set_default_device(const char *name) {
-#if FF_VOLUMES < 2
-    return 0;
-#else
-
     int ret;
     char drname[40];
     int devid = FindDevice(name);
@@ -137,17 +133,20 @@ int fsdev_set_default_device(const char *name) {
         return -1;
     }
 
+#if FF_VOLUMES < 2
+    ret = 0;
+#else
+
     strcpy(drname, name);
     strcat(drname, ":");
 
     ret = fsdev_convert_rc(NULL, f_chdrive(drname));
-
+#endif
     if (ret == 0) {
         setDefaultDevice(devid);
     }
 
     return ret;
-#endif
 }
 
 int fsdev_unmount_device(const char *name) {
