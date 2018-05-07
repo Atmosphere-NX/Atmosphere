@@ -16,8 +16,8 @@ static char g_bct0_buffer[BCTO_MAX_SIZE];
 "BCT0\n"\
 "[stage1]\n"\
 "stage2_path = fusee-secondary.bin\n"\
-"stage2_addr = 0xFFF00000\n"\
-"stage2_entrypoint = 0xFFF00000\n"
+"stage2_addr = 0xF0000000\n"\
+"stage2_entrypoint = 0xF0000000\n"
 
 const char *load_config(void) {
     if (!read_sd_file(g_bct0_buffer, BCTO_MAX_SIZE, "BCT.ini")) {
