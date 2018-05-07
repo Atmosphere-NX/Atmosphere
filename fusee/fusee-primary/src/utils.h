@@ -80,7 +80,7 @@ static inline bool check_32bit_address_range_loadable(uintptr_t addr, size_t siz
     return
         !__builtin_add_overflow_p(addr, size, (uintptr_t)0) && /* the range doesn't overflow */
         check_32bit_address_loadable(addr) && check_32bit_address_loadable(addr + size) && /* bounds are valid */
-        !(addr >= 0x40010000u && addr + size >= 0x40040000u) /* the range doesn't cross MMIO */
+        !(addr >= 0x40010000u && addr < 0x40040000u && addr + size >= 0x40040000u) /* the range doesn't cross MMIO */
     ;
 }
 
