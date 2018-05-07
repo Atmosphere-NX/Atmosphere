@@ -6,7 +6,7 @@ ENTRY(_start)
 MEMORY
 {
     NULL        : ORIGIN = 0x00000000, LENGTH = 0x1000
-    main        : ORIGIN = 0xFFF00000, LENGTH = 0x00100000
+    main        : ORIGIN = 0xF0000000, LENGTH = 0x10000000
     low_iram    : ORIGIN = 0x40003000, LENGTH = 0x8000
 }
 
