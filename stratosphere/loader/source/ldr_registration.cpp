@@ -230,7 +230,7 @@ Result Registration::RemoveNroInfo(u64 index, Handle process_h, u64 nro_heap_add
         return 0xA809;
     }
     
-    for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
+    for (unsigned int i = 0; i < NRO_INFO_MAX; i++) {
         if (target_process->nro_infos[i].in_use && target_process->nro_infos[i].nro_heap_address == nro_heap_address) {
             NroInfo *info = &target_process->nro_infos[i];
             Result rc = svcUnmapProcessCodeMemory(process_h, info->base_address + info->text_size + info->ro_size + info->rw_size, info->bss_heap_address, info->bss_heap_size);

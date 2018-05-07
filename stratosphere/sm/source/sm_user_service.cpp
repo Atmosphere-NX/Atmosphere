@@ -65,11 +65,11 @@ std::tuple<Result, MovedHandle> UserService::register_service(u64 service, u8 is
     Result rc = 0x415;
 #ifdef SM_ENABLE_SMHAX
     if (!this->has_initialized) {
-        rc = Registration::RegisterServiceForPid(Registration::GetInitialProcessId(), service, max_sessions, is_light != 0, &service_h);
+        rc = Registration::RegisterServiceForPid(Registration::GetInitialProcessId(), service, max_sessions, (is_light & 1) != 0, &service_h);
     }
 #endif
     if (this->has_initialized) {
-        rc = Registration::RegisterServiceForPid(this->pid, service, max_sessions, is_light != 0, &service_h);
+        rc = Registration::RegisterServiceForPid(this->pid, service, max_sessions, (is_light & 1) != 0, &service_h);
     }
     return {rc, MovedHandle{service_h}};
 }
