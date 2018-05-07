@@ -828,12 +828,6 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Ensure we're using Single-operation DMA (SDMA) mode for DMA.
     regs->host_control &= ~MMC_DMA_SELECT_MASK;
 
-    // ... and verify that the card is there.
-    if (!sdmmc_card_present(mmc)) {
-        mmc_print(mmc, "ERROR: no card detected!");
-        return ENODEV;
-    }
-
     return 0;
 }
 
@@ -2134,7 +2128,6 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
             mmc->name = "eMMC";
             mmc->max_bus_width = MMC_BUS_WIDTH_8BIT;
             mmc->operating_voltage = MMC_VOLTAGE_1V8;
-            mmc->card_detect_gpio = GPIO_MICROSD_CARD_DETECT;
 
             // Set up function pointers for each of our per-instance functions.
             mmc->set_up_clock_and_io = sdmmc4_set_up_clock_and_io;
@@ -2153,6 +2146,7 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
             mmc->card_type = MMC_CARD_SD;
             mmc->max_bus_width = MMC_BUS_WIDTH_4BIT;
             mmc->operating_voltage = MMC_VOLTAGE_3V3;
+            mmc->card_detect_gpio = GPIO_MICROSD_CARD_DETECT;
 
             // For the microSD card slot, assume we have an SD-type card.
             // Negotiation has a chance to change this, later.
@@ -2217,6 +2211,12 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
     if (rc) {
         mmc_print(mmc, "failed to set up controller! (%d)", rc);
         return rc;
+    }
+
+    // ... and verify that the card is there.
+    if (!mmc->card_present(mmc)) {
+        mmc_print(mmc, "ERROR: no card detected!");
+        return ENODEV;
     }
 
     // Handle the initialization that's specific to the card type.
