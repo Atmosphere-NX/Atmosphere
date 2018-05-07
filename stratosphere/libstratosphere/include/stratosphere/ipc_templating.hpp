@@ -210,6 +210,10 @@ T GetValueFromIpcParsedCommand(IpcParsedCommand& r, IpcCommand& out_c, u8 *point
     } else if constexpr (std::is_same<T, PidDescriptor>::value) {
         cur_rawdata_index += sizeof(u64) / sizeof(u32);
         return PidDescriptor(r.Pid);
+    } else if constexpr (std::is_same<T, bool>::value) {
+        /* Official bools accept non-zero values with low bit unset as false. */
+        cur_rawdata_index += size_in_raw_data<T>::value / sizeof(u32);
+        return ((*(((u32 *)r.Raw + old_rawdata_index))) & 1) == 1;
     } else {
         cur_rawdata_index += size_in_raw_data<T>::value / sizeof(u32);
         return *((T *)((u32 *)r.Raw + old_rawdata_index));
