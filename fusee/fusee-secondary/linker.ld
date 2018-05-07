@@ -105,6 +105,7 @@ SECTIONS
     .chainloader :
     {
         . = ALIGN(32);
+        PROVIDE (__chainloader_start = .);
         KEEP(*(.chainloader.text.start))
         build/chainloader.o(.text*)
         build/chainloader.o(.rodata*)
@@ -112,7 +113,8 @@ SECTIONS
         . = ALIGN(8);
         build/chainloader.o(.bss*)
         . = ALIGN(32);
-    } >low_iram
+        PROVIDE (__chainloader_end = .);
+    } >low_iram AT>main
 
     .bss :
     {
