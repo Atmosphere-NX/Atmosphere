@@ -6,22 +6,12 @@
 
 void ProcessTracking::MainLoop(void *arg) {
     /* Make a new waitable manager. */
-    WaitableManager *process_waiter = new WaitableManager(1000);
+    WaitableManager *process_waiter = new WaitableManager(U64_MAX);
+    process_waiter->add_waitable(Registration::GetProcessLaunchStartEvent());
     process_waiter->add_waitable(Registration::GetProcessList());
     
-    static unsigned int i = 0;
     /* Service processes. */
-    while (true) {
-        process_waiter->process_until_timeout();
-        
-        i++;
-        if (Registration::TryWaitProcessLaunchStartEvent()) {
-            Registration::HandleProcessLaunch();
-        }
-        if (i > 1000000) {
-            Reboot();
-        }
-    }
+    process_waiter->process();
     
     delete process_waiter;
     svcExitThread();

@@ -8,7 +8,7 @@
 static ProcessList g_process_list;
 static ProcessList g_dead_process_list;
 
-static HosSemaphore g_sema_start_launch;
+static SystemEvent *g_process_launch_start_event = NULL;
 static HosSemaphore g_sema_finish_launch;
 
 static HosMutex g_process_launch_mutex;
@@ -61,6 +61,7 @@ void Registration::InitializeSystemResources() {
     g_process_event = new SystemEvent(&IEvent::PanicCallback);
     g_debug_title_event = new SystemEvent(&IEvent::PanicCallback);
     g_debug_application_event = new SystemEvent(&IEvent::PanicCallback);
+    g_process_launch_start_event = new SystemEvent(&Registration::ProcessLaunchStartCallback);
     
     /* Get memory limits. */
     u64 memory_arrangement;
@@ -111,8 +112,14 @@ void Registration::InitializeSystemResources() {
     }
 }
 
-bool Registration::TryWaitProcessLaunchStartEvent() {
-    return g_sema_start_launch.TryWait();
+Result Registration::ProcessLaunchStartCallback(Handle *handles, size_t num_handles, u64 timeout) {
+    svcClearEvent(handles[0]);
+    Registration::HandleProcessLaunch();
+    return 0;
+}
+
+IWaitable *Registration::GetProcessLaunchStartEvent() {
+    return g_process_launch_start_event;
 }
 
 IWaitable *Registration::GetProcessList() {
@@ -257,7 +264,7 @@ Result Registration::LaunchProcess(u64 title_id, FsStorageId storage_id, u64 lau
     g_process_launch_state.out_pid = out_pid;
     
     /* Start a launch, and wait for it to exit. */
-    g_sema_start_launch.Signal();
+    g_process_launch_start_event->signal_event();
     g_sema_finish_launch.Wait();
     
     rc = g_process_launch_state.result;

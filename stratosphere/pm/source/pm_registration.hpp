@@ -41,7 +41,8 @@ class Registration {
         };
                 
         static void InitializeSystemResources();
-        static bool TryWaitProcessLaunchStartEvent();
+        static IWaitable *GetProcessLaunchStartEvent();
+        static Result ProcessLaunchStartCallback(Handle *handles, size_t num_handles, u64 timeout);
         
         static IWaitable *GetProcessList();
         static void HandleSignaledProcess(Process *process);

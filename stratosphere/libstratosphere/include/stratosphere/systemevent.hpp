@@ -12,7 +12,7 @@ class SystemEvent : public IEvent {
         SystemEvent(EventCallback callback) : IEvent(0, callback) {
             Handle wait_h;
             Handle sig_h;
-            if (R_FAILED(svcCreateEvent(&wait_h, &sig_h))) {
+            if (R_FAILED(svcCreateEvent(&sig_h, &wait_h))) {
                 /* TODO: Panic. */
             }
             
