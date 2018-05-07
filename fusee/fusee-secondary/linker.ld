@@ -15,12 +15,31 @@ SECTIONS
     PROVIDE(__start__ = 0xFFF00000);
     . = __start__;
     . = ALIGN(32);
-    .text :
+
+    .crt0 :
     {
         . = ALIGN(32);
-        /* .init */
         KEEP( *(.text.start) )
         KEEP( *(.init) )
+        . = ALIGN(4);
+    } >main
+
+    .chainloader :
+    {
+        . = ALIGN(32);
+        PROVIDE (__chainloader_start = .);
+        KEEP(*(.chainloader.text.start))
+        build/chainloader.o(.text*)
+        build/chainloader.o(.rodata*)
+        build/chainloader.o(.data*)
+        . = ALIGN(8);
+        build/chainloader.o(.bss* COMMON)
+        . = ALIGN(8);
+        PROVIDE (__chainloader_end = .);
+    } >low_iram AT>main
+
+    .text :
+    {
         . = ALIGN(4);
 
         /* .text */
@@ -101,20 +120,6 @@ SECTIONS
         CONSTRUCTORS
         . = ALIGN(4);
     } >main
-
-    .chainloader :
-    {
-        . = ALIGN(32);
-        PROVIDE (__chainloader_start = .);
-        KEEP(*(.chainloader.text.start))
-        build/chainloader.o(.text*)
-        build/chainloader.o(.rodata*)
-        build/chainloader.o(.data*)
-        . = ALIGN(8);
-        build/chainloader.o(.bss*)
-        . = ALIGN(32);
-        PROVIDE (__chainloader_end = .);
-    } >low_iram AT>main
 
     .bss :
     {
