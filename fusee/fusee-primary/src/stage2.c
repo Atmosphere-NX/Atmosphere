@@ -90,7 +90,7 @@ void load_stage2(const char *bct0) {
     }
 
     if (!check_32bit_address_range_loadable(config.load_address, size)) {
-        printk("Error: Stage2 has an invalid load address & size combination!\n");
+        printk("Error: Stage2 has an invalid load address & size combination (0x%08x 0x%08x)!\n", config.load_address, size);
         generic_panic();
     }
 
