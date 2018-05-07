@@ -2,7 +2,6 @@
 #include <stratosphere.hpp>
 #include "pm_process_track.hpp"
 #include "pm_registration.hpp"
-#include "pm_debug.hpp"
 
 void ProcessTracking::MainLoop(void *arg) {
     /* Make a new waitable manager. */

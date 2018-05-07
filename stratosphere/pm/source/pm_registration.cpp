@@ -150,8 +150,6 @@ void Registration::HandleProcessLaunch() {
     
         if (R_SUCCEEDED(rc)) {
             SetProcessState(new_process.pid, ProcessState_DebugDetached);
-            Log("MADENEWPROCESS", 16);
-            Log(GetProcess(new_process.pid), sizeof(Process));
         }
     }
     
@@ -185,6 +183,32 @@ HANDLE_PROCESS_LAUNCH_END:
 }
 
 
+Result Registration::LaunchDebugProcess(u64 pid) {
+    AutoProcessListLock auto_lock;
+    LoaderProgramInfo program_info = {0};
+    Result rc;
+    
+    Process *proc = GetProcess(pid);
+    if (proc == NULL) {
+        return 0x20F;
+    }
+    
+    if (proc->state >= ProcessState_DebugDetached) {
+        return 0x40F;
+    }
+    
+    /* Check that this is a real program. */
+    if (R_FAILED((rc = ldrPmGetProgramInfo(proc->tid_sid.title_id, proc->tid_sid.storage_id, &program_info)))) {
+        return rc;
+    }
+    
+    if (R_SUCCEEDED((rc = svcStartProcess(proc->handle, program_info.main_thread_priority, program_info.default_cpu_id, program_info.main_thread_stack_size)))) {
+        proc->state = ProcessState_DebugDetached;
+    }
+    
+    return rc;
+}
+
 Result Registration::LaunchProcess(u64 title_id, FsStorageId storage_id, u64 launch_flags, u64 *out_pid) {
     Result rc;
     /* Only allow one mutex to exist. */
@@ -210,9 +234,6 @@ Result Registration::LaunchProcessByTidSid(TidSid tid_sid, u64 launch_flags, u64
 
 void Registration::HandleSignaledProcess(Process *process) {
     u64 tmp;
-    
-    Log("PROCESSIGNALED\x00", 16);
-    Log(process, sizeof(*process));
      
     /* Reset the signal. */
     svcResetSignal(process->handle);
@@ -221,7 +242,6 @@ void Registration::HandleSignaledProcess(Process *process) {
     old_state = process->state;
     svcGetProcessInfo(&tmp, process->handle, ProcessInfoType_ProcessState);
     process->state = (ProcessState)tmp;
-    Log(process, sizeof(*process));
     
     if (old_state == ProcessState_Crashed && process->state != ProcessState_Crashed) {
         process->flags &= ~0x4;
@@ -381,6 +401,23 @@ Registration::Process *Registration::GetProcessByTitleId(u64 tid) {
     return NULL;
 }
 
+
+Result Registration::GetDebugProcessIds(u64 *out_pids, u32 max_out, u32 *num_out) {
+    AutoProcessListLock auto_lock;
+    u32 num = 0;
+    
+
+    for (auto &pw : g_process_list.process_waiters) {
+        Process *p = pw->get_process();
+        if (p->flags & 4 && num < max_out) {
+            out_pids[num++] = p->pid;
+        }
+    }
+    
+    *num_out = num;
+    return 0;
+}
+
 Handle Registration::GetProcessEventHandle() {
     return g_process_event->get_handle();
 }
@@ -433,10 +470,19 @@ void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
     *out_type = 0;
 }
 
-Handle Registration::GetDebugTitleEventHandle() {
-    return g_debug_title_event->get_handle();
+
+Result Registration::EnableDebugForTitleId(u64 tid, Handle *out) {
+    u64 old = g_debug_on_launch_tid.exchange(tid);
+    if (old) {
+        g_debug_on_launch_tid = old;
+        return 0x80F;
+    }
+    *out = g_debug_title_event->get_handle();
+    return 0x0;
 }
 
-Handle Registration::GetDebugApplicationEventHandle() {
-    return g_debug_application_event->get_handle();
+Result Registration::EnableDebugForApplication(Handle *out) {
+    g_debug_next_application = true;
+    *out = g_debug_application_event->get_handle();
+    return 0;
 }

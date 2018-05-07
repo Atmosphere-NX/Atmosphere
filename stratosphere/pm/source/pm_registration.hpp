@@ -54,12 +54,16 @@ class Registration {
         
         static Process *GetProcess(u64 pid);
         static Process *GetProcessByTitleId(u64 tid);
+        static Result GetDebugProcessIds(u64 *out_pids, u32 max_out, u32 *num_out);
         static Handle GetProcessEventHandle();
         static void GetProcessEventType(u64 *out_pid, u64 *out_type);
+        static Result EnableDebugForTitleId(u64 tid, Handle *out);
+        static Result EnableDebugForApplication(Handle *out);
         static Handle GetDebugTitleEventHandle();
         static Handle GetDebugApplicationEventHandle();
         
         static void HandleProcessLaunch();
+        static Result LaunchDebugProcess(u64 pid);
         static void SignalFinishLaunchProcess();
         static Result LaunchProcess(u64 title_id, FsStorageId storage_id, u64 launch_flags, u64 *out_pid);
         static Result LaunchProcessByTidSid(TidSid tid_sid, u64 launch_flags, u64 *out_pid);

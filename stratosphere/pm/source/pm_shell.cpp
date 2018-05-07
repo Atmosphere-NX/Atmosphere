@@ -2,15 +2,12 @@
 #include "pm_registration.hpp"
 #include "pm_resource_limits.hpp"
 #include "pm_shell.hpp"
-#include "pm_debug.hpp"
 
 static bool g_has_boot_finished = false;
 
 Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     Result rc = 0xF601;
-    LogForService("SHELLSRV", 8);
-    LogForService(&cmd_id, 8);
-    LogForService(armGetTls(), 0x100);
+
     if (kernelAbove500()) {
         switch ((ShellCmd_5X)cmd_id) {
             case Shell_Cmd_5X_LaunchProcess:
@@ -36,6 +33,8 @@ Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id
                 break;
             case Shell_Cmd_5X_BoostSystemMemoryResourceLimit:
                 rc = WrapIpcCommandImpl<&ShellService::boost_system_memory_resource_limit>(this, r, out_c, pointer_buffer, pointer_buffer_size);
+                break;
+            default:
                 break;
         }
     } else {
@@ -74,12 +73,7 @@ Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id
                 break;
         }
     }
-    //Log(armGetTls(), 0x100);
-    LogForService(armGetTls(), 0x100);
-    if (R_FAILED(rc)) {
-        
-        Reboot();
-    }
+    
     return rc;
 }
 

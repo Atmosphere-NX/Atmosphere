@@ -11,7 +11,7 @@
 #include "pm_shell.hpp"
 #include "pm_process_track.hpp"
 #include "pm_registration.hpp"
-#include "pm_debug.hpp"
+#include "pm_debug_monitor.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -111,6 +111,7 @@ int main(int argc, char **argv)
         
     /* TODO: Create services. */
     server_manager->add_waitable(new ServiceServer<ShellService>("pm:shell", 3));
+    server_manager->add_waitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 2));
     server_manager->add_waitable(new ServiceServer<BootModeService>("pm:bm", 5));
     server_manager->add_waitable(new ServiceServer<InformationService>("pm:info", 1));
     
