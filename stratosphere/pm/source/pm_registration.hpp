@@ -65,6 +65,5 @@ class Registration {
         static Result LaunchProcessByTidSid(TidSid tid_sid, u64 launch_flags, u64 *out_pid);
         
         static bool HasApplicationProcess(Process **out);
-        static void EnsureApplicationResourcesAvailable();
 };
 

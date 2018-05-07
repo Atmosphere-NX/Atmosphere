@@ -3,6 +3,7 @@
 #include <atomic>
 
 #include "pm_registration.hpp"
+#include "pm_resource_limits.hpp"
 #include "pm_process_wait.hpp"
 
 static ProcessList g_process_list;
@@ -20,24 +21,6 @@ static std::atomic<u64> g_debug_on_launch_tid(0);
 static SystemEvent *g_process_event = NULL;
 static SystemEvent *g_debug_title_event = NULL;
 static SystemEvent *g_debug_application_event = NULL;
-
-static const u64 g_memory_resource_limits[5][3] = {
-    {0x010D00000ULL, 0x0CD500000ULL, 0x021700000ULL},
-    {0x01E100000ULL, 0x080000000ULL, 0x061800000ULL},
-    {0x014800000ULL, 0x0CD500000ULL, 0x01DC00000ULL},
-    {0x028D00000ULL, 0x133400000ULL, 0x023800000ULL},
-    {0x028D00000ULL, 0x0CD500000ULL, 0x089700000ULL}
-};
-
-/* These are the limits for LimitableResources. */
-/* Memory, Threads, Events, TransferMemories, Sessions. */
-static u64 g_resource_limits[3][5] = {
-    {0x0, 0x1FC, 0x258, 0x80, 0x31A},
-    {0x0, 0x60, 0x0, 0x20, 0x1},
-    {0x0, 0x60, 0x0, 0x20, 0x5},
-};
-
-static Handle g_resource_limit_handles[3] = {0};
 
 Registration::AutoProcessListLock::AutoProcessListLock() {
     g_process_list.Lock();
@@ -63,53 +46,7 @@ void Registration::InitializeSystemResources() {
     g_debug_application_event = new SystemEvent(&IEvent::PanicCallback);
     g_process_launch_start_event = new SystemEvent(&Registration::ProcessLaunchStartCallback);
     
-    /* Get memory limits. */
-    u64 memory_arrangement;
-    if (R_FAILED(splGetConfig(SplConfigItem_MemoryArrange, &memory_arrangement))) {
-        /* TODO: panic. */
-    }
-    memory_arrangement &= 0x3F;
-    int memory_limit_type;
-    switch (memory_arrangement) {
-        case 2:
-            memory_limit_type = 1;
-            break;
-        case 3:
-            memory_limit_type = 2;
-            break;
-        case 17:
-            memory_limit_type = 3;
-            break;
-        case 18:
-            memory_limit_type = 4;
-            break;
-        default:
-            memory_limit_type = 0;
-            break;
-    }
-    for (unsigned int i = 0; i < 3; i++) {
-        g_resource_limits[i][0] = g_memory_resource_limits[memory_limit_type][i];
-    }
-    
-    /* Create resource limits. */
-    for (unsigned int i = 0; i < 3; i++) {
-        if (i > 0) {
-            if (R_FAILED(svcCreateResourceLimit(&g_resource_limit_handles[i]))) {
-                /* TODO: Panic. */
-            }
-        } else {
-            u64 out = 0;
-            if (R_FAILED(svcGetInfo(&out, 9, 0, 0))) {
-                /* TODO: Panic. */
-            }
-            g_resource_limit_handles[i] = (Handle)out;
-        }
-        for (unsigned int r = 0; r < 5; r++) {
-            if (R_FAILED(svcSetResourceLimitLimitValue(g_resource_limit_handles[i], (LimitableResource)r, g_resource_limits[i][r]))) {
-                /* TODO: Panic. */
-            }
-        }
-    }
+    ResourceLimitUtils::InitializeLimits();
 }
 
 Result Registration::ProcessLaunchStartCallback(Handle *handles, size_t num_handles, u64 timeout) {
@@ -131,7 +68,6 @@ void Registration::HandleProcessLaunch() {
     Result rc;
     u64 launch_flags = g_process_launch_state.launch_flags;
     u64 *out_pid = g_process_launch_state.out_pid;
-    u32 reslimit_idx;
     Process new_process = {0};
     new_process.tid_sid = g_process_launch_state.tid_sid;
     u8 *ac_buf = new u8[4 * sizeof(LoaderProgramInfo)];
@@ -144,14 +80,9 @@ void Registration::HandleProcessLaunch() {
     }
         
     /* Get the resource limit handle, ensure that we can launch the program. */
-    if ((program_info.application_type & 3) == 1) {
-        if (HasApplicationProcess(NULL)) {
-            rc = 0xA0F;
-            goto HANDLE_PROCESS_LAUNCH_END;
-        }
-        reslimit_idx = 1;
-    } else {
-        reslimit_idx = 2 * ((program_info.application_type & 3) == 2);
+    if ((program_info.application_type & 3) == 1 && HasApplicationProcess(NULL)) {
+        rc = 0xA0F;
+        goto HANDLE_PROCESS_LAUNCH_END;
     }
     
     /* Try to register the title for launch in loader... */
@@ -161,11 +92,11 @@ void Registration::HandleProcessLaunch() {
         
     /* Make sure the previous application is cleaned up. */
     if ((program_info.application_type & 3) == 1) {
-        EnsureApplicationResourcesAvailable();
+        ResourceLimitUtils::EnsureApplicationResourcesAvailable();
     }
     
     /* Try to create the process... */
-    if (R_FAILED((rc = ldrPmCreateProcess(LAUNCHFLAGS_ARGLOW(launch_flags) | LAUNCHFLAGS_ARGHIGH(launch_flags), new_process.ldr_queue_index, g_resource_limit_handles[reslimit_idx], &new_process.handle)))) {
+    if (R_FAILED((rc = ldrPmCreateProcess(LAUNCHFLAGS_ARGLOW(launch_flags) | LAUNCHFLAGS_ARGHIGH(launch_flags), new_process.ldr_queue_index, ResourceLimitUtils::GetResourceLimitHandle(program_info.application_type), &new_process.handle)))) {
         goto PROCESS_CREATION_FAILED;
     }
         
@@ -508,17 +439,4 @@ Handle Registration::GetDebugTitleEventHandle() {
 
 Handle Registration::GetDebugApplicationEventHandle() {
     return g_debug_application_event->get_handle();
-}
-
-void Registration::EnsureApplicationResourcesAvailable() {
-    Handle application_reslimit_h = g_resource_limit_handles[1];
-    for (unsigned int i = 0; i < 5; i++) {
-        u64 result;
-        do {
-            if (R_FAILED(svcGetResourceLimitCurrentValue(&result, application_reslimit_h, (LimitableResource)i))) {
-                return;
-            }
-            svcSleepThread(1000000ULL);
-        } while (result);
-    }
 }

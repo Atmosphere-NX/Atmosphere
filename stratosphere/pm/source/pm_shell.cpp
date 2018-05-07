@@ -1,5 +1,6 @@
 #include <switch.h>
 #include "pm_registration.hpp"
+#include "pm_resource_limits.hpp"
 #include "pm_shell.hpp"
 #include "pm_debug.hpp"
 
@@ -170,11 +171,11 @@ std::tuple<Result, u64> ShellService::get_application_process_id() {
     return {0x20F, 0};
 }
 
-std::tuple<Result> ShellService::boost_system_memory_resource_limit() {
+std::tuple<Result> ShellService::boost_system_memory_resource_limit(u64 sysmem_size) {
     if (!kernelAbove400()) {
         return {0xF601};
     }
     
     /* TODO */
-    return {0xF601};
+    return {ResourceLimitUtils::BoostSystemMemoryResourceLimit(sysmem_size)};
 }

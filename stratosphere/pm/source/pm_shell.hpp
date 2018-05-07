@@ -46,5 +46,5 @@ class ShellService : IServiceObject {
         std::tuple<Result> clear_process_notification_flag(u64 pid);
         std::tuple<Result> notify_boot_finished();
         std::tuple<Result, u64> get_application_process_id();
-        std::tuple<Result> boost_system_memory_resource_limit();
+        std::tuple<Result> boost_system_memory_resource_limit(u64 sysmem_size);
 };
