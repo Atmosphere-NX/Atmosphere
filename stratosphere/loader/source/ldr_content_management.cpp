@@ -129,7 +129,7 @@ void ContentManagement::TryMountSdCard() {
     /* Mount SD card, if psc, bus, and pcv have been created. */
     if (!g_has_initialized_fs_dev && HasCreatedTitle(0x0100000000000021) && HasCreatedTitle(0x010000000000000A) && HasCreatedTitle(0x010000000000001A)) {
         Handle tmp_hnd = 0;
-        static const char *required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
+        static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
         for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
             if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
                 return;
