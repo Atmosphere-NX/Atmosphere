@@ -124,7 +124,7 @@ int fsdev_mount_device(const char *name, unsigned int id) {
 }
 
 int fsdev_set_default_device(const char *name) {
-    int ret;
+    int ret = 0;
     int devid = FindDevice(name);
 
     if (devid == -1) {
@@ -132,9 +132,7 @@ int fsdev_set_default_device(const char *name) {
         return -1;
     }
 
-#if FF_VOLUMES < 2
-    ret = 0;
-#else
+#if FF_VOLUMES >= 2
     char drname[40];
 
     strcpy(drname, name);
