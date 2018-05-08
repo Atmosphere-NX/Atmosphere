@@ -71,9 +71,9 @@ int main(int argc, void **argv) {
     fsdev_unmount_all();
 
     /* Deinitialize the framebuffer and display */
-    display_enable_backlight(false);
+    /*display_enable_backlight(false);
     display_end();
-    free(framebuffer);
+    free(framebuffer);*/
 
     if (loader_ctx->chainload_entrypoint != 0) {
         /* TODO: What else do we want to do in terms of argc/argv? */
