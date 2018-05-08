@@ -59,6 +59,7 @@ int main(int argc, char **argv)
     Handle smm_h;
     if (R_FAILED(Registration::RegisterServiceForSelf(smEncodeName("sm:m"), 1, false, &smm_h))) {
         /* TODO: Panic. */
+        while (1) { }
     }
     
     server_manager->add_waitable(new ExistingPortServer<ManagerService>(smm_h, 1));

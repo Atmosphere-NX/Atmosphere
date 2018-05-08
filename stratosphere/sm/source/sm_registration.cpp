@@ -117,7 +117,7 @@ void Registration::CacheInitialProcessIdLimits() {
     }
     if (kernelAbove500()) {
         svcGetSystemInfo(&g_initial_process_id_low, 2, 0, 0);
-        svcGetSystemInfo(&g_initial_process_id_high, 2, 0, 0);
+        svcGetSystemInfo(&g_initial_process_id_high, 2, 0, 1);
     } else {
         g_initial_process_id_low = 0;
         g_initial_process_id_high = REGISTRATION_INITIAL_PID_MAX;
