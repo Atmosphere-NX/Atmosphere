@@ -41,6 +41,8 @@ _start:
     ldr r0, =__program_argc
     ldr r1, =__program_argv
     ldr lr, =__program_exit
+    ldr r0, [r0]
+    ldr r1, [r1]
     b   main
 
 /* No need to include this in normal programs: */

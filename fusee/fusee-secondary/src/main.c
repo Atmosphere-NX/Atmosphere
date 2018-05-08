@@ -47,6 +47,7 @@ int main(int argc, void **argv) {
     g_stage2_args = (stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT];
 
     if(g_stage2_args->version != 0) {
+        printf("Error: Incorrect Stage2 args version (expected %lu, got %lu)!\n", 0lu, g_stage2_args->version);
         generic_panic();
     }
 
