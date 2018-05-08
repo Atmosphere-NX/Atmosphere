@@ -311,24 +311,29 @@ static int fsdev_open(struct _reent *r, void *fileStruct, const char *path, int 
         { O_CREAT , FA_OPEN_ALWAYS     },
         { O_EXCL  , FA_CREATE_NEW      },
         { O_TRUNC , FA_CREATE_ALWAYS   },
-        { O_RDONLY, FA_READ            },
+        /*{ O_RDONLY, FA_READ            }, O_RDONLY is 0*/
         { O_WRONLY, FA_WRITE           },
         { O_RDWR  , FA_READ | FA_WRITE },
     };
 
-    if ((flags & O_RDONLY & O_WRONLY) || ((flags & O_RDWR) & (O_RDONLY | O_WRONLY))) {
+    if ((flags & O_RDWR) & (O_RDONLY | O_WRONLY)) {
         r->_errno = EINVAL;
         return -1;
     }
-    if (flags & O_RDONLY & O_APPEND) {
+    if ((flags & O_APPEND) && (flags & O_ACCMODE) == O_RDONLY) {
         r->_errno = EINVAL;
         return -1;
     }
+
     for (size_t i = 0; i < sizeof(flag_mappings)/sizeof(flag_mappings[0]); i++) {
         if (flags & flag_mappings[i].posix_flag) {
             ff_flags |= flag_mappings[i].ff_flag;
         }
     }
+    if ((flags & O_ACCMODE) == O_RDONLY) {
+        ff_flags |= FA_READ;
+    }
+
     /* Normalize O_CREAT|O_TRUNC */
     if ((ff_flags & (FA_CREATE_ALWAYS | FA_OPEN_ALWAYS)) == (FA_CREATE_ALWAYS | FA_OPEN_ALWAYS)) {
         ff_flags &= ~FA_OPEN_ALWAYS;
