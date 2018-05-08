@@ -233,11 +233,19 @@ void package2_patch_kernel(void) {
 void package2_patch_ini1(void) {
     /* TODO: Do we want to support loading another INI from sd:/whatever/INI1.bin? */
     ini1_header_t *inis_to_merge[STRATOSPHERE_INI1_MAX] = {0};
+    ini1_header_t *merged;
+
     inis_to_merge[STRATOSPHERE_INI1_EMBEDDED] = stratosphere_get_ini1();
     inis_to_merge[STRATOSPHERE_INI1_PACKAGE2] = (ini1_header_t *)g_package2_sections[PACKAGE2_SECTION_INI1];
 
     /* Merge all of the INI1s. */
-    g_patched_package2_header->metadata.section_sizes[PACKAGE2_SECTION_INI1] = stratosphere_merge_inis(g_package2_sections[PACKAGE2_SECTION_INI1], inis_to_merge, STRATOSPHERE_INI1_MAX);
+    merged = stratosphere_merge_inis(inis_to_merge, STRATOSPHERE_INI1_MAX);
+    memcpy(g_package2_sections[PACKAGE2_SECTION_INI1], merged, merged->size);
+    g_patched_package2_header->metadata.section_sizes[PACKAGE2_SECTION_INI1] = merged->size;
+
+    /* Free temporary buffers. */
+    free(merged);
+    stratosphere_free_ini1();
 }
 
 void package2_fixup_header_and_section_hashes(void) {

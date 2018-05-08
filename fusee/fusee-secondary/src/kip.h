@@ -14,7 +14,7 @@ typedef struct {
     uint32_t size;
     uint32_t num_processes;
     uint32_t _0xC;
-    unsigned char kip_data[];
+    uint8_t kip_data[];
 } ini1_header_t;
 
 typedef struct {
@@ -35,13 +35,12 @@ typedef struct {
     uint8_t flags;
     kip_section_header_t section_headers[6];
     uint32_t capabilities[0x20];
-    unsigned char data[];
+    uint8_t data[];
 } kip1_header_t;
 
-static inline uint64_t kip1_get_size_from_header(kip1_header_t *header) {
+static inline size_t kip1_get_size_from_header(kip1_header_t *header) {
     /* Header + .text + .rodata + .rwdata */
     return 0x100 + header->section_headers[0].compressed_size + header->section_headers[1].compressed_size + header->section_headers[2].compressed_size;
 }
-
 
 #endif

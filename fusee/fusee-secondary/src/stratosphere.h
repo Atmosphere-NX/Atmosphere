@@ -9,7 +9,8 @@
 #define STRATOSPHERE_INI1_MAX      0x2
 
 ini1_header_t *stratosphere_get_ini1(void);
+void stratosphere_free_ini1(void);
 
-size_t stratosphere_merge_inis(void *dst, ini1_header_t **inis, unsigned int num_inis);
+ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, unsigned int num_inis);
 
 #endif
