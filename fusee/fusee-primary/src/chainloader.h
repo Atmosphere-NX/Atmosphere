@@ -14,12 +14,13 @@ typedef struct chainloader_entry_t {
     size_t num;
 } chainloader_entry_t;
 
+extern int g_chainloader_argc;
 extern chainloader_entry_t g_chainloader_entries[CHAINLOADER_MAX_ENTRIES]; /* keep them sorted */
 extern size_t g_chainloader_num_entries;
 extern uintptr_t g_chainloader_entrypoint;
 
 extern char g_chainloader_arg_data[CHAINLOADER_ARG_DATA_MAX_SIZE];
 
-void relocate_and_chainload(int argc);
+void relocate_and_chainload(void);
 
 #endif

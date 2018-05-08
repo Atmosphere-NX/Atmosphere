@@ -10,6 +10,9 @@
 #include "lib/printk.h"
 #include "display/video_fb.h"
 
+extern void (*__program_exit_callback)(int rc);
+
+static void *g_framebuffer;
 static char g_bct0_buffer[BCTO_MAX_SIZE];
 
 #define DEFAULT_BCT0_FOR_DEBUG \
@@ -19,7 +22,7 @@ static char g_bct0_buffer[BCTO_MAX_SIZE];
 "stage2_addr = 0xF0000000\n"\
 "stage2_entrypoint = 0xF0000000\n"
 
-const char *load_config(void) {
+static const char *load_config(void) {
     if (!read_sd_file(g_bct0_buffer, BCTO_MAX_SIZE, "BCT.ini")) {
         printk("Failed to read BCT0 from SD!\n");
         printk("[DEBUG] Using default BCT0!\n");
@@ -45,7 +48,7 @@ const char *load_config(void) {
     return bct0;
 }
 
-void load_sbk(void) {
+static void load_sbk(void) {
     uint32_t sbk[0x4];
     /* Load the SBK into the security engine, if relevant. */
     memcpy(sbk, (void *)get_fuse_chip_regs()->FUSE_PRIVATE_KEY, 0x10);
@@ -57,32 +60,54 @@ void load_sbk(void) {
     }
 }
 
-int main(void) {
-    const char *bct0;
-    void *lfb_base = (void *)0xC0000000;
-    const char *stage2_path;
-    stage2_args_t stage2_args = {0};
+static void setup_env(void) {
+    g_framebuffer = (void *)0xC0000000;
 
     /* Initialize DRAM. */
     /* TODO: What can be stripped out to make this minimal? */
     nx_hwinit();
 
+    /* Try to load the SBK into the security engine, if possible. */
+    /* TODO: Should this be done later? */
+    load_sbk();
+
     /* Zero-fill the framebuffer and register it as printk provider. */
-    video_init(lfb_base);
+    video_init(g_framebuffer);
 
     /* Initialize the display. */
     display_init();
 
     /* Set the framebuffer. */
-    display_init_framebuffer(lfb_base);
+    display_init_framebuffer(g_framebuffer);
 
     /* Turn on the backlight after initializing the lfb */
     /* to avoid flickering. */
     display_enable_backlight(true);
+}
+
+static void cleanup_env(void) {
+    f_unmount("");
+
+    display_enable_backlight(false);
+    display_end();
+}
+
+static void exit_callback(int rc) {
+    (void)rc;
+    relocate_and_chainload();
+}
+
+int main(void) {
+    const char *bct0;
+    const char *stage2_path;
+    stage2_args_t stage2_args = {0};
+
+    /* Initialize the display, console, etc. */
+    setup_env();
 
     /* Say hello. */
     printk("Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
-    printk("Using color linear framebuffer at 0x%p!\n", lfb_base);
+    printk("Using color linear framebuffer at 0x%p!\n", g_framebuffer);
 
 #ifndef I_KNOW_WHAT_I_AM_DOING
 #error "Fusee is a work-in-progress bootloader, and is not ready for usage yet. If you want to play with it anyway, please #define I_KNOW_WHAT_I_AM_DOING -- and recognize that we will be unable to provide support until it is ready for general usage :)"
@@ -92,29 +117,24 @@ int main(void) {
     generic_panic();
 #endif
 
-    /* Try to load the SBK into the security engine, if possible. */
-    /* TODO: Should this be done later? */
-    load_sbk();
-
     /* Load the BCT0 configuration ini off of the SD. */
     bct0 = load_config();
 
     /* Load the loader payload into DRAM. */
     load_stage2(bct0);
 
-    f_unmount("");
-
-    display_enable_backlight(false);
-    display_end();
-
     /* Setup argument data. */
     stage2_path = stage2_get_program_path();
     stage2_args.version = 0;
     strcpy(stage2_args.bct0, bct0);
+    g_chainloader_argc = 2;
     strcpy(g_chainloader_arg_data, stage2_path);
     memcpy(g_chainloader_arg_data + strlen(stage2_path) + 1, &stage2_args, sizeof(stage2_args_t));
 
-    /* Jump to Stage 2. */
-    relocate_and_chainload(STAGE2_ARGC);
+    /* Deinitialize the display, console, etc. */
+    cleanup_env();
+
+    /* Finally, after the cleanup routines (__libc_fini_array, etc.) are called, jump to Stage2. */
+    __program_exit_callback = exit_callback;
     return 0;
 }
