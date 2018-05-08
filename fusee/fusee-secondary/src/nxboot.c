@@ -60,7 +60,7 @@ void nxboot_main(void) {
     derive_nx_keydata(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
     /* Patch package2, adding thermosphere + custom KIPs. */
-    package2_patch((void *)loader_ctx->package2_loadfile.load_address);
+    package2_rebuild_and_copy((void *)loader_ctx->package2_loadfile.load_address);
 
     /* Boot up Exosphere. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 0;
