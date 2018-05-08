@@ -75,7 +75,7 @@ bool Registration::IsValidForSac(u8 *sac, size_t sac_size, u64 service, bool is_
             cur_service &= mask;
             service_for_compare &= mask;
         }
-        if (cur_service == service_for_compare && (!is_host || cur_is_host)) {
+        if (cur_service == service_for_compare && (is_host == cur_is_host)) {
             return true;
         }
         sac += cur_size;
