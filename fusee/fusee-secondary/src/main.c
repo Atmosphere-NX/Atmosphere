@@ -22,22 +22,26 @@ int main(int argc, void **argv) {
     loader_ctx_t *loader_ctx = get_loader_ctx();
     void *framebuffer = memalign(0x1000, CONFIG_VIDEO_VISIBLE_ROWS * CONFIG_VIDEO_COLS * CONFIG_VIDEO_PIXEL_SIZE);
 
-    /* Initialize the display. */
-    display_init();
-
+    /* Note: the framebuffer needs to be >= 0xC0000000, this is fine because of where our heap is. */
     if (framebuffer == NULL) {
         generic_panic();
     }
 
-    /* Initalize the framebuffer and console/stdout */
-    display_init_framebuffer(framebuffer);
+    /* Zero-fill the framebuffer and set the console up. */
     console_init(framebuffer);
+
+    /* Initialize the display. */
+    display_init();
+
+    /* Set the framebuffer. */
+    display_init_framebuffer(framebuffer);
 
     /* Turn on the backlight after initializing the lfb */
     /* to avoid flickering. */
     display_enable_backlight(true);
 
     if (argc != STAGE2_ARGC) {
+        printf("Error: Invalid argc (expected %d, got %d)!\n", STAGE2_ARGC, argc);
         generic_panic();
     }
     g_stage2_args = (stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT];

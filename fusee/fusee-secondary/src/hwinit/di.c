@@ -190,10 +190,18 @@ void display_enable_backlight(bool on) {
 
 u32 *display_init_framebuffer(void *address)
 {
+	static cfg_op_t conf[sizeof(cfg_display_framebuffer)/sizeof(cfg_op_t)] = {0};
+	if(conf[0].val == 0) {
+		for (u32 i = 0; i < sizeof(cfg_display_framebuffer)/sizeof(cfg_op_t); i++) {
+			conf[i] = cfg_display_framebuffer[i];
+		}
+	}
+
 	u32 *lfb_addr = (u32 *)address;
 
-	//This configures the framebuffer @ 0xC0000000 with a resolution of 1280x720 (line stride 768).
-	exec_cfg((u32 *)DISPLAY_A_BASE, cfg_display_framebuffer, 32);
+	conf[19].val = (u32)address;
+	//This configures the framebuffer @ address with a resolution of 1280x720 (line stride 768).
+	exec_cfg((u32 *)DISPLAY_A_BASE, conf, 32);
 
 	sleep(35000);
 

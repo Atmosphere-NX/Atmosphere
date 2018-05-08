@@ -59,7 +59,7 @@ void load_sbk(void) {
 
 int main(void) {
     const char *bct0;
-    u32 *lfb_base;
+    void *lfb_base = (void *)0xC0000000;
     const char *stage2_path;
     stage2_args_t stage2_args = {0};
 
@@ -67,12 +67,14 @@ int main(void) {
     /* TODO: What can be stripped out to make this minimal? */
     nx_hwinit();
 
+    /* Zero-fill the framebuffer and register it as printk provider. */
+    video_init(lfb_base);
+
     /* Initialize the display. */
     display_init();
 
-    /* Register the display as a printk provider. */
-    lfb_base = display_init_framebuffer((void *)0xC0000000);
-    video_init(lfb_base);
+    /* Set the framebuffer. */
+    display_init_framebuffer(lfb_base);
 
     /* Turn on the backlight after initializing the lfb */
     /* to avoid flickering. */
