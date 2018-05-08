@@ -16,9 +16,12 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     Result rc;
     
     /* We defer SD card mounting, so if relevant ensure it is mounted. */
-    TryMountSdCard();
-    
-    if (R_FAILED(rc = GetContentPath(path, tid, sid))) {
+    if (!g_has_initialized_fs_dev) {   
+        TryMountSdCard();
+    }
+
+        
+    if (R_FAILED(rc = ResolveContentPath(path, tid, sid))) {
         return rc;
     }
     
@@ -53,31 +56,34 @@ Result ContentManagement::MountCodeForTidSid(Registration::TidSid *tid_sid) {
     return MountCode(tid_sid->title_id, tid_sid->storage_id);
 }
 
-Result ContentManagement::GetContentPath(char *out_path, u64 tid, FsStorageId sid) {
+Result ContentManagement::ResolveContentPath(char *out_path, u64 tid, FsStorageId sid) {
     Result rc;
     LrRegisteredLocationResolver reg;
     LrLocationResolver lr;
     char path[FS_MAX_PATH] = {0};
     
     /* Try to get the path from the registered resolver. */
-    if (R_FAILED(rc = lrGetRegisteredLocationResolver(&reg))) {
+    if (R_FAILED(rc = lrOpenRegisteredLocationResolver(&reg))) {
         return rc;
     }
     
-    if (R_SUCCEEDED(rc = lrRegLrGetProgramPath(&reg, tid, path))) {
+    if (R_SUCCEEDED(rc = lrRegLrResolveProgramPath(&reg, tid, path))) {
         strncpy(out_path, path, sizeof(path));
     } else if (rc != 0x408) {
         return rc;
     }
     
     serviceClose(&reg.s);
-    
-    /* If getting the path from the registered resolver fails, fall back to the normal resolver. */
-    if (R_FAILED(rc = lrGetLocationResolver(sid, &lr))) {
+    if (R_SUCCEEDED(rc)) {
         return rc;
     }
     
-    if (R_SUCCEEDED(rc = lrLrGetProgramPath(&lr, tid, path))) {
+    /* If getting the path from the registered resolver fails, fall back to the normal resolver. */
+    if (R_FAILED(rc = lrOpenLocationResolver(sid, &lr))) {
+        return rc;
+    }
+    
+    if (R_SUCCEEDED(rc = lrLrResolveProgramPath(&lr, tid, path))) {
         strncpy(out_path, path, sizeof(path));
     }
     
@@ -86,27 +92,27 @@ Result ContentManagement::GetContentPath(char *out_path, u64 tid, FsStorageId si
     return rc;
 }
 
-Result ContentManagement::GetContentPathForTidSid(char *out_path, Registration::TidSid *tid_sid) {
-    return GetContentPath(out_path, tid_sid->title_id, tid_sid->storage_id);
+Result ContentManagement::ResolveContentPathForTidSid(char *out_path, Registration::TidSid *tid_sid) {
+    return ResolveContentPath(out_path, tid_sid->title_id, tid_sid->storage_id);
 }
 
-Result ContentManagement::SetContentPath(const char *path, u64 tid, FsStorageId sid) {
+Result ContentManagement::RedirectContentPath(const char *path, u64 tid, FsStorageId sid) {
     Result rc;
     LrLocationResolver lr;
     
-    if (R_FAILED(rc = lrGetLocationResolver(sid, &lr))) {
+    if (R_FAILED(rc = lrOpenLocationResolver(sid, &lr))) {
         return rc;
     }
     
-    rc = lrLrSetProgramPath(&lr, tid, path);
+    rc = lrLrRedirectProgramPath(&lr, tid, path);
     
     serviceClose(&lr.s);
     
     return rc;
 }
 
-Result ContentManagement::SetContentPathForTidSid(const char *path, Registration::TidSid *tid_sid) {
-    return SetContentPath(path, tid_sid->title_id, tid_sid->storage_id);
+Result ContentManagement::RedirectContentPathForTidSid(const char *path, Registration::TidSid *tid_sid) {
+    return RedirectContentPath(path, tid_sid->title_id, tid_sid->storage_id);
 }
 
 bool ContentManagement::HasCreatedTitle(u64 tid) {
@@ -122,6 +128,16 @@ void ContentManagement::SetCreatedTitle(u64 tid) {
 void ContentManagement::TryMountSdCard() {
     /* Mount SD card, if psc, bus, and pcv have been created. */
     if (!g_has_initialized_fs_dev && HasCreatedTitle(0x0100000000000021) && HasCreatedTitle(0x010000000000000A) && HasCreatedTitle(0x010000000000001A)) {
+        Handle tmp_hnd = 0;
+        static const char *required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
+        for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
+            if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
+                return;
+            } else {
+                svcCloseHandle(tmp_hnd);   
+            }
+        }
+        
         if (R_SUCCEEDED(fsdevMountSdmc())) {
             g_has_initialized_fs_dev = true;
         }

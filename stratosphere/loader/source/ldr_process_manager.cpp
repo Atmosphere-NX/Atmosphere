@@ -42,7 +42,7 @@ std::tuple<Result, MovedHandle> ProcessManagerService::create_process(u64 flags,
         return {rc, MovedHandle{process_h}};
     }
     
-    rc = ContentManagement::GetContentPathForTidSid(nca_path, &tid_sid);
+    rc = ContentManagement::ResolveContentPathForTidSid(nca_path, &tid_sid);
     if (R_FAILED(rc)) {
         return {rc, MovedHandle{process_h}};
     }
@@ -71,12 +71,12 @@ std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid 
     }
     
     if (tid_sid.title_id != out_program_info.pointer->title_id) {
-        rc = ContentManagement::GetContentPathForTidSid(nca_path, &tid_sid);
+        rc = ContentManagement::ResolveContentPathForTidSid(nca_path, &tid_sid);
         if (R_FAILED(rc)) {
             return {rc};
         }
         
-        rc = ContentManagement::SetContentPath(nca_path, out_program_info.pointer->title_id, tid_sid.storage_id);
+        rc = ContentManagement::RedirectContentPath(nca_path, out_program_info.pointer->title_id, tid_sid.storage_id);
         if (R_FAILED(rc)) {
             return {rc};
         }

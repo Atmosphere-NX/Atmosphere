@@ -9,10 +9,10 @@ class ContentManagement {
         static Result UnmountCode();
         static Result MountCodeForTidSid(Registration::TidSid *tid_sid);
 
-        static Result GetContentPath(char *out_path, u64 tid, FsStorageId sid);
-        static Result SetContentPath(const char *path, u64 tid, FsStorageId sid);
-        static Result GetContentPathForTidSid(char *out_path, Registration::TidSid *tid_sid);
-        static Result SetContentPathForTidSid(const char *path, Registration::TidSid *tid_sid);
+        static Result ResolveContentPath(char *out_path, u64 tid, FsStorageId sid);
+        static Result RedirectContentPath(const char *path, u64 tid, FsStorageId sid);
+        static Result ResolveContentPathForTidSid(char *out_path, Registration::TidSid *tid_sid);
+        static Result RedirectContentPathForTidSid(const char *path, Registration::TidSid *tid_sid);
         
         static bool HasCreatedTitle(u64 tid);
         static void SetCreatedTitle(u64 tid);
