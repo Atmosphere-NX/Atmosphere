@@ -21,9 +21,6 @@ typedef struct {
 
 typedef struct {
     uint32_t version;
-    uint32_t *lfb;
-    uint32_t console_row;
-    uint32_t console_col;
     char bct0[BCTO_MAX_SIZE];
 } stage2_args_t;
 
