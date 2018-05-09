@@ -85,11 +85,11 @@ int fsdev_mount_device(const char *name, unsigned int id) {
     strcpy(drname, name);
     strcat(drname, ":");
 
-    if (id >= FF_VOLUMES) {
+    if (id >= FF_VOLUMES || name[0] == '\0') {
         errno = EINVAL;
         return -1;
     }
-    if (name[0] == '\0' || strlen(name) > 32) {
+    if (strlen(name) > 32) {
         errno = ENAMETOOLONG;
         return -1;
     }
