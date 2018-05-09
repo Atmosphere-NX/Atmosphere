@@ -185,8 +185,8 @@ static int rawmmcdev_open(struct _reent *r, void *fileStruct, const char *path, 
         return -1;
     }
 
-    /* Only allow R/W flags, and O_CREAT which is no-op in this case. */
-    if (flags & ~(O_ACCMODE | O_CREAT)) {
+    /* Forbid some flags that we explicitely don't support.*/
+    if (flags & (O_APPEND | O_TRUNC | O_EXCL)) {
         r->_errno = EINVAL;
         return -1;
     }
@@ -205,14 +205,15 @@ static int rawmmcdev_close(struct _reent *r, void *fd) {
     return 0;
 }
 
-static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size_t len) {
-    static __attribute__((aligned(16))) uint8_t crypt_buf[4096] = {0};
+/* Keep this <= the size of the DMA bounce buffer in sdmmc.c */
+static __attribute__((aligned(16))) uint8_t g_crypto_buffer[4096 * 4] = {0};
 
+static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size_t len) {
     rawmmcdev_file_t *f = (rawmmcdev_file_t *)fd;
     rawmmcdev_device_t *device = f->device;
     uint32_t device_sector_offset = (uint32_t)(device->offset / 512);
     uint32_t sector_begin = (uint32_t)((device->offset + f->offset) / 512); /* NAND offset */
-    uint32_t sector_end = (uint32_t)(512 * (device->offset + f->offset + len + 511) / 512);
+    uint32_t sector_end = (uint32_t)((device->offset + f->offset + len + 511) / 512);
     uint32_t sector_end_aligned = sector_end - ((f->offset + len) % 512 != 0 ? 1 : 0);
     uint32_t current_sector = sector_begin;
     const uint8_t *data = (const uint8_t *)ptr;
@@ -232,19 +233,19 @@ static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size
 
     /* Unaligned at the start, we need to read the sector and incorporate the data. */
     if (f->offset % 512 != 0) {
-        no = sdmmc_read(device->mmc, crypt_buf, sector_begin, 1);
+        no = sdmmc_read(device->mmc, g_crypto_buffer, sector_begin, 1);
         if (no != 0) {
             r->_errno = no;
             return -1;
         }
         if (device->encrypted) {
-            device->read_crypt_func(crypt_buf, crypt_buf, 512 * (sector_begin - device_sector_offset), 512, device->iv, device->crypt_flags);
+            device->read_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_begin - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
-        memcpy(crypt_buf, data, len <= (512 - (f->offset % 512)) ? len : 512 - (f->offset % 512));
+        memcpy(g_crypto_buffer, data, len <= (512 - (f->offset % 512)) ? len : 512 - (f->offset % 512));
         if (device->encrypted) {
-            device->write_crypt_func(crypt_buf, crypt_buf, 512 * (sector_begin - device_sector_offset), 512, device->iv, device->crypt_flags);
+            device->write_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_begin - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
-        no = sdmmc_write(device->mmc, crypt_buf, sector_begin, 1);
+        no = sdmmc_write(device->mmc, g_crypto_buffer, sector_begin, 1);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -261,52 +262,42 @@ static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size
         return len;
     }
 
-    if (device->encrypted) {
-        size_t sectors_remaining = sector_end_aligned - current_sector;
-        for (size_t i = 0; i < len; i += sizeof(crypt_buf)/512) {
-            size_t n = sectors_remaining <= sizeof(crypt_buf)/512 ? sectors_remaining : sizeof(crypt_buf)/512;
+    size_t sectors_remaining = sector_end_aligned - current_sector;
+    for (size_t i = 0; i < len; i += sizeof(g_crypto_buffer)/512) {
+        size_t n = sectors_remaining <= sizeof(g_crypto_buffer)/512 ? sectors_remaining : sizeof(g_crypto_buffer)/512;
 
-            memcpy(crypt_buf, data, 512 * n);
-            device->write_crypt_func(crypt_buf, crypt_buf, current_sector - device_sector_offset, 512 * n, device->iv, device->crypt_flags);
-
-            no = sdmmc_write(device->mmc, crypt_buf, current_sector, n);
-            if (no != 0) {
-                r->_errno = no;
-                return -1;
-            }
-
-            data += 512 * n;
-            current_sector++;
+        if (device->encrypted) {
+            memcpy(g_crypto_buffer, data, 512 * n);
+            device->write_crypt_func(g_crypto_buffer, g_crypto_buffer, current_sector - device_sector_offset, 512 * n, device->iv, device->crypt_flags);
+            no = sdmmc_write(device->mmc, g_crypto_buffer, current_sector, n);
+        } else {
+            no = sdmmc_write(device->mmc, data, current_sector, n);
         }
-    } else {
-        /* We can write everything aligned at once. */
-        size_t sectors_remaining = sector_end_aligned - current_sector;
 
-        no = sdmmc_write(device->mmc, data, current_sector, sectors_remaining);
         if (no != 0) {
             r->_errno = no;
             return -1;
         }
 
-        data += 512 * sectors_remaining;
-        current_sector += sectors_remaining;
+        data += 512 * n;
+        current_sector += n;
     }
 
     /* Unaligned at the end, we need to read the sector and incorporate the data. */
     if (sector_end != sector_end_aligned) {
-        no = sdmmc_read(device->mmc, crypt_buf, sector_end_aligned, 1);
+        no = sdmmc_read(device->mmc, g_crypto_buffer, sector_end_aligned, 1);
         if (no != 0) {
             r->_errno = no;
             return -1;
         }
         if (device->encrypted) {
-            device->read_crypt_func(crypt_buf, crypt_buf, 512 * (sector_end_aligned - device_sector_offset), 512, device->iv, device->crypt_flags);
+            device->read_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_end_aligned - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
-        memcpy(crypt_buf, data, (f->offset + len) % 512);
+        memcpy(g_crypto_buffer, data, (f->offset + len) % 512);
         if (device->encrypted) {
-            device->write_crypt_func(crypt_buf, crypt_buf, 512 * (sector_end_aligned - device_sector_offset), 512, device->iv, device->crypt_flags);
+            device->write_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_end_aligned - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
-        no = sdmmc_write(device->mmc, crypt_buf, sector_end_aligned, 1);
+        no = sdmmc_write(device->mmc, g_crypto_buffer, sector_end_aligned, 1);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -322,13 +313,11 @@ static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size
 }
 
 static ssize_t rawmmcdev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
-    static __attribute__((aligned(16))) uint8_t crypt_buf[4096] = {0};
-
     rawmmcdev_file_t *f = (rawmmcdev_file_t *)fd;
     rawmmcdev_device_t *device = f->device;
     uint32_t device_sector_offset = (uint32_t)(device->offset / 512);
     uint32_t sector_begin = (uint32_t)((device->offset + f->offset) / 512); /* NAND offset */
-    uint32_t sector_end = (uint32_t)(512 * (device->offset + f->offset + len + 511) / 512);
+    uint32_t sector_end = (uint32_t)((device->offset + f->offset + len + 511) / 512);
     uint32_t sector_end_aligned = sector_end - ((f->offset + len) % 512 != 0 ? 1 : 0);
     uint32_t current_sector = sector_begin;
     uint8_t *data = (uint8_t *)ptr;
@@ -348,15 +337,15 @@ static ssize_t rawmmcdev_read(struct _reent *r, void *fd, char *ptr, size_t len)
 
     /* Unaligned at the start. */
     if (f->offset % 512 != 0) {
-        no = sdmmc_read(device->mmc, crypt_buf, sector_begin, 1);
+        no = sdmmc_read(device->mmc, g_crypto_buffer, sector_begin, 1);
         if (no != 0) {
             r->_errno = no;
             return -1;
         }
         if (device->encrypted) {
-            device->read_crypt_func(crypt_buf, crypt_buf, 512 * (sector_begin - device_sector_offset), 512, device->iv, device->crypt_flags);
+            device->read_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_begin - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
-        memcpy(data, crypt_buf + (f->offset % 512), len <= (512 - (f->offset % 512)) ? len : 512 - (f->offset % 512));
+        memcpy(data, g_crypto_buffer + (f->offset % 512), len <= (512 - (f->offset % 512)) ? len : 512 - (f->offset % 512));
 
         /* Advance */
         data += 512 - (f->offset % 512);
@@ -368,48 +357,41 @@ static ssize_t rawmmcdev_read(struct _reent *r, void *fd, char *ptr, size_t len)
         return 0;
     }
 
-    if (device->encrypted) {
-        size_t sectors_remaining = sector_end_aligned - current_sector;
-        for (size_t i = 0; i < sectors_remaining; i += sizeof(crypt_buf)/512) {
-            size_t n = sectors_remaining <= sizeof(crypt_buf)/512 ? sectors_remaining : sizeof(crypt_buf)/512;
+    size_t sectors_remaining = sector_end_aligned - current_sector;
+    for (size_t i = 0; i < len; i += sizeof(g_crypto_buffer)/512) {
+        size_t n = sectors_remaining <= sizeof(g_crypto_buffer)/512 ? sectors_remaining : sizeof(g_crypto_buffer)/512;
 
-            no = sdmmc_read(device->mmc, crypt_buf, current_sector, n);
+        if (device->encrypted) {
+            no = sdmmc_read(device->mmc, g_crypto_buffer, current_sector, n);
             if (no != 0) {
                 r->_errno = no;
                 return -1;
             }
-            device->read_crypt_func(crypt_buf, crypt_buf, current_sector - device_sector_offset, 512 * n, device->iv, device->crypt_flags);
-
-            memcpy(data, crypt_buf, 512 * n);
-
-            data += 512 * n;
-            current_sector++;
-        }
-    } else {
-        /* We can read everything aligned at once. */
-        size_t sectors_remaining = sector_end_aligned - current_sector;
-
-        no = sdmmc_read(device->mmc, data, current_sector, sectors_remaining);
-        if (no != 0) {
-            r->_errno = no;
-            return -1;
+            device->read_crypt_func(g_crypto_buffer, g_crypto_buffer, current_sector - device_sector_offset, 512 * n, device->iv, device->crypt_flags);
+            memcpy(data, g_crypto_buffer, 512 * n);
+        } else {
+            no = sdmmc_read(device->mmc, data, current_sector, n);
+            if (no != 0) {
+                r->_errno = no;
+                return -1;
+            }
         }
 
-        data += 512 * sectors_remaining;
-        current_sector += sectors_remaining;
+        data += 512 * n;
+        current_sector += n;
     }
 
     /* Unaligned at the end, we need to read the sector and incorporate the data. */
     if (sector_end != sector_end_aligned) {
-        no = sdmmc_read(device->mmc, crypt_buf, sector_end_aligned, 1);
+        no = sdmmc_read(device->mmc, g_crypto_buffer, sector_end_aligned, 1);
         if (no != 0) {
             r->_errno = no;
             return -1;
         }
         if (device->encrypted) {
-            device->read_crypt_func(crypt_buf, crypt_buf, 512 * (sector_end_aligned - device_sector_offset), 512, device->iv, device->crypt_flags);
+            device->read_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_end_aligned - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
-        memcpy(data, crypt_buf, (f->offset + len) % 512);
+        memcpy(data, g_crypto_buffer, (f->offset + len) % 512);
 
         /* Advance */
         data += 512 - (f->offset % 512);
