@@ -107,7 +107,7 @@ static int console_create(void) {
     devoptab_list[STD_OUT] = &dotab_stdout;
     devoptab_list[STD_ERR] = &dotab_stdout;
 
-    setvbuf(stdout, NULL , _IONBF, 0);
+    setvbuf(stdout, NULL , _IOLBF, 4096);
     setvbuf(stderr, NULL , _IONBF, 0);
 
     g_console_created = true;
