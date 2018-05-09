@@ -94,7 +94,7 @@ void Registration::HandleProcessLaunch() {
     if ((program_info.application_type & 3) == 1) {
         ResourceLimitUtils::EnsureApplicationResourcesAvailable();
     }
-    
+        
     /* Try to create the process... */
     if (R_FAILED((rc = ldrPmCreateProcess(LAUNCHFLAGS_ARGLOW(launch_flags) | LAUNCHFLAGS_ARGHIGH(launch_flags), new_process.ldr_queue_index, ResourceLimitUtils::GetResourceLimitHandle(program_info.application_type), &new_process.handle)))) {
         goto PROCESS_CREATION_FAILED;
@@ -121,8 +121,8 @@ void Registration::HandleProcessLaunch() {
     if (program_info.application_type & 1) {
         new_process.flags |= 0x40;
     }
-    if (kernelAbove200() && LAUNCHFLAGS_NOTIYDEBUGSPECIAL(launch_flags) && (program_info.application_type & 4)) {
-        
+    if (kernelAbove200() && LAUNCHFLAGS_NOTIYDEBUGSPECIAL(launch_flags) && (program_info.application_type & 4)) { 
+        new_process.flags |= 0x80;
     }
     if (LAUNCHFLAGS_NOTIFYWHENEXITED(launch_flags)) {
         new_process.flags |= 1;

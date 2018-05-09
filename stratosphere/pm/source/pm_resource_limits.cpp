@@ -123,12 +123,22 @@ void ResourceLimitUtils::InitializeLimits() {
 }
 
 void ResourceLimitUtils::EnsureApplicationResourcesAvailable() {
+    Result rc;
     Handle application_reslimit_h = g_resource_limit_handles[1];
     for (unsigned int i = 0; i < 5; i++) {
         u64 result;
         do {
             if (R_FAILED(svcGetResourceLimitCurrentValue(&result, application_reslimit_h, (LimitableResource)i))) {
                 return;
+            }
+            svcSleepThread(1000000ULL);
+        } while (result);
+    }
+    if (kernelAbove500()) {
+        u64 result;
+        do {
+            if (R_FAILED(svcGetSystemInfo(&result, 1, 0, 0))) {
+                /* TODO: Panic. */
             }
             svcSleepThread(1000000ULL);
         } while (result);
