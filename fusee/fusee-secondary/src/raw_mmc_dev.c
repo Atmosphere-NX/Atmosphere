@@ -206,12 +206,6 @@ static int rawmmcdev_close(struct _reent *r, void *fd) {
 }
 
 static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size_t len) {
-    (void)fd;
-    (void)ptr;
-    (void)len;
-    r->_errno = ENOSYS;
-    return -1;
-#if 0 /* sdmmc_write not implemented */
     static __attribute__((aligned(16))) uint8_t crypt_buf[4096] = {0};
 
     rawmmcdev_file_t *f = (rawmmcdev_file_t *)fd;
@@ -325,7 +319,6 @@ static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size
 
     f->offset += len;
     return len;
-#endif
 }
 
 static ssize_t rawmmcdev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
