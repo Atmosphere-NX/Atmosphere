@@ -75,11 +75,11 @@ typedef struct fsdev_fsdevice_t {
     FATFS fatfs;
 } fsdev_fsdevice_t;
 
-static fsdev_fsdevice_t g_devices[FF_VOLUMES] = { 0 };
+static fsdev_fsdevice_t g_fsdev_devices[FF_VOLUMES] = { 0 };
 const char *VolumeStr[FF_VOLUMES] = { 0 };
 
 int fsdev_mount_device(const char *name, unsigned int id) {
-    fsdev_fsdevice_t *device = &g_devices[id];
+    fsdev_fsdevice_t *device = &g_fsdev_devices[id];
     FRESULT rc;
     char drname[40];
     strcpy(drname, name);
@@ -93,7 +93,7 @@ int fsdev_mount_device(const char *name, unsigned int id) {
         errno = ENAMETOOLONG;
         return -1;
     }
-    if (FindDevice(drname) != -1 || g_devices[id].setup) {
+    if (FindDevice(drname) != -1 || g_fsdev_devices[id].setup) {
         errno = EEXIST; /* Device already exists */
         return -1;
     }
