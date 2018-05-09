@@ -90,7 +90,7 @@ static void __program_parse_argc_argv(int argc, char *argdata) {
     strcpy((char *)__program_argv[0], argdata);
     pos += len + 1;
 
-    __program_argv[1] = malloc(len + 1);
+    __program_argv[1] = malloc(sizeof(stage2_args_t));
     if (__program_argv[1] == NULL) {
         generic_panic();
     }
