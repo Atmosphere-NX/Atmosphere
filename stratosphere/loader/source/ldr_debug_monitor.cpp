@@ -26,7 +26,7 @@ Result DebugMonitorService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64
 }
 
 std::tuple<Result> DebugMonitorService::add_title_to_launch_queue(u64 tid, InPointer<char> args) {
-    fprintf(stderr, "Add to launch queue: %p, %X\n", args.pointer, args.num_elements);
+    fprintf(stderr, "Add to launch queue: %p, %zX\n", args.pointer, args.num_elements);
     return {LaunchQueue::add(tid, args.pointer, args.num_elements)};
 }
 
