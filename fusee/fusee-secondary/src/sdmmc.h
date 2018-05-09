@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "utils.h"
+#include "gpio.h"
 
 /* Opaque pointer to the Tegra SDMMC registers */
 struct tegra_sdmmc;
@@ -71,6 +72,56 @@ enum sdmmc_controller {
     SWITCH_EMMC = 3
 };
 
+/**
+ * Write permission modes for SD cards.
+ */
+enum sdmmc_write_permission {
+    SDMMC_WRITE_DISABLED,
+    SDMMC_WRITE_ENABLED,
+
+    /* use this with the utmost caution so you don't wind up with a brick  */
+    SDMMC_WRITE_ENABLED_INCLUDING_EMMC,
+};
+
+
+/**
+ * Methods by which we can touch registers accessed via.
+ * CMD_SWITCH_MODE.
+ */
+enum sdmmc_switch_access_mode {
+
+    /* Normal commands */
+    MMC_SWITCH_MODE_CMD_SET    = 0,
+    MMC_SWITCH_MODE_SET_BITS   = 1,
+    MMC_SWITCH_MODE_CLEAR_BITS = 2,
+    MMC_SWITCH_MODE_WRITE_BYTE = 3,
+
+    /* EXTCSD access */
+    MMC_SWITCH_EXTCSD_NORMAL   = 1,
+};
+
+
+/**
+ * Offsets into the SWITCH_MODE argument.
+ */
+enum sdmmc_switch_argument_offsets {
+    MMC_SWITCH_VALUE_SHIFT = 8,
+    MMC_SWITCH_FIELD_SHIFT = 16,
+    MMC_SWITCH_ACCESS_MODE_SHIFT = 24,
+};
+
+
+/**
+ * Fields that can be modified by CMD_SWITCH_MODE.
+ */
+enum sdmmc_switch_field {
+    /* Fields */
+    MMC_GROUP_ERASE_DEF = 175,
+    MMC_PARTITION_CONFIG = 179,
+    MMC_BUS_WIDTH = 183,
+};
+
+
 
 /**
  * Primary data structure describing a Fusée MMC driver.
@@ -80,9 +131,22 @@ struct mmc {
 
     /* Controller properties */
     const char *name;
-    unsigned int timeout;
-    enum sdmmc_card_type card_type;
     bool use_dma;
+    unsigned int timeout;
+    enum tegra_named_gpio card_detect_gpio;
+    enum sdmmc_card_type card_type;
+    enum sdmmc_write_permission write_enable;
+
+    /* Per-controller operations. */
+    int (*set_up_clock_and_io)(struct mmc *mmc);
+    int (*enable_supplies)(struct mmc *mmc);
+    bool (*card_present)(struct mmc *mmc);
+
+    /* Per-card-type operations */
+    int (*card_init)(struct mmc *mmc);
+    int (*establish_relative_address)(struct mmc *mmc);
+    int (*switch_mode)(struct mmc *mmc, enum sdmmc_switch_access_mode mode,
+            enum sdmmc_switch_field field, uint16_t value, uint32_t timeout);
 
     /* Card properties */
     uint8_t cid[15];
@@ -117,10 +181,18 @@ struct mmc;
  * Parititions supported by the Switch eMMC.
  */
 enum sdmmc_partition {
-    MMC_PARTITION_USER  = 0,
-    MMC_PARTITION_BOOT1 = 1,
-    MMC_PARITTION_BOOT2 = 2,
+    SDMMC_PARTITION_USER  = 0,
+    SDMMC_PARTITION_BOOT0 = 1,
+    SDMMC_PARTITION_BOOT1 = 2,
 };
+
+
+/**
+ * Sets the current SDMMC debugging loglevel.
+ *
+ * @param loglevel Current log level. A higher value prints more logs.
+ */
+void sdmmc_set_loglevel(int loglevel);
 
 
 /**
@@ -153,6 +225,29 @@ int sdmmc_select_partition(struct mmc *mmc, enum sdmmc_partition partition);
  * @param count The number of sectors to read.
  */
 int sdmmc_read(struct mmc *mmc, void *buffer, uint32_t sector, unsigned int count);
+
+
+/**
+ * Releases the SDMMC write lockout, enabling access to the card.
+ * Note that by default, setting this to WRITE_ENABLED will not allow access to eMMC.
+ * Check the source for a third constant that can be used to enable eMMC writes.
+ *
+ * @param perms The permissions to apply-- typically WRITE_DISABLED or WRITE_ENABLED.
+ */
+void sdmmc_set_write_enable(struct mmc *mmc, enum sdmmc_write_permission perms);
+
+
+/**
+ * Writes a sector or sectors to a given SD/MMC card.
+ *
+ * @param mmc The MMC device to work with.
+ * @param buffer The input buffer to write.
+ * @param block The sector number to write from.
+ * @param count The number of sectors to write.
+ *
+ * @return 0 on success, or an error code on failure.
+ */
+int sdmmc_write(struct mmc *mmc, void *buffer, uint32_t block, unsigned int count);
 
 
 /**
