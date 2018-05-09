@@ -82,6 +82,8 @@ int fsdev_mount_device(const char *name, unsigned int id) {
     fsdev_fsdevice_t *device = &g_devices[id];
     FRESULT rc;
     char drname[40];
+    strcpy(drname, name);
+    strcat(drname, ":");
 
     if (id >= FF_VOLUMES) {
         errno = EINVAL;
@@ -91,7 +93,7 @@ int fsdev_mount_device(const char *name, unsigned int id) {
         errno = ENAMETOOLONG;
         return -1;
     }
-    if (FindDevice(name) != -1 || g_devices[id].setup) {
+    if (FindDevice(drname) != -1 || g_devices[id].setup) {
         errno = EEXIST; /* Device already exists */
         return -1;
     }
@@ -102,9 +104,6 @@ int fsdev_mount_device(const char *name, unsigned int id) {
     device->devoptab.name = device->name;
     device->devoptab.deviceData = device;
     VolumeStr[id] = device->name;
-
-    strcpy(drname, name);
-    strcat(drname, ":");
 
     rc = f_mount(&device->fatfs, drname, 1);
 
@@ -125,7 +124,12 @@ int fsdev_mount_device(const char *name, unsigned int id) {
 
 int fsdev_set_default_device(const char *name) {
     int ret = 0;
-    int devid = FindDevice(name);
+    int devid;
+    char drname[40];
+
+    strcpy(drname, name);
+    strcat(drname, ":");
+    devid = FindDevice(drname);
 
     if (devid == -1) {
         errno = ENOENT;
@@ -133,11 +137,6 @@ int fsdev_set_default_device(const char *name) {
     }
 
 #if FF_VOLUMES >= 2
-    char drname[40];
-
-    strcpy(drname, name);
-    strcat(drname, ":");
-
     ret = fsdev_convert_rc(NULL, f_chdrive(drname));
 #endif
     if (ret == 0) {
@@ -150,20 +149,23 @@ int fsdev_set_default_device(const char *name) {
 int fsdev_unmount_device(const char *name) {
     int ret;
     char drname[40];
-    int devid = FindDevice(name);
+    int devid;
+
+    strcpy(drname, name);
+    strcat(drname, ":");
+
+    devid = FindDevice(drname);
 
     if (devid == -1) {
         errno = ENOENT;
         return -1;
     }
-    strcpy(drname, name);
-    strcat(drname, ":");
 
     ret = fsdev_convert_rc(NULL, f_unmount(drname));
 
     if (ret == 0) {
         fsdev_fsdevice_t *device = (fsdev_fsdevice_t *)(GetDeviceOpTab(name)->deviceData);
-        RemoveDevice(name);
+        RemoveDevice(drname);
         memset(device, 0, sizeof(fsdev_fsdevice_t));
     }
 
