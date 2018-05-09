@@ -70,13 +70,19 @@ void __appInit(void) {
     
     rc = smManagerInitialize();
     if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 4);
+        fatalSimple(0xCAFE << 4 | 5);
     }
-    
     
     rc = splInitialize();
     if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 5);
+        fatalSimple(0xCAFE << 4 | 6);
+    }
+    
+    /* Check for exosphere API compatibility. */
+    u64 exosphere_cfg;
+    if (R_FAILED(splGetConfig((SplConfigItem)65000, &exosphere_cfg))) {
+        fatalSimple(0xCAFE << 4 | 0xFF);
+        /* TODO: Does PM need to know about target firmware/master key revision? If so, extract from exosphere_cfg. */
     }
 }
 

@@ -38,7 +38,7 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    /* We must do nothing here, because we are sm. */
+    /* We must do no setup here, because we are sm. */
 }
 
 void __appExit(void) {
