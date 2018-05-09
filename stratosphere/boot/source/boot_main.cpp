@@ -59,12 +59,12 @@ void __appInit(void) {
     if (R_FAILED(rc))
         fatalSimple(0xCAFE << 4 | 2);
     
-    fsdevInit();
+    fsdevMountSdmc();
 }
 
 void __appExit(void) {
     /* Cleanup services. */
-    fsdevExit();
+    fsdevUnmountAll();
     pmshellExit(); 
     splExit();
     fsExit();
