@@ -2,11 +2,17 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <malloc.h>
 #include <sys/iosupport.h>
 #include "console.h"
+#include "hwinit.h"
 #include "display/video_fb.h"
 
+static void *g_framebuffer = NULL;
+static bool g_display_initialized = false;
+
 static ssize_t console_write(struct _reent *r, void *fd, const char *ptr, size_t len);
+static void console_init_display(void);
 
 static const devoptab_t dotab_stdout = {
     .name = "con",
@@ -14,7 +20,7 @@ static const devoptab_t dotab_stdout = {
 };
 
 /* https://github.com/switchbrew/libnx/blob/master/nx/source/runtime/util/utf/decode_utf8.c */
-ssize_t decode_utf8(uint32_t *out, const uint8_t *in) {
+static ssize_t decode_utf8(uint32_t *out, const uint8_t *in) {
     uint8_t code1, code2, code3, code4;
 
     code1 = *in++;
@@ -80,8 +86,25 @@ ssize_t decode_utf8(uint32_t *out, const uint8_t *in) {
     return -1;
 }
 
+static void console_init_display(void) {
+    /* Initialize the display. */
+    display_init();
+
+    /* Set the framebuffer. */
+    display_init_framebuffer(g_framebuffer);
+
+    /* Turn on the backlight after initializing the lfb */
+    /* to avoid flickering. */
+    display_enable_backlight(true);
+
+    g_display_initialized = true;
+}
+
 static ssize_t console_write(struct _reent *r, void *fd, const char *ptr, size_t len) {
     size_t i = 0;
+    if (!g_display_initialized) {
+        console_init_display();
+    }
     while (i < len) {
         uint32_t chr;
         ssize_t n = decode_utf8(&chr, (uint8_t *)(ptr + i));
@@ -96,11 +119,15 @@ static ssize_t console_write(struct _reent *r, void *fd, const char *ptr, size_t
     return i;
 }
 
-static bool g_console_created = false;
-
 static int console_create(void) {
-    if (g_console_created) {
+    if (g_framebuffer != NULL) {
         errno = EEXIST;
+        return -1;
+    }
+    g_framebuffer = memalign(0x1000, CONFIG_VIDEO_VISIBLE_ROWS * CONFIG_VIDEO_COLS * CONFIG_VIDEO_PIXEL_SIZE);
+
+    if (g_framebuffer == NULL) {
+        errno = ENOMEM;
         return -1;
     }
 
@@ -110,23 +137,51 @@ static int console_create(void) {
     setvbuf(stdout, NULL , _IOLBF, 4096);
     setvbuf(stderr, NULL , _IONBF, 0);
 
-    g_console_created = true;
     return 0;
 }
 
-int console_init(void *fb) {
-    if (video_init(fb) == -1) {
-        errno = EIO;
+int console_init(void) {
+    if (console_create() == -1) {
         return -1;
     }
 
-    return console_create();
+    /* Zero-fill the framebuffer, etc. */
+    if (video_init(g_framebuffer) == -1) {
+        errno = EIO;
+        console_end();
+        return -1;
+    }
+
+    return 0;
 }
 
-int console_resume(void *fb, int row, int col) {
-   video_resume(fb, row, col); if(false){// if (video_resume(fb, row, col) == -1) {
-        errno = EIO;
-        return -1;
+int console_display(const void *framebuffer) {
+    if (!g_display_initialized) {
+        console_init_display();
     }
-    return console_create();
+
+    /* TODO: does this work? */
+    display_init_framebuffer((void *)framebuffer);
+    return 0;
+}
+
+int console_resume(void) {
+    if (!g_display_initialized) {
+        console_init_display();
+    } else {
+        /* TODO: does this work? */
+        display_init_framebuffer(g_framebuffer);
+    }
+    return 0;
+}
+
+int console_end(void) {
+    /* Deinitialize the framebuffer and display */
+    if (g_display_initialized) {
+        display_enable_backlight(false);
+        display_end();
+    }
+    free(g_framebuffer);
+    g_framebuffer = NULL;
+    return 0;
 }

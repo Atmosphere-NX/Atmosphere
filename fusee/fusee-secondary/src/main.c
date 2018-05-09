@@ -3,7 +3,6 @@
 #include <errno.h>
 #include <malloc.h>
 #include "utils.h"
-#include "hwinit.h"
 #include "loader.h"
 #include "chainloader.h"
 #include "stage2.h"
@@ -16,29 +15,13 @@
 extern void (*__program_exit_callback)(int rc);
 
 static stage2_args_t *g_stage2_args;
-static void *g_framebuffer;
 static bool g_do_nxboot;
 
 static void setup_env(void) {
-    g_framebuffer = memalign(0x1000, CONFIG_VIDEO_VISIBLE_ROWS * CONFIG_VIDEO_COLS * CONFIG_VIDEO_PIXEL_SIZE);
-
-    /* Note: the framebuffer needs to be >= 0xC0000000, this is fine because of where our heap is. */
-    if (g_framebuffer == NULL) {
+    /* Set the console up. */
+    if (console_init() == -1) {
         generic_panic();
     }
-
-    /* Zero-fill the framebuffer and set the console up. */
-    console_init(g_framebuffer);
-
-    /* Initialize the display. */
-    display_init();
-
-    /* Set the framebuffer. */
-    display_init_framebuffer(g_framebuffer);
-
-    /* Turn on the backlight after initializing the lfb */
-    /* to avoid flickering. */
-    display_enable_backlight(true);
 
     initialize_sd();
     if(fsdev_mount_all() == -1) {
@@ -53,12 +36,7 @@ static void setup_env(void) {
 static void cleanup_env(void) {
     /* Unmount everything (this causes all open files to be flushed and closed) */
     fsdev_unmount_all();
-
-    /* Deinitialize the framebuffer and display */
-    /*display_enable_backlight(false);
-    display_end();
-    free(g_framebuffer);
-    g_framebuffer = NULL;*/
+    //console_end();
 }
 
 static void exit_callback(int rc) {
