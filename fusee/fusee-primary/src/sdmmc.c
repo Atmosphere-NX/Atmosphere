@@ -2313,7 +2313,7 @@ void sdmmc_set_write_enable(struct mmc *mmc, enum sdmmc_write_permission perms)
  *
  * @return 0 on success, or an error code on failure.
  */
-int sdmmc_write(struct mmc *mmc, void *buffer, uint32_t block, unsigned int count)
+int sdmmc_write(struct mmc *mmc, const void *buffer, uint32_t block, unsigned int count)
 {
     // Sanity check variables: we're especially careful about allowing writes to the switch eMMC.
     bool is_emmc = (mmc->controller == SWITCH_EMMC);
@@ -2343,7 +2343,7 @@ int sdmmc_write(struct mmc *mmc, void *buffer, uint32_t block, unsigned int coun
     }
 
     // Execute the relevant read.
-    return sdmmc_send_command(mmc, command, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, extent, NULL, count, true, count > 1, buffer);
+    return sdmmc_send_command(mmc, command, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, extent, NULL, count, true, count > 1, (void *)buffer);
 }
 
 /**

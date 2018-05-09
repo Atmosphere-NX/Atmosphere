@@ -247,7 +247,7 @@ void sdmmc_set_write_enable(struct mmc *mmc, enum sdmmc_write_permission perms);
  *
  * @return 0 on success, or an error code on failure.
  */
-int sdmmc_write(struct mmc *mmc, void *buffer, uint32_t block, unsigned int count);
+int sdmmc_write(struct mmc *mmc, const void *buffer, uint32_t block, unsigned int count);
 
 
 /**
