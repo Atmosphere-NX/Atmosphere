@@ -385,7 +385,7 @@ static off_t fsdev_seek(struct _reent *r, void *fd, off_t pos, int whence) {
             return -1;
     }
 
-    if(pos < 0 && off < -pos) {
+    if(pos < 0 && pos + off < 0) {
         /* don't allow seek to before the beginning of the file */
         r->_errno = EINVAL;
         return -1;
