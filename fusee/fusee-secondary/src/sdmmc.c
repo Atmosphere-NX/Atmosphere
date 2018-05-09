@@ -25,7 +25,7 @@
 /**
  * Map of tegra SDMMC registers
  */
-struct PACKED tegra_sdmmc {
+struct tegra_sdmmc {
 
     /* SDHCI standard registers */
     uint32_t dma_address;
@@ -56,7 +56,7 @@ struct PACKED tegra_sdmmc {
     uint16_t set_acmd12_error;
     uint16_t set_int_error;
     uint16_t adma_error;
-    uint8_t _0x55[0x3];
+    uint8_t _0x56[0x2];
     uint32_t adma_address;
     uint32_t upper_adma_address;
     uint16_t preset_for_init;
@@ -67,7 +67,7 @@ struct PACKED tegra_sdmmc {
     uint16_t preset_for_sdr50;
     uint16_t preset_for_sdr104;
     uint16_t preset_for_ddr50;
-    uint8_t _0x70[0x3];
+    uint8_t _0x70[0x4];
     uint32_t _0x74[0x22];
     uint16_t slot_int_status;
     uint16_t host_version;
@@ -84,7 +84,7 @@ struct PACKED tegra_sdmmc {
     uint32_t vendor_misc_cntrl;
     uint32_t max_current_override;
     uint32_t max_current_override_hi;
-    uint32_t _0x12c[0x21];
+    uint32_t _0x12c[0x20];
     uint32_t vendor_io_trim_cntrl;
 
     /* start of sdmmc2/sdmmc4 only */
@@ -111,7 +111,6 @@ struct PACKED tegra_sdmmc {
     uint32_t timeout_wcoal_sdmmca;
     uint32_t _0x1fc;
 };
-
 
 /**
  * SDMMC response lengths
