@@ -63,6 +63,18 @@ void __appInit(void) {
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 2);
     }
+    
+    rc = splInitialize();
+    if (R_FAILED(rc))  {
+        fatalSimple(0xCAFE << 4 | 3);
+    }
+    
+    /* Check for exosphere API compatibility. */
+    u64 exosphere_cfg;
+    if (R_FAILED(splGetConfig((SplConfigItem)65000, &exosphere_cfg))) {
+        fatalSimple(0xCAFE << 4 | 0xFF);
+        /* TODO: Does Loader need to know about target firmware/master key revision? If so, extract from exosphere_cfg. */
+    }
 }
 
 void __appExit(void) {

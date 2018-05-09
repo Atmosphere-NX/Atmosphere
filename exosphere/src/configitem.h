@@ -21,7 +21,10 @@ typedef enum {
     CONFIGITEM_ODM4BIT10_4X = 14,
     CONFIGITEM_NEWHARDWARETYPE_5X = 15,
     CONFIGITEM_NEWKEYGENERATION_5X = 16,
-    CONFIGITEM_PACKAGE2HASH_5X = 17
+    CONFIGITEM_PACKAGE2HASH_5X = 17,
+    
+    /* These are unofficial, for usage by Exosphere. */
+    CONFIGITEM_EXOSPHERE_VERSION = 65000
 } ConfigItem;
 
 uint32_t configitem_set(ConfigItem item, uint64_t value);
