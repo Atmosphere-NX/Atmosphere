@@ -22,6 +22,9 @@ enum sdmmc_bus_width {
     MMC_BUS_WIDTH_1BIT = 0,
     MMC_BUS_WIDTH_4BIT = 1,
     MMC_BUS_WIDTH_8BIT = 2,
+
+    SD_BUS_WIDTH_1BIT = 0,
+    SD_BUS_WIDTH_4BIT = 2
 };
 
 
@@ -58,8 +61,9 @@ enum sdmmc_spec_version  {
     MMC_VERSION_4 = 0,
 
     /* SD card versions */
-    SD_VERSION_1 = 1,
-    SD_VERSION_2 = 2,
+    SD_VERSION_1_0 = 0,
+    SD_VERSION_1_1 = 1,
+    SD_VERSION_2_0 = 2,
 
 };
 
@@ -140,6 +144,7 @@ struct mmc {
     /* Per-controller operations. */
     int (*set_up_clock_and_io)(struct mmc *mmc);
     int (*enable_supplies)(struct mmc *mmc);
+    int (*switch_to_low_voltage)(struct mmc *mmc);
     bool (*card_present)(struct mmc *mmc);
 
     /* Per-card-type operations */
@@ -147,6 +152,7 @@ struct mmc {
     int (*establish_relative_address)(struct mmc *mmc);
     int (*switch_mode)(struct mmc *mmc, enum sdmmc_switch_access_mode mode,
             enum sdmmc_switch_field field, uint16_t value, uint32_t timeout);
+    int (*switch_bus_width)(struct mmc *mmc, enum sdmmc_bus_width width);
 
     /* Card properties */
     uint8_t cid[15];
@@ -162,6 +168,7 @@ struct mmc {
     uint32_t partition_switch_time;
 
     uint8_t read_block_order;
+    uint8_t write_block_order;
     bool uses_block_addressing;
 
     /* Pointers to hardware structures */

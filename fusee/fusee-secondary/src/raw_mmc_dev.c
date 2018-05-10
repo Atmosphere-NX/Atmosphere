@@ -206,7 +206,7 @@ static int rawmmcdev_close(struct _reent *r, void *fd) {
 }
 
 /* Keep this <= the size of the DMA bounce buffer in sdmmc.c */
-static __attribute__((aligned(16))) uint8_t g_crypto_buffer[4096 * 4] = {0};
+static __attribute__((aligned(16))) uint8_t g_crypto_buffer[512] = {0};
 
 static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size_t len) {
     rawmmcdev_file_t *f = (rawmmcdev_file_t *)fd;
