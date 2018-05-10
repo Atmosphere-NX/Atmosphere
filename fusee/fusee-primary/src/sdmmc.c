@@ -321,6 +321,8 @@ enum sdmmc_command_magic {
 
     /* Misc constants */
     MMC_DEFAULT_BLOCK_ORDER = 9,
+    MMC_VOLTAGE_SWITCH_TIME = 5000, // 5mS
+    MMC_POST_CLOCK_DELAY = 1000, // 1mS
 };
 
 
@@ -789,12 +791,17 @@ static int sdmmc1_switch_to_low_voltage(struct mmc *mmc)
     }
 
     // Rerun the main clock calibration...
-    rc = sdmmc_run_autocal(mmc, true);
+    rc = sdmmc_run_autocal(mmc, false);
     if (rc)
         mmc_print(mmc, "WARNING: failed to re-calibrate after voltage switch!");
 
     // ... and ensure the host is set up to apply the relevant change.
     sdmmc_set_working_voltage(mmc, MMC_VOLTAGE_1V8);
+    udelay(MMC_VOLTAGE_SWITCH_TIME);
+
+    // Enable the SD clock.
+    sdmmc_clock_enable(mmc, true);
+    udelay(MMC_POST_CLOCK_DELAY);
 
     mmc_debug(mmc, "now running from 1V8");
     return 0;
