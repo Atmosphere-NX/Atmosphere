@@ -22,6 +22,9 @@ enum sdmmc_bus_width {
     MMC_BUS_WIDTH_1BIT = 0,
     MMC_BUS_WIDTH_4BIT = 1,
     MMC_BUS_WIDTH_8BIT = 2,
+
+    SD_BUS_WIDTH_1BIT = 0,
+    SD_BUS_WIDTH_4BIT = 2
 };
 
 
@@ -147,6 +150,7 @@ struct mmc {
     int (*establish_relative_address)(struct mmc *mmc);
     int (*switch_mode)(struct mmc *mmc, enum sdmmc_switch_access_mode mode,
             enum sdmmc_switch_field field, uint16_t value, uint32_t timeout);
+    int (*switch_bus_width)(struct mmc *mmc, enum sdmmc_bus_width width);
 
     /* Card properties */
     uint8_t cid[15];

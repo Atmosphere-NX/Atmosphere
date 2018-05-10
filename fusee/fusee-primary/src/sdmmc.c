@@ -228,6 +228,7 @@ enum sdmmc_command {
     CMD_SET_DSR = 4,
     CMD_TOGGLE_SLEEP_AWAKE = 5,
     CMD_SWITCH_MODE = 6,
+    CMD_APP_SWITCH_WIDTH = 6,
     CMD_TOGGLE_CARD_SELECT = 7,
     CMD_SEND_EXT_CSD = 8,
     CMD_SEND_IF_COND = 8,
@@ -244,6 +245,7 @@ enum sdmmc_command {
     CMD_WRITE_MULTIPLE_BLOCK = 25,
 
     CMD_APP_SEND_OP_COND = 41,
+    CMD_APP_SET_CARD_DETECT = 42,
     CMD_APP_COMMAND = 55,
 };
 
@@ -434,6 +436,8 @@ static const char *sdmmc_get_command_string(enum sdmmc_command command)
             return "CMD_APP_COMMAND";
         case CMD_APP_SEND_OP_COND:
             return "CMD_APP_SEND_OP_COND";
+        case CMD_APP_SET_CARD_DETECT:
+            return "CMD_APP_SET_CARD_DETECT";
         case CMD_WRITE_SINGLE_BLOCK:
             return "CMD_WRITE_SINGLE_BLOCK";
         case CMD_WRITE_MULTIPLE_BLOCK:
@@ -819,7 +823,7 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Set SDHCI_DIVIDER and SDHCI_DIVIDER_HI
     // FIXME: divider SD if necessary
     regs->clock_control &= ~(0xFFC0);
-    regs->clock_control |= (0x30 << 8);  // 200kHz, initially
+    regs->clock_control |= (0x18 << 8);  // 400kHz, initially
 
     // Set SDHCI_CLOCK_CARD_EN
     regs->clock_control |= 0x04;
@@ -1402,9 +1406,9 @@ static int sdmmc_send_simple_app_command(struct mmc *mmc, enum sdmmc_command com
     int rc;
 
     // First, send the application command.
-    rc = sdmmc_send_simple_command(mmc, CMD_APP_COMMAND, MMC_RESPONSE_LEN48, 0, NULL);
+    rc = sdmmc_send_simple_command(mmc, CMD_APP_COMMAND, MMC_RESPONSE_LEN48, mmc->relative_address << 16, NULL);
     if (rc) {
-        mmc_print(mmc, "failed to prepare application command! (%d)", rc);
+        mmc_print(mmc, "failed to prepare application command %s! (%d)", sdmmc_get_command_string(command), rc);
         return rc;
     }
 
@@ -1581,12 +1585,13 @@ static int sdmmc_set_up_block_transfer_size(struct mmc *mmc)
 }
 
 
+
 /**
  * Switches the SDMMC card and controller to the fullest bus width possible.
  *
  * @param mmc The MMC controller to switch up to a full bus width.
  */
-static int sdmmc_switch_bus_width(struct mmc *mmc, enum sdmmc_bus_width width)
+static int sdmmc_mmc_switch_bus_width(struct mmc *mmc, enum sdmmc_bus_width width)
 {
     // Ask the card to adjust to the wider bus width.
     int rc = mmc->switch_mode(mmc, MMC_SWITCH_EXTCSD_NORMAL,
@@ -1596,7 +1601,7 @@ static int sdmmc_switch_bus_width(struct mmc *mmc, enum sdmmc_bus_width width)
         return rc;
     }
 
-    // And switch the bus width on our side.
+    // Apply the same changes on the host side.
     mmc->regs->host_control &= ~MMC_HOST_BUS_WIDTH_MASK;
     switch (width) {
         case MMC_BUS_WIDTH_4BIT:
@@ -1608,6 +1613,40 @@ static int sdmmc_switch_bus_width(struct mmc *mmc, enum sdmmc_bus_width width)
         default:
             break;
     }
+    return 0;
+}
+
+
+/**
+ * Switches the SDMMC card and controller to the fullest bus width possible.
+ *
+ * @param mmc The MMC controller to switch up to a full bus width.
+ */
+static int sdmmc_sd_switch_bus_width(struct mmc *mmc, enum sdmmc_bus_width width)
+{
+    // By default, SD DAT3 is used for card detect. We'll need to
+    // release it from this function by dropping its pull-up resistor
+    // before we can use the line for data. Do so.
+    int rc = sdmmc_send_simple_app_command(mmc, CMD_APP_SET_CARD_DETECT,
+            MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, 0, NULL);
+    if (rc) {
+        mmc_print(mmc, "could not stop using DAT3 as a card detect!");
+        return rc;
+    }
+
+    // Ask the card to adjust to the wider bus width.
+    rc = sdmmc_send_simple_app_command(mmc, CMD_APP_SWITCH_WIDTH,
+            MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, width, NULL);
+    if (rc) {
+        mmc_print(mmc, "could not switch mode on the card side!");
+        return rc;
+    }
+
+    // Apply the same changes on the host side.
+    mmc->regs->host_control &= ~MMC_HOST_BUS_WIDTH_MASK;
+    if (mmc->max_bus_width == SD_BUS_WIDTH_4BIT) {
+        mmc->regs->host_control |= MMC_HOST_BUS_WIDTH_4BIT;
+    }
 
     return 0;
 }
@@ -1616,12 +1655,12 @@ static int sdmmc_switch_bus_width(struct mmc *mmc, enum sdmmc_bus_width width)
 /**
  * Optimize our SDMMC transfer mode to fully utilize the bus.
  */
-static int mmc_optimize_transfer_mode(struct mmc *mmc)
+static int sdmmc_optimize_transfer_mode(struct mmc *mmc)
 {
     int rc;
 
     // Switch the device to its maximum bus width.
-    rc = sdmmc_switch_bus_width(mmc, mmc->max_bus_width);
+    rc = mmc->switch_bus_width(mmc, mmc->max_bus_width);
     if (rc) {
         mmc_print(mmc, "could not switch the controller's bus width!");
         return rc;
@@ -1630,31 +1669,6 @@ static int mmc_optimize_transfer_mode(struct mmc *mmc)
     // TODO: step up into high speed modes
     mmc_print(mmc, "now operating with a wider bus width");
     return 0;
-}
-
-
-/**
- * Retrieves information about the card, and populates the MMC structure accordingly.
- * Used as part of the SDMMC initialization process.
- */
-static int sdmmc_set_up_partitions(struct mmc *mmc)
-{
-    // If the card doesn't support partitions, fail out.
-    if (!(mmc->partition_support & MMC_SUPPORTS_HARDWARE_PARTS))
-        return ENOTTY;
-
-    // If the card hasn't been partitioned, fail out.
-    // We don't support setting up hardware partitioning.
-    if (!mmc->partitioned) {
-        mmc_print(mmc, "NOTE: card supports partitions but is not partitioned");
-        return ENOTDIR;
-    }
-
-    mmc_print(mmc, "detected a card with hardware partitions.");
-
-    // Use partitioning.
-    return mmc->switch_mode(mmc, MMC_SWITCH_EXTCSD_NORMAL,
-            MMC_GROUP_ERASE_DEF, MMC_EXT_CSD_ERASE_GROUP_DEF_BIT, mmc->timeout);
 }
 
 
@@ -1708,8 +1722,10 @@ static int sdmmc_get_relative_address(struct mmc *mmc)
 
 
 /**
- * Retrieves information about the card, and populates the MMC structure accordingly.
- * Used as part of the SDMMC initialization process.
+ * Shared card initialization for SD and MMC cards.
+ * Used to bring the card fully online and gather information about the card.
+ *
+ * @param mmc The MMC controller that will perform the initilaization.
  */
 static int sdmmc_card_init(struct mmc *mmc)
 {
@@ -1751,6 +1767,15 @@ static int sdmmc_card_init(struct mmc *mmc)
     rc = sdmmc_set_up_block_transfer_size(mmc);
     if (rc) {
         mmc_print(mmc, "could not set up block transfer sizes! (%d)", rc);
+        return rc;
+    }
+
+    // Switch to a transfer mode that can more efficiently utilize the bus.
+    rc = sdmmc_optimize_transfer_mode(mmc);
+    if (rc) {
+        mmc_print(mmc, "could not optimize bus utlization! (%d)", rc);
+
+        // TODO: possibly skip this?
         return rc;
     }
 
@@ -1863,26 +1888,11 @@ static int sdmmc_mmc_card_init(struct mmc *mmc)
         return rc;
     }
 
-    // Switch to a transfer mode that can more efficiently utilize the bus.
-    /*
-    rc = mmc_optimize_transfer_mode(mmc);
-    if (rc) {
-        mmc_print(mmc, "could not optimize bus utlization! (%d)", rc);
-    }
-    */
-    (void)mmc_optimize_transfer_mode;
-
     // Read and handle card's Extended Card Specific Data (ext-CSD).
     rc = sdmmc_read_and_parse_ext_csd(mmc);
     if (rc) {
         mmc_print(mmc, "could not populate extended-CSD attributes! (%d)", rc);
         return EPIPE;
-    }
-
-    // Set up MMC card partitioning, if supported.
-    rc = sdmmc_set_up_partitions(mmc);
-    if (rc) {
-        mmc_print(mmc, "NOTE: card cannot be used with hardware partitions", rc);
     }
 
     return 0;
@@ -1958,8 +1968,6 @@ static int sdmmc_sd_card_init(struct mmc *mmc)
         return rc;
     }
 
-    // FIXME: optimize bus utilization here?
-    // is this just a call to the same routine as for eMMC?
     return 0;
 }
 
@@ -2115,6 +2123,7 @@ static void sdmmc_apply_card_type(struct mmc *mmc, enum sdmmc_card_type type)
             mmc->card_init = sdmmc_mmc_card_init;
             mmc->establish_relative_address = sdmmc_set_relative_address;
             mmc->switch_mode = sdmmc_mmc_switch_mode;
+            mmc->switch_bus_width = sdmmc_mmc_switch_bus_width;
             break;
 
         // SD-protocol cards
@@ -2122,6 +2131,7 @@ static void sdmmc_apply_card_type(struct mmc *mmc, enum sdmmc_card_type type)
             mmc->card_init = sdmmc_sd_card_init;
             mmc->establish_relative_address = sdmmc_get_relative_address;
             mmc->switch_mode = sdmmc_sd_switch_mode;
+            mmc->switch_bus_width = sdmmc_sd_switch_bus_width;
             break;
 
         // Switch-cart protocol cards
@@ -2161,7 +2171,7 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
         case SWITCH_MICROSD:
             mmc->name = "uSD";
             mmc->card_type = MMC_CARD_SD;
-            mmc->max_bus_width = MMC_BUS_WIDTH_4BIT;
+            mmc->max_bus_width = SD_BUS_WIDTH_4BIT;
             mmc->operating_voltage = MMC_VOLTAGE_3V3;
             mmc->card_detect_gpio = GPIO_MICROSD_CARD_DETECT;
 
