@@ -23,8 +23,8 @@ typedef struct rawmmcdev_device_t {
 
     struct mmc *mmc;
     enum sdmmc_partition partition;
-    size_t offset;
-    size_t size;
+    uint64_t offset;
+    uint64_t size;
     rawmmc_crypt_func_t read_crypt_func;
     rawmmc_crypt_func_t write_crypt_func;
     uint64_t crypt_flags;
@@ -38,7 +38,7 @@ typedef struct rawmmcdev_device_t {
 typedef struct rawmmcdev_file_t {
     rawmmcdev_device_t *device;
     int open_flags;
-    size_t offset;
+    uint64_t offset;
 } rawmmcdev_file_t;
 
 static rawmmcdev_device_t g_rawmmcdev_devices[RAWMMC_MAX_DEVICES] = {0};
@@ -60,8 +60,8 @@ int rawmmcdev_mount_device(
     const char *name,
     struct mmc *mmc,
     enum sdmmc_partition partition,
-    size_t offset,
-    size_t size,
+    uint64_t offset,
+    uint64_t size,
     rawmmc_crypt_func_t read_crypt_func,
     rawmmc_crypt_func_t write_crypt_func,
     uint64_t crypt_flags,
@@ -137,8 +137,8 @@ int rawmmcdev_mount_unencrypted_device(
     const char *name,
     struct mmc *mmc,
     enum sdmmc_partition partition,
-    size_t offset,
-    size_t size
+    uint64_t offset,
+    uint64_t size
 ) {
     return rawmmcdev_mount_device(name, mmc, partition, offset, size, NULL, NULL, 0, NULL);
 }
@@ -221,7 +221,7 @@ static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size
     int no = 0;
 
     if (f->offset + len >= device->offset + device->size) {
-        len = device->size - f->offset;
+        len = (size_t)(device->size - f->offset);
     }
 
     /* Change the partition, if needed. */
@@ -241,7 +241,7 @@ static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size
         if (device->encrypted) {
             device->read_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_begin - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
-        memcpy(g_crypto_buffer, data, len <= (512 - (f->offset % 512)) ? len : 512 - (f->offset % 512));
+        memcpy(g_crypto_buffer, data, len <= (512 - (uint32_t)(f->offset % 512)) ? len : 512 - (uint32_t)(f->offset % 512));
         if (device->encrypted) {
             device->write_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_begin - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
@@ -252,7 +252,7 @@ static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size
         }
 
         /* Advance */
-        data += 512 - (f->offset % 512);
+        data += 512 - (uint32_t)(f->offset % 512);
         current_sector++;
     }
 
@@ -293,7 +293,7 @@ static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size
         if (device->encrypted) {
             device->read_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_end_aligned - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
-        memcpy(g_crypto_buffer, data, (f->offset + len) % 512);
+        memcpy(g_crypto_buffer, data, (uint32_t)((f->offset + len) % 512));
         if (device->encrypted) {
             device->write_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_end_aligned - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
@@ -304,7 +304,7 @@ static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size
         }
 
         /* Advance */
-        data += 512 - ((f->offset + len) % 512);
+        data += 512 - (uint32_t)((f->offset + len) % 512);
         current_sector++;
     }
 
@@ -325,7 +325,7 @@ static ssize_t rawmmcdev_read(struct _reent *r, void *fd, char *ptr, size_t len)
     int no = 0;
 
     if (f->offset + len >= device->offset + device->size) {
-        len = device->size - f->offset;
+        len = (size_t)(device->size - f->offset);
     }
 
     /* Change the partition, if needed. */
@@ -345,10 +345,10 @@ static ssize_t rawmmcdev_read(struct _reent *r, void *fd, char *ptr, size_t len)
         if (device->encrypted) {
             device->read_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_begin - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
-        memcpy(data, g_crypto_buffer + (f->offset % 512), len <= (512 - (f->offset % 512)) ? len : 512 - (f->offset % 512));
+        memcpy(data, g_crypto_buffer + (f->offset % 512), len <= (512 - (uint32_t)(f->offset % 512)) ? len : 512 - (uint32_t)(f->offset % 512));
 
         /* Advance */
-        data += 512 - (f->offset % 512);
+        data += 512 - (uint32_t)(f->offset % 512);
         current_sector++;
     }
 
@@ -391,10 +391,10 @@ static ssize_t rawmmcdev_read(struct _reent *r, void *fd, char *ptr, size_t len)
         if (device->encrypted) {
             device->read_crypt_func(g_crypto_buffer, g_crypto_buffer, 512 * (sector_end_aligned - device_sector_offset), 512, device->iv, device->crypt_flags);
         }
-        memcpy(data, g_crypto_buffer, (f->offset + len) % 512);
+        memcpy(data, g_crypto_buffer, (uint32_t)((f->offset + len) % 512));
 
         /* Advance */
-        data += 512 - (f->offset % 512);
+        data += 512 - (uint32_t)(f->offset % 512);
         current_sector++;
     }
 
@@ -405,7 +405,7 @@ static ssize_t rawmmcdev_read(struct _reent *r, void *fd, char *ptr, size_t len)
 static off_t rawmmcdev_seek(struct _reent *r, void *fd, off_t pos, int whence) {
     rawmmcdev_file_t *f = (rawmmcdev_file_t *)fd;
     rawmmcdev_device_t *device = f->device;
-    size_t off;
+    uint64_t off;
 
     switch (whence) {
         case SEEK_SET:

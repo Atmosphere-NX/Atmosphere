@@ -15,8 +15,8 @@ int rawmmcdev_mount_device(
     const char *name,
     struct mmc *mmc,
     enum sdmmc_partition partition,
-    size_t offset,
-    size_t size,
+    uint64_t offset,
+    uint64_t size,
     rawmmc_crypt_func_t read_crypt_func,
     rawmmc_crypt_func_t write_crypt_func,
     uint64_t crypt_flags,
@@ -27,8 +27,8 @@ int rawmmcdev_mount_unencrypted_device(
     const char *name,
     struct mmc *mmc,
     enum sdmmc_partition partition,
-    size_t offset,
-    size_t size
+    uint64_t offset,
+    uint64_t size
 );
 
 int rawmmcdev_unmount_device(const char *name);
