@@ -7,7 +7,6 @@
 #include <sys/iosupport.h>
 #include <sys/param.h>
 #include <unistd.h>
-#include <stdio.h>
 
 #include "lib/fatfs/ff.h"
 
