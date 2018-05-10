@@ -187,6 +187,9 @@ enum sdmmc_register_bits {
 
     MMC_STATUS_ERROR_MASK =  (0xF << 16),
 
+    /* Clock control */
+    MMC_CLOCK_CONTROL_CARD_CLOCK_ENABLE = (1 << 2),
+
     /* Host control */
     MMC_DMA_SELECT_MASK = (0x3 << 3),
     MMC_DMA_SELECT_SDMA = (0x0 << 3),
@@ -206,12 +209,21 @@ enum sdmmc_register_bits {
     MMC_CLOCK_TRIM_SDMMC1 = (0x02 << 24),
     MMC_CLOCK_TRIM_SDMMC4 = (0x08 << 24),
 
-    /* Auto cal configuration */
+    /* Autocal configuration */
     MMC_AUTOCAL_PDPU_CONFIG_MASK = 0x7f7f,
     MMC_AUTOCAL_PDPU_SDMMC1_1V8 = 0x7b7b,
     MMC_AUTOCAL_PDPU_SDMMC1_3V3 = 0x7d00,
     MMC_AUTOCAL_PDPU_SDMMC4_1V8 = 0x0505,
+    MMC_AUTOCAL_START = (1 << 31),
+    MMC_AUTOCAL_ENABLE = (1 << 29),
 
+    /* Autocal status */
+    MMC_AUTOCAL_ACTIVE = (1 << 31),
+
+    /* Power control */
+    MMC_POWER_CONTROL_VOLTAGE_MASK = (0x3 << 1),
+    MMC_POWER_CONTROL_VOLTAGE_SHIFT = 1,
+    MMC_POWER_CONTROL_POWER_ENABLE = (1 << 0),
 
 };
 
@@ -234,6 +246,7 @@ enum sdmmc_command {
     CMD_SEND_IF_COND = 8,
     CMD_SEND_CSD = 9,
     CMD_SEND_CID = 10,
+    CMD_SWITCH_TO_LOW_VOLTAGE = 11,
     CMD_STOP_TRANSMISSION = 12,
     CMD_READ_STATUS = 13,
     CMD_BUS_TEST = 14,
@@ -246,6 +259,7 @@ enum sdmmc_command {
 
     CMD_APP_SEND_OP_COND = 41,
     CMD_APP_SET_CARD_DETECT = 42,
+    CMD_APP_SEND_SCR = 51,
     CMD_APP_COMMAND = 55,
 };
 
@@ -265,7 +279,7 @@ static const char *sdmmc_command_string[] = {
     "CMD_SEND_EXT_CSD/CMD_SEND_IF_COND",
     "CMD_SEND_CSD",
     "CMD_SEND_CID ",
-    "<unsupported>",
+    "CMD_SWITCH_TO_LOW_VOLTAGE",
     "CMD_STOP_TRANSMISSION",
     "CMD_READ_STATUS",
     "CMD_BUS_TEST",
@@ -292,6 +306,7 @@ enum sdmmc_command_magic {
 
     MMC_SD_OPERATING_COND_READY            = (1 << 31),
     MMC_SD_OPERATING_COND_HIGH_CAPACITY    = (1 << 30),
+    MMC_SD_OPERATING_COND_ACCEPTS_1V8      = (1 << 24),
     MMC_SD_OPERATING_COND_ACCEPTS_3V3      = (1 << 20),
 
     /* READ_STATUS responses */
@@ -303,6 +318,9 @@ enum sdmmc_command_magic {
     /* IF_COND components */
     MMC_IF_VOLTAGE_3V3 = (1 << 8),
     MMC_IF_CHECK_PATTERN = 0xAA,
+
+    /* Misc constants */
+    MMC_DEFAULT_BLOCK_ORDER = 9,
 };
 
 
@@ -313,7 +331,6 @@ enum sdmmc_csd_versions {
     MMC_CSD_VERSION1 = 0,
     MMC_CSD_VERSION2 = 1,
 };
-
 
 
 /**
@@ -331,6 +348,7 @@ enum sdmmc_csd_extents {
     MMC_CSD_V1_READ_BL_LENGTH_WIDTH = 4,
 
 };
+
 
 /**
  * Positions of the different fields in the Extended CSD.
@@ -360,6 +378,25 @@ enum sdmmc_ext_csd_extents {
 
 };
 
+/**
+ * Bitfield struct representing an SD SCR.
+ */
+struct PACKED sdmmc_scr {
+    uint32_t reserved1;
+    uint16_t reserved0;
+    uint8_t supports_width_1bit : 1;
+    uint8_t supports_width_reserved0 : 1;
+    uint8_t supports_width_4bit : 1;
+    uint8_t supports_width_reserved1 : 1;
+    uint8_t security_support : 3;
+    uint8_t data_after_erase : 1;
+    uint8_t spec_version : 4;
+    uint8_t scr_version : 4;
+};
+
+/* Forward declarations */
+static int sdmmc_send_simple_command(struct mmc *mmc, enum sdmmc_command command,
+        enum sdmmc_response_type response_type, uint32_t argument, void *response_buffer);
 
 /* SDMMC debug enable */
 static int sdmmc_loglevel = 0;
@@ -438,6 +475,8 @@ static const char *sdmmc_get_command_string(enum sdmmc_command command)
             return "CMD_APP_SEND_OP_COND";
         case CMD_APP_SET_CARD_DETECT:
             return "CMD_APP_SET_CARD_DETECT";
+        case CMD_APP_SEND_SCR:
+            return "CMD_APP_SEND_SCR";
         case CMD_WRITE_SINGLE_BLOCK:
             return "CMD_WRITE_SINGLE_BLOCK";
         case CMD_WRITE_MULTIPLE_BLOCK:
@@ -545,6 +584,25 @@ static int sdmmc4_set_up_clock_and_io(struct mmc *mmc)
     return 0;
 }
 
+/**
+ * Sets the voltage that the given SDMMC is currently working with.
+ *
+ * @param mmc The controller to affect.
+ * @param voltage The voltage to apply.
+ */
+static void sdmmc_set_working_voltage(struct mmc *mmc, enum sdmmc_bus_voltage voltage)
+{
+    // Apply the voltage...
+    mmc->operating_voltage = voltage;
+
+    // Set up the SD card's voltage.
+    mmc->regs->power_control &= ~MMC_POWER_CONTROL_VOLTAGE_MASK;
+    mmc->regs->power_control |= voltage << MMC_POWER_CONTROL_VOLTAGE_SHIFT;
+
+    // Mark the power as on.
+    mmc->regs->power_control |= MMC_POWER_CONTROL_POWER_ENABLE;
+}
+
 
 /**
  * Enables power supplies for SDMMC4, used for eMMC.
@@ -552,6 +610,9 @@ static int sdmmc4_set_up_clock_and_io(struct mmc *mmc)
 static int sdmmc4_enable_supplies(struct mmc *mmc)
 {
     // As a booot device, SDMMC4's power supply is always on.
+    // Modify the controller to know the voltage being applied to it,
+    // and return success.
+    sdmmc_set_working_voltage(mmc, MMC_VOLTAGE_1V8);
     return 0;
 }
 
@@ -571,6 +632,14 @@ static int sdmmc1_enable_supplies(struct mmc *mmc)
     pmc->no_iopower  &= ~PMC_CONTROL_SDMMC1;
     pmc->pwr_det_val |= PMC_CONTROL_SDMMC1;
 
+    // Set up SD card voltages.
+    udelay(1000);
+    supply_enable(SUPPLY_MICROSD, false);
+    udelay(1000);
+
+    // Modify the controller to know the voltage being applied to it.
+    sdmmc_set_working_voltage(mmc, MMC_VOLTAGE_3V3);
+
     // Configure the enable line for the SD card power.
     pinmux->dmic3_clk  =  PINMUX_SELECT_FUNCTION0;
     gpio_configure_mode(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_MODE_GPIO);
@@ -579,6 +648,170 @@ static int sdmmc1_enable_supplies(struct mmc *mmc)
 
 
     return 0;
+}
+
+
+/**
+ * Configures clocking parameters for a given controller.
+ *
+ * @param mmc The MMC controller to set up.
+ * @param operating_voltage The operating voltage for the bus, currently.
+ */
+static int sdmmc_set_up_clocking_parameters(struct mmc *mmc, enum sdmmc_bus_voltage operating_voltage)
+{
+    // TODO: decide if these should be split into separate functions after seeing how much
+    // is common to the tunable modes
+
+    // TODO: timing for HS400/HS667 modes
+    // TODO: timing for tuanble modes (SDR50/104/200)
+
+    // Clear the I/O conditioning constants.
+    mmc->regs->vendor_clock_cntrl &= ~(MMC_CLOCK_TRIM_MASK | MMC_CLOCK_TAP_MASK);
+    mmc->regs->auto_cal_config &= ~MMC_AUTOCAL_PDPU_CONFIG_MASK;
+
+    switch (operating_voltage) {
+        case MMC_VOLTAGE_1V8:
+            mmc->regs->auto_cal_config |= MMC_AUTOCAL_PDPU_SDMMC4_1V8;
+            break;
+        case MMC_VOLTAGE_3V3:
+            mmc->regs->auto_cal_config |= MMC_AUTOCAL_PDPU_SDMMC1_3V3;
+            break;
+        default:
+            printk("ERROR: currently no controllers support voltage %d", mmc->operating_voltage);
+            return EINVAL;
+
+    }
+
+    // Set up the I/O conditioning constants used to ensure we have a reliable clock.
+    // Constants above and procedure below from the TRM.
+    switch (mmc->controller) {
+        case SWITCH_EMMC:
+            mmc->regs->vendor_clock_cntrl |= (MMC_CLOCK_TRIM_SDMMC4 | MMC_CLOCK_TAP_SDMMC4);
+            break;
+
+        case SWITCH_MICROSD:
+            mmc->regs->vendor_clock_cntrl |= (MMC_CLOCK_TRIM_SDMMC1 | MMC_CLOCK_TAP_SDMMC1);
+            break;
+
+        default:
+            printk("ERROR: initialization not yet writen for SDMMC%d", mmc->controller);
+            return ENODEV;
+    }
+
+    return 0;
+}
+
+
+/**
+ * Enables or disables delivering a clock to the downstream SD/MMC card.
+ *
+ * @param mmc The controller to be affected.
+ * @param enabled True if the clock should be enabled; false to disable.
+ */
+void sdmmc_clock_enable(struct mmc *mmc, bool enabled)
+{
+    // Set or clear the card clock enable bit according to the
+    // controller paramter.
+    if (enabled)
+        mmc->regs->clock_control |= MMC_CLOCK_CONTROL_CARD_CLOCK_ENABLE;
+    else
+        mmc->regs->clock_control &= ~MMC_CLOCK_CONTROL_CARD_CLOCK_ENABLE;
+}
+
+
+/**
+ * Runs SDMMC automatic calibration-- this tunes the parameters used for SDMMC
+ * signal intergrity.
+ *
+ * @param mmc The controller whose card is to be tuned.
+ * @param restart_sd_clock True iff the SD card should be started after calibration.
+ *
+ * @return 0 on success, or an error code on failure
+ */
+static int sdmmc_run_autocal(struct mmc *mmc, bool restart_sd_clock)
+{
+    uint32_t timebase;
+
+    // Stop the SD card's clock, so our autocal sequence doesn't
+    // confuse the target card.
+    sdmmc_clock_enable(mmc, false);
+
+    // Start automatic calibration...
+    mmc->regs->auto_cal_config |= (MMC_AUTOCAL_START | MMC_AUTOCAL_ENABLE);
+    udelay(1000);
+
+    // ... and wait until the autocal is complete
+    timebase = get_time();
+    while ((mmc->regs->auto_cal_status & MMC_AUTOCAL_ACTIVE)) {
+
+        // Ensure we haven't timed out...
+        if (get_time_since(timebase) > mmc->timeout) {
+            mmc_print(mmc, "ERROR: autocal timed out!");
+            return ETIMEDOUT;
+        }
+    }
+
+    // If requested, enable the SD clock.
+    if (restart_sd_clock)
+        sdmmc_clock_enable(mmc, true);
+
+    return 0;
+}
+
+
+/**
+ * Switches the Switch's microSD card into low-voltage mode.
+ *
+ * @param mmc The MMC controller via which to communicate.
+ * @return 0 on success, or an error code on failure.
+ */
+static int sdmmc1_switch_to_low_voltage(struct mmc *mmc)
+{
+    volatile struct tegra_pmc *pmc = pmc_get_regs();
+    int rc;
+
+    // Let the SD card know we're about to switch into low-voltage mode.
+    // Set up the card's relative address.
+    rc = sdmmc_send_simple_command(mmc, CMD_SWITCH_TO_LOW_VOLTAGE, MMC_RESPONSE_LEN48, 0, NULL);
+    if (rc) {
+        mmc_print(mmc, "card was not willling to switch to low voltage! (%d)", rc);
+        return rc;
+    }
+
+    // Switch the MicroSD card supply into its low-voltage mode.
+    supply_enable(SUPPLY_MICROSD, true);
+    pmc->pwr_det_val &= ~PMC_CONTROL_SDMMC1;
+
+    // Apply our clocking parameters for low-voltage mode.
+    rc = sdmmc_set_up_clocking_parameters(mmc, MMC_VOLTAGE_1V8);
+    if (rc) {
+        mmc_print(mmc, "WARNING: could not optimize card clocking parameters. (%d)", rc);
+    }
+
+    // Rerun the main clock calibration...
+    rc = sdmmc_run_autocal(mmc, true);
+    if (rc)
+        mmc_print(mmc, "WARNING: failed to re-calibrate after voltage switch!");
+
+    // ... and ensure the host is set up to apply the relevant change.
+    sdmmc_set_working_voltage(mmc, MMC_VOLTAGE_1V8);
+
+    mmc_debug(mmc, "now running from 1V8");
+    return 0;
+}
+
+
+/**
+ * Low-voltage switching method for controllers that don't
+ * support a low-voltage switch. Always fails.
+ *
+ * @param mmc The MMC controller via which to communicate.
+ * @return ENOSYS, indicating failure, always
+ */
+static int sdmmc_always_fail(struct mmc *mmc)
+{
+    // This card 
+    return ENOSYS;
 }
 
 
@@ -624,11 +857,6 @@ static int sdmmc1_set_up_clock_and_io(struct mmc *mmc)
     car->clk_enb_l_set |= CAR_CONTROL_SDMMC1;
     car->clk_enb_y_set |= CAR_CONTROL_SDMMC_LEGACY;
 
-    // Set up SD card voltages.
-    udelay(1000);
-    supply_enable(SUPPLY_MICROSD);
-    udelay(1000);
-
     // host_clk_delay(0x64, clk_freq) -> Delay 100 host clock cycles
     udelay(5000);
 
@@ -637,45 +865,6 @@ static int sdmmc1_set_up_clock_and_io(struct mmc *mmc)
 
     // Enable clock loopback.
     padctl->sdmmc1_control |= PADCTL_SDMMC1_DEEP_LOOPBACK;
-
-    return 0;
-}
-
-
-/**
- * Configures clocking parameters for a given controller.
- *
- * @param mmc The MMC controller to set up.
- */
-static int sdmmc_set_up_clocking_parameters(struct mmc *mmc)
-{
-    // TODO: decide if these should be split into separate functions after seeing how much
-    // is common to the tunable modes
-
-    // TODO: timing for HS400/HS667 modes
-    // TODO: timing for tuanble modes (SDR50/104/200)
-
-    // Clear the I/O conditioning constants.
-    mmc->regs->vendor_clock_cntrl &= ~(MMC_CLOCK_TRIM_MASK | MMC_CLOCK_TAP_MASK);
-    mmc->regs->auto_cal_config &= ~MMC_AUTOCAL_PDPU_CONFIG_MASK;
-
-    // Set up the I/O conditioning constants used to ensure we have a reliable clock.
-    // Constants above and procedure below from the TRM.
-    switch (mmc->controller) {
-        case SWITCH_EMMC:
-            mmc->regs->vendor_clock_cntrl |= (MMC_CLOCK_TRIM_SDMMC4 | MMC_CLOCK_TAP_SDMMC4);
-            mmc->regs->auto_cal_config |= MMC_AUTOCAL_PDPU_SDMMC4_1V8;
-            break;
-
-        case SWITCH_MICROSD:
-            mmc->regs->vendor_clock_cntrl |= (MMC_CLOCK_TRIM_SDMMC1 | MMC_CLOCK_TAP_SDMMC1);
-            mmc->regs->auto_cal_config |= MMC_AUTOCAL_PDPU_SDMMC1_3V3;
-            break;
-
-        default:
-            printk("ERROR: initialization not yet writen for SDMMC%d", mmc->controller);
-            return ENODEV;
-    }
 
     return 0;
 }
@@ -728,41 +917,23 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     regs->sdmemcomppadctrl &= ~(0x0F);
     regs->sdmemcomppadctrl |= 0x07;
 
-    // Set auto-calibration PD/PU offsets
-    /*
-    */
-
     // Set ourselves up to have a stable.
-    rc = sdmmc_set_up_clocking_parameters(mmc);
+    rc = sdmmc_set_up_clocking_parameters(mmc, mmc->operating_voltage);
     if (rc) {
         mmc_print(mmc, "WARNING: could not optimize card clocking parameters. (%d)", rc);
     }
 
-    // Set PAD_E_INPUT_OR_E_PWRD (relevant for eMMC only)
+    // Set PAD_E_INPUT_OR_E_PWRD
     regs->sdmemcomppadctrl |= 0x80000000;
 
     // Wait one milisecond
     udelay(1000);
 
-    // Set AUTO_CAL_START and AUTO_CAL_ENABLE
-    regs->auto_cal_config |= 0xA0000000;
-
-    udelay(1000);
-
-    // Program a timeout of 10ms
-    is_timeout = false;
-    timebase = get_time();
-
-    // Wait for AUTO_CAL_ACTIVE to be cleared
-    while ((regs->auto_cal_status & 0x80000000) && !is_timeout) {
-        // Keep checking if timeout expired
-        is_timeout = get_time_since(timebase) > 10000;
-    }
-
-    // AUTO_CAL_ACTIVE was not cleared in time
-    if (is_timeout) {
-        mmc_print(mmc, "autocal failed!");
-        return ETIMEDOUT;
+    // Run automatic calibration.
+    rc = sdmmc_run_autocal(mmc, false);
+    if (rc) {
+        mmc_print(mmc, "autocal failed! (%d)", rc);
+        return rc;
     }
 
     // Clear PAD_E_INPUT_OR_E_PWRD (relevant for eMMC only)
@@ -804,12 +975,7 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     regs->host_control &= 0xFD;
     regs->host_control &= 0xDF;
 
-    // Set up the SD card's voltage.
-    regs->power_control &= 0xF1;
-    regs->power_control |= mmc->operating_voltage << 1;
-
-    // Mark the power as on.
-    regs->power_control |= 0x01;
+    // TODO: move me into enable voltages, if applicable?
 
     // Clear TAP_VAL_UPDATED_BY_HW
     regs->vendor_tuning_cntrl0 &= ~(0x20000);
@@ -823,10 +989,10 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Set SDHCI_DIVIDER and SDHCI_DIVIDER_HI
     // FIXME: divider SD if necessary
     regs->clock_control &= ~(0xFFC0);
-    regs->clock_control |= (0x18 << 8);  // 400kHz, initially
+    regs->clock_control |= (0x18 << 8);  // 200kHz, initially
 
-    // Set SDHCI_CLOCK_CARD_EN
-    regs->clock_control |= 0x04;
+    // Start delivering the clock to the card.
+    sdmmc_clock_enable(mmc, true);
 
     // Ensure we're using Single-operation DMA (SDMA) mode for DMA.
     regs->host_control &= ~MMC_DMA_SELECT_MASK;
@@ -873,7 +1039,6 @@ static int sdmmc_wait_for_physical_state(struct mmc *mmc, uint32_t present_state
 }
 
 
-
 /**
  * Blocks until the SD driver is ready for a command,
  * or the MMC controller's timeout interval is met.
@@ -884,7 +1049,6 @@ static int sdmmc_wait_for_command_readiness(struct mmc *mmc)
 {
     return sdmmc_wait_for_physical_state(mmc, MMC_COMMAND_INHIBIT, true);
 }
-
 
 
 /**
@@ -909,7 +1073,6 @@ static int sdmmc_wait_until_no_longer_busy(struct mmc *mmc)
 {
     return sdmmc_wait_for_physical_state(mmc, MMC_DAT0_LINE_STATE, false);
 }
-
 
 
 /**
@@ -946,8 +1109,6 @@ static int sdmmc_wait_for_interrupt(struct mmc *mmc,
     }
 }
 
-
-
 /**
  * Blocks until the SD driver has completed issuing a command.
  *
@@ -971,6 +1132,21 @@ static int sdmmc_wait_for_transfer_completion(struct mmc *mmc)
 
 
 /**
+ *  Returns the block order for a given operation on the MMC controller.
+ *
+ *  @param mmc The MMC controller for which we're quierying block size.
+ *  @param is_write True iff the given operation is a write.
+ */
+static uint8_t sdmmc_get_block_order(struct mmc *mmc, bool is_write)
+{
+    if (is_write)
+        return mmc->write_block_order;
+    else
+        return mmc->read_block_order;
+}
+
+
+/**
  *  Returns the block size for a given operation on the MMC controller.
  *
  *  @param mmc The MMC controller for which we're quierying block size.
@@ -978,12 +1154,8 @@ static int sdmmc_wait_for_transfer_completion(struct mmc *mmc)
  */
 static uint32_t sdmmc_get_block_size(struct mmc *mmc, bool is_write)
 {
-    // FIXME: support write blocks?
-    (void)is_write;
-
-    return (1 << mmc->read_block_order);
+    return (1 << sdmmc_get_block_order(mmc, is_write));
 }
-
 
 
 /**
@@ -1236,7 +1408,6 @@ static int sdmmc_handle_command_response(struct mmc *mmc,
 }
 
 
-
 /**
  * Sends a command to the SD card, and awaits a response.
  *
@@ -1363,7 +1534,6 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
 }
 
 
-
 /**
  * Convenience function that sends a simple SDMMC command
  * and awaits response.  Wrapper around sdmmc_send_command.
@@ -1399,9 +1569,10 @@ static int sdmmc_send_simple_command(struct mmc *mmc, enum sdmmc_command command
  *
  * @returns 0 on success, an error number on failure
  */
-static int sdmmc_send_simple_app_command(struct mmc *mmc, enum sdmmc_command command,
+static int sdmmc_send_app_command(struct mmc *mmc, enum sdmmc_command command,
         enum sdmmc_response_type response_type, enum sdmmc_response_checks checks,
-        uint32_t argument, void *response_buffer)
+        uint32_t argument, void *response_buffer, uint16_t blocks_to_transfer,
+        bool auto_terminate, void *data_buffer)
 {
     int rc;
 
@@ -1413,11 +1584,30 @@ static int sdmmc_send_simple_app_command(struct mmc *mmc, enum sdmmc_command com
     }
 
     // And issue the body of the command.
-    return sdmmc_send_command(mmc, command, response_type, checks, argument, response_buffer, 0, false, false, NULL);
+    return sdmmc_send_command(mmc, command, response_type, checks, argument, response_buffer, 
+            blocks_to_transfer, false, auto_terminate, data_buffer);
 }
 
 
-
+/**
+ * Sends an SDMMC application command.
+ *
+ * @param mmc The SDMMC device to be used to transmit the command.
+ * @param response_type The type of response to expect-- mostly specifies the length.
+ * @param checks Determines which sanity checks the host controller should run.
+ * @param argument The argument to the SDMMC command.
+ * @param response_buffer A buffer to store the response. Should be at uint32_t for a LEN48 command,
+ *      or 16 bytes for a LEN136 command.
+ *
+ * @returns 0 on success, an error number on failure
+ */
+static int sdmmc_send_simple_app_command(struct mmc *mmc, enum sdmmc_command command,
+        enum sdmmc_response_type response_type, enum sdmmc_response_checks checks,
+        uint32_t argument, void *response_buffer)
+{
+    // Deletegate to the full app command function.
+    return sdmmc_send_app_command(mmc, command, response_type, checks, argument, response_buffer, 0, false, NULL);
+}
 
 
 /**
@@ -1486,6 +1676,79 @@ static int sdmmc_parse_csd_version1(struct mmc *mmc, uint32_t *csd)
     mmc->read_block_order = sdmmc_extract_csd_bits(csd, MMC_CSD_V1_READ_BL_LENGTH_START, MMC_CSD_V1_READ_BL_LENGTH_WIDTH);
 
     // TODO: handle other attributes
+    return 0;
+}
+
+
+/**
+ * Decides on a block transfer sized based on the information observed,
+ * and applies it to the card.
+ *
+ * @param mmc The controller to use to set the order
+ * @param block_order The order (log-base-2) of the block size to be used.
+ */
+static int sdmmc_use_block_size(struct mmc *mmc, int block_order)
+{
+    int rc;
+
+    // Inform the card of the block size we'll want to use.
+    rc = sdmmc_send_simple_command(mmc, CMD_SET_BLKLEN, MMC_RESPONSE_LEN48, 1 << block_order, NULL);
+    if (rc) {
+        mmc_print(mmc, "could not fetch the CID");
+        return ENODEV;
+    }
+
+    // On success, store the relevant block size.
+    mmc->read_block_order = block_order;
+    mmc->write_block_order = block_order;
+    return 0;
+}
+
+
+/**
+ * Reads the active SD card's SD Configuration Register, and updates the object's properties.
+ *
+ * @param mmc The controller with which to query and to update.
+ * @returns 0 on success, or an errno on failure
+ */
+static int sdmmc_read_and_parse_scr(struct mmc *mmc)
+{
+    int rc;
+    struct sdmmc_scr scr;
+
+    // Read the current block order, so we can restore it.
+    int original_block_order = sdmmc_get_block_order(mmc, false);
+
+    // Always request a single 8-byte block.
+    const int block_order = 3;
+    const int num_blocks = 1;
+
+    // Momentarily step down to a smaller block size, so we don't
+    // have to allocate a huge buffer for this command.
+    rc = sdmmc_use_block_size(mmc, block_order);
+    if (rc) {
+        mmc_print(mmc, "could not step down to a smaller block size! (%d)", rc);
+        return rc;
+    }
+
+    // Request the CSD from the device.
+    rc = sdmmc_send_app_command(mmc, CMD_APP_SEND_SCR, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, 0, NULL, num_blocks, false, &scr);
+    if (rc) {
+        mmc_print(mmc, "could not get the card's SCR!");
+        sdmmc_use_block_size(mmc, original_block_order);
+        return rc;
+    }
+
+    // Store the SCR data.
+    mmc->spec_version = scr.spec_version;
+
+    // Restore the original block order.
+    rc = sdmmc_use_block_size(mmc, original_block_order);
+    if (rc) {
+        mmc_print(mmc, "could not restore the original block size! (%d)", rc);
+        return rc;
+    }
+
     return 0;
 }
 
@@ -1560,30 +1823,6 @@ static int sdmmc_read_and_parse_ext_csd(struct mmc *mmc)
 
     return 0;
 }
-
-
-/**
- * Decides on a block transfer sized based on the information observed,
- * and applies it to the card.
- */
-static int sdmmc_set_up_block_transfer_size(struct mmc *mmc)
-{
-    int rc;
-
-    // For now, we'll only ever set up 512B blocks, because
-    // 1) every card supports this, and 2) we use SDMA, which only supports up to 512B
-    mmc->read_block_order = 9;
-
-    // Inform the card of the block size we'll want to use.
-    rc = sdmmc_send_simple_command(mmc, CMD_SET_BLKLEN, MMC_RESPONSE_LEN48, 1 << mmc->read_block_order, NULL);
-    if (rc) {
-        mmc_print(mmc, "could not fetch the CID");
-        return ENODEV;
-    }
-
-    return 0;
-}
-
 
 
 /**
@@ -1763,19 +2002,11 @@ static int sdmmc_card_init(struct mmc *mmc)
         return rc;
     }
 
-    // Determine the block size we want to work with, and then set up the size accordingly.
-    rc = sdmmc_set_up_block_transfer_size(mmc);
+    // Set up a block transfer size of 512B blocks.
+    // 1) every card supports this, and 2) we use SDMA, which only supports up to 512B
+    rc = sdmmc_use_block_size(mmc, MMC_DEFAULT_BLOCK_ORDER);
     if (rc) {
         mmc_print(mmc, "could not set up block transfer sizes! (%d)", rc);
-        return rc;
-    }
-
-    // Switch to a transfer mode that can more efficiently utilize the bus.
-    rc = sdmmc_optimize_transfer_mode(mmc);
-    if (rc) {
-        mmc_print(mmc, "could not optimize bus utlization! (%d)", rc);
-
-        // TODO: possibly skip this?
         return rc;
     }
 
@@ -1834,13 +2065,16 @@ static int sdmmc_sd_wait_for_card_readiness(struct mmc *mmc, uint32_t *response)
     int rc;
     uint32_t argument = MMC_SD_OPERATING_COND_ACCEPTS_3V3;
 
-    // If this is a SDv2 or higher card, check for an SDHC card.
-    if (mmc->spec_version >= SD_VERSION_2) {
+    // If this is a SDv2 or higher card, check for an SDHC card,
+    // and for low-voltage support.
+    if (mmc->spec_version >= SD_VERSION_2_0) {
         argument |= MMC_SD_OPERATING_COND_HIGH_CAPACITY;
+        argument |= MMC_SD_OPERATING_COND_ACCEPTS_1V8;
     }
 
     while (true) {
-        // Ask the SD card to identify its state. It will respond with readiness and a capacity magic.
+
+        // Ask the SD card to identify its state.
         rc = sdmmc_send_simple_app_command(mmc, CMD_APP_SEND_OP_COND,
                 MMC_RESPONSE_LEN48, MMC_CHECKS_NONE, argument, response);
         if (rc) {
@@ -1913,7 +2147,6 @@ static bool sdmmc_check_pattern_present(uint32_t response)
 }
 
 
-
 /**
  * Handles SD-specific card initialization.
  */
@@ -1931,8 +2164,6 @@ static int sdmmc_sd_card_init(struct mmc *mmc)
         return rc;
     }
 
-    udelay(1000);
-
     // Validate that the card can handle working with the voltages we can provide.
     rc = sdmmc_send_simple_command(mmc, CMD_SEND_IF_COND, MMC_RESPONSE_LEN48, MMC_IF_VOLTAGE_3V3 | MMC_IF_CHECK_PATTERN, &response);
     if (rc || !sdmmc_check_pattern_present(response)) {
@@ -1947,7 +2178,7 @@ static int sdmmc_sd_card_init(struct mmc *mmc)
     // If this responded, indicate that this is a v2 card.
     else {
         // store that this is a v2 card
-        mmc->spec_version = SD_VERSION_2;
+        mmc->spec_version = SD_VERSION_2_0;
     }
 
     // Wait for the card to finish being busy.
@@ -1961,10 +2192,26 @@ static int sdmmc_sd_card_init(struct mmc *mmc)
     // always use block addressing.
     mmc->uses_block_addressing = !!(ocr & MMC_SD_OPERATING_COND_HIGH_CAPACITY);
 
+    // If the card supports using 1V8, drop down using lower voltages.
+    if (ocr & MMC_SD_OPERATING_COND_ACCEPTS_1V8) {
+        if (mmc->operating_voltage != MMC_VOLTAGE_1V8) {
+            rc = mmc->switch_to_low_voltage(mmc);
+            if (rc)
+                mmc_print(mmc, "WARNING: could not switch to low-voltage mode! (%d)", rc);
+        }
+    }
+
     // Run the common core card initialization.
     rc = sdmmc_card_init(mmc);
     if (rc) {
         mmc_print(mmc, "failed to set up card (%d)!", rc);
+        return rc;
+    }
+
+    // Read the card's SCR.
+    rc = sdmmc_read_and_parse_scr(mmc);
+    if (rc) {
+        mmc_print(mmc, "failed to read SCR! (%d)!", rc);
         return rc;
     }
 
@@ -2159,6 +2406,7 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
             // Set up function pointers for each of our per-instance functions.
             mmc->set_up_clock_and_io = sdmmc4_set_up_clock_and_io;
             mmc->enable_supplies = sdmmc4_enable_supplies;
+            mmc->switch_to_low_voltage = sdmmc_always_fail;
             mmc->card_present = sdmmc_builtin_card_present;
 
             // The EMMC controller always uses an EMMC card.
@@ -2179,6 +2427,7 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
             // Negotiation has a chance to change this, later.
             mmc->set_up_clock_and_io = sdmmc1_set_up_clock_and_io;
             mmc->enable_supplies = sdmmc1_enable_supplies;
+            mmc->switch_to_low_voltage = sdmmc1_switch_to_low_voltage;
             mmc->card_present = sdmmc_external_card_present;
             sdmmc_apply_card_type(mmc, MMC_CARD_SD);
 
@@ -2198,7 +2447,6 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
 
 /**
  * Set up a new SDMMC driver.
- * FIXME: clean up!
  *
  * @param mmc The SDMMC structure to be initiailized with the device state.
  * @param controler The controller description to be used; usually SWITCH_EMMC
@@ -2251,6 +2499,12 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
     if (rc) {
         mmc_print(mmc, "failed to set run card-specific initialization (%d)!", rc);
         return rc;
+    }
+
+    // Switch to a transfer mode that can more efficiently utilize the bus.
+    rc = sdmmc_optimize_transfer_mode(mmc);
+    if (rc) {
+        mmc_print(mmc, "WARNING: could not optimize bus utlization! (%d)", rc);
     }
 
     return 0;
@@ -2366,7 +2620,7 @@ int sdmmc_write(struct mmc *mmc, const void *buffer, uint32_t block, unsigned in
     // If this card uses byte addressing rather than sector addressing,
     // multiply by the block size.
     if (!mmc->uses_block_addressing) {
-        extent *= sdmmc_get_block_size(mmc, false);
+        extent *= sdmmc_get_block_size(mmc, true);
     }
 
     // Execute the relevant read.
