@@ -8,9 +8,10 @@
 #define ATTRIB_MEMTYPE_DEVICE MMU_PTE_BLOCK_MEMTYPE(MMU_MT_DEVICE_NGNRE)
 
 /* Identity mappings (addr, size, additional attributes, is block range) */
-#define _MMAPID0    ( 0x40020000ull, 0x20000ull,                                   0ull, false ) /* iRAM-C+D (contains the secmon's coldboot crt0) */
-#define _MMAPID1    ( 0x7C010000ull, 0x10000ull,                                   0ull, false ) /* TZRAM (contains the secmon's warmboot crt0) */
-#define _MMAPID2    ( 0x80000000ull, 4ull << 30,    MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_NS,  true ) /* DRAM (4GB) */
+#define _MMAPID0   ( 0x40006000ull, 0x01000ull,                                   0ull, false ) /* Part of iRAM-A, where our coldboot crt0 is */
+#define _MMAPID1   ( 0x40020000ull, 0x20000ull,                                   0ull, false ) /* iRAM-C+D */
+#define _MMAPID2   ( 0x7C010000ull, 0x10000ull,                                   0ull, false ) /* TZRAM (contains the secmon's warmboot crt0) */
+#define _MMAPID3   ( 0x80000000ull, 4ull << 30,    MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_NS,  true ) /* DRAM (4GB) */
 
 /* MMIO (addr, size, is secure) */
 #define _MMAPDEV0       ( 0x50041000ull, 0x1000ull, true  ) /* ARM Interrupt Distributor */
@@ -57,10 +58,11 @@
 #define WARMBOOT_RAM_SEGMENT_BASE       (LP0_ENTRY_RAM_SEGMENT_BASE + 0x000047000ull) /* increment seems to be arbitrary ? */
 #define TZRAM_SEGMENT_BASE              (MMIO_BASE + 0x000160000ull)
 
-#define IDENTITY_MAPPING_IRAM_CD        0
-#define IDENTITY_MAPPING_TZRAM          1
-#define IDENTITY_MAPPING_DRAM           2
-#define IDENTIY_MAPPING_ID_MAX          3
+#define IDENTITY_MAPPING_IRAM_A_CCRT0   0
+#define IDENTITY_MAPPING_IRAM_CD        1
+#define IDENTITY_MAPPING_TZRAM          2
+#define IDENTITY_MAPPING_DRAM           3
+#define IDENTIY_MAPPING_ID_MAX          4
 
 #define MMIO_DEVID_GICD                 0
 #define MMIO_DEVID_GICC                 1
