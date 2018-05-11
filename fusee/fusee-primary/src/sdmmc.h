@@ -171,6 +171,9 @@ struct mmc {
     uint8_t write_block_order;
     bool uses_block_addressing;
 
+    /* Current operation status flags */
+    uint32_t active_data_buffer;
+
     /* Pointers to hardware structures */
     volatile struct tegra_sdmmc *regs;
 };
