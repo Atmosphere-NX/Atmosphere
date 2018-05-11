@@ -36,12 +36,12 @@ static void get_tsec_key(void *dst, const void *tsec_fw, size_t tsec_fw_size) {
     /* TODO: Implement this method. Attempt to read TSEC fw from NAND, or from SD if that fails. */
 }
 
-void get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *available_keyblobs, uint32_t available_revision) {
+void get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {
     if (revision >= 0x20) {
         generic_panic();
     }
 
-    if (revision <= available_revision) {
+    if (keyblobs != NULL) {
         *dst = available_keyblobs[revision];
     } else {
         generic_panic();
@@ -58,7 +58,7 @@ static bool safe_memcmp(uint8_t *a, uint8_t *b, size_t sz) {
 }
 
 /* Derive all Switch keys. */
-void derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *available_keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size) {
+void derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size) {
     uint8_t work_buffer[0x10];
     nx_keyblob_t keyblob;
 
@@ -72,7 +72,7 @@ void derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *available_k
 
     /* Get keyblob, always try to set up the highest possible master key. */
     /* TODO: Should we iterate, trying lower keys on failure? */
-    get_keyblob(&keyblob, MASTERKEY_REVISION_500_CURRENT, available_keyblobs, available_revision);
+    get_keyblob(&keyblob, MASTERKEY_REVISION_500_CURRENT, keyblobs, available_revision);
 
     /* Derive both keyblob key 1, and keyblob key latest. */
     se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, keyblob_seeds[MASTERKEY_REVISION_100_230], 0x10);
