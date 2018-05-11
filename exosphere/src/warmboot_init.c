@@ -12,6 +12,8 @@
 void __set_memory_registers(uintptr_t ttbr0, uintptr_t vbar, uint64_t cpuectlr, uint32_t scr,
                             uint32_t tcr, uint32_t cptr, uint64_t mair, uint32_t sctlr);
 
+unsigned int g_exosphere_target_firmware_for_init = 0;
+
 uintptr_t get_warmboot_crt0_stack_address(void) {
     return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x800;
 }
@@ -140,6 +142,7 @@ void set_memory_registers_enable_mmu(void) {
     __set_memory_registers(ttbr0, vbar, cpuectlr, scr, tcr, cptr, mair, sctlr);
 }
 
+#if 0 /* Since we decided not to identity-unmap TZRAM */
 static void identity_remap_tzram(void) {
     /* See also: configure_ttbls (in coldboot_init.c). */
     uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
@@ -153,8 +156,9 @@ static void identity_remap_tzram(void) {
                          IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_TZRAM), IDENTITY_GET_MAPPING_ATTRIBS(IDENTITY_MAPPING_TZRAM),
                          IDENTITY_IS_MAPPING_BLOCK_RANGE(IDENTITY_MAPPING_TZRAM));
 }
+#endif
 
-void warmboot_init(boot_func_list_t *func_list) {
+void warmboot_init(void) {
     /*
         From https://events.static.linuxfound.org/sites/events/files/slides/slides_17.pdf :
         Caches may write back dirty lines at any time:
@@ -162,15 +166,15 @@ void warmboot_init(boot_func_list_t *func_list) {
             - Even if MMU is off
             - Even if Cacheable accesses are disabled (caches are never 'off')
     */
-    func_list->funcs.flush_dcache_all();
-    func_list->funcs.invalidate_icache_all();
+    flush_dcache_all();
+    invalidate_icache_all();
 
     /* On warmboot (not cpu_on) only */
     if (MC_SECURITY_CFG3_0 == 0) {
-        init_dma_controllers(func_list->target_firmware);
+        init_dma_controllers(g_exosphere_target_firmware_for_init);
     }
 
-    identity_remap_tzram();
+    /*identity_remap_tzram();*/
     /* Nintendo pointlessly fully invalidate the TLB & invalidate the data cache on the modified ranges here */
     set_memory_registers_enable_mmu();
 }

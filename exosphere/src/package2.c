@@ -78,7 +78,7 @@ static void setup_se(void) {
 
     /* Detect Master Key revision. */
     mkey_detect_revision();
-    
+
     /* Derive new device keys. */
     switch (exosphere_get_target_firmware()) {
         case EXOSPHERE_TARGET_FIRMWARE_100:
@@ -294,7 +294,7 @@ static uint32_t decrypt_and_validate_header(package2_header_t *header) {
         }
 
         /* Ensure we successfully decrypted the header. */
-        if (mkey_rev > mkey_get_revision()) {   
+        if (mkey_rev > mkey_get_revision()) {
             panic(0xFAF00003);
         }
     } else if (!validate_package2_metadata(&header->metadata)) {
@@ -349,7 +349,7 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
         memset(load_buf, 0, PACKAGE2_SIZE_MAX);
         load_buf = (void *)potential_base_start;
     }
-    
+
     size_t cur_section_offset = 0;
     /* Copy each section to its appropriate location, decrypting if necessary. */
     for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
@@ -395,7 +395,7 @@ uintptr_t get_pk2ldr_stack_address(void) {
 void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* Load Exosphere-specific config. */
     exosphere_load_config();
-        
+
     /* Setup the Security Engine. */
     setup_se();
 
@@ -407,10 +407,10 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     /* Save boot reason to global. */
     bootconfig_load_boot_reason((volatile boot_reason_t *)(MAILBOX_NX_BOOTLOADER_BOOT_REASON));
-    
+
     /* Initialize cache'd random bytes for kernel. */
     randomcache_init();
-    
+
     /* memclear the initial copy of Exosphere running in IRAM (relocated to TZRAM by earlier code). */
     memset((void *)reloc_list->reloc_base, 0, reloc_list->loaded_bin_size);
     /* Let NX Bootloader know that we're running. */
@@ -438,6 +438,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     secure_additional_devices();
 
     /* Remove the identity mapping for iRAM-C+D & TZRAM */
+    /* For our crt0 to work, this doesn't actually unmap TZRAM */
     identity_unmap_iram_cd_tzram();
 
     /* Load header from NX_BOOTLOADER-initialized DRAM. */
@@ -451,7 +452,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     if (header.signature[0] == 0 && memcmp(header.signature, header.signature + 1, sizeof(header.signature) - 1) == 0 && header.metadata.magic == MAGIC_PK21) {
         bootconfig_set_package2_plaintext_and_unsigned();
     }
-    
+
     verify_header_signature(&header);
 
     /* Decrypt header, get key revision required. */
@@ -484,7 +485,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     } else {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
     }
-    
+
     /* Prepare the SMC API with version-dependent SMCs. */
     set_version_specific_smcs();
 

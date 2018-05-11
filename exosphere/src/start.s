@@ -81,6 +81,24 @@ __start_cold:
         However we'll initialize g_boot_critical_section so that it acts like core0 has entered it,
         for it to be in .data and for safety.
     */
+
+    /* Relocate the crt0. Nintendo doesn't do it. */
+    ldr  x0, =__cold_crt0_start__
+    adr  x1, __start_cold
+    ldr  x2, =__cold_crt0_end__
+    cmp  x0, x1
+    beq  _post_cold_crt0_reloc
+    1:
+        ldp  x3, x4, [x0], #0x10
+        stp  x3, x4, [x1], #0x10
+        cmp  x0, x2
+        blo  1b
+
+    ldr  x16, =_post_cold_crt0_reloc
+    br   x16
+
+_post_cold_crt0_reloc:
+
     msr  spsel, #0
     bl   get_coldboot_crt0_stack_address
     mov  sp, x0
@@ -88,9 +106,7 @@ __start_cold:
 
     adr  x0, g_coldboot_crt0_relocation_list
     mov  x19, x0
-    adr  x1, g_coldboot_crt0_main_func_list
-    ldr  x2, =g_warmboot_crt0_main_func_list
-    adr  x3, __start_cold
+    adr  x1, __start_cold
     bl   coldboot_init
 
     ldr  x16, =__jump_to_main_cold
@@ -112,17 +128,12 @@ __start_warm:
 
     /* PA(__main_start__) = __warmboot_crt0_start__ + 0x800 (refer to the linker script) */
     ldr  x0, =g_boot_critical_section
-    ldr  x1, =__main_start__
-    sub  x0, x0, x1
-    ldr  x1, =(__start_warm + 0x800)
-    add  x0, x0, x1
     bl   warmboot_crt0_critical_section_enter
 
     bl   get_warmboot_crt0_stack_address
     mov  sp, x0
     mov  fp, #0
 
-    adr  x0, g_warmboot_crt0_main_func_list
     bl   warmboot_init
     ldr  x16, =__jump_to_main_warm
     br   x16
@@ -238,20 +249,9 @@ g_coldboot_crt0_relocation_list:
     .quad   __main_bss_start__, __main_end__, 0
     .quad   __pk2ldr_bss_start__, __pk2ldr_end__, 0
 
-.section    .cold_crt0.data.g_coldboot_crt0_main_func_list, "aw", %progbits
-.align      3
-.global     g_coldboot_crt0_main_func_list
-g_coldboot_crt0_main_func_list:
-    .quad   4   /* Number of functions */
-    .quad   0   /* Target firmware, overwritten in coldboot_init. */
-    /* Functions */
-    .quad   init_dma_controllers
-    .quad   set_memory_registers_enable_mmu
-    .quad   flush_dcache_all
-    .quad   invalidate_icache_all
-
-.section    .warm_crt0.data.g_warmboot_crt0_main_func_list, "aw", %progbits
-.align      3
-.global     g_warmboot_crt0_main_func_list
-g_warmboot_crt0_main_func_list:
-    .space (6 * 8)
+/* Critical section */
+.section    .warm_crt0.data.g_boot_critical_section, "aw", %progbits
+.align      2
+.global     g_boot_critical_section
+g_boot_critical_section:
+    .word   1 /* Core0 entered, by default. */

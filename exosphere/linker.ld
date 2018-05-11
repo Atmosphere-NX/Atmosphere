@@ -3,7 +3,9 @@ ENTRY(__start_cold)
 
 MEMORY
 {
-    fake  : ORIGIN = 0,           LENGTH = 4096M
+    NULL  : ORIGIN = 0,           LENGTH = 4K
+    ccrt0 : ORIGIN = 0x040006000, LENGTH = 4K
+    glob  : ORIGIN = 0x040020000, LENGTH = 128K
     tzram : ORIGIN = 0x07C010000, LENGTH = 64K
     /*
         The warmboot crt0 is preceeded by the exception vector page and the L2 and L3 translation tables.
@@ -12,7 +14,7 @@ MEMORY
     */
     warmboot_crt0 : ORIGIN = ORIGIN(tzram) + 12K, LENGTH = 2K
 
-    /* 8K are the MMU L2 and L3 tables & 2K from the evt page */ 
+    /* 8K are the MMU L2 and L3 tables & 2K from the evt page */
     main    : ORIGIN = 0x1F01E0000                          + LENGTH(warmboot_crt0),    LENGTH = LENGTH(tzram) - LENGTH(pk2ldr) - LENGTH(evt) - LENGTH(warmboot_crt0) - 10K
     pk2ldr  : ORIGIN = ORIGIN(main) - LENGTH(warmboot_crt0) + LENGTH(tzram),            LENGTH = 8K
     /* The first half of the page are exception entry stacks, the other half are the vectors themselves */
@@ -21,12 +23,14 @@ MEMORY
 
 SECTIONS
 {
-    PROVIDE(__start__ = 0x0);
+    PROVIDE(__start__ = 0x040006000);
     . = __start__;
 
     .cold_crt0 :
     {
         . = ALIGN(64);
+        __cold_crt0_start__ = ABSOLUTE(.);
+        __glob_origin__ = ORIGIN(glob);
         KEEP (*(.cold_crt0.text.start)) /* MUST be first */
         KEEP (*(.cold_crt0.text*))
         KEEP (build/coldboot_init.o(.text*))
@@ -36,9 +40,10 @@ SECTIONS
         build/coldboot_init.o(.data*)
         . = ALIGN(8);
         *(.cold_crt0.bss*)
-        build/coldboot_init.o(.bss*)
+        build/coldboot_init.o(.bss* COMMON)
         . = ALIGN(64);
-    } >fake AT>fake
+        __cold_crt0_end__ = ABSOLUTE(.);
+    } >ccrt0 AT>glob
 
     .pk2ldr :
     {
@@ -49,16 +54,16 @@ SECTIONS
         build/package2.o(.rodata*)
         build/package2.o(.data*)
         . = ALIGN(8);
-    } >pk2ldr AT>fake
+    } >pk2ldr AT>glob
 
     .pk2ldr.bss :
     {
         . = ALIGN(8);
         __pk2ldr_bss_start__ = ABSOLUTE(.);
-        build/package2.o(.bss*)
+        build/package2.o(.bss* COMMON)
         . = ALIGN(8);
         __pk2ldr_end__ = ABSOLUTE(.);
-    } >pk2ldr AT>fake
+    } >pk2ldr AT>glob
 
     .vectors :
     {
@@ -68,7 +73,7 @@ SECTIONS
         KEEP (*(.vectors*))
         . = ALIGN(8);
         __vectors_end__ = ABSOLUTE(.);
-    } >evt AT>fake
+    } >evt AT>glob
 
     .warm_crt0 :
     {
@@ -87,7 +92,7 @@ SECTIONS
         build/warmboot_init.o(.bss*)
         . = ALIGN(64);
         __warmboot_crt0_end__ = ABSOLUTE(.);
-    } >warmboot_crt0 AT>fake
+    } >warmboot_crt0 AT>glob
 
     .text :
     {
@@ -100,37 +105,37 @@ SECTIONS
         *(.text.hot .text.hot.*)
         *(.text .stub .text.* .gnu.linkonce.t.*)
         . = ALIGN(8);
-    } >main AT>fake
+    } >main AT>glob
 
     .init :
     {
         KEEP( *(.init) )
         . = ALIGN(8);
-    } >main AT>fake
+    } >main AT>glob
 
     .plt :
     {
         *(.plt)
         *(.iplt)
         . = ALIGN(8);
-    } >main AT>fake
+    } >main AT>glob
 
 
     .fini :
     {
         KEEP( *(.fini) )
         . = ALIGN(8);
-    } >main AT>fake
+    } >main AT>glob
 
     .rodata :
     {
         *(.rodata .rodata.* .gnu.linkonce.r.*)
         SORT(CONSTRUCTORS)
         . = ALIGN(8);
-    } >main AT>fake
+    } >main AT>glob
 
-    .got            : { __got_start__ = ABSOLUTE(.); *(.got) *(.igot) } >main AT>fake
-    .got.plt        : { *(.got.plt)  *(.igot.plt)  __got_end__ = ABSOLUTE(.);} >main AT>fake
+    .got            : { __got_start__ = ABSOLUTE(.); *(.got) *(.igot) } >main AT>glob
+    .got.plt        : { *(.got.plt)  *(.igot.plt)  __got_end__ = ABSOLUTE(.);} >main AT>glob
 
     .preinit_array :
     {
@@ -139,7 +144,7 @@ SECTIONS
         KEEP (*(.preinit_array))
         PROVIDE (__preinit_array_end = .);
         . = ALIGN(8);
-    } >main AT>fake
+    } >main AT>glob
 
     .init_array :
     {
@@ -147,7 +152,7 @@ SECTIONS
         KEEP (*(SORT(.init_array.*)))
         KEEP (*(.init_array))
         PROVIDE (__init_array_end = .);
-    } >main AT>fake
+    } >main AT>glob
 
     .fini_array :
     {
@@ -157,7 +162,7 @@ SECTIONS
         KEEP (*(SORT(.fini_array.*)))
         PROVIDE (__fini_array_end = .);
         . = ALIGN(8);
-    } >main AT>fake
+    } >main AT>glob
 
     .ctors :
     {
@@ -167,7 +172,7 @@ SECTIONS
         KEEP (*(SORT(.ctors.*)))
         KEEP (*(.ctors))
         . = ALIGN(8);
-    } >main AT>fake
+    } >main AT>glob
 
     .dtors ALIGN(8) :
     {
@@ -177,33 +182,33 @@ SECTIONS
         KEEP (*(SORT(.dtors.*)))
         KEEP (*(.dtors))
         . = ALIGN(8);
-    } >main AT>fake
+    } >main AT>glob
 
     .data ALIGN(8) :
     {
         *(.data .data.* .gnu.linkonce.d.*)
         CONSTRUCTORS
         . = ALIGN(8);
-    } >main AT>fake
+    } >main AT>glob
 
 
-    .eh_frame_hdr     : { *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) } >main AT>fake
-    .eh_frame         : { KEEP (*(.eh_frame)) *(.eh_frame.*) } >main AT>fake
-    .gcc_except_table : { *(.gcc_except_table .gcc_except_table.*) } >main AT>fake
-    .gnu_extab        : { *(.gnu_extab*) } >main AT>fake
-    .exception_ranges : { *(.exception_ranges .exception_ranges*) } >main AT>fake
+    .eh_frame_hdr     : { *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) } >main AT>glob
+    .eh_frame         : { KEEP (*(.eh_frame)) *(.eh_frame.*) } >main AT>glob
+    .gcc_except_table : { *(.gcc_except_table .gcc_except_table.*) } >main AT>glob
+    .gnu_extab        : { *(.gnu_extab*) } >main AT>glob
+    .exception_ranges : { *(.exception_ranges .exception_ranges*) } >main AT>glob
 
-    .dynamic           : { *(.dynamic) } >main AT>fake
-    .interp            : { *(.interp) } >main AT>fake
-    .note.gnu.build-id : { *(.note.gnu.build-id) } >main AT>fake
-    .hash              : { *(.hash) } >main AT>fake
-    .gnu.hash          : { *(.gnu.hash) } >main AT>fake
-    .gnu.version       : { *(.gnu.version) } >main AT>fake
-    .gnu.version_d     : { *(.gnu.version_d) } >main AT>fake
-    .gnu.version_r     : { *(.gnu.version_r) } >main AT>fake
-    .dynsym            : { *(.dynsym) } >main AT>fake
-    .dynstr            : { *(.dynstr) } >main AT>fake
-    .rela.dyn          : { *(.rela.*); __main_end__ = ABSOLUTE(.);} >main AT>fake
+    .dynamic           : { *(.dynamic) } >main AT>glob
+    .interp            : { *(.interp) } >main AT>glob
+    .note.gnu.build-id : { *(.note.gnu.build-id) } >main AT>glob
+    .hash              : { *(.hash) } >main AT>glob
+    .gnu.hash          : { *(.gnu.hash) } >main AT>glob
+    .gnu.version       : { *(.gnu.version) } >main AT>glob
+    .gnu.version_d     : { *(.gnu.version_d) } >main AT>glob
+    .gnu.version_r     : { *(.gnu.version_r) } >main AT>glob
+    .dynsym            : { *(.dynsym) } >main AT>glob
+    .dynstr            : { *(.dynstr) } >main AT>glob
+    .rela.dyn          : { *(.rela.*); __main_end__ = ABSOLUTE(.);} >main AT>glob
 
     .bss :
     {
@@ -215,7 +220,7 @@ SECTIONS
         *(COMMON)
         . = ALIGN(8);
         __main_end__ = ABSOLUTE(.);
-    } >main AT>fake
+    } >main AT>glob
 
     __end__ = ABSOLUTE(.) ;
 
@@ -230,35 +235,35 @@ SECTIONS
     /DISCARD/ : { *(.group .comment .note) }
 
     /* Stabs debugging sections. */
-    .stab          0 : { *(.stab) }
-    .stabstr       0 : { *(.stabstr) }
-    .stab.excl     0 : { *(.stab.excl) }
-    .stab.exclstr  0 : { *(.stab.exclstr) }
-    .stab.index    0 : { *(.stab.index) }
-    .stab.indexstr 0 : { *(.stab.indexstr) }
+    .stab          0 : { *(.stab) } AT>glob
+    .stabstr       0 : { *(.stabstr) } AT>glob
+    .stab.excl     0 : { *(.stab.excl) } AT>glob
+    .stab.exclstr  0 : { *(.stab.exclstr) } AT>glob
+    .stab.index    0 : { *(.stab.index) } AT>glob
+    .stab.indexstr 0 : { *(.stab.indexstr) } AT>glob
 
     /* DWARF debug sections.
        Symbols in the DWARF debugging sections are relative to the beginning
        of the section so we begin them at 0. */
 
     /* DWARF 1 */
-    .debug          0 : { *(.debug) }
-    .line           0 : { *(.line) }
+    .debug          0 : { *(.debug) } AT>glob
+    .line           0 : { *(.line) } AT>glob
 
     /* GNU DWARF 1 extensions */
-    .debug_srcinfo  0 : { *(.debug_srcinfo) }
-    .debug_sfnames  0 : { *(.debug_sfnames) }
+    .debug_srcinfo  0 : { *(.debug_srcinfo) } AT>glob
+    .debug_sfnames  0 : { *(.debug_sfnames) } AT>glob
 
     /* DWARF 1.1 and DWARF 2 */
-    .debug_aranges  0 : { *(.debug_aranges) }
-    .debug_pubnames 0 : { *(.debug_pubnames) }
+    .debug_aranges  0 : { *(.debug_aranges) } AT>glob
+    .debug_pubnames 0 : { *(.debug_pubnames) } AT>glob
 
     /* DWARF 2 */
-    .debug_info     0 : { *(.debug_info) }
-    .debug_abbrev   0 : { *(.debug_abbrev) }
-    .debug_line     0 : { *(.debug_line) }
-    .debug_frame    0 : { *(.debug_frame) }
-    .debug_str      0 : { *(.debug_str) }
-    .debug_loc      0 : { *(.debug_loc) }
-    .debug_macinfo  0 : { *(.debug_macinfo) }
+    .debug_info     0 : { *(.debug_info) } AT>glob
+    .debug_abbrev   0 : { *(.debug_abbrev) } AT>glob
+    .debug_line     0 : { *(.debug_line) } AT>glob
+    .debug_frame    0 : { *(.debug_frame) } AT>glob
+    .debug_str      0 : { *(.debug_str) } AT>glob
+    .debug_loc      0 : { *(.debug_loc) } AT>glob
+    .debug_macinfo  0 : { *(.debug_macinfo) } AT>glob
 }

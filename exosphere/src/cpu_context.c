@@ -23,9 +23,6 @@
 /* start.s */
 void __attribute__((noreturn)) __jump_to_lower_el(uint64_t arg, uintptr_t ep, uint32_t spsr);
 
-/* See notes in start.s */
-critical_section_t g_boot_critical_section = {{{.ticket_number = 1}}};
-
 static saved_cpu_context_t g_cpu_contexts[NUM_CPU_CORES] = {0};
 
 void use_core_entrypoint_and_argument(uint32_t core, uintptr_t *entrypoint_addr, uint64_t *argument) {
@@ -47,15 +44,22 @@ void set_core_entrypoint_and_argument(uint32_t core, uintptr_t entrypoint_addr, 
     g_cpu_contexts[core].argument = argument;
 }
 
+static __attribute__((target("cmodel=large"), noinline))
+critical_section_t *get_boot_critical_section(void) {
+    return &g_boot_critical_section;
+}
+
 void __attribute__((noreturn)) core_jump_to_lower_el(void) {
     uintptr_t ep;
     uint64_t arg;
     unsigned int core_id = get_core_id();
     uint32_t spsr = get_spsr();
+    critical_section_t *critsec = get_boot_critical_section();
 
     use_core_entrypoint_and_argument(core_id, &ep, &arg);
-    critical_section_leave(&g_boot_critical_section);
-    flush_dcache_range(&g_boot_critical_section, (uint8_t *)&g_boot_critical_section + sizeof(g_boot_critical_section)); /* already does a dsb sy */
+    critical_section_leave(critsec);
+    flush_dcache_range(critsec, (uint8_t *)critsec + sizeof(critical_section_t));
+    /* already does a dsb sy */
     __sev();
 
     /* Nintendo hardcodes EL1, but we can boot fine using other EL1/EL2 modes as well */

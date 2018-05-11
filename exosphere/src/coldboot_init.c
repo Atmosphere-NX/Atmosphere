@@ -1,5 +1,6 @@
 #include <string.h>
 #include "utils.h"
+#include "arm.h"
 #include "mmu.h"
 #include "memory_map.h"
 #include "arm.h"
@@ -13,6 +14,11 @@
 #define TIMERS_BASE                 (MMIO_GET_DEVICE_PA(MMIO_DEVID_TMRs_WDTs))
 
 extern const uint8_t __start_cold[];
+
+/* warboot_init.c */
+extern unsigned int g_exosphere_target_firmware_for_init;
+void init_dma_controllers(unsigned int target_firmware);
+void set_memory_registers_enable_mmu(void);
 
 static void identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
     static const uintptr_t addrs[]      =   { TUPLE_FOLD_LEFT_0(EVAL(IDENTIY_MAPPING_ID_MAX), _MMAPID, COMMA) };
@@ -98,32 +104,15 @@ static void configure_ttbls(void) {
     tzram_map_all_segments(mmu_l3_tbl);
 }
 
-static void translate_func_list(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list, bool in_tzram) {
-    coldboot_crt0_reloc_t *warmboot_crt0_reloc = &reloc_list->relocs[0];
-    coldboot_crt0_reloc_t *main_reloc = &reloc_list->relocs[reloc_list->nb_relocs_pre_mmu_init];
-
-    uintptr_t main_pa;
-    if (in_tzram) {
-        /* The main segment immediately follows the warmboot crt0 in TZRAM, in the same page. */
-        main_pa = (uintptr_t)warmboot_crt0_reloc->vma | ((uintptr_t)main_reloc->vma & 0xFFF);
-    } else {
-        main_pa = reloc_list->reloc_base + main_reloc->reloc_offset;
-    }
-
-    for(size_t i = 0; i < func_list->nb_funcs; i++) {
-        if(func_list->addrs[i] >= 0x1F0000000ull) {
-            func_list->addrs[i] = main_pa + func_list->addrs[i] - (uintptr_t)main_reloc->vma;
-        }
-    }
-}
-
 static void do_relocation(const coldboot_crt0_reloc_list_t *reloc_list, size_t index) {
+    extern const uint8_t __glob_origin__[];
     uint64_t *p_vma = (uint64_t *)reloc_list->relocs[index].vma;
-    const uint64_t *p_lma = (const uint64_t *)(reloc_list->reloc_base + reloc_list->relocs[index].reloc_offset);
+    size_t offset = reloc_list->relocs[index].lma - (uintptr_t)__glob_origin__;
+    const uint64_t *p_lma = (const uint64_t *)(reloc_list->reloc_base + offset);
     size_t size = reloc_list->relocs[index].end_vma - reloc_list->relocs[index].vma;
 
     for(size_t i = 0; i < size / 8; i++) {
-        p_vma[i] = reloc_list->relocs[index].reloc_offset != 0 ? p_lma[i] : 0;
+        p_vma[i] = offset != 0 ? p_lma[i] : 0;
     }
 }
 
@@ -131,14 +120,19 @@ uintptr_t get_coldboot_crt0_stack_address(void) {
     return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
 }
 
-void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list, boot_func_list_t *func_list_warmboot, uintptr_t start_cold) {
+void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, uintptr_t start_cold) {
     //MAILBOX_NX_SECMON_BOOT_TIME = TIMERUS_CNTR_1US_0;
 
-    boot_func_list_t func_copy = *func_list;
     /* Custom approach */
     reloc_list->reloc_base = start_cold;
-    translate_func_list(reloc_list, func_list, false);
-    
+
+    /* TODO: Set NX BOOTLOADER clock time field */
+
+    /* This at least copies .warm_crt0 to its VMA. */
+    for(size_t i = 0; i < reloc_list->nb_relocs_pre_mmu_init; i++) {
+        do_relocation(reloc_list, i);
+    }
+    /* At this point, we can (and will) access functions located in .warm_crt0 */
 
     /*
         From https://events.static.linuxfound.org/sites/events/files/slides/slides_17.pdf :
@@ -149,37 +143,25 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *fun
 
         It should be fine to clear that here and not before.
     */
-    func_list->funcs.flush_dcache_all();
-    func_list->funcs.invalidate_icache_all();
-    
+    flush_dcache_all();
+    invalidate_icache_all();
 
-    /* TODO: Set NX BOOTLOADER clock time field */
-    
-    /* This at least copies .warm_crt0 to its VMA. */
-    for(size_t i = 0; i < reloc_list->nb_relocs_pre_mmu_init; i++) {
-        do_relocation(reloc_list, i);
-    }
-    /* At this point, we can (and will) access functions located in .warm_crt0 */
-    
     /* Set target firmware. */
-    func_list->target_firmware = exosphere_get_target_firmware_physical();
+    g_exosphere_target_firmware_for_init = exosphere_get_target_firmware_for_init();
 
     /* Initialize DMA controllers, and write to AHB_GIZMO_TZRAM. */
     /* TZRAM accesses should work normally after this point. */
-    func_list->funcs.init_dma_controllers(func_list->target_firmware);
+    init_dma_controllers(g_exosphere_target_firmware_for_init);
 
     configure_ttbls();
-    func_list->funcs.set_memory_registers_enable_mmu();
+    set_memory_registers_enable_mmu();
 
     /* Copy or clear the remaining sections */
     for(size_t i = 0; i < reloc_list->nb_relocs_post_mmu_init; i++) {
         do_relocation(reloc_list, reloc_list->nb_relocs_pre_mmu_init + i);
     }
 
-    func_list->funcs.flush_dcache_all();
-    func_list->funcs.invalidate_icache_all();
+    flush_dcache_all();
+    invalidate_icache_all();
     /* At this point we can access all the mapped segments (all other functions, data...) normally */
-
-    *func_list_warmboot = func_copy;
-    translate_func_list(reloc_list, func_list_warmboot, true);
 }

@@ -25,26 +25,11 @@
 
 /* Custom stuff below */
 
-/* For warmboot (and coldboot crt0) */
-typedef struct {
-    size_t      nb_funcs;
-    uint64_t target_firmware;
-    union {
-        struct {
-            void (*init_dma_controllers)(unsigned int);
-            void (*set_memory_registers_enable_mmu)(void);
-            void (*flush_dcache_all)(void);
-            void (*invalidate_icache_all)(void);
-        } funcs;
-        uintptr_t addrs[4];
-    };
-} boot_func_list_t;
-
 /* For coldboot */
 typedef struct {
     uint8_t     *vma;
     uint8_t     *end_vma;
-    uintptr_t   reloc_offset;
+    uintptr_t   lma;
 } coldboot_crt0_reloc_t;
 
 typedef struct {

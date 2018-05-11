@@ -27,6 +27,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
     }
 
     /* IRAM C+D identity mapping has actually been removed on coldboot but we don't really care */
+    /* For our crt0 to work, this doesn't actually unmap TZRAM */
     identity_unmap_iram_cd_tzram();
 
     /* On warmboot (not cpu_on) only */
@@ -60,7 +61,8 @@ void __attribute__((noreturn)) warmboot_main(void) {
         clear_user_smc_in_progress();
 
         if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
-            setup_4x_mmio();        }
+            setup_4x_mmio();
+        }
     }
 
     setup_current_core_state();

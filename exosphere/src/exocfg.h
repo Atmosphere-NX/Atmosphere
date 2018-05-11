@@ -34,7 +34,7 @@ typedef struct {
 unsigned int exosphere_load_config(void);
 unsigned int exosphere_get_target_firmware(void);
 
-static inline unsigned int exosphere_get_target_firmware_physical(void) {
+static inline unsigned int exosphere_get_target_firmware_for_init(void) {
     return MAILBOX_EXOSPHERE_CONFIG_PHYS.magic == MAGIC_EXOSPHERE_BOOTCONFIG ? MAILBOX_EXOSPHERE_CONFIG_PHYS.target_firmware : EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG;
 }
 

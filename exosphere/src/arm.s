@@ -63,7 +63,7 @@ tlb_invalidate_page_inner_shareable:
  * x1: 0 clean & invalidate, 1 invalidate only
  * x2~x9: clobbered
  */
-.section    .text.__asm_dcache_level, "ax", %progbits
+.section    .warm_crt0.text.__asm_dcache_level, "ax", %progbits
 .type       __asm_dcache_level, %function
 __asm_dcache_level:
     lsl x12, x0, #1
@@ -108,7 +108,7 @@ loop_way:
  *
  * flush or invalidate all data cache by SET/WAY.
  */
-.section    .text.__asm_dcache_all, "ax", %progbits
+.section    .warm_crt0.text.__asm_dcache_all, "ax", %progbits
 .type       __asm_dcache_all, %function
 __asm_dcache_all:
     mov x1, x0
@@ -146,14 +146,14 @@ skip:
 finished:
     ret
 
-.section    .text.flush_dcache_all, "ax", %progbits
+.section    .warm_crt0.text.flush_dcache_all, "ax", %progbits
 .type       flush_dcache_all, %function
 .global     flush_dcache_all
 flush_dcache_all:
     mov x0, #0
     b   __asm_dcache_all
 
-.section    .text.invalidate_dcache_all, "ax", %progbits
+.section    .warm_crt0.text.invalidate_dcache_all, "ax", %progbits
 .type       invalidate_dcache_all, %function
 .global     invalidate_dcache_all
 invalidate_dcache_all:
@@ -168,7 +168,7 @@ invalidate_dcache_all:
  * x0: start address
  * x1: end address
  */
-.section    .text.flush_dcache_range, "ax", %progbits
+.section    .warm_crt0.text.flush_dcache_range, "ax", %progbits
 .type       flush_dcache_range, %function
 .global     flush_dcache_range
 flush_dcache_range:
@@ -196,7 +196,7 @@ flush_dcache_range:
  * x0: start address
  * x1: end address
  */
-.section    .text.invalidate_dcache_range, "ax", %progbits
+.section    .warm_crt0.text.invalidate_dcache_range, "ax", %progbits
 .type       invalidate_dcache_range, %function
 .global     invalidate_dcache_range
 invalidate_dcache_range:
@@ -220,7 +220,7 @@ invalidate_dcache_range:
  *
  * invalidate all icache entries.
  */
-.section    .text.invalidate_icache_all_inner_shareable, "ax", %progbits
+.section    .warm_crt0.text.invalidate_icache_all_inner_shareable, "ax", %progbits
 .type       invalidate_icache_all_inner_shareable, %function
 .global     invalidate_icache_all_inner_shareable
 invalidate_icache_all_inner_shareable:
@@ -231,7 +231,7 @@ invalidate_icache_all_inner_shareable:
     isb
     ret
 
-.section    .text.invalidate_icache_all, "ax", %progbits
+.section    .warm_crt0.text.invalidate_icache_all, "ax", %progbits
 .type       invalidate_icache_all, %function
 .global     invalidate_icache_all
 invalidate_icache_all:
