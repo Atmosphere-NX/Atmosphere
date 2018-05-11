@@ -66,21 +66,30 @@ void bootup_misc_mmio(void) {
     APBDEV_PMC_DPD_ENABLE_0 = 0;
 
     /* Setup MC. */
-    /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x984) = 1;
-    MAKE_MC_REG(0x648) = 0;
-    MAKE_MC_REG(0x64C) = 0;
-    MAKE_MC_REG(0x650) = 1;
-    MAKE_MC_REG(0x670) = 0;
-    MAKE_MC_REG(0x674) = 0;
-    MAKE_MC_REG(0x678) = 1;
-    MAKE_MC_REG(0x9A0) = 0;
-    MAKE_MC_REG(0x9A4) = 0;
-    MAKE_MC_REG(0x9A8) = 0;
-    MAKE_MC_REG(0x9AC) = 1;
-    MC_SECURITY_CFG0_0 = 0;
-    MC_SECURITY_CFG1_0 = 0;
-    MC_SECURITY_CFG3_0 = 3;
+    volatile mc_register_t *mc_register = get_mc_reg();
+    mc_register->VIDEO_PROTECT_GPU_OVERRIDE_0_0 = 1;
+
+    /* undefined in reference manual */
+    mc_register->_0x648 = 0;
+    mc_register->_0x64C = 0;
+    mc_register->_0x650 = 1;
+
+    /* disable SEC carveout */
+    mc_register->SEC_CARVEOUT_BOM_0 = 0;
+    mc_register->SEC_CARVEOUT_SIZE_MB_0 = 0;
+    mc_register->SEC_CARVEOUT_REG_CTRL_0 = 1;
+
+    /* disable MTS carveout */
+    mc_register->MTS_CARVEOUT_BOM_0 = 0;
+    mc_register->MTS_CARVEOUT_SIZE_MB_0 = 0;
+    mc_register->MTS_CARVEOUT_ADR_HI_0 = 0;
+    mc_register->MTS_CARVEOUT_REG_CTRL_0 = 1;
+
+    /* disable security carveout - SECURITY_CFG0_0, CFG1_0, CFG3_0 */
+    mc_register->SECURITY_CFG0_0 = 0;
+    mc_register->SECURITY_CFG1_0 = 0;
+    mc_register->SECURITY_CFG3_0 = 3;
+
     configure_default_carveouts();
 
     /* Mark registers secure world only. */
@@ -102,33 +111,47 @@ void bootup_misc_mmio(void) {
         /* Starting on 4.x on non-dev units, mark SDMMC1 secure only. */
         sec_disable_2 |= APB_SSER2_SDMMC1;
     }
+
     APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = sec_disable_1;
     APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = sec_disable_2;
 
+    /* reset translation tables to allow all */
+    mc_register->SMMU_TRANSLATION_ENABLE_0_0 = 0xFFFFFFFF;
+    mc_register->SMMU_TRANSLATION_ENABLE_1_0 = 0xFFFFFFFF;
+    mc_register->SMMU_TRANSLATION_ENABLE_2_0 = 0xFFFFFFFF;
+    mc_register->SMMU_TRANSLATION_ENABLE_3_0 = 0xFFFFFFFF;
+    mc_register->SMMU_TRANSLATION_ENABLE_4_0 = 0xFFFFFFFF;
+
+    /* unknown null */
+    mc_register->_0x38 = 0;
+    mc_register->_0x3C = 0;
+
+    /* disable stall calls after ring1 and ring3 requests */
+    mc_register->EMEM_ARB_RING1_THROTTLE_0 = 0;
+    mc_register->EMEM_ARB_RING3_THROTTLE_0 = 0;
+
+    mc_register->EMEM_ARB_OVERRIDE_0 = 0; /* disable overrides */
+    mc_register->EMEM_ARB_RSV_0 = 0; /*  null reserved register */
+
+    /* unknown null */
+    mc_register->_0xF0 = 0;
+
+    /* disable clock-enable overrides */
+    mc_register->CLKEN_OVERRIDE_0 = 0;
+
+    /* reset PTB, TLB and PTC */
+    mc_register->SMMU_PTB_DATA_0 = 0;
+    mc_register->SMMU_TLB_CONFIG_0 = SMMU_TLB_CONFIG_ROUND_ROBIN_ARBITRATION | SMMU_TLB_CONFIG_HIT_UNDER_MISS | 0x30; /* reset to default - 0x30 => TLB_ACTIVE_LINES */
+    mc_register->SMMU_PTC_CONFIG_0 = SMMU_PTC_CONFIG_CACHE_ENABLE | 0x8000000 | 0x3F; /* reset to default, except PTC_LINE_MASK - 0x8000000 = 0x8 << 27 => PTC_REQ_LIMIT - 0x37 => PTC_INDEX_MAP */
+
     /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x228) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x22C) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x230) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x234) = 0xFFFFFFFF;
-    MAKE_MC_REG(0xB98) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x038) = 0;
-    MAKE_MC_REG(0x03C) = 0;
-    MAKE_MC_REG(0x0E0) = 0;
-    MAKE_MC_REG(0x0E4) = 0;
-    MAKE_MC_REG(0x0E8) = 0;
-    MAKE_MC_REG(0x0EC) = 0;
-    MAKE_MC_REG(0x0F0) = 0;
-    MAKE_MC_REG(0x0F4) = 0;
-    MAKE_MC_REG(0x020) = 0;
-    MAKE_MC_REG(0x014) = 0x30000030;
-    MAKE_MC_REG(0x018) = 0x2800003F;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x034) = 0;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x030) = 0;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x010) = 1;
-    (void)(MAKE_MC_REG(0x014));
+    (void)(mc_register->SMMU_TLB_CONFIG_0);
+    mc_register->SMMU_PTC_FLUSH_0 = 0;
+    (void)(mc_register->SMMU_TLB_CONFIG_0);
+    mc_register->SMMU_TLB_FLUSH_0 = 0;
+    (void)(mc_register->SMMU_TLB_CONFIG_0);
+    mc_register->SMMU_CONFIG_0 = 1; /* enable SMMU */
+    (void)(mc_register->SMMU_TLB_CONFIG_0);
 
     /* Clear RESET Vector, setup CPU Secure Boot RESET Vectors. */
     uint32_t reset_vec = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
@@ -168,19 +191,21 @@ void bootup_misc_mmio(void) {
         g_has_booted_up = true;
     } else if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400) {
         /* TODO: What are these MC reg writes? */
-        MAKE_MC_REG(0x65C) = 0xFFFFF000;
-        MAKE_MC_REG(0x660) = 0;
-        MAKE_MC_REG(0x964) |= 1;
+        mc_register->_0x65C = 0xFFFFF000;
+        mc_register->_0x660 = 0;
+        mc_register->IRAM_REG_CTRL_0 |= 1; /* lock write access to IRAM registers */
         CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
     }
 }
 
 void setup_4x_mmio(void) {
+    volatile mc_register_t *mc_register = get_mc_reg();
     /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x65C) = 0xFFFFF000;
-    MAKE_MC_REG(0x660) = 0;
-    MAKE_MC_REG(0x964) |= 1;
+    mc_register->_0x65C = 0xFFFFF000;
+    mc_register->_0x660 = 0;
+    mc_register->IRAM_REG_CTRL_0 |= 1; /* lock write access to IRAM registers */
     CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
+
     /* TODO: What are these PMC scratch writes? */
     APBDEV_PMC_SECURE_SCRATCH51_0 = (APBDEV_PMC_SECURE_SCRATCH51_0 & 0xFFFF8000) | 0x4000;
     APBDEV_PMC_SECURE_SCRATCH16_0 &= 0x3FFFFFFF;
@@ -197,6 +222,7 @@ void setup_4x_mmio(void) {
     APBDEV_PMC_SECURE_SCRATCH103_0 = 0x0;
     APBDEV_PMC_SECURE_SCRATCH39_0 = (APBDEV_PMC_SECURE_SCRATCH39_0 & 0xF8000000) | 0x88;
     /* TODO: Do we want to bother locking the secure scratch registers? */
+
     /* 4.x Jamais Vu mitigations. */
     /* Overwrite exception vectors. */
     BPMP_VECTOR_RESET = BPMP_MITIGATION_RESET_VAL;
@@ -207,17 +233,21 @@ void setup_4x_mmio(void) {
     BPMP_VECTOR_UNK = BPMP_MITIGATION_RESET_VAL;
     BPMP_VECTOR_IRQ = BPMP_MITIGATION_RESET_VAL;
     BPMP_VECTOR_FIQ = BPMP_MITIGATION_RESET_VAL;
+
     /* Disable AHB arbitration for the BPMP. */
     AHB_ARBITRATION_DISABLE_0 |= 2;
+
     /* Set SMMU for BPMP/APB-DMA to point to TZRAM. */
-    MC_SMMU_PTB_ASID_0 = 1;
-    MC_SMMU_PTB_DATA_0 = 0x70012;
-    MC_SMMU_AVPC_ASID_0 = 0x80000001;
-    MC_SMMU_PPCS1_ASID_0 = 0x80000001;
+    mc_register->SMMU_PTB_ASID_0 = 0x1; /* CURRENT_ASID */
+    mc_register->SMMU_PTB_DATA_0 = 0x70012; /* ASID_PDE_BASE */
+    mc_register->SMMU_AVPC_ASID_0 = SMMU_AVPC_ASID_AVPC_SMMU_ENABLE | 0x1; /* 0x1 => AVPC_ASID */
+    mc_register->SMMU_PPCS1_ASID_0 = SMMU_PPCS1_ASID_PPCS1_SMMU_ENABLE | 0x1; /* 0x1 => PPCS1_ASID */
+
     /* Wait for the BPMP to halt. */
     while ((FLOW_CTLR_HALT_COP_EVENTS_0 >> 29) != 5) {
         wait(1);
     }
+
     /* If not in a debugging context, setup the activity monitor. */
     if ((get_debug_authentication_status() & 3) != 3) {
         FLOW_CTLR_HALT_COP_EVENTS_0 = 0x40000000;
