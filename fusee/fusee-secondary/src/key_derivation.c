@@ -42,7 +42,7 @@ void get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keybl
     }
 
     if (keyblobs != NULL) {
-        *dst = available_keyblobs[revision];
+        *dst = keyblobs[revision];
     } else {
         generic_panic();
         /* TODO: what should we do? */
@@ -96,7 +96,7 @@ void derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, u
 
     /* Get needed data. */
     set_aes_keyslot(0xC, keyblob.keys[0], 0x10);
-    /* We don't need the Package1 Key, but for reference: set_aes_keyslot(0xB, keyblob.keys[8], 0x10); */
+    set_aes_keyslot(0xB, keyblob.keys[8], 0x10);
 
     /* Clear keyblob. */
     memset(keyblob.data, 0, sizeof(keyblob.data));
