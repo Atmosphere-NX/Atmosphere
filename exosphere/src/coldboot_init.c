@@ -131,13 +131,14 @@ uintptr_t get_coldboot_crt0_stack_address(void) {
     return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
 }
 
-void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list, boot_func_list_t *func_list_warmboot) {
-    MAILBOX_NX_SECMON_BOOT_TIME = TIMERUS_CNTR_1US_0;
+void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, boot_func_list_t *func_list, boot_func_list_t *func_list_warmboot, uintptr_t start_cold) {
+    //MAILBOX_NX_SECMON_BOOT_TIME = TIMERUS_CNTR_1US_0;
 
     boot_func_list_t func_copy = *func_list;
     /* Custom approach */
-    reloc_list->reloc_base = (uintptr_t)__start_cold;
+    reloc_list->reloc_base = start_cold;
     translate_func_list(reloc_list, func_list, false);
+    
 
     /*
         From https://events.static.linuxfound.org/sites/events/files/slides/slides_17.pdf :

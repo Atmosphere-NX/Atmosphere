@@ -90,6 +90,7 @@ __start_cold:
     mov  x19, x0
     adr  x1, g_coldboot_crt0_main_func_list
     ldr  x2, =g_warmboot_crt0_main_func_list
+    adr  x3, __start_cold
     bl   coldboot_init
 
     ldr  x16, =__jump_to_main_cold
