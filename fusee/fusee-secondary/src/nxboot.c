@@ -117,7 +117,7 @@ void nxboot_main(void) {
     nxboot_configure_exosphere();
 
     /* Derive keydata. */
-    derive_nx_keydata(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
+    //derive_nx_keydata(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
     if (loader_ctx->package2_loadfile.load_address == 0) {
         if (init_bcpkg2_device() == -1) {

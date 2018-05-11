@@ -1,7 +1,9 @@
 #ifndef FUSEE_KEYDERIVATION_H
 #define FUSEE_KEYDERIVATION_H
 
-#include "hwinit/tsec.h"
+#include <stddef.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 /* TODO: Update to 0x6 on release of new master key. */
 #define MASTERKEY_REVISION_MAX 0x5
@@ -14,24 +16,24 @@
 
 #define MASTERKEY_NUM_NEW_DEVICE_KEYS (MASTERKEY_REVISION_MAX - MASTERKEY_REVISION_400_410)
 
-typedef enum {
+typedef enum BisPartition {
     BisPartition_Calibration = 0,
     BisPartition_Safe = 1,
-    BisPartition_UserSystem = 2
-} BisPartition_t;
+    BisPartition_UserSystem = 2,
+} BisPartition;
 
-typedef struct {
-    u8 mac[0x10];
-    u8 ctr[0x10];
+typedef struct nx_keyblob_t {
+    uint8_t mac[0x10];
+    uint8_t ctr[0x10];
     union {
-        u8 data[0x90];
-        u8 keys[9][0x10];
+        uint8_t data[0x90];
+        uint8_t keys[9][0x10];
     };
 } nx_keyblob_t;
 
-void derive_nx_keydata(u32 target_firmware);
-void finalize_nx_keydata(u32 target_firmware);
+void derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *available_keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size);
+void finalize_nx_keydata(uint32_t target_firmware);
 
-void derive_bis_key(void *dst, BisPartition_t partition_id, u32 target_firmware);
+void derive_bis_key(void *dst, BisPartition partition_id, uint32_t target_firmware);
 
 #endif
