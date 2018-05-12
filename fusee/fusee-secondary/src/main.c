@@ -23,7 +23,6 @@ static void setup_env(void) {
         generic_panic();
     }
 
-    initialize_sd();
     if(fsdev_mount_all() == -1) {
         perror("Failed to mount at least one FAT parition");
         generic_panic();

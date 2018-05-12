@@ -155,9 +155,13 @@ enum sdmmc_register_bits {
     MMC_DAT0_LINE_STATE      = (1 << 20),
 
     /* Block size register */
-    MMC_DMA_BOUNDARY_MAXIMUM = (0x3 << 12),
-    MMC_DMA_BOUNDARY_512K    = (0x3 << 12),
+    MMC_DMA_BOUNDARY_MAXIMUM = (0x7 << 12),
+    MMC_DMA_BOUNDARY_512K    = (0x7 << 12),
+    MMC_DMA_BOUNDARY_64K     = (0x4 << 12),
+    MMC_DMA_BOUNDARY_32K     = (0x3 << 12),
     MMC_DMA_BOUNDARY_16K     = (0x2 << 12),
+    MMC_DMA_BOUNDARY_8K      = (0x1 << 12),
+    MMC_DMA_BOUNDARY_4K      = (0x0 << 12),
     MMC_TRANSFER_BLOCK_512B  = (0x200 << 0),
 
     /* Command register */
@@ -396,6 +400,9 @@ struct PACKED sdmmc_scr {
     uint8_t scr_version : 4;
 };
 
+/* Callback function typedefs */
+typedef int (*fault_handler_t)(struct mmc *mmc);
+
 /* Forward declarations */
 static int sdmmc_send_simple_command(struct mmc *mmc, enum sdmmc_command command,
         enum sdmmc_response_type response_type, uint32_t argument, void *response_buffer);
@@ -407,8 +414,8 @@ static int sdmmc_loglevel = 0;
  * Page-aligned bounce buffer to target with SDMMC DMA.
  * If the size of this buffer is changed, the block_size
  */
-static uint8_t ALIGN(4096) sdmmc_bounce_buffer[4096 * 4];
-static const uint16_t sdmmc_bounce_dma_boundary = MMC_DMA_BOUNDARY_16K;
+static uint8_t ALIGN(4096) sdmmc_bounce_buffer[1024 * 8];
+static const uint16_t sdmmc_bounce_dma_boundary = MMC_DMA_BOUNDARY_8K;
 
 
 /**
@@ -1081,6 +1088,31 @@ static int sdmmc_wait_until_no_longer_busy(struct mmc *mmc)
     return sdmmc_wait_for_physical_state(mmc, MMC_DAT0_LINE_STATE, false);
 }
 
+/**
+ * Handles an event in which the given SDMMC controller's DMA buffers have
+ * become full, and must be emptied again before they can be used.
+ *
+ * @param mmc The MMC controller that has suffered a full buffer.
+ */
+static int sdmmc_flush_bounce_buffer(struct mmc *mmc)
+{
+    // Determine the total amount copied by subtracting the current pointer from
+    // its starting address-- effectively by figuring out how far we got in the bounce buffer.
+    uint32_t total_copied = mmc->regs->dma_address - (uint32_t)sdmmc_bounce_buffer;
+
+    // If we have a DMA buffer we're copying to, empty it out.
+    if (mmc->active_data_buffer) {
+
+        // Copy the data to the user buffer, and advance in the user buffer
+        // by the amount coppied.
+        memcpy((void *)mmc->active_data_buffer, sdmmc_bounce_buffer, total_copied);
+        mmc->active_data_buffer += total_copied;
+    }
+
+    // Reset the DMA to point at the beginning of our bounce buffer for another interation.
+    mmc->regs->dma_address = (uint32_t)sdmmc_bounce_buffer;
+    return 0;
+}
 
 /**
  * Blocks until the SD driver has completed issuing a command.
@@ -1089,23 +1121,43 @@ static int sdmmc_wait_until_no_longer_busy(struct mmc *mmc)
  * @param target_irq A bitmask that specifies the bits that
  *      will make this function return success
  * @param fault_conditions A bitmask that specifies the bits that
- *      will make this function return EFAULT.
+ *      will make this function trigger its fault handler.
+ *  @param fault_handler A function that's called to handle DMA faults.
+ *      If it returns nonzero, this method will abort immediately; if it
+ *      returns zero, it'll clear the error and continue.
  *
  * @return 0 on sucess, EFAULT if a fault condition occurs,
  *      or an error code if a transfer failure occurs
  */
 static int sdmmc_wait_for_interrupt(struct mmc *mmc,
-        uint32_t target_irq, uint32_t fault_conditions)
+        uint32_t target_irq, uint32_t fault_conditions, fault_handler_t fault_handler)
 {
     uint32_t timebase = get_time();
+    int rc;
 
     // Wait until we either wind up ready, or until we've timed out.
     while (true) {
         if (get_time_since(timebase) > mmc->timeout)
             return ETIMEDOUT;
 
-        if (mmc->regs->int_status & fault_conditions)
-            return EFAULT;
+        if (mmc->regs->int_status & fault_conditions) {
+
+            // If we don't have a handler, fault.
+            if (!fault_handler) {
+                mmc_print(mmc, "ERROR: unhandled DMA fault!\n");
+                return EFAULT;
+            }
+
+            // Call the DMA fault handler.
+            rc = fault_handler(mmc);
+            if (rc) {
+                mmc_print(mmc, "ERROR: unhandled DMA fault!\n (%d)", rc);
+                return rc;
+            }
+
+            // Finally, EOI the relevant interrupt.
+            mmc->regs->int_status |= fault_conditions;
+        }
 
         if (mmc->regs->int_status & target_irq)
             return 0;
@@ -1123,8 +1175,9 @@ static int sdmmc_wait_for_interrupt(struct mmc *mmc,
  */
 static int sdmmc_wait_for_command_completion(struct mmc *mmc)
 {
-    return sdmmc_wait_for_interrupt(mmc, MMC_STATUS_COMMAND_COMPLETE, 0);
+    return sdmmc_wait_for_interrupt(mmc, MMC_STATUS_COMMAND_COMPLETE, 0, NULL);
 }
+
 
 
 /**
@@ -1134,7 +1187,8 @@ static int sdmmc_wait_for_command_completion(struct mmc *mmc)
  */
 static int sdmmc_wait_for_transfer_completion(struct mmc *mmc)
 {
-    return sdmmc_wait_for_interrupt(mmc, MMC_STATUS_TRANSFER_COMPLETE, MMC_STATUS_DMA_INTERRUPT);
+    return sdmmc_wait_for_interrupt(mmc, MMC_STATUS_TRANSFER_COMPLETE,
+            MMC_STATUS_DMA_INTERRUPT, sdmmc_flush_bounce_buffer);
 }
 
 
@@ -1441,16 +1495,13 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     uint32_t total_data_to_xfer = sdmmc_get_block_size(mmc, is_write) * blocks_to_transfer;
     int rc;
 
-    // If this transfer would have us send more than we can, fail out.
-    if (total_data_to_xfer > sizeof(sdmmc_bounce_buffer)) {
-        mmc_print(mmc, "ERROR: transfer is larger than our maximum DMA transfer size!");
-        return -E2BIG;
-    }
+    // Store user data buffer for use by future DMA operations.
+    mmc->active_data_buffer = (uint32_t)data_buffer;
 
     // Sanity check: if this is a data transfer, make sure we have a data buffer...
     if (blocks_to_transfer && !data_buffer) {
-        mmc_print(mmc, "ERROR: no data buffer provided, but this is a data transfer!");
-        return -EINVAL;
+        mmc_print(mmc, "WARNING: no data buffer provided, but this is a data transfer!");
+        mmc_print(mmc, "this does nothing; but is supported for debug");
     }
 
     // Wait until we can issue commands to the device.
@@ -1474,9 +1525,8 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
 
     // If this is a write and we have data, we'll need to populate the bounce buffer before
     // issuing the command.
-    if (blocks_to_transfer && is_write && mmc->use_dma) {
-        memcpy(sdmmc_bounce_buffer, data_buffer, total_data_to_xfer);
-    }
+    if (blocks_to_transfer && is_write && mmc->use_dma && data_buffer)
+        memcpy(sdmmc_bounce_buffer, (void *)mmc->active_data_buffer, total_data_to_xfer);
 
     // Configure the controller to send the command.
     sdmmc_prepare_command_registers(mmc, blocks_to_transfer, command, response_type, checks);
@@ -1517,9 +1567,8 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
 
             // If this is a read, and we've just finished a transfer, copy the data from
             // our bounce buffer to the target data buffer.
-            if (!is_write) {
-                memcpy(data_buffer, sdmmc_bounce_buffer, total_data_to_xfer);
-            }
+            if (!is_write && data_buffer)
+                sdmmc_flush_bounce_buffer(mmc);
         }
         // Otherwise, perform the transfer using the CPU.
         else {
@@ -1913,7 +1962,7 @@ static int sdmmc_optimize_transfer_mode(struct mmc *mmc)
     }
 
     // TODO: step up into high speed modes
-    mmc_print(mmc, "now operating with a wider bus width");
+
     return 0;
 }
 
@@ -1950,9 +1999,6 @@ static int sdmmc_get_relative_address(struct mmc *mmc)
 {
     int rc;
     uint32_t response;
-    //uint32_t timebase = get_time();
-
-    // TODO: do we need to repeatedly retry this? other codebases do
 
     // Set up the card's relative address.
     rc = sdmmc_send_simple_command(mmc, CMD_GET_RELATIVE_ADDR, MMC_RESPONSE_LEN48, 0, &response);

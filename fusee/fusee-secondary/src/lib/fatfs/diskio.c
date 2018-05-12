@@ -7,12 +7,23 @@
 /* storage control modules to the FatFs module with a defined API.       */
 /*-----------------------------------------------------------------------*/
 
+#include <stdbool.h>
 #include <string.h>
 #include "diskio.h"		/* FatFs lower layer API */
 #include "../../sdmmc.h"
+#include "../../hwinit.h"
 
 /* Global sd struct. */
-extern struct mmc sd_mmc;
+struct mmc g_sd_mmc = {0};
+static bool g_sd_initialized = false;
+
+static bool g_ahb_redirect_enabled = false;
+
+/*
+Uncomment if needed:
+struct mmc nand_mmc = {0};
+static bool g_nand_initialized = false;
+*/
 
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
@@ -35,7 +46,28 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-	return 0;
+	if (!g_ahb_redirect_enabled) {
+		mc_enable_ahb_redirect();
+		g_ahb_redirect_enabled = true;
+	}
+
+	switch (pdrv) {
+		case 0: {
+			if (!g_sd_initialized) {
+				int rc = sdmmc_init(&g_sd_mmc, SWITCH_MICROSD);
+				if (rc == 0) {
+					g_sd_initialized = true;
+					return 0;
+				} else {
+					return rc;
+				}
+			} else {
+				return 0;
+			}
+		}
+		default:
+			return STA_NODISK;
+	}
 }
 
 
@@ -51,12 +83,12 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-    for (unsigned int i = 0; i < count; i++) {
-        if (sdmmc_read(&sd_mmc, buff + 0x200 * i, sector + i, 1) != 0) {
-            return RES_ERROR;
-        }
-    }
-    return RES_OK;
+	switch (pdrv) {
+		case 0:
+			return sdmmc_read(&g_sd_mmc, buff, sector, count) == 0 ? RES_OK : RES_ERROR;
+		default:
+			return RES_PARERR;
+	}
 }
 
 
@@ -72,7 +104,12 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-	return RES_ERROR;
+	switch (pdrv) {
+		case 0:
+			return sdmmc_write(&g_sd_mmc, buff, sector, count) == 0 ? RES_OK : RES_ERROR;
+		default:
+			return RES_PARERR;
+	}
 }
 
 
@@ -87,6 +124,6 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
-	return RES_OK;
+	return 0;
 }
 
