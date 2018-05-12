@@ -205,8 +205,7 @@ static int rawmmcdev_close(struct _reent *r, void *fd) {
     return 0;
 }
 
-/* Keep this <= the size of the DMA bounce buffer in sdmmc.c */
-static __attribute__((aligned(16))) uint8_t g_crypto_buffer[512] = {0};
+static __attribute__((aligned(16))) uint8_t g_crypto_buffer[512 * 16] = {0};
 
 static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size_t len) {
     rawmmcdev_file_t *f = (rawmmcdev_file_t *)fd;
@@ -262,25 +261,35 @@ static ssize_t rawmmcdev_write(struct _reent *r, void *fd, const char *ptr, size
         return len;
     }
 
-    size_t sectors_remaining = sector_end_aligned - current_sector;
-    for (size_t i = 0; i < len; i += sizeof(g_crypto_buffer)/512) {
-        size_t n = sectors_remaining <= sizeof(g_crypto_buffer)/512 ? sectors_remaining : sizeof(g_crypto_buffer)/512;
+    if (device->encrypted) {
+        size_t sectors_remaining = sector_end_aligned - current_sector;
+        for (size_t i = 0; i < len; i += sizeof(g_crypto_buffer)/512) {
+            size_t n = sectors_remaining <= sizeof(g_crypto_buffer)/512 ? sectors_remaining : sizeof(g_crypto_buffer)/512;
 
-        if (device->encrypted) {
             memcpy(g_crypto_buffer, data, 512 * n);
             device->write_crypt_func(g_crypto_buffer, g_crypto_buffer, current_sector - device_sector_offset, 512 * n, device->iv, device->crypt_flags);
             no = sdmmc_write(device->mmc, g_crypto_buffer, current_sector, n);
-        } else {
-            no = sdmmc_write(device->mmc, data, current_sector, n);
-        }
 
+            if (no != 0) {
+                r->_errno = no;
+                return -1;
+            }
+
+            data += 512 * n;
+            current_sector += n;
+        }
+    } else {
+        /* We can write everything aligned at once. */
+        size_t sectors_remaining = sector_end_aligned - current_sector;
+
+        no = sdmmc_write(device->mmc, data, current_sector, sectors_remaining);
         if (no != 0) {
             r->_errno = no;
             return -1;
         }
 
-        data += 512 * n;
-        current_sector += n;
+        data += 512 * sectors_remaining;
+        current_sector += sectors_remaining;
     }
 
     /* Unaligned at the end, we need to read the sector and incorporate the data. */
@@ -357,11 +366,11 @@ static ssize_t rawmmcdev_read(struct _reent *r, void *fd, char *ptr, size_t len)
         return 0;
     }
 
-    size_t sectors_remaining = sector_end_aligned - current_sector;
-    for (size_t i = 0; i < len; i += sizeof(g_crypto_buffer)/512) {
-        size_t n = sectors_remaining <= sizeof(g_crypto_buffer)/512 ? sectors_remaining : sizeof(g_crypto_buffer)/512;
+    if (device->encrypted) {
+        size_t sectors_remaining = sector_end_aligned - current_sector;
+        for (size_t i = 0; i < len; i += sizeof(g_crypto_buffer)/512) {
+            size_t n = sectors_remaining <= sizeof(g_crypto_buffer)/512 ? sectors_remaining : sizeof(g_crypto_buffer)/512;
 
-        if (device->encrypted) {
             no = sdmmc_read(device->mmc, g_crypto_buffer, current_sector, n);
             if (no != 0) {
                 r->_errno = no;
@@ -369,16 +378,22 @@ static ssize_t rawmmcdev_read(struct _reent *r, void *fd, char *ptr, size_t len)
             }
             device->read_crypt_func(g_crypto_buffer, g_crypto_buffer, current_sector - device_sector_offset, 512 * n, device->iv, device->crypt_flags);
             memcpy(data, g_crypto_buffer, 512 * n);
-        } else {
-            no = sdmmc_read(device->mmc, data, current_sector, n);
-            if (no != 0) {
-                r->_errno = no;
-                return -1;
-            }
+
+            data += 512 * n;
+            current_sector += n;
+        }
+    } else {
+        /* We can read everything aligned at once. */
+        size_t sectors_remaining = sector_end_aligned - current_sector;
+
+        no = sdmmc_read(device->mmc, data, current_sector, sectors_remaining);
+        if (no != 0) {
+            r->_errno = no;
+            return -1;
         }
 
-        data += 512 * n;
-        current_sector += n;
+        data += 512 * sectors_remaining;
+        current_sector += sectors_remaining;
     }
 
     /* Unaligned at the end, we need to read the sector and incorporate the data. */
