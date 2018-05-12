@@ -83,21 +83,12 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-#if 1
-	for (unsigned int i = 0; i < count; i++) {
-        if (sdmmc_read(&g_sd_mmc, buff + 0x200 * i, sector + i, 1) != 0) {
-            return RES_ERROR;
-        }
-    }
-    return RES_OK;
-#else
 	switch (pdrv) {
 		case 0:
 			return sdmmc_read(&g_sd_mmc, buff, sector, count) == 0 ? RES_OK : RES_ERROR;
 		default:
 			return RES_PARERR;
 	}
-#endif
 }
 
 
@@ -113,16 +104,12 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-#if 0
 	switch (pdrv) {
 		case 0:
 			return sdmmc_write(&g_sd_mmc, buff, sector, count) == 0 ? RES_OK : RES_ERROR;
 		default:
 			return RES_PARERR;
 	}
-#else
-	return 0;
-#endif
 }
 
 
