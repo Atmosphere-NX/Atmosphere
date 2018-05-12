@@ -1094,7 +1094,7 @@ static int sdmmc_wait_until_no_longer_busy(struct mmc *mmc)
  *
  * @param mmc The MMC controller that has suffered a full buffer.
  */
-static int sdmmc_handle_full_dma_buffers(struct mmc *mmc)
+static int sdmmc_flush_bounce_buffer(struct mmc *mmc)
 {
     // Determine the total amount copied by subtracting the current pointer from
     // its starting address-- effectively by figuring out how far we got in the bounce buffer.
@@ -1188,7 +1188,7 @@ static int sdmmc_wait_for_command_completion(struct mmc *mmc)
 static int sdmmc_wait_for_transfer_completion(struct mmc *mmc)
 {
     return sdmmc_wait_for_interrupt(mmc, MMC_STATUS_TRANSFER_COMPLETE,
-            MMC_STATUS_DMA_INTERRUPT, sdmmc_handle_full_dma_buffers);
+            MMC_STATUS_DMA_INTERRUPT, sdmmc_flush_bounce_buffer);
 }
 
 
@@ -1525,9 +1525,8 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
 
     // If this is a write and we have data, we'll need to populate the bounce buffer before
     // issuing the command.
-    if (blocks_to_transfer && is_write && mmc->use_dma && data_buffer) {
-        memcpy(sdmmc_bounce_buffer, data_buffer, total_data_to_xfer);
-    }
+    if (blocks_to_transfer && is_write && mmc->use_dma && data_buffer)
+        memcpy(sdmmc_bounce_buffer, (void *)mmc->active_data_buffer, total_data_to_xfer);
 
     // Configure the controller to send the command.
     sdmmc_prepare_command_registers(mmc, blocks_to_transfer, command, response_type, checks);
@@ -1568,9 +1567,8 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
 
             // If this is a read, and we've just finished a transfer, copy the data from
             // our bounce buffer to the target data buffer.
-            if (!is_write && data_buffer) {
-                memcpy(data_buffer, sdmmc_bounce_buffer, total_data_to_xfer);
-            }
+            if (!is_write && data_buffer)
+                sdmmc_flush_bounce_buffer(mmc);
         }
         // Otherwise, perform the transfer using the CPU.
         else {
@@ -2001,9 +1999,6 @@ static int sdmmc_get_relative_address(struct mmc *mmc)
 {
     int rc;
     uint32_t response;
-    //uint32_t timebase = get_time();
-
-    // TODO: do we need to repeatedly retry this? other codebases do
 
     // Set up the card's relative address.
     rc = sdmmc_send_simple_command(mmc, CMD_GET_RELATIVE_ADDR, MMC_RESPONSE_LEN48, 0, &response);
