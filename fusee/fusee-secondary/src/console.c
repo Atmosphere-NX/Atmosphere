@@ -155,6 +155,14 @@ int console_init(void) {
     return 0;
 }
 
+void *console_get_framebuffer(bool enable_display) {
+    if (g_framebuffer != NULL && enable_display) {
+        console_init_display();
+    }
+
+    return g_framebuffer;
+}
+
 int console_display(const void *framebuffer) {
     if (!g_display_initialized) {
         console_init_display();
