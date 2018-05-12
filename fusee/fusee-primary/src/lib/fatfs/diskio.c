@@ -13,16 +13,55 @@
 #include "../../sdmmc.h"
 #include "../../hwinit.h"
 
+static bool g_ahb_redirect_enabled = false;
+
 /* Global sd struct. */
-struct mmc g_sd_mmc = {0};
+static struct mmc g_sd_mmc = {0};
 static bool g_sd_initialized = false;
 
-static bool g_ahb_redirect_enabled = false;
+int initialize_sd_mmc(void) {
+	if (!g_ahb_redirect_enabled) {
+		mc_enable_ahb_redirect();
+		g_ahb_redirect_enabled = true;
+	}
+
+	if (!g_sd_initialized) {
+		int rc = sdmmc_init(&g_sd_mmc, SWITCH_MICROSD);
+		if (rc == 0) {
+			g_sd_initialized = true;
+			return 0;
+		} else {
+			return rc;
+		}
+	} else {
+		return 0;
+	}
+}
 
 /*
 Uncomment if needed:
-struct mmc nand_mmc = {0};
+static struct mmc nand_mmc = {0};
 static bool g_nand_initialized = false;
+
+int initialize_nand_mmc(void) {
+	if (!g_ahb_redirect_enabled) {
+		mc_enable_ahb_redirect();
+		g_ahb_redirect_enabled = true;
+	}
+
+	if (!g_nand_initialized) {
+		int rc = sdmmc_init(&g_sd_mmc, SWITCH_EMMC);
+		if (rc == 0) {
+			g_nand_initialized = true;
+			return 0;
+		} else {
+			return rc;
+		}
+	} else {
+		return 0;
+	}
+}
+
 */
 
 /*-----------------------------------------------------------------------*/
@@ -46,25 +85,9 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-	if (!g_ahb_redirect_enabled) {
-		mc_enable_ahb_redirect();
-		g_ahb_redirect_enabled = true;
-	}
-
 	switch (pdrv) {
-		case 0: {
-			if (!g_sd_initialized) {
-				int rc = sdmmc_init(&g_sd_mmc, SWITCH_MICROSD);
-				if (rc == 0) {
-					g_sd_initialized = true;
-					return 0;
-				} else {
-					return rc;
-				}
-			} else {
-				return 0;
-			}
-		}
+		case 0:
+			return initialize_sd_mmc() == 0 ? 0 : STA_NOINIT;
 		default:
 			return STA_NODISK;
 	}
