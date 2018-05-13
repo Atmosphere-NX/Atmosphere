@@ -46,7 +46,7 @@ void nxboot_configure_exosphere(void) {
 }
 
 /* This is the main function responsible for booting Horizon. */
-void nxboot_main(void) {
+void nxboot_main(uint8_t *fb_addr) {
     loader_ctx_t *loader_ctx = get_loader_ctx();
 
     /* TODO: Validate that we're capable of booting. */
@@ -87,7 +87,7 @@ void nxboot_main(void) {
     }
 
     /* Display splash screen. */
-    display_splash_screen_bmp(loader_ctx->custom_splash_path);
+    display_splash_screen_bmp(loader_ctx->custom_splash_path, fb_addr);
 
     /* TODO: Halt ourselves. */
 }

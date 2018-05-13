@@ -3,9 +3,10 @@
 
 #include <stdint.h>
 
-/* TODO: Actually make this a real thing. */
-extern unsigned char g_default_splash_screen[1];
+extern uint8_t default_splash_bmp[];
+extern uint32_t default_splash_bmp_size;
 
-void display_splash_screen_bmp(const char *custom_splash_path);
+void display_splash_screen_bmp(const char *custom_splash_path, uint8_t *fb_addr);
+uint8_t *load_default_splash();
 
 #endif

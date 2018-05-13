@@ -22,6 +22,6 @@
 
 #define MAILBOX_NX_BOOTLOADER_BOOT_REASON (MAILBOX_NX_BOOTLOADER_BASE + 0xE10ULL)
 
-void nxboot_main(void);
+void nxboot_main(uint8_t *fb_addr);
 
 #endif

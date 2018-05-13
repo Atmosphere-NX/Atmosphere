@@ -11,6 +11,7 @@ name := fusee-secondary
 dir_source := src
 dir_build := build
 dir_out := out
+dir_data := data
 
 ARCH := -march=armv4t -mtune=arm7tdmi -marm
 
@@ -34,7 +35,8 @@ LDFLAGS = -specs=linker.specs -g $(ARCH)
 
 objects =	$(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
 			$(patsubst $(dir_source)/%.c, $(dir_build)/%.o, \
-			$(call rwildcard, $(dir_source), *.s *.c)))
+			$(call rwildcard, $(dir_source), *.s *.c))) \
+			$(dir_build)/default_splash.bmp.o
 
 define bin2o
 	bin2s $< | $(AS) -o $(@)
@@ -58,6 +60,9 @@ $(dir_build)/$(name).elf: $(objects)
 $(dir_build)/%.bin.o: $(dir_build)/%.bin
 	@$(bin2o)
 
+$(dir_build)/default_splash.bmp.o: $(dir_data)/default_splash.bmp
+	@$(bin2o)
+
 $(dir_build)/%.o: $(dir_source)/%.c
 	@mkdir -p "$(@D)"
 	$(COMPILE.c) $(OUTPUT_OPTION) $<
@@ -65,3 +70,5 @@ $(dir_build)/%.o: $(dir_source)/%.c
 $(dir_build)/%.o: $(dir_source)/%.s
 	@mkdir -p "$(@D)"
 	$(COMPILE.c) -x assembler-with-cpp $(OUTPUT_OPTION) $<
+
+	

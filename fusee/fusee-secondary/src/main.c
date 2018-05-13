@@ -13,6 +13,7 @@
 #include "switch_fs.h"
 #include "gpt.h"
 #include "display/video_fb.h"
+#include "splash_screen.h"
 
 extern void (*__program_exit_callback)(int rc);
 
@@ -78,7 +79,7 @@ int main(int argc, void **argv) {
 
     g_do_nxboot = loader_ctx->chainload_entrypoint == 0;
     if (g_do_nxboot) {
-        nxboot_main();
+        nxboot_main((uint8_t*)g_framebuffer);
     } else {
         /* TODO: What else do we want to do in terms of argc/argv? */
         const char *path = get_loader_ctx()->file_paths[get_loader_ctx()->file_id_of_entrypoint];
