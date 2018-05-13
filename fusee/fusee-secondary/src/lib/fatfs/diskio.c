@@ -116,6 +116,13 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
-	return 0;
+	device_partition_t *devpart = g_volume_to_devparts[pdrv];
+	switch (cmd) {
+			case GET_SECTOR_SIZE:
+				*(WORD *)buff = devpart != NULL ? (WORD)devpart->sector_size : 512;
+				return 0;
+			default:
+				return 0;
+	}
 }
 
