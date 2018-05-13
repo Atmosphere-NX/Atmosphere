@@ -30,6 +30,10 @@ CFLAGS = \
 	-fstrict-volatile-bitfields \
 	-DFUSEE_STAGE1_SRC
 
+ifneq (,$(wildcard src/config.h))
+	CFLAGS += -DHAS_CONFIG_H
+endif
+
 LDFLAGS = -specs=linker.specs -g $(ARCH)
 
 objects =	$(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
