@@ -11,7 +11,6 @@
 #include "lib/fatfs/ff.h"
 
 #include "fs_dev.h"
-
 /* Quite a bit of code comes from https://github.com/switchbrew/libnx/blob/master/nx/source/runtime/devices/fs_dev.c */
 
 static int fsdev_convert_rc(struct _reent *r, FRESULT rc);
@@ -69,23 +68,33 @@ static devoptab_t g_fsdev_devoptab = {
 };
 
 typedef struct fsdev_fsdevice_t {
+    devoptab_t devoptab;
+    device_partition_t devpart;
+    FATFS fatfs;
     char name[32+1];
     bool setup;
-    devoptab_t devoptab;
-    FATFS fatfs;
 } fsdev_fsdevice_t;
 
 static fsdev_fsdevice_t g_fsdev_devices[FF_VOLUMES] = { 0 };
-const char *VolumeStr[FF_VOLUMES] = { 0 };
 
-int fsdev_mount_device(const char *name, unsigned int id) {
-    fsdev_fsdevice_t *device = &g_fsdev_devices[id];
+/* Required by ff.c */
+/* FF_VOLUMES = 10 */
+#define FKNAM   "\xff$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$" /* Workaround for fatfs. */
+
+const char *VolumeStr[FF_VOLUMES] = { FKNAM, FKNAM, FKNAM, FKNAM, FKNAM, FKNAM, FKNAM, FKNAM, FKNAM, FKNAM };
+
+/* For diskio.c code */
+device_partition_t *g_volume_to_devparts[FF_VOLUMES] = { NULL };
+
+#include <stdio.h>
+int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool initialize_immediately) {
+    fsdev_fsdevice_t *device = NULL;
     FRESULT rc;
     char drname[40];
     strcpy(drname, name);
     strcat(drname, ":");
 
-    if (id >= FF_VOLUMES || name[0] == '\0') {
+    if (name[0] == '\0' || strcmp(name, FKNAM) == 0 || devpart == NULL) {
         errno = EINVAL;
         return -1;
     }
@@ -93,19 +102,35 @@ int fsdev_mount_device(const char *name, unsigned int id) {
         errno = ENAMETOOLONG;
         return -1;
     }
-    if (FindDevice(drname) != -1 || g_fsdev_devices[id].setup) {
+
+    if (FindDevice(drname) != -1) {
         errno = EEXIST; /* Device already exists */
+        return -1;
+    }
+    /* Find an unused slot. */
+    for(size_t i = 0; i < FF_VOLUMES; i++) {
+        if (!g_fsdev_devices[i].setup) {
+            device = &g_fsdev_devices[i];
+            break;
+        }
+    }
+    if (device == NULL) {
+        errno = ENOMEM;
         return -1;
     }
 
     strcpy(device->name, name);
 
-    memcpy(&device->devoptab, &g_fsdev_devoptab, sizeof(devoptab_t));
+    device->devoptab = g_fsdev_devoptab;
+    device->devpart = *devpart;
+
     device->devoptab.name = device->name;
     device->devoptab.deviceData = device;
-    VolumeStr[id] = device->name;
 
-    rc = f_mount(&device->fatfs, drname, 1);
+    VolumeStr[device - g_fsdev_devices] = device->name;
+    g_volume_to_devparts[device - g_fsdev_devices] = &device->devpart;
+
+    rc = f_mount(&device->fatfs, drname, initialize_immediately ? 1 : 0);
 
     if (rc != FR_OK) {
         return fsdev_convert_rc(NULL, rc);
@@ -113,7 +138,8 @@ int fsdev_mount_device(const char *name, unsigned int id) {
 
     if (AddDevice(&device->devoptab) == -1) {
         f_unmount(drname);
-        VolumeStr[id] = NULL;
+        g_volume_to_devparts[device - g_fsdev_devices] = NULL;
+        VolumeStr[device - g_fsdev_devices] = FKNAM;
         errno = ENOMEM;
         return -1;
     } else {
@@ -166,24 +192,13 @@ int fsdev_unmount_device(const char *name) {
     if (ret == 0) {
         fsdev_fsdevice_t *device = (fsdev_fsdevice_t *)(GetDeviceOpTab(name)->deviceData);
         RemoveDevice(drname);
+        VolumeStr[device - g_fsdev_devices] = FKNAM;
+        g_volume_to_devparts[device - g_fsdev_devices] = NULL;
+        device->devpart.finalizer(&device->devpart);
         memset(device, 0, sizeof(fsdev_fsdevice_t));
     }
 
     return ret;
-}
-
-int fsdev_mount_all(void) {
-    /* Change this accordingly: */
-    static const char* const volumes[] = { "sdmc" };
-
-    for (size_t i = 0; i < FF_VOLUMES; i++) {
-        int ret = fsdev_mount_device(volumes[i], i);
-        if (ret != 0) {
-            return ret;
-        }
-    }
-
-    return 0;
 }
 
 int fsdev_unmount_all(void) {

@@ -35,9 +35,9 @@ typedef struct efi_header {
     uint32_t entries_crc32;
 } __attribute__((packed, aligned(4))) efi_header_t;
 
-typedef int (*gpt_entry_iterator_t)(const efi_entry_t *entry, size_t entry_offset, FILE *disk);
+typedef int (*gpt_entry_iterator_t)(const efi_entry_t *entry, void *param, size_t entry_offset, FILE *disk);
 
-int gpt_get_header(efi_header_t *out, FILE *disk);
-int gpt_iterate_through_entries(FILE *disk, gpt_entry_iterator_t callback);
+int gpt_get_header(efi_header_t *out, FILE *disk, size_t sector_size);
+int gpt_iterate_through_entries(FILE *disk, size_t sector_size, gpt_entry_iterator_t callback, void *param);
 
 #endif

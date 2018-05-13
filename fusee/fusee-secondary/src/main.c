@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <malloc.h>
 #include "utils.h"
@@ -9,7 +10,8 @@
 #include "nxboot.h"
 #include "console.h"
 #include "sd_utils.h"
-#include "fs_dev.h"
+#include "switch_fs.h"
+#include "gpt.h"
 #include "display/video_fb.h"
 
 extern void (*__program_exit_callback)(int rc);
@@ -23,18 +25,17 @@ static void setup_env(void) {
         generic_panic();
     }
 
-    if(fsdev_mount_all() == -1) {
-        perror("Failed to mount at least one FAT parition");
+    if(switchfs_mount_all() == -1) {
+        perror("Failed to mount at least one parition");
         generic_panic();
     }
-    fsdev_set_default_device("sdmc");
 
     /* TODO: What other hardware init should we do here? */
 }
 
 static void cleanup_env(void) {
     /* Unmount everything (this causes all open files to be flushed and closed) */
-    fsdev_unmount_all();
+    switchfs_unmount_all();
     //console_end();
 }
 

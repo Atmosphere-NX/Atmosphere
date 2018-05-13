@@ -35,4 +35,6 @@ void display_enable_backlight(bool on);
 
 void cluster_enable_cpu0(u64 entry, u32 ns_disable);
 
+void mc_enable_ahb_redirect();
+
 #endif

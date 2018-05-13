@@ -10,20 +10,11 @@
 #include <stdbool.h>
 #include <string.h>
 #include "diskio.h"		/* FatFs lower layer API */
-#include "../../sdmmc.h"
-#include "../../hwinit.h"
+#include "ffconf.h"
+#include "../../device_partition.h"
 
-/* Global sd struct. */
-struct mmc g_sd_mmc = {0};
-static bool g_sd_initialized = false;
-
-static bool g_ahb_redirect_enabled = false;
-
-/*
-Uncomment if needed:
-struct mmc nand_mmc = {0};
-static bool g_nand_initialized = false;
-*/
+/* fs_dev.c */
+extern device_partition_t *g_volume_to_devparts[FF_VOLUMES];
 
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
@@ -46,27 +37,15 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-	if (!g_ahb_redirect_enabled) {
-		mc_enable_ahb_redirect();
-		g_ahb_redirect_enabled = true;
-	}
-
-	switch (pdrv) {
-		case 0: {
-			if (!g_sd_initialized) {
-				int rc = sdmmc_init(&g_sd_mmc, SWITCH_MICROSD);
-				if (rc == 0) {
-					g_sd_initialized = true;
-					return 0;
-				} else {
-					return rc;
-				}
-			} else {
-				return 0;
-			}
-		}
-		default:
-			return STA_NODISK;
+	/* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
+	device_partition_t *devpart = g_volume_to_devparts[pdrv];
+	if (devpart == NULL) {
+		return STA_NODISK;
+	} else if (devpart->initializer != NULL) {
+		int rc = devpart->initializer(devpart);
+		return rc == 0 ? 0 : STA_NOINIT;
+	} else {
+		return 0;
 	}
 }
 
@@ -83,11 +62,15 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-	switch (pdrv) {
-		case 0:
-			return sdmmc_read(&g_sd_mmc, buff, sector, count) == 0 ? RES_OK : RES_ERROR;
-		default:
-			return RES_PARERR;
+	/* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
+	device_partition_t *devpart = g_volume_to_devparts[pdrv];
+	if (devpart == NULL) {
+		return RES_PARERR;
+	} else if (devpart->reader != NULL) {
+		int rc = devpart->reader(devpart, buff, sector, count);
+		return rc == 0 ? 0 : RES_ERROR;
+	} else {
+		return RES_ERROR;
 	}
 }
 
@@ -104,11 +87,15 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-	switch (pdrv) {
-		case 0:
-			return sdmmc_write(&g_sd_mmc, buff, sector, count) == 0 ? RES_OK : RES_ERROR;
-		default:
-			return RES_PARERR;
+	/* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
+	device_partition_t *devpart = g_volume_to_devparts[pdrv];
+	if (devpart == NULL) {
+		return RES_PARERR;
+	} else if (devpart->writer != NULL) {
+		int rc = devpart->writer(devpart, buff, sector, count);
+		return rc == 0 ? 0 : RES_ERROR;
+	} else {
+		return RES_ERROR;
 	}
 }
 
