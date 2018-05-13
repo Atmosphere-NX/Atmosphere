@@ -44,6 +44,7 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
     if (mmcpart->mmc == &g_sd_mmc && !g_sd_mmc_initialized) {
         int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller);
         if (rc == 0) {
+            sdmmc_set_write_enable(mmcpart->mmc, SDMMC_WRITE_ENABLED);
             g_sd_mmc_initialized = true;
         }
         return rc;
