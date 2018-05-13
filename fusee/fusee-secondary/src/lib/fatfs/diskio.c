@@ -24,7 +24,12 @@ DSTATUS disk_status (
 	BYTE pdrv		/* Physical drive nmuber to identify the drive */
 )
 {
-	return 0;
+	device_partition_t *devpart = g_volume_to_devparts[pdrv];
+	if (devpart == NULL) {
+		return STA_NODISK;
+	} else {
+		return devpart->initialized ? 0 : STA_NOINIT;
+	}
 }
 
 
