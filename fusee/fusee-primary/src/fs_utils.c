@@ -1,4 +1,4 @@
-#include "sd_utils.h"
+#include "fs_utils.h"
 #include "hwinit.h"
 #include "sdmmc.h"
 #include "lib/printk.h"
@@ -18,7 +18,7 @@ int mount_sd(void) {
     return mounted_sd;
 }
 
-size_t read_sd_file(void *dst, size_t dst_size, const char *filename) {
+size_t read_from_file(void *dst, size_t dst_size, const char *filename) {
     if (!mounted_sd && mount_sd() == 0) {
         return 0;
     }

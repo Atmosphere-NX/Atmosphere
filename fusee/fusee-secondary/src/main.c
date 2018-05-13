@@ -9,7 +9,7 @@
 #include "stage2.h"
 #include "nxboot.h"
 #include "console.h"
-#include "sd_utils.h"
+#include "fs_utils.h"
 #include "switch_fs.h"
 #include "gpt.h"
 #include "display/video_fb.h"

@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "package2.h"
 #include "stratosphere.h"
-#include "sd_utils.h"
+#include "fs_utils.h"
 
 static ini1_header_t *g_stratosphere_ini1 = NULL;
 
@@ -97,7 +97,7 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, size_t num_inis) {
             snprintf(sd_path, sizeof(sd_path), "atmosphere/titles/%016llX/%016llX.kip", current_kip->title_id, current_kip->title_id);
 
             /* Try to load an override KIP from SD, if possible. */
-            read_size = read_sd_file(current_dst_kip, remaining_size, sd_path);
+            read_size = read_from_file(current_dst_kip, remaining_size, sd_path);
             if (read_size != 0) {
                 kip1_header_t *sd_kip = (kip1_header_t *)(current_dst_kip);
                 if (read_size < sizeof(kip1_header_t) || sd_kip->magic != MAGIC_KIP1) {

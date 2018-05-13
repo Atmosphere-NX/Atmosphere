@@ -2,7 +2,7 @@
 #include "hwinit.h"
 #include "fuse.h"
 #include "se.h"
-#include "sd_utils.h"
+#include "fs_utils.h"
 #include "stage2.h"
 #include "chainloader.h"
 #include "sdmmc.h"
@@ -23,7 +23,7 @@ static char g_bct0_buffer[BCTO_MAX_SIZE];
 "stage2_entrypoint = 0xF0000000\n"
 
 static const char *load_config(void) {
-    if (!read_sd_file(g_bct0_buffer, BCTO_MAX_SIZE, "BCT.ini")) {
+    if (!read_from_file(g_bct0_buffer, BCTO_MAX_SIZE, "BCT.ini")) {
         printk("Failed to read BCT0 from SD!\n");
         printk("[DEBUG] Using default BCT0!\n");
         memcpy(g_bct0_buffer, DEFAULT_BCT0_FOR_DEBUG, sizeof(DEFAULT_BCT0_FOR_DEBUG));

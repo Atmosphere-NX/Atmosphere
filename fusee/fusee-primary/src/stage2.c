@@ -1,7 +1,7 @@
 #include "utils.h"
 #include <stdint.h>
 #include "display/video_fb.h"
-#include "sd_utils.h"
+#include "fs_utils.h"
 #include "stage2.h"
 #include "chainloader.h"
 #include "lib/printk.h"
@@ -105,7 +105,7 @@ void load_stage2(const char *bct0) {
         tmp_addr = config.load_address;
     }
 
-    if (read_sd_file((void *)tmp_addr, size, config.path) != size) {
+    if (read_from_file((void *)tmp_addr, size, config.path) != size) {
         printk("Error: Failed to read stage2 (%s)!\n", config.path);
         generic_panic();
     }

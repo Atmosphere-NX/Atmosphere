@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include "utils.h"
 #include "loader.h"
-#include "sd_utils.h"
+#include "fs_utils.h"
 #include "stage2.h"
 #include "lib/ini.h"
 
@@ -266,7 +266,7 @@ void load_payload(const char *bct0) {
         for (size_t i = 0; i < ctx->nb_files; i++) {
             chainloader_entry_t *entry = &g_chainloader_entries[i];
             entry->src_address = entry->load_address;
-            if (read_sd_file((void *)entry->src_address, entry->size, ctx->file_paths[entry->num]) != entry->size) {
+            if (read_from_file((void *)entry->src_address, entry->size, ctx->file_paths[entry->num]) != entry->size) {
                 printf("Error: Failed to read file %s: %s!\n", ctx->file_paths[entry->num], strerror(errno));
                 generic_panic();
             }
@@ -303,7 +303,7 @@ void load_payload(const char *bct0) {
         for (size_t i = 0; i < ctx->nb_files; i++) {
             chainloader_entry_t *entry = &g_chainloader_entries[i];
             entry->src_address = pos;
-            if (read_sd_file((void *)entry->src_address, entry->size, ctx->file_paths[entry->num]) != entry->size) {
+            if (read_from_file((void *)entry->src_address, entry->size, ctx->file_paths[entry->num]) != entry->size) {
                 printf("Error: Failed to read file %s: %s!\n", ctx->file_paths[entry->num], strerror(errno));
                 generic_panic();
             }
