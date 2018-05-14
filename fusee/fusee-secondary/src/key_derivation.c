@@ -3,6 +3,7 @@
 #include "se.h"
 #include "exocfg.h"
 #include "fuse.h"
+#include "hwinit.h"
 
 static const uint8_t keyblob_seeds[MASTERKEY_REVISION_MAX][0x10] = {
     {0xDF, 0x20, 0x6F, 0x59, 0x44, 0x54, 0xEF, 0xDC, 0x70, 0x74, 0x48, 0x3B, 0x0D, 0xED, 0x9F, 0xD3}, /* Keyblob seed 00. */
@@ -32,21 +33,26 @@ static const uint8_t masterkey_4x_seed[0x10] = {
     0x2D, 0xC1, 0xF4, 0x8D, 0xF3, 0x5B, 0x69, 0x33, 0x42, 0x10, 0xAC, 0x65, 0xDA, 0x90, 0x46, 0x66
 };
 
-static void get_tsec_key(void *dst, const void *tsec_fw, size_t tsec_fw_size) {
-    /* TODO: Implement this method. Attempt to read TSEC fw from NAND, or from SD if that fails. */
+static int get_tsec_key(void *dst, const void *tsec_fw, size_t tsec_fw_size, uint32_t revision) {
+    static uint8_t __attribute__((aligned(256))) tsec_dma_buf[0xF00];
+    memcpy(tsec_dma_buf, tsec_fw, tsec_fw_size);
+    return tsec_query((u32)tsec_dma_buf, dst, revision);
 }
 
-void get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {
+static int get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {
     if (revision >= 0x20) {
+        return -1;
         generic_panic();
     }
 
     if (keyblobs != NULL) {
         *dst = keyblobs[revision];
     } else {
-        generic_panic();
+        return -1;
         /* TODO: what should we do? */
     }
+
+    return 0;
 }
 
 static bool safe_memcmp(uint8_t *a, uint8_t *b, size_t sz) {
@@ -58,7 +64,7 @@ static bool safe_memcmp(uint8_t *a, uint8_t *b, size_t sz) {
 }
 
 /* Derive all Switch keys. */
-void derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size) {
+int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size) {
     uint8_t work_buffer[0x10];
     nx_keyblob_t keyblob;
 
@@ -67,12 +73,16 @@ void derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, u
     set_aes_keyslot_flags(0xD, 0x15);
 
     /* Set TSEC key. */
-    get_tsec_key(work_buffer, tsec_fw, tsec_fw_size);
+    if  (get_tsec_key(work_buffer, tsec_fw, tsec_fw_size, target_firmware) != 0) {
+        return -1;
+    }
     set_aes_keyslot(0xD, work_buffer, 0x10);
 
     /* Get keyblob, always try to set up the highest possible master key. */
     /* TODO: Should we iterate, trying lower keys on failure? */
-    get_keyblob(&keyblob, MASTERKEY_REVISION_500_CURRENT, keyblobs, available_revision);
+    if (get_keyblob(&keyblob, MASTERKEY_REVISION_500_CURRENT, keyblobs, available_revision) != 0) {
+        return -1;
+    }
 
     /* Derive both keyblob key 1, and keyblob key latest. */
     se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, keyblob_seeds[MASTERKEY_REVISION_100_230], 0x10);
@@ -88,7 +98,7 @@ void derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, u
     /* Validate keyblob. */
     se_compute_aes_128_cmac(0xB, work_buffer, 0x10, keyblob.mac + sizeof(keyblob.mac), sizeof(keyblob) - sizeof(keyblob.mac));
     if (safe_memcmp(keyblob.mac, work_buffer, 0x10)) {
-        generic_panic();
+        return -1;
     }
 
     /* Decrypt keyblob. */
@@ -122,11 +132,12 @@ void derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, u
             decrypt_data_into_keyslot(0xC, 0xC, masterkey_seed, 0x10);
             break;
         default:
-            generic_panic();
+            return -1;
     }
 
     /* Setup master key revision, derive older master keys for use. */
     mkey_detect_revision();
+    return 0;
 }
 
 /* Sets final keyslot flags, for handover to TZ/Exosphere. Setting these will prevent the BPMP from using the device key or master key. */
