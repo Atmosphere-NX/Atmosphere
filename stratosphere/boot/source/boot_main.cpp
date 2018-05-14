@@ -1075,7 +1075,7 @@ static int pinmux_update_pad(u64 pinmux_base_vaddr, unsigned int pinmux_idx, uns
     return pinmux_val;
 }
 
-static const std::tuple<u32, u32, u32> g_drivepad_map[] = {
+static const std::tuple<u32, u32> g_drivepad_map[] = {
     {0x000008E4, 0x01F1F000},   /* AlsProxInt */
     {0x000008E8, 0x01F1F000},   /* ApReady */
     {0x000008EC, 0x01F1F000},   /* ApWakeBt */
