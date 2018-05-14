@@ -6,6 +6,9 @@
 #include "../boost/callable_traits.hpp"
 #include <type_traits>
 
+#pragma GCC diagnostic push 
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+
 /* Represents an A descriptor. */
 template <typename T>
 struct InBuffer {
@@ -462,3 +465,5 @@ Result WrapStaticIpcCommandImpl(IpcParsedCommand& r, IpcCommand &out_command, u8
     
     return std::apply(Encoder<OutArgs>{out_command}, result);
 }
+
+#pragma GCC diagnostic pop
