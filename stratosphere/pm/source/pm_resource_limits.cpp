@@ -123,7 +123,6 @@ void ResourceLimitUtils::InitializeLimits() {
 }
 
 void ResourceLimitUtils::EnsureApplicationResourcesAvailable() {
-    Result rc;
     Handle application_reslimit_h = g_resource_limit_handles[1];
     for (unsigned int i = 0; i < 5; i++) {
         u64 result;

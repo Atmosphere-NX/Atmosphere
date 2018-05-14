@@ -68,7 +68,7 @@ Result ContentManagement::ResolveContentPath(char *out_path, u64 tid, FsStorageI
     }
     
     if (R_SUCCEEDED(rc = lrRegLrResolveProgramPath(&reg, tid, path))) {
-        strncpy(out_path, path, sizeof(path));
+        strncpy(out_path, path, FS_MAX_PATH);
     } else if (rc != 0x408) {
         return rc;
     }
@@ -84,7 +84,7 @@ Result ContentManagement::ResolveContentPath(char *out_path, u64 tid, FsStorageI
     }
     
     if (R_SUCCEEDED(rc = lrLrResolveProgramPath(&lr, tid, path))) {
-        strncpy(out_path, path, sizeof(path));
+        strncpy(out_path, path, FS_MAX_PATH);
     }
     
     serviceClose(&lr.s);

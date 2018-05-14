@@ -22,7 +22,7 @@ Result LaunchQueue::add(u64 tid, const char *args, u64 arg_size) {
 }
 
 Result LaunchQueue::add_copy(u64 tid_base, u64 tid) {
-    unsigned int idx = get_index(tid_base);
+    int idx = get_index(tid_base);
     if (idx == LAUNCH_QUEUE_FULL) {
         return 0x0;
     }
