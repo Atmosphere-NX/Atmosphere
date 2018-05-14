@@ -1,4 +1,5 @@
-SUBFOLDERS := exosphere fusee stratosphere thermosphere
+KIPS := boot boot2 loader pm sm
+SUBFOLDERS := libstratosphere $(KIPS)
 
 TOPTARGETS := all clean
 
@@ -7,6 +8,6 @@ $(TOPTARGETS): $(SUBFOLDERS)
 $(SUBFOLDERS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
-fusee: exosphere thermosphere stratosphere
- 
+$(KIPS): libstratosphere
+
 .PHONY: $(TOPTARGETS) $(SUBFOLDERS)
