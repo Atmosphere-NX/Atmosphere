@@ -20,7 +20,8 @@ static int stage2_ini_handler(void *user, const char *section, const char *name,
     uintptr_t x = 0;
     if (strcmp(section, "stage1") == 0) {
         if (strcmp(name, STAGE2_NAME_KEY) == 0) {
-            strncpy(config->path, value, sizeof(config->path));
+            strncpy(config->path, value, sizeof(config->path) - 1);
+            config->path[sizeof(config->path) - 1]  = '\0';
         } else if (strcmp(name, STAGE2_ADDRESS_KEY) == 0) {
             /* Read in load address as a hex string. */
             sscanf(value, "%x", &x);

@@ -25,7 +25,8 @@ static int loadlist_entry_ini_handler(void *user, const char *section, const cha
             ext = name + strlen(load_file_ctx->key);
             if (strcmp(ext, "_path") == 0) {
                 /* Copy in the path. */
-                strncpy(load_file_ctx->path, value, sizeof(load_file_ctx->path));
+                strncpy(load_file_ctx->path, value, sizeof(load_file_ctx->path) - 1);
+                load_file_ctx->path[sizeof(load_file_ctx->path) - 1] = '\0';
             } else if (strcmp(ext, "_addr") == 0) {
                 /* Read in load address as a hex string. */
                 sscanf(value, "%x", &x);

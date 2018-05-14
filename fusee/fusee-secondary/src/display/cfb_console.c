@@ -555,7 +555,7 @@ static void console_scrollup (void)
 			 CONFIG_VIDEO_VISIBLE_ROWS - video_logo_height - VIDEO_FONT_HEIGHT	/* frame height */
 		);
 #else
-	memcpy(CONSOLE_ROW_FIRST, CONSOLE_ROW_SECOND,
+	memmove(CONSOLE_ROW_FIRST, CONSOLE_ROW_SECOND,
 	       CONSOLE_SCROLL_SIZE);
 #endif
 
