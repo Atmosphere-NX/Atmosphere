@@ -4,6 +4,8 @@
 #include "utils.h"
 #include "chainloader.h"
 
+#define LOADER_MAX_PATH_SIZE 255
+
 typedef struct {
     char path[0x100];
     const char *key;
@@ -15,13 +17,13 @@ typedef struct {
     const char *bct0;
     uintptr_t chainload_entrypoint;
     size_t file_id_of_entrypoint;
-    size_t nb_files;
-    load_file_t package2_loadfile;
-    load_file_t exosphere_loadfile;
-    load_file_t tsecfw_loadfile;
-    load_file_t warmboot_loadfile;
-    char custom_splash_path[0x100];
-    char file_paths[CHAINLOADER_MAX_ENTRIES][0x100];
+    size_t nb_files_to_load;
+    char package2_path[LOADER_MAX_PATH_SIZE+1];
+    char exosphere_path[LOADER_MAX_PATH_SIZE+1];
+    char tsecfw_path[LOADER_MAX_PATH_SIZE+1];
+    char warmboot_path[LOADER_MAX_PATH_SIZE+1];
+    char custom_splash_path[LOADER_MAX_PATH_SIZE+1];
+    char file_paths_to_load[CHAINLOADER_MAX_ENTRIES][LOADER_MAX_PATH_SIZE+1];
 } loader_ctx_t;
 
 #define LOADER_ENTRYPOINT_KEY "entrypoint"

@@ -33,7 +33,7 @@ int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_
 
     pk1_offset = 0x4000 * pk1_info->start_blk + 0x200 * pk1_info->start_page;
 
-    (*package1loader) = memalign(16, *package1loader_size);
+    (*package1loader) = memalign(0x10000, *package1loader_size);
 
     if (*package1loader == NULL) {
         errno = ENOMEM;

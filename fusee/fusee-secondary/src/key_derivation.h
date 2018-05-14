@@ -31,6 +31,7 @@ typedef struct nx_keyblob_t {
     };
 } nx_keyblob_t;
 
+/* TSEC fw must be 0x100-byte-aligned. */
 int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size);
 void finalize_nx_keydata(uint32_t target_firmware);
 

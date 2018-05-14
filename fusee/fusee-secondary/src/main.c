@@ -82,7 +82,7 @@ int main(int argc, void **argv) {
         nxboot_main();
     } else {
         /* TODO: What else do we want to do in terms of argc/argv? */
-        const char *path = get_loader_ctx()->file_paths[get_loader_ctx()->file_id_of_entrypoint];
+        const char *path = get_loader_ctx()->file_paths_to_load[get_loader_ctx()->file_id_of_entrypoint];
         printf("Now chainloading.\n");
         g_chainloader_argc = 1;
         strcpy(g_chainloader_arg_data, path);

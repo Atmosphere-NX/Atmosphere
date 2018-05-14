@@ -34,9 +34,7 @@ static const uint8_t masterkey_4x_seed[0x10] = {
 };
 
 static int get_tsec_key(void *dst, const void *tsec_fw, size_t tsec_fw_size, uint32_t revision) {
-    static uint8_t __attribute__((aligned(256))) tsec_dma_buf[0xF00];
-    memcpy(tsec_dma_buf, tsec_fw, tsec_fw_size);
-    return tsec_query((u32)tsec_dma_buf, dst, revision);
+    return tsec_query((u32)tsec_fw, dst, revision);
 }
 
 static int get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {

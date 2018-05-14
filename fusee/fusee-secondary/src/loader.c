@@ -42,13 +42,7 @@ static int loadlist_entry_ini_handler(void *user, const char *section, const cha
     return 1;
 }
 
-bool validate_load_address(uintptr_t load_addr) {
-    /* TODO: Actually validate addresses. */
-    (void)(load_addr);
-    return true;
-}
-
-void load_list_entry(const char *key) {
+static void load_list_entry(const char *key) {
     load_file_t load_file_ctx = {0};
     struct stat st;
     size_t size;
@@ -62,7 +56,12 @@ void load_list_entry(const char *key) {
     }
 
     if (load_file_ctx.load_address == 0 || load_file_ctx.path[0] == '\x00') {
-        printf("Error: Failed to determine where to load %s!\n", key);
+        printf("Error: Failed to determine where to load %s from!\n", key);
+        generic_panic();
+    }
+
+    if (strlen(load_file_ctx.path) > LOADER_MAX_PATH_SIZE) {
+        printf("Error: The filename for %s is too long!\n", key);
         generic_panic();
     }
 
@@ -87,26 +86,16 @@ void load_list_entry(const char *key) {
     entry->load_address = load_file_ctx.load_address;
     entry->size = size;
     entry->num = entry_num;
-    strcpy(get_loader_ctx()->file_paths[entry_num], load_file_ctx.path);
-    get_loader_ctx()->nb_files++;
+    get_loader_ctx()->nb_files_to_load++;
 
-    /* Check for special keys. */
-    if (strcmp(key, LOADER_PACKAGE2_KEY) == 0) {
-        get_loader_ctx()->package2_loadfile = load_file_ctx;
-    } else if (strcmp(key, LOADER_EXOSPHERE_KEY) == 0) {
-        get_loader_ctx()->exosphere_loadfile = load_file_ctx;
-    } else if (strcmp(key, LOADER_TSECFW_KEY) == 0) {
-        get_loader_ctx()->tsecfw_loadfile = load_file_ctx;
-    } else if (strcmp(key, LOADER_WARMBOOT_KEY) == 0) {
-        get_loader_ctx()->warmboot_loadfile = load_file_ctx;
-    }
+    strcpy(get_loader_ctx()->file_paths_to_load[entry_num], load_file_ctx.path);
 }
 
-void parse_loadlist(const char *ll) {
+static void parse_loadlist(const char *ll) {
     printf("Parsing load list: %s\n", ll);
 
     char load_list[0x200] = {0};
-    strncpy(load_list, ll, 0x200);
+    strncpy(load_list, ll, 0x200 - 1);
 
     char *entry, *p;
 
@@ -153,7 +142,20 @@ static int loadlist_ini_handler(void *user, const char *section, const char *nam
             sscanf(value, "%x", &x);
             loader_ctx->chainload_entrypoint = x;
         } else if (strcmp(name, LOADER_CUSTOMSPLASH_KEY) == 0) {
-            strncpy(loader_ctx->custom_splash_path, value, sizeof(loader_ctx->custom_splash_path));
+            strncpy(loader_ctx->custom_splash_path, value, LOADER_MAX_PATH_SIZE);
+            loader_ctx->custom_splash_path[LOADER_MAX_PATH_SIZE] = '\0';
+        } else if (strcmp(name, LOADER_PACKAGE2_KEY) == 0) {
+            strncpy(loader_ctx->package2_path, value, LOADER_MAX_PATH_SIZE);
+            loader_ctx->package2_path[LOADER_MAX_PATH_SIZE] = '\0';
+        } else if (strcmp(name, LOADER_EXOSPHERE_KEY) == 0) {
+            strncpy(loader_ctx->exosphere_path, value, LOADER_MAX_PATH_SIZE);
+            loader_ctx->exosphere_path[LOADER_MAX_PATH_SIZE] = '\0';
+        } else if (strcmp(name, LOADER_TSECFW_KEY) == 0) {
+            strncpy(loader_ctx->tsecfw_path, value, LOADER_MAX_PATH_SIZE);
+            loader_ctx->tsecfw_path[LOADER_MAX_PATH_SIZE] = '\0';
+        } else if (strcmp(name, LOADER_WARMBOOT_KEY) == 0) {
+            strncpy(loader_ctx->warmboot_path, value, LOADER_MAX_PATH_SIZE);
+            loader_ctx->warmboot_path[LOADER_MAX_PATH_SIZE] = '\0';
         } else {
             return 0;
         }
@@ -209,7 +211,6 @@ void load_payload(const char *bct0) {
         nonallocatable_entries[5].size = __end__ - __start__;
     }
 
-
     /* Set BCT0 global. */
     ctx->bct0 = bct0;
 
@@ -218,13 +219,18 @@ void load_payload(const char *bct0) {
         generic_panic();
     }
 
+    if (ctx->chainload_entrypoint == 0 || ctx->nb_files_to_load > 0) {
+        printf("Error: loadlist must be empty when booting Horizon!\n");
+        generic_panic();
+    }
+
     /* Sort the entries by ascending load addresses */
     qsort(g_chainloader_entries, g_chainloader_num_entries, sizeof(chainloader_entry_t), chainloader_entry_comparator);
 
     /* Check for possible overlap and find the entrypoint, also determine whether we can load in-place */
-    ctx->file_id_of_entrypoint = ctx->nb_files;
-    for (size_t i = 0; i < ctx->nb_files; i++) {
-        if (i != ctx->nb_files - 1 &&
+    ctx->file_id_of_entrypoint = ctx->nb_files_to_load;
+    for (size_t i = 0; i < ctx->nb_files_to_load; i++) {
+        if (i != ctx->nb_files_to_load - 1 &&
             overlaps(
                 g_chainloader_entries[i].load_address,
                 g_chainloader_entries[i].load_address + g_chainloader_entries[i].size,
@@ -234,8 +240,8 @@ void load_payload(const char *bct0) {
         ) {
             printf(
                 "Error: Loading ranges for files %s and %s overlap!\n",
-                ctx->file_paths[g_chainloader_entries[i].num],
-                ctx->file_paths[g_chainloader_entries[i + 1].num]
+                ctx->file_paths_to_load[g_chainloader_entries[i].num],
+                ctx->file_paths_to_load[g_chainloader_entries[i + 1].num]
             );
             generic_panic();
         }
@@ -252,22 +258,17 @@ void load_payload(const char *bct0) {
         );
     }
 
-    if (ctx->chainload_entrypoint != 0 && ctx->file_id_of_entrypoint >= ctx->nb_files) {
+    if (ctx->chainload_entrypoint != 0 && ctx->file_id_of_entrypoint >= ctx->nb_files_to_load) {
         printf("Error: Entrypoint not in range of any of the files!\n");
         generic_panic();
     }
 
-    if (ctx->chainload_entrypoint == 0 && !can_load_in_place) {
-        printf("Error: Files have to be loaded in place when booting Horizon!\n");
-        generic_panic();
-    }
-
     if (can_load_in_place) {
-        for (size_t i = 0; i < ctx->nb_files; i++) {
+        for (size_t i = 0; i < ctx->nb_files_to_load; i++) {
             chainloader_entry_t *entry = &g_chainloader_entries[i];
             entry->src_address = entry->load_address;
-            if (read_from_file((void *)entry->src_address, entry->size, ctx->file_paths[entry->num]) != entry->size) {
-                printf("Error: Failed to read file %s: %s!\n", ctx->file_paths[entry->num], strerror(errno));
+            if (read_from_file((void *)entry->src_address, entry->size, ctx->file_paths_to_load[entry->num]) != entry->size) {
+                printf("Error: Failed to read file %s: %s!\n", ctx->file_paths_to_load[entry->num], strerror(errno));
                 generic_panic();
             }
         }
@@ -275,7 +276,7 @@ void load_payload(const char *bct0) {
         size_t total_size = 0;
         uintptr_t carveout, min_addr, max_addr, pos;
 
-        for (size_t i = 0; i < ctx->nb_files; i++) {
+        for (size_t i = 0; i < ctx->nb_files_to_load; i++) {
             total_size += g_chainloader_entries[i].size;
         }
 
@@ -300,11 +301,11 @@ void load_payload(const char *bct0) {
 
         /* Finally, read the files into the carveout */
         pos = carveout;
-        for (size_t i = 0; i < ctx->nb_files; i++) {
+        for (size_t i = 0; i < ctx->nb_files_to_load; i++) {
             chainloader_entry_t *entry = &g_chainloader_entries[i];
             entry->src_address = pos;
-            if (read_from_file((void *)entry->src_address, entry->size, ctx->file_paths[entry->num]) != entry->size) {
-                printf("Error: Failed to read file %s: %s!\n", ctx->file_paths[entry->num], strerror(errno));
+            if (read_from_file((void *)entry->src_address, entry->size, ctx->file_paths_to_load[entry->num]) != entry->size) {
+                printf("Error: Failed to read file %s: %s!\n", ctx->file_paths_to_load[entry->num], strerror(errno));
                 generic_panic();
             }
             pos += entry->size;
