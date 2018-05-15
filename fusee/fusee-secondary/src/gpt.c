@@ -79,7 +79,6 @@ int gpt_iterate_through_entries(FILE *disk, size_t sector_size, gpt_entry_iterat
 
     /* Iterate through the entries. */
     for (uint32_t i = 0; i < hdr.entry_count; i++) {
-        printf("%lu/%lu\n", i, hdr.entry_count);
         if (fread(&entry, sizeof(efi_entry_t), 1, disk) == 0) {
             return -1;
         }
