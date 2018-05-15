@@ -12,7 +12,7 @@ int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_
 
     size_t fpos, pk1_offset;
 
-    if (package1loader == NULL || package1loader_size != NULL || keyblobs == NULL || revision == NULL || boot0 == NULL) {
+    if (package1loader == NULL || package1loader_size == NULL || keyblobs == NULL || revision == NULL || boot0 == NULL) {
         errno = EINVAL;
         return -1;
     }
