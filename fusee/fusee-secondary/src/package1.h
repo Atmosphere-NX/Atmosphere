@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include "key_derivation.h"
 
+#define PACKAGE1LOADER_SIZE_MAX 0x40000
+
 typedef struct package1_header_t {
     char magic[4];
     uint32_t warmboot_size;

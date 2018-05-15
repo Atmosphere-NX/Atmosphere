@@ -7,32 +7,44 @@
 #include "se.h"
 
 int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0) {
-    static nvboot_config_table bct = {0}; /* Normal firmware BCT, primary. TODO: check? */
-    nv_bootloader_info *pk1_info = &bct.bootloader[0]; /* TODO: check? */
-
-    size_t fpos, pk1_offset;
+    nvboot_config_table *bct; /* Normal firmware BCT, primary. TODO: check? */
+    nv_bootloader_info *pk1l_info; /* TODO: check? */
+    size_t fpos, pk1l_offset;
+    union {
+        nx_keyblob_t keyblob;
+        uint8_t sector[0x200];
+    } d;
 
     if (package1loader == NULL || package1loader_size == NULL || keyblobs == NULL || revision == NULL || boot0 == NULL) {
         errno = EINVAL;
         return -1;
     }
 
+    bct = malloc(sizeof(nvboot_config_table));
+    if (bct == NULL) {
+        errno = ENOMEM;
+        return -1;
+    }
+    pk1l_info = &bct->bootloader[0];
+
     fpos = ftell(boot0);
 
     /* Read the BCT. */
-    if (fread(&bct, sizeof(nvboot_config_table), 1, boot0) == 0) {
+    if (fread(bct, sizeof(nvboot_config_table), 1, boot0) == 0) {
+        free(bct);
         return -1;
     }
-    if (bct.bootloader_used < 1) {
+    if (bct->bootloader_used < 1) {
+        free(bct);
         errno = EILSEQ;
         return -1;
     }
 
-    *revision = pk1_info->attribute;
-    *package1loader_size = pk1_info->length;
+    *revision = pk1l_info->attribute;
+    *package1loader_size = pk1l_info->length;
 
-    pk1_offset = 0x4000 * pk1_info->start_blk + 0x200 * pk1_info->start_page;
-
+    pk1l_offset = 0x4000 * pk1l_info->start_blk + 0x200 * pk1l_info->start_page;
+    free(bct);
     (*package1loader) = memalign(0x10000, *package1loader_size);
 
     if (*package1loader == NULL) {
@@ -40,27 +52,23 @@ int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_
         return -1;
     }
 
-    /* Read the pk1/pk1l. */
-    if (fseek(boot0, fpos + pk1_offset, SEEK_SET) != 0) {
+    /* Read the pk1/pk1l, and skip the backup too. */
+    if (fseek(boot0, fpos + pk1l_offset, SEEK_SET) != 0) {
         return -1;
     }
     if (fread(*package1loader, *package1loader_size, 1, boot0) == 0) {
         return -1;
     }
-
-    /* Skip the backup pk1/pk1l. */
-    if (fseek(boot0, *package1loader_size, SEEK_CUR) != 0) {
+    if (fseek(boot0, fpos + pk1l_offset + 2 * PACKAGE1LOADER_SIZE_MAX, SEEK_SET) != 0) {
         return -1;
     }
 
     /* Read the full keyblob area.*/
     for (size_t i = 0; i < 32; i++) {
-        if (fread(&keyblobs[i], sizeof(nx_keyblob_t), 1, boot0) == 0) {
+        if (fread(d.sector, 0x200, 1, boot0) == 0) {
             return -1;
         }
-        if (fseek(boot0, 0x200 - sizeof(nx_keyblob_t), SEEK_CUR)) {
-            return -1;
-        }
+        keyblobs[i] = d.keyblob;
     }
 
     return 0;
