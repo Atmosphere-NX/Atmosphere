@@ -41,6 +41,7 @@
 *.nro
 *.nacp
 *.pfs0
+*.kip
 
 # Debug files
 *.dSYM/
