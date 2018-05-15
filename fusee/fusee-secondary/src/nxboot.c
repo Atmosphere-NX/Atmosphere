@@ -164,7 +164,7 @@ void nxboot_main(void) {
             printf("Error: Package2 from %s is too big!\n", loader_ctx->package2_path);
             generic_panic();
         }
-    
+
         if (read_from_file(package2, package2_size, loader_ctx->package2_path) != package2_size) {
             printf("Error: Could not read Package2 from %s!\n", loader_ctx->package2_path);
             generic_panic();
@@ -183,7 +183,7 @@ void nxboot_main(void) {
     }
 
     /* Patch package2, adding Thermosphère + custom KIPs. */
-    package2_rebuild_and_copy(package2);
+    package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
     /* Copy Exophère to a good location (or read it directly to it.) */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware <= EXOSPHERE_TARGET_FIRMWARE_400) {
@@ -202,7 +202,7 @@ void nxboot_main(void) {
             printf(u8"Error: Exosphère from %s is too big!\n", loader_ctx->exosphere_path);
             generic_panic();
         }
-    
+
         if (read_from_file(exosphere_memaddr, exosphere_size, loader_ctx->exosphere_path) != exosphere_size) {
             printf(u8"Error: Could not read Exosphère from %s!\n", loader_ctx->exosphere_path);
             generic_panic();

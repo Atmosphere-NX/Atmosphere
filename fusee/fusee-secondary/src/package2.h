@@ -53,6 +53,6 @@ typedef struct {
     };
 } package2_header_t;
 
-void package2_rebuild_and_copy(void *package2_address);
+void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware);
 
 #endif

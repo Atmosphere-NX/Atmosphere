@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include "exocfg.h"
 #include "utils.h"
 #include "package2.h"
 #include "stratosphere.h"
@@ -15,13 +16,19 @@ extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size;
 
 /* GCC doesn't consider the size as const... we have to write it ourselves. */
 
-ini1_header_t *stratosphere_get_ini1(void) {
+ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
     //const uint8_t *boot_kip = NULL;
     const uint32_t boot_kip_size = 0;
     uint8_t *data;
 
     if (g_stratosphere_ini1 != NULL) {
         return g_stratosphere_ini1;
+    }
+
+    if (target_firmware <= EXOSPHERE_TARGET_FIRMWARE_100) {
+        /* TODO. */
+    } else {
+        /* TODO. */
     }
 
     size_t size = sizeof(ini1_header_t) + loader_kip_size + pm_kip_size + sm_kip_size + boot_kip_size;

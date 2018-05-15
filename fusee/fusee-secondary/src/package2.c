@@ -10,13 +10,12 @@
 static void package2_decrypt(package2_header_t *package2);
 static size_t package2_get_thermosphere(void **thermosphere);
 static void package2_patch_kernel(void *kernel, size_t kernel_size);
-static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1);
+static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware);
 static void package2_append_section(size_t id, package2_header_t *package2, void *data, size_t size);
 static void package2_fixup_header_and_section_hashes(package2_header_t *package2, size_t size);
 
-void package2_rebuild_and_copy(void *package2_address) {
-    uintptr_t pk2da = (uintptr_t)package2_address + sizeof(package2_header_t);
-    package2_header_t *package2 = (package2_header_t *)package2_address;
+void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware) {
+    uintptr_t pk2da = (uintptr_t)package2 + sizeof(package2_header_t);
     package2_header_t *rebuilt_package2;
     size_t rebuilt_package2_size;
     void *kernel;
@@ -42,7 +41,7 @@ void package2_rebuild_and_copy(void *package2_address) {
     package2_patch_kernel(kernel, kernel_size);
 
     /* Perform any patches to the INI1, rebuilding it (This is where our built-in sysmodules will be added.) */
-    rebuilt_ini1 = package2_rebuild_ini1((ini1_header_t *)(pk2da + package2->metadata.section_offsets[PACKAGE2_SECTION_INI1]));
+    rebuilt_ini1 = package2_rebuild_ini1((ini1_header_t *)(pk2da + package2->metadata.section_offsets[PACKAGE2_SECTION_INI1]), target_firmware);
 
     /* Allocate the rebuilt package2. */
     rebuilt_package2_size = sizeof(package2_header_t);
@@ -234,6 +233,9 @@ static void package2_decrypt(package2_header_t *package2) {
 }
 
 static size_t package2_get_thermosphere(void **thermosphere) {
+    /*extern const uint8_t thermosphere_bin[];
+    extern const uint32_t thermosphere_bin_size;*/
+    /* TODO: enable when tested. */
     (*thermosphere) = NULL;
     return 0;
 }
@@ -245,12 +247,12 @@ static void package2_patch_kernel(void *kernel, size_t size) {
 }
 
 
-static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1) {
+static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware) {
     /* TODO: Do we want to support loading another INI from sd:/whatever/INI1.bin? */
     ini1_header_t *inis_to_merge[STRATOSPHERE_INI1_MAX] = {0};
     ini1_header_t *merged;
 
-    inis_to_merge[STRATOSPHERE_INI1_EMBEDDED] = stratosphere_get_ini1();
+    inis_to_merge[STRATOSPHERE_INI1_EMBEDDED] = stratosphere_get_ini1(target_firmware);
     inis_to_merge[STRATOSPHERE_INI1_PACKAGE2] = ini1;
 
     /* Merge all of the INI1s. */
