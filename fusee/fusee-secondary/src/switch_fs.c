@@ -111,9 +111,9 @@ static int switchfs_bis_crypto_encrypt(device_partition_t *devpart, uint64_t sec
 }
 
 static mmc_partition_info_t g_sd_mmcpart = { &g_sd_mmc, SWITCH_MICROSD, SDMMC_PARTITION_USER };
-static mmc_partition_info_t g_nand_boot0_mmcpart = { &g_sd_mmc, SWITCH_EMMC, SDMMC_PARTITION_BOOT0 };
-static mmc_partition_info_t g_nand_boot1_mmcpart = { &g_sd_mmc, SWITCH_EMMC, SDMMC_PARTITION_BOOT1 };
-static mmc_partition_info_t g_nand_user_mmcpart = { &g_sd_mmc, SWITCH_EMMC, SDMMC_PARTITION_USER };
+static mmc_partition_info_t g_nand_boot0_mmcpart = { &g_nand_mmc, SWITCH_EMMC, SDMMC_PARTITION_BOOT0 };
+static mmc_partition_info_t g_nand_boot1_mmcpart = { &g_nand_mmc, SWITCH_EMMC, SDMMC_PARTITION_BOOT1 };
+static mmc_partition_info_t g_nand_user_mmcpart = { &g_nand_mmc, SWITCH_EMMC, SDMMC_PARTITION_USER };
 
 static const device_partition_t g_mmc_devpart_template = {
     .sector_size = 512,
