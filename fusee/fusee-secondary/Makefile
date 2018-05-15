@@ -37,9 +37,7 @@ LDFLAGS = -specs=linker.specs -g $(ARCH)
 
 bundled =	$(dir_exosphere)/out/exosphere.bin $(dir_thermosphere)/out/thermosphere.bin \
 			$(dir_stratosphere)/loader/loader.kip $(dir_stratosphere)/pm/pm.kip \
-			$(dir_stratosphere)/sm/sm.kip
-
-#$(dir_stratosphere)/boot/boot.kip $(dir_stratosphere)/boot2/boot2.kip
+			$(dir_stratosphere)/sm/sm.kip $(dir_stratosphere)/boot/boot_100.kip $(dir_stratosphere)/boot/boot_200.kip
 
 objects =	$(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
 			$(patsubst $(dir_source)/%.c, $(dir_build)/%.o, \

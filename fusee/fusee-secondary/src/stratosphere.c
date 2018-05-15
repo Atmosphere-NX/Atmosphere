@@ -9,16 +9,16 @@
 
 static ini1_header_t *g_stratosphere_ini1 = NULL;
 
-//extern const uint8_t boot_100_kip[], boot_200_kip[];
+extern const uint8_t boot_100_kip[], boot_200_kip[];
 extern const uint8_t loader_kip[], pm_kip[], sm_kip[];
-//extern const uint32_t boot_100_kip_size, boot_200_kip_size;
+extern const uint32_t boot_100_kip_size, boot_200_kip_size;
 extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size;
 
 /* GCC doesn't consider the size as const... we have to write it ourselves. */
 
 ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
-    //const uint8_t *boot_kip = NULL;
-    const uint32_t boot_kip_size = 0;
+    const uint8_t *boot_kip = NULL;
+    uint32_t boot_kip_size = 0;
     uint8_t *data;
 
     if (g_stratosphere_ini1 != NULL) {
@@ -26,9 +26,11 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
     }
 
     if (target_firmware <= EXOSPHERE_TARGET_FIRMWARE_100) {
-        /* TODO. */
+        boot_kip = boot_100_kip;
+        boot_kip_size = boot_100_kip_size;
     } else {
-        /* TODO. */
+        boot_kip = boot_200_kip;
+        boot_kip_size = boot_200_kip_size;
     }
 
     size_t size = sizeof(ini1_header_t) + loader_kip_size + pm_kip_size + sm_kip_size + boot_kip_size;
@@ -56,7 +58,7 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
     memcpy(data, sm_kip, sm_kip_size);
     data += sm_kip_size;
 
-//    memcpy(data, boot_kip, boot_kip_size);
+    memcpy(data, boot_kip, boot_kip_size);
     data += boot_kip_size;
 
     return g_stratosphere_ini1;
