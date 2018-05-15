@@ -8,12 +8,23 @@
 
 static ini1_header_t *g_stratosphere_ini1 = NULL;
 
+//extern const uint8_t boot_100_kip[], boot_200_kip[];
+extern const uint8_t loader_kip[], pm_kip[], sm_kip[];
+//extern const uint32_t boot_100_kip_size, boot_200_kip_size;
+extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size;
+
+/* GCC doesn't consider the size as const... we have to write it ourselves. */
+
 ini1_header_t *stratosphere_get_ini1(void) {
+    //const uint8_t *boot_kip = NULL;
+    const uint32_t boot_kip_size = 0;
+    uint8_t *data;
+
     if (g_stratosphere_ini1 != NULL) {
         return g_stratosphere_ini1;
     }
 
-    size_t size = 0; /* TODO */
+    size_t size = sizeof(ini1_header_t) + loader_kip_size + pm_kip_size + sm_kip_size + boot_kip_size;
     g_stratosphere_ini1 = (ini1_header_t *)malloc(size);
 
     if (g_stratosphere_ini1 != NULL) {
@@ -22,11 +33,24 @@ ini1_header_t *stratosphere_get_ini1(void) {
     }
 
     g_stratosphere_ini1->magic = MAGIC_INI1;
-    g_stratosphere_ini1->size = sizeof(ini1_header_t);
-    g_stratosphere_ini1->num_processes = 0;
+    g_stratosphere_ini1->size = size;
+    g_stratosphere_ini1->num_processes = 4;
     g_stratosphere_ini1->_0xC = 0;
 
-    /* TODO: When we have processes, copy them into ini1_header->kip_data here. */
+    data = g_stratosphere_ini1->kip_data;
+
+    /* Copy our processes. */
+    memcpy(data, loader_kip, loader_kip_size);
+    data += loader_kip_size;
+
+    memcpy(data, pm_kip, pm_kip_size);
+    data += pm_kip_size;
+
+    memcpy(data, sm_kip, sm_kip_size);
+    data += sm_kip_size;
+
+//    memcpy(data, boot_kip, boot_kip_size);
+    data += boot_kip_size;
 
     return g_stratosphere_ini1;
 }
