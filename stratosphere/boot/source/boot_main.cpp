@@ -13,6 +13,7 @@
 #define MAX_GPIOS 0x3D
 #define MAX_PINMUX 0xA2
 #define MAX_PINMUX_5X 0xAF
+#define MAX_PINMUX_DRIVEPAD 0x2F
 
 extern "C" {
     extern u32 __start__;
@@ -1043,7 +1044,6 @@ static int pinmux_update_pad(u64 pinmux_base_vaddr, unsigned int pinmux_idx, uns
     
     /* Adjust Preemp */
     if (pinmux_config_mask_val & 0x10000) {
-        
         /* This pin supports Preemp change */
         if (pinmux_mask_val & 0x8000) {
             /* Change Preemp */
@@ -1075,7 +1075,7 @@ static int pinmux_update_pad(u64 pinmux_base_vaddr, unsigned int pinmux_idx, uns
     return pinmux_val;
 }
 
-static const std::tuple<u32, u32> g_drivepad_map[] = {
+static const std::tuple<u32, u32> g_pinmux_drivepad_map[] = {
     {0x000008E4, 0x01F1F000},   /* AlsProxInt */
     {0x000008E8, 0x01F1F000},   /* ApReady */
     {0x000008EC, 0x01F1F000},   /* ApWakeBt */
@@ -1226,6 +1226,135 @@ static const std::tuple<u32, u32> g_drivepad_map[] = {
     {0x00000B6C, 0x01F1F000},   /* WifiWakeAp */
 };
 
+static const std::tuple<u32, u32, u32> g_pinmux_drivepad_config_map[] = {
+    {0x04, 0x01010000, 0x01F1F000},
+    {0x0D, 0x01010000, 0x01F1F000},
+    {0x10, 0x01010000, 0x01F1F000},
+    {0x12, 0x01010000, 0x01F1F000},
+    {0x13, 0x01010000, 0x01F1F000},
+    {0x14, 0x0001F000, 0x01F1F000},
+    {0x15, 0x0001F000, 0x01F1F000},
+    {0x24, 0x01010000, 0x01F1F000},
+    {0x25, 0x01010000, 0x01F1F000},
+    {0x26, 0x01010000, 0x01F1F000},
+    {0x27, 0x01010000, 0x01F1F000},
+    {0x28, 0x01010000, 0x01F1F000},
+    {0x29, 0x01010000, 0x01F1F000},
+    {0x2A, 0x01010000, 0x01F1F000},
+    {0x2B, 0x01010000, 0x01F1F000},
+    {0x2C, 0x01F1F000, 0x01F1F000},
+    {0x2D, 0x01F1F000, 0x01F1F000},
+    {0x2F, 0x01F1F000, 0x01F1F000},
+    {0x30, 0x01404000, 0x01F1F000},
+    {0x31, 0x0001F000, 0x01F1F000},
+    {0x32, 0x0001F000, 0x01F1F000},
+    {0x33, 0x0001F000, 0x01F1F000},
+    {0x34, 0x0001F000, 0x01F1F000},
+    {0x35, 0x00007000, 0x01F1F000},
+    {0x36, 0x00007000, 0x01F1F000},
+    {0x46, 0x01010000, 0x01F1F000},
+    {0x47, 0x01010000, 0x01F1F000},
+    {0x4C, 0x01404000, 0x01F1F000},
+    {0x4D, 0x01404000, 0x01F1F000},
+    {0x62, 0x0001F000, 0x01F1F000},
+    {0x63, 0x0001F000, 0x01F1F000},
+    {0x7C, 0x01414000, 0x01F1F000},
+    {0x87, 0x01404000, 0x01F1F000},
+    {0x88, 0x01404000, 0x01F1F000},
+    {0x89, 0x01404000, 0x01F1F000},
+    {0x8A, 0x01404000, 0x01F1F000},
+    {0x6D, 0x00000000, 0xF0000000},
+    {0x6E, 0x00000000, 0xF0000000},
+    {0x6F, 0x00000000, 0xF0000000},
+    {0x70, 0x00000000, 0xF0000000},
+    {0x71, 0x00000000, 0xF0000000},
+    {0x72, 0x00000000, 0xF0000000},
+    {0x73, 0x00000000, 0xF0000000},
+    {0x74, 0x00000000, 0xF0000000},
+    {0x75, 0x00000000, 0xF0000000},
+    {0x76, 0x00000000, 0xF0000000},
+    {0x69, 0x51212000, 0xF1F1F000},
+};
+
+static int pinmux_update_drivepad(u64 pinmux_base_vaddr, unsigned int pinmux_drivepad_idx, unsigned int pinmux_drivepad_config_val, unsigned int pinmux_drivepad_config_mask_val) {
+    /* Fetch this PINMUX drive group's register offset */
+    u32 pinmux_drivepad_reg_offset = std::get<0>(g_pinmux_drivepad_map[pinmux_drivepad_idx]);
+    
+    /* Fetch this PINMUX drive group's mask value */
+    u32 pinmux_drivepad_mask_val = std::get<1>(g_pinmux_drivepad_map[pinmux_drivepad_idx]);
+        
+    /* Read from the PINMUX drive group register */
+    u32 pinmux_drivepad_val = *((u32 *)pinmux_base_vaddr + pinmux_drivepad_reg_offset);
+    
+    /* Adjust DriveDownStrength */
+    if (pinmux_drivepad_config_mask_val & 0x1F000) {
+        u32 mask_val = 0x7F000;
+        
+        /* Adjust mask value */
+        if ((pinmux_drivepad_mask_val & 0x7F000) != 0x7F000)
+            mask_val = 0x1F000;
+        
+        /* This drive group supports DriveDownStrength change */
+        if (pinmux_drivepad_mask_val & mask_val) {
+            /* Change DriveDownStrength */
+            if (((pinmux_drivepad_config_val & 0x7F000) & mask_val) != (pinmux_drivepad_val & mask_val)) {
+                pinmux_drivepad_val &= ~(mask_val);
+                pinmux_drivepad_val |= ((pinmux_drivepad_config_val & 0x7F000) & mask_val);
+            }
+        }
+    }
+
+    /* Adjust DriveUpStrength */
+    if (pinmux_drivepad_config_mask_val & 0x1F00000) {
+        u32 mask_val = 0x7F00000;
+        
+        /* Adjust mask value */
+        if ((pinmux_drivepad_mask_val & 0x7F00000) != 0x7F00000)
+            mask_val = 0x1F00000;
+        
+        /* This drive group supports DriveUpStrength change */
+        if (pinmux_drivepad_mask_val & mask_val) {
+            /* Change DriveUpStrength */
+            if (((pinmux_drivepad_config_val & 0x7F00000) & mask_val) != (pinmux_drivepad_val & mask_val)) {
+                pinmux_drivepad_val &= ~(mask_val);
+                pinmux_drivepad_val |= ((pinmux_drivepad_config_val & 0x7F00000) & mask_val);
+            }
+        }
+    }
+    
+    /* Adjust DriveDownSlew */
+    if (pinmux_drivepad_config_mask_val & 0x30000000) {        
+        /* This drive group supports DriveDownSlew change */
+        if (pinmux_drivepad_mask_val & 0x30000000) {
+            /* Change DriveDownSlew */
+            if ((pinmux_drivepad_val ^ pinmux_drivepad_config_val) & 0x30000000) {
+                pinmux_drivepad_val &= 0xCFFFFFFF;
+                pinmux_drivepad_val |= (pinmux_drivepad_config_val & 0x30000000);
+            }
+        }
+    }
+    
+    /* Adjust DriveUpSlew */
+    if (pinmux_drivepad_config_mask_val & 0xC0000000) {        
+        /* This drive group supports DriveUpSlew change */
+        if (pinmux_drivepad_mask_val & 0xC0000000) {
+            /* Change DriveUpSlew */
+            if ((pinmux_drivepad_val ^ pinmux_drivepad_config_val) & 0xC0000000) {
+                pinmux_drivepad_val &= 0x3FFFFFFF;
+                pinmux_drivepad_val |= (pinmux_drivepad_config_val & 0xC0000000);
+            }
+        }
+    }
+    
+    /* Write to the appropriate PINMUX drive group register */
+    *((u32 *)pinmux_base_vaddr + pinmux_drivepad_reg_offset) = pinmux_drivepad_val;
+    
+    /* Do a dummy read from the PINMUX drive group register */
+    pinmux_drivepad_val = *((u32 *)pinmux_base_vaddr + pinmux_drivepad_reg_offset);
+
+    return pinmux_drivepad_val;
+}
+
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
@@ -1332,7 +1461,11 @@ int main(int argc, char **argv)
         /* Invalid */
     }
     
-    /* TODO: Set initial PINMUX drive pad configuration */
+    /* Configure all PINMUX drive pads (common to all hardware types) */
+    for (unsigned int i = 0; i < MAX_PINMUX_DRIVEPAD; i++) {
+        pinmux_update_drivepad(pinmux_base_vaddr, std::get<0>(g_pinmux_drivepad_config_map[i]), std::get<1>(g_pinmux_drivepad_config_map[i]), std::get<2>(g_pinmux_drivepad_config_map[i]));
+    }
+    
     /* TODO: Set initial wake pin configuration */
     
     /* This is ignored in Copper hardware */
