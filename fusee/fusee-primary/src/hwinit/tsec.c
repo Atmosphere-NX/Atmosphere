@@ -3,10 +3,6 @@
 #include "clock.h"
 #include "t210.h"
 
-static const u8 _tsec_fw[3840] __attribute__((aligned(0x100))) = {
-	/* ... */
-};
-
 static int _tsec_dma_wait_idle()
 {
 	u32 timeout = TMR(0x10) + 10000000;
@@ -58,7 +54,6 @@ int tsec_query(u32 carveout, u8 *dst, u32 rev)
 	}
 
 	//Load firmware.
-	memcpy((void *)carveout, _tsec_fw, 0xF00);
 	TSEC(0x1110) = carveout >> 8;// tsec_dmatrfbase_r
 	for (u32 addr = 0; addr < 0xF00; addr += 0x100)
 		if (!_tsec_dma_pa_to_internal_100(0, addr, addr))
