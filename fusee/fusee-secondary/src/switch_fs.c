@@ -45,13 +45,13 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
         int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller);
         if (rc == 0) {
             sdmmc_set_write_enable(mmcpart->mmc, SDMMC_WRITE_ENABLED);
-            g_sd_mmc_initialized = true;
+            devpart->initialized = g_sd_mmc_initialized = true;
         }
         return rc;
     } else if (mmcpart->mmc == &g_nand_mmc && !g_nand_mmc_initialized) {
         int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller);
         if (rc == 0) {
-            g_nand_mmc_initialized = true;
+            devpart->initialized = g_nand_mmc_initialized = true;
         }
         return rc;
     }

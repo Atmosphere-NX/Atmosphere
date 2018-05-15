@@ -72,7 +72,7 @@ DRESULT disk_read (
 	if (devpart == NULL) {
 		return RES_PARERR;
 	} else if (devpart->reader != NULL) {
-		int rc = devpart->reader(devpart, buff, sector, count);
+		int rc = device_partition_read_data(devpart, buff, sector, count);
 		return rc == 0 ? 0 : RES_ERROR;
 	} else {
 		return RES_ERROR;
@@ -97,7 +97,7 @@ DRESULT disk_write (
 	if (devpart == NULL) {
 		return RES_PARERR;
 	} else if (devpart->writer != NULL) {
-		int rc = devpart->writer(devpart, buff, sector, count);
+		int rc = device_partition_write_data(devpart, buff, sector, count);
 		return rc == 0 ? 0 : RES_ERROR;
 	} else {
 		return RES_ERROR;

@@ -86,7 +86,6 @@ const char *VolumeStr[FF_VOLUMES] = { FKNAM, FKNAM, FKNAM, FKNAM, FKNAM, FKNAM, 
 /* For diskio.c code */
 device_partition_t *g_volume_to_devparts[FF_VOLUMES] = { NULL };
 
-#include <stdio.h>
 int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool initialize_immediately) {
     fsdev_fsdevice_t *device = NULL;
     FRESULT rc;
