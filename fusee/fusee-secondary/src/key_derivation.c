@@ -33,8 +33,8 @@ static const uint8_t masterkey_4x_seed[0x10] = {
     0x2D, 0xC1, 0xF4, 0x8D, 0xF3, 0x5B, 0x69, 0x33, 0x42, 0x10, 0xAC, 0x65, 0xDA, 0x90, 0x46, 0x66
 };
 
-static int get_tsec_key(void *dst, const void *tsec_fw, size_t tsec_fw_size, uint32_t revision) {
-    return tsec_query((u32)tsec_fw, dst, revision);
+static int get_tsec_key(void *dst, const void *tsec_fw, size_t tsec_fw_size, uint32_t tsec_key_id) {
+    return tsec_query((u32)tsec_fw, dst, tsec_key_id);
 }
 
 static int get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {
@@ -71,7 +71,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     set_aes_keyslot_flags(0xD, 0x15);
 
     /* Set TSEC key. */
-    if  (get_tsec_key(work_buffer, tsec_fw, tsec_fw_size, target_firmware) != 0) {
+    if  (get_tsec_key(work_buffer, tsec_fw, tsec_fw_size, 1) != 0) {
         return -1;
     }
     set_aes_keyslot(0xD, work_buffer, 0x10);
