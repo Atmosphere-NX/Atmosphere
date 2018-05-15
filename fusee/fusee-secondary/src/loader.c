@@ -220,7 +220,7 @@ void load_payload(const char *bct0) {
         generic_panic();
     }
 
-    if (ctx->chainload_entrypoint == 0 || ctx->nb_files_to_load > 0) {
+    if (ctx->chainload_entrypoint != 0 || ctx->nb_files_to_load > 0) {
         printf("Error: loadlist must be empty when booting Horizon!\n");
         generic_panic();
     }
