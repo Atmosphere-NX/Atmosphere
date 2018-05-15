@@ -154,7 +154,7 @@ void nxboot_main(void) {
         generic_panic();
     }
 
-    /* Read the warmboot firmware from a file, otherwise from PK1. */
+    /* Read Package2 from a file, otherwise from its partition(s). */
     if (loader_ctx->package2_path[0] != '\0') {
         size_t package2_size = get_file_size(loader_ctx->package2_path);
         if (package2_size == 0) {
@@ -208,9 +208,9 @@ void nxboot_main(void) {
             generic_panic();
         }
     } else {
-        /*extern const uint8_t exosphere_bin[];
+        extern const uint8_t exosphere_bin[];
         extern const uint32_t exosphere_bin_size;
-        memcpy(exosphere_memaddr, exosphere_bin, exosphere_bin_size);*/
+        memcpy(exosphere_memaddr, exosphere_bin, exosphere_bin_size);
     }
 
     /* Boot up Exosphère. */
