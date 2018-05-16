@@ -86,7 +86,7 @@ static int decrypt_keyblob(const nx_keyblob_t *keyblobs, uint32_t revision, uint
     }
     
     /* Decrypt keyblob. */
-    se_aes_ctr_crypt(0xD, &g_dec_keyblobs[revision], sizeof(g_dec_keyblobs[revision]), keyblob.data, sizeof(keyblob.data), keyblob.ctr, sizeof(keyblob.ctr));
+    se_aes_ctr_crypt(keyslot, &g_dec_keyblobs[revision], sizeof(g_dec_keyblobs[revision]), keyblob.data, sizeof(keyblob.data), keyblob.ctr, sizeof(keyblob.ctr));
     return 0;
 }
 
