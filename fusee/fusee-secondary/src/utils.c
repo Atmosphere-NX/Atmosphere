@@ -6,6 +6,8 @@
 #include "panic_color.h"
 #include "timers.h"
 
+#include <stdio.h>
+#include <inttypes.h>
 
 __attribute__ ((noreturn)) void panic(uint32_t code) {
     /* Set Panic Code for NX_BOOTLOADER. */
@@ -37,4 +39,38 @@ __attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, u
     if(bs <= as && as <= be)
         return true;
     return false;
+}
+
+/* Adapted from https://gist.github.com/ccbrown/9722406 */
+void hexdump(const void* data, size_t size, uintptr_t addrbase) {
+    const uint8_t *d = (const uint8_t *)data;
+    char ascii[17];
+    ascii[16] = '\0';
+
+    for (size_t i = 0; i < size; i++) {
+        if (i % 16 == 0) {
+            printf("%0*" PRIXPTR ": | ", 2 * sizeof(addrbase), addrbase + i);
+        }
+        printf("%02X ", d[i]);
+        if (d[i] >= ' ' && d[i] <= '~') {
+            ascii[i % 16] = d[i];
+        } else {
+            ascii[i % 16] = '.';
+        }
+        if ((i+1) % 8 == 0 || i+1 == size) {
+            printf(" ");
+            if ((i+1) % 16 == 0) {
+                printf("|  %s \n", ascii);
+            } else if (i+1 == size) {
+                ascii[(i+1) % 16] = '\0';
+                if ((i+1) % 16 <= 8) {
+                    printf(" ");
+                }
+                for (size_t j = (i+1) % 16; j < 16; j++) {
+                    printf("   ");
+                }
+                printf("|  %s \n", ascii);
+            }
+        }
+    }
 }

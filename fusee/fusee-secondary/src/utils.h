@@ -102,6 +102,8 @@ static inline bool check_32bit_address_range_in_program(uintptr_t addr, size_t s
     overlaps_a(start, end, __start__, __end__);
 }
 
+void hexdump(const void* data, size_t size, uintptr_t addrbase);
+
 void panic(uint32_t code);
 void generic_panic(void);
 void panic_predefined(uint32_t which);
