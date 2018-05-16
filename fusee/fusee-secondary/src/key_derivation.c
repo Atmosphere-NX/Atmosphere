@@ -111,7 +111,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     set_aes_keyslot(0xD, work_buffer, 0x10);
     
     /* Decrypt all keyblobs. */
-    for (unsigned int rev = MASTERKEY_REVISION_100_230; rev < MASTERKEY_REVISION_500_CURRENT; rev++) {
+    for (unsigned int rev = 0; rev < MASTERKEY_REVISION_MAX; rev++) {
         int ret = decrypt_keyblob(keyblobs, rev, available_revision);
         if (ret) {
             return ret;
