@@ -40,7 +40,7 @@ int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_
         return -1;
     }
 
-    *revision = pk1l_info->attribute;
+    *revision = pk1l_info->version;
     *package1loader_size = pk1l_info->length;
 
     pk1l_offset = 0x4000 * pk1l_info->start_blk + 0x200 * pk1l_info->start_page;
