@@ -65,7 +65,6 @@ static bool safe_memcmp(uint8_t *a, uint8_t *b, size_t sz) {
 
 static int decrypt_keyblob(const nx_keyblob_t *keyblobs, uint32_t revision, uint32_t available_revision) {
     nx_keyblob_t keyblob;
-    nx_dec_keyblob_t *dec = &g_dec_keyblobs[revision];
     uint8_t work_buffer[0x10];
     
     if (get_keyblob(&keyblob, revision, keyblobs, available_revision) != 0) {
@@ -83,7 +82,7 @@ static int decrypt_keyblob(const nx_keyblob_t *keyblobs, uint32_t revision, uint
     }
     
     /* Decrypt keyblob. */
-    se_aes_ctr_crypt(0xD, dec, sizeof(dec), keyblob.data, sizeof(keyblob.data), keyblob.ctr, sizeof(keyblob.ctr));
+    se_aes_ctr_crypt(0xD, &g_dec_keyblobs[revision], sizeof(g_dec_keyblobs[revision]), keyblob.data, sizeof(keyblob.data), keyblob.ctr, sizeof(keyblob.ctr));
     return 0;
 }
 
