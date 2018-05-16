@@ -64,16 +64,17 @@ static bool safe_memcmp(uint8_t *a, uint8_t *b, size_t sz) {
 }
 
 static int decrypt_keyblob(const nx_keyblob_t *keyblobs, uint32_t revision, uint32_t available_revision) {
-    nx_keyblob_t keyblob;
-    uint8_t work_buffer[0x10];
-    
+    nx_keyblob_t __attribute__((aligned(16))) keyblob;
+    uint8_t __attribute__((aligned(16))) work_buffer[0x10];
+    unsigned int keyslot = revision == MASTERKEY_REVISION_100_230 ? 0xF : KEYSLOT_SWITCH_TEMPKEY;
+
     if (get_keyblob(&keyblob, revision, keyblobs, available_revision) != 0) {
         return -1;
     }
     
     se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, keyblob_seeds[revision], 0x10);
-    decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, 0xE, work_buffer, 0x10);
-    decrypt_data_into_keyslot(0xB, KEYSLOT_SWITCH_TEMPKEY, keyblob_mac_seed, 0x10);
+    decrypt_data_into_keyslot(keyslot, 0xE, work_buffer, 0x10);
+    decrypt_data_into_keyslot(0xB, keyslot, keyblob_mac_seed, 0x10);
     
     /* Validate keyblob. */
     se_compute_aes_128_cmac(0xB, work_buffer, 0x10, keyblob.mac + sizeof(keyblob.mac), sizeof(keyblob) - sizeof(keyblob.mac));
@@ -97,8 +98,7 @@ int load_package1_key(uint32_t revision) {
 
 /* Derive all Switch keys. */
 int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size) {
-    uint8_t work_buffer[0x10];
-    nx_dec_keyblob_t dec_keyblob;
+    uint8_t __attribute__((aligned(16))) work_buffer[0x10];
 
     /* TODO: Set keyslot flags properly in preparation of derivation. */
     set_aes_keyslot_flags(0xE, 0x15);
@@ -110,7 +110,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     }
     set_aes_keyslot(0xD, work_buffer, 0x10);
     
-    /* Decrypt all keyblobs. */
+    /* Decrypt all keyblobs, setting keyslot 0xF correctly. */
     for (unsigned int rev = 0; rev < MASTERKEY_REVISION_MAX; rev++) {
         int ret = decrypt_keyblob(keyblobs, rev, available_revision);
         if (ret) {
@@ -118,21 +118,11 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
         }
     }
 
-    /* Always try to set up the highest possible master key. */
-    /* Derive both keyblob key 1, and keyblob key latest. */
-    se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, keyblob_seeds[MASTERKEY_REVISION_100_230], 0x10);
-    decrypt_data_into_keyslot(0xF, 0xE, work_buffer, 0x10);
-    se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, keyblob_seeds[MASTERKEY_REVISION_500_CURRENT], 0x10);
-    decrypt_data_into_keyslot(0xD, 0xE, work_buffer, 0x10);
-
     /* Clear the SBK. */
     clear_aes_keyslot(0xE);
-    
-    /* Get latest keyblob. */
-    dec_keyblob = g_dec_keyblobs[MASTERKEY_REVISION_500_CURRENT];
 
     /* Get needed data. */
-    set_aes_keyslot(0xC, dec_keyblob.keys[0], 0x10);
+    set_aes_keyslot(0xC, g_dec_keyblobs[MASTERKEY_REVISION_500_CURRENT].keys[0], 0x10);
 
     /* Derive keys for Exosphere, lock critical keyslots. */
     switch (target_firmware) {
