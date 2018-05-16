@@ -127,6 +127,9 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     /* Get needed data. */
     set_aes_keyslot(0xC, g_dec_keyblobs[MASTERKEY_REVISION_500_CURRENT].keys[0], 0x10);
 
+    /* Also set the Package1 key for the revision that is stored on the eMMC boot0 partition. */
+    load_package1_key(available_revision);
+
     /* Derive keys for Exosphere, lock critical keyslots. */
     switch (target_firmware) {
         case EXOSPHERE_TARGET_FIRMWARE_100:
