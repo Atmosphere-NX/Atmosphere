@@ -138,18 +138,19 @@ static int switchfs_mount_partition_gpt_callback(const efi_entry_t *entry, void 
         const char *mount_point;
         bool is_fat;
         bool is_encrypted;
+        bool register_immediately;
     } known_partitions[] = {
-        {"PRODINFO", "prodinfo", false, true},
-        {"PRODINFOF", "prodinfof", true, true},
-        {"BCPKG2-1-Normal-Main", "bcpkg21", false, false},
-        {"BCPKG2-2-Normal-Sub", "bcpkg22", false, false},
-        {"BCPKG2-3-SafeMode-Main", "bcpkg23", false, false},
-        {"BCPKG2-4-SafeMode-Sub", "bcpkg24", false, false},
-        {"BCPKG2-5-Repair-Main", "bcpkg25", false, false},
-        {"BCPKG2-6-Repair-Sub", "bcpkg26", false, false},
-        {"SAFE", "safe", true, true},
-        {"SYSTEM", "system", true, true},
-        {"USER", "user", true, true},
+        {"PRODINFO", "prodinfo", false, true, false},
+        {"PRODINFOF", "prodinfof", true, true, false},
+        {"BCPKG2-1-Normal-Main", "bcpkg21", false, false, true},
+        {"BCPKG2-2-Normal-Sub", "bcpkg22", false, false, false},
+        {"BCPKG2-3-SafeMode-Main", "bcpkg23", false, false, false},
+        {"BCPKG2-4-SafeMode-Sub", "bcpkg24", false, false, false},
+        {"BCPKG2-5-Repair-Main", "bcpkg25", false, false, false},
+        {"BCPKG2-6-Repair-Sub", "bcpkg26", false, false, false},
+        {"SAFE", "safe", true, true, false},
+        {"SYSTEM", "system", true, true, false},
+        {"USER", "user", true, true, false},
     };
 
     /* Convert the partition name to ASCII, for comparison. */
@@ -174,14 +175,26 @@ static int switchfs_mount_partition_gpt_callback(const efi_entry_t *entry, void 
             }
 
             if (known_partitions[i].is_fat) {
-                rc = fsdev_mount_device(known_partitions[i].partition_name, &devpart, false);
+                rc = fsdev_mount_device(known_partitions[i].mount_point, &devpart, false);
                 if (rc == -1) {
                     return -1;
                 }
+                if (known_partitions[i].register_immediately) {
+                    rc = fsdev_register_device(known_partitions[i].mount_point);
+                    if (rc == -1) {
+                        return -1;
+                    }
+                }
             } else {
-                rc = rawdev_mount_device(known_partitions[i].partition_name, &devpart, false);
+                rc = rawdev_mount_device(known_partitions[i].mount_point, &devpart, false);
                 if (rc == -1) {
                     return -1;
+                }
+                if (known_partitions[i].register_immediately) {
+                    rc = rawdev_register_device(known_partitions[i].mount_point);
+                    if (rc == -1) {
+                        return -1;
+                    }
                 }
             }
         }
@@ -204,6 +217,10 @@ int switchfs_mount_all(void) {
     if (rc == -1) {
         return -1;
     }
+    rc = fsdev_register_device("sdmc");
+    if (rc == -1) {
+        return -1;
+    }
 
     /* Boot0. */
     model = g_mmc_devpart_template;
@@ -211,6 +228,10 @@ int switchfs_mount_all(void) {
     model.start_sector = 0;
     model.num_sectors = 0x184000 / model.sector_size;
     rc = rawdev_mount_device("boot0", &model, true);
+    if (rc == -1) {
+        return -1;
+    }
+    rc = rawdev_register_device("boot0");
     if (rc == -1) {
         return -1;
     }
@@ -224,6 +245,7 @@ int switchfs_mount_all(void) {
     if (rc == -1) {
         return -1;
     }
+    /* Don't register boot1 for now. */
 
     /* Raw NAND (excluding boot partitions), and its partitions. */
     model = g_mmc_devpart_template;
@@ -235,10 +257,14 @@ int switchfs_mount_all(void) {
     if (rc == -1) {
         return -1;
     }
+    rc = rawdev_register_device("rawnand");
+    if (rc == -1) {
+        return -1;
+    }
     rawnand = fopen("rawnand:/", "rb");
     rc = gpt_iterate_through_entries(rawnand, model.sector_size, switchfs_mount_partition_gpt_callback, &model);
     fclose(rawnand);
-    if (rc != 0) {
+    if (rc == 0) {
         rc = fsdev_set_default_device("sdmc");
     }
     return rc;

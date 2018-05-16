@@ -7,8 +7,11 @@
 #include "device_partition.h"
 
 int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool initialize_immediately);
-int fsdev_set_default_device(const char *name);
-int fsdev_unmount_device(const char *name);
+int fsdev_register_device(const char *name);
+int fsdev_set_default_device(const char *name); /* must be registered. */
+
+int fsdev_unregister_device(const char *name);
+int fsdev_unmount_device(const char *name); /* also unregisters. */
 
 int fsdev_unmount_all(void);
 

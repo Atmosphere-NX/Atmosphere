@@ -10,6 +10,10 @@
 
 #include "lib/fatfs/ff.h"
 
+#if FF_VOLUMES != 10
+#error "FatFs misconfigured, expected FF_VOLUMES == 10"
+#endif
+
 #include "fs_dev.h"
 /* Quite a bit of code comes from https://github.com/switchbrew/libnx/blob/master/nx/source/runtime/devices/fs_dev.c */
 
@@ -67,15 +71,15 @@ static devoptab_t g_fsdev_devoptab = {
   .rmdir_r      = fsdev_rmdir,
 };
 
-typedef struct fsdev_fsdevice_t {
+typedef struct fsdev_device_t {
     devoptab_t devoptab;
     device_partition_t devpart;
     FATFS fatfs;
     char name[32+1];
-    bool setup;
-} fsdev_fsdevice_t;
+    bool setup, registered;
+} fsdev_device_t;
 
-static fsdev_fsdevice_t g_fsdev_devices[FF_VOLUMES] = { 0 };
+static fsdev_device_t g_fsdev_devices[FF_VOLUMES] = { 0 };
 
 /* Required by ff.c */
 /* FF_VOLUMES = 10 */
@@ -86,10 +90,26 @@ const char *VolumeStr[FF_VOLUMES] = { FKNAM, FKNAM, FKNAM, FKNAM, FKNAM, FKNAM, 
 /* For diskio.c code */
 device_partition_t *g_volume_to_devparts[FF_VOLUMES] = { NULL };
 
+static fsdev_device_t *fsdev_find_device(const char *name) {
+    for (size_t i = 0; i < FF_VOLUMES; i++) {
+        if (g_fsdev_devices[i].setup && strcmp(g_fsdev_devices[i].name, name) == 0) {
+            return &g_fsdev_devices[i];
+        }
+    }
+
+    return NULL;
+}
+
 int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool initialize_immediately) {
-    fsdev_fsdevice_t *device = NULL;
+    fsdev_device_t *device = fsdev_find_device(name);
     FRESULT rc;
     char drname[40];
+
+    if (device != NULL) {
+        errno = EEXIST; /* Device already exists */
+        return -1;
+    }
+
     strcpy(drname, name);
     strcat(drname, ":");
 
@@ -102,10 +122,6 @@ int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool
         return -1;
     }
 
-    if (FindDevice(drname) != -1) {
-        errno = EEXIST; /* Device already exists */
-        return -1;
-    }
     /* Find an unused slot. */
     for(size_t i = 0; i < FF_VOLUMES; i++) {
         if (!g_fsdev_devices[i].setup) {
@@ -118,6 +134,7 @@ int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool
         return -1;
     }
 
+    memset(device, 0, sizeof(fsdev_device_t));
     strcpy(device->name, name);
 
     device->devoptab = g_fsdev_devoptab;
@@ -132,17 +149,60 @@ int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool
     rc = f_mount(&device->fatfs, drname, initialize_immediately ? 1 : 0);
 
     if (rc != FR_OK) {
+        g_volume_to_devparts[device - g_fsdev_devices] = NULL;
+        VolumeStr[device - g_fsdev_devices] = FKNAM;
         return fsdev_convert_rc(NULL, rc);
     }
 
+    device->setup = true;
+    device->registered = false;
+
+    return 0;
+}
+
+int fsdev_register_device(const char *name) {
+    fsdev_device_t *device = fsdev_find_device(name);
+    if (device == NULL) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    if (device->registered) {
+        /* Do nothing if the device is already registered. */
+        return 0;
+    }
+
     if (AddDevice(&device->devoptab) == -1) {
-        f_unmount(drname);
-        g_volume_to_devparts[device - g_fsdev_devices] = NULL;
-        VolumeStr[device - g_fsdev_devices] = FKNAM;
         errno = ENOMEM;
         return -1;
     } else {
-        device->setup = true;
+        device->registered = true;
+        return 0;
+    }
+}
+
+int fsdev_unregister_device(const char *name) {
+    fsdev_device_t *device = fsdev_find_device(name);
+    char drname[40];
+
+    if (device == NULL) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    if (!device->registered) {
+        /* Do nothing if the device is not registered. */
+        return 0;
+    }
+
+    strcpy(drname, name);
+    strcat(drname, ":");
+
+    if (RemoveDevice(drname) == -1) {
+        errno = ENOENT;
+        return -1;
+    } else {
+        device->registered = false;
         return 0;
     }
 }
@@ -156,14 +216,12 @@ int fsdev_set_default_device(const char *name) {
     strcat(drname, ":");
     devid = FindDevice(drname);
 
-    if (devid == -1) {
+    if (devid == -1 || fsdev_find_device(name) == NULL) {
         errno = ENOENT;
         return -1;
     }
 
-#if FF_VOLUMES >= 2
     ret = fsdev_convert_rc(NULL, f_chdrive(drname));
-#endif
     if (ret == 0) {
         setDefaultDevice(devid);
     }
@@ -174,27 +232,28 @@ int fsdev_set_default_device(const char *name) {
 int fsdev_unmount_device(const char *name) {
     int ret;
     char drname[40];
-    int devid;
+    fsdev_device_t *device = fsdev_find_device(name);
 
-    strcpy(drname, name);
-    strcat(drname, ":");
-
-    devid = FindDevice(drname);
-
-    if (devid == -1) {
+    if (device == NULL) {
         errno = ENOENT;
         return -1;
     }
 
+    ret = fsdev_unregister_device(name);
+    if (ret == -1) {
+        return -1;
+    }
+
+    strcpy(drname, name);
+    strcat(drname, ":");
+
     ret = fsdev_convert_rc(NULL, f_unmount(drname));
 
     if (ret == 0) {
-        fsdev_fsdevice_t *device = (fsdev_fsdevice_t *)(GetDeviceOpTab(name)->deviceData);
-        RemoveDevice(drname);
         VolumeStr[device - g_fsdev_devices] = FKNAM;
         g_volume_to_devparts[device - g_fsdev_devices] = NULL;
         device->devpart.finalizer(&device->devpart);
-        memset(device, 0, sizeof(fsdev_fsdevice_t));
+        memset(device, 0, sizeof(fsdev_device_t));
     }
 
     return ret;
@@ -202,7 +261,7 @@ int fsdev_unmount_device(const char *name) {
 
 int fsdev_unmount_all(void) {
     for (size_t i = 0; i < FF_VOLUMES; i++) {
-        int ret = fsdev_unmount_device(VolumeStr[i]);
+        int ret = fsdev_unmount_device(g_fsdev_devices[i].name);
         if (ret != 0) {
             return ret;
         }
