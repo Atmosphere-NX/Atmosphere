@@ -86,25 +86,20 @@ size_t package1_get_tsec_fw(void **tsec_fw, const void *package1loader, size_t p
 }
 
 size_t package1_get_encrypted_package1(package1_header_t **package1, uint8_t *ctr, const void *package1loader, size_t package1loader_size) {
-    const uint32_t *pos;
-    uintptr_t pk1l = (uintptr_t)package1loader;
-
+    const uint8_t *crypt_hdr = (const uint8_t *)package1loader + 0x4000 - 0x20;
     if (package1loader_size < 0x4000) {
         return 0; /* Shouldn't happen, ever. */
     }
 
-    for (pos = (const uint32_t *)pk1l; (uintptr_t)pos < pk1l + 0x3FF8 && (pos[0] != 0x70012000 || pos[2] != 0x40007000); pos++);
-    pos = (const uint32_t *)(pk1l + pos[1] - 0x40010000);
-
-    memcpy(ctr, pos + 4, 0x10);
-    (*package1) = (package1_header_t *)(pos + 8);
-    return *pos;
+    memcpy(ctr, crypt_hdr + 0x10, 0x10);
+    (*package1) = (package1_header_t *)(crypt_hdr + 0x20);
+    return *(uint32_t *)crypt_hdr;
 }
 
 bool package1_decrypt(package1_header_t *package1, size_t package1_size, const uint8_t *ctr) {
     uint8_t __attribute__((aligned(16))) ctrbuf[16];
     memcpy(ctrbuf, ctr, 16);
-    se_aes_ctr_crypt(0xB, package1, package1_size, package1, package1_size, ctr, 16);
+    se_aes_ctr_crypt(0xB, package1, package1_size, package1, package1_size, ctrbuf, 16);
     return memcmp(package1->magic, "PK11", 4) == 0;
 }
 
@@ -119,7 +114,6 @@ void *package1_get_warmboot_fw(const package1_header_t *package1) {
         Nx-bootloader seems to always start by 0xE328F0C0 (msr cpsr_f, 0xc0).
     */
     const uint32_t *data = (const uint32_t *)package1->data;
-
     for (size_t i = 0; i < 3; i++) {
         switch (*data) {
             case 0xD5034FDFu:
