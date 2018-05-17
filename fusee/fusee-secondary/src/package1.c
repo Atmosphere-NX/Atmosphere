@@ -34,13 +34,13 @@ int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_
         free(bct);
         return -1;
     }
-    if (bct->bootloader_used < 1) {
+    if (bct->bootloader_used < 1 || pk1l_info->version < 1) {
         free(bct);
         errno = EILSEQ;
         return -1;
     }
 
-    *revision = pk1l_info->version;
+    *revision = pk1l_info->version - 1;
     *package1loader_size = pk1l_info->length;
 
     pk1l_offset = 0x4000 * pk1l_info->start_blk + 0x200 * pk1l_info->start_page;
