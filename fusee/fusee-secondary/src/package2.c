@@ -93,11 +93,11 @@ static bool package2_validate_metadata(package2_meta_t *metadata) {
 
     /* Package2 size, version number is stored XORed in header CTR. */
     /* Nintendo, what the fuck? */
-    uint32_t package_size = metadata->ctr_dwords[0] ^ metadata->ctr_dwords[2] ^ metadata->ctr_dwords[3];
-    uint8_t header_version = (uint8_t)((metadata->ctr_dwords[1] ^ (metadata->ctr_dwords[1] >> 16) ^ (metadata->ctr_dwords[1] >> 24)) & 0xFF);
+    uint32_t package_size = package2_meta_get_size(metadata);
+    uint8_t header_version = package2_meta_get_header_version(metadata);
 
     /* Ensure package isn't too big or too small. */
-    if (package_size <= sizeof(package2_header_t) || package_size > PACKAGE2_SIZE_MAX - sizeof(package2_header_t)) {
+    if (package_size <= sizeof(package2_header_t) || package_size > PACKAGE2_SIZE_MAX) {
         return false;
     }
 

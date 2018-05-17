@@ -51,7 +51,18 @@ typedef struct {
         package2_meta_t metadata;
         uint8_t encrypted_header[0x100];
     };
+    uint8_t data[];
 } package2_header_t;
+
+/* Package2 can be encrypted or unencrypted for these functions: */
+
+static inline size_t package2_meta_get_size(const package2_meta_t *metadata) {
+    return metadata->ctr_dwords[0] ^ metadata->ctr_dwords[2] ^ metadata->ctr_dwords[3]; 
+}
+
+static inline uint8_t package2_meta_get_header_version(const package2_meta_t *metadata) {
+    return (uint8_t)((metadata->ctr_dwords[1] ^ (metadata->ctr_dwords[1] >> 16) ^ (metadata->ctr_dwords[1] >> 24)) & 0xFF);
+}
 
 void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware);
 

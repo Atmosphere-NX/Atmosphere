@@ -30,7 +30,7 @@ static int exosphere_ini_handler(void *user, const char *section, const char *na
     return 1;
 }
 
-void nxboot_configure_exosphere(void) {
+static void nxboot_configure_exosphere(void) {
     exosphere_config_t exo_cfg = {0};
 
     exo_cfg.magic = MAGIC_EXOSPHERE_BOOTCONFIG;
@@ -49,11 +49,30 @@ void nxboot_configure_exosphere(void) {
     *(MAILBOX_EXOSPHERE_CONFIGURATION) = exo_cfg;
 }
 
+static void nxboot_adjust_exosphere_target_firmware(const package2_header_t *package2) {
+    static const uint32_t mkey_ver_to_target_fw[] = {
+        EXOSPHERE_TARGET_FIRMWARE_100,
+        EXOSPHERE_TARGET_FIRMWARE_200,
+        EXOSPHERE_TARGET_FIRMWARE_300,
+        EXOSPHERE_TARGET_FIRMWARE_300,
+        EXOSPHERE_TARGET_FIRMWARE_400,
+        EXOSPHERE_TARGET_FIRMWARE_500,
+    };
+    uint8_t package2_header_version = package2_meta_get_header_version(&package2->metadata);
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == 0) {
+        if (package2_header_version >= 1 && package2_header_version <= sizeof(mkey_ver_to_target_fw)/4) {
+            MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware = mkey_ver_to_target_fw[package2_header_version];
+        }
+    }
+}
+
 /* This is the main function responsible for booting Horizon. */
 static nx_keyblob_t __attribute__((aligned(16))) g_keyblobs[32];
 void nxboot_main(void) {
     loader_ctx_t *loader_ctx = get_loader_ctx();
-    package2_header_t *package2 = NULL;
+    /* void *bootconfig; */
+    package2_header_t *package2;
+    size_t package2_size;
     void *tsec_fw;
     size_t tsec_fw_size;
     void *warmboot_fw;
@@ -62,11 +81,77 @@ void nxboot_main(void) {
     size_t package1loader_size ;
     package1_header_t *package1;
     size_t package1_size;
-    uint32_t revision = EXOSPHERE_TARGET_FIRMWARE_MAX;
-    FILE *boot0 = fopen("boot0:/", "rb");
+    uint32_t available_revision;
+    FILE *boot0;
     void *exosphere_memaddr;
 
-    if (boot0 == NULL || package1_read_and_parse_boot0(&package1loader, &package1loader_size, g_keyblobs, &revision, boot0) == -1) {
+    /* TODO: How should we deal with bootconfig? */
+    package2 = memalign(4096, PACKAGE2_SIZE_MAX);
+    if (package2 == NULL) {
+        printf("Error: nxboot: out of memory!\n");
+        generic_panic();
+    }
+
+    /* Read Package2 from a file, otherwise from its partition(s). */
+    if (loader_ctx->package2_path[0] != '\0') {
+        package2_size = get_file_size(loader_ctx->package2_path);
+        if (package2_size == 0) {
+            printf("Error: Could not read Package2 from %s!\n", loader_ctx->package2_path);
+            generic_panic();
+        } else if (package2_size > PACKAGE2_SIZE_MAX || package2_size <= sizeof(package2_header_t)) {
+            printf("Error: Package2 from %s is too big or too small!\n", loader_ctx->package2_path);
+            generic_panic();
+        }
+
+        if (read_from_file(package2, package2_size, loader_ctx->package2_path) != package2_size) {
+            printf("Error: Could not read Package2 from %s!\n", loader_ctx->package2_path);
+            generic_panic();
+        }
+
+        if (package2_meta_get_size(&package2->metadata) < package2_size) {
+            printf("Error: Package2 from %s is too small!\n", loader_ctx->package2_path);
+            generic_panic();
+        }
+    } else {
+#ifdef I_KNOW_WHAT_IM_DOING_2
+        FILE *bcpkg21 = fopen("bcpkg21:/", "rb");
+        if (bcpkg21 == NULL || fseek(bcpkg21, 0x4000, SEEK_SET) != 0) {
+            printf("Error: Failed to read Package2 from NAND!\n");
+            generic_panic();
+        }
+        if (fread(package2, sizeof(package2_header_t), 1, bcpkg21) < 1) {
+            printf("Error: Failed to read Package2 from NAND!\n");
+            generic_panic();
+        }
+
+        package2_size = package2_meta_get_size(&package2->metadata);
+        if (package2_size > PACKAGE2_SIZE_MAX || package2_size <= sizeof(package2_header_t)) {
+            printf("Error: Package2 from NAND is too big or too small!\n");
+            generic_panic();
+        }
+
+        if (fread(package2->data, package2_size - sizeof(package2_header_t), 1, bcpkg21) < 1) {
+            printf("Error: Failed to read Package2 from NAND!\n");
+            generic_panic();
+        }
+        fclose(bcpkg21);
+#else
+        printf("Error: Package2 must be loaded from the SD card, unless you know what you are doing!\n");
+        generic_panic();
+#endif
+    }
+
+    /* Setup boot configuration for Exosphère. */
+    nxboot_configure_exosphere();
+    nxboot_adjust_exosphere_target_firmware(package2);
+
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == 0) {
+        printf("Error: Failed to determine which target firmware too use!\n");
+        generic_panic();
+    }
+
+    boot0 = fopen("boot0:/", "rb");
+    if (boot0 == NULL || package1_read_and_parse_boot0(&package1loader, &package1loader_size, g_keyblobs, &available_revision, boot0) == -1) {
         printf("Error: Couldn't parse boot0: %s!\n", strerror(errno));
         generic_panic();
     }
@@ -104,11 +189,8 @@ void nxboot_main(void) {
 
     /* TODO: Initialize Boot Reason. */
 
-    /* Setup boot configuration for Exosphere. */
-    nxboot_configure_exosphere();
-
     /* Derive keydata. */
-    if (derive_nx_keydata(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware, g_keyblobs, revision, tsec_fw, tsec_fw_size) != 0) {
+    if (derive_nx_keydata(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware, g_keyblobs, available_revision, tsec_fw, tsec_fw_size) != 0) {
         printf("Error: Key derivation failed!\n");
         generic_panic();
     }
@@ -145,41 +227,6 @@ void nxboot_main(void) {
             printf("Error: Could not read the warmboot firmware from Package1!\n");
             generic_panic();
         }
-    }
-
-    /* TODO: How should we deal with bootconfig? */
-    package2 = memalign(4096, PACKAGE2_SIZE_MAX);
-    if (package2 == NULL) {
-        printf("Error: nxboot: out of memory!\n");
-        generic_panic();
-    }
-
-    /* Read Package2 from a file, otherwise from its partition(s). */
-    if (loader_ctx->package2_path[0] != '\0') {
-        size_t package2_size = get_file_size(loader_ctx->package2_path);
-        if (package2_size == 0) {
-            printf("Error: Could not read Package2 from %s!\n", loader_ctx->package2_path);
-            generic_panic();
-        } else if (package2_size > PACKAGE2_SIZE_MAX) {
-            printf("Error: Package2 from %s is too big!\n", loader_ctx->package2_path);
-            generic_panic();
-        }
-
-        if (read_from_file(package2, package2_size, loader_ctx->package2_path) != package2_size) {
-            printf("Error: Could not read Package2 from %s!\n", loader_ctx->package2_path);
-            generic_panic();
-        }
-    } else {
-        FILE *bcpkg21 = fopen("bcpkg21:/", "rb");
-        if (bcpkg21 == NULL)  {
-            printf("Error: Failed to read Package2 from NAND!\n");
-            generic_panic();
-        }
-        if (fseek(bcpkg21, 0x4000, SEEK_SET) != 0 || fread(package2, 1, PACKAGE2_SIZE_MAX, bcpkg21) < sizeof(package2_header_t)) {
-            printf("Error: Failed to read Package2 from NAND!\n");
-            generic_panic();
-        }
-        fclose(bcpkg21);
     }
 
     /* Patch package2, adding Thermosphère + custom KIPs. */
