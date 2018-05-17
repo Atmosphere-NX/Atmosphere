@@ -104,8 +104,8 @@ static inline bool check_32bit_address_range_in_program(uintptr_t addr, size_t s
 
 void hexdump(const void* data, size_t size, uintptr_t addrbase);
 
-void panic(uint32_t code);
-void generic_panic(void);
-void panic_predefined(uint32_t which);
+__attribute__ ((noreturn)) void panic(uint32_t code);
+__attribute__ ((noreturn)) void generic_panic(void);
+__attribute__ ((noreturn)) void panic_predefined(uint32_t which);
 
 #endif

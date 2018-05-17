@@ -15,7 +15,7 @@
 #define MASTERKEY_NUM_NEW_DEVICE_KEYS (MASTERKEY_REVISION_MAX - MASTERKEY_REVISION_400_410)
 
 /* This should be called during initialization. */
-void mkey_detect_revision(void);
+int mkey_detect_revision(void);
 
 unsigned int mkey_get_revision(void);
 

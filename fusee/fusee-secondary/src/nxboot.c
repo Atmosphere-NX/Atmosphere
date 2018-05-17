@@ -34,7 +34,7 @@ static void nxboot_configure_exosphere(void) {
     exosphere_config_t exo_cfg = {0};
 
     exo_cfg.magic = MAGIC_EXOSPHERE_BOOTCONFIG;
-    exo_cfg.target_firmware = EXOSPHERE_TARGET_FIRMWARE_MAX;
+    exo_cfg.target_firmware = 0;
 
     if (ini_parse_string(get_loader_ctx()->bct0, exosphere_ini_handler, &exo_cfg) < 0) {
         printf("Error: Failed to parse BCT.ini!\n");
@@ -82,7 +82,7 @@ void nxboot_main(void) {
     package1_header_t *package1;
     size_t package1_size;
     uint32_t available_revision;
-    FILE *boot0;
+    FILE *boot0, *pk2file;
     void *exosphere_memaddr;
 
     /* TODO: How should we deal with bootconfig? */
@@ -94,52 +94,54 @@ void nxboot_main(void) {
 
     /* Read Package2 from a file, otherwise from its partition(s). */
     if (loader_ctx->package2_path[0] != '\0') {
-        package2_size = get_file_size(loader_ctx->package2_path);
-        if (package2_size == 0) {
-            printf("Error: Could not read Package2 from %s!\n", loader_ctx->package2_path);
-            generic_panic();
-        } else if (package2_size > PACKAGE2_SIZE_MAX || package2_size <= sizeof(package2_header_t)) {
-            printf("Error: Package2 from %s is too big or too small!\n", loader_ctx->package2_path);
-            generic_panic();
-        }
-
-        if (read_from_file(package2, package2_size, loader_ctx->package2_path) != package2_size) {
-            printf("Error: Could not read Package2 from %s!\n", loader_ctx->package2_path);
-            generic_panic();
-        }
-
-        if (package2_meta_get_size(&package2->metadata) < package2_size) {
-            printf("Error: Package2 from %s is too small!\n", loader_ctx->package2_path);
+        pk2file = fopen(loader_ctx->package2_path, "rb");
+        if (pk2file == NULL) {
+            printf("Error: Failed to open Package2 from %s: %s!\n", loader_ctx->package2_path, strerror(errno));
             generic_panic();
         }
     } else {
 #ifdef I_KNOW_WHAT_IM_DOING_2
-        FILE *bcpkg21 = fopen("bcpkg21:/", "rb");
-        if (bcpkg21 == NULL || fseek(bcpkg21, 0x4000, SEEK_SET) != 0) {
-            printf("Error: Failed to read Package2 from NAND!\n");
+        pk2file = fopen("bcpkg21:/", "rb");
+        if (pk2file == NULL || fseek(pk2file, 0x4000, SEEK_SET) != 0) {
+            printf("Error: Failed to open Package2 from NAND: %s!\n", strerror(errno));
+            fclose(pk2file);
             generic_panic();
         }
-        if (fread(package2, sizeof(package2_header_t), 1, bcpkg21) < 1) {
-            printf("Error: Failed to read Package2 from NAND!\n");
-            generic_panic();
-        }
-
-        package2_size = package2_meta_get_size(&package2->metadata);
-        if (package2_size > PACKAGE2_SIZE_MAX || package2_size <= sizeof(package2_header_t)) {
-            printf("Error: Package2 from NAND is too big or too small!\n");
-            generic_panic();
-        }
-
-        if (fread(package2->data, package2_size - sizeof(package2_header_t), 1, bcpkg21) < 1) {
-            printf("Error: Failed to read Package2 from NAND!\n");
-            generic_panic();
-        }
-        fclose(bcpkg21);
 #else
         printf("Error: Package2 must be loaded from the SD card, unless you know what you are doing!\n");
         generic_panic();
 #endif
     }
+
+    setvbuf(pk2file, NULL, _IONBF, 0); /* Workaround. */
+    if (fread(package2, sizeof(package2_header_t), 1, pk2file) < 1) {
+        printf("Error: Failed to read Package2!\n");
+        generic_panic();
+    }
+
+    package2_size = package2_meta_get_size(&package2->metadata);
+    if (package2_size > PACKAGE2_SIZE_MAX || package2_size <= sizeof(package2_header_t)) {
+        printf("Error: Package2 is too big or too small!\n");
+        generic_panic();
+    }
+/*
+    if (fread(package2->data, package2_size - sizeof(package2_header_t), 1, pk2file) < 1) {
+        printf("Error: Failed to read Package2!\n");
+        generic_panic();
+    }
+*/
+    for (size_t i = 0; i < package2_size - sizeof(package2_header_t); i += 512*32) {
+        /* TODO: check if we have read everything, eventually. */
+        size_t r = fread(package2->data + i, 1, 512, pk2file);
+        if (r == 0) {
+            printf("Error: Failed to read Package2!\n");
+            generic_panic();
+        } else if (r < 512) {
+            break;
+        }
+    }
+    fclose(pk2file);
+    printf("Read package2!\n");
 
     /* Setup boot configuration for Exosphère. */
     nxboot_configure_exosphere();
@@ -150,6 +152,7 @@ void nxboot_main(void) {
         generic_panic();
     }
 
+    printf("Reading boot0...\n");
     boot0 = fopen("boot0:/", "rb");
     if (boot0 == NULL || package1_read_and_parse_boot0(&package1loader, &package1loader_size, g_keyblobs, &available_revision, boot0) == -1) {
         printf("Error: Couldn't parse boot0: %s!\n", strerror(errno));
@@ -229,8 +232,10 @@ void nxboot_main(void) {
         }
     }
 
+    printf("Rebuilding package2...\n");
     /* Patch package2, adding Thermosphère + custom KIPs. */
     package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
+    printf(u8"Loading Exosphère...\n");
 
     /* Copy Exophère to a good location (or read it directly to it.) */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware <= EXOSPHERE_TARGET_FIRMWARE_400) {

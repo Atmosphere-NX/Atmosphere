@@ -43,7 +43,7 @@ bool check_mkey_revision(unsigned int revision) {
     return true;
 }
 
-void mkey_detect_revision(void) {
+int mkey_detect_revision(void) {
     if (g_determined_mkey_revision) {
         generic_panic();
     }
@@ -58,8 +58,9 @@ void mkey_detect_revision(void) {
     
     /* We must have determined the master key, or we're not running on a Switch. */
     if (!g_determined_mkey_revision) {
-        /* Panic in bright red. */
-        panic(0x00F00060);
+        return -1;
+    } else {
+        return 0;
     }
 }
 

@@ -155,8 +155,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     }
 
     /* Setup master key revision, derive older master keys for use. */
-    mkey_detect_revision();
-    return 0;
+    return mkey_detect_revision();
 }
 
 /* Sets final keyslot flags, for handover to TZ/Exosphere. Setting these will prevent the BPMP from using the device key or master key. */
