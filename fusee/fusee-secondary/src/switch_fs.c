@@ -102,7 +102,7 @@ static int switchfs_bis_crypto_decrypt(device_partition_t *devpart, uint64_t sec
         case DevicePartitionCryptoMode_Xts:
             set_aes_keyslot(keyslot_a, devpart->keys[0], 0x10);
             set_aes_keyslot(keyslot_b, devpart->keys[1], 0x10);
-            se_aes_128_xts_nintendo_decrypt(keyslot_a, keyslot_b, sector, devpart->crypto_work_buffer, devpart->crypto_work_buffer, num_sectors * devpart->sector_size, devpart->sector_size);
+            se_aes_128_xts_nintendo_decrypt(keyslot_a, keyslot_b, sector, devpart->crypto_work_buffer, devpart->crypto_work_buffer, size, devpart->sector_size);
             return 0;
         case DevicePartitionCryptoMode_None:
         default:
@@ -122,7 +122,7 @@ static int switchfs_bis_crypto_encrypt(device_partition_t *devpart, uint64_t sec
         case DevicePartitionCryptoMode_Xts:
             set_aes_keyslot(keyslot_a, devpart->keys[0], 0x10);
             set_aes_keyslot(keyslot_b, devpart->keys[1], 0x10);
-            se_aes_128_xts_nintendo_encrypt(keyslot_a, keyslot_b, sector, devpart->crypto_work_buffer, devpart->crypto_work_buffer, num_sectors * devpart->sector_size, devpart->sector_size);
+            se_aes_128_xts_nintendo_encrypt(keyslot_a, keyslot_b, sector, devpart->crypto_work_buffer, devpart->crypto_work_buffer, size, devpart->sector_size);
             return 0;
         case DevicePartitionCryptoMode_None:
         default:
