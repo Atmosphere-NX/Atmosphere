@@ -163,7 +163,7 @@ static int switchfs_mount_partition_gpt_callback(const efi_entry_t *entry, void 
     for (size_t i = 0; i < sizeof(known_partitions)/sizeof(known_partitions[0]); i++) {
         if (strcmp(name_buffer, known_partitions[i].partition_name) == 0) {
             devpart.start_sector += entry->first_lba;
-            devpart.num_sectors = entry->last_lba - entry->first_lba;
+            devpart.num_sectors = (entry->last_lba + 1) - entry->first_lba;
             if (parent->num_sectors < devpart.num_sectors) {
                 errno = EINVAL;
                 return -1;
