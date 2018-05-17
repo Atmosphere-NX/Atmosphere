@@ -237,7 +237,7 @@ static ssize_t rawdev_write(struct _reent *r, void *fd, const char *ptr, size_t 
     size_t sector_size = device->devpart.sector_size;
     uint64_t sector_begin = f->offset / sector_size;
     uint64_t sector_end = (f->offset + len + sector_size - 1) / sector_size;
-    uint64_t sector_end_aligned = sector_end - ((f->offset + len) % sector_size != 0 ? 1 : 0);
+    uint64_t sector_end_aligned;
     uint64_t current_sector = sector_begin;
     const uint8_t *data = (const uint8_t *)ptr;
 
@@ -245,6 +245,13 @@ static ssize_t rawdev_write(struct _reent *r, void *fd, const char *ptr, size_t 
 
     if (sector_end >= device->devpart.num_sectors) {
         len = (size_t)(sector_size * device->devpart.num_sectors - f->offset);
+        sector_end = device->devpart.num_sectors;
+    }
+
+    sector_end_aligned = sector_end - ((f->offset + len) % sector_size != 0 ? 1 : 0);
+
+    if (len == 0) {
+        return 0;
     }
 
     /* Unaligned at the start, we need to read the sector and incorporate the data. */
@@ -311,13 +318,14 @@ static ssize_t rawdev_write(struct _reent *r, void *fd, const char *ptr, size_t 
     f->offset += len;
     return len;
 }
+
 static ssize_t rawdev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
     rawdev_file_t *f = (rawdev_file_t *)fd;
     rawdev_device_t *device = f->device;
     size_t sector_size = device->devpart.sector_size;
     uint64_t sector_begin = f->offset / sector_size;
     uint64_t sector_end = (f->offset + len + sector_size - 1) / sector_size;
-    uint64_t sector_end_aligned = sector_end - ((f->offset + len) % sector_size != 0 ? 1 : 0);
+    uint64_t sector_end_aligned;
     uint64_t current_sector = sector_begin;
     uint8_t *data = (uint8_t *)ptr;
 
@@ -325,6 +333,13 @@ static ssize_t rawdev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
 
     if (sector_end >= device->devpart.num_sectors) {
         len = (size_t)(sector_size * device->devpart.num_sectors - f->offset);
+        sector_end = device->devpart.num_sectors;
+    }
+
+    sector_end_aligned = sector_end - ((f->offset + len) % sector_size != 0 ? 1 : 0);
+
+    if (len == 0) {
+        return 0;
     }
 
     /* Unaligned at the start, we need to read the sector and incorporate the data. */
