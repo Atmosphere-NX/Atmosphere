@@ -34,7 +34,7 @@ static void nxboot_configure_exosphere(void) {
     exosphere_config_t exo_cfg = {0};
 
     exo_cfg.magic = MAGIC_EXOSPHERE_BOOTCONFIG;
-    exo_cfg.target_firmware = 0;
+    exo_cfg.target_firmware = EXOSPHERE_TARGET_FIRMWARE_MAX;
 
     if (ini_parse_string(get_loader_ctx()->bct0, exosphere_ini_handler, &exo_cfg) < 0) {
         printf("Error: Failed to parse BCT.ini!\n");
@@ -47,23 +47,6 @@ static void nxboot_configure_exosphere(void) {
     }
 
     *(MAILBOX_EXOSPHERE_CONFIGURATION) = exo_cfg;
-}
-
-static void nxboot_adjust_exosphere_target_firmware(const package2_header_t *package2) {
-    static const uint32_t mkey_ver_to_target_fw[] = {
-        EXOSPHERE_TARGET_FIRMWARE_100,
-        EXOSPHERE_TARGET_FIRMWARE_200,
-        EXOSPHERE_TARGET_FIRMWARE_300,
-        EXOSPHERE_TARGET_FIRMWARE_300,
-        EXOSPHERE_TARGET_FIRMWARE_400,
-        EXOSPHERE_TARGET_FIRMWARE_500,
-    };
-    uint8_t package2_header_version = package2_meta_get_header_version(&package2->metadata);
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == 0) {
-        if (package2_header_version >= 1 && package2_header_version <= sizeof(mkey_ver_to_target_fw)/4) {
-            MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware = mkey_ver_to_target_fw[package2_header_version];
-        }
-    }
 }
 
 /* This is the main function responsible for booting Horizon. */
@@ -145,12 +128,6 @@ void nxboot_main(void) {
 
     /* Setup boot configuration for Exosphère. */
     nxboot_configure_exosphere();
-    nxboot_adjust_exosphere_target_firmware(package2);
-
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == 0) {
-        printf("Error: Failed to determine which target firmware too use!\n");
-        generic_panic();
-    }
 
     printf("Reading boot0...\n");
     boot0 = fopen("boot0:/", "rb");
