@@ -6,6 +6,8 @@
 #include <stdbool.h>
 
 #define DEVPART_IV_MAX_SIZE   16
+#define DEVPART_KEY_MAX 2
+#define DEVPART_KEY_MAX_SIZE 16
 
 struct device_partition_t;
 
@@ -18,6 +20,12 @@ typedef int (*device_partition_cipher_t)(struct device_partition_t *devpart, uin
 typedef int (*device_partition_reader_t)(struct device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors);
 typedef int (*device_partition_writer_t)(struct device_partition_t *devpart, const void *src, uint64_t sector, uint64_t num_sectors);
 
+typedef enum DevicePartitionCryptoMode {
+    DevicePartitionCryptoMode_None,
+    DevicePartitionCryptoMode_Ctr,
+    DevicePartitionCryptoMode_Xts,
+} DevicePartitionCryptoMode;
+
 typedef struct device_partition_t {
     size_t sector_size; /* The size of a sector */
     uint64_t start_sector;    /* Offset in the parent device, in sectors. */
@@ -25,7 +33,7 @@ typedef struct device_partition_t {
 
     device_partition_cipher_t read_cipher; /* Cipher for read operations. */
     device_partition_cipher_t write_cipher; /* Cipher for write operations. */
-    uint64_t crypto_flags; /* Additional information for crypto, for conveniency. */
+    DevicePartitionCryptoMode crypto_mode; /* Mode to use for cryptographic operations. */
 
     device_partition_initializer_t initializer; /* Initializer. */
     device_partition_finalizer_t finalizer; /* Finalizer. */
@@ -38,6 +46,7 @@ typedef struct device_partition_t {
     void *crypto_work_buffer; /* Work buffer for crypto. */
     uint64_t crypto_work_buffer_num_sectors; /* Size of the crypto work buffer in sectors. */
 
+    uint8_t keys[DEVPART_KEY_MAX][DEVPART_KEY_MAX_SIZE]; /* Key. */
     uint8_t iv[DEVPART_IV_MAX_SIZE]; /* IV. */
     bool initialized;
 } device_partition_t;

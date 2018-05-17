@@ -438,7 +438,7 @@ void aes_128_xts_nintendo_crypt_sector(unsigned int keyslot_1, unsigned int keys
         SECURITY_ENGINE->CRYPTO_REG = keyslot_1 << 24;
     }
     SECURITY_ENGINE->BLOCK_COUNT_REG = (size >> 4) - 1;
-    trigger_se_blocking_op(OP_START, dst, size, src, size);
+    trigger_se_blocking_op(OP_START, dst, size, dst, size);
     
     /* XOR. */
     aes_128_xts_nintendo_xor_with_tweak(keyslot_2, sector, dst, dst, size);

@@ -91,23 +91,43 @@ static int mmc_partition_write(device_partition_t *devpart, const void *src, uin
 }
 
 static int switchfs_bis_crypto_decrypt(device_partition_t *devpart, uint64_t sector, uint64_t num_sectors) {
-    unsigned int keyslot = (unsigned int)devpart->crypto_flags;
-    (void)keyslot;
-    (void)sector;
-    (void)num_sectors;
-    /*devpart->crypto_work_buffer*/
-    /* TODO */
-    return 0;
+    unsigned int keyslot_a = 4; /* These keyslots are never used by exosphere, and should be safe. */
+    unsigned int keyslot_b = 5;
+    size_t size = num_sectors * devpart->sector_size;
+    switch (devpart->crypto_mode) {
+        case DevicePartitionCryptoMode_Ctr:
+            set_aes_keyslot(keyslot_a, devpart->keys[0], 0x10);
+            se_aes_ctr_crypt(keyslot_a, devpart->crypto_work_buffer, size, devpart->crypto_work_buffer, size, devpart->iv, 0x10);
+            return 0;
+        case DevicePartitionCryptoMode_Xts:
+            set_aes_keyslot(keyslot_a, devpart->keys[0], 0x10);
+            set_aes_keyslot(keyslot_b, devpart->keys[1], 0x10);
+            se_aes_128_xts_nintendo_decrypt(keyslot_a, keyslot_b, sector, devpart->crypto_work_buffer, devpart->crypto_work_buffer, num_sectors * devpart->sector_size, devpart->sector_size);
+            return 0;
+        case DevicePartitionCryptoMode_None:
+        default:
+            return 0;
+    }
 }
 
 static int switchfs_bis_crypto_encrypt(device_partition_t *devpart, uint64_t sector, uint64_t num_sectors) {
-    unsigned int keyslot = (unsigned int)devpart->crypto_flags;
-    (void)keyslot;
-    (void)sector;
-    (void)num_sectors;
-    /*devpart->crypto_work_buffer*/
-    /* TODO */
-    return 0;
+    unsigned int keyslot_a = 4; /* These keyslots are never used by exosphere, and should be safe. */
+    unsigned int keyslot_b = 5;
+    size_t size = num_sectors * devpart->sector_size;
+    switch (devpart->crypto_mode) {
+        case DevicePartitionCryptoMode_Ctr:
+            set_aes_keyslot(keyslot_a, devpart->keys[0], 0x10);
+            se_aes_ctr_crypt(keyslot_a, devpart->crypto_work_buffer, size, devpart->crypto_work_buffer, size, devpart->iv, 0x10);
+            return 0;
+        case DevicePartitionCryptoMode_Xts:
+            set_aes_keyslot(keyslot_a, devpart->keys[0], 0x10);
+            set_aes_keyslot(keyslot_b, devpart->keys[1], 0x10);
+            se_aes_128_xts_nintendo_encrypt(keyslot_a, keyslot_b, sector, devpart->crypto_work_buffer, devpart->crypto_work_buffer, num_sectors * devpart->sector_size, devpart->sector_size);
+            return 0;
+        case DevicePartitionCryptoMode_None:
+        default:
+            return 0;
+    }
 }
 
 static mmc_partition_info_t g_sd_mmcpart = { &g_sd_mmc, SWITCH_MICROSD, SDMMC_PARTITION_USER };
