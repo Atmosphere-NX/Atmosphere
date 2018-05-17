@@ -41,19 +41,30 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
         g_ahb_redirect_enabled = true;
     }
 
-    if (mmcpart->mmc == &g_sd_mmc && !g_sd_mmc_initialized) {
-        int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller);
-        if (rc == 0) {
-            sdmmc_set_write_enable(mmcpart->mmc, SDMMC_WRITE_ENABLED);
-            devpart->initialized = g_sd_mmc_initialized = true;
+    if (mmcpart->mmc == &g_sd_mmc) {
+        if (!g_sd_mmc_initialized) {
+            int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller);
+            if (rc == 0) {
+                sdmmc_set_write_enable(mmcpart->mmc, SDMMC_WRITE_ENABLED);
+                g_sd_mmc_initialized = true;
+            }
+            else {
+                return rc;
+            }
         }
-        return rc;
-    } else if (mmcpart->mmc == &g_nand_mmc && !g_nand_mmc_initialized) {
-        int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller);
-        if (rc == 0) {
-            devpart->initialized = g_nand_mmc_initialized = true;
+        devpart->initialized = true;
+        return 0;
+    } else if (mmcpart->mmc == &g_nand_mmc) {
+        if (!g_nand_mmc_initialized) {
+            int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller);
+            if (rc == 0) {
+                g_nand_mmc_initialized = true;
+            } else {
+                return rc;
+            }
         }
-        return rc;
+        devpart->initialized = true;
+        return 0;
     }
 
     return 0;
@@ -63,7 +74,7 @@ static void mmc_partition_finalize(device_partition_t *devpart) {
     free(devpart->crypto_work_buffer);
 }
 
-static enum sdmmc_partition g_current_emmc_partition = SDMMC_PARTITION_USER;
+static enum sdmmc_partition g_current_emmc_partition = (enum sdmmc_partition)-1;
 
 static int mmc_partition_read(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors) {
     mmc_partition_info_t *mmcpart = (mmc_partition_info_t *)devpart->device_struct;
@@ -192,6 +203,7 @@ static int switchfs_mount_partition_gpt_callback(const efi_entry_t *entry, void 
             if (known_partitions[i].is_encrypted) {
                 devpart.read_cipher = switchfs_bis_crypto_decrypt;
                 devpart.write_cipher = switchfs_bis_crypto_encrypt;
+                devpart.crypto_mode = DevicePartitionCryptoMode_Xts;
             }
 
             if (known_partitions[i].is_fat) {

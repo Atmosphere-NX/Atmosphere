@@ -46,8 +46,8 @@ typedef struct device_partition_t {
     void *crypto_work_buffer; /* Work buffer for crypto. */
     uint64_t crypto_work_buffer_num_sectors; /* Size of the crypto work buffer in sectors. */
 
-    uint8_t keys[DEVPART_KEY_MAX][DEVPART_KEY_MAX_SIZE]; /* Key. */
-    uint8_t iv[DEVPART_IV_MAX_SIZE]; /* IV. */
+    uint8_t __attribute__((aligned(16))) keys[DEVPART_KEY_MAX][DEVPART_KEY_MAX_SIZE]; /* Key. */
+    uint8_t __attribute__((aligned(16))) iv[DEVPART_IV_MAX_SIZE]; /* IV. */
     bool initialized;
 } device_partition_t;
 

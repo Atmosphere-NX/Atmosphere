@@ -9,7 +9,7 @@ int device_partition_read_data(device_partition_t *devpart, void *dst, uint64_t 
             return rc;
         }
     }
-    if (devpart->read_cipher != NULL) {
+    if (devpart->read_cipher != NULL && devpart->crypto_mode != DevicePartitionCryptoMode_None) {
         for (uint64_t i = 0; i < num_sectors; i += devpart->crypto_work_buffer_num_sectors) {
             uint64_t n = (i + devpart->crypto_work_buffer_num_sectors > num_sectors) ? (num_sectors - i) : devpart->crypto_work_buffer_num_sectors;
             rc = devpart->reader(devpart, devpart->crypto_work_buffer, sector + i, n);
@@ -38,7 +38,7 @@ int device_partition_write_data(device_partition_t *devpart, const void *src, ui
         }
     }
 
-    if (devpart->read_cipher != NULL) {
+    if (devpart->read_cipher != NULL && devpart->crypto_mode != DevicePartitionCryptoMode_None) {
         for (uint64_t i = 0; i < num_sectors; i += devpart->crypto_work_buffer_num_sectors) {
             uint64_t n = (i + devpart->crypto_work_buffer_num_sectors > num_sectors) ? (num_sectors - i) : devpart->crypto_work_buffer_num_sectors;
             memcpy(devpart->crypto_work_buffer, src + (size_t)(devpart->sector_size * i), (size_t)(devpart->sector_size * n)); 
