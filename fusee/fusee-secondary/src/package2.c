@@ -15,7 +15,6 @@ static void package2_append_section(size_t id, package2_header_t *package2, void
 static void package2_fixup_header_and_section_hashes(package2_header_t *package2, size_t size);
 
 void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware) {
-    uintptr_t pk2da = (uintptr_t)package2 + sizeof(package2_header_t);
     package2_header_t *rebuilt_package2;
     size_t rebuilt_package2_size;
     void *kernel;
@@ -26,7 +25,8 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
 
     /* First things first: Decrypt Package2 in place. */
     package2_decrypt(package2);
-    kernel = (void *)(pk2da + package2->metadata.section_offsets[PACKAGE2_SECTION_KERNEL]);
+    printf("Decrypted package2!\n");
+    kernel = package2->data + package2->metadata.section_offsets[PACKAGE2_SECTION_KERNEL];
     kernel_size = package2->metadata.section_sizes[PACKAGE2_SECTION_KERNEL];
 
     /* Modify Package2 to add an additional thermosphere section. */
@@ -40,8 +40,10 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     /* Perform any patches we want to the NX kernel. */
     package2_patch_kernel(kernel, kernel_size);
 
+    printf("Rebuilding the INI1 section...\n");
     /* Perform any patches to the INI1, rebuilding it (This is where our built-in sysmodules will be added.) */
-    rebuilt_ini1 = package2_rebuild_ini1((ini1_header_t *)(pk2da + package2->metadata.section_offsets[PACKAGE2_SECTION_INI1]), target_firmware);
+    rebuilt_ini1 = package2_rebuild_ini1((ini1_header_t *)(package2->data + package2->metadata.section_offsets[PACKAGE2_SECTION_INI1]), target_firmware);
+    printf("Rebuilt INI1...\n");
 
     /* Allocate the rebuilt package2. */
     rebuilt_package2_size = sizeof(package2_header_t);
@@ -197,10 +199,12 @@ static uint32_t package2_decrypt_and_validate_header(package2_header_t *header, 
 
         /* Ensure we successfully decrypted the header. */
         if (mkey_rev > mkey_get_revision()) {
-            panic(0xFAF00003);
+            printf("Error: failed to decrypt the Package2 header (master key revision %u)!\n", mkey_get_revision());
+            generic_panic();
         }
     } else if (!package2_validate_metadata(&header->metadata)) {
-        panic(0xFAF0003);
+        printf("Error: Failed to validate the Package2 header!\n");
+        generic_panic();
     }
     return 0;
 }
