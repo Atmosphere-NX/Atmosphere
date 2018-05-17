@@ -78,7 +78,9 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
 
 static void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
     /* Derive package2 key. */
-    const uint8_t package2_key_source[0x10] = {0xFB, 0x8B, 0x6A, 0x9C, 0x79, 0x00, 0xC8, 0x49, 0xEF, 0xD2, 0x4D, 0x85, 0x4D, 0x30, 0xA0, 0xC7};
+    const uint8_t __attribute__((aligned(16))) package2_key_source[0x10] = {
+        0xFB, 0x8B, 0x6A, 0x9C, 0x79, 0x00, 0xC8, 0x49, 0xEF, 0xD2, 0x4D, 0x85, 0x4D, 0x30, 0xA0, 0xC7
+    };
     unsigned int keyslot = mkey_get_keyslot(master_key_rev);
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_PACKAGE2KEY, keyslot, package2_key_source, 0x10);
 
@@ -87,6 +89,7 @@ static void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t ds
 }
 
 static bool package2_validate_metadata(package2_meta_t *metadata) {
+    package2_header_t *package2 = (package2_header_t *)((uint8_t *)metadata - offsetof(package2_header_t, metadata));
     if (metadata->magic != MAGIC_PK21) {
         return false;
     }
@@ -147,7 +150,7 @@ static bool package2_validate_metadata(package2_meta_t *metadata) {
 
         /* Validate section hashes. */
         if (metadata->section_sizes[section]) {
-            void *section_data = (void *)((uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS + sizeof(package2_header_t) + cur_section_offset);
+            void *section_data = package2->data + cur_section_offset;
             uint8_t calculated_hash[0x20];
             se_calculate_sha256(calculated_hash, section_data, metadata->section_sizes[section]);
             if (memcmp(calculated_hash, metadata->section_hashes[section], sizeof(metadata->section_hashes[section])) != 0) {
@@ -216,7 +219,7 @@ static void package2_decrypt(package2_header_t *package2) {
             continue;
         }
 
-        void *src_start = (uint8_t *)package2 + sizeof(package2_header_t) + cur_section_offset;
+        void *src_start = package2->data + cur_section_offset;
         void *dst_start = src_start;
         size_t size = (size_t)package2->metadata.section_sizes[section];
 
@@ -267,7 +270,7 @@ static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target
 static void package2_append_section(size_t id, package2_header_t *package2, void *data, size_t size) {
     /* This function must be called in ascending order of id */
     uint32_t offset = id == 0 ? 0 : package2->metadata.section_offsets[id - 1] + package2->metadata.section_sizes[id - 1];
-    void *dst = (uint8_t *)package2 + sizeof(package2_header_t) + offset;
+    void *dst = package2->data + offset;
     memcpy(dst, data, size);
 
     package2->metadata.section_offsets[id] = offset;
@@ -282,10 +285,10 @@ static void package2_fixup_header_and_section_hashes(package2_header_t *package2
         }
 
         size_t sz = (size_t)package2->metadata.section_sizes[section];
-        size_t off = sizeof(package2_header_t) + package2->metadata.section_offsets[section];
+        size_t off = package2->metadata.section_offsets[section];
 
         /* Fix up the hash. */
-        se_calculate_sha256(package2->metadata.section_hashes[section],(uint8_t *)package2 + off, sz);
+        se_calculate_sha256(package2->metadata.section_hashes[section], package2->data + off, sz);
     }
 
     /* Fix up the size in XOR'd CTR. */

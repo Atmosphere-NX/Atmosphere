@@ -81,6 +81,7 @@ typedef struct {
         package2_meta_t metadata;
         uint8_t encrypted_header[0x100];
     };
+    uint8_t data[];
 } package2_header_t;
 
 void load_package2(coldboot_crt0_reloc_list_t *reloc_list);
