@@ -93,9 +93,10 @@ __start_cold:
         stp  x3, x4, [x0], #0x10
         cmp  x0, x2
         blo  1b
-
-    adr  x20, __start_cold
-    adr  x19, g_coldboot_crt0_relocation_list
+    
+    adr  x19, __start_cold
+    adr x20, g_coldboot_crt0_relocation_list
+    sub x20, x20, x19
     ldr  x16, =_post_cold_crt0_reloc
     br   x16
 
@@ -105,10 +106,28 @@ _post_cold_crt0_reloc:
     bl   get_coldboot_crt0_stack_address
     mov  sp, x0
     mov  fp, #0
+    
+    /* Relocate Exosphere image to free DRAM, clearing the image in IRAM. */
+    ldr x0, =0x80010000
+    add x20, x20, x0
+    ldr x2, =__loaded_end_lma__
+    ldr x3, =0x40020000
+    sub x21, x2, x3
+    mov x1, x19
+    mov x2, x21
+    add x2, x2, x0
+    2:
+        ldp x3, x4, [x1]
+        stp x3, x4, [x0], #0x10
+        stp xzr, xzr, [x1], #0x10
+        cmp x0, x2
+        blo 2b
 
-    /* X1 is already set to __start_cold (original load location) from above. */
-    mov  x0, x19
+    /* X0 = TZ-in-DRAM, X1 = relocation-list-in-DRAM. */
+    ldr x0, =0x80010000
     mov  x1, x20
+    /* Set size in coldboot relocation list. */
+    str x21, [x1, #0x8]
     bl   coldboot_init
 
     ldr  x16, =__jump_to_main_cold
@@ -240,7 +259,7 @@ __jump_to_lower_el:
 .align      3
 .global     g_coldboot_crt0_relocation_list
 g_coldboot_crt0_relocation_list:
-    .quad   0, __loaded_end_lma__  /* __start_cold, to be set & loaded size */
+    .quad   0, 0  /* __start_cold, to be set & loaded size */
     .quad   1, 5                   /* number of sections to relocate/clear before & after mmu init */
     /* Relocations */
     .quad   __warmboot_crt0_start__, __warmboot_crt0_end__, __warmboot_crt0_lma__
