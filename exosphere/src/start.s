@@ -124,10 +124,10 @@ _post_cold_crt0_reloc:
         blo 2b
 
     /* X0 = TZ-in-DRAM, X1 = relocation-list-in-DRAM. */
-    ldr x0, =0x80010000
-    mov  x1, x20
+    mov  x0, x20
+    ldr x1, =0x80010000
     /* Set size in coldboot relocation list. */
-    str x21, [x1, #0x8]
+    str x21, [x0, #0x8]
     bl   coldboot_init
 
     ldr  x16, =__jump_to_main_cold

@@ -122,7 +122,6 @@ uintptr_t get_coldboot_crt0_stack_address(void) {
 
 void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, uintptr_t start_cold) {
     //MAILBOX_NX_SECMON_BOOT_TIME = TIMERUS_CNTR_1US_0;
-    MAKE_REG32(0x7000E400ULL) = 0x10;
 
     /* Custom approach */
     reloc_list->reloc_base = start_cold;
@@ -161,6 +160,7 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, uintptr_t start_cold)
     for(size_t i = 0; i < reloc_list->nb_relocs_post_mmu_init; i++) {
         do_relocation(reloc_list, reloc_list->nb_relocs_pre_mmu_init + i);
     }
+    // MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
 
     flush_dcache_all();
     invalidate_icache_all();
