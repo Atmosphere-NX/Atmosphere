@@ -107,12 +107,13 @@ static void configure_ttbls(void) {
 static void do_relocation(const coldboot_crt0_reloc_list_t *reloc_list, size_t index) {
     extern const uint8_t __glob_origin__[];
     uint64_t *p_vma = (uint64_t *)reloc_list->relocs[index].vma;
+    bool is_clear = reloc_list->relocs[index].lma == 0;
     size_t offset = reloc_list->relocs[index].lma - (uintptr_t)__glob_origin__;
     const uint64_t *p_lma = (const uint64_t *)(reloc_list->reloc_base + offset);
     size_t size = reloc_list->relocs[index].end_vma - reloc_list->relocs[index].vma;
 
     for(size_t i = 0; i < size / 8; i++) {
-        p_vma[i] = offset != 0 ? p_lma[i] : 0;
+        p_vma[i] = is_clear ? 0 : p_lma[i];
     }
 }
 
@@ -160,7 +161,6 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, uintptr_t start_cold)
     for(size_t i = 0; i < reloc_list->nb_relocs_post_mmu_init; i++) {
         do_relocation(reloc_list, reloc_list->nb_relocs_pre_mmu_init + i);
     }
-    // MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
 
     flush_dcache_all();
     invalidate_icache_all();

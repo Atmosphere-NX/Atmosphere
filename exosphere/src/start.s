@@ -111,7 +111,7 @@ _post_cold_crt0_reloc:
     ldr x0, =0x80010000
     add x20, x20, x0
     ldr x2, =__loaded_end_lma__
-    ldr x3, =0x40020000
+    ldr x3, =__glob_origin__
     sub x21, x2, x3
     mov x1, x19
     mov x2, x21
