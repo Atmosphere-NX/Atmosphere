@@ -1,12 +1,10 @@
-SUBFOLDERS := exosphere fusee stratosphere thermosphere
-
 TOPTARGETS := all clean
 
-$(TOPTARGETS): $(SUBFOLDERS)
+all: fusee
+fusee:
+	$(MAKE) -C $@ all
 
-$(SUBFOLDERS):
-	$(MAKE) -C $@ $(MAKECMDGOALS)
+clean:
+	$(MAKE) -C fusee clean
 
-fusee: exosphere thermosphere stratosphere
- 
-.PHONY: $(TOPTARGETS) $(SUBFOLDERS)
+.PHONY: $(TOPTARGETS) fusee

@@ -7,6 +7,12 @@
 #include "kip.h"
 #include "se.h"
 
+#define u8 uint8_t
+#define u32 uint32_t
+#include "thermosphere_bin.h"
+#undef u8
+#undef u32
+
 static void package2_decrypt(package2_header_t *package2);
 static size_t package2_get_thermosphere(void **thermosphere);
 static void package2_patch_kernel(void *kernel, size_t kernel_size);

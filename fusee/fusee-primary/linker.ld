@@ -35,9 +35,9 @@ SECTIONS
         PROVIDE (__chainloader_start__  = .);
         PROVIDE (__chainloader_lma__    = LOADADDR(.chainloader_loadable));
         KEEP(*(.chainloader.text.start))
-        build/chainloader.o(.text*)
-        build/chainloader.o(.rodata*)
-        build/chainloader.o(.data*)
+        chainloader.o(.text*)
+        chainloader.o(.rodata*)
+        chainloader.o(.data*)
         . = ALIGN(8);
 
     } >low_iram AT>main
@@ -46,7 +46,7 @@ SECTIONS
     {
         . = ALIGN(8);
         PROVIDE (__chainloader_bss_start__ = .);
-        build/chainloader.o(.bss* COMMON)
+        chainloader.o(.bss* COMMON)
         . = ALIGN(8);
         PROVIDE (__chainloader_end__ = .);
     } >low_iram AT>main

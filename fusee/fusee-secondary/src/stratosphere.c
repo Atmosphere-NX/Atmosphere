@@ -7,6 +7,16 @@
 #include "stratosphere.h"
 #include "fs_utils.h"
 
+#define u8 uint8_t
+#define u32 uint32_t
+#include "loader_kip.h"
+#include "pm_kip.h"
+#include "sm_kip.h"
+#include "boot_100_kip.h"
+#include "boot_200_kip.h"
+#undef u8
+#undef u32
+
 static ini1_header_t *g_stratosphere_ini1 = NULL;
 
 extern const uint8_t boot_100_kip[], boot_200_kip[];

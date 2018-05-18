@@ -1,69 +1,155 @@
-rwildcard = $(foreach d, $(wildcard $1*), $(filter $(subst *, %, $2), $d) $(call rwildcard, $d/, $2))
+#---------------------------------------------------------------------------------
+.SUFFIXES:
+#---------------------------------------------------------------------------------
 
 ifeq ($(strip $(DEVKITPRO)),)
-$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPro")
+$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>/devkitpro")
 endif
 
-include $(DEVKITPRO)/devkitA64/base_tools
+TOPDIR ?= $(CURDIR)
+include $(DEVKITPRO)/devkitA64/base_rules
 
-name := thermosphere
+#---------------------------------------------------------------------------------
+# TARGET is the name of the output
+# BUILD is the directory where object files & intermediate files will be placed
+# SOURCES is a list of directories containing source code
+# DATA is a list of directories containing data files
+# INCLUDES is a list of directories containing header files
+#---------------------------------------------------------------------------------
+TARGET		:=	$(notdir $(CURDIR))
+BUILD		:=	build
+SOURCES		:=	src src/lib
+DATA		:=	data
+INCLUDES	:=	include
 
-dir_source := src
-dir_build := build
-dir_out := out
+#---------------------------------------------------------------------------------
+# options for code generation
+#---------------------------------------------------------------------------------
+ARCH	:=	-march=armv8-a -mtune=cortex-a57
 
-ARCH := -march=armv8-a -mtune=cortex-a57
+CFLAGS	:= \
+		-g \
+		-O2 \
+		-ffunction-sections \
+		-fdata-sections \
+		-mgeneral-regs-only \
+		-fomit-frame-pointer \
+		-std=gnu11 \
+		-Werror \
+		-Wall \
+		-Wno-main \
+		$(ARCH) $(DEFINES)
 
-ASFLAGS := -g $(ARCH)
+CFLAGS	+=	$(INCLUDE) -D__CCPLEX__
 
-CFLAGS = \
-	$(ARCH) \
-	-g \
-	-O2 \
-	-ffunction-sections \
-	-fdata-sections \
-	-mgeneral-regs-only \
-	-fomit-frame-pointer \
-	-std=gnu11 \
-	-Werror \
-	-Wall \
-	-Wno-main
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
-LDFLAGS = -specs=linker.specs -g $(ARCH)
+ASFLAGS	:=	-g $(ARCH)
+LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-objects =	$(patsubst $(dir_source)/%.s, $(dir_build)/%.o, \
-			$(patsubst $(dir_source)/%.c, $(dir_build)/%.o, \
-			$(patsubst $(dir_source)/%.S, $(dir_build)/%.o, \
-			$(call rwildcard, $(dir_source), *.s *.c *.S))))
+LIBS	:=
+
+#---------------------------------------------------------------------------------
+# list of directories containing libraries, this must be the top level containing
+# include and lib
+#---------------------------------------------------------------------------------
+LIBDIRS	:=
 
 
-define bin2o
-	bin2s $< | $(AS) -o $(@)
-endef
+#---------------------------------------------------------------------------------
+# no real need to edit anything past this point unless you need to add additional
+# rules for different file extensions
+#---------------------------------------------------------------------------------
+ifneq ($(BUILD),$(notdir $(CURDIR)))
+#---------------------------------------------------------------------------------
 
-.PHONY: all
-all: $(dir_out)/$(name).bin
+export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export TOPDIR	:=	$(CURDIR)
 
-.PHONY: clean
+export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
+			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+
+export DEPSDIR	:=	$(CURDIR)/$(BUILD)
+
+CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
+SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+
+#---------------------------------------------------------------------------------
+# use CXX for linking C++ projects, CC for standard C
+#---------------------------------------------------------------------------------
+ifeq ($(strip $(CPPFILES)),)
+#---------------------------------------------------------------------------------
+	export LD	:=	$(CC)
+#---------------------------------------------------------------------------------
+else
+#---------------------------------------------------------------------------------
+	export LD	:=	$(CXX)
+#---------------------------------------------------------------------------------
+endif
+#---------------------------------------------------------------------------------
+
+export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
+export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
+export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)
+export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
+
+export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+			-I$(CURDIR)/$(BUILD)
+
+export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+
+.PHONY: $(BUILD) clean all
+
+#---------------------------------------------------------------------------------
+all: $(BUILD)
+
+$(BUILD):
+	@[ -d $@ ] || mkdir -p $@
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+
+#---------------------------------------------------------------------------------
 clean:
-	@rm -rf $(dir_build)
-	@rm -rf $(dir_out)
+	@echo clean ...
+	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
 
-$(dir_out)/$(name).bin: $(dir_build)/$(name).elf
-	@mkdir -p "$(@D)"
+
+#---------------------------------------------------------------------------------
+else
+.PHONY:	all
+
+DEPENDS	:=	$(OFILES:.o=.d)
+
+#---------------------------------------------------------------------------------
+# main targets
+#---------------------------------------------------------------------------------
+all	:	$(OUTPUT).bin
+
+$(OUTPUT).bin	:	$(OUTPUT).elf
 	$(OBJCOPY) -S -O binary $< $@
+	@echo built ... $(notdir $@)
 
-$(dir_build)/$(name).elf: $(objects)
-	$(LINK.o) $(OUTPUT_OPTION) $^
+$(OUTPUT).elf	:	$(OFILES)
 
-$(dir_build)/%.bin.o: $(dir_build)/%.bin
+%.elf:
+	@echo linking $(notdir $@)
+	$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	@$(NM) -CSn $@ > $(notdir $*.lst)
+
+$(OFILES_SRC)	: $(HFILES_BIN)
+
+#---------------------------------------------------------------------------------
+# you need a rule like this for each extension you use as binary data
+#---------------------------------------------------------------------------------
+%.bin.o	:	%.bin
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
 	@$(bin2o)
 
-$(dir_build)/%.o: $(dir_source)/%.c
-	@mkdir -p "$(@D)"
-	$(COMPILE.c) $(OUTPUT_OPTION) $<
+-include $(DEPENDS)
 
-$(dir_build)/%.o: $(dir_source)/%.s
-	@mkdir -p "$(@D)"
-	$(COMPILE.c) -x assembler-with-cpp $(OUTPUT_OPTION) $<
-
+#---------------------------------------------------------------------------------------
+endif
+#---------------------------------------------------------------------------------------

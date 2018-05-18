@@ -14,6 +14,13 @@
 #include "exocfg.h"
 #include "display/video_fb.h"
 #include "lib/ini.h"
+
+#define u8 uint8_t
+#define u32 uint32_t
+#include "exosphere_bin.h"
+#undef u8
+#undef u32
+
 #include "hwinit/cluster.h"
 
 static int exosphere_ini_handler(void *user, const char *section, const char *name, const char *value) {
@@ -237,8 +244,6 @@ void nxboot_main(void) {
             generic_panic();
         }
     } else {
-        extern const uint8_t exosphere_bin[];
-        extern const uint32_t exosphere_bin_size;
         memcpy(exosphere_memaddr, exosphere_bin, exosphere_bin_size);
     }
 

@@ -1,4 +1,7 @@
-KIPS := boot boot2 loader pm sm
+KIPS := loader pm sm boot
+
+#TODO: boot2 ?
+
 SUBFOLDERS := libstratosphere $(KIPS)
 
 TOPTARGETS := all clean

@@ -9,7 +9,7 @@ SECTIONS
     . = ALIGN(4);
     .text : {
     PROVIDE(lds_thermo_start = .);
-        build/start.o (.text*)
+        start.o (.text*)
         *(.text*)
     }
 
@@ -35,16 +35,16 @@ SECTIONS
     . = ALIGN(16);
     . += 0x10000; /* 64 KiB stack */
     el2_stack_end = .;
-  
+
     /* Page align the end of binary */
     . = ALIGN(512);
     PROVIDE(lds_el2_thermo_end = .);
-  
+
     /* EL1 stack */
     . = ALIGN(16);
     . += 0x10000; /* 64 KiB stack */
     el1_stack_end = .;
-  
+
     lds_thermo_end = .;
 
     /DISCARD/ : { *(.dynstr*) }

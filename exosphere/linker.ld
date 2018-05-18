@@ -33,14 +33,14 @@ SECTIONS
         __glob_origin__ = ORIGIN(glob);
         KEEP (*(.cold_crt0.text.start)) /* MUST be first */
         KEEP (*(.cold_crt0.text*))
-        KEEP (build/coldboot_init.o(.text*))
+        KEEP (coldboot_init.o(.text*))
         *(.cold_crt0.rodata*)
-        build/coldboot_init.o(.rodata*)
+        coldboot_init.o(.rodata*)
         *(.cold_crt0.data*)
-        build/coldboot_init.o(.data*)
+        coldboot_init.o(.data*)
         . = ALIGN(8);
         *(.cold_crt0.bss*)
-        build/coldboot_init.o(.bss* COMMON)
+        coldboot_init.o(.bss* COMMON)
         . = ALIGN(64);
         __cold_crt0_end__ = ABSOLUTE(.);
     } >ccrt0 AT>glob
@@ -50,9 +50,9 @@ SECTIONS
         . = ALIGN(4096);
         __pk2ldr_lma__   = LOADADDR(.pk2ldr);
         __pk2ldr_start__ = ABSOLUTE(.);
-        KEEP (build/package2.o(.text*))
-        build/package2.o(.rodata*)
-        build/package2.o(.data*)
+        KEEP (package2.o(.text*))
+        package2.o(.rodata*)
+        package2.o(.data*)
         . = ALIGN(8);
     } >pk2ldr AT>glob
 
@@ -60,7 +60,7 @@ SECTIONS
     {
         . = ALIGN(8);
         __pk2ldr_bss_start__ = ABSOLUTE(.);
-        build/package2.o(.bss* COMMON)
+        package2.o(.bss* COMMON)
         . = ALIGN(8);
         __pk2ldr_end__ = ABSOLUTE(.);
     } >pk2ldr AT>glob
@@ -82,14 +82,14 @@ SECTIONS
         __warmboot_crt0_start__ = ABSOLUTE(.);
         KEEP (*(.warm_crt0.text.start)) /* Should be first */
         KEEP (*(.warm_crt0.text*))
-        KEEP (build/warmboot_init.o(.text*))
+        KEEP (warmboot_init.o(.text*))
         *(.warm_crt0.rodata*)
-        build/warmboot_init.o(.rodata*)
+        warmboot_init.o(.rodata*)
         *(.warm_crt0.data*)
-        build/warmboot_init.o(.data*)
+        warmboot_init.o(.data*)
         . = ALIGN(8);
         *(.warm_crt0.bss*)
-        build/warmboot_init.o(.bss*)
+        warmboot_init.o(.bss*)
         . = ALIGN(64);
         __warmboot_crt0_end__ = ABSOLUTE(.);
     } >warmboot_crt0 AT>glob
