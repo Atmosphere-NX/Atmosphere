@@ -126,7 +126,6 @@ enum sdmmc_switch_field {
 };
 
 
-
 /**
  * Primary data structure describing a Fusée MMC driver.
  */
@@ -150,9 +149,9 @@ struct mmc {
     /* Per-card-type operations */
     int (*card_init)(struct mmc *mmc);
     int (*establish_relative_address)(struct mmc *mmc);
-    int (*switch_mode)(struct mmc *mmc, enum sdmmc_switch_access_mode mode,
-            enum sdmmc_switch_field field, uint16_t value, uint32_t timeout);
+    int (*switch_mode)(struct mmc *mmc, int a, int b, int c, uint32_t timeout, void *response);
     int (*switch_bus_width)(struct mmc *mmc, enum sdmmc_bus_width width);
+    int (*switch_to_high_speed)(struct mmc *mmc);
 
     /* Card properties */
     uint8_t cid[15];

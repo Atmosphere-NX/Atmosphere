@@ -51,8 +51,6 @@ enum {
     CLK_SOURCE_MASK        = (0b111 << 29),
     CLK_SOURCE_FIRST       = 0,
     CLK_DIVIDER_UNITY      = 0,
-
-    CLK_DIVIDER_32         = 32,
 };
 
 
