@@ -28,7 +28,7 @@
 #define CONSOLE_FG_COL            0xa0
 
 /* Try using the small font */
-#define CONFIG_VIDEO_FONT_SMALL
+//#define CONFIG_VIDEO_FONT_SMALL
 
 /*
  * Graphic Data Format (GDF) bits for VIDEO_DATA_FORMAT

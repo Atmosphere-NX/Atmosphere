@@ -1157,6 +1157,10 @@ static int sdmmc_wait_for_interrupt(struct mmc *mmc,
 
             // Finally, EOI the relevant interrupt.
             mmc->regs->int_status |= fault_conditions;
+
+            // Reset the timebase, so it applies to the next
+            // DMA interval.
+            timebase = get_time();
         }
 
         if (mmc->regs->int_status & target_irq)
