@@ -122,6 +122,7 @@ uintptr_t get_coldboot_crt0_stack_address(void) {
 
 void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, uintptr_t start_cold) {
     //MAILBOX_NX_SECMON_BOOT_TIME = TIMERUS_CNTR_1US_0;
+    //MAKE_REG32(0x7000E400ULL) = 0x10;
 
     /* Custom approach */
     reloc_list->reloc_base = start_cold;

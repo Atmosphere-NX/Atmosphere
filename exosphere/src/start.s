@@ -89,11 +89,13 @@ __start_cold:
     cmp  x0, x1
     beq  _post_cold_crt0_reloc
     1:
-        ldp  x3, x4, [x0], #0x10
-        stp  x3, x4, [x1], #0x10
+        ldp  x3, x4, [x1], #0x10
+        stp  x3, x4, [x0], #0x10
         cmp  x0, x2
         blo  1b
 
+    adr  x20, __start_cold
+    adr  x19, g_coldboot_crt0_relocation_list
     ldr  x16, =_post_cold_crt0_reloc
     br   x16
 
@@ -104,9 +106,9 @@ _post_cold_crt0_reloc:
     mov  sp, x0
     mov  fp, #0
 
-    adr  x0, g_coldboot_crt0_relocation_list
-    mov  x19, x0
-    adr  x1, __start_cold
+    /* X1 is already set to __start_cold (original load location) from above. */
+    mov  x0, x19
+    mov  x1, x20
     bl   coldboot_init
 
     ldr  x16, =__jump_to_main_cold
