@@ -10,6 +10,10 @@
 #include "lib/printk.h"
 #include "display/video_fb.h"
 
+#ifdef HAS_CONFIG_H
+#include "config.h"
+#endif
+
 extern void (*__program_exit_callback)(int rc);
 
 static void *g_framebuffer;
