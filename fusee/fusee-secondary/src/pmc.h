@@ -29,7 +29,7 @@
 /**
  * Definitions of the Tegra PMC.
  */
-struct PACKED tegra_pmc {
+struct tegra_pmc {
     uint32_t cntrl;
     uint32_t sec_disable;
     uint32_t pmc_swrst;
