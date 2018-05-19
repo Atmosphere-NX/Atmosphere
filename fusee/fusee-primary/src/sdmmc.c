@@ -135,9 +135,9 @@ enum sdmmc_constants {
  * SDMMC clock divider constants
  */
 enum sdmmc_clock_dividers {
-    MMC_CLOCK_DIVIDER_SDR12  = 32, // 16.5, from the TRM table
-    MMC_CLOCK_DIVIDER_SDR25  = 16, // 8.5, from the table
-    MMC_CLOCK_DIVIDER_SDR50  = 8,  // 4.5, from the table
+    MMC_CLOCK_DIVIDER_SDR12  = 31, // 16.5, from the TRM table
+    MMC_CLOCK_DIVIDER_SDR25  = 15, // 8.5, from the table
+    MMC_CLOCK_DIVIDER_SDR50  = 7,  // 4.5, from the table
     MMC_CLOCK_DIVIDER_SDR104 = 3,  // 2, from the datasheet
 };
 
@@ -204,9 +204,11 @@ enum sdmmc_register_bits {
     MMC_STATUS_ERROR_MASK =  (0xF << 16),
 
     /* Clock control */
-    MMC_CLOCK_CONTROL_CARD_CLOCK_ENABLE = (1 << 2),
-    MMC_CLOCK_CONTROL_FREQUENCY_MASK = (0x3FF << 6),
-    MMC_CLOCK_CONTROL_FREQUENCY_INIT = (0x18 << 8),
+    MMC_CLOCK_CONTROL_CARD_CLOCK_ENABLE      = (1 << 2),
+    MMC_CLOCK_CONTROL_FREQUENCY_MASK         = (0x3FF << 6),
+    MMC_CLOCK_CONTROL_FREQUENCY_SHIFT        = 8,
+    MMC_CLOCK_CONTROL_FREQUENCY_INIT         = 0x18, // generates 400kHz from the TRM dividers
+    MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH  = 0x00, // passes through the CAR clock unmodified
 
     /* Host control */
     MMC_DMA_SELECT_MASK = (0x3 << 3),
@@ -251,6 +253,9 @@ enum sdmmc_register_bits {
     MMC_POWER_CONTROL_VOLTAGE_MASK = (0x3 << 1),
     MMC_POWER_CONTROL_VOLTAGE_SHIFT = 1,
     MMC_POWER_CONTROL_POWER_ENABLE = (1 << 0),
+
+    /* Capabilities register high */
+    MMC_SDR50_REQUIRES_TUNING = (1 << 13),
 
 };
 
@@ -356,6 +361,12 @@ enum sdmmc_command_magic {
     SDMMC_SWITCH_MODE_ALL_FUNCTIONS_UNUSED = 0xFFFFFF,
     SDMMC_SWITCH_MODE_FUNCTION_MASK = 0xF,
     SDMMC_SWITCH_MODE_GROUP_SIZE_BITS = 4,
+
+    SDMMC_SWITCH_MODE_MODE_QUERY = 0,
+    SDMMC_SWITCH_MODE_MODE_APPLY = 1,
+    SDMMC_SWITCH_MODE_ACCESS_MODE = 0,
+    SDMMC_SWITCH_MODE_NO_GROUP = -1,
+
 };
 
 
@@ -413,19 +424,6 @@ enum sdmmc_ext_csd_extents {
 
 };
 
-/**
- * Bus speeds possible for an SDMMC controller.
- */
-enum sdmmc_bus_speed {
-    SDMMC_SPEED_SDR12  = 0,
-    SDMMC_SPEED_SDR25  = 1,
-    SDMMC_SPEED_SDR50  = 2,
-    SDMMC_SPEED_SDR104 = 3,
-    SDMMC_SPEED_DDR50  = 4,
-
-    SDMMC_SPEED_INIT = -1,
-};
-
 
 /**
  * Bitfield struct representing an SD SCR.
@@ -441,6 +439,47 @@ struct PACKED sdmmc_scr {
     uint8_t data_after_erase : 1;
     uint8_t spec_version : 4;
     uint8_t scr_version : 4;
+};
+
+
+/**
+ * Bitfield struct represneting an SD card's function status.
+ */
+struct PACKED sdmmc_function_status {
+
+    /* NOTE: all of the below are reversed from CPU endianness! */
+    uint16_t current_consumption;
+    uint16_t group6_support;
+    uint16_t group5_support;
+    uint16_t group4_support;
+    uint16_t group3_support;
+    uint16_t group2_support;
+
+    /* support for various speed modes */
+    uint16_t group1_support_reserved1  : 8;
+    uint16_t ddr50_support   :  1;
+    uint16_t sdr104_support  :  1;
+    uint16_t sdr50_support   :  1;
+    uint16_t sdr25_support   :  1;
+    uint16_t sdr12_support   :  1;
+    uint16_t group1_support_reserved2  : 3;
+
+
+    uint8_t group5_selection :  4;
+    uint8_t group6_selection :  4;
+    uint8_t group3_selection :  4;
+    uint8_t group4_selection :  4;
+    uint8_t active_access_mode :  4;
+    uint8_t group2_selection :  4;
+
+    uint8_t structure_version;
+    uint16_t group6_busy_status;
+    uint16_t group5_busy_status;
+    uint16_t group4_busy_status;
+    uint16_t group3_busy_status;
+    uint16_t group2_busy_status;
+    uint16_t group1_busy_status;
+    uint8_t reserved[34];
 };
 
 /* Callback function typedefs */
@@ -510,6 +549,24 @@ static void mmc_debug(struct mmc *mmc, char *fmt, ...)
     va_start(list, fmt);
     mmc_vprint(mmc, fmt, 1, list);
     va_end(list);
+}
+
+
+/**
+ * @return a statically allocated string that describes the given command
+ */
+static const char *sdmmc_get_speed_string(enum sdmmc_bus_speed speed)
+{
+    switch (speed) {
+        case SDMMC_SPEED_INIT:   return "400kHz (init)";
+        case SDMMC_SPEED_SDR12:  return "12.5MB/s";
+        case SDMMC_SPEED_SDR25:  return "25MB/s";
+        case SDMMC_SPEED_SDR50:  return "50MB/s";
+        case SDMMC_SPEED_SDR104: return "104MB/s";
+        case SDMMC_SPEED_DDR50:  return "104MB/s (DDR)";
+    }
+
+    return "";
 }
 
 
@@ -612,9 +669,7 @@ static int sdmmc4_set_up_clock_and_io(struct mmc *mmc)
     // Put SDMMC4 in reset
     car->rst_dev_l_set |= 0x8000;
 
-    // Set SDMMC4 clock source (PLLP_OUT0) and divisor (17).
-    // Divider value is the suggested base from the dataseet.
-    // TODO: abstract me!
+    // Configure the clock to place the device into the initial mode.
     car->clk_src[CLK_SOURCE_SDMMC4] = CLK_SOURCE_FIRST | MMC_CLOCK_DIVIDER_SDR12;
 
     // Set the legacy divier used for detecting timeouts.
@@ -715,12 +770,6 @@ static int sdmmc1_enable_supplies(struct mmc *mmc)
  */
 static int sdmmc_set_up_clocking_parameters(struct mmc *mmc, enum sdmmc_bus_voltage operating_voltage)
 {
-    // TODO: decide if these should be split into separate functions after seeing how much
-    // is common to the tunable modes
-
-    // TODO: timing for HS400/HS667 modes
-    // TODO: timing for tuanble modes (SDR50/104/200)
-
     // Clear the I/O conditioning constants.
     mmc->regs->vendor_clock_cntrl &= ~(MMC_CLOCK_TRIM_MASK | MMC_CLOCK_TAP_MASK);
     mmc->regs->auto_cal_config &= ~MMC_AUTOCAL_PDPU_CONFIG_MASK;
@@ -871,9 +920,157 @@ static int sdmmc1_switch_to_low_voltage(struct mmc *mmc)
  */
 static int sdmmc_always_fail(struct mmc *mmc)
 {
-    // This card 
+    // This card is always in low voltage and should never have to switch.
     return ENOSYS;
 }
+
+
+/**
+ * Sets up the clock for the given SDMMC controller.
+ * Assumes the controller's clock has been stopped with sdmmc_clock_enable before use.
+ *
+ * @param mmc The controller to work with.
+ * @param source The clock source, as defined by the CAR.
+ * @param car_divisor. The divisor for that source in the CAR. Usually one of the MMC_CLOCK_DIVIDER macros;
+ *      a divider of N results in a clock that's (N/2) + 1 slower.
+ * @param sdmmc_divisor An additional divisor applied in the SDMMC controller.
+ */
+static void sdmmc4_configure_clock(struct mmc *mmc, int source, int car_divisor, int sdmmc_divisor)
+{
+    volatile struct tegra_car *car = car_get_regs();
+
+    // Set up the CAR aspect of the clock, and wait 2uS per change per the TRM.
+    car->clk_enb_l_clr = CAR_CONTROL_SDMMC4;
+    car->clk_src[CLK_SOURCE_SDMMC4] = source | car_divisor;
+    udelay(2);
+    car->clk_enb_l_set = CAR_CONTROL_SDMMC4;
+
+    // ... and the SDMMC section of it.
+    mmc->regs->clock_control &= ~MMC_CLOCK_CONTROL_FREQUENCY_MASK;
+    mmc->regs->clock_control |= sdmmc_divisor << MMC_CLOCK_CONTROL_FREQUENCY_SHIFT;
+}
+
+
+
+/**
+ * Sets up the clock for the given SDMMC controller.
+ * Assumes the controller's clock has been stopped with sdmmc_clock_enable before use.
+ *
+ * @param mmc The controller to work with.
+ * @param source The clock source, as defined by the CAR.
+ * @param car_divisor. The divisor for that source in the CAR. Usually one of the MMC_CLOCK_DIVIDER macros;
+ *      a divider of N results in a clock that's (N/2) + 1 slower.
+ * @param sdmmc_divisor An additional divisor applied in the SDMMC controller.
+ */
+static void sdmmc1_configure_clock(struct mmc *mmc, int source, int car_divisor, int sdmmc_divisor)
+{
+    volatile struct tegra_car *car = car_get_regs();
+
+    // Set up the CAR aspect of the clock, and wait 2uS per change per the TRM.
+    car->clk_enb_l_clr = CAR_CONTROL_SDMMC1;
+    car->clk_src[CLK_SOURCE_SDMMC1] = source | car_divisor;
+    udelay(2);
+    car->clk_enb_l_set = CAR_CONTROL_SDMMC1;
+
+    // ... and the SDMMC section of it.
+    mmc->regs->clock_control &= ~MMC_CLOCK_CONTROL_FREQUENCY_MASK;
+    mmc->regs->clock_control |= sdmmc_divisor << MMC_CLOCK_CONTROL_FREQUENCY_SHIFT;
+}
+
+/**
+ * Performs an SDMMC clock tuning -- should be issued when switching up to a UHS-I
+ * mode, and periodically thereafter per the spec.
+ *
+ * @param mmc The controller to tune.
+ */
+static int sdmmc_tune_clock(struct mmc *mmc)
+{
+    // FIXME: implement
+    mmc_print(mmc, "ERROR: can't use a mode that requires tuning, currently!");
+    return ENOSYS;
+}
+
+
+/**
+ * Applies the appropriate clock dividers to the CAR and SD controller to enable use of the
+ * provided speed. Does not handle any requisite communications with the card.
+ *
+ * @param mmc The controller to affect.
+ * @param speed The speed to apply.
+ * @param enable_after If set, the SDMMC clock will be enabled after the change. If not, it will be left disabled.
+ */
+static int sdmmc_apply_clock_speed(struct mmc *mmc, enum sdmmc_bus_speed speed, bool enable_after)
+{
+    int rc;
+
+    // Ensure the clocks are not currently running to avoid glitches.
+    sdmmc_clock_enable(mmc, false);
+
+    // Clear the registers of any existing values, so we can apply new ones.
+    mmc->regs->host_control &= ~MMC_HOST_ENABLE_HIGH_SPEED;
+
+    // Apply the dividers according to the speed provided.
+    switch (speed) {
+
+        // 400kHz initialization mode.
+        case SDMMC_SPEED_INIT:
+            mmc->configure_clock(mmc, CLK_SOURCE_FIRST, MMC_CLOCK_DIVIDER_SDR12, MMC_CLOCK_CONTROL_FREQUENCY_INIT);
+            break;
+
+        // 25MHz default speed
+        case SDMMC_SPEED_SDR12:
+            mmc->configure_clock(mmc, CLK_SOURCE_FIRST, MMC_CLOCK_DIVIDER_SDR12, MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH);
+            break;
+
+        // 50MHz high speed
+        case SDMMC_SPEED_SDR25:
+            // Configure the host to use high-speed timing.
+            mmc->regs->host_control |= MMC_HOST_ENABLE_HIGH_SPEED;
+            mmc->configure_clock(mmc, CLK_SOURCE_FIRST, MMC_CLOCK_DIVIDER_SDR25, MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH);
+            break;
+
+        // 100MHz UHS-I
+        case SDMMC_SPEED_SDR50:
+            mmc->regs->host_control |= MMC_HOST_ENABLE_HIGH_SPEED;
+            mmc->configure_clock(mmc, CLK_SOURCE_FIRST, MMC_CLOCK_DIVIDER_SDR50, MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH);
+
+            // Execute tuning.
+            rc = sdmmc_tune_clock(mmc);
+            if (rc) {
+                mmc_print(mmc, "ERROR: tuning failed! (%d)", rc);
+                return rc;
+            }
+            break;
+
+        // 200MHz UHS-I
+        case SDMMC_SPEED_SDR104:
+            mmc->regs->host_control |= MMC_HOST_ENABLE_HIGH_SPEED;
+            mmc->configure_clock(mmc, CLK_SOURCE_FIRST, MMC_CLOCK_DIVIDER_SDR104, MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH);
+
+            // Execute tuning.
+            rc = sdmmc_tune_clock(mmc);
+            if (rc) {
+                mmc_print(mmc, "ERROR: tuning failed! (%d)", rc);
+                return rc;
+            }
+            break;
+
+        default:
+            mmc_print(mmc, "ERROR: switching to unsupported speed!\n");
+            return ENOSYS;
+    }
+
+    // Re-enable the clock, if necessary.
+    if (enable_after) {
+        sdmmc_clock_enable(mmc, true);
+        udelay(MMC_POST_CLOCK_DELAY);
+    }
+
+    // Finally store the operating speed.
+    mmc->operating_speed = speed;
+    return 0;
+}
+
 
 
 /**
@@ -905,19 +1102,17 @@ static int sdmmc1_set_up_clock_and_io(struct mmc *mmc)
     padctl->vgpio_gpio_mux_sel &= ~PADCTL_SDMMC1_CD_SOURCE;
 
     // Put SDMMC1 in reset
-    car->rst_dev_l_set |= CAR_CONTROL_SDMMC1;
+    car->rst_dev_l_set = CAR_CONTROL_SDMMC1;
 
-    // Set SDMMC1 clock source (PLLP_OUT0) and divisor (div by 17).
-    // This is the datasheet recommended value for SDR12.
-    // TODO: abstract this into a clock source specification function!
+    // Configure the clock to place the device into the initial mode.
     car->clk_src[CLK_SOURCE_SDMMC1] = CLK_SOURCE_FIRST | MMC_CLOCK_DIVIDER_SDR12;
 
     // Set the legacy divier used for detecting timeouts.
     car->clk_src_y[CLK_SOURCE_SDMMC_LEGACY] = CLK_SOURCE_FIRST | MMC_CLOCK_DIVIDER_SDR12;
 
     // Set SDMMC1 clock enable
-    car->clk_enb_l_set |= CAR_CONTROL_SDMMC1;
-    car->clk_enb_y_set |= CAR_CONTROL_SDMMC_LEGACY;
+    car->clk_enb_l_set = CAR_CONTROL_SDMMC1;
+    car->clk_enb_y_set = CAR_CONTROL_SDMMC_LEGACY;
 
     // host_clk_delay(0x64, clk_freq) -> Delay 100 host clock cycles
     udelay(5000);
@@ -931,52 +1126,6 @@ static int sdmmc1_set_up_clock_and_io(struct mmc *mmc)
     return 0;
 }
 
-
-/**
- * Applies the appropriate clock dividers to the CAR and SD controller to enable use of the
- * provided speed. Does not handle any requisite communications with the card.
- *
- * @param mmc The controller to affect.
- * @param speed The speed to apply.
- * @param enable_after If set, the SDMMC clock will be enabled after the change. If not, it will be left disabled.
- */
-static int sdmmc_apply_clock_speed(struct mmc *mmc, enum sdmmc_bus_speed speed, bool enable_after)
-{
-    // TODO: also set the clock for the main divider
-
-    // Ensure the clocks are not currently running to avoid glitches.
-    sdmmc_clock_enable(mmc, false);
-
-    // Clear the registers of any existing values, so we can apply new ones.
-    mmc->regs->clock_control &= ~MMC_CLOCK_CONTROL_FREQUENCY_MASK;
-    mmc->regs->host_control &= ~MMC_HOST_ENABLE_HIGH_SPEED;
-    mmc->regs->host_control2 &= ~MMC_HOST2_DRIVE_STRENGTH_MASK;
-
-    // Apply the dividers according to the speed provided.
-    switch (speed) {
-
-        // 400kHz initialization mode.
-        case SDMMC_SPEED_INIT:
-            mmc->regs->clock_control |= MMC_CLOCK_CONTROL_FREQUENCY_INIT;
-            break;
-
-        // 25MHz default speed
-        case SDMMC_SPEED_SDR12:
-            break;
-
-        default:
-            mmc_print(mmc, "ERROR: switching to unsupported speed!\n");
-            return ENOSYS;
-    }
-
-    // Re-enable the clock, if necessary.
-    if (enable_after) {
-        sdmmc_clock_enable(mmc, true);
-        udelay(MMC_POST_CLOCK_DELAY);
-    }
-
-    return 0;
-}
 
 
 /**
@@ -1095,8 +1244,11 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     regs->host_control2 &= ~(0x08);
 
     // Set up the card's initialization.
-    sdmmc_apply_clock_speed(mmc, SDMMC_SPEED_INIT, true);
-
+    rc = sdmmc_apply_clock_speed(mmc, SDMMC_SPEED_INIT, true);
+    if (rc) {
+        mmc_print(mmc, "ERROR: could not set SDMMC card speed!");
+        return rc;
+    }
 
     return 0;
 }
@@ -2066,12 +2218,135 @@ static int sdmmc_optimize_transfer_mode(struct mmc *mmc)
     // which is meant to keep us within the pre-init operating frequency of 400kHz.
     // We're now set up, so we can drop the divider. From this point forward, the
     // clock is now driven by the CAR frequency.
-    sdmmc_apply_clock_speed(mmc, SDMMC_SPEED_SDR12, true);
+    rc = sdmmc_apply_clock_speed(mmc, SDMMC_SPEED_SDR12, true);
+    if (rc) {
+        mmc_print(mmc, "WARNING: could not step up to normal operating speeds!");
+        mmc_print(mmc, "         ... expect delays.");
+        return rc;
+    }
+    mmc_debug(mmc, "now operating at 12.5MB/s!");
 
-    // TODO: step up into high speed modes
+    // Automatically optimize speed as much as is possible. How this works depends on
+    // the type of card.
+    rc = mmc->optimize_speed(mmc);
+    if (rc) {
+        mmc_print(mmc, "could not optimize the controller's speed!");
+        return rc;
+    }
 
     return 0;
 }
+
+
+
+/**
+ * Switches the active SD card and host controller to the given sppeed mode.
+ *
+ * @param mmc The MMC controller to affect.
+ * @param speed The speed to switch to.
+ * @param status_out The status result of the relevant switch operation.
+ */
+static int sdmmc_sd_switch_bus_speed(struct mmc *mmc, enum sdmmc_bus_speed speed, struct sdmmc_function_status *status_out)
+{
+    int rc;
+
+    // Read the supported functions from the card.
+    rc = mmc->switch_mode(mmc, SDMMC_SWITCH_MODE_MODE_APPLY, SDMMC_SWITCH_MODE_ACCESS_MODE, speed, 0, status_out);
+    if (rc) {
+        mmc_print(mmc, "WARNING: could not issue the mode switch");
+        return rc;
+    }
+
+    // Check that the active operating mode has switched to the new mode.
+    if (status_out->active_access_mode != speed) {
+        mmc_print(mmc, "WARNING: device did not accept mode %s!", sdmmc_get_speed_string(speed));
+        mmc_print(mmc, "         reported mode is %s / $d", sdmmc_get_speed_string(status_out->active_access_mode), status_out->active_access_mode);
+        mmc_print(mmc, "         adjacent mode is %s / $d", sdmmc_get_speed_string(status_out->group2_selection), status_out->group2_selection);
+        return EINVAL;
+    }
+
+    // Switch the host controller so it talks the relevant speed.
+    rc = sdmmc_apply_clock_speed(mmc, speed, true);
+    if (rc) {
+        mmc_print(mmc, "WARNING: could not switch the host to %s", sdmmc_get_speed_string(speed));
+
+        // Fall back to the original speed before returning..
+        sdmmc_apply_clock_speed(mmc, mmc->operating_speed, true);
+        return rc;
+    }
+
+    mmc_debug(mmc, "now operating at %s!", sdmmc_get_speed_string(speed));
+    return 0;
+
+}
+
+
+/**
+ * Optimize our SDMMC transfer speed by maxing out the bus as much as is possible.
+ */
+static int sdmmc_sd_optimize_speed(struct mmc *mmc)
+{
+    int rc;
+    struct sdmmc_function_status function_status;
+
+    // If we're not at a full bus width, we can't switch to a higher speed.
+    // We're already optimal, vacuously succeed.
+    if (mmc->max_bus_width != SD_BUS_WIDTH_4BIT)
+        return 0;
+
+
+    // Read the supported functions from the card.
+    rc = mmc->switch_mode(mmc, SDMMC_SWITCH_MODE_MODE_QUERY, SDMMC_SWITCH_MODE_NO_GROUP, 0, 0, &function_status);
+    if (rc) {
+        mmc_print(mmc, "WARNING: could not query card mode status; speed will be limited");
+        return rc;
+    }
+
+    // Debug information for very vebose modes.
+    mmc_debug(mmc, "this card supports the following speed modes:");
+    mmc_debug(mmc, "SDR12: %d SDR25: %d SDR50: %d SDR104: %d DDR50: %d\n",
+            function_status.sdr12_support, function_status.sdr25_support,
+            function_status.sdr50_support, function_status.sdr104_support,
+            function_status.ddr50_support);
+
+    // If we're operating in a UHS-compatbile low-voltage mode, check for UHS-modes.
+    if (mmc->operating_voltage == MMC_VOLTAGE_1V8) {
+
+        // Try each of the UHS-I modes, we support.
+        if (function_status.sdr104_support && !sdmmc_sd_switch_bus_speed(mmc, SDMMC_SPEED_SDR104, &function_status))
+            return 0;
+        if (function_status.sdr50_support && !sdmmc_sd_switch_bus_speed(mmc, SDMMC_SPEED_SDR50,  &function_status))
+            return 0;
+    }
+
+    // If we support High Speed but not a UHS-I mode, use it.
+    if (function_status.sdr25_support)
+        return sdmmc_sd_switch_bus_speed(mmc, SDMMC_SPEED_SDR25, &function_status);
+
+    mmc_debug(mmc, "couldn't improve speed above the speed already set.");
+    return 0;
+}
+
+
+/**
+ * Optimize our MMC transfer speed by maxing out the bus as much as is possible.
+ */
+static int sdmmc_mmc_optimize_speed(struct mmc *mmc)
+{
+    // TODO
+    return 0;
+}
+
+
+/**
+ * Optimize our MMC transfer speed by maxing out the bus as much as is possible.
+ */
+static int sdmmc_emmc_optimize_speed(struct mmc *mmc)
+{
+    // TODO
+    return 0;
+}
+
 
 
 /**
@@ -2499,7 +2774,8 @@ bool sdmmc_external_card_present(struct mmc *mmc)
  *
  * @param mmc The controller to use.
  * @param mode The mode flag -- one to set function data, zero to query.
- * @param group The SD card function group-- see the SD card Physical Layer spec.
+ * @param group The SD card function group-- see the SD card Physical Layer spec. Set this negative to not apply arguments.
+ * @param response 64-byte buffer to store the response.
  */
 static int sdmmc_sd_switch_mode(struct mmc *mmc, int mode, int group, int value, uint32_t timeout, void *response)
 {
@@ -2513,10 +2789,14 @@ static int sdmmc_sd_switch_mode(struct mmc *mmc, int mode, int group, int value,
     const int num_blocks = 1;
 
     // Build the argument we're going to issue.
-    const int group_shift = group * SDMMC_SWITCH_MODE_GROUP_SIZE_BITS;
     uint32_t argument = (mode << SDMMC_SWITCH_MODE_MODE_SHIFT) | SDMMC_SWITCH_MODE_ALL_FUNCTIONS_UNUSED;
-    argument         &= ~(SDMMC_SWITCH_MODE_FUNCTION_MASK << group_shift);
-    argument         |= value << group_shift;
+
+    // If we have a group argument, apply the group and value.
+    if(group >= 0) {
+        const int group_shift = group * SDMMC_SWITCH_MODE_GROUP_SIZE_BITS;
+        argument &= ~(SDMMC_SWITCH_MODE_FUNCTION_MASK << group_shift);
+        argument |= value << group_shift;
+    }
 
     // Momentarily step down to a smaller block size, so we don't
     // have to allocate a huge buffer for this command.
@@ -2545,18 +2825,6 @@ static int sdmmc_sd_switch_mode(struct mmc *mmc, int mode, int group, int value,
 }
 
 
-
-/**
- * Switches the host controller and SD card to high speed mode.
- */
-/*
-static int sdmmc_sd_switch_to_high_speed(struct mmc *mmc)
-{
-    return ENOSYS;
-}
-*/
-
-
 /**
  * Switches a given SDMMC Controller where
  */
@@ -2575,6 +2843,13 @@ static void sdmmc_apply_card_type(struct mmc *mmc, enum sdmmc_card_type type)
             mmc->establish_relative_address = sdmmc_set_relative_address;
             mmc->switch_mode = sdmmc_mmc_switch_mode;
             mmc->switch_bus_width = sdmmc_mmc_switch_bus_width;
+
+            // Handle eMMC and MMC speed optimizations differently.
+            if (type == MMC_CARD_EMMC)
+                mmc->optimize_speed = sdmmc_emmc_optimize_speed;
+            else
+                mmc->optimize_speed = sdmmc_mmc_optimize_speed;
+
             break;
 
         // SD-protocol cards
@@ -2583,6 +2858,7 @@ static void sdmmc_apply_card_type(struct mmc *mmc, enum sdmmc_card_type type)
             mmc->establish_relative_address = sdmmc_get_relative_address;
             mmc->switch_mode = sdmmc_sd_switch_mode;
             mmc->switch_bus_width = sdmmc_sd_switch_bus_width;
+            mmc->optimize_speed = sdmmc_sd_optimize_speed;
             break;
 
         // Switch-cart protocol cards
@@ -2612,6 +2888,7 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
             mmc->enable_supplies = sdmmc4_enable_supplies;
             mmc->switch_to_low_voltage = sdmmc_always_fail;
             mmc->card_present = sdmmc_builtin_card_present;
+            mmc->configure_clock = sdmmc4_configure_clock;
 
             // The EMMC controller always uses an EMMC card.
             sdmmc_apply_card_type(mmc, MMC_CARD_EMMC);
@@ -2627,12 +2904,15 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
             mmc->operating_voltage = MMC_VOLTAGE_3V3;
             mmc->card_detect_gpio = GPIO_MICROSD_CARD_DETECT;
 
-            // For the microSD card slot, assume we have an SD-type card.
-            // Negotiation has a chance to change this, later.
+            // Per-instance functions.
             mmc->set_up_clock_and_io = sdmmc1_set_up_clock_and_io;
             mmc->enable_supplies = sdmmc1_enable_supplies;
             mmc->switch_to_low_voltage = sdmmc1_switch_to_low_voltage;
             mmc->card_present = sdmmc_external_card_present;
+            mmc->configure_clock = sdmmc1_configure_clock;
+
+            // For the microSD card slot, assume we have an SD-type card.
+            // Negotiation has a chance to change this, later.
             sdmmc_apply_card_type(mmc, MMC_CARD_SD);
 
             // Start off assuming byte addressing; we'll detect and correct this

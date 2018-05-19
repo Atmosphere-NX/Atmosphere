@@ -127,6 +127,21 @@ enum sdmmc_switch_field {
 
 
 /**
+ * Bus speeds possible for an SDMMC controller.
+ */
+enum sdmmc_bus_speed {
+    SDMMC_SPEED_SDR12  = 0,
+    SDMMC_SPEED_SDR25  = 1,
+    SDMMC_SPEED_SDR50  = 2,
+    SDMMC_SPEED_SDR104 = 3,
+    SDMMC_SPEED_DDR50  = 4,
+
+    SDMMC_SPEED_INIT = -1,
+};
+
+
+
+/**
  * Primary data structure describing a Fusée MMC driver.
  */
 struct mmc {
@@ -142,6 +157,7 @@ struct mmc {
 
     /* Per-controller operations. */
     int (*set_up_clock_and_io)(struct mmc *mmc);
+    void (*configure_clock)(struct mmc *mmc, int source, int car_divisor, int sdmmc_divisor);
     int (*enable_supplies)(struct mmc *mmc);
     int (*switch_to_low_voltage)(struct mmc *mmc);
     bool (*card_present)(struct mmc *mmc);
@@ -151,7 +167,7 @@ struct mmc {
     int (*establish_relative_address)(struct mmc *mmc);
     int (*switch_mode)(struct mmc *mmc, int a, int b, int c, uint32_t timeout, void *response);
     int (*switch_bus_width)(struct mmc *mmc, enum sdmmc_bus_width width);
-    int (*switch_to_high_speed)(struct mmc *mmc);
+    int (*optimize_speed)(struct mmc *mmc);
 
     /* Card properties */
     uint8_t cid[15];
@@ -160,6 +176,7 @@ struct mmc {
     enum sdmmc_spec_version spec_version;
     enum sdmmc_bus_width max_bus_width;
     enum sdmmc_bus_voltage operating_voltage;
+    enum sdmmc_bus_speed operating_speed;
 
     uint8_t partition_support;
     uint8_t partition_config;
