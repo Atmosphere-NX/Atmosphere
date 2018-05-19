@@ -1278,7 +1278,7 @@ static int sdmmc_handle_cpu_transfer(struct mmc *mmc, uint16_t blocks, bool is_w
                     // Handle unaligned buffers
                     uint32_t w;
                     uint8_t *data = (uint8_t *)buffer;
-                    w = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
+                    memcpy(&w, data, 4);
                     mmc->regs->buffer = w;
                 } else {
                     mmc->regs->buffer = *buffer;
@@ -1288,10 +1288,7 @@ static int sdmmc_handle_cpu_transfer(struct mmc *mmc, uint16_t blocks, bool is_w
                     // Handle unaligned buffers
                     uint32_t w = mmc->regs->buffer;
                     uint8_t *data = (uint8_t *)buffer;
-                    data[0] = w & 0xFF;
-                    data[1] = (w >> 8) & 0xFF;
-                    data[2] = (w >> 16) & 0xFF;
-                    data[3] = (w >> 24) & 0xFF;
+                    memcpy(&w, data, 4);
                 } else {
                     *buffer = mmc->regs->buffer;
                 }

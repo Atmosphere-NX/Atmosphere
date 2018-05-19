@@ -824,7 +824,7 @@ static int sdmmc1_switch_to_low_voltage(struct mmc *mmc)
  */
 static int sdmmc_always_fail(struct mmc *mmc)
 {
-    // This card
+    // This card 
     return ENOSYS;
 }
 
@@ -1157,6 +1157,10 @@ static int sdmmc_wait_for_interrupt(struct mmc *mmc,
 
             // Finally, EOI the relevant interrupt.
             mmc->regs->int_status |= fault_conditions;
+
+            // Reset the timebase, so it applies to the next
+            // DMA interval.
+            timebase = get_time();
         }
 
         if (mmc->regs->int_status & target_irq)
@@ -1637,7 +1641,7 @@ static int sdmmc_send_app_command(struct mmc *mmc, enum sdmmc_command command,
     }
 
     // And issue the body of the command.
-    return sdmmc_send_command(mmc, command, response_type, checks, argument, response_buffer,
+    return sdmmc_send_command(mmc, command, response_type, checks, argument, response_buffer, 
             blocks_to_transfer, false, auto_terminate, data_buffer);
 }
 
@@ -1959,7 +1963,7 @@ static int sdmmc_optimize_transfer_mode(struct mmc *mmc)
     }
 
     // TODO: step up into high speed modes
-
+    
     return 0;
 }
 

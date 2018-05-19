@@ -90,7 +90,7 @@ void nxboot_main(void) {
             generic_panic();
         }
     } else {
-#ifdef I_KNOW_WHAT_IM_DOING_2
+#ifndef I_KNOW_WHAT_IM_DOING_2
         pk2file = fopen("bcpkg21:/", "rb");
         if (pk2file == NULL || fseek(pk2file, 0x4000, SEEK_SET) != 0) {
             printf("Error: Failed to open Package2 from NAND: %s!\n", strerror(errno));
@@ -114,22 +114,12 @@ void nxboot_main(void) {
         printf("Error: Package2 is too big or too small!\n");
         generic_panic();
     }
-/*
+
     if (fread(package2->data, package2_size - sizeof(package2_header_t), 1, pk2file) < 1) {
         printf("Error: Failed to read Package2!\n");
         generic_panic();
     }
-*/
-    for (size_t i = 0; i < package2_size - sizeof(package2_header_t); i += 512*32) {
-        /* TODO: check if we have read everything, eventually. */
-        size_t r = fread(package2->data + i, 1, 512, pk2file);
-        if (r == 0) {
-            printf("Error: Failed to read Package2!\n");
-            generic_panic();
-        } else if (r < 512) {
-            break;
-        }
-    }
+
     fclose(pk2file);
     printf("Read package2!\n");
 
