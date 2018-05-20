@@ -20,6 +20,7 @@
 
 #define APBDEV_PM_0 MAKE_REG32(PMC_BASE + 0x14)
 #define APBDEV_PMC_WAKE2_STATUS_0 MAKE_REG32(PMC_BASE + 0x168)
+#define APBDEV_PMC_RST_STATUS_0 MAKE_REG32(PMC_BASE + 0x1B4)
 #define APBDEV_PMC_CNTRL2_0 MAKE_REG32(PMC_BASE + 0x440)
 
 #define APBDEV_PMC_SCRATCH43_0 MAKE_REG32(PMC_BASE + 0x22C)
@@ -28,6 +29,7 @@
 
 /**
  * Definitions of the Tegra PMC.
+ * NOTE: Incomplete, do not use
  */
 struct tegra_pmc {
     uint32_t cntrl;
@@ -306,11 +308,11 @@ enum tegra_pmc_masks {
 
 
 /**
- * Utility function that grabs the Tegra pinmux registers.
+ * Utility function that grabs the Tegra PMC registers.
  */
-static inline struct tegra_pmc *pmc_get_regs(void)
+static inline volatile struct tegra_pmc *pmc_get_regs(void)
 {
-    return (struct tegra_pmc *)0x7000e400;
+    return (volatile struct tegra_pmc *)0x7000E400;
 }
 
 

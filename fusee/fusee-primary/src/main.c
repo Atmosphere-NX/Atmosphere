@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "panic.h"
 #include "hwinit.h"
 #include "fuse.h"
 #include "se.h"
@@ -66,6 +67,9 @@ static void setup_env(void) {
     /* Initialize DRAM. */
     /* TODO: What can be stripped out to make this minimal? */
     nx_hwinit();
+
+    /* Check for panics. */
+    check_and_display_panic();
 
     /* Try to load the SBK into the security engine, if possible. */
     /* TODO: Should this be done later? */

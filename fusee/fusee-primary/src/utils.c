@@ -3,41 +3,49 @@
 #include "se.h"
 #include "fuse.h"
 #include "pmc.h"
-#include "panic_color.h"
 #include "timers.h"
 
 #include "hwinit/btn.h"
 
-
-__attribute__ ((noreturn)) void panic(uint32_t code) {
-    /* Set Panic Code for NX_BOOTLOADER. */
-    if (APBDEV_PMC_SCRATCH200_0 == 0) {
-        APBDEV_PMC_SCRATCH200_0 = code;
+__attribute__((noreturn)) void watchdog_reboot(void) {
+    volatile watchdog_timers_t *wdt = GET_WDT(4);
+    wdt->PATTERN = WDT_REBOOT_PATTERN;
+    wdt->COMMAND = 2; /* Disable Counter. */
+    GET_WDT_REBOOT_CFG_REG(4) = 0xC0000000;
+    wdt->CONFIG = 0x8019; /* Full System Reset after Fourth Counter expires, using TIMER(9). */
+    wdt->COMMAND = 1; /* Enable Counter. */
+    while (true) {
+        /* Wait for reboot. */
     }
+}
 
-    /* TODO: Custom Panic Driver, which displays to screen without rebooting. */
-    /* For now, just use NX BOOTLOADER's panic. */
-    fuse_disable_programming();
-    APBDEV_PMC_CRYPTO_OP_0 = 1; /* Disable all SE operations. */
-
-    /* FIXME: clean up and use this instead of replacing things */
-    while(btn_read() != BTN_POWER);
-    
-    /* Ensure we boot back into RCM, for development. */
-    APBDEV_PMC_SCRATCH0_0 = (1 << 1);
+__attribute__((noreturn)) void pmc_reboot(uint32_t scratch0) {
+    APBDEV_PMC_SCRATCH0_0 = scratch0;
 
     /* Reset the processor. */
-    APBDEV_PMC_CONTROL = (1 << 4);
-    while(1);
+    APBDEV_PMC_CONTROL = BIT(4);
+
+    while (true) {
+        /* Wait for reboot. */
+    }
+}
+
+__attribute__((noreturn)) void wait_for_button_and_pmc_reboot(void) {
+    uint32_t button;
+    while (true) {
+        button = btn_read();
+        if (button & BTN_POWER) {
+            /* Reboot into RCM. */
+            pmc_reboot(BIT(1) | 0);
+        } else if (button & (BTN_VOL_UP | BTN_VOL_DOWN)) {
+            /* Reboot normally. */
+            pmc_reboot(0);
+        }
+    }
 }
 
 __attribute__ ((noreturn)) void generic_panic(void) {
-    panic(0xFF000006);
-}
-
-__attribute__ ((noreturn)) void panic_predefined(uint32_t which) {
-    static const uint32_t codes[0x10] = {COLOR_0, COLOR_1, COLOR_2, COLOR_3, COLOR_4, COLOR_5, COLOR_6, COLOR_7, COLOR_8, COLOR_9, COLOR_A, COLOR_B, COLOR_C, COLOR_D, COLOR_E, COLOR_F};
-    panic(codes[which & 0xF]);
+    while(true);//panic(0xFF000006);
 }
 
 __attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be)

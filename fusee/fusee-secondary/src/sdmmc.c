@@ -2440,8 +2440,8 @@ static void sdmmc_apply_card_type(struct mmc *mmc, enum sdmmc_card_type type)
 
         // Switch-cart protocol cards
         case MMC_CARD_CART:
-            printk("BUG: trying to use an impossible code path!\n");
-            panic(0);
+            printk("BUG: trying to use an impossible code path, hanging!\n");
+            while(true);
     }
 }
 
