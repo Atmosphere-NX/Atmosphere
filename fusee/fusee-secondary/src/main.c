@@ -21,9 +21,6 @@ static stage2_args_t *g_stage2_args;
 static bool g_do_nxboot;
 
 static void setup_env(void) {
-    /* Check for panics. */
-    check_and_display_panic();
-
     /* Set the console up. */
     if (console_init() == -1) {
         generic_panic();
