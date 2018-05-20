@@ -196,6 +196,7 @@ enum sdmmc_register_bits {
     MMC_STATUS_COMMAND_COMPLETE = (1 << 0),
     MMC_STATUS_TRANSFER_COMPLETE = (1 << 1),
     MMC_STATUS_DMA_INTERRUPT = (1 << 3),
+    MMC_STATUS_BUFFER_READ_READY = (1 << 5),
     MMC_STATUS_COMMAND_TIMEOUT = (1 << 16),
     MMC_STATUS_COMMAND_CRC_ERROR = (1 << 17),
     MMC_STATUS_COMMAND_END_BIT_ERROR = (1 << 18),
@@ -225,9 +226,14 @@ enum sdmmc_register_bits {
     MMC_HOST2_DRIVE_STRENGTH_C = (0x2 << 4),
     MMC_HOST2_DRIVE_STRENGTH_D = (0x3 << 4),
     MMC_HOST2_USE_1V8_SIGNALING = (1 << 3),
+    MMC_HOST2_EXECUTE_TUNING = (1 << 6),
+    MMC_HOST2_SAMPLING_CLOCK_ENABLED = (1 << 7),
+    MMC_HOST2_UHS_MODE_MASK = (0x7 << 3),
 
     /* Software reset */
     MMC_SOFT_RESET_FULL = (1 << 0),
+    MMC_SOFT_RESET_CMD = (1 << 1),
+    MMC_SOFT_RESET_DAT = (1 << 2),
 
     /* Vendor clock control */
     MMC_CLOCK_TAP_MASK    = (0xFF << 16),
@@ -257,8 +263,41 @@ enum sdmmc_register_bits {
     /* Capabilities register high */
     MMC_SDR50_REQUIRES_TUNING = (1 << 13),
 
+    /* Vendor tuning control 0*/
+    MMC_VENDOR_TUNING_TRIES_MASK = (0x7 << 13),
+    MMC_VENDOR_TUNING_TRIES_SHIFT = 13,
+
+    MMC_VENDOR_TUNING_MULTIPLIER_MASK = (0x7F << 6),
+    MMC_VENDOR_TUNING_MULTIPLIER_UNITY = (1 << 6),
+
+    MMC_VENDOR_TUNING_DIVIDER_MASK = (0x7 << 3),
+
+    MMC_VENDOR_TUNING_SET_BY_HW = (1 << 17),
+
+    /* Vendor tuning control 0*/
+    MMC_VENDOR_TUNING_STEP_SIZE_SDR50_DEFAULT  = (0 << 0),
+    MMC_VENDOR_TUNING_STEP_SIZE_SDR104_DEFAULT = (0 << 4),
 };
 
+
+/**
+ * The number o
+ */
+enum sdmmc_tuning_attempts {
+    MMC_VENDOR_TUNING_TRIES_40   = 0,
+    MMC_VENDOR_TUNING_TRIES_64   = 1,
+    MMC_VENDOR_TUNING_TRIES_128  = 2,
+    MMC_VENDOR_TUNING_TRIES_192  = 3,
+    MMC_VENDOR_TUNING_TRIES_256  = 4,
+
+    /* Helpful aliases; values are from the TRM */
+    MMC_VENDOR_TUNING_TRIES_SDR50   = 4,
+    MMC_VENDOR_TUNING_TRIES_SDR104  = 2,
+};
+
+
+/* Constant map that converts from a MMC_VENDOR_TUNING_TRIES_* value to the number of tries. */
+static const int sdmmc_tuning_iterations[] = {40, 64, 128, 192, 256};
 
 /**
  * SDMMC commands
@@ -286,6 +325,7 @@ enum sdmmc_command {
     CMD_SET_BLKLEN = 16,
     CMD_READ_SINGLE_BLOCK = 17,
     CMD_READ_MULTIPLE_BLOCK = 18,
+    CMD_SEND_TUNING_BLOCK = 19,
     CMD_WRITE_SINGLE_BLOCK = 24,
     CMD_WRITE_MULTIPLE_BLOCK = 25,
 
@@ -367,6 +407,9 @@ enum sdmmc_command_magic {
     SDMMC_SWITCH_MODE_ACCESS_MODE = 0,
     SDMMC_SWITCH_MODE_NO_GROUP = -1,
 
+    /* Misc constants */
+    MMC_TUNING_TIMEOUT = 150 * 1000, // 150mS
+
 };
 
 
@@ -420,8 +463,6 @@ enum sdmmc_ext_csd_extents {
 
     MMC_EXT_CSD_PARTITION_SWITCH_TIME = 199,
     MMC_EXT_CSD_PARTITION_SWITCH_SCALE_US = 10000,
-
-
 };
 
 
@@ -488,6 +529,22 @@ typedef int (*fault_handler_t)(struct mmc *mmc);
 /* Forward declarations */
 static int sdmmc_send_simple_command(struct mmc *mmc, enum sdmmc_command command,
         enum sdmmc_response_type response_type, uint32_t argument, void *response_buffer);
+static int sdmmc_wait_for_event(struct mmc *mmc,
+        uint32_t target_irq, uint32_t state_conditions,
+        uint32_t fault_conditions, fault_handler_t fault_handler);
+static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
+        enum sdmmc_response_type response_type, enum sdmmc_response_checks checks,
+        uint32_t argument, void *response_buffer, uint16_t blocks_to_transfer,
+        bool is_write, bool auto_terminate, void *data_buffer);
+static int sdmmc_use_block_size(struct mmc *mmc, int block_order);
+static uint8_t sdmmc_get_block_order(struct mmc *mmc, bool is_write);
+static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks,
+        bool is_write, bool auto_terminate, bool use_dma, int argument);
+static void sdmmc_prepare_command_registers(struct mmc *mmc, int blocks_to_xfer,
+        enum sdmmc_command command, enum sdmmc_response_type response_type,
+        enum sdmmc_response_checks checks);
+static int sdmmc_wait_for_command_readiness(struct mmc *mmc);
+static int sdmmc_wait_for_data_readiness(struct mmc *mmc);
 
 /* SDMMC debug enable */
 static int sdmmc_loglevel = 0;
@@ -590,6 +647,8 @@ static const char *sdmmc_get_command_string(enum sdmmc_command command)
             return "CMD_WRITE_SINGLE_BLOCK";
         case CMD_WRITE_MULTIPLE_BLOCK:
             return "CMD_WRITE_MULTIPLE_BLOCK";
+        case CMD_SEND_TUNING_BLOCK:
+            return "CMD_SEND_TUNING_BLOCK";
 
         // For commands with low numbers, read them string from the relevant array.
         default:
@@ -639,15 +698,15 @@ static struct tegra_sdmmc *sdmmc_get_regs(enum sdmmc_controller controller)
  * @param mmc The MMC controller to be reset.
  * @return 0 if the device successfully came out of reset; or an error code otherwise
  */
-static int sdmmc_hardware_reset(struct mmc *mmc)
+static int sdmmc_hardware_reset(struct mmc *mmc, uint32_t reset_flags)
 {
     uint32_t timebase = get_time();
 
     // Reset the MMC controller...
-    mmc->regs->software_reset |= MMC_SOFT_RESET_FULL;
+    mmc->regs->software_reset |= reset_flags;
 
     // Wait for the SDMMC controller to come back up...
-    while (mmc->regs->software_reset & MMC_SOFT_RESET_FULL) {
+    while (mmc->regs->software_reset & reset_flags) {
         if (get_time_since(timebase) > mmc->timeout) {
             mmc_print(mmc, "failed to bring up SDMMC controller");
             return ETIMEDOUT;
@@ -951,7 +1010,6 @@ static void sdmmc4_configure_clock(struct mmc *mmc, int source, int car_divisor,
 }
 
 
-
 /**
  * Sets up the clock for the given SDMMC controller.
  * Assumes the controller's clock has been stopped with sdmmc_clock_enable before use.
@@ -977,17 +1035,191 @@ static void sdmmc1_configure_clock(struct mmc *mmc, int source, int car_divisor,
     mmc->regs->clock_control |= sdmmc_divisor << MMC_CLOCK_CONTROL_FREQUENCY_SHIFT;
 }
 
+
+/**
+ * Runs a single iteration of an active SDMMC clock tune.
+ * You probably want sdmmc_tune_clock instead.
+ */
+static int sdmmc_run_tuning_iteration(struct mmc *mmc)
+{
+    int rc;
+    uint32_t saved_int_enable = mmc->regs->int_enable;
+
+    // Enable the BUFFER_READ_READY interrupt for this run, and make sure it's not set.
+    mmc->regs->int_enable |= MMC_STATUS_BUFFER_READ_READY;
+    mmc->regs->int_status = mmc->regs->int_status;
+
+    // Wait until we can issue commands to the device.
+    rc = sdmmc_wait_for_command_readiness(mmc);
+    if (rc) {
+        mmc_print(mmc, "card not willing to accept commands (%d / %08x)", rc, mmc->regs->present_state);
+        return EBUSY;
+    }
+
+    rc = sdmmc_wait_for_data_readiness(mmc);
+    if (rc) {
+        mmc_print(mmc, "card not willing to accept data-commands (%d / %08x)", rc, mmc->regs->present_state);
+        return EBUSY;
+    }
+
+    // Disable the SD card clock. [TRM 32.7.6.2 Step 3]
+    // NVIDIA notes that issuing the re-tune command triggers a re-selection of clock tap, but also
+    // due to a hardware issue, causes a one-microsecond window in which a clock glitch can occur.
+    // We'll disable the SD card clock temporarily so the card itself isn't affected by the glitch.
+    sdmmc_clock_enable(mmc, false);
+
+    // Issue our tuning command.  [TRM 32.7.6.2 Step 4]
+    sdmmc_prepare_command_data(mmc, 1, false, false, false, 0);
+    sdmmc_prepare_command_registers(mmc, 1, CMD_SEND_TUNING_BLOCK, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL);
+
+    // Wait for 1us  [TRM 32.7.6.2 Step 5]
+    // As part of the workaround above, we'll wait one microsecond for the glitch window to pass.
+    udelay(1);
+
+    // Issue a software reset for the data and command lines. [TRM 32.7.6.2 Step 6/7]
+    // This completes the workaround by ensuring the glitch didn't leave the sampling hardware
+    // for these lines in an uncertain state. This function blocks until the glitch window has
+    // complete, so it handles both TRM steps 7 and 8.
+    sdmmc_hardware_reset(mmc, MMC_SOFT_RESET_CMD | MMC_SOFT_RESET_DAT);
+
+    // Restore the SDMMC clock, now that the workaround is complete.  [TRM 32.7.6.2 Step 8]
+    // This enables the actual command to be issued.
+    sdmmc_clock_enable(mmc, true);
+
+    // Wait for the command to be completed. [TRM 32.7.6.2 Step 9]
+    rc = sdmmc_wait_for_event(mmc, MMC_STATUS_BUFFER_READ_READY, 0, 0, NULL);
+
+    // Always restore the prior interrupt settings.
+    mmc->regs->int_enable = saved_int_enable;
+
+    // If we had an error waiting for the interrupt, something went wrong.
+    // TODO: decide if this should be a retry condition?
+    if (rc) {
+        mmc_print(mmc, "buffer ready ready didn't go high in time?");
+        mmc_print(mmc, "error message: %s", strerror(rc));
+        mmc_print(mmc, "interrupt reg: %08x", mmc->regs->int_status);
+        mmc_print(mmc, "interrupt en: %08x", mmc->regs->int_enable);
+        return rc;
+    }
+
+    // Check the status of the "execute tuning", which indicates the success of
+    // this tuning step. [TRM 32.7.6.2 Step 10]
+    if (mmc->regs->host_control2 & MMC_HOST2_EXECUTE_TUNING)
+        return EAGAIN;
+
+    return 0;
+}
+
+
 /**
  * Performs an SDMMC clock tuning -- should be issued when switching up to a UHS-I
  * mode, and periodically thereafter per the spec.
  *
  * @param mmc The controller to tune.
+ * @param iterations The total number of iterations to perform.
  */
-static int sdmmc_tune_clock(struct mmc *mmc)
+static int sdmmc_tune_clock(struct mmc *mmc, enum sdmmc_tuning_attempts iterations)
 {
-    // FIXME: implement
-    mmc_print(mmc, "ERROR: can't use a mode that requires tuning, currently!");
-    return ENOSYS;
+    int rc;
+
+    // We follow the NVIDIA-suggested tuning procedure (TRM section 32.7.6),
+    // including sections where it deviates from the SDMMC specifications.
+    //
+    // This seems to produce the most reliable results, and includes workarounds
+    // for bugs in the X1 hardware.
+
+    // Read the current block order, so we can restore it.
+    int original_block_order = sdmmc_get_block_order(mmc, false);
+
+    // Stores the current timeout; we'll restore it in a bit.
+    int original_timeout = mmc->timeout;
+
+    // Figure out the block order to be used for communciations.
+    // XXX: where does this come from
+    int target_block_order = 6;
+
+    // The SDMMC host spec suggests tuning should occur over 40 iterations, so we'll stick to that.
+    // Vendors seem to deviate from this, so this is a possible area to look into if something doesn't
+    // wind up working correctly.
+    int attempts_remaining = sdmmc_tuning_iterations[iterations];
+    mmc_debug(mmc, "executing tuning (%d iterations)", attempts_remaining);
+
+    // These values come from the vendor's recommended values in the TRM.
+
+    // Allow the tuning hardware to control e.g. our clock taps.
+    mmc->regs->vendor_tuning_cntrl0 |= MMC_VENDOR_TUNING_SET_BY_HW;
+
+    // Apply our number of tries.
+    mmc->regs->vendor_tuning_cntrl0 &= ~MMC_VENDOR_TUNING_TRIES_MASK;
+    mmc->regs->vendor_tuning_cntrl0 |= (iterations << MMC_VENDOR_TUNING_TRIES_SHIFT);
+
+    // Don't use a multiplier or a divider.
+    mmc->regs->vendor_tuning_cntrl0 &= ~(MMC_VENDOR_TUNING_MULTIPLIER_MASK | MMC_VENDOR_TUNING_DIVIDER_MASK);
+    mmc->regs->vendor_tuning_cntrl0 |= MMC_VENDOR_TUNING_MULTIPLIER_UNITY;
+
+    // Use zero step sizes; per TRM 32.7.6.1.
+    mmc->regs->vendor_tuning_cntrl1 = MMC_VENDOR_TUNING_STEP_SIZE_SDR50_DEFAULT | MMC_VENDOR_TUNING_STEP_SIZE_SDR104_DEFAULT;
+
+    // Start the tuning process. [TRM 32.7.6.2 Step 2]
+    mmc->regs->host_control2 |= MMC_HOST2_EXECUTE_TUNING;
+
+    // Momentarily step down to a smaller block size, so we don't
+    // have to allocate a huge buffer for this command.
+    mmc->read_block_order = target_block_order;
+
+    // Step down to the timeout recommended in the specification.
+    mmc->timeout = MMC_TUNING_TIMEOUT;
+
+    // Iterate an iteration of the tuning process.
+    while (attempts_remaining--) {
+
+        // Run an iteration of our tuning process.
+        rc = sdmmc_run_tuning_iteration(mmc);
+
+        // If we have an error other than "retry, break.
+        if (rc != EAGAIN)
+            break;
+    }
+
+    // Restore the original parameters.
+    mmc->read_block_order = original_block_order;
+    mmc->timeout = original_timeout;
+
+    // If we exceeded our attempts, set this as a timeout.
+    if (rc == EAGAIN) {
+        mmc_print(mmc, "tuning attempts exceeded!");
+        rc = ETIMEDOUT;
+    }
+
+    // If the tuning failed, for any reason, print and return the error.
+    if (rc) {
+        mmc_print(mmc, "ERROR: failed to tune the SDMMC clock! (%d)", rc);
+        mmc_print(mmc, "error message %s", strerror(rc));
+        return rc;
+    }
+
+    // If we've made it here, this iteration completed tuning.
+    // Check for a tuning failure (SAMPLE CLOCK = 0). [TRM 32.7.6.2 Step 11]
+    if (!(mmc->regs->host_control2 & MMC_HOST2_SAMPLING_CLOCK_ENABLED)) {
+        mmc_print(mmc, "ERROR: tuning failed after complete iteration!");
+        return EIO;
+    }
+
+    return 0;
+}
+
+
+/**
+ * Configures the host controller to work at a given UHS-I mode.
+ *
+ * @param mmc The controller to work with
+ * @param speed The UHS or pre-UHS speed to work at.
+ */
+static void sdmmc_set_uhs_mode(struct mmc *mmc, enum sdmmc_bus_speed speed)
+{
+    // Set the UHS mode register.
+    mmc->regs->host_control2 &= MMC_HOST2_UHS_MODE_MASK;
+    mmc->regs->host_control2 |= speed;
 }
 
 
@@ -1015,11 +1247,13 @@ static int sdmmc_apply_clock_speed(struct mmc *mmc, enum sdmmc_bus_speed speed, 
         // 400kHz initialization mode.
         case SDMMC_SPEED_INIT:
             mmc->configure_clock(mmc, CLK_SOURCE_FIRST, MMC_CLOCK_DIVIDER_SDR12, MMC_CLOCK_CONTROL_FREQUENCY_INIT);
+            sdmmc_set_uhs_mode(mmc, SDMMC_SPEED_SDR12);
             break;
 
         // 25MHz default speed
         case SDMMC_SPEED_SDR12:
             mmc->configure_clock(mmc, CLK_SOURCE_FIRST, MMC_CLOCK_DIVIDER_SDR12, MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH);
+            sdmmc_set_uhs_mode(mmc, SDMMC_SPEED_SDR12);
             break;
 
         // 50MHz high speed
@@ -1027,15 +1261,17 @@ static int sdmmc_apply_clock_speed(struct mmc *mmc, enum sdmmc_bus_speed speed, 
             // Configure the host to use high-speed timing.
             mmc->regs->host_control |= MMC_HOST_ENABLE_HIGH_SPEED;
             mmc->configure_clock(mmc, CLK_SOURCE_FIRST, MMC_CLOCK_DIVIDER_SDR25, MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH);
+            sdmmc_set_uhs_mode(mmc, SDMMC_SPEED_SDR25);
             break;
 
         // 100MHz UHS-I
         case SDMMC_SPEED_SDR50:
             mmc->regs->host_control |= MMC_HOST_ENABLE_HIGH_SPEED;
             mmc->configure_clock(mmc, CLK_SOURCE_FIRST, MMC_CLOCK_DIVIDER_SDR50, MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH);
+            sdmmc_set_uhs_mode(mmc, SDMMC_SPEED_SDR50);
 
             // Execute tuning.
-            rc = sdmmc_tune_clock(mmc);
+            rc = sdmmc_tune_clock(mmc, MMC_VENDOR_TUNING_TRIES_SDR50);
             if (rc) {
                 mmc_print(mmc, "ERROR: tuning failed! (%d)", rc);
                 return rc;
@@ -1046,9 +1282,10 @@ static int sdmmc_apply_clock_speed(struct mmc *mmc, enum sdmmc_bus_speed speed, 
         case SDMMC_SPEED_SDR104:
             mmc->regs->host_control |= MMC_HOST_ENABLE_HIGH_SPEED;
             mmc->configure_clock(mmc, CLK_SOURCE_FIRST, MMC_CLOCK_DIVIDER_SDR104, MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH);
+            sdmmc_set_uhs_mode(mmc, SDMMC_SPEED_SDR104);
 
             // Execute tuning.
-            rc = sdmmc_tune_clock(mmc);
+            rc = sdmmc_tune_clock(mmc, MMC_VENDOR_TUNING_TRIES_SDR104);
             if (rc) {
                 mmc_print(mmc, "ERROR: tuning failed! (%d)", rc);
                 return rc;
@@ -1070,7 +1307,6 @@ static int sdmmc_apply_clock_speed(struct mmc *mmc, enum sdmmc_bus_speed speed, 
     mmc->operating_speed = speed;
     return 0;
 }
-
 
 
 /**
@@ -1127,7 +1363,6 @@ static int sdmmc1_set_up_clock_and_io(struct mmc *mmc)
 }
 
 
-
 /**
  * Initialize the low-level SDMMC hardware.
  * Thanks to hexkyz for this init code.
@@ -1150,8 +1385,8 @@ static int sdmmc_hardware_init(struct mmc *mmc)
         return rc;
     }
 
-    // Software reset the SDMMC device
-    rc = sdmmc_hardware_reset(mmc);
+    // Software reset the SDMMC device.
+    rc = sdmmc_hardware_reset(mmc, MMC_SOFT_RESET_FULL);
     if (rc) {
         mmc_print(mmc, "failed to reset!");
         return rc;
@@ -1429,7 +1664,6 @@ static int sdmmc_wait_for_command_completion(struct mmc *mmc)
 }
 
 
-
 /**
  * Blocks until the SD driver has completed issuing a command.
  *
@@ -1568,13 +1802,13 @@ static int sdmmc_handle_cpu_transfer(struct mmc *mmc, uint16_t blocks, bool is_w
  *      to reclaim the data lines after a transaction.
  */
 static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks,
-        bool is_write, bool auto_terminate, int argument)
+        bool is_write, bool auto_terminate, bool use_dma, int argument)
 {
     if (blocks) {
         uint16_t block_size = sdmmc_get_block_size(mmc, is_write);
 
         // If we're using DMA, target our bounce buffer.
-        if (mmc->use_dma)
+        if (use_dma)
             mmc->regs->dma_address = (uint32_t)sdmmc_bounce_buffer;
 
         // Set up the DMA block size and count.
@@ -1590,7 +1824,7 @@ static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks,
         uint32_t to_write = MMC_TRANSFER_LIMIT_BLOCK_COUNT;
 
         // If this controller should use DMA, set that up.
-        if (mmc->use_dma)
+        if (use_dma)
             to_write |= MMC_TRANSFER_DMA_ENABLE;
 
         // If this is a multi-block datagram, indicate so.
@@ -1631,6 +1865,8 @@ static void sdmmc_prepare_command_registers(struct mmc *mmc, int blocks_to_xfer,
         to_write |= MMC_COMMAND_TYPE_ABORT;
 
     // If this command has a data stage, include it.
+    // Note that tuning commands are atypical, but are considered to have a data stage
+    // consiting of the tuning pattern.
     if (blocks_to_xfer)
         to_write |= MMC_COMMAND_HAS_DATA;
 
@@ -1774,7 +2010,7 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     }
 
     // If we have data to send, prepare it.
-    sdmmc_prepare_command_data(mmc, blocks_to_transfer, is_write, auto_terminate, argument);
+    sdmmc_prepare_command_data(mmc, blocks_to_transfer, is_write, auto_terminate, mmc->use_dma, argument);
 
     // If this is a write and we have data, we'll need to populate the bounce buffer before
     // issuing the command.
@@ -1790,7 +2026,7 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     // Wait for the command to be completed.
     rc = sdmmc_wait_for_command_completion(mmc);
     if (rc) {
-        mmc_print(mmc, "failed to issue %s (arg=%08x, rc=%d)", sdmmc_get_command_string(command), argument, rc);
+        mmc_print(mmc, "failed to issue %s (arg=%x, rc=%d)", sdmmc_get_command_string(command), argument, rc);
         mmc_print_command_errors(mmc, rc);
 
         sdmmc_enable_interrupts(mmc, false);
@@ -2034,17 +2270,13 @@ static int sdmmc_read_and_parse_scr(struct mmc *mmc)
 
     // Momentarily step down to a smaller block size, so we don't
     // have to allocate a huge buffer for this command.
-    rc = sdmmc_use_block_size(mmc, block_order);
-    if (rc) {
-        mmc_print(mmc, "could not step down to a smaller block size! (%d)", rc);
-        return rc;
-    }
+    mmc->read_block_order = block_order;
 
     // Request the CSD from the device.
     rc = sdmmc_send_app_command(mmc, CMD_APP_SEND_SCR, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, 0, NULL, num_blocks, false, &scr);
     if (rc) {
         mmc_print(mmc, "could not get the card's SCR!");
-        sdmmc_use_block_size(mmc, original_block_order);
+        mmc->read_block_order = original_block_order;
         return rc;
     }
 
@@ -2052,11 +2284,7 @@ static int sdmmc_read_and_parse_scr(struct mmc *mmc)
     mmc->spec_version = scr.spec_version;
 
     // Restore the original block order.
-    rc = sdmmc_use_block_size(mmc, original_block_order);
-    if (rc) {
-        mmc_print(mmc, "could not restore the original block size! (%d)", rc);
-        return rc;
-    }
+    mmc->read_block_order = original_block_order;
 
     return 0;
 }
@@ -2238,7 +2466,6 @@ static int sdmmc_optimize_transfer_mode(struct mmc *mmc)
 }
 
 
-
 /**
  * Switches the active SD card and host controller to the given sppeed mode.
  *
@@ -2346,7 +2573,6 @@ static int sdmmc_emmc_optimize_speed(struct mmc *mmc)
     // TODO
     return 0;
 }
-
 
 
 /**
@@ -2800,26 +3026,18 @@ static int sdmmc_sd_switch_mode(struct mmc *mmc, int mode, int group, int value,
 
     // Momentarily step down to a smaller block size, so we don't
     // have to allocate a huge buffer for this command.
-    rc = sdmmc_use_block_size(mmc, block_order);
-    if (rc) {
-        mmc_print(mmc, "could not step down to a smaller block size! (%d)", rc);
-        return rc;
-    }
+    mmc->read_block_order = block_order;
 
     // Issue the command itself.
     rc = sdmmc_send_command(mmc, CMD_SWITCH_MODE, MMC_RESPONSE_LEN48, MMC_CHECKS_ALL, argument, NULL, num_blocks, false, false, response);
     if (rc) {
         mmc_print(mmc, "could not issue switch command!");
-        sdmmc_use_block_size(mmc, original_block_order);
+        mmc->read_block_order = original_block_order;
         return rc;
     }
 
     // Restore the original block order.
-    rc = sdmmc_use_block_size(mmc, original_block_order);
-    if (rc) {
-        mmc_print(mmc, "could not restore the original block size! (%d)", rc);
-        return rc;
-    }
+    mmc->read_block_order = original_block_order;
 
     return 0;
 }
