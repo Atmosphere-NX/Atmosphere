@@ -11,7 +11,7 @@
 /**
  * Registers in the Misc Pad control region
  */
-struct PACKED tegra_padctl {
+struct tegra_padctl {
     /* TODO: support registers before? */
     uint32_t sdmmc1_control;
     uint32_t sdmmc3_control;

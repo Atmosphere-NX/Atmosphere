@@ -8,7 +8,7 @@
 /**
  * Pinmux structures.
  */
-struct PACKED tegra_pinmux {
+struct tegra_pinmux {
     uint32_t sdmmc1_clk;
     uint32_t sdmmc1_cmd;
     uint32_t sdmmc1_dat3;

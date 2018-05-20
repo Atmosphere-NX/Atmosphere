@@ -75,7 +75,7 @@ enum {
 
 
 /* Clock/Reset Controller (CLK_RST_CONTROLLER_) regs */
-struct PACKED tegra_car {
+struct tegra_car {
     uint32_t rst_src;           /* _RST_SOURCE_0,0x00 */
 
     uint32_t rst_dev_l;
