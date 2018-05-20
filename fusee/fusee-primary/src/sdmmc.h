@@ -34,7 +34,6 @@ enum sdmmc_bus_width {
  */
 enum sdmmc_bus_voltage {
    MMC_VOLTAGE_3V3 = 0b111,
-   MMC_VOLTAGE_3V0 = 0b110,
    MMC_VOLTAGE_1V8 = 0b101,
 };
 
@@ -116,26 +115,27 @@ enum sdmmc_switch_argument_offsets {
 
 
 /**
- * Fields that can be modified by CMD_SWITCH_MODE.
- */
-enum sdmmc_switch_field {
-    /* Fields */
-    MMC_GROUP_ERASE_DEF = 175,
-    MMC_PARTITION_CONFIG = 179,
-    MMC_BUS_WIDTH = 183,
-};
-
-
-/**
  * Bus speeds possible for an SDMMC controller.
  */
 enum sdmmc_bus_speed {
+    /* SD card speeds */
     SDMMC_SPEED_SDR12  = 0,
     SDMMC_SPEED_SDR25  = 1,
     SDMMC_SPEED_SDR50  = 2,
     SDMMC_SPEED_SDR104 = 3,
     SDMMC_SPEED_DDR50  = 4,
 
+    /* Other speed: non-spec-compliant value used for e.g. HS400 */
+    SDMMC_SPEED_OTHER  = 5,
+
+    /* eMMC card speeds */
+    /* note: to avoid an enum clash, we add ten to these */
+    SDMMC_SPEED_HS26   = 10 ,
+    SDMMC_SPEED_HS52   = 11 ,
+    SDMMC_SPEED_HS200  = 12 ,
+    SDMMC_SPEED_HS400  = 13 ,
+
+    /* special speeds */
     SDMMC_SPEED_INIT = -1,
 };
 
@@ -152,7 +152,6 @@ struct mmc {
     bool use_dma;
     unsigned int timeout;
     enum tegra_named_gpio card_detect_gpio;
-    enum sdmmc_card_type card_type;
     enum sdmmc_write_permission write_enable;
 
     /* Per-controller operations. */
@@ -168,8 +167,12 @@ struct mmc {
     int (*switch_mode)(struct mmc *mmc, int a, int b, int c, uint32_t timeout, void *response);
     int (*switch_bus_width)(struct mmc *mmc, enum sdmmc_bus_width width);
     int (*optimize_speed)(struct mmc *mmc);
+    int (*card_switch_bus_speed)(struct mmc *mmc, enum sdmmc_bus_speed speed);
 
     /* Card properties */
+    enum sdmmc_card_type card_type;
+    uint32_t mmc_card_type;
+
     uint8_t cid[15];
     uint32_t relative_address;
     uint8_t partitioned;
