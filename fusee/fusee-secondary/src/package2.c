@@ -39,8 +39,7 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     thermosphere_size = package2_get_thermosphere(&thermosphere);
 
     if (thermosphere_size != 0 && package2->metadata.section_sizes[PACKAGE2_SECTION_UNUSED] != 0) {
-        printf(u8"Error: Package2 has no unused section for Thermosphère!\n");
-        generic_panic();
+        fatal_error(u8"Error: Package2 has no unused section for Thermosphère!\n");
     }
 
     /* Perform any patches we want to the NX kernel. */
@@ -56,14 +55,12 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     rebuilt_package2_size += package2->metadata.section_sizes[PACKAGE2_SECTION_KERNEL] + thermosphere_size + rebuilt_ini1->size;
 
     if (rebuilt_package2_size > PACKAGE2_SIZE_MAX) {
-        printf("Error: rebuilt package2 is too big!\n");
-        generic_panic();
+        fatal_error("rebuilt package2 is too big!\n");
     }
 
     rebuilt_package2 = (package2_header_t *)malloc(rebuilt_package2_size);
     if (rebuilt_package2 == NULL) {
-        printf("Error: package2_rebuild: out of memory!\n");
-        generic_panic();
+        fatal_error("package2_rebuild: out of memory!\n");
     }
 
     /* Rebuild package2. */
@@ -205,12 +202,10 @@ static uint32_t package2_decrypt_and_validate_header(package2_header_t *header, 
 
         /* Ensure we successfully decrypted the header. */
         if (mkey_rev > mkey_get_revision()) {
-            printf("Error: failed to decrypt the Package2 header (master key revision %u)!\n", mkey_get_revision());
-            generic_panic();
+            fatal_error("failed to decrypt the Package2 header (master key revision %u)!\n", mkey_get_revision());
         }
     } else if (!package2_validate_metadata(&header->metadata)) {
-        printf("Error: Failed to validate the Package2 header!\n");
-        generic_panic();
+        fatal_error("Failed to validate the Package2 header!\n");
     }
     return 0;
 }

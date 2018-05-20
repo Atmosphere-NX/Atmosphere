@@ -52,34 +52,28 @@ static void load_list_entry(const char *key) {
     load_file_ctx.key = key;
 
     if (ini_parse_string(get_loader_ctx()->bct0, loadlist_entry_ini_handler, &load_file_ctx) < 0) {
-        printf("Error: Failed to parse BCT.ini!\n");
-        generic_panic();
+        fatal_error("Failed to parse BCT.ini!\n");
     }
 
     if (load_file_ctx.load_address == 0 || load_file_ctx.path[0] == '\x00') {
-        printf("Error: Failed to determine where to load %s from!\n", key);
-        generic_panic();
+        fatal_error("Failed to determine where to load %s from!\n", key);
     }
 
     if (strlen(load_file_ctx.path) > LOADER_MAX_PATH_SIZE) {
-        printf("Error: The filename for %s is too long!\n", key);
-        generic_panic();
+        fatal_error("The filename for %s is too long!\n", key);
     }
 
     if (!check_32bit_address_loadable(load_file_ctx.load_address)) {
-        printf("Error: Load address 0x%08x is invalid (%s)!\n", load_file_ctx.load_address, key);
-        generic_panic();
+        fatal_error("Load address 0x%08x is invalid (%s)!\n", load_file_ctx.load_address, key);
     }
 
     if (stat(load_file_ctx.path, &st) == -1) {
-        printf("Error: Failed to stat file %s: %s!\n", load_file_ctx.path, strerror(errno));
-        generic_panic();
+        fatal_error("Failed to stat file %s: %s!\n", load_file_ctx.path, strerror(errno));
     }
 
     size = (size_t)st.st_size;
     if (!check_32bit_address_range_loadable(load_file_ctx.load_address, size)) {
-        printf("Error: %s has an invalid load address & size combination!\n", key);
-        generic_panic();
+        fatal_error("%s has an invalid load address & size combination!\n", key);
     }
 
     entry_num = g_chainloader_num_entries++;
@@ -114,8 +108,7 @@ static void parse_loadlist(const char *ll) {
             /* Skip to the next delimiter. */
             for (; *p == ' ' || *p == '\t' || *p == '\x00'; p++) { }
             if (*p != '|') {
-                printf("Error: Load list is malformed!\n");
-                generic_panic();
+                fatal_error("Load list is malformed!\n");
             } else {
                 /* Skip to the next entry. */
                 for (; *p == ' ' || *p == '\t' || *p == '|'; p++) { }
@@ -216,13 +209,11 @@ void load_payload(const char *bct0) {
     ctx->bct0 = bct0;
 
     if (ini_parse_string(ctx->bct0, loadlist_ini_handler, ctx) < 0) {
-        printf("Error: Failed to parse BCT.ini!\n");
-        generic_panic();
+        fatal_error("Failed to parse BCT.ini!\n");
     }
 
     if (ctx->chainload_entrypoint != 0 || ctx->nb_files_to_load > 0) {
-        printf("Error: loadlist must be empty when booting Horizon!\n");
-        generic_panic();
+        fatal_error("loadlist must be empty when booting Horizon!\n");
     }
 
     /* Sort the entries by ascending load addresses */
@@ -239,8 +230,8 @@ void load_payload(const char *bct0) {
                 g_chainloader_entries[i + 1].load_address + g_chainloader_entries[i + 1].size
             )
         ) {
-            printf(
-                "Error: Loading ranges for files %s and %s overlap!\n",
+            fatal_error(
+                "Loading ranges for files %s and %s overlap!\n",
                 ctx->file_paths_to_load[g_chainloader_entries[i].num],
                 ctx->file_paths_to_load[g_chainloader_entries[i + 1].num]
             );
@@ -260,8 +251,7 @@ void load_payload(const char *bct0) {
     }
 
     if (ctx->chainload_entrypoint != 0 && ctx->file_id_of_entrypoint >= ctx->nb_files_to_load) {
-        printf("Error: Entrypoint not in range of any of the files!\n");
-        generic_panic();
+        fatal_error("Entrypoint not in range of any of the files!\n");
     }
 
     if (can_load_in_place) {
@@ -269,8 +259,7 @@ void load_payload(const char *bct0) {
             chainloader_entry_t *entry = &g_chainloader_entries[i];
             entry->src_address = entry->load_address;
             if (read_from_file((void *)entry->src_address, entry->size, ctx->file_paths_to_load[entry->num]) != entry->size) {
-                printf("Error: Failed to read file %s: %s!\n", ctx->file_paths_to_load[entry->num], strerror(errno));
-                generic_panic();
+                fatal_error("Failed to read file %s: %s!\n", ctx->file_paths_to_load[entry->num], strerror(errno));
             }
         }
     } else {
@@ -296,8 +285,7 @@ void load_payload(const char *bct0) {
             carveout = find_carveout(g_chainloader_entries, g_chainloader_num_entries, total_size);
         }
         if (carveout == 0) {
-            printf("Error: Failed to find a carveout!\n");
-            generic_panic();
+            fatal_error("Failed to find a carveout!\n");
         }
 
         /* Finally, read the files into the carveout */
@@ -306,8 +294,7 @@ void load_payload(const char *bct0) {
             chainloader_entry_t *entry = &g_chainloader_entries[i];
             entry->src_address = pos;
             if (read_from_file((void *)entry->src_address, entry->size, ctx->file_paths_to_load[entry->num]) != entry->size) {
-                printf("Error: Failed to read file %s: %s!\n", ctx->file_paths_to_load[entry->num], strerror(errno));
-                generic_panic();
+                fatal_error("Failed to read file %s: %s!\n", ctx->file_paths_to_load[entry->num], strerror(errno));
             }
             pos += entry->size;
         }

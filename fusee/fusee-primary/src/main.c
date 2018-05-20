@@ -34,8 +34,7 @@ static const char *load_config(void) {
     }
 
     if (memcmp(g_bct0_buffer, "BCT0", 4) != 0) {
-        printk("Error: Unexpected magic in BCT.ini!\n");
-        generic_panic();
+        fatal_error("Unexpected magic in BCT.ini!\n");
     }
     /* Return pointer to first line of the ini. */
     const char *bct0 = g_bct0_buffer;
@@ -43,8 +42,7 @@ static const char *load_config(void) {
         bct0++;
     }
     if (!bct0) {
-        printk("Error: BCT.ini has no newline!\n");
-        generic_panic();
+        fatal_error("BCT.ini has no newline!\n");
     }
     return bct0;
 }
@@ -116,9 +114,8 @@ int main(void) {
 #ifndef I_KNOW_WHAT_I_AM_DOING
 #error "Fusee is a work-in-progress bootloader, and is not ready for usage yet. If you want to play with it anyway, please #define I_KNOW_WHAT_I_AM_DOING -- and recognize that we will be unable to provide support until it is ready for general usage :)"
 
-    printk("Warning: Fus\e9e is not yet completed, and not ready for general testing!\n");
-    printk("Please do not seek support for it until it is done.\n");
-    generic_panic();
+    printk("Warning: Fus\xe9" "e is not yet completed, and not ready for general testing!\n");
+    fatal_error("Please do not seek support for it until it is done.\n");
 #endif
 
     /* Load the BCT0 configuration ini off of the SD. */

@@ -13,7 +13,7 @@
  * TODO: This should print via UART, console framebuffer, and to a ring for
  * consumption by Horizon
  */
-void printk(char *fmt, ...)
+void printk(const char *fmt, ...)
 {
 	va_list list;
 	va_start(list, fmt);
@@ -22,7 +22,7 @@ void printk(char *fmt, ...)
 }
 
 
-void vprintk(char *fmt, va_list args)
+void vprintk(const char *fmt, va_list args)
 {
 	char buf[512];
 	vsnprintf(buf, sizeof(buf), fmt, args);

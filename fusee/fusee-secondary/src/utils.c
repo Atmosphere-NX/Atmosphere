@@ -1,10 +1,12 @@
 #include <stdbool.h>
+#include <stdarg.h>
 #include "utils.h"
 #include "se.h"
 #include "fuse.h"
 #include "pmc.h"
 #include "timers.h"
 #include "hwinit/btn.h"
+#include "panic.h"
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -46,8 +48,19 @@ __attribute__((noreturn)) void wait_for_button_and_pmc_reboot(void) {
 }
 
 __attribute__ ((noreturn)) void generic_panic(void) {
-    while(true);//panic(0xFF000006);
+    panic(0xFF000006);
 }
+
+__attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
+    va_list args;
+    printf("Fatal error: ");
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+    printf("\n Press POWER to reboot into RCM, VOL+/VOL- to reboot normally.\n");
+    wait_for_button_and_pmc_reboot();
+}
+
 __attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be)
 {
     if(as <= bs && bs <= ae)

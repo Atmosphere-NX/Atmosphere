@@ -49,13 +49,11 @@ void load_stage2(const char *bct0) {
     uintptr_t tmp_addr;
 
     if (ini_parse_string(bct0, stage2_ini_handler, &config) < 0) {
-        printk("Error: Failed to parse BCT.ini!\n");
-        generic_panic();
+        fatal_error("Failed to parse BCT.ini!\n");
     }
 
     if (config.load_address == 0 || config.path[0] == '\x00') {
-        printk("Error: Failed to determine where to load stage2!\n");
-        generic_panic();
+        fatal_error("Failed to determine where to load stage2!\n");
     }
 
     if (strlen(config.path) + 1 + sizeof(stage2_args_t) > CHAINLOADER_ARG_DATA_MAX_SIZE) {
@@ -63,13 +61,11 @@ void load_stage2(const char *bct0) {
     }
 
     if (!check_32bit_address_loadable(config.entrypoint)) {
-        printk("Error: Stage2's entrypoint is invalid!\n");
-        generic_panic();
+        fatal_error("Stage2's entrypoint is invalid!\n");
     }
 
     if (!check_32bit_address_loadable(config.load_address)) {
-        printk("Error: Stage2's load address is invalid!\n");
-        generic_panic();
+        fatal_error("Stage2's load address is invalid!\n");
     }
 
     printk("[DEBUG] Stage 2 Config:\n");
@@ -78,26 +74,22 @@ void load_stage2(const char *bct0) {
     printk("    Entrypoint:   0x%p\n", config.entrypoint);
 
     if (f_stat(config.path, &info) != FR_OK) {
-        printk("Error: Failed to stat stage2 (%s)!\n", config.path);
-        generic_panic();
+        fatal_error("Failed to stat stage2 (%s)!\n", config.path);
     }
 
     size = (size_t)info.fsize;
 
     /* the LFB is located at 0xC0000000 atm */
     if (size > 0xC0000000u - 0x80000000u) {
-        printk("Error: Stage2 is way too big!\n");
-        generic_panic();
+        fatal_error("Stage2 is way too big!\n");
     }
 
     if (!check_32bit_address_range_loadable(config.load_address, size)) {
-        printk("Error: Stage2 has an invalid load address & size combination (0x%08x 0x%08x)!\n", config.load_address, size);
-        generic_panic();
+        fatal_error("Stage2 has an invalid load address & size combination (0x%08x 0x%08x)!\n", config.load_address, size);
     }
 
     if (config.entrypoint < config.load_address || config.entrypoint >= config.load_address + size) {
-        printk("Error: Stage2's entrypoint is outside Stage2!\n");
-        generic_panic();
+        fatal_error("Stage2's entrypoint is outside Stage2!\n");
     }
 
     if (check_32bit_address_range_in_program(config.load_address, size)) {
@@ -107,8 +99,7 @@ void load_stage2(const char *bct0) {
     }
 
     if (read_from_file((void *)tmp_addr, size, config.path) != size) {
-        printk("Error: Failed to read stage2 (%s)!\n", config.path);
-        generic_panic();
+        fatal_error("Failed to read stage2 (%s)!\n", config.path);
     }
 
     g_chainloader_num_entries             = 1;

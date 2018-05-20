@@ -62,14 +62,12 @@ int main(int argc, void **argv) {
     setup_env();
 
     if (argc != STAGE2_ARGC) {
-        printf("Error: Invalid argc (expected %d, got %d)!\n", STAGE2_ARGC, argc);
-        generic_panic();
+        fatal_error("Invalid argc (expected %d, got %d)!\n", STAGE2_ARGC, argc);
     }
     g_stage2_args = (stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT];
 
     if(g_stage2_args->version != 0) {
-        printf("Error: Incorrect Stage2 args version (expected %lu, got %lu)!\n", 0ul, g_stage2_args->version);
-        generic_panic();
+        fatal_error("Incorrect Stage2 args version (expected %lu, got %lu)!\n", 0ul, g_stage2_args->version);
     }
 
     printf(u8"Welcome to Atmosphère Fusée Stage 2!\n");
