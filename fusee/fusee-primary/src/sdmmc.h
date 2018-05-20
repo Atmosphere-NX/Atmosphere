@@ -188,6 +188,7 @@ struct mmc {
 
     uint8_t read_block_order;
     uint8_t write_block_order;
+    uint8_t tuning_block_order;
     bool uses_block_addressing;
 
     /* Current operation status flags */

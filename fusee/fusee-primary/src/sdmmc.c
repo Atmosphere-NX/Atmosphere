@@ -463,8 +463,11 @@ enum sdmmc_command_magic {
     MMC_DEFAULT_BLOCK_ORDER = 9,
     MMC_VOLTAGE_SWITCH_TIME = 5000, // 5mS
     MMC_POST_CLOCK_DELAY = 1000, // 1mS
-    MMC_TUNING_TIMEOUT = 150 * 1000, // 150mS
     MMC_SPEED_MMC_OFFSET = 10,
+
+    MMC_TUNING_TIMEOUT = 150 * 1000, // 150mS
+    MMC_TUNING_BLOCK_ORDER_4BIT = 6,
+    MMC_TUNING_BLOCK_ORDER_8BIT = 7,
 };
 
 
@@ -1208,17 +1211,11 @@ static int sdmmc_tune_clock(struct mmc *mmc, enum sdmmc_tuning_attempts iteratio
     // Stores the current timeout; we'll restore it in a bit.
     int original_timeout = mmc->timeout;
 
-    // Figure out the block order to be used for communciations.
-    // XXX: where does this come from
-    int target_block_order = 6;
-
     // The SDMMC host spec suggests tuning should occur over 40 iterations, so we'll stick to that.
     // Vendors seem to deviate from this, so this is a possible area to look into if something doesn't
     // wind up working correctly.
     int attempts_remaining = sdmmc_tuning_iterations[iterations];
     mmc_debug(mmc, "executing tuning (%d iterations)", attempts_remaining);
-
-    // These values come from the vendor's recommended values in the TRM.
 
     // Allow the tuning hardware to control e.g. our clock taps.
     mmc->regs->vendor_tuning_cntrl0 |= MMC_VENDOR_TUNING_SET_BY_HW;
@@ -1239,7 +1236,7 @@ static int sdmmc_tune_clock(struct mmc *mmc, enum sdmmc_tuning_attempts iteratio
 
     // Momentarily step down to a smaller block size, so we don't
     // have to allocate a huge buffer for this command.
-    mmc->read_block_order = target_block_order;
+    mmc->read_block_order = mmc->tuning_block_order;
 
     // Step down to the timeout recommended in the specification.
     mmc->timeout = MMC_TUNING_TIMEOUT;
@@ -2773,11 +2770,10 @@ static int sdmmc_mmc_optimize_speed(struct mmc *mmc)
     if (mmc->operating_voltage == MMC_VOLTAGE_1V8) {
         //if (hs400_support && !sdmmc_switch_bus_speed(mmc, SDMMC_SPEED_HS400))
         //    return 0;
-        //if (hs200_support && !sdmmc_switch_bus_speed(mmc, SDMMC_SPEED_HS200))
-        //    return 0;
+        if (hs200_support && !sdmmc_switch_bus_speed(mmc, SDMMC_SPEED_HS200))
+            return 0;
 
         (void)hs400_support;
-        (void)hs200_support;
     }
 
     // Next, try the legacy "high speed" mode.
@@ -3310,6 +3306,7 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
         case SWITCH_EMMC:
             mmc->name = "eMMC";
             mmc->max_bus_width = MMC_BUS_WIDTH_8BIT;
+            mmc->tuning_block_order = MMC_TUNING_BLOCK_ORDER_8BIT;
             mmc->operating_voltage = MMC_VOLTAGE_1V8;
 
             // Set up function pointers for each of our per-instance functions.
@@ -3330,6 +3327,7 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
             mmc->name = "uSD";
             mmc->card_type = MMC_CARD_SD;
             mmc->max_bus_width = SD_BUS_WIDTH_4BIT;
+            mmc->tuning_block_order = MMC_TUNING_BLOCK_ORDER_4BIT;
             mmc->operating_voltage = MMC_VOLTAGE_3V3;
             mmc->card_detect_gpio = GPIO_MICROSD_CARD_DETECT;
 
