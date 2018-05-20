@@ -57,8 +57,10 @@ __attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
     va_start(args, fmt);
     vprintf(fmt, args);
     va_end(args);
-    printf("\n Press POWER to reboot into RCM, VOL+/VOL- to reboot normally.\n");
-    wait_for_button_and_pmc_reboot();
+    printf("Hanging...\n");
+    while(true);
+    //printf("\n Press POWER to reboot into RCM, VOL+/VOL- to reboot normally.\n");
+    //wait_for_button_and_pmc_reboot();
 }
 
 __attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be)
