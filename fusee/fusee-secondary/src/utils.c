@@ -4,6 +4,7 @@
 #include "se.h"
 #include "fuse.h"
 #include "pmc.h"
+#include "car.h"
 #include "timers.h"
 #include "hwinit/btn.h"
 #include "panic.h"
@@ -33,16 +34,21 @@ __attribute__((noreturn)) void pmc_reboot(uint32_t scratch0) {
     }
 }
 
-__attribute__((noreturn)) void wait_for_button_and_pmc_reboot(void) {
+__attribute__((noreturn)) void car_reboot(void) {
+    /* Reset the processor. */
+    car_get_regs()->rst_dev_l |= 1<<2;
+
+    while (true) {
+        /* Wait for reboot. */
+    }
+}
+
+__attribute__((noreturn)) void wait_for_button_and_reboot(void) {
     uint32_t button;
     while (true) {
         button = btn_read();
         if (button & BTN_POWER) {
-            /* Reboot into RCM. */
-            pmc_reboot(BIT(1) | 0);
-        } else if (button & (BTN_VOL_UP | BTN_VOL_DOWN)) {
-            /* Reboot normally. */
-            pmc_reboot(0);
+            car_reboot();
         }
     }
 }
@@ -57,10 +63,8 @@ __attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
     va_start(args, fmt);
     vprintf(fmt, args);
     va_end(args);
-    printf("Hanging...\n");
-    while(true);
-    //printf("\n Press POWER to reboot into RCM, VOL+/VOL- to reboot normally.\n");
-    //wait_for_button_and_pmc_reboot();
+    printf("\n Press POWER to reboot.\n");
+    wait_for_button_and_reboot();
 }
 
 __attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be)
