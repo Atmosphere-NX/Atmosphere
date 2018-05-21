@@ -10,10 +10,12 @@
 #define APB_MISC_BASE 0x70000000
 #define PINMUX_BASE (APB_MISC_BASE + 0x3000)
 #define PMC_BASE 0x7000E400
-#define MAX_GPIOS 0x3D
+#define MAX_GPIO 0x3D
 #define MAX_PINMUX 0xA2
 #define MAX_PINMUX_5X 0xAF
 #define MAX_PINMUX_DRIVEPAD 0x2F
+#define MAX_PMC_CONTROL 0x09
+#define MAX_PMC_WAKE_PIN 0x31
 
 extern "C" {
     extern u32 __start__;
@@ -1355,6 +1357,536 @@ static int pinmux_update_drivepad(u64 pinmux_base_vaddr, unsigned int pinmux_dri
     return pinmux_drivepad_val;
 }
 
+static const std::tuple<u32, u32, u32> g_pmc_control_map[] = {
+    {0x000, 0x0800, 0x01},
+    {0x000, 0x0400, 0x00},
+    {0x000, 0x0200, 0x01},
+    {0x000, 0x0100, 0x00},
+    {0x000, 0x0040, 0x00},
+    {0x000, 0x0020, 0x00},
+    {0x440, 0x4000, 0x01},
+    {0x440, 0x0200, 0x00},
+    {0x440, 0x0001, 0x01},
+};
+
+static int pmc_init_wake_events(u64 pmc_base_vaddr, bool is_blink) {
+    Result rc;
+    
+    u32 pmc_wake_debounce_val = 0;
+    u32 pmc_blink_timer_val = 0x08008800;
+    u32 pmc_cntrl_val = 0;
+    u32 pmc_dpd_pads_oride_val = 0;
+    
+    if (kernelAbove200()) {
+        /* Use svcReadWriteRegister to write APBDEV_PMC_WAKE_DEBOUNCE_EN_0 */
+        rc = svcReadWriteRegister(&pmc_wake_debounce_val, PMC_BASE + 0x4D8, 0xFFFFFFFF, pmc_wake_debounce_val);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        /* Use svcReadWriteRegister to do a dummy read from APBDEV_PMC_WAKE_DEBOUNCE_EN_0 */
+        rc = svcReadWriteRegister(&pmc_wake_debounce_val, PMC_BASE + 0x4D8, 0, 0);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        /* Use svcReadWriteRegister to write APBDEV_PMC_BLINK_TIMER_0 */
+        rc = svcReadWriteRegister(&pmc_blink_timer_val, PMC_BASE + 0x40, 0xFFFFFFFF, pmc_blink_timer_val);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        /* Use svcReadWriteRegister to do a dummy read from APBDEV_PMC_BLINK_TIMER_0 */
+        rc = svcReadWriteRegister(&pmc_blink_timer_val, PMC_BASE + 0x40, 0, 0);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+
+        for (unsigned int i = 0; i < MAX_PMC_CONTROL; i++) {
+            /* Fetch this PMC register offset */
+            u32 pmc_control_reg_offset = std::get<0>(g_pmc_control_map[i]);
+            
+            /* Fetch this PMC mask value */
+            u32 pmc_control_mask_val = std::get<1>(g_pmc_control_map[i]);
+            
+            /* Fetch this PMC flag value */
+            u32 pmc_control_flag_val = std::get<2>(g_pmc_control_map[i]);
+            
+            u32 pmc_control_val = 0;
+            
+            /* Use svcReadWriteRegister to read from the PMC register */
+            rc = svcReadWriteRegister(&pmc_control_val, PMC_BASE + pmc_control_reg_offset, 0, 0);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            pmc_control_val &= ~(pmc_control_mask_val);
+            pmc_control_val |= ((pmc_control_flag_val & 0x01) ? pmc_control_mask_val : 0);
+            
+            /* Use svcReadWriteRegister to write to the PMC register */
+            rc = svcReadWriteRegister(&pmc_control_val, PMC_BASE + pmc_control_reg_offset, 0xFFFFFFFF, pmc_control_val);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            /* Use svcReadWriteRegister to do a dummy read from  the PMC register */
+            rc = svcReadWriteRegister(&pmc_control_val, PMC_BASE + pmc_control_reg_offset, 0, 0);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+        }
+
+        /* Use svcReadWriteRegister to read from APBDEV_PMC_CNTRL_0 */
+        rc = svcReadWriteRegister(&pmc_cntrl_val, PMC_BASE + 0, 0, 0);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        pmc_cntrl_val &= ~(0x80);
+        pmc_cntrl_val |= (is_blink ? 0x80 : 0);
+        
+        /* Use svcReadWriteRegister to write to APBDEV_PMC_CNTRL_0 */
+        rc = svcReadWriteRegister(&pmc_cntrl_val, PMC_BASE + 0, 0xFFFFFFFF, pmc_cntrl_val);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        /* Use svcReadWriteRegister to do a dummy read from APBDEV_PMC_CNTRL_0 */
+        rc = svcReadWriteRegister(&pmc_cntrl_val, PMC_BASE + 0, 0, 0);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+
+        /* Use svcReadWriteRegister to read from APBDEV_PMC_DPD_PADS_ORIDE_0 */
+        rc = svcReadWriteRegister(&pmc_dpd_pads_oride_val, PMC_BASE + 0x1C, 0, 0);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        pmc_dpd_pads_oride_val &= ~(0x100000);
+        pmc_dpd_pads_oride_val |= (is_blink ? 0x100000 : 0);
+        
+        /* Use svcReadWriteRegister to write to APBDEV_PMC_DPD_PADS_ORIDE_0 */
+        rc = svcReadWriteRegister(&pmc_dpd_pads_oride_val, PMC_BASE + 0x1C, 0xFFFFFFFF, pmc_dpd_pads_oride_val);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        /* Use svcReadWriteRegister to do a dummy read from APBDEV_PMC_DPD_PADS_ORIDE_0 */
+        rc = svcReadWriteRegister(&pmc_dpd_pads_oride_val, PMC_BASE + 0x1C, 0, 0);
+        if (R_FAILED(rc)) {
+            return rc;
+        }        
+    } else {
+        /* Write to APBDEV_PMC_WAKE_DEBOUNCE_EN_0 */
+        *((u32 *)pmc_base_vaddr + 0x4D8) = pmc_wake_debounce_val;
+        
+        /* Do a dummy read from APBDEV_PMC_WAKE_DEBOUNCE_EN_0 */
+        pmc_wake_debounce_val = *((u32 *)pmc_base_vaddr + 0x4D8);
+        
+        /* Write to APBDEV_PMC_BLINK_TIMER_0 */
+        *((u32 *)pmc_base_vaddr + 0x40) = pmc_blink_timer_val;
+        
+        /* Do a dummy read from APBDEV_PMC_BLINK_TIMER_0 */
+        pmc_blink_timer_val = *((u32 *)pmc_base_vaddr + 0x40);
+        
+        for (unsigned int i = 0; i < MAX_PMC_CONTROL; i++) {
+            /* Fetch this PMC register offset */
+            u32 pmc_control_reg_offset = std::get<0>(g_pmc_control_map[i]);
+            
+            /* Fetch this PMC mask value */
+            u32 pmc_control_mask_val = std::get<1>(g_pmc_control_map[i]);
+            
+            /* Fetch this PMC flag value */
+            u32 pmc_control_flag_val = std::get<2>(g_pmc_control_map[i]);
+            
+            /* Read from the PMC register */
+            u32 pmc_control_val = *((u32 *)pmc_base_vaddr + pmc_control_reg_offset);
+            
+            pmc_control_val &= ~(pmc_control_mask_val);
+            pmc_control_val |= ((pmc_control_flag_val & 0x01) ? pmc_control_mask_val : 0);
+            
+            /* Write to the PMC register */
+            *((u32 *)pmc_base_vaddr + pmc_control_reg_offset) = pmc_control_val;
+            
+            /* Do a dummy read from the PMC register */
+            pmc_control_val = *((u32 *)pmc_base_vaddr + pmc_control_reg_offset);
+        }
+        
+        /* Read from APBDEV_PMC_CNTRL_0 */
+        pmc_cntrl_val = *((u32 *)pmc_base_vaddr + 0);
+        
+        pmc_cntrl_val &= ~(0x80);
+        pmc_cntrl_val |= (is_blink ? 0x80 : 0);
+        
+        /* Write to APBDEV_PMC_CNTRL_0 */
+        *((u32 *)pmc_base_vaddr + 0) = pmc_cntrl_val;
+        
+        /* Do a dummy read from APBDEV_PMC_CNTRL_0 */
+        pmc_cntrl_val = *((u32 *)pmc_base_vaddr + 0);
+        
+        /* Read from APBDEV_PMC_DPD_PADS_ORIDE_0 */
+        pmc_dpd_pads_oride_val = *((u32 *)pmc_base_vaddr + 0x1C);
+        
+        pmc_dpd_pads_oride_val &= ~(0x100000);
+        pmc_dpd_pads_oride_val |= (is_blink ? 0x100000 : 0);
+        
+        /* Write to APBDEV_PMC_DPD_PADS_ORIDE_0 */
+        *((u32 *)pmc_base_vaddr + 0x1C) = pmc_dpd_pads_oride_val;
+        
+        /* Do a dummy read from APBDEV_PMC_DPD_PADS_ORIDE_0 */
+        pmc_dpd_pads_oride_val = *((u32 *)pmc_base_vaddr + 0x1C);
+    }
+    
+    rc = 0;
+    return rc;
+}
+
+static const std::tuple<u32, u32, u32> g_pmc_wake_pin_map_icosa[] = {
+    {0x00, 0x00, 0x02},
+    {0x01, 0x00, 0x02},
+    {0x02, 0x00, 0x02},
+    {0x03, 0x00, 0x02},
+    {0x04, 0x01, 0x02},
+    {0x05, 0x00, 0x02},
+    {0x06, 0x01, 0x02},
+    {0x07, 0x01, 0x02},
+    {0x08, 0x00, 0x02},
+    {0x0A, 0x01, 0x02},
+    {0x0B, 0x00, 0x02},
+    {0x0C, 0x00, 0x02},
+    {0x0D, 0x00, 0x02},
+    {0x0E, 0x01, 0x00},
+    {0x0F, 0x00, 0x02},
+    {0x11, 0x00, 0x02},
+    {0x12, 0x00, 0x02},
+    {0x13, 0x00, 0x02},
+    {0x14, 0x00, 0x02},
+    {0x15, 0x00, 0x02},
+    {0x16, 0x00, 0x02},
+    {0x17, 0x00, 0x02},
+    {0x18, 0x00, 0x02},
+    {0x19, 0x00, 0x02},
+    {0x1A, 0x00, 0x02},
+    {0x1B, 0x01, 0x00},
+    {0x1C, 0x00, 0x02},
+    {0x21, 0x00, 0x02},
+    {0x22, 0x01, 0x00},
+    {0x23, 0x01, 0x02},
+    {0x24, 0x00, 0x02},
+    {0x2D, 0x00, 0x02},
+    {0x2E, 0x00, 0x02},
+    {0x2F, 0x00, 0x02},
+    {0x30, 0x01, 0x02},
+    {0x31, 0x00, 0x02},
+    {0x32, 0x00, 0x02},
+    {0x33, 0x01, 0x00},
+    {0x34, 0x01, 0x00},
+    {0x35, 0x00, 0x02},
+    {0x36, 0x00, 0x02},
+    {0x37, 0x00, 0x02},
+    {0x38, 0x00, 0x02},
+    {0x39, 0x00, 0x02},
+    {0x3A, 0x00, 0x02},
+    {0x3B, 0x00, 0x02},
+    {0x3D, 0x00, 0x02},
+    {0x3E, 0x00, 0x02},
+    {0x3F, 0x00, 0x02},
+};
+
+static const std::tuple<u32, u32, u32> g_pmc_wake_pin_map_copper[] = {
+    {0x00, 0x01, 0x02},
+    {0x01, 0x00, 0x02},
+    {0x02, 0x00, 0x02},
+    {0x03, 0x01, 0x02},
+    {0x04, 0x00, 0x02},
+    {0x05, 0x01, 0x02},
+    {0x06, 0x00, 0x02},
+    {0x07, 0x00, 0x02},
+    {0x08, 0x01, 0x02},
+    {0x0A, 0x00, 0x02},
+    {0x0B, 0x00, 0x02},
+    {0x0C, 0x00, 0x02},
+    {0x0D, 0x00, 0x02},
+    {0x0E, 0x01, 0x00},
+    {0x0F, 0x00, 0x02},
+    {0x11, 0x00, 0x02},
+    {0x12, 0x00, 0x02},
+    {0x13, 0x00, 0x02},
+    {0x14, 0x00, 0x02},
+    {0x15, 0x00, 0x02},
+    {0x16, 0x00, 0x02},
+    {0x17, 0x00, 0x02},
+    {0x18, 0x01, 0x02},
+    {0x19, 0x00, 0x02},
+    {0x1A, 0x00, 0x02},
+    {0x1B, 0x00, 0x00},
+    {0x1C, 0x00, 0x02},
+    {0x21, 0x00, 0x02},
+    {0x22, 0x00, 0x00},
+    {0x23, 0x00, 0x02},
+    {0x24, 0x00, 0x02},
+    {0x2D, 0x00, 0x02},
+    {0x2E, 0x00, 0x02},
+    {0x2F, 0x01, 0x02},
+    {0x30, 0x01, 0x02},
+    {0x31, 0x00, 0x02},
+    {0x32, 0x01, 0x02},
+    {0x33, 0x01, 0x00},
+    {0x34, 0x01, 0x00},
+    {0x35, 0x00, 0x02},
+    {0x36, 0x00, 0x02},
+    {0x37, 0x00, 0x02},
+    {0x38, 0x00, 0x02},
+    {0x39, 0x00, 0x02},
+    {0x3A, 0x00, 0x02},
+    {0x3B, 0x00, 0x02},
+    {0x3D, 0x00, 0x02},
+    {0x3E, 0x00, 0x02},
+    {0x3F, 0x00, 0x02},
+};
+
+static int pmc_set_wake_event_level(u64 pmc_base_vaddr, unsigned int wake_pin_idx, unsigned int wake_pin_mode) {
+    Result rc;
+    
+    /* Invalid pin index */
+    if (wake_pin_idx > 0x3F) {
+        return -1;
+    }
+    
+    u32 pmc_wake_level_reg_offset = 0;
+    u32 pmc_wake_level_mask_reg_offset = 0;
+    u32 pmc_wake_level_val = 0;
+    u32 pmc_wake_level_mask_val = 0;
+    
+    /* Pins up to 0x1F use APBDEV_PMC_WAKE_LVL_0 and APBDEV_PMC_AUTO_WAKE_LVL_MASK_0, */
+    /* while others use APBDEV_PMC_WAKE2_LVL_0 and APBDEV_PMC_AUTO_WAKE2_LVL_MASK_0 */
+    if (wake_pin_idx <= 0x1F) {
+        pmc_wake_level_reg_offset = 0x10;
+        pmc_wake_level_mask_reg_offset = 0xDC;
+    } else {
+        pmc_wake_level_reg_offset = 0x164;
+        pmc_wake_level_mask_reg_offset = 0x170;
+    }
+        
+    if (wake_pin_mode < 0x02) {
+        if (kernelAbove200()) {
+            /* Use svcReadWriteRegister to read from the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_mask_val, PMC_BASE + pmc_wake_level_mask_reg_offset, 0, 0);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            /* Mask with the wake pin index */
+            pmc_wake_level_mask_val &= ~(0x01 << (wake_pin_idx & 0x1F));
+            
+            /* Use svcReadWriteRegister to write to the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_mask_val, PMC_BASE + pmc_wake_level_mask_reg_offset, 0xFFFFFFFF, pmc_wake_level_mask_val);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            /* Use svcReadWriteRegister to do a dummy read from the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_mask_val, PMC_BASE + pmc_wake_level_mask_reg_offset, 0, 0);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            /* Use svcReadWriteRegister to read from the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_val, PMC_BASE + pmc_wake_level_reg_offset, 0, 0);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            /* Mask with the wake pin index */
+            pmc_wake_level_val &= ~(0x01 << (wake_pin_idx & 0x1F));
+            
+            /* Set or clear the wake level */
+            pmc_wake_level_val |= (wake_pin_mode ? (0x01 << (wake_pin_idx & 0x1F)) : 0);
+            
+            /* Use svcReadWriteRegister to write to the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_val, PMC_BASE + pmc_wake_level_reg_offset, 0xFFFFFFFF, pmc_wake_level_val);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            /* Use svcReadWriteRegister to do a dummy read from the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_val, PMC_BASE + pmc_wake_level_reg_offset, 0, 0);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+        } else {
+            /* Read from the PMC register */
+            pmc_wake_level_mask_val = *((u32 *)pmc_base_vaddr + pmc_wake_level_mask_reg_offset);
+            
+            /* Mask with the wake pin index */
+            pmc_wake_level_mask_val &= ~(0x01 << (wake_pin_idx & 0x1F));
+
+            /* Write to the PMC register */
+            *((u32 *)pmc_base_vaddr + pmc_wake_level_mask_reg_offset) = pmc_wake_level_mask_val;
+            
+            /* Do a dummy read from the PMC register */
+            pmc_wake_level_mask_val = *((u32 *)pmc_base_vaddr + pmc_wake_level_mask_reg_offset);
+            
+            /* Read from the PMC register */
+            pmc_wake_level_val = *((u32 *)pmc_base_vaddr + pmc_wake_level_reg_offset);
+            
+            /* Mask with the wake pin index */
+            pmc_wake_level_val &= ~(0x01 << (wake_pin_idx & 0x1F));
+            
+            /* Set or clear the wake level */
+            pmc_wake_level_val |= (wake_pin_mode ? (0x01 << (wake_pin_idx & 0x1F)) : 0);
+             
+            /* Write to the PMC register */
+            *((u32 *)pmc_base_vaddr + pmc_wake_level_reg_offset) = pmc_wake_level_val;
+            
+            /* Do a dummy read from the PMC register */
+            pmc_wake_level_val = *((u32 *)pmc_base_vaddr + pmc_wake_level_reg_offset);
+        }
+    } else if (wake_pin_mode == 0x02) {
+        if (kernelAbove200()) {
+            /* Use svcReadWriteRegister to read from the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_val, PMC_BASE + pmc_wake_level_reg_offset, 0, 0);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            /* Mask with the wake pin index */
+            pmc_wake_level_val &= ~(0x01 << (wake_pin_idx & 0x1F));
+            
+            /* Use svcReadWriteRegister to write to the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_val, PMC_BASE + pmc_wake_level_reg_offset, 0xFFFFFFFF, pmc_wake_level_val);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            /* Use svcReadWriteRegister to do a dummy read from the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_val, PMC_BASE + pmc_wake_level_reg_offset, 0, 0);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+
+            /* Use svcReadWriteRegister to read from the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_mask_val, PMC_BASE + pmc_wake_level_mask_reg_offset, 0, 0);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            /* Mask with the wake pin index */
+            pmc_wake_level_mask_val &= ~(0x01 << (wake_pin_idx & 0x1F));
+            
+            /* Set the wake level mask */
+            pmc_wake_level_mask_val |= (0x01 << (wake_pin_idx & 0x1F));
+            
+            /* Use svcReadWriteRegister to write to the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_mask_val, PMC_BASE + pmc_wake_level_mask_reg_offset, 0xFFFFFFFF, pmc_wake_level_mask_val);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+            
+            /* Use svcReadWriteRegister to do a dummy read from the PMC register */
+            rc = svcReadWriteRegister(&pmc_wake_level_mask_val, PMC_BASE + pmc_wake_level_mask_reg_offset, 0, 0);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
+        } else {
+            /* Read from the PMC register */
+            pmc_wake_level_val = *((u32 *)pmc_base_vaddr + pmc_wake_level_reg_offset);
+            
+            /* Mask with the wake pin index */
+            pmc_wake_level_val &= ~(0x01 << (wake_pin_idx & 0x1F));
+            
+            /* Write to the PMC register */
+            *((u32 *)pmc_base_vaddr + pmc_wake_level_reg_offset) = pmc_wake_level_val;
+            
+            /* Do a dummy read from the PMC register */
+            pmc_wake_level_val = *((u32 *)pmc_base_vaddr + pmc_wake_level_reg_offset);
+
+            /* Read from the PMC register */
+            pmc_wake_level_mask_val = *((u32 *)pmc_base_vaddr + pmc_wake_level_mask_reg_offset);
+            
+            /* Mask with the wake pin index */
+            pmc_wake_level_mask_val &= ~(0x01 << (wake_pin_idx & 0x1F));
+
+            /* Set the wake level mask */
+            pmc_wake_level_mask_val |= (0x01 << (wake_pin_idx & 0x1F));
+             
+            /* Write to the PMC register */
+            *((u32 *)pmc_base_vaddr + pmc_wake_level_mask_reg_offset) = pmc_wake_level_mask_val;
+            
+            /* Do a dummy read from the PMC register */
+            pmc_wake_level_mask_val = *((u32 *)pmc_base_vaddr + pmc_wake_level_mask_reg_offset);
+        }
+    } else {
+        /* Invalid */
+    }
+    
+    rc = 0;
+    return rc;
+}
+
+static int pmc_set_wake_event_enabled(u64 pmc_base_vaddr, unsigned int wake_pin_idx, bool is_enabled) {
+    Result rc;
+    
+    /* Invalid pin index */
+    if (wake_pin_idx > 0x3F) {
+        return -1;
+    }
+    
+    u32 pmc_wake_mask_reg_offset = 0;
+    u32 pmc_wake_mask_val = 0;
+    
+    /* Pins up to 0x1F use APBDEV_PMC_WAKE_MASK_0, while others use APBDEV_PMC_WAKE2_MASK_0 */
+    if (wake_pin_idx <= 0x1F)
+        pmc_wake_mask_reg_offset = 0x0C;
+    else
+        pmc_wake_mask_reg_offset = 0x160;
+        
+    if (kernelAbove200()) {
+        /* Use svcReadWriteRegister to read from the PMC register */
+        rc = svcReadWriteRegister(&pmc_wake_mask_val, PMC_BASE + pmc_wake_mask_reg_offset, 0, 0);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        /* Mask with the wake pin index */
+        pmc_wake_mask_val &= ~(0x01 << (wake_pin_idx & 0x1F));
+        
+        /* Set the wake mask */
+        pmc_wake_mask_val |= (is_enabled ? (0x01 << (wake_pin_idx & 0x1F)) : 0);
+        
+        /* Use svcReadWriteRegister to write to the PMC register */
+        rc = svcReadWriteRegister(&pmc_wake_mask_val, PMC_BASE + pmc_wake_mask_reg_offset, 0xFFFFFFFF, pmc_wake_mask_val);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        /* Use svcReadWriteRegister to do a dummy read from the PMC register */
+        rc = svcReadWriteRegister(&pmc_wake_mask_val, PMC_BASE + pmc_wake_mask_reg_offset, 0, 0);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+    } else {
+        /* Read from the PMC register */
+        pmc_wake_mask_val = *((u32 *)pmc_base_vaddr + pmc_wake_mask_reg_offset);
+        
+        /* Mask with the wake pin index */
+        pmc_wake_mask_val &= ~(0x01 << (wake_pin_idx & 0x1F));
+        
+        /* Set the wake mask */
+        pmc_wake_mask_val |= (is_enabled ? (0x01 << (wake_pin_idx & 0x1F)) : 0);
+        
+        /* Write to the PMC register */
+        *((u32 *)pmc_base_vaddr + pmc_wake_mask_reg_offset) = pmc_wake_mask_val;
+        
+        /* Do a dummy read from the PMC register */
+        pmc_wake_mask_val = *((u32 *)pmc_base_vaddr + pmc_wake_mask_reg_offset);
+    }
+    
+    rc = 0;
+    return rc;
+}
+
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
@@ -1421,7 +1953,7 @@ int main(int argc, char **argv)
     svcSleepThread(100000);
     
     /* Setup all GPIOs from 0x01 to 0x3C */
-    for (unsigned int i = 1; i < MAX_GPIOS; i++) {
+    for (unsigned int i = 1; i < MAX_GPIO; i++) {
         gpio_configure(gpio_base_vaddr, i);
         gpio_set_direction(gpio_base_vaddr, i);
         gpio_set_value(gpio_base_vaddr, i);
@@ -1466,7 +1998,42 @@ int main(int argc, char **argv)
         pinmux_update_drivepad(pinmux_base_vaddr, std::get<0>(g_pinmux_drivepad_config_map[i]), std::get<1>(g_pinmux_drivepad_config_map[i]), std::get<2>(g_pinmux_drivepad_config_map[i]));
     }
     
-    /* TODO: Set initial wake pin configuration */
+    /* Initialize PMC for configuring wake pin events */
+    pmc_init_wake_events(pmc_base_vaddr, false);
+    
+    /* Configure all wake pin events */
+    for (unsigned int i = 0; i < MAX_PMC_WAKE_PIN; i++) {
+        if (kernelAbove200()) {
+            if (hardware_type == 0x01) {
+                /* Set wake event levels for Copper hardware */
+                pmc_set_wake_event_level(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_copper[i]), std::get<2>(g_pmc_wake_pin_map_copper[i]));
+                
+                /* Enable or disable wake events for Copper hardware */
+                pmc_set_wake_event_enabled(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_copper[i]), std::get<1>(g_pmc_wake_pin_map_copper[i]));
+            } else {
+                /* Manually set pin 8 values which changed on 2.0.0+ */
+                if (i == 0x08) {
+                    /* Set pin 8's wake event level for Icosa hardware */
+                    pmc_set_wake_event_level(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), 1);
+                    
+                    /* Enable or disable pin 8's wake event for Icosa hardware */
+                    pmc_set_wake_event_enabled(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), 1);
+                } else {
+                    /* Set wake event levels for Icosa hardware */
+                    pmc_set_wake_event_level(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), std::get<2>(g_pmc_wake_pin_map_icosa[i]));
+                    
+                    /* Enable or disable wake events for Icosa hardware */
+                    pmc_set_wake_event_enabled(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), std::get<1>(g_pmc_wake_pin_map_icosa[i]));
+                }
+            }
+        } else {
+            /* Set wake event levels for Icosa hardware */
+            pmc_set_wake_event_level(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), std::get<2>(g_pmc_wake_pin_map_icosa[i]));
+            
+            /* Enable or disable wake events for Icosa hardware */
+            pmc_set_wake_event_enabled(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), std::get<1>(g_pmc_wake_pin_map_icosa[i]));
+        }
+    }
     
     /* This is ignored in Copper hardware */
     if (hardware_type != 0x01) {
