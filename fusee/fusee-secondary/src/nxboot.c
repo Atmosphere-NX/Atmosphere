@@ -86,7 +86,7 @@ void nxboot_main(void) {
             fatal_error("Failed to open Package2 from %s: %s!\n", loader_ctx->package2_path, strerror(errno));
         }
     } else {
-#ifndef I_KNOW_WHAT_IM_DOING_2
+#ifdef I_KNOW_WHAT_IM_DOING_2
         pk2file = fopen("bcpkg21:/", "rb");
         if (pk2file == NULL || fseek(pk2file, 0x4000, SEEK_SET) != 0) {
             printf("Error: Failed to open Package2 from NAND: %s!\n", strerror(errno));
@@ -190,8 +190,8 @@ void nxboot_main(void) {
     printf("Rebuilding package2...\n");
     /* Patch package2, adding Thermosphère + custom KIPs. */
     package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
-    printf(u8"Loading Exosphère...\n");
 
+    printf(u8"Reading Exosphère...\n");
     /* Copy Exophère to a good location (or read it directly to it.) */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware <= EXOSPHERE_TARGET_FIRMWARE_400) {
         exosphere_memaddr = (void *)0x40020000;
@@ -222,6 +222,7 @@ void nxboot_main(void) {
     } else {
         MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_LOADED_PACKAGE2_4X;
     }
+    printf("Powering on the CCPLEX...\n");
     cluster_enable_cpu0((uint64_t)(uintptr_t)exosphere_memaddr, 1);
     while (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE == 0) {
         /* Wait for Exosphere to wake up. */

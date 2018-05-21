@@ -22,7 +22,7 @@ static void package2_append_section(unsigned int id, package2_header_t *package2
 static void package2_fixup_header_and_section_hashes(package2_header_t *package2, size_t size);
 
 static inline size_t align_to_4(size_t s) {
-    return ((s + 3) << 2) >> 2;
+    return ((s + 3) >> 2) << 2;
 }
 
 void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware) {
