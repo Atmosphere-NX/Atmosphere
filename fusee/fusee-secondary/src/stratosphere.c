@@ -46,7 +46,7 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
     size_t size = sizeof(ini1_header_t) + loader_kip_size + pm_kip_size + sm_kip_size + boot_kip_size;
     g_stratosphere_ini1 = (ini1_header_t *)malloc(size);
 
-    if (g_stratosphere_ini1 != NULL) {
+    if (g_stratosphere_ini1 == NULL) {
         fatal_error("stratosphere_get_ini1: out of memory!\n");
     }
 
@@ -145,9 +145,8 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, size_t num_inis) {
                 }
                 size_t expected_sd_kip_size = kip1_get_size_from_header(sd_kip);
                 if (expected_sd_kip_size != read_size) {
-                    printf("Error: %s has wrong size or there is not enough space (expected 0x%zx, read 0x%zx)!\n",
+                    fatal_error("%s has wrong size or there is not enough space (expected 0x%zx, read 0x%zx)!\n",
                     sd_path, expected_sd_kip_size, read_size);
-                    generic_panic();
                 }
                 remaining_size -= expected_sd_kip_size;
                 current_dst_kip += expected_sd_kip_size;
