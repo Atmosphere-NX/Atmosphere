@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <string.h>
 #include "utils.h"
 #include "se.h"
 #include "fuse.h"
@@ -12,10 +13,13 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
         APBDEV_PMC_SCRATCH200_0 = code;
     }
     
+    strcpy((void *)MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM), (void *)"PANIC");
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
     /* TODO: Custom Panic Driver, which displays to screen without rebooting. */
     /* For now, just use NX BOOTLOADER's panic. */
     fuse_disable_programming();
     APBDEV_PMC_CRYPTO_OP_0 = 1; /* Disable all SE operations. */
+    while (1) { }
     watchdog_reboot();
 }
 

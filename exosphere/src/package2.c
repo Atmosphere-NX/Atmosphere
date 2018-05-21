@@ -58,6 +58,10 @@ static void setup_se(void) {
 
     /* Perform some sanity initialization. */
     volatile security_engine_t *p_security_engine = get_security_engine();
+    p_security_engine->_0x0 &= 0xFFFEFFFF; /* Clear bit 16. */
+    (void)(SECURITY_ENGINE->FLAGS_REG);
+    __dsb_sy();
+    
     p_security_engine->_0x4 = 0;
     p_security_engine->AES_KEY_READ_DISABLE_REG = 0;
     p_security_engine->RSA_KEY_READ_DISABLE_REG = 0;
@@ -107,6 +111,7 @@ static void setup_se(void) {
 
     /* Generate test vector for our keys. */
     se_generate_stored_vector();
+    
 }
 
 static void setup_boot_config(void) {
@@ -178,7 +183,8 @@ static void verify_header_signature(package2_header_t *header) {
     }
 
     /* This is normally only allowed on dev units, but we'll allow it anywhere. */
-    if (bootconfig_is_package2_unsigned() == 0 && se_rsa2048_pss_verify(header->signature, 0x100, modulus, 0x100, header->encrypted_header, 0x100) == 0) {
+    bool is_unsigned = EXOSPHERE_LOOSEN_PACKAGE2_RESTRICTIONS_FOR_DEBUG || bootconfig_is_package2_unsigned();
+    if (!is_unsigned && se_rsa2048_pss_verify(header->signature, 0x100, modulus, 0x100, header->encrypted_header, 0x100) == 0) {
         panic(0xF0000001); /* Invalid PK21 signature. */
     }
 }
@@ -191,6 +197,7 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
     if (metadata->magic != MAGIC_PK21) {
         return false;
     }
+    
 
     /* Package2 size, version number is stored XORed in header CTR. */
     /* Nintendo, what the fuck? */
@@ -246,13 +253,14 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
             }
         }
 
+        bool check_hash = EXOSPHERE_LOOSEN_PACKAGE2_RESTRICTIONS_FOR_DEBUG == 0;
         /* Validate section hashes. */
         if (metadata->section_sizes[section]) {
             void *section_data = (void *)((uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS + sizeof(package2_header_t) + cur_section_offset);
             uint8_t calculated_hash[0x20];
             flush_dcache_range((uint8_t *)section_data, (uint8_t *)section_data + metadata->section_sizes[section]);
             se_calculate_sha256(calculated_hash, section_data, metadata->section_sizes[section]);
-            if (memcmp(calculated_hash, metadata->section_hashes[section], sizeof(metadata->section_hashes[section])) != 0) {
+            if (check_hash && memcmp(calculated_hash, metadata->section_hashes[section], sizeof(metadata->section_hashes[section])) != 0) {
                 return false;
             }
             cur_section_offset += metadata->section_sizes[section];
@@ -288,6 +296,7 @@ static uint32_t decrypt_and_validate_header(package2_header_t *header) {
             memcpy(metadata.ctr, header->metadata.ctr, sizeof(header->metadata.ctr));
             /* See if this is the correct key. */
             if (validate_package2_metadata(&metadata)) {
+                se_calculate_sha256(metadata.ctr, &header->metadata, sizeof(package2_meta_t));
                 header->metadata = metadata;
                 return mkey_rev;
             }
@@ -446,7 +455,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     flush_dcache_range((uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, (uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS + sizeof(header));
     memcpy(&header, NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, sizeof(header));
     flush_dcache_range((uint8_t *)&header, (uint8_t *)&header + sizeof(header));
-
+    
     /* Perform signature checks. */
     /* Special exosphere patching enable: All-zeroes signature + decrypted header implies unsigned and decrypted package2. */
     if (header.signature[0] == 0 && memcmp(header.signature, header.signature + 1, sizeof(header.signature) - 1) == 0 && header.metadata.magic == MAGIC_PK21) {
@@ -457,7 +466,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     /* Decrypt header, get key revision required. */
     uint32_t package2_mkey_rev = decrypt_and_validate_header(&header);
-
+    
     /* Copy hash, if necessary. */
     if (bootconfig_is_recovery_boot()) {
         bootconfig_set_package2_hash_for_recovery(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, get_package2_size(&header.metadata));
@@ -477,8 +486,6 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     indentity_unmap_dram();
 
     /* Synchronize with NX BOOTLOADER. */
-    sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED);
-
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED_4X);
         setup_4x_mmio();
@@ -490,5 +497,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     set_version_specific_smcs();
 
     /* Update SCR_EL3 depending on value in Bootconfig. */
-    set_extabt_serror_taken_to_el3(bootconfig_take_extabt_serror_to_el3());
+    set_extabt_serror_taken_to_el3(bootconfig_take_extabt_serror_to_el3());  
+    strcpy((void *)MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM), (void *)"PK2LOADED");  
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
 }

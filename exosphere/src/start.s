@@ -201,7 +201,7 @@ __jump_to_main_cold:
     bl   get_pk2ldr_stack_address
     mov  sp, x0
 
-    mov  x0, x19
+    mov  x0, x20
     bl   load_package2
 
     mov  w0, #3 /* use core3 stack temporarily */

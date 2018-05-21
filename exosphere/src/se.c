@@ -32,7 +32,7 @@ void ll_init(se_ll_t *ll, void *buffer, size_t size) {
         ll->addr_info.address = 0;
         ll->addr_info.size = 0;
     }
-
+    
     flush_dcache_range((uint8_t *)ll, (uint8_t *)ll + sizeof(*ll));
 }
 
@@ -452,17 +452,20 @@ void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const v
 
     ll_init(&in_ll, (void *)src, src_size);
     ll_init(&out_ll, dst, dst_size);
+    
+    __dsb_sy();
 
     /* Set the LLs. */
     SECURITY_ENGINE->IN_LL_ADDR_REG = (uint32_t) get_physical_address(&in_ll);
     SECURITY_ENGINE->OUT_LL_ADDR_REG = (uint32_t) get_physical_address(&out_ll);
-
+    
     /* Set registers for operation. */
     SECURITY_ENGINE->ERR_STATUS_REG = SECURITY_ENGINE->ERR_STATUS_REG;
     SECURITY_ENGINE->INT_STATUS_REG = SECURITY_ENGINE->INT_STATUS_REG;
     SECURITY_ENGINE->OPERATION_REG = op;
 
     while (!(SECURITY_ENGINE->INT_STATUS_REG & 0x10)) { /* Wait a while */ }
+
     se_check_for_error();
 }
 
@@ -659,14 +662,14 @@ void se_calculate_sha256(void *dst, const void *src, size_t src_size) {
     SECURITY_ENGINE->CONFIG_REG = (ENCMODE_SHA256 | ALG_SHA | DST_HASHREG);
     SECURITY_ENGINE->SHA_CONFIG_REG = 1;
     SECURITY_ENGINE->SHA_MSG_LENGTH_REG = (unsigned int)(src_size << 3);
+    SECURITY_ENGINE->_0x208 = 0;
     SECURITY_ENGINE->_0x20C = 0;
     SECURITY_ENGINE->_0x210 = 0;
-    SECURITY_ENGINE->SHA_MSG_LEFT_REG = 0;
-    SECURITY_ENGINE->_0x218 = (unsigned int)(src_size << 3);
+    SECURITY_ENGINE->SHA_MSG_LEFT_REG = (unsigned int)(src_size << 3);
+    SECURITY_ENGINE->_0x218 = 0;
     SECURITY_ENGINE->_0x21C = 0;
     SECURITY_ENGINE->_0x220 = 0;
-    SECURITY_ENGINE->_0x224 = 0;
-
+    
     /* Trigger the operation. */
     trigger_se_blocking_op(OP_START, NULL, 0, src, src_size);
 

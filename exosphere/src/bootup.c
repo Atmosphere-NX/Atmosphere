@@ -33,7 +33,7 @@ static bool g_has_booted_up = false;
 void bootup_misc_mmio(void) {
     /* Initialize Fuse registers. */
     fuse_init();
-
+    
     /* Verify Security Engine sanity. */
     se_set_in_context_save_mode(false);
     /* TODO: se_verify_keys_unreadable(); */
@@ -82,6 +82,8 @@ void bootup_misc_mmio(void) {
     MC_SECURITY_CFG1_0 = 0;
     MC_SECURITY_CFG3_0 = 3;
     configure_default_carveouts();
+    
+    
 
     /* Mark registers secure world only. */
     /* Mark SATA_AUX, DTV, QSPI, SE, SATA, LA secure only. */
@@ -111,14 +113,15 @@ void bootup_misc_mmio(void) {
     MAKE_MC_REG(0x230) = 0xFFFFFFFF;
     MAKE_MC_REG(0x234) = 0xFFFFFFFF;
     MAKE_MC_REG(0xB98) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x038) = 0;
+    MAKE_MC_REG(0x038) = 0xE;
     MAKE_MC_REG(0x03C) = 0;
-    MAKE_MC_REG(0x0E0) = 0;
-    MAKE_MC_REG(0x0E4) = 0;
-    MAKE_MC_REG(0x0E8) = 0;
-    MAKE_MC_REG(0x0EC) = 0;
-    MAKE_MC_REG(0x0F0) = 0;
-    MAKE_MC_REG(0x0F4) = 0;
+    MAKE_MC_REG(0x9E0) = 0;
+    MAKE_MC_REG(0x9E4) = 0;
+    MAKE_MC_REG(0x9E8) = 0;
+    MAKE_MC_REG(0x9EC) = 0;
+    MAKE_MC_REG(0x9F0) = 0;
+    MAKE_MC_REG(0x9F4) = 0;
+    MAKE_MC_REG(0x01C) = 0;
     MAKE_MC_REG(0x020) = 0;
     MAKE_MC_REG(0x014) = 0x30000030;
     MAKE_MC_REG(0x018) = 0x2800003F;
@@ -129,7 +132,7 @@ void bootup_misc_mmio(void) {
     (void)(MAKE_MC_REG(0x014));
     MAKE_MC_REG(0x010) = 1;
     (void)(MAKE_MC_REG(0x014));
-
+    
     /* Clear RESET Vector, setup CPU Secure Boot RESET Vectors. */
     uint32_t reset_vec = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
     EVP_CPU_RESET_VECTOR_0 = 0;

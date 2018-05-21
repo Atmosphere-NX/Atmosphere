@@ -100,6 +100,7 @@ typedef struct security_engine {
   unsigned char _0x74[0x18C];
   unsigned int SHA_CONFIG_REG;
   unsigned int SHA_MSG_LENGTH_REG;
+  unsigned int _0x208;
   unsigned int _0x20C;
   unsigned int _0x210;
   unsigned int SHA_MSG_LEFT_REG;
@@ -110,7 +111,7 @@ typedef struct security_engine {
   unsigned char _0x228[0x5C];
   unsigned int AES_KEY_READ_DISABLE_REG;
   unsigned int AES_KEYSLOT_FLAGS[0x10];
-  unsigned char _0x2C4[0x3C];
+  unsigned char _0x2C8[0x38];
   unsigned int _0x300;
   unsigned int CRYPTO_REG;
   unsigned int CRYPTO_CTR_REG[4];
