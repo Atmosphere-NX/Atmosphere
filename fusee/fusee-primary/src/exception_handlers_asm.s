@@ -55,12 +55,10 @@ _exception_handler_data_abort:
     /* Mask interrupts (abort mode). */
     msr     cpsr_cx, #0xD7
 
-    adr     sp, safecpy
-    add     sp, sp, #8
+    adr     sp, safecpy+8
     cmp     lr, sp
     blo     _exception_handler_data_abort_normal
-    adr     sp, _safecpy_end
-    add     sp, sp, #8
+    adr     sp, _safecpy_end+8
     cmp     lr, sp
     bhs     _exception_handler_data_abort_normal
 
@@ -87,7 +85,8 @@ safecpy:
 
     _safecpy_loop_end:
     mov     r0, r3
-    pop     {r4, pc}
+    pop     {r4, lr}
+    bx      lr         /* Need to do that separately on ARMv4. */
 
 _safecpy_end:
 

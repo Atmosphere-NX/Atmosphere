@@ -37,10 +37,11 @@ void exception_handler_main(uint32_t *registers, unsigned int exception_type) {
 
     uint32_t instr_addr = pc + ((cpsr & 0x20) ? 2 : 4) - CODE_DUMP_SIZE;
 
-    code_dump_size =0;// safecpy(code_dump, (const void *)instr_addr, CODE_DUMP_SIZE);
-    stack_dump_size = safecpy(stack_dump, (const void *)registers[14], STACK_DUMP_SIZE);
-
     printk("Something went wrong...\n");
+
+    code_dump_size = safecpy(code_dump, (const void *)instr_addr, CODE_DUMP_SIZE);
+    stack_dump_size = safecpy(stack_dump, (const void *)registers[13], STACK_DUMP_SIZE);
+
     printk("\nException type: %s\n", exception_names[exception_type]);
     printk("\nRegisters:\n\n");
 
@@ -55,6 +56,7 @@ void exception_handler_main(uint32_t *registers, unsigned int exception_type) {
     printk("\nCode dump:\n");
     hexdump(code_dump, code_dump_size, instr_addr);
     printk("\nStack dump:\n");
-    hexdump(stack_dump, stack_dump_size, registers[14]);
+    hexdump(stack_dump, stack_dump_size, registers[13]);
+    printk("\n");
     fatal_error("An exception occured!\n");
 }
