@@ -107,6 +107,7 @@ int main(void) {
     const char *bct0;
     const char *stage2_path;
     stage2_args_t *stage2_args;
+    uint32_t stage2_version = 0;
 
     /* Initialize the display, console, etc. */
     setup_env();
@@ -131,8 +132,8 @@ int main(void) {
     /* Setup argument data. */
     stage2_path = stage2_get_program_path();
     strcpy(g_chainloader_arg_data, stage2_path);
-    stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1);
-    stage2_args->version = 0;
+    stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1); /* May be unaligned. */
+    memcpy(&stage2_args->version, &stage2_version, 4);
     strcpy(stage2_args->bct0, bct0);
     g_chainloader_argc = 2;
 
