@@ -101,6 +101,8 @@ static inline bool check_32bit_address_range_in_program(uintptr_t addr, size_t s
     overlaps_a(start, end, __start__, __end__);
 }
 
+void hexdump(const void* data, size_t size, uintptr_t addrbase);
+
 __attribute__((noreturn)) void watchdog_reboot(void);
 __attribute__((noreturn)) void pmc_reboot(uint32_t scratch0);
 __attribute__((noreturn)) void car_reboot(void);

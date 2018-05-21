@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "exception_handlers.h"
 #include "panic.h"
 #include "hwinit.h"
 #include "fuse.h"
@@ -85,6 +86,9 @@ static void setup_env(void) {
     /* Turn on the backlight after initializing the lfb */
     /* to avoid flickering. */
     display_enable_backlight(true);
+
+    /* Set up the exception handlers. */
+    setup_exception_handlers();
 }
 
 static void cleanup_env(void) {
