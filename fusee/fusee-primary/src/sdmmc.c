@@ -140,7 +140,7 @@ enum sdmmc_clock_dividers {
     MMC_CLOCK_DIVIDER_SDR12  = 31, // 16.5, from the TRM table
     MMC_CLOCK_DIVIDER_SDR25  = 15, // 8.5, from the table
     MMC_CLOCK_DIVIDER_SDR50  = 7,  // 4.5, from the table
-    MMC_CLOCK_DIVIDER_SDR104 = 3,  // 2, from the datasheet
+    MMC_CLOCK_DIVIDER_SDR104 = 2,  // 2, from the datasheet
 
     /* Clock dividers: MMC */
     MMC_CLOCK_DIVIDER_HS26   = 30, // 16, from the TRM table
@@ -217,8 +217,9 @@ enum sdmmc_register_bits {
     MMC_TRANSFER_LIMIT_BLOCK_COUNT = (1 << 1),
     MMC_TRANSFER_MULTIPLE_BLOCKS = (1 << 5),
     MMC_TRANSFER_AUTO_CMD_MASK = (0x3 << 2),
-    MMC_TRANSFER_AUTO_CMD = (0x3 << 2),
     MMC_TRANSFER_AUTO_CMD12 = (0x1 << 2),
+    MMC_TRANSFER_AUTO_CMD23 = (0x2 << 2),
+    MMC_TRANSFER_AUTO_CMD = (0x3 << 2),
     MMC_TRANSFER_CARD_TO_HOST = (1 << 4),
 
     /* Interrupt status */
@@ -1950,8 +1951,14 @@ static void sdmmc_prepare_command_data(struct mmc *mmc, uint16_t blocks,
 
         // If this command should automatically terminate, set the host to
         // terminate it after the block span is complete.
-        if (auto_terminate)
-            to_write |= MMC_TRANSFER_AUTO_CMD12;
+        if (auto_terminate) {
+            // If we're in SDR104, use AUTO_CMD23 intead of AUTO_CMD12,
+            // per the host controller specification.
+            if (mmc->operating_speed == SDMMC_SPEED_SDR104)
+                to_write |= MMC_TRANSFER_AUTO_CMD23;
+            else
+                to_write |= MMC_TRANSFER_AUTO_CMD12;
+        }
 
         // If this is a read, set the READ mode.
         if (!is_write)
