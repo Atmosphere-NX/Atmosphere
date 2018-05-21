@@ -106,7 +106,7 @@ static void exit_callback(int rc) {
 int main(void) {
     const char *bct0;
     const char *stage2_path;
-    stage2_args_t stage2_args = {0};
+    stage2_args_t *stage2_args;
 
     /* Initialize the display, console, etc. */
     setup_env();
@@ -130,11 +130,11 @@ int main(void) {
 
     /* Setup argument data. */
     stage2_path = stage2_get_program_path();
-    stage2_args.version = 0;
-    strcpy(stage2_args.bct0, bct0);
-    g_chainloader_argc = 2;
     strcpy(g_chainloader_arg_data, stage2_path);
-    memcpy(g_chainloader_arg_data + strlen(stage2_path) + 1, &stage2_args, sizeof(stage2_args_t));
+    stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1);
+    stage2_args->version = 0;
+    strcpy(stage2_args->bct0, bct0);
+    g_chainloader_argc = 2;
 
     /* Deinitialize the display, console, etc. */
     cleanup_env();
