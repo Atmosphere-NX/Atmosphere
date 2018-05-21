@@ -14,11 +14,16 @@
 #undef u32
 
 static void package2_decrypt(package2_header_t *package2);
+static size_t package2_get_src_section(void **section, package2_header_t *package2, unsigned int id);
 static size_t package2_get_thermosphere(void **thermosphere);
 static void package2_patch_kernel(void *kernel, size_t kernel_size);
 static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware);
-static void package2_append_section(size_t id, package2_header_t *package2, void *data, size_t size);
+static void package2_append_section(unsigned int id, package2_header_t *package2, void *data, size_t size);
 static void package2_fixup_header_and_section_hashes(package2_header_t *package2, size_t size);
+
+static inline size_t align_to_4(size_t s) {
+    return ((s + 3) << 2) >> 2;
+}
 
 void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware) {
     package2_header_t *rebuilt_package2;
@@ -27,13 +32,13 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     size_t kernel_size;
     void *thermosphere;
     size_t thermosphere_size;
-    ini1_header_t *rebuilt_ini1;
+    ini1_header_t *orig_ini1, *rebuilt_ini1;
 
     /* First things first: Decrypt Package2 in place. */
     package2_decrypt(package2);
     printf("Decrypted package2!\n");
-    kernel = package2->data + package2->metadata.section_offsets[PACKAGE2_SECTION_KERNEL];
-    kernel_size = package2->metadata.section_sizes[PACKAGE2_SECTION_KERNEL];
+
+    kernel_size = package2_get_src_section(&kernel, package2, PACKAGE2_SECTION_KERNEL);
 
     /* Modify Package2 to add an additional thermosphere section. */
     thermosphere_size = package2_get_thermosphere(&thermosphere);
@@ -46,13 +51,13 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     package2_patch_kernel(kernel, kernel_size);
 
     printf("Rebuilding the INI1 section...\n");
+    package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);
     /* Perform any patches to the INI1, rebuilding it (This is where our built-in sysmodules will be added.) */
-    rebuilt_ini1 = package2_rebuild_ini1((ini1_header_t *)(package2->data + package2->metadata.section_offsets[PACKAGE2_SECTION_INI1]), target_firmware);
+    rebuilt_ini1 = package2_rebuild_ini1(orig_ini1, target_firmware);
     printf("Rebuilt INI1...\n");
 
     /* Allocate the rebuilt package2. */
-    rebuilt_package2_size = sizeof(package2_header_t);
-    rebuilt_package2_size += package2->metadata.section_sizes[PACKAGE2_SECTION_KERNEL] + thermosphere_size + rebuilt_ini1->size;
+    rebuilt_package2_size = sizeof(package2_header_t) + kernel_size + align_to_4(thermosphere_size) + align_to_4(rebuilt_ini1->size);
 
     if (rebuilt_package2_size > PACKAGE2_SIZE_MAX) {
         fatal_error("rebuilt package2 is too big!\n");
@@ -73,7 +78,7 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     package2_fixup_header_and_section_hashes(rebuilt_package2, rebuilt_package2_size);
 
     /* Relocate Package2. */
-    memcpy(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, rebuilt_package2, PACKAGE2_SIZE_MAX);
+    memcpy(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, rebuilt_package2, rebuilt_package2_size);
 
     /* We're done. */
     free(rebuilt_ini1);
@@ -240,6 +245,16 @@ static void package2_decrypt(package2_header_t *package2) {
     memset(package2->signature, 0, sizeof(package2->signature));
 }
 
+static size_t package2_get_src_section(void **section, package2_header_t *package2, unsigned int id) {
+    uint8_t *data = package2->data;
+    for (unsigned int i = 0; i < id; i++) {
+        data += package2->metadata.section_sizes[i];
+    }
+
+    (*section) = data;
+    return package2->metadata.section_sizes[id];
+}
+
 static size_t package2_get_thermosphere(void **thermosphere) {
     /*extern const uint8_t thermosphere_bin[];
     extern const uint32_t thermosphere_bin_size;*/
@@ -272,28 +287,30 @@ static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target
     return merged;
 }
 
-static void package2_append_section(size_t id, package2_header_t *package2, void *data, size_t size) {
-    /* This function must be called in ascending order of id */
-    uint32_t offset = id == 0 ? 0 : package2->metadata.section_offsets[id - 1] + package2->metadata.section_sizes[id - 1];
-    void *dst = package2->data + offset;
-    memcpy(dst, data, size);
+static void package2_append_section(unsigned int id, package2_header_t *package2, void *data, size_t size) {
+    /* This function must be called in ascending order of id. */
+    /* We assume that the loading address doesn't need to be changed. */
+    uint8_t *dst = package2->data;
+    for (unsigned int i = 0; i < id; i++) {
+        dst += package2->metadata.section_sizes[i];
+    }
 
-    package2->metadata.section_offsets[id] = offset;
-    package2->metadata.section_sizes[id] = ((size + 3) << 2) >> 2;
+    memcpy(dst, data, size);
+    package2->metadata.section_sizes[id] = align_to_4(size);
 }
 
 static void package2_fixup_header_and_section_hashes(package2_header_t *package2, size_t size) {
-    /* Copy each section to its appropriate location. */
+    uint8_t *data = package2->data;
+
     for (unsigned int section = 0; section < PACKAGE2_SECTION_MAX; section++) {
-        if (package2->metadata.section_sizes[section] == 0) {
+        size_t sz = (size_t)package2->metadata.section_sizes[section];
+        if (sz == 0) {
             continue;
         }
 
-        size_t sz = (size_t)package2->metadata.section_sizes[section];
-        size_t off = package2->metadata.section_offsets[section];
-
         /* Fix up the hash. */
-        se_calculate_sha256(package2->metadata.section_hashes[section], package2->data + off, sz);
+        se_calculate_sha256(package2->metadata.section_hashes[section], data, sz);
+        data += sz;
     }
 
     /* Fix up the size in XOR'd CTR. */
