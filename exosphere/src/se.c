@@ -661,11 +661,11 @@ void se_calculate_sha256(void *dst, const void *src, size_t src_size) {
     /* Setup config for SHA256, size = BITS(src_size) */
     SECURITY_ENGINE->CONFIG_REG = (ENCMODE_SHA256 | ALG_SHA | DST_HASHREG);
     SECURITY_ENGINE->SHA_CONFIG_REG = 1;
-    SECURITY_ENGINE->SHA_MSG_LENGTH_REG = (unsigned int)(src_size << 3);
+    SECURITY_ENGINE->SHA_MSG_LENGTH_REG = (uint32_t)(src_size << 3);
     SECURITY_ENGINE->_0x208 = 0;
     SECURITY_ENGINE->_0x20C = 0;
     SECURITY_ENGINE->_0x210 = 0;
-    SECURITY_ENGINE->SHA_MSG_LEFT_REG = (unsigned int)(src_size << 3);
+    SECURITY_ENGINE->SHA_MSG_LEFT_REG = (uint32_t)(src_size << 3);
     SECURITY_ENGINE->_0x218 = 0;
     SECURITY_ENGINE->_0x21C = 0;
     SECURITY_ENGINE->_0x220 = 0;
