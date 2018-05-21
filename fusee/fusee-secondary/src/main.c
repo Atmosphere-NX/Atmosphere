@@ -5,6 +5,7 @@
 #include <malloc.h>
 #include "utils.h"
 #include "panic.h"
+#include "exception_handlers.h"
 #include "loader.h"
 #include "chainloader.h"
 #include "stage2.h"
@@ -26,9 +27,11 @@ static void setup_env(void) {
         generic_panic();
     }
 
+    /* Set up exception handlers. */
+    setup_exception_handlers();
+
     if(switchfs_mount_all() == -1) {
-        perror("Failed to mount at least one parition");
-        generic_panic();
+        fatal_error("Failed to mount at least one parition: %s\n", strerror(errno));
     }
 
     /* TODO: What other hardware init should we do here? */
