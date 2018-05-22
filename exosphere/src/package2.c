@@ -296,7 +296,6 @@ static uint32_t decrypt_and_validate_header(package2_header_t *header) {
             memcpy(metadata.ctr, header->metadata.ctr, sizeof(header->metadata.ctr));
             /* See if this is the correct key. */
             if (validate_package2_metadata(&metadata)) {
-                se_calculate_sha256(metadata.ctr, &header->metadata, sizeof(package2_meta_t));
                 header->metadata = metadata;
                 return mkey_rev;
             }
@@ -474,7 +473,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     /* Load Package2 Sections. */
     load_package2_sections(&header.metadata, package2_mkey_rev);
-
+    
     /* Clean up cache. */
     flush_dcache_all();
     invalidate_icache_all(); /* non-broadcasting */
@@ -497,7 +496,5 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     set_version_specific_smcs();
 
     /* Update SCR_EL3 depending on value in Bootconfig. */
-    set_extabt_serror_taken_to_el3(bootconfig_take_extabt_serror_to_el3());  
-    strcpy((void *)MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM), (void *)"PK2LOADED");  
-    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
+    set_extabt_serror_taken_to_el3(bootconfig_take_extabt_serror_to_el3());
 }

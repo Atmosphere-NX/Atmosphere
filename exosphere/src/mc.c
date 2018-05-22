@@ -2,6 +2,7 @@
 
 #include "memory_map.h"
 #include "mc.h"
+#include "exocfg.h"
 
 volatile security_carveout_t *get_carveout_by_id(unsigned int carveout) {
     if (CARVEOUT_ID_MIN <= carveout && carveout <= CARVEOUT_ID_MAX) {
@@ -64,12 +65,31 @@ void configure_default_carveouts(void) {
     carveout->allowed_clients = 0x4401E7E;
 
     /* Configure default Kernel carveouts based on 2.0.0+. */
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_200) {
+        /* Configure Carveout 4 (KERNEL_BUILTINS) */
+        configure_kernel_carveout(4, 0x80060000, KERNEL_CARVEOUT_SIZE_MAX);
 
-    /* Configure Carveout 4 (KERNEL_BUILTINS) */
-    configure_kernel_carveout(4, 0x80060000, KERNEL_CARVEOUT_SIZE_MAX);
-
-    /* Configure Carveout 5 (KERNEL_UNUSED) */
-    configure_kernel_carveout(5, 0, 0);
+        /* Configure Carveout 5 (KERNEL_UNUSED) */
+        configure_kernel_carveout(5, 0, 0);
+    } else {
+        for (unsigned int i = 4; i <= 5; i++) {
+            carveout = get_carveout_by_id(i);
+            carveout->paddr_low = 0;
+            carveout->paddr_high = 0;
+            carveout->size_big_pages = 0;
+            carveout->flags_0 = 0;
+            carveout->flags_1 = 0;
+            carveout->flags_2 = 0;
+            carveout->flags_3 = 0;
+            carveout->flags_4 = 0;
+            carveout->flags_5 = 0;
+            carveout->flags_6 = 0;
+            carveout->flags_7 = 0;
+            carveout->flags_8 = 0;
+            carveout->flags_9 = 0;
+            carveout->allowed_clients = 0x4000006;
+        }
+    }
 }
 
 void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint64_t size) {

@@ -44,7 +44,7 @@ typedef struct {
     uint32_t flags_7;
     uint32_t flags_8;
     uint32_t flags_9;
-    uint8_t padding[0x28];
+    uint8_t padding[0x18];
 } security_carveout_t;
 
 

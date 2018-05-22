@@ -230,6 +230,8 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
         generic_panic();
     }
     
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM)) = 0xD0D0D0D0; 
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
  
     /* Call function. */
     args->X[0] = smc_handler(args);

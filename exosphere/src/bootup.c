@@ -86,26 +86,33 @@ void bootup_misc_mmio(void) {
     
 
     /* Mark registers secure world only. */
-    /* Mark SATA_AUX, DTV, QSPI, SE, SATA, LA secure only. */
-    APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = APB_SSER0_SATA_AUX | APB_SSER0_DTV | APB_SSER0_QSPI | APB_SSER0_SE | APB_SSER0_SATA | APB_SSER0_LA;
+    if (exosphere_get_target_firmware() == EXOSPHERE_TARGET_FIRMWARE_100) {
+        /* TODO: Switch these to use the enum. */
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = 0x500244;
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = 0xA3700000;
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = 0x304;
+    } else {
+        /* Mark SATA_AUX, DTV, QSPI, SE, SATA, LA secure only. */
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = APB_SSER0_SATA_AUX | APB_SSER0_DTV | APB_SSER0_QSPI | APB_SSER0_SE | APB_SSER0_SATA | APB_SSER0_LA;
 
-    /* By default, mark SPI1, SPI2, SPI3, SPI5, SPI6, I2C6 secure only. */
-    uint32_t sec_disable_1 = APB_SSER1_SPI1 | APB_SSER1_SPI2 | APB_SSER1_SPI3 | APB_SSER1_SPI5 | APB_SSER1_SPI6 | APB_SSER1_I2C6;
-    /* By default, mark SDMMC3, DDS, DP2 secure only. */
-    uint32_t sec_disable_2 = APB_SSER2_SDMMC3 | APB_SSER2_DDS | APB_SSER2_DP2;
-    uint64_t hardware_type = configitem_get_hardware_type();
-    if (hardware_type != 1) {
-        /* Also mark I2C4 secure only, */
-        sec_disable_1 |= APB_SSER1_I2C4;
+        /* By default, mark SPI1, SPI2, SPI3, SPI5, SPI6, I2C6 secure only. */
+        uint32_t sec_disable_1 = APB_SSER1_SPI1 | APB_SSER1_SPI2 | APB_SSER1_SPI3 | APB_SSER1_SPI5 | APB_SSER1_SPI6 | APB_SSER1_I2C6;
+        /* By default, mark SDMMC3, DDS, DP2 secure only. */
+        uint32_t sec_disable_2 = APB_SSER2_SDMMC3 | APB_SSER2_DDS | APB_SSER2_DP2;
+        uint64_t hardware_type = configitem_get_hardware_type();
+        if (hardware_type != 1) {
+            /* Also mark I2C4 secure only, */
+            sec_disable_1 |= APB_SSER1_I2C4;
+        }
+        if (hardware_type != 0 && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+            /* Starting on 4.x on non-dev units, mark UARTB, UARTC, SPI4, I2C3 secure only. */
+            sec_disable_1 |= APB_SSER1_UART_B | APB_SSER1_UART_C | APB_SSER1_SPI4 | APB_SSER1_I2C3;
+            /* Starting on 4.x on non-dev units, mark SDMMC1 secure only. */
+            sec_disable_2 |= APB_SSER2_SDMMC1;
+        }
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = sec_disable_1;
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = sec_disable_2;
     }
-    if (hardware_type != 0 && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
-        /* Starting on 4.x on non-dev units, mark UARTB, UARTC, SPI4, I2C3 secure only. */
-        sec_disable_1 |= APB_SSER1_UART_B | APB_SSER1_UART_C | APB_SSER1_SPI4 | APB_SSER1_I2C3;
-        /* Starting on 4.x on non-dev units, mark SDMMC1 secure only. */
-        sec_disable_2 |= APB_SSER2_SDMMC1;
-    }
-    APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = sec_disable_1;
-    APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = sec_disable_2;
 
     /* TODO: What are these MC reg writes? */
     MAKE_MC_REG(0x228) = 0xFFFFFFFF;
@@ -156,15 +163,19 @@ void bootup_misc_mmio(void) {
     intr_set_enabled(INTERRUPT_ID_SECURITY_ENGINE, 1);
     intr_set_cpu_mask(INTERRUPT_ID_SECURITY_ENGINE, 8);
     intr_set_edge_level(INTERRUPT_ID_SECURITY_ENGINE, 0);
-    intr_set_priority(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
-    intr_set_group(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
-    intr_set_enabled(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 1);
-    intr_set_cpu_mask(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 8);
-    intr_set_edge_level(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+        intr_set_priority(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
+        intr_set_group(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
+        intr_set_enabled(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 1);
+        intr_set_cpu_mask(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 8);
+        intr_set_edge_level(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
+    }
 
     if (!g_has_booted_up) {
         intr_register_handler(INTERRUPT_ID_SECURITY_ENGINE, se_operation_completed);
-        intr_register_handler(INTERRUPT_ID_ACTIVITY_MONITOR_4X, actmon_interrupt_handler);
+        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+            intr_register_handler(INTERRUPT_ID_ACTIVITY_MONITOR_4X, actmon_interrupt_handler);
+        }
         for (unsigned int core = 1; core < NUM_CPU_CORES; core++) {
             set_core_is_active(core, false);
         }
@@ -286,11 +297,11 @@ void identity_unmap_iram_cd_tzram(void) {
 }
 
 void secure_additional_devices(void) {
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
-        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 |= APB_SSER0_PMC; /* make PMC secure-only (2.x+ but see note below) */
-        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 |= APB_SSER1_MC0 | APB_SSER1_MC1 | APB_SSER1_MCB;  /* make MC0, MC1, MCB secure-only (4.x+) */
-    } else {
-        /* TODO: Detect 1.x */
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_200) {
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 |= APB_SSER0_PMC; /* make PMC secure-only (2.x+) */
+        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+            APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 |= APB_SSER1_MC0 | APB_SSER1_MC1 | APB_SSER1_MCB;  /* make MC0, MC1, MCB secure-only (4.x+) */
+        }
     }
 }
 
