@@ -43,7 +43,7 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
 
     if (mmcpart->mmc == &g_sd_mmc) {
         if (!g_sd_mmc_initialized) {
-            int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller);
+            int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller, true);
             if (rc == 0) {
                 sdmmc_set_write_enable(mmcpart->mmc, SDMMC_WRITE_ENABLED);
                 g_sd_mmc_initialized = true;
@@ -56,7 +56,7 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
         return 0;
     } else if (mmcpart->mmc == &g_nand_mmc) {
         if (!g_nand_mmc_initialized) {
-            int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller);
+            int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller, true);
             if (rc == 0) {
                 g_nand_mmc_initialized = true;
             } else {

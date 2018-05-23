@@ -1,5 +1,5 @@
 
-#ifndef __FUSEE_CLOCK_H___
+#ifndef __FUSEE_CLOCK_H__
 #define __FUSEE_CLOCK_H__
 
 #include "utils.h"

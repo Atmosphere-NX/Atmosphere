@@ -34,7 +34,6 @@ enum sdmmc_bus_width {
  */
 enum sdmmc_bus_voltage {
    MMC_VOLTAGE_3V3 = 0b111,
-   MMC_VOLTAGE_3V0 = 0b110,
    MMC_VOLTAGE_1V8 = 0b101,
 };
 
@@ -116,13 +115,28 @@ enum sdmmc_switch_argument_offsets {
 
 
 /**
- * Fields that can be modified by CMD_SWITCH_MODE.
+ * Bus speeds possible for an SDMMC controller.
  */
-enum sdmmc_switch_field {
-    /* Fields */
-    MMC_GROUP_ERASE_DEF = 175,
-    MMC_PARTITION_CONFIG = 179,
-    MMC_BUS_WIDTH = 183,
+enum sdmmc_bus_speed {
+    /* SD card speeds */
+    SDMMC_SPEED_SDR12  = 0,
+    SDMMC_SPEED_SDR25  = 1,
+    SDMMC_SPEED_SDR50  = 2,
+    SDMMC_SPEED_SDR104 = 3,
+    SDMMC_SPEED_DDR50  = 4,
+
+    /* Other speed: non-spec-compliant value used for e.g. HS400 */
+    SDMMC_SPEED_OTHER  = 5,
+
+    /* eMMC card speeds */
+    /* note: to avoid an enum clash, we add ten to these */
+    SDMMC_SPEED_HS26   = 10 ,
+    SDMMC_SPEED_HS52   = 11 ,
+    SDMMC_SPEED_HS200  = 12 ,
+    SDMMC_SPEED_HS400  = 13 ,
+
+    /* special speeds */
+    SDMMC_SPEED_INIT = -1,
 };
 
 
@@ -136,13 +150,14 @@ struct mmc {
     /* Controller properties */
     const char *name;
     bool use_dma;
+    bool allow_voltage_switching;
     unsigned int timeout;
     enum tegra_named_gpio card_detect_gpio;
-    enum sdmmc_card_type card_type;
     enum sdmmc_write_permission write_enable;
 
     /* Per-controller operations. */
     int (*set_up_clock_and_io)(struct mmc *mmc);
+    void (*configure_clock)(struct mmc *mmc, int source, int car_divisor, int sdmmc_divisor);
     int (*enable_supplies)(struct mmc *mmc);
     int (*switch_to_low_voltage)(struct mmc *mmc);
     bool (*card_present)(struct mmc *mmc);
@@ -150,17 +165,22 @@ struct mmc {
     /* Per-card-type operations */
     int (*card_init)(struct mmc *mmc);
     int (*establish_relative_address)(struct mmc *mmc);
-    int (*switch_mode)(struct mmc *mmc, enum sdmmc_switch_access_mode mode,
-            enum sdmmc_switch_field field, uint16_t value, uint32_t timeout);
+    int (*switch_mode)(struct mmc *mmc, int a, int b, int c, uint32_t timeout, void *response);
     int (*switch_bus_width)(struct mmc *mmc, enum sdmmc_bus_width width);
+    int (*optimize_speed)(struct mmc *mmc);
+    int (*card_switch_bus_speed)(struct mmc *mmc, enum sdmmc_bus_speed speed);
 
     /* Card properties */
+    enum sdmmc_card_type card_type;
+    uint32_t mmc_card_type;
+
     uint8_t cid[15];
     uint32_t relative_address;
     uint8_t partitioned;
     enum sdmmc_spec_version spec_version;
     enum sdmmc_bus_width max_bus_width;
     enum sdmmc_bus_voltage operating_voltage;
+    enum sdmmc_bus_speed operating_speed;
 
     uint8_t partition_support;
     uint8_t partition_config;
@@ -169,6 +189,7 @@ struct mmc {
 
     uint8_t read_block_order;
     uint8_t write_block_order;
+    uint8_t tuning_block_order;
     bool uses_block_addressing;
 
     /* Current operation status flags */
@@ -201,17 +222,22 @@ enum sdmmc_partition {
  * Sets the current SDMMC debugging loglevel.
  *
  * @param loglevel Current log level. A higher value prints more logs.
+ * @return The loglevel prior to when this was applied, for easy restoration.
  */
-void sdmmc_set_loglevel(int loglevel);
+int sdmmc_set_loglevel(int loglevel);
 
 
 /**
- * Initiailzes an SDMMC controller for use with an eMMC or SD card device.
+ * Set up a new SDMMC driver.
  *
- * @param mmc An (uninitialized) structure for the MMC device.
- * @param controller The controller number to be initialized. Either SWITCH_MICROSD or SWITCH_EMMC.
+ * @param mmc The SDMMC structure to be initiailized with the device state.
+ * @param controler The controller description to be used; usually SWITCH_EMMC
+ *      or SWITCH_MICROSD.
+ * @param allow_voltage_switching True if we should allow voltage switching,
+ *      which may not make sense if we're about to chainload to another component,
+ *      a la fusee stage1.
  */
-int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller);
+int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller, bool allow_voltage_switching);
 
 
 /**

@@ -1,5 +1,5 @@
 
-#ifndef __FUSEE_CLOCK_H___
+#ifndef __FUSEE_CLOCK_H__
 #define __FUSEE_CLOCK_H__
 
 #include "utils.h"
@@ -49,10 +49,10 @@ enum {
  */
 enum {
     CLK_SOURCE_MASK        = (0b111 << 29),
-    CLK_SOURCE_FIRST       = 0,
-    CLK_DIVIDER_UNITY      = 0,
+    CLK_SOURCE_FIRST       = (0b000 << 29),
 
-    CLK_DIVIDER_32         = 32,
+    CLK_DIVIDER_MASK       = (0xff << 0),
+    CLK_DIVIDER_UNITY      = (0x00 << 0),
 };
 
 
@@ -67,8 +67,8 @@ enum {
 
 
 enum {
-    CLK_SOURCE_SDMMC1         = 19,
-    CLK_SOURCE_SDMMC4         = 21,   /* 0x54 into the the main source block */
+    CLK_SOURCE_SDMMC1         = 20,
+    CLK_SOURCE_SDMMC4         = 25,   /* 0x54 into the the main source block */
 
     CLK_SOURCE_SDMMC_LEGACY  = 0,   /* first in block Y */
 };
