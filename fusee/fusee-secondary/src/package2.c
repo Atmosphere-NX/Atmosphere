@@ -159,7 +159,7 @@ static bool package2_validate_metadata(package2_meta_t *metadata) {
         }
 
         /* Validate section hashes. */
-        if (false && metadata->section_sizes[section]) {
+        if (metadata->section_sizes[section]) {
             void *section_data = package2->data + cur_section_offset;
             uint8_t calculated_hash[0x20];
             se_calculate_sha256(calculated_hash, section_data, metadata->section_sizes[section]);
