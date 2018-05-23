@@ -227,6 +227,7 @@ void nxboot_main(void) {
     while (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE == 0) {
         /* Wait for Exosphere to wake up. */
     }
+    printf(u8"Exopshère is responding!\n");
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
         MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_FINISHED;
     } else {
