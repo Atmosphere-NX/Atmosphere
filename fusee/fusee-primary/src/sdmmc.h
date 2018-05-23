@@ -150,6 +150,7 @@ struct mmc {
     /* Controller properties */
     const char *name;
     bool use_dma;
+    bool allow_voltage_switching;
     unsigned int timeout;
     enum tegra_named_gpio card_detect_gpio;
     enum sdmmc_write_permission write_enable;
@@ -221,17 +222,22 @@ enum sdmmc_partition {
  * Sets the current SDMMC debugging loglevel.
  *
  * @param loglevel Current log level. A higher value prints more logs.
+ * @return The loglevel prior to when this was applied, for easy restoration.
  */
-void sdmmc_set_loglevel(int loglevel);
+int sdmmc_set_loglevel(int loglevel);
 
 
 /**
- * Initiailzes an SDMMC controller for use with an eMMC or SD card device.
+ * Set up a new SDMMC driver.
  *
- * @param mmc An (uninitialized) structure for the MMC device.
- * @param controller The controller number to be initialized. Either SWITCH_MICROSD or SWITCH_EMMC.
+ * @param mmc The SDMMC structure to be initiailized with the device state.
+ * @param controler The controller description to be used; usually SWITCH_EMMC
+ *      or SWITCH_MICROSD.
+ * @param allow_voltage_switching True if we should allow voltage switching,
+ *      which may not make sense if we're about to chainload to another component,
+ *      a la fusee stage1.
  */
-int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller);
+int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller, bool allow_voltage_switching);
 
 
 /**

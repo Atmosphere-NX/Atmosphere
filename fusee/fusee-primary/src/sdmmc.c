@@ -140,7 +140,7 @@ enum sdmmc_clock_dividers {
     MMC_CLOCK_DIVIDER_SDR12  = 31, // 16.5, from the TRM table
     MMC_CLOCK_DIVIDER_SDR25  = 15, // 8.5, from the table
     MMC_CLOCK_DIVIDER_SDR50  = 7,  // 4.5, from the table
-    MMC_CLOCK_DIVIDER_SDR104 = 2,  // 2, from the datasheet
+    MMC_CLOCK_DIVIDER_SDR104 = 4,  // 2, from the datasheet
 
     /* Clock dividers: MMC */
     MMC_CLOCK_DIVIDER_HS26   = 30, // 16, from the TRM table
@@ -568,11 +568,11 @@ struct PACKED sdmmc_function_status {
 
     /* support for various speed modes */
     uint16_t group1_support_reserved1  : 8;
-    uint16_t ddr50_support   :  1;
-    uint16_t sdr104_support  :  1;
-    uint16_t sdr50_support   :  1;
-    uint16_t sdr25_support   :  1;
     uint16_t sdr12_support   :  1;
+    uint16_t sdr25_support   :  1;
+    uint16_t sdr50_support   :  1;
+    uint16_t sdr104_support  :  1;
+    uint16_t ddr50_support   :  1;
     uint16_t group1_support_reserved2  : 3;
 
 
@@ -631,10 +631,14 @@ static const uint16_t sdmmc_bounce_dma_boundary = MMC_DMA_BOUNDARY_8K;
  * Sets the current SDMMC debugging loglevel.
  *
  * @param loglevel Current log level. A higher value prints more logs.
+ * @return The loglevel prior to when this was applied, for easy restoration.
  */
-void sdmmc_set_loglevel(int loglevel)
+int sdmmc_set_loglevel(int loglevel)
 {
+    int original_loglevel = sdmmc_loglevel;
     sdmmc_loglevel = loglevel;
+
+    return original_loglevel;
 }
 
 
@@ -887,9 +891,9 @@ static int sdmmc1_enable_supplies(struct mmc *mmc)
     pinmux->dmic3_clk  =  PINMUX_SELECT_FUNCTION0;
     gpio_configure_mode(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_MODE_GPIO);
     gpio_configure_direction(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_DIRECTION_OUTPUT);
+
+    // Bring up the SD card fixed regulator.
     gpio_write(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_LEVEL_HIGH);
-
-
     return 0;
 }
 
@@ -1414,6 +1418,7 @@ static int sdmmc_apply_clock_speed(struct mmc *mmc, enum sdmmc_bus_speed speed, 
 
         mmc_print(mmc, "TODO: double the data rate here!");
     }
+
 
     // Re-enable the clock, if necessary.
     if (enable_after) {
@@ -2902,13 +2907,17 @@ static int sdmmc_mmc_wait_for_card_readiness(struct mmc *mmc)
     int rc;
     uint32_t response[4];
 
+
     while (true) {
 
         uint32_t response_masked;
 
         // Ask the SD card to identify its state. It will respond with readiness and a capacity magic.
+        int original_loglevel = sdmmc_set_loglevel(0);
         rc = sdmmc_send_command(mmc, CMD_SEND_OPERATING_CONDITIONS, MMC_RESPONSE_LEN48,
                 MMC_CHECKS_NONE, 0x40000080, response, 0, false, false, NULL);
+        sdmmc_set_loglevel(original_loglevel);
+
         if (rc) {
             mmc_print(mmc, "ERROR: could not read the card's operating conditions!");
             return rc;
@@ -2953,8 +2962,10 @@ static int sdmmc_sd_wait_for_card_readiness(struct mmc *mmc, uint32_t *response)
     while (true) {
 
         // Ask the SD card to identify its state.
+        int original_loglevel = sdmmc_set_loglevel(0);
         rc = sdmmc_send_simple_app_command(mmc, CMD_APP_SEND_OP_COND,
                 MMC_RESPONSE_LEN48, MMC_CHECKS_NONE, argument, response);
+        sdmmc_set_loglevel(original_loglevel);
         if (rc) {
             mmc_print(mmc, "ERROR: could not read the card's operating conditions!");
             return rc;
@@ -3071,7 +3082,7 @@ static int sdmmc_sd_card_init(struct mmc *mmc)
     mmc->uses_block_addressing = !!(ocr & MMC_SD_OPERATING_COND_HIGH_CAPACITY);
 
     // If the card supports using 1V8, drop down using lower voltages.
-    if (ocr & MMC_SD_OPERATING_COND_ACCEPTS_1V8) {
+    if (mmc->allow_voltage_switching && ocr & MMC_SD_OPERATING_COND_ACCEPTS_1V8) {
         if (mmc->operating_voltage != MMC_VOLTAGE_1V8) {
             rc = mmc->switch_to_low_voltage(mmc);
             if (rc)
@@ -3369,14 +3380,18 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
  * @param mmc The SDMMC structure to be initiailized with the device state.
  * @param controler The controller description to be used; usually SWITCH_EMMC
  *      or SWITCH_MICROSD.
+ * @param allow_voltage_switching True if we should allow voltage switching,
+ *      which may not make sense if we're about to chainload to another component,
+ *      a la fusee stage1.
  */
-int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller)
+int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller, bool allow_voltage_switching)
 {
     int rc;
 
     // Get a reference to the registers for the relevant SDMMC controller.
     mmc->controller = controller;
     mmc->regs = sdmmc_get_regs(controller);
+    mmc->allow_voltage_switching = false;
 
     // Set the defaults for the card, including the default function pointers
     // for the assumed card type, and the per-controller options.
