@@ -3391,7 +3391,7 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller, bool allow_vol
     // Get a reference to the registers for the relevant SDMMC controller.
     mmc->controller = controller;
     mmc->regs = sdmmc_get_regs(controller);
-    mmc->allow_voltage_switching = false;
+    mmc->allow_voltage_switching = allow_voltage_switching;
 
     // Set the defaults for the card, including the default function pointers
     // for the assumed card type, and the per-controller options.
