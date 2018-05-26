@@ -2,6 +2,13 @@ OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(_start)
 
+PHDRS
+{
+    crt0        PT_LOAD;
+    chainloader PT_LOAD;
+    main        PT_LOAD;
+}
+
 /* Mostly copied from https://github.com/devkitPro/buildscripts/blob/master/dkarm-eabi/crtls/3dsx.ld */
 MEMORY
 {
@@ -19,42 +26,38 @@ SECTIONS
     PROVIDE(__heap_end__        = 0);
 
     . = __start__;
-    . = ALIGN(32);
 
     .crt0 :
     {
-        . = ALIGN(32);
         KEEP( *(.text.start) )
         KEEP( *(.init) )
-        . = ALIGN(4);
-    } >main
+        . = ALIGN(32);
+    } >main :crt0
 
     .chainloader_loadable :
     {
         . = ALIGN(32);
-        PROVIDE (__chainloader_start__  = .);
+        PROVIDE (__chainloader_start__  = ABSOLUTE(.));
         PROVIDE (__chainloader_lma__    = LOADADDR(.chainloader_loadable));
         KEEP(*(.chainloader.text.start))
         chainloader.o(.text*)
         chainloader.o(.rodata*)
         chainloader.o(.data*)
-        . = ALIGN(8);
+        . = ALIGN(32);
+    } >low_iram AT>main :chainloader
 
-    } >low_iram AT>main
-
-    .chainloader_bss :
+    .chainloader_bss (NOLOAD) :
     {
-        . = ALIGN(8);
-        PROVIDE (__chainloader_bss_start__ = .);
+        . = ALIGN(32);
+        PROVIDE (__chainloader_bss_start__ = ABSOLUTE(.));
         chainloader.o(.bss* COMMON)
-        . = ALIGN(8);
-        PROVIDE (__chainloader_end__ = .);
-    } >low_iram AT>main
+        . = ALIGN(32);
+        PROVIDE (__chainloader_end__ = ABSOLUTE(.));
+    } >low_iram :NONE
 
     .text :
     {
-        . = ALIGN(4);
-
+        . = ALIGN(32);
         /* .text */
         *(.text)
         *(.text.*)
@@ -63,12 +66,11 @@ SECTIONS
         *(.stub)
         *(.gnu.warning)
         *(.gnu.linkonce.t*)
-        . = ALIGN(4);
 
         /* .fini */
         KEEP( *(.fini) )
-        . = ALIGN(4);
-    } >main
+        . = ALIGN(8);
+    } >main :main
 
     .rodata :
     {
@@ -78,10 +80,10 @@ SECTIONS
         *all.rodata*(*)
         *(.gnu.linkonce.r*)
         SORT(CONSTRUCTORS)
-        . = ALIGN(4);
+        . = ALIGN(8);
     } >main
 
-    .preinit_array ALIGN(4) :
+    .preinit_array :
     {
         PROVIDE (__preinit_array_start = .);
         KEEP (*(.preinit_array))
@@ -110,6 +112,7 @@ SECTIONS
         KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
         KEEP (*(SORT(.ctors.*)))
         KEEP (*(.ctors))
+        . = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
     } >main
 
     .dtors ALIGN(4) :
@@ -118,12 +121,11 @@ SECTIONS
         KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
         KEEP (*(SORT(.dtors.*)))
         KEEP (*(.dtors))
+        . = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
     } >main
 
-    .ARM.extab : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >main
-    __exidx_start = .;
-    ARM.exidx : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) } >main
-    __exidx_end = .;
+    .ARM.extab : { *(.ARM.extab* .gnu.linkonce.armextab.*) __exidx_start = ABSOLUTE(.);} >main
+    ARM.exidx : { *(.ARM.exidx* .gnu.linkonce.armexidx.*)  __exidx_end = ABSOLUTE(.);} >main
 
     .data :
     {
@@ -131,20 +133,21 @@ SECTIONS
         *(.data.*)
         *(.gnu.linkonce.d*)
         CONSTRUCTORS
-        . = ALIGN(4);
+        . = ALIGN(32);
     } >main
 
-    .bss :
+    .bss (NOLOAD) :
     {
-        __bss_start__ = ALIGN(32);
+        . = ALIGN(32);
+        PROVIDE (__bss_start__ = ABSOLUTE(.));
         *(.dynbss)
         *(.bss)
         *(.bss.*)
         *(.gnu.linkonce.b*)
         *(COMMON)
-        . = ALIGN(8);
-        __bss_end__ = .;
-    } >main
+        . = ALIGN(32);
+        PROVIDE (__bss_end__ = ABSOLUTE(.));
+    } >main :NONE
     __end__ = ABSOLUTE(.) ;
 
     /* ==================

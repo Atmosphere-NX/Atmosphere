@@ -16,7 +16,7 @@
 
 .section    .text.exception_handlers_asm, "ax", %progbits
 .arm
-.align      4
+.align      5
 
 _exception_handler_common:
     mrs     r2, spsr
