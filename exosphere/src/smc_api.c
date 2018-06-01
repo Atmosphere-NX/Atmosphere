@@ -24,6 +24,8 @@
 #define SMC_USER_HANDLERS 0x13
 #define SMC_PRIV_HANDLERS 0x9
 
+#define DEBUG_LOG_SMCS 0
+
 /* User SMC prototypes */
 uint32_t smc_set_config(smc_args_t *args);
 uint32_t smc_get_config(smc_args_t *args);
@@ -141,7 +143,7 @@ void set_version_specific_smcs(void) {
             g_smc_user_table[0xD].handler = smc_decrypt_or_import_rsa_key;
             break;
         default:
-            panic_predefined(0xF);
+            panic_predefined(0xA);
     }
 }
 
@@ -199,6 +201,8 @@ void clear_smc_callback(uint64_t key) {
     }
 }
 
+_Atomic uint64_t num_smcs_called = 0;
+
 void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     unsigned char smc_id;
     unsigned int result;
@@ -229,10 +233,14 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     if ((smc_handler = g_smc_tables[handler_id].handlers[smc_id].handler) == NULL) {
         generic_panic();
     }
-    
-    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM)) = 0xD0D0D0D0; 
-    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
- 
+
+#if DEBUG_LOG_SMCS    
+    if (handler_id == SMC_HANDLER_USER) {
+        uint64_t num = atomic_fetch_add(&num_smcs_called, 1);
+        *(volatile smc_args_t *)(get_iram_address_for_debug() + 0x100 + ((0x40 * num) & 0x3FFF)) = *args;
+    }
+#endif
+     
     /* Call function. */
     args->X[0] = smc_handler(args);
     if (args->X[0]) 

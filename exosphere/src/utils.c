@@ -6,6 +6,7 @@
 #include "pmc.h"
 #include "timers.h"
 
+#define SAVE_SYSREG64(reg, ofs) do { __asm__ __volatile__ ("mrs %0, " #reg : "=r"(temp_reg) :: "memory"); MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM) + ofs) = (uint32_t)((temp_reg >> 0) & 0xFFFFFFFFULL); MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM) + ofs + 4) = (uint32_t)((temp_reg >> 32) & 0xFFFFFFFFULL); } while(false)
 
 __attribute__ ((noreturn)) void panic(uint32_t code) {
     /* Set Panic Code for NX_BOOTLOADER. */
@@ -13,8 +14,15 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
         APBDEV_PMC_SCRATCH200_0 = code;
     }
     
-    strcpy((void *)MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM), (void *)"PANIC");
-    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
+    /* Uncomment for Debugging.
+    uint64_t temp_reg;
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM)) = APBDEV_PMC_SCRATCH200_0;
+    SAVE_SYSREG64(ESR_EL3, 0x10);
+    SAVE_SYSREG64(ELR_EL3, 0x18);
+    SAVE_SYSREG64(FAR_EL3, 0x20);
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x2;
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10; */
+    
     /* TODO: Custom Panic Driver, which displays to screen without rebooting. */
     /* For now, just use NX BOOTLOADER's panic. */
     fuse_disable_programming();
@@ -24,6 +32,15 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
 }
 
 __attribute__ ((noreturn)) void generic_panic(void) {
+    /* Uncomment for Debugging.
+    uint64_t temp_reg;    
+    do { __asm__ __volatile__ ("mov %0, LR" : "=r"(temp_reg) :: "memory"); } while (false);
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM) + 0x28) = (uint32_t)((temp_reg >> 0) & 0xFFFFFFFFULL);
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM) + 0x28 + 4) = (uint32_t)((temp_reg >> 32) & 0xFFFFFFFFULL);
+    do { __asm__ __volatile__ ("mov %0, SP" : "=r"(temp_reg) :: "memory"); } while (false);
+    for (unsigned int i = 0; i < 0x80; i += 4) {
+         MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM) + 0x40 + i) = *((volatile uint32_t *)(temp_reg + i));
+    } */
     panic(0xFF000006);
 }
 

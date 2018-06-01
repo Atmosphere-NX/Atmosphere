@@ -22,6 +22,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
             - warmboot (core 3)
             - cpu_on
     */
+    
     if (is_core_active(get_core_id())) {
         panic(0xF7F00009); /* invalid CPU context */
     }

@@ -425,7 +425,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 1;
 
     /* Wait for 1 second, to allow time for NX_BOOTLOADER to draw to the screen. This is useful for debugging. */
-    wait(1000000);
+    /* wait(1000000); */
 
     /* Synchronize with NX BOOTLOADER. */
     sync_with_nx_bootloader(NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG);

@@ -108,10 +108,10 @@ typedef struct security_engine {
     uint32_t _0x21C;
     uint32_t _0x220;
     uint32_t _0x224;
-    uint8_t _0x228[0x5C];
+    uint8_t _0x228[0x58];
     uint32_t AES_KEY_READ_DISABLE_REG;
     uint32_t AES_KEYSLOT_FLAGS[0x10];
-    uint8_t _0x2C8[0x38];
+    uint8_t _0x2C4[0x3C];
     uint32_t _0x300;
     uint32_t CRYPTO_REG;
     uint32_t CRYPTO_CTR_REG[4];
