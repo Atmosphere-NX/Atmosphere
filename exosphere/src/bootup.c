@@ -235,7 +235,7 @@ void setup_4x_mmio(void) {
     MC_SMMU_AVPC_ASID_0 = 0x80000001;
     MC_SMMU_PPCS1_ASID_0 = 0x80000001;
     /* Wait for the BPMP to halt. */
-    while ((FLOW_CTLR_HALT_COP_EVENTS_0 >> 29) != 5) {
+    while ((FLOW_CTLR_HALT_COP_EVENTS_0 >> 28) != 5) {
         wait(1);
     }
     /* If not in a debugging context, setup the activity monitor. */
