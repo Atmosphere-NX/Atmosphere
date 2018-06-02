@@ -6,13 +6,16 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#define CAR_BASE 0x60006000
 #define GPIO_BASE 0x6000D000
 #define APB_MISC_BASE 0x70000000
 #define PINMUX_BASE (APB_MISC_BASE + 0x3000)
 #define PMC_BASE 0x7000E400
-#define MAX_GPIO 0x3D
+#define MAX_GPIO_ICOSA 0x3C
+#define MAX_GPIO_COPPER 0x2C
+#define MAX_GPIO_MARIKO 0x3A
 #define MAX_PINMUX 0xA2
-#define MAX_PINMUX_5X 0xAF
+#define MAX_PINMUX_MARIKO 0xAF
 #define MAX_PINMUX_DRIVEPAD 0x2F
 #define MAX_PMC_CONTROL 0x09
 #define MAX_PMC_WAKE_PIN 0x31
@@ -75,99 +78,283 @@ void __appExit(void) {
     smExit();
 }
 
-static const std::tuple<u32, bool, bool> g_gpio_map[] = {
+typedef enum {
+    HARDWARETYPE_ICOSA = 0,  
+    HARDWARETYPE_COPPER = 1,
+    HARDWARETYPE_HOAG = 2,
+    HARDWARETYPE_MARIKO = 3,
+    HARDWARETYPE_INVALID = 4
+} HardwareType;
+
+static const std::tuple<u32, u32> g_gpio_map[] = {
     /* Icosa, Copper, Hoag and Mariko  */
-    {0xFFFFFFFF, false, false},  /* Invalid */
-    {0x000000CC, true, false},   /* Port Z, Pin 4 */
-    {0x00000024, true, false},   /* Port E, Pin 4 */
-    {0x0000003C, true, false},   /* Port H, Pin 4 */
-    {0x000000DA, false, true},   /* Port BB, Pin 2 */
-    {0x000000DB, true, false},   /* Port BB, Pin 3 */
-    {0x000000DC, false, false},  /* Port BB, Pin 4 */
-    {0x00000025, true, false},   /* Port E, Pin 5 */
-    {0x00000090, false, false},  /* Port S, Pin 0 */
-    {0x00000091, false, false},  /* Port S, Pin 1 */
-    {0x00000096, true, false},   /* Port S, Pin 6 */
-    {0x00000097, false, true},   /* Port S, Pin 7 */
-    {0x00000026, false, false},  /* Port E, Pin 6 */
-    {0x00000005, true, false},   /* Port A, Pin 5 */
-    {0x00000078, false, false},  /* Port P, Pin 0 */
-    {0x00000093, false, true},   /* Port S, Pin 3 */
-    {0x0000007D, false, false},  /* Port P, Pin 5 */
-    {0x0000007C, false, false},  /* Port P, Pin 4 */
-    {0x0000007B, false, false},  /* Port P, Pin 3 */
-    {0x0000007A, false, false},  /* Port P, Pin 2 */
-    {0x000000BC, false, true},   /* Port X, Pin 4 */
-    {0x000000AE, false, false},  /* Port V, Pin 6 */
-    {0x000000BA, false, false},  /* Port X, Pin 2 */
-    {0x000000B9, false, true},   /* Port X, Pin 1 */
-    {0x000000BD, false, false},  /* Port X, Pin 5 */
-    {0x000000BE, false, true},   /* Port X, Pin 6 */
-    {0x000000BF, false, true},   /* Port X, Pin 7 */
-    {0x000000C0, false, true},   /* Port Y, Pin 0 */
-    {0x000000C1, false, false},  /* Port Y, Pin 1 */
-    {0x000000A9, true, false},   /* Port V, Pin 1 */
-    {0x000000AA, true, false},   /* Port V, Pin 2 */
-    {0x00000055, true, false},   /* Port K, Pin 5 */
-    {0x000000AD, true, false},   /* Port V, Pin 5 */
-    {0x000000C8, false, true},   /* Port Z, Pin 0 */
-    {0x000000CA, false, false},  /* Port Z, Pin 2 */
-    {0x000000CB, false, true},   /* Port Z, Pin 3 */
-    {0x0000004F, true, false},   /* Port J, Pin 7 */
-    {0x00000050, false, false},  /* Port K, Pin 0 */
-    {0x00000051, false, false},  /* Port K, Pin 1 */
-    {0x00000052, false, false},  /* Port K, Pin 2 */
-    {0x00000054, false, true},   /* Port K, Pin 4 */
-    {0x00000056, false, true},   /* Port K, Pin 6 */
-    {0x00000057, false, true},   /* Port K, Pin 7 */
-    {0x00000053, true, false},   /* Port K, Pin 3 */
-    {0x000000E3, true, false},   /* Port CC, Pin 3 */
-    {0x00000038, true, false},   /* Port H, Pin 0 */
-    {0x00000039, true, false},   /* Port H, Pin 1 */
-    {0x0000003B, true, false},   /* Port H, Pin 3 */
-    {0x0000003D, false, false},  /* Port H, Pin 5 */
-    {0x0000003F, true, false},   /* Port H, Pin 7 */
-    {0x00000040, true, false},   /* Port I, Pin 0 */
-    {0x00000041, true, false},   /* Port I, Pin 1 */
-    {0x0000003E, false, false},  /* Port H, Pin 6 */
-    {0x000000E2, false, true},   /* Port CC, Pin 2 */
-    {0x000000E4, true, false},   /* Port CC, Pin 4 */
-    {0x0000003A, false, false},  /* Port H, Pin 2 */
-    {0x000000C9, false, true},   /* Port Z, Pin 1 */
-    {0x0000004D, true, false},   /* Port J, Pin 5 */
-    {0x00000058, true, false},   /* Port L, Pin 0 */
-    {0x0000003E, false, false},  /* Port H, Pin 6 */
-    {0x00000026, false, false},  /* Port E, Pin 6 */
+    {0xFFFFFFFF, 0xFFFFFFFF},   /* Invalid */
+    {0x000000CC, 0xFFFFFFFF},   /* Port Z, Pin 4 */
+    {0x00000024, 0xFFFFFFFF},   /* Port E, Pin 4 */
+    {0x0000003C, 0xFFFFFFFF},   /* Port H, Pin 4 */
+    {0x000000DA, 0xFFFFFFFF},   /* Port BB, Pin 2 */
+    {0x000000DB, 0xFFFFFFFF},   /* Port BB, Pin 3 */
+    {0x000000DC, 0xFFFFFFFF},   /* Port BB, Pin 4 */
+    {0x00000025, 0xFFFFFFFF},   /* Port E, Pin 5 */
+    {0x00000090, 0xFFFFFFFF},   /* Port S, Pin 0 */
+    {0x00000091, 0xFFFFFFFF},   /* Port S, Pin 1 */
+    {0x00000096, 0xFFFFFFFF},   /* Port S, Pin 6 */
+    {0x00000097, 0xFFFFFFFF},   /* Port S, Pin 7 */
+    {0x00000026, 0x00000004},   /* Port E, Pin 6 */
+    {0x00000005, 0xFFFFFFFF},   /* Port A, Pin 5 */
+    {0x00000078, 0xFFFFFFFF},   /* Port P, Pin 0 */
+    {0x00000093, 0x00000030},   /* Port S, Pin 3 */
+    {0x0000007D, 0xFFFFFFFF},   /* Port P, Pin 5 */
+    {0x0000007C, 0xFFFFFFFF},   /* Port P, Pin 4 */
+    {0x0000007B, 0xFFFFFFFF},   /* Port P, Pin 3 */
+    {0x0000007A, 0xFFFFFFFF},   /* Port P, Pin 2 */
+    {0x000000BC, 0xFFFFFFFF},   /* Port X, Pin 4 */
+    {0x000000AE, 0xFFFFFFFF},   /* Port V, Pin 6 */
+    {0x000000BA, 0xFFFFFFFF},   /* Port X, Pin 2 */
+    {0x000000B9, 0xFFFFFFFF},   /* Port X, Pin 1 */
+    {0x000000BD, 0xFFFFFFFF},   /* Port X, Pin 5 */
+    {0x000000BE, 0xFFFFFFFF},   /* Port X, Pin 6 */
+    {0x000000BF, 0xFFFFFFFF},   /* Port X, Pin 7 */
+    {0x000000C0, 0x0000001B},   /* Port Y, Pin 0 */
+    {0x000000C1, 0xFFFFFFFF},   /* Port Y, Pin 1 */
+    {0x000000A9, 0xFFFFFFFF},   /* Port V, Pin 1 */
+    {0x000000AA, 0xFFFFFFFF},   /* Port V, Pin 2 */
+    {0x00000055, 0xFFFFFFFF},   /* Port K, Pin 5 */
+    {0x000000AD, 0xFFFFFFFF},   /* Port V, Pin 5 */
+    {0x000000C8, 0x00000022},   /* Port Z, Pin 0 */
+    {0x000000CA, 0xFFFFFFFF},   /* Port Z, Pin 2 */
+    {0x000000CB, 0xFFFFFFFF},   /* Port Z, Pin 3 */
+    {0x0000004F, 0xFFFFFFFF},   /* Port J, Pin 7 */
+    {0x00000050, 0xFFFFFFFF},   /* Port K, Pin 0 */
+    {0x00000051, 0xFFFFFFFF},   /* Port K, Pin 1 */
+    {0x00000052, 0xFFFFFFFF},   /* Port K, Pin 2 */
+    {0x00000054, 0x0000000E},   /* Port K, Pin 4 */
+    {0x00000056, 0xFFFFFFFF},   /* Port K, Pin 6 */
+    {0x00000057, 0xFFFFFFFF},   /* Port K, Pin 7 */
+    {0x00000053, 0xFFFFFFFF},   /* Port K, Pin 3 */
+    {0x000000E3, 0xFFFFFFFF},   /* Port CC, Pin 3 */
+    {0x00000038, 0xFFFFFFFF},   /* Port H, Pin 0 */
+    {0x00000039, 0xFFFFFFFF},   /* Port H, Pin 1 */
+    {0x0000003B, 0xFFFFFFFF},   /* Port H, Pin 3 */
+    {0x0000003D, 0x00000034},   /* Port H, Pin 5 */
+    {0x0000003F, 0xFFFFFFFF},   /* Port H, Pin 7 */
+    {0x00000040, 0xFFFFFFFF},   /* Port I, Pin 0 */
+    {0x00000041, 0xFFFFFFFF},   /* Port I, Pin 1 */
+    {0x0000003E, 0x0000000A},   /* Port H, Pin 6 */
+    {0x000000E2, 0xFFFFFFFF},   /* Port CC, Pin 2 */
+    {0x000000E4, 0xFFFFFFFF},   /* Port CC, Pin 4 */
+    {0x0000003A, 0x00000008},   /* Port H, Pin 2 */
+    {0x000000C9, 0x00000023},   /* Port Z, Pin 1 */
+    {0x0000004D, 0xFFFFFFFF},   /* Port J, Pin 5 */
+    {0x00000058, 0xFFFFFFFF},   /* Port L, Pin 0 */
+    {0x0000003E, 0xFFFFFFFF},   /* Port H, Pin 6 */
+    {0x00000026, 0xFFFFFFFF},   /* Port E, Pin 6 */
     
     /* Copper only */
-    {0xFFFFFFFF, false, false},  /* Invalid */
-    {0x00000033, false, false},  /* Port G, Pin 3 */
-    {0x0000001C, false, false},  /* Port D, Pin 4 */
-    {0x000000D9, true, false},   /* Port BB, Pin 1 */
-    {0x0000000C, false, false},  /* Port B, Pin 4 */
-    {0x0000000D, false, false},  /* Port B, Pin 5 */
-    {0x00000021, true, false},   /* Port E, Pin 1 */
-    {0x00000027, false, false},  /* Port E, Pin 7 */
-    {0x00000092, false, false},  /* Port S, Pin 2 */
-    {0x00000095, true, false},   /* Port S, Pin 5 */
-    {0x00000098, true, false},   /* Port T, Pin 0 */
-    {0x00000010, true, false},   /* Port C, Pin 0 */
-    {0x00000011, true, false},   /* Port C, Pin 1 */
-    {0x00000012, true, false},   /* Port C, Pin 2 */
-    {0x00000042, true, false},   /* Port I, Pin 2 */
-    {0x000000E6, false, false},  /* Port CC, Pin 6 */
+    {0xFFFFFFFF, 0x00000033},   /* Invalid */
+    {0x00000033, 0x00000006},   /* Port G, Pin 3 */
+    {0x0000001C, 0x00000007},   /* Port D, Pin 4 */
+    {0x000000D9, 0xFFFFFFFF},   /* Port BB, Pin 1 */
+    {0x0000000C, 0xFFFFFFFF},   /* Port B, Pin 4 */
+    {0x0000000D, 0xFFFFFFFF},   /* Port B, Pin 5 */
+    {0x00000021, 0xFFFFFFFF},   /* Port E, Pin 1 */
+    {0x00000027, 0xFFFFFFFF},   /* Port E, Pin 7 */
+    {0x00000092, 0xFFFFFFFF},   /* Port S, Pin 2 */
+    {0x00000095, 0xFFFFFFFF},   /* Port S, Pin 5 */
+    {0x00000098, 0xFFFFFFFF},   /* Port T, Pin 0 */
+    {0x00000010, 0xFFFFFFFF},   /* Port C, Pin 0 */
+    {0x00000011, 0xFFFFFFFF},   /* Port C, Pin 1 */
+    {0x00000012, 0xFFFFFFFF},   /* Port C, Pin 2 */
+    {0x00000042, 0xFFFFFFFF},   /* Port I, Pin 2 */
+    {0x000000E6, 0xFFFFFFFF},   /* Port CC, Pin 6 */
     
     /* 2.0.0+ Copper only */
-    {0x000000AC, true, false},   /* Port V, Pin 4 */
-    {0x000000E1, false, false},  /* Port CC, Pin 1 */
+    {0x000000AC, 0xFFFFFFFF},   /* Port V, Pin 4 */
+    {0x000000E1, 0xFFFFFFFF},   /* Port CC, Pin 1 */
     
     /* 5.0.0+ Copper only (unused) */
-    {0x00000056, false, false},  /* Port K, Pin 6 */
+    {0x00000056, 0xFFFFFFFF},  /* Port K, Pin 6 */
+};
+
+static const std::tuple<u32, bool, bool> g_gpio_config_map_icosa[] = {
+    {0x04, false, true},
+    {0x05, true, false},
+    {0x06, false, false},
+    {0x02, true, false},
+    {0x07, true, false},
+    {0x3C, false, false},
+    {0x0F, false, true},
+    {0x08, false, false},
+    {0x09, false, false},
+    {0x0A, true, false},
+    {0x0B, false, true},
+    {0x0D, true, false},
+    {0x0E, false, false},
+    {0x10, false, false},
+    {0x11, false, false},
+    {0x12, false, false},
+    {0x13, false, false},
+    {0x14, false, true},
+    {0x16, false, false},
+    {0x15, false, false},
+    {0x17, false, true},
+    {0x18, false, false},
+    {0x19, false, true},
+    {0x1A, false, true},
+    {0x1B, false, true},
+    {0x1C, false, false},
+    {0x1D, true, false},
+    {0x1E, true, false},
+    {0x20, true, false},
+    {0x21, false, true},
+    {0x38, false, true},
+    {0x22, false, false},
+    {0x23, false, true},
+    {0x01, true, false},
+    {0x39, true, false},
+    {0x24, true, false},
+    {0x34, false, false},
+    {0x25, false, false},
+    {0x26, false, false},
+    {0x27, false, false},
+    {0x2B, true, false},
+    {0x28, false, true},
+    {0x1F, true, false},
+    {0x29, false, true},
+    {0x2A, false, true},
+    {0x3A, true, false},
+    {0x0C, false, false},
+    {0x2D, true, false},
+    {0x2E, true, false},
+    {0x37, false, false},
+    {0x2F, true, false},
+    {0x03, true, false},
+    {0x30, false, false},
+    {0x3B, false, false},
+    {0x31, true, false},
+    {0x32, true, false},
+    {0x33, true, false},
+    {0x35, false, true},
+    {0x2C, true, false},
+    {0x36, true, false},
+};
+
+static const std::tuple<u32, bool, bool> g_gpio_config_map_copper[] = {
+    {0x40, true, false},
+    {0x05, true, false},
+    {0x41, false, true},
+    {0x42, false, false},
+    {0x43, true, false},
+    {0x02, true, false},
+    {0x07, true, false},
+    {0x44, false, true},
+    {0x45, false, true},
+    {0x0F, false, true},
+    {0x46, true, false},
+    {0x47, true, false},
+    {0x10, false, false},
+    {0x11, false, false},
+    {0x12, false, false},
+    {0x13, false, false},
+    {0x14, false, true},
+    {0x18, false, false},
+    {0x19, false, true},
+    {0x1A, false, true},
+    {0x1C, false, true},
+    {0x4D, true, false},
+    {0x20, true, false},
+    {0x38, false, true},
+    {0x23, false, true},
+    {0x25, false, false},
+    {0x26, false, false},
+    {0x27, false, false},
+    {0x28, false, true},
+    {0x29, false, true},
+    {0x2A, false, true},
+    {0x48, true, false},
+    {0x49, true, false},
+    {0x4A, true, false},
+    {0x2D, true, false},
+    {0x2E, true, false},
+    {0x37, false, false},
+    {0x2F, true, false},
+    {0x03, true, false},
+    {0x30, false, false},
+    {0x31, true, false},
+    {0x4B, true, false},
+    {0x4C, false, true},
+    {0x4E, false, false},
+};
+
+static const std::tuple<u32, bool, bool> g_gpio_config_map_mariko[] = {
+    {0x04, false, true},
+    {0x05, true, false},
+    {0x06, false, false},
+    {0x02, true, false},
+    {0x3C, false, false},
+    {0x0F, false, true},
+    {0x08, false, false},
+    {0x09, false, false},
+    {0x0A, true, false},
+    {0x0B, false, false},
+    {0x0D, true, false},
+    {0x0E, false, false},
+    {0x10, false, false},
+    {0x11, false, false},
+    {0x12, false, false},
+    {0x13, false, false},
+    {0x14, false, true},
+    {0x16, false, false},
+    {0x15, false, false},
+    {0x17, false, true},
+    {0x18, false, false},
+    {0x19, false, true},
+    {0x1A, false, true},
+    {0x1B, false, false},
+    {0x1C, false, false},
+    {0x1D, true, false},
+    {0x1E, true, false},
+    {0x20, true, false},
+    {0x21, false, false},
+    {0x38, false, true},
+    {0x22, false, false},
+    {0x23, false, true},
+    {0x01, true, false},
+    {0x39, true, false},
+    {0x24, true, false},
+    {0x34, false, false},
+    {0x25, false, false},
+    {0x26, false, false},
+    {0x27, false, false},
+    {0x2B, true, false},
+    {0x28, false, true},
+    {0x1F, true, false},
+    {0x29, false, true},
+    {0x3A, true, false},
+    {0x0C, false, false},
+    {0x2D, true, false},
+    {0x2E, true, false},
+    {0x37, false, false},
+    {0x2F, true, false},
+    {0x03, true, false},
+    {0x30, false, false},
+    {0x3B, false, false},
+    {0x31, true, false},
+    {0x32, true, false},
+    {0x33, true, false},
+    {0x35, false, true},
+    {0x2C, true, false},
+    {0x36, true, false},
 };
 
 static int gpio_configure(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
+    
+    /* Discard invalid GPIOs */
+    if (gpio_pad_desc < 0) {
+        return -1;
+    }
     
     /* Convert the GPIO pad descriptor into its register offset */
     u32 gpio_reg_offset = (((gpio_pad_desc << 0x03) & 0xFFFFFF00) | ((gpio_pad_desc >> 0x01) & 0x0C));
@@ -184,12 +371,14 @@ static int gpio_configure(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     return gpio_cnf_val;
 }
 
-static int gpio_set_direction(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
+static int gpio_set_direction(u64 gpio_base_vaddr, unsigned int gpio_pad_name, bool is_out) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
-    /* Fetch this GPIO's direction */
-    bool is_out = std::get<1>(g_gpio_map[gpio_pad_name]);
+    /* Discard invalid GPIOs */
+    if (gpio_pad_desc < 0) {
+        return -1;
+    }
     
     /* Convert the GPIO pad descriptor into its register offset */
     u32 gpio_reg_offset = (((gpio_pad_desc << 0x03) & 0xFFFFFF00) | ((gpio_pad_desc >> 0x01) & 0x0C));
@@ -206,12 +395,14 @@ static int gpio_set_direction(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
     return gpio_oe_val;
 }
 
-static int gpio_set_value(u64 gpio_base_vaddr, unsigned int gpio_pad_name) {
+static int gpio_set_value(u64 gpio_base_vaddr, unsigned int gpio_pad_name, bool is_high) {
     /* Fetch this GPIO's pad descriptor */
     u32 gpio_pad_desc = std::get<0>(g_gpio_map[gpio_pad_name]);
     
-    /* Fetch this GPIO's output value */
-    bool is_high = std::get<2>(g_gpio_map[gpio_pad_name]);
+    /* Discard invalid GPIOs */
+    if (gpio_pad_desc < 0) {
+        return -1;
+    }
     
     /* Convert the GPIO pad descriptor into its register offset */
     u32 gpio_reg_offset = (((gpio_pad_desc << 0x03) & 0xFFFFFF00) | ((gpio_pad_desc >> 0x01) & 0x0C));
@@ -734,6 +925,183 @@ static const std::tuple<u32, u32, u32> g_pinmux_config_map_copper[] = {
     {0x66, 0x05, 0x07},
     {0x67, 0x05, 0x07},
     {0x68, 0x05, 0x07},
+};
+
+static const std::tuple<u32, u32, u32> g_pinmux_config_map_mariko[] = {
+    {0x5D, 0x00, 0x7F},
+    {0x47, 0x28, 0x7F},
+    {0x48, 0x00, 0x7F},
+    {0x46, 0x00, 0x7F},
+    {0x49, 0x00, 0x7F},
+    {0x30, 0x40, 0x27F},
+    {0x31, 0x40, 0x27F},
+    {0x0D, 0x20, 0x27F},
+    {0x0C, 0x00, 0x27F},
+    {0x10, 0x40, 0x27F},
+    {0x0F, 0x00, 0x27F},
+    {0x0E, 0x20, 0x27F},
+    {0x00, 0x40, 0x7F},
+    {0x01, 0x50, 0x7F},
+    {0x05, 0x50, 0x7F},
+    {0x04, 0x50, 0x7F},
+    {0x03, 0x50, 0x7F},
+    {0x02, 0x50, 0x7F},
+    {0xAA, 0x40, 0x7F},
+    {0xAC, 0x40, 0x7F},
+    {0xA2, 0x50, 0x7F},
+    {0xA3, 0x50, 0x7F},
+    {0xA4, 0x50, 0x7F},
+    {0xA5, 0x50, 0x7F},
+    {0xA6, 0x50, 0x7F},
+    {0xA7, 0x50, 0x7F},
+    {0xA8, 0x50, 0x7F},
+    {0xA9, 0x50, 0x7F},
+    {0x5B, 0x00, 0x78},
+    {0x7C, 0x01, 0x67},
+    {0x80, 0x01, 0x7F},
+    {0x34, 0x40, 0x27F},
+    {0x35, 0x40, 0x27F},
+    {0x55, 0x20, 0x78},
+    {0x56, 0x20, 0x7F},
+    {0xA1, 0x30, 0x7F},
+    {0x5C, 0x00, 0x78},
+    {0x5A, 0x20, 0x78},
+    {0x2C, 0x40, 0x27F},
+    {0x2D, 0x40, 0x27F},
+    {0x2E, 0x40, 0x27F},
+    {0x2F, 0x40, 0x27F},
+    {0x3B, 0x20, 0x7F},
+    {0x3C, 0x00, 0x7F},
+    {0x3D, 0x20, 0x7F},
+    {0x36, 0x00, 0x7F},
+    {0x37, 0x30, 0x7F},
+    {0x38, 0x00, 0x7F},
+    {0x39, 0x28, 0x7F},
+    {0x54, 0x00, 0x67},
+    {0x9B, 0x30, 0x7F},
+    {0x1C, 0x00, 0x7F},
+    {0x1D, 0x30, 0x7F},
+    {0x1E, 0x00, 0x7F},
+    {0x1F, 0x00, 0x7F},
+    {0x3F, 0x20, 0x7F},
+    {0x40, 0x00, 0x7F},
+    {0x41, 0x20, 0x7F},
+    {0x42, 0x00, 0x7F},
+    {0x43, 0x28, 0x7F},
+    {0x44, 0x00, 0x7F},
+    {0x45, 0x28, 0x7F},
+    {0x4B, 0x28, 0x7F},
+    {0x4C, 0x00, 0x7F},
+    {0x4A, 0x00, 0x7F},
+    {0x4D, 0x00, 0x7F},
+    {0x64, 0x20, 0x27F},
+    {0x5F, 0x34, 0x7F},
+    {0x60, 0x04, 0x67},
+    {0x61, 0x2C, 0x7F},
+    {0x2A, 0x04, 0x67},
+    {0x8F, 0x24, 0x7F},
+    {0x33, 0x34, 0x27F},
+    {0x52, 0x2C, 0x7F},
+    {0x53, 0x24, 0x7F},
+    {0x77, 0x04, 0x67},
+    {0x78, 0x24, 0x7F},
+    {0x11, 0x04, 0x67},
+    {0x06, 0x2C, 0x7F},
+    {0x08, 0x24, 0x7F},
+    {0x09, 0x24, 0x7F},
+    {0x0A, 0x24, 0x7F},
+    {0x0B, 0x24, 0x7F},
+    {0x88, 0x34, 0x7F},
+    {0x86, 0x2C, 0x7F},
+    {0x82, 0x24, 0x7F},
+    {0x85, 0x34, 0x7F},
+    {0x89, 0x24, 0x7F},
+    {0x8A, 0x34, 0x7F},
+    {0x8B, 0x34, 0x7F},
+    {0x8C, 0x24, 0x7F},
+    {0x8D, 0x24, 0x7F},
+    {0x7D, 0x04, 0x67},
+    {0x7E, 0x04, 0x67},
+    {0x81, 0x04, 0x67},
+    {0x9C, 0x24, 0x7F},
+    {0x9D, 0x34, 0x7F},
+    {0x9E, 0x2C, 0x7F},
+    {0x9F, 0x34, 0x7F},
+    {0xA0, 0x04, 0x67},
+    {0x4F, 0x04, 0x67},
+    {0x51, 0x04, 0x67},
+    {0x3A, 0x24, 0x7F},
+    {0x92, 0x4C, 0x7F},
+    {0x93, 0x4C, 0x7F},
+    {0x94, 0x44, 0x7F},
+    {0x95, 0x04, 0x67},
+    {0x96, 0x34, 0x7F},
+    {0x97, 0x04, 0x67},
+    {0x98, 0x34, 0x7F},
+    {0x9A, 0x04, 0x67},
+    {0x3E, 0x24, 0x7F},
+    {0x6A, 0x04, 0x67},
+    {0x6B, 0x04, 0x67},
+    {0x6C, 0x2C, 0x7F},
+    {0x6D, 0x04, 0x67},
+    {0x6E, 0x04, 0x67},
+    {0x6F, 0x24, 0x7F},
+    {0x91, 0x24, 0x7F},
+    {0x70, 0x04, 0x7F},
+    {0x71, 0x04, 0x67},
+    {0x72, 0x04, 0x67},
+    {0x65, 0x34, 0x7F},
+    {0x66, 0x04, 0x67},
+    {0x67, 0x04, 0x267},
+    {0x5E, 0x05, 0x07},
+    {0x17, 0x05, 0x07},
+    {0x18, 0x05, 0x07},
+    {0x19, 0x05, 0x07},
+    {0x1A, 0x05, 0x07},
+    {0x1B, 0x05, 0x07},
+    {0x26, 0x05, 0x07},
+    {0x27, 0x05, 0x07},
+    {0x28, 0x05, 0x07},
+    {0x29, 0x05, 0x07},
+    {0x2B, 0x05, 0x07},
+    {0x90, 0x05, 0x07},
+    {0x32, 0x05, 0x07},
+    {0x75, 0x05, 0x07},
+    {0x76, 0x05, 0x07},
+    {0x79, 0x05, 0x07},
+    {0x7A, 0x05, 0x07},
+    {0x8E, 0x05, 0x07},
+    {0xAB, 0x05, 0x07},
+    {0xAD, 0x05, 0x07},
+    {0xAE, 0x05, 0x07},
+    {0x07, 0x05, 0x07},
+    {0x87, 0x05, 0x07},
+    {0x83, 0x05, 0x07},
+    {0x84, 0x05, 0x07},
+    {0x7B, 0x05, 0x07},
+    {0x7F, 0x05, 0x07},
+    {0x58, 0x00, 0x00},
+    {0x59, 0x00, 0x00},
+    {0x50, 0x05, 0x07},
+    {0x4E, 0x05, 0x07},
+    {0x99, 0x05, 0x07},
+    {0x12, 0x05, 0x07},
+    {0x13, 0x05, 0x07},
+    {0x14, 0x05, 0x07},
+    {0x15, 0x05, 0x07},
+    {0x16, 0x05, 0x07},
+    {0x73, 0x05, 0x07},
+    {0x74, 0x05, 0x07},
+    {0x22, 0x05, 0x07},
+    {0x23, 0x05, 0x07},
+    {0x20, 0x05, 0x07},
+    {0x21, 0x05, 0x07},
+    {0x24, 0x05, 0x07},
+    {0x25, 0x05, 0x07},
+    {0x62, 0x05, 0x07},
+    {0x68, 0x05, 0x07},
+    {0x69, 0x05, 0x07},
+    {0x63, 0x05, 0x07},
 };
 
 static int pinmux_update_park(u64 pinmux_base_vaddr, unsigned int pinmux_idx) {
@@ -1952,23 +2320,95 @@ int main(int argc, char **argv)
     /* Wait for changes to take effect */
     svcSleepThread(100000);
     
-    /* Setup all GPIOs from 0x01 to 0x3C */
-    for (unsigned int i = 1; i < MAX_GPIO; i++) {
-        gpio_configure(gpio_base_vaddr, i);
-        gpio_set_direction(gpio_base_vaddr, i);
-        gpio_set_value(gpio_base_vaddr, i);
-    }
-    
-    u64 hardware_type = 0;
+    /* Default to invalid hardware type */
+    HardwareType hardware_type = HARDWARETYPE_INVALID;
     
     /* Get the hardware type from SPL */
-    rc = splGetConfig(SplConfigItem_HardwareType, &hardware_type);
+    rc = splGetConfig(SplConfigItem_HardwareType, (u64 *)&hardware_type);
     if (R_FAILED(rc)) {
         return rc;
     }
     
+    /* The Icosa GPIO map was common to all hardware before 2.0.0 */
+    if (!kernelAbove200() || (hardware_type == HARDWARETYPE_ICOSA)
+        || (hardware_type == HARDWARETYPE_HOAG)) {
+        /* Setup all GPIOs for Icosa or Hoag hardware */
+        for (unsigned int i = 0; i < MAX_GPIO_ICOSA; i++) {
+            /* Configure the GPIO */
+            gpio_configure(gpio_base_vaddr, std::get<0>(g_gpio_config_map_icosa[i]));
+            
+            /* Set the GPIO's direction */
+            gpio_set_direction(gpio_base_vaddr, std::get<0>(g_gpio_config_map_icosa[i]), std::get<1>(g_gpio_config_map_icosa[i]));
+            
+            /* Manually set GPIO 0x18 value which changed on 4.0.0+ */
+            if (kernelAbove400() && (std::get<0>(g_gpio_config_map_icosa[i]) == 0x18)) {
+                /* Set the GPIO's value to high */
+                gpio_set_value(gpio_base_vaddr, std::get<0>(g_gpio_config_map_icosa[i]), true);
+            } else {
+                /* Set the GPIO's value */
+                gpio_set_value(gpio_base_vaddr, std::get<0>(g_gpio_config_map_icosa[i]), std::get<2>(g_gpio_config_map_icosa[i]));
+            }
+        }
+    } else if (hardware_type == HARDWARETYPE_COPPER) {
+        /* Setup all GPIOs for Copper hardware */
+        for (unsigned int i = 0; i < MAX_GPIO_COPPER; i++) {
+            /* Configure the GPIO */
+            gpio_configure(gpio_base_vaddr, std::get<0>(g_gpio_config_map_copper[i]));
+            
+            /* Set the GPIO's direction */
+            gpio_set_direction(gpio_base_vaddr, std::get<0>(g_gpio_config_map_copper[i]), std::get<1>(g_gpio_config_map_copper[i]));
+            
+            /* Set the GPIO's value */
+            gpio_set_value(gpio_base_vaddr, std::get<0>(g_gpio_config_map_copper[i]), std::get<2>(g_gpio_config_map_copper[i]));
+        }
+    } else if (hardware_type == HARDWARETYPE_MARIKO) {
+        /* Setup all GPIOs for Mariko hardware */
+        for (unsigned int i = 0; i < MAX_GPIO_MARIKO; i++) {
+            /* Configure the GPIO */
+            gpio_configure(gpio_base_vaddr, std::get<0>(g_gpio_config_map_mariko[i]));
+            
+            /* Set the GPIO's direction */
+            gpio_set_direction(gpio_base_vaddr, std::get<0>(g_gpio_config_map_mariko[i]), std::get<1>(g_gpio_config_map_mariko[i]));
+            
+            /* Set the GPIO's value */
+            gpio_set_value(gpio_base_vaddr, std::get<0>(g_gpio_config_map_mariko[i]), std::get<2>(g_gpio_config_map_mariko[i]));
+        }
+    }
+    
+    /* TODO: Evaluate if this can be ignored */
+    if (kernelAbove500()) {
+        u64 car_base_vaddr = 0;
+        
+        /* Map the Clock and Reset registers */
+        rc = svcQueryIoMapping(&car_base_vaddr, CAR_BASE, 0x1000);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        /* Read from CLK_RST_CONTROLLER_PLLU_BASE_0 */
+        u32 pplu_base = *((u32 *)car_base_vaddr + 0xC0);
+        
+        /* Read from CLK_RST_CONTROLLER_UTMIP_PLL_CFG0_0 */
+        u32 utmip_pll_cfg0 = *((u32 *)car_base_vaddr + 0x480);
+        
+        if (((pplu_base & 0x1FFFFF) != 0x11902) || ((utmip_pll_cfg0 & 0xFFFF00) != 0x190100)) {
+            /*
+                svcSleepThread(1000000000);
+                pmic_reset();
+            */
+        }
+    }
+    
+    if (kernelAbove200()) {
+        /* TODO: PMIC testing */
+    }
+    
     /* This is ignored in Copper hardware */
-    if (hardware_type != 0x01) {
+    if (hardware_type != HARDWARETYPE_COPPER) {
+        if (kernelAbove200()) {
+            /* TODO: Display configuration */
+        }
+        
         /* TODO: Battery charge check */
     }
     
@@ -1977,18 +2417,33 @@ int main(int argc, char **argv)
         pinmux_update_park(pinmux_base_vaddr, i);
     }
     
-    if ((hardware_type == 0x00) || (hardware_type == 0x02)) {
+    if ((hardware_type == HARDWARETYPE_ICOSA) || (hardware_type == HARDWARETYPE_HOAG)) {
         /* Configure all PINMUX pads (minus BattBcl) for Icosa or Hoag */
         for (unsigned int i = 0; i < (MAX_PINMUX - 1); i++) {
             pinmux_update_pad(pinmux_base_vaddr, std::get<0>(g_pinmux_config_map_icosa[i]), std::get<1>(g_pinmux_config_map_icosa[i]), std::get<2>(g_pinmux_config_map_icosa[i]));
         }
-    } else if (hardware_type == 0x01) {
+    } else if (hardware_type == HARDWARETYPE_COPPER) {
         /* Configure all PINMUX pads (minus BattBcl) for Copper */
         for (unsigned int i = 0; i < (MAX_PINMUX - 1); i++) {
             pinmux_update_pad(pinmux_base_vaddr, std::get<0>(g_pinmux_config_map_copper[i]), std::get<1>(g_pinmux_config_map_copper[i]), std::get<2>(g_pinmux_config_map_copper[i]));
         }
-    } else if (hardware_type == 0x03) {
-        /* TODO: Configure PINMUX pads for Mariko */
+    } else if (hardware_type == HARDWARETYPE_MARIKO) {
+        /* Configure all PINMUX pads (minus BattBcl) for Mariko */
+        for (unsigned int i = 0; i < (MAX_PINMUX_MARIKO - 1); i++) {
+            pinmux_update_pad(pinmux_base_vaddr, std::get<0>(g_pinmux_config_map_mariko[i]), std::get<1>(g_pinmux_config_map_mariko[i]), std::get<2>(g_pinmux_config_map_mariko[i]));
+        }
+        
+        /* Configure additional values for SDMMC2 pins */
+        pinmux_update_pad(pinmux_base_vaddr, 0xAA, 0x2000, 0x2000);
+        pinmux_update_pad(pinmux_base_vaddr, 0xAC, 0x2000, 0x2000);
+        pinmux_update_pad(pinmux_base_vaddr, 0xA2, 0x2000, 0x2000);
+        pinmux_update_pad(pinmux_base_vaddr, 0xA3, 0x2000, 0x2000);
+        pinmux_update_pad(pinmux_base_vaddr, 0xA4, 0x2000, 0x2000);
+        pinmux_update_pad(pinmux_base_vaddr, 0xA5, 0x2000, 0x2000);
+        pinmux_update_pad(pinmux_base_vaddr, 0xA6, 0x2000, 0x2000);
+        pinmux_update_pad(pinmux_base_vaddr, 0xA7, 0x2000, 0x2000);
+        pinmux_update_pad(pinmux_base_vaddr, 0xA8, 0x2000, 0x2000);
+        pinmux_update_pad(pinmux_base_vaddr, 0xA9, 0x2000, 0x2000);
     } else {
         /* Invalid */
     }
@@ -2003,29 +2458,18 @@ int main(int argc, char **argv)
     
     /* Configure all wake pin events */
     for (unsigned int i = 0; i < MAX_PMC_WAKE_PIN; i++) {
-        if (kernelAbove200()) {
-            if (hardware_type == 0x01) {
-                /* Set wake event levels for Copper hardware */
-                pmc_set_wake_event_level(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_copper[i]), std::get<2>(g_pmc_wake_pin_map_copper[i]));
-                
-                /* Enable or disable wake events for Copper hardware */
-                pmc_set_wake_event_enabled(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_copper[i]), std::get<1>(g_pmc_wake_pin_map_copper[i]));
-            } else {
-                /* Manually set pin 8 values which changed on 2.0.0+ */
-                if (i == 0x08) {
-                    /* Set pin 8's wake event level for Icosa hardware */
-                    pmc_set_wake_event_level(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), 1);
-                    
-                    /* Enable or disable pin 8's wake event for Icosa hardware */
-                    pmc_set_wake_event_enabled(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), 1);
-                } else {
-                    /* Set wake event levels for Icosa hardware */
-                    pmc_set_wake_event_level(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), std::get<2>(g_pmc_wake_pin_map_icosa[i]));
-                    
-                    /* Enable or disable wake events for Icosa hardware */
-                    pmc_set_wake_event_enabled(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), std::get<1>(g_pmc_wake_pin_map_icosa[i]));
-                }
-            }
+        if (kernelAbove200() && (hardware_type == HARDWARETYPE_COPPER)) {
+            /* Set wake event levels for Copper hardware */
+            pmc_set_wake_event_level(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_copper[i]), std::get<2>(g_pmc_wake_pin_map_copper[i]));
+            
+            /* Enable or disable wake events for Copper hardware */
+            pmc_set_wake_event_enabled(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_copper[i]), std::get<1>(g_pmc_wake_pin_map_copper[i]));
+        } else if (kernelAbove200() && (std::get<0>(g_pmc_wake_pin_map_icosa[i]) == 0x08)) {
+            /* Manually set pin 8's wake event level for Icosa hardware on 2.0.0+ */
+            pmc_set_wake_event_level(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), 1);
+            
+            /* Manually enable or disable pin 8's wake event for Icosa hardware on 2.0.0+ */
+            pmc_set_wake_event_enabled(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), 1);
         } else {
             /* Set wake event levels for Icosa hardware */
             pmc_set_wake_event_level(pmc_base_vaddr, std::get<0>(g_pmc_wake_pin_map_icosa[i]), std::get<2>(g_pmc_wake_pin_map_icosa[i]));
@@ -2036,7 +2480,7 @@ int main(int argc, char **argv)
     }
     
     /* This is ignored in Copper hardware */
-    if (hardware_type != 0x01) {
+    if (hardware_type != HARDWARETYPE_COPPER) {
         /* Configure PMC clock out */
         if (kernelAbove200()) {
             u32 rw_reg_val = 0;
@@ -2052,11 +2496,11 @@ int main(int argc, char **argv)
         }
     }
     
-    /* Setup GPIO 0x4B for Copper hardware only */
-    if (hardware_type == 0x01) {
+    /* Change GPIO 0x4B in Copper hardware only */
+    if (hardware_type == HARDWARETYPE_COPPER) {
         gpio_configure(gpio_base_vaddr, 0x4B);
-        gpio_set_direction(gpio_base_vaddr, 0x4B);
-        gpio_set_value(gpio_base_vaddr, 0x4B);
+        gpio_set_direction(gpio_base_vaddr, 0x4B, true);
+        gpio_set_value(gpio_base_vaddr, 0x4B, true);
     }
     
     /* TODO: NAND repair */
