@@ -59,6 +59,8 @@ bool bootconfig_is_debug_mode(void);
 
 bool bootconfig_take_extabt_serror_to_el3(void);
 
+uint64_t bootconfig_get_value_for_sysctr0(void);
+
 uint64_t bootconfig_get_memory_arrangement(void);
 uint64_t bootconfig_get_kernel_memory_configuration(void);
 

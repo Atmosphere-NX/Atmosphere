@@ -233,17 +233,29 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     if ((smc_handler = g_smc_tables[handler_id].handlers[smc_id].handler) == NULL) {
         generic_panic();
     }
+    
+    bool is_aes_kek = handler_id == SMC_HANDLER_USER && args->X[0] == 0xC3000007;
 
-#if DEBUG_LOG_SMCS    
+#if DEBUG_LOG_SMCS  
+    uint64_t num;  
     if (handler_id == SMC_HANDLER_USER) {
-        uint64_t num = atomic_fetch_add(&num_smcs_called, 1);
-        *(volatile smc_args_t *)(get_iram_address_for_debug() + 0x100 + ((0x40 * num) & 0x3FFF)) = *args;
+        num = atomic_fetch_add(&num_smcs_called, 1);
+        *(volatile smc_args_t *)(get_iram_address_for_debug() + 0x100 + ((0x80 * num) & 0x3FFF)) = *args;
     }
 #endif
      
     /* Call function. */
     args->X[0] = smc_handler(args);
-    if (args->X[0]) 
+#if DEBUG_LOG_SMCS    
+    if (handler_id == SMC_HANDLER_USER) {
+        *(volatile smc_args_t *)(get_iram_address_for_debug() + 0x100 + ((0x80 * num + 0x40) & 0x3FFF)) = *args;
+        /*if (num >= 0x69) {
+            panic(PANIC_REBOOT);
+        }*/
+    }
+#endif
+    
+    if (args->X[0] && (!is_aes_kek || args->X[3] <= EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG)) 
     {
         MAKE_REG32(get_iram_address_for_debug() + 0x4FF0) = handler_id;
         MAKE_REG32(get_iram_address_for_debug() + 0x4FF4) = smc_id;

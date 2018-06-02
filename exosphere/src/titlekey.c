@@ -133,7 +133,7 @@ size_t tkey_rsa_oaep_unwrap(void *dst, size_t dst_size, void *src, size_t src_si
 
     /* Extract the wrapped key. */
     memcpy(dst, &db[wrapped_key_offset_in_db], wrapped_titlekey_size);
-    return wrapped_key_offset_in_db;
+    return wrapped_titlekey_size;
 }
 
 void tkey_aes_unwrap(void *dst, size_t dst_size, const void *src, size_t src_size) {

@@ -113,7 +113,7 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
         master_key_rev -= 1; /* GenerateAesKek offsets by one. */
     }
 
-    if (master_key_rev >= MASTERKEY_REVISION_MAX) {
+    if (master_key_rev >= MASTERKEY_REVISION_MAX || master_key_rev > mkey_get_revision()) {
         return 2;
     }
 
@@ -628,8 +628,10 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
         master_key_rev -= 1;
     }
 
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_300 && master_key_rev >= MASTERKEY_REVISION_MAX) {
-        return 2;
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_300) {
+        if (master_key_rev >= MASTERKEY_REVISION_MAX) {
+            return 2;
+        }
     } else {
         master_key_rev = 0;
     }
@@ -690,8 +692,10 @@ uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
     if (master_key_rev > 0) {
         master_key_rev -= 1;
     }
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_300 && master_key_rev >= MASTERKEY_REVISION_MAX) {
-        return 2;
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_300) {
+        if (master_key_rev >= MASTERKEY_REVISION_MAX) {
+            return 2;
+        }
     } else {
         master_key_rev = 0;
     }
@@ -782,8 +786,8 @@ uint32_t user_decrypt_or_import_rsa_key(smc_args_t *args) {
     size_t size;
     upage_ref_t page_ref;
 
-    /* This function no longer exists in 5.x+. */
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+    /* This function only exists in 5.x+. */
+    if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_500) {
         generic_panic();
     }
 

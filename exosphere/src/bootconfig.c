@@ -75,6 +75,14 @@ bool bootconfig_take_extabt_serror_to_el3(void) {
     return (LOADED_BOOTCONFIG->unsigned_config.data[0x10] & 6) != 6;
 }
 
+uint64_t bootconfig_get_value_for_sysctr0(void) {
+    if (LOADED_BOOTCONFIG->unsigned_config.data[0x24] & 1) {
+        return *(volatile uint64_t *)(&(LOADED_BOOTCONFIG->unsigned_config.data[0x30]));
+    } else {
+        return 0ULL;
+    }
+}
+
 uint64_t bootconfig_get_memory_arrangement(void) {
     if (bootconfig_is_debug_mode()) {
         if (fuse_get_dram_id() == 4) {

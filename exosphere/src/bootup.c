@@ -231,11 +231,17 @@ void setup_4x_mmio(void) {
     AHB_ARBITRATION_DISABLE_0 |= 2;
     /* Set SMMU for BPMP/APB-DMA to point to TZRAM. */
     MC_SMMU_PTB_ASID_0 = 1;
+    (void)(MAKE_MC_REG(0x014));
     MC_SMMU_PTB_DATA_0 = 0x70012;
     MC_SMMU_AVPC_ASID_0 = 0x80000001;
     MC_SMMU_PPCS1_ASID_0 = 0x80000001;
+    (void)(MAKE_MC_REG(0x014));
+    MAKE_MC_REG(0x34) = 0;
+    (void)(MAKE_MC_REG(0x014));
+    MAKE_MC_REG(0x30) = 0;
+    (void)(MAKE_MC_REG(0x014));
     /* Wait for the BPMP to halt. */
-    while ((FLOW_CTLR_HALT_COP_EVENTS_0 >> 28) != 5) {
+    while ((FLOW_CTLR_HALT_COP_EVENTS_0 >> 29) != 2) {
         wait(1);
     }
     /* If not in a debugging context, setup the activity monitor. */

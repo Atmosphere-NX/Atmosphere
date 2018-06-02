@@ -106,8 +106,8 @@ void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint6
     carveout->flags_2 = 0x303C00;
     carveout->flags_3 = 0xCF0830BB;
     carveout->flags_4 = 0x3;
-    carveout->flags_5 = 0;
-    carveout->flags_6 = 0;
+    carveout->flags_5 = exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400 && carveout_id == 4 ? 0x8000 : 0;
+    carveout->flags_6 = exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400 && carveout_id == 4 ? 0x40000 : 0;
     carveout->flags_7 = 0;
     carveout->flags_8 = 0;
     carveout->flags_9 = 0;
