@@ -4,6 +4,7 @@
 #include "masterkey.h"
 #include "stratosphere.h"
 #include "package2.h"
+#include "kernel_patches.h"
 #include "kip.h"
 #include "se.h"
 
