@@ -2,7 +2,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-class ProcessWaiter : public IWaitable {
+class ProcessWaiter final : public IWaitable {
     public:
         Registration::Process process;
         
@@ -19,33 +19,33 @@ class ProcessWaiter : public IWaitable {
         }
         
         /* IWaitable */
-        virtual unsigned int get_num_waitables() {
+        unsigned int get_num_waitables() override {
             return 1;
         }
         
-        virtual void get_waitables(IWaitable **dst) {
+        void get_waitables(IWaitable **dst) override {
             dst[0] = this;
         }
         
-        virtual void delete_child(IWaitable *child) {
+        void delete_child(IWaitable *child) override {
             /* TODO: Panic, because we can never have any children. */
         }
         
-        virtual Handle get_handle() {
+        Handle get_handle() override {
             return this->process.handle;
         }
         
-        virtual void handle_deferred() {
+        void handle_deferred() override {
             /* TODO: Panic, because we can never be deferred. */
         }
         
-        virtual Result handle_signaled(u64 timeout) {
+        Result handle_signaled(u64 timeout) override {
             Registration::HandleSignaledProcess(this->get_process());
             return 0;
         }
 };
 
-class ProcessList : public IWaitable {
+class ProcessList final : public IWaitable {
     private:      
         HosRecursiveMutex mutex;
     public:
@@ -64,11 +64,11 @@ class ProcessList : public IWaitable {
         }
         
         /* IWaitable */
-        virtual unsigned int get_num_waitables() {
+        unsigned int get_num_waitables() override {
             return process_waiters.size();
         }
         
-        virtual void get_waitables(IWaitable **dst) {
+        void get_waitables(IWaitable **dst) override {
             Lock();
             for (unsigned int i = 0; i < process_waiters.size(); i++) {
                 dst[i] = process_waiters[i];
@@ -76,20 +76,20 @@ class ProcessList : public IWaitable {
             Unlock();
         }
         
-        virtual void delete_child(IWaitable *child) {
+        void delete_child(IWaitable *child) override {
             /* TODO: Panic, because we should never be asked to delete a child. */
         }
         
-        virtual Handle get_handle() {
+        Handle get_handle() override {
             /* TODO: Panic, because we don't have a handle. */
             return 0;
         }
         
-        virtual void handle_deferred() {
+        void handle_deferred() override {
             /* TODO: Panic, because we can never be deferred. */
         }
         
-        virtual Result handle_signaled(u64 timeout) {
+        Result handle_signaled(u64 timeout) override {
             /* TODO: Panic, because we can never be signaled. */         
             return 0;
         }

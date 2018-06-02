@@ -23,7 +23,7 @@ template <typename T>
 class IServer;
 
 template <typename T>
-class ServiceSession : public IWaitable {
+class ServiceSession final : public IWaitable {
     static_assert(std::is_base_of<IServiceObject, T>::value, "Service Objects must derive from IServiceObject");
     
     T *service_object;
@@ -39,7 +39,7 @@ class ServiceSession : public IWaitable {
             this->service_object = new T();
         }
         
-        virtual ~ServiceSession() {
+        ~ServiceSession() override {
             delete this->service_object;
             if (server_handle) {
                 svcCloseHandle(server_handle);
@@ -54,23 +54,23 @@ class ServiceSession : public IWaitable {
         Handle get_client_handle() { return this->client_handle; }
         
         /* IWaitable */
-        virtual unsigned int get_num_waitables() {
+        unsigned int get_num_waitables() override {
             return 1;
         }
         
-        virtual void get_waitables(IWaitable **dst) {
+        void get_waitables(IWaitable **dst) override {
             dst[0] = this;
         }
         
-        virtual void delete_child(IWaitable *child) {
+        void delete_child(IWaitable *child) override {
             /* TODO: Panic, because we can never have any children. */
         }
         
-        virtual Handle get_handle() {
+        Handle get_handle() override {
             return this->server_handle;
         }
         
-        virtual void handle_deferred() {
+        void handle_deferred() override {
             Result rc = this->service_object->handle_deferred();
             int handle_index;
             
@@ -84,7 +84,7 @@ class ServiceSession : public IWaitable {
             }
         }
         
-        virtual Result handle_signaled(u64 timeout) {
+        Result handle_signaled(u64 timeout) override {
             Result rc;
             int handle_index;
             
