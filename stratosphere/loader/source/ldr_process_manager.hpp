@@ -12,7 +12,7 @@ enum ProcessManagerServiceCmd {
     Pm_Cmd_UnregisterTitle = 3
 };
 
-class ProcessManagerService : IServiceObject {
+class ProcessManagerService final : IServiceObject {
     struct ProgramInfo {
         u8 main_thread_priority;
         u8 default_cpu_id;
@@ -29,8 +29,8 @@ class ProcessManagerService : IServiceObject {
     static_assert(sizeof(ProcessManagerService::ProgramInfo) == 0x400, "Incorrect ProgramInfo definition.");
     
     public:
-        virtual Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
-        virtual Result handle_deferred() {
+        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) override;
+        Result handle_deferred() override {
             /* This service will never defer. */
             return 0;
         }

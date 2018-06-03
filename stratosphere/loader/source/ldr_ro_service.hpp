@@ -12,7 +12,7 @@ enum RoServiceCmd {
     Ro_Cmd_Initialize = 4,
 };
 
-class RelocatableObjectsService : IServiceObject {
+class RelocatableObjectsService final : IServiceObject {
     Handle process_handle;
     u64 process_id;
     bool has_initialized;
@@ -24,8 +24,8 @@ class RelocatableObjectsService : IServiceObject {
                 svcCloseHandle(this->process_handle);
             }
         }
-        virtual Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
-        virtual Result handle_deferred() {
+        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) override;
+        Result handle_deferred() override {
             /* This service will never defer. */
             return 0;
         }
