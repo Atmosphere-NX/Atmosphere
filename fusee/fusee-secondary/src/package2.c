@@ -4,6 +4,7 @@
 #include "masterkey.h"
 #include "stratosphere.h"
 #include "package2.h"
+#include "kernel_patches.h"
 #include "kip.h"
 #include "se.h"
 
@@ -16,7 +17,6 @@
 static void package2_decrypt(package2_header_t *package2);
 static size_t package2_get_src_section(void **section, package2_header_t *package2, unsigned int id);
 static size_t package2_get_thermosphere(void **thermosphere);
-static void package2_patch_kernel(void *kernel, size_t kernel_size);
 static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware);
 static void package2_append_section(unsigned int id, package2_header_t *package2, void *data, size_t size);
 static void package2_fixup_header_and_section_hashes(package2_header_t *package2, size_t size);
@@ -263,11 +263,7 @@ static size_t package2_get_thermosphere(void **thermosphere) {
     return 0;
 }
 
-static void package2_patch_kernel(void *kernel, size_t size) {
-    (void)kernel;
-    (void)size;
-    /* TODO: What kind of patching do we want to try to do here? */
-}
+
 
 
 static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware) {

@@ -18,6 +18,14 @@ class Registration {
             u64 service_name;
             u64 owner_pid;
             Handle port_h;
+            
+            /* Debug. */
+            u64 max_sessions;
+            bool is_light;
+            
+            /* Extension. */
+            u64 mitm_pid;
+            Handle mitm_port_h;
         };
         
         /* Utilities. */
@@ -37,9 +45,13 @@ class Registration {
         
         /* Service management. */
         static bool HasService(u64 service);
-        static Result GetServiceHandle(u64 service, Handle *out);
+        static Result GetServiceHandle(u64 pid, u64 service, Handle *out);
         static Result GetServiceForPid(u64 pid, u64 service, Handle *out);
         static Result RegisterServiceForPid(u64 pid, u64 service, u64 max_sessions, bool is_light, Handle *out);
         static Result RegisterServiceForSelf(u64 service, u64 max_sessions, bool is_light, Handle *out);
         static Result UnregisterServiceForPid(u64 pid, u64 service);
+        
+        /* Extension. */
+        static Result InstallMitmForPid(u64 pid, u64 service, Handle *out);
+        static Result UninstallMitmForPid(u64 pid, u64 service);
 };

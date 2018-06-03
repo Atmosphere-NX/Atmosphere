@@ -63,6 +63,8 @@ void cluster_enable_cpu0(u64 entry, u32 ns_disable)
 	{
 		CLOCK(0x518) &= 0xFFFFFFF7;
 		sleep(2);
+		CLOCK(0xE0) = 0x80404E02;
+		CLOCK(0xE0) = 0x404E02;
 		CLOCK(0xE4) = CLOCK(0xE4) & 0xFFFBFFFF | 0x40000;
 		CLOCK(0xE0) = 0x40404E02;
 	}
@@ -77,7 +79,7 @@ void cluster_enable_cpu0(u64 entry, u32 ns_disable)
 
 	clock_enable_coresight();
 
-	CLOCK(0x388) = CLOCK(0x388) & 0xFFFFE000;
+	CLOCK(0x388) = CLOCK(0x388) & 0xFFFFF000;
 
 	//Enable CPU rail.
 	_cluster_pmc_enable_partition(1, 0);
@@ -110,5 +112,6 @@ void cluster_enable_cpu0(u64 entry, u32 ns_disable)
 
 	//Until here the CPU was in reset, this kicks execution.
 	CLOCK(CLK_RST_CONTROLLER_RST_DEVICES_V) &= 0xFFFFFFF7;
+	CLOCK(CLK_RST_CONTROLLER_RST_CPUG_CMPLX_CLR) = 0x20000000;
 	CLOCK(CLK_RST_CONTROLLER_RST_CPUG_CMPLX_CLR) = 0x411F000F;
 }

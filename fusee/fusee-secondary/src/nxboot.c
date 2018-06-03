@@ -14,6 +14,7 @@
 #include "exocfg.h"
 #include "display/video_fb.h"
 #include "lib/ini.h"
+#include "hwinit/t210.h"
 
 #define u8 uint8_t
 #define u32 uint32_t
@@ -247,5 +248,8 @@ void nxboot_main(void) {
     /* Display splash screen. */
     display_splash_screen_bmp(loader_ctx->custom_splash_path);
 
-    /* TODO: Halt ourselves. */
+    //Halt ourselves in waitevent state.
+    while (1) {
+        FLOW_CTLR(0x4) = 0x50000000;
+    }
 }
