@@ -5,6 +5,9 @@
 
 #define MAKE_BRANCH(a, o) 0x14000000 | ((((o) - (a)) >> 2) & 0x3FFFFFF)
 
+#define MAKE_KERNEL_PATTERN_NAME(vers, name) g_kernel_patch_##vers_##name
+#define MAKE_KERNEL_HOOK_NAME(vers, name) g_kernel_hook_##vers_##name
+
 typedef uint32_t instruction_t;
 
 typedef struct {
@@ -23,6 +26,42 @@ typedef struct {
     const kernel_hook_t *hooks;
 } kernel_info_t;
 
+/* Patch definitions. */
+/*  
+    mov w10, w23
+    lsl x10, x10, #2
+    ldr x10, [x27, x10]
+    mov x9, #0x0000ffffffffffff
+    and x8, x10, x9
+    mov x9, #0xffff000000000000
+    and x10, x10, x9
+    mov x9, #0xfffe000000000000
+    cmp x10, x9
+    beq #12
+    ldr x10, [sp,#0x80]
+    ldr x8, [x10,#0x2b0]
+    ldr x10, [sp,#0x80]
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(500, proc_id_send)[] = {0xEA, 0x43, 0x40, 0xF9, 0x48, 0x59, 0x41, 0xF9, 0xE9, 0x03, 0x17, 0x2A, 0x29, 0xF5, 0x7E, 0xD3};
+static const instruction_t MAKE_KERNEL_HOOK_NAME(500, proc_id_send)[] = {0x2A1703EA, 0xD37EF54A, 0xF86A6B6A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000060, 0xF94043EA, 0xF9415948, 0xF94043EA};
+/*  
+    ldr x13, [sp, #0x70]
+    mov w10, w21
+    lsl x10, x10, #2
+    ldr x10, [x13, x10]
+    mov x9, #0x0000ffffffffffff
+    and x8, x10, x9
+    mov x9, #0xffff000000000000
+    and x10, x10, x9
+    mov x9, #0xfffe000000000000
+    cmp x10, x9
+    beq #8
+    ldr x8, [x24,#0x2b0]
+    ldr x10, [sp,#0xd8] 
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(500, proc_id_recv)[] = {0x08, 0x5B, 0x41, 0xF9, 0xEA, 0x6F, 0x40, 0xF9, 0xE9, 0x03, 0x15, 0x2A, 0x29, 0xF5, 0x7E, 0xD3};
+static const instruction_t MAKE_KERNEL_HOOK_NAME(500, proc_id_recv)[] = {0xF9403BED, 0x2A1503EA, 0xD37EF54A, 0xF86A69AA, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000040, 0xF9415B08, 0xF9406FEA};
+
 /* Hook Definitions. */
 static const kernel_hook_t g_kernel_hooks_100[] = {
     /* TODO */
@@ -40,7 +79,22 @@ static const kernel_hook_t g_kernel_hooks_400[] = {
     /* TODO */
 };
 static const kernel_hook_t g_kernel_hooks_500[] = {
-    /* TODO */
+    {   /* Send Message Process ID Patch. */
+        .pattern_size = 0x10,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(500, proc_id_send),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = 13,
+        .branch_back_offset = 0x8,
+        .payload = MAKE_KERNEL_HOOK_NAME(500, proc_id_send)
+    },
+    {   /* Receive Message Process ID Patch. */
+        .pattern_size = 0x10,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(500, proc_id_recv),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = 13,
+        .branch_back_offset = 0x8,
+        .payload = MAKE_KERNEL_HOOK_NAME(500, proc_id_recv)
+    }
 };
 
 #define KERNEL_HOOKS(vers) .num_hooks = sizeof(g_kernel_hooks_##vers)/sizeof(kernel_hook_t), .hooks = g_kernel_hooks_##vers,
