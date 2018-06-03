@@ -18,12 +18,14 @@ Result UserService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id,
         case User_Cmd_UnregisterService:
             rc = WrapIpcCommandImpl<&UserService::unregister_service>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
+#ifdef SM_ENABLE_MITM
         case User_Cmd_AtmosphereInstallMitm:
             rc = WrapIpcCommandImpl<&UserService::install_mitm>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
         case User_Cmd_AtmosphereUninstallMitm:
             rc = WrapIpcCommandImpl<&UserService::uninstall_mitm>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
+#endif
         default:
             break;
     }
