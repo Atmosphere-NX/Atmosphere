@@ -176,7 +176,7 @@ bool Registration::HasService(u64 service) {
     return false;
 }
 
-Result Registration::GetServiceHandle(u64 service, Handle *out) {
+Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL) {
         /* Note: This defers the result until later. */
@@ -184,7 +184,12 @@ Result Registration::GetServiceHandle(u64 service, Handle *out) {
     }
     
     *out = 0;
-    Result rc = svcConnectToPort(out, target_service->port_h);
+    Result rc;
+    if (target_service->mitm_pid == 0 || target_service->mitm_pid == pid) {
+        rc = svcConnectToPort(out, target_service->port_h);
+    } else {
+        rc = svcConnectToPort(out, target_service->mitm_port_h);
+    }
     if (R_FAILED(rc)) {
         if ((rc & 0x3FFFFF) == 0xE01) {
             return 0x615;
@@ -217,7 +222,7 @@ Result Registration::GetServiceForPid(u64 pid, u64 service, Handle *out) {
         }
     }
     
-    return GetServiceHandle(service, out);
+    return GetServiceHandle(pid, service, out);
 }
 
 Result Registration::RegisterServiceForPid(u64 pid, u64 service, u64 max_sessions, bool is_light, Handle *out) {
@@ -294,6 +299,8 @@ Result Registration::RegisterServiceForSelf(u64 service, u64 max_sessions, bool 
     if (R_SUCCEEDED(rc)) {
         free_service->service_name = service;
         free_service->owner_pid = pid;
+        free_service->max_sessions = max_sessions;
+        free_service->is_light = is_light;
     }
     
     return rc;
@@ -321,6 +328,80 @@ Result Registration::UnregisterServiceForPid(u64 pid, u64 service) {
     }
     
     svcCloseHandle(target_service->port_h);
+    svcCloseHandle(target_service->mitm_port_h);
     *target_service = (const Registration::Service){0};
+    return 0;
+}
+
+
+Result Registration::InstallMitmForPid(u64 pid, u64 service, Handle *out) {
+    if (!service) {
+        return 0xC15;
+    }
+    
+    u64 service_name_len = GetServiceNameLength(service);
+    
+    /* If the service has bytes after a null terminator, that's no good. */
+    if (service_name_len != 8 && (service >> (8 * service_name_len))) {
+        return 0xC15;
+    }
+    
+    /* Verify we're allowed to mitm the service. */
+    if (!IsInitialProcess(pid)) {
+        Registration::Process *proc = GetProcessForPid(pid);
+        if (proc == NULL) {
+            return 0x415;
+        }
+        
+        if (!IsValidForSac(proc->sac, proc->sac_size, service, true)) {
+            return 0x1015;
+        }
+    }
+    
+    /* Verify the service exists. */
+    Registration::Service *target_service = GetService(service);
+    if (target_service == NULL) {
+        return 0xE15;
+    }
+    
+    /* Verify the service isn't already being mitm'd. */
+    if (target_service->mitm_pid != 0) {
+        return 0x815;
+    }
+    
+    *out = 0;
+    u64 x = 0;
+    Result rc = svcCreatePort(out, &target_service->mitm_port_h, target_service->max_sessions, target_service->is_light, (char *)&x);
+    
+    if (R_SUCCEEDED(rc)) {
+        target_service->mitm_pid = pid;
+    }
+    
+    return rc;
+}
+
+Result Registration::UninstallMitmForPid(u64 pid, u64 service) {
+    if (!service) {
+        return 0xC15;
+    }
+    
+    u64 service_name_len = GetServiceNameLength(service);
+    
+    /* If the service has bytes after a null terminator, that's no good. */
+    if (service_name_len != 8 && (service >> (8 * service_name_len))) {
+        return 0xC15;
+    }
+    
+    Registration::Service *target_service = GetService(service);
+    if (target_service == NULL) {
+        return 0xE15;
+    }
+
+    if (!IsInitialProcess(pid) && target_service->mitm_pid != pid) {
+        return 0x1015;
+    }
+    
+    svcCloseHandle(target_service->mitm_port_h);
+    target_service->mitm_pid = 0;
     return 0;
 }
