@@ -12,6 +12,7 @@ typedef struct {
     const uint8_t *pattern;
     size_t pattern_hook_offset;
     size_t payload_num_instructions;
+    size_t branch_back_offset;
     const instruction_t *payload;
 } kernel_hook_t;
 
@@ -71,6 +72,7 @@ static const kernel_info_t g_kernel_infos[] = {
         KERNEL_HOOKS(400)
     },
     {   /* 5.0.0. */
+        .hash = {0xB2, 0x38, 0x61, 0xA8, 0xE1, 0xE2, 0xE4, 0xE4, 0x17, 0x28, 0xED, 0xA9, 0xF6, 0xF6, 0xBD, 0xD2, 0x59, 0xDB, 0x1F, 0xEF, 0x4A, 0x8B, 0x2F, 0x1C, 0x64, 0x46, 0x06, 0x40, 0xF5, 0x05, 0x9C, 0x43},
         .free_code_space_offset = 0x5C020,
         KERNEL_HOOKS(500)
     }
@@ -121,6 +123,9 @@ void package2_patch_kernel(void *_kernel, size_t size) {
     size_t free_space_size = ((free_space_offset + 0xFFFULL) & ~0xFFFULL) - free_space_offset;
     for (unsigned int i = 0; i < kernel_info->num_hooks; i++) {
         size_t hook_size = sizeof(instruction_t) * kernel_info->hooks[i].payload_num_instructions;
+        if (kernel_info->hooks[i].branch_back_offset) {
+            hook_size += sizeof(instruction_t);
+        }
         if (free_space_size < hook_size) {
             /* TODO: What should be done in this case? */
             fatal_error("kernel_patcher: insufficient space to apply patches!\n");
@@ -139,6 +144,9 @@ void package2_patch_kernel(void *_kernel, size_t size) {
         instruction_t *payload = (instruction_t *)(kernel + free_space_offset);
         for (unsigned int p = 0; p < kernel_info->hooks[i].payload_num_instructions; p++) {
             payload[p] = kernel_info->hooks[i].payload[p];
+        }
+        if (kernel_info->hooks[i].branch_back_offset) {
+            payload[kernel_info->hooks[i].payload_num_instructions] = MAKE_BRANCH(free_space_offset + sizeof(instruction_t) * kernel_info->hooks[i].payload_num_instructions, (uint32_t)(kernel_info->hooks[i].branch_back_offset + (uintptr_t)hook_start - (uintptr_t)kernel));
         }
         
         free_space_offset += hook_size;
