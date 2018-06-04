@@ -9,7 +9,7 @@ Atmosphère is a work-in-progress customized firmware for the Nintendo Switch.
 Credits
 =====
 
-Atmosphère is currently being developed and maintained by __SciresM__, __TuxSH__, and __hexkyz__.<br>
+Atmosphère is currently being developed and maintained by __SciresM__, __TuxSH__ and __hexkyz__.<br>
 In no particular order, we credit the following for their invaluable contributions:
 
 * __switchbrew__ for the [libnx](https://github.com/switchbrew/libnx) project and the extensive [documentation, research and tool development](http://switchbrew.org) pertaining to the Nintendo Switch.
@@ -18,6 +18,7 @@ In no particular order, we credit the following for their invaluable contributio
 * __ChaN__ for the [FatFs](http://elm-chan.org/fsw/ff/00index_e.html) module.
 * __Riley__ for suggesting "Atmosphere" as a Horizon OS reimplementation+customization project name.
 * __naehrwert__ for the [hekate](https://github.com/nwert/hekate) project and its hwinit code base.
+* __ktemkin__ for the work on [Fusée Gelée](https://github.com/reswitched/fusee-launcher) and Atmosphère's SDMMC driver and hypervisor system.
 * __hedgeberg__ for research and hardware testing.
 * __lioncash__ for code cleanup and general improvements.
 * __jaames__ for designing and providing Atmosphère's graphical resources.
