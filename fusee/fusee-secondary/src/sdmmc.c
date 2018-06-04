@@ -1360,7 +1360,8 @@ static int sdmmc_apply_clock_speed(struct mmc *mmc, enum sdmmc_bus_speed speed, 
         case SDMMC_SPEED_SDR50:
             mmc->regs->host_control |= MMC_HOST_ENABLE_HIGH_SPEED;
             mmc->configure_clock(mmc, MMC_CLOCK_SOURCE_SDR50, MMC_CLOCK_DIVIDER_SDR50, MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH);
-            sdmmc_set_uhs_mode(mmc, SDMMC_SPEED_SDR50);
+            // Tegra X1 Series Processors Silicon Errata MMC-2 mentions setting SDR104 mode as workaround.
+            sdmmc_set_uhs_mode(mmc, SDMMC_SPEED_SDR104);
 
             execute_tuning = true;
             tuning_attempts = MMC_VENDOR_TUNING_TRIES_SDR50;
