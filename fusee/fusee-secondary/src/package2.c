@@ -98,8 +98,7 @@ static void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t ds
     se_aes_ctr_crypt(KEYSLOT_SWITCH_PACKAGE2KEY, dst, dst_size, src, src_size, ctr, ctr_size);
 }
 
-static bool package2_validate_metadata(package2_meta_t *metadata) {
-    package2_header_t *package2 = (package2_header_t *)((uint8_t *)metadata - offsetof(package2_header_t, metadata));
+static bool package2_validate_metadata(package2_meta_t *metadata, uint8_t data[]) {
     if (metadata->magic != MAGIC_PK21) {
         return false;
     }
@@ -160,7 +159,7 @@ static bool package2_validate_metadata(package2_meta_t *metadata) {
 
         /* Validate section hashes. */
         if (metadata->section_sizes[section]) {
-            void *section_data = package2->data + cur_section_offset;
+            void *section_data = data + cur_section_offset;
             uint8_t calculated_hash[0x20];
             se_calculate_sha256(calculated_hash, section_data, metadata->section_sizes[section]);
             if (memcmp(calculated_hash, metadata->section_hashes[section], sizeof(metadata->section_hashes[section])) != 0) {
@@ -199,7 +198,7 @@ static uint32_t package2_decrypt_and_validate_header(package2_header_t *header, 
             /* Copy the ctr (which stores information) into the decrypted metadata. */
             memcpy(metadata.ctr, header->metadata.ctr, sizeof(header->metadata.ctr));
             /* See if this is the correct key. */
-            if (package2_validate_metadata(&metadata)) {
+            if (package2_validate_metadata(&metadata, header->data)) {
                 header->metadata = metadata;
                 return mkey_rev;
             }
@@ -209,7 +208,7 @@ static uint32_t package2_decrypt_and_validate_header(package2_header_t *header, 
         if (mkey_rev > mkey_get_revision()) {
             fatal_error("failed to decrypt the Package2 header (master key revision %u)!\n", mkey_get_revision());
         }
-    } else if (!package2_validate_metadata(&header->metadata)) {
+    } else if (!package2_validate_metadata(&header->metadata, header->data)) {
         fatal_error("Failed to validate the Package2 header!\n");
     }
     return 0;
