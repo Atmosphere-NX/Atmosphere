@@ -120,6 +120,8 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, size_t num_inis) {
                 fatal_error("INI1s[%zu][%zu] appears not to be a KIP1!\n", i, p);
             }
 
+            offset += kip1_get_size_from_header(current_kip);
+            
             bool already_loaded = false;
             for (uint32_t j = 0; j < merged->num_processes; j++) {
                 if (process_list[j] == current_kip->title_id) {
