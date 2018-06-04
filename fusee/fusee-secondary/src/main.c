@@ -23,14 +23,14 @@ static bool g_do_nxboot;
 
 static void setup_env(void) {
     /* Set the console up. */
-    if (console_init() == -1) {
+    if (console_init(g_stage2_args->display_initialized) == -1) {
         generic_panic();
     }
 
     /* Set up exception handlers. */
     setup_exception_handlers();
 
-    if(switchfs_mount_all() == -1) {
+    if(switchfs_import_mmc_structs(&g_stage2_args->sd_mmc, NULL) == -1 || switchfs_mount_all() == -1) {
         fatal_error("Failed to mount at least one parition: %s\n", strerror(errno));
     }
 

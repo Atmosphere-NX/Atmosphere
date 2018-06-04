@@ -15,15 +15,8 @@
 
 static bool g_ahb_redirect_enabled = false;
 
-// Only use voltage switching in stage2 and later.
-#ifdef FUSEE_STAGE1_SRC
-#define MMC_VOLTAGE_SWITCHING_ALLOWED false
-#else
-#define MMC_VOLTAGE_SWITCHING_ALLOWED true
-#endif
-
 /* Global sd struct. */
-static struct mmc g_sd_mmc = {0};
+struct mmc g_sd_mmc = {0};
 static bool g_sd_initialized = false;
 
 int initialize_sd_mmc(void) {
@@ -33,7 +26,7 @@ int initialize_sd_mmc(void) {
 	}
 
 	if (!g_sd_initialized) {
-		int rc = sdmmc_init(&g_sd_mmc, SWITCH_MICROSD, MMC_VOLTAGE_SWITCHING_ALLOWED);
+		int rc = sdmmc_init(&g_sd_mmc, SWITCH_MICROSD, false);
 		if (rc == 0) {
 			g_sd_initialized = true;
 			return 0;

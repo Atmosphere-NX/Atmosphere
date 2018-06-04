@@ -234,10 +234,19 @@ int sdmmc_set_loglevel(int loglevel);
  * @param controler The controller description to be used; usually SWITCH_EMMC
  *      or SWITCH_MICROSD.
  * @param allow_voltage_switching True if we should allow voltage switching,
- *      which may not make sense if we're about to chainload to another component,
- *      a la fusee stage1.
+ *      which may not make sense if we're about to chainload to another component without
+ *      preseving the overall structure.
  */
 int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller, bool allow_voltage_switching);
+
+
+/**
+ * Imports a SDMMC driver struct from another program. This mainly intended for stage2,
+ * so that it can reuse stage1's SDMMC struct instance(s).
+ *
+ * @param mmc The SDMMC structure to be imported.
+ */
+int sdmmc_import_struct(struct mmc *mmc);
 
 
 /**

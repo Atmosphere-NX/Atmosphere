@@ -12,6 +12,9 @@ static bool g_ahb_redirect_enabled = false;
 static bool g_sd_mmc_initialized = false;
 static bool g_nand_mmc_initialized = false;
 
+static bool g_sd_mmc_imported = false;
+static bool g_nand_mmc_imported = false;
+
 static struct mmc g_sd_mmc = {0};
 static struct mmc g_nand_mmc = {0};
 
@@ -43,7 +46,7 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
 
     if (mmcpart->mmc == &g_sd_mmc) {
         if (!g_sd_mmc_initialized) {
-            int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller, true);
+            int rc = g_sd_mmc_imported ? 0 : sdmmc_init(mmcpart->mmc, mmcpart->controller, true);
             if (rc == 0) {
                 sdmmc_set_write_enable(mmcpart->mmc, SDMMC_WRITE_ENABLED);
                 g_sd_mmc_initialized = true;
@@ -56,7 +59,7 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
         return 0;
     } else if (mmcpart->mmc == &g_nand_mmc) {
         if (!g_nand_mmc_initialized) {
-            int rc = sdmmc_init(mmcpart->mmc, mmcpart->controller, true);
+            int rc = g_nand_mmc_imported ? 0 : sdmmc_init(mmcpart->mmc, mmcpart->controller, true);
             if (rc == 0) {
                 g_nand_mmc_initialized = true;
             } else {
@@ -229,6 +232,36 @@ static int switchfs_mount_partition_gpt_callback(const efi_entry_t *entry, void 
                     }
                 }
             }
+        }
+    }
+
+    return 0;
+}
+
+int switchfs_import_mmc_structs(void *sd, void *nand) {
+    if (sd != NULL) {
+        int rc = 0;
+        memcpy(&g_sd_mmc, sd, sizeof(g_sd_mmc));
+        rc = sdmmc_import_struct(&g_sd_mmc);
+        if (rc != 0) {
+            memset(&g_sd_mmc, 0, sizeof(g_sd_mmc));
+            errno = rc;
+            return -1;
+        } else {
+            g_sd_mmc_imported = true;
+        }
+    }
+
+    if (nand != NULL) {
+        int rc = 0;
+        memcpy(&g_nand_mmc, nand, sizeof(g_nand_mmc));
+        rc = sdmmc_import_struct(&g_nand_mmc);
+        if (rc != 0) {
+            memset(&g_nand_mmc, 0, sizeof(g_nand_mmc));
+            errno = rc;
+            return -1;
+        } else {
+            g_nand_mmc_imported = true;
         }
     }
 

@@ -87,15 +87,19 @@ static ssize_t decode_utf8(uint32_t *out, const uint8_t *in) {
 }
 
 static void console_init_display(void) {
-    /* Initialize the display. */
-    display_init();
+    if (!g_display_initialized) {
+        /* Initialize the display. */
+        display_init();
+    }
 
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
 
     /* Turn on the backlight after initializing the lfb */
     /* to avoid flickering. */
-    display_enable_backlight(true);
+    if (!g_display_initialized) {
+        display_enable_backlight(true);
+    }
 
     g_display_initialized = true;
 }
@@ -140,7 +144,10 @@ static int console_create(void) {
     return 0;
 }
 
-int console_init(void) {
+
+int console_init(bool display_initialized) {
+    g_display_initialized = display_initialized;
+
     if (console_create() == -1) {
         return -1;
     }

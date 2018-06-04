@@ -2259,7 +2259,7 @@ static int sdmmc_send_app_command(struct mmc *mmc, enum sdmmc_command command,
     }
 
     // And issue the body of the command.
-    return sdmmc_send_command(mmc, command, response_type, checks, argument, response_buffer, 
+    return sdmmc_send_command(mmc, command, response_type, checks, argument, response_buffer,
             blocks_to_transfer, false, auto_terminate, data_buffer);
 }
 
@@ -3382,8 +3382,8 @@ static int sdmmc_initialize_defaults(struct mmc *mmc)
  * @param controler The controller description to be used; usually SWITCH_EMMC
  *      or SWITCH_MICROSD.
  * @param allow_voltage_switching True if we should allow voltage switching,
- *      which may not make sense if we're about to chainload to another component,
- *      a la fusee stage1.
+ *      which may not make sense if we're about to chainload to another component without
+ *      preseving the overall structure.
  */
 int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller, bool allow_voltage_switching)
 {
@@ -3441,6 +3441,29 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller, bool allow_vol
         mmc_print(mmc, "WARNING: could not optimize bus utlization! (%d)", rc);
     }
 
+    return 0;
+}
+
+
+/**
+ * Imports a SDMMC driver struct from another program. This mainly intended for stage2,
+ * so that it can reuse stage1's SDMMC struct instance(s).
+ *
+ * @param mmc The SDMMC structure to be imported.
+ */
+int sdmmc_import_struct(struct mmc *mmc)
+{
+    int rc;
+    bool uses_block_addressing = mmc->uses_block_addressing;
+    mmc->regs = sdmmc_get_regs(mmc->controller);
+
+    rc = sdmmc_initialize_defaults(mmc);
+    if (rc) {
+        printk("ERROR: controller SDMMC%d not currently supported!\n", mmc->controller + 1);
+        return rc;
+    }
+
+    mmc->uses_block_addressing = uses_block_addressing;
     return 0;
 }
 

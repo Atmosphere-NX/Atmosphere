@@ -4,6 +4,8 @@
 #include "fs_dev.h"
 #include "raw_dev.h"
 
+int switchfs_import_mmc_structs(void *sd, void *nand);
+
 int switchfs_mount_all(void);
 int switchfs_unmount_all(void);
 
