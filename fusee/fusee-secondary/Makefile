@@ -108,7 +108,7 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 .PHONY: $(BUILD) clean all
-.PHONY: check_exosphere check_thermosphere check_exosphere
+.PHONY: check_exosphere check_thermosphere check_stratosphere
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
