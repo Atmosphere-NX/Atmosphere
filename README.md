@@ -9,7 +9,7 @@ Atmosphère is a work-in-progress customized firmware for the Nintendo Switch.
 Credits
 =====
 
-Atmosphère is currently being developed and maintained by __SciresM__, __TuxSH__, __ktemkin__ and __hexkyz__.<br>
+Atmosphère is currently being developed and maintained by __SciresM__, __TuxSH__, and __hexkyz__.<br>
 In no particular order, we credit the following for their invaluable contributions:
 
 * __switchbrew__ for the [libnx](https://github.com/switchbrew/libnx) project and the extensive [documentation, research and tool development](http://switchbrew.org) pertaining to the Nintendo Switch.
