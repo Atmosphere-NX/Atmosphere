@@ -6,6 +6,8 @@
 
 Atmosphère is a work-in-progress customized firmware for the Nintendo Switch.
 
+## Atmosphère is still a work in progress CFW, and is NOT ready for usage yet! If you want to play with it anyway, please recognize that we will be unable to provide support until it is ready for general usage :)
+
 Credits
 =====
 
