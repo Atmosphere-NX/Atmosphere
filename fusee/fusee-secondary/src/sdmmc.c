@@ -17,6 +17,7 @@
 #include "supplies.h"
 #include "pmc.h"
 #include "pad_control.h"
+#include "apb_misc.h"
 
 #define TEGRA_SDMMC_BASE (0x700B0000)
 #define TEGRA_SDMMC_SIZE (0x200)
@@ -462,11 +463,12 @@ enum sdmmc_command_magic {
 
     /* Misc constants */
     MMC_DEFAULT_BLOCK_ORDER = 9,
-    MMC_VOLTAGE_SWITCH_TIME = 5000, // 5mS
-    MMC_POST_CLOCK_DELAY = 1000, // 1mS
+    MMC_VOLTAGE_SWITCH_TIME = 5000, // 5ms
+    MMC_POST_CLOCK_DELAY = 1000, // 1ms
     MMC_SPEED_MMC_OFFSET = 10,
 
-    MMC_TUNING_TIMEOUT = 150 * 1000, // 150mS
+    MMC_AUTOCAL_TIMEOUT = 10 * 1000, // 10ms
+    MMC_TUNING_TIMEOUT = 150 * 1000, // 150ms
     MMC_TUNING_BLOCK_ORDER_4BIT = 6,
     MMC_TUNING_BLOCK_ORDER_8BIT = 7,
 };
@@ -975,6 +977,7 @@ void sdmmc_clock_enable(struct mmc *mmc, bool enabled)
 static int sdmmc_run_autocal(struct mmc *mmc, bool restart_sd_clock)
 {
     uint32_t timebase;
+    int ret = 0;
 
     // Stop the SD card's clock, so our autocal sequence doesn't
     // confuse the target card.
@@ -982,16 +985,34 @@ static int sdmmc_run_autocal(struct mmc *mmc, bool restart_sd_clock)
 
     // Start automatic calibration...
     mmc->regs->auto_cal_config |= (MMC_AUTOCAL_START | MMC_AUTOCAL_ENABLE);
-    udelay(1000);
+    udelay(1);
 
     // ... and wait until the autocal is complete
     timebase = get_time();
     while ((mmc->regs->auto_cal_status & MMC_AUTOCAL_ACTIVE)) {
 
         // Ensure we haven't timed out...
-        if (get_time_since(timebase) > mmc->timeout) {
+        if (get_time_since(timebase) > MMC_AUTOCAL_TIMEOUT) {
             mmc_print(mmc, "ERROR: autocal timed out!");
-            return ETIMEDOUT;
+            if (mmc->controller == SWITCH_MICROSD) {
+                // Fallback driver strengths from Tegra X1 TRM
+                uint32_t drvup = (mmc->operating_voltage == MMC_VOLTAGE_3V3) ? 0x12 : 0x11;
+                uint32_t drvdn = (mmc->operating_voltage == MMC_VOLTAGE_3V3) ? 0x12 : 0x15;
+                uint32_t value = APB_MISC_GP_SDMMC1_PAD_CFGPADCTRL_0;
+                value &= ~(SDMMC1_PAD_CAL_DRVUP_MASK | SDMMC1_PAD_CAL_DRVDN_MASK);
+                value |= (drvup << SDMMC1_PAD_CAL_DRVUP_SHIFT);
+                value |= (drvdn << SDMMC1_PAD_CAL_DRVDN_SHIFT);
+                APB_MISC_GP_SDMMC1_PAD_CFGPADCTRL_0 = value;
+            } else if (mmc->controller == SWITCH_EMMC) {
+                uint32_t value = APB_MISC_GP_EMMC4_PAD_CFGPADCTRL_0;
+                value &= ~(CFG2TMC_EMMC4_PAD_DRVUP_COMP_MASK | CFG2TMC_EMMC4_PAD_DRVDN_COMP_MASK);
+                value |= (0x10 << CFG2TMC_EMMC4_PAD_DRVUP_COMP_SHIFT);
+                value |= (0x10 << CFG2TMC_EMMC4_PAD_DRVDN_COMP_SHIFT);
+                APB_MISC_GP_EMMC4_PAD_CFGPADCTRL_0 = value;
+            }
+            mmc->regs->auto_cal_config &= ~MMC_AUTOCAL_ENABLE;
+            ret = ETIMEDOUT;
+            break;
         }
     }
 
@@ -999,7 +1020,7 @@ static int sdmmc_run_autocal(struct mmc *mmc, bool restart_sd_clock)
     if (restart_sd_clock)
         sdmmc_clock_enable(mmc, true);
 
-    return 0;
+    return ret;
 }
 
 
