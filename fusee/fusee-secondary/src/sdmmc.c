@@ -3615,3 +3615,37 @@ bool sdmmc_card_present(struct mmc *mmc)
 {
     return mmc->card_present(mmc);
 }
+
+/**
+ * Prints out all of the tegra_mmc struct fields
+ *
+ * @mmc mmc The controller with which to dump registers.
+ */
+void sdmmc_dump_regs(struct mmc *mmc) {
+    printk("block_size: 0x%04X\n",mmc->regs->block_size);
+    printk("block_count: 0x%04X\n",mmc->regs->block_count);
+    printk("transfer_mode: 0x%04X\n",mmc->regs->transfer_mode);
+    printk("command: 0x%04X\n",mmc->regs->command);
+    printk("host_control: 0x%02X\n",mmc->regs->host_control);
+    printk("power_control: 0x%02X\n",mmc->regs->power_control);
+    printk("block_gap_control: 0x%02X\n",mmc->regs->block_gap_control);
+    printk("wake_up_control: 0x%02X\n",mmc->regs->wake_up_control);
+    printk("clock_control: 0x%04X\n",mmc->regs->clock_control);
+    printk("timeout_control: 0x%02X\n",mmc->regs->timeout_control);
+    printk("software_reset: 0x%02X\n",mmc->regs->software_reset);
+    printk("acmd12_err: 0x%04X\n",mmc->regs->acmd12_err);
+    printk("host_control2: 0x%04X\n",mmc->regs->host_control2);
+    printk("set_acmd12_error: 0x%04X\n",mmc->regs->set_acmd12_error);
+    printk("set_int_error: 0x%04X\n",mmc->regs->set_int_error);
+    printk("adma_error: 0x%04X\n",mmc->regs->adma_error);
+    printk("preset_for_init: 0x%04X\n",mmc->regs->preset_for_init);
+    printk("preset_for_default: 0x%04X\n",mmc->regs->preset_for_default);
+    printk("preset_for_high: 0x%04X\n",mmc->regs->preset_for_high);
+    printk("preset_for_sdr12: 0x%04X\n",mmc->regs->preset_for_sdr12);
+    printk("preset_for_sdr25: 0x%04X\n",mmc->regs->preset_for_sdr25);
+    printk("preset_for_sdr50: 0x%04X\n",mmc->regs->preset_for_sdr50);
+    printk("preset_for_sdr104: 0x%04X\n",mmc->regs->preset_for_sdr104);
+    printk("preset_for_ddr50: 0x%04X\n",mmc->regs->preset_for_ddr50);
+    printk("slot_int_status: 0x%04X\n",mmc->regs->slot_int_status);
+    printk("host_version: 0x%04X\n",mmc->regs->host_version);
+}
