@@ -29,7 +29,6 @@ In no particular order, we credit the following for their invaluable contributio
 * __ChaN__ for the [FatFs](http://elm-chan.org/fsw/ff/00index_e.html) module.
 * __Riley__ for suggesting "Atmosphere" as a Horizon OS reimplementation+customization project name.
 * __naehrwert__ for the [hekate](https://github.com/nwert/hekate) project and its hwinit code base.
-* __ktemkin__ for the work on [Fusée Gelée](https://github.com/reswitched/fusee-launcher) and Atmosphère's SDMMC driver and hypervisor system.
 * __hedgeberg__ for research and hardware testing.
 * __lioncash__ for code cleanup and general improvements.
 * __jaames__ for designing and providing Atmosphère's graphical resources.
