@@ -24,6 +24,9 @@ Result DebugMonitorService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64
             case Dmnt_Cmd_5X_EnableDebugForApplication:
                 rc = WrapIpcCommandImpl<&DebugMonitorService::enable_debug_for_application>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                 break;
+            case Dmnt_Cmd_5X_AtmosphereGetProcessHandle:
+                rc = WrapIpcCommandImpl<&DebugMonitorService::get_process_handle>(this, r, out_c, pointer_buffer, pointer_buffer_size);
+                break;
             default:
                 break;
         }
@@ -49,6 +52,9 @@ Result DebugMonitorService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64
                 break;
             case Dmnt_Cmd_EnableDebugForApplication:
                 rc = WrapIpcCommandImpl<&DebugMonitorService::enable_debug_for_application>(this, r, out_c, pointer_buffer, pointer_buffer_size);
+                break;
+            case Dmnt_Cmd_AtmosphereGetProcessHandle:
+                rc = WrapIpcCommandImpl<&DebugMonitorService::get_process_handle>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                 break;
             default:
                 break;
@@ -116,4 +122,12 @@ std::tuple<Result, CopiedHandle> DebugMonitorService::enable_debug_for_applicati
     Handle h = 0;
     Result rc = Registration::EnableDebugForApplication(&h);
     return {rc, h};
+}
+
+std::tuple<Result, CopiedHandle> DebugMonitorService::get_process_handle(u64 pid) {
+    Registration::Process *proc = Registration::GetProcess(pid);
+    if(proc == NULL) {
+        return {0x20F, 0};
+    }
+    return {0, proc->handle};
 }
