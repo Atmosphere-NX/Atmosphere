@@ -910,32 +910,38 @@ static int sdmmc_set_up_clocking_parameters(struct mmc *mmc, enum sdmmc_bus_volt
 {
     // Clear the I/O conditioning constants.
     mmc->regs->vendor_clock_cntrl &= ~(MMC_CLOCK_TRIM_MASK | MMC_CLOCK_TAP_MASK);
-    mmc->regs->auto_cal_config &= ~MMC_AUTOCAL_PDPU_CONFIG_MASK;
 
     // Per the TRM, set the PADPIPE clock enable.
     mmc->regs->vendor_clock_cntrl |= MMC_CLOCK_PADPIPE_CLKEN_OVERRIDE;
-
-    switch (operating_voltage) {
-        case MMC_VOLTAGE_1V8:
-            mmc->regs->auto_cal_config |= MMC_AUTOCAL_PDPU_SDMMC4_1V8;
-            break;
-        case MMC_VOLTAGE_3V3:
-            mmc->regs->auto_cal_config |= MMC_AUTOCAL_PDPU_SDMMC1_3V3;
-            break;
-        default:
-            printk("ERROR: currently no controllers support voltage %d", mmc->operating_voltage);
-            return EINVAL;
-
-    }
 
     // Set up the I/O conditioning constants used to ensure we have a reliable clock.
     // Constants above and procedure below from the TRM.
     switch (mmc->controller) {
         case SWITCH_EMMC:
+            if (operating_voltage != MMC_VOLTAGE_1V8) {
+                mmc_print(mmc, "ERROR: eMMC can only run at 1V8, but mmc struct claims voltage %d", operating_voltage);
+                return EINVAL;
+            }
+
+            mmc->regs->auto_cal_config &= ~MMC_AUTOCAL_PDPU_CONFIG_MASK;
+            mmc->regs->auto_cal_config |= MMC_AUTOCAL_PDPU_SDMMC4_1V8;
             mmc->regs->vendor_clock_cntrl |= (MMC_CLOCK_TRIM_SDMMC4 | MMC_CLOCK_TAP_SDMMC4);
             break;
 
         case SWITCH_MICROSD:
+            switch (operating_voltage) {
+                case MMC_VOLTAGE_1V8:
+                    mmc->regs->auto_cal_config &= ~MMC_AUTOCAL_PDPU_CONFIG_MASK;
+                    mmc->regs->auto_cal_config |= MMC_AUTOCAL_PDPU_SDMMC1_1V8;
+                    break;
+                case MMC_VOLTAGE_3V3:
+                    mmc->regs->auto_cal_config &= ~MMC_AUTOCAL_PDPU_CONFIG_MASK;
+                    mmc->regs->auto_cal_config |= MMC_AUTOCAL_PDPU_SDMMC1_3V3;
+                    break;
+                default:
+                    mmc_print(mmc, "ERROR: microsd does not support voltage %d", operating_voltage);
+                    return EINVAL;
+            }
             mmc->regs->vendor_clock_cntrl |= (MMC_CLOCK_TRIM_SDMMC1 | MMC_CLOCK_TAP_SDMMC1);
             break;
 
@@ -1756,6 +1762,7 @@ static int sdmmc_wait_for_event(struct mmc *mmc,
         uint32_t fault_conditions, fault_handler_t fault_handler)
 {
     uint32_t timebase = get_time();
+    uint32_t intstatus;
     int rc;
 
     // Wait until we either wind up ready, or until we've timed out.
@@ -1763,7 +1770,13 @@ static int sdmmc_wait_for_event(struct mmc *mmc,
         if (get_time_since(timebase) > mmc->timeout)
             return ETIMEDOUT;
 
-        if (mmc->regs->int_status & fault_conditions) {
+        // Read intstatus into temporary variable to make sure that the
+        // priorities are: fault conditions, target irq, errors
+        // This makes sure that if fault conditions and target irq
+        // comes nearly at the same time that the fault handler will
+        // always be called
+        intstatus = mmc->regs->int_status;
+        if (intstatus & fault_conditions) {
 
             // If we don't have a handler, fault.
             if (!fault_handler) {
@@ -1779,22 +1792,23 @@ static int sdmmc_wait_for_event(struct mmc *mmc,
             }
 
             // Finally, EOI the relevant interrupt.
-            mmc->regs->int_status |= fault_conditions;
+            mmc->regs->int_status = fault_conditions;
+            intstatus &= ~(fault_conditions);
 
             // Reset the timebase, so it applies to the next
             // DMA interval.
             timebase = get_time();
         }
 
-        if (mmc->regs->int_status & target_irq)
+        if (intstatus & target_irq)
             return 0;
 
         if (state_conditions && !(mmc->regs->present_state & state_conditions))
             return 0;
 
         // If an error occurs, return it.
-        if (mmc->regs->int_status & MMC_STATUS_ERROR_MASK)
-            return (mmc->regs->int_status & MMC_STATUS_ERROR_MASK);
+        if (intstatus & MMC_STATUS_ERROR_MASK)
+            return (intstatus & MMC_STATUS_ERROR_MASK);
     }
 }
 
@@ -2042,7 +2056,7 @@ static void sdmmc_enable_interrupts(struct mmc *mmc, bool enabled)
         MMC_STATUS_DMA_INTERRUPT | MMC_STATUS_ERROR_MASK;
 
     // Clear any pending interrupts.
-    mmc->regs->int_status |= all_interrupts;
+    mmc->regs->int_status = all_interrupts;
 
     // And enable or disable the pseudo-interrupts.
     if (enabled) {
@@ -2160,6 +2174,8 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
         }
     }
 
+    sdmmc_run_autocal(mmc, true);
+
     // If we have data to send, prepare it.
     sdmmc_prepare_command_data(mmc, blocks_to_transfer, is_write, auto_terminate, mmc->use_dma, argument);
 
@@ -2168,11 +2184,11 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
     if (blocks_to_transfer && is_write && mmc->use_dma && data_buffer)
         memcpy(sdmmc_bounce_buffer, (void *)mmc->active_data_buffer, total_data_to_xfer);
 
-    // Configure the controller to send the command.
-    sdmmc_prepare_command_registers(mmc, blocks_to_transfer, command, response_type, checks);
-
     // Ensure we get the status response we want.
     sdmmc_enable_interrupts(mmc, true);
+
+    // Configure the controller to send the command.
+    sdmmc_prepare_command_registers(mmc, blocks_to_transfer, command, response_type, checks);
 
     // Wait for the command to be completed.
     rc = sdmmc_wait_for_command_completion(mmc);
