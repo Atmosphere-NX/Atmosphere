@@ -108,7 +108,7 @@ class MitMSession final : public IWaitable {
                     rawdata_start = (u32 *)r.Raw;
                     retval = 0xF601;
                     if (r.CommandType == IpcCommandType_Request || r.CommandType == IpcCommandType_RequestWithContext) {
-                        retval = this->service_object->dispatch(r, c, rawdata_start[2], (u8 *)this->pointer_buffer, sizeof(this->pointer_buffer));
+                        retval = this->service_object->dispatch(r, c, rawdata_start[2], (u8 *)this->pointer_buffer, this->pointer_buffer_size);
                     }
                     
                     /* 0xF601 --> Dispatch onwards. */
