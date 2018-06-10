@@ -6,24 +6,23 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "ldr_process_manager.hpp"
-#include "ldr_debug_monitor.hpp"
-#include "ldr_shell.hpp"
-#include "ldr_ro_service.hpp"
+#include "sm_mitm.h"
+
+#include "mitm_server.hpp"
+#include "fsmitm_service.hpp"
 
 extern "C" {
     extern u32 __start__;
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x200000
+    #define INNER_HEAP_SIZE 0x1000000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
     
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
-
 }
 
 
@@ -41,9 +40,13 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     Result rc;
-
-    /* Initialize services we need (TODO: SPL) */
+    
     rc = smInitialize();
+    if (R_FAILED(rc)) {
+        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
+    }
+    
+    rc = smMitMInitialize();
     if (R_FAILED(rc)) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
     }
@@ -51,17 +54,6 @@ void __appInit(void) {
     rc = fsInitialize();
     if (R_FAILED(rc)) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
-    }
-        
-    
-    rc = lrInitialize();
-    if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 1);
-    }
-    
-    rc = fsldrInitialize();
-    if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 2);
     }
     
     rc = splInitialize();
@@ -71,9 +63,14 @@ void __appInit(void) {
     
     /* Check for exosphere API compatibility. */
     u64 exosphere_cfg;
-    if (R_FAILED(splGetConfig((SplConfigItem)65000, &exosphere_cfg))) {
+    if (R_SUCCEEDED(splGetConfig((SplConfigItem)65000, &exosphere_cfg))) {
+        /* MitM requires Atmosphere API 0.1. */
+        u16 api_version = (exosphere_cfg >> 16) & 0xFFFF;
+        if (api_version < 0x0001) {
+            fatalSimple(0xCAFE << 4 | 0xFE);
+        }
+    } else {
         fatalSimple(0xCAFE << 4 | 0xFF);
-        /* TODO: Does Loader need to know about target firmware/master key revision? If so, extract from exosphere_cfg. */
     }
     
     splExit();
@@ -81,29 +78,22 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
-    fsdevUnmountAll();
-    fsldrExit();
-    lrExit();
     fsExit();
+    smMitMExit();
     smExit();
 }
 
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
-        
+    
+    
     /* TODO: What's a good timeout value to use here? */
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
-    
-    /* Add services to manager. */
-    server_manager->add_waitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
-    server_manager->add_waitable(new ServiceServer<ShellService>("ldr:shel", 3));
-    server_manager->add_waitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
-    if (!kernelAbove300()) {
-        /* On 1.0.0-2.3.0, Loader services ldr:ro instead of ro. */
-        server_manager->add_waitable(new ServiceServer<RelocatableObjectsService>("ldr:ro", 0x20));
-    }
-    
+        
+    /* Create fsp-srv mitm. */
+    server_manager->add_waitable(new MitMServer<FsMitMService>("fsp-srv", 61));
+            
     /* Loop forever, servicing our services. */
     server_manager->process();
     
