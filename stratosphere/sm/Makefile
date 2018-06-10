@@ -34,7 +34,7 @@ ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)
 
-CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DSM_ENABLE_SMHAX -DSM_ENABLE_MITM
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DSM_ENABLE_SMHAX -DSM_ENABLE_MITM -DSM_MINIMUM_SESSION_LIMIT=8
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
