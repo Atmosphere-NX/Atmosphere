@@ -57,7 +57,6 @@
 			"svcReplyAndReceive":	"0x43",
 			"svcReplyAndReceiveWithUserBuffer":	"0x44",
 			"svcCreateEvent":	"0x45",
-            "svcReadWriteRegister": "0x4E",
 			"svcCreateInterruptEvent":	"0x53",
 			"svcQueryIoMapping":	"0x55",
 			"svcCreateDeviceAddressSpace":	"0x56",
@@ -66,12 +65,6 @@
 			"svcMapDeviceAddressSpaceAligned":	"0x5a",
 			"svcUnmapDeviceAddressSpace":	"0x5c",
 			"svcGetSystemInfo":	"0x6f"
-		},
-        "map" : {
-            "address" : "0x40000000",
-            "size" : "0x40000",
-            "is_ro" : false,
-            "is_io" : true
-        }
+		}
     }
 }
