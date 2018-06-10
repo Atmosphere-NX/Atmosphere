@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include "lib/driver_utils.h"
 #include "sdmmc.h"
@@ -18,7 +19,6 @@
 #include "pmc.h"
 #include "pad_control.h"
 #include "apb_misc.h"
-
 #define TEGRA_SDMMC_BASE (0x700B0000)
 #define TEGRA_SDMMC_SIZE (0x200)
 
@@ -3632,4 +3632,85 @@ int sdmmc_write(struct mmc *mmc, const void *buffer, uint32_t block, unsigned in
 bool sdmmc_card_present(struct mmc *mmc)
 {
     return mmc->card_present(mmc);
+}
+
+/**
+ * Prints out all of the tegra_mmc struct fields
+ *
+ * @mmc mmc The controller with which to dump registers.
+ */
+void sdmmc_dump_regs(struct mmc *mmc) {
+    mmc_debug(mmc, "dma_address: 0x%08" PRIX32 "\n",mmc->regs->dma_address);
+    mmc_debug(mmc, "block_size: 0x%04" PRIX16 "\n",mmc->regs->block_size);
+    mmc_debug(mmc, "block_count: 0x%04" PRIX16 "\n",mmc->regs->block_count);
+    mmc_debug(mmc, "argument: 0x%08" PRIX32 "\n",mmc->regs->argument);
+    mmc_debug(mmc, "transfer_mode: 0x%04" PRIX16 "\n",mmc->regs->transfer_mode);
+    mmc_debug(mmc, "command: 0x%04" PRIX16 "\n",mmc->regs->command);
+    mmc_debug(mmc, "response[0]: 0x%08" PRIX32 "\n",mmc->regs->response[0]);
+    mmc_debug(mmc, "response[1]: 0x%08" PRIX32 "\n",mmc->regs->response[1]);
+    mmc_debug(mmc, "response[2]: 0x%08" PRIX32 "\n",mmc->regs->response[2]);
+    mmc_debug(mmc, "response[3]: 0x%08" PRIX32 "\n",mmc->regs->response[3]);
+    mmc_debug(mmc, "buffer: 0x%08" PRIX32 "\n",mmc->regs->buffer);
+    mmc_debug(mmc, "present_state: 0x%08" PRIX32 "\n",mmc->regs->present_state);
+    mmc_debug(mmc, "host_control: 0x%02" PRIX8 "\n",mmc->regs->host_control);
+    mmc_debug(mmc, "power_control: 0x%02" PRIX8 "\n",mmc->regs->power_control);
+    mmc_debug(mmc, "block_gap_control: 0x%02" PRIX8 "\n",mmc->regs->block_gap_control);
+    mmc_debug(mmc, "wake_up_control: 0x%02" PRIX8 "\n",mmc->regs->wake_up_control);
+    mmc_debug(mmc, "clock_control: 0x%04" PRIX16 "\n",mmc->regs->clock_control);
+    mmc_debug(mmc, "timeout_control: 0x%02" PRIX8 "\n",mmc->regs->timeout_control);
+    mmc_debug(mmc, "software_reset: 0x%02" PRIX8 "\n",mmc->regs->software_reset);
+    mmc_debug(mmc, "int_status: 0x%08" PRIX32 "\n",mmc->regs->int_status);
+    mmc_debug(mmc, "int_enable: 0x%08" PRIX32 "\n",mmc->regs->int_enable);
+    mmc_debug(mmc, "signal_enable: 0x%08" PRIX32 "\n",mmc->regs->signal_enable);
+    mmc_debug(mmc, "acmd12_err: 0x%04" PRIX16 "\n",mmc->regs->acmd12_err);
+    mmc_debug(mmc, "host_control2: 0x%04" PRIX16 "\n",mmc->regs->host_control2);
+    mmc_debug(mmc, "capabilities: 0x%08" PRIX32 "\n",mmc->regs->capabilities);
+    mmc_debug(mmc, "capabilities_1: 0x%08" PRIX32 "\n",mmc->regs->capabilities_1);
+    mmc_debug(mmc, "max_current: 0x%08" PRIX32 "\n",mmc->regs->max_current);
+    mmc_debug(mmc, "set_acmd12_error: 0x%04" PRIX16 "\n",mmc->regs->set_acmd12_error);
+    mmc_debug(mmc, "set_int_error: 0x%04" PRIX16 "\n",mmc->regs->set_int_error);
+    mmc_debug(mmc, "adma_error: 0x%04" PRIX16 "\n",mmc->regs->adma_error);
+    mmc_debug(mmc, "adma_address: 0x%08" PRIX32 "\n",mmc->regs->adma_address);
+    mmc_debug(mmc, "upper_adma_address: 0x%08" PRIX32 "\n",mmc->regs->upper_adma_address);
+    mmc_debug(mmc, "preset_for_init: 0x%04" PRIX16 "\n",mmc->regs->preset_for_init);
+    mmc_debug(mmc, "preset_for_default: 0x%04" PRIX16 "\n",mmc->regs->preset_for_default);
+    mmc_debug(mmc, "preset_for_high: 0x%04" PRIX16 "\n",mmc->regs->preset_for_high);
+    mmc_debug(mmc, "preset_for_sdr12: 0x%04" PRIX16 "\n",mmc->regs->preset_for_sdr12);
+    mmc_debug(mmc, "preset_for_sdr25: 0x%04" PRIX16 "\n",mmc->regs->preset_for_sdr25);
+    mmc_debug(mmc, "preset_for_sdr50: 0x%04" PRIX16 "\n",mmc->regs->preset_for_sdr50);
+    mmc_debug(mmc, "preset_for_sdr104: 0x%04" PRIX16 "\n",mmc->regs->preset_for_sdr104);
+    mmc_debug(mmc, "preset_for_ddr50: 0x%04" PRIX16 "\n",mmc->regs->preset_for_ddr50);
+    mmc_debug(mmc, "slot_int_status: 0x%04" PRIX16 "\n",mmc->regs->slot_int_status);
+    mmc_debug(mmc, "host_version: 0x%04" PRIX16 "\n",mmc->regs->host_version);
+    mmc_debug(mmc, "vendor_clock_cntrl: 0x%08" PRIX32 "\n",mmc->regs->vendor_clock_cntrl);
+    mmc_debug(mmc, "vendor_sys_sw_cntrl: 0x%08" PRIX32 "\n",mmc->regs->vendor_sys_sw_cntrl);
+    mmc_debug(mmc, "vendor_err_intr_status: 0x%08" PRIX32 "\n",mmc->regs->vendor_err_intr_status);
+    mmc_debug(mmc, "vendor_cap_overrides: 0x%08" PRIX32 "\n",mmc->regs->vendor_cap_overrides);
+    mmc_debug(mmc, "vendor_boot_cntrl: 0x%08" PRIX32 "\n",mmc->regs->vendor_boot_cntrl);
+    mmc_debug(mmc, "vendor_boot_ack_timeout: 0x%08" PRIX32 "\n",mmc->regs->vendor_boot_ack_timeout);
+    mmc_debug(mmc, "vendor_boot_dat_timeout: 0x%08" PRIX32 "\n",mmc->regs->vendor_boot_dat_timeout);
+    mmc_debug(mmc, "vendor_debounce_count: 0x%08" PRIX32 "\n",mmc->regs->vendor_debounce_count);
+    mmc_debug(mmc, "vendor_misc_cntrl: 0x%08" PRIX32 "\n",mmc->regs->vendor_misc_cntrl);
+    mmc_debug(mmc, "max_current_override: 0x%08" PRIX32 "\n",mmc->regs->max_current_override);
+    mmc_debug(mmc, "max_current_override_hi: 0x%08" PRIX32 "\n",mmc->regs->max_current_override_hi);
+    mmc_debug(mmc, "vendor_io_trim_cntrl: 0x%08" PRIX32 "\n",mmc->regs->vendor_io_trim_cntrl);
+    mmc_debug(mmc, "vendor_dllcal_cfg: 0x%08" PRIX32 "\n",mmc->regs->vendor_dllcal_cfg);
+    mmc_debug(mmc, "vendor_dll_ctrl0: 0x%08" PRIX32 "\n",mmc->regs->vendor_dll_ctrl0);
+    mmc_debug(mmc, "vendor_dll_ctrl1: 0x%08" PRIX32 "\n",mmc->regs->vendor_dll_ctrl1);
+    mmc_debug(mmc, "vendor_dllcal_cfg_sta: 0x%08" PRIX32 "\n",mmc->regs->vendor_dllcal_cfg_sta);
+    mmc_debug(mmc, "vendor_tuning_cntrl0: 0x%08" PRIX32 "\n",mmc->regs->vendor_tuning_cntrl0);
+    mmc_debug(mmc, "vendor_tuning_cntrl1: 0x%08" PRIX32 "\n",mmc->regs->vendor_tuning_cntrl1);
+    mmc_debug(mmc, "vendor_tuning_status0: 0x%08" PRIX32 "\n",mmc->regs->vendor_tuning_status0);
+    mmc_debug(mmc, "vendor_tuning_status1: 0x%08" PRIX32 "\n",mmc->regs->vendor_tuning_status1);
+    mmc_debug(mmc, "vendor_clk_gate_hysteresis_count: 0x%08" PRIX32 "\n",mmc->regs->vendor_clk_gate_hysteresis_count);
+    mmc_debug(mmc, "vendor_preset_val0: 0x%08" PRIX32 "\n",mmc->regs->vendor_preset_val0);
+    mmc_debug(mmc, "vendor_preset_val1: 0x%08" PRIX32 "\n",mmc->regs->vendor_preset_val1);
+    mmc_debug(mmc, "vendor_preset_val2: 0x%08" PRIX32 "\n",mmc->regs->vendor_preset_val2);
+    mmc_debug(mmc, "sdmemcomppadctrl: 0x%08" PRIX32 "\n",mmc->regs->sdmemcomppadctrl);
+    mmc_debug(mmc, "auto_cal_config: 0x%08" PRIX32 "\n",mmc->regs->auto_cal_config);
+    mmc_debug(mmc, "auto_cal_interval: 0x%08" PRIX32 "\n",mmc->regs->auto_cal_interval);
+    mmc_debug(mmc, "auto_cal_status: 0x%08" PRIX32 "\n",mmc->regs->auto_cal_status);
+    mmc_debug(mmc, "io_spare: 0x%08" PRIX32 "\n",mmc->regs->io_spare);
+    mmc_debug(mmc, "sdmmca_mccif_fifoctrl: 0x%08" PRIX32 "\n",mmc->regs->sdmmca_mccif_fifoctrl);
+    mmc_debug(mmc, "timeout_wcoal_sdmmca: 0x%08" PRIX32 "\n",mmc->regs->timeout_wcoal_sdmmca);
 }

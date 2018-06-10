@@ -303,4 +303,11 @@ int sdmmc_write(struct mmc *mmc, const void *buffer, uint32_t block, unsigned in
  */
 bool sdmmc_card_present(struct mmc *mmc);
 
+/**
+ * Prints out all of the tegra_mmc struct fields
+ *
+ * @mmc mmc The controller with which to dump registers.
+ */
+void sdmmc_dump_regs(struct mmc *mmc);
+
 #endif
