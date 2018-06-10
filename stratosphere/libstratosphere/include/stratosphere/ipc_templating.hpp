@@ -9,28 +9,38 @@
 #pragma GCC diagnostic push 
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
+/* Base for In/Out Buffers. */
+struct IpcBufferBase {};
+
 /* Represents an A descriptor. */
-template <typename T>
-struct InBuffer {
+struct InBufferBase : IpcBufferBase {};
+
+template <typename T, BufferType e_t = BufferType_Normal>
+struct InBuffer : InBufferBase {
     T *buffer;
     size_t num_elements;
     BufferType type;
+    static const BufferType expected_type = e_t;
     
-    InBuffer(void *b, size_t n) : buffer((T *)b), num_elements(n/sizeof(T)) { }
+    InBuffer(void *b, size_t n, BufferType t) : buffer((T *)b), num_elements(n/sizeof(T)), type(t) { }
 };
 
 /* Represents a B descriptor. */
-template <typename T>
-struct OutBuffer {
+struct OutBufferBase : IpcBufferBase {};
+
+template <typename T, BufferType e_t = BufferType_Normal>
+struct OutBuffer : OutBufferBase {
     T *buffer;
     size_t num_elements;
+    BufferType type;
+    static const BufferType expected_type = e_t;
     
-    OutBuffer(void *b, size_t n) : buffer((T *)b), num_elements(n/sizeof(T)) { }
+    OutBuffer(void *b, size_t n, BufferType t) : buffer((T *)b), num_elements(n/sizeof(T)), type(t) { }
 };
 
 /* Represents an X descriptor. */
 template <typename T>
-struct InPointer {
+struct InPointer : IpcBufferBase {
     T *pointer;
     size_t num_elements;
     
@@ -38,7 +48,7 @@ struct InPointer {
 };
 
 /* Represents a C descriptor. */
-struct OutPointerWithServerSizeBase {};
+struct OutPointerWithServerSizeBase : IpcBufferBase {};
  
 template <typename T, size_t n>
 struct OutPointerWithServerSize : OutPointerWithServerSizeBase {
@@ -50,7 +60,7 @@ struct OutPointerWithServerSize : OutPointerWithServerSizeBase {
 
 /* Represents a C descriptor with size in raw data. */
 template <typename T>
-struct OutPointerWithClientSize {
+struct OutPointerWithClientSize : IpcBufferBase {
     T *pointer;
     size_t num_elements;
     
@@ -99,11 +109,7 @@ struct pop_front<std::tuple<Head, Tail...>> {
 
 template <typename T>
 struct is_ipc_buffer {
-    static const bool value = is_specialization_of<T, InBuffer>::value 
-                           || is_specialization_of<T, OutBuffer>::value 
-                           || is_specialization_of<T, InPointer>::value 
-                           || std::is_base_of<OutPointerWithServerSizeBase, T>::value 
-                           || is_specialization_of<T, OutPointerWithClientSize>::value;
+    static const bool value = std::is_base_of<IpcBufferBase, T>::value;
 };
 
 template <typename T>
@@ -133,7 +139,7 @@ struct size_in_raw_data_with_out_pointers_for_arguments {
 
 template <typename T>
 struct is_ipc_inbuffer {
-    static const size_t value = (is_specialization_of<T, InBuffer>::value) ? 1 : 0;
+    static const size_t value = (std::is_base_of<InBufferBase, T>::value) ? 1 : 0;
 };
 
 template <typename ...Args>
@@ -163,7 +169,7 @@ struct num_outpointers_in_arguments {
 
 template <typename T>
 struct is_ipc_inoutbuffer {
-    static const size_t value = (is_specialization_of<T, InBuffer>::value || is_specialization_of<T, OutBuffer>::value) ? 1 : 0;
+    static const size_t value = (std::is_base_of<InBufferBase, T>::value || std::is_base_of<OutBufferBase, T>::value) ? 1 : 0;
 };
 
 template <typename ...Args>
@@ -186,12 +192,12 @@ T GetValueFromIpcParsedCommand(IpcParsedCommand& r, IpcCommand& out_c, u8 *point
     const size_t old_rawdata_index = cur_rawdata_index;
     const size_t old_c_size_offset = cur_c_size_offset;
     const size_t old_pointer_buffer_offset = pointer_buffer_offset;
-    if constexpr (is_specialization_of<T, InBuffer>::value) {
-        const T& value{r.Buffers[a_index], r.BufferSizes[a_index]};
+    if constexpr (std::is_base_of<InBufferBase, T>::value) {
+        const T& value = T(r.Buffers[a_index], r.BufferSizes[a_index], r.BufferTypes[a_index]);
         ++a_index;
         return value;
-    } else if constexpr (is_specialization_of<T, OutBuffer>::value) {
-        const T& value{r.Buffers[b_index], r.BufferSizes[b_index]};
+    } else if constexpr (std::is_base_of<OutBufferBase, T>::value) {
+        const T& value = T(r.Buffers[b_index], r.BufferSizes[b_index], r.BufferTypes[b_index]);
         ++b_index;
         return value;
     } else if constexpr (is_specialization_of<T, InPointer>::value) {
@@ -226,10 +232,10 @@ T GetValueFromIpcParsedCommand(IpcParsedCommand& r, IpcCommand& out_c, u8 *point
 template <typename T>
 bool ValidateIpcParsedCommandArgument(IpcParsedCommand& r, size_t& cur_rawdata_index, size_t& cur_c_size_offset, size_t& a_index, size_t& b_index, size_t& x_index, size_t& c_index, size_t& h_index, size_t& total_c_size) {
     const size_t old_c_size_offset = cur_c_size_offset;
-    if constexpr (is_specialization_of<T, InBuffer>::value) {
-        return r.Buffers[a_index] != NULL && r.BufferDirections[a_index++] == BufferDirection_Send;
-    } else if constexpr (is_specialization_of<T, OutBuffer>::value) {
-        return r.Buffers[b_index] != NULL && r.BufferDirections[b_index++] == BufferDirection_Recv;
+    if constexpr (std::is_base_of<InBufferBase, T>::value) {
+        return r.Buffers[a_index] != NULL && r.BufferDirections[a_index] == BufferDirection_Send && r.BufferTypes[a_index++] == T::expected_type;
+    } else if constexpr (std::is_base_of<OutBufferBase, T>::value) {
+        return r.Buffers[b_index] != NULL && r.BufferDirections[b_index] == BufferDirection_Recv && r.BufferTypes[b_index++] == T::expected_type;
     } else if constexpr (is_specialization_of<T, InPointer>::value) {
         return r.Statics[x_index] != NULL;
     } else if constexpr (std::is_base_of<OutPointerWithServerSizeBase, T>::value) {

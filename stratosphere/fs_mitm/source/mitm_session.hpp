@@ -28,18 +28,19 @@ class MitMSession final : public IWaitable {
     static_assert(sizeof(pointer_buffer) <= POINTER_BUFFER_SIZE_MAX, "Incorrect Size for PointerBuffer!");
     public:
         MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, const char *srv) : server(s), server_handle(s_h), client_handle(c_h) {
-            this->service_object = new T();
             if (R_FAILED(smMitMGetService(&forward_service, srv))) {
                 /* TODO: Panic. */
             }
             if (R_FAILED(ipcQueryPointerBufferSize(forward_service.handle, &pointer_buffer_size))) {
                 /* TODO: Panic. */
             }
+            this->service_object = new T(&forward_service);
             this->pointer_buffer = new char[pointer_buffer_size];
         }
         
         ~MitMSession() override {
             delete this->service_object;
+            delete this->pointer_buffer;
             serviceClose(&forward_service);
             if (server_handle) {
                 svcCloseHandle(server_handle);
