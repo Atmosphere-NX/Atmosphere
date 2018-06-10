@@ -10,6 +10,7 @@
 
 #include "mitm_server.hpp"
 #include "fsmitm_service.hpp"
+#include "fsmitm_worker.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -85,8 +86,15 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
+    Thread worker_thread = {0};
     consoleDebugInit(debugDevice_SVC);
     
+    if (R_FAILED(threadCreate(&worker_thread, &FsMitmWorker::Main, NULL, 0x8000, 45, 0))) {
+        /* TODO: Panic. */
+    }
+    if (R_FAILED(threadStart(&worker_thread))) {
+        /* TODO: Panic. */
+    }
     
     /* TODO: What's a good timeout value to use here? */
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
