@@ -1,6 +1,7 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include "imitmserviceobject.hpp"
 
 #include "mitm_server.hpp"
 
@@ -12,7 +13,7 @@ class MitMServer;
 
 template <typename T>
 class MitMSession final : public IWaitable {
-    static_assert(std::is_base_of<IServiceObject, T>::value, "Service Objects must derive from IServiceObject");
+    static_assert(std::is_base_of<IMitMServiceObject, T>::value, "MitM Service Objects must derive from IMitMServiceObject");
     
     T *service_object;
     MitMServer<T> *server;
@@ -102,13 +103,19 @@ class MitMSession final : public IWaitable {
                 
                 retval = ipcParse(&r);
                 
+                u64 cmd_id = U64_MAX;
+                
                 /* TODO: Close input copy handles that we don't need. */
                                 
                 if (R_SUCCEEDED(retval)) {
                     rawdata_start = (u32 *)r.Raw;
+                    cmd_id = rawdata_start[2];
                     retval = 0xF601;
                     if (r.CommandType == IpcCommandType_Request || r.CommandType == IpcCommandType_RequestWithContext) {
-                        retval = this->service_object->dispatch(r, c, rawdata_start[2], (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                        retval = this->service_object->dispatch(r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                        if (R_SUCCEEDED(retval)) {
+                            ipcParse(&out_r);
+                        }
                     }
                     
                     /* 0xF601 --> Dispatch onwards. */
@@ -137,6 +144,10 @@ class MitMSession final : public IWaitable {
                     /* Session close. */
                     rc = retval;
                 } else {
+                    if (R_SUCCEEDED(rc)) {
+                        ipcInitialize(&c);
+                        retval = this->service_object->postprocess(r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                    }
                     Log(armGetTls(), 0x100);
                     rc = svcReplyAndReceive(&handle_index, &this->server_handle, 0, this->server_handle, 0);
                     /* Clean up copy handles. */
