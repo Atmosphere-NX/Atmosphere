@@ -2175,7 +2175,10 @@ static int sdmmc_send_command(struct mmc *mmc, enum sdmmc_command command,
         }
     }
 
-    sdmmc_run_autocal(mmc, true);
+    // Periodically recalibrate the SD controller
+    if (mmc->controller == SWITCH_MICROSD) {
+        sdmmc_run_autocal(mmc, true);
+    }
 
     // If we have data to send, prepare it.
     sdmmc_prepare_command_data(mmc, blocks_to_transfer, is_write, auto_terminate, mmc->use_dma, argument);
