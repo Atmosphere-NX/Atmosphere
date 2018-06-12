@@ -12,6 +12,8 @@
 #include "fsmitm_service.hpp"
 #include "fsmitm_worker.hpp"
 
+#include "mitm_service.hpp"
+
 extern "C" {
     extern u32 __start__;
 
@@ -62,6 +64,11 @@ void __appInit(void) {
         fatalSimple(0xCAFE << 4 | 3);
     }
     
+    rc = pminfoInitialize();
+    if (R_FAILED(rc)) {
+        fatalSimple(0xCAFE << 4 | 4);
+    }
+    
     /* Check for exosphere API compatibility. */
     u64 exosphere_cfg;
     if (R_SUCCEEDED(splGetConfig((SplConfigItem)65000, &exosphere_cfg))) {
@@ -74,7 +81,7 @@ void __appInit(void) {
         fatalSimple(0xCAFE << 4 | 0xFF);
     }
     
-    splExit();
+    //splExit();
 }
 
 void __appExit(void) {
@@ -100,7 +107,8 @@ int main(int argc, char **argv)
     WaitableManager *server_manager = new WaitableManager(U64_MAX);
         
     /* Create fsp-srv mitm. */
-    server_manager->add_waitable(new MitMServer<FsMitMService>("fsp-srv", 61));
+    //server_manager->add_waitable(new MitMServer<FsMitMService>("fsp-srv", 61));
+    server_manager->add_waitable(new MitMServer<GenericMitMService>("fsp-srv", 61));
             
     /* Loop forever, servicing our services. */
     server_manager->process();

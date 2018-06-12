@@ -1,4 +1,5 @@
 #include <switch.h>
+#include <stratosphere.hpp>
 #include "ldr_shell.hpp"
 #include "ldr_launch_queue.hpp"
 

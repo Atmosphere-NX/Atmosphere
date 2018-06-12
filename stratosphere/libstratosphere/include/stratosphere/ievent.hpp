@@ -27,24 +27,7 @@ class IEvent : public IWaitable {
         
         virtual Result signal_event() = 0;
         
-        /* IWaitable */
-        virtual unsigned int get_num_waitables() {
-            if (handles.size() > 0) {
-                return 1;
-            }
-            return 0;
-        }
-        
-        virtual void get_waitables(IWaitable **dst) {
-            if (handles.size() > 0) {
-                dst[0] = this;
-            }
-        }
-        
-        virtual void delete_child(IWaitable *child) {
-            /* TODO: Panic, an event can never be a parent. */
-        }
-        
+        /* IWaitable */                
         virtual Handle get_handle() {
             if (handles.size() > 0) {
                 return this->handles[0];

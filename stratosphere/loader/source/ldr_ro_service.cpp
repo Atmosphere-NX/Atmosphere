@@ -1,6 +1,7 @@
 #include <switch.h>
 #include <cstdio>
 #include <algorithm>
+#include <stratosphere.hpp>
 
 #include "ldr_ro_service.hpp"
 #include "ldr_registration.hpp"

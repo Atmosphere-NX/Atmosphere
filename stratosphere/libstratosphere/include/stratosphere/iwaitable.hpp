@@ -2,38 +2,34 @@
 
 #include <switch.h>
 
+#include "waitablemanagerbase.hpp"
+
+class WaitableManager;
+
 class IWaitable {
-    u64 wait_priority = 0;
-    bool is_deferred = false;
-    IWaitable *parent_waitable;
+    private:
+        u64 wait_priority = 0;
+        bool is_deferred = false;
+        WaitableManagerBase *manager;
     public:
         virtual ~IWaitable() { }
         
-        virtual unsigned int get_num_waitables() = 0;
-        virtual void get_waitables(IWaitable **dst) = 0;
-        virtual void delete_child(IWaitable *child) = 0;
         virtual void handle_deferred() = 0;
         virtual Handle get_handle() = 0;
         virtual Result handle_signaled(u64 timeout) = 0;
-        
-        bool has_parent() {
-            return this->parent_waitable != NULL;
+                
+        WaitableManager *get_manager() {
+            return (WaitableManager *)this->manager;
         }
         
-        void set_parent(IWaitable *p) {
-            if (has_parent()) {
-                /* TODO: Panic? */
-            }
-            this->parent_waitable = p;
-        }
-        
-        IWaitable *get_parent() {
-            return this->parent_waitable;
+        void set_manager(WaitableManagerBase *m) {
+            this->manager = m;
         }
         
         void update_priority() {
-            static u64 g_cur_priority = 0;
-            this->wait_priority = g_cur_priority++;
+            if (manager) {
+                this->wait_priority = this->manager->get_priority();
+            }
         }
         
         bool get_deferred() {
@@ -48,3 +44,5 @@ class IWaitable {
             return (a->wait_priority < b->wait_priority) && !a->is_deferred;
         }
 };
+
+#include "waitablemanager.hpp"

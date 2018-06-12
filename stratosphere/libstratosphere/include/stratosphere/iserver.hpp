@@ -4,10 +4,10 @@
 
 #include "iserviceobject.hpp"
 #include "iwaitable.hpp"
-#include "servicesession.hpp"
+#include "isession.hpp"
 
 template <typename T>
-class ServiceSession;
+class ISession;
 
 template <typename T>
 class IServer : public IWaitable {
@@ -15,71 +15,22 @@ class IServer : public IWaitable {
     protected:
         Handle port_handle;
         unsigned int max_sessions;
-        unsigned int num_sessions;
-        ServiceSession<T> **sessions;
+        bool supports_domains;
     
     public:        
-        IServer(const char *service_name, unsigned int max_s) : max_sessions(max_s) {
-            this->sessions = new ServiceSession<T> *[this->max_sessions];
-            for (unsigned int i = 0; i < this->max_sessions; i++) {
-                this->sessions[i] = NULL;
-            }
-            this->num_sessions = 0;
+        IServer(const char *service_name, unsigned int max_s, bool s_d = false) : max_sessions(max_s), supports_domains(s_d) {
+            
         }
         
-        virtual ~IServer() {
-            for (unsigned int i = 0; i < this->max_sessions; i++) {
-                if (this->sessions[i]) {
-                    delete this->sessions[i];
-                }
-                
-                delete this->sessions;
-            }
-            
+        virtual ~IServer() {            
             if (port_handle) {
                 svcCloseHandle(port_handle);
             }
         }
+        
+        virtual ISession<T> *get_new_session(Handle session_h) = 0;
     
-        /* IWaitable */
-        virtual unsigned int get_num_waitables() {
-            unsigned int n = 1;
-            for (unsigned int i = 0; i < this->max_sessions; i++) {
-                if (this->sessions[i]) {
-                    n += this->sessions[i]->get_num_waitables();
-                }
-            }
-            return n;
-        }
-        
-        virtual void get_waitables(IWaitable **dst) {
-            dst[0] = this;
-            unsigned int n = 0;
-            for (unsigned int i = 0; i < this->max_sessions; i++) {
-                if (this->sessions[i]) {
-                    this->sessions[i]->get_waitables(&dst[1 + n]);
-                    n += this->sessions[i]->get_num_waitables();
-                }
-            }
-        }
-        
-        virtual void delete_child(IWaitable *child) {
-            unsigned int i;
-            for (i = 0; i < this->max_sessions; i++) {
-                if (this->sessions[i] == child) {
-                    break;
-                }
-            }
-            
-            if (i == this->max_sessions) {
-                /* TODO: Panic, because this isn't our child. */
-            } else {
-                delete this->sessions[i];
-                this->sessions[i] = NULL;
-                this->num_sessions--;
-            }
-        }
-        
+        /* IWaitable */                        
         virtual Handle get_handle() {
             return this->port_handle;
         }
@@ -92,23 +43,12 @@ class IServer : public IWaitable {
         virtual Result handle_signaled(u64 timeout) {
             /* If this server's port was signaled, accept a new session. */
             Handle session_h;
-            svcAcceptSession(&session_h, this->port_handle);
+            Result rc = svcAcceptSession(&session_h, this->port_handle);
+            if (R_FAILED(rc)) {
+                return rc;
+            }
             
-            if (this->num_sessions >= this->max_sessions) {
-                svcCloseHandle(session_h);
-                return 0x10601;
-            }
-
-            unsigned int i;
-            for (i = 0; i < this->max_sessions; i++) {
-                if (this->sessions[i] == NULL) {
-                    break;
-                }
-            }
-
-            this->sessions[i] = new ServiceSession<T>(this, session_h, 0);
-            this->sessions[i]->set_parent(this);
-            this->num_sessions++;
+            this->get_manager()->add_waitable(this->get_new_session(session_h));
             return 0;
         }
 };

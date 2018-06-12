@@ -3,6 +3,8 @@
 #include <stratosphere.hpp>
 #include "fs_shim.h"
 
+#include "debug.hpp"
+
 enum FsIStorageCmd {
     FsIStorage_Cmd_Read = 0,
     FsIStorage_Cmd_Write = 1,
@@ -17,6 +19,9 @@ class IStorage {
         virtual ~IStorage() {
             
         }
+        
+        virtual IStorage *Clone() = 0; 
+        
         virtual Result Read(void *buffer, size_t size, u64 offset, u64 *out_read_size) = 0;
         virtual Result Write(void *buffer, size_t size, u64 offset) = 0;
         virtual Result Flush() = 0;
@@ -32,6 +37,10 @@ class IStorageInterface : public IServiceObject {
         IStorageInterface(IStorage *s) : base_storage(s) {
             /* ... */
         };
+        
+        IStorageInterface *clone() override {
+            return new IStorageInterface(this->base_storage->Clone());
+        }
         
         ~IStorageInterface() {
             delete base_storage;

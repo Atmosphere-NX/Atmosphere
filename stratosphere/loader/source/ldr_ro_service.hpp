@@ -12,7 +12,7 @@ enum RoServiceCmd {
     Ro_Cmd_Initialize = 4,
 };
 
-class RelocatableObjectsService final : IServiceObject {
+class RelocatableObjectsService final : public IServiceObject {
     Handle process_handle;
     u64 process_id;
     bool has_initialized;

@@ -1,4 +1,5 @@
 #include <switch.h>
+#include <stratosphere.hpp>
 #include "sm_manager_service.hpp"
 #include "sm_registration.hpp"
 

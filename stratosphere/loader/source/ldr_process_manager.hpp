@@ -12,7 +12,7 @@ enum ProcessManagerServiceCmd {
     Pm_Cmd_UnregisterTitle = 3
 };
 
-class ProcessManagerService final : IServiceObject {
+class ProcessManagerService final : public IServiceObject {
     struct ProgramInfo {
         u8 main_thread_priority;
         u8 default_cpu_id;

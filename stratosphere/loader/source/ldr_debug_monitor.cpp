@@ -1,7 +1,7 @@
 #include <switch.h>
 #include <cstdio>
 #include <algorithm>
-
+#include <stratosphere.hpp>
 #include "ldr_debug_monitor.hpp"
 #include "ldr_launch_queue.hpp"
 #include "ldr_registration.hpp"

@@ -7,7 +7,7 @@ enum ShellServiceCmd {
     Shell_Cmd_ClearLaunchQueue = 1
 };
 
-class ShellService final : IServiceObject {
+class ShellService final : public IServiceObject {
     public:
         Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) override;
         Result handle_deferred() override {

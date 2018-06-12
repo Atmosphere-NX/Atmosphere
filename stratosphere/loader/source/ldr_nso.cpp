@@ -198,7 +198,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
 }
 
 
-Result NsoUtils::LoadNsoSegment(unsigned int index, unsigned int segment, FILE *f_nso, u8 *map_base, u8 *map_end) {
+Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int segment, FILE *f_nso, u8 *map_base, u8 *map_end) {
     bool is_compressed = ((g_nso_headers[index].flags >> segment) & 1) != 0;
     bool check_hash = ((g_nso_headers[index].flags >> (segment + 3)) & 1) != 0;
     size_t out_size = g_nso_headers[index].segments[segment].decomp_size;
@@ -259,7 +259,7 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
                 return 0xA09;
             }
             for (unsigned int seg = 0; seg < 3; seg++) {
-                if (R_FAILED((rc = LoadNsoSegment(i, seg, f_nso, map_base, map_base + extents->nso_sizes[i])))) {
+                if (R_FAILED((rc = LoadNsoSegment(title_id, i, seg, f_nso, map_base, map_base + extents->nso_sizes[i])))) {
                     fclose(f_nso);
                     return rc;
                 }

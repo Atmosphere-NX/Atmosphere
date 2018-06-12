@@ -12,154 +12,208 @@ template <typename T>
 class MitMServer;
 
 template <typename T>
-class MitMSession final : public IWaitable {
+class MitMSession final : public ISession<T> {
     static_assert(std::is_base_of<IMitMServiceObject, T>::value, "MitM Service Objects must derive from IMitMServiceObject");
     
-    T *service_object;
-    MitMServer<T> *server;
-    Handle server_handle;
-    Handle client_handle;
     /* This will be for the actual session. */
     Service forward_service;
-    
-    char *pointer_buffer;
-    size_t pointer_buffer_size;
-    
-    static_assert(sizeof(pointer_buffer) <= POINTER_BUFFER_SIZE_MAX, "Incorrect Size for PointerBuffer!");
+    IpcParsedCommand cur_out_r;
+    u32 mitm_domain_id;
+        
     public:
-        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, const char *srv) : server(s), server_handle(s_h), client_handle(c_h) {
+        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, const char *srv) : ISession<T>(s, s_h, c_h, NULL, 0), mitm_domain_id(0) {
+            this->server = s;
+            this->server_handle = s_h;
+            this->client_handle = c_h;
             if (R_FAILED(smMitMGetService(&forward_service, srv))) {
                 /* TODO: Panic. */
             }
-            if (R_FAILED(ipcQueryPointerBufferSize(forward_service.handle, &pointer_buffer_size))) {
+            if (R_FAILED(ipcQueryPointerBufferSize(forward_service.handle, &this->pointer_buffer_size))) {
                 /* TODO: Panic. */
             }
             this->service_object = new T(&forward_service);
-            this->pointer_buffer = new char[pointer_buffer_size];
+            this->pointer_buffer = new char[this->pointer_buffer_size];
+        }
+        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, Handle f_h, size_t pbs) : ISession<T>(s, s_h, c_h, NULL, 0), mitm_domain_id(0) {
+            this->server = s;
+            this->server_handle = s_h;
+            this->client_handle = c_h;
+            this->pointer_buffer_size = pbs;
+            this->forward_service = {.handle = f_h};
+            this->service_object = new T(&forward_service);
+            this->pointer_buffer = new char[this->pointer_buffer_size];
         }
         
-        ~MitMSession() override {
-            delete this->service_object;
-            delete this->pointer_buffer;
+        virtual ~MitMSession() {
             serviceClose(&forward_service);
-            if (server_handle) {
-                svcCloseHandle(server_handle);
-            }
-            if (client_handle) {
-                svcCloseHandle(client_handle);
-            }
-        }
-
-        T *get_service_object() { return this->service_object; }
-        Handle get_server_handle() { return this->server_handle; }
-        Handle get_client_handle() { return this->client_handle; }
-        
-        /* IWaitable */
-        unsigned int get_num_waitables() override {
-            return 1;
         }
         
-        void get_waitables(IWaitable **dst) override {
-            dst[0] = this;
-        }
-        
-        void delete_child(IWaitable *child) override {
-            /* TODO: Panic, because we can never have any children. */
-        }
-        
-        Handle get_handle() override {
-            return this->server_handle;
-        }
-        
-        void handle_deferred() override {
-            /* TODO: Panic, because we can never be deferred. */
-        }
-        
-        Result handle_signaled(u64 timeout) override {
-            Result rc;
-            int handle_index;
-                        
-            /* Prepare pointer buffer... */
-            IpcCommand c_for_reply;
-            ipcInitialize(&c_for_reply);
-            ipcAddRecvStatic(&c_for_reply, this->pointer_buffer, this->pointer_buffer_size, 0);
+        Result handle_message(IpcParsedCommand &r) override {
+            IpcCommand c;
+            ipcInitialize(&c);
+            u64 cmd_id = ((u32 *)r.Raw)[2];
+            Result retval = 0xF601;
+            
+            cur_out_r.NumHandles = 0;
+            
+            Log(armGetTls(), 0x100);
+            
             u32 *cmdbuf = (u32 *)armGetTls();
-            ipcPrepareHeader(&c_for_reply, 0);
-            
-            
-            if (R_SUCCEEDED(rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, 0, timeout))) {
-                if (handle_index != 0) {
-                    /* TODO: Panic? */
-                }
-                Log(armGetTls(), 0x100);
-                Result retval = 0;
-                u32 *rawdata_start = cmdbuf;
-                                
-                IpcParsedCommand r;
-                IpcCommand c;
-                IpcParsedCommand out_r;
-                out_r.NumHandles = 0;
-                                
-                ipcInitialize(&c);
-                
-                retval = ipcParse(&r);
-                
-                u64 cmd_id = U64_MAX;
-                
-                /* TODO: Close input copy handles that we don't need. */
-                                
-                if (R_SUCCEEDED(retval)) {
-                    rawdata_start = (u32 *)r.Raw;
-                    cmd_id = rawdata_start[2];
-                    retval = 0xF601;
-                    if (r.CommandType == IpcCommandType_Request || r.CommandType == IpcCommandType_RequestWithContext) {
-                        retval = this->service_object->dispatch(r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
-                        if (R_SUCCEEDED(retval)) {
-                            ipcParse(&out_r);
-                        }
-                    }
-                    
-                    /* 0xF601 --> Dispatch onwards. */
-                    if (retval == 0xF601) {
-                        /* Patch PID Descriptor, if relevant. */
-                        if (r.HasPid) {
-                            /* [ctrl 0] [ctrl 1] [handle desc 0] [pid low] [pid high] */
-                            cmdbuf[4] = 0xFFFE0000UL | (cmdbuf[4] & 0xFFFFUL);
-                        }
-                        Log(armGetTls(), 0x100);
-                        retval = serviceIpcDispatch(&forward_service);
-                        if (R_SUCCEEDED(retval)) {
-                            ipcParse(&out_r);
+            if (r.CommandType == IpcCommandType_Request || r.CommandType == IpcCommandType_RequestWithContext) {
+                IServiceObject *obj;
+                if (r.IsDomainMessage) {
+                    obj = this->get_domain_object(r.ThisObjectId);
+                    if (obj && r.MessageType == DomainMessageType_Close) {
+                        this->delete_object(r.ThisObjectId);
+                        struct {
+                            u64 magic;
+                            u64 result;
+                        } *o_resp;
 
+                        o_resp = (decltype(o_resp)) ipcPrepareHeaderForDomain(&c, sizeof(*o_resp), 0);
+                        *(DomainMessageHeader *)((uintptr_t)o_resp - sizeof(DomainMessageHeader)) = {0};
+                        o_resp->magic = SFCO_MAGIC;
+                        o_resp->result = 0x0;
+                        Log(armGetTls(), 0x100);
+                        Reboot();
+                        return o_resp->result;
+                    }
+                } else {
+                    obj = this->service_object;
+                }
+                if (obj) {
+                    retval = obj->dispatch(r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                    if (R_SUCCEEDED(retval)) {
+                        if (r.IsDomainMessage) { 
+                            ipcParseForDomain(&cur_out_r);
+                        } else {
+                            ipcParse(&cur_out_r);
+                        }
+                        return retval;
+                    }
+                }
+            } else if (r.CommandType == IpcCommandType_Control || r.CommandType == IpcCommandType_ControlWithContext) {
+                /* Ipc Clone Current Object. */
+                retval = serviceIpcDispatch(&forward_service);
+                Log(armGetTls(), 0x100);
+                if (R_SUCCEEDED(retval)) {
+                    ipcParse(&cur_out_r);
+                    struct {
+                        u64 magic;
+                        u64 result;
+                    } *resp = (decltype(resp))cur_out_r.Raw;
+                    retval = resp->result;
+                    if (false && (cmd_id == IpcCtrl_Cmd_CloneCurrentObject || cmd_id == IpcCtrl_Cmd_CloneCurrentObjectEx)) {
+                        if (R_SUCCEEDED(retval)) {
+                            Handle s_h;
+                            Handle c_h;
+                            Result rc;
+                            if (R_FAILED((rc = svcCreateSession(&s_h, &c_h, 0, 0)))) {
+                                fatalSimple(rc);
+                            }
+                            
+                            MitMSession<T> *new_sess = new MitMSession<T>((MitMServer<T> *)this->server, s_h, c_h, cur_out_r.Handles[0], this->pointer_buffer_size);
+                            this->get_service_object()->clone_to(new_sess->get_service_object());
+                            if (this->is_domain) {
+                                new_sess->is_domain = true;
+                                new_sess->mitm_domain_id = this->mitm_domain_id;
+                                new_sess->forward_service.type = this->forward_service.type;
+                                new_sess->forward_service.object_id = this->forward_service.object_id;
+                                new_sess->set_object(new_sess->get_service_object(), new_sess->mitm_domain_id);
+                                for (unsigned int i = 0; i < DOMAIN_ID_MAX; i++) {
+                                    if (i != new_sess->mitm_domain_id) {
+                                        IServiceObject *obj = this->get_domain_object(i);
+                                        if (obj) {
+                                            new_sess->set_object(obj->clone(), i);
+                                        }
+                                    }
+                                }
+                            }
+                            this->get_manager()->add_waitable(new_sess);
+                            ipcSendHandleMove(&c, c_h);
                             struct {
                                 u64 magic;
                                 u64 result;
-                            } *resp = (decltype(resp))out_r.Raw;
+                            } *o_resp;
 
-                            retval = resp->result;
+                            o_resp = (decltype(o_resp)) ipcPrepareHeader(&c, sizeof(*o_resp));
+                            o_resp->magic = SFCO_MAGIC;
+                            o_resp->result = 0x0;
                         }
                     }
+                }
+                Log(armGetTls(), 0x100);
+                return retval;
+            }
+            
+            /* 0xF601 --> Dispatch onwards. */
+            if (retval == 0xF601) {
+                /* Patch PID Descriptor, if relevant. */
+                if (r.HasPid) {
+                    /* [ctrl 0] [ctrl 1] [handle desc 0] [pid low] [pid high] */
+                    cmdbuf[4] = 0xFFFE0000UL | (cmdbuf[4] & 0xFFFFUL);
                 }
                 
-                if (retval == 0xF601) {
-                    /* Session close. */
-                    rc = retval;
-                } else {
-                    if (R_SUCCEEDED(rc)) {
-                        ipcInitialize(&c);
-                        retval = this->service_object->postprocess(r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                Log(armGetTls(), 0x100);
+                retval = serviceIpcDispatch(&forward_service);
+                if (R_SUCCEEDED(retval)) {
+                    if (r.IsDomainMessage) { 
+                        ipcParseForDomain(&cur_out_r);
+                    } else {
+                        ipcParse(&cur_out_r);
                     }
-                    Log(armGetTls(), 0x100);
-                    rc = svcReplyAndReceive(&handle_index, &this->server_handle, 0, this->server_handle, 0);
-                    /* Clean up copy handles. */
-                    for (unsigned int i = 0; i < out_r.NumHandles; i++) {
-                        if (out_r.WasHandleCopied[i]) {
-                            svcCloseHandle(out_r.Handles[i]);
-                        }
-                    }
+
+                    struct {
+                        u64 magic;
+                        u64 result;
+                    } *resp = (decltype(resp))cur_out_r.Raw;
+
+                    retval = resp->result;
                 }
             }
-              
-            return rc;
+            
+            Log(armGetTls(), 0x100);
+            Log(&cmd_id, sizeof(u64));
+            u64 retval_for_log = retval;
+            Log(&retval_for_log, sizeof(u64));
+            if (R_FAILED(retval)) {
+                // Reboot();
+            }
+
+            return retval;
+        }
+        
+        void postprocess(IpcParsedCommand &r, u64 cmd_id) override {
+            if (this->active_object == this->service_object && (r.CommandType == IpcCommandType_Request || r.CommandType == IpcCommandType_RequestWithContext)) {
+                IpcCommand c;
+                ipcInitialize(&c);
+                this->service_object->postprocess(cur_out_r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+            } else if (r.CommandType == IpcCommandType_Control || r.CommandType == IpcCommandType_ControlWithContext) {
+                if (cmd_id == IpcCtrl_Cmd_ConvertCurrentObjectToDomain) {
+                    return;
+                    this->is_domain = true;
+                    struct {
+                        u64 magic;
+                        u64 result;
+                        u32 domain_id;
+                    } *resp = (decltype(resp))cur_out_r.Raw;
+                    Result rc;
+                    if (R_FAILED((rc = this->set_object(this->service_object, resp->domain_id)))) {
+                        fatalSimple(rc);
+                    }
+                    this->mitm_domain_id = resp->domain_id;
+                    this->forward_service.type = ServiceType_Domain;
+                    this->forward_service.object_id = resp->domain_id;
+                }
+            }
+        }
+        
+        void cleanup() override {
+            /* Clean up copy handles. */
+            for (unsigned int i = 0; i < cur_out_r.NumHandles; i++) {
+                if (cur_out_r.WasHandleCopied[i]) {
+                    svcCloseHandle(cur_out_r.Handles[i]);
+                }
+            }
         }
 };

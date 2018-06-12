@@ -4,56 +4,51 @@
 
 #include <stratosphere/waitablemanager.hpp>
 
-
-unsigned int WaitableManager::get_num_signalable() {
-    unsigned int n = 0;
-    for (auto & waitable : this->waitables) {
-        n += waitable->get_num_waitables();
-    }
-    return n;
-}
-
 void WaitableManager::add_waitable(IWaitable *waitable) {
-    this->waitables.push_back(waitable);
+    this->lock.Lock();
+    this->to_add_waitables.push_back(waitable);
+    waitable->set_manager(this);
+    this->has_new_items = true;
+    this->lock.Unlock();
 }
 
 void WaitableManager::process_internal(bool break_on_timeout) {
-    std::vector<IWaitable *> signalables;
     std::vector<Handle> handles;
     
     int handle_index = 0;
     Result rc;
     
     while (1) {
-        /* Create vector of signalable items. */
-        signalables.resize(this->get_num_signalable(), NULL);
-        unsigned int n = 0;
-        for (auto & waitable : this->waitables) {
-            waitable->get_waitables(signalables.data() + n);
-            n += waitable->get_num_waitables();
+        /* Add new items, if relevant. */
+        if (this->has_new_items) {
+            this->lock.Lock();
+            this->waitables.insert(this->waitables.end(), this->to_add_waitables.begin(), this->to_add_waitables.end());
+            this->to_add_waitables.clear();
+            this->has_new_items = false;
+            this->lock.Unlock();
         }
-        
-        /* Sort signalables by priority. */
-        std::sort(signalables.begin(), signalables.end(), IWaitable::compare);
+                
+        /* Sort waitables by priority. */
+        std::sort(this->waitables.begin(), this->waitables.end(), IWaitable::compare);
         
         /* Copy out handles. */
-        handles.resize(signalables.size());
-        std::transform(signalables.begin(), signalables.end(), handles.begin(), [](IWaitable *w) { return w->get_handle(); });
+        handles.resize(this->waitables.size());
+        std::transform(this->waitables.begin(), this->waitables.end(), handles.begin(), [](IWaitable *w) { return w->get_handle(); });
         
         
-        rc = svcWaitSynchronization(&handle_index, handles.data(), signalables.size(), this->timeout);
+        rc = svcWaitSynchronization(&handle_index, handles.data(), this->waitables.size(), this->timeout);
         if (R_SUCCEEDED(rc)) {
             /* Handle a signaled waitable. */
             /* TODO: What timeout should be passed here? */
                         
-            rc = signalables[handle_index]->handle_signaled(0);
+            rc = this->waitables[handle_index]->handle_signaled(0);
             
             for (int i = 0; i < handle_index; i++) {
-                signalables[i]->update_priority();
+                this->waitables[i]->update_priority();
             }
         } else if (rc == 0xEA01) {
             /* Timeout. */
-            for (auto & waitable : signalables) {
+            for (auto & waitable : this->waitables) {
                 waitable->update_priority();
             }
             if (break_on_timeout) {
@@ -69,26 +64,21 @@ void WaitableManager::process_internal(bool break_on_timeout) {
             /* Close the handle. */
             svcCloseHandle(handles[handle_index]);
             
+            IWaitable  *to_delete = this->waitables[handle_index];
+            
             /* If relevant, remove from waitables. */
-            this->waitables.erase(std::remove(this->waitables.begin(), this->waitables.end(), signalables[handle_index]), this->waitables.end());
+            this->waitables.erase(this->waitables.begin() + handle_index);
             
             /* Delete it. */
-            if (signalables[handle_index]->has_parent()) {
-                signalables[handle_index]->get_parent()->delete_child(signalables[handle_index]);
-            } else {
-                delete signalables[handle_index];
-            }
-            
-            /* If relevant, remove from signalables. */
-            signalables.erase(std::remove(signalables.begin(), signalables.end(), signalables[handle_index]), signalables.end());
-            
+            delete to_delete;
+                        
             for (int i = 0; i < handle_index; i++) {
-                signalables[i]->update_priority();
+                this->waitables[i]->update_priority();
             }
         }
         
         /* Do deferred callback for each waitable. */
-        for (auto & waitable : signalables) {
+        for (auto & waitable : this->waitables) {
             if (waitable->get_deferred()) {
                 waitable->handle_deferred();
             }
