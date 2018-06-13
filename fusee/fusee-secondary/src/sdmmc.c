@@ -141,34 +141,52 @@ enum sdmmc_clock_dividers {
     MMC_CLOCK_DIVIDER_SDR12  = 31, // 16.5, from the TRM table
     MMC_CLOCK_DIVIDER_SDR25  = 15, // 8.5, from the table
     MMC_CLOCK_DIVIDER_SDR50  = 7,  // 4.5, from the table
-    MMC_CLOCK_DIVIDER_SDR104 = 4,  // 2, from the datasheet
+    MMC_CLOCK_DIVIDER_SDR104 = 2,  // 2, from the table
 
     /* Clock dividers: MMC */
     MMC_CLOCK_DIVIDER_HS26   = 30, // 16, from the TRM table
     MMC_CLOCK_DIVIDER_HS52   = 14, // 8, from the table
 
-    MMC_CLOCK_DIVIDER_HS200  = 2,  // 1 -- NOTE THIS IS WITH RESPECT TO PLLC4_OUT2_LJ
-    MMC_CLOCK_DIVIDER_HS400  = 2,  // 1 -- NOTE THIS IS WITH RESPECT TO PLLC4_OUT2_LJ
-};
+#if 0
+    // TODO: Figure out why PLLC4_OUT2_LJ doesn't work, most likely need to be enabled in hwinit
+    MMC_CLOCK_DIVIDER_HS200  = 0,  // 1 -- NOTE THIS IS WITH RESPECT TO PLLC4_OUT2_LJ
+    MMC_CLOCK_DIVIDER_HS400  = 0,  // 1 -- NOTE THIS IS WITH RESPECT TO PLLC4_OUT2_LJ
+#else
+    MMC_CLOCK_DIVIDER_HS200 = 3,
+    MMC_CLOCK_DIVIDER_HS400 = 3,
+#endif
 
+    /* Clock dividers: Legacy 12 MHz timer */
+    MMC_CLOCK_DIVIDER_LEGACY = 66, // 34 - to get 12 MHz out of 408 MHz
+};
 
 /**
  * SDMMC clock divider constants
  */
 enum sdmmc_clock_sources {
 
-    /* Clock dividers: SD */
-    MMC_CLOCK_SOURCE_SDR12  = 0, // PLLP
-    MMC_CLOCK_SOURCE_SDR25  = 0,
-    MMC_CLOCK_SOURCE_SDR50  = 0,
-    MMC_CLOCK_SOURCE_SDR104 = 0,
+    /* Clock sources: SD */
+    MMC_CLOCK_SOURCE_SDR12  = CLK_SOURCE_SDMMC1_PLLP_OUT0, // PLLP
+    MMC_CLOCK_SOURCE_SDR25  = CLK_SOURCE_SDMMC1_PLLP_OUT0,
+    MMC_CLOCK_SOURCE_SDR50  = CLK_SOURCE_SDMMC1_PLLP_OUT0,
+    MMC_CLOCK_SOURCE_SDR104 = CLK_SOURCE_SDMMC1_PLLP_OUT0,
 
-    /* Clock dividers: MMC */
-    MMC_CLOCK_SOURCE_HS26   = 0, // PLLP
-    MMC_CLOCK_SOURCE_HS52   = 0,
-    MMC_CLOCK_SOURCE_HS200  = 1, // PLLC4_OUT2_LJ
-    MMC_CLOCK_SOURCE_HS400  = 1,
+    /* Clock sources: MMC */
+    MMC_CLOCK_SOURCE_HS26   = CLK_SOURCE_SDMMC4_PLLP_OUT0, // PLLP
+    MMC_CLOCK_SOURCE_HS52   = CLK_SOURCE_SDMMC4_PLLP_OUT0,
 
+#if 0
+    // TODO: Figure out why PLLC4_OUT2_LJ doesn't work, most likely need to be enabled in hwinit
+    MMC_CLOCK_SOURCE_HS200  = CLK_SOURCE_SDMMC4_PLLC4_OUT2_LJ, // PLLC4_OUT2_LJ
+    MMC_CLOCK_SOURCE_HS400  = CLK_SOURCE_SDMMC4_PLLC4_OUT2_LJ,
+#else
+    // For the time being, use PLLP_OUT0
+    MMC_CLOCK_SOURCE_HS200 = CLK_SOURCE_SDMMC4_PLLP_OUT0,
+    MMC_CLOCK_SOURCE_HS400 = CLK_SOURCE_SDMMC4_PLLP_OUT0,
+#endif
+
+    /* Clock sources: Legacy 12 MHz timer */
+    MMC_CLOCK_SOURCE_LEGACY = CLK_SOURCE_SDMMC_LEGACY_PLLP_OUT0,
 };
 
 /**
@@ -239,7 +257,7 @@ enum sdmmc_register_bits {
     MMC_CLOCK_CONTROL_CARD_CLOCK_ENABLE      = (1 << 2),
     MMC_CLOCK_CONTROL_FREQUENCY_MASK         = (0x3FF << 6),
     MMC_CLOCK_CONTROL_FREQUENCY_SHIFT        = 8,
-    MMC_CLOCK_CONTROL_FREQUENCY_INIT         = 0x18, // generates 400kHz from the TRM dividers
+    MMC_CLOCK_CONTROL_FREQUENCY_INIT         = 0x1F, // generates 400kHz from the TRM dividers
     MMC_CLOCK_CONTROL_FREQUENCY_PASSTHROUGH  = 0x00, // passes through the CAR clock unmodified
 
     /* Host control */
@@ -798,29 +816,42 @@ static int sdmmc_hardware_reset(struct mmc *mmc, uint32_t reset_flags)
 }
 
 /**
+ * Delays for a given amount of host clock cycles.
+ *
+ * @param mmc The MMC controller whose clock cycles should be waited upon.
+ * @param clocks The number of clock cycles to wait.
+ */
+static void sdmmc_host_clock_delay(struct mmc *mmc, unsigned int clocks)
+{
+    // For the time being simply wait for clocks * 50 us
+    // This covers clocks as slow as 20 kHz and hence should always be safe
+    // TODO: determine the actual wait time based on clock source and divider
+    udelay(50 * clocks);
+}
+
+/**
  * Performs low-level initialization for SDMMC4, used for the eMMC.
  */
 static int sdmmc4_set_up_clock_and_io(struct mmc *mmc)
 {
     volatile struct tegra_car *car = car_get_regs();
     volatile struct tegra_padctl *padctl = padctl_get_regs();
-    (void)mmc;
 
     // Put SDMMC4 in reset
     car->rst_dev_l_set |= 0x8000;
 
     // Configure the clock to place the device into the initial mode.
-    car->clk_src[CLK_SOURCE_SDMMC4] = CLK_SOURCE_FIRST | MMC_CLOCK_DIVIDER_SDR12;
+    car->clk_src[CLK_SOURCE_SDMMC4] = MMC_CLOCK_SOURCE_SDR12 | MMC_CLOCK_DIVIDER_SDR12;
 
     // Set the legacy divier used for detecting timeouts.
-    car->clk_src_y[CLK_SOURCE_SDMMC_LEGACY] = CLK_SOURCE_FIRST | MMC_CLOCK_DIVIDER_SDR12;
+    car->clk_src_y[CLK_SOURCE_SDMMC_LEGACY] = MMC_CLOCK_SOURCE_LEGACY | MMC_CLOCK_DIVIDER_LEGACY;
 
     // Set SDMMC4 clock enable
     car->clk_enb_l_set |= 0x8000;
     car->clk_enb_y_set |= CAR_CONTROL_SDMMC_LEGACY;
 
-    // host_clk_delay(0x64, clk_freq) -> Delay 100 host clock cycles
-    udelay(5000);
+    // Delay 100 host clock cycles
+    sdmmc_host_clock_delay(mmc, 100);
 
     // Take SDMMC4 out of reset
     car->rst_dev_l_clr |= 0x8000;
@@ -1103,11 +1134,11 @@ static int sdmmc_always_fail(struct mmc *mmc)
  *      a divider of N results in a clock that's (N/2) + 1 slower.
  * @param sdmmc_divisor An additional divisor applied in the SDMMC controller.
  */
-static void sdmmc4_configure_clock(struct mmc *mmc, int source, int car_divisor, int sdmmc_divisor)
+static void sdmmc4_configure_clock(struct mmc *mmc, uint32_t source, int car_divisor, int sdmmc_divisor)
 {
     volatile struct tegra_car *car = car_get_regs();
 
-    // Set up the CAR aspect of the clock, and wait 2uS per change per the TRM.
+    // Set up the CAR aspect of the clock, and wait 2us per change per the TRM.
     car->clk_enb_l_clr = CAR_CONTROL_SDMMC4;
     car->clk_src[CLK_SOURCE_SDMMC4] = source | car_divisor;
     udelay(2);
@@ -1129,11 +1160,11 @@ static void sdmmc4_configure_clock(struct mmc *mmc, int source, int car_divisor,
  *      a divider of N results in a clock that's (N/2) + 1 slower.
  * @param sdmmc_divisor An additional divisor applied in the SDMMC controller.
  */
-static void sdmmc1_configure_clock(struct mmc *mmc, int source, int car_divisor, int sdmmc_divisor)
+static void sdmmc1_configure_clock(struct mmc *mmc, uint32_t source, int car_divisor, int sdmmc_divisor)
 {
     volatile struct tegra_car *car = car_get_regs();
 
-    // Set up the CAR aspect of the clock, and wait 2uS per change per the TRM.
+    // Set up the CAR aspect of the clock, and wait 2us per change per the TRM.
     car->clk_enb_l_clr = CAR_CONTROL_SDMMC1;
     car->clk_src[CLK_SOURCE_SDMMC1] = source | car_divisor;
     udelay(2);
@@ -1470,7 +1501,6 @@ static int sdmmc1_set_up_clock_and_io(struct mmc *mmc)
     volatile struct tegra_car *car = car_get_regs();
     volatile struct tegra_pinmux *pinmux = pinmux_get_regs();
     volatile struct tegra_padctl *padctl = padctl_get_regs();
-    (void)mmc;
 
     // Set up each of the relevant pins to be connected to output drivers,
     // and selected for SDMMC use.
@@ -1494,19 +1524,19 @@ static int sdmmc1_set_up_clock_and_io(struct mmc *mmc)
     car->rst_dev_l_set = CAR_CONTROL_SDMMC1;
 
     // Configure the clock to place the device into the initial mode.
-    car->clk_src[CLK_SOURCE_SDMMC1] = CLK_SOURCE_FIRST | MMC_CLOCK_DIVIDER_SDR12;
+    car->clk_src[CLK_SOURCE_SDMMC1] = MMC_CLOCK_SOURCE_SDR12 | MMC_CLOCK_DIVIDER_SDR12;
 
     // Set the legacy divier used for detecting timeouts.
-    car->clk_src_y[CLK_SOURCE_SDMMC_LEGACY] = CLK_SOURCE_FIRST | MMC_CLOCK_DIVIDER_SDR12;
+    car->clk_src_y[CLK_SOURCE_SDMMC_LEGACY] = MMC_CLOCK_SOURCE_LEGACY | MMC_CLOCK_DIVIDER_LEGACY;
 
     // Set SDMMC1 clock enable
     car->clk_enb_l_set = CAR_CONTROL_SDMMC1;
     car->clk_enb_y_set = CAR_CONTROL_SDMMC_LEGACY;
 
-    // host_clk_delay(0x64, clk_freq) -> Delay 100 host clock cycles
-    udelay(5000);
+    // Delay 100 host clock cycles
+    sdmmc_host_clock_delay(mmc, 100);
 
-    // Take SDMMC4 out of reset
+    // Take SDMMC1 out of reset
     car->rst_dev_l_clr |= CAR_CONTROL_SDMMC1;
 
     // Enable clock loopback.
@@ -3444,7 +3474,7 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller, bool allow_vol
         return rc;
     }
 
-    // Default to a timeout of 1S.
+    // Default to a timeout of 1s.
     mmc->timeout = 1000000;
     mmc->partition_switch_time = 1000;
 

@@ -157,7 +157,7 @@ struct mmc {
 
     /* Per-controller operations. */
     int (*set_up_clock_and_io)(struct mmc *mmc);
-    void (*configure_clock)(struct mmc *mmc, int source, int car_divisor, int sdmmc_divisor);
+    void (*configure_clock)(struct mmc *mmc, uint32_t source, int car_divisor, int sdmmc_divisor);
     int (*enable_supplies)(struct mmc *mmc);
     int (*switch_to_low_voltage)(struct mmc *mmc);
     bool (*card_present)(struct mmc *mmc);

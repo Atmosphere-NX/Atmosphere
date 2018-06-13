@@ -48,11 +48,14 @@ enum {
  * Masks for TEGRA_CLK_SOURCE elements.
  */
 enum {
-    CLK_SOURCE_MASK        = (0b111 << 29),
-    CLK_SOURCE_FIRST       = (0b000 << 29),
+    CLK_SOURCE_MASK                   = (0b111 << 29),
+    CLK_SOURCE_SDMMC1_PLLP_OUT0       = (0b000 << 29), /* Fixed 408 MHz */
+    CLK_SOURCE_SDMMC4_PLLP_OUT0       = (0b000 << 29), /* Fixed 408 MHz */
+    CLK_SOURCE_SDMMC4_PLLC4_OUT2_LJ   = (0b001 << 29), /* 199.68 MHz */
+    CLK_SOURCE_SDMMC_LEGACY_PLLP_OUT0 = (0b100 << 29), /* Fixed 408 MHz */
 
-    CLK_DIVIDER_MASK       = (0xff << 0),
-    CLK_DIVIDER_UNITY      = (0x00 << 0),
+    CLK_DIVIDER_MASK                  = (0xff << 0),
+    CLK_DIVIDER_UNITY                 = (0x00 << 0),
 };
 
 
