@@ -101,7 +101,7 @@ Result smMitMGetService(Service* service_out, const char *name_str)
 }
 
 
-Result smMitMInstall(Handle *handle_out, const char *name) {
+Result smMitMInstall(Handle *handle_out, Handle *query_out, const char *name) {
     IpcCommand c;
     ipcInitialize(&c);
 
@@ -132,6 +132,7 @@ Result smMitMInstall(Handle *handle_out, const char *name) {
 
         if (R_SUCCEEDED(rc)) {
             *handle_out = r.Handles[0];
+            *query_out = r.Handles[1];
         }
     }
 

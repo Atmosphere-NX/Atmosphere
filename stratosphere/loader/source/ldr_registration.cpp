@@ -266,3 +266,65 @@ Result Registration::GetNsoInfosForProcessId(Registration::NsoInfo *out, u32 max
 
     return 0;
 }
+
+void Registration::AssociatePidTidForMitM(u64 index) {
+    Registration::Process *target_process = GetProcess(index);
+    if (target_process == NULL) {
+        return;
+    }
+    
+    Handle sm_hnd;
+    Result rc = svcConnectToNamedPort(&sm_hnd, "sm:");
+    if (R_SUCCEEDED(rc)) {
+        /* Initialize. */
+        {
+            IpcCommand c;
+            ipcInitialize(&c);
+            ipcSendPid(&c);
+
+            struct {
+                u64 magic;
+                u64 cmd_id;
+                u64 zero;
+                u64 reserved[2];
+            } *raw = (decltype(raw))ipcPrepareHeader(&c, sizeof(*raw));
+
+            raw->magic = SFCI_MAGIC;
+            raw->cmd_id = 0;
+            raw->zero = 0;
+
+            rc = ipcDispatch(sm_hnd);
+
+            if (R_SUCCEEDED(rc)) {
+                IpcParsedCommand r;
+                ipcParse(&r);
+
+                struct {
+                    u64 magic;
+                    u64 result;
+                } *resp = (decltype(resp))r.Raw;
+
+                rc = resp->result;
+            }
+        }
+        /* Associate. */
+        if (R_SUCCEEDED(rc)) {
+            IpcCommand c;
+            ipcInitialize(&c);
+            struct {
+                u64 magic;
+                u64 cmd_id;
+                u64 process_id;
+                u64 title_id;
+            } *raw = (decltype(raw))ipcPrepareHeader(&c, sizeof(*raw));
+            
+            raw->magic = SFCI_MAGIC;
+            raw->cmd_id = 65002;
+            raw->process_id = target_process->process_id;
+            raw->title_id = target_process->tid_sid.title_id;
+            
+            ipcDispatch(sm_hnd);
+        }
+        svcCloseHandle(sm_hnd);
+    }
+}

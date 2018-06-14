@@ -14,7 +14,7 @@ extern "C" {
 Result smMitMInitialize(void);
 void smMitMExit(void);
 Result smMitMGetService(Service* service_out, const char *name);
-Result smMitMInstall(Handle *handle_out, const char *name);
+Result smMitMInstall(Handle *handle_out, Handle *query_out, const char *name);
 Result smMitMUninstall(const char *name);
 
 #ifdef __cplusplus

@@ -35,6 +35,10 @@ class ProcessManagerService final : public IServiceObject {
             return 0;
         }
         
+        ProcessManagerService *clone() override {
+            return new ProcessManagerService();
+        }
+        
     private:
         /* Actual commands. */
         std::tuple<Result, MovedHandle> create_process(u64 flags, u64 index, CopiedHandle reslimit_h);

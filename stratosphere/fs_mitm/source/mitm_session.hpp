@@ -3,10 +3,11 @@
 #include <stratosphere.hpp>
 #include "imitmserviceobject.hpp"
 
+#include "mitm_query_service.hpp"
 #include "mitm_server.hpp"
+#include "fsmitm_worker.hpp"
 
 #include "debug.hpp"
-
 
 template <typename T>
 class MitMServer;
@@ -19,9 +20,10 @@ class MitMSession final : public ISession<T> {
     Service forward_service;
     IpcParsedCommand cur_out_r;
     u32 mitm_domain_id;
+    bool got_first_message;
         
     public:
-        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, const char *srv) : ISession<T>(s, s_h, c_h, NULL, 0), mitm_domain_id(0) {
+        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, const char *srv) : ISession<T>(s, s_h, c_h, NULL, 0), mitm_domain_id(0), got_first_message(false) {
             this->server = s;
             this->server_handle = s_h;
             this->client_handle = c_h;
@@ -31,16 +33,18 @@ class MitMSession final : public ISession<T> {
             if (R_FAILED(ipcQueryPointerBufferSize(forward_service.handle, &this->pointer_buffer_size))) {
                 /* TODO: Panic. */
             }
-            this->service_object = new T(&forward_service);
+            this->service_object = std::make_shared<T>(&forward_service);
             this->pointer_buffer = new char[this->pointer_buffer_size];
         }
-        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, Handle f_h, size_t pbs) : ISession<T>(s, s_h, c_h, NULL, 0), mitm_domain_id(0) {
+        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, Handle f_h) : ISession<T>(s, s_h, c_h, NULL, 0), mitm_domain_id(0), got_first_message(true) {
             this->server = s;
             this->server_handle = s_h;
             this->client_handle = c_h;
-            this->pointer_buffer_size = pbs;
-            this->forward_service = {.handle = f_h};
-            this->service_object = new T(&forward_service);
+            serviceCreate(&this->forward_service, f_h);
+            if (R_FAILED(ipcQueryPointerBufferSize(forward_service.handle, &this->pointer_buffer_size))) {
+                /* TODO: Panic. */
+            }
+            this->service_object = std::make_shared<T>(&forward_service);
             this->pointer_buffer = new char[this->pointer_buffer_size];
         }
         
@@ -57,14 +61,21 @@ class MitMSession final : public ISession<T> {
             cur_out_r.NumHandles = 0;
             
             Log(armGetTls(), 0x100);
-            
+                        
             u32 *cmdbuf = (u32 *)armGetTls();
+            if (r.CommandType == IpcCommandType_Close) {
+                Reboot();
+            }
+                        
             if (r.CommandType == IpcCommandType_Request || r.CommandType == IpcCommandType_RequestWithContext) {
-                IServiceObject *obj;
+                std::shared_ptr<IServiceObject> obj;
                 if (r.IsDomainMessage) {
-                    obj = this->get_domain_object(r.ThisObjectId);
-                    if (obj && r.MessageType == DomainMessageType_Close) {
-                        this->delete_object(r.ThisObjectId);
+                    obj = this->domain->get_domain_object(r.ThisObjectId);
+                    if (obj != nullptr && r.MessageType == DomainMessageType_Close) {
+                        if (r.ThisObjectId == this->mitm_domain_id) {
+                            Reboot();
+                        }
+                        this->domain->delete_object(r.ThisObjectId);
                         struct {
                             u64 magic;
                             u64 result;
@@ -75,13 +86,12 @@ class MitMSession final : public ISession<T> {
                         o_resp->magic = SFCO_MAGIC;
                         o_resp->result = 0x0;
                         Log(armGetTls(), 0x100);
-                        Reboot();
                         return o_resp->result;
                     }
                 } else {
                     obj = this->service_object;
                 }
-                if (obj) {
+                if (obj != nullptr) {
                     retval = obj->dispatch(r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
                     if (R_SUCCEEDED(retval)) {
                         if (r.IsDomainMessage) { 
@@ -103,7 +113,7 @@ class MitMSession final : public ISession<T> {
                         u64 result;
                     } *resp = (decltype(resp))cur_out_r.Raw;
                     retval = resp->result;
-                    if (false && (cmd_id == IpcCtrl_Cmd_CloneCurrentObject || cmd_id == IpcCtrl_Cmd_CloneCurrentObjectEx)) {
+                    if ((cmd_id == IpcCtrl_Cmd_CloneCurrentObject || cmd_id == IpcCtrl_Cmd_CloneCurrentObjectEx)) {
                         if (R_SUCCEEDED(retval)) {
                             Handle s_h;
                             Handle c_h;
@@ -112,22 +122,18 @@ class MitMSession final : public ISession<T> {
                                 fatalSimple(rc);
                             }
                             
-                            MitMSession<T> *new_sess = new MitMSession<T>((MitMServer<T> *)this->server, s_h, c_h, cur_out_r.Handles[0], this->pointer_buffer_size);
-                            this->get_service_object()->clone_to(new_sess->get_service_object());
+                            if (cur_out_r.NumHandles != 1) {
+                                Reboot();
+                            }
+                            
+                            MitMSession<T> *new_sess = new MitMSession<T>((MitMServer<T> *)this->server, s_h, c_h, cur_out_r.Handles[0]);
+                            new_sess->service_object = this->service_object;
                             if (this->is_domain) {
                                 new_sess->is_domain = true;
+                                new_sess->domain = this->domain;
                                 new_sess->mitm_domain_id = this->mitm_domain_id;
                                 new_sess->forward_service.type = this->forward_service.type;
                                 new_sess->forward_service.object_id = this->forward_service.object_id;
-                                new_sess->set_object(new_sess->get_service_object(), new_sess->mitm_domain_id);
-                                for (unsigned int i = 0; i < DOMAIN_ID_MAX; i++) {
-                                    if (i != new_sess->mitm_domain_id) {
-                                        IServiceObject *obj = this->get_domain_object(i);
-                                        if (obj) {
-                                            new_sess->set_object(obj->clone(), i);
-                                        }
-                                    }
-                                }
                             }
                             this->get_manager()->add_waitable(new_sess);
                             ipcSendHandleMove(&c, c_h);
@@ -179,7 +185,11 @@ class MitMSession final : public ISession<T> {
             if (R_FAILED(retval)) {
                 // Reboot();
             }
-
+            
+            if (retval == 0xA08) {
+                Reboot();
+            }
+            
             return retval;
         }
         
@@ -190,15 +200,15 @@ class MitMSession final : public ISession<T> {
                 this->service_object->postprocess(cur_out_r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
             } else if (r.CommandType == IpcCommandType_Control || r.CommandType == IpcCommandType_ControlWithContext) {
                 if (cmd_id == IpcCtrl_Cmd_ConvertCurrentObjectToDomain) {
-                    return;
                     this->is_domain = true;
+                    this->domain = std::make_shared<DomainOwner>();
                     struct {
                         u64 magic;
                         u64 result;
                         u32 domain_id;
                     } *resp = (decltype(resp))cur_out_r.Raw;
                     Result rc;
-                    if (R_FAILED((rc = this->set_object(this->service_object, resp->domain_id)))) {
+                    if (R_FAILED((rc = this->domain->set_object(this->service_object, resp->domain_id)))) {
                         fatalSimple(rc);
                     }
                     this->mitm_domain_id = resp->domain_id;

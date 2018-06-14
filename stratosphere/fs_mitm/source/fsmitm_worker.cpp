@@ -9,13 +9,14 @@ static HosSemaphore g_sema_new_waitable_finish;
 
 static WaitableManager *g_worker_waiter = NULL;
 
-Result FsMitmWorker::AddWaitableCallback(Handle *handles, size_t num_handles, u64 timeout) {
+Result FsMitMWorker::AddWaitableCallback(void *arg, Handle *handles, size_t num_handles, u64 timeout) {
+    (void)arg;
     svcClearEvent(handles[0]);
     g_sema_new_waitable_finish.Signal();
     return 0;
 }
 
-void FsMitmWorker::AddWaitable(IWaitable *waitable) {
+void FsMitMWorker::AddWaitable(IWaitable *waitable) {
     g_worker_waiter->add_waitable(waitable);
     g_new_waitable_mutex.Lock();
     g_new_waitable_event->signal_event();
@@ -23,9 +24,9 @@ void FsMitmWorker::AddWaitable(IWaitable *waitable) {
     g_new_waitable_mutex.Unlock();
 }
 
-void FsMitmWorker::Main(void *arg) {
+void FsMitMWorker::Main(void *arg) {
     /* Initialize waitable event. */
-    g_new_waitable_event = new SystemEvent(&FsMitmWorker::AddWaitableCallback);
+    g_new_waitable_event = new SystemEvent(NULL, &FsMitMWorker::AddWaitableCallback);
 
     /* Make a new waitable manager. */
     g_worker_waiter = new WaitableManager(U64_MAX);

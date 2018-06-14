@@ -12,7 +12,7 @@
 #include "fsmitm_service.hpp"
 #include "fsmitm_worker.hpp"
 
-#include "mitm_service.hpp"
+#include "mitm_query_service.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -64,11 +64,6 @@ void __appInit(void) {
         fatalSimple(0xCAFE << 4 | 3);
     }
     
-    rc = pminfoInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(0xCAFE << 4 | 4);
-    }
-    
     /* Check for exosphere API compatibility. */
     u64 exosphere_cfg;
     if (R_SUCCEEDED(splGetConfig((SplConfigItem)65000, &exosphere_cfg))) {
@@ -96,7 +91,7 @@ int main(int argc, char **argv)
     Thread worker_thread = {0};
     consoleDebugInit(debugDevice_SVC);
     
-    if (R_FAILED(threadCreate(&worker_thread, &FsMitmWorker::Main, NULL, 0x8000, 45, 0))) {
+    if (R_FAILED(threadCreate(&worker_thread, &FsMitMWorker::Main, NULL, 0x20000, 45, 0))) {
         /* TODO: Panic. */
     }
     if (R_FAILED(threadStart(&worker_thread))) {
@@ -104,11 +99,14 @@ int main(int argc, char **argv)
     }
     
     /* TODO: What's a good timeout value to use here? */
-    WaitableManager *server_manager = new WaitableManager(U64_MAX);
+    MultiThreadedWaitableManager *server_manager = new MultiThreadedWaitableManager(1, U64_MAX, 0x20000);
+    //WaitableManager *server_manager = new WaitableManager(U64_MAX);
         
     /* Create fsp-srv mitm. */
-    //server_manager->add_waitable(new MitMServer<FsMitMService>("fsp-srv", 61));
-    server_manager->add_waitable(new MitMServer<GenericMitMService>("fsp-srv", 61));
+    ISession<MitMQueryService<FsMitMService>> *fs_query_srv = NULL;
+    MitMServer<FsMitMService> *fs_srv = new MitMServer<FsMitMService>(&fs_query_srv, "fsp-srv", 61);
+    server_manager->add_waitable(fs_srv);
+    server_manager->add_waitable(fs_query_srv);
             
     /* Loop forever, servicing our services. */
     server_manager->process();

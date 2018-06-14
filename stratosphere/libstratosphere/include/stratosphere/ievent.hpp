@@ -4,18 +4,20 @@
 
 #include "iwaitable.hpp"
 
-typedef Result (*EventCallback)(Handle *handles, size_t num_handles, u64 timeout);
+typedef Result (*EventCallback)(void *arg, Handle *handles, size_t num_handles, u64 timeout);
 
 class IEvent : public IWaitable {
     protected:
         std::vector<Handle> handles;
         EventCallback callback;
+        void *arg;
     
     public:
-        IEvent(Handle wait_h, EventCallback callback) {
+        IEvent(Handle wait_h, void *a, EventCallback callback) {
             if (wait_h) {
                 this->handles.push_back(wait_h);
             }
+            this->arg = a;
             this->callback = callback;
         }
         
@@ -41,7 +43,7 @@ class IEvent : public IWaitable {
         }
         
         virtual Result handle_signaled(u64 timeout) {
-            return this->callback(this->handles.data(), this->handles.size(), timeout);
+            return this->callback(this->arg, this->handles.data(), this->handles.size(), timeout);
         }
         
         static Result PanicCallback(Handle *handles, size_t num_handles, u64 timeout) {

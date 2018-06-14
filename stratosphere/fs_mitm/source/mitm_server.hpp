@@ -2,6 +2,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "mitm_query_service.hpp"
 #include "sm_mitm.h"
 #include "mitm_session.hpp"
 
@@ -16,9 +17,10 @@ class MitMServer final : public IServer<T> {
     private:
         char mitm_name[9];
     
-    public:        
-        MitMServer(const char *service_name, unsigned int max_s, bool s_d = false) : IServer<T>(service_name, max_s, s_d) {
+    public:
+        MitMServer(ISession<MitMQueryService<T>> **out_query_session, const char *service_name, unsigned int max_s, bool s_d = false) : IServer<T>(service_name, max_s, s_d) {
             Handle tmp_hnd;
+            Handle out_query_h;
             Result rc;
             
             if (R_SUCCEEDED((rc = smGetServiceOriginal(&tmp_hnd, smEncodeName(service_name))))) {
@@ -28,9 +30,10 @@ class MitMServer final : public IServer<T> {
             }
             strncpy(mitm_name, service_name, 8);
             mitm_name[8] = '\x00';
-            if (R_FAILED((rc = smMitMInstall(&this->port_handle, mitm_name)))) {
+            if (R_FAILED((rc = smMitMInstall(&this->port_handle, &out_query_h, mitm_name)))) {
                 fatalSimple(rc);           
             }
+            *out_query_session = new ServiceSession<MitMQueryService<T>>(NULL, out_query_h, 0);
         }
         
         virtual ~MitMServer() {

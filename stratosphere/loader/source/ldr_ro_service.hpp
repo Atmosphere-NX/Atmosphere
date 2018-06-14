@@ -30,6 +30,10 @@ class RelocatableObjectsService final : public IServiceObject {
             return 0;
         }
         
+        RelocatableObjectsService *clone() override {
+            return new RelocatableObjectsService(*this);
+        }
+        
     private:
         /* Actual commands. */
         std::tuple<Result, u64> load_nro(PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);

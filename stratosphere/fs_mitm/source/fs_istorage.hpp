@@ -22,7 +22,7 @@ class IStorage {
         
         virtual IStorage *Clone() = 0; 
         
-        virtual Result Read(void *buffer, size_t size, u64 offset, u64 *out_read_size) = 0;
+        virtual Result Read(void *buffer, size_t size, u64 offset) = 0;
         virtual Result Write(void *buffer, size_t size, u64 offset) = 0;
         virtual Result Flush() = 0;
         virtual Result SetSize(u64 size) = 0;
@@ -81,10 +81,8 @@ class IStorageInterface : public IServiceObject {
         };
     private:
         /* Actual command API. */
-        virtual std::tuple<Result, u64> read(OutBuffer<u8, BufferType_Type1> buffer, u64 offset, u64 size) final {
-            u64 out_size = 0;
-            Result rc = this->base_storage->Read(buffer.buffer, std::min(buffer.num_elements, size), offset , &out_size);
-            return {rc, out_size};
+        virtual std::tuple<Result> read(OutBuffer<u8, BufferType_Type1> buffer, u64 offset, u64 size) final {
+            return {this->base_storage->Read(buffer.buffer, std::min(buffer.num_elements, size), offset)};
         };
         virtual std::tuple<Result> write(InBuffer<u8, BufferType_Type1> buffer, u64 offset, u64 size) final {
            return {this->base_storage->Write(buffer.buffer, std::min(buffer.num_elements, size), offset)};
@@ -109,8 +107,8 @@ class IStorageInterface : public IServiceObject {
 };
 
 class IROStorage : public IStorage {
-    protected:
-        virtual Result Read(void *buffer, size_t size, u64 offset, u64 *out_read_size) = 0;
+    public:
+        virtual Result Read(void *buffer, size_t size, u64 offset) = 0;
         Result Write(void *buffer, size_t size, u64 offset) final {
             (void)(buffer);
             (void)(offset);

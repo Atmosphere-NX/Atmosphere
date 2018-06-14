@@ -18,7 +18,6 @@ class IServiceObject {
         DomainOwner *get_owner() { return this->owner; }
         void set_owner(DomainOwner *owner) { this->owner = owner; }
         virtual Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) = 0;
-    protected:
         virtual Result handle_deferred() = 0;
 };
 

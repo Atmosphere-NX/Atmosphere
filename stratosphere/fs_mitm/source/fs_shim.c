@@ -43,6 +43,77 @@ Result ipcCopyFromDomain(Handle session, u32 object_id, Service *out) {
 
 
 /* Missing fsp-srv commands. */
+Result fsOpenDataStorageByCurrentProcessFwd(Service* s, FsStorage* out) {
+    IpcCommand c;
+    ipcInitialize(&c);
+
+    struct {
+        u64 magic;
+        u64 cmd_id;
+    } *raw;
+
+    raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+    raw->magic = SFCI_MAGIC;
+    raw->cmd_id = 200;
+
+    Result rc = serviceIpcDispatch(s);
+
+    if (R_SUCCEEDED(rc)) {
+        IpcParsedCommand r;
+        ipcParse(&r);
+
+        struct {
+            u64 magic;
+            u64 result;
+        } *resp = r.Raw;
+
+        rc = resp->result;
+
+        if (R_SUCCEEDED(rc)) {
+            serviceCreate(&out->s, r.Handles[0]);
+        }
+    }
+
+    return rc;
+}
+
+Result fsOpenDataStorageByCurrentProcessFromDomainFwd(Service* s, u32 *out_object_id) {
+    IpcCommand c;
+    ipcInitialize(&c);
+
+    struct {
+        u64 magic;
+        u64 cmd_id;
+    } *raw;
+
+    raw = ipcPrepareHeaderForDomain(&c, sizeof(*raw), s->object_id);
+
+    raw->magic = SFCI_MAGIC;
+    raw->cmd_id = 200;
+
+    Result rc = serviceIpcDispatch(s);
+
+    if (R_SUCCEEDED(rc)) {
+        IpcParsedCommand r;
+        ipcParseForDomain(&r);
+
+        struct {
+            u64 magic;
+            u64 result;
+            u32 object_id;
+        } *resp = r.Raw;
+
+        rc = resp->result;
+
+        if (R_SUCCEEDED(rc)) {
+            *out_object_id = resp->object_id;
+        }
+    }
+
+    return rc;
+}
+
 Result fsOpenDataStorageByDataId(Service* s, FsStorageId storage_id, u64 data_id, FsStorage* out) {
     IpcCommand c;
     ipcInitialize(&c);

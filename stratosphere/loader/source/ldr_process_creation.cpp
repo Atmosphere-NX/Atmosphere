@@ -186,6 +186,9 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
         }
     }
     
+    /* Send the pid/tid pair to anyone interested in man-in-the-middle-attacking it. */
+    Registration::AssociatePidTidForMitM(index);
+    
     rc = 0;  
 CREATE_PROCESS_END:
     if (R_SUCCEEDED(rc)) {

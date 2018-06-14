@@ -9,7 +9,7 @@
 
 class SystemEvent final : public IEvent {
     public:
-        SystemEvent(EventCallback callback) : IEvent(0, callback) {
+        SystemEvent(void *a, EventCallback callback) : IEvent(0, a, callback) {
             Handle wait_h;
             Handle sig_h;
             if (R_FAILED(svcCreateEvent(&sig_h, &wait_h))) {

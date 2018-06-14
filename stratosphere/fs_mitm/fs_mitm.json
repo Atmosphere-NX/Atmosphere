@@ -1,12 +1,12 @@
 {
     "name" : "fs.mitm",
     "title_id" : "0x010041544D530000",
-	"main_thread_stack_size" : "0x8000",
-	"main_thread_priority":	44,
+	"main_thread_stack_size" : "0x20000",
+	"main_thread_priority":	43,
 	"default_cpu_id":	3,
     "process_category" : 1,
     "kernel_capabilities" : {
-        "handle_table_size" : 256,
+        "handle_table_size" : 512,
 		"syscalls":	{
 			"svcSetHeapSize":	"0x01",
 			"svcSetMemoryPermission":	"0x02",

@@ -9,7 +9,8 @@ enum UserServiceCmd {
     User_Cmd_UnregisterService = 3,
     
     User_Cmd_AtmosphereInstallMitm = 65000,
-    User_Cmd_AtmosphereUninstallMitm = 65001
+    User_Cmd_AtmosphereUninstallMitm = 65001,
+    User_Cmd_AtmosphereAssociatePidTidForMitm = 65002
 };
 
 class UserService final : public IServiceObject {
@@ -39,6 +40,7 @@ class UserService final : public IServiceObject {
         std::tuple<Result> unregister_service(u64 service);
         
         /* Atmosphere commands. */
-        std::tuple<Result, MovedHandle> install_mitm(u64 service);
+        std::tuple<Result, MovedHandle, MovedHandle> install_mitm(u64 service);
         std::tuple<Result> uninstall_mitm(u64 service);
+        std::tuple<Result> associate_pid_tid_for_mitm(u64 pid, u64 tid);
 };

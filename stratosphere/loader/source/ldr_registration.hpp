@@ -76,4 +76,7 @@ class Registration {
         static void AddNroToProcess(u64 index, MappedCodeMemory *nro, MappedCodeMemory *bss, u32 text_size, u32 ro_size, u32 rw_size, u8 *build_id);
         static Result RemoveNroInfo(u64 index, Handle process_h, u64 base_address);
         static Result GetNsoInfosForProcessId(NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written);
+        
+        /* Atmosphere MitM Extension. */
+        static void AssociatePidTidForMitM(u64 index);
 };

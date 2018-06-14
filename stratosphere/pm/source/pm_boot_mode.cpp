@@ -1,4 +1,5 @@
 #include <switch.h>
+#include <stratosphere.hpp>
 #include "pm_boot_mode.hpp"
 
 static bool g_is_maintenance_boot = false;

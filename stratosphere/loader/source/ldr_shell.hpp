@@ -15,6 +15,10 @@ class ShellService final : public IServiceObject {
             return 0;
         }
         
+        ShellService *clone() override {
+            return new ShellService();
+        }
+        
     private:
         /* Actual commands. */
         std::tuple<Result> add_title_to_launch_queue(u64 tid, InPointer<char> args);

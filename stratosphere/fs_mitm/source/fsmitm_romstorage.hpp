@@ -23,12 +23,12 @@ class RomFileStorage : public IROStorage {
         RomFileStorage *Clone() override {
             return new RomFileStorage(this->base_file);
         };
-    protected:
-        Result Read(void *buffer, size_t size, u64 offset, u64 *out_read_size) override {
+    public:
+        Result Read(void *buffer, size_t size, u64 offset) override {
             size_t out_sz = 0;
             Result rc = fsFileRead(this->base_file, offset, buffer, size, &out_sz);
-            if (R_SUCCEEDED(rc)) {
-                *out_read_size = out_sz;
+            if (R_SUCCEEDED(rc) && out_sz != size && out_sz) {
+                return this->Read((void *)((uintptr_t)buffer + out_sz), size - out_sz, offset + out_sz);
             }
             return rc;
         };
@@ -36,7 +36,7 @@ class RomFileStorage : public IROStorage {
             return fsFileGetSize(this->base_file, out_size);
         };
         Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override {
-            /* TODO: Merge into libnx. */
+            /* TODO: Merge into libnx? */
             return fsFileOperateRange(this->base_file, operation_type, offset, size, out_range_info);
         };
 };
@@ -60,20 +60,16 @@ class RomInterfaceStorage : public IROStorage {
         RomInterfaceStorage *Clone() override {
             return new RomInterfaceStorage(this->base_storage);
         };
-    protected:
-        Result Read(void *buffer, size_t size, u64 offset, u64 *out_read_size) override {
-            Result rc = fsStorageRead(this->base_storage, offset, buffer, size);
-            if (R_SUCCEEDED(rc)) {
-                *out_read_size = size;
-            }
-            return rc;
+    public:
+        Result Read(void *buffer, size_t size, u64 offset) override {
+            return fsStorageRead(this->base_storage, offset, buffer, size);
         };
         Result GetSize(u64 *out_size) override {
-            /* TODO: Merge into libnx. */
+            /* TODO: Merge into libnx? */
             return fsStorageGetSize(this->base_storage, out_size);
         };
         Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override {
-            /* TODO: Merge into libnx. */
+            /* TODO: Merge into libnx? */
             return fsStorageOperateRange(this->base_storage, operation_type, offset, size, out_range_info);
         };
 };

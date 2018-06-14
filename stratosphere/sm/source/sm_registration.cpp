@@ -188,7 +188,37 @@ Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
     if (target_service->mitm_pid == 0 || target_service->mitm_pid == pid) {
         rc = svcConnectToPort(out, target_service->port_h);
     } else {
-        rc = svcConnectToPort(out, target_service->mitm_port_h);
+        IpcCommand c;
+        ipcInitialize(&c);
+        struct {
+            u64 magic;
+            u64 cmd_id;
+            u64 pid;
+        } *info = ((decltype(info))ipcPrepareHeader(&c, sizeof(*info)));
+        info->magic = SFCI_MAGIC;
+        info->cmd_id = 65000;
+        info->pid = pid;
+        rc = ipcDispatch(target_service->mitm_query_h);
+        if (R_SUCCEEDED(rc)) {
+            IpcParsedCommand r;
+            ipcParse(&r);
+            struct {
+                u64 magic;
+                u64 result;
+                u64 should_mitm;
+            } *resp = ((decltype(resp))r.Raw);
+            rc = resp->result;
+            if (R_SUCCEEDED(rc)) {
+                if (resp->should_mitm) {
+                    rc = svcConnectToPort(out, target_service->mitm_port_h);
+                } else {
+                    rc = svcConnectToPort(out, target_service->port_h);
+                }
+            }
+        }
+        if (R_FAILED(rc)) {
+            rc = svcConnectToPort(out, target_service->port_h);
+        }
     }
     if (R_FAILED(rc)) {
         if ((rc & 0x3FFFFF) == 0xE01) {
@@ -343,12 +373,13 @@ Result Registration::UnregisterServiceForPid(u64 pid, u64 service) {
     
     svcCloseHandle(target_service->port_h);
     svcCloseHandle(target_service->mitm_port_h);
+    svcCloseHandle(target_service->mitm_query_h);
     *target_service = (const Registration::Service){0};
     return 0;
 }
 
 
-Result Registration::InstallMitmForPid(u64 pid, u64 service, Handle *out) {
+Result Registration::InstallMitmForPid(u64 pid, u64 service, Handle *out, Handle *query_out) {
     if (!service) {
         return 0xC15;
     }
@@ -387,7 +418,7 @@ Result Registration::InstallMitmForPid(u64 pid, u64 service, Handle *out) {
     u64 x = 0;
     Result rc = svcCreatePort(out, &target_service->mitm_port_h, target_service->max_sessions, target_service->is_light, (char *)&x);
     
-    if (R_SUCCEEDED(rc)) {
+    if (R_SUCCEEDED(rc) && R_SUCCEEDED((rc = svcCreateSession(query_out, &target_service->mitm_query_h, 0, 0)))) {
         target_service->mitm_pid = pid;
     }
     
@@ -416,6 +447,28 @@ Result Registration::UninstallMitmForPid(u64 pid, u64 service) {
     }
     
     svcCloseHandle(target_service->mitm_port_h);
+    svcCloseHandle(target_service->mitm_query_h);
     target_service->mitm_pid = 0;
     return 0;
+}
+
+Result Registration::AssociatePidTidForMitm(u64 pid, u64 tid) {
+    for (auto &service : g_service_list) {
+        if (service.mitm_pid) {
+            IpcCommand c;
+            ipcInitialize(&c);
+            struct {
+                u64 magic;
+                u64 cmd_id;
+                u64 pid;
+                u64 tid;
+            } *info = ((decltype(info))ipcPrepareHeader(&c, sizeof(*info)));
+            info->magic = SFCI_MAGIC;
+            info->cmd_id = 65001;
+            info->pid = pid;
+            info->tid = tid;
+            ipcDispatch(service.mitm_query_h);
+        }
+    }
+    return 0x0;
 }

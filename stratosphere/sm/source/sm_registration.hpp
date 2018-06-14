@@ -26,6 +26,7 @@ class Registration {
             /* Extension. */
             u64 mitm_pid;
             Handle mitm_port_h;
+            Handle mitm_query_h;
         };
         
         /* Utilities. */
@@ -52,6 +53,7 @@ class Registration {
         static Result UnregisterServiceForPid(u64 pid, u64 service);
         
         /* Extension. */
-        static Result InstallMitmForPid(u64 pid, u64 service, Handle *out);
+        static Result InstallMitmForPid(u64 pid, u64 service, Handle *out, Handle *query_out);
         static Result UninstallMitmForPid(u64 pid, u64 service);
+        static Result AssociatePidTidForMitm(u64 pid, u64 tid);
 };

@@ -18,19 +18,7 @@ class ProcessWaiter final : public IWaitable {
             return &this->process; 
         }
         
-        /* IWaitable */
-        unsigned int get_num_waitables() override {
-            return 1;
-        }
-        
-        void get_waitables(IWaitable **dst) override {
-            dst[0] = this;
-        }
-        
-        void delete_child(IWaitable *child) override {
-            /* TODO: Panic, because we can never have any children. */
-        }
-        
+        /* IWaitable */        
         Handle get_handle() override {
             return this->process.handle;
         }

@@ -27,10 +27,10 @@ class IServer;
 class IServiceObject;
 
 template <typename T>
-class ISession : public IWaitable, public DomainOwner {
+class ISession : public IWaitable {
     static_assert(std::is_base_of<IServiceObject, T>::value, "Service Objects must derive from IServiceObject");
     protected:
-        T *service_object;
+        std::shared_ptr<T> service_object;
         IServer<T> *server;
         Handle server_handle;
         Handle client_handle;
@@ -38,35 +38,35 @@ class ISession : public IWaitable, public DomainOwner {
         size_t pointer_buffer_size;
         
         bool is_domain;
+        std::shared_ptr<DomainOwner> domain;
         
         
-        IServiceObject *active_object;
+        std::shared_ptr<IServiceObject> active_object;
     
     static_assert(sizeof(pointer_buffer) <= POINTER_BUFFER_SIZE_MAX, "Incorrect Size for PointerBuffer!");
     
     public:
         ISession<T>(IServer<T> *s, Handle s_h, Handle c_h, size_t pbs = 0x400) : server(s), server_handle(s_h), client_handle(c_h), pointer_buffer_size(pbs) {
-            this->service_object = new T();
+            this->service_object = std::make_shared<T>();
             if (this->pointer_buffer_size) {
                 this->pointer_buffer = new char[this->pointer_buffer_size];
             }
             this->is_domain = false;
-            this->active_object = NULL;
+            this->domain.reset();
+            this->active_object.reset();
         }
         
-        ISession<T>(IServer<T> *s, Handle s_h, Handle c_h, T *so, size_t pbs = 0x400) : service_object(so), server(s), server_handle(s_h), client_handle(c_h), pointer_buffer_size(pbs) {
+        ISession<T>(IServer<T> *s, Handle s_h, Handle c_h, std::shared_ptr<T> so, size_t pbs = 0x400) : service_object(so), server(s), server_handle(s_h), client_handle(c_h), pointer_buffer_size(pbs) {
             if (this->pointer_buffer_size) {
                 this->pointer_buffer = new char[this->pointer_buffer_size];
             }
             this->is_domain = false;
-            this->active_object = NULL;
+            this->domain.reset();
+            this->active_object.reset();
         }
 
         ~ISession() override {
             delete this->pointer_buffer;
-            if (this->service_object && !this->is_domain) {
-                //delete this->service_object;
-            }
             if (server_handle) {
                 svcCloseHandle(server_handle);
             }
@@ -86,12 +86,12 @@ class ISession : public IWaitable, public DomainOwner {
             }
         }
         
-        T *get_service_object() { return this->service_object; }
+        std::shared_ptr<T> get_service_object() { return this->service_object; }
         Handle get_server_handle() { return this->server_handle; }
         Handle get_client_handle() { return this->client_handle; }
         
         
-        DomainOwner *get_owner() { return is_domain ? this : NULL; }
+        DomainOwner *get_owner() { return this->is_domain ? this->domain.get() : NULL; }
         
         /* IWaitable */        
         Handle get_handle() override {
@@ -125,7 +125,7 @@ class ISession : public IWaitable, public DomainOwner {
            
             
             if (r.IsDomainMessage && r.MessageType == DomainMessageType_Close) {
-                this->delete_object(this->active_object);
+                this->domain->delete_object(this->active_object);
                 this->active_object = NULL;
                 struct {
                     u64 magic;
@@ -188,7 +188,7 @@ class ISession : public IWaitable, public DomainOwner {
             ipcAddRecvStatic(&c_for_reply, this->pointer_buffer, this->pointer_buffer_size, 0);
             ipcPrepareHeader(&c_for_reply, 0);
             
-            if (R_SUCCEEDED(rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, 0, timeout))) {
+            if (R_SUCCEEDED(rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, 0, U64_MAX))) {
                 if (handle_index != 0) {
                     /* TODO: Panic? */
                 }                                
@@ -203,7 +203,7 @@ class ISession : public IWaitable, public DomainOwner {
                         if (!r.IsDomainMessage || r.ThisObjectId >= DOMAIN_ID_MAX) {
                             retval = 0xF601;
                         } else {
-                            this->active_object = this->get_domain_object(r.ThisObjectId);
+                            this->active_object = this->domain->get_domain_object(r.ThisObjectId);
                         }
                     } else {
                         this->active_object = this->service_object;
@@ -218,19 +218,22 @@ class ISession : public IWaitable, public DomainOwner {
                 
                 if (retval == RESULT_DEFER_SESSION) {
                     /* Session defer. */
-                    this->active_object = NULL;
+                    this->active_object.reset();
                     this->set_deferred(true);
                     rc = retval;
                 } else if (retval == 0xF601) {
                     /* Session close. */
-                    this->active_object = NULL;
+                    this->active_object.reset();
                     rc = retval;
                 } else {
                     if (R_SUCCEEDED(retval)) {
                         this->postprocess(r, cmd_id);
                     }
-                    this->active_object = NULL;
+                    this->active_object.reset();
                     rc = svcReplyAndReceive(&handle_index, &this->server_handle, 0, this->server_handle, 0);
+                    if (rc == 0xEA01) {
+                        rc = 0x0;
+                    }
                     this->cleanup();
                 }
             }

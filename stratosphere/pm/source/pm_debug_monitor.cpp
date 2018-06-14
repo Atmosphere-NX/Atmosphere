@@ -1,4 +1,5 @@
 #include <switch.h>
+#include <stratosphere.hpp>
 #include "pm_registration.hpp"
 #include "pm_debug_monitor.hpp"
 

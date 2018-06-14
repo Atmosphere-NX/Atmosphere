@@ -16,3 +16,4 @@
 #include "stratosphere/hossynch.hpp"
 
 #include "stratosphere/waitablemanager.hpp"
+#include "stratosphere/multithreadedwaitablemanager.hpp"

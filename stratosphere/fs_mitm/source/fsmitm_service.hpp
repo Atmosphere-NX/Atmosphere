@@ -6,17 +6,21 @@
 
 enum FspSrvCmd {
     FspSrv_Cmd_SetCurrentProcess = 1,
+    FspSrv_Cmd_OpenDataStorageByCurrentProcess = 200,
     FspSrv_Cmd_OpenDataStorageByDataId = 202,
 };
 
 class FsMitMService : public IMitMServiceObject {      
     private:
         bool has_initialized;
-        u64 process_id;
-        u64 title_id;
+        u64 init_pid;
     public:
-        FsMitMService(Service *s) : IMitMServiceObject(s), has_initialized(false), process_id(0), title_id(0) {
+        FsMitMService(Service *s) : IMitMServiceObject(s), has_initialized(false), init_pid(0) {
             /* ... */
+        }
+        
+        static bool should_mitm(u64 pid, u64 tid) {
+            return tid >= 0x0100000000010000ULL;
         }
         
         FsMitMService *clone() override {
@@ -28,8 +32,7 @@ class FsMitMService : public IMitMServiceObject {
         void clone_to(void *o) override {
             FsMitMService *other = (FsMitMService *)o;
             other->has_initialized = has_initialized;
-            other->process_id = process_id;
-            other->title_id = title_id;
+            other->init_pid = init_pid;
         }
         
         virtual Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
@@ -38,5 +41,6 @@ class FsMitMService : public IMitMServiceObject {
     
     protected:
         /* Overridden commands. */
+        std::tuple<Result, OutSession<IStorageInterface>> open_data_storage_by_current_process();
         std::tuple<Result, OutSession<IStorageInterface>> open_data_storage_by_data_id(u64 storage_id, u64 data_id);
 };
