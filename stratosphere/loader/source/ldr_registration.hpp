@@ -1,5 +1,6 @@
 #pragma once
 #include <switch.h>
+#include <array>
 
 #include "ldr_map.hpp"
 
@@ -48,14 +49,14 @@ class Registration {
             u64 process_id;
             u64 title_id;
             Registration::TidSid tid_sid;
-            Registration::NsoInfoHolder nso_infos[NSO_INFO_MAX];
-            Registration::NroInfo nro_infos[NRO_INFO_MAX];
-            MappedCodeMemory nrr_infos[NRR_INFO_MAX];
+            std::array<Registration::NsoInfoHolder, NSO_INFO_MAX> nso_infos;
+            std::array<Registration::NroInfo, NRO_INFO_MAX> nro_infos;
+            std::array<MappedCodeMemory, NRR_INFO_MAX> nrr_infos;
             void *owner_ro_service;
         };
         
         struct List {
-            Registration::Process processes[REGISTRATION_LIST_MAX];
+            std::array<Registration::Process, REGISTRATION_LIST_MAX> processes;
             u64 num_processes;
         };
         

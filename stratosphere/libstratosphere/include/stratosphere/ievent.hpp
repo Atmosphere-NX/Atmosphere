@@ -1,5 +1,6 @@
 #pragma once
 #include <switch.h>
+#include <algorithm>
 #include <vector>
 
 #include "iwaitable.hpp"
@@ -22,9 +23,7 @@ class IEvent : public IWaitable {
         }
         
         ~IEvent() {
-            for (auto &h : this->handles) {
-                svcCloseHandle(h);
-            }
+            std::for_each(handles.begin(), handles.end(), svcCloseHandle);
         }
         
         virtual Result signal_event() = 0;

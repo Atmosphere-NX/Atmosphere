@@ -74,8 +74,8 @@ void LaunchQueue::clear() {
 
 
 LaunchQueue::LaunchItem *LaunchQueue::get_item(u64 tid) {
-    int idx;
-    if ((idx = get_index(tid)) == LAUNCH_QUEUE_FULL) {
+    int idx = get_index(tid);
+    if (idx == LAUNCH_QUEUE_FULL) {
         return NULL;
     }
     return &g_launch_queue[idx];
