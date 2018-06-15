@@ -52,21 +52,6 @@ class ProcessList final : public IWaitable {
         }
         
         /* IWaitable */
-        unsigned int get_num_waitables() override {
-            return process_waiters.size();
-        }
-        
-        void get_waitables(IWaitable **dst) override {
-            Lock();
-            for (unsigned int i = 0; i < process_waiters.size(); i++) {
-                dst[i] = process_waiters[i];
-            }
-            Unlock();
-        }
-        
-        void delete_child(IWaitable *child) override {
-            /* TODO: Panic, because we should never be asked to delete a child. */
-        }
         
         Handle get_handle() override {
             /* TODO: Panic, because we don't have a handle. */

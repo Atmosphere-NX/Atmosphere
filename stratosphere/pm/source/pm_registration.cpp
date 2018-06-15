@@ -41,15 +41,15 @@ void Registration::AutoProcessListLock::Unlock() {
 }
 
 void Registration::InitializeSystemResources() {
-    g_process_event = new SystemEvent(&IEvent::PanicCallback);
-    g_debug_title_event = new SystemEvent(&IEvent::PanicCallback);
-    g_debug_application_event = new SystemEvent(&IEvent::PanicCallback);
-    g_process_launch_start_event = new SystemEvent(&Registration::ProcessLaunchStartCallback);
+    g_process_event = new SystemEvent(NULL, &IEvent::PanicCallback);
+    g_debug_title_event = new SystemEvent(NULL, &IEvent::PanicCallback);
+    g_debug_application_event = new SystemEvent(NULL, &IEvent::PanicCallback);
+    g_process_launch_start_event = new SystemEvent(NULL, &Registration::ProcessLaunchStartCallback);
     
     ResourceLimitUtils::InitializeLimits();
 }
 
-Result Registration::ProcessLaunchStartCallback(Handle *handles, size_t num_handles, u64 timeout) {
+Result Registration::ProcessLaunchStartCallback(void *arg, Handle *handles, size_t num_handles, u64 timeout) {
     svcClearEvent(handles[0]);
     Registration::HandleProcessLaunch();
     return 0;

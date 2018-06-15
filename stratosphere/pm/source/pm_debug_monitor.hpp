@@ -32,6 +32,10 @@ class DebugMonitorService final : public IServiceObject {
         Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) override;
         Result handle_deferred() override;
         
+        DebugMonitorService *clone() override {
+            return new DebugMonitorService(*this);
+        }
+        
     private:
         /* Actual commands. */
         std::tuple<Result, u32> get_unknown_stub(u64 unknown, OutBuffer<u8> out_unknown);

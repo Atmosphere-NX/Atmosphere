@@ -46,7 +46,7 @@ class IEvent : public IWaitable {
             return this->callback(this->arg, this->handles.data(), this->handles.size(), timeout);
         }
         
-        static Result PanicCallback(Handle *handles, size_t num_handles, u64 timeout) {
+        static Result PanicCallback(void *arg, Handle *handles, size_t num_handles, u64 timeout) {
             /* TODO: Panic. */
             return 0xCAFE;
         } 
