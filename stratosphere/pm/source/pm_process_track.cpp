@@ -5,9 +5,9 @@
 
 void ProcessTracking::MainLoop(void *arg) {
     /* Make a new waitable manager. */
-    WaitableManager *process_waiter = new WaitableManager(U64_MAX);
+    MultiThreadedWaitableManager *process_waiter = new MultiThreadedWaitableManager(1, U64_MAX);
     process_waiter->add_waitable(Registration::GetProcessLaunchStartEvent());
-    process_waiter->add_waitable(Registration::GetProcessList());
+    Registration::SetProcessListManager(process_waiter);
     
     /* Service processes. */
     process_waiter->process();

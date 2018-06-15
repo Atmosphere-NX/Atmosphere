@@ -53,7 +53,7 @@ IWaitable *MultiThreadedWaitableManager::get_waitable() {
             for (auto & waitable : this->waitables) {
                 waitable->update_priority();
             }
-        } else if (rc != 0xF601) {
+        } else if (rc != 0xF601 && rc != 0xE401) {
             /* TODO: Panic. When can this happen? */
         } else {
             for (int i = 0; i < handle_index; i++) {

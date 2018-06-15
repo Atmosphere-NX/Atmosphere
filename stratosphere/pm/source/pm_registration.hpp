@@ -1,6 +1,7 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include <memory>
 
 #define LAUNCHFLAGS_NOTIFYWHENEXITED(flags) (flags & 1)
 #define LAUNCHFLAGS_STARTSUSPENDED(flags) (flags & (kernelAbove500() ? 0x10 : 0x2))
@@ -42,18 +43,18 @@ class Registration {
                 
         static void InitializeSystemResources();
         static IWaitable *GetProcessLaunchStartEvent();
+        static void SetProcessListManager(WaitableManager *m);
         static Result ProcessLaunchStartCallback(void *arg, Handle *handles, size_t num_handles, u64 timeout);
         
-        static IWaitable *GetProcessList();
-        static void HandleSignaledProcess(Process *process);
-        static void FinalizeExitedProcess(Process *process);
+        static Result HandleSignaledProcess(std::shared_ptr<Process> process);
+        static void FinalizeExitedProcess(std::shared_ptr<Process> process);
         
-        static void AddProcessToList(Process *process);
+        static void AddProcessToList(std::shared_ptr<Process> process);
         static void RemoveProcessFromList(u64 pid);
         static void SetProcessState(u64 pid, ProcessState new_state);
         
-        static Process *GetProcess(u64 pid);
-        static Process *GetProcessByTitleId(u64 tid);
+        static std::shared_ptr<Registration::Process> GetProcess(u64 pid);
+        static std::shared_ptr<Registration::Process> GetProcessByTitleId(u64 tid);
         static Result GetDebugProcessIds(u64 *out_pids, u32 max_out, u32 *num_out);
         static Handle GetProcessEventHandle();
         static void GetProcessEventType(u64 *out_pid, u64 *out_type);
@@ -68,6 +69,6 @@ class Registration {
         static Result LaunchProcess(u64 title_id, FsStorageId storage_id, u64 launch_flags, u64 *out_pid);
         static Result LaunchProcessByTidSid(TidSid tid_sid, u64 launch_flags, u64 *out_pid);
         
-        static bool HasApplicationProcess(Process **out);
+        static bool HasApplicationProcess(std::shared_ptr<Process> *out);
 };
 

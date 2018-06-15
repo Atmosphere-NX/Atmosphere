@@ -4,23 +4,19 @@
 
 class ProcessWaiter final : public IWaitable {
     public:
-        Registration::Process process;
+        std::shared_ptr<Registration::Process> process;
         
-        ProcessWaiter(Registration::Process p) : process(p) {
-            
+        ProcessWaiter(std::shared_ptr<Registration::Process> p) : process(p) {
+            /* ... */
         }
         
-        ProcessWaiter(Registration::Process *p) {
-            this->process = *p;
-        }
-        
-        Registration::Process *get_process() { 
-            return &this->process; 
+        std::shared_ptr<Registration::Process> get_process() { 
+            return this->process; 
         }
         
         /* IWaitable */        
         Handle get_handle() override {
-            return this->process.handle;
+            return this->process->handle;
         }
         
         void handle_deferred() override {
@@ -28,16 +24,16 @@ class ProcessWaiter final : public IWaitable {
         }
         
         Result handle_signaled(u64 timeout) override {
-            Registration::HandleSignaledProcess(this->get_process());
-            return 0;
+            return Registration::HandleSignaledProcess(this->get_process());
         }
 };
 
-class ProcessList final : public IWaitable {
+class ProcessList final {
     private:      
         HosRecursiveMutex mutex;
+        WaitableManager *manager;
     public:
-        std::vector<ProcessWaiter *> process_waiters;
+        std::vector<std::shared_ptr<Registration::Process>> processes;
         
         void Lock() {
             this->mutex.Lock();
@@ -51,20 +47,12 @@ class ProcessList final : public IWaitable {
             return this->mutex.TryLock();
         }
         
-        /* IWaitable */
-        
-        Handle get_handle() override {
-            /* TODO: Panic, because we don't have a handle. */
-            return 0;
+        void set_manager(WaitableManager *manager) {
+            this->manager = manager;
         }
         
-        void handle_deferred() override {
-            /* TODO: Panic, because we can never be deferred. */
-        }
-        
-        Result handle_signaled(u64 timeout) override {
-            /* TODO: Panic, because we can never be signaled. */         
-            return 0;
+        WaitableManager *get_manager() {
+            return this->manager;
         }
 };
 

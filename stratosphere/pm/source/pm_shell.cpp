@@ -92,7 +92,7 @@ std::tuple<Result, u64> ShellService::launch_process(u64 launch_flags, Registrat
 std::tuple<Result> ShellService::terminate_process_id(u64 pid) {
     Registration::AutoProcessListLock auto_lock;
     
-    Registration::Process *proc = Registration::GetProcess(pid);
+    std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
     if (proc != NULL) {
         return {svcTerminateProcess(proc->handle)};
     } else {
@@ -103,7 +103,7 @@ std::tuple<Result> ShellService::terminate_process_id(u64 pid) {
 std::tuple<Result> ShellService::terminate_title_id(u64 tid) {
     Registration::AutoProcessListLock auto_lock;
     
-    Registration::Process *proc = Registration::GetProcessByTitleId(tid);
+    std::shared_ptr<Registration::Process> proc = Registration::GetProcessByTitleId(tid);
     if (proc != NULL) {
         return {svcTerminateProcess(proc->handle)};
     } else {
@@ -124,7 +124,7 @@ std::tuple<Result, u64, u64> ShellService::get_process_event_type() {
 std::tuple<Result> ShellService::finalize_exited_process(u64 pid) {
     Registration::AutoProcessListLock auto_lock;
     
-    Registration::Process *proc = Registration::GetProcess(pid);
+    std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
     if (proc == NULL) {
         return {0x20F};
     } else if (proc->state != ProcessState_Exited) {
@@ -138,7 +138,7 @@ std::tuple<Result> ShellService::finalize_exited_process(u64 pid) {
 std::tuple<Result> ShellService::clear_process_notification_flag(u64 pid) {
     Registration::AutoProcessListLock auto_lock;
     
-    Registration::Process *proc = Registration::GetProcess(pid);
+    std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
     if (proc != NULL) {
         proc->flags &= ~2;
         return {0x0};
@@ -159,7 +159,7 @@ std::tuple<Result> ShellService::notify_boot_finished() {
 std::tuple<Result, u64> ShellService::get_application_process_id() {
     Registration::AutoProcessListLock auto_lock;
     
-    Registration::Process *app_proc;
+    std::shared_ptr<Registration::Process> app_proc;
     if (Registration::HasApplicationProcess(&app_proc)) {
         return {0, app_proc->pid};
     }

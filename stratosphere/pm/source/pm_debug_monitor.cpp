@@ -95,8 +95,8 @@ std::tuple<Result> DebugMonitorService::launch_debug_process(u64 pid) {
 std::tuple<Result, u64> DebugMonitorService::get_title_process_id(u64 tid) {
     Registration::AutoProcessListLock auto_lock;
     
-    Registration::Process *proc = Registration::GetProcessByTitleId(tid);
-    if (proc != NULL) {
+    std::shared_ptr<Registration::Process> proc = Registration::GetProcessByTitleId(tid);
+    if (proc != nullptr) {
         return {0, proc->pid};
     } else {
         return {0x20F, 0};
@@ -112,7 +112,7 @@ std::tuple<Result, CopiedHandle> DebugMonitorService::enable_debug_for_tid(u64 t
 std::tuple<Result, u64> DebugMonitorService::get_application_process_id() {
     Registration::AutoProcessListLock auto_lock;
     
-    Registration::Process *app_proc;
+    std::shared_ptr<Registration::Process> app_proc;
     if (Registration::HasApplicationProcess(&app_proc)) {
         return {0, app_proc->pid};
     }
@@ -126,7 +126,7 @@ std::tuple<Result, CopiedHandle> DebugMonitorService::enable_debug_for_applicati
 }
 
 std::tuple<Result, CopiedHandle> DebugMonitorService::get_process_handle(u64 pid) {
-    Registration::Process *proc = Registration::GetProcess(pid);
+    std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
     if(proc == NULL) {
         return {0x20F, 0};
     }
