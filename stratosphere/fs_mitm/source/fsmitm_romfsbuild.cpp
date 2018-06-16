@@ -77,7 +77,7 @@ void RomFSBuildContext::MergeSdFiles() {
     if (R_FAILED(fsMountSdcard(&sd_filesystem))) {
         return;
     }
-    this->cur_source_type = RomFSDataSource_LooseFile;
+    this->cur_source_type = RomFSDataSource::LooseFile;
     this->VisitDirectory(&sd_filesystem, this->root);
     fsFsClose(&sd_filesystem);
 }
@@ -310,7 +310,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     }
     
     out_infos->clear();
-    out_infos->push_back(RomFSSourceInfo(0, sizeof(*header), header, RomFSDataSource_Memory));
+    out_infos->push_back(RomFSSourceInfo(0, sizeof(*header), header, RomFSDataSource::Memory));
         
     /* Determine file offsets. */
     cur_file = this->files;
@@ -356,8 +356,8 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
         
         
         switch (cur_file->source) {
-            case RomFSDataSource_BaseRomFS:
-            case RomFSDataSource_FileRomFS:
+            case RomFSDataSource::BaseRomFS:
+            case RomFSDataSource::FileRomFS:
                 /* Try to compact, if possible. */
                 if (out_infos->back().GetType() == cur_file->source) {
                     out_infos->back().size = cur_file->offset + ROMFS_FILEPARTITION_OFS + cur_file->size - out_infos->back().virtual_offset;
@@ -365,7 +365,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
                     out_infos->push_back(RomFSSourceInfo(cur_file->offset + ROMFS_FILEPARTITION_OFS, cur_file->size, cur_file->orig_offset + ROMFS_FILEPARTITION_OFS, cur_file->source));
                 }
                 break;
-            case RomFSDataSource_LooseFile:
+            case RomFSDataSource::LooseFile:
                 {
                     char *path = new char[cur_file->path_len + 1];
                     strcpy(path, cur_file->path);
@@ -416,5 +416,5 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     header->file_hash_table_ofs = header->dir_table_ofs + header->dir_table_size;
     header->file_table_ofs = header->file_hash_table_ofs + header->file_hash_table_size;
     
-    out_infos->push_back(RomFSSourceInfo(header->dir_hash_table_ofs, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size, metadata, RomFSDataSource_Memory));
+    out_infos->push_back(RomFSSourceInfo(header->dir_hash_table_ofs, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size, metadata, RomFSDataSource::Memory));
 }

@@ -19,10 +19,10 @@ LayeredRomFS::LayeredRomFS(std::shared_ptr<RomInterfaceStorage> s_r, std::shared
         build_ctx.MergeSdFiles();
     }
     if (this->file_romfs) {
-        build_ctx.MergeRomStorage(this->file_romfs.get(), RomFSDataSource_FileRomFS);
+        build_ctx.MergeRomStorage(this->file_romfs.get(), RomFSDataSource::FileRomFS);
     }
     if (this->storage_romfs) {
-        build_ctx.MergeRomStorage(this->storage_romfs.get(), RomFSDataSource_BaseRomFS);
+        build_ctx.MergeRomStorage(this->storage_romfs.get(), RomFSDataSource::BaseRomFS);
     }
     build_ctx.Build(this->p_source_infos.get());
 }

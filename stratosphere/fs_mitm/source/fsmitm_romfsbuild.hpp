@@ -8,11 +8,11 @@
 #define ROMFS_FILEPARTITION_OFS 0x200
 
 /* Types for RomFS Meta construction. */
-enum RomFSDataSource {
-    RomFSDataSource_BaseRomFS,
-    RomFSDataSource_FileRomFS,
-    RomFSDataSource_LooseFile,
-    RomFSDataSource_Memory,
+enum class RomFSDataSource {
+    BaseRomFS,
+    FileRomFS,
+    LooseFile,
+    Memory,
 };
 
 struct RomFSBaseSourceInfo {
@@ -36,10 +36,10 @@ class RomFSSourceInfo {
 
     static InfoVariant MakeInfoVariantFromOffset(u64 offset, RomFSDataSource t) {
         switch(t) {
-            case RomFSDataSource_BaseRomFS:
+            case RomFSDataSource::BaseRomFS:
                 return RomFSBaseSourceInfo { offset };
 
-            case RomFSDataSource_FileRomFS:
+            case RomFSDataSource::FileRomFS:
                 return RomFSFileSourceInfo { offset };
 
             default:
@@ -49,10 +49,10 @@ class RomFSSourceInfo {
 
     static InfoVariant MakeInfoVariantFromPointer(const void *arg, RomFSDataSource t) {
         switch(t) {
-            case RomFSDataSource_LooseFile:
+            case RomFSDataSource::LooseFile:
                 return RomFSLooseSourceInfo { (decltype(RomFSLooseSourceInfo::path))arg };
 
-            case RomFSDataSource_Memory:
+            case RomFSDataSource::Memory:
                 return RomFSMemorySourceInfo { (decltype(RomFSMemorySourceInfo::data))arg };
 
             default:
@@ -78,19 +78,19 @@ class RomFSSourceInfo {
 
     struct GetTypeHelper {
         RomFSDataSource operator()(const RomFSBaseSourceInfo& info) const {
-            return RomFSDataSource_BaseRomFS;
+            return RomFSDataSource::BaseRomFS;
         }
 
         RomFSDataSource operator()(const RomFSFileSourceInfo& info) const {
-            return RomFSDataSource_FileRomFS;
+            return RomFSDataSource::FileRomFS;
         }
 
         RomFSDataSource operator()(const RomFSLooseSourceInfo& info) const {
-            return RomFSDataSource_LooseFile;
+            return RomFSDataSource::LooseFile;
         }
 
         RomFSDataSource operator()(const RomFSMemorySourceInfo& info) const {
-            return RomFSDataSource_Memory;
+            return RomFSDataSource::Memory;
         }
     };
 
