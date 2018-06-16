@@ -1,5 +1,6 @@
 #pragma once
 #include <switch.h>
+#include <algorithm>
 #include <type_traits>
 
 #include "iserviceobject.hpp"

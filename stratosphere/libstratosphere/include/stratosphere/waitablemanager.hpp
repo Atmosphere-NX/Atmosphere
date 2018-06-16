@@ -1,5 +1,7 @@
 #pragma once
 #include <switch.h>
+#include <algorithm>
+#include <memory>
 #include <vector>
 
 #include "waitablemanagerbase.hpp"
@@ -21,10 +23,7 @@ class WaitableManager : public WaitableManagerBase {
         WaitableManager(u64 t) : waitables(0), timeout(t), has_new_items(false) { }
         ~WaitableManager() override {
             /* This should call the destructor for every waitable. */
-            for (auto & waitable : waitables) {
-                delete waitable;
-            }
-            waitables.clear();
+            std::for_each(waitables.begin(), waitables.end(), std::default_delete<IWaitable>{});
         }
         
         virtual void add_waitable(IWaitable *waitable);

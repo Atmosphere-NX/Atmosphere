@@ -3,8 +3,8 @@
 #include <stratosphere/servicesession.hpp>
 #include "sm_registration.hpp"
 
-static Registration::Process g_process_list[REGISTRATION_LIST_MAX_PROCESS] = {0};
-static Registration::Service g_service_list[REGISTRATION_LIST_MAX_SERVICE] = {0};
+static std::array<Registration::Process, REGISTRATION_LIST_MAX_PROCESS> g_process_list = {0};
+static std::array<Registration::Service, REGISTRATION_LIST_MAX_SERVICE> g_service_list = {0};
 
 static u64 g_initial_process_id_low = 0;
 static u64 g_initial_process_id_high = 0;

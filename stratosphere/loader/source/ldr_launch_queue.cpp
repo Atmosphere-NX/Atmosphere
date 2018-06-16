@@ -1,9 +1,10 @@
 #include <switch.h>
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include "ldr_launch_queue.hpp"
 
-static LaunchQueue::LaunchItem g_launch_queue[LAUNCH_QUEUE_SIZE] = {0};
+static std::array<LaunchQueue::LaunchItem, LAUNCH_QUEUE_SIZE> g_launch_queue = {0};
 
 Result LaunchQueue::add(u64 tid, const char *args, u64 arg_size) {
     if(arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {

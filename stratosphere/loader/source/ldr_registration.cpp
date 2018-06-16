@@ -190,7 +190,7 @@ bool Registration::IsNroAlreadyLoaded(u64 index, u8 *build_id) {
     }
     
     for (unsigned int i = 0; i < NRO_INFO_MAX; i++) {
-        if (target_process->nro_infos[i].in_use && std::memcmp(target_process->nro_infos[i].build_id, build_id, 0x20) == 0) {
+        if (target_process->nro_infos[i].in_use && std::equal(build_id, build_id + 0x20, target_process->nro_infos[i].build_id)) {
             return true;
         }
     }
