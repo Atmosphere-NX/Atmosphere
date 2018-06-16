@@ -13,16 +13,18 @@
 Result FsMitMService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     Result rc = 0xF601;
     if (this->has_initialized) {
-        switch (cmd_id) {
-            case FspSrv_Cmd_OpenDataStorageByCurrentProcess:
+        switch (static_cast<FspSrvCmd>(cmd_id)) {
+            case FspSrvCmd::OpenDataStorageByCurrentProcess:
                 rc = WrapIpcCommandImpl<&FsMitMService::open_data_storage_by_current_process>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                 break;
-            case FspSrv_Cmd_OpenDataStorageByDataId:
+            case FspSrvCmd::OpenDataStorageByDataId:
                 rc = WrapIpcCommandImpl<&FsMitMService::open_data_storage_by_data_id>(this, r, out_c, pointer_buffer, pointer_buffer_size);
+                break;
+            default:
                 break;
         }
     } else {
-        if (cmd_id == FspSrv_Cmd_SetCurrentProcess) {
+        if (static_cast<FspSrvCmd>(cmd_id) == FspSrvCmd::SetCurrentProcess) {
             if (r.HasPid) {
                 this->init_pid = r.Pid;
             }
@@ -44,8 +46,8 @@ void FsMitMService::postprocess(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_
     }
     
     Result rc = (Result)resp->result;
-    switch (cmd_id) {
-        case FspSrv_Cmd_SetCurrentProcess:
+    switch (static_cast<FspSrvCmd>(cmd_id)) {
+        case FspSrvCmd::SetCurrentProcess:
             if (R_SUCCEEDED(rc)) {
                 this->has_initialized = true;
             }
@@ -57,6 +59,8 @@ void FsMitMService::postprocess(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_
             for (unsigned int i = 0; i < sizeof(backup_tls)/sizeof(u64); i++) {
                 tls[i] = backup_tls[i];
             }
+            break;
+        default:
             break;
     }
     resp->result = rc;
