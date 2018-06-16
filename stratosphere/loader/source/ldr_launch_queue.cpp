@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdio>
 #include "ldr_launch_queue.hpp"
+#include "meta_tools.hpp"
 
 static std::array<LaunchQueue::LaunchItem, LAUNCH_QUEUE_SIZE> g_launch_queue = {0};
 
@@ -46,12 +47,11 @@ Result LaunchQueue::add_item(const LaunchItem *item) {
 }
 
 int LaunchQueue::get_index(u64 tid) {
-    for(unsigned int i = 0; i < LAUNCH_QUEUE_SIZE; i++) {
-        if(g_launch_queue[i].tid == tid) {
-            return i;
-        }
+    auto it = std::find_if(g_launch_queue.begin(), g_launch_queue.end(), member_equals_fn(&LaunchQueue::LaunchItem::tid, tid));
+    if (it == g_launch_queue.end()) {
+        return LAUNCH_QUEUE_FULL;
     }
-    return LAUNCH_QUEUE_FULL;
+    return std::distance(g_launch_queue.begin(), it);
 }
 
 int LaunchQueue::get_free_index(u64 tid) {
