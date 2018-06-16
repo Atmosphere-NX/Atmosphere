@@ -33,14 +33,14 @@ class DomainOwner {
             }
 
             *out_i = std::distance(domain_objects.begin(), object_it);
-            *object_it = object;
+            *object_it = std::move(object);
             (*object_it)->set_owner(this);
             return 0;
         }
         
         Result set_object(std::shared_ptr<IServiceObject> object, unsigned int i) {
             if (domain_objects[i] == NULL) {
-                domain_objects[i] = object;
+                domain_objects[i] = std::move(object);
                 object->set_owner(this);
                 return 0;
             }
