@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     consoleDebugInit(debugDevice_SVC);
         
     /* TODO: What's a good timeout value to use here? */
-    WaitableManager *server_manager = new WaitableManager(U64_MAX);
+    auto server_manager = std::make_unique<WaitableManager>(U64_MAX);
     
     /* Add services to manager. */
     server_manager->add_waitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
@@ -107,8 +107,6 @@ int main(int argc, char **argv)
     /* Loop forever, servicing our services. */
     server_manager->process();
     
-    /* Cleanup. */
-    delete server_manager;
 	return 0;
 }
 
