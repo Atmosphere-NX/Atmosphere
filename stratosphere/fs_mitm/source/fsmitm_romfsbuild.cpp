@@ -158,19 +158,17 @@ void RomFSBuildContext::MergeRomStorage(IROStorage *storage, RomFSDataSource sou
     }
     
     /* Read tables. */
-    u8 *dir_table = new u8[header.dir_table_size];
-    u8 *file_table = new u8[header.file_table_size];
-    if (R_FAILED((rc = storage->Read(dir_table, header.dir_table_size, header.dir_table_ofs)))) {
+    auto dir_table = std::make_unique<u8[]>(header.dir_table_size);
+    auto file_table = std::make_unique<u8[]>(header.file_table_size);
+    if (R_FAILED((rc = storage->Read(dir_table.get(), header.dir_table_size, header.dir_table_ofs)))) {
         fatalSimple(rc);
     }
-    if (R_FAILED((rc = storage->Read(file_table, header.file_table_size, header.file_table_ofs)))) {
+    if (R_FAILED((rc = storage->Read(file_table.get(), header.file_table_size, header.file_table_ofs)))) {
         fatalSimple(rc);
     }
     
     this->cur_source_type = source;
-    this->VisitDirectory(this->root, 0x0, dir_table, (size_t)header.dir_table_size, file_table, (size_t)header.file_table_size);
-    delete dir_table;
-    delete file_table;
+    this->VisitDirectory(this->root, 0x0, dir_table.get(), (size_t)header.dir_table_size, file_table.get(), (size_t)header.file_table_size);
 }
 
 bool RomFSBuildContext::AddDirectory(RomFSBuildDirectoryContext *parent_dir_ctx, RomFSBuildDirectoryContext *dir_ctx, RomFSBuildDirectoryContext **out_dir_ctx) {    
