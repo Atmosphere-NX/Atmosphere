@@ -40,10 +40,8 @@ void FsMitMService::postprocess(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_
     } *resp = (decltype(resp))r.Raw;
     
     u64 *tls = (u64 *)armGetTls();
-    u64 backup_tls[0x100/sizeof(u64)];
-    for (unsigned int i = 0; i < sizeof(backup_tls)/sizeof(u64); i++) {
-        backup_tls[i] = tls[i];
-    }
+    std::array<u64, 0x100/sizeof(u64)> backup_tls;
+    std::copy(tls, tls + backup_tls.size(), backup_tls.begin());
     
     Result rc = (Result)resp->result;
     switch (static_cast<FspSrvCmd>(cmd_id)) {
@@ -56,9 +54,7 @@ void FsMitMService::postprocess(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_
             if (R_FAILED(MitMQueryUtils::get_associated_tid_for_pid(this->process_id, &this->title_id))) {
                 /* Log here, if desired. */
             }
-            for (unsigned int i = 0; i < sizeof(backup_tls)/sizeof(u64); i++) {
-                tls[i] = backup_tls[i];
-            }
+            std::copy(backup_tls.begin(), backup_tls.end(), tls);
             break;
         default:
             break;
