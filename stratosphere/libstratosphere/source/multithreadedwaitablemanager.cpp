@@ -1,6 +1,7 @@
 #include <switch.h>
 
 #include <algorithm>
+#include <functional>
 
 #include <stratosphere/multithreadedwaitablemanager.hpp>
 
@@ -44,21 +45,15 @@ IWaitable *MultiThreadedWaitableManager::get_waitable() {
         rc = svcWaitSynchronization(&handle_index, handles.data(), this->waitables.size(), this->timeout);
         IWaitable *w = this->waitables[handle_index];
         if (R_SUCCEEDED(rc)) {
-            for (int i = 0; i < handle_index; i++) {
-                this->waitables[i]->update_priority();
-            }
+            std::for_each(waitables.begin(), waitables.begin() + handle_index, std::mem_fn(&IWaitable::update_priority));
             this->waitables.erase(this->waitables.begin() + handle_index);
         } else if (rc == 0xEA01) {
             /* Timeout. */
-            for (auto & waitable : this->waitables) {
-                waitable->update_priority();
-            }
+            std::for_each(waitables.begin(), waitables.end(), std::mem_fn(&IWaitable::update_priority));
         } else if (rc != 0xF601 && rc != 0xE401) {
             /* TODO: Panic. When can this happen? */
         } else {
-            for (int i = 0; i < handle_index; i++) {
-                this->waitables[i]->update_priority();
-            }
+            std::for_each(waitables.begin(), waitables.begin() + handle_index, std::mem_fn(&IWaitable::update_priority));
             this->waitables.erase(this->waitables.begin() + handle_index);
             delete w;
         }
