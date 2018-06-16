@@ -9,12 +9,7 @@
 LayeredRomFS::LayeredRomFS(std::shared_ptr<RomInterfaceStorage> s_r, std::shared_ptr<RomFileStorage> f_r, u64 tid) : storage_romfs(s_r), file_romfs(f_r), title_id(tid) {
     /* Start building the new virtual romfs. */
     RomFSBuildContext build_ctx(this->title_id);
-    this->p_source_infos = std::shared_ptr<std::vector<RomFSSourceInfo>>(new std::vector<RomFSSourceInfo>(), [](std::vector<RomFSSourceInfo> *to_delete) {
-        for (unsigned int i = 0; i < to_delete->size(); i++) {
-            (*to_delete)[i].Cleanup();
-        }
-        delete to_delete;
-    });
+    this->p_source_infos = std::make_shared<std::vector<RomFSSourceInfo>>();
     if (Utils::IsSdInitialized()) {
         build_ctx.MergeSdFiles();
     }

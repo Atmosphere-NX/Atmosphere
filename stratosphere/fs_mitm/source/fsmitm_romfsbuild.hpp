@@ -106,7 +106,7 @@ public:
     RomFSSourceInfo(u64 v_o, u64 s, const void *arg, RomFSDataSource t) : virtual_offset(v_o), size(s), info(MakeInfoVariantFromPointer(arg, t)) {
     }
 
-    void Cleanup() {
+    ~RomFSSourceInfo() {
         std::visit(InfoCleanupHelper{}, info);
     }
 
