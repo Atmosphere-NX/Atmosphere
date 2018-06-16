@@ -23,7 +23,7 @@ class LayeredRomFS : public IROStorage {
                 
     public:
         LayeredRomFS(std::shared_ptr<RomInterfaceStorage> s_r, std::shared_ptr<RomFileStorage> f_r, u64 tid);
-        virtual ~LayeredRomFS();
+        virtual ~LayeredRomFS() = default;
         
         Result Read(void *buffer, size_t size, u64 offset) override;
         Result GetSize(u64 *out_size) override;
