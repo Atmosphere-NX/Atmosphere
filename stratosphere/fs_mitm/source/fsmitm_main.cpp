@@ -99,8 +99,8 @@ int main(int argc, char **argv)
     }
     
     /* TODO: What's a good timeout value to use here? */
-    MultiThreadedWaitableManager *server_manager = new MultiThreadedWaitableManager(1, U64_MAX, 0x20000);
-    //WaitableManager *server_manager = new WaitableManager(U64_MAX);
+    auto server_manager = std::make_unique<MultiThreadedWaitableManager>(1, U64_MAX, 0x20000);
+    //auto server_manager = std::make_unique<WaitableManager>(U64_MAX);
         
     /* Create fsp-srv mitm. */
     ISession<MitMQueryService<FsMitMService>> *fs_query_srv = NULL;
@@ -110,9 +110,7 @@ int main(int argc, char **argv)
             
     /* Loop forever, servicing our services. */
     server_manager->process();
-    
-    /* Cleanup. */
-    delete server_manager;
-	return 0;
+
+    return 0;
 }
 

@@ -7,7 +7,7 @@ static SystemEvent *g_new_waitable_event = NULL;
 static HosMutex g_new_waitable_mutex;
 static HosSemaphore g_sema_new_waitable_finish;
 
-static WaitableManager *g_worker_waiter = NULL;
+static std::unique_ptr<WaitableManager> g_worker_waiter;
 
 Result FsMitMWorker::AddWaitableCallback(void *arg, Handle *handles, size_t num_handles, u64 timeout) {
     (void)arg;
@@ -29,11 +29,9 @@ void FsMitMWorker::Main(void *arg) {
     g_new_waitable_event = new SystemEvent(NULL, &FsMitMWorker::AddWaitableCallback);
 
     /* Make a new waitable manager. */
-    g_worker_waiter = new WaitableManager(U64_MAX);
+    g_worker_waiter = std::make_unique<WaitableManager>(U64_MAX);
     g_worker_waiter->add_waitable(g_new_waitable_event);
     
     /* Service processes. */
     g_worker_waiter->process();
-    
-    delete g_worker_waiter;
 }
