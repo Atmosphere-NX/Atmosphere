@@ -19,33 +19,35 @@ class MitMSession final : public ISession<T> {
     /* This will be for the actual session. */
     Service forward_service;
     IpcParsedCommand cur_out_r;
-    u32 mitm_domain_id;
+    u32 mitm_domain_id = 0;
     bool got_first_message;
         
     public:
-        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, const char *srv) : ISession<T>(s, s_h, c_h, NULL, 0), mitm_domain_id(0), got_first_message(false) {
+        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, const char *srv) : ISession<T>(s, s_h, c_h, NULL, 0), got_first_message(false) {
             this->server = s;
             this->server_handle = s_h;
             this->client_handle = c_h;
             if (R_FAILED(smMitMGetService(&forward_service, srv))) {
                 /* TODO: Panic. */
             }
-            if (R_FAILED(ipcQueryPointerBufferSize(forward_service.handle, &this->pointer_buffer_size))) {
+            size_t pointer_buffer_size = 0;
+            if (R_FAILED(ipcQueryPointerBufferSize(forward_service.handle, &pointer_buffer_size))) {
                 /* TODO: Panic. */
             }
             this->service_object = std::make_shared<T>(&forward_service);
-            this->pointer_buffer = new char[this->pointer_buffer_size];
+            this->pointer_buffer.resize(pointer_buffer_size);
         }
-        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, Handle f_h) : ISession<T>(s, s_h, c_h, NULL, 0), mitm_domain_id(0), got_first_message(true) {
+        MitMSession<T>(MitMServer<T> *s, Handle s_h, Handle c_h, Handle f_h) : ISession<T>(s, s_h, c_h, NULL, 0), got_first_message(true) {
             this->server = s;
             this->server_handle = s_h;
             this->client_handle = c_h;
             serviceCreate(&this->forward_service, f_h);
-            if (R_FAILED(ipcQueryPointerBufferSize(forward_service.handle, &this->pointer_buffer_size))) {
+            size_t pointer_buffer_size = 0;
+            if (R_FAILED(ipcQueryPointerBufferSize(forward_service.handle, &pointer_buffer_size))) {
                 /* TODO: Panic. */
             }
             this->service_object = std::make_shared<T>(&forward_service);
-            this->pointer_buffer = new char[this->pointer_buffer_size];
+            this->pointer_buffer.resize(pointer_buffer_size);
         }
         
         virtual ~MitMSession() {
@@ -92,7 +94,7 @@ class MitMSession final : public ISession<T> {
                     obj = this->service_object;
                 }
                 if (obj != nullptr) {
-                    retval = obj->dispatch(r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                    retval = obj->dispatch(r, c, cmd_id, (u8 *)this->pointer_buffer.data(), this->pointer_buffer.size());
                     if (R_SUCCEEDED(retval)) {
                         if (r.IsDomainMessage) { 
                             ipcParseForDomain(&cur_out_r);
@@ -197,7 +199,7 @@ class MitMSession final : public ISession<T> {
             if (this->active_object == this->service_object && (r.CommandType == IpcCommandType_Request || r.CommandType == IpcCommandType_RequestWithContext)) {
                 IpcCommand c;
                 ipcInitialize(&c);
-                this->service_object->postprocess(cur_out_r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                this->service_object->postprocess(cur_out_r, c, cmd_id, (u8 *)this->pointer_buffer.data(), this->pointer_buffer.size());
             } else if (r.CommandType == IpcCommandType_Control || r.CommandType == IpcCommandType_ControlWithContext) {
                 if (cmd_id == IpcCtrl_Cmd_ConvertCurrentObjectToDomain) {
                     this->is_domain = true;
