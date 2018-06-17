@@ -38,7 +38,7 @@ typedef struct {
     mov x9, #0xfffe000000000000
     cmp x10, x9
     beq #12
-    ldr x10, [sp,#0x80]
+    ldr x10, [sp,#0xa0]
     ldr x8, [x10,#0x2b0]
     ldr x10, [sp,#0xa0]
 */
