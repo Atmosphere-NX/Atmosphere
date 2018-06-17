@@ -5,8 +5,8 @@
 
 #define MAKE_BRANCH(a, o) 0x14000000 | ((((o) - (a)) >> 2) & 0x3FFFFFF)
 
-#define MAKE_KERNEL_PATTERN_NAME(vers, name) g_kernel_patch_##vers_##name
-#define MAKE_KERNEL_HOOK_NAME(vers, name) g_kernel_hook_##vers_##name
+#define MAKE_KERNEL_PATTERN_NAME(vers, name) g_kernel_patch_##vers##_##name
+#define MAKE_KERNEL_HOOK_NAME(vers, name) g_kernel_hook_##vers##_##name
 
 typedef uint32_t instruction_t;
 
