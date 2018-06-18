@@ -5,8 +5,8 @@
 
 #define MAKE_BRANCH(a, o) 0x14000000 | ((((o) - (a)) >> 2) & 0x3FFFFFF)
 
-#define MAKE_KERNEL_PATTERN_NAME(vers, name) g_kernel_patch_##vers_##name
-#define MAKE_KERNEL_HOOK_NAME(vers, name) g_kernel_hook_##vers_##name
+#define MAKE_KERNEL_PATTERN_NAME(vers, name) g_kernel_patch_##vers##_##name
+#define MAKE_KERNEL_HOOK_NAME(vers, name) g_kernel_hook_##vers##_##name
 
 typedef uint32_t instruction_t;
 
@@ -195,7 +195,7 @@ uint8_t *search_pattern(void *_mem, size_t mem_size, const void *_pattern, size_
     }
     
     for (unsigned int i = 0; i <= mem_size - pattern_size; i += table[mem[i + pattern_size - 1]]) {
-        if (pattern[pattern_size - 1] == table[mem[i + pattern_size - 1]] && memcmp(pattern, mem + i, pattern_size - 1) == 0) {
+        if (pattern[pattern_size - 1] == mem[i + pattern_size - 1] && memcmp(pattern, mem + i, pattern_size - 1) == 0) {
             return mem + i;
         }
     }
