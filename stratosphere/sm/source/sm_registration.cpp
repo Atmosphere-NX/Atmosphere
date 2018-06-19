@@ -2,9 +2,10 @@
 #include <algorithm>
 #include <stratosphere/servicesession.hpp>
 #include "sm_registration.hpp"
+#include "meta_tools.hpp"
 
-static Registration::Process g_process_list[REGISTRATION_LIST_MAX_PROCESS] = {0};
-static Registration::Service g_service_list[REGISTRATION_LIST_MAX_SERVICE] = {0};
+static std::array<Registration::Process, REGISTRATION_LIST_MAX_PROCESS> g_process_list = {0};
+static std::array<Registration::Service, REGISTRATION_LIST_MAX_SERVICE> g_service_list = {0};
 
 static u64 g_initial_process_id_low = 0;
 static u64 g_initial_process_id_high = 0;
@@ -21,12 +22,11 @@ u64 GetServiceNameLength(u64 service) {
 
 /* Utilities. */
 Registration::Process *Registration::GetProcessForPid(u64 pid) {
-    for (auto &process : g_process_list) {
-        if (process.pid == pid) {
-            return &process;
-        }
+    auto process_it = std::find_if(g_process_list.begin(), g_process_list.end(), member_equals_fn(&Process::pid, pid));
+    if (process_it == g_process_list.end()) {
+        return nullptr;
     }
-    return NULL;
+    return &*process_it;
 }
 
 Registration::Process *Registration::GetFreeProcess() {
@@ -34,12 +34,11 @@ Registration::Process *Registration::GetFreeProcess() {
 }
 
 Registration::Service *Registration::GetService(u64 service_name) {
-    for (auto &service : g_service_list) {
-        if (service.service_name == service_name) {
-            return &service;
-        }
+    auto service_it = std::find_if(g_service_list.begin(), g_service_list.end(), member_equals_fn(&Service::service_name, service_name));
+    if (service_it == g_service_list.end()) {
+        return nullptr;
     }
-    return NULL;
+    return &*service_it;
 }
 
 Registration::Service *Registration::GetFreeService() {
@@ -168,12 +167,7 @@ Result Registration::UnregisterProcess(u64 pid) {
 
 /* Service management. */
 bool Registration::HasService(u64 service) {
-    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX_SERVICE; i++) {
-        if (g_service_list[i].service_name == service) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(g_service_list.begin(), g_service_list.end(), member_equals_fn(&Service::service_name, service));
 }
 
 Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {

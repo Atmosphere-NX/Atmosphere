@@ -17,7 +17,6 @@ enum IpcControlCommand {
     IpcCtrl_Cmd_CloneCurrentObjectEx = 4
 };
 
-#define POINTER_BUFFER_SIZE_MAX 0xFFFF
 #define RESULT_DEFER_SESSION (0x6580A)
 
 
@@ -34,39 +33,23 @@ class ISession : public IWaitable {
         IServer<T> *server;
         Handle server_handle;
         Handle client_handle;
-        char *pointer_buffer;
-        size_t pointer_buffer_size;
+        std::vector<char> pointer_buffer;
         
-        bool is_domain;
+        bool is_domain = false;
         std::shared_ptr<DomainOwner> domain;
         
         
         std::shared_ptr<IServiceObject> active_object;
     
-    static_assert(sizeof(pointer_buffer) <= POINTER_BUFFER_SIZE_MAX, "Incorrect Size for PointerBuffer!");
-    
     public:
-        ISession<T>(IServer<T> *s, Handle s_h, Handle c_h, size_t pbs = 0x400) : server(s), server_handle(s_h), client_handle(c_h), pointer_buffer_size(pbs) {
+        ISession<T>(IServer<T> *s, Handle s_h, Handle c_h, size_t pbs = 0x400) : server(s), server_handle(s_h), client_handle(c_h), pointer_buffer(pbs) {
             this->service_object = std::make_shared<T>();
-            if (this->pointer_buffer_size) {
-                this->pointer_buffer = new char[this->pointer_buffer_size];
-            }
-            this->is_domain = false;
-            this->domain.reset();
-            this->active_object.reset();
         }
         
-        ISession<T>(IServer<T> *s, Handle s_h, Handle c_h, std::shared_ptr<T> so, size_t pbs = 0x400) : service_object(so), server(s), server_handle(s_h), client_handle(c_h), pointer_buffer_size(pbs) {
-            if (this->pointer_buffer_size) {
-                this->pointer_buffer = new char[this->pointer_buffer_size];
-            }
-            this->is_domain = false;
-            this->domain.reset();
-            this->active_object.reset();
+        ISession<T>(IServer<T> *s, Handle s_h, Handle c_h, std::shared_ptr<T> so, size_t pbs = 0x400) : service_object(so), server(s), server_handle(s_h), client_handle(c_h), pointer_buffer(pbs) {
         }
 
         ~ISession() override {
-            delete this->pointer_buffer;
             if (server_handle) {
                 svcCloseHandle(server_handle);
             }
@@ -153,7 +136,7 @@ class ISession : public IWaitable {
                     break;
                 case IpcCommandType_Request:
                 case IpcCommandType_RequestWithContext:
-                    retval = this->active_object->dispatch(r, c, cmd_id, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                    retval = this->active_object->dispatch(r, c, cmd_id, (u8 *)pointer_buffer.data(), pointer_buffer.size());
                     break;
                 case IpcCommandType_Control:
                 case IpcCommandType_ControlWithContext:
@@ -185,7 +168,7 @@ class ISession : public IWaitable {
             /* Prepare pointer buffer... */
             IpcCommand c_for_reply;
             ipcInitialize(&c_for_reply);
-            ipcAddRecvStatic(&c_for_reply, this->pointer_buffer, this->pointer_buffer_size, 0);
+            ipcAddRecvStatic(&c_for_reply, this->pointer_buffer.data(), this->pointer_buffer.size(), 0);
             ipcPrepareHeader(&c_for_reply, 0);
             
             if (R_SUCCEEDED(rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, 0, U64_MAX))) {
@@ -247,19 +230,19 @@ class ISession : public IWaitable {
             /* TODO: Implement. */
             switch ((IpcControlCommand)cmd_id) {
                 case IpcCtrl_Cmd_ConvertCurrentObjectToDomain:
-                    rc = WrapIpcCommandImpl<&ISession::ConvertCurrentObjectToDomain>(this, r, out_c, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                    rc = WrapIpcCommandImpl<&ISession::ConvertCurrentObjectToDomain>(this, r, out_c, (u8 *)this->pointer_buffer.data(), pointer_buffer.size());
                     break;
                 case IpcCtrl_Cmd_CopyFromCurrentDomain:
-                    rc = WrapIpcCommandImpl<&ISession::CopyFromCurrentDomain>(this, r, out_c, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                    rc = WrapIpcCommandImpl<&ISession::CopyFromCurrentDomain>(this, r, out_c, (u8 *)this->pointer_buffer.data(), pointer_buffer.size());
                     break;
                 case IpcCtrl_Cmd_CloneCurrentObject:
-                    rc = WrapIpcCommandImpl<&ISession::CloneCurrentObject>(this, r, out_c, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                    rc = WrapIpcCommandImpl<&ISession::CloneCurrentObject>(this, r, out_c, (u8 *)this->pointer_buffer.data(), pointer_buffer.size());
                     break;
                 case IpcCtrl_Cmd_QueryPointerBufferSize:
-                    rc = WrapIpcCommandImpl<&ISession::QueryPointerBufferSize>(this, r, out_c, (u8 *)this->pointer_buffer, this->pointer_buffer_size);
+                    rc = WrapIpcCommandImpl<&ISession::QueryPointerBufferSize>(this, r, out_c, (u8 *)this->pointer_buffer.data(), pointer_buffer.size());
                     break;
                 case IpcCtrl_Cmd_CloneCurrentObjectEx:
-                    rc = WrapIpcCommandImpl<&ISession::CloneCurrentObjectEx>(this, r, out_c, (u8 *)this->pointer_buffer, sizeof(this->pointer_buffer));
+                    rc = WrapIpcCommandImpl<&ISession::CloneCurrentObjectEx>(this, r, out_c, (u8 *)this->pointer_buffer.data(), pointer_buffer.size());
                     break;
                 default:
                     break;
@@ -282,7 +265,7 @@ class ISession : public IWaitable {
             return {0xF601};
         }
         std::tuple<Result, u32> QueryPointerBufferSize() {
-            return {0x0, (u32)this->pointer_buffer_size};
+            return {0x0, (u32)this->pointer_buffer.size()};
         }
         std::tuple<Result> CloneCurrentObjectEx() {
             /* TODO */

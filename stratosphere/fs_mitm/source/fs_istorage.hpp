@@ -5,13 +5,13 @@
 
 #include "debug.hpp"
 
-enum FsIStorageCmd {
-    FsIStorage_Cmd_Read = 0,
-    FsIStorage_Cmd_Write = 1,
-    FsIStorage_Cmd_Flush = 2,
-    FsIStorage_Cmd_SetSize = 3,
-    FsIStorage_Cmd_GetSize = 4,
-    FsIStorage_Cmd_OperateRange = 5,
+enum class FsIStorageCmd {
+    Read = 0,
+    Write = 1,
+    Flush = 2,
+    SetSize = 3,
+    GetSize = 4,
+    OperateRange = 5,
 };
 
 class IStorage {
@@ -49,22 +49,22 @@ class IStorageInterface : public IServiceObject {
         Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) final {
             Result rc = 0xF601;
             switch ((FsIStorageCmd)cmd_id) {
-                case FsIStorage_Cmd_Read:
+                case FsIStorageCmd::Read:
                     rc = WrapIpcCommandImpl<&IStorageInterface::read>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                     break;
-                case FsIStorage_Cmd_Write:
+                case FsIStorageCmd::Write:
                     rc = WrapIpcCommandImpl<&IStorageInterface::write>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                     break;
-                case FsIStorage_Cmd_Flush:
+                case FsIStorageCmd::Flush:
                     rc = WrapIpcCommandImpl<&IStorageInterface::flush>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                     break;
-                case FsIStorage_Cmd_SetSize:
+                case FsIStorageCmd::SetSize:
                     rc = WrapIpcCommandImpl<&IStorageInterface::set_size>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                     break;
-                case FsIStorage_Cmd_GetSize:
+                case FsIStorageCmd::GetSize:
                     rc = WrapIpcCommandImpl<&IStorageInterface::get_size>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                     break;
-                case FsIStorage_Cmd_OperateRange:
+                case FsIStorageCmd::OperateRange:
                     if (kernelAbove400()) {
                         rc = WrapIpcCommandImpl<&IStorageInterface::operate_range>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                     }

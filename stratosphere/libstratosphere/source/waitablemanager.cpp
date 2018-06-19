@@ -1,6 +1,7 @@
 #include <switch.h>
 
 #include <algorithm>
+#include <functional>
 
 #include <stratosphere/waitablemanager.hpp>
 
@@ -43,14 +44,10 @@ void WaitableManager::process_internal(bool break_on_timeout) {
                         
             rc = this->waitables[handle_index]->handle_signaled(0);
             
-            for (int i = 0; i < handle_index; i++) {
-                this->waitables[i]->update_priority();
-            }
+            std::for_each(waitables.begin(), waitables.begin() + handle_index, std::mem_fn(&IWaitable::update_priority));
         } else if (rc == 0xEA01) {
             /* Timeout. */
-            for (auto & waitable : this->waitables) {
-                waitable->update_priority();
-            }
+            std::for_each(waitables.begin(), waitables.end(), std::mem_fn(&IWaitable::update_priority));
             if (break_on_timeout) {
                 return;
             }
@@ -72,9 +69,7 @@ void WaitableManager::process_internal(bool break_on_timeout) {
             /* Delete it. */
             delete to_delete;
                         
-            for (int i = 0; i < handle_index; i++) {
-                this->waitables[i]->update_priority();
-            }
+            std::for_each(waitables.begin(), waitables.begin() + handle_index, std::mem_fn(&IWaitable::update_priority));
         }
         
         /* Do deferred callback for each waitable. */

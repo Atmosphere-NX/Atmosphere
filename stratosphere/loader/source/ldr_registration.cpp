@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <functional>
 #include "ldr_registration.hpp"
 #include "ldr_nro.hpp"
 
@@ -9,12 +10,11 @@ static Registration::List g_registration_list = {0};
 static u64 g_num_registered = 1;
 
 Registration::Process *Registration::GetFreeProcess() {
-    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX; i++) {
-        if (!g_registration_list.processes[i].in_use) {
-            return &g_registration_list.processes[i];
-        }
+    auto process_it = std::find_if_not(g_registration_list.processes.begin(), g_registration_list.processes.end(), std::mem_fn(&Registration::Process::in_use));
+    if (process_it == g_registration_list.processes.end()) {
+        return nullptr;
     }
-    return NULL;
+    return &*process_it;
 }
 
 Registration::Process *Registration::GetProcess(u64 index) {
@@ -98,15 +98,13 @@ void Registration::AddNsoInfo(u64 index, u64 base_address, u64 size, const unsig
     if (target_process == NULL) {
         return;
     }
-    
-    for (unsigned int i = 0; i < NSO_INFO_MAX; i++) {
-        if (!target_process->nso_infos[i].in_use) {
-            target_process->nso_infos[i].info.base_address = base_address;
-            target_process->nso_infos[i].info.size = size;
-            std::copy(build_id, build_id + sizeof(target_process->nso_infos[i].info.build_id), target_process->nso_infos[i].info.build_id);
-            target_process->nso_infos[i].in_use = true;
-            return;
-        }
+
+    auto nso_info_it = std::find_if_not(target_process->nso_infos.begin(), target_process->nso_infos.end(), std::mem_fn(&Registration::NsoInfoHolder::in_use));
+    if (nso_info_it != target_process->nso_infos.end()) {
+        nso_info_it->info.base_address = base_address;
+        nso_info_it->info.size = size;
+        std::copy(build_id, build_id + sizeof(nso_info_it->info.build_id), nso_info_it->info.build_id);
+        nso_info_it->in_use = true;
     }
 }
 
@@ -130,13 +128,12 @@ Result Registration::AddNrrInfo(u64 index, MappedCodeMemory *nrr_info) {
         return 0x7009;
     }
     
-    for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
-        if (!target_process->nrr_infos[i].IsActive()) {
-            target_process->nrr_infos[i] = *nrr_info;
-            return 0;
-        }
+    auto nrr_info_it = std::find_if_not(target_process->nrr_infos.begin(), target_process->nrr_infos.end(), std::mem_fn(&MappedCodeMemory::IsActive));
+    if (nrr_info_it == target_process->nrr_infos.end()) {
+        return 0x7009;
     }
-    return 0x7009;
+    *nrr_info_it = *nrr_info;
+    return 0;
 }
 
 Result Registration::RemoveNrrInfo(u64 index, u64 base_address) {
@@ -193,7 +190,7 @@ bool Registration::IsNroAlreadyLoaded(u64 index, u8 *build_id) {
     }
     
     for (unsigned int i = 0; i < NRO_INFO_MAX; i++) {
-        if (target_process->nro_infos[i].in_use && std::memcmp(target_process->nro_infos[i].build_id, build_id, 0x20) == 0) {
+        if (target_process->nro_infos[i].in_use && std::equal(build_id, build_id + 0x20, target_process->nro_infos[i].build_id)) {
             return true;
         }
     }
@@ -207,20 +204,18 @@ void Registration::AddNroToProcess(u64 index, MappedCodeMemory *nro, MappedCodeM
         return;
     }
     
-    for (unsigned int i = 0; i < NRO_INFO_MAX; i++) {
-        if (!target_process->nro_infos[i].in_use) {
-            target_process->nro_infos[i].base_address = nro->code_memory_address;
-            target_process->nro_infos[i].nro_heap_address = nro->base_address;
-            target_process->nro_infos[i].nro_heap_size = nro->size;
-            target_process->nro_infos[i].bss_heap_address = bss->base_address;
-            target_process->nro_infos[i].bss_heap_size = bss->size;
-            target_process->nro_infos[i].text_size = text_size;
-            target_process->nro_infos[i].ro_size = ro_size;
-            target_process->nro_infos[i].rw_size = rw_size;
-            std::copy(build_id, build_id + sizeof(target_process->nro_infos[i].build_id), target_process->nro_infos[i].build_id);
-            target_process->nro_infos[i].in_use = true;
-            break;
-        }
+    auto nro_info_it = std::find_if_not(target_process->nro_infos.begin(), target_process->nro_infos.end(), std::mem_fn(&Registration::NroInfo::in_use));
+    if (nro_info_it != target_process->nro_infos.end()) {
+        nro_info_it->base_address = nro->code_memory_address;
+        nro_info_it->nro_heap_address = nro->base_address;
+        nro_info_it->nro_heap_size = nro->size;
+        nro_info_it->bss_heap_address = bss->base_address;
+        nro_info_it->bss_heap_size = bss->size;
+        nro_info_it->text_size = text_size;
+        nro_info_it->ro_size = ro_size;
+        nro_info_it->rw_size = rw_size;
+        std::copy(build_id, build_id + sizeof(nro_info_it->build_id), nro_info_it->build_id);
+        nro_info_it->in_use = true;
     }
 }
 
@@ -254,11 +249,9 @@ Result Registration::GetNsoInfosForProcessId(Registration::NsoInfo *out, u32 max
     }
     u32 cur = 0;
     
-    if (max_out > 0) {
-        for (unsigned int i = 0; i < NSO_INFO_MAX && cur < max_out; i++) {
-            if (target_process->nso_infos[i].in_use) {
-                out[cur++] = target_process->nso_infos[i].info;
-            }
+    for (unsigned int i = 0; i < NSO_INFO_MAX && cur < max_out; i++) {
+        if (target_process->nso_infos[i].in_use) {
+            out[cur++] = target_process->nso_infos[i].info;
         }
     }
     

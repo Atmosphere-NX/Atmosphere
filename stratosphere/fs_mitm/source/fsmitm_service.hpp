@@ -4,10 +4,10 @@
 #include "imitmserviceobject.hpp"
 #include "fs_istorage.hpp"
 
-enum FspSrvCmd {
-    FspSrv_Cmd_SetCurrentProcess = 1,
-    FspSrv_Cmd_OpenDataStorageByCurrentProcess = 200,
-    FspSrv_Cmd_OpenDataStorageByDataId = 202,
+enum class FspSrvCmd {
+    SetCurrentProcess = 1,
+    OpenDataStorageByCurrentProcess = 200,
+    OpenDataStorageByDataId = 202,
 };
 
 class FsMitMService : public IMitMServiceObject {      

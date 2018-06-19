@@ -1,5 +1,6 @@
 #pragma once
 #include <switch.h>
+#include <variant>
 
 #include "fsmitm_romstorage.hpp"
 
@@ -7,11 +8,11 @@
 #define ROMFS_FILEPARTITION_OFS 0x200
 
 /* Types for RomFS Meta construction. */
-enum RomFSDataSource {
-    RomFSDataSource_BaseRomFS,
-    RomFSDataSource_FileRomFS,
-    RomFSDataSource_LooseFile,
-    RomFSDataSource_Memory,
+enum class RomFSDataSource {
+    BaseRomFS,
+    FileRomFS,
+    LooseFile,
+    Memory,
 };
 
 struct RomFSBaseSourceInfo {
@@ -30,65 +31,91 @@ struct RomFSMemorySourceInfo {
     const u8 *data;
 };
 
-struct RomFSSourceInfo {
+class RomFSSourceInfo {
+    using InfoVariant = std::variant<RomFSBaseSourceInfo, RomFSFileSourceInfo, RomFSLooseSourceInfo, RomFSMemorySourceInfo>;
+
+    static InfoVariant MakeInfoVariantFromOffset(u64 offset, RomFSDataSource t) {
+        switch(t) {
+            case RomFSDataSource::BaseRomFS:
+                return RomFSBaseSourceInfo { offset };
+
+            case RomFSDataSource::FileRomFS:
+                return RomFSFileSourceInfo { offset };
+
+            default:
+                fatalSimple(0xF601);
+        }
+    }
+
+    static InfoVariant MakeInfoVariantFromPointer(const void *arg, RomFSDataSource t) {
+        switch(t) {
+            case RomFSDataSource::LooseFile:
+                return RomFSLooseSourceInfo { (decltype(RomFSLooseSourceInfo::path))arg };
+
+            case RomFSDataSource::Memory:
+                return RomFSMemorySourceInfo { (decltype(RomFSMemorySourceInfo::data))arg };
+
+            default:
+                fatalSimple(0xF601);
+        }
+    }
+
+    struct InfoCleanupHelper {
+        void operator()(RomFSBaseSourceInfo& info) {
+        }
+
+        void operator()(RomFSFileSourceInfo& info) {
+        }
+
+        void operator()(RomFSLooseSourceInfo& info) {
+            delete info.path;
+        }
+
+        void operator()(RomFSMemorySourceInfo& info) {
+            delete info.data;
+        }
+    };
+
+    struct GetTypeHelper {
+        RomFSDataSource operator()(const RomFSBaseSourceInfo& info) const {
+            return RomFSDataSource::BaseRomFS;
+        }
+
+        RomFSDataSource operator()(const RomFSFileSourceInfo& info) const {
+            return RomFSDataSource::FileRomFS;
+        }
+
+        RomFSDataSource operator()(const RomFSLooseSourceInfo& info) const {
+            return RomFSDataSource::LooseFile;
+        }
+
+        RomFSDataSource operator()(const RomFSMemorySourceInfo& info) const {
+            return RomFSDataSource::Memory;
+        }
+    };
+
+public:
     u64 virtual_offset;
     u64 size;
-    union {
-        RomFSBaseSourceInfo base_source_info;
-        RomFSFileSourceInfo file_source_info;
-        RomFSLooseSourceInfo loose_source_info;
-        RomFSMemorySourceInfo memory_source_info;
-    };
-    RomFSDataSource type;
-    
-    RomFSSourceInfo(u64 v_o, u64 s, u64 offset, RomFSDataSource t) : virtual_offset(v_o), size(s), type(t) {
-        switch (this->type) {
-            case RomFSDataSource_BaseRomFS:
-                this->base_source_info.offset = offset;
-                break;
-            case RomFSDataSource_FileRomFS:
-                this->file_source_info.offset = offset;
-                break;
-            case RomFSDataSource_LooseFile:
-            case RomFSDataSource_Memory:
-            default:
-                fatalSimple(0xF601);
-        }
+
+    InfoVariant info;
+
+    RomFSSourceInfo(u64 v_o, u64 s, u64 offset, RomFSDataSource t) : virtual_offset(v_o), size(s), info(MakeInfoVariantFromOffset(offset, t)) {
     }
-    
-    RomFSSourceInfo(u64 v_o, u64 s, const void *arg, RomFSDataSource t) : virtual_offset(v_o), size(s), type(t) {
-        switch (this->type) {
-            case RomFSDataSource_LooseFile:
-                this->loose_source_info.path = (decltype(this->loose_source_info.path))arg;
-                break;
-            case RomFSDataSource_Memory:
-                this->memory_source_info.data = (decltype(this->memory_source_info.data))arg;
-                break;
-            case RomFSDataSource_BaseRomFS:
-            case RomFSDataSource_FileRomFS:
-            default:
-                fatalSimple(0xF601);
-        }
+
+    RomFSSourceInfo(u64 v_o, u64 s, const void *arg, RomFSDataSource t) : virtual_offset(v_o), size(s), info(MakeInfoVariantFromPointer(arg, t)) {
     }
-    
-    void Cleanup() {
-        switch (this->type) {
-            case RomFSDataSource_BaseRomFS:
-            case RomFSDataSource_FileRomFS:
-                break;
-            case RomFSDataSource_LooseFile:
-                delete this->loose_source_info.path;
-                break;
-            case RomFSDataSource_Memory:
-                delete this->memory_source_info.data;
-                break;
-            default:
-                fatalSimple(0xF601);
-        }
+
+    ~RomFSSourceInfo() {
+        std::visit(InfoCleanupHelper{}, info);
     }
-    
+
     static bool Compare(RomFSSourceInfo *a, RomFSSourceInfo *b) {
         return (a->virtual_offset < b->virtual_offset);
+    }
+
+    RomFSDataSource GetType() const {
+        return std::visit(GetTypeHelper{}, info);
     }
 };
 

@@ -18,9 +18,7 @@ class IPCSession final : public ISession<T> {
                 fatalSimple(rc);
             }
             this->service_object = std::make_shared<T>();
-            this->pointer_buffer_size = pbs;
-            this->pointer_buffer = new char[this->pointer_buffer_size];
-            this->is_domain = false;
+            this->pointer_buffer.resize(pbs);
         }
         
         IPCSession<T>(std::shared_ptr<T> so, size_t pbs = 0x400) : ISession<T>(NULL, 0, 0, so, 0) {
@@ -28,8 +26,6 @@ class IPCSession final : public ISession<T> {
             if (R_FAILED((rc = svcCreateSession(&this->server_handle, &this->client_handle, 0, 0)))) {
                 fatalSimple(rc);
             }
-            this->pointer_buffer_size = pbs;
-            this->pointer_buffer = new char[this->pointer_buffer_size];
-            this->is_domain = false;
+            this->pointer_buffer.resize(pbs);
         }
 };

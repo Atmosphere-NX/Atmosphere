@@ -77,7 +77,7 @@ void RomFSBuildContext::MergeSdFiles() {
     if (R_FAILED(fsMountSdcard(&sd_filesystem))) {
         return;
     }
-    this->cur_source_type = RomFSDataSource_LooseFile;
+    this->cur_source_type = RomFSDataSource::LooseFile;
     this->VisitDirectory(&sd_filesystem, this->root);
     fsFsClose(&sd_filesystem);
 }
@@ -158,19 +158,17 @@ void RomFSBuildContext::MergeRomStorage(IROStorage *storage, RomFSDataSource sou
     }
     
     /* Read tables. */
-    u8 *dir_table = new u8[header.dir_table_size];
-    u8 *file_table = new u8[header.file_table_size];
-    if (R_FAILED((rc = storage->Read(dir_table, header.dir_table_size, header.dir_table_ofs)))) {
+    auto dir_table = std::make_unique<u8[]>(header.dir_table_size);
+    auto file_table = std::make_unique<u8[]>(header.file_table_size);
+    if (R_FAILED((rc = storage->Read(dir_table.get(), header.dir_table_size, header.dir_table_ofs)))) {
         fatalSimple(rc);
     }
-    if (R_FAILED((rc = storage->Read(file_table, header.file_table_size, header.file_table_ofs)))) {
+    if (R_FAILED((rc = storage->Read(file_table.get(), header.file_table_size, header.file_table_ofs)))) {
         fatalSimple(rc);
     }
     
     this->cur_source_type = source;
-    this->VisitDirectory(this->root, 0x0, dir_table, (size_t)header.dir_table_size, file_table, (size_t)header.file_table_size);
-    delete dir_table;
-    delete file_table;
+    this->VisitDirectory(this->root, 0x0, dir_table.get(), (size_t)header.dir_table_size, file_table.get(), (size_t)header.file_table_size);
 }
 
 bool RomFSBuildContext::AddDirectory(RomFSBuildDirectoryContext *parent_dir_ctx, RomFSBuildDirectoryContext *dir_ctx, RomFSBuildDirectoryContext **out_dir_ctx) {    
@@ -310,7 +308,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     }
     
     out_infos->clear();
-    out_infos->push_back(RomFSSourceInfo(0, sizeof(*header), header, RomFSDataSource_Memory));
+    out_infos->emplace_back(0, sizeof(*header), header, RomFSDataSource::Memory);
         
     /* Determine file offsets. */
     cur_file = this->files;
@@ -356,20 +354,20 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
         
         
         switch (cur_file->source) {
-            case RomFSDataSource_BaseRomFS:
-            case RomFSDataSource_FileRomFS:
+            case RomFSDataSource::BaseRomFS:
+            case RomFSDataSource::FileRomFS:
                 /* Try to compact, if possible. */
-                if (out_infos->back().type == cur_file->source) {
+                if (out_infos->back().GetType() == cur_file->source) {
                     out_infos->back().size = cur_file->offset + ROMFS_FILEPARTITION_OFS + cur_file->size - out_infos->back().virtual_offset;
                 } else {
-                    out_infos->push_back(RomFSSourceInfo(cur_file->offset + ROMFS_FILEPARTITION_OFS, cur_file->size, cur_file->orig_offset + ROMFS_FILEPARTITION_OFS, cur_file->source));
+                    out_infos->emplace_back(cur_file->offset + ROMFS_FILEPARTITION_OFS, cur_file->size, cur_file->orig_offset + ROMFS_FILEPARTITION_OFS, cur_file->source);
                 }
                 break;
-            case RomFSDataSource_LooseFile: 
+            case RomFSDataSource::LooseFile:
                 {
                     char *path = new char[cur_file->path_len + 1];
                     strcpy(path, cur_file->path);
-                    out_infos->push_back(RomFSSourceInfo(cur_file->offset + ROMFS_FILEPARTITION_OFS, cur_file->size, path, cur_file->source));
+                    out_infos->emplace_back(cur_file->offset + ROMFS_FILEPARTITION_OFS, cur_file->size, path, cur_file->source);
                 }
                 break;
             default:
@@ -416,5 +414,5 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     header->file_hash_table_ofs = header->dir_table_ofs + header->dir_table_size;
     header->file_table_ofs = header->file_hash_table_ofs + header->file_hash_table_size;
     
-    out_infos->push_back(RomFSSourceInfo(header->dir_hash_table_ofs, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size, metadata, RomFSDataSource_Memory));
+    out_infos->emplace_back(header->dir_hash_table_ofs, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size, metadata, RomFSDataSource::Memory);
 }

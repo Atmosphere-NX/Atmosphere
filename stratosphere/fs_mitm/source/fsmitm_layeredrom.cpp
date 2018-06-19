@@ -9,26 +9,17 @@
 LayeredRomFS::LayeredRomFS(std::shared_ptr<RomInterfaceStorage> s_r, std::shared_ptr<RomFileStorage> f_r, u64 tid) : storage_romfs(s_r), file_romfs(f_r), title_id(tid) {
     /* Start building the new virtual romfs. */
     RomFSBuildContext build_ctx(this->title_id);
-    this->p_source_infos = std::shared_ptr<std::vector<RomFSSourceInfo>>(new std::vector<RomFSSourceInfo>(), [](std::vector<RomFSSourceInfo> *to_delete) {
-        for (unsigned int i = 0; i < to_delete->size(); i++) {
-            (*to_delete)[i].Cleanup();
-        }
-        delete to_delete;
-    });
+    this->p_source_infos = std::make_shared<std::vector<RomFSSourceInfo>>();
     if (Utils::IsSdInitialized()) {
         build_ctx.MergeSdFiles();
     }
     if (this->file_romfs) {
-        build_ctx.MergeRomStorage(this->file_romfs.get(), RomFSDataSource_FileRomFS);
+        build_ctx.MergeRomStorage(this->file_romfs.get(), RomFSDataSource::FileRomFS);
     }
     if (this->storage_romfs) {
-        build_ctx.MergeRomStorage(this->storage_romfs.get(), RomFSDataSource_BaseRomFS);
+        build_ctx.MergeRomStorage(this->storage_romfs.get(), RomFSDataSource::BaseRomFS);
     }
     build_ctx.Build(this->p_source_infos.get());
-}
-
-LayeredRomFS::~LayeredRomFS() {
-    /* ... */
 }
 
 
@@ -60,7 +51,6 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
         }
     }
     
-    Result rc;
     size_t read_so_far = 0;
     while (read_so_far < size) {
         RomFSSourceInfo *cur_source = &((*this->p_source_infos)[cur_source_ind]);
@@ -69,47 +59,38 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
             if (cur_read_size > cur_source->size - (offset - cur_source->virtual_offset)) {
                 cur_read_size = cur_source->size - (offset - cur_source->virtual_offset);
             }
-            switch (cur_source->type) {
-                case RomFSDataSource_LooseFile:
-                    {
-                        FsFile file;
-                        if (R_FAILED((rc = Utils::OpenRomFSSdFile(this->title_id, cur_source->loose_source_info.path, FS_OPEN_READ, &file)))) {
-                            fatalSimple(rc);
-                        }
-                        size_t out_read;
-                        if (R_FAILED((rc = fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, &out_read)))) {
-                            fatalSimple(rc);
-                        }
-                        if (out_read != cur_read_size) {
-                            Reboot();
-                        }
-                        fsFileClose(&file);
+            auto source_info_visitor = [&](auto& info) -> Result {
+                Result rc = 0;
+                if constexpr (std::is_same_v<decltype(info), RomFSBaseSourceInfo>) {
+                    FsFile file;
+                    if (R_FAILED((rc = Utils::OpenRomFSSdFile(this->title_id, info.path, FS_OPEN_READ, &file)))) {
+                        fatalSimple(rc);
                     }
-                    break;
-                case RomFSDataSource_Memory:
-                    {
-                        memcpy((void *)((uintptr_t)buffer + read_so_far), cur_source->memory_source_info.data + (offset - cur_source->virtual_offset), cur_read_size);
+                    size_t out_read;
+                    if (R_FAILED((rc = fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, &out_read)))) {
+                        fatalSimple(rc);
                     }
-                    break;
-                case RomFSDataSource_BaseRomFS:
-                    {
-                        if (R_FAILED((rc = this->storage_romfs->Read((void *)((uintptr_t)buffer + read_so_far), cur_read_size, cur_source->base_source_info.offset + (offset - cur_source->virtual_offset))))) {
-                            /* TODO: Can this ever happen? */
-                            /* fatalSimple(rc); */
-                            return rc;
-                        }
+                    if (out_read != cur_read_size) {
+                        Reboot();
                     }
-                    break;
-                case RomFSDataSource_FileRomFS:
-                    {
-                        if (R_FAILED((rc = this->file_romfs->Read((void *)((uintptr_t)buffer + read_so_far), cur_read_size, cur_source->base_source_info.offset + (offset - cur_source->virtual_offset))))) {
-                            fatalSimple(rc);
-                        }
+                    fsFileClose(&file);
+                } else if constexpr (std::is_same_v<decltype(info), RomFSFileSourceInfo>) {
+                    memcpy((void *)((uintptr_t)buffer + read_so_far), info.data + (offset - cur_source->virtual_offset), cur_read_size);
+                } else if constexpr (std::is_same_v<decltype(info), RomFSLooseSourceInfo>) {
+                    if (R_FAILED((rc = this->storage_romfs->Read((void *)((uintptr_t)buffer + read_so_far), cur_read_size, info.offset + (offset - cur_source->virtual_offset))))) {
+                        /* TODO: Can this ever happen? */
+                        /* fatalSimple(rc); */
+                        return rc;
                     }
-                    break;
-                default:
-                    fatalSimple(0xF601);
-            }
+                } else if constexpr (std::is_same_v<decltype(info), RomFSMemorySourceInfo>) {
+                    if (R_FAILED((rc = this->file_romfs->Read((void *)((uintptr_t)buffer + read_so_far), cur_read_size, info.offset + (offset - cur_source->virtual_offset))))) {
+                        fatalSimple(rc);
+                    }
+                }
+                return rc;
+            };
+            Result rc = std::visit(source_info_visitor, cur_source->info);
+
             read_so_far += cur_read_size;
         } else {
             /* Handle padding explicitly. */

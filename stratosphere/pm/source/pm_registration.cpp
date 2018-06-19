@@ -71,9 +71,9 @@ void Registration::HandleProcessLaunch() {
     u64 *out_pid = g_process_launch_state.out_pid;
     Process new_process = {0};
     new_process.tid_sid = g_process_launch_state.tid_sid;
-    u8 *ac_buf = new u8[4 * sizeof(LoaderProgramInfo)];
-    std::fill(ac_buf, ac_buf + 4 * sizeof(LoaderProgramInfo), 0xCC);
-    u8 *acid_sac = ac_buf, *aci0_sac = acid_sac + sizeof(LoaderProgramInfo), *fac = aci0_sac + sizeof(LoaderProgramInfo), *fah = fac + sizeof(LoaderProgramInfo);
+    auto ac_buf = std::vector<u8>(4 * sizeof(LoaderProgramInfo));
+    std::fill(ac_buf.begin(), ac_buf.end(), 0xCC);
+    u8 *acid_sac = ac_buf.data(), *aci0_sac = acid_sac + sizeof(LoaderProgramInfo), *fac = aci0_sac + sizeof(LoaderProgramInfo), *fah = fac + sizeof(LoaderProgramInfo);
             
     /* Check that this is a real program. */
     if (R_FAILED((rc = ldrPmGetProgramInfo(new_process.tid_sid.title_id, new_process.tid_sid.storage_id, &program_info)))) {
@@ -180,7 +180,6 @@ HANDLE_PROCESS_LAUNCH_END:
     if (R_SUCCEEDED(rc)) {
         *out_pid = new_process.pid;
     }
-    delete ac_buf;
     g_sema_finish_launch.Signal();
 }
 

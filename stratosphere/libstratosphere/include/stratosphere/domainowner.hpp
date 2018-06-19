@@ -1,5 +1,6 @@
 #pragma once
 #include <switch.h>
+#include <algorithm>
 #include <memory>
 #include <type_traits>
 
@@ -11,18 +12,13 @@ class IServiceObject;
 
 class DomainOwner {
     private:
-        std::shared_ptr<IServiceObject> domain_objects[DOMAIN_ID_MAX];
+        std::array<std::shared_ptr<IServiceObject>, DOMAIN_ID_MAX> domain_objects;
     public:
-        DomainOwner() {
-            for (unsigned int i = 0; i < DOMAIN_ID_MAX; i++) {
-                domain_objects[i].reset();
-            }
-        }
-        
-        virtual ~DomainOwner() {
-            /* Shared ptrs should auto delete here. */
-        }
-        
+        DomainOwner() = default;
+
+        /* Shared ptrs should auto delete here. */
+        virtual ~DomainOwner() = default;
+
         std::shared_ptr<IServiceObject> get_domain_object(unsigned int i) {
             if (i < DOMAIN_ID_MAX) {
                 return domain_objects[i];
@@ -31,20 +27,20 @@ class DomainOwner {
         }
         
         Result reserve_object(std::shared_ptr<IServiceObject> object, unsigned int *out_i) {
-            for (unsigned int i = 4; i < DOMAIN_ID_MAX; i++) {
-                if (domain_objects[i] == NULL) {
-                    domain_objects[i] = object;
-                    object->set_owner(this);
-                    *out_i = i;
-                    return 0;
-                }
+            auto object_it = std::find(domain_objects.begin() + 4, domain_objects.end(), nullptr);
+            if (object_it == domain_objects.end()) {
+                return 0x1900B;
             }
-            return 0x1900B;
+
+            *out_i = std::distance(domain_objects.begin(), object_it);
+            *object_it = std::move(object);
+            (*object_it)->set_owner(this);
+            return 0;
         }
         
         Result set_object(std::shared_ptr<IServiceObject> object, unsigned int i) {
             if (domain_objects[i] == NULL) {
-                domain_objects[i] = object;
+                domain_objects[i] = std::move(object);
                 object->set_owner(this);
                 return 0;
             }
@@ -52,26 +48,18 @@ class DomainOwner {
         }
         
         unsigned int get_object_id(std::shared_ptr<IServiceObject> object) {
-            for (unsigned int i = 0; i < DOMAIN_ID_MAX; i++) {
-                if (domain_objects[i] == object) {
-                    return i;
-                }
-            }
-            return DOMAIN_ID_MAX;
+            auto object_it = std::find(domain_objects.begin(), domain_objects.end(), object);
+            return std::distance(domain_objects.begin(), object_it);
         }
         
         void delete_object(unsigned int i) {
-            if (domain_objects[i]) {
-                domain_objects[i].reset();
-            }
+            domain_objects[i].reset();
         }
         
         void delete_object(std::shared_ptr<IServiceObject> object) {
-            for (unsigned int i = 0; i < DOMAIN_ID_MAX; i++) {
-                if (domain_objects[i] == object) {
-                    domain_objects[i].reset();
-                    break;
-                }
+            auto object_it = std::find(domain_objects.begin(), domain_objects.end(), object);
+            if (object_it != domain_objects.end()) {
+                object_it->reset();
             }
         }
 };

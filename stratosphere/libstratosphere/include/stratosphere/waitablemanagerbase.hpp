@@ -4,12 +4,12 @@
 #include <vector>
 
 class WaitableManagerBase {
-    std::atomic<u64> cur_priority;
+    std::atomic<u64> cur_priority = 0;
     public:
-        WaitableManagerBase() : cur_priority(0) { }
-        virtual ~WaitableManagerBase() { }
-        
-        u64 get_priority() {            
+        WaitableManagerBase() = default;
+        virtual ~WaitableManagerBase() = default;
+
+        u64 get_priority() {
             return std::atomic_fetch_add(&cur_priority, (u64)1);
         }
 };
