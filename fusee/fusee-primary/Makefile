@@ -28,6 +28,10 @@ INCLUDES	:=	include
 ARCH	:=	-march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
 DEFINES :=	-D__BPMP__ -DFUSEE_STAGE1_SRC
 
+ifeq ($(FUSEE_I_KNOW_WHAT_I_AM_DOING),1)
+DEFINES +=	-DI_KNOW_WHAT_I_AM_DOING
+endif
+
 CFLAGS	:= \
 	-g \
 	-O2 \
