@@ -61,6 +61,42 @@ static const instruction_t MAKE_KERNEL_HOOK_NAME(100, proc_id_send)[] = {0xA9BF2
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(100, proc_id_recv)[] = {0x68, 0x29, 0x41, 0xF9, 0x89, 0xF7, 0x7E, 0xD3, 0x9C, 0x0B, 0x00, 0x11, 0x48, 0x69, 0x29, 0xF8};
 static const instruction_t MAKE_KERNEL_HOOK_NAME(100, proc_id_recv)[] = {0xA9BF2FEA, 0x2A1C03EA, 0xD37EF54A, 0xF86A69AA, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000040, 0xF9412968, 0xA8C12FEA};
+/*
+    stp x10, x11, [sp, #-0x10]!
+    mov w11, w24
+    lsl x11, x11, #2
+    ldr x11, [x28, x11]
+    mov x9, #0x0000ffffffffffff
+    and x8, x11, x9
+    mov x9, #0xffff000000000000
+    and x11, x11, x9
+    mov x9, #0xfffe000000000000
+    cmp x11, x9
+    beq #8
+    ldr x8, [x10,#0x260]
+    ldp x10, x11, [sp],#0x10
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(200, proc_id_send)[] = {0x48, 0x31, 0x41, 0xF9, 0xE9, 0x03, 0x18, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0xC8, 0x6A, 0x29, 0xF8};
+static const instruction_t MAKE_KERNEL_HOOK_NAME(200, proc_id_send)[] = {0xA9BF2FEA, 0x2A1803EB, 0xD37EF56B, 0xF86B6B8B, 0x92FFFFE9, 0x8A090168, 0xD2FFFFE9, 0x8A09016B, 0xD2FFFFC9, 0xEB09017F, 0x54000040, 0xF9413148, 0xA8C12FEA};
+/*  
+    stp x10, x11, [sp, #-0x10]!
+    mov w10, w15
+    lsl x10, x10, #2
+    ldr x11, [sp, #0xB8]
+    ldr x10, [x11, x10]
+    ldr x11, [sp, #0xF0]
+    mov x9, #0x0000ffffffffffff
+    and x8, x10, x9
+    mov x9, #0xffff000000000000
+    and x10, x10, x9
+    mov x9, #0xfffe000000000000
+    cmp x10, x9
+    beq #8
+    ldr x8, [x11,#0x260]
+    ldp x10, x11, [sp],#0x10
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(200, proc_id_recv)[] = {0x08, 0x31, 0x41, 0xF9, 0xE9, 0x03, 0x0F, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0x48, 0x6B, 0x29, 0xF8};
+static const instruction_t MAKE_KERNEL_HOOK_NAME(200, proc_id_recv)[] = {0xA9BF2FEA, 0x2A0F03EA, 0xD37EF54A, 0xF9405FEB, 0xF86A696A, 0xF9407BEB, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000040, 0xF9413168, 0xA8C12FEA};
 /*  
     mov w10, w23
     lsl x10, x10, #2
@@ -136,7 +172,7 @@ static const kernel_hook_t g_kernel_hooks_100[] = {
         .pattern_size = 0x10,
         .pattern = MAKE_KERNEL_PATTERN_NAME(100, proc_id_send),
         .pattern_hook_offset = 0x0,
-        .payload_num_instructions = 13,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(100, proc_id_send))/sizeof(instruction_t),
         .branch_back_offset = 0x4,
         .payload = MAKE_KERNEL_HOOK_NAME(100, proc_id_send)
     },
@@ -144,13 +180,28 @@ static const kernel_hook_t g_kernel_hooks_100[] = {
         .pattern_size = 0x10,
         .pattern = MAKE_KERNEL_PATTERN_NAME(100, proc_id_recv),
         .pattern_hook_offset = 0x0,
-        .payload_num_instructions = 13,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(100, proc_id_recv))/sizeof(instruction_t),
         .branch_back_offset = 0x4,
         .payload = MAKE_KERNEL_HOOK_NAME(100, proc_id_recv)
     }
 };
 static const kernel_hook_t g_kernel_hooks_200[] = {
-    /* TODO */
+    {   /* Send Message Process ID Patch. */
+        .pattern_size = 0x10,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(200, proc_id_send),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(200, proc_id_send))/sizeof(instruction_t),
+        .branch_back_offset = 0x4,
+        .payload = MAKE_KERNEL_HOOK_NAME(200, proc_id_send)
+    },
+    {   /* Receive Message Process ID Patch. */
+        .pattern_size = 0x10,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(200, proc_id_recv),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(200, proc_id_recv))/sizeof(instruction_t),
+        .branch_back_offset = 0x4,
+        .payload = MAKE_KERNEL_HOOK_NAME(200, proc_id_recv)
+    }
 };
 static const kernel_hook_t g_kernel_hooks_300[] = {
     /* TODO */
@@ -163,7 +214,7 @@ static const kernel_hook_t g_kernel_hooks_400[] = {
         .pattern_size = 0x10,
         .pattern = MAKE_KERNEL_PATTERN_NAME(400, proc_id_send),
         .pattern_hook_offset = 0x0,
-        .payload_num_instructions = 13,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(400, proc_id_send))/sizeof(instruction_t),
         .branch_back_offset = 0x8,
         .payload = MAKE_KERNEL_HOOK_NAME(400, proc_id_send)
     },
@@ -171,7 +222,7 @@ static const kernel_hook_t g_kernel_hooks_400[] = {
         .pattern_size = 0x10,
         .pattern = MAKE_KERNEL_PATTERN_NAME(400, proc_id_recv),
         .pattern_hook_offset = 0x0,
-        .payload_num_instructions = 13,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(400, proc_id_recv))/sizeof(instruction_t),
         .branch_back_offset = 0x4,
         .payload = MAKE_KERNEL_HOOK_NAME(400, proc_id_recv)
     }
@@ -181,7 +232,7 @@ static const kernel_hook_t g_kernel_hooks_500[] = {
         .pattern_size = 0x10,
         .pattern = MAKE_KERNEL_PATTERN_NAME(500, proc_id_send),
         .pattern_hook_offset = 0x0,
-        .payload_num_instructions = 13,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(500, proc_id_send))/sizeof(instruction_t),
         .branch_back_offset = 0x8,
         .payload = MAKE_KERNEL_HOOK_NAME(500, proc_id_send)
     },
@@ -189,7 +240,7 @@ static const kernel_hook_t g_kernel_hooks_500[] = {
         .pattern_size = 0x10,
         .pattern = MAKE_KERNEL_PATTERN_NAME(500, proc_id_recv),
         .pattern_hook_offset = 0x0,
-        .payload_num_instructions = 13,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(500, proc_id_recv))/sizeof(instruction_t),
         .branch_back_offset = 0x8,
         .payload = MAKE_KERNEL_HOOK_NAME(500, proc_id_recv)
     }
@@ -201,12 +252,12 @@ static const kernel_hook_t g_kernel_hooks_500[] = {
 static const kernel_info_t g_kernel_infos[] = {
     {   /* 1.0.0. */
         .hash = {0xB8, 0xC5, 0x0C, 0x68, 0x25, 0xA9, 0xB9, 0x5B, 0xD2, 0x4D, 0x2C, 0x7C, 0x81, 0x7F, 0xE6, 0x96, 0xF2, 0x42, 0x4E, 0x1D, 0x78, 0xDF, 0x3B, 0xCA, 0x3D, 0x6B, 0x68, 0x12, 0xDD, 0xA9, 0xCB, 0x9C},
-        .free_code_space_offset = 0x4597C,
+        .free_code_space_offset = 0x4797C,
         KERNEL_HOOKS(100)
     },
     {   /* 2.0.0. */
-        /* TODO */
-        .free_code_space_offset = 0,
+        .hash = {0x64, 0x0B, 0x51, 0xFF, 0x28, 0x01, 0xB8, 0x30, 0xA7, 0xA3, 0x60, 0x47, 0x86, 0x0D, 0x68, 0xAA, 0x9A, 0x92, 0x10, 0x0D, 0xB9, 0xCC, 0xEC, 0x8B, 0x05, 0x80, 0x73, 0xBD, 0x33, 0xB4, 0x2C, 0x6C},
+        .free_code_space_offset = 0x6486C,
         KERNEL_HOOKS(200)
     },
     {   /* 3.0.0. */
@@ -215,8 +266,8 @@ static const kernel_info_t g_kernel_infos[] = {
         KERNEL_HOOKS(300)
     },
     {   /* 3.0.2. */
-        /* TODO */
-        .free_code_space_offset = 0,
+        .hash = {0x81, 0x9D, 0x08, 0xBE, 0xE4, 0x5E, 0x1F, 0xBB, 0x45, 0x5A, 0x6D, 0x70, 0x4B, 0xB2, 0x17, 0xA6, 0x12, 0x69, 0xF8, 0xB8, 0x75, 0x1C, 0x71, 0x16, 0xF0, 0xE9, 0x79, 0x7F, 0xB0, 0xD1, 0x78, 0xB2},
+        .free_code_space_offset = 0x494BC,
         KERNEL_HOOKS(302)
     },
     {   /* 4.0.0. */
