@@ -97,6 +97,78 @@ static const instruction_t MAKE_KERNEL_HOOK_NAME(200, proc_id_send)[] = {0xA9BF2
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(200, proc_id_recv)[] = {0x08, 0x31, 0x41, 0xF9, 0xE9, 0x03, 0x0F, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0x48, 0x6B, 0x29, 0xF8};
 static const instruction_t MAKE_KERNEL_HOOK_NAME(200, proc_id_recv)[] = {0xA9BF2FEA, 0x2A0F03EA, 0xD37EF54A, 0xF9405FEB, 0xF86A696A, 0xF9407BEB, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000040, 0xF9413168, 0xA8C12FEA};
+/*
+    stp x10, x11, [sp, #-0x10]!
+    mov w11, w24
+    lsl x11, x11, #2
+    ldr x11, [x28, x11]
+    mov x9, #0x0000ffffffffffff
+    and x8, x11, x9
+    mov x9, #0xffff000000000000
+    and x11, x11, x9
+    mov x9, #0xfffe000000000000
+    cmp x11, x9
+    beq #8
+    ldr x8, [x10,#0x2A8]
+    ldp x10, x11, [sp],#0x10
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(300, proc_id_send)[] = {0x48, 0x55, 0x41, 0xF9, 0xE9, 0x03, 0x18, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0xC8, 0x6A, 0x29, 0xF8};
+static const instruction_t MAKE_KERNEL_HOOK_NAME(300, proc_id_send)[] = {0xA9BF2FEA, 0x2A1803EB, 0xD37EF56B, 0xF86B6B8B, 0x92FFFFE9, 0x8A090168, 0xD2FFFFE9, 0x8A09016B, 0xD2FFFFC9, 0xEB09017F, 0x54000040, 0xF9415548, 0xA8C12FEA};
+/*  
+    stp x10, x11, [sp, #-0x10]!
+    mov w10, w15
+    lsl x10, x10, #2
+    ldr x11, [sp, #0xB8]
+    ldr x10, [x11, x10]
+    ldr x11, [sp, #0xF0]
+    mov x9, #0x0000ffffffffffff
+    and x8, x10, x9
+    mov x9, #0xffff000000000000
+    and x10, x10, x9
+    mov x9, #0xfffe000000000000
+    cmp x10, x9
+    beq #8
+    ldr x8, [x11,#0x2A8]
+    ldp x10, x11, [sp],#0x10
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(300, proc_id_recv)[] = {0x08, 0x55, 0x41, 0xF9, 0xE9, 0x03, 0x0F, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0x48, 0x6B, 0x29, 0xF8};
+static const instruction_t MAKE_KERNEL_HOOK_NAME(300, proc_id_recv)[] = {0xA9BF2FEA, 0x2A0F03EA, 0xD37EF54A, 0xF9405FEB, 0xF86A696A, 0xF9407BEB, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000040, 0xF9415568, 0xA8C12FEA};
+/*
+    stp x10, x11, [sp, #-0x10]!
+    mov w11, w24
+    lsl x11, x11, #2
+    ldr x11, [x28, x11]
+    mov x9, #0x0000ffffffffffff
+    and x8, x11, x9
+    mov x9, #0xffff000000000000
+    and x11, x11, x9
+    mov x9, #0xfffe000000000000
+    cmp x11, x9
+    beq #8
+    ldr x8, [x10,#0x2A8]
+    ldp x10, x11, [sp],#0x10
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(302, proc_id_send)[] = {0x48, 0x55, 0x41, 0xF9, 0xE9, 0x03, 0x18, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0xC8, 0x6A, 0x29, 0xF8};
+static const instruction_t MAKE_KERNEL_HOOK_NAME(302, proc_id_send)[] = {0xA9BF2FEA, 0x2A1803EB, 0xD37EF56B, 0xF86B6B8B, 0x92FFFFE9, 0x8A090168, 0xD2FFFFE9, 0x8A09016B, 0xD2FFFFC9, 0xEB09017F, 0x54000040, 0xF9415548, 0xA8C12FEA};
+/*  
+    stp x10, x11, [sp, #-0x10]!
+    mov w10, w15
+    lsl x10, x10, #2
+    ldr x11, [sp, #0xB8]
+    ldr x10, [x11, x10]
+    ldr x11, [sp, #0xF0]
+    mov x9, #0x0000ffffffffffff
+    and x8, x10, x9
+    mov x9, #0xffff000000000000
+    and x10, x10, x9
+    mov x9, #0xfffe000000000000
+    cmp x10, x9
+    beq #8
+    ldr x8, [x11,#0x2A8]
+    ldp x10, x11, [sp],#0x10
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(302, proc_id_recv)[] = {0x08, 0x55, 0x41, 0xF9, 0xE9, 0x03, 0x0F, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0x48, 0x6B, 0x29, 0xF8};
+static const instruction_t MAKE_KERNEL_HOOK_NAME(302, proc_id_recv)[] = {0xA9BF2FEA, 0x2A0F03EA, 0xD37EF54A, 0xF9405FEB, 0xF86A696A, 0xF9407BEB, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000040, 0xF9415568, 0xA8C12FEA};
 /*  
     mov w10, w23
     lsl x10, x10, #2
@@ -204,10 +276,40 @@ static const kernel_hook_t g_kernel_hooks_200[] = {
     }
 };
 static const kernel_hook_t g_kernel_hooks_300[] = {
-    /* TODO */
+    {   /* Send Message Process ID Patch. */
+        .pattern_size = 0x10,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(300, proc_id_send),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(300, proc_id_send))/sizeof(instruction_t),
+        .branch_back_offset = 0x4,
+        .payload = MAKE_KERNEL_HOOK_NAME(300, proc_id_send)
+    },
+    {   /* Receive Message Process ID Patch. */
+        .pattern_size = 0x10,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(300, proc_id_recv),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(300, proc_id_recv))/sizeof(instruction_t),
+        .branch_back_offset = 0x4,
+        .payload = MAKE_KERNEL_HOOK_NAME(300, proc_id_recv)
+    }
 };
 static const kernel_hook_t g_kernel_hooks_302[] = {
-    /* TODO */
+    {   /* Send Message Process ID Patch. */
+        .pattern_size = 0x10,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(302, proc_id_send),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(302, proc_id_send))/sizeof(instruction_t),
+        .branch_back_offset = 0x4,
+        .payload = MAKE_KERNEL_HOOK_NAME(302, proc_id_send)
+    },
+    {   /* Receive Message Process ID Patch. */
+        .pattern_size = 0x10,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(302, proc_id_recv),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(302, proc_id_recv))/sizeof(instruction_t),
+        .branch_back_offset = 0x4,
+        .payload = MAKE_KERNEL_HOOK_NAME(302, proc_id_recv)
+    }
 };
 static const kernel_hook_t g_kernel_hooks_400[] = {
     {   /* Send Message Process ID Patch. */
