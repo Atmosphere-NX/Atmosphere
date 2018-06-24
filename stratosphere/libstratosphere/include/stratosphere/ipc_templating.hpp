@@ -400,6 +400,7 @@ void EncodeValueIntoIpcMessageBeforePrepare(DomainOwner *domain_owner, IpcComman
                 domain_owner->reserve_object(value.session->get_service_object(), &value.domain_id);
             }
             value.session->close_handles();
+            delete value.session;
         } else {
             ipcSendHandleMove(c, value.session ? value.session->get_client_handle() : 0x0);
         }
