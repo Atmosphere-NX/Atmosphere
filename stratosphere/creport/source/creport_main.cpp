@@ -6,6 +6,8 @@
 
 #include <switch.h>
 
+#include "creport_crash_report.hpp"
+
 
 extern "C" {
     extern u32 __start__;
@@ -74,6 +76,8 @@ static u64 creport_parse_u64(char *s) {
     return out_val;
 }
 
+static CrashReport g_Creport;
+
 int main(int argc, char **argv) {
     /* Validate arguments. */
     if (argc < 2) {
@@ -85,12 +89,11 @@ int main(int argc, char **argv) {
         }
     }
     
-    /* Parse arguments. */
+    /* Parse crashed PID. */
     u64 crashed_pid = creport_parse_u64(argv[0]);
-    bool has_extra_info = argv[1][0] == '1';
     
-    /* TODO: Generate report. */
-    (void)(has_extra_info);
+    /* Try to debug the crashed process. */
+    g_Creport.BuildReport(crashed_pid, argv[1][0] == '1');
     
     if (R_SUCCEEDED(nsdevInitialize())) {
         nsdevTerminateProcess(crashed_pid);
