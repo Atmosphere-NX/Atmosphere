@@ -10,8 +10,17 @@ void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
     this->has_extra_info = has_extra_info;
     if (OpenProcess(pid)) {
         ProcessExceptions();
+        if (kernelAbove500()) {
+            /* TODO: Process Code Regions. */
+            /* TODO: Process Threads. */
+        }
         
-        /* TODO: More stuff here (sub_7100002260)... */
+        if (IsApplication()) {
+            ProcessDyingMessage();
+        }
+        
+        /* Real creport builds the report here. We do it later. */
+        
         Close();
     }
 }
@@ -67,13 +76,13 @@ void CrashReport::HandleAttachProcess(DebugEventInfo &d) {
         }
         
         /* Cap userdata size. */
-        if (userdata_size > 0x1000) {
-            userdata_size = 0x1000;
+        if (userdata_size > sizeof(this->dying_message)) {
+            userdata_size = sizeof(this->dying_message);
         }
         
         /* Assign. */
-        this->userdata_5x_address = userdata_address;
-        this->userdata_5x_size = userdata_size;
+        this->dying_message_address = userdata_address;
+        this->dying_message_size = userdata_size;
     }
 }
 
@@ -115,6 +124,32 @@ void CrashReport::HandleException(DebugEventInfo &d) {
     }
     /* Parse crashing thread info. */
     this->crashed_thread_info.ReadFromProcess(this->debug_handle, d.thread_id, Is64Bit());
+}
+
+void CrashReport::ProcessDyingMessage() {
+    /* Dying message is only stored starting in 5.0.0. */
+    if (!kernelAbove500()) {
+        return;
+    }
+    
+    /* Validate the message address/size. */
+    if (this->dying_message_address == 0 || this->dying_message_address & 0xFFF) {
+        return;
+    }
+    if (this->dying_message_size > sizeof(this->dying_message)) {
+        return;
+    }
+    
+    /* Validate that the report isn't garbage. */
+    if (!IsOpen() || !WasSuccessful()) {
+        return;
+    }
+    
+    if (!IsAddressReadable(this->dying_message_address, this->dying_message_size)) {
+        return;
+    }
+    
+    svcReadDebugProcessMemory(this->dying_message, this->debug_handle, this->dying_message_address, this->dying_message_size);
 }
 
 bool CrashReport::IsAddressReadable(u64 address, u64 size, MemoryInfo *o_mi) {

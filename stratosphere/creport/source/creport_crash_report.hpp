@@ -27,19 +27,22 @@ class CrashReport {
         
         /* Attach Process Info. */ 
         AttachProcessInfo process_info;
-        u64 userdata_5x_address;
-        u64 userdata_5x_size;
+        u64 dying_message_address;
+        u64 dying_message_size;
+        u8 dying_message[0x1000];
+        
+        static_assert(sizeof(dying_message) == 0x1000, "Incorrect definition for dying message!");
         
         /* Exception Info. */
         ExceptionInfo exception_info;
         ThreadInfo crashed_thread_info;
         
     public:
-        CrashReport() : debug_handle(INVALID_HANDLE), result((Result)CrashReportResult::IncompleteReport), process_info({}), exception_info({}) { }
+        CrashReport() : debug_handle(INVALID_HANDLE), result((Result)CrashReportResult::IncompleteReport), process_info({}), dying_message_address(0),
+            dying_message_size(0), dying_message{}, exception_info({}) { }
         
         void BuildReport(u64 pid, bool has_extra_info);
         void SaveReport();
-        void ProcessExceptions();
         
         bool IsAddressReadable(u64 address, u64 size, MemoryInfo *mi = NULL);
         
@@ -78,6 +81,8 @@ class CrashReport {
             return this->exception_info.type == DebugExceptionType::UserBreak;
         }
     private:
+        void ProcessExceptions();
+        void ProcessDyingMessage();
         void HandleAttachProcess(DebugEventInfo &d);
         void HandleException(DebugEventInfo &d);
 };
