@@ -41,6 +41,9 @@ class ThreadInfo {
             (*this) = {};
         }
         
+        u64 GetPC() { return context.pc; }
+        u64 GetLR() { return context.lr; }
+        
         bool ReadFromProcess(Handle debug_handle, u64 thread_id, bool is_64_bit);
     private:
         void TryGetStackInfo(Handle debug_handle);

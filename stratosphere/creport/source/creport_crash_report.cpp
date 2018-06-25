@@ -11,7 +11,7 @@ void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
     if (OpenProcess(pid)) {
         ProcessExceptions();
         if (kernelAbove500()) {
-            /* TODO: Process Code Regions. */
+            this->code_list.ReadCodeRegionsFromProcess(this->debug_handle, this->crashed_thread_info.GetPC(), this->crashed_thread_info.GetLR());
             this->thread_list.ReadThreadsFromProcess(this->debug_handle, Is64Bit());
         }
         

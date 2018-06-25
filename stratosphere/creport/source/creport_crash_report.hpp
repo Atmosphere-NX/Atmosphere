@@ -4,6 +4,7 @@
 
 #include "creport_debug_types.hpp"
 #include "creport_thread_info.hpp"
+#include "creport_code_info.hpp"
 
 enum class CrashReportResult : Result {
     UndefinedInstruction = 0x00A8,
@@ -38,6 +39,7 @@ class CrashReport {
         ThreadInfo crashed_thread_info;
         
         /* Extra Info. */
+        CodeList code_list;
         ThreadList thread_list;
         
     public:
