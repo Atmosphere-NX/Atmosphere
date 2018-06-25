@@ -113,7 +113,8 @@ void CrashReport::HandleException(DebugEventInfo &d) {
         default:
             return;
     }
-    /* TODO: Parse crashing thread info. */
+    /* Parse crashing thread info. */
+    this->crashed_thread_info.ReadFromProcess(this->debug_handle, d.thread_id, Is64Bit());
 }
 
 bool CrashReport::IsAddressReadable(u64 address, u64 size, MemoryInfo *o_mi) {

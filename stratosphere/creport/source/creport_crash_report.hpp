@@ -3,6 +3,7 @@
 #include <switch.h>
 
 #include "creport_debug_types.hpp"
+#include "creport_thread_info.hpp"
 
 enum class CrashReportResult : Result {
     UndefinedInstruction = 0x00A8,
@@ -31,6 +32,7 @@ class CrashReport {
         
         /* Exception Info. */
         ExceptionInfo exception_info;
+        ThreadInfo crashed_thread_info;
         
     public:
         CrashReport() : debug_handle(INVALID_HANDLE), result((Result)CrashReportResult::IncompleteReport), process_info({}), exception_info({}) { }

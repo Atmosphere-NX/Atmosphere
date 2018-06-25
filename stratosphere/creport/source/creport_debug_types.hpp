@@ -1,6 +1,11 @@
 #pragma once
 #include <switch.h>
 
+struct StackFrame {
+    u64 fp;
+    u64 lr;
+};
+
 struct AttachProcessInfo {
     u64 title_id;
     u64 process_id;
