@@ -142,7 +142,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     if (R_FAILED(rc)) {
         goto CREATE_PROCESS_END;
     }
-    
+        
     /* Figure out where NSOs will be mapped, and how much space they (and arguments) will take up. */
     rc = NsoUtils::CalculateNsoLoadExtents(process_info.process_flags, launch_item != NULL ? launch_item->arg_size : 0, &nso_extents);
     if (R_FAILED(rc)) {

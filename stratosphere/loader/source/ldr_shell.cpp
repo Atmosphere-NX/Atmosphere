@@ -20,9 +20,9 @@ Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id
     return rc;
 }
 
-std::tuple<Result> ShellService::add_title_to_launch_queue(u64 tid, InPointer<char> args) {
-    fprintf(stderr, "Add to launch queue: %p, %zX\n", args.pointer, args.num_elements);
-    return {LaunchQueue::add(tid, args.pointer, args.num_elements)};
+std::tuple<Result> ShellService::add_title_to_launch_queue(u64 args_size, u64 tid, InPointer<char> args) {
+    fprintf(stderr, "Add to launch queue: %p, %zX\n", args.pointer, std::min(args_size, args.num_elements));
+    return {LaunchQueue::add(tid, args.pointer, std::min(args_size, args.num_elements))};
 }
 
 std::tuple<Result> ShellService::clear_launch_queue(u64 dat) {

@@ -21,6 +21,6 @@ class ShellService final : public IServiceObject {
         
     private:
         /* Actual commands. */
-        std::tuple<Result> add_title_to_launch_queue(u64 tid, InPointer<char> args);
+        std::tuple<Result> add_title_to_launch_queue(u64 args_size, u64 tid, InPointer<char> args);
         std::tuple<Result> clear_launch_queue(u64 dat);
 };

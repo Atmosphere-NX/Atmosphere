@@ -141,6 +141,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
                 /* What the fuck? Where does 0x9007 come from? */
                 extents->args_size = (2 * args_size + 0x9007);
                 extents->args_size &= ~0xFFFULL;
+                extents->total_size += extents->args_size;
             }
         }
     }
