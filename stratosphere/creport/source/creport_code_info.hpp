@@ -5,7 +5,7 @@
 
 struct CodeInfo {
     char name[0x20];
-    u8 id[0x20];
+    u8  build_id[0x20];
     u64 start_address;
     u64 end_address;
 };
@@ -21,4 +21,6 @@ class CodeList {
         void ReadCodeRegionsFromProcess(Handle debug_handle, u64 pc, u64 lr);
     private:
         bool TryFindCodeRegion(Handle debug_handle, u64 guess, u64 *address);
+        void GetCodeInfoName(u64 debug_handle, u64 ro_address, char *name);
+        void GetCodeInfoBuildId(u64 debug_handle, u64 ro_address, u8 *build_id);
 };
