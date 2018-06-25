@@ -90,4 +90,7 @@ class CrashReport {
         void ProcessDyingMessage();
         void HandleAttachProcess(DebugEventInfo &d);
         void HandleException(DebugEventInfo &d);
+        
+        void EnsureReportDirectories();
+        bool GetCurrentTime(u64 *out);
 };

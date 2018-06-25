@@ -1,9 +1,46 @@
+#include <cstdio>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <switch.h>
+
 #include "creport_crash_report.hpp"
 #include "creport_debug_types.hpp"
 
+void CrashReport::EnsureReportDirectories() {
+    char path[FS_MAX_PATH];  
+    strcpy(path, "sdmc:/atmosphere");
+    mkdir(path, S_IRWXU);
+    strcat(path, "/crash reports");
+    mkdir(path, S_IRWXU);
+    strcat(path, "/dumps");
+    mkdir(path, S_IRWXU);
+}
+
 void CrashReport::SaveReport() {
     /* TODO: Save the report to the SD card. */
+    char report_path[FS_MAX_PATH];
+    
+    /* Ensure path exists. */
+    EnsureReportDirectories();
+    
+    /* Get a timestamp. */
+    u64 timestamp;
+    if (!GetCurrentTime(&timestamp)) {
+        timestamp = svcGetSystemTick();
+    }
+    
+    /* Open report file. */
+    snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash reports/%016lx_%016lx.log", timestamp, process_info.title_id), 
+    FILE *f_report = fopen(report_path, "w");
+    if (f_report == NULL) {
+        return;
+    }
+    
+    fprintf(f_report, "Atmosphere Crash Report:\n");
+    
+    /* TODO: Actually report about the crash. */
+    
+    fclose(f_report);
 }
 
 void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
@@ -175,4 +212,27 @@ bool CrashReport::IsAddressReadable(u64 address, u64 size, MemoryInfo *o_mi) {
     }
 
     return true;
+}
+
+bool GetCurrentTime(u64 *out) {
+    *out = 0;
+    
+    /* Verify that pcv isn't dead. */
+    {
+        Handle dummy;
+        if (R_SUCCEEDED(smRegisterService(&dummy, "time:s", false, 0x20))) {
+            svcCloseHandle(dummy);
+            return false;
+        }
+    }
+    
+    /* Try to get the current time. */
+    bool success = false;
+    if (R_SUCCEEDED(timeInitialize())) {
+        if (R_SUCCEEDED(timeGetCurrentTime(TimeType_LocalSystemClock, out))) {
+            success = true;
+        }
+        timeExit();
+    }
+    return success;
 }

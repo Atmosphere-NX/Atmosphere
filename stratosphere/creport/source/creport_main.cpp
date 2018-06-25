@@ -95,6 +95,8 @@ int main(int argc, char **argv) {
     /* Try to debug the crashed process. */
     g_Creport.BuildReport(crashed_pid, argv[1][0] == '1');
     if (g_Creport.WasSuccessful()) {
+        g_Creport.SaveReport();
+        
         if (R_SUCCEEDED(nsdevInitialize())) {
             nsdevTerminateProcess(crashed_pid);
             nsdevExit();
