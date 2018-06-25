@@ -37,6 +37,9 @@ class CrashReport {
         ExceptionInfo exception_info;
         ThreadInfo crashed_thread_info;
         
+        /* Extra Info. */
+        ThreadList thread_list;
+        
     public:
         CrashReport() : debug_handle(INVALID_HANDLE), result((Result)CrashReportResult::IncompleteReport), process_info({}), dying_message_address(0),
             dying_message_size(0), dying_message{}, exception_info({}) { }

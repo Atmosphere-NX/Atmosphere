@@ -42,4 +42,17 @@ class ThreadInfo {
         }
         
         bool ReadFromProcess(Handle debug_handle, u64 thread_id, bool is_64_bit);
+    private:
+        void TryGetStackInfo(Handle debug_handle);
+};
+
+class ThreadList {
+    private:
+        static const size_t max_thread_count = 0x60;
+        u32 thread_count;
+        ThreadInfo thread_infos[max_thread_count];
+    public:
+        ThreadList() : thread_count(0), thread_infos({}) { }
+        
+        void ReadThreadsFromProcess(Handle debug_handle, bool is_64_bit);
 };
