@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstring>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <switch.h>
@@ -30,7 +31,7 @@ void CrashReport::SaveReport() {
     }
     
     /* Open report file. */
-    snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash reports/%016lx_%016lx.log", timestamp, process_info.title_id), 
+    snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash reports/%016lx_%016lx.log", timestamp, process_info.title_id);
     FILE *f_report = fopen(report_path, "w");
     if (f_report == NULL) {
         return;
@@ -214,7 +215,7 @@ bool CrashReport::IsAddressReadable(u64 address, u64 size, MemoryInfo *o_mi) {
     return true;
 }
 
-bool GetCurrentTime(u64 *out) {
+bool CrashReport::GetCurrentTime(u64 *out) {
     *out = 0;
     
     /* Verify that pcv isn't dead. */
