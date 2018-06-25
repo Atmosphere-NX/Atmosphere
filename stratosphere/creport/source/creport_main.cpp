@@ -94,12 +94,27 @@ int main(int argc, char **argv) {
     
     /* Try to debug the crashed process. */
     g_Creport.BuildReport(crashed_pid, argv[1][0] == '1');
-    
-    if (R_SUCCEEDED(nsdevInitialize())) {
-        nsdevTerminateProcess(crashed_pid);
-        nsdevExit();
+    if (g_Creport.WasSuccessful()) {
+        if (R_SUCCEEDED(nsdevInitialize())) {
+            nsdevTerminateProcess(crashed_pid);
+            nsdevExit();
+        }
+        
+        /* Don't fatal if we have extra info. */
+        if (kernelAbove500()) {
+            if (g_Creport.IsApplication()) {
+                return 0;
+            }
+        } else if (argv[1][0] == '1') {
+            return 0;
+        }
+        
+        /* Also don't fatal if we're a user break. */
+        if (g_Creport.IsUserBreak()) {
+            return 0;
+        }
+        
+        fatalWithType(g_Creport.GetResult(), FatalType_ErrorScreen);
     }
     
-    /* TODO: fatalWithType(<report error>, FatalType_ErrorScreen); */
-    fatalWithType(0, FatalType_ErrorScreen);
 }
