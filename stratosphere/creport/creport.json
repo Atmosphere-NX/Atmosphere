@@ -20,7 +20,7 @@
 		"fatal:u":	false,
 		"fsp-srv":	false,
 		"ns:dev":	false,
-		"time:s":	true,
+		"time:s":	true
 	},
 	"kernel_capabilities":	{
 		"kernel_flags":	{
