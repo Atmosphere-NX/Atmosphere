@@ -43,6 +43,12 @@ struct AlignmentFaultInfo {
     u64 address;
 };
 
+struct UserBreakInfo {
+    u64 info_0;
+    u64 address;
+    u64 size;
+};
+
 struct BadSvcInfo {
     u32 id;
 };
@@ -51,11 +57,10 @@ union SpecificExceptionInfo {
     UndefinedInstructionInfo undefined_instruction;
     DataAbortInfo data_abort;
     AlignmentFaultInfo alignment_fault;
+    UserBreakInfo user_break;
     BadSvcInfo bad_svc;
     u64 raw;
 };
-
-static_assert(sizeof(SpecificExceptionInfo) == sizeof(u64), "Bad SpecificExceptionInfo definition!");
 
 struct ExceptionInfo {
     DebugExceptionType type;

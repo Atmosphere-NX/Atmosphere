@@ -29,12 +29,17 @@ class CrashReport {
         u64 userdata_5x_address;
         u64 userdata_5x_size;
         
+        /* Exception Info. */
+        ExceptionInfo exception_info;
+        
     public:
-        CrashReport() : debug_handle(INVALID_HANDLE), result((Result)CrashReportResult::IncompleteReport), process_info({0}) { }
+        CrashReport() : debug_handle(INVALID_HANDLE), result((Result)CrashReportResult::IncompleteReport), process_info({}), exception_info({}) { }
         
         void BuildReport(u64 pid, bool has_extra_info);
         void SaveReport();
         void ProcessExceptions();
+        
+        bool IsAddressReadable(u64 address, u64 size, MemoryInfo *mi = NULL);
         
         Result GetResult() {
             return this->result;
@@ -68,7 +73,7 @@ class CrashReport {
         }
         
         bool IsUserBreak() {
-            return this->result == (Result)CrashReportResult::UserBreak;
+            return this->exception_info.type == DebugExceptionType::UserBreak;
         }
     private:
         void HandleAttachProcess(DebugEventInfo &d);
