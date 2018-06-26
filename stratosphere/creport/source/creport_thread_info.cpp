@@ -1,6 +1,29 @@
 #include <switch.h>
+#include <cstring>
 
 #include "creport_thread_info.hpp"
+#include "creport_crash_report.hpp"
+
+void ThreadInfo::SaveToFile(FILE *f_report) {
+    fprintf(f_report, "    Thread ID:                   %016lx\n", this->thread_id);
+    if (stack_top) {  
+        fprintf(f_report, "    Stack:                       %016lx-%016lx\n", this->stack_bottom, this->stack_top);
+    }
+    fprintf(f_report, "    Registers:\n");
+    {
+        for (unsigned int i = 0; i <= 28; i++) {  
+            fprintf(f_report, "        X[%02u]:                   %016lx\n", i, this->context.x[i]);
+        }
+        fprintf(f_report, "        FP:                      %016lx\n", this->context.fp);
+        fprintf(f_report, "        LR:                      %016lx\n", this->context.lr);
+        fprintf(f_report, "        SP:                      %016lx\n", this->context.sp);
+        fprintf(f_report, "        PC:                      %016lx\n", this->context.pc);
+    }
+    fprintf(f_report, "    Stack Trace:\n");
+    for (unsigned int i = 0; i < this->stack_trace_size; i++) {
+        fprintf(f_report, "        ReturnAddress[%02u]:       %016lx\n", i, this->stack_trace[i]);
+    }
+}
 
 bool ThreadInfo::ReadFromProcess(Handle debug_handle, u64 thread_id, bool is_64_bit) {
     this->thread_id = thread_id;
@@ -74,6 +97,35 @@ void ThreadInfo::TryGetStackInfo(Handle debug_handle) {
     if (mi.type == MemType_MappedMemory) {
         this->stack_bottom = mi.addr;
         this->stack_top = mi.addr + mi.size;
+    }
+}
+
+void ThreadInfo::DumpBinary(FILE *f_bin) {
+    fwrite(&this->thread_id, sizeof(this->thread_id), 1, f_bin);
+    fwrite(&this->context, sizeof(this->context), 1, f_bin);
+    
+    u64 sts = this->stack_trace_size;
+    fwrite(&sts, sizeof(sts), 1, f_bin);
+    fwrite(this->stack_trace, sizeof(u64), this->stack_trace_size, f_bin);
+    fwrite(&this->stack_bottom, sizeof(this->stack_bottom), 1, f_bin);
+    fwrite(&this->stack_top, sizeof(this->stack_top), 1, f_bin);
+}
+
+void ThreadList::DumpBinary(FILE *f_bin, u64 crashed_id) {
+    u32 magic = 0x30495444; /* 'DTI0' */
+    fwrite(&magic, sizeof(magic), 1, f_bin);
+    fwrite(&this->thread_count, sizeof(u32), 1, f_bin);
+    fwrite(&crashed_id, sizeof(crashed_id), 1, f_bin);
+    for (unsigned int i = 0; i < this->thread_count; i++) {
+        this->thread_infos[i].DumpBinary(f_bin);
+    }
+}
+
+void ThreadList::SaveToFile(FILE *f_report) {
+    fprintf(f_report, "Number of Threads:               %02u\n", this->thread_count);
+    for (unsigned int i = 0; i < this->thread_count; i++) {
+        fprintf(f_report, "Threads[%02u]:\n", i);
+        this->thread_infos[i].SaveToFile(f_report);
     }
 }
 

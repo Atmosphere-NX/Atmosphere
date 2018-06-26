@@ -2,6 +2,19 @@
 #include <cstring>
 
 #include "creport_code_info.hpp"
+#include "creport_crash_report.hpp"
+
+void CodeList::SaveToFile(FILE *f_report) {
+    fprintf(f_report, "    Number of Code Regions:      %u\n", this->code_count);
+    for (unsigned int i = 0; i < this->code_count; i++) {
+        fprintf(f_report, "    Code Region %02u:\n", i);
+        fprintf(f_report, "        Address:                 %016lx-%016lx\n", this->code_infos[i].start_address, this->code_infos[i].end_address);
+        if (this->code_infos[i].name[0]) {    
+            fprintf(f_report, "        Name:                    %s\n", this->code_infos[i].name);
+        }
+        CrashReport::Memdump(f_report, "        Build Id:                ", this->code_infos[i].build_id, sizeof(this->code_infos[i].build_id));
+    }
+}
 
 void CodeList::ReadCodeRegionsFromProcess(Handle debug_handle, u64 pc, u64 lr) {
     u64 code_base;

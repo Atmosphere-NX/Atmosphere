@@ -36,6 +36,33 @@ enum class DebugExceptionType : u32 {
     UnknownNine = 9,
 };
 
+static inline const char *GetDebugExceptionTypeStr(DebugExceptionType type) {
+    switch (type) {
+        case DebugExceptionType::UndefinedInstruction:
+            return "Undefined Instruction";
+        case DebugExceptionType::InstructionAbort:
+            return "Instruction Abort";
+        case DebugExceptionType::DataAbort:
+            return "Data Abort";
+        case DebugExceptionType::AlignmentFault:
+            return "Alignment Fault";
+        case DebugExceptionType::DebuggerAttached:
+            return "Debugger Attached";
+        case DebugExceptionType::BreakPoint:
+            return "Break Point";
+        case DebugExceptionType::UserBreak:
+            return "User Break";
+        case DebugExceptionType::DebuggerBreak:
+            return "Debugger Break";
+        case DebugExceptionType::BadSvc:
+            return "Bad Svc";
+        case DebugExceptionType::UnknownNine:
+            return "Unknown Nine";
+        default:
+            return "Unknown";
+    }
+}
+
 struct UndefinedInstructionInfo {
     u32 insn;
 };

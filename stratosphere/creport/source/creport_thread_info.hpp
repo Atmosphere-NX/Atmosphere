@@ -1,5 +1,6 @@
 #pragma once
 #include <switch.h>
+#include <cstdio>
 
 #include "creport_debug_types.hpp"
 
@@ -37,12 +38,15 @@ class ThreadInfo {
         u64 stack_trace[0x20];
         u32 stack_trace_size;
     public:
-        ThreadInfo() : context{}, thread_id(0), stack_top(0), stack_bottom(0), stack_trace{}, stack_trace_size(0) { }
+        ThreadInfo() : context{0}, thread_id(0), stack_top(0), stack_bottom(0), stack_trace{0}, stack_trace_size(0) { }
         
         u64 GetPC() { return context.pc; }
         u64 GetLR() { return context.lr; }
+        u64 GetId() { return thread_id; }
         
         bool ReadFromProcess(Handle debug_handle, u64 thread_id, bool is_64_bit);
+        void SaveToFile(FILE *f_report);
+        void DumpBinary(FILE *f_bin);
     private:
         void TryGetStackInfo(Handle debug_handle);
 };
@@ -55,5 +59,7 @@ class ThreadList {
     public:
         ThreadList() : thread_count(0) { }
         
+        void SaveToFile(FILE *f_report);
+        void DumpBinary(FILE *f_bin, u64 crashed_id);
         void ReadThreadsFromProcess(Handle debug_handle, bool is_64_bit);
 };
