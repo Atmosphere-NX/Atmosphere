@@ -280,6 +280,12 @@ void CrashReport::SaveToFile(FILE *f_report) {
     this->crashed_thread_info.SaveToFile(f_report);
     
     if (kernelAbove500()) {
+        if (this->dying_message_size) {
+            fprintf(f_report, "Dying Message Info:\n");
+            fprintf(f_report, "    Address:                     0x%016lx\n", this->dying_message_address);
+            fprintf(f_report, "    Size:                        0x%016lx\n", this->dying_message_size);
+            CrashReport::Memdump(f_report, "    Dying Message:              ", this->dying_message, this->dying_message_size);
+        }
         fprintf(f_report, "Code Region Info:\n");
         this->code_list.SaveToFile(f_report);
         fprintf(f_report, "\nThread Report:\n");
