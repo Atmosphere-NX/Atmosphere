@@ -90,7 +90,7 @@ void nxboot_main(void) {
 #ifdef I_KNOW_WHAT_IM_DOING_2
         pk2file = fopen("bcpkg21:/", "rb");
         if (pk2file == NULL || fseek(pk2file, 0x4000, SEEK_SET) != 0) {
-            printf("Error: Failed to open Package2 from NAND: %s!\n", strerror(errno));
+            printf("Error: Failed to open Package2 from eMMC: %s!\n", strerror(errno));
             fclose(pk2file);
             generic_panic();
         }
