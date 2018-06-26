@@ -16,7 +16,7 @@ class CodeList {
         u32 code_count;
         CodeInfo code_infos[max_code_count];
     public:
-        CodeList() : code_count(0), code_infos({}) { }
+        CodeList() : code_count(0) { }
         
         void ReadCodeRegionsFromProcess(Handle debug_handle, u64 pc, u64 lr);
     private:

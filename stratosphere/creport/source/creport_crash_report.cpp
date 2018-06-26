@@ -31,7 +31,7 @@ void CrashReport::SaveReport() {
     }
     
     /* Open report file. */
-    snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash reports/%016lx_%016lx.log", timestamp, process_info.title_id);
+    snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash reports/%020lu_%016lx.log", timestamp, process_info.title_id);
     FILE *f_report = fopen(report_path, "w");
     if (f_report == NULL) {
         return;

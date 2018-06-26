@@ -92,5 +92,10 @@ struct DebugEventInfo {
     DebugEventType type;
     u32 flags;
     u64 thread_id;
-    DebugInfo info;
+    union {
+        DebugInfo info;
+        u64 _[0x40/sizeof(u64)];
+    };
 };
+
+static_assert(sizeof(DebugEventInfo) >= 0x50, "Incorrect DebugEventInfo definition!");

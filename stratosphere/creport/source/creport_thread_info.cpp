@@ -46,7 +46,7 @@ bool ThreadInfo::ReadFromProcess(Handle debug_handle, u64 thread_id, bool is_64_
         
         /* Advance to the next frame. */
         this->stack_trace[this->stack_trace_size++] = cur_frame.lr;
-        cur_fp = cur_frame.lr;
+        cur_fp = cur_frame.fp;
     }
     
     return true;
