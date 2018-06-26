@@ -37,9 +37,7 @@ class ThreadInfo {
         u64 stack_trace[0x20];
         u32 stack_trace_size;
     public:
-        ThreadInfo() {
-            (*this) = {};
-        }
+        ThreadInfo() : context{}, thread_id(0), stack_top(0), stack_bottom(0), stack_trace{}, stack_trace_size(0) { }
         
         u64 GetPC() { return context.pc; }
         u64 GetLR() { return context.lr; }
