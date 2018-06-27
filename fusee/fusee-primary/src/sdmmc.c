@@ -686,20 +686,33 @@ static void mmc_print(struct mmc *mmc, char *fmt, ...)
     va_list list;
 
     va_start(list, fmt);
-    mmc_vprint(mmc, fmt, 0, list);
+    mmc_vprint(mmc, fmt, 1, list);
     va_end(list);
 }
 
 
 /**
- * Normal SDMMC print for SDMMC information.
+ * Debug SDMMC print for SDMMC information.
  */
 static void mmc_debug(struct mmc *mmc, char *fmt, ...)
 {
     va_list list;
 
     va_start(list, fmt);
-    mmc_vprint(mmc, fmt, 1, list);
+    mmc_vprint(mmc, fmt, 2, list);
+    va_end(list);
+}
+
+
+/**
+ * Error SDMMC print for SDMMC information.
+ */
+static void mmc_error(struct mmc *mmc, char *fmt, ...)
+{
+    va_list list;
+
+    va_start(list, fmt);
+    mmc_vprint(mmc, fmt, 0, list);
     va_end(list);
 }
 
@@ -761,16 +774,16 @@ static const char *sdmmc_get_command_string(enum sdmmc_command command)
 void mmc_print_command_errors(struct mmc *mmc, int command_errno)
 {
     if (command_errno & MMC_STATUS_COMMAND_TIMEOUT)
-        mmc_print(mmc, "ERROR: command timed out!");
+        mmc_error(mmc, "ERROR: command timed out!");
 
     if (command_errno & MMC_STATUS_COMMAND_CRC_ERROR)
-        mmc_print(mmc, "ERROR: command response had invalid CRC");
+        mmc_error(mmc, "ERROR: command response had invalid CRC");
 
     if (command_errno & MMC_STATUS_COMMAND_END_BIT_ERROR)
-        mmc_print(mmc, "ERROR: command response had invalid end bit");
+        mmc_error(mmc, "ERROR: command response had invalid end bit");
 
     if (command_errno & MMC_STATUS_COMMAND_INDEX_ERROR)
-        mmc_print(mmc, "ERROR: response appears not to be for the last issued command");
+        mmc_error(mmc, "ERROR: response appears not to be for the last issued command");
 
 }
 
@@ -951,7 +964,7 @@ static int sdmmc_set_up_clocking_parameters(struct mmc *mmc, enum sdmmc_bus_volt
     switch (mmc->controller) {
         case SWITCH_EMMC:
             if (operating_voltage != MMC_VOLTAGE_1V8) {
-                mmc_print(mmc, "ERROR: eMMC can only run at 1V8, but mmc struct claims voltage %d", operating_voltage);
+                mmc_error(mmc, "ERROR: eMMC can only run at 1V8, but mmc struct claims voltage %d", operating_voltage);
                 return EINVAL;
             }
 
@@ -971,7 +984,7 @@ static int sdmmc_set_up_clocking_parameters(struct mmc *mmc, enum sdmmc_bus_volt
                     mmc->regs->auto_cal_config |= MMC_AUTOCAL_PDPU_SDMMC1_3V3;
                     break;
                 default:
-                    mmc_print(mmc, "ERROR: microsd does not support voltage %d", operating_voltage);
+                    mmc_error(mmc, "ERROR: microsd does not support voltage %d", operating_voltage);
                     return EINVAL;
             }
             mmc->regs->vendor_clock_cntrl |= (MMC_CLOCK_TRIM_SDMMC1 | MMC_CLOCK_TAP_SDMMC1);
@@ -1031,7 +1044,7 @@ static int sdmmc_run_autocal(struct mmc *mmc, bool restart_sd_clock)
 
         // Ensure we haven't timed out...
         if (get_time_since(timebase) > MMC_AUTOCAL_TIMEOUT) {
-            mmc_print(mmc, "ERROR: autocal timed out!");
+            mmc_error(mmc, "ERROR: autocal timed out!");
             if (mmc->controller == SWITCH_MICROSD) {
                 // Fallback driver strengths from Tegra X1 TRM
                 uint32_t drvup = (mmc->operating_voltage == MMC_VOLTAGE_3V3) ? 0x12 : 0x11;
@@ -1328,16 +1341,16 @@ static int sdmmc_tune_clock(struct mmc *mmc, enum sdmmc_tuning_attempts iteratio
 
     // If the tuning failed, for any reason, print and return the error.
     if (rc) {
-        mmc_print(mmc, "ERROR: failed to tune the SDMMC clock! (%d)", rc);
-        mmc_print(mmc, "error message %s", strerror(rc));
+        mmc_error(mmc, "ERROR: failed to tune the SDMMC clock! (%d)", rc);
+        mmc_error(mmc, "error message %s", strerror(rc));
         return rc;
     }
 
     // If we've made it here, this iteration completed tuning.
     // Check for a tuning failure (SAMPLE CLOCK = 0). [TRM 32.7.6.2 Step 11]
     if (!(mmc->regs->host_control2 & MMC_HOST2_SAMPLING_CLOCK_ENABLED)) {
-        mmc_print(mmc, "ERROR: tuning failed after complete iteration!");
-        mmc_print(mmc, "host_control2: %08x", mmc->regs->host_control2);
+        mmc_error(mmc, "ERROR: tuning failed after complete iteration!");
+        mmc_error(mmc, "host_control2: %08x", mmc->regs->host_control2);
         return EIO;
     }
 
@@ -1450,7 +1463,7 @@ static int sdmmc_apply_clock_speed(struct mmc *mmc, enum sdmmc_bus_speed speed, 
             break;
 
         default:
-            mmc_print(mmc, "ERROR: switching to unsupported speed!\n");
+            mmc_error(mmc, "ERROR: switching to unsupported speed!\n");
             return ENOSYS;
     }
 
@@ -1563,21 +1576,21 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Initialize the Tegra resources necessary to use the given piece of hardware.
     rc = mmc->set_up_clock_and_io(mmc);
     if (rc) {
-        mmc_print(mmc, "ERROR: could not set up controller for use!");
+        mmc_error(mmc, "ERROR: could not set up controller for use!");
         return rc;
     }
 
     // Software reset the SDMMC device.
     rc = sdmmc_hardware_reset(mmc, MMC_SOFT_RESET_FULL);
     if (rc) {
-        mmc_print(mmc, "failed to reset!");
+        mmc_error(mmc, "failed to reset!");
         return rc;
     }
 
     // Turn on the card's power supplies...
     rc = mmc->enable_supplies(mmc);
     if (rc) {
-        mmc_print(mmc, "ERROR: could power on the card!");
+        mmc_error(mmc, "ERROR: could power on the card!");
         return rc;
     }
 
@@ -1663,7 +1676,7 @@ static int sdmmc_hardware_init(struct mmc *mmc)
     // Set up the card's initialization.
     rc = sdmmc_apply_clock_speed(mmc, SDMMC_SPEED_INIT, true);
     if (rc) {
-        mmc_print(mmc, "ERROR: could not set SDMMC card speed!");
+        mmc_error(mmc, "ERROR: could not set SDMMC card speed!");
         return rc;
     }
 
@@ -1811,14 +1824,14 @@ static int sdmmc_wait_for_event(struct mmc *mmc,
 
             // If we don't have a handler, fault.
             if (!fault_handler) {
-                mmc_print(mmc, "ERROR: unhandled DMA fault!");
+                mmc_error(mmc, "ERROR: unhandled DMA fault!");
                 return EFAULT;
             }
 
             // Call the DMA fault handler.
             rc = fault_handler(mmc);
             if (rc) {
-                mmc_print(mmc, "ERROR: unhandled DMA fault! (%d)", rc);
+                mmc_error(mmc, "ERROR: unhandled DMA fault! (%d)", rc);
                 return rc;
             }
 
@@ -2523,7 +2536,7 @@ static int sdmmc_read_and_parse_csd(struct mmc *mmc)
 
         // For now, don't support any others.
         default:
-            mmc_print(mmc, "ERROR: we don't currently support cards with v%d CSDs!", csd_version);
+            mmc_error(mmc, "ERROR: we don't currently support cards with v%d CSDs!", csd_version);
             return ENOTTY;
     }
 }
@@ -2544,7 +2557,7 @@ static int sdmmc_read_and_parse_ext_csd(struct mmc *mmc)
     rc = sdmmc_send_command(mmc, CMD_SEND_EXT_CSD, MMC_RESPONSE_LEN48,
             MMC_CHECKS_ALL, 0, NULL, 1, false, false, ext_csd);
     if (rc) {
-        mmc_print(mmc, "ERROR: failed to read the extended CSD!");
+        mmc_error(mmc, "ERROR: failed to read the extended CSD!");
         return rc;
     }
 
@@ -2748,7 +2761,7 @@ static int sdmmc_mmc_switch_bus_speed(struct mmc *mmc, enum sdmmc_bus_speed spee
     rc = sdmmc_send_command(mmc, CMD_SEND_EXT_CSD, MMC_RESPONSE_LEN48,
             MMC_CHECKS_ALL, 0, NULL, 1, false, false, ext_csd);
     if (rc) {
-        mmc_print(mmc, "ERROR: failed to read the extended CSD after mode-switch!");
+        mmc_error(mmc, "ERROR: failed to read the extended CSD after mode-switch!");
         return rc;
     }
 
@@ -2991,7 +3004,7 @@ static int sdmmc_mmc_wait_for_card_readiness(struct mmc *mmc)
         sdmmc_set_loglevel(original_loglevel);
 
         if (rc) {
-            mmc_print(mmc, "ERROR: could not read the card's operating conditions!");
+            mmc_error(mmc, "ERROR: could not read the card's operating conditions!");
             return rc;
         }
 
@@ -2999,7 +3012,7 @@ static int sdmmc_mmc_wait_for_card_readiness(struct mmc *mmc)
         // Per the spec, any card greater than 2GiB should respond with this magic number.
         response_masked = response[0] & MMC_EMMC_OPERATING_COND_CAPACITY_MASK;
         if (response_masked != MMC_EMMC_OPERATING_COND_CAPACITY_MAGIC) {
-            mmc_print(mmc, "ERROR: this doesn't appear to be a valid Switch eMMC!");
+            mmc_error(mmc, "ERROR: this doesn't appear to be a valid Switch eMMC!");
             return ENOTTY;
         }
 
@@ -3039,7 +3052,7 @@ static int sdmmc_sd_wait_for_card_readiness(struct mmc *mmc, uint32_t *response)
                 MMC_RESPONSE_LEN48, MMC_CHECKS_NONE, argument, response);
         sdmmc_set_loglevel(original_loglevel);
         if (rc) {
-            mmc_print(mmc, "ERROR: could not read the card's operating conditions!");
+            mmc_error(mmc, "ERROR: could not read the card's operating conditions!");
             return rc;
         }
 
@@ -3132,7 +3145,7 @@ static int sdmmc_sd_card_init(struct mmc *mmc)
         // TODO: This is either a broken, SDv1 or MMC card.
         // Handle the latter two cases as best we can.
 
-        mmc_print(mmc, "ERROR: this card isn't an SDHC card!");
+        mmc_error(mmc, "ERROR: this card isn't an SDHC card!");
         mmc_print(mmc, "       we don't yet support low-capacity cards. :(");
         return rc;
     }
@@ -3495,7 +3508,7 @@ int sdmmc_init(struct mmc *mmc, enum sdmmc_controller controller, bool allow_vol
 
     // ... and verify that the card is there.
     if (!mmc->card_present(mmc)) {
-        mmc_print(mmc, "ERROR: no card detected!");
+        mmc_error(mmc, "ERROR: no card detected!");
         return ENODEV;
     }
 
