@@ -4,6 +4,8 @@
 
 #include "fsmitm_romstorage.hpp"
 
+#include "debug.hpp"
+
 #define ROMFS_ENTRY_EMPTY 0xFFFFFFFF
 #define ROMFS_FILEPARTITION_OFS 0x200
 
@@ -31,91 +33,65 @@ struct RomFSMemorySourceInfo {
     const u8 *data;
 };
 
-class RomFSSourceInfo {
-    using InfoVariant = std::variant<RomFSBaseSourceInfo, RomFSFileSourceInfo, RomFSLooseSourceInfo, RomFSMemorySourceInfo>;
-
-    static InfoVariant MakeInfoVariantFromOffset(u64 offset, RomFSDataSource t) {
-        switch(t) {
-            case RomFSDataSource::BaseRomFS:
-                return RomFSBaseSourceInfo { offset };
-
-            case RomFSDataSource::FileRomFS:
-                return RomFSFileSourceInfo { offset };
-
-            default:
-                fatalSimple(0xF601);
-        }
-    }
-
-    static InfoVariant MakeInfoVariantFromPointer(const void *arg, RomFSDataSource t) {
-        switch(t) {
-            case RomFSDataSource::LooseFile:
-                return RomFSLooseSourceInfo { (decltype(RomFSLooseSourceInfo::path))arg };
-
-            case RomFSDataSource::Memory:
-                return RomFSMemorySourceInfo { (decltype(RomFSMemorySourceInfo::data))arg };
-
-            default:
-                fatalSimple(0xF601);
-        }
-    }
-
-    struct InfoCleanupHelper {
-        void operator()(RomFSBaseSourceInfo& info) {
-        }
-
-        void operator()(RomFSFileSourceInfo& info) {
-        }
-
-        void operator()(RomFSLooseSourceInfo& info) {
-            delete info.path;
-        }
-
-        void operator()(RomFSMemorySourceInfo& info) {
-            delete info.data;
-        }
-    };
-
-    struct GetTypeHelper {
-        RomFSDataSource operator()(const RomFSBaseSourceInfo& info) const {
-            return RomFSDataSource::BaseRomFS;
-        }
-
-        RomFSDataSource operator()(const RomFSFileSourceInfo& info) const {
-            return RomFSDataSource::FileRomFS;
-        }
-
-        RomFSDataSource operator()(const RomFSLooseSourceInfo& info) const {
-            return RomFSDataSource::LooseFile;
-        }
-
-        RomFSDataSource operator()(const RomFSMemorySourceInfo& info) const {
-            return RomFSDataSource::Memory;
-        }
-    };
-
-public:
+struct RomFSSourceInfo {
     u64 virtual_offset;
     u64 size;
-
-    InfoVariant info;
-
-    RomFSSourceInfo(u64 v_o, u64 s, u64 offset, RomFSDataSource t) : virtual_offset(v_o), size(s), info(MakeInfoVariantFromOffset(offset, t)) {
+    union {
+        RomFSBaseSourceInfo base_source_info;
+        RomFSFileSourceInfo file_source_info;
+        RomFSLooseSourceInfo loose_source_info;
+        RomFSMemorySourceInfo memory_source_info;
+    };
+    RomFSDataSource type;
+    
+    RomFSSourceInfo(u64 v_o, u64 s, u64 offset, RomFSDataSource t) : virtual_offset(v_o), size(s), type(t) {
+        switch (this->type) {
+            case RomFSDataSource::BaseRomFS:
+                this->base_source_info.offset = offset;
+                break;
+            case RomFSDataSource::FileRomFS:
+                this->file_source_info.offset = offset;
+                break;
+            case RomFSDataSource::LooseFile:
+            case RomFSDataSource::Memory:
+            default:
+                fatalSimple(0xF601);
+        }
     }
-
-    RomFSSourceInfo(u64 v_o, u64 s, const void *arg, RomFSDataSource t) : virtual_offset(v_o), size(s), info(MakeInfoVariantFromPointer(arg, t)) {
+    
+    RomFSSourceInfo(u64 v_o, u64 s, const void *arg, RomFSDataSource t) : virtual_offset(v_o), size(s), type(t) {
+        switch (this->type) {
+            case RomFSDataSource::LooseFile:
+                this->loose_source_info.path = (decltype(this->loose_source_info.path))arg;
+                break;
+            case RomFSDataSource::Memory:
+                this->memory_source_info.data = (decltype(this->memory_source_info.data))arg;
+                break;
+            case RomFSDataSource::BaseRomFS:
+            case RomFSDataSource::FileRomFS:
+            default:
+                fatalSimple(0xF601);
+        }
     }
-
-    ~RomFSSourceInfo() {
-        std::visit(InfoCleanupHelper{}, info);
+    
+    void Cleanup() {
+        switch (this->type) {
+            case RomFSDataSource::BaseRomFS:
+            case RomFSDataSource::FileRomFS:
+                break;
+            case RomFSDataSource::LooseFile:
+                delete this->loose_source_info.path;
+                break;
+            case RomFSDataSource::Memory:
+                delete this->memory_source_info.data;
+                break;
+            default:
+                fatalSimple(0xF601);
+        }
     }
-
+    
     static bool Compare(RomFSSourceInfo *a, RomFSSourceInfo *b) {
         return (a->virtual_offset < b->virtual_offset);
-    }
-
-    RomFSDataSource GetType() const {
-        return std::visit(GetTypeHelper{}, info);
     }
 };
 
@@ -165,26 +141,26 @@ struct RomFSBuildDirectoryContext {
     char path[FS_MAX_PATH];
     u32 cur_path_ofs;
     u32 path_len;
-    u32 entry_offset;
-    RomFSBuildDirectoryContext *parent;
-    RomFSBuildDirectoryContext *child;
-    RomFSBuildDirectoryContext *sibling;
-    RomFSBuildFileContext *file;
-    RomFSBuildDirectoryContext *next;
+    u32 entry_offset = 0;
+    RomFSBuildDirectoryContext *parent = NULL;
+    RomFSBuildDirectoryContext *child = NULL;
+    RomFSBuildDirectoryContext *sibling = NULL;
+    RomFSBuildFileContext *file = NULL;
+    RomFSBuildDirectoryContext *next = NULL;
 };
 
 struct RomFSBuildFileContext {
     char path[FS_MAX_PATH];
     u32 cur_path_ofs;
     u32 path_len;
-    u32 entry_offset;
-    u64 offset;
-    u64 size;
-    RomFSBuildDirectoryContext *parent;
-    RomFSBuildFileContext *sibling;
-    RomFSBuildFileContext *next;
-    RomFSDataSource source;
-    u64 orig_offset;
+    u32 entry_offset = 0;
+    u64 offset = 0;
+    u64 size = 0;
+    RomFSBuildDirectoryContext *parent = NULL;
+    RomFSBuildFileContext *sibling = NULL;
+    RomFSBuildFileContext *next = NULL;
+    RomFSDataSource source{0};
+    u64 orig_offset = 0;
 };
 
 class RomFSBuildContext {
@@ -210,7 +186,7 @@ class RomFSBuildContext {
         bool AddFile(RomFSBuildDirectoryContext *parent_dir_ctx, RomFSBuildFileContext *file_ctx);
     public:
         RomFSBuildContext(u64 tid) : title_id(tid), root(NULL), files(NULL), num_dirs(0), num_files(0), dir_table_size(0), file_table_size(0), dir_hash_table_size(0), file_hash_table_size(0), file_partition_size(0) {
-            this->root = new RomFSBuildDirectoryContext({0}); 
+            this->root = new RomFSBuildDirectoryContext({0});
             this->num_dirs = 1;
             this->dir_table_size = 0x18;
         }

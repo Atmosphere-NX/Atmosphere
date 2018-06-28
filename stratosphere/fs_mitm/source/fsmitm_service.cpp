@@ -70,28 +70,44 @@ Result FsMitMService::handle_deferred() {
 /* Add redirection for RomFS to the SD card. */
 std::tuple<Result, OutSession<IStorageInterface>> FsMitMService::open_data_storage_by_current_process() {
     IPCSession<IStorageInterface> *out_session = NULL;
-    FsStorage data_storage;
-    FsFile data_file;
+    std::shared_ptr<IStorageInterface> out_storage = nullptr;
     u32 out_domain_id = 0;
     Result rc;
-    if (this->get_owner() == NULL) {
-        rc = fsOpenDataStorageByCurrentProcessFwd(this->forward_service, &data_storage);
-    } else {
-        rc = fsOpenDataStorageByCurrentProcessFromDomainFwd(this->forward_service, &out_domain_id);
-        if (R_SUCCEEDED(rc)) {
-            rc = ipcCopyFromDomain(this->forward_service->handle, out_domain_id, &data_storage.s);
-        }
-    }
-    Log(armGetTls(), 0x100);
-    if (R_SUCCEEDED(rc)) {
-        /* TODO: Is there a sensible path that ends in ".romfs" we can use?" */
-        if (R_SUCCEEDED(Utils::OpenSdFileForAtmosphere(this->title_id, "romfs.bin", FS_OPEN_READ, &data_file))) {
-            out_session = new IPCSession<IStorageInterface>(std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), std::make_shared<RomFileStorage>(data_file), this->title_id)));
+    if (this->romfs_storage != nullptr) {
+        if (this->get_owner() != NULL) {
+            rc = fsOpenDataStorageByCurrentProcessFromDomainFwd(this->forward_service, &out_domain_id);
         } else {
-            out_session = new IPCSession<IStorageInterface>(std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), nullptr, this->title_id)));
+            rc = 0;
         }
+        if (R_SUCCEEDED(rc)) {
+            out_storage = this->romfs_storage;
+            out_session = new IPCSession<IStorageInterface>(out_storage);
+        }
+    } else {
+        FsStorage data_storage;
+        FsFile data_file;
+
         if (this->get_owner() == NULL) {
-            FsMitMWorker::AddWaitable(out_session);
+            rc = fsOpenDataStorageByCurrentProcessFwd(this->forward_service, &data_storage);
+        } else {
+            rc = fsOpenDataStorageByCurrentProcessFromDomainFwd(this->forward_service, &out_domain_id);
+            if (R_SUCCEEDED(rc)) {
+                rc = ipcCopyFromDomain(this->forward_service->handle, out_domain_id, &data_storage.s);
+            }
+        }
+        Log(armGetTls(), 0x100);
+        if (R_SUCCEEDED(rc)) {
+            /* TODO: Is there a sensible path that ends in ".romfs" we can use?" */
+            if (R_SUCCEEDED(Utils::OpenSdFileForAtmosphere(this->title_id, "romfs.bin", FS_OPEN_READ, &data_file))) {
+                out_storage = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), std::make_shared<RomFileStorage>(data_file), this->title_id));
+            } else {
+                out_storage = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), nullptr, this->title_id));
+            }
+            this->romfs_storage = out_storage;
+            out_session = new IPCSession<IStorageInterface>(out_storage);
+            if (this->get_owner() == NULL) {
+                FsMitMWorker::AddWaitable(out_session);
+            }
         }
     }
     

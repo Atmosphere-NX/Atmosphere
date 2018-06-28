@@ -14,6 +14,7 @@ class FsMitMService : public IMitMServiceObject {
     private:
         bool has_initialized;
         u64 init_pid;
+        std::shared_ptr<IStorageInterface> romfs_storage;
     public:
         FsMitMService(Service *s) : IMitMServiceObject(s), has_initialized(false), init_pid(0) {
             /* ... */

@@ -14,7 +14,11 @@ class DomainOwner {
     private:
         std::array<std::shared_ptr<IServiceObject>, DOMAIN_ID_MAX> domain_objects;
     public:
-        DomainOwner() = default;
+        DomainOwner() {
+            for (unsigned int i = 0; i < DOMAIN_ID_MAX; i++) {
+                this->domain_objects[i].reset();
+            }
+        }
 
         /* Shared ptrs should auto delete here. */
         virtual ~DomainOwner() = default;
@@ -33,14 +37,14 @@ class DomainOwner {
             }
 
             *out_i = std::distance(domain_objects.begin(), object_it);
-            *object_it = std::move(object);
-            (*object_it)->set_owner(this);
+            *object_it = object;
+            object->set_owner(this);
             return 0;
         }
         
         Result set_object(std::shared_ptr<IServiceObject> object, unsigned int i) {
-            if (domain_objects[i] == NULL) {
-                domain_objects[i] = std::move(object);
+            if (domain_objects[i] == nullptr) {
+                domain_objects[i] = object;
                 object->set_owner(this);
                 return 0;
             }
