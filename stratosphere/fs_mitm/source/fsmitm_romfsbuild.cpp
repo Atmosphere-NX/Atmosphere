@@ -20,25 +20,28 @@ void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirector
         if (this->dir_entry.type == ENTRYTYPE_DIR) {
             RomFSBuildDirectoryContext *child = new RomFSBuildDirectoryContext({0});
             /* Set child's path. */
-            strcpy(child->path, parent->path);
             child->cur_path_ofs = parent->path_len + 1;
             child->path_len = child->cur_path_ofs + strlen(this->dir_entry.name);
-            if (child->path_len > sizeof(child->path)) {
+            child->path = new char[child->path_len + 1];
+            strcpy(child->path, parent->path);
+            if (child->path_len > FS_MAX_PATH - 1) {
                 fatalSimple(0xF601);
             }
             strcat(child->path + parent->path_len, "/");
             strcat(child->path + parent->path_len, this->dir_entry.name);
                                     
             if (!this->AddDirectory(parent, child, NULL)) {
+                delete child->path;
                 delete child;
             }
         } else if (this->dir_entry.type == ENTRYTYPE_FILE) {
             RomFSBuildFileContext *child = new RomFSBuildFileContext({0});
             /* Set child's path. */
-            strcpy(child->path, parent->path);
             child->cur_path_ofs = parent->path_len + 1;
             child->path_len = child->cur_path_ofs + strlen(this->dir_entry.name);
-            if (child->path_len > sizeof(child->path)) {
+            child->path = new char[child->path_len + 1];
+            strcpy(child->path, parent->path);
+            if (child->path_len > FS_MAX_PATH - 1) {
                 fatalSimple(0xF601);
             }
             strcat(child->path + parent->path_len, "/");
@@ -49,6 +52,7 @@ void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirector
             child->size = this->dir_entry.fileSize;
                                     
             if (!this->AddFile(parent, child)) {
+                delete child->path;
                 delete child;
             }
         } else {
@@ -89,10 +93,11 @@ void RomFSBuildContext::VisitDirectory(RomFSBuildDirectoryContext *parent, u32 p
         while (cur_file != NULL) {
             RomFSBuildFileContext *child = new RomFSBuildFileContext({0});
             /* Set child's path. */
-            strcpy(child->path, parent->path);
             child->cur_path_ofs = parent->path_len + 1;
             child->path_len = child->cur_path_ofs + cur_file->name_size;
-            if (child->path_len > sizeof(child->path)) {
+            child->path = new char[child->path_len + 1];
+            strcpy(child->path, parent->path);
+            if (child->path_len > FS_MAX_PATH - 1) {
                 fatalSimple(0xF601);
             }
             strcat(child->path + parent->path_len, "/");
@@ -102,6 +107,7 @@ void RomFSBuildContext::VisitDirectory(RomFSBuildDirectoryContext *parent, u32 p
             child->source = this->cur_source_type;
             child->orig_offset = cur_file->offset;
             if (!this->AddFile(parent, child)) {
+                delete child->path;
                 delete child;
             }
             if (cur_file->sibling == ROMFS_ENTRY_EMPTY) {
@@ -117,10 +123,11 @@ void RomFSBuildContext::VisitDirectory(RomFSBuildDirectoryContext *parent, u32 p
         while (cur_child != NULL) {
             RomFSBuildDirectoryContext *child = new RomFSBuildDirectoryContext({0});
             /* Set child's path. */
-            strcpy(child->path, parent->path);
             child->cur_path_ofs = parent->path_len + 1;
             child->path_len = child->cur_path_ofs + cur_child->name_size;
-            if (child->path_len > sizeof(child->path)) {
+            child->path = new char[child->path_len + 1];
+            strcpy(child->path, parent->path);
+            if (child->path_len > FS_MAX_PATH - 1) {
                 fatalSimple(0xF601);
             }
             strcat(child->path + parent->path_len, "/");
@@ -128,6 +135,7 @@ void RomFSBuildContext::VisitDirectory(RomFSBuildDirectoryContext *parent, u32 p
             
             RomFSBuildDirectoryContext *real = NULL;
             if (!this->AddDirectory(parent, child, &real)) {
+                delete child->path;
                 delete child;
             }
             if (real == NULL) {
@@ -313,12 +321,25 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     /* Determine file offsets. */
     cur_file = this->files;
     entry_offset = 0;
+    RomFSBuildFileContext *prev_file = NULL;
     while (cur_file != NULL) {
         this->file_partition_size = (this->file_partition_size + 0xFULL) & ~0xFULL;
+        /* Check for extra padding in the original romfs source and preserve it, to help ourselves later. */
+        if (prev_file && prev_file->source == cur_file->source && (prev_file->source == RomFSDataSource::BaseRomFS || prev_file->source == RomFSDataSource::FileRomFS)) {
+            u64 expected = (this->file_partition_size - prev_file->offset + prev_file->orig_offset);
+            if (expected != cur_file->orig_offset) {
+                if (expected > cur_file->orig_offset) {
+                    /* This case should NEVER happen. */
+                    fatalSimple(0xF601);
+                }
+                this->file_partition_size += cur_file->orig_offset - expected;
+            }
+        }
         cur_file->offset = this->file_partition_size;
         this->file_partition_size += cur_file->size;
         cur_file->entry_offset = entry_offset;
         entry_offset += sizeof(RomFSFileEntry) + ((cur_file->path_len - cur_file->cur_path_ofs + 3) & ~3);
+        prev_file = cur_file;
         cur_file = cur_file->next;
     }
     
@@ -357,7 +378,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
             case RomFSDataSource::BaseRomFS:
             case RomFSDataSource::FileRomFS:
                 /* Try to compact, if possible. */
-                if (out_infos->back().type == cur_file->source) {
+                if (out_infos->back().type == cur_file->source && ((out_infos->back().virtual_offset + out_infos->back().size + 0xFULL) & ~0xFULL) == cur_file->offset + ROMFS_FILEPARTITION_OFS) {
                     out_infos->back().size = cur_file->offset + ROMFS_FILEPARTITION_OFS + cur_file->size - out_infos->back().virtual_offset;
                 } else {
                     out_infos->emplace_back(cur_file->offset + ROMFS_FILEPARTITION_OFS, cur_file->size, cur_file->orig_offset + ROMFS_FILEPARTITION_OFS, cur_file->source);
@@ -376,6 +397,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
         
         RomFSBuildFileContext *temp = cur_file;
         cur_file = cur_file->next;
+        delete temp->path;
         delete temp;
     }
         
@@ -399,6 +421,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
         
         RomFSBuildDirectoryContext *temp = cur_dir;
         cur_dir = cur_dir->next;
+        delete temp->path;
         delete temp;
     }
     
@@ -413,6 +436,24 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     header->dir_table_ofs = header->dir_hash_table_ofs + header->dir_hash_table_size;
     header->file_hash_table_ofs = header->dir_table_ofs + header->dir_table_size;
     header->file_table_ofs = header->file_hash_table_ofs + header->file_hash_table_size;
+    
+    /* For debugging, uncomment this to get a log of the generated metadata tables. */
+    /*
+        {
+            FsFileSystem sd_fs;
+            if (R_SUCCEEDED(fsMountSdcard(&sd_fs))) {
+                FsFile f;
+                fsFsCreateFile(&sd_fs, "/METADATALOG.bin", this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size + sizeof(*header), 0);
+                if (R_SUCCEEDED(fsFsOpenFile(&sd_fs, "/METADATALOG.bin", FS_OPEN_READ | FS_OPEN_WRITE, &f))) {
+                    fsFileSetSize(&f, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size + sizeof(*header));
+                    fsFileWrite(&f, 0, header, sizeof(*header));
+                    fsFileWrite(&f, sizeof(*header), metadata, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size);
+                    fsFileClose(&f);
+                }
+                fsFsClose(&sd_fs);
+            }
+        }
+    */
     
     out_infos->emplace_back(header->dir_hash_table_ofs, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size, metadata, RomFSDataSource::Memory);
 }

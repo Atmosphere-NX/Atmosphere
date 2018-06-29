@@ -18,7 +18,7 @@ Result FsMitMService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_i
                 rc = WrapIpcCommandImpl<&FsMitMService::open_data_storage_by_current_process>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                 break;
             case FspSrvCmd::OpenDataStorageByDataId:
-                rc = WrapIpcCommandImpl<&FsMitMService::open_data_storage_by_data_id>(this, r, out_c, pointer_buffer, pointer_buffer_size);
+                //rc = WrapIpcCommandImpl<&FsMitMService::open_data_storage_by_data_id>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                 break;
             default:
                 break;

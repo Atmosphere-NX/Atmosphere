@@ -138,7 +138,7 @@ static_assert(sizeof(RomFSFileEntry) == 0x20, "Incorrect RomFSFileEntry definiti
 struct RomFSBuildFileContext;
 
 struct RomFSBuildDirectoryContext {
-    char path[FS_MAX_PATH];
+    char *path;
     u32 cur_path_ofs;
     u32 path_len;
     u32 entry_offset = 0;
@@ -150,7 +150,7 @@ struct RomFSBuildDirectoryContext {
 };
 
 struct RomFSBuildFileContext {
-    char path[FS_MAX_PATH];
+    char *path;
     u32 cur_path_ofs;
     u32 path_len;
     u32 entry_offset = 0;
@@ -187,6 +187,8 @@ class RomFSBuildContext {
     public:
         RomFSBuildContext(u64 tid) : title_id(tid), root(NULL), files(NULL), num_dirs(0), num_files(0), dir_table_size(0), file_table_size(0), dir_hash_table_size(0), file_hash_table_size(0), file_partition_size(0) {
             this->root = new RomFSBuildDirectoryContext({0});
+            this->root->path = new char[1];
+            this->root->path[0] = '\x00';
             this->num_dirs = 1;
             this->dir_table_size = 0x18;
         }

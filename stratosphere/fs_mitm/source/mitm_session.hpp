@@ -130,7 +130,6 @@ class MitMSession final : public ISession<T> {
                             
                             MitMSession<T> *new_sess = new MitMSession<T>((MitMServer<T> *)this->server, s_h, c_h, cur_out_r.Handles[0]);
                             new_sess->service_object = this->service_object;
-                            IServiceObject *obj = this->service_object.get();
 
                             if (this->is_domain) {
                                 new_sess->is_domain = true;
