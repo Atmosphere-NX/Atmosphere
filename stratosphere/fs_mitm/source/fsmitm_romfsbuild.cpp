@@ -378,7 +378,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
             case RomFSDataSource::BaseRomFS:
             case RomFSDataSource::FileRomFS:
                 /* Try to compact, if possible. */
-                if (out_infos->back().type == cur_file->source && ((out_infos->back().virtual_offset + out_infos->back().size + 0xFULL) & ~0xFULL) == cur_file->offset + ROMFS_FILEPARTITION_OFS) {
+                if (out_infos->back().type == cur_file->source) {
                     out_infos->back().size = cur_file->offset + ROMFS_FILEPARTITION_OFS + cur_file->size - out_infos->back().virtual_offset;
                 } else {
                     out_infos->emplace_back(cur_file->offset + ROMFS_FILEPARTITION_OFS, cur_file->size, cur_file->orig_offset + ROMFS_FILEPARTITION_OFS, cur_file->source);
