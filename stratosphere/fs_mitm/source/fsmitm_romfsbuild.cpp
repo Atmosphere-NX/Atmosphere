@@ -269,17 +269,13 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
         this->file_partition_size += cur_file->size;
         cur_file->entry_offset = entry_offset;
         entry_offset += sizeof(RomFSFileEntry) + ((cur_file->path_len - cur_file->cur_path_ofs + 3) & ~3);
-        
-        /* Assign deferred parent/sibling ownership. */
-        if (cur_file->parent->file == NULL) {
-            cur_file->parent->file = cur_file;
-            cur_file->parent->tail = cur_file;
-        } else {
-            ((RomFSBuildFileContext *)cur_file->parent->tail)->sibling = cur_file;
-            cur_file->parent->tail = cur_file;
-        }
-        
         prev_file = cur_file;
+    }
+    /* Assign deferred parent/sibling ownership. */
+    for (auto it = this->files.rbegin(); it != this->files.rend(); it++) {
+        cur_file = it->second;
+        cur_file->sibling = cur_file->parent->file;
+        cur_file->parent->file = cur_file;
     }
     
     /* Determine directory offsets. */
@@ -288,17 +284,12 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
         cur_dir = it.second;
         cur_dir->entry_offset = entry_offset;
         entry_offset += sizeof(RomFSDirectoryEntry) + ((cur_dir->path_len - cur_dir->cur_path_ofs + 3) & ~3);
-        
-        /* Assign deferred parent/sibling ownership. */
-        if (cur_dir != this->root) {
-            if (cur_dir->parent->child == NULL) {
-                cur_dir->parent->child = cur_dir;
-                cur_dir->parent->tail = cur_dir;
-            } else {
-                ((RomFSBuildDirectoryContext *)cur_dir->parent->tail)->sibling = cur_dir;
-                cur_dir->parent->tail = cur_dir;
-            }
-        }
+    }
+    /* Assign deferred parent/sibling ownership. */
+    for (auto it = this->directories.rbegin(); it->second != this->root; it++) {
+        cur_dir = it->second;
+        cur_dir->sibling = cur_dir->parent->child;
+        cur_dir->parent->child = cur_dir;
     }
     
     
@@ -384,7 +375,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     header->file_table_ofs = header->file_hash_table_ofs + header->file_hash_table_size;
     
     /* For debugging, uncomment this to get a log of the generated metadata tables. */
-    
+    /*
         {
             FsFileSystem sd_fs;
             if (R_SUCCEEDED(fsMountSdcard(&sd_fs))) {
@@ -399,7 +390,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
                 fsFsClose(&sd_fs);
             }
         }
-    
+    */
     
     out_infos->emplace_back(header->dir_hash_table_ofs, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size, metadata, RomFSDataSource::Memory);
 }

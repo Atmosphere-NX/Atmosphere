@@ -153,7 +153,6 @@ struct RomFSBuildDirectoryContext {
     RomFSBuildDirectoryContext *child = NULL;
     RomFSBuildDirectoryContext *sibling = NULL;
     RomFSBuildFileContext *file = NULL;
-    void *tail;
 };
 
 struct RomFSBuildFileContext {
