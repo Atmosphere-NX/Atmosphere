@@ -1,6 +1,6 @@
 #pragma once
 #include <switch.h>
-#include <variant>
+#include <map>
 
 #include "fsmitm_romstorage.hpp"
 
@@ -137,6 +137,13 @@ static_assert(sizeof(RomFSFileEntry) == 0x20, "Incorrect RomFSFileEntry definiti
 
 struct RomFSBuildFileContext;
 
+/* Used as comparator for std::map<char *, RomFSBuild*Context> */
+struct build_ctx_cmp {
+    bool operator()(const char *a, const char *b) const {
+        return strcmp(a, b) < 0;
+    }
+};
+
 struct RomFSBuildDirectoryContext {
     char *path;
     u32 cur_path_ofs;
@@ -146,7 +153,6 @@ struct RomFSBuildDirectoryContext {
     RomFSBuildDirectoryContext *child = NULL;
     RomFSBuildDirectoryContext *sibling = NULL;
     RomFSBuildFileContext *file = NULL;
-    RomFSBuildDirectoryContext *next = NULL;
 };
 
 struct RomFSBuildFileContext {
@@ -158,7 +164,6 @@ struct RomFSBuildFileContext {
     u64 size = 0;
     RomFSBuildDirectoryContext *parent = NULL;
     RomFSBuildFileContext *sibling = NULL;
-    RomFSBuildFileContext *next = NULL;
     RomFSDataSource source{0};
     u64 orig_offset = 0;
 };
@@ -167,7 +172,8 @@ class RomFSBuildContext {
     private:
         u64 title_id;
         RomFSBuildDirectoryContext *root;
-        RomFSBuildFileContext *files;
+        std::map<char *, RomFSBuildDirectoryContext *, build_ctx_cmp> directories;
+        std::map<char *, RomFSBuildFileContext *, build_ctx_cmp> files;
         u64 num_dirs;
         u64 num_files;
         u64 dir_table_size;
@@ -185,10 +191,11 @@ class RomFSBuildContext {
         bool AddDirectory(RomFSBuildDirectoryContext *parent_dir_ctx, RomFSBuildDirectoryContext *dir_ctx, RomFSBuildDirectoryContext **out_dir_ctx);
         bool AddFile(RomFSBuildDirectoryContext *parent_dir_ctx, RomFSBuildFileContext *file_ctx);
     public:
-        RomFSBuildContext(u64 tid) : title_id(tid), root(NULL), files(NULL), num_dirs(0), num_files(0), dir_table_size(0), file_table_size(0), dir_hash_table_size(0), file_hash_table_size(0), file_partition_size(0) {
+        RomFSBuildContext(u64 tid) : title_id(tid), num_dirs(0), num_files(0), dir_table_size(0), file_table_size(0), dir_hash_table_size(0), file_hash_table_size(0), file_partition_size(0) {
             this->root = new RomFSBuildDirectoryContext({0});
             this->root->path = new char[1];
             this->root->path[0] = '\x00';
+            this->directories.insert({this->root->path, this->root});
             this->num_dirs = 1;
             this->dir_table_size = 0x18;
         }
