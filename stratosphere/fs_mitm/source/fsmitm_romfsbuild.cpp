@@ -273,12 +273,10 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
         /* Assign deferred parent/sibling ownership. */
         if (cur_file->parent->file == NULL) {
             cur_file->parent->file = cur_file;
+            cur_file->parent->tail = cur_file;
         } else {
-            RomFSBuildFileContext *temp = cur_file->parent->file;
-            while (temp->sibling != NULL) {
-                temp = temp->sibling;
-            }
-            temp->sibling = cur_file;
+            ((RomFSBuildFileContext *)cur_file->parent->tail)->sibling = cur_file;
+            cur_file->parent->tail = cur_file;
         }
         
         prev_file = cur_file;
@@ -295,12 +293,10 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
         if (cur_dir != this->root) {
             if (cur_dir->parent->child == NULL) {
                 cur_dir->parent->child = cur_dir;
+                cur_dir->parent->tail = cur_dir;
             } else {
-                RomFSBuildDirectoryContext *temp = cur_dir->parent->child;
-                while (temp->sibling != NULL) {
-                    temp = temp->sibling;
-                }
-                temp->sibling = cur_dir;
+                ((RomFSBuildDirectoryContext *)cur_dir->parent->tail)->sibling = cur_dir;
+                cur_dir->parent->tail = cur_dir;
             }
         }
     }
