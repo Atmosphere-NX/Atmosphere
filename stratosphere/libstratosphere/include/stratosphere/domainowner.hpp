@@ -14,12 +14,6 @@ class DomainOwner {
     private:
         std::array<std::shared_ptr<IServiceObject>, DOMAIN_ID_MAX> domain_objects;
     public:
-        DomainOwner() {
-            for (unsigned int i = 0; i < DOMAIN_ID_MAX; i++) {
-                this->domain_objects[i].reset();
-            }
-        }
-
         /* Shared ptrs should auto delete here. */
         virtual ~DomainOwner() = default;
 
