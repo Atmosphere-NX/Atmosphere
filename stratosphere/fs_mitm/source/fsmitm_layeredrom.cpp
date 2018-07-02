@@ -5,6 +5,7 @@
 #include "fsmitm_utils.hpp"
 #include "debug.hpp"
 
+IStorage::~IStorage() = default;
 
 LayeredRomFS::LayeredRomFS(std::shared_ptr<RomInterfaceStorage> s_r, std::shared_ptr<RomFileStorage> f_r, u64 tid) : storage_romfs(s_r), file_romfs(f_r), title_id(tid) {
     /* Start building the new virtual romfs. */
