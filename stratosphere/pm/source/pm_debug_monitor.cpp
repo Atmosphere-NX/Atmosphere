@@ -93,7 +93,7 @@ std::tuple<Result> DebugMonitorService::launch_debug_process(u64 pid) {
 }
 
 std::tuple<Result, u64> DebugMonitorService::get_title_process_id(u64 tid) {
-    Registration::AutoProcessListLock auto_lock;
+    auto auto_lock = Registration::GetProcessListUniqueLock();
     
     std::shared_ptr<Registration::Process> proc = Registration::GetProcessByTitleId(tid);
     if (proc != nullptr) {
@@ -110,7 +110,7 @@ std::tuple<Result, CopiedHandle> DebugMonitorService::enable_debug_for_tid(u64 t
 }
 
 std::tuple<Result, u64> DebugMonitorService::get_application_process_id() {
-    Registration::AutoProcessListLock auto_lock;
+    auto auto_lock = Registration::GetProcessListUniqueLock();
     
     std::shared_ptr<Registration::Process> app_proc;
     if (Registration::HasApplicationProcess(&app_proc)) {

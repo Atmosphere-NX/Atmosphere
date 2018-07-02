@@ -1,4 +1,5 @@
 #pragma once
+#include <mutex>
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "pm_registration.hpp"
@@ -36,18 +37,10 @@ class ProcessList final {
     public:
         std::vector<std::shared_ptr<Registration::Process>> processes;
         
-        void Lock() {
-            this->mutex.Lock();
+        auto get_unique_lock() {
+            return std::unique_lock{this->mutex};
         }
-        
-        void Unlock() {
-            this->mutex.Unlock();
-        }
-        
-        bool TryLock() {
-            return this->mutex.TryLock();
-        }
-        
+
         void set_manager(WaitableManager *manager) {
             this->manager = manager;
         }
