@@ -14,12 +14,11 @@ enum UserServiceCmd {
 };
 
 class UserService final : public IServiceObject {
-    u64 pid;
-    bool has_initialized;
-    u64 deferred_service;
+    u64 pid = U64_MAX;
+    bool has_initialized = false;
+    u64 deferred_service = 0;
     
     public:
-        UserService() : pid(U64_MAX), has_initialized(false), deferred_service(0) { }
         Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) override;
         Result handle_deferred() override;
         
