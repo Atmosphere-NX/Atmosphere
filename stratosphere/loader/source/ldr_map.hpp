@@ -27,12 +27,11 @@ class MapUtils {
 
 class AutoCloseMap {
     private:
-        void *mapped_address;
-        u64 base_address;
-        u64 size;
-        Handle process_handle;
+        void *mapped_address = nullptr;
+        u64 base_address = 0;
+        u64 size = 0;
+        Handle process_handle = 0;
     public:
-        AutoCloseMap() : mapped_address(0), base_address(0), size(0), process_handle(0) { };
         ~AutoCloseMap() {
             Close();
         }

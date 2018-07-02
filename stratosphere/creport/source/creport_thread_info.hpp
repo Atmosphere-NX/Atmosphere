@@ -31,15 +31,13 @@ static_assert(sizeof(DebugThreadContext) == 0x320, "Incorrect DebugThreadContext
 
 class ThreadInfo {
     private:
-        DebugThreadContext context;
-        u64 thread_id;
-        u64 stack_top;
-        u64 stack_bottom;
-        u64 stack_trace[0x20];
-        u32 stack_trace_size;
-    public:
-        ThreadInfo() : context{0}, thread_id(0), stack_top(0), stack_bottom(0), stack_trace{0}, stack_trace_size(0) { }
-        
+        DebugThreadContext context{};
+        u64 thread_id = 0;
+        u64 stack_top = 0;
+        u64 stack_bottom = 0;
+        u64 stack_trace[0x20]{};
+        u32 stack_trace_size = 0;
+    public:        
         u64 GetPC() { return context.pc; }
         u64 GetLR() { return context.lr; }
         u64 GetId() { return thread_id; }
@@ -54,11 +52,9 @@ class ThreadInfo {
 class ThreadList {
     private:
         static const size_t max_thread_count = 0x60;
-        u32 thread_count;
+        u32 thread_count = 0;
         ThreadInfo thread_infos[max_thread_count];
-    public:
-        ThreadList() : thread_count(0) { }
-        
+    public:      
         void SaveToFile(FILE *f_report);
         void DumpBinary(FILE *f_bin, u64 crashed_id);
         void ReadThreadsFromProcess(Handle debug_handle, bool is_64_bit);

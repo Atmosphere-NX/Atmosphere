@@ -174,13 +174,13 @@ class RomFSBuildContext {
         RomFSBuildDirectoryContext *root;
         std::map<char *, RomFSBuildDirectoryContext *, build_ctx_cmp> directories;
         std::map<char *, RomFSBuildFileContext *, build_ctx_cmp> files;
-        u64 num_dirs;
-        u64 num_files;
-        u64 dir_table_size;
-        u64 file_table_size;
-        u64 dir_hash_table_size;
-        u64 file_hash_table_size;
-        u64 file_partition_size;
+        u64 num_dirs = 0;
+        u64 num_files = 0;
+        u64 dir_table_size = 0;
+        u64 file_table_size = 0;
+        u64 dir_hash_table_size = 0;
+        u64 file_hash_table_size = 0;
+        u64 file_partition_size = 0;
         
         FsDirectoryEntry dir_entry;
         RomFSDataSource cur_source_type;
@@ -191,7 +191,7 @@ class RomFSBuildContext {
         bool AddDirectory(RomFSBuildDirectoryContext *parent_dir_ctx, RomFSBuildDirectoryContext *dir_ctx, RomFSBuildDirectoryContext **out_dir_ctx);
         bool AddFile(RomFSBuildDirectoryContext *parent_dir_ctx, RomFSBuildFileContext *file_ctx);
     public:
-        RomFSBuildContext(u64 tid) : title_id(tid), num_dirs(0), num_files(0), dir_table_size(0), file_table_size(0), dir_hash_table_size(0), file_hash_table_size(0), file_partition_size(0) {
+        RomFSBuildContext(u64 tid) : title_id(tid) {
             this->root = new RomFSBuildDirectoryContext({0});
             this->root->path = new char[1];
             this->root->path[0] = '\x00';

@@ -13,11 +13,10 @@ enum RoServiceCmd {
 };
 
 class RelocatableObjectsService final : public IServiceObject {
-    Handle process_handle;
-    u64 process_id;
-    bool has_initialized;
+    Handle process_handle = 0;
+    u64 process_id = U64_MAX;
+    bool has_initialized = false;
     public:
-        RelocatableObjectsService() : process_handle(0), process_id(U64_MAX), has_initialized(false) { }
         ~RelocatableObjectsService() {
             Registration::CloseRoService(this, this->process_handle);
             if (this->has_initialized) {

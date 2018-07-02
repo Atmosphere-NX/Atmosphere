@@ -23,30 +23,27 @@ enum class CrashReportResult : Result {
 
 class CrashReport {
     private:
-        Handle debug_handle;
+        Handle debug_handle = INVALID_HANDLE;
         bool has_extra_info;
-        Result result;
+        Result result = static_cast<Result>(CrashReportResult::IncompleteReport);
         
         /* Attach Process Info. */ 
-        AttachProcessInfo process_info;
-        u64 dying_message_address;
-        u64 dying_message_size;
-        u8 dying_message[0x1000];
+        AttachProcessInfo process_info{};
+        u64 dying_message_address = 0;
+        u64 dying_message_size = 0;
+        u8 dying_message[0x1000]{};
         
         static_assert(sizeof(dying_message) == 0x1000, "Incorrect definition for dying message!");
         
         /* Exception Info. */
-        ExceptionInfo exception_info;
+        ExceptionInfo exception_info{};
         ThreadInfo crashed_thread_info;
         
         /* Extra Info. */
         CodeList code_list;
         ThreadList thread_list;
         
-    public:
-        CrashReport() : debug_handle(INVALID_HANDLE), result((Result)CrashReportResult::IncompleteReport), process_info{0}, dying_message_address(0),
-            dying_message_size(0), dying_message{0}, exception_info({}) { }
-        
+    public:        
         void BuildReport(u64 pid, bool has_extra_info);
         void SaveReport();
         

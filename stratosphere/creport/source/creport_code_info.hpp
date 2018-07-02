@@ -14,11 +14,9 @@ struct CodeInfo {
 class CodeList {
     private:
         static const size_t max_code_count = 0x10;
-        u32 code_count;
+        u32 code_count = 0;
         CodeInfo code_infos[max_code_count];
-    public:
-        CodeList() : code_count(0) { }
-        
+    public:        
         void ReadCodeRegionsFromProcess(Handle debug_handle, u64 pc, u64 lr);
         void SaveToFile(FILE *f_report);
     private:
