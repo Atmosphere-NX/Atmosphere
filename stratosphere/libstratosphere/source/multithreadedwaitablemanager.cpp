@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <mutex>
 
 #include <stratosphere/multithreadedwaitablemanager.hpp>
 
@@ -20,11 +21,10 @@ void MultiThreadedWaitableManager::process_until_timeout() {
 }
 
 void MultiThreadedWaitableManager::add_waitable(IWaitable *waitable) {
-    this->lock.Lock();
+    std::scoped_lock lk{this->lock};
     this->to_add_waitables.push_back(waitable);
     waitable->set_manager(this);
     this->new_waitable_event->signal_event();
-    this->lock.Unlock();
 }
 
 
@@ -33,7 +33,7 @@ IWaitable *MultiThreadedWaitableManager::get_waitable() {
     
     int handle_index = 0;
     Result rc;
-    this->get_waitable_lock.Lock();
+    std::scoped_lock lk{this->get_waitable_lock};
     while (1) {
         /* Sort waitables by priority. */
         std::sort(this->waitables.begin(), this->waitables.end(), IWaitable::compare);
@@ -71,7 +71,6 @@ IWaitable *MultiThreadedWaitableManager::get_waitable() {
                 w->handle_signaled(0);
                 this->waitables.push_back(w);
             } else {
-                this->get_waitable_lock.Unlock();
                 return w;
             }
         }
@@ -81,10 +80,9 @@ IWaitable *MultiThreadedWaitableManager::get_waitable() {
 Result MultiThreadedWaitableManager::add_waitable_callback(void *arg, Handle *handles, size_t num_handles, u64 timeout) {
     MultiThreadedWaitableManager *this_ptr = (MultiThreadedWaitableManager *)arg;
     svcClearEvent(handles[0]);
-    this_ptr->lock.Lock();
+    std::scoped_lock lk{this_ptr->lock};
     this_ptr->waitables.insert(this_ptr->waitables.end(), this_ptr->to_add_waitables.begin(), this_ptr->to_add_waitables.end());
     this_ptr->to_add_waitables.clear();
-    this_ptr->lock.Unlock();
     return 0;
 }
 

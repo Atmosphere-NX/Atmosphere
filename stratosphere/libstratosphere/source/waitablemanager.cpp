@@ -2,15 +2,15 @@
 
 #include <algorithm>
 #include <functional>
+#include <mutex>
 
 #include <stratosphere/waitablemanager.hpp>
 
 void WaitableManager::add_waitable(IWaitable *waitable) {
-    this->lock.Lock();
+    std::scoped_lock lk{this->lock};
     this->to_add_waitables.push_back(waitable);
     waitable->set_manager(this);
     this->has_new_items = true;
-    this->lock.Unlock();
 }
 
 void WaitableManager::process_internal(bool break_on_timeout) {
@@ -22,11 +22,10 @@ void WaitableManager::process_internal(bool break_on_timeout) {
     while (1) {
         /* Add new items, if relevant. */
         if (this->has_new_items) {
-            this->lock.Lock();
+            std::scoped_lock lk{this->lock};
             this->waitables.insert(this->waitables.end(), this->to_add_waitables.begin(), this->to_add_waitables.end());
             this->to_add_waitables.clear();
             this->has_new_items = false;
-            this->lock.Unlock();
         }
                 
         /* Sort waitables by priority. */

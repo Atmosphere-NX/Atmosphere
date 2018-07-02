@@ -22,24 +22,9 @@ static SystemEvent *g_process_event = NULL;
 static SystemEvent *g_debug_title_event = NULL;
 static SystemEvent *g_debug_application_event = NULL;
 
-Registration::AutoProcessListLock::AutoProcessListLock() {
-    g_process_list.Lock();
-    this->has_lock = true;
+std::unique_lock<HosRecursiveMutex> Registration::GetProcessListUniqueLock() {
+    return g_process_list.get_unique_lock();
 }
-
-Registration::AutoProcessListLock::~AutoProcessListLock() {
-    if (this->has_lock) {
-        this->Unlock();
-    }
-}
-
-void Registration::AutoProcessListLock::Unlock() {
-    if (this->has_lock) {
-        g_process_list.Unlock();
-    }
-    this->has_lock = false;
-}
-
 
 void Registration::SetProcessListManager(WaitableManager *m) {
     g_process_list.set_manager(m);
@@ -185,7 +170,7 @@ HANDLE_PROCESS_LAUNCH_END:
 
 
 Result Registration::LaunchDebugProcess(u64 pid) {
-    AutoProcessListLock auto_lock;
+    auto auto_lock = GetProcessListUniqueLock();
     LoaderProgramInfo program_info = {0};
     Result rc;
     
@@ -211,9 +196,8 @@ Result Registration::LaunchDebugProcess(u64 pid) {
 }
 
 Result Registration::LaunchProcess(u64 title_id, FsStorageId storage_id, u64 launch_flags, u64 *out_pid) {
-    Result rc;
     /* Only allow one mutex to exist. */
-    g_process_launch_mutex.Lock();
+    std::scoped_lock lk{g_process_launch_mutex};
     g_process_launch_state.tid_sid.title_id = title_id;
     g_process_launch_state.tid_sid.storage_id = storage_id;
     g_process_launch_state.launch_flags = launch_flags;
@@ -223,10 +207,7 @@ Result Registration::LaunchProcess(u64 title_id, FsStorageId storage_id, u64 lau
     g_process_launch_start_event->signal_event();
     g_sema_finish_launch.Wait();
     
-    rc = g_process_launch_state.result;
-    
-    g_process_launch_mutex.Unlock();
-    return rc;
+    return g_process_launch_state.result;
 }
 
 Result Registration::LaunchProcessByTidSid(TidSid tid_sid, u64 launch_flags, u64 *out_pid) {
@@ -292,7 +273,7 @@ Result Registration::HandleSignaledProcess(std::shared_ptr<Registration::Process
 }
 
 void Registration::FinalizeExitedProcess(std::shared_ptr<Registration::Process> process) {
-    AutoProcessListLock auto_lock;
+    auto auto_lock = GetProcessListUniqueLock();
     bool signal_debug_process_5x = kernelAbove500() && process->flags & 1;
     /* Unregister with FS. */
     if (R_FAILED(fsprUnregisterProgram(process->pid))) {
@@ -313,28 +294,27 @@ void Registration::FinalizeExitedProcess(std::shared_ptr<Registration::Process> 
     
     /* Insert into dead process list, if relevant. */
     if (signal_debug_process_5x) {
-        g_dead_process_list.Lock();
+        auto lk = g_dead_process_list.get_unique_lock();
         g_dead_process_list.processes.push_back(process);
-        g_dead_process_list.Unlock();
     }
     
     /* Remove NOTE: This probably frees process. */
     RemoveProcessFromList(process->pid);
 
-    auto_lock.Unlock();
+    auto_lock.unlock();
     if (signal_debug_process_5x) {
         g_process_event->signal_event();
     }
 }
 
 void Registration::AddProcessToList(std::shared_ptr<Registration::Process> process) {
-    AutoProcessListLock auto_lock;
+    auto auto_lock = GetProcessListUniqueLock();
     g_process_list.processes.push_back(process);
     g_process_list.get_manager()->add_waitable(new ProcessWaiter(process));
 }
 
 void Registration::RemoveProcessFromList(u64 pid) {
-    AutoProcessListLock auto_lock;
+    auto auto_lock = GetProcessListUniqueLock();
     
     /* Remove process from list. */
     for (unsigned int i = 0; i < g_process_list.processes.size(); i++) {
@@ -349,7 +329,7 @@ void Registration::RemoveProcessFromList(u64 pid) {
 }
 
 void Registration::SetProcessState(u64 pid, ProcessState new_state) {
-    AutoProcessListLock auto_lock;
+    auto auto_lock = GetProcessListUniqueLock();
     
     /* Set process state. */
     for (auto &process : g_process_list.processes) {
@@ -361,7 +341,7 @@ void Registration::SetProcessState(u64 pid, ProcessState new_state) {
 }
 
 bool Registration::HasApplicationProcess(std::shared_ptr<Registration::Process> *out) {
-    AutoProcessListLock auto_lock;
+    auto auto_lock = GetProcessListUniqueLock();
     
     for (auto &process : g_process_list.processes) {
         if (process->flags & 0x40) {
@@ -376,7 +356,7 @@ bool Registration::HasApplicationProcess(std::shared_ptr<Registration::Process> 
 }
 
 std::shared_ptr<Registration::Process> Registration::GetProcess(u64 pid) {
-    AutoProcessListLock auto_lock;
+    auto auto_lock = GetProcessListUniqueLock();
     
     for (auto &process : g_process_list.processes) {
         if (process->pid == pid) {
@@ -388,7 +368,7 @@ std::shared_ptr<Registration::Process> Registration::GetProcess(u64 pid) {
 }
 
 std::shared_ptr<Registration::Process> Registration::GetProcessByTitleId(u64 tid) {
-    AutoProcessListLock auto_lock;
+    auto auto_lock = GetProcessListUniqueLock();
     
     for (auto &process : g_process_list.processes) {
         if (process->tid_sid.title_id == tid) {
@@ -401,7 +381,7 @@ std::shared_ptr<Registration::Process> Registration::GetProcessByTitleId(u64 tid
 
 
 Result Registration::GetDebugProcessIds(u64 *out_pids, u32 max_out, u32 *num_out) {
-    AutoProcessListLock auto_lock;
+    auto auto_lock = GetProcessListUniqueLock();
     u32 num = 0;
     
 
@@ -420,7 +400,7 @@ Handle Registration::GetProcessEventHandle() {
 }
 
 void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
-    AutoProcessListLock auto_lock;
+    auto auto_lock = GetProcessListUniqueLock();
     
     for (auto &p : g_process_list.processes) {
         if (kernelAbove200() && p->state >= ProcessState_DebugDetached && p->flags & 0x100) {
@@ -448,17 +428,15 @@ void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
         }
     }
     if (kernelAbove500()) {
-        auto_lock.Unlock();
-        g_dead_process_list.Lock();
+        auto_lock.unlock();
+        auto dead_process_list_lock = g_dead_process_list.get_unique_lock();
         if (g_dead_process_list.processes.size()) {
             std::shared_ptr<Registration::Process> process = g_dead_process_list.processes[0];
             g_dead_process_list.processes.erase(g_dead_process_list.processes.begin());
             *out_pid = process->pid;
             *out_type = 1;
-            g_dead_process_list.Unlock();
             return;
         }
-        g_dead_process_list.Unlock();
     }
     *out_pid = 0;
     *out_type = 0;

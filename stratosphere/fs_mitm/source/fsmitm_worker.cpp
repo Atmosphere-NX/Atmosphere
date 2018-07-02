@@ -1,3 +1,4 @@
+#include <mutex>
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "fsmitm_worker.hpp"
@@ -18,10 +19,9 @@ Result FsMitMWorker::AddWaitableCallback(void *arg, Handle *handles, size_t num_
 
 void FsMitMWorker::AddWaitable(IWaitable *waitable) {
     g_worker_waiter->add_waitable(waitable);
-    g_new_waitable_mutex.Lock();
+    std::scoped_lock lk{g_new_waitable_mutex};
     g_new_waitable_event->signal_event();
     g_sema_new_waitable_finish.Wait();
-    g_new_waitable_mutex.Unlock();
 }
 
 void FsMitMWorker::Main(void *arg) {

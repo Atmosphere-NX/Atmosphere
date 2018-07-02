@@ -2,6 +2,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include <memory>
+#include <mutex>
 
 #define LAUNCHFLAGS_NOTIFYWHENEXITED(flags) (flags & 1)
 #define LAUNCHFLAGS_STARTSUSPENDED(flags) (flags & (kernelAbove500() ? 0x10 : 0x2))
@@ -32,17 +33,10 @@ class Registration {
             u64* out_pid;
             Result result;
         };
-        class AutoProcessListLock {
-            private:
-                bool has_lock;
-            public:
-                AutoProcessListLock();
-                ~AutoProcessListLock();
-                void Unlock();
-        };
-                
+
         static void InitializeSystemResources();
         static IWaitable *GetProcessLaunchStartEvent();
+        static std::unique_lock<HosRecursiveMutex> GetProcessListUniqueLock();
         static void SetProcessListManager(WaitableManager *m);
         static Result ProcessLaunchStartCallback(void *arg, Handle *handles, size_t num_handles, u64 timeout);
         

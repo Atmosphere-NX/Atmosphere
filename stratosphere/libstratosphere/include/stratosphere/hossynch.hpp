@@ -9,15 +9,15 @@ class HosMutex {
             mutexInit(&this->m);
         }
         
-        void Lock() {
+        void lock() {
             mutexLock(&this->m);
         }
         
-        void Unlock() {
+        void unlock() {
             mutexUnlock(&this->m);
         }
         
-        bool TryLock() {
+        bool try_lock() {
             return mutexTryLock(&this->m);
         }
 };
@@ -30,15 +30,15 @@ class HosRecursiveMutex {
             rmutexInit(&this->m);
         }
         
-        void Lock() {
+        void lock() {
             rmutexLock(&this->m);
         }
         
-        void Unlock() {
+        void unlock() {
             rmutexUnlock(&this->m);
         }
         
-        bool TryLock() {
+        bool try_lock() {
             return rmutexTryLock(&this->m);
         }
 };
