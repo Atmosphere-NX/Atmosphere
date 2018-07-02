@@ -1,6 +1,7 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include "pm_registration.hpp"
 
 class ProcessWaiter final : public IWaitable {
     public:
