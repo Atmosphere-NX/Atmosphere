@@ -16,9 +16,7 @@ enum class FsIStorageCmd {
 
 class IStorage {
     public:
-        virtual ~IStorage() {
-            
-        }
+        virtual ~IStorage();
         
         virtual IStorage *Clone() = 0; 
         
