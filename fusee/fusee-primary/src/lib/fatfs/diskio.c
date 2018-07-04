@@ -9,70 +9,18 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include "diskio.h"		/* FatFs lower layer API */
-#include "../../sdmmc.h"
-#include "../../hwinit.h"
-
-static bool g_ahb_redirect_enabled = false;
-
-/* Global sd struct. */
-struct mmc g_sd_mmc = {0};
-static bool g_sd_initialized = false;
-
-int initialize_sd_mmc(void) {
-	if (!g_ahb_redirect_enabled) {
-		mc_enable_ahb_redirect();
-		g_ahb_redirect_enabled = true;
-	}
-
-	if (!g_sd_initialized) {
-		int rc = sdmmc_init(&g_sd_mmc, SWITCH_MICROSD, false);
-		if (rc == 0) {
-			g_sd_initialized = true;
-			return 0;
-		} else {
-			return rc;
-		}
-	} else {
-		return 0;
-	}
-}
-
-/*
-Uncomment if needed:
-static struct mmc nand_mmc = {0};
-static bool g_nand_initialized = false;
-
-int initialize_nand_mmc(void) {
-	if (!g_ahb_redirect_enabled) {
-		mc_enable_ahb_redirect();
-		g_ahb_redirect_enabled = true;
-	}
-
-	if (!g_nand_initialized) {
-		int rc = sdmmc_init(&g_sd_mmc, SWITCH_EMMC);
-		if (rc == 0) {
-			g_nand_initialized = true;
-			return 0;
-		} else {
-			return rc;
-		}
-	} else {
-		return 0;
-	}
-}
-
-*/
+#include "diskio.h"     /* FatFs lower layer API */
+#include "../../fs_utils.h"
 
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
 /*-----------------------------------------------------------------------*/
 
 DSTATUS disk_status (
-	BYTE pdrv		/* Physical drive nmuber to identify the drive */
+    BYTE pdrv       /* Physical drive nmuber to identify the drive */
 )
 {
-	return 0;
+    return 0;
 }
 
 
@@ -82,15 +30,10 @@ DSTATUS disk_status (
 /*-----------------------------------------------------------------------*/
 
 DSTATUS disk_initialize (
-	BYTE pdrv				/* Physical drive nmuber to identify the drive */
+    BYTE pdrv               /* Physical drive nmuber to identify the drive */
 )
 {
-	switch (pdrv) {
-		case 0:
-			return initialize_sd_mmc() == 0 ? 0 : STA_NOINIT;
-		default:
-			return STA_NODISK;
-	}
+    return 0;
 }
 
 
@@ -100,18 +43,18 @@ DSTATUS disk_initialize (
 /*-----------------------------------------------------------------------*/
 
 DRESULT disk_read (
-	BYTE pdrv,		/* Physical drive nmuber to identify the drive */
-	BYTE *buff,		/* Data buffer to store read data */
-	DWORD sector,	/* Start sector in LBA */
-	UINT count		/* Number of sectors to read */
+    BYTE pdrv,      /* Physical drive nmuber to identify the drive */
+    BYTE *buff,     /* Data buffer to store read data */
+    DWORD sector,   /* Start sector in LBA */
+    UINT count      /* Number of sectors to read */
 )
 {
-	switch (pdrv) {
-		case 0:
-			return sdmmc_read(&g_sd_mmc, buff, sector, count) == 0 ? RES_OK : RES_ERROR;
-		default:
-			return RES_PARERR;
-	}
+    switch (pdrv) {
+        case 0:
+            return sdmmc_device_read(&g_sd_device, sector, count, (void *)buff) ? RES_OK : RES_ERROR;
+        default:
+            return RES_PARERR;
+    }
 }
 
 
@@ -121,18 +64,18 @@ DRESULT disk_read (
 /*-----------------------------------------------------------------------*/
 
 DRESULT disk_write (
-	BYTE pdrv,			/* Physical drive nmuber to identify the drive */
-	const BYTE *buff,	/* Data to be written */
-	DWORD sector,		/* Start sector in LBA */
-	UINT count			/* Number of sectors to write */
+    BYTE pdrv,          /* Physical drive nmuber to identify the drive */
+    const BYTE *buff,   /* Data to be written */
+    DWORD sector,       /* Start sector in LBA */
+    UINT count          /* Number of sectors to write */
 )
 {
-	switch (pdrv) {
-		case 0:
-			return sdmmc_write(&g_sd_mmc, buff, sector, count) == 0 ? RES_OK : RES_ERROR;
-		default:
-			return RES_PARERR;
-	}
+    switch (pdrv) {
+        case 0:
+            return sdmmc_device_write(&g_sd_device, sector, count, (void *)buff) ? RES_OK : RES_ERROR;
+        default:
+            return RES_PARERR;
+    }
 }
 
 
@@ -142,11 +85,11 @@ DRESULT disk_write (
 /*-----------------------------------------------------------------------*/
 
 DRESULT disk_ioctl (
-	BYTE pdrv,		/* Physical drive nmuber (0..) */
-	BYTE cmd,		/* Control code */
-	void *buff		/* Buffer to send/receive control data */
+    BYTE pdrv,      /* Physical drive nmuber (0..) */
+    BYTE cmd,       /* Control code */
+    void *buff      /* Buffer to send/receive control data */
 )
 {
-	return 0;
+    return RES_OK;
 }
 

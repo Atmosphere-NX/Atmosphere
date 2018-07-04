@@ -4,9 +4,7 @@
 #include "utils.h"
 
 #define TIMERS_BASE 0x60005000
-
 #define MAKE_TIMERS_REG(n) MAKE_REG32(TIMERS_BASE + n)
-
 #define TIMERUS_CNTR_1US_0 MAKE_REG32(TIMERS_BASE + 0x10)
 
 typedef struct {
@@ -36,10 +34,9 @@ static inline uint32_t get_time_since(uint32_t base) {
 /**
  * Delays for a given number of microseconds.
  */
-static inline void udelay(unsigned usecs)
-{
-  uint32_t start = get_time();
-  while (get_time() - start < usecs) ;
+static inline void udelay(unsigned usecs) {
+    uint32_t start = get_time();
+    while (get_time() - start < usecs);
 }
 
 __attribute__ ((noreturn)) void watchdog_reboot(void);

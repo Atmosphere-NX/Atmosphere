@@ -1,5 +1,6 @@
-#include "utils.h"
 #include <stdint.h>
+
+#include "utils.h"
 #include "display/video_fb.h"
 #include "fs_utils.h"
 #include "stage2.h"
@@ -97,7 +98,7 @@ void load_stage2(const char *bct0) {
     } else {
         tmp_addr = config.load_address;
     }
-
+    
     if (read_from_file((void *)tmp_addr, size, config.path) != size) {
         fatal_error("Failed to read stage2 (%s)!\n", config.path);
     }

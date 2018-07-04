@@ -1,14 +1,22 @@
-#ifndef __FUSEE_PINMUX_H__
-#define __FUSEE_PINMUX_H__
+#ifndef FUSEE_PINMUX_H
+#define FUSEE_PINMUX_H
 
-#include <stdbool.h>
-#include <stdint.h>
-#include "utils.h"
+#define PINMUX_TRISTATE             (1 << 4)
+#define PINMUX_PARKED               (1 << 5)
+#define PINMUX_INPUT                (1 << 6)
+#define PINMUX_PULL_NONE            (0 << 2)
+#define PINMUX_PULL_DOWN            (1 << 2)
+#define PINMUX_PULL_UP              (2 << 2)
+#define PINMUX_SELECT_FUNCTION0     0
+#define PINMUX_SELECT_FUNCTION1     1
+#define PINMUX_SELECT_FUNCTION2     2
+#define PINMUX_SELECT_FUNCTION3     3    
+#define PINMUX_DRIVE_1X             (0 << 13)
+#define PINMUX_DRIVE_2X             (1 << 13)
+#define PINMUX_DRIVE_3X             (2 << 13)
+#define PINMUX_DRIVE_4X             (3 << 13)
 
-/**
- * Pinmux structures.
- */
-struct tegra_pinmux {
+typedef struct {
     uint32_t sdmmc1_clk;
     uint32_t sdmmc1_cmd;
     uint32_t sdmmc1_dat3;
@@ -174,48 +182,11 @@ struct tegra_pinmux {
     uint32_t pz3;
     uint32_t pz4;
     uint32_t pz5;
-};
+} tegra_pinmux_t;
 
-/**
- * Constants for use of the Tegra Pinmux.
- */
-enum tegra_pinmux_constants {
-
-    /* Tristate (output buffer) control */
-    PINMUX_TRISTATE = (1 << 4),
-
-    /* Park control */
-    PINMUX_PARKED = (1 << 5),
-
-    /* Input control */
-    PINMUX_INPUT = (1 << 6),
-
-    /* Pull resistors */
-    PINMUX_PULL_NONE = (0 << 2),
-    PINMUX_PULL_DOWN = (1 << 2),
-    PINMUX_PULL_UP   = (2 << 2),
-
-    /* Function select */
-    PINMUX_SELECT_FUNCTION0 = 0,
-    PINMUX_SELECT_FUNCTION1 = 1,
-    PINMUX_SELECT_FUNCTION2 = 2,
-    PINMUX_SELECT_FUNCTION3 = 3,
-
-    /* Drive */
-    PINMUX_DRIVE_1X = (0x0 << 13),
-    PINMUX_DRIVE_2X = (0x1 << 13),
-    PINMUX_DRIVE_3X = (0x2 << 13),
-    PINMUX_DRIVE_4X = (0x3 << 13),
-};
-
-
-/**
- * Utility function that grabs the Tegra pinmux registers.
- */
-static inline struct tegra_pinmux *pinmux_get_regs(void)
+static inline volatile tegra_pinmux_t *pinmux_get_regs(void)
 {
-    return (struct tegra_pinmux *)0x70003000;
+    return (volatile tegra_pinmux_t *)0x70003000;
 }
-
 
 #endif

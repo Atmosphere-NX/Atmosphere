@@ -7,7 +7,7 @@
 #include "fs_utils.h"
 #include "stage2.h"
 #include "chainloader.h"
-#include "sdmmc.h"
+#include "sdmmc/sdmmc.h"
 #include "lib/fatfs/ff.h"
 #include "lib/printk.h"
 #include "display/video_fb.h"
@@ -89,10 +89,14 @@ static void setup_env(void) {
 
     /* Set up the exception handlers. */
     setup_exception_handlers();
+    
+    /* Mount the SD card. */
+    mount_sd();
 }
 
 static void cleanup_env(void) {
-    f_unmount("");
+    /* Unmount the SD card. */
+    unmount_sd();
 
     display_enable_backlight(false);
     display_end();
@@ -108,12 +112,13 @@ int main(void) {
     const char *stage2_path;
     stage2_args_t *stage2_args;
     uint32_t stage2_version = 0;
-    extern struct mmc g_sd_mmc;
 
-    sdmmc_set_loglevel(2);
+    /* Set the SDMMC's driver logging level. */
+    sdmmc_set_log_level(SDMMC_LOG_INFO);
+    
     /* Initialize the display, console, etc. */
     setup_env();
-
+    
     /* Say hello. */
     printk("Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
     printk("Using color linear framebuffer at 0x%p!\n", g_framebuffer);
@@ -137,7 +142,7 @@ int main(void) {
     stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1); /* May be unaligned. */
     memcpy(&stage2_args->version, &stage2_version, 4);
     stage2_args->display_initialized = false;
-    memcpy(&stage2_args->sd_mmc, &g_sd_mmc, sizeof(g_sd_mmc));
+    memcpy(&stage2_args->sd_sdmmc, &g_sd_sdmmc, sizeof(g_sd_sdmmc));
     strcpy(stage2_args->bct0, bct0);
     g_chainloader_argc = 2;
 

@@ -1,8 +1,7 @@
 #ifndef FUSEE_STAGE2_H
 #define FUSEE_STAGE2_H
 
-#include "utils.h"
-#include "sdmmc.h"
+#include "sdmmc/sdmmc_core.h"
 
 /* TODO: Is there a more concise way to do this? */
 #define STAGE2_ARGV_PROGRAM_PATH 0
@@ -22,7 +21,7 @@ typedef struct {
 
 typedef struct {
     uint32_t version;
-    struct mmc sd_mmc;
+    sdmmc_t sd_sdmmc;
     bool display_initialized;
     char bct0[BCTO_MAX_SIZE];
 } stage2_args_t;

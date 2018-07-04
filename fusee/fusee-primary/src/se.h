@@ -1,7 +1,6 @@
 #ifndef FUSEE_SE_H
 #define FUSEE_SE_H
 
-#include "utils.h"
 #include <assert.h>
 
 #define KEYSLOT_SWITCH_LP0TZRAMKEY 0x2
@@ -206,4 +205,4 @@ bool se_rsa2048_pss_verify(const void *signature, size_t signature_size, const v
 void se_initialize_rng(unsigned int keyslot);
 void se_generate_random(unsigned int keyslot, void *dst, size_t size);
 
-#endif /* EXOSPHERE_SE_H */
+#endif
