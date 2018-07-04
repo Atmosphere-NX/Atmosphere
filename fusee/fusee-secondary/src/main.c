@@ -30,7 +30,7 @@ static void setup_env(void) {
     /* Set up exception handlers. */
     setup_exception_handlers();
 
-    if(switchfs_import_mmc_structs(&g_stage2_args->sd_mmc, NULL) == -1 || switchfs_mount_all() == -1) {
+    if(/*switchfs_import_mmc_structs(&g_stage2_args->sd_mmc, NULL) == -1 ||*/ switchfs_mount_all() == -1) {
         fatal_error("Failed to mount at least one parition: %s\n", strerror(errno));
     }
 

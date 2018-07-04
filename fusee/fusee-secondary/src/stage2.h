@@ -13,7 +13,7 @@
 
 typedef struct {
     uint32_t version;
-    struct mmc sd_mmc;
+    //struct mmc sd_mmc;
     bool display_initialized;
     char bct0[BCTO_MAX_SIZE];
 } stage2_args_t;
