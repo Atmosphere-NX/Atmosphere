@@ -215,8 +215,8 @@ typedef enum {
     SDMMC_CAR_DIVIDER_DDR50  = 18, // (5 * 2 * 2) - 2
     SDMMC_CAR_DIVIDER_HS26   = 30, // (16 * 2) - 2
     SDMMC_CAR_DIVIDER_HS52   = 14, // (8 * 2) - 2
-    SDMMC_CAR_DIVIDER_HS200  = 3,  // 1 -- NOTE THIS IS WITH RESPECT TO PLLC4_OUT2_LJ
-    SDMMC_CAR_DIVIDER_HS400  = 3,  // 1 -- NOTE THIS IS WITH RESPECT TO PLLC4_OUT2_LJ
+    SDMMC_CAR_DIVIDER_HS200  = 3,  // (2.5 * 2) - 2 (for PLLP_OUT0)
+    SDMMC_CAR_DIVIDER_HS400  = 3,  // (2.5 * 2) - 2 (for PLLP_OUT0)
 } SdmmcCarDivider;
 
 /* Structure for describing a SDMMC device. */
