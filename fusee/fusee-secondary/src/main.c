@@ -12,9 +12,10 @@
 #include "nxboot.h"
 #include "console.h"
 #include "fs_utils.h"
-#include "switch_fs.h"
+#include "nxfs.h"
 #include "gpt.h"
 #include "display/video_fb.h"
+#include "sdmmc/sdmmc.h"
 
 extern void (*__program_exit_callback)(int rc);
 
@@ -30,7 +31,7 @@ static void setup_env(void) {
     /* Set up exception handlers. */
     setup_exception_handlers();
 
-    if(/*switchfs_import_mmc_structs(&g_stage2_args->sd_mmc, NULL) == -1 ||*/ switchfs_mount_all() == -1) {
+    if (nxfs_mount_all() < 0) {
         fatal_error("Failed to mount at least one parition: %s\n", strerror(errno));
     }
 
@@ -39,7 +40,7 @@ static void setup_env(void) {
 
 static void cleanup_env(void) {
     /* Unmount everything (this causes all open files to be flushed and closed) */
-    switchfs_unmount_all();
+    nxfs_unmount_all();
     //console_end();
 }
 
@@ -61,12 +62,16 @@ int main(int argc, void **argv) {
     if (argc != STAGE2_ARGC) {
         generic_panic();
     }
+    
     g_stage2_args = (stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT];
 
-    if(g_stage2_args->version != 0) {
+    if (g_stage2_args->version != 0) {
         generic_panic();
     }
-
+    
+    /* Set the SDMMC's driver logging level. */
+    sdmmc_set_log_level(SDMMC_LOG_INFO);
+    
     /* Initialize the display, console, FS, etc. */
     setup_env();
 

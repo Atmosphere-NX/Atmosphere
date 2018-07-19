@@ -1,7 +1,8 @@
 #include <string.h>
 #include "device_partition.h"
 
-int device_partition_read_data(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors) {
+int device_partition_read_data(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors)
+{
     int rc;
     if (!devpart->initialized) {
         rc = devpart->initializer(devpart);
@@ -28,16 +29,15 @@ int device_partition_read_data(device_partition_t *devpart, void *dst, uint64_t 
     }
 }
 
-int device_partition_write_data(device_partition_t *devpart, const void *src, uint64_t sector, uint64_t num_sectors) {
+int device_partition_write_data(device_partition_t *devpart, const void *src, uint64_t sector, uint64_t num_sectors)
+{
     int rc;
-
     if (!devpart->initialized) {
         rc = devpart->initializer(devpart);
         if (rc != 0) {
             return rc;
         }
     }
-
     if (devpart->read_cipher != NULL && devpart->crypto_mode != DevicePartitionCryptoMode_None) {
         for (uint64_t i = 0; i < num_sectors; i += devpart->crypto_work_buffer_num_sectors) {
             uint64_t n = (i + devpart->crypto_work_buffer_num_sectors > num_sectors) ? (num_sectors - i) : devpart->crypto_work_buffer_num_sectors;

@@ -2,31 +2,40 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <errno.h>
-#include "switch_fs.h"
+#include <string.h>
+#include "nxfs.h"
 #include "gpt.h"
-#include "sdmmc.h"
 #include "se.h"
 #include "hwinit.h"
+#include "utils.h"
+#include "sdmmc/sdmmc.h"
 
 static bool g_ahb_redirect_enabled = false;
-static bool g_sd_mmc_initialized = false;
-static bool g_nand_mmc_initialized = false;
+static bool g_sd_device_initialized = false;
+static bool g_emmc_device_initialized = false;
 
-static bool g_sd_mmc_imported = false;
-static bool g_nand_mmc_imported = false;
+static sdmmc_t g_sd_sdmmc = {0};
+static sdmmc_t g_emmc_sdmmc = {0};
 
-static struct mmc g_sd_mmc = {0};
-static struct mmc g_nand_mmc = {0};
+static sdmmc_device_t g_sd_device = {0};
+static sdmmc_device_t g_emmc_device = {0};
 
 typedef struct mmc_partition_info_t {
-    struct mmc *mmc;
-    enum sdmmc_controller controller;
-    enum sdmmc_partition mmc_partition;
+    sdmmc_device_t *device;
+    SdmmcControllerNum controller;
+    SdmmcPartitionNum partition;
 } mmc_partition_info_t;
+
+static mmc_partition_info_t g_sd_mmcpart = {&g_sd_device, SDMMC_1, SDMMC_PARTITION_USER};
+static mmc_partition_info_t g_emmc_boot0_mmcpart = {&g_emmc_device, SDMMC_4, SDMMC_PARTITION_BOOT0};
+static mmc_partition_info_t g_emmc_boot1_mmcpart = {&g_emmc_device, SDMMC_4, SDMMC_PARTITION_BOOT1};
+static mmc_partition_info_t g_emmc_user_mmcpart = {&g_emmc_device, SDMMC_4, SDMMC_PARTITION_USER};
+
+SdmmcPartitionNum g_current_emmc_partition = SDMMC_PARTITION_INVALID;
 
 static int mmc_partition_initialize(device_partition_t *devpart) {
     mmc_partition_info_t *mmcpart = (mmc_partition_info_t *)devpart->device_struct;
-
+    
     if (devpart->read_cipher != NULL || devpart->write_cipher != NULL) {
         devpart->crypto_work_buffer = memalign(16, devpart->sector_size * 16);
         if (devpart->crypto_work_buffer == NULL) {
@@ -44,27 +53,21 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
         g_ahb_redirect_enabled = true;
     }
 
-    if (mmcpart->mmc == &g_sd_mmc) {
-        if (!g_sd_mmc_initialized) {
-            int rc = g_sd_mmc_imported ? 0 : sdmmc_init(mmcpart->mmc, mmcpart->controller, true);
-            if (rc == 0) {
-                sdmmc_set_write_enable(mmcpart->mmc, SDMMC_WRITE_ENABLED);
-                g_sd_mmc_initialized = true;
-            }
-            else {
+    if (mmcpart->device == &g_sd_device) {
+        if (!g_sd_device_initialized) {
+            int rc = sdmmc_device_sd_init(mmcpart->device, &g_sd_sdmmc, SDMMC_BUS_WIDTH_4BIT, SDMMC_SPEED_SDR104) ? 0 : EIO;
+            if (rc)
                 return rc;
-            }
+            g_sd_device_initialized = true;
         }
         devpart->initialized = true;
         return 0;
-    } else if (mmcpart->mmc == &g_nand_mmc) {
-        if (!g_nand_mmc_initialized) {
-            int rc = g_nand_mmc_imported ? 0 : sdmmc_init(mmcpart->mmc, mmcpart->controller, true);
-            if (rc == 0) {
-                g_nand_mmc_initialized = true;
-            } else {
+    } else if (mmcpart->device == &g_emmc_device) {
+        if (!g_emmc_device_initialized) {
+            int rc = sdmmc_device_mmc_init(mmcpart->device, &g_emmc_sdmmc, SDMMC_BUS_WIDTH_8BIT, SDMMC_SPEED_HS400) ? 0 : EIO;
+            if (rc)
                 return rc;
-            }
+            g_emmc_device_initialized = true;
         }
         devpart->initialized = true;
         return 0;
@@ -77,34 +80,31 @@ static void mmc_partition_finalize(device_partition_t *devpart) {
     free(devpart->crypto_work_buffer);
 }
 
-static enum sdmmc_partition g_current_emmc_partition = (enum sdmmc_partition)-1;
-
 static int mmc_partition_read(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors) {
     mmc_partition_info_t *mmcpart = (mmc_partition_info_t *)devpart->device_struct;
-    if (mmcpart->mmc == &g_nand_mmc && g_current_emmc_partition != mmcpart->mmc_partition) {
-        int rc = sdmmc_select_partition(mmcpart->mmc, mmcpart->mmc_partition);
-        if (rc != 0 && rc != ENOTTY) {
-            return rc;
-        }
-        g_current_emmc_partition = mmcpart->mmc_partition;
+    
+    if ((mmcpart->device == &g_emmc_device) && (g_current_emmc_partition != mmcpart->partition)) {
+        if (!sdmmc_mmc_select_partition(mmcpart->device, mmcpart->partition))
+            return EIO;
+        g_current_emmc_partition = mmcpart->partition;
     }
-    return sdmmc_read(mmcpart->mmc, dst, (uint32_t)(devpart->start_sector + sector), (uint32_t)num_sectors);
+    
+    return sdmmc_device_read(mmcpart->device, (uint32_t)(devpart->start_sector + sector), (uint32_t)num_sectors, dst) ? 0 : EIO;
 }
 
 static int mmc_partition_write(device_partition_t *devpart, const void *src, uint64_t sector, uint64_t num_sectors) {
     mmc_partition_info_t *mmcpart = (mmc_partition_info_t *)devpart->device_struct;
-    if (mmcpart->mmc == &g_nand_mmc && g_current_emmc_partition != mmcpart->mmc_partition) {
-        int rc = sdmmc_select_partition(mmcpart->mmc, mmcpart->mmc_partition);
-        if (rc != 0 && rc != ENOTTY) {
-            return rc;
-        }
-        g_current_emmc_partition = mmcpart->mmc_partition;
+    
+    if ((mmcpart->device == &g_emmc_device) && (g_current_emmc_partition != mmcpart->partition)) {
+        if (!sdmmc_mmc_select_partition(mmcpart->device, mmcpart->partition))
+            return EIO;
+        g_current_emmc_partition = mmcpart->partition;
     }
 
-    return sdmmc_write(mmcpart->mmc, src, (uint32_t)(devpart->start_sector + sector), (uint32_t)num_sectors);
+    return sdmmc_device_write(mmcpart->device, (uint32_t)(devpart->start_sector + sector), (uint32_t)num_sectors, (void *)src) ? 0 : EIO;
 }
 
-static int switchfs_bis_crypto_decrypt(device_partition_t *devpart, uint64_t sector, uint64_t num_sectors) {
+static int nxfs_bis_crypto_decrypt(device_partition_t *devpart, uint64_t sector, uint64_t num_sectors) {
     unsigned int keyslot_a = 4; /* These keyslots are never used by exosphere, and should be safe. */
     unsigned int keyslot_b = 5;
     size_t size = num_sectors * devpart->sector_size;
@@ -124,7 +124,7 @@ static int switchfs_bis_crypto_decrypt(device_partition_t *devpart, uint64_t sec
     }
 }
 
-static int switchfs_bis_crypto_encrypt(device_partition_t *devpart, uint64_t sector, uint64_t num_sectors) {
+static int nxfs_bis_crypto_encrypt(device_partition_t *devpart, uint64_t sector, uint64_t num_sectors) {
     unsigned int keyslot_a = 4; /* These keyslots are never used by exosphere, and should be safe. */
     unsigned int keyslot_b = 5;
     size_t size = num_sectors * devpart->sector_size;
@@ -144,11 +144,6 @@ static int switchfs_bis_crypto_encrypt(device_partition_t *devpart, uint64_t sec
     }
 }
 
-static mmc_partition_info_t g_sd_mmcpart = { &g_sd_mmc, SWITCH_MICROSD, SDMMC_PARTITION_USER };
-static mmc_partition_info_t g_nand_boot0_mmcpart = { &g_nand_mmc, SWITCH_EMMC, SDMMC_PARTITION_BOOT0 };
-static mmc_partition_info_t g_nand_boot1_mmcpart = { &g_nand_mmc, SWITCH_EMMC, SDMMC_PARTITION_BOOT1 };
-static mmc_partition_info_t g_nand_user_mmcpart = { &g_nand_mmc, SWITCH_EMMC, SDMMC_PARTITION_USER };
-
 static const device_partition_t g_mmc_devpart_template = {
     .sector_size = 512,
     .initializer = mmc_partition_initialize,
@@ -157,7 +152,7 @@ static const device_partition_t g_mmc_devpart_template = {
     .writer = mmc_partition_write,
 };
 
-static int switchfs_mount_partition_gpt_callback(const efi_entry_t *entry, void *param, size_t entry_offset, FILE *disk) {
+static int nxfs_mount_partition_gpt_callback(const efi_entry_t *entry, void *param, size_t entry_offset, FILE *disk) {
     (void)entry_offset;
     (void)disk;
     device_partition_t *parent = (device_partition_t *)param;
@@ -204,8 +199,8 @@ static int switchfs_mount_partition_gpt_callback(const efi_entry_t *entry, void 
             }
 
             if (known_partitions[i].is_encrypted) {
-                devpart.read_cipher = switchfs_bis_crypto_decrypt;
-                devpart.write_cipher = switchfs_bis_crypto_encrypt;
+                devpart.read_cipher = nxfs_bis_crypto_decrypt;
+                devpart.write_cipher = nxfs_bis_crypto_encrypt;
                 devpart.crypto_mode = DevicePartitionCryptoMode_Xts;
             }
 
@@ -238,37 +233,7 @@ static int switchfs_mount_partition_gpt_callback(const efi_entry_t *entry, void 
     return 0;
 }
 
-int switchfs_import_mmc_structs(void *sd, void *nand) {
-    if (sd != NULL) {
-        int rc = 0;
-        memcpy(&g_sd_mmc, sd, sizeof(g_sd_mmc));
-        rc = sdmmc_import_struct(&g_sd_mmc);
-        if (rc != 0) {
-            memset(&g_sd_mmc, 0, sizeof(g_sd_mmc));
-            errno = rc;
-            return -1;
-        } else {
-            g_sd_mmc_imported = true;
-        }
-    }
-
-    if (nand != NULL) {
-        int rc = 0;
-        memcpy(&g_nand_mmc, nand, sizeof(g_nand_mmc));
-        rc = sdmmc_import_struct(&g_nand_mmc);
-        if (rc != 0) {
-            memset(&g_nand_mmc, 0, sizeof(g_nand_mmc));
-            errno = rc;
-            return -1;
-        } else {
-            g_nand_mmc_imported = true;
-        }
-    }
-
-    return 0;
-}
-
-int switchfs_mount_all(void) {
+int nxfs_mount_all(void) {
     device_partition_t model;
     int rc;
     FILE *rawnand;
@@ -278,63 +243,80 @@ int switchfs_mount_all(void) {
     model.device_struct = &g_sd_mmcpart;
     model.start_sector = 0;
     model.num_sectors = 1u << 30; /* arbitrary numbers of sectors. TODO: find the size of the SD in sectors. */
+    
     rc = fsdev_mount_device("sdmc", &model, true);
+    
     if (rc == -1) {
         return -1;
     }
+    
     rc = fsdev_register_device("sdmc");
+    
     if (rc == -1) {
         return -1;
     }
 
     /* Boot0. */
     model = g_mmc_devpart_template;
-    model.device_struct = &g_nand_boot0_mmcpart;
+    model.device_struct = &g_emmc_boot0_mmcpart;
     model.start_sector = 0;
     model.num_sectors = 0x184000 / model.sector_size;
+    
     rc = rawdev_mount_device("boot0", &model, true);
+    
     if (rc == -1) {
         return -1;
     }
+    
     rc = rawdev_register_device("boot0");
+    
+    if (rc == -1) {
+        return -1;
+    }
+    
+    /* Boot1. */
+    model = g_mmc_devpart_template;
+    model.device_struct = &g_emmc_boot1_mmcpart;
+    model.start_sector = 0;
+    model.num_sectors = 0x80000 / model.sector_size;
+    
+    rc = rawdev_mount_device("boot1", &model, false);
+    
     if (rc == -1) {
         return -1;
     }
 
-    /* Boot1. */
-    model = g_mmc_devpart_template;
-    model.device_struct = &g_nand_boot1_mmcpart;
-    model.start_sector = 0;
-    model.num_sectors = 0x80000 / model.sector_size;
-    rc = rawdev_mount_device("boot1", &model, false);
-    if (rc == -1) {
-        return -1;
-    }
     /* Don't register boot1 for now. */
 
     /* Raw NAND (excluding boot partitions), and its partitions. */
     model = g_mmc_devpart_template;
     model = g_mmc_devpart_template;
-    model.device_struct = &g_nand_user_mmcpart;
+    model.device_struct = &g_emmc_user_mmcpart;
     model.start_sector = 0;
     model.num_sectors = (32ull << 30) / model.sector_size;
+    
     rc = rawdev_mount_device("rawnand", &model, false);
+    
     if (rc == -1) {
         return -1;
     }
+    
     rc = rawdev_register_device("rawnand");
     if (rc == -1) {
         return -1;
     }
+    
     rawnand = fopen("rawnand:/", "rb");
-    rc = gpt_iterate_through_entries(rawnand, model.sector_size, switchfs_mount_partition_gpt_callback, &model);
+    rc = gpt_iterate_through_entries(rawnand, model.sector_size, nxfs_mount_partition_gpt_callback, &model);
     fclose(rawnand);
+    
     if (rc == 0) {
         rc = fsdev_set_default_device("sdmc");
     }
+    
     return rc;
 }
 
-int switchfs_unmount_all(void) {
-    return fsdev_unmount_all() != 0 || rawdev_unmount_all() != 0 ? -1 : 0;
+int nxfs_unmount_all(void) {
+    return ((fsdev_unmount_all() || rawdev_unmount_all()) ? -1 : 0);
 }

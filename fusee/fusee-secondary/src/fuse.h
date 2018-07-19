@@ -1,9 +1,6 @@
 #ifndef FUSEE_FUSE_H
 #define FUSEE_FUSE_H
 
-#include <stdbool.h>
-#include <stdint.h>
-
 typedef struct {
     uint32_t FUSE_CTRL;
     uint32_t FUSE_REG_ADDR;

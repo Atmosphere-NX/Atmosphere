@@ -4,6 +4,7 @@
 #include "hwinit.h"
 #include "fuse.h"
 #include "se.h"
+#include "timers.h"
 #include "fs_utils.h"
 #include "stage2.h"
 #include "chainloader.h"
@@ -122,14 +123,7 @@ int main(void) {
     /* Say hello. */
     printk("Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
     printk("Using color linear framebuffer at 0x%p!\n", g_framebuffer);
-
-#ifndef I_KNOW_WHAT_I_AM_DOING
-#error "Fusee is a work-in-progress bootloader, and is not ready for usage yet. If you want to play with it anyway, please #define I_KNOW_WHAT_I_AM_DOING -- and recognize that we will be unable to provide support until it is ready for general usage :)"
-
-    printk("Warning: Fus\xe9" "e is not yet completed, and not ready for general testing!\n");
-    fatal_error("Please do not seek support for it until it is done.\n");
-#endif
-
+    
     /* Load the BCT0 configuration ini off of the SD. */
     bct0 = load_config();
 
@@ -142,10 +136,12 @@ int main(void) {
     stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1); /* May be unaligned. */
     memcpy(&stage2_args->version, &stage2_version, 4);
     stage2_args->display_initialized = false;
-    memcpy(&stage2_args->sd_sdmmc, &g_sd_sdmmc, sizeof(g_sd_sdmmc));
     strcpy(stage2_args->bct0, bct0);
     g_chainloader_argc = 2;
 
+    /* Wait a while. */
+    mdelay(1000);
+    
     /* Deinitialize the display, console, etc. */
     cleanup_env();
 

@@ -2,6 +2,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/iosupport.h>
@@ -104,7 +105,7 @@ int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool
     fsdev_device_t *device = fsdev_find_device(name);
     FRESULT rc;
     char drname[40];
-
+    
     if (device != NULL) {
         errno = EEXIST; /* Device already exists */
         return -1;
@@ -153,7 +154,7 @@ int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool
         VolumeStr[device - g_fsdev_devices] = FKNAM;
         return fsdev_convert_rc(NULL, rc);
     }
-
+    
     device->setup = true;
     device->registered = false;
 

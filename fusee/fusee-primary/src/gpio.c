@@ -4,7 +4,6 @@
 
 #include "gpio.h"
 #include "utils.h"
-#include "lib/printk.h"
 
 /**
  * Returns a GPIO bank object that corresponds to the given GPIO pin,

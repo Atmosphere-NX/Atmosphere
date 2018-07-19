@@ -1,37 +1,27 @@
-#ifndef __FUSEE_PMC_H__
-#define __FUSEE_PMC_H__
-
-#include "utils.h"
-
-#define PMC_BASE 0x7000E400
-
+#ifndef FUSEE_PMC_H
+#define FUSEE_PMC_H
 
 /* TODO: get rid of these defines; use the struct instead */
+#define PMC_BASE 0x7000E400
+
+#define PMC_CONTROL_SDMMC1      (1 << 12)
+#define PMC_CONTROL_SDMMC3      (1 << 13)
+#define PMC_CONTROL_SDMMC4      (1 << 14)
+
 #define APBDEV_PMC_CONTROL MAKE_REG32(PMC_BASE + 0x00)
-
 #define APBDEV_PMC_DPD_ENABLE_0 MAKE_REG32(PMC_BASE + 0x24)
-
 #define APBDEV_PMC_PWRGATE_TOGGLE_0 MAKE_REG32(PMC_BASE + 0x30)
 #define APBDEV_PMC_PWRGATE_STATUS_0 MAKE_REG32(PMC_BASE + 0x38)
-
 #define APBDEV_PMC_SCRATCH0_0 MAKE_REG32(PMC_BASE + 0x50)
-
 #define APBDEV_PMC_CRYPTO_OP_0 MAKE_REG32(PMC_BASE + 0xF4)
-
 #define APBDEV_PM_0 MAKE_REG32(PMC_BASE + 0x14)
 #define APBDEV_PMC_WAKE2_STATUS_0 MAKE_REG32(PMC_BASE + 0x168)
 #define APBDEV_PMC_RST_STATUS_0 MAKE_REG32(PMC_BASE + 0x1B4)
 #define APBDEV_PMC_CNTRL2_0 MAKE_REG32(PMC_BASE + 0x440)
-
 #define APBDEV_PMC_SCRATCH43_0 MAKE_REG32(PMC_BASE + 0x22C)
-
 #define APBDEV_PMC_SCRATCH200_0 MAKE_REG32(PMC_BASE + 0x840)
 
-/**
- * Definitions of the Tegra PMC.
- * NOTE: Incomplete, do not use
- */
-struct tegra_pmc {
+typedef struct {
     uint32_t cntrl;
     uint32_t sec_disable;
     uint32_t pmc_swrst;
@@ -297,23 +287,11 @@ struct tegra_pmc {
     uint32_t scratch118;
     uint32_t scratch119;
     uint32_t scratch1_eco;
-};
+} tegra_pmc_t;
 
-enum tegra_pmc_masks {
-    /* NO_IOPOWER, power detect, ect. */
-    PMC_CONTROL_SDMMC1 = (1 << 12),
-    PMC_CONTROL_SDMMC3 = (1 << 13),
-    PMC_CONTROL_SDMMC4 = (1 << 14),
-};
-
-
-/**
- * Utility function that grabs the Tegra PMC registers.
- */
-static inline volatile struct tegra_pmc *pmc_get_regs(void)
+static inline volatile tegra_pmc_t *pmc_get_regs(void)
 {
-    return (volatile struct tegra_pmc *)0x7000E400;
+    return (volatile tegra_pmc_t *)0x7000E400;
 }
-
 
 #endif

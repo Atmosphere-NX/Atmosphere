@@ -5,6 +5,6 @@
 #include <stdarg.h>
 
 #define vprintk vprintf
-#define printk  printf
+#define printk printf
 
 #endif

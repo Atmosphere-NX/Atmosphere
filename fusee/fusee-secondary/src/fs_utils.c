@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include "fs_utils.h"
-#include "hwinit.h"
-#include "sdmmc.h"
 
 size_t get_file_size(const char *filename) {
     struct stat st;

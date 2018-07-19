@@ -21,7 +21,6 @@ typedef struct {
 
 typedef struct {
     uint32_t version;
-    sdmmc_t sd_sdmmc;
     bool display_initialized;
     char bct0[BCTO_MAX_SIZE];
 } stage2_args_t;

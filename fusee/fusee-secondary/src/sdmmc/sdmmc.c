@@ -1322,6 +1322,9 @@ static int sdmmc_mmc_select_hs400(sdmmc_device_t *device)
 
 static int sdmmc_mmc_select_timing(sdmmc_device_t *device, SdmmcBusSpeed bus_speed)
 {
+    // FIXME: Tuning is broken. Use HS52 for now.
+    return sdmmc_mmc_select_hs(device, false);
+    
     if ((bus_speed == SDMMC_SPEED_HS400) &&
         (device->sdmmc->bus_width == SDMMC_BUS_WIDTH_8BIT) &&
         (device->ext_csd.raw_card_type & EXT_CSD_CARD_TYPE_HS400_1_8V))
