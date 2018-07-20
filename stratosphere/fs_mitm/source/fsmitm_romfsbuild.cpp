@@ -236,7 +236,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     RomFSDirectoryEntry *dir_table = (RomFSDirectoryEntry *)((uintptr_t)dir_hash_table + this->dir_hash_table_size);
     u32 *file_hash_table = (u32 *)((uintptr_t)dir_table + this->dir_table_size);
     RomFSFileEntry *file_table = (RomFSFileEntry *)((uintptr_t)file_hash_table + this->file_hash_table_size);
-    
+        
     /* Clear out hash tables. */
     for (u32 i = 0; i < dir_hash_table_entry_count; i++) {
         dir_hash_table[i] = ROMFS_ENTRY_EMPTY;
@@ -332,11 +332,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
             default:
                 fatalSimple(0xF601);
         }
-        
-        delete cur_file->path;
-        delete cur_file;
     }
-    this->files.clear();
         
     /* Populate dir tables. */
     for (const auto &it : this->directories) {
@@ -361,6 +357,14 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     }
     this->root = NULL;
     this->directories.clear();
+    
+    /* Delete files. */
+    for (const auto &it : this->files) {
+        cur_file = it.second;
+        delete cur_file->path;
+        delete cur_file;
+    }
+    this->files.clear();
     
     /* Set header fields. */
     header->header_size = sizeof(*header);
