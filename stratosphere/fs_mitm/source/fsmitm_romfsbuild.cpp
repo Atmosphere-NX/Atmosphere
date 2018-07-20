@@ -352,6 +352,11 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
         memset(cur_entry->name, 0, (cur_entry->name_size + 3) & ~3);
         memcpy(cur_entry->name, cur_dir->path + cur_dir->cur_path_ofs, name_size);
         
+    }
+    
+    /* Delete directories. */
+    for (const auto &it : this->directories) {
+        cur_dir = it.second;
         delete cur_dir->path;
         delete cur_dir;
     }
