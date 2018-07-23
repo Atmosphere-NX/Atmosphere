@@ -549,28 +549,26 @@ static int sdmmc_autocal_config(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
         case SDMMC_3:
             switch (voltage) {
                 case SDMMC_VOLTAGE_1V8:
-                    sdmmc->regs->auto_cal_config &= ~SDMMC_AUTOCAL_PDPU_CONFIG_MASK;
+                    sdmmc->regs->auto_cal_config &= ~(SDMMC_AUTOCAL_PDPU_CONFIG_MASK);
                     sdmmc->regs->auto_cal_config |= SDMMC_AUTOCAL_PDPU_SDMMC1_1V8;
                     break;
                 case SDMMC_VOLTAGE_3V3:
-                    sdmmc->regs->auto_cal_config &= ~SDMMC_AUTOCAL_PDPU_CONFIG_MASK;
+                    sdmmc->regs->auto_cal_config &= ~(SDMMC_AUTOCAL_PDPU_CONFIG_MASK);
                     sdmmc->regs->auto_cal_config |= SDMMC_AUTOCAL_PDPU_SDMMC1_3V3;
                     break;
                 default:
-                    sdmmc_error(sdmmc, "microsd does not support voltage %d", voltage);
+                    sdmmc_error(sdmmc, "uSD does not support requested voltage!");
                     return 0;
             }
             
             break;
-        
         case SDMMC_2:
         case SDMMC_4:
             if (voltage != SDMMC_VOLTAGE_1V8) {
-                sdmmc_error(sdmmc, "eMMC can only run at 1V8, but sdmmc struct claims voltage %d", voltage);
+                sdmmc_error(sdmmc, "eMMC can only run at 1V8!");
                 return 0;
             }
-            
-            sdmmc->regs->auto_cal_config &= ~SDMMC_AUTOCAL_PDPU_CONFIG_MASK;
+            sdmmc->regs->auto_cal_config &= ~(SDMMC_AUTOCAL_PDPU_CONFIG_MASK);
             sdmmc->regs->auto_cal_config |= SDMMC_AUTOCAL_PDPU_SDMMC4_1V8;
             break;
     }
@@ -581,8 +579,8 @@ static int sdmmc_autocal_config(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
 /* Run automatic calibration. */
 static void sdmmc_autocal_run(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
 {
-    bool restart_sd_clock = false;
     volatile tegra_padctl_t *padctl = padctl_get_regs();
+    bool restart_sd_clock = false;
     
     /* SD clock is enabled. Disable it and restart later. */
     if (sdmmc->is_sd_clk_enabled)
@@ -619,7 +617,7 @@ static void sdmmc_autocal_run(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
     while ((sdmmc->regs->auto_cal_status & SDMMC_AUTOCAL_ACTIVE)) {
         /* Ensure we haven't timed out. */
         if (get_time_since(timebase) > SDMMC_AUTOCAL_TIMEOUT) {
-            sdmmc_error(sdmmc, "autocal timed out!");
+            sdmmc_error(sdmmc, "Auto-calibration timed out!");
             
             /* Force a register read to refresh the clock control value. */
             sdmmc_get_sd_clock_control(sdmmc);
@@ -642,7 +640,7 @@ static void sdmmc_autocal_run(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
             }
             
             /* Manually clear the autocal enable bit. */
-            sdmmc->regs->auto_cal_config &= ~SDMMC_AUTOCAL_ENABLE;
+            sdmmc->regs->auto_cal_config &= ~(SDMMC_AUTOCAL_ENABLE);
             break;
         }
     }
@@ -696,16 +694,9 @@ static int sdmmc_int_clk_enable(sdmmc_t *sdmmc)
     /* Use SDMA by default. */
     sdmmc->regs->host_control &= ~SDHCI_CTRL_DMA_MASK;
 
-    /* Change to ADMA if requested. */
-    if (sdmmc->use_adma && (sdmmc->regs->capabilities & SDHCI_CAN_DO_ADMA2)) {
-        // TODO: Setting the ADMA flags breaks ADMA...
-        /*
-        if (sdmmc->regs->capabilities & SDHCI_CAN_64BIT)
-            sdmmc->regs->host_control |= SDHCI_CTRL_ADMA64;
-        else
-            sdmmc->regs->host_control |= SDHCI_CTRL_ADMA32;
-        */
-    }
+    /* Change to ADMA if possible. */
+    if (sdmmc->regs->capabilities & SDHCI_CAN_DO_ADMA2)
+        sdmmc->use_adma = true;
     
     /* Set the timeout to be the maximum value. */
     sdmmc->regs->timeout_control &= 0xF0;
@@ -847,9 +838,9 @@ static int sdmmc_dllcal_run(sdmmc_t *sdmmc)
         is_timeout = (get_time_since(timebase) > 10000);
     }
 
-    /* Clock failed to stabilize. */
+    /* Calibration failed. */
     if (is_timeout) {
-        sdmmc_error(sdmmc, "ERROR: DLLCAL failed!");
+        sdmmc_error(sdmmc, "DLLCAL failed!");
         return 0;
     }
 
@@ -898,20 +889,23 @@ int sdmmc_select_speed(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
         case SDMMC_SPEED_DDR50:
         case SDMMC_SPEED_SDR50:
         case SDMMC_SPEED_UNK14:
-            sdmmc->regs->host_control2 &= SDHCI_CTRL_UHS_MASK;
-            sdmmc->regs->host_control2 |= (SDHCI_CTRL_UHS_SDR104 | SDHCI_CTRL_VDD_180);
+            sdmmc->regs->host_control2 &= ~(SDHCI_CTRL_UHS_MASK);
+            sdmmc->regs->host_control2 |= SDHCI_CTRL_UHS_SDR104;
+            sdmmc->regs->host_control2 |= SDHCI_CTRL_VDD_180;
             break;
             
         /* 200MHz single-data rate (MMC). */
         case SDMMC_SPEED_HS400:
-            sdmmc->regs->host_control2 &= SDHCI_CTRL_UHS_MASK;
-            sdmmc->regs->host_control2 |= (SDHCI_CTRL_HS400 | SDHCI_CTRL_VDD_180);
+            sdmmc->regs->host_control2 &= ~(SDHCI_CTRL_UHS_MASK);
+            sdmmc->regs->host_control2 |= SDHCI_CTRL_HS400;
+            sdmmc->regs->host_control2 |= SDHCI_CTRL_VDD_180;
             break;
             
         /* 25MHz default speed (SD). */
         case SDMMC_SPEED_SDR12:
-            sdmmc->regs->host_control2 &= SDHCI_CTRL_UHS_MASK;
-            sdmmc->regs->host_control2 |= (SDHCI_CTRL_UHS_SDR12 | SDHCI_CTRL_VDD_180);
+            sdmmc->regs->host_control2 &= ~(SDHCI_CTRL_UHS_MASK);
+            sdmmc->regs->host_control2 |= SDHCI_CTRL_UHS_SDR12;
+            sdmmc->regs->host_control2 |= SDHCI_CTRL_VDD_180;
             break;
 
         default:
@@ -1093,7 +1087,7 @@ static int sdmmc_init_controller(sdmmc_t *sdmmc, SdmmcControllerNum controller)
             sdmmc->is_clk_running = false;
             sdmmc->is_sd_clk_enabled = false;
             sdmmc->is_tuning_tap_val_set = false;
-            sdmmc->use_adma = true;
+            sdmmc->use_adma = false;
             sdmmc->dma_bounce_buf = (uint8_t*)SDMMC_BOUNCE_BUFFER_ADDRESS;
             sdmmc->tap_val = 0;
             sdmmc->internal_divider = 0;
@@ -1206,11 +1200,11 @@ void sdmmc_finish(sdmmc_t *sdmmc)
         sdmmc_select_voltage(sdmmc, SDMMC_VOLTAGE_NONE);
         
         /* Disable the SD card power. */
-		if (sdmmc->controller == SDMMC_1)
-		{
+        if (sdmmc->controller == SDMMC_1)
+        {
             /* Disable GPIO output. */
             gpio_configure_direction(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_DIRECTION_INPUT);
-         	
+            
             /* Power cycle for 100ms without power. */
             mdelay(100);
         }
@@ -1749,7 +1743,7 @@ int sdmmc_switch_voltage(sdmmc_t *sdmmc)
     sdmmc_get_sd_clock_control(sdmmc);
     
     /* Wait a while. */
-    udelay(5000);
+    mdelay(5);
     
     /* Host control 2 flag should be set by now. */
     if (sdmmc->regs->host_control2 & SDHCI_CTRL_VDD_180)
@@ -1761,7 +1755,7 @@ int sdmmc_switch_voltage(sdmmc_t *sdmmc)
         sdmmc_get_sd_clock_control(sdmmc);
         
         /* Wait a while. */
-        udelay(1000);
+        mdelay(1);
         
         /* Data level is up. Voltage switching is done.*/
         if (sdmmc->regs->present_state & SDHCI_DATA_LVL_MASK)

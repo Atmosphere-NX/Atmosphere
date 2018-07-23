@@ -487,12 +487,12 @@ static int sdmmc_sd_send_op_cond(sdmmc_device_t *device, bool is_sd_ver2, bool i
                         return 0;
                     
                     /* Delay a bit before asking for the voltage switch. */
-                    udelay(1000);
+                    mdelay(100);
                     
                     /* Tell the driver to switch the voltage. */
                     if (!sdmmc_switch_voltage(device->sdmmc))
                         return 0;
-                    
+
                     /* We are now running at 1.8V. */
                     device->is_180v = true;
                 }
@@ -693,15 +693,15 @@ static int sdmmc_sd_switch_hs_low(sdmmc_device_t *device, uint8_t *status)
     /* Adjust the current limit. */
     if (!sdmmc_sd_set_current_limit(device, status))
         return 0;
-    
+
     /* Invalid bus width. */
     if (device->sdmmc->bus_width != SDMMC_BUS_WIDTH_4BIT)
         return 0;
-    
+
     /* Get the supported high-speed type. */
     if (!sdmmc_sd_switch(device, 0, 0, 0xF, status))
         return 0;
-    
+
     /* High-speed SDR104 is supported. */
     if (status[13] & SD_MODE_UHS_SDR104)
     {
@@ -747,6 +747,7 @@ static int sdmmc_sd_switch_hs_low(sdmmc_device_t *device, uint8_t *status)
     }
     else
         return 0;
+    
     
     /* Peek the SD card's status. */
     return sdmmc_device_send_status(device);
@@ -974,22 +975,22 @@ int sdmmc_device_sd_init(sdmmc_device_t *device, sdmmc_t *sdmmc, SdmmcBusWidth b
         /* Switch to high-speed from low voltage (if possible). */
         if (!sdmmc_sd_switch_hs_low(device, switch_status))
         {
-            sdmmc_error(sdmmc, "Failed to switch to high-speed!");
+            sdmmc_error(sdmmc, "Failed to switch to high-speed from low voltage!");
             return 0;
         }
         
-        sdmmc_info(sdmmc, "Switched to high-speed!");
+        sdmmc_info(sdmmc, "Switched to high-speed from low voltage!");
     }
     else if ((device->scr.sda_vsn & (SD_SCR_SPEC_VER_1 | SD_SCR_SPEC_VER_2)) && ((bus_speed != SDMMC_SPEED_UNK6)))
     {
         /* Switch to high-speed from high voltage (if possible). */
         if (!sdmmc_sd_switch_hs_high(device, switch_status))
         {
-            sdmmc_error(sdmmc, "Failed to switch to high-speed!");
+            sdmmc_error(sdmmc, "Failed to switch to high-speed from high voltage!");
             return 0;
         }
         
-        sdmmc_info(sdmmc, "Switched to high-speed!");
+        sdmmc_info(sdmmc, "Switched to high-speed from high voltage!");
     }
 
     /* Correct any inconsistent states. */
@@ -1322,9 +1323,6 @@ static int sdmmc_mmc_select_hs400(sdmmc_device_t *device)
 
 static int sdmmc_mmc_select_timing(sdmmc_device_t *device, SdmmcBusSpeed bus_speed)
 {
-    // FIXME: Tuning is broken. Use HS52 for now.
-    return sdmmc_mmc_select_hs(device, false);
-    
     if ((bus_speed == SDMMC_SPEED_HS400) &&
         (device->sdmmc->bus_width == SDMMC_BUS_WIDTH_8BIT) &&
         (device->ext_csd.raw_card_type & EXT_CSD_CARD_TYPE_HS400_1_8V))
@@ -1376,7 +1374,7 @@ int sdmmc_device_mmc_init(sdmmc_device_t *device, sdmmc_t *sdmmc, SdmmcBusWidth 
 {
     uint32_t cid[4] = {0};
     uint32_t csd[4] = {0};
-    uint8_t *ext_csd = (uint8_t *)SDMMC_BOUNCE_BUFFER_ADDRESS;      // TODO: Better way to do this.
+    uint8_t ext_csd[512] = {0};
     
     /* Initialize our device's struct. */
     memset(device, 0, sizeof(sdmmc_device_t));

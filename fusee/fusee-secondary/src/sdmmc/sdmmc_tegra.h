@@ -106,7 +106,7 @@ typedef struct {
     uint16_t slot_int_status;
     uint16_t host_version;
 
-    /* vendor specific registers */
+    /* Vendor specific registers */
     uint32_t vendor_clock_cntrl;
     uint32_t vendor_sys_sw_cntrl;
     uint32_t vendor_err_intr_status;
@@ -121,12 +121,12 @@ typedef struct {
     uint32_t _0x12c[0x20];
     uint32_t vendor_io_trim_cntrl;
 
-    /* start of sdmmc2/sdmmc4 only */
+    /* Start of sdmmc2/sdmmc4 only */
     uint32_t vendor_dllcal_cfg;
     uint32_t vendor_dll_ctrl0;
     uint32_t vendor_dll_ctrl1;
     uint32_t vendor_dllcal_cfg_sta;
-    /* end of sdmmc2/sdmmc4 only */
+    /* End of sdmmc2/sdmmc4 only */
 
     uint32_t vendor_tuning_cntrl0;
     uint32_t vendor_tuning_cntrl1;
