@@ -1712,6 +1712,9 @@ int sdmmc_switch_voltage(sdmmc_t *sdmmc)
 {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     
+    /* Disable the SD clock. */
+    sdmmc_disable_sd_clock(sdmmc);
+    
     /* Reconfigure the internal clock. */
     if (!sdmmc_select_speed(sdmmc, SDMMC_SPEED_SDR12))
     {
