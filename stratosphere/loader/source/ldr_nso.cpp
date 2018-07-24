@@ -199,6 +199,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
 }
 
 
+
 Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int segment, FILE *f_nso, u8 *map_base, u8 *map_end) {
     bool is_compressed = ((g_nso_headers[index].flags >> segment) & 1) != 0;
     bool check_hash = ((g_nso_headers[index].flags >> (segment + 3)) & 1) != 0;
@@ -230,10 +231,11 @@ Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int s
     
     if (check_hash) {
         u8 hash[0x20] = {0};
-        SHA256_CTX sha_ctx;
+        struct sha256_state sha_ctx;
         sha256_init(&sha_ctx);
         sha256_update(&sha_ctx, dst_addr, out_size);
-        sha256_final(&sha_ctx, hash);
+        sha256_finalize(&sha_ctx);
+        sha256_finish(&sha_ctx, hash);
 
         if (std::memcmp(g_nso_headers[index].section_hashes[segment], hash, sizeof(hash))) {
             return 0xA09;
