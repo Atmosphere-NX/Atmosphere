@@ -42,17 +42,21 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
     g_npdm_cache.info = (const NpdmUtils::NpdmInfo){0};
     
     FILE *f_npdm = OpenNpdm(tid);
+    
+    rc = 0x202;
     if (f_npdm == NULL) {
         /* For generic "Couldn't open the file" error, just say the file doesn't exist. */
-        return 0x202;
+        return rc;
     }
     
     fseek(f_npdm, 0, SEEK_END);
     size_t npdm_size = ftell(f_npdm);
     fseek(f_npdm, 0, SEEK_SET);
     
-    if (npdm_size > sizeof(g_npdm_cache.buffer) || fread(g_npdm_cache.buffer, 1, npdm_size, f_npdm) != npdm_size) {
-        return 0x609;
+    rc = 0x609;
+    if ((npdm_size > sizeof(g_npdm_cache.buffer)) || (fread(g_npdm_cache.buffer, 1, npdm_size, f_npdm) != npdm_size)) {
+        fclose(f_npdm);
+        return rc;
     }
     
     fclose(f_npdm);

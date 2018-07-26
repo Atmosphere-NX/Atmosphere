@@ -110,5 +110,6 @@ void load_stage2(const char *bct0) {
     g_chainloader_entries[0].num          = 0;
     g_chainloader_entrypoint              = config.entrypoint;
 
-    strncpy(g_stage2_path, config.path, sizeof(g_stage2_path));
+    strncpy(g_stage2_path, config.path, sizeof(g_stage2_path) - 1);
+    g_stage2_path[sizeof(g_stage2_path) - 1]  = '\0';
 }

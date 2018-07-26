@@ -643,7 +643,7 @@ static int sdmmc_sd_switch(sdmmc_device_t *device, uint32_t mode, uint32_t group
 static int sdmmc_sd_set_current_limit(sdmmc_device_t *device, uint8_t *status)
 {
     /* Start with the highest possible limit. */
-    uint32_t current_limit = SD_SET_CURRENT_LIMIT_800;
+    int32_t current_limit = SD_SET_CURRENT_LIMIT_800;
     
     /* Try each limit. */
     while (current_limit > SD_SET_CURRENT_NO_CHANGE)

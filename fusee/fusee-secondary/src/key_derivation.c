@@ -45,7 +45,7 @@ static int get_tsec_key(void *dst, const void *tsec_fw, size_t tsec_fw_size, uin
 static int get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {
     if (revision >= 0x20) {
         return -1;
-        generic_panic();
+        /* TODO: what should we do? */
     }
 
     if (keyblobs != NULL) {
@@ -80,7 +80,7 @@ static int decrypt_keyblob(const nx_keyblob_t *keyblobs, uint32_t revision, uint
     decrypt_data_into_keyslot(0xB, keyslot, keyblob_mac_seed, 0x10);
     
     /* Validate keyblob. */
-    se_compute_aes_128_cmac(0xB, work_buffer, 0x10, keyblob.mac + sizeof(keyblob.mac), sizeof(keyblob) - sizeof(keyblob.mac));
+    se_compute_aes_128_cmac(0xB, work_buffer, 0x10, &keyblob + sizeof(keyblob.mac), sizeof(keyblob) - sizeof(keyblob.mac));
     if (safe_memcmp(keyblob.mac, work_buffer, 0x10)) {
         return -1;
     }

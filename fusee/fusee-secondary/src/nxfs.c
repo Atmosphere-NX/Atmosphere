@@ -157,7 +157,7 @@ static int nxfs_mount_partition_gpt_callback(const efi_entry_t *entry, void *par
     (void)disk;
     device_partition_t *parent = (device_partition_t *)param;
     device_partition_t devpart = *parent;
-    char name_buffer[64];
+    char name_buffer[128];
     const uint16_t *utf16name = entry->name;
     uint32_t name_len;
     int rc;
@@ -307,6 +307,11 @@ int nxfs_mount_all(void) {
     }
     
     rawnand = fopen("rawnand:/", "rb");
+    
+    if (rawnand == NULL) {
+        return -1;
+    }
+    
     rc = gpt_iterate_through_entries(rawnand, model.sector_size, nxfs_mount_partition_gpt_callback, &model);
     fclose(rawnand);
     

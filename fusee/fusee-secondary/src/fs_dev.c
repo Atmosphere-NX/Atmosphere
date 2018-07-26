@@ -359,6 +359,8 @@ static void fsdev_filinfo_to_st(struct stat *st, const FILINFO *info) {
     date.tm_sec  = (info->ftime << 1) & 63;
     date.tm_min  = (info->ftime >> 5) & 63;
     date.tm_hour = (info->ftime >> 11) & 31;
+    
+    date.tm_isdst = 0;
 
     st->st_atime = st->st_mtime = st->st_ctime = mktime(&date);
     st->st_size = (off_t)info->fsize;
@@ -459,7 +461,7 @@ static off_t fsdev_seek(struct _reent *r, void *fd, off_t pos, int whence) {
             return -1;
     }
 
-    if(pos < 0 && pos + off < 0) {
+    if ((FSIZE_t)pos < 0 && (FSIZE_t)pos + off < 0) {
         /* don't allow seek to before the beginning of the file */
         r->_errno = EINVAL;
         return -1;

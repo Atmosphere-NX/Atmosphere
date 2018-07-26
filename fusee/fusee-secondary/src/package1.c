@@ -65,7 +65,7 @@ int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_
 
     /* Read the full keyblob area.*/
     for (size_t i = 0; i < 32; i++) {
-        if (fread(d.sector, 0x200, 1, boot0) == 0) {
+        if (!fread(d.sector, 0x200, 1, boot0)) {
             return -1;
         }
         keyblobs[i] = d.keyblob;
