@@ -3,6 +3,9 @@
 
 #include "pm_resource_limits.hpp"
 
+/* Give 24 MiB to SYSTEM from Applet. This allows for more custom sysmodules. */
+#define ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES 0x1800000ULL
+
 /* Memory that system, application, applet are allowed to allocate. */
 static const u64 g_memory_resource_limits_deprecated[5][3] = {
     {0x010D00000ULL, 0x0CD500000ULL, 0x021700000ULL},
@@ -77,6 +80,11 @@ void ResourceLimitUtils::InitializeLimits() {
     } else {
         memcpy(&g_memory_resource_limits, &g_memory_resource_limits_deprecated, sizeof(g_memory_resource_limits));
         memcpy(&g_resource_limits, &g_resource_limits_deprecated, sizeof(g_resource_limits));
+    }
+    /* Atmosphere: Allocate extra memory (24 MiB) to SYSTEM away from Applet. */
+    for (unsigned int i = 0; i < 5; i++) {
+        g_memory_resource_limits[i][0] += ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
+        g_memory_resource_limits[i][2] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
     }
     /* Get memory limits. */
     u64 memory_arrangement;
