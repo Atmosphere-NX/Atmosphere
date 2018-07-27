@@ -80,28 +80,57 @@ static const std::tuple<Boot2KnownTitleId, bool> g_additional_launch_programs[] 
     {Boot2KnownTitleId::grc, true},         /* grc */
 };
 
+static void MountSdCard() {
+    Handle tmp_hnd = 0;
+    static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
+    for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
+        if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
+            /* TODO: Panic */
+        } else {
+            svcCloseHandle(tmp_hnd);   
+        }
+    }
+    fsdevMountSdmc();
+}
+
 void EmbeddedBoot2::Main() {     
-    /* TODO: Modify initial program launch order, to get SD card mounted faster. */ 
-    
+    /* psc, bus, pcv is the minimal set of required titles to get SD card. */ 
+    /* bus depends on pcie, and pcv depends on settings. */
     /* Launch psc. */
     LaunchTitle(Boot2KnownTitleId::psc, FsStorageId_NandSystem, 0, NULL);
-    /* Launch settings. */
-    LaunchTitle(Boot2KnownTitleId::settings, FsStorageId_NandSystem, 0, NULL);
-    /* Launch usb. */
-    LaunchTitle(Boot2KnownTitleId::usb, FsStorageId_NandSystem, 0, NULL);
     /* Launch pcie. */
     LaunchTitle(Boot2KnownTitleId::pcie, FsStorageId_NandSystem, 0, NULL);
     /* Launch bus. */
     LaunchTitle(Boot2KnownTitleId::bus, FsStorageId_NandSystem, 0, NULL);
-    /* Launch tma. */
-    LaunchTitle(Boot2KnownTitleId::tma, FsStorageId_NandSystem, 0, NULL);
+    /* Launch settings. */
+    LaunchTitle(Boot2KnownTitleId::settings, FsStorageId_NandSystem, 0, NULL);
     /* Launch pcv. */
     LaunchTitle(Boot2KnownTitleId::pcv, FsStorageId_NandSystem, 0, NULL);
     
+    /* At this point, the SD card can be mounted. */
+    MountSdCard();
+    
+    /* Launch usb. */
+    LaunchTitle(Boot2KnownTitleId::usb, FsStorageId_NandSystem, 0, NULL);
+    /* Launch tma. */
+    LaunchTitle(Boot2KnownTitleId::tma, FsStorageId_NandSystem, 0, NULL);
+    
+    /* Launch default programs. */
     bool maintenance = ShouldForceMaintenanceMode();
     for (auto &launch_program : g_additional_launch_programs) {
         if (!maintenance || std::get<bool>(launch_program)) {
             LaunchTitle(std::get<Boot2KnownTitleId>(launch_program), FsStorageId_NandSystem, 0, NULL);
         }
     }
+    
+    /* Allow for user-customizable programs. */
+    FILE *f_boot2 = fopen("sdmc:/atmosphere/boot2.txt", "rb");
+    if (f_boot2 != NULL) {
+        /* TODO: Parse Title Id/Storage ID pairs, and launch them. */
+        
+        fclose(f_boot2);
+    }
+    
+    /* We no longer need the SD card. */
+    fsdevUnmountAll();
 }
