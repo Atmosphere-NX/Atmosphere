@@ -3,6 +3,7 @@
 #include "pm_registration.hpp"
 #include "pm_resource_limits.hpp"
 #include "pm_shell.hpp"
+#include "pm_boot2.hpp"
 
 static bool g_has_boot_finished = false;
 
@@ -148,10 +149,9 @@ std::tuple<Result> ShellService::clear_process_notification_flag(u64 pid) {
 }
 
 std::tuple<Result> ShellService::notify_boot_finished() {
-    u64 boot2_pid;
     if (!g_has_boot_finished) {
         g_has_boot_finished = true;
-        return {Registration::LaunchProcess(BOOT2_TITLE_ID, FsStorageId_NandSystem, 0, &boot2_pid)};
+        EmbeddedBoot2::Main();
     }
     return {0};
 }
