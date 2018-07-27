@@ -140,7 +140,7 @@ std::tuple<Result> ShellService::clear_process_notification_flag(u64 pid) {
     
     std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
     if (proc != NULL) {
-        proc->flags &= ~2;
+        proc->flags &= ~PROCESSFLAGS_CRASHED;
         return {0x0};
     } else {
         return {0x20F};

@@ -11,7 +11,126 @@
 #define LAUNCHFLAGS_NOTIFYDEBUGEVENTS(flags) (flags & (kernelAbove500() ? 0x8 : 0x10))
 #define LAUNCHFLAGS_NOTIYDEBUGSPECIAL(flags) (flags & (kernelAbove500() ? 0x2 : (kernelAbove200() ? 0x20 : 0x0)))
 
+// none of these names are official or authoritative in any way
+enum {
+    /*
+        set in HandleProcessLaunch when
+            - launch_flags has LAUNCHFLAGS_NOTIFYWHENEXITED set
+        signals g_process_event in HandleSignaledProcess when
+            - process enters Exited state
+            - we're below 5.0.0
+            (finalizes dead process when not set)
+        adds to dead process list in FinalizeExitedProcess when
+            - we're 5.0.0+
+            (also signals g_process_event)
+        [5.0.0+] causes ProcessEventType 2
+     */
+    PROCESSFLAGS_NOTIFYWHENEXITED = 0x001,
 
+    /*
+        set in HandleSignaledProcess when
+            - process crashes
+        causes ProcessEventType 1 ([5.0.0+] 3) (persistent)
+     */
+    PROCESSFLAGS_CRASHED = 0x002,
+
+    /*
+        cleared in HandleSignaledProcess when
+            - process goes from CRASHED to any other state
+        set in HandleSignaledProcess when
+            - process crashes
+        adds process to GetDebugProcessIds
+     */
+    PROCESSFLAGS_CRASH_DEBUG = 0x004,
+
+    /*
+        set in HandleProcessLaunch when
+            - launch_flags has LAUNCHFLAGS_NOTIFYDEBUGEVENTS set
+            - and (we're 1.0.0 or program_info.application_type & 4) (is this because 1.0.0 doesn't check?)
+        signals g_process_event in HandleSignaledProcess when
+            - process enters DebugDetached state
+        signals g_process_event in HandleSignaledProcess when
+            - process enters Running state
+     */
+    PROCESSFLAGS_NOTIFYDEBUGEVENTS = 0x008,
+
+    /*
+        set in HandleSignaledProcess when
+            - process enters DebugDetached state
+            - and PROCESSFLAGS_NOTIFYDEBUGEVENTS is set
+        set in HandleSignaledProcess when
+            - process enters Running state
+            - and PROCESSFLAGS_NOTIFYDEBUGEVENTS is set
+        set in HandleSignaledProcess when
+            - process enters DebugSuspended state
+            - and PROCESSFLAGS_NOTIFYDEBUGEVENTS is set
+        causes some complicated ProcessEvent (one-shot)
+     */
+    PROCESSFLAGS_DEBUGEVENTPENDING = 0x010,
+
+    /*
+        cleared in HandleSignaledProcess when
+            - process enters DebugDetached state
+            - and PROCESSFLAGS_NOTIFYDEBUGEVENTS is set
+        cleared in HandleSignaledProcess when
+            - process enters Running state
+            - and PROCESSFLAGS_NOTIFYDEBUGEVENTS is set
+        set in HandleSignaledProcess when
+            - process enters DebugSuspended state
+            - and PROCESSFLAGS_NOTIFYDEBUGEVENTS is set
+     */
+    PROCESSFLAGS_DEBUGSUSPENDED = 0x020,
+    
+    /*
+        set in HandleProcessLaunch when
+            - program_info.application_type & 1
+        signals g_debug_application_event in HandleProcessLaunch when
+            - g_debug_next_application is set (unsets g_debug_next_application)
+        causes HasApplicationProcess to return true
+        meaning?
+            application
+    */
+    PROCESSFLAGS_APPLICATION = 0x040,
+
+    /*
+        set in HandleProcessLaunch when
+            - we're above 2.0.0 (creport related?)
+            - and launch_flags has LAUNCHFLAGS_NOTIFYDEBUGSPECIAL set
+            - and program_info.application_type & 4
+        tested in HandleSignaledProcess when
+            - process enters DebugDetached state
+            - and we're above 2.0.0
+            causes
+            - clearing of PROCESSFLAGS_NOTIFYDEBUGSPECIAL (one-shot?)
+            - setting of PROCESSFLAGS_DEBUGDETACHED
+     */
+    PROCESSFLAGS_NOTIFYDEBUGSPECIAL = 0x080,
+
+    /*
+        set in HandleSignaledProcess when
+            - process enters DebugDetached state
+            - and we're above 2.0.0
+            - and PROCESSFLAGS_NOTIFYDEBUGSPECIAL was set
+        causes ProcessEventType 5 ([5.0.0+] 2) (one-shot)
+     */
+    PROCESSFLAGS_DEBUGDETACHED = 0x100,
+};
+
+enum {
+	PROCESSEVENTTYPE_CRASH = 1,
+	PROCESSEVENTTYPE_EXIT = 2, // only fired once, when process enters DebugDetached state (likely creport related)
+	PROCESSEVENTTYPE_RUNNING = 3, // debug detached or running
+	PROCESSEVENTTYPE_SUSPENDED = 4, // debug suspended
+	PROCESSEVENTTYPE_DEBUGDETACHED = 5,
+
+
+	PROCESSEVENTTYPE_500_EXIT = 1,
+	PROCESSEVENTTYPE_500_DEBUGDETACHED = 2, // only fired once, when process enters DebugDetached state (likely creport related)
+	PROCESSEVENTTYPE_500_CRASH = 3,
+	PROCESSEVENTTYPE_500_RUNNING = 4, // debug detached or running
+	PROCESSEVENTTYPE_500_SUSPENDED = 5, // debug suspended
+};
+	
 class Registration {
     public:
         struct TidSid {
