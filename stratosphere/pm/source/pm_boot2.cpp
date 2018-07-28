@@ -1,12 +1,27 @@
 #include <cstdlib>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
+#include <dirent.h>
 #include <malloc.h>
 
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "pm_boot2.hpp"
 #include "pm_registration.hpp"
+
+static bool IsHexadecimal(const char *str) {
+    while (*str) {
+        if (('0' <= *str && *str <= '9') || 
+            ('a' <= *str && *str <= 'f') ||
+            ('A' <= *str && *str <= 'F')) {
+                str++;
+            } else {
+                return false;
+            }
+    }
+    return true;
+}
 
 static void LaunchTitle(Boot2KnownTitleId title_id, FsStorageId storage_id, u32 launch_flags, u64 *pid) {
     u64 local_pid;
@@ -124,11 +139,24 @@ void EmbeddedBoot2::Main() {
     }
     
     /* Allow for user-customizable programs. */
-    FILE *f_boot2 = fopen("sdmc:/atmosphere/boot2.txt", "rb");
-    if (f_boot2 != NULL) {
-        /* TODO: Parse Title Id/Storage ID pairs, and launch them. */
-        
-        fclose(f_boot2);
+    DIR *titles_dir = opendir("sdmc:/atmosphere/titles");
+    struct dirent *ent;
+    if (titles_dir != NULL) {
+        while ((ent = readdir(titles_dir)) != NULL) {
+            if (strlen(ent->d_name) == 0x10 && IsHexadecimal(ent->d_name)) {
+                u64 title_id = strtoul(ent->d_name, NULL, 16);
+                char title_path[FS_MAX_PATH] = {0};
+                strcpy(title_path, "sdmc:/atmosphere/titles/");
+                strcat(title_path, ent->d_name);
+                strcat(title_path, "/boot2.flag");
+                FILE *f_flag = fopen(title_path, "rb");
+                if (f_flag != NULL) {
+                    fclose(f_flag);
+                    LaunchTitle((Boot2KnownTitleId)title_id, FsStorageId_None, 0, NULL);
+                }
+            }
+        }
+        closedir(titles_dir);
     }
     
     /* We no longer need the SD card. */
