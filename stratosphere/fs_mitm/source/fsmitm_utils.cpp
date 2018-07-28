@@ -1,53 +1,88 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include <atomic>
+#include <algorithm>
 
 #include "sm_mitm.h"
 #include "debug.hpp"
 #include "fsmitm_utils.hpp"
 
 static FsFileSystem g_sd_filesystem = {0};
-static bool g_has_initialized = false;
+static std::vector<u64> g_mitm_flagged_tids;
+static std::atomic_bool g_has_initialized = false;
 
-static Result EnsureInitialized() {
-    if (g_has_initialized) {
-        return 0x0;
+static bool IsHexadecimal(const char *str) {
+    while (*str) {
+        if (('0' <= *str && *str <= '9') || 
+            ('a' <= *str && *str <= 'f') ||
+            ('A' <= *str && *str <= 'F')) {
+                str++;
+            } else {
+                return false;
+            }
     }
-    
+    return true;
+}
+
+void Utils::InitializeSdThreadFunc(void *args) {
+    /* Get required services. */
+    Handle tmp_hnd = 0;
     static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
     for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
-        Result rc = smMitMUninstall(required_active_services[i]);
-        if (rc == 0xE15) {
-            return rc;
-        } else if (R_FAILED(rc) && rc != 0x1015) {
-            return rc;
+        if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
+            /* TODO: Panic */
+        } else {
+            svcCloseHandle(tmp_hnd);   
         }
     }
     
-    Result rc = fsMountSdcard(&g_sd_filesystem);
-    if (R_SUCCEEDED(rc)) {
-        g_has_initialized = true;
+    /* Mount SD. */
+    while (R_FAILED(fsMountSdcard(&g_sd_filesystem))) {
+        svcSleepThread(1000ULL);
     }
-    return rc;
+    
+    /* Check for MitM flags. */
+    FsDir titles_dir;
+    if (R_SUCCEEDED(fsFsOpenDirectory(&g_sd_filesystem, "/atmosphere/titles", FS_DIROPEN_DIRECTORY, &titles_dir))) {
+        FsDirectoryEntry dir_entry;
+        FsFile f;
+        u64 read_entries;
+        while (R_SUCCEEDED((fsDirRead(&titles_dir, 0, &read_entries, 1, &dir_entry))) && read_entries == 1) {
+            if (strlen(dir_entry.name) == 0x10 && IsHexadecimal(dir_entry.name)) {
+                u64 title_id = strtoul(dir_entry.name, NULL, 16);
+                char title_path[FS_MAX_PATH] = {0};
+                strcpy(title_path, "sdmc:/atmosphere/titles/");
+                strcat(title_path, dir_entry.name);
+                strcat(title_path, "/fsmitm.flag");
+                if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
+                    g_mitm_flagged_tids.push_back(title_id);
+                    fsFileClose(&f);
+                }
+            }
+        }
+        fsDirClose(&titles_dir);
+    }
+    
+    g_has_initialized = true;
+    
+    svcExitThread();
 }
 
 bool Utils::IsSdInitialized() {
-    return R_SUCCEEDED(EnsureInitialized());
+    return g_has_initialized;
 }
 
 Result Utils::OpenSdFile(const char *fn, int flags, FsFile *out) {
-    Result rc;
-    if (R_FAILED((rc = EnsureInitialized()))) {
-        return rc;
+    if (!IsSdInitialized()) {
+        return 0xFA202;
     }
     
     return fsFsOpenFile(&g_sd_filesystem, fn, flags, out);
 }
 
 Result Utils::OpenSdFileForAtmosphere(u64 title_id, const char *fn, int flags, FsFile *out) {
-    Result rc;
-    if (R_FAILED((rc = EnsureInitialized()))) {
-        return rc;
+    if (!IsSdInitialized()) {
+        return 0xFA202;
     }
     
     char path[FS_MAX_PATH];
@@ -60,27 +95,24 @@ Result Utils::OpenSdFileForAtmosphere(u64 title_id, const char *fn, int flags, F
 }
 
 Result Utils::OpenRomFSSdFile(u64 title_id, const char *fn, int flags, FsFile *out) {
-    Result rc;
-    if (R_FAILED((rc = EnsureInitialized()))) {
-        return rc;
+    if (!IsSdInitialized()) {
+        return 0xFA202;
     }
     
     return OpenRomFSFile(&g_sd_filesystem, title_id, fn, flags, out);
 }
 
 Result Utils::OpenSdDir(const char *path, FsDir *out) {
-    Result rc;
-    if (R_FAILED((rc = EnsureInitialized()))) {
-        return rc;
+    if (!IsSdInitialized()) {
+        return 0xFA202;
     }
     
     return fsFsOpenDirectory(&g_sd_filesystem, path, FS_DIROPEN_DIRECTORY | FS_DIROPEN_FILE, out);
 }
 
 Result Utils::OpenSdDirForAtmosphere(u64 title_id, const char *path, FsDir *out) {
-    Result rc;
-    if (R_FAILED((rc = EnsureInitialized()))) {
-        return rc;
+    if (!IsSdInitialized()) {
+        return 0xFA202;
     }
     
     char safe_path[FS_MAX_PATH];
@@ -93,9 +125,8 @@ Result Utils::OpenSdDirForAtmosphere(u64 title_id, const char *path, FsDir *out)
 }
 
 Result Utils::OpenRomFSSdDir(u64 title_id, const char *path, FsDir *out) {
-    Result rc;
-    if (R_FAILED((rc = EnsureInitialized()))) {
-        return rc;
+    if (!IsSdInitialized()) {
+        return 0xFA202;
     }
     
     return OpenRomFSDir(&g_sd_filesystem, title_id, path, out);
@@ -136,4 +167,11 @@ Result Utils::HasSdRomfsContent(u64 title_id, bool *out) {
     }
     fsDirClose(&dir);
     return rc;
+}
+
+bool Utils::HasSdMitMFlag(u64 tid) {
+    if (IsSdInitialized()) {
+        return std::find(g_mitm_flagged_tids.begin(), g_mitm_flagged_tids.end(), tid) != g_mitm_flagged_tids.end();
+    }
+    return false;
 }

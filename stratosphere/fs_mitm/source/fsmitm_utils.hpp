@@ -17,4 +17,8 @@ class Utils {
         static Result OpenRomFSDir(FsFileSystem *fs, u64 title_id, const char *path, FsDir *out);
         
         static Result HasSdRomfsContent(u64 title_id, bool *out);
+        
+        /* SD card Initialization + MitM detection. */
+        static void InitializeSdThreadFunc(void *args);
+        static bool HasSdMitMFlag(u64 tid);
 };

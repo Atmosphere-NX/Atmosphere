@@ -14,6 +14,8 @@
 
 #include "mitm_query_service.hpp"
 
+#include "fsmitm_utils.hpp"
+
 extern "C" {
     extern u32 __start__;
 
@@ -89,12 +91,22 @@ void __appExit(void) {
 int main(int argc, char **argv)
 {
     Thread worker_thread = {0};
+    Thread sd_initializer_thread = {0};
+    consoleDebugInit(debugDevice_SVC);
+    
     consoleDebugInit(debugDevice_SVC);
     
     if (R_FAILED(threadCreate(&worker_thread, &FsMitMWorker::Main, NULL, 0x20000, 45, 0))) {
         /* TODO: Panic. */
     }
     if (R_FAILED(threadStart(&worker_thread))) {
+        /* TODO: Panic. */
+    }
+    
+    if (R_FAILED(threadCreate(&sd_initializer_thread, &Utils::InitializeSdThreadFunc, NULL, 0x4000, 0x15, 0))) {
+        /* TODO: Panic. */
+    }
+    if (R_FAILED(threadStart(&sd_initializer_thread))) {
         /* TODO: Panic. */
     }
     

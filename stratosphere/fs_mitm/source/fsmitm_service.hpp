@@ -22,12 +22,7 @@ class FsMitMService : public IMitMServiceObject {
         }
         
         static bool should_mitm(u64 pid, u64 tid) {
-            if (tid >= 0x0100000000010000ULL) {
-                return true;
-            }
-            bool has_romfs_content;
-            Result rc = Utils::HasSdRomfsContent(tid, &has_romfs_content);
-            return R_SUCCEEDED(rc) && has_romfs_content;
+            return tid >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(tid);
         }
         
         FsMitMService *clone() override {
