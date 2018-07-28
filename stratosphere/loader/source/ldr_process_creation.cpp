@@ -102,9 +102,11 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     }
     
     /* Mount the title's exefs. */
-    rc = ContentManagement::MountCodeForTidSid(&target_process->tid_sid);  
-    if (R_FAILED(rc)) {
-        return rc;
+    if (target_process->tid_sid.storage_id != FsStorageId_None) {
+        rc = ContentManagement::MountCodeForTidSid(&target_process->tid_sid);  
+        if (R_FAILED(rc)) {
+            return rc;
+        }
     }
     
     /* Load the process's NPDM. */
@@ -191,7 +193,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     
     rc = 0;  
 CREATE_PROCESS_END:
-    if (R_SUCCEEDED(rc)) {
+    if (R_SUCCEEDED(rc) && target_process->tid_sid.storage_id != FsStorageId_None) {
         rc = ContentManagement::UnmountCode();
     } else {
         ContentManagement::UnmountCode();

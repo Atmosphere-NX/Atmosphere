@@ -42,10 +42,13 @@ std::tuple<Result, MovedHandle> ProcessManagerService::create_process(u64 flags,
         return {rc, MovedHandle{process_h}};
     }
     
-    rc = ContentManagement::ResolveContentPathForTidSid(nca_path, &tid_sid);
-    if (R_FAILED(rc)) {
-        return {rc, MovedHandle{process_h}};
+    if (tid_sid.storage_id != FsStorageId_None) {
+        rc = ContentManagement::ResolveContentPathForTidSid(nca_path, &tid_sid);
+        if (R_FAILED(rc)) {
+            return {rc, MovedHandle{process_h}};
+        }
     }
+
     
     launch_item = LaunchQueue::get_item(tid_sid.title_id);
     
@@ -70,7 +73,7 @@ std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid 
         return {rc};
     }
     
-    if (tid_sid.title_id != out_program_info.pointer->title_id) {
+    if (tid_sid.storage_id != FsStorageId_None && tid_sid.title_id != out_program_info.pointer->title_id) {
         rc = ContentManagement::ResolveContentPathForTidSid(nca_path, &tid_sid);
         if (R_FAILED(rc)) {
             return {rc};
@@ -109,17 +112,23 @@ Result ProcessManagerService::populate_program_info_buffer(ProcessManagerService
     NpdmUtils::NpdmInfo info;
     Result rc;
     
-    rc = ContentManagement::MountCodeForTidSid(tid_sid);  
-    if (R_FAILED(rc)) {
-        return rc;
+    if (tid_sid->storage_id != FsStorageId_None) {
+        rc = ContentManagement::MountCodeForTidSid(tid_sid);  
+        if (R_FAILED(rc)) {
+            return rc;
+        }
     }
     
     rc = NpdmUtils::LoadNpdm(tid_sid->title_id, &info);
+    
+    if (tid_sid->storage_id != FsStorageId_None) {
+        ContentManagement::UnmountCode();
+    }
+    
     if (R_FAILED(rc)) {
         return rc;
     }
-    
-    ContentManagement::UnmountCode();
+
     
     out->main_thread_priority = info.header->main_thread_prio;
     out->default_cpu_id = info.header->default_cpuid;

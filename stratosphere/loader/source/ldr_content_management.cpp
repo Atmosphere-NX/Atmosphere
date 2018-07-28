@@ -44,6 +44,7 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     
     fsdevMountDevice("code", g_CodeFileSystem);
     
+    fsldrExit();
     return rc;
 }
 
