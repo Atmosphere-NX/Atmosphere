@@ -19,6 +19,7 @@
 		"erpt:c":	false,
 		"fatal:u":	false,
 		"ns:dev":	false,
+		"fsp-srv":	false,
 		"time:s":	true
 	},
 	"kernel_capabilities":	{
