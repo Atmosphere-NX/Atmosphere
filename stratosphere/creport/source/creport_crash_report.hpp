@@ -43,7 +43,7 @@ class CrashReport {
         CodeList code_list;
         ThreadList thread_list;
         
-    public:        
+    public:
         void BuildReport(u64 pid, bool has_extra_info);
         void SaveReport();
         

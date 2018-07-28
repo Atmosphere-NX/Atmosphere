@@ -12,16 +12,16 @@ void ThreadInfo::SaveToFile(FILE *f_report) {
     fprintf(f_report, "    Registers:\n");
     {
         for (unsigned int i = 0; i <= 28; i++) {  
-            fprintf(f_report, "        X[%02u]:                   %016lx\n", i, this->context.x[i]);
+            fprintf(f_report, "        X[%02u]:                   %s\n", i, this->code_list->GetFormattedAddressString(this->context.x[i]));
         }
-        fprintf(f_report, "        FP:                      %016lx\n", this->context.fp);
-        fprintf(f_report, "        LR:                      %016lx\n", this->context.lr);
-        fprintf(f_report, "        SP:                      %016lx\n", this->context.sp);
-        fprintf(f_report, "        PC:                      %016lx\n", this->context.pc);
+        fprintf(f_report, "        FP:                      %s\n", this->code_list->GetFormattedAddressString(this->context.fp));
+        fprintf(f_report, "        LR:                      %s\n", this->code_list->GetFormattedAddressString(this->context.lr));
+        fprintf(f_report, "        SP:                      %s\n", this->code_list->GetFormattedAddressString(this->context.sp));
+        fprintf(f_report, "        PC:                      %s\n", this->code_list->GetFormattedAddressString(this->context.pc));
     }
     fprintf(f_report, "    Stack Trace:\n");
     for (unsigned int i = 0; i < this->stack_trace_size; i++) {
-        fprintf(f_report, "        ReturnAddress[%02u]:       %016lx\n", i, this->stack_trace[i]);
+        fprintf(f_report, "        ReturnAddress[%02u]:       %s\n", i, this->code_list->GetFormattedAddressString(this->stack_trace[i]));
     }
 }
 

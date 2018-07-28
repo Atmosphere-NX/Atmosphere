@@ -15,6 +15,7 @@ void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
             this->code_list.ReadCodeRegionsFromProcess(this->debug_handle, this->crashed_thread_info.GetPC(), this->crashed_thread_info.GetLR());
             this->thread_list.ReadThreadsFromProcess(this->debug_handle, Is64Bit());
         }
+        this->thread_list.SetCodeList(&this->code_list);
         
         if (IsApplication()) {
             ProcessDyingMessage();
@@ -242,7 +243,7 @@ void CrashReport::SaveReport() {
 
 void CrashReport::SaveToFile(FILE *f_report) {
     char buf[0x10] = {0};
-    fprintf(f_report, "Atmosphère Crash Report (v1.0):\n");
+    fprintf(f_report, "Atmosphère Crash Report (v1.1):\n");
     fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->result, R_MODULE(this->result), R_DESCRIPTION(this->result));
     
     /* Process Info. */
@@ -253,12 +254,12 @@ void CrashReport::SaveToFile(FILE *f_report) {
     fprintf(f_report, "    Process ID:                  %016lx\n", this->process_info.process_id);
     fprintf(f_report, "    Process Flags:               %08x\n", this->process_info.flags);
     if (kernelAbove500()) {
-        fprintf(f_report, "    User Exception Address:      %016lx\n", this->process_info.user_exception_context_address);
+        fprintf(f_report, "    User Exception Address:      %s\n", this->code_list.GetFormattedAddressString(this->process_info.user_exception_context_address));
     }
     
     fprintf(f_report, "Exception Info:\n");
     fprintf(f_report, "    Type:                        %s\n", GetDebugExceptionTypeStr(this->exception_info.type));
-    fprintf(f_report, "    Address:                     %016lx\n", this->exception_info.address);
+    fprintf(f_report, "    Address:                     %s\n", this->code_list.GetFormattedAddressString(this->exception_info.address));
     switch (this->exception_info.type) {
         case DebugExceptionType::UndefinedInstruction:
             fprintf(f_report, "    Opcode:                      %08x\n", this->exception_info.specific.undefined_instruction.insn);
@@ -266,7 +267,7 @@ void CrashReport::SaveToFile(FILE *f_report) {
         case DebugExceptionType::DataAbort:
         case DebugExceptionType::AlignmentFault:
             if (this->exception_info.specific.raw != this->exception_info.address) { 
-                fprintf(f_report, "    Fault Address:               %016lx\n", this->exception_info.specific.raw);
+                fprintf(f_report, "    Fault Address:               %s\n", this->code_list.GetFormattedAddressString(this->exception_info.specific.raw));
             }
             break;
         case DebugExceptionType::BadSvc:
@@ -282,7 +283,7 @@ void CrashReport::SaveToFile(FILE *f_report) {
     if (kernelAbove500()) {
         if (this->dying_message_size) {
             fprintf(f_report, "Dying Message Info:\n");
-            fprintf(f_report, "    Address:                     0x%016lx\n", this->dying_message_address);
+            fprintf(f_report, "    Address:                     0x%s\n", this->code_list.GetFormattedAddressString(this->dying_message_address));
             fprintf(f_report, "    Size:                        0x%016lx\n", this->dying_message_size);
             CrashReport::Memdump(f_report, "    Dying Message:              ", this->dying_message, this->dying_message_size);
         }

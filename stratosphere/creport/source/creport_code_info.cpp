@@ -126,3 +126,16 @@ void CodeList::GetCodeInfoBuildId(u64 debug_handle, u64 rodata_addr, u8 *build_i
         }
     }
 }
+
+
+const char *CodeList::GetFormattedAddressString(u64 address) {
+    memset(this->address_str_buf, 0, sizeof(this->address_str_buf));
+    for (unsigned int i = 0; i < this->code_count; i++) {
+        if (this->code_infos[i].start_address <= address && address < this->code_infos[i].end_address) {
+            snprintf(this->address_str_buf, sizeof(this->address_str_buf) - 1, "%016lx (%s + 0x%lx)", address, this->code_infos[i].name, address - this->code_infos[i].start_address);
+            return this->address_str_buf;
+        }
+    }
+    snprintf(this->address_str_buf, sizeof(this->address_str_buf) - 1, "%016lx", address);
+    return this->address_str_buf;
+}

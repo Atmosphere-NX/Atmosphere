@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "creport_debug_types.hpp"
+#include "creport_code_info.hpp"
 
 struct FpuReg {
     u64 _[2]; /* TODO: uint128? */
@@ -37,6 +38,7 @@ class ThreadInfo {
         u64 stack_bottom = 0;
         u64 stack_trace[0x20]{};
         u32 stack_trace_size = 0;
+        CodeList *code_list;
     public:        
         u64 GetPC() { return context.pc; }
         u64 GetLR() { return context.lr; }
@@ -45,6 +47,7 @@ class ThreadInfo {
         bool ReadFromProcess(Handle debug_handle, u64 thread_id, bool is_64_bit);
         void SaveToFile(FILE *f_report);
         void DumpBinary(FILE *f_bin);
+        void SetCodeList(CodeList *cl) { this->code_list = cl; }
     private:
         void TryGetStackInfo(Handle debug_handle);
 };
@@ -58,4 +61,9 @@ class ThreadList {
         void SaveToFile(FILE *f_report);
         void DumpBinary(FILE *f_bin, u64 crashed_id);
         void ReadThreadsFromProcess(Handle debug_handle, bool is_64_bit);
+        void SetCodeList(CodeList *cl) { 
+            for (u32 i = 0; i < thread_count; i++) {
+                thread_infos[i].SetCodeList(cl);
+            }
+        }
 };
