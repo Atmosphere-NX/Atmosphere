@@ -3,6 +3,7 @@
 #include <stratosphere/iserviceobject.hpp>
 #include "imitmserviceobject.hpp"
 #include "fs_istorage.hpp"
+#include "fsmitm_utils.hpp"
 
 enum class FspSrvCmd {
     SetCurrentProcess = 1,
@@ -21,7 +22,12 @@ class FsMitMService : public IMitMServiceObject {
         }
         
         static bool should_mitm(u64 pid, u64 tid) {
-            return tid >= 0x0100000000010000ULL;
+            if (tid >= 0x0100000000010000ULL) {
+                return true;
+            }
+            bool has_romfs_content;
+            Result rc = Utils::HasSdRomfsContent(tid, &has_romfs_content);
+            return R_SUCCEEDED(rc) && has_romfs_content;
         }
         
         FsMitMService *clone() override {

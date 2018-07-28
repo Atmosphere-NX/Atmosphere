@@ -121,3 +121,19 @@ Result Utils::OpenRomFSDir(FsFileSystem *fs, u64 title_id, const char *path, FsD
     }
     return fsFsOpenDirectory(fs, safe_path, FS_DIROPEN_DIRECTORY | FS_DIROPEN_FILE, out);
 }
+
+Result Utils::HasSdRomfsContent(u64 title_id, bool *out) {
+    Result rc;
+    FsDir dir;
+    if (R_FAILED((rc = Utils::OpenRomFSSdDir(title_id, "", &dir)))) {
+        return rc;
+    }
+    
+    FsDirectoryEntry dir_entry;
+    u64 read_entries;
+    if (R_SUCCEEDED((rc = fsDirRead(&dir, 0, &read_entries, 1, &dir_entry)))) {
+        *out = (read_entries == 1);
+    }
+    fsDirClose(&dir);
+    return rc;
+}

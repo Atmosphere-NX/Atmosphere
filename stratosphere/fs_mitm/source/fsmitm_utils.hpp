@@ -15,4 +15,6 @@ class Utils {
         
         static Result OpenRomFSFile(FsFileSystem *fs, u64 title_id, const char *fn, int flags, FsFile *out);
         static Result OpenRomFSDir(FsFileSystem *fs, u64 title_id, const char *path, FsDir *out);
+        
+        static Result HasSdRomfsContent(u64 title_id, bool *out);
 };
