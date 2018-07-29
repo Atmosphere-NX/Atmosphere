@@ -29,7 +29,6 @@ Result fsOpenDataStorageByDataIdFromDomain(Service* s, FsStorageId storage_id, u
 Result fsFileOperateRange(FsFile* f, u32 op_id, u64 off, u64 len, FsRangeInfo *out);
 
 /* Missing FS Storage commands. */
-Result fsStorageGetSize(FsStorage* s, u64* out);
 Result fsStorageOperateRange(FsStorage* s, u32 op_id, u64 off, u64 len, FsRangeInfo *out);
 
 #ifdef __cplusplus

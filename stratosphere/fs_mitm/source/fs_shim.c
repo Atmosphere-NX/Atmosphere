@@ -235,39 +235,6 @@ Result fsFileOperateRange(FsFile* f, u32 op_id, u64 off, u64 len, FsRangeInfo *o
 }
 
 /* Missing FS Storage commands. */
-Result fsStorageGetSize(FsStorage* s, u64* out) {
-    IpcCommand c;
-    ipcInitialize(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 4;
-
-    Result rc = serviceIpcDispatch(&s->s);
-
-    if (R_SUCCEEDED(rc)) {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-            u64 size;
-        } *resp = r.Raw;
-
-        rc = resp->result;
-        if (R_SUCCEEDED(rc) && out) *out = resp->size;
-    }
-
-    return rc;
-}
-
 Result fsStorageOperateRange(FsStorage* s, u32 op_id, u64 off, u64 len, FsRangeInfo *out) {
     IpcCommand c;
     ipcInitialize(&c);
