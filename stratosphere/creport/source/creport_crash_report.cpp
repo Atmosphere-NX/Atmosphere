@@ -206,7 +206,7 @@ void CrashReport::EnsureReportDirectories() {
     char path[FS_MAX_PATH];  
     strcpy(path, "sdmc:/atmosphere");
     mkdir(path, S_IRWXU);
-    strcat(path, "/crash reports");
+    strcat(path, "/crash_reports");
     mkdir(path, S_IRWXU);
     strcat(path, "/dumps");
     mkdir(path, S_IRWXU);
