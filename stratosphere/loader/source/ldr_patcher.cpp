@@ -7,6 +7,8 @@
 #include <switch.h>
 #include "ldr_patcher.hpp"
 
+/* IPS Patching adapted from Luma3DS (https://github.com/AuroraWright/Luma3DS/blob/master/sysmodules/loader/source/patcher.c) */
+
 #define IPS_MAGIC "PATCH"
 #define IPS_TAIL "EOF"
 
@@ -43,19 +45,83 @@ static bool MatchesBuildId(const char *name, size_t name_len, const u8 *build_id
     return memcmp(build_id, build_id_from_name, sizeof(build_id_from_name)) == 0;
 }
 
-static inline void PatchNsoByte(u8 *nso, size_t max_size, size_t offset, u8 val) {
-    /* TODO: Be smarter about this. */
-    if (sizeof(NsoUtils::NsoHeader) <= offset && offset < max_size) {
-        nso[offset - sizeof(NsoUtils::NsoHeader)] = val;
+static void ApplyIpsPatch(u8 *mapped_nso, size_t mapped_size, bool is_ips32, FILE *f_ips) {
+    u8 buffer[4];
+    while (fread(buffer, is_ips32 ? 4 : 3, 1, f_ips) == 1) {
+        if (is_ips32 && memcmp(buffer, IPS32_TAIL, 4) == 0) {
+            break;
+        } else if (!is_ips32 && memcmp(buffer, IPS_TAIL, 3) == 0) {
+            break;
+        }
+        
+        /* Offset of patch. */
+        u32 patch_offset;
+        if (is_ips32) {
+           patch_offset = (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[3];
+        } else {
+           patch_offset = (buffer[0] << 16) | (buffer[1] << 8) | (buffer[2]);
+        }
+        
+        /* Size of patch. */
+        if (fread(buffer, 2, 1, f_ips) != 1) {
+            break;
+        }
+        u32 patch_size = (buffer[0] << 8) | (buffer[1]);
+        
+        /* Check for RLE encoding. */
+        if (patch_size == 0) {
+            /* Size of RLE. */
+            if (fread(buffer, 2, 1, f_ips) != 1) {
+                break;
+            }
+            
+            u32 rle_size = (buffer[0] << 8) | (buffer[1]);
+            
+            /* Value for RLE. */
+            if (fread(buffer, 1, 1, f_ips) != 1) {
+                break;
+            }
+            
+            if (patch_offset < sizeof(NsoUtils::NsoHeader)) {
+                if (patch_offset + rle_size > sizeof(NsoUtils::NsoHeader)) {
+                    u32 diff = sizeof(NsoUtils::NsoHeader) - patch_offset;
+                    patch_offset += diff;
+                    rle_size -= diff;
+                    goto IPS_RLE_PATCH_OFFSET_WITHIN_BOUNDS;
+                }
+            } else {
+                IPS_RLE_PATCH_OFFSET_WITHIN_BOUNDS:
+                patch_offset -= sizeof(NsoUtils::NsoHeader);
+                if (patch_offset + rle_size > mapped_size) {
+                    rle_size = mapped_size - patch_offset;
+                }
+                memset(mapped_nso + patch_offset, buffer[0], rle_size);
+            }
+        } else {
+            if (patch_offset < sizeof(NsoUtils::NsoHeader)) {
+                if (patch_offset + patch_size > sizeof(NsoUtils::NsoHeader)) {
+                    u32 diff = sizeof(NsoUtils::NsoHeader) - patch_offset;
+                    patch_offset += diff;
+                    patch_size -= diff;
+                    fseek(f_ips, diff, SEEK_CUR);
+                    goto IPS_DATA_PATCH_OFFSET_WITHIN_BOUNDS;
+                }
+            } else {
+                IPS_DATA_PATCH_OFFSET_WITHIN_BOUNDS:
+                patch_offset -= sizeof(NsoUtils::NsoHeader);
+                u32 read_size = patch_size;
+                if (patch_offset + read_size > mapped_size) {
+                    read_size = mapped_size - patch_offset;
+                }
+                if (fread(mapped_nso + patch_offset, read_size, 1, f_ips) != 1) {
+                    break;
+                }
+                if (patch_size > read_size) {
+                    fseek(f_ips, patch_size - read_size, SEEK_CUR);
+                }
+            }
+        }
     }
-}
-
-static void ApplyIpsPatch(u8 *mapped_nso, size_t mapped_size, FILE *ips) {
-    /* TODO */
-}
-
-static void ApplyIps32Patch(u8 *mapped_nso, size_t mapped_size, FILE *ips) {
-    /* TODO */
 }
 
 void PatchUtils::ApplyPatches(u64 title_id, const NsoUtils::NsoHeader *header, u8 *mapped_nso, size_t mapped_size) {
@@ -87,9 +153,9 @@ void PatchUtils::ApplyPatches(u64 title_id, const NsoUtils::NsoHeader *header, u
                             u8 header[5];
                             if (fread(header, 5, 1, f_ips) == 1) {
                                 if (memcmp(header, IPS_MAGIC, 5) == 0) {
-                                    ApplyIpsPatch(mapped_nso, mapped_size, f_ips);
+                                    ApplyIpsPatch(mapped_nso, mapped_size, false, f_ips);
                                 } else if (memcmp(header, IPS32_MAGIC, 5) == 0) {
-                                    ApplyIps32Patch(mapped_nso, mapped_size, f_ips);
+                                    ApplyIps32Patch(mapped_nso, mapped_size, true, f_ips);
                                 }
                             }
                             fclose(f_ips);
