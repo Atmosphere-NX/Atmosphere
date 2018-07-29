@@ -285,7 +285,7 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
             std::fill(map_base + bss_base, map_base + bss_base + bss_size, 0);
             
             /* Apply patches to loaded module. */
-            PatchUtils::ApplyPatches(title_id, &g_nso_headers[i], map_base, bss_base);
+            PatchUtils::ApplyPatches(&g_nso_headers[i], map_base, bss_base);
             
             nso_map.Close();
             
