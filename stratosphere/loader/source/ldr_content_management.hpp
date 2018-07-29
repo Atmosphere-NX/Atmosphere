@@ -6,6 +6,7 @@
 class ContentManagement {
     public:
         static Result MountCode(u64 tid, FsStorageId sid);
+        static Result MountCodeNspOnSd(u64 tid);
         static Result UnmountCode();
         static Result MountCodeForTidSid(Registration::TidSid *tid_sid);
 

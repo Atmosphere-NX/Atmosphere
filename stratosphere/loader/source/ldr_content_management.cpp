@@ -19,6 +19,10 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     if (!g_has_initialized_fs_dev) {   
         TryMountSdCard();
     }
+    
+    if (kernelAbove200() && g_has_initialized_fs_dev && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
+        return 0x0;
+    }
 
         
     if (R_FAILED(rc = ResolveContentPath(path, tid, sid))) {
@@ -51,6 +55,18 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
 Result ContentManagement::UnmountCode() {
     fsdevUnmountDevice("code");
     return 0;
+}
+
+Result ContentManagement::MountCodeNspOnSd(u64 tid) {
+    char path[FS_MAX_PATH+1] = {0};
+    snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/exefs.nsp", tid); 
+    Result rc = fsOpenFileSystemWithId(&g_CodeFileSystem, 0, FsFileSystemType_ApplicationPackage, path);
+    
+    if (R_SUCCEEDED(rc)) {   
+        fsdevMountDevice("code", g_CodeFileSystem);
+    }
+    
+    return rc;
 }
 
 Result ContentManagement::MountCodeForTidSid(Registration::TidSid *tid_sid) {

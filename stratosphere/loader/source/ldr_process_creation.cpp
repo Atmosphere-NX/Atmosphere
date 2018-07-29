@@ -93,6 +93,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     Registration::Process *target_process;
     Handle process_h = 0;
     u64 process_id = 0;
+    bool mounted_code = false;
     Result rc;
     
     /* Get the process from the registration queue. */
@@ -106,6 +107,11 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
         rc = ContentManagement::MountCodeForTidSid(&target_process->tid_sid);  
         if (R_FAILED(rc)) {
             return rc;
+        }
+        mounted_code = true;
+    } else {
+        if (R_SUCCEEDED(ContentManagement::MountCodeNspOnSd(target_process->tid_sid.title_id))) {
+            mounted_code = true;
         }
     }
     
@@ -193,10 +199,12 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     
     rc = 0;  
 CREATE_PROCESS_END:
-    if (R_SUCCEEDED(rc) && target_process->tid_sid.storage_id != FsStorageId_None) {
-        rc = ContentManagement::UnmountCode();
-    } else {
-        ContentManagement::UnmountCode();
+    if (mounted_code) {
+        if (R_SUCCEEDED(rc) && target_process->tid_sid.storage_id != FsStorageId_None) {
+            rc = ContentManagement::UnmountCode();
+        } else {
+            ContentManagement::UnmountCode();
+        }
     }
     if (R_SUCCEEDED(rc)) {
         *out_process_h = process_h;

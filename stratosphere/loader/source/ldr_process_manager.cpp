@@ -111,17 +111,21 @@ std::tuple<Result> ProcessManagerService::unregister_title(u64 index) {
 Result ProcessManagerService::populate_program_info_buffer(ProcessManagerService::ProgramInfo *out, Registration::TidSid *tid_sid) {
     NpdmUtils::NpdmInfo info;
     Result rc;
+    bool mounted_code = false;
     
     if (tid_sid->storage_id != FsStorageId_None) {
         rc = ContentManagement::MountCodeForTidSid(tid_sid);  
         if (R_FAILED(rc)) {
             return rc;
         }
+        mounted_code = true;
+    } else if (R_SUCCEEDED(ContentManagement::MountCodeNspOnSd(tid_sid->title_id))) {
+        mounted_code = true;
     }
     
     rc = NpdmUtils::LoadNpdm(tid_sid->title_id, &info);
     
-    if (tid_sid->storage_id != FsStorageId_None) {
+    if (mounted_code) {
         ContentManagement::UnmountCode();
     }
     
