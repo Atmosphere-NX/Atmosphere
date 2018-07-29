@@ -59,7 +59,7 @@ Result ContentManagement::UnmountCode() {
 
 Result ContentManagement::MountCodeNspOnSd(u64 tid) {
     char path[FS_MAX_PATH+1] = {0};
-    snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/exefs.nsp", tid); 
+    snprintf(path, FS_MAX_PATH, "@Sdcard:/atmosphere/titles/%016lx/exefs.nsp", tid); 
     Result rc = fsOpenFileSystemWithId(&g_CodeFileSystem, 0, FsFileSystemType_ApplicationPackage, path);
     
     if (R_SUCCEEDED(rc)) {   
