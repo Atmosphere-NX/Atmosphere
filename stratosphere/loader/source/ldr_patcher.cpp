@@ -157,7 +157,7 @@ void PatchUtils::ApplyPatches(u64 title_id, const NsoUtils::NsoHeader *header, u
                                 if (memcmp(header, IPS_MAGIC, 5) == 0) {
                                     ApplyIpsPatch(mapped_nso, mapped_size, false, f_ips);
                                 } else if (memcmp(header, IPS32_MAGIC, 5) == 0) {
-                                    ApplyIps32Patch(mapped_nso, mapped_size, true, f_ips);
+                                    ApplyIpsPatch(mapped_nso, mapped_size, true, f_ips);
                                 }
                             }
                             fclose(f_ips);
