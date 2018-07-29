@@ -105,6 +105,8 @@ static void ApplyIpsPatch(u8 *mapped_nso, size_t mapped_size, bool is_ips32, FIL
                     patch_size -= diff;
                     fseek(f_ips, diff, SEEK_CUR);
                     goto IPS_DATA_PATCH_OFFSET_WITHIN_BOUNDS;
+                } else {
+                    fseek(f_ips, patch_size, SEEK_CUR);
                 }
             } else {
                 IPS_DATA_PATCH_OFFSET_WITHIN_BOUNDS:
@@ -127,7 +129,7 @@ static void ApplyIpsPatch(u8 *mapped_nso, size_t mapped_size, bool is_ips32, FIL
 void PatchUtils::ApplyPatches(u64 title_id, const NsoUtils::NsoHeader *header, u8 *mapped_nso, size_t mapped_size) {
     /* Inspect all patches from /<title>/exefs/patches/<*>/<*>.ips. */
     char path[FS_MAX_PATH+1] = {0};
-    snprintf(path, sizeof(path) - 1, "sdmc:/atmosphere/titles/%016lx/exefs/patches", title_id);
+    snprintf(path, sizeof(path) - 1, "sdmc:/atmosphere/titles/%016lx/exefs_patches", title_id);
     DIR *patches_dir = opendir(path);
     struct dirent *pdir_ent;
     if (patches_dir != NULL) {
@@ -136,7 +138,7 @@ void PatchUtils::ApplyPatches(u64 title_id, const NsoUtils::NsoHeader *header, u
             if (strcmp(pdir_ent->d_name, ".") == 0 || strcmp(pdir_ent->d_name, "..") == 0) {
                 continue;
             }
-            snprintf(path, sizeof(path) - 1, "sdmc:/atmosphere/titles/%016lx/exefs/patches/%s", title_id, pdir_ent->d_name);
+            snprintf(path, sizeof(path) - 1, "sdmc:/atmosphere/titles/%016lx/exefs_patches/%s", title_id, pdir_ent->d_name);
             DIR *patch_dir = opendir(path);
             struct dirent *ent;
             if (patch_dir != NULL) {
@@ -147,7 +149,7 @@ void PatchUtils::ApplyPatches(u64 title_id, const NsoUtils::NsoHeader *header, u
                     }
                     size_t name_len = strlen(ent->d_name);
                     if ((4 < name_len && name_len <= 0x44) && ((name_len & 1) == 0) && strcmp(ent->d_name + name_len - 4, ".ips") == 0 && MatchesBuildId(ent->d_name, name_len, header->build_id)) {
-                        snprintf(path, sizeof(path) - 1, "sdmc:/atmosphere/titles/%016lx/exefs/patches/%s/%s", title_id, pdir_ent->d_name, ent->d_name);
+                        snprintf(path, sizeof(path) - 1, "sdmc:/atmosphere/titles/%016lx/exefs_patches/%s/%s", title_id, pdir_ent->d_name, ent->d_name);
                         FILE *f_ips = fopen(path, "rb");
                         if (f_ips != NULL) {
                             u8 header[5];
