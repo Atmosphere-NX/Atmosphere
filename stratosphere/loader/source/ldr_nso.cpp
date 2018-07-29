@@ -7,6 +7,7 @@
 #include "ldr_nso.hpp"
 #include "ldr_map.hpp"
 #include "ldr_random.hpp"
+#include "ldr_patcher.hpp"
 
 static NsoUtils::NsoHeader g_nso_headers[NSO_NUM_MAX] = {0};
 static bool g_nso_present[NSO_NUM_MAX] = {0};
@@ -282,6 +283,9 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
             /* Zero out .bss. */
             u64 bss_base = rw_start + g_nso_headers[i].segments[2].decomp_size, bss_size = g_nso_headers[i].segments[2].align_or_total_size;
             std::fill(map_base + bss_base, map_base + bss_base + bss_size, 0);
+            
+            /* Apply patches to loaded module. */
+            PatchUtils::ApplyPatches(title_id, &g_nso_headers[i], map_base, bss_base);
             
             nso_map.Close();
             
