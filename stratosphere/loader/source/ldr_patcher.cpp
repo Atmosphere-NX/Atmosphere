@@ -19,9 +19,9 @@ static inline u8 HexNybbleToU8(const char nybble) {
     if ('0' <= nybble && nybble <= '9') {
         return nybble - '0';
     } else if ('a' <= nybble && nybble <= 'f') {
-        return nybble - 'a';
+        return nybble - 'a' + 0xa;
     } else {
-        return nybble - 'A';
+        return nybble - 'A' + 0xA;
     }
 }
 
