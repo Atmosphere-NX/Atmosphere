@@ -12,6 +12,13 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+void wait(uint32_t microseconds) {
+    uint32_t old_time = TIMERUS_CNTR_1US_0;
+    while (TIMERUS_CNTR_1US_0 - old_time <= microseconds) {
+        /* Spin-lock. */
+    }
+}
+
 __attribute__((noreturn)) void watchdog_reboot(void) {
     volatile watchdog_timers_t *wdt = GET_WDT(4);
     wdt->PATTERN = WDT_REBOOT_PATTERN;
