@@ -33,12 +33,14 @@ CFLAGS	:= \
 	-ffunction-sections \
 	-fdata-sections \
 	-fomit-frame-pointer \
+    -fno-asynchronous-unwind-tables \
+    -fno-unwind-tables \
 	-std=gnu11 \
 	-Werror \
 	-Wall \
 	$(ARCH) $(DEFINES)
 
-CFLAGS	+=	$(INCLUDE)
+CFLAGS	+=	$(INCLUDE) 
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
