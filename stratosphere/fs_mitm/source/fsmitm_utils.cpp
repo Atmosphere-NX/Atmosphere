@@ -51,7 +51,7 @@ void Utils::InitializeSdThreadFunc(void *args) {
             if (strlen(dir_entry.name) == 0x10 && IsHexadecimal(dir_entry.name)) {
                 u64 title_id = strtoul(dir_entry.name, NULL, 16);
                 char title_path[FS_MAX_PATH] = {0};
-                strcpy(title_path, "sdmc:/atmosphere/titles/");
+                strcpy(title_path, "/atmosphere/titles/");
                 strcat(title_path, dir_entry.name);
                 strcat(title_path, "/fsmitm.flag");
                 if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
