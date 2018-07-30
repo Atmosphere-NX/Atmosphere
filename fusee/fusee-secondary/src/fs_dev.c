@@ -442,7 +442,7 @@ static ssize_t fsdev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
 }
 
 static off_t fsdev_seek(struct _reent *r, void *fd, off_t pos, int whence) {
-    FIL *f = (FIL *)f;
+    FIL *f = (FIL *)fd;
     FSIZE_t off;
     int ret;
 
