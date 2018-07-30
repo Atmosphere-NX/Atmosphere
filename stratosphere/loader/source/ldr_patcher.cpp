@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 #include <dirent.h>
+#include <ctype.h>
 
 #include <switch.h>
 #include "ldr_patcher.hpp"
@@ -28,11 +29,9 @@ static inline u8 HexNybbleToU8(const char nybble) {
 static bool MatchesBuildId(const char *name, size_t name_len, const u8 *build_id) {
     /* Validate name is hex build id. */
     for (unsigned int i = 0; i < name_len - 4; i++) {
-        if (!(('0' <= name[i] && name[i] <= '9') ||
-            ('a' <= name[i] && name[i] <= 'f') ||
-            ('A' <= name[i] && name[i] <= 'F'))) {
+        if (isxdigit(name[i]) == 0) {
                 return false;
-            }
+        }
     }
     
     /* Read build id from name. */

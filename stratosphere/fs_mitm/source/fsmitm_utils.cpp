@@ -13,13 +13,11 @@ static std::atomic_bool g_has_initialized = false;
 
 static bool IsHexadecimal(const char *str) {
     while (*str) {
-        if (('0' <= *str && *str <= '9') || 
-            ('a' <= *str && *str <= 'f') ||
-            ('A' <= *str && *str <= 'F')) {
-                str++;
-            } else {
-                return false;
-            }
+        if (isxdigit(*str)) {
+            str++;
+        } else {
+            return false;
+        }
     }
     return true;
 }
