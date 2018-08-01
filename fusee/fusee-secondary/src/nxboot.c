@@ -87,16 +87,12 @@ void nxboot_main(void) {
             fatal_error("Failed to open Package2 from %s: %s!\n", loader_ctx->package2_path, strerror(errno));
         }
     } else {
-#ifdef I_KNOW_WHAT_IM_DOING_2
         pk2file = fopen("bcpkg21:/", "rb");
         if (pk2file == NULL || fseek(pk2file, 0x4000, SEEK_SET) != 0) {
             printf("Error: Failed to open Package2 from eMMC: %s!\n", strerror(errno));
             fclose(pk2file);
             generic_panic();
         }
-#else
-        fatal_error("Package2 must be loaded from the SD card, unless you know what you are doing!\n");
-#endif
     }
 
     setvbuf(pk2file, NULL, _IONBF, 0); /* Workaround. */
@@ -193,7 +189,7 @@ void nxboot_main(void) {
     package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
     printf(u8"Reading Exosphère...\n");
-    /* Copy Exophère to a good location (or read it directly to it.) */
+    /* Copy Exosphère to a good location (or read it directly to it.) */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware <= EXOSPHERE_TARGET_FIRMWARE_400) {
         exosphere_memaddr = (void *)0x40020000;
     } else {
