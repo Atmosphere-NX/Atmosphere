@@ -83,7 +83,7 @@ static const std::tuple<Boot2KnownTitleId, bool> g_additional_launch_programs[] 
     {Boot2KnownTitleId::btm, true},         /* btm */
     {Boot2KnownTitleId::eupld, false},      /* eupld */
     {Boot2KnownTitleId::glue, true},        /* glue */
-    {Boot2KnownTitleId::eclct, true},       /* eclct */
+ /* {Boot2KnownTitleId::eclct, true}, */    /* eclct */      /* Skip launching error collection in Atmosphere to lessen telemetry. */
     {Boot2KnownTitleId::npns, false},       /* npns */
     {Boot2KnownTitleId::fatal, true},       /* fatal */
     {Boot2KnownTitleId::ro, true},          /* ro */
