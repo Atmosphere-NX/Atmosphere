@@ -53,6 +53,16 @@
 #define _MMAPTZS6   (           0x1000ull,                    0x1000ull, 0x02000ull, false ) /* L2 translation table */
 #define _MMAPTZS7   (           0x2000ull,                    0x1000ull, 0x02000ull, false ) /* L3 translation table */
 
+/* TZRAM segments for 5.0.0+. (offset).  */
+#define _MMAPTZ5XS0   (           0x3000ull ) /* Warmboot crt0 sections and main code segment */
+#define _MMAPTZ5XS1   (                0ull ) /* pk2ldr segment */
+#define _MMAPTZ5XS2   (                0ull ) /* SPL .bss buffer, NOT mapped at startup */
+#define _MMAPTZ5XS3   (                0ull ) /* Core 0ull1,2 stack */
+#define _MMAPTZ5XS4   (           0x1000ull ) /* Core 3 stack */
+#define _MMAPTZ5XS5   (           0x2000ull ) /* Secure Monitor exception vectors, some init stacks */
+#define _MMAPTZ5XS6   ( 0x10000 - 0x2000ull ) /* L2 translation table */
+#define _MMAPTZ5XS7   ( 0x10000 - 0x1000ull ) /* L3 translation table */
+
 #define MMIO_BASE                       0x1F0080000ull
 #define LP0_ENTRY_RAM_SEGMENT_BASE      (MMIO_BASE + 0x000100000ull)
 #define WARMBOOT_RAM_SEGMENT_BASE       (LP0_ENTRY_RAM_SEGMENT_BASE + 0x000047000ull) /* increment seems to be arbitrary ? */
@@ -129,6 +139,7 @@
 #define WARMBOOT_GET_RAM_SEGMENT_ATTRIBS(segment_id)    (TUPLE_ELEM_2(CAT(_MMAPWBS, EVAL(segment_id))))
 
 #define TZRAM_GET_SEGMENT_PA(segment_id)            (0x7C010000ull + (TUPLE_ELEM_0(CAT(_MMAPTZS, EVAL(segment_id)))))
+#define TZRAM_GET_SEGMENT_5X_PA(segment_id)         (0x7C010000ull + (TUPLE_ELEM_0(CAT(_MMAPTZ5XS, EVAL(segment_id)))))
 #define TZRAM_GET_SEGMENT_ADDRESS(segment_id)       (TUPLE_FOLD_LEFT_2(EVAL(segment_id), _MMAPTZS, PLUS) EVAL(TZRAM_SEGMENT_BASE))
 #define TZRAM_GET_SEGMENT_SIZE(segment_id)          (TUPLE_ELEM_1(CAT(_MMAPTZS, EVAL(segment_id))))
 #define TZRAM_IS_SEGMENT_EXECUTABLE(segment_id)     (TUPLE_ELEM_3(CAT(_MMAPTZS, EVAL(segment_id))))

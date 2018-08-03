@@ -18,7 +18,8 @@ extern const uint8_t __start_cold[];
 /* warboot_init.c */
 extern unsigned int g_exosphere_target_firmware_for_init;
 void init_dma_controllers(unsigned int target_firmware);
-void set_memory_registers_enable_mmu(void);
+void set_memory_registers_enable_mmu_1x_ttbr0(void);
+void set_memory_registers_enable_mmu_5x_ttbr0(void);
 
 static void identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_tbl) {
     static const uintptr_t addrs[]      =   { TUPLE_FOLD_LEFT_0(EVAL(IDENTIY_MAPPING_ID_MAX), _MMAPID, COMMA) };
@@ -65,22 +66,34 @@ static void warmboot_map_all_ram_segments(uintptr_t *mmu_l3_tbl) {
     }
 }
 
-static void tzram_map_all_segments(uintptr_t *mmu_l3_tbl) {
+static void tzram_map_all_segments(uintptr_t *mmu_l3_tbl, unsigned int target_firmware) {
     static const uintptr_t offs[]       =   { TUPLE_FOLD_LEFT_0(EVAL(TZRAM_SEGMENT_ID_MAX), _MMAPTZS, COMMA) };
     static const size_t sizes[]         =   { TUPLE_FOLD_LEFT_1(EVAL(TZRAM_SEGMENT_ID_MAX), _MMAPTZS, COMMA) };
     static const size_t increments[]    =   { TUPLE_FOLD_LEFT_2(EVAL(TZRAM_SEGMENT_ID_MAX), _MMAPTZS, COMMA) };
     static const bool is_executable[]   =   { TUPLE_FOLD_LEFT_3(EVAL(TZRAM_SEGMENT_ID_MAX), _MMAPTZS, COMMA) };
 
+    static const uintptr_t offs_5x[]    =   { TUPLE_FOLD_LEFT_0(EVAL(TZRAM_SEGMENT_ID_MAX), _MMAPTZ5XS, COMMA) };
+	
     for(size_t i = 0, offset = 0; i < TZRAM_SEGMENT_ID_MAX; i++) {
-        tzram_map_segment(mmu_l3_tbl, TZRAM_SEGMENT_BASE + offset, 0x7C010000ull + offs[i], sizes[i], is_executable[i]);
+		uintptr_t off = (target_firmware < EXOSPHERE_TARGET_FIRMWARE_500) ? offs[i] : offs_5x[i];
+        tzram_map_segment(mmu_l3_tbl, TZRAM_SEGMENT_BASE + offset, 0x7C010000ull + off, sizes[i], is_executable[i]);
         offset += increments[i];
     }
 }
 
-static void configure_ttbls(void) {
-    uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
-    uintptr_t *mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
-    uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
+static void configure_ttbls(unsigned int target_firmware) {
+    uintptr_t *mmu_l1_tbl;
+    uintptr_t *mmu_l2_tbl; 
+    uintptr_t *mmu_l3_tbl;
+	if (target_firmware < EXOSPHERE_TARGET_FIRMWARE_500) {
+		mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
+		mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
+		mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
+	} else {
+		mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_5X_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
+		mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_5X_PA(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
+		mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_5X_PA(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
+	}
 
     mmu_init_table(mmu_l1_tbl, 64); /* 33-bit address space */
     mmu_init_table(mmu_l2_tbl, 4096);
@@ -101,7 +114,7 @@ static void configure_ttbls(void) {
     mmio_map_all_devices(mmu_l3_tbl);
     lp0_entry_map_all_ram_segments(mmu_l3_tbl);
     warmboot_map_all_ram_segments(mmu_l3_tbl);
-    tzram_map_all_segments(mmu_l3_tbl);
+    tzram_map_all_segments(mmu_l3_tbl, target_firmware);
 }
 
 static void do_relocation(const coldboot_crt0_reloc_list_t *reloc_list, size_t index) {
@@ -117,8 +130,17 @@ static void do_relocation(const coldboot_crt0_reloc_list_t *reloc_list, size_t i
     }
 }
 
+uintptr_t get_coldboot_crt0_temp_stack_address(void) {
+	return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
+}
+
 uintptr_t get_coldboot_crt0_stack_address(void) {
-    return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
+	if (exosphere_get_target_firmware_for_init() < EXOSPHERE_TARGET_FIRMWARE_500) {
+		return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
+	} else {
+		return TZRAM_GET_SEGMENT_5X_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
+	}
+    
 }
 
 void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, uintptr_t start_cold) {
@@ -154,8 +176,12 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, uintptr_t start_cold)
     /* TZRAM accesses should work normally after this point. */
     init_dma_controllers(g_exosphere_target_firmware_for_init);
 
-    configure_ttbls();
-    set_memory_registers_enable_mmu();
+    configure_ttbls(g_exosphere_target_firmware_for_init);
+	if (g_exosphere_target_firmware_for_init < EXOSPHERE_TARGET_FIRMWARE_500) {
+		set_memory_registers_enable_mmu_1x_ttbr0();
+	} else {
+		set_memory_registers_enable_mmu_5x_ttbr0();
+	}
 
     /* Copy or clear the remaining sections */
     for(size_t i = 0; i < reloc_list->nb_relocs_post_mmu_init; i++) {

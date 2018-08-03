@@ -101,8 +101,11 @@ __start_cold:
     br   x16
 
 _post_cold_crt0_reloc:
-
+	/* Setup stack for coldboot crt0. */
     msr  spsel, #0
+    bl   get_coldboot_crt0_temp_stack_address
+    mov  sp, x0
+    mov  fp, #0
     bl   get_coldboot_crt0_stack_address
     mov  sp, x0
     mov  fp, #0
@@ -128,6 +131,7 @@ _post_cold_crt0_reloc:
     ldr x1, =0x80010000
     /* Set size in coldboot relocation list. */
     str x21, [x0, #0x8]
+	
     bl   coldboot_init
 
     ldr  x16, =__jump_to_main_cold
