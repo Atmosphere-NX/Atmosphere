@@ -41,7 +41,9 @@
 *.nso
 *.nro
 *.nacp
+*.npdm
 *.pfs0
+*.nsp
 *.kip
 
 # Debug files
