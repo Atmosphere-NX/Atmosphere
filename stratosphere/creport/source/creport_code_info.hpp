@@ -25,6 +25,6 @@ class CodeList {
         void SaveToFile(FILE *f_report);
     private:
         bool TryFindCodeRegion(Handle debug_handle, u64 guess, u64 *address);
-        void GetCodeInfoName(u64 debug_handle, u64 ro_address, char *name);
+        void GetCodeInfoName(u64 debug_handle, u64 rx_address, u64 ro_address, char *name);
         void GetCodeInfoBuildId(u64 debug_handle, u64 ro_address, u8 *build_id);
 };
