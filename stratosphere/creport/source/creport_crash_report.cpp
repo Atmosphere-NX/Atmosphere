@@ -272,6 +272,11 @@ void CrashReport::SaveToFile(FILE *f_report) {
         case DebugExceptionType::BadSvc:
             fprintf(f_report, "    Svc Id:                      0x%02x\n", this->exception_info.specific.bad_svc.id);
             break;
+        case DebugExceptionType::UserBreak:
+            fprintf(f_report, "    Break Reason:                0x%lx\n", this->exception_info.specific.user_break.break_reason);
+            fprintf(f_report, "    Break Address:               %s\n", this->code_list.GetFormattedAddressString(this->exception_info.specific.user_break.address));
+            fprintf(f_report, "    Break Size:                  0x%lx\n", this->exception_info.specific.user_break.size);
+            break;
         default:
             break;
     }

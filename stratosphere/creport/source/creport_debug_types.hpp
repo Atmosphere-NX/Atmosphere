@@ -76,7 +76,7 @@ struct AlignmentFaultInfo {
 };
 
 struct UserBreakInfo {
-    u64 info_0;
+    u64 break_reason;
     u64 address;
     u64 size;
 };
