@@ -11,9 +11,9 @@ void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
     this->has_extra_info = has_extra_info;
     if (OpenProcess(pid)) {
         ProcessExceptions();
-		this->code_list.ReadCodeRegionsFromProcess(this->debug_handle, this->crashed_thread_info.GetPC(), this->crashed_thread_info.GetLR());
-		this->thread_list.ReadThreadsFromProcess(this->debug_handle, Is64Bit());
-		this->crashed_thread_info.SetCodeList(&this->code_list);
+        this->code_list.ReadCodeRegionsFromProcess(this->debug_handle, this->crashed_thread_info.GetPC(), this->crashed_thread_info.GetLR());
+        this->thread_list.ReadThreadsFromProcess(this->debug_handle, Is64Bit());
+        this->crashed_thread_info.SetCodeList(&this->code_list);
         this->thread_list.SetCodeList(&this->code_list);
         
         if (IsApplication()) {
@@ -287,10 +287,10 @@ void CrashReport::SaveToFile(FILE *f_report) {
             CrashReport::Memdump(f_report, "    Dying Message:              ", this->dying_message, this->dying_message_size);
         }
     }
-	fprintf(f_report, "Code Region Info:\n");
-	this->code_list.SaveToFile(f_report);
-	fprintf(f_report, "\nThread Report:\n");
-	this->thread_list.SaveToFile(f_report);
+    fprintf(f_report, "Code Region Info:\n");
+    this->code_list.SaveToFile(f_report);
+    fprintf(f_report, "\nThread Report:\n");
+    this->thread_list.SaveToFile(f_report);
 }
 
 /* Lifted from hactool. */

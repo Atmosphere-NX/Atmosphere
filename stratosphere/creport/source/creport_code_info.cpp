@@ -38,12 +38,12 @@ void CodeList::ReadCodeRegionsFromProcess(Handle debug_handle, u64 pc, u64 lr) {
             this->code_infos[this->code_count].end_address = mi.addr + mi.size; 
             GetCodeInfoName(debug_handle, mi.addr, mi.addr + mi.size, this->code_infos[this->code_count].name);
             GetCodeInfoBuildId(debug_handle, mi.addr + mi.size, this->code_infos[this->code_count].build_id);
-			if (this->code_infos[this->code_count].name[0] == '\x00') {
-				snprintf(this->code_infos[this->code_count].name, 0x1F, "[%02x%02x%02x%02x]", this->code_infos[this->code_count].build_id[0], 
-																							 this->code_infos[this->code_count].build_id[1], 
-																							 this->code_infos[this->code_count].build_id[2], 
-																							 this->code_infos[this->code_count].build_id[3]);
-			}
+            if (this->code_infos[this->code_count].name[0] == '\x00') {
+                snprintf(this->code_infos[this->code_count].name, 0x1F, "[%02x%02x%02x%02x]", this->code_infos[this->code_count].build_id[0], 
+                                                                                             this->code_infos[this->code_count].build_id[1], 
+                                                                                             this->code_infos[this->code_count].build_id[2], 
+                                                                                             this->code_infos[this->code_count].build_id[3]);
+            }
             this->code_count++;
         }
         
@@ -90,44 +90,44 @@ void CodeList::GetCodeInfoName(u64 debug_handle, u64 rx_address, u64 rodata_addr
     
     /* Clear name. */
     memset(name, 0, 0x20);
-	
-	/* Check whether this NSO *has* a name... */
-	{
-		u64 rodata_start[0x20/sizeof(u64)];
-		MemoryInfo mi;
-		u32 pi;
-		u64 rw_address;
-		
-		/* Verify .rodata is read-only. */
-		if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, rodata_addr)) || mi.perm != Perm_R) {
-			return;
-		}
-		
-		/* rwdata is after rodata. */
-		rw_address = mi.addr + mi.size;
-		
-		/* Read start of .rodata. */
-		if (R_FAILED(svcReadDebugProcessMemory(rodata_start, debug_handle, rodata_addr, sizeof(rodata_start)))) {
-			return;
-		}
-		
-		/* Check if name section is present. */
-		if (rodata_start[0] == (rw_address - rx_address)) {
-			return;
-		}
-	}
+    
+    /* Check whether this NSO *has* a name... */
+    {
+        u64 rodata_start[0x20/sizeof(u64)];
+        MemoryInfo mi;
+        u32 pi;
+        u64 rw_address;
+        
+        /* Verify .rodata is read-only. */
+        if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, rodata_addr)) || mi.perm != Perm_R) {
+            return;
+        }
+        
+        /* rwdata is after rodata. */
+        rw_address = mi.addr + mi.size;
+        
+        /* Read start of .rodata. */
+        if (R_FAILED(svcReadDebugProcessMemory(rodata_start, debug_handle, rodata_addr, sizeof(rodata_start)))) {
+            return;
+        }
+        
+        /* Check if name section is present. */
+        if (rodata_start[0] == (rw_address - rx_address)) {
+            return;
+        }
+    }
     
     /* Read name out of .rodata. */
     if (R_FAILED(svcReadDebugProcessMemory(name_in_proc, debug_handle, rodata_addr + 8, sizeof(name_in_proc)))) {
         return;
     }
-	    
+        
     /* Start after last slash in path. */
     int ofs = strnlen(name_in_proc, sizeof(name_in_proc));
     while (ofs >= 0 && name_in_proc[ofs] != '/' && name_in_proc[ofs] != '\\') {
         ofs--;
     }
-	
+    
     strncpy(name, name_in_proc + ofs + 1, 0x20);
     name[0x1F] = '\x00';
 }
