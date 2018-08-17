@@ -23,7 +23,7 @@
 
 #define u8 uint8_t
 #define u32 uint32_t
-#include "bpmpfw_debug.h"
+#include "bpmpfw_bin.h"
 #undef u8
 #undef u32
 
@@ -186,11 +186,11 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
 
     /* Copy BPMP firmware. */
     uint8_t *lp0_entry_code = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE));
-    for (unsigned int i = 0; i < sizeof(g_bpmpfw_for_debug); i += 4) {
-        write32le(lp0_entry_code, i, read32le(g_bpmpfw_for_debug, i));
+    for (unsigned int i = 0; i < bpmpfw_bin_size; i += 4) {
+        write32le(lp0_entry_code, i, read32le(bpmpfw_bin, i));
     }
         
-    flush_dcache_range(lp0_entry_code, lp0_entry_code + sizeof(g_bpmpfw_for_debug));
+    flush_dcache_range(lp0_entry_code, lp0_entry_code + bpmpfw_bin_size);
 
     /* Take the BPMP out of reset. */
     MAKE_CAR_REG(0x304) = 2;
