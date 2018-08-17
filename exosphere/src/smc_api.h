@@ -22,6 +22,9 @@ uintptr_t get_exception_entry_stack_address(unsigned int core_id);
 
 void set_version_specific_smcs(void);
 
+
+void set_suspend_for_debug(void);
+
 void call_smc_handler(unsigned int handler_id, smc_args_t *args);
 
 #endif

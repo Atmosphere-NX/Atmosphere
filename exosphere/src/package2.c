@@ -382,13 +382,32 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
     memset(load_buf, 0, PACKAGE2_SIZE_MAX);
 }
 
+static void copy_warmboot_bin_to_dram() {
+    uint8_t *warmboot_src = (uint8_t *)0x4003B000;
+    uint8_t *warmboot_dst = (uint8_t *)0x8000D000;
+    const size_t warmboot_size = 0x2000;
+    
+    /* Flush cache, to ensure warmboot is where we need it to be. */
+    flush_dcache_range(warmboot_src, warmboot_src + warmboot_size);
+    __dsb_sy();
+    
+    /* Copy warmboot. */
+    for (size_t i = 0; i < warmboot_size; i += sizeof(uint32_t)) {
+        write32le(warmboot_dst, i, read32le(warmboot_src, i));
+    }
+    
+    /* Flush cache, to ensure warmboot is where we need it to be. */
+    flush_dcache_range(warmboot_dst, warmboot_dst + warmboot_size);
+    __dsb_sy();
+}
+
 static void sync_with_nx_bootloader(int state) {
     while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < state) {
         wait(100);
     }
 }
 
-static void indentity_unmap_dram(void) {
+static void identity_unmap_dram(void) {
     uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
 
     mmu_unmap_range(1, mmu_l1_tbl, IDENTITY_GET_MAPPING_ADDRESS(IDENTITY_MAPPING_DRAM), IDENTITY_GET_MAPPING_SIZE(IDENTITY_MAPPING_DRAM));
@@ -410,6 +429,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     
     /* Perform initial PMC register writes, if relevant. */
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+        MAKE_REG32(PMC_BASE + 0x054) = 0x8000D000; 
         MAKE_REG32(PMC_BASE + 0x0A0) &= 0xFFF3FFFF; 
         MAKE_REG32(PMC_BASE + 0x818) &= 0xFFFFFFFE; 
         MAKE_REG32(PMC_BASE + 0x334) |= 0x10; 
@@ -453,7 +473,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* Synchronize with NX BOOTLOADER. */
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_DRAM_INITIALIZED_4X);
-        /* TODO: copy_warmboot_bin_to_dram(); */
+        copy_warmboot_bin_to_dram();
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2_4X);
     } else {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2);
@@ -461,7 +481,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     /* Make PMC (2.x+), MC (4.x+) registers secure-only */
     secure_additional_devices();
-
+    
     /* Remove the identity mapping for iRAM-C+D & TZRAM */
     /* For our crt0 to work, this doesn't actually unmap TZRAM */
     identity_unmap_iram_cd_tzram();
@@ -499,7 +519,9 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     set_core_entrypoint_and_argument(0, DRAM_BASE_PHYSICAL + header.metadata.entrypoint, 0);
 
     /* Remove the DRAM identity mapping. */
-    indentity_unmap_dram();
+    if (0) {
+        identity_unmap_dram();
+    } 
 
     /* Synchronize with NX BOOTLOADER. */
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {

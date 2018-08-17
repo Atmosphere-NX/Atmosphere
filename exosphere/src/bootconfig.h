@@ -26,7 +26,6 @@ typedef struct {
     bootconfig_unsigned_config_t unsigned_config;
     uint8_t signature[0x100];
     bootconfig_signed_config_t signed_config;
-    uint8_t unused_space[0x240]; /* remaining space in the evt page */
 } bootconfig_t;
 
 static inline bootconfig_t *get_loaded_bootconfig(void) {

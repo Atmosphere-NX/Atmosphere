@@ -121,6 +121,11 @@ static atomic_flag g_is_priv_smc_in_progress = ATOMIC_FLAG_INIT;
 /* Global for smc_configure_carveout. */
 static bool g_configured_carveouts[2] = {false, false};
 
+static bool g_has_suspended = false;
+void set_suspend_for_debug(void) {
+    g_has_suspended = true;
+}
+
 void set_version_specific_smcs(void) {
     switch (exosphere_get_target_firmware()) {
         case EXOSPHERE_TARGET_FIRMWARE_100:
@@ -207,7 +212,7 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     unsigned char smc_id;
     unsigned int result;
     unsigned int (*smc_handler)(smc_args_t *args);
-
+    
     /* Validate top-level handler. */
     if (handler_id != SMC_HANDLER_USER && handler_id != SMC_HANDLER_PRIV) {
         generic_panic();

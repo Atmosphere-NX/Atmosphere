@@ -16,6 +16,12 @@
 #include "misc.h"
 #include "interrupt.h"
 
+#include "pmc.h"
+
+uintptr_t get_warmboot_main_stack_address(void) {
+    return TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x780;
+}
+
 void __attribute__((noreturn)) warmboot_main(void) {
     /*
         This function and its callers are reached in either of the following events, under normal conditions:
@@ -53,7 +59,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
             PINMUX_AUX_GEN1_I2C_SCL_0 = 0x40;
             PINMUX_AUX_GEN1_I2C_SDA_0 = 0x40;
 
-            clkrst_enable(CARDEVICE_I2C1);
+            clkrst_reboot(CARDEVICE_I2C1);
             i2c_init(0);
             i2c_clear_ti_charger_bit_7();
             clkrst_disable(CARDEVICE_I2C1);

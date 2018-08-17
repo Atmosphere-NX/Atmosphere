@@ -23,16 +23,21 @@
 
 #define u8 uint8_t
 #define u32 uint32_t
-#include "bpmpfw_bin.h"
+#include "bpmpfw_debug.h"
 #undef u8
 #undef u32
 
 /* Save security engine, and go to sleep. */
 void save_se_and_power_down_cpu(void) {
+	/* TODO: Remove set suspend call once exo warmboots fully */
+    set_suspend_for_debug();
     uint32_t tzram_cmac[0x4] = {0};
 
     uint8_t *tzram_encryption_dst = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_ENCRYPTED_TZRAM));
     uint8_t *tzram_encryption_src = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_CURRENT_TZRAM));
+	if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+		tzram_encryption_src += 0x2000ull;
+	}
     uint8_t *tzram_store_address = (uint8_t *)(WARMBOOT_GET_RAM_SEGMENT_ADDRESS(WARMBOOT_RAM_SEGMENT_ID_TZRAM));
     clear_priv_smc_in_progress();
 
@@ -45,17 +50,20 @@ void save_se_and_power_down_cpu(void) {
     flush_dcache_range(tzram_encryption_dst, tzram_encryption_dst + LP0_TZRAM_SAVE_SIZE);
     flush_dcache_range(tzram_encryption_src, tzram_encryption_src + LP0_TZRAM_SAVE_SIZE);
 
-    /* Use the all-zero cmac buffer as an IV. */
+    /* Use the all-zero cmac buffer as an IV. */    
     se_aes_256_cbc_encrypt(KEYSLOT_SWITCH_LP0TZRAMKEY, tzram_encryption_dst, LP0_TZRAM_SAVE_SIZE, tzram_encryption_src, LP0_TZRAM_SAVE_SIZE, tzram_cmac);
     flush_dcache_range(tzram_encryption_dst, tzram_encryption_dst + LP0_TZRAM_SAVE_SIZE);
 
     /* Copy encrypted TZRAM from IRAM to DRAM. */
-    memcpy(tzram_store_address, tzram_encryption_dst, LP0_TZRAM_SAVE_SIZE);
+    for (unsigned int i = 0; i < LP0_TZRAM_SAVE_SIZE; i += 4) {
+        write32le(tzram_store_address, i, read32le(tzram_encryption_dst, i));
+    }
+    
     flush_dcache_range(tzram_store_address, tzram_store_address + LP0_TZRAM_SAVE_SIZE);
 
     /* Compute CMAC. */
     se_compute_aes_256_cmac(KEYSLOT_SWITCH_LP0TZRAMKEY, tzram_cmac, sizeof(tzram_cmac), tzram_encryption_src, LP0_TZRAM_SAVE_SIZE);
-
+    
     /* Write CMAC, lock registers. */
     APBDEV_PMC_SECURE_SCRATCH112_0 = tzram_cmac[0];
     APBDEV_PMC_SECURE_SCRATCH113_0 = tzram_cmac[1];
@@ -76,6 +84,8 @@ void save_se_and_power_down_cpu(void) {
     if (!configitem_is_retail()) {
         /* TODO: uart_log("OYASUMI"); */
     }
+    
+    __dsb_sy();
 
     finalize_powerdown();
 }
@@ -85,6 +95,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     if ((power_state & 0x17FFF) != 0x1001B) {
         return 0xFFFFFFFD;
     }
+    
 
     unsigned int current_core = get_core_id();
 
@@ -169,14 +180,17 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     BPMP_VECTOR_UNK = 0x40003004; /* Reboot. */
     BPMP_VECTOR_IRQ = 0x40003004; /* Reboot. */
     BPMP_VECTOR_FIQ = 0x40003004; /* Reboot. */
-
+    
     /* Hold the BPMP in reset. */
     MAKE_CAR_REG(0x300) = 2;
 
     /* Copy BPMP firmware. */
     uint8_t *lp0_entry_code = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE));
-    memcpy(lp0_entry_code, bpmpfw_bin, bpmpfw_bin_size);
-    flush_dcache_range(lp0_entry_code, lp0_entry_code + bpmpfw_bin_size);
+    for (unsigned int i = 0; i < sizeof(g_bpmpfw_for_debug); i += 4) {
+        write32le(lp0_entry_code, i, read32le(g_bpmpfw_for_debug, i));
+    }
+        
+    flush_dcache_range(lp0_entry_code, lp0_entry_code + sizeof(g_bpmpfw_for_debug));
 
     /* Take the BPMP out of reset. */
     MAKE_CAR_REG(0x304) = 2;
@@ -188,11 +202,13 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     flow_set_halt_events(current_core, false);
     FLOW_CTLR_L2FLUSH_CONTROL_0 = 0;
     flow_set_csr(current_core, 2);
-
+    
     /* Save core context. */
     set_core_entrypoint_and_argument(current_core, entrypoint, argument);
     save_current_core_context();
     set_current_core_inactive();
+    
+
     call_with_stack_pointer(get_smc_core012_stack_address(), save_se_and_power_down_cpu);
 
     generic_panic();

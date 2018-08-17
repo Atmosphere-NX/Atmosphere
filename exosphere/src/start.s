@@ -223,8 +223,8 @@ __jump_to_main_warm:
     bl   __set_exception_entry_stack_pointer
 
     mov  w0, #0 /* use core0,1,2 stack bottom + 0x800 (VA of warmboot crt0 sp) temporarily */
-    bl   get_exception_entry_stack_address
-    add  sp, x0, #0x800
+    bl   get_warmboot_main_stack_address
+    mov  sp, x0
     bl   warmboot_main
 
 .section    .text.__set_exception_entry_stack, "ax", %progbits
@@ -248,12 +248,14 @@ __set_exception_entry_stack_pointer:
 .type       __jump_to_lower_el, %function
 __jump_to_lower_el:
     /* x0: arg (context ID), x1: entrypoint, w2: spsr */
+    mov x19, x0
     mov  w2, w2
 
     msr  elr_el3, x1
     msr  spsr_el3, x2
 
     bl __set_exception_entry_stack_pointer
+    mov x0, x19
 
     isb
     eret
