@@ -15,7 +15,7 @@
 #define SAVE_SYSREG64(reg) do { __asm__ __volatile__ ("mrs %0, " #reg : "=r"(temp_reg) :: "memory"); g_cpu_contexts[current_core].reg = temp_reg; } while(false)
 #define SAVE_SYSREG32(reg) do { __asm__ __volatile__ ("mrs %0, " #reg : "=r"(temp_reg) :: "memory"); g_cpu_contexts[current_core].reg = (uint32_t)temp_reg; } while(false)
 #define SAVE_BP_REG(i, _) SAVE_SYSREG64(DBGBVR##i##_EL1); SAVE_SYSREG64(DBGBCR##i##_EL1);
-#define SAVE_WP_REG(i, _) SAVE_SYSREG64(DBGBVR##i##_EL1); SAVE_SYSREG64(DBGBCR##i##_EL1);
+#define SAVE_WP_REG(i, _) SAVE_SYSREG64(DBGWVR##i##_EL1); SAVE_SYSREG64(DBGWCR##i##_EL1);
 
 #define RESTORE_SYSREG64(reg) do { temp_reg = g_cpu_contexts[current_core].reg; __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
 #define RESTORE_SYSREG32(reg) RESTORE_SYSREG64(reg)
