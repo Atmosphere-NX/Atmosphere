@@ -4,6 +4,16 @@
 #include "mc.h"
 #include "exocfg.h"
 
+typedef struct {
+    uint64_t address;
+    uint64_t size;
+} saved_carveout_info_t;
+
+static saved_carveout_info_t g_saved_carveouts[2] = {
+    {0x80060000ull, KERNEL_CARVEOUT_SIZE_MAX},
+    {0x00000000ull, 0x00000000ull}
+};    
+
 volatile security_carveout_t *get_carveout_by_id(unsigned int carveout) {
     if (CARVEOUT_ID_MIN <= carveout && carveout <= CARVEOUT_ID_MAX) {
          return (volatile security_carveout_t *)(MC_BASE + 0xC08ull + 0x50 * (carveout - CARVEOUT_ID_MIN));
@@ -67,10 +77,10 @@ void configure_default_carveouts(void) {
     /* Configure default Kernel carveouts based on 2.0.0+. */
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_200) {
         /* Configure Carveout 4 (KERNEL_BUILTINS) */
-        configure_kernel_carveout(4, 0x80060000, KERNEL_CARVEOUT_SIZE_MAX);
+        configure_kernel_carveout(4, g_saved_carveouts[0].address, g_saved_carveouts[0].size);
 
         /* Configure Carveout 5 (KERNEL_UNUSED) */
-        configure_kernel_carveout(5, 0, 0);
+        configure_kernel_carveout(5, g_saved_carveouts[1].address, g_saved_carveouts[1].size);
     } else {
         for (unsigned int i = 4; i <= 5; i++) {
             carveout = get_carveout_by_id(i);
@@ -96,6 +106,9 @@ void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint6
     if (carveout_id != 4 && carveout_id != 5) {
         generic_panic();
     }
+    
+    g_saved_carveouts[carveout_id-4].address = address;
+    g_saved_carveouts[carveout_id-4].size = size;
 
     volatile security_carveout_t *carveout = get_carveout_by_id(carveout_id);
     carveout->paddr_low = (uint32_t)(address & 0xFFFFFFFF);
