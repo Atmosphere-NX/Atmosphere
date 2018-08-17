@@ -38,7 +38,14 @@ class FsMitMService : public IMitMServiceObject {
         }
         
         static bool should_mitm(u64 pid, u64 tid) {
-            return tid >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(tid);
+            if(!(tid >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(tid))) return false;
+            
+            FsDir tst;
+            char slash = '/';
+            bool ret = R_SUCCEEDED(Utils::OpenSdDirForAtmosphere(tid, &slash, &tst));
+            if(!ret) return false;
+            fsDirClose(&tst);
+            return true;
         }
         
         FsMitMService *clone() override {
