@@ -29,15 +29,15 @@
 
 /* Save security engine, and go to sleep. */
 void save_se_and_power_down_cpu(void) {
-	/* TODO: Remove set suspend call once exo warmboots fully */
+    /* TODO: Remove set suspend call once exo warmboots fully */
     set_suspend_for_debug();
     uint32_t tzram_cmac[0x4] = {0};
 
     uint8_t *tzram_encryption_dst = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_ENCRYPTED_TZRAM));
     uint8_t *tzram_encryption_src = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_CURRENT_TZRAM));
-	if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
-		tzram_encryption_src += 0x2000ull;
-	}
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+        tzram_encryption_src += 0x2000ull;
+    }
     uint8_t *tzram_store_address = (uint8_t *)(WARMBOOT_GET_RAM_SEGMENT_ADDRESS(WARMBOOT_RAM_SEGMENT_ID_TZRAM));
     clear_priv_smc_in_progress();
 

@@ -51,7 +51,7 @@ tlb_invalidate_page_inner_shareable:
  *
  * This file is based on sample code from ARMv8 ARM.
  *
- * SPDX-License-Identifier:	GPL-2.0+
+ * SPDX-License-Identifier:    GPL-2.0+
  */
 
 /*
@@ -84,7 +84,7 @@ __asm_dcache_level:
     /* x5 <- bit position of #ways */
 
 loop_set:
-    mov	x6, x3          /* x6 <- working copy of #ways */
+    mov    x6, x3          /* x6 <- working copy of #ways */
 loop_way:
     lsl x7, x6, x5
     orr x9, x12, x7     /* map way and level to cisw value */
