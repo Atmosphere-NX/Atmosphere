@@ -157,7 +157,7 @@ int console_init(bool display_initialized) {
         console_end();
         return -1;
     }
-
+    console_display(g_framebuffer);
     return 0;
 }
 
