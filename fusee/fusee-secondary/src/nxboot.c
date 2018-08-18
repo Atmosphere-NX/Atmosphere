@@ -6,6 +6,13 @@
 #include "utils.h"
 #include "fs_utils.h"
 #include "nxboot.h"
+#include "nxfs.h"
+#include "di.h"
+#include "mc.h"
+#include "se.h"
+#include "cluster.h"
+#include "flow.h"
+#include "timers.h"
 #include "key_derivation.h"
 #include "package1.h"
 #include "package2.h"
@@ -14,15 +21,12 @@
 #include "exocfg.h"
 #include "display/video_fb.h"
 #include "lib/ini.h"
-#include "hwinit/t210.h"
 
 #define u8 uint8_t
 #define u32 uint32_t
 #include "exosphere_bin.h"
 #undef u8
 #undef u32
-
-#include "hwinit/cluster.h"
 
 static int exosphere_ini_handler(void *user, const char *section, const char *name, const char *value) {
     exosphere_config_t *exo_cfg = (exosphere_config_t *)user;
@@ -58,6 +62,7 @@ static void nxboot_configure_exosphere(void) {
 /* This is the main function responsible for booting Horizon. */
 static nx_keyblob_t __attribute__((aligned(16))) g_keyblobs[32];
 void nxboot_main(void) {
+    volatile tegra_se_t *se = se_get_regs(); 
     loader_ctx_t *loader_ctx = get_loader_ctx();
     /* void *bootconfig; */
     package2_header_t *package2;
@@ -74,7 +79,6 @@ void nxboot_main(void) {
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
 
-    /* TODO: How should we deal with bootconfig? */
     package2 = memalign(4096, PACKAGE2_SIZE_MAX);
     if (package2 == NULL) {
         fatal_error("nxboot: out of memory!\n");
@@ -185,10 +189,12 @@ void nxboot_main(void) {
     }
 
     printf("Rebuilding package2...\n");
+    
     /* Patch package2, adding Thermosphère + custom KIPs. */
     package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
     printf(u8"Reading Exosphère...\n");
+    
     /* Copy Exosphère to a good location (or read it directly to it.) */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware <= EXOSPHERE_TARGET_FIRMWARE_400) {
         exosphere_memaddr = (void *)0x40020000;
@@ -211,26 +217,7 @@ void nxboot_main(void) {
     } else {
         memcpy(exosphere_memaddr, exosphere_bin, exosphere_bin_size);
     }
-
-    /* Boot up Exosphère. */
-    MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 0;
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
-        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_LOADED_PACKAGE2;
-    } else {
-        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_LOADED_PACKAGE2_4X;
-    }
-    printf("Powering on the CCPLEX...\n");
-    cluster_enable_cpu0((uint64_t)(uintptr_t)exosphere_memaddr, 1);
-    while (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE == 0) {
-        /* Wait for Exosphere to wake up. */
-    }
-    printf(u8"Exopshère is responding!\n");
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
-        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_FINISHED;
-    } else {
-        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_FINISHED_4X;
-    }
-
+    
     /* Clean up. */
     free(package1loader);
     if (loader_ctx->tsecfw_path[0] != '\0') {
@@ -240,12 +227,79 @@ void nxboot_main(void) {
         free(warmboot_fw);
     }
     free(package2);
+    
+    /* Unmount everything. */
+    nxfs_unmount_all();
+    
+    /* Clear used keyslots. */
+    clear_aes_keyslot(KEYSLOT_SWITCH_PACKAGE2KEY);
+    clear_aes_keyslot(KEYSLOT_SWITCH_RNGKEY);
+    
+    /* Lock keyslots. */
+    set_aes_keyslot_flags(KEYSLOT_SWITCH_MASTERKEY, 0xFF);
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
+        set_aes_keyslot_flags(KEYSLOT_SWITCH_DEVICEKEY, 0xFF);
+    } else {
+        set_aes_keyslot_flags(KEYSLOT_SWITCH_4XOLDDEVICEKEY, 0xFF);
+    }
 
+    /* TODO: Handle bootconfig. */
+	memset((void *)0x4003D000, 0, 0x3000);
+    
+    /* Finalize the GPU UCODE carveout. */
+	mc_config_carveout_finalize();
+    
+    /* Lock AES keyslots. */
+    for (uint32_t i = 0; i < 16; i++)
+		set_aes_keyslot_flags(i, 0x15);
+
+    /* Lock RSA keyslots. */
+	for (uint32_t i = 0; i < 2; i++)
+		set_rsa_keyslot_flags(i, 1);
+
+    /* Lock the Security Engine. */
+    se->_0x4 = 0;
+    se->AES_KEY_READ_DISABLE_REG = 0;
+    se->RSA_KEY_READ_DISABLE_REG = 0;
+    se->_0x0 &= 0xFFFFFFFB;
+    
+    /* Boot up Exosphère. */
+    MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 0;
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
+        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_LOADED_PACKAGE2;
+    } else {
+        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_LOADED_PACKAGE2_4X;
+    }
+    
+    printf("Powering on the CCPLEX...\n");
+    
     /* Display splash screen. */
     display_splash_screen_bmp(loader_ctx->custom_splash_path);
+    
+    /* Turn off the backlight. */
+    display_backlight(false);
+    
+    /* Terminate the display if necessary. */
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400)
+        display_end();
+    
+    /* Boot CPU0. */
+    cluster_boot_cpu0((uint64_t)(uintptr_t)exosphere_memaddr);
+    
+    /* Wait for Exosphère to wake up. */
+    while (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE == 0) {
+        udelay(1);
+    }
+    
+    /* Signal Exosphère. */
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
+        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_FINISHED;
+    } else {
+        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_FINISHED_4X;
+    }
 
-    //Halt ourselves in waitevent state.
+    /* Halt ourselves in waitevent state. */
     while (1) {
-        FLOW_CTLR(0x4) = 0x50000000;
+        FLOW_CTLR_HALT_COP_EVENTS_0 = 0x50000000;
     }
 }

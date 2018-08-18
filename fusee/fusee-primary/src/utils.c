@@ -7,9 +7,9 @@
 #include "timers.h"
 #include "panic.h"
 #include "car.h"
+#include "btn.h"
 
 #include "lib/printk.h"
-#include "hwinit/btn.h"
 
 #include <inttypes.h>
 

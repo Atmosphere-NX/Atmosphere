@@ -85,7 +85,6 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     free(rebuilt_package2);
 }
 
-
 static void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
     /* Derive package2 key. */
     const uint8_t __attribute__((aligned(16))) package2_key_source[0x10] = {
@@ -261,9 +260,6 @@ static size_t package2_get_thermosphere(void **thermosphere) {
     (*thermosphere) = NULL;
     return 0;
 }
-
-
-
 
 static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware) {
     /* TODO: Do we want to support loading another INI from sd:/whatever/INI1.bin? */

@@ -1,5 +1,5 @@
 #include "fs_utils.h"
-#include "hwinit.h"
+#include "mc.h"
 #include "lib/printk.h"
 #include "lib/fatfs/ff.h"
 

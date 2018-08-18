@@ -1,7 +1,8 @@
 #ifndef FUSEE_SE_H
 #define FUSEE_SE_H
 
-#include <assert.h>
+#define SE_BASE 0x70012000
+#define MAKE_SE_REG(n) MAKE_REG32(SE_BASE + n)
 
 #define KEYSLOT_SWITCH_LP0TZRAMKEY 0x2
 #define KEYSLOT_SWITCH_SRKGENKEY 0x8
@@ -98,10 +99,10 @@ typedef struct security_engine {
     uint32_t _0x21C;
     uint32_t _0x220;
     uint32_t _0x224;
-    uint8_t _0x228[0x5C];
+    uint8_t _0x228[0x58];
     uint32_t AES_KEY_READ_DISABLE_REG;
     uint32_t AES_KEYSLOT_FLAGS[0x10];
-    uint8_t _0x2C8[0x38];
+    uint8_t _0x2C4[0x3C];
     uint32_t _0x300;
     uint32_t CRYPTO_REG;
     uint32_t CRYPTO_CTR_REG[4];
@@ -131,15 +132,13 @@ typedef struct security_engine {
     uint32_t FLAGS_REG;
     uint32_t ERR_STATUS_REG;
     uint32_t _0x808;
-    uint32_t _0x80C;
+    uint32_t SPARE_0;
     uint32_t _0x810;
     uint32_t _0x814;
     uint32_t _0x818;
     uint32_t _0x81C;
     uint8_t _0x820[0x17E0];
-} security_engine_t;
-
-static_assert(sizeof(security_engine_t) == 0x2000, "Mis-defined Security Engine Registers!");
+} tegra_se_t;
 
 typedef struct {
     uint32_t address;
@@ -151,14 +150,9 @@ typedef struct {
     se_addr_info_t addr_info; /* This should really be an array...but for our use case it works. */
 } se_ll_t;
 
-
-/* WIP, API subject to change. */
-
-static inline volatile security_engine_t *get_security_engine(void) {
-    return (volatile security_engine_t *)0x70012000;
+static inline volatile tegra_se_t *se_get_regs(void) {
+    return (volatile tegra_se_t *)SE_BASE;
 }
-
-#define SECURITY_ENGINE (get_security_engine())
 
 /* This function MUST be registered to fire on the appropriate interrupt. */
 

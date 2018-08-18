@@ -6,7 +6,7 @@
 #include "pmc.h"
 #include "car.h"
 #include "timers.h"
-#include "hwinit/btn.h"
+#include "btn.h"
 #include "panic.h"
 
 #include <stdio.h>

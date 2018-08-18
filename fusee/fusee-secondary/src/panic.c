@@ -1,8 +1,8 @@
 #include "panic.h"
+#include "di.h"
 #include "pmc.h"
 #include "fuse.h"
 #include "utils.h"
-#include "hwinit.h"
 
 static uint32_t g_panic_code = 0;
 

@@ -1,6 +1,11 @@
 #ifndef FUSEE_FUSE_H
 #define FUSEE_FUSE_H
 
+#define FUSE_BASE 0x7000F800
+#define FUSE_CHIP_BASE (FUSE_BASE + 0x100)
+#define MAKE_FUSE_REG(n) MAKE_REG32(FUSE_BASE + n)
+#define MAKE_FUSE_CHIP_REG(n) MAKE_REG32(FUSE_CHIP_BASE + n)
+
 typedef struct {
     uint32_t FUSE_CTRL;
     uint32_t FUSE_REG_ADDR;
@@ -17,7 +22,7 @@ typedef struct {
     uint32_t FUSE_WRITE_ACCESS;
     uint32_t FUSE_PWR_GOOD_SW;
     uint32_t _0x38[0x32];
-} fuse_registers_t;
+} tegra_fuse_t;
 
 typedef struct {
     uint32_t FUSE_PRODUCTION_MODE;
@@ -160,17 +165,15 @@ typedef struct {
     uint32_t _0x278;
     uint32_t _0x27C;
     uint32_t FUSE_SPARE_BIT[0x20];
-} fuse_chip_registers_t;
+} tegra_fuse_chip_t;
 
-static inline volatile fuse_registers_t *get_fuse_regs(void) {
-    return (volatile fuse_registers_t *)(0x7000F000 + 0x800);
+static inline volatile tegra_fuse_t *fuse_get_regs(void) {
+    return (volatile tegra_fuse_t *)FUSE_BASE;
 }
 
-static inline volatile fuse_chip_registers_t *get_fuse_chip_regs(void) {
-    return (volatile fuse_chip_registers_t *)(0x7000F000 + 0x900);
+static inline volatile tegra_fuse_chip_t *fuse_chip_get_regs(void) {
+    return (volatile tegra_fuse_chip_t *)FUSE_CHIP_BASE;
 }
-#define FUSE_REGS       (get_fuse_regs())
-#define FUSE_CHIP_REGS  (get_fuse_chip_regs())
 
 void fuse_init(void);
 

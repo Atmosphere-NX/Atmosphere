@@ -1,6 +1,9 @@
 #ifndef FUSEE_PINMUX_H
 #define FUSEE_PINMUX_H
 
+#define PINMUX_BASE 0x70003000
+#define MAKE_PINMUX_REG(n) MAKE_REG32(PINMUX_BASE + n)
+
 #define PINMUX_TRISTATE             (1 << 4)
 #define PINMUX_PARKED               (1 << 5)
 #define PINMUX_INPUT                (1 << 6)
@@ -186,7 +189,7 @@ typedef struct {
 
 static inline volatile tegra_pinmux_t *pinmux_get_regs(void)
 {
-    return (volatile tegra_pinmux_t *)0x70003000;
+    return (volatile tegra_pinmux_t *)PINMUX_BASE;
 }
 
 #endif

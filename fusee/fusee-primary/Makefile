@@ -18,7 +18,7 @@ include $(DEVKITARM)/base_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src src/sdmmc src/hwinit src/lib src/lib/fatfs src/display
+SOURCES		:=	src src/sdmmc src/lib src/lib/fatfs src/display
 DATA		:=	data
 INCLUDES	:=	include
 

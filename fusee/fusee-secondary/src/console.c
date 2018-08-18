@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <sys/iosupport.h>
 #include "console.h"
-#include "hwinit.h"
+#include "di.h"
 #include "display/video_fb.h"
 
 static void *g_framebuffer = NULL;
@@ -98,7 +98,7 @@ static void console_init_display(void) {
     /* Turn on the backlight after initializing the lfb */
     /* to avoid flickering. */
     if (!g_display_initialized) {
-        display_enable_backlight(true);
+        display_backlight(true);
     }
 
     g_display_initialized = true;
@@ -143,7 +143,6 @@ static int console_create(void) {
 
     return 0;
 }
-
 
 int console_init(bool display_initialized) {
     g_display_initialized = display_initialized;
@@ -193,7 +192,7 @@ int console_resume(void) {
 int console_end(void) {
     /* Deinitialize the framebuffer and display */
     if (g_display_initialized) {
-        display_enable_backlight(false);
+        display_backlight(false);
         display_end();
     }
     free(g_framebuffer);

@@ -1,6 +1,11 @@
 #ifndef FUSEE_GPIO_H
 #define FUSEE_GPIO_H
 
+#include <stdint.h>
+
+#define GPIO_BASE  0x6000D000
+#define MAKE_GPIO_REG(n) MAKE_REG32(GPIO_BASE + n)
+
 #define TEGRA_GPIO_PORTS        4
 #define TEGRA_GPIO_BANKS        8
 #define GPIO_BANK_SHIFT         5  
@@ -68,7 +73,7 @@ typedef struct {
 
 static inline volatile tegra_gpio_t *gpio_get_regs(void)
 {
-    return (volatile tegra_gpio_t *)0x6000D000;
+    return (volatile tegra_gpio_t *)GPIO_BASE;
 }
 
 #define TEGRA_GPIO(port, offset) \
@@ -87,9 +92,16 @@ static inline volatile tegra_gpio_t *gpio_get_regs(void)
 #define GPIO_LEVEL_HIGH         1
 
 /* Named GPIOs */
+#define GPIO_BUTTON_VOL_DOWN            TEGRA_GPIO(X, 7)
+#define GPIO_BUTTON_VOL_UP              TEGRA_GPIO(X, 6)
 #define GPIO_MICROSD_CARD_DETECT        TEGRA_GPIO(Z, 1)
 #define GPIO_MICROSD_WRITE_PROTECT      TEGRA_GPIO(Z, 4)
 #define GPIO_MICROSD_SUPPLY_ENABLE      TEGRA_GPIO(E, 4)
+#define GPIO_LCD_BL_P5V                 TEGRA_GPIO(I, 0)
+#define GPIO_LCD_BL_N5V                 TEGRA_GPIO(I, 1)
+#define GPIO_LCD_BL_PWM                 TEGRA_GPIO(V, 0)
+#define GPIO_LCD_BL_EN                  TEGRA_GPIO(V, 1)
+#define GPIO_LCD_BL_RST                 TEGRA_GPIO(V, 2)
 
 void gpio_configure_mode(uint32_t pin, uint32_t mode);
 void gpio_configure_direction(uint32_t pin, uint32_t dir);

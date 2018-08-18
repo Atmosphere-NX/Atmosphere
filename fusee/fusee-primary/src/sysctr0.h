@@ -1,0 +1,11 @@
+#ifndef FUSEE_SYSCTR0_H
+#define FUSEE_SYSCTR0_H
+
+#include <stdint.h>
+
+#define SYSCTR0_BASE 0x7000F000
+#define MAKE_SYSCTR0_REG(n) MAKE_REG32(SYSCTR0_BASE + n)
+
+#define SYSCTR0_CNTFID0_0 MAKE_SYSCTR0_REG(0x00)
+
+#endif

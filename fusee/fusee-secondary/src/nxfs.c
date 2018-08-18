@@ -4,9 +4,9 @@
 #include <errno.h>
 #include <string.h>
 #include "nxfs.h"
+#include "mc.h"
 #include "gpt.h"
 #include "se.h"
-#include "hwinit.h"
 #include "utils.h"
 #include "sdmmc/sdmmc.h"
 

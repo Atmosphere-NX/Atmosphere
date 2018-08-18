@@ -27,7 +27,7 @@ extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size;
 /* GCC doesn't consider the size as const... we have to write it ourselves. */
 
 ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
-    const uint8_t *boot_kip = NULL;
+    /* const uint8_t *boot_kip = NULL; */
     uint32_t boot_kip_size = 0;
     uint8_t *data;
 
@@ -36,10 +36,10 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
     }
 
     if (target_firmware <= EXOSPHERE_TARGET_FIRMWARE_100) {
-        boot_kip = boot_100_kip;
+        /* boot_kip = boot_100_kip; */
         boot_kip_size = boot_100_kip_size;
     } else {
-        boot_kip = boot_200_kip;
+        /* boot_kip = boot_200_kip; */
         boot_kip_size = boot_200_kip_size;
     }
 
@@ -52,7 +52,7 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
 
     g_stratosphere_ini1->magic = MAGIC_INI1;
     g_stratosphere_ini1->size = size;
-    g_stratosphere_ini1->num_processes = 4;
+    g_stratosphere_ini1->num_processes = 3; /*TODO: Change to 4 when boot is supported. */
     g_stratosphere_ini1->_0xC = 0;
 
     data = g_stratosphere_ini1->kip_data;
@@ -67,9 +67,12 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
     memcpy(data, sm_kip, sm_kip_size);
     data += sm_kip_size;
 
+    /* TODO: Uncomment when boot is supported. */
+    /*
     memcpy(data, boot_kip, boot_kip_size);
     data += boot_kip_size;
-
+    */
+    
     return g_stratosphere_ini1;
 }
 

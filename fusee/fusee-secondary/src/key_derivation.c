@@ -3,7 +3,7 @@
 #include "se.h"
 #include "exocfg.h"
 #include "fuse.h"
-#include "hwinit.h"
+#include "tsec.h"
 #include "utils.h"
 
 #define AL16 ALIGN(16)
@@ -39,7 +39,7 @@ static const uint8_t AL16 masterkey_4x_seed[0x10] = {
 static nx_dec_keyblob_t AL16 g_dec_keyblobs[32];
 
 static int get_tsec_key(void *dst, const void *tsec_fw, size_t tsec_fw_size, uint32_t tsec_key_id) {
-    return tsec_query((u32)tsec_fw, dst, tsec_key_id);
+    return tsec_get_key(dst, tsec_key_id, tsec_fw);
 }
 
 static int get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {
