@@ -27,8 +27,10 @@ In no particular order, we credit the following for their invaluable contributio
 * __devkitPro__ for the [devkitA64](https://devkitpro.org/) toolchain and libnx support.
 * __ReSwitched Team__ for additional [documentation, research and tool development](https://reswitched.tech/) pertaining to the Nintendo Switch.
 * __ChaN__ for the [FatFs](http://elm-chan.org/fsw/ff/00index_e.html) module.
+* __Marcus Geelnard__ for the [bcl-1.2.0](https://sourceforge.net/projects/bcl/files/bcl/bcl-1.2.0) library.
+* __naehrwert__ and __st4rk__ for the original [hekate](https://github.com/nwert/hekate) project and its hwinit code base.
+* __CTCaer__ for the continued [hekate](https://github.com/CTCaer/hekate) project's fork.
 * __Riley__ for suggesting "Atmosphere" as a Horizon OS reimplementation+customization project name.
-* __naehrwert__ for the [hekate](https://github.com/nwert/hekate) project and its hwinit code base.
 * __hedgeberg__ for research and hardware testing.
 * __lioncash__ for code cleanup and general improvements.
 * __jaames__ for designing and providing Atmosphère's graphical resources.
