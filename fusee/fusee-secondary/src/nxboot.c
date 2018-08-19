@@ -10,6 +10,7 @@
 #include "di.h"
 #include "mc.h"
 #include "se.h"
+#include "pmc.h"
 #include "cluster.h"
 #include "flow.h"
 #include "timers.h"
@@ -62,7 +63,8 @@ static void nxboot_configure_exosphere(void) {
 /* This is the main function responsible for booting Horizon. */
 static nx_keyblob_t __attribute__((aligned(16))) g_keyblobs[32];
 void nxboot_main(void) {
-    volatile tegra_se_t *se = se_get_regs(); 
+    volatile tegra_pmc_t *pmc = pmc_get_regs();
+    volatile tegra_se_t *se = se_get_regs();
     loader_ctx_t *loader_ctx = get_loader_ctx();
     /* void *bootconfig; */
     package2_header_t *package2;
@@ -71,6 +73,7 @@ void nxboot_main(void) {
     size_t tsec_fw_size;
     void *warmboot_fw;
     size_t warmboot_fw_size;
+    void *warmboot_memaddr;
     void *package1loader;
     size_t package1loader_size ;
     package1_header_t *package1;
@@ -81,7 +84,7 @@ void nxboot_main(void) {
 
     package2 = memalign(4096, PACKAGE2_SIZE_MAX);
     if (package2 == NULL) {
-        fatal_error("nxboot: out of memory!\n");
+        fatal_error("Out of memory!\n");
     }
 
     /* Read Package2 from a file, otherwise from its partition(s). */
@@ -93,7 +96,7 @@ void nxboot_main(void) {
     } else {
         pk2file = fopen("bcpkg21:/", "rb");
         if (pk2file == NULL || fseek(pk2file, 0x4000, SEEK_SET) != 0) {
-            printf("Error: Failed to open Package2 from eMMC: %s!\n", strerror(errno));
+            printf("Failed to open Package2 from eMMC: %s!\n", strerror(errno));
             fclose(pk2file);
             generic_panic();
         }
@@ -137,7 +140,7 @@ void nxboot_main(void) {
 
         tsec_fw = memalign(0x100, tsec_fw_size);
         if (tsec_fw == NULL) {
-            fatal_error("nxboot_main: out of memory!\n");
+            fatal_error("Out of memory!\n");
         }
         if (read_from_file(tsec_fw, tsec_fw_size, loader_ctx->tsecfw_path) != tsec_fw_size) {
             fatal_error("Could not read the TSEC firmware from %s!\n", loader_ctx->tsecfw_path);
@@ -167,7 +170,7 @@ void nxboot_main(void) {
 
         warmboot_fw = malloc(warmboot_fw_size);
         if (warmboot_fw == NULL) {
-            fatal_error("nxboot_main: out of memory!\n");
+            fatal_error("Out of memory!\n");
         }
         if (read_from_file(warmboot_fw, warmboot_fw_size, loader_ctx->warmboot_path) != warmboot_fw_size) {
             fatal_error("Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
@@ -175,7 +178,7 @@ void nxboot_main(void) {
     } else {
         uint8_t ctr[16];
         package1_size = package1_get_encrypted_package1(&package1, ctr, package1loader, package1loader_size);
-        if(package1_decrypt(package1, package1_size, ctr)) {
+        if (package1_decrypt(package1, package1_size, ctr)) {
             warmboot_fw = package1_get_warmboot_fw(package1);
             warmboot_fw_size = package1->warmboot_size;
         } else {
@@ -187,7 +190,23 @@ void nxboot_main(void) {
             fatal_error("Could not read the warmboot firmware from Package1!\n");
         }
     }
-
+    
+    /* Select the right address for the warmboot firmware. */
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
+        warmboot_memaddr = (void *)0x8000D000;
+    } else {
+        warmboot_memaddr = (void *)0x4003B000;
+    }
+    
+    printf("Copying warmboot firmware...\n");
+    
+    /* Copy the warmboot firmware and set the address in PMC if necessary. */
+    if (warmboot_fw && (warmboot_fw_size > 0)) {
+        memcpy(warmboot_memaddr, warmboot_fw, warmboot_fw_size);
+        if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400)
+            pmc->scratch1 = (uint32_t)warmboot_memaddr;
+    }
+    
     printf("Rebuilding package2...\n");
     
     /* Patch package2, adding Thermosphère + custom KIPs. */
@@ -195,24 +214,25 @@ void nxboot_main(void) {
 
     printf(u8"Reading Exosphère...\n");
     
-    /* Copy Exosphère to a good location (or read it directly to it.) */
+    /* Select the right address for Exosphère. */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware <= EXOSPHERE_TARGET_FIRMWARE_400) {
         exosphere_memaddr = (void *)0x40020000;
     } else {
         exosphere_memaddr = (void *)0x40018000; /* 5.x has its secmon's crt0 around this region. */
     }
 
+    /* Copy Exosphère to a good location or read it directly to it. */
     if (loader_ctx->exosphere_path[0] != '\0') {
         size_t exosphere_size = get_file_size(loader_ctx->exosphere_path);
         if (exosphere_size == 0) {
-            fatal_error(u8"Error: Could not read Exosphère from %s!\n", loader_ctx->exosphere_path);
+            fatal_error(u8"Could not read Exosphère from %s!\n", loader_ctx->exosphere_path);
         } else if (exosphere_size > 0x10000) {
             /* The maximum is actually a bit less than that. */
-            fatal_error(u8"Error: Exosphère from %s is too big!\n", loader_ctx->exosphere_path);
+            fatal_error(u8"Exosphère from %s is too big!\n", loader_ctx->exosphere_path);
         }
 
         if (read_from_file(exosphere_memaddr, exosphere_size, loader_ctx->exosphere_path) != exosphere_size) {
-            fatal_error(u8"Error: Could not read Exosphère from %s!\n", loader_ctx->exosphere_path);
+            fatal_error(u8"Could not read Exosphère from %s!\n", loader_ctx->exosphere_path);
         }
     } else {
         memcpy(exosphere_memaddr, exosphere_bin, exosphere_bin_size);
@@ -244,18 +264,18 @@ void nxboot_main(void) {
     }
 
     /* TODO: Handle bootconfig. */
-	memset((void *)0x4003D000, 0, 0x3000);
+    memset((void *)0x4003D000, 0, 0x3000);
     
     /* Finalize the GPU UCODE carveout. */
-	mc_config_carveout_finalize();
+    mc_config_carveout_finalize();
     
     /* Lock AES keyslots. */
     for (uint32_t i = 0; i < 16; i++)
-		set_aes_keyslot_flags(i, 0x15);
+        set_aes_keyslot_flags(i, 0x15);
 
     /* Lock RSA keyslots. */
-	for (uint32_t i = 0; i < 2; i++)
-		set_rsa_keyslot_flags(i, 1);
+    for (uint32_t i = 0; i < 2; i++)
+        set_rsa_keyslot_flags(i, 1);
 
     /* Lock the Security Engine. */
     se->_0x4 = 0;

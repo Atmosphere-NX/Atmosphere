@@ -9,12 +9,12 @@
 typedef struct package1_header_t {
     char magic[4];
     uint32_t warmboot_size;
-    uint32_t _0x8;
+    uint32_t warmboot_offset;
     uint32_t _0xC;
     uint32_t nx_bootloader_size;
-    uint32_t _0x14;
+    uint32_t nx_bootloader_offset;
     uint32_t secmon_size;
-    uint32_t _0x1C;
+    uint32_t secmon_offset;
     uint8_t data[];
 } package1_header_t;
 
