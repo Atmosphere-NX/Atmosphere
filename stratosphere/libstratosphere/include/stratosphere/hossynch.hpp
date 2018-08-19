@@ -8,15 +8,15 @@ class HosMutex {
         HosMutex() {
             mutexInit(&this->m);
         }
-        
+
         void lock() {
             mutexLock(&this->m);
         }
-        
+
         void unlock() {
             mutexUnlock(&this->m);
         }
-        
+
         bool try_lock() {
             return mutexTryLock(&this->m);
         }
@@ -29,15 +29,12 @@ class HosRecursiveMutex {
         HosRecursiveMutex() {
             rmutexInit(&this->m);
         }
-        
         void lock() {
             rmutexLock(&this->m);
         }
-        
         void unlock() {
             rmutexUnlock(&this->m);
         }
-        
         bool try_lock() {
             return rmutexTryLock(&this->m);
         }
@@ -50,25 +47,25 @@ class HosCondVar {
     public:
         HosCondVar() {
             mutexInit(&m);
-            condvarInit(&cv, &m);
+            condvarInit(&cv);
         }
-        
+
         Result WaitTimeout(u64 timeout) {
-            return condvarWaitTimeout(&cv, timeout);
+            return condvarWaitTimeout(&cv, &m, timeout);
         }
-        
+
         Result Wait() {
-            return condvarWait(&cv);
+            return condvarWait(&cv, &m);
         }
-        
+
         Result Wake(int num) {
             return condvarWake(&cv, num);
         }
-        
+
         Result WakeOne() {
             return condvarWakeOne(&cv);
         }
-        
+
         Result WakeAll() {
             return condvarWakeAll(&cv);
         }
@@ -83,30 +80,30 @@ class HosSemaphore {
         HosSemaphore() {
             count = 0;
             mutexInit(&m);
-            condvarInit(&cv, &m);
+            condvarInit(&cv);
         }
-        
+
         HosSemaphore(u64 c) : count(c) {
             mutexInit(&m);
-            condvarInit(&cv, &m);
+            condvarInit(&cv);
         }
-        
+
         void Signal() {
             mutexLock(&this->m);
             count++;
             condvarWakeOne(&cv);
             mutexUnlock(&this->m);
         }
-        
+
         void Wait() {
             mutexLock(&this->m);
             while (!count) {
-                condvarWait(&cv);
+                condvarWait(&cv, &m);
             }
             count--;
             mutexUnlock(&this->m);
         }
-        
+
         bool TryWait() {
             mutexLock(&this->m);
             bool success = false;
