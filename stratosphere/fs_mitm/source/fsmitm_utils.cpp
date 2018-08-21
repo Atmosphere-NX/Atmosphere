@@ -2,6 +2,7 @@
 #include <stratosphere.hpp>
 #include <atomic>
 #include <algorithm>
+#include <dirent.h>
 
 #include "sm_mitm.h"
 #include "debug.hpp"
@@ -83,11 +84,35 @@ Result Utils::OpenSdFileForAtmosphere(u64 title_id, const char *fn, int flags, F
         return 0xFA202;
     }
     
+    // multi-user stuff
+    // todo: add error handling (should i use fatalSimple?)
+    accountInitialize();
+    u128 user_id;
+    bool acc_selected;
+    accountGetActiveUser(&user_id, &acc_selected);
+    AccountProfile profile;
+    accountGetProfile(&profile, user_id);
+    AccountUserData user_data;
+    AccountProfileBase profile_base;
+    accountProfileGet(&profile, &user_data, &profile_base);
+    
     char path[FS_MAX_PATH];
     if (*fn == '/') {
-        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", title_id, fn);
+        snprintf(path, sizeof(path), "sdmc:/atmosphere/titles/%016lx_%s", title_id, profile_base.username);
+        DIR* dir = opendir(path);
+        if (dir) {
+            snprintf(path, sizeof(path), "/atmosphere/titles/%016lx_$s%s", title_id, profile_base.username, fn);
+        } else {
+            snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", title_id, fn);
+        }
     } else {
-        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/%s", title_id, fn);
+        snprintf(path, sizeof(path), "sdmc:/atmosphere/titles/%016lx_%s", title_id, profile_base.username);
+        DIR* dir = opendir(path);
+        if (dir) {
+            snprintf(path, sizeof(path), "/atmosphere/titles/%016lx_$s/%s", title_id, profile_base.username, fn);
+        } else {
+            snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/%s", title_id, fn);
+        }
     }
     return fsFsOpenFile(&g_sd_filesystem, path, flags, out);
 }
