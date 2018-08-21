@@ -39,7 +39,7 @@ void WaitableManager::process_internal(bool break_on_timeout) {
             continue;
         }
         if(this->waitables.size() > 0x40) {
-            panic("PANIC: Too many waitables in waitablemanager");
+            /* TODO: panic. Too many waitables */
         }
         rc = svcWaitSynchronization(&handle_index, handles.data(), this->waitables.size(), this->timeout);
         if (R_SUCCEEDED(rc)) {
@@ -58,22 +58,18 @@ void WaitableManager::process_internal(bool break_on_timeout) {
         } else if (rc == 0xE401) {
             /* Invalid handle */
             /* handle_index does not get updated when this happens 
-            so we can't really do anything */
-            panic("PANIC: Invalid handle in waitablemanager");
-
-            /* however switchbrew says that svcWaitSynchronization
+            so we don't know which waitable is the problem.
+            However switchbrew says that svcWaitSynchronization
             does not accept 0xFFFF8001 or 0xFFFF8000 as handles
-            so we could at least remove them if any exists
+            so we could at least remove them if any exists */
             
             for(auto it = waitables.begin(); it != waitables.end(); it++) {
                 if(*it->get_handle() == 0xFFFF8000 || *it->get_handle() == 0xFFFF8001) {
                     waitables.erase(it);
                 }
             }
-            */
         } else if (rc != 0xF601) {
-            /* TODO: When can this happen? */
-            panic("PANIC: unhandled result code in waitablemanager");
+            /* TODO: panic. When can this happen? */
         }
         
         if (rc == 0xF601) {
