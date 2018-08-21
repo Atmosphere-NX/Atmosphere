@@ -64,7 +64,7 @@ void WaitableManager::process_internal(bool break_on_timeout) {
             so we could at least remove them if any exists */
             
             for(auto it = waitables.begin(); it != waitables.end(); it++) {
-                if(*it->get_handle() == 0xFFFF8000 || *it->get_handle() == 0xFFFF8001) {
+                if((*it)->get_handle() == 0xFFFF8000 || (*it)->get_handle() == 0xFFFF8001) {
                     waitables.erase(it);
                 }
             }
