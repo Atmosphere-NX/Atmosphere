@@ -6,7 +6,17 @@
 
 #define PACKAGE1LOADER_SIZE_MAX 0x40000
 
-typedef struct package1_header_t {
+typedef struct {
+    uint32_t package1loader_hash;
+    uint32_t secmon_hash;
+    uint32_t nx_bootloader_hash;
+    uint32_t _0xC;
+    char build_timestamp[0x0E];
+    uint8_t _0x1E;
+    uint8_t version;
+} package1loader_header_t;
+
+typedef struct {
     char magic[4];
     uint32_t warmboot_size;
     uint32_t warmboot_offset;
