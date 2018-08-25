@@ -549,7 +549,7 @@ void sdram_init()
     pmc->vddp_sel = params->pmc_vddp_sel;
     udelay(params->pmc_vddp_sel_wait);
     
-    pmc->ddr_pwr = pmc->ddr_pwr;
+    pmc->ddr_pwr = params->pmc_ddr_pwr;
     pmc->no_iopower = params->pmc_no_io_power;
     pmc->reg_short = params->pmc_reg_short;
     pmc->ddr_cntrl = params->pmc_ddr_ctrl;
