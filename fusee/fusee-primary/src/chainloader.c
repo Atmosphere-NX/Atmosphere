@@ -17,7 +17,7 @@ static void *xmemmove(void *dst, const void *src, size_t len)
         for (size_t i = 0; i < len; i++) {
             dst8[i] = src8[i];
         }
-    } else if (src8 > dst8) {
+    } else if (dst8 > src8) {
         for (size_t i = len; len > 0; len--)
             dst8[i - 1] = src8[i - 1];
     }
