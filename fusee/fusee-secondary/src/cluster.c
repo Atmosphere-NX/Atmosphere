@@ -12,22 +12,22 @@
 void _cluster_enable_power()
 {
     uint8_t val = 0;
-    i2c_query(4, 0x3C, MAX77620_REG_AME_GPIO, &val, 1);
+    i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_AME_GPIO, &val, 1);
     
     val &= 0xDF;
-    i2c_send(4, 0x3C, MAX77620_REG_AME_GPIO, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_AME_GPIO, &val, 1);
     val = 0x09;
-    i2c_send(4, 0x3C, MAX77620_REG_GPIO5, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_GPIO5, &val, 1);
     
     /* Enable power. */
     val = 0x20;
-    i2c_send(4, 0x1B, MAX77620_REG_CNFGGLBL3, &val, 1);
+    i2c_send(I2C_5, MAX77621_CPU_I2C_ADDR, 0x02, &val, 1);
     val = 0x8D;
-    i2c_send(4, 0x1B, MAX77620_REG_CNFG1_32K, &val, 1);
+    i2c_send(I2C_5, MAX77621_CPU_I2C_ADDR, 0x03, &val, 1);
     val = 0xB7;
-    i2c_send(4, 0x1B, MAX77620_REG_CNFGGLBL1, &val, 1);
+    i2c_send(I2C_5, MAX77621_CPU_I2C_ADDR, 0x00, &val, 1);
     val = 0xB7;
-    i2c_send(4, 0x1B, MAX77620_REG_CNFGGLBL2, &val, 1);
+    i2c_send(I2C_5, MAX77621_CPU_I2C_ADDR, 0x01, &val, 1);
 }
 
 int _cluster_pmc_enable_partition(uint32_t part, uint32_t toggle)

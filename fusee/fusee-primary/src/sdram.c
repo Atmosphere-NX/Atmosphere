@@ -542,9 +542,9 @@ void sdram_init()
     const sdram_params_t *params = (const sdram_params_t *)sdram_get_params();
 
     uint8_t val = 5;
-    i2c_send(4, 0x3C, MAX77620_REG_SD_CFG2, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_SD_CFG2, &val, 1);
     val = 40;   /* 40 = (1000 * 1100 - 600000) / 12500 -> 1.1V */
-    i2c_send(4, 0x3C, MAX77620_REG_SD1, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_SD1, &val, 1);
 
     pmc->vddp_sel = params->pmc_vddp_sel;
     udelay(params->pmc_vddp_sel_wait);

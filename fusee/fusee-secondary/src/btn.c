@@ -16,7 +16,7 @@ uint32_t btn_read()
         res |= BTN_VOL_UP;
     
     uint32_t val = 0;
-    if (i2c_query(4, 0x3C, 0x15, &val, 1))
+    if (i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, 0x15, &val, 1))
     {
         if (val & 0x4)
             res |= BTN_POWER;

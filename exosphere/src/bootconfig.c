@@ -138,9 +138,9 @@ void bootconfig_get_package2_hash_for_recovery(uint64_t *out_hash) {
 }
 
 bool bootconfig_is_recovery_boot(void) {
-    return (g_boot_reason.is_recovery_boot != 0);
+    return ((g_boot_reason.bootloader_attribute & 0x01) != 0);
 }
 
 uint64_t bootconfig_get_boot_reason(void) {
-    return ((uint64_t)g_boot_reason.boot_reason_high << 24) | (g_boot_reason.boot_reason_low & 0xFFFFFF);
+    return ((uint64_t)g_boot_reason.boot_reason_state << 24) | (g_boot_reason.boot_reason_value & 0xFFFFFF);
 }
