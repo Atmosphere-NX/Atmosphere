@@ -48,6 +48,7 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
         devpart->crypto_work_buffer_num_sectors = 0;
     }
 
+    /* Enable AHB redirection if necessary. */
     if (!g_ahb_redirect_enabled) {
         mc_enable_ahb_redirect();
         g_ahb_redirect_enabled = true;
@@ -78,6 +79,12 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
 
 static void mmc_partition_finalize(device_partition_t *devpart) {
     free(devpart->crypto_work_buffer);
+    
+    /* Disable AHB redirection if necessary. */
+    if (g_ahb_redirect_enabled) {
+        mc_disable_ahb_redirect();
+        g_ahb_redirect_enabled = false;
+    }
 }
 
 static int mmc_partition_read(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors) {

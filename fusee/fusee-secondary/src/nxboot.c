@@ -362,6 +362,15 @@ void nxboot_main(void) {
     printf("[NXBOOT]: Moving BootConfig...\n");
     nxboot_move_bootconfig();
     
+    /* Set 3.0.0/3.0.1/3.0.2 warmboot security check. */
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == EXOSPHERE_TARGET_FIRMWARE_300) {
+        const package1loader_header_t *package1loader_header = (const package1loader_header_t *)package1loader;
+        if (!strcmp(package1loader_header->build_timestamp, "20170519101410"))
+            pmc->secure_scratch32 = 0xE3;       /* Warmboot 3.0.0 security check.*/
+        else if (!strcmp(package1loader_header->build_timestamp, "20170710161758"))
+            pmc->secure_scratch32 = 0x104;      /* Warmboot 3.0.1/3.0.2 security check. */
+    }
+    
     /* Clean up. */
     free(package1loader);
     if (loader_ctx->tsecfw_path[0] != '\0') {
@@ -424,7 +433,7 @@ void nxboot_main(void) {
     display_end();
     
     /* Boot CPU0. */
-    cluster_boot_cpu0((uint64_t)(uintptr_t)exosphere_memaddr);
+    cluster_boot_cpu0((uint32_t)exosphere_memaddr);
     
     /* Wait for Exosphère to wake up. */
     while (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE == 0) {
