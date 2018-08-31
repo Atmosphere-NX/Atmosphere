@@ -381,9 +381,6 @@ void nxboot_main(void) {
     }
     free(package2);
     
-    /* Unmount everything. */
-    nxfs_unmount_all();
-    
     /* Clear used keyslots. */
     clear_aes_keyslot(KEYSLOT_SWITCH_PACKAGE2KEY);
     clear_aes_keyslot(KEYSLOT_SWITCH_RNGKEY);
@@ -425,6 +422,9 @@ void nxboot_main(void) {
     
     /* Display splash screen. */
     display_splash_screen_bmp(loader_ctx->custom_splash_path);
+    
+    /* Unmount everything. */
+    nxfs_unmount_all();
     
     /* Turn off the backlight. */
     display_backlight(false);
