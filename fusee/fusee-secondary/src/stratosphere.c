@@ -21,7 +21,7 @@ static ini1_header_t *g_stratosphere_ini1 = NULL;
 
 static bool g_stratosphere_loader_enabled = true;
 static bool g_stratosphere_sm_enabled = true;
-static bool g_stratosphere_pm_enabled = false;
+static bool g_stratosphere_pm_enabled = true;
 static bool g_stratosphere_boot_enabled = false;
 
 extern const uint8_t boot_100_kip[], boot_200_kip[];
