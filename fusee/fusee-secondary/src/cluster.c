@@ -77,12 +77,12 @@ void cluster_boot_cpu0(uint32_t entry)
         udelay(2);
         car->pllx_base = 0x80404E02;
         car->pllx_base = 0x404E02;
-        car->pllx_misc = ((car->pllx_base & 0xFFFBFFFF) | 0x40000);
+        car->pllx_misc = ((car->pllx_misc & 0xFFFBFFFF) | 0x40000);
         car->pllx_base = 0x40404E02;
     }
     
     while (!(car->pllx_base & 0x8000000)) {
-        /* Spinlock. */
+        /* Wait. */
     }
 
     /* Configure MSELECT source and enable clock. */
@@ -111,13 +111,13 @@ void cluster_boot_cpu0(uint32_t entry)
     /* Request and wait for RAM repair. */
     FLOW_CTLR_RAM_REPAIR_0 = 1;
     while (!(FLOW_CTLR_RAM_REPAIR_0 & 2)){
-        /* Spinlock. */
+        /* Wait. */
     }
 
     MAKE_EXCP_VEC_REG(0x100) = 0;
 
     /* Set reset vector. */
-    SB_AA64_RESET_LOW_0 = entry | 1;
+    SB_AA64_RESET_LOW_0 = (entry | 1);
     SB_AA64_RESET_HIGH_0 = 0;
     
     /* Non-secure reset vector write disable. */
