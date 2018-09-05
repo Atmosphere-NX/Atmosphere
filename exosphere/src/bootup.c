@@ -82,15 +82,12 @@ void bootup_misc_mmio(void) {
     MC_SECURITY_CFG1_0 = 0;
     MC_SECURITY_CFG3_0 = 3;
     configure_default_carveouts();
-    
-    
-
+        
     /* Mark registers secure world only. */
     if (exosphere_get_target_firmware() == EXOSPHERE_TARGET_FIRMWARE_100) {
-        /* TODO: Switch these to use the enum. */
-        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = 0x500244;
-        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = 0xA3700000;
-        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = 0x304;
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = APB_SSER0_SATA_AUX | APB_SSER0_DTV | APB_SSER0_QSPI | APB_SSER0_SATA | APB_SSER0_LA;
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = APB_SSER1_SPI1 | APB_SSER1_SPI2 | APB_SSER1_SPI3 | APB_SSER1_SPI5 | APB_SSER1_SPI6 | APB_SSER1_I2C4 | APB_SSER1_I2C6;
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = 1 << 4 | 1 << 5 | APB_SSER2_DDS; /* bits 4 and 5 are not labeled in 21.1.7.3 */
     } else {
         /* Mark SATA_AUX, DTV, QSPI, SE, SATA, LA secure only. */
         APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = APB_SSER0_SATA_AUX | APB_SSER0_DTV | APB_SSER0_QSPI | APB_SSER0_SE | APB_SSER0_SATA | APB_SSER0_LA;
@@ -114,37 +111,42 @@ void bootup_misc_mmio(void) {
         APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = sec_disable_2;
     }
 
+    /* reset Translation Enable Registers */
+    MC_SMMU_TRANSLATION_ENABLE_0_0 = 0xFFFFFFFF;
+    MC_SMMU_TRANSLATION_ENABLE_1_0 = 0xFFFFFFFF;
+    MC_SMMU_TRANSLATION_ENABLE_2_0 = 0xFFFFFFFF;
+    MC_SMMU_TRANSLATION_ENABLE_3_0 = 0xFFFFFFFF;
+    MC_SMMU_TRANSLATION_ENABLE_4_0 = 0xFFFFFFFF;
+
     /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x228) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x22C) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x230) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x234) = 0xFFFFFFFF;
-    MAKE_MC_REG(0xB98) = 0xFFFFFFFF;
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         MAKE_MC_REG(0x038) = 0xE;
     } else {
         MAKE_MC_REG(0x038) = 0x0;
     }
     MAKE_MC_REG(0x03C) = 0;
+
+    /* MISC registers*/
     MAKE_MC_REG(0x9E0) = 0;
     MAKE_MC_REG(0x9E4) = 0;
     MAKE_MC_REG(0x9E8) = 0;
     MAKE_MC_REG(0x9EC) = 0;
     MAKE_MC_REG(0x9F0) = 0;
     MAKE_MC_REG(0x9F4) = 0;
+
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
-        MAKE_MC_REG(0x01C) = 0;
+        MC_SMMU_PTB_ASID_0 = 0;
     }
-    MAKE_MC_REG(0x020) = 0;
-    MAKE_MC_REG(0x014) = 0x30000030;
-    MAKE_MC_REG(0x018) = 0x2800003F;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x034) = 0;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x030) = 0;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x010) = 1;
-    (void)(MAKE_MC_REG(0x014));
+    MC_SMMU_PTB_DATA_0 = 0;
+    MC_SMMU_TLB_CONFIG_0 = 0x30000030;
+    MC_SMMU_PTC_CONFIG_0 = 0x2800003F;
+    (void)MC_SMMU_TLB_CONFIG_0;
+    MC_SMMU_PTC_FLUSH_0 = 0;
+    (void)MC_SMMU_TLB_CONFIG_0;
+    MC_SMMU_TLB_FLUSH_0 = 0;
+    (void)MC_SMMU_TLB_CONFIG_0;
+    MC_SMMU_CONFIG_0 = 1; /* enable SMMU */
+    (void)MC_SMMU_TLB_CONFIG_0;
     
     /* Clear RESET Vector, setup CPU Secure Boot RESET Vectors. */
     uint32_t reset_vec;
@@ -206,6 +208,7 @@ void setup_4x_mmio(void) {
     MAKE_MC_REG(0x660) = 0;
     MAKE_MC_REG(0x964) |= 1;
     CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
+
     /* TODO: What are these PMC scratch writes? */
     APBDEV_PMC_SECURE_SCRATCH51_0 = (APBDEV_PMC_SECURE_SCRATCH51_0 & 0xFFFF8000) | 0x4000;
     APBDEV_PMC_SECURE_SCRATCH16_0 &= 0x3FFFFFFF;
@@ -221,6 +224,7 @@ void setup_4x_mmio(void) {
     APBDEV_PMC_SECURE_SCRATCH102_0 = 0x0;
     APBDEV_PMC_SECURE_SCRATCH103_0 = 0x0;
     APBDEV_PMC_SECURE_SCRATCH39_0 = (APBDEV_PMC_SECURE_SCRATCH39_0 & 0xF8000000) | 0x88;
+
     /* TODO: Do we want to bother locking the secure scratch registers? */
     /* 4.x Jamais Vu mitigations. */
     /* Overwrite exception vectors. */
@@ -232,23 +236,27 @@ void setup_4x_mmio(void) {
     BPMP_VECTOR_UNK = BPMP_MITIGATION_RESET_VAL;
     BPMP_VECTOR_IRQ = BPMP_MITIGATION_RESET_VAL;
     BPMP_VECTOR_FIQ = BPMP_MITIGATION_RESET_VAL;
+
     /* Disable AHB arbitration for the BPMP. */
     AHB_ARBITRATION_DISABLE_0 |= 2;
+
     /* Set SMMU for BPMP/APB-DMA to point to TZRAM. */
     MC_SMMU_PTB_ASID_0 = 1;
-    (void)(MAKE_MC_REG(0x014));
+    (void)MC_SMMU_TLB_CONFIG_0;
     MC_SMMU_PTB_DATA_0 = 0x70012;
     MC_SMMU_AVPC_ASID_0 = 0x80000001;
     MC_SMMU_PPCS1_ASID_0 = 0x80000001;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x34) = 0;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x30) = 0;
-    (void)(MAKE_MC_REG(0x014));
+    (void)MC_SMMU_TLB_CONFIG_0;
+    MC_SMMU_PTC_FLUSH_0 = 0;
+    (void)MC_SMMU_TLB_CONFIG_0;
+    MC_SMMU_TLB_FLUSH_0 = 0;
+    (void)MC_SMMU_TLB_CONFIG_0;
+
     /* Wait for the BPMP to halt. */
     while ((FLOW_CTLR_HALT_COP_EVENTS_0 >> 29) != 2) {
         wait(1);
     }
+
     /* If not in a debugging context, setup the activity monitor. */
     if ((get_debug_authentication_status() & 3) != 3) {
         FLOW_CTLR_HALT_COP_EVENTS_0 = 0x40000000;
