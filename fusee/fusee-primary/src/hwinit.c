@@ -24,7 +24,7 @@ void config_oscillators()
     car->spare_reg0 = ((car->spare_reg0 & 0xFFFFFFF3) | 4);
     
     SYSCTR0_CNTFID0_0 = 19200000;
-    MAKE_TIMERS_REG(0x14) = 0x45F;
+    TIMERUS_USEC_CFG_0 = 0x45F;
     
     car->osc_ctrl = 0x50000071;
     pmc->osc_edpd_over = ((pmc->osc_edpd_over & 0xFFFFFF81) | 0xE);

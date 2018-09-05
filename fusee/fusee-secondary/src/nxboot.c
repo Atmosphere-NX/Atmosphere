@@ -133,7 +133,7 @@ static void nxboot_set_bootreason() {
         boot_reason.boot_reason_state = 0x04;
     
     /* Set in memory. */
-    memcpy((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON, &boot_reason, sizeof(boot_reason));
+    memcpy((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE, &boot_reason, sizeof(boot_reason));
     
     /* Clean up. */
     free(bct);
@@ -335,7 +335,7 @@ void nxboot_main(void) {
     printf(u8"[NXBOOT]: Reading Exosphère...\n");
     
     /* Select the right address for Exosphère. */
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware <= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
         exosphere_memaddr = (void *)0x4002D000;
     } else {
         exosphere_memaddr = (void *)0x4002B000;
@@ -415,7 +415,7 @@ void nxboot_main(void) {
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
         MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_LOADED_PACKAGE2;
     } else {
-        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_LOADED_PACKAGE2_4X;
+        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_DRAM_INITIALIZED_4X;
     }
     
     printf("[NXBOOT]: Powering on the CCPLEX...\n");
@@ -425,9 +425,6 @@ void nxboot_main(void) {
     
     /* Unmount everything. */
     nxfs_unmount_all();
-    
-    /* Turn off the backlight. */
-    display_backlight(false);
     
     /* Terminate the display. */
     display_end();

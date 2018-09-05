@@ -60,7 +60,7 @@ int max77620_regulator_get_status(uint32_t id)
     }
     
     if (i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, reg->cfg_addr, &val, 1))
-        return (val & 8) ? 0 : 1;
+        return (val & 8) ? 1 : 0;
     
     return 0;
 }

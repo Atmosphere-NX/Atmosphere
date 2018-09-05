@@ -110,7 +110,7 @@ void cluster_boot_cpu0(uint32_t entry)
 
     /* Request and wait for RAM repair. */
     FLOW_CTLR_RAM_REPAIR_0 = 1;
-    while (!(FLOW_CTLR_RAM_REPAIR_0 & 2)){
+    while (!(FLOW_CTLR_RAM_REPAIR_0 & 2)) {
         /* Wait. */
     }
 

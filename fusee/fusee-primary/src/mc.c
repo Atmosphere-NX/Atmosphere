@@ -20,7 +20,7 @@ void mc_config_carveout()
     MAKE_MC_REG(MC_VIDEO_PROTECT_SIZE_MB) = 0;
     MAKE_MC_REG(MC_VIDEO_PROTECT_REG_CTRL) = 1;
 
-    mc_config_tsec_carveout(0, 0, 1);
+    mc_config_tsec_carveout(0, 0, true);
 
     MAKE_MC_REG(MC_MTS_CARVEOUT_BOM) = 0;
     MAKE_MC_REG(MC_MTS_CARVEOUT_SIZE_MB) = 0;
