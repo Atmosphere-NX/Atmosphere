@@ -34,11 +34,12 @@ static inline bootconfig_t *get_loaded_bootconfig(void) {
 }
 
 typedef struct {
-    uint64_t _0x00;
-    uint32_t _0x08;
-    uint32_t is_recovery_boot;
-    uint32_t boot_reason_low;
-    uint32_t boot_reason_high;
+    uint32_t bootloader_version;
+    uint32_t bootloader_start_block;
+    uint32_t bootloader_start_page;
+    uint32_t bootloader_attribute;
+    uint32_t boot_reason_value;
+    uint32_t boot_reason_state;
 } boot_reason_t;
 
 void bootconfig_load_and_verify(const bootconfig_t *bootconfig);

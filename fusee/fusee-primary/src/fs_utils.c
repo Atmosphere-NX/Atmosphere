@@ -47,6 +47,12 @@ void unmount_sd(void)
         sdmmc_device_finish(&g_sd_device);
         g_sd_mounted = false;
     }
+    
+    /* Disable AHB redirection if necessary. */
+    if (g_ahb_redirect_enabled) {
+        mc_disable_ahb_redirect();
+        g_ahb_redirect_enabled = false;
+    }
 }
 
 uint32_t get_file_size(const char *filename)

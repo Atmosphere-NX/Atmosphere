@@ -36,9 +36,9 @@ void display_init()
     
     /* Power on. */
     uint8_t val = 0xD0;
-    i2c_send(4, 0x3C, MAX77620_REG_LDO0_CFG, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_LDO0_CFG, &val, 1);
     val = 0x09;
-    i2c_send(4, 0x3C, MAX77620_REG_GPIO7, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_GPIO7, &val, 1);
     
     /* Enable MIPI CAL, DSI, DISP1, HOST1X, UART_FST_MIPI_CAL, DSIA LP clocks. */
     car->rst_dev_h_clr = 0x1010000;

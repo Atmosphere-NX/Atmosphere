@@ -43,16 +43,16 @@ void i2c_init(unsigned int id) {
 void i2c_send_pmic_cpu_shutdown_cmd(void) {
     uint32_t val = 0;
     /* PMIC == Device 4:3C. */
-    i2c_query(4, 0x3C, 0x41, &val, 1);
+    i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, 0x41, &val, 1);
     val |= 4;
-    i2c_send(4, 0x3C, 0x41, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, 0x41, &val, 1);
 }
 
 /* Queries the value of TI charger bit over I2C. */
 bool i2c_query_ti_charger_bit_7(void) {
     uint32_t val = 0;
     /* TI Charger = Device 0:6B. */
-    i2c_query(0, 0x6B, 0, &val, 1);
+    i2c_query(I2C_1, BQ24193_I2C_ADDR, 0, &val, 1);
     return (val & 0x80) != 0;
 }
 
@@ -60,34 +60,34 @@ bool i2c_query_ti_charger_bit_7(void) {
 void i2c_clear_ti_charger_bit_7(void) {
     uint32_t val = 0;
     /* TI Charger = Device 0:6B. */
-    i2c_query(0, 0x6B, 0, &val, 1);
+    i2c_query(I2C_1, BQ24193_I2C_ADDR, 0, &val, 1);
     val &= 0x7F;
-    i2c_send(0, 0x6B, 0, &val, 1);
+    i2c_send(I2C_1, BQ24193_I2C_ADDR, 0, &val, 1);
 }
 
 /* Sets TI charger bit over I2C. */
 void i2c_set_ti_charger_bit_7(void) {
     uint32_t val = 0;
     /* TI Charger = Device 0:6B. */
-    i2c_query(0, 0x6B, 0, &val, 1);
+    i2c_query(I2C_1, BQ24193_I2C_ADDR, 0, &val, 1);
     val |= 0x80;
-    i2c_send(0, 0x6B, 0, &val, 1);
+    i2c_send(I2C_1, BQ24193_I2C_ADDR, 0, &val, 1);
 }
 
 /* Get registers pointer based on I2C ID. */
 volatile tegra_i2c_t *i2c_get_registers_from_id(unsigned int id) {
     switch (id) {
-        case 0:
+        case I2C_1:
             return I2C1_REGS;
-        case 1:
+        case I2C_2:
             return I2C2_REGS;
-        case 2:
+        case I2C_3:
             return I2C3_REGS;
-        case 3:
+        case I2C_4:
             return I2C4_REGS;
-        case 4:
+        case I2C_5:
             return I2C5_REGS;
-        case 5:
+        case I2C_6:
             return I2C6_REGS;
         default:
             generic_panic();

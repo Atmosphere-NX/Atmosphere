@@ -203,33 +203,33 @@ void nx_hwinit()
     clkrst_reboot(CARDEVICE_UNK);
 
     /* Initialize I2C1 and I2C5. */
-    i2c_init(0);
-    i2c_init(4);
+    i2c_init(I2C_1);
+    i2c_init(I2C_5);
     
     uint8_t val = 0x40;
-    i2c_send(4, 0x3C, MAX77620_REG_CNFGBBC, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGBBC, &val, 1);
     val = 0x78;
-    i2c_send(4, 0x3C, MAX77620_REG_ONOFFCNFG1, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFCNFG1, &val, 1);
 
     val = 0x38;
-    i2c_send(4, 0x3C, MAX77620_REG_FPS_CFG0, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG0, &val, 1);
     val = 0x3A;
-    i2c_send(4, 0x3C, MAX77620_REG_FPS_CFG1, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG1, &val, 1);
     val = 0x38;
-    i2c_send(4, 0x3C, MAX77620_REG_FPS_CFG2, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG2, &val, 1);
     val = 0xF;
-    i2c_send(4, 0x3C, MAX77620_REG_FPS_LDO4, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_LDO4, &val, 1);
     val = 0xC7;
-    i2c_send(4, 0x3C, MAX77620_REG_FPS_LDO8, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_LDO8, &val, 1);
     val = 0x4F;
-    i2c_send(4, 0x3C, MAX77620_REG_FPS_SD0, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD0, &val, 1);
     val = 0x29;
-    i2c_send(4, 0x3C, MAX77620_REG_FPS_SD1, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD1, &val, 1);
     val = 0x1B;
-    i2c_send(4, 0x3C, MAX77620_REG_FPS_SD3, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD3, &val, 1);
 
     val = 42;       /* 42 = (1125000 - 600000) / 12500 -> 1.125V */
-    i2c_send(4, 0x3C, MAX77620_REG_SD0, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_SD0, &val, 1);
 
     /* Configure and lock PMC scratch registers. */
     config_pmc_scratch();

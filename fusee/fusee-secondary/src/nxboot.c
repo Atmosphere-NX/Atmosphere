@@ -7,10 +7,13 @@
 #include "fs_utils.h"
 #include "nxboot.h"
 #include "nxfs.h"
+#include "bct.h"
 #include "di.h"
 #include "mc.h"
 #include "se.h"
 #include "pmc.h"
+#include "i2c.h"
+#include "max77620.h"
 #include "cluster.h"
 #include "flow.h"
 #include "timers.h"
@@ -78,13 +81,98 @@ static void nxboot_configure_exosphere(uint32_t target_firmware) {
     *(MAILBOX_EXOSPHERE_CONFIGURATION) = exo_cfg;
 }
 
+static void nxboot_set_bootreason() {
+    boot_reason_t boot_reason = {0};
+    FILE *boot0; 
+    nvboot_config_table *bct;
+    nv_bootloader_info *bootloader_info;
+
+    /* Allocate memory for the BCT. */
+    bct = malloc(sizeof(nvboot_config_table));
+    if (bct == NULL) {
+        fatal_error("[NXBOOT]: Out of memory!\n");
+    }
+    
+    /* Open boot0. */
+    boot0 = fopen("boot0:/", "rb");
+    if (boot0 == NULL) {
+        fatal_error("[NXBOOT]: Failed to open boot0!\n");
+    }
+
+    /* Read the BCT. */
+    if (fread(bct, sizeof(nvboot_config_table), 1, boot0) == 0) {
+        fatal_error("[NXBOOT]: Failed to read the BCT!\n");
+    }
+    
+    /* Close boot0. */
+    fclose(boot0);
+    
+    /* Populate bootloader parameters. */
+    bootloader_info = &bct->bootloader[0];
+    boot_reason.bootloader_version = bootloader_info->version;
+    boot_reason.bootloader_start_block = bootloader_info->start_blk;
+    boot_reason.bootloader_start_page = bootloader_info->start_page;
+    boot_reason.bootloader_attribute = bootloader_info->attribute;
+    
+    uint8_t power_key_intr = 0;
+    uint8_t rtc_intr = 0;
+    i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFIRQ, &power_key_intr, 1);
+    i2c_query(I2C_5, MAX77620_RTC_I2C_ADDR, MAX77620_REG_RTCINT, &rtc_intr, 1);
+    
+    /* Set PMIC value. */
+    boot_reason.boot_reason_value = ((rtc_intr << 0x08) | power_key_intr);
+    
+    /* TODO: Find out what these mean. */
+    if (power_key_intr & 0x80)
+        boot_reason.boot_reason_state = 0x01;
+    else if (power_key_intr & 0x08)
+        boot_reason.boot_reason_state = 0x02;
+    else if (rtc_intr & 0x02)
+        boot_reason.boot_reason_state = 0x03;
+    else if (rtc_intr & 0x04)
+        boot_reason.boot_reason_state = 0x04;
+    
+    /* Set in memory. */
+    memcpy((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON, &boot_reason, sizeof(boot_reason));
+    
+    /* Clean up. */
+    free(bct);
+}
+
+static void nxboot_move_bootconfig() {
+    FILE *bcfile;
+    void *bootconfig;
+    
+    /* Allocate memory for reading BootConfig. */
+    bootconfig = memalign(0x1000, 0x4000);
+    if (bootconfig == NULL) {
+        fatal_error("[NXBOOT]: Out of memory!\n");
+    }
+    
+    /* Get BootConfig from the Package2 partition. */
+    bcfile = fopen("bcpkg21:/", "rb");
+    if (bcfile == NULL) {
+        fatal_error("[NXBOOT]: Failed to open BootConfig from eMMC!\n");
+    }
+    if (fread(bootconfig, 0x4000, 1, bcfile) < 1) {
+        fatal_error("[NXBOOT]: Failed to read BootConfig!\n");
+    }
+    fclose(bcfile);
+    
+    /* Copy the first 0x3000 bytes into IRAM. */
+    memset((void *)0x4003D000, 0, 0x3000);
+    memcpy((void *)0x4003D000, bootconfig, 0x3000);
+    
+    /* Clean up. */
+    free(bootconfig);
+}
+
 /* This is the main function responsible for booting Horizon. */
 static nx_keyblob_t __attribute__((aligned(16))) g_keyblobs[32];
 void nxboot_main(void) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_se_t *se = se_get_regs();
     loader_ctx_t *loader_ctx = get_loader_ctx();
-    /* void *bootconfig; */
     package2_header_t *package2;
     size_t package2_size;
     void *tsec_fw;
@@ -101,7 +189,7 @@ void nxboot_main(void) {
     void *exosphere_memaddr;
 
     /* Allocate memory for reading Package2. */
-    package2 = memalign(4096, PACKAGE2_SIZE_MAX);
+    package2 = memalign(0x1000, PACKAGE2_SIZE_MAX);
     if (package2 == NULL) {
         fatal_error("[NXBOOT]: Out of memory!\n");
     }
@@ -115,10 +203,12 @@ void nxboot_main(void) {
         }
     } else {
         pk2file = fopen("bcpkg21:/", "rb");
-        if (pk2file == NULL || fseek(pk2file, 0x4000, SEEK_SET) != 0) {
-            printf("[NXBOOT]: Failed to open Package2 from eMMC: %s!\n", strerror(errno));
+        if (pk2file == NULL) {
+            fatal_error("[NXBOOT]: Failed to open Package2 from eMMC: %s!\n", strerror(errno));
+        }
+        if (fseek(pk2file, 0x4000, SEEK_SET) != 0) {
+            fatal_error("[NXBOOT]: Failed to seek Package2 in eMMC: %s!\n", strerror(errno));
             fclose(pk2file);
-            generic_panic();
         }
     }
 
@@ -127,7 +217,7 @@ void nxboot_main(void) {
         fatal_error("[NXBOOT]: Failed to read Package2!\n");
     }
     package2_size = package2_meta_get_size(&package2->metadata);
-    if (package2_size > PACKAGE2_SIZE_MAX || package2_size <= sizeof(package2_header_t)) {
+    if ((package2_size > PACKAGE2_SIZE_MAX) || (package2_size <= sizeof(package2_header_t))) {
         fatal_error("[NXBOOT]: Package2 is too big or too small!\n");
     }
     if (fread(package2->data, package2_size - sizeof(package2_header_t), 1, pk2file) < 1) {
@@ -138,7 +228,7 @@ void nxboot_main(void) {
     /* Read and parse boot0. */
     printf("[NXBOOT]: Reading boot0...\n");
     boot0 = fopen("boot0:/", "rb");
-    if (boot0 == NULL || package1_read_and_parse_boot0(&package1loader, &package1loader_size, g_keyblobs, &available_revision, boot0) == -1) {
+    if ((boot0 == NULL) || (package1_read_and_parse_boot0(&package1loader, &package1loader_size, g_keyblobs, &available_revision, boot0) == -1)) {
         fatal_error("[NXBOOT]: Couldn't parse boot0: %s!\n", strerror(errno));
     }
     fclose(boot0);
@@ -146,13 +236,15 @@ void nxboot_main(void) {
     /* Read the TSEC firmware from a file, otherwise from PK1L. */
     if (loader_ctx->tsecfw_path[0] != '\0') {
         tsec_fw_size = get_file_size(loader_ctx->tsecfw_path);
-        if (tsec_fw_size != 0 && tsec_fw_size != 0xF00) {
+        if ((tsec_fw_size != 0) && (tsec_fw_size != 0xF00)) {
             fatal_error("[NXBOOT]: TSEC firmware from %s has a wrong size!\n", loader_ctx->tsecfw_path);
         } else if (tsec_fw_size == 0) {
             fatal_error("[NXBOOT]: Could not read the TSEC firmware from %s!\n", loader_ctx->tsecfw_path);
         }
-
+        
+        /* Allocate memory for the TSEC firmware. */
         tsec_fw = memalign(0x100, tsec_fw_size);
+        
         if (tsec_fw == NULL) {
             fatal_error("[NXBOOT]: Out of memory!\n");
         }
@@ -165,10 +257,6 @@ void nxboot_main(void) {
             fatal_error("[NXBOOT]: Failed to read the TSEC firmware from Package1loader!\n");
         }
     }
-
-    /* TODO: Validate that we're capable of booting. */
-
-    /* TODO: Initialize Boot Reason. */
     
     /* Find the system's target firmware. */
     uint32_t target_firmware = nxboot_get_target_firmware(package1loader);
@@ -179,6 +267,12 @@ void nxboot_main(void) {
 
     /* Setup boot configuration for Exosphère. */
     nxboot_configure_exosphere(target_firmware);
+    
+    /* Initialize Boot Reason on older firmware versions. */
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
+        printf("[NXBOOT]: Initializing Boot Reason...\n");
+        nxboot_set_bootreason();
+    }
     
     /* Derive keydata. */
     if (derive_nx_keydata(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware, g_keyblobs, available_revision, tsec_fw, tsec_fw_size) != 0) {
@@ -192,7 +286,9 @@ void nxboot_main(void) {
             fatal_error("[NXBOOT]: Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
         }
 
+        /* Allocate memory for the warmboot firmware. */
         warmboot_fw = malloc(warmboot_fw_size);
+        
         if (warmboot_fw == NULL) {
             fatal_error("[NXBOOT]: Out of memory!\n");
         }
@@ -236,30 +332,43 @@ void nxboot_main(void) {
     /* Patch package2, adding Thermosphère + custom KIPs. */
     package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
-    printf(u8"Reading Exosphère...\n");
+    printf(u8"[NXBOOT]: Reading Exosphère...\n");
     
     /* Select the right address for Exosphère. */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware <= EXOSPHERE_TARGET_FIRMWARE_400) {
-        exosphere_memaddr = (void *)0x40020000;
+        exosphere_memaddr = (void *)0x4002D000;
     } else {
-        exosphere_memaddr = (void *)0x40018000; /* 5.x has its secmon's crt0 around this region. */
+        exosphere_memaddr = (void *)0x4002B000;
     }
 
     /* Copy Exosphère to a good location or read it directly to it. */
     if (loader_ctx->exosphere_path[0] != '\0') {
         size_t exosphere_size = get_file_size(loader_ctx->exosphere_path);
         if (exosphere_size == 0) {
-            fatal_error(u8"Could not read Exosphère from %s!\n", loader_ctx->exosphere_path);
+            fatal_error(u8"[NXBOOT]: Could not read Exosphère from %s!\n", loader_ctx->exosphere_path);
         } else if (exosphere_size > 0x10000) {
             /* The maximum is actually a bit less than that. */
-            fatal_error(u8"Exosphère from %s is too big!\n", loader_ctx->exosphere_path);
+            fatal_error(u8"[NXBOOT]: Exosphère from %s is too big!\n", loader_ctx->exosphere_path);
         }
 
         if (read_from_file(exosphere_memaddr, exosphere_size, loader_ctx->exosphere_path) != exosphere_size) {
-            fatal_error(u8"Could not read Exosphère from %s!\n", loader_ctx->exosphere_path);
+            fatal_error(u8"[NXBOOT]: Could not read Exosphère from %s!\n", loader_ctx->exosphere_path);
         }
     } else {
         memcpy(exosphere_memaddr, exosphere_bin, exosphere_bin_size);
+    }
+    
+    /* Move BootConfig. */
+    printf("[NXBOOT]: Moving BootConfig...\n");
+    nxboot_move_bootconfig();
+    
+    /* Set 3.0.0/3.0.1/3.0.2 warmboot security check. */
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == EXOSPHERE_TARGET_FIRMWARE_300) {
+        const package1loader_header_t *package1loader_header = (const package1loader_header_t *)package1loader;
+        if (!strcmp(package1loader_header->build_timestamp, "20170519101410"))
+            pmc->secure_scratch32 = 0xE3;       /* Warmboot 3.0.0 security check.*/
+        else if (!strcmp(package1loader_header->build_timestamp, "20170710161758"))
+            pmc->secure_scratch32 = 0x104;      /* Warmboot 3.0.1/3.0.2 security check. */
     }
     
     /* Clean up. */
@@ -271,9 +380,6 @@ void nxboot_main(void) {
         free(warmboot_fw);
     }
     free(package2);
-    
-    /* Unmount everything. */
-    nxfs_unmount_all();
     
     /* Clear used keyslots. */
     clear_aes_keyslot(KEYSLOT_SWITCH_PACKAGE2KEY);
@@ -287,9 +393,6 @@ void nxboot_main(void) {
         set_aes_keyslot_flags(KEYSLOT_SWITCH_4XOLDDEVICEKEY, 0xFF);
     }
 
-    /* TODO: Handle bootconfig. */
-    memset((void *)0x4003D000, 0, 0x3000);
-    
     /* Finalize the GPU UCODE carveout. */
     mc_config_carveout_finalize();
     
@@ -320,6 +423,9 @@ void nxboot_main(void) {
     /* Display splash screen. */
     display_splash_screen_bmp(loader_ctx->custom_splash_path);
     
+    /* Unmount everything. */
+    nxfs_unmount_all();
+    
     /* Turn off the backlight. */
     display_backlight(false);
     
@@ -327,7 +433,7 @@ void nxboot_main(void) {
     display_end();
     
     /* Boot CPU0. */
-    cluster_boot_cpu0((uint64_t)(uintptr_t)exosphere_memaddr);
+    cluster_boot_cpu0((uint32_t)exosphere_memaddr);
     
     /* Wait for Exosphère to wake up. */
     while (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE == 0) {
