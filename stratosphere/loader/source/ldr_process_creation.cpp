@@ -8,6 +8,15 @@
 #include "ldr_npdm.hpp"
 #include "ldr_nso.hpp"
 
+extern "C" {
+    
+    bool __attribute__((weak)) kernelAbove600(void) {
+        u64 tmp;
+        return (svcGetInfo(&tmp, 21, INVALID_HANDLE, 0) != 0xF001);
+    }
+    
+}
+
 Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle reslimit_h, u64 arg_flags, ProcessInfo *out_proc_info) {
     /* Initialize a ProcessInfo using an npdm. */
     *out_proc_info = (const ProcessCreation::ProcessInfo){0};
@@ -48,7 +57,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
             if ((out_proc_info->process_flags & 6) == 0) {
                 return 0x809;
             }
-            if ((application_type & 3) != 1) {
+            if (!(((application_type & 3) == 1) || (kernelAbove600() && (application_type & 3) == 2))) {
                 return 0x809;
             }
             if (npdm->header->system_resource_size > 0x1FE00000) {
