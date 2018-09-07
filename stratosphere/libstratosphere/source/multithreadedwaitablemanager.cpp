@@ -58,6 +58,12 @@ IWaitable *MultiThreadedWaitableManager::get_waitable() {
         handles.resize(this->waitables.size());
         std::transform(this->waitables.begin(), this->waitables.end(), handles.begin(), [](IWaitable *w) { return w->get_handle(); });
         
+        if(this->waitables.size() == 0) {
+            continue;
+        }
+        if(this->waitables.size() > 0x40) {
+            /* TODO: panic. Too many waitables */
+        }
         rc = svcWaitSynchronization(&handle_index, handles.data(), this->waitables.size(), this->timeout);
         IWaitable *w = this->waitables[handle_index];
         if (R_SUCCEEDED(rc)) {
@@ -66,7 +72,20 @@ IWaitable *MultiThreadedWaitableManager::get_waitable() {
         } else if (rc == 0xEA01) {
             /* Timeout. */
             std::for_each(waitables.begin(), waitables.end(), std::mem_fn(&IWaitable::update_priority));
-        } else if (rc != 0xF601 && rc != 0xE401) {
+        } else if (rc == 0xE401) {
+            /* Invalid handle */
+            /* handle_index does not get updated when this happens 
+            so we don't know which waitable is the problem.
+            However switchbrew says that svcWaitSynchronization
+            does not accept 0xFFFF8001 or 0xFFFF8000 as handles
+            so we could at least remove them if any exists */
+            
+            for(auto it = waitables.begin(); it != waitables.end(); it++) {
+                if((*it)->get_handle() == 0xFFFF8000 || (*it)->get_handle() == 0xFFFF8001) {
+                    waitables.erase(it);
+                }
+            }
+        } else if (rc != 0xF601) {
             /* TODO: Panic. When can this happen? */
         } else {
             std::for_each(waitables.begin(), waitables.begin() + handle_index, std::mem_fn(&IWaitable::update_priority));
