@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2018 naehrwert
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #ifndef EXOSPHERE_UART_H
 #define EXOSPHERE_UART_H
 
@@ -5,7 +22,6 @@
 #include "memory_map.h"
 
 /* Exosphere driver for the Tegra X1 UARTs. */
-/* Mostly copied from https://github.com/nwert/hekate/blob/master/hwinit/uart.h and https://github.com/nwert/hekate/blob/master/hwinit/uart.c */
 
 static inline uintptr_t get_uart_base(void) {
     return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_UART);
