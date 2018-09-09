@@ -79,6 +79,7 @@ typedef struct {
 
 volatile security_carveout_t *get_carveout_by_id(unsigned int carveout);
 void configure_default_carveouts(void);
+void configure_gpu_ucode_carveout(void);
 void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint64_t size);
 
 

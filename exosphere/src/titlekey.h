@@ -19,8 +19,11 @@
 
 #include <stdint.h>
 
+#define TITLEKEY_TYPE_MAX 0x1
+
 void tkey_set_expected_label_hash(uint64_t *label_hash);
 void tkey_set_master_key_rev(unsigned int master_key_rev);
+void tkey_set_type(unsigned int type);
 
 size_t tkey_rsa_oaep_unwrap(void *dst, size_t dst_size, void *src, size_t src_size);
 

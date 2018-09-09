@@ -50,6 +50,7 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
 #define MAILBOX_NX_BOOTLOADER_BOOT_REASON (MAILBOX_NX_BOOTLOADER_BASE + 0xE10ULL)
 
 #define NX_BOOTLOADER_BOOTCONFIG_POINTER ((void *)(0x4003D000ull))
+#define NX_BOOTLOADER_BOOTCONFIG_POINTER_6X ((void *)(0x4003F800ull))
 
 #define NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS ((void *)(0xA9800000ull))
 

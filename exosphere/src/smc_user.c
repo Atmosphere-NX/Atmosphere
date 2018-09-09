@@ -40,6 +40,20 @@ static uint8_t g_imported_exponents[4][0x100];
 
 static uint8_t g_rsausecase_to_cryptousecase[5] = {1, 2, 3, 5, 6};
 
+static bool is_user_keyslot_valid(unsigned int keyslot) {
+    switch (exosphere_get_target_firmware()) {
+        case EXOSPHERE_TARGET_FIRMWARE_100:
+        case EXOSPHERE_TARGET_FIRMWARE_200:
+        case EXOSPHERE_TARGET_FIRMWARE_300:
+        case EXOSPHERE_TARGET_FIRMWARE_400:
+        case EXOSPHERE_TARGET_FIRMWARE_500:
+            return keyslot <= 3;
+        case EXOSPHERE_TARGET_FIRMWARE_600:
+        default:
+            return keyslot <= 5;
+    }
+}
+
 void set_exp_mod_done(bool done) {
     g_exp_mod_done = done;
 }
@@ -152,7 +166,7 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
     /* 5.0.0+ Bounds checking. */
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
         if (is_personalized) {
-            if (master_key_rev > MASTERKEY_REVISION_500_CURRENT || ((1 << (master_key_rev + 1)) & 0x33) == 0) {
+            if (master_key_rev > MASTERKEY_REVISION_600_CURRENT || ((1 << (master_key_rev + 1)) & 0x73) == 0) {
                 return 2;
             }
             if (mask_id > 3 || usecase >= CRYPTOUSECASE_MAX_5X) {
@@ -238,7 +252,7 @@ uint32_t user_load_aes_key(smc_args_t *args) {
     uint64_t wrapped_key[2];
 
     uint32_t keyslot = (uint32_t)args->X[1];
-    if (keyslot > 3) {
+    if (!is_user_keyslot_valid(keyslot)) {
         return 2;
     }
 
@@ -278,6 +292,10 @@ uint32_t crypt_aes_done_handler(void) {
 uint32_t user_crypt_aes(smc_args_t *args) {
     uint32_t keyslot = args->X[1] & 3;
     uint32_t mode = (args->X[1] >> 4) & 3;
+    
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_600) {
+        keyslot = args->X[1] & 7;
+    }
 
     uint64_t iv_ctr[2];
     iv_ctr[0] = args->X[2];
@@ -287,7 +305,7 @@ uint32_t user_crypt_aes(smc_args_t *args) {
     uint32_t out_ll_paddr = (uint32_t)(args->X[5]);
 
     size_t size = args->X[6];
-    if (size & 0xF) {
+    if (!is_user_keyslot_valid(keyslot) || size & 0xF) {
         return 2;
     }
 
@@ -406,7 +424,7 @@ uint32_t user_compute_cmac(smc_args_t *args) {
     upage_ref_t page_ref;
 
     /* Validate keyslot and size. */
-    if (keyslot > 3 || args->X[3] > 0x400) {
+    if (!is_user_keyslot_valid(keyslot) || args->X[3] > 0x400) {
         return 2;
     }
 
@@ -642,7 +660,16 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
 
     void *user_wrapped_key = (void *)args->X[1];
     void *user_modulus = (void *)args->X[2];
-    unsigned int master_key_rev = (unsigned int)args->X[7];
+    unsigned int option = (unsigned int)args->X[7];
+    unsigned int master_key_rev;
+    unsigned int titlekey_type;
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_600) {
+        master_key_rev = option & 0x3F;
+        titlekey_type = (option >> 6) & 1;
+    } else {
+        master_key_rev = option;
+        titlekey_type = 0;
+    }
 
     if(master_key_rev > 0) {
         master_key_rev -= 1;
@@ -673,6 +700,7 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
     tkey_set_expected_label_hash(&args->X[3]);
 
     tkey_set_master_key_rev(master_key_rev);
+    tkey_set_type(titlekey_type);
 
     /* Hardcode RSA keyslot 0. */
     set_rsa_keyslot(0, modulus, 0x100, g_imported_exponents[0], 0x100);
@@ -686,7 +714,7 @@ uint32_t user_load_titlekey(smc_args_t *args) {
     uint64_t sealed_titlekey[2];
 
     uint32_t keyslot = (uint32_t)args->X[1];
-    if (keyslot > 3) {
+    if (!is_user_keyslot_valid(keyslot)) {
         return 2;
     }
 
@@ -721,6 +749,7 @@ uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
     }
 
     tkey_set_master_key_rev(master_key_rev);
+    tkey_set_type(0);
 
     tkey_aes_unwrap(titlekey, 0x10, aes_wrapped_titlekey, 0x10);
     seal_titlekey(sealed_titlekey, 0x10, titlekey, 0x10);

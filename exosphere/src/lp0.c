@@ -244,12 +244,13 @@ void save_se_and_power_down_cpu(void) {
         /* TODO: uart_log("OYASUMI"); */
     }
     
-    __dsb_sy();
-
     finalize_powerdown();
 }
 
 uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argument) {
+    /* TODO: 6.0.0 introduces heavy deja vu mitigations. */
+    /* Exosphere may want to implement these. */
+    
     /* Ensure SMC call is to enter deep sleep. */
     if ((power_state & 0x17FFF) != 0x1001B) {
         return 0xFFFFFFFD;

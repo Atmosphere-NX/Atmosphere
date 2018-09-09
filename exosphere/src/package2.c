@@ -38,20 +38,31 @@
 extern void *__start_cold_addr;
 extern size_t __bin_size;
 
+
+static const uint8_t new_device_key_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
+    {0x8B, 0x4E, 0x1C, 0x22, 0x42, 0x07, 0xC8, 0x73, 0x56, 0x94, 0x08, 0x8B, 0xCC, 0x47, 0x0F, 0x5D}, /* 4.x New Device Key Source. */
+    {0x6C, 0xEF, 0xC6, 0x27, 0x8B, 0xEC, 0x8A, 0x91, 0x99, 0xAB, 0x24, 0xAC, 0x4F, 0x1C, 0x8F, 0x1C}, /* 5.x New Device Key Source. */
+    {0x70, 0x08, 0x1B, 0x97, 0x44, 0x64, 0xF8, 0x91, 0x54, 0x9D, 0xC6, 0x84, 0x8F, 0x1A, 0xB2, 0xE4}  /* 6.x New Device Key Source. */
+};
+
+static const uint8_t new_device_keygen_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
+    {0x88, 0x62, 0x34, 0x6E, 0xFA, 0xF7, 0xD8, 0x3F, 0xE1, 0x30, 0x39, 0x50, 0xF0, 0xB7, 0x5D, 0x5D}, /* 4.x New Device Keygen Source. */
+    {0x06, 0x1E, 0x7B, 0xE9, 0x6D, 0x47, 0x8C, 0x77, 0xC5, 0xC8, 0xE7, 0x94, 0x9A, 0xA8, 0x5F, 0x2E}, /* 5.x New Device Keygen Source. */
+    {0x99, 0xFA, 0x98, 0xBD, 0x15, 0x1C, 0x72, 0xFD, 0x7D, 0x9A, 0xD5, 0x41, 0x00, 0xFD, 0xB2, 0xEF}  /* 6.x New Device Keygen Source. */
+};
+
+static const uint8_t new_device_keygen_sources_dev[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
+    {0xD6, 0xBD, 0x9F, 0xC6, 0x18, 0x09, 0xE1, 0x96, 0x20, 0x39, 0x60, 0xD2, 0x89, 0x83, 0x31, 0x34}, /* 4.x New Device Keygen Source. */
+    {0x59, 0x2D, 0x20, 0x69, 0x33, 0xB5, 0x17, 0xBA, 0xCF, 0xB1, 0x4E, 0xFD, 0xE4, 0xC2, 0x7B, 0xA8}, /* 5.x New Device Keygen Source. */
+    {0xF6, 0xD8, 0x59, 0x63, 0x8F, 0x47, 0xCB, 0x4A, 0xD8, 0x74, 0x05, 0x7F, 0x88, 0x92, 0x33, 0xA5}  /* 6.x New Device Keygen Source. */
+};
+
 static void derive_new_device_keys(unsigned int keygen_keyslot) {
     uint8_t work_buffer[0x10];
-    static const uint8_t new_device_key_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
-        {0x8B, 0x4E, 0x1C, 0x22, 0x42, 0x07, 0xC8, 0x73, 0x56, 0x94, 0x08, 0x8B, 0xCC, 0x47, 0x0F, 0x5D}, /* 4.x New Device Key Source. */
-        {0x6C, 0xEF, 0xC6, 0x27, 0x8B, 0xEC, 0x8A, 0x91, 0x99, 0xAB, 0x24, 0xAC, 0x4F, 0x1C, 0x8F, 0x1C}  /* 5.x New Device Key Source. */
-    };
-
-    static const uint8_t new_device_keygen_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
-        {0x88, 0x62, 0x34, 0x6E, 0xFA, 0xF7, 0xD8, 0x3F, 0xE1, 0x30, 0x39, 0x50, 0xF0, 0xB7, 0x5D, 0x5D}, /* 4.x New Device Keygen Source. */
-        {0x06, 0x1E, 0x7B, 0xE9, 0x6D, 0x47, 0x8C, 0x77, 0xC5, 0xC8, 0xE7, 0x94, 0x9A, 0xA8, 0x5F, 0x2E}  /* 5.x New Device Keygen Source. */
-    };
+    bool is_retail = configitem_is_retail();
     for (unsigned int revision = 0; revision < MASTERKEY_NUM_NEW_DEVICE_KEYS; revision++) {
         se_aes_ecb_decrypt_block(keygen_keyslot, work_buffer, 0x10, new_device_key_sources[revision], 0x10);
-        decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, mkey_get_keyslot(0), new_device_keygen_sources[revision], 0x10);
+        decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, mkey_get_keyslot(0), is_retail ? new_device_keygen_sources[revision] : new_device_keygen_sources_dev[revision], 0x10);
         if (revision < MASTERKEY_NUM_NEW_DEVICE_KEYS - 1) {
             se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10, work_buffer, 0x10);
             set_old_devkey(revision + MASTERKEY_REVISION_400_410, work_buffer);
@@ -110,6 +121,7 @@ static void setup_se(void) {
             derive_new_device_keys(KEYSLOT_SWITCH_4XNEWDEVICEKEYGENKEY);
             break;
         case EXOSPHERE_TARGET_FIRMWARE_500:
+        case EXOSPHERE_TARGET_FIRMWARE_600:
             derive_new_device_keys(KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY);
             break;
     }
@@ -136,14 +148,18 @@ static void setup_boot_config(void) {
     if (configitem_is_retail()) {
         bootconfig_clear();
     } else {
-        flush_dcache_range((uint8_t *)NX_BOOTLOADER_BOOTCONFIG_POINTER, (uint8_t *)NX_BOOTLOADER_BOOTCONFIG_POINTER + sizeof(bootconfig_t));
-        bootconfig_load_and_verify((bootconfig_t *)NX_BOOTLOADER_BOOTCONFIG_POINTER);
+        void *bootconfig_ptr = NX_BOOTLOADER_BOOTCONFIG_POINTER;
+        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_600) {
+            bootconfig_ptr = NX_BOOTLOADER_BOOTCONFIG_POINTER_6X;
+        }
+        flush_dcache_range((uint8_t *)bootconfig_ptr, (uint8_t *)bootconfig_ptr + sizeof(bootconfig_t));
+        bootconfig_load_and_verify((bootconfig_t *)bootconfig_ptr);
     }
 }
 
 static void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
     /* Derive package2 key. */
-    const uint8_t package2_key_source[0x10] = {0xFB, 0x8B, 0x6A, 0x9C, 0x79, 0x00, 0xC8, 0x49, 0xEF, 0xD2, 0x4D, 0x85, 0x4D, 0x30, 0xA0, 0xC7};
+    static const uint8_t package2_key_source[0x10] = {0xFB, 0x8B, 0x6A, 0x9C, 0x79, 0x00, 0xC8, 0x49, 0xEF, 0xD2, 0x4D, 0x85, 0x4D, 0x30, 0xA0, 0xC7};
     flush_dcache_range((uint8_t *)dst, (uint8_t *)dst + dst_size);
     flush_dcache_range((uint8_t *)src, (uint8_t *)src + src_size);
     unsigned int keyslot = mkey_get_keyslot(master_key_rev);
@@ -399,7 +415,22 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
 }
 
 static void copy_warmboot_bin_to_dram() {
-    uint8_t *warmboot_src = (uint8_t *)0x4003B000;
+    uint8_t *warmboot_src;
+    switch (exosphere_get_target_firmware()) {
+        case EXOSPHERE_TARGET_FIRMWARE_100:
+        case EXOSPHERE_TARGET_FIRMWARE_200:
+        case EXOSPHERE_TARGET_FIRMWARE_300:
+        default:
+            generic_panic();
+            break;
+        case EXOSPHERE_TARGET_FIRMWARE_400:
+        case EXOSPHERE_TARGET_FIRMWARE_500:
+            warmboot_src = (uint8_t *)0x4003B000;
+            break;
+        case EXOSPHERE_TARGET_FIRMWARE_600:
+            warmboot_src = (uint8_t *)0x4003D800;
+            break;
+    }
     uint8_t *warmboot_dst = (uint8_t *)0x8000D000;
     const size_t warmboot_size = 0x2000;
     
@@ -448,8 +479,18 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
         MAKE_REG32(PMC_BASE + 0x054) = 0x8000D000; 
         MAKE_REG32(PMC_BASE + 0x0A0) &= 0xFFF3FFFF; 
         MAKE_REG32(PMC_BASE + 0x818) &= 0xFFFFFFFE; 
-        MAKE_REG32(PMC_BASE + 0x334) |= 0x10; 
-        MAKE_REG32(PMC_BASE + 0x360) = 6; 
+        MAKE_REG32(PMC_BASE + 0x334) |= 0x10;
+        switch (exosphere_get_target_firmware()) {
+            case EXOSPHERE_TARGET_FIRMWARE_400:
+                MAKE_REG32(PMC_BASE + 0x360) = 5;
+                break;
+            case EXOSPHERE_TARGET_FIRMWARE_500:
+                MAKE_REG32(PMC_BASE + 0x360) = 6;
+                break;
+            case EXOSPHERE_TARGET_FIRMWARE_600:
+                MAKE_REG32(PMC_BASE + 0x360) = 0x87;
+                break;
+        }
     }
 
     wait(1000);
@@ -465,7 +506,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     randomcache_init();
 
     /* memclear the initial copy of Exosphere running in IRAM (relocated to TZRAM by earlier code). */
-    memset((void *)reloc_list->reloc_base, 0, reloc_list->loaded_bin_size);
+    //memset((void *)reloc_list->reloc_base, 0, reloc_list->loaded_bin_size);
     /* Let NX Bootloader know that we're running. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 1;
 
@@ -490,6 +531,9 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_DRAM_INITIALIZED_4X);
         copy_warmboot_bin_to_dram();
+        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_600) {
+            setup_dram_magic_numbers();
+        }
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2_4X);
     } else {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2);

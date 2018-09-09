@@ -102,6 +102,8 @@ void bootup_misc_mmio(void);
 
 void setup_4x_mmio(void);
 
+void setup_dram_magic_numbers(void);
+
 void setup_current_core_state(void);
 
 void identity_unmap_iram_cd_tzram(void);

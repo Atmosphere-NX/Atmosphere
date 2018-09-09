@@ -158,6 +158,7 @@ void set_version_specific_smcs(void) {
             /* Do nothing. */
             break;
         case EXOSPHERE_TARGET_FIRMWARE_500:
+        case EXOSPHERE_TARGET_FIRMWARE_600:
             /* No more LoadSecureExpModKey. */
             g_smc_user_table[0xE].handler = NULL;
             g_smc_user_table[0xC].id = 0xC300D60C;

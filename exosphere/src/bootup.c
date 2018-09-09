@@ -46,6 +46,23 @@
 
 static bool g_has_booted_up = false;
 
+
+void setup_dram_magic_numbers(void) {
+    /* TODO: Why does these DRAM write occur? */
+    unsigned int target_fw = exosphere_get_target_firmware();
+    if (EXOSPHERE_TARGET_FIRMWARE_400 <= target_fw) {
+        (*(volatile uint32_t *)(0x8005FFFC)) = 0xC0EDBBCC;
+        flush_dcache_range((void *)0x8005FFFC, (void *)0x80060000);
+        if (EXOSPHERE_TARGET_FIRMWARE_600 <= target_fw) {
+            (*(volatile uint32_t *)(0x8005FF00)) = 0x00000083;
+            (*(volatile uint32_t *)(0x8005FF04)) = 0x00000002;
+            (*(volatile uint32_t *)(0x8005FF08)) = 0x00000210;
+            flush_dcache_range((void *)0x8005FF00, (void *)0x8005FF0C);
+        }
+    }
+    __dsb_sy();
+}
+
 void bootup_misc_mmio(void) {
     /* Initialize Fuse registers. */
     fuse_init();
@@ -66,10 +83,8 @@ void bootup_misc_mmio(void) {
     se_generate_random_key(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY);
     se_generate_srk(KEYSLOT_SWITCH_SRKGENKEY);
 
-    /* TODO: Why does this DRAM write occur? */
-    if (!g_has_booted_up && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
-        /* 4.x writes this magic number into DRAM. Why? */
-        (*(volatile uint32_t *)(0x8005FFFC)) = 0xC0EDBBCC;
+    if (!g_has_booted_up && EXOSPHERE_TARGET_FIRMWARE_600 > exosphere_get_target_firmware() && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+        setup_dram_magic_numbers();
     }
 
     /* Todo: What? */
@@ -219,6 +234,9 @@ void bootup_misc_mmio(void) {
 }
 
 void setup_4x_mmio(void) {
+    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_600) {
+        configure_gpu_ucode_carveout();
+    }
     /* TODO: What are these MC reg writes? */
     MAKE_MC_REG(0x65C) = 0xFFFFF000;
     MAKE_MC_REG(0x660) = 0;
