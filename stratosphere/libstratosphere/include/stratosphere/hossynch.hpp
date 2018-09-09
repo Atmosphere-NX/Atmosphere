@@ -20,61 +20,75 @@
 class HosMutex {
     private:
         Mutex m;
+        Mutex *GetMutex() {
+            return &this->m;
+        }
     public:
         HosMutex() {
-            mutexInit(&this->m);
+            mutexInit(GetMutex());
         }
         
         void lock() {
-            mutexLock(&this->m);
+            mutexLock(GetMutex());
         }
         
         void unlock() {
-            mutexUnlock(&this->m);
+            mutexUnlock(GetMutex());
         }
         
         bool try_lock() {
-            return mutexTryLock(&this->m);
+            return mutexTryLock(GetMutex());
         }
+        
+    friend class HosCondVar;
 };
 
 class HosRecursiveMutex {
     private:
         RMutex m;
+        RMutex *GetMutex() {
+            return &this->m;
+        }
     public:
         HosRecursiveMutex() {
-            rmutexInit(&this->m);
+            rmutexInit(GetMutex());
         }
         
         void lock() {
-            rmutexLock(&this->m);
+            rmutexLock(GetMutex());
         }
         
         void unlock() {
-            rmutexUnlock(&this->m);
+            rmutexUnlock(GetMutex());
         }
         
         bool try_lock() {
-            return rmutexTryLock(&this->m);
+            return rmutexTryLock(GetMutex());
         }
 };
 
 class HosCondVar {
     private:
         CondVar cv;
-        Mutex m;
     public:
         HosCondVar() {
-            mutexInit(&m);
             condvarInit(&cv);
         }
         
-        Result WaitTimeout(u64 timeout) {
-            return condvarWaitTimeout(&cv, &m, timeout);
+        Result WaitTimeout(u64 timeout, HosMutex *hm) {
+            return WaitTimeout(timeout, hm->GetMutex());
         }
         
-        Result Wait() {
-            return condvarWait(&cv, &m);
+        Result Wait(HosMutex *hm) {
+            return Wait(hm->GetMutex());
+        }
+        
+        Result WaitTimeout(u64 timeout, Mutex *m) {
+            return condvarWaitTimeout(&cv, m, timeout);
+        }
+        
+        Result Wait(Mutex *m) {
+            return condvarWait(&cv, m);
         }
         
         Result Wake(int num) {
