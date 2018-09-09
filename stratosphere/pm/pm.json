@@ -49,6 +49,7 @@
 			"svcOutputDebugString":	"0x27",
 			"svcReturnFromException":	"0x28",
 			"svcGetInfo":	"0x29",
+			"svcGetResourceLimitLimitValue":	"0x30",
 			"svcGetResourceLimitCurrentValue":	"0x31",
 			"svcWaitForAddress":	"0x34",
 			"svcSignalToAddress":	"0x35",

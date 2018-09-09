@@ -55,10 +55,17 @@ static u64 g_resource_limits_4x[3][5] = {
     {0x0, 0x60, 0x0, 0x20, 0x5},
 };
 
+/* 6.x boosted the number of events and sessions that system modules are allowed to make. */
+static u64 g_resource_limits_6x[3][5] = {
+    {0x0, 0x260, 0x2BC, 0x80, 0x37E},
+    {0x0, 0x60, 0x0, 0x20, 0x1},
+    {0x0, 0x60, 0x0, 0x20, 0x5},
+};
+
 static Handle g_resource_limit_handles[3] = {0};
 
 
-static u64 g_memory_resource_limits[5][3] = {0};
+static u64 g_memory_resource_limits[6][3] = {0};
 static u64 g_resource_limits[3][5] = {0};
 static int g_memory_limit_type;
 static u64 g_system_boost_size = 0;
@@ -89,44 +96,7 @@ static Result SetNewMemoryResourceLimit(ResourceLimitUtils::ResourceLimitCategor
 }
 
 void ResourceLimitUtils::InitializeLimits() {
-    /* Set global aliases. */
-    if (kernelAbove400()) {
-        memcpy(&g_memory_resource_limits, &g_memory_resource_limits_4x, sizeof(g_memory_resource_limits));
-        memcpy(&g_resource_limits, &g_resource_limits_4x, sizeof(g_resource_limits));
-    } else {
-        memcpy(&g_memory_resource_limits, &g_memory_resource_limits_deprecated, sizeof(g_memory_resource_limits));
-        memcpy(&g_resource_limits, &g_resource_limits_deprecated, sizeof(g_resource_limits));
-    }
-    /* Atmosphere: Allocate extra memory (24 MiB) to SYSTEM away from Applet. */
-    for (unsigned int i = 0; i < 5; i++) {
-        g_memory_resource_limits[i][0] += ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
-        g_memory_resource_limits[i][2] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
-    }
-    /* Get memory limits. */
-    u64 memory_arrangement;
-    if (R_FAILED(splGetConfig(SplConfigItem_MemoryArrange, &memory_arrangement))) {
-        /* TODO: panic. */
-    }
-    memory_arrangement &= 0x3F;
-    switch (memory_arrangement) {
-        case 2:
-            g_memory_limit_type = 1;
-            break;
-        case 3:
-            g_memory_limit_type = 2;
-            break;
-        case 17:
-            g_memory_limit_type = 3;
-            break;
-        case 18:
-            g_memory_limit_type = 4;
-            break;
-        default:
-            g_memory_limit_type = 0;
-            break;
-    }
-
-    /* Create resource limits. */
+    /* Create Resource Limits. */
     for (unsigned int i = 0; i < 3; i++) {
         if (i > 0) {
             if (R_FAILED(svcCreateResourceLimit(&g_resource_limit_handles[i]))) {
@@ -139,7 +109,85 @@ void ResourceLimitUtils::InitializeLimits() {
             }
             g_resource_limit_handles[i] = (Handle)out;
         }
+    }
+    /* Set global aliases. */
+    if (kernelAbove600()) {
+        /* 6.0.0 did away with hardcoded memory resource limit values. */
+        memcpy(&g_resource_limits, &g_resource_limits_6x, sizeof(g_resource_limits));
+    } else if (kernelAbove400()) {
+        memcpy(&g_memory_resource_limits, &g_memory_resource_limits_4x, sizeof(g_memory_resource_limits_4x));
+        memcpy(&g_resource_limits, &g_resource_limits_4x, sizeof(g_resource_limits));
+    } else {
+        memcpy(&g_memory_resource_limits, &g_memory_resource_limits_deprecated, sizeof(g_memory_resource_limits_deprecated));
+        memcpy(&g_resource_limits, &g_resource_limits_deprecated, sizeof(g_resource_limits));
+    }
+    
+    if (kernelAbove600()) {
+        /* NOTE: 5 is a fake type, official code does not do this. */
+        /* This is done for ease of backwards compatibility. */
+        g_memory_limit_type = 5;
         
+        /* Starting 6.x, 5 MB of memory is always reserved for system. */
+        const u64 reserved_system_size_6x = 0x500000;
+                
+        /* Get total memory available. */
+        u64 total_memory = 0;
+        if (R_FAILED(svcGetResourceLimitLimitValue(&total_memory, g_resource_limit_handles[0], LimitableResource_Memory))) {
+            /* TODO: Panic. */
+        }
+        
+        /* Get and save application + applet memory. */
+        if (R_FAILED(svcGetSystemInfo(&g_memory_resource_limits[g_memory_limit_type][1], 0, 0, 0)) ||
+            R_FAILED(svcGetSystemInfo(&g_memory_resource_limits[g_memory_limit_type][2], 0, 0, 1))) {
+                /* TODO: Panic. */
+            }
+        
+        const u64 application_size = g_memory_resource_limits[g_memory_limit_type][1];
+        const u64 applet_size = g_memory_resource_limits[g_memory_limit_type][2];
+        const u64 reserved_nonsys_size = (application_size + applet_size + reserved_system_size_6x);
+            
+        /* Ensure there's enough memory for system region. */
+        if (reserved_nonsys_size > total_memory) {
+            /* TODO: Panic. */
+        }
+        
+        /* Set System memory. */
+        g_memory_resource_limits[g_memory_limit_type][0] = total_memory - (reserved_nonsys_size);
+    } else {
+        /* Get memory limits. */
+        u64 memory_arrangement;
+        if (R_FAILED(splGetConfig(SplConfigItem_MemoryArrange, &memory_arrangement))) {
+            /* TODO: panic. */
+        }
+        memory_arrangement &= 0x3F;
+        switch (memory_arrangement) {
+            case 2:
+                g_memory_limit_type = 1;
+                break;
+            case 3:
+                g_memory_limit_type = 2;
+                break;
+            case 17:
+                g_memory_limit_type = 3;
+                break;
+            case 18:
+                g_memory_limit_type = 4;
+                break;
+            default:
+                g_memory_limit_type = 0;
+                break;
+        }
+    }
+
+    /* Atmosphere: Allocate extra memory (24 MiB) to SYSTEM away from Applet. */
+    for (unsigned int i = 0; i < 6; i++) {
+        g_memory_resource_limits[i][0] += ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
+        g_memory_resource_limits[i][2] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
+    }
+
+    /* Set resource limits. */
+    for (unsigned int i = 0; i < 3; i++) {
+        g_resource_limits[i][LimitableResource_Memory] = g_memory_resource_limits[g_memory_limit_type][i];
         if (R_FAILED(SetResourceLimits((ResourceLimitCategory)i, g_memory_resource_limits[g_memory_limit_type][i]))) {
             /* TODO: Panic. */
         }

@@ -133,20 +133,20 @@ enum {
 };
 
 enum {
-	PROCESSEVENTTYPE_CRASH = 1,
-	PROCESSEVENTTYPE_EXIT = 2, // only fired once, when process enters DebugDetached state (likely creport related)
-	PROCESSEVENTTYPE_RUNNING = 3, // debug detached or running
-	PROCESSEVENTTYPE_SUSPENDED = 4, // debug suspended
-	PROCESSEVENTTYPE_DEBUGDETACHED = 5,
+    PROCESSEVENTTYPE_CRASH = 1,
+    PROCESSEVENTTYPE_EXIT = 2, // only fired once, when process enters DebugDetached state (likely creport related)
+    PROCESSEVENTTYPE_RUNNING = 3, // debug detached or running
+    PROCESSEVENTTYPE_SUSPENDED = 4, // debug suspended
+    PROCESSEVENTTYPE_DEBUGDETACHED = 5,
 
 
-	PROCESSEVENTTYPE_500_EXIT = 1,
-	PROCESSEVENTTYPE_500_DEBUGDETACHED = 2, // only fired once, when process enters DebugDetached state (likely creport related)
-	PROCESSEVENTTYPE_500_CRASH = 3,
-	PROCESSEVENTTYPE_500_RUNNING = 4, // debug detached or running
-	PROCESSEVENTTYPE_500_SUSPENDED = 5, // debug suspended
+    PROCESSEVENTTYPE_500_EXIT = 1,
+    PROCESSEVENTTYPE_500_DEBUGDETACHED = 2, // only fired once, when process enters DebugDetached state (likely creport related)
+    PROCESSEVENTTYPE_500_CRASH = 3,
+    PROCESSEVENTTYPE_500_RUNNING = 4, // debug detached or running
+    PROCESSEVENTTYPE_500_SUSPENDED = 5, // debug suspended
 };
-	
+    
 class Registration {
     public:
         struct TidSid {
@@ -189,6 +189,7 @@ class Registration {
         static void GetProcessEventType(u64 *out_pid, u64 *out_type);
         static Result EnableDebugForTitleId(u64 tid, Handle *out);
         static Result EnableDebugForApplication(Handle *out);
+        static Result DisableDebug(u32 which);
         static Handle GetDebugTitleEventHandle();
         static Handle GetDebugApplicationEventHandle();
         

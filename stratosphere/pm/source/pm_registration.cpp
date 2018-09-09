@@ -480,3 +480,13 @@ Result Registration::EnableDebugForApplication(Handle *out) {
     *out = g_debug_application_event->get_handle();
     return 0;
 }
+
+Result Registration::DisableDebug(u32 which) {
+    if (which & 1) {
+        g_debug_on_launch_tid = 0;
+    }
+    if (which & 2) {
+        g_debug_next_application = false;
+    }
+    return 0;
+}

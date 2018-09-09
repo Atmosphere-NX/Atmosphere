@@ -76,6 +76,7 @@ enum class Boot2KnownTitleId : u64 {
     jit = 0x010000000000003BUL,
     jpegdec = 0x010000000000003CUL,
     safemode = 0x010000000000003DUL,
+    olsc = 0x010000000000003EUL,
 };
 
 class EmbeddedBoot2 {

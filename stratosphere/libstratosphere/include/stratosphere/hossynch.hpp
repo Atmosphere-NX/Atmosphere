@@ -66,15 +66,15 @@ class HosCondVar {
     public:
         HosCondVar() {
             mutexInit(&m);
-            condvarInit(&cv, &m);
+            condvarInit(&cv);
         }
         
         Result WaitTimeout(u64 timeout) {
-            return condvarWaitTimeout(&cv, timeout);
+            return condvarWaitTimeout(&cv, &m, timeout);
         }
         
         Result Wait() {
-            return condvarWait(&cv);
+            return condvarWait(&cv, &m);
         }
         
         Result Wake(int num) {
@@ -92,45 +92,25 @@ class HosCondVar {
 
 class HosSemaphore {
     private:
-        CondVar cv;
-        Mutex m;
-        u64 count;
+        Semaphore s;
     public:
         HosSemaphore() {
-            count = 0;
-            mutexInit(&m);
-            condvarInit(&cv, &m);
+            semaphoreInit(&s, 0);
         }
         
-        HosSemaphore(u64 c) : count(c) {
-            mutexInit(&m);
-            condvarInit(&cv, &m);
+        HosSemaphore(u64 c) {
+            semaphoreInit(&s, c);
         }
         
         void Signal() {
-            mutexLock(&this->m);
-            count++;
-            condvarWakeOne(&cv);
-            mutexUnlock(&this->m);
+            semaphoreSignal(&s);
         }
         
         void Wait() {
-            mutexLock(&this->m);
-            while (!count) {
-                condvarWait(&cv);
-            }
-            count--;
-            mutexUnlock(&this->m);
+            semaphoreWait(&s);
         }
         
         bool TryWait() {
-            mutexLock(&this->m);
-            bool success = false;
-            if (count) {
-                count--;
-                success = true;
-            }
-            mutexUnlock(&this->m);
-            return success;
+            return semaphoreTryWait(&s);
         }
 };

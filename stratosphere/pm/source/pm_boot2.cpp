@@ -107,6 +107,7 @@ static const std::tuple<Boot2KnownTitleId, bool> g_additional_launch_programs[] 
     {Boot2KnownTitleId::sdb, true},         /* sdb */
     {Boot2KnownTitleId::migration, true},   /* migration */
     {Boot2KnownTitleId::grc, true},         /* grc */
+    {Boot2KnownTitleId::olsc, true},        /* olsc */
 };
 
 static void MountSdCard() {
