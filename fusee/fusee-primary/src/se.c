@@ -39,8 +39,7 @@ void NOINLINE ll_init(volatile se_ll_t *ll, void *buffer, size_t size) {
 }
 
 void se_check_error_status_reg(void) {
-    volatile tegra_se_t *se = se_get_regs();
-    if (se->ERR_STATUS_REG) {
+    if (se_get_regs()->ERR_STATUS_REG) {
         generic_panic();
     }
 }
@@ -53,8 +52,7 @@ void se_check_for_error(void) {
 }
 
 void se_verify_flags_cleared(void) {
-    volatile tegra_se_t *se = se_get_regs();
-    if (se->FLAGS_REG & 3) {
+    if (se_get_regs()->FLAGS_REG & 3) {
         generic_panic();
     }
 }
@@ -193,9 +191,8 @@ void clear_aes_keyslot_iv(unsigned int keyslot) {
 }
 
 void set_se_ctr(const void *ctr) {
-    volatile tegra_se_t *se = se_get_regs();
     for (unsigned int i = 0; i < 4; i++) {
-        se->CRYPTO_CTR_REG[i] = read32le(ctr, i * 4);
+        se_get_regs()->CRYPTO_CTR_REG[i] = read32le(ctr, i * 4);
     }
 }
 
@@ -237,7 +234,6 @@ void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, co
 }
 
 void se_get_exp_mod_output(void *buf, size_t size) {
-    volatile tegra_se_t *se = se_get_regs();
     size_t num_dwords = (size >> 2);
     
     if (num_dwords < 1) {
@@ -249,7 +245,7 @@ void se_get_exp_mod_output(void *buf, size_t size) {
 
     /* Copy endian swapped output. */
     while (num_dwords) {
-        *p_out = read32be(se->RSA_OUTPUT, offset);
+        *p_out = read32be(se_get_regs()->RSA_OUTPUT, offset);
         offset += 4;
         p_out--;
         num_dwords--;
@@ -330,10 +326,8 @@ void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const v
     se_check_for_error();
 }
 
-
 /* Secure AES Functionality. */
 void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src, size_t src_size) {
-    volatile tegra_se_t *se = se_get_regs();
     uint8_t block[0x10] = {0};
 
     if (src_size > sizeof(block) || dst_size > sizeof(block)) {
@@ -346,7 +340,7 @@ void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src,
     }
 
     /* Trigger AES operation. */
-    se->BLOCK_COUNT_REG = 0;
+    se_get_regs()->BLOCK_COUNT_REG = 0;
     trigger_se_blocking_op(OP_START, block, sizeof(block), block, sizeof(block));
 
     /* Copy output data into dst. */
@@ -406,7 +400,6 @@ void se_aes_128_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_si
 void se_aes_256_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
     se_aes_ecb_encrypt_block(keyslot, dst, dst_size, src, src_size, 0x202);
 }
-
 
 void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
     volatile tegra_se_t *se = se_get_regs();
@@ -534,7 +527,6 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
     se->CONFIG_REG = (ALG_AES_ENC | DST_HASHREG) | (config_high << 16);
     se->CRYPTO_REG = (keyslot << 24) | (0x145);
     clear_aes_keyslot_iv(keyslot);
-
 
     unsigned int num_blocks = (data_size + 0xF) >> 4;
     /* Handle aligned blocks. */

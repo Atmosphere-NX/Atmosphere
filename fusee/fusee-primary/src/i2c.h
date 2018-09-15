@@ -21,8 +21,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#define I2C234_BASE 0x7000C000
-#define I2C56_BASE 0x7000D000
+#define I2C1234_BASE    0x7000C000
+#define I2C56_BASE      0x7000D000
 
 #define I2C_1 0
 #define I2C_2 1
@@ -82,10 +82,10 @@ typedef struct {
     uint32_t I2C_I2C_HS_INTERFACE_TIMING_1_0;
 } tegra_i2c_t;
 
-#define I2C1_REGS ((volatile tegra_i2c_t *)(I2C234_BASE + 0x000))
-#define I2C2_REGS ((volatile tegra_i2c_t *)(I2C234_BASE + 0x400))
-#define I2C3_REGS ((volatile tegra_i2c_t *)(I2C234_BASE + 0x500))
-#define I2C4_REGS ((volatile tegra_i2c_t *)(I2C234_BASE + 0x700))
+#define I2C1_REGS ((volatile tegra_i2c_t *)(I2C1234_BASE + 0x000))
+#define I2C2_REGS ((volatile tegra_i2c_t *)(I2C1234_BASE + 0x400))
+#define I2C3_REGS ((volatile tegra_i2c_t *)(I2C1234_BASE + 0x500))
+#define I2C4_REGS ((volatile tegra_i2c_t *)(I2C1234_BASE + 0x700))
 #define I2C5_REGS ((volatile tegra_i2c_t *)(I2C56_BASE + 0x000))
 #define I2C6_REGS ((volatile tegra_i2c_t *)(I2C56_BASE + 0x100))
 

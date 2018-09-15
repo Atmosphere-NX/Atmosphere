@@ -51,8 +51,11 @@ static void __program_init_newlib_hooks(void) {
 static void __program_move_additional_sections(void) {
 #if defined(FUSEE_STAGE1_SRC) || defined(FUSEE_STAGE2_SRC)
     extern uint8_t __chainloader_lma__[], __chainloader_start__[], __chainloader_bss_start__[], __chainloader_end__[];
+    extern uint8_t __nxboot_lma__[], __nxboot_start__[], __nxboot_bss_start__[], __nxboot_end__[];
     memcpy(__chainloader_start__, __chainloader_lma__, __chainloader_bss_start__ - __chainloader_start__);
     memset(__chainloader_bss_start__, 0, __chainloader_end__ - __chainloader_bss_start__);
+    memcpy(__nxboot_start__, __nxboot_lma__, __nxboot_bss_start__ - __nxboot_start__);
+    memset(__nxboot_bss_start__, 0, __nxboot_end__ - __nxboot_bss_start__);
 #endif
 }
 

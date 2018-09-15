@@ -6,6 +6,7 @@ PHDRS
 {
     crt0        PT_LOAD;
     chainloader PT_LOAD;
+    nxboot      PT_LOAD;
     main        PT_LOAD;
 }
 
@@ -13,16 +14,17 @@ PHDRS
 MEMORY
 {
     main        : ORIGIN = 0xF0000000, LENGTH = 0x10000000
+    high_iram   : ORIGIN = 0x40010000, LENGTH = 0x20000
     low_iram    : ORIGIN = 0x40003000, LENGTH = 0x8000
 }
 
 SECTIONS
 {
     PROVIDE(__start__           = 0xF0000000);
-    PROVIDE(__stack_top__       = 0x40010000);
-    PROVIDE(__stack_bottom__    = 0x4000C000);
-    PROVIDE(__heap_start__      = 0xE0000000);
-    PROVIDE(__heap_end__        = 0xF0000000);
+    PROVIDE(__stack_top__       = 0x90020000);
+    PROVIDE(__stack_bottom__    = 0x90010000);
+    PROVIDE(__heap_start__      = 0x90020000);
+    PROVIDE(__heap_end__        = 0xA0020000);
 
     . = __start__;
 
@@ -53,6 +55,27 @@ SECTIONS
         . = ALIGN(32);
         PROVIDE (__chainloader_end__ = ABSOLUTE(.));
     } >low_iram :NONE
+    
+    .nxboot_loadable :
+    {
+        . = ALIGN(32);
+        PROVIDE (__nxboot_start__  = ABSOLUTE(.));
+        PROVIDE (__nxboot_lma__    = LOADADDR(.nxboot_loadable));
+        KEEP(*(.nxboot.text.start))
+        nxboot_iram.o(.text*)
+        nxboot_iram.o(.rodata*)
+        nxboot_iram.o(.data*)
+        . = ALIGN(32);
+    } >high_iram AT>main :nxboot
+
+    .nxboot_bss (NOLOAD) :
+    {
+        . = ALIGN(32);
+        PROVIDE (__nxboot_bss_start__ = ABSOLUTE(.));
+        nxboot_iram.o(.bss* COMMON)
+        . = ALIGN(32);
+        PROVIDE (__nxboot_end__ = ABSOLUTE(.));
+    } >high_iram :NONE
 
     .text :
     {

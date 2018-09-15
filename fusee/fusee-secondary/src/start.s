@@ -70,3 +70,12 @@ _start:
 relocate_and_chainload:
     ldr sp, =__stack_top__
     b   relocate_and_chainload_main
+
+.section .nxboot.text.start, "ax", %progbits
+.arm
+.align 5
+.global nxboot
+.type   nxboot, %function
+nxboot:
+    ldr sp, =__stack_top__
+    b   nxboot_finish

@@ -43,6 +43,7 @@ typedef struct {
     uint32_t boot_reason_state;
 } boot_reason_t;
 
-void nxboot_main(void);
+uint32_t nxboot_main(void);
+void nxboot_finish(uint32_t boot_memaddr);
 
 #endif

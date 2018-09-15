@@ -97,7 +97,7 @@
 
 #define RSA_2048_BYTES 0x100
 
-typedef struct security_engine {
+typedef struct {
     uint32_t _0x0;
     uint32_t _0x4;
     uint32_t OPERATION_REG;
@@ -157,15 +157,13 @@ typedef struct security_engine {
     uint32_t FLAGS_REG;
     uint32_t ERR_STATUS_REG;
     uint32_t _0x808;
-    uint32_t _0x80C;
+    uint32_t SPARE_0;
     uint32_t _0x810;
     uint32_t _0x814;
     uint32_t _0x818;
     uint32_t _0x81C;
     uint8_t _0x820[0x17E0];
-} security_engine_t;
-
-static_assert(sizeof(security_engine_t) == 0x2000, "Mis-defined Security Engine Registers!");
+} tegra_se_t;
 
 typedef struct {
     uint32_t address;
@@ -177,14 +175,9 @@ typedef struct {
     se_addr_info_t addr_info; /* This should really be an array...but for our use case it works. */
 } se_ll_t;
 
-
-/* WIP, API subject to change. */
-
-static inline volatile security_engine_t *get_security_engine(void) {
-    return (volatile security_engine_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_SE));
+static inline volatile tegra_se_t *se_get_regs(void) {
+    return (volatile tegra_se_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_SE));
 }
-
-#define SECURITY_ENGINE (get_security_engine())
 
 /* This function MUST be registered to fire on the appropriate interrupt. */
 void se_operation_completed(void);
@@ -208,7 +201,6 @@ void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_sr
 void set_rsa_keyslot(unsigned int keyslot, const void *modulus, size_t modulus_size, const void *exponent, size_t exp_size);
 void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size);
 void set_se_ctr(const void *ctr);
-
 
 /* Insecure AES API */
 void se_aes_ctr_crypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *ctr, unsigned int (*callback)(void));

@@ -18,7 +18,6 @@
 
 #include "utils.h"
 #include "memory_map.h"
-
 #include "bootup.h"
 #include "cpu_context.h"
 #include "package2.h"
@@ -37,7 +36,6 @@
 
 extern void *__start_cold_addr;
 extern size_t __bin_size;
-
 
 static const uint8_t new_device_key_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
     {0x8B, 0x4E, 0x1C, 0x22, 0x42, 0x07, 0xC8, 0x73, 0x56, 0x94, 0x08, 0x8B, 0xCC, 0x47, 0x0F, 0x5D}, /* 4.x New Device Key Source. */
@@ -85,15 +83,15 @@ static void setup_se(void) {
     intr_initialize_gic_nonsecure();
 
     /* Perform some sanity initialization. */
-    volatile security_engine_t *p_security_engine = get_security_engine();
-    p_security_engine->_0x0 &= 0xFFFEFFFF; /* Clear bit 16. */
-    (void)(SECURITY_ENGINE->FLAGS_REG);
+    volatile tegra_se_t *se = se_get_regs();
+    se->_0x0 &= 0xFFFEFFFF; /* Clear bit 16. */
+    (void)(se->FLAGS_REG);
     __dsb_sy();
     
-    p_security_engine->_0x4 = 0;
-    p_security_engine->AES_KEY_READ_DISABLE_REG = 0;
-    p_security_engine->RSA_KEY_READ_DISABLE_REG = 0;
-    p_security_engine->_0x0 &= 0xFFFFFFFB;
+    se->_0x4 = 0;
+    se->AES_KEY_READ_DISABLE_REG = 0;
+    se->RSA_KEY_READ_DISABLE_REG = 0;
+    se->_0x0 &= 0xFFFFFFFB;
 
     /* Currently unknown what each flag does. */
     for (unsigned int i = 0; i < KEYSLOT_AES_MAX; i++) {
@@ -139,8 +137,7 @@ static void setup_se(void) {
     set_aes_keyslot_flags(KEYSLOT_SWITCH_SESSIONKEY, 0xFF);
 
     /* Generate test vector for our keys. */
-    se_generate_stored_vector();
-    
+    se_generate_stored_vector();  
 }
 
 static void setup_boot_config(void) {
@@ -168,7 +165,6 @@ static void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t ds
     /* Perform Encryption. */
     se_aes_ctr_crypt(KEYSLOT_SWITCH_PACKAGE2KEY, dst, dst_size, src, src_size, ctr, ctr_size);
 }
-
 
 static void verify_header_signature(package2_header_t *header) {
     const uint8_t *modulus;
@@ -506,7 +502,8 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     randomcache_init();
 
     /* memclear the initial copy of Exosphere running in IRAM (relocated to TZRAM by earlier code). */
-    //memset((void *)reloc_list->reloc_base, 0, reloc_list->loaded_bin_size);
+    /* memset((void *)reloc_list->reloc_base, 0, reloc_list->loaded_bin_size); */
+    
     /* Let NX Bootloader know that we're running. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 1;
 

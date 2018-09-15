@@ -102,7 +102,8 @@ int main(int argc, void **argv) {
     g_do_nxboot = loader_ctx->chainload_entrypoint == 0;
     if (g_do_nxboot) {
         printf("Now performing nxboot.\n");
-        nxboot_main();
+        uint32_t boot_memaddr = nxboot_main();
+        nxboot_finish(boot_memaddr);
     } else {
         /* TODO: What else do we want to do in terms of argc/argv? */
         const char *path = get_loader_ctx()->file_paths_to_load[get_loader_ctx()->file_id_of_entrypoint];

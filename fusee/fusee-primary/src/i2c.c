@@ -175,8 +175,7 @@ bool i2c_write(volatile tegra_i2c_t *regs, uint8_t device, void *src, size_t src
     i2c_load_config(regs);
 
     /* Config |= SEND; */
-    regs->I2C_I2C_CNFG_0 |= 0x200;
-
+    regs->I2C_I2C_CNFG_0 = ((regs->I2C_I2C_CNFG_0 & 0xFFFFFDFF) | 0x200);
 
     while (regs->I2C_I2C_STATUS_0 & 0x100) {
         /* Wait until not busy. */
@@ -203,8 +202,7 @@ bool i2c_read(volatile tegra_i2c_t *regs, uint8_t device, void *dst, size_t dst_
     i2c_load_config(regs);
 
     /* Config |= SEND; */
-    regs->I2C_I2C_CNFG_0 |= 0x200;
-
+    regs->I2C_I2C_CNFG_0 = ((regs->I2C_I2C_CNFG_0 & 0xFFFFFDFF) | 0x200);
 
     while (regs->I2C_I2C_STATUS_0 & 0x100) {
         /* Wait until not busy. */

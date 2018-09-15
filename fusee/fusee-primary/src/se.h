@@ -34,6 +34,9 @@
 #define KEYSLOT_SWITCH_4XNEWCONSOLEKEYGENKEY 0xE
 #define KEYSLOT_SWITCH_4XOLDDEVICEKEY 0xF
 
+/* This keyslot was added in 5.0.0. */
+#define KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY 0xA
+
 #define KEYSLOT_AES_MAX 0x10
 #define KEYSLOT_RSA_MAX 0x2
 
@@ -88,7 +91,7 @@
 
 #define RSA_2048_BYTES 0x100
 
-typedef struct security_engine {
+typedef struct {
     uint32_t _0x0;
     uint32_t _0x4;
     uint32_t OPERATION_REG;
@@ -169,8 +172,6 @@ typedef struct {
 static inline volatile tegra_se_t *se_get_regs(void) {
     return (volatile tegra_se_t *)SE_BASE;
 }
-
-/* This function MUST be registered to fire on the appropriate interrupt. */
 
 void se_check_error_status_reg(void);
 void se_check_for_error(void);
