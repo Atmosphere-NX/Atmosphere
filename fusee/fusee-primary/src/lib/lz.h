@@ -41,9 +41,8 @@ extern "C" {
 * Function prototypes
 *************************************************************************/
 
-void LZ_Uncompress( const unsigned char *in, unsigned char *out,
-                    unsigned int insize );
-
+int LZ_Compress(const unsigned char *in, unsigned char *out, unsigned int insize);
+int LZ_Uncompress(const unsigned char *in, unsigned char *out, unsigned int insize);
 
 #ifdef __cplusplus
 }

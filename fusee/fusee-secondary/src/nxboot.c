@@ -75,6 +75,8 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
             return EXOSPHERE_TARGET_FIRMWARE_400;
         case 0x0B:          /* 5.0.0 - 5.1.0 */
             return EXOSPHERE_TARGET_FIRMWARE_500;
+        case 0x0E:          /* 6.0.0 */
+            return EXOSPHERE_TARGET_FIRMWARE_600;
         default:
             return 0;
     }
@@ -158,6 +160,8 @@ static void nxboot_set_bootreason() {
 static void nxboot_move_bootconfig() {
     FILE *bcfile;
     void *bootconfig;
+    uint32_t bootconfig_addr;
+    uint32_t bootconfig_size;
     
     /* Allocate memory for reading BootConfig. */
     bootconfig = memalign(0x1000, 0x4000);
@@ -175,9 +179,13 @@ static void nxboot_move_bootconfig() {
     }
     fclose(bcfile);
     
-    /* Copy the first 0x3000 bytes into IRAM. */
-    memset((void *)0x4003D000, 0, 0x3000);
-    memcpy((void *)0x4003D000, bootconfig, 0x3000);
+    /* Select the actual BootConfig size and destination address. */
+    bootconfig_addr = (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_600) ? 0x4003D000 : 0x4003F800;
+    bootconfig_size = (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) ? 0x3000 : 0x1000;
+    
+    /* Copy the BootConfig into IRAM. */
+    memset((void *)bootconfig_addr, 0, bootconfig_size);
+    memcpy((void *)bootconfig_addr, bootconfig, bootconfig_size);
     
     /* Clean up. */
     free(bootconfig);
@@ -329,8 +337,10 @@ uint32_t nxboot_main(void) {
     /* Select the right address for the warmboot firmware. */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
         warmboot_memaddr = (void *)0x8000D000;
-    } else {
+    } else if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_600) {
         warmboot_memaddr = (void *)0x4003B000;
+    } else {
+        warmboot_memaddr = (void *)0x4003D800;
     }
     
     printf("[NXBOOT]: Copying warmboot firmware...\n");
@@ -399,7 +409,7 @@ uint32_t nxboot_main(void) {
     printf("[NXBOOT]: Powering on the CCPLEX...\n");
     
     /* Display splash screen. */
-    display_splash_screen_bmp(loader_ctx->custom_splash_path);
+    display_splash_screen_bmp(loader_ctx->custom_splash_path, (void *)0xC0000000);
     
     /* Unmount everything. */
     nxfs_unmount_all();

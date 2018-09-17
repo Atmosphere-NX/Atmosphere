@@ -194,7 +194,10 @@ void nx_hwinit()
     AHB_AHB_SPARE_REG_0 &= 0xFFFFFF9F;
     pmc->scratch49 = (((pmc->scratch49 >> 1) << 1) & 0xFFFFFFFD);
     
+    /* Apply the memory built-in self test workaround. */
     mbist_workaround();
+    
+    /* Reboot SE. */
     clkrst_reboot(CARDEVICE_SE);
 
     /* Initialize the fuse driver. */
@@ -203,9 +206,15 @@ void nx_hwinit()
     /* Initialize the memory controller. */
     mc_enable();
 
-    /* Configure oscillators, pinmux and GPIOs. */
+    /* Configure oscillators. */
     config_oscillators();
+    
+    /* Disable pinmux tristate input clamping. */
     APB_MISC_PP_PINMUX_GLOBAL_0 = 0;
+    
+    /* Configure GPIOs. */
+    /* NOTE: In 3.x+ part of the GPIO configuration is skipped if the unit is SDEV. */
+    /* NOTE: In 6.x+ the GPIO configuration's order was changed a bit. */
     config_gpios();
 
     /* Uncomment for UART debugging. */
@@ -214,21 +223,34 @@ void nx_hwinit()
     uart_init(UART_C, 115200);
     */
     
+    /* Reboot CL-DVFS. */
     clkrst_reboot(CARDEVICE_CL_DVFS);
+    
+    /* Reboot I2C1. */
     clkrst_reboot(CARDEVICE_I2C1);
+    
+    /* Reboot I2C5. */
     clkrst_reboot(CARDEVICE_I2C5);
+    
+    /* Reboot SE. */
+    /* NOTE: In 4.x+ this was removed. */
     clkrst_reboot(CARDEVICE_SE);
+    
+    /* Reboot unknown device. */
     clkrst_reboot(CARDEVICE_UNK);
 
-    /* Initialize I2C1 and I2C5. */
+    /* Initialize I2C1. */
+    /* NOTE: In 6.x+ this was moved to after the PMIC is configured. */
     i2c_init(I2C_1);
+    
+    /* Initialize I2C5. */
     i2c_init(I2C_5);
     
+    /* Configure the PMIC. */
     uint8_t val = 0x40;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGBBC, &val, 1);
     val = 0x78;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFCNFG1, &val, 1);
-
     val = 0x38;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG0, &val, 1);
     val = 0x3A;
@@ -245,19 +267,38 @@ void nx_hwinit()
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD1, &val, 1);
     val = 0x1B;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD3, &val, 1);
+    
+    /* TODO: In 3.x+ this was added. */
+    /*
+    val = 0x22;
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_GPIO3, &val, 1);
+    */
+    
+    /* TODO: In 3.x+, if the unit is SDEV, the MBLPD bit is set. */
+    /*
+    i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGGLBL1, &val, 1);
+    val |= 0x40;
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGGLBL1, &val, 1);
+    */
 
+    /* Configure SD0 voltage. */
     val = 42;       /* 42 = (1125000 - 600000) / 12500 -> 1.125V */
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_SD0, &val, 1);
 
     /* Configure and lock PMC scratch registers. */
+    /* NOTE: In 4.x+ this was removed. */
     config_pmc_scratch();
 
+    /* Set super clock burst policy. */
     car->sclk_brst_pol = ((car->sclk_brst_pol & 0xFFFF8888) | 0x3333);
 
     /* Configure memory controller carveouts. */
+    /* NOTE: In 4.x+ this was removed. */
     mc_config_carveout();
 
-    /* Initialize and save SDRAM. */
+    /* Initialize SDRAM. */
     sdram_init();
+    
+    /* Save SDRAM LP0 parameters. */
     sdram_lp0_save_params(sdram_get_params());
 }

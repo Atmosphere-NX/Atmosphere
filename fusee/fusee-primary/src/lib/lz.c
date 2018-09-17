@@ -79,8 +79,70 @@
 
 
 /*************************************************************************
+* Constants used for LZ77 coding
+*************************************************************************/
+
+/* Maximum offset (can be any size < 2^31). Lower values give faster
+   compression, while higher values gives better compression. The default
+   value of 100000 is quite high. Experiment to see what works best for
+   you. */
+#define LZ_MAX_OFFSET 100000
+
+
+
+/*************************************************************************
 *                           INTERNAL FUNCTIONS                           *
 *************************************************************************/
+
+
+/*************************************************************************
+* _LZ_StringCompare() - Return maximum length string match.
+*************************************************************************/
+
+static unsigned int _LZ_StringCompare( unsigned char * str1,
+  unsigned char * str2, unsigned int minlen, unsigned int maxlen )
+{
+    unsigned int len;
+
+    for( len = minlen; (len < maxlen) && (str1[len] == str2[len]); ++ len );
+
+    return len;
+}
+
+
+/*************************************************************************
+* _LZ_WriteVarSize() - Write unsigned integer with variable number of
+* bytes depending on value.
+*************************************************************************/
+
+static int _LZ_WriteVarSize( unsigned int x, unsigned char * buf )
+{
+    unsigned int y;
+    int num_bytes, i, b;
+
+    /* Determine number of bytes needed to store the number x */
+    y = x >> 3;
+    for( num_bytes = 5; num_bytes >= 2; -- num_bytes )
+    {
+        if( y & 0xfe000000 ) break;
+        y <<= 7;
+    }
+
+    /* Write all bytes, seven bits in each, with 8:th bit set for all */
+    /* but the last byte. */
+    for( i = num_bytes-1; i >= 0; -- i )
+    {
+        b = (x >> (i*7)) & 0x0000007f;
+        if( i > 0 )
+        {
+            b |= 0x00000080;
+        }
+        *buf ++ = (unsigned char) b;
+    }
+
+    /* Return number of bytes written */
+    return num_bytes;
+}
 
 
 /*************************************************************************
@@ -118,6 +180,141 @@ static int _LZ_ReadVarSize( unsigned int * x, const unsigned char * buf )
 
 
 /*************************************************************************
+* LZ_Compress() - Compress a block of data using an LZ77 coder.
+*  in     - Input (uncompressed) buffer.
+*  out    - Output (compressed) buffer. This buffer must be 0.4% larger
+*           than the input buffer, plus one byte.
+*  insize - Number of input bytes.
+* The function returns the size of the compressed data.
+*************************************************************************/
+
+int LZ_Compress( const unsigned char *in, unsigned char *out, unsigned int insize )
+{
+    unsigned char marker, symbol;
+    unsigned int  inpos, outpos, bytesleft, i;
+    unsigned int  maxoffset, offset, bestoffset;
+    unsigned int  maxlength, length, bestlength;
+    unsigned int  histogram[ 256 ];
+    unsigned char *ptr1, *ptr2;
+
+    /* Do we have anything to compress? */
+    if( insize < 1 )
+    {
+        return 0;
+    }
+
+    /* Create histogram */
+    for( i = 0; i < 256; ++ i )
+    {
+        histogram[ i ] = 0;
+    }
+    for( i = 0; i < insize; ++ i )
+    {
+        ++ histogram[ in[ i ] ];
+    }
+
+    /* Find the least common byte, and use it as the marker symbol */
+    marker = 0;
+    for( i = 1; i < 256; ++ i )
+    {
+        if( histogram[ i ] < histogram[ marker ] )
+        {
+            marker = (unsigned char) i;
+        }
+    }
+
+    /* Remember the marker symbol for the decoder */
+    out[ 0 ] = marker;
+
+    /* Start of compression */
+    inpos = 0;
+    outpos = 1;
+
+    /* Main compression loop */
+    bytesleft = insize;
+    do
+    {
+        /* Determine most distant position */
+        if( inpos > LZ_MAX_OFFSET ) maxoffset = LZ_MAX_OFFSET;
+        else                        maxoffset = inpos;
+
+        /* Get pointer to current position */
+        ptr1 = &in[ inpos ];
+
+        /* Search history window for maximum length string match */
+        bestlength = 3;
+        bestoffset = 0;
+        for( offset = 3; offset <= maxoffset; ++ offset )
+        {
+            /* Get pointer to candidate string */
+            ptr2 = &ptr1[ -(int)offset ];
+
+            /* Quickly determine if this is a candidate (for speed) */
+            if( (ptr1[ 0 ] == ptr2[ 0 ]) &&
+                (ptr1[ bestlength ] == ptr2[ bestlength ]) )
+            {
+                /* Determine maximum length for this offset */
+                maxlength = (bytesleft < offset ? bytesleft : offset);
+
+                /* Count maximum length match at this offset */
+                length = _LZ_StringCompare( ptr1, ptr2, 0, maxlength );
+
+                /* Better match than any previous match? */
+                if( length > bestlength )
+                {
+                    bestlength = length;
+                    bestoffset = offset;
+                }
+            }
+        }
+
+        /* Was there a good enough match? */
+        if( (bestlength >= 8) ||
+            ((bestlength == 4) && (bestoffset <= 0x0000007f)) ||
+            ((bestlength == 5) && (bestoffset <= 0x00003fff)) ||
+            ((bestlength == 6) && (bestoffset <= 0x001fffff)) ||
+            ((bestlength == 7) && (bestoffset <= 0x0fffffff)) )
+        {
+            out[ outpos ++ ] = (unsigned char) marker;
+            outpos += _LZ_WriteVarSize( bestlength, &out[ outpos ] );
+            outpos += _LZ_WriteVarSize( bestoffset, &out[ outpos ] );
+            inpos += bestlength;
+            bytesleft -= bestlength;
+        }
+        else
+        {
+            /* Output single byte (or two bytes if marker byte) */
+            symbol = in[ inpos ++ ];
+            out[ outpos ++ ] = symbol;
+            if( symbol == marker )
+            {
+                out[ outpos ++ ] = 0;
+            }
+            -- bytesleft;
+        }
+    }
+    while( bytesleft > 3 );
+
+    /* Dump remaining bytes, if any */
+    while( inpos < insize )
+    {
+        if( in[ inpos ] == marker )
+        {
+            out[ outpos ++ ] = marker;
+            out[ outpos ++ ] = 0;
+        }
+        else
+        {
+            out[ outpos ++ ] = in[ inpos ];
+        }
+        ++ inpos;
+    }
+
+    return outpos;
+}
+
+
+/*************************************************************************
 * LZ_Uncompress() - Uncompress a block of data using an LZ77 decoder.
 *  in      - Input (compressed) buffer.
 *  out     - Output (uncompressed) buffer. This buffer must be large
@@ -125,8 +322,7 @@ static int _LZ_ReadVarSize( unsigned int * x, const unsigned char * buf )
 *  insize  - Number of input bytes.
 *************************************************************************/
 
-void LZ_Uncompress( const unsigned char *in, unsigned char *out,
-    unsigned int insize )
+int LZ_Uncompress( const unsigned char *in, unsigned char *out, unsigned int insize )
 {
     unsigned char marker, symbol;
     unsigned int  i, inpos, outpos, length, offset;
@@ -134,7 +330,7 @@ void LZ_Uncompress( const unsigned char *in, unsigned char *out,
     /* Do we have anything to uncompress? */
     if( insize < 1 )
     {
-        return;
+        return 0;
     }
 
     /* Get marker symbol from input stream */
@@ -176,4 +372,6 @@ void LZ_Uncompress( const unsigned char *in, unsigned char *out,
         }
     }
     while( inpos < insize );
+
+    return outpos;
 }

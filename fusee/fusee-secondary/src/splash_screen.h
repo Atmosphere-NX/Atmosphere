@@ -19,9 +19,12 @@
 
 #include <stdint.h>
 
-/* TODO: Actually make this a real thing. */
-extern unsigned char g_default_splash_screen[1];
+#define SPLASH_SCREEN_WIDTH_MAX     720
+#define SPLASH_SCREEN_HEIGHT_MAX    1280
+#define SPLASH_SCREEN_BPP           32
+#define SPLASH_SCREEN_STRIDE        768
+#define SPLASH_SCREEN_SIZE_MAX      (SPLASH_SCREEN_HEIGHT_MAX * SPLASH_SCREEN_STRIDE * 4)
 
-void display_splash_screen_bmp(const char *custom_splash_path);
+void display_splash_screen_bmp(const char *custom_splash_path, void *fb_address);
 
 #endif
