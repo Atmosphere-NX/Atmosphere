@@ -99,8 +99,8 @@
 * _LZ_StringCompare() - Return maximum length string match.
 *************************************************************************/
 
-static unsigned int _LZ_StringCompare( unsigned char * str1,
-  unsigned char * str2, unsigned int minlen, unsigned int maxlen )
+static unsigned int _LZ_StringCompare( const unsigned char * str1,
+  const unsigned char * str2, unsigned int minlen, unsigned int maxlen )
 {
     unsigned int len;
 
@@ -195,7 +195,7 @@ int LZ_Compress( const unsigned char *in, unsigned char *out, unsigned int insiz
     unsigned int  maxoffset, offset, bestoffset;
     unsigned int  maxlength, length, bestlength;
     unsigned int  histogram[ 256 ];
-    unsigned char *ptr1, *ptr2;
+    const unsigned char *ptr1, *ptr2;
 
     /* Do we have anything to compress? */
     if( insize < 1 )
