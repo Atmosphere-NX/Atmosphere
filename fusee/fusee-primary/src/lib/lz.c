@@ -188,7 +188,7 @@ static int _LZ_ReadVarSize( unsigned int * x, const unsigned char * buf )
 * The function returns the size of the compressed data.
 *************************************************************************/
 
-int LZ_Compress( const unsigned char *in, unsigned char *out, unsigned int insize )
+int LZ_Compress( unsigned char *in, unsigned char *out, unsigned int insize )
 {
     unsigned char marker, symbol;
     unsigned int  inpos, outpos, bytesleft, i;
