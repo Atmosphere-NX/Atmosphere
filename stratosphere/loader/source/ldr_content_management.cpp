@@ -14,18 +14,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
+#include <cstring>
 #include <switch.h>
-#include <string.h>
+#include <strings.h>
 #include <vector>
 #include <algorithm>
 
 #include "ldr_registration.hpp"
 #include "ldr_content_management.hpp"
+#include "ldr_hid.hpp"
+
+
+#include "ini.h"
 
 static FsFileSystem g_CodeFileSystem = {0};
+static FsFileSystem g_HblFileSystem = {0};
 
 static std::vector<u64> g_created_titles;
 static bool g_has_initialized_fs_dev = false;
+
+/* Default to Key R, hold disables override, HBL at atmosphere/hbl.nsp. */
+static bool g_mounted_hbl_nsp = false;
+static char g_hbl_sd_path[FS_MAX_PATH+1] = "@Sdcard:/atmosphere/hbl.nsp\x00";
+static u64 g_override_key_combination = KEY_R;
+static bool g_override_by_default = true;
+static u64 g_override_hbl_tid = 0x010000000000100D;
 
 Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     char path[FS_MAX_PATH] = {0};
@@ -36,10 +49,9 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
         TryMountSdCard();
     }
     
-    if (kernelAbove200() && g_has_initialized_fs_dev && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
+    if (ShouldOverrideContents() && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
         return 0x0;
     }
-
         
     if (R_FAILED(rc = ResolveContentPath(path, tid, sid))) {
         return rc;
@@ -63,14 +75,34 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     }
     
     fsdevMountDevice("code", g_CodeFileSystem);
+    TryMountHblNspOnSd();
     
     fsldrExit();
     return rc;
 }
 
 Result ContentManagement::UnmountCode() {
+    if (g_mounted_hbl_nsp) {
+        fsdevUnmountDevice("hbl");
+        g_mounted_hbl_nsp = false;
+    }
     fsdevUnmountDevice("code");
     return 0;
+}
+
+
+void ContentManagement::TryMountHblNspOnSd() {
+    char path[FS_MAX_PATH+1] = {0};
+    strncpy(path, g_hbl_sd_path, FS_MAX_PATH);
+    for (unsigned int i = 0; i < FS_MAX_PATH && path[i] != '\x00'; i++) {
+        if (path[i] == '\\') {
+            path[i] = '/';
+        }
+    }
+    if (g_has_initialized_fs_dev && !g_mounted_hbl_nsp && R_SUCCEEDED(fsOpenFileSystemWithId(&g_HblFileSystem, 0, FsFileSystemType_ApplicationPackage, path))) {   
+        fsdevMountDevice("hbl", g_HblFileSystem);
+        g_mounted_hbl_nsp = true;
+    }
 }
 
 Result ContentManagement::MountCodeNspOnSd(u64 tid) {
@@ -78,8 +110,9 @@ Result ContentManagement::MountCodeNspOnSd(u64 tid) {
     snprintf(path, FS_MAX_PATH, "@Sdcard:/atmosphere/titles/%016lx/exefs.nsp", tid); 
     Result rc = fsOpenFileSystemWithId(&g_CodeFileSystem, 0, FsFileSystemType_ApplicationPackage, path);
     
-    if (R_SUCCEEDED(rc)) {   
+    if (R_SUCCEEDED(rc)) {
         fsdevMountDevice("code", g_CodeFileSystem);
+        TryMountHblNspOnSd();
     }
     
     return rc;
@@ -158,6 +191,94 @@ void ContentManagement::SetCreatedTitle(u64 tid) {
     }
 }
 
+static int LoaderIniHandler(void *user, const char *section, const char *name, const char *value) {
+    /* Taken and modified, with love, from Rajkosto's implementation. */
+    if (strcasecmp(section, "config") == 0) {
+        if (strcasecmp(name, "hbl_tid") == 0) {
+            u64 override_tid = strtoul(value, NULL, 16);
+            if (override_tid != 0) {
+                g_override_hbl_tid = override_tid;
+            }
+        } else if (strcasecmp(name, "hbl_path") == 0) {
+            while (*value == '/' || *value == '\\') {
+                value++;
+            }
+            snprintf(g_hbl_sd_path, FS_MAX_PATH, "@Sdcard:/%s", value);
+            g_hbl_sd_path[FS_MAX_PATH] = 0;
+        } else if (strcasecmp(name, "override_key") == 0) {
+            if (value[0] == '!') {
+                g_override_by_default = true;
+                value++;
+            } else {
+                g_override_by_default = false;
+            }
+            
+            if (strcasecmp(value, "A") == 0) {
+                g_override_key_combination = KEY_A;
+            } else if (strcasecmp(value, "B") == 0) {
+                g_override_key_combination = KEY_B;
+            } else if (strcasecmp(value, "X") == 0) {
+                g_override_key_combination = KEY_X;
+            } else if (strcasecmp(value, "Y") == 0) {
+                g_override_key_combination = KEY_Y;
+            } else if (strcasecmp(value, "LS") == 0) {
+                g_override_key_combination = KEY_LSTICK;
+            } else if (strcasecmp(value, "RS") == 0) {
+                g_override_key_combination = KEY_RSTICK;
+            } else if (strcasecmp(value, "L") == 0) {
+                g_override_key_combination = KEY_L;
+            } else if (strcasecmp(value, "R") == 0) {
+                g_override_key_combination = KEY_R;
+            } else if (strcasecmp(value, "ZL") == 0) {
+                g_override_key_combination = KEY_ZL;
+            } else if (strcasecmp(value, "ZR") == 0) {
+                g_override_key_combination = KEY_ZR;
+            } else if (strcasecmp(value, "PLUS") == 0) {
+                g_override_key_combination = KEY_PLUS;
+            } else if (strcasecmp(value, "MINUS") == 0) {
+                g_override_key_combination = KEY_MINUS;
+            } else if (strcasecmp(value, "DLEFT") == 0) {
+                g_override_key_combination = KEY_DLEFT;
+            } else if (strcasecmp(value, "DUP") == 0) {
+                g_override_key_combination = KEY_DUP;
+            } else if (strcasecmp(value, "DRIGHT") == 0) {
+                g_override_key_combination = KEY_DRIGHT;
+            } else if (strcasecmp(value, "DDOWN") == 0) {
+                g_override_key_combination = KEY_DDOWN;
+            } else if (strcasecmp(value, "SL") == 0) {
+                g_override_key_combination = KEY_SL;
+            } else if (strcasecmp(value, "SR") == 0) {
+                g_override_key_combination = KEY_SR;
+            } else {
+                g_override_key_combination = 0;
+            }
+        }
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+void ContentManagement::LoadConfiguration(FILE *config) {
+    if (config == NULL) {
+        return;
+    }
+    
+    char *config_str = new char[0x800];
+    if (config_str != NULL) {
+        /* Read in string. */
+        std::fill(config_str, config_str + FS_MAX_PATH, 0);
+        fread(config_str, 1, 0x7FF, config);
+        config_str[strlen(config_str)] = 0x0;
+        
+        ini_parse_string(config_str, LoaderIniHandler, NULL);
+        
+        delete[] config_str;
+    }
+    
+    fclose(config);
+}
+
 void ContentManagement::TryMountSdCard() {
     /* Mount SD card, if psc, bus, and pcv have been created. */
     if (!g_has_initialized_fs_dev && HasCreatedTitle(0x0100000000000021) && HasCreatedTitle(0x010000000000000A) && HasCreatedTitle(0x010000000000001A)) {
@@ -172,7 +293,23 @@ void ContentManagement::TryMountSdCard() {
         }
         
         if (R_SUCCEEDED(fsdevMountSdmc())) {
+            ContentManagement::LoadConfiguration(fopen("sdmc:/atmosphere/loader.ini", "r"));
             g_has_initialized_fs_dev = true;
         }
+    }
+}
+
+bool ContentManagement::ShouldReplaceWithHBL(u64 tid) {
+    return g_mounted_hbl_nsp && tid == g_override_hbl_tid;
+}
+
+bool ContentManagement::ShouldOverrideContents() {
+    if (HasCreatedTitle(0x0100000000001000)) {
+        u64 kDown = 0;
+        bool keys_triggered = (R_SUCCEEDED(HidManagement::GetKeysDown(&kDown)) && ((kDown & g_override_key_combination) != 0));
+        return g_has_initialized_fs_dev && (g_override_by_default ^ keys_triggered);
+    } else {
+        /* Always redirect before qlaunch. */
+        return g_has_initialized_fs_dev;
     }
 }

@@ -24,11 +24,18 @@
 #include "ldr_map.hpp"
 #include "ldr_random.hpp"
 #include "ldr_patcher.hpp"
+#include "ldr_content_management.hpp"
 
 static NsoUtils::NsoHeader g_nso_headers[NSO_NUM_MAX] = {0};
 static bool g_nso_present[NSO_NUM_MAX] = {0};
 
 static char g_nso_path[FS_MAX_PATH] = {0};
+
+FILE *NsoUtils::OpenNsoFromHBL(unsigned int index) {
+    std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
+    snprintf(g_nso_path, FS_MAX_PATH, "hbl:/%s", NsoUtils::GetNsoFileName(index));
+    return fopen(g_nso_path, "rb");
+}
 
 FILE *NsoUtils::OpenNsoFromExeFS(unsigned int index) {
     std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
@@ -54,14 +61,18 @@ bool NsoUtils::CheckNsoStubbed(unsigned int index, u64 title_id) {
 }
 
 FILE *NsoUtils::OpenNso(unsigned int index, u64 title_id) {
-    FILE *f_out = OpenNsoFromSdCard(index, title_id);
-    if (f_out != NULL) {
-        return f_out;
-    } else if (CheckNsoStubbed(index, title_id)) {
-        return NULL;
-    } else {
-        return OpenNsoFromExeFS(index);
+    if (ContentManagement::ShouldOverrideContents()) {
+        if (ContentManagement::ShouldReplaceWithHBL(title_id)) {
+            return OpenNsoFromHBL(index);
+        }
+        FILE *f_out = OpenNsoFromSdCard(index, title_id);
+        if (f_out != NULL) {
+            return f_out;
+        } else if (CheckNsoStubbed(index, title_id)) {
+            return NULL;
+        }
     }
+    return OpenNsoFromExeFS(index);
 }
 
 bool NsoUtils::IsNsoPresent(unsigned int index) {

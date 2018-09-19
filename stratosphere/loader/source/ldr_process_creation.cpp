@@ -24,15 +24,6 @@
 #include "ldr_npdm.hpp"
 #include "ldr_nso.hpp"
 
-extern "C" {
-    
-    bool __attribute__((weak)) kernelAbove600(void) {
-        u64 tmp;
-        return (svcGetInfo(&tmp, 21, INVALID_HANDLE, 0) != 0xF001);
-    }
-    
-}
-
 Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle reslimit_h, u64 arg_flags, ProcessInfo *out_proc_info) {
     /* Initialize a ProcessInfo using an npdm. */
     *out_proc_info = (const ProcessCreation::ProcessInfo){0};
@@ -87,7 +78,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
     
     /* 5.0.0+ Pool Partition. */
     if (kernelAbove500()) {
-        u32 pool_partition_id = (npdm->acid->is_retail >> 2) & 0xF;
+        u32 pool_partition_id = (npdm->acid->flags >> 2) & 0xF;
         switch (pool_partition_id) {
             case 0: /* Application. */
                 if ((application_type & 3) == 2) {

@@ -50,7 +50,7 @@ class NpdmUtils {
             u32 magic;
             u32 size;
             u32 _0x208;
-            u32 is_retail;
+            u32 flags;
             u64 title_id_range_min;
             u64 title_id_range_max;
             u32 fac_offset;
@@ -101,9 +101,12 @@ class NpdmUtils {
         static Result ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32 *aci0_caps, size_t num_aci0_caps);
         
         
+        static FILE *OpenNpdmFromHBL();
         static FILE *OpenNpdmFromExeFS();
         static FILE *OpenNpdmFromSdCard(u64 tid);
         static FILE *OpenNpdm(u64 tid);
         static Result LoadNpdm(u64 tid, NpdmInfo *out);
         static Result LoadNpdmFromCache(u64 tid, NpdmInfo *out);
+    private:
+        static Result LoadNpdmInternal(FILE *f_npdm, NpdmCache *cache);
 };
