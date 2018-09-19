@@ -28,12 +28,12 @@ void ThreadInfo::SaveToFile(FILE *f_report) {
     fprintf(f_report, "    Registers:\n");
     {
         for (unsigned int i = 0; i <= 28; i++) {  
-            fprintf(f_report, "        X[%02u]:                   %s\n", i, this->code_list->GetFormattedAddressString(this->context.x[i]));
+            fprintf(f_report, "        X[%02u]:                   %s\n", i, this->code_list->GetFormattedAddressString(this->context.cpu_gprs[i].x));
         }
         fprintf(f_report, "        FP:                      %s\n", this->code_list->GetFormattedAddressString(this->context.fp));
         fprintf(f_report, "        LR:                      %s\n", this->code_list->GetFormattedAddressString(this->context.lr));
         fprintf(f_report, "        SP:                      %s\n", this->code_list->GetFormattedAddressString(this->context.sp));
-        fprintf(f_report, "        PC:                      %s\n", this->code_list->GetFormattedAddressString(this->context.pc));
+        fprintf(f_report, "        PC:                      %s\n", this->code_list->GetFormattedAddressString(this->context.pc.x));
     }
     fprintf(f_report, "    Stack Trace:\n");
     for (unsigned int i = 0; i < this->stack_trace_size; i++) {
@@ -58,7 +58,7 @@ bool ThreadInfo::ReadFromProcess(Handle debug_handle, u64 thread_id, bool is_64_
     }
     
     /* Get the thread context. */
-    if (R_FAILED(svcGetDebugThreadContext((u8 *)&this->context, debug_handle, this->thread_id, 0xF))) {
+    if (R_FAILED(svcGetDebugThreadContext(&this->context, debug_handle, this->thread_id, 0xF))) {
         return false;
     }
     

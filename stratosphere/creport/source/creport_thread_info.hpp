@@ -21,34 +21,9 @@
 #include "creport_debug_types.hpp"
 #include "creport_code_info.hpp"
 
-struct FpuReg {
-    u64 _[2]; /* TODO: uint128? */
-};
-
-struct DebugThreadContext {
-    union {
-        u64 x[0x20];
-        struct {
-            u64 _x[29];
-            u64 fp;
-            u64 lr;
-            u64 sp;
-        };
-    };
-    u64 pc;
-    u32 psr;
-    /* 32-bits of padding. */
-    FpuReg fpu_reg[0x20];
-    u32 fpcr;
-    u32 fpsr;
-    u64 tpidr;
-};
-
-static_assert(sizeof(DebugThreadContext) == 0x320, "Incorrect DebugThreadContext Definition!");
-
 class ThreadInfo {
     private:
-        DebugThreadContext context{};
+        ThreadContext context{};
         u64 thread_id = 0;
         u64 stack_top = 0;
         u64 stack_bottom = 0;
@@ -56,7 +31,7 @@ class ThreadInfo {
         u32 stack_trace_size = 0;
         CodeList *code_list;
     public:        
-        u64 GetPC() { return context.pc; }
+        u64 GetPC() { return context.pc.x; }
         u64 GetLR() { return context.lr; }
         u64 GetId() { return thread_id; }
         
