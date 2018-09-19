@@ -187,7 +187,7 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
         NpdmInfo *original_info = &g_original_npdm_cache.info;
         /* Fix pool partition. */
         if (kernelAbove500()) {
-            info->acid->flags = (info->acid->flags & 0xFFFFFFF9) | (original_info->acid->flags & 0x00000006);
+            info->acid->flags = (info->acid->flags & 0xFFFFFFC3) | (original_info->acid->flags & 0x0000003C);
         }
         /* Fix application type. */
         const u32 original_application_type = GetApplicationType((u32 *)original_info->aci0_kac, original_info->aci0->kac_size/sizeof(u32)) & 7;
