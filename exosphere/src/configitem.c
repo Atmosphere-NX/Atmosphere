@@ -117,9 +117,9 @@ uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
         case CONFIGITEM_BATTERYPROFILE:
             *p_outvalue = (int)g_battery_profile;
             break;
-        case CONFIGITEM_ODM4BIT10_4X:
-            /* Added on 4.x ... where is it being used? */
-            if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+        case CONFIGITEM_ISQUESTUNIT:
+            /* Added on 3.0, used to determine whether console is a kiosk unit. */
+            if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_300) {
                 *p_outvalue = (fuse_get_reserved_odm(4) >> 10) & 1;
             } else {
                 result = 2;
