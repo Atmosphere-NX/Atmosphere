@@ -31,6 +31,7 @@
 #include "../pmc.h"
 #include "../max7762x.h"
 #include "../lib/driver_utils.h"
+#include "../print.h"
 
 static SdmmcLogLevel g_sdmmc_log_level = SDMMC_LOG_NONE;
 
@@ -46,21 +47,21 @@ static void sdmmc_print(sdmmc_t *sdmmc, SdmmcLogLevel log_level, char *fmt, va_l
     
     switch (log_level) {
         case SDMMC_LOG_ERROR:
-            printk("%s [ERROR]: ", sdmmc->name);
+            print(PRINT_LOG_ERROR, "%s", sdmmc->name);
             break;
         case SDMMC_LOG_WARN:
-            printk("%s [WARN]: ", sdmmc->name);
+            print(PRINT_LOG_WARNING, "%s", sdmmc->name);
             break;
         case SDMMC_LOG_INFO:
-            printk("%s [INFO]: ", sdmmc->name);
+            print(PRINT_LOG_INFO, "%s", sdmmc->name);
             break;
         case SDMMC_LOG_DEBUG:
-            printk("%s [DEBUG]: ", sdmmc->name);
+            print(PRINT_LOG_DEBUG, "%s", sdmmc->name);
             break;
         default:
             break;
     }
-    
+
     vprintk(fmt, list);
     printk("\n");
 }
