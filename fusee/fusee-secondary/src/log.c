@@ -30,21 +30,22 @@ void log_to_uart(const char *message) {
     /* TODO: add UART logging */
 }
 
-void print_to_screen(ScreenLogLevel screenLogLevel, char *message) {
+void print_to_screen(ScreenLogLevel screen_log_level, char *message) {
     /* don't print to screen if below log level */
-    if(g_screen_log_level == SCREEN_LOG_LEVEL_NONE || screenLogLevel > g_screen_log_level) return;
+    if(screen_log_level > g_screen_log_level) return;
 
     //video_puts(buf);
     printf(message);
 }
 
 /**
- * vprintk - logs a message to the console
+ * vprintk - logs a message and prints it to screen based on its screen_log_level
  *
- * This text will not be colored or prefixed but logged to UART
+ * If the level is below g_screen_log_level it will not be shown but logged to UART
+ * This text will not be colored or prefixed
  * UART is TODO
  */
-void vprint(ScreenLogLevel screenLogLevel, const char *fmt, va_list args)
+void vprint(ScreenLogLevel screen_log_level, const char *fmt, va_list args)
 {
     char buf[PRINT_MESSAGE_MAX_LENGTH];
     vsnprintf(buf, PRINT_MESSAGE_MAX_LENGTH, fmt, args);
@@ -52,16 +53,16 @@ void vprint(ScreenLogLevel screenLogLevel, const char *fmt, va_list args)
     /* log to UART */
     log_to_uart(buf);
 
-    print_to_screen(screenLogLevel, buf);
+    print_to_screen(screen_log_level, buf);
 }
 
 /**
- * print - logs a message and prints it to screen based on its screenLogLevel
+ * print - logs a message and prints it to screen based on its screen_log_level
  * 
  * If the level is below g_screen_log_level it will not be shown but logged to UART
  * UART is TODO
  */
-void print(ScreenLogLevel screenLogLevel, const char * fmt, ...)
+void print(ScreenLogLevel screen_log_level, const char * fmt, ...)
 {
     char typebuf[] = "[%s] %s";
     char buf[PRINT_MESSAGE_MAX_LENGTH] = {};
@@ -70,7 +71,7 @@ void print(ScreenLogLevel screenLogLevel, const char * fmt, ...)
     /* apply prefix and append message format */
     /* TODO: add coloring to the output */
     /* TODO: make splash disappear if level > MANDATORY */
-    switch(screenLogLevel)
+    switch(screen_log_level)
     {
         case SCREEN_LOG_LEVEL_ERROR:
             snprintf(buf, PRINT_MESSAGE_MAX_LENGTH, typebuf, "ERROR", fmt);
@@ -100,5 +101,5 @@ void print(ScreenLogLevel screenLogLevel, const char * fmt, ...)
     /* log to UART */
     log_to_uart(message);
 
-    print_to_screen(screenLogLevel, message);
+    print_to_screen(screen_log_level, message);
 }
