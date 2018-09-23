@@ -19,20 +19,24 @@
 
 #define PRINT_MESSAGE_MAX_LENGTH      512
 
-typedef enum {
-    PRINT_LOG_DEBUG = 0,
-    PRINT_LOG_INFO,
-    PRINT_LOG_MANDATORY,
-    PRINT_LOG_WARNING,
-    PRINT_LOG_ERROR
-} PrintLogLevel;
-
-#include <stdint.h>
+//#include <stdint.h>
 #include "../../fusee-primary/src/lib/vsprintf.h"
 
-extern PrintLogLevel g_print_log_level;
+typedef enum {
+    SCREEN_LOG_LEVEL_NONE       = 0,
+    SCREEN_LOG_LEVEL_ERROR      = 1,
+    SCREEN_LOG_LEVEL_WARNING    = 2,
+    SCREEN_LOG_LEVEL_MANDATORY  = 3, /* no log prefix */
+    SCREEN_LOG_LEVEL_INFO       = 4,
+    SCREEN_LOG_LEVEL_DEBUG      = 5
+} ScreenLogLevel;
 
-//void vprintk(const char *fmt, va_list args);
-void print(PrintLogLevel printLogLevel, const char* fmt, ...);
+/* TODO: make this configurable by BCT.ini */
+extern ScreenLogLevel g_screen_log_level;
+
+void log_set_log_level(ScreenLogLevel screen_log_level);
+void log_to_uart(const char *message);
+void vprint(ScreenLogLevel screenLogLevel, const char *fmt, va_list args);
+void print(ScreenLogLevel screenLogLevel, const char* fmt, ...);
 
 #endif
