@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#define vprintk vprintf
-#define printk printf
+//#define vprint vprintf
+//#define print printf
 
 #endif

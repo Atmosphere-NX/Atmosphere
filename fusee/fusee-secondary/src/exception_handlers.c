@@ -20,6 +20,7 @@
 #include "lib/driver_utils.h"
 #include "utils.h"
 #include "display/video_fb.h"
+#include "log.h"
 
 #define CODE_DUMP_SIZE      0x30
 #define STACK_DUMP_SIZE     0x60
@@ -55,26 +56,26 @@ void exception_handler_main(uint32_t *registers, unsigned int exception_type) {
 
     uint32_t instr_addr = pc + ((cpsr & 0x20) ? 2 : 4) - CODE_DUMP_SIZE;
 
-    printk("\nSomething went wrong...\n");
+    print(SCREEN_LOG_LEVEL_ERROR, "\nSomething went wrong...\n");
 
     code_dump_size = safecpy(code_dump, (const void *)instr_addr, CODE_DUMP_SIZE);
     stack_dump_size = safecpy(stack_dump, (const void *)registers[13], STACK_DUMP_SIZE);
 
-    printk("\nException type: %s\n", exception_names[exception_type]);
-    printk("\nRegisters:\n\n");
+    print(SCREEN_LOG_LEVEL_ERROR, "\nException type: %s\n", exception_names[exception_type]);
+    print(SCREEN_LOG_LEVEL_ERROR, "\nRegisters:\n\n");
 
     /* Print r0 to pc. */
     for (int i = 0; i < 16; i += 2) {
-        printk("%-7s%08"PRIX32"       %-7s%08"PRIX32"\n", register_names[i], registers[i], register_names[i+1], registers[i+1]);
+        print(SCREEN_LOG_LEVEL_ERROR, "%-7s%08"PRIX32"       %-7s%08"PRIX32"\n", register_names[i], registers[i], register_names[i+1], registers[i+1]);
     }
 
     /* Print cpsr. */
-    printk("%-7s%08"PRIX32"\n", register_names[16], registers[16]);
+    print(SCREEN_LOG_LEVEL_ERROR, "%-7s%08"PRIX32"\n", register_names[16], registers[16]);
 
-    printk("\nCode dump:\n");
+    print(SCREEN_LOG_LEVEL_ERROR, "\nCode dump:\n");
     hexdump(code_dump, code_dump_size, instr_addr);
-    printk("\nStack dump:\n");
+    print(SCREEN_LOG_LEVEL_ERROR, "\nStack dump:\n");
     hexdump(stack_dump, stack_dump_size, registers[13]);
-    printk("\n");
-    fatal_error("An exception occured!\n");
+    print(SCREEN_LOG_LEVEL_ERROR, "\n");
+    fatal_error("An exception occurred!\n");
 }

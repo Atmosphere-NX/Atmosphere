@@ -19,6 +19,7 @@
 #include <string.h>
 #include <errno.h>
 #include <malloc.h>
+
 #include "utils.h"
 #include "panic.h"
 #include "exception_handlers.h"
@@ -32,7 +33,7 @@
 #include "gpt.h"
 #include "display/video_fb.h"
 #include "sdmmc/sdmmc.h"
-#include "print.h"
+#include "log.h"
 
 extern void (*__program_exit_callback)(int rc);
 
@@ -92,23 +93,23 @@ int main(int argc, void **argv) {
     /* Initialize the display, console, FS, etc. */
     setup_env();
 
-    print(PRINT_LOG_MANDATORY, u8"Welcome to Atmosphère Fusée Stage 2!\n");
-    print(PRINT_LOG_DEBUG, "Stage 2 executing from: %s\n", (const char *)argv[STAGE2_ARGV_PROGRAM_PATH]);
+    print(SCREEN_LOG_LEVEL_MANDATORY, u8"Welcome to Atmosphère Fusée Stage 2!\n");
+    print(SCREEN_LOG_LEVEL_DEBUG, "Stage 2 executing from: %s\n", (const char *)argv[STAGE2_ARGV_PROGRAM_PATH]);
 
     /* This will load all remaining binaries off of the SD. */
     load_payload(g_stage2_args->bct0);
 
-    print(PRINT_LOG_INFO, "Loaded payloads!\n");
+    print(SCREEN_LOG_LEVEL_INFO, "Loaded payloads!\n");
 
     g_do_nxboot = loader_ctx->chainload_entrypoint == 0;
     if (g_do_nxboot) {
-        print(PRINT_LOG_INFO, "Now performing nxboot.\n");
+        print(SCREEN_LOG_LEVEL_INFO, "Now performing nxboot.\n");
         uint32_t boot_memaddr = nxboot_main();
         nxboot_finish(boot_memaddr);
     } else {
         /* TODO: What else do we want to do in terms of argc/argv? */
         const char *path = get_loader_ctx()->file_paths_to_load[get_loader_ctx()->file_id_of_entrypoint];
-        print(PRINT_LOG_INFO, "Now chainloading.\n");
+        print(SCREEN_LOG_LEVEL_INFO, "Now chainloading.\n");
         g_chainloader_argc = 1;
         strcpy(g_chainloader_arg_data, path);
     }
