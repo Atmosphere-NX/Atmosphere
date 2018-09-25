@@ -67,7 +67,7 @@ static void sdmmc_print(sdmmc_t *sdmmc, SdmmcLogLevel log_level, char *fmt, va_l
 
     print(screen_log_level, sdmmc_fmt, sdmmc->name);
     vprint(screen_log_level, fmt, list);
-    print(screen_log_level, "\n");
+    print(screen_log_level | SCREEN_LOG_LEVEL_NO_PREFIX, "\n");
 }
 
 void sdmmc_error(sdmmc_t *sdmmc, char *fmt, ...)
