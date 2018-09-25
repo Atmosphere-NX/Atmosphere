@@ -56,21 +56,11 @@ void vprint(ScreenLogLevel screen_log_level, const char *fmt, va_list args)
     print_to_screen(screen_log_level, buf);
 }
 
-/**
- * print - logs a message and prints it to screen based on its screen_log_level
- * 
- * If the level is below g_screen_log_level it will not be shown but logged to UART
- * UART is TODO
- */
-void print(ScreenLogLevel screen_log_level, const char * fmt, ...)
-{
+void add_prefix(ScreenLogLevel screen_log_level, const char *fmt, char *buf) {
     char typebuf[] = "[%s] %s";
-    char buf[PRINT_MESSAGE_MAX_LENGTH] = {};
-    char message[PRINT_MESSAGE_MAX_LENGTH] = {};
 
     /* apply prefix and append message format */
     /* TODO: add coloring to the output */
-    /* TODO: make splash disappear if level > MANDATORY */
     switch(screen_log_level)
     {
         case SCREEN_LOG_LEVEL_ERROR:
@@ -90,6 +80,32 @@ void print(ScreenLogLevel screen_log_level, const char * fmt, ...)
             break;
         default:
             break;
+    }
+}
+
+/**
+ * print - logs a message and prints it to screen based on its screen_log_level
+ * 
+ * If the level is below g_screen_log_level it will not be shown but logged to UART
+ * Use SCREEN_LOG_LEVEL_NO_PREFIX if you don't want a prefix to be added
+ * UART is TODO
+ */
+void print(ScreenLogLevel screen_log_level, const char * fmt, ...)
+{
+    char buf[PRINT_MESSAGE_MAX_LENGTH] = {};
+    char message[PRINT_MESSAGE_MAX_LENGTH] = {};
+
+    /* TODO: make splash disappear if level > MANDATORY */
+
+    /* make prefix free messages with log_level possible */
+    if(screen_log_level & SCREEN_LOG_LEVEL_NO_PREFIX) {
+        /* remove the NO_PREFIX flag so the enum can be recognized later on */
+        screen_log_level &= ~SCREEN_LOG_LEVEL_NO_PREFIX;
+
+        snprintf(buf, PRINT_MESSAGE_MAX_LENGTH, "%s", fmt);
+    }
+    else {
+        add_prefix(screen_log_level, fmt, buf);
     }
 
     /* input arguments */

@@ -27,7 +27,9 @@ typedef enum {
     SCREEN_LOG_LEVEL_WARNING    = 2,
     SCREEN_LOG_LEVEL_MANDATORY  = 3, /* no log prefix */
     SCREEN_LOG_LEVEL_INFO       = 4,
-    SCREEN_LOG_LEVEL_DEBUG      = 5
+    SCREEN_LOG_LEVEL_DEBUG      = 5,
+
+    SCREEN_LOG_LEVEL_NO_PREFIX  = 0x100 /* OR this to your LOG_LEVEL to prevent prefix creation */
 } ScreenLogLevel;
 
 /* TODO: make this configurable by BCT.ini */

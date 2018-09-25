@@ -61,21 +61,23 @@ void exception_handler_main(uint32_t *registers, unsigned int exception_type) {
     code_dump_size = safecpy(code_dump, (const void *)instr_addr, CODE_DUMP_SIZE);
     stack_dump_size = safecpy(stack_dump, (const void *)registers[13], STACK_DUMP_SIZE);
 
-    print(SCREEN_LOG_LEVEL_ERROR, "\nException type: %s\n", exception_names[exception_type]);
-    print(SCREEN_LOG_LEVEL_ERROR, "\nRegisters:\n\n");
+    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\nException type: %s\n",
+            exception_names[exception_type]);
+    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\nRegisters:\n\n");
 
     /* Print r0 to pc. */
     for (int i = 0; i < 16; i += 2) {
-        print(SCREEN_LOG_LEVEL_ERROR, "%-7s%08"PRIX32"       %-7s%08"PRIX32"\n", register_names[i], registers[i], register_names[i+1], registers[i+1]);
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "%-7s%08"PRIX32"       %-7s%08"PRIX32"\n",
+                register_names[i], registers[i], register_names[i+1], registers[i+1]);
     }
 
     /* Print cpsr. */
-    print(SCREEN_LOG_LEVEL_ERROR, "%-7s%08"PRIX32"\n", register_names[16], registers[16]);
+    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "%-7s%08"PRIX32"\n", register_names[16], registers[16]);
 
-    print(SCREEN_LOG_LEVEL_ERROR, "\nCode dump:\n");
+    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\nCode dump:\n");
     hexdump(code_dump, code_dump_size, instr_addr);
-    print(SCREEN_LOG_LEVEL_ERROR, "\nStack dump:\n");
+    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\nStack dump:\n");
     hexdump(stack_dump, stack_dump_size, registers[13]);
-    print(SCREEN_LOG_LEVEL_ERROR, "\n");
+    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\n");
     fatal_error("An exception occurred!\n");
 }

@@ -97,7 +97,7 @@ __attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
     va_start(args, fmt);
     vprint(SCREEN_LOG_LEVEL_ERROR, fmt, args);
     va_end(args);
-    print(SCREEN_LOG_LEVEL_ERROR, "\n Press POWER to reboot.\n");
+    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\n Press POWER to reboot.\n");
     wait_for_button_and_reboot();
 }
 
