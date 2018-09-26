@@ -24,7 +24,7 @@
 #include "timers.h"
 #include "btn.h"
 #include "panic.h"
-#include "log.h"
+#include "lib/log.h"
 
 #include <stdio.h>
 #include <inttypes.h>

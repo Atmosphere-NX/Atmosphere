@@ -45,7 +45,7 @@
 #define u8 uint8_t
 #define u32 uint32_t
 #include "exosphere_bin.h"
-#include "log.h"
+#include "lib/log.h"
 #undef u8
 #undef u32
 

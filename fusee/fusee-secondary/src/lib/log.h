@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FUSEE_PRINT_H
-#define FUSEE_PRINT_H
+#ifndef FUSEE_SECONDARY_PRINT_H
+#define FUSEE_SECONDARY_PRINT_H
 
 #define PRINT_MESSAGE_MAX_LENGTH 512
 

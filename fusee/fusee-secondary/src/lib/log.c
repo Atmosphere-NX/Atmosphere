@@ -14,10 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-
 #include "log.h"
-#include "display/video_fb.h"
+
+#include <stdio.h>
 
 /* default log level for screen output */
 ScreenLogLevel g_screen_log_level = SCREEN_LOG_LEVEL_MANDATORY;
@@ -34,7 +33,6 @@ void print_to_screen(ScreenLogLevel screen_log_level, char *message) {
     /* don't print to screen if below log level */
     if(screen_log_level > g_screen_log_level) return;
 
-    //video_puts(buf);
     printf(message);
 }
 

@@ -24,7 +24,7 @@
 #include "fs_utils.h"
 #include "stage2.h"
 #include "lib/ini.h"
-#include "log.h"
+#include "lib/log.h"
 
 static loader_ctx_t g_loader_ctx = {0};
 

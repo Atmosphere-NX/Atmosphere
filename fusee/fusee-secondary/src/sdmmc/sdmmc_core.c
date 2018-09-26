@@ -30,8 +30,7 @@
 #include "../gpio.h"
 #include "../pmc.h"
 #include "../max7762x.h"
-#include "../lib/driver_utils.h"
-#include "../log.h"
+#include "../lib/log.h"
 
 static SdmmcLogLevel g_sdmmc_log_level = SDMMC_LOG_NONE;
 

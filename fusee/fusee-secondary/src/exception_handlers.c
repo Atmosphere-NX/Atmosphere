@@ -17,10 +17,9 @@
 #include <inttypes.h>
 
 #include "exception_handlers.h"
-#include "lib/driver_utils.h"
 #include "utils.h"
 #include "display/video_fb.h"
-#include "log.h"
+#include "lib/log.h"
 
 #define CODE_DUMP_SIZE      0x30
 #define STACK_DUMP_SIZE     0x60
