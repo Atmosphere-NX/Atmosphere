@@ -48,6 +48,9 @@ void vprint(ScreenLogLevel screen_log_level, const char *fmt, va_list args)
     char buf[PRINT_MESSAGE_MAX_LENGTH];
     vsnprintf(buf, PRINT_MESSAGE_MAX_LENGTH, fmt, args);
 
+    /* we don't need that flag here, but if it gets used, strip it so we print correctly */
+    screen_log_level &= ~SCREEN_LOG_LEVEL_NO_PREFIX;
+
     /* log to UART */
     log_to_uart(buf);
 
