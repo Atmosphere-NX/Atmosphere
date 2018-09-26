@@ -25,7 +25,7 @@
 #include "car.h"
 #include "btn.h"
 
-#include "lib/printk.h"
+#include "lib/log.h"
 
 #include <inttypes.h>
 
@@ -84,11 +84,11 @@ __attribute__ ((noreturn)) void generic_panic(void) {
 
 __attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
     va_list args;
-    printk("Fatal error: ");
+    print(SCREEN_LOG_LEVEL_ERROR, "Fatal error: ");
     va_start(args, fmt);
-    vprintk(fmt, args);
+    vprint(SCREEN_LOG_LEVEL_ERROR, fmt, args);
     va_end(args);
-    printk("\nPress POWER to reboot\n");
+    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"\nPress POWER to reboot\n");
     wait_for_button_and_reboot();
 }
 
@@ -109,27 +109,27 @@ void hexdump(const void* data, size_t size, uintptr_t addrbase) {
 
     for (size_t i = 0; i < size; i++) {
         if (i % 16 == 0) {
-            printk("%0*" PRIXPTR ": | ", 2 * sizeof(addrbase), addrbase + i);
+            print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "%0*" PRIXPTR ": | ", 2 * sizeof(addrbase), addrbase + i);
         }
-        printk("%02X ", d[i]);
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "%02X ", d[i]);
         if (d[i] >= ' ' && d[i] <= '~') {
             ascii[i % 16] = d[i];
         } else {
             ascii[i % 16] = '.';
         }
         if ((i+1) % 8 == 0 || i+1 == size) {
-            printk(" ");
+            print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, " ");
             if ((i+1) % 16 == 0) {
-                printk("|  %s \n", ascii);
+                print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "|  %s \n", ascii);
             } else if (i+1 == size) {
                 ascii[(i+1) % 16] = '\0';
                 if ((i+1) % 16 <= 8) {
-                    printk(" ");
+                    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, " ");
                 }
                 for (size_t j = (i+1) % 16; j < 16; j++) {
-                    printk("   ");
+                    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "   ");
                 }
-                printk("|  %s \n", ascii);
+                print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "|  %s \n", ascii);
             }
         }
     }
