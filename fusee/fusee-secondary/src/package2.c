@@ -192,7 +192,7 @@ static bool package2_validate_metadata(package2_meta_t *metadata, uint8_t data[]
 
     /* Perform version checks. */
     /* We will be compatible with all package2s released before current, but not newer ones. */
-    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_500_CURRENT) {
+    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_600_CURRENT) {
         return true;
     }
 
@@ -221,7 +221,7 @@ static uint32_t package2_decrypt_and_validate_header(package2_header_t *header, 
 
         /* Ensure we successfully decrypted the header. */
         if (mkey_rev > mkey_get_revision()) {
-            fatal_error("failed to decrypt the Package2 header (master key revision %u)!\n", mkey_get_revision());
+            fatal_error("Failed to decrypt the Package2 header (master key revision %u)!\n", mkey_get_revision());
         }
     } else if (!package2_validate_metadata(&header->metadata, header->data)) {
         fatal_error("Failed to validate the Package2 header!\n");
