@@ -25,7 +25,7 @@ INCLUDES	:=	include
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only #<- important
 DEFINES	:=	-D__CCPLEX__
 CFLAGS	:= \
 	-g \
@@ -45,7 +45,7 @@ CFLAGS	+=	$(INCLUDE)
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -nostartfiles -nostdlib -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=
 
