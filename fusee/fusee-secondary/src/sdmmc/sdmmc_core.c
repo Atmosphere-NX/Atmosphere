@@ -32,39 +32,12 @@
 #include "../max7762x.h"
 #include "../lib/log.h"
 
-static SdmmcLogLevel g_sdmmc_log_level = SDMMC_LOG_NONE;
-
-void sdmmc_set_log_level(SdmmcLogLevel log_level)
+static void sdmmc_print(sdmmc_t *sdmmc, ScreenLogLevel screen_log_level, char *fmt, va_list list)
 {
-    g_sdmmc_log_level = log_level;
-}
-
-static void sdmmc_print(sdmmc_t *sdmmc, SdmmcLogLevel log_level, char *fmt, va_list list)
-{
-    if (log_level > g_sdmmc_log_level)
+    if (screen_log_level > log_get_log_level())
         return;
-
-    char sdmmc_fmt[] = "%s: ";
-    ScreenLogLevel screen_log_level = SCREEN_LOG_LEVEL_ERROR;
     
-    switch (log_level) {
-        case SDMMC_LOG_ERROR:
-            screen_log_level = SCREEN_LOG_LEVEL_ERROR;
-            break;
-        case SDMMC_LOG_WARN:
-            screen_log_level = SCREEN_LOG_LEVEL_WARNING;
-            break;
-        case SDMMC_LOG_INFO:
-            screen_log_level = SCREEN_LOG_LEVEL_DEBUG;
-            break;
-        case SDMMC_LOG_DEBUG:
-            screen_log_level = SCREEN_LOG_LEVEL_DEBUG;
-            break;
-        default:
-            break;
-    }
-
-    print(screen_log_level, sdmmc_fmt, sdmmc->name);
+    print(screen_log_level, "%s: ", sdmmc->name);
     vprint(screen_log_level, fmt, list);
     print(screen_log_level | SCREEN_LOG_LEVEL_NO_PREFIX, "\n");
 }
@@ -74,7 +47,7 @@ void sdmmc_error(sdmmc_t *sdmmc, char *fmt, ...)
     va_list list;
     
     va_start(list, fmt);
-    sdmmc_print(sdmmc, SDMMC_LOG_ERROR, fmt, list);
+    sdmmc_print(sdmmc, SCREEN_LOG_LEVEL_ERROR, fmt, list);
     va_end(list);
 }
 
@@ -83,7 +56,7 @@ void sdmmc_warn(sdmmc_t *sdmmc, char *fmt, ...)
     va_list list;
     
     va_start(list, fmt);
-    sdmmc_print(sdmmc, SDMMC_LOG_WARN, fmt, list);
+    sdmmc_print(sdmmc, SCREEN_LOG_LEVEL_WARNING, fmt, list);
     va_end(list);
 }
 
@@ -92,7 +65,7 @@ void sdmmc_info(sdmmc_t *sdmmc, char *fmt, ...)
     va_list list;
     
     va_start(list, fmt);
-    sdmmc_print(sdmmc, SDMMC_LOG_INFO, fmt, list);
+    sdmmc_print(sdmmc, SCREEN_LOG_LEVEL_INFO, fmt, list);
     va_end(list);
 }
 
@@ -101,7 +74,7 @@ void sdmmc_debug(sdmmc_t *sdmmc, char *fmt, ...)
     va_list list;
     
     va_start(list, fmt);
-    sdmmc_print(sdmmc, SDMMC_LOG_DEBUG, fmt, list);
+    sdmmc_print(sdmmc, SCREEN_LOG_LEVEL_DEBUG, fmt, list);
     va_end(list);
 }
 

@@ -17,8 +17,9 @@
 #ifndef FUSEE_STAGE2_H
 #define FUSEE_STAGE2_H
 
-#include "utils.h"
+#include "lib/log.h"
 #include "sdmmc/sdmmc.h"
+#include "utils.h"
 
 /* TODO: Is there a more concise way to do this? */
 #define STAGE2_ARGV_PROGRAM_PATH 0
@@ -29,6 +30,7 @@
 
 typedef struct {
     uint32_t version;
+    ScreenLogLevel log_level;
     bool display_initialized;
     char bct0[BCTO_MAX_SIZE];
 } stage2_args_t;

@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FUSEE_PRIMARY_PRINT_H
-#define FUSEE_PRIMARY_PRINT_H
+#ifndef FUSEE_LOG_H
+#define FUSEE_LOG_H
 
 #define PRINT_MESSAGE_MAX_LENGTH 512
 
@@ -32,10 +32,10 @@ typedef enum {
     SCREEN_LOG_LEVEL_NO_PREFIX  = 0x100 /* OR this to your LOG_LEVEL to prevent prefix creation */
 } ScreenLogLevel;
 
-/* TODO: make this configurable by BCT.ini */
 extern ScreenLogLevel g_screen_log_level;
 
 void log_set_log_level(ScreenLogLevel screen_log_level);
+ScreenLogLevel log_get_log_level();
 void log_to_uart(const char *message);
 void vprint(ScreenLogLevel screen_log_level, const char *fmt, va_list args);
 void print(ScreenLogLevel screen_log_level, const char* fmt, ...);

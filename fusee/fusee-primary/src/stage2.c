@@ -13,18 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#include <stdint.h>
 
-#include "utils.h"
-#include "display/video_fb.h"
-#include "fs_utils.h"
 #include "stage2.h"
 #include "chainloader.h"
-#include "lib/log.h"
-#include "lib/vsprintf.h"
-#include "lib/ini.h"
-#include "lib/fatfs/ff.h"
+#include "fs_utils.h"
+#include "utils.h"
 
 char g_stage2_path[0x100] = {0};
 

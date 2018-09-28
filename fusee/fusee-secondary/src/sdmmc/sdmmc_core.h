@@ -181,15 +181,6 @@
 #define SDMMC_RSP_SPI_R5        (SDMMC_RSP_SPI_S1|SDMMC_RSP_SPI_S2)
 #define SDMMC_RSP_SPI_R7        (SDMMC_RSP_SPI_S1|SDMMC_RSP_SPI_B4)
 
-/* Internal logging */
-typedef enum {
-    SDMMC_LOG_NONE  = 0,
-    SDMMC_LOG_ERROR = 1,
-    SDMMC_LOG_WARN  = 2,
-    SDMMC_LOG_INFO  = 3,
-    SDMMC_LOG_DEBUG = 4
-} SdmmcLogLevel;
-
 /* SDMMC controllers */
 typedef enum {
     SDMMC_1 = 0,
@@ -306,7 +297,6 @@ int sdmmc_execute_tuning(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed, uint32_t opcod
 int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, uint32_t *num_blocks_out);
 int sdmmc_load_response(sdmmc_t *sdmmc, uint32_t flags, uint32_t *resp);
 int sdmmc_abort(sdmmc_t *sdmmc, uint32_t opcode);
-void sdmmc_set_log_level(SdmmcLogLevel log_level);
 void sdmmc_error(sdmmc_t *sdmmc, char *fmt, ...);
 void sdmmc_warn(sdmmc_t *sdmmc, char *fmt, ...);
 void sdmmc_info(sdmmc_t *sdmmc, char *fmt, ...);

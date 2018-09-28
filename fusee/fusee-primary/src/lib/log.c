@@ -20,17 +20,21 @@
 #include "vsprintf.h"
 
 /* default log level for screen output */
-ScreenLogLevel g_screen_log_level = SCREEN_LOG_LEVEL_MANDATORY;
+ScreenLogLevel g_screen_log_level = SCREEN_LOG_LEVEL_NONE;
 
 void log_set_log_level(ScreenLogLevel log_level) {
     g_screen_log_level = log_level;
+}
+
+ScreenLogLevel log_get_log_level() {
+    return g_screen_log_level;
 }
 
 void log_to_uart(const char *message) {
     /* TODO: add UART logging */
 }
 
-void print_to_screen(ScreenLogLevel screen_log_level, char *message) {
+static void print_to_screen(ScreenLogLevel screen_log_level, char *message) {
     /* don't print to screen if below log level */
     if(screen_log_level > g_screen_log_level) return;
 
@@ -58,7 +62,7 @@ void vprint(ScreenLogLevel screen_log_level, const char *fmt, va_list args)
     print_to_screen(screen_log_level, buf);
 }
 
-void add_prefix(ScreenLogLevel screen_log_level, const char *fmt, char *buf) {
+static void add_prefix(ScreenLogLevel screen_log_level, const char *fmt, char *buf) {
     char typebuf[] = "[%s] %s";
 
     /* apply prefix and append message format */

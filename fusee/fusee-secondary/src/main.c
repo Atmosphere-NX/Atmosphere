@@ -52,8 +52,6 @@ static void setup_env(void) {
     if (nxfs_mount_all() < 0) {
         fatal_error("Failed to mount at least one parition: %s\n", strerror(errno));
     }
-
-    /* TODO: What other hardware init should we do here? */
 }
 
 static void cleanup_env(void) {
@@ -87,8 +85,8 @@ int main(int argc, void **argv) {
         generic_panic();
     }
     
-    /* Set the SDMMC's driver logging level. */
-    sdmmc_set_log_level(SDMMC_LOG_INFO);
+    /* Override the global logging level. */
+    log_set_log_level(g_stage2_args->log_level);
     
     /* Initialize the display, console, FS, etc. */
     setup_env();

@@ -17,6 +17,13 @@
 #ifndef FUSEE_CONSOLE_H
 #define FUSEE_CONSOLE_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <malloc.h>
+#include <sys/iosupport.h>
+
 int console_init(bool display_initialized);
 void *console_get_framebuffer(bool enable_display);
 int console_display(const void *framebuffer); /* Must be page-aligned */

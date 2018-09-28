@@ -13,8 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#include <stdio.h>
+
+#include "console.h"
 #include "di.h"
 #include "timers.h"
 #include "splash_screen.h"
@@ -36,7 +36,7 @@ static void render_bmp(const uint32_t *bmp_data, uint32_t *framebuffer, uint32_t
     }
     
     /* Re-initialize the frame buffer. */
-    display_init_framebuffer(framebuffer);
+    console_display(framebuffer);
 }
 
 void display_splash_screen_bmp(const char *custom_splash_path, void *fb_address) {

@@ -26,12 +26,16 @@
 #include "sdmmc/sdmmc.h"
 #include "lib/fatfs/ff.h"
 #include "lib/log.h"
+#include "lib/vsprintf.h"
+#include "lib/ini.h"
 #include "display/video_fb.h"
 
 extern void (*__program_exit_callback)(int rc);
 
 static void *g_framebuffer;
 static char g_bct0_buffer[BCTO_MAX_SIZE];
+
+#define CONFIG_LOG_LEVEL_KEY "log_level"
 
 #define DEFAULT_BCT0_FOR_DEBUG \
 "BCT0\n"\
@@ -45,23 +49,39 @@ static const char *load_config(void) {
         print(SCREEN_LOG_LEVEL_DEBUG, "Failed to read BCT0 from SD!\n");
         print(SCREEN_LOG_LEVEL_DEBUG, "Using default BCT0!\n");
         memcpy(g_bct0_buffer, DEFAULT_BCT0_FOR_DEBUG, sizeof(DEFAULT_BCT0_FOR_DEBUG));
-        /* TODO: Stop using default. */
-        /* printk("Error: Failed to load BCT.ini!\n");
-         * generic_panic(); */
     }
 
     if (memcmp(g_bct0_buffer, "BCT0", 4) != 0) {
         fatal_error("Unexpected magic in BCT.ini!\n");
     }
+    
     /* Return pointer to first line of the ini. */
     const char *bct0 = g_bct0_buffer;
     while (*bct0 && *bct0 != '\n') {
         bct0++;
     }
+    
     if (!bct0) {
         fatal_error("BCT.ini has no newline!\n");
     }
+    
     return bct0;
+}
+
+static int config_ini_handler(void *user, const char *section, const char *name, const char *value) {
+    if (strcmp(section, "config") == 0) {
+        if (strcmp(name, CONFIG_LOG_LEVEL_KEY) == 0) {
+            ScreenLogLevel *config_log_level = (ScreenLogLevel *)user;
+            int log_level = 0;
+            sscanf(value, "%d", &log_level);
+            *config_log_level = (ScreenLogLevel)log_level;
+        } else {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+    return 1;
 }
 
 static void setup_env(void) {
@@ -111,20 +131,26 @@ int main(void) {
     const char *stage2_path;
     stage2_args_t *stage2_args;
     uint32_t stage2_version = 0;
-
-    /* Set the SDMMC's driver logging level. */
-    sdmmc_set_log_level(SDMMC_LOG_INFO);
+    ScreenLogLevel log_level = SCREEN_LOG_LEVEL_MANDATORY;
     
     /* Initialize the display, console, etc. */
     setup_env();
     
-    /* Say hello. */
-    print(SCREEN_LOG_LEVEL_MANDATORY, "Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
-    print(SCREEN_LOG_LEVEL_DEBUG, "Using color linear framebuffer at 0x%p!\n", g_framebuffer);
-        
     /* Load the BCT0 configuration ini off of the SD. */
     bct0 = load_config();
 
+    /* Extract the logging level from the BCT.ini file. */
+    if (ini_parse_string(bct0, config_ini_handler, &log_level) < 0) {
+        fatal_error("Failed to parse BCT.ini!\n");
+    }
+    
+    /* Override the global logging level. */
+    log_set_log_level(log_level);
+    
+    /* Say hello. */
+    print(SCREEN_LOG_LEVEL_MANDATORY, "Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
+    print(SCREEN_LOG_LEVEL_DEBUG, "Using color linear framebuffer at 0x%p!\n", g_framebuffer);    
+    
     /* Load the loader payload into DRAM. */
     load_stage2(bct0);
 
@@ -133,6 +159,7 @@ int main(void) {
     strcpy(g_chainloader_arg_data, stage2_path);
     stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1); /* May be unaligned. */
     memcpy(&stage2_args->version, &stage2_version, 4);
+    stage2_args->log_level = log_level;
     stage2_args->display_initialized = false;
     strcpy(stage2_args->bct0, bct0);
     g_chainloader_argc = 2;
