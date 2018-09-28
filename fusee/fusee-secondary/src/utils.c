@@ -24,6 +24,7 @@
 #include "timers.h"
 #include "btn.h"
 #include "panic.h"
+#include "lib/log.h"
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -76,17 +77,27 @@ __attribute__((noreturn)) void wait_for_button_and_reboot(void) {
     }
 }
 
+void wait_for_button(void) {
+    uint32_t button;
+    while (true) {
+        button = btn_read();
+        if (button) {
+            return;
+        }
+    }
+}
+
 __attribute__ ((noreturn)) void generic_panic(void) {
     panic(0xFF000006);
 }
 
 __attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
     va_list args;
-    printf("Fatal error: ");
+    print(SCREEN_LOG_LEVEL_ERROR, "Fatal error: ");
     va_start(args, fmt);
-    vprintf(fmt, args);
+    vprint(SCREEN_LOG_LEVEL_ERROR, fmt, args);
     va_end(args);
-    printf("\n Press POWER to reboot.\n");
+    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\n Press POWER to reboot.\n");
     wait_for_button_and_reboot();
 }
 

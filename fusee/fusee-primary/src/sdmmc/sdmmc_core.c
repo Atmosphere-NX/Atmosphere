@@ -30,7 +30,7 @@
 #include "../gpio.h"
 #include "../pmc.h"
 #include "../max7762x.h"
-#include "../lib/driver_utils.h"
+#include "../lib/log.h"
 
 static SdmmcLogLevel g_sdmmc_log_level = SDMMC_LOG_NONE;
 
@@ -43,26 +43,30 @@ static void sdmmc_print(sdmmc_t *sdmmc, SdmmcLogLevel log_level, char *fmt, va_l
 {
     if (log_level > g_sdmmc_log_level)
         return;
-    
+
+    char sdmmc_fmt[] = "%s: ";
+    ScreenLogLevel screen_log_level = SCREEN_LOG_LEVEL_ERROR;
+
     switch (log_level) {
         case SDMMC_LOG_ERROR:
-            printk("%s [ERROR]: ", sdmmc->name);
+            screen_log_level = SCREEN_LOG_LEVEL_ERROR;
             break;
         case SDMMC_LOG_WARN:
-            printk("%s [WARN]: ", sdmmc->name);
+            screen_log_level = SCREEN_LOG_LEVEL_WARNING;
             break;
         case SDMMC_LOG_INFO:
-            printk("%s [INFO]: ", sdmmc->name);
+            screen_log_level = SCREEN_LOG_LEVEL_DEBUG;
             break;
         case SDMMC_LOG_DEBUG:
-            printk("%s [DEBUG]: ", sdmmc->name);
+            screen_log_level = SCREEN_LOG_LEVEL_DEBUG;
             break;
         default:
             break;
     }
-    
-    vprintk(fmt, list);
-    printk("\n");
+
+    print(screen_log_level, sdmmc_fmt, sdmmc->name);
+    vprint(screen_log_level, fmt, list);
+    print(screen_log_level | SCREEN_LOG_LEVEL_NO_PREFIX, "\n");
 }
 
 void sdmmc_error(sdmmc_t *sdmmc, char *fmt, ...)

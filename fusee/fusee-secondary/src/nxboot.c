@@ -45,6 +45,7 @@
 #define u8 uint8_t
 #define u32 uint32_t
 #include "exosphere_bin.h"
+#include "lib/log.h"
 #undef u8
 #undef u32
 
@@ -175,6 +176,7 @@ static void nxboot_move_bootconfig() {
         fatal_error("[NXBOOT]: Failed to open BootConfig from eMMC!\n");
     }
     if (fread(bootconfig, 0x4000, 1, bcfile) < 1) {
+        fclose(bcfile);
         fatal_error("[NXBOOT]: Failed to read BootConfig!\n");
     }
     fclose(bcfile);
@@ -218,7 +220,7 @@ uint32_t nxboot_main(void) {
     }
 
     /* Read Package2 from a file, otherwise from its partition(s). */
-    printf("[NXBOOT]: Reading package2...\n");
+    print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Reading package2...\n");
     if (loader_ctx->package2_path[0] != '\0') {
         pk2file = fopen(loader_ctx->package2_path, "rb");
         if (pk2file == NULL) {
@@ -230,26 +232,29 @@ uint32_t nxboot_main(void) {
             fatal_error("[NXBOOT]: Failed to open Package2 from eMMC: %s!\n", strerror(errno));
         }
         if (fseek(pk2file, 0x4000, SEEK_SET) != 0) {
-            fatal_error("[NXBOOT]: Failed to seek Package2 in eMMC: %s!\n", strerror(errno));
             fclose(pk2file);
+            fatal_error("[NXBOOT]: Failed to seek Package2 in eMMC: %s!\n", strerror(errno));
         }
     }
 
     setvbuf(pk2file, NULL, _IONBF, 0); /* Workaround. */
     if (fread(package2, sizeof(package2_header_t), 1, pk2file) < 1) {
+        fclose(pk2file);
         fatal_error("[NXBOOT]: Failed to read Package2!\n");
     }
     package2_size = package2_meta_get_size(&package2->metadata);
     if ((package2_size > PACKAGE2_SIZE_MAX) || (package2_size <= sizeof(package2_header_t))) {
+        fclose(pk2file);
         fatal_error("[NXBOOT]: Package2 is too big or too small!\n");
     }
     if (fread(package2->data, package2_size - sizeof(package2_header_t), 1, pk2file) < 1) {
+        fclose(pk2file);
         fatal_error("[NXBOOT]: Failed to read Package2!\n");
     }
     fclose(pk2file);
     
     /* Read and parse boot0. */
-    printf("[NXBOOT]: Reading boot0...\n");
+    print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Reading boot0...\n");
     boot0 = fopen("boot0:/", "rb");
     if ((boot0 == NULL) || (package1_read_and_parse_boot0(&package1loader, &package1loader_size, g_keyblobs, &available_revision, boot0) == -1)) {
         fatal_error("[NXBOOT]: Couldn't parse boot0: %s!\n", strerror(errno));
@@ -286,17 +291,17 @@ uint32_t nxboot_main(void) {
     if (!target_firmware)
         fatal_error("[NXBOOT]: Failed to detect target firmware!\n");
     else
-        printf("[NXBOOT]: Detected target firmware %ld!\n", target_firmware);
+        print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Detected target firmware %ld!\n", target_firmware);
 
     /* Setup boot configuration for Exosphère. */
     nxboot_configure_exosphere(target_firmware);
-    
+
     /* Initialize Boot Reason on older firmware versions. */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
-        printf("[NXBOOT]: Initializing Boot Reason...\n");
+        print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Initializing Boot Reason...\n");
         nxboot_set_bootreason();
     }
-    
+
     /* Derive keydata. */
     if (derive_nx_keydata(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware, g_keyblobs, available_revision, tsec_fw, tsec_fw_size) != 0) {
         fatal_error("[NXBOOT]: Key derivation failed!\n");
@@ -311,7 +316,7 @@ uint32_t nxboot_main(void) {
 
         /* Allocate memory for the warmboot firmware. */
         warmboot_fw = malloc(warmboot_fw_size);
-        
+
         if (warmboot_fw == NULL) {
             fatal_error("[NXBOOT]: Out of memory!\n");
         }
@@ -333,7 +338,7 @@ uint32_t nxboot_main(void) {
             fatal_error("[NXBOOT]: Could not read the warmboot firmware from Package1!\n");
         }
     }
-    
+
     /* Select the right address for the warmboot firmware. */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
         warmboot_memaddr = (void *)0x8000D000;
@@ -342,23 +347,23 @@ uint32_t nxboot_main(void) {
     } else {
         warmboot_memaddr = (void *)0x4003D800;
     }
-    
-    printf("[NXBOOT]: Copying warmboot firmware...\n");
-    
+
+    print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Copying warmboot firmware...\n");
+
     /* Copy the warmboot firmware and set the address in PMC if necessary. */
     if (warmboot_fw && (warmboot_fw_size > 0)) {
         memcpy(warmboot_memaddr, warmboot_fw, warmboot_fw_size);
         if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400)
             pmc->scratch1 = (uint32_t)warmboot_memaddr;
     }
-    
-    printf("[NXBOOT]: Rebuilding package2...\n");
-    
+
+    print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Rebuilding package2...\n");
+
     /* Patch package2, adding Thermosphère + custom KIPs. */
     package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
-    printf(u8"[NXBOOT]: Reading Exosphère...\n");
-    
+    print(SCREEN_LOG_LEVEL_INFO, u8"[NXBOOT]: Reading Exosphère...\n");
+
     /* Select the right address for Exosphère. */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
         exosphere_memaddr = (void *)0x4002D000;
@@ -382,11 +387,11 @@ uint32_t nxboot_main(void) {
     } else {
         memcpy(exosphere_memaddr, exosphere_bin, exosphere_bin_size);
     }
-    
+
     /* Move BootConfig. */
-    printf("[NXBOOT]: Moving BootConfig...\n");
+    print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Moving BootConfig...\n");
     nxboot_move_bootconfig();
-    
+
     /* Set 3.0.0/3.0.1/3.0.2 warmboot security check. */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == EXOSPHERE_TARGET_FIRMWARE_300) {
         const package1loader_header_t *package1loader_header = (const package1loader_header_t *)package1loader;
@@ -395,7 +400,7 @@ uint32_t nxboot_main(void) {
         else if (!strcmp(package1loader_header->build_timestamp, "20170710161758"))
             pmc->secure_scratch32 = 0x104;      /* Warmboot 3.0.1/3.0.2 security check. */
     }
-    
+
     /* Clean up. */
     free(package1loader);
     if (loader_ctx->tsecfw_path[0] != '\0') {
@@ -405,8 +410,8 @@ uint32_t nxboot_main(void) {
         free(warmboot_fw);
     }
     free(package2);
-    
-    printf("[NXBOOT]: Powering on the CCPLEX...\n");
+
+    print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Powering on the CCPLEX...\n");
     
     /* Display splash screen. */
     display_splash_screen_bmp(loader_ctx->custom_splash_path, (void *)0xC0000000);

@@ -27,6 +27,7 @@
 #define u8 uint8_t
 #define u32 uint32_t
 #include "thermosphere_bin.h"
+#include "lib/log.h"
 #undef u8
 #undef u32
 
@@ -52,7 +53,7 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
 
     /* First things first: Decrypt Package2 in place. */
     package2_decrypt(package2);
-    printf("Decrypted package2!\n");
+    print(SCREEN_LOG_LEVEL_DEBUG, "Decrypted package2!\n");
 
     kernel_size = package2_get_src_section(&kernel, package2, PACKAGE2_SECTION_KERNEL);
 
@@ -66,11 +67,11 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     /* Perform any patches we want to the NX kernel. */
     package2_patch_kernel(kernel, kernel_size);
 
-    printf("Rebuilding the INI1 section...\n");
+    print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilding the INI1 section...\n");
     package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);
     /* Perform any patches to the INI1, rebuilding it (This is where our built-in sysmodules will be added.) */
     rebuilt_ini1 = package2_rebuild_ini1(orig_ini1, target_firmware);
-    printf("Rebuilt INI1...\n");
+    print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilt INI1...\n");
 
     /* Allocate the rebuilt package2. */
     rebuilt_package2_size = sizeof(package2_header_t) + kernel_size + align_to_4(thermosphere_size) + align_to_4(rebuilt_ini1->size);

@@ -24,6 +24,7 @@
 #include "fs_utils.h"
 #include "stage2.h"
 #include "lib/ini.h"
+#include "lib/log.h"
 
 static loader_ctx_t g_loader_ctx = {0};
 
@@ -103,7 +104,7 @@ static void load_list_entry(const char *key) {
 }
 
 static void parse_loadlist(const char *ll) {
-    printf("Parsing load list: %s\n", ll);
+    print(SCREEN_LOG_LEVEL_DEBUG, "Parsing load list: %s\n", ll);
 
     char load_list[0x200] = {0};
     strncpy(load_list, ll, 0x200 - 1);

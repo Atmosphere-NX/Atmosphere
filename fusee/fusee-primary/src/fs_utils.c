@@ -13,11 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include "fs_utils.h"
 #include "mc.h"
-#include "lib/printk.h"
 #include "lib/fatfs/ff.h"
+#include "lib/log.h"
 
 FATFS sd_fs;
 static bool g_sd_mounted = false;
@@ -44,7 +44,7 @@ bool mount_sd(void)
             
             /* Mount SD. */
             if (f_mount(&sd_fs, "", 1) == FR_OK) {
-                printk("Mounted SD card!\n");
+                print(SCREEN_LOG_LEVEL_INFO, "Mounted SD card!\n");
                 g_sd_mounted = true;
             }
         }

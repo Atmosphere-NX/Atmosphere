@@ -25,7 +25,7 @@
 #include "chainloader.h"
 #include "sdmmc/sdmmc.h"
 #include "lib/fatfs/ff.h"
-#include "lib/printk.h"
+#include "lib/log.h"
 #include "display/video_fb.h"
 
 extern void (*__program_exit_callback)(int rc);
@@ -42,8 +42,8 @@ static char g_bct0_buffer[BCTO_MAX_SIZE];
 
 static const char *load_config(void) {
     if (!read_from_file(g_bct0_buffer, BCTO_MAX_SIZE, "BCT.ini")) {
-        printk("Failed to read BCT0 from SD!\n");
-        printk("[DEBUG] Using default BCT0!\n");
+        print(SCREEN_LOG_LEVEL_DEBUG, "Failed to read BCT0 from SD!\n");
+        print(SCREEN_LOG_LEVEL_DEBUG, "Using default BCT0!\n");
         memcpy(g_bct0_buffer, DEFAULT_BCT0_FOR_DEBUG, sizeof(DEFAULT_BCT0_FOR_DEBUG));
         /* TODO: Stop using default. */
         /* printk("Error: Failed to load BCT.ini!\n");
@@ -119,8 +119,8 @@ int main(void) {
     setup_env();
     
     /* Say hello. */
-    printk("Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
-    printk("Using color linear framebuffer at 0x%p!\n", g_framebuffer);
+    print(SCREEN_LOG_LEVEL_MANDATORY, "Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
+    print(SCREEN_LOG_LEVEL_DEBUG, "Using color linear framebuffer at 0x%p!\n", g_framebuffer);
         
     /* Load the BCT0 configuration ini off of the SD. */
     bct0 = load_config();

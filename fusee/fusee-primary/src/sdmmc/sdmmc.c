@@ -26,7 +26,6 @@
 #include "mmc.h"
 #include "sd.h"
 #include "../timers.h"
-#include "../lib/driver_utils.h"
 
 #define UNSTUFF_BITS(resp,start,size)                               \
 ({                                                                  \
