@@ -141,5 +141,5 @@ void main_el1(void * fdt)
     }
 
     // If we've made it here, we failed to boot, and we can't recover.
-    panic("We should launch Horizon, here!");
+    panic("We should launch Horizon here!");
 }
