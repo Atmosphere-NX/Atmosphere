@@ -20,7 +20,9 @@
 
 enum ShellServiceCmd {
     Shell_Cmd_AddTitleToLaunchQueue = 0,
-    Shell_Cmd_ClearLaunchQueue = 1
+    Shell_Cmd_ClearLaunchQueue = 1,
+
+    Shell_Cmd_AtmosphereSetExtraMemory = 65000,
 };
 
 class ShellService final : public IServiceObject {
@@ -39,4 +41,7 @@ class ShellService final : public IServiceObject {
         /* Actual commands. */
         std::tuple<Result> add_title_to_launch_queue(u64 args_size, u64 tid, InPointer<char> args);
         std::tuple<Result> clear_launch_queue(u64 dat);
+
+        /* Atmosphere commands. */
+        std::tuple<Result> set_extra_memory(u64 tid, u64 extra_size);
 };

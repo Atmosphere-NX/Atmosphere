@@ -30,6 +30,9 @@ Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id
         case Shell_Cmd_ClearLaunchQueue:
             rc = WrapIpcCommandImpl<&ShellService::clear_launch_queue>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
+        case Shell_Cmd_AtmosphereSetExtraMemory:
+            rc = WrapIpcCommandImpl<&ShellService::set_extra_memory>(this, r, out_c, pointer_buffer, pointer_buffer_size);
+            break;
         default:
             break;
     }
@@ -44,5 +47,11 @@ std::tuple<Result> ShellService::add_title_to_launch_queue(u64 args_size, u64 ti
 std::tuple<Result> ShellService::clear_launch_queue(u64 dat) {
     fprintf(stderr, "Clear launch queue: %lx\n", dat);
     LaunchQueue::clear();
+    return {0};
+}
+
+std::tuple<Result> ShellService::set_extra_memory(u64 tid, u64 extra_size) {
+    fprintf(stderr, "Set extra memory for %zX: %zX\n", tid, extra_size);
+    LaunchQueue::set_extra_memory(tid, extra_size);
     return {0};
 }

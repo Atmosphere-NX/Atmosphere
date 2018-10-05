@@ -23,6 +23,12 @@
 
 static std::array<LaunchQueue::LaunchItem, LAUNCH_QUEUE_SIZE> g_launch_queue = {0};
 
+/* This state is maintained separately from the launch queue so that
+   NS can't clobber this information by clearing the launch queue
+   when the process using this extension doesn't expect it. */
+static u64 g_extra_memory_tid = 0;
+static u64 g_extra_memory_size = 0;
+
 Result LaunchQueue::add(u64 tid, const char *args, u64 arg_size) {
     if(arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {
         return 0x209;
@@ -96,4 +102,23 @@ LaunchQueue::LaunchItem *LaunchQueue::get_item(u64 tid) {
         return NULL;
     }
     return &g_launch_queue[idx];
+}
+
+void LaunchQueue::set_extra_memory(u64 tid, u64 extra_size) {
+    g_extra_memory_tid = tid;
+    g_extra_memory_size = extra_size;
+}
+
+u64 LaunchQueue::get_extra_memory(u64 tid) {
+    if(tid == g_extra_memory_tid) {
+        u64 size = g_extra_memory_size;
+
+        // reset extra memory state
+        g_extra_memory_tid = 0;
+        g_extra_memory_size = 0;
+
+        return size;
+    } else {
+        return 0;
+    }
 }

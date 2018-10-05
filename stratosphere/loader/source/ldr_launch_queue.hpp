@@ -39,4 +39,8 @@ class LaunchQueue {
         static int get_free_index(u64 tid);
         static bool contains(u64 tid);
         static void clear();
+
+        // extra memory extension
+        static void set_extra_memory(u64 tid, u64 extra_size);
+        static u64 get_extra_memory(u64 tid);
 };
