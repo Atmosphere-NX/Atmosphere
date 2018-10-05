@@ -224,6 +224,10 @@ Handle ResourceLimitUtils::GetResourceLimitHandle(u16 application_type) {
     }
 }
 
+Handle ResourceLimitUtils::GetResourceLimitHandleByCategory(ResourceLimitCategory category) {
+    return g_resource_limit_handles[category];
+}
+
 Result ResourceLimitUtils::BoostSystemMemoryResourceLimit(u64 boost_size) {
     Result rc = 0;
     if (boost_size > g_memory_resource_limits[g_memory_limit_type][ResourceLimitCategory_Application]) {

@@ -28,5 +28,6 @@ class ResourceLimitUtils {
         static void InitializeLimits();
         static void EnsureApplicationResourcesAvailable();
         static Handle GetResourceLimitHandle(u16 application_type);
+        static Handle GetResourceLimitHandleByCategory(ResourceLimitCategory category);
         static Result BoostSystemMemoryResourceLimit(u64 boost_size);
 };
