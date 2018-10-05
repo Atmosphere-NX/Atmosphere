@@ -151,7 +151,7 @@ void Registration::HandleProcessLaunch() {
         rc = svcStartProcess(new_process.handle, program_info.main_thread_priority, program_info.default_cpu_id, program_info.main_thread_stack_size);
     
         if (R_SUCCEEDED(rc)) {
-            SetProcessState(new_process.pid, ProcessState_DebugDetached);
+            SetProcessState(new_process.pid, ProcessState_Running);
         }
     }
     
@@ -195,7 +195,7 @@ Result Registration::LaunchDebugProcess(u64 pid) {
         return 0x20F;
     }
     
-    if (proc->state >= ProcessState_DebugDetached) {
+    if (proc->state >= ProcessState_Running) {
         return 0x40F;
     }
     
@@ -205,7 +205,7 @@ Result Registration::LaunchDebugProcess(u64 pid) {
     }
     
     if (R_SUCCEEDED((rc = svcStartProcess(proc->handle, program_info.main_thread_priority, program_info.default_cpu_id, program_info.main_thread_stack_size)))) {
-        proc->state = ProcessState_DebugDetached;
+        proc->state = ProcessState_Running;
     }
     
     return rc;
@@ -246,10 +246,10 @@ Result Registration::HandleSignaledProcess(std::shared_ptr<Registration::Process
     }
     switch (process->state) {
         case ProcessState_Created:
-        case ProcessState_DebugAttached:
+        case ProcessState_CreatedAttached:
         case ProcessState_Exiting:
             break;
-        case ProcessState_DebugDetached:
+        case ProcessState_Running:
             if (process->flags & PROCESSFLAGS_NOTIFYDEBUGEVENTS) {
                 process->flags &= ~(PROCESSFLAGS_DEBUGEVENTPENDING | PROCESSFLAGS_DEBUGSUSPENDED);
                 process->flags |= PROCESSFLAGS_DEBUGEVENTPENDING;
@@ -264,7 +264,7 @@ Result Registration::HandleSignaledProcess(std::shared_ptr<Registration::Process
             process->flags |= (PROCESSFLAGS_CRASHED | PROCESSFLAGS_CRASH_DEBUG);
             g_process_event->signal_event();
             break;
-        case ProcessState_Running:
+        case ProcessState_RunningAttached:
             if (process->flags & PROCESSFLAGS_NOTIFYDEBUGEVENTS) {
                 process->flags &= ~(PROCESSFLAGS_DEBUGEVENTPENDING | PROCESSFLAGS_DEBUGSUSPENDED);
                 process->flags |= PROCESSFLAGS_DEBUGEVENTPENDING;
@@ -419,7 +419,7 @@ void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
     auto auto_lock = GetProcessListUniqueLock();
     
     for (auto &p : g_process_list.processes) {
-        if (kernelAbove200() && p->state >= ProcessState_DebugDetached && p->flags & PROCESSFLAGS_DEBUGDETACHED) {
+        if (kernelAbove200() && p->state >= ProcessState_Running && p->flags & PROCESSFLAGS_DEBUGDETACHED) {
             p->flags &= ~PROCESSFLAGS_DEBUGDETACHED;
             *out_pid = p->pid;
             *out_type = kernelAbove500() ? PROCESSEVENTTYPE_500_DEBUGDETACHED : PROCESSEVENTTYPE_DEBUGDETACHED;
