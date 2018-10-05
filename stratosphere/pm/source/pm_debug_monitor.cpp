@@ -17,6 +17,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "pm_registration.hpp"
+#include "pm_resource_limits.hpp"
 #include "pm_debug_monitor.hpp"
 
 Result DebugMonitorService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
@@ -49,6 +50,9 @@ Result DebugMonitorService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64
             case Dmnt_Cmd_5X_AtmosphereGetProcessHandle:
                 rc = WrapIpcCommandImpl<&DebugMonitorService::get_process_handle>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                 break;
+            case Dmnt_Cmd_5X_AtmosphereGetCurrentLimitInfo:
+                rc = WrapIpcCommandImpl<&DebugMonitorService::get_current_limit_info>(this, r, out_c, pointer_buffer, pointer_buffer_size);
+                break;
             default:
                 break;
         }
@@ -77,6 +81,9 @@ Result DebugMonitorService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64
                 break;
             case Dmnt_Cmd_AtmosphereGetProcessHandle:
                 rc = WrapIpcCommandImpl<&DebugMonitorService::get_process_handle>(this, r, out_c, pointer_buffer, pointer_buffer_size);
+                break;
+            case Dmnt_Cmd_AtmosphereGetCurrentLimitInfo:
+                rc = WrapIpcCommandImpl<&DebugMonitorService::get_current_limit_info>(this, r, out_c, pointer_buffer, pointer_buffer_size);
                 break;
             default:
                 break;
@@ -157,4 +164,28 @@ std::tuple<Result, CopiedHandle> DebugMonitorService::get_process_handle(u64 pid
         return {0x20F, 0};
     }
     return {0, proc->handle};
+}
+
+std::tuple<Result, u64, u64> DebugMonitorService::get_current_limit_info(u32 category, u32 resource) {
+    if(category > ResourceLimitUtils::ResourceLimitCategory::ResourceLimitCategory_Applet) {
+        return {0xf001, 0, 0};
+    }
+
+    Handle limit_h = ResourceLimitUtils::GetResourceLimitHandleByCategory((ResourceLimitUtils::ResourceLimitCategory) category);
+
+    uint64_t current_value, limit_value;
+
+    Result r;
+
+    r = svcGetResourceLimitCurrentValue(&current_value, limit_h, (LimitableResource) resource);
+    if(R_FAILED(r)) {
+        return {r, 0, 0};
+    }
+
+    r = svcGetResourceLimitLimitValue(&limit_value, limit_h, (LimitableResource) resource);
+    if(R_FAILED(r)) {
+        return {r, 0, 0};
+    }
+
+    return {0, current_value, limit_value};
 }

@@ -29,7 +29,8 @@ enum DmntCmd {
     Dmnt_Cmd_GetApplicationProcessId = 5,
     Dmnt_Cmd_EnableDebugForApplication = 6,
 
-    Dmnt_Cmd_AtmosphereGetProcessHandle = 65000
+    Dmnt_Cmd_AtmosphereGetProcessHandle = 65000,
+    Dmnt_Cmd_AtmosphereGetCurrentLimitInfo = 65001,
 };
 
 enum DmntCmd_5X {
@@ -42,7 +43,8 @@ enum DmntCmd_5X {
     
     Dmnt_Cmd_6X_DisableDebug = 6,
 
-    Dmnt_Cmd_5X_AtmosphereGetProcessHandle = 65000
+    Dmnt_Cmd_5X_AtmosphereGetProcessHandle = 65000,
+    Dmnt_Cmd_5X_AtmosphereGetCurrentLimitInfo = 65001,
 };
 
 class DebugMonitorService final : public IServiceObject {
@@ -67,4 +69,5 @@ class DebugMonitorService final : public IServiceObject {
 
         /* Atmosphere commands. */
         std::tuple<Result, CopiedHandle> get_process_handle(u64 pid);
+        std::tuple<Result, u64, u64> get_current_limit_info(u32 category, u32 resource);
 };
