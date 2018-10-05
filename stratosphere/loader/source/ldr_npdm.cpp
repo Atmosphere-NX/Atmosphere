@@ -190,7 +190,7 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
             info->acid->flags = (info->acid->flags & 0xFFFFFFC3) | (original_info->acid->flags & 0x0000003C);
         }
         /* Fix application type. */
-        const u32 original_application_type = GetApplicationType((u32 *)original_info->aci0_kac, original_info->aci0->kac_size/sizeof(u32)) & 7;
+        const u32 original_application_type = GetApplicationTypeRaw((u32 *)original_info->aci0_kac, original_info->aci0->kac_size/sizeof(u32)) & 7;
         u32 *caps = (u32 *)info->aci0_kac;
         for (unsigned int i = 0; i < info->aci0->kac_size/sizeof(u32); i++) {
             if ((caps[i] & 0x3FFF) == 0x1FFF) {
@@ -486,6 +486,17 @@ u32 NpdmUtils::GetApplicationType(u32 *caps, size_t num_caps) {
         /* After 1.0.0, allow_debug is used as bit 4. */
         if (kernelAbove200() && (caps[i] & 0x1FFFF) == 0xFFFF) {
             application_type |= (caps[i] >> 15) & 4;
+        }
+    }
+    return application_type;
+}
+
+/* Like GetApplicationType, except this returns the raw kac descriptor value. */
+u32 NpdmUtils::GetApplicationTypeRaw(u32 *caps, size_t num_caps) {
+    u32 application_type = 0;
+    for (unsigned int i = 0; i < num_caps; i++) {
+        if ((caps[i] & 0x3FFF) == 0x1FFF) {
+            return (caps[i] >> 14) & 7;
         }
     }
     return application_type;
