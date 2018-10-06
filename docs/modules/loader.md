@@ -62,3 +62,15 @@ TODO
 ### SM MITM Integration
 
 When the Stratosphere implementation of loader creates a new process, it notifies [sm](sm.md) through the `AtmosphereAssociatePidTidForMitm` command to notify any MITM services of new processes' identities.
+
+### IPC: AtmosphereSetExtraMemory
+
+This command is added to the [`ldr:shel`](https://reswitched.github.io/SwIPC/ifaces.html#nn::ro::detail::ILdrShellInterface) interface, and allows a client to request that a title be created with a certain amount of additional CodeStatic memory the next time it is created. This is useful for advanced homebrew loaders.
+
+The SwIPC definition for this command follows.
+```
+interface nn::ldr::detail::ILdrShellInterface is ldr:shel {
+  ...
+  [65000] AtmosphereSetExtraMemory(u64 title_id, u64 extra_memory_size);
+}
+```

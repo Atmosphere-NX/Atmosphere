@@ -172,6 +172,11 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     if (R_FAILED(rc)) {
         goto CREATE_PROCESS_END;
     }
+
+    nso_extents.total_size += 0xFFF;
+    nso_extents.total_size &= ~0xFFFULL;
+
+    nso_extents.total_size += LaunchQueue::get_extra_memory(target_process->tid_sid.title_id);
     
     /* Set Address Space information in ProcessInfo. */
     process_info.code_addr = nso_extents.base_address;
