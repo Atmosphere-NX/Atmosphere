@@ -61,7 +61,7 @@ bool NsoUtils::CheckNsoStubbed(unsigned int index, u64 title_id) {
 }
 
 FILE *NsoUtils::OpenNso(unsigned int index, u64 title_id) {
-    if (ContentManagement::ShouldOverrideContents()) {
+    if (ContentManagement::ShouldOverrideContents(title_id)) {
         if (ContentManagement::ShouldReplaceWithHBL(title_id)) {
             return OpenNsoFromHBL(index);
         }
