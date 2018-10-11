@@ -53,7 +53,7 @@ FILE *NpdmUtils::OpenNpdmFromSdCard(u64 title_id) {
 
 
 FILE *NpdmUtils::OpenNpdm(u64 title_id) {
-    if (ContentManagement::ShouldOverrideContents()) {
+    if (ContentManagement::ShouldOverrideContents(title_id)) {
         if (ContentManagement::ShouldReplaceWithHBL(title_id)) {
             return OpenNpdmFromHBL();
         }
@@ -182,7 +182,7 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
     info->acid->title_id_range_max = tid;
     info->aci0->title_id = tid;
     
-    if (ContentManagement::ShouldOverrideContents() && ContentManagement::ShouldReplaceWithHBL(tid) 
+    if (ContentManagement::ShouldOverrideContents(tid) && ContentManagement::ShouldReplaceWithHBL(tid) 
         && R_SUCCEEDED(LoadNpdmInternal(OpenNpdmFromExeFS(), &g_original_npdm_cache))) {
         NpdmInfo *original_info = &g_original_npdm_cache.info;
         /* Fix pool partition. */

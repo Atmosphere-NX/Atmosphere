@@ -38,5 +38,5 @@ class ContentManagement {
         static void TryMountSdCard();
         
         static bool ShouldReplaceWithHBL(u64 tid);
-        static bool ShouldOverrideContents();
+        static bool ShouldOverrideContents(u64 tid);
 };

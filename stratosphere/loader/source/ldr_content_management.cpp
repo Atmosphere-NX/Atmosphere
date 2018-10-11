@@ -56,7 +56,7 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
         RefreshConfigurationData();
     }
     
-    if (ShouldOverrideContents() && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
+    if (ShouldOverrideContents(tid) && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
         return 0x0;
     }
         
@@ -302,7 +302,7 @@ bool ContentManagement::ShouldReplaceWithHBL(u64 tid) {
     return g_mounted_hbl_nsp && tid == g_override_hbl_tid;
 }
 
-bool ContentManagement::ShouldOverrideContents() {
+bool ContentManagement::ShouldOverrideContents(u64 tid) {
     if (HasCreatedTitle(0x0100000000001000)) {
         u64 kDown = 0;
         bool keys_triggered = (R_SUCCEEDED(HidManagement::GetKeysDown(&kDown)) && ((kDown & g_override_key_combination) != 0));
