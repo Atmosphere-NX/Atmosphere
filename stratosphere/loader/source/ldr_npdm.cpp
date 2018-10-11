@@ -501,3 +501,9 @@ u32 NpdmUtils::GetApplicationTypeRaw(u32 *caps, size_t num_caps) {
     }
     return application_type;
 }
+
+void NpdmUtils::InvalidateCache(u64 tid) {
+    if (g_npdm_cache.info.title_id == tid) {
+        g_npdm_cache.info = (const NpdmUtils::NpdmInfo){0};
+    }
+}
