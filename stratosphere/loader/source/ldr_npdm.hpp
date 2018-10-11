@@ -108,6 +108,8 @@ class NpdmUtils {
         static FILE *OpenNpdm(u64 tid);
         static Result LoadNpdm(u64 tid, NpdmInfo *out);
         static Result LoadNpdmFromCache(u64 tid, NpdmInfo *out);
+
+        static void InvalidateCache(u64 tid);
     private:
         static Result LoadNpdmInternal(FILE *f_npdm, NpdmCache *cache);
 };
