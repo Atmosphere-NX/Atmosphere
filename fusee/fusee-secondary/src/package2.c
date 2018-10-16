@@ -283,6 +283,7 @@ static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target
     ini1_header_t *inis_to_merge[STRATOSPHERE_INI1_MAX] = {0};
     ini1_header_t *merged;
 
+    inis_to_merge[STRATOSPHERE_INI1_SDFILES]  = stratosphere_get_sd_files_ini1();
     inis_to_merge[STRATOSPHERE_INI1_EMBEDDED] = stratosphere_get_ini1(target_firmware);
     inis_to_merge[STRATOSPHERE_INI1_PACKAGE2] = ini1;
 
