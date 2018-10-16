@@ -87,20 +87,20 @@ class MitMSession final : public ISession<T> {
                         
             if (r.CommandType == IpcCommandType_Request || r.CommandType == IpcCommandType_RequestWithContext) {
                 std::shared_ptr<IServiceObject> obj;
-                if (r.IsDomainMessage) {
-                    obj = this->domain->get_domain_object(r.ThisObjectId);
-                    if (obj != nullptr && r.MessageType == DomainMessageType_Close) {
-                        if (r.ThisObjectId == this->mitm_domain_id) {
+                if (r.IsDomainRequest) {
+                    obj = this->domain->get_domain_object(r.InThisObjectId);
+                    if (obj != nullptr && r.InMessageType == DomainMessageType_Close) {
+                        if (r.InThisObjectId == this->mitm_domain_id) {
                             Reboot();
                         }
-                        this->domain->delete_object(r.ThisObjectId);
+                        this->domain->delete_object(r.InThisObjectId);
                         struct {
                             u64 magic;
                             u64 result;
                         } *o_resp;
 
                         o_resp = (decltype(o_resp)) ipcPrepareHeaderForDomain(&c, sizeof(*o_resp), 0);
-                        *(DomainMessageHeader *)((uintptr_t)o_resp - sizeof(DomainMessageHeader)) = {0};
+                        *(DomainResponseHeader *)((uintptr_t)o_resp - sizeof(DomainResponseHeader)) = {0};
                         o_resp->magic = SFCO_MAGIC;
                         o_resp->result = 0x0;
                         Log(armGetTls(), 0x100);
@@ -112,8 +112,9 @@ class MitMSession final : public ISession<T> {
                 if (obj != nullptr) {
                     retval = obj->dispatch(r, c, cmd_id, (u8 *)this->pointer_buffer.data(), this->pointer_buffer.size());
                     if (R_SUCCEEDED(retval)) {
-                        if (r.IsDomainMessage) { 
-                            ipcParseForDomain(&cur_out_r);
+                        if (r.IsDomainRequest) {
+                            /* We never work with out object ids, so this should be fine. */
+                            ipcParseDomainResponse(&cur_out_r, 0);
                         } else {
                             ipcParse(&cur_out_r);
                         }
@@ -182,8 +183,9 @@ class MitMSession final : public ISession<T> {
                 Log(armGetTls(), 0x100);
                 retval = serviceIpcDispatch(&forward_service);
                 if (R_SUCCEEDED(retval)) {
-                    if (r.IsDomainMessage) { 
-                        ipcParseForDomain(&cur_out_r);
+                    if (r.IsDomainRequest) { 
+                        /* We never work with out object ids, so this should be fine. */
+                        ipcParseDomainResponse(&cur_out_r, 0);
                     } else {
                         ipcParse(&cur_out_r);
                     }

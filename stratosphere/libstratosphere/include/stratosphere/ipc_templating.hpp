@@ -459,7 +459,9 @@ struct Encoder<std::tuple<Args...>> {
             raw = (decltype(raw))ipcPrepareHeader(&out_command, sizeof(*raw) + size_in_raw_data_for_arguments<Args... >::value - sizeof(Result));
         } else {
             raw = (decltype(raw))ipcPrepareHeaderForDomain(&out_command, sizeof(*raw) + size_in_raw_data_for_arguments<Args... >::value + (num_out_sessions_in_arguments<Args... >::value * sizeof(u32)) - sizeof(Result), 0);
-            *((DomainMessageHeader *)((uintptr_t)raw - sizeof(DomainMessageHeader))) = {0};
+            auto resp_header = (DomainResponseHeader *)((uintptr_t)raw - sizeof(DomainResponseHeader));
+            *resp_header = {0};
+            resp_header->NumObjectIds = num_out_sessions_in_arguments<Args... >::value;
         }
         
         
@@ -474,7 +476,13 @@ struct Encoder<std::tuple<Args...>> {
         if (R_FAILED(rc)) {
             std::fill(tls, tls + 0x100, 0x00);
             ipcInitialize(&out_command);
-            raw = (decltype(raw))ipcPrepareHeader(&out_command, sizeof(raw));
+            if (domain_owner != NULL) {
+                raw = (decltype(raw))ipcPrepareHeaderForDomain(&out_command, sizeof(raw), 0);
+                auto resp_header = (DomainResponseHeader *)((uintptr_t)raw - sizeof(DomainResponseHeader));
+                *resp_header = {0};
+            } else {
+                raw = (decltype(raw))ipcPrepareHeader(&out_command, sizeof(raw));
+            }
             raw->magic = SFCO_MAGIC;
             raw->result = rc;
         }
@@ -526,7 +534,7 @@ Result WrapIpcCommandImpl(Class *this_ptr, IpcParsedCommand& r, IpcCommand &out_
     auto args = Decoder<OutArgs, InArgsWithoutThis>::Decode(r, out_command, pointer_buffer);    
     auto result = std::apply( [=](auto&&... args) { return (this_ptr->*IpcCommandImpl)(args...); }, args);
     DomainOwner *down = NULL;
-    if (r.IsDomainMessage) {
+    if (r.IsDomainRequest) {
         down = this_ptr->get_owner();
     }
     

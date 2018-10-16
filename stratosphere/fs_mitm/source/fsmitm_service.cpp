@@ -91,7 +91,11 @@ std::tuple<Result, OutSession<IStorageInterface>> FsMitMService::open_data_stora
     Result rc;
     if (this->romfs_storage != nullptr) {
         if (this->get_owner() != NULL) {
-            rc = fsOpenDataStorageByCurrentProcessFromDomainFwd(this->forward_service, &out_domain_id);
+            FsStorage s = {0};
+            rc = fsOpenDataStorageByCurrentProcessFwd(this->forward_service, &s);
+            if (R_SUCCEEDED(rc)) {
+                out_domain_id = s.s.object_id;
+            }
         } else {
             rc = 0;
         }
@@ -102,15 +106,9 @@ std::tuple<Result, OutSession<IStorageInterface>> FsMitMService::open_data_stora
     } else {
         FsStorage data_storage;
         FsFile data_file;
+        
+        rc = fsOpenDataStorageByCurrentProcessFwd(this->forward_service, &data_storage);
 
-        if (this->get_owner() == NULL) {
-            rc = fsOpenDataStorageByCurrentProcessFwd(this->forward_service, &data_storage);
-        } else {
-            rc = fsOpenDataStorageByCurrentProcessFromDomainFwd(this->forward_service, &out_domain_id);
-            if (R_SUCCEEDED(rc)) {
-                rc = ipcCopyFromDomain(this->forward_service->handle, out_domain_id, &data_storage.s);
-            }
-        }
         Log(armGetTls(), 0x100);
         if (R_SUCCEEDED(rc)) {
             /* TODO: Is there a sensible path that ends in ".romfs" we can use?" */
@@ -123,6 +121,8 @@ std::tuple<Result, OutSession<IStorageInterface>> FsMitMService::open_data_stora
             out_session = new IPCSession<IStorageInterface>(out_storage);
             if (this->get_owner() == NULL) {
                 FsMitMWorker::AddWaitable(out_session);
+            } else {
+                out_domain_id = data_storage.s.object_id;
             }
         }
     }
@@ -140,14 +140,9 @@ std::tuple<Result, OutSession<IStorageInterface>> FsMitMService::open_data_stora
     FsFile data_file;
     u32 out_domain_id = 0;
     Result rc;
-    if (this->get_owner() == NULL) {
-        rc = fsOpenDataStorageByDataId(this->forward_service, storage_id, data_id, &data_storage);
-    } else {
-        rc = fsOpenDataStorageByDataIdFromDomain(this->forward_service, storage_id, data_id, &out_domain_id);
-        if (R_SUCCEEDED(rc)) {
-            rc = ipcCopyFromDomain(this->forward_service->handle, out_domain_id, &data_storage.s);
-        }
-    }
+    
+    rc = fsOpenDataStorageByDataIdFwd(this->forward_service, storage_id, data_id, &data_storage);
+
     if (R_SUCCEEDED(rc)) {
         /* TODO: Is there a sensible path that ends in ".romfs" we can use?" */
         if (R_SUCCEEDED(Utils::OpenSdFileForAtmosphere(data_id, "romfs.bin", FS_OPEN_READ, &data_file))) {
@@ -157,6 +152,8 @@ std::tuple<Result, OutSession<IStorageInterface>> FsMitMService::open_data_stora
         }
         if (this->get_owner() == NULL) {
             FsMitMWorker::AddWaitable(out_session);
+        } else {
+            out_domain_id = data_storage.s.object_id;
         }
     }
     
