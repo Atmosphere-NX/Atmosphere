@@ -38,12 +38,13 @@ static ini1_header_t *g_stratosphere_ini1 = NULL;
 static bool g_stratosphere_loader_enabled = true;
 static bool g_stratosphere_sm_enabled = true;
 static bool g_stratosphere_pm_enabled = true;
+static bool g_stratosphere_fs_mitm_enabled = true;
 static bool g_stratosphere_boot_enabled = false;
 
 extern const uint8_t boot_100_kip[], boot_200_kip[];
-extern const uint8_t loader_kip[], pm_kip[], sm_kip[];
+extern const uint8_t loader_kip[], pm_kip[], sm_kip[], fs_mitm_kip[];
 extern const uint32_t boot_100_kip_size, boot_200_kip_size;
-extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size;
+extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size, fs_mitm_kip_size;
 
 /* GCC doesn't consider the size as const... we have to write it ourselves. */
 
@@ -83,6 +84,11 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
         num_processes++;
     }
     
+    if (g_stratosphere_fs_mitm_enabled) {
+        size += fs_mitm_kip_size;
+        num_processes++;
+    }
+    
     if (g_stratosphere_boot_enabled) {
         size += boot_kip_size;
         num_processes++;
@@ -115,6 +121,11 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
     if (g_stratosphere_sm_enabled) {
         memcpy(data, sm_kip, sm_kip_size);
         data += sm_kip_size;
+    }
+
+    if (g_stratosphere_fs_mitm_enabled) {
+        memcpy(data, fs_mitm_kip, fs_mitm_kip_size);
+        data += fs_mitm_kip_size;
     }
 
     if (g_stratosphere_boot_enabled) {
