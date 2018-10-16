@@ -63,6 +63,24 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     if (thermosphere_size != 0 && package2->metadata.section_sizes[PACKAGE2_SECTION_UNUSED] != 0) {
         fatal_error(u8"Error: Package2 has no unused section for Thermosphère!\n");
     }
+    
+    /* Load Kernel from SD, if possible. */
+    {
+        size_t sd_kernel_size = get_file_size("atmosphere/kernel.bin");
+        if (sd_kernel_size != 0) {
+            if (sd_kernel_size > PACKAGE2_SIZE_MAX) {
+                fatal_error("Error: atmosphere/kernel.bin is too large!\n");
+            }
+            kernel = malloc(sd_kernel_size);
+            if (kernel == NULL) {
+                fatal_error("Error: failed to allocate kernel!\n");
+            }
+            if (read_from_file(kernel, sd_kernel_size, "atmosphere/kernel.bin") != sd_kernel_size) {
+                fatal_error("Error: failed to read atmosphere/kernel.bin!\n");
+            }
+            kernel_size = sd_kernel_size;
+        }
+    }
 
     /* Perform any patches we want to the NX kernel. */
     package2_patch_kernel(kernel, kernel_size);
