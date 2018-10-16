@@ -23,6 +23,7 @@
 #include "kernel_patches.h"
 #include "kip.h"
 #include "se.h"
+#include "fs_utils.h"
 
 #define u8 uint8_t
 #define u32 uint32_t
@@ -47,6 +48,7 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     size_t rebuilt_package2_size;
     void *kernel;
     size_t kernel_size;
+    bool is_sd_kernel = false;
     void *thermosphere;
     size_t thermosphere_size;
     ini1_header_t *orig_ini1, *rebuilt_ini1;
@@ -79,11 +81,12 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
                 fatal_error("Error: failed to read atmosphere/kernel.bin!\n");
             }
             kernel_size = sd_kernel_size;
+            is_sd_kernel = true;
         }
     }
 
     /* Perform any patches we want to the NX kernel. */
-    package2_patch_kernel(kernel, kernel_size);
+    package2_patch_kernel(kernel, kernel_size, is_sd_kernel);
 
     print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilding the INI1 section...\n");
     package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);

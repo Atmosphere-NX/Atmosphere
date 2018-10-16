@@ -23,6 +23,7 @@
 #include "package2.h"
 #include "stratosphere.h"
 #include "fs_utils.h"
+#include "ips.h"
 #include "lib/log.h"
 
 #define u8 uint8_t
@@ -300,9 +301,20 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, size_t num_inis) {
             if (current_kip_size > remaining_size) {
                 fatal_error("Not enough space for all the KIP1s!\n");
             }
-            memcpy(current_dst_kip, current_kip, current_kip_size);
-            remaining_size -= current_kip_size;
-            current_dst_kip += current_kip_size;
+            
+            kip1_header_t *patched_kip = apply_kip_ips_patches(current_kip, current_kip_size);
+            if (patched_kip != NULL) {
+                size_t patched_kip_size = kip1_get_size_from_header(patched_kip);
+                memcpy(current_dst_kip, patched_kip, patched_kip_size);
+                remaining_size -= patched_kip_size;
+                current_dst_kip += patched_kip_size;
+                
+                free(patched_kip);
+            } else {   
+                memcpy(current_dst_kip, current_kip, current_kip_size);
+                remaining_size -= current_kip_size;
+                current_dst_kip += current_kip_size;
+            }
 
             process_list[merged->num_processes++] = current_kip->title_id;
         }
