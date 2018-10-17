@@ -117,7 +117,7 @@ int main(int argc, char **argv)
     }
     
     /* TODO: What's a good timeout value to use here? */
-    auto server_manager = std::make_unique<MultiThreadedWaitableManager>(1, U64_MAX, 0x20000);
+    auto server_manager = std::make_unique<MultiThreadedWaitableManager>(5, U64_MAX, 0x20000);
     //auto server_manager = std::make_unique<WaitableManager>(U64_MAX);
         
     /* Create fsp-srv mitm. */

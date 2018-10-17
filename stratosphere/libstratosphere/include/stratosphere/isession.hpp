@@ -187,6 +187,10 @@ class ISession : public IWaitable {
             ipcAddRecvStatic(&c_for_reply, this->pointer_buffer.data(), this->pointer_buffer.size(), 0);
             ipcPrepareHeader(&c_for_reply, 0);
             
+            /* Fix libnx bug in serverside C descriptor handling. */
+            ((u32 *)armGetTls())[1] &= 0xFFFFC3FF;
+            ((u32 *)armGetTls())[1] |= (2) << 10;
+            
             if (R_SUCCEEDED(rc = svcReplyAndReceive(&handle_index, &this->server_handle, 1, 0, U64_MAX))) {
                 if (handle_index != 0) {
                     /* TODO: Panic? */
