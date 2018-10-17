@@ -90,6 +90,7 @@ int main(int argc, char **argv)
 {
     Thread worker_thread = {0};
     Thread sd_initializer_thread = {0};
+    Thread hid_initializer_thread = {0};
     consoleDebugInit(debugDevice_SVC);
     
     consoleDebugInit(debugDevice_SVC);
@@ -105,6 +106,13 @@ int main(int argc, char **argv)
         /* TODO: Panic. */
     }
     if (R_FAILED(threadStart(&sd_initializer_thread))) {
+        /* TODO: Panic. */
+    }
+    
+    if (R_FAILED(threadCreate(&hid_initializer_thread, &Utils::InitializeHidThreadFunc, NULL, 0x4000, 0x15, 0))) {
+        /* TODO: Panic. */
+    }
+    if (R_FAILED(threadStart(&hid_initializer_thread))) {
         /* TODO: Panic. */
     }
     

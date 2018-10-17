@@ -20,8 +20,6 @@
 #include "ldr_content_management.hpp"
 #include "ldr_hid.hpp"
 
-static bool g_has_opened_hid_session = false;
-
 Result HidManagement::GetKeysDown(u64 *keys) {
     if (!ContentManagement::HasCreatedTitle(0x0100000000000013) || R_FAILED(hidInitialize())) {
         return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);

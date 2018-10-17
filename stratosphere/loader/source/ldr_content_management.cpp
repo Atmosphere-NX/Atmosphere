@@ -92,7 +92,7 @@ Result ContentManagement::UnmountCode() {
 
 
 void ContentManagement::TryMountHblNspOnSd() {
-    char path[FS_MAX_PATH+1] = {0};
+    char path[FS_MAX_PATH + 1] = {0};
     strncpy(path, g_hbl_sd_path, FS_MAX_PATH);
     for (unsigned int i = 0; i < FS_MAX_PATH && path[i] != '\x00'; i++) {
         if (path[i] == '\\') {
@@ -267,9 +267,8 @@ void ContentManagement::LoadConfiguration(FILE *config) {
     char *config_str = new char[0x800];
     if (config_str != NULL) {
         /* Read in string. */
-        std::fill(config_str, config_str + FS_MAX_PATH, 0);
+        std::fill(config_str, config_str + 0x800, 0);
         fread(config_str, 1, 0x7FF, config);
-        config_str[strlen(config_str)] = 0x0;
         
         ini_parse_string(config_str, LoaderIniHandler, NULL);
         
