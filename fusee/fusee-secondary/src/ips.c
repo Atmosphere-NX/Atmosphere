@@ -22,6 +22,7 @@
 #include <ctype.h>
 #include "utils.h"
 #include "se.h"
+#include "lib/log.h"
 #include "ips.h"
 
 /* IPS Patching adapted from Luma3DS (https://github.com/AuroraWright/Luma3DS/blob/master/sysmodules/loader/source/patcher.c) */
@@ -79,13 +80,13 @@ static void apply_ips_patch(uint8_t *mem, size_t mem_size, size_t prot_size, boo
                 }
             } else {
                 IPS_RLE_PATCH_OFFSET_WITHIN_BOUNDS:
-                patch_offset -= prot_size;
                 if (patch_offset + rle_size > mem_size) {
                     rle_size = mem_size - patch_offset;
                 }
                 memset(mem + patch_offset, buffer[0], rle_size);
             }
         } else {
+            uint32_t read_size;
             if (patch_offset < prot_size) {
                 if (patch_offset + patch_size > prot_size) {
                     uint32_t diff = prot_size - patch_offset;
@@ -98,8 +99,7 @@ static void apply_ips_patch(uint8_t *mem, size_t mem_size, size_t prot_size, boo
                 }
             } else {
                 IPS_DATA_PATCH_OFFSET_WITHIN_BOUNDS:
-                patch_offset -= prot_size;
-                uint32_t read_size = patch_size;
+                read_size = patch_size;
                 if (patch_offset + read_size > mem_size) {
                     read_size = mem_size - patch_offset;
                 }
@@ -144,8 +144,52 @@ static bool name_matches_hash(const char *name, size_t name_len, const void *has
 
 }
 
-static bool apply_ips_patches(const char *dir, void *mem, size_t mem_size, size_t prot_size, const void *hash, size_t hash_size) {
+static bool has_ips_patches(const char *dir, const void *hash, size_t hash_size) {
     bool any_patches = false;
+    char path[0x301] = {0};
+    snprintf(path, sizeof(path) - 1, "%s", dir);
+    DIR *patches_dir = opendir(path);
+    struct dirent *pdir_ent;
+    if (patches_dir != NULL) {
+        /* Iterate over the patches directory to find patch subdirectories. */
+        while ((pdir_ent = readdir(patches_dir)) != NULL && !any_patches) {
+            if (strcmp(pdir_ent->d_name, ".") == 0 || strcmp(pdir_ent->d_name, "..") == 0) {
+                continue;
+            }
+            snprintf(path, sizeof(path) - 1, "%s/%s", dir, pdir_ent->d_name);
+            DIR *patch_dir = opendir(path);
+            struct dirent *ent;
+            if (patch_dir != NULL) {
+                /* Iterate over the patch subdirectory to find .ips patches. */
+                while ((ent = readdir(patch_dir)) != NULL && !any_patches) {
+                    if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
+                        continue;
+                    }
+                    size_t name_len = strlen(ent->d_name);
+                    if ((4 < name_len && name_len <= 0x44) && ((name_len & 1) == 0) && strcmp(ent->d_name + name_len - 4, ".ips") == 0 && name_matches_hash(ent->d_name, name_len, hash, hash_size)) {
+                        snprintf(path, sizeof(path) - 1, "%s/%s/%s", dir, pdir_ent->d_name, ent->d_name);
+                        FILE *f_ips = fopen(path, "rb");
+                        if (f_ips != NULL) {
+                            uint8_t header[5];
+                            if (fread(header, 5, 1, f_ips) == 1) {
+                                if (memcmp(header, IPS_MAGIC, 5) == 0 || memcmp(header, IPS32_MAGIC, 5) == 0) {
+                                    any_patches = true;
+                                }
+                            }
+                            fclose(f_ips);
+                        }
+                    }
+                }
+                closedir(patch_dir);
+            }
+        }
+        closedir(patches_dir);
+    }
+
+    return any_patches;
+}
+
+static void apply_ips_patches(const char *dir, void *mem, size_t mem_size, size_t prot_size, const void *hash, size_t hash_size) {
     char path[0x301] = {0};
     snprintf(path, sizeof(path) - 1, "%s", dir);
     DIR *patches_dir = opendir(path);
@@ -173,10 +217,8 @@ static bool apply_ips_patches(const char *dir, void *mem, size_t mem_size, size_
                             uint8_t header[5];
                             if (fread(header, 5, 1, f_ips) == 1) {
                                 if (memcmp(header, IPS_MAGIC, 5) == 0) {
-                                    any_patches = true;
                                     apply_ips_patch(mem, mem_size, prot_size, false, f_ips);
                                 } else if (memcmp(header, IPS32_MAGIC, 5) == 0) {
-                                    any_patches = true;
                                     apply_ips_patch(mem, mem_size, prot_size, true, f_ips);
                                 }
                             }
@@ -189,8 +231,6 @@ static bool apply_ips_patches(const char *dir, void *mem, size_t mem_size, size_
         }
         closedir(patches_dir);
     }
-
-    return any_patches;
 } 
 
 void apply_kernel_ips_patches(void *kernel, size_t kernel_size) {
@@ -200,10 +240,11 @@ void apply_kernel_ips_patches(void *kernel, size_t kernel_size) {
 }
 
 static void kip1_blz_uncompress(void *hdr_end) {
-    uint32_t addl_size = ((uint32_t *)hdr_end)[-1];
-    uint32_t header_size = ((uint32_t *)hdr_end)[-2];
-    uint32_t cmp_and_hdr_size = ((uint32_t *)hdr_end)[-3];
-    
+    uint8_t *u8_hdr_end = (uint8_t *)hdr_end;
+    uint32_t addl_size = ((u8_hdr_end[-4]) << 0) | ((u8_hdr_end[-3]) << 8) | ((u8_hdr_end[-2]) << 16) | ((u8_hdr_end[-1]) << 24);
+    uint32_t header_size = ((u8_hdr_end[-8]) << 0) | ((u8_hdr_end[-7]) << 8) | ((u8_hdr_end[-6]) << 16) | ((u8_hdr_end[-5]) << 24);
+    uint32_t cmp_and_hdr_size = ((u8_hdr_end[-12]) << 0) | ((u8_hdr_end[-11]) << 8) | ((u8_hdr_end[-10]) << 16) | ((u8_hdr_end[-9]) << 24);
+        
     unsigned char *cmp_start = (unsigned char *)(((uintptr_t)hdr_end) - cmp_and_hdr_size);
     uint32_t cmp_ofs = cmp_and_hdr_size - header_size;
     uint32_t out_ofs = cmp_and_hdr_size + addl_size;
@@ -275,17 +316,20 @@ static kip1_header_t *kip1_uncompress(kip1_header_t *kip, size_t *size) {
 kip1_header_t *apply_kip_ips_patches(kip1_header_t *kip, size_t kip_size) {
     uint8_t hash[0x20];
     se_calculate_sha256(hash, kip, kip_size);
+        
+    if (!has_ips_patches("atmosphere/kip_patches", hash, sizeof(hash))) {
+        return NULL;
+    }
+
+    print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Patching KIP %08x%08x...\n", (uint32_t)(kip->title_id >> 32), (uint32_t)kip->title_id);
     
+        
     size_t uncompressed_kip_size;
     kip1_header_t *uncompressed_kip = kip1_uncompress(kip, &uncompressed_kip_size);
-    if (uncompressed_kip == NULL) {
+    if (uncompressed_kip == NULL) {  
         return NULL;
     }
-    
-    if (apply_ips_patches("atmosphere/kip_patches", uncompressed_kip, uncompressed_kip_size, 0x100, hash, sizeof(hash))) {
-        return uncompressed_kip;
-    } else {
-        free(uncompressed_kip);
-        return NULL;
-    }
+        
+    apply_ips_patches("atmosphere/kip_patches", uncompressed_kip, uncompressed_kip_size, 0x100, hash, sizeof(hash));
+    return uncompressed_kip;
 }

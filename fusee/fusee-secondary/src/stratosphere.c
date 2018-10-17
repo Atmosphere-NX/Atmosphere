@@ -296,6 +296,8 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, size_t num_inis) {
             if (already_loaded) {
                 continue;
             }
+            
+            print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Loading KIP %08x%08x...\n", (uint32_t)(current_kip->title_id >> 32), (uint32_t)current_kip->title_id);
 
             size_t current_kip_size = kip1_get_size_from_header(current_kip);
             if (current_kip_size > remaining_size) {
@@ -305,6 +307,9 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, size_t num_inis) {
             kip1_header_t *patched_kip = apply_kip_ips_patches(current_kip, current_kip_size);
             if (patched_kip != NULL) {
                 size_t patched_kip_size = kip1_get_size_from_header(patched_kip);
+                if (patched_kip_size > remaining_size) {
+                    fatal_error("Not enough space for all the KIP1s!\n");
+                }
                 memcpy(current_dst_kip, patched_kip, patched_kip_size);
                 remaining_size -= patched_kip_size;
                 current_dst_kip += patched_kip_size;
