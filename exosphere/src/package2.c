@@ -478,7 +478,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
         MAKE_REG32(PMC_BASE + 0x334) |= 0x10;
         switch (exosphere_get_target_firmware()) {
             case EXOSPHERE_TARGET_FIRMWARE_400:
-                MAKE_REG32(PMC_BASE + 0x360) = 5;
+                MAKE_REG32(PMC_BASE + 0x360) = 0x105;
                 break;
             case EXOSPHERE_TARGET_FIRMWARE_500:
                 MAKE_REG32(PMC_BASE + 0x360) = 6;
