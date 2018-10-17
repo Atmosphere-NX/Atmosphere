@@ -151,7 +151,11 @@ uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
             break;
         case CONFIGITEM_EXOSPHERE_VERSION:
             /* UNOFFICIAL: Gets information about the current exosphere version. */
-            *p_outvalue = (EXOSPHERE_RELEASE_VERSION_MAJOR << 24) | (EXOSPHERE_RELEASE_VERSION_MINOR << 16) | (exosphere_get_target_firmware() << 8) | (mkey_get_revision() << 0);
+            *p_outvalue = ((ATMOSPHERE_RELEASE_VERSION_MAJOR & 0xFF) << 24) | 
+                          ((ATMOSPHERE_RELEASE_VERSION_MINOR & 0xFF) << 16) |
+                          ((ATMOSPHERE_RELEASE_VERSION_MICRO & 0x3F) << 10) |
+                          ((exosphere_get_target_firmware() & 0x1F) << 6) |
+                          ((mkey_get_revision() & 0x1F) << 0);
             break;
         default:
             result = 2;
