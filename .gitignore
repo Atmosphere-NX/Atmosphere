@@ -61,6 +61,10 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# Distribution files
+*.tgz
+*.zip
+
 .**/
 
 # NOTE: make sure to make exceptions to this pattern when needed!
