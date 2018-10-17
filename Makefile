@@ -9,6 +9,7 @@ creport:
 
 clean:
 	$(MAKE) -C fusee clean
+	rm -rf out
     
 dist: fusee creport
 	$(eval MAJORVER = $(shell grep '\ATMOSPHERE_RELEASE_VERSION_MAJOR\b' common/include/atmosphere/version.h \
@@ -22,6 +23,7 @@ dist: fusee creport
 		| cut -d' ' -f3))
 	$(eval AMSVER = $(MAJORVER).$(MINORVER).$(MICROVER))
 	rm -rf atmosphere-$(AMSVER)
+	rm -rf out
 	mkdir atmosphere-$(AMSVER)
 	mkdir atmosphere-$(AMSVER)/atmosphere
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000036
@@ -31,6 +33,9 @@ dist: fusee creport
 	cp stratosphere/creport/creport.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000036/exefs.nsp
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)
+	mkdir out
+	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER).zip
+	cp fusee/fusee-primary/fusee-primary.bin out/fusee-primary.bin
    
 
 .PHONY: $(TOPTARGETS) fusee
