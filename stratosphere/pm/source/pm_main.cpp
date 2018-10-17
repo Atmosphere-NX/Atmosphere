@@ -28,6 +28,7 @@
 #include "pm_process_track.hpp"
 #include "pm_registration.hpp"
 #include "pm_debug_monitor.hpp"
+#include "smm_ams.h"
 
 extern "C" {
     extern u32 __start__;
@@ -56,6 +57,20 @@ void __libnx_initheap(void) {
     fake_heap_end   = (char*)addr + size;
 }
 
+void RegisterPrivilegedProcessesWithFs() {
+    /* Ensures that all privileged processes are registered with full FS permissions. */
+    constexpr u64 PRIVILEGED_PROCESS_MIN = 0;
+    constexpr u64 PRIVILEGED_PROCESS_MAX = 0x4F;
+    
+    const u32 PRIVILEGED_FAH[0x1C/sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x0000001C, 0x00000000, 0x0000001C, 0x00000000};
+    const u32 PRIVILEGED_FAC[0x2C/sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF};
+    
+    for (u64 pid = PRIVILEGED_PROCESS_MIN; pid <= PRIVILEGED_PROCESS_MAX; pid++) {
+        fsprUnregisterProgram(pid);
+        fsprRegisterProgram(pid, pid, FsStorageId_NandSystem,  PRIVILEGED_FAH, sizeof(PRIVILEGED_FAH), PRIVILEGED_FAC, sizeof(PRIVILEGED_FAC));
+    }
+}
+
 void __appInit(void) {
     Result rc;
 
@@ -64,27 +79,33 @@ void __appInit(void) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
     }
     
-    rc = fsInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
-    }
-        
-    rc = lrInitialize();
+    rc = fsprInitialize();
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 1);
     }
     
-    rc = fsprInitialize();
-    if (R_FAILED(rc))  {
+    /* This works around a bug with process permissions on < 4.0.0. */
+    RegisterPrivilegedProcessesWithFs();
+    
+    rc = smManagerAmsInitialize();
+    if (R_SUCCEEDED(rc)) {
+        smManagerAmsEndInitialDefers();
+        smManagerAmsExit();
+    } else {
         fatalSimple(0xCAFE << 4 | 2);
     }
     
-    rc = ldrPmInitialize();
+    rc = smManagerInitialize();
+    if (R_FAILED(rc))  {
+        fatalSimple(0xCAFE << 4 | 3);
+    }
+        
+    rc = lrInitialize();
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 4);
     }
     
-    rc = smManagerInitialize();
+    rc = ldrPmInitialize();
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 5);
     }
@@ -92,6 +113,11 @@ void __appInit(void) {
     rc = splInitialize();
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 6);
+    }
+    
+    rc = fsInitialize();
+    if (R_FAILED(rc)) {
+        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
     }
     
     CheckAtmosphereVersion();

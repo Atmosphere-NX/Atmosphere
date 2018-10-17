@@ -20,7 +20,10 @@
 
 enum ManagerServiceCmd {
     Manager_Cmd_RegisterProcess = 0,
-    Manager_Cmd_UnregisterProcess = 1
+    Manager_Cmd_UnregisterProcess = 1,
+    
+    
+    Manager_Cmd_AtmosphereEndInitDefers = 65000,
 };
 
 class ManagerService final : public IServiceObject {
@@ -36,4 +39,5 @@ class ManagerService final : public IServiceObject {
         /* Actual commands. */
         std::tuple<Result> register_process(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac);
         std::tuple<Result> unregister_process(u64 pid);
+        std::tuple<Result> end_init_defers();
 };

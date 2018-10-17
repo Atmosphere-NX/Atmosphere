@@ -28,6 +28,9 @@ Result ManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_
         case Manager_Cmd_UnregisterProcess:
             rc = WrapIpcCommandImpl<&ManagerService::unregister_process>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
+        case Manager_Cmd_AtmosphereEndInitDefers:
+            rc = WrapIpcCommandImpl<&ManagerService::end_init_defers>(this, r, out_c, pointer_buffer, pointer_buffer_size);
+            break;
         default:
             break;
     }
@@ -47,3 +50,9 @@ std::tuple<Result> ManagerService::register_process(u64 pid, InBuffer<u8> acid_s
 std::tuple<Result> ManagerService::unregister_process(u64 pid) {
     return {Registration::UnregisterProcess(pid)};
 }
+
+std::tuple<Result> ManagerService::end_init_defers() {
+    Registration::EndInitDefers();
+    return {0};
+}
+

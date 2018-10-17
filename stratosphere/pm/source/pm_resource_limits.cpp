@@ -182,7 +182,8 @@ void ResourceLimitUtils::InitializeLimits() {
     /* Atmosphere: Allocate extra memory (24 MiB) to SYSTEM away from Applet. */
     for (unsigned int i = 0; i < 6; i++) {
         g_memory_resource_limits[i][0] += ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
-        g_memory_resource_limits[i][2] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
+        //g_memory_resource_limits[i][2] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
+        g_memory_resource_limits[i][1] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
     }
 
     /* Set resource limits. */

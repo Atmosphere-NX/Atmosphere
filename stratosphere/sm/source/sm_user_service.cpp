@@ -53,7 +53,7 @@ Result UserService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id,
 
 Result UserService::handle_deferred() {
     /* If we're deferred, GetService failed. */
-    return WrapDeferredIpcCommandImpl<&UserService::deferred_get_service>(this, this->deferred_service);;
+    return WrapDeferredIpcCommandImpl<&UserService::deferred_get_service>(this, this->deferred_service);
 }
 
 
