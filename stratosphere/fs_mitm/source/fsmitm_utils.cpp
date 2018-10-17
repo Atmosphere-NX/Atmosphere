@@ -27,6 +27,7 @@
 
 static FsFileSystem g_sd_filesystem = {0};
 static std::vector<u64> g_mitm_flagged_tids;
+static std::vector<u64> g_disable_mitm_flagged_tids;
 static std::atomic_bool g_has_initialized = false;
 static std::atomic_bool g_has_hid_session = false;
 
@@ -76,6 +77,15 @@ void Utils::InitializeSdThreadFunc(void *args) {
                 strcat(title_path, "/fsmitm.flag");
                 if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
                     g_mitm_flagged_tids.push_back(title_id);
+                    fsFileClose(&f);
+                }
+                
+                memset(title_path, 0, sizeof(title_path));
+                strcpy(title_path, "/atmosphere/titles/");
+                strcat(title_path, dir_entry.name);
+                strcat(title_path, "/fsmitm_disable.flag");
+                if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
+                    g_disable_mitm_flagged_tids.push_back(title_id);
                     fsFileClose(&f);
                 }
             }
@@ -213,6 +223,13 @@ Result Utils::HasSdRomfsContent(u64 title_id, bool *out) {
 bool Utils::HasSdMitMFlag(u64 tid) {
     if (IsSdInitialized()) {
         return std::find(g_mitm_flagged_tids.begin(), g_mitm_flagged_tids.end(), tid) != g_mitm_flagged_tids.end();
+    }
+    return false;
+}
+
+bool Utils::HasSdDisableMitMFlag(u64 tid) {
+    if (IsSdInitialized()) {
+        return std::find(g_disable_mitm_flagged_tids.begin(), g_disable_mitm_flagged_tids.end(), tid) != g_disable_mitm_flagged_tids.end();
     }
     return false;
 }

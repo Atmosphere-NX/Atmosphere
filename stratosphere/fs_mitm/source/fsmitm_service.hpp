@@ -38,6 +38,9 @@ class FsMitMService : public IMitMServiceObject {
         }
         
         static bool should_mitm(u64 pid, u64 tid) {
+            if (Utils::HasSdDisableMitMFlag(tid)) {
+                return false;
+            }
             return (tid >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(tid)) && Utils::HasOverrideButton(tid);
         }
         

@@ -37,6 +37,7 @@ class Utils {
         /* SD card Initialization + MitM detection. */
         static void InitializeSdThreadFunc(void *args);
         static bool HasSdMitMFlag(u64 tid);
+        static bool HasSdDisableMitMFlag(u64 tid);
         
         
         static bool IsHidInitialized();
