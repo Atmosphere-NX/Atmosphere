@@ -142,9 +142,7 @@ uint64_t memSearch(
     do
     {
         if (skipCount) skipCount--;
-#ifndef _WIN32
         location = (uint64_t)memmem((const void*)startLocation, searchAreaSize, (const void*)pattern, patternSize);
-#endif
     } while (skipCount > 0);
 
     if (location == 0) return 0;
