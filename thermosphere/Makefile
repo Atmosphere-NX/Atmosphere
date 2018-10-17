@@ -20,7 +20,7 @@ TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src src/lib
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include ../common/include
 
 #---------------------------------------------------------------------------------
 # options for code generation

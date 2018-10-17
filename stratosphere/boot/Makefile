@@ -21,7 +21,7 @@ TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include ../../common/include
 EXEFS_SRC	:=	exefs_src
 
 DEFINES	:=	-DDISABLE_IPC

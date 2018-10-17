@@ -33,3 +33,5 @@
 
 #include "stratosphere/waitablemanager.hpp"
 #include "stratosphere/multithreadedwaitablemanager.hpp"
+
+#include "stratosphere/version_check.hpp"

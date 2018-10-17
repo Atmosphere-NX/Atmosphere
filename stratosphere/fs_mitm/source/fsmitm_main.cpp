@@ -76,25 +76,7 @@ void __appInit(void) {
     if (R_FAILED(rc)) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
     }
-    
-    rc = splInitialize();
-    if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 3);
-    }
-    
-    /* Check for exosphere API compatibility. */
-    u64 exosphere_cfg;
-    if (R_SUCCEEDED(splGetConfig((SplConfigItem)65000, &exosphere_cfg))) {
-        /* MitM requires Atmosphere API 0.1. */
-        u16 api_version = (exosphere_cfg >> 16) & 0xFFFF;
-        if (api_version < 0x0001) {
-            fatalSimple(0xCAFE << 4 | 0xFE);
-        }
-    } else {
-        fatalSimple(0xCAFE << 4 | 0xFF);
-    }
-    
-    //splExit();
+    CheckAtmosphereVersion();
 }
 
 void __appExit(void) {
