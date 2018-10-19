@@ -124,12 +124,14 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                     fatalSimple(0xF601);
             }
             read_so_far += cur_read_size;
+            offset += cur_read_size;
         } else {
             /* Handle padding explicitly. */
             cur_source_ind++;
             /* Zero out the padding we skip, here. */
-            memset((void *)((uintptr_t)buffer + read_so_far), 0, ((*this->p_source_infos)[cur_source_ind]).virtual_offset - (cur_source->virtual_offset + cur_source->size));
-            read_so_far += ((*this->p_source_infos)[cur_source_ind]).virtual_offset - (cur_source->virtual_offset + cur_source->size);
+            memset((void *)((uintptr_t)buffer + read_so_far), 0, ((*this->p_source_infos)[cur_source_ind]).virtual_offset - offset);
+            read_so_far += ((*this->p_source_infos)[cur_source_ind]).virtual_offset - offset;
+            offset = ((*this->p_source_infos)[cur_source_ind]).virtual_offset;
         }
     }
     
