@@ -1,4 +1,8 @@
 TOPTARGETS := all clean dist
+AMSREV := $(shell git rev-parse --short HEAD)
+ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
+    AMSREV := $(AMSREV)-dirty
+endif
 
 all: fusee creport
 fusee:
@@ -21,7 +25,7 @@ dist: fusee creport
 	$(eval MICROVER = $(shell grep '\ATMOSPHERE_RELEASE_VERSION_MICRO\b' common/include/atmosphere/version.h \
 		| tr -s [:blank:] \
 		| cut -d' ' -f3))
-	$(eval AMSVER = $(MAJORVER).$(MINORVER).$(MICROVER))
+	$(eval AMSVER = $(MAJORVER).$(MINORVER).$(MICROVER)-$(AMSREV))
 	rm -rf atmosphere-$(AMSVER)
 	rm -rf out
 	mkdir atmosphere-$(AMSVER)
