@@ -45,5 +45,5 @@ class Utils {
         static Result GetKeysDown(u64 *keys);
         static bool HasOverrideButton(u64 tid);
     private:
-        static void LoadConfiguration(FsFile *f);
+        static void RefreshConfiguration();
 };

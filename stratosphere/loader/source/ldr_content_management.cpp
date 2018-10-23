@@ -40,6 +40,9 @@ static u64 g_override_key_combination = KEY_R;
 static bool g_override_by_default = true;
 static u64 g_override_hbl_tid = 0x010000000000100D;
 
+/* Static buffer for loader.ini contents at runtime. */
+static char g_config_ini_data[0x800];
+
 Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     char path[FS_MAX_PATH] = {0};
     Result rc;
@@ -47,6 +50,10 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     /* We defer SD card mounting, so if relevant ensure it is mounted. */
     if (!g_has_initialized_fs_dev) {   
         TryMountSdCard();
+    }
+    
+    if (g_has_initialized_fs_dev) {
+        RefreshConfigurationData();
     }
     
     if (ShouldOverrideContents() && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
@@ -259,23 +266,17 @@ static int LoaderIniHandler(void *user, const char *section, const char *name, c
     return 1;
 }
 
-void ContentManagement::LoadConfiguration(FILE *config) {
+void ContentManagement::RefreshConfigurationData() {    
+    FILE *config = fopen("sdmc:/atmosphere/loader.ini", "r");
     if (config == NULL) {
         return;
     }
     
-    char *config_str = new char[0x800];
-    if (config_str != NULL) {
-        /* Read in string. */
-        std::fill(config_str, config_str + 0x800, 0);
-        fread(config_str, 1, 0x7FF, config);
-        
-        ini_parse_string(config_str, LoaderIniHandler, NULL);
-        
-        delete[] config_str;
-    }
-    
+    std::fill(g_config_ini_data, g_config_ini_data + 0x800, 0);
+    fread(g_config_ini_data, 1, 0x7FF, config);
     fclose(config);
+    
+    ini_parse_string(g_config_ini_data, LoaderIniHandler, NULL);
 }
 
 void ContentManagement::TryMountSdCard() {
@@ -292,7 +293,6 @@ void ContentManagement::TryMountSdCard() {
         }
         
         if (R_SUCCEEDED(fsdevMountSdmc())) {
-            ContentManagement::LoadConfiguration(fopen("sdmc:/atmosphere/loader.ini", "r"));
             g_has_initialized_fs_dev = true;
         }
     }
