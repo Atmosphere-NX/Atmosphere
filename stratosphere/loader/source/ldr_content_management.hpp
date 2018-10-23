@@ -35,7 +35,6 @@ class ContentManagement {
         static bool HasCreatedTitle(u64 tid);
         static void SetCreatedTitle(u64 tid);
         static void RefreshConfigurationData();
-        static void LoadConfiguration(FILE *config);
         static void TryMountSdCard();
         
         static bool ShouldReplaceWithHBL(u64 tid);
