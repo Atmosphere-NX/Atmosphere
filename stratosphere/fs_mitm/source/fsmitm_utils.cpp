@@ -244,7 +244,7 @@ Result Utils::GetKeysDown(u64 *keys) {
 }
 
 bool Utils::HasOverrideButton(u64 tid) {
-    if (tid < 0x0100000000010000ULL) {
+    if (tid < 0x0100000000010000ULL || !IsSdInitialized()) {
         /* Disable button override disable for non-applications. */
         return true;
     }
@@ -332,9 +332,7 @@ void Utils::RefreshConfiguration() {
     std::fill(g_config_ini_data, g_config_ini_data + 0x800, 0);
     size_t r_s;
     fsFileRead(&config_file, 0, g_config_ini_data, size, &r_s);
+    fsFileClose(&config_file);
     
     ini_parse_string(g_config_ini_data, FsMitMIniHandler, NULL);
-        
-
-    fsFileClose(&config_file);
 }
