@@ -1,14 +1,21 @@
 # Changelog
+## 0.7.3
++ Loader and fs.mitm now try to reload loader.ini before reading it. This allows for changing the override button combination/HBL title id at runtime.
++ Added a MitM between set:sys and qlaunch, used to override the system version string displayed in system settings.
+  + The displayed system version will now display `<Actual version> (AMS <x>.<y>.<z>)`.
++ General system stability improvements to enhance the user's experience.
 ## 0.7.2
 + Fixed a bug in fs.mitm's LayeredFS read implementation that caused some games to crash when trying to read files.
 + Fixed a bug affecting 1.0.0 that caused games to crash with fatal error 2001-0106 on boot.
 + Improved filenames output by the make dist target.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.7.1
 + Fixed a bug preventing consoles on 4.0.0-4.1.0 from going to sleep and waking back up.
 + Fixed a bug preventing consoles on < 4.0.0 from booting without specific KIPs on the SD card.
 + An API was added to Atmosphère's Service Manager for deferring acquisition of all handles for specific services until after early initialization is completed.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.7.0
 + First official release of Atmosphère.
 + Supports the following featureset:
