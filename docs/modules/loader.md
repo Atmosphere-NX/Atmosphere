@@ -53,11 +53,15 @@ When authoring patches, [hactool](https://github.com/SciresM/hactool) can be use
 
 ### HBL Support
 
-TODO
+Atmosphère can use the loader module in order to turn any game on your Switch's home menu into a launchpoint for the Homebrew Menu, rather than launching it through the album applet. This allows one to launch the Homebrew Menu with access to the ~3.2GB of RAM that the Switch reserves for games and applications, as opposed to the 442MB of RAM we are limited to when launching the Homebrew Menu from the album. This also means that it is no longer necessary to install homebrew as `.nsp` files on your Switch so long as you are using this method, as the only reason to do so is to allow the homebrew to access all of the Switch's available memory.
+
+In order to setup this method you will need the latest release of [hbmenu](https://github.com/switchbrew/nx-hbmenu/releases), and the latest release of [hbloader](https://github.com/switchbrew/nx-hbloader/releases). Place `hbmenu.nro` on the root of your Switch's SD Card, and place `hbl.nsp` in the atmosphere folder. From there, simply configure `loader.ini` in the atmosphere folder by replacing the Title ID in the ini (hbl_tid) (it is the Title ID for the album by default) with the Title ID of whatever game you wish to use to launch the Homebrew Menu. A list of Title IDs for Switch Games can be found [here](https://switchbrew.org/wiki/Title_list/Games). Afterwards you may reinsert your SD Card into your Switch and boot into Atmosphère as you normally would. You should now be able to boot into the Homebrew Menu by launching your designated game of choice.
 
 ### Button Overrides
 
-TODO
+By default `loader.ini` is configured to launch the Homebrew Menu when launching the game normally, and launching the game when selecting the game while holding down R. If you wish to change this, you can modify the override_key section of `loader.ini`. Placing an exclamation point in front of whatever button you wish to use will make it so that you will only launch the actual game while holding down that button, otherwise you will go into the Homebrew Menu. Removing the exclamation point will reverse this, meaning that you will boot into the Homebrew Menu only while holding down the assigned button when launching the game.
+
+For example, `override_key=!R` will run the game only while holding down R when launching it, otherwise it will boot into the Homebrew Menu. `override_key=R` will only boot into the Homebrew Menu while holding down R when launching the game, otherwise it will launch the game as normal.
 
 ### SM MITM Integration
 

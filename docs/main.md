@@ -22,5 +22,8 @@ Stratosphère's modules include:
 ### Building Atmosphère
 A guide to building Atmosphère can be found [here](../docs/building.md).
 
-### Release Roadmap
-A roadmap of the releases of Atmosphère can be found [here](../docs/roadmap.md).
+### Upcoming Features
+A list of planned features for Atmosphère can be found [here](../docs/roadmap.md).
+
+### Release History
+A changelog of previous versions of Atmosphère can be found [here](../docs/changelog.md).
