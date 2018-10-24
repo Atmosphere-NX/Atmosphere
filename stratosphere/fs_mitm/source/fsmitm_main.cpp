@@ -32,6 +32,8 @@
 
 #include "fsmitm_utils.hpp"
 
+#include "setsys_mitm_service.hpp"
+
 extern "C" {
     extern u32 __start__;
 
@@ -86,15 +88,30 @@ void __appExit(void) {
     smExit();
 }
 
+void CreateSettingsMitMServer(void *arg) {
+    MultiThreadedWaitableManager *server_manager = (MultiThreadedWaitableManager *)arg;
+    
+    Result rc;
+    if (R_FAILED((rc = setsysInitialize()))) {
+        fatalSimple(rc);
+    }
+    
+    ISession<MitMQueryService<SetSysMitMService>> *setsys_query_srv = NULL;
+    MitMServer<SetSysMitMService> *setsys_srv = new MitMServer<SetSysMitMService>(&setsys_query_srv, "set:sys", 60);
+    server_manager->add_waitable(setsys_srv);
+    server_manager->add_waitable(setsys_query_srv);
+    
+    svcExitThread();
+}
+
 int main(int argc, char **argv)
 {
     Thread worker_thread = {0};
     Thread sd_initializer_thread = {0};
     Thread hid_initializer_thread = {0};
+    Thread set_mitm_setup_thread = {0};
     consoleDebugInit(debugDevice_SVC);
-    
-    consoleDebugInit(debugDevice_SVC);
-    
+        
     if (R_FAILED(threadCreate(&worker_thread, &FsMitMWorker::Main, NULL, 0x20000, 45, 0))) {
         /* TODO: Panic. */
     }
@@ -117,17 +134,26 @@ int main(int argc, char **argv)
     }
     
     /* TODO: What's a good timeout value to use here? */
-    auto server_manager = std::make_unique<MultiThreadedWaitableManager>(5, U64_MAX, 0x20000);
-    //auto server_manager = std::make_unique<WaitableManager>(U64_MAX);
+    MultiThreadedWaitableManager *server_manager = new MultiThreadedWaitableManager(5, U64_MAX, 0x20000);
         
     /* Create fsp-srv mitm. */
     ISession<MitMQueryService<FsMitMService>> *fs_query_srv = NULL;
     MitMServer<FsMitMService> *fs_srv = new MitMServer<FsMitMService>(&fs_query_srv, "fsp-srv", 61);
     server_manager->add_waitable(fs_srv);
     server_manager->add_waitable(fs_query_srv);
+    
+    /* Create set:sys mitm server, delayed until set:sys is available. */
+    if (R_FAILED(threadCreate(&set_mitm_setup_thread, &CreateSettingsMitMServer, server_manager, 0x4000, 0x15, 0))) {
+        /* TODO: Panic. */
+    }
+    if (R_FAILED(threadStart(&set_mitm_setup_thread))) {
+        /* TODO: Panic. */
+    }
             
     /* Loop forever, servicing our services. */
     server_manager->process();
+    
+    delete server_manager;
 
     return 0;
 }

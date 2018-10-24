@@ -196,7 +196,7 @@ class ISession : public IWaitable {
                     /* TODO: Panic? */
                 }                                
                 IpcParsedCommand r;
-                u64 cmd_id;
+                u64 cmd_id = 0;
                 
                 
                 Result retval = ipcParse(&r);
