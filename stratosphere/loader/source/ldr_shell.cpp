@@ -18,6 +18,7 @@
 #include <stratosphere.hpp>
 #include "ldr_shell.hpp"
 #include "ldr_launch_queue.hpp"
+#include "ldr_content_management.hpp"
 
 Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
     
@@ -29,6 +30,9 @@ Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id
             break;
         case Shell_Cmd_ClearLaunchQueue:
             rc = WrapIpcCommandImpl<&ShellService::clear_launch_queue>(this, r, out_c, pointer_buffer, pointer_buffer_size);
+            break;
+        case Shell_Cmd_AtmosphereSetExternalContentSource:
+            rc = WrapIpcCommandImpl<&ShellService::set_external_content_source>(this, r, out_c, pointer_buffer, pointer_buffer_size);
             break;
         default:
             break;
@@ -45,4 +49,20 @@ std::tuple<Result> ShellService::clear_launch_queue(u64 dat) {
     fprintf(stderr, "Clear launch queue: %lx\n", dat);
     LaunchQueue::clear();
     return {0};
+}
+
+/* SetExternalContentSource extension */
+std::tuple<Result, MovedHandle> ShellService::set_external_content_source(u64 tid) {
+    Handle server_h;
+    Handle client_h;
+
+    Result rc;
+    if (R_FAILED(rc = svcCreateSession(&server_h, &client_h, 0, 0))) {
+        return {rc, 0};
+    }
+
+    Service service;
+    serviceCreate(&service, client_h);
+    ContentManagement::SetExternalContentSource(tid, FsFileSystem {service});
+    return {0, server_h};
 }

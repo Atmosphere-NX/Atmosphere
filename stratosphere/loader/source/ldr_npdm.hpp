@@ -19,6 +19,7 @@
 #include <cstdio>
 
 #include "ldr_registration.hpp"
+#include "ldr_content_management.hpp" /* for ExternalContentSource */
 
 #define MAGIC_META 0x4154454D
 #define MAGIC_ACI0 0x30494341
@@ -101,7 +102,7 @@ class NpdmUtils {
         static Result ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size_t num_restrict_caps, u32 *&cur_cap, size_t &caps_remaining);
         static Result ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32 *aci0_caps, size_t num_aci0_caps);
         
-        
+        static FILE *OpenNpdmFromECS(ContentManagement::ExternalContentSource *ecs);
         static FILE *OpenNpdmFromHBL();
         static FILE *OpenNpdmFromExeFS();
         static FILE *OpenNpdmFromSdCard(u64 tid);

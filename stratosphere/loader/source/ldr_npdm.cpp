@@ -33,6 +33,12 @@ Result NpdmUtils::LoadNpdmFromCache(u64 tid, NpdmInfo *out) {
     return 0;
 }
 
+FILE *NpdmUtils::OpenNpdmFromECS(ContentManagement::ExternalContentSource *ecs) {
+    std::fill(g_npdm_path, g_npdm_path + FS_MAX_PATH, 0);
+    snprintf(g_npdm_path, FS_MAX_PATH, "%s:/main.npdm", ecs->mountpoint);
+    return fopen(g_npdm_path, "rb");
+}
+
 FILE *NpdmUtils::OpenNpdmFromHBL() {
     std::fill(g_npdm_path, g_npdm_path + FS_MAX_PATH, 0);
     snprintf(g_npdm_path, FS_MAX_PATH, "hbl:/main.npdm");
@@ -53,6 +59,11 @@ FILE *NpdmUtils::OpenNpdmFromSdCard(u64 title_id) {
 
 
 FILE *NpdmUtils::OpenNpdm(u64 title_id) {
+    ContentManagement::ExternalContentSource *ecs = nullptr;
+    if ((ecs = ContentManagement::GetExternalContentSource(title_id)) != nullptr) {
+        return OpenNpdmFromECS(ecs);
+    }
+
     if (ContentManagement::ShouldOverrideContents(title_id)) {
         if (ContentManagement::ShouldReplaceWithHBL(title_id)) {
             return OpenNpdmFromHBL();
