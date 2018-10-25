@@ -19,11 +19,12 @@
 #include <strings.h>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 #include "ldr_registration.hpp"
 #include "ldr_content_management.hpp"
 #include "ldr_hid.hpp"
-
+#include "ldr_npdm.hpp"
 
 #include "ini.h"
 
@@ -42,6 +43,9 @@ static u64 g_override_hbl_tid = 0x010000000000100D;
 
 /* Static buffer for loader.ini contents at runtime. */
 static char g_config_ini_data[0x800];
+
+/* SetExternalContentSource extension */
+static std::map<u64, ContentManagement::ExternalContentSource> g_external_content_sources;
 
 Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     char path[FS_MAX_PATH] = {0};
@@ -311,4 +315,55 @@ bool ContentManagement::ShouldOverrideContents(u64 tid) {
         /* Always redirect before qlaunch. */
         return g_has_initialized_fs_dev;
     }
+}
+
+/* SetExternalContentSource extension */
+ContentManagement::ExternalContentSource *ContentManagement::GetExternalContentSource(u64 tid) {
+    auto i = g_external_content_sources.find(tid);
+    if (i == g_external_content_sources.end()) {
+        return nullptr;
+    } else {
+        return &i->second;
+    }
+}
+
+Result ContentManagement::SetExternalContentSource(u64 tid, FsFileSystem filesystem) {
+    if (g_external_content_sources.size() >= 16) {
+        return 0x409; /* LAUNCH_QUEUE_FULL */
+    }
+
+    /* Remove any existing ECS for this title. */
+    ClearExternalContentSource(tid);
+
+    char mountpoint[32];
+    ExternalContentSource::GenerateMountpointName(tid, mountpoint, sizeof(mountpoint));
+    if (fsdevMountDevice(mountpoint, filesystem) == -1) {
+        return 0x7802; /* specified mount name already exists */
+    }
+    g_external_content_sources.emplace(
+        std::piecewise_construct,
+        std::make_tuple(tid),
+        std::make_tuple(tid, mountpoint));
+
+    return 0;
+}
+
+void ContentManagement::ClearExternalContentSource(u64 tid) {
+    auto i = g_external_content_sources.find(tid);
+    if (i != g_external_content_sources.end()) {
+        g_external_content_sources.erase(i);
+    }
+}
+
+void ContentManagement::ExternalContentSource::GenerateMountpointName(u64 tid, char *out, size_t max_length) {
+    snprintf(out, max_length, "ecs-%016lx", tid);
+}
+
+ContentManagement::ExternalContentSource::ExternalContentSource(u64 tid, const char *mountpoint) : tid(tid) {
+    strncpy(this->mountpoint, mountpoint, sizeof(this->mountpoint));
+    NpdmUtils::InvalidateCache(tid);
+}
+
+ContentManagement::ExternalContentSource::~ExternalContentSource() {
+    fsdevUnmountDevice(mountpoint);
 }
