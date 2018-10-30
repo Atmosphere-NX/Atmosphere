@@ -35,10 +35,6 @@ class RomFileStorage : public IROStorage {
             fsFileClose(base_file);
             delete base_file;
         };
-        
-        RomFileStorage *Clone() override {
-            return new RomFileStorage(this->base_file);
-        };
     public:
         Result Read(void *buffer, size_t size, u64 offset) override {
             size_t out_sz = 0;
@@ -71,10 +67,6 @@ class RomInterfaceStorage : public IROStorage {
         ~RomInterfaceStorage() {
             fsStorageClose(base_storage);
             delete base_storage;
-        };
-        
-        RomInterfaceStorage *Clone() override {
-            return new RomInterfaceStorage(this->base_storage);
         };
     public:
         Result Read(void *buffer, size_t size, u64 offset) override {

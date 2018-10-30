@@ -24,7 +24,5 @@ void Reboot() {
 }
 
 void Log(const void *data, int size) {
-    (void)(data);
-    (void)(size);
     /* ... */
 }

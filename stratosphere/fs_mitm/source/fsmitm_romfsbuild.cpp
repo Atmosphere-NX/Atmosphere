@@ -400,7 +400,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     header->file_table_ofs = header->file_hash_table_ofs + header->file_hash_table_size;
     
     /* For debugging, uncomment this to get a log of the generated metadata tables. */
-    /*
+    
         {
             FsFileSystem sd_fs;
             if (R_SUCCEEDED(fsMountSdcard(&sd_fs))) {
@@ -415,7 +415,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
                 fsFsClose(&sd_fs);
             }
         }
-    */
+    
     
     out_infos->emplace_back(header->dir_hash_table_ofs, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size, metadata, RomFSDataSource::Memory);
 }

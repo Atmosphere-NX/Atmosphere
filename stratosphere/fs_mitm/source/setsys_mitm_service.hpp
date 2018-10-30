@@ -16,43 +16,34 @@
  
 #pragma once
 #include <switch.h>
-#include <stratosphere/iserviceobject.hpp>
-#include "imitmserviceobject.hpp"
+#include <stratosphere.hpp>
 #include "fsmitm_utils.hpp"
 
-enum class SetSysCmd {
-    GetFirmwareVersion = 3,
-    GetFirmwareVersion2 = 4,
+enum SetSysCmd : u32 {
+    SetSysCmd_GetFirmwareVersion = 3,
+    SetSysCmd_GetFirmwareVersion2 = 4,
 };
 
-class SetSysMitMService : public IMitMServiceObject {      
-    private:
+class SetSysMitmService : public IMitmServiceObject {      
     public:
-        SetSysMitMService(Service *s) : IMitMServiceObject(s) {
+        SetSysMitmService(std::shared_ptr<Service> s) : IMitmServiceObject(s) {
             /* ... */
         }
         
-        static bool should_mitm(u64 pid, u64 tid) {
+        static bool ShouldMitm(u64 pid, u64 tid) {
             /* Only MitM qlaunch, maintenance. */
             return tid == 0x0100000000001000ULL || tid == 0x0100000000001015ULL;
         }
         
-        SetSysMitMService *clone() override {
-            auto new_srv = new SetSysMitMService((Service *)&this->forward_service);
-            this->clone_to(new_srv);
-            return new_srv;
-        }
-        
-        void clone_to(void *o) override {
-            /* ... */
-        }
-        
-        virtual Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
-        virtual void postprocess(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size);
-        virtual Result handle_deferred();
-    
+        static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
+                    
     protected:
         /* Overridden commands. */
-        std::tuple<Result> get_firmware_version(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out);
-        std::tuple<Result> get_firmware_version2(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out);
+        Result GetFirmwareVersion(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out);
+        Result GetFirmwareVersion2(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out);
+    public:
+        DEFINE_SERVICE_DISPATCH_TABLE {
+            MakeServiceCommandMeta<SetSysCmd_GetFirmwareVersion, &SetSysMitmService::GetFirmwareVersion>(),
+            MakeServiceCommandMeta<SetSysCmd_GetFirmwareVersion2, &SetSysMitmService::GetFirmwareVersion2>(),
+        };
 };

@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <strings.h>
 
-#include "sm_mitm.h"
 #include "debug.hpp"
 #include "fsmitm_utils.hpp"
 #include "ini.h"

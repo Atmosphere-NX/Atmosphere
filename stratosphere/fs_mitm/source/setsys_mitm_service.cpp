@@ -18,7 +18,6 @@
 #include <switch.h>
 #include "setsys_mitm_service.hpp"
 
-#include "mitm_query_service.hpp"
 #include "debug.hpp"
 
 static HosMutex g_version_mutex;
@@ -51,54 +50,20 @@ static Result _GetFirmwareVersion(SetSysFirmwareVersion *out) {
     return 0;
 }
 
-Result SetSysMitMService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
-    Result rc = 0xF601;
-
-    switch (static_cast<SetSysCmd>(cmd_id)) {
-        case SetSysCmd::GetFirmwareVersion:
-            rc = WrapIpcCommandImpl<&SetSysMitMService::get_firmware_version>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-            break;
-        case SetSysCmd::GetFirmwareVersion2:
-            if (kernelAbove300()) {
-                rc = WrapIpcCommandImpl<&SetSysMitMService::get_firmware_version2>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-            }
-            break;
-        default:
-            break;
-    }
-    
-    return rc;
-}
-
-void SetSysMitMService::postprocess(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
+void SetSysMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx) {
     /* No commands need postprocessing. */    
 }
 
-Result SetSysMitMService::handle_deferred() {
-    /* This service is never deferrable. */
-    return 0;
-}
-
-std::tuple<Result> SetSysMitMService::get_firmware_version(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) {
-    if (out.num_elements != 1) {
-        return {0xF601};
-    }
-    
+Result SetSysMitmService::GetFirmwareVersion(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) { 
     Result rc = _GetFirmwareVersion(out.pointer);
     
     /* GetFirmwareVersion sanitizes these fields. */
     out.pointer->revision_major = 0;
     out.pointer->revision_minor = 0;
         
-    return {rc};
+    return rc;
 }
 
-std::tuple<Result> SetSysMitMService::get_firmware_version2(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) {
-    if (out.num_elements != 1) {
-        return {0xF601};
-    }
-    
-    Result rc = _GetFirmwareVersion(out.pointer);
-        
-    return {rc};
+Result SetSysMitmService::GetFirmwareVersion2(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) {        
+    return _GetFirmwareVersion(out.pointer);
 }
