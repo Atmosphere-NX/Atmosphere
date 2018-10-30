@@ -16,7 +16,7 @@
  
 #pragma once
 #include <switch.h>
-#include <stratosphere/iserviceobject.hpp>
+#include <stratosphere.hpp>
 
 #include "pm_registration.hpp"
 
@@ -28,12 +28,7 @@ enum DmntCmd {
     Dmnt_Cmd_EnableDebugForTitleId = 4,
     Dmnt_Cmd_GetApplicationProcessId = 5,
     Dmnt_Cmd_EnableDebugForApplication = 6,
-
-    Dmnt_Cmd_AtmosphereGetProcessHandle = 65000,
-    Dmnt_Cmd_AtmosphereGetCurrentLimitInfo = 65001,
-};
-
-enum DmntCmd_5X {
+    
     Dmnt_Cmd_5X_GetDebugProcessIds = 0,
     Dmnt_Cmd_5X_LaunchDebugProcess = 1,
     Dmnt_Cmd_5X_GetTitleProcessId = 2,
@@ -43,31 +38,49 @@ enum DmntCmd_5X {
     
     Dmnt_Cmd_6X_DisableDebug = 6,
 
-    Dmnt_Cmd_5X_AtmosphereGetProcessHandle = 65000,
-    Dmnt_Cmd_5X_AtmosphereGetCurrentLimitInfo = 65001,
+    Dmnt_Cmd_AtmosphereGetProcessHandle = 65000,
+    Dmnt_Cmd_AtmosphereGetCurrentLimitInfo = 65001,
 };
 
 class DebugMonitorService final : public IServiceObject {
-    public:
-        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) override;
-        Result handle_deferred() override;
-        
-        DebugMonitorService *clone() override {
-            return new DebugMonitorService(*this);
-        }
-        
     private:
         /* Actual commands. */
-        std::tuple<Result, u32> get_unknown_stub(u64 unknown, OutBuffer<u8> out_unknown);
-        std::tuple<Result, u32> get_debug_process_ids(OutBuffer<u64> out_processes);
-        std::tuple<Result> launch_debug_process(u64 pid);
-        std::tuple<Result, u64> get_title_process_id(u64 tid);
-        std::tuple<Result, CopiedHandle> enable_debug_for_tid(u64 tid);
-        std::tuple<Result, u64> get_application_process_id();
-        std::tuple<Result, CopiedHandle> enable_debug_for_application();
-        std::tuple<Result> disable_debug(u32 which);
+        Result GetUnknownStub(Out<u32> count, OutBuffer<u8> out_buf, u64 in_unk);
+        Result GetDebugProcessIds(Out<u32> count, OutBuffer<u64> out_pids);
+        Result LaunchDebugProcess(u64 pid);
+        Result GetTitleProcessId(Out<u64> pid, u64 tid);
+        Result EnableDebugForTitleId(Out<CopiedHandle> event, u64 tid);
+        Result GetApplicationProcessId(Out<u64> pid);
+        Result EnableDebugForApplication(Out<CopiedHandle> event);
+        Result DisableDebug(u32 which);
 
         /* Atmosphere commands. */
-        std::tuple<Result, CopiedHandle> get_process_handle(u64 pid);
-        std::tuple<Result, u64, u64> get_current_limit_info(u32 category, u32 resource);
+        Result AtmosphereGetProcessHandle(Out<CopiedHandle> proc_hand, u64 pid);
+        Result AtmosphereGetCurrentLimitInfo(Out<u64> cur_val, Out<u64> lim_val, u32 category, u32 resource);
+    public:
+        DEFINE_SERVICE_DISPATCH_TABLE {
+            /* 1.0.0-4.1.0 */
+            MakeServiceCommandMeta<Dmnt_Cmd_GetUnknownStub, &DebugMonitorService::GetUnknownStub, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_GetDebugProcessIds, &DebugMonitorService::GetDebugProcessIds, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_LaunchDebugProcess, &DebugMonitorService::LaunchDebugProcess, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_GetTitleProcessId, &DebugMonitorService::GetTitleProcessId, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_EnableDebugForTitleId, &DebugMonitorService::EnableDebugForTitleId, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_GetApplicationProcessId, &DebugMonitorService::GetApplicationProcessId, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_EnableDebugForApplication, &DebugMonitorService::EnableDebugForApplication, FirmwareVersion_Min, FirmwareVersion_400>(),
+            
+            /* 5.0.0-* */
+            MakeServiceCommandMeta<Dmnt_Cmd_5X_GetDebugProcessIds, &DebugMonitorService::GetDebugProcessIds, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_5X_LaunchDebugProcess, &DebugMonitorService::LaunchDebugProcess, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_5X_GetTitleProcessId, &DebugMonitorService::GetTitleProcessId, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_5X_EnableDebugForTitleId, &DebugMonitorService::EnableDebugForTitleId, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_5X_GetApplicationProcessId, &DebugMonitorService::GetApplicationProcessId, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_5X_EnableDebugForApplication, &DebugMonitorService::EnableDebugForApplication, FirmwareVersion_500>(),
+            
+            /* 6.0.0-* */
+            MakeServiceCommandMeta<Dmnt_Cmd_6X_DisableDebug, &DebugMonitorService::DisableDebug, FirmwareVersion_600>(),
+            
+            /* Atmosphere extensions. */
+            MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetProcessHandle, &DebugMonitorService::AtmosphereGetProcessHandle>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetCurrentLimitInfo, &DebugMonitorService::AtmosphereGetCurrentLimitInfo>(),
+        };
 };

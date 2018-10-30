@@ -28,41 +28,28 @@ class ProcessWaiter final : public IWaitable {
             /* ... */
         }
         
-        std::shared_ptr<Registration::Process> get_process() { 
+        std::shared_ptr<Registration::Process> GetProcess() { 
             return this->process; 
         }
         
         /* IWaitable */        
-        Handle get_handle() override {
+        Handle GetHandle() override {
             return this->process->handle;
         }
         
-        void handle_deferred() override {
-            /* TODO: Panic, because we can never be deferred. */
-        }
-        
-        Result handle_signaled(u64 timeout) override {
-            return Registration::HandleSignaledProcess(this->get_process());
+        Result HandleSignaled(u64 timeout) override {
+            return Registration::HandleSignaledProcess(this->GetProcess());
         }
 };
 
 class ProcessList final {
     private:      
         HosRecursiveMutex mutex;
-        WaitableManager *manager;
     public:
         std::vector<std::shared_ptr<Registration::Process>> processes;
         
-        auto get_unique_lock() {
+        auto GetUniqueLock() {
             return std::unique_lock{this->mutex};
-        }
-
-        void set_manager(WaitableManager *manager) {
-            this->manager = manager;
-        }
-        
-        WaitableManager *get_manager() {
-            return this->manager;
         }
 };
 

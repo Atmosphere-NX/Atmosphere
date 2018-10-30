@@ -172,8 +172,7 @@ class Registration {
         static void InitializeSystemResources();
         static IWaitable *GetProcessLaunchStartEvent();
         static std::unique_lock<HosRecursiveMutex> GetProcessListUniqueLock();
-        static void SetProcessListManager(WaitableManager *m);
-        static Result ProcessLaunchStartCallback(void *arg, Handle *handles, size_t num_handles, u64 timeout);
+        static Result ProcessLaunchStartCallback(u64 timeout);
         
         static Result HandleSignaledProcess(std::shared_ptr<Process> process);
         static void FinalizeExitedProcess(std::shared_ptr<Process> process);

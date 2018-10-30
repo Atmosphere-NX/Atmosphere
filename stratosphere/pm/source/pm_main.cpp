@@ -28,7 +28,6 @@
 #include "pm_process_track.hpp"
 #include "pm_registration.hpp"
 #include "pm_debug_monitor.hpp"
-#include "smm_ams.h"
 
 extern "C" {
     extern u32 __start__;
@@ -150,16 +149,16 @@ int main(int argc, char **argv)
     }
     
     /* TODO: What's a good timeout value to use here? */
-    WaitableManager *server_manager = new WaitableManager(U64_MAX);
+    auto server_manager = new WaitableManager(1);
         
     /* TODO: Create services. */
-    server_manager->add_waitable(new ServiceServer<ShellService>("pm:shell", 3));
-    server_manager->add_waitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 2));
-    server_manager->add_waitable(new ServiceServer<BootModeService>("pm:bm", 5));
-    server_manager->add_waitable(new ServiceServer<InformationService>("pm:info", 1));
+    server_manager->AddWaitable(new ServiceServer<ShellService>("pm:shell", 3));
+    server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 2));
+    server_manager->AddWaitable(new ServiceServer<BootModeService>("pm:bm", 5));
+    server_manager->AddWaitable(new ServiceServer<InformationService>("pm:info", 1));
     
     /* Loop forever, servicing our services. */
-    server_manager->process();
+    server_manager->Process();
     
     /* Cleanup. */
     delete server_manager;
