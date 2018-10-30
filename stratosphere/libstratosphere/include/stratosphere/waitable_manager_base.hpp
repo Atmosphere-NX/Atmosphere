@@ -15,22 +15,23 @@
  */
  
 #pragma once
-#include <switch.h>
-#include <type_traits>
+#include <atomic>
 
-#include "ipc_templating.hpp"
-#include "iserviceobject.hpp"
-#include "iwaitable.hpp"
-#include "iserver.hpp"
-#include "isession.hpp"
+class IWaitable;
 
-template <typename T>
-class ServiceSession final : public ISession<T> {
-    static_assert(std::is_base_of<IServiceObject, T>::value, "Service Objects must derive from IServiceObject");
-        
+class WaitableManagerBase {
+    std::atomic<u64> cur_priority = 0;
     public:
-        ServiceSession<T>(IServer<T> *s, Handle s_h, Handle c_h, size_t pbs = 0x400) : ISession<T>(s, s_h, c_h, pbs) {
-            /* ... */
+        WaitableManagerBase() = default;
+        virtual ~WaitableManagerBase() = default;
+
+        u64 GetNextPriority() {
+            return std::atomic_fetch_add(&cur_priority, (u64)1);
         }
         
+        virtual void AddWaitable(IWaitable *w) = 0;
+        virtual void NotifySignaled(IWaitable *w) = 0;
+                
+        virtual void Process() = 0;
 };
+

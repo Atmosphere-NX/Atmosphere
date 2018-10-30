@@ -337,7 +337,7 @@ struct Validator<std::tuple<Args...>> {
         }
         
         if (((u32 *)r.Raw)[0] != SFCI_MAGIC) {
-            //return 0xF601;
+            return 0xF601;
         }
         
         size_t a_index = 0, b_index = num_inbuffers_in_arguments<Args ...>::value, x_index = 0, c_index = 0, h_index = 0;

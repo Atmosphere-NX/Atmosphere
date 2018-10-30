@@ -16,48 +16,36 @@
  
 #pragma once
 #include <switch.h>
-#include <algorithm>
-#include <type_traits>
 
-#include "iserviceobject.hpp"
 #include "iwaitable.hpp"
-#include "isession.hpp"
+#include "ipc.hpp"
 
-template <typename T>
-class ISession;
-
-template <typename T>
+template<typename T>
 class IServer : public IWaitable {
     static_assert(std::is_base_of<IServiceObject, T>::value, "Service Objects must derive from IServiceObject");
     protected:
         Handle port_handle;
         unsigned int max_sessions;
-        bool supports_domains;
     
     public:        
-        IServer(const char *service_name, unsigned int max_s, bool s_d = false) : max_sessions(max_s), supports_domains(s_d) {
-            
-        }
+        IServer(unsigned int max_s) : port_handle(0), max_sessions(max_s) { }
         
         virtual ~IServer() {            
             if (port_handle) {
                 svcCloseHandle(port_handle);
             }
         }
+
+        SessionManagerBase *GetSessionManager() {
+            return static_cast<SessionManagerBase *>(this->GetManager());
+        }
         
-        virtual ISession<T> *get_new_session(Handle session_h) = 0;
-    
         /* IWaitable */                        
-        virtual Handle get_handle() {
+        virtual Handle GetHandle() override {
             return this->port_handle;
         }
         
-        
-        virtual void handle_deferred() {
-            /* TODO: Panic, because we can never defer a server. */
-        }
-        
-        virtual Result handle_signaled(u64 timeout) {
+        virtual Result HandleSignaled(u64 timeout) override {
             /* If this server's port was signaled, accept a new session. */
             Handle session_h;
             Result rc = svcAcceptSession(&session_h, this->port_handle);
@@ -65,7 +53,35 @@ class IServer : public IWaitable {
                 return rc;
             }
             
-            this->get_manager()->add_waitable(this->get_new_session(session_h));
+            this->GetSessionManager()->AddSession(session_h, std::move(ServiceObjectHolder(std::move(std::make_shared<T>()))));
             return 0;
+        }
+};
+
+template <typename T>
+class ServiceServer : public IServer<T> {    
+    public:
+        ServiceServer(const char *service_name, unsigned int max_s) : IServer<T>(max_s) { 
+            if (R_FAILED(smRegisterService(&this->port_handle, service_name, false, this->max_sessions))) {
+                /* TODO: Panic. */
+            }
+        }
+};
+
+template <typename T>
+class ExistingPortServer : public IServer<T> {    
+    public:
+        ExistingPortServer(Handle port_h, unsigned int max_s) : IServer<T>(max_s) {
+            this->port_handle = port_h;
+        }
+};
+
+template <typename T>
+class ManagedPortServer : public IServer<T> {    
+    public:
+        ManagedPortServer(const char *service_name, unsigned int max_s) : IServer<T>(max_s) { 
+            if (R_FAILED(svcManageNamedPort(&this->port_handle, service_name, this->max_sessions))) {
+                /* TODO: panic */
+            }
         }
 };

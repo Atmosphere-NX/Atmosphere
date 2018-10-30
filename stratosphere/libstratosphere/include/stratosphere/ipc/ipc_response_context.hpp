@@ -16,16 +16,29 @@
  
 #pragma once
 #include <switch.h>
-#include "iserver.hpp"
 
-template <typename T>
-class ExistingPortServer : public IServer<T> {    
-    public:
-        ExistingPortServer(Handle port_h, unsigned int max_s, bool s_d = false) : IServer<T>(NULL, max_s, s_d) {
-            this->port_handle = port_h;
-        }
-        
-        ISession<T> *get_new_session(Handle session_h) override {
-            return new ServiceSession<T>(this, session_h, 0);
-        }
+#include "ipc_service_object.hpp"
+#include "ipc_domain_object.hpp"
+
+#include "ipc_special.hpp"
+
+#include "ipc_session_manager_base.hpp"
+
+struct IpcResponseContext {
+    /* Request/Reply data. */
+    IpcParsedCommand request;
+    IpcCommand reply;
+    u8 out_data[0x100];
+    std::shared_ptr<IServiceObject> *out_objs[8];
+    Handle out_object_server_handles[8];
+    IpcHandle out_handles[8];
+    u32 out_object_ids[8];
+    IpcCommandType cmd_type;
+    u64 cmd_id;
+    Result rc;
+    /* Context. */
+    SessionManagerBase *manager;
+    ServiceObjectHolder *obj_holder;
+    unsigned char *pb;
+    size_t pb_size;
 };

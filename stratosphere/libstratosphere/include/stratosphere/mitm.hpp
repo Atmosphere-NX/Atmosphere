@@ -15,17 +15,12 @@
  */
  
 #pragma once
-#include <switch.h>
-#include <atomic>
-#include <vector>
 
-class WaitableManagerBase {
-    std::atomic<u64> cur_priority = 0;
-    public:
-        WaitableManagerBase() = default;
-        virtual ~WaitableManagerBase() = default;
+#include "mitm/sm_mitm.h"
 
-        u64 get_priority() {
-            return std::atomic_fetch_add(&cur_priority, (u64)1);
-        }
-};
+#include "ipc.hpp"
+
+#include "mitm/imitmserviceobject.hpp"
+#include "mitm/mitm_query_service.hpp"
+#include "mitm/mitm_session.hpp"
+#include "mitm/mitm_server.hpp"
