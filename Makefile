@@ -10,12 +10,15 @@ fusee:
 
 creport:
 	$(MAKE) -C stratosphere/creport all
+	
+set_mitm:
+	$(MAKE) -C stratosphere/set_mitm all
 
 clean:
 	$(MAKE) -C fusee clean
 	rm -rf out
     
-dist: fusee creport 
+dist: fusee creport set_mitm
 	$(eval MAJORVER = $(shell grep '\ATMOSPHERE_RELEASE_VERSION_MAJOR\b' common/include/atmosphere/version.h \
 		| tr -s [:blank:] \
 		| cut -d' ' -f3))
