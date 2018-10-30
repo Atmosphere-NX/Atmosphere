@@ -124,6 +124,7 @@ class ServiceObjectHolder {
         }
         
         ServiceObjectHolder Clone() {
-            return ServiceObjectHolder(*this);
+            ServiceObjectHolder clone(*this);
+            return clone;
         }
 };

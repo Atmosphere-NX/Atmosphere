@@ -28,6 +28,14 @@ class IMitmServiceObject : public IServiceObject {
     public:
         IMitmServiceObject(std::shared_ptr<Service> s) : forward_service(s) {}
         
+        virtual u64 GetTitleId() {
+            return this->title_id;
+        }
+        
+        virtual u64 GetProcessId() {
+            return this->process_id;
+        }
+        
         static bool ShouldMitm(u64 pid, u64 tid);
                 
     protected:

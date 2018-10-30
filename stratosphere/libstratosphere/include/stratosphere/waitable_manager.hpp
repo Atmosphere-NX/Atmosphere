@@ -165,6 +165,7 @@ class WaitableManager : public SessionManagerBase {
                         
             if (result == nullptr) {
                 std::vector<Handle> handles;
+                std::vector<IWaitable *> wait_list;
                 
                 int handle_index = 0;
                 Result rc;
@@ -174,11 +175,14 @@ class WaitableManager : public SessionManagerBase {
                     
                     /* Copy out handles. */
                     handles.resize(this->waitables.size() + 1);
+                    wait_list.resize(this->waitables.size() + 1);
                     handles[0] = this->new_waitable_event->GetHandle();
+                    wait_list[0] = this->new_waitable_event;
                     unsigned int num_handles = 1;
                     for (unsigned int i = 0; i < this->waitables.size(); i++) {
                         Handle h = this->waitables[i]->GetHandle();
                         if (h != INVALID_HANDLE) {
+                            wait_list[num_handles] = this->waitables[i];
                             handles[num_handles++] = h;
                         }
                     }
@@ -194,14 +198,15 @@ class WaitableManager : public SessionManagerBase {
                     /* Wait forever. */
                     rc = svcWaitSynchronization(&handle_index, handles.data(), num_handles, U64_MAX);
                     
-                    IWaitable *w = this->waitables[handle_index - 1];  
+                    IWaitable *w = wait_list[handle_index];
+                    size_t w_ind = std::distance(this->waitables.begin(), std::find(this->waitables.begin(), this->waitables.end(), w));
                     
                     if (R_SUCCEEDED(rc)) {
                         if (handle_index == 0) {
                             AddWaitablesInternal();
                             continue;
                         }
-                        std::for_each(waitables.begin(), waitables.begin() + handle_index - 1, std::mem_fn(&IWaitable::UpdatePriority));
+                        std::for_each(waitables.begin(), waitables.begin() + w_ind, std::mem_fn(&IWaitable::UpdatePriority));
                         result = w;
                     } else if (rc == 0xEA01) {
                         /* Timeout: Just update priorities. */
@@ -216,8 +221,9 @@ class WaitableManager : public SessionManagerBase {
                         if (handle_index == 0) {
                             std::abort();
                         }
-                        this->waitables.erase(this->waitables.begin() + handle_index - 1);
-                        std::for_each(waitables.begin(), waitables.begin() + handle_index - 1, std::mem_fn(&IWaitable::UpdatePriority));
+                        
+                        this->waitables.erase(this->waitables.begin() + w_ind);
+                        std::for_each(waitables.begin(), waitables.begin() + w_ind - 1, std::mem_fn(&IWaitable::UpdatePriority));
                         delete w;
                     }
                 }

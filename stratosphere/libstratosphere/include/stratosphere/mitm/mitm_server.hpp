@@ -32,7 +32,10 @@ class MitmServer : public IWaitable {
     public:
         MitmServer(Handle *out_query_h, const char *service_name, unsigned int max_s) : port_handle(0), max_sessions(max_s) {
             Handle tmp_hnd;
-            Result rc;
+            Result rc = smMitMInitialize();
+            if (R_FAILED(rc)) {
+                fatalSimple(rc);
+            }
             
             if (R_SUCCEEDED((rc = smGetServiceOriginal(&tmp_hnd, smEncodeName(service_name))))) {
                 svcCloseHandle(tmp_hnd);
@@ -44,6 +47,8 @@ class MitmServer : public IWaitable {
             if (R_FAILED((rc = smMitMInstall(&this->port_handle, out_query_h, mitm_name)))) {
                 fatalSimple(rc);           
             }
+            
+            smMitMExit();
         }
         
         virtual ~MitmServer() override {
@@ -79,9 +84,16 @@ class MitmServer : public IWaitable {
                 delete s;
             });
             
+            rc = smMitMInitialize();
+            if (R_FAILED(rc)) {
+                fatalSimple(rc);
+            }
+            
             if (R_FAILED(smMitMGetService(forward_service.get(), mitm_name))) {
                 /* TODO: Panic. */
             }
+            
+            smMitMExit();
             
             this->GetSessionManager()->AddWaitable(new MitmSession(session_h, forward_service, std::make_shared<T>(forward_service)));
             return 0;
