@@ -4,18 +4,25 @@ ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
     AMSREV := $(AMSREV)-dirty
 endif
 
-all: fusee creport
-fusee:
-	$(MAKE) -C $@ all
+all: fusee stratosphere exosphere thermosphere
 
-creport:
-	$(MAKE) -C stratosphere/creport all
+thermosphere:
+	$(MAKE) -C thermosphere all
+
+exosphere: thermosphere
+	$(MAKE) -C exosphere all
+
+stratosphere: exosphere
+	$(MAKE) -C stratosphere all
+
+fusee: exosphere stratosphere
+	$(MAKE) -C $@ all
 
 clean:
 	$(MAKE) -C fusee clean
 	rm -rf out
     
-dist: fusee creport
+dist: all
 	$(eval MAJORVER = $(shell grep '\ATMOSPHERE_RELEASE_VERSION_MAJOR\b' common/include/atmosphere/version.h \
 		| tr -s [:blank:] \
 		| cut -d' ' -f3))
