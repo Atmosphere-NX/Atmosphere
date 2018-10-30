@@ -31,10 +31,12 @@ dist: fusee creport
 	mkdir atmosphere-$(AMSVER)
 	mkdir atmosphere-$(AMSVER)/atmosphere
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000036
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032
 	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/fusee-secondary.bin
 	cp common/defaults/BCT.ini atmosphere-$(AMSVER)/BCT.ini
 	cp common/defaults/loader.ini atmosphere-$(AMSVER)/atmosphere/loader.ini
 	cp stratosphere/creport/creport.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000036/exefs.nsp
+	cp stratosphere/set_mitm/set_mitm.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032/exefs.nsp
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)
 	mkdir out
