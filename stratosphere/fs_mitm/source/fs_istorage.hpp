@@ -21,21 +21,19 @@
 
 #include "debug.hpp"
 
-enum class FsIStorageCmd {
-    Read = 0,
-    Write = 1,
-    Flush = 2,
-    SetSize = 3,
-    GetSize = 4,
-    OperateRange = 5,
+enum FsIStorageCmd : u32 {
+    FsIStorageCmd_Read = 0,
+    FsIStorageCmd_Write = 1,
+    FsIStorageCmd_Flush = 2,
+    FsIStorageCmd_SetSize = 3,
+    FsIStorageCmd_GetSize = 4,
+    FsIStorageCmd_OperateRange = 5,
 };
 
 class IStorage {
     public:
         virtual ~IStorage();
-        
-        virtual IStorage *Clone() = 0; 
-        
+                
         virtual Result Read(void *buffer, size_t size, u64 offset) = 0;
         virtual Result Write(void *buffer, size_t size, u64 offset) = 0;
         virtual Result Flush() = 0;
@@ -51,88 +49,59 @@ class IStorageInterface : public IServiceObject {
         IStorageInterface(IStorage *s) : base_storage(s) {
             /* ... */
         };
-        
-        IStorageInterface *clone() override {
-            return new IStorageInterface(this->base_storage->Clone());
-        }
-        
+                
         ~IStorageInterface() {
             delete base_storage;
         };
         
-        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) final {
-            Result rc = 0xF601;
-            switch ((FsIStorageCmd)cmd_id) {
-                case FsIStorageCmd::Read:
-                    rc = WrapIpcCommandImpl<&IStorageInterface::read>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                    break;
-                case FsIStorageCmd::Write:
-                    rc = WrapIpcCommandImpl<&IStorageInterface::write>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                    break;
-                case FsIStorageCmd::Flush:
-                    rc = WrapIpcCommandImpl<&IStorageInterface::flush>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                    break;
-                case FsIStorageCmd::SetSize:
-                    rc = WrapIpcCommandImpl<&IStorageInterface::set_size>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                    break;
-                case FsIStorageCmd::GetSize:
-                    rc = WrapIpcCommandImpl<&IStorageInterface::get_size>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                    break;
-                case FsIStorageCmd::OperateRange:
-                    if (kernelAbove400()) {
-                        rc = WrapIpcCommandImpl<&IStorageInterface::operate_range>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                    }
-                    break;
-                default:
-                    break;
-            }
-            return rc;
-        };
-        
-        Result handle_deferred() final {
-            /* TODO: Panic, we can never defer. */
-            return 0;
-        };
     private:
         /* Actual command API. */
-        virtual std::tuple<Result> read(OutBuffer<u8, BufferType_Type1> buffer, u64 offset, u64 size) final {
-            return {this->base_storage->Read(buffer.buffer, std::min(buffer.num_elements, size), offset)};
+        virtual Result Read(OutBuffer<u8, BufferType_Type1> buffer, u64 offset, u64 size) final {
+            return this->base_storage->Read(buffer.buffer, std::min(buffer.num_elements, size), offset);
         };
-        virtual std::tuple<Result> write(InBuffer<u8, BufferType_Type1> buffer, u64 offset, u64 size) final {
-           return {this->base_storage->Write(buffer.buffer, std::min(buffer.num_elements, size), offset)};
+        virtual Result Write(InBuffer<u8, BufferType_Type1> buffer, u64 offset, u64 size) final {
+           return this->base_storage->Write(buffer.buffer, std::min(buffer.num_elements, size), offset);
 
         };
-        virtual std::tuple<Result> flush() final {
-            return {this->base_storage->Flush()};
+        virtual Result Flush() final {
+            return this->base_storage->Flush();
         };
-        virtual std::tuple<Result> set_size(u64 size) final {
-            return {this->base_storage->SetSize(size)};
+        virtual Result SetSize(u64 size) final {
+            return this->base_storage->SetSize(size);
         };
-        virtual std::tuple<Result, u64> get_size() final {
-            u64 out_size = 0;
-            Result rc = this->base_storage->GetSize(&out_size);
-            return {rc, out_size};
+        virtual Result GetSize(Out<u64> size) final {
+            return this->base_storage->GetSize(size.GetPointer());
         };
-        virtual std::tuple<Result, FsRangeInfo> operate_range(u32 operation_type, u64 offset, u64 size) final {
-            FsRangeInfo out_range_info = {0};
-            Result rc = this->base_storage->OperateRange(operation_type, offset, size, &out_range_info);
-            return {rc, out_range_info};
+        virtual Result OperateRange(Out<FsRangeInfo> range_info, u32 operation_type, u64 offset, u64 size) final {
+            return this->base_storage->OperateRange(operation_type, offset, size, range_info.GetPointer());
+        };
+    public:
+        DEFINE_SERVICE_DISPATCH_TABLE {
+            /* 1.0.0- */
+            MakeServiceCommandMeta<FsIStorageCmd_Read, &IStorageInterface::Read>(),
+            MakeServiceCommandMeta<FsIStorageCmd_Write, &IStorageInterface::Write>(),
+            MakeServiceCommandMeta<FsIStorageCmd_Flush, &IStorageInterface::Flush>(),
+            MakeServiceCommandMeta<FsIStorageCmd_SetSize, &IStorageInterface::SetSize>(),
+            MakeServiceCommandMeta<FsIStorageCmd_GetSize, &IStorageInterface::GetSize>(),
+            
+            /* 4.0.0- */
+            MakeServiceCommandMeta<FsIStorageCmd_OperateRange, &IStorageInterface::OperateRange, FirmwareVersion_400>(),
         };
 };
 
 class IROStorage : public IStorage {
     public:
         virtual Result Read(void *buffer, size_t size, u64 offset) = 0;
-        Result Write(void *buffer, size_t size, u64 offset) final {
+        virtual Result Write(void *buffer, size_t size, u64 offset) final {
             (void)(buffer);
             (void)(offset);
             (void)(size);
             return 0x313802;
         };
-        Result Flush() final {
+        virtual Result Flush() final {
             return 0x0;
         };
-        Result SetSize(u64 size) final {
+        virtual Result SetSize(u64 size) final {
             (void)(size);
             return 0x313802;
         };
