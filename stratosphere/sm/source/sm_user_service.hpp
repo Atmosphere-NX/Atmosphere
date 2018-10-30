@@ -17,6 +17,7 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include "sm_types.hpp"
 
 enum UserServiceCmd {
     User_Cmd_Initialize = 0,
@@ -36,13 +37,13 @@ class UserService final : public IServiceObject {
         
         /* Actual commands. */
         virtual Result Initialize(PidDescriptor pid);
-        virtual Result GetService(Out<MovedHandle> out_h, u64 service);
-        virtual Result RegisterService(Out<MovedHandle> out_h, u64 service, u8 is_light, u32 max_sessions);
-        virtual Result UnregisterService(u64 service);
+        virtual Result GetService(Out<MovedHandle> out_h, SmServiceName service);
+        virtual Result RegisterService(Out<MovedHandle> out_h, SmServiceName service, u32 max_sessions, bool is_light);
+        virtual Result UnregisterService(SmServiceName service);
         
         /* Atmosphere commands. */
-        virtual Result AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandle> qry_h, u64 service);
-        virtual Result AtmosphereUninstallMitm(u64 service);
+        virtual Result AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandle> qry_h, SmServiceName service);
+        virtual Result AtmosphereUninstallMitm(SmServiceName service);
         virtual Result AtmosphereAssociatePidTidForMitm(u64 pid, u64 tid);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {

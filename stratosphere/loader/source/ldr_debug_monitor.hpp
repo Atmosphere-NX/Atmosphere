@@ -29,7 +29,7 @@ enum DebugMonitorServiceCmd {
 class DebugMonitorService final : public IServiceObject {        
     private:
         /* Actual commands. */
-        Result AddTitleToLaunchQueue(u64 args_size, u64 tid, InPointer<char> args);
+        Result AddTitleToLaunchQueue(u64 tid, InPointer<char> args, u32 args_size);
         void ClearLaunchQueue();
         Result GetNsoInfo(Out<u32> count, OutPointerWithClientSize<Registration::NsoInfo> out, u64 pid);
     public:

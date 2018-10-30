@@ -20,7 +20,7 @@
 
 static bool g_is_maintenance_boot = false;
 
-void BootModeService::GetBootMode(Out<bool> out) {
+void BootModeService::GetBootMode(Out<u32> out) {
     out.SetValue(g_is_maintenance_boot);
 }
 

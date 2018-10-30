@@ -20,9 +20,9 @@
 #include "ldr_launch_queue.hpp"
 #include "ldr_content_management.hpp"
 
-Result ShellService::AddTitleToLaunchQueue(u64 args_size, u64 tid, InPointer<char> args) {
-    fprintf(stderr, "Add to launch queue: %p, %zX\n", args.pointer, std::min(args_size, args.num_elements));
-    return LaunchQueue::Add(tid, args.pointer, std::min(args_size, args.num_elements));
+Result ShellService::AddTitleToLaunchQueue(u64 tid, InPointer<char> args, u32 args_size) {
+    if (args.num_elements < args_size) args_size = args.num_elements;
+    return LaunchQueue::Add(tid, args.pointer, args_size);
 }
 
 void ShellService::ClearLaunchQueue() {

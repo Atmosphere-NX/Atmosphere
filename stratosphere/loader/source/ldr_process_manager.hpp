@@ -45,8 +45,8 @@ class ProcessManagerService final : public IServiceObject {
     static_assert(sizeof(ProcessManagerService::ProgramInfo) == 0x400, "Incorrect ProgramInfo definition.");      
     private:
         /* Actual commands. */
-        Result CreateProcess(Out<MovedHandle> proc_h, u64 flags, u64 index, CopiedHandle reslimit_h);
-        Result GetProgramInfo(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info);
+        Result CreateProcess(Out<MovedHandle> proc_h, u64 index, u32 flags, CopiedHandle reslimit_h);
+        Result GetProgramInfo(OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info, Registration::TidSid tid_sid);
         Result RegisterTitle(Out<u64> index, Registration::TidSid tid_sid);
         Result UnregisterTitle(u64 index);
         

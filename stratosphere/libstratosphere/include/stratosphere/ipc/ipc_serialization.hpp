@@ -174,19 +174,83 @@ struct RawSizeElementAdder {
 };
 
 template<typename Ts>
-struct GetRawDataSize;
+struct RawDataHelper;
 
 template<typename... Ts>
-struct GetRawDataSize<std::tuple<Ts...>> {
-    static constexpr size_t Size() {
-        if constexpr (sizeof...(Ts) == 0) {
-            return 0;
-        } else {
-            size_t s = 0;
-            size_t ends[] = { RawSizeElementAdder<Ts>::GetUpdateElementSize(s)... };
-            return (ends[sizeof...(Ts)-1] + 3) & ~3;
+struct RawDataHelper<std::tuple<Ts...>> {
+    /* https://referencesource.microsoft.com/#System.Core/System/Linq/Enumerable.cs,2604 */
+    static constexpr void QuickSort(std::array<size_t, sizeof...(Ts)> &map, std::array<size_t, sizeof...(Ts)> &values, int left, int right) {
+        do {
+            int i = left;
+            int j = right;
+            int x = map[i + ((j - i) >> 1)];
+            do {
+                while (i < static_cast<int>(sizeof...(Ts)) && values[x] > values[map[i]]) i++;
+                while (j >= 0 && values[x] < values[map[j]]) j--;
+                if (i > j) break;
+                if (i < j) {
+                    const size_t temp = map[i];
+                    map[i] = map[j];
+                    map[j] = temp;
+                }
+                i++;
+                j--;
+            } while (i <= j);
+            if (j - left <= right - i) {
+                if (left < j) QuickSort(map, values, left, j);
+                left = i;
+            } else {
+                if (i < right) QuickSort(map, values, i, right);
+                right = j;
+            }
+        } while (left < right);
+    }
+    
+    static constexpr void StableSort(std::array<size_t, sizeof...(Ts)> &map, std::array<size_t, sizeof...(Ts)> &values) {
+        /* First, quicksort a copy of the map. */
+        std::array<size_t, sizeof...(Ts)> map_unstable(map);
+        QuickSort(map_unstable, values, 0, sizeof...(Ts)-1);
+        
+        /* Now, create stable sorted map from unstably quicksorted indices (via repeated insertion sort on element runs). */
+        for (size_t i = 0; i < sizeof...(Ts); i++) {
+            map[i] = map_unstable[i];
+            for (ssize_t j = i-1; j >= 0 && values[map[j]] == values[map[j+1]] && map[j] > map[j+1]; j--) {
+                const size_t temp = map[j];
+                map[j] = map[j+1];
+                map[j+1] = temp;
+            }
         }
     }
+    
+    static constexpr std::array<size_t, sizeof...(Ts)+1> GetOffsets() {
+        std::array<size_t, sizeof...(Ts)+1> offsets = {};
+        offsets[0] = 0;
+        if constexpr (sizeof...(Ts) > 0) {
+            /* Get size, alignment for each type. */
+            std::array<size_t, sizeof...(Ts)> sizes = { RawDataHelper<Ts>::size... };
+            std::array<size_t, sizeof...(Ts)> aligns = { RawDataHelper<Ts>::align... };
+            
+            /* We want to sort...by alignment. */
+            std::array<size_t, sizeof...(Ts)> map = {};
+            for (size_t i = 0; i < sizeof...(Ts); i++) { map[i] = i; }
+            StableSort(map, aligns);
+            
+            /* Iterate over sorted types. */
+            size_t cur_offset = 0;
+            for (size_t i = 0; i < sizeof...(Ts); i++) {
+                const size_t align = aligns[map[i]];
+                if (cur_offset % align != 0) {
+                    cur_offset += align - (cur_offset % align);
+                }
+                offsets[map[i]] = cur_offset;
+                cur_offset += sizes[map[i]];
+            }
+            offsets[sizeof...(Ts)] = cur_offset;
+        }
+        return offsets;
+    }
+    
+    static constexpr std::array<size_t, sizeof...(Ts)+1> offsets = GetOffsets();
 };
 
 template <typename _Args, typename _ReturnType>
@@ -236,10 +300,12 @@ struct CommandMetaInfo<std::tuple<_Args...>, _ReturnType> {
     static_assert(NumInHandles <= 8, "Methods can take in <= 8 Handles!");
     static_assert(NumOutHandles + NumOutSessions <= 8, "Methods can only return <= 8 Handles+Sessions!");
     
-    static constexpr size_t InRawArgSize = GetRawDataSize<InDatas>::Size();
+    static constexpr std::array<size_t, NumInDatas+1> InDataOffsets = RawDataHelper<InDatas>::offsets;
+    static constexpr size_t InRawArgSize = InDataOffsets[NumInDatas];
     static constexpr size_t InRawArgSizeWithOutPointers = ((InRawArgSize + NumClientSizeOutPointers * sizeof(u16)) + 3) & ~3;
     
-    static constexpr size_t OutRawArgSize = GetRawDataSize<OutDatas>::Size();
+    static constexpr std::array<size_t, NumOutDatas+1> OutDataOffsets = RawDataHelper<OutDatas>::offsets;
+    static constexpr size_t OutRawArgSize = OutDataOffsets[NumOutDatas];
 };
 
 
@@ -335,10 +401,11 @@ struct Validator {
 /* ================================================================================= */
 
 /* Decoder. */
+template<typename MetaInfo>
 struct Decoder {
     
     template<typename T>
-    static constexpr T DecodeCommandArgument(IpcResponseContext *ctx, size_t& a_index, size_t& b_index, size_t& x_index, size_t& c_index, size_t& in_h_index, size_t& out_h_index, size_t& out_obj_index, size_t& in_rd_offset, size_t& out_rd_offset, size_t& pb_offset, size_t& c_sz_offset) {
+    static constexpr T DecodeCommandArgument(IpcResponseContext *ctx, size_t& a_index, size_t& b_index, size_t& x_index, size_t& c_index, size_t& in_h_index, size_t& out_h_index, size_t& out_obj_index, size_t& in_data_index, size_t& out_data_index, size_t& pb_offset, size_t& c_sz_offset) {
         constexpr ArgType argT = GetArgType<T>();
         if constexpr (argT == ArgType::InBuffer) {
             const T& value = T(ctx->request.Buffers[a_index], ctx->request.BufferSizes[a_index], ctx->request.BufferTypes[a_index]);
@@ -357,36 +424,18 @@ struct Decoder {
         } else if constexpr (argT == ArgType::OutHandle) {
             return T(&ctx->out_handles[out_h_index++]);
         } else if constexpr (argT == ArgType::PidDesc) {
-            constexpr size_t t_align = RawDataHelper<T>::align;
-            constexpr size_t t_size = RawDataHelper<T>::size;
-            if (in_rd_offset % t_align) {
-                in_rd_offset += (t_align - (in_rd_offset % t_align));
-            }
-            uintptr_t ptr = ((uintptr_t)ctx->request.Raw + 0x10 + in_rd_offset);
-            in_rd_offset += t_size;
+            uintptr_t ptr = ((uintptr_t)ctx->request.Raw + 0x10 + MetaInfo::InDataOffsets[in_data_index++]);
             *(u64 *)ptr = ctx->request.Pid;
             return T(ctx->request.Pid);
         } else if constexpr (argT == ArgType::InData) {
-            constexpr size_t t_align = RawDataHelper<T>::align;
-            constexpr size_t t_size = RawDataHelper<T>::size;
-            if (in_rd_offset % t_align) {
-                in_rd_offset += (t_align - (in_rd_offset % t_align));
-            }
-            uintptr_t ptr = ((uintptr_t)ctx->request.Raw + 0x10 + in_rd_offset);
-            in_rd_offset += t_size;
+            uintptr_t ptr = ((uintptr_t)ctx->request.Raw + 0x10 + MetaInfo::InDataOffsets[in_data_index++]);
             if constexpr (std::is_same_v<bool, T>) {
                 return *((u8 *)ptr) & 1;
             } else {
                 return *((T *)ptr);
             }
         } else if constexpr (argT == ArgType::OutData) {
-            constexpr size_t t_align = RawDataHelper<T>::align;
-            constexpr size_t t_size = RawDataHelper<T>::size;
-            if (out_rd_offset % t_align) {
-                out_rd_offset += (t_align - (out_rd_offset % t_align));
-            }
-            uintptr_t ptr = ((uintptr_t)ctx->out_data + out_rd_offset);
-            out_rd_offset += t_size;
+            uintptr_t ptr = ((uintptr_t)ctx->out_data + MetaInfo::OutDataOffsets[out_data_index++]);
             return T(reinterpret_cast<typename OutHelper<T>::type *>(ptr));
         } else if constexpr (argT == ArgType::OutPointerClientSize || argT == ArgType::OutPointerServerSize) {
             u16 sz;
@@ -418,21 +467,20 @@ struct Decoder {
     
     template <typename ...Ts>
     struct DecodeTuple<std::tuple<Ts...>> {
-        static constexpr std::tuple<Ts...> GetArgs(IpcResponseContext *ctx, size_t& a_index, size_t& b_index, size_t& x_index, size_t& c_index, size_t& in_h_index, size_t& out_h_index, size_t& out_obj_index, size_t& in_rd_offset, size_t& out_rd_offset, size_t& pb_offset, size_t& c_sz_offset) {
+        static constexpr std::tuple<Ts...> GetArgs(IpcResponseContext *ctx, size_t& a_index, size_t& b_index, size_t& x_index, size_t& c_index, size_t& in_h_index, size_t& out_h_index, size_t& out_obj_index, size_t& in_data_index, size_t& out_data_index, size_t& pb_offset, size_t& c_sz_offset) {
             return std::tuple<Ts... > {
-                    DecodeCommandArgument<Ts>(ctx, a_index, b_index, x_index, c_index, in_h_index, out_h_index, out_obj_index, in_rd_offset, out_rd_offset, pb_offset, c_sz_offset)
+                    DecodeCommandArgument<Ts>(ctx, a_index, b_index, x_index, c_index, in_h_index, out_h_index, out_obj_index, in_data_index, out_data_index, pb_offset, c_sz_offset)
                     ...
             };
         }
     };
 
         
-    template<typename MetaInfo>
 	static constexpr typename MetaInfo::Args Decode(IpcResponseContext *ctx) {
         size_t a_index = 0, b_index = MetaInfo::NumInBuffers, x_index = 0, c_index = 0, in_h_index = 0, out_h_index = 0, out_obj_index = 0;
-        size_t in_rd_offset = 0x0, out_rd_offset = 0, pb_offset = 0;
+        size_t in_data_index = 0x0, out_data_index = 0, pb_offset = 0;
         size_t c_sz_offset = MetaInfo::InRawArgSize + (0x10 - ((uintptr_t)ctx->request.Raw - (uintptr_t)ctx->request.RawWithoutPadding));
-        return DecodeTuple<typename MetaInfo::Args>::GetArgs(ctx, a_index, b_index, x_index, c_index,  in_h_index, out_h_index, out_obj_index, in_rd_offset, out_rd_offset, pb_offset, c_sz_offset);
+        return DecodeTuple<typename MetaInfo::Args>::GetArgs(ctx, a_index, b_index, x_index, c_index,  in_h_index, out_h_index, out_obj_index, in_data_index, out_data_index, pb_offset, c_sz_offset);
     }
 };
 
@@ -594,7 +642,7 @@ constexpr Result WrapIpcCommandImpl(IpcResponseContext *ctx) {
     };
     
     if (R_SUCCEEDED(rc)) {
-        auto args = Decoder::Decode<CommandMetaData>(ctx);
+        auto args = Decoder<CommandMetaData>::Decode(ctx);
         
         if constexpr (CommandMetaData::ReturnsResult) {
             rc = std::apply( [=](auto&&... args) { return (this_ptr->*IpcCommandImpl)(args...); }, args);

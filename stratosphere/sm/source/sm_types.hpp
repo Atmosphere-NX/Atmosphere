@@ -15,22 +15,8 @@
  */
  
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
-
-enum BootModeCmd {
-    BootMode_Cmd_GetBootMode = 0,
-    BootMode_Cmd_SetMaintenanceBoot = 1
+struct SmServiceName {
+    char name[sizeof(u64)];
 };
 
-class BootModeService final : public IServiceObject {        
-    private:
-        /* Actual commands. */
-        void GetBootMode(Out<u32> out);
-        void SetMaintenanceBoot();
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<BootMode_Cmd_GetBootMode, &BootModeService::GetBootMode>(),
-            MakeServiceCommandMeta<BootMode_Cmd_SetMaintenanceBoot, &BootModeService::SetMaintenanceBoot>(),
-        };
-};
+static_assert(__alignof__(SmServiceName) == 1, "SmServiceName definition!");
