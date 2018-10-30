@@ -16,7 +16,7 @@
  
 #include <switch.h>
 #include <algorithm>
-#include <stratosphere/servicesession.hpp>
+#include <stratosphere.hpp>
 #include "sm_registration.hpp"
 #include "meta_tools.hpp"
 
@@ -250,7 +250,7 @@ Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
             struct {
                 u64 magic;
                 u64 result;
-                u64 should_mitm;
+                bool should_mitm;
             } *resp = ((decltype(resp))r.Raw);
             rc = resp->result;
             if (R_SUCCEEDED(rc)) {
