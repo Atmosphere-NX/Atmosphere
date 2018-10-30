@@ -131,12 +131,12 @@ int main(int argc, char **argv)
     AddMitmServerToManager<FsMitmService>(server_manager, "fsp-srv", 61);
     
     /* Create set:sys mitm server, delayed until set:sys is available. */
-    //if (R_FAILED(threadCreate(&set_mitm_setup_thread, &CreateSettingsMitMServer, server_manager, 0x4000, 0x15, 0))) {
+    if (R_FAILED(threadCreate(&set_mitm_setup_thread, &CreateSettingsMitMServer, server_manager, 0x4000, 0x15, 0))) {
         /* TODO: Panic. */
-    //}
-    //if (R_FAILED(threadStart(&set_mitm_setup_thread))) {
+    }
+    if (R_FAILED(threadStart(&set_mitm_setup_thread))) {
         /* TODO: Panic. */
-    //}
+    }
             
     /* Loop forever, servicing our services. */
     server_manager->Process();
