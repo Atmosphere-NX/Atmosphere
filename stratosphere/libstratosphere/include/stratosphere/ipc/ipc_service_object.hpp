@@ -72,7 +72,7 @@ class ServiceObjectHolder {
         explicit ServiceObjectHolder(std::shared_ptr<ServiceImpl>&& s) : srv(std::move(s)), dispatch_table(DispatchTable<ServiceImpl>()), entry_count(DispatchTableEntryCount<ServiceImpl>()) { }
         
         template <typename ServiceImpl>
-        ServiceImpl *GetServiceObject() {
+        ServiceImpl *GetServiceObject() const {
             if (GetServiceId() == ServiceObjectId<ServiceImpl>()) {
                 return static_cast<ServiceImpl *>(this->srv.get());
             }
@@ -80,19 +80,19 @@ class ServiceObjectHolder {
         }
         
         template<typename ServiceImpl>
-        ServiceImpl *GetServiceObjectUnsafe() {
+        ServiceImpl *GetServiceObjectUnsafe() const {
             return static_cast<ServiceImpl *>(this->srv.get());
         }
         
-        const ServiceCommandMeta *GetDispatchTable() {
+        const ServiceCommandMeta *GetDispatchTable() const {
             return this->dispatch_table;
         }
         
-        size_t GetDispatchTableEntryCount() {
+        size_t GetDispatchTableEntryCount() const {
             return this->entry_count;
         }
         
-        constexpr uintptr_t GetServiceId() {
+        constexpr uintptr_t GetServiceId() const {
             return reinterpret_cast<uintptr_t>(this->dispatch_table);
         }
         
@@ -109,11 +109,11 @@ class ServiceObjectHolder {
             return *this;
         }
         
-        explicit operator bool() {
+        explicit operator bool() const {
             return this->srv != nullptr;
         }
         
-        bool operator!() {
+        bool operator!() const {
             return this->srv == nullptr;
         }
         
@@ -123,7 +123,7 @@ class ServiceObjectHolder {
             this->entry_count = 0;
         }
         
-        ServiceObjectHolder Clone() {
+        ServiceObjectHolder Clone() const {
             ServiceObjectHolder clone(*this);
             return clone;
         }
