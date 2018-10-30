@@ -92,24 +92,31 @@ void __appExit(void) {
     smExit();
 }
 
+struct LoaderServerOptions {
+    static constexpr size_t PointerBufferSize = 0x400;
+    static constexpr size_t MaxDomains = 0;
+    static constexpr size_t MaxDomainObjects = 0;
+};
+
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
+            
+    auto server_manager = new WaitableManager<LoaderServerOptions>(1);
         
-    /* TODO: What's a good timeout value to use here? */
-    auto server_manager = std::make_unique<WaitableManager>(U64_MAX);
-    
     /* Add services to manager. */
-    server_manager->add_waitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
-    server_manager->add_waitable(new ServiceServer<ShellService>("ldr:shel", 3));
-    server_manager->add_waitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
-    if (!kernelAbove300()) {
+    server_manager->AddWaitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
+    server_manager->AddWaitable(new ServiceServer<ShellService>("ldr:shel", 3));
+    server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
+    if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
         /* On 1.0.0-2.3.0, Loader services ldr:ro instead of ro. */
-        server_manager->add_waitable(new ServiceServer<RelocatableObjectsService>("ldr:ro", 0x20));
+        server_manager->AddWaitable(new ServiceServer<RelocatableObjectsService>("ldr:ro", 0x20));
     }
-    
+        
     /* Loop forever, servicing our services. */
-    server_manager->process();
+    server_manager->Process();
+    
+    delete server_manager;
     
 	return 0;
 }
