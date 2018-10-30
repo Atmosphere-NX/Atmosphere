@@ -160,24 +160,11 @@ struct RawDataHelper<Out<T>> {
     static constexpr size_t size = sizeof(T);
 };
 
-template<typename T>
-struct RawSizeElementAdder {
-    static constexpr size_t GetUpdateElementSize(size_t &size) {
-        constexpr size_t t_align = RawDataHelper<T>::align;
-        constexpr size_t t_size = RawDataHelper<T>::size;
-        if (size % t_align == 0) {
-            size += t_align - (size % t_align);
-        }
-        size += t_size;
-        return size;
-    }
-};
-
 template<typename Ts>
-struct RawDataHelper;
+struct RawDataComputer;
 
 template<typename... Ts>
-struct RawDataHelper<std::tuple<Ts...>> {
+struct RawDataComputer<std::tuple<Ts...>> {
     /* https://referencesource.microsoft.com/#System.Core/System/Linq/Enumerable.cs,2604 */
     static constexpr void QuickSort(std::array<size_t, sizeof...(Ts)> &map, std::array<size_t, sizeof...(Ts)> &values, int left, int right) {
         do {
@@ -300,11 +287,11 @@ struct CommandMetaInfo<std::tuple<_Args...>, _ReturnType> {
     static_assert(NumInHandles <= 8, "Methods can take in <= 8 Handles!");
     static_assert(NumOutHandles + NumOutSessions <= 8, "Methods can only return <= 8 Handles+Sessions!");
     
-    static constexpr std::array<size_t, NumInDatas+1> InDataOffsets = RawDataHelper<InDatas>::offsets;
+    static constexpr std::array<size_t, NumInDatas+1> InDataOffsets = RawDataComputer<InDatas>::offsets;
     static constexpr size_t InRawArgSize = InDataOffsets[NumInDatas];
     static constexpr size_t InRawArgSizeWithOutPointers = ((InRawArgSize + NumClientSizeOutPointers * sizeof(u16)) + 3) & ~3;
     
-    static constexpr std::array<size_t, NumOutDatas+1> OutDataOffsets = RawDataHelper<OutDatas>::offsets;
+    static constexpr std::array<size_t, NumOutDatas+1> OutDataOffsets = RawDataComputer<OutDatas>::offsets;
     static constexpr size_t OutRawArgSize = OutDataOffsets[NumOutDatas];
 };
 
