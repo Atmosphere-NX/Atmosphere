@@ -18,47 +18,61 @@
 
 #include <switch.h>
 
-#include "waitablemanagerbase.hpp"
-
-class WaitableManager;
+#include "waitable_manager_base.hpp"
+#include "hossynch.hpp"
 
 class IWaitable {
     private:
         u64 wait_priority = 0;
         bool is_deferred = false;
-        WaitableManagerBase *manager;
+        WaitableManagerBase *manager = nullptr;
+    protected:
+        HosMutex sig_lock;
+        bool is_signaled = false;
     public:
-        virtual ~IWaitable() { }
+        virtual ~IWaitable() = default;
         
-        virtual void handle_deferred() = 0;
-        virtual Handle get_handle() = 0;
-        virtual Result handle_signaled(u64 timeout) = 0;
-                
-        WaitableManager *get_manager() {
-            return (WaitableManager *)this->manager;
+        virtual void HandleDeferred() {
+            /* ... */
         }
         
-        void set_manager(WaitableManagerBase *m) {
+        bool IsSignaled() {
+            std::scoped_lock<HosMutex> lock(this->sig_lock);
+            return this->is_signaled;
+        }
+        
+        virtual Handle GetHandle() = 0;
+        virtual Result HandleSignaled(u64 timeout) = 0;
+        
+        WaitableManagerBase *GetManager() {
+            return this->manager;
+        }
+        
+        void SetManager(WaitableManagerBase *m) {
             this->manager = m;
         }
         
-        void update_priority() {
+        void UpdatePriority() {
             if (manager) {
-                this->wait_priority = this->manager->get_priority();
+                this->wait_priority = this->manager->GetNextPriority();
             }
         }
         
-        bool get_deferred() {
+        bool IsDeferred() {
             return this->is_deferred;
         }
         
-        void set_deferred(bool d) {
+        void SetDeferred(bool d) {
             this->is_deferred = d;
         }
         
-        static bool compare(IWaitable *a, IWaitable *b) {
-            return (a->wait_priority < b->wait_priority) && !a->is_deferred;
+        static bool Compare(IWaitable *a, IWaitable *b) {
+            return (a->wait_priority < b->wait_priority) && !a->IsDeferred() && (a->GetHandle() != INVALID_HANDLE);
+        }
+        
+        void NotifyManagerSignaled() {
+            if (this->manager) {
+                this->manager->NotifySignaled(this);
+            }
         }
 };
-
-#include "waitablemanager.hpp"

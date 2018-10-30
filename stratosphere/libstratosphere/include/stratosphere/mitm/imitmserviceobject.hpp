@@ -16,27 +16,20 @@
  
 #pragma once
 #include <switch.h>
+#include <atomic>
 
-#include "iwaitable.hpp"
-#include "ievent.hpp"
+#include <stratosphere.hpp>
 
-#define SYSTEMEVENT_INDEX_WAITHANDLE 0
-#define SYSTEMEVENT_INDEX_SGNLHANDLE 1
-
-class SystemEvent final : public IEvent {
+class IMitmServiceObject : public IServiceObject {
+    protected:
+        std::shared_ptr<Service> forward_service;
+        u64 process_id = 0;
+        u64 title_id = 0;
     public:
-        SystemEvent(void *a, EventCallback callback) : IEvent(0, a, callback) {
-            Handle wait_h;
-            Handle sig_h;
-            if (R_FAILED(svcCreateEvent(&sig_h, &wait_h))) {
-                /* TODO: Panic. */
-            }
-            
-            this->handles.push_back(wait_h);
-            this->handles.push_back(sig_h);
-        }
+        IMitmServiceObject(std::shared_ptr<Service> s) : forward_service(s) {}
         
-        Result signal_event() override {
-            return svcSignalEvent(this->handles[SYSTEMEVENT_INDEX_SGNLHANDLE]);
-        }  
+        static bool ShouldMitm(u64 pid, u64 tid);
+                
+    protected:
+        virtual ~IMitmServiceObject() = default;
 };

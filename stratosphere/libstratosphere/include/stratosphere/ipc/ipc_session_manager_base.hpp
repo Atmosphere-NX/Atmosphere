@@ -15,26 +15,20 @@
  */
  
 #pragma once
-#include <switch.h>
+#include <atomic>
 
-template <typename T>
-class ISession;
+#include "../waitable_manager_base.hpp"
+#include "ipc_service_object.hpp"
 
-class DomainOwner;
-
-class IServiceObject {
-    private:
-        DomainOwner *owner = NULL;
+class SessionManagerBase : public WaitableManagerBase, public DomainManager {
     public:
-        virtual ~IServiceObject() { }
-        
-        virtual IServiceObject *clone() = 0;
-        
-        bool is_domain() { return this->owner != NULL; }
-        DomainOwner *get_owner() { return this->owner; }
-        void set_owner(DomainOwner *owner) { this->owner = owner; }
-        virtual Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) = 0;
-        virtual Result handle_deferred() = 0;
+        SessionManagerBase() = default;
+        virtual ~SessionManagerBase() = default;     
+                
+        virtual void AddSession(Handle server_h, ServiceObjectHolder &&service) = 0;
+                
+        static Result CreateSessionHandles(Handle *server_h, Handle *client_h) {
+            return svcCreateSession(server_h, client_h, 0, 0);
+        }
 };
 
-#include "domainowner.hpp"

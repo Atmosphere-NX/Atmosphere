@@ -16,17 +16,7 @@
  
 #pragma once
 
-#include "stratosphere/version_check.hpp"
-#include "stratosphere/scope_guard.hpp"
+#include "ipc/ipc_service_object.hpp"
+#include "ipc/ipc_serialization.hpp"
 
-#include "stratosphere/hossynch.hpp"
-#include "stratosphere/iwaitable.hpp"
-#include "stratosphere/event.hpp"
-
-#include "stratosphere/waitable_manager.hpp"
-
-#include "stratosphere/ipc.hpp"
-
-#include "stratosphere/mitm.hpp"
-
-#include "stratosphere/services.hpp"
+#include "ipc/ipc_service_session.hpp"

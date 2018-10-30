@@ -16,6 +16,7 @@
  
 #pragma once
 #include <switch.h>
+#include <mutex>
 
 class HosMutex {
     private:
@@ -38,6 +39,18 @@ class HosMutex {
         
         bool try_lock() {
             return mutexTryLock(GetMutex());
+        }
+        
+        void Lock() {
+            lock();
+        }
+        
+        void Unlock() {
+            unlock();
+        }
+        
+        bool TryLock() {
+            return try_lock();
         }
         
     friend class HosCondVar;
@@ -64,6 +77,18 @@ class HosRecursiveMutex {
         
         bool try_lock() {
             return rmutexTryLock(GetMutex());
+        }
+        
+        void Lock() {
+            lock();
+        }
+        
+        void Unlock() {
+            unlock();
+        }
+        
+        bool TryLock() {
+            return try_lock();
         }
 };
 
