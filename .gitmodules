@@ -1,0 +1,3 @@
+[submodule "common/include/boost"]
+	path = common/include/boost
+	url = https://github.com/Atmosphere-NX/ext-boost.git

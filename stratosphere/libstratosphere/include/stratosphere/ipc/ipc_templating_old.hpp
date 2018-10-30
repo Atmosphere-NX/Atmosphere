@@ -13,18 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <cstdlib>
 #include <cstring>
 #include <tuple>
-#include "../boost/callable_traits.hpp"
+#include <boost/callable_traits.hpp>
 #include <type_traits>
 
 #include "domainowner.hpp"
 
-#pragma GCC diagnostic push 
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
 /* Base for In/Out Buffers. */
@@ -39,7 +39,7 @@ struct InBuffer : InBufferBase {
     size_t num_elements;
     BufferType type;
     static const BufferType expected_type = e_t;
-    
+
     InBuffer(void *b, size_t n, BufferType t) : buffer((T *)b), num_elements(n/sizeof(T)), type(t) { }
 };
 
@@ -52,7 +52,7 @@ struct OutBuffer : OutBufferBase {
     size_t num_elements;
     BufferType type;
     static const BufferType expected_type = e_t;
-    
+
     OutBuffer(void *b, size_t n, BufferType t) : buffer((T *)b), num_elements(n/sizeof(T)), type(t) { }
 };
 
@@ -61,18 +61,18 @@ template <typename T>
 struct InPointer : IpcBufferBase {
     T *pointer;
     size_t num_elements;
-    
+
     InPointer(void *p, size_t n) : pointer((T *)p), num_elements(n/sizeof(T)) { }
 };
 
 /* Represents a C descriptor. */
 struct OutPointerWithServerSizeBase : IpcBufferBase {};
- 
+
 template <typename T, size_t n>
 struct OutPointerWithServerSize : OutPointerWithServerSizeBase {
     T *pointer;
     static const size_t num_elements = n;
-    
+
     OutPointerWithServerSize(void *p) : pointer((T *)p) { }
 };
 
@@ -81,28 +81,28 @@ template <typename T>
 struct OutPointerWithClientSize : IpcBufferBase {
     T *pointer;
     size_t num_elements;
-    
+
     OutPointerWithClientSize(void *p, size_t n) : pointer((T *)p), num_elements(n/sizeof(T)) { }
 };
 
 /* Represents an input PID. */
 struct PidDescriptor {
     u64 pid;
-    
+
     PidDescriptor(u64 p) : pid(p) { }
 };
 
 /* Represents a moved handle. */
 struct MovedHandle {
     Handle handle;
-    
+
     MovedHandle(Handle h) : handle(h) { }
 };
 
 /* Represents a copied handle. */
 struct CopiedHandle {
     Handle handle;
-    
+
     CopiedHandle(Handle h) : handle(h) { }
 };
 
@@ -117,7 +117,7 @@ template <typename T>
 struct OutSession : OutSessionBase {
     ISession<T> *session;
     u32 domain_id;
-    
+
     OutSession(ISession<T> *s) : session(s), domain_id(DOMAIN_ID_MAX) { }
 };
 
@@ -306,16 +306,16 @@ template<typename... Args>
 struct Validator<std::tuple<Args...>> {
     IpcParsedCommand &r;
     size_t pointer_buffer_size;
-    
+
 	Result operator()() {
         if (r.RawSize < size_in_raw_data_with_out_pointers_for_arguments<Args... >::value) {
             return 0xF601;
         }
-                        
+
         if (r.NumBuffers != num_inoutbuffers_in_arguments<Args... >::value) {
             return 0xF601;
         }
-        
+
         if (r.NumStatics != num_inpointers_in_arguments<Args... >::value) {
             return 0xF601;
         }
@@ -323,32 +323,32 @@ struct Validator<std::tuple<Args...>> {
         if (r.NumStaticsOut != num_outpointers_in_arguments<Args... >::value) {
             return 0xF601;
         }
-        
+
         if (r.NumHandles != num_handles_in_arguments<Args... >::value) {
             return 0xF601;
         }
-        
+
         constexpr size_t num_pids = num_pids_in_arguments<Args... >::value;
-        
+
         static_assert(num_pids <= 1, "Number of PID descriptors in IpcCommandImpl cannot be > 1");
-        
+
         if ((r.HasPid && num_pids == 0) || (!r.HasPid && num_pids)) {
             return 0xF601;
         }
-        
+
         if (((u32 *)r.Raw)[0] != SFCI_MAGIC) {
             return 0xF601;
         }
-        
+
         size_t a_index = 0, b_index = num_inbuffers_in_arguments<Args ...>::value, x_index = 0, c_index = 0, h_index = 0;
 		size_t cur_rawdata_index = 4;
         size_t cur_c_size_offset = 0x10 + size_in_raw_data_for_arguments<Args... >::value + (0x10 - ((uintptr_t)r.Raw - (uintptr_t)r.RawWithoutPadding));
         size_t total_c_size = 0;
-                
+
         if (!(ValidateIpcParsedCommandArgument<Args>(r, cur_rawdata_index, cur_c_size_offset, a_index, b_index, x_index, c_index, h_index, total_c_size) && ...)) {
             return 0xF601;
         }
-        
+
         if (total_c_size > pointer_buffer_size) {
             return 0xF601;
         }
@@ -383,7 +383,7 @@ struct Encoder;
 template<typename T>
 constexpr size_t GetAndUpdateOffsetIntoRawData(DomainOwner *domain_owner, size_t& offset) {
 	auto old = offset;
-            
+
     if (old == 0) {
         offset += sizeof(u64);
     } else {
@@ -392,8 +392,8 @@ constexpr size_t GetAndUpdateOffsetIntoRawData(DomainOwner *domain_owner, size_t
                 offset += sizeof(u32);
             }
         } else {
-            offset += size_in_raw_data<T>::value;   
-        } 
+            offset += size_in_raw_data<T>::value;
+        }
     }
 
 	return old;
@@ -439,17 +439,17 @@ void EncodeValueIntoIpcMessageAfterPrepare(DomainOwner *domain_owner, u8 *cur_ou
 template<typename... Args>
 struct Encoder<std::tuple<Args...>> {
     IpcCommand &out_command;
-    
+
 	auto operator()(DomainOwner *domain_owner, Args... args) {
         static_assert(sizeof...(Args) > 0, "IpcCommandImpls must return std::tuple<Result, ...>");
 		size_t offset = 0;
-        
+
         u8 *tls = (u8 *)armGetTls();
-        
+
         std::fill(tls, tls + 0x100, 0x00);
-        
+
         ((EncodeValueIntoIpcMessageBeforePrepare<Args>(domain_owner, &out_command, args)), ...);
-        
+
         /* Remove the extra space resulting from first Result type. */
         struct {
             u64 magic;
@@ -463,16 +463,16 @@ struct Encoder<std::tuple<Args...>> {
             *resp_header = {0};
             resp_header->NumObjectIds = num_out_sessions_in_arguments<Args... >::value;
         }
-        
-        
+
+
         raw->magic = SFCO_MAGIC;
-        
+
         u8 *raw_data = (u8 *)&raw->result;
-        
+
         ((EncodeValueIntoIpcMessageAfterPrepare<Args>(domain_owner, raw_data + GetAndUpdateOffsetIntoRawData<Args>(domain_owner, offset), args)), ...);
-        
+
         Result rc = raw->result;
-                        
+
         if (R_FAILED(rc)) {
             std::fill(tls, tls + 0x100, 0x00);
             ipcInitialize(&out_command);
@@ -486,7 +486,7 @@ struct Encoder<std::tuple<Args...>> {
             raw->magic = SFCO_MAGIC;
             raw->result = rc;
         }
-                
+
         return rc;
 	}
 };
@@ -497,20 +497,20 @@ Result WrapDeferredIpcCommandImpl(Class *this_ptr, Args... args) {
     using InArgs = typename boost::callable_traits::args_t<decltype(IpcCommandImpl)>;
     using InArgsWithoutThis = typename pop_front<InArgs>::type;
     using OutArgs = typename boost::callable_traits::return_type_t<decltype(IpcCommandImpl)>;
-    
+
     static_assert(is_specialization_of<OutArgs, std::tuple>::value, "IpcCommandImpls must return std::tuple<Result, ...>");
     static_assert(std::is_same_v<std::tuple_element_t<0, OutArgs>, Result>, "IpcCommandImpls must return std::tuple<Result, ...>");
     static_assert(std::is_same_v<InArgsWithoutThis, std::tuple<Args...>>, "Invalid Deferred Wrapped IpcCommandImpl arguments!");
-    
+
     IpcCommand out_command;
-    
+
     ipcInitialize(&out_command);
 
     auto tuple_args = std::make_tuple(args...);
     auto result = std::apply( [=](auto&&... a) { return (this_ptr->*IpcCommandImpl)(a...); }, tuple_args);
-    
+
     DomainOwner *down = NULL;
-    
+
     return std::apply(Encoder<OutArgs>{out_command}, std::tuple_cat(std::make_tuple(down), result));
 }
 
@@ -519,25 +519,25 @@ Result WrapIpcCommandImpl(Class *this_ptr, IpcParsedCommand& r, IpcCommand &out_
     using InArgs = typename boost::callable_traits::args_t<decltype(IpcCommandImpl)>;
     using InArgsWithoutThis = typename pop_front<InArgs>::type;
     using OutArgs = typename boost::callable_traits::return_type_t<decltype(IpcCommandImpl)>;
-    
+
     static_assert(is_specialization_of<OutArgs, std::tuple>::value, "IpcCommandImpls must return std::tuple<Result, ...>");
     static_assert(std::is_same_v<std::tuple_element_t<0, OutArgs>, Result>, "IpcCommandImpls must return std::tuple<Result, ...>");
-    
+
     ipcInitialize(&out_command);
 
     Result rc = Validator<InArgsWithoutThis>{r, pointer_buffer_size}();
-        
+
     if (R_FAILED(rc)) {
         return 0xF601;
     }
 
-    auto args = Decoder<OutArgs, InArgsWithoutThis>::Decode(r, out_command, pointer_buffer);    
+    auto args = Decoder<OutArgs, InArgsWithoutThis>::Decode(r, out_command, pointer_buffer);
     auto result = std::apply( [=](auto&&... args) { return (this_ptr->*IpcCommandImpl)(args...); }, args);
     DomainOwner *down = NULL;
     if (r.IsDomainRequest) {
         down = this_ptr->get_owner();
     }
-    
+
     return std::apply(Encoder<OutArgs>{out_command}, std::tuple_cat(std::make_tuple(down), result));
 }
 
@@ -545,22 +545,22 @@ template<auto IpcCommandImpl>
 Result WrapStaticIpcCommandImpl(IpcParsedCommand& r, IpcCommand &out_command, u8 *pointer_buffer, size_t pointer_buffer_size) {
     using InArgs = typename boost::callable_traits::args_t<decltype(IpcCommandImpl)>;
     using OutArgs = typename boost::callable_traits::return_type_t<decltype(IpcCommandImpl)>;
-    
+
     static_assert(is_specialization_of<OutArgs, std::tuple>::value, "IpcCommandImpls must return std::tuple<Result, ...>");
     static_assert(std::is_same_v<std::tuple_element_t<0, OutArgs>, Result>, "IpcCommandImpls must return std::tuple<Result, ...>");
-    
+
     ipcInitialize(&out_command);
 
     Result rc = Validator<InArgs>{r, pointer_buffer_size}();
-        
+
     if (R_FAILED(rc)) {
         return 0xF601;
     }
 
-    auto args = Decoder<OutArgs, InArgs>::Decode(r, out_command, pointer_buffer);    
+    auto args = Decoder<OutArgs, InArgs>::Decode(r, out_command, pointer_buffer);
     auto result = std::apply(IpcCommandImpl, args);
     DomainOwner *down = NULL;
-    
+
     return std::apply(Encoder<OutArgs>{out_command}, std::tuple_cat(std::make_tuple(down), result));
 }
 
