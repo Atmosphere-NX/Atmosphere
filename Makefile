@@ -4,7 +4,7 @@ ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
     AMSREV := $(AMSREV)-dirty
 endif
 
-all: fusee creport
+all: fusee creport set_mitm
 fusee:
 	$(MAKE) -C $@ all
 
@@ -15,7 +15,7 @@ clean:
 	$(MAKE) -C fusee clean
 	rm -rf out
     
-dist: fusee creport
+dist: fusee creport 
 	$(eval MAJORVER = $(shell grep '\ATMOSPHERE_RELEASE_VERSION_MAJOR\b' common/include/atmosphere/version.h \
 		| tr -s [:blank:] \
 		| cut -d' ' -f3))
