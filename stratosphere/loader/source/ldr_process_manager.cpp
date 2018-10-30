@@ -22,13 +22,13 @@
 #include "ldr_content_management.hpp"
 #include "ldr_npdm.hpp"
 
-Result ProcessManagerService::CreateProcess(Out<MovedHandle> proc_h, u64 flags, u64 index, CopiedHandle reslimit_h) {
+Result ProcessManagerService::CreateProcess(Out<MovedHandle> proc_h, u64 index, u32 flags, CopiedHandle reslimit_h) {
     Result rc;
     Registration::TidSid tid_sid;
     LaunchQueue::LaunchItem *launch_item;
     char nca_path[FS_MAX_PATH] = {0};
     
-    fprintf(stderr, "CreateProcess(%016lx, %016lx, %08x);\n", flags, index, reslimit_h.handle);
+    fprintf(stderr, "CreateProcess(%016lx, %08x, %08x);\n", index, flags, reslimit_h.handle);
     
     rc = Registration::GetRegisteredTidSid(index, &tid_sid);
     if (R_FAILED(rc)) {
@@ -54,7 +54,7 @@ Result ProcessManagerService::CreateProcess(Out<MovedHandle> proc_h, u64 flags, 
     return rc;
 }
 
-Result ProcessManagerService::GetProgramInfo(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info) {
+Result ProcessManagerService::GetProgramInfo(OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info, Registration::TidSid tid_sid) {
     Result rc;
     char nca_path[FS_MAX_PATH] = {0};
     /* Zero output. */

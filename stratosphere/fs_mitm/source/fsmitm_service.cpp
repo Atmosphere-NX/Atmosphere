@@ -96,7 +96,7 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
 }
 
 /* Add redirection for System Data Archives to the SD card. */
-Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterface>> out_storage, u64 sid, u64 data_id) {
+Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterface>> out_storage, u64 data_id, u8 sid) {
     FsStorageId storage_id = (FsStorageId)sid;
     FsStorage data_storage;
     FsFile data_file;

@@ -25,17 +25,17 @@ Result UserService::Initialize(PidDescriptor pid) {
     return 0;
 }
 
-Result UserService::GetService(Out<MovedHandle> out_h, u64 service) {
+Result UserService::GetService(Out<MovedHandle> out_h, SmServiceName service) {
     Handle session_h = 0;
     Result rc = 0x415;
     
 #ifdef SM_ENABLE_SMHAX
     if (!this->has_initialized) {
-        rc = Registration::GetServiceForPid(Registration::GetInitialProcessId(), service, &session_h);
+        rc = Registration::GetServiceForPid(Registration::GetInitialProcessId(), smEncodeName(service.name), &session_h);
     }
 #endif
     if (this->has_initialized) {
-        rc = Registration::GetServiceForPid(this->pid, service, &session_h);
+        rc = Registration::GetServiceForPid(this->pid, smEncodeName(service.name), &session_h);
     }
     
     if (R_SUCCEEDED(rc)) {
@@ -44,16 +44,16 @@ Result UserService::GetService(Out<MovedHandle> out_h, u64 service) {
     return rc;
 }
 
-Result UserService::RegisterService(Out<MovedHandle> out_h, u64 service, u8 is_light, u32 max_sessions) {
+Result UserService::RegisterService(Out<MovedHandle> out_h, SmServiceName service, u32 max_sessions, bool is_light) {
     Handle service_h = 0;
     Result rc = 0x415;
 #ifdef SM_ENABLE_SMHAX
     if (!this->has_initialized) {
-        rc = Registration::RegisterServiceForPid(Registration::GetInitialProcessId(), service, max_sessions, (is_light & 1) != 0, &service_h);
+        rc = Registration::RegisterServiceForPid(Registration::GetInitialProcessId(), smEncodeName(service.name), max_sessions, (is_light & 1) != 0, &service_h);
     }
 #endif
     if (this->has_initialized) {
-        rc = Registration::RegisterServiceForPid(this->pid, service, max_sessions, (is_light & 1) != 0, &service_h);
+        rc = Registration::RegisterServiceForPid(this->pid, smEncodeName(service.name), max_sessions, (is_light & 1) != 0, &service_h);
     }
     
     if (R_SUCCEEDED(rc)) {
@@ -62,25 +62,25 @@ Result UserService::RegisterService(Out<MovedHandle> out_h, u64 service, u8 is_l
     return rc;
 }
 
-Result UserService::UnregisterService(u64 service) {
+Result UserService::UnregisterService(SmServiceName service) {
     Result rc = 0x415;
 #ifdef SM_ENABLE_SMHAX
     if (!this->has_initialized) {
-        rc = Registration::UnregisterServiceForPid(Registration::GetInitialProcessId(), service);
+        rc = Registration::UnregisterServiceForPid(Registration::GetInitialProcessId(), smEncodeName(service.name));
     }
 #endif
     if (this->has_initialized) {
-        rc = Registration::UnregisterServiceForPid(this->pid, service);
+        rc = Registration::UnregisterServiceForPid(this->pid, smEncodeName(service.name));
     }
     return rc;
 }
 
-Result UserService::AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandle> qry_h, u64 service) {
+Result UserService::AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandle> qry_h, SmServiceName service) {
     Handle service_h = 0;
     Handle query_h = 0;
     Result rc = 0x415;
     if (this->has_initialized) {
-        rc = Registration::InstallMitmForPid(this->pid, service, &service_h, &query_h);
+        rc = Registration::InstallMitmForPid(this->pid, smEncodeName(service.name), &service_h, &query_h);
     }
     
     if (R_SUCCEEDED(rc)) {
@@ -90,10 +90,10 @@ Result UserService::AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandl
     return rc;
 }
 
-Result UserService::AtmosphereUninstallMitm(u64 service) {
+Result UserService::AtmosphereUninstallMitm(SmServiceName service) {
     Result rc = 0x415;
     if (this->has_initialized) {
-        rc = Registration::UninstallMitmForPid(this->pid, service);
+        rc = Registration::UninstallMitmForPid(this->pid, smEncodeName(service.name));
     }
     return rc;
 }

@@ -23,7 +23,7 @@
 
 static bool g_has_boot_finished = false;
 
-Result ShellService::LaunchProcess(Out<u64> pid, u64 launch_flags, Registration::TidSid tid_sid) {
+Result ShellService::LaunchProcess(Out<u64> pid, Registration::TidSid tid_sid, u32 launch_flags) {
     return Registration::LaunchProcessByTidSid(tid_sid, launch_flags, pid.GetPointer());
 }
 

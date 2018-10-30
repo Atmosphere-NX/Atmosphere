@@ -49,7 +49,7 @@ enum ShellCmd_5X {
 class ShellService final : public IServiceObject {    
     private:
         /* Actual commands. */
-        Result LaunchProcess(Out<u64> pid, u64 launch_flags, Registration::TidSid tid_sid);
+        Result LaunchProcess(Out<u64> pid, Registration::TidSid tid_sid, u32 launch_flags);
         Result TerminateProcessId(u64 pid);
         Result TerminateTitleId(u64 tid);
         void GetProcessWaitEvent(Out<CopiedHandle> event);

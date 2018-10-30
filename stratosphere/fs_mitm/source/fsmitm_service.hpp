@@ -47,7 +47,7 @@ class FsMitmService : public IMitmServiceObject {
     protected:
         /* Overridden commands. */
         Result OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStorageInterface>> out);
-        Result OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterface>> out, u64 storage_id, u64 data_id);
+        Result OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterface>> out, u64 data_id, u8 storage_id);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<FspSrvCmd_OpenDataStorageByCurrentProcess, &FsMitmService::OpenDataStorageByCurrentProcess>(),
