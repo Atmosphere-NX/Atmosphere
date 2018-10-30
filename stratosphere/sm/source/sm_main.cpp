@@ -61,15 +61,18 @@ void __appExit(void) {
     /* Nothing to clean up, because we're sm. */
 }
 
+
+
+
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
     
     /* TODO: What's a good timeout value to use here? */
-    WaitableManager *server_manager = new WaitableManager(U64_MAX);
-        
+    auto server_manager = new WaitableManager(1);
+            
     /* Create sm:, (and thus allow things to register to it). */
-    server_manager->add_waitable(new ManagedPortServer<UserService>("sm:", 0x40));
+    server_manager->AddWaitable(new ManagedPortServer<UserService>("sm:", 0x40));
         
     /* Create sm:m manually. */
     Handle smm_h;
@@ -78,10 +81,10 @@ int main(int argc, char **argv)
         while (1) { }
     }
     
-    server_manager->add_waitable(new ExistingPortServer<ManagerService>(smm_h, 1));
-    
+    server_manager->AddWaitable(new ExistingPortServer<ManagerService>(smm_h, 1));
+        
     /* Loop forever, servicing our services. */
-    server_manager->process();
+    server_manager->Process();
     
     /* Cleanup. */
     delete server_manager;

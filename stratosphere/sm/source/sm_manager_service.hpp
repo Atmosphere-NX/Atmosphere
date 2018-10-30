@@ -16,7 +16,7 @@
  
 #pragma once
 #include <switch.h>
-#include <stratosphere/iserviceobject.hpp>
+#include <stratosphere.hpp>
 
 enum ManagerServiceCmd {
     Manager_Cmd_RegisterProcess = 0,
@@ -27,17 +27,16 @@ enum ManagerServiceCmd {
 };
 
 class ManagerService final : public IServiceObject {
-    public:
-        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) override;
-        Result handle_deferred() override;
-        
-        ManagerService *clone() override {
-            return new ManagerService();
-        }
-        
     private:
         /* Actual commands. */
-        std::tuple<Result> register_process(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac);
-        std::tuple<Result> unregister_process(u64 pid);
-        std::tuple<Result> end_init_defers();
+        virtual Result RegisterProcess(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac);
+        virtual Result UnregisterProcess(u64 pid);
+        virtual void AtmosphereEndInitDefers();
+    public:
+        DEFINE_SERVICE_DISPATCH_TABLE {
+            MakeServiceCommandMeta<Manager_Cmd_RegisterProcess, &ManagerService::RegisterProcess>(),
+            MakeServiceCommandMeta<Manager_Cmd_UnregisterProcess, &ManagerService::UnregisterProcess>(),
+            
+            MakeServiceCommandMeta<Manager_Cmd_AtmosphereEndInitDefers, &ManagerService::AtmosphereEndInitDefers>(),
+        };
 };
