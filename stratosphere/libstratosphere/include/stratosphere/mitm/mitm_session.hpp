@@ -30,7 +30,7 @@ class MitmSession final : public ServiceSession {
         void (*service_post_process_handler)(IMitmServiceObject *, IpcResponseContext *);
         
         /* For cleanup usage. */
-        u32 num_fwd_copy_hnds;
+        u32 num_fwd_copy_hnds = 0;
         Handle fwd_copy_hnds[8];
     public:
         template<typename T>
@@ -46,7 +46,7 @@ class MitmSession final : public ServiceSession {
             }
             this->pointer_buffer.resize(pbs);
             this->control_holder.Reset();
-            this->control_holder = ServiceObjectHolder(std::make_shared<IMitmHipcControlService>(this));
+            this->control_holder = std::move(ServiceObjectHolder(std::move(std::make_shared<IMitmHipcControlService>(this))));
         }
         
         MitmSession(Handle s_h, std::shared_ptr<Service> fs, ServiceObjectHolder &&h, void (*pph)(IMitmServiceObject *, IpcResponseContext *)) : ServiceSession(s_h) {
@@ -62,7 +62,7 @@ class MitmSession final : public ServiceSession {
             }
             this->pointer_buffer.resize(pbs);
             this->control_holder.Reset();
-            this->control_holder = ServiceObjectHolder(std::make_shared<IMitmHipcControlService>(this));
+            this->control_holder = std::move(ServiceObjectHolder(std::move(std::make_shared<IMitmHipcControlService>(this))));
         }
         
         virtual void PreProcessRequest(IpcResponseContext *ctx) override {
@@ -101,7 +101,7 @@ class MitmSession final : public ServiceSession {
             }
             return rc;
         }
-                
+                        
         virtual Result GetResponse(IpcResponseContext *ctx) {
             Result rc = 0xF601;
             FirmwareVersion fw = GetRuntimeFirmwareVersion();
@@ -130,7 +130,8 @@ class MitmSession final : public ServiceSession {
                     {
                         auto sub_obj = ctx->obj_holder->GetServiceObject<IDomainObject>()->GetObject(ctx->request.InThisObjectId);
                         if (sub_obj == nullptr) {
-                            return ForwardRequest(ctx);
+                            rc = ForwardRequest(ctx);
+                            return rc;
                         }
                         dispatch_table = sub_obj->GetDispatchTable();
                         entry_count = sub_obj->GetDispatchTableEntryCount();
@@ -152,7 +153,7 @@ class MitmSession final : public ServiceSession {
                 memcpy(armGetTls(), this->backup_tls, sizeof(this->backup_tls));
                 rc = ForwardRequest(ctx);
             }
-                                                                        
+                                                                                    
             return rc;
         }
         
