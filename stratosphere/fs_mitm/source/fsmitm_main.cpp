@@ -102,7 +102,7 @@ int main(int argc, char **argv)
     }
     
     /* TODO: What's a good timeout value to use here? */
-    auto server_manager = new FsMitmManager(1);
+    auto server_manager = new FsMitmManager(5);
         
     /* Create fsp-srv mitm. */
     AddMitmServerToManager<FsMitmService>(server_manager, "fsp-srv", 61);
