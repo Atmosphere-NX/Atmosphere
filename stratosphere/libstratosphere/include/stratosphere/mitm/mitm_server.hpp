@@ -93,8 +93,8 @@ template<typename T>
 static void AddMitmServerToManager(SessionManagerBase *manager, const char *srv_name, unsigned int max_sessions) {
     Handle query_h;
     auto *srv = new MitmServer<T>(&query_h, srv_name, max_sessions);
-    manager->AddWaitable(srv);
     manager->AddSession(query_h, std::move(ServiceObjectHolder(std::move(std::make_shared<MitmQueryService<T>>()))));
+    manager->AddWaitable(srv);
 }
 
 

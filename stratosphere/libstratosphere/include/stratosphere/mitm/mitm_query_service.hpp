@@ -44,7 +44,7 @@ class MitmQueryService : public IServiceObject {
         }
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<MQS_Cmd_ShouldMitm, &MitmQueryService::ShouldMitm>(),
-            MakeServiceCommandMeta<MQS_Cmd_AssociatePidTid, &MitmQueryService::AssociatePidToTid>(),
+            MakeServiceCommandMeta<MQS_Cmd_ShouldMitm, &MitmQueryService<T>::ShouldMitm>(),
+            MakeServiceCommandMeta<MQS_Cmd_AssociatePidTid, &MitmQueryService<T>::AssociatePidToTid>(),
         };
 };

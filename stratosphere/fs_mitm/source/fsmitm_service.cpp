@@ -48,6 +48,15 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;
     Result rc = 0;
+    
+    ON_SCOPE_EXIT {
+        if (R_SUCCEEDED(rc)) {
+            out_storage.SetValue(std::move(storage));
+            if (out_storage.IsDomain()) {
+                out_storage.ChangeObjectId(out_domain_id);
+            }
+        }
+    };
         
     if (this->romfs_storage != nullptr) {
         if (out_storage.IsDomain()) {
@@ -80,13 +89,6 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
             if (out_storage.IsDomain()) {
                 out_domain_id = data_storage.s.object_id;
             }
-        }
-    }
-    
-    if (R_SUCCEEDED(rc)) {
-        out_storage.SetValue(std::move(storage));
-        if (out_storage.IsDomain()) {
-            out_storage.ChangeObjectId(out_domain_id);
         }
     }
     
@@ -123,13 +125,6 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
         }
         if (out_storage.IsDomain()) {
             out_domain_id = data_storage.s.object_id;
-        }
-    }
-    
-    if (R_SUCCEEDED(rc)) {
-        out_storage.SetValue(std::move(storage));
-        if (out_storage.IsDomain()) {
-            out_storage.ChangeObjectId(out_domain_id);
         }
     }
     
