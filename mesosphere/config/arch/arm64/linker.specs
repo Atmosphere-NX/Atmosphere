@@ -1,0 +1,4 @@
+%rename link                old_link
+
+*link:
+%(old_link) -T %:getenv(ARCH_MAKE_DIR /linker.ld) -pie --gc-sections -z text -z nodynamic-undefined-weak --build-id=sha1
