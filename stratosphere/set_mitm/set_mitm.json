@@ -14,22 +14,29 @@
 	"filesystem_access":	{
 		"permissions":	"0xFFFFFFFFFFFFFFFF"
 	},
-	"service_access":	{
-		"fatal:u":	false,
-		"fsp-srv":	false,
-		"spl:":	false,
-		"set:sys":	false,
-		"set:sys":	true
-	},
-	"kernel_capabilities":	{
-		"kernel_flags":	{
-			"highest_thread_priority":	63,
-			"lowest_thread_priority":	24,
-			"lowest_cpu_id":	3,
-			"highest_cpu_id":	3
-		},
-		"syscalls":	{
-			
+    "service_host": [
+        "set:sys"
+    ],
+    "service_access": [
+        "fatal:u",
+        "fsp-srv",
+        "spl:",
+        "set:sys",
+        "fsp-srv"
+    ],
+	"kernel_capabilities": [
+        {
+            "type": "kernel_flags",
+            "value": {
+                "highest_thread_priority": 63,
+                "lowest_thread_priority": 24,
+                "lowest_cpu_id": 3,
+                "highest_cpu_id": 3
+            }
+        },
+		{
+            "type": "syscalls",
+            "value": {
 			"svcSetHeapSize":	"0x01",
 			"svcSetMemoryPermission":	"0x02",
 			"svcSetMemoryAttribute":	"0x03",
@@ -88,11 +95,11 @@
 			"svcMapDeviceAddressSpaceAligned":	"0x5a",
 			"svcUnmapDeviceAddressSpace":	"0x5c",
 			"svcGetSystemInfo":	"0x6f"
-		},
-		"min_kernel_version":	"0x0060",
-		"debug_flags":	{
-			"allow_debug":	false,
-			"force_debug":	true
-		}
-	}
+            }
+        },
+        {
+            "type": "min_kernel_version",
+            "value": "0x0060"
+        }
+	]
 }
