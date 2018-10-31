@@ -56,6 +56,20 @@ void __libnx_initheap(void) {
     fake_heap_end   = (char*)addr + size;
 }
 
+void RegisterPrivilegedProcessesWithFs() {
+    /* Ensures that all privileged processes are registered with full FS permissions. */
+    constexpr u64 PRIVILEGED_PROCESS_MIN = 0;
+    constexpr u64 PRIVILEGED_PROCESS_MAX = 0x4F;
+    
+    const u32 PRIVILEGED_FAH[0x1C/sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x0000001C, 0x00000000, 0x0000001C, 0x00000000};
+    const u32 PRIVILEGED_FAC[0x2C/sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF};
+    
+    for (u64 pid = PRIVILEGED_PROCESS_MIN; pid <= PRIVILEGED_PROCESS_MAX; pid++) {
+        fsprUnregisterProgram(pid);
+        fsprRegisterProgram(pid, pid, FsStorageId_NandSystem,  PRIVILEGED_FAH, sizeof(PRIVILEGED_FAH), PRIVILEGED_FAC, sizeof(PRIVILEGED_FAC));
+    }
+}
+
 void __appInit(void) {
     Result rc;
 
@@ -64,27 +78,33 @@ void __appInit(void) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
     }
     
-    rc = fsInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
-    }
-        
-    rc = lrInitialize();
+    rc = fsprInitialize();
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 1);
     }
     
-    rc = fsprInitialize();
-    if (R_FAILED(rc))  {
+    /* This works around a bug with process permissions on < 4.0.0. */
+    RegisterPrivilegedProcessesWithFs();
+    
+    rc = smManagerAmsInitialize();
+    if (R_SUCCEEDED(rc)) {
+        smManagerAmsEndInitialDefers();
+        smManagerAmsExit();
+    } else {
         fatalSimple(0xCAFE << 4 | 2);
     }
     
-    rc = ldrPmInitialize();
+    rc = smManagerInitialize();
+    if (R_FAILED(rc))  {
+        fatalSimple(0xCAFE << 4 | 3);
+    }
+        
+    rc = lrInitialize();
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 4);
     }
     
-    rc = smManagerInitialize();
+    rc = ldrPmInitialize();
     if (R_FAILED(rc))  {
         fatalSimple(0xCAFE << 4 | 5);
     }
@@ -94,12 +114,12 @@ void __appInit(void) {
         fatalSimple(0xCAFE << 4 | 6);
     }
     
-    /* Check for exosphere API compatibility. */
-    u64 exosphere_cfg;
-    if (R_FAILED(splGetConfig((SplConfigItem)65000, &exosphere_cfg))) {
-        fatalSimple(0xCAFE << 4 | 0xFF);
-        /* TODO: Does PM need to know about target firmware/master key revision? If so, extract from exosphere_cfg. */
+    rc = fsInitialize();
+    if (R_FAILED(rc)) {
+        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
     }
+    
+    CheckAtmosphereVersion();
 }
 
 void __appExit(void) {
@@ -129,16 +149,16 @@ int main(int argc, char **argv)
     }
     
     /* TODO: What's a good timeout value to use here? */
-    WaitableManager *server_manager = new WaitableManager(U64_MAX);
+    auto server_manager = new WaitableManager(1);
         
     /* TODO: Create services. */
-    server_manager->add_waitable(new ServiceServer<ShellService>("pm:shell", 3));
-    server_manager->add_waitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 2));
-    server_manager->add_waitable(new ServiceServer<BootModeService>("pm:bm", 5));
-    server_manager->add_waitable(new ServiceServer<InformationService>("pm:info", 1));
+    server_manager->AddWaitable(new ServiceServer<ShellService>("pm:shell", 3));
+    server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 2));
+    server_manager->AddWaitable(new ServiceServer<BootModeService>("pm:bm", 5));
+    server_manager->AddWaitable(new ServiceServer<InformationService>("pm:info", 1));
     
     /* Loop forever, servicing our services. */
-    server_manager->process();
+    server_manager->Process();
     
     /* Cleanup. */
     delete server_manager;

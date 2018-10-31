@@ -46,6 +46,9 @@ class Registration {
         };
         
         /* Utilities. */
+        static void EndInitDefers();
+        static bool ShouldInitDefer(u64 service);
+        
         static Registration::Process *GetProcessForPid(u64 pid);
         static Registration::Process *GetFreeProcess();
         static Registration::Service *GetService(u64 service);

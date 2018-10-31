@@ -31,6 +31,12 @@ static bool g_nso_present[NSO_NUM_MAX] = {0};
 
 static char g_nso_path[FS_MAX_PATH] = {0};
 
+FILE *NsoUtils::OpenNsoFromECS(unsigned int index, ContentManagement::ExternalContentSource *ecs) {
+    std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
+    snprintf(g_nso_path, FS_MAX_PATH, "%s:/%s", ecs->mountpoint, NsoUtils::GetNsoFileName(index));
+    return fopen(g_nso_path, "rb");
+}
+
 FILE *NsoUtils::OpenNsoFromHBL(unsigned int index) {
     std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
     snprintf(g_nso_path, FS_MAX_PATH, "hbl:/%s", NsoUtils::GetNsoFileName(index));
@@ -61,7 +67,12 @@ bool NsoUtils::CheckNsoStubbed(unsigned int index, u64 title_id) {
 }
 
 FILE *NsoUtils::OpenNso(unsigned int index, u64 title_id) {
-    if (ContentManagement::ShouldOverrideContents()) {
+    ContentManagement::ExternalContentSource *ecs = nullptr;
+    if ((ecs = ContentManagement::GetExternalContentSource(title_id)) != nullptr) {
+        return OpenNsoFromECS(index, ecs);
+    }
+
+    if (ContentManagement::ShouldOverrideContents(title_id)) {
         if (ContentManagement::ShouldReplaceWithHBL(title_id)) {
             return OpenNsoFromHBL(index);
         }

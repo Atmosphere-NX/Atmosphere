@@ -19,11 +19,12 @@
 #include <strings.h>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 #include "ldr_registration.hpp"
 #include "ldr_content_management.hpp"
 #include "ldr_hid.hpp"
-
+#include "ldr_npdm.hpp"
 
 #include "ini.h"
 
@@ -40,6 +41,12 @@ static u64 g_override_key_combination = KEY_R;
 static bool g_override_by_default = true;
 static u64 g_override_hbl_tid = 0x010000000000100D;
 
+/* Static buffer for loader.ini contents at runtime. */
+static char g_config_ini_data[0x800];
+
+/* SetExternalContentSource extension */
+static std::map<u64, ContentManagement::ExternalContentSource> g_external_content_sources;
+
 Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     char path[FS_MAX_PATH] = {0};
     Result rc;
@@ -49,7 +56,11 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
         TryMountSdCard();
     }
     
-    if (ShouldOverrideContents() && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
+    if (g_has_initialized_fs_dev) {
+        RefreshConfigurationData();
+    }
+    
+    if (ShouldOverrideContents(tid) && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
         return 0x0;
     }
         
@@ -92,7 +103,7 @@ Result ContentManagement::UnmountCode() {
 
 
 void ContentManagement::TryMountHblNspOnSd() {
-    char path[FS_MAX_PATH+1] = {0};
+    char path[FS_MAX_PATH + 1] = {0};
     strncpy(path, g_hbl_sd_path, FS_MAX_PATH);
     for (unsigned int i = 0; i < FS_MAX_PATH && path[i] != '\x00'; i++) {
         if (path[i] == '\\') {
@@ -259,24 +270,17 @@ static int LoaderIniHandler(void *user, const char *section, const char *name, c
     return 1;
 }
 
-void ContentManagement::LoadConfiguration(FILE *config) {
+void ContentManagement::RefreshConfigurationData() {    
+    FILE *config = fopen("sdmc:/atmosphere/loader.ini", "r");
     if (config == NULL) {
         return;
     }
     
-    char *config_str = new char[0x800];
-    if (config_str != NULL) {
-        /* Read in string. */
-        std::fill(config_str, config_str + FS_MAX_PATH, 0);
-        fread(config_str, 1, 0x7FF, config);
-        config_str[strlen(config_str)] = 0x0;
-        
-        ini_parse_string(config_str, LoaderIniHandler, NULL);
-        
-        delete[] config_str;
-    }
-    
+    std::fill(g_config_ini_data, g_config_ini_data + 0x800, 0);
+    fread(g_config_ini_data, 1, 0x7FF, config);
     fclose(config);
+    
+    ini_parse_string(g_config_ini_data, LoaderIniHandler, NULL);
 }
 
 void ContentManagement::TryMountSdCard() {
@@ -293,7 +297,6 @@ void ContentManagement::TryMountSdCard() {
         }
         
         if (R_SUCCEEDED(fsdevMountSdmc())) {
-            ContentManagement::LoadConfiguration(fopen("sdmc:/atmosphere/loader.ini", "r"));
             g_has_initialized_fs_dev = true;
         }
     }
@@ -303,7 +306,7 @@ bool ContentManagement::ShouldReplaceWithHBL(u64 tid) {
     return g_mounted_hbl_nsp && tid == g_override_hbl_tid;
 }
 
-bool ContentManagement::ShouldOverrideContents() {
+bool ContentManagement::ShouldOverrideContents(u64 tid) {
     if (HasCreatedTitle(0x0100000000001000)) {
         u64 kDown = 0;
         bool keys_triggered = (R_SUCCEEDED(HidManagement::GetKeysDown(&kDown)) && ((kDown & g_override_key_combination) != 0));
@@ -312,4 +315,55 @@ bool ContentManagement::ShouldOverrideContents() {
         /* Always redirect before qlaunch. */
         return g_has_initialized_fs_dev;
     }
+}
+
+/* SetExternalContentSource extension */
+ContentManagement::ExternalContentSource *ContentManagement::GetExternalContentSource(u64 tid) {
+    auto i = g_external_content_sources.find(tid);
+    if (i == g_external_content_sources.end()) {
+        return nullptr;
+    } else {
+        return &i->second;
+    }
+}
+
+Result ContentManagement::SetExternalContentSource(u64 tid, FsFileSystem filesystem) {
+    if (g_external_content_sources.size() >= 16) {
+        return 0x409; /* LAUNCH_QUEUE_FULL */
+    }
+
+    /* Remove any existing ECS for this title. */
+    ClearExternalContentSource(tid);
+
+    char mountpoint[32];
+    ExternalContentSource::GenerateMountpointName(tid, mountpoint, sizeof(mountpoint));
+    if (fsdevMountDevice(mountpoint, filesystem) == -1) {
+        return 0x7802; /* specified mount name already exists */
+    }
+    g_external_content_sources.emplace(
+        std::piecewise_construct,
+        std::make_tuple(tid),
+        std::make_tuple(tid, mountpoint));
+
+    return 0;
+}
+
+void ContentManagement::ClearExternalContentSource(u64 tid) {
+    auto i = g_external_content_sources.find(tid);
+    if (i != g_external_content_sources.end()) {
+        g_external_content_sources.erase(i);
+    }
+}
+
+void ContentManagement::ExternalContentSource::GenerateMountpointName(u64 tid, char *out, size_t max_length) {
+    snprintf(out, max_length, "ecs-%016lx", tid);
+}
+
+ContentManagement::ExternalContentSource::ExternalContentSource(u64 tid, const char *mountpoint) : tid(tid) {
+    strncpy(this->mountpoint, mountpoint, sizeof(this->mountpoint));
+    NpdmUtils::InvalidateCache(tid);
+}
+
+ContentManagement::ExternalContentSource::~ExternalContentSource() {
+    fsdevUnmountDevice(mountpoint);
 }

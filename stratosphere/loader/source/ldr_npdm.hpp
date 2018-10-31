@@ -19,6 +19,7 @@
 #include <cstdio>
 
 #include "ldr_registration.hpp"
+#include "ldr_content_management.hpp" /* for ExternalContentSource */
 
 #define MAGIC_META 0x4154454D
 #define MAGIC_ACI0 0x30494341
@@ -96,17 +97,20 @@ class NpdmUtils {
         static_assert(sizeof(NpdmAci0) == 0x40, "Incorrectly defined NpdmAci0!");
         
         static u32 GetApplicationType(u32 *caps, size_t num_caps);
+        static u32 GetApplicationTypeRaw(u32 *caps, size_t num_caps);
         
         static Result ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size_t num_restrict_caps, u32 *&cur_cap, size_t &caps_remaining);
         static Result ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32 *aci0_caps, size_t num_aci0_caps);
         
-        
+        static FILE *OpenNpdmFromECS(ContentManagement::ExternalContentSource *ecs);
         static FILE *OpenNpdmFromHBL();
         static FILE *OpenNpdmFromExeFS();
         static FILE *OpenNpdmFromSdCard(u64 tid);
         static FILE *OpenNpdm(u64 tid);
         static Result LoadNpdm(u64 tid, NpdmInfo *out);
         static Result LoadNpdmFromCache(u64 tid, NpdmInfo *out);
+
+        static void InvalidateCache(u64 tid);
     private:
         static Result LoadNpdmInternal(FILE *f_npdm, NpdmCache *cache);
 };

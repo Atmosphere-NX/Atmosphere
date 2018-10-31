@@ -23,6 +23,7 @@
 #include "kernel_patches.h"
 #include "kip.h"
 #include "se.h"
+#include "fs_utils.h"
 
 #define u8 uint8_t
 #define u32 uint32_t
@@ -47,6 +48,7 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     size_t rebuilt_package2_size;
     void *kernel;
     size_t kernel_size;
+    bool is_sd_kernel = false;
     void *thermosphere;
     size_t thermosphere_size;
     ini1_header_t *orig_ini1, *rebuilt_ini1;
@@ -63,9 +65,28 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     if (thermosphere_size != 0 && package2->metadata.section_sizes[PACKAGE2_SECTION_UNUSED] != 0) {
         fatal_error(u8"Error: Package2 has no unused section for Thermosphère!\n");
     }
+    
+    /* Load Kernel from SD, if possible. */
+    {
+        size_t sd_kernel_size = get_file_size("atmosphere/kernel.bin");
+        if (sd_kernel_size != 0) {
+            if (sd_kernel_size > PACKAGE2_SIZE_MAX) {
+                fatal_error("Error: atmosphere/kernel.bin is too large!\n");
+            }
+            kernel = malloc(sd_kernel_size);
+            if (kernel == NULL) {
+                fatal_error("Error: failed to allocate kernel!\n");
+            }
+            if (read_from_file(kernel, sd_kernel_size, "atmosphere/kernel.bin") != sd_kernel_size) {
+                fatal_error("Error: failed to read atmosphere/kernel.bin!\n");
+            }
+            kernel_size = sd_kernel_size;
+            is_sd_kernel = true;
+        }
+    }
 
     /* Perform any patches we want to the NX kernel. */
-    package2_patch_kernel(kernel, kernel_size);
+    package2_patch_kernel(kernel, kernel_size, is_sd_kernel);
 
     print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilding the INI1 section...\n");
     package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);
@@ -283,6 +304,7 @@ static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target
     ini1_header_t *inis_to_merge[STRATOSPHERE_INI1_MAX] = {0};
     ini1_header_t *merged;
 
+    inis_to_merge[STRATOSPHERE_INI1_SDFILES]  = stratosphere_get_sd_files_ini1();
     inis_to_merge[STRATOSPHERE_INI1_EMBEDDED] = stratosphere_get_ini1(target_firmware);
     inis_to_merge[STRATOSPHERE_INI1_PACKAGE2] = ini1;
 

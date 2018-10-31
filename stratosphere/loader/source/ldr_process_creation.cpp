@@ -215,6 +215,8 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     
     rc = 0;  
 CREATE_PROCESS_END:
+    /* ECS is a one-shot operation. */
+    ContentManagement::ClearExternalContentSource(target_process->tid_sid.title_id);
     if (mounted_code) {
         if (R_SUCCEEDED(rc) && target_process->tid_sid.storage_id != FsStorageId_None) {
             rc = ContentManagement::UnmountCode();

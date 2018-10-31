@@ -15,6 +15,7 @@
  */
  
 #include <stdint.h>
+#include <atmosphere/version.h>
 
 #include "bootconfig.h"
 #include "configitem.h"
@@ -25,7 +26,6 @@
 #include "utils.h"
 #include "masterkey.h"
 #include "exocfg.h"
-#include "version.h"
 
 static bool g_battery_profile = false;
 
@@ -151,7 +151,11 @@ uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
             break;
         case CONFIGITEM_EXOSPHERE_VERSION:
             /* UNOFFICIAL: Gets information about the current exosphere version. */
-            *p_outvalue = (EXOSPHERE_RELEASE_VERSION_MAJOR << 24) | (EXOSPHERE_RELEASE_VERSION_MINOR << 16) | (exosphere_get_target_firmware() << 8) | (mkey_get_revision() << 0);
+            *p_outvalue = ((uint64_t)(ATMOSPHERE_RELEASE_VERSION_MAJOR & 0xFF) << 32ull) | 
+                          ((uint64_t)(ATMOSPHERE_RELEASE_VERSION_MINOR & 0xFF) << 24ull) |
+                          ((uint64_t)(ATMOSPHERE_RELEASE_VERSION_MICRO & 0xFF) << 16ull) |
+                          ((uint64_t)(exosphere_get_target_firmware() & 0xFF) << 8ull) |
+                          ((uint64_t)(mkey_get_revision() & 0xFF) << 0ull);
             break;
         default:
             result = 2;

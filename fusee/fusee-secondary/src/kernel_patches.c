@@ -18,6 +18,7 @@
 #include "utils.h"
 #include "se.h"
 #include "kernel_patches.h"
+#include "ips.h"
 
 #define MAKE_BRANCH(a, o) 0x14000000 | ((((o) - (a)) >> 2) & 0x3FFFFFF)
 
@@ -510,9 +511,13 @@ const kernel_info_t *get_kernel_info(void *kernel, size_t size) {
     return NULL;
 }
 
-void package2_patch_kernel(void *_kernel, size_t size) {
+void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel) {
     const kernel_info_t *kernel_info = get_kernel_info(_kernel, size);
-    if (kernel_info == NULL) {
+    
+    /* Apply IPS patches. */
+    apply_kernel_ips_patches(_kernel, size);
+    
+    if (kernel_info == NULL && !is_sd_kernel) {
         /* Should this be fatal? */
         fatal_error("kernel_patcher: unable to identify kernel!\n");
     }

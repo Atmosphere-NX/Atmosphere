@@ -16,7 +16,7 @@
  
 #pragma once
 #include <switch.h>
-#include <stratosphere/iserviceobject.hpp>
+#include <stratosphere.hpp>
 
 #include "ldr_registration.hpp"
 #include "ldr_process_creation.hpp"
@@ -42,26 +42,21 @@ class ProcessManagerService final : public IServiceObject {
         u8 ac_buffer[0x3E0];
     };
     
-    static_assert(sizeof(ProcessManagerService::ProgramInfo) == 0x400, "Incorrect ProgramInfo definition.");
-    
-    public:
-        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) override;
-        Result handle_deferred() override {
-            /* This service will never defer. */
-            return 0;
-        }
-        
-        ProcessManagerService *clone() override {
-            return new ProcessManagerService();
-        }
-        
+    static_assert(sizeof(ProcessManagerService::ProgramInfo) == 0x400, "Incorrect ProgramInfo definition.");      
     private:
         /* Actual commands. */
-        std::tuple<Result, MovedHandle> create_process(u64 flags, u64 index, CopiedHandle reslimit_h);
-        std::tuple<Result> get_program_info(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info);
-        std::tuple<Result, u64> register_title(Registration::TidSid tid_sid);
-        std::tuple<Result> unregister_title(u64 index);
+        Result CreateProcess(Out<MovedHandle> proc_h, u64 index, u32 flags, CopiedHandle reslimit_h);
+        Result GetProgramInfo(OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info, Registration::TidSid tid_sid);
+        Result RegisterTitle(Out<u64> index, Registration::TidSid tid_sid);
+        Result UnregisterTitle(u64 index);
         
         /* Utilities */
-        Result populate_program_info_buffer(ProcessManagerService::ProgramInfo *out, Registration::TidSid *tid_sid);
+        Result PopulateProgramInfoBuffer(ProcessManagerService::ProgramInfo *out, Registration::TidSid *tid_sid);
+    public:
+        DEFINE_SERVICE_DISPATCH_TABLE {
+            MakeServiceCommandMeta<Pm_Cmd_CreateProcess, &ProcessManagerService::CreateProcess>(),
+            MakeServiceCommandMeta<Pm_Cmd_GetProgramInfo, &ProcessManagerService::GetProgramInfo>(),
+            MakeServiceCommandMeta<Pm_Cmd_RegisterTitle, &ProcessManagerService::RegisterTitle>(),
+            MakeServiceCommandMeta<Pm_Cmd_UnregisterTitle, &ProcessManagerService::UnregisterTitle>(),
+        };
 };

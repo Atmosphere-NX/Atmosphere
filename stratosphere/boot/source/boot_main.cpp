@@ -83,6 +83,8 @@ void __appInit(void) {
         fatalSimple(0xCAFE << 4 | 2);
     
     fsdevMountSdmc();
+    
+    CheckAtmosphereVersion();
 }
 
 void __appExit(void) {

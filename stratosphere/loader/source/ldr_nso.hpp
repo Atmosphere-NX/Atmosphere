@@ -18,6 +18,8 @@
 #include <switch.h>
 #include <cstdio>
 
+#include "ldr_content_management.hpp" /* for ExternalContentSource */
+
 #define MAGIC_NSO0 0x304F534E
 #define NSO_NUM_MAX 13
 
@@ -96,7 +98,8 @@ class NsoUtils {
                     return "?";
             }
         }
-        
+
+        static FILE *OpenNsoFromECS(unsigned int index, ContentManagement::ExternalContentSource *ecs);
         static FILE *OpenNsoFromHBL(unsigned int index);
         static FILE *OpenNsoFromExeFS(unsigned int index);
         static FILE *OpenNsoFromSdCard(unsigned int index, u64 title_id);

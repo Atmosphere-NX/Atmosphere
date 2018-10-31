@@ -304,7 +304,7 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
 
     /* Perform version checks. */
     /* We will be compatible with all package2s released before current, but not newer ones. */
-    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_500_CURRENT) {
+    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_600_CURRENT) {
         return true;
     }
 
@@ -331,7 +331,7 @@ static uint32_t decrypt_and_validate_header(package2_header_t *header) {
         }
 
         /* Ensure we successfully decrypted the header. */
-        if (mkey_rev > mkey_get_revision()) {
+        if (mkey_rev > mkey_get_revision()) {        
             panic(0xFAF00003);
         }
     } else if (!validate_package2_metadata(&header->metadata)) {
@@ -478,7 +478,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
         MAKE_REG32(PMC_BASE + 0x334) |= 0x10;
         switch (exosphere_get_target_firmware()) {
             case EXOSPHERE_TARGET_FIRMWARE_400:
-                MAKE_REG32(PMC_BASE + 0x360) = 5;
+                MAKE_REG32(PMC_BASE + 0x360) = 0x105;
                 break;
             case EXOSPHERE_TARGET_FIRMWARE_500:
                 MAKE_REG32(PMC_BASE + 0x360) = 6;

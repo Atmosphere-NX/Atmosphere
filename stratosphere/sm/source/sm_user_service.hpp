@@ -16,7 +16,8 @@
  
 #pragma once
 #include <switch.h>
-#include <stratosphere/iserviceobject.hpp>
+#include <stratosphere.hpp>
+#include "sm_types.hpp"
 
 enum UserServiceCmd {
     User_Cmd_Initialize = 0,
@@ -30,32 +31,31 @@ enum UserServiceCmd {
 };
 
 class UserService final : public IServiceObject {
-    u64 pid = U64_MAX;
-    bool has_initialized = false;
-    u64 deferred_service = 0;
-    
-    public:
-        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) override;
-        Result handle_deferred() override;
-        
-        UserService *clone() override {
-            auto new_srv = new UserService();
-            new_srv->pid = pid;
-            new_srv->has_initialized = has_initialized;
-            new_srv->deferred_service = deferred_service;
-            return new_srv;
-        }
-        
     private:
+        u64 pid = U64_MAX;
+        bool has_initialized = false;
+        
         /* Actual commands. */
-        std::tuple<Result> initialize(PidDescriptor pid);
-        std::tuple<Result, MovedHandle> get_service(u64 service);
-        std::tuple<Result, MovedHandle> deferred_get_service(u64 service);
-        std::tuple<Result, MovedHandle> register_service(u64 service, u8 is_light, u32 max_sessions);
-        std::tuple<Result> unregister_service(u64 service);
+        virtual Result Initialize(PidDescriptor pid);
+        virtual Result GetService(Out<MovedHandle> out_h, SmServiceName service);
+        virtual Result RegisterService(Out<MovedHandle> out_h, SmServiceName service, u32 max_sessions, bool is_light);
+        virtual Result UnregisterService(SmServiceName service);
         
         /* Atmosphere commands. */
-        std::tuple<Result, MovedHandle, MovedHandle> install_mitm(u64 service);
-        std::tuple<Result> uninstall_mitm(u64 service);
-        std::tuple<Result> associate_pid_tid_for_mitm(u64 pid, u64 tid);
+        virtual Result AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandle> qry_h, SmServiceName service);
+        virtual Result AtmosphereUninstallMitm(SmServiceName service);
+        virtual Result AtmosphereAssociatePidTidForMitm(u64 pid, u64 tid);
+    public:
+        DEFINE_SERVICE_DISPATCH_TABLE {
+            MakeServiceCommandMeta<User_Cmd_Initialize, &UserService::Initialize>(),
+            MakeServiceCommandMeta<User_Cmd_GetService, &UserService::GetService>(),
+            MakeServiceCommandMeta<User_Cmd_RegisterService, &UserService::RegisterService>(),
+            MakeServiceCommandMeta<User_Cmd_UnregisterService, &UserService::UnregisterService>(),
+            
+#ifdef SM_ENABLE_MITM
+            MakeServiceCommandMeta<User_Cmd_AtmosphereInstallMitm, &UserService::AtmosphereInstallMitm>(),
+            MakeServiceCommandMeta<User_Cmd_AtmosphereUninstallMitm, &UserService::AtmosphereUninstallMitm>(),
+            MakeServiceCommandMeta<User_Cmd_AtmosphereAssociatePidTidForMitm, &UserService::AtmosphereAssociatePidTidForMitm>(),
+#endif
+        };
 };

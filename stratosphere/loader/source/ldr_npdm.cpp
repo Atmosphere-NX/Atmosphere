@@ -33,6 +33,12 @@ Result NpdmUtils::LoadNpdmFromCache(u64 tid, NpdmInfo *out) {
     return 0;
 }
 
+FILE *NpdmUtils::OpenNpdmFromECS(ContentManagement::ExternalContentSource *ecs) {
+    std::fill(g_npdm_path, g_npdm_path + FS_MAX_PATH, 0);
+    snprintf(g_npdm_path, FS_MAX_PATH, "%s:/main.npdm", ecs->mountpoint);
+    return fopen(g_npdm_path, "rb");
+}
+
 FILE *NpdmUtils::OpenNpdmFromHBL() {
     std::fill(g_npdm_path, g_npdm_path + FS_MAX_PATH, 0);
     snprintf(g_npdm_path, FS_MAX_PATH, "hbl:/main.npdm");
@@ -53,7 +59,12 @@ FILE *NpdmUtils::OpenNpdmFromSdCard(u64 title_id) {
 
 
 FILE *NpdmUtils::OpenNpdm(u64 title_id) {
-    if (ContentManagement::ShouldOverrideContents()) {
+    ContentManagement::ExternalContentSource *ecs = nullptr;
+    if ((ecs = ContentManagement::GetExternalContentSource(title_id)) != nullptr) {
+        return OpenNpdmFromECS(ecs);
+    }
+
+    if (ContentManagement::ShouldOverrideContents(title_id)) {
         if (ContentManagement::ShouldReplaceWithHBL(title_id)) {
             return OpenNpdmFromHBL();
         }
@@ -182,7 +193,7 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
     info->acid->title_id_range_max = tid;
     info->aci0->title_id = tid;
     
-    if (ContentManagement::ShouldOverrideContents() && ContentManagement::ShouldReplaceWithHBL(tid) 
+    if (ContentManagement::ShouldOverrideContents(tid) && ContentManagement::ShouldReplaceWithHBL(tid) 
         && R_SUCCEEDED(LoadNpdmInternal(OpenNpdmFromExeFS(), &g_original_npdm_cache))) {
         NpdmInfo *original_info = &g_original_npdm_cache.info;
         /* Fix pool partition. */
@@ -190,7 +201,7 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
             info->acid->flags = (info->acid->flags & 0xFFFFFFC3) | (original_info->acid->flags & 0x0000003C);
         }
         /* Fix application type. */
-        const u32 original_application_type = GetApplicationType((u32 *)original_info->aci0_kac, original_info->aci0->kac_size/sizeof(u32)) & 7;
+        const u32 original_application_type = GetApplicationTypeRaw((u32 *)original_info->aci0_kac, original_info->aci0->kac_size/sizeof(u32)) & 7;
         u32 *caps = (u32 *)info->aci0_kac;
         for (unsigned int i = 0; i < info->aci0->kac_size/sizeof(u32); i++) {
             if ((caps[i] & 0x3FFF) == 0x1FFF) {
@@ -489,4 +500,21 @@ u32 NpdmUtils::GetApplicationType(u32 *caps, size_t num_caps) {
         }
     }
     return application_type;
+}
+
+/* Like GetApplicationType, except this returns the raw kac descriptor value. */
+u32 NpdmUtils::GetApplicationTypeRaw(u32 *caps, size_t num_caps) {
+    u32 application_type = 0;
+    for (unsigned int i = 0; i < num_caps; i++) {
+        if ((caps[i] & 0x3FFF) == 0x1FFF) {
+            return (caps[i] >> 14) & 7;
+        }
+    }
+    return application_type;
+}
+
+void NpdmUtils::InvalidateCache(u64 tid) {
+    if (g_npdm_cache.info.title_id == tid) {
+        g_npdm_cache.info = (const NpdmUtils::NpdmInfo){0};
+    }
 }

@@ -22,68 +22,45 @@
 #include "ldr_content_management.hpp"
 #include "ldr_npdm.hpp"
 
-Result ProcessManagerService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
-    Result rc = 0xF601;
-                
-    switch ((ProcessManagerServiceCmd)cmd_id) {
-        case Pm_Cmd_CreateProcess:
-            rc = WrapIpcCommandImpl<&ProcessManagerService::create_process>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-            break;
-        case Pm_Cmd_GetProgramInfo:
-            rc = WrapIpcCommandImpl<&ProcessManagerService::get_program_info>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-            break;
-        case Pm_Cmd_RegisterTitle:            
-            rc = WrapIpcCommandImpl<&ProcessManagerService::register_title>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-            break;
-        case Pm_Cmd_UnregisterTitle:
-            rc = WrapIpcCommandImpl<&ProcessManagerService::unregister_title>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-            break;
-        default:
-            break;
-    }
-    return rc;
-}
-
-std::tuple<Result, MovedHandle> ProcessManagerService::create_process(u64 flags, u64 index, CopiedHandle reslimit_h) {
+Result ProcessManagerService::CreateProcess(Out<MovedHandle> proc_h, u64 index, u32 flags, CopiedHandle reslimit_h) {
     Result rc;
     Registration::TidSid tid_sid;
     LaunchQueue::LaunchItem *launch_item;
     char nca_path[FS_MAX_PATH] = {0};
-    Handle process_h = 0;
     
-    fprintf(stderr, "CreateProcess(%016lx, %016lx, %08x);\n", flags, index, reslimit_h.handle);
+    fprintf(stderr, "CreateProcess(%016lx, %08x, %08x);\n", index, flags, reslimit_h.handle);
     
     rc = Registration::GetRegisteredTidSid(index, &tid_sid);
     if (R_FAILED(rc)) {
-        return {rc, MovedHandle{process_h}};
+        return rc;
     }
     
     if (tid_sid.storage_id != FsStorageId_None) {
         rc = ContentManagement::ResolveContentPathForTidSid(nca_path, &tid_sid);
         if (R_FAILED(rc)) {
-            return {rc, MovedHandle{process_h}};
+            return rc;
         }
     }
 
     
-    launch_item = LaunchQueue::get_item(tid_sid.title_id);
+    launch_item = LaunchQueue::GetItem(tid_sid.title_id);
     
-    rc = ProcessCreation::CreateProcess(&process_h, index, nca_path, launch_item, flags, reslimit_h.handle);
+    rc = ProcessCreation::CreateProcess(proc_h.GetHandlePointer(), index, nca_path, launch_item, flags, reslimit_h.handle);
     
     if (R_SUCCEEDED(rc)) {
         ContentManagement::SetCreatedTitle(tid_sid.title_id);
     }
     
-    return {rc, MovedHandle{process_h}};
+    return rc;
 }
 
-std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid tid_sid, OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info) {
+Result ProcessManagerService::GetProgramInfo(OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info, Registration::TidSid tid_sid) {
     Result rc;
     char nca_path[FS_MAX_PATH] = {0};
     /* Zero output. */
     std::fill(out_program_info.pointer, out_program_info.pointer + out_program_info.num_elements, (const ProcessManagerService::ProgramInfo){0});
     
-    rc = populate_program_info_buffer(out_program_info.pointer, &tid_sid);
+    rc = PopulateProgramInfoBuffer(out_program_info.pointer, &tid_sid);
     
     if (R_FAILED(rc)) {
         return {rc};
@@ -100,31 +77,22 @@ std::tuple<Result> ProcessManagerService::get_program_info(Registration::TidSid 
             return {rc};
         }
         
-        rc = LaunchQueue::add_copy(tid_sid.title_id, out_program_info.pointer->title_id);
+        rc = LaunchQueue::AddCopy(tid_sid.title_id, out_program_info.pointer->title_id);
     }
         
     return {rc};
 }
 
-std::tuple<Result, u64> ProcessManagerService::register_title(Registration::TidSid tid_sid) {
-    u64 out_index = 0;
-    if (Registration::RegisterTidSid(&tid_sid, &out_index)) {
-        return {0, out_index};
-    } else {
-        return {0xE09, out_index};
-    }
+Result ProcessManagerService::RegisterTitle(Out<u64> index, Registration::TidSid tid_sid) {
+    return Registration::RegisterTidSid(&tid_sid, index.GetPointer()) ? 0 : 0xE09;
 }
 
-std::tuple<Result> ProcessManagerService::unregister_title(u64 index) {
-    if (Registration::UnregisterIndex(index)) {
-        return {0};
-    } else {
-        return {0x1009};
-    }
+Result ProcessManagerService::UnregisterTitle(u64 index) {
+    return Registration::UnregisterIndex(index) ? 0 : 0x1009;
 }
 
 
-Result ProcessManagerService::populate_program_info_buffer(ProcessManagerService::ProgramInfo *out, Registration::TidSid *tid_sid) {
+Result ProcessManagerService::PopulateProgramInfoBuffer(ProcessManagerService::ProgramInfo *out, Registration::TidSid *tid_sid) {
     NpdmUtils::NpdmInfo info;
     Result rc;
     bool mounted_code = false;

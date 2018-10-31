@@ -21,12 +21,11 @@
 
 void ProcessTracking::MainLoop(void *arg) {
     /* Make a new waitable manager. */
-    MultiThreadedWaitableManager *process_waiter = new MultiThreadedWaitableManager(1, U64_MAX);
-    process_waiter->add_waitable(Registration::GetProcessLaunchStartEvent());
-    Registration::SetProcessListManager(process_waiter);
+    auto process_waiter = new WaitableManager(1);
+    process_waiter->AddWaitable(Registration::GetProcessLaunchStartEvent());
     
     /* Service processes. */
-    process_waiter->process();
+    process_waiter->Process();
     
     delete process_waiter;
     svcExitThread();
