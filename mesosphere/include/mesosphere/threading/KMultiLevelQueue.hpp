@@ -156,8 +156,6 @@ public:
 
     using iterator = iterator_impl<false>;
     using const_iterator = iterator_impl<true>;
-    using reverse_iterator = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     void add(reference r) {
         uint prio = prioGetter(r);
@@ -307,24 +305,9 @@ public:
         return minPrio == depth - 1 ? iterator{*this, depth} : begin(minPrio + 1);
     }
 
-    const_reverse_iterator crbegin(uint maxPrio = 0) const {
-        return const_reverse_iterator(cbegin(maxPrio));
-    }
-    const_reverse_iterator rbegin(uint maxPrio = 0) const {
-        return crbegin(maxPrio);
-    }
-    reverse_iterator rbegin(uint maxPrio = 0) {
-        return reverse_iterator(begin(maxPrio));
-    }
-
-    const_reverse_iterator crend(uint minPrio = KMultiLevelQueue::depth - 1) const {
-        return const_reverse_iterator(cend(minPrio));
-    }
-    const_reverse_iterator rend(uint minPrio = KMultiLevelQueue::depth - 1) const {
-        return crend(minPrio);
-    }
-    reverse_iterator rend(uint minPrio = KMultiLevelQueue::depth - 1) {
-        return reverse_iterator(end(minPrio));
+    void swap(KMultiLevelQueue &other)
+    {
+        std::swap(*this, other);
     }
 
     KMultiLevelQueue(PrioGetterType prioGetter) : prioGetter(prioGetter), usedPriorities(0), levels() {};
