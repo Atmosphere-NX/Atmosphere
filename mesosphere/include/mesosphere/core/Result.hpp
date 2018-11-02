@@ -5,7 +5,8 @@
 namespace mesosphere
 {
 
-struct Result {
+class Result {
+    public:
     enum class Module : uint {
         None    = 0,
         Kernel  = 1,
@@ -44,7 +45,7 @@ struct Result {
         AlreadyExists               = 122,
         ConnectionClosed            = 123,
         UnhandledUserInterrupt      = 124,
-        NotPermitted                = 125,
+        InvalidState                = 125,
         ReservedValue               = 126,
         InvalidHwBreakpoint         = 127,
         FatalUserException          = 128,
@@ -58,15 +59,21 @@ struct Result {
         NotDebugged                 = 520,
     };
 
-    Module module           : 9;
-    Description description : 23;
+    Result() : module{(uint)Module::None}, description{(uint)Description::None} {}
+    Result(Description description, Module module = Module::Kernel) : module{(uint)module}, description{(uint)description} {}
 
-    Result() : module{Module::None}, description{Description::None} {}
-    Result(Description description, Module module = Module::Kernel) : description{description}, module{module} {}
-
-    constexpr bool IsSuccess() const { return module == Module::None && description == Description::None; }
+    constexpr bool IsSuccess() const { return module == (uint)Module::None && description == (uint)Description::None; }
     constexpr bool operator==(const Result &other) const { return module == other.module && description == other.description; }
     constexpr bool operator!=(const Result &other) const { return !(*this == other); }
+
+    constexpr Module GetModule() const { return (Module)module; }
+    constexpr Description GetDescription() const { return (Description)module; }
+
+    void SetModule(Module module) { this->module = (uint)module; }
+    void SetDescription(Description description) { this->description = (uint)description;}
+    private:
+    uint      module      : 9;
+    uint      description : 13;
 };
 
 }

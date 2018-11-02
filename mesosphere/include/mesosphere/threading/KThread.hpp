@@ -3,6 +3,7 @@
 #include <atomic>
 #include <boost/intrusive/list.hpp>
 #include <mesosphere/core/util.hpp>
+#include <mesosphere/core/Result.hpp>
 #include <mesosphere/processes/KProcess.hpp>
 #include <mesosphere/interfaces/IAlarmable.hpp>
 #include <mesosphere/interfaces/ILimitedResource.hpp>
@@ -243,7 +244,7 @@ private:
     size_t numKernelMutexWaiters = 0;
 
     Handle syncResultHandle{};
-    Result syncResult = 0;
+    Result syncResult{};
 
     u64 lastScheduledTime = 0;
 };
