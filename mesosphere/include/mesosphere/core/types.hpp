@@ -39,8 +39,6 @@ using vs16 = volatile int16_t;
 using vs32 = volatile int32_t;
 using vs64 = volatile int64_t;
 
-using Result = uint;
-
 template <typename T>
 using SharedPtr = boost::intrusive_ptr<T>;
 
