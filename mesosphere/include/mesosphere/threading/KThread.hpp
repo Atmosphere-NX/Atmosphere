@@ -3,6 +3,7 @@
 #include <atomic>
 #include <boost/intrusive/list.hpp>
 #include <mesosphere/core/util.hpp>
+#include <mesosphere/core/Handle.hpp>
 #include <mesosphere/core/Result.hpp>
 #include <mesosphere/processes/KProcess.hpp>
 #include <mesosphere/interfaces/IAlarmable.hpp>

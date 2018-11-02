@@ -5,7 +5,7 @@
 namespace mesosphere
 {
 
-class Result {
+class Result final {
     public:
     enum class Module : uint {
         None    = 0,
@@ -59,8 +59,8 @@ class Result {
         NotDebugged                 = 520,
     };
 
-    Result() : module{(uint)Module::None}, description{(uint)Description::None} {}
-    Result(Description description, Module module = Module::Kernel) : module{(uint)module}, description{(uint)description} {}
+    constexpr Result() : module{(uint)Module::None}, description{(uint)Description::None} {}
+    constexpr Result(Description description, Module module = Module::Kernel) : module{(uint)module}, description{(uint)description} {}
 
     constexpr bool IsSuccess() const { return module == (uint)Module::None && description == (uint)Description::None; }
     constexpr bool operator==(const Result &other) const { return module == other.module && description == other.description; }

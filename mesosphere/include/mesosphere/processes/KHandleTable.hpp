@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mesosphere/core/util.hpp>
+#include <mesosphere/core/Handle.hpp>
 #include <mesosphere/kresources/KAutoObject.hpp>
 #include <mesosphere/arch/KSpinLock.hpp>
 #include <array>

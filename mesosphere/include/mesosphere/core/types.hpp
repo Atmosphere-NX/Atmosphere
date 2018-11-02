@@ -42,19 +42,4 @@ using vs64 = volatile int64_t;
 template <typename T>
 using SharedPtr = boost::intrusive_ptr<T>;
 
-struct Handle {
-    u16 index       : 15;
-    s16 id          : 16;
-    bool isAlias    : 1;
-
-    constexpr bool IsAliasOrFree() const { return isAlias || id < 0; }
-
-    constexpr bool operator==(const Handle &other) const
-    {
-        return index == other.index && id == other.id && isAlias == other.isAlias;
-    }
-
-    constexpr bool operator!=(const Handle &other) const { return !(*this == other); }
-};
-
 }
