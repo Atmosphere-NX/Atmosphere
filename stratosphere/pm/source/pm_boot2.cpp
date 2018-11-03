@@ -157,8 +157,9 @@ void EmbeddedBoot2::Main() {
     
     /* Launch usb. */
     LaunchTitle(Boot2KnownTitleId::usb, FsStorageId_NandSystem, 0, NULL);
-    /* Launch tma. */
-    LaunchTitle(Boot2KnownTitleId::tma, FsStorageId_NandSystem, 0, NULL);
+   
+    /* Don't launch tma, because atmosphere replaces it with a KIP. */
+    /* LaunchTitle(Boot2KnownTitleId::tma, FsStorageId_NandSystem, 0, NULL); */
     
     /* Launch default programs. */
     bool maintenance = ShouldForceMaintenanceMode();
