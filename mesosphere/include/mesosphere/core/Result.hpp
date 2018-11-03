@@ -59,11 +59,18 @@ class Result final {
         NotDebugged                 = 520,
     };
 
-    constexpr Result() : module{(uint)Module::None}, description{(uint)Description::None} {}
-    constexpr Result(Description description, Module module = Module::Kernel) : module{(uint)module}, description{(uint)description} {}
+    constexpr Result() : module{(uint)Module::None}, description{(uint)Description::None}, padding{0} {}
+    constexpr Result(Description description, Module module = Module::Kernel) :
+    module{(uint)module}, description{(uint)description}, padding{0} {}
 
-    constexpr bool IsSuccess() const { return module == (uint)Module::None && description == (uint)Description::None; }
-    constexpr bool operator==(const Result &other) const { return module == other.module && description == other.description; }
+    constexpr bool IsSuccess() const
+    {
+        return module == (uint)Module::None && description == (uint)Description::None && padding == 0;
+    }
+    constexpr bool operator==(const Result &other) const
+    {
+        return module == other.module && description == other.description && padding == other.padding;
+    }
     constexpr bool operator!=(const Result &other) const { return !(*this == other); }
 
     constexpr Module GetModule() const { return (Module)module; }
@@ -74,6 +81,7 @@ class Result final {
     private:
     uint      module      : 9;
     uint      description : 13;
+    uint      padding     : 10;
 };
 
 }
