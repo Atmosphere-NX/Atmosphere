@@ -245,7 +245,7 @@ private:
     size_t numKernelMutexWaiters = 0;
 
     Handle syncResultHandle{};
-    Result syncResult{};
+    Result syncResult = ResultSuccess();
 
     u64 lastScheduledTime = 0;
 };
