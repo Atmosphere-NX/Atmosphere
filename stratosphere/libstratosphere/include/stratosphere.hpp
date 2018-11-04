@@ -20,6 +20,7 @@
 #include "stratosphere/scope_guard.hpp"
 
 #include "stratosphere/hossynch.hpp"
+#include "stratosphere/message_queue.hpp"
 #include "stratosphere/iwaitable.hpp"
 #include "stratosphere/event.hpp"
 

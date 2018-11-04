@@ -16,6 +16,7 @@
  
 #pragma once
 #include <switch.h>
+#include <switch/arm/counter.h>
 #include <mutex>
 
 class HosMutex {
@@ -100,15 +101,15 @@ class HosCondVar {
             condvarInit(&cv);
         }
         
-        Result WaitTimeout(u64 timeout, HosMutex *hm) {
-            return WaitTimeout(timeout, hm->GetMutex());
+        Result TimedWait(u64 timeout, HosMutex *hm) {
+            return TimedWait(timeout, hm->GetMutex());
         }
         
         Result Wait(HosMutex *hm) {
             return Wait(hm->GetMutex());
         }
         
-        Result WaitTimeout(u64 timeout, Mutex *m) {
+        Result TimedWait(u64 timeout, Mutex *m) {
             return condvarWaitTimeout(&cv, m, timeout);
         }
         
@@ -151,5 +152,37 @@ class HosSemaphore {
         
         bool TryWait() {
             return semaphoreTryWait(&s);
+        }
+};
+
+class TimeoutHelper {
+    private:
+        u64 end_tick;
+    public:
+        TimeoutHelper(u64 ns) {
+            /* Special case zero-time timeouts. */
+            if (ns == 0) {
+                end_tick = 0;
+                return;
+            }
+            
+            u64 cur_tick = armGetSystemTick();
+            this->end_tick = cur_tick + NsToTick(ns) + 1;
+        }
+        
+        static inline u64 NsToTick(u64 ns) {
+            return (ns * 12) / 625;
+        }
+        
+        static inline u64 TickToNs(u64 tick) {
+            return (tick * 625) / 12;
+        }
+        
+        bool TimedOut() {
+            if (this->end_tick == 0) {
+                return true;
+            }
+            
+            return armGetSystemTick() >= this->end_tick;
         }
 };
