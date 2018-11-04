@@ -6,7 +6,7 @@
 #include <initializer_list>
 #include <functional>
 #include <type_traits>
-#include <mesosphere/core/util.h>
+#include <mesosphere/core/util.hpp>
 #include <mesosphere/interfaces/ISlabAllocated.hpp>
 
 namespace mesosphere

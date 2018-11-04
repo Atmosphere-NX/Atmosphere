@@ -5,6 +5,7 @@
 #include <mesosphere/core/util.hpp>
 #include <mesosphere/core/Handle.hpp>
 #include <mesosphere/core/Result.hpp>
+#include <mesosphere/core/KSynchronizationObject.hpp>
 #include <mesosphere/processes/KProcess.hpp>
 #include <mesosphere/interfaces/IAlarmable.hpp>
 #include <mesosphere/interfaces/ILimitedResource.hpp>
@@ -206,6 +207,9 @@ class KThread final :
     /// Takes effect immediately
     void CancelKernelSync(Result res);
 
+    /// Takes effect when critical section is left
+    void HandleSyncObjectSignaled(KSynchronizationObject *syncObj);
+
     constexpr size_t GetNumberOfKMutexWaiters() const { return numKernelMutexWaiters; }
     constexpr uiptr GetWantedMutex() const { return wantedMutex; }
     void SetWantedMutex(uiptr mtx)  { wantedMutex = mtx; }
@@ -244,8 +248,8 @@ private:
     MutexWaitList mutexWaitList{};
     size_t numKernelMutexWaiters = 0;
 
-    Handle syncResultHandle{};
-    Result syncResult = ResultSuccess();
+    KSynchronizationObject *signaledSyncObject = nullptr;
+    Result syncResult = ResultSuccess{};
 
     u64 lastScheduledTime = 0;
 };

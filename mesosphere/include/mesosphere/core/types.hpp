@@ -3,12 +3,15 @@
 #include <cstddef>
 #include <cstdint>
 #include <climits>
+#include <chrono>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #define MAX_CORES 4
 
 namespace mesosphere
 {
+
+using namespace std::chrono_literals;
 
 using ushort = unsigned short;
 using uint = unsigned int;

@@ -120,6 +120,15 @@ void KThread::CancelKernelSync(Result res)
     CancelKernelSync();
 }
 
+void KThread::HandleSyncObjectSignaled(KSynchronizationObject *syncObj)
+{
+    if (GetSchedulingStatus() == SchedulingStatus::Paused) {
+        signaledSyncObject = syncObj;
+        syncResult = ResultSuccess{};
+        Reschedule(SchedulingStatus::Running);
+    }
+}
+
 void KThread::AddToMutexWaitList(KThread &thread)
 {
     // TODO: check&increment numKernelMutexWaiters
