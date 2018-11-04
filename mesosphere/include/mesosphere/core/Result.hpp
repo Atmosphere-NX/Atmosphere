@@ -100,7 +100,7 @@ class ResultError : public ResultBase<ResultError<module, description>> {
 DEFINE_RESULT(Kernel, InvalidCapabilityDescriptor,  14);
 
 DEFINE_RESULT(Kernel, NotImplemented,               33);
-DEFINE_RESULT(Kernel, ThreadTerminated,             59);
+DEFINE_RESULT(Kernel, ThreadTerminating,            59);
 
 DEFINE_RESULT(Kernel, OutOfDebugEvents,             70);
 

@@ -32,7 +32,8 @@ void KThread::AdjustScheduling(ushort oldMaskFull)
 
 void KThread::Reschedule(KThread::SchedulingStatus newStatus)
 {
-    std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+    //std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+    // TODO check the above ^
     AdjustScheduling(SetSchedulingStatusField(newStatus));
 }
 
@@ -127,6 +128,72 @@ void KThread::HandleSyncObjectSignaled(KSynchronizationObject *syncObj)
         syncResult = ResultSuccess{};
         Reschedule(SchedulingStatus::Running);
     }
+}
+
+Result KThread::WaitSynchronizationImpl(int &outId, KSynchronizationObject **syncObjs, int numSyncObjs, const KSystemClock::time_point &timeoutTime)
+{
+    KLinkedList<KThread *>::const_iterator nodes[numSyncObjs];
+
+    outId = -1;
+    {
+        std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+
+        // Try to find an already signaled object.
+        if (numSyncObjs >= 1) {
+            KSynchronizationObject **readyFound = std::find_if(
+                syncObjs,
+                syncObjs + numSyncObjs,
+                [](KSynchronizationObject *obj) {
+                    return obj->IsSignaled();
+                }
+            );
+
+            outId = readyFound - syncObjs >= numSyncObjs ? -1 : readyFound - syncObjs;
+        }
+
+        if (timeoutTime == KSystemClock::time_point{} && outId == -1) {
+            return ResultKernelTimedOut{};
+        }
+        if (IsDying()) {
+            return ResultKernelThreadTerminating{};
+        }
+        if (cancelled) {
+            return ResultKernelCancelled{};
+        }
+
+        for (int i = 0; i < numSyncObjs; i++) {
+            nodes[i] = syncObjs[i]->AddWaiter(*this);
+        }
+
+        isWaitingSync = true;
+        signaledSyncObject = nullptr;
+        syncResult = ResultKernelTimedOut{};
+
+        Reschedule(SchedulingStatus::Paused);
+        if (timeoutTime > KSystemClock::time_point{}) {
+            SetAlarmTime(timeoutTime);
+        }
+    }
+
+    // Now waiting...
+
+    {
+        std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+
+        isWaitingSync = false;
+        if (timeoutTime > KSystemClock::time_point{}) {
+            ClearAlarm();
+        }
+
+        for (int i = 0; i < numSyncObjs; i++) {
+            syncObjs[i]->RemoveWaiter(nodes[i]);
+            if (syncObjs[i] == signaledSyncObject) {
+                outId = i;
+            }
+        }
+    }
+
+    return syncResult;
 }
 
 void KThread::AddToMutexWaitList(KThread &thread)

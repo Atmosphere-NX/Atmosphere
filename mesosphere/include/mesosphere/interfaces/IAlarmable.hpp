@@ -31,13 +31,13 @@ class IAlarmable : public AlarmableSetBaseHook {
     template<typename Clock, typename Duration>
     void SetAlarmTime(const std::chrono::time_point<Clock, Duration> &alarmTime)
     {
-        SetAlarmTime(alarmTime);
+        SetAlarmTimeImpl(alarmTime);
     }
 
     template<typename Rep, typename Period>
     void SetAlarmIn(const std::chrono::duration<Rep, Period> &alarmTimeOffset)
     {
-        SetAlarmTime(KSystemClock::now() + alarmTimeOffset);
+        SetAlarmTimeImpl(KSystemClock::now() + alarmTimeOffset);
     }
 
     void ClearAlarm();

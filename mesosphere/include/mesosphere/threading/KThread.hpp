@@ -210,6 +210,12 @@ class KThread final :
     /// Takes effect when critical section is left
     void HandleSyncObjectSignaled(KSynchronizationObject *syncObj);
 
+    template<typename Clock, typename Duration>
+    Result WaitSynchronization(int &outId, KSynchronizationObject **syncObjs, int numSyncObjs, const std::chrono::time_point<Clock, Duration> &timeoutTime)
+    {
+        return WaitSynchronizationImpl(outId, syncObjs, numSyncObjs, timeoutTime);
+    }
+
     constexpr size_t GetNumberOfKMutexWaiters() const { return numKernelMutexWaiters; }
     constexpr uiptr GetWantedMutex() const { return wantedMutex; }
     void SetWantedMutex(uiptr mtx)  { wantedMutex = mtx; }
@@ -224,6 +230,8 @@ class KThread final :
     id(id), basePriority(priority), priority(priority),
     currentCoreId(0), affinityMask(15) {};
 private:
+    Result WaitSynchronizationImpl(int &outId, KSynchronizationObject **syncObjs, int numSyncObjs, const KSystemClock::time_point &timeoutTime);
+
     void AddToMutexWaitList(KThread &thread);
     MutexWaitList::iterator RemoveFromMutexWaitList(MutexWaitList::const_iterator it);
     void RemoveFromMutexWaitList(const KThread &t);
@@ -242,7 +250,8 @@ private:
     uint basePriority = 64, priority = 64;
     int currentCoreId = -1;
     ulong affinityMask = 0;
-
+    bool cancelled = false;
+    bool isWaitingSync = false;
     uiptr wantedMutex = 0;
     KThread *wantedMutexOwner = nullptr;
     MutexWaitList mutexWaitList{};
