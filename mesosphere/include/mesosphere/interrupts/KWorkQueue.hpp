@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mesosphere/interfaces/IWork.hpp>
-#include <mesosphere/kresources/KAutoObject.hpp>
+#include <mesosphere/core/KAutoObject.hpp>
 
 namespace mesosphere
 {

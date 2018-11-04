@@ -1,7 +1,7 @@
 #pragma once
 // circular dep: #include "resource_limit.h"
 
-#include <mesosphere/kresources/KAutoObject.hpp>
+#include <mesosphere/core/KAutoObject.hpp>
 #include <tuple>
 
 namespace mesosphere

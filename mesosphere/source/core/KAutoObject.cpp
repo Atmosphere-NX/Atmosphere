@@ -1,4 +1,4 @@
-#include <mesosphere/kresources/KAutoObject.hpp>
+#include <mesosphere/core/KAutoObject.hpp>
 
 namespace mesosphere
 {

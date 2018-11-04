@@ -4,7 +4,7 @@ class KThread;
 class KResourceLimit;
 
 #include <mesosphere/core/util.hpp>
-#include <mesosphere/kresources/KAutoObject.hpp>
+#include <mesosphere/core/KAutoObject.hpp>
 #include <mesosphere/interfaces/ISetAllocated.hpp>
 
 namespace mesosphere
