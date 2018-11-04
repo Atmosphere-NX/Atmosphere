@@ -21,6 +21,8 @@
 
 #include "mitm_query_service.hpp"
 
+#define RESULT_FORWARD_TO_SESSION 0xCAFEFC
+
 class MitmSession final : public ServiceSession {    
     private:
         /* This will be for the actual session. */
@@ -149,7 +151,7 @@ class MitmSession final : public ServiceSession {
                 }
             }
             
-            if (!found_entry) {
+            if (!found_entry || rc == RESULT_FORWARD_TO_SESSION) {
                 memcpy(armGetTls(), this->backup_tls, sizeof(this->backup_tls));
                 rc = ForwardRequest(ctx);
             }

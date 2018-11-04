@@ -79,15 +79,21 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
 
         Log(armGetTls(), 0x100);
         if (R_SUCCEEDED(rc)) {
-            /* TODO: Is there a sensible path that ends in ".romfs" we can use?" */
-            if (R_SUCCEEDED(Utils::OpenSdFileForAtmosphere(this->title_id, "romfs.bin", FS_OPEN_READ, &data_file))) {
-                storage = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), std::make_shared<RomFileStorage>(data_file), this->title_id));
+            if (Utils::HasSdRomfsContent(this->title_id)) {
+                /* TODO: Is there a sensible path that ends in ".romfs" we can use?" */
+                if (R_SUCCEEDED(Utils::OpenSdFileForAtmosphere(this->title_id, "romfs.bin", FS_OPEN_READ, &data_file))) {
+                    storage = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), std::make_shared<RomFileStorage>(data_file), this->title_id));
+                } else {
+                    storage = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), nullptr, this->title_id));
+                }
+                this->romfs_storage = storage;
+                if (out_storage.IsDomain()) {
+                    out_domain_id = data_storage.s.object_id;
+                }
             } else {
-                storage = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), nullptr, this->title_id));
-            }
-            this->romfs_storage = storage;
-            if (out_storage.IsDomain()) {
-                out_domain_id = data_storage.s.object_id;
+                /* If we don't have anything to modify, there's no sense in maintaining a copy of the metadata tables. */
+                fsStorageClose(&data_storage);
+                rc = RESULT_FORWARD_TO_SESSION;
             }
         }
     }
@@ -117,14 +123,20 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
     rc = fsOpenDataStorageByDataIdFwd(this->forward_service.get(), storage_id, data_id, &data_storage);
 
     if (R_SUCCEEDED(rc)) {
-        /* TODO: Is there a sensible path that ends in ".romfs" we can use?" */
-        if (R_SUCCEEDED(Utils::OpenSdFileForAtmosphere(data_id, "romfs.bin", FS_OPEN_READ, &data_file))) {
-            storage = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), std::make_shared<RomFileStorage>(data_file), data_id));
+        if (Utils::HasSdRomfsContent(data_id)) {
+            /* TODO: Is there a sensible path that ends in ".romfs" we can use?" */
+            if (R_SUCCEEDED(Utils::OpenSdFileForAtmosphere(data_id, "romfs.bin", FS_OPEN_READ, &data_file))) {
+                storage = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), std::make_shared<RomFileStorage>(data_file), data_id));
+            } else {
+                storage = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), nullptr, data_id));
+            }
+            if (out_storage.IsDomain()) {
+                out_domain_id = data_storage.s.object_id;
+            }
         } else {
-            storage = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<RomInterfaceStorage>(data_storage), nullptr, data_id));
-        }
-        if (out_storage.IsDomain()) {
-            out_domain_id = data_storage.s.object_id;
+            /* If we don't have anything to modify, there's no sense in maintaining a copy of the metadata tables. */
+            fsStorageClose(&data_storage);
+            rc = RESULT_FORWARD_TO_SESSION;
         }
     }
     
