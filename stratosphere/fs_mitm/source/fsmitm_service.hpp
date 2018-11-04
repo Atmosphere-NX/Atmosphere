@@ -29,7 +29,6 @@ enum FspSrvCmd : u32 {
 class FsMitmService : public IMitmServiceObject {      
     private:
         bool has_initialized = false;
-        std::shared_ptr<IStorageInterface> romfs_storage;
     public:
         FsMitmService(std::shared_ptr<Service> s) : IMitmServiceObject(s) {
             /* ... */

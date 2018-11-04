@@ -223,6 +223,47 @@ bool Utils::HasSdRomfsContent(u64 title_id) {
     return R_SUCCEEDED(fsDirRead(&dir, 0, &read_entries, 1, &dir_entry)) && read_entries == 1;
 }
 
+Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, size_t size) {
+    if (!IsSdInitialized()) {
+        return 0xFA202;
+    }
+    
+    Result rc = 0;
+    
+    char path[FS_MAX_PATH];
+    if (*fn == '/') {
+        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", title_id, fn);
+    } else {
+        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/%s", title_id, fn);
+    }
+    
+    /* Unconditionally create. */
+    FsFile f;
+    fsFsCreateFile(&g_sd_filesystem, path, size, 0);
+    
+    /* Try to open. */
+    rc = fsFsOpenFile(&g_sd_filesystem, path, FS_OPEN_READ | FS_OPEN_WRITE, &f);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    /* Always close, if we opened. */
+    ON_SCOPE_EXIT {
+        fsFileClose(&f);
+    };
+    
+    /* Try to make it big enough. */
+    rc = fsFileSetSize(&f, size);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    /* Try to write the data. */
+    rc = fsFileWrite(&f, 0, data, size);
+    
+    return rc;
+}
+
 bool Utils::HasSdMitMFlag(u64 tid) {
     if (IsSdInitialized()) {
         return std::find(g_mitm_flagged_tids.begin(), g_mitm_flagged_tids.end(), tid) != g_mitm_flagged_tids.end();

@@ -399,23 +399,14 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     header->file_hash_table_ofs = header->dir_table_ofs + header->dir_table_size;
     header->file_table_ofs = header->file_hash_table_ofs + header->file_hash_table_size;
     
-    /* For debugging, uncomment this to get a log of the generated metadata tables. */
+    const size_t metadata_size = this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size;
     
-        {
-            FsFileSystem sd_fs;
-            if (R_SUCCEEDED(fsMountSdcard(&sd_fs))) {
-                FsFile f;
-                fsFsCreateFile(&sd_fs, "/METADATALOG.bin", this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size + sizeof(*header), 0);
-                if (R_SUCCEEDED(fsFsOpenFile(&sd_fs, "/METADATALOG.bin", FS_OPEN_READ | FS_OPEN_WRITE, &f))) {
-                    fsFileSetSize(&f, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size + sizeof(*header));
-                    fsFileWrite(&f, 0, header, sizeof(*header));
-                    fsFileWrite(&f, sizeof(*header), metadata, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size);
-                    fsFileClose(&f);
-                }
-                fsFsClose(&sd_fs);
-            }
-        }
+    /* Try to save metadata to the SD card, to save on memory space. */
+    if (R_SUCCEEDED(Utils::SaveSdFileForAtmosphere(this->title_id, ROMFS_METADATA_FILE_PATH, metadata, metadata_size))) {
+        out_infos->emplace_back(header->dir_hash_table_ofs, metadata_size, RomFSDataSource::MetaData);
+        delete metadata;
+    } else {
+        out_infos->emplace_back(header->dir_hash_table_ofs, metadata_size, metadata, RomFSDataSource::Memory);
+    }
     
-    
-    out_infos->emplace_back(header->dir_hash_table_ofs, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size, metadata, RomFSDataSource::Memory);
 }

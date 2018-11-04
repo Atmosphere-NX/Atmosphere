@@ -83,6 +83,22 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                 cur_read_size = cur_source->size - (offset - cur_source->virtual_offset);
             }
             switch (cur_source->type) {
+                case RomFSDataSource::MetaData:
+                    {
+                        FsFile file;
+                        if (R_FAILED((rc = Utils::OpenSdFileForAtmosphere(this->title_id, ROMFS_METADATA_FILE_PATH, FS_OPEN_READ, &file)))) {
+                            fatalSimple(rc);
+                        }
+                        size_t out_read;
+                        if (R_FAILED((rc = fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, &out_read)))) {
+                            fatalSimple(rc);
+                        }
+                        if (out_read != cur_read_size) {
+                            Reboot();
+                        }
+                        fsFileClose(&file);
+                    }
+                    break;
                 case RomFSDataSource::LooseFile:
                     {
                         FsFile file;
