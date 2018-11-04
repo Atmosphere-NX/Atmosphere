@@ -202,6 +202,14 @@ Result Utils::OpenRomFSDir(FsFileSystem *fs, u64 title_id, const char *path, FsD
 }
 
 bool Utils::HasSdRomfsContent(u64 title_id) {
+    /* Check for romfs.bin. */
+    FsFile data_file;
+    if (R_SUCCEEDED(Utils::OpenSdFileForAtmosphere(title_id, "romfs.bin", FS_OPEN_READ, &data_file))) {
+        fsFileClose(&data_file);
+        return true;
+    }
+    
+    /* Check for romfs folder with non-zero content. */
     FsDir dir;
     if (R_FAILED(Utils::OpenRomFSSdDir(title_id, "", &dir))) {
         return false;
