@@ -13,6 +13,8 @@
 namespace mesosphere
 {
 
+struct KThreadContext;
+
 struct ThreadWaitListTag;
 struct ThreadMutexWaitListTag;
 using  ThreadWaitListBaseHook = boost::intrusive::list_base_hook<boost::intrusive::tag<ThreadWaitListTag> >;
@@ -29,9 +31,35 @@ class KThread final :
     public:
 
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, Thread);
-    virtual bool IsAlive() const override;
 
-    virtual void OnAlarm() override;
+    class StackParameters {
+        public:
+        StackParameters(std::array<u64, 4> svcPermissionMask, KThreadContext *threadCtx) :
+        svcPermissionMask{svcPermissionMask}, threadCtx{threadCtx} {}
+    
+        void Initialize(std::array<u64, 4> svcPermissionMask, KThreadContext *threadCtx)
+        {
+            *this = StackParameters{svcPermissionMask, threadCtx};
+        }
+
+        constexpr bool IsExecutingSvc() const { return isExecutingSvc; }
+        constexpr u8 GetCurrentSvcId() const { return currentSvcId; }
+
+        constexpr uint GetBottomHalfLockCount() const { return bottomHalfLockCount; }
+        void IncrementBottomHalfLockCount() { ++bottomHalfLockCount; }
+        void DecrementBottomHalfLockCount() { --bottomHalfLockCount; }
+
+        KThreadContext *GetThreadContext() const { return threadCtx; }
+    
+        private:
+        std::array<u64, 4> svcPermissionMask[256/64]{};
+        u8 stateFlags = 0;
+        u8 currentSvcId = 0;
+        bool isExecutingSvc = false;
+        bool isNotStarted = true;
+        uint bottomHalfLockCount = 1;
+        KThreadContext *threadCtx = nullptr;
+    };
 
     struct SchedulerValueTraits {
         using node_traits =  boost::intrusive::list_node_traits<KThread *>;
@@ -94,6 +122,9 @@ class KThread final :
 
     public:
 
+    virtual bool IsAlive() const override;
+    virtual void OnAlarm() override;
+
     static constexpr uint GetPriorityOf(const KThread &thread)
     {
         return thread.priority;
@@ -104,6 +135,11 @@ class KThread final :
     constexpr int GetCurrentCoreId() const { return currentCoreId; }
     constexpr ulong GetAffinityMask() const { return affinityMask; }
     constexpr long GetLastScheduledTime() const { return lastScheduledTime; }
+
+    StackParameters &GetStackParameters()
+    {
+        return *(StackParameters *)(kernelStackTop - sizeof(StackParameters));
+    }
 
     KProcess *GetOwner() const { return owner; }
     bool IsSchedulerOperationRedundant() const { return owner != nullptr && owner->GetSchedulerOperationCount() == redundantSchedulerOperationCount; }
@@ -256,6 +292,7 @@ private:
     KThread *wantedMutexOwner = nullptr;
     MutexWaitList mutexWaitList{};
     size_t numKernelMutexWaiters = 0;
+    uiptr kernelStackTop = 0;
 
     KSynchronizationObject *signaledSyncObject = nullptr;
     Result syncResult = ResultSuccess{};
