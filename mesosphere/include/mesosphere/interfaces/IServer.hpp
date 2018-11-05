@@ -20,7 +20,7 @@ class IServer {
     }
 
     protected:
-    void Initialize(SharedPtr<Parent> parent)
+    void SetParent(SharedPtr<Parent> parent)
     {
         this->parent = std::move(parent);
         this->client = &this->parent->client;

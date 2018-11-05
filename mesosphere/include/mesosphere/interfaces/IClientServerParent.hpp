@@ -13,11 +13,11 @@ class IClientServerParent {
     using ServerType = Server;
 
     protected:
-    void Initialize()
+    void SetClientServerParent()
     {
         Parent par = (Parent *)this;
-        client.Initialize(par);
-        server.Initialize(par);
+        client.SetParent(par);
+        server.SetParent(par);
     }
 
     ClientType client{};

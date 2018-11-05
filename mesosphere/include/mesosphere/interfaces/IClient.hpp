@@ -20,7 +20,7 @@ class IClient {
     }
 
     protected:
-    void Initialize(SharedPtr<Parent> parent)
+    void SetParent(SharedPtr<Parent> parent)
     {
         this->parent = std::move(parent);
     }
