@@ -21,12 +21,13 @@ class IServer {
     
     ParentType *GetParent() const { return parent; }
 
-    protected:
-    void SetParent(SharedPtr<Parent> parent)
+    void SetParentAndClient(SharedPtr<Parent> parent, SharedPtr<Client> client)
     {
         this->parent = std::move(parent);
-        this->client = &this->parent->client;
+        this->client = std::move(client);
     }
+
+    protected:
 
     SharedPtr<Parent> parent{};
     SharedPtr<Client> client{};

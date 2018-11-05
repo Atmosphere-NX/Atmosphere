@@ -6,6 +6,7 @@ class KProcess;
 #include <mesosphere/core/Result.hpp>
 #include <mesosphere/core/KAutoObject.hpp>
 #include <mesosphere/interfaces/ISetAllocated.hpp>
+#include <mesosphere/interfaces/ILimitedResource.hpp>
 #include <mesosphere/interfaces/IClientServerParent.hpp>
 #include <mesosphere/processes/KReadableEvent.hpp>
 #include <mesosphere/processes/KWritableEvent.hpp>
@@ -13,26 +14,27 @@ class KProcess;
 namespace mesosphere
 {
 
-class KEvent final : public KAutoObject, IClientServerParent<KEvent, KReadableEvent, KWritableEvent> {
+class KEvent final :
+    public KAutoObject,
+    public IClientServerParent<KEvent, KReadableEvent, KWritableEvent>,
+    public ISetAllocated<KEvent>,
+    public ILimitedResource<KEvent> {
     public:
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, Event);
-    
-    explicit KEvent() : owner(nullptr), is_initialized(false) {}
-    virtual ~KEvent() {}
-    
-    KProcess *GetOwner() const { return this->owner; }
-    void Initialize();
+
+    virtual ~KEvent();
+
+    Result Initialize();
 
     /* KAutoObject */
-    virtual bool IsAlive() const override { return is_initialized; }
+    virtual bool IsAlive() const override;
     
     /* IClientServerParent */
     void HandleServerDestroyed() { }
     void HandleClientDestroyed() { }
     
     private:
-    KProcess *owner;
-    bool is_initialized;
+    bool isInitialized = false;
 };
 
 inline void intrusive_ptr_add_ref(KEvent *obj)

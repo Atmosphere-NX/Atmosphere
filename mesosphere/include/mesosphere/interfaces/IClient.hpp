@@ -21,12 +21,12 @@ class IClient {
 
     ParentType *GetParent() const { return parent; }
     
-    protected:
     void SetParent(SharedPtr<Parent> parent)
     {
         this->parent = std::move(parent);
     }
 
+    protected:
     SharedPtr<Parent> parent{};
 };
 

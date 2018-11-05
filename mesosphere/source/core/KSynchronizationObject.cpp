@@ -15,7 +15,7 @@ KSynchronizationObject::~KSynchronizationObject()
 
 void KSynchronizationObject::NotifyWaiters()
 {
-    KScopedCriticalSection critical_section;
+    KScopedCriticalSection criticalSection;
 
     if (IsSignaled()) {
         for (auto &&waiter : waiters) {

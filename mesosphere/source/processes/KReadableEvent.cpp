@@ -5,36 +5,44 @@
 
 namespace mesosphere
 {
-    
-bool KReadableEvent::IsSignaled() const {
-    return this->is_signaled;
+
+bool KReadableEvent::IsSignaled() const
+{
+    return this->isSignaled;
 }
 
-Result KReadableEvent::Signal() {
-    KScopedCriticalSection critical_section;
+KReadableEvent::~KReadableEvent()
+{
+}
+
+Result KReadableEvent::Signal()
+{
+    KScopedCriticalSection criticalSection{};
     
-    if (!this->is_signaled) {
-        this->is_signaled = true;
-        this->NotifyWaiters();
+    if (!this->isSignaled) {
+        this->isSignaled = true;
+        NotifyWaiters();
     }
     
-    return ResultSuccess();
+    return ResultSuccess{};
 }
 
-Result KReadableEvent::Clear() {
-    this->Reset();
-    
-    return ResultSuccess();
+Result KReadableEvent::Clear()
+{
+    Reset();
+
+    return ResultSuccess{};
 }
 
-Result KReadableEvent::Reset() {
-    KScopedCriticalSection critical_section;
-    
-    if (this->is_signaled) {
-        this->is_signaled = false;
-        return ResultSuccess();
+Result KReadableEvent::Reset()
+{
+    KScopedCriticalSection criticalSection{};
+
+    if (this->isSignaled) {
+        this->isSignaled = false;
+        return ResultSuccess{};
     }
-    return ResultKernelInvalidState();
+    return ResultKernelInvalidState{};
 }
 
 }

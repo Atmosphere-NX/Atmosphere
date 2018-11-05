@@ -16,20 +16,19 @@ class KEvent;
 class KReadableEvent final : public KSynchronizationObject, public IClient<KEvent, KReadableEvent, KWritableEvent> {
     public:
     MESOSPHERE_AUTO_OBJECT_TRAITS(SynchronizationObject, ReadableEvent);
-    
+
     virtual bool IsAlive() const override { return true; }
-    
-    explicit KReadableEvent() {}
-    virtual ~KReadableEvent() {}
+
+    virtual ~KReadableEvent();
 
     Result Signal();
     Result Clear();
     Result Reset();
-    
+
     virtual bool IsSignaled() const override;
-    
+
     private:
-    bool is_signaled = false;
+    bool isSignaled = false;
 };
 
 inline void intrusive_ptr_add_ref(KReadableEvent *obj)

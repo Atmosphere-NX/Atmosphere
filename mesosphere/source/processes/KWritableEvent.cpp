@@ -5,12 +5,18 @@
 namespace mesosphere
 {
 
-Result KWritableEvent::Signal() {
-    return this->client->Signal();
+KWritableEvent::~KWritableEvent()
+{
 }
 
-Result KWritableEvent::Clear() {
-    return this->client->Clear();
+Result KWritableEvent::Signal()
+{
+    return client->Signal();
+}
+
+Result KWritableEvent::Clear()
+{
+    return client->Clear();
 }
 
 }
