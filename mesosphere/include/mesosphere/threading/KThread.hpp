@@ -295,7 +295,7 @@ private:
     uiptr kernelStackTop = 0;
 
     KSynchronizationObject *signaledSyncObject = nullptr;
-    Result syncResult = ResultSuccess{};
+    Result syncResult = ResultSuccess();
 
     u64 lastScheduledTime = 0;
 };

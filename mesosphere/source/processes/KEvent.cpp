@@ -20,7 +20,7 @@ Result KEvent::Initialize()
     SetResourceOwner(KCoreContext::GetCurrentInstance().GetCurrentProcess());
     isInitialized = true;
 
-    return ResultSuccess{};
+    return ResultSuccess();
 }
 
 }

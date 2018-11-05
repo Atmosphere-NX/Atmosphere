@@ -125,7 +125,7 @@ void KThread::HandleSyncObjectSignaled(KSynchronizationObject *syncObj)
 {
     if (GetSchedulingStatus() == SchedulingStatus::Paused) {
         signaledSyncObject = syncObj;
-        syncResult = ResultSuccess{};
+        syncResult = ResultSuccess();
         Reschedule(SchedulingStatus::Running);
     }
 }
@@ -152,13 +152,13 @@ Result KThread::WaitSynchronizationImpl(int &outId, KSynchronizationObject **syn
         }
 
         if (timeoutTime == KSystemClock::time_point{} && outId == -1) {
-            return ResultKernelTimedOut{};
+            return ResultKernelTimedOut();
         }
         if (IsDying()) {
-            return ResultKernelThreadTerminating{};
+            return ResultKernelThreadTerminating();
         }
         if (cancelled) {
-            return ResultKernelCancelled{};
+            return ResultKernelCancelled();
         }
 
         for (int i = 0; i < numSyncObjs; i++) {
@@ -167,7 +167,7 @@ Result KThread::WaitSynchronizationImpl(int &outId, KSynchronizationObject **syn
 
         isWaitingSync = true;
         signaledSyncObject = nullptr;
-        syncResult = ResultKernelTimedOut{};
+        syncResult = ResultKernelTimedOut();
 
         Reschedule(SchedulingStatus::Paused);
         if (timeoutTime > KSystemClock::time_point{}) {

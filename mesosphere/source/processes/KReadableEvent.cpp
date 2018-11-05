@@ -24,14 +24,14 @@ Result KReadableEvent::Signal()
         NotifyWaiters();
     }
     
-    return ResultSuccess{};
+    return ResultSuccess();
 }
 
 Result KReadableEvent::Clear()
 {
     Reset();
 
-    return ResultSuccess{};
+    return ResultSuccess();
 }
 
 Result KReadableEvent::Reset()
@@ -40,9 +40,9 @@ Result KReadableEvent::Reset()
 
     if (this->isSignaled) {
         this->isSignaled = false;
-        return ResultSuccess{};
+        return ResultSuccess();
     }
-    return ResultKernelInvalidState{};
+    return ResultKernelInvalidState();
 }
 
 }
