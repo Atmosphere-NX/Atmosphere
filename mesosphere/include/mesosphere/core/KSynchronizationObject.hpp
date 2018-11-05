@@ -14,7 +14,7 @@ class KSynchronizationObject : public KAutoObject {
     virtual ~KSynchronizationObject();
     virtual bool IsSignaled() const = 0;
 
-    void Signal(); // Note: Signal() with !IsSignaled() is no-op
+    void NotifyWaiters(); // Note: NotifyWaiters() with !IsSignaled() is no-op
 
     KLinkedList<KThread *>::const_iterator AddWaiter(KThread &thread);
     void RemoveWaiter(KLinkedList<KThread *>::const_iterator it);
