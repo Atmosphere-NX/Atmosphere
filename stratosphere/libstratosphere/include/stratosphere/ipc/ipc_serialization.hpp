@@ -306,9 +306,9 @@ struct Validator {
     static constexpr bool ValidateCommandArgument(IpcResponseContext *ctx, size_t& a_index, size_t& b_index, size_t& x_index, size_t& h_index, size_t& cur_c_size_offset, size_t& total_c_size) {
         constexpr ArgType argT = GetArgType<T>();
         if constexpr (argT == ArgType::InBuffer) {
-            return ctx->request.Buffers[a_index] != nullptr && ctx->request.BufferDirections[a_index] == BufferDirection_Send && ctx->request.BufferTypes[a_index++] == T::expected_type;
+            return (ctx->request.Buffers[a_index] != nullptr || ctx->request.BufferSizes[a_index] == 0) && ctx->request.BufferDirections[a_index] == BufferDirection_Send && ctx->request.BufferTypes[a_index++] == T::expected_type;
         } else if constexpr (argT == ArgType::OutBuffer) {
-            return ctx->request.Buffers[b_index] != nullptr && ctx->request.BufferDirections[b_index] == BufferDirection_Recv && ctx->request.BufferTypes[b_index++] == T::expected_type;
+            return (ctx->request.Buffers[b_index] != nullptr || ctx->request.BufferSizes[b_index] == 0) && ctx->request.BufferDirections[b_index] == BufferDirection_Recv && ctx->request.BufferTypes[b_index++] == T::expected_type;
         } else if constexpr (argT == ArgType::InPointer) {
             return ctx->request.Statics[x_index++] != nullptr;
         } else if constexpr (argT == ArgType::InHandle) {

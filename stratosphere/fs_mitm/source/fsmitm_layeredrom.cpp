@@ -46,6 +46,11 @@ LayeredRomFS::LayeredRomFS(std::shared_ptr<RomInterfaceStorage> s_r, std::shared
 
 
 Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
+    /* Size zero reads should always succeed. */
+    if (size == 0) {
+        return 0;
+    }
+    
     /* Validate size. */
     u64 virt_size = (*this->p_source_infos)[this->p_source_infos->size() - 1].virtual_offset + (*this->p_source_infos)[this->p_source_infos->size() - 1].size;
     if (offset >= virt_size) {
