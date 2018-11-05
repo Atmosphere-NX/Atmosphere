@@ -46,7 +46,7 @@ void KThread::RescheduleIfStatusEquals(SchedulingStatus expectedStatus, Scheduli
 
 void KThread::AddForcePauseReason(KThread::ForcePauseReason reason)
 {
-    std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+    KScopedCriticalSection critical_section;
 
     if (!IsDying()) {
         AddForcePauseReasonToField(reason);
@@ -58,7 +58,7 @@ void KThread::AddForcePauseReason(KThread::ForcePauseReason reason)
 
 void KThread::RemoveForcePauseReason(KThread::ForcePauseReason reason)
 {
-    std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+    KScopedCriticalSection critical_section;
 
     if (!IsDying()) {
         RemoveForcePauseReasonToField(reason);
@@ -104,7 +104,7 @@ void KThread::ResumeAllFromKernelSync(KThread::WaitList &waitList)
 
 void KThread::CancelKernelSync()
 {
-    std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+    KScopedCriticalSection critical_section;
     if (GetSchedulingStatus() == SchedulingStatus::Paused) {
         // Note: transparent to force-pause
         if (currentWaitList != nullptr) {
@@ -136,7 +136,7 @@ Result KThread::WaitSynchronizationImpl(int &outId, KSynchronizationObject **syn
 
     outId = -1;
     {
-        std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+        KScopedCriticalSection critical_section;
 
         // Try to find an already signaled object.
         if (numSyncObjs >= 1) {
@@ -178,7 +178,7 @@ Result KThread::WaitSynchronizationImpl(int &outId, KSynchronizationObject **syn
     // Now waiting...
 
     {
-        std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+        KScopedCriticalSection critical_section;
 
         isWaitingSync = false;
         if (timeoutTime > KSystemClock::time_point{}) {

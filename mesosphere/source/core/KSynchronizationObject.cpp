@@ -13,9 +13,9 @@ KSynchronizationObject::~KSynchronizationObject()
 {
 }
 
-void KSynchronizationObject::Signal()
+void KSynchronizationObject::NotifyWaiters()
 {
-    std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+    KScopedCriticalSection critical_section;
 
     if (IsSignaled()) {
         for (auto &&waiter : waiters) {

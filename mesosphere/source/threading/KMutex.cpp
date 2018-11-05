@@ -36,7 +36,7 @@ void KMutex::lock_slow_path(KThread &owner, KThread &requester)
 
 void KMutex::unlock_slow_path(KThread &owner)
 {
-    std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+    KScopedCriticalSection critical_section;
     size_t count;
     KThread *newOwner = owner.RelinquishMutex(&count, (uiptr)this);
     native_handle_type newTag;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <mutex>
 #include <mesosphere/core/util.hpp>
 #include <mesosphere/threading/KMultiLevelQueue.hpp>
 #include <mesosphere/threading/KThread.hpp>
@@ -125,6 +126,13 @@ class KScheduler {
             ForceContextSwitch();
         }
     }
+};
+
+// Convenience 
+
+class KScopedCriticalSection {
+    private:
+        std::scoped_lock<KCriticalSection> lk{KScheduler::GetCriticalSection()};
 };
 
 }
