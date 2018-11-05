@@ -64,8 +64,6 @@ bool KResourceLimit::ReserveDetail(KResourceLimit::Category category, size_t cou
     };
 
     if (timeoutTime <= KSystemClock::never) {
-        // TODO, check is actually < 0
-        // TODO timeout
         ok = true;
         condvar.wait(condition);
     } else {

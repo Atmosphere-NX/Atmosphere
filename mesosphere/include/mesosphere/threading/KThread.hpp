@@ -22,7 +22,7 @@ using  ThreadMutexWaitListBaseHook = boost::intrusive::list_base_hook<boost::int
 
 class KThread final :
     public KAutoObject,
-    public ILimitedResource<KThread>,
+    public ILimitedResource<KThread, 100u>,
     public ISetAllocated<KThread>,
     public IAlarmable,
     public ThreadWaitListBaseHook,

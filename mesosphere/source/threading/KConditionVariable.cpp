@@ -8,15 +8,18 @@ namespace mesosphere
 void KConditionVariable::wait_until_impl(const KSystemClock::time_point &timeoutPoint) noexcept
 {
     // Official kernel counts number of waiters, but that isn't necessary
+    bool hasWaited = false;
+    KThread *currentThread = KCoreContext::GetCurrentInstance().GetCurrentThread();
     {
-        KThread *currentThread = KCoreContext::GetCurrentInstance().GetCurrentThread();
         KScopedCriticalSection criticalSection{};
         mutex_.unlock();
-        if (currentThread->WaitForKernelSync(waiterList)) {
-            (void)timeoutPoint; //TODO!
-        } else {
-            // Termination
+        if (currentThread->WaitForKernelSync(waiterList) && timeoutPoint > KSystemClock::time_point{}) {
+            hasWaited = true;
+            currentThread->SetAlarmTime(timeoutPoint);
         }
+    }
+    if (hasWaited) {
+        currentThread->ClearAlarm();
     }
     mutex_.lock();
 }
