@@ -22,7 +22,7 @@ using  ThreadMutexWaitListBaseHook = boost::intrusive::list_base_hook<boost::int
 
 class KThread final :
     public KAutoObject,
-    public ILimitedResource<KThread, 100u>,
+    public ILimitedResource<KThread>,
     public ISetAllocated<KThread>,
     public IAlarmable,
     public ThreadWaitListBaseHook,
@@ -31,6 +31,7 @@ class KThread final :
     public:
 
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, Thread);
+    MESOSPHERE_LIMITED_RESOURCE_TRAITS(100ms);
 
     class StackParameters {
         public:

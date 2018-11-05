@@ -115,6 +115,7 @@ void KHandleTable::Destroy()
     }
 }
 
+/*
 KHandleTable::KHandleTable(size_t capacity_) : capacity((u16)capacity_)
 {
     // Note: caller should check the > case, and return an error in that case!
@@ -123,7 +124,7 @@ KHandleTable::KHandleTable(size_t capacity_) : capacity((u16)capacity_)
     u16 capa = capacity;
     Destroy();
     capacity = capa;
-}
+}*/
 
 KHandleTable::~KHandleTable()
 {

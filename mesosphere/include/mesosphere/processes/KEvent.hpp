@@ -22,6 +22,7 @@ class KEvent final :
     public:
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, Event);
     MESOSPHERE_CLIENT_SERVER_PARENT_TRAITS(ReadableEvent, WritableEvent);
+    MESOSPHERE_LIMITED_RESOURCE_TRAITS(1s);
 
     virtual ~KEvent();
 

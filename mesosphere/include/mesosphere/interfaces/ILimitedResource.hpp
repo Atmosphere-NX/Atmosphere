@@ -4,6 +4,8 @@
 #include <mesosphere/core/KAutoObject.hpp>
 #include <tuple>
 
+#define MESOSPHERE_LIMITED_RESOURCE_TRAITS(maxTime) static constexpr auto maxResourceAcqWaitTime = maxTime;
+
 namespace mesosphere
 {
 
@@ -15,11 +17,9 @@ void ReleaseResource(const SharedPtr<KResourceLimit> &reslimit, KAutoObject::Typ
 
 }
 
-template<typename Derived, uint maxResourceAcqWaitTimeMsec = 1000u>
+template<typename Derived>
 class ILimitedResource {
     public:
-
-    static constexpr auto maxResourceAcqWaitTime = maxResourceAcqWaitTimeMsec * 1ms;
 
     const SharedPtr<KProcess>& GetResourceOwner() const { return resourceOwner; }
     void SetResourceOwner(SharedPtr<KProcess> owner)

@@ -6,6 +6,7 @@ class KResourceLimit;
 #include <mesosphere/core/util.hpp>
 #include <mesosphere/core/KAutoObject.hpp>
 #include <mesosphere/interfaces/ISetAllocated.hpp>
+#include <mesosphere/processes/KHandleTable.hpp>
 
 namespace mesosphere
 {
@@ -28,6 +29,7 @@ class KProcess : public KAutoObject {
     long schedulerOperationCount = -1;
 
     SharedPtr<KResourceLimit> reslimit{};
+    KHandleTable handleTable{};
 };
 
 inline void intrusive_ptr_add_ref(KProcess *obj)

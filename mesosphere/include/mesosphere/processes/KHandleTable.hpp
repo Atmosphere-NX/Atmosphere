@@ -2,6 +2,7 @@
 
 #include <mesosphere/core/util.hpp>
 #include <mesosphere/core/Handle.hpp>
+#include <mesosphere/core/Result.hpp>
 #include <mesosphere/core/KAutoObject.hpp>
 #include <mesosphere/arch/KSpinLock.hpp>
 #include <array>
@@ -46,7 +47,8 @@ class KHandleTable final {
     constexpr size_t GetSize() const { return size; }
     constexpr size_t GetCapacity() const { return capacity; }
 
-    KHandleTable(size_t capacity);
+    Result Initialize(size_t capacity); // TODO: implement!
+
     ~KHandleTable();
 
     private:
