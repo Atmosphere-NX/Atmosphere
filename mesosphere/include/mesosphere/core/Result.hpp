@@ -125,7 +125,7 @@ DEFINE_RESULT(Kernel, NotFound,                     121);
 DEFINE_RESULT(Kernel, AlreadyExists,                122);
 DEFINE_RESULT(Kernel, ConnectionClosed,             123);
 DEFINE_RESULT(Kernel, UnhandledUserInterrupt,       124);
-DEFINE_RESULT(Kernel, NotPermitted,                 125);
+DEFINE_RESULT(Kernel, InvalidState,                 125);
 DEFINE_RESULT(Kernel, ReservedValue,                126);
 DEFINE_RESULT(Kernel, InvalidHwBreakpoint,          127);
 DEFINE_RESULT(Kernel, FatalUserException,           128);
