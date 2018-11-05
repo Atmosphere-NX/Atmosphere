@@ -4,22 +4,26 @@
 #include <mesosphere/core/types.hpp>
 #include <mesosphere/interfaces/IClientServerParent.hpp>
 
+#define MESOSPHERE_SERVER_TRAITS(ParentId) using ParentClass = K##ParentId;
+
 namespace mesosphere
 {
 
+struct IServerTag {};
+
 template<typename Parent, typename Client, typename Server>
-class IServer {
+class IServer : public IServerTag {
     public:
-    using ParentType = Parent;
-    using ClientType = Client;
-    using ServerType = Server;
+    using ParentClass = Parent;
+    using ClientClass = Client;
+    using ServerClass = Server;
 
     ~IServer()
     {
         parent->HandleServerDestroyed();
     }
     
-    ParentType *GetParent() const { return parent; }
+    ParentClass *GetParent() const { return parent; }
 
     void SetParentAndClient(SharedPtr<Parent> parent, SharedPtr<Client> client)
     {

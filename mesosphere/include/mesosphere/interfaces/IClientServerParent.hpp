@@ -2,15 +2,21 @@
 
 #include <mesosphere/core/types.hpp>
 
+#define MESOSPHERE_CLIENT_SERVER_PARENT_TRAITS(ClientId, ServerId)\
+using ClientClass = K##ClientId;\
+using ServerClass = K##ServerId;
+
 namespace mesosphere
 {
 
+struct IClientServerParentTag {};
+
 template<typename Parent, typename Client, typename Server>
-class IClientServerParent {
+class IClientServerParent : public IClientServerParentTag {
     public:
-    using ParentType = Parent;
-    using ClientType = Client;
-    using ServerType = Server;
+    using ParentClass = Parent;
+    using ClientClass = Client;
+    using ServerClass = Server;
 
     void SetClientServerParent()
     {
@@ -21,8 +27,8 @@ class IClientServerParent {
 
     protected:
 
-    ClientType client{};
-    ServerType server{};
+    ClientClass client{};
+    ServerClass server{};
 };
 
 }

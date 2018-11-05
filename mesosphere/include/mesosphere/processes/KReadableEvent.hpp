@@ -13,9 +13,11 @@ namespace mesosphere
 class KWritableEvent;
 class KEvent;
 
-class KReadableEvent final : public KSynchronizationObject, public IClient<KEvent, KReadableEvent, KWritableEvent> {
+// Inherited by KInterruptEvent
+class KReadableEvent : public KSynchronizationObject, public IClient<KEvent, KReadableEvent, KWritableEvent> {
     public:
     MESOSPHERE_AUTO_OBJECT_TRAITS(SynchronizationObject, ReadableEvent);
+    MESOSPHERE_CLIENT_TRAITS(Event);
 
     virtual bool IsAlive() const override { return true; }
 

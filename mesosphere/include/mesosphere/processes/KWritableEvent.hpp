@@ -15,7 +15,8 @@ class KEvent;
 class KWritableEvent final : public KAutoObject, public IServer<KEvent, KReadableEvent, KWritableEvent> {
     public:
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, WritableEvent);
-    
+    MESOSPHERE_SERVER_TRAITS(Event);
+
     virtual bool IsAlive() const override { return true; }
 
     virtual ~KWritableEvent();
