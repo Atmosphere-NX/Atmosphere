@@ -19,6 +19,8 @@ class IClient {
         parent->HandleClientDestroyed();
     }
 
+    ParentType *GetParent() const { return parent; }
+    
     protected:
     void SetParent(SharedPtr<Parent> parent)
     {

@@ -1,0 +1,45 @@
+#pragma once
+
+#include <mesosphere/core/util.hpp>
+#include <mesosphere/core/Result.hpp>
+#include <mesosphere/core/KAutoObject.hpp>
+#include <mesosphere/core/KSynchronizationObject.hpp>
+#include <mesosphere/interfaces/ISetAllocated.hpp>
+#include <mesosphere/interfaces/IClient.hpp>
+
+namespace mesosphere
+{
+
+class KWritableEvent;
+class KEvent;
+
+class KReadableEvent final : public KSynchronizationObject, public IClient<KEvent, KReadableEvent, KWritableEvent> {
+    public:
+    MESOSPHERE_AUTO_OBJECT_TRAITS(SynchronizationObject, ReadableEvent);
+    
+    virtual bool IsAlive() const override { return true; }
+    
+    explicit KReadableEvent() {}
+    virtual ~KReadableEvent() {}
+
+    Result Signal();
+    Result Clear();
+    Result Reset();
+    
+    virtual bool IsSignaled() const override;
+    
+    private:
+    bool is_signaled = false;
+};
+
+inline void intrusive_ptr_add_ref(KReadableEvent *obj)
+{
+    intrusive_ptr_add_ref((KAutoObject *)obj);
+}
+
+inline void intrusive_ptr_release(KReadableEvent *obj)
+{
+    intrusive_ptr_release((KAutoObject *)obj);
+}
+
+}

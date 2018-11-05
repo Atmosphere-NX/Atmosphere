@@ -18,6 +18,8 @@ class IServer {
     {
         parent->HandleServerDestroyed();
     }
+    
+    ParentType *GetParent() const { return parent; }
 
     protected:
     void SetParent(SharedPtr<Parent> parent)
