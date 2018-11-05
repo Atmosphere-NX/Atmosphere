@@ -8,7 +8,7 @@ namespace mesosphere
 
 void KAlarm::AddAlarmable(IAlarmable &alarmable)
 {
-    std::lock_guard guard{spinlock};
+    std::scoped_lock guard{spinlock};
     alarmables.insert(alarmable);
 
     KSystemClock::SetAlarm(alarmables.cbegin()->GetAlarmTime());
@@ -16,7 +16,7 @@ void KAlarm::AddAlarmable(IAlarmable &alarmable)
 
 void KAlarm::RemoveAlarmable(const IAlarmable &alarmable)
 {
-    std::lock_guard guard{spinlock};
+    std::scoped_lock guard{spinlock};
     alarmables.erase(alarmable);
 
     KSystemClock::SetAlarm(alarmables.cbegin()->GetAlarmTime());
@@ -26,8 +26,8 @@ void KAlarm::HandleAlarm()
 {
     {
         KCriticalSection &critsec = KScheduler::GetCriticalSection();
-        std::lock_guard criticalSection{critsec};
-        std::lock_guard guard{spinlock};
+        std::scoped_lock criticalSection{critsec};
+        std::scoped_lock guard{spinlock};
 
         KSystemClock::SetInterruptMasked(true); // mask timer interrupt
         KSystemClock::time_point currentTime = KSystemClock::now(), maxAlarmTime;

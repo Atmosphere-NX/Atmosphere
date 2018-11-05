@@ -9,7 +9,7 @@ void KMutex::lock_slow_path(KThread &owner, KThread &requester)
 {
     // Requester is currentThread most of (all ?) the time
     KCriticalSection &critsec = KScheduler::GetCriticalSection();
-    std::lock_guard criticalSection{critsec};
+    std::scoped_lock criticalSection{critsec};
     if (KCoreContext::GetCurrentInstance().GetScheduler()->IsActive()) {
         requester.SetWantedMutex((uiptr)this);
         owner.AddMutexWaiter(requester);

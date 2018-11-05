@@ -51,13 +51,13 @@ class KObjectAllocator {
 
     void RegisterObject(T &obj) noexcept
     {
-        std::lock_guard guard{mutex};
+        std::scoped_lock guard{mutex};
         allocatedSet.insert(obj);
     }
 
     void UnregisterObject(T &obj) noexcept
     {
-        std::lock_guard guard{mutex};
+        std::scoped_lock guard{mutex};
         allocatedSet.erase(obj);
     }
 

@@ -32,7 +32,7 @@ void KThread::AdjustScheduling(ushort oldMaskFull)
 
 void KThread::Reschedule(KThread::SchedulingStatus newStatus)
 {
-    //std::lock_guard criticalSection{KScheduler::GetCriticalSection()};
+    //KScopedCriticalSection criticalSection{};
     // TODO check the above ^
     AdjustScheduling(SetSchedulingStatusField(newStatus));
 }

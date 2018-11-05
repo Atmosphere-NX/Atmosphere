@@ -10,7 +10,7 @@ void KConditionVariable::wait_until_impl(const KSystemClock::time_point &timeout
     // Official kernel counts number of waiters, but that isn't necessary
     {
         KThread *currentThread = KCoreContext::GetCurrentInstance().GetCurrentThread();
-        std::lock_guard guard{KScheduler::GetCriticalSection()};
+        KScopedCriticalSection criticalSection{};
         mutex_.unlock();
         if (currentThread->WaitForKernelSync(waiterList)) {
             (void)timeoutPoint; //TODO!
@@ -23,7 +23,7 @@ void KConditionVariable::wait_until_impl(const KSystemClock::time_point &timeout
 
 void KConditionVariable::notify_one() noexcept
 {
-    std::lock_guard guard{KScheduler::GetCriticalSection()};
+    KScopedCriticalSection criticalSection{};
     auto t = waiterList.begin();
     if (t != waiterList.end()) {
         t->ResumeFromKernelSync();
@@ -32,7 +32,7 @@ void KConditionVariable::notify_one() noexcept
 
 void KConditionVariable::notify_all() noexcept
 {
-    std::lock_guard guard{KScheduler::GetCriticalSection()};
+    KScopedCriticalSection criticalSection{};
     KThread::ResumeAllFromKernelSync(waiterList);
 }
 

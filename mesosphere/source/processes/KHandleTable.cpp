@@ -20,7 +20,7 @@ SharedPtr<KAutoObject> KHandleTable::GetAutoObject(Handle handle) const
         // Note: official kernel locks the spinlock here, but we don't need to.
         return nullptr;
     } else {
-        std::lock_guard guard{spinlock};
+        std::scoped_lock guard{spinlock};
         return IsValid(handle) ? entries[handle.index].object : nullptr;
     }
 }
@@ -50,7 +50,7 @@ bool KHandleTable::Close(Handle handle)
     if (handle.IsAliasOrFree()) {
         return false;
     } else {
-        std::lock_guard guard{spinlock};
+        std::scoped_lock guard{spinlock};
         if (IsValid(handle)) {
             entries[-firstFreeIndex].id = firstFreeIndex;
             firstFreeIndex = -(s16)handle.index;
@@ -67,7 +67,7 @@ bool KHandleTable::Generate(Handle &out, SharedPtr<KAutoObject> obj)
 {
     // Note: nullptr is accepted, for deferred-init.
 
-    std::lock_guard guard{spinlock};
+    std::scoped_lock guard{spinlock};
     if (numActive >= capacity) {
         return false; // caller should return 0xD201
     }
@@ -93,7 +93,7 @@ bool KHandleTable::Generate(Handle &out, SharedPtr<KAutoObject> obj)
 bool KHandleTable::Set(SharedPtr<KAutoObject> obj, Handle handle)
 {
     if (!handle.IsAliasOrFree() && IsValid(handle)) {
-        std::lock_guard guard{spinlock};
+        std::scoped_lock guard{spinlock};
         entries[handle.index].object = std::move(obj);
         return true;
     } else {
