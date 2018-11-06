@@ -112,14 +112,14 @@ class KAutoObject {
             * Multiple inheritance is not supported
             * (BaseToken & DerivedToken) == BaseToken
             * The token for KAutoObject is 0
-            * Not-final classes have a token of (1 << typeid)
+            * Not-final classes have a token of (1 << (typeid - 1))
             * Final derived classes have a unique token part of Seq[typeid - DerivedClassMin] | 0x100,
             where Seq is (in base 2) 11, 101, 110, 1001, 1010, and so on...
         */
        if constexpr (std::is_same_v<T, KAutoObject>) {
            return 0;
        } else if constexpr (!std::is_final_v<T>) {
-           return (1 << (ushort)T::typeId) | GenerateClassToken<typename T::BaseClass>();
+           return (1 << ((ushort)T::typeId - 1)) | GenerateClassToken<typename T::BaseClass>();
        } else {
            ushort off = (ushort)T::typeId - (ushort)TypeId::FinalClassesMin;
            return ((ushort)detail::A038444(off) << 9) | 0x100u | GenerateClassToken<typename T::BaseClass>();
