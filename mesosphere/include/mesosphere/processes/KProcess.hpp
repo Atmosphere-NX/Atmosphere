@@ -11,7 +11,7 @@ class KResourceLimit;
 namespace mesosphere
 {
 
-class KProcess : public KAutoObject {
+class KProcess final : public KAutoObject {
     public:
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, Process);
 

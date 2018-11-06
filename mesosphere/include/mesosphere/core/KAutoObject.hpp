@@ -95,7 +95,7 @@ class KAutoObject {
         SessionRequest,
         CodeMemory, // JIT
 
-        FinalClassesMax = CodeMemory,
+        Max = CodeMemory + 1,
     };
 
     private:
@@ -119,8 +119,10 @@ class KAutoObject {
        if constexpr (std::is_same_v<T, KAutoObject>) {
            return 0;
        } else if constexpr (!std::is_final_v<T>) {
+           static_assert(T::typeId >= TypeId::SynchronizationObject && T::typeId < TypeId::FinalClassesMin, "Invalid type ID!");
            return (1 << ((ushort)T::typeId - 1)) | GenerateClassToken<typename T::BaseClass>();
        } else {
+           static_assert(T::typeId >= TypeId::FinalClassesMin && T::typeId < TypeId::Max, "Invalid type ID!");
            ushort off = (ushort)T::typeId - (ushort)TypeId::FinalClassesMin;
            return ((ushort)detail::A038444(off) << 9) | 0x100u | GenerateClassToken<typename T::BaseClass>();
        }
