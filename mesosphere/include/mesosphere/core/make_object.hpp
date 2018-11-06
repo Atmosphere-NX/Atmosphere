@@ -52,7 +52,7 @@ cleanup:
 template<typename T, typename std::enable_if_t<!std::is_base_of_v<IClientServerParentTag, T>> * = nullptr, typename ...Args>
 auto MakeObject(Args&& ...args)
 {
-    auto [res, obj] = MakeObjectRaw(std::forward<Args>(args)...);
+    auto [res, obj] = MakeObjectRaw<T>(std::forward<Args>(args)...);
     return std::tuple<Result, SharedPtr<T>>{res, SharedPtr<T>{obj}};
 }
 
@@ -61,8 +61,8 @@ auto MakeObject(Args&& ...args)
 {
     // Bug in type inference?
     using RetType = std::tuple<Result, SharedPtr<typename T::ServerClass>, SharedPtr<typename T::ClientClass>>;
-    auto [res, obj] = MakeObjectRaw(std::forward<Args>(args)...);
-    return res.IsSuccess() ? RetType{res, &obj.GetServer(), &obj.GetClient()} : RetType{res, nullptr, nullptr};
+    auto [res, obj] = MakeObjectRaw<T>(std::forward<Args>(args)...);
+    return res.IsSuccess() ? RetType{res, &obj->GetServer(), &obj->GetClient()} : RetType{res, nullptr, nullptr};
 }
 
 template<typename T, typename std::enable_if_t<!std::is_base_of_v<IClientServerParentTag, T>> * = nullptr, typename ...Args>
@@ -72,7 +72,7 @@ auto MakeObjectWithHandle(Args&& ...args)
     KProcess *currentProcess = cctx.GetCurrentProcess();
     KHandleTable &tbl = currentProcess->GetHandleTable();
 
-    auto [res, obj] = MakeObjectRaw(std::forward<Args>(args)...);
+    auto [res, obj] = MakeObjectRaw<T>(std::forward<Args>(args)...);
     if (res.IsFailure()) {
         return std::tuple{res, Handle{}};
     }
@@ -87,14 +87,14 @@ auto MakeObjectWithHandle(Args&& ...args)
     KProcess *currentProcess = cctx.GetCurrentProcess();
     KHandleTable &tbl = currentProcess->GetHandleTable();
 
-    auto [res, obj] = MakeObjectRaw(std::forward<Args>(args)...);
+    auto [res, obj] = MakeObjectRaw<T>(std::forward<Args>(args)...);
     if (res.IsFailure()) {
         return std::tuple{res, Handle{}, Handle{}};
     }
 
-    auto [res2, serverHandle] = tbl.Generate(&obj.GetServer());
+    auto [res2, serverHandle] = tbl.Generate(&obj->GetServer());
     if (res2.IsSuccess()) {
-        auto [res3, clientHandle] = tbl.Generate(&obj.GetClient());
+        auto [res3, clientHandle] = tbl.Generate(&obj->GetClient());
         if (res3.IsSuccess()) {
             return std::tuple{res3, serverHandle, clientHandle};
         } else {
