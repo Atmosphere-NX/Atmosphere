@@ -29,8 +29,7 @@
 #include "scope_guard.hpp"
 
 static inline Handle GetCurrentThreadHandle() {
-    /* TODO: Wait for libnx to add a way for me to call getThreadVars() */
-    return *((Handle *)((uintptr_t)armGetTls() + 0x1E4));
+    return threadGetCurHandle();
 }
 
 struct DefaultManagerOptions {
