@@ -18,7 +18,7 @@ class IClient : public IClientTag {
     using ClientClass = Client;
     using ServerClass = Server;
 
-    void *operator new(size_t sz) noexcept { for (;;); }
+    void *operator new(size_t sz) noexcept = delete;
     void operator delete(void *ptr) noexcept {}
 
     ~IClient()
