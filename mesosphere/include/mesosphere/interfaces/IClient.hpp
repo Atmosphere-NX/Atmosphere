@@ -23,8 +23,8 @@ class IClient : public IClientTag {
         parent->HandleClientDestroyed();
     }
 
-    ParentClass *GetParent() const { return parent; }
-    
+    const SharedPtr<Parent>& GetParent() const { return parent; }
+
     void SetParent(SharedPtr<Parent> parent)
     {
         this->parent = std::move(parent);

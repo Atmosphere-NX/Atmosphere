@@ -25,6 +25,9 @@ class IClientServerParent : public IClientServerParentTag {
         server.SetParentAndClient(par, &client);
     }
 
+    ClientClass &GetClient() { return client; }
+    ServerClass &GetServer() { return server; }
+
     protected:
 
     ClientClass client{};

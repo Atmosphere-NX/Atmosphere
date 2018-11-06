@@ -63,13 +63,13 @@ bool KHandleTable::Close(Handle handle)
     }
 }
 
-bool KHandleTable::Generate(Handle &out, SharedPtr<KAutoObject> obj)
+std::tuple<Result, Handle> KHandleTable::Generate(SharedPtr<KAutoObject> obj)
 {
     // Note: nullptr is accepted, for deferred-init.
 
     std::scoped_lock guard{spinlock};
     if (numActive >= capacity) {
-        return false; // caller should return 0xD201
+        return {ResultKernelOutOfHandles(), Handle{}};
     }
 
     // Get/allocate the entry
@@ -80,24 +80,20 @@ bool KHandleTable::Generate(Handle &out, SharedPtr<KAutoObject> obj)
     e->id = idCounter;
     e->object = std::move(obj);
 
-    out.index = index;
-    out.id = e->id;
-    out.isAlias = false;
-
     size = ++numActive > size ? numActive : size;
     idCounter = idCounter == 0x7FFF ? 1 : idCounter + 1;
 
-    return true;
+    return {ResultSuccess(), Handle{index, e->id, false}};
 }
 
-bool KHandleTable::Set(SharedPtr<KAutoObject> obj, Handle handle)
+Result KHandleTable::Set(SharedPtr<KAutoObject> obj, Handle handle)
 {
     if (!handle.IsAliasOrFree() && IsValid(handle)) {
         std::scoped_lock guard{spinlock};
         entries[handle.index].object = std::move(obj);
-        return true;
+        return ResultSuccess();
     } else {
-        return false;
+        return ResultKernelInvalidHandle();
     }
 }
 

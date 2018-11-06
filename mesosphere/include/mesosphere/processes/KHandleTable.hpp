@@ -6,6 +6,7 @@
 #include <mesosphere/core/KAutoObject.hpp>
 #include <mesosphere/arch/KSpinLock.hpp>
 #include <array>
+#include <tuple>
 
 namespace mesosphere
 {
@@ -35,10 +36,10 @@ class KHandleTable final {
         }
     }
 
-    bool Generate(Handle &out, SharedPtr<KAutoObject> obj);
+    std::tuple<Result, Handle> Generate(SharedPtr<KAutoObject> obj);
 
     /// For deferred-init
-    bool Set(SharedPtr<KAutoObject> obj, Handle handle);
+    Result Set(SharedPtr<KAutoObject> obj, Handle handle);
 
     bool Close(Handle handle);
     void Destroy();

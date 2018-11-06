@@ -25,7 +25,6 @@ class ISetAllocated : public KObjectAllocator<Derived>::AllocatedSetHookType
         allocator.GetSlabHeap().deallocate((Derived *)ptr);
     }
 
-    protected:
     void AddToAllocatedSet() noexcept
     {
         Derived *d = (Derived *)this;
@@ -33,6 +32,7 @@ class ISetAllocated : public KObjectAllocator<Derived>::AllocatedSetHookType
         isRegisteredToAllocator = true;
     }
 
+    protected:
     void RemoveFromAllocatedSet() noexcept
     {
         Derived *d = (Derived *)this;

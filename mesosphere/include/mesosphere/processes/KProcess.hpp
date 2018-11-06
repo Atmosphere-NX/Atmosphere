@@ -23,6 +23,8 @@ class KProcess : public KAutoObject {
 
     const SharedPtr<KResourceLimit> &GetResourceLimit() const { return reslimit; }
 
+    KHandleTable &GetHandleTable() { return handleTable; }
+
     private:
     KThread *lastThreads[MAX_CORES]{nullptr};
     ulong lastIdleSelectionCount[MAX_CORES]{0};

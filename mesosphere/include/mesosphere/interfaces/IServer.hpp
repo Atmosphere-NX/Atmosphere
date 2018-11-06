@@ -22,8 +22,8 @@ class IServer : public IServerTag {
     {
         parent->HandleServerDestroyed();
     }
-    
-    ParentClass *GetParent() const { return parent; }
+
+    const SharedPtr<Parent> &GetParent() const { return parent; }
 
     void SetParentAndClient(SharedPtr<Parent> parent, SharedPtr<Client> client)
     {
