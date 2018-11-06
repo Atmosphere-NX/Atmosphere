@@ -61,7 +61,7 @@ class WaitableManager : public SessionManagerBase {
         HosMutex process_lock;
         HosMutex signal_lock;
         HosMutex add_lock;
-        IEvent *new_waitable_event = nullptr;
+        bool has_new_waitables = false;
                 
         IWaitable *next_signaled = nullptr;
         Handle cur_thread_handle = INVALID_HANDLE;
@@ -80,7 +80,6 @@ class WaitableManager : public SessionManagerBase {
                     threadCreate(&threads[i], &WaitableManager::ProcessLoop, this, ss, prio, cpuid);
                 }
             }
-            new_waitable_event = CreateSystemEvent([](u64 timeout) { return 0; }, true);
         }
         
         ~WaitableManager() override {
@@ -94,15 +93,20 @@ class WaitableManager : public SessionManagerBase {
             std::scoped_lock lk{this->add_lock};
             this->to_add_waitables.push_back(w);
             w->SetManager(this);
-            this->new_waitable_event->Signal();
+            this->has_new_waitables = true;
+            this->CancelSynchronization();
+        }
+
+        virtual void CancelSynchronization() {
+            svcCancelSynchronization(this->cur_thread_handle);
         }
         
         virtual void NotifySignaled(IWaitable *w) override {
             std::scoped_lock lk{this->signal_lock};
-            if (this->next_signaled == nullptr && w != this->new_waitable_event) {
+            if (this->next_signaled == nullptr) {
                 this->next_signaled = w;
             }
-            svcCancelSynchronization(this->cur_thread_handle);
+            this->CancelSynchronization();
         }
         
         virtual void Process() override {
@@ -141,9 +145,8 @@ class WaitableManager : public SessionManagerBase {
             this->next_signaled = nullptr;
             IWaitable *result = nullptr;
             
-            if (this->new_waitable_event->IsSignaled()) {
-                AddWaitablesInternal();
-            }
+            /* Add new waitables, if any. */
+            AddWaitablesInternal();
             
             this->cur_thread_handle = GetCurrentThreadHandle();
             ON_SCOPE_EXIT {
@@ -174,11 +177,9 @@ class WaitableManager : public SessionManagerBase {
                     std::sort(this->waitables.begin(), this->waitables.end(), IWaitable::Compare);
                     
                     /* Copy out handles. */
-                    handles.resize(this->waitables.size() + 1);
-                    wait_list.resize(this->waitables.size() + 1);
-                    handles[0] = this->new_waitable_event->GetHandle();
-                    wait_list[0] = this->new_waitable_event;
-                    unsigned int num_handles = 1;
+                    handles.resize(this->waitables.size());
+                    wait_list.resize(this->waitables.size());
+                    unsigned int num_handles = 0;
                     for (unsigned int i = 0; i < this->waitables.size(); i++) {
                         Handle h = this->waitables[i]->GetHandle();
                         if (h != INVALID_HANDLE) {
@@ -202,10 +203,6 @@ class WaitableManager : public SessionManagerBase {
                     size_t w_ind = std::distance(this->waitables.begin(), std::find(this->waitables.begin(), this->waitables.end(), w));
                     
                     if (R_SUCCEEDED(rc)) {
-                        if (handle_index == 0) {
-                            AddWaitablesInternal();
-                            continue;
-                        }
                         std::for_each(waitables.begin(), waitables.begin() + w_ind, std::mem_fn(&IWaitable::UpdatePriority));
                         result = w;
                     } else if (rc == 0xEA01) {
@@ -213,15 +210,16 @@ class WaitableManager : public SessionManagerBase {
                         std::for_each(waitables.begin(), waitables.end(), std::mem_fn(&IWaitable::UpdatePriority));
                     } else if (rc == 0xEC01) {
                         /* svcCancelSynchronization was called. */
-                        std::scoped_lock lk{this->signal_lock};
-                        if (this->next_signaled != nullptr) result = this->next_signaled;
+                        AddWaitablesInternal();
+                        {
+                            std::scoped_lock lk{this->signal_lock};
+                            if (this->next_signaled != nullptr) {
+                                result = this->next_signaled;
+                            }
+                        }
                     } else if (rc != 0xF601 && rc != 0xE401) {
                         std::abort();
-                    } else {
-                        if (handle_index == 0) {
-                            std::abort();
-                        }
-                        
+                    } else {  
                         this->waitables.erase(this->waitables.begin() + w_ind);
                         std::for_each(waitables.begin(), waitables.begin() + w_ind - 1, std::mem_fn(&IWaitable::UpdatePriority));
                         delete w;
@@ -235,11 +233,11 @@ class WaitableManager : public SessionManagerBase {
         }
         
         void AddWaitablesInternal() {
-            {
-                std::scoped_lock lk{this->add_lock};
+            std::scoped_lock lk{this->add_lock};
+            if (this->has_new_waitables) {
                 this->waitables.insert(this->waitables.end(), this->to_add_waitables.begin(), this->to_add_waitables.end());
                 this->to_add_waitables.clear();
-                this->new_waitable_event->Clear();
+                this->has_new_waitables = false;
             }
         }
     /* Session Manager */
