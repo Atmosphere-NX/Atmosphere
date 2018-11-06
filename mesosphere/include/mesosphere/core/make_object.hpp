@@ -13,17 +13,17 @@ namespace mesosphere
 template<typename T, typename ...Args>
 auto MakeObjectRaw(Args&& ...args)
 {
-    Result res = ResultSuccess;
+    Result res = ResultSuccess();
     KCoreContext &cctx = KCoreContext::GetCurrentInstance();
     auto reslimit = cctx.GetCurrentProcess()->GetResourceLimit();
     bool doReslimitCleanup = false;
     T *obj = nullptr;
     if constexpr (std::is_base_of_v<ILimitedResource<T>, T>) {
         if (reslimit != nullptr) {
-            if (reslimit->Reserve(KResourceLimit::GetCategoryOf<T>(), 1, maxResourceAcqWaitTime)) {
+            if (reslimit->Reserve(KResourceLimit::categoryOf<T>, 1, T::maxResourceAcqWaitTime)) {
                 doReslimitCleanup = true;
             } else {
-                return ResultKernelOutOfResource();
+                return std::tuple<Result, T *>{ResultKernelOutOfResource(), nullptr};
             }
         }
     }
@@ -34,7 +34,7 @@ auto MakeObjectRaw(Args&& ...args)
         goto cleanup;
     }
 
-    res = T::Initialize(std::forward<Args>(args)...);
+    res = obj->Initialize(std::forward<Args>(args)...);
     if (res.IsSuccess()) {
         doReslimitCleanup = false;
         if constexpr (std::is_base_of_v<ISetAllocated<T>, T>) {
@@ -43,27 +43,29 @@ auto MakeObjectRaw(Args&& ...args)
     }
 cleanup:
     if (doReslimitCleanup) {
-        reslimit->Release(KResourceLimit::GetCategoryOf<T>(), 1, 1);
+        reslimit->Release(KResourceLimit::categoryOf<T>, 1, 1);
     }
 
     return std::tuple{res, obj};
 }
 
-template<typename T, typename = std::enable_if_t<!std::is_base_of_v<IClientServerParentTag, T>>, typename ...Args>
+template<typename T, typename std::enable_if_t<!std::is_base_of_v<IClientServerParentTag, T>> * = nullptr, typename ...Args>
 auto MakeObject(Args&& ...args)
 {
     auto [res, obj] = MakeObjectRaw(std::forward<Args>(args)...);
-    return std::tuple{res, SharedPtr{obj}};
+    return std::tuple<Result, SharedPtr<T>>{res, SharedPtr<T>{obj}};
 }
 
-template<typename T, typename = std::enable_if_t<std::is_base_of_v<IClientServerParentTag, T>>, typename ...Args>
+template<typename T, typename std::enable_if_t<std::is_base_of_v<IClientServerParentTag, T>> * = nullptr, typename ...Args>
 auto MakeObject(Args&& ...args)
 {
+    // Bug in type inference?
+    using RetType = std::tuple<Result, SharedPtr<typename T::ServerClass>, SharedPtr<typename T::ClientClass>>;
     auto [res, obj] = MakeObjectRaw(std::forward<Args>(args)...);
-    return res.IsSuccess() ? std::tuple{res, SharedPtr{&obj.GetServer()}, SharedPtr{&obj.GetClient()}} : std::tuple{res, nullptr, nullptr};
+    return res.IsSuccess() ? RetType{res, &obj.GetServer(), &obj.GetClient()} : RetType{res, nullptr, nullptr};
 }
 
-template<typename T, typename = std::enable_if_t<!std::is_base_of_v<IClientServerParentTag, T>>, typename ...Args>
+template<typename T, typename std::enable_if_t<!std::is_base_of_v<IClientServerParentTag, T>> * = nullptr, typename ...Args>
 auto MakeObjectWithHandle(Args&& ...args)
 {
     KCoreContext &cctx = KCoreContext::GetCurrentInstance();
@@ -78,7 +80,7 @@ auto MakeObjectWithHandle(Args&& ...args)
     return tbl.Generate(obj);
 }
 
-template<typename T, typename = std::enable_if_t<std::is_base_of_v<IClientServerParentTag, T>>, typename ...Args>
+template<typename T, typename std::enable_if_t<std::is_base_of_v<IClientServerParentTag, T>> * = nullptr, typename ...Args>
 auto MakeObjectWithHandle(Args&& ...args)
 {
     KCoreContext &cctx = KCoreContext::GetCurrentInstance();

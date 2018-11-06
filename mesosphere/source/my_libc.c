@@ -1,4 +1,4 @@
-/* Note: copied from newlib */
+/* Note: copied from newlib or libgcc */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -85,15 +85,6 @@ __libc_fini_array (void)
 #endif
 }
 #endif
-
-int
-__cxa_atexit (void (*fn) (void *),
-	void *arg,
-	void *d)
-{
-  return 0;
-}
-void *__dso_handle = 0;
 
 /*
 FUNCTION

@@ -39,10 +39,7 @@ class KResourceLimit final :
         }
     }
 
-    template<typename T> Category GetCategoryOf()
-    {
-        return GetCategory(T::typeId);
-    }
+    template<typename T> static constexpr Category categoryOf = GetCategory(T::typeId);
 
     static KResourceLimit &GetDefaultInstance() { return defaultInstance; }
 
