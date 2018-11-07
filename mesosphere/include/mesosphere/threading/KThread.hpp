@@ -123,7 +123,6 @@ class KThread final :
 
     public:
 
-    virtual bool IsAlive() const override;
     virtual void OnAlarm() override;
 
     static constexpr uint GetPriorityOf(const KThread &thread)

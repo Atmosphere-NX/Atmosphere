@@ -15,7 +15,6 @@ class KProcess final : public KAutoObject {
     public:
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, Process);
 
-    virtual bool IsAlive() const override { return true; }
     constexpr long GetSchedulerOperationCount() const { return schedulerOperationCount; }
 
     void IncrementSchedulerOperationCount() { ++schedulerOperationCount; }

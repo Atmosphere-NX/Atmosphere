@@ -9,11 +9,6 @@
 namespace mesosphere
 {
 
-bool KThread::IsAlive() const
-{
-    return true;
-}
-
 void KThread::OnAlarm()
 {
     CancelKernelSync();

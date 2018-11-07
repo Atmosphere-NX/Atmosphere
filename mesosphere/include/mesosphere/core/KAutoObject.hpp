@@ -57,9 +57,6 @@ class KAutoObject {
         return (u64)(uiptr)this;
     }
 
-    /// Is alive (checked for deletion)
-    virtual bool IsAlive() const = 0;
-
     /// Virtual destructor
     virtual ~KAutoObject();
 

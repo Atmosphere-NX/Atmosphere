@@ -18,8 +18,6 @@ class KReadableEvent : public KSynchronizationObject, public IClient<KEvent, KRe
     MESOSPHERE_AUTO_OBJECT_TRAITS(SynchronizationObject, ReadableEvent);
     MESOSPHERE_CLIENT_TRAITS(Event);
 
-    virtual bool IsAlive() const override { return true; }
-
     virtual ~KReadableEvent();
 
     Result Signal();

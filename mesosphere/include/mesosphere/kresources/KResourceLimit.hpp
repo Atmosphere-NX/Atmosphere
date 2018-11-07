@@ -17,7 +17,6 @@ class KResourceLimit final :
     public:
 
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, ResourceLimit);
-    virtual bool IsAlive() const override { return true; }
 
     enum class Category : uint {
         Memory = 0,

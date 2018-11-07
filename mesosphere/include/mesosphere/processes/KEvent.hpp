@@ -28,11 +28,7 @@ class KEvent final :
 
     Result Initialize();
 
-    /* KAutoObject */
-    virtual bool IsAlive() const override;
-
     private:
-    bool isInitialized = false;
 };
 
 inline void intrusive_ptr_add_ref(KEvent *obj)
