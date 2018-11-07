@@ -60,6 +60,7 @@ class WaitableManager : public SessionManagerBase {
         HosMutex process_lock;
         HosMutex signal_lock;
         HosMutex add_lock;
+        HosMutex cur_thread_lock;
         bool has_new_waitables = false;
                 
         IWaitable *next_signaled = nullptr;
@@ -97,7 +98,7 @@ class WaitableManager : public SessionManagerBase {
         }
 
         virtual void CancelSynchronization() {
-            svcCancelSynchronization(this->cur_thread_handle);
+            svcCancelSynchronization(GetProcessingThreadHandle());
         }
         
         virtual void NotifySignaled(IWaitable *w) override {
@@ -122,6 +123,16 @@ class WaitableManager : public SessionManagerBase {
             ProcessLoop(this);
         }
     private:
+        void SetProcessingThreadHandle(Handle h) {
+            std::scoped_lock<HosMutex> lk{this->cur_thread_lock};
+            this->cur_thread_handle = h;
+        }
+        
+        Handle GetProcessingThreadHandle() {
+            std::scoped_lock<HosMutex> lk{this->cur_thread_lock};
+            return this->cur_thread_handle;
+        }
+    
         static void ProcessLoop(void *t) {
             WaitableManager *this_ptr = (WaitableManager *)t;
             while (true) {
@@ -141,16 +152,19 @@ class WaitableManager : public SessionManagerBase {
         
         IWaitable *GetWaitable() {
             std::scoped_lock lk{this->process_lock};
+            
+            /* Set processing thread handle while in scope. */
+            SetProcessingThreadHandle(GetCurrentThreadHandle());
+            ON_SCOPE_EXIT {
+                SetProcessingThreadHandle(INVALID_HANDLE);
+            };
+            
+            /* Prepare variables for result. */
             this->next_signaled = nullptr;
             IWaitable *result = nullptr;
             
             /* Add new waitables, if any. */
             AddWaitablesInternal();
-            
-            this->cur_thread_handle = GetCurrentThreadHandle();
-            ON_SCOPE_EXIT {
-                this->cur_thread_handle = INVALID_HANDLE;
-            };
             
             /* First, see if anything's already signaled. */
             for (auto &w : this->waitables) {
