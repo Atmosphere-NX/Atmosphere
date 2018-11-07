@@ -30,11 +30,7 @@ class KEvent final :
 
     /* KAutoObject */
     virtual bool IsAlive() const override;
-    
-    /* IClientServerParent */
-    void HandleServerDestroyed() { }
-    void HandleClientDestroyed() { }
-    
+
     private:
     bool isInitialized = false;
 };

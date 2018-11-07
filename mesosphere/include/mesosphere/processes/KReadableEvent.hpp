@@ -4,7 +4,6 @@
 #include <mesosphere/core/Result.hpp>
 #include <mesosphere/core/KAutoObject.hpp>
 #include <mesosphere/core/KSynchronizationObject.hpp>
-#include <mesosphere/interfaces/ISetAllocated.hpp>
 #include <mesosphere/interfaces/IClient.hpp>
 
 namespace mesosphere

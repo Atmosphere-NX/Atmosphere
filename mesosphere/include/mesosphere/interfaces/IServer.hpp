@@ -21,11 +21,6 @@ class IServer : public IServerTag {
     void *operator new(size_t sz) noexcept = delete;
     void operator delete(void *ptr) noexcept {};
 
-    ~IServer()
-    {
-        parent->HandleServerDestroyed();
-    }
-
     const SharedPtr<Parent> &GetParent() const { return parent; }
 
     void SetParentAndClient(SharedPtr<Parent> parent, SharedPtr<Client> client)

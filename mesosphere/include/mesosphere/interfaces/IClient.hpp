@@ -21,11 +21,6 @@ class IClient : public IClientTag {
     void *operator new(size_t sz) noexcept = delete;
     void operator delete(void *ptr) noexcept {}
 
-    ~IClient()
-    {
-        parent->HandleClientDestroyed();
-    }
-
     const SharedPtr<Parent>& GetParent() const { return parent; }
 
     void SetParent(SharedPtr<Parent> parent)

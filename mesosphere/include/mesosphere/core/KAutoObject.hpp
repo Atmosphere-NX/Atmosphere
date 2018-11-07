@@ -19,12 +19,28 @@ namespace mesosphere
 class KProcess;
 class KResourceLimit;
 class KThread;
+class KEvent;
+class KReadableEvent;
+class KWritableEvent;
+class KInterruptEvent;
 
 void intrusive_ptr_add_ref(KProcess *obj);
 void intrusive_ptr_release(KProcess *obj);
 
 void intrusive_ptr_add_ref(KResourceLimit *obj);
 void intrusive_ptr_release(KResourceLimit *obj);
+
+void intrusive_ptr_add_ref(KEvent *obj);
+void intrusive_ptr_release(KEvent *obj);
+
+void intrusive_ptr_add_ref(KReadableEvent *obj);
+void intrusive_ptr_release(KReadableEvent *obj);
+
+void intrusive_ptr_add_ref(KWritableEvent *obj);
+void intrusive_ptr_release(KWritableEvent *obj);
+
+void intrusive_ptr_add_ref(KInterruptEvent *obj);
+void intrusive_ptr_release(KInterruptEvent *obj);
 
 class KAutoObject {
     public:
