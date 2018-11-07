@@ -34,5 +34,13 @@ static constexpr u32 HashServiceName(const char *name) {
 
 enum class TmaService : u32 {
     Invalid = 0,
+    
+    /* Special nodes, for facilitating connection over USB. */
+    UsbQueryTarget = HashServiceName("USBQueryTarget"),
+    UsbSendHostInfo = HashServiceName("USBSendHostInfo"),
+    UsbConnect = HashServiceName("USBConnect"),
+    UsbDisconnect = HashServiceName("USBDisconnect"),
+    
+    
     TestService = HashServiceName("AtmosphereTestService"), /* Temporary service, will be used to debug communications. */
 };

@@ -436,7 +436,7 @@ TmaConnResult TmaUsbComms::SendPacket(TmaPacket *packet) {
             res = TmaConnResult::GeneralFailure;
         }
         
-        if (res == TmaConnResult::Success) {
+        if (res == TmaConnResult::Success && 0 < body_len) {
             /* Copy body to send buffer. */
             packet->CopyBodyTo(g_send_data_buf);
             

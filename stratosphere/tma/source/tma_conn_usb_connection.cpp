@@ -76,18 +76,54 @@ void TmaUsbConnection::RecvThreadFunc(void *arg) {
     this_ptr->SetConnected(true);
     
     while (res == TmaConnResult::Success) {
-        if (!this_ptr->IsConnected()) {
-            break;
-        }
         TmaPacket *packet = this_ptr->AllocateRecvPacket();
         if (packet == nullptr) { std::abort(); }
         
         res = TmaUsbComms::ReceivePacket(packet);
         
         if (res == TmaConnResult::Success) {
-            TmaPacket *send_packet = this_ptr->AllocateSendPacket();
-            send_packet->Write<u64>(i++);
-            this_ptr->send_queue.Send(reinterpret_cast<uintptr_t>(send_packet));
+            switch (packet->GetServiceId()) {
+                case TmaService::UsbQueryTarget: {
+                    this_ptr->SetConnected(false);
+                    
+                    res = this_ptr->SendQueryReply(packet);
+                                        
+                    if (!this_ptr->has_woken_up) {
+                        /* TODO: Cancel background work. */
+                    }
+                }
+                break;
+                case TmaService::UsbSendHostInfo: {
+                    struct {
+                        u32 version;
+                        u32 sleeping;
+                    } host_info;
+                    packet->Read<decltype(host_info)>(host_info);
+                    
+                    if (!this_ptr->has_woken_up || !host_info.sleeping) {
+                        /* TODO: Cancel background work. */
+                    }
+                }
+                break;
+                case TmaService::UsbConnect: {
+                    res = this_ptr->SendQueryReply(packet);
+                    
+                    if (res == TmaConnResult::Success) {
+                        this_ptr->SetConnected(true);
+                        this_ptr->OnConnectionEvent(ConnectionEvent::Connected);
+                    }
+                }
+                break;
+                case TmaService::UsbDisconnect: {   
+                    this_ptr->SetConnected(false);
+                    this_ptr->OnDisconnected();
+                    
+                    /* TODO: Cancel background work. */
+                }
+                break;
+                default:
+                    break;
+            }
             this_ptr->FreePacket(packet);
         } else {
             this_ptr->FreePacket(packet);
@@ -152,4 +188,14 @@ TmaConnResult TmaUsbConnection::SendPacket(TmaPacket *packet) {
         this->Tick();
         return TmaConnResult::Disconnected;
     }
+}
+
+TmaConnResult TmaUsbConnection::SendQueryReply(TmaPacket *packet) {
+    packet->ClearOffset();
+    struct {
+        u32 version;
+    } target_info;
+    target_info.version = 0;
+    packet->Write<decltype(target_info)>(target_info);
+    return TmaUsbComms::SendPacket(packet);
 }

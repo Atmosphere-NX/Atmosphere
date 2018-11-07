@@ -190,7 +190,7 @@ class TmaPacket {
         }
         
         template<typename T>
-        TmaConnResult Read(const T &t) {
+        TmaConnResult Read(T &t) {
             return Read(&t, sizeof(T));
         }
         

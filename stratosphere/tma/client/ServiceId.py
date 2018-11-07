@@ -10,15 +10,18 @@
 # more details.
 #
 # You should have received a copy of the GNU General Public License
-from UsbConnection import UsbConnection
-import sys, time
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-def main(argc, argv):
-    with UsbConnection(None) as c:
-        print 'Waiting for connection...'
-        c.wait_connected()
-        print 'Connected!'
-    return 0
+def hash(s):
+    h = ord(s[0]) & 0xFFFFFFFF
+    for c in s:
+        h = ((1000003 * h) ^ ord(c)) & 0xFFFFFFFF
+    h ^= len(s)
+    return h
     
-if __name__ == '__main__':
-    sys.exit(main(len(sys.argv), sys.argv))
+USB_QUERY_TARGET = hash("USBQueryTarget")
+USB_SEND_HOST_INFO = hash("USBSendHostInfo")
+USB_CONNECT = hash("USBConnect")
+USB_DISCONNECT = hash("USBDisconnect")
+
+    

@@ -15,6 +15,8 @@ from UsbInterface import UsbInterface
 from threading import Thread, Condition
 from collections import deque
 import time
+import ServiceId
+from Packet import Packet
 
 class UsbConnection(UsbInterface):
     # Auto connect thread func.
@@ -25,12 +27,6 @@ class UsbConnection(UsbInterface):
             except ValueError as e:
                 continue
     def recv_thread(connection):
-        if connection.is_connected():
-            try:
-                # If we've previously been connected, PyUSB will read garbage...
-                connection.recv_packet()
-            except ValueError:
-                pass
         while connection.is_connected():
             try:
                 connection.recv_packet()
@@ -65,6 +61,7 @@ class UsbConnection(UsbInterface):
         self.conn_thrd.start()
         return self
     def __exit__(self, type, value, traceback):
+        self.disconnect()
         time.sleep(1)
         print 'Closing!'
         time.sleep(1)
@@ -80,24 +77,43 @@ class UsbConnection(UsbInterface):
         self.conn_lock.acquire()
         assert not self.connected
         self.intf = intf
-        self.connected = True
-        self.conn_lock.notify()
-        self.conn_lock.release()
-        self.recv_thrd = Thread(target=UsbConnection.recv_thread, args=(self,))
-        self.send_thrd = Thread(target=UsbConnection.send_thread, args=(self,))
-        self.recv_thrd.daemon = True
-        self.send_thrd.daemon = True
-        self.recv_thrd.start()
-        self.send_thrd.start()
+        
+        try:
+            # Perform Query + Connection handshake
+            self.intf.send_packet(Packet().set_service(ServiceId.USB_QUERY_TARGET))
+            query_resp = self.intf.read_packet()
+            print 'Found Switch, Protocol version 0x%x' % query_resp.read_u32()
+            
+            self.intf.send_packet(Packet().set_service(ServiceId.USB_SEND_HOST_INFO).write_u32(0).write_u32(0))
+            
+            self.intf.send_packet(Packet().set_service(ServiceId.USB_CONNECT))
+            resp = self.intf.read_packet()
+            
+            # Spawn threads
+            self.recv_thrd = Thread(target=UsbConnection.recv_thread, args=(self,))
+            self.send_thrd = Thread(target=UsbConnection.send_thread, args=(self,))
+            self.recv_thrd.daemon = True
+            self.send_thrd.daemon = True
+            self.recv_thrd.start()
+            self.send_thrd.start()
+            self.connected = True
+        finally:
+            # Finish connection.
+            self.conn_lock.notify()
+            self.conn_lock.release()
     def disconnect(self):
         self.conn_lock.acquire()
         if self.connected:
             self.connected = False
+            self.intf.send_packet(Packet().set_service(ServiceId.USB_DISCONNECT))
         self.conn_lock.release()
     def recv_packet(self):
-        hdr, body = self.intf.read_packet()
-        print('Got Packet: %s' % body.encode('hex'))
+        packet = self.intf.read_packet()
+        assert type(packet) is Packet
+        dat = packet.read_u64()
+        print('Got Packet: %08x' % dat)
     def send_packet(self, packet):
+        assert type(packet) is Packet
         self.send_lock.acquire()
         if len(self.send_queue) == 0x40:
             self.send_lock.wait()

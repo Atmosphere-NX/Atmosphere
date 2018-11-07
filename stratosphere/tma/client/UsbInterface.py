@@ -11,11 +11,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import usb, zlib
-from struct import unpack as up, pack as pk
-
-def crc32(s):
-    return zlib.crc32(s) & 0xFFFFFFFF
+import usb
+import Packet
 
 class UsbInterface():
     def __init__(self):
@@ -50,20 +47,16 @@ class UsbInterface():
     def blocking_write(self, data):
         self.ep_out.write(data, 0xFFFFFFFFFFFFFFFF)
     def read_packet(self):
-        hdr = self.blocking_read(0x28)
-        _, _, _, body_size, _, _, _, _, body_chk, hdr_chk = up('<IIIIIIIIII', hdr)
-        if crc32(hdr[:-4]) != hdr_chk:
-            raise ValueError('Invalid header checksum in received packet!')
-        body = self.blocking_read(body_size)
-        if len(body) != body_size:
-            raise ValueError('Failed to receive packet body!')
-        elif crc32(body) != body_chk:
-            raise ValueError('Invalid body checksum in received packet!')
-        return (hdr, body)
-    def send_packet(self, body):
-        hdr = pk('<IIIIIIIII', 0, 0, 0, len(body), 0, 0, 0, 0, crc32(body))
-        hdr += pk('<I', crc32(hdr))
-        self.blocking_write(hdr)
-        self.blocking_write(body)
+        packet = Packet.Packet()
+        hdr = self.blocking_read(Packet.HEADER_SIZE)
+        packet.load_header(hdr)
+        if packet.body_len:
+            packet.load_body(self.blocking_read(packet.body_len))
+        return packet
+    def send_packet(self, packet):
+        data = packet.get_data()
+        self.blocking_write(data[:Packet.HEADER_SIZE])
+        if (len(data) > Packet.HEADER_SIZE):
+            self.blocking_write(data[Packet.HEADER_SIZE:])
 
 

@@ -29,6 +29,7 @@ class TmaUsbConnection : public TmaConnection {
         static void SendThreadFunc(void *arg);
         static void RecvThreadFunc(void *arg);
         static void OnUsbStateChange(void *this_ptr, u32 state);
+        TmaConnResult SendQueryReply(TmaPacket *packet);
         void ClearSendQueue();
         void StartThreads();
         void StopThreads();
