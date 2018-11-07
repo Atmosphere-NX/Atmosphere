@@ -1,7 +1,6 @@
 #include <mutex>
 #include <algorithm>
 #include <mesosphere/processes/KHandleTable.hpp>
-#include <mesosphere/core/KCoreContext.hpp>
 #include <mesosphere/threading/KThread.hpp>
 
 namespace mesosphere

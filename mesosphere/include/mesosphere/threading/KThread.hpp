@@ -33,7 +33,7 @@ class KThread final :
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, Thread);
     MESOSPHERE_LIMITED_RESOURCE_TRAITS(100ms);
 
-    class StackParameters {
+    class StackParameters final {
         public:
         StackParameters(std::array<u64, 4> svcPermissionMask, KThreadContext *threadCtx) :
         svcPermissionMask{svcPermissionMask}, threadCtx{threadCtx} {}
@@ -46,19 +46,19 @@ class KThread final :
         constexpr bool IsExecutingSvc() const { return isExecutingSvc; }
         constexpr u8 GetCurrentSvcId() const { return currentSvcId; }
 
-        constexpr uint GetBottomHalfLockCount() const { return bottomHalfLockCount; }
-        void IncrementBottomHalfLockCount() { ++bottomHalfLockCount; }
-        void DecrementBottomHalfLockCount() { --bottomHalfLockCount; }
+        constexpr uint GetInterruptBottomHalfLockCount() const { return interruptBottomHalfLockCount; }
+        void IncrementInterruptBottomHalfLockCount() { ++interruptBottomHalfLockCount; }
+        void DecrementInterruptBottomHalfLockCount() { --interruptBottomHalfLockCount; }
 
         KThreadContext *GetThreadContext() const { return threadCtx; }
-    
+
         private:
         std::array<u64, 4> svcPermissionMask[256/64]{};
         u8 stateFlags = 0;
         u8 currentSvcId = 0;
         bool isExecutingSvc = false;
         bool isNotStarted = true;
-        uint bottomHalfLockCount = 1;
+        uint interruptBottomHalfLockCount = 1;
         KThreadContext *threadCtx = nullptr;
     };
 
@@ -265,6 +265,15 @@ class KThread final :
     KThread(KProcess *owner, u64 id, uint priority) : KAutoObject(), owner(owner), schedulerNodes(),
     id(id), basePriority(priority), priority(priority),
     currentCoreId(0), affinityMask(15) {};
+
+    friend void IncrementThreadInterruptBottomHalfLockCount(KThread &thread)
+    {
+        thread.GetStackParameters().IncrementInterruptBottomHalfLockCount();
+    }
+    friend void DecrementThreadInterruptBottomHalfLockCount(KThread &thread)
+    {
+        thread.GetStackParameters().DecrementInterruptBottomHalfLockCount();
+    }
 private:
     Result WaitSynchronizationImpl(int &outId, KSynchronizationObject **syncObjs, int numSyncObjs, const KSystemClock::time_point &timeoutTime);
 

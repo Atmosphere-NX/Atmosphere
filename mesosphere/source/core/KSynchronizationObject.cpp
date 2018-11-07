@@ -1,6 +1,5 @@
 #include <mesosphere/core/KSynchronizationObject.hpp>
 #include <mesosphere/core/Result.hpp>
-#include <mesosphere/core/KCoreContext.hpp>
 #include <mesosphere/threading/KScheduler.hpp>
 #include <mesosphere/threading/KThread.hpp>
 

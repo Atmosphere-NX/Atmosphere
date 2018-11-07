@@ -1,5 +1,4 @@
 #include <mesosphere/interrupts/KAlarm.hpp>
-#include <mesosphere/core/KCoreContext.hpp>
 #include <mesosphere/threading/KScheduler.hpp>
 #include <mesosphere/arch/KInterruptMaskGuard.hpp>
 

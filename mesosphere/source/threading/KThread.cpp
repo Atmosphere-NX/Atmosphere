@@ -4,7 +4,6 @@
 
 #include <mesosphere/threading/KThread.hpp>
 #include <mesosphere/threading/KScheduler.hpp>
-#include <mesosphere/core/KCoreContext.hpp>
 
 namespace mesosphere
 {
