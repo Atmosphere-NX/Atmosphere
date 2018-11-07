@@ -10,7 +10,7 @@ inline namespace arm64
 {
 
 // This largely uses the Linux kernel spinlock code, which is more efficient than Nintendo's (serializing two u16s into an u32).
-class KSpinLock final {
+class KSpinLock {
 
     private:
 

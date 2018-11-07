@@ -15,13 +15,26 @@ inline namespace arm64
 class KInterruptMaskGuard final {
     public:
 
+    using FlagsType = u64;
+
     KInterruptMaskGuard()
     {
-        flags = MESOSPHERE_READ_SYSREG(daif);
-        MESOSPHERE_WRITE_SYSREG(flags | PSR_I_BIT, daif);
+        flags = MaskInterrupts();
     }
 
     ~KInterruptMaskGuard()
+    {
+        RestoreInterrupts(flags);
+    }
+
+    static FlagsType MaskInterrupts()
+    {
+        FlagsType flags = MESOSPHERE_READ_SYSREG(daif);
+        MESOSPHERE_WRITE_SYSREG(flags | PSR_I_BIT, daif);
+        return flags;
+    }
+
+    static void RestoreInterrupts(FlagsType flags)
     {
         MESOSPHERE_WRITE_SYSREG(MESOSPHERE_READ_SYSREG(daif) | (flags & PSR_I_BIT), daif);
     }
@@ -32,7 +45,7 @@ class KInterruptMaskGuard final {
     KInterruptMaskGuard &operator=(KInterruptMaskGuard &&) = delete;
 
     private:
-    u64 flags;
+    FlagsType flags;
 };
 
 }

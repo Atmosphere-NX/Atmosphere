@@ -2,7 +2,7 @@
 
 #include <mesosphere/interfaces/IInterruptibleWork.hpp>
 #include <mesosphere/interfaces/IAlarmable.hpp>
-#include <mesosphere/arch/KSpinLock.hpp>
+#include <mesosphere/interrupts/KInterruptSpinLock.hpp>
 #include <mesosphere/board/KSystemClock.hpp>
 
 namespace mesosphere
@@ -27,7 +27,7 @@ class KAlarm final : public IInterruptibleWork {
     KAlarm &operator=(KAlarm &&) = delete;
 
     private:
-    KSpinLock spinlock{};
+    mutable KInterruptSpinLock<false> spinlock{};
     AlarmableSetType alarmables{};
 };
 

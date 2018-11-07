@@ -4,7 +4,7 @@
 #include <mesosphere/core/Handle.hpp>
 #include <mesosphere/core/Result.hpp>
 #include <mesosphere/core/KAutoObject.hpp>
-#include <mesosphere/arch/KSpinLock.hpp>
+#include <mesosphere/interrupts/KInterruptSpinLock.hpp>
 #include <array>
 #include <tuple>
 
@@ -72,7 +72,7 @@ class KHandleTable final {
 
     u16 numActive = 0, size = 0, capacity = 0;
 
-    mutable KSpinLock spinlock;
+    mutable KInterruptSpinLock<false> spinlock;
 };
 
 }

@@ -64,7 +64,7 @@ class KObjectAllocator {
     private:
     AllocatedSetType allocatedSet{};
     KSlabHeap<T> slabHeap{};
-    KMutex mutex{};
+    mutable KMutex mutex{};
 };
 
 }
