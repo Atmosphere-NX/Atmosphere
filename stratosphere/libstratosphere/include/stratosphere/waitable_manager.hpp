@@ -160,12 +160,12 @@ class WaitableManager : public SessionManagerBase {
                 {
                     std::scoped_lock lk{this_ptr->deferred_lock};
                     
-                    for (size_t i = 0; i < this_ptr->deferred_waitables.size(); i++) {
-                        auto w = this_ptr->deferred_waitables[i];
+                    for (auto it = this_ptr->deferred_waitables.begin(); it != this_ptr->deferred_waitables.end();) {
+                        auto w = *it;
                         Result rc = w->HandleDeferred();
                         if (rc == 0xF601 || !w->IsDeferred()) {
-                            /* Remove from the deferred list. */
-                            this_ptr->deferred_waitables.erase(this_ptr->deferred_waitables.begin() + i);
+                            /* Remove from the deferred list, set iterator. */
+                            it = this_ptr->deferred_waitables.erase(it);
                             if (rc == 0xF601) {
                                 /* Delete the closed waitable. */
                                 delete w;
@@ -173,8 +173,9 @@ class WaitableManager : public SessionManagerBase {
                                 /* Add to the waitables list. */
                                 this_ptr->AddWaitable(w);
                             }
-                            /* Subtract one from i, to avoid skipping a deferred session. */
-                            i--;
+                        } else {
+                            /* Move on to the next deferred waitable. */
+                            it++;
                         }
                     }
                 }
