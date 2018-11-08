@@ -125,3 +125,8 @@ template <bool a = false>
 static IEvent *CreateWriteOnlySystemEvent() {
     return CreateSystemEvent([](u64 timeout) { std::abort(); return 0; }, a);
 }
+
+template <class F>
+static IEvent *LoadReadOnlySystemEvent(Handle r_h, F f, bool autoclear = false) {
+    return new HosEvent<F>(r_h, f, autoclear);
+}

@@ -56,11 +56,6 @@ class HosMessageQueue {
         bool TryPeek(uintptr_t *out);
         bool TimedPeek(uintptr_t *out, u64 timeout);
     private:
-        void SendInternal(uintptr_t data);
-        void SendNextInternal(uintptr_t data);
-        uintptr_t ReceiveInternal();
-        uintptr_t PeekInternal();
-        
         bool IsFull() {
             return this->count >= this->capacity;
         }
@@ -68,6 +63,11 @@ class HosMessageQueue {
         bool IsEmpty() {
             return this->count == 0;
         }
+        
+        void SendInternal(uintptr_t data);
+        void SendNextInternal(uintptr_t data);
+        uintptr_t ReceiveInternal();
+        uintptr_t PeekInternal();
 
 };
 
