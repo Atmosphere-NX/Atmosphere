@@ -20,6 +20,7 @@
 #include <malloc.h>
 
 #include <switch.h>
+#include <atmosphere.h>
 #include <stratosphere.hpp>
 
 #include "ldr_process_manager.hpp"
@@ -80,7 +81,7 @@ void __appInit(void) {
         fatalSimple(0xCAFE << 4 | 2);
     }
     
-    CheckAtmosphereVersion();
+    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {

@@ -20,6 +20,7 @@
 #include <malloc.h>
 
 #include <switch.h>
+#include <atmosphere.h>
 #include <stratosphere.hpp>
 
 #include "setsys_mitm_service.hpp"
@@ -64,7 +65,7 @@ void __appInit(void) {
         fatalSimple(rc);
     }
     
-    CheckAtmosphereVersion();
+    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {

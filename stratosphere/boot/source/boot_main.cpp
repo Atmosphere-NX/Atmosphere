@@ -20,6 +20,7 @@
 #include <malloc.h>
 
 #include <switch.h>
+#include <atmosphere.h>
 #include <stratosphere.hpp>
 
 #define CAR_BASE 0x60006000
@@ -84,7 +85,7 @@ void __appInit(void) {
     
     fsdevMountSdmc();
     
-    CheckAtmosphereVersion();
+    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {

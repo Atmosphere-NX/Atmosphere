@@ -20,6 +20,7 @@
 #include <malloc.h>
 
 #include <switch.h>
+#include <atmosphere.h>
 #include <stratosphere.hpp>
 
 #include "fsmitm_service.hpp"
@@ -65,7 +66,8 @@ void __appInit(void) {
     if (R_FAILED(rc)) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
     }
-    CheckAtmosphereVersion();
+    
+    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {

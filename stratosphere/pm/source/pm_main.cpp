@@ -20,6 +20,7 @@
 #include <malloc.h>
 
 #include <switch.h>
+#include <atmosphere.h>
 #include <stratosphere.hpp>
 
 #include "pm_boot_mode.hpp"
@@ -119,7 +120,7 @@ void __appInit(void) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
     }
     
-    CheckAtmosphereVersion();
+    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {
