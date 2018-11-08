@@ -65,6 +65,7 @@
                 "svcReplyAndReceiveWithUserBuffer":	"0x44",
                 "svcCreateEvent":	"0x45",
                 "svcSetUnsafeLimit":	"0x4a",
+                "svcGetProcessList":	"0x65",
                 "svcStartProcess":	"0x7a",
                 "svcTerminateProcess":	"0x7b",
                 "svcGetProcessInfo":	"0x7c",

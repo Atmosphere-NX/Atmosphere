@@ -65,9 +65,21 @@ void RegisterPrivilegedProcessesWithFs() {
     const u32 PRIVILEGED_FAH[0x1C/sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x0000001C, 0x00000000, 0x0000001C, 0x00000000};
     const u32 PRIVILEGED_FAC[0x2C/sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF};
     
-    for (u64 pid = PRIVILEGED_PROCESS_MIN; pid <= PRIVILEGED_PROCESS_MAX; pid++) {
-        fsprUnregisterProgram(pid);
-        fsprRegisterProgram(pid, pid, FsStorageId_NandSystem,  PRIVILEGED_FAH, sizeof(PRIVILEGED_FAH), PRIVILEGED_FAC, sizeof(PRIVILEGED_FAC));
+    u32 num_pids;
+    u64 pids[PRIVILEGED_PROCESS_MAX+1];
+    if (R_SUCCEEDED(svcGetProcessList(&num_pids, pids, sizeof(pids)/sizeof(pids[0])))) {
+        for (u32 i = 0; i < num_pids; i++) {
+            const u64 pid = pids[i];
+            if (PRIVILEGED_PROCESS_MIN <= pid && pid <= PRIVILEGED_PROCESS_MAX) {
+                fsprUnregisterProgram(pid);
+                fsprRegisterProgram(pid, pid, FsStorageId_NandSystem,  PRIVILEGED_FAH, sizeof(PRIVILEGED_FAH), PRIVILEGED_FAC, sizeof(PRIVILEGED_FAC));
+            }
+        }
+    } else {
+        for (u64 pid = PRIVILEGED_PROCESS_MIN; pid <= PRIVILEGED_PROCESS_MAX; pid++) {
+            fsprUnregisterProgram(pid);
+            fsprRegisterProgram(pid, pid, FsStorageId_NandSystem,  PRIVILEGED_FAH, sizeof(PRIVILEGED_FAH), PRIVILEGED_FAC, sizeof(PRIVILEGED_FAC));
+        }
     }
 }
 

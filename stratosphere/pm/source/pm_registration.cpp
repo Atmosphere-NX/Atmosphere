@@ -292,15 +292,15 @@ void Registration::FinalizeExitedProcess(std::shared_ptr<Registration::Process> 
     bool signal_debug_process_5x = kernelAbove500() && process->flags & PROCESSFLAGS_NOTIFYWHENEXITED;
     /* Unregister with FS. */
     if (R_FAILED(fsprUnregisterProgram(process->pid))) {
-        /* TODO: Panic. */
+        std::abort();
     }
     /* Unregister with SM. */
     if (R_FAILED(smManagerUnregisterProcess(process->pid))) {
-        /* TODO: Panic. */
+        std::abort();
     }
     /* Unregister with LDR. */
     if (R_FAILED(ldrPmUnregisterTitle(process->ldr_queue_index))) {
-        /* TODO: Panic. */
+        std::abort();
     }
     
     /* Close the process's handle. */
