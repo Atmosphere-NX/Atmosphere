@@ -211,11 +211,10 @@ class WaitableManager : public SessionManagerBase {
                     
                     /* Wait forever. */
                     rc = svcWaitSynchronization(&handle_index, handles.data(), num_handles, U64_MAX);
-                    
-                    IWaitable *w = wait_list[handle_index];
-                    size_t w_ind = std::distance(this->waitables.begin(), std::find(this->waitables.begin(), this->waitables.end(), w));
-                    
+                                        
                     if (R_SUCCEEDED(rc)) {
+                        IWaitable *w = wait_list[handle_index];
+                        size_t w_ind = std::distance(this->waitables.begin(), std::find(this->waitables.begin(), this->waitables.end(), w));
                         std::for_each(waitables.begin(), waitables.begin() + w_ind, std::mem_fn(&IWaitable::UpdatePriority));
                         result = w;
                     } else if (rc == 0xEA01) {
@@ -233,6 +232,8 @@ class WaitableManager : public SessionManagerBase {
                     } else if (rc != 0xF601 && rc != 0xE401) {
                         std::abort();
                     } else {  
+                        IWaitable *w = wait_list[handle_index];
+                        size_t w_ind = std::distance(this->waitables.begin(), std::find(this->waitables.begin(), this->waitables.end(), w));
                         this->waitables.erase(this->waitables.begin() + w_ind);
                         std::for_each(waitables.begin(), waitables.begin() + w_ind - 1, std::mem_fn(&IWaitable::UpdatePriority));
                         delete w;
