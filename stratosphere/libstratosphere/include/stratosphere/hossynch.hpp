@@ -186,3 +186,30 @@ class TimeoutHelper {
             return armGetSystemTick() >= this->end_tick;
         }
 };
+
+class HosThread {
+    private:
+        Thread thr = {0};
+    public:
+        HosThread() {}
+        
+        Result Initialize(ThreadFunc entry, void *arg, size_t stack_sz, int prio, int cpuid = -2) {
+            return threadCreate(&this->thr, entry, arg, stack_sz, prio, cpuid);
+        }
+        
+        Handle GetHandle() const {
+            return this->thr.handle;
+        }
+        
+        Result Start() {
+            return threadStart(&this->thr);
+        }
+        
+        Result Join() {
+            Result rc = threadWaitForExit(&this->thr);
+            if (R_SUCCEEDED(rc)) {
+                rc = threadClose(&this->thr);
+            }
+            return rc;
+        }
+};

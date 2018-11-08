@@ -31,7 +31,8 @@ class WaitableManagerBase {
         
         virtual void AddWaitable(IWaitable *w) = 0;
         virtual void NotifySignaled(IWaitable *w) = 0;
-                
+        
+        virtual void RequestStop() = 0;        
         virtual void Process() = 0;
 };
 
