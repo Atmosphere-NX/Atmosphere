@@ -32,8 +32,10 @@ class IWaitable {
     public:
         virtual ~IWaitable() = default;
         
-        virtual void HandleDeferred() {
-            /* ... */
+        virtual Result HandleDeferred() {
+            /* By default, HandleDeferred panics, because object shouldn't be deferrable. */
+            std::abort();
+            return 0;
         }
         
         bool IsSignaled() {

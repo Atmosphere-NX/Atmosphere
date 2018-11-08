@@ -55,12 +55,14 @@ class WaitableManager : public SessionManagerBase {
         /* Waitable Manager */
         std::vector<IWaitable *> to_add_waitables;
         std::vector<IWaitable *> waitables;
+        std::vector<IWaitable *> deferred_waitables;
         u32 num_threads;
         Thread *threads;
         HosMutex process_lock;
         HosMutex signal_lock;
         HosMutex add_lock;
         HosMutex cur_thread_lock;
+        HosMutex deferred_lock;
         bool has_new_waitables = false;
                 
         IWaitable *next_signaled = nullptr;
@@ -84,7 +86,9 @@ class WaitableManager : public SessionManagerBase {
         
         ~WaitableManager() override {
             /* This should call the destructor for every waitable. */
+            std::for_each(to_add_waitables.begin(), to_add_waitables.end(), std::default_delete<IWaitable>{});
             std::for_each(waitables.begin(), waitables.end(), std::default_delete<IWaitable>{});
+            std::for_each(deferred_waitables.begin(), deferred_waitables.end(), std::default_delete<IWaitable>{});
             
             /* TODO: Exit the threads? */
         }
@@ -143,10 +147,37 @@ class WaitableManager : public SessionManagerBase {
                         /* Close! */
                         delete w;
                     } else {
-                        this_ptr->AddWaitable(w);
+                        if (w->IsDeferred()) {    
+                            std::scoped_lock lk{this_ptr->deferred_lock};
+                            this_ptr->deferred_waitables.push_back(w);
+                        } else {  
+                            this_ptr->AddWaitable(w);
+                        }
                     }
                 }
-                
+                    
+                /* We finished processing, and maybe that means we can stop deferring an object. */
+                {
+                    std::scoped_lock lk{this_ptr->deferred_lock};
+                    
+                    for (size_t i = 0; i < this_ptr->deferred_waitables.size(); i++) {
+                        auto w = this_ptr->deferred_waitables[i];
+                        Result rc = w->HandleDeferred();
+                        if (rc == 0xF601 || !w->IsDeferred()) {
+                            /* Remove from the deferred list. */
+                            this_ptr->deferred_waitables.erase(this_ptr->deferred_waitables.begin() + i);
+                            if (rc == 0xF601) {
+                                /* Delete the closed waitable. */
+                                delete w;
+                            } else {
+                                /* Add to the waitables list. */
+                                this_ptr->AddWaitable(w);
+                            }
+                            /* Subtract one from i, to avoid skipping a deferred session. */
+                            i--;
+                        }
+                    }
+                }
             }
         }
         
@@ -193,19 +224,13 @@ class WaitableManager : public SessionManagerBase {
                     handles.resize(this->waitables.size());
                     wait_list.resize(this->waitables.size());
                     unsigned int num_handles = 0;
+
+                    /* Try to add waitables to wait list. */
                     for (unsigned int i = 0; i < this->waitables.size(); i++) {
                         Handle h = this->waitables[i]->GetHandle();
                         if (h != INVALID_HANDLE) {
                             wait_list[num_handles] = this->waitables[i];
                             handles[num_handles++] = h;
-                        }
-                    }
-                    
-      
-                    /* Do deferred callback for each waitable. This has to happen before we wait on anything else. */
-                    for (auto & waitable : this->waitables) {
-                        if (waitable->IsDeferred()) {
-                            waitable->HandleDeferred();
                         }
                     }
                     
@@ -215,7 +240,7 @@ class WaitableManager : public SessionManagerBase {
                     if (R_SUCCEEDED(rc)) {
                         IWaitable *w = wait_list[handle_index];
                         size_t w_ind = std::distance(this->waitables.begin(), std::find(this->waitables.begin(), this->waitables.end(), w));
-                        std::for_each(waitables.begin(), waitables.begin() + w_ind, std::mem_fn(&IWaitable::UpdatePriority));
+                        std::for_each(waitables.begin(), waitables.begin() + w_ind + 1, std::mem_fn(&IWaitable::UpdatePriority));
                         result = w;
                     } else if (rc == 0xEA01) {
                         /* Timeout: Just update priorities. */
@@ -229,14 +254,13 @@ class WaitableManager : public SessionManagerBase {
                                 result = this->next_signaled;
                             }
                         }
-                    } else if (rc != 0xF601 && rc != 0xE401) {
+                    } else {
+                        /* TODO: Consider the following cases that this covers: */
+                        /* 7601: Thread termination requested. */
+                        /* E401: Handle is dead. */
+                        /* E601: Handle list address invalid. */
+                        /* EE01: Too many handles. */
                         std::abort();
-                    } else {  
-                        IWaitable *w = wait_list[handle_index];
-                        size_t w_ind = std::distance(this->waitables.begin(), std::find(this->waitables.begin(), this->waitables.end(), w));
-                        this->waitables.erase(this->waitables.begin() + w_ind);
-                        std::for_each(waitables.begin(), waitables.begin() + w_ind - 1, std::mem_fn(&IWaitable::UpdatePriority));
-                        delete w;
                     }
                 }
             }

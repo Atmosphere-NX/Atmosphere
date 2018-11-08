@@ -612,14 +612,16 @@ constexpr Result WrapIpcCommandImpl(IpcResponseContext *ctx) {
 
     ON_SCOPE_EXIT {
         /* Clean up objects as necessary. */
-        if (IsDomainObject(ctx->obj_holder) && R_FAILED(rc)) {
-            for (unsigned int i = 0; i < num_out_objects; i++) {
-                ctx->obj_holder->GetServiceObject<IDomainObject>()->FreeObject(ctx->out_object_ids[i]);
-            }
-        } else {
-            for (unsigned int i = 0; i < num_out_objects; i++) {
-                svcCloseHandle(ctx->out_object_server_handles[i]);
-                svcCloseHandle(ctx->out_handles[CommandMetaData::NumOutHandles + i].handle);
+        if (R_FAILED(rc)) {
+            if (IsDomainObject(ctx->obj_holder)) {
+                for (unsigned int i = 0; i < num_out_objects; i++) {
+                    ctx->obj_holder->GetServiceObject<IDomainObject>()->FreeObject(ctx->out_object_ids[i]);
+                }
+            } else {
+                for (unsigned int i = 0; i < num_out_objects; i++) {
+                    svcCloseHandle(ctx->out_object_server_handles[i]);
+                    svcCloseHandle(ctx->out_handles[CommandMetaData::NumOutHandles + i].handle);
+                }
             }
         }
 

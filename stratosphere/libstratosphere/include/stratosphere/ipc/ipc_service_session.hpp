@@ -234,16 +234,14 @@ class ServiceSession : public IWaitable
             return ctx.rc;
         }
         
-        virtual void HandleDeferred() override {
+        virtual Result HandleDeferred() override {
             memcpy(armGetTls(), this->backup_tls, sizeof(this->backup_tls));
             Result rc = this->HandleReceived();
             
             if (rc != RESULT_DEFER_SESSION) {
                 this->SetDeferred(false);
-                if (rc == 0xF601) {
-                    svcCloseHandle(this->GetHandle());
-                }
             }
+            return rc;
         }
         
         virtual Result HandleSignaled(u64 timeout) {
