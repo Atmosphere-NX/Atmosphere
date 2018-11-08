@@ -12,7 +12,7 @@ inline void IncrementThreadInterruptBottomHalfLockCount(KThread &thread);
 inline void DecrementThreadInterruptBottomHalfLockCount(KThread &thread);
 
 template<bool disableInterrupts = false>
-class KInterruptSpinLock final : public KSpinLock {
+class KInterruptSpinLock : public KSpinLock {
     public:
 
     bool try_lock()
@@ -48,7 +48,7 @@ class KInterruptSpinLock final : public KSpinLock {
 };
 
 template<>
-class KInterruptSpinLock<true> final : public KSpinLock {
+class KInterruptSpinLock<true> : public KSpinLock {
     public:
 
     bool try_lock()
@@ -80,7 +80,7 @@ class KInterruptSpinLock<true> final : public KSpinLock {
     KInterruptSpinLock &operator=(KInterruptSpinLock &&) = delete;
 
     private:
-    typename KInterruptMaskGuard::FlagsType flags;
+    typename KInterruptMaskGuard::FlagsType flags = 0;
 };
 
 }

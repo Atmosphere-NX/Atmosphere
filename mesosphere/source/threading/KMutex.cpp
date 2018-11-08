@@ -1,6 +1,6 @@
 #include <mesosphere/threading/KMutex.hpp>
 #include <mesosphere/threading/KThread.hpp>
-#include <mesosphere/threading/KScheduler.hpp>
+#include <mesosphere/threading/KScopedCriticalSection.hpp>
 
 namespace mesosphere
 {

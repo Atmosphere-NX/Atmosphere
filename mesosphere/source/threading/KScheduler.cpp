@@ -341,4 +341,15 @@ void KScheduler::YieldCurrentThreadAndWaitForLoadBalancing()
     cctx.GetScheduler()->DoYieldOperation(Global::YieldThreadAndWaitForLoadBalancing, *cctx.GetCurrentThread());
 }
 
+void KScheduler::HandleCriticalSectionLeave()
+{
+    if (KScheduler::Global::reselectionRequired) {
+        KScheduler::Global::SelectThreads();
+    }
+
+    std::atomic_thread_fence(std::memory_order_seq_cst);
+
+    // TODO: check which cores needs ctx switches, sent interrupts and/or ctx switch ourselves
+}
+
 }

@@ -4,13 +4,11 @@
 #include <mutex>
 #include <mesosphere/core/util.hpp>
 #include <mesosphere/threading/KMultiLevelQueue.hpp>
+#include <mesosphere/threading/KCriticalSection.hpp>
 #include <mesosphere/threading/KThread.hpp>
 
 namespace mesosphere
 {
-
-//TODO
-struct KCriticalSection { void lock() {} void unlock() {} bool try_lock() {return true;} };
 
 class KScheduler {
     public:
@@ -40,6 +38,8 @@ class KScheduler {
 
             static constexpr uint minRegularPriority = 2;
         private:
+            friend class KScheduler;
+
             static void TransferThreadToCore(KThread &thread, int coreId);
             static void AskForReselectionOrMarkRedundant(KThread *currentThread, KThread *winner);
 
@@ -91,6 +91,11 @@ class KScheduler {
     static void YieldCurrentThreadAndBalanceLoad();
     static void YieldCurrentThreadAndWaitForLoadBalancing();
 
+    static void HandleCriticalSectionLeave();
+    friend void SchedulerHandleCriticalSectionLeave()
+    {
+        HandleCriticalSectionLeave();
+    }
 
     void ForceContextSwitch() {}
     void ForceContextSwitchAfterIrq() {}
@@ -99,6 +104,7 @@ class KScheduler {
 
     constexpr ulong GetIdleSelectionCount() const { return idleSelectionCount; }
     constexpr bool IsActive() const { return /*isActive */ true; } // TODO
+
     private:
     bool hasContextSwitchStartedAfterIrq;
     bool isActive;
@@ -126,13 +132,6 @@ class KScheduler {
             ForceContextSwitch();
         }
     }
-};
-
-// Convenience 
-
-class KScopedCriticalSection {
-    private:
-        std::scoped_lock<KCriticalSection> lk{KScheduler::GetCriticalSection()};
 };
 
 }

@@ -45,7 +45,7 @@ class KInterruptMaskGuard final {
     KInterruptMaskGuard &operator=(KInterruptMaskGuard &&) = delete;
 
     private:
-    FlagsType flags;
+    FlagsType flags = 0;
 };
 
 }

@@ -1,5 +1,5 @@
 #include <mesosphere/threading/KConditionVariable.hpp>
-#include <mesosphere/threading/KScheduler.hpp>
+#include <mesosphere/threading/KScopedCriticalSection.hpp>
 #include <mesosphere/core/KCoreContext.hpp>
 
 namespace mesosphere

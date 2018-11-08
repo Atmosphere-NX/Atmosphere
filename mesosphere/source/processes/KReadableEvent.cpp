@@ -1,7 +1,7 @@
 #include <mesosphere/processes/KWritableEvent.hpp>
 #include <mesosphere/processes/KReadableEvent.hpp>
 #include <mesosphere/processes/KEvent.hpp>
-#include <mesosphere/threading/KScheduler.hpp>
+#include <mesosphere/threading/KScopedCriticalSection.hpp>
 
 namespace mesosphere
 {
@@ -18,12 +18,12 @@ KReadableEvent::~KReadableEvent()
 Result KReadableEvent::Signal()
 {
     KScopedCriticalSection criticalSection{};
-    
+
     if (!this->isSignaled) {
         this->isSignaled = true;
         NotifyWaiters();
     }
-    
+
     return ResultSuccess();
 }
 
