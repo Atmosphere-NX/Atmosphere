@@ -48,7 +48,7 @@ void Registration::InitializeSystemResources() {
     g_debug_application_event = CreateWriteOnlySystemEvent();
     
     /* Auto-clear non-system event. */
-    g_process_launch_start_event = CreateSystemEvent(&Registration::ProcessLaunchStartCallback);
+    g_process_launch_start_event = CreateHosEvent(&Registration::ProcessLaunchStartCallback);
     
     ResourceLimitUtils::InitializeLimits();
 }
