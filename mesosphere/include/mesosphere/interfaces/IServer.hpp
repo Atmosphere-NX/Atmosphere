@@ -23,16 +23,14 @@ class IServer : public IServerTag {
 
     const SharedPtr<Parent> &GetParent() const { return parent; }
 
-    void SetParentAndClient(SharedPtr<Parent> parent, SharedPtr<Client> client)
+    void SetParentAndClient(SharedPtr<Parent> parent)
     {
         this->parent = std::move(parent);
-        this->client = std::move(client);
     }
 
     protected:
 
     SharedPtr<Parent> parent{};
-    SharedPtr<Client> client{};
 };
 
 }

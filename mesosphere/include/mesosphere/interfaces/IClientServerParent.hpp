@@ -22,7 +22,7 @@ class IClientServerParent : public IClientServerParentTag {
     {
         Parent *par = (Parent *)this;
         client.SetParent(par);
-        server.SetParentAndClient(par, &client);
+        server.SetParentAndClient(par);
     }
 
     ClientClass &GetClient() { return client; }

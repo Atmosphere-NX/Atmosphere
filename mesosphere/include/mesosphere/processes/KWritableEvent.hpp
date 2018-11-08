@@ -21,6 +21,11 @@ class KWritableEvent final : public KAutoObject, public IServer<KEvent, KReadabl
 
     Result Signal();
     Result Clear();
+
+    void SetClient(SharedPtr<KReadableEvent> client);
+
+    private:
+    SharedPtr<KReadableEvent> client{};
 };
 
 inline void intrusive_ptr_add_ref(KWritableEvent *obj)
