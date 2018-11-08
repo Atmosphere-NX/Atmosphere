@@ -22,12 +22,14 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "tma_usb_comms.hpp"
+
 extern "C" {
     extern u32 __start__;
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x20000
+    #define INNER_HEAP_SIZE 0x100000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
     
@@ -71,10 +73,7 @@ void __appExit(void) {
     smExit();
 }
 
-int main(int argc, char **argv)
-{
-    consoleDebugInit(debugDevice_SVC);
-            
+void PmThread(void *arg) {
     /* Setup psc module. */
     Result rc;
     PscPmModule tma_module = {0};
@@ -99,6 +98,32 @@ int main(int argc, char **argv)
             fatalSimple(rc);
         }
     }
+}
+
+int main(int argc, char **argv)
+{
+    consoleDebugInit(debugDevice_SVC);
+    Thread pm_thread = {0};
+    if (R_FAILED(threadCreate(&pm_thread, &PmThread, NULL, 0x4000, 0x15, 0))) {
+        /* TODO: Panic. */
+    }
+    if (R_FAILED(threadStart(&pm_thread))) {
+        /* TODO: Panic. */
+    }
+    
+    TmaUsbComms::Initialize();
+    TmaPacket *packet = new TmaPacket();
+    usbDsWaitReady(U64_MAX);
+    packet->Write<u64>(0xCAFEBABEDEADCAFEUL);
+    packet->Write<u64>(0xCCCCCCCCCCCCCCCCUL);
+    TmaUsbComms::SendPacket(packet);
+    packet->ClearOffset();
+    while (true) {
+        if (TmaUsbComms::ReceivePacket(packet) == TmaConnResult::Success) {
+            TmaUsbComms::SendPacket(packet);
+        }
+    }
+
     
     return 0;
 }
