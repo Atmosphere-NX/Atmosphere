@@ -258,12 +258,12 @@ TmaConnResult TmaUsbComms::Initialize() {
     }
     
     /* Start the state change thread. */
-    /*if (R_SUCCEEDED(rc)) {
+    if (R_SUCCEEDED(rc)) {
         rc = g_state_change_thread.Initialize(&TmaUsbComms::UsbStateChangeThreadFunc, nullptr, 0x4000, 38);
         if (R_SUCCEEDED(rc)) {
             rc = g_state_change_thread.Start();
         }
-    }*/
+    }
     
     /* Enable USB communication. */
     if (R_SUCCEEDED(rc)) {
@@ -277,10 +277,6 @@ TmaConnResult TmaUsbComms::Initialize() {
     if (R_FAILED(rc)) {
         /* TODO: Should I not abort here? */
         std::abort();
-        
-        // /* Cleanup, just in case. */
-        // TmaUsbComms::Finalize();
-        // res = TmaConnResult::Failure;
     }
     
     g_initialized = true;
@@ -306,6 +302,10 @@ TmaConnResult TmaUsbComms::Finalize() {
         usbDsExit();
     }
     
+    g_state_change_callback = nullptr;
+    g_interface = nullptr;
+    g_endpoint_in = nullptr;
+    g_endpoint_out = nullptr;
     g_initialized = false;
     
     return R_SUCCEEDED(rc) ? TmaConnResult::Success : TmaConnResult::ConnectionFailure;
@@ -457,4 +457,28 @@ TmaConnResult TmaUsbComms::SendPacket(TmaPacket *packet) {
     }
 
     return res;
+}
+
+void TmaUsbComms::UsbStateChangeThreadFunc(void *arg) {
+    u32 state;
+    g_state_change_manager = new WaitableManager(1);
+    
+    auto state_change_event = LoadReadOnlySystemEvent(usbDsGetStateChangeEvent()->revent, [&](u64 timeout) {
+        if (R_SUCCEEDED(usbDsGetState(&state))) {
+            if (g_state_change_callback != nullptr) {
+                g_state_change_callback(g_state_change_arg, state);
+            }
+        }
+        return 0;
+    }, true);
+    
+    g_state_change_manager->AddWaitable(state_change_event);
+    g_state_change_manager->Process();
+    
+    /* If we get here, we're exiting. */
+    state_change_event->r_h = 0;
+    delete g_state_change_manager;
+    g_state_change_manager = nullptr;
+    
+    svcExitThread();
 }

@@ -65,6 +65,9 @@ dkms.conf
 *.tgz
 *.zip
 
+# Python modules
+*.pyc
+
 .**/
 
 # NOTE: make sure to make exceptions to this pattern when needed!

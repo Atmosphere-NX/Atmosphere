@@ -22,14 +22,14 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "tma_usb_comms.hpp"
+#include "tma_conn_usb_connection.hpp"
 
 extern "C" {
     extern u32 __start__;
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x100000
+    #define INNER_HEAP_SIZE 0x400000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
     
@@ -111,17 +111,12 @@ int main(int argc, char **argv)
         /* TODO: Panic. */
     }
     
-    TmaUsbComms::Initialize();
-    TmaPacket *packet = new TmaPacket();
-    usbDsWaitReady(U64_MAX);
-    packet->Write<u64>(0xCAFEBABEDEADCAFEUL);
-    packet->Write<u64>(0xCCCCCCCCCCCCCCCCUL);
-    TmaUsbComms::SendPacket(packet);
-    packet->ClearOffset();
+    TmaUsbConnection::InitializeComms();
+    auto conn = new TmaUsbConnection();
+    conn->Initialize();
+    
     while (true) {
-        if (TmaUsbComms::ReceivePacket(packet) == TmaConnResult::Success) {
-            TmaUsbComms::SendPacket(packet);
-        }
+        svcSleepThread(10000000UL);
     }
 
     
