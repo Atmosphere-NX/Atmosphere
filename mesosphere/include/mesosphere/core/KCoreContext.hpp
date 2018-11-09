@@ -2,6 +2,7 @@
 
 #include <array>
 #include <mesosphere/core/util.hpp>
+#include <mesosphere/arch/arch.hpp>
 
 namespace mesosphere
 {
@@ -14,7 +15,7 @@ class KAlarm;
 class KCoreContext {
     public:
     static KCoreContext &GetInstance(uint coreId) { return instances[coreId]; };
-    static KCoreContext &GetCurrentInstance() { return instances[0]; /* FIXME*/ };
+    static KCoreContext &GetCurrentInstance() { return GetCurrentCoreContextInstance(); };
 
     KThread *GetCurrentThread() const { return currentThread; }
     KProcess *GetCurrentProcess() const { return currentProcess; }

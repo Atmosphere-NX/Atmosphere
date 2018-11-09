@@ -53,9 +53,9 @@ class KInterruptSpinLock<true> : public KSpinLock {
 
     bool try_lock()
     {
-        flags = KInterruptMaskGuard::MaskInterrupts();
+        flags = MaskInterrupts();
         if (!KSpinLock::try_lock()) {
-            KInterruptMaskGuard::RestoreInterrupts(flags);
+            RestoreInterrupts(flags);
             return false;
         }
         return true;
@@ -63,14 +63,14 @@ class KInterruptSpinLock<true> : public KSpinLock {
 
     void lock()
     {
-        flags = KInterruptMaskGuard::MaskInterrupts();
+        flags = MaskInterrupts();
         KSpinLock::lock();
     }
 
     void unlock()
     {
         KSpinLock::unlock();
-        KInterruptMaskGuard::RestoreInterrupts(flags);
+        RestoreInterrupts(flags);
     }
 
     KInterruptSpinLock() = default;
@@ -80,7 +80,7 @@ class KInterruptSpinLock<true> : public KSpinLock {
     KInterruptSpinLock &operator=(KInterruptSpinLock &&) = delete;
 
     private:
-    typename KInterruptMaskGuard::FlagsType flags = 0;
+    InterruptFlagsType flags = 0;
 };
 
 }

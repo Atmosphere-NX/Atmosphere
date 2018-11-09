@@ -2,7 +2,7 @@
 
 #include <chrono>
 #include <mesosphere/core/util.hpp>
-#include <mesosphere/arch/arm64/arm64.hpp>
+#include <mesosphere/arch/arm64/arch.hpp>
 
 #ifndef MESOSPHERE_SYSTEM_CLOCK_RATE // NEEDS to be defined; depends on cntfreq
 #define MESOSPHERE_SYSTEM_CLOCK_RATE 192000000ull

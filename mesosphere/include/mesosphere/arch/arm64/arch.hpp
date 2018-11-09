@@ -12,13 +12,16 @@
 #define MESOSPHERE_WRITE_SYSREG(v, r) do {                          \
     u64 __val = (u64)v;                                             \
     asm volatile("msr " BOOST_PP_STRINGIZE(r) ", %0"                \
-    :: "r" (__val));                                                \
+    :: "r" (__val) : "memory");                                     \
 } while (false)
 
 #define MESOSPHERE_DAIF_BIT(v)  (((u64)(v)) >> 6)
 
 namespace mesosphere
 {
+
+class KCoreContext;
+
 inline namespace arch
 {
 inline namespace arm64
@@ -61,6 +64,37 @@ enum PsrBitGroup {
     PSR_s = 0x00FF0000u,
     PSR_f = 0xFF000000u,
 };
+
+using InterruptFlagsType = u64;
+
+static inline InterruptFlagsType MaskInterrupts()
+{
+    InterruptFlagsType flags = MESOSPHERE_READ_SYSREG(daif);
+    MESOSPHERE_WRITE_SYSREG(flags | PSR_I_BIT, daif);
+    return flags;
+}
+
+static inline void RestoreInterrupts(InterruptFlagsType flags)
+{
+    MESOSPHERE_WRITE_SYSREG(MESOSPHERE_READ_SYSREG(daif) | (flags & PSR_I_BIT), daif);
+}
+
+static inline KCoreContext &GetCurrentCoreContextInstance()
+{
+    register KCoreContext *x18 asm ("x18");
+    return *x18;
+}
+
+static inline void ReloadCurrentCoreContextInstance()
+{
+    asm volatile("mrs x18, tpidr_el1" ::: "x18", "memory"); 
+}
+
+static inline void SetCurrentCoreContextInstance(KCoreContext &cctx)
+{
+    MESOSPHERE_WRITE_SYSREG((uiptr)&cctx, tpidr_el1);
+    ReloadCurrentCoreContextInstance();
+}
 
 }
 }
