@@ -522,6 +522,10 @@ void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel) {
         fatal_error("kernel_patcher: unable to identify kernel!\n");
     }
     
+    if (kernel_info == NULL && is_sd_kernel) {
+        return;
+    }
+    
     /* Apply hooks. */
     uint8_t *kernel = (uint8_t *)_kernel;
     size_t free_space_offset = kernel_info->free_code_space_offset;

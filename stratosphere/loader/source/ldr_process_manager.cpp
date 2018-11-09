@@ -30,6 +30,11 @@ Result ProcessManagerService::CreateProcess(Out<MovedHandle> proc_h, u64 index, 
     
     fprintf(stderr, "CreateProcess(%016lx, %08x, %08x);\n", index, flags, reslimit_h.handle);
     
+    ON_SCOPE_EXIT {
+        /* Loader doesn't persist the copied resource limit handle. */
+        svcCloseHandle(reslimit_h.handle);
+    };
+    
     rc = Registration::GetRegisteredTidSid(index, &tid_sid);
     if (R_FAILED(rc)) {
         return rc;
