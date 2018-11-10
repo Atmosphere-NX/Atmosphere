@@ -72,6 +72,11 @@ void __appInit(void) {
         std::abort();
     }
     
+    rc = bpcInitialize();
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+    
     rc = spsmInitialize();
     if (R_FAILED(rc)) {
         std::abort();
@@ -83,6 +88,7 @@ void __appInit(void) {
 void __appExit(void) {
     /* Cleanup services. */
     spsmExit();
+    bpcExit();
     pminfoExit();
     setsysExit();
     smExit();
