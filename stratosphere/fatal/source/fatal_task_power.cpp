@@ -102,7 +102,7 @@ void PowerButtonObserveTask::WaitForPowerButton() {
         }
         
         /* Wait 100 ms between button checks. */
-        svcSleepThread(TimeoutHelper::NsToTick(100000000UL));
+        svcSleepThread(100000000UL);
     }
 }
 
