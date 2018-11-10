@@ -56,6 +56,7 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
     switch (policy) {
         case FatalType_ErrorReport:
             /* TODO: Don't write an error report. */
+            break;
         case FatalType_ErrorReportAndErrorScreen:
         case FatalType_ErrorScreen:
             {
