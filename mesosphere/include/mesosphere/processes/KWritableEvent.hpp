@@ -22,9 +22,9 @@ class KWritableEvent final : public KAutoObject, public IServer<KEvent, KReadabl
     Result Signal();
     Result Clear();
 
-    void SetClient(SharedPtr<KReadableEvent> client);
-
     private:
+    friend class KEvent;
+
     SharedPtr<KReadableEvent> client{};
 };
 

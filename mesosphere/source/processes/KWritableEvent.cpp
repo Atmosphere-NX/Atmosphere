@@ -19,9 +19,4 @@ Result KWritableEvent::Clear()
     return client->Clear();
 }
 
-void KWritableEvent::SetClient(SharedPtr<KReadableEvent> client)
-{
-    this->client = std::move(client);
-}
-
 }

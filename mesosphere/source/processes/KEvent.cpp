@@ -11,7 +11,7 @@ KEvent::~KEvent()
 Result KEvent::Initialize()
 {
     SetClientServerParent();
-    server.SetClient(&client);
+    server.client = &client;
     SetResourceOwner(KCoreContext::GetCurrentInstance().GetCurrentProcess());
 
     return ResultSuccess();
