@@ -17,6 +17,76 @@
 #include <switch.h>
 #include "fatal_task_power.hpp"
 
+bool PowerControlTask::TryShutdown() {
+    /* Set a timeout of 30 seconds. */
+    TimeoutHelper timeout_helper(30000000000UL); 
+    bool cancel_shutdown = false;
+    PsmBatteryVoltageState bv_state = PsmBatteryVoltageState_Normal;
+    
+    while (true) {
+        if (timeout_helper.TimedOut()) {
+            break;
+        }
+        
+        if (R_FAILED(psmGetBatteryVoltageState(&bv_state)) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
+            break;
+        }
+        
+        if (bv_state == PsmBatteryVoltageState_Normal) {
+            cancel_shutdown = true;
+            break;
+        }
+        
+        /* Query voltage state every 5 seconds, for 30 seconds. */
+        svcSleepThread(5000000000UL);
+    }
+    
+    if (!cancel_shutdown) {
+        bpcShutdownSystem();
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void PowerControlTask::MonitorBatteryState() {
+    PsmBatteryVoltageState bv_state = PsmBatteryVoltageState_Normal;
+    
+    /* Check the battery state, and shutdown on low voltage. */
+    if (R_FAILED(psmGetBatteryVoltageState(&bv_state)) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
+        /* Wait a second for the error report task to finish. */
+        eventWait(this->erpt_event, TimeoutHelper::NsToTick(1000000000UL));
+        this->TryShutdown();
+        return;
+    }
+    
+    /* Signal we've checked the battery at least once. */
+    eventFire(this->battery_event);
+    
+    while (true) {
+        if (R_FAILED(psmGetBatteryVoltageState(&bv_state))) {
+            bv_state = PsmBatteryVoltageState_NeedsShutdown;
+        }
+        
+        switch (bv_state) {
+            case PsmBatteryVoltageState_NeedsShutdown:
+            case PsmBatteryVoltageState_NeedsSleep:
+                {
+                    bool shutdown = this->TryShutdown();
+                    if (shutdown) {
+                        return;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+        
+        /* Query voltage state every 5 seconds. */
+        svcSleepThread(5000000000UL);
+    }
+}
+
 void PowerButtonObserveTask::WaitForPowerButton() {
     /* Wait up to a second for error report generation to finish. */
     eventWait(this->erpt_event, TimeoutHelper::NsToTick(1000000000UL));
@@ -34,6 +104,11 @@ void PowerButtonObserveTask::WaitForPowerButton() {
         /* Wait 100 ms between button checks. */
         svcSleepThread(TimeoutHelper::NsToTick(100000000UL));
     }
+}
+
+Result PowerControlTask::Run() {
+    MonitorBatteryState();
+    return 0;
 }
 
 Result PowerButtonObserveTask::Run() {

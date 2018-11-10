@@ -23,6 +23,9 @@ class PowerControlTask : public IFatalTask {
     private:
         Event *erpt_event;
         Event *battery_event;
+    private:
+        bool TryShutdown();
+        void MonitorBatteryState();
     public:
         PowerControlTask(FatalContext *ctx, u64 title_id, Event *er_evt, Event *bt_evt) : IFatalTask(ctx, title_id), erpt_event(er_evt), battery_event(bt_evt) { }
         virtual Result Run() override;

@@ -52,7 +52,7 @@ static void RunTask(IFatalTask *task) {
 
 void RunFatalTasks(FatalContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event) {
     RunTask(new ErrorReportTask(ctx, title_id, error_report, erpt_event));
-    /* TODO: RunTask(new PowerControlTask(ctx, title_id, erpt_event, battery_event)); */
+    RunTask(new PowerControlTask(ctx, title_id, erpt_event, battery_event));
     /* TODO: RunTask(new ShowFatalTask(ctx, title_id, battery_event)); */
     /* TODO: RunTask(new StopSoundTask(ctx, title_id)); */
     /* TODO: RunTask(new BacklightControlTask(ctx, title_id)); */
