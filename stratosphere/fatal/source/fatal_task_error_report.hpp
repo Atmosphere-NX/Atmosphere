@@ -17,16 +17,16 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
-#include "fatal_types.hpp"
+#include "fatal_task.hpp"
 
-class IFatalTask {
-    protected:
-        FatalContext *ctx;
-        u64 title_id;
+class ErrorReportTask : public IFatalTask {
+    private:
+        bool create_report;
+        Event *erpt_event;
     public:
-        IFatalTask(FatalContext *ctx, u64 tid) : ctx(ctx), title_id(tid) { }
-        virtual Result Run() = 0;
-        virtual const char *GetName() const = 0;
+        ErrorReportTask(FatalContext *ctx, u64 title_id, bool error_report, Event *evt) : IFatalTask(ctx, title_id), create_report(error_report), erpt_event(evt) { }
+        virtual Result Run() override;
+        virtual const char *GetName() const override {
+            return "WriteErrorReport";
+        }
 };
-
-void RunFatalTasks(FatalContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event);

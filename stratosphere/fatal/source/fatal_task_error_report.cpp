@@ -14,19 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#pragma once
 #include <switch.h>
-#include <stratosphere.hpp>
-#include "fatal_types.hpp"
+#include "fatal_task_error_report.hpp"
 
-class IFatalTask {
-    protected:
-        FatalContext *ctx;
-        u64 title_id;
-    public:
-        IFatalTask(FatalContext *ctx, u64 tid) : ctx(ctx), title_id(tid) { }
-        virtual Result Run() = 0;
-        virtual const char *GetName() const = 0;
-};
-
-void RunFatalTasks(FatalContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event);
+Result ErrorReportTask::Run() {
+    if (this->create_report) {
+        /* Here, Nintendo creates an error report with erpt. AMS will not do that. */
+        /* TODO: Should atmosphere log reports to to the SD card? */
+    }
+    
+    /* Signal we're done with our job. */
+    eventFire(this->erpt_event);
+}

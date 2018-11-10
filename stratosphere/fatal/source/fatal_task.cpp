@@ -18,6 +18,9 @@
 #include "fatal_types.hpp"
 #include "fatal_task.hpp"
 
+#include "fatal_task_error_report.hpp"
+
+
 static constexpr size_t MaxTasks = 8;
 static HosThread g_task_threads[MaxTasks];
 static size_t g_num_threads = 0;
@@ -44,12 +47,12 @@ static void RunTask(IFatalTask *task) {
 }
 
 void RunFatalTasks(FatalContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event) {
-    /* TODO: RunTask(new ErrorReportTask(ctx, title_id, error_report, erpt_event); */
-    /* TODO: RunTask(new PowerControlTask(ctx, title_id, battery_event); */
-    /* TODO: RunTask(new ShowFatalTask(ctx, title_id, battery_event); */
-    /* TODO: RunTask(new StopSoundTask(); */
-    /* TODO: RunTask(new BacklightControlTask(); */
-    /* TODO: RunTask(new AdjustClockTask(); */
-    /* TODO: RunTask(new PowerButtonTask(erpt_event); */
-    /* TODO: RunTask(new StateTransitionStop(); */
+    RunTask(new ErrorReportTask(ctx, title_id, error_report, erpt_event));
+    /* TODO: RunTask(new PowerControlTask(ctx, title_id, battery_event)); */
+    /* TODO: RunTask(new ShowFatalTask(ctx, title_id, battery_event)); */
+    /* TODO: RunTask(new StopSoundTask()); */
+    /* TODO: RunTask(new BacklightControlTask()); */
+    /* TODO: RunTask(new AdjustClockTask()); */
+    /* TODO: RunTask(new PowerButtonTask(erpt_event)); */
+    /* TODO: RunTask(new StateTransitionStop()); */
 }
