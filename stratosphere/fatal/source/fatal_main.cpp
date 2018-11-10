@@ -59,24 +59,30 @@ void __appInit(void) {
     
     rc = smInitialize();
     if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
+        std::abort();
     }
     
     rc = setsysInitialize();
     if (R_FAILED(rc)) {
-        fatalSimple(rc);
+        std::abort();
     }
     
     rc = pminfoInitialize();
     if (R_FAILED(rc)) {
-        fatalSimple(rc);
+        std::abort();
     }
     
-    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
+    rc = spsmInitialize();
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+    
+    /* fatal cannot throw fatal, so don't do: CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION); */
 }
 
 void __appExit(void) {
     /* Cleanup services. */
+    spsmExit();
     pminfoExit();
     setsysExit();
     smExit();
