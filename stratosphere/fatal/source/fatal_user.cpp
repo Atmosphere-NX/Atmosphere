@@ -18,6 +18,7 @@
 #include "fatal_user.hpp"
 #include "fatal_event_manager.hpp"
 #include "fatal_task.hpp"
+#include "fatal_config.hpp"
 
 static bool g_thrown = false;
 
@@ -36,6 +37,9 @@ Result UserService::ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCp
     FatalContext ctx;
     ctx.error_code = error;
     ctx.cpu_ctx = *cpu_ctx;
+    
+    /* Get config. */
+    const FatalConfig *config = GetFatalConfig();
     
     /* Get title id. On failure, it'll be zero. */
     u64 title_id = 0;
@@ -63,7 +67,13 @@ Result UserService::ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCp
                 }
                 
                 /* Run tasks. */
-                RunFatalTasks(&ctx, title_id, policy == FatalType_ErrorReportAndErrorScreen, &erpt_event, &battery_event);
+                if (config->transition_to_fatal) {
+                    RunFatalTasks(&ctx, title_id, policy == FatalType_ErrorReportAndErrorScreen, &erpt_event, &battery_event);
+                } else {
+                    /* If flag is not set, don't show the fatal screen. */
+                    return 0;
+                }
+                
             }
             break;
         default:

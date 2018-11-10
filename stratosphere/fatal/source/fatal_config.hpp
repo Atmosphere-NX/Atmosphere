@@ -14,30 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
+#pragma once
 #include <switch.h>
-#include "fatal_task_screen.hpp"
-#include "fatal_config.hpp"
+#include <stratosphere.hpp>
 
-Result ShowFatalTask::ShowFatal() {
-    Result rc = 0;
+struct FatalConfig {
+    char serial_number[0x18];
+    SetSysFirmwareVersion firmware_version;
+    u64 language_code;
+    u64 quest_reboot_interval_second;
+    bool transition_to_fatal;
+    bool show_extra_info;
+    bool quest_flag;
+};
 
-    /* TODO: Get graphics to work, draw fatal screen. */
+IEvent *GetFatalSettingsEvent();
+FatalConfig *GetFatalConfig();
 
-    return rc;
-}
-
-Result ShowFatalTask::Run() {
-    /* Don't show the fatal error screen until we've verified the battery is okay. */
-    eventWait(this->battery_event, U64_MAX);
-
-    return ShowFatal();
-}
-
-void BacklightControlTask::TurnOnBacklight() {
-    lblSwitchBacklightOn(0);
-}
-
-Result BacklightControlTask::Run() {
-    TurnOnBacklight();
-    return 0;
-}
+void InitializeFatalConfig();

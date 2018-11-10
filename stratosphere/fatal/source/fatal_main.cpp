@@ -26,6 +26,7 @@
 #include "fatal_types.hpp"
 #include "fatal_private.hpp"
 #include "fatal_user.hpp"
+#include "fatal_config.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -61,6 +62,11 @@ void __appInit(void) {
     Result rc;
     
     rc = smInitialize();
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+    
+    rc = setInitialize();
     if (R_FAILED(rc)) {
         std::abort();
     }
@@ -118,13 +124,15 @@ void __appExit(void) {
     i2cExit();
     pminfoExit();
     setsysExit();
+    setExit();
     smExit();
 }
 
 int main(int argc, char **argv)
 {
-    /* TODO: Load settings from set:sys. */
-
+    /* Load settings from set:sys. */
+    InitializeFatalConfig();
+    
     /* TODO: Load shared font. */
 
     /* TODO: Check whether we should throw fatal due to repair process... */
@@ -135,6 +143,7 @@ int main(int argc, char **argv)
     /* TODO: Create services. */
     server_manager->AddWaitable(new ServiceServer<PrivateService>("fatal:p", 4));
     server_manager->AddWaitable(new ServiceServer<UserService>("fatal:u", 4));
+    server_manager->AddWaitable(GetFatalSettingsEvent());
 
     /* Loop forever, servicing our services. */
     server_manager->Process();

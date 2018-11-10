@@ -16,6 +16,7 @@
  
 #include <switch.h>
 #include "fatal_task_power.hpp"
+#include "fatal_config.hpp"
 
 bool PowerControlTask::TryShutdown() {
     /* Set a timeout of 30 seconds. */
@@ -91,12 +92,16 @@ void PowerButtonObserveTask::WaitForPowerButton() {
     /* Wait up to a second for error report generation to finish. */
     eventWait(this->erpt_event, TimeoutHelper::NsToTick(1000000000UL));
     
-    /* TODO: Force a reboot after some time if kiosk unit. */
+    /* Force a reboot after some time if kiosk unit. */
+    const FatalConfig *config = GetFatalConfig();
+    TimeoutHelper reboot_helper(config->quest_reboot_interval_second * 1000000000UL); 
     
     BpcSleepButtonState state;
     while (true) {
+        
+        
         Result rc = bpcGetSleepButtonState(&state);
-        if (R_SUCCEEDED(rc) && state == BpcSleepButtonState_Held) {
+        if ((R_SUCCEEDED(rc) && state == BpcSleepButtonState_Held) || (config->quest_flag && reboot_helper.TimedOut())) {
             bpcRebootSystem();
             return;
         }
