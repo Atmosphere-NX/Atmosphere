@@ -72,6 +72,11 @@ void __appInit(void) {
         std::abort();
     }
     
+    rc = i2cInitialize();
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+    
     rc = bpcInitialize();
     if (R_FAILED(rc)) {
         std::abort();
@@ -107,6 +112,7 @@ void __appExit(void) {
     lblExit();
     pcvExit();
     bpcExit();
+    i2cExit();
     pminfoExit();
     setsysExit();
     smExit();

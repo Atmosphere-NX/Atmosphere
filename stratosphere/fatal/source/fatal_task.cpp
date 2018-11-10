@@ -20,6 +20,7 @@
 
 #include "fatal_task_error_report.hpp"
 #include "fatal_task_screen.hpp"
+#include "fatal_task_sound.hpp"
 #include "fatal_task_clock.hpp"
 #include "fatal_task_power.hpp"
 
@@ -56,7 +57,7 @@ void RunFatalTasks(FatalContext *ctx, u64 title_id, bool error_report, Event *er
     RunTask(new ErrorReportTask(ctx, title_id, error_report, erpt_event));
     RunTask(new PowerControlTask(ctx, title_id, erpt_event, battery_event));
     /* TODO: RunTask(new ShowFatalTask(ctx, title_id, battery_event)); */
-    /* TODO: RunTask(new StopSoundTask(ctx, title_id)); */
+    RunTask(new StopSoundTask(ctx, title_id));
     RunTask(new BacklightControlTask(ctx, title_id));
     RunTask(new AdjustClockTask(ctx, title_id));
     RunTask(new PowerButtonObserveTask(ctx, title_id, erpt_event));
