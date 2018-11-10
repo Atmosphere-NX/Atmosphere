@@ -32,25 +32,27 @@ static bool InRepairWithoutVolHeld() {
     
     {
         GpioPadSession vol_btn;
-        if (R_SUCCEEDED(gpioOpenSession(&vol_btn, GpioPadName_ButtonVolUp))) {
-            /* Ensure we close even on early return. */
-            ON_SCOPE_EXIT { gpioPadClose(&vol_btn); };
-            
-            /* Set direction input. */
-            gpioPadSetDirection(&vol_btn, GpioDirection_Input);
-
-            /* Ensure that we're holding the volume button for a full second. */
-            TimeoutHelper timeout_helper(1000000000UL);
-            while (!timeout_helper.TimedOut()) {
-                GpioValue val;
-                if (R_FAILED(gpioPadGetValue(&vol_btn, &val)) || val != GpioValue_Low) {
-                    return true;
-                }
-                
-                /* Sleep for 100 ms. */
-                svcSleepThread(100000000UL);
-            }            
+        if (R_FAILED(gpioOpenSession(&vol_btn, GpioPadName_ButtonVolUp))) {
+            return true;
         }
+        
+        /* Ensure we close even on early return. */
+        ON_SCOPE_EXIT { gpioPadClose(&vol_btn); };
+        
+        /* Set direction input. */
+        gpioPadSetDirection(&vol_btn, GpioDirection_Input);
+
+        /* Ensure that we're holding the volume button for a full second. */
+        TimeoutHelper timeout_helper(1000000000UL);
+        while (!timeout_helper.TimedOut()) {
+            GpioValue val;
+            if (R_FAILED(gpioPadGetValue(&vol_btn, &val)) || val != GpioValue_Low) {
+                return true;
+            }
+            
+            /* Sleep for 100 ms. */
+            svcSleepThread(100000000UL);
+        }            
     }
     
     return false;
@@ -66,11 +68,31 @@ static bool InRepairWithoutTimeReviserCartridge() {
         return false;
     }
     
-    /* TODO: if (!IsGamecardInserted()) { return true; } */
-    
-    /* TODO: return GetGameCardAttribute(GetGameCardHandle()) & GameCardAttribute_Repair == GameCardAttribute_Repair; */
-    
-    return false;
+    FsGameCardHandle gc_hnd;
+    u8 gc_attr;
+    {
+        FsDeviceOperator devop;
+        if (R_FAILED(fsOpenDeviceOperator(&devop))) {
+            return true;
+        }
+        
+        /* Ensure we close even on early return. */
+        ON_SCOPE_EXIT { fsDeviceOperatorClose(&devop); };
+        
+        /* Check that a gamecard is inserted. */
+        bool inserted;
+        if (R_FAILED(fsDeviceOperatorIsGameCardInserted(&devop, &inserted)) || !inserted) {
+            return true;
+        }
+        
+        /* Check that we can retrieve the gamecard's attributes. */
+        if (R_FAILED(fsDeviceOperatorGetGameCardHandle(&devop, &gc_hnd)) || R_FAILED(fsDeviceOperatorGetGameCardAttribute(&devop, &gc_hnd, &gc_attr))) {
+            return true;
+        }
+    }
+        
+    /* Check that the gamecard is a repair tool. */
+    return (gc_attr & FsGameCardAttribute_Repair) == FsGameCardAttribute_Repair;
 }
 
 void CheckRepairStatus() {
