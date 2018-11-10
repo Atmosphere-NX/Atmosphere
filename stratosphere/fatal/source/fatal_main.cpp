@@ -82,6 +82,11 @@ void __appInit(void) {
         std::abort();
     }
     
+    rc = lblInitialize();
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+    
     rc = psmInitialize();
     if (R_FAILED(rc)) {
         std::abort();
@@ -99,6 +104,7 @@ void __appExit(void) {
     /* Cleanup services. */
     spsmExit();
     psmExit();
+    lblExit();
     pcvExit();
     bpcExit();
     pminfoExit();
