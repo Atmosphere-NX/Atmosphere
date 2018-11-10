@@ -18,17 +18,17 @@ class IClientServerParent : public IClientServerParentTag {
     using ClientClass = Client;
     using ServerClass = Server;
 
-    void SetClientServerParent()
-    {
-        Parent *par = (Parent *)this;
-        client.SetParent(par);
-        server.SetParentAndClient(par);
-    }
-
     ClientClass &GetClient() { return client; }
     ServerClass &GetServer() { return server; }
 
     protected:
+
+    void SetClientServerParent()
+    {
+        ParentClass *par = (ParentClass *)this;
+        client.parent = par;
+        server.parent = par;
+    }
 
     ClientClass client{};
     ServerClass server{};

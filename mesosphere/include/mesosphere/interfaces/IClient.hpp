@@ -21,15 +21,11 @@ class IClient : public IClientTag {
     void *operator new(size_t sz) noexcept = delete;
     void operator delete(void *ptr) noexcept {}
 
-    const SharedPtr<Parent>& GetParent() const { return parent; }
-
-    void SetParent(SharedPtr<Parent> parent)
-    {
-        this->parent = std::move(parent);
-    }
+    const SharedPtr<ParentClass>& GetParent() const { return parent; }
 
     protected:
-    SharedPtr<Parent> parent{};
+    friend class IClientServerParent<ParentClass, ClientClass, ServerClass>;
+    SharedPtr<ParentClass> parent{};
 };
 
 }
