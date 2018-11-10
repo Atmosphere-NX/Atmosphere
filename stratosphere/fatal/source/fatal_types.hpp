@@ -19,6 +19,7 @@
 #include <stratosphere.hpp>
 
 enum FatalResult : Result {
+    FatalResult_AlreadyThrown = 0x6A3,
     FatalResult_TooManyEvents = 0x8A3,
     FatalResult_InRepairWithoutVolHeld = 0xAA3,
     FatalResult_InRepairWithoutTimeReviserCartridge = 0xCA3,
@@ -89,6 +90,11 @@ struct FatalCpuContext {
     
     bool is_aarch32;
     u32 type;
+};
+
+struct FatalContext {
+    u32 error_code;
+    FatalCpuContext cpu_ctx;
 };
 
 static_assert(sizeof(Aarch64CpuContext) == 0x248, "Aarch64CpuContext definition!");

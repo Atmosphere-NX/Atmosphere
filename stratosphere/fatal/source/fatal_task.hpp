@@ -14,10 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
+#pragma once
 #include <switch.h>
-#include "fatal_private.hpp"
-#include "fatal_event_manager.hpp"
+#include <stratosphere.hpp>
+#include "fatal_types.hpp"
 
-Result PrivateService::GetFatalEvent(Out<CopiedHandle> out_h) {
-    return GetEventManager()->GetEvent(out_h.GetHandlePointer());
-}
+class IFatalTask {
+    protected:
+        FatalContext *ctx;
+        u64 title_id;
+    public:
+        virtual Result Run() = 0;
+        virtual const char *GetName() const = 0;
+};
+
+void RunFatalTasks(FatalContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event);

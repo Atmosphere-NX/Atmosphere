@@ -67,11 +67,17 @@ void __appInit(void) {
         fatalSimple(rc);
     }
     
+    rc = pminfoInitialize();
+    if (R_FAILED(rc)) {
+        fatalSimple(rc);
+    }
+    
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {
     /* Cleanup services. */
+    pminfoExit();
     setsysExit();
     smExit();
 }

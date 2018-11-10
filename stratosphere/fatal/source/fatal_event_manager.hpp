@@ -30,3 +30,5 @@ class FatalEventManager {
         Result GetEvent(Handle *out);
         void SignalEvents();
 };
+
+FatalEventManager *GetEventManager();

@@ -15,7 +15,14 @@
  */
  
 #include <switch.h>
+#include "fatal_types.hpp"
 #include "fatal_event_manager.hpp"
+
+static FatalEventManager g_event_manager;
+
+FatalEventManager *GetEventManager() {
+    return &g_event_manager;
+}
 
 FatalEventManager::FatalEventManager() {
     /* Just create all the events. */
@@ -31,7 +38,7 @@ Result FatalEventManager::GetEvent(Handle *out) {
     
     /* Only allow GetEvent to succeed NumFatalEvents times. */
     if (this->events_gotten >= FatalEventManager::NumFatalEvents) {
-        return 0x8A3;
+        return FatalResult_TooManyEvents;
     }
     
     *out = this->events[this->events_gotten++].revent;
