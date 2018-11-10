@@ -32,10 +32,13 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x380000
+    #define INNER_HEAP_SIZE 0x3C0000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
     
+    u32 __nx_nv_transfermem_size = 0x40000;
+    ViServiceType __nx_gfx_vi_service_type = ViServiceType_Manager;
+
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
@@ -120,18 +123,22 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
-    consoleDebugInit(debugDevice_SVC);
-    
+    /* TODO: Load settings from set:sys. */
+
+    /* TODO: Load shared font. */
+
+    /* TODO: Check whether we should throw fatal due to repair process... */
+
     /* TODO: What's a good timeout value to use here? */
     auto server_manager = new WaitableManager(1);
-   
+
     /* TODO: Create services. */
     server_manager->AddWaitable(new ServiceServer<PrivateService>("fatal:p", 4));
     server_manager->AddWaitable(new ServiceServer<UserService>("fatal:u", 4));
 
     /* Loop forever, servicing our services. */
     server_manager->Process();
-    
+
     delete server_manager;
 
     return 0;

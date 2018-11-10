@@ -17,6 +17,20 @@
 #include <switch.h>
 #include "fatal_task_screen.hpp"
 
+Result ShowFatalTask::ShowFatal() {
+    Result rc = 0;
+
+    /* TODO: Get graphics to work, draw fatal screen. */
+
+    return rc;
+}
+
+Result ShowFatalTask::Run() {
+    /* Don't show the fatal error screen until we've verified the battery is okay. */
+    eventWait(this->battery_event, U64_MAX);
+
+    return ShowFatal();
+}
 
 void BacklightControlTask::TurnOnBacklight() {
     lblSwitchBacklightOn(0);

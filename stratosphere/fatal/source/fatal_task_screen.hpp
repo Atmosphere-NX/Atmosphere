@@ -19,6 +19,19 @@
 #include <stratosphere.hpp>
 #include "fatal_task.hpp"
 
+class ShowFatalTask : public IFatalTask {
+    private:
+        Event *battery_event;
+    private:
+        Result ShowFatal();
+    public:
+        ShowFatalTask(FatalContext *ctx, u64 title_id, Event *evt) : IFatalTask(ctx, title_id), battery_event(evt) { }
+        virtual Result Run() override;
+        virtual const char *GetName() const override {
+            return "ShowFatal";
+        }
+};
+
 class BacklightControlTask : public IFatalTask {
     private:
         void TurnOnBacklight();
