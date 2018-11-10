@@ -19,6 +19,31 @@
 #include <stratosphere.hpp>
 #include "fatal_task.hpp"
 
+class PowerControlTask : public IFatalTask {
+    private:
+        Event *erpt_event;
+        Event *battery_event;
+    public:
+        PowerControlTask(FatalContext *ctx, u64 title_id, Event *er_evt, Event *bt_evt) : IFatalTask(ctx, title_id), erpt_event(er_evt), battery_event(bt_evt) { }
+        virtual Result Run() override;
+        virtual const char *GetName() const override {
+            return "PowerControlTask";
+        }
+};
+
+class PowerButtonObserveTask : public IFatalTask {
+    private:
+        Event *erpt_event;
+    private:
+        void WaitForPowerButton();
+    public:
+        PowerButtonObserveTask(FatalContext *ctx, u64 title_id, Event *er_evt) : IFatalTask(ctx, title_id), erpt_event(er_evt) { }
+        virtual Result Run() override;
+        virtual const char *GetName() const override {
+            return "PowerButtonObserveTask";
+        }
+};
+
 class StateTransitionStopTask : public IFatalTask {
     public:
         StateTransitionStopTask(FatalContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }

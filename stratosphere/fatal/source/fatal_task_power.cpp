@@ -17,6 +17,30 @@
 #include <switch.h>
 #include "fatal_task_power.hpp"
 
+void PowerButtonObserveTask::WaitForPowerButton() {
+    /* Wait up to a second for error report generation to finish. */
+    eventWait(this->erpt_event, TimeoutHelper::NsToTick(1000000000UL));
+    
+    /* TODO: Force a reboot after some time if kiosk unit. */
+    
+    BpcSleepButtonState state;
+    while (true) {
+        Result rc = bpcGetSleepButtonState(&state);
+        if (R_SUCCEEDED(rc) && state == BpcSleepButtonState_Held) {
+            bpcRebootSystem();
+            return;
+        }
+        
+        /* Wait 100 ms between button checks. */
+        svcSleepThread(TimeoutHelper::NsToTick(100000000UL));
+    }
+}
+
+Result PowerButtonObserveTask::Run() {
+    WaitForPowerButton();
+    return 0;
+}
+
 Result StateTransitionStopTask::Run() {
     /* Nintendo ignores the output of this call... */
     spsmPutErrorState();
