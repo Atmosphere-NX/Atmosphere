@@ -27,9 +27,7 @@ enum UserCmd {
 };
 
 class UserService final : public IServiceObject {
-    private:
-        Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *context);
-    
+    private:    
         /* Actual commands. */
         Result ThrowFatal(u32 error, PidDescriptor pid_desc);
         Result ThrowFatalWithPolicy(u32 error, PidDescriptor pid_desc, FatalType policy);
