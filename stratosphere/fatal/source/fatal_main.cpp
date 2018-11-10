@@ -27,6 +27,7 @@
 #include "fatal_private.hpp"
 #include "fatal_user.hpp"
 #include "fatal_config.hpp"
+#include "fatal_repair.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -135,12 +136,13 @@ int main(int argc, char **argv)
     
     /* TODO: Load shared font. */
 
-    /* TODO: Check whether we should throw fatal due to repair process... */
+    /* Check whether we should throw fatal due to repair process. */
+    CheckRepairStatus();
 
     /* TODO: What's a good timeout value to use here? */
     auto server_manager = new WaitableManager(1);
 
-    /* TODO: Create services. */
+    /* Create services. */
     server_manager->AddWaitable(new ServiceServer<PrivateService>("fatal:p", 4));
     server_manager->AddWaitable(new ServiceServer<UserService>("fatal:u", 4));
     server_manager->AddWaitable(GetFatalSettingsEvent());
