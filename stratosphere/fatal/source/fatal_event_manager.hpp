@@ -24,7 +24,7 @@ class FatalEventManager {
         
         HosMutex lock;
         size_t events_gotten = 0;
-        Event events[3];
+        Event events[NumFatalEvents];
     public:
         FatalEventManager();
         Result GetEvent(Handle *out);

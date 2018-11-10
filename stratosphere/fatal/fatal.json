@@ -14,7 +14,7 @@
 	"filesystem_access":	{
 		"permissions":	"0x0000000000100000"
 	},
-	"service_access":	["bpc", "erpt:c", "fsp-srv", "gpio", "i2c", "lbl", "lm", "nvdrv:s", "pcv", "pl:u", "pm:info", "psm", "set", "set:sys", "spsm", "vi:m", "vi:s"],
+	"service_access":	["bpc", "bpc:c", "erpt:c", "fsp-srv", "gpio", "i2c", "lbl", "lm", "nvdrv:s", "pcv", "pl:u", "pm:info", "psm", "set", "set:sys", "spsm", "vi:m", "vi:s"],
 	"service_host":	["fatal:p", "fatal:u"],
 	"kernel_capabilities":	[{
 			"type":	"kernel_flags",
@@ -75,7 +75,8 @@
 				"svcReplyAndReceiveLight":	"0x42",
 				"svcReplyAndReceive":	"0x43",
 				"svcReplyAndReceiveWithUserBuffer":	"0x44",
-				"svcCreateEvent":	"0x45"
+				"svcCreateEvent":	"0x45",
+				"svcReadWriteRegister":	"0x4E"
 			}
 		}, {
 			"type":	"min_kernel_version",

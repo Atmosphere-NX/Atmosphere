@@ -34,6 +34,9 @@ static void RunTaskThreadFunc(void *arg) {
     if (R_FAILED(rc)) {
         /* TODO: Log task failure, somehow? */
     }
+    
+    /* Finish. */
+    svcExitThread();
 }
 
 static void RunTask(IFatalTask *task) {    

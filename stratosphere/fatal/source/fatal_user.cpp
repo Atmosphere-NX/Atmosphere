@@ -58,7 +58,7 @@ Result UserService::ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCp
                 /* Create events. */
                 Event erpt_event;
                 Event battery_event;
-                if (R_FAILED(eventCreate(&erpt_event, true)) || R_FAILED(eventCreate(&battery_event, true))) {
+                if (R_FAILED(eventCreate(&erpt_event, false)) || R_FAILED(eventCreate(&battery_event, false))) {
                     std::abort();
                 }
                 
@@ -85,11 +85,11 @@ Result UserService::ThrowFatalWithPolicy(u32 error, PidDescriptor pid_desc, Fata
     return ThrowFatalImpl(error, pid_desc.pid, policy, &ctx);
 }
 
-Result UserService::ThrowFatalWithCpuContext(u32 error, PidDescriptor pid_desc, FatalType policy, InBuffer<FatalCpuContext> _ctx) {
-    /* Require exactly one context passed in. */
-    if (_ctx.num_elements != 1) {
-        return 0xF601;
+Result UserService::ThrowFatalWithCpuContext(u32 error, PidDescriptor pid_desc, FatalType policy, InBuffer<u8> _ctx) {
+    if (_ctx.num_elements < sizeof(FatalCpuContext)) {
+        FatalCpuContext ctx = {0};
+        return ThrowFatalImpl(error, pid_desc.pid, policy, &ctx);
+    } else {
+        return ThrowFatalImpl(error, pid_desc.pid, policy, reinterpret_cast<FatalCpuContext *>(_ctx.buffer));
     }
-    
-    return ThrowFatalImpl(error, pid_desc.pid, policy, _ctx.buffer);
 }

@@ -25,4 +25,6 @@ Result ErrorReportTask::Run() {
     
     /* Signal we're done with our job. */
     eventFire(this->erpt_event);
+    
+    return 0;
 }

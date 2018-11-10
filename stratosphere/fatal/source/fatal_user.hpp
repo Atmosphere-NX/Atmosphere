@@ -33,7 +33,7 @@ class UserService final : public IServiceObject {
         /* Actual commands. */
         Result ThrowFatal(u32 error, PidDescriptor pid_desc);
         Result ThrowFatalWithPolicy(u32 error, PidDescriptor pid_desc, FatalType policy);
-        Result ThrowFatalWithCpuContext(u32 error, PidDescriptor pid_desc, FatalType policy, InBuffer<FatalCpuContext> _ctx);
+        Result ThrowFatalWithCpuContext(u32 error, PidDescriptor pid_desc, FatalType policy, InBuffer<u8> _ctx);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<User_Cmd_ThrowFatal, &UserService::ThrowFatal>(),
