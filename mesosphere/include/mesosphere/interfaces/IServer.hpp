@@ -21,7 +21,7 @@ class IServer : public IServerTag {
     void *operator new(size_t sz) noexcept = delete;
     void operator delete(void *ptr) noexcept {};
 
-    const SharedPtr<ParentClass> &GetParent() const { return parent; }
+    ParentClass *GetParent() const { return parent.get(); }
 
     protected:
     friend class IClientServerParent<ParentClass, ClientClass, ServerClass>;

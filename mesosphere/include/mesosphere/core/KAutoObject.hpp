@@ -23,6 +23,9 @@ class KEvent;
 class KReadableEvent;
 class KWritableEvent;
 class KInterruptEvent;
+class KBaseSession;
+class KBaseClientSession;
+class KBaseServerSession;
 
 void intrusive_ptr_add_ref(KProcess *obj);
 void intrusive_ptr_release(KProcess *obj);
@@ -41,6 +44,15 @@ void intrusive_ptr_release(KWritableEvent *obj);
 
 void intrusive_ptr_add_ref(KInterruptEvent *obj);
 void intrusive_ptr_release(KInterruptEvent *obj);
+
+void intrusive_ptr_add_ref(KBaseSession *obj);
+void intrusive_ptr_release(KBaseSession *obj);
+
+void intrusive_ptr_add_ref(KBaseClientSession *obj);
+void intrusive_ptr_release(KBaseClientSession *obj);
+
+void intrusive_ptr_add_ref(KBaseClientSession *obj);
+void intrusive_ptr_release(KBaseServerSession *obj);
 
 class KAutoObject {
     public:

@@ -1,7 +1,5 @@
 #pragma once
 
-class KProcess;
-
 #include <mesosphere/core/util.hpp>
 #include <mesosphere/core/Result.hpp>
 #include <mesosphere/core/KAutoObject.hpp>
