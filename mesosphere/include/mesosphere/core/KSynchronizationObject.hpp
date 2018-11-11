@@ -23,4 +23,6 @@ class KSynchronizationObject : public KAutoObject {
     KLinkedList<KThread *> waiters{};
 };
 
+MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(SynchronizationObject);
+
 }

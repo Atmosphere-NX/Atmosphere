@@ -29,14 +29,6 @@ class KReadableEvent : public KSynchronizationObject, public IClient<KEvent, KRe
     bool isSignaled = false;
 };
 
-inline void intrusive_ptr_add_ref(KReadableEvent *obj)
-{
-    intrusive_ptr_add_ref((KAutoObject *)obj);
-}
-
-inline void intrusive_ptr_release(KReadableEvent *obj)
-{
-    intrusive_ptr_release((KAutoObject *)obj);
-}
+MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(ReadableEvent);
 
 }

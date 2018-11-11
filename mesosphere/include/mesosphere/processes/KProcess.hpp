@@ -33,14 +33,6 @@ class KProcess final : public KAutoObject {
     KHandleTable handleTable{};
 };
 
-inline void intrusive_ptr_add_ref(KProcess *obj)
-{
-    intrusive_ptr_add_ref((KAutoObject *)obj);
-}
-
-inline void intrusive_ptr_release(KProcess *obj)
-{
-    intrusive_ptr_release((KAutoObject *)obj);
-}
+MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(Process);
 
 }

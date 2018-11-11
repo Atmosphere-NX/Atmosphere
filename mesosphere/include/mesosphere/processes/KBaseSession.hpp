@@ -26,14 +26,6 @@ class KBaseSession : public KAutoObject, public IClientServerParent<KBaseSession
     KBaseSession() = default;
 };
 
-inline void intrusive_ptr_add_ref(KBaseSession *obj)
-{
-    intrusive_ptr_add_ref((KAutoObject *)obj);
-}
-
-inline void intrusive_ptr_release(KBaseSession *obj)
-{
-    intrusive_ptr_release((KAutoObject *)obj);
-}
+MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(BaseSession);
 
 }

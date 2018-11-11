@@ -12,47 +12,29 @@ virtual ushort GetClassToken() const\
     return KAutoObject::GenerateClassToken<K##DerivedId >();\
 }\
 
+#define MESOSPHERE_AUTO_OBJECT_FW_DECL(BaseId)\
+class K##BaseId;\
+void intrusive_ptr_add_ref(K##BaseId *obj);\
+void intrusive_ptr_release(K##BaseId *obj);
+
+
+#define MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(BaseId)\
+inline void intrusive_ptr_add_ref(K##BaseId *obj) { intrusive_ptr_add_ref((KAutoObject *)obj); }\
+inline void intrusive_ptr_release(K##BaseId *obj) { intrusive_ptr_release((KAutoObject *)obj); }
+
 namespace mesosphere
 {
 
-// Foward declarations for intrusive_ptr
-class KProcess;
-class KResourceLimit;
-class KThread;
-class KEvent;
-class KReadableEvent;
-class KWritableEvent;
-class KInterruptEvent;
-class KBaseSession;
-class KBaseClientSession;
-class KBaseServerSession;
-
-void intrusive_ptr_add_ref(KProcess *obj);
-void intrusive_ptr_release(KProcess *obj);
-
-void intrusive_ptr_add_ref(KResourceLimit *obj);
-void intrusive_ptr_release(KResourceLimit *obj);
-
-void intrusive_ptr_add_ref(KEvent *obj);
-void intrusive_ptr_release(KEvent *obj);
-
-void intrusive_ptr_add_ref(KReadableEvent *obj);
-void intrusive_ptr_release(KReadableEvent *obj);
-
-void intrusive_ptr_add_ref(KWritableEvent *obj);
-void intrusive_ptr_release(KWritableEvent *obj);
-
-void intrusive_ptr_add_ref(KInterruptEvent *obj);
-void intrusive_ptr_release(KInterruptEvent *obj);
-
-void intrusive_ptr_add_ref(KBaseSession *obj);
-void intrusive_ptr_release(KBaseSession *obj);
-
-void intrusive_ptr_add_ref(KBaseClientSession *obj);
-void intrusive_ptr_release(KBaseClientSession *obj);
-
-void intrusive_ptr_add_ref(KBaseClientSession *obj);
-void intrusive_ptr_release(KBaseServerSession *obj);
+MESOSPHERE_AUTO_OBJECT_FW_DECL(Process);
+MESOSPHERE_AUTO_OBJECT_FW_DECL(ResourceLimit);
+MESOSPHERE_AUTO_OBJECT_FW_DECL(Thread);
+MESOSPHERE_AUTO_OBJECT_FW_DECL(Event);
+MESOSPHERE_AUTO_OBJECT_FW_DECL(ReadableEvent);
+MESOSPHERE_AUTO_OBJECT_FW_DECL(WritableEvent);
+MESOSPHERE_AUTO_OBJECT_FW_DECL(InterruptEvent);
+MESOSPHERE_AUTO_OBJECT_FW_DECL(BaseSession);
+MESOSPHERE_AUTO_OBJECT_FW_DECL(BaseClientSession);
+MESOSPHERE_AUTO_OBJECT_FW_DECL(BaseServerSession);
 
 class KAutoObject {
     public:

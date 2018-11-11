@@ -29,14 +29,6 @@ class KEvent final :
     private:
 };
 
-inline void intrusive_ptr_add_ref(KEvent *obj)
-{
-    intrusive_ptr_add_ref((KAutoObject *)obj);
-}
-
-inline void intrusive_ptr_release(KEvent *obj)
-{
-    intrusive_ptr_release((KAutoObject *)obj);
-}
+MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(Event);
 
 }

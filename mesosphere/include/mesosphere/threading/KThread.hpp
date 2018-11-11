@@ -309,14 +309,6 @@ private:
     u64 lastScheduledTime = 0;
 };
 
-inline void intrusive_ptr_add_ref(KThread *obj)
-{
-    intrusive_ptr_add_ref((KAutoObject *)obj);
-}
-
-inline void intrusive_ptr_release(KThread *obj)
-{
-    intrusive_ptr_release((KAutoObject *)obj);
-}
+MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(Thread);
 
 }

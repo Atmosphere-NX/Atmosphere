@@ -5,10 +5,7 @@
 namespace mesosphere
 {
 
-class KThread;
-class KEvent;
 class KTransferMemory;
-class KSession;
 
 class KResourceLimit final :
     public KAutoObject,
@@ -71,13 +68,6 @@ class KResourceLimit final :
     mutable KConditionVariable condvar{};
 };
 
-inline void intrusive_ptr_add_ref(KResourceLimit *obj)
-{
-    intrusive_ptr_add_ref((KAutoObject *)obj);
-}
+MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(ResourceLimit);
 
-inline void intrusive_ptr_release(KResourceLimit *obj)
-{
-    intrusive_ptr_add_ref((KAutoObject *)obj);
-}
 }

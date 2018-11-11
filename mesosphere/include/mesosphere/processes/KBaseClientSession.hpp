@@ -32,14 +32,6 @@ class KBaseClientSession : public KAutoObject, public IClient<KBaseSession, KBas
     KClientPort *parentPort = nullptr;
 };
 
-inline void intrusive_ptr_add_ref(KBaseClientSession *obj)
-{
-    intrusive_ptr_add_ref((KAutoObject *)obj);
-}
-
-inline void intrusive_ptr_release(KBaseClientSession *obj)
-{
-    intrusive_ptr_release((KAutoObject *)obj);
-}
+MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(BaseClientSession);
 
 }

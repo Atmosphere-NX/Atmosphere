@@ -28,14 +28,6 @@ class KWritableEvent final : public KAutoObject, public IServer<KEvent, KReadabl
     SharedPtr<KReadableEvent> client{};
 };
 
-inline void intrusive_ptr_add_ref(KWritableEvent *obj)
-{
-    intrusive_ptr_add_ref((KAutoObject *)obj);
-}
-
-inline void intrusive_ptr_release(KWritableEvent *obj)
-{
-    intrusive_ptr_release((KAutoObject *)obj);
-}
+MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(WritableEvent);
 
 }
