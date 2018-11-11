@@ -31,6 +31,7 @@ class KResourceLimit final :
             case KAutoObject::TypeId::Event:            return Category::Events;
             case KAutoObject::TypeId::TransferMemory:   return Category::TransferMemories;
             case KAutoObject::TypeId::Session:          return Category::Sessions;
+            case KAutoObject::TypeId::LightSession:     return Category::Sessions;
             default:                                    return Category::Max;
         }
     }
