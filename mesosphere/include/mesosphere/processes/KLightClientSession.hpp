@@ -21,7 +21,6 @@ class KLightClientSession final : public KAutoObject, public IClient<KLightSessi
     friend class KLightSession;
 
     KClientPort *parentPort = nullptr;
-    bool isRemoteActive = false;
 };
 
 MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(LightClientSession);

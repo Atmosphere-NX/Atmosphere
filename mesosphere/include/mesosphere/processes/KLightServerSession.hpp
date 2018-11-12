@@ -38,12 +38,13 @@ class KLightServerSession final :
     virtual bool IsSignaled() const override;
 
     private:
-
     friend class KLightSession;
 
+    void Terminate(bool fromServer);
+
     KThread::WaitList senderThreads{}, receiverThreads{};
-    SharedPtr<KThread> currentSender{}, currentReceiver{};
-    bool isRemoteActive = false;
+    SharedPtr<KThread> currentSender{};
+    KThread *currentReceiver = nullptr;
 };
 
 MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(LightServerSession);

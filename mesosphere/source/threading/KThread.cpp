@@ -151,7 +151,7 @@ Result KThread::WaitSynchronizationImpl(int &outId, KSynchronizationObject **syn
         if (IsDying()) {
             return ResultKernelThreadTerminating();
         }
-        if (cancelled) {
+        if (isSyncCancelled) {
             return ResultKernelCancelled();
         }
 

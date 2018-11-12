@@ -11,11 +11,16 @@ KLightSession::~KLightSession()
 Result KLightSession::Initialize()
 {
     SetClientServerParent();
-    client.isRemoteActive = true;
-    server.isRemoteActive = true;
+    isClientAlive = true;
+    isServerAlive = true;
 
     SetResourceOwner(KCoreContext::GetCurrentInstance().GetCurrentProcess());
     return ResultSuccess();
+}
+
+void KLightSession::Terminate(bool fromServer)
+{
+    server.Terminate(fromServer);
 }
 
 }

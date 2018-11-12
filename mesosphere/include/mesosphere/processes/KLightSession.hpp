@@ -24,6 +24,14 @@ class KLightSession final :
     virtual ~KLightSession();
 
     Result Initialize();
+
+    private:
+    friend class KLightClientSession;
+    friend class KLightServerSession;
+
+    void Terminate(bool fromServer);
+    bool isClientAlive = false;
+    bool isServerAlive = false;
 };
 
 MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(LightSession);

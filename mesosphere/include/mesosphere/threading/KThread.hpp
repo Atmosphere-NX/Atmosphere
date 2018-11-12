@@ -242,6 +242,14 @@ class KThread final :
     void CancelKernelSync();
     /// Takes effect immediately
     void CancelKernelSync(Result res);
+    /// Needs to be in kernel sync
+    bool IsInKernelSync() const { return currentWaitList != nullptr; }
+
+    /// User sync
+    constexpr bool IsWaitingSync() const { return isWaitingSync; }
+    void SetWaitingSync(bool isWaitingSync) { this->isWaitingSync = isWaitingSync; }
+    constexpr bool IsSyncCancelled() const { return isSyncCancelled; }
+    void SetSyncCancelled(bool isSyncCancelled) { this->isSyncCancelled = isSyncCancelled; }
 
     /// Takes effect when critical section is left
     void HandleSyncObjectSignaled(KSynchronizationObject *syncObj);
@@ -295,7 +303,7 @@ private:
     uint basePriority = 64, priority = 64;
     int currentCoreId = -1;
     ulong affinityMask = 0;
-    bool cancelled = false;
+    bool isSyncCancelled = false;
     bool isWaitingSync = false;
     uiptr wantedMutex = 0;
     KThread *wantedMutexOwner = nullptr;
