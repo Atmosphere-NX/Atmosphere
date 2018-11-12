@@ -27,13 +27,18 @@ void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
     this->has_extra_info = has_extra_info;
     if (OpenProcess(pid)) {
         ProcessExceptions();
-        this->code_list.ReadCodeRegionsFromProcess(this->debug_handle, this->crashed_thread_info.GetPC(), this->crashed_thread_info.GetLR());
+        this->code_list.ReadCodeRegionsFromThreadInfo(this->debug_handle, &this->crashed_thread_info);
         this->thread_list.ReadThreadsFromProcess(this->debug_handle, Is64Bit());
         this->crashed_thread_info.SetCodeList(&this->code_list);
         this->thread_list.SetCodeList(&this->code_list);
         
         if (IsApplication()) {
             ProcessDyingMessage();
+        }
+        
+        /* Real creport only does this if application, but there's no reason not to do it all the time. */
+        for (u32 i = 0; i < this->thread_list.GetThreadCount(); i++) {
+            this->code_list.ReadCodeRegionsFromThreadInfo(this->debug_handle, this->thread_list.GetThreadInfo(i));
         }
         
         /* Real creport builds the report here. We do it later. */
@@ -258,7 +263,7 @@ void CrashReport::SaveReport() {
 
 void CrashReport::SaveToFile(FILE *f_report) {
     char buf[0x10] = {0};
-    fprintf(f_report, "Atmosphère Crash Report (v1.1):\n");
+    fprintf(f_report, "Atmosphère Crash Report (v1.2):\n");
     fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->result, R_MODULE(this->result), R_DESCRIPTION(this->result));
     
     /* Process Info. */
