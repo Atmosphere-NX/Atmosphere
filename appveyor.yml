@@ -1,0 +1,52 @@
+version: AppVeyor build {build}
+image: Ubuntu
+init:
+- sh: >-
+    mkdir ../resources
+
+    mkdir ../libnx
+
+    wget https://github.com/devkitPro/pacman/releases/download/devkitpro-pacman-1.0.1/devkitpro-pacman.deb -P ../resources
+install:
+- sh: >-
+    sudo dpkg -i ../resources/devkitpro-pacman.deb
+
+    echo -en "\n\n" | sudo dkp-pacman -S switch-dev
+
+    echo -en "\n\n" | sudo dkp-pacman -S devkitARM
+
+    source /etc/profile.d/devkit-env.sh
+    
+    git submodule update --init --recursive
+build_script:
+- sh: >-
+    make
+
+    COMMIT_ID="$(git rev-parse --short HEAD)"
+
+    RELEASE_FILE="../atmosphere/bin-Atmosphere-${COMMIT_ID}.zip"
+
+    RELEASE_FOLDER="../bin-Atmopshere-${COMMIT_ID}"
+
+    mkdir ${RELEASE_FOLDER}
+
+    find . -name '*.elf' | cpio -pdm ${RELEASE_FOLDER}
+
+    find . -name '*.kip' | cpio -pdm ${RELEASE_FOLDER}
+
+    find . -name '*.bin' | cpio -pdm ${RELEASE_FOLDER}
+
+    find . -name '*.nsp' | cpio -pdm ${RELEASE_FOLDER}
+
+    TEMP="$(realpath ${RELEASE_FOLDER})"
+
+    cd ${RELEASE_FOLDER}
+
+    zip -9 -r ${RELEASE_FILE} *
+    
+    cd ${APPVEYOR_BUILD_FOLDER}
+    
+    make dist
+artifacts:
+- path: bin-Atmosphere-*.zip
+- path: out/*.zip
