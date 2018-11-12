@@ -13,6 +13,8 @@
 namespace mesosphere
 {
 
+struct LightSessionRequest;
+
 struct KThreadContext;
 
 struct ThreadWaitListTag;
@@ -236,8 +238,12 @@ class KThread final :
     bool WaitForKernelSync(WaitList &waitList);
     /// Takes effect when critical section is left
     void ResumeFromKernelSync();
+    /// Takes effect when critical section is left
+    void ResumeFromKernelSync(Result res);
     /// Takes effect when critical section is left -- all threads in waitlist
     static void ResumeAllFromKernelSync(WaitList &waitList);
+    /// Takes effect when critical section is left -- all threads in waitlist
+    static void ResumeAllFromKernelSync(WaitList &waitList, Result res);
     /// Takes effect immediately
     void CancelKernelSync();
     /// Takes effect immediately
@@ -250,9 +256,22 @@ class KThread final :
     void SetWaitingSync(bool isWaitingSync) { this->isWaitingSync = isWaitingSync; }
     constexpr bool IsSyncCancelled() const { return isSyncCancelled; }
     void SetSyncCancelled(bool isSyncCancelled) { this->isSyncCancelled = isSyncCancelled; }
+    void ClearSync()
+    {
+        signaledSyncObject = nullptr;
+        syncResult = ResultSuccess();
+    }
+
+    constexpr Result GetSyncResult() const { return syncResult; }
 
     /// Takes effect when critical section is left
     void HandleSyncObjectSignaled(KSynchronizationObject *syncObj);
+
+    LightSessionRequest *GetCurrentLightSessionRequest() const { return currentLightSessionRequest; }
+    void SetCurrentLightSessionRequest(LightSessionRequest *currentLightSessionRequest)
+    {
+        this->currentLightSessionRequest = currentLightSessionRequest;
+    }
 
     template<typename Clock, typename Duration>
     Result WaitSynchronization(int &outId, KSynchronizationObject **syncObjs, int numSyncObjs, const std::chrono::time_point<Clock, Duration> &timeoutTime)
@@ -305,6 +324,7 @@ private:
     ulong affinityMask = 0;
     bool isSyncCancelled = false;
     bool isWaitingSync = false;
+    LightSessionRequest *currentLightSessionRequest = nullptr; // located in kernel thread stacks
     uiptr wantedMutex = 0;
     KThread *wantedMutexOwner = nullptr;
     MutexWaitList mutexWaitList{};

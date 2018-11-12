@@ -2,7 +2,7 @@
 
 #include <mesosphere/core/util.hpp>
 #include <mesosphere/core/Result.hpp>
-#include <mesosphere/core/KSynchronizationObject.hpp>
+#include <mesosphere/core/KAutoObject.hpp>
 #include <mesosphere/interfaces/IServer.hpp>
 #include <mesosphere/threading/KThread.hpp>
 
@@ -15,17 +15,19 @@ class KLightClientSession;
 class KLightSession;
 class KClientPort;
 
+struct LightSessionRequest;
+
 struct LightServerSessionListTag;
 using  LightServerSessionListBaseHook = boost::intrusive::list_base_hook<boost::intrusive::tag<LightServerSessionListTag> >;
 
 class KLightServerSession final :
-    public KSynchronizationObject,
+    public KAutoObject,
     public IServer<KLightSession, KLightClientSession, KLightServerSession>,
     public LightServerSessionListBaseHook {
 
     public:
 
-    MESOSPHERE_AUTO_OBJECT_TRAITS(SynchronizationObject, LightServerSession);
+    MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, LightServerSession);
 
     using List = typename boost::intrusive::make_list<
         KLightServerSession,
@@ -35,8 +37,10 @@ class KLightServerSession final :
 
     virtual ~KLightServerSession();
 
-    virtual bool IsSignaled() const override;
+    /// Needs to be called from critical section
+    Result HandleSyncRequest(KThread &sender);
 
+    Result ReplyAndReceive(LightSessionRequest *request);
     private:
     friend class KLightSession;
 

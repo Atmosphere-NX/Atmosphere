@@ -1,5 +1,5 @@
 #include <mesosphere/interrupts/KAlarm.hpp>
-#include <mesosphere/threading/KScheduler.hpp>
+#include <mesosphere/threading/KScopedCriticalSection.hpp>
 #include <mesosphere/arch/KInterruptMaskGuard.hpp>
 
 namespace mesosphere
@@ -24,8 +24,7 @@ void KAlarm::RemoveAlarmable(const IAlarmable &alarmable)
 void KAlarm::HandleAlarm()
 {
     {
-        KCriticalSection &critsec = KScheduler::GetCriticalSection();
-        std::scoped_lock criticalSection{critsec};
+        KScopedCriticalSection critsec{};
         std::scoped_lock guard{spinlock};
 
         KSystemClock::SetInterruptMasked(true); // mask timer interrupt

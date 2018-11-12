@@ -11,11 +11,15 @@ namespace mesosphere
 class KLightSession;
 class KClientPort;
 
+struct LightSessionRequest;
+
 class KLightClientSession final : public KAutoObject, public IClient<KLightSession, KLightClientSession, KLightServerSession> {
     public:
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, LightClientSession);
 
     virtual ~KLightClientSession();
+
+    Result SendSyncRequest(LightSessionRequest *request);
 
     private:
     friend class KLightSession;

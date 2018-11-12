@@ -85,6 +85,13 @@ void KThread::ResumeFromKernelSync()
     Reschedule(SchedulingStatus::Running);
 }
 
+void KThread::ResumeFromKernelSync(Result res)
+{
+    // Has to be called from critical section
+    syncResult = res;
+    ResumeFromKernelSync();
+}
+
 void KThread::ResumeAllFromKernelSync(KThread::WaitList &waitList)
 {
     // Has to be called from critical section
@@ -96,6 +103,18 @@ void KThread::ResumeAllFromKernelSync(KThread::WaitList &waitList)
     );
 }
 
+void KThread::ResumeAllFromKernelSync(KThread::WaitList &waitList, Result res)
+{
+    // Has to be called from critical section
+    waitList.clear_and_dispose(
+        [res](KThread *t) {
+            t->syncResult = res;
+            t->currentWaitList = nullptr;
+            t->Reschedule(SchedulingStatus::Running);
+        }
+    );
+
+}
 void KThread::CancelKernelSync()
 {
     KScopedCriticalSection criticalSection;

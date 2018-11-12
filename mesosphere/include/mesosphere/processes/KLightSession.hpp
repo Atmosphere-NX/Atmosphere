@@ -11,6 +11,11 @@
 namespace mesosphere
 {
 
+struct LightSessionRequest {
+    s32 cmdId;
+    u32 data[6];
+};
+
 class KLightSession final :
     public KAutoObject,
     public ISetAllocated<KLightSession>,
