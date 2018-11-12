@@ -1,4 +1,12 @@
 # Changelog
+## 0.7.5
++ DRAM training was added to fusee-secondary, courtesy @hexkyz.
+  + This greatly improves the speed of memory accesses during boot, resulting in a boot time that is ~200-400% faster.
++ creport has had its code region detection improved.
+  + Instead of only checking one of the crashing thread's PC/LR for code region presence, creport now checks both + every address in the stacktrace. This is also now done for every thread.
+    + This matches the improvement Nintendo added to official creport in 6.1.0.
+  + The code region detection heuristic was further improved by checking whether an address points to .rodata or .rwdata, instead of just .text.
+  + This means that a crash appears in a loaded NRO (or otherwise discontiguous) code region, creport will be able to detect all active code regions, and not just that one. 
 ## 0.7.4
 + [libstratosphere](https://github.com/Atmosphere-NX/libstratosphere) has been completely refactored/rewritten, and split into its own, separate submodule.
   + While this is mostly "under the hood" for end-users, the refactor is faster (improving both boot-time and runtime performance), more accurate (many of the internal IPC structures are now bug-for-bug compatible with Nintendo's implementations), and significantly more stable (it fixes a large number of bugs present in the old library).
