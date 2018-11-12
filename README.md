@@ -29,7 +29,7 @@ In no particular order, we credit the following for their invaluable contributio
 * __ChaN__ for the [FatFs](http://elm-chan.org/fsw/ff/00index_e.html) module.
 * __Marcus Geelnard__ for the [bcl-1.2.0](https://sourceforge.net/projects/bcl/files/bcl/bcl-1.2.0) library.
 * __naehrwert__ and __st4rk__ for the original [hekate](https://github.com/nwert/hekate) project and its hwinit code base.
-* __CTCaer__ for the continued [hekate](https://github.com/CTCaer/hekate) project's fork.
+* __CTCaer__ for the continued [hekate](https://github.com/CTCaer/hekate) project's fork and the [minerva_tc](https://github.com/CTCaer/minerva_tc) project.
 * __Riley__ for suggesting "Atmosphere" as a Horizon OS reimplementation+customization project name.
 * __hedgeberg__ for research and hardware testing.
 * __lioncash__ for code cleanup and general improvements.
