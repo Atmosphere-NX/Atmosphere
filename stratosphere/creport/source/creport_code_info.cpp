@@ -102,7 +102,25 @@ void CodeList::AddCodeRegion(u64 debug_handle, u64 code_address) {
 bool CodeList::TryFindCodeRegion(Handle debug_handle, u64 guess, u64 *address) {
     MemoryInfo mi;
     u32 pi;
-    if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess)) || mi.perm != Perm_Rx) {
+    if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
+        return false;
+    }
+    
+    if (mi.perm == Perm_Rw) {
+        guess = mi.addr - 4;
+        if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
+            return false;
+        }
+    }
+    
+    if (mi.perm == Perm_R) {
+        guess = mi.addr - 4;
+        if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
+            return false;
+        }
+    }
+    
+    if (mi.perm != Perm_Rx) {
         return false;
     }
     
