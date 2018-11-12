@@ -6,6 +6,7 @@
 #include <mesosphere/interfaces/ISetAllocated.hpp>
 #include <mesosphere/processes/KClientPort.hpp>
 #include <mesosphere/processes/KServerPort.hpp>
+#include <mesosphere/processes/KLightServerSession.hpp>
 
 namespace mesosphere
 {
@@ -20,11 +21,13 @@ class KPort final :
 
     virtual ~KPort();
 
-    Result Initialize();
+    Result Initialize(int maxSessions, bool isLight);
 
     private:
     friend class KClientPort;
     friend class KServerPort;
+
+    Result AddServerSession(KLightServerSession &lightServerSession);
 
     bool isClientAlive = false;
     bool isServerAlive = false;

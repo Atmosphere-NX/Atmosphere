@@ -14,7 +14,23 @@ KServerPort::~KServerPort()
 
 bool KServerPort::IsSignaled() const
 {
-    return false; // TODO
+    if (!parent->isLight) {
+        return false; // TODO
+    } else {
+        return !lightServerSessions.empty();
+    }
+}
+
+Result KServerPort::AddServerSession(KLightServerSession &lightServerSession)
+{
+    KScopedCriticalSection critsec{};
+    bool wasEmpty = lightServerSessions.empty();
+    lightServerSessions.push_back(lightServerSession);
+    if (wasEmpty && !lightServerSessions.empty()) {
+        NotifyWaiters();
+    }
+
+    return ResultSuccess();
 }
 
 }

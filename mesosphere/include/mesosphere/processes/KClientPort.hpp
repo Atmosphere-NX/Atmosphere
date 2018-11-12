@@ -27,6 +27,7 @@ class KClientPort final :
     private:
     friend class KPort;
 
+    std::atomic<int> numSessions{0}, currentCapacity{0}, maxSessions{0};
 };
 
 MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(ClientPort);

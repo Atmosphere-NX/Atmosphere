@@ -23,7 +23,9 @@ class KServerPort final :
 
     private:
     friend class KPort;
+    Result AddServerSession(KLightServerSession &lightServerSession);
 
+    KLightServerSession::List lightServerSessions{};
 };
 
 MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(ServerPort);
