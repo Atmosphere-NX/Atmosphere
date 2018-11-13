@@ -12,6 +12,13 @@ AMS		:= $(TOPDIR)/../../
 
 include $(DEVKITARM)/base_rules
 
+AMSBRANCH := $(shell git symbolic-ref --short HEAD)
+AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
+
+ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
+    AMSREV := $(AMSREV)-dirty
+endif
+
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
 # BUILD is the directory where object files & intermediate files will be placed
@@ -29,7 +36,7 @@ INCLUDES	:=	include ../../common/include
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv4t -mtune=arm7tdmi -marm
-DEFINES :=	-D__BPMP__ -DFUSEE_STAGE2_SRC
+DEFINES :=	-D__BPMP__ -DFUSEE_STAGE2_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
 
 CFLAGS	:= \
 	-g \
