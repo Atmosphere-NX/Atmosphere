@@ -21,13 +21,13 @@ Result KPort::Initialize(int maxSessions, bool isLight)
     return ResultSuccess();
 }
 
-Result KPort::AddServerSession(KLightServerSession &lightServerSession)
+Result KPort::AddLightServerSession(KLightServerSession &lightServerSession)
 {
     KScopedCriticalSection critsec{};
     if (isClientAlive || isServerAlive) {
         return ResultKernelConnectionRefused();
     } else {
-        return server.AddServerSession(lightServerSession);
+        return server.AddLightServerSession(lightServerSession);
     }
 }
 

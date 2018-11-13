@@ -24,7 +24,7 @@ class KLightClientSession final : public KAutoObject, public IClient<KLightSessi
     private:
     friend class KLightSession;
 
-    KClientPort *parentPort = nullptr;
+    SharedPtr<KClientPort> parentClientPort = nullptr;
 };
 
 MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(LightClientSession);

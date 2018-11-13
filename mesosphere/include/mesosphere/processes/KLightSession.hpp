@@ -11,6 +11,8 @@
 namespace mesosphere
 {
 
+class KPort;
+
 struct LightSessionRequest {
     s32 cmdId;
     u32 data[6];
@@ -28,7 +30,7 @@ class KLightSession final :
 
     virtual ~KLightSession();
 
-    Result Initialize();
+    Result Initialize(KPort *parentPort = nullptr);
 
     private:
     friend class KLightClientSession;

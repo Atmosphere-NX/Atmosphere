@@ -23,7 +23,7 @@ class KServerPort final :
 
     private:
     friend class KPort;
-    Result AddServerSession(KLightServerSession &lightServerSession);
+    Result AddLightServerSession(KLightServerSession &lightServerSession);
 
     KLightServerSession::List lightServerSessions{};
 };

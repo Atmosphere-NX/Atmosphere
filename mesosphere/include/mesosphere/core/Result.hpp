@@ -97,6 +97,8 @@ class ResultError : public ResultBase<ResultError<module, description>> {
 
 #define DEFINE_RESULT(module, name, description) class Result##module##name final : public ResultError<ResultModule::module, description> {}
 
+DEFINE_RESULT(Kernel, OutOfSessions,                7);
+
 DEFINE_RESULT(Kernel, InvalidCapabilityDescriptor,  14);
 
 DEFINE_RESULT(Kernel, NotImplemented,               33);

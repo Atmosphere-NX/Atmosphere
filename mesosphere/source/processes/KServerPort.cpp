@@ -10,6 +10,7 @@ KServerPort::~KServerPort()
 {
     KScopedCriticalSection critsec{};
     parent->isServerAlive = false;
+    // TODO
 }
 
 bool KServerPort::IsSignaled() const
@@ -21,7 +22,7 @@ bool KServerPort::IsSignaled() const
     }
 }
 
-Result KServerPort::AddServerSession(KLightServerSession &lightServerSession)
+Result KServerPort::AddLightServerSession(KLightServerSession &lightServerSession)
 {
     KScopedCriticalSection critsec{};
     bool wasEmpty = lightServerSessions.empty();

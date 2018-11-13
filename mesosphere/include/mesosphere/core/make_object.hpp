@@ -40,6 +40,15 @@ auto MakeObjectRaw(Args&& ...args)
         if constexpr (std::is_base_of_v<ISetAllocated<T>, T>) {
             obj->AddToAllocatedSet();
         }
+    } else {
+        if constexpr (std::is_base_of_v<IClientServerParentTag, T>) {
+            delete &obj->GetClient();
+            delete &obj->GetServer();
+        } else {
+            delete obj;
+        }
+    
+        obj = nullptr;
     }
 cleanup:
     if (doReslimitCleanup) {
