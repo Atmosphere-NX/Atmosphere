@@ -15,6 +15,9 @@
  */
  
 #include <switch.h>
+
+#include <atmosphere/version.h>
+
 #include "fatal_task_screen.hpp"
 #include "fatal_config.hpp"
 #include "fatal_font.hpp"
@@ -198,7 +201,11 @@ Result ShowFatalTask::ShowFatal() {
     }
     
     /* TODO: Actually draw meaningful shit here. */
-    FontManager::DrawFormat(32, 64, u8"A fatal error occurred: 2%03d-%04d\n", R_MODULE(this->ctx->error_code), R_DESCRIPTION(this->ctx->error_code));
+    FontManager::SetPosition(32, 64);
+    FontManager::PrintFormatLine(u8"A fatal error occurred: 2%03d-%04d", R_MODULE(this->ctx->error_code), R_DESCRIPTION(this->ctx->error_code));
+    FontManager::PrintFormatLine(u8"Firmware: %s (AMS %u.%u.%u-%s)", GetFatalConfig()->firmware_version.display_version, 
+                                CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
+    
 
     /* Enqueue the buffer. */
     framebufferEnd(&fb);

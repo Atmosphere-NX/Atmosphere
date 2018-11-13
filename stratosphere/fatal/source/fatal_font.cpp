@@ -31,6 +31,7 @@
 static u16 *g_fb = nullptr;
 static u32 (*g_unswizzle_func)(u32, u32) = nullptr;
 static u16 g_font_color = 0xFFFF;
+static u32 g_cur_x = 0, g_cur_y = 0;
 
 static PlFontData g_font;
 static PlFontData g_fonts[PlSharedFontType_Total];
@@ -68,13 +69,18 @@ static void DrawGlyph(FT_Bitmap *bitmap, u32 x, u32 y) {
     }
 }
 
-void FontManager::DrawString(u32 x, u32 y, const char *str) {
+void FontManager::PrintLine(const char *str) {
     FT_UInt glyph_index;
     FT_GlyphSlot slot = g_face->glyph;
     
     const size_t len = strlen(str);
     
-    u32 cur_x = x, cur_y = y;
+    u32 cur_x = g_cur_x, cur_y = g_cur_y;
+    ON_SCOPE_EXIT { 
+        /* Advance to next line. */
+        /* g_cur_x = g_cur_x; */
+        g_cur_y = cur_y + (g_face->size->metrics.height >> 6);
+    };
     
     for (u32 i = 0; i < len; ) {
         u32 cur_char;
@@ -83,7 +89,7 @@ void FontManager::DrawString(u32 x, u32 y, const char *str) {
         i += unit_count;
         
         if (cur_char == '\n') {
-            cur_x = x;
+            cur_x = g_cur_x;
             cur_y += g_face->size->metrics.height >> 6;
             continue;
         }
@@ -107,18 +113,23 @@ void FontManager::DrawString(u32 x, u32 y, const char *str) {
     }
 }
 
-void FontManager::DrawFormat(u32 x, u32 y, const char *format, ...) {
+void FontManager::PrintFormatLine(const char *format, ...) {
     va_list va_arg;
     va_start(va_arg, format);
     
     char char_buf[0x400];
     vsnprintf(char_buf, sizeof(char_buf), format, va_arg);
     
-    DrawString(x, y, char_buf);
+    PrintLine(char_buf);
 }
 
 void FontManager::SetFontColor(u16 color) {
     g_font_color = color;
+}
+
+void FontManager::SetPosition(u32 x, u32 y) {
+    g_cur_x = x;
+    g_cur_y = y;
 }
 
 void FontManager::ConfigureFontFramebuffer(u16 *fb, u32 (*unswizzle_func)(u32, u32)) {

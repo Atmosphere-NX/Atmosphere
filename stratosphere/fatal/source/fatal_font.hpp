@@ -30,6 +30,7 @@ class FontManager {
         static void ConfigureFontFramebuffer(u16 *fb, u32 (*unswizzle_func)(u32, u32));
 
         static void SetFontColor(u16 color);
-        static void DrawString(u32 x, u32 y, const char *str);
-        static void DrawFormat(u32 x, u32 y, const char *format, ...);
+        static void SetPosition(u32 x, u32 y);
+        static void PrintLine(const char *str);
+        static void PrintFormatLine(const char *format, ...);
 };
