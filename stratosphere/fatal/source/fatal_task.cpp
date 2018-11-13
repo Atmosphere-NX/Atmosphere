@@ -42,21 +42,21 @@ static void RunTaskThreadFunc(void *arg) {
     svcExitThread();
 }
 
-static void RunTask(IFatalTask *task) {    
+static void RunTask(IFatalTask *task, u32 stack_size = 0x4000) {    
     if (g_num_threads >= MaxTasks) {
         std::abort();
     }
     
     HosThread *cur_thread = &g_task_threads[g_num_threads++];
     
-    cur_thread->Initialize(&RunTaskThreadFunc, task, 0x4000, 15);
+    cur_thread->Initialize(&RunTaskThreadFunc, task, stack_size, 15);
     cur_thread->Start();
 }
 
 void RunFatalTasks(FatalContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event) {
     RunTask(new ErrorReportTask(ctx, title_id, error_report, erpt_event));
     RunTask(new PowerControlTask(ctx, title_id, erpt_event, battery_event));
-    RunTask(new ShowFatalTask(ctx, title_id, battery_event));
+    RunTask(new ShowFatalTask(ctx, title_id, battery_event), 0x10000);
     RunTask(new StopSoundTask(ctx, title_id));
     RunTask(new BacklightControlTask(ctx, title_id));
     RunTask(new AdjustClockTask(ctx, title_id));

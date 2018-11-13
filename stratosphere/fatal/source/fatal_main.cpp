@@ -28,13 +28,14 @@
 #include "fatal_user.hpp"
 #include "fatal_config.hpp"
 #include "fatal_repair.hpp"
+#include "fatal_font.hpp"
 
 extern "C" {
     extern u32 __start__;
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x3C0000
+    #define INNER_HEAP_SIZE 0x280000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
     
@@ -112,11 +113,17 @@ void __appInit(void) {
         std::abort();
     }
     
+    rc = plInitialize();
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+    
     /* fatal cannot throw fatal, so don't do: CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION); */
 }
 
 void __appExit(void) {
     /* Cleanup services. */
+    plExit();
     spsmExit();
     psmExit();
     lblExit();
@@ -134,7 +141,10 @@ int main(int argc, char **argv)
     /* Load settings from set:sys. */
     InitializeFatalConfig();
     
-    /* TODO: Load shared font. */
+    /* Load shared font. */
+    if (R_FAILED(FontManager::InitializeSharedFont())) {
+        std::abort();
+    }
 
     /* Check whether we should throw fatal due to repair process. */
     CheckRepairStatus();

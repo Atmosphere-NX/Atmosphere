@@ -17,6 +17,27 @@
 #include <switch.h>
 #include "fatal_task_screen.hpp"
 #include "fatal_config.hpp"
+#include "fatal_font.hpp"
+#include "ams_logo.hpp"
+
+static constexpr u32 FatalScreenWidth = 1280;
+static constexpr u32 FatalScreenHeight = 720;
+static constexpr u32 FatalScreenBpp = 2;
+
+static constexpr u32 FatalScreenWidthAlignedBytes = (FatalScreenWidth * FatalScreenBpp + 63) & ~63;
+static constexpr u32 FatalScreenWidthAligned = FatalScreenWidthAlignedBytes / FatalScreenBpp;
+
+u32 GetPixelOffset(uint32_t x, uint32_t y)
+{
+    u32 tmp_pos;
+
+    tmp_pos = ((y & 127) / 16) + (x/32*8) + ((y/16/8)*(((FatalScreenWidthAligned/2)/16*8)));
+    tmp_pos *= 16*16 * 4;
+
+    tmp_pos += ((y%16)/8)*512 + ((x%32)/16)*256 + ((y%8)/2)*64 + ((x%16)/8)*32 + (y%2)*16 + (x%8)*2;//This line is a modified version of code from the Tegra X1 datasheet.
+
+    return tmp_pos / 2;
+}
 
 Result ShowFatalTask::SetupDisplayInternal() {
     Result rc;
@@ -107,8 +128,8 @@ Result ShowFatalTask::PrepareScreenForDrawing() {
         /* Display a layer of 1280 x 720 at 1.5x magnification */
         /* NOTE: N uses 2 (770x400) RGBA4444 buffers (tiled buffer + linear). */
         /* We use a single 1280x720 tiled RGB565 buffer. */
-        constexpr u32 raw_width = 1280;
-        constexpr u32 raw_height = 720;
+        constexpr u32 raw_width = FatalScreenWidth;
+        constexpr u32 raw_height = FatalScreenHeight;
         constexpr u32 layer_width = ((raw_width) * 3) / 2;
         constexpr u32 layer_height = ((raw_height) * 3) / 2;
         
@@ -160,13 +181,25 @@ Result ShowFatalTask::ShowFatal() {
         return FatalResult_NullGfxBuffer;
     }
     
+    /* Let the font manager know about our framebuffer. */
+    FontManager::ConfigureFontFramebuffer(tiled_buf, GetPixelOffset);
+    FontManager::SetFontColor(0xFFFF);
+    
     /* Draw a background. */
     for (size_t i = 0; i < this->fb.fb_size / sizeof(*tiled_buf); i++) {
         tiled_buf[i] = 0x39C9;
     }
     
-    /* TODO: Actually draw meaningful shit here. */
+    /* Draw the atmosphere logo in the bottom right corner. */
+    for (size_t y = 0; y < AMS_LOGO_HEIGHT; y++) {
+        for (size_t x = 0; x < AMS_LOGO_WIDTH; x++) {
+            tiled_buf[GetPixelOffset(FatalScreenWidth - AMS_LOGO_WIDTH - 32 + x, FatalScreenHeight - AMS_LOGO_HEIGHT - 32 + y)] = AMS_LOGO_BIN[y * AMS_LOGO_WIDTH + x];
+        }
+    }
     
+    /* TODO: Actually draw meaningful shit here. */
+    FontManager::DrawFormat(32, 64, u8"A fatal error occurred: 2%03d-%04d\n", R_MODULE(this->ctx->error_code), R_DESCRIPTION(this->ctx->error_code));
+
     /* Enqueue the buffer. */
     framebufferEnd(&fb);
     
