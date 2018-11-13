@@ -389,6 +389,18 @@ class KLinkedList final {
         return nd->data;
     }
 
+    template< class... Args>
+    T *emplace_back_or_fail(Args&&... args)
+    {
+        auto *nd = new typename List::Node{std::forward<Args>(args)...};
+        if (nd != nullptr) {
+            insert_node_after(list.last(), &nd->link);
+            return &nd->data;
+        } else {
+            return nullptr;
+        }
+    }
+
     void pop_back()
     {
         auto *nd = list.last();
