@@ -132,6 +132,10 @@ void FontManager::SetPosition(u32 x, u32 y) {
     g_cur_y = y;
 }
 
+void FontManager::AddSpacingLines(float num_lines) {
+    g_cur_y += static_cast<u32>((static_cast<float>(g_face->size->metrics.height) * num_lines) / 64.0f);
+}
+
 void FontManager::ConfigureFontFramebuffer(u16 *fb, u32 (*unswizzle_func)(u32, u32)) {
     g_fb = fb;
     g_unswizzle_func = unswizzle_func;

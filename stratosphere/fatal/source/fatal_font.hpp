@@ -20,9 +20,9 @@
 #include <stratosphere.hpp>
 
 #define RGB888_TO_RGB565(r, g, b) ((((r >> 3) << 11) & 0xF800) | (((g >> 2) << 5) & 0x7E0) | ((b >> 3) & 0x1F))
-#define RGB565_GET_R8(c) (((c >> 11) & 0x1F) << 3)
-#define RGB565_GET_G8(c) (((c >> 5) & 0x3F) << 2)
-#define RGB565_GET_B8(c) (((c >> 0) & 0x1F) << 3)
+#define RGB565_GET_R8(c) ((((c >> 11) & 0x1F) << 3) | ((c >> 13) & 7))
+#define RGB565_GET_G8(c) ((((c >> 5) & 0x3F) << 2) | ((c >> 9) & 3))
+#define RGB565_GET_B8(c) ((((c >> 0) & 0x1F) << 3) | ((c >> 2) & 7))
 
 class FontManager {        
     public:
@@ -31,6 +31,7 @@ class FontManager {
 
         static void SetFontColor(u16 color);
         static void SetPosition(u32 x, u32 y);
+        static void AddSpacingLines(float num_lines);
         static void PrintLine(const char *str);
         static void PrintFormatLine(const char *format, ...);
 };
