@@ -8,9 +8,18 @@ namespace mesosphere
 
 KServerPort::~KServerPort()
 {
-    KScopedCriticalSection critsec{};
+    KCriticalSection &critsec = KScheduler::GetCriticalSection();
+    critsec.lock();
     parent->isServerAlive = false;
-    // TODO
+    // TODO: normal sessions
+    lightServerSessions.clear_and_dispose(
+        [&critsec](KLightServerSession *s) {
+            critsec.unlock();
+            intrusive_ptr_release(s);
+            critsec.lock();
+        }
+    );
+    critsec.unlock();
 }
 
 bool KServerPort::IsSignaled() const
