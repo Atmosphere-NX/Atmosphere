@@ -207,7 +207,7 @@ Result ShowFatalTask::ShowFatal() {
     FontManager::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", GetFatalConfig()->firmware_version.display_version, 
                                 CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
     
-
+    
     /* Enqueue the buffer. */
     framebufferEnd(&fb);
     

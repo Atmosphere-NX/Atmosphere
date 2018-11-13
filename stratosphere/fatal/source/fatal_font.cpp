@@ -31,6 +31,7 @@
 static u16 *g_fb = nullptr;
 static u32 (*g_unswizzle_func)(u32, u32) = nullptr;
 static u16 g_font_color = 0xFFFF;
+static float g_font_sz = 16.0f;
 static u32 g_cur_x = 0, g_cur_y = 0;
 
 static PlFontData g_font;
@@ -132,6 +133,11 @@ void FontManager::SetPosition(u32 x, u32 y) {
     g_cur_y = y;
 }
 
+void FontManager::SetFontSize(float fsz) {
+    g_font_sz = fsz;
+    g_ft_err = FT_Set_Char_Size(g_face, 0, static_cast<u32>(g_font_sz * 64.0f), 96, 96);
+}
+
 void FontManager::AddSpacingLines(float num_lines) {
     g_cur_y += static_cast<u32>((static_cast<float>(g_face->size->metrics.height) * num_lines) / 64.0f);
 }
@@ -159,6 +165,6 @@ Result FontManager::InitializeSharedFont() {
     g_ft_err = FT_New_Memory_Face(g_library, reinterpret_cast<const FT_Byte *>(g_font.address), g_font.size, 0, &g_face);
     if (g_ft_err) return g_ft_err;
     
-    g_ft_err = FT_Set_Char_Size(g_face, 0, 8*64, 300, 300);
+    g_ft_err = FT_Set_Char_Size(g_face, 0, static_cast<u32>(g_font_sz * 64.0f), 96, 96);
     return g_ft_err;
 }

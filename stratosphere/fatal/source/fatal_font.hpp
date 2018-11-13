@@ -31,6 +31,7 @@ class FontManager {
 
         static void SetFontColor(u16 color);
         static void SetPosition(u32 x, u32 y);
+        static void SetFontSize(float fsz);
         static void AddSpacingLines(float num_lines);
         static void PrintLine(const char *str);
         static void PrintFormatLine(const char *format, ...);
