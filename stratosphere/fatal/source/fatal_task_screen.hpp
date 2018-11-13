@@ -22,7 +22,14 @@
 class ShowFatalTask : public IFatalTask {
     private:
         Event *battery_event;
+        ViDisplay display;
+        ViLayer layer;
+        NWindow win;
+        Framebuffer fb;
     private:
+        Result SetupDisplayInternal();
+        Result SetupDisplayExternal();
+        Result PrepareScreenForDrawing();
         Result ShowFatal();
     public:
         ShowFatalTask(FatalContext *ctx, u64 title_id, Event *evt) : IFatalTask(ctx, title_id), battery_event(evt) { }

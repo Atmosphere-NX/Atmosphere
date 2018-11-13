@@ -19,6 +19,7 @@
 #include <stratosphere.hpp>
 
 enum FatalResult : Result {
+    FatalResult_NullGfxBuffer = 0x4A3,
     FatalResult_AlreadyThrown = 0x6A3,
     FatalResult_TooManyEvents = 0x8A3,
     FatalResult_InRepairWithoutVolHeld = 0xAA3,

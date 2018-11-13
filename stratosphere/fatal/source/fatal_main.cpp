@@ -39,8 +39,8 @@ extern "C" {
     char   nx_inner_heap[INNER_HEAP_SIZE];
     
     u32 __nx_nv_transfermem_size = 0x40000;
-    ViServiceType __nx_gfx_vi_service_type = ViServiceType_Manager;
-
+    ViLayerFlags __nx_vi_stray_layer_flags = (ViLayerFlags)0;
+    
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
