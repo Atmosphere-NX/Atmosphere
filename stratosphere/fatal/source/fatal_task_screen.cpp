@@ -293,7 +293,7 @@ Result ShowFatalTask::ShowFatal() {
         }
     } else {
         if (this->ctx->cpu_ctx.is_aarch32) {
-            FontManager::PrintFormatLine("Backtrace - Start Address: ");
+            FontManager::Print("Backtrace - Start Address: ");
             FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.start_address);
             FontManager::PrintLine("");
             FontManager::AddSpacingLines(0.5f);
@@ -325,9 +325,10 @@ Result ShowFatalTask::ShowFatal() {
                 FontManager::SetPosition(backtrace_x, FontManager::GetY());
             }
         } else {
-            FontManager::PrintFormatLine("Backtrace - Start Address: ");
+            FontManager::Print("Backtrace - Start Address: ");
             FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.start_address);
             FontManager::PrintLine("");
+            FontManager::AddSpacingLines(0.5f);
             for (u32 i = 0; i < Aarch64CpuContext::MaxStackTraceDepth / 2; i++) {
                 u64 bt_cur = 0, bt_next = 0;
                 if (i < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {

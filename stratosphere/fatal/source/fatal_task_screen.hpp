@@ -32,7 +32,7 @@ class ShowFatalTask : public IFatalTask {
         Result PrepareScreenForDrawing();
         Result ShowFatal();
     public:
-        ShowFatalTask(FatalContext *ctx, u64 title_id, Event *evt) : IFatalTask(ctx, title_id), battery_event(evt) { }
+        ShowFatalTask(FatalThrowContext *ctx, u64 title_id, Event *evt) : IFatalTask(ctx, title_id), battery_event(evt) { }
         virtual Result Run() override;
         virtual const char *GetName() const override {
             return "ShowFatal";
@@ -43,7 +43,7 @@ class BacklightControlTask : public IFatalTask {
     private:
         void TurnOnBacklight();
     public:
-        BacklightControlTask(FatalContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
+        BacklightControlTask(FatalThrowContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
         virtual Result Run() override;
         virtual const char *GetName() const override {
             return "BacklightControlTask";

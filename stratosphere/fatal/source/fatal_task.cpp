@@ -53,7 +53,7 @@ static void RunTask(IFatalTask *task, u32 stack_size = 0x4000) {
     cur_thread->Start();
 }
 
-void RunFatalTasks(FatalContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event) {
+void RunFatalTasks(FatalThrowContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event) {
     RunTask(new ErrorReportTask(ctx, title_id, error_report, erpt_event));
     RunTask(new PowerControlTask(ctx, title_id, erpt_event, battery_event));
     RunTask(new ShowFatalTask(ctx, title_id, battery_event), 0x10000);

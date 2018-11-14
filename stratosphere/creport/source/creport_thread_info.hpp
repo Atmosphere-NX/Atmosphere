@@ -22,7 +22,7 @@
 #include "creport_code_info.hpp"
 
 class ThreadInfo {
-    private:
+    public:
         ThreadContext context{};
         u64 thread_id = 0;
         u64 stack_top = 0;

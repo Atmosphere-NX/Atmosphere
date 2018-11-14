@@ -24,7 +24,7 @@ class ErrorReportTask : public IFatalTask {
         bool create_report;
         Event *erpt_event;
     public:
-        ErrorReportTask(FatalContext *ctx, u64 title_id, bool error_report, Event *evt) : IFatalTask(ctx, title_id), create_report(error_report), erpt_event(evt) { }
+        ErrorReportTask(FatalThrowContext *ctx, u64 title_id, bool error_report, Event *evt) : IFatalTask(ctx, title_id), create_report(error_report), erpt_event(evt) { }
         virtual Result Run() override;
         virtual const char *GetName() const override {
             return "WriteErrorReport";

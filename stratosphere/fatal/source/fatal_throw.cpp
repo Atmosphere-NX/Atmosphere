@@ -42,7 +42,7 @@ Result ThrowFatalForSelf(u32 error) {
 
 Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu_ctx) {
     Result rc = 0;
-    FatalContext ctx;
+    FatalThrowContext ctx;
     ctx.error_code = error;
     ctx.cpu_ctx = *cpu_ctx;
     
@@ -51,7 +51,13 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
     
     /* Get title id. On failure, it'll be zero. */
     u64 title_id = 0;
-    pminfoGetTitleId(&title_id, pid);
+    pminfoGetTitleId(&title_id, pid);   
+    ctx.is_creport = title_id == 0x0100000000000036;
+    
+    /* Support for ams creport. TODO: Make this its own command? */
+    if (ctx.is_creport && !cpu_ctx->is_aarch32 && cpu_ctx->aarch64_ctx.afsr0 != 0) {
+        title_id = cpu_ctx->aarch64_ctx.afsr0;
+    }
     
     switch (policy) {
         case FatalType_ErrorReport:

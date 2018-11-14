@@ -96,8 +96,9 @@ struct FatalCpuContext {
     u32 type;
 };
 
-struct FatalContext {
+struct FatalThrowContext {
     u32 error_code;
+    bool is_creport;
     FatalCpuContext cpu_ctx;
 };
 

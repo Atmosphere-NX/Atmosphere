@@ -27,7 +27,7 @@ class PowerControlTask : public IFatalTask {
         bool TryShutdown();
         void MonitorBatteryState();
     public:
-        PowerControlTask(FatalContext *ctx, u64 title_id, Event *er_evt, Event *bt_evt) : IFatalTask(ctx, title_id), erpt_event(er_evt), battery_event(bt_evt) { }
+        PowerControlTask(FatalThrowContext *ctx, u64 title_id, Event *er_evt, Event *bt_evt) : IFatalTask(ctx, title_id), erpt_event(er_evt), battery_event(bt_evt) { }
         virtual Result Run() override;
         virtual const char *GetName() const override {
             return "PowerControlTask";
@@ -40,7 +40,7 @@ class PowerButtonObserveTask : public IFatalTask {
     private:
         void WaitForPowerButton();
     public:
-        PowerButtonObserveTask(FatalContext *ctx, u64 title_id, Event *er_evt) : IFatalTask(ctx, title_id), erpt_event(er_evt) { }
+        PowerButtonObserveTask(FatalThrowContext *ctx, u64 title_id, Event *er_evt) : IFatalTask(ctx, title_id), erpt_event(er_evt) { }
         virtual Result Run() override;
         virtual const char *GetName() const override {
             return "PowerButtonObserveTask";
@@ -49,7 +49,7 @@ class PowerButtonObserveTask : public IFatalTask {
 
 class StateTransitionStopTask : public IFatalTask {
     public:
-        StateTransitionStopTask(FatalContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
+        StateTransitionStopTask(FatalThrowContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
         virtual Result Run() override;
         virtual const char *GetName() const override {
             return "StateTransitionStopTask";

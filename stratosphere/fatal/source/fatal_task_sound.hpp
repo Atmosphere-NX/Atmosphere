@@ -23,7 +23,7 @@ class StopSoundTask : public IFatalTask {
     private:
         void StopSound();
     public:
-        StopSoundTask(FatalContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
+        StopSoundTask(FatalThrowContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
         virtual Result Run() override;
         virtual const char *GetName() const override {
             return "SoundTask";

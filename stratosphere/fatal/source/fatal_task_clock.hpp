@@ -23,7 +23,7 @@ class AdjustClockTask : public IFatalTask {
     private:
         Result AdjustClock();
     public:
-        AdjustClockTask(FatalContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
+        AdjustClockTask(FatalThrowContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
         virtual Result Run() override;
         virtual const char *GetName() const override {
             return "AdjustClockTask";

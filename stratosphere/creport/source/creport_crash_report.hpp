@@ -61,6 +61,7 @@ class CrashReport {
         
     public:
         void BuildReport(u64 pid, bool has_extra_info);
+        FatalContext *GetFatalContext();
         void SaveReport();
         
         bool IsAddressReadable(u64 address, u64 size, MemoryInfo *mi = NULL);

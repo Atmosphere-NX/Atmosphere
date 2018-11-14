@@ -21,12 +21,12 @@
 
 class IFatalTask {
     protected:
-        FatalContext *ctx;
+        FatalThrowContext *ctx;
         u64 title_id;
     public:
-        IFatalTask(FatalContext *ctx, u64 tid) : ctx(ctx), title_id(tid) { }
+        IFatalTask(FatalThrowContext *ctx, u64 tid) : ctx(ctx), title_id(tid) { }
         virtual Result Run() = 0;
         virtual const char *GetName() const = 0;
 };
 
-void RunFatalTasks(FatalContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event);
+void RunFatalTasks(FatalThrowContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event);
