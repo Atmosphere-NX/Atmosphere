@@ -42,7 +42,7 @@ Result ThrowFatalForSelf(u32 error) {
 
 Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu_ctx) {
     Result rc = 0;
-    FatalThrowContext ctx;
+    FatalThrowContext ctx = {0};
     ctx.error_code = error;
     if (cpu_ctx != nullptr) {
         ctx.cpu_ctx = *cpu_ctx;
@@ -86,7 +86,7 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
                 if (R_FAILED((rc = SetThrown()))) {
                     return rc;
                 }
-                
+                                
                 /* Signal that fatal is about to happen. */
                 GetEventManager()->SignalEvents();
                 

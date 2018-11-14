@@ -100,6 +100,9 @@ struct FatalThrowContext {
     u32 error_code;
     bool is_creport;
     bool has_gprs[NumAarch64Gprs];
+    size_t stack_dump_size;
+    u8 stack_dump[0x100];
+    char proc_name[0xD];
     FatalCpuContext cpu_ctx;
 };
 

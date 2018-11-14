@@ -257,7 +257,7 @@ void CrashReport::EnsureReportDirectories() {
 }
 
 void CrashReport::SaveReport() {
-    /* TODO: Save the report to the SD card. */
+    /* Save the report to the SD card. */
     char report_path[FS_MAX_PATH];
     
     /* Ensure path exists. */

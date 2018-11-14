@@ -146,6 +146,7 @@ void TryCollectDebugInformation(FatalThrowContext *ctx, u64 pid) {
             while (R_SUCCEEDED(svcGetDebugEvent((u8 *)&d, debug_handle))) {
                 if (d.type == DebugEventType::AttachProcess) {
                     ctx->cpu_ctx.is_aarch32 = (d.info.attach_process.flags & 1) == 0;
+                    memcpy(ctx->proc_name, d.info.attach_process.name, sizeof(d.info.attach_process.name));
                     got_attach_process = true;
                 } else if (d.type == DebugEventType::AttachThread) {
                     thread_id_to_tls[d.info.attach_thread.thread_id] = d.info.attach_thread.tls_address;
@@ -226,6 +227,16 @@ void TryCollectDebugInformation(FatalThrowContext *ctx, u64 pid) {
             /* Advance to the next frame. */
             ctx->cpu_ctx.aarch64_ctx.stack_trace[ctx->cpu_ctx.aarch64_ctx.stack_trace_size++] = cur_frame.lr;
             cur_fp = cur_frame.fp;
+        }
+        
+        /* Try to read up to 0x100 of stack. */
+        for (size_t sz = 0x100; sz > 0; sz -= 0x10) {
+            if (IsAddressReadable(debug_handle, ctx->cpu_ctx.aarch64_ctx.sp, sz, nullptr)) {
+                if (R_SUCCEEDED(svcReadDebugProcessMemory(ctx->stack_dump, debug_handle, ctx->cpu_ctx.aarch64_ctx.sp, sz))) {
+                    ctx->stack_dump_size = sz;
+                }
+                break;
+            }
         }
         
         /* Parse the starting address. */
