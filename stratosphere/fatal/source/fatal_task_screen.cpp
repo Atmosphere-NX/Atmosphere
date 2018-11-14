@@ -225,21 +225,40 @@ Result ShowFatalTask::ShowFatal() {
     
     /* Print GPRs. */
     FontManager::SetFontSize(14.0f);
-    FontManager::PrintLine("General Purpose Registers");
+    FontManager::Print("General Purpose Registers      ");
+    {
+        FontManager::SetPosition(FontManager::GetX() + 2, FontManager::GetY());
+        u32 x = FontManager::GetX();
+        FontManager::Print("PC: ");
+        FontManager::SetPosition(x + 47, FontManager::GetY());
+    }
+    if (this->ctx->cpu_ctx.is_aarch32) {
+        FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.pc);
+    } else {
+        FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.pc);
+    }
+    FontManager::PrintLine("");
+    FontManager::SetPosition(32, FontManager::GetY());
     FontManager::AddSpacingLines(0.5f);
     if (this->ctx->cpu_ctx.is_aarch32) {
         for (size_t i = 0; i < (NumAarch32Gprs / 2); i++) {
             u32 x = FontManager::GetX();
             FontManager::PrintFormat("%s:", Aarch32GprNames[i]);
             FontManager::SetPosition(x + 47, FontManager::GetY());
-            FontManager::Print("0x");
-            FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.r[i]);
+            if (this->ctx->has_gprs[i]) {
+                FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.r[i]);
+            } else {
+                FontManager::PrintMonospaceBlank(8);
+            }
             FontManager::Print("  ");
             x = FontManager::GetX();
             FontManager::PrintFormat("%s:", Aarch32GprNames[i + (NumAarch32Gprs / 2)]);
             FontManager::SetPosition(x + 47, FontManager::GetY());
-            FontManager::Print("0x");
-            FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.r[i + (NumAarch32Gprs / 2)]);
+            if (this->ctx->has_gprs[i + (NumAarch32Gprs / 2)]) {
+                FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.r[i + (NumAarch32Gprs / 2)]);
+            } else {
+                FontManager::PrintMonospaceBlank(8);
+            }
 
             if (i == (NumAarch32Gprs / 2) - 1) {
                 FontManager::Print("    ");
@@ -254,12 +273,20 @@ Result ShowFatalTask::ShowFatal() {
             u32 x = FontManager::GetX();
             FontManager::PrintFormat("%s:", Aarch64GprNames[i]);
             FontManager::SetPosition(x + 47, FontManager::GetY());
-            FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.x[i]);
+            if (this->ctx->has_gprs[i]) {
+                FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.x[i]);
+            } else {
+                FontManager::PrintMonospaceBlank(16);
+            }
             FontManager::Print("  ");
             x = FontManager::GetX();
             FontManager::PrintFormat("%s:", Aarch64GprNames[i + (NumAarch64Gprs / 2)]);
             FontManager::SetPosition(x + 47, FontManager::GetY());
-            FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.x[i + (NumAarch64Gprs / 2)]);
+            if (this->ctx->has_gprs[i + (NumAarch64Gprs / 2)]) {
+                FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.x[i + (NumAarch64Gprs / 2)]);
+            } else {
+                FontManager::PrintMonospaceBlank(16);
+            }
 
             if (i == (NumAarch64Gprs / 2) - 1) {
                 FontManager::Print("    ");

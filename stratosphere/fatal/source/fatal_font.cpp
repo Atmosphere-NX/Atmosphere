@@ -163,6 +163,14 @@ void FontManager::PrintMonospaceU32(u32 x) {
     DrawString(char_buf, false, true);
 }
 
+void FontManager::PrintMonospaceBlank(u32 width) {
+    char char_buf[0x400] = {0};
+    for (size_t i = 0; i < width && i < sizeof(char_buf); i++) {
+        char_buf[i] = ' ';
+    }
+    
+    DrawString(char_buf, false, true);
+}
 
 void FontManager::SetFontColor(u16 color) {
     g_font_color = color;

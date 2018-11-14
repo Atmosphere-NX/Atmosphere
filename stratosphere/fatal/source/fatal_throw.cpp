@@ -19,6 +19,7 @@
 #include "fatal_event_manager.hpp"
 #include "fatal_task.hpp"
 #include "fatal_config.hpp"
+#include "fatal_debug.hpp"
 
 static bool g_thrown = false;
 
@@ -34,17 +35,25 @@ static Result SetThrown() {
 
 Result ThrowFatalForSelf(u32 error) {
     u64 pid = 0;
-    FatalCpuContext ctx = {0};
     
     svcGetProcessId(&pid, CUR_PROCESS_HANDLE);
-    return ThrowFatalImpl(error, pid, FatalType_ErrorScreen, &ctx);
+    return ThrowFatalImpl(error, pid, FatalType_ErrorScreen, nullptr);
 }
 
 Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu_ctx) {
     Result rc = 0;
     FatalThrowContext ctx;
     ctx.error_code = error;
-    ctx.cpu_ctx = *cpu_ctx;
+    if (cpu_ctx != nullptr) {
+        ctx.cpu_ctx = *cpu_ctx;
+        /* Assume if we're provided a context that it's complete. */
+        for (u32 i = 0; i < NumAarch64Gprs; i++) {
+            ctx.has_gprs[i] = true;
+        }
+    } else {
+        std::memset(&ctx.cpu_ctx, 0, sizeof(ctx.cpu_ctx));
+        cpu_ctx = &ctx.cpu_ctx;
+    }
     
     /* Get config. */
     const FatalConfig *config = GetFatalConfig();
@@ -57,6 +66,13 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
     /* Support for ams creport. TODO: Make this its own command? */
     if (ctx.is_creport && !cpu_ctx->is_aarch32 && cpu_ctx->aarch64_ctx.afsr0 != 0) {
         title_id = cpu_ctx->aarch64_ctx.afsr0;
+    }
+    
+    /* Atmosphere extension: automatic debug info collection. */
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 && !ctx.is_creport) {
+        if ((cpu_ctx->is_aarch32 && cpu_ctx->aarch32_ctx.stack_trace_size == 0) || (!cpu_ctx->is_aarch32 && cpu_ctx->aarch32_ctx.stack_trace_size == 0)) {
+            TryCollectDebugInformation(&ctx, pid);
+        }
     }
     
     switch (policy) {

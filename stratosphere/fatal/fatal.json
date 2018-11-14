@@ -12,7 +12,7 @@
 	"is_64_bit":	true,
 	"address_space_type":	3,
 	"filesystem_access":	{
-		"permissions":	"0x0000000000100000"
+		"permissions":	"0xFFFFFFFFFFFFFFFF"
 	},
 	"service_access":	["bpc", "bpc:c", "erpt:c", "fsp-srv", "gpio", "i2c", "lbl", "lm", "nvdrv:s", "pcv", "pl:u", "pm:info", "psm", "set", "set:sys", "spsm", "vi:m", "vi:s"],
 	"service_host":	["fatal:p", "fatal:u"],
@@ -76,7 +76,14 @@
 				"svcReplyAndReceive":	"0x43",
 				"svcReplyAndReceiveWithUserBuffer":	"0x44",
 				"svcCreateEvent":	"0x45",
-				"svcReadWriteRegister":	"0x4E"
+				"svcReadWriteRegister":	"0x4E",
+                "svcDebugActiveProcess": "0x60",
+                "svcGetDebugEvent": "0x63",
+                "svcGetThreadList": "0x66",
+                "svcGetDebugThreadContext": "0x67",
+                "svcQueryDebugProcessMemory": "0x69",
+                "svcReadDebugProcessMemory": "0x6a",
+                "svcGetDebugThreadParam": "0x6d"
 			}
 		}, {
 			"type":	"min_kernel_version",

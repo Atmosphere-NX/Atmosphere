@@ -21,19 +21,16 @@
 #include "fatal_task.hpp"
 
 Result UserService::ThrowFatal(u32 error, PidDescriptor pid_desc) {
-    FatalCpuContext ctx = {0};
-    return ThrowFatalImpl(error, pid_desc.pid, FatalType_ErrorReportAndErrorScreen, &ctx);
+    return ThrowFatalImpl(error, pid_desc.pid, FatalType_ErrorReportAndErrorScreen, nullptr);
 }
 
 Result UserService::ThrowFatalWithPolicy(u32 error, PidDescriptor pid_desc, FatalType policy) {
-    FatalCpuContext ctx = {0};
-    return ThrowFatalImpl(error, pid_desc.pid, policy, &ctx);
+    return ThrowFatalImpl(error, pid_desc.pid, policy, nullptr);
 }
 
 Result UserService::ThrowFatalWithCpuContext(u32 error, PidDescriptor pid_desc, FatalType policy, InBuffer<u8> _ctx) {
     if (_ctx.num_elements < sizeof(FatalCpuContext)) {
-        FatalCpuContext ctx = {0};
-        return ThrowFatalImpl(error, pid_desc.pid, policy, &ctx);
+        return ThrowFatalImpl(error, pid_desc.pid, policy, nullptr);
     } else {
         return ThrowFatalImpl(error, pid_desc.pid, policy, reinterpret_cast<FatalCpuContext *>(_ctx.buffer));
     }

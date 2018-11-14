@@ -99,6 +99,7 @@ struct FatalCpuContext {
 struct FatalThrowContext {
     u32 error_code;
     bool is_creport;
+    bool has_gprs[NumAarch64Gprs];
     FatalCpuContext cpu_ctx;
 };
 
@@ -129,6 +130,7 @@ static constexpr const char *Aarch64GprNames[NumAarch64Gprs] = {
     u8"X18",
     u8"X19",
     u8"X20",
+    u8"X21",
     u8"X22",
     u8"X23",
     u8"X24",
@@ -139,7 +141,6 @@ static constexpr const char *Aarch64GprNames[NumAarch64Gprs] = {
     u8"FP",
     u8"LR",
     u8"SP",
-    u8"PC",
 };
 
 static constexpr const char *Aarch32GprNames[NumAarch32Gprs] = {
