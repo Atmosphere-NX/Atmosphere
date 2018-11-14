@@ -32,7 +32,7 @@ static u16 *g_fb = nullptr;
 static u32 (*g_unswizzle_func)(u32, u32) = nullptr;
 static u16 g_font_color = 0xFFFF;
 static float g_font_sz = 16.0f;
-static u32 g_cur_x = 0, g_cur_y = 0;
+static u32 g_line_x = 0, g_cur_x = 0, g_cur_y = 0;
 
 static PlFontData g_font;
 static PlFontData g_fonts[PlSharedFontType_Total];
@@ -70,7 +70,7 @@ static void DrawGlyph(FT_Bitmap *bitmap, u32 x, u32 y) {
     }
 }
 
-void FontManager::PrintLine(const char *str) {
+static void DrawString(const char *str, bool add_line) {
     FT_UInt glyph_index;
     FT_GlyphSlot slot = g_face->glyph;
     
@@ -78,9 +78,14 @@ void FontManager::PrintLine(const char *str) {
     
     u32 cur_x = g_cur_x, cur_y = g_cur_y;
     ON_SCOPE_EXIT { 
-        /* Advance to next line. */
-        /* g_cur_x = g_cur_x; */
-        g_cur_y = cur_y + (g_face->size->metrics.height >> 6);
+        if (add_line) {
+            /* Advance to next line. */
+            g_cur_x = g_line_x;
+            g_cur_y = cur_y + (g_face->size->metrics.height >> 6); 
+        } else {
+            g_cur_x = cur_x;
+            g_cur_y = cur_y;
+        }
     };
     
     for (u32 i = 0; i < len; ) {
@@ -90,7 +95,7 @@ void FontManager::PrintLine(const char *str) {
         i += unit_count;
         
         if (cur_char == '\n') {
-            cur_x = g_cur_x;
+            cur_x = g_line_x;
             cur_y += g_face->size->metrics.height >> 6;
             continue;
         }
@@ -114,6 +119,10 @@ void FontManager::PrintLine(const char *str) {
     }
 }
 
+void FontManager::PrintLine(const char *str) {
+    return DrawString(str, true);
+}
+
 void FontManager::PrintFormatLine(const char *format, ...) {
     va_list va_arg;
     va_start(va_arg, format);
@@ -124,13 +133,37 @@ void FontManager::PrintFormatLine(const char *format, ...) {
     PrintLine(char_buf);
 }
 
+void FontManager::Print(const char *str) {
+    return DrawString(str, false);
+}
+
+void FontManager::PrintFormat(const char *format, ...) {
+    va_list va_arg;
+    va_start(va_arg, format);
+    
+    char char_buf[0x400];
+    vsnprintf(char_buf, sizeof(char_buf), format, va_arg);
+    
+    Print(char_buf);
+}
+
+
 void FontManager::SetFontColor(u16 color) {
     g_font_color = color;
 }
 
 void FontManager::SetPosition(u32 x, u32 y) {
+    g_line_x = x;
     g_cur_x = x;
     g_cur_y = y;
+}
+
+u32 FontManager::GetX() {
+    return g_cur_x;
+}
+
+u32 FontManager::GetY() {
+    return g_cur_y;
 }
 
 void FontManager::SetFontSize(float fsz) {
@@ -139,6 +172,7 @@ void FontManager::SetFontSize(float fsz) {
 }
 
 void FontManager::AddSpacingLines(float num_lines) {
+    g_cur_x = g_line_x;
     g_cur_y += static_cast<u32>((static_cast<float>(g_face->size->metrics.height) * num_lines) / 64.0f);
 }
 

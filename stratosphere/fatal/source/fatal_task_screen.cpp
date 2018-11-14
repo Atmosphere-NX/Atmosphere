@@ -172,6 +172,7 @@ Result ShowFatalTask::PrepareScreenForDrawing() {
 
 Result ShowFatalTask::ShowFatal() {
     Result rc = 0;
+    const FatalConfig *config = GetFatalConfig();
 
     if (R_FAILED((rc = PrepareScreenForDrawing()))) {
         *(volatile u32 *)(0xCAFEBABE) = rc;
@@ -196,17 +197,132 @@ Result ShowFatalTask::ShowFatal() {
     /* Draw the atmosphere logo in the bottom right corner. */
     for (size_t y = 0; y < AMS_LOGO_HEIGHT; y++) {
         for (size_t x = 0; x < AMS_LOGO_WIDTH; x++) {
-            tiled_buf[GetPixelOffset(FatalScreenWidth - AMS_LOGO_WIDTH - 32 + x, FatalScreenHeight - AMS_LOGO_HEIGHT - 32 + y)] = AMS_LOGO_BIN[y * AMS_LOGO_WIDTH + x];
+            tiled_buf[GetPixelOffset(FatalScreenWidth - AMS_LOGO_WIDTH - 32 + x, 32 + y)] = AMS_LOGO_BIN[y * AMS_LOGO_WIDTH + x];
         }
     }
     
     /* TODO: Actually draw meaningful shit here. */
     FontManager::SetPosition(32, 64);
-    FontManager::PrintFormatLine(u8"A fatal error occurred: 2%03d-%04d", R_MODULE(this->ctx->error_code), R_DESCRIPTION(this->ctx->error_code));
+    FontManager::SetFontSize(16.0f);
+    FontManager::PrintFormatLine("Title: %016lx", this->title_id);
     FontManager::AddSpacingLines(0.5f);
-    FontManager::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", GetFatalConfig()->firmware_version.display_version, 
-                                CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
+    FontManager::PrintFormatLine(config->error_msg, R_MODULE(this->ctx->error_code), R_DESCRIPTION(this->ctx->error_code), this->ctx->error_code);
+    FontManager::PrintLine(config->error_desc);
+    FontManager::AddSpacingLines(0.5f);
+    FontManager::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", GetFatalConfig()->firmware_version.display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
     
+    /* Add a line. */
+    for (size_t x = 32; x < FatalScreenWidth - 32; x++) {
+        tiled_buf[GetPixelOffset(x, FontManager::GetY())] = 0xFFFF;
+    }
+    
+    
+    FontManager::AddSpacingLines(1.5f);
+    
+    u32 backtrace_y = FontManager::GetY();
+    u32 backtrace_x = 0;
+    
+    /* Print GPRs. */
+    FontManager::SetFontSize(14.0f);
+    FontManager::PrintLine("General Purpose Registers");
+    FontManager::AddSpacingLines(0.5f);
+    if (this->ctx->cpu_ctx.is_aarch32) {
+        for (size_t i = 0; i < (NumAarch32Gprs / 2); i++) {
+            u32 x = FontManager::GetX();
+            FontManager::PrintFormat("%s:", Aarch32GprNames[i]);
+            FontManager::SetPosition(x + 47, FontManager::GetY());
+            FontManager::PrintFormat("0x%08x  ", this->ctx->cpu_ctx.aarch32_ctx.r[i]);
+            x = FontManager::GetX();
+            FontManager::PrintFormat("%s:", Aarch32GprNames[i + (NumAarch32Gprs / 2)]);
+            FontManager::SetPosition(x + 47, FontManager::GetY());
+            FontManager::PrintFormat("0x%08x  ", this->ctx->cpu_ctx.aarch32_ctx.r[i]);
+
+            
+            FontManager::PrintLine("");
+            FontManager::SetPosition(32, FontManager::GetY());
+        }
+    } else {
+        for (size_t i = 0; i < NumAarch64Gprs / 2; i++) {
+            u32 x = FontManager::GetX();
+            FontManager::PrintFormat("%s:", Aarch64GprNames[i]);
+            FontManager::SetPosition(x + 47, FontManager::GetY());
+            FontManager::PrintFormat("0x%016lx ", this->ctx->cpu_ctx.aarch64_ctx.x[i]);
+            x = FontManager::GetX();
+            FontManager::PrintFormat("%s:", Aarch64GprNames[i + (NumAarch64Gprs / 2)]);
+            FontManager::SetPosition(x + 47, FontManager::GetY());
+            FontManager::PrintFormat("0x%016lx  ", this->ctx->cpu_ctx.aarch64_ctx.x[i]);
+
+            if (i == (NumAarch64Gprs / 2) - 1) {
+                FontManager::Print("    ");
+                backtrace_x = FontManager::GetX();
+            }
+            
+            FontManager::PrintLine("");
+            FontManager::SetPosition(32, FontManager::GetY());
+        }
+    }
+    
+    /* Print Backtrace. */
+    FontManager::SetPosition(backtrace_x, backtrace_y);
+    if (this->ctx->cpu_ctx.is_aarch32) {
+        FontManager::PrintFormatLine("Backtrace (Start Address = 0x%08x)", this->ctx->cpu_ctx.aarch32_ctx.start_address);
+        FontManager::AddSpacingLines(0.5f);
+        for (u32 i = 0; i < Aarch32CpuContext::MaxStackTraceDepth / 2; i++) {
+            u32 bt_cur = 0, bt_next = 0;
+            if (i < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
+                bt_cur = this->ctx->cpu_ctx.aarch32_ctx.stack_trace[i];
+            }
+            if (i + Aarch32CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
+                bt_next = this->ctx->cpu_ctx.aarch32_ctx.stack_trace[i + Aarch32CpuContext::MaxStackTraceDepth / 2];
+            }
+            
+            if (i < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
+                u32 x = FontManager::GetX();
+                FontManager::PrintFormat("BT[%02X]: ", i);
+                FontManager::SetPosition(x + 76, FontManager::GetY());
+                FontManager::PrintFormat("0x%08x  ", bt_cur);
+            }
+            
+            if (i + Aarch32CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
+                u32 x = FontManager::GetX();
+                FontManager::PrintFormat("BT[%02X]: ", i + Aarch32CpuContext::MaxStackTraceDepth / 2);
+                FontManager::SetPosition(x + 76, FontManager::GetY());
+                FontManager::PrintFormat("0x%08x  ", bt_next);
+            }
+            
+            FontManager::PrintLine("");
+            FontManager::SetPosition(backtrace_x, FontManager::GetY());
+        }
+    } else { 
+        FontManager::PrintFormatLine("Backtrace (Start Address = 0x%016lx)", this->ctx->cpu_ctx.aarch64_ctx.start_address);
+        FontManager::AddSpacingLines(0.5f);
+        for (u32 i = 0; i < Aarch64CpuContext::MaxStackTraceDepth / 2; i++) {
+            u64 bt_cur = 0, bt_next = 0;
+            if (i < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
+                bt_cur = this->ctx->cpu_ctx.aarch64_ctx.stack_trace[i];
+            }
+            if (i + Aarch64CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
+                bt_next = this->ctx->cpu_ctx.aarch64_ctx.stack_trace[i + Aarch64CpuContext::MaxStackTraceDepth / 2];
+            }
+            
+            if (i < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
+                u32 x = FontManager::GetX();
+                FontManager::PrintFormat("BT[%02X]: ", i);
+                FontManager::SetPosition(x + 76, FontManager::GetY());
+                FontManager::PrintFormat("0x%016lx  ", bt_cur);
+            }
+            
+            if (i + Aarch64CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
+                u32 x = FontManager::GetX();
+                FontManager::PrintFormat("BT[%02X]: ", i + Aarch64CpuContext::MaxStackTraceDepth / 2);
+                FontManager::SetPosition(x + 76, FontManager::GetY());
+                FontManager::PrintFormat("0x%016lx  ", bt_next);
+            }
+            
+            FontManager::PrintLine("");
+            FontManager::SetPosition(backtrace_x, FontManager::GetY());
+        }
+    }    
     
     /* Enqueue the buffer. */
     framebufferEnd(&fb);

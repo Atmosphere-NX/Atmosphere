@@ -48,6 +48,28 @@ IEvent *GetFatalSettingsEvent() {
     return g_fatal_settings_event;
 }
 
+static void SetupConfigLanguages() {
+    FatalConfig *config = GetFatalConfig();
+    
+    /* Defaults. */
+    config->error_msg   = u8"Error Code: 2%03d-%04d (0x%x)\n";
+    
+    if (config->quest_flag) {
+        config->error_desc = u8"Please call 1-800-875-1852 for service.\n";
+    } else {
+        config->error_desc = u8"An error has occured.\n\n"
+                             u8"Please press the POWER Button to restart the console. If you are\n"
+                             u8"unable to restart the console, hold the POWER Button for 12 seconds\n"
+                             u8"to turn the console off.\n\n"
+                             u8"If the problem persists, refer to the Nintendo Support Website.\n"
+                             u8"nintendo.com/switch/error\n";
+    }
+    
+    /* TODO: Try to load dynamically. */
+    /* FsStorage message_storage; */
+    /* TODO: if (R_SUCCEEDED(fsOpenDataStorageByDataId(0x010000000000081D, "fatal_msg"))) { ... } */
+}
+
 void InitializeFatalConfig() {
     FatalConfig *config = GetFatalConfig();
     
@@ -61,4 +83,6 @@ void InitializeFatalConfig() {
     setsysGetSettingsItemValue("fatal", "quest_reboot_interval_second", &config->quest_reboot_interval_second, sizeof(config->quest_reboot_interval_second));
     
     setsysGetFlag(SetSysFlag_Quest, &config->quest_flag);
+    
+    SetupConfigLanguages();
 }

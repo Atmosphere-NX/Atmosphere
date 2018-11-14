@@ -26,13 +26,16 @@ enum FatalResult : Result {
     FatalResult_InRepairWithoutTimeReviserCartridge = 0xCA3,
 };
 
+static constexpr size_t NumAarch64Gprs = 32;
+static constexpr size_t NumAarch32Gprs = 16;
+
 struct Aarch64CpuContext {
     using RegisterType = u64;
     static constexpr size_t MaxStackTraceDepth = 0x20;
     
     /* Registers, exception context. N left names for these fields in fatal .rodata. */
     union {
-        RegisterType x[31];
+        RegisterType x[NumAarch64Gprs];
         struct {
             RegisterType _x[29];
             RegisterType fp;
@@ -60,9 +63,9 @@ struct Aarch32CpuContext {
     
     /* Registers, exception context. N left names for these fields in fatal .rodata. */
     union {
-        RegisterType r[16];
+        RegisterType r[NumAarch32Gprs];
         struct {
-            RegisterType _x[11];
+            RegisterType _r[11];
             RegisterType fp;
             RegisterType ip;
             RegisterType sp;
@@ -86,7 +89,7 @@ struct Aarch32CpuContext {
 struct FatalCpuContext {
     union {
         Aarch64CpuContext aarch64_ctx;
-        Aarch64CpuContext aarch32_ctx;
+        Aarch32CpuContext aarch32_ctx;
     };
     
     bool is_aarch32;
@@ -102,3 +105,58 @@ static_assert(sizeof(Aarch64CpuContext) == 0x248, "Aarch64CpuContext definition!
 static_assert(sizeof(Aarch32CpuContext) == 0xE0, "Aarch32CpuContext definition!");
 static_assert(sizeof(FatalCpuContext) == 0x250, "FatalCpuContext definition!");
 static_assert(std::is_pod_v<FatalCpuContext>, "FatalCpuContext definition!");
+
+static constexpr const char *Aarch64GprNames[NumAarch64Gprs] = {
+    u8"X0",
+    u8"X1",
+    u8"X2",
+    u8"X3",
+    u8"X4",
+    u8"X5",
+    u8"X6",
+    u8"X7",
+    u8"X8",
+    u8"X9",
+    u8"X10",
+    u8"X11",
+    u8"X12",
+    u8"X13",
+    u8"X14",
+    u8"X15",
+    u8"X16",
+    u8"X17",
+    u8"X18",
+    u8"X19",
+    u8"X20",
+    u8"X22",
+    u8"X23",
+    u8"X24",
+    u8"X25",
+    u8"X26",
+    u8"X27",
+    u8"X28",
+    u8"FP",
+    u8"LR",
+    u8"SP",
+    u8"PC",
+};
+
+static constexpr const char *Aarch32GprNames[NumAarch32Gprs] = {
+    u8"R0",
+    u8"R1",
+    u8"R2",
+    u8"R3",
+    u8"R4",
+    u8"R5",
+    u8"R6",
+    u8"R7",
+    u8"R8",
+    u8"R9",
+    u8"R10",
+    u8"FP",
+    u8"IP",
+    u8"LR",
+    u8"SP",
+    u8"PC",
+};
+

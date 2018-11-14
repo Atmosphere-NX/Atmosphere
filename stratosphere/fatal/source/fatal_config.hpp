@@ -26,6 +26,9 @@ struct FatalConfig {
     bool transition_to_fatal;
     bool show_extra_info;
     bool quest_flag;
+    const char *error_msg;
+    const char *error_desc;
+    const char *quest_desc;
 };
 
 IEvent *GetFatalSettingsEvent();
