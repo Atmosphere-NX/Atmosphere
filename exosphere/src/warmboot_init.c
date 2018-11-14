@@ -199,7 +199,7 @@ void warmboot_init(void) {
     invalidate_icache_all();
     
     /* On warmboot (not cpu_on) only */
-    if (MC_SECURITY_CFG3_0 == 0) {
+    if (VIRT_MC_SECURITY_CFG3 == 0) {
         init_dma_controllers(g_exosphere_target_firmware_for_init);
     }
     

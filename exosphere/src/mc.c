@@ -39,23 +39,23 @@ volatile security_carveout_t *get_carveout_by_id(unsigned int carveout) {
 }
 
 void configure_gpu_ucode_carveout(void) {
-    /* Starting in 6.0.0, Carveout 2 is configured later on. */
+    /* Starting in 6.0.0, Carveout 2 is configured later on and adds read permission to TSEC. */
     /* This is a helper function to make this easier... */
     volatile security_carveout_t *carveout = get_carveout_by_id(2);
     carveout->paddr_low = 0x80020000;
     carveout->paddr_high = 0;
-    carveout->size_big_pages = 2; /* 0x40000 */
-    carveout->flags_0 = 0;
-    carveout->flags_1 = 0;
-    carveout->flags_2 = 0x3000000;
-    carveout->flags_3 = 0;
-    carveout->flags_4 = 0x300;
-    carveout->flags_5 = 0;
-    carveout->flags_6 = 0;
-    carveout->flags_7 = 0;
-    carveout->flags_8 = 0;
-    carveout->flags_9 = 0;
-    carveout->allowed_clients = 0x440167E;
+    carveout->size_big_pages = 2;       /* 0x40000 */
+    carveout->client_access_0 = 0;
+    carveout->client_access_1 = 0;
+    carveout->client_access_2 = (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_600) ? (BIT(CSR_GPUSRD) | BIT(CSW_GPUSWR) | BIT(CSR_TSECSRD)) : (BIT(CSR_GPUSRD) | BIT(CSW_GPUSWR));
+    carveout->client_access_3 = 0;
+    carveout->client_access_4 = (BIT(CSR_GPUSRD2) | BIT(CSW_GPUSWR2));
+    carveout->client_force_internal_access_0 = 0;
+    carveout->client_force_internal_access_1 = 0;
+    carveout->client_force_internal_access_2 = 0;
+    carveout->client_force_internal_access_3 = 0;
+    carveout->client_force_internal_access_4 = 0;
+    carveout->config = 0x440167E;
 }
 
 void configure_default_carveouts(void) {
@@ -64,17 +64,17 @@ void configure_default_carveouts(void) {
     carveout->paddr_low = 0;
     carveout->paddr_high = 0;
     carveout->size_big_pages = 0;
-    carveout->flags_0 = 0;
-    carveout->flags_1 = 0;
-    carveout->flags_2 = 0;
-    carveout->flags_3 = 0;
-    carveout->flags_4 = 0;
-    carveout->flags_5 = 0;
-    carveout->flags_6 = 0;
-    carveout->flags_7 = 0;
-    carveout->flags_8 = 0;
-    carveout->flags_9 = 0;
-    carveout->allowed_clients = 0x04000006;
+    carveout->client_access_0 = 0;
+    carveout->client_access_1 = 0;
+    carveout->client_access_2 = 0;
+    carveout->client_access_3 = 0;
+    carveout->client_access_4 = 0;
+    carveout->client_force_internal_access_0 = 0;
+    carveout->client_force_internal_access_1 = 0;
+    carveout->client_force_internal_access_2 = 0;
+    carveout->client_force_internal_access_3 = 0;
+    carveout->client_force_internal_access_4 = 0;
+    carveout->config = 0x4000006;
 
     /* Configure Carveout 2 (GPU UCODE) */
     if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_600) {
@@ -86,17 +86,17 @@ void configure_default_carveouts(void) {
     carveout->paddr_low = 0;
     carveout->paddr_high = 0;
     carveout->size_big_pages = 0;
-    carveout->flags_0 = 0;
-    carveout->flags_1 = 0;
-    carveout->flags_2 = 0x3000000;
-    carveout->flags_3 = 0;
-    carveout->flags_4 = 0x300;
-    carveout->flags_5 = 0;
-    carveout->flags_6 = 0;
-    carveout->flags_7 = 0;
-    carveout->flags_8 = 0;
-    carveout->flags_9 = 0;
-    carveout->allowed_clients = 0x4401E7E;
+    carveout->client_access_0 = 0;
+    carveout->client_access_1 = 0;
+    carveout->client_access_2 = (BIT(CSR_GPUSRD) | BIT(CSW_GPUSWR));
+    carveout->client_access_3 = 0;
+    carveout->client_access_4 = (BIT(CSR_GPUSRD2) | BIT(CSW_GPUSWR2));
+    carveout->client_force_internal_access_0 = 0;
+    carveout->client_force_internal_access_1 = 0;
+    carveout->client_force_internal_access_2 = 0;
+    carveout->client_force_internal_access_3 = 0;
+    carveout->client_force_internal_access_4 = 0;
+    carveout->config = 0x4401E7E;
 
     /* Configure default Kernel carveouts based on 2.0.0+. */
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_200) {
@@ -111,17 +111,17 @@ void configure_default_carveouts(void) {
             carveout->paddr_low = 0;
             carveout->paddr_high = 0;
             carveout->size_big_pages = 0;
-            carveout->flags_0 = 0;
-            carveout->flags_1 = 0;
-            carveout->flags_2 = 0;
-            carveout->flags_3 = 0;
-            carveout->flags_4 = 0;
-            carveout->flags_5 = 0;
-            carveout->flags_6 = 0;
-            carveout->flags_7 = 0;
-            carveout->flags_8 = 0;
-            carveout->flags_9 = 0;
-            carveout->allowed_clients = 0x4000006;
+            carveout->client_access_0 = 0;
+            carveout->client_access_1 = 0;
+            carveout->client_access_2 = 0;
+            carveout->client_access_3 = 0;
+            carveout->client_access_4 = 0;
+            carveout->client_force_internal_access_0 = 0;
+            carveout->client_force_internal_access_1 = 0;
+            carveout->client_force_internal_access_2 = 0;
+            carveout->client_force_internal_access_3 = 0;
+            carveout->client_force_internal_access_4 = 0;
+            carveout->config = 0x4000006;
         }
     }
 }
@@ -138,15 +138,15 @@ void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint6
     carveout->paddr_low = (uint32_t)(address & 0xFFFFFFFF);
     carveout->paddr_high = (uint32_t)(address >> 32);
     carveout->size_big_pages = (uint32_t)(size >> 17);
-    carveout->flags_0 = 0x70E3407F;
-    carveout->flags_1 = 0x1A620880;
-    carveout->flags_2 = 0x303C00;
-    carveout->flags_3 = 0xCF0830BB;
-    carveout->flags_4 = 0x3;
-    carveout->flags_5 = exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400 && carveout_id == 4 ? 0x8000 : 0;
-    carveout->flags_6 = exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400 && carveout_id == 4 ? 0x40000 : 0;
-    carveout->flags_7 = 0;
-    carveout->flags_8 = 0;
-    carveout->flags_9 = 0;
-    carveout->allowed_clients = 0x8B;
+    carveout->client_access_0 = (BIT(CSR_PTCR) | BIT(CSR_DISPLAY0A) | BIT(CSR_DISPLAY0AB) | BIT(CSR_DISPLAY0B) | BIT(CSR_DISPLAY0BB) | BIT(CSR_DISPLAY0C) | BIT(CSR_DISPLAY0CB) | BIT(CSR_AFIR) | BIT(CSR_DISPLAYHC) | BIT(CSR_DISPLAYHCB) | BIT(CSR_HDAR) | BIT(CSR_HOST1XDMAR) | BIT(CSR_HOST1XR) | BIT(CSR_NVENCSRD) | BIT(CSR_PPCSAHBDMAR) | BIT(CSR_PPCSAHBSLVR));
+    carveout->client_access_1 = (BIT(CSR_MPCORER) | BIT(CSW_NVENCSWR) | BIT(CSW_AFIW) | BIT(CSW_HDAW) | BIT(CSW_HOST1XW) | BIT(CSW_MPCOREW) | BIT(CSW_PPCSAHBDMAW) | BIT(CSW_PPCSAHBSLVW));
+    carveout->client_access_2 = (BIT(CSR_XUSB_HOSTR) | BIT(CSW_XUSB_HOSTW) | BIT(CSR_XUSB_DEVR) | BIT(CSW_XUSB_DEVW) | BIT(CSR_TSECSRD) | BIT(CSW_TSECSWR));
+    carveout->client_access_3 = (BIT(CSR_SDMMCRA) | BIT(CSR_SDMMCRAA) | BIT(CSR_SDMMCRAB) | BIT(CSW_SDMMCWA) | BIT(CSW_SDMMCWAA) | BIT(CSW_SDMMCWAB) | BIT(CSR_VICSRD) | BIT(CSW_VICSWR) | BIT(CSR_DISPLAYD) | BIT(CSR_NVDECSRD) | BIT(CSW_NVDECSWR) | BIT(CSR_APER) | BIT(CSW_APEW) | BIT(CSR_NVJPGSRD) | BIT(CSW_NVJPGSWR));
+    carveout->client_access_4 = (BIT(CSR_SESRD) | BIT(CSW_SESWR));
+    carveout->client_force_internal_access_0 = ((exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) && (carveout_id == 4)) ? BIT(CSR_AVPCARM7R) : 0;
+    carveout->client_force_internal_access_1 = ((exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) && (carveout_id == 4)) ? BIT(CSW_AVPCARM7W) : 0;
+    carveout->client_force_internal_access_2 = 0;
+    carveout->client_force_internal_access_3 = 0;
+    carveout->client_force_internal_access_4 = 0;
+    carveout->config = 0x8B;
 }

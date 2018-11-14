@@ -26,6 +26,7 @@
 #include "loader.h"
 #include "chainloader.h"
 #include "stage2.h"
+#include "mtc.h"
 #include "nxboot.h"
 #include "console.h"
 #include "fs_utils.h"
@@ -52,6 +53,9 @@ static void setup_env(void) {
     if (nxfs_mount_all() < 0) {
         fatal_error("Failed to mount at least one parition: %s\n", strerror(errno));
     }
+    
+    /* Train DRAM. */
+    train_dram();
 }
 
 static void cleanup_env(void) {

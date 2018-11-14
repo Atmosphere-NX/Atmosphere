@@ -213,8 +213,8 @@ void nx_hwinit()
     APB_MISC_PP_PINMUX_GLOBAL_0 = 0;
     
     /* Configure GPIOs. */
-    /* NOTE: In 3.x+ part of the GPIO configuration is skipped if the unit is SDEV. */
-    /* NOTE: In 6.x+ the GPIO configuration's order was changed a bit. */
+    /* NOTE: [3.0.0+] Part of the GPIO configuration is skipped if the unit is SDEV. */
+    /* NOTE: [6.0.0+] The GPIO configuration's order was changed a bit. */
     config_gpios();
 
     /* Uncomment for UART debugging. */
@@ -233,14 +233,14 @@ void nx_hwinit()
     clkrst_reboot(CARDEVICE_I2C5);
     
     /* Reboot SE. */
-    /* NOTE: In 4.x+ this was removed. */
+    /* NOTE: [4.0.0+] This was removed. */
     clkrst_reboot(CARDEVICE_SE);
     
     /* Reboot unknown device. */
     clkrst_reboot(CARDEVICE_UNK);
 
     /* Initialize I2C1. */
-    /* NOTE: In 6.x+ this was moved to after the PMIC is configured. */
+    /* NOTE: [6.0.0+] This was moved to after the PMIC is configured. */
     i2c_init(I2C_1);
     
     /* Initialize I2C5. */
@@ -268,11 +268,9 @@ void nx_hwinit()
     val = 0x1B;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD3, &val, 1);
     
-    /* TODO: In 3.x+ this was added. */
-    /*
+    /* NOTE: [3.0.0+] This was added. */
     val = 0x22;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_GPIO3, &val, 1);
-    */
     
     /* TODO: In 3.x+, if the unit is SDEV, the MBLPD bit is set. */
     /*
@@ -286,15 +284,15 @@ void nx_hwinit()
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_SD0, &val, 1);
 
     /* Configure and lock PMC scratch registers. */
-    /* NOTE: In 4.x+ this was removed. */
+    /* NOTE: [4.0.0+] This was removed. */
     config_pmc_scratch();
 
     /* Set super clock burst policy. */
     car->sclk_brst_pol = ((car->sclk_brst_pol & 0xFFFF8888) | 0x3333);
 
     /* Configure memory controller carveouts. */
-    /* NOTE: In 4.x+ this was removed. */
-    mc_config_carveout();
+    /* NOTE: [4.0.0+] This is now done in the Secure Monitor. */
+    /* mc_config_carveout(); */
 
     /* Initialize SDRAM. */
     sdram_init();

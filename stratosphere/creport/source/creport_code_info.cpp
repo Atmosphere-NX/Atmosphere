@@ -32,15 +32,37 @@ void CodeList::SaveToFile(FILE *f_report) {
     }
 }
 
-void CodeList::ReadCodeRegionsFromProcess(Handle debug_handle, u64 pc, u64 lr) {
+void CodeList::ReadCodeRegionsFromThreadInfo(Handle debug_handle, const ThreadInfo *thread) {
     u64 code_base;
     
-    /* Guess that either PC or LR will point to a code region. This could be false. */
-    if (!TryFindCodeRegion(debug_handle, pc, &code_base) && !TryFindCodeRegion(debug_handle, lr, &code_base)) {
-        return;
+    /* Try to add the thread's PC. */
+    if (TryFindCodeRegion(debug_handle, thread->GetPC(), &code_base)) {
+        AddCodeRegion(debug_handle, code_base);
     }
     
-    u64 cur_ptr = code_base;
+    /* Try to add the thread's LR. */
+    if (TryFindCodeRegion(debug_handle, thread->GetLR(), &code_base)) {
+        AddCodeRegion(debug_handle, code_base);
+    }
+    
+    /* Try to add all the addresses in the thread's stacktrace. */
+    for (u32 i = 0; i < thread->GetStackTraceSize(); i++) {
+        if (TryFindCodeRegion(debug_handle, thread->GetStackTrace(i), &code_base)) {
+            AddCodeRegion(debug_handle, code_base);
+        }
+    }
+}
+
+void CodeList::AddCodeRegion(u64 debug_handle, u64 code_address) {
+    /* Check whether we already have this code region. */
+    for (size_t i = 0; i < this->code_count; i++) {
+        if (this->code_infos[i].start_address <= code_address && code_address < this->code_infos[i].end_address) {
+            return;
+        }
+    }
+    
+    /* Add all contiguous code regions. */
+    u64 cur_ptr = code_address;
     while (this->code_count < max_code_count) {
         MemoryInfo mi;
         u32 pi;
@@ -80,7 +102,25 @@ void CodeList::ReadCodeRegionsFromProcess(Handle debug_handle, u64 pc, u64 lr) {
 bool CodeList::TryFindCodeRegion(Handle debug_handle, u64 guess, u64 *address) {
     MemoryInfo mi;
     u32 pi;
-    if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess)) || mi.perm != Perm_Rx) {
+    if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
+        return false;
+    }
+    
+    if (mi.perm == Perm_Rw) {
+        guess = mi.addr - 4;
+        if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
+            return false;
+        }
+    }
+    
+    if (mi.perm == Perm_R) {
+        guess = mi.addr - 4;
+        if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
+            return false;
+        }
+    }
+    
+    if (mi.perm != Perm_Rx) {
         return false;
     }
     

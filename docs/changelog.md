@@ -1,4 +1,32 @@
 # Changelog
+## 0.7.5
++ DRAM training was added to fusee-secondary, courtesy @hexkyz.
+  + This greatly improves the speed of memory accesses during boot, resulting in a boot time that is ~200-400% faster.
++ creport has had its code region detection improved.
+  + Instead of only checking one of the crashing thread's PC/LR for code region presence, creport now checks both + every address in the stacktrace. This is also now done for every thread.
+    + This matches the improvement Nintendo added to official creport in 6.1.0.
+  + The code region detection heuristic was further improved by checking whether an address points to .rodata or .rwdata, instead of just .text.
+  + This means that a crash appears in a loaded NRO (or otherwise discontiguous) code region, creport will be able to detect all active code regions, and not just that one. 
+## 0.7.4
++ [libstratosphere](https://github.com/Atmosphere-NX/libstratosphere) has been completely refactored/rewritten, and split into its own, separate submodule.
+  + While this is mostly "under the hood" for end-users, the refactor is faster (improving both boot-time and runtime performance), more accurate (many of the internal IPC structures are now bug-for-bug compatible with Nintendo's implementations), and significantly more stable (it fixes a large number of bugs present in the old library).
+  + The refactored API is significantly cleaner and easier to write system module code for, which should improve/speed up development of stratosphere.
+  + Developers looking to write their own custom system modules for the Switch can now easily include libstratosphere as a submodule in their projects.
++ Loader was extended to add a new generic way to redirect content (ExternalContentSources), courtesy @misson20000:
+  + A new command was added to ldr:shel, taking in a tid to redirect and returning a session handle.
+  + When the requested TID is loading, Loader will query the handle as though it were an IFileSystem.
+    + This allows clients to generically define their own filesystems, and override content with them in loader.
++ fs.mitm has gotten several optimizations that should improve its performance and stability:
+  + RomFS redirection now only occurs when there is content to redirect, even if the title is being mitm'd elsewhere.
+  + A cache is now maintained of the active data storage, if any, for all opened title IDs. This means if two processes both try to open the same archive, fs.mitm won't duplicate any of its work.
+  + RomFS metadata is now cached to the SD card on build instead of being persisted in memory -- this greatly reduces memory footprint and allows fs.mitm to redirect more titles simultaneously than before.
++ A number of bugs were fixed, including:
+  + A resource leak was fixed in process creation. This fixes crashes that occur when a large number (>32) games have been launched since the last reboot.
+  + fs.mitm no longer errors when receiving a zero-sized buffer. This fixes crashes in some games, including The Messenger.
+  + Multi-threaded server semantics should no longer cause deadlocks in certain circumstances. This fixes crashes in some games, including NES Classics.
+  + PM now only gives full FS permissions to the active KIPs. This fixes a potential crash where new processes might be unable to be registered with FS.
++ The `make dist` target now includes the branch in the generated zip name.
++ General system stability improvements to enhance the user's experience.
 ## 0.7.3
 + Loader and fs.mitm now try to reload loader.ini before reading it. This allows for changing the override button combination/HBL title id at runtime.
 + Added a MitM between set:sys and qlaunch, used to override the system version string displayed in system settings.

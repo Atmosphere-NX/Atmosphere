@@ -46,19 +46,16 @@
 
 static bool g_has_booted_up = false;
 
-
 void setup_dram_magic_numbers(void) {
-    /* TODO: Why does these DRAM write occur? */
+    /* These DRAM writes test and set values for the GPU UCODE carveout. */
     unsigned int target_fw = exosphere_get_target_firmware();
-    if (EXOSPHERE_TARGET_FIRMWARE_400 <= target_fw) {
-        (*(volatile uint32_t *)(0x8005FFFC)) = 0xC0EDBBCC;
-        flush_dcache_range((void *)0x8005FFFC, (void *)0x80060000);
-        if (EXOSPHERE_TARGET_FIRMWARE_600 <= target_fw) {
-            (*(volatile uint32_t *)(0x8005FF00)) = 0x00000083;
-            (*(volatile uint32_t *)(0x8005FF04)) = 0x00000002;
-            (*(volatile uint32_t *)(0x8005FF08)) = 0x00000210;
-            flush_dcache_range((void *)0x8005FF00, (void *)0x8005FF0C);
-        }
+    (*(volatile uint32_t *)(0x8005FFFC)) = 0xC0EDBBCC;              /* Access test value. */
+    flush_dcache_range((void *)0x8005FFFC, (void *)0x80060000);
+    if (EXOSPHERE_TARGET_FIRMWARE_600 <= target_fw) {
+        (*(volatile uint32_t *)(0x8005FF00)) = 0x00000083;          /* SKU code. */
+        (*(volatile uint32_t *)(0x8005FF04)) = 0x00000002;
+        (*(volatile uint32_t *)(0x8005FF08)) = 0x00000210;          /* Tegra210 code. */
+        flush_dcache_range((void *)0x8005FF00, (void *)0x8005FF0C);
     }
     __dsb_sy();
 }
@@ -83,35 +80,34 @@ void bootup_misc_mmio(void) {
     se_generate_random_key(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY);
     se_generate_srk(KEYSLOT_SWITCH_SRKGENKEY);
 
-    if (!g_has_booted_up && EXOSPHERE_TARGET_FIRMWARE_600 > exosphere_get_target_firmware() && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (!g_has_booted_up && (EXOSPHERE_TARGET_FIRMWARE_600 > exosphere_get_target_firmware())) {
         setup_dram_magic_numbers();
     }
 
-    /* Todo: What? */
-    MAKE_TIMERS_REG(0x1A4) = 0xF1E0;
+    /* Mark TMR5, TMR6, TMR7, TMR8, WDT0, WDT1, WDT2 and WDT3 as secure. */
+    SHARED_TIMER_SECURE_CFG_0 = 0xF1E0;
 
-    FLOW_CTLR_BPMP_CLUSTER_CONTROL_0 = 4; /* ACTIVE_CLUSTER_LOCK. */
-    FLOW_CTLR_FLOW_DBG_QUAL_0 = 0x10000000; /* Enable FIQ2CCPLEX */
+    FLOW_CTLR_BPMP_CLUSTER_CONTROL_0 = 4;       /* ACTIVE_CLUSTER_LOCK. */
+    FLOW_CTLR_FLOW_DBG_QUAL_0 = 0x10000000;     /* Enable FIQ2CCPLEX */
 
     /* Disable Deep Power Down. */
     APBDEV_PMC_DPD_ENABLE_0 = 0;
 
-    /* Setup MC. */
-    /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x984) = 1;
-    MAKE_MC_REG(0x648) = 0;
-    MAKE_MC_REG(0x64C) = 0;
-    MAKE_MC_REG(0x650) = 1;
-    MAKE_MC_REG(0x670) = 0;
-    MAKE_MC_REG(0x674) = 0;
-    MAKE_MC_REG(0x678) = 1;
-    MAKE_MC_REG(0x9A0) = 0;
-    MAKE_MC_REG(0x9A4) = 0;
-    MAKE_MC_REG(0x9A8) = 0;
-    MAKE_MC_REG(0x9AC) = 1;
-    MC_SECURITY_CFG0_0 = 0;
-    MC_SECURITY_CFG1_0 = 0;
-    MC_SECURITY_CFG3_0 = 3;
+    /* Setup MC carveouts. */
+    MAKE_MC_REG(MC_VIDEO_PROTECT_GPU_OVERRIDE_0) = 1;
+    MAKE_MC_REG(MC_VIDEO_PROTECT_BOM) = 0;
+    MAKE_MC_REG(MC_VIDEO_PROTECT_SIZE_MB) = 0;
+    MAKE_MC_REG(MC_VIDEO_PROTECT_REG_CTRL) = 1;
+    MAKE_MC_REG(MC_SEC_CARVEOUT_BOM) = 0;
+    MAKE_MC_REG(MC_SEC_CARVEOUT_SIZE_MB) = 0;
+    MAKE_MC_REG(MC_SEC_CARVEOUT_REG_CTRL) = 1;
+    MAKE_MC_REG(MC_MTS_CARVEOUT_BOM) = 0;
+    MAKE_MC_REG(MC_MTS_CARVEOUT_SIZE_MB) = 0;
+    MAKE_MC_REG(MC_MTS_CARVEOUT_ADR_HI) = 0;
+    MAKE_MC_REG(MC_MTS_CARVEOUT_REG_CTRL) = 1;
+    MAKE_MC_REG(MC_SECURITY_CFG0) = 0;
+    MAKE_MC_REG(MC_SECURITY_CFG1) = 0;
+    MAKE_MC_REG(MC_SECURITY_CFG3) = 3;
     configure_default_carveouts();
         
     /* Mark registers secure world only. */
@@ -142,12 +138,12 @@ void bootup_misc_mmio(void) {
         APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = sec_disable_2;
     }
 
-    /* reset Translation Enable Registers */
-    MC_SMMU_TRANSLATION_ENABLE_0_0 = 0xFFFFFFFF;
-    MC_SMMU_TRANSLATION_ENABLE_1_0 = 0xFFFFFFFF;
-    MC_SMMU_TRANSLATION_ENABLE_2_0 = 0xFFFFFFFF;
-    MC_SMMU_TRANSLATION_ENABLE_3_0 = 0xFFFFFFFF;
-    MC_SMMU_TRANSLATION_ENABLE_4_0 = 0xFFFFFFFF;
+    /* Reset Translation Enable Registers. */
+    MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_0) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_1) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_2) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_3) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_4) = 0xFFFFFFFF;
 
     /* TODO: What are these MC reg writes? */
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
@@ -157,7 +153,7 @@ void bootup_misc_mmio(void) {
     }
     MAKE_MC_REG(0x03C) = 0;
 
-    /* MISC registers*/
+    /* MISC registers. */
     MAKE_MC_REG(0x9E0) = 0;
     MAKE_MC_REG(0x9E4) = 0;
     MAKE_MC_REG(0x9E8) = 0;
@@ -166,18 +162,18 @@ void bootup_misc_mmio(void) {
     MAKE_MC_REG(0x9F4) = 0;
 
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
-        MC_SMMU_PTB_ASID_0 = 0;
+        MAKE_MC_REG(MC_SMMU_PTB_ASID) = 0;
     }
-    MC_SMMU_PTB_DATA_0 = 0;
-    MC_SMMU_TLB_CONFIG_0 = 0x30000030;
-    MC_SMMU_PTC_CONFIG_0 = 0x2800003F;
-    (void)MC_SMMU_TLB_CONFIG_0;
-    MC_SMMU_PTC_FLUSH_0 = 0;
-    (void)MC_SMMU_TLB_CONFIG_0;
-    MC_SMMU_TLB_FLUSH_0 = 0;
-    (void)MC_SMMU_TLB_CONFIG_0;
-    MC_SMMU_CONFIG_0 = 1; /* enable SMMU */
-    (void)MC_SMMU_TLB_CONFIG_0;
+    MAKE_MC_REG(MC_SMMU_PTB_DATA) = 0;
+    MAKE_MC_REG(MC_SMMU_TLB_CONFIG) = 0x30000030;
+    MAKE_MC_REG(MC_SMMU_PTC_CONFIG) = 0x2800003F;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_PTC_FLUSH) = 0;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_TLB_FLUSH) = 0;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_CONFIG) = 1;        /* Enable SMMU. */
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
     
     /* Clear RESET Vector, setup CPU Secure Boot RESET Vectors. */
     uint32_t reset_vec;
@@ -200,13 +196,13 @@ void bootup_misc_mmio(void) {
 
     /* Setup FIQs. */
 
-
     /* And assign "se_operation_completed" to Interrupt 0x5A. */
     intr_set_priority(INTERRUPT_ID_SECURITY_ENGINE, 0);
     intr_set_group(INTERRUPT_ID_SECURITY_ENGINE, 0);
     intr_set_enabled(INTERRUPT_ID_SECURITY_ENGINE, 1);
     intr_set_cpu_mask(INTERRUPT_ID_SECURITY_ENGINE, 8);
     intr_set_edge_level(INTERRUPT_ID_SECURITY_ENGINE, 0);
+    
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
         intr_set_priority(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
         intr_set_group(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
@@ -225,10 +221,10 @@ void bootup_misc_mmio(void) {
         }
         g_has_booted_up = true;
     } else if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400) {
-        /* TODO: What are these MC reg writes? */
-        MAKE_MC_REG(0x65C) = 0xFFFFF000;
-        MAKE_MC_REG(0x660) = 0;
-        MAKE_MC_REG(0x964) |= 1;
+        /* Disable AHB redirect. */
+        MAKE_MC_REG(MC_IRAM_BOM) = 0xFFFFF000;
+        MAKE_MC_REG(MC_IRAM_TOM) = 0;
+        MAKE_MC_REG(MC_IRAM_REG_CTRL) |= 1;
         CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
     }
 }
@@ -237,10 +233,11 @@ void setup_4x_mmio(void) {
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_600) {
         configure_gpu_ucode_carveout();
     }
-    /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x65C) = 0xFFFFF000;
-    MAKE_MC_REG(0x660) = 0;
-    MAKE_MC_REG(0x964) |= 1;
+
+    /* Disable AHB redirect. */
+    MAKE_MC_REG(MC_IRAM_BOM) = 0xFFFFF000;
+    MAKE_MC_REG(MC_IRAM_TOM) = 0;
+    MAKE_MC_REG(MC_IRAM_REG_CTRL) |= 1;
     CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
 
     /* TODO: What are these PMC scratch writes? */
@@ -275,16 +272,16 @@ void setup_4x_mmio(void) {
     AHB_ARBITRATION_DISABLE_0 |= 2;
 
     /* Set SMMU for BPMP/APB-DMA to point to TZRAM. */
-    MC_SMMU_PTB_ASID_0 = 1;
-    (void)MC_SMMU_TLB_CONFIG_0;
-    MC_SMMU_PTB_DATA_0 = 0x70012;
-    MC_SMMU_AVPC_ASID_0 = 0x80000001;
-    MC_SMMU_PPCS1_ASID_0 = 0x80000001;
-    (void)MC_SMMU_TLB_CONFIG_0;
-    MC_SMMU_PTC_FLUSH_0 = 0;
-    (void)MC_SMMU_TLB_CONFIG_0;
-    MC_SMMU_TLB_FLUSH_0 = 0;
-    (void)MC_SMMU_TLB_CONFIG_0;
+    MAKE_MC_REG(MC_SMMU_PTB_ASID) = 1;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_PTB_DATA) = 0x70012;
+    MAKE_MC_REG(MC_SMMU_AVPC_ASID) = 0x80000001;
+    MAKE_MC_REG(MC_SMMU_PPCS1_ASID) = 0x80000001;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_PTC_FLUSH) = 0;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_TLB_FLUSH) = 0;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
 
     /* Wait for the BPMP to halt. */
     while ((FLOW_CTLR_HALT_COP_EVENTS_0 >> 29) != 2) {
@@ -321,7 +318,7 @@ void setup_current_core_state(void) {
 
     __isb();
 
-    SET_SYSREG(cntfrq_el0, MAKE_SYSCTR0_REG(0x20)); /* TODO: Reg name. */
+    SET_SYSREG(cntfrq_el0, SYSCTR0_CNTFID0_0);
     SET_SYSREG(cnthctl_el2, 3ull);
 
     __isb();
