@@ -204,12 +204,13 @@ Result ShowFatalTask::ShowFatal() {
     /* TODO: Actually draw meaningful shit here. */
     FontManager::SetPosition(32, 64);
     FontManager::SetFontSize(16.0f);
+    FontManager::PrintFormat(config->error_msg, R_MODULE(this->ctx->error_code), R_DESCRIPTION(this->ctx->error_code), this->ctx->error_code);
+    FontManager::AddSpacingLines(0.5f);
     FontManager::PrintFormatLine("Title: %016lx", this->title_id);
     FontManager::AddSpacingLines(0.5f);
-    FontManager::PrintFormatLine(config->error_msg, R_MODULE(this->ctx->error_code), R_DESCRIPTION(this->ctx->error_code), this->ctx->error_code);
-    FontManager::PrintLine(config->error_desc);
-    FontManager::AddSpacingLines(0.5f);
     FontManager::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", GetFatalConfig()->firmware_version.display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
+    FontManager::AddSpacingLines(1.5f);
+    FontManager::Print(config->error_desc);
     
     /* Add a line. */
     for (size_t x = 32; x < FatalScreenWidth - 32; x++) {
