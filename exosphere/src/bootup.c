@@ -49,15 +49,13 @@ static bool g_has_booted_up = false;
 void setup_dram_magic_numbers(void) {
     /* These DRAM writes test and set values for the GPU UCODE carveout. */
     unsigned int target_fw = exosphere_get_target_firmware();
-    if (EXOSPHERE_TARGET_FIRMWARE_400 <= target_fw) {
-        (*(volatile uint32_t *)(0x8005FFFC)) = 0xC0EDBBCC;              /* Access test value. */
-        flush_dcache_range((void *)0x8005FFFC, (void *)0x80060000);
-        if (EXOSPHERE_TARGET_FIRMWARE_600 <= target_fw) {
-            (*(volatile uint32_t *)(0x8005FF00)) = 0x00000083;          /* SKU code. */
-            (*(volatile uint32_t *)(0x8005FF04)) = 0x00000002;
-            (*(volatile uint32_t *)(0x8005FF08)) = 0x00000210;          /* Tegra210 code. */
-            flush_dcache_range((void *)0x8005FF00, (void *)0x8005FF0C);
-        }
+    (*(volatile uint32_t *)(0x8005FFFC)) = 0xC0EDBBCC;              /* Access test value. */
+    flush_dcache_range((void *)0x8005FFFC, (void *)0x80060000);
+    if (EXOSPHERE_TARGET_FIRMWARE_600 <= target_fw) {
+        (*(volatile uint32_t *)(0x8005FF00)) = 0x00000083;          /* SKU code. */
+        (*(volatile uint32_t *)(0x8005FF04)) = 0x00000002;
+        (*(volatile uint32_t *)(0x8005FF08)) = 0x00000210;          /* Tegra210 code. */
+        flush_dcache_range((void *)0x8005FF00, (void *)0x8005FF0C);
     }
     __dsb_sy();
 }
@@ -82,7 +80,7 @@ void bootup_misc_mmio(void) {
     se_generate_random_key(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY);
     se_generate_srk(KEYSLOT_SWITCH_SRKGENKEY);
 
-    if (!g_has_booted_up && EXOSPHERE_TARGET_FIRMWARE_600 > exosphere_get_target_firmware() && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (!g_has_booted_up && (EXOSPHERE_TARGET_FIRMWARE_600 > exosphere_get_target_firmware())) {
         setup_dram_magic_numbers();
     }
 

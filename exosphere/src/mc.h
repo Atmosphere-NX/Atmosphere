@@ -493,6 +493,9 @@ static inline uintptr_t get_mc_base(void) {
 #define MC_ERR_APB_ASID_UPDATE_STATUS                           0x9d0
 #define MC_DA_CONFIG0                                           0x9dc
 
+/* Virtual aliases */
+#define VIRT_MC_SECURITY_CFG3   MAKE_MC_REG(MC_SECURITY_CFG3)
+
 /* Memory Controller clients */
 #define CLIENT_ACCESS_NUM_CLIENTS   32
 typedef enum {
