@@ -27,10 +27,11 @@ static inline uintptr_t get_timers_base(void) {
 }
 
 #define TIMERS_BASE (get_timers_base())
-
 #define MAKE_TIMERS_REG(n) MAKE_REG32(TIMERS_BASE + n)
 
-#define TIMERUS_CNTR_1US_0 MAKE_REG32(TIMERS_BASE + 0x10)
+#define TIMERUS_CNTR_1US_0 MAKE_TIMERS_REG(0x10)
+#define SHARED_INTR_STATUS_0 MAKE_TIMERS_REG(0x1A0)
+#define SHARED_TIMER_SECURE_CFG_0 MAKE_TIMERS_REG(0x1A4)
 
 typedef struct {
     uint32_t CONFIG;
@@ -41,7 +42,7 @@ typedef struct {
 
 #define GET_WDT(n) ((volatile watchdog_timers_t *)(TIMERS_BASE + 0x100 + 0x20 * n))
 #define WDT_REBOOT_PATTERN 0xC45A
-#define GET_WDT_REBOOT_CFG_REG(n) MAKE_REG32(TIMERS_BASE + 0x60 + 0x8*n)
+#define GET_WDT_REBOOT_CFG_REG(n) MAKE_REG32(TIMERS_BASE + 0x60 + 0x8 * n)
 
 void wait(uint32_t microseconds);
 

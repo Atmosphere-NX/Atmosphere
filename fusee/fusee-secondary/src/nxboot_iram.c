@@ -41,7 +41,8 @@ void nxboot_finish(uint32_t boot_memaddr) {
     }
     
     /* Finalize the GPU UCODE carveout. */
-    mc_config_carveout_finalize();
+    /* NOTE: [4.0.0+] This is now done in the Secure Monitor. */
+    /* mc_config_carveout_finalize(); */
     
     /* Lock AES keyslots. */
     for (uint32_t i = 0; i < 16; i++)
