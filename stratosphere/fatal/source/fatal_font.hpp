@@ -39,4 +39,6 @@ class FontManager {
         static void PrintFormatLine(const char *format, ...);
         static void Print(const char *str);
         static void PrintFormat(const char *format, ...);
+        static void PrintMonospaceU64(u64 x);
+        static void PrintMonospaceU32(u32 x);
 };

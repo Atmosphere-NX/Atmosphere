@@ -62,7 +62,7 @@ static void SetupConfigLanguages() {
                              u8"unable to restart the console, hold the POWER Button for 12 seconds\n"
                              u8"to turn the console off.\n\n"
                              u8"If the problem persists, refer to the Nintendo Support Website.\n"
-                             u8"nintendo.com/switch/error\n";
+                             u8"support.nintendo.com/switch/error\n";
     }
     
     /* TODO: Try to load dynamically. */

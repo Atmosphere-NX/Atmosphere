@@ -206,7 +206,7 @@ Result ShowFatalTask::ShowFatal() {
     FontManager::SetFontSize(16.0f);
     FontManager::PrintFormat(config->error_msg, R_MODULE(this->ctx->error_code), R_DESCRIPTION(this->ctx->error_code), this->ctx->error_code);
     FontManager::AddSpacingLines(0.5f);
-    FontManager::PrintFormatLine("Title: %016lx", this->title_id);
+    FontManager::PrintFormatLine("Title: %016lX", this->title_id);
     FontManager::AddSpacingLines(0.5f);
     FontManager::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", GetFatalConfig()->firmware_version.display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
     FontManager::AddSpacingLines(1.5f);
@@ -232,12 +232,19 @@ Result ShowFatalTask::ShowFatal() {
             u32 x = FontManager::GetX();
             FontManager::PrintFormat("%s:", Aarch32GprNames[i]);
             FontManager::SetPosition(x + 47, FontManager::GetY());
-            FontManager::PrintFormat("0x%08x  ", this->ctx->cpu_ctx.aarch32_ctx.r[i]);
+            FontManager::Print("0x");
+            FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.r[i]);
+            FontManager::Print("  ");
             x = FontManager::GetX();
             FontManager::PrintFormat("%s:", Aarch32GprNames[i + (NumAarch32Gprs / 2)]);
             FontManager::SetPosition(x + 47, FontManager::GetY());
-            FontManager::PrintFormat("0x%08x  ", this->ctx->cpu_ctx.aarch32_ctx.r[i]);
+            FontManager::Print("0x");
+            FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.r[i + (NumAarch32Gprs / 2)]);
 
+            if (i == (NumAarch32Gprs / 2) - 1) {
+                FontManager::Print("    ");
+                backtrace_x = FontManager::GetX();
+            }
             
             FontManager::PrintLine("");
             FontManager::SetPosition(32, FontManager::GetY());
@@ -247,11 +254,12 @@ Result ShowFatalTask::ShowFatal() {
             u32 x = FontManager::GetX();
             FontManager::PrintFormat("%s:", Aarch64GprNames[i]);
             FontManager::SetPosition(x + 47, FontManager::GetY());
-            FontManager::PrintFormat("0x%016lx ", this->ctx->cpu_ctx.aarch64_ctx.x[i]);
+            FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.x[i]);
+            FontManager::Print("  ");
             x = FontManager::GetX();
             FontManager::PrintFormat("%s:", Aarch64GprNames[i + (NumAarch64Gprs / 2)]);
             FontManager::SetPosition(x + 47, FontManager::GetY());
-            FontManager::PrintFormat("0x%016lx  ", this->ctx->cpu_ctx.aarch64_ctx.x[i]);
+            FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.x[i + (NumAarch64Gprs / 2)]);
 
             if (i == (NumAarch64Gprs / 2) - 1) {
                 FontManager::Print("    ");
@@ -271,16 +279,17 @@ Result ShowFatalTask::ShowFatal() {
         bt_size = this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size;
     }
     
+    
+    FontManager::SetPosition(backtrace_x, backtrace_y);
     if (bt_size == 0) {
         if (this->ctx->cpu_ctx.is_aarch32) {
-             FontManager::PrintFormatLine("Start Address: 0x%08x", this->ctx->cpu_ctx.aarch32_ctx.start_address);
+             FontManager::PrintFormatLine("Start Address: 0x%08X", this->ctx->cpu_ctx.aarch32_ctx.start_address);
         } else {
-             FontManager::PrintFormatLine("Start Address: 0x%016lx", this->ctx->cpu_ctx.aarch64_ctx.start_address);
+             FontManager::PrintFormatLine("Start Address: 0x%016lX", this->ctx->cpu_ctx.aarch64_ctx.start_address);
         }
     } else {
-        FontManager::SetPosition(backtrace_x, backtrace_y);
         if (this->ctx->cpu_ctx.is_aarch32) {
-            FontManager::PrintFormatLine("Backtrace (Start Address = 0x%08x)", this->ctx->cpu_ctx.aarch32_ctx.start_address);
+            FontManager::PrintFormatLine("Backtrace - Start Address: 0x%08X", this->ctx->cpu_ctx.aarch32_ctx.start_address);
             FontManager::AddSpacingLines(0.5f);
             for (u32 i = 0; i < Aarch32CpuContext::MaxStackTraceDepth / 2; i++) {
                 u32 bt_cur = 0, bt_next = 0;
@@ -293,23 +302,25 @@ Result ShowFatalTask::ShowFatal() {
                 
                 if (i < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
                     u32 x = FontManager::GetX();
-                    FontManager::PrintFormat("BT[%02X]: ", i);
-                    FontManager::SetPosition(x + 76, FontManager::GetY());
-                    FontManager::PrintFormat("0x%08x  ", bt_cur);
+                    FontManager::PrintFormat("BT[%02d]: ", i);
+                    FontManager::SetPosition(x + 72, FontManager::GetY());
+                    FontManager::PrintMonospaceU32(bt_cur);
+                    FontManager::Print("  ");
                 }
                 
                 if (i + Aarch32CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
                     u32 x = FontManager::GetX();
-                    FontManager::PrintFormat("BT[%02X]: ", i + Aarch32CpuContext::MaxStackTraceDepth / 2);
-                    FontManager::SetPosition(x + 76, FontManager::GetY());
-                    FontManager::PrintFormat("0x%08x  ", bt_next);
+                    FontManager::PrintFormat("BT[%02d]: ", i + Aarch32CpuContext::MaxStackTraceDepth / 2);
+                    FontManager::SetPosition(x + 72, FontManager::GetY());
+                    FontManager::PrintMonospaceU32(bt_next);
                 }
                 
                 FontManager::PrintLine("");
                 FontManager::SetPosition(backtrace_x, FontManager::GetY());
             }
-        } else { 
-            FontManager::PrintFormatLine("Backtrace (Start Address = 0x%016lx)", this->ctx->cpu_ctx.aarch64_ctx.start_address);
+        } else {
+            
+            FontManager::PrintFormatLine("Backtrace - Start Address: 0x%016lX", this->ctx->cpu_ctx.aarch64_ctx.start_address);
             FontManager::AddSpacingLines(0.5f);
             for (u32 i = 0; i < Aarch64CpuContext::MaxStackTraceDepth / 2; i++) {
                 u64 bt_cur = 0, bt_next = 0;
@@ -322,16 +333,17 @@ Result ShowFatalTask::ShowFatal() {
                 
                 if (i < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
                     u32 x = FontManager::GetX();
-                    FontManager::PrintFormat("BT[%02X]: ", i);
-                    FontManager::SetPosition(x + 76, FontManager::GetY());
-                    FontManager::PrintFormat("0x%016lx  ", bt_cur);
+                    FontManager::PrintFormat("BT[%02d]: ", i);
+                    FontManager::SetPosition(x + 72, FontManager::GetY());
+                    FontManager::PrintMonospaceU64(bt_cur);
+                    FontManager::Print("  ");
                 }
                 
                 if (i + Aarch64CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
                     u32 x = FontManager::GetX();
-                    FontManager::PrintFormat("BT[%02X]: ", i + Aarch64CpuContext::MaxStackTraceDepth / 2);
-                    FontManager::SetPosition(x + 76, FontManager::GetY());
-                    FontManager::PrintFormat("0x%016lx  ", bt_next);
+                    FontManager::PrintFormat("BT[%02d]: ", i + Aarch64CpuContext::MaxStackTraceDepth / 2);
+                    FontManager::SetPosition(x + 72, FontManager::GetY());
+                    FontManager::PrintMonospaceU64(bt_next);
                 }
                 
                 FontManager::PrintLine("");

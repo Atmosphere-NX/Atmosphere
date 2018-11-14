@@ -34,6 +34,8 @@ static u16 g_font_color = 0xFFFF;
 static float g_font_sz = 16.0f;
 static u32 g_line_x = 0, g_cur_x = 0, g_cur_y = 0;
 
+static u32 g_mono_adv = 0;
+
 static PlFontData g_font;
 static PlFontData g_fonts[PlSharedFontType_Total];
 static FT_Library g_library;
@@ -70,7 +72,7 @@ static void DrawGlyph(FT_Bitmap *bitmap, u32 x, u32 y) {
     }
 }
 
-static void DrawString(const char *str, bool add_line) {
+static void DrawString(const char *str, bool add_line, bool mono = false) {
     FT_UInt glyph_index;
     FT_GlyphSlot slot = g_face->glyph;
     
@@ -112,9 +114,9 @@ static void DrawString(const char *str, bool add_line) {
             return;
         }
         
-        DrawGlyph(&slot->bitmap, cur_x + slot->bitmap_left, cur_y - slot->bitmap_top);
+        DrawGlyph(&slot->bitmap, cur_x + slot->bitmap_left + ((mono && g_mono_adv > slot->advance.x) ? ((g_mono_adv - slot->advance.x) >> 7) : 0), cur_y - slot->bitmap_top);
         
-        cur_x += slot->advance.x >> 6;
+        cur_x += (mono ? g_mono_adv : slot->advance.x) >> 6;
         cur_y += slot->advance.y >> 6;
     }
 }
@@ -147,6 +149,20 @@ void FontManager::PrintFormat(const char *format, ...) {
     Print(char_buf);
 }
 
+void FontManager::PrintMonospaceU64(u64 x) {    
+    char char_buf[0x400];
+    snprintf(char_buf, sizeof(char_buf), "%016lX", x);
+    
+    DrawString(char_buf, false, true);
+}
+
+void FontManager::PrintMonospaceU32(u32 x) {    
+    char char_buf[0x400];
+    snprintf(char_buf, sizeof(char_buf), "%08X", x);
+    
+    DrawString(char_buf, false, true);
+}
+
 
 void FontManager::SetFontColor(u16 color) {
     g_font_color = color;
@@ -169,6 +185,15 @@ u32 FontManager::GetY() {
 void FontManager::SetFontSize(float fsz) {
     g_font_sz = fsz;
     g_ft_err = FT_Set_Char_Size(g_face, 0, static_cast<u32>(g_font_sz * 64.0f), 96, 96);
+        
+    g_ft_err = FT_Load_Glyph(g_face, FT_Get_Char_Index(g_face, 'A'), FT_LOAD_DEFAULT);
+    
+    if (g_ft_err == 0) {
+        g_ft_err = FT_Render_Glyph(g_face->glyph, FT_RENDER_MODE_NORMAL);
+    }
+    if (g_ft_err == 0) {
+        g_mono_adv = g_face->glyph->advance.x;
+    }
 }
 
 void FontManager::AddSpacingLines(float num_lines) {
@@ -199,6 +224,6 @@ Result FontManager::InitializeSharedFont() {
     g_ft_err = FT_New_Memory_Face(g_library, reinterpret_cast<const FT_Byte *>(g_font.address), g_font.size, 0, &g_face);
     if (g_ft_err) return g_ft_err;
     
-    g_ft_err = FT_Set_Char_Size(g_face, 0, static_cast<u32>(g_font_sz * 64.0f), 96, 96);
+    SetFontSize(g_font_sz);
     return g_ft_err;
 }
