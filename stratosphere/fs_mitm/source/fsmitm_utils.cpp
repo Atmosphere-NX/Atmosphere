@@ -80,7 +80,7 @@ void Utils::InitializeSdThreadFunc(void *args) {
         
         char prodinfo_backup_path[FS_MAX_PATH] = {0};
         if (strlen(serial_number) > 0) {
-            snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/PRODINFO_%s.bin", serial_number);
+            snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/%s_PRODINFO.bin", serial_number);
         } else {
             snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/PRODINFO.bin");
         }
