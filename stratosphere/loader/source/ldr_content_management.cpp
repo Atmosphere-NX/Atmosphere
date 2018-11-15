@@ -307,7 +307,7 @@ bool ContentManagement::ShouldReplaceWithHBL(u64 tid) {
 }
 
 bool ContentManagement::ShouldOverrideContents(u64 tid) {
-    if (HasCreatedTitle(0x0100000000001000)) {
+    if (tid >= 0x0100000000001000 && HasCreatedTitle(0x0100000000001000)) {
         u64 kDown = 0;
         bool keys_triggered = (R_SUCCEEDED(HidManagement::GetKeysDown(&kDown)) && ((kDown & g_override_key_combination) != 0));
         return g_has_initialized_fs_dev && (g_override_by_default ^ keys_triggered);
