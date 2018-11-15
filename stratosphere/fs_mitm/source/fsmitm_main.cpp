@@ -78,7 +78,7 @@ void __appExit(void) {
 
 struct FsMitmManagerOptions {
     static const size_t PointerBufferSize = 0x800;
-    static const size_t MaxDomains = 0x10;
+    static const size_t MaxDomains = 0x40;
     static const size_t MaxDomainObjects = 0x4000;
 };
 using FsMitmManager = WaitableManager<FsMitmManagerOptions>;

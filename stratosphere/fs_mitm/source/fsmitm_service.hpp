@@ -33,16 +33,16 @@ class FsMitmService : public IMitmServiceObject {
         bool should_override_contents;
     public:
         FsMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
-            this->should_override_contents = !Utils::HasSdDisableMitMFlag(this->title_id) && Utils::HasOverrideButton(this->title_id);
+            if (Utils::HasSdDisableMitMFlag(this->title_id)) {
+                this->should_override_contents = false;
+            } else {
+                this->should_override_contents = (this->title_id >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(this->title_id)) && Utils::HasOverrideButton(this->title_id);
+            }
         }
         
         static bool ShouldMitm(u64 pid, u64 tid) {
-            /* Always intercept NS, so that we can protect the boot partition. */
-            if (tid == 0x010000000000001FULL) {
-                return true;
-            }
-                        
-            return (tid >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(tid));
+            /* fs.mitm should always mitm everything. */
+            return true;
         }
         
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
