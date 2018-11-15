@@ -221,12 +221,10 @@ bool Registration::HasService(u64 service) {
 
 Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
     Registration::Service *target_service = GetService(service);
-    if (target_service == NULL || ShouldInitDefer(service)) {
+    if (target_service == NULL || ShouldInitDefer(service) || target_service->mitm_waiting_ack) {
         /* Note: This defers the result until later. */
         return RESULT_DEFER_SESSION;
     }
-    
-    /* */
     
     *out = 0;
     Result rc;
@@ -255,7 +253,17 @@ Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
             rc = resp->result;
             if (R_SUCCEEDED(rc)) {
                 if (resp->should_mitm) {
-                    rc = svcConnectToPort(out, target_service->mitm_port_h);
+                    rc = svcConnectToPort(&target_service->mitm_fwd_sess_h, target_service->port_h);
+                    if (R_SUCCEEDED(rc)) {   
+                        rc = svcConnectToPort(out, target_service->mitm_port_h);
+                        if (R_SUCCEEDED(rc)) {
+                            target_service->mitm_waiting_ack_pid = pid;
+                            target_service->mitm_waiting_ack = true;
+                        } else {
+                            svcCloseHandle(target_service->mitm_fwd_sess_h);
+                            target_service->mitm_fwd_sess_h = 0;
+                        }
+                    }
                 } else {
                     rc = svcConnectToPort(out, target_service->port_h);
                 }
@@ -494,6 +502,35 @@ Result Registration::UninstallMitmForPid(u64 pid, u64 service) {
     svcCloseHandle(target_service->mitm_port_h);
     svcCloseHandle(target_service->mitm_query_h);
     target_service->mitm_pid = 0;
+    return 0;
+}
+
+Result Registration::AcknowledgeMitmSessionForPid(u64 pid, u64 service, Handle *out, u64 *out_pid) {
+    if (!service) {
+        return 0xC15;
+    }
+    
+    u64 service_name_len = GetServiceNameLength(service);
+    
+    /* If the service has bytes after a null terminator, that's no good. */
+    if (service_name_len != 8 && (service >> (8 * service_name_len))) {
+        return 0xC15;
+    }
+    
+    Registration::Service *target_service = GetService(service);
+    if (target_service == NULL) {
+        return 0xE15;
+    }
+
+    if ((!IsInitialProcess(pid) && target_service->mitm_pid != pid) || !target_service->mitm_waiting_ack) {
+        return 0x1015;
+    }
+    
+    *out = target_service->mitm_fwd_sess_h;
+    *out_pid = target_service->mitm_waiting_ack_pid;
+    target_service->mitm_fwd_sess_h = 0;
+    target_service->mitm_waiting_ack_pid = 0;
+    target_service->mitm_waiting_ack = false;
     return 0;
 }
 

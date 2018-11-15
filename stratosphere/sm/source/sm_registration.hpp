@@ -43,6 +43,10 @@ class Registration {
             u64 mitm_pid;
             Handle mitm_port_h;
             Handle mitm_query_h;
+            
+            bool mitm_waiting_ack;
+            u64 mitm_waiting_ack_pid;
+            Handle mitm_fwd_sess_h;
         };
         
         /* Utilities. */
@@ -74,5 +78,6 @@ class Registration {
         /* Extension. */
         static Result InstallMitmForPid(u64 pid, u64 service, Handle *out, Handle *query_out);
         static Result UninstallMitmForPid(u64 pid, u64 service);
+        static Result AcknowledgeMitmSessionForPid(u64 pid, u64 service, Handle *out, u64 *out_pid);
         static Result AssociatePidTidForMitm(u64 pid, u64 tid);
 };

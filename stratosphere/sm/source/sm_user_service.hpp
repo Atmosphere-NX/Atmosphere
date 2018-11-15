@@ -27,7 +27,8 @@ enum UserServiceCmd {
     
     User_Cmd_AtmosphereInstallMitm = 65000,
     User_Cmd_AtmosphereUninstallMitm = 65001,
-    User_Cmd_AtmosphereAssociatePidTidForMitm = 65002
+    User_Cmd_AtmosphereAssociatePidTidForMitm = 65002,
+    User_Cmd_AtmosphereAcknowledgeMitmSession = 65003,
 };
 
 class UserService final : public IServiceObject {
@@ -45,6 +46,7 @@ class UserService final : public IServiceObject {
         virtual Result AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandle> qry_h, SmServiceName service);
         virtual Result AtmosphereUninstallMitm(SmServiceName service);
         virtual Result AtmosphereAssociatePidTidForMitm(u64 pid, u64 tid);
+        virtual Result AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<MovedHandle> fwd_h, SmServiceName service);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<User_Cmd_Initialize, &UserService::Initialize>(),
@@ -56,6 +58,7 @@ class UserService final : public IServiceObject {
             MakeServiceCommandMeta<User_Cmd_AtmosphereInstallMitm, &UserService::AtmosphereInstallMitm>(),
             MakeServiceCommandMeta<User_Cmd_AtmosphereUninstallMitm, &UserService::AtmosphereUninstallMitm>(),
             MakeServiceCommandMeta<User_Cmd_AtmosphereAssociatePidTidForMitm, &UserService::AtmosphereAssociatePidTidForMitm>(),
+            MakeServiceCommandMeta<User_Cmd_AtmosphereAcknowledgeMitmSession, &UserService::AtmosphereAcknowledgeMitmSession>(),
 #endif
         };
 };
