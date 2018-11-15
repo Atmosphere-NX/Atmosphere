@@ -42,4 +42,17 @@ void KProcess::ClearDebug(KProcess::State attachState)
     }
 }
 
+void KProcess::SetDebugPauseState(bool pause) {
+    if (pause && state == State::StartedAttached) {
+        state = State::DebugSuspended;
+    } else if (!pause && state == State::DebugSuspended) {
+        state = State::StartedAttached;
+    } else {
+        return;
+    }
+
+    stateChanged = true;
+    NotifyWaiters();
+}
+
 }

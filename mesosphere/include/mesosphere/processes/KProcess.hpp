@@ -39,6 +39,8 @@ class KProcess final : public KSynchronizationObject /* FIXME */ {
 
     constexpr State GetState() const { return state; }
 
+    void SetDebugPauseState(bool pause);
+
     KDebug *GetDebug() const { return debug; }
     void SetDebug(KDebug *debug);
     void ClearDebug(State attachState);
