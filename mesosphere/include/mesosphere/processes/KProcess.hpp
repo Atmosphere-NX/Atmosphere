@@ -4,16 +4,29 @@ class KThread;
 class KResourceLimit;
 
 #include <mesosphere/core/util.hpp>
-#include <mesosphere/core/KAutoObject.hpp>
+#include <mesosphere/core/KSynchronizationObject.hpp>
 #include <mesosphere/interfaces/ISetAllocated.hpp>
 #include <mesosphere/processes/KHandleTable.hpp>
 
 namespace mesosphere
 {
 
-class KProcess final : public KAutoObject {
+class KProcess final : public KSynchronizationObject /* FIXME */ {
     public:
     MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, Process);
+
+    enum class State : uint {
+        Created = 0,
+        CreatedAttached,
+        Started,
+        Crashed,
+        StartedAttached,
+        Exiting,
+        Exited,
+        DebugSuspended,
+    };
+
+    virtual bool IsSignaled() const override;
 
     constexpr long GetSchedulerOperationCount() const { return schedulerOperationCount; }
 
@@ -24,11 +37,21 @@ class KProcess final : public KAutoObject {
 
     KHandleTable &GetHandleTable() { return handleTable; }
 
+    constexpr State GetState() const { return state; }
+
+    KDebug *GetDebug() const { return debug; }
+    void SetDebug(KDebug *debug);
+    void ClearDebug(State attachState);
+
     private:
     KThread *lastThreads[MAX_CORES]{nullptr};
     ulong lastIdleSelectionCount[MAX_CORES]{0};
     long schedulerOperationCount = -1;
 
+    State state = State::Created;
+    bool stateChanged = false;
+
+    KDebug *debug = nullptr;
     SharedPtr<KResourceLimit> reslimit{};
     KHandleTable handleTable{};
 };

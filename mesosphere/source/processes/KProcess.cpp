@@ -11,4 +11,35 @@ void KProcess::SetLastThreadAndIdleSelectionCount(KThread *thread, ulong idleSel
     lastIdleSelectionCount[thread->GetCurrentCoreId()] = idleSelectionCount;
 }
 
+bool KProcess::IsSignaled() const
+{
+    return stateChanged;
+}
+
+void KProcess::SetDebug(KDebug *debug)
+{
+    this->debug = debug;
+    if (state != State::DebugSuspended) {
+        state = state == State::Created ? State::CreatedAttached : State::DebugSuspended;
+        stateChanged = true;
+        NotifyWaiters();
+    }
+}
+
+void KProcess::ClearDebug(KProcess::State attachState)
+{
+    debug = nullptr;
+    State oldState = state;
+    if (state == State::StartedAttached || state == State::DebugSuspended) {
+        state = attachState == State::Created ? State::Started : attachState; // Restore the old state
+    } else if (state == State::CreatedAttached) {
+        state = State::Created;
+    }
+
+    if (state != oldState) {
+        stateChanged = true;
+        NotifyWaiters();
+    }
+}
+
 }
