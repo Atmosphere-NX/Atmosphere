@@ -125,16 +125,21 @@ class SectoredProxyStorage : public ProxyStorage {
 class Boot0Storage : public SectoredProxyStorage<0x200> {
     using Base = SectoredProxyStorage<0x200>;
     private:
-        bool allow_writes;
+        u64 title_id;
     private:
         HosMutex *GetMutex() {
             static HosMutex s_boot0_mutex;
             return &s_boot0_mutex;
         }
+        bool AllowWrites() {
+            return title_id < 0x0100000000001000ULL;
+        }
+        bool CanModifyBctPubks() {
+            return title_id != 0x010000000000001FULL;
+        }
     public:
-        Boot0Storage(FsStorage *s, bool w) : Base(s), allow_writes(w) { }
-        Boot0Storage(FsStorage s, bool w) : Base(s), allow_writes(w) { }
-        
+        Boot0Storage(FsStorage *s, u64 t) : Base(s), title_id(t) { }
+        Boot0Storage(FsStorage s, u64 t) : Base(s), title_id(t) { }
     public:
         virtual Result Read(void *_buffer, size_t size, u64 offset) override {
             GetMutex()->Lock();
@@ -147,10 +152,16 @@ class Boot0Storage : public SectoredProxyStorage<0x200> {
             GetMutex()->Lock();
             ON_SCOPE_EXIT { GetMutex()->Unlock(); };
             
-            if (!this->allow_writes) {
+            if (!AllowWrites()) {
                 return 0x313802;
             }
             
-            return Base::Write(_buffer, size, offset);
+            /* We care about protecting autorcm from NS. */
+            if (CanModifyBctPubks()) {
+                return Base::Write(_buffer, size, offset);
+            }
+            
+            /* TODO */
+            return 0x313802;
         }
 };
