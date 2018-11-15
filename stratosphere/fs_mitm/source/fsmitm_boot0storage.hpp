@@ -16,6 +16,7 @@
  
 #pragma once
 #include <switch.h>
+#include <cstring>
 #include <stratosphere.hpp>
 
 #include "fs_istorage.hpp"
@@ -41,6 +42,11 @@ class SectoredProxyStorage : public ProxyStorage {
             Result rc = 0;
             u8 *buffer = static_cast<u8 *>(_buffer);
             this->Seek(offset);
+            
+            if (this->cur_sector_ofs == 0 && size % SectorSize == 0) {
+                /* Fast case. */
+                return ProxyStorage::Read(buffer, size, offset);
+            }
             
             if (R_FAILED((rc = ProxyStorage::Read(this->sector_buf, SectorSize, this->cur_seek)))) {
                 return rc;
@@ -79,6 +85,11 @@ class SectoredProxyStorage : public ProxyStorage {
             Result rc = 0;
             u8 *buffer = static_cast<u8 *>(_buffer);
             this->Seek(offset);
+            
+            if (this->cur_sector_ofs == 0 && size % SectorSize == 0) {
+                /* Fast case. */
+                return ProxyStorage::Write(buffer, size, offset);
+            }
             
             if (R_FAILED((rc = ProxyStorage::Read(this->sector_buf, SectorSize, this->cur_seek)))) {
                 return rc;
@@ -124,44 +135,22 @@ class SectoredProxyStorage : public ProxyStorage {
 /* Represents an RCM-preserving BOOT0 partition. */
 class Boot0Storage : public SectoredProxyStorage<0x200> {
     using Base = SectoredProxyStorage<0x200>;
+    
+    public:
+        static constexpr u64 BctEndOffset = 0xFC000;
+        static constexpr u64 BctSize = 0x4000;
+        static constexpr u64 BctPubkStart = 0x210;
+        static constexpr u64 BctPubkSize = 0x100;
+        static constexpr u64 BctPubkEnd = BctPubkStart + BctPubkSize;
     private:
         u64 title_id;
     private:
-        HosMutex *GetMutex() {
-            static HosMutex s_boot0_mutex;
-            return &s_boot0_mutex;
-        }
-        bool AllowWrites() {
-            return title_id < 0x0100000000001000ULL;
-        }
-        bool CanModifyBctPubks() {
-            return title_id != 0x010000000000001FULL;
-        }
+        bool AllowWrites();
+        bool CanModifyBctPubks();
     public:
         Boot0Storage(FsStorage *s, u64 t) : Base(s), title_id(t) { }
         Boot0Storage(FsStorage s, u64 t) : Base(s), title_id(t) { }
     public:
-        virtual Result Read(void *_buffer, size_t size, u64 offset) override {
-            GetMutex()->Lock();
-            ON_SCOPE_EXIT { GetMutex()->Unlock(); };
-            
-            return Base::Read(_buffer, size, offset);
-        }
-        
-        virtual Result Write(void *_buffer, size_t size, u64 offset) override {
-            GetMutex()->Lock();
-            ON_SCOPE_EXIT { GetMutex()->Unlock(); };
-            
-            if (!AllowWrites()) {
-                return 0x313802;
-            }
-            
-            /* We care about protecting autorcm from NS. */
-            if (CanModifyBctPubks()) {
-                return Base::Write(_buffer, size, offset);
-            }
-            
-            /* TODO */
-            return 0x313802;
-        }
+        virtual Result Read(void *_buffer, size_t size, u64 offset) override; 
+        virtual Result Write(void *_buffer, size_t size, u64 offset) override;
 };

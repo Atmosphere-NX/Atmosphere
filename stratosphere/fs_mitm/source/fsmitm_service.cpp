@@ -101,7 +101,7 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
         if (R_SUCCEEDED(rc)) {
             const bool allow_writes = this->title_id < 0x0100000000001000;
             if (bis_partition_id == BisStorageId_Boot0) {
-                storage = std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, allow_writes));
+                storage = std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, this->title_id));
             } else {
                 if (allow_writes) {
                     storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));

@@ -61,7 +61,6 @@ class IStorageInterface : public IServiceObject {
         };
         virtual Result Write(InBuffer<u8, BufferType_Type1> buffer, u64 offset, u64 size) final {
            return this->base_storage->Write(buffer.buffer, std::min(buffer.num_elements, size), offset);
-
         };
         virtual Result Flush() final {
             return this->base_storage->Flush();
