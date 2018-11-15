@@ -24,6 +24,7 @@
 #include "fs_shim.h"
 
 #include "fsmitm_utils.hpp"
+#include "fsmitm_boot0storage.hpp"
 #include "fsmitm_romstorage.hpp"
 #include "fsmitm_layeredrom.hpp"
 
@@ -98,11 +99,16 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
         FsStorage bis_storage;
         rc = fsOpenBisStorageFwd(this->forward_service.get(), &bis_storage, bis_partition_id);
         if (R_SUCCEEDED(rc)) {
-            if (this->title_id >= 0x0100000000001000) {
-                storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
+            const bool allow_writes = this->title_id < 0x0100000000001000;
+            if (bis_partition_id == BisStorageId_Boot0) {
+                storage = std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, allow_writes));
             } else {
-                /* Sysmodules should still be allowed to read and write. */
-                storage = std::make_shared<IStorageInterface>(new ProxyStorage(bis_storage));
+                if (allow_writes) {
+                    storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
+                } else {
+                    /* Sysmodules should still be allowed to read and write. */
+                    storage = std::make_shared<IStorageInterface>(new ProxyStorage(bis_storage));
+                }
             }
             if (out_storage.IsDomain()) {
                 out_domain_id = bis_storage.s.object_id;

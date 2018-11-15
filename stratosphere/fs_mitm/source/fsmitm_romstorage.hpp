@@ -31,7 +31,7 @@ class RomFileStorage : public IROStorage {
         RomFileStorage(FsFile f) {
             this->base_file = new FsFile(f);
         };
-        ~RomFileStorage() {
+        virtual ~RomFileStorage() {
             fsFileClose(base_file);
             delete base_file;
         };

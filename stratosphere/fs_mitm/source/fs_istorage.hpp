@@ -120,7 +120,7 @@ class ProxyStorage : public IStorage {
         ProxyStorage(FsStorage s) {
             this->base_storage = new FsStorage(s);
         };
-        ~ProxyStorage() {
+        virtual ~ProxyStorage() {
             fsStorageClose(base_storage);
             delete base_storage;
         };
@@ -155,7 +155,7 @@ class ROProxyStorage : public IROStorage {
         ROProxyStorage(FsStorage s) {
             this->base_storage = new FsStorage(s);
         };
-        ~ROProxyStorage() {
+        virtual ~ROProxyStorage() {
             fsStorageClose(base_storage);
             delete base_storage;
         };
