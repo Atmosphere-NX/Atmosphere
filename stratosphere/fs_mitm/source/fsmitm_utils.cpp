@@ -31,6 +31,7 @@ static std::atomic_bool g_has_initialized = false;
 static std::atomic_bool g_has_hid_session = false;
 
 static u64 g_override_key_combination = KEY_R;
+static u64 g_override_hbl_tid = 0x010000000000100DULL;
 static bool g_override_by_default = true;
 
 /* Static buffer for loader.ini contents at runtime. */
@@ -76,19 +77,39 @@ void Utils::InitializeSdThreadFunc(void *args) {
                 char title_path[FS_MAX_PATH] = {0};
                 strcpy(title_path, "/atmosphere/titles/");
                 strcat(title_path, dir_entry.name);
-                strcat(title_path, "/fsmitm.flag");
+                strcat(title_path, "/flags/fsmitm.flag");
                 if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
                     g_mitm_flagged_tids.push_back(title_id);
                     fsFileClose(&f);
+                } else {
+                    /* TODO: Deprecate. */
+                    memset(title_path, 0, sizeof(title_path));
+                    strcpy(title_path, "/atmosphere/titles/");
+                    strcat(title_path, dir_entry.name);
+                    strcat(title_path, "/fsmitm.flag");
+                    if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
+                        g_mitm_flagged_tids.push_back(title_id);
+                        fsFileClose(&f);
+                    }
                 }
                 
                 memset(title_path, 0, sizeof(title_path));
                 strcpy(title_path, "/atmosphere/titles/");
                 strcat(title_path, dir_entry.name);
-                strcat(title_path, "/fsmitm_disable.flag");
+                strcat(title_path, "/flags/fsmitm_disable.flag");
                 if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
                     g_disable_mitm_flagged_tids.push_back(title_id);
                     fsFileClose(&f);
+                } else {
+                    /* TODO: Deprecate. */
+                    memset(title_path, 0, sizeof(title_path));
+                    strcpy(title_path, "/atmosphere/titles/");
+                    strcat(title_path, dir_entry.name);
+                    strcat(title_path, "/fsmitm_disable.flag");
+                    if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
+                        g_disable_mitm_flagged_tids.push_back(title_id);
+                        fsFileClose(&f);
+                    }
                 }
             }
         }
@@ -264,7 +285,46 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
     return rc;
 }
 
+bool Utils::HasFlag(u64 tid, const char *flag) {
+    if (IsSdInitialized()) {
+        FsFile f;
+        char flag_path[FS_MAX_PATH];
+        
+        memset(flag_path, 0, sizeof(flag_path));
+        snprintf(flag_path, sizeof(flag_path) - 1, "flags/%s.flag", flag);
+        if (OpenSdFileForAtmosphere(tid, flag_path, FS_OPEN_READ, &f)) {
+            fsFileClose(&f);
+            return true;
+        }
+        
+        /* TODO: Deprecate. */
+        snprintf(flag_path, sizeof(flag_path) - 1, "%s.flag", flag);
+        if (OpenSdFileForAtmosphere(tid, flag_path, FS_OPEN_READ, &f)) {
+            fsFileClose(&f);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Utils::HasGlobalFlag(u64 tid, const char *flag) {
+    if (IsSdInitialized()) {
+        FsFile f;
+        char flag_path[FS_MAX_PATH] = {0};
+        snprintf(flag_path, sizeof(flag_path), "/atmosphere/flags/%s.flag", flag);
+        if (fsFsOpenFile(&g_sd_filesystem, flag_path, FS_OPEN_READ, &f)) {
+            fsFileClose(&f);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Utils::HasSdMitMFlag(u64 tid) {
+    if (tid == g_override_hbl_tid) {
+        return true;
+    }
+    
     if (IsSdInitialized()) {
         return std::find(g_mitm_flagged_tids.begin(), g_mitm_flagged_tids.end(), tid) != g_mitm_flagged_tids.end();
     }
@@ -306,7 +366,12 @@ bool Utils::HasOverrideButton(u64 tid) {
 static int FsMitMIniHandler(void *user, const char *section, const char *name, const char *value) {
     /* Taken and modified, with love, from Rajkosto's implementation. */
     if (strcasecmp(section, "config") == 0) {
-        if (strcasecmp(name, "override_key") == 0) {
+        if (strcasecmp(name, "hbl_tid") == 0) {
+            u64 override_tid = strtoul(value, NULL, 16);
+            if (override_tid != 0) {
+                g_override_hbl_tid = override_tid;
+            }
+        } else if (strcasecmp(name, "override_key") == 0) {
             if (value[0] == '!') {
                 g_override_by_default = true;
                 value++;
