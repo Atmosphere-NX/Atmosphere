@@ -120,6 +120,7 @@ void Utils::InitializeSdThreadFunc(void *args) {
             }
             
             /* NOTE: g_cal0_file is intentionally not closed here. This prevents any other process from opening it. */
+            memset(g_cal0_backup, 0, sizeof(g_cal0_backup));
         }
     }
     
