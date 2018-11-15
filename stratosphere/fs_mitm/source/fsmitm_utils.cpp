@@ -65,6 +65,42 @@ void Utils::InitializeSdThreadFunc(void *args) {
         svcSleepThread(1000ULL);
     }
     
+    /* Back up CAL0, if it's not backed up already. */
+    fsFsCreateDirectory(&g_sd_filesystem, "/atmosphere/automatic_backups");
+    {
+        FsStorage cal0_storage;
+        FsFile cal0_file;
+        bool has_auto_backup = false;
+        
+        static const char * const PRODINFO_BACKUP_PATH = "/atmosphere/automatic_backups/PRODINFO.bin";
+        constexpr size_t PRODINFO_SIZE = 0x4000;
+        
+        if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, PRODINFO_BACKUP_PATH, FS_OPEN_READ, &cal0_file))) {
+            char magic[4];
+            size_t read;
+            if (R_SUCCEEDED(fsFileRead(&cal0_file, 0, magic, sizeof(magic), &read)) && read == sizeof(magic) && memcmp(magic, "CAL0", sizeof(magic)) == 0) {
+                has_auto_backup = true;
+            }
+            fsFileClose(&cal0_file);
+        }
+        
+        if (!has_auto_backup && R_SUCCEEDED(fsOpenBisStorage(&cal0_storage, BisStorageId_Prodinfo))) {
+            u8 *cal0 = new u8[PRODINFO_SIZE];
+            if (R_SUCCEEDED(fsStorageRead(&cal0_storage, 0, cal0, PRODINFO_SIZE)) ) {
+                fsFsCreateFile(&g_sd_filesystem, PRODINFO_BACKUP_PATH, PRODINFO_SIZE, 0);
+                if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, PRODINFO_BACKUP_PATH, FS_OPEN_READ | FS_OPEN_WRITE, &cal0_file))) {
+                    fsFileSetSize(&cal0_file, PRODINFO_SIZE);
+                    fsFileWrite(&cal0_file, 0, cal0, PRODINFO_SIZE);
+                    fsFileFlush(&cal0_file);
+                    fsFileClose(&cal0_file);
+                }
+            }
+            
+            delete cal0;
+            fsStorageClose(&cal0_storage);
+        }
+    }
+    
     /* Check for MitM flags. */
     FsDir titles_dir;
     if (R_SUCCEEDED(fsFsOpenDirectory(&g_sd_filesystem, "/atmosphere/titles", FS_DIROPEN_DIRECTORY, &titles_dir))) {
@@ -307,7 +343,7 @@ bool Utils::HasFlag(u64 tid, const char *flag) {
     return false;
 }
 
-bool Utils::HasGlobalFlag(u64 tid, const char *flag) {
+bool Utils::HasGlobalFlag(const char *flag) {
     if (IsSdInitialized()) {
         FsFile f;
         char flag_path[FS_MAX_PATH] = {0};
