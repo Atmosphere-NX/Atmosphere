@@ -30,9 +30,10 @@ enum FspSrvCmd : u32 {
 class FsMitmService : public IMitmServiceObject {
     private:
         bool has_initialized = false;
+        bool should_override_contents;
     public:
-        FsMitmService(std::shared_ptr<Service> s) : IMitmServiceObject(s) {
-            /* ... */
+        FsMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
+            this->should_override_contents = !Utils::HasSdDisableMitMFlag(this->title_id) && Utils::HasOverrideButton(this->title_id);
         }
         
         static bool ShouldMitm(u64 pid, u64 tid) {
@@ -40,12 +41,8 @@ class FsMitmService : public IMitmServiceObject {
             if (tid == 0x010000000000001FULL) {
                 return true;
             }
-            
-            if (Utils::HasSdDisableMitMFlag(tid)) {
-                return false;
-            }
-            
-            return (tid >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(tid)) && Utils::HasOverrideButton(tid);
+                        
+            return (tid >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(tid));
         }
         
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);

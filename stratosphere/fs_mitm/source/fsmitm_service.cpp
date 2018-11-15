@@ -106,7 +106,7 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
                 /* PRODINFO should *never* be writable. */
                 storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
             } else {
-                if (allow_writes) {
+                if (!allow_writes) {
                     storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
                 } else {
                     /* Sysmodules should still be allowed to read and write. */
@@ -127,6 +127,10 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;
     Result rc = 0;
+    
+    if (!this->should_override_contents) {
+        return RESULT_FORWARD_TO_SESSION;
+    }
     
     bool has_cache = StorageCacheGetEntry(this->title_id, &storage);
     
@@ -191,6 +195,10 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
     FsStorageId storage_id = (FsStorageId)sid;
     FsStorage data_storage;
     FsFile data_file;
+    
+    if (!this->should_override_contents) {
+        return RESULT_FORWARD_TO_SESSION;
+    }
         
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;
