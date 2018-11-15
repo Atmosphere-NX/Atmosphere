@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include <mesosphere/threading/KThread.hpp>
+#include <mesosphere/processes/KProcess.hpp>
 #include <mesosphere/threading/KScopedCriticalSection.hpp>
 
 namespace mesosphere
@@ -11,6 +12,30 @@ namespace mesosphere
 void KThread::OnAlarm()
 {
     CancelKernelSync();
+}
+
+bool KThread::IsSchedulerOperationRedundant() const
+{
+    return owner != nullptr && owner->GetSchedulerOperationCount() == redundantSchedulerOperationCount;
+}
+
+void KThread::IncrementSchedulerOperationCount()
+{
+    if (owner != nullptr) {
+        owner->IncrementSchedulerOperationCount();
+    }
+}
+
+void KThread::SetRedundantSchedulerOperation()
+{
+    redundantSchedulerOperationCount = owner != nullptr ? owner->GetSchedulerOperationCount() : redundantSchedulerOperationCount;
+}
+
+void KThread::SetProcessLastThreadAndIdleSelectionCount(ulong idleSelectionCount)
+{
+    if (owner != nullptr) {
+        owner->SetLastThreadAndIdleSelectionCount(this, idleSelectionCount);
+    }
 }
 
 void KThread::AdjustScheduling(ushort oldMaskFull)

@@ -6,7 +6,7 @@
 #include <mesosphere/core/Handle.hpp>
 #include <mesosphere/core/Result.hpp>
 #include <mesosphere/core/KSynchronizationObject.hpp>
-#include <mesosphere/processes/KProcess.hpp>
+#include <mesosphere/interfaces/ISetAllocated.hpp>
 #include <mesosphere/interfaces/IAlarmable.hpp>
 #include <mesosphere/interfaces/ILimitedResource.hpp>
 
@@ -144,18 +144,13 @@ class KThread final :
     }
 
     KProcess *GetOwner() const { return owner; }
-    bool IsSchedulerOperationRedundant() const { return owner != nullptr && owner->GetSchedulerOperationCount() == redundantSchedulerOperationCount; }
+    bool IsSchedulerOperationRedundant() const;
 
-    void IncrementSchedulerOperationCount() { if (owner != nullptr) owner->IncrementSchedulerOperationCount(); }
-    void SetRedundantSchedulerOperation() { redundantSchedulerOperationCount = owner != nullptr ? owner->GetSchedulerOperationCount() : redundantSchedulerOperationCount; }
+    void IncrementSchedulerOperationCount();
+    void SetRedundantSchedulerOperation();
     void SetCurrentCoreId(int coreId) { currentCoreId = coreId; }
 
-    void SetProcessLastThreadAndIdleSelectionCount(ulong idleSelectionCount)
-    {
-        if (owner != nullptr) {
-            owner->SetLastThreadAndIdleSelectionCount(this, idleSelectionCount);
-        }
-    }
+    void SetProcessLastThreadAndIdleSelectionCount(ulong idleSelectionCount);
 
     void UpdateLastScheduledTime() { ++lastScheduledTime; /* FIXME */}
 

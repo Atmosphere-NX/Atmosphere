@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <mesosphere/processes/KHandleTable.hpp>
 #include <mesosphere/threading/KThread.hpp>
+#include <mesosphere/processes/KProcess.hpp>
 
 namespace mesosphere
 {

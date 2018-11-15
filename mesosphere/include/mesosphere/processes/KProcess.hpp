@@ -7,13 +7,14 @@ class KResourceLimit;
 #include <mesosphere/core/KSynchronizationObject.hpp>
 #include <mesosphere/interfaces/ISetAllocated.hpp>
 #include <mesosphere/processes/KHandleTable.hpp>
+#include <mesosphere/threading/KThread.hpp>
 
 namespace mesosphere
 {
 
 class KProcess final : public KSynchronizationObject /* FIXME */ {
     public:
-    MESOSPHERE_AUTO_OBJECT_TRAITS(AutoObject, Process);
+    MESOSPHERE_AUTO_OBJECT_TRAITS(SynchronizationObject, Process);
 
     enum class State : uint {
         Created = 0,
