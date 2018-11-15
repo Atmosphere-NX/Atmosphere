@@ -23,6 +23,7 @@
 #include "debug.hpp"
 #include "fsmitm_utils.hpp"
 #include "ini.h"
+#include "sha256.h"
 
 static FsFileSystem g_sd_filesystem = {0};
 static std::vector<u64> g_mitm_flagged_tids;
@@ -36,6 +37,11 @@ static bool g_override_by_default = true;
 
 /* Static buffer for loader.ini contents at runtime. */
 static char g_config_ini_data[0x800];
+
+/* Backup file for CAL0 partition. */
+static constexpr size_t ProdinfoSize = 0x8000;
+static FsFile g_cal0_file;
+static u8 g_cal0_backup[ProdinfoSize];
 
 static bool IsHexadecimal(const char *str) {
     while (*str) {
@@ -69,8 +75,7 @@ void Utils::InitializeSdThreadFunc(void *args) {
     fsFsCreateDirectory(&g_sd_filesystem, "/atmosphere/automatic_backups");
     {
         FsStorage cal0_storage;
-        FsFile cal0_file;
-        bool has_auto_backup = false;
+        
         char serial_number[0x40] = {0};
         
         if (R_SUCCEEDED(setsysInitialize())) {
@@ -84,32 +89,37 @@ void Utils::InitializeSdThreadFunc(void *args) {
         } else {
             snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/PRODINFO.bin");
         }
-        
-        constexpr size_t PRODINFO_SIZE = 0x4000;
-        
-        if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, prodinfo_backup_path, FS_OPEN_READ, &cal0_file))) {
-            char magic[4];
-            size_t read;
-            if (R_SUCCEEDED(fsFileRead(&cal0_file, 0, magic, sizeof(magic), &read)) && read == sizeof(magic) && memcmp(magic, "CAL0", sizeof(magic)) == 0) {
-                has_auto_backup = true;
+                
+        if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, prodinfo_backup_path, FS_OPEN_READ | FS_OPEN_WRITE, &g_cal0_file))) {
+            bool has_auto_backup = false;
+            size_t read = 0;
+            if (R_SUCCEEDED(fsFileRead(&g_cal0_file, 0, g_cal0_backup, sizeof(g_cal0_backup), &read)) && read == sizeof(g_cal0_backup)) {
+                bool is_cal0_valid = true;
+                is_cal0_valid &= memcmp(g_cal0_backup, "CAL0", 4) == 0;
+                is_cal0_valid &= memcmp(g_cal0_backup + 0x250, serial_number, 0x18) == 0;
+                u32 cal0_size = ((u32 *)g_cal0_backup)[2];
+                is_cal0_valid &= cal0_size + 0x40 <= ProdinfoSize;
+                if (is_cal0_valid) {
+                    struct sha256_state sha_ctx;
+                    u8 calc_hash[0x20];
+                    sha256_init(&sha_ctx);
+                    sha256_update(&sha_ctx, g_cal0_backup + 0x40, cal0_size);
+                    sha256_finalize(&sha_ctx);
+                    sha256_finish(&sha_ctx, calc_hash);
+                    is_cal0_valid &= memcmp(calc_hash, g_cal0_backup + 0x20, sizeof(calc_hash)) == 0;
+                }
+                has_auto_backup = is_cal0_valid;
             }
-            fsFileClose(&cal0_file);
-        }
-        
-        if (!has_auto_backup && R_SUCCEEDED(fsOpenBisStorage(&cal0_storage, BisStorageId_Prodinfo))) {
-            u8 *cal0 = new u8[PRODINFO_SIZE];
-            if (R_SUCCEEDED(fsStorageRead(&cal0_storage, 0, cal0, PRODINFO_SIZE)) ) {
-                fsFsCreateFile(&g_sd_filesystem, prodinfo_backup_path, PRODINFO_SIZE, 0);
-                if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, prodinfo_backup_path, FS_OPEN_READ | FS_OPEN_WRITE, &cal0_file))) {
-                    fsFileSetSize(&cal0_file, PRODINFO_SIZE);
-                    fsFileWrite(&cal0_file, 0, cal0, PRODINFO_SIZE);
-                    fsFileFlush(&cal0_file);
-                    fsFileClose(&cal0_file);
+            
+            if (!has_auto_backup && R_SUCCEEDED(fsOpenBisStorage(&cal0_storage, BisStorageId_Prodinfo))) {
+                if (R_SUCCEEDED(fsStorageRead(&cal0_storage, 0, g_cal0_backup, ProdinfoSize)) ) {
+                    fsFileSetSize(&g_cal0_file, ProdinfoSize);
+                    fsFileWrite(&g_cal0_file, 0, g_cal0_backup, ProdinfoSize);
+                    fsFileFlush(&g_cal0_file);
                 }
             }
             
-            delete cal0;
-            fsStorageClose(&cal0_storage);
+            /* NOTE: g_cal0_file is intentionally not closed here. This prevents any other process from opening it. */
         }
     }
     
