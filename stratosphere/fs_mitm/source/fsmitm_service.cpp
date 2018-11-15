@@ -79,6 +79,40 @@ void FsMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx
     }
 }
 
+/* Gate access to the BIS partitions. */
+Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out_storage, u32 bis_partition_id) {
+    std::shared_ptr<IStorageInterface> storage = nullptr;
+    u32 out_domain_id = 0;
+    Result rc = 0;
+    
+    ON_SCOPE_EXIT {
+        if (R_SUCCEEDED(rc)) {
+            out_storage.SetValue(std::move(storage));
+            if (out_storage.IsDomain()) {
+                out_storage.ChangeObjectId(out_domain_id);
+            }
+        }
+    };
+    
+    {
+        FsStorage bis_storage;
+        rc = fsOpenBisStorageFwd(this->forward_service.get(), &bis_storage, bis_partition_id);
+        if (R_SUCCEEDED(rc)) {
+            if (this->title_id >= 0x0100000000001000) {
+                storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
+            } else {
+                /* Sysmodules should still be allowed to read and write. */
+                storage = std::make_shared<IStorageInterface>(new ProxyStorage(bis_storage));
+            }
+            if (out_storage.IsDomain()) {
+                out_domain_id = bis_storage.s.object_id;
+            }
+        }
+    }
+    
+    return rc;
+}
+
 /* Add redirection for RomFS to the SD card. */
 Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStorageInterface>> out_storage) {
     std::shared_ptr<IStorageInterface> storage = nullptr;

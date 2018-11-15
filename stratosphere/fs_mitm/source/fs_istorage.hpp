@@ -108,3 +108,65 @@ class IROStorage : public IStorage {
         virtual Result GetSize(u64 *out_size) = 0;
         virtual Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) = 0;
 };
+
+
+class ProxyStorage : public IStorage {
+    private:
+        FsStorage *base_storage;
+    public:
+        ProxyStorage(FsStorage *s) : base_storage(s) {
+            /* ... */
+        };
+        ProxyStorage(FsStorage s) {
+            this->base_storage = new FsStorage(s);
+        };
+        ~ProxyStorage() {
+            fsStorageClose(base_storage);
+            delete base_storage;
+        };
+    public:
+        virtual Result Read(void *buffer, size_t size, u64 offset) override {
+            return fsStorageRead(this->base_storage, offset, buffer, size);
+        };
+        virtual Result Write(void *buffer, size_t size, u64 offset) override {
+            return fsStorageWrite(this->base_storage, offset, buffer, size);
+        };
+        virtual Result Flush() override {
+            return fsStorageFlush(this->base_storage);
+        };
+        virtual Result GetSize(u64 *out_size) override {
+            return fsStorageGetSize(this->base_storage, out_size);
+        };
+        virtual Result SetSize(u64 size) override {
+            return fsStorageSetSize(this->base_storage, size);
+        };
+        virtual Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override {
+            return fsStorageOperateRange(this->base_storage, operation_type, offset, size, out_range_info);
+        };
+};
+
+class ROProxyStorage : public IROStorage {
+    private:
+        FsStorage *base_storage;
+    public:
+        ROProxyStorage(FsStorage *s) : base_storage(s) {
+            /* ... */
+        };
+        ROProxyStorage(FsStorage s) {
+            this->base_storage = new FsStorage(s);
+        };
+        ~ROProxyStorage() {
+            fsStorageClose(base_storage);
+            delete base_storage;
+        };
+    public:
+        virtual Result Read(void *buffer, size_t size, u64 offset) override {
+            return fsStorageRead(this->base_storage, offset, buffer, size);
+        };
+        virtual Result GetSize(u64 *out_size) override {
+            return fsStorageGetSize(this->base_storage, out_size);
+        };
+        virtual Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override {
+            return fsStorageOperateRange(this->base_storage, operation_type, offset, size, out_range_info);
+        };
+};

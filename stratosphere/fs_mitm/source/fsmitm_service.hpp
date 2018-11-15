@@ -22,11 +22,31 @@
 
 enum FspSrvCmd : u32 {
     FspSrvCmd_SetCurrentProcess = 1,
+    FspSrvCmd_OpenBisStorage = 12,
     FspSrvCmd_OpenDataStorageByCurrentProcess = 200,
     FspSrvCmd_OpenDataStorageByDataId = 202,
 };
 
-class FsMitmService : public IMitmServiceObject {      
+enum BisStorageId : u32 {
+    BisStorageId_Boot0 = 0,
+    BisStorageId_Boot1 = 10,
+    BisStorageId_RawNand = 20,
+    BisStorageId_BcPkg2_1 = 21,
+    BisStorageId_BcPkg2_2 = 22,
+    BisStorageId_BcPkg2_3 = 23,
+    BisStorageId_BcPkg2_4 = 24,
+    BisStorageId_BcPkg2_5 = 25,
+    BisStorageId_BcPkg2_6 = 26,
+    BisStorageId_Prodinfo = 27,
+    BisStorageId_ProdinfoF = 28,
+    BisStorageId_Safe = 29,
+    BisStorageId_User = 30,
+    BisStorageId_System = 31,
+    BisStorageId_SystemProperEncryption = 32,
+    BisStorageId_SystemProperPartition = 33,
+};
+
+class FsMitmService : public IMitmServiceObject {
     private:
         bool has_initialized = false;
     public:
@@ -35,9 +55,15 @@ class FsMitmService : public IMitmServiceObject {
         }
         
         static bool ShouldMitm(u64 pid, u64 tid) {
+            /* Always intercept NS, so that we can protect the boot partition. */
+            if (tid == 0x010000000000001FULL) {
+                return true;
+            }
+            
             if (Utils::HasSdDisableMitMFlag(tid)) {
                 return false;
             }
+            
             return (tid >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(tid)) && Utils::HasOverrideButton(tid);
         }
         
@@ -45,10 +71,12 @@ class FsMitmService : public IMitmServiceObject {
             
     protected:
         /* Overridden commands. */
+        Result OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out, u32 bis_partition_id);
         Result OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStorageInterface>> out);
         Result OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterface>> out, u64 data_id, u8 storage_id);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
+            MakeServiceCommandMeta<FspSrvCmd_OpenBisStorage, &FsMitmService::OpenBisStorage>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenDataStorageByCurrentProcess, &FsMitmService::OpenDataStorageByCurrentProcess>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenDataStorageByDataId, &FsMitmService::OpenDataStorageByDataId>(),
         };
