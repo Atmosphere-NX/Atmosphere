@@ -71,11 +71,23 @@ void Utils::InitializeSdThreadFunc(void *args) {
         FsStorage cal0_storage;
         FsFile cal0_file;
         bool has_auto_backup = false;
+        char serial_number[0x40] = {0};
         
-        static const char * const PRODINFO_BACKUP_PATH = "/atmosphere/automatic_backups/PRODINFO.bin";
+        if (R_SUCCEEDED(setsysInitialize())) {
+            setsysGetSerialNumber(serial_number);
+            setsysExit();
+        }
+        
+        char prodinfo_backup_path[FS_MAX_PATH] = {0};
+        if (strlen(serial_number) > 0) {
+            snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/PRODINFO_%s.bin", serial_number);
+        } else {
+            snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/PRODINFO.bin");
+        }
+        
         constexpr size_t PRODINFO_SIZE = 0x4000;
         
-        if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, PRODINFO_BACKUP_PATH, FS_OPEN_READ, &cal0_file))) {
+        if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, prodinfo_backup_path, FS_OPEN_READ, &cal0_file))) {
             char magic[4];
             size_t read;
             if (R_SUCCEEDED(fsFileRead(&cal0_file, 0, magic, sizeof(magic), &read)) && read == sizeof(magic) && memcmp(magic, "CAL0", sizeof(magic)) == 0) {
@@ -87,8 +99,8 @@ void Utils::InitializeSdThreadFunc(void *args) {
         if (!has_auto_backup && R_SUCCEEDED(fsOpenBisStorage(&cal0_storage, BisStorageId_Prodinfo))) {
             u8 *cal0 = new u8[PRODINFO_SIZE];
             if (R_SUCCEEDED(fsStorageRead(&cal0_storage, 0, cal0, PRODINFO_SIZE)) ) {
-                fsFsCreateFile(&g_sd_filesystem, PRODINFO_BACKUP_PATH, PRODINFO_SIZE, 0);
-                if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, PRODINFO_BACKUP_PATH, FS_OPEN_READ | FS_OPEN_WRITE, &cal0_file))) {
+                fsFsCreateFile(&g_sd_filesystem, prodinfo_backup_path, PRODINFO_SIZE, 0);
+                if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, prodinfo_backup_path, FS_OPEN_READ | FS_OPEN_WRITE, &cal0_file))) {
                     fsFileSetSize(&cal0_file, PRODINFO_SIZE);
                     fsFileWrite(&cal0_file, 0, cal0, PRODINFO_SIZE);
                     fsFileFlush(&cal0_file);
