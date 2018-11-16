@@ -142,10 +142,13 @@ class Boot0Storage : public SectoredProxyStorage<0x200> {
         static constexpr u64 BctPubkStart = 0x210;
         static constexpr u64 BctPubkSize = 0x100;
         static constexpr u64 BctPubkEnd = BctPubkStart + BctPubkSize;
+        
+        static constexpr u64 EksStart = 0x180000;
+        static constexpr u64 EksSize = 0x4000;
+        static constexpr u64 EksEnd = EksStart + EksSize;
     private:
         u64 title_id;
     private:
-        bool AllowWrites();
         bool CanModifyBctPubks();
     public:
         Boot0Storage(FsStorage *s, u64 t) : Base(s), title_id(t) { }

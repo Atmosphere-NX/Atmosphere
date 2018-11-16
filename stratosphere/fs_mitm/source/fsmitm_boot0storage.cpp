@@ -23,10 +23,6 @@
 static HosMutex g_boot0_mutex;
 static u8 g_boot0_bct_buffer[Boot0Storage::BctEndOffset];
 
-bool Boot0Storage::AllowWrites() {
-    return this->title_id < 0x0100000000001000ULL;
-}
-
 bool Boot0Storage::CanModifyBctPubks() {
     return this->title_id != 0x010000000000001FULL;
 }
@@ -40,17 +36,51 @@ Result Boot0Storage::Read(void *_buffer, size_t size, u64 offset) {
 Result Boot0Storage::Write(void *_buffer, size_t size, u64 offset) {
     std::scoped_lock<HosMutex> lk{g_boot0_mutex};
     
-    if (!AllowWrites()) {
-        return 0x313802;
+    Result rc = 0;
+    u8 *buffer = static_cast<u8 *>(_buffer);
+    
+    /* Protect the keyblob region from writes. */
+    if (offset <= EksStart) {
+        if (offset + size < EksStart) {
+            /* Fall through, no need to do anything here. */
+        } else {
+            if (offset + size < EksEnd) {
+                /* Adjust size to avoid writing end of data. */
+                size = EksStart - offset;
+            } else {
+                /* Perform portion of write falling past end of keyblobs. */
+                const u64 diff = EksEnd - offset;
+                if (R_FAILED((rc = Base::Write(buffer + diff, size - diff, EksEnd)))) {
+                    return rc;
+                }
+                /* Adjust size to avoid writing end of data. */
+                size = EksStart - offset;
+            }
+        }
+    } else {
+        if (offset < EksEnd) {
+            if (offset + size < EksEnd) {
+                /* Ignore writes falling strictly within the region. */
+                return 0;
+            } else {
+                /* Only write past the end of the keyblob region. */
+                buffer = buffer + (EksEnd - offset);
+                size -= (EksEnd - offset);
+                offset = EksEnd;
+            }
+        } else {
+            /* Fall through, no need to do anything here. */
+        }
+    }
+    
+    if (size == 0) {
+        return 0;
     }
     
     /* We care about protecting autorcm from NS. */
     if (CanModifyBctPubks() || offset >= BctEndOffset || (offset + BctSize >= BctEndOffset && offset % BctSize >= BctPubkEnd)) {
-        return Base::Write(_buffer, size, offset);
+        return Base::Write(buffer, size, offset);
     }
-    
-    Result rc = 0;
-    u8 *buffer = static_cast<u8 *>(_buffer);
     
     /* First, let's deal with the data past the end. */
     if (offset + size >= BctEndOffset) {

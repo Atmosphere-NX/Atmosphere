@@ -41,8 +41,8 @@ class FsMitmService : public IMitmServiceObject {
         }
         
         static bool ShouldMitm(u64 pid, u64 tid) {
-            /* fs.mitm should always mitm everything. */
-            return true;
+            /* fs.mitm should always mitm everything that's not a kip. */
+            return pid >= 0x50;
         }
         
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
