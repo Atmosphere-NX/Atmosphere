@@ -88,7 +88,7 @@ int main(int argc, char **argv)
     Thread sd_initializer_thread = {0};
     Thread hid_initializer_thread = {0};
     consoleDebugInit(debugDevice_SVC);
-        
+    
     if (R_FAILED(threadCreate(&sd_initializer_thread, &Utils::InitializeSdThreadFunc, NULL, 0x4000, 0x15, 0))) {
         /* TODO: Panic. */
     }

@@ -40,7 +40,8 @@ static char g_config_ini_data[0x800];
 
 /* Backup file for CAL0 partition. */
 static constexpr size_t ProdinfoSize = 0x8000;
-static FsFile g_cal0_file;
+static FsFile g_cal0_file = {0};
+static u8 g_cal0_storage_backup[ProdinfoSize];
 static u8 g_cal0_backup[ProdinfoSize];
 
 static bool IsHexadecimal(const char *str) {
@@ -75,13 +76,14 @@ void Utils::InitializeSdThreadFunc(void *args) {
     fsFsCreateDirectory(&g_sd_filesystem, "/atmosphere/automatic_backups");
     {
         FsStorage cal0_storage;
+        if (R_FAILED(fsOpenBisStorage(&cal0_storage, BisStorageId_Prodinfo)) || R_FAILED(fsStorageRead(&cal0_storage, 0, g_cal0_storage_backup, ProdinfoSize))) {
+            std::abort();
+        }
+        fsStorageClose(&cal0_storage);
         
         char serial_number[0x40] = {0};
+        memcpy(serial_number, g_cal0_storage_backup + 0x250, 0x18);
         
-        if (R_SUCCEEDED(setsysInitialize())) {
-            setsysGetSerialNumber(serial_number);
-            setsysExit();
-        }
         
         char prodinfo_backup_path[FS_MAX_PATH] = {0};
         if (strlen(serial_number) > 0) {
@@ -89,7 +91,8 @@ void Utils::InitializeSdThreadFunc(void *args) {
         } else {
             snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/PRODINFO.bin");
         }
-                
+        
+        fsFsCreateFile(&g_sd_filesystem, prodinfo_backup_path, ProdinfoSize, 0);
         if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, prodinfo_backup_path, FS_OPEN_READ | FS_OPEN_WRITE, &g_cal0_file))) {
             bool has_auto_backup = false;
             size_t read = 0;
@@ -111,15 +114,14 @@ void Utils::InitializeSdThreadFunc(void *args) {
                 has_auto_backup = is_cal0_valid;
             }
             
-            if (!has_auto_backup && R_SUCCEEDED(fsOpenBisStorage(&cal0_storage, BisStorageId_Prodinfo))) {
-                if (R_SUCCEEDED(fsStorageRead(&cal0_storage, 0, g_cal0_backup, ProdinfoSize)) ) {
-                    fsFileSetSize(&g_cal0_file, ProdinfoSize);
-                    fsFileWrite(&g_cal0_file, 0, g_cal0_backup, ProdinfoSize);
-                    fsFileFlush(&g_cal0_file);
-                }
+            if (!has_auto_backup) {
+                fsFileSetSize(&g_cal0_file, ProdinfoSize);
+                fsFileWrite(&g_cal0_file, 0, g_cal0_backup, ProdinfoSize);
+                fsFileFlush(&g_cal0_file);
             }
             
             /* NOTE: g_cal0_file is intentionally not closed here. This prevents any other process from opening it. */
+            memset(g_cal0_storage_backup, 0, sizeof(g_cal0_storage_backup));
             memset(g_cal0_backup, 0, sizeof(g_cal0_backup));
         }
     }
