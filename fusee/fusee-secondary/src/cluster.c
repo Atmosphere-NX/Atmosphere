@@ -22,6 +22,7 @@
 #include "sysreg.h"
 #include "i2c.h"
 #include "car.h"
+#include "mc.h"
 #include "timers.h"
 #include "pmc.h"
 #include "max77620.h"
@@ -141,6 +142,10 @@ void cluster_boot_cpu0(uint32_t entry)
     SB_CSR_0 = 2;
     (void)SB_CSR_0;
 
+    /* Set CPU_STRICT_TZ_APERTURE_CHECK. */
+    /* NOTE: [4.0.0+] This was added, but it breaks Exosphère. */
+    /* MAKE_MC_REG(MC_TZ_SECURITY_CTRL) = 1; */
+    
     /* Clear MSELECT reset. */
     car->rst_dev_v &= 0xFFFFFFF7;
     
@@ -148,5 +153,7 @@ void cluster_boot_cpu0(uint32_t entry)
     car->rst_cpug_cmplx_clr = 0x20000000;
     
     /* Clear CPU{0,1,2,3} POR and CORE, CX0, L2, and DBG reset.*/
-    car->rst_cpug_cmplx_clr = 0x411F000F;
+    /* NOTE: [5.0.0+] This was changed so only CPU0 reset is cleared. */
+    /* car->rst_cpug_cmplx_clr = 0x411F000F; */
+    car->rst_cpug_cmplx_clr = 0x41010001;
 }

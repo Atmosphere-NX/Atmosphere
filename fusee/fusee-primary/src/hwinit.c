@@ -234,7 +234,7 @@ void nx_hwinit()
     
     /* Reboot SE. */
     /* NOTE: [4.0.0+] This was removed. */
-    clkrst_reboot(CARDEVICE_SE);
+    /* clkrst_reboot(CARDEVICE_SE); */
     
     /* Reboot unknown device. */
     clkrst_reboot(CARDEVICE_UNK);

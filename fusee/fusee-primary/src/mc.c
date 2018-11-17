@@ -160,7 +160,9 @@ void mc_enable()
     car->clk_enb_x_set = ((car->clk_enb_x_set & 0xFFFFBFFF) | 0x4000);
     
     /* Clear EMC and MC reset. */
-    car->rst_dev_h_set = 0x2000001; 
+    /* NOTE: [4.0.0+] This was changed to use the right register. */
+    /* car->rst_dev_h_set = 0x2000001; */
+    car->rst_dev_h_clr = 0x2000001; 
     udelay(5);
 
     mc_disable_ahb_redirect();
