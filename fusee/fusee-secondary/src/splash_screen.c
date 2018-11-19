@@ -44,7 +44,7 @@ void display_splash_screen_bmp(const char *custom_splash_path, void *fb_address)
     
     /* Try to load an external custom splash screen. */
     if ((custom_splash_path != NULL) && (custom_splash_path[0] != '\x00')) {
-        if (!read_from_file(splash_screen, sizeof(&splash_screen_bmp), custom_splash_path)) {
+        if (!read_from_file(splash_screen, splash_screen_bmp_size, custom_splash_path)) {
             fatal_error("Failed to read custom splash screen from %s!\n", custom_splash_path);
         }
     }
