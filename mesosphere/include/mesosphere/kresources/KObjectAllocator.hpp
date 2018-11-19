@@ -1,6 +1,7 @@
 #pragma once
 #include <boost/intrusive/set.hpp>
 #include <mesosphere/core/util.hpp>
+#include <mesosphere/core/KAutoObject.hpp>
 #include <mesosphere/kresources/KSlabHeap.hpp>
 #include <mesosphere/threading/KMutex.hpp>
 
@@ -17,6 +18,14 @@ class KObjectAllocator {
         }
     };
 
+
+    struct ComparatorEqual {
+        constexpr u64 operator()(const T &val) const
+        {
+            return val.GetComparisonKey();
+        }
+    };
+
     public:
     struct HookTag;
 
@@ -29,6 +38,7 @@ class KObjectAllocator {
         T,
         boost::intrusive::base_hook<AllocatedSetHookType>,
         boost::intrusive::compare<Comparator>
+        //boost::intrusive::key_of_value<KeyOfValue>
     >::type;
 
     using pointer = T *;
@@ -59,6 +69,12 @@ class KObjectAllocator {
     {
         std::scoped_lock guard{mutex};
         allocatedSet.erase(obj);
+    }
+
+    T *FindObject(u64 comparisonKey)
+    {
+        auto it = allocatedSet.find(comparisonKey, ComparatorEqual{});
+        return it != allocatedSet.end() ? &*it : nullptr;
     }
 
     private:
