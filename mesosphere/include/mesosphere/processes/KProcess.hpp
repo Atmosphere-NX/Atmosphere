@@ -46,7 +46,20 @@ class KProcess final : public KSynchronizationObject /* FIXME */ {
     void SetDebug(KDebug *debug);
     void ClearDebug(State attachState);
 
+    template<typename F, typename ...Args>
+    void ForEachThread(F f, Args &&...args)
+    {
+        std::scoped_lock s{mutex};
+        std::scoped_lock s2{threadingMutex};
+
+        for (KThread &t : threadList) {
+            f(t, std::forward(args)...);
+        }
+    }
+
     private:
+    KThread::ProcessList threadList{};
+
     KThread *lastThreads[MAX_CORES]{nullptr};
     ulong lastIdleSelectionCount[MAX_CORES]{0};
     long schedulerOperationCount = -1;
@@ -57,6 +70,8 @@ class KProcess final : public KSynchronizationObject /* FIXME */ {
     KDebug *debug = nullptr;
     SharedPtr<KResourceLimit> reslimit{};
     KHandleTable handleTable{};
+
+    mutable KMutex mutex{}, threadingMutex{};
 };
 
 MESOSPHERE_AUTO_OBJECT_DEFINE_INCREF(Process);

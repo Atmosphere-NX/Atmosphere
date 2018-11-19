@@ -17,8 +17,10 @@ struct LightSessionRequest;
 
 struct KThreadContext;
 
+struct ThreadProcessListTag;
 struct ThreadWaitListTag;
 struct ThreadMutexWaitListTag;
+using  ThreadProcessListBaseHook = boost::intrusive::list_base_hook<boost::intrusive::tag<ThreadProcessListTag> >;
 using  ThreadWaitListBaseHook = boost::intrusive::list_base_hook<boost::intrusive::tag<ThreadWaitListTag> >;
 using  ThreadMutexWaitListBaseHook = boost::intrusive::list_base_hook<boost::intrusive::tag<ThreadMutexWaitListTag> >;
 
@@ -27,6 +29,7 @@ class KThread final :
     public ILimitedResource<KThread>,
     public ISetAllocated<KThread>,
     public IAlarmable,
+    public ThreadProcessListBaseHook,
     public ThreadWaitListBaseHook,
     public ThreadMutexWaitListBaseHook
 {
@@ -105,6 +108,12 @@ class KThread final :
         Reserved           = 3,
         KernelLoading      = 4,
     };
+
+
+    using ProcessList = typename boost::intrusive::make_list<
+        KThread,
+        boost::intrusive::base_hook<ThreadProcessListBaseHook>
+    >::type;
 
     using SchedulerList = typename boost::intrusive::make_list<
         KThread,
