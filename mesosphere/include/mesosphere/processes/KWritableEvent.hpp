@@ -2,6 +2,7 @@
 
 #include <mesosphere/core/util.hpp>
 #include <mesosphere/core/Result.hpp>
+#include <mesosphere/core/KAutoObject.hpp>
 #include <mesosphere/interfaces/ISetAllocated.hpp>
 #include <mesosphere/interfaces/IServer.hpp>
 
