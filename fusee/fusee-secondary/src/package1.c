@@ -90,15 +90,19 @@ int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_
     return 0;
 }
 
-size_t package1_get_tsec_fw(void **tsec_fw, const void *package1loader, size_t package1loader_size) {
+bool package1_get_tsec_fw(void **tsec_fw, const void *package1loader, size_t package1loader_size) {
     /* The TSEC firmware is always located at a 256-byte aligned address. */
-    /* We're looking for its 4 first bytes. We assume its size is always 0xF00 bytes. */
+    /* We're looking for its 4 first bytes. */
     const uint32_t *pos;
     uintptr_t pk1l = (uintptr_t)package1loader;
-    for (pos = (const uint32_t *)pk1l; (uintptr_t)pos < pk1l + package1loader_size && *pos != 0xCF42004D; pos += 0x40);
-
-    (*tsec_fw) = (void *)pos;
-    return 0xF00;
+    for (pos = (const uint32_t *)pk1l; (uintptr_t)pos < pk1l + package1loader_size; pos += 0x40) {
+        if (*pos == 0xCF42004D) {
+            (*tsec_fw) = (void *)pos;
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 size_t package1_get_encrypted_package1(package1_header_t **package1, uint8_t *ctr, const void *package1loader, size_t package1loader_size) {

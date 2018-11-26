@@ -56,7 +56,7 @@ static const uint8_t AL16 masterkey_4x_seed[0x10] = {
 static nx_dec_keyblob_t AL16 g_dec_keyblobs[32];
 
 static int get_tsec_key(void *dst, const void *tsec_fw, size_t tsec_fw_size, uint32_t tsec_key_id) {
-    return tsec_get_key(dst, tsec_key_id, tsec_fw);
+    return tsec_get_key(dst, tsec_key_id, tsec_fw, tsec_fw_size);
 }
 
 static int get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {
@@ -125,9 +125,10 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     set_aes_keyslot_flags(0xD, 0x15);
 
     /* Set TSEC key. */
-    if  (get_tsec_key(work_buffer, tsec_fw, tsec_fw_size, 1) != 0) {
+    if (get_tsec_key(work_buffer, tsec_fw, tsec_fw_size, 1) != 0) {
         return -1;
     }
+    
     set_aes_keyslot(0xD, work_buffer, 0x10);
     
     /* Decrypt all keyblobs, setting keyslot 0xF correctly. */

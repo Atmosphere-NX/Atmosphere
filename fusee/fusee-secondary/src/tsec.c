@@ -49,7 +49,7 @@ static int tsec_dma_phys_to_flcn(bool is_imem, uint32_t flcn_offset, uint32_t ph
     return tsec_dma_wait_idle();
 }
 
-int tsec_get_key(uint8_t *key, uint32_t rev, const void *tsec_fw)
+int tsec_get_key(uint8_t *key, uint32_t rev, const void *tsec_fw, size_t tsec_fw_size)
 {
     volatile tegra_tsec_t *tsec = tsec_get_regs();
 
@@ -82,7 +82,7 @@ int tsec_get_key(uint8_t *key, uint32_t rev, const void *tsec_fw)
     
     /* Load firmware. */
     tsec->FALCON_DMATRFBASE = (uint32_t)tsec_fw >> 8;
-    for (uint32_t addr = 0; addr < 0xF00; addr += 0x100)
+    for (uint32_t addr = 0; addr < tsec_fw_size; addr += 0x100)
     {
         if (!tsec_dma_phys_to_flcn(true, addr, addr))
         {

@@ -109,6 +109,6 @@ static inline volatile tegra_tsec_t *tsec_get_regs(void)
     return (volatile tegra_tsec_t *)TSEC_BASE;
 }
 
-int tsec_get_key(uint8_t *key, uint32_t rev, const void *tsec_fw);
+int tsec_get_key(uint8_t *key, uint32_t rev, const void *tsec_fw, size_t tsec_fw_size);
 
 #endif

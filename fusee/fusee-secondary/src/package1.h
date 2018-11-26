@@ -46,7 +46,7 @@ typedef struct {
 
 int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0);
 
-size_t package1_get_tsec_fw(void **tsec_fw, const void *package1loader, size_t package1loader_size);
+bool package1_get_tsec_fw(void **tsec_fw, const void *package1loader, size_t package1loader_size);
 size_t package1_get_encrypted_package1(package1_header_t **package1, uint8_t *ctr, const void *package1loader, size_t package1loader_size);
 
 /* Must be aligned to 16 bytes. */
