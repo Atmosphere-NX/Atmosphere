@@ -90,12 +90,16 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
     }
 }
 
-static void nxboot_configure_exosphere(uint32_t target_firmware) {
+static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int keygen_type) {
     exosphere_config_t exo_cfg = {0};
 
     exo_cfg.magic = MAGIC_EXOSPHERE_BOOTCONFIG;
     exo_cfg.target_firmware = target_firmware;
-    exo_cfg.flags = EXOSPHERE_FLAGS_DEFAULT;
+    if (keygen_type) {
+        exo_cfg.flags = EXOSPHERE_FLAGS_DEFAULT | EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
+    } else {
+        exo_cfg.flags = EXOSPHERE_FLAGS_DEFAULT;
+    }
 
     if (ini_parse_string(get_loader_ctx()->bct0, exosphere_ini_handler, &exo_cfg) < 0) {
         fatal_error("[NXBOOT]: Failed to parse BCT.ini!\n");
@@ -307,18 +311,19 @@ uint32_t nxboot_main(void) {
     
     print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Loaded firmware from eMMC...\n");
 
+    /* Derive keydata. */
+    unsigned int keygen_type = 0;
+    if (derive_nx_keydata(target_firmware, g_keyblobs, available_revision, tsec_fw, tsec_fw_size, &keygen_type) != 0) {
+        fatal_error("[NXBOOT]: Key derivation failed!\n");
+    }
+
     /* Setup boot configuration for Exosphère. */
-    nxboot_configure_exosphere(target_firmware);
+    nxboot_configure_exosphere(target_firmware, keygen_type);
 
     /* Initialize Boot Reason on older firmware versions. */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
         print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Initializing Boot Reason...\n");
         nxboot_set_bootreason();
-    }
-
-    /* Derive keydata. */
-    if (derive_nx_keydata(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware, g_keyblobs, available_revision, tsec_fw, tsec_fw_size) != 0) {
-        fatal_error("[NXBOOT]: Key derivation failed!\n");
     }
 
     /* Read the warmboot firmware from a file, otherwise from PK1. */

@@ -67,7 +67,8 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
 #define PACKAGE2_MAXVER_302 0x5
 #define PACKAGE2_MAXVER_400_410 0x6
 #define PACKAGE2_MAXVER_500_510 0x7
-#define PACKAGE2_MAXVER_600_CURRENT 0x8
+#define PACKAGE2_MAXVER_600_610 0x8
+#define PACKAGE2_MAXVER_620_CURRENT 0x9
 
 #define PACKAGE2_MINVER_100 0x3
 #define PACKAGE2_MINVER_200 0x4
@@ -75,7 +76,8 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
 #define PACKAGE2_MINVER_302 0x6
 #define PACKAGE2_MINVER_400_410 0x7
 #define PACKAGE2_MINVER_500_510 0x8
-#define PACKAGE2_MINVER_600_CURRENT 0x9
+#define PACKAGE2_MINVER_600_610 0x9
+#define PACKAGE2_MINVER_620_CURRENT 0xA
 
 typedef struct {
     union {

@@ -28,7 +28,14 @@ typedef enum BisPartition {
 } BisPartition;
 
 typedef struct {
-    uint8_t keys[9][0x10];
+    union {
+        uint8_t keys[9][0x10];
+        struct {
+            uint8_t master_kek[0x10];
+            uint8_t _keys[7][0x10];
+            uint8_t package1_key[0x10];
+        };
+    };
 } nx_dec_keyblob_t;
 
 typedef struct nx_keyblob_t {
@@ -40,7 +47,7 @@ typedef struct nx_keyblob_t {
     };
 } nx_keyblob_t;
 
-int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size);
+int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size, unsigned int *out_keygen_type);
 int load_package1_key(uint32_t revision);
 void finalize_nx_keydata(uint32_t target_firmware);
 void derive_bis_key(void *dst, BisPartition partition_id, uint32_t target_firmware);

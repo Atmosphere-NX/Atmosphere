@@ -49,6 +49,7 @@ static bool is_user_keyslot_valid(unsigned int keyslot) {
         case EXOSPHERE_TARGET_FIRMWARE_500:
             return keyslot <= 3;
         case EXOSPHERE_TARGET_FIRMWARE_600:
+        case EXOSPHERE_TARGET_FIRMWARE_620:
         default:
             return keyslot <= 5;
     }
@@ -166,7 +167,7 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
     /* 5.0.0+ Bounds checking. */
     if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
         if (is_personalized) {
-            if (master_key_rev > MASTERKEY_REVISION_MAX || (MASTERKEY_REVISION_300 <= master_key_rev + 1 && master_key_rev + 1 < MASTERKEY_REVISION_400_410)) {
+            if (master_key_rev >= MASTERKEY_REVISION_MAX || (MASTERKEY_REVISION_300 <= master_key_rev && master_key_rev < MASTERKEY_REVISION_400_410)) {
                 return 2;
             }
             if (mask_id > 3 || usecase >= CRYPTOUSECASE_MAX_5X) {

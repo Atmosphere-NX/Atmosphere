@@ -144,7 +144,7 @@ static void setup_se(void) {
         decrypt_data_into_keyslot(KEYSLOT_SWITCH_6XTSECROOTKEY, KEYSLOT_SWITCH_6XTSECROOTKEY, new_master_kek_sources[0], 0x10);
         decrypt_data_into_keyslot(KEYSLOT_SWITCH_MASTERKEY, KEYSLOT_SWITCH_6XTSECROOTKEY, masterkey_seed, 0x10);
         decrypt_data_into_keyslot(KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, KEYSLOT_SWITCH_6XTSECROOTKEY, devicekek_4x_seed, 0x10);
-        clear_aes_keyslot(KEYSLOT_SWITCH_6XTSECROOTKEY);
+        clear_aes_keyslot(KEYSLOT_SWITCH_6XTSECROOTKEY);  
     }
 
     /* Detect Master Key revision. */
@@ -346,7 +346,7 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
 
     /* Perform version checks. */
     /* We will be compatible with all package2s released before current, but not newer ones. */
-    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_600_CURRENT) {
+    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_620_CURRENT) {
         return true;
     }
 
@@ -466,6 +466,7 @@ static void copy_warmboot_bin_to_dram() {
             warmboot_src = (uint8_t *)0x4003B000;
             break;
         case EXOSPHERE_TARGET_FIRMWARE_600:
+        case EXOSPHERE_TARGET_FIRMWARE_620:
             warmboot_src = (uint8_t *)0x4003D800;
             break;
     }

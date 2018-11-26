@@ -13,13 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+#include <stdio.h>
 #include "key_derivation.h"
 #include "masterkey.h"
 #include "se.h"
 #include "exocfg.h"
 #include "fuse.h"
 #include "tsec.h"
+#include "extkeys.h"
 #include "utils.h"
 
 #define AL16 ALIGN(16)
@@ -51,6 +53,10 @@ static const uint8_t AL16 devicekey_4x_seed[0x10] = {
 
 static const uint8_t AL16 masterkey_4x_seed[0x10] = {
     0x2D, 0xC1, 0xF4, 0x8D, 0xF3, 0x5B, 0x69, 0x33, 0x42, 0x10, 0xAC, 0x65, 0xDA, 0x90, 0x46, 0x66
+};
+
+static const uint8_t AL16 new_master_kek_seeds[1][0x10] = {
+    {0x37, 0x4B, 0x77, 0x29, 0x59, 0xB4, 0x04, 0x30, 0x81, 0xF6, 0xE5, 0x8C, 0x6D, 0x36, 0x17, 0x9A}, /* MasterKek seed 06. */
 };
 
 static nx_dec_keyblob_t AL16 g_dec_keyblobs[32];
@@ -108,45 +114,79 @@ static int decrypt_keyblob(const nx_keyblob_t *keyblobs, uint32_t revision, uint
 }
 
 int load_package1_key(uint32_t revision) {
-    if (revision > MASTERKEY_REVISION_600_CURRENT) {
+    if (revision > MASTERKEY_REVISION_600_610) {
         return -1;
     }
     
-    set_aes_keyslot(0xB, g_dec_keyblobs[revision].keys[8], 0x10);
+    set_aes_keyslot(0xB, g_dec_keyblobs[revision].package1_key, 0x10);
     return 0;
 }
 
 /* Derive all Switch keys. */
-int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size) {
+int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size, unsigned int *out_keygen_type) {
+    uint8_t AL16 tsec_key[0x10];
     uint8_t AL16 work_buffer[0x10];
+    uint8_t AL16 zeroes[0x10] = {0};
 
     /* TODO: Set keyslot flags properly in preparation of derivation. */
     set_aes_keyslot_flags(0xE, 0x15);
     set_aes_keyslot_flags(0xD, 0x15);
 
     /* Set TSEC key. */
-    if (get_tsec_key(work_buffer, tsec_fw, tsec_fw_size, 1) != 0) {
+    if (get_tsec_key(tsec_key, tsec_fw, tsec_fw_size, 1) != 0) {
         return -1;
     }
     
-    set_aes_keyslot(0xD, work_buffer, 0x10);
-    
+    set_aes_keyslot(0xD, tsec_key, 0x10);
+        
     /* Decrypt all keyblobs, setting keyslot 0xF correctly. */
-    for (unsigned int rev = 0; rev < MASTERKEY_REVISION_MAX; rev++) {
+    for (unsigned int rev = 0; rev <= MASTERKEY_REVISION_600_610; rev++) {
         int ret = decrypt_keyblob(keyblobs, rev, available_revision);
         if (ret) {
             return ret;
         }
     }
-
+    
+    
+    /* TODO: Eventually do 6.2.0+ keygen properly? */
+    *out_keygen_type = 0;
+    if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_620) {
+        const char *keyfile = fuse_get_retail_type() != 0 ? "atmosphere/prod.keys" : "atmosphere/dev.keys";
+        FILE *extkey_file = fopen(keyfile, "r");
+        AL16 fusee_extkeys_t extkeys = {0};
+        if (extkey_file == NULL) {
+            fatal_error("Error: failed to read %s, needed for 6.2.0+ key derivation!", keyfile);
+        }
+        extkeys_initialize_keyset(&extkeys, extkey_file);
+        fclose(extkey_file);
+        
+        if (memcmp(extkeys.tsec_root_key, zeroes, 0x10) != 0) {
+            set_aes_keyslot(0xC, extkeys.tsec_root_key, 0x10);
+            for (unsigned int rev = MASTERKEY_REVISION_620_CURRENT; rev < MASTERKEY_REVISION_MAX; rev++) {
+                se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620_CURRENT], 0x10);
+                memcpy(g_dec_keyblobs[rev].master_kek, work_buffer, 0x10);
+            }
+        } else {
+            for (unsigned int rev = MASTERKEY_REVISION_620_CURRENT; rev < MASTERKEY_REVISION_MAX; rev++) {
+                memcpy(g_dec_keyblobs[rev].master_kek, extkeys.master_keks[rev], 0x10);
+            }
+        }
+        
+        if (memcmp(g_dec_keyblobs[available_revision].master_kek, zeroes, 0x10) == 0) {
+            fatal_error("Error: failed to derive master_kek_%02x!", available_revision);
+        }
+    }
+    
     /* Clear the SBK. */
     clear_aes_keyslot(0xE);
 
     /* Get needed data. */
-    set_aes_keyslot(0xC, g_dec_keyblobs[MASTERKEY_REVISION_600_CURRENT].keys[0], 0x10);
+    set_aes_keyslot(0xC, g_dec_keyblobs[available_revision].master_kek, 0x10);
 
     /* Also set the Package1 key for the revision that is stored on the eMMC boot0 partition. */
-    load_package1_key(available_revision);
+    if (target_firmware < EXOSPHERE_TARGET_FIRMWARE_620) {
+        load_package1_key(available_revision);
+    }
 
     /* Derive keys for Exosphere, lock critical keyslots. */
     switch (target_firmware) {
@@ -164,6 +204,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
             break;
         case EXOSPHERE_TARGET_FIRMWARE_500:
         case EXOSPHERE_TARGET_FIRMWARE_600:
+        case EXOSPHERE_TARGET_FIRMWARE_620:
             decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
             decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
             decrypt_data_into_keyslot(0xE, 0xC, masterkey_4x_seed, 0x10);
