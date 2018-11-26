@@ -43,6 +43,11 @@
 /* This keyslot was added in 5.0.0. */
 #define KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY 0xA
 
+/* This keyslot was added in 6.00. */
+#define KEYSLOT_SWITCH_6XTSECKEY 0xC
+#define KEYSLOT_SWITCH_6XTSECROOTKEY 0xD
+#define KEYSLOT_SWITCH_6XSBK 0xE
+
 #define KEYSLOT_AES_MAX 0x10
 #define KEYSLOT_RSA_MAX 0x2
 

@@ -59,7 +59,7 @@ typedef struct {
 
 unsigned int exosphere_load_config(void);
 unsigned int exosphere_get_target_firmware(void);
-unsigned int exosphere_get_should_perform_620_keygen(void);
+unsigned int exosphere_should_perform_620_keygen(void);
 
 static inline unsigned int exosphere_get_target_firmware_for_init(void) {
     const unsigned int magic = MAILBOX_EXOSPHERE_CONFIG_PHYS.magic;

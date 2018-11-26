@@ -60,7 +60,7 @@ unsigned int exosphere_get_target_firmware(void) {
     return g_exosphere_cfg.target_firmware;
 }
 
-unsigned int exosphere_get_should_perform_620_keygen(void) {
+unsigned int exosphere_should_perform_620_keygen(void) {
     if (!g_has_loaded_config) {
         generic_panic();
     }
