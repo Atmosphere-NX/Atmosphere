@@ -41,8 +41,15 @@ class FsMitmService : public IMitmServiceObject {
         }
         
         static bool ShouldMitm(u64 pid, u64 tid) {
-            /* fs.mitm should always mitm everything that's not a kip. */
-            return pid >= 0x50;
+            static std::atomic_bool has_launched_qlaunch = false;
+
+            /* TODO: intercepting everything seems to cause issues with sleep mode, for some reason. */
+            /* Figure out why, and address it. */
+            if (tid == 0x0100000000001000ULL) {
+                has_launched_qlaunch = true;
+            }
+            
+            return has_launched_qlaunch || tid == 0x010000000000001FULL || tid >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(tid);
         }
         
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
