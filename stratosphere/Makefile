@@ -1,4 +1,4 @@
-KIPS := loader pm sm boot fs_mitm set_mitm creport
+KIPS := loader pm sm boot fs_mitm set_mitm creport fatal
 
 #TODO: boot2 ?
 

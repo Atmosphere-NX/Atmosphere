@@ -132,7 +132,9 @@ int main(int argc, char **argv) {
             return 0;
         }
         
-        fatalWithType(g_Creport.GetResult(), FatalType_ErrorScreen);
+        FatalContext *ctx = g_Creport.GetFatalContext();
+        
+        fatalWithContext(g_Creport.GetResult(), FatalType_ErrorScreen, ctx);
     }
     
 }

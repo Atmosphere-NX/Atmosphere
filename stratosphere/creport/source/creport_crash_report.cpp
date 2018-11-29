@@ -47,6 +47,35 @@ void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
     }
 }
 
+FatalContext *CrashReport::GetFatalContext() {
+    FatalContext *ctx = new FatalContext;
+    *ctx = (FatalContext){0};
+    
+    ctx->is_aarch32 = false;
+    ctx->type = static_cast<u32>(this->exception_info.type);
+    
+    for (size_t i = 0; i < 29; i++) {
+        ctx->aarch64_ctx.x[i] = this->crashed_thread_info.context.cpu_gprs[i].x;
+    }
+    ctx->aarch64_ctx.fp = this->crashed_thread_info.context.fp;
+    ctx->aarch64_ctx.lr = this->crashed_thread_info.context.lr;
+    ctx->aarch64_ctx.pc = this->crashed_thread_info.context.pc.x;
+    
+    ctx->aarch64_ctx.stack_trace_size = this->crashed_thread_info.stack_trace_size;
+    for (size_t i = 0; i < ctx->aarch64_ctx.stack_trace_size; i++) {
+        ctx->aarch64_ctx.stack_trace[i] = this->crashed_thread_info.stack_trace[i];
+    }
+    
+    if (this->code_list.code_count) {
+        ctx->aarch64_ctx.start_address = this->code_list.code_infos[0].start_address;
+    }
+    
+    /* For ams fatal... */
+    ctx->aarch64_ctx.afsr0 = this->process_info.title_id;
+    
+    return ctx;
+}
+
 void CrashReport::ProcessExceptions() {
     if (!IsOpen()) {
         return;
@@ -233,7 +262,7 @@ void CrashReport::EnsureReportDirectories() {
 }
 
 void CrashReport::SaveReport() {
-    /* TODO: Save the report to the SD card. */
+    /* Save the report to the SD card. */
     char report_path[FS_MAX_PATH];
     
     /* Ensure path exists. */

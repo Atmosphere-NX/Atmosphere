@@ -23,7 +23,7 @@
 class CodeList;
 
 class ThreadInfo {
-    private:
+    public:
         ThreadContext context{};
         u64 thread_id = 0;
         u64 stack_top = 0;

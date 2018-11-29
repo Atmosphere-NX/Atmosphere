@@ -29,7 +29,7 @@ struct CodeInfo {
 };
 
 class CodeList {
-    private:
+    public:
         static const size_t max_code_count = 0x60;
         u32 code_count = 0;
         CodeInfo code_infos[max_code_count];
