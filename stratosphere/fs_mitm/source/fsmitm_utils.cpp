@@ -346,7 +346,7 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
     return rc;
 }
 
-bool Utils::HasFlag(u64 tid, const char *flag) {
+bool Utils::HasTitleFlag(u64 tid, const char *flag) {
     if (IsSdInitialized()) {
         FsFile f;
         char flag_path[FS_MAX_PATH];
@@ -379,6 +379,16 @@ bool Utils::HasGlobalFlag(const char *flag) {
         }
     }
     return false;
+}
+
+bool Utils::HasHblFlag(const char *flag) {
+    char hbl_flag[FS_MAX_PATH] = {0};
+    snprintf(hbl_flag, sizeof(hbl_flag), "hbl_%s", flag);
+    return HasGlobalFlag(hbl_flag);
+}
+
+bool Utils::HasFlag(u64 tid, const char *flag) {
+    return HasTitleFlag(tid, flag) || (tid == g_override_hbl_tid && HasHblFlag(flag));
 }
 
 bool Utils::HasSdMitMFlag(u64 tid) {
