@@ -20,7 +20,6 @@
 #include "se.h"
 #include "exocfg.h"
 #include "fuse.h"
-#include "tsec.h"
 #include "extkeys.h"
 #include "utils.h"
 
@@ -60,10 +59,6 @@ static const uint8_t AL16 new_master_kek_seeds[1][0x10] = {
 };
 
 static nx_dec_keyblob_t AL16 g_dec_keyblobs[32];
-
-static int get_tsec_key(void *dst, const void *tsec_fw, size_t tsec_fw_size, uint32_t tsec_key_id) {
-    return tsec_get_key(dst, tsec_key_id, tsec_fw, tsec_fw_size);
-}
 
 static int get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {
     if (revision >= 0x20) {
@@ -123,20 +118,18 @@ int load_package1_key(uint32_t revision) {
 }
 
 /* Derive all Switch keys. */
-int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size, unsigned int *out_keygen_type) {
-    uint8_t AL16 tsec_key[0x10];
+int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_key, void *tsec_root_key, unsigned int *out_keygen_type) {
     uint8_t AL16 work_buffer[0x10];
     uint8_t AL16 zeroes[0x10] = {0};
+    
+    /* Initialize keygen type. */
+    *out_keygen_type = 0;
 
     /* TODO: Set keyslot flags properly in preparation of derivation. */
     set_aes_keyslot_flags(0xE, 0x15);
     set_aes_keyslot_flags(0xD, 0x15);
-
-    /* Set TSEC key. */
-    if (get_tsec_key(tsec_key, tsec_fw, tsec_fw_size, 1) != 0) {
-        return -1;
-    }
     
+    /* Set the TSEC key. */
     set_aes_keyslot(0xD, tsec_key, 0x10);
         
     /* Decrypt all keyblobs, setting keyslot 0xF correctly. */
@@ -146,29 +139,37 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
             return ret;
         }
     }
-    
-    
-    /* TODO: Eventually do 6.2.0+ keygen properly? */
-    *out_keygen_type = 0;
+
+    /* Do 6.2.0+ keygen. */
     if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_620) {
-        const char *keyfile = fuse_get_retail_type() != 0 ? "atmosphere/prod.keys" : "atmosphere/dev.keys";
-        FILE *extkey_file = fopen(keyfile, "r");
-        AL16 fusee_extkeys_t extkeys = {0};
-        if (extkey_file == NULL) {
-            fatal_error("Error: failed to read %s, needed for 6.2.0+ key derivation!", keyfile);
-        }
-        extkeys_initialize_keyset(&extkeys, extkey_file);
-        fclose(extkey_file);
-        
-        if (memcmp(extkeys.tsec_root_key, zeroes, 0x10) != 0) {
-            set_aes_keyslot(0xC, extkeys.tsec_root_key, 0x10);
+        if (memcmp(tsec_root_key, zeroes, 0x10) != 0) {
+            /* We got a valid key from emulation. */
+            set_aes_keyslot(0xC, tsec_root_key, 0x10);
             for (unsigned int rev = MASTERKEY_REVISION_620_CURRENT; rev < MASTERKEY_REVISION_MAX; rev++) {
                 se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620_CURRENT], 0x10);
                 memcpy(g_dec_keyblobs[rev].master_kek, work_buffer, 0x10);
             }
         } else {
-            for (unsigned int rev = MASTERKEY_REVISION_620_CURRENT; rev < MASTERKEY_REVISION_MAX; rev++) {
-                memcpy(g_dec_keyblobs[rev].master_kek, extkeys.master_keks[rev], 0x10);
+            /* Try reading the keys from a file. */
+            const char *keyfile = fuse_get_retail_type() != 0 ? "atmosphere/prod.keys" : "atmosphere/dev.keys";
+            FILE *extkey_file = fopen(keyfile, "r");
+            AL16 fusee_extkeys_t extkeys = {0};
+            if (extkey_file == NULL) {
+                fatal_error("Error: failed to read %s, needed for 6.2.0+ key derivation!", keyfile);
+            }
+            extkeys_initialize_keyset(&extkeys, extkey_file);
+            fclose(extkey_file);
+        
+            if (memcmp(extkeys.tsec_root_key, zeroes, 0x10) != 0) {
+                set_aes_keyslot(0xC, extkeys.tsec_root_key, 0x10);
+                for (unsigned int rev = MASTERKEY_REVISION_620_CURRENT; rev < MASTERKEY_REVISION_MAX; rev++) {
+                    se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620_CURRENT], 0x10);
+                    memcpy(g_dec_keyblobs[rev].master_kek, work_buffer, 0x10);
+                }
+            } else {
+                for (unsigned int rev = MASTERKEY_REVISION_620_CURRENT; rev < MASTERKEY_REVISION_MAX; rev++) {
+                    memcpy(g_dec_keyblobs[rev].master_kek, extkeys.master_keks[rev], 0x10);
+                }
             }
         }
         

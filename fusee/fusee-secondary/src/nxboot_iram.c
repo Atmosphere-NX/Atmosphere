@@ -23,7 +23,9 @@
 #include "mc.h"
 #include "nxboot.h"
 #include "se.h"
+#include "smmu.h"
 #include "timers.h"
+#include "sysreg.h"
 
 void nxboot_finish(uint32_t boot_memaddr) {
     volatile tegra_se_t *se = se_get_regs();
@@ -69,8 +71,21 @@ void nxboot_finish(uint32_t boot_memaddr) {
     /* Terminate the display. */
     display_end();
     
-    /* Boot CPU0. */
-    cluster_boot_cpu0(boot_memaddr);
+    /* Check if SMMU emulation has been used. */
+    uint32_t smmu_magic = *(uint32_t *)(SMMU_AARCH64_PAYLOAD_ADDR + 0xFC);
+    if (smmu_magic == 0xDEADC0DE) {
+        /* Clear the magic. */
+        *(uint32_t *)(SMMU_AARCH64_PAYLOAD_ADDR + 0xFC) = 0;
+        
+        /* Pass the boot address to the already running payload. */
+        *(uint32_t *)(SMMU_AARCH64_PAYLOAD_ADDR + 0xF0) = boot_memaddr;
+        
+        /* Wait a while. */
+        mdelay(500);
+    } else {
+        /* Boot CPU0. */
+        cluster_boot_cpu0(boot_memaddr);
+    }
     
     /* Wait for Exosphère to wake up. */
     while (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE == 0) {

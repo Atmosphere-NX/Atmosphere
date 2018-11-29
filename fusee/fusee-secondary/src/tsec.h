@@ -109,6 +109,10 @@ static inline volatile tegra_tsec_t *tsec_get_regs(void)
     return (volatile tegra_tsec_t *)TSEC_BASE;
 }
 
+void tsec_enable_clkrst();
+void tsec_disable_clkrst();
 int tsec_get_key(uint8_t *key, uint32_t rev, const void *tsec_fw, size_t tsec_fw_size);
+int tsec_load_fw(const void *tsec_fw, size_t tsec_fw_size);
+void tsec_run_fw();
 
 #endif

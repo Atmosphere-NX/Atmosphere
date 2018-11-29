@@ -47,7 +47,7 @@ typedef struct nx_keyblob_t {
     };
 } nx_keyblob_t;
 
-int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_fw, size_t tsec_fw_size, unsigned int *out_keygen_type);
+int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_key, void *tsec_root_key, unsigned int *out_keygen_type);
 int load_package1_key(uint32_t revision);
 void finalize_nx_keydata(uint32_t target_firmware);
 void derive_bis_key(void *dst, BisPartition partition_id, uint32_t target_firmware);

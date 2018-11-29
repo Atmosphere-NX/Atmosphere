@@ -131,7 +131,7 @@ void *package1_get_warmboot_fw(const package1_header_t *package1) {
         https://github.com/ARM-software/arm-trusted-firmware/blob/master/plat/nvidia/tegra/common/aarch64/tegra_helpers.S#L312
         and thus by 0xD5034FDF.
 
-        Nx-bootloader seems to always start by 0xE328F0C0 (msr cpsr_f, 0xc0).
+        Nx-bootloader starts by 0xE328F0C0 (msr cpsr_f, 0xc0) before 6.2.0 and by 0xF0C0A7F0 afterwards.
     */
     const uint32_t *data = (const uint32_t *)package1->data;
     for (size_t i = 0; i < 3; i++) {
@@ -140,6 +140,7 @@ void *package1_get_warmboot_fw(const package1_header_t *package1) {
                 data += package1->secmon_size / 4;
                 break;
             case 0xE328F0C0:
+            case 0xF0C0A7F0:
                 data += package1->nx_bootloader_size / 4;
                 break;
             default:

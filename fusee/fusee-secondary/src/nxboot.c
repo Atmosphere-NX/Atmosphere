@@ -36,6 +36,8 @@
 #include "key_derivation.h"
 #include "package1.h"
 #include "package2.h"
+#include "smmu.h"
+#include "tsec.h"
 #include "loader.h"
 #include "splash_screen.h"
 #include "exocfg.h"
@@ -311,9 +313,28 @@ uint32_t nxboot_main(void) {
     
     print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Loaded firmware from eMMC...\n");
 
+    /* Get the TSEC keys. */
+    uint8_t tsec_key[0x10] = {0};
+    uint8_t tsec_root_key[0x10] = {0};
+    if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_620) {
+        uint8_t tsec_keys[0x20] = {0};
+        
+        /* Emulate the TSEC payload on 6.2.0+. */
+        smmu_emulate_tsec((void *)tsec_keys, package1loader, package1loader_size, package1loader);
+        
+        /* Copy back the keys. */
+        memcpy((void *)tsec_key, (void *)tsec_keys, 0x10);
+        memcpy((void *)tsec_root_key, (void *)tsec_keys + 0x10, 0x10);
+    } else {
+        /* Run the TSEC payload and get the key. */
+        if (tsec_get_key(tsec_key, 1, tsec_fw, tsec_fw_size) != 0) {
+            fatal_error("[NXBOOT]: Failed to get TSEC key!\n");
+        }
+    }
+    
     /* Derive keydata. */
     unsigned int keygen_type = 0;
-    if (derive_nx_keydata(target_firmware, g_keyblobs, available_revision, tsec_fw, tsec_fw_size, &keygen_type) != 0) {
+    if (derive_nx_keydata(target_firmware, g_keyblobs, available_revision, tsec_key, tsec_root_key, &keygen_type) != 0) {
         fatal_error("[NXBOOT]: Key derivation failed!\n");
     }
 
@@ -343,16 +364,26 @@ uint32_t nxboot_main(void) {
             fatal_error("[NXBOOT]: Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
         }
     } else {
-        uint8_t ctr[16];
-        package1_size = package1_get_encrypted_package1(&package1, ctr, package1loader, package1loader_size);
-        if (package1_decrypt(package1, package1_size, ctr)) {
+        if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_620) {
+            /* Package1 was decrypted during TSEC emulation. */
+            const uint8_t *package1_hdr = (const uint8_t *)package1loader + 0x7000 - 0x20;
+            package1 = (package1_header_t *)(package1_hdr + 0x20);
+            package1_size = *(uint32_t *)package1_hdr;
             warmboot_fw = package1_get_warmboot_fw(package1);
             warmboot_fw_size = package1->warmboot_size;
         } else {
-            warmboot_fw = NULL;
-            warmboot_fw_size = 0;
+            /* Decrypt package1 and extract the warmboot firmware. */
+            uint8_t ctr[16];
+            package1_size = package1_get_encrypted_package1(&package1, ctr, package1loader, package1loader_size);
+            if (package1_decrypt(package1, package1_size, ctr)) {
+                warmboot_fw = package1_get_warmboot_fw(package1);
+                warmboot_fw_size = package1->warmboot_size;
+            } else {
+                warmboot_fw = NULL;
+                warmboot_fw_size = 0;
+            }
         }
-
+        
         if (warmboot_fw_size == 0) {
             fatal_error("[NXBOOT]: Could not read the warmboot firmware from Package1!\n");
         }
