@@ -18,6 +18,25 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+enum BisStorageId : u32 {
+    BisStorageId_Boot0 = 0,
+    BisStorageId_Boot1 = 10,
+    BisStorageId_RawNand = 20,
+    BisStorageId_BcPkg2_1 = 21,
+    BisStorageId_BcPkg2_2 = 22,
+    BisStorageId_BcPkg2_3 = 23,
+    BisStorageId_BcPkg2_4 = 24,
+    BisStorageId_BcPkg2_5 = 25,
+    BisStorageId_BcPkg2_6 = 26,
+    BisStorageId_Prodinfo = 27,
+    BisStorageId_ProdinfoF = 28,
+    BisStorageId_Safe = 29,
+    BisStorageId_User = 30,
+    BisStorageId_System = 31,
+    BisStorageId_SystemProperEncryption = 32,
+    BisStorageId_SystemProperPartition = 33,
+};
+
 class Utils {
     public:
         static bool IsSdInitialized();
@@ -38,6 +57,12 @@ class Utils {
         
         /* SD card Initialization + MitM detection. */
         static void InitializeSdThreadFunc(void *args);
+        
+        static bool HasTitleFlag(u64 tid, const char *flag);
+        static bool HasHblFlag(const char *flag);
+        static bool HasGlobalFlag(const char *flag);
+        static bool HasFlag(u64 tid, const char *flag);
+        
         static bool HasSdMitMFlag(u64 tid);
         static bool HasSdDisableMitMFlag(u64 tid);
         

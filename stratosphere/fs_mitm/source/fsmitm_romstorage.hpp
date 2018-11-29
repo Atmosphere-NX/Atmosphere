@@ -31,7 +31,7 @@ class RomFileStorage : public IROStorage {
         RomFileStorage(FsFile f) {
             this->base_file = new FsFile(f);
         };
-        ~RomFileStorage() {
+        virtual ~RomFileStorage() {
             fsFileClose(base_file);
             delete base_file;
         };
@@ -54,30 +54,4 @@ class RomFileStorage : public IROStorage {
 };
 
 /* Represents a RomFS accessed via some IStorage. */
-class RomInterfaceStorage : public IROStorage {
-    private:
-        FsStorage *base_storage;
-    public:
-        RomInterfaceStorage(FsStorage *s) : base_storage(s) {
-            /* ... */
-        };
-        RomInterfaceStorage(FsStorage s) {
-            this->base_storage = new FsStorage(s);
-        };
-        ~RomInterfaceStorage() {
-            fsStorageClose(base_storage);
-            delete base_storage;
-        };
-    public:
-        Result Read(void *buffer, size_t size, u64 offset) override {
-            return fsStorageRead(this->base_storage, offset, buffer, size);
-        };
-        Result GetSize(u64 *out_size) override {
-            /* TODO: Merge into libnx? */
-            return fsStorageGetSize(this->base_storage, out_size);
-        };
-        Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override {
-            /* TODO: Merge into libnx? */
-            return fsStorageOperateRange(this->base_storage, operation_type, offset, size, out_range_info);
-        };
-};
+using RomInterfaceStorage = ROProxyStorage;

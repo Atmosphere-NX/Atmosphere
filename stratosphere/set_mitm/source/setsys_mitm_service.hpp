@@ -25,7 +25,7 @@ enum SetSysCmd : u32 {
 
 class SetSysMitmService : public IMitmServiceObject {      
     public:
-        SetSysMitmService(std::shared_ptr<Service> s) : IMitmServiceObject(s) {
+        SetSysMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
             /* ... */
         }
         

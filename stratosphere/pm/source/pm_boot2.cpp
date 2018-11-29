@@ -163,11 +163,22 @@ void EmbeddedBoot2::Main() {
                 char title_path[FS_MAX_PATH] = {0};
                 strcpy(title_path, "sdmc:/atmosphere/titles/");
                 strcat(title_path, ent->d_name);
-                strcat(title_path, "/boot2.flag");
+                strcat(title_path, "/flags/boot2.flag");
                 FILE *f_flag = fopen(title_path, "rb");
                 if (f_flag != NULL) {
                     fclose(f_flag);
                     LaunchTitle((Boot2KnownTitleId)title_id, FsStorageId_None, 0, NULL);
+                } else {
+                    /* TODO: Deprecate this in the future. */
+                    memset(title_path, 0, FS_MAX_PATH);
+                    strcpy(title_path, "sdmc:/atmosphere/titles/");
+                    strcat(title_path, ent->d_name);
+                    strcat(title_path, "/boot2.flag");
+                    f_flag = fopen(title_path, "rb");
+                    if (f_flag != NULL) {
+                        fclose(f_flag);
+                        LaunchTitle((Boot2KnownTitleId)title_id, FsStorageId_None, 0, NULL);
+                    }
                 }
             }
         }

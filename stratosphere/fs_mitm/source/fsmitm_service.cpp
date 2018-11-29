@@ -24,6 +24,7 @@
 #include "fs_shim.h"
 
 #include "fsmitm_utils.hpp"
+#include "fsmitm_boot0storage.hpp"
 #include "fsmitm_romstorage.hpp"
 #include "fsmitm_layeredrom.hpp"
 
@@ -79,11 +80,66 @@ void FsMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx
     }
 }
 
+/* Gate access to the BIS partitions. */
+Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out_storage, u32 bis_partition_id) {
+    std::shared_ptr<IStorageInterface> storage = nullptr;
+    u32 out_domain_id = 0;
+    Result rc = 0;
+    
+    ON_SCOPE_EXIT {
+        if (R_SUCCEEDED(rc)) {
+            out_storage.SetValue(std::move(storage));
+            if (out_storage.IsDomain()) {
+                out_storage.ChangeObjectId(out_domain_id);
+            }
+        }
+    };
+    
+    {
+        FsStorage bis_storage;
+        rc = fsOpenBisStorageFwd(this->forward_service.get(), &bis_storage, bis_partition_id);
+        if (R_SUCCEEDED(rc)) {
+            const bool is_sysmodule = this->title_id < 0x0100000000001000;
+            const bool has_bis_write_flag = Utils::HasFlag(this->title_id, "bis_write");
+            const bool has_cal0_read_flag = Utils::HasFlag(this->title_id, "cal_read");
+            if (bis_partition_id == BisStorageId_Boot0) {
+                storage = std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, this->title_id));
+            } else if (bis_partition_id == BisStorageId_Prodinfo) {
+                /* PRODINFO should *never* be writable. */
+                if (is_sysmodule || has_cal0_read_flag) {
+                    storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
+                } else {
+                    /* Do not allow non-sysmodules to read *or* write CAL0. */
+                    fsStorageClose(&bis_storage);
+                    return 0x320002;
+                }
+            } else {
+                if (is_sysmodule || has_bis_write_flag) {
+                    /* Sysmodules should still be allowed to read and write. */
+                    storage = std::make_shared<IStorageInterface>(new ProxyStorage(bis_storage));
+                } else {
+                    /* Non-sysmodules should be allowed to read. */
+                    storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
+                }
+            }
+            if (out_storage.IsDomain()) {
+                out_domain_id = bis_storage.s.object_id;
+            }
+        }
+    }
+    
+    return rc;
+}
+
 /* Add redirection for RomFS to the SD card. */
 Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStorageInterface>> out_storage) {
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;
     Result rc = 0;
+    
+    if (!this->should_override_contents) {
+        return RESULT_FORWARD_TO_SESSION;
+    }
     
     bool has_cache = StorageCacheGetEntry(this->title_id, &storage);
     
@@ -148,6 +204,10 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
     FsStorageId storage_id = (FsStorageId)sid;
     FsStorage data_storage;
     FsFile data_file;
+    
+    if (!this->should_override_contents) {
+        return RESULT_FORWARD_TO_SESSION;
+    }
         
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;

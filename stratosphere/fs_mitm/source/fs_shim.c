@@ -18,6 +18,44 @@
 #include "fs_shim.h"
 
 /* Missing fsp-srv commands. */
+Result fsOpenBisStorageFwd(Service* s, FsStorage* out, u32 PartitionId) {
+    IpcCommand c;
+    ipcInitialize(&c);
+
+    struct {
+        u64 magic;
+        u64 cmd_id;
+        u32 PartitionId;
+    } *raw;
+
+    raw = serviceIpcPrepareHeader(s, &c, sizeof(*raw));
+
+    raw->magic = SFCI_MAGIC;
+    raw->cmd_id = 12;
+    raw->PartitionId = PartitionId;
+
+    Result rc = serviceIpcDispatch(s);
+
+    if (R_SUCCEEDED(rc)) {
+        IpcParsedCommand r;
+        struct {
+            u64 magic;
+            u64 result;
+        } *resp;
+
+        serviceIpcParse(s, &r, sizeof(*resp));
+        resp = r.Raw;
+
+        rc = resp->result;
+
+        if (R_SUCCEEDED(rc)) {
+            serviceCreateSubservice(&out->s, s, &r, 0);
+        }
+    }
+
+    return rc;
+}
+
 Result fsOpenDataStorageByCurrentProcessFwd(Service* s, FsStorage* out) {
     IpcCommand c;
     ipcInitialize(&c);

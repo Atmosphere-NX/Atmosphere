@@ -98,6 +98,20 @@ Result UserService::AtmosphereUninstallMitm(SmServiceName service) {
     return rc;
 }
 
+Result UserService::AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<MovedHandle> fwd_h, SmServiceName service) {
+    Result rc = 0x415;
+    Handle out_fwd_h = 0;
+    if (this->has_initialized) {
+        rc = Registration::AcknowledgeMitmSessionForPid(this->pid, smEncodeName(service.name), &out_fwd_h, client_pid.GetPointer());
+    }
+    
+    if (R_SUCCEEDED(rc)) {
+        fwd_h.SetValue(out_fwd_h);
+    }
+    
+    return rc;
+}
+
 Result UserService::AtmosphereAssociatePidTidForMitm(u64 pid, u64 tid) {
     Result rc = 0x415;
     if (this->has_initialized) {
