@@ -41,6 +41,11 @@ class FsMitmService : public IMitmServiceObject {
         }
         
         static bool ShouldMitm(u64 pid, u64 tid) {
+            /* Don't Mitm KIPs */
+            if (pid < 0x50) {
+                return false;
+            }
+            
             static std::atomic_bool has_launched_qlaunch = false;
 
             /* TODO: intercepting everything seems to cause issues with sleep mode, for some reason. */
