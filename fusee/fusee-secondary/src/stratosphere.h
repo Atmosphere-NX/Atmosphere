@@ -31,4 +31,7 @@ void stratosphere_free_ini1(void);
 
 ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, unsigned int num_inis);
 
+
+#define STRATOSPHERE_NOGC_KEY "nogc"
+
 #endif

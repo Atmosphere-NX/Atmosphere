@@ -24,4 +24,6 @@
 void apply_kernel_ips_patches(void *kernel, size_t kernel_size);
 kip1_header_t *apply_kip_ips_patches(kip1_header_t *kip, size_t kip_size);
 
+void kip_patches_set_enable_nogc(void);
+
 #endif

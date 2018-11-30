@@ -33,6 +33,53 @@
 #define IPS32_MAGIC "IPS32"
 #define IPS32_TAIL "EEOF"
 
+#define NOGC_PATCH_DIR "default_nogc"
+static bool g_enable_nogc_patches = false;
+
+void kip_patches_set_enable_nogc(void) {
+    g_enable_nogc_patches = true;
+}
+
+static bool should_ignore_default_patch(const char *patch_dir) {
+    /* This function will ensure that select default patches only get loaded if enabled. */
+    if (!g_enable_nogc_patches && strcmp(patch_dir, NOGC_PATCH_DIR) == 0) {
+        return true;
+    }
+    
+    return false;
+}
+
+static bool has_patch(const char *dir, const char *subdir, const void *hash, size_t hash_size) {
+    char path[0x301] = {0};
+    int cur_len = 0;
+    cur_len += snprintf(path + cur_len, sizeof(path) - cur_len, "%s/", dir);
+    if (subdir != NULL) {
+        cur_len += snprintf(path + cur_len, sizeof(path) - cur_len, "%s/", subdir);
+    }
+    for (size_t i = 0; i < hash_size; i++) {
+         cur_len += snprintf(path + cur_len, sizeof(path) - cur_len, "%02X", ((const uint8_t *)hash)[i]);
+    }
+    cur_len += snprintf(path + cur_len, sizeof(path) - cur_len, ".ips");
+    if (cur_len >= sizeof(path)) {
+        return false;
+    }
+    
+    FILE *f = fopen(path, "rb");
+    if (f != NULL) {
+        fclose(f);
+        return true;
+    }
+    return false;
+}
+
+static bool has_needed_default_kip_patches(uint64_t title_id, const void *hash, size_t hash_size) {
+    if (title_id == 0x0100000000000000ULL && g_enable_nogc_patches) {
+        return has_patch("atmosphere/kip_patches", NOGC_PATCH_DIR, hash, hash_size);
+    }
+    
+    return true;
+}
+
 /* Applies an IPS/IPS32 patch to memory, disregarding writes to the first prot_size bytes. */
 static void apply_ips_patch(uint8_t *mem, size_t mem_size, size_t prot_size, bool is_ips32, FILE *f_ips) {
     uint8_t buffer[4];
@@ -156,6 +203,11 @@ static bool has_ips_patches(const char *dir, const void *hash, size_t hash_size)
             if (strcmp(pdir_ent->d_name, ".") == 0 || strcmp(pdir_ent->d_name, "..") == 0) {
                 continue;
             }
+            
+            if (should_ignore_default_patch(pdir_ent->d_name)) {
+                continue;
+            }
+            
             snprintf(path, sizeof(path) - 1, "%s/%s", dir, pdir_ent->d_name);
             DIR *patch_dir = opendir(path);
             struct dirent *ent;
@@ -165,6 +217,7 @@ static bool has_ips_patches(const char *dir, const void *hash, size_t hash_size)
                     if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
                         continue;
                     }
+                    
                     size_t name_len = strlen(ent->d_name);
                     if ((4 < name_len && name_len <= 0x44) && ((name_len & 1) == 0) && strcmp(ent->d_name + name_len - 4, ".ips") == 0 && name_matches_hash(ent->d_name, name_len, hash, hash_size)) {
                         snprintf(path, sizeof(path) - 1, "%s/%s/%s", dir, pdir_ent->d_name, ent->d_name);
@@ -200,6 +253,11 @@ static void apply_ips_patches(const char *dir, void *mem, size_t mem_size, size_
             if (strcmp(pdir_ent->d_name, ".") == 0 || strcmp(pdir_ent->d_name, "..") == 0) {
                 continue;
             }
+            
+            if (should_ignore_default_patch(pdir_ent->d_name)) {
+                continue;
+            }
+            
             snprintf(path, sizeof(path) - 1, "%s/%s", dir, pdir_ent->d_name);
             DIR *patch_dir = opendir(path);
             struct dirent *ent;
@@ -209,6 +267,7 @@ static void apply_ips_patches(const char *dir, void *mem, size_t mem_size, size_
                     if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
                         continue;
                     }
+                    
                     size_t name_len = strlen(ent->d_name);
                     if ((4 < name_len && name_len <= 0x44) && ((name_len & 1) == 0) && strcmp(ent->d_name + name_len - 4, ".ips") == 0 && name_matches_hash(ent->d_name, name_len, hash, hash_size)) {
                         snprintf(path, sizeof(path) - 1, "%s/%s/%s", dir, pdir_ent->d_name, ent->d_name);
@@ -316,7 +375,11 @@ static kip1_header_t *kip1_uncompress(kip1_header_t *kip, size_t *size) {
 kip1_header_t *apply_kip_ips_patches(kip1_header_t *kip, size_t kip_size) {
     uint8_t hash[0x20];
     se_calculate_sha256(hash, kip, kip_size);
-        
+    
+    if (!has_needed_default_kip_patches(kip->title_id, hash, sizeof(hash))) {
+        fatal_error("[NXBOOT]: Missing default patch for KIP %08x%08x...\n", (uint32_t)(kip->title_id >> 32), (uint32_t)kip->title_id);
+    }
+            
     if (!has_ips_patches("atmosphere/kip_patches", hash, sizeof(hash))) {
         return NULL;
     }

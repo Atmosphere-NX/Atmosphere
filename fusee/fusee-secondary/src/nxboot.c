@@ -29,6 +29,8 @@
 #include "se.h"
 #include "pmc.h"
 #include "i2c.h"
+#include "ips.h"
+#include "stratosphere.h"
 #include "max77620.h"
 #include "cluster.h"
 #include "flow.h"
@@ -72,6 +74,23 @@ static int exosphere_ini_handler(void *user, const char *section, const char *na
                 exo_cfg->flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_USER;
             } else {
                 exo_cfg->flags &= ~(EXOSPHERE_FLAG_IS_DEBUGMODE_USER);
+            }
+        } else {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+static int stratosphere_ini_handler(void *user, const char *section, const char *name, const char *value) {
+    int tmp = 0;
+    if (strcmp(section, "stratosphere") == 0) {
+        if (strcmp(name, STRATOSPHERE_NOGC_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (tmp) {
+                kip_patches_set_enable_nogc();
             }
         } else {
             return 0;
@@ -427,6 +446,9 @@ uint32_t nxboot_main(void) {
     print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Rebuilding package2...\n");
 
     /* Patch package2, adding Thermosphère + custom KIPs. */
+    if (ini_parse_string(get_loader_ctx()->bct0, stratosphere_ini_handler, NULL) < 0) {
+        fatal_error("[NXBOOT]: Failed to parse BCT.ini!\n");
+    }
     package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
     print(SCREEN_LOG_LEVEL_INFO, u8"[NXBOOT]: Reading Exosphère...\n");
