@@ -122,7 +122,6 @@ void hexdump(const void* data, size_t size, uintptr_t addrbase);
 
 __attribute__((noreturn)) void watchdog_reboot(void);
 __attribute__((noreturn)) void pmc_reboot(uint32_t scratch0);
-__attribute__((noreturn)) void car_reboot(void);
 __attribute__((noreturn)) void wait_for_button_and_reboot(void);
 void wait_for_button(void);
 

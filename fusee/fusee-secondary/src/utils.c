@@ -58,21 +58,12 @@ __attribute__((noreturn)) void pmc_reboot(uint32_t scratch0) {
     }
 }
 
-__attribute__((noreturn)) void car_reboot(void) {
-    /* Reset the processor. */
-    car_get_regs()->rst_dev_l |= 1<<2;
-
-    while (true) {
-        /* Wait for reboot. */
-    }
-}
-
 __attribute__((noreturn)) void wait_for_button_and_reboot(void) {
     uint32_t button;
     while (true) {
         button = btn_read();
         if (button & BTN_POWER) {
-            car_reboot();
+            pmc_reboot(1 << 1);
         }
     }
 }
