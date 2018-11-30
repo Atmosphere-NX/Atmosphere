@@ -58,9 +58,9 @@ static void SetupConfigLanguages() {
         config->error_desc = u8"Please call 1-800-875-1852 for service.\n";
     } else {
         config->error_desc = u8"An error has occured.\n\n"
-                             u8"Please press the POWER Button to restart the console. If you are\n"
-                             u8"unable to restart the console, hold the POWER Button for 12 seconds\n"
-                             u8"to turn the console off.\n\n"
+                             u8"Please press the POWER Button to restart the console, or a VOL button\n"
+                             u8"to restart the console in RCM mode. If you are unable to restart the\n"
+                             u8"console, hold the POWER Button for 12 seconds to turn the console off.\n\n"
                              u8"If the problem persists, refer to the Nintendo Support Website.\n"
                              u8"support.nintendo.com/switch/error\n";
     }

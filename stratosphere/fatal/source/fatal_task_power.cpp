@@ -94,14 +94,45 @@ void PowerButtonObserveTask::WaitForPowerButton() {
     
     /* Force a reboot after some time if kiosk unit. */
     const FatalConfig *config = GetFatalConfig();
-    TimeoutHelper reboot_helper(config->quest_reboot_interval_second * 1000000000UL); 
+    TimeoutHelper reboot_helper(config->quest_reboot_interval_second * 1000000000UL);
+    
+    bool check_vol_up = true, check_vol_down = true;
+    GpioPadSession vol_up_btn, vol_down_btn;
+    if (R_FAILED(gpioOpenSession(&vol_up_btn, GpioPadName_ButtonVolUp))) {
+        check_vol_up = false;
+    }
+    if (R_FAILED(gpioOpenSession(&vol_down_btn, GpioPadName_ButtonVolDown))) {
+        check_vol_down = false;
+    }
+    
+    /* Ensure we close on early return. */
+    ON_SCOPE_EXIT { if (check_vol_up) { gpioPadClose(&vol_up_btn); } };
+    ON_SCOPE_EXIT { if (check_vol_down) { gpioPadClose(&vol_down_btn); } };
+    
+    /* Set direction input. */
+    if (check_vol_up) {
+        gpioPadSetDirection(&vol_up_btn, GpioDirection_Input);
+    }
+    if (check_vol_down) {
+        gpioPadSetDirection(&vol_down_btn, GpioDirection_Input);
+    }
     
     BpcSleepButtonState state;
+    GpioValue val;
     while (true) {
+        Result rc = 0;
         
+        if (check_vol_up && R_SUCCEEDED((rc = gpioPadGetValue(&vol_up_btn, &val))) && val == GpioValue_Low) {
+            /* Tell exosphere to reboot to RCM. */
+            RebootToRcm();
+        }
         
-        Result rc = bpcGetSleepButtonState(&state);
-        if ((R_SUCCEEDED(rc) && state == BpcSleepButtonState_Held) || (config->quest_flag && reboot_helper.TimedOut())) {
+        if (check_vol_down && R_SUCCEEDED((rc = gpioPadGetValue(&vol_down_btn, &val))) && val == GpioValue_Low) {
+            /* Tell exosphere to reboot to RCM. */
+            RebootToRcm();
+        }
+        
+        if ((R_SUCCEEDED(rc = bpcGetSleepButtonState(&state)) && state == BpcSleepButtonState_Held) || (config->quest_flag && reboot_helper.TimedOut())) {
             bpcRebootSystem();
             return;
         }

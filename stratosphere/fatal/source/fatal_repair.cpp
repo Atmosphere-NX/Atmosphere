@@ -52,7 +52,7 @@ static bool InRepairWithoutVolHeld() {
             
             /* Sleep for 100 ms. */
             svcSleepThread(100000000UL);
-        }            
+        }
     }
     
     return false;

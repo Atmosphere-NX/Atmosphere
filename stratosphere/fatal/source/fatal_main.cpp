@@ -118,7 +118,7 @@ void __appInit(void) {
         std::abort();
     }
     
-    rc = fsInitialize();
+    rc = gpioInitialize();
     if (R_FAILED(rc)) {
         std::abort();
     }
@@ -141,6 +141,7 @@ void __appExit(void) {
     fsdevUnmountAll();
     fsExit();
     plExit();
+    gpioExit();
     spsmExit();
     psmExit();
     lblExit();

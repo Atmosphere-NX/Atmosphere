@@ -36,8 +36,8 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
             g_battery_profile = (value != 0);
             break;
         case CONFIGITEM_NEEDS_REBOOT_TO_RCM:
-            /* Force a reboot to RCM. */
-            {
+            /* Force a reboot to RCM, if requested. */
+            if (value != 0) {
                 MAKE_REG32(0x7000E450) = 0x2;
                 MAKE_REG32(0x7000E400) = 0x10;
                 while (1) { }
