@@ -28,6 +28,7 @@
 #include "mc.h"
 #include "se.h"
 #include "pmc.h"
+#include "fuse.h"
 #include "i2c.h"
 #include "ips.h"
 #include "stratosphere.h"
@@ -85,13 +86,13 @@ static int exosphere_ini_handler(void *user, const char *section, const char *na
 }
 
 static int stratosphere_ini_handler(void *user, const char *section, const char *name, const char *value) {
+    stratosphere_cfg_t *strat_cfg = (stratosphere_cfg_t *)user;
     int tmp = 0;
     if (strcmp(section, "stratosphere") == 0) {
         if (strcmp(name, STRATOSPHERE_NOGC_KEY) == 0) {
+            strat_cfg->has_nogc_config = true;
             sscanf(value, "%d", &tmp);
-            if (tmp) {
-                kip_patches_set_enable_nogc();
-            }
+            strat_cfg->enable_nogc = tmp != 0;
         } else {
             return 0;
         }
@@ -148,6 +149,25 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     }
 
     *(MAILBOX_EXOSPHERE_CONFIGURATION) = exo_cfg;
+}
+
+static void nxboot_configure_stratosphere(uint32_t target_firmware) {
+    stratosphere_cfg_t strat_cfg = {0};
+    if (ini_parse_string(get_loader_ctx()->bct0, stratosphere_ini_handler, &strat_cfg) < 0) {
+        fatal_error("[NXBOOT]: Failed to parse BCT.ini!\n");
+    }
+    
+    /* Enable NOGC patches if the user requested it, or if the user is booting into 4.0.0+ with 3.0.2- fuses. */
+    if (strat_cfg.has_nogc_config) {
+        if (strat_cfg.enable_nogc) {
+            kip_patches_set_enable_nogc();
+        }
+    } else {
+        /* Check if fuses are < 4.0.0, but firmware is >= 4.0.0 */
+        if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_400 && !(fuse_get_reserved_odm(7) & ~0x0000000F)) {
+            kip_patches_set_enable_nogc();
+        }
+    }
 }
 
 static void nxboot_set_bootreason() {
@@ -444,11 +464,11 @@ uint32_t nxboot_main(void) {
     }
 
     print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Rebuilding package2...\n");
+    
+    /* Parse stratosphere config. */
+    nxboot_configure_stratosphere(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
     /* Patch package2, adding Thermosphère + custom KIPs. */
-    if (ini_parse_string(get_loader_ctx()->bct0, stratosphere_ini_handler, NULL) < 0) {
-        fatal_error("[NXBOOT]: Failed to parse BCT.ini!\n");
-    }
     package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
     print(SCREEN_LOG_LEVEL_INFO, u8"[NXBOOT]: Reading Exosphère...\n");

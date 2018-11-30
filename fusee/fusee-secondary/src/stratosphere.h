@@ -31,6 +31,10 @@ void stratosphere_free_ini1(void);
 
 ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, unsigned int num_inis);
 
+typedef struct {
+    bool has_nogc_config;
+    bool enable_nogc;
+} stratosphere_cfg_t;
 
 #define STRATOSPHERE_NOGC_KEY "nogc"
 
