@@ -34,6 +34,10 @@ EXEFS_SRC	:=	exefs_src
 
 DEFINES	:=	-DDISABLE_IPC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
 
+ifneq ($(strip $(AMSSRC)),)
+	DEFINES	+= -DATMOSPHERE_BUILD_SOURCE=\"$(strip $(AMSSRC))\"
+endif
+
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------

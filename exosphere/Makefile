@@ -34,6 +34,11 @@ INCLUDES	:=	include ../common/include
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only #<- important
 DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
+
+ifneq ($(strip $(AMSSRC)),)
+	DEFINES	+= -DATMOSPHERE_BUILD_SOURCE=\"$(strip $(AMSSRC))\"
+endif
+
 CFLAGS	:= \
 	-g \
 	-O2 \

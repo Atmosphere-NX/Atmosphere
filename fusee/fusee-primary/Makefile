@@ -35,6 +35,10 @@ INCLUDES	:=	include  ../../common/include
 ARCH	:=	-march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
 DEFINES :=	-D__BPMP__ -DFUSEE_STAGE1_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
 
+ifneq ($(strip $(AMSSRC)),)
+	DEFINES	+= -DATMOSPHERE_BUILD_SOURCE=\"$(strip $(AMSSRC))\"
+endif
+
 CFLAGS	:= \
 	-g \
 	-O2 \
