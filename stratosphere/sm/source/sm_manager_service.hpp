@@ -17,6 +17,7 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include "sm_types.hpp"
 
 enum ManagerServiceCmd {
     Manager_Cmd_RegisterProcess = 0,
@@ -24,6 +25,7 @@ enum ManagerServiceCmd {
     
     
     Manager_Cmd_AtmosphereEndInitDefers = 65000,
+    Manager_Cmd_AtmosphereHasMitm = 65001,
 };
 
 class ManagerService final : public IServiceObject {
@@ -32,11 +34,13 @@ class ManagerService final : public IServiceObject {
         virtual Result RegisterProcess(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac);
         virtual Result UnregisterProcess(u64 pid);
         virtual void AtmosphereEndInitDefers();
+        virtual void AtmosphereHasMitm(Out<bool> out, SmServiceName service);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<Manager_Cmd_RegisterProcess, &ManagerService::RegisterProcess>(),
             MakeServiceCommandMeta<Manager_Cmd_UnregisterProcess, &ManagerService::UnregisterProcess>(),
             
             MakeServiceCommandMeta<Manager_Cmd_AtmosphereEndInitDefers, &ManagerService::AtmosphereEndInitDefers>(),
+            MakeServiceCommandMeta<Manager_Cmd_AtmosphereHasMitm, &ManagerService::AtmosphereHasMitm>(),
         };
 };

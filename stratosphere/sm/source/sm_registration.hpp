@@ -69,6 +69,7 @@ class Registration {
         
         /* Service management. */
         static bool HasService(u64 service);
+        static bool HasMitm(u64 service);
         static Result GetServiceHandle(u64 pid, u64 service, Handle *out);
         static Result GetServiceForPid(u64 pid, u64 service, Handle *out);
         static Result RegisterServiceForPid(u64 pid, u64 service, u64 max_sessions, bool is_light, Handle *out);

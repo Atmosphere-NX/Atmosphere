@@ -180,6 +180,9 @@ bool Registration::IsInitialProcess(u64 pid) {
 
 u64 Registration::GetInitialProcessId() {
     CacheInitialProcessIdLimits();
+    if (IsInitialProcess(1)) {
+        return 1;
+    }
     return g_initial_process_id_low;
 }
 
@@ -217,6 +220,11 @@ Result Registration::UnregisterProcess(u64 pid) {
 /* Service management. */
 bool Registration::HasService(u64 service) {
     return std::any_of(g_service_list.begin(), g_service_list.end(), member_equals_fn(&Service::service_name, service));
+}
+
+bool Registration::HasMitm(u64 service) {
+    Registration::Service *target_service = GetService(service);
+    return target_service != NULL && target_service->mitm_pid != 0;
 }
 
 Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {

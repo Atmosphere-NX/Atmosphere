@@ -31,3 +31,7 @@ void ManagerService::AtmosphereEndInitDefers() {
     Registration::EndInitDefers();
 }
 
+void ManagerService::AtmosphereHasMitm(Out<bool> out, SmServiceName service) {
+    out.SetValue(Registration::HasMitm(smEncodeName(service.name)));
+}
+

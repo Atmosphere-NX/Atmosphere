@@ -88,7 +88,7 @@ Result Boot0Storage::Write(void *_buffer, size_t size, u64 offset) {
         if (R_FAILED((rc = ProxyStorage::Write(buffer + diff, size - diff, BctEndOffset)))) {
             return rc;
         }
-        size -= diff;
+        size = diff;
     }
     
     /* Read in the current BCT region. */
