@@ -37,6 +37,8 @@
 
 #define EXOSPHERE_FLAGS_DEFAULT 0x00000000
 #define EXOSPHERE_FLAG_PERFORM_620_KEYGEN (1 << 0u)
+#define EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV  (1 << 1u)
+#define EXOSPHERE_FLAG_IS_DEBUGMODE_USER  (1 << 2u)
 
 typedef struct {
     unsigned int magic;
@@ -47,5 +49,7 @@ typedef struct {
 #define MAILBOX_EXOSPHERE_CONFIGURATION ((volatile exosphere_config_t *)(0x40002E40))
 
 #define EXOSPHERE_TARGETFW_KEY "target_firmware"
+#define EXOSPHERE_DEBUGMODE_PRIV_KEY "debug_mode"
+#define EXOSPHERE_DEBUGMODE_USER_KEY "debug_mode_user"
 
 #endif

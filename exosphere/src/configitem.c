@@ -28,8 +28,9 @@
 #include "exocfg.h"
 
 static bool g_battery_profile = false;
+static bool g_debugmode_override_user = false, g_debugmode_override_priv = false;
 
-uint32_t configitem_set(ConfigItem item, uint64_t value) {
+uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
     if (item != CONFIGITEM_BATTERYPROFILE) {
         return 2;
     }
@@ -40,7 +41,7 @@ uint32_t configitem_set(ConfigItem item, uint64_t value) {
 
 bool configitem_is_recovery_boot(void) {
     uint64_t is_recovery_boot;
-    if (configitem_get(CONFIGITEM_ISRECOVERYBOOT, &is_recovery_boot) != 0) {
+    if (configitem_get(true, CONFIGITEM_ISRECOVERYBOOT, &is_recovery_boot) != 0) {
         generic_panic();
     }
 
@@ -49,7 +50,7 @@ bool configitem_is_recovery_boot(void) {
 
 bool configitem_is_retail(void) {
     uint64_t is_retail;
-    if (configitem_get(CONFIGITEM_ISRETAIL, &is_retail) != 0) {
+    if (configitem_get(true, CONFIGITEM_ISRETAIL, &is_retail) != 0) {
         generic_panic();
     }
 
@@ -62,13 +63,18 @@ bool configitem_should_profile_battery(void) {
 
 uint64_t configitem_get_hardware_type(void) {
     uint64_t hardware_type;
-    if (configitem_get(CONFIGITEM_HARDWARETYPE, &hardware_type) != 0) {
+    if (configitem_get(true, CONFIGITEM_HARDWARETYPE, &hardware_type) != 0) {
         generic_panic();
     }
     return hardware_type;
 }
 
-uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
+void configitem_set_debugmode_override(bool user, bool priv) {
+    g_debugmode_override_user = user;
+    g_debugmode_override_priv = priv;
+}
+
+uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) {
     uint32_t result = 0;
     switch (item) {
         case CONFIGITEM_DISABLEPROGRAMVERIFICATION:
@@ -109,7 +115,11 @@ uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue) {
             *p_outvalue = bootconfig_get_memory_arrangement();
             break;
         case CONFIGITEM_ISDEBUGMODE:
-            *p_outvalue = (int)(bootconfig_is_debug_mode());
+            if ((privileged && g_debugmode_override_priv) || (!privileged && g_debugmode_override_user)) {
+                *p_outvalue = 1;
+            } else {
+                *p_outvalue = (int)(bootconfig_is_debug_mode());
+            }
             break;
         case CONFIGITEM_KERNELMEMORYCONFIGURATION:
             *p_outvalue = bootconfig_get_kernel_memory_configuration();

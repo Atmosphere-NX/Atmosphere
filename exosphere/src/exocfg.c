@@ -67,3 +67,19 @@ unsigned int exosphere_should_perform_620_keygen(void) {
     
     return g_exosphere_cfg.target_firmware >= EXOSPHERE_TARGET_FIRMWARE_620 && EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_PERFORM_620_KEYGEN);
 }
+
+unsigned int exosphere_should_override_debugmode_priv(void) {
+    if (!g_has_loaded_config) {
+        generic_panic();
+    }
+    
+    return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV);
+}
+
+unsigned int exosphere_should_override_debugmode_user(void) {
+    if (!g_has_loaded_config) {
+        generic_panic();
+    }
+    
+    return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_IS_DEBUGMODE_USER);
+}

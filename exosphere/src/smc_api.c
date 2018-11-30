@@ -44,8 +44,8 @@
 #define DEBUG_PANIC_ON_FAILURE 0
 
 /* User SMC prototypes */
-uint32_t smc_set_config(smc_args_t *args);
-uint32_t smc_get_config(smc_args_t *args);
+uint32_t smc_set_config_user(smc_args_t *args);
+uint32_t smc_get_config_user(smc_args_t *args);
 uint32_t smc_check_status(smc_args_t *args);
 uint32_t smc_get_result(smc_args_t *args);
 uint32_t smc_exp_mod(smc_args_t *args);
@@ -71,7 +71,7 @@ uint32_t smc_decrypt_or_import_rsa_key(smc_args_t *args);
 uint32_t smc_cpu_suspend(smc_args_t *args);
 uint32_t smc_cpu_off(smc_args_t *args);
 uint32_t smc_cpu_on(smc_args_t *args);
-/* uint32_t smc_get_config(smc_args_t *args); */
+uint32_t smc_get_config_priv(smc_args_t *args);
 uint32_t smc_get_random_bytes_for_priv(smc_args_t *args);
 uint32_t smc_panic(smc_args_t *args);
 uint32_t smc_configure_carveout(smc_args_t *args);
@@ -89,8 +89,8 @@ typedef struct {
 
 static smc_table_entry_t g_smc_user_table[SMC_USER_HANDLERS] = {
     {0, NULL},
-    {0xC3000401, smc_set_config},
-    {0xC3000002, smc_get_config},
+    {0xC3000401, smc_set_config_user},
+    {0xC3000002, smc_get_config_user},
     {0xC3000003, smc_check_status},
     {0xC3000404, smc_get_result},
     {0xC3000E05, smc_exp_mod},
@@ -114,7 +114,7 @@ static smc_table_entry_t g_smc_priv_table[SMC_PRIV_HANDLERS] = {
     {0xC4000001, smc_cpu_suspend},
     {0x84000002, smc_cpu_off},
     {0xC4000003, smc_cpu_on},
-    {0xC3000004, smc_get_config}, /* NOTE: Same function as for USER */
+    {0xC3000004, smc_get_config_priv},
     {0xC3000005, smc_get_random_bytes_for_priv},
     {0xC3000006, smc_panic},
     {0xC3000007, smc_configure_carveout},
@@ -329,15 +329,15 @@ uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), 
     return result;
 }
 
-uint32_t smc_set_config(smc_args_t *args) {
+uint32_t smc_set_config_user(smc_args_t *args) {
     /* Actual value presumed in X3 on hardware. */
-    return configitem_set((ConfigItem)args->X[1], args->X[3]);
+    return configitem_set(false, (ConfigItem)args->X[1], args->X[3]);
 }
 
-uint32_t smc_get_config(smc_args_t *args) {
+uint32_t smc_get_config_user(smc_args_t *args) {
     uint64_t out_item = 0;
     uint32_t result;
-    result = configitem_get((ConfigItem)args->X[1], &out_item);
+    result = configitem_get(false, (ConfigItem)args->X[1], &out_item);
     args->X[1] = out_item;
     return result;
 }
@@ -532,6 +532,14 @@ uint32_t cpu_suspend_wrapper(smc_args_t *args) {
 
 uint32_t smc_cpu_suspend(smc_args_t *args) {
     return smc_wrapper_sync(args, cpu_suspend_wrapper);
+}
+
+uint32_t smc_get_config_priv(smc_args_t *args) {
+    uint64_t out_item = 0;
+    uint32_t result;
+    result = configitem_get(true, (ConfigItem)args->X[1], &out_item);
+    args->X[1] = out_item;
+    return result;
 }
 
 uint32_t smc_get_random_bytes_for_priv(smc_args_t *args) {

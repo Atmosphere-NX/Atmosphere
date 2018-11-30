@@ -43,12 +43,14 @@ typedef enum {
     CONFIGITEM_EXOSPHERE_VERSION = 65000
 } ConfigItem;
 
-uint32_t configitem_set(ConfigItem item, uint64_t value);
-uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue);
+uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value);
+uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue);
 
 bool configitem_is_recovery_boot(void);
 bool configitem_is_retail(void);
 bool configitem_should_profile_battery(void);
+
+void configitem_set_debugmode_override(bool user, bool priv);
 
 uint64_t configitem_get_hardware_type(void);
 

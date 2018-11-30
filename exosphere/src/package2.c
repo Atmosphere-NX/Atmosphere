@@ -509,6 +509,7 @@ uintptr_t get_pk2ldr_stack_address(void) {
 void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* Load Exosphere-specific config. */
     exosphere_load_config();
+    configitem_set_debugmode_override(exosphere_should_override_debugmode_user() != 0, exosphere_should_override_debugmode_priv() != 0);
 
     /* Setup the Security Engine. */
     setup_se();

@@ -50,6 +50,8 @@
 
 #define EXOSPHERE_FLAGS_DEFAULT 0x00000000
 #define EXOSPHERE_FLAG_PERFORM_620_KEYGEN (1 << 0u)
+#define EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV  (1 << 1u)
+#define EXOSPHERE_FLAG_IS_DEBUGMODE_USER  (1 << 2u)
 
 typedef struct {
     unsigned int magic;
@@ -60,6 +62,8 @@ typedef struct {
 unsigned int exosphere_load_config(void);
 unsigned int exosphere_get_target_firmware(void);
 unsigned int exosphere_should_perform_620_keygen(void);
+unsigned int exosphere_should_override_debugmode_priv(void);
+unsigned int exosphere_should_override_debugmode_user(void);
 
 static inline unsigned int exosphere_get_target_firmware_for_init(void) {
     const unsigned int magic = MAILBOX_EXOSPHERE_CONFIG_PHYS.magic;
