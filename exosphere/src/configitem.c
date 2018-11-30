@@ -31,11 +31,22 @@ static bool g_battery_profile = false;
 static bool g_debugmode_override_user = false, g_debugmode_override_priv = false;
 
 uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
-    if (item != CONFIGITEM_BATTERYPROFILE) {
-        return 2;
+    switch (item) {
+        case CONFIGITEM_BATTERYPROFILE:
+            g_battery_profile = (value != 0);
+            break;
+        case CONFIGITEM_NEEDS_REBOOT_TO_RCM:
+            /* Force a reboot to RCM. */
+            {
+                MAKE_REG32(0x7000E450) = 0x2;
+                MAKE_REG32(0x7000E400) = 0x10;
+                while (1) { }
+            }
+            break;
+        default:
+            return 2;
     }
     
-    g_battery_profile = (value != 0);
     return 0;
 }
 
@@ -166,6 +177,10 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
                           ((uint64_t)(ATMOSPHERE_RELEASE_VERSION_MICRO & 0xFF) << 16ull) |
                           ((uint64_t)(exosphere_get_target_firmware() & 0xFF) << 8ull) |
                           ((uint64_t)(mkey_get_revision() & 0xFF) << 0ull);
+            break;
+        case CONFIGITEM_NEEDS_REBOOT_TO_RCM:
+            /* UNOFFICIAL: The fact that we are executing means we aren't in the process of rebooting to rcm. */
+            *p_outvalue = 0;
             break;
         default:
             result = 2;

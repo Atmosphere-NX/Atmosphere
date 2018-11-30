@@ -40,7 +40,8 @@ typedef enum {
     CONFIGITEM_PACKAGE2HASH_5X = 17,
     
     /* These are unofficial, for usage by Exosphere. */
-    CONFIGITEM_EXOSPHERE_VERSION = 65000
+    CONFIGITEM_EXOSPHERE_VERSION = 65000,
+    CONFIGITEM_NEEDS_REBOOT_TO_RCM = 65001,
 } ConfigItem;
 
 uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value);
