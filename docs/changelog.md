@@ -1,4 +1,25 @@
 # Changelog
+## 0.8.1
++ A bug was fixed causing users to see `Failed to enable SMMU!` if fusee had previously rebooted.
+  + This message will still occur sporadically if fusee is not launched from coldboot, but it can never happen twice in a row.
++ A race condition was fixed in Atmosphere `bis_protect` functionality that could cause NS to be able to overwrite BCT public keys.
+  + This sometimes broke AutoRCM protection, the current fix has been tested on hardware and verified to work.
++ Support was added for enabling `debugmode` based on the `exosphere` section of `BCT.ini`:
+  + Setting `debugmode = 1` will cause exosphere to tell the kernel that debugmode is active.
+  + Setting `debugmode_user = 1` will cause exosphere to tell userland that debugmode is active.
+  + These are completely independent of one another, allowing fine control of system behavior.
++ Support was added for `nogc` functionality; thanks to @rajkosto for the patches.
+  + By default, `nogc` patches will automatically apply if the user is booting into 4.0.0+ with fuses from <= 3.0.2.
+  + Users can override this functionality via the `nogc` entry in the `stratosphere` section of `BCT.ini`:
+    + Setting `nogc = 1` will force enable `nogc` patches.
+    + Setting `nogc = 0` will force disable `nogc` patches.
+  + If patches are enabled but not found for the booting system, a fatal error will be thrown.
+    + This should prevent running FS without `nogc` patches after updating to an unsupported system version.
++ An extension was added to `exosphere` allowing userland applications to cause the system to reboot into RCM:
+  + This is done by calling smcSetConfig(id=65001, value=<nonzero>); user homebrew can use splSetConfig for this.
++ On fatal error, the user can now choose to perform a standard reboot via the power button, or a reboot into RCM via either volume button. 
++ A custom message was added to `fatal` for when an Atmosphère API version mismatch is detected (2495-1623).
++ General system stability improvements to enhance the user's experience.
 ## 0.8.0
 + A custom `fatal` system module was added.
   + This re-implements and extends Nintendo's fatal module, with the following features:
@@ -27,6 +48,7 @@
   + To facilitate this, `fs.mitm` now mitms all sessions for non-system modules; content overriding has been made separate from service interception.
   + Please note: these protections are basic, and sufficiently malicious homebrew ++can defeat them++.
     + Please be careful to only run homebrew software from sources that you trust.
++ A bug involving HDCP titles crashing on newer firmwares was fixed.
 + Support was added for system version 6.2.0; our thanks to @motezazer for his invaluable help.
   + By default, new keys will automatically be derived without user input.
   + Support is also present for loading new keys from `atmosphere/prod.keys` or `atmosphere/dev.keys`
