@@ -8,5 +8,5 @@ The following flags are supported on a per-title basis, by placing `<flag_name>.
 + `bis_write`, which indicates that `fs.mitm` should allow the title to write to BIS partitions.
 + `cal_read`, which indicates that `fs.mitm` should allow the title to read the CAL0/PRODINFO partition.
 
-The following global flags are supported, by placing `<flag name>` inside `/atmosphere/flags/`:
+The following global flags are supported, by placing `<flag name>.flag` inside `/atmosphere/flags/`:
 + `hbl_bis_write` and `hbl_cal_read` enable the BIS write and CAL0 read functionality for HBL, without needing to specify its title id.
