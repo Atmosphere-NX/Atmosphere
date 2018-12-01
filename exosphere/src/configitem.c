@@ -38,8 +38,8 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
         case CONFIGITEM_NEEDS_REBOOT_TO_RCM:
             /* Force a reboot to RCM, if requested. */
             if (value != 0) {
-                MAKE_REG32(0x7000E450) = 0x2;
-                MAKE_REG32(0x7000E400) = 0x10;
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x2;
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
                 while (1) { }
             }
             break;
