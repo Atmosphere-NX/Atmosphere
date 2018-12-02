@@ -36,7 +36,12 @@ static Result _GetFirmwareVersion(SetSysFirmwareVersion *out) {
             char display_version[sizeof(g_fw_version.display_version)] = {0};
             
             GetAtmosphereApiVersion(&major, &minor, &micro, nullptr, nullptr);
-            snprintf(display_version, sizeof(display_version), "%s (AMS %u.%u.%u)", g_fw_version.display_version, major, minor, micro);
+
+            #ifdef ATMOSPHERE_BUILD_SOURCE
+                snprintf(display_version, sizeof(display_version), "%s (AMS %u.%u.%u [%s])", g_fw_version.display_version, major, minor, micro, ATMOSPHERE_BUILD_SOURCE);
+            #else
+                snprintf(display_version, sizeof(display_version), "%s (AMS %u.%u.%u)", g_fw_version.display_version, major, minor, micro);
+            #endif
             
             memcpy(g_fw_version.display_version, display_version, sizeof(g_fw_version.display_version));
         }

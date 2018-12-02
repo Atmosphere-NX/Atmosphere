@@ -292,7 +292,12 @@ void CrashReport::SaveReport() {
 
 void CrashReport::SaveToFile(FILE *f_report) {
     char buf[0x10] = {0};
-    fprintf(f_report, "Atmosphère Crash Report (v1.2):\n");
+
+    #ifdef ATMOSPHERE_BUILD_SOURCE
+        fprintf(f_report, "Atmosphère Crash Report (v1.2 [%s]):\n", ATMOSPHERE_BUILD_SOURCE);
+    #else
+        fprintf(f_report, "Atmosphère Crash Report (v1.2):\n");
+    #endif
     fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->result, R_MODULE(this->result), R_DESCRIPTION(this->result));
     
     /* Process Info. */

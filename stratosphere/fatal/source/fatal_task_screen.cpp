@@ -208,7 +208,11 @@ Result ShowFatalTask::ShowFatal() {
     FontManager::AddSpacingLines(0.5f);
     FontManager::PrintFormatLine("Title: %016lX", this->title_id);
     FontManager::AddSpacingLines(0.5f);
-    FontManager::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", GetFatalConfig()->firmware_version.display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
+    #ifdef ATMOSPHERE_BUILD_SOURCE
+        FontManager::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s [%s])", GetFatalConfig()->firmware_version.display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision(), ATMOSPHERE_BUILD_SOURCE);
+    #else
+        FontManager::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", GetFatalConfig()->firmware_version.display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
+    #endif
     FontManager::AddSpacingLines(1.5f);
     if (this->ctx->error_code != 0xCAFEF) {
         FontManager::Print(config->error_desc);
