@@ -310,24 +310,6 @@ static const uint8_t MAKE_KERNEL_PATTERN_NAME(600, proc_id_recv)[] = {0x08, 0x03
 static const instruction_t MAKE_KERNEL_HOOK_NAME(600, proc_id_recv)[] = {0xA9BF2FEA, 0xF94043EB, 0x2A1503EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF9400308, 0xF9401D08, 0xAA1803E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
 
 /* Hook Definitions. */
-static const kernel_hook_t g_kernel_hooks_100_7[] = {
-    {   /* Send Message Process ID Patch. */
-        .pattern_size = 0x10,
-        .pattern = MAKE_KERNEL_PATTERN_NAME(100, proc_id_send),
-        .pattern_hook_offset = 0x0,
-        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(100, proc_id_send))/sizeof(instruction_t),
-        .branch_back_offset = 0x4,
-        .payload = MAKE_KERNEL_HOOK_NAME(100, proc_id_send)
-    },
-    {   /* Receive Message Process ID Patch. */
-        .pattern_size = 0x10,
-        .pattern = MAKE_KERNEL_PATTERN_NAME(100, proc_id_recv),
-        .pattern_hook_offset = 0x0,
-        .payload_num_instructions = sizeof(MAKE_KERNEL_HOOK_NAME(100, proc_id_recv))/sizeof(instruction_t),
-        .branch_back_offset = 0x4,
-        .payload = MAKE_KERNEL_HOOK_NAME(100, proc_id_recv)
-    }
-};
 static const kernel_hook_t g_kernel_hooks_100[] = {
     {   /* Send Message Process ID Patch. */
         .pattern_size = 0x10,
@@ -463,7 +445,7 @@ static const kernel_info_t g_kernel_infos[] = {
     {   /* 1.0.0-7. */
         .hash = {0x64, 0x44, 0x07, 0x2F, 0x56, 0x44, 0x73, 0xDD, 0xD5, 0x46, 0x1B, 0x8C, 0xDC, 0xEF, 0x54, 0x98, 0x16, 0xDA, 0x81, 0xDE, 0x5B, 0x1C, 0x9D, 0xD7, 0x5A, 0x13, 0x91, 0xD9, 0x53, 0xAB, 0x8D, 0x8D},
         .free_code_space_offset = 0x4797C,
-        KERNEL_HOOKS(100_7)
+        KERNEL_HOOKS(100)
     },
     {   /* 1.0.0. */
         .hash = {0xB8, 0xC5, 0x0C, 0x68, 0x25, 0xA9, 0xB9, 0x5B, 0xD2, 0x4D, 0x2C, 0x7C, 0x81, 0x7F, 0xE6, 0x96, 0xF2, 0x42, 0x4E, 0x1D, 0x78, 0xDF, 0x3B, 0xCA, 0x3D, 0x6B, 0x68, 0x12, 0xDD, 0xA9, 0xCB, 0x9C},
