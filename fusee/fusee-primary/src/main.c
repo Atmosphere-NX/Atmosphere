@@ -40,12 +40,12 @@ static char g_bct0_buffer[BCTO_MAX_SIZE];
 #define DEFAULT_BCT0_FOR_DEBUG \
 "BCT0\n"\
 "[stage1]\n"\
-"stage2_path = fusee-secondary.bin\n"\
+"stage2_path = atmosphere/fusee-secondary.bin\n"\
 "stage2_addr = 0xF0000000\n"\
 "stage2_entrypoint = 0xF0000000\n"
 
 static const char *load_config(void) {
-    if (!read_from_file(g_bct0_buffer, BCTO_MAX_SIZE, "BCT.ini")) {
+    if (!read_from_file(g_bct0_buffer, BCTO_MAX_SIZE, "atmosphere/BCT.ini")) {
         print(SCREEN_LOG_LEVEL_DEBUG, "Failed to read BCT0 from SD!\n");
         print(SCREEN_LOG_LEVEL_DEBUG, "Using default BCT0!\n");
         memcpy(g_bct0_buffer, DEFAULT_BCT0_FOR_DEBUG, sizeof(DEFAULT_BCT0_FOR_DEBUG));
@@ -159,7 +159,7 @@ int main(void) {
     strcpy(g_chainloader_arg_data, stage2_path);
     stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1); /* May be unaligned. */
     memcpy(&stage2_args->version, &stage2_version, 4);
-    stage2_args->log_level = log_level;
+    memcpy(&stage2_args->log_level, &log_level, sizeof(log_level));
     stage2_args->display_initialized = false;
     strcpy(stage2_args->bct0, bct0);
     g_chainloader_argc = 2;
