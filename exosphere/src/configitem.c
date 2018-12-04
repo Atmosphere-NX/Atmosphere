@@ -72,6 +72,15 @@ bool configitem_should_profile_battery(void) {
     return g_battery_profile;
 }
 
+bool configitem_is_debugmode_priv(void) {
+    uint64_t debugmode = 0;
+    if (configitem_get(true, CONFIGITEM_ISDEBUGMODE, &debugmode) != 0) {
+        generic_panic();
+    }
+
+    return debugmode != 0;
+}
+
 uint64_t configitem_get_hardware_type(void) {
     uint64_t hardware_type;
     if (configitem_get(true, CONFIGITEM_HARDWARETYPE, &hardware_type) != 0) {
