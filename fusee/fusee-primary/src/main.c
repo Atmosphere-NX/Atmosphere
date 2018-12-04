@@ -108,7 +108,7 @@ static void setup_env(void) {
 
     /* Set up the exception handlers. */
     setup_exception_handlers();
-    
+        
     /* Mount the SD card. */
     mount_sd();
 }
@@ -133,6 +133,9 @@ int main(void) {
     uint32_t stage2_version = 0;
     ScreenLogLevel log_level = SCREEN_LOG_LEVEL_MANDATORY;
     
+    /* Override the global logging level. */
+    log_set_log_level(log_level);
+    
     /* Initialize the display, console, etc. */
     setup_env();
     
@@ -143,9 +146,6 @@ int main(void) {
     if (ini_parse_string(bct0, config_ini_handler, &log_level) < 0) {
         fatal_error("Failed to parse BCT.ini!\n");
     }
-    
-    /* Override the global logging level. */
-    log_set_log_level(log_level);
     
     /* Say hello. */
     print(SCREEN_LOG_LEVEL_MANDATORY, "Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
