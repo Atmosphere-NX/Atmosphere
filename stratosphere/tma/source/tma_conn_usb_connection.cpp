@@ -72,7 +72,6 @@ void TmaUsbConnection::SendThreadFunc(void *arg) {
 void TmaUsbConnection::RecvThreadFunc(void *arg) {
     TmaUsbConnection *this_ptr = reinterpret_cast<TmaUsbConnection *>(arg);
     TmaConnResult res = TmaConnResult::Success;
-    u64 i = 0;
     this_ptr->SetConnected(true);
     
     while (res == TmaConnResult::Success) {
@@ -83,7 +82,7 @@ void TmaUsbConnection::RecvThreadFunc(void *arg) {
         
         if (res == TmaConnResult::Success) {
             switch (packet->GetServiceId()) {
-                case TmaService::UsbQueryTarget: {
+                case TmaServiceId::UsbQueryTarget: {
                     this_ptr->SetConnected(false);
                     
                     res = this_ptr->SendQueryReply(packet);
@@ -93,7 +92,7 @@ void TmaUsbConnection::RecvThreadFunc(void *arg) {
                     }
                 }
                 break;
-                case TmaService::UsbSendHostInfo: {
+                case TmaServiceId::UsbSendHostInfo: {
                     struct {
                         u32 version;
                         u32 sleeping;
@@ -105,7 +104,7 @@ void TmaUsbConnection::RecvThreadFunc(void *arg) {
                     }
                 }
                 break;
-                case TmaService::UsbConnect: {
+                case TmaServiceId::UsbConnect: {
                     res = this_ptr->SendQueryReply(packet);
                     
                     if (res == TmaConnResult::Success) {
@@ -114,7 +113,7 @@ void TmaUsbConnection::RecvThreadFunc(void *arg) {
                     }
                 }
                 break;
-                case TmaService::UsbDisconnect: {   
+                case TmaServiceId::UsbDisconnect: {   
                     this_ptr->SetConnected(false);
                     this_ptr->OnDisconnected();
                     

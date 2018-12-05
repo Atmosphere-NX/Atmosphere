@@ -117,12 +117,12 @@ class TmaPacket {
             return MaxPacketSize - this->offset;
         }
         
-        void SetServiceId(TmaService srv) {
+        void SetServiceId(TmaServiceId srv) {
             GetHeader()->service_id = static_cast<u32>(srv);
         }
         
-        TmaService GetServiceId() const {
-            return static_cast<TmaService>(GetHeader()->service_id);
+        TmaServiceId GetServiceId() const {
+            return static_cast<TmaServiceId>(GetHeader()->service_id);
         }
         
         void SetTaskId(u32 id) {

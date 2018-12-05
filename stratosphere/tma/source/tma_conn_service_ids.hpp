@@ -32,7 +32,7 @@ static constexpr u32 HashServiceName(const char *name) {
     return h ^ len;
 }
 
-enum class TmaService : u32 {
+enum class TmaServiceId : u32 {
     Invalid = 0,
     
     /* Special nodes, for facilitating connection over USB. */
@@ -44,3 +44,10 @@ enum class TmaService : u32 {
     
     TestService = HashServiceName("AtmosphereTestService"), /* Temporary service, will be used to debug communications. */
 };
+
+static constexpr bool IsMetaService(TmaServiceId id) {
+    return  id == TmaServiceId::UsbQueryTarget || 
+            id == TmaServiceId::UsbSendHostInfo || 
+            id == TmaServiceId::UsbConnect || 
+            id == TmaServiceId::UsbDisconnect;
+}
