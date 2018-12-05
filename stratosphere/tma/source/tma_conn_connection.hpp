@@ -26,6 +26,9 @@ enum class ConnectionEvent : u32 {
     Disconnected
 };
 
+
+class TmaServiceManager;
+
 class TmaConnection {
     protected:
         HosMutex lock;
@@ -33,6 +36,7 @@ class TmaConnection {
         void *connection_event_arg = nullptr;
         bool has_woken_up = false;
         bool is_initialized = false;
+        TmaServiceManager *service_manager = nullptr;
     protected:
         void OnReceivePacket(TmaPacket *packet);
         void OnDisconnected();
@@ -66,10 +70,16 @@ class TmaConnection {
             }
         }
         
+        void SetServiceManager(TmaServiceManager *manager) { this->service_manager = manager; }
+        
         /* Packet management. */
         TmaPacket *AllocateSendPacket();
         TmaPacket *AllocateRecvPacket();
         void FreePacket(TmaPacket *packet);
+        
+        /* Sleep management. */
+        bool HasWokenUp() const { return this->has_woken_up; }
+        void SetWokenUp(bool woke) { this->has_woken_up = woke; }
 
         /* For sub-interfaces to implement, connection management. */
         virtual void StartListening() { }

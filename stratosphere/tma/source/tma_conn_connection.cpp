@@ -17,25 +17,23 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "tma_conn_connection.hpp"
+#include "tma_service_manager.hpp"
 
 /* Packet management. */
 TmaPacket *TmaConnection::AllocateSendPacket() {
-    /* TODO: Service Manager. */
-    return new TmaPacket();
+    return this->service_manager->AllocateSendPacket();
 }
 
 TmaPacket *TmaConnection::AllocateRecvPacket() {
-    /* TODO: Service Manager. */
-    return new TmaPacket();
+    return this->service_manager->AllocateRecvPacket();
 }
 
 void TmaConnection::FreePacket(TmaPacket *packet) {
-    /* TODO: Service Manager. */
-    delete packet;
+    this->service_manager->FreePacket(packet);
 }
 
 void TmaConnection::OnReceivePacket(TmaPacket *packet) {
-    /* TODO: Service Manager. */
+    this->service_manager->OnReceivePacket(packet);
 }
 
 void TmaConnection::OnDisconnected() {
@@ -43,7 +41,9 @@ void TmaConnection::OnDisconnected() {
         std::abort();
     }
     
-    /* TODO: Service Manager. */
+    if (this->service_manager != nullptr) {
+        this->service_manager->OnDisconnect();
+    }
     
     this->has_woken_up = false;
     this->OnConnectionEvent(ConnectionEvent::Disconnected);
@@ -56,9 +56,9 @@ void TmaConnection::OnConnectionEvent(ConnectionEvent event) {
 }
 
 void TmaConnection::CancelTasks() {
-    /* TODO: Service Manager. */
+    this->service_manager->CancelTasks();
 }
 
 void TmaConnection::Tick() {
-    /* TODO: Service Manager. */
+    this->service_manager->Tick();
 }

@@ -52,6 +52,11 @@ u32 TmaTaskList::GetNumSleepingTasks() const {
     return count;
 }
 
+bool TmaTaskList::IsIdFree(u32 task_id) const {
+    std::scoped_lock<HosMutex> lk(this->lock);
+    return GetById(task_id) == nullptr;
+}
+
 bool TmaTaskList::SendPacket(bool connected, TmaPacket *packet) {
     std::scoped_lock<HosMutex> lk(this->lock);
     
@@ -110,6 +115,36 @@ bool TmaTaskList::ReceivePacket(TmaPacket *packet) {
         task->OnReceivePacket(packet);
     }
     return task != nullptr;
+}
+
+
+void TmaTaskList::CleanupDoneTasks() {
+    std::scoped_lock<HosMutex> lk(this->lock);
+    
+    /* Clean up all tasks in Complete/Canceled state. */
+    for (u32 i = 0; i < TmaTask::NumPriorities; i++) {
+        auto it = this->tasks[i].begin();
+        while (it != this->tasks[i].end()) {
+            auto task = *it;
+            switch (task->GetState()) {
+                case TmaTaskState::InProgress:
+                    it++;
+                    break;
+                case TmaTaskState::Complete:
+                case TmaTaskState::Canceled:
+                    it = this->tasks[i].erase(it);
+                    if (task->GetOwnedByTaskList()) {
+                        delete task;
+                    } else {
+                        task->Signal();
+                    }
+                    break;
+                default:
+                    /* TODO: Panic to fatal? */
+                    std::abort();
+            }
+        }
+    }
 }
 
 void TmaTaskList::Add(TmaTask *task) {

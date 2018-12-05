@@ -43,6 +43,7 @@ class TmaPacket {
     private:
         std::unique_ptr<u8[]> buffer = std::make_unique<u8[]>(MaxPacketSize);
         u32 offset = 0;
+        HosMessageQueue *free_queue = nullptr;
         
         Header *GetHeader() const {
             return reinterpret_cast<Header *>(buffer.get());
@@ -93,6 +94,14 @@ class TmaPacket {
             } else {
                 return crc32_arm64_le_hw(GetBody(0), body_len) == GetHeader()->body_checksum;
             }
+        }
+        
+        HosMessageQueue *GetFreeQueue() const {
+            return this->free_queue;
+        }
+        
+        void SetFreeQueue(HosMessageQueue *queue) {
+            this->free_queue = queue;
         }
         
         void SetChecksums() {
@@ -159,6 +168,10 @@ class TmaPacket {
         
         void ClearOffset() {
             this->offset = 0;
+        }
+        
+        void SetBodyLength() {
+            GetHeader()->body_len = this->offset;
         }
         
         TmaConnResult Write(const void *data, size_t size) {

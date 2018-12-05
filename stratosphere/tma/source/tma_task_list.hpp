@@ -36,10 +36,11 @@ class TmaTaskList {
         
         u32 GetNumTasks() const;
         u32 GetNumSleepingTasks() const;
+        bool IsIdFree(u32 task_id) const;
         
         bool SendPacket(bool connected, TmaPacket *packet);
         bool ReceivePacket(TmaPacket *packet);
-        
+        void CleanupDoneTasks();
         void Add(TmaTask *task);
         void Cancel(u32 task_id);
         void CancelAll();

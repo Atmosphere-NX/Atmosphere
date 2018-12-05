@@ -88,7 +88,7 @@ void TmaUsbConnection::RecvThreadFunc(void *arg) {
                     res = this_ptr->SendQueryReply(packet);
                                         
                     if (!this_ptr->has_woken_up) {
-                        /* TODO: Cancel background work. */
+                        this_ptr->CancelTasks();
                     }
                 }
                 break;
@@ -100,7 +100,7 @@ void TmaUsbConnection::RecvThreadFunc(void *arg) {
                     packet->Read<decltype(host_info)>(host_info);
                     
                     if (!this_ptr->has_woken_up || !host_info.sleeping) {
-                        /* TODO: Cancel background work. */
+                        this_ptr->CancelTasks();
                     }
                 }
                 break;
@@ -117,7 +117,7 @@ void TmaUsbConnection::RecvThreadFunc(void *arg) {
                     this_ptr->SetConnected(false);
                     this_ptr->OnDisconnected();
                     
-                    /* TODO: Cancel background work. */
+                    this_ptr->CancelTasks();
                 }
                 break;
                 default:

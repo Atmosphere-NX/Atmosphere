@@ -17,10 +17,10 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "tma_service.hpp"
+#include "tma_service_manager.hpp"
 
 u32 TmaService::GetNextTaskId() {
-    /* TODO: Service Manager */
-    return 0;
+    return this->manager->GetNextTaskId();
 }
 
 void TmaService::OnSleep() {

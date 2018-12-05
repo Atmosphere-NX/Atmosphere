@@ -17,13 +17,16 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "tma_task.hpp"
+#include "tma_service_manager.hpp"
 
 void TmaTask::Complete() {
-    /* TODO: Service manager */
+    /* TODO: Set packet state */
     this->state = TmaTaskState::Complete;
+    this->manager->Tick();
 }
 
 void TmaTask::Cancel() {
-    /* TODO: Service manager */
+    /* TODO: Set packet state */
     this->state = TmaTaskState::Canceled;
+    this->manager->Tick();
 }

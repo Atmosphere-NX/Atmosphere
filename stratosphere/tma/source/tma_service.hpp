@@ -31,13 +31,13 @@ class TmaService {
         const TmaServiceId id;
     protected:
         u32 GetNextTaskId();
-        virtual TmaTask *NewTask(TmaPacket *packet) = 0;
-        
-        virtual void OnSleep();
-        virtual void OnWake();
     public:
         TmaService(TmaServiceManager *m, const char *n) : manager(m), service_name(n), id(static_cast<TmaServiceId>(HashServiceName(this->service_name))) { }
         virtual ~TmaService() { }
         
         TmaServiceId GetServiceId() const { return this->id; }
+        
+        virtual TmaTask *NewTask(TmaPacket *packet) = 0;
+        virtual void OnSleep();
+        virtual void OnWake();
 };
