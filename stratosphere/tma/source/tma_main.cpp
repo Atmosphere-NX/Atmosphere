@@ -23,7 +23,7 @@
 #include <atmosphere.h>
 #include <stratosphere.hpp>
 
-#include "tma_conn_usb_connection.hpp"
+#include "tma_target.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -74,52 +74,18 @@ void __appExit(void) {
     smExit();
 }
 
-void PmThread(void *arg) {
-    /* Setup psc module. */
-    Result rc;
-    PscPmModule tma_module = {0};
-    if (R_FAILED((rc = pscGetPmModule(&tma_module, 0x1E, nullptr, 0, true)))) {
-        fatalSimple(rc);
-    }
-    
-    /* For now, just do what dummy tma does -- loop forever, acknowledging everything. */
-    while (true) {
-        if (R_FAILED((rc = eventWait(&tma_module.event, U64_MAX)))) {
-            fatalSimple(rc);
-        }
-        
-        PscPmState state;
-        u32 flags;
-        if (R_FAILED((rc = pscPmModuleGetRequest(&tma_module, &state, &flags)))) {
-            fatalSimple(rc);
-        }
-        
-        
-        if (R_FAILED((rc = pscPmModuleAcknowledge(&tma_module, state)))) {
-            fatalSimple(rc);
-        }
-    }
-}
-
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
-    Thread pm_thread = {0};
-    if (R_FAILED(threadCreate(&pm_thread, &PmThread, NULL, 0x4000, 0x15, 0))) {
-        /* TODO: Panic. */
-    }
-    if (R_FAILED(threadStart(&pm_thread))) {
-        /* TODO: Panic. */
-    }
-    
-    TmaUsbConnection::InitializeComms();
-    auto conn = new TmaUsbConnection();
-    conn->Initialize();
+
+    /* This will initialize the target. */
+    TmaTarget::Initialize();
     
     while (true) {
         svcSleepThread(10000000UL);
     }
-
+    
+    TmaTarget::Finalize();
     
     return 0;
 }
