@@ -215,11 +215,9 @@ void bootup_misc_mmio(void) {
 
     if (!g_has_booted_up) {
         /* N doesn't do this, but we should for compatibility. */
-        if (configitem_is_debugmode_priv()) {
-            uart_select(UART_A);
-            clkrst_reboot(CARDEVICE_UARTA);
-            uart_init(UART_A, 115200);
-        }
+        uart_select(UART_A);
+        clkrst_reboot(CARDEVICE_UARTA);
+        uart_init(UART_A, 115200);
         
         intr_register_handler(INTERRUPT_ID_SECURITY_ENGINE, se_operation_completed);
         if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
