@@ -70,6 +70,8 @@ class Packet():
         self.offset = 0
         return self
     def write_str(self, s):
+        if s[-1] != '\x00':
+            s += '\x00'
         self.body += s
         self.body_len += len(s)
         return self
@@ -93,6 +95,8 @@ class Packet():
         s = ''
         while self.body[self.offset] != '\x00' and self.offset < self.body_len:
             s += self.body[self.offset]
+            self.offset += 1
+        if self.offset < self.body_len and self.body[self.offset] == '\x00':
             self.offset += 1
     def read_u8(self):
         x, = up('<B', self.body[self.offset:self.offset+1])

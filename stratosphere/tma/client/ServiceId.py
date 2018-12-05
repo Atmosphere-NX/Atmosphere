@@ -25,5 +25,5 @@ USB_CONNECT = hash("USBConnect")
 USB_DISCONNECT = hash("USBDisconnect")
 
 ATMOSPHERE_TEST_SERVICE = hash("AtmosphereTestService")
-
+SETTINGS_SERVICE = hash ("SettingsService")
     

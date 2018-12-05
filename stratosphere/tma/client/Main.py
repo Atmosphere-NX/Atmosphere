@@ -20,9 +20,16 @@ def main(argc, argv):
         print 'Waiting for connection...'
         c.wait_connected()
         print 'Connected!'
-        c.intf.send_packet(Packet().set_service(ServiceId.ATMOSPHERE_TEST_SERVICE).set_task(0x01000000).write_u32(0x40))
+        c.intf.send_packet(Packet().set_service(ServiceId.SETTINGS_SERVICE).set_task(0x01000000).set_cmd(0).write_str('lm').write_str('sd_card_log_output_directory'))
         resp = c.intf.read_packet()
-        print resp.body
+        success = resp.read_u8() != 0
+        print 'Succeeded: %s' % str(success)
+        if success:
+            size = resp.read_u32()
+            value = resp.body[resp.offset:resp.offset+size]
+            print 'Value Size: 0x%x' % size
+            print 'Value: %s' % repr(value)
+            
     return 0
     
 if __name__ == '__main__':

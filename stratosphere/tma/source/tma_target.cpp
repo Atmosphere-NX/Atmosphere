@@ -26,6 +26,7 @@
 #include "tma_target.hpp"
 
 #include "test/atmosphere_test_service.hpp"
+#include "settings/settings_service.hpp"
 
 struct TmaTargetConfig {
     char configuration_id1[0x80];
@@ -208,6 +209,7 @@ void TmaTarget::Initialize() {
     g_service_manager = new TmaServiceManager();
     /* TODO: Make this better. */
     g_service_manager->AddService(new AtmosphereTestService(g_service_manager));
+    g_service_manager->AddService(new SettingsService(g_service_manager));
     
     RefreshTargetConfig();
     
