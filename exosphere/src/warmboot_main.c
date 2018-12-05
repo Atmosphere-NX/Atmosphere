@@ -30,6 +30,7 @@
 #include "car.h"
 #include "i2c.h"
 #include "misc.h"
+#include "uart.h"
 #include "interrupt.h"
 
 #include "pmc.h"
@@ -55,8 +56,16 @@ void __attribute__((noreturn)) warmboot_main(void) {
 
     /* On warmboot (not cpu_on) only */
     if (VIRT_MC_SECURITY_CFG3 == 0) {
+        /* N only does this on dev units, but we will do it unconditionally. */
+        {
+            uart_select(UART_A);
+            clkrst_reboot(CARDEVICE_UARTA);
+            uart_init(UART_A, 115200);
+        }
+        
         if (!configitem_is_retail()) {
-            /* TODO: uart_log("OHAYO"); */
+            uart_send(UART_A, "OHAYO", 6);
+            uart_wait_idle(UART_A, UART_VENDOR_STATE_TX_IDLE);
         }
 
         /* Sanity check the Security Engine. */

@@ -35,6 +35,7 @@
 #include "smc_api.h"
 #include "timers.h"
 #include "misc.h"
+#include "uart.h"
 #include "exocfg.h"
 
 #define u8 uint8_t
@@ -241,7 +242,7 @@ void save_se_and_power_down_cpu(void) {
     save_se_state();
 
     if (!configitem_is_retail()) {
-        /* TODO: uart_log("OYASUMI"); */
+        uart_send(UART_A, "OYASUMI", 8);
     }
     
     finalize_powerdown();

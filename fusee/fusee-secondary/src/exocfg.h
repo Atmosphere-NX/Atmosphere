@@ -49,7 +49,7 @@ typedef struct {
 #define MAILBOX_EXOSPHERE_CONFIGURATION ((volatile exosphere_config_t *)(0x40002E40))
 
 #define EXOSPHERE_TARGETFW_KEY "target_firmware"
-#define EXOSPHERE_DEBUGMODE_PRIV_KEY "debug_mode"
-#define EXOSPHERE_DEBUGMODE_USER_KEY "debug_mode_user"
+#define EXOSPHERE_DEBUGMODE_PRIV_KEY "debugmode"
+#define EXOSPHERE_DEBUGMODE_USER_KEY "debugmode_user"
 
 #endif

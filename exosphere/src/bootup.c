@@ -31,6 +31,7 @@
 #include "configitem.h"
 #include "timers.h"
 #include "misc.h"
+#include "uart.h"
 #include "bpmp.h"
 #include "sysreg.h"
 #include "interrupt.h"
@@ -213,6 +214,11 @@ void bootup_misc_mmio(void) {
     }
 
     if (!g_has_booted_up) {
+        /* N doesn't do this, but we should for compatibility. */
+        uart_select(UART_A);
+        clkrst_reboot(CARDEVICE_UARTA);
+        uart_init(UART_A, 115200);
+        
         intr_register_handler(INTERRUPT_ID_SECURITY_ENGINE, se_operation_completed);
         if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
             intr_register_handler(INTERRUPT_ID_ACTIVITY_MONITOR_4X, actmon_interrupt_handler);

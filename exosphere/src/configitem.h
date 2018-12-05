@@ -50,6 +50,7 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue);
 bool configitem_is_recovery_boot(void);
 bool configitem_is_retail(void);
 bool configitem_should_profile_battery(void);
+bool configitem_is_debugmode_priv(void);
 
 void configitem_set_debugmode_override(bool user, bool priv);
 

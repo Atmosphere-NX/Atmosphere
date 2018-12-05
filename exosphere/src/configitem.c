@@ -38,8 +38,8 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
         case CONFIGITEM_NEEDS_REBOOT_TO_RCM:
             /* Force a reboot to RCM, if requested. */
             if (value != 0) {
-                MAKE_REG32(0x7000E450) = 0x2;
-                MAKE_REG32(0x7000E400) = 0x10;
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x2;
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
                 while (1) { }
             }
             break;
@@ -70,6 +70,15 @@ bool configitem_is_retail(void) {
 
 bool configitem_should_profile_battery(void) {
     return g_battery_profile;
+}
+
+bool configitem_is_debugmode_priv(void) {
+    uint64_t debugmode = 0;
+    if (configitem_get(true, CONFIGITEM_ISDEBUGMODE, &debugmode) != 0) {
+        generic_panic();
+    }
+
+    return debugmode != 0;
 }
 
 uint64_t configitem_get_hardware_type(void) {

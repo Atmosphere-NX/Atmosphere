@@ -4,13 +4,13 @@
 	"title_id_range_min":	"0x0100000000000034",
 	"title_id_range_max":	"0x0100000000000034",
 	"main_thread_stack_size":	"0x00010000",
-	"main_thread_priority":	37,
+	"main_thread_priority":	15,
 	"default_cpu_id":	3,
 	"process_category":	0,
 	"is_retail":	true,
 	"pool_partition":	2,
 	"is_64_bit":	true,
-	"address_space_type":	3,
+	"address_space_type":	1,
 	"filesystem_access":	{
 		"permissions":	"0xFFFFFFFFFFFFFFFF"
 	},
@@ -88,7 +88,7 @@
 			}
 		}, {
 			"type":	"min_kernel_version",
-			"value":	"0x0060"
+			"value":	"0x0030"
 		}, {
 			"type":	"handle_table_size",
 			"value":	128

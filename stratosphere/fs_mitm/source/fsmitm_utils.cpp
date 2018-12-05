@@ -69,7 +69,7 @@ void Utils::InitializeSdThreadFunc(void *args) {
     
     /* Mount SD. */
     while (R_FAILED(fsMountSdcard(&g_sd_filesystem))) {
-        svcSleepThread(1000ULL);
+        svcSleepThread(1000000ULL);
     }
     
     /* Back up CAL0, if it's not backed up already. */
