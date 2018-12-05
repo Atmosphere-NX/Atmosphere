@@ -34,6 +34,7 @@ static TmaConnection *g_active_connection = nullptr;
 static TmaServiceManager *g_service_manager = nullptr;
 static HosMutex g_connection_event_mutex;
 static bool g_has_woken_up = false;
+static bool g_connected_before_sleep = false;
 static bool g_signal_on_disconnect = false;
 
 static TmaUsbConnection *g_usb_connection = nullptr;
@@ -119,7 +120,7 @@ static void Wake() {
         g_usb_connection = new TmaUsbConnection();
         g_usb_connection->SetConnectionEventCallback(OnConnectionEvent, g_usb_connection);
         g_usb_connection->Initialize();
-        SetActiveConnection(g_usb_connection);
+        g_active_connection = g_usb_connection;
         
         g_service_manager->Wake(g_active_connection);
     }
@@ -128,7 +129,11 @@ static void Wake() {
 static void Sleep() {
     if (!g_service_manager->GetAsleep()) {
         if (g_active_connection->IsConnected()) {
+            g_connected_before_sleep = true;
+            
             /* TODO: Send a packet saying we're going to sleep. */
+        } else {
+            g_connected_before_sleep = false;
         }
         
         g_service_manager->Sleep();
@@ -157,6 +162,7 @@ static void OnPowerManagementEvent(PscPmState state, u32 flags) {
             {
                 if (g_service_manager->GetAsleep()) {
                     Wake();
+                    if (g_connected_before_sleep)
                     {
                         /* Try to restore a connection. */
                         bool connected = g_service_manager->GetConnected();
@@ -170,6 +176,7 @@ static void OnPowerManagementEvent(PscPmState state, u32 flags) {
                                 svcSleepThread(1000000ULL);
                             }
                         }
+                        
                         if (!connected) {
                             /* TODO: Signal disconnected */
                         }

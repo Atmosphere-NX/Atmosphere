@@ -93,6 +93,7 @@ void TmaServiceManager::AddWork(TmaWorkType type, TmaTask *task, TmaPacket *pack
     work_item->task = task;
     work_item->packet = packet;
     work_item->work_type = type;
+    this->work_queue.Send(reinterpret_cast<uintptr_t>(work_item));
 }
 
 /* Packet management. */
@@ -391,6 +392,7 @@ void TmaServiceManager::HandleSleepWork() {
     this->wake_signal.Wait();
     
     /* We're awake now... */
+    this->SetAsleep(false);
     
     /* Wake up services. */
     for (auto srv : this->services) {

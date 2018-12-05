@@ -23,7 +23,6 @@ static constexpr u16 PscPmModuleId_Pcie = 0x13;
 static constexpr u16 PscPmModuleId_Tma  = 0x1E;
 
 static const u16 g_tma_pm_dependencies[] = {
-    PscPmModuleId_Pcie,
     PscPmModuleId_Usb,
 };
 

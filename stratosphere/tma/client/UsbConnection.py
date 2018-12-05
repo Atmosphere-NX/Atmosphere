@@ -80,6 +80,7 @@ class UsbConnection(UsbInterface):
         
         try:
             # Perform Query + Connection handshake
+            print 'Performing handshake...'
             self.intf.send_packet(Packet().set_service(ServiceId.USB_QUERY_TARGET))
             query_resp = self.intf.read_packet()
             print 'Found Switch, Protocol version 0x%x' % query_resp.read_u32()
