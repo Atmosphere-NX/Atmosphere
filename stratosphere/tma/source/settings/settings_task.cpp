@@ -39,8 +39,10 @@ void GetSettingTask::OnReceivePacket(TmaPacket *packet) {
 
 void GetSettingTask::OnSendPacket(TmaPacket *packet) {
     packet->Write<u8>((u8)this->succeeded);
-    packet->Write<u32>((u32)this->value_size);
-    packet->Write(this->value, this->value_size);
+    if (this->succeeded) {
+        packet->Write<u32>((u32)this->value_size);
+        packet->Write(this->value, this->value_size);
+    }
     
     this->Complete();
 }
