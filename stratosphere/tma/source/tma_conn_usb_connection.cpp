@@ -81,49 +81,53 @@ void TmaUsbConnection::RecvThreadFunc(void *arg) {
         res = TmaUsbComms::ReceivePacket(packet);
         
         if (res == TmaConnResult::Success) {
-            switch (packet->GetServiceId()) {
-                case TmaServiceId::UsbQueryTarget: {
-                    this_ptr->SetConnected(false);
-                    
-                    res = this_ptr->SendQueryReply(packet);
-                                        
-                    if (!this_ptr->has_woken_up) {
-                        this_ptr->CancelTasks();
+            if (!IsMetaService(packet->GetServiceId())) {
+                this_ptr->OnReceivePacket(packet);
+            } else {
+                switch (packet->GetServiceId()) {
+                    case TmaServiceId::UsbQueryTarget: {
+                        this_ptr->SetConnected(false);
+
+                        res = this_ptr->SendQueryReply(packet);
+
+                        if (!this_ptr->has_woken_up) {
+                            this_ptr->CancelTasks();
+                        }
                     }
-                }
-                break;
-                case TmaServiceId::UsbSendHostInfo: {
-                    struct {
-                        u32 version;
-                        u32 sleeping;
-                    } host_info;
-                    packet->Read<decltype(host_info)>(host_info);
-                    
-                    if (!this_ptr->has_woken_up || !host_info.sleeping) {
-                        this_ptr->CancelTasks();
-                    }
-                }
-                break;
-                case TmaServiceId::UsbConnect: {
-                    res = this_ptr->SendQueryReply(packet);
-                    
-                    if (res == TmaConnResult::Success) {
-                        this_ptr->SetConnected(true);
-                        this_ptr->OnConnectionEvent(ConnectionEvent::Connected);
-                    }
-                }
-                break;
-                case TmaServiceId::UsbDisconnect: {   
-                    this_ptr->SetConnected(false);
-                    this_ptr->OnDisconnected();
-                    
-                    this_ptr->CancelTasks();
-                }
-                break;
-                default:
                     break;
+                    case TmaServiceId::UsbSendHostInfo: {
+                        struct {
+                            u32 version;
+                            u32 sleeping;
+                        } host_info;
+                        packet->Read<decltype(host_info)>(host_info);
+
+                        if (!this_ptr->has_woken_up || !host_info.sleeping) {
+                            this_ptr->CancelTasks();
+                        }
+                    }
+                    break;
+                    case TmaServiceId::UsbConnect: {
+                        res = this_ptr->SendQueryReply(packet);
+
+                        if (res == TmaConnResult::Success) {
+                            this_ptr->SetConnected(true);
+                            this_ptr->OnConnectionEvent(ConnectionEvent::Connected);
+                        }
+                    }
+                    break;
+                    case TmaServiceId::UsbDisconnect: {
+                        this_ptr->SetConnected(false);
+                        this_ptr->OnDisconnected();
+
+                        this_ptr->CancelTasks();
+                    }
+                    break;
+                    default:
+                        break;
+                }
+                this_ptr->FreePacket(packet);
             }
-            this_ptr->FreePacket(packet);
         } else {
             this_ptr->FreePacket(packet);
         }

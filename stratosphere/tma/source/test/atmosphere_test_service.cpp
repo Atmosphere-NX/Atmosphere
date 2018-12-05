@@ -16,22 +16,16 @@
 
 #include <switch.h>
 #include <stratosphere.hpp>
-#include "tma_task.hpp"
-#include "tma_service_manager.hpp"
 
-void TmaTask::SetNeedsPackets(bool n) {
-    this->needs_packets = n;
-    this->manager->Tick();
-}
+#include "atmosphere_test_service.hpp"
+#include "atmosphere_test_task.hpp"
 
-void TmaTask::Complete() {
-    SetNeedsPackets(false);
-    this->state = TmaTaskState::Complete;
-    this->manager->Tick();
-}
-
-void TmaTask::Cancel() {
-    SetNeedsPackets(false);
-    this->state = TmaTaskState::Canceled;
-    this->manager->Tick();
+TmaTask *AtmosphereTestService::NewTask(TmaPacket *packet) {
+    auto new_task = new AtmosphereTestTask(this->manager);
+    new_task->SetServiceId(this->GetServiceId());
+    new_task->SetTaskId(packet->GetTaskId());
+    new_task->OnStart(packet);
+    new_task->SetNeedsPackets(true);
+    
+    return new_task;
 }

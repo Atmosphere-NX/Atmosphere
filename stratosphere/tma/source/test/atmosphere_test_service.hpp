@@ -13,25 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+ 
+#pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
-#include "tma_task.hpp"
-#include "tma_service_manager.hpp"
 
-void TmaTask::SetNeedsPackets(bool n) {
-    this->needs_packets = n;
-    this->manager->Tick();
-}
+#include "../tma_conn_service_ids.hpp"
+#include "../tma_service.hpp"
 
-void TmaTask::Complete() {
-    SetNeedsPackets(false);
-    this->state = TmaTaskState::Complete;
-    this->manager->Tick();
-}
-
-void TmaTask::Cancel() {
-    SetNeedsPackets(false);
-    this->state = TmaTaskState::Canceled;
-    this->manager->Tick();
-}
+class AtmosphereTestService : public TmaService {
+    public:
+        AtmosphereTestService(TmaServiceManager *m) : TmaService(m, "AtmosphereTestService") { }
+        virtual ~AtmosphereTestService() { }
+        
+        virtual TmaTask *NewTask(TmaPacket *packet) override;
+};

@@ -70,9 +70,9 @@ bool TmaTaskList::SendPacket(bool connected, TmaPacket *packet) {
             switch (task->GetState()) {
                 case TmaTaskState::InProgress:
                     it++;
-                    if (target_task == nullptr) {
+                    if (target_task == nullptr && task->GetNeedsPackets()) {
                         if (connected || IsMetaService(task->GetServiceId())) {
-                            target_task = nullptr;
+                            target_task = task;
                         }
                     }
                     break;

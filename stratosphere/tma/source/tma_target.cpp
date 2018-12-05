@@ -25,6 +25,8 @@
 
 #include "tma_target.hpp"
 
+#include "test/atmosphere_test_service.hpp"
+
 struct TmaTargetConfig {
     char configuration_id1[0x80];
     char serial_number[0x80];
@@ -204,6 +206,8 @@ void TmaTarget::Initialize() {
     
     g_active_connection = nullptr;
     g_service_manager = new TmaServiceManager();
+    /* TODO: Make this better. */
+    g_service_manager->AddService(new AtmosphereTestService(g_service_manager));
     
     RefreshTargetConfig();
     

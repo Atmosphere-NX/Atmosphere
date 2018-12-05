@@ -327,6 +327,8 @@ void TmaServiceManager::HandleFreeTaskWork(TmaWorkItem *work_item) {
 }
 
 void TmaServiceManager::HandleReceivePacketWork(TmaWorkItem *work_item) {
+    ON_SCOPE_EXIT { this->FreePacket(work_item->packet); };
+    
     /* Handle continuation packets. */
     if (work_item->packet->GetContinuation()) {
         this->task_list.ReceivePacket(work_item->packet);

@@ -24,4 +24,6 @@ USB_SEND_HOST_INFO = hash("USBSendHostInfo")
 USB_CONNECT = hash("USBConnect")
 USB_DISCONNECT = hash("USBDisconnect")
 
+ATMOSPHERE_TEST_SERVICE = hash("AtmosphereTestService")
+
     

@@ -43,6 +43,7 @@ class TmaTask {
         HosSignal signal;
         bool owned_by_task_list = true;
         bool sleep_allowed = true;
+        bool needs_packets = false;
     public:
         TmaTask(TmaServiceManager *m) : manager(m) { }
         virtual ~TmaTask() { }
@@ -54,6 +55,7 @@ class TmaTask {
         TmaTaskState GetState() const { return this->state; }
         bool GetOwnedByTaskList() const { return this->owned_by_task_list; }
         bool GetSleepAllowed() const { return this->sleep_allowed; }
+        bool GetNeedsPackets() const { return this->needs_packets; }
         
         void SetPriority(u32 p) { this->priority = p; }
         void SetServiceId(TmaServiceId s) { this->service_id = s; }
@@ -61,6 +63,7 @@ class TmaTask {
         void SetCommand(u32 c) { this->command = c; }
         void SetOwnedByTaskList(bool o) { this->owned_by_task_list = o; }
         void SetSleepAllowed(bool a) { this->sleep_allowed = a; }
+        void SetNeedsPackets(bool n);
         
         void Signal() { this->signal.Signal(); }
         void ResetSignal() { this->signal.Reset(); }
