@@ -23,6 +23,8 @@
 #include <atmosphere.h>
 #include <stratosphere.hpp>
 
+#include "dmnt_debug_monitor.hpp"
+
 extern "C" {
     extern u32 __start__;
 
@@ -121,8 +123,17 @@ void __appExit(void) {
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
-        
-    /* TODO: Make a server manager, and process on it. */
+    
+    /* Nintendo uses four threads. */
+    auto server_manager = new WaitableManager(4);
+    
+    /* Create services. */
+    server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("dmnt:-", 4));
+
+    /* Loop forever, servicing our services. */
+    server_manager->Process();
+
+    delete server_manager;
 
     return 0;
 }
