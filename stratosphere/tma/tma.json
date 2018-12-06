@@ -6,8 +6,6 @@
 	"main_thread_stack_size":	"0x00004000",
 	"main_thread_priority":	38,
 	"default_cpu_id":	3,
-	"process_category":	1,
-	"default_cpu_id":	3,
 	"process_category":	0,
 	"is_retail":	true,
 	"pool_partition":	2,
@@ -39,8 +37,15 @@
         "tma_log",
         "tmagent"
     ],
-	"kernel_capabilities":	[
-        {
+	"kernel_capabilities":	[{
+			"type":	"kernel_flags",
+			"value":	{
+				"highest_thread_priority":	63,
+				"lowest_thread_priority":	24,
+				"lowest_cpu_id":	0,
+				"highest_cpu_id":	3
+			}
+		}, {
 			"type":	"syscalls",
 			"value":	{
 				"svcSetHeapSize":	"0x01",
@@ -131,6 +136,9 @@
 		}, {
 			"type":	"irq_pair",
 			"value":	[131, 132]
+		}, {
+			"type":	"min_kernel_version",
+			"value":	"0x0030"
 		}, {
 			"type":	"handle_table_size",
 			"value":	256
