@@ -81,6 +81,11 @@ class DebugMonitorService final : public IServiceObject {
         Result GetProcessId(Out<u64> out_pid, Handle hnd);
         Result GetProcessHandle(Out<Handle> out_hnd, u64 pid);
         Result WaitSynchronization(Handle hnd, u64 ns);
+        
+        Result TargetIO_FileOpen(OutBuffer<u64> out_hnd, InBuffer<char> path, int open_mode, u32 create_mode);
+        Result TargetIO_FileClose(InBuffer<u64> hnd);
+        Result TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8> out_data, Out<u32> out_read, u64 offset);
+        Result TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8> data, Out<u32> out_written, u64 offset);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<DebugMonitor_Cmd_BreakDebugProcess, &DebugMonitorService::BreakDebugProcess>(),
@@ -110,10 +115,10 @@ class DebugMonitorService final : public IServiceObject {
             // MakeServiceCommandMeta<DebugMonitor_Cmd_GetJitDebugProcessList, &DebugMonitorService::GetJitDebugProcessList>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_CreateCoreDump, &DebugMonitorService::CreateCoreDump>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_GetAllDebugThreadInfo, &DebugMonitorService::GetAllDebugThreadInfo>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileOpen, &DebugMonitorService::TargetIO_FileOpen>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileClose, &DebugMonitorService::TargetIO_FileClose>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileRead, &DebugMonitorService::TargetIO_FileRead>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileWrite, &DebugMonitorService::TargetIO_FileWrite>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileOpen, &DebugMonitorService::TargetIO_FileOpen>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileClose, &DebugMonitorService::TargetIO_FileClose>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileRead, &DebugMonitorService::TargetIO_FileRead>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileWrite, &DebugMonitorService::TargetIO_FileWrite>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileSetAttributes, &DebugMonitorService::TargetIO_FileSetAttributes>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileGetInformation, &DebugMonitorService::TargetIO_FileGetInformation>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileSetTime, &DebugMonitorService::TargetIO_FileSetTime>(),

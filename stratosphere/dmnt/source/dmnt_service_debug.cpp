@@ -15,7 +15,7 @@
  */
  
 #include <switch.h>
-#include "dmnt_debug_monitor.hpp"
+#include "dmnt_service.hpp"
 
 Result DebugMonitorService::BreakDebugProcess(Handle debug_hnd) {
     /* Nintendo discards the output of this command, but we will return it. */

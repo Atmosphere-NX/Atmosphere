@@ -23,7 +23,7 @@
 #include <atmosphere.h>
 #include <stratosphere.hpp>
 
-#include "dmnt_debug_monitor.hpp"
+#include "dmnt_service.hpp"
 
 extern "C" {
     extern u32 __start__;
