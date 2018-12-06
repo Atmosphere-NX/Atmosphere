@@ -26,6 +26,8 @@
 #include "pm_boot2.hpp"
 #include "pm_registration.hpp"
 
+static std::vector<Boot2KnownTitleId> g_launched_titles;
+
 static bool IsHexadecimal(const char *str) {
     while (*str) {
         if (isxdigit(*str)) {
@@ -37,22 +39,34 @@ static bool IsHexadecimal(const char *str) {
     return true;
 }
 
+static bool HasLaunchedTitle(Boot2KnownTitleId title_id) {
+    return std::find(g_launched_titles.begin(), g_launched_titles.end(), title_id) != g_launched_titles.end();
+}
+
+static void SetLaunchedTitle(Boot2KnownTitleId title_id) {
+    g_launched_titles.push_back(title_id);
+}
+
+static void ClearLaunchedTitles() {
+    g_launched_titles.clear();
+}
+
 static void LaunchTitle(Boot2KnownTitleId title_id, FsStorageId storage_id, u32 launch_flags, u64 *pid) {
-    u64 local_pid;
+    u64 local_pid = 0;
     
     Result rc = Registration::LaunchProcessByTidSid(Registration::TidSid{(u64)title_id, storage_id}, launch_flags, &local_pid);
     switch (rc) {
         case 0xCE01:
             /* Out of resource! */
-            /* TODO: Panic(). */
+            std::abort();
             break;
         case 0xDE01:
             /* Out of memory! */
-            /* TODO: Panic(). */
+            std::abort();
             break;
         case 0xD001:
             /* Limit Reached! */
-            /* TODO: Panic(). */
+            std::abort();
             break;
         default:
             /* We don't care about other issues. */
@@ -61,6 +75,8 @@ static void LaunchTitle(Boot2KnownTitleId title_id, FsStorageId storage_id, u32 
     if (pid) {
         *pid = local_pid;
     }
+    
+    SetLaunchedTitle(title_id);
 }
 
 static bool ShouldForceMaintenanceMode() {
@@ -178,7 +194,10 @@ void EmbeddedBoot2::Main() {
     if (titles_dir != NULL) {
         while ((ent = readdir(titles_dir)) != NULL) {
             if (strlen(ent->d_name) == 0x10 && IsHexadecimal(ent->d_name)) {
-                u64 title_id = strtoul(ent->d_name, NULL, 16);
+                Boot2KnownTitleId title_id = (Boot2KnownTitleId)strtoul(ent->d_name, NULL, 16);
+                if (HasLaunchedTitle(title_id)) {
+                    continue;
+                }
                 char title_path[FS_MAX_PATH] = {0};
                 strcpy(title_path, "sdmc:/atmosphere/titles/");
                 strcat(title_path, ent->d_name);
@@ -186,7 +205,7 @@ void EmbeddedBoot2::Main() {
                 FILE *f_flag = fopen(title_path, "rb");
                 if (f_flag != NULL) {
                     fclose(f_flag);
-                    LaunchTitle((Boot2KnownTitleId)title_id, FsStorageId_None, 0, NULL);
+                    LaunchTitle(title_id, FsStorageId_None, 0, NULL);
                 } else {
                     /* TODO: Deprecate this in the future. */
                     memset(title_path, 0, FS_MAX_PATH);
@@ -196,13 +215,16 @@ void EmbeddedBoot2::Main() {
                     f_flag = fopen(title_path, "rb");
                     if (f_flag != NULL) {
                         fclose(f_flag);
-                        LaunchTitle((Boot2KnownTitleId)title_id, FsStorageId_None, 0, NULL);
+                        LaunchTitle(title_id, FsStorageId_None, 0, NULL);
                     }
                 }
             }
         }
         closedir(titles_dir);
     }
+    
+    /* Free the memory used to track what boot2 launches. */
+    ClearLaunchedTitles();
         
     /* We no longer need the SD card. */
     fsdevUnmountAll();

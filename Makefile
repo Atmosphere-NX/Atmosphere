@@ -42,6 +42,8 @@ dist: all
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000036
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000034
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/010000000000000D
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000007
 	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
 	cp common/defaults/BCT.ini atmosphere-$(AMSVER)/atmosphere/BCT.ini
 	cp common/defaults/loader.ini atmosphere-$(AMSVER)/atmosphere/loader.ini
