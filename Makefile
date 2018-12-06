@@ -51,6 +51,8 @@ dist: all
 	cp stratosphere/set_mitm/set_mitm.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032/exefs.nsp
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032/flags
 	touch atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032/flags/boot2.flag
+	cp stratosphere/tma/tma.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000007/exefs.nsp
+	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/atmosphere/titles/010000000000000D/exefs.nsp
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)
 	mkdir out

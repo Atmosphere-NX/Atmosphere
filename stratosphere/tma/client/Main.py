@@ -20,7 +20,7 @@ def main(argc, argv):
         print 'Waiting for connection...'
         c.wait_connected()
         print 'Connected!'
-        c.intf.send_packet(Packet().set_service(ServiceId.SETTINGS_SERVICE).set_task(0x01000000).set_cmd(0).write_str('lm').write_str('sd_card_log_output_directory'))
+        c.intf.send_packet(Packet().set_service(ServiceId.SETTINGS_SERVICE).set_task(0x01000000).set_cmd(0).write_str('platformconfig').write_str('platformtype'))
         resp = c.intf.read_packet()
         success = resp.read_u8() != 0
         print 'Succeeded: %s' % str(success)

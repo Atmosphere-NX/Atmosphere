@@ -158,8 +158,11 @@ void EmbeddedBoot2::Main() {
     /* Launch usb. */
     LaunchTitle(Boot2KnownTitleId::usb, FsStorageId_NandSystem, 0, NULL);
    
-    /* Don't launch tma, because atmosphere replaces it with a KIP. */
-    /* LaunchTitle(Boot2KnownTitleId::tma, FsStorageId_NandSystem, 0, NULL); */
+    /* Launch Atmosphere tma, using FsStorageId_None to force SD card boot. */
+    LaunchTitle(Boot2KnownTitleId::tma, FsStorageId_None, 0, NULL);
+   
+    /* Launch Atmosphere dmnt, using FsStorageId_None to force SD card boot. */
+    LaunchTitle(Boot2KnownTitleId::dmnt, FsStorageId_None, 0, NULL);
     
     /* Launch default programs. */
     bool maintenance = ShouldForceMaintenanceMode();

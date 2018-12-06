@@ -1,10 +1,44 @@
 {
 	"name":	"tma",
 	"title_id":	"0x0100000000000007",
+	"title_id_range_min":	"0x0100000000000007",
+	"title_id_range_max":	"0x0100000000000007",
 	"main_thread_stack_size":	"0x00004000",
 	"main_thread_priority":	38,
 	"default_cpu_id":	3,
 	"process_category":	1,
+	"default_cpu_id":	3,
+	"process_category":	0,
+	"is_retail":	true,
+	"pool_partition":	2,
+	"is_64_bit":	true,
+	"address_space_type":	1,
+	"filesystem_access":	{
+		"permissions":	"0xFFFFFFFFFFFFFFFF"
+	},
+	"service_access":	[
+        "bsd:s",
+        "bsdcfg",
+        "dmnt:-",
+        "fatal:u",
+        "i2c",
+        "pcie",
+        "psc:m",
+        "set:cal",
+        "set:fd",
+        "set:sys",
+        "sfdnsres",
+        "spl:",
+        "usb:ds"
+    ],
+	"service_host":	[
+        "file_io",
+        "gds",
+        "htc",
+        "htcs",
+        "tma_log",
+        "tmagent"
+    ],
 	"kernel_capabilities":	[
         {
 			"type":	"syscalls",
