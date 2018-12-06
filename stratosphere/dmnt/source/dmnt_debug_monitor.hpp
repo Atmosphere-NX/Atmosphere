@@ -78,16 +78,19 @@ class DebugMonitorService final : public IServiceObject {
         Result BreakDebugProcess(Handle debug_hnd);
         Result TerminateDebugProcess(Handle debug_hnd);
         Result CloseHandle(Handle debug_hnd);
+        Result GetProcessId(Out<u64> out_pid, Handle hnd);
+        Result GetProcessHandle(Out<Handle> out_hnd, u64 pid);
+        Result WaitSynchronization(Handle hnd, u64 ns);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<DebugMonitor_Cmd_BreakDebugProcess, &DebugMonitorService::BreakDebugProcess>(),
             MakeServiceCommandMeta<DebugMonitor_Cmd_TerminateDebugProcess, &DebugMonitorService::TerminateDebugProcess>(),
             MakeServiceCommandMeta<DebugMonitor_Cmd_CloseHandle, &DebugMonitorService::CloseHandle>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_LoadImage, &DebugMonitorService::LoadImage>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_GetProcessId, &DebugMonitorService::GetProcessId>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_GetProcessHandle, &DebugMonitorService::GetProcessHandle>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_WaitSynchronization, &DebugMonitorService::WaitSynchronization>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_GetDebugEvent, &DebugMonitorService::GetDebugEvent>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_GetProcessId, &DebugMonitorService::GetProcessId>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_GetProcessHandle, &DebugMonitorService::GetProcessHandle>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_WaitSynchronization, &DebugMonitorService::WaitSynchronization>(),
+            //MakeServiceCommandMeta<DebugMonitor_Cmd_GetDebugEvent, &DebugMonitorService::GetDebugEvent>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_GetProcessModuleInfo, &DebugMonitorService::GetProcessModuleInfo>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_GetProcessList, &DebugMonitorService::GetProcessList>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_GetThreadList, &DebugMonitorService::GetThreadList>(),

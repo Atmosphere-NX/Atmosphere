@@ -32,3 +32,21 @@ Result DebugMonitorService::CloseHandle(Handle debug_hnd) {
     /* This command is, entertainingly, also pretty unsafe in general... */
     return svcCloseHandle(debug_hnd);
 }
+
+Result DebugMonitorService::GetProcessId(Out<u64> out_pid, Handle hnd) {
+    /* Nintendo discards the output of this command, but we will return it. */
+    return svcGetProcessId(out_pid.GetPointer(), hnd);
+}
+
+Result DebugMonitorService::GetProcessHandle(Out<Handle> out_hnd, u64 pid) {
+    Result rc = svcDebugActiveProcess(out_hnd.GetPointer(), pid);
+    if (rc == 0xF401) {
+        rc = 0x4B7;
+    }
+    return rc;
+}
+
+Result DebugMonitorService::WaitSynchronization(Handle hnd, u64 ns) {
+    /* Nintendo discards the output of this command, but we will return it. */
+    return svcWaitSynchronizationSingle(hnd, ns);
+}
