@@ -157,7 +157,7 @@ Result DebugMonitorService::TargetIO_FileClose(InBuffer<u64> hnd) {
     return CloseFileByHandle(hnd[0]);
 }
 
-Result DebugMonitorService::TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8> out_data, Out<u32> out_read, u64 offset) {
+Result DebugMonitorService::TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8, BufferType_Type1> out_data, Out<u32> out_read, u64 offset) {
     if (hnd.num_elements != 1) {
         return 0xF601;
     }
@@ -174,7 +174,7 @@ Result DebugMonitorService::TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8> o
     return rc;
 }
 
-Result DebugMonitorService::TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8> data, Out<u32> out_written, u64 offset) {
+Result DebugMonitorService::TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8, BufferType_Type1> data, Out<u32> out_written, u64 offset) {
     if (hnd.num_elements != 1) {
         return 0xF601;
     }

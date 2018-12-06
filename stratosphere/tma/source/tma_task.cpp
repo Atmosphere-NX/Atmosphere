@@ -24,6 +24,21 @@ void TmaTask::SetNeedsPackets(bool n) {
     this->manager->Tick();
 }
 
+TmaPacket *TmaTask::AllocateSendPacket(bool continuation) {
+    auto packet = this->manager->AllocateSendPacket();
+    packet->SetServiceId(this->service_id);
+    packet->SetTaskId(this->task_id);
+    packet->SetCommand(this->command);
+    packet->SetContinuation(continuation);
+
+    return packet;
+}
+
+
+void TmaTask::FreePacket(TmaPacket *packet) {
+    this->manager->FreePacket(packet);
+}
+
 void TmaTask::Complete() {
     SetNeedsPackets(false);
     this->state = TmaTaskState::Complete;

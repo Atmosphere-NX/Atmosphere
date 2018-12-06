@@ -166,6 +166,10 @@ class TmaPacket {
             return GetHeader()->version;
         }
         
+        u8 *GetCurrentBodyPtr() {
+            return GetBody(this->offset);
+        }
+        
         void ClearOffset() {
             this->offset = 0;
         }

@@ -84,8 +84,8 @@ class DebugMonitorService final : public IServiceObject {
         
         Result TargetIO_FileOpen(OutBuffer<u64> out_hnd, InBuffer<char> path, int open_mode, u32 create_mode);
         Result TargetIO_FileClose(InBuffer<u64> hnd);
-        Result TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8> out_data, Out<u32> out_read, u64 offset);
-        Result TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8> data, Out<u32> out_written, u64 offset);
+        Result TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8, BufferType_Type1> out_data, Out<u32> out_read, u64 offset);
+        Result TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8, BufferType_Type1> data, Out<u32> out_written, u64 offset);
         Result TargetIO_FileSetAttributes(InBuffer<char> path, InBuffer<u8> attributes);
         Result TargetIO_FileGetInformation(InBuffer<char> path, OutBuffer<u64> out_info, Out<int> is_directory);
         Result TargetIO_FileSetTime(InBuffer<char> path, u64 create, u64 access, u64 modify);

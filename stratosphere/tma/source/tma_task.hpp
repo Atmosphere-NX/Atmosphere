@@ -68,6 +68,9 @@ class TmaTask {
         void Signal() { this->signal.Signal(); }
         void ResetSignal() { this->signal.Reset(); }
         
+        TmaPacket *AllocateSendPacket(bool continuation = true);
+        void FreePacket(TmaPacket *packet);
+        
         void Complete();
         void Cancel();
         

@@ -25,6 +25,8 @@
 
 #include "tma_target.hpp"
 
+#include "dmnt.h"
+
 extern "C" {
     extern u32 __start__;
 
@@ -70,11 +72,17 @@ void __appInit(void) {
         fatalSimple(rc);
     }
     
+    rc = dmntInitialize();
+    if (R_FAILED(rc)) {
+        fatalSimple(rc);
+    }
+    
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {
     /* Cleanup services. */
+    dmntExit();
     setsysExit();
     pscExit();
     smExit();

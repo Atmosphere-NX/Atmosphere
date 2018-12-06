@@ -20,16 +20,15 @@ def main(argc, argv):
         print 'Waiting for connection...'
         c.wait_connected()
         print 'Connected!'
-        c.intf.send_packet(Packet().set_service(ServiceId.SETTINGS_SERVICE).set_task(0x01000000).set_cmd(0).write_str('platformconfig').write_str('platformtype'))
+        print 'Reading atmosphere/BCT.ini...'
+        c.intf.send_packet(Packet().set_service(ServiceId.TARGETIO_SERVICE).set_task(0x01000000).set_cmd(2).write_str('atmosphere/BCT.ini').write_u64(0x109).write_u64(0))
         resp = c.intf.read_packet()
-        success = resp.read_u8() != 0
-        print 'Succeeded: %s' % str(success)
-        if success:
-            size = resp.read_u32()
-            value = resp.body[resp.offset:resp.offset+size]
-            print 'Value Size: 0x%x' % size
-            print 'Value: %s' % repr(value)
-            
+        res_packet = c.intf.read_packet()
+        read_res, size_read = resp.read_u32(), resp.read_u32()
+        print 'Final Result: 0x%x' % res_packet.read_u32()
+        print 'Size Read: 0x%x' % size_read
+        print 'Data:\n%s' % resp.body[resp.offset:]
+        
     return 0
     
 if __name__ == '__main__':
