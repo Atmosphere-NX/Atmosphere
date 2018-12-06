@@ -86,6 +86,12 @@ class DebugMonitorService final : public IServiceObject {
         Result TargetIO_FileClose(InBuffer<u64> hnd);
         Result TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8> out_data, Out<u32> out_read, u64 offset);
         Result TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8> data, Out<u32> out_written, u64 offset);
+        Result TargetIO_FileSetAttributes(InBuffer<char> path, InBuffer<u8> attributes);
+        Result TargetIO_FileGetInformation(InBuffer<char> path, OutBuffer<u64> out_info, Out<int> is_directory);
+        Result TargetIO_FileSetTime(InBuffer<char> path, u64 create, u64 access, u64 modify);
+        Result TargetIO_FileSetSize(InBuffer<char> path, u64 size);
+        Result TargetIO_FileDelete(InBuffer<char> path);
+        Result TargetIO_FileMove(InBuffer<char> path0, InBuffer<char> path1);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<DebugMonitor_Cmd_BreakDebugProcess, &DebugMonitorService::BreakDebugProcess>(),
@@ -119,12 +125,12 @@ class DebugMonitorService final : public IServiceObject {
             MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileClose, &DebugMonitorService::TargetIO_FileClose>(),
             MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileRead, &DebugMonitorService::TargetIO_FileRead>(),
             MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileWrite, &DebugMonitorService::TargetIO_FileWrite>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileSetAttributes, &DebugMonitorService::TargetIO_FileSetAttributes>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileGetInformation, &DebugMonitorService::TargetIO_FileGetInformation>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileSetTime, &DebugMonitorService::TargetIO_FileSetTime>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileSetSize, &DebugMonitorService::TargetIO_FileSetSize>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileDelete, &DebugMonitorService::TargetIO_FileDelete>(),
-            // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileMove, &DebugMonitorService::TargetIO_FileMove>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileSetAttributes, &DebugMonitorService::TargetIO_FileSetAttributes>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileGetInformation, &DebugMonitorService::TargetIO_FileGetInformation>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileSetTime, &DebugMonitorService::TargetIO_FileSetTime>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileSetSize, &DebugMonitorService::TargetIO_FileSetSize>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileDelete, &DebugMonitorService::TargetIO_FileDelete>(),
+            MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_FileMove, &DebugMonitorService::TargetIO_FileMove>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_DirectoryCreate, &DebugMonitorService::TargetIO_DirectoryCreate>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_DirectoryDelete, &DebugMonitorService::TargetIO_DirectoryDelete>(),
             // MakeServiceCommandMeta<DebugMonitor_Cmd_TargetIO_DirectoryRename, &DebugMonitorService::TargetIO_DirectoryRename>(),

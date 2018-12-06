@@ -113,7 +113,6 @@ Result DebugMonitorService::TargetIO_FileOpen(OutBuffer<u64> out_hnd, InBuffer<c
     }
     
     char fs_path[FS_MAX_PATH];
-    
     FixPath(fs_path, sizeof(fs_path), path);
     
     if (create_mode == TIOCreateOption_CreateAlways) {
@@ -192,4 +191,109 @@ Result DebugMonitorService::TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8> d
     }
     
     return rc;
+}
+
+Result DebugMonitorService::TargetIO_FileSetAttributes(InBuffer<char> path, InBuffer<u8> attributes) {
+    /* I don't really know why this command exists, Horizon doesn't allow you to set any attributes. */
+    /* N just returns 0x0 unconditionally here. */
+    return 0x0;
+}
+
+Result DebugMonitorService::TargetIO_FileGetInformation(InBuffer<char> path, OutBuffer<u64> out_info, Out<int> is_directory) {
+    if (out_info.num_elements != 4) {
+        return 0xF601;
+    }
+    
+    Result rc = EnsureSdInitialized();
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    char fs_path[FS_MAX_PATH];
+    FixPath(fs_path, sizeof(fs_path), path);
+    
+    for (size_t i = 0; i < out_info.num_elements; i++) {
+        out_info[i] = 0;
+    }
+    is_directory.SetValue(0);
+    
+    FsFile f;
+    rc = fsFsOpenFile(&g_sd_fs, fs_path, FS_OPEN_READ, &f);
+    if (R_SUCCEEDED(rc)) {
+        ON_SCOPE_EXIT { fsFileClose(&f); };
+        
+        /* N doesn't check this return code. */
+        fsFileGetSize(&f, &out_info[0]);
+        
+        /* TODO: N does not call fsFsGetFileTimestampRaw here, but we possibly could. */
+    } else {
+        FsDir dir;
+        rc = fsFsOpenDirectory(&g_sd_fs, fs_path, FS_DIROPEN_FILE | FS_DIROPEN_DIRECTORY, &dir);
+        if (R_SUCCEEDED(rc)) {
+            fsDirClose(&dir);
+            is_directory.SetValue(1);
+        }
+    }
+    
+    return rc;
+}
+
+Result DebugMonitorService::TargetIO_FileSetTime(InBuffer<char> path, u64 create, u64 access, u64 modify) {
+    /* This is another function that doesn't really need to exist, because Horizon doesn't let you set anything. */
+    return 0x0;
+}
+
+Result DebugMonitorService::TargetIO_FileSetSize(InBuffer<char> input, u64 size) {
+    /* Why does this function take in a path and not a file handle? */
+    
+    /* We will try to be better than N, here. N only treats input as a path. */
+    if (input.num_elements == sizeof(u64)) {
+        FsFile f;
+        if (R_SUCCEEDED(GetFileByHandle(&f, reinterpret_cast<u64 *>(input.buffer)[0]))) {
+            return fsFileSetSize(&f, size);
+        }
+    }
+    
+    Result rc = EnsureSdInitialized();
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    char fs_path[FS_MAX_PATH];
+    FixPath(fs_path, sizeof(fs_path), input);
+    
+    FsFile f;
+    rc = fsFsOpenFile(&g_sd_fs, fs_path, FS_OPEN_WRITE, &f);
+    if (R_SUCCEEDED(rc)) {
+        rc = fsFileSetSize(&f, size);
+        fsFileClose(&f);
+    }
+    
+    return rc;
+}
+
+Result DebugMonitorService::TargetIO_FileDelete(InBuffer<char> path) {
+    Result rc = EnsureSdInitialized();
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    char fs_path[FS_MAX_PATH];
+    FixPath(fs_path, sizeof(fs_path), path);
+    
+    return fsFsDeleteFile(&g_sd_fs, fs_path);
+}
+
+Result DebugMonitorService::TargetIO_FileMove(InBuffer<char> path0, InBuffer<char> path1) {
+    Result rc = EnsureSdInitialized();
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    char fs_path0[FS_MAX_PATH];
+    char fs_path1[FS_MAX_PATH];
+    FixPath(fs_path0, sizeof(fs_path0), path0);
+    FixPath(fs_path1, sizeof(fs_path1), path1);
+    
+    return fsFsRenameFile(&g_sd_fs, fs_path0, fs_path1);
 }
