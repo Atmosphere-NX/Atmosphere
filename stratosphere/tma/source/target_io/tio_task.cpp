@@ -27,12 +27,22 @@ void TIOFileReadTask::OnStart(TmaPacket *packet) {
     packet->Read<u64>(this->size_remaining);
     packet->Read<u64>(this->cur_offset);
     
+    Result rc = 0;    
     if (strlen(path) == 0) {
-        this->SendResult(0x202);
-        return;
+        rc = 0x202;
     }
     
-    Result rc = dmntTargetIOFileOpen(&this->handle, path, FS_OPEN_READ, DmntTIOCreateOption_OpenExisting);
+    if (R_SUCCEEDED(rc)) {
+        u64 file_size;
+        rc = dmntTargetIOFileGetSize(path, &file_size);
+        if (R_SUCCEEDED(rc)) {
+            if (file_size < this->cur_offset + this->size_remaining) {
+                this->size_remaining = file_size - this->cur_offset;
+            }
+        }
+    }
+    
+    rc = dmntTargetIOFileOpen(&this->handle, path, FS_OPEN_READ, DmntTIOCreateOption_OpenExisting);
     if (R_FAILED(rc)) {
         this->SendResult(rc);
         return;
@@ -101,12 +111,23 @@ void TIOFileWriteTask::OnStart(TmaPacket *packet) {
     packet->Read<u64>(this->size_remaining);
     packet->Read<u64>(this->cur_offset);
     
+    Result rc = 0;
     if (strlen(path) == 0) {
-        this->SendResult(0x202);
-        return;
+        rc = 0x202;
     }
     
-    Result rc = dmntTargetIOFileOpen(&this->handle, path, FS_OPEN_READ, DmntTIOCreateOption_OpenExisting);
+    if (R_SUCCEEDED(rc)) {
+        u64 file_size;
+        rc = dmntTargetIOFileGetSize(path, &file_size);
+        if (R_SUCCEEDED(rc)) {
+            if (file_size < this->cur_offset + this->size_remaining) {
+                this->size_remaining = file_size - this->cur_offset;
+            }
+        }
+    }
+    
+    rc = dmntTargetIOFileOpen(&this->handle, path, FS_OPEN_READ, DmntTIOCreateOption_OpenExisting);
+    
     if (R_FAILED(rc)) {
         this->SendResult(rc);
     }
