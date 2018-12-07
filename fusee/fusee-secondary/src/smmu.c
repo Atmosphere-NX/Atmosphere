@@ -226,9 +226,10 @@ void smmu_emulate_tsec(void *tsec_keys, const void *package1, size_t package1_si
     uint32_t old_key_data = *key_data;
     uint32_t buf_counter = 0;
     while (!(tsec->FALCON_CPUCTL & 0x10)) {
-        if (*key_data != old_key_data) {
-            old_key_data = *key_data;
-            key_buf[buf_counter] = *key_data;
+        const uint32_t new_key_data = *key_data;
+        if (new_key_data != old_key_data) {
+            old_key_data = new_key_data;
+            key_buf[buf_counter] = new_key_data;
             buf_counter++;
         }
     }
