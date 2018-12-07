@@ -112,7 +112,8 @@
 				"svcUnmapDeviceAddressSpace":	"0x5c",
 				"svcInvalidateProcessDataCache":	"0x5d",
 				"svcStoreProcessDataCache":	"0x5e",
-				"svcFlushProcessDataCache":	"0x5f"
+				"svcFlushProcessDataCache":	"0x5f",
+				"svcCallSecureMonitor": "0x7f"
 			}
 		}, {
 			"type":	"map",

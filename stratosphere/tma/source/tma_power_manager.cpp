@@ -59,7 +59,7 @@ static void PowerManagerThread(void *arg) {
 
 void TmaPowerManager::Initialize(void (*callback)(PscPmState, u32)) {
     g_pm_callback = callback;
-    g_pm_thread.Initialize(PowerManagerThread, nullptr, 0x4000, 0x15);
+    g_pm_thread.Initialize(PowerManagerThread, nullptr, 0x4000, 0x26);
     g_pm_thread.Start();
 }
 
