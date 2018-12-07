@@ -20,6 +20,8 @@
 #include "timers.h"
 #include "tsec.h"
 
+#define TSEC_KEYGEN_MAX_RETRIES 25
+
 void *smmu_heap = (void *)SMMU_HEAP_BASE_ADDR;
 
 static void safe_memcpy(void *dst, void *src, uint32_t sz) {
@@ -168,14 +170,6 @@ void smmu_emulate_tsec(void *tsec_keys, const void *package1, size_t package1_si
     /* Copy package1 into IRAM. */
     memcpy((void *)0x40010000, package1, package1_size);
     
-    /* Load the TSEC firmware from IRAM. */
-    if (tsec_load_fw((void *)(0x40010000 + 0xE00), 0x2900) < 0) {
-        fatal_error("[SMMU]: Failed to load TSEC firmware!\n");
-    }
-    
-    /* Disable the aperture since it has precedence over the SMMU. */
-    mc_disable_ahb_redirect();
-    
     /* Setup TSEC's address space. */
     uint32_t *pdir = smmu_setup_tsec_as(1);
 
@@ -188,21 +182,6 @@ void smmu_emulate_tsec(void *tsec_keys, const void *package1, size_t package1_si
     volatile uint32_t *mc_page = smmu_alloc_page(1);
     volatile uint32_t *iram_pages = smmu_alloc_page(48);
     volatile uint32_t *expv_page = smmu_alloc_page(1);
-    
-    /* Copy CAR, MC and FUSE. */
-    safe_memcpy((void *)car_page, (void *)0x60006000, 0x1000);
-    safe_memcpy((void *)mc_page, (void *)0x70019000, 0x1000);
-    safe_memcpy((void *)&fuse_page[0x800/4], (void *)0x7000F800, 0x400);
-    
-    /* Copy IRAM. */
-    memcpy((void *)iram_pages, (void *)0x40010000, 0x30000);
-        
-    /* TSEC wants CLK_RST_CONTROLLER_CLK_SOURCE_TSEC_0 to be equal to 2. */
-    car_page[0x1F4/4] = 2;
-    
-    /* TSEC wants the aperture fully open. */
-    mc_page[0x65C/4] = 0;
-    mc_page[0x660/4] = 0x80000000;
     
     /* Map all necessary pages. */
     smmu_map(pdir, 0x60006000, (uint32_t)car_page, 1, _READABLE | _WRITABLE | _NONSECURE);
@@ -217,19 +196,69 @@ void smmu_emulate_tsec(void *tsec_keys, const void *package1, size_t package1_si
     /* Enable the SMMU. */
     smmu_enable();
     
-    /* Run the TSEC firmware. */
-    tsec_run_fw();
-    
-    /* Extract the keys from SE. */
+    /* Loop retrying TSEC firmware execution, in case we lose the SE keydata race. */
     uint32_t key_buf[0x20/4] = {0};
-    volatile uint32_t *key_data = (volatile uint32_t *)((void *)se_page + 0x320);
-    uint32_t old_key_data = *key_data;
-    uint32_t buf_counter = 0;
-    while (!(tsec->FALCON_CPUCTL & 0x10)) {
-        if (*key_data != old_key_data) {
-            old_key_data = *key_data;
-            key_buf[buf_counter] = *key_data;
-            buf_counter++;
+    unsigned int retries = 0;
+    while (true) {
+        if (retries++ > TSEC_KEYGEN_MAX_RETRIES) {
+            fatal_error("[SMMU] TSEC key generation race was lost too many times!");
+        }
+    
+        /* Load the TSEC firmware from IRAM. */
+        if (tsec_load_fw((void *)(0x40010000 + 0xE00), 0x2900) < 0) {
+            fatal_error("[SMMU]: Failed to load TSEC firmware!\n");
+        }
+    
+        /* Disable the aperture since it has precedence over the SMMU. */
+        mc_disable_ahb_redirect();
+        
+        /* Clear all pages. */
+        memset((void *)car_page, 0, SMMU_PAGE_SIZE);
+        memset((void *)fuse_page, 0, SMMU_PAGE_SIZE);
+        memset((void *)pmc_page, 0, SMMU_PAGE_SIZE);
+        memset((void *)flow_page, 0, SMMU_PAGE_SIZE);
+        memset((void *)se_page, 0, SMMU_PAGE_SIZE);
+        memset((void *)mc_page, 0, SMMU_PAGE_SIZE);
+        memset((void *)iram_pages, 0, 48 * SMMU_PAGE_SIZE);
+        memset((void *)expv_page, 0, SMMU_PAGE_SIZE);
+        
+        /* Copy CAR, MC and FUSE. */
+        safe_memcpy((void *)car_page, (void *)0x60006000, 0x1000);
+        safe_memcpy((void *)mc_page, (void *)0x70019000, 0x1000);
+        safe_memcpy((void *)&fuse_page[0x800/4], (void *)0x7000F800, 0x400);
+        
+        /* Copy IRAM. */
+        memcpy((void *)iram_pages, (void *)0x40010000, 0x30000);
+            
+        /* TSEC wants CLK_RST_CONTROLLER_CLK_SOURCE_TSEC_0 to be equal to 2. */
+        car_page[0x1F4/4] = 2;
+        
+        /* TSEC wants the aperture fully open. */
+        mc_page[0x65C/4] = 0;
+        mc_page[0x660/4] = 0x80000000;
+        
+    
+        /* Run the TSEC firmware. */
+        tsec_run_fw();
+    
+        /* Extract the keys from SE. */
+        volatile uint32_t *key_data = (volatile uint32_t *)((void *)se_page + 0x320);
+        uint32_t old_key_data = *key_data;
+        uint32_t buf_counter = 0;
+        while (!(tsec->FALCON_CPUCTL & 0x10)) {
+            const uint32_t new_key_data = *key_data;
+            if (new_key_data != old_key_data) {
+                old_key_data = new_key_data;
+                key_buf[buf_counter] = new_key_data;
+                buf_counter++;
+            }
+        }
+    
+        /* Enable back the aperture. */
+        mc_enable_ahb_redirect();
+        
+        if (buf_counter == 8) {
+            break;
         }
     }
     
@@ -247,9 +276,6 @@ void smmu_emulate_tsec(void *tsec_keys, const void *package1, size_t package1_si
     
     /* Clear TSEC's address space. */
     smmu_clear_tsec_as(1);
-    
-    /* Enable back the aperture. */
-    mc_enable_ahb_redirect();
     
     /* Return the decrypted package1 from emulated IRAM. */
     memcpy(package1_dec, (void *)iram_pages, package1_size);
