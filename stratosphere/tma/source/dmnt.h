@@ -33,6 +33,13 @@ typedef enum {
     DmntTIOCreateOption_ResetSize = 5,
 } DmntTIOCreateOption;
 
+typedef struct {
+    u64 size;
+    u64 create_time;
+    u64 access_time;
+    u64 modify_time;
+} DmntFileInformation;
+
 Result dmntInitialize(void);
 void dmntExit(void);
 
@@ -40,6 +47,10 @@ Result dmntTargetIOFileOpen(DmntFile *out, const char *path, int flags, DmntTIOC
 Result dmntTargetIOFileClose(DmntFile *f);
 Result dmntTargetIOFileRead(DmntFile *f, u64 off, void* buf, size_t len, size_t* out_read);
 Result dmntTargetIOFileWrite(DmntFile *f, u64 off, const void* buf, size_t len, size_t* out_written);
+Result dmntTargetIOFileGetInformation(const char *path, bool *out_is_dir, DmntFileInformation *out_info);
+Result dmntTargetIOFileGetSize(const char *path, u64 *out_size);
+Result dmntTargetIOFileSetSize(const char *path, u64 size);
+Result dmntTargetIOFileSetOpenFileSize(DmntFile *f, u64 size); /* Atmosphere extension */
 
 #ifdef __cplusplus
 }

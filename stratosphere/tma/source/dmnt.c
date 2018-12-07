@@ -186,3 +186,101 @@ Result dmntTargetIOFileWrite(DmntFile *f, u64 off, const void* buf, size_t len, 
 
     return rc;
 }
+
+Result dmntTargetIOFileGetInformation(const char *path, bool *out_is_dir, DmntFileInformation *out_info) {
+    IpcCommand c;
+    ipcInitialize(&c);
+    ipcAddSendBuffer(&c, path, FS_MAX_PATH, BufferType_Normal);
+    ipcAddRecvBuffer(&c, out_info, sizeof(*out_info), BufferType_Normal);
+
+    struct {
+        u64 magic;
+        u64 cmd_id;
+    } *raw;
+
+    raw = serviceIpcPrepareHeader(&g_dmntSrv, &c, sizeof(*raw));
+    
+    raw->magic = SFCI_MAGIC;
+    raw->cmd_id = 34;
+    
+    Result rc = serviceIpcDispatch(&g_dmntSrv);
+    
+    if (R_SUCCEEDED(rc)) {
+        IpcParsedCommand r;
+        struct {
+            u64 magic;
+            u64 result;
+            int is_dir;
+        } *resp;
+
+        serviceIpcParse(&g_dmntSrv, &r, sizeof(*resp));
+        resp = r.Raw;
+
+        rc = resp->result;
+        
+        if (R_SUCCEEDED(rc)) {
+            *out_is_dir = resp->is_dir != 0;
+        }
+    }
+
+    return rc;
+}
+
+Result dmntTargetIOFileGetSize(const char *path, u64 *out_size) {
+    DmntFileInformation info;
+    bool is_dir;
+    Result rc = dmntTargetIOFileGetInformation(path, &is_dir, &info);
+    if (R_SUCCEEDED(rc)) {
+        if (is_dir) {
+            /* TODO: error code? */
+            rc = 0x202;
+        } else {
+            *out_size = info.size;
+        }
+    }
+    return rc;
+}
+
+static Result _dmntTargetIOFileSetSize(const void *arg, size_t arg_size, u64 size) {
+    IpcCommand c;
+    ipcInitialize(&c);
+    ipcAddSendBuffer(&c, arg, arg_size, BufferType_Normal);
+
+    struct {
+        u64 magic;
+        u64 cmd_id;
+        u64 size;
+    } *raw;
+
+    raw = serviceIpcPrepareHeader(&g_dmntSrv, &c, sizeof(*raw));
+    
+    raw->magic = SFCI_MAGIC;
+    raw->cmd_id = 36;
+    raw->size = size;
+    
+    Result rc = serviceIpcDispatch(&g_dmntSrv);
+    
+    if (R_SUCCEEDED(rc)) {
+        IpcParsedCommand r;
+        struct {
+            u64 magic;
+            u64 result;
+        } *resp;
+
+        serviceIpcParse(&g_dmntSrv, &r, sizeof(*resp));
+        resp = r.Raw;
+
+        rc = resp->result;
+    }
+
+    return rc;
+}
+
+Result dmntTargetIOFileSetSize(const char *path, u64 size) {
+    return _dmntTargetIOFileSetSize(path, FS_MAX_PATH, size);
+}
+
+Result dmntTargetIOFileSetOpenFileSize(DmntFile *f, u64 size) {
+    /* Atmosphere extension */
+    return _dmntTargetIOFileSetSize(f, sizeof(*f), size);
+}
