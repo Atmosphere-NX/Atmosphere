@@ -15,6 +15,7 @@
  */
  
 #include "car.h"
+#include "timers.h"
 #include "utils.h"
 
 static inline uint32_t get_clk_source_reg(CarDevice dev) {
@@ -121,7 +122,15 @@ void clkrst_disable(CarDevice dev) {
 
 void clkrst_reboot(CarDevice dev) {
     clkrst_disable(dev);
-    clkrst_enable(dev);
+    if (dev == CARDEVICE_KFUSE) {
+        /* Workaround for KFUSE clock. */
+        clk_enable(dev);
+        udelay(100);
+        rst_disable(dev);
+        udelay(200);
+    } else {
+        clkrst_enable(dev);
+    }
 }
 
 void clkrst_enable_fuse_regs(bool enable) {
