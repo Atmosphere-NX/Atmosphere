@@ -1,4 +1,13 @@
 # Changelog
+## 0.8.2
++ A number of bugs were fixed causing users to sometimes see `Key Derivation Failed!`.
+  + KFUSE clock enable timings have been adjusted to allow time to stabilize before TSEC is granted access.
+  + A race condition was fixed that could cause wrong key data to be used on 6.2.0
+  + The TSEC firmware is now retried on failure, fixing a failure affecting ~1/50 boots on 6.2.0.
++ A bug was fixed causing some modules to not work on firmware 1.0.0.
++ A bug was fixed causing sleep mode to not work with debugmode enabled.
+  + As a result, debugmode is now enabled in the default BCT.ini.
++ General system stability improvements to enhance the user's experience.
 ## 0.8.1
 + A bug was fixed causing users to see `Failed to enable SMMU!` if fusee had previously rebooted.
   + This message will still occur sporadically if fusee is not launched from coldboot, but it can never happen twice in a row.
