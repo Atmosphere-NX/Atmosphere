@@ -191,6 +191,8 @@ void Utils::InitializeHidThreadFunc(void *args) {
     
     g_has_hid_session = true;
     
+    hidExit();
+    
     svcExitThread();
 }
 
@@ -198,7 +200,7 @@ bool Utils::IsSdInitialized() {
     return g_has_initialized;
 }
 
-bool Utils::IsHidInitialized() {
+bool Utils::IsHidAvailable() {
     return g_has_hid_session;
 }
 
@@ -410,13 +412,14 @@ bool Utils::HasSdDisableMitMFlag(u64 tid) {
 }
 
 Result Utils::GetKeysDown(u64 *keys) {
-    if (!Utils::IsHidInitialized()) {
+    if (!Utils::IsHidAvailable() || R_FAILED(hidInitialize())) {
         return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
     }
     
     hidScanInput();
     *keys = hidKeysDown(CONTROLLER_P1_AUTO);
     
+    hidExit();
     return 0x0;
 }
 

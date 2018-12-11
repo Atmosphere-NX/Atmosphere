@@ -67,7 +67,7 @@ class Utils {
         static bool HasSdDisableMitMFlag(u64 tid);
         
         
-        static bool IsHidInitialized();
+        static bool IsHidAvailable();
         static void InitializeHidThreadFunc(void *args);
         static Result GetKeysDown(u64 *keys);
         static bool HasOverrideButton(u64 tid);
