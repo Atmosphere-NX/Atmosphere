@@ -34,7 +34,7 @@
 #include "se.h"
 #include "userpage.h"
 #include "titlekey.h"
-#include "lp0.h"
+#include "sc7.h"
 #include "exocfg.h"
 
 #define SMC_USER_HANDLERS 0x13

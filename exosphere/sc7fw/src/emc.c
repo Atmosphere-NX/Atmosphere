@@ -15,7 +15,7 @@
  */
 
 #include "utils.h"
-#include "lp0.h"
+#include "sc7.h"
 #include "emc.h"
 #include "pmc.h"
 #include "timer.h"

@@ -15,7 +15,7 @@
  */
  
 #include "utils.h"
-#include "lp0.h"
+#include "sc7.h"
 #include "i2c.h"
 #include "pmc.h"
 #include "emc.h"
@@ -55,7 +55,7 @@ static void set_pmc_dpd_io_pads(void) {
     spinlock_wait(32);
 }
 
-void lp0_entry_main(void) {
+void sc7_entry_main(void) {
     /* Disable the BPMP Cache. */
     CACHE_CTRL |= 0xC00;
 

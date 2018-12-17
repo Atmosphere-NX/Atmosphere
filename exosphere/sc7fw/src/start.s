@@ -25,11 +25,11 @@ _start:
 .global crt0
 .type crt0, %function
 crt0:
-    @ setup to call lp0_entry_main
+    @ setup to call sc7_entry_main
     msr cpsr_cxsf, #0xD3
     ldr sp, =__stack_top__
     ldr lr, =reboot
-    b lp0_entry_main
+    b sc7_entry_main
 
 
 .global spinlock_wait

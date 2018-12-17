@@ -14,12 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#ifndef EXOSPHERE_BPMPFW_LP0_H
-#define EXOSPHERE_BPMPFW_LP0_H
+#ifndef EXOSPHERE_BPMPFW_SC7_H
+#define EXOSPHERE_BPMPFW_SC7_H
 
 #include "utils.h"
 
-void lp0_entry_main(void);
+void sc7_entry_main(void);
 
 void reboot(void);
 

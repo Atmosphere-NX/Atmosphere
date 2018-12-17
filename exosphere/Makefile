@@ -75,14 +75,14 @@ export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(TOPDIR)/bpmpfw
+			$(TOPDIR)/sc7fw
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) bpmpfw.bin
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) sc7fw.bin
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -109,22 +109,22 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) build_bpmpfw clean all
+.PHONY: $(BUILD) build_sc7fw clean all
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
 
-check_bpmpfw:
-	@$(MAKE) -C bpmpfw all
+check_sc7fw:
+	@$(MAKE) -C sc7fw all
 
-$(BUILD): check_bpmpfw
+$(BUILD): check_sc7fw
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@$(MAKE) -C $(TOPDIR)/bpmpfw clean
+	@$(MAKE) -C $(TOPDIR)/sc7fw clean
 	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
 
 

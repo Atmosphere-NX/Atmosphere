@@ -28,7 +28,7 @@
 #include "flow.h"
 #include "fuse.h"
 #include "i2c.h"
-#include "lp0.h"
+#include "sc7.h"
 #include "masterkey.h"
 #include "pmc.h"
 #include "se.h"
@@ -40,7 +40,7 @@
 
 #define u8 uint8_t
 #define u32 uint32_t
-#include "bpmpfw_bin.h"
+#include "sc7fw_bin.h"
 #undef u8
 #undef u32
 
@@ -138,11 +138,11 @@ static void setup_bpmp_sc7_firmware(void) {
 
     /* Copy BPMP firmware. */
     uint8_t *lp0_entry_code = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE));
-    for (unsigned int i = 0; i < bpmpfw_bin_size; i += 4) {
-        write32le(lp0_entry_code, i, read32le(bpmpfw_bin, i));
+    for (unsigned int i = 0; i < sc7fw_bin_size; i += 4) {
+        write32le(lp0_entry_code, i, read32le(sc7fw_bin, i));
     }
         
-    flush_dcache_range(lp0_entry_code, lp0_entry_code + bpmpfw_bin_size);
+    flush_dcache_range(lp0_entry_code, lp0_entry_code + sc7fw_bin_size);
 
     /* Take the BPMP out of reset. */
     MAKE_CAR_REG(0x304) = 2;

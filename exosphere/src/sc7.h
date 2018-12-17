@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#ifndef EXOSPHERE_LP0_H
-#define EXOSPHERE_LP0_H
+#ifndef EXOSPHERE_SC7_H
+#define EXOSPHERE_SC7_H
 
 #include <stdint.h>
 
