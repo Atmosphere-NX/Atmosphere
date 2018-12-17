@@ -186,4 +186,15 @@ typedef struct {
 #define FUSE_REGS       ((volatile fuse_registers_t *)(0x7000F800))
 #define FUSE_CHIP_REGS  ((volatile fuse_chip_registers_t *)(0x7000F900))
 
+#define MAKE_FUSE_REG(n) MAKE_REG32(0x7000F800 + n)
+
+typedef struct {
+    uint32_t offset;
+    uint32_t value;
+} fuse_bypass_data_t;
+
+bool fuse_check_downgrade_status(void);
+
+void fuse_configure_fuse_bypass(void);
+
 #endif

@@ -30,6 +30,6 @@ typedef struct {
 
 void lp0_entry_main(warmboot_metadata_t *meta);
 
-void reboot(void);
+void __attribute__((noreturn)) reboot(void);
 
 #endif

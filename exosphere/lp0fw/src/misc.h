@@ -19,6 +19,8 @@
 
 #include <stdint.h>
 
+#include "utils.h"
+
 #define MISC_BASE  (0x70000000)
 
 #define MAKE_MISC_REG(n) MAKE_REG32(MISC_BASE + n)

@@ -19,6 +19,7 @@
 #include "mc.h"
 #include "pmc.h"
 #include "misc.h"
+#include "fuse.h"
 #include "timer.h"
 
 void reboot(void) {
@@ -30,18 +31,39 @@ void reboot(void) {
 }
 
 void lp0_entry_main(warmboot_metadata_t *meta) {
+    const uint32_t target_firmware = meta->target_firmware;
     /* Before doing anything else, ensure some sanity. */
-    if (meta->magic != WARMBOOT_MAGIC || meta->target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX) {
+    if (meta->magic != WARMBOOT_MAGIC || target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX) {
         reboot();
     }
     
     /* [4.0.0+] First thing warmboot does is disable BPMP access to memory. */
-    if (meta->target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400)  {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400)  {
         disable_bpmp_access_to_dram();
     }
     
     /* Configure debugging depending on FUSE_PRODUCTION_MODE */
     configure_device_dbg_settings();
+    
+    /* Check for downgrade. */
+    /* NOTE: We implemented this as "return false" */
+    if (fuse_check_downgrade_status()) {
+        reboot();
+    }
+    
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_300) {
+        /* Nintendo's firmware checks APBDEV_PMC_SECURE_SCRATCH32_0 against a per-warmboot binary value here. */
+        /* We won't bother with that. */
+        if (false /* APBDEV_PMC_SECURE_SCRATCH32_0 == WARMBOOT_MAGIC_NUMBER */) {
+            reboot();
+        }
+    }
+    
+    /* TODO: Check that we're running at the correct physical address. */
+    
+    /* Setup fuses, disable bypass. */
+    fuse_configure_fuse_bypass();
+    
     
     /* TODO: stuff */
 
