@@ -13,26 +13,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#ifndef EXOSPHERE_WARMBOOT_BIN_MISC_H
-#define EXOSPHERE_WARMBOOT_BIN_MISC_H
-
-#include <stdint.h>
 
 #include "utils.h"
+#include "lp0.h"
+#include "emc.h"
+#include "pmc.h"
+#include "timer.h"
 
-#define MISC_BASE  (0x70000000)
-
-#define MAKE_MISC_REG(n) MAKE_REG32(MISC_BASE + n)
-
-#define APB_MISC_PP_CONFIG_CTL_0 MAKE_MISC_REG(0x024)
-
-#define APB_MISC_GP_ASDBGREG_0 MAKE_MISC_REG(0x810)
-
-#define PINMUX_AUX_GPIO_PA6_0 MAKE_MISC_REG(0x3244)
-
-void misc_configure_device_dbg_settings(void);
-
-void misc_restore_ram_svop(void);
-
-#endif
+void emc_configure_pmacro_training(void) {
+    /* Set DISABLE_CFG_BYTEN for all N. */
+    EMC_PMACRO_CFG_PM_GLOBAL_0_0 = 0xFF0000;
+    
+    /* Set CHN_TRAINING_E_WRPTR for channel 0 + channel 1. */
+    EMC_PMACRO_TRAINING_CTRL_0_0 = 8;
+    EMC_PMACRO_TRAINING_CTRL_1_0 = 8;
+    
+    /* Clear DISABLE_CFG_BYTEN for all N. */
+    EMC_PMACRO_CFG_PM_GLOBAL_0_0 = 0x0;
+}

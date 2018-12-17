@@ -22,7 +22,7 @@
 #include "sysreg.h"
 #include "pmc.h"
 
-void configure_device_dbg_settings(void) {
+void misc_configure_device_dbg_settings(void) {
     /* Enable RTCK daisychaining by setting TBE bit. */
     APB_MISC_PP_CONFIG_CTL_0 = 0x80;
     
@@ -44,4 +44,9 @@ void configure_device_dbg_settings(void) {
     
     /* Set E_INPUT in PINMUX_AUX_GPIO_PA6_0 */
     PINMUX_AUX_GPIO_PA6_0 |= 0x40;
+}
+
+void misc_restore_ram_svop(void) {
+    /* This sets CFG2TMC_RAM_SVOP_PDP to 0x2. */
+    APB_MISC_GP_ASDBGREG_0 |= 0x02000000;
 }

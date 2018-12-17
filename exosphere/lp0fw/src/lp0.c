@@ -20,6 +20,8 @@
 #include "pmc.h"
 #include "misc.h"
 #include "fuse.h"
+#include "car.h"
+#include "emc.h"
 #include "timer.h"
 
 void reboot(void) {
@@ -43,7 +45,7 @@ void lp0_entry_main(warmboot_metadata_t *meta) {
     }
     
     /* Configure debugging depending on FUSE_PRODUCTION_MODE */
-    configure_device_dbg_settings();
+    misc_configure_device_dbg_settings();
     
     /* Check for downgrade. */
     /* NOTE: We implemented this as "return false" */
@@ -64,6 +66,12 @@ void lp0_entry_main(warmboot_metadata_t *meta) {
     /* Setup fuses, disable bypass. */
     fuse_configure_fuse_bypass();
     
+    /* Configure oscillators/timing in CAR. */
+    car_configure_oscillators();
+    
+    /* Restore RAM configuration. */
+    misc_restore_ram_svop();
+    emc_configure_pmacro_training();
     
     /* TODO: stuff */
 
