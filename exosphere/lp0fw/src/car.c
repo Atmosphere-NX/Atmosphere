@@ -20,6 +20,7 @@
 #include "car.h"
 #include "timer.h"
 #include "pmc.h"
+#include "emc.h"
 #include "lp0.h"
 
 static inline uint32_t get_special_clk_reg(CarDevice dev) {
@@ -49,6 +50,8 @@ static inline uint32_t get_special_clk_val(CarDevice dev) {
 static uint32_t g_clk_reg_offsets[NUM_CAR_BANKS] = {0x010, 0x014, 0x018, 0x360, 0x364, 0x280, 0x298};
 static uint32_t g_rst_reg_offsets[NUM_CAR_BANKS] = {0x004, 0x008, 0x00C, 0x358, 0x35C, 0x28C, 0x2A4}; 
 
+static uint32_t g_clk_clr_reg_offsets[NUM_CAR_BANKS] = {0x324, 0x32C, 0x334, 0x444, 0x44C, 0x228, 0x2A0};
+
 void car_configure_oscillators(void) {
     /* Enable the crystal oscillator, setting drive strength to the saved value in PMC. */
     CLK_RST_CONTROLLER_OSC_CTRL_0 = (CLK_RST_CONTROLLER_OSC_CTRL_0 & 0xFFFFFC0E) | 1 | (((APBDEV_PMC_OSC_EDPD_OVER_0 >> 1) & 0x3F) << 4);
@@ -61,6 +64,38 @@ void car_configure_oscillators(void) {
     /* Set TIMERUS_USEC_CFG to cycle at 0x60 / 0x5 = 19.2 MHz. */
     /* Value is (dividend << 8) | (divisor). */
     TIMERUS_USEC_CFG_0 = 0x45F;
+}
+
+void car_mbist_workaround(void) {
+    /* This code works around MBIST bug. */
+    
+    /* Clear LVL2_CLK_GATE_OVR* registers. */
+    CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRA_0 = 0;
+    CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRB_0 = 0;
+    CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRC_0 = 0;
+    CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 = 0;
+    CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRE_0 = 0;
+    
+    /* Clear bit patterns in CAR. */
+    /* L: Reset all but RTC, TMR, GPIO, BPMP Cache (CACHE2). */ 
+    MAKE_CAR_REG(g_clk_clr_reg_offsets[0]) = MAKE_CAR_REG(g_clk_reg_offsets[0]) & 0x7FFFFECF;
+    /* H: Reset all but MC, PMC, FUSE, EMC. */ 
+    MAKE_CAR_REG(g_clk_clr_reg_offsets[1]) = MAKE_CAR_REG(g_clk_reg_offsets[1]) & 0xFDFFFF3E;
+    /* U: Reset all but CSITE, IRAM[A-D], BPMP Cache RAM (CRAM2). */ 
+    MAKE_CAR_REG(g_clk_clr_reg_offsets[2]) = MAKE_CAR_REG(g_clk_reg_offsets[2]) & 0xFE0FFDFF;
+    /* V: Reset all but MSELECT, S/PDIF audio doubler, TZRAM, SE. */ 
+    MAKE_CAR_REG(g_clk_clr_reg_offsets[3]) = MAKE_CAR_REG(g_clk_reg_offsets[3]) & 0x3FBFFFF7;
+    /* W: Reset all but PCIERX[0-5], ENTROPY. */ 
+    MAKE_CAR_REG(g_clk_clr_reg_offsets[4]) = MAKE_CAR_REG(g_clk_reg_offsets[4]) & 0xFFDFFF03;
+    /* X: Reset all but ETC, MCLK, MCLK2, I2C6, EMC_DLL, GPU, DBGAPB, PLLG_REF, . */ 
+    MAKE_CAR_REG(g_clk_clr_reg_offsets[5]) = MAKE_CAR_REG(g_clk_reg_offsets[5]) & 0xDCFFB87F;
+    /* Y: Reset all but MC_CDPA, MC_CCPA. */ 
+    MAKE_CAR_REG(g_clk_clr_reg_offsets[6]) = MAKE_CAR_REG(g_clk_reg_offsets[6]) & 0xFFFFFCFF;
+    
+    /* Enable clock to MC1, if CH1 is enabled in EMC. */
+    if (EMC_FBIO_CFG7_0 & 4) { /* CH1_ENABLE */
+        CLK_RST_CONTROLLER_CLK_ENB_W_SET_0 |= 0x40000000; /* SET_CLK_ENB_MC1 */
+    }
 }
 
 void clk_enable(CarDevice dev) {

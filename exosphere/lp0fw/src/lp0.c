@@ -73,6 +73,9 @@ void lp0_entry_main(warmboot_metadata_t *meta) {
     misc_restore_ram_svop();
     emc_configure_pmacro_training();
     
+    /* Setup clock output for all devices, working around mbist bug. */
+    car_mbist_workaround();
+    
     /* TODO: stuff */
 
     while (true) { /* TODO: Halt BPMP */ }
