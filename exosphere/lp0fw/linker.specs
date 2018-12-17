@@ -1,0 +1,7 @@
+%rename link                old_link
+
+*link:
+%(old_link) -T %:getenv(TOPDIR /linker.ld) --nmagic --gc-sections
+
+*startfile:
+crti%O%s crtbegin%O%s
