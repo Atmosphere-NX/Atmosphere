@@ -18,6 +18,7 @@
 #include "lp0.h"
 #include "mc.h"
 #include "pmc.h"
+#include "misc.h"
 #include "timer.h"
 
 void reboot(void) {
@@ -38,6 +39,9 @@ void lp0_entry_main(warmboot_metadata_t *meta) {
     if (meta->target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400)  {
         disable_bpmp_access_to_dram();
     }
+    
+    /* Configure debugging depending on FUSE_PRODUCTION_MODE */
+    configure_device_dbg_settings();
     
     /* TODO: stuff */
 
