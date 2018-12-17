@@ -240,6 +240,10 @@ void save_se_and_power_down_cpu(void) {
     /* Save context for warmboot to restore. */
     save_tzram_state();
     save_se_state();
+    
+    /* Patch the bootrom to disable warmboot signature checks. */
+    MAKE_REG32(PMC_BASE + 0x118) = 0x2202E012;
+    MAKE_REG32(PMC_BASE + 0x11C) = 0x6001DC28;
 
     if (!configitem_is_retail()) {
         uart_send(UART_A, "OYASUMI", 8);
