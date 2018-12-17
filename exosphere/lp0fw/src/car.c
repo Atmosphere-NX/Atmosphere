@@ -19,6 +19,7 @@
 #include "utils.h"
 #include "car.h"
 #include "timer.h"
+#include "pmc.h"
 #include "lp0.h"
 
 static inline uint32_t get_special_clk_reg(CarDevice dev) {
@@ -47,6 +48,20 @@ static inline uint32_t get_special_clk_val(CarDevice dev) {
 
 static uint32_t g_clk_reg_offsets[NUM_CAR_BANKS] = {0x010, 0x014, 0x018, 0x360, 0x364, 0x280, 0x298};
 static uint32_t g_rst_reg_offsets[NUM_CAR_BANKS] = {0x004, 0x008, 0x00C, 0x358, 0x35C, 0x28C, 0x2A4}; 
+
+void car_configure_oscillators(void) {
+    /* Enable the crystal oscillator, setting drive strength to the saved value in PMC. */
+    CLK_RST_CONTROLLER_OSC_CTRL_0 = (CLK_RST_CONTROLLER_OSC_CTRL_0 & 0xFFFFFC0E) | 1 | (((APBDEV_PMC_OSC_EDPD_OVER_0 >> 1) & 0x3F) << 4);
+    
+    /* Set CLK_M_DIVISOR to 1 (causes actual division by 2.) */
+    CLK_RST_CONTROLLER_SPARE_REG0_0 = (1 << 2);
+    /* Reading the register after writing it is required to ensure value takes. */
+    (void)(CLK_RST_CONTROLLER_SPARE_REG0_0);
+    
+    /* Set TIMERUS_USEC_CFG to cycle at 0x60 / 0x5 = 19.2 MHz. */
+    /* Value is (dividend << 8) | (divisor). */
+    TIMERUS_USEC_CFG_0 = 0x45F;
+}
 
 void clk_enable(CarDevice dev) {
     uint32_t special_reg;

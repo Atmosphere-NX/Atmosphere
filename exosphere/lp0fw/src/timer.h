@@ -20,6 +20,7 @@
 #include "utils.h"
 
 #define TIMERUS_CNTR_1US_0 MAKE_REG32(0x60005010)
+#define TIMERUS_USEC_CFG_0 MAKE_REG32(0x60005014)
 
 static inline void timer_wait(uint32_t microseconds) {
     uint32_t old_time = TIMERUS_CNTR_1US_0;
