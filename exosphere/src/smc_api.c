@@ -145,21 +145,21 @@ void set_suspend_for_debug(void) {
 
 void set_version_specific_smcs(void) {
     switch (exosphere_get_target_firmware()) {
-        case EXOSPHERE_TARGET_FIRMWARE_100:
+        case ATMOSPHERE_TARGET_FIRMWARE_100:
             /* 1.0.0 doesn't have ConfigureCarveout or ReadWriteRegister. */
             g_smc_priv_table[7].handler = NULL;
             g_smc_priv_table[8].handler = NULL;
             /* 1.0.0 doesn't have UnwrapAesWrappedTitlekey. */
             g_smc_user_table[0x12].handler = NULL;
             break;
-        case EXOSPHERE_TARGET_FIRMWARE_200:
-        case EXOSPHERE_TARGET_FIRMWARE_300:
-        case EXOSPHERE_TARGET_FIRMWARE_400:
+        case ATMOSPHERE_TARGET_FIRMWARE_200:
+        case ATMOSPHERE_TARGET_FIRMWARE_300:
+        case ATMOSPHERE_TARGET_FIRMWARE_400:
             /* Do nothing. */
             break;
-        case EXOSPHERE_TARGET_FIRMWARE_500:
-        case EXOSPHERE_TARGET_FIRMWARE_600:
-        case EXOSPHERE_TARGET_FIRMWARE_620:
+        case ATMOSPHERE_TARGET_FIRMWARE_500:
+        case ATMOSPHERE_TARGET_FIRMWARE_600:
+        case ATMOSPHERE_TARGET_FIRMWARE_620:
             /* No more LoadSecureExpModKey. */
             g_smc_user_table[0xE].handler = NULL;
             g_smc_user_table[0xC].id = 0xC300D60C;
@@ -280,7 +280,7 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
 #endif
     
 #if DEBUG_PANIC_ON_FAILURE
-    if (args->X[0] && (!is_aes_kek || args->X[3] <= EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG)) 
+    if (args->X[0] && (!is_aes_kek || args->X[3] <= ATMOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG)) 
     {
         MAKE_REG32(get_iram_address_for_debug() + 0x4FF0) = handler_id;
         MAKE_REG32(get_iram_address_for_debug() + 0x4FF4) = smc_id;
@@ -594,7 +594,7 @@ uint32_t smc_read_write_register(smc_args_t *args) {
         } else {
             return 2;
         }
-    } else if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400 && MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) <= address &&
+    } else if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400 && MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) <= address &&
                address < MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) + MMIO_GET_DEVICE_SIZE(MMIO_DEVID_MC)) {
         /* Memory Controller RW supported only on 4.0.0+ */
         const uint8_t mc_whitelist[0x68] = {
@@ -667,7 +667,7 @@ uint32_t smc_configure_carveout(smc_args_t *args) {
     }
 
     /* Configuration is one-shot, and cannot be done multiple times. */
-    if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_300) { 
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_300) { 
         if (g_configured_carveouts[carveout_id]) {
             return 2;
         }

@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <atmosphere.h>
 
 #define BIT(n)      (1u   << (n))
 #define BITL(n)     (1ull << (n))

@@ -44,7 +44,7 @@ void tkey_set_master_key_rev(unsigned int master_key_rev) {
 }
 
 static void tkey_validate_type(unsigned int type) {
-    if (type > TITLEKEY_TYPE_MAX || (type > 0 && exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_600)) {
+    if (type > TITLEKEY_TYPE_MAX || (type > 0 && exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_600)) {
         generic_panic();
     }
 }

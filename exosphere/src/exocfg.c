@@ -27,7 +27,7 @@
 /* TODO: Should this be at a non-static location? */
 #define MAILBOX_EXOSPHERE_CONFIG (*((volatile exosphere_config_t *)(MAILBOX_BASE + 0xE40ULL)))
 
-static exosphere_config_t g_exosphere_cfg = {MAGIC_EXOSPHERE_BOOTCONFIG, EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG, EXOSPHERE_FLAGS_DEFAULT};
+static exosphere_config_t g_exosphere_cfg = {MAGIC_EXOSPHERE_BOOTCONFIG, ATMOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG, EXOSPHERE_FLAGS_DEFAULT};
 static bool g_has_loaded_config = false;
 
 #define EXOSPHERE_CHECK_FLAG(flag) ((g_exosphere_cfg.flags & flag) != 0)
@@ -65,7 +65,7 @@ unsigned int exosphere_should_perform_620_keygen(void) {
         generic_panic();
     }
     
-    return g_exosphere_cfg.target_firmware >= EXOSPHERE_TARGET_FIRMWARE_620 && EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_PERFORM_620_KEYGEN);
+    return g_exosphere_cfg.target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_620 && EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_PERFORM_620_KEYGEN);
 }
 
 unsigned int exosphere_should_override_debugmode_priv(void) {

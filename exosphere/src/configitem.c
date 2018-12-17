@@ -125,7 +125,7 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             break;
         case CONFIGITEM_BOOTREASON:
             /* For some reason, Nintendo removed it on 4.0 */
-            if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400) {
+            if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_400) {
                 *p_outvalue = bootconfig_get_boot_reason();
             } else {
                 result = 2;
@@ -149,7 +149,7 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             break;
         case CONFIGITEM_ISQUESTUNIT:
             /* Added on 3.0, used to determine whether console is a kiosk unit. */
-            if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_300) {
+            if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_300) {
                 *p_outvalue = (fuse_get_reserved_odm(4) >> 10) & 1;
             } else {
                 result = 2;
@@ -157,7 +157,7 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             break;
         case CONFIGITEM_NEWHARDWARETYPE_5X:
             /* Added in 5.x, currently hardcoded to 0. */
-            if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+            if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
                 *p_outvalue = 0;
             } else {
                 result = 2;
@@ -165,7 +165,7 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             break;
         case CONFIGITEM_NEWKEYGENERATION_5X:
             /* Added in 5.x. */
-            if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+            if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
                 *p_outvalue = fuse_get_5x_key_generation();
             } else {
                 result = 2;
@@ -173,7 +173,7 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             break;
         case CONFIGITEM_PACKAGE2HASH_5X:
             /* Added in 5.x. */
-            if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500 && bootconfig_is_recovery_boot()) {
+            if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500 && bootconfig_is_recovery_boot()) {
                 bootconfig_get_package2_hash_for_recovery(p_outvalue);
             } else {
                 result = 2;

@@ -79,7 +79,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
         /* Make PMC (2.x+), MC (4.x+) registers secure-only */
         secure_additional_devices();
 
-        if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400 || configitem_get_hardware_type() == 0) {
+        if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_400 || configitem_get_hardware_type() == 0) {
             /* Enable input to I2C1 */
             PINMUX_AUX_GEN1_I2C_SCL_0 = 0x40;
             PINMUX_AUX_GEN1_I2C_SDA_0 = 0x40;
@@ -92,7 +92,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
 
         clear_user_smc_in_progress();
 
-        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
             setup_4x_mmio();
         }
     }

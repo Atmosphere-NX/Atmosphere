@@ -37,7 +37,7 @@ static const uint8_t g_seal_key_sources[CRYPTOUSECASE_MAX_5X][0x10] = {
 };
 
 bool usecase_is_invalid(unsigned int usecase) {
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
         return usecase >= CRYPTOUSECASE_MAX_5X;
     } else {
         return usecase >= CRYPTOUSECASE_MAX;

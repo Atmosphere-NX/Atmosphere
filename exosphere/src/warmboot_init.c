@@ -25,7 +25,7 @@
 #undef  MC_BASE
 #define MC_BASE (MMIO_GET_DEVICE_PA(MMIO_DEVID_MC))
 
-#define WARMBOOT_GET_TZRAM_SEGMENT_PA(x) ((g_exosphere_target_firmware_for_init < EXOSPHERE_TARGET_FIRMWARE_500) \
+#define WARMBOOT_GET_TZRAM_SEGMENT_PA(x) ((g_exosphere_target_firmware_for_init < ATMOSPHERE_TARGET_FIRMWARE_500) \
                                             ? TZRAM_GET_SEGMENT_PA(x) : TZRAM_GET_SEGMENT_5X_PA(x))
 
 /* start.s */
@@ -53,7 +53,7 @@ void warmboot_crt0_critical_section_enter(volatile critical_section_t *critical_
 }
 
 void init_dma_controllers(unsigned int target_firmware) {
-    if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         /* Set some unknown registers in HOST1X. */
         MAKE_REG32(0x500038F8) &= 0xFFFFFFFE;
         MAKE_REG32(0x50003300) = 0;
@@ -205,7 +205,7 @@ void warmboot_init(void) {
     
     /*identity_remap_tzram();*/
     /* Nintendo pointlessly fully invalidate the TLB & invalidate the data cache on the modified ranges here */
-    if (g_exosphere_target_firmware_for_init < EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (g_exosphere_target_firmware_for_init < ATMOSPHERE_TARGET_FIRMWARE_500) {
         set_memory_registers_enable_mmu_1x_ttbr0();
     } else {
         set_memory_registers_enable_mmu_5x_ttbr0();

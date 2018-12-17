@@ -106,20 +106,20 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
     const package1loader_header_t *package1loader_header = (const package1loader_header_t *)package1loader;
     switch (package1loader_header->version) {
         case 0x01:          /* 1.0.0 */
-            return EXOSPHERE_TARGET_FIRMWARE_100;
+            return ATMOSPHERE_TARGET_FIRMWARE_100;
         case 0x02:          /* 2.0.0 - 2.3.0 */
-            return EXOSPHERE_TARGET_FIRMWARE_200;
+            return ATMOSPHERE_TARGET_FIRMWARE_200;
         case 0x04:          /* 3.0.0 and 3.0.1 - 3.0.2 */
-            return EXOSPHERE_TARGET_FIRMWARE_300;
+            return ATMOSPHERE_TARGET_FIRMWARE_300;
         case 0x07:          /* 4.0.0 - 4.1.0 */
-            return EXOSPHERE_TARGET_FIRMWARE_400;
+            return ATMOSPHERE_TARGET_FIRMWARE_400;
         case 0x0B:          /* 5.0.0 - 5.1.0 */
-            return EXOSPHERE_TARGET_FIRMWARE_500;
+            return ATMOSPHERE_TARGET_FIRMWARE_500;
         case 0x0E: {        /* 6.0.0 - 6.2.0 */
             if (memcmp(package1loader_header->build_timestamp, "20180802", 8) == 0) {
-                return EXOSPHERE_TARGET_FIRMWARE_600;
+                return ATMOSPHERE_TARGET_FIRMWARE_600;
             } else if (memcmp(package1loader_header->build_timestamp, "20181107", 8) == 0) {
-                return EXOSPHERE_TARGET_FIRMWARE_620;
+                return ATMOSPHERE_TARGET_FIRMWARE_620;
             } else {
                 fatal_error("[NXBOOT]: Unable to identify package1!\n");
             }
@@ -144,7 +144,7 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
         fatal_error("[NXBOOT]: Failed to parse BCT.ini!\n");
     }
 
-    if ((exo_cfg.target_firmware < EXOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > EXOSPHERE_TARGET_FIRMWARE_MAX)) {
+    if ((exo_cfg.target_firmware < ATMOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX)) {
         fatal_error("[NXBOOT]: Invalid Exosphere target firmware!\n");
     }
 
@@ -164,7 +164,7 @@ static void nxboot_configure_stratosphere(uint32_t target_firmware) {
         }
     } else {
         /* Check if fuses are < 4.0.0, but firmware is >= 4.0.0 */
-        if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_400 && !(fuse_get_reserved_odm(7) & ~0x0000000F)) {
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400 && !(fuse_get_reserved_odm(7) & ~0x0000000F)) {
             kip_patches_set_enable_nogc();
         }
     }
@@ -252,8 +252,8 @@ static void nxboot_move_bootconfig() {
     fclose(bcfile);
     
     /* Select the actual BootConfig size and destination address. */
-    bootconfig_addr = (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_600) ? 0x4003D000 : 0x4003F800;
-    bootconfig_size = (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) ? 0x3000 : 0x1000;
+    bootconfig_addr = (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_600) ? 0x4003D000 : 0x4003F800;
+    bootconfig_size = (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) ? 0x3000 : 0x1000;
     
     /* Copy the BootConfig into IRAM. */
     memset((void *)bootconfig_addr, 0, bootconfig_size);
@@ -360,7 +360,7 @@ uint32_t nxboot_main(void) {
         if (!package1_get_tsec_fw(&tsec_fw, package1loader, package1loader_size)) {
             fatal_error("[NXBOOT]: Failed to read the TSEC firmware from Package1loader!\n");
         }
-        if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_620) {
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_620) {
             tsec_fw_size = 0x2900;
         } else {
             tsec_fw_size = 0xF00;
@@ -372,7 +372,7 @@ uint32_t nxboot_main(void) {
     /* Get the TSEC keys. */
     uint8_t tsec_key[0x10] = {0};
     uint8_t tsec_root_key[0x10] = {0};
-    if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_620) {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_620) {
         uint8_t tsec_keys[0x20] = {0};
         
         /* Emulate the TSEC payload on 6.2.0+. */
@@ -398,7 +398,7 @@ uint32_t nxboot_main(void) {
     nxboot_configure_exosphere(target_firmware, keygen_type);
 
     /* Initialize Boot Reason on older firmware versions. */
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
         print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Initializing Boot Reason...\n");
         nxboot_set_bootreason();
     }
@@ -420,7 +420,7 @@ uint32_t nxboot_main(void) {
             fatal_error("[NXBOOT]: Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
         }
     } else {
-        if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_620) {
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_620) {
             /* Package1 was decrypted during TSEC emulation. */
             const uint8_t *package1_hdr = (const uint8_t *)package1loader + 0x7000 - 0x20;
             package1 = (package1_header_t *)(package1_hdr + 0x20);
@@ -446,9 +446,9 @@ uint32_t nxboot_main(void) {
     }
 
     /* Select the right address for the warmboot firmware. */
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
         warmboot_memaddr = (void *)0x8000D000;
-    } else if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_600) {
+    } else if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_600) {
         warmboot_memaddr = (void *)0x4003B000;
     } else {
         warmboot_memaddr = (void *)0x4003D800;
@@ -459,7 +459,7 @@ uint32_t nxboot_main(void) {
     /* Copy the warmboot firmware and set the address in PMC if necessary. */
     if (warmboot_fw && (warmboot_fw_size > 0)) {
         memcpy(warmboot_memaddr, warmboot_fw, warmboot_fw_size);
-        if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400)
+        if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400)
             pmc->scratch1 = (uint32_t)warmboot_memaddr;
     }
 
@@ -474,7 +474,7 @@ uint32_t nxboot_main(void) {
     print(SCREEN_LOG_LEVEL_INFO, u8"[NXBOOT]: Reading Exosphère...\n");
 
     /* Select the right address for Exosphère. */
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
         exosphere_memaddr = (void *)0x4002D000;
     } else {
         exosphere_memaddr = (void *)0x4002B000;
@@ -502,7 +502,7 @@ uint32_t nxboot_main(void) {
     nxboot_move_bootconfig();
 
     /* Set 3.0.0/3.0.1/3.0.2 warmboot security check. */
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == EXOSPHERE_TARGET_FIRMWARE_300) {
+    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == ATMOSPHERE_TARGET_FIRMWARE_300) {
         const package1loader_header_t *package1loader_header = (const package1loader_header_t *)package1loader;
         if (!strcmp(package1loader_header->build_timestamp, "20170519101410"))
             pmc->secure_scratch32 = 0xE3;       /* Warmboot 3.0.0 security check.*/

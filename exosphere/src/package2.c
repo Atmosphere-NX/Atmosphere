@@ -133,7 +133,7 @@ static void setup_se(void) {
         set_rsa_keyslot_flags(i, 0x41);
     }
     
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_620 && exosphere_should_perform_620_keygen()) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_620 && exosphere_should_perform_620_keygen()) {
         /* Start by generating device keys. */
         se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_6XTSECKEY, work_buffer, 0x10, keyblob_key_seed_00, 0x10);
         decrypt_data_into_keyslot(KEYSLOT_SWITCH_4XOLDDEVICEKEY, KEYSLOT_SWITCH_6XSBK, work_buffer, 0x10);
@@ -152,16 +152,16 @@ static void setup_se(void) {
 
     /* Derive new device keys. */
     switch (exosphere_get_target_firmware()) {
-        case EXOSPHERE_TARGET_FIRMWARE_100:
-        case EXOSPHERE_TARGET_FIRMWARE_200:
-        case EXOSPHERE_TARGET_FIRMWARE_300:
+        case ATMOSPHERE_TARGET_FIRMWARE_100:
+        case ATMOSPHERE_TARGET_FIRMWARE_200:
+        case ATMOSPHERE_TARGET_FIRMWARE_300:
             break;
-        case EXOSPHERE_TARGET_FIRMWARE_400:
+        case ATMOSPHERE_TARGET_FIRMWARE_400:
             derive_new_device_keys(KEYSLOT_SWITCH_4XNEWDEVICEKEYGENKEY);
             break;
-        case EXOSPHERE_TARGET_FIRMWARE_500:
-        case EXOSPHERE_TARGET_FIRMWARE_600:
-        case EXOSPHERE_TARGET_FIRMWARE_620:
+        case ATMOSPHERE_TARGET_FIRMWARE_500:
+        case ATMOSPHERE_TARGET_FIRMWARE_600:
+        case ATMOSPHERE_TARGET_FIRMWARE_620:
             derive_new_device_keys(KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY);
             break;
     }
@@ -188,7 +188,7 @@ static void setup_boot_config(void) {
         bootconfig_clear();
     } else {
         void *bootconfig_ptr = NX_BOOTLOADER_BOOTCONFIG_POINTER;
-        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_600) {
+        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_600) {
             bootconfig_ptr = NX_BOOTLOADER_BOOTCONFIG_POINTER_6X;
         }
         flush_dcache_range((uint8_t *)bootconfig_ptr, (uint8_t *)bootconfig_ptr + sizeof(bootconfig_t));
@@ -455,18 +455,18 @@ static void load_package2_sections(package2_meta_t *metadata, uint32_t master_ke
 static void copy_warmboot_bin_to_dram() {
     uint8_t *warmboot_src;
     switch (exosphere_get_target_firmware()) {
-        case EXOSPHERE_TARGET_FIRMWARE_100:
-        case EXOSPHERE_TARGET_FIRMWARE_200:
-        case EXOSPHERE_TARGET_FIRMWARE_300:
+        case ATMOSPHERE_TARGET_FIRMWARE_100:
+        case ATMOSPHERE_TARGET_FIRMWARE_200:
+        case ATMOSPHERE_TARGET_FIRMWARE_300:
         default:
             generic_panic();
             break;
-        case EXOSPHERE_TARGET_FIRMWARE_400:
-        case EXOSPHERE_TARGET_FIRMWARE_500:
+        case ATMOSPHERE_TARGET_FIRMWARE_400:
+        case ATMOSPHERE_TARGET_FIRMWARE_500:
             warmboot_src = (uint8_t *)0x4003B000;
             break;
-        case EXOSPHERE_TARGET_FIRMWARE_600:
-        case EXOSPHERE_TARGET_FIRMWARE_620:
+        case ATMOSPHERE_TARGET_FIRMWARE_600:
+        case ATMOSPHERE_TARGET_FIRMWARE_620:
             warmboot_src = (uint8_t *)0x4003D800;
             break;
     }
@@ -515,22 +515,22 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     setup_se();
     
     /* Perform initial PMC register writes, if relevant. */
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         MAKE_REG32(PMC_BASE + 0x054) = 0x8000D000; 
         MAKE_REG32(PMC_BASE + 0x0A0) &= 0xFFF3FFFF; 
         MAKE_REG32(PMC_BASE + 0x818) &= 0xFFFFFFFE; 
         MAKE_REG32(PMC_BASE + 0x334) |= 0x10;
         switch (exosphere_get_target_firmware()) {
-            case EXOSPHERE_TARGET_FIRMWARE_400:
+            case ATMOSPHERE_TARGET_FIRMWARE_400:
                 MAKE_REG32(PMC_BASE + 0x360) = 0x105;
                 break;
-            case EXOSPHERE_TARGET_FIRMWARE_500:
+            case ATMOSPHERE_TARGET_FIRMWARE_500:
                 MAKE_REG32(PMC_BASE + 0x360) = 6;
                 break;
-            case EXOSPHERE_TARGET_FIRMWARE_600:
+            case ATMOSPHERE_TARGET_FIRMWARE_600:
                 MAKE_REG32(PMC_BASE + 0x360) = 0x87;
                 break;
-            case EXOSPHERE_TARGET_FIRMWARE_620:
+            case ATMOSPHERE_TARGET_FIRMWARE_620:
                 MAKE_REG32(PMC_BASE + 0x360) = 0xA8;
                 break;
         }
@@ -564,7 +564,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     setup_boot_config();
     
     /* Set sysctr0 registers based on bootconfig. */
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         uint64_t sysctr0_val = bootconfig_get_value_for_sysctr0();
         MAKE_SYSCTR0_REG(0x8) = (uint32_t)((sysctr0_val >> 0) & 0xFFFFFFFFULL);
         MAKE_SYSCTR0_REG(0xC) = (uint32_t)((sysctr0_val >> 32) & 0xFFFFFFFFULL);
@@ -572,10 +572,10 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     }
 
     /* Synchronize with NX BOOTLOADER. */
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_DRAM_INITIALIZED_4X);
         copy_warmboot_bin_to_dram();
-        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_600) {
+        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_600) {
             setup_dram_magic_numbers();
         }
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_LOADED_PACKAGE2_4X);
@@ -628,7 +628,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     } 
 
     /* Synchronize with NX BOOTLOADER. */
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         sync_with_nx_bootloader(NX_BOOTLOADER_STATE_FINISHED_4X);
         setup_4x_mmio();
     } else {

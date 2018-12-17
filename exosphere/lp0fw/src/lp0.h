@@ -24,7 +24,7 @@
 
 typedef struct {
     uint32_t magic;
-    uint32_t tz_relative_offset;
+    uint32_t target_firmware;
     uint32_t padding[2];
 } warmboot_metadata_t;
 

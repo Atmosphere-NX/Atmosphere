@@ -16,6 +16,7 @@
  
 #include "utils.h"
 #include "lp0.h"
+#include "mc.h"
 #include "pmc.h"
 #include "timer.h"
 
@@ -29,8 +30,13 @@ void reboot(void) {
 
 void lp0_entry_main(warmboot_metadata_t *meta) {
     /* Before doing anything else, ensure some sanity. */
-    if (meta->magic != WARMBOOT_MAGIC || meta->tz_relative_offset > 0x2000) {
+    if (meta->magic != WARMBOOT_MAGIC || meta->target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX) {
         reboot();
+    }
+    
+    /* [4.0.0+] First thing warmboot does is disable BPMP access to memory. */
+    if (meta->target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400)  {
+        disable_bpmp_access_to_dram();
     }
     
     /* TODO: stuff */

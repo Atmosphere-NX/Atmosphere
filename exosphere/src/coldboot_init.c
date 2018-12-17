@@ -91,7 +91,7 @@ static void tzram_map_all_segments(uintptr_t *mmu_l3_tbl, unsigned int target_fi
     static const uintptr_t offs_5x[]    =   { TUPLE_FOLD_LEFT_0(EVAL(TZRAM_SEGMENT_ID_MAX), _MMAPTZ5XS, COMMA) };
     
     for(size_t i = 0, offset = 0; i < TZRAM_SEGMENT_ID_MAX; i++) {
-        uintptr_t off = (target_firmware < EXOSPHERE_TARGET_FIRMWARE_500) ? offs[i] : offs_5x[i];
+        uintptr_t off = (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_500) ? offs[i] : offs_5x[i];
         tzram_map_segment(mmu_l3_tbl, TZRAM_SEGMENT_BASE + offset, 0x7C010000ull + off, sizes[i], is_executable[i]);
         offset += increments[i];
     }
@@ -101,7 +101,7 @@ static void configure_ttbls(unsigned int target_firmware) {
     uintptr_t *mmu_l1_tbl;
     uintptr_t *mmu_l2_tbl; 
     uintptr_t *mmu_l3_tbl;
-    if (target_firmware < EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_500) {
         mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
         mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
         mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
@@ -151,7 +151,7 @@ uintptr_t get_coldboot_crt0_temp_stack_address(void) {
 }
 
 uintptr_t get_coldboot_crt0_stack_address(void) {
-    if (exosphere_get_target_firmware_for_init() < EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware_for_init() < ATMOSPHERE_TARGET_FIRMWARE_500) {
         return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
     } else {
         return TZRAM_GET_SEGMENT_5X_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x800;
@@ -193,7 +193,7 @@ void coldboot_init(coldboot_crt0_reloc_list_t *reloc_list, uintptr_t start_cold)
     init_dma_controllers(g_exosphere_target_firmware_for_init);
 
     configure_ttbls(g_exosphere_target_firmware_for_init);
-    if (g_exosphere_target_firmware_for_init < EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (g_exosphere_target_firmware_for_init < ATMOSPHERE_TARGET_FIRMWARE_500) {
         set_memory_registers_enable_mmu_1x_ttbr0();
     } else {
         set_memory_registers_enable_mmu_5x_ttbr0();

@@ -141,7 +141,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     }
 
     /* Do 6.2.0+ keygen. */
-    if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_620) {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_620) {
         if (memcmp(tsec_root_key, zeroes, 0x10) != 0) {
             /* We got a valid key from emulation. */
             set_aes_keyslot(0xC, tsec_root_key, 0x10);
@@ -185,27 +185,27 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     set_aes_keyslot(0xC, g_dec_keyblobs[available_revision].master_kek, 0x10);
 
     /* Also set the Package1 key for the revision that is stored on the eMMC boot0 partition. */
-    if (target_firmware < EXOSPHERE_TARGET_FIRMWARE_620) {
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_620) {
         load_package1_key(available_revision);
     }
 
     /* Derive keys for Exosphere, lock critical keyslots. */
     switch (target_firmware) {
-        case EXOSPHERE_TARGET_FIRMWARE_100:
-        case EXOSPHERE_TARGET_FIRMWARE_200:
-        case EXOSPHERE_TARGET_FIRMWARE_300:
+        case ATMOSPHERE_TARGET_FIRMWARE_100:
+        case ATMOSPHERE_TARGET_FIRMWARE_200:
+        case ATMOSPHERE_TARGET_FIRMWARE_300:
             decrypt_data_into_keyslot(0xD, 0xF, devicekey_seed, 0x10);
             decrypt_data_into_keyslot(0xC, 0xC, masterkey_seed, 0x10);
             break;
-        case EXOSPHERE_TARGET_FIRMWARE_400:
+        case ATMOSPHERE_TARGET_FIRMWARE_400:
             decrypt_data_into_keyslot(0xD, 0xF, devicekey_4x_seed, 0x10);
             decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
             decrypt_data_into_keyslot(0xE, 0xC, masterkey_4x_seed, 0x10);
             decrypt_data_into_keyslot(0xC, 0xC, masterkey_seed, 0x10);
             break;
-        case EXOSPHERE_TARGET_FIRMWARE_500:
-        case EXOSPHERE_TARGET_FIRMWARE_600:
-        case EXOSPHERE_TARGET_FIRMWARE_620:
+        case ATMOSPHERE_TARGET_FIRMWARE_500:
+        case ATMOSPHERE_TARGET_FIRMWARE_600:
+        case ATMOSPHERE_TARGET_FIRMWARE_620:
             decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
             decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
             decrypt_data_into_keyslot(0xE, 0xC, masterkey_4x_seed, 0x10);
@@ -222,11 +222,11 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
 /* Sets final keyslot flags, for handover to TZ/Exosphere. Setting these will prevent the BPMP from using the device key or master key. */
 void finalize_nx_keydata(uint32_t target_firmware) {
     set_aes_keyslot_flags(0xC, 0xFF);
-    set_aes_keyslot_flags((target_firmware >= EXOSPHERE_TARGET_FIRMWARE_400) ? (KEYSLOT_SWITCH_4XOLDDEVICEKEY) : (KEYSLOT_SWITCH_DEVICEKEY), 0xFF);
+    set_aes_keyslot_flags((target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400) ? (KEYSLOT_SWITCH_4XOLDDEVICEKEY) : (KEYSLOT_SWITCH_DEVICEKEY), 0xFF);
 }
 
 static void generate_specific_aes_key(void *dst, const void *wrapped_key, bool should_mask, uint32_t target_firmware) {
-    unsigned int keyslot = (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_400) ? (KEYSLOT_SWITCH_4XOLDDEVICEKEY) : (KEYSLOT_SWITCH_DEVICEKEY);
+    unsigned int keyslot = (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400) ? (KEYSLOT_SWITCH_4XOLDDEVICEKEY) : (KEYSLOT_SWITCH_DEVICEKEY);
     if (fuse_get_bootrom_patch_version() < 0x7F) {
         /* On dev units, use a fixed "all-zeroes" seed. */
         /* Yes, this data really is all-zero in actual TrustZone .rodata. */
@@ -257,7 +257,7 @@ static void generate_personalized_aes_key_for_bis(void *dst, const void *wrapped
         0x89, 0x61, 0x5E, 0xE0, 0x5C, 0x31, 0xB6, 0x80, 0x5F, 0xE5, 0x8F, 0x3D, 0xA2, 0x4F, 0x7A, 0xA8
     };
 
-    unsigned int keyslot = (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_400) ? (KEYSLOT_SWITCH_4XOLDDEVICEKEY) : (KEYSLOT_SWITCH_DEVICEKEY);
+    unsigned int keyslot = (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400) ? (KEYSLOT_SWITCH_4XOLDDEVICEKEY) : (KEYSLOT_SWITCH_DEVICEKEY);
     /* Derive kek. */
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, keyslot, kek_source, 0x10);
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, KEYSLOT_SWITCH_TEMPKEY, wrapped_kek, 0x10);

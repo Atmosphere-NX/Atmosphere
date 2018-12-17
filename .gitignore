@@ -65,6 +65,14 @@ dkms.conf
 *.tgz
 *.zip
 
+# IDA binaries
+*.id0
+*.id1
+*.id2
+*.idb
+*.nam
+*.til
+
 .**/
 
 # NOTE: make sure to make exceptions to this pattern when needed!

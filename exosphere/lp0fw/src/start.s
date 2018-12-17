@@ -47,14 +47,11 @@
 .global _start
 _start:
     b crt0
-.rept 0x7C
-    .word  0x00000000 /* Padding */
-.endr
 
 .global _metadata
 _metadata:
     .ascii "WBT0"     /* Magic number */
-    .word  0x00000000 /* TrustZone relative base. */
+    .word  0x00000000 /* Target firmware. */
     .word  0x00000000 /* Reserved */
     .word  0x00000000 /* Reserved */
 

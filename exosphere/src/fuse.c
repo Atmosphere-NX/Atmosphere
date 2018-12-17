@@ -207,7 +207,7 @@ uint32_t fuse_get_hardware_type(void) {
     /* This function is very different between 4.x and < 4.x */
     uint32_t hardware_type = ((FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 7) & 2) | ((FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 2) & 1);
     
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         static const uint32_t types[] = {0,1,4,3};
 
         hardware_type |= (FUSE_CHIP_REGS->FUSE_RESERVED_ODM[4] >> 14) & 0x3C;

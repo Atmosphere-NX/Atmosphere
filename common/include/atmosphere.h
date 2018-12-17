@@ -22,6 +22,7 @@ extern "C" {
 #endif
 
 #include "atmosphere/version.h"
+#include "atmosphere/target_fw.h"
 
 #ifdef __cplusplus
 }
