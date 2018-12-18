@@ -133,9 +133,16 @@ void cluster_initialize_cpu(void) {
     /* Perform RAM repair if necessary. */
     flow_perform_ram_repair();
     
-    /* TODO: This function is enormous */
+    /* Enable power to the C0NC partition. */
+    cluster_pmc_enable_partition(0x8000, 0x10F);
+    
+    /* TODO: other shit */    
 }
 
 void cluster_power_on_cpu(void) {
-    /* TODO */
+    /*  Enable power to CE0 partition. */
+    cluster_pmc_enable_partition(0x4000, 0x10E);
+    
+    /* Clear CPU reset. */
+    CLK_RST_CONTROLLER_RST_CPUG_CMPLX_CLR_0 = 0x10001;
 }
