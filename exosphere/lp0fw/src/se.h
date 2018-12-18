@@ -183,5 +183,6 @@ void clear_rsa_keyslot(unsigned int keyslot);
 void clear_aes_keyslot_iv(unsigned int keyslot);
 
 void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size);
+void se_aes_256_cbc_decrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 
 #endif

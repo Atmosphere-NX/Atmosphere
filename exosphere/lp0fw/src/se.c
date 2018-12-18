@@ -236,3 +236,17 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
 void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size) {
     se_compute_aes_cmac(keyslot, cmac, cmac_size, data, data_size, 0x202);
 }
+
+void se_aes_256_cbc_decrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
+    volatile tegra_se_t *se = se_get_regs();
+    
+    if (keyslot >= KEYSLOT_AES_MAX || src_size < 0x10) {
+        reboot();
+    }
+
+    se->CONFIG_REG = (ALG_AES_DEC | DST_MEMORY) | (0x202 << 16);
+    se->CRYPTO_REG = (keyslot << 24) | 0x66;
+    clear_aes_keyslot_iv(keyslot);
+    se->BLOCK_COUNT_REG = (src_size >> 4) - 1;
+    trigger_se_blocking_op(OP_START, dst, dst_size, src, src_size);
+}
