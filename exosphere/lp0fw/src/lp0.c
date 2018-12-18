@@ -25,6 +25,7 @@
 #include "cluster.h"
 #include "flow.h"
 #include "timer.h"
+#include "secmon.h"
 
 void reboot(void) {
     /* Write MAIN_RST */
@@ -81,7 +82,7 @@ void lp0_entry_main(warmboot_metadata_t *meta) {
     /* Initialize the CPU cluster. */
     cluster_initialize_cpu();
     
-    /* TODO: decrypt_restore_secmon_to_tzram(); */
+    secmon_restore_to_tzram(target_firmware);
     
     /* Power on the CPU cluster. */
     cluster_power_on_cpu();
@@ -95,5 +96,3 @@ void lp0_entry_main(warmboot_metadata_t *meta) {
         FLOW_CTLR_HALT_COP_EVENTS_0 = halt_val;
     }
 }
-
-
