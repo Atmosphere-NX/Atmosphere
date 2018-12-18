@@ -133,10 +133,25 @@ void cluster_initialize_cpu(void) {
     /* Perform RAM repair if necessary. */
     flow_perform_ram_repair();
     
-    /* Enable power to the C0NC partition. */
+    /* Enable power to the non-CPU partition. */
     cluster_pmc_enable_partition(0x8000, 0x10F);
     
-    /* TODO: other shit */    
+    /* Enable clock to PLLP_OUT_CPU, wait 2 us. */
+    CLK_RST_CONTROLLER_CLK_ENB_Y_SET_0 = 0x80000000;
+    timer_wait(2);
+    
+    /* Enable clock to CPU, CPUG, wait 10 us. */
+    CLK_RST_CONTROLLER_CLK_ENB_L_SET_0 = 1;
+    CLK_RST_CONTROLLER_CLK_ENB_V_SET_0 = 1;
+    timer_wait(10);
+    
+    /* Set CPU clock sources to PLLP_OUT_0 + state to RUN, wait 10 us. */
+    CLK_RST_CONTROLLER_CCLKG_BURST_POLICY_0 = 0x20004444;
+    CLK_RST_CONTROLLER_CCLKP_BURST_POLICY_0 = 0x20004444;
+    timer_wait(10);
+    
+    /* Take non-CPU out of reset (write CLR_NONCPURESET). */
+    CLK_RST_CONTROLLER_RST_CPUG_CMPLX_CLR_0 = 0x20000000;
 }
 
 void cluster_power_on_cpu(void) {
