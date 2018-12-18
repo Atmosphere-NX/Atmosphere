@@ -14,22 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#ifndef EXOSPHERE_WARMBOOT_BIN_FLOW_CTLR_H
-#define EXOSPHERE_WARMBOOT_BIN_FLOW_CTLR_H
-
 #include <stdint.h>
-#include <stdbool.h>
 
 #include "utils.h"
+#include "flow.h"
 
-#define FLOW_BASE (0x60007000)
-
-#define MAKE_FLOW_REG(ofs) MAKE_REG32(FLOW_BASE + ofs)
-
-#define FLOW_CTLR_HALT_COP_EVENTS_0      MAKE_FLOW_REG(0x004)
-#define FLOW_CTLR_RAM_REPAIR_0           MAKE_FLOW_REG(0x040)
-#define FLOW_CTLR_BPMP_CLUSTER_CONTROL_0 MAKE_FLOW_REG(0x098)
-
-void flow_perform_ram_repair(void);
-
-#endif
+void flow_perform_ram_repair(void) {
+    /* Perform repair only if not active cluster. */
+    if (!(FLOW_CTLR_BPMP_CLUSTER_CONTROL_0 & 1)) {
+        /* Set REQ, to begin RAM repair. */
+        FLOW_CTLR_RAM_REPAIR_0 = 1;
+        
+        /* Wait for STS to say RAM repair has completed. */
+        while (!(FLOW_CTLR_RAM_REPAIR_0 & 2)) { }
+    }
+}

@@ -23,6 +23,7 @@
 #include "pmc.h"
 #include "misc.h"
 #include "i2c.h"
+#include "flow.h"
 #include "sysreg.h"
 
 static void cluster_pmc_enable_partition(uint32_t mask, uint32_t toggle) {
@@ -128,6 +129,9 @@ void cluster_initialize_cpu(void) {
     
     /* Disable clock to CL_DVFS */
     CLK_RST_CONTROLLER_CLK_ENB_W_CLR_0 = 0x08000000;
+    
+    /* Perform RAM repair if necessary. */
+    flow_perform_ram_repair();
     
     /* TODO: This function is enormous */
 }
