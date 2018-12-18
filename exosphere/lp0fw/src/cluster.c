@@ -50,6 +50,17 @@ void cluster_initialize_cpu(void) {
     timer_wait(2);
     CLK_RST_CONTROLLER_RST_DEV_V_CLR_0 = 0x8;
     
+    /* Set MSELECT WRAP_TO_SLAVE_INCR[0-2], clear ERR_RESP_EN_SLAVE[1-2]. */
+    MSELECT_CONFIG_0 = (MSELECT_CONFIG_0 & 0xFCFFFFFF) | 0x38000000;
+    
+    /* Clear PLLX_ENABLE. */
+    CLK_RST_CONTROLLER_PLLX_BASE_0 &= 0xBFFFFFFF;
+    
+    /* Clear PMC scratch 190, disable PMC DPD then wait 10 us. */
+    APBDEV_PMC_SCRATCH190_0 &= 0xFFFFFFFE;
+    APBDEV_PMC_DPD_SAMPLE_0 = 0;
+    timer_wait(10);
+    
     /* TODO: This function is enormous */
 }
 

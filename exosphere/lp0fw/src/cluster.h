@@ -18,6 +18,12 @@
 #ifndef EXOSPHERE_WARMBOOT_BIN_CLUSTER_H
 #define EXOSPHERE_WARMBOOT_BIN_CLUSTER_H
 
+#include <stdint.h>
+
+#include "utils.h"
+
+#define MSELECT_CONFIG_0 MAKE_REG32(0x50060000)
+
 void cluster_initialize_cpu(void);
 void cluster_power_on_cpu(void);
 
