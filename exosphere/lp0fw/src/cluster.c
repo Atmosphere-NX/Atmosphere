@@ -25,6 +25,20 @@
 #include "i2c.h"
 #include "sysreg.h"
 
+static void cluster_pmc_enable_partition(uint32_t mask, uint32_t toggle) {
+    /* Set toggle if unset. */
+    if (!(APBDEV_PMC_PWRGATE_STATUS_0 & mask)) {
+        APBDEV_PMC_PWRGATE_TOGGLE_0 = toggle;
+    }
+    
+    /* Wait until toggle set. */
+    while (!(APBDEV_PMC_PWRGATE_STATUS_0 & mask)) { }
+
+    /* Remove clamping. */
+    APBDEV_PMC_REMOVE_CLAMPING_CMD_0 = mask;
+    while (!(APBDEV_PMC_CLAMP_STATUS_0 & mask)) { }
+}
+
 void cluster_initialize_cpu(void) {
     /* Hold CoreSight in reset. */
     CLK_RST_CONTROLLER_RST_DEV_U_SET_0 = 0x200;
@@ -88,8 +102,32 @@ void cluster_initialize_cpu(void) {
     CLK_RST_CONTROLLER_CLK_SOURCE_I2C5_0 = 0x4;
     CLK_RST_CONTROLLER_RST_DEV_H_CLR_0 = 0x8000;
     
-    /* Enable the PMIC. */
+    /* Enable the PMIC, wait 2ms. */
     i2c_enable_pmic();
+    timer_wait(2000);
+    
+    /* Enable power to the CRAIL partition. */
+    cluster_pmc_enable_partition(1, 0x100);
+    
+    /* Remove SW clamp to CRAIL. */
+    APBDEV_PMC_SET_SW_CLAMP_0 = 0;
+    APBDEV_PMC_REMOVE_CLAMPING_CMD_0 = 1;
+    while (!(APBDEV_PMC_CLAMP_STATUS_0 & 1)) { }
+    
+    /* Nintendo manually counts down from 8. I am not sure why this happens. */
+    {
+        volatile int32_t counter = 8;
+        while (counter >= 0) {
+            counter--;
+        }
+    }
+    
+    /* Power off I2C5. */
+    CLK_RST_CONTROLLER_RST_DEV_H_SET_0 = 0x8000;
+    CLK_RST_CONTROLLER_CLK_ENB_H_CLR_0 = 0x8000;
+    
+    /* Disable clock to CL_DVFS */
+    CLK_RST_CONTROLLER_CLK_ENB_W_CLR_0 = 0x08000000;
     
     /* TODO: This function is enormous */
 }
