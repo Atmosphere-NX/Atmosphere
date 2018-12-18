@@ -14,21 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#ifndef EXOSPHERE_WARMBOOT_BIN_TIMER_H
-#define EXOSPHERE_WARMBOOT_BIN_TIMER_H
+#ifndef EXOSPHERE_WARMBOOT_BIN_FLOW_CTLR_H
+#define EXOSPHERE_WARMBOOT_BIN_FLOW_CTLR_H
+
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "utils.h"
 
-#define TIMERUS_CNTR_1US_0 MAKE_REG32(0x60005010)
-#define TIMERUS_USEC_CFG_0 MAKE_REG32(0x60005014)
+#define FLOW_BASE (0x60007000)
 
-static inline void timer_wait(uint32_t microseconds) {
-    const uint32_t old_time = TIMERUS_CNTR_1US_0;
-    while (TIMERUS_CNTR_1US_0 - old_time <= microseconds) {
-        /* Spin-lock. */
-    }
-}
+#define MAKE_FLOW_REG(ofs) MAKE_REG32(FLOW_BASE + ofs)
 
-void spinlock_wait(uint32_t count);
+#define FLOW_CTLR_HALT_COP_EVENTS_0 MAKE_FLOW_REG(0x004)
 
 #endif

@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2018 naehrwert
  * Copyright (c) 2018 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -14,21 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#ifndef EXOSPHERE_WARMBOOT_BIN_TIMER_H
-#define EXOSPHERE_WARMBOOT_BIN_TIMER_H
+#ifndef EXOSPHERE_WARMBOOT_BIN_CLUSTER_H
+#define EXOSPHERE_WARMBOOT_BIN_CLUSTER_H
 
-#include "utils.h"
-
-#define TIMERUS_CNTR_1US_0 MAKE_REG32(0x60005010)
-#define TIMERUS_USEC_CFG_0 MAKE_REG32(0x60005014)
-
-static inline void timer_wait(uint32_t microseconds) {
-    const uint32_t old_time = TIMERUS_CNTR_1US_0;
-    while (TIMERUS_CNTR_1US_0 - old_time <= microseconds) {
-        /* Spin-lock. */
-    }
-}
-
-void spinlock_wait(uint32_t count);
+void cluster_initialize_cpu(void);
+void cluster_power_on_cpu(void);
 
 #endif

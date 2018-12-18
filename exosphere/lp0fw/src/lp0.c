@@ -22,6 +22,8 @@
 #include "fuse.h"
 #include "car.h"
 #include "emc.h"
+#include "cluster.h"
+#include "flow.h"
 #include "timer.h"
 
 void reboot(void) {
@@ -76,9 +78,22 @@ void lp0_entry_main(warmboot_metadata_t *meta) {
     /* Setup clock output for all devices, working around mbist bug. */
     car_mbist_workaround();
     
-    /* TODO: stuff */
-
-    while (true) { /* TODO: Halt BPMP */ }
+    /* Initialize the CPU cluster. */
+    cluster_initialize_cpu();
+    
+    /* TODO: decrypt_restore_secmon_to_tzram(); */
+    
+    /* Power on the CPU cluster. */
+    cluster_power_on_cpu();
+    
+    /* Nintendo clears most of warmboot.bin out of IRAM here. We're not gonna bother. */
+    /* memset( ... ); */
+    
+    const uint32_t halt_val = (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400) ? 0x40000000 : 0x50000000;
+    while (true) {
+        /* Halt the BPMP. */
+        FLOW_CTLR_HALT_COP_EVENTS_0 = halt_val;
+    }
 }
 
 
