@@ -61,6 +61,29 @@ void cluster_initialize_cpu(void) {
     APBDEV_PMC_DPD_SAMPLE_0 = 0;
     timer_wait(10);
     
+    /* Configure UART2 via GPIO controller 2 G. */
+    MAKE_REG32(0x6000D108) |= 4;  /* GPIO_CNF */
+    MAKE_REG32(0x6000D118) |= 4;  /* GPIO_OE */
+    MAKE_REG32(0x6000D128) &= ~4; /* GPIO_OUT */
+    
+    /* Set CL_DVFS RSVD0 + TRISTATE, read register to make it stick. */
+    PINMUX_AUX_DVFS_PWM_0 = 0x11;
+    (void)PINMUX_AUX_DVFS_PWM_0;
+    
+    /* Configure I2C. */
+    PINMUX_AUX_PWR_I2C_SCL_0 = 0x40;
+    PINMUX_AUX_PWR_I2C_SDA_0 = 0x40;
+    
+    /* Enable clock to CL_DVFS, and set its source/divider. */
+    CLK_RST_CONTROLLER_CLK_ENB_W_SET_0 = 0x08000000;
+    CLK_RST_CONTROLLER_CLK_SOURCE_DVFS_REF_0 = 0xE;
+    CLK_RST_CONTROLLER_CLK_SOURCE_DVFS_SOC_0 = 0xE;
+    
+    /* Power on I2C5, wait 5 us. */
+    CLK_RST_CONTROLLER_CLK_ENB_H_SET_0 = 0x8000;
+    CLK_RST_CONTROLLER_RST_DEV_H_SET_0 = 0x8000;
+    timer_wait(5);
+    
     /* TODO: This function is enormous */
 }
 
