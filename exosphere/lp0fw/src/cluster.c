@@ -21,6 +21,8 @@
 #include "car.h"
 #include "timer.h"
 #include "pmc.h"
+#include "misc.h"
+#include "i2c.h"
 #include "sysreg.h"
 
 void cluster_initialize_cpu(void) {
@@ -79,10 +81,15 @@ void cluster_initialize_cpu(void) {
     CLK_RST_CONTROLLER_CLK_SOURCE_DVFS_REF_0 = 0xE;
     CLK_RST_CONTROLLER_CLK_SOURCE_DVFS_SOC_0 = 0xE;
     
-    /* Power on I2C5, wait 5 us. */
+    /* Power on I2C5, wait 5 us, set source + take out of reset. */
     CLK_RST_CONTROLLER_CLK_ENB_H_SET_0 = 0x8000;
     CLK_RST_CONTROLLER_RST_DEV_H_SET_0 = 0x8000;
     timer_wait(5);
+    CLK_RST_CONTROLLER_CLK_SOURCE_I2C5_0 = 0x4;
+    CLK_RST_CONTROLLER_RST_DEV_H_CLR_0 = 0x8000;
+    
+    /* Enable the PMIC. */
+    i2c_enable_pmic();
     
     /* TODO: This function is enormous */
 }
