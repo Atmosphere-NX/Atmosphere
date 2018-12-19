@@ -20,6 +20,7 @@
 #include "lp0.h"
 #include "secmon.h"
 #include "se.h"
+#include "fuse.h"
 #include "pmc.h"
 
 /* "private" functions. */
@@ -47,7 +48,12 @@ void secmon_restore_to_tzram(const uint32_t target_firmware) {
     /* Make security engine require secure busmaster. */
     se_get_regs()->_0x4 = 0;
 
-    /* TODO: stuff */
+    /* TODO: se_verify_keys_unreadable(); */
+
+    /* TODO: pmc_lockout_wb_scratch_registers(); */
+
+    /* Disable fuse programming. */
+    fuse_disable_programming();
 }
 
 void secmon_decrypt_saved_image(void *dst, const void *src, size_t size) {

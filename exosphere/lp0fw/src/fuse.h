@@ -197,4 +197,6 @@ bool fuse_check_downgrade_status(void);
 
 void fuse_configure_fuse_bypass(void);
 
+void fuse_disable_programming(void);
+
 #endif

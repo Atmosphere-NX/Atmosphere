@@ -28,6 +28,10 @@ bool fuse_check_downgrade_status(void) {
     return false;
 }
 
+void fuse_disable_programming(void) {
+    FUSE_REGS->FUSE_DIS_PGM = 1;
+}
+
 static fuse_bypass_data_t g_fuse_bypass_entries[NUM_FUSE_BYPASS_ENTRIES] = {
     /* No entries here. */
 };
