@@ -428,9 +428,11 @@ Result Registration::UnregisterServiceForPid(u64 pid, u64 service) {
         return 0xE15;
     }
 
+#ifndef SM_ENABLE_PERMISSIVE_UNREGISTER
     if (!IsInitialProcess(pid) && target_service->owner_pid != pid) {
         return 0x1015;
     }
+#endif
     
     svcCloseHandle(target_service->port_h);
     svcCloseHandle(target_service->mitm_port_h);
