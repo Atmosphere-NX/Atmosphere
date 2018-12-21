@@ -20,6 +20,16 @@ interface nn::sm::detail::IUserInterface is sm: {
 }
 ```
 
+Additionally, several commands have been added to the [`sm:m`](https://reswitched.github.io/SwIPC/ifaces.html#nn::sm::detail::IManagerInterface) interface.
+
+Their SwIPC definitions follow.
+```
+interface nn::sm::detail::IManagerInterface is sm:m {
+  ...
+  [65002] AtmosphereQueryRegistrations(u64 offset) -> buffer<ServiceRecord, 6>, u64 count, u64 record_size;
+}
+```
+
 #### AtmosphereInstallMitm
 
 This command alters the registration for the named service, in order to allow services to intercept communication between client processes and their intended services. It is used by [fs_mitm](fs_mitm.md).
@@ -57,6 +67,40 @@ This command requires that the session be initialized, returning error code 0x41
 This command is used internally by the Stratosphere implementation of the [loader](loader.md) sysmodule, when a new process is created. It will call the `AssociatePidTid` command on every registered MITM query session.
 
 If the given process ID refers to a kernel internal process, error code 0x1015 is returned. This command requires that the session be initialized, returning error code 0x415 if it is not.
+
+#### AtmosphereQueryRegistrations
+
+Provides a list of service registrations. The format of the `ServiceRecord` structure follows.
+```
+struct ServiceRecord {
+    uint64_t service_name;
+    uint64_t owner_pid;
+    uint64_t max_sessions;
+    uint64_t mitm_pid;
+    uint64_t mitm_waiting_ack_pid;
+    bool is_light;
+    bool mitm_waiting_ack;
+};
+```
+The command will return an array of `ServiceRecord`s, skipping `offset` records. The number of records returned is indicated by `count`, and the size of each record is indicated by `record_size`.
+If `count` is less than the size of the buffer divided by `record_size` (the buffer was not completely filled), the end of the service registration list has been reached. Otherwise, client code
+should increment `offset` by `count` and call again. Client code should either make sure that `record_size` matches what it expects, or should make sure to use `record_size` as the stride while
+iterating over the array of returned records. Example pseudocode is shown below.
+
+```
+offset = 0;
+do {
+    ServiceRecord records[16];
+    count, record_size = AtmosphereQueryRegistrations(offset, buffer(records));
+
+    for(i = 0; i < count; i++) {
+        ServiceRecord record = {0};
+        memcpy(&record, &records[i], min(record_size, sizeof(ServiceRecord));
+        // process record
+        offset++;
+    }
+} while(count == sizeof(records)/record_size);
+```
 
 ### Minimum Session Limit
 
