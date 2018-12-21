@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <dirent.h>
+#include <sys/stat.h>
 #include "exocfg.h"
 #include "utils.h"
 #include "package2.h"
