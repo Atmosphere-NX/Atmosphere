@@ -35,3 +35,10 @@ void ManagerService::AtmosphereHasMitm(Out<bool> out, SmServiceName service) {
     out.SetValue(Registration::HasMitm(smEncodeName(service.name)));
 }
 
+Result ManagerService::AtmosphereQueryRegistrations(u64 offset, OutBuffer<ServiceRecord> records, Out<u64> out_count, Out<u64> record_size) {
+    uint64_t count = records.num_elements;
+    Registration::QueryRegistrations(offset, records.buffer, &count);
+    out_count.SetValue(count);
+    record_size.SetValue(sizeof(ServiceRecord));
+    return 0;
+}

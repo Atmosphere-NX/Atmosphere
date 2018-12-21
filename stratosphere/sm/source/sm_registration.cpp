@@ -562,3 +562,29 @@ Result Registration::AssociatePidTidForMitm(u64 pid, u64 tid) {
     }
     return 0x0;
 }
+
+void Registration::QueryRegistrations(u64 offset, ServiceRecord *out, u64 *count) {
+    u64 space = *count;
+    *count = 0;
+
+    for(auto i = g_service_list.begin() + offset; i < g_service_list.end() && space > 0; i++) {
+        if(i->service_name != 0) {
+            if(offset > 0) {
+                offset--;
+            } else {
+                ServiceRecord *out_record = out++;
+                
+                out_record->service_name = i->service_name;
+                out_record->owner_pid = i->owner_pid;
+                out_record->max_sessions = i->max_sessions;
+                out_record->mitm_pid = i->mitm_pid;
+                out_record->mitm_waiting_ack_pid = i->mitm_waiting_ack_pid;
+                out_record->is_light = i->is_light;
+                out_record->mitm_waiting_ack = i->mitm_waiting_ack;
+                    
+                space--;
+                (*count)++;
+            }
+        }
+    }
+}

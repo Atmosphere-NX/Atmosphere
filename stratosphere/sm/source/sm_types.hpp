@@ -20,3 +20,14 @@ struct SmServiceName {
 };
 
 static_assert(__alignof__(SmServiceName) == 1, "SmServiceName definition!");
+
+// for QueryRegistrations extension
+struct ServiceRecord {
+    u64 service_name;
+    u64 owner_pid;
+    u64 max_sessions;
+    u64 mitm_pid;
+    u64 mitm_waiting_ack_pid;
+    bool is_light;
+    bool mitm_waiting_ack;
+};

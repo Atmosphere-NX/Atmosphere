@@ -26,6 +26,7 @@ enum ManagerServiceCmd {
     
     Manager_Cmd_AtmosphereEndInitDefers = 65000,
     Manager_Cmd_AtmosphereHasMitm = 65001,
+    Manager_Cmd_AtmosphereQueryRegistrations = 65002,
 };
 
 class ManagerService final : public IServiceObject {
@@ -35,6 +36,7 @@ class ManagerService final : public IServiceObject {
         virtual Result UnregisterProcess(u64 pid);
         virtual void AtmosphereEndInitDefers();
         virtual void AtmosphereHasMitm(Out<bool> out, SmServiceName service);
+        virtual Result AtmosphereQueryRegistrations(u64 offset, OutBuffer<ServiceRecord> records, Out<u64> out_count, Out<u64> record_size);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<Manager_Cmd_RegisterProcess, &ManagerService::RegisterProcess>(),
@@ -42,5 +44,6 @@ class ManagerService final : public IServiceObject {
             
             MakeServiceCommandMeta<Manager_Cmd_AtmosphereEndInitDefers, &ManagerService::AtmosphereEndInitDefers>(),
             MakeServiceCommandMeta<Manager_Cmd_AtmosphereHasMitm, &ManagerService::AtmosphereHasMitm>(),
+            MakeServiceCommandMeta<Manager_Cmd_AtmosphereQueryRegistrations, &ManagerService::AtmosphereQueryRegistrations>(),
         };
 };

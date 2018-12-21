@@ -17,6 +17,8 @@
 #pragma once
 #include <switch.h>
 
+#include "sm_types.hpp"
+
 #define REGISTRATION_LIST_MAX_PROCESS (0x40)
 #define REGISTRATION_LIST_MAX_SERVICE (0x100)
 #define REGISTRATION_MAX_SAC_SIZE (0x200)
@@ -81,4 +83,5 @@ class Registration {
         static Result UninstallMitmForPid(u64 pid, u64 service);
         static Result AcknowledgeMitmSessionForPid(u64 pid, u64 service, Handle *out, u64 *out_pid);
         static Result AssociatePidTidForMitm(u64 pid, u64 tid);
+        static void QueryRegistrations(u64 offset, ServiceRecord *out, u64 *count);
 };
