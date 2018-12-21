@@ -567,7 +567,7 @@ void Registration::QueryRegistrations(u64 offset, ServiceRecord *out, u64 *count
     u64 space = *count;
     *count = 0;
 
-    for(auto i = g_service_list.begin() + offset; i < g_service_list.end() && space > 0; i++) {
+    for(auto i = g_service_list.begin(); i < g_service_list.end() && space > 0; i++) {
         if(i->service_name != 0) {
             if(offset > 0) {
                 offset--;
