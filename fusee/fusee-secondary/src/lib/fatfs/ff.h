@@ -187,6 +187,7 @@ typedef struct {
 
 /* Directory object structure (DIR) */
 
+#ifndef _dirent_h_
 typedef struct {
 	FFOBJID	obj;			/* Object identifier */
 	DWORD	dptr;			/* Current read/write offset */
@@ -201,7 +202,7 @@ typedef struct {
 	const TCHAR* pat;		/* Pointer to the name matching pattern */
 #endif
 } DIR;
-
+#endif
 
 
 /* File information structure (FILINFO) */
