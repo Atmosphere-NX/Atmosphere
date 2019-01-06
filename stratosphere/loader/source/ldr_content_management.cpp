@@ -40,6 +40,7 @@ static char g_hbl_sd_path[FS_MAX_PATH+1] = "@Sdcard:/atmosphere/hbl.nsp\x00";
 static u64 g_override_key_combination = KEY_R;
 static bool g_override_by_default = true;
 static u64 g_override_hbl_tid = 0x010000000000100D;
+static bool g_override_any_app = false;
 
 /* Static buffer for loader.ini contents at runtime. */
 static char g_config_ini_data[0x800];
@@ -206,9 +207,14 @@ static int LoaderIniHandler(void *user, const char *section, const char *name, c
     /* Taken and modified, with love, from Rajkosto's implementation. */
     if (strcasecmp(section, "config") == 0) {
         if (strcasecmp(name, "hbl_tid") == 0) {
-            u64 override_tid = strtoul(value, NULL, 16);
-            if (override_tid != 0) {
-                g_override_hbl_tid = override_tid;
+            if (strcasecmp(value, "app") == 0) {
+                g_override_any_app = true;
+            }
+            else {
+                u64 override_tid = strtoul(value, NULL, 16);
+                if (override_tid != 0) {
+                    g_override_hbl_tid = override_tid;
+                }
             }
         } else if (strcasecmp(name, "hbl_path") == 0) {
             while (*value == '/' || *value == '\\') {
@@ -303,7 +309,7 @@ void ContentManagement::TryMountSdCard() {
 }
 
 bool ContentManagement::ShouldReplaceWithHBL(u64 tid) {
-    return g_mounted_hbl_nsp && tid == g_override_hbl_tid;
+    return g_mounted_hbl_nsp && ((g_override_any_app && tid >= 0x0100000000010000) || (!g_override_any_app && tid == g_override_hbl_tid));
 }
 
 bool ContentManagement::ShouldOverrideContents(u64 tid) {
