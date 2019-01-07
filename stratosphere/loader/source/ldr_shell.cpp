@@ -45,3 +45,7 @@ Result ShellService::SetExternalContentSource(Out<MovedHandle> out, u64 tid) {
     out.SetValue(server_h);
     return 0;
 }
+
+void ShellService::ClearExternalContentSource(u64 tid) {
+    ContentManagement::ClearExternalContentSource(tid);
+}

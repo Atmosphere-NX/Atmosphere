@@ -67,16 +67,35 @@ For example, `override_key=!R` will run the game only while holding down R when 
 
 When the Stratosphere implementation of loader creates a new process, it notifies [sm](sm.md) through the `AtmosphereAssociatePidTidForMitm` command to notify any MITM services of new processes' identities.
 
-### IPC: AtmosphereSetExternalContentSource
+### IPC: AtmosphereSetExternalContentSource and AtmosphereClearExternalContentSource
 
-An additional command is added to the [`ldr:shel`](https://reswitched.github.io/SwIPC/ifaces.html#nn::ro::detail::ILdrShellInterface) interface, called `AtmosphereSetExternalContentSource`. It's command ID is `65000` on all system firmware versions. It takes a `u64 tid` and returns a server-side session handle. The client is expected to implement the `IFileSystem` interface on the returned handle. The next time the title specified by the given title ID is launched, its ExeFS contents will be loaded from the custom `IFileSystem` instead of from SD card or original ExeFS. NSOs loaded from external content source may still be subject to exefs IPS patches. After the title is launched, the `IFileSystem` is closed and the external content source override is removed. If `AtmosphereSetExternalContentSource` is called on a title that already has an external content source set for it, the existing one will be removed and replaced with the new one. It is illegal to call `AtmosphereSetExternalContentSource` while the title is being launched.
+Two additional commands are added to the [`ldr:shel`](https://reswitched.github.io/SwIPC/ifaces.html#nn::ro::detail::ILdrShellInterface) interface, called `AtmosphereSetExternalContentSource` and `AtmosphereClearExternalContentSource`.
+Their command IDs are `65000` and `65001` on all system firmware versions.
 
-The `IFileSystem` only needs to implement `OpenFile`. The paths received by the `IFileSystem`'s `OpenFile` command begin with slashes, as in `/main`, `/rtld`, and `/main.npdm`. A result code of 0x202 should be returned if the file does not exist. The `IFile`s returned from `OpenFile` only need to implement `Read` and `GetSize`.
+`AtmosphereSetExternalContentSource` takes a `u64 tid` and returns a server-side session handle.
+The client is expected to implement the `IFileSystem` interface on the returned handle. The next
+time the title specified by the given title ID is launched, its ExeFS contents will be loaded from
+the custom `IFileSystem` instead of from SD card or original ExeFS. NSOs loaded from external
+content source may still be subject to exefs IPS patches. After the title is launched successfuly,
+the `IFileSystem` is closed and the external content source override is removed. If
+`AtmosphereSetExternalContentSource` is called on a title that already has an external content
+source set for it, the existing one will be removed and replaced with the new one. It is illegal to
+call `AtmosphereSetExternalContentSource` while the title is being launched.
 
-The SwIPC definition for the `AtmosphereSetExternalContentSource` command follows.
+If title launching fails, the external content source remains registered. The
+`AtmosphereClearExternalContentSource` command can be used to clear an external content source if
+title launch fails.
+
+The `IFileSystem` only needs to implement `OpenFile` and `GetFileTimeStampRaw`. The paths received
+by the `IFileSystem`'s `OpenFile` command begin with slashes, as in `/main`, `/rtld`, and `/main.npdm`.
+A result code of 0x202 should be returned if the file does not exist. `GetFileTimeStampRaw` can just
+be a stub. The `IFile`s returned from `OpenFile` only need to implement `Read` and `GetSize`.
+
+The SwIPC definitions for the extension commands follow.
 ```
 interface nn::ldr::detail::IShellInterface is ldr:shel {
   ...
   [65000] AtmosphereSetExternalContentSource(u64 tid) -> handle<copy, session_server> ifilesystem_handle;
+  [65001] AtmosphereClearExternalContentSource(u64 tid);
 }
 ```

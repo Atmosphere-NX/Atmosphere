@@ -214,8 +214,8 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     Registration::AssociatePidTidForMitM(index);
     
     rc = 0;  
-CREATE_PROCESS_END:
-    /* ECS is a one-shot operation. */
+
+    /* ECS is a one-shot operation, but we don't clear on failure. */
     ContentManagement::ClearExternalContentSource(target_process->tid_sid.title_id);
     if (mounted_code) {
         if (R_SUCCEEDED(rc) && target_process->tid_sid.storage_id != FsStorageId_None) {
@@ -224,6 +224,8 @@ CREATE_PROCESS_END:
             ContentManagement::UnmountCode();
         }
     }
+
+CREATE_PROCESS_END:
     if (R_SUCCEEDED(rc)) {
         *out_process_h = process_h;
     } else {

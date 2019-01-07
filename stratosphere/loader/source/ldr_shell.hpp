@@ -23,6 +23,7 @@ enum ShellServiceCmd {
     Shell_Cmd_ClearLaunchQueue = 1,
 
     Shell_Cmd_AtmosphereSetExternalContentSource = 65000,
+    Shell_Cmd_AtmosphereClearExternalContentSource = 65001,
 };
 
 class ShellService final : public IServiceObject {
@@ -33,10 +34,12 @@ class ShellService final : public IServiceObject {
         
         /* Atmosphere commands. */
         Result SetExternalContentSource(Out<MovedHandle> out, u64 tid);
+        void ClearExternalContentSource(u64 tid);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<Shell_Cmd_AddTitleToLaunchQueue, &ShellService::AddTitleToLaunchQueue>(),
             MakeServiceCommandMeta<Shell_Cmd_ClearLaunchQueue, &ShellService::ClearLaunchQueue>(),
             MakeServiceCommandMeta<Shell_Cmd_AtmosphereSetExternalContentSource, &ShellService::SetExternalContentSource>(),
+            MakeServiceCommandMeta<Shell_Cmd_AtmosphereClearExternalContentSource, &ShellService::ClearExternalContentSource>(),
         };
 };
