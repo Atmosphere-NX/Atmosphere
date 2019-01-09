@@ -33,6 +33,7 @@ static std::atomic_bool g_has_hid_session = false;
 
 static u64 g_override_key_combination = KEY_R;
 static u64 g_override_hbl_tid = 0x010000000000100DULL;
+static bool g_override_any_app = false;
 static bool g_override_by_default = true;
 
 /* Static buffer for loader.ini contents at runtime. */
@@ -348,6 +349,10 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
     return rc;
 }
 
+bool Utils::IsHblTid(u64 tid) {
+    return (g_override_any_app && tid >= 0x0100000000010000ULL) || (!g_override_any_app && tid == g_override_hbl_tid);
+}
+
 bool Utils::HasTitleFlag(u64 tid, const char *flag) {
     if (IsSdInitialized()) {
         FsFile f;
@@ -390,11 +395,11 @@ bool Utils::HasHblFlag(const char *flag) {
 }
 
 bool Utils::HasFlag(u64 tid, const char *flag) {
-    return HasTitleFlag(tid, flag) || (tid == g_override_hbl_tid && HasHblFlag(flag));
+    return HasTitleFlag(tid, flag) || (IsHblTid(tid) && HasHblFlag(flag));
 }
 
 bool Utils::HasSdMitMFlag(u64 tid) {
-    if (tid == g_override_hbl_tid) {
+    if (IsHblTid(tid)) {
         return true;
     }
     
@@ -441,9 +446,14 @@ static int FsMitMIniHandler(void *user, const char *section, const char *name, c
     /* Taken and modified, with love, from Rajkosto's implementation. */
     if (strcasecmp(section, "config") == 0) {
         if (strcasecmp(name, "hbl_tid") == 0) {
-            u64 override_tid = strtoul(value, NULL, 16);
-            if (override_tid != 0) {
-                g_override_hbl_tid = override_tid;
+            if (strcasecmp(value, "app") == 0) {
+                g_override_any_app = true;
+            }
+            else {
+                u64 override_tid = strtoul(value, NULL, 16);
+                if (override_tid != 0) {
+                    g_override_hbl_tid = override_tid;
+                }
             }
         } else if (strcasecmp(name, "override_key") == 0) {
             if (value[0] == '!') {
