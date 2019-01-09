@@ -58,6 +58,8 @@ class Utils {
         /* SD card Initialization + MitM detection. */
         static void InitializeSdThreadFunc(void *args);
         
+        static bool IsHblTid(u64 tid);
+        
         static bool HasTitleFlag(u64 tid, const char *flag);
         static bool HasHblFlag(const char *flag);
         static bool HasGlobalFlag(const char *flag);
