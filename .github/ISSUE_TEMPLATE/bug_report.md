@@ -25,6 +25,10 @@ about: Something doesn't work correctly in Atmosphère.
 If your issue caused Atmosphère to crash, include the crash report(s) by creating a [gist](https://gist.github.com/) which you should the link here.
 Failure to include a crash report for crash related issues could mean your issue is closed with no notification or reason.
 
+### System Firmware Version
+X.X.X  
+[ Replace X's with system firmware version at time of crash. ]
+
 ### Environment?
 
 - What bootloader (fusee, hekate, etc) was Atmosphère launched by:
