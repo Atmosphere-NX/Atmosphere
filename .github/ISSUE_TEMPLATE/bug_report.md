@@ -17,19 +17,19 @@ about: Something doesn't work correctly in Atmosphère.
 
 ### How can the issue be reproduced?
 
-[ Include a detailed step by step process for recreating your issue. ]
+[ Include a detailed step by step process for recreating your issue. ]  
 [ Note: If software you have installed can be used to make 'backups' of game files or distributed explicitly for piracy and are connected to why Atmosphère crashed, we will not provide support related to this issue. ]
 
 ### Crash Report
 
-If your issue caused Atmosphère to crash, include the crash report(s) by creating a [gist](https://gist.github.com/) which you should the link here.
+[ If your issue caused Atmosphère to crash, include the crash report(s) by creating a [gist](https://gist.github.com/) which you should the link here. ]  
 [ Failure to include a crash report for crash related issues could mean your issue is closed with no notification or reason. ]
 
 ### System Firmware Version
 X.X.X  
-[ Replace X's with system firmware version at time of crash. ]
-[ You can find your firmware version in the Settings -> System, under "System Update". ]
-[ If it says "Update Pending", you can clear the pending update by rebooting to Maintenance Mode. ]
+[ Replace X's with system firmware version at time of crash. ]  
+[ You can find your firmware version in the Settings -> System, under "System Update". ]  
+[ If it says "Update Pending", you can clear the pending update by rebooting to Maintenance Mode. ]  
 
 ### Environment?
 
