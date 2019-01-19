@@ -28,6 +28,8 @@ If your issue caused Atmosphère to crash, include the crash report(s) by creati
 ### System Firmware Version
 X.X.X  
 [ Replace X's with system firmware version at time of crash. ]
+[ You can find your firmware version in the Settings -> System, under "System Update". ]
+[ If it says "Update Pending", you can clear the pending update by rebooting to Maintenance Mode. ]
 
 ### Environment?
 
