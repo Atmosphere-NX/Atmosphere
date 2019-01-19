@@ -35,7 +35,7 @@ about: Suggest a new feature for Atmosphère.
     - Custom system modules.
 - **[Thermosphère](https://github.com/Atmosphere-NX/Atmosphere#components)** ******
   - Atmosphère's emuNAND implementation.
-- **[Troposphèr. ](https://github.com/Atmosphere-NX/Atmosphere#components)** ******
+- **[Troposphère. ](https://github.com/Atmosphere-NX/Atmosphere#components)** ******
   - Application-level patches to the Horizon OS.
 
 [****** Note: **Bolded components are not implemented** or are still at the prototyping phase. ]
