@@ -231,6 +231,7 @@ bool CrashReport::IsAddressReadable(u64 address, u64 size, MemoryInfo *o_mi) {
     if (address < o_mi->addr || o_mi->addr + o_mi->size < address + size) {
         return false;
     }
+
     return true;
 }
 
@@ -357,24 +358,31 @@ void CrashReport::SaveToFile(FILE *f_report) {
 /* Lifted from hactool. */
 void CrashReport::Memdump(FILE *f, const char *prefix, const void *data, size_t size) {
     uint8_t *p = (uint8_t *)data;
+
     unsigned int prefix_len = strlen(prefix);
     size_t offset = 0;
     int first = 1;
+
     while (size) {
         unsigned int max = 32;
+
         if (max > size) {
             max = size;
         }
+
         if (first) {
             fprintf(f, "%s", prefix);
             first = 0;
         } else {
             fprintf(f, "%*s", prefix_len, "");
         }
+
         for (unsigned int i = 0; i < max; i++) {
             fprintf(f, "%02X", p[offset++]);
         }
+
         fprintf(f, "\n");
+
         size -= max;
     }
 }
