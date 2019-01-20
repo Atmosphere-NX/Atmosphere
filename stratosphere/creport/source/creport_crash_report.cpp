@@ -19,10 +19,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <switch.h>
-
 #include "creport_crash_report.hpp"
 #include "creport_debug_types.hpp"
-
 void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
     this->has_extra_info = has_extra_info;
     if (OpenProcess(pid)) {
@@ -46,7 +44,6 @@ void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
         Close();
     }
 }
-
 FatalContext *CrashReport::GetFatalContext() {
     FatalContext *ctx = new FatalContext;
     *ctx = (FatalContext){0};
@@ -75,7 +72,6 @@ FatalContext *CrashReport::GetFatalContext() {
     
     return ctx;
 }
-
 void CrashReport::ProcessExceptions() {
     if (!IsOpen()) {
         return;
@@ -98,7 +94,6 @@ void CrashReport::ProcessExceptions() {
         }
     }
 }
-
 void CrashReport::HandleAttachProcess(DebugEventInfo &d) {
     this->process_info = d.info.attach_process;
     if (kernelAbove500() && IsApplication()) {
@@ -136,7 +131,6 @@ void CrashReport::HandleAttachProcess(DebugEventInfo &d) {
         this->dying_message_size = userdata_size;
     }
 }
-
 void CrashReport::HandleException(DebugEventInfo &d) {
     switch (d.info.exception.type) {
         case DebugExceptionType::UndefinedInstruction:
@@ -155,8 +149,15 @@ void CrashReport::HandleException(DebugEventInfo &d) {
         case DebugExceptionType::UserBreak:
             this->result = (Result)CrashReportResult::UserBreak;
             /* Try to parse out the user break result. */
-            if (kernelAbove500() && IsAddressReadable(d.info.exception.specific.user_break.address, sizeof(this->result))) {
-                svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
+            if (kernelAbove500()) {
+                Result user_result = RESULT_SUCCESS;
+                if (IsAddressReadable(d.info.exception.specific.user_break.address, sizeof(user_result))) {
+                    svcReadDebugProcessMemory(&user_result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(user_result));
+                }
+                /* Only copy over the user result if it gives us information (as by default nnSdk uses the success code, which is confusing). */
+                if (R_FAILED(user_result)) {
+                    this->result = user_result;
+                }
             }
             break;
         case DebugExceptionType::BadSvc:
@@ -176,7 +177,6 @@ void CrashReport::HandleException(DebugEventInfo &d) {
     /* Parse crashing thread info. */
     this->crashed_thread_info.ReadFromProcess(this->debug_handle, d.thread_id, Is64Bit());
 }
-
 void CrashReport::ProcessDyingMessage() {
     /* Dying message is only stored starting in 5.0.0. */
     if (!kernelAbove500()) {
@@ -202,7 +202,6 @@ void CrashReport::ProcessDyingMessage() {
     
     svcReadDebugProcessMemory(this->dying_message, this->debug_handle, this->dying_message_address, this->dying_message_size);
 }
-
 bool CrashReport::IsAddressReadable(u64 address, u64 size, MemoryInfo *o_mi) {
     MemoryInfo mi;
     u32 pi;
@@ -224,10 +223,8 @@ bool CrashReport::IsAddressReadable(u64 address, u64 size, MemoryInfo *o_mi) {
     if (address < o_mi->addr || o_mi->addr + o_mi->size < address + size) {
         return false;
     }
-
     return true;
 }
-
 bool CrashReport::GetCurrentTime(u64 *out) {
     *out = 0;
     
@@ -250,7 +247,6 @@ bool CrashReport::GetCurrentTime(u64 *out) {
     }
     return success;
 }
-
 void CrashReport::EnsureReportDirectories() {
     char path[FS_MAX_PATH];  
     strcpy(path, "sdmc:/atmosphere");
@@ -260,7 +256,6 @@ void CrashReport::EnsureReportDirectories() {
     strcat(path, "/dumps");
     mkdir(path, S_IRWXU);
 }
-
 void CrashReport::SaveReport() {
     /* Save the report to the SD card. */
     char report_path[FS_MAX_PATH];
@@ -289,7 +284,6 @@ void CrashReport::SaveReport() {
     this->thread_list.DumpBinary(f_report, this->crashed_thread_info.GetId());
     fclose(f_report);
 }
-
 void CrashReport::SaveToFile(FILE *f_report) {
     char buf[0x10] = {0};
     fprintf(f_report, "Atmosphère Crash Report (v1.2):\n");
@@ -347,35 +341,27 @@ void CrashReport::SaveToFile(FILE *f_report) {
     fprintf(f_report, "\nThread Report:\n");
     this->thread_list.SaveToFile(f_report);
 }
-
 /* Lifted from hactool. */
 void CrashReport::Memdump(FILE *f, const char *prefix, const void *data, size_t size) {
     uint8_t *p = (uint8_t *)data;
-
     unsigned int prefix_len = strlen(prefix);
     size_t offset = 0;
     int first = 1;
-
     while (size) {
         unsigned int max = 32;
-
         if (max > size) {
             max = size;
         }
-
         if (first) {
             fprintf(f, "%s", prefix);
             first = 0;
         } else {
             fprintf(f, "%*s", prefix_len, "");
         }
-
         for (unsigned int i = 0; i < max; i++) {
             fprintf(f, "%02X", p[offset++]);
         }
-
         fprintf(f, "\n");
-
         size -= max;
     }
 }
