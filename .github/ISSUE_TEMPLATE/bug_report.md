@@ -13,7 +13,7 @@ about: Something doesn't work correctly in Atmosphère.
 
 [ Describe the issue in detail and what you were doing beforehand. ]  
 [ Did you make any changes related to Atmosphère itself? ]  
-[ If so make sure to include details relating to what exactly you changed. ]
+[ If so, make sure to include details relating to what exactly you changed. ]
 
 ### How can the issue be reproduced?
 
