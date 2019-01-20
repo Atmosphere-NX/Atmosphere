@@ -49,8 +49,10 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
                         /* Set reboot kind = warmboot. */
                         MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x1;
                         /* Patch bootrom to jump to payload. */
-                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x118) = 0x40010000; /* Return to start of payload. */
-                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x11C) = 0x4000FFA4; /* Overwrite bootrom return address on stack. */
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x630ull) = 0x0010171B; /* Return to bootrom IRAM initialization func. */
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x634ull) = 0x4000FFA4; /* Overwrite bootrom return address on stack. */
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x638ull) = 0x40010000; /* Return to start of payload. */
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x63Cull) = 0x4000FFB4; /* Overwrite bootrom return address on stack. */
                         break;
                     default:
                         return 2;
