@@ -37,7 +37,7 @@ static void cluster_pmc_enable_partition(uint32_t mask, uint32_t toggle) {
 
     /* Remove clamping. */
     APBDEV_PMC_REMOVE_CLAMPING_CMD_0 = mask;
-    while (!(APBDEV_PMC_CLAMP_STATUS_0 & mask)) { }
+    while (APBDEV_PMC_CLAMP_STATUS_0 & mask) { }
 }
 
 void cluster_initialize_cpu(void) {
@@ -113,7 +113,7 @@ void cluster_initialize_cpu(void) {
     /* Remove SW clamp to CRAIL. */
     APBDEV_PMC_SET_SW_CLAMP_0 = 0;
     APBDEV_PMC_REMOVE_CLAMPING_CMD_0 = 1;
-    while (!(APBDEV_PMC_CLAMP_STATUS_0 & 1)) { }
+    while (APBDEV_PMC_CLAMP_STATUS_0 & 1) { }
     
     /* Nintendo manually counts down from 8. I am not sure why this happens. */
     {

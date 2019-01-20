@@ -48,5 +48,5 @@ void misc_configure_device_dbg_settings(void) {
 
 void misc_restore_ram_svop(void) {
     /* This sets CFG2TMC_RAM_SVOP_PDP to 0x2. */
-    APB_MISC_GP_ASDBGREG_0 |= 0x02000000;
+    APB_MISC_GP_ASDBGREG_0 = (APB_MISC_GP_ASDBGREG_0 & 0xFCFFFFFF) | 0x02000000;
 }

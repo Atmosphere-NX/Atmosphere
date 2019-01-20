@@ -27,8 +27,8 @@ void i2c_set_test_master_config_load(void) {
     /* Set MSTR_CONFIG_LOAD. */
     I2C_I2C_CONFIG_LOAD_0 = 0x1;
     
-    while (!(I2C_I2C_CONFIG_LOAD_0 & 1)) {
-        /* Wait forever until it's set. */
+    while (I2C_I2C_CONFIG_LOAD_0 & 1) {
+        /* Wait forever until it's unset. */
     }
 }
 
