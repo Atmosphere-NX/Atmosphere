@@ -27,20 +27,19 @@ about: Suggest a new feature for Atmosphère.
 [ Failure to do so means your request can and likely will be closed with no warning. ]
 
 ### What component do you feel this would best fit within?
-- [Fusé](https://github.com/Atmosphere-NX/Atmosphere#components)
+- [Fusée](https://github.com/Atmosphere-NX/Atmosphere#components)
   - Atmosphère's custom bootloader.
 - [Exosphère](https://github.com/Atmosphere-NX/Atmosphere#components)
   - Fully-featured custom secure monitor.
 - [Stratosphère](https://github.com/Atmosphere-NX/Atmosphere#components)
     - Custom system modules.
-- **[Thermosphère](https://github.com/Atmosphere-NX/Atmosphere#components)** ******
+- [**Thermosphère**](https://github.com/Atmosphere-NX/Atmosphere#components)
   - Atmosphère's emuNAND implementation.
-- **[Troposphère. ](https://github.com/Atmosphere-NX/Atmosphere#components)** ******
+- [**Troposphère**](https://github.com/Atmosphere-NX/Atmosphere#components)
   - Application-level patches to the Horizon OS.
 
-[****** Note: **Bolded components are not implemented** or are still at the prototyping phase. ]
+[ Note: **Bolded components are not implemented** or are still at the prototyping phase. ]
 
 ### Why would this feature be useful?
 [ If this is a feature for an end-user, how does it benefit the end-user? ]  
 [ If this feature is for developers, what does it add to Atmosphère that did not already exist? ]  
-[ 'Sell' your idea. ]
