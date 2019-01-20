@@ -6,7 +6,7 @@ about: Something doesn't work correctly in Atmosphère.
 
 ## Bug Report
 
-[ If any section does not apply, use nil. ]  
+[ If any section does not apply, use N/A. ]  
 [ Lines between [ ] (square brackets) should be removed before posting. ]
 
 ### What's the issue you encountered?
