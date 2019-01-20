@@ -6,10 +6,11 @@ about: Suggest a new feature for Atmosphère.
 
 ## Feature Request
 
-[ If any section does not apply or you do not have the information needed for that section, use N/A (Not Applicable). ]  
+[ If any section does not apply, replace its contents with "N/A". ]
+[ If you do not have the information needed for a section, replace its contents with "Unknown". ]
 [ Lines between [ ] (square brackets) are to be removed before posting. ]
 
-[ Please refer to the already existing [feature requests](https://github.com/Atmosphere-NX/Atmosphere/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22features%2Ffeature-request%22) before you make your own request. ]  
+[ Please search for existing [feature requests](https://github.com/Atmosphere-NX/Atmosphere/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3A%22features%2Ffeature-request%22) before you make your own request. ]
 [ Duplicate requests will be marked as such and you will be referred to the original request. ]
 
 ### What feature are you suggesting?
