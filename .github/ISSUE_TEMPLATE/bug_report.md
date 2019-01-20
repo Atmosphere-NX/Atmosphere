@@ -23,7 +23,7 @@ about: Something doesn't work correctly in Atmosphère.
 ### Crash Report
 
 [ Crash reports can be found under ``/atmosphere/crash_reports``. ]  
-[ If your issue caused Atmosphère to crash, include the crash report(s) by creating a [gist](https://gist.github.com/) which you should the link here.
+[ If your issue caused Atmosphère to crash, include the crash report(s) by creating a [gist](https://gist.github.com/) and pasting the link here.
 [ Failure to include a crash report for crash related issues could mean your issue is closed with no notification or reason. ]
 
 ### System Firmware Version
