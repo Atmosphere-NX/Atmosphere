@@ -156,7 +156,7 @@ void CrashReport::HandleException(DebugEventInfo &d) {
             this->result = (Result)CrashReportResult::UserBreak;
             /* Try to parse out the user break result. */
             if (kernelAbove500()) {
-                Result user_result = RESULT_SUCCESS;
+                Result user_result = 0;
                 if (IsAddressReadable(d.info.exception.specific.user_break.address, sizeof(user_result))) {
                     svcReadDebugProcessMemory(&user_result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(user_result));
                 }
