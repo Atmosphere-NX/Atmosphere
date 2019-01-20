@@ -5,7 +5,7 @@ about: Suggest a new feature for Atmosphère.
 ---
 
 ## Feature Request
-[ If any section does not apply, use nil. ]  
+[ If any section does not apply, use N/A. ]  
 [ Lines between [ ] (square brackets) should be removed before posting. ]
 ### What feature are you suggesting?
 #### Overview:
