@@ -165,6 +165,10 @@ static inline void mmu_unmap(unsigned int level, uintptr_t *tbl, uintptr_t base_
     tbl[mmu_compute_index(level, base_addr)] = MMU_PTE_TYPE_FAULT;
 }
 
+static inline void mmu_unmap_page(uintptr_t *tbl, uintptr_t base_addr) {
+    tbl[mmu_compute_index(3, base_addr)] = MMU_PTE_TYPE_FAULT;
+}
+
 static inline void mmu_map_block_range(unsigned int level, uintptr_t *tbl, uintptr_t base_addr, uintptr_t phys_addr, size_t size, uint64_t attrs) {
     size = ((size + (BITL(MMU_Lx_SHIFT(level)) - 1)) >> MMU_Lx_SHIFT(level)) << MMU_Lx_SHIFT(level);
     for(size_t offset = 0; offset < size; offset += BITL(MMU_Lx_SHIFT(level))) {
