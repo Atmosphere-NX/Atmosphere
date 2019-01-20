@@ -12,9 +12,8 @@ about: Something doesn't work correctly in Atmosphère.
 [ * ]  
 [ Note: If the bug or crash you encountered is related to; ]  
 [ - software used to make "backups", ]  
-[ - software explicitly distributed for piracy, ]  
-[ - other software related to the duplication of copyrighted works,  
-no support for your issue will be provided and your issue will be closed. ]  
+[ - software explicitly distributed for piracy, etc ]  
+[ then contributors will not provide support for your issue and your issue will be closed. ]  
 
 ### What's the issue you encountered?
 
