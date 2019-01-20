@@ -79,7 +79,7 @@ export TOPDIR	:=	$(CURDIR)
 export KIPDIRS	:= $(AMS)/stratosphere/loader $(AMS)/stratosphere/pm $(AMS)/stratosphere/sm $(AMS)/stratosphere/boot $(AMS)/stratosphere/fs_mitm
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(AMS)/exosphere $(AMS)/thermosphere $(KIPDIRS)
+			$(AMS)/exosphere $(AMS)/exosphere/lp0fw $(AMS)/thermosphere $(KIPDIRS)
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
@@ -87,7 +87,7 @@ CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 KIPFILES 	:=	loader.kip pm.kip sm.kip fs_mitm.kip boot_100.kip boot_200.kip
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) exosphere.bin thermosphere.bin splash_screen.bmp $(KIPFILES)
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) exosphere.bin lp0fw.bin thermosphere.bin splash_screen.bmp $(KIPFILES)
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
