@@ -34,7 +34,7 @@ X.X.X
 
 ### Environment?
 
-- What bootloader (fusee, hekate, etc) was Atmosphère launched by:
+- What bootloader (fusèe, hekate, etc) was Atmosphère launched by:
 - Official release or unofficial build: 
   - [ Offical Release Version x.x.x (or) Unofficial Build ]
   - [ If using an unofficial build, include details on where/how you acquired the build. Self-compilation vs ex: Kosmos included version of Atmosphère ]
