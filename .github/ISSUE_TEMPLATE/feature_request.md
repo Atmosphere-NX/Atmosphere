@@ -5,8 +5,13 @@ about: Suggest a new feature for Atmosphère.
 ---
 
 ## Feature Request
-[ If any section does not apply, use N/A. ]  
-[ Lines between [ ] (square brackets) should be removed before posting. ]
+
+[ If any section does not apply or you do not have the information needed for that section, use N/A (Not Applicable). ]  
+[ Lines between [ ] (square brackets) are to be removed before posting. ]
+
+[ Please refer to the already existing [feature requests](https://github.com/Atmosphere-NX/Atmosphere/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22features%2Ffeature-request%22) before you make your own request. ]  
+[ Duplicate requests will be marked as such and you will be referred to the original request. ]
+
 ### What feature are you suggesting?
 #### Overview:
 - [ Include the basic, high-level concepts for this feature here. ]
@@ -22,9 +27,6 @@ about: Suggest a new feature for Atmosphère.
 - Change
 - Removal
   - [Ex: Removal of certain features or implementation due to a specific issue/bug or because of low quality code, etc.]
-
-[ Required: Reference the already existing [feature request. ](https://github.com/Atmosphere-NX/Atmosphere/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22features%2Ffeature-request%22) before you make your own request. ]  
-[ Failure to do so means your request can and likely will be closed with no warning. ]
 
 ### What component do you feel this would best fit within?
 - [Fusée](https://github.com/Atmosphere-NX/Atmosphere#components)
