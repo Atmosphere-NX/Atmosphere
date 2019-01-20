@@ -9,6 +9,13 @@ about: Something doesn't work correctly in Atmosphère.
 [ If any section does not apply, use N/A. ]  
 [ Lines between [ ] (square brackets) should be removed before posting. ]
 
+[ * ]  
+[ Note: If the bug or crash you encountered is related to; ]  
+[ - software used to make "backups", ]  
+[ - software explicitly distributed for piracy, ]  
+[ - other software related to the duplication of copyrighted works,  
+no support for your issue will be provided and your issue will be closed. ]  
+
 ### What's the issue you encountered?
 
 [ Describe the issue in detail and what you were doing beforehand. ]  
@@ -17,8 +24,8 @@ about: Something doesn't work correctly in Atmosphère.
 
 ### How can the issue be reproduced?
 
+[*]  
 [ Include a detailed step by step process for recreating your issue. ]
-[ Note: If software you have installed can be used to make 'backups' of game files or distributed explicitly for piracy and are connected to why Atmosphère crashed, we will not provide support related to this issue. ]
 
 ### Crash Report
 
@@ -27,6 +34,7 @@ about: Something doesn't work correctly in Atmosphère.
 [ If you don't include a crash report in instances of crash related issues, we will ask you one to provide one. ]  
 
 ### System Firmware Version
+
 X.X.X  
 [ Replace X's with system firmware version at time of crash. ]
 [ You can find your firmware version in the Settings -> System, under "System Update". ]  
@@ -37,11 +45,13 @@ X.X.X
 - What bootloader (fusèe, hekate, etc) was Atmosphère launched by:
 - Official release or unofficial build: 
   - [ Offical release version x.x.x (or) unofficial build ]
-  - [ If using an unofficial build, include details on where/how you acquired the build. Self-compilation vs ex: Kosmos included version of Atmosphère ]
+  - [ If using an unofficial build, include details on where/how you acquired the build. ] 
+     - [ Ex: Self-compilation ]
+     - [ Ex: Kosmos' distribution of Atmosphère ]
 - Do you have additional kips or sysmodules you're loading:
-- Homebrew software installed:
-  - [ Note: If software you have installed can be used to make 'backups' of game files or distributed explicitly for piracy and are connected to why Atmosphère crashed, we will not provide support related to this issue. ]
+- Homebrew software installed: [ * ] 
 
 ### Additional context?
+
 - Additional info about your environment:
 - [ Any other information relevant to your issue. ]
