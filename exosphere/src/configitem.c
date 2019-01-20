@@ -35,13 +35,26 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
         case CONFIGITEM_BATTERYPROFILE:
             g_battery_profile = (value != 0);
             break;
-        case CONFIGITEM_NEEDS_REBOOT_TO_RCM:
+        case CONFIGITEM_NEEDS_REBOOT:
             /* Force a reboot to RCM, if requested. */
-            if (value != 0) {
-                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x2;
-                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
-                while (1) { }
+            switch (value) {
+                case REBOOT_KIND_NO_REBOOT:
+                    return 0;
+                case REBOOT_KIND_TO_RCM:
+                    /* Set reboot kind = rcm. */
+                    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x2;
+                    break;
+                case REBOOT_KIND_TO_WB_PAYLOAD:
+                    /* Set reboot kind = warmboot. */
+                    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x1;
+                    /* Patch bootrom to jump to payload. */
+                    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x118) = 0x40010000; /* Return to start of payload. */
+                    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x11C) = 0x4000FFA4; /* Overwrite bootrom return address on stack. */
+                    break;
+                default:
+                    return 2;
             }
+            MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
             break;
         default:
             return 2;
@@ -187,8 +200,8 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
                           ((uint64_t)(exosphere_get_target_firmware() & 0xFF) << 8ull) |
                           ((uint64_t)(mkey_get_revision() & 0xFF) << 0ull);
             break;
-        case CONFIGITEM_NEEDS_REBOOT_TO_RCM:
-            /* UNOFFICIAL: The fact that we are executing means we aren't in the process of rebooting to rcm. */
+        case CONFIGITEM_NEEDS_REBOOT:
+            /* UNOFFICIAL: The fact that we are executing means we aren't in the process of rebooting. */
             *p_outvalue = 0;
             break;
         default:

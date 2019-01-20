@@ -41,8 +41,12 @@ typedef enum {
     
     /* These are unofficial, for usage by Exosphere. */
     CONFIGITEM_EXOSPHERE_VERSION = 65000,
-    CONFIGITEM_NEEDS_REBOOT_TO_RCM = 65001,
+    CONFIGITEM_NEEDS_REBOOT = 65001,
 } ConfigItem;
+
+#define REBOOT_KIND_NO_REBOOT     0
+#define REBOOT_KIND_TO_RCM        1
+#define REBOOT_KIND_TO_WB_PAYLOAD 2
 
 uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value);
 uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue);
