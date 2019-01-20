@@ -36,7 +36,7 @@ X.X.X
 
 - What bootloader (fusèe, hekate, etc) was Atmosphère launched by:
 - Official release or unofficial build: 
-  - [ Offical Release Version x.x.x (or) Unofficial Build ]
+  - [ Offical release version x.x.x (or) unofficial build ]
   - [ If using an unofficial build, include details on where/how you acquired the build. Self-compilation vs ex: Kosmos included version of Atmosphère ]
 - Do you have additional kips or sysmodules you're loading:
 - Homebrew software installed:
