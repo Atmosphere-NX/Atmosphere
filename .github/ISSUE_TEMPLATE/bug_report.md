@@ -44,4 +44,4 @@ X.X.X
 
 ### Additional context?
 - Additional info about your environment:
-- Any other information relevant to your issue.
+- [ Any other information relevant to your issue. ]
