@@ -36,25 +36,28 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
             g_battery_profile = (value != 0);
             break;
         case CONFIGITEM_NEEDS_REBOOT:
-            /* Force a reboot to RCM, if requested. */
-            switch (value) {
-                case REBOOT_KIND_NO_REBOOT:
-                    return 0;
-                case REBOOT_KIND_TO_RCM:
-                    /* Set reboot kind = rcm. */
-                    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x2;
-                    break;
-                case REBOOT_KIND_TO_WB_PAYLOAD:
-                    /* Set reboot kind = warmboot. */
-                    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x1;
-                    /* Patch bootrom to jump to payload. */
-                    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x118) = 0x40010000; /* Return to start of payload. */
-                    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x11C) = 0x4000FFA4; /* Overwrite bootrom return address on stack. */
-                    break;
-                default:
-                    return 2;
+            /* Force a reboot, if requested. */
+            {
+                switch (value) {
+                    case REBOOT_KIND_NO_REBOOT:
+                        return 0;
+                    case REBOOT_KIND_TO_RCM:
+                        /* Set reboot kind = rcm. */
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x2;
+                        break;
+                    case REBOOT_KIND_TO_WB_PAYLOAD:
+                        /* Set reboot kind = warmboot. */
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x1;
+                        /* Patch bootrom to jump to payload. */
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x118) = 0x40010000; /* Return to start of payload. */
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x11C) = 0x4000FFA4; /* Overwrite bootrom return address on stack. */
+                        break;
+                    default:
+                        return 2;
+                }
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
+                while (1) { }
             }
-            MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
             break;
         default:
             return 2;
