@@ -23,25 +23,25 @@ about: Something doesn't work correctly in Atmosphère.
 ### Crash Report
 
 [ Crash reports can be found under ``/atmosphere/crash_reports``. ]  
-[ If your issue caused Atmosphère to crash, include the crash report(s) by creating a [gist](https://gist.github.com/) and pasting the link here.
-[ Failure to include a crash report for crash related issues could mean your issue is closed with no notification or reason. ]
+[ If your issue caused Atmosphère to crash, include the crash report(s) by creating a [gist](https://gist.github.com/) and pasting the link here. ]  
+[ If you don't include a crash report in instances of crash related issues, we will ask you one to provide one. ]  
 
 ### System Firmware Version
 X.X.X  
 [ Replace X's with system firmware version at time of crash. ]
-[ You can find your firmware version in the Settings -> System, under "System Update". ]
-[ If it says "Update Pending", you can clear the pending update by rebooting to Maintenance Mode. ]
+[ You can find your firmware version in the Settings -> System, under "System Update". ]  
+[ If it says "Update Pending", you can clear the pending update by rebooting to Maintenance Mode. ]  
 
 ### Environment?
 
 - What bootloader (fusèe, hekate, etc) was Atmosphère launched by:
 - Official release or unofficial build: 
-  - [ Offical release version x.x.x (or) unofficial build ]
+  - [ Offical Release Version x.x.x (or) Unofficial Build ]
   - [ If using an unofficial build, include details on where/how you acquired the build. Self-compilation vs ex: Kosmos included version of Atmosphère ]
-- Do you have additional kips you're loading:
+- Do you have additional kips or sysmodules you're loading:
 - Homebrew software installed:
   - [ Note: If software you have installed can be used to make 'backups' of game files or distributed explicitly for piracy and are connected to why Atmosphère crashed, we will not provide support related to this issue. ]
 
 ### Additional context?
 - Additional info about your environment:
-- [ Any other information relevant to your issue. ]
+- Any other information relevant to your issue.
