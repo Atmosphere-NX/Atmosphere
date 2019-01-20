@@ -20,6 +20,18 @@ interface nn::sm::detail::IUserInterface is sm: {
 }
 ```
 
+Additionally, an interface `sm:dmnt` has been created to allow a debug monitor to query sm's state.
+
+Its SwIPC definition follows.
+```
+interface nn::sm::detail::IDebugMonitorInterface is sm:dmnt {
+  [65000] AtmosphereGetServiceRecord(ServiceName name) -> SmServiceRecord;
+  [65001] AtmosphereListServiceRecords(u64 offset) -> buffer<SmServiceRecord, 6>, u64 count;
+  [65002] AtmosphereGetServiceRecordSize() -> u64 record_size;
+}
+```
+
+
 #### AtmosphereInstallMitm
 
 This command alters the registration for the named service, in order to allow services to intercept communication between client processes and their intended services. It is used by [fs_mitm](fs_mitm.md).
@@ -57,6 +69,50 @@ This command requires that the session be initialized, returning error code 0x41
 This command is used internally by the Stratosphere implementation of the [loader](loader.md) sysmodule, when a new process is created. It will call the `AssociatePidTid` command on every registered MITM query session.
 
 If the given process ID refers to a kernel internal process, error code 0x1015 is returned. This command requires that the session be initialized, returning error code 0x415 if it is not.
+
+#### AtmosphereGetServiceRecordSize
+
+Retrieves `sizeof(SmServiceRecord)` for a service. The current format of `SmServiceRecord` structure follows.
+
+```
+struct SmServiceRecord {
+    uint64_t service_name;
+    uint64_t owner_pid;
+    uint64_t max_sessions;
+    uint64_t mitm_pid;
+    uint64_t mitm_waiting_ack_pid;
+    bool is_light;
+    bool mitm_waiting_ack;
+};
+```
+
+#### AtmosphereGetServiceRecord
+
+Retrieves a service registration record for a service.
+
+#### AtmosphereListServiceRecords
+
+Provides a list of service registrations records.
+
+The command will return an array of `SmServiceRecord`s, skipping `offset` records. The number of records returned is indicated by `count`.
+If `count` is less than the size of the buffer divided by `sizeof(SmServiceRecord)` (the buffer was not completely filled), the end of the service registration list has been reached. Otherwise, client code
+should increment `offset` by `count` and call again. Client code should retrieve a record size using `AtmosphereGetServiceRecordSize`, and either make sure that the size of a record matches what it expects,
+or should make sure to use the correct size as the stride while iterating over the array of returned records. Example pseudocode is shown below.
+
+```
+offset = 0;
+record_size = AtmosphereGetServiceRecordSize();
+do {
+    SmServiceRecord records[16];
+    count = AtmosphereListServiceRecords(offset, buffer(records));
+    for (i = 0; i < count; i++) {
+        SmServiceRecord record = {0};
+        memcpy(&record, &records[i], min(record_size, sizeof(SmServiceRecord));
+        /* process record */
+        offset++;
+    }
+} while(count == sizeof(records) / record_size);
+```
 
 ### Minimum Session Limit
 

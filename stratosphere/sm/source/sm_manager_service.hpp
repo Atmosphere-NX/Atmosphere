@@ -23,7 +23,6 @@ enum ManagerServiceCmd {
     Manager_Cmd_RegisterProcess = 0,
     Manager_Cmd_UnregisterProcess = 1,
     
-    
     Manager_Cmd_AtmosphereEndInitDefers = 65000,
     Manager_Cmd_AtmosphereHasMitm = 65001,
 };

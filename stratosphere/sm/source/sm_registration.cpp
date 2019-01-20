@@ -562,3 +562,51 @@ Result Registration::AssociatePidTidForMitm(u64 pid, u64 tid) {
     }
     return 0x0;
 }
+
+void Registration::ConvertServiceToRecord(Registration::Service *service, SmServiceRecord *record) {
+    record->service_name         = service->service_name;
+    record->owner_pid            = service->owner_pid;
+    record->max_sessions         = service->max_sessions;
+    record->mitm_pid             = service->mitm_pid;
+    record->mitm_waiting_ack_pid = service->mitm_waiting_ack_pid;
+    record->is_light             = service->is_light;
+    record->mitm_waiting_ack     = service->mitm_waiting_ack;
+}
+
+Result Registration::GetServiceRecord(u64 service, SmServiceRecord *out) {
+    if (!service) {
+        return 0xC15;
+    }
+    
+    u64 service_name_len = GetServiceNameLength(service);
+    
+    /* If the service has bytes after a null terminator, that's no good. */
+    if (service_name_len != 8 && (service >> (8 * service_name_len))) {
+        return 0xC15;
+    }
+    
+    Registration::Service *target_service = GetService(service);
+    if (target_service == NULL) {
+        return 0xE15;
+    }
+    
+    ConvertServiceToRecord(target_service, out);
+    return 0x0;
+}
+
+void Registration::ListServiceRecords(u64 offset, u64 max_out, SmServiceRecord *out, u64 *out_count) {
+    u64 count = 0;
+    
+    for (auto it = g_service_list.begin(); it != g_service_list.end() && count < max_out; it++) {
+        if (it->service_name != 0) {
+            if (offset > 0) {
+                offset--;
+            } else {
+                ConvertServiceToRecord(it, out++);
+                count++;
+            }
+        }
+    }
+    
+    *out_count = count;
+}

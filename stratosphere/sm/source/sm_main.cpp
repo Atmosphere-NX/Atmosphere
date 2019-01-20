@@ -24,6 +24,7 @@
 
 #include "sm_manager_service.hpp"
 #include "sm_user_service.hpp"
+#include "sm_dmnt_service.hpp"
 #include "sm_registration.hpp"
 
 extern "C" {
@@ -82,6 +83,17 @@ int main(int argc, char **argv)
     }
     
     server_manager->AddWaitable(new ExistingPortServer<ManagerService>(smm_h, 1));
+    
+    /*===== ATMOSPHERE EXTENSION =====*/
+    /* Create sm:dmnt manually. */
+    Handle smdmnt_h;
+    if (R_FAILED(Registration::RegisterServiceForSelf(smEncodeName("sm:dmnt"), 1, false, &smdmnt_h))) {
+        /* TODO: Panic. */
+        while (1) { }
+    }
+    
+    server_manager->AddWaitable(new ExistingPortServer<DmntService>(smm_h, 1));;
+    /*================================*/
         
     /* Loop forever, servicing our services. */
     server_manager->Process();

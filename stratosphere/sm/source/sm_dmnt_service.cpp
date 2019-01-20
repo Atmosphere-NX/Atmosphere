@@ -14,22 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#pragma once
-struct SmServiceName {
-    char name[sizeof(u64)];
-};
+#include <switch.h>
+#include <stratosphere.hpp>
+#include "sm_dmnt_service.hpp"
+#include "sm_registration.hpp"
 
-static_assert(__alignof__(SmServiceName) == 1, "SmServiceName definition!");
+Result DmntService::AtmosphereGetRecord(Out<SmServiceRecord> record, SmServiceName service) {
+    return Registration::GetServiceRecord(smEncodeName(service.name), record.GetPointer());
+}
 
-/* For Debug Monitor extensions. */
-struct SmServiceRecord {
-    u64 service_name;
-    u64 owner_pid;
-    u64 max_sessions;
-    u64 mitm_pid;
-    u64 mitm_waiting_ack_pid;
-    bool is_light;
-    bool mitm_waiting_ack;
-};
+void DmntService::AtmosphereListRecords(OutBuffer<SmServiceRecord> records, Out<u64> out_count, u64 offset) {
+    Registration::ListServiceRecords(offset, records.num_elements, records.buffer, out_count.GetPointer());
+}
 
-static_assert(sizeof(SmServiceRecord) == 0x30, "SmServiceRecord definition!");
+void DmntService::AtmosphereGetRecordSize(Out<u64> record_size) {
+    record_size.SetValue(sizeof(SmServiceRecord));
+}
+
