@@ -19,8 +19,19 @@
 
 #include <stdint.h>
 
-#define SMC_HANDLER_USER 0
-#define SMC_HANDLER_PRIV 1
+#define SMC_HANDLER_USER  0
+#define SMC_HANDLER_PRIV  1
+#define SMC_HANDLER_COUNT 2
+
+#define SMC_HANDLER_AMS  (SMC_HANDLER_COUNT)
+
+#define SMC_CALL_RANGE_ARM_ARCH    0
+#define SMC_CALL_RANGE_CPU         1
+#define SMC_CALL_RANGE_SIP         2
+#define SMC_CALL_RANGE_OEM         3
+#define SMC_CALL_RANGE_STANDARD    4
+
+#define SMC_CALL_RANGE_TRUSTED_APP 0x30
 
 typedef struct {
     uint64_t X[8];

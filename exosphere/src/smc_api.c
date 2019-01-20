@@ -31,6 +31,7 @@
 #include "sealedkeys.h"
 #include "smc_api.h"
 #include "smc_user.h"
+#include "smc_ams.h"
 #include "se.h"
 #include "userpage.h"
 #include "titlekey.h"
@@ -39,6 +40,8 @@
 
 #define SMC_USER_HANDLERS 0x13
 #define SMC_PRIV_HANDLERS 0x9
+
+#define SMC_AMS_HANDLERS 0x2
 
 #define DEBUG_LOG_SMCS 0
 #define DEBUG_PANIC_ON_FAILURE 0
@@ -76,6 +79,9 @@ uint32_t smc_get_random_bytes_for_priv(smc_args_t *args);
 uint32_t smc_panic(smc_args_t *args);
 uint32_t smc_configure_carveout(smc_args_t *args);
 uint32_t smc_read_write_register(smc_args_t *args);
+
+/* Atmosphere SMC prototypes */
+uint32_t smc_ams_iram_copy(smc_args_t *args);
 
 typedef struct {
     uint32_t id;
@@ -121,7 +127,13 @@ static smc_table_entry_t g_smc_priv_table[SMC_PRIV_HANDLERS] = {
     {0xC3000008, smc_read_write_register}
 };
 
-static smc_table_t g_smc_tables[2] = {
+/* This is a table used for atmosphere-specific SMCs. */
+static smc_table_entry_t g_smc_ams_table[SMC_AMS_HANDLERS] = {
+    {0, NULL},
+    {0xF0000201, smc_ams_iram_copy},
+};
+
+static smc_table_t g_smc_tables[SMC_HANDLER_COUNT + 1] = {
     { /* SMC_HANDLER_USER */
         g_smc_user_table,
         SMC_USER_HANDLERS
@@ -129,6 +141,10 @@ static smc_table_t g_smc_tables[2] = {
     { /* SMC_HANDLER_PRIV */
         g_smc_priv_table,
         SMC_PRIV_HANDLERS
+    },
+    { /* SMC_HANDLER_AMS */
+        g_smc_ams_table,
+        SMC_AMS_HANDLERS
     }
 };
 
@@ -228,19 +244,25 @@ void clear_smc_callback(uint64_t key) {
 _Atomic uint64_t num_smcs_called = 0;
 
 void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
-    unsigned char smc_id;
+    unsigned char smc_id, call_range;
     unsigned int result;
     unsigned int (*smc_handler)(smc_args_t *args);
     
     /* Validate top-level handler. */
-    if (handler_id != SMC_HANDLER_USER && handler_id != SMC_HANDLER_PRIV) {
+    if (handler_id >= SMC_HANDLER_COUNT) {
         generic_panic();
     }
 
-    /* Validate core is appropriate for handler. */
-    if (handler_id == SMC_HANDLER_USER && get_core_id() != 3) {
-        /* USER SMCs must be called via svcCallSecureMonitor on core 3 (where spl runs) */
-        generic_panic();
+    /* If user-handler, detect if talking to Atmosphere/validate calling core. */
+    if (handler_id == SMC_HANDLER_USER) {
+        if ((call_range = (unsigned char)((args->X[0] >> 24) & 0x3F)) == SMC_CALL_RANGE_TRUSTED_APP) {
+            /* Nintendo's SMCs are all OEM-specific. */
+            /* Pending a reason not to, we will treat Trusted Application SMCs as intended to talk to Atmosphere. */
+            handler_id = SMC_HANDLER_AMS;
+        } else if (get_core_id() != 3) {
+            /* USER SMCs must be called via svcCallSecureMonitor on core 3 (where spl runs) */
+            generic_panic();
+        }
     }
 
     /* Validate sub-handler index */
@@ -682,4 +704,8 @@ uint32_t smc_panic(smc_args_t *args) {
     /* Swap RGB values from args. */
     uint32_t color = ((args->X[1] & 0xF) << 8) | ((args->X[1] & 0xF0)) | ((args->X[1] & 0xF00) >> 8);
     panic((color << 20) | 0x40);
+}
+
+uint32_t smc_ams_iram_copy(smc_args_t *args) {
+    return smc_wrapper_sync(args, ams_iram_copy);
 }
