@@ -38,6 +38,9 @@ static HosThread g_fatal_thread;
 
 static void FatalThreadFunc(void *arg) {
     Result rc = (Result)((uintptr_t)arg);
+    
+    svcSleepThread(5000000000ULL);
+    
     fatalSimple(rc);
 }
 
