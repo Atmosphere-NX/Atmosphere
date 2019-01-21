@@ -56,7 +56,7 @@ This command requires that the session be initialized, returning error code 0x41
 If the given service name is invalid, error code 0xC15 is returned.\
 If the user does not have service registration permission for the named service, error code 0x1015 is returned.\
 If the service already has an MITM installed, error code 0x815 is returned.\
-If the service has not yet been registered, the request will be deferred until the service is registered in the same manner as IUserInterface::GetService.\
+If the service has not yet been registered, the request will be deferred until the service is registered in the same manner as IUserInterface::GetService.
 
 #### AtmosphereUninstallMitm
 
