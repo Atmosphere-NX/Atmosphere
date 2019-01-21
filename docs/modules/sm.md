@@ -52,11 +52,11 @@ The `AssociatePidTid` command is invoked on all MITM query sessions whenever a n
 
 If the process that installed the MITM attempts to connect to the service, it will always connect to the original service.
 
-This command requires that the session be initialized, returning error code 0x415 if it is not.
-If the given service name is invalid, error code 0xC15 is returned.
-If the user does not have service registration permission for the named service, error code 0x1015 is returned.
-If the service has not yet been registered, error code 0xE15 is returned.
-If the service already has an MITM installed, error code 0x815 is returned.
+This command requires that the session be initialized, returning error code 0x415 if it is not.\
+If the given service name is invalid, error code 0xC15 is returned.\
+If the user does not have service registration permission for the named service, error code 0x1015 is returned.\
+If the service already has an MITM installed, error code 0x815 is returned.\
+If the service has not yet been registered, the request will be deferred until the service is registered in the same manner as IUserInterface::GetService.\
 
 #### AtmosphereUninstallMitm
 
