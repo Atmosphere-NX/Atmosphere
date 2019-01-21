@@ -148,15 +148,15 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
-    Thread process_track_thread = {0};
+    HosThread process_track_thread;
     consoleDebugInit(debugDevice_SVC);
     
     /* Initialize and spawn the Process Tracking thread. */
     Registration::InitializeSystemResources();
-    if (R_FAILED(threadCreate(&process_track_thread, &ProcessTracking::MainLoop, NULL, 0x4000, 0x15, 0))) {
+    if (R_FAILED(process_track_thread.Initialize(&ProcessTracking::MainLoop, NULL, 0x4000, 0x15))) {
         /* TODO: Panic. */
     }
-    if (R_FAILED(threadStart(&process_track_thread))) {
+    if (R_FAILED(process_track_thread.Start())) {
         /* TODO: Panic. */
     }
     

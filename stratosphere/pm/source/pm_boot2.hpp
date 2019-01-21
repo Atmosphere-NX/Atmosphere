@@ -77,6 +77,10 @@ enum class Boot2KnownTitleId : u64 {
     jpegdec = 0x010000000000003CUL,
     safemode = 0x010000000000003DUL,
     olsc = 0x010000000000003EUL,
+    
+    
+    /* atmosphere extensions */
+    ams_set_mitm = 0x0100000000000032UL,
 };
 
 class EmbeddedBoot2 {

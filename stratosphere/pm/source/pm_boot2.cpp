@@ -26,6 +26,20 @@
 #include "pm_boot2.hpp"
 #include "pm_registration.hpp"
 
+static std::vector<Boot2KnownTitleId> g_boot2_titles;
+
+static void ClearLaunchedTitles() {
+    g_boot2_titles.clear();
+}
+
+static void SetLaunchedTitle(Boot2KnownTitleId title_id) {
+    g_boot2_titles.push_back(title_id);
+}
+
+static bool HasLaunchedTitle(Boot2KnownTitleId title_id) {
+    return std::find(g_boot2_titles.begin(), g_boot2_titles.end(), title_id) != g_boot2_titles.end();
+}
+
 static bool IsHexadecimal(const char *str) {
     while (*str) {
         if (isxdigit(*str)) {
@@ -39,6 +53,11 @@ static bool IsHexadecimal(const char *str) {
 
 static void LaunchTitle(Boot2KnownTitleId title_id, FsStorageId storage_id, u32 launch_flags, u64 *pid) {
     u64 local_pid;
+    
+    /* Don't launch a title twice during boot2. */
+    if (HasLaunchedTitle(title_id)) {
+        return;
+    }
     
     Result rc = Registration::LaunchProcessByTidSid(Registration::TidSid{(u64)title_id, storage_id}, launch_flags, &local_pid);
     switch (rc) {
@@ -60,6 +79,10 @@ static void LaunchTitle(Boot2KnownTitleId title_id, FsStorageId storage_id, u32 
     }
     if (pid) {
         *pid = local_pid;
+    }
+    
+    if (R_SUCCEEDED(rc)) {
+        SetLaunchedTitle(title_id);
     }
 }
 
@@ -123,25 +146,28 @@ static void MountSdCard() {
     fsdevMountSdmc();
 }
 
-static void WaitForFsMitm() {
-    bool fs_mitm_installed = false;
+static void WaitForMitm(const char *service) {
+    bool mitm_installed = false;
 
     Result rc = smManagerAmsInitialize();
     if (R_FAILED(rc)) {
         std::abort();
     }
-    while (R_FAILED((rc = smManagerAmsHasMitm(&fs_mitm_installed, "fsp-srv"))) || !fs_mitm_installed) {
+    while (R_FAILED((rc = smManagerAmsHasMitm(&mitm_installed, service))) || !mitm_installed) {
         if (R_FAILED(rc)) {
             std::abort();
         }
-        svcSleepThread(1000ull);
+        svcSleepThread(1000000ull);
     }
     smManagerAmsExit();
 }
 
 void EmbeddedBoot2::Main() {
     /* Wait until fs.mitm has installed itself. We want this to happen as early as possible. */
-    WaitForFsMitm();
+    WaitForMitm("fsp-srv");
+    
+    /* Clear titles. */
+    ClearLaunchedTitles();
 
     /* psc, bus, pcv is the minimal set of required titles to get SD card. */ 
     /* bus depends on pcie, and pcv depends on settings. */
@@ -158,6 +184,10 @@ void EmbeddedBoot2::Main() {
     
     /* At this point, the SD card can be mounted. */
     MountSdCard();
+    
+    /* Launch set:mitm, wait for it. */
+    LaunchTitle(Boot2KnownTitleId::ams_set_mitm, FsStorageId_None, 0, NULL);
+    WaitForMitm("set:sys");
     
     /* Launch usb. */
     LaunchTitle(Boot2KnownTitleId::usb, FsStorageId_NandSystem, 0, NULL);
@@ -206,4 +236,7 @@ void EmbeddedBoot2::Main() {
         
     /* We no longer need the SD card. */
     fsdevUnmountAll();
+    
+    /* Clear titles. */
+    ClearLaunchedTitles();
 }
