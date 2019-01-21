@@ -31,7 +31,7 @@ DATA		:=	data
 INCLUDES	:=	include ../../common/include
 EXEFS_SRC	:=	exefs_src
 
-DEFINES	:=	-DDISABLE_IPC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
+DEFINES	:=	-DDISABLE_IPC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\" -DINI_MAX_LINE=768
 
 #---------------------------------------------------------------------------------
 # options for code generation

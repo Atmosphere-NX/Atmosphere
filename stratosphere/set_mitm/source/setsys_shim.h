@@ -17,6 +17,7 @@ typedef struct {
 
 /* Command forwarders. */
 Result setsysGetEdidFwd(Service* s, SetSysEdid* out);
+Result setsysGetSettingsItemValueFwd(Service* s, const char *name, const char *item_key, void *value_out, size_t value_out_size, u64 *size_out);
 
 #ifdef __cplusplus
 }

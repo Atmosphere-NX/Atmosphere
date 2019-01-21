@@ -19,6 +19,7 @@
 #include <switch.h>
 #include "setsys_mitm_service.hpp"
 #include "setsys_firmware_version.hpp"
+#include "setsys_settings_items.hpp"
 
 void SetSysMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx) {
     /* No commands need postprocessing. */    
@@ -44,6 +45,16 @@ Result SetSysMitmService::GetSettingsItemValueSize(Out<u64> out_size, InPointer<
     char name[SET_MAX_NAME_SIZE] = {0};
     char key[SET_MAX_NAME_SIZE] = {0};
     
+    Result rc = SettingsItemManager::ValidateName(in_name.pointer);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    rc = SettingsItemManager::ValidateKey(in_key.pointer);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
     if (in_name.num_elements < SET_MAX_NAME_SIZE) {
         strncpy(name, in_name.pointer, in_name.num_elements);
     } else {
@@ -55,14 +66,33 @@ Result SetSysMitmService::GetSettingsItemValueSize(Out<u64> out_size, InPointer<
     } else {
         strncpy(key, in_key.pointer, SET_MAX_NAME_SIZE-1);
     }
+    
+    rc = SettingsItemManager::GetValueSize(name, key, out_size.GetPointer());
+    if (R_FAILED(rc)) {
+        rc = setsysGetSettingsItemValueSize(name, key, out_size.GetPointer());
+    }
 
-    return setsysGetSettingsItemValueSize(name, key, out_size.GetPointer());
+    return rc;
 }
 
 Result SetSysMitmService::GetSettingsItemValue(Out<u64> out_size, OutBuffer<u8> out_value, InPointer<char> in_name, InPointer<char> in_key) {
     char name[SET_MAX_NAME_SIZE] = {0};
     char key[SET_MAX_NAME_SIZE] = {0};
     
+    Result rc = SettingsItemManager::ValidateName(in_name.pointer);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    rc = SettingsItemManager::ValidateKey(in_key.pointer);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    if (out_value.buffer == nullptr) {
+        return 0x19A69;
+    }
+    
     if (in_name.num_elements < SET_MAX_NAME_SIZE) {
         strncpy(name, in_name.pointer, in_name.num_elements);
     } else {
@@ -74,8 +104,14 @@ Result SetSysMitmService::GetSettingsItemValue(Out<u64> out_size, OutBuffer<u8> 
     } else {
         strncpy(key, in_key.pointer, SET_MAX_NAME_SIZE-1);
     }
+    
+    rc = SettingsItemManager::GetValue(name, key, out_value.buffer, out_value.num_elements, out_size.GetPointer());
+    
+    if (R_FAILED(rc)) {
+        rc = setsysGetSettingsItemValueFwd(this->forward_service.get(), name, key, out_value.buffer, out_value.num_elements, out_size.GetPointer());
+    }
 
-    return setsysGetSettingsItemValue(name, key, out_value.buffer, out_value.num_elements);
+    return rc;
 }
 
 Result SetSysMitmService::GetEdid(OutPointerWithServerSize<SetSysEdid, 0x1> out) {
