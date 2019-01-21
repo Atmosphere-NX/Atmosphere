@@ -467,7 +467,7 @@ Result Registration::InstallMitmForPid(u64 pid, u64 service, Handle *out, Handle
     /* Verify the service exists. */
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL) {
-        return 0xE15;
+        return RESULT_DEFER_SESSION;
     }
     
     /* Verify the service isn't already being mitm'd. */

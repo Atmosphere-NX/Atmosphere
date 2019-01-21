@@ -60,11 +60,6 @@ void __appInit(void) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
     }
     
-    rc = setsysInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
@@ -89,8 +84,16 @@ int main(int argc, char **argv)
     /* TODO: What's a good timeout value to use here? */
     auto server_manager = new SetMitmManager(1);
         
-    /* Create fsp-srv mitm. */
+    /* Create set:sys mitm. */
     AddMitmServerToManager<SetSysMitmService>(server_manager, "set:sys", 4);
+    
+    /* Connect to set:sys. */
+    {
+        Result rc = setsysInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(rc);
+        }
+    }
 
     /* Loop forever, servicing our services. */
     server_manager->Process();

@@ -123,8 +123,7 @@ static void MountSdCard() {
     fsdevMountSdmc();
 }
 
-void EmbeddedBoot2::Main() {
-    /* Wait until fs.mitm has installed itself. We want this to happen as early as possible. */
+static void WaitForFsMitm() {
     bool fs_mitm_installed = false;
 
     Result rc = smManagerAmsInitialize();
@@ -138,6 +137,11 @@ void EmbeddedBoot2::Main() {
         svcSleepThread(1000ull);
     }
     smManagerAmsExit();
+}
+
+void EmbeddedBoot2::Main() {
+    /* Wait until fs.mitm has installed itself. We want this to happen as early as possible. */
+    WaitForFsMitm();
 
     /* psc, bus, pcv is the minimal set of required titles to get SD card. */ 
     /* bus depends on pcie, and pcv depends on settings. */

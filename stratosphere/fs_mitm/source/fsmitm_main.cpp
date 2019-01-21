@@ -62,11 +62,6 @@ void __appInit(void) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
     }
     
-    rc = fsInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
-    }
-    
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
@@ -94,6 +89,14 @@ int main(int argc, char **argv)
 
     /* Create fsp-srv mitm. */
     AddMitmServerToManager<FsMitmService>(server_manager, "fsp-srv", 61);
+    
+    /* Connect to FS */
+    {
+        Result rc = fsInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+        }
+    }
 
     if (R_FAILED(threadCreate(&sd_initializer_thread, &Utils::InitializeSdThreadFunc, NULL, 0x4000, 0x15, 0))) {
         /* TODO: Panic. */
