@@ -85,7 +85,7 @@ int main(int argc, char **argv)
     auto server_manager = new SetMitmManager(1);
         
     /* Create set:sys mitm. */
-    AddMitmServerToManager<SetSysMitmService>(server_manager, "set:sys", 4);
+    AddMitmServerToManager<SetSysMitmService>(server_manager, "set:sys", 60);
     
     /* Connect to set:sys. */
     {

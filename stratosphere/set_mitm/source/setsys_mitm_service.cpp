@@ -15,45 +15,17 @@
  */
 
 #include <mutex>
+#include <algorithm>
 #include <switch.h>
 #include "setsys_mitm_service.hpp"
-
-static HosMutex g_version_mutex;
-static bool g_got_version = false;
-static SetSysFirmwareVersion g_fw_version = {0};
-
-static Result _GetFirmwareVersion(SetSysFirmwareVersion *out) {
-    std::scoped_lock<HosMutex> lock(g_version_mutex);
-    if (!g_got_version) {
-        Result rc = setsysGetFirmwareVersion(&g_fw_version);
-        if (R_FAILED(rc)) {
-            return rc;
-        }
-        
-        /* Modify the output firmware version. */
-        {
-            u32 major, minor, micro;
-            char display_version[sizeof(g_fw_version.display_version)] = {0};
-            
-            GetAtmosphereApiVersion(&major, &minor, &micro, nullptr, nullptr);
-            snprintf(display_version, sizeof(display_version), "%s (AMS %u.%u.%u)", g_fw_version.display_version, major, minor, micro);
-            
-            memcpy(g_fw_version.display_version, display_version, sizeof(g_fw_version.display_version));
-        }
-        
-        g_got_version = true;
-    }
-    
-    *out = g_fw_version;
-    return 0;
-}
+#include "setsys_firmware_version.hpp"
 
 void SetSysMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx) {
     /* No commands need postprocessing. */    
 }
 
-Result SetSysMitmService::GetFirmwareVersion(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) { 
-    Result rc = _GetFirmwareVersion(out.pointer);
+Result SetSysMitmService::GetFirmwareVersion(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) {
+    Result rc = VersionManager::GetFirmwareVersion(this->title_id, out.pointer);
     
     /* GetFirmwareVersion sanitizes these fields. */
     if (R_SUCCEEDED(rc)) {
@@ -64,6 +36,48 @@ Result SetSysMitmService::GetFirmwareVersion(OutPointerWithServerSize<SetSysFirm
     return rc;
 }
 
-Result SetSysMitmService::GetFirmwareVersion2(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) {        
-    return _GetFirmwareVersion(out.pointer);
+Result SetSysMitmService::GetFirmwareVersion2(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) {
+    return VersionManager::GetFirmwareVersion(this->title_id, out.pointer);
+}
+
+Result SetSysMitmService::GetSettingsItemValueSize(Out<u64> out_size, InPointer<char> in_name, InPointer<char> in_key) {
+    char name[SET_MAX_NAME_SIZE] = {0};
+    char key[SET_MAX_NAME_SIZE] = {0};
+    
+    if (in_name.num_elements < SET_MAX_NAME_SIZE) {
+        strncpy(name, in_name.pointer, in_name.num_elements);
+    } else {
+        strncpy(name, in_name.pointer, SET_MAX_NAME_SIZE-1);
+    }
+    
+    if (in_key.num_elements < SET_MAX_NAME_SIZE) {
+        strncpy(key, in_key.pointer, in_key.num_elements);
+    } else {
+        strncpy(key, in_key.pointer, SET_MAX_NAME_SIZE-1);
+    }
+
+    return setsysGetSettingsItemValueSize(name, key, out_size.GetPointer());
+}
+
+Result SetSysMitmService::GetSettingsItemValue(Out<u64> out_size, OutBuffer<u8> out_value, InPointer<char> in_name, InPointer<char> in_key) {
+    char name[SET_MAX_NAME_SIZE] = {0};
+    char key[SET_MAX_NAME_SIZE] = {0};
+    
+    if (in_name.num_elements < SET_MAX_NAME_SIZE) {
+        strncpy(name, in_name.pointer, in_name.num_elements);
+    } else {
+        strncpy(name, in_name.pointer, SET_MAX_NAME_SIZE-1);
+    }
+    
+    if (in_key.num_elements < SET_MAX_NAME_SIZE) {
+        strncpy(key, in_key.pointer, in_key.num_elements);
+    } else {
+        strncpy(key, in_key.pointer, SET_MAX_NAME_SIZE-1);
+    }
+
+    return setsysGetSettingsItemValue(name, key, out_value.buffer, out_value.num_elements);
+}
+
+Result SetSysMitmService::GetEdid(OutPointerWithServerSize<SetSysEdid, 0x1> out) {
+    return setsysGetEdidFwd(this->forward_service.get(), out.pointer);
 }
