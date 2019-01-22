@@ -31,7 +31,7 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x28000
+    #define INNER_HEAP_SIZE 0x50000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
     
@@ -61,6 +61,11 @@ void __appInit(void) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
     }
     
+    rc = setsysInitialize();
+    if (R_FAILED(rc)) {
+        fatalSimple(rc);
+    }
+    
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
@@ -86,19 +91,11 @@ int main(int argc, char **argv)
     SettingsItemManager::RefreshConfiguration();
         
     /* TODO: What's a good timeout value to use here? */
-    auto server_manager = new SetMitmManager(1);
+    auto server_manager = new SetMitmManager(3);
         
     /* Create set:sys mitm. */
     AddMitmServerToManager<SetSysMitmService>(server_manager, "set:sys", 60);
     
-    /* Connect to set:sys. */
-    {
-        Result rc = setsysInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
-    }
-
     /* Loop forever, servicing our services. */
     server_manager->Process();
     
