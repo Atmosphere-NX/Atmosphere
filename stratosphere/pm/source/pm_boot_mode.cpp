@@ -27,3 +27,7 @@ void BootModeService::GetBootMode(Out<u32> out) {
 void BootModeService::SetMaintenanceBoot() {
     g_is_maintenance_boot = true;
 }
+
+void BootModeService::SetMaintenanceBootForEmbeddedBoot2() {
+    g_is_maintenance_boot = true;
+}

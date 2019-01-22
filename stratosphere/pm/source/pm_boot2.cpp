@@ -25,6 +25,7 @@
 #include <stratosphere.hpp>
 #include "pm_boot2.hpp"
 #include "pm_registration.hpp"
+#include "pm_boot_mode.hpp"
 
 static std::vector<Boot2KnownTitleId> g_boot2_titles;
 
@@ -86,8 +87,41 @@ static void LaunchTitle(Boot2KnownTitleId title_id, FsStorageId storage_id, u32 
     }
 }
 
-static bool ShouldForceMaintenanceMode() {
-    /* TODO: Contact set:sys, retrieve boot!force_maintenance, read plus/minus buttons. */
+static bool GetGpioPadLow(GpioPadName pad) {
+    GpioPadSession button;
+    if (R_FAILED(gpioOpenSession(&button, pad))) {
+        return false;
+    }
+    
+    /* Ensure we close even on early return. */
+    ON_SCOPE_EXIT { gpioPadClose(&button); };
+    
+    /* Set direction input. */
+    gpioPadSetDirection(&button, GpioDirection_Input);
+    
+    GpioValue val;
+    return R_SUCCEEDED(gpioPadGetValue(&button, &val)) && val == GpioValue_Low;
+}
+
+static bool IsMaintenanceMode() {
+    /* Contact set:sys, retrieve boot!force_maintenance. */
+    if (R_SUCCEEDED(setsysInitialize())) {
+        ON_SCOPE_EXIT { setsysExit(); };
+        
+        u8 force_maintenance = 1;
+        setsysGetSettingsItemValue("boot", "force_maintenance", &force_maintenance, sizeof(force_maintenance));
+        if (force_maintenance != 0) {
+            return true;
+        }
+    }
+
+    /* Contact GPIO, read plus/minus buttons. */
+    if (R_SUCCEEDED(gpioInitialize())) {
+        ON_SCOPE_EXIT { gpioExit(); };
+        
+        return GetGpioPadLow(GpioPadName_ButtonVolUp) && GetGpioPadLow(GpioPadName_ButtonVolDown);
+    }
+    
     return false;
 }
 
@@ -185,6 +219,12 @@ void EmbeddedBoot2::Main() {
     /* At this point, the SD card can be mounted. */
     MountSdCard();
     
+    /* Find out whether we are maintenance mode. */
+    bool maintenance = IsMaintenanceMode();
+    if (maintenance) {
+        BootModeService::SetMaintenanceBootForEmbeddedBoot2();
+    }
+    
     /* Launch set:mitm, wait for it. */
     LaunchTitle(Boot2KnownTitleId::ams_set_mitm, FsStorageId_None, 0, NULL);
     WaitForMitm("set:sys");
@@ -195,7 +235,6 @@ void EmbeddedBoot2::Main() {
     LaunchTitle(Boot2KnownTitleId::tma, FsStorageId_NandSystem, 0, NULL);
     
     /* Launch default programs. */
-    bool maintenance = ShouldForceMaintenanceMode();
     for (auto &launch_program : g_additional_launch_programs) {
         if (!maintenance || std::get<bool>(launch_program)) {
             LaunchTitle(std::get<Boot2KnownTitleId>(launch_program), FsStorageId_NandSystem, 0, NULL);

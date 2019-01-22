@@ -29,6 +29,8 @@ class BootModeService final : public IServiceObject {
         void GetBootMode(Out<u32> out);
         void SetMaintenanceBoot();
     public:
+        static void SetMaintenanceBootForEmbeddedBoot2();
+    public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<BootMode_Cmd_GetBootMode, &BootModeService::GetBootMode>(),
             MakeServiceCommandMeta<BootMode_Cmd_SetMaintenanceBoot, &BootModeService::SetMaintenanceBoot>(),
