@@ -37,16 +37,16 @@ upload_enabled = u8!0x0
 ### Supported Types
 
 * Strings
- * Type identifiers: `str`, `string`
- * The value string is used directly as the setting, with null terminator appended.
+    * Type identifiers: `str`, `string`
+    * The value string is used directly as the setting, with null terminator appended.
 * Integral types
- * Type identifiers: `u8`, `u16`, `u32`, `u64`
- * The value string is parsed via a call to `strtoul(value, NULL, 0)`.
- * Setting bitwidth is determined by the identifier (8 for 1 byte, 16 for 2 bytes, and so on).
+    * Type identifiers: `u8`, `u16`, `u32`, `u64`
+    * The value string is parsed via a call to `strtoul(value, NULL, 0)`.
+    * Setting bitwidth is determined by the identifier (8 for 1 byte, 16 for 2 bytes, and so on).
 * Raw bytes
- * Type identifiers: `hex`, `bytes`
- * The value string is parsed as a hexadecimal string.
- * The value string must be of even length, or a fatal error will be thrown on parse.
+    * Type identifiers: `hex`, `bytes`
+    * The value string is parsed as a hexadecimal string.
+        * The value string must be of even length, or a fatal error will be thrown on parse.
 
 ### Atmosphère Custom Settings
 
