@@ -9,6 +9,8 @@
 + A bug was fixed causing incorrect fatal-error output when svcBreak was called on 5.0.0+.
 + An extension was added to set.mitm to support customization of system settings.
   + These are controlled by `atmosphere/system_settings.ini`, see [here](https://github.com/Atmosphere-NX/Atmosphere/blob/master/docs/modules/set_mitm.md) for documentation.
++ An extension was added to sm, adding a new `sm:dmnt` service.
+  + This can be used by a debug monitor in order to debug the registration state of various other services.
 + A bug was fixed in the MitM API that could sometimes cause a system hang during boot.
 + A change was made to the MitM API: in cases where sm would have returned 0xE15 when installing a mitm service, it now defers the result (following GetService semantics).
 + Support for booting into maintenance mode by holding +/- was added to PM.
