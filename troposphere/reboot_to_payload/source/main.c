@@ -52,7 +52,6 @@ static void reboot_to_payload(void) {
 
 int main(int argc, char **argv)
 {
-    fsdevMountSdmc();
     consoleInit(NULL);
     
     bool can_reboot = true;
@@ -88,14 +87,13 @@ int main(int argc, char **argv)
         }
         if (kDown & KEY_L)  { break; } // break in order to return to hbmenu 
 
-        gfxFlushBuffers();
-        gfxSwapBuffers();
+        consoleUpdate(NULL);
     }
 
     if (can_reboot) {
         splExit();
     }
-    fsdevUnmountAll();
+    
     consoleExit(NULL);
     return 0;
 }
