@@ -72,7 +72,7 @@ static void ams_unmap_userpage(void) {
     lock_release(&g_ams_userpage_mapped);
 }
 
-static void ams_map_irampage(uintptr_t iram_address) {
+void ams_map_irampage(uintptr_t iram_address) {
     lock_acquire(&g_ams_iram_page_mapped);
     static const uint64_t irampage_attributes =  MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | ATTRIB_MEMTYPE_DEVICE;
     uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
@@ -80,7 +80,7 @@ static void ams_map_irampage(uintptr_t iram_address) {
     tlb_invalidate_page_inner_shareable((void *)AMS_IRAM_PAGE_SECURE_MONITOR_ADDR);
 }
 
-static void ams_unmap_irampage(void) {
+void ams_unmap_irampage(void) {
     uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
     mmu_unmap_page(mmu_l3_tbl, AMS_IRAM_PAGE_SECURE_MONITOR_ADDR);
     tlb_invalidate_page_inner_shareable((void *)AMS_IRAM_PAGE_SECURE_MONITOR_ADDR);

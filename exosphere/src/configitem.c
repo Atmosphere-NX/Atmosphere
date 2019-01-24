@@ -26,6 +26,14 @@
 #include "utils.h"
 #include "masterkey.h"
 #include "exocfg.h"
+#include "smc_ams.h"
+#include "arm.h"
+
+#define u8 uint8_t
+#define u32 uint32_t
+#include "rebootstub_bin.h"
+#undef u8
+#undef u32
 
 static bool g_battery_profile = false;
 static bool g_debugmode_override_user = false, g_debugmode_override_priv = false;
@@ -48,11 +56,22 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
                     case REBOOT_KIND_TO_WB_PAYLOAD:
                         /* Set reboot kind = warmboot. */
                         MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x1;
-                        /* Patch bootrom to jump to payload. */
-                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x630ull) = 0x0010171B; /* Return to bootrom IRAM initialization func. */
-                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x634ull) = 0x4000FFA4; /* Overwrite bootrom return address on stack. */
-                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x638ull) = 0x40010000; /* Return to start of payload. */
-                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x63Cull) = 0x4000FFB4; /* Overwrite bootrom return address on stack. */
+                        /* Patch SDRAM init to perform an SVC immediately after second write */
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x634ull) = 0x2E38DFFF;
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x638ull) = 0x6001DC28;
+                        /* Set SVC handler to jump to reboot stub in IRAM. */
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x520ull) = 0x4003F000;
+                        MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x53Cull) = 0x6000F208;
+                        
+                        /* Copy reboot stub payload. */
+                        ams_map_irampage(0x4003F000);
+                        for (unsigned int i = 0; i < rebootstub_bin_size; i += 4) {
+                            MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_AMS_IRAM_PAGE) + i) = read32le(rebootstub_bin, i);
+                        }
+                        ams_unmap_irampage();
+                        
+                        /* Ensure stub is flushed. */
+                        flush_dcache_all();
                         break;
                     default:
                         return 2;

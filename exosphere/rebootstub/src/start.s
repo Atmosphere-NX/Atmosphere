@@ -14,14 +14,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#ifndef EXOSPHERE_SMC_AMS_H
-#define EXOSPHERE_SMC_AMS_H
+.section .text.start
+.align 4
+.global _start
+_start:
+    b crt0
 
-#include "smc_api.h"
+.global crt0
+.type crt0, %function
+crt0:
+    @ clear all registers
+    ldr r0, =0x52425430 @ RBT0
+    mov r1, #0x0
+    mov r2, #0x0
+    mov r3, #0x0
+    mov r4, #0x0
+    mov r5, #0x0
+    mov r6, #0x0
+    mov r7, #0x0
+    mov r8, #0x0
+    mov r9, #0x0
+    mov r10, #0x0
+    mov r11, #0x0
+    mov r12, #0x0
+    mov lr, #0x0
+    ldr sp, =0x40010000
+    ldr pc, =0x40010000
+    
 
-uint32_t ams_iram_copy(smc_args_t *args);
 
-void ams_map_irampage(uintptr_t iram_address);
-void ams_unmap_irampage(void);
-
-#endif

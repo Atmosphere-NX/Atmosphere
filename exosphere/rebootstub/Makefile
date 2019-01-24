@@ -2,19 +2,12 @@
 .SUFFIXES:
 #---------------------------------------------------------------------------------
 
-ifeq ($(strip $(DEVKITPRO)),)
-$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>/devkitpro")
+ifeq ($(strip $(DEVKITARM)),)
+$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
 TOPDIR ?= $(CURDIR)
-include $(DEVKITPRO)/devkitA64/base_rules
-
-AMSBRANCH := $(shell git symbolic-ref --short HEAD)
-AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
-
-ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
-    AMSREV := $(AMSREV)-dirty
-endif
+include $(DEVKITARM)/base_rules
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -25,34 +18,33 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src src/dbg
+SOURCES		:=	src
 DATA		:=	data
-INCLUDES	:=	include ../common/include
+INCLUDES	:=	include
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only #<- important
-DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
-CFLAGS	:= \
-	-g \
-	-O2 \
-	-ffunction-sections \
-	-fdata-sections \
-	-fomit-frame-pointer \
-    -fno-asynchronous-unwind-tables \
-    -fno-unwind-tables \
-	-std=gnu11 \
-	-Werror \
-	-Wall \
-	$(ARCH) $(DEFINES)
+ARCH	:=	-march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
 
-CFLAGS	+=	$(INCLUDE) 
+CFLAGS	:= \
+		-g \
+		-O2 \
+		-ffunction-sections \
+		-fdata-sections \
+		-fomit-frame-pointer \
+		-fno-inline \
+		-std=gnu11 \
+		-Werror \
+		-Wall \
+		$(ARCH) $(DEFINES)
+
+CFLAGS	+=	$(INCLUDE) -D__BPMP__
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -nostartfiles -nostdlib -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=
 
@@ -74,17 +66,14 @@ export OUTPUT	:=	$(CURDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(TOPDIR)/lp0fw \
-			$(TOPDIR)/sc7fw \
-			$(TOPDIR)/rebootstub
+			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) sc7fw.bin lp0fw.bin rebootstub.bin
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -111,30 +100,18 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) build_sc7fw build_lp0fw build_rebootstub clean all
+.PHONY: $(BUILD) clean all
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
 
-check_sc7fw:
-	@$(MAKE) -C sc7fw all
-
-check_lp0fw:
-	@$(MAKE) -C lp0fw all
-
-check_rebootstub:
-	@$(MAKE) -C lp0fw all
-
-$(BUILD): check_sc7fw check_lp0fw check_rebootstub
+$(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@$(MAKE) -C $(TOPDIR)/sc7fw clean
-	@$(MAKE) -C $(TOPDIR)/lp0fw clean
-	@$(MAKE) -C $(TOPDIR)/rebootstub clean
 	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
 
 
@@ -155,9 +132,9 @@ $(OUTPUT).bin	:	$(OUTPUT).elf
 
 $(OUTPUT).elf	:	$(OFILES)
 
-%.elf:
+%.elf: $(OFILES)
 	@echo linking $(notdir $@)
-	$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
 	@$(NM) -CSn $@ > $(notdir $*.lst)
 
 $(OFILES_SRC)	: $(HFILES_BIN)
@@ -165,7 +142,7 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
-%.bin.o	%_bin.h:	%.bin
+%.bin.o	:	%.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
