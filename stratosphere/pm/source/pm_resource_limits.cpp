@@ -183,9 +183,7 @@ void ResourceLimitUtils::InitializeLimits() {
     for (unsigned int i = 0; i < 6; i++) {
         g_memory_resource_limits[i][0] += ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
         /* On < 4.0.0, taking from application instead of applet fixes a rare hang on boot. */
-        if (kernelAbove600()) {
-            g_memory_resource_limits[i][1] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
-        } else if (kernelAbove400()) {
+        if (kernelAbove400()) {
             g_memory_resource_limits[i][2] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
         } else {
             g_memory_resource_limits[i][1] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
