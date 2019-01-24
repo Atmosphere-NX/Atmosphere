@@ -123,7 +123,7 @@ check_lp0fw:
 	@$(MAKE) -C lp0fw all
 
 check_rebootstub:
-	@$(MAKE) -C lp0fw all
+	@$(MAKE) -C rebootstub all
 
 $(BUILD): check_sc7fw check_lp0fw check_rebootstub
 	@[ -d $@ ] || mkdir -p $@
