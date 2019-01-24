@@ -1,4 +1,22 @@
 # Changelog
+## 0.8.3
++ A custom warmboot firmware was implemented, which does not perform anti-downgrade fuse checks.
+  + This fixes sleep mode when using a downgraded NAND.
+  + This also removes Atmosphère's final dependency on Nintendo's encrypted PK11 binary; all components are now re-implemented.
++ The ExternalContentSource API was changed to not clear on failure.
++ Content override now supports an "app" setting, that causes all applications to be overridden with HBL instead of a specific title.
+  + Note: because override keys are system-wide, using this setting will prevent using mods in games (as every game will be HBL).
++ A bug was fixed causing incorrect fatal-error output when svcBreak was called on 5.0.0+.
++ An extension was added to set.mitm to support customization of system settings.
+  + These are controlled by `atmosphere/system_settings.ini`, see [here](https://github.com/Atmosphere-NX/Atmosphere/blob/master/docs/modules/set_mitm.md) for documentation.
++ A bug was fixed in the MitM API that could sometimes cause a system hang during boot.
++ A change was made to the MitM API: in cases where sm would have returned 0xE15 when installing a mitm service, it now defers the result (following GetService semantics).
++ Support for booting into maintenance mode by holding +/- was added to PM.
++ An extension was added to exosphere, adding a custom SMC that allows for DMA to IRAM.
++ In addition, smcGetConfig was extended to reboot to a payload in IRAM at 0x40010000 when ConfigItem 65001 is set to 2.
+  + Fatal will now use this to reboot to sdmc:/atmosphere/reboot_payload.bin if present, when a vol button is pressed.
+  + An example homebrew ("reboot_to_payload") was also written and is now included with Atmosphère.
++ General system stability improvements to enhance the user's experience.
 ## 0.8.2
 + A number of bugs were fixed causing users to sometimes see `Key Derivation Failed!`.
   + KFUSE clock enable timings have been adjusted to allow time to stabilize before TSEC is granted access.
