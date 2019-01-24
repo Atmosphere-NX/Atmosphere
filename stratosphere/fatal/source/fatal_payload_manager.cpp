@@ -21,8 +21,8 @@
 #include "fatal_payload_manager.hpp"
 
 /* TODO: Find a way to pre-populate this with the contents of fusee-primary. */
-static alignas(0x1000) u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE];
-static alignas(0x1000) u8 g_work_page[0x1000];
+static u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE] __attribute__ ((aligned (0x1000)));
+static u8 g_work_page[0x1000] __attribute__ ((aligned (0x1000)));
 static bool g_payload_loaded = false;
 
 void FatalPayloadManager::LoadPayloadFromSdCard() {
