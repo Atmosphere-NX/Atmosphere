@@ -52,7 +52,6 @@ static void reboot_to_payload(void) {
 
 int main(int argc, char **argv)
 {
-    gfxInitDefault();
     fsdevMountSdmc();
     consoleInit(NULL);
     
@@ -97,7 +96,7 @@ int main(int argc, char **argv)
         splExit();
     }
     fsdevUnmountAll();
-    gfxExit();
+    consoleExit(NULL);
     return 0;
 }
 
