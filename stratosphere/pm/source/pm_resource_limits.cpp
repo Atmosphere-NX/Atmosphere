@@ -179,15 +179,11 @@ void ResourceLimitUtils::InitializeLimits() {
         }
     }
 
-    /* Atmosphere: Allocate extra memory (24 MiB) to SYSTEM away from Applet. */
+    /* Atmosphere: Allocate extra memory (24 MiB) to SYSTEM away from Application. */
     for (unsigned int i = 0; i < 6; i++) {
         g_memory_resource_limits[i][0] += ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
-        /* On < 4.0.0, taking from application instead of applet fixes a rare hang on boot. */
-        if (kernelAbove400()) {
-            g_memory_resource_limits[i][2] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
-        } else {
-            g_memory_resource_limits[i][1] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
-        }
+        /* Taking from application instead of applet fixes a rare hang on boot on < 4.0.0. */
+        g_memory_resource_limits[i][1] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
     }
 
     /* Set resource limits. */

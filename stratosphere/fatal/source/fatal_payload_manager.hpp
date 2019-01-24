@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#define IRAM_PAYLOAD_MAX_SIZE 0x30000
+#define IRAM_PAYLOAD_MAX_SIZE 0x2F000
 #define IRAM_PAYLOAD_BASE 0x40010000ull
 
 class FatalPayloadManager {
