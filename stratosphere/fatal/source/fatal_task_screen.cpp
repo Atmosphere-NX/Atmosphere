@@ -215,9 +215,9 @@ Result ShowFatalTask::ShowFatal() {
     } else {
         /* Print a special message for atmosphere version mismatch. */
         FontManager::Print(u8"Atmosphère version mismatch detected.\n\n"
-                           u8"Please press the POWER Button to restart the console, or a VOL button\n"
-                           u8"to restart the console in RCM mode. If you are unable to restart the\n"
-                           u8"console, hold the POWER Button for 12 seconds to turn the console off.\n\n"
+                           u8"Please press the POWER Button to restart the console normally, or a VOL button\n"
+                           u8"to reboot to a payload (or RCM, if none is present). If you are unable to\n"
+                           u8"restart the console, hold the POWER Button for 12 seconds to turn the console off.\n\n"
                            u8"Please ensure that all Atmosphère components are updated.\n"
                            u8"github.com/Atmosphere-NX/Atmosphere/releases\n");
     }

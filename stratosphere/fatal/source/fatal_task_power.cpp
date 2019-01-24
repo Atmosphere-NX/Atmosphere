@@ -16,6 +16,7 @@
  
 #include <switch.h>
 #include "fatal_task_power.hpp"
+#include "fatal_payload_manager.hpp"
 #include "fatal_config.hpp"
 
 bool PowerControlTask::TryShutdown() {
@@ -123,13 +124,13 @@ void PowerButtonObserveTask::WaitForPowerButton() {
         Result rc = 0;
         
         if (check_vol_up && R_SUCCEEDED((rc = gpioPadGetValue(&vol_up_btn, &val))) && val == GpioValue_Low) {
-            /* Tell exosphere to reboot to RCM. */
-            RebootToRcm();
+            /* Tell exosphere to reboot to payload. */
+            FatalPayloadManager::RebootToPayload();
         }
         
         if (check_vol_down && R_SUCCEEDED((rc = gpioPadGetValue(&vol_down_btn, &val))) && val == GpioValue_Low) {
-            /* Tell exosphere to reboot to RCM. */
-            RebootToRcm();
+            /* Tell exosphere to reboot to payload. */
+            FatalPayloadManager::RebootToPayload();
         }
         
         if ((R_SUCCEEDED(rc = bpcGetSleepButtonState(&state)) && state == BpcSleepButtonState_Held) || (config->quest_flag && reboot_helper.TimedOut())) {
