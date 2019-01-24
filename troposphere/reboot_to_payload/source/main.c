@@ -7,9 +7,9 @@
 #define IRAM_PAYLOAD_MAX_SIZE 0x2F000
 #define IRAM_PAYLOAD_BASE 0x40010000
 
-static u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE] __attribute__ ((aligned (0x1000)));
-static u8 g_ff_page[0x1000] __attribute__ ((aligned (0x1000)));
-static u8 g_work_page[0x1000] __attribute__ ((aligned (0x1000)));
+static alignas(0x1000) u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE];
+static alignas(0x1000) u8 g_ff_page[0x1000];
+static alignas(0x1000) u8 g_work_page[0x1000];
 
 void do_iram_dram_copy(void *buf, uintptr_t iram_addr, size_t size, int option) {
     memcpy(g_work_page, buf, size);
