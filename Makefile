@@ -6,7 +6,9 @@ ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
     AMSREV := $(AMSREV)-dirty
 endif
 
-all: fusee stratosphere exosphere thermosphere troposphere
+COMPONENTS := fusee stratosphere exosphere thermosphere troposphere
+
+all: $(COMPONENTS)
 
 thermosphere:
 	$(MAKE) -C thermosphere all
@@ -26,7 +28,7 @@ fusee: exosphere stratosphere
 clean:
 	$(MAKE) -C fusee clean
 	rm -rf out
-    
+
 dist: all
 	$(eval MAJORVER = $(shell grep '\ATMOSPHERE_RELEASE_VERSION_MAJOR\b' common/include/atmosphere/version.h \
 		| tr -s [:blank:] \
@@ -63,6 +65,6 @@ dist: all
 	mkdir out
 	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER).zip
 	cp fusee/fusee-primary/fusee-primary.bin out/fusee-primary.bin
-   
 
-.PHONY: $(TOPTARGETS) fusee
+
+.PHONY: $(TOPTARGETS) $(COMPONENTS)
