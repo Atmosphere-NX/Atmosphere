@@ -43,7 +43,6 @@
 #include "tsec.h"
 #include "lp0.h"
 #include "loader.h"
-#include "splash_screen.h"
 #include "exocfg.h"
 #include "display/video_fb.h"
 #include "lib/ini.h"
@@ -566,9 +565,6 @@ uint32_t nxboot_main(void) {
     free(package2);
 
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Powering on the CCPLEX...\n");
-    
-    /* Display splash screen. */
-    display_splash_screen_bmp(loader_ctx->custom_splash_path, (void *)0xC0000000);
     
     /* Unmount everything. */
     nxfs_unmount_all();

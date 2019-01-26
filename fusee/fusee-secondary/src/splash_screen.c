@@ -85,6 +85,6 @@ void display_splash_screen_bmp(const char *custom_splash_path, void *fb_address)
         fatal_error("Invalid splash screen format!\n");
     }
 
-    /* Display the splash screen for three seconds. */
-    udelay(3000000);
+    /* Display the splash screen for two and a half seconds. */
+    udelay(2500000);
 }

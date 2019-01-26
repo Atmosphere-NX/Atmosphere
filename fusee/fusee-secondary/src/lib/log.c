@@ -15,6 +15,7 @@
  */
 
 #include "log.h"
+#include "../console.h"
 
 #include <stdio.h>
 
@@ -100,7 +101,10 @@ void print(ScreenLogLevel screen_log_level, const char * fmt, ...)
     char buf[PRINT_MESSAGE_MAX_LENGTH] = {};
     char message[PRINT_MESSAGE_MAX_LENGTH] = {};
 
-    /* TODO: make splash disappear if level > MANDATORY */
+    /* Make splash disappear if level is ERROR or WARNING */
+    if (screen_log_level < SCREEN_LOG_LEVEL_MANDATORY) {
+        console_resume();
+    }
 
     /* make prefix free messages with log_level possible */
     if(screen_log_level & SCREEN_LOG_LEVEL_NO_PREFIX) {
