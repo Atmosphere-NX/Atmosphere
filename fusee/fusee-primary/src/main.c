@@ -163,7 +163,7 @@ int main(void) {
     stage2_args->display_initialized = false;
     strcpy(stage2_args->bct0, bct0);
     g_chainloader_argc = 2;
-
+    
     /* Wait a while. */
     mdelay(1000);
     
