@@ -27,6 +27,8 @@
 #undef u8
 #undef u32
 
+static uint32_t g_splash_start_time = 0;
+
 static void render_bmp(const uint32_t *bmp_data, uint32_t *framebuffer, uint32_t bmp_width, uint32_t bmp_height, uint32_t bmp_pos_x, uint32_t bmp_pos_y) {
     /* Render the BMP. */
     for (uint32_t y = bmp_pos_y; y < (bmp_pos_y + bmp_height); y++) {
@@ -37,6 +39,11 @@ static void render_bmp(const uint32_t *bmp_data, uint32_t *framebuffer, uint32_t
     
     /* Re-initialize the frame buffer. */
     console_display(framebuffer);
+}
+
+void splash_screen_wait_delay(void) {
+    /* Ensure the splash screen is displayed for at least three seconds. */
+    udelay_absolute(g_splash_start_time, 3000000);
 }
 
 void display_splash_screen_bmp(const char *custom_splash_path, void *fb_address) {
@@ -84,7 +91,7 @@ void display_splash_screen_bmp(const char *custom_splash_path, void *fb_address)
     } else {
         fatal_error("Invalid splash screen format!\n");
     }
-
-    /* Display the splash screen for two and a half seconds. */
-    udelay(2500000);
+    
+    /* Note the time we started displaying the splash. */
+    g_splash_start_time = get_time_us();
 }

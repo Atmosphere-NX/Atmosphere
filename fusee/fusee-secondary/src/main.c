@@ -111,6 +111,9 @@ int main(int argc, void **argv) {
         
         print(SCREEN_LOG_LEVEL_MANDATORY, "Now performing nxboot.\n");
         uint32_t boot_memaddr = nxboot_main();
+        /* Wait for the splash screen to have been displayed as long as it should be. */
+        splash_screen_wait_delay();
+        /* Finish boot. */
         nxboot_finish(boot_memaddr);
     } else {
         /* TODO: What else do we want to do in terms of argc/argv? */

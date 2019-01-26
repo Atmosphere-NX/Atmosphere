@@ -82,6 +82,13 @@ static inline void udelay(uint32_t usecs) {
 }
 
 /**
+ * Delays until a number of usecs have passed since an absolute start time.
+ */
+static inline void udelay_absolute(uint32_t start, uint32_t usecs) {
+    while (get_time_us() - start < usecs);
+}
+
+/**
  * Delays for a given number of milliseconds.
  */
 static inline void mdelay(uint32_t msecs) {

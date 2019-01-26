@@ -26,5 +26,6 @@
 #define SPLASH_SCREEN_SIZE_MAX      (SPLASH_SCREEN_HEIGHT_MAX * SPLASH_SCREEN_STRIDE * 4)
 
 void display_splash_screen_bmp(const char *custom_splash_path, void *fb_address);
+void splash_screen_wait_delay(void);
 
 #endif
