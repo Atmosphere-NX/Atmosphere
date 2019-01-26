@@ -249,7 +249,7 @@ void nx_hwinit()
     /* Configure the PMIC. */
     uint8_t val = 0x40;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGBBC, &val, 1);
-    val = 0x78;
+    val = 0x60;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFCNFG1, &val, 1);
     val = 0x38;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG0, &val, 1);
