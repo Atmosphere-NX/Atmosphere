@@ -17,10 +17,10 @@
 #include <switch.h>
 #include <string.h>
 #include <stratosphere.hpp>
-#include "fsmitm_utils.hpp"
+#include "../utils.hpp"
 #include "fsmitm_romfsbuild.hpp"
 
-#include "debug.hpp"
+#include "../debug.hpp"
 
 void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirectoryContext *parent) {
     FsDir dir;
@@ -367,7 +367,6 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
         cur_entry->name_size = name_size;
         memset(cur_entry->name, 0, (cur_entry->name_size + 3) & ~3);
         memcpy(cur_entry->name, cur_dir->path + cur_dir->cur_path_ofs, name_size);
-        
     }
     
     /* Delete directories. */

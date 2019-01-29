@@ -18,8 +18,8 @@
 #include <stratosphere.hpp>
 
 #include "fsmitm_layeredrom.hpp"
-#include "fsmitm_utils.hpp"
-#include "debug.hpp"
+#include "../utils.hpp"
+#include "../debug.hpp"
 
 IStorage::~IStorage() = default;
 

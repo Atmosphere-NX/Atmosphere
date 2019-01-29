@@ -20,7 +20,7 @@
 
 #include "fsmitm_romstorage.hpp"
 #include "fsmitm_romfsbuild.hpp"
-#include "fsmitm_utils.hpp"
+#include "../utils.hpp"
 
 
 /* Represents a merged RomFS. */

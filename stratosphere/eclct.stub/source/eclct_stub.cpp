@@ -23,15 +23,12 @@
 #include <atmosphere.h>
 #include <stratosphere.hpp>
 
-#include "setsys_mitm_service.hpp"
-#include "setsys_settings_items.hpp"
-
 extern "C" {
     extern u32 __start__;
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x50000
+    #define INNER_HEAP_SIZE 0x8000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
     
@@ -54,53 +51,15 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    Result rc;
-    
-    rc = smInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
-    }
-    
-    rc = setsysInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
-    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
+    /* nothing to do */
 }
 
 void __appExit(void) {
-    /* Cleanup services. */
-    setsysExit();
-    smExit();
+    /* nothing to do */
 }
-
-struct SetSysManagerOptions {
-    static const size_t PointerBufferSize = 0x100;
-    static const size_t MaxDomains = 4;
-    static const size_t MaxDomainObjects = 0x100;
-};
-
-using SetMitmManager = WaitableManager<SetSysManagerOptions>;
 
 int main(int argc, char **argv)
 {
-    consoleDebugInit(debugDevice_SVC);
-    
-    /* Load settings from SD card. */
-    SettingsItemManager::RefreshConfiguration();
-        
-    /* TODO: What's a good timeout value to use here? */
-    auto server_manager = new SetMitmManager(3);
-        
-    /* Create set:sys mitm. */
-    AddMitmServerToManager<SetSysMitmService>(server_manager, "set:sys", 60);
-    
-    /* Loop forever, servicing our services. */
-    server_manager->Process();
-    
-    delete server_manager;
-
     return 0;
 }
 

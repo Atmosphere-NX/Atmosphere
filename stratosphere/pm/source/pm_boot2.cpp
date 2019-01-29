@@ -224,9 +224,8 @@ void EmbeddedBoot2::Main() {
     if (maintenance) {
         BootModeService::SetMaintenanceBootForEmbeddedBoot2();
     }
-    
+        
     /* Launch set:mitm, wait for it. */
-    LaunchTitle(Boot2KnownTitleId::ams_set_mitm, FsStorageId_None, 0, NULL);
     WaitForMitm("set:sys");
     
     /* Launch usb. */

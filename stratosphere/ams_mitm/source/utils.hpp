@@ -40,6 +40,7 @@ enum BisStorageId : u32 {
 class Utils {
     public:
         static bool IsSdInitialized();
+        static void WaitSdInitialized();
         
         static Result OpenSdFile(const char *fn, int flags, FsFile *out);
         static Result OpenSdFileForAtmosphere(u64 title_id, const char *fn, int flags, FsFile *out);
@@ -55,8 +56,8 @@ class Utils {
         
         static bool HasSdRomfsContent(u64 title_id);
         
-        /* SD card Initialization + MitM detection. */
-        static void InitializeSdThreadFunc(void *args);
+        /* Delayed Initialization + MitM detection. */
+        static void InitializeThreadFunc(void *args);
         
         static bool IsHblTid(u64 tid);
         
@@ -70,7 +71,6 @@ class Utils {
         
         
         static bool IsHidAvailable();
-        static void InitializeHidThreadFunc(void *args);
         static Result GetKeysDown(u64 *keys);
         static bool HasOverrideButton(u64 tid);
     private:

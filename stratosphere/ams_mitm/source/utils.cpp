@@ -21,11 +21,13 @@
 #include <strings.h>
 
 #include "debug.hpp"
-#include "fsmitm_utils.hpp"
+#include "utils.hpp"
 #include "ini.h"
 #include "sha256.h"
 
 static FsFileSystem g_sd_filesystem = {0};
+static HosSignal g_sd_signal;
+
 static std::vector<u64> g_mitm_flagged_tids;
 static std::vector<u64> g_disable_mitm_flagged_tids;
 static std::atomic_bool g_has_initialized = false;
@@ -56,7 +58,7 @@ static bool IsHexadecimal(const char *str) {
     return true;
 }
 
-void Utils::InitializeSdThreadFunc(void *args) {
+void Utils::InitializeThreadFunc(void *args) {
     /* Get required services. */
     Handle tmp_hnd = 0;
     static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
@@ -180,25 +182,34 @@ void Utils::InitializeSdThreadFunc(void *args) {
     
     Utils::RefreshConfiguration();
     
+    /* Initialize set:sys. */
+    setsysInitialize();
+    
+    /* Signal SD is initialized. */
     g_has_initialized = true;
+    g_sd_signal.Signal();
     
-    svcExitThread();
-}
-
-void Utils::InitializeHidThreadFunc(void *args) {
-    while (R_FAILED(hidInitialize())) {
-        svcSleepThread(1000ULL);
+    /* Initialize HID. */
+    {
+        
+        while (R_FAILED(hidInitialize())) {
+            svcSleepThread(1000000ULL);
+        }
+        
+        g_has_hid_session = true;
+        
+        hidExit();
     }
-    
-    g_has_hid_session = true;
-    
-    hidExit();
     
     svcExitThread();
 }
 
 bool Utils::IsSdInitialized() {
     return g_has_initialized;
+}
+
+void Utils::WaitSdInitialized() {
+    g_sd_signal.Wait();
 }
 
 bool Utils::IsHidAvailable() {

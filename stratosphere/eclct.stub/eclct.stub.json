@@ -1,5 +1,5 @@
 {
-	"name":	"set.mitm",
+	"name":	"eclct.stun",
 	"title_id":	"0x0100000000000032",
 	"title_id_range_min":	"0x0100000000000032",
 	"title_id_range_max":	"0x0100000000000032",
@@ -14,16 +14,8 @@
 	"filesystem_access":	{
 		"permissions":	"0xFFFFFFFFFFFFFFFF"
 	},
-    "service_host": [
-        "set:sys"
-    ],
-    "service_access": [
-        "fatal:u",
-        "fsp-srv",
-        "spl:",
-        "set:sys",
-        "fsp-srv"
-    ],
+    "service_host": [],
+    "service_access": [],
 	"kernel_capabilities": [
         {
             "type": "kernel_flags",
@@ -95,7 +87,7 @@
 			"svcMapDeviceAddressSpaceAligned":	"0x5a",
 			"svcUnmapDeviceAddressSpace":	"0x5c",
 			"svcGetSystemInfo":	"0x6f",
-                "svcCallSecureMonitor": "0x7F"
+            "svcCallSecureMonitor": "0x7F"
             }
         },
         {

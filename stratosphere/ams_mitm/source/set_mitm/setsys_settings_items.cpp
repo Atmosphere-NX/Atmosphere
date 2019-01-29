@@ -24,7 +24,8 @@
 #include <ctype.h>
 
 #include "setsys_settings_items.hpp"
-#include "ini.h"
+#include "../utils.hpp"
+#include "../ini.h"
 
 struct SettingsItemValue {
     size_t size;
@@ -241,39 +242,39 @@ static int SettingsItemIniHandler(void *user, const char *name, const char *key,
     return R_SUCCEEDED(rc) ? 1 : 0;
 }
 
-void SettingsItemManager::RefreshConfiguration() {
-    /* Mount the SD Card. */
-    Result rc = fsInitialize();
-    if (R_SUCCEEDED(rc)) {
-        rc = fsdevMountSdmc();
-    }
+void SettingsItemManager::LoadConfiguration() {    
+    /* Open file. */
+    FsFile config_file;
+    Result rc = Utils::OpenSdFile("/atmosphere/system_settings.ini", FS_OPEN_READ, &config_file);
     if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+        return;
     }
-    
-    /* When we're done, we should stop talking to FS. */
     ON_SCOPE_EXIT {
-        fsdevUnmountAll();
-        fsExit();
+        fsFileClose(&config_file);
     };
     
-    /* Open, parse config file. */
-    {
-        FILE *config = fopen("sdmc:/atmosphere/system_settings.ini", "r");
-        if (config == NULL) {
-            return;
-        }
-        ON_SCOPE_EXIT { fclose(config); };
-        
-        Result rc = 0;
-        ini_parse_file(config, SettingsItemIniHandler, &rc);
-        
-        /* Report error if we encountered one. */
-        if (R_FAILED(rc) && !g_threw_fatal) {
-            g_threw_fatal = true;
-            g_fatal_thread.Initialize(&FatalThreadFunc, reinterpret_cast<void *>(rc), 0x1000, 49);
-            g_fatal_thread.Start();
-        }
+    /* Allocate buffer. */
+    char *config_buf = new char[0x10000];
+    std::memset(config_buf, 0, 0x10000);
+    ON_SCOPE_EXIT {
+        delete config_buf;
+    };
+    
+    /* Read from file. */
+    if (R_SUCCEEDED(rc)) {
+        size_t actual_size;
+        rc = fsFileRead(&config_file, 0, config_buf, 0xFFFF, &actual_size);
+    }
+    
+    if (R_SUCCEEDED(rc)) {
+        ini_parse_string(config_buf, SettingsItemIniHandler, &rc);
+    }
+    
+    /* Report error if we encountered one. */
+    if (R_FAILED(rc) && !g_threw_fatal) {
+        g_threw_fatal = true;
+        g_fatal_thread.Initialize(&FatalThreadFunc, reinterpret_cast<void *>(rc), 0x1000, 49);
+        g_fatal_thread.Start();
     }
 }
 

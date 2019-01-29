@@ -23,9 +23,8 @@
 #include <atmosphere.h>
 #include <stratosphere.hpp>
 
-#include "fsmitm_service.hpp"
-
-#include "fsmitm_utils.hpp"
+#include "amsmitm_modules.hpp"
+#include "utils.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -76,44 +75,23 @@ void __appExit(void) {
     smExit();
 }
 
-struct FsMitmManagerOptions {
-    static const size_t PointerBufferSize = 0x800;
-    static const size_t MaxDomains = 0x40;
-    static const size_t MaxDomainObjects = 0x4000;
-};
-using FsMitmManager = WaitableManager<FsMitmManagerOptions>;
-
 int main(int argc, char **argv)
 {
-    Thread sd_initializer_thread = {0};
-    Thread hid_initializer_thread = {0};
     consoleDebugInit(debugDevice_SVC);
+    HosThread initializer_thread;
     
-    /* TODO: What's a good timeout value to use here? */
-    auto server_manager = new FsMitmManager(5);
+    LaunchAllMitmModules();
 
-    /* Create fsp-srv mitm. */
-    AddMitmServerToManager<FsMitmService>(server_manager, "fsp-srv", 61);
-
-    if (R_FAILED(threadCreate(&sd_initializer_thread, &Utils::InitializeSdThreadFunc, NULL, 0x4000, 0x15, 0))) {
+    if (R_FAILED(initializer_thread.Initialize(&Utils::InitializeThreadFunc, NULL, 0x4000, 0x15))) {
         /* TODO: Panic. */
     }
-    if (R_FAILED(threadStart(&sd_initializer_thread))) {
+    if (R_FAILED(initializer_thread.Start())) {
         /* TODO: Panic. */
     }
+        
+    /* Wait for all mitm modules to end. */
+    WaitAllMitmModules();
     
-    if (R_FAILED(threadCreate(&hid_initializer_thread, &Utils::InitializeHidThreadFunc, NULL, 0x4000, 0x15, 0))) {
-        /* TODO: Panic. */
-    }
-    if (R_FAILED(threadStart(&hid_initializer_thread))) {
-        /* TODO: Panic. */
-    }
-                
-    /* Loop forever, servicing our services. */
-    server_manager->Process();
-    
-    delete server_manager;
-
     return 0;
 }
 

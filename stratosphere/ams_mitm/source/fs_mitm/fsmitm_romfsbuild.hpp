@@ -20,7 +20,7 @@
 
 #include "fsmitm_romstorage.hpp"
 
-#include "debug.hpp"
+#include "../debug.hpp"
 
 #define ROMFS_ENTRY_EMPTY 0xFFFFFFFF
 #define ROMFS_FILEPARTITION_OFS 0x200

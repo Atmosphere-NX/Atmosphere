@@ -23,12 +23,12 @@
 #include "fsmitm_service.hpp"
 #include "fs_shim.h"
 
-#include "fsmitm_utils.hpp"
+#include "../utils.hpp"
 #include "fsmitm_boot0storage.hpp"
 #include "fsmitm_romstorage.hpp"
 #include "fsmitm_layeredrom.hpp"
 
-#include "debug.hpp"
+#include "../debug.hpp"
 
 static HosMutex g_StorageCacheLock;
 static std::unordered_map<u64, std::weak_ptr<IStorageInterface>> g_StorageCache;

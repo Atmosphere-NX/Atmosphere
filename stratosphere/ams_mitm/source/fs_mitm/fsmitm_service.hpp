@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "fs_istorage.hpp"
-#include "fsmitm_utils.hpp"
+#include "../utils.hpp"
 
 enum FspSrvCmd : u32 {
     FspSrvCmd_SetCurrentProcess = 1,

@@ -14,23 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#pragma once
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
+#include <malloc.h>
+
 #include <switch.h>
+#include <atmosphere.h>
 #include <stratosphere.hpp>
 
+constexpr u32 FsMitmPriority = 43;
+constexpr u32 FsMitmStackSize = 0x8000;
 
-class SettingsItemManager {
-    public:
-        static constexpr size_t MaxNameLength = 64; 
-        static constexpr size_t MaxKeyLength = 64;
-    public:
-        static Result ValidateName(const char *name, size_t max_size);
-        static Result ValidateName(const char *name);
-        
-        static Result ValidateKey(const char *key, size_t max_size);
-        static Result ValidateKey(const char *key);
-
-        static void RefreshConfiguration();
-        static Result GetValueSize(const char *name, const char *key, u64 *out_size);
-        static Result GetValue(const char *name, const char *key, void *out, size_t max_size, u64 *out_size);
-};
+void FsMitmMain(void *arg);

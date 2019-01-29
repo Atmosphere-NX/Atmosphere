@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include "fs_shim.h"
 
-#include "debug.hpp"
+#include "../debug.hpp"
 
 enum FsIStorageCmd : u32 {
     FsIStorageCmd_Read = 0,
