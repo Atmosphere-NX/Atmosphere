@@ -197,18 +197,19 @@ void extkeys_initialize_keyset(fusee_extkeys_t *keyset, FILE *f) {
                 continue;
             }
             int matched_key = 0;
-            if (strcmp(key, "tsec_root_key") == 0 || strcmp(key, "tsec_root_key_00") == 0) {
-                parse_hex_key(keyset->tsec_root_key, value, sizeof(keyset->tsec_root_key));
-                matched_key = 1;
-            } else {
-                char test_name[0x100] = {0};
-                for (unsigned int i = 0; i < 0x20 && !matched_key; i++) { 
-                    snprintf(test_name, sizeof(test_name), "master_kek_%02x", i);
-                    if (strcmp(key, test_name) == 0) {
-                        parse_hex_key(keyset->master_keks[i], value, sizeof(keyset->master_keks[i]));
-                        matched_key = 1;
-                        break;
-                    }
+            char test_name[0x100] = {0};
+            for (unsigned int i = 0; i < 0x20 && !matched_key; i++) { 
+                snprintf(test_name, sizeof(test_name), "tsec_root_key_%02x", i);
+                if (strcmp(key, test_name) == 0) {
+                    parse_hex_key(keyset->tsec_root_keys[i], value, sizeof(keyset->tsec_root_keys[i]));
+                    matched_key = 1;
+                    break;
+                }
+                snprintf(test_name, sizeof(test_name), "master_kek_%02x", i);
+                if (strcmp(key, test_name) == 0) {
+                    parse_hex_key(keyset->master_keks[i], value, sizeof(keyset->master_keks[i]));
+                    matched_key = 1;
+                    break;
                 }
             }
         }

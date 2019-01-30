@@ -26,6 +26,7 @@ enum RoServiceCmd {
     Ro_Cmd_LoadNrr = 2,
     Ro_Cmd_UnloadNrr = 3,
     Ro_Cmd_Initialize = 4,
+    Ro_Cmd_LoadNrrEx = 10,
 };
 
 class RelocatableObjectsService final : public IServiceObject {
@@ -47,6 +48,7 @@ class RelocatableObjectsService final : public IServiceObject {
         Result LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size);
         Result UnloadNrr(PidDescriptor pid_desc, u64 nrr_address);
         Result Initialize(PidDescriptor pid_desc, CopiedHandle process_h);
+        Result LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<Ro_Cmd_LoadNro, &RelocatableObjectsService::LoadNro>(),

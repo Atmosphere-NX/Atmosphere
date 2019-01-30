@@ -54,8 +54,9 @@ static const uint8_t AL16 masterkey_4x_seed[0x10] = {
     0x2D, 0xC1, 0xF4, 0x8D, 0xF3, 0x5B, 0x69, 0x33, 0x42, 0x10, 0xAC, 0x65, 0xDA, 0x90, 0x46, 0x66
 };
 
-static const uint8_t AL16 new_master_kek_seeds[1][0x10] = {
+static const uint8_t AL16 new_master_kek_seeds[MASTERKEY_REVISION_700_CURRENT - MASTERKEY_REVISION_600_610][0x10] = {
     {0x37, 0x4B, 0x77, 0x29, 0x59, 0xB4, 0x04, 0x30, 0x81, 0xF6, 0xE5, 0x8C, 0x6D, 0x36, 0x17, 0x9A}, /* MasterKek seed 06. */
+    {0x9A, 0x3E, 0xA9, 0xAB, 0xFD, 0x56, 0x46, 0x1C, 0x9B, 0xF6, 0x48, 0x7F, 0x5C, 0xFA, 0x09, 0x5C}, /* MasterKek seed 07. */
 };
 
 static nx_dec_keyblob_t AL16 g_dec_keyblobs[32];
@@ -118,7 +119,7 @@ int load_package1_key(uint32_t revision) {
 }
 
 /* Derive all Switch keys. */
-int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_key, void *tsec_root_key, unsigned int *out_keygen_type) {
+int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_key, void *tsec_root_keys, unsigned int *out_keygen_type) {
     uint8_t AL16 work_buffer[0x10];
     uint8_t AL16 zeroes[0x10] = {0};
     
@@ -142,14 +143,31 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
 
     /* Do 6.2.0+ keygen. */
     if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_620) {
-        if (memcmp(tsec_root_key, zeroes, 0x10) != 0) {
-            /* We got a valid key from emulation. */
-            set_aes_keyslot(0xC, tsec_root_key, 0x10);
-            for (unsigned int rev = MASTERKEY_REVISION_620_CURRENT; rev < MASTERKEY_REVISION_MAX; rev++) {
-                se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620_CURRENT], 0x10);
+        uint32_t desired_keyblob;
+        switch (target_firmware) {
+            case ATMOSPHERE_TARGET_FIRMWARE_620:
+                desired_keyblob = MASTERKEY_REVISION_620;
+                break;
+            case ATMOSPHERE_TARGET_FIRMWARE_700:
+                desired_keyblob = MASTERKEY_REVISION_700_CURRENT;
+                break;
+            default:
+                fatal_error("Unknown target firmware: %02x!", target_firmware);
+                break;
+        }
+        
+        /* Try emulation result. */
+        for (unsigned int rev = MASTERKEY_REVISION_620; rev < MASTERKEY_REVISION_MAX; rev++) {
+            void *tsec_root_key = (void *)((uintptr_t)tsec_root_keys + 0x10 * (rev - MASTERKEY_REVISION_620));
+            if (memcmp(tsec_root_key, zeroes, 0x10) != 0) {
+                /* We got a valid key from emulation. */
+                set_aes_keyslot(0xC, tsec_root_key, 0x10);
+                se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620], 0x10);
                 memcpy(g_dec_keyblobs[rev].master_kek, work_buffer, 0x10);
             }
-        } else {
+        }
+        
+        if (memcmp(g_dec_keyblobs[desired_keyblob].master_kek, zeroes, 0x10) == 0) {
             /* Try reading the keys from a file. */
             const char *keyfile = fuse_get_retail_type() != 0 ? "atmosphere/prod.keys" : "atmosphere/dev.keys";
             FILE *extkey_file = fopen(keyfile, "r");
@@ -159,19 +177,17 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
             }
             extkeys_initialize_keyset(&extkeys, extkey_file);
             fclose(extkey_file);
-        
-            if (memcmp(extkeys.tsec_root_key, zeroes, 0x10) != 0) {
-                set_aes_keyslot(0xC, extkeys.tsec_root_key, 0x10);
-                for (unsigned int rev = MASTERKEY_REVISION_620_CURRENT; rev < MASTERKEY_REVISION_MAX; rev++) {
-                    se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620_CURRENT], 0x10);
+            for (unsigned int rev = MASTERKEY_REVISION_620; rev < MASTERKEY_REVISION_MAX; rev++) {
+                if (memcmp(extkeys.tsec_root_keys[rev - MASTERKEY_REVISION_620], zeroes, 0x10) != 0) {
+                    set_aes_keyslot(0xC, extkeys.tsec_root_keys[rev - MASTERKEY_REVISION_620], 0x10);
+                    se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620], 0x10);
                     memcpy(g_dec_keyblobs[rev].master_kek, work_buffer, 0x10);
-                }
-            } else {
-                for (unsigned int rev = MASTERKEY_REVISION_620_CURRENT; rev < MASTERKEY_REVISION_MAX; rev++) {
+                } else {
                     memcpy(g_dec_keyblobs[rev].master_kek, extkeys.master_keks[rev], 0x10);
                 }
             }
         }
+        
         
         if (memcmp(g_dec_keyblobs[available_revision].master_kek, zeroes, 0x10) == 0) {
             fatal_error("Error: failed to derive master_kek_%02x!", available_revision);

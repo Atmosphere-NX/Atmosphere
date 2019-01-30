@@ -28,6 +28,7 @@
 #include "sysreg.h"
 
 void nxboot_finish(uint32_t boot_memaddr) {
+    uint32_t target_firmware = MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware;
     volatile tegra_se_t *se = se_get_regs();
     
     /* Clear used keyslots. */
@@ -36,7 +37,7 @@ void nxboot_finish(uint32_t boot_memaddr) {
     
     /* Lock keyslots. */
     set_aes_keyslot_flags(KEYSLOT_SWITCH_MASTERKEY, 0xFF);
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
         set_aes_keyslot_flags(KEYSLOT_SWITCH_DEVICEKEY, 0xFF);
     } else {
         set_aes_keyslot_flags(KEYSLOT_SWITCH_4XOLDDEVICEKEY, 0xFF);
@@ -61,11 +62,11 @@ void nxboot_finish(uint32_t boot_memaddr) {
     se->_0x0 &= 0xFFFFFFFB;
     
     /* Boot up Exosphère. */
-    MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 0;
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
-        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_LOADED_PACKAGE2;
+    MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE(target_firmware) = 0;
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
+        MAILBOX_NX_BOOTLOADER_SETUP_STATE(target_firmware) = NX_BOOTLOADER_STATE_LOADED_PACKAGE2;
     } else {
-        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_DRAM_INITIALIZED_4X;
+        MAILBOX_NX_BOOTLOADER_SETUP_STATE(target_firmware) = NX_BOOTLOADER_STATE_DRAM_INITIALIZED_4X;
     }
 
     /* Terminate the display. */
@@ -88,15 +89,15 @@ void nxboot_finish(uint32_t boot_memaddr) {
     }
     
     /* Wait for Exosphère to wake up. */
-    while (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE == 0) {
+    while (MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE(target_firmware) == 0) {
         udelay(1);
     }
     
     /* Signal Exosphère. */
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
-        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_FINISHED;
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
+        MAILBOX_NX_BOOTLOADER_SETUP_STATE(target_firmware) = NX_BOOTLOADER_STATE_FINISHED;
     } else {
-        MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_FINISHED_4X;
+        MAILBOX_NX_BOOTLOADER_SETUP_STATE(target_firmware) = NX_BOOTLOADER_STATE_FINISHED_4X;
     }
 
     /* Halt ourselves in waitevent state. */

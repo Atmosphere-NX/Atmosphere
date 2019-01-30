@@ -22,7 +22,7 @@
 #include "masterkey.h"
 
 typedef struct {
-    unsigned char tsec_root_key[0x10];
+    unsigned char tsec_root_keys[0x20][0x10];
     unsigned char master_keks[0x20][0x10];
 } fusee_extkeys_t;
 

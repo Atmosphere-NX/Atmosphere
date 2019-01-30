@@ -212,7 +212,7 @@ static void nxboot_configure_stratosphere(uint32_t target_firmware) {
     }
 }
 
-static void nxboot_set_bootreason() {
+static void nxboot_set_bootreason(void *bootreason_base) {
     boot_reason_t boot_reason = {0};
     FILE *boot0; 
     nvboot_config_table *bct;
@@ -264,7 +264,7 @@ static void nxboot_set_bootreason() {
         boot_reason.boot_reason_state = 0x04;
     
     /* Set in memory. */
-    memcpy((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE, &boot_reason, sizeof(boot_reason));
+    memcpy(bootreason_base, &boot_reason, sizeof(boot_reason));
     
     /* Clean up. */
     free(bct);
@@ -412,7 +412,12 @@ uint32_t nxboot_main(void) {
     /* Get the TSEC keys. */
     uint8_t tsec_key[0x10] = {0};
     uint8_t tsec_root_key[0x10] = {0};
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_620) {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_700) {
+        /* TODO: what to do here? */
+        if (tsec_get_key(tsec_key, 1, tsec_fw, tsec_fw_size) != 0) {
+            fatal_error("[NXBOOT]: Failed to get TSEC key!\n");
+        }
+    } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_620) {
         uint8_t tsec_keys[0x20] = {0};
         
         /* Emulate the TSEC payload on 6.2.0+. */
@@ -438,9 +443,9 @@ uint32_t nxboot_main(void) {
     nxboot_configure_exosphere(target_firmware, keygen_type);
 
     /* Initialize Boot Reason on older firmware versions. */
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
         print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Initializing Boot Reason...\n");
-        nxboot_set_bootreason();
+        nxboot_set_bootreason((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE(target_firmware));
     }
 
     /* Read the warmboot firmware from a file, otherwise from Atmosphere's implementation. */
