@@ -174,7 +174,7 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
 static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int keygen_type) {
     exosphere_config_t exo_cfg = {0};
 
-    exo_cfg.magic = MAGIC_EXOSPHERE_BOOTCONFIG;
+    exo_cfg.magic = MAGIC_EXOSPHERE_CONFIG;
     exo_cfg.target_firmware = target_firmware;
     if (keygen_type) {
         exo_cfg.flags = EXOSPHERE_FLAGS_DEFAULT | EXOSPHERE_FLAG_PERFORM_620_KEYGEN;

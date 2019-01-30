@@ -21,11 +21,8 @@
 
 /* This serves to set configuration for *exosphere itself*, separate from the SecMon Exosphere mimics. */
 
-/* "XBC0" */
-#define MAGIC_EXOSPHERE_BOOTCONFIG_0 (0x30434258)
-/* "XBC1" */
-#define MAGIC_EXOSPHERE_BOOTCONFIG   (0x31434258)
-
+/* "EXO0" */
+#define MAGIC_EXOSPHERE_CONFIG (0x304F5845)
 
 #define EXOSPHERE_FLAGS_DEFAULT 0x00000000
 #define EXOSPHERE_FLAG_PERFORM_620_KEYGEN (1 << 0u)
@@ -36,9 +33,10 @@ typedef struct {
     unsigned int magic;
     unsigned int target_firmware;
     unsigned int flags;
+    unsigned int reserved;
 } exosphere_config_t;
 
-#define MAILBOX_EXOSPHERE_CONFIGURATION ((volatile exosphere_config_t *)(0x40002E40))
+#define MAILBOX_EXOSPHERE_CONFIGURATION ((volatile exosphere_config_t *)(0x8000F000ull))
 
 #define EXOSPHERE_TARGETFW_KEY "target_firmware"
 #define EXOSPHERE_DEBUGMODE_PRIV_KEY "debugmode"

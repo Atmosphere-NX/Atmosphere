@@ -25,17 +25,15 @@
 
 /* This serves to set configuration for *exosphere itself*, separate from the SecMon Exosphere mimics. */
 
-/* "XBC0" */
-#define MAGIC_EXOSPHERE_BOOTCONFIG_0 (0x30434258)
-/* "XBC1" */
-#define MAGIC_EXOSPHERE_BOOTCONFIG (0x31434258)
+/* "EXO0" */
+#define MAGIC_EXOSPHERE_CONFIG (0x304F5845)
 
 #define EXOSPHERE_LOOSEN_PACKAGE2_RESTRICTIONS_FOR_DEBUG 1
 
-#define MAILBOX_BASE_PHYS  (MMIO_GET_DEVICE_PA(MMIO_DEVID_NXBOOTLOADER_MAILBOX))
+#define MAILBOX_EXOSPHERE_CONFIG (*((volatile exosphere_config_t *)(0x8000F000ull)))
 
-/* TODO: Should this be at a non-static location? */
-#define MAILBOX_EXOSPHERE_CONFIG_PHYS (*((volatile exosphere_config_t *)(MAILBOX_BASE_PHYS + 0xE40ULL)))
+/* Exosphere config in DRAM shares physical/virtual mapping. */
+#define MAILBOX_EXOSPHERE_CONFIG_PHYS MAILBOX_EXOSPHERE_CONFIG
 
 #define EXOSPHERE_FLAGS_DEFAULT 0x00000000
 #define EXOSPHERE_FLAG_PERFORM_620_KEYGEN (1 << 0u)
@@ -46,6 +44,7 @@ typedef struct {
     unsigned int magic;
     unsigned int target_firmware;
     unsigned int flags;
+    unsigned int reserved;
 } exosphere_config_t;
 
 unsigned int exosphere_load_config(void);
@@ -56,7 +55,7 @@ unsigned int exosphere_should_override_debugmode_user(void);
 
 static inline unsigned int exosphere_get_target_firmware_for_init(void) {
     const unsigned int magic = MAILBOX_EXOSPHERE_CONFIG_PHYS.magic;
-    if (magic == MAGIC_EXOSPHERE_BOOTCONFIG || magic == MAGIC_EXOSPHERE_BOOTCONFIG_0) {
+    if (magic == MAGIC_EXOSPHERE_CONFIG) {
         return MAILBOX_EXOSPHERE_CONFIG_PHYS.target_firmware;
     } else {
         return ATMOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG;
