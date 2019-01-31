@@ -48,7 +48,7 @@ class RelocatableObjectsService final : public IServiceObject {
         Result LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size);
         Result UnloadNrr(PidDescriptor pid_desc, u64 nrr_address);
         Result Initialize(PidDescriptor pid_desc, CopiedHandle process_h);
-        Result LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size);
+        Result LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size, CopiedHandle process_h);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<Ro_Cmd_LoadNro, &RelocatableObjectsService::LoadNro>(),
