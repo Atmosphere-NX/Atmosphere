@@ -16,6 +16,7 @@
  
 #include <switch.h>
 #include <algorithm>
+#include <stratosphere.hpp>
 
 #include "ldr_process_creation.hpp"
 #include "ldr_registration.hpp"
@@ -47,12 +48,19 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
         return 0x809;
     }
     out_proc_info->process_flags = (npdm->header->mmu_flags & 0xF);
+    
     /* Set Bit 4 (?) and EnableAslr based on argument flags. */
     out_proc_info->process_flags |= ((arg_flags & 3) << 4) ^ 0x20;
     /* Set UseSystemMemBlocks if application type is 1. */
     u32 application_type = NpdmUtils::GetApplicationType((u32 *)npdm->aci0_kac, npdm->aci0->kac_size / sizeof(u32));
     if ((application_type & 3) == 1) {
         out_proc_info->process_flags |= 0x40;
+        /* 7.0.0+: Set unknown bit related to system resource heap if relevant. */
+        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+            if ((npdm->header->mmu_flags & 0x10)) {
+                out_proc_info->process_flags |= 0x800;
+            }
+        }
     }
     
     /* 3.0.0+ System Resource Size. */
