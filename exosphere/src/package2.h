@@ -21,18 +21,19 @@
 
 #include "utils.h"
 #include "bootconfig.h"
+#include "exocfg.h"
 #include "memory_map.h"
 
 /* Physaddr 0x40002EF8 */
-static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
-    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_NXBOOTLOADER_MAILBOX);
+static inline uintptr_t get_nx_bootloader_mailbox_base(unsigned int targetfw) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_NXBOOTLOADER_MAILBOX) + ((targetfw >= ATMOSPHERE_TARGET_FIRMWARE_700) ? (0x000ull) : (0xE00ull));
 }
 
-#define MAILBOX_NX_BOOTLOADER_BASE (get_nx_bootloader_mailbox_base())
+#define MAILBOX_NX_BOOTLOADER_BASE(targetfw) (get_nx_bootloader_mailbox_base(targetfw))
 
-#define MAILBOX_NX_SECMON_BOOT_TIME       MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE + 0xE08ull)
+#define MAILBOX_NX_SECMON_BOOT_TIME(targetfw)       MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE(targetfw) + 0x08ull)
 
-#define MAILBOX_NX_BOOTLOADER_SETUP_STATE MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE + 0xEF8ull)
+#define MAILBOX_NX_BOOTLOADER_SETUP_STATE(targetfw) MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE(targetfw) + 0xF8ull)
 
 #define NX_BOOTLOADER_STATE_INIT 0
 #define NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG 1
@@ -45,9 +46,9 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
 #define NX_BOOTLOADER_STATE_FINISHED_4X 4
 
 /* Physaddr 0x40002EFC */
-#define MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE + 0xEFCULL)
+#define MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE(targetfw) MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE(targetfw) + 0xFCULL)
 
-#define MAILBOX_NX_BOOTLOADER_BOOT_REASON (MAILBOX_NX_BOOTLOADER_BASE + 0xE10ULL)
+#define MAILBOX_NX_BOOTLOADER_BOOT_REASON(targetfw) (MAILBOX_NX_BOOTLOADER_BASE(targetfw) + 0x10ULL)
 
 #define NX_BOOTLOADER_BOOTCONFIG_POINTER ((void *)(0x4003D000ull))
 #define NX_BOOTLOADER_BOOTCONFIG_POINTER_6X ((void *)(0x4003F800ull))

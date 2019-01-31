@@ -52,6 +52,29 @@
 #define _MMAPDEV19      ( 0x00000000ull, 0x1000ull, true  ) /* AMS userpage, NOT mapped at startup */
 #define _MMAPDEV20      ( 0x40038000ull, 0x5000ull, true  ) /* DEBUG: IRAM */
 
+/* MMIO 7.0.0+. (addr).  */
+#define _MMAPDEV7X0       ( 0x50041000ull ) /* ARM Interrupt Distributor */
+#define _MMAPDEV7X1       ( 0x50042000ull ) /* Interrupt Controller Physical CPU interface */
+#define _MMAPDEV7X2       ( 0x70006000ull ) /* UART */
+#define _MMAPDEV7X3       ( 0x60006000ull ) /* Clock and Reset */
+#define _MMAPDEV7X4       ( 0x7000E000ull ) /* RTC, PMC */
+#define _MMAPDEV7X5       ( 0x60005000ull ) /* TMRs, WDTs */
+#define _MMAPDEV7X6       ( 0x6000C000ull ) /* System Registers */
+#define _MMAPDEV7X7       ( 0x70012000ull ) /* SE */
+#define _MMAPDEV7X8       ( 0x700F0000ull ) /* SYSCTR0 */
+#define _MMAPDEV7X9       ( 0x70019000ull ) /* MC */
+#define _MMAPDEV7X10      ( 0x7000F000ull ) /* FUSE (0x7000F800) */
+#define _MMAPDEV7X11      ( 0x70000000ull ) /* MISC */
+#define _MMAPDEV7X12      ( 0x60007000ull ) /* Flow Controller */
+#define _MMAPDEV7X13      ( 0x40000000ull ) /* NX bootloader mailbox page */
+#define _MMAPDEV7X14      ( 0x7000D000ull ) /* I2C-5,6 - SPI 2B-1 to 4 */
+#define _MMAPDEV7X15      ( 0x6000D000ull ) /* GPIO-1 - GPIO-8 */
+#define _MMAPDEV7X16      ( 0x7000C000ull ) /* I2C-I2C4 */
+#define _MMAPDEV7X17      ( 0x6000F000ull ) /* Exception vectors */
+#define _MMAPDEV7X18      ( 0x00000000ull ) /* AMS irampage, NOT mapped at startup */
+#define _MMAPDEV7X19      ( 0x00000000ull ) /* AMS userpage, NOT mapped at startup */
+#define _MMAPDEV7X20      ( 0x40038000ull ) /* DEBUG: IRAM */
+
 /* LP0 entry ram segments (addr, size, additional attributes) */
 #define _MMAPLP0ES0  ( 0x40020000ull, 0x10000ull, MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_DEVICE ) /* Encrypted TZRAM */
 #define _MMAPLP0ES1  ( 0x40003000ull, 0x01000ull, MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_DEVICE ) /* LP0 entry code */
@@ -140,6 +163,7 @@
 #define IDENTITY_IS_MAPPING_BLOCK_RANGE(mapping_id)     (TUPLE_ELEM_3(CAT(_MMAPID, EVAL(mapping_id))))
 
 #define MMIO_GET_DEVICE_PA(device_id)                   (TUPLE_ELEM_0(CAT(_MMAPDEV, EVAL(device_id))))
+#define MMIO_GET_DEVICE_7X_PA(device_id)                (TUPLE_ELEM_0(CAT(_MMAPDEV, EVAL(device_id))))
 #define MMIO_GET_DEVICE_ADDRESS(device_id)\
 (\
     (TUPLE_FOLD_LEFT_1(EVAL(device_id), _MMAPDEV, PLUS) EVAL(MMIO_BASE)) +\

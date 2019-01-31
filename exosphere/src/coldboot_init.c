@@ -26,7 +26,7 @@
 
 #undef  MAILBOX_NX_BOOTLOADER_BASE
 #undef  TIMERS_BASE
-#define MAILBOX_NX_BOOTLOADER_BASE  (MMIO_GET_DEVICE_PA(MMIO_DEVID_NXBOOTLOADER_MAILBOX))
+#define MAILBOX_NX_BOOTLOADER_BASE(targetfw)  (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_700) ? (MMIO_GET_DEVICE_7X_PA(MMIO_DEVID_NXBOOTLOADER_MAILBOX)) : (MMIO_GET_DEVICE_PA(MMIO_DEVID_NXBOOTLOADER_MAILBOX))
 #define TIMERS_BASE                 (MMIO_GET_DEVICE_PA(MMIO_DEVID_TMRs_WDTs))
 
 extern const uint8_t __start_cold[];
@@ -48,13 +48,16 @@ static void identity_map_all_mappings(uintptr_t *mmu_l1_tbl, uintptr_t *mmu_l3_t
     }
 }
 
-static void mmio_map_all_devices(uintptr_t *mmu_l3_tbl) {
+static void mmio_map_all_devices(uintptr_t *mmu_l3_tbl, unsigned int target_firmware) {
     static const uintptr_t pas[]        =   { TUPLE_FOLD_LEFT_0(EVAL(MMIO_DEVID_MAX), _MMAPDEV, COMMA) };
     static const size_t sizes[]         =   { TUPLE_FOLD_LEFT_1(EVAL(MMIO_DEVID_MAX), _MMAPDEV, COMMA) };
     static const bool is_secure[]       =   { TUPLE_FOLD_LEFT_2(EVAL(MMIO_DEVID_MAX), _MMAPDEV, COMMA) };
+    
+    static const uintptr_t pas_7x[]     =   { TUPLE_FOLD_LEFT_0(EVAL(MMIO_DEVID_MAX), _MMAPDEV7X, COMMA) };
 
     for(size_t i = 0, offset = 0; i < MMIO_DEVID_MAX; i++) {
-        mmio_map_device(mmu_l3_tbl, MMIO_BASE + offset, pas[i], sizes[i], is_secure[i]);
+        uintptr_t pa = (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_700) ? pas[i] : pas_7x[i];
+        mmio_map_device(mmu_l3_tbl, MMIO_BASE + offset, pa, sizes[i], is_secure[i]);
         offset += sizes[i];
         offset += 0x1000;
     }
@@ -127,7 +130,7 @@ static void configure_ttbls(unsigned int target_firmware) {
     mmu_map_table(2, mmu_l2_tbl, 0x1F0000000ull, mmu_l3_tbl, 0);
 
     identity_map_all_mappings(mmu_l1_tbl, mmu_l3_tbl);
-    mmio_map_all_devices(mmu_l3_tbl);
+    mmio_map_all_devices(mmu_l3_tbl, target_firmware);
     lp0_entry_map_all_ram_segments(mmu_l3_tbl);
     warmboot_map_all_ram_segments(mmu_l3_tbl);
     tzram_map_all_segments(mmu_l3_tbl, target_firmware);

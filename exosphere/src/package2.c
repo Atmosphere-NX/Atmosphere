@@ -508,7 +508,7 @@ static void copy_warmboot_bin_to_dram() {
 }
 
 static void sync_with_nx_bootloader(int state) {
-    while (MAILBOX_NX_BOOTLOADER_SETUP_STATE < state) {
+    while (MAILBOX_NX_BOOTLOADER_SETUP_STATE(exosphere_get_target_firmware()) < state) {
         wait(100);
     }
 }
@@ -566,7 +566,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     setup_current_core_state();
 
     /* Save boot reason to global. */
-    bootconfig_load_boot_reason((volatile boot_reason_t *)(MAILBOX_NX_BOOTLOADER_BOOT_REASON));
+    bootconfig_load_boot_reason((volatile boot_reason_t *)(MAILBOX_NX_BOOTLOADER_BOOT_REASON(exosphere_get_target_firmware())));
 
     /* Initialize cache'd random bytes for kernel. */
     randomcache_init();
@@ -575,7 +575,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* memset((void *)reloc_list->reloc_base, 0, reloc_list->loaded_bin_size); */
     
     /* Let NX Bootloader know that we're running. */
-    MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 1;
+    MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE(exosphere_get_target_firmware()) = 1;
 
     /* Wait for 1 second, to allow time for NX_BOOTLOADER to draw to the screen. This is useful for debugging. */
     /* wait(1000000); */
