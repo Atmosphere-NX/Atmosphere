@@ -64,7 +64,8 @@
                 "svcDetachDeviceAddressSpace": "0x58",
                 "svcMapDeviceAddressSpaceAligned": "0x5A",
                 "svcUnmapDeviceAddressSpace": "0x5C",
-                "svcFlushProcessDataCache": "0x5F"
+                "svcFlushProcessDataCache": "0x5F",
+                "svcCallSecureMonitor": "0x7F"
             }
         },
         {

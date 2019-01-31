@@ -71,7 +71,8 @@
                 "svcGetProcessInfo":	"0x7c",
                 "svcCreateResourceLimit":	"0x7d",
                 "svcSetResourceLimitLimitValue":	"0x7e",
-                "svcGetSystemInfo":	"0x6f"
+                "svcGetSystemInfo":	"0x6f",
+                "svcCallSecureMonitor": "0x7F"
             }
         }
     ]

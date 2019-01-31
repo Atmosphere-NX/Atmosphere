@@ -65,7 +65,8 @@
                 "svcGetMemoryInfo"                   : "0x6F",
                 "svcCreatePort"                      : "0x70",
                 "svcManageNamedPort"                 : "0x71",
-                "svcConnectToPort"                   : "0x72"
+                "svcConnectToPort"                   : "0x72",
+                "svcCallSecureMonitor": "0x7F"
             }
         }
     ]

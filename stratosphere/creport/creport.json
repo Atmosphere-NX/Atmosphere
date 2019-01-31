@@ -19,6 +19,7 @@
     ],
     "service_access": [
         "csrng",
+        "spl:",
         "erpt:c",
         "fatal:u",
         "ns:dev",
@@ -92,7 +93,8 @@
                 "svcGetDebugThreadContext": "0x67",
                 "svcQueryDebugProcessMemory": "0x69",
                 "svcReadDebugProcessMemory": "0x6a",
-                "svcGetDebugThreadParam": "0x6d"
+                "svcGetDebugThreadParam": "0x6d",
+                "svcCallSecureMonitor": "0x7F"
             }
         },
         {
