@@ -104,3 +104,10 @@ Result ShellService::GetApplicationProcessId(Out<u64> pid) {
 Result ShellService::BoostSystemMemoryResourceLimit(u64 sysmem_size) {
     return ResourceLimitUtils::BoostSystemMemoryResourceLimit(sysmem_size);
 }
+
+Result ShellService::BoostSystemThreadsResourceLimit() {
+    /* Starting in 7.0.0, Nintendo reduces the number of system threads from 0x260 to 0x60, */
+    /* Until this command is called to double that amount to 0xC0. */
+    /* We will simply not reduce the number of system threads available for no reason. */
+    return 0x0;
+}

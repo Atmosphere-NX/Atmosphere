@@ -43,7 +43,9 @@ enum ShellCmd_5X {
     Shell_Cmd_5X_GetProcessEventType = 4,
     Shell_Cmd_5X_NotifyBootFinished = 5,
     Shell_Cmd_5X_GetApplicationProcessId = 6,
-    Shell_Cmd_5X_BoostSystemMemoryResourceLimit = 7
+    Shell_Cmd_5X_BoostSystemMemoryResourceLimit = 7,
+    
+    Shell_Cmd_BoostSystemThreadsResourceLimit = 8
 };
 
 class ShellService final : public IServiceObject {    
@@ -59,6 +61,7 @@ class ShellService final : public IServiceObject {
         void NotifyBootFinished();
         Result GetApplicationProcessId(Out<u64> pid);
         Result BoostSystemMemoryResourceLimit(u64 sysmem_size);
+        Result BoostSystemThreadsResourceLimit();
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             /* 1.0.0-4.0.0 */
@@ -84,5 +87,8 @@ class ShellService final : public IServiceObject {
             MakeServiceCommandMeta<Shell_Cmd_5X_NotifyBootFinished, &ShellService::NotifyBootFinished, FirmwareVersion_500>(),
             MakeServiceCommandMeta<Shell_Cmd_5X_GetApplicationProcessId, &ShellService::GetApplicationProcessId, FirmwareVersion_500>(),
             MakeServiceCommandMeta<Shell_Cmd_5X_BoostSystemMemoryResourceLimit, &ShellService::BoostSystemMemoryResourceLimit, FirmwareVersion_500>(),
+            
+            /* 7.0.0-* */
+            MakeServiceCommandMeta<Shell_Cmd_BoostSystemThreadsResourceLimit, &ShellService::BoostSystemThreadsResourceLimit, FirmwareVersion_700>(),
         };
 };

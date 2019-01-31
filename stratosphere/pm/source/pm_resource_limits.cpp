@@ -122,6 +122,9 @@ void ResourceLimitUtils::InitializeLimits() {
         memcpy(&g_resource_limits, &g_resource_limits_deprecated, sizeof(g_resource_limits));
     }
     
+    /* 7.0.0+: Nintendo restricts the number of system threads here, from 0x260 -> 0x60. */
+    /* We will not do this. */
+    
     if (kernelAbove600()) {
         /* NOTE: 5 is a fake type, official code does not do this. */
         /* This is done for ease of backwards compatibility. */
