@@ -166,8 +166,10 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
                 fatal_error("[NXBOOT]: Unable to identify package1!\n");
             }
         }
+        case 0x0F:
+            return ATMOSPHERE_TARGET_FIRMWARE_700;
         default:
-            return 0;
+            fatal_error("[NXBOOT]: Unable to identify package1!\n");
     }
 }
 
@@ -381,7 +383,7 @@ uint32_t nxboot_main(void) {
     /* Read the TSEC firmware from a file, otherwise from PK1L. */
     if (loader_ctx->tsecfw_path[0] != '\0') {
         tsec_fw_size = get_file_size(loader_ctx->tsecfw_path);
-        if ((tsec_fw_size != 0) && (tsec_fw_size != 0xF00 && tsec_fw_size != 0x2900)) {
+        if ((tsec_fw_size != 0) && (tsec_fw_size != 0xF00 && tsec_fw_size != 0x2900 && tsec_fw_size != 0x3000)) {
             fatal_error("[NXBOOT]: TSEC firmware from %s has a wrong size!\n", loader_ctx->tsecfw_path);
         } else if (tsec_fw_size == 0) {
             fatal_error("[NXBOOT]: Could not read the TSEC firmware from %s!\n", loader_ctx->tsecfw_path);
@@ -400,7 +402,9 @@ uint32_t nxboot_main(void) {
         if (!package1_get_tsec_fw(&tsec_fw, package1loader, package1loader_size)) {
             fatal_error("[NXBOOT]: Failed to read the TSEC firmware from Package1loader!\n");
         }
-        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_620) {
+        if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_700) { 
+            tsec_fw_size = 0x3000;
+        } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_620) {
             tsec_fw_size = 0x2900;
         } else {
             tsec_fw_size = 0xF00;
@@ -413,7 +417,10 @@ uint32_t nxboot_main(void) {
     uint8_t tsec_key[0x10] = {0};
     uint8_t tsec_root_keys[0x20][0x10] = {0};
     if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_700) {
-        /* TODO: what to do here? */
+        /* TODO: what else to do here? */
+        
+        /* Patch TSEC firmware to exit after generating TSEC key. */
+        *((volatile uint16_t *)((uintptr_t)tsec_fw + 0x2DB5)) = 0x02F8;
         if (tsec_get_key(tsec_key, 1, tsec_fw, tsec_fw_size) != 0) {
             fatal_error("[NXBOOT]: Failed to get TSEC key!\n");
         }
@@ -499,8 +506,10 @@ uint32_t nxboot_main(void) {
         warmboot_memaddr = (void *)0x8000D000;
     } else if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_600) {
         warmboot_memaddr = (void *)0x4003B000;
-    } else {
+    } else if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_700) {
         warmboot_memaddr = (void *)0x4003D800;
+    } else {
+        warmboot_memaddr = (void *)0x4003E000;
     }
 
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Copying warmboot firmware...\n");
