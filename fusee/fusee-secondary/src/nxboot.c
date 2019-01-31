@@ -411,7 +411,7 @@ uint32_t nxboot_main(void) {
 
     /* Get the TSEC keys. */
     uint8_t tsec_key[0x10] = {0};
-    uint8_t tsec_root_key[0x10] = {0};
+    uint8_t tsec_root_keys[0x20][0x10] = {0};
     if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_700) {
         /* TODO: what to do here? */
         if (tsec_get_key(tsec_key, 1, tsec_fw, tsec_fw_size) != 0) {
@@ -425,7 +425,7 @@ uint32_t nxboot_main(void) {
         
         /* Copy back the keys. */
         memcpy((void *)tsec_key, (void *)tsec_keys, 0x10);
-        memcpy((void *)tsec_root_key, (void *)tsec_keys + 0x10, 0x10);
+        memcpy((void *)tsec_root_keys, (void *)tsec_keys + 0x10, 0x10);
     } else {
         /* Run the TSEC payload and get the key. */
         if (tsec_get_key(tsec_key, 1, tsec_fw, tsec_fw_size) != 0) {
@@ -435,7 +435,7 @@ uint32_t nxboot_main(void) {
     
     /* Derive keydata. */
     unsigned int keygen_type = 0;
-    if (derive_nx_keydata(target_firmware, g_keyblobs, available_revision, tsec_key, tsec_root_key, &keygen_type) != 0) {
+    if (derive_nx_keydata(target_firmware, g_keyblobs, available_revision, tsec_key, tsec_root_keys, &keygen_type) != 0) {
         fatal_error("[NXBOOT]: Key derivation failed!\n");
     }
 
