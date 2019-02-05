@@ -17,24 +17,33 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include <string.h>
-#include "fatal_types.hpp"
-#include "fatal_payload_manager.hpp"
+#include "bpcmitm_reboot_manager.hpp"
+#include "../utils.hpp"
 
 /* TODO: Find a way to pre-populate this with the contents of fusee-primary. */
 static u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE] __attribute__ ((aligned (0x1000)));
 static u8 g_work_page[0x1000] __attribute__ ((aligned (0x1000)));
 static bool g_payload_loaded = false;
+static BpcRebootType g_reboot_type = BpcRebootType::ToPayload;
 
-void FatalPayloadManager::LoadPayloadFromSdCard() {
-    FILE *f = fopen("sdmc:/atmosphere/reboot_payload.bin", "rb");
-    if (f == NULL) {
+void BpcRebootManager::Initialize() {
+    /* Open payload file. */
+    FsFile payload_file;
+    if (R_FAILED(Utils::OpenSdFile("/atmosphere/reboot_payload.bin", FS_OPEN_READ, &payload_file))) {
         return;
     }
-    ON_SCOPE_EXIT { fclose(f); };
+    ON_SCOPE_EXIT { fsFileClose(&payload_file); };
     
-    memset(g_reboot_payload, 0xFF, sizeof(g_reboot_payload));
-    fread(g_reboot_payload, 1, IRAM_PAYLOAD_MAX_SIZE, f);
+    /* Clear payload buffer */
+    std::memset(g_reboot_payload, 0xFF, sizeof(g_reboot_payload));
+    
+    /* Read payload file. */
+    size_t actual_size;
+    fsFileRead(&payload_file, 0, g_reboot_payload, IRAM_PAYLOAD_MAX_SIZE, &actual_size);
+    
     g_payload_loaded = true;
+    
+    /* TODO: Figure out what kind of reboot we're gonna be doing. */
 }
 
 static void ClearIram() {
@@ -47,7 +56,7 @@ static void ClearIram() {
     }
 }
 
-void FatalPayloadManager::RebootToPayload() {
+static void DoRebootToPayload() {
     /* If we don't actually have a payload loaded, just go to RCM. */
     if (!g_payload_loaded) {
         RebootToRcm();
@@ -62,4 +71,18 @@ void FatalPayloadManager::RebootToPayload() {
     }
     
     RebootToIramPayload();
+}
+
+Result BpcRebootManager::PerformReboot() {
+    switch (g_reboot_type) {
+        case BpcRebootType::Standard:
+            return RESULT_FORWARD_TO_SESSION;
+        case BpcRebootType::ToRcm:
+            RebootToRcm();
+            return 0;
+        case BpcRebootType::ToPayload:
+        default:
+            DoRebootToPayload();
+            return 0;
+    }
 }

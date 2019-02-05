@@ -23,6 +23,7 @@
 
 #include "fs_mitm/fsmitm_main.hpp"
 #include "set_mitm/setmitm_main.hpp"
+#include "bpc_mitm/bpcmitm_main.hpp"
 
 static HosThread g_module_threads[MitmModuleId_Count];
 
@@ -33,6 +34,7 @@ static const struct {
 } g_module_definitions[MitmModuleId_Count] = {
     { &FsMitmMain,  FsMitmPriority,  FsMitmStackSize },  /* FsMitm */
     { &SetMitmMain, SetMitmPriority, SetMitmStackSize }, /* SetMitm */
+    { &BpcMitmMain, BpcMitmPriority, BpcMitmStackSize }, /* BpcMitm */
 };
 
 void LaunchAllMitmModules() {

@@ -15,15 +15,20 @@
  */
  
 #pragma once
+#include <switch.h>
+#include <stratosphere.hpp>
 
-enum MitmModuleId : u32 {
-    MitmModuleId_FsMitm = 0,
-    MitmModuleId_SetMitm = 1,
-    MitmModuleId_BpcMitm = 2,
-    
-    MitmModuleId_Count = 3,
+#define IRAM_PAYLOAD_MAX_SIZE 0x2F000
+#define IRAM_PAYLOAD_BASE 0x40010000ull
+
+enum class BpcRebootType : u32 {
+    Standard,
+    ToRcm,
+    ToPayload,
 };
 
-void LaunchAllMitmModules();
-
-void WaitAllMitmModules();
+class BpcRebootManager {
+    public:
+        static void Initialize();
+        static Result PerformReboot();
+};

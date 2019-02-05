@@ -13,16 +13,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#pragma once
+
+#include <mutex>
 #include <switch.h>
 #include <stratosphere.hpp>
+#include "bpc_mitm_service.hpp"
+#include "bpcmitm_reboot_manager.hpp"
 
-#define IRAM_PAYLOAD_MAX_SIZE 0x2F000
-#define IRAM_PAYLOAD_BASE 0x40010000ull
+void BpcMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx) {
+    /* Nothing to do here */
+}
 
-class FatalPayloadManager {
-    public:
-        static void LoadPayloadFromSdCard();
-        static void RebootToPayload();
-};
+Result BpcMitmService::ShutdownSystem() {
+    /* TODO: Use exosphere + reboot to perform real shutdown, instead of fake shutdown. */
+    return RESULT_FORWARD_TO_SESSION;
+}
+
+Result BpcMitmService::RebootSystem() {
+    return BpcRebootManager::PerformReboot();
+}

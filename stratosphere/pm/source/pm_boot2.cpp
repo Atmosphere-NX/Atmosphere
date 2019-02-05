@@ -225,8 +225,13 @@ void EmbeddedBoot2::Main() {
         BootModeService::SetMaintenanceBootForEmbeddedBoot2();
     }
         
-    /* Launch set:mitm, wait for it. */
+    /* Wait for other atmosphere mitm modules to initialize. */
     WaitForMitm("set:sys");
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
+        WaitForMitm("bpc");
+    } else {
+        WaitForMitm("bpc:c");
+    }
     
     /* Launch usb. */
     LaunchTitle(Boot2KnownTitleId::usb, FsStorageId_NandSystem, 0, NULL);

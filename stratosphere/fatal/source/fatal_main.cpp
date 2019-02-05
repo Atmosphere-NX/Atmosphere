@@ -29,7 +29,6 @@
 #include "fatal_config.hpp"
 #include "fatal_repair.hpp"
 #include "fatal_font.hpp"
-#include "fatal_payload_manager.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -159,10 +158,7 @@ int main(int argc, char **argv)
 {
     /* Load settings from set:sys. */
     InitializeFatalConfig();
-    
-    /* Load a payload from the SD card. */
-    FatalPayloadManager::LoadPayloadFromSdCard();
-    
+        
     /* Load shared font. */
     if (R_FAILED(FontManager::InitializeSharedFont())) {
         std::abort();
