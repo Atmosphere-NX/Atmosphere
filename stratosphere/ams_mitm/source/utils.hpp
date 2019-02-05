@@ -73,6 +73,10 @@ class Utils {
         static bool IsHidAvailable();
         static Result GetKeysDown(u64 *keys);
         static bool HasOverrideButton(u64 tid);
+        
+        /* Settings! */
+        static Result GetSettingsItemValueSize(const char *name, const char *key, u64 *out_size);
+        static Result GetSettingsItemValue(const char *name, const char *key, void *out, size_t max_size, u64 *out_size);
     private:
         static void RefreshConfiguration();
 };

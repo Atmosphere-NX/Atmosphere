@@ -25,6 +25,8 @@
 #include "ini.h"
 #include "sha256.h"
 
+#include "set_mitm/setsys_settings_items.hpp"
+
 static FsFileSystem g_sd_filesystem = {0};
 static HosSignal g_sd_signal;
 
@@ -187,6 +189,11 @@ void Utils::InitializeThreadFunc(void *args) {
     
     /* Signal SD is initialized. */
     g_has_initialized = true;
+    
+    /* Load custom settings configuration. */
+    SettingsItemManager::LoadConfiguration();
+    
+    /* Signal to waiters that we are ready. */
     g_sd_signal.Signal();
     
     /* Initialize HID. */
@@ -541,4 +548,12 @@ void Utils::RefreshConfiguration() {
     fsFileClose(&config_file);
     
     ini_parse_string(g_config_ini_data, FsMitMIniHandler, NULL);
+}
+
+Result Utils::GetSettingsItemValueSize(const char *name, const char *key, u64 *out_size) {
+    return SettingsItemManager::GetValueSize(name, key, out_size);
+}
+
+Result Utils::GetSettingsItemValue(const char *name, const char *key, void *out, size_t max_size, u64 *out_size) {
+    return SettingsItemManager::GetValue(name, key, out, max_size, out_size);
 }

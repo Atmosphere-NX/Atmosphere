@@ -40,10 +40,7 @@ using SetMitmManager = WaitableManager<SetSysManagerOptions>;
 void SetMitmMain(void *arg) {
     /* Wait for SD to initialize. */
     Utils::WaitSdInitialized();
-    
-    /* Load settings */
-    SettingsItemManager::LoadConfiguration();
-        
+            
     /* Create server manager */
     auto server_manager = new SetMitmManager(3);
     
