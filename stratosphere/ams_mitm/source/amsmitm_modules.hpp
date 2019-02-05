@@ -21,7 +21,8 @@ enum MitmModuleId : u32 {
     MitmModuleId_SetMitm = 1,
     MitmModuleId_BpcMitm = 2,
     
-    MitmModuleId_Count = 3,
+    /* Always keep this at the end. */
+    MitmModuleId_Count,
 };
 
 void LaunchAllMitmModules();

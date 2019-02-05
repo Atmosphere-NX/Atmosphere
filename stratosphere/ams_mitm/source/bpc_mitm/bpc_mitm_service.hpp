@@ -18,6 +18,8 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "../utils.hpp"
+
 enum BpcCmd : u32 {
     BpcCmd_ShutdownSystem = 0,
     BpcCmd_RebootSystem = 1,
@@ -35,7 +37,7 @@ class BpcMitmService : public IMitmServiceObject {
              * - fatal, to simplify payload reboot logic significantly
              * - applications, to allow homebrew to take advantage of the feature.
              */
-            return tid == 0x0100000000000023ull || tid == 0x0100000000000034ull || tid >= 0x0100000000010000ull;
+            return tid == 0x0100000000000023ull || tid == 0x0100000000000034ull || Utils::IsHblTid(tid);
         }
         
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
