@@ -16,6 +16,7 @@
  
 #include <cstring>
 #include <switch.h>
+#include <stratosphere.hpp>
 #include <strings.h>
 #include <vector>
 #include <algorithm>
@@ -309,7 +310,7 @@ void ContentManagement::TryMountSdCard() {
 }
 
 bool ContentManagement::ShouldReplaceWithHBL(u64 tid) {
-    return g_mounted_hbl_nsp && ((g_override_any_app && tid >= 0x0100000000010000) || (!g_override_any_app && tid == g_override_hbl_tid));
+    return g_mounted_hbl_nsp && ((g_override_any_app && IsApplicationTid(tid)) || (!g_override_any_app && tid == g_override_hbl_tid));
 }
 
 bool ContentManagement::ShouldOverrideContents(u64 tid) {

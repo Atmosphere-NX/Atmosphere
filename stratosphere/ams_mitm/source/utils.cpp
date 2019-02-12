@@ -368,7 +368,7 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
 }
 
 bool Utils::IsHblTid(u64 tid) {
-    return (g_override_any_app && tid >= 0x0100000000010000ULL) || (!g_override_any_app && tid == g_override_hbl_tid);
+    return (g_override_any_app && IsApplicationTid(tid)) || (!g_override_any_app && tid == g_override_hbl_tid);
 }
 
 bool Utils::HasTitleFlag(u64 tid, const char *flag) {
@@ -447,7 +447,7 @@ Result Utils::GetKeysDown(u64 *keys) {
 }
 
 bool Utils::HasOverrideButton(u64 tid) {
-    if (tid < 0x0100000000010000ULL || !IsSdInitialized()) {
+    if ((!IsApplicationTid(tid)) || (!IsSdInitialized())) {
         /* Disable button override disable for non-applications. */
         return true;
     }
