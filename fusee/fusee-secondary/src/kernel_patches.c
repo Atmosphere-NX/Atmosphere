@@ -636,7 +636,7 @@ void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel) {
     size_t free_space_offset = kernel_info->free_code_space_offset;
     size_t free_space_size = ((free_space_offset + 0xFFFULL) & ~0xFFFULL) - free_space_offset;
     for (unsigned int i = 0; i < kernel_info->num_patches; i++) {
-        if(kernel_info->patches[i].patch_offset) {
+        if (kernel_info->patches[i].patch_offset) {
             for (unsigned int p = 0; p < kernel_info->patches[i].payload_num_instructions; p++) {
                 *(volatile instruction_t*)(_kernel + kernel_info->patches[i].patch_offset) = kernel_info->patches[i].payload[p];
             }
