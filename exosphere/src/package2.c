@@ -141,10 +141,10 @@ static void setup_se(void) {
         unsigned int master_kek_source_ind;
         switch (exosphere_get_target_firmware()) {
             case ATMOSPHERE_TARGET_FIRMWARE_620:
-                master_kek_source_ind = MASTERKEY_REVISION_620 - MASTERKEY_REVISION_600_610;
+                master_kek_source_ind = MASTERKEY_REVISION_620 - MASTERKEY_REVISION_620;
                 break;
             case ATMOSPHERE_TARGET_FIRMWARE_700:
-                master_kek_source_ind = MASTERKEY_REVISION_700_CURRENT - MASTERKEY_REVISION_600_610;
+                master_kek_source_ind = MASTERKEY_REVISION_700_CURRENT - MASTERKEY_REVISION_620;
                 break;
             default:
                 generic_panic();
