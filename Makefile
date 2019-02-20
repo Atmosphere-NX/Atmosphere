@@ -65,6 +65,7 @@ dist: all
 	mkdir out
 	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER).zip
 	cp fusee/fusee-primary/fusee-primary.bin out/fusee-primary.bin
+	cp sept/sept-primary/sept-primary.bin out/sept-primary.bin
 
 
 .PHONY: $(TOPTARGETS) $(COMPONENTS)
