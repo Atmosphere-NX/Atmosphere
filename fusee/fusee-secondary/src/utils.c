@@ -153,7 +153,6 @@ void wait_for_button(void) {
 }
 
 __attribute__ ((noreturn)) void generic_panic(void) {
-    print(SCREEN_LOG_LEVEL_ERROR, "generic panic from %p", __builtin_return_address(0));
     panic(0xFF000006);
 }
 
