@@ -108,13 +108,12 @@ static inline bool overlaps_a(const void *as, const void *ae, const void *bs, co
 static inline bool check_32bit_address_range_in_program(uintptr_t addr, size_t size) {
     extern uint8_t __chainloader_start__[], __chainloader_end__[];
     extern uint8_t __stack_bottom__[], __stack_top__[];
-    extern uint8_t __heap_start__[], __heap_end__[];
     extern uint8_t __start__[], __end__[];
     uint8_t *start = (uint8_t *)addr, *end = start + size;
 
     return overlaps_a(start, end, __chainloader_start__, __chainloader_end__) ||
     overlaps_a(start, end, __stack_bottom__, __stack_top__) ||
-    overlaps_a(start, end, __heap_start__, __heap_end__) ||
+    overlaps_a(start, end, (void *)0xC0000000, (void *)0xC03C0000) || /* framebuffer */
     overlaps_a(start, end, __start__, __end__);
 }
 
@@ -122,15 +121,9 @@ void hexdump(const void* data, size_t size, uintptr_t addrbase);
 
 __attribute__((noreturn)) void watchdog_reboot(void);
 __attribute__((noreturn)) void pmc_reboot(uint32_t scratch0);
-__attribute__((noreturn)) void reboot_to_fusee_primary(void);
-__attribute__((noreturn)) void reboot_to_sept(const void *tsec_fw, size_t tsec_fw_length, const void *stage2, size_t stage2_size);
-__attribute__((noreturn)) void reboot_to_iram_payload(void *payload, size_t payload_size);
+__attribute__((noreturn)) void reboot_to_self(void);
 __attribute__((noreturn)) void wait_for_button_and_reboot(void);
-void wait_for_button(void);
 
 __attribute__((noreturn)) void generic_panic(void);
-
-__attribute__((noreturn)) void fatal_error(const char *fmt, ...);
-
 
 #endif

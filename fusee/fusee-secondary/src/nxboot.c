@@ -411,6 +411,12 @@ uint32_t nxboot_main(void) {
         }
     }
     
+    if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_700) {
+        /* TODO: Detect when we have been loaded by sept-secondary, and thus have keys provided for us. */
+        static const uint8_t sept_secondary[0x0] = { /* TODO: link-time magic */ };
+        reboot_to_sept(tsec_fw, tsec_fw_size, sept_secondary, sizeof(sept_secondary));
+    }
+
     print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Loaded firmware from eMMC...\n");
 
     /* Get the TSEC keys. */
