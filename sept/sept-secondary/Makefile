@@ -6,10 +6,9 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
-TOPDIR	?= $(CURDIR)
+TOPDIR ?= $(CURDIR)
 
 AMS		:= $(TOPDIR)/../../
-
 include $(DEVKITARM)/base_rules
 
 AMSBRANCH := $(shell git symbolic-ref --short HEAD)
@@ -18,13 +17,6 @@ AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
 ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
     AMSREV := $(AMSREV)-dirty
 endif
-
-define _bin2o
-	bin2s $< | $(AS) -o $(@)
-	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _ | tr - _)`"_end[];" > `(echo $(<F) | tr . _ | tr - _)`.h
-	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _ | tr - _)`"[];" >> `(echo $(<F) | tr . _ | tr - _)`.h
-	echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _ | tr - _)`_size";" >> `(echo $(<F) | tr . _ | tr - _)`.h
-endef
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -37,13 +29,13 @@ TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src src/sdmmc src/lib src/lib/fatfs src/display
 DATA		:=	data
-INCLUDES	:=	include ../../common/include
+INCLUDES	:=	include  ../../common/include
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv4t -mtune=arm7tdmi -marm
-DEFINES :=	-D__BPMP__ -DFUSEE_STAGE2_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
+ARCH	:=	-march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
+DEFINES :=	-D__BPMP__ -DFUSEE_STAGE1_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
 
 CFLAGS	:= \
 	-g \
@@ -83,23 +75,16 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
 
-export KIPDIRS	:= $(AMS)/stratosphere/loader $(AMS)/stratosphere/pm $(AMS)/stratosphere/sm $(AMS)/stratosphere/boot $(AMS)/stratosphere/ams_mitm
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(AMS)/exosphere $(AMS)/exosphere/lp0fw $(AMS)/exosphere/rebootstub \
-			$(AMS)/thermosphere $(AMS)/fusee/fusee-primary $(AMS)/sept/sept-primary \
-			$(AMS)/sept/sept-secondary $(KIPDIRS)
+			$(AMS)/exosphere/rebootstub
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-KIPFILES 	:=	loader.kip pm.kip sm.kip ams_mitm.kip boot_100.kip boot_200.kip
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary.bin \
-				exosphere.bin lp0fw.bin rebootstub.bin thermosphere.bin splash_screen.bmp \
-				sept-primary.bin sept-secondary.enc \
-				$(KIPFILES)
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) rebootstub.bin
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -115,10 +100,10 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES_BIN	:=	$(addsuffix .o,$(subst -,_,$(BINFILES)))
+export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
 export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 export OFILES 		:=	$(OFILES_BIN) $(OFILES_SRC)
-export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(subst -,_,$(BINFILES))))
+export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
@@ -126,40 +111,24 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) clean all
-.PHONY: check_fusee_primary check_exosphere check_sept check_thermosphere check_stratosphere
+.PHONY: $(BUILD) clean all check_rebootstub
 
 #---------------------------------------------------------------------------------
-all: $(BUILD)
+all: check_rebootstub $(BUILD)
 
-check_fusee_primary:
-	@$(MAKE) -C $(AMS)/fusee/fusee-primary all
+check_rebootstub:
+	@$(MAKE) -C $(AMS)/exosphere/rebootstub all
 
-check_exosphere:
-	@$(MAKE) -C $(AMS)/exosphere all
-
-check_sept:
-	@$(MAKE) -C $(AMS)/sept all
-
-check_thermosphere:
-	@$(MAKE) -C $(AMS)/thermosphere all
-
-check_stratosphere:
-	@$(MAKE) -C $(AMS)/stratosphere all
-
-
-$(BUILD): check_fusee_primary check_exosphere check_sept check_thermosphere check_stratosphere
+$(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@$(MAKE) -C $(AMS)/fusee/fusee-primary clean
-	@$(MAKE) -C $(AMS)/exosphere clean
-	@$(MAKE) -C $(AMS)/thermosphere clean
-	@$(MAKE) -C $(AMS)/stratosphere clean
+	@$(MAKE) -C $(AMS)/exosphere/rebootstub clean
 	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
+
 
 #---------------------------------------------------------------------------------
 else
@@ -170,7 +139,11 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all	:	$(OUTPUT).bin
+all	:	$(OUTPUT).enc
+
+$(OUTPUT).enc	:	$(OUTPUT).bin
+	@python $(TOPDIR)/sept_sign.py $< $@
+	@echo built ... $(notdir $@)
 
 $(OUTPUT).bin	:	$(OUTPUT).elf
 	$(OBJCOPY) -S -O binary $< $@
@@ -188,32 +161,7 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
-fusee_primary.bin.o	fusee_primary_bin.h:	fusee-primary.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(_bin2o)
-    
-sept_primary.bin.o	sept_primary_bin.h:	sept-primary.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(_bin2o)
-    
-sept_secondary.enc.o	sept_secondary_enc.h:	sept-secondary.enc
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(_bin2o)
-    
 %.bin.o	%_bin.h:	%.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(bin2o)
-    
-%.bmp.o	%_bmp.h:	%.bmp
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(bin2o)
-
-%.kip.o	%_kip.h:	%.kip
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)

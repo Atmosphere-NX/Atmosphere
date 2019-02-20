@@ -1,4 +1,4 @@
-SUBFOLDERS := sept-primary
+SUBFOLDERS := sept-primary sept-secondary
 
 TOPTARGETS := all clean
 

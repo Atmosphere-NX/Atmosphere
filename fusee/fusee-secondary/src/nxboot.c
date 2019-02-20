@@ -50,6 +50,7 @@
 #define u8 uint8_t
 #define u32 uint32_t
 #include "exosphere_bin.h"
+#include "sept_secondary_enc.h"
 #include "lp0fw_bin.h"
 #include "lib/log.h"
 #undef u8
@@ -413,8 +414,7 @@ uint32_t nxboot_main(void) {
     
     if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_700) {
         /* TODO: Detect when we have been loaded by sept-secondary, and thus have keys provided for us. */
-        static const uint8_t sept_secondary[0x0] = { /* TODO: link-time magic */ };
-        reboot_to_sept(tsec_fw, tsec_fw_size, sept_secondary, sizeof(sept_secondary));
+        reboot_to_sept(tsec_fw, tsec_fw_size, sept_secondary_enc, sept_secondary_enc_size);
     }
 
     print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Loaded firmware from eMMC...\n");

@@ -73,10 +73,15 @@ dkms.conf
 *.nam
 *.til
 
+# KEYS file for sept-secondary.
+*.pyc
+sept/sept-secondary/KEYS.py
+
 .**/
 
 # NOTE: make sure to make exceptions to this pattern when needed!
 *.bin
+*.enc
 
 **/out
 **/build
