@@ -115,10 +115,6 @@ static void setup_env(void) {
 
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
-
-    /* Turn on the backlight after initializing the lfb */
-    /* to avoid flickering. */
-    display_backlight(true);
     
     /* Set display background color. */
     for (size_t i = 0; i < 1280 * 768 * 4; i += 4) {
@@ -127,6 +123,10 @@ static void setup_env(void) {
     
     /* Draw splash. */
     draw_splash((volatile uint32_t *)g_framebuffer);
+
+    /* Turn on the backlight after initializing the lfb */
+    /* to avoid flickering. */
+    display_backlight(true);
 
     /* Set up the exception handlers. */
     setup_exception_handlers();
