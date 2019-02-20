@@ -3,7 +3,11 @@ import sys
 from struct import pack as pk, unpack as up
 from Crypto.Cipher import AES
 from Crypto.Hash import CMAC
-import KEYS
+try:
+    import KEYS
+except ImportError:
+    import KEYS_template as KEYS
+    print('Warning: output will not work on 7.0.0+!')
 
 def shift_left_xor_rb(s):
     N = int(s.encode('hex'), 16)
