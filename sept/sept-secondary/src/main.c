@@ -21,6 +21,8 @@
 #include "di.h"
 #include "se.h"
 #include "pmc.h"
+#include "emc.h"
+#include "key_derivation.h"
 #include "timers.h"
 #include "fs_utils.h"
 #include "stage2.h"
@@ -151,9 +153,20 @@ int main(void) {
     
     /* Say hello. */
     print(SCREEN_LOG_LEVEL_MANDATORY, "Welcome to Atmosph\xe8re sept-secondary!\n");
-    while (true) { }
     
-    /* TODO: Derive keys. */
+    /* Derive keys. */
+    derive_7x_keys(g_tsec_key, g_tsec_root_key);
+    
+    /* Cleanup keys in memory. */
+    for (size_t i = 0; i < 0x10; i += 4) {
+        g_tsec_root_key[i/4] = 0xCCCCCCCC;
+        g_tsec_key[i/4] = 0xCCCCCCCC;
+    }
+    
+    /* Mark EMC scratch to say that sept has run. */
+    MAKE_EMC_REG(EMC_SCRATCH0) |= 0x80000000;
+    
+    while (true) { }
     
     /* TODO: Chainload to payload. */
     
