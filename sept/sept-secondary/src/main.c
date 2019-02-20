@@ -26,6 +26,7 @@
 #include "timers.h"
 #include "fs_utils.h"
 #include "stage2.h"
+#include "splash.h"
 #include "chainloader.h"
 #include "sdmmc/sdmmc.h"
 #include "lib/fatfs/ff.h"
@@ -118,6 +119,14 @@ static void setup_env(void) {
     /* Turn on the backlight after initializing the lfb */
     /* to avoid flickering. */
     display_backlight(true);
+    
+    /* Set display background color. */
+    for (size_t i = 0; i < 1280 * 768 * 4; i += 4) {
+        MAKE_REG32((uintptr_t)g_framebuffer + i) = 0xFF37394C;
+    }
+    
+    /* Draw splash. */
+    draw_splash((volatile uint32_t *)g_framebuffer);
 
     /* Set up the exception handlers. */
     setup_exception_handlers();
@@ -143,7 +152,7 @@ int main(void) {
     const char *stage2_path;
     stage2_args_t *stage2_args;
     uint32_t stage2_version = 0;
-    ScreenLogLevel log_level = SCREEN_LOG_LEVEL_MANDATORY;
+    ScreenLogLevel log_level = SCREEN_LOG_LEVEL_NONE;
     
     /* Extract keys from the security engine, which TSEC FW locked down. */
     exfiltrate_keys_and_reboot_if_needed();
@@ -153,10 +162,7 @@ int main(void) {
     
     /* Initialize the display, console, etc. */
     setup_env();
-    
-    /* Say hello. */
-    print(SCREEN_LOG_LEVEL_MANDATORY, "Welcome to Atmosph\xe8re sept-secondary!\n");
-    
+        
     /* Derive keys. */
     derive_7x_keys(g_tsec_key, g_tsec_root_key);
     
@@ -173,6 +179,7 @@ int main(void) {
     load_stage2();
 
     /* Setup argument data. */
+    log_level = SCREEN_LOG_LEVEL_MANDATORY;
     stage2_path = stage2_get_program_path();
     strcpy(g_chainloader_arg_data, stage2_path);
     stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1); /* May be unaligned. */
