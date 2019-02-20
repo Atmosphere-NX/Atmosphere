@@ -65,6 +65,8 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     Result rc;
+    
+    SetFirmwareVersionForLibnx();
 
     /* Initialize services we need (TODO: NCM) */
     rc = smInitialize();

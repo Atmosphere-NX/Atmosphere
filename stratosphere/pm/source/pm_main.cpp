@@ -85,6 +85,8 @@ void RegisterPrivilegedProcessesWithFs() {
 
 void __appInit(void) {
     Result rc;
+    
+    SetFirmwareVersionForLibnx();
 
     rc = smInitialize();
     if (R_FAILED(rc)) {
