@@ -21,6 +21,7 @@
 #include <malloc.h>
 
 #include <switch.h>
+#include <stratosphere/firmware_version.hpp>
 
 #include "creport_crash_report.hpp"
 
