@@ -83,7 +83,7 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
         }
         
         /* Clear the security engine state. */
-        for (size_t i = 0; i < 0x1000; i += 4) {
+        for (size_t i = 0; i < 0x840; i += 4) {
             MAKE_REG32((uintptr_t)(enc_se_state) + i) = 0xCCCCCCCC;
             MAKE_REG32((uintptr_t)(dec_se_state) + i) = 0xCCCCCCCC;
         }
@@ -140,6 +140,9 @@ static void exit_callback(int rc) {
 }
 
 int main(void) {
+    const char *stage2_path;
+    stage2_args_t *stage2_args;
+    uint32_t stage2_version = 0;
     ScreenLogLevel log_level = SCREEN_LOG_LEVEL_MANDATORY;
     
     /* Extract keys from the security engine, which TSEC FW locked down. */
@@ -166,9 +169,18 @@ int main(void) {
     /* Mark EMC scratch to say that sept has run. */
     MAKE_EMC_REG(EMC_SCRATCH0) |= 0x80000000;
     
-    while (true) { }
-    
-    /* TODO: Chainload to payload. */
+    /* Load the loader payload into DRAM. */
+    load_stage2();
+
+    /* Setup argument data. */
+    stage2_path = stage2_get_program_path();
+    strcpy(g_chainloader_arg_data, stage2_path);
+    stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1); /* May be unaligned. */
+    memcpy(&stage2_args->version, &stage2_version, 4);
+    memcpy(&stage2_args->log_level, &log_level, sizeof(log_level));
+    stage2_args->display_initialized = false;
+    strcpy(stage2_args->bct0, "");
+    g_chainloader_argc = 2;
     
     /* Wait a while. */
     mdelay(1000);

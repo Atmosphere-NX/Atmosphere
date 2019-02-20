@@ -98,6 +98,14 @@ int main(int argc, void **argv) {
 
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, u8"Welcome to Atmosphère Fusée Stage 2!\n");
     print(SCREEN_LOG_LEVEL_DEBUG, "Stage 2 executing from: %s\n", (const char *)argv[STAGE2_ARGV_PROGRAM_PATH]);
+    
+    /* Load BCT0 from SD if needed. */
+    if (strcmp(g_stage2_args->bct0, "") == 0) {
+        read_from_file(g_stage2_args->bct0, sizeof(g_stage2_args->bct0) - 1, "atmosphere/BCT.ini");
+        if (!read_from_file(g_stage2_args->bct0, sizeof(g_stage2_args->bct0) - 1, "atmosphere/BCT.ini")) {
+            fatal_error("Failed to read BCT0 from SD!\n");
+        }
+    }
 
     /* This will load all remaining binaries off of the SD. */
     load_payload(g_stage2_args->bct0);
@@ -106,10 +114,7 @@ int main(int argc, void **argv) {
 
     g_do_nxboot = loader_ctx->chainload_entrypoint == 0;
     if (g_do_nxboot) {
-        /* Display splash screen. */
-        display_splash_screen_bmp(loader_ctx->custom_splash_path, (void *)0xC0000000);
-        
-        print(SCREEN_LOG_LEVEL_MANDATORY, "Now performing nxboot.\n");
+        print(SCREEN_LOG_LEVEL_INFO, "Now performing nxboot.\n");
         uint32_t boot_memaddr = nxboot_main();
         /* Wait for the splash screen to have been displayed as long as it should be. */
         splash_screen_wait_delay();

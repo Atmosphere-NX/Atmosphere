@@ -25,59 +25,17 @@ const char *stage2_get_program_path(void) {
     return g_stage2_path;
 }
 
-static int stage2_ini_handler(void *user, const char *section, const char *name, const char *value) {
-    stage2_config_t *config = (stage2_config_t *)user;
-    uintptr_t x = 0;
-    if (strcmp(section, "stage1") == 0) {
-        if (strcmp(name, STAGE2_NAME_KEY) == 0) {
-            strncpy(config->path, value, sizeof(config->path) - 1);
-            config->path[sizeof(config->path) - 1]  = '\0';
-        } else if (strcmp(name, STAGE2_ADDRESS_KEY) == 0) {
-            /* Read in load address as a hex string. */
-            sscanf(value, "%x", &x);
-            config->load_address = x;
-            if (config->entrypoint == 0) {
-                config->entrypoint = config->load_address;
-            }
-        } else if (strcmp(name, STAGE2_ENTRYPOINT_KEY) == 0) {
-            /* Read in entrypoint as a hex string. */
-            sscanf(value, "%x", &x);
-            config->entrypoint = x;
-        } else {
-            return 0;
-        }
-    } else {
-        return 0;
-    }
-    return 1;
-}
-
-void load_stage2(const char *bct0) {
-    stage2_config_t config = {0};
+/* We get the luxury of assuming a constant filename/load address. */
+void load_stage2(void) {
     FILINFO info;
     size_t size;
     uintptr_t tmp_addr;
-
-    if (ini_parse_string(bct0, stage2_ini_handler, &config) < 0) {
-        fatal_error("Failed to parse BCT.ini!\n");
-    }
-
-    if (config.load_address == 0 || config.path[0] == '\x00') {
-        fatal_error("Failed to determine where to load stage2!\n");
-    }
-
-    if (strlen(config.path) + 1 + sizeof(stage2_args_t) > CHAINLOADER_ARG_DATA_MAX_SIZE) {
-        print(SCREEN_LOG_LEVEL_ERROR, "Stage2's path name is too big!\n");
-    }
-
-    if (!check_32bit_address_loadable(config.entrypoint)) {
-        fatal_error("Stage2's entrypoint is invalid!\n");
-    }
-
-    if (!check_32bit_address_loadable(config.load_address)) {
-        fatal_error("Stage2's load address is invalid!\n");
-    }
-
+    stage2_config_t config = {
+        .path = "sept/payload.bin",
+        .load_address = 0xF0000000,
+        .entrypoint = 0xF0000000,
+    };
+    
     print(SCREEN_LOG_LEVEL_DEBUG, "Stage 2 Config:\n");
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    File Path:    %s\n", config.path);
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    Load Address: 0x%08x\n", config.load_address);

@@ -149,7 +149,7 @@ int main(void) {
     
     /* Say hello. */
     print(SCREEN_LOG_LEVEL_MANDATORY, "Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
-    print(SCREEN_LOG_LEVEL_DEBUG, "Using color linear framebuffer at 0x%p!\n", g_framebuffer);    
+    print(SCREEN_LOG_LEVEL_DEBUG, "Using color linear framebuffer at 0x%p!\n", g_framebuffer);
     
     /* Load the loader payload into DRAM. */
     load_stage2(bct0);

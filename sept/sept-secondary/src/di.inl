@@ -128,7 +128,7 @@ static const cfg_op_t _display_config_2[94] = {
 };
 
 //DSI Init config.
-static const cfg_op_t _display_config_3[61] = { 
+static const cfg_op_t _display_config_3[60] = { 
     {DSI_WR_DATA, 0},
     {DSI_INT_ENABLE, 0},
     {DSI_INT_STATUS, 0},
@@ -137,7 +137,6 @@ static const cfg_op_t _display_config_3[61] = {
     {DSI_INIT_SEQ_DATA_1, 0},
     {DSI_INIT_SEQ_DATA_2, 0},
     {DSI_INIT_SEQ_DATA_3, 0},
-	{DSI_INIT_SEQ_DATA_15, 0},
     {DSI_DCS_CMDS, 0},
     {DSI_PKT_SEQ_0_LO, 0},
     {DSI_PKT_SEQ_1_LO, 0},
@@ -289,7 +288,7 @@ static const cfg_op_t _display_config_7[10] = {
 static const cfg_op_t _display_config_8[6] = {
     {0x18, 0},
     {2, 0xF3F10000},
-    {0x16, 0},
+    {0x16, 1},
     {0x18, 0},
     {0x18, 0x10010},
     {0x17, 0x300}
@@ -475,10 +474,10 @@ static const cfg_op_t _display_config_13[16] = {
     {DSI_PAD_CONTROL_1, 0},
     {DSI_PHY_TIMING_0, 0x6070601},
     {DSI_PHY_TIMING_1, 0x40A0E05},
-    {DSI_PHY_TIMING_2, 0x30118},
+    {DSI_PHY_TIMING_2, 0x30109},
     {DSI_BTA_TIMING, 0x190A14},
     {DSI_TIMEOUT_0, DSI_TIMEOUT_LRX(0x2000) | DSI_TIMEOUT_HTX(0xFFFF) },
-    {DSI_TIMEOUT_1, DSI_TIMEOUT_PR(0x1343) | DSI_TIMEOUT_TA(0x2000)},
+    {DSI_TIMEOUT_1, DSI_TIMEOUT_PR(0x765) | DSI_TIMEOUT_TA(0x2000)},
     {DSI_TO_TALLY, 0},
     {DSI_HOST_CONTROL, DSI_HOST_CONTROL_CRC_RESET | DSI_HOST_CONTROL_TX_TRIG_HOST | DSI_HOST_CONTROL_CS | DSI_HOST_CONTROL_ECC},
     {DSI_CONTROL, DSI_CONTROL_LANES(3) | DSI_CONTROL_HOST_ENABLE},

@@ -185,23 +185,30 @@ void config_se_brom()
 
 void nx_hwinit()
 {
-    volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
+    volatile tegra_car_t *car = car_get_regs();
     
-    /* This stuff was handled by whatever loaded us. */
+    /* Bootrom stuff we skipped by going through RCM. */
     config_se_brom();
     
     AHB_AHB_SPARE_REG_0 &= 0xFFFFFF9F;
     pmc->scratch49 = (((pmc->scratch49 >> 1) << 1) & 0xFFFFFFFD);
     
+    /* Apply the memory built-in self test workaround. */
     mbist_workaround();
     
+    /* Reboot SE. */
     clkrst_reboot(CARDEVICE_SE);
 
+    /* Initialize the fuse driver. */
     fuse_init();
 
+    /* Initialize the memory controller. */
     mc_enable();
-        
+
+    /* Configure oscillators. */
+    config_oscillators();
+    
     /* Disable pinmux tristate input clamping. */
     APB_MISC_PP_PINMUX_GLOBAL_0 = 0;
     

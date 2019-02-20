@@ -190,7 +190,6 @@
 #define DC_WIN_WIN_OPTIONS 0x700
 #define  H_DIRECTION  (1 <<  0)
 #define  V_DIRECTION  (1 <<  2)
-#define  SCAN_COLUMN  (1 <<  4)
 #define  COLOR_EXPAND (1 <<  6)
 #define  CSC_ENABLE   (1 << 18)
 #define  WIN_ENABLE   (1 << 30)
@@ -238,8 +237,6 @@
 #define  V_DDA_INC(x) (((x) & 0xffff) << 16)
 
 #define DC_WIN_LINE_STRIDE 0x70A
-#define LINE_STRIDE(x)	   (x)
-#define UV_LINE_STRIDE(x) (((x) & 0xffff) << 16)
 #define DC_WIN_DV_CONTROL 0x70E
 
 /* The following registers are A/B/C shadows of the 0xBC0/0xDC0/0xFC0 registers (see DISPLAY_WINDOW_HEADER). */
@@ -349,8 +346,6 @@
 #define  DSI_PAD_PREEMP_PU(x)     (((x) & 0x3) << 0)
 
 #define DSI_PAD_CONTROL_4 0x52
-
-#define DSI_INIT_SEQ_DATA_15 0x5F
 
 typedef struct _cfg_op_t
 {

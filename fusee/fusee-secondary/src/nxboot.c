@@ -38,6 +38,7 @@
 #include "flow.h"
 #include "timers.h"
 #include "key_derivation.h"
+#include "masterkey.h"
 #include "package1.h"
 #include "package2.h"
 #include "smmu.h"
@@ -47,6 +48,7 @@
 #include "exocfg.h"
 #include "display/video_fb.h"
 #include "lib/ini.h"
+#include "splash_screen.h"
 
 #define u8 uint8_t
 #define u32 uint32_t
@@ -419,7 +421,7 @@ uint32_t nxboot_main(void) {
         }
     }
 
-    print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Loaded firmware from eMMC...\n");
+    print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Loaded firmware from eMMC...\n");
 
     /* Get the TSEC keys. */
     uint8_t tsec_key[0x10] = {0};
@@ -428,7 +430,12 @@ uint32_t nxboot_main(void) {
         /* Detect whether we need to run sept-secondary in order to derive keys. */
         if (!get_and_clear_has_run_sept()) {
             reboot_to_sept(tsec_fw, tsec_fw_size, sept_secondary_enc, sept_secondary_enc_size);
+        } else {
+            if (mkey_detect_revision(fuse_get_retail_type() != 0) != 0) {
+                fatal_error("[NXBOOT]: Sept derived incorrect keys!\n");
+            }
         }
+        get_and_clear_has_run_sept();
     } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_620) {
         uint8_t tsec_keys[0x20] = {0};
         
@@ -444,6 +451,10 @@ uint32_t nxboot_main(void) {
             fatal_error("[NXBOOT]: Failed to get TSEC key!\n");
         }
     }
+    
+    //fatal_error("Ran sept!");
+    /* Display splash screen. */
+    display_splash_screen_bmp(loader_ctx->custom_splash_path, (void *)0xC0000000);
     
     /* Derive keydata. If on 7.0.0+, sept has already derived keys for us. */
     unsigned int keygen_type = 0;
@@ -528,10 +539,12 @@ uint32_t nxboot_main(void) {
             pmc->scratch1 = (uint32_t)warmboot_memaddr;
     }
 
-    print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Rebuilding package2...\n");
+    print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Rebuilding package2...\n");
     
     /* Parse stratosphere config. */
     nxboot_configure_stratosphere(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
+
+    print(SCREEN_LOG_LEVEL_INFO, u8"[NXBOOT]: Configured Stratosphere...\n");
 
     /* Patch package2, adding Thermosphère + custom KIPs. */
     package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);

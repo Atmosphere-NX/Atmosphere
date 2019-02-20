@@ -48,7 +48,6 @@ static const uint8_t AL16 new_master_kek_seed_7x[0x10] = {
 
 void derive_7x_keys(const void *tsec_key, void *tsec_root_key) {
     uint8_t AL16 work_buffer[0x10];
-    uint8_t AL16 master_kek[0x10];
 
     /* Set keyslot flags properly in preparation of derivation. */
     set_aes_keyslot_flags(0xE, 0x15);
@@ -61,15 +60,12 @@ void derive_7x_keys(const void *tsec_key, void *tsec_root_key) {
     se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, keyblob_seed_00, 0x10);
     decrypt_data_into_keyslot(0xF, 0xE, work_buffer, 0x10);
     
-    /* Derive the master kek. */
-    set_aes_keyslot(0xC, tsec_root_key, 0x10);
-    se_aes_ecb_decrypt_block(0xC, master_kek, 0x10, new_master_kek_seed_7x, 0x10);
-    
     /* Clear the SBK. */
     clear_aes_keyslot(0xE);
-
-    /* Set master kek. */
-    set_aes_keyslot(0xC, master_kek, 0x10);
+    
+    /* Derive the master kek. */
+    set_aes_keyslot(0xC, tsec_root_key, 0x10);
+    decrypt_data_into_keyslot(0xC, 0xC, new_master_kek_seed_7x, 0x10);
     
     /* Derive keys for exosphere. */
     decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
@@ -78,8 +74,7 @@ void derive_7x_keys(const void *tsec_key, void *tsec_root_key) {
     decrypt_data_into_keyslot(0xC, 0xC, masterkey_seed, 0x10);
     
     /* Clear master kek from memory. */
-    for (size_t i = 0; i < sizeof(master_kek); i++) {
-        master_kek[i]  = 0xCC;
+    for (size_t i = 0; i < sizeof(work_buffer); i++) {
         work_buffer[i] = 0xCC;
     }
 }

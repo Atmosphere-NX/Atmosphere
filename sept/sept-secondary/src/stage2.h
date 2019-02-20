@@ -50,6 +50,6 @@ typedef struct {
 } stage2_args_t;
 
 const char *stage2_get_program_path(void);
-void load_stage2(const char *bct0);
+void load_stage2(void);
 
 #endif

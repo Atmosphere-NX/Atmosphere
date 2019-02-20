@@ -111,7 +111,7 @@ void display_init()
 
     exec_cfg((uint32_t *)CAR_BASE, _display_config_1, 4);
     exec_cfg((uint32_t *)DI_BASE, _display_config_2, 94);
-    exec_cfg((uint32_t *)DSI_BASE, _display_config_3, 61);
+    exec_cfg((uint32_t *)DSI_BASE, _display_config_3, 60);
 
     udelay(10000);
     
@@ -149,8 +149,8 @@ void display_init()
 
     udelay(20000);
 
-    exec_cfg((uint32_t *)CAR_BASE, _display_config_6, 3);
     exec_cfg((uint32_t *)DSI_BASE, _display_config_5, 21);
+    exec_cfg((uint32_t *)CAR_BASE, _display_config_6, 3);
     
     MAKE_DI_REG(DC_DISP_DISP_CLOCK_CONTROL) = 4;
     exec_cfg((uint32_t *)DSI_BASE, _display_config_7, 10);
