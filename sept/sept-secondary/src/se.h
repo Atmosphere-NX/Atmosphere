@@ -203,6 +203,7 @@ void se_aes_256_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_si
 void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size);
 void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *iv);
+void se_aes_128_cbc_decrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 
 /* Hash API */
 void se_calculate_sha256(void *dst, const void *src, size_t src_size);
@@ -215,5 +216,11 @@ bool se_rsa2048_pss_verify(const void *signature, size_t signature_size, const v
 /* RNG API */
 void se_initialize_rng(unsigned int keyslot);
 void se_generate_random(unsigned int keyslot, void *dst, size_t size);
+
+/* SE context save API. */
+void se_generate_srk(unsigned int srkgen_keyslot);
+void se_set_in_context_save_mode(bool is_context_save_mode);
+void se_generate_random_key(unsigned int dst_keyslot, unsigned int rng_keyslot);
+void se_save_context(unsigned int srk_keyslot, unsigned int rng_keyslot, void *dst);
 
 #endif

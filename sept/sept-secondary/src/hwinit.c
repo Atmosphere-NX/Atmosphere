@@ -186,25 +186,22 @@ void config_se_brom()
 void nx_hwinit()
 {
     volatile tegra_car_t *car = car_get_regs();
+    volatile tegra_pmc_t *pmc = pmc_get_regs();
     
     /* This stuff was handled by whatever loaded us. */
-    /*
-        config_se_brom();
-        
-        AHB_AHB_SPARE_REG_0 &= 0xFFFFFF9F;
-        pmc->scratch49 = (((pmc->scratch49 >> 1) << 1) & 0xFFFFFFFD);
-        
-        mbist_workaround();
-        
-        clkrst_reboot(CARDEVICE_SE);
-
-        fuse_init();
-
-        mc_enable();
-
-        config_oscillators();
-    */
+    config_se_brom();
     
+    AHB_AHB_SPARE_REG_0 &= 0xFFFFFF9F;
+    pmc->scratch49 = (((pmc->scratch49 >> 1) << 1) & 0xFFFFFFFD);
+    
+    mbist_workaround();
+    
+    clkrst_reboot(CARDEVICE_SE);
+
+    fuse_init();
+
+    mc_enable();
+        
     /* Disable pinmux tristate input clamping. */
     APB_MISC_PP_PINMUX_GLOBAL_0 = 0;
     

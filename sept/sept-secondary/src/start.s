@@ -32,6 +32,11 @@ _start:
     adr r3, _start
     cmp r2, r3
     beq _relocation_loop_end
+    
+    /* If we are relocating, we are not rebooting to ourselves. Note that. */
+    ldr r0, =0x4003FFFC
+    mov r1, #0x0
+    str r1, [r0]
 
     ldr r4, =_relocation_loop_end
     mov r4, #0x1000

@@ -53,7 +53,8 @@ def main(argc, argv):
         return 1
     with open(argv[1], 'rb') as f:
         code = f.read()
-    assert (len(code) & 0xF) == 0
+    if len(code) & 0xF:
+        code += '\x00'*(0x10 - (len(code) & 0xF))
     # TODO: Support dev unit crypto
     with open(argv[2], 'wb') as f:
         f.write(sign_encrypt_code(code, KEYS.HOVI_SIG_KEY_PRD, KEYS.HOVI_ENC_KEY_PRD, KEYS.IV, 'THANKS_NVIDIA_<3'))

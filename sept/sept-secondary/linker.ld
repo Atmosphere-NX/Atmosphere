@@ -148,6 +148,7 @@ SECTIONS
         . = ALIGN(32);
         PROVIDE (__bss_end__ = ABSOLUTE(.));
     } >main :NONE
+    . = ALIGN(32);
     __end__ = ABSOLUTE(.) ;
 
     /* ==================

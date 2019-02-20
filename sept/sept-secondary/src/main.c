@@ -19,6 +19,8 @@
 #include "panic.h"
 #include "hwinit.h"
 #include "di.h"
+#include "se.h"
+#include "pmc.h"
 #include "timers.h"
 #include "fs_utils.h"
 #include "stage2.h"
@@ -33,6 +35,82 @@
 extern void (*__program_exit_callback)(int rc);
 
 static void *g_framebuffer;
+
+static uint32_t g_tsec_root_key[0x4] = {0};
+static uint32_t g_tsec_key[0x4] = {0};
+
+static bool has_rebooted(void) {
+    return MAKE_REG32(0x4003FFFC) == 0xFAFAFAFA;
+}
+
+static void set_has_rebooted(bool rebooted) {
+    MAKE_REG32(0x4003FFFC) = rebooted ? 0xFAFAFAFA : 0x00000000;
+}
+
+
+static void exfiltrate_keys_and_reboot_if_needed(void) {
+    volatile tegra_pmc_t *pmc = pmc_get_regs();
+    uint8_t *enc_se_state = (uint8_t *)0x4003E000;
+    uint8_t *dec_se_state = (uint8_t *)0x4003F000;
+    
+    if (!has_rebooted()) {
+
+        
+        /* Save the security engine context. */
+        se_get_regs()->_0x4 = 0x0;
+        se_set_in_context_save_mode(true);
+        se_save_context(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY, enc_se_state);
+        se_set_in_context_save_mode(false);
+        
+        /* Decrypt the security engine context. */
+        
+        /* Copy TSEC key from SOR1 registers. */
+        MAKE_REG32(0x4003FFC0) = pmc->secure_scratch4;
+        MAKE_REG32(0x4003FFC4) = pmc->secure_scratch5;
+        MAKE_REG32(0x4003FFC8) = pmc->secure_scratch6;
+        MAKE_REG32(0x4003FFCC) = pmc->secure_scratch7;
+        
+        /* TODO: Master kek */
+        MAKE_REG32(0x4003FFD0) = 0;
+        MAKE_REG32(0x4003FFD4) = 0;
+        MAKE_REG32(0x4003FFD8) = 0;
+        MAKE_REG32(0x4003FFDC) = 0;
+        
+        set_has_rebooted(true);
+        reboot_to_self();
+    } else {
+        /* Decrypt the security engine state. */
+        uint32_t ALIGN(16) context_key[4];
+        context_key[0] = pmc->secure_scratch4;
+        context_key[1] = pmc->secure_scratch5;
+        context_key[2] = pmc->secure_scratch6;
+        context_key[3] = pmc->secure_scratch7;
+        set_aes_keyslot(0xC, context_key, sizeof(context_key));
+        se_aes_128_cbc_decrypt(0xC, dec_se_state, 0x840, enc_se_state, 0x840);
+        
+        /* Copy out tsec key + tsec root key. */
+        for (size_t i = 0; i < 0x10; i += 4) {
+            g_tsec_key[i/4] = MAKE_REG32((uintptr_t)(dec_se_state) + 0x1B0 + i);
+            g_tsec_root_key[i/4] = MAKE_REG32((uintptr_t)(dec_se_state) + 0x1D0 + i);
+        }
+        
+        /* Clear the security engine state. */
+        for (size_t i = 0; i < 0x1000; i += 4) {
+            MAKE_REG32((uintptr_t)(enc_se_state) + i) = 0xCCCCCCCC;
+            MAKE_REG32((uintptr_t)(dec_se_state) + i) = 0xCCCCCCCC;
+        }
+        for (size_t i = 0; i < 4; i++) {
+            context_key[i] = 0xCCCCCCCC;
+        }
+        pmc->secure_scratch4 = 0xCCCCCCCC;
+        pmc->secure_scratch5 = 0xCCCCCCCC;
+        pmc->secure_scratch6 = 0xCCCCCCCC;
+        pmc->secure_scratch7 = 0xCCCCCCCC;
+    }
+    
+
+    
+}
 
 static void setup_env(void) {
     g_framebuffer = (void *)0xC0000000;
@@ -78,6 +156,9 @@ static void exit_callback(int rc) {
 
 int main(void) {
     ScreenLogLevel log_level = SCREEN_LOG_LEVEL_MANDATORY;
+    
+    /* Extract keys from the security engine, which TSEC FW locked down. */
+    exfiltrate_keys_and_reboot_if_needed();
     
     /* Override the global logging level. */
     log_set_log_level(log_level);
