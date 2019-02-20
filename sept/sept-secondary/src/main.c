@@ -183,7 +183,7 @@ int main(void) {
     g_chainloader_argc = 2;
     
     /* Wait a while. */
-    mdelay(1000);
+    mdelay(1500);
     
     /* Deinitialize the display, console, etc. */
     cleanup_env();
