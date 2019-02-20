@@ -61,21 +61,7 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
         se_set_in_context_save_mode(true);
         se_save_context(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY, enc_se_state);
         se_set_in_context_save_mode(false);
-        
-        /* Decrypt the security engine context. */
-        
-        /* Copy TSEC key from SOR1 registers. */
-        MAKE_REG32(0x4003FFC0) = pmc->secure_scratch4;
-        MAKE_REG32(0x4003FFC4) = pmc->secure_scratch5;
-        MAKE_REG32(0x4003FFC8) = pmc->secure_scratch6;
-        MAKE_REG32(0x4003FFCC) = pmc->secure_scratch7;
-        
-        /* TODO: Master kek */
-        MAKE_REG32(0x4003FFD0) = 0;
-        MAKE_REG32(0x4003FFD4) = 0;
-        MAKE_REG32(0x4003FFD8) = 0;
-        MAKE_REG32(0x4003FFDC) = 0;
-        
+                
         set_has_rebooted(true);
         reboot_to_self();
     } else {
@@ -107,9 +93,6 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
         pmc->secure_scratch6 = 0xCCCCCCCC;
         pmc->secure_scratch7 = 0xCCCCCCCC;
     }
-    
-
-    
 }
 
 static void setup_env(void) {
