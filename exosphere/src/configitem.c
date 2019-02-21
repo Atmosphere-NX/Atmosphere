@@ -80,6 +80,34 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
                 while (1) { }
             }
             break;
+        case CONFIGITEM_NEEDS_SHUTDOWN:
+            /* Force a shutdown, if requested. */
+            {
+                if (value == 0) {
+                    return 0;
+                }
+                /* Set reboot kind = warmboot. */
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x1;
+                /* Patch SDRAM init to perform an SVC immediately after second write */
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x634ull) = 0x2E38DFFF;
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x638ull) = 0x6001DC28;
+                /* Set SVC handler to jump to reboot stub in IRAM. */
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x520ull) = 0x4003F000;
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x53Cull) = 0x6000F208;
+                
+                /* Copy reboot stub payload. */
+                ams_map_irampage(0x4003F000);
+                for (unsigned int i = 0; i < rebootstub_bin_size; i += 4) {
+                    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_AMS_IRAM_PAGE) + i) = read32le(rebootstub_bin, i);
+                }
+                /* Tell rebootstub to shut down. */
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_AMS_IRAM_PAGE) + 0x10) = 0x0;
+                ams_unmap_irampage();
+                
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
+                while (1) { }
+            }
+            break;
         default:
             return 2;
     }
@@ -226,6 +254,10 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             break;
         case CONFIGITEM_NEEDS_REBOOT:
             /* UNOFFICIAL: The fact that we are executing means we aren't in the process of rebooting. */
+            *p_outvalue = 0;
+            break;
+        case CONFIGITEM_NEEDS_SHUTDOWN:
+            /* UNOFFICIAL: The fact that we are executing means we aren't in the process of shutting down. */
             *p_outvalue = 0;
             break;
         default:

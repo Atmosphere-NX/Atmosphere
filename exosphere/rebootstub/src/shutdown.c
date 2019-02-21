@@ -13,23 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+ 
+#include "utils.h"
+#include "i2c.h"
+#include "timer.h"
 
-#include <mutex>
-#include <switch.h>
-#include <stratosphere.hpp>
-#include "bpc_mitm_service.hpp"
-#include "bpcmitm_reboot_manager.hpp"
-
-void BpcMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx) {
-    /* Nothing to do here */
-}
-
-Result BpcMitmService::ShutdownSystem() {
-    /* Use exosphere + reboot to perform real shutdown, instead of fake shutdown. */
-    PerformShutdownSmc();
-    return 0;
-}
-
-Result BpcMitmService::RebootSystem() {
-    return BpcRebootManager::PerformReboot();
+void do_shutdown(void) {
+    /* Initialize i2c. */
+    i2c_init();
+    
+    /* Stop alarm, shutdown. */
+    i2c_stop_rtc_alarm();
+    i2c_send_shutdown_cmd();
+    
+    while (true) { }
 }

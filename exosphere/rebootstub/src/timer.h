@@ -13,23 +13,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+ 
+#ifndef EXOSPHERE_REBOOTSTUB_TIMER_H
+#define EXOSPHERE_REBOOTSTUB_TIMER_H
 
-#include <mutex>
-#include <switch.h>
-#include <stratosphere.hpp>
-#include "bpc_mitm_service.hpp"
-#include "bpcmitm_reboot_manager.hpp"
+#include "utils.h"
 
-void BpcMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx) {
-    /* Nothing to do here */
+#define TIMERUS_CNTR_1US_0 MAKE_REG32(0x60005010)
+
+static inline void timer_wait(uint32_t microseconds) {
+    uint32_t old_time = TIMERUS_CNTR_1US_0;
+    while (TIMERUS_CNTR_1US_0 - old_time <= microseconds) {
+        /* Spin-lock. */
+    }
 }
 
-Result BpcMitmService::ShutdownSystem() {
-    /* Use exosphere + reboot to perform real shutdown, instead of fake shutdown. */
-    PerformShutdownSmc();
-    return 0;
-}
+void spinlock_wait(uint32_t count);
 
-Result BpcMitmService::RebootSystem() {
-    return BpcRebootManager::PerformReboot();
-}
+#endif

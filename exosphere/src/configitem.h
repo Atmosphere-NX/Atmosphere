@@ -42,6 +42,7 @@ typedef enum {
     /* These are unofficial, for usage by Exosphere. */
     CONFIGITEM_EXOSPHERE_VERSION = 65000,
     CONFIGITEM_NEEDS_REBOOT = 65001,
+    CONFIGITEM_NEEDS_SHUTDOWN = 65002,
 } ConfigItem;
 
 #define REBOOT_KIND_NO_REBOOT     0
