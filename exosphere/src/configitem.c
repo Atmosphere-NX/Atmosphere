@@ -101,7 +101,7 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
                     MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_AMS_IRAM_PAGE) + i) = read32le(rebootstub_bin, i);
                 }
                 /* Tell rebootstub to shut down. */
-                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_AMS_IRAM_PAGE) + 0x10) = 0x0;
+                MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_AMS_IRAM_PAGE) + 0x20) = 0x0;
                 ams_unmap_irampage();
                 
                 MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
