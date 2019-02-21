@@ -1,4 +1,17 @@
 # Changelog
+## 0.8.4
++ Support for 7.0.0/7.0.1 was added.
+  + This is facilitated through a new payload, `sept`, which can be signed, encrypted, and then loaded by Nintendo's TSEC firmware.
+  + `sept` will derive the keys needed to boot new firmware, and then load `sept/payload.bin` off the SD card and jump to it.
++ Recognition of applications for override/mitm has been improved.
+  + Nintendo's official Title ID range (`0x0100000000000000`-`0x01FFFFFFFFFFFFFF`) is now enforced.
++ A deadlock condition was fixed involving libstratosphere mitm sysmodules.
++ `set.mitm` and `fs.mitm` were merged into a single `ams_mitm` sysmodule.
+  + This saves a process ID, allowing users to run one additional process up to the 0x40 process limit.
++ A `bpc.mitm` component was added, performing custom behavior on shutdown/reboot requests from `am` or applications.
+  + Performing a reboot from the reboot menu now reboots to atmosphere. This can be configured via `system_settings.ini`.
+  + Performing a shutdown from the reboot menu now works properly with AutoRCM, and does a real shutdown.
++ General system stability improvements to enhance the user's experience.
 ## 0.8.3
 + A custom warmboot firmware was implemented, which does not perform anti-downgrade fuse checks.
   + This fixes sleep mode when using a downgraded NAND.
