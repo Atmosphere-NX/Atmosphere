@@ -18,14 +18,10 @@
 .align 4
 .global _start
 _start:
-    adr r0, reboot_type
-    ldr r0, [r0]
+    ldr r0, reboot_type
     cmp r0, #0x0
     beq do_shutdown
     b jump_to_reboot_payload
-    nop
-    nop
-    nop
 reboot_type:
 .word 0x00000001
 
