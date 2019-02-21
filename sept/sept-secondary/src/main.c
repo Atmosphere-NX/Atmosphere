@@ -93,6 +93,11 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
         pmc->secure_scratch5 = 0xCCCCCCCC;
         pmc->secure_scratch6 = 0xCCCCCCCC;
         pmc->secure_scratch7 = 0xCCCCCCCC;
+        
+        /* Clear all keyslots except for SBK/SSK. */
+        for (size_t k = 0; k < 0xE; k++) {
+            clear_aes_keyslot(k);
+        }
     }
 }
 
