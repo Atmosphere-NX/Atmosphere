@@ -63,6 +63,11 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
         se_save_context(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY, enc_se_state);
         se_set_in_context_save_mode(false);
                 
+        /* Clear all keyslots. */
+        for (size_t k = 0; k < 0x10; k++) {
+            clear_aes_keyslot(k);
+        }
+                
         set_has_rebooted(true);
         reboot_to_self();
     } else {
