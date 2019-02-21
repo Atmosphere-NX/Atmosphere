@@ -18,11 +18,16 @@
 .align 4
 .global _start
 _start:
-    b crt0
+    ldr r0, reboot_type
+    cmp r0, #0x0
+    beq do_shutdown
+    b jump_to_reboot_payload
+reboot_type:
+.word 0x00000001
 
-.global crt0
-.type crt0, %function
-crt0:
+.global jump_to_reboot_payload
+.type jump_to_reboot_payload, %function
+jump_to_reboot_payload:
     @ clear all registers
     ldr r0, =0x52425430 @ RBT0
     mov r1, #0x0

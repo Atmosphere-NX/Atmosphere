@@ -13,23 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+ 
+#ifndef EXOSPHERE_REBOOTSTUB_UTILS_H
+#define EXOSPHERE_REBOOTSTUB_UTILS_H
 
-#include <mutex>
-#include <switch.h>
-#include <stratosphere.hpp>
-#include "bpc_mitm_service.hpp"
-#include "bpcmitm_reboot_manager.hpp"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-void BpcMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx) {
-    /* Nothing to do here */
-}
+#define BIT(n)      (1u   << (n))
+#define BITL(n)     (1ull << (n))
+#define MASK(n)     (BIT(n) - 1)
+#define MASKL(n)    (BITL(n) - 1)
+#define MASK2(a,b)  (MASK(a) & ~MASK(b))
+#define MASK2L(a,b) (MASKL(a) & ~MASKL(b))
 
-Result BpcMitmService::ShutdownSystem() {
-    /* Use exosphere + reboot to perform real shutdown, instead of fake shutdown. */
-    PerformShutdownSmc();
-    return 0;
-}
+#define MAKE_REG32(a)   (*(volatile uint32_t *)(a))
 
-Result BpcMitmService::RebootSystem() {
-    return BpcRebootManager::PerformReboot();
-}
+#define ALIGN(m)        __attribute__((aligned(m)))
+#define PACKED          __attribute__((packed))
+
+#define ALINLINE        __attribute__((always_inline))
+
+#endif
