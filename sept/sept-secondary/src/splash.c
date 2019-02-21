@@ -44,7 +44,7 @@ void draw_splash(volatile uint32_t *fb) {
     }
     
     /* Draw actual splash. */
-    const size_t x_res = 352;
+    const size_t x_res = 336;
     const size_t y_res = 392;
     const size_t x_start = (768 - x_res) / 2;
     const size_t y_start = (1280 - y_res) / 2;
