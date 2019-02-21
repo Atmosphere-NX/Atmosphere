@@ -57,8 +57,6 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
     uint8_t *dec_se_state = (uint8_t *)0x4003F000;
     
     if (!has_rebooted()) {
-
-        
         /* Save the security engine context. */
         se_get_regs()->_0x4 = 0x0;
         se_set_in_context_save_mode(true);
@@ -115,11 +113,6 @@ static void setup_env(void) {
 
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
-    
-    /* Set display background color. */
-    for (size_t i = 0; i < 1280 * 768 * 4; i += 4) {
-        MAKE_REG32((uintptr_t)g_framebuffer + i) = 0xFF37394C;
-    }
     
     /* Draw splash. */
     draw_splash((volatile uint32_t *)g_framebuffer);
