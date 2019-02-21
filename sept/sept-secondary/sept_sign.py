@@ -61,7 +61,7 @@ def main(argc, argv):
         code += '\x00'*(0x10 - (len(code) & 0xF))
     # TODO: Support dev unit crypto
     with open(argv[2], 'wb') as f:
-        f.write(sign_encrypt_code(code, KEYS.HOVI_SIG_KEY_PRD, KEYS.HOVI_ENC_KEY_PRD, KEYS.IV, 'THANKS_NVIDIA_<3'))
+        f.write(sign_encrypt_code(code, KEYS.HOVI_SIG_KEY_PRD, KEYS.HOVI_ENC_KEY_PRD, KEYS.HOVI_ENC_KEY_IV1, 'THANKS_NVIDIA_<3'))
     return 0
         
 if __name__ == '__main__':
