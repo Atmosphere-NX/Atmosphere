@@ -6,6 +6,8 @@
 + Recognition of applications for override/mitm has been improved.
   + Nintendo's official Title ID range (`0x0100000000000000`-`0x01FFFFFFFFFFFFFF`) is now enforced.
 + A deadlock condition was fixed involving libstratosphere mitm sysmodules.
++ Kernel patches for JIT support were added (Thanks, @m4xw!).
+  + These loosen restrictions on caller process in svcControlCodeMemory.
 + `set.mitm` and `fs.mitm` were merged into a single `ams_mitm` sysmodule.
   + This saves a process ID, allowing users to run one additional process up to the 0x40 process limit.
 + A `bpc.mitm` component was added, performing custom behavior on shutdown/reboot requests from `am` or applications.
