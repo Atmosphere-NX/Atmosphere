@@ -65,7 +65,7 @@ __attribute__((noreturn)) void pmc_reboot(uint32_t scratch0) {
     }
 }
 
-__attribute__((noreturn)) void reboot_to_self(void) {
+void prepare_for_reboot_to_self(void) {
     /* Patch SDRAM init to perform an SVC immediately after second write */
     APBDEV_PMC_SCRATCH45_0 = 0x2E38DFFF;
     APBDEV_PMC_SCRATCH46_0 = 0x6001DC28;
@@ -77,6 +77,11 @@ __attribute__((noreturn)) void reboot_to_self(void) {
     for (size_t i = 0; i < rebootstub_bin_size; i += sizeof(uint32_t)) {
         write32le((void *)0x4003F000, i, read32le(rebootstub_bin, i));
     }
+}
+
+__attribute__((noreturn)) void reboot_to_self(void) {
+    /* Prep IRAM for reboot. */
+    prepare_for_reboot_to_self();
     
     /* Trigger warm reboot. */
     pmc_reboot(1 << 0);

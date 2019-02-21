@@ -57,6 +57,10 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
     uint8_t *dec_se_state = (uint8_t *)0x4003F000;
     
     if (!has_rebooted()) {
+        /* Prepare for a reboot before doing anything else. */
+        prepare_for_reboot_to_self();
+        set_has_rebooted(true);
+        
         /* Save the security engine context. */
         se_get_regs()->_0x4 = 0x0;
         se_set_in_context_save_mode(true);
@@ -67,8 +71,7 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
         for (size_t k = 0; k < 0x10; k++) {
             clear_aes_keyslot(k);
         }
-                
-        set_has_rebooted(true);
+        
         reboot_to_self();
     } else {
         /* Decrypt the security engine state. */
