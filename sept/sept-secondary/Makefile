@@ -124,6 +124,7 @@ ifeq ($(strip $(SEPT_ENC_PATH)),)
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 else
+	@touch $(TOPDIR)/sept-secondary.bin
 	@cp $(SEPT_ENC_PATH) $(TOPDIR)/sept-secondary.enc
 endif
 
