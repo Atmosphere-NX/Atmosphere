@@ -120,8 +120,12 @@ check_rebootstub:
 	@$(MAKE) -C $(AMS)/exosphere/rebootstub all
 
 $(BUILD):
+ifeq ($(strip $(SEPT_ENC_PATH)),)
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+else
+	@cp $(SEPT_ENC_PATH) $(TOPDIR)/sept-secondary.enc
+endif
 
 #---------------------------------------------------------------------------------
 clean:
