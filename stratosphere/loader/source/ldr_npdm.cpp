@@ -63,16 +63,21 @@ FILE *NpdmUtils::OpenNpdm(u64 title_id) {
     if ((ecs = ContentManagement::GetExternalContentSource(title_id)) != nullptr) {
         return OpenNpdmFromECS(ecs);
     }
-
-    if (ContentManagement::ShouldOverrideContents(title_id)) {
-        if (ContentManagement::ShouldReplaceWithHBL(title_id)) {
-            return OpenNpdmFromHBL();
-        }
+    
+    /* First, check HBL. */
+    if (ContentManagement::ShouldOverrideContentsWithHBL(title_id)) {
+        return OpenNpdmFromHBL();
+    }
+    
+    /* Next, check other override. */
+    if (ContentManagement::ShouldOverrideContentsWithSD(title_id)) {
         FILE *f_out = OpenNpdmFromSdCard(title_id);
         if (f_out != NULL) {
             return f_out;
         }
     }
+    
+    /* Last resort: real exefs. */
     return OpenNpdmFromExeFS();
 }
 
@@ -193,8 +198,7 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
     info->acid->title_id_range_max = tid;
     info->aci0->title_id = tid;
     
-    if (ContentManagement::ShouldOverrideContents(tid) && ContentManagement::ShouldReplaceWithHBL(tid) 
-        && R_SUCCEEDED(LoadNpdmInternal(OpenNpdmFromExeFS(), &g_original_npdm_cache))) {
+    if (ContentManagement::ShouldOverrideContentsWithHBL(tid) && R_SUCCEEDED(LoadNpdmInternal(OpenNpdmFromExeFS(), &g_original_npdm_cache))) {
         NpdmInfo *original_info = &g_original_npdm_cache.info;
         /* Fix pool partition. */
         if (kernelAbove500()) {

@@ -38,10 +38,26 @@ static bool g_has_initialized_fs_dev = false;
 /* Default to Key R, hold disables override, HBL at atmosphere/hbl.nsp. */
 static bool g_mounted_hbl_nsp = false;
 static char g_hbl_sd_path[FS_MAX_PATH+1] = "@Sdcard:/atmosphere/hbl.nsp\x00";
-static u64 g_override_key_combination = KEY_R;
-static bool g_override_by_default = true;
-static u64 g_override_hbl_tid = 0x010000000000100D;
-static bool g_override_any_app = false;
+
+static OverrideKey g_default_override_key = {
+    .key_combination = KEY_R,
+    .override_by_default = true
+};
+
+struct HblOverrideConfig {
+    OverrideKey override_key;
+    u64 title_id;
+    bool override_any_app;
+};
+
+static HblOverrideConfig g_hbl_override_config = {
+    .override_key = {
+        .key_combination = KEY_R,
+        .override_by_default = true
+    },
+    .title_id = 0x010000000000100D,
+    .override_any_app = false
+};
 
 /* Static buffer for loader.ini contents at runtime. */
 static char g_config_ini_data[0x800];
@@ -62,7 +78,7 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
         RefreshConfigurationData();
     }
     
-    if (ShouldOverrideContents(tid) && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
+    if (ShouldOverrideContentsWithSD(tid) && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
         return 0x0;
     }
         
@@ -204,72 +220,100 @@ void ContentManagement::SetCreatedTitle(u64 tid) {
     }
 }
 
+static OverrideKey ParseOverrideKey(const char *value) {
+    OverrideKey cfg;
+    
+    /* Parse on by default. */
+    if (value[0] == '!') {
+        cfg.override_by_default = true;
+        value++;
+    } else {
+        cfg.override_by_default = false;
+    }
+    
+    /* Parse key combination. */
+    if (strcasecmp(value, "A") == 0) {
+        cfg.key_combination = KEY_A;
+    } else if (strcasecmp(value, "B") == 0) {
+        cfg.key_combination = KEY_B;
+    } else if (strcasecmp(value, "X") == 0) {
+        cfg.key_combination = KEY_X;
+    } else if (strcasecmp(value, "Y") == 0) {
+        cfg.key_combination = KEY_Y;
+    } else if (strcasecmp(value, "LS") == 0) {
+        cfg.key_combination = KEY_LSTICK;
+    } else if (strcasecmp(value, "RS") == 0) {
+        cfg.key_combination = KEY_RSTICK;
+    } else if (strcasecmp(value, "L") == 0) {
+        cfg.key_combination = KEY_L;
+    } else if (strcasecmp(value, "R") == 0) {
+        cfg.key_combination = KEY_R;
+    } else if (strcasecmp(value, "ZL") == 0) {
+        cfg.key_combination = KEY_ZL;
+    } else if (strcasecmp(value, "ZR") == 0) {
+        cfg.key_combination = KEY_ZR;
+    } else if (strcasecmp(value, "PLUS") == 0) {
+        cfg.key_combination = KEY_PLUS;
+    } else if (strcasecmp(value, "MINUS") == 0) {
+        cfg.key_combination = KEY_MINUS;
+    } else if (strcasecmp(value, "DLEFT") == 0) {
+        cfg.key_combination = KEY_DLEFT;
+    } else if (strcasecmp(value, "DUP") == 0) {
+        cfg.key_combination = KEY_DUP;
+    } else if (strcasecmp(value, "DRIGHT") == 0) {
+        cfg.key_combination = KEY_DRIGHT;
+    } else if (strcasecmp(value, "DDOWN") == 0) {
+        cfg.key_combination = KEY_DDOWN;
+    } else if (strcasecmp(value, "SL") == 0) {
+        cfg.key_combination = KEY_SL;
+    } else if (strcasecmp(value, "SR") == 0) {
+        cfg.key_combination = KEY_SR;
+    } else {
+        cfg.key_combination = 0;
+    }
+    
+    return cfg;
+}
+
 static int LoaderIniHandler(void *user, const char *section, const char *name, const char *value) {
     /* Taken and modified, with love, from Rajkosto's implementation. */
-    if (strcasecmp(section, "config") == 0) {
-        if (strcasecmp(name, "hbl_tid") == 0) {
+    if (strcasecmp(section, "hbl_config") == 0) {
+        if (strcasecmp(name, "title_id") == 0) {
             if (strcasecmp(value, "app") == 0) {
-                g_override_any_app = true;
+                g_hbl_override_config.override_any_app = true;
             }
             else {
                 u64 override_tid = strtoul(value, NULL, 16);
                 if (override_tid != 0) {
-                    g_override_hbl_tid = override_tid;
+                    g_hbl_override_config.title_id = override_tid;
                 }
             }
-        } else if (strcasecmp(name, "hbl_path") == 0) {
+        } else if (strcasecmp(name, "path") == 0) {
             while (*value == '/' || *value == '\\') {
                 value++;
             }
             snprintf(g_hbl_sd_path, FS_MAX_PATH, "@Sdcard:/%s", value);
             g_hbl_sd_path[FS_MAX_PATH] = 0;
         } else if (strcasecmp(name, "override_key") == 0) {
-            if (value[0] == '!') {
-                g_override_by_default = true;
-                value++;
-            } else {
-                g_override_by_default = false;
-            }
-            
-            if (strcasecmp(value, "A") == 0) {
-                g_override_key_combination = KEY_A;
-            } else if (strcasecmp(value, "B") == 0) {
-                g_override_key_combination = KEY_B;
-            } else if (strcasecmp(value, "X") == 0) {
-                g_override_key_combination = KEY_X;
-            } else if (strcasecmp(value, "Y") == 0) {
-                g_override_key_combination = KEY_Y;
-            } else if (strcasecmp(value, "LS") == 0) {
-                g_override_key_combination = KEY_LSTICK;
-            } else if (strcasecmp(value, "RS") == 0) {
-                g_override_key_combination = KEY_RSTICK;
-            } else if (strcasecmp(value, "L") == 0) {
-                g_override_key_combination = KEY_L;
-            } else if (strcasecmp(value, "R") == 0) {
-                g_override_key_combination = KEY_R;
-            } else if (strcasecmp(value, "ZL") == 0) {
-                g_override_key_combination = KEY_ZL;
-            } else if (strcasecmp(value, "ZR") == 0) {
-                g_override_key_combination = KEY_ZR;
-            } else if (strcasecmp(value, "PLUS") == 0) {
-                g_override_key_combination = KEY_PLUS;
-            } else if (strcasecmp(value, "MINUS") == 0) {
-                g_override_key_combination = KEY_MINUS;
-            } else if (strcasecmp(value, "DLEFT") == 0) {
-                g_override_key_combination = KEY_DLEFT;
-            } else if (strcasecmp(value, "DUP") == 0) {
-                g_override_key_combination = KEY_DUP;
-            } else if (strcasecmp(value, "DRIGHT") == 0) {
-                g_override_key_combination = KEY_DRIGHT;
-            } else if (strcasecmp(value, "DDOWN") == 0) {
-                g_override_key_combination = KEY_DDOWN;
-            } else if (strcasecmp(value, "SL") == 0) {
-                g_override_key_combination = KEY_SL;
-            } else if (strcasecmp(value, "SR") == 0) {
-                g_override_key_combination = KEY_SR;
-            } else {
-                g_override_key_combination = 0;
-            }
+            g_hbl_override_config.override_key = ParseOverrideKey(value);
+        }
+    } else if (strcasecmp(section, "default_config") == 0) {
+        if (strcasecmp(name, "override_key") == 0) {
+            g_default_override_key = ParseOverrideKey(value);
+        }
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+static int LoaderTitleSpecificIniHandler(void *user, const char *section, const char *name, const char *value) {
+    /* We'll output an override key when relevant. */
+    OverrideKey *user_cfg = reinterpret_cast<OverrideKey *>(user);
+    
+    if (strcasecmp(section, "override_config") == 0) {
+        if (strcasecmp(name, "override_key") == 0) {
+            *user_cfg = ParseOverrideKey(value);
         }
     } else {
         return 0;
@@ -309,18 +353,56 @@ void ContentManagement::TryMountSdCard() {
     }
 }
 
-bool ContentManagement::ShouldReplaceWithHBL(u64 tid) {
-    return g_mounted_hbl_nsp && ((g_override_any_app && IsApplicationTid(tid)) || (!g_override_any_app && tid == g_override_hbl_tid));
+static bool IsHBLTitleId(u64 tid) {
+    return ((g_hbl_override_config.override_any_app && IsApplicationTid(tid)) || (!g_hbl_override_config.override_any_app && tid == g_hbl_override_config.title_id));
 }
 
-bool ContentManagement::ShouldOverrideContents(u64 tid) {
-    if (tid >= 0x0100000000001000 && HasCreatedTitle(0x0100000000001000)) {
-        u64 kDown = 0;
-        bool keys_triggered = (R_SUCCEEDED(HidManagement::GetKeysDown(&kDown)) && ((kDown & g_override_key_combination) != 0));
-        return g_has_initialized_fs_dev && (g_override_by_default ^ keys_triggered);
+OverrideKey ContentManagement::GetTitleOverrideKey(u64 tid) {
+    OverrideKey cfg = g_default_override_key;
+    char path[FS_MAX_PATH+1] = {0};
+    snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/config.ini", tid); 
+    
+    
+    FILE *config = fopen(path, "r");
+    if (config != NULL) {
+        ON_SCOPE_EXIT { fclose(config); };
+
+        /* Parse current title ini. */
+        ini_parse_file(config, LoaderTitleSpecificIniHandler, &cfg);
+    }
+    
+    return cfg;
+}
+
+static bool ShouldOverrideContents(OverrideKey *cfg) {
+    u64 kDown = 0;
+    bool keys_triggered = (R_SUCCEEDED(HidManagement::GetKeysDown(&kDown)) && ((kDown & cfg->key_combination) != 0));
+    return g_has_initialized_fs_dev && (cfg->override_by_default ^ keys_triggered);
+}
+
+bool ContentManagement::ShouldOverrideContentsWithHBL(u64 tid) {
+    if (g_mounted_hbl_nsp && tid >= 0x0100000000001000 && HasCreatedTitle(0x0100000000001000)) {
+        /* Return whether we should override contents with HBL. */
+        return IsHBLTitleId(tid) && ShouldOverrideContents(&g_hbl_override_config.override_key);
     } else {
-        /* Always redirect before qlaunch. */
-        return g_has_initialized_fs_dev;
+        /* Don't override if we failed to mount HBL or haven't launched qlaunch. */
+        return false;
+    }
+}
+
+bool ContentManagement::ShouldOverrideContentsWithSD(u64 tid) {
+    if (g_has_initialized_fs_dev) {
+        if (tid >= 0x0100000000001000 && HasCreatedTitle(0x0100000000001000)) {
+            /* Check whether we should override with non-HBL. */
+            OverrideKey title_cfg = GetTitleOverrideKey(tid);
+            return ShouldOverrideContents(&title_cfg);
+        } else {
+            /* Always redirect before qlaunch. */
+            return true;
+        }
+    } else {
+        /* Never redirect before we can do so. */
+        return false;
     }
 }
 

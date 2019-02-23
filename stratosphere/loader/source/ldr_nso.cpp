@@ -71,11 +71,14 @@ FILE *NsoUtils::OpenNso(unsigned int index, u64 title_id) {
     if ((ecs = ContentManagement::GetExternalContentSource(title_id)) != nullptr) {
         return OpenNsoFromECS(index, ecs);
     }
+    
+    /* First, check HBL. */
+    if (ContentManagement::ShouldOverrideContentsWithHBL(title_id)) {
+        return OpenNsoFromHBL(index);
+    }
 
-    if (ContentManagement::ShouldOverrideContents(title_id)) {
-        if (ContentManagement::ShouldReplaceWithHBL(title_id)) {
-            return OpenNsoFromHBL(index);
-        }
+    /* Next, check secondary override. */
+    if (ContentManagement::ShouldOverrideContentsWithSD(title_id)) {
         FILE *f_out = OpenNsoFromSdCard(index, title_id);
         if (f_out != NULL) {
             return f_out;
@@ -83,6 +86,8 @@ FILE *NsoUtils::OpenNso(unsigned int index, u64 title_id) {
             return NULL;
         }
     }
+    
+    /* Finally, default to exefs. */
     return OpenNsoFromExeFS(index);
 }
 
