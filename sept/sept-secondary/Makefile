@@ -124,15 +124,15 @@ ifeq ($(strip $(SEPT_ENC_PATH)),)
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 else
-	@touch $(TOPDIR)/sept-secondary.bin
-	@cp $(SEPT_ENC_PATH) $(TOPDIR)/sept-secondary.enc
+	@touch $(TOPDIR)/$(TARGET).bin
+	@cp $(SEPT_ENC_PATH) $(TOPDIR)/$(TARGET).enc
 endif
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(AMS)/exosphere/rebootstub clean
-	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
+	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).enc $(TARGET).elf
 
 
 #---------------------------------------------------------------------------------
