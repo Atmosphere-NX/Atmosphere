@@ -37,6 +37,11 @@ enum BisStorageId : u32 {
     BisStorageId_SystemProperPartition = 33,
 };
 
+struct OverrideKey {
+    u64 key_combination;
+    bool override_by_default;
+};
+
 class Utils {
     public:
         static bool IsSdInitialized();
@@ -72,6 +77,8 @@ class Utils {
         
         static bool IsHidAvailable();
         static Result GetKeysDown(u64 *keys);
+        
+        static OverrideKey GetTitleOverrideKey(u64 tid);
         static bool HasOverrideButton(u64 tid);
         
         /* Settings! */
