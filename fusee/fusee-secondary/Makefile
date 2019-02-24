@@ -159,6 +159,7 @@ clean:
 	@$(MAKE) -C $(AMS)/exosphere clean
 	@$(MAKE) -C $(AMS)/thermosphere clean
 	@$(MAKE) -C $(AMS)/stratosphere clean
+	@$(MAKE) -C $(AMS)/sept clean
 	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
 
 #---------------------------------------------------------------------------------
