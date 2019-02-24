@@ -587,13 +587,13 @@ OverrideKey Utils::GetTitleOverrideKey(u64 tid) {
     snprintf(path, FS_MAX_PATH, "/atmosphere/titles/%016lx/config.ini", tid); 
     FsFile cfg_file;
     
-    if (fsFsOpenFile(&g_sd_filesystem, path, FS_OPEN_READ, &cfg_file)) {
+    if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, path, FS_OPEN_READ, &cfg_file))) {
         ON_SCOPE_EXIT { fsFileClose(&cfg_file); };
         
         size_t config_file_size = 0x20000;
         fsFileGetSize(&cfg_file, &config_file_size);
         
-        char *config_buf = reinterpret_cast<char *>(calloc(1, config_file_size));
+        char *config_buf = reinterpret_cast<char *>(calloc(1, config_file_size + 1));
         if (config_buf != NULL) {
             ON_SCOPE_EXIT { free(config_buf); };
             
