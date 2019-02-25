@@ -76,7 +76,7 @@ _metadata:
 .word (_crt0 - _start)
 .word (_content_headers - _start)
 .word (_content_headers_end - _content_headers) / 0x20 /* Number of content headers */
-.word 0x00010007 /* Maximum known supported HOS version: 7.0.1 */
+.word ((ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR << 24) | (ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR << 16) | (ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO << 8) | (0x0))
 .word ((ATMOSPHERE_RELEASE_VERSION_MAJOR << 24) | (ATMOSPHERE_RELEASE_VERSION_MINOR << 16) | (ATMOSPHERE_RELEASE_VERSION_MICRO << 8) | (0x0))
 #define TO_WORD(x) TO_WORD_(x)
 #define TO_WORD_(x) 0x##x
