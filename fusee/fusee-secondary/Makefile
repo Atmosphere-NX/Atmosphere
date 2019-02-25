@@ -13,7 +13,8 @@ AMS		:= $(TOPDIR)/../../
 include $(DEVKITARM)/base_rules
 
 AMSBRANCH := $(shell git symbolic-ref --short HEAD)
-AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
+AMSHASH := $(shell git rev-parse --short HEAD)
+AMSREV := $(AMSBRANCH)-$(AMSHASH)
 
 ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
     AMSREV := $(AMSREV)-dirty
@@ -43,7 +44,7 @@ INCLUDES	:=	include ../../common/include
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv4t -mtune=arm7tdmi -marm
-DEFINES :=	-D__BPMP__ -DFUSEE_STAGE2_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
+DEFINES :=	-D__BPMP__ -DFUSEE_STAGE2_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\" -DATMOSPHERE_GIT_HASH=$(AMSHASH)
 
 CFLAGS	:= \
 	-g \
@@ -61,7 +62,7 @@ CFLAGS	+=	$(INCLUDE)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
-ASFLAGS	:=	-g $(ARCH)
+ASFLAGS	:=	-g $(ARCH) $(INCLUDE) $(DEFINES)
 LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=

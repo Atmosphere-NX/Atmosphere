@@ -1,6 +1,7 @@
 TOPTARGETS := all clean dist
 AMSBRANCH := $(shell git symbolic-ref --short HEAD)
-AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
+AMSHASH := $(shell git rev-parse --short HEAD)
+AMSREV := $(AMSBRANCH)-$(AMSHASH)
 
 ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
     AMSREV := $(AMSREV)-dirty
