@@ -32,6 +32,8 @@ class DmntCheatManager {
         static void ContinueCheatProcess();
     public:;
         static bool GetHasActiveCheatProcess();
+        static Handle GetCheatProcessEventHandle();
+        static Result GetCheatProcessMetadata(CheatProcessMetadata *out);
         
         static void InitializeCheatManager();
 };

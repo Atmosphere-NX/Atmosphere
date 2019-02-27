@@ -21,6 +21,8 @@
 static HosMutex g_cheat_lock;
 static HosThread g_detect_thread, g_vm_thread;
 
+static IEvent *g_cheat_process_event;
+
 static CheatProcessMetadata g_cheat_process_metadata = {0};
 static Handle g_cheat_process_debug_hnd = 0;
 
@@ -29,6 +31,7 @@ void DmntCheatManager::CloseActiveCheatProcess() {
         svcCloseHandle(g_cheat_process_debug_hnd);
         g_cheat_process_debug_hnd = 0;
         g_cheat_process_metadata = (CheatProcessMetadata){0};
+        g_cheat_process_event->Signal();
     }
 }
 
@@ -157,6 +160,9 @@ void DmntCheatManager::OnNewApplicationLaunch() {
     
     /* Continue debug events, etc. */
     ContinueCheatProcess();
+    
+    /* Signal to our fans. */
+    g_cheat_process_event->Signal();
 }
 
 void DmntCheatManager::DetectThread(void *arg) {
@@ -198,7 +204,26 @@ bool DmntCheatManager::GetHasActiveCheatProcess() {
     return HasActiveCheatProcess();
 }
 
+Handle DmntCheatManager::GetCheatProcessEventHandle() {
+    return g_cheat_process_event->GetHandle();
+}
+
+Result DmntCheatManager::GetCheatProcessMetadata(CheatProcessMetadata *out) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (HasActiveCheatProcess()) {
+        *out = g_cheat_process_metadata;
+        return 0;
+    }
+    
+    /* TODO: Decide on a set of return values... */
+    return 0x20F;
+}
+
 void DmntCheatManager::InitializeCheatManager() {
+    /* Create cheat process detection event. */
+    g_cheat_process_event = CreateWriteOnlySystemEvent();
+    
     /* Spawn application detection thread, spawn cheat vm thread. */
     if (R_FAILED(g_detect_thread.Initialize(&DmntCheatManager::DetectThread, nullptr, 0x4000, 28))) {
         std::abort();

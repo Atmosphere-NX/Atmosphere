@@ -16,20 +16,18 @@
  
 #include <switch.h>
 #include "dmnt_cheat_service.hpp"
+#include "dmnt_cheat_manager.hpp"
 
 void DmntCheatService::HasCheatProcess(Out<bool> out) {
-    /* TODO */
-    std::abort();
+    out.SetValue(DmntCheatManager::GetHasActiveCheatProcess());
 }
 
 void DmntCheatService::GetCheatProcessEvent(Out<CopiedHandle> out_event) {
-    /* TODO */
-    std::abort();
+    out_event.SetValue(DmntCheatManager::GetCheatProcessEventHandle());
 }
 
 Result DmntCheatService::GetCheatProcessMetadata(Out<CheatProcessMetadata> out_metadata) {
-    /* TODO */
-    return 0xF601;
+    return DmntCheatManager::GetCheatProcessMetadata(out_metadata.GetPointer());
 }
 
 
