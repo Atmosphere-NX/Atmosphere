@@ -24,11 +24,12 @@ struct MemoryRegionExtents {
 };
 
 struct CheatProcessMetadata {
+    u64 process_id;
     MemoryRegionExtents main_nso_extents;
     MemoryRegionExtents heap_extents;
     MemoryRegionExtents alias_extents;
     MemoryRegionExtents address_space_extents;
-    u64 main_nso_build_id[4];
+    u8 main_nso_build_id[0x20];
 };
 
 struct CheatEntry {
