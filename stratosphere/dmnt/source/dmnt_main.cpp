@@ -25,6 +25,7 @@
 
 #include "dmnt_service.hpp"
 #include "dmnt_cheat_service.hpp"
+#include "dmnt_cheat_manager.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -124,6 +125,9 @@ void __appExit(void) {
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
+    
+    /* Start cheat manager. */
+    DmntCheatManager::InitializeCheatManager();
     
     /* Nintendo uses four threads. Add a fifth for our cheat service. */
     auto server_manager = new WaitableManager(5);
