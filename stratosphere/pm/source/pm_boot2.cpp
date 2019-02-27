@@ -27,20 +27,6 @@
 #include "pm_registration.hpp"
 #include "pm_boot_mode.hpp"
 
-static std::vector<Boot2KnownTitleId> g_boot2_titles;
-
-static void ClearLaunchedTitles() {
-    g_boot2_titles.clear();
-}
-
-static void SetLaunchedTitle(Boot2KnownTitleId title_id) {
-    g_boot2_titles.push_back(title_id);
-}
-
-static bool HasLaunchedTitle(Boot2KnownTitleId title_id) {
-    return std::find(g_boot2_titles.begin(), g_boot2_titles.end(), title_id) != g_boot2_titles.end();
-}
-
 static std::vector<Boot2KnownTitleId> g_launched_titles;
 
 static bool IsHexadecimal(const char *str) {
