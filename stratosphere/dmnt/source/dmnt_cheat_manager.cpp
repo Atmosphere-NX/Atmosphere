@@ -21,9 +21,56 @@
 static HosMutex g_cheat_lock;
 static HosThread g_detect_thread, g_vm_thread;
 
-static bool g_has_cheat_process;
 static CheatProcessMetadata g_cheat_process_metadata = {0};
 static Handle g_cheat_process_debug_hnd = 0;
+
+void DmntCheatManager::CloseActiveCheatProcess() {
+    if (g_cheat_process_debug_hnd != 0) {
+        svcCloseHandle(g_cheat_process_debug_hnd);
+        g_cheat_process_debug_hnd = 0;
+        g_cheat_process_metadata = (CheatProcessMetadata){0};
+    }
+}
+
+bool DmntCheatManager::HasActiveCheatProcess() {
+    u64 tmp;
+    bool has_cheat_process = g_cheat_process_debug_hnd != 0;
+    
+    if (has_cheat_process) {
+        has_cheat_process &= R_SUCCEEDED(svcGetProcessId(&tmp, g_cheat_process_debug_hnd));
+    }
+    
+    if (has_cheat_process) {
+        has_cheat_process &= R_SUCCEEDED(pmdmntGetApplicationPid(&tmp));
+    }
+    
+    if (has_cheat_process) {
+        has_cheat_process &= tmp == g_cheat_process_metadata.process_id;
+    }
+    
+    if (!has_cheat_process) {
+        CloseActiveCheatProcess();
+    }
+    
+    return has_cheat_process;
+}
+
+void DmntCheatManager::ContinueCheatProcess() {
+    if (HasActiveCheatProcess()) {
+        /* Loop getting debug events. */
+        u8 tmp;
+        while (R_SUCCEEDED(svcGetDebugEvent(&tmp, g_cheat_process_debug_hnd))) {
+            /* ... */
+        }
+        
+        /* Continue the process. */
+        if (kernelAbove300()) {
+            svcContinueDebugEvent(g_cheat_process_debug_hnd, 5, nullptr, 0);
+        } else {
+            svcLegacyContinueDebugEvent(g_cheat_process_debug_hnd, 5, 0);
+        }
+    }
+}
 
 Handle DmntCheatManager::PrepareDebugNextApplication() {
     Result rc;
@@ -53,11 +100,7 @@ void DmntCheatManager::OnNewApplicationLaunch() {
     Result rc;
     
     /* Close the current application, if it's open. */
-    if (g_cheat_process_debug_hnd != 0) {
-        svcCloseHandle(g_cheat_process_debug_hnd);
-        g_cheat_process_debug_hnd = 0;
-        g_cheat_process_metadata = (CheatProcessMetadata){0};
-    }
+    CloseActiveCheatProcess();
     
     /* Get the new application's process ID. */
     if (R_FAILED((rc = pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id)))) {
@@ -88,7 +131,7 @@ void DmntCheatManager::OnNewApplicationLaunch() {
     {
         LoaderModuleInfo proc_modules[2];
         u32 num_modules;
-        if (R_FAILED((rc = ldrDmntGetModuleInfos(g_cheat_process_metadata.process_id, &proc_modules, 2, &num_modules)))) {
+        if (R_FAILED((rc = ldrDmntGetModuleInfos(g_cheat_process_metadata.process_id, proc_modules, 2, &num_modules)))) {
             fatalSimple(rc);
         }
         
@@ -102,15 +145,18 @@ void DmntCheatManager::OnNewApplicationLaunch() {
         
         g_cheat_process_metadata.main_nso_extents.base = proc_modules[1].base_address;
         g_cheat_process_metadata.main_nso_extents.size = proc_modules[1].size;
-        g_cheat_process_metadata.main_nso_build_id = proc_modules[1].build_id;
+        memcpy(g_cheat_process_metadata.main_nso_build_id, proc_modules[1].build_id, sizeof(g_cheat_process_metadata.main_nso_build_id));
     }
+    
+    /* TODO: Read cheats off the SD. */
     
     /* Open a debug handle. */
     if (R_FAILED((rc = svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id)))) {
         fatalSimple(rc);
     }
     
-    /* TODO: Continue debug events, etc. */
+    /* Continue debug events, etc. */
+    ContinueCheatProcess();
 }
 
 void DmntCheatManager::DetectThread(void *arg) {
@@ -131,9 +177,25 @@ void DmntCheatManager::DetectThread(void *arg) {
  
 void DmntCheatManager::VmThread(void *arg) {
     while (true) {
-        /* TODO */
+        /* Execute Cheat VM. */
+        {
+            /* Acquire lock. */
+            std::scoped_lock<HosMutex> lk(g_cheat_lock);
+            
+            if (HasActiveCheatProcess()) {
+                ContinueCheatProcess();
+                
+                /* TODO: Execute VM. */
+            }
+        }
         svcSleepThread(0x5000000ul);
     }
+}
+
+bool DmntCheatManager::GetHasActiveCheatProcess() {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    return HasActiveCheatProcess();
 }
 
 void DmntCheatManager::InitializeCheatManager() {
