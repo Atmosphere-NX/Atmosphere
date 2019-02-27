@@ -24,6 +24,7 @@
 #include <stratosphere.hpp>
 
 #include "dmnt_service.hpp"
+#include "dmnt_cheat_service.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -124,11 +125,12 @@ int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
     
-    /* Nintendo uses four threads. */
-    auto server_manager = new WaitableManager(4);
+    /* Nintendo uses four threads. Add a fifth for our cheat service. */
+    auto server_manager = new WaitableManager(5);
     
     /* Create services. */
     server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("dmnt:-", 4));
+    server_manager->AddWaitable(new ServiceServer<DmntCheatService>("dmnt:cht", 1));
 
     /* Loop forever, servicing our services. */
     server_manager->Process();

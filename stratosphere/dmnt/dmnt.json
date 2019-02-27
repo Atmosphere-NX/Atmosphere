@@ -30,7 +30,8 @@
         "fatal:u"
     ],
 	"service_host":	[
-        "dmnt:-"
+        "dmnt:-",
+        "dmnt:cht"
     ],
 	"kernel_capabilities":	[{
 			"type":	"kernel_flags",
