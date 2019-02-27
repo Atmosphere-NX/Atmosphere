@@ -32,9 +32,14 @@ struct CheatProcessMetadata {
     u8 main_nso_build_id[0x20];
 };
 
+struct CheatDefinition {
+    char readable_name[0x40];
+    uint32_t num_opcodes;
+    uint32_t opcodes[0x100];
+};
+
 struct CheatEntry {
     bool enabled;
     uint32_t cheat_id;
-    char readable_name[0x20];
-    uint32_t opcodes[0x100];
+    CheatDefinition definition;
 };

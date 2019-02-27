@@ -61,7 +61,7 @@ class DmntCheatService final : public IServiceObject {
         Result GetCheats(OutBuffer<CheatEntry> cheats, Out<u64> out_count, u64 offset);
         Result GetCheatById(OutBuffer<CheatEntry> cheat, u32 cheat_id);
         Result ToggleCheat(u32 cheat_id);
-        Result AddCheat(InBuffer<CheatEntry> cheat);
+        Result AddCheat(InBuffer<CheatDefinition> cheat, Out<u32> out_cheat_id, bool enabled);
         Result RemoveCheat(u32 cheat_id);
         
         Result GetFrozenAddressCount(Out<u64> out_count);
