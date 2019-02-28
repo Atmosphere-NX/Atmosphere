@@ -16,12 +16,14 @@
  
 #include <switch.h>
 #include "dmnt_cheat_manager.hpp"
+#include "dmnt_cheat_vm.hpp"
 #include "pm_shim.h"
 
 static HosMutex g_cheat_lock;
 static HosThread g_detect_thread, g_vm_thread;
 
 static IEvent *g_cheat_process_event;
+static DmntCheatVm *g_cheat_vm;
 
 static CheatProcessMetadata g_cheat_process_metadata = {0};
 static Handle g_cheat_process_debug_hnd = 0;
@@ -189,9 +191,13 @@ void DmntCheatManager::VmThread(void *arg) {
             std::scoped_lock<HosMutex> lk(g_cheat_lock);
             
             if (HasActiveCheatProcess()) {
+                /* Handle any pending debug events. */
                 ContinueCheatProcess();
                 
-                /* TODO: Execute VM. */
+                /* Execute VM. */
+                if (g_cheat_vm->GetProgramSize() != 0) {
+                    g_cheat_vm->Execute(&g_cheat_process_metadata);
+                }
             }
         }
         svcSleepThread(0x5000000ul);
@@ -223,6 +229,9 @@ Result DmntCheatManager::GetCheatProcessMetadata(CheatProcessMetadata *out) {
 void DmntCheatManager::InitializeCheatManager() {
     /* Create cheat process detection event. */
     g_cheat_process_event = CreateWriteOnlySystemEvent();
+    
+    /* Create cheat vm. */
+    g_cheat_vm = new DmntCheatVm();
     
     /* Spawn application detection thread, spawn cheat vm thread. */
     if (R_FAILED(g_detect_thread.Initialize(&DmntCheatManager::DetectThread, nullptr, 0x4000, 28))) {

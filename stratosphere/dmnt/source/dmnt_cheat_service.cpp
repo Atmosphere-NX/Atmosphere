@@ -72,7 +72,7 @@ Result DmntCheatService::ToggleCheat(u32 cheat_id) {
     return 0xF601;
 }
 
-Result DmntCheatService::AddCheat(InBuffer<CheatEntry> cheat) {
+Result DmntCheatService::AddCheat(InBuffer<CheatDefinition> cheat, Out<u32> out_cheat_id, bool enabled) {
     /* TODO */
     return 0xF601;
 }
