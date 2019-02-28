@@ -37,6 +37,22 @@ void DmntCheatVm::SkipConditionalBlock() {
     }
 }
 
+u64 DmntCheatVm::GetVmInt(VmInt value, u32 bit_width) {
+    switch (bit_width) {
+        case 1:
+            return value.bit8;
+        case 2:
+            return value.bit16;
+        case 4:
+            return value.bit32;
+        case 8:
+            return value.bit64;
+        default:
+            /* Invalid bit width -> return 0. */
+            return 0;
+    }
+}
+
 void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
     CheatVmOpcode cur_opcode;
     u64 kDown = 0;
@@ -111,6 +127,9 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                         case RegisterArithmeticType_RightShift:
                             this->registers[cur_opcode.perform_math_static.reg_index] >>= (u64)cur_opcode.perform_math_static.value;
                             break;
+                        default:
+                            /* Do not handle extensions here. */
+                            break;
                     }
                     /* Apply bit width. */
                     switch (cur_opcode.perform_math_static.bit_width) {
@@ -134,6 +153,69 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                 if ((cur_opcode.begin_keypress_cond.key_mask & kDown) != cur_opcode.begin_keypress_cond.key_mask) {
                     /* Keys not pressed. Skip conditional block. */
                     this->SkipConditionalBlock();
+                }
+                break;
+            case CheatVmOpcodeType_PerformArithmeticRegister:
+                {
+                    const u64 operand_1_value = this->registers[cur_opcode.perform_math_reg.src_reg_1_index];
+                    const u64 operand_2_value = cur_opcode.perform_math_reg.has_immediate ? 
+                                                GetVmInt(cur_opcode.perform_math_reg.value, cur_opcode.perform_math_reg.bit_width) :
+                                                this->registers[cur_opcode.perform_math_reg.src_reg_2_index];
+                    
+                    u64 res_val = 0;
+                    /* Do requested math. */
+                    switch (cur_opcode.perform_math_reg.math_type) {
+                        case RegisterArithmeticType_Addition:
+                            res_val = operand_1_value + operand_2_value;
+                            break;
+                        case RegisterArithmeticType_Subtraction:
+                            res_val = operand_1_value - operand_2_value;
+                            break;
+                        case RegisterArithmeticType_Multiplication:
+                            res_val = operand_1_value * operand_2_value;
+                            break;
+                        case RegisterArithmeticType_LeftShift:
+                            res_val = operand_1_value << operand_2_value;
+                            break;
+                        case RegisterArithmeticType_RightShift:
+                            res_val = operand_1_value >> operand_2_value;
+                            break;
+                        case RegisterArithmeticType_LogicalAnd:
+                            res_val = operand_1_value & operand_2_value;
+                            break;
+                        case RegisterArithmeticType_LogicalOr:
+                            res_val = operand_1_value | operand_2_value;
+                            break;
+                        case RegisterArithmeticType_LogicalNot:
+                            res_val = ~operand_1_value;
+                            break;
+                        case RegisterArithmeticType_LogicalXor:
+                            res_val = operand_1_value ^ operand_2_value;
+                            break;
+                        case RegisterArithmeticType_None:
+                            res_val = operand_1_value;
+                            break;
+                    }
+                    
+                    
+                    /* Apply bit width. */
+                    switch (cur_opcode.perform_math_reg.bit_width) {
+                        case 1:
+                            res_val = static_cast<u8>(res_val);
+                            break;
+                        case 2:
+                            res_val = static_cast<u16>(res_val);
+                            break;
+                        case 4:
+                            res_val = static_cast<u32>(res_val);
+                            break;
+                        case 8:
+                            res_val = static_cast<u64>(res_val);
+                            break;
+                    }
+                    
+                    /* Save to register. */
+                    this->registers[cur_opcode.perform_math_reg.dst_reg_index] = res_val;
                 }
                 break;
         }

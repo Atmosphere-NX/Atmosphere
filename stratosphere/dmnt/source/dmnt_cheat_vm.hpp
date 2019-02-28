@@ -30,6 +30,9 @@ enum CheatVmOpcodeType : u32 {
     CheatVmOpcodeType_StoreToRegisterAddress = 6,
     CheatVmOpcodeType_PerformArithmeticStatic = 7,
     CheatVmOpcodeType_BeginKeypressConditionalBlock = 8,
+    
+    /* These are not implemented by Gateway's VM. */
+    CheatVmOpcodeType_PerformArithmeticRegister = 9,
 };
 
 enum MemoryAccessType : u32 {
@@ -52,6 +55,14 @@ enum RegisterArithmeticType : u32 {
     RegisterArithmeticType_Multiplication = 2,
     RegisterArithmeticType_LeftShift = 3,
     RegisterArithmeticType_RightShift = 4,
+    
+    /* These are not supported by Gateway's VM. */
+    RegisterArithmeticType_LogicalAnd = 5,
+    RegisterArithmeticType_LogicalOr = 6,
+    RegisterArithmeticType_LogicalNot = 7,
+    RegisterArithmeticType_LogicalXor = 8,
+    
+    RegisterArithmeticType_None = 9,
 };
 
 union VmInt {
@@ -118,6 +129,16 @@ struct BeginKeypressConditionalOpcode {
     u32 key_mask;
 };
 
+struct PerformArithmeticRegisterOpcode {
+    u32 bit_width;
+    RegisterArithmeticType math_type;
+    u32 dst_reg_index;
+    u32 src_reg_1_index;
+    u32 src_reg_2_index;
+    bool has_immediate;
+    VmInt value;
+};
+
 struct CheatVmOpcode {
     CheatVmOpcodeType opcode;
     union {
@@ -130,6 +151,7 @@ struct CheatVmOpcode {
         StoreToRegisterAddressOpcode str_regaddr;
         PerformArithmeticStaticOpcode perform_math_static;
         BeginKeypressConditionalOpcode begin_keypress_cond;
+        PerformArithmeticRegisterOpcode perform_math_reg;
     };
 };
 
@@ -146,6 +168,8 @@ class DmntCheatVm {
     private:
         bool DecodeNextOpcode(CheatVmOpcode *out);
         void SkipConditionalBlock();
+        
+        static u64 GetVmInt(VmInt value, u32 bit_width);
     public:
         DmntCheatVm() { }
         
