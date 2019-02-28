@@ -35,6 +35,6 @@ In no particular order, we credit the following for their invaluable contributio
 * __Riley__ for suggesting "Atmosphere" as a Horizon OS reimplementation+customization project name.
 * __hedgeberg__ for research and hardware testing.
 * __lioncash__ for code cleanup and general improvements.
-* __sirocyl__ for the Atmosphère logo concept and initial design and __jaames__ for designing and providing Atmosphère's graphical resources.
+* __sirocyl__ for the Atmosphère logo concept and initial design, __jaames__ for designing and providing Atmosphère's graphical resources.
 * Everyone who submitted entries for Atmosphère's [splash design contest](https://github.com/Atmosphere-NX/Atmosphere-splashes).
 * _All those who actively contribute to the Atmosphère repository._
