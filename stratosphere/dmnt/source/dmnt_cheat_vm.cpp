@@ -68,19 +68,19 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
             case CheatVmOpcodeType_ControlLoop:
                 if (cur_opcode.ctrl_loop.start_loop) {
                     /* Start a loop. */
-                    this->registers[cur_opcode.ctrl_loop.register_index] = cur_opcode.ctrl_loop.num_iters;
-                    this->loop_tops[cur_opcode.ctrl_loop.register_index] = this->instruction_ptr;
+                    this->registers[cur_opcode.ctrl_loop.reg_index] = cur_opcode.ctrl_loop.num_iters;
+                    this->loop_tops[cur_opcode.ctrl_loop.reg_index] = this->instruction_ptr;
                 } else {
                     /* End a loop. */
-                    this->registers[cur_opcode.ctrl_loop.register_index]--;
-                    if (this->registers[cur_opcode.ctrl_loop.register_index] != 0) {
-                        this->instruction_ptr = this->loop_tops[cur_opcode.ctrl_loop.register_index];
+                    this->registers[cur_opcode.ctrl_loop.reg_index]--;
+                    if (this->registers[cur_opcode.ctrl_loop.reg_index] != 0) {
+                        this->instruction_ptr = this->loop_tops[cur_opcode.ctrl_loop.reg_index];
                     }
                 }
                 break;
             case CheatVmOpcodeType_LoadRegisterStatic:
                 /* Set a register to a static value. */
-                this->registers[cur_opcode.ldr_static.register_index] = cur_opcode.ldr_static.value;
+                this->registers[cur_opcode.ldr_static.reg_index] = cur_opcode.ldr_static.value;
                 break;
             case CheatVmOpcodeType_LoadRegisterMemory:
                 {
@@ -92,9 +92,41 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                     /* TODO */
                 }
                 break;
-            case CheatVmOpcodeType_PerformArithmetic:
+            case CheatVmOpcodeType_PerformArithmeticStatic:
                 {
-                    /* TODO */
+                    /* Do requested math. */
+                    switch (cur_opcode.perform_math_static.math_type) {
+                        case RegisterArithmeticType_Addition:
+                            this->registers[cur_opcode.perform_math_static.reg_index] +=  (u64)cur_opcode.perform_math_static.value;
+                            break;
+                        case RegisterArithmeticType_Subtraction:
+                            this->registers[cur_opcode.perform_math_static.reg_index] -=  (u64)cur_opcode.perform_math_static.value;
+                            break;
+                        case RegisterArithmeticType_Multiplication:
+                            this->registers[cur_opcode.perform_math_static.reg_index] *=  (u64)cur_opcode.perform_math_static.value;
+                            break;
+                        case RegisterArithmeticType_LeftShift:
+                            this->registers[cur_opcode.perform_math_static.reg_index] <<= (u64)cur_opcode.perform_math_static.value;
+                            break;
+                        case RegisterArithmeticType_RightShift:
+                            this->registers[cur_opcode.perform_math_static.reg_index] >>= (u64)cur_opcode.perform_math_static.value;
+                            break;
+                    }
+                    /* Apply bit width. */
+                    switch (cur_opcode.perform_math_static.bit_width) {
+                        case 1:
+                            this->registers[cur_opcode.perform_math_static.reg_index] = static_cast<u8>(this->registers[cur_opcode.perform_math_static.reg_index]);
+                            break;
+                        case 2:
+                            this->registers[cur_opcode.perform_math_static.reg_index] = static_cast<u16>(this->registers[cur_opcode.perform_math_static.reg_index]);
+                            break;
+                        case 4:
+                            this->registers[cur_opcode.perform_math_static.reg_index] = static_cast<u32>(this->registers[cur_opcode.perform_math_static.reg_index]);
+                            break;
+                        case 8:
+                            this->registers[cur_opcode.perform_math_static.reg_index] = static_cast<u64>(this->registers[cur_opcode.perform_math_static.reg_index]);
+                            break;
+                    }
                 }
                 break;
             case CheatVmOpcodeType_BeginKeypressConditionalBlock:

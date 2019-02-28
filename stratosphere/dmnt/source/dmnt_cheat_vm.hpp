@@ -28,7 +28,7 @@ enum CheatVmOpcodeType : u32 {
     CheatVmOpcodeType_LoadRegisterStatic = 4,
     CheatVmOpcodeType_LoadRegisterMemory = 5,
     CheatVmOpcodeType_StoreToRegisterAddress = 6,
-    CheatVmOpcodeType_PerformArithmetic = 7,
+    CheatVmOpcodeType_PerformArithmeticStatic = 7,
     CheatVmOpcodeType_BeginKeypressConditionalBlock = 8,
 };
 
@@ -81,12 +81,12 @@ struct EndConditionalOpcode {};
 
 struct ControlLoopOpcode {
     bool start_loop;
-    u32 register_index;
+    u32 reg_index;
     u32 num_iters;
 };
 
 struct LoadRegisterStaticOpcode {
-    u32 register_index;
+    u32 reg_index;
     u64 value;
 };
 
@@ -107,11 +107,11 @@ struct StoreToRegisterAddressOpcode {
     u64 value;
 };
 
-struct PerformArithmeticOpcode {
+struct PerformArithmeticStaticOpcode {
     u32 bit_width;
     u32 reg_index;
     RegisterArithmeticType math_type;
-    VmInt value;
+    u32 value;
 };
 
 struct BeginKeypressConditionalOpcode {
@@ -128,7 +128,7 @@ struct CheatVmOpcode {
         LoadRegisterStaticOpcode ldr_static;
         LoadRegisterMemoryOpcode ldr_memory;
         StoreToRegisterAddressOpcode str_regaddr;
-        PerformArithmeticOpcode perform_math;
+        PerformArithmeticStaticOpcode perform_math_static;
         BeginKeypressConditionalOpcode begin_keypress_cond;
     };
 };
