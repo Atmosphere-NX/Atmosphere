@@ -76,7 +76,7 @@ struct StoreStaticOpcode {
     u32 bit_width;
     MemoryAccessType mem_type;
     u32 offset_register;
-    u64 relative_address;
+    u64 rel_address;
     VmInt value;
 };
 
@@ -84,7 +84,7 @@ struct BeginConditionalOpcode {
     u32 bit_width;
     MemoryAccessType mem_type;
     ConditionalComparisonType cond_type;
-    u64 relative_address;
+    u64 rel_address;
     VmInt value;
 };
 
@@ -106,7 +106,7 @@ struct LoadRegisterMemoryOpcode {
     MemoryAccessType mem_type;
     u32 reg_index;
     bool load_from_reg;
-    u64 relative_address;
+    u64 rel_address;
 };
 
 struct StoreToRegisterAddressOpcode {
@@ -170,6 +170,7 @@ class DmntCheatVm {
         void SkipConditionalBlock();
         
         static u64 GetVmInt(VmInt value, u32 bit_width);
+        static u64 GetCheatProcessAddress(const CheatProcessMetadata* metadata, MemoryAccessType mem_type, u64 rel_address);
     public:
         DmntCheatVm() { }
         

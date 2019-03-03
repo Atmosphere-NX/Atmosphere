@@ -17,6 +17,7 @@
 #include <switch.h>
 #include "dmnt_cheat_types.hpp"
 #include "dmnt_cheat_vm.hpp"
+#include "dmnt_cheat_manager.hpp"
 
 bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
     /* TODO: Parse opcodes */
@@ -53,6 +54,16 @@ u64 DmntCheatVm::GetVmInt(VmInt value, u32 bit_width) {
     }
 }
 
+u64 DmntCheatVm::GetCheatProcessAddress(const CheatProcessMetadata* metadata, MemoryAccessType mem_type, u64 rel_address) {
+    switch (mem_type) {
+        case MemoryAccessType_MainNso:
+        default:
+            return metadata->main_nso_extents.base + rel_address;
+        case MemoryAccessType_Heap:
+            return metadata->heap_extents.base + rel_address;
+    }
+}
+
 void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
     CheatVmOpcode cur_opcode;
     u64 kDown = 0;
@@ -70,12 +81,59 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
         switch (cur_opcode.opcode) {
             case CheatVmOpcodeType_StoreStatic:
                 {
-                    /* TODO */
+                    /* Calculate address, write value to memory. */
+                    u64 dst_address = GetCheatProcessAddress(metadata, cur_opcode.store_static.mem_type, cur_opcode.store_static.rel_address + this->registers[cur_opcode.store_static.offset_register]);
+                    u64 dst_value = GetVmInt(cur_opcode.store_static.value, cur_opcode.store_static.bit_width);
+                    switch (cur_opcode.store_static.bit_width) {
+                        case 1:
+                        case 2:
+                        case 4:
+                        case 8:
+                            DmntCheatManager::WriteCheatProcessMemoryForVm(dst_address, &dst_value, cur_opcode.store_static.bit_width);
+                            break;
+                    }
                 }
                 break;
             case CheatVmOpcodeType_BeginConditionalBlock:
                 {
-                    /* TODO */
+                    /* Read value from memory. */
+                    u64 src_address = GetCheatProcessAddress(metadata, cur_opcode.begin_cond.mem_type, cur_opcode.begin_cond.rel_address);
+                    u64 src_value = 0;
+                    switch (cur_opcode.store_static.bit_width) {
+                        case 1:
+                        case 2:
+                        case 4:
+                        case 8:
+                            DmntCheatManager::ReadCheatProcessMemoryForVm(src_address, &src_value, cur_opcode.begin_cond.bit_width);
+                            break;
+                    }
+                    /* Check against condition. */
+                    u64 cond_value = GetVmInt(cur_opcode.begin_cond.value, cur_opcode.begin_cond.bit_width);
+                    bool cond_met = false;
+                    switch (cur_opcode.begin_cond.cond_type) {
+                        case ConditionalComparisonType_GT:
+                            cond_met = src_value > cond_value;
+                            break;
+                        case ConditionalComparisonType_GE:
+                            cond_met = src_value >= cond_value;
+                            break;
+                        case ConditionalComparisonType_LT:
+                            cond_met = src_value < cond_value;
+                            break;
+                        case ConditionalComparisonType_LE:
+                            cond_met = src_value <= cond_value;
+                            break;
+                        case ConditionalComparisonType_EQ:
+                            cond_met = src_value == cond_value;
+                            break;
+                        case ConditionalComparisonType_NE:
+                            cond_met = src_value != cond_value;
+                            break;
+                    }
+                    /* Skip conditional block if condition not met. */
+                    if (!cond_met) {
+                        this->SkipConditionalBlock();
+                    }
                 }
                 break;
             case CheatVmOpcodeType_EndConditionalBlock:
@@ -100,12 +158,45 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                 break;
             case CheatVmOpcodeType_LoadRegisterMemory:
                 {
-                    /* TODO */
+                    /* Choose source address. */
+                    u64 src_address;
+                    if (cur_opcode.ldr_memory.load_from_reg) {
+                        src_address = this->registers[cur_opcode.ldr_memory.reg_index] + cur_opcode.ldr_memory.rel_address;
+                    } else {
+                        src_address = GetCheatProcessAddress(metadata, cur_opcode.ldr_memory.mem_type, cur_opcode.ldr_memory.rel_address);
+                    }
+                    /* Read into register. Gateway only reads on valid bitwidth. */
+                    switch (cur_opcode.ldr_memory.bit_width) {
+                        case 1:
+                        case 2:
+                        case 4:
+                        case 8:
+                            DmntCheatManager::ReadCheatProcessMemoryForVm(src_address, &this->registers[cur_opcode.ldr_memory.reg_index], cur_opcode.ldr_memory.bit_width);
+                            break;
+                    }
                 }
                 break;
             case CheatVmOpcodeType_StoreToRegisterAddress:
                 {
-                    /* TODO */
+                    /* Calculate address. */
+                    u64 dst_address = this->registers[cur_opcode.str_regaddr.reg_index];
+                    u64 dst_value = cur_opcode.str_regaddr.value;
+                    if (cur_opcode.str_regaddr.add_offset_reg) {
+                        dst_address += this->registers[cur_opcode.str_regaddr.offset_reg_index];
+                    }
+                    /* Write value to memory. Gateway only writes on valid bitwidth. */
+                    switch (cur_opcode.str_regaddr.bit_width) {
+                        case 1:
+                        case 2:
+                        case 4:
+                        case 8:
+                            DmntCheatManager::WriteCheatProcessMemoryForVm(dst_address, &dst_value, cur_opcode.str_regaddr.bit_width);
+                            break;
+                    }
+                    /* Increment register if relevant. */
+                    if (cur_opcode.str_regaddr.increment_reg) {
+                        this->registers[cur_opcode.str_regaddr.reg_index] += cur_opcode.str_regaddr.bit_width;
+                    }
                 }
                 break;
             case CheatVmOpcodeType_PerformArithmeticStatic:

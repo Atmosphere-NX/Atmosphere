@@ -77,6 +77,36 @@ void DmntCheatManager::ContinueCheatProcess() {
     }
 }
 
+Result DmntCheatManager::ReadCheatProcessMemoryForVm(u64 proc_addr, void *out_data, size_t size) {
+    if (HasActiveCheatProcess()) {
+        return svcReadDebugProcessMemory(out_data, g_cheat_process_debug_hnd, proc_addr, size);
+    }
+    
+    /* TODO: Return value... */
+    return 0x20F;
+}
+
+Result DmntCheatManager::WriteCheatProcessMemoryForVm(u64 proc_addr, const void *data, size_t size) {
+    if (HasActiveCheatProcess()) {
+        return svcWriteDebugProcessMemory(g_cheat_process_debug_hnd, data, proc_addr, size);
+    }
+    
+    /* TODO: Return value... */
+    return 0x20F;
+}
+
+Result DmntCheatManager::ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    return ReadCheatProcessMemoryForVm(proc_addr, out_data, size);
+}
+
+Result DmntCheatManager::WriteCheatProcessMemory(u64 proc_addr, const void *data, size_t size) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    return WriteCheatProcessMemoryForVm(proc_addr, data, size);
+}
+
 Handle DmntCheatManager::PrepareDebugNextApplication() {
     Result rc;
     Handle event_h;

@@ -30,10 +30,15 @@ class DmntCheatManager {
         static bool HasActiveCheatProcess();
         static void CloseActiveCheatProcess();
         static void ContinueCheatProcess();
-    public:;
+    public:
         static bool GetHasActiveCheatProcess();
         static Handle GetCheatProcessEventHandle();
         static Result GetCheatProcessMetadata(CheatProcessMetadata *out);
+        
+        static Result ReadCheatProcessMemoryForVm(u64 proc_addr, void *out_data, size_t size);
+        static Result WriteCheatProcessMemoryForVm(u64 proc_addr, const void *data, size_t size);
+        static Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size);
+        static Result WriteCheatProcessMemory(u64 proc_addr, const void *data, size_t size);
         
         static void InitializeCheatManager();
 };
