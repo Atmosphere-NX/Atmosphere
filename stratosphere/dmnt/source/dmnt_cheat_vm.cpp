@@ -20,8 +20,90 @@
 #include "dmnt_cheat_manager.hpp"
 
 bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
-    /* TODO: Parse opcodes */
-    return false;
+    /* If we've ever seen a decode failure, return true. */
+    bool valid = this->decode_success;
+    CheatVmOpcode opcode = {};
+    ON_SCOPE_EXIT {
+        this->decode_success &= valid;
+        if (valid) {
+            *out = opcode;
+        }
+    };
+    
+    /* If we have ever seen a decode failure, don't decode any more. */
+    if (!valid) {
+        return valid;
+    }
+    
+    /* Validate instruction pointer. */
+    if (this->instruction_ptr >= this->num_opcodes) {
+        valid = false;
+        return valid;
+    }
+    
+    /* Read opcode. */
+    const u32 first_dword = this->program[this->instruction_ptr++];
+    opcode.opcode = (CheatVmOpcodeType)(((first_dword >> 28) & 0xF));
+    
+    switch (opcode.opcode) {
+        case CheatVmOpcodeType_StoreStatic:
+            {
+                /* TODO */
+            }
+            break;
+        case CheatVmOpcodeType_BeginConditionalBlock:
+            {
+                /* TODO */
+            }
+            break;
+        case CheatVmOpcodeType_EndConditionalBlock:
+            {
+                /* There's actually nothing left to process here! */
+            }
+            break;
+        case CheatVmOpcodeType_ControlLoop:
+            {
+                /* TODO */
+            }
+            break;
+        case CheatVmOpcodeType_LoadRegisterStatic:
+            {
+                /* TODO */
+            }
+            break;
+        case CheatVmOpcodeType_LoadRegisterMemory:
+            {
+                /* TODO */
+            }
+            break;
+        case CheatVmOpcodeType_StoreToRegisterAddress:
+            {
+                /* TODO */
+            }
+            break;
+        case CheatVmOpcodeType_PerformArithmeticStatic:
+            {
+                /* TODO */
+            }
+            break;
+        case CheatVmOpcodeType_BeginKeypressConditionalBlock:
+            {
+                /* TODO */
+            }
+            break;
+        case CheatVmOpcodeType_PerformArithmeticRegister:
+            {
+                /* TODO */
+            }
+            break;
+        default:
+            /* Unrecognized instruction cannot be decoded. */
+            valid = false;
+            break;
+    }
+    
+    /* End decoding. */
+    return valid;
 }
 
 void DmntCheatVm::SkipConditionalBlock() {
@@ -64,6 +146,15 @@ u64 DmntCheatVm::GetCheatProcessAddress(const CheatProcessMetadata* metadata, Me
     }
 }
 
+void DmntCheatVm::ResetState() {
+    for (size_t i = 0; i < DmntCheatVm::NumRegisters; i++) {
+        this->registers[i] = 0;
+        this->loop_tops[i] = 0;
+    }
+    this->instruction_ptr = 0;
+    this->decode_success = true;
+}
+
 void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
     CheatVmOpcode cur_opcode;
     u64 kDown = 0;
@@ -71,10 +162,7 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
     /* TODO: Get Keys down. */
     
     /* Clear VM state. */
-    for (size_t i = 0; i < DmntCheatVm::NumRegisters; i++) {
-        this->registers[i] = 0;
-        this->loop_tops[i] = 0;
-    }
+    this->ResetState();
     
     /* Loop until program finishes. */
     while (this->DecodeNextOpcode(&cur_opcode)) {

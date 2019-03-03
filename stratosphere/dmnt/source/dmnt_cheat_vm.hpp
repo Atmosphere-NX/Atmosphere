@@ -162,12 +162,14 @@ class DmntCheatVm {
     private:
         size_t num_opcodes = 0;
         size_t instruction_ptr = 0;
+        bool decode_success = false;
         u32 program[MaximumProgramOpcodeCount] = {0};
         u64 registers[NumRegisters] = {0};
         size_t loop_tops[NumRegisters] = {0};
     private:
         bool DecodeNextOpcode(CheatVmOpcode *out);
         void SkipConditionalBlock();
+        void ResetState();
         
         static u64 GetVmInt(VmInt value, u32 bit_width);
         static u64 GetCheatProcessAddress(const CheatProcessMetadata* metadata, MemoryAccessType mem_type, u64 rel_address);
