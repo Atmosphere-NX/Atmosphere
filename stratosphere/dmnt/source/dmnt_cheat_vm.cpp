@@ -20,7 +20,7 @@
 #include "dmnt_cheat_manager.hpp"
 
 bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
-    /* If we've ever seen a decode failure, return true. */
+    /* If we've ever seen a decode failure, return false. */
     bool valid = this->decode_success;
     CheatVmOpcode opcode = {};
     ON_SCOPE_EXIT {
@@ -30,70 +30,154 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
         }
     };
     
-    /* If we have ever seen a decode failure, don't decode any more. */
+    /* Helper function for getting instruction dwords. */
+    auto GetNextDword = [&]() {
+        if (this->instruction_ptr >= this->num_opcodes) {
+            valid = false;
+            return static_cast<u32>(0);
+        }
+        return this->program[this->instruction_ptr++];
+    };
+    
+    /* Helper function for parsing a VmInt. */
+    auto GetNextVmInt = [&](const u32 bit_width) {
+        VmInt val = {0};
+        
+        const u32 first_dword = GetNextDword();
+        switch (bit_width) {
+            case 1:
+                val.bit8 = (u8)first_dword;
+                break;
+            case 2:
+                val.bit16 = (u16)first_dword;
+                break;
+            case 4:
+                val.bit32 = first_dword;
+                break;
+            case 8:
+                val.bit64 = (((u64)first_dword) << 32ul) | ((u64)GetNextDword());
+                break;
+        }
+        
+        return val;
+    };
+    
+    /* Read opcode. */
+    const u32 first_dword = GetNextDword();
     if (!valid) {
         return valid;
     }
     
-    /* Validate instruction pointer. */
-    if (this->instruction_ptr >= this->num_opcodes) {
-        valid = false;
-        return valid;
-    }
-    
-    /* Read opcode. */
-    const u32 first_dword = this->program[this->instruction_ptr++];
     opcode.opcode = (CheatVmOpcodeType)(((first_dword >> 28) & 0xF));
     
     switch (opcode.opcode) {
         case CheatVmOpcodeType_StoreStatic:
             {
-                /* TODO */
+                /* 0TMR00AA AAAAAAAA YYYYYYYY (YYYYYYYY) */
+                /* Read additional words. */
+                const u32 second_dword = GetNextDword();
+                opcode.store_static.bit_width = (first_dword >> 24) & 0xF;
+                opcode.store_static.mem_type = (MemoryAccessType)((first_dword >> 20) & 0xF);
+                opcode.store_static.offset_register = ((first_dword >> 16) & 0xF);
+                opcode.store_static.rel_address = ((u64)(first_dword & 0xFF) << 32ul) | ((u64)second_dword);
+                opcode.store_static.value = GetNextVmInt(opcode.store_static.bit_width);
             }
             break;
         case CheatVmOpcodeType_BeginConditionalBlock:
             {
-                /* TODO */
+                /* 1TMC00AA AAAAAAAA YYYYYYYY (YYYYYYYY) */
+                /* Read additional words. */
+                const u32 second_dword = GetNextDword();
+                opcode.begin_cond.bit_width = (first_dword >> 24) & 0xF;
+                opcode.begin_cond.mem_type = (MemoryAccessType)((first_dword >> 20) & 0xF);
+                opcode.begin_cond.cond_type = (ConditionalComparisonType)((first_dword >> 16) & 0xF);
+                opcode.begin_cond.rel_address = ((u64)(first_dword & 0xFF) << 32ul) | ((u64)second_dword);
+                opcode.begin_cond.value = GetNextVmInt(opcode.store_static.bit_width);
             }
             break;
         case CheatVmOpcodeType_EndConditionalBlock:
             {
+                /* 20000000 */
                 /* There's actually nothing left to process here! */
             }
             break;
         case CheatVmOpcodeType_ControlLoop:
             {
-                /* TODO */
+                /* 300R0000 VVVVVVVV */
+                /* 310R0000 */
+                /* Parse register, whether loop start or loop end. */
+                opcode.ctrl_loop.start_loop = ((first_dword >> 24) & 0xF) == 0;
+                opcode.ctrl_loop.reg_index = ((first_dword >> 20) & 0xF);
+                
+                /* Read number of iters if loop start. */
+                if (opcode.ctrl_loop.start_loop) {
+                    opcode.ctrl_loop.num_iters = GetNextDword();
+                }
             }
             break;
         case CheatVmOpcodeType_LoadRegisterStatic:
             {
-                /* TODO */
+                /* 400R0000 VVVVVVVV VVVVVVVV */
+                /* Read additional words. */
+                opcode.ldr_static.reg_index = ((first_dword >> 20) & 0xF);
+                opcode.ldr_static.value = (((u64)GetNextDword()) << 32ul) | ((u64)GetNextDword());
             }
             break;
         case CheatVmOpcodeType_LoadRegisterMemory:
             {
-                /* TODO */
+                /* 5TMRI0AA AAAAAAAA */
+                /* Read additional words. */
+                const u32 second_dword = GetNextDword();
+                opcode.ldr_memory.bit_width = (first_dword >> 24) & 0xF;
+                opcode.ldr_memory.mem_type = (MemoryAccessType)((first_dword >> 20) & 0xF);
+                opcode.ldr_memory.reg_index = ((first_dword >> 16) & 0xF);
+                opcode.ldr_memory.load_from_reg = ((first_dword >> 12) & 0xF) == 0;
+                opcode.ldr_memory.rel_address = ((u64)(first_dword & 0xFF) << 32ul) | ((u64)second_dword);
             }
             break;
         case CheatVmOpcodeType_StoreToRegisterAddress:
             {
-                /* TODO */
+                /* 6T0RIor0 VVVVVVVV VVVVVVVV */
+                /* Read additional words. */
+                opcode.str_regaddr.bit_width = (first_dword >> 24) & 0xF;
+                opcode.str_regaddr.reg_index = ((first_dword >> 16) & 0xF);
+                opcode.str_regaddr.increment_reg = ((first_dword >> 12) & 0xF) == 0;
+                opcode.str_regaddr.add_offset_reg = ((first_dword >> 8) & 0xF) == 0;
+                opcode.str_regaddr.offset_reg_index = ((first_dword >> 4) & 0xF);
+                opcode.str_regaddr.value = (((u64)GetNextDword()) << 32ul) | ((u64)GetNextDword());
             }
             break;
         case CheatVmOpcodeType_PerformArithmeticStatic:
             {
-                /* TODO */
+                /* 7T0RC000 VVVVVVVV */
+                /* Read additional words. */
+                opcode.perform_math_static.bit_width = (first_dword >> 24) & 0xF;
+                opcode.perform_math_static.reg_index = ((first_dword >> 16) & 0xF);
+                opcode.perform_math_static.math_type = (RegisterArithmeticType)((first_dword >> 12) & 0xF);
+                opcode.perform_math_static.value = GetNextDword();
             }
             break;
         case CheatVmOpcodeType_BeginKeypressConditionalBlock:
             {
-                /* TODO */
+                /* 8kkkkkkk */
+                /* Just parse the mask. */
+                opcode.begin_keypress_cond.key_mask = first_dword & 0x0FFFFFFF;
             }
             break;
         case CheatVmOpcodeType_PerformArithmeticRegister:
             {
-                /* TODO */
+                /* 9TCRSIs0 (VVVVVVVV (VVVVVVVV)) */
+                opcode.perform_math_reg.bit_width = (first_dword >> 24) & 0xF;
+                opcode.perform_math_reg.math_type = (RegisterArithmeticType)((first_dword >> 20) & 0xF);
+                opcode.perform_math_reg.dst_reg_index = ((first_dword >> 16) & 0xF);
+                opcode.perform_math_reg.src_reg_1_index = ((first_dword >> 12) & 0xF);
+                opcode.perform_math_reg.has_immediate = ((first_dword >> 8) & 0xF) == 0;
+                if (opcode.perform_math_reg.has_immediate) {
+                    opcode.perform_math_reg.src_reg_2_index = 0;
+                    opcode.perform_math_reg.value = GetNextVmInt(opcode.perform_math_reg.bit_width);
+                } else {
+                    opcode.perform_math_reg.src_reg_2_index = ((first_dword >> 4) & 0xF);
+                }
             }
             break;
         default:
