@@ -34,6 +34,7 @@ class DmntCheatManager {
         static bool GetHasActiveCheatProcess();
         static Handle GetCheatProcessEventHandle();
         static Result GetCheatProcessMetadata(CheatProcessMetadata *out);
+        static Result ForceOpenCheatProcess();
         
         static Result ReadCheatProcessMemoryForVm(u64 proc_addr, void *out_data, size_t size);
         static Result WriteCheatProcessMemoryForVm(u64 proc_addr, const void *data, size_t size);

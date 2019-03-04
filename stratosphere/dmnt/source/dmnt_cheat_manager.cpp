@@ -17,6 +17,7 @@
 #include <switch.h>
 #include "dmnt_cheat_manager.hpp"
 #include "dmnt_cheat_vm.hpp"
+#include "dmnt_config.hpp"
 #include "pm_shim.h"
 
 static HosMutex g_cheat_lock;
@@ -206,6 +207,82 @@ static void StartDebugProcess(u64 pid) {
     }
 }
 
+Result DmntCheatManager::ForceOpenCheatProcess() {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    Result rc;
+    
+    if (HasActiveCheatProcess()) {
+        return 0;
+    }
+    
+    /* Get the current application process ID. */
+    if (R_FAILED((rc = pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id)))) {
+        return rc;
+    }
+    ON_SCOPE_EXIT { if (R_FAILED(rc)) { g_cheat_process_metadata.process_id = 0; } };
+    
+    /* Get process handle, use it to learn memory extents. */
+    {
+        Handle proc_h = 0;
+        ON_SCOPE_EXIT { if (proc_h != 0) { svcCloseHandle(proc_h); } };
+        
+        if (R_FAILED((rc = pmdmntAtmosphereGetProcessInfo(&proc_h, &g_cheat_process_metadata.title_id, nullptr, g_cheat_process_metadata.process_id)))) {
+            return rc;
+        }
+        
+        /* Get memory extents. */
+        PopulateMemoryExtents(&g_cheat_process_metadata.heap_extents, proc_h, 4, 5);
+        PopulateMemoryExtents(&g_cheat_process_metadata.alias_extents, proc_h, 2, 3);
+        if (kernelAbove200()) {
+            PopulateMemoryExtents(&g_cheat_process_metadata.address_space_extents, proc_h, 12, 13);
+        } else {
+            g_cheat_process_metadata.address_space_extents.base = 0x08000000UL;
+            g_cheat_process_metadata.address_space_extents.size = 0x78000000UL;
+        }
+    }
+    
+    /* Get module information from Loader. */
+    {
+        LoaderModuleInfo proc_modules[2];
+        u32 num_modules;
+        if (R_FAILED((rc = ldrDmntGetModuleInfos(g_cheat_process_metadata.process_id, proc_modules, sizeof(proc_modules), &num_modules)))) {
+            return rc;
+        }
+        
+        /* All applications must have two modules. */
+        /* However, this is a force-open, so we will accept one module. */
+        /* Poor HBL, I guess... */
+        LoaderModuleInfo *proc_module;
+        if (num_modules == 2) {
+            proc_module = &proc_modules[1];
+        } else if (num_modules == 1) {
+            proc_module = &proc_modules[0];
+        } else {
+            rc = ResultDmntCheatNotAttached;
+            return rc;
+        }
+        
+        g_cheat_process_metadata.main_nso_extents.base = proc_module->base_address;
+        g_cheat_process_metadata.main_nso_extents.size = proc_module->size;
+        memcpy(g_cheat_process_metadata.main_nso_build_id, proc_module->build_id, sizeof(g_cheat_process_metadata.main_nso_build_id));
+    }
+    
+    /* TODO: Read cheats off the SD. */
+    
+    /* Open a debug handle. */
+    if (R_FAILED((rc = svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id)))) {
+        return rc;
+    }
+        
+    /* Continue debug events, etc. */
+    ContinueCheatProcess();
+    
+    /* Signal to our fans. */
+    g_cheat_process_event->Signal();
+    
+    return rc;
+}
+
 void DmntCheatManager::OnNewApplicationLaunch() {
     std::scoped_lock<HosMutex> lk(g_cheat_lock);
     Result rc;
@@ -223,7 +300,7 @@ void DmntCheatManager::OnNewApplicationLaunch() {
         Handle proc_h = 0;
         ON_SCOPE_EXIT { if (proc_h != 0) { svcCloseHandle(proc_h); } };
         
-        if (R_FAILED((rc = pmdmntAtmosphereGetProcessHandle(&proc_h, g_cheat_process_metadata.process_id)))) {
+        if (R_FAILED((rc = pmdmntAtmosphereGetProcessInfo(&proc_h, &g_cheat_process_metadata.title_id, nullptr, g_cheat_process_metadata.process_id)))) {
             fatalSimple(rc);
         }
         
@@ -236,6 +313,13 @@ void DmntCheatManager::OnNewApplicationLaunch() {
             g_cheat_process_metadata.address_space_extents.base = 0x08000000UL;
             g_cheat_process_metadata.address_space_extents.size = 0x78000000UL;
         }
+    }
+    
+    /* Check if we should skip based on keys down. */
+    if (!DmntConfigManager::HasCheatEnableButton(g_cheat_process_metadata.title_id)) {
+        StartDebugProcess(g_cheat_process_metadata.process_id);
+        g_cheat_process_metadata.process_id = 0;
+        return;
     }
     
     /* Get module information from Loader. */

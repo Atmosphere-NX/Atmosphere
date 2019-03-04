@@ -26,6 +26,7 @@
 #include "dmnt_service.hpp"
 #include "dmnt_cheat_service.hpp"
 #include "dmnt_cheat_manager.hpp"
+#include "dmnt_config.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -127,6 +128,9 @@ void __appExit(void) {
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
+    
+    /* Initialize configuration manager. */
+    DmntConfigManager::RefreshConfiguration();
     
     /* Start cheat manager. */
     DmntCheatManager::InitializeCheatManager();

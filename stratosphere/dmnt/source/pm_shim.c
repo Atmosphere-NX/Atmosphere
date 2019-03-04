@@ -18,7 +18,7 @@
 #include "pm_shim.h"
 
 /* Atmosphere extension commands. */
-Result pmdmntAtmosphereGetProcessHandle(Handle* out, u64 pid) {
+Result pmdmntAtmosphereGetProcessInfo(Handle* out, u64 *tid_out, FsStorageId *sid_out, u64 pid) {
     IpcCommand c;
     ipcInitialize(&c);
     Service *s = pmdmntGetServiceSession();
@@ -42,6 +42,8 @@ Result pmdmntAtmosphereGetProcessHandle(Handle* out, u64 pid) {
         struct {
             u64 magic;
             u64 result;
+            u64 title_id;
+            FsStorageId storage_id;
         } *resp;
 
         serviceIpcParse(s, &r, sizeof(*resp));
@@ -50,7 +52,13 @@ Result pmdmntAtmosphereGetProcessHandle(Handle* out, u64 pid) {
         rc = resp->result;
 
         if (R_SUCCEEDED(rc)) {
-            *out = r.Handles[0];
+            if (out) {
+               *out = r.Handles[0]; 
+            } else {
+                svcCloseHandle(r.Handles[0]);
+            }
+            if (tid_out) *tid_out = resp->title_id;
+            if (sid_out) *sid_out = resp->storage_id;
         }
     }
 

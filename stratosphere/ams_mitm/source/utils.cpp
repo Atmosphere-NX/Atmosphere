@@ -49,7 +49,7 @@ struct HblOverrideConfig {
 
 static HblOverrideConfig g_hbl_override_config = {
     .override_key = {
-        .key_combination = KEY_R,
+        .key_combination = KEY_L,
         .override_by_default = true
     },
     .title_id = 0x010000000000100D,

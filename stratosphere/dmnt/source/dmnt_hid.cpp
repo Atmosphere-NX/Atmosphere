@@ -14,35 +14,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#pragma once
 #include <switch.h>
-#include <stratosphere.hpp>
+#include <string.h>
 
-#include "dmnt_results.hpp"
+#include "dmnt_hid.hpp"
 
-struct MemoryRegionExtents {
-    u64 base;
-    u64 size;
-};
-
-struct CheatProcessMetadata {
-    u64 process_id;
-    u64 title_id;
-    MemoryRegionExtents main_nso_extents;
-    MemoryRegionExtents heap_extents;
-    MemoryRegionExtents alias_extents;
-    MemoryRegionExtents address_space_extents;
-    u8 main_nso_build_id[0x20];
-};
-
-struct CheatDefinition {
-    char readable_name[0x40];
-    uint32_t num_opcodes;
-    uint32_t opcodes[0x100];
-};
-
-struct CheatEntry {
-    bool enabled;
-    uint32_t cheat_id;
-    CheatDefinition definition;
-};
+Result HidManagement::GetKeysDown(u64 *keys) {
+    if (R_FAILED(hidInitialize())) {
+        return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
+    }
+    
+    hidScanInput();
+    *keys = hidKeysDown(CONTROLLER_P1_AUTO);
+    
+    hidExit();
+    return 0x0;
+}

@@ -25,6 +25,7 @@ enum DmntCheatCmd {
     DmntCheat_Cmd_HasCheatProcess = 65000,
     DmntCheat_Cmd_GetCheatProcessEvent = 65001,
     DmntCheat_Cmd_GetCheatProcessMetadata = 65002,
+    DmntCheat_Cmd_ForceOpenCheatProcess = 65003,
     
     /* Interact with Memory */
     DmntCheat_Cmd_GetCheatProcessMappingCount = 65100,
@@ -52,6 +53,7 @@ class DmntCheatService final : public IServiceObject {
         void HasCheatProcess(Out<bool> out);
         void GetCheatProcessEvent(Out<CopiedHandle> out_event);
         Result GetCheatProcessMetadata(Out<CheatProcessMetadata> out_metadata);
+        Result ForceOpenCheatProcess();
         
         Result GetCheatProcessMappingCount(Out<u64> out_count);
         Result GetCheatProcessMappings(OutBuffer<MemoryInfo> mappings, Out<u64> out_count, u64 offset);
@@ -75,6 +77,7 @@ class DmntCheatService final : public IServiceObject {
             MakeServiceCommandMeta<DmntCheat_Cmd_HasCheatProcess, &DmntCheatService::HasCheatProcess>(),
             MakeServiceCommandMeta<DmntCheat_Cmd_GetCheatProcessEvent, &DmntCheatService::GetCheatProcessEvent>(),
             MakeServiceCommandMeta<DmntCheat_Cmd_GetCheatProcessMetadata, &DmntCheatService::GetCheatProcessMetadata>(),
+            MakeServiceCommandMeta<DmntCheat_Cmd_ForceOpenCheatProcess, &DmntCheatService::ForceOpenCheatProcess>(),
 
             MakeServiceCommandMeta<DmntCheat_Cmd_GetCheatProcessMappingCount, &DmntCheatService::GetCheatProcessMappingCount>(),
             MakeServiceCommandMeta<DmntCheat_Cmd_GetCheatProcessMappings, &DmntCheatService::GetCheatProcessMappings>(),

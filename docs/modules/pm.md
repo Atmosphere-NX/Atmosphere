@@ -14,7 +14,7 @@ The SwIPC definition for this command follows.
 ```
 interface nn::pm::detail::IDebugMonitorInterface is pm:dmnt {
   ...
-  [65000] AtmosphereGetProcessHandle(u64 pid) -> handle<copy, process> process_handle;
+  [65000] AtmosphereGetProcessInfo(u64 pid) -> handle<copy, process> process_handle, u64 title_id, u64 storage_id;
 }
 ```
 

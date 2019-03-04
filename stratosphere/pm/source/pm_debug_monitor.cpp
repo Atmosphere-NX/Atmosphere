@@ -76,10 +76,11 @@ Result DebugMonitorService::DisableDebug(u32 which) {
     return Registration::DisableDebug(which);
 }
 
-Result DebugMonitorService::AtmosphereGetProcessHandle(Out<CopiedHandle> proc_hand, u64 pid) {
+Result DebugMonitorService::AtmosphereGetProcessInfo(Out<CopiedHandle> proc_hand, Out<Registration::TidSid> tid_sid, u64 pid) {
     auto proc = Registration::GetProcess(pid);
-    if(proc != nullptr) {
+    if (proc != nullptr) {
         proc_hand.SetValue(proc->handle);
+        tid_sid.SetValue(proc->tid_sid);
         return 0;
     }
     return 0x20F;

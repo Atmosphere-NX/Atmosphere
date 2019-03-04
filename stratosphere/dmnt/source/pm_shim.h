@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 /* Atmosphere extension commands. */
-Result pmdmntAtmosphereGetProcessHandle(Handle* out, u64 pid);
+Result pmdmntAtmosphereGetProcessInfo(Handle* out, u64 *tid_out, FsStorageId *sid_out, u64 pid);
 
 #ifdef __cplusplus
 }

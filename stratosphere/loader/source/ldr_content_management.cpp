@@ -40,7 +40,7 @@ static bool g_mounted_hbl_nsp = false;
 static char g_hbl_sd_path[FS_MAX_PATH+1] = "@Sdcard:/atmosphere/hbl.nsp\x00";
 
 static OverrideKey g_default_override_key = {
-    .key_combination = KEY_R,
+    .key_combination = KEY_L,
     .override_by_default = true
 };
 
@@ -321,7 +321,7 @@ static int LoaderTitleSpecificIniHandler(void *user, const char *section, const 
     return 1;
 }
 
-void ContentManagement::RefreshConfigurationData() {    
+void ContentManagement::RefreshConfigurationData() {
     FILE *config = fopen("sdmc:/atmosphere/loader.ini", "r");
     if (config == NULL) {
         return;

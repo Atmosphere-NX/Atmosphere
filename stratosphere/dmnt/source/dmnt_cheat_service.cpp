@@ -30,6 +30,16 @@ Result DmntCheatService::GetCheatProcessMetadata(Out<CheatProcessMetadata> out_m
     return DmntCheatManager::GetCheatProcessMetadata(out_metadata.GetPointer());
 }
 
+Result DmntCheatService::ForceOpenCheatProcess() {
+    Result rc = DmntCheatManager::ForceOpenCheatProcess();
+    
+    if (R_FAILED(rc)) {
+        rc = ResultDmntCheatNotAttached;
+    }
+    
+    return rc;
+}
+
 
 Result DmntCheatService::GetCheatProcessMappingCount(Out<u64> out_count) {
     return DmntCheatManager::GetCheatProcessMappingCount(out_count.GetPointer());

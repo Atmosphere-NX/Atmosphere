@@ -38,7 +38,7 @@ enum DmntCmd {
     
     Dmnt_Cmd_6X_DisableDebug = 6,
 
-    Dmnt_Cmd_AtmosphereGetProcessHandle = 65000,
+    Dmnt_Cmd_AtmosphereGetProcessInfo = 65000,
     Dmnt_Cmd_AtmosphereGetCurrentLimitInfo = 65001,
 };
 
@@ -55,7 +55,7 @@ class DebugMonitorService final : public IServiceObject {
         Result DisableDebug(u32 which);
 
         /* Atmosphere commands. */
-        Result AtmosphereGetProcessHandle(Out<CopiedHandle> proc_hand, u64 pid);
+        Result AtmosphereGetProcessInfo(Out<CopiedHandle> proc_hand, Out<Registration::TidSid> tid_sid, u64 pid);
         Result AtmosphereGetCurrentLimitInfo(Out<u64> cur_val, Out<u64> lim_val, u32 category, u32 resource);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
@@ -80,7 +80,7 @@ class DebugMonitorService final : public IServiceObject {
             MakeServiceCommandMeta<Dmnt_Cmd_6X_DisableDebug, &DebugMonitorService::DisableDebug, FirmwareVersion_600>(),
             
             /* Atmosphere extensions. */
-            MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetProcessHandle, &DebugMonitorService::AtmosphereGetProcessHandle>(),
+            MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetProcessInfo, &DebugMonitorService::AtmosphereGetProcessInfo>(),
             MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetCurrentLimitInfo, &DebugMonitorService::AtmosphereGetCurrentLimitInfo>(),
         };
 };

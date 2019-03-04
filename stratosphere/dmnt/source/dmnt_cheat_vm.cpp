@@ -18,6 +18,7 @@
 #include "dmnt_cheat_types.hpp"
 #include "dmnt_cheat_vm.hpp"
 #include "dmnt_cheat_manager.hpp"
+#include "dmnt_hid.hpp"
 
 
 void DmntCheatVm::OpenDebugLogFile() {
@@ -356,15 +357,16 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
     CheatVmOpcode cur_opcode;
     u64 kDown = 0;
     
-    /* TODO: Get Keys down. */
-    
+    /* Get Keys down. */
+    HidManagement::GetKeysDown(&kDown);
     
     this->OpenDebugLogFile();
     ON_SCOPE_EXIT { this->CloseDebugLogFile(); };
     
     this->LogToDebugFile("Started VM execution.\n");
-    this->LogToDebugFile("Main NSO: %012lx\n", metadata->main_nso_extents.base);
-    this->LogToDebugFile("Heap:     %012lx\n", metadata->main_nso_extents.base);
+    this->LogToDebugFile("Main NSO:  %012lx\n", metadata->main_nso_extents.base);
+    this->LogToDebugFile("Heap:      %012lx\n", metadata->main_nso_extents.base);
+    this->LogToDebugFile("Keys Down: %08x\n", (u32)(kDown & 0x0FFFFFFF));
         
     /* Clear VM state. */
     this->ResetState();
