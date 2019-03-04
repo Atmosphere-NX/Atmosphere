@@ -82,8 +82,7 @@ Result DmntCheatManager::ReadCheatProcessMemoryForVm(u64 proc_addr, void *out_da
         return svcReadDebugProcessMemory(out_data, g_cheat_process_debug_hnd, proc_addr, size);
     }
     
-    /* TODO: Return value... */
-    return 0x20F;
+    return ResultDmntCheatNotAttached;
 }
 
 Result DmntCheatManager::WriteCheatProcessMemoryForVm(u64 proc_addr, const void *data, size_t size) {
@@ -91,8 +90,67 @@ Result DmntCheatManager::WriteCheatProcessMemoryForVm(u64 proc_addr, const void 
         return svcWriteDebugProcessMemory(g_cheat_process_debug_hnd, data, proc_addr, size);
     }
     
-    /* TODO: Return value... */
-    return 0x20F;
+    return ResultDmntCheatNotAttached;
+}
+
+
+Result DmntCheatManager::GetCheatProcessMappingCount(u64 *out_count) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    MemoryInfo mem_info;
+    
+    u64 address = 0;
+    *out_count = 0;
+    do {
+        mem_info.perm = 0;
+        u32 tmp;
+        if (R_FAILED(svcQueryDebugProcessMemory(&mem_info, &tmp, g_cheat_process_debug_hnd, address))) {
+            break;
+        }
+        
+        if (mem_info.perm != 0) {
+            *out_count += 1;
+        }
+        
+        address = mem_info.addr + mem_info.size;
+    } while (address != 0);
+    
+    return 0;
+}
+
+Result DmntCheatManager::GetCheatProcessMappings(MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    MemoryInfo mem_info;
+    u64 address = 0;
+    u64 count = 0;
+    *out_count = 0;
+    do {
+        mem_info.perm = 0;
+        u32 tmp;
+        if (R_FAILED(svcQueryDebugProcessMemory(&mem_info, &tmp, g_cheat_process_debug_hnd, address))) {
+            break;
+        }
+        
+        if (mem_info.perm != 0) {
+            count++;
+            if (count > offset) {
+                mappings[(*out_count)++] = mem_info;
+            }
+        }
+        
+        address = mem_info.addr + mem_info.size;
+    } while (address != 0 && *out_count < max_count);
+    
+    return 0;
 }
 
 Result DmntCheatManager::ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size) {
@@ -105,6 +163,17 @@ Result DmntCheatManager::WriteCheatProcessMemory(u64 proc_addr, const void *data
     std::scoped_lock<HosMutex> lk(g_cheat_lock);
     
     return WriteCheatProcessMemoryForVm(proc_addr, data, size);
+}
+
+Result DmntCheatManager::QueryCheatProcessMemory(MemoryInfo *mapping, u64 address) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (HasActiveCheatProcess()) {
+        u32 tmp;
+        return svcQueryDebugProcessMemory(mapping, &tmp, g_cheat_process_debug_hnd, address);
+    }
+    
+    return ResultDmntCheatNotAttached;
 }
 
 Handle DmntCheatManager::PrepareDebugNextApplication() {
@@ -263,8 +332,7 @@ Result DmntCheatManager::GetCheatProcessMetadata(CheatProcessMetadata *out) {
         return 0;
     }
     
-    /* TODO: Decide on a set of return values... */
-    return 0x20F;
+    return ResultDmntCheatNotAttached;
 }
 
 void DmntCheatManager::InitializeCheatManager() {

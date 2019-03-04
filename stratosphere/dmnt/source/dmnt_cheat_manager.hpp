@@ -37,8 +37,12 @@ class DmntCheatManager {
         
         static Result ReadCheatProcessMemoryForVm(u64 proc_addr, void *out_data, size_t size);
         static Result WriteCheatProcessMemoryForVm(u64 proc_addr, const void *data, size_t size);
+        
+        static Result GetCheatProcessMappingCount(u64 *out_count);
+        static Result GetCheatProcessMappings(MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset);
         static Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size);
         static Result WriteCheatProcessMemory(u64 proc_addr, const void *data, size_t size);
+        static Result QueryCheatProcessMemory(MemoryInfo *mapping, u64 address);
         
         static void InitializeCheatManager();
 };

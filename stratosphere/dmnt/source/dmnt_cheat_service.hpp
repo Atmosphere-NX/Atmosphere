@@ -31,6 +31,7 @@ enum DmntCheatCmd {
     DmntCheat_Cmd_GetCheatProcessMappings = 65101,
     DmntCheat_Cmd_ReadCheatProcessMemory = 65102,
     DmntCheat_Cmd_WriteCheatProcessMemory = 65103,
+    DmntCheat_Cmd_QueryCheatProcessMemory = 65104,
     
     /* Interact with Cheats */
     DmntCheat_Cmd_GetCheatCount = 65200,
@@ -56,6 +57,7 @@ class DmntCheatService final : public IServiceObject {
         Result GetCheatProcessMappings(OutBuffer<MemoryInfo> mappings, Out<u64> out_count, u64 offset);
         Result ReadCheatProcessMemory(OutBuffer<u8> buffer, u64 address, u64 out_size);
         Result WriteCheatProcessMemory(InBuffer<u8> buffer, u64 address, u64 in_size);
+        Result QueryCheatProcessMemory(Out<MemoryInfo> mapping, u64 address);
         
         Result GetCheatCount(Out<u64> out_count);
         Result GetCheats(OutBuffer<CheatEntry> cheats, Out<u64> out_count, u64 offset);
@@ -78,6 +80,7 @@ class DmntCheatService final : public IServiceObject {
             MakeServiceCommandMeta<DmntCheat_Cmd_GetCheatProcessMappings, &DmntCheatService::GetCheatProcessMappings>(),
             MakeServiceCommandMeta<DmntCheat_Cmd_ReadCheatProcessMemory, &DmntCheatService::ReadCheatProcessMemory>(),
             MakeServiceCommandMeta<DmntCheat_Cmd_WriteCheatProcessMemory, &DmntCheatService::WriteCheatProcessMemory>(),
+            MakeServiceCommandMeta<DmntCheat_Cmd_QueryCheatProcessMemory, &DmntCheatService::QueryCheatProcessMemory>(),
 
             MakeServiceCommandMeta<DmntCheat_Cmd_GetCheatCount, &DmntCheatService::GetCheatCount>(),
             MakeServiceCommandMeta<DmntCheat_Cmd_GetCheats, &DmntCheatService::GetCheats>(),

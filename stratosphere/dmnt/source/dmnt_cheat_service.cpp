@@ -32,23 +32,45 @@ Result DmntCheatService::GetCheatProcessMetadata(Out<CheatProcessMetadata> out_m
 
 
 Result DmntCheatService::GetCheatProcessMappingCount(Out<u64> out_count) {
-    /* TODO */
-    return 0xF601;
+    return DmntCheatManager::GetCheatProcessMappingCount(out_count.GetPointer());
 }
 
 Result DmntCheatService::GetCheatProcessMappings(OutBuffer<MemoryInfo> mappings, Out<u64> out_count, u64 offset) {
-    /* TODO */
-    return 0xF601;
+    if (mappings.buffer == nullptr) {
+        return ResultDmntCheatNullBuffer;
+    }
+    
+    return DmntCheatManager::GetCheatProcessMappings(mappings.buffer, mappings.num_elements, out_count.GetPointer(), offset);
 }
 
 Result DmntCheatService::ReadCheatProcessMemory(OutBuffer<u8> buffer, u64 address, u64 out_size) {
-    /* TODO */
-    return 0xF601;
+    if (buffer.buffer == nullptr) {
+        return ResultDmntCheatNullBuffer;
+    }
+    
+    u64 sz = out_size;
+    if (buffer.num_elements < sz) {
+        sz = buffer.num_elements;
+    }
+    
+    return DmntCheatManager::ReadCheatProcessMemory(address, buffer.buffer, sz);
 }
 
 Result DmntCheatService::WriteCheatProcessMemory(InBuffer<u8> buffer, u64 address, u64 in_size) {
-    /* TODO */
-    return 0xF601;
+    if (buffer.buffer == nullptr) {
+        return ResultDmntCheatNullBuffer;
+    }
+    
+    u64 sz = in_size;
+    if (buffer.num_elements < sz) {
+        sz = buffer.num_elements;
+    }
+    
+    return DmntCheatManager::WriteCheatProcessMemory(address, buffer.buffer, sz);
+}
+
+Result DmntCheatService::QueryCheatProcessMemory(Out<MemoryInfo> mapping, u64 address) {
+    return DmntCheatManager::QueryCheatProcessMemory(mapping.GetPointer(), address);
 }
 
 
