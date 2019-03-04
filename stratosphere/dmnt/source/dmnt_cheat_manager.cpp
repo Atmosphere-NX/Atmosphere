@@ -193,7 +193,6 @@ void DmntCheatManager::OnNewApplicationLaunch() {
         
     /* TODO: Read cheats off the SD. */
     
-    
     /* Open a debug handle. */
     if (R_FAILED((rc = svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id)))) {
         fatalSimple(rc);

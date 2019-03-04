@@ -16,6 +16,7 @@
  
 #pragma once
 #include <switch.h>
+#include <stdarg.h>
 #include <stratosphere.hpp>
 
 #include "dmnt_cheat_types.hpp"
@@ -171,6 +172,12 @@ class DmntCheatVm {
         void SkipConditionalBlock();
         void ResetState();
         
+        /* For debugging. These will be IFDEF'd out normally. */
+        void OpenDebugLogFile();
+        void CloseDebugLogFile();
+        void LogToDebugFile(const char *format, ...);
+        void LogOpcode(const CheatVmOpcode *opcode);
+        
         static u64 GetVmInt(VmInt value, u32 bit_width);
         static u64 GetCheatProcessAddress(const CheatProcessMetadata* metadata, MemoryAccessType mem_type, u64 rel_address);
     public:
@@ -181,4 +188,8 @@ class DmntCheatVm {
         }
         
         void Execute(const CheatProcessMetadata *metadata);
+#ifdef DMNT_CHEAT_VM_DEBUG_LOG
+    private:
+        FILE *debug_log_file = NULL;
+#endif
 };

@@ -19,6 +19,119 @@
 #include "dmnt_cheat_vm.hpp"
 #include "dmnt_cheat_manager.hpp"
 
+
+void DmntCheatVm::OpenDebugLogFile() {
+    #ifdef DMNT_CHEAT_VM_DEBUG_LOG
+    CloseDebugLogFile();
+    this->debug_log_file = fopen("cheat_vm_log.txt", "wb");
+    #endif
+}
+
+void DmntCheatVm::CloseDebugLogFile() {
+    #ifdef DMNT_CHEAT_VM_DEBUG_LOG
+    if (this->debug_log_file != NULL) {
+        fclose(this->debug_log_file);
+        this->debug_log_file = NULL;
+    }
+    #endif
+}
+
+void DmntCheatVm::LogToDebugFile(const char *format, ...) {
+    #ifdef DMNT_CHEAT_VM_DEBUG_LOG
+    if (this->debug_log_file != NULL) {
+        va_list arglist;
+        va_start(arglist, format);
+        vfprintf(this->debug_log_file, format, arglist);
+        va_end(arglist);
+    }
+    #endif
+}
+
+void DmntCheatVm::LogOpcode(const CheatVmOpcode *opcode) {
+    #ifndef DMNT_CHEAT_VM_DEBUG_LOG
+        return;
+    #endif
+    switch (opcode->opcode) {
+        case CheatVmOpcodeType_StoreStatic:
+            this->LogToDebugFile("Opcode: Store Static\n");
+            this->LogToDebugFile("Bit Width: %x\n", opcode->store_static.bit_width);
+            this->LogToDebugFile("Mem Type:  %x\n", opcode->store_static.mem_type);
+            this->LogToDebugFile("Reg Idx:   %x\n", opcode->store_static.offset_register);
+            this->LogToDebugFile("Rel Addr:  %lx\n", opcode->store_static.rel_address);
+            this->LogToDebugFile("Value:     %lx\n", opcode->store_static.value.bit64);
+            break;
+        case CheatVmOpcodeType_BeginConditionalBlock:
+            this->LogToDebugFile("Opcode: Begin Conditional\n");
+            this->LogToDebugFile("Bit Width: %x\n", opcode->begin_cond.bit_width);
+            this->LogToDebugFile("Mem Type:  %x\n", opcode->begin_cond.mem_type);
+            this->LogToDebugFile("Cond Type: %x\n", opcode->begin_cond.cond_type);
+            this->LogToDebugFile("Rel Addr:  %lx\n", opcode->begin_cond.rel_address);
+            this->LogToDebugFile("Value:     %lx\n", opcode->begin_cond.value.bit64);
+            break;
+        case CheatVmOpcodeType_EndConditionalBlock:
+            this->LogToDebugFile("Opcode: End Conditional\n");
+            break;
+        case CheatVmOpcodeType_ControlLoop:
+            if (opcode->ctrl_loop.start_loop) {
+                this->LogToDebugFile("Opcode: Start Loop\n");
+                this->LogToDebugFile("Reg Idx:   %x\n", opcode->ctrl_loop.reg_index);
+                this->LogToDebugFile("Num Iters: %x\n", opcode->ctrl_loop.num_iters);
+            } else {
+                this->LogToDebugFile("Opcode: End Loop\n");
+                this->LogToDebugFile("Reg Idx:   %x\n", opcode->ctrl_loop.reg_index);
+            }
+            break;
+        case CheatVmOpcodeType_LoadRegisterStatic:
+            this->LogToDebugFile("Opcode: Load Register Static\n");
+            this->LogToDebugFile("Reg Idx:   %x\n", opcode->ldr_static.reg_index);
+            this->LogToDebugFile("Value:     %lx\n", opcode->ldr_static.value);
+            break;
+        case CheatVmOpcodeType_LoadRegisterMemory:
+            this->LogToDebugFile("Opcode: Load Register Memory\n");
+            this->LogToDebugFile("Bit Width: %x\n", opcode->ldr_memory.bit_width);
+            this->LogToDebugFile("Reg Idx:   %x\n", opcode->ldr_memory.reg_index);
+            this->LogToDebugFile("Mem Type:  %x\n", opcode->ldr_memory.mem_type);
+            this->LogToDebugFile("From Reg:  %d\n", opcode->ldr_memory.load_from_reg);
+            this->LogToDebugFile("Rel Addr:  %lx\n", opcode->ldr_memory.rel_address);
+            break;
+        case CheatVmOpcodeType_StoreToRegisterAddress:
+            this->LogToDebugFile("Opcode: Store Static to Register Address\n");
+            this->LogToDebugFile("Bit Width: %x\n", opcode->str_regaddr.bit_width);
+            this->LogToDebugFile("Reg Idx:   %x\n", opcode->str_regaddr.reg_index);
+            if (opcode->str_regaddr.add_offset_reg) {
+                this->LogToDebugFile("O Reg Idx: %x\n", opcode->str_regaddr.offset_reg_index);
+            }
+            this->LogToDebugFile("Incr Reg:  %d\n", opcode->str_regaddr.increment_reg);
+            this->LogToDebugFile("Value:     %lx\n", opcode->str_regaddr.value);
+            break;
+        case CheatVmOpcodeType_PerformArithmeticStatic:
+            this->LogToDebugFile("Opcode: Perform Static Arithmetic\n");
+            this->LogToDebugFile("Bit Width: %x\n", opcode->perform_math_static.bit_width);
+            this->LogToDebugFile("Reg Idx:   %x\n", opcode->perform_math_static.reg_index);
+            this->LogToDebugFile("Math Type: %x\n", opcode->perform_math_static.math_type);
+            this->LogToDebugFile("Value:     %lx\n", opcode->perform_math_static.value);
+            break;
+        case CheatVmOpcodeType_BeginKeypressConditionalBlock:
+            this->LogToDebugFile("Opcode: Begin Keypress Conditional\n");
+            this->LogToDebugFile("Key Mask:  %x\n", opcode->begin_keypress_cond.key_mask);
+            break;
+        case CheatVmOpcodeType_PerformArithmeticRegister:
+            this->LogToDebugFile("Opcode: Perform Register Arithmetic\n");
+            this->LogToDebugFile("Bit Width: %x\n", opcode->perform_math_reg.bit_width);
+            this->LogToDebugFile("Dst Idx:   %x\n", opcode->perform_math_reg.dst_reg_index);
+            this->LogToDebugFile("Src1 Idx:  %x\n", opcode->perform_math_reg.src_reg_1_index);
+            if (opcode->perform_math_reg.has_immediate) {
+                this->LogToDebugFile("Value:     %lx\n", opcode->perform_math_reg.value.bit64);
+            } else {
+                this->LogToDebugFile("Src2 Idx:  %x\n", opcode->perform_math_reg.src_reg_2_index);
+            }
+            break;
+        default:
+            this->LogToDebugFile("Unknown opcode: %x\n", opcode->opcode);
+            break;
+    }
+}
+
 bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
     /* If we've ever seen a decode failure, return false. */
     bool valid = this->decode_success;
@@ -131,7 +244,7 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
                 opcode.ldr_memory.bit_width = (first_dword >> 24) & 0xF;
                 opcode.ldr_memory.mem_type = (MemoryAccessType)((first_dword >> 20) & 0xF);
                 opcode.ldr_memory.reg_index = ((first_dword >> 16) & 0xF);
-                opcode.ldr_memory.load_from_reg = ((first_dword >> 12) & 0xF) == 0;
+                opcode.ldr_memory.load_from_reg = ((first_dword >> 12) & 0xF) != 0;
                 opcode.ldr_memory.rel_address = ((u64)(first_dword & 0xFF) << 32ul) | ((u64)second_dword);
             }
             break;
@@ -141,8 +254,8 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
                 /* Read additional words. */
                 opcode.str_regaddr.bit_width = (first_dword >> 24) & 0xF;
                 opcode.str_regaddr.reg_index = ((first_dword >> 16) & 0xF);
-                opcode.str_regaddr.increment_reg = ((first_dword >> 12) & 0xF) == 0;
-                opcode.str_regaddr.add_offset_reg = ((first_dword >> 8) & 0xF) == 0;
+                opcode.str_regaddr.increment_reg = ((first_dword >> 12) & 0xF) != 0;
+                opcode.str_regaddr.add_offset_reg = ((first_dword >> 8) & 0xF) != 0;
                 opcode.str_regaddr.offset_reg_index = ((first_dword >> 4) & 0xF);
                 opcode.str_regaddr.value = (((u64)GetNextDword()) << 32ul) | ((u64)GetNextDword());
             }
@@ -171,7 +284,7 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
                 opcode.perform_math_reg.math_type = (RegisterArithmeticType)((first_dword >> 20) & 0xF);
                 opcode.perform_math_reg.dst_reg_index = ((first_dword >> 16) & 0xF);
                 opcode.perform_math_reg.src_reg_1_index = ((first_dword >> 12) & 0xF);
-                opcode.perform_math_reg.has_immediate = ((first_dword >> 8) & 0xF) == 0;
+                opcode.perform_math_reg.has_immediate = ((first_dword >> 8) & 0xF) != 0;
                 if (opcode.perform_math_reg.has_immediate) {
                     opcode.perform_math_reg.src_reg_2_index = 0;
                     opcode.perform_math_reg.value = GetNextVmInt(opcode.perform_math_reg.bit_width);
@@ -245,11 +358,26 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
     
     /* TODO: Get Keys down. */
     
+    
+    this->OpenDebugLogFile();
+    ON_SCOPE_EXIT { this->CloseDebugLogFile(); };
+    
+    this->LogToDebugFile("Started VM execution.\n");
+    this->LogToDebugFile("Main NSO: %012lx\n", metadata->main_nso_extents.base);
+    this->LogToDebugFile("Heap:     %012lx\n", metadata->main_nso_extents.base);
+        
     /* Clear VM state. */
     this->ResetState();
     
     /* Loop until program finishes. */
     while (this->DecodeNextOpcode(&cur_opcode)) {
+        this->LogToDebugFile("Instruction Ptr: %04x\n", (u32)this->instruction_ptr);
+
+        for (size_t i = 0; i < NumRegisters; i++) {
+            this->LogToDebugFile("Registers[%02x]: %016lx\n", i, this->registers[i]);
+        }
+        this->LogOpcode(&cur_opcode);
+        
         switch (cur_opcode.opcode) {
             case CheatVmOpcodeType_StoreStatic:
                 {
