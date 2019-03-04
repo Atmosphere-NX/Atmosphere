@@ -235,6 +235,9 @@ void EmbeddedBoot2::Main() {
     
     /* Launch usb. */
     LaunchTitle(Boot2KnownTitleId::usb, FsStorageId_NandSystem, 0, NULL);
+    
+    /* Launch tma. */
+    LaunchTitle(Boot2KnownTitleId::tma, FsStorageId_NandSystem, 0, NULL);
       
     /* Launch Atmosphere dmnt, using FsStorageId_None to force SD card boot. */
     LaunchTitle(Boot2KnownTitleId::dmnt, FsStorageId_None, 0, NULL);
