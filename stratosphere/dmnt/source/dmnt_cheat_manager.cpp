@@ -63,8 +63,8 @@ bool DmntCheatManager::HasActiveCheatProcess() {
 void DmntCheatManager::ContinueCheatProcess() {
     if (HasActiveCheatProcess()) {
         /* Loop getting debug events. */
-        u8 tmp;
-        while (R_SUCCEEDED(svcGetDebugEvent(&tmp, g_cheat_process_debug_hnd))) {
+        u64 debug_event_buf[0x50];
+        while (R_SUCCEEDED(svcGetDebugEvent((u8 *)debug_event_buf, g_cheat_process_debug_hnd))) {
             /* ... */
         }
         
@@ -130,6 +130,13 @@ static void PopulateMemoryExtents(MemoryRegionExtents *extents, Handle p_h, u64 
     }
 }
 
+static void StartDebugProcess(u64 pid) {
+    Result rc = pmdmntStartProcess(pid);
+    if (R_FAILED(rc)) {
+        fatalSimple(rc);
+    }
+}
+
 void DmntCheatManager::OnNewApplicationLaunch() {
     std::scoped_lock<HosMutex> lk(g_cheat_lock);
     Result rc;
@@ -166,7 +173,7 @@ void DmntCheatManager::OnNewApplicationLaunch() {
     {
         LoaderModuleInfo proc_modules[2];
         u32 num_modules;
-        if (R_FAILED((rc = ldrDmntGetModuleInfos(g_cheat_process_metadata.process_id, proc_modules, 2, &num_modules)))) {
+        if (R_FAILED((rc = ldrDmntGetModuleInfos(g_cheat_process_metadata.process_id, proc_modules, sizeof(proc_modules), &num_modules)))) {
             fatalSimple(rc);
         }
         
@@ -174,6 +181,7 @@ void DmntCheatManager::OnNewApplicationLaunch() {
         /* If we only have one, we must be e.g. mitming HBL. */
         /* We don't want to fuck with HBL. */
         if (num_modules != 2) {
+            StartDebugProcess(g_cheat_process_metadata.process_id);
             g_cheat_process_metadata.process_id = 0;
             return;
         }
@@ -182,13 +190,17 @@ void DmntCheatManager::OnNewApplicationLaunch() {
         g_cheat_process_metadata.main_nso_extents.size = proc_modules[1].size;
         memcpy(g_cheat_process_metadata.main_nso_build_id, proc_modules[1].build_id, sizeof(g_cheat_process_metadata.main_nso_build_id));
     }
-    
+        
     /* TODO: Read cheats off the SD. */
+    
     
     /* Open a debug handle. */
     if (R_FAILED((rc = svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id)))) {
         fatalSimple(rc);
     }
+    
+    /* Start the process. */
+    StartDebugProcess(g_cheat_process_metadata.process_id);
     
     /* Continue debug events, etc. */
     ContinueCheatProcess();
