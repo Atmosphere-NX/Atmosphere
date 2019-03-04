@@ -221,7 +221,9 @@ void ContentManagement::SetCreatedTitle(u64 tid) {
 }
 
 static OverrideKey ParseOverrideKey(const char *value) {
-    OverrideKey cfg;
+    OverrideKey cfg = {
+        .key_combination = 0
+    };
     
     /* Parse on by default. */
     if (value[0] == '!') {
@@ -232,44 +234,65 @@ static OverrideKey ParseOverrideKey(const char *value) {
     }
     
     /* Parse key combination. */
-    if (strcasecmp(value, "A") == 0) {
-        cfg.key_combination = KEY_A;
-    } else if (strcasecmp(value, "B") == 0) {
-        cfg.key_combination = KEY_B;
-    } else if (strcasecmp(value, "X") == 0) {
-        cfg.key_combination = KEY_X;
-    } else if (strcasecmp(value, "Y") == 0) {
-        cfg.key_combination = KEY_Y;
-    } else if (strcasecmp(value, "LS") == 0) {
-        cfg.key_combination = KEY_LSTICK;
-    } else if (strcasecmp(value, "RS") == 0) {
-        cfg.key_combination = KEY_RSTICK;
-    } else if (strcasecmp(value, "L") == 0) {
-        cfg.key_combination = KEY_L;
-    } else if (strcasecmp(value, "R") == 0) {
-        cfg.key_combination = KEY_R;
-    } else if (strcasecmp(value, "ZL") == 0) {
-        cfg.key_combination = KEY_ZL;
-    } else if (strcasecmp(value, "ZR") == 0) {
-        cfg.key_combination = KEY_ZR;
-    } else if (strcasecmp(value, "PLUS") == 0) {
-        cfg.key_combination = KEY_PLUS;
-    } else if (strcasecmp(value, "MINUS") == 0) {
-        cfg.key_combination = KEY_MINUS;
-    } else if (strcasecmp(value, "DLEFT") == 0) {
-        cfg.key_combination = KEY_DLEFT;
-    } else if (strcasecmp(value, "DUP") == 0) {
-        cfg.key_combination = KEY_DUP;
-    } else if (strcasecmp(value, "DRIGHT") == 0) {
-        cfg.key_combination = KEY_DRIGHT;
-    } else if (strcasecmp(value, "DDOWN") == 0) {
-        cfg.key_combination = KEY_DDOWN;
-    } else if (strcasecmp(value, "SL") == 0) {
-        cfg.key_combination = KEY_SL;
-    } else if (strcasecmp(value, "SR") == 0) {
-        cfg.key_combination = KEY_SR;
-    } else {
-        cfg.key_combination = 0;
+    while (value[0] != '\0') {
+        if (strncasecmp(value, "A", 1) == 0) {
+            cfg.key_combination |= KEY_A;
+            value += 1;
+        } else if (strncasecmp(value, "B", 1) == 0) {
+            cfg.key_combination |= KEY_B;
+            value += 1;
+        } else if (strncasecmp(value, "X", 1) == 0) {
+            cfg.key_combination |= KEY_X;
+            value += 1;
+        } else if (strncasecmp(value, "Y", 1) == 0) {
+            cfg.key_combination |= KEY_Y;
+            value += 1;
+        } else if (strncasecmp(value, "LS", 2) == 0) {
+            cfg.key_combination |= KEY_LSTICK;
+            value += 2;
+        } else if (strncasecmp(value, "RS", 2) == 0) {
+            cfg.key_combination |= KEY_RSTICK;
+            value += 2;
+        } else if (strncasecmp(value, "L", 1) == 0) {
+            cfg.key_combination |= KEY_L;
+            value += 1;
+        } else if (strncasecmp(value, "R", 1) == 0) {
+            cfg.key_combination |= KEY_R;
+            value += 1;
+        } else if (strncasecmp(value, "ZL", 2) == 0) {
+            cfg.key_combination |= KEY_ZL;
+            value += 2;
+        } else if (strncasecmp(value, "ZR", 2) == 0) {
+            cfg.key_combination |= KEY_ZR;
+            value += 2;
+        } else if (strncasecmp(value, "PLUS", 4) == 0) {
+            cfg.key_combination |= KEY_PLUS;
+            value += 4;
+        } else if (strncasecmp(value, "MINUS", 5) == 0) {
+            cfg.key_combination |= KEY_MINUS;
+            value += 5;
+        } else if (strncasecmp(value, "DLEFT", 5) == 0) {
+            cfg.key_combination |= KEY_DLEFT;
+            value += 5;
+        } else if (strncasecmp(value, "DUP", 3) == 0) {
+            cfg.key_combination |= KEY_DUP;
+            value += 3;
+        } else if (strncasecmp(value, "DRIGHT", 6) == 0) {
+            cfg.key_combination |= KEY_DRIGHT;
+            value += 6;
+        } else if (strncasecmp(value, "DDOWN", 5) == 0) {
+            cfg.key_combination |= KEY_DDOWN;
+            value += 5;
+        } else if (strncasecmp(value, "SL", 2) == 0) {
+            cfg.key_combination |= KEY_SL;
+            value += 2;
+        } else if (strncasecmp(value, "SR", 2) == 0) {
+            cfg.key_combination |= KEY_SR;
+            value += 2;
+        } else {
+            cfg.key_combination = 0;
+            break;
+        }
     }
     
     return cfg;
