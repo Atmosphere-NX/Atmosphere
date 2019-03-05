@@ -164,6 +164,7 @@ struct StoreRegisterToAddressOpcode {
 
 struct CheatVmOpcode {
     CheatVmOpcodeType opcode;
+    bool begin_conditional_block;
     union {
         StoreStaticOpcode store_static;
         BeginConditionalOpcode begin_cond;
@@ -186,6 +187,7 @@ class DmntCheatVm {
     private:
         size_t num_opcodes = 0;
         size_t instruction_ptr = 0;
+        size_t condition_depth = 0;
         bool decode_success = false;
         u32 program[MaximumProgramOpcodeCount] = {0};
         u64 registers[NumRegisters] = {0};

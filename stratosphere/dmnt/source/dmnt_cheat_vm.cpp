@@ -204,6 +204,17 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
         opcode.opcode = (CheatVmOpcodeType)((((u32)opcode.opcode) << 4) | ((first_dword >> 24) & 0xF));
     }
     
+    /* detect condition start. */
+    switch (opcode.opcode) {
+        case CheatVmOpcodeType_BeginConditionalBlock:
+        case CheatVmOpcodeType_BeginKeypressConditionalBlock:
+            opcode.begin_conditional_block = true;
+            break;
+        default:
+            opcode.begin_conditional_block = false;
+            break;
+    }
+    
     switch (opcode.opcode) {
         case CheatVmOpcodeType_StoreStatic:
             {
@@ -357,16 +368,32 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
 }
 
 void DmntCheatVm::SkipConditionalBlock() {
-    CheatVmOpcode skip_opcode;
-    while (this->DecodeNextOpcode(&skip_opcode)) {
-        /* Decode instructions until we see end of conditional block. */
-        /* NOTE: This is broken in gateway's implementation. */
-        /* Gateway currently checks for "0x2" instead of "0x20000000" */
-        /* In addition, they do a linear scan instead of correctly decoding opcodes. */
-        /* This causes issues if "0x2" appears as an immediate in the conditional block... */
-        if (skip_opcode.opcode == CheatVmOpcodeType_EndConditionalBlock) {
-            break;
+    if (this->condition_depth > 0) {
+        /* We want to continue until we're out of the current block. */
+        size_t desired_depth = this->condition_depth - 1;
+        
+        CheatVmOpcode skip_opcode;
+        while (this->DecodeNextOpcode(&skip_opcode) && this->condition_depth > desired_depth) {
+            /* Decode instructions until we see end of the current conditional block. */
+            /* NOTE: This is broken in gateway's implementation. */
+            /* Gateway currently checks for "0x2" instead of "0x20000000" */
+            /* In addition, they do a linear scan instead of correctly decoding opcodes. */
+            /* This causes issues if "0x2" appears as an immediate in the conditional block... */
+            
+            /* We also support nesting of conditional blocks, and Gateway does not. */
+            if (skip_opcode.begin_conditional_block) {
+                this->condition_depth++;
+            } else if (skip_opcode.opcode == CheatVmOpcodeType_EndConditionalBlock) {
+                this->condition_depth--;
+            }
         }
+    } else {
+        /* Skipping, but this->condition_depth = 0. */
+        /* This is an error condition. */
+        /* However, I don't actually believe it is possible for this to happen. */
+        /* I guess we'll throw a fatal error here, so as to encourage me to fix the VM */
+        /* in the event that someone triggers it? I don't know how you'd do that. */
+        fatalSimple(ResultDmntCheatVmInvalidCondDepth);
     }
 }
 
@@ -402,6 +429,7 @@ void DmntCheatVm::ResetState() {
         this->loop_tops[i] = 0;
     }
     this->instruction_ptr = 0;
+    this->condition_depth = 0;
     this->decode_success = true;
 }
 
@@ -451,6 +479,11 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
             this->LogToDebugFile("Registers[%02x]: %016lx\n", i, this->registers[i]);
         }
         this->LogOpcode(&cur_opcode);
+        
+        /* Increment conditional depth, if relevant. */
+        if (cur_opcode.begin_conditional_block) {
+            this->condition_depth++;
+        }
         
         switch (cur_opcode.opcode) {
             case CheatVmOpcodeType_StoreStatic:
@@ -511,7 +544,11 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                 }
                 break;
             case CheatVmOpcodeType_EndConditionalBlock:
-                /* There is nothing to do here. Just move on to the next instruction. */
+                /* Decrement the condition depth. */
+                /* We will assume, graciously, that mismatched conditional block ends are a nop. */
+                if (this->condition_depth > 0) {
+                    this->condition_depth--;
+                }
                 break;
             case CheatVmOpcodeType_ControlLoop:
                 if (cur_opcode.ctrl_loop.start_loop) {

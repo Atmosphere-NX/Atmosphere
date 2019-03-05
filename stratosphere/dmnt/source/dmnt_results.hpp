@@ -34,3 +34,5 @@ static constexpr Result ResultDmntCheatInvalidFreezeWidth     = MAKERESULT(Modul
 static constexpr Result ResultDmntCheatAddressAlreadyFrozen   = MAKERESULT(Module_Dmnt, 6601);
 static constexpr Result ResultDmntCheatAddressNotFrozen       = MAKERESULT(Module_Dmnt, 6602);
 static constexpr Result ResultDmntCheatTooManyFrozenAddresses = MAKERESULT(Module_Dmnt, 6603);
+
+static constexpr Result ResultDmntCheatVmInvalidCondDepth = MAKERESULT(Module_Dmnt, 6700);
