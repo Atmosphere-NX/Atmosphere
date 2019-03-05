@@ -34,6 +34,10 @@ enum CheatVmOpcodeType : u32 {
     
     /* These are not implemented by Gateway's VM. */
     CheatVmOpcodeType_PerformArithmeticRegister = 9,
+    
+    /* This is a meta entry, and not a real opcode. */
+    /* This is to facilitate multi-nybble instruction decoding in the future. */
+    CheatVmOpcodeType_ExtendedWidth = 12,
 };
 
 enum MemoryAccessType : u32 {

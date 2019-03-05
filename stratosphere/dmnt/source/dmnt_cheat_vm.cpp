@@ -183,6 +183,9 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
     }
     
     opcode.opcode = (CheatVmOpcodeType)(((first_dword >> 28) & 0xF));
+    if (opcode.opcode >= CheatVmOpcodeType_ExtendedWidth) {
+        opcode.opcode = (CheatVmOpcodeType)((((u32)opcode.opcode) << 4) | ((first_dword >> 24) & 0xF));
+    }
     
     switch (opcode.opcode) {
         case CheatVmOpcodeType_StoreStatic:
@@ -294,6 +297,7 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
                 }
             }
             break;
+        case CheatVmOpcodeType_ExtendedWidth:
         default:
             /* Unrecognized instruction cannot be decoded. */
             valid = false;
@@ -630,6 +634,9 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                     /* Save to register. */
                     this->registers[cur_opcode.perform_math_reg.dst_reg_index] = res_val;
                 }
+                break;
+            default:
+                /* By default, we do a no-op. */
                 break;
         }
     }
