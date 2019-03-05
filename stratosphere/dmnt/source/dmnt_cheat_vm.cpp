@@ -370,7 +370,7 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
 void DmntCheatVm::SkipConditionalBlock() {
     if (this->condition_depth > 0) {
         /* We want to continue until we're out of the current block. */
-        size_t desired_depth = this->condition_depth - 1;
+        const size_t desired_depth = this->condition_depth - 1;
         
         CheatVmOpcode skip_opcode;
         while (this->DecodeNextOpcode(&skip_opcode) && this->condition_depth > desired_depth) {
