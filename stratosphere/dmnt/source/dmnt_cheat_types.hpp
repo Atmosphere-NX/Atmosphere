@@ -46,3 +46,13 @@ struct CheatEntry {
     uint32_t cheat_id;
     CheatDefinition definition;
 };
+
+struct FrozenAddressValue {
+    u64 value;
+    u8 width;
+};
+
+struct FrozenAddressEntry {
+    u64 address;
+    FrozenAddressValue value;
+};

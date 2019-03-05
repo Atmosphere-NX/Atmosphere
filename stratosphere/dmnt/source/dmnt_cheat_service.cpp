@@ -143,16 +143,35 @@ Result DmntCheatService::RemoveCheat(u32 cheat_id) {
 /* ========================================================================================= */
 
 Result DmntCheatService::GetFrozenAddressCount(Out<u64> out_count) {
-    /* TODO */
-    return 0xF601;
+    return DmntCheatManager::GetFrozenAddressCount(out_count.GetPointer());
 }
 
-Result DmntCheatService::GetFrozenAddresses(OutBuffer<uintptr_t> addresses, Out<u64> out_count, u64 offset) {
-    /* TODO */
-    return 0xF601;
+Result DmntCheatService::GetFrozenAddresses(OutBuffer<FrozenAddressEntry> frz_addrs, Out<u64> out_count, u64 offset) {
+    if (frz_addrs.buffer == nullptr) {
+        return ResultDmntCheatNullBuffer;
+    }
+    
+    return DmntCheatManager::GetFrozenAddresses(frz_addrs.buffer, frz_addrs.num_elements, out_count.GetPointer(), offset);
 }
 
-Result DmntCheatService::ToggleAddressFrozen(uintptr_t address) {
-    /* TODO */
-    return 0xF601;
+Result DmntCheatService::GetFrozenAddress(Out<FrozenAddressEntry> entry, u64 address) {
+    return DmntCheatManager::GetFrozenAddress(entry.GetPointer(), address);
+}
+
+Result DmntCheatService::EnableFrozenAddress(u64 address, u64 width) {
+    switch (width) {
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+            break;
+        default:
+            return ResultDmntCheatInvalidFreezeWidth;
+    }
+    
+    return DmntCheatManager::EnableFrozenAddress(address, width);
+}
+
+Result DmntCheatService::DisableFrozenAddress(u64 address) {
+    return DmntCheatManager::DisableFrozenAddress(address);
 }

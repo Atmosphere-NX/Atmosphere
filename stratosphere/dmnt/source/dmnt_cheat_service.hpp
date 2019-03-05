@@ -45,7 +45,9 @@ enum DmntCheatCmd {
     /* Interact with Frozen Addresses */
     DmntCheat_Cmd_GetFrozenAddressCount = 65300,
     DmntCheat_Cmd_GetFrozenAddresses = 65301,
-    DmntCheat_Cmd_ToggleAddressFrozen = 65302,
+    DmntCheat_Cmd_GetFrozenAddress = 65302,
+    DmntCheat_Cmd_EnableFrozenAddress = 65303,
+    DmntCheat_Cmd_DisableFrozenAddress = 65304,
 };
 
 class DmntCheatService final : public IServiceObject {
@@ -69,8 +71,10 @@ class DmntCheatService final : public IServiceObject {
         Result RemoveCheat(u32 cheat_id);
         
         Result GetFrozenAddressCount(Out<u64> out_count);
-        Result GetFrozenAddresses(OutBuffer<uintptr_t> addresses, Out<u64> out_count, u64 offset);
-        Result ToggleAddressFrozen(uintptr_t address);
+        Result GetFrozenAddresses(OutBuffer<FrozenAddressEntry> addresses, Out<u64> out_count, u64 offset);
+        Result GetFrozenAddress(Out<FrozenAddressEntry> entry, u64 address);
+        Result EnableFrozenAddress(u64 address, u64 width);
+        Result DisableFrozenAddress(u64 address);
 
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
@@ -94,6 +98,8 @@ class DmntCheatService final : public IServiceObject {
 
             MakeServiceCommandMeta<DmntCheat_Cmd_GetFrozenAddressCount, &DmntCheatService::GetFrozenAddressCount>(),
             MakeServiceCommandMeta<DmntCheat_Cmd_GetFrozenAddresses, &DmntCheatService::GetFrozenAddresses>(),
-            MakeServiceCommandMeta<DmntCheat_Cmd_ToggleAddressFrozen, &DmntCheatService::ToggleAddressFrozen>(),
+            MakeServiceCommandMeta<DmntCheat_Cmd_GetFrozenAddress, &DmntCheatService::GetFrozenAddress>(),
+            MakeServiceCommandMeta<DmntCheat_Cmd_EnableFrozenAddress, &DmntCheatService::EnableFrozenAddress>(),
+            MakeServiceCommandMeta<DmntCheat_Cmd_DisableFrozenAddress, &DmntCheatService::DisableFrozenAddress>(),
         };
 };

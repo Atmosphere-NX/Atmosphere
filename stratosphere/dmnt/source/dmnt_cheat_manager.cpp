@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
+#include <map>
 #include <switch.h>
 #include "dmnt_cheat_manager.hpp"
 #include "dmnt_cheat_vm.hpp"
@@ -32,6 +33,9 @@ static Handle g_cheat_process_debug_hnd = 0;
 /* Global cheat entry storage. */
 static CheatEntry g_cheat_entries[DmntCheatManager::MaxCheatCount];
 
+/* Global frozen address storage. */
+static std::map<u64, FrozenAddressValue> g_frozen_addresses_map;
+
 void DmntCheatManager::CloseActiveCheatProcess() {
     if (g_cheat_process_debug_hnd != 0) {
         /* Close process resources. */
@@ -41,6 +45,9 @@ void DmntCheatManager::CloseActiveCheatProcess() {
         
         /* Clear cheat list. */
         ResetAllCheatEntries();
+        
+        /* Clear frozen addresses. */
+        ResetFrozenAddresses();
         
         /* Signal to our fans. */
         g_cheat_process_event->Signal();
@@ -184,6 +191,11 @@ Result DmntCheatManager::QueryCheatProcessMemory(MemoryInfo *mapping, u64 addres
     }
     
     return ResultDmntCheatNotAttached;
+}
+
+void DmntCheatManager::ResetFrozenAddresses() {
+    /* Just clear the map. */
+    g_frozen_addresses_map.clear();
 }
 
 void DmntCheatManager::ResetCheatEntry(size_t i) {
@@ -466,6 +478,102 @@ Result DmntCheatManager::RemoveCheat(u32 cheat_id) {
     return 0;
 }
 
+Result DmntCheatManager::GetFrozenAddressCount(u64 *out_count) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    *out_count = g_frozen_addresses_map.size();
+    return 0;
+}
+
+Result DmntCheatManager::GetFrozenAddresses(FrozenAddressEntry *frz_addrs, size_t max_count, u64 *out_count, u64 offset) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    u64 count = 0;
+    *out_count = 0;
+    for (auto const& [address, value] : g_frozen_addresses_map) {
+        if ((*out_count) >= max_count) {
+            break;
+        }
+        
+        count++;
+        if (count > offset) {
+            const u64 cur_ind = (*out_count)++;
+            frz_addrs[cur_ind].address = address;
+            frz_addrs[cur_ind].value = value;
+        }
+    }
+    
+    return 0;
+}
+
+Result  DmntCheatManager::GetFrozenAddress(FrozenAddressEntry *frz_addr, u64 address) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    const auto it = g_frozen_addresses_map.find(address);
+    if (it == g_frozen_addresses_map.end()) {
+        return ResultDmntCheatAddressNotFrozen;
+    }
+    
+    frz_addr->address = it->first;
+    frz_addr->value = it->second;
+    return 0;
+}
+
+Result DmntCheatManager::EnableFrozenAddress(u64 address, u64 width) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    if (g_frozen_addresses_map.size() >= DmntCheatManager::MaxFrozenAddressCount) {
+        return ResultDmntCheatTooManyFrozenAddresses;
+    }
+    
+    const auto it = g_frozen_addresses_map.find(address);
+    if (it != g_frozen_addresses_map.end()) {
+        return ResultDmntCheatAddressAlreadyFrozen;
+    }
+    
+    Result rc;
+    FrozenAddressValue value = {0};
+    value.width = width;
+    if (R_FAILED((rc = ReadCheatProcessMemoryForVm(address, &value.value, width)))) {
+        return rc;
+    }
+    
+    g_frozen_addresses_map[address] = value;
+    return 0;
+}
+
+Result DmntCheatManager::DisableFrozenAddress(u64 address) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    const auto it = g_frozen_addresses_map.find(address);
+    if (it == g_frozen_addresses_map.end()) {
+        return ResultDmntCheatAddressNotFrozen;
+    }
+    
+    g_frozen_addresses_map.erase(address);
+    return 0;
+}
+
 Handle DmntCheatManager::PrepareDebugNextApplication() {
     Result rc;
     Handle event_h;
@@ -690,6 +798,11 @@ void DmntCheatManager::VmThread(void *arg) {
                     if (g_cheat_vm->GetProgramSize() != 0) {
                         g_cheat_vm->Execute(&g_cheat_process_metadata);
                     }
+                }
+                
+                /* Apply frozen addresses. */
+                for (auto const& [address, value] : g_frozen_addresses_map) {
+                    WriteCheatProcessMemoryForVm(address, &value.value, value.width);
                 }
             }
         }

@@ -29,3 +29,8 @@ static constexpr Result ResultDmntCheatInvalidBuffer = MAKERESULT(Module_Dmnt, 6
 static constexpr Result ResultDmntCheatUnknownChtId  = MAKERESULT(Module_Dmnt, 6503);
 static constexpr Result ResultDmntCheatOutOfCheats   = MAKERESULT(Module_Dmnt, 6504);
 static constexpr Result ResultDmntCheatInvalidCheat  = MAKERESULT(Module_Dmnt, 6505);
+
+static constexpr Result ResultDmntCheatInvalidFreezeWidth     = MAKERESULT(Module_Dmnt, 6600);
+static constexpr Result ResultDmntCheatAddressAlreadyFrozen   = MAKERESULT(Module_Dmnt, 6601);
+static constexpr Result ResultDmntCheatAddressNotFrozen       = MAKERESULT(Module_Dmnt, 6602);
+static constexpr Result ResultDmntCheatTooManyFrozenAddresses = MAKERESULT(Module_Dmnt, 6603);

@@ -23,6 +23,7 @@
 class DmntCheatManager {
     public:
         static constexpr size_t MaxCheatCount = 0x80;
+        static constexpr size_t MaxFrozenAddressCount = 0x80;
     private:
         static Handle PrepareDebugNextApplication();
         static void OnNewApplicationLaunch();
@@ -39,6 +40,8 @@ class DmntCheatManager {
         static CheatEntry *GetCheatEntryById(size_t i);
         static bool ParseCheats(const char *cht_txt, size_t len);
         static bool LoadCheats(u64 title_id, const u8 *build_id);
+        
+        static void ResetFrozenAddresses();
     public:
         static bool GetHasActiveCheatProcess();
         static Handle GetCheatProcessEventHandle();
@@ -60,6 +63,12 @@ class DmntCheatManager {
         static Result ToggleCheat(u32 cheat_id);
         static Result AddCheat(u32 *out_id, CheatDefinition *def, bool enabled);
         static Result RemoveCheat(u32 cheat_id);
+        
+        static Result GetFrozenAddressCount(u64 *out_count);
+        static Result GetFrozenAddresses(FrozenAddressEntry *frz_addrs, size_t max_count, u64 *out_count, u64 offset);
+        static Result GetFrozenAddress(FrozenAddressEntry *frz_addr, u64 address);
+        static Result EnableFrozenAddress(u64 address, u64 width);
+        static Result DisableFrozenAddress(u64 address);
         
         static void InitializeCheatManager();
 };
