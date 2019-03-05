@@ -104,7 +104,17 @@ Result DmntCheatManager::ReadCheatProcessMemoryForVm(u64 proc_addr, void *out_da
 
 Result DmntCheatManager::WriteCheatProcessMemoryForVm(u64 proc_addr, const void *data, size_t size) {
     if (HasActiveCheatProcess()) {
-        return svcWriteDebugProcessMemory(g_cheat_process_debug_hnd, data, proc_addr, size);
+        Result rc = svcWriteDebugProcessMemory(g_cheat_process_debug_hnd, data, proc_addr, size);
+        
+        /* We might have a frozen address. Update it if we do! */
+        if (R_SUCCEEDED(rc)) {
+            auto it = g_frozen_addresses_map.find(proc_addr);
+            if (it != g_frozen_addresses_map.end()) {
+                memcpy(&it->second.value, data, size < sizeof(it->second.value) ? size : sizeof(it->second.value));
+            }
+        }
+        
+        return rc;
     }
     
     return ResultDmntCheatNotAttached;
