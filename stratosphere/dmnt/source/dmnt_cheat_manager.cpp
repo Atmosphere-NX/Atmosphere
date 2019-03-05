@@ -211,6 +211,14 @@ CheatEntry *DmntCheatManager::GetFreeCheatEntry() {
     return nullptr;
 }
 
+CheatEntry *DmntCheatManager::GetCheatEntryById(size_t i) {
+    if (i < DmntCheatManager::MaxCheatCount) {
+        return &g_cheat_entries[i];
+    }
+    
+    return nullptr;
+}
+
 bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
     size_t i = 0;
     CheatEntry *cur_entry = NULL;
@@ -350,6 +358,112 @@ bool DmntCheatManager::LoadCheats(u64 title_id, const u8 *build_id) {
         
     /* Parse cheat buffer. */
     return ParseCheats(cht_txt, strlen(cht_txt));
+}
+
+Result DmntCheatManager::GetCheatCount(u64 *out_count) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    *out_count = 0;
+    for (size_t i = 0; i < DmntCheatManager::MaxCheatCount; i++) {
+        if (g_cheat_entries[i].definition.num_opcodes > 0) {
+            *out_count += 1;
+        }
+    }
+    
+    return 0;
+}
+
+Result DmntCheatManager::GetCheats(CheatEntry *cheats, size_t max_count, u64 *out_count, u64 offset) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    u64 count = 0;
+    *out_count = 0;
+    for (size_t i = 0; i < DmntCheatManager::MaxCheatCount && (*out_count) < max_count; i++) {
+        if (g_cheat_entries[i].definition.num_opcodes > 0) {
+            count++;
+            if (count > offset) {
+                cheats[(*out_count)++] = g_cheat_entries[i];
+            }
+        }
+    }
+    
+    return 0;
+}
+
+Result DmntCheatManager::GetCheatById(CheatEntry *out_cheat, u32 cheat_id) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    const CheatEntry *entry = GetCheatEntryById(cheat_id);
+    if (entry == nullptr || entry->definition.num_opcodes == 0) {
+        return ResultDmntCheatUnknownChtId;
+    }
+    
+    *out_cheat = *entry;
+    return 0;
+}
+
+Result DmntCheatManager::ToggleCheat(u32 cheat_id) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    CheatEntry *entry = GetCheatEntryById(cheat_id);
+    if (entry == nullptr || entry->definition.num_opcodes == 0) {
+        return ResultDmntCheatUnknownChtId;
+    }
+    
+    entry->enabled = !entry->enabled;
+    return 0;
+}
+
+Result DmntCheatManager::AddCheat(u32 *out_id, CheatDefinition *def, bool enabled) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    if (def->num_opcodes == 0 || def->num_opcodes > sizeof(def->opcodes)/sizeof(def->opcodes[0])) {
+        return ResultDmntCheatInvalidCheat;
+    }
+    
+    CheatEntry *new_entry = GetFreeCheatEntry();
+    if (new_entry == nullptr) {
+        return ResultDmntCheatOutOfCheats;
+    }
+    
+    new_entry->enabled = enabled;
+    new_entry->definition = *def;
+    return 0;
+}
+
+Result DmntCheatManager::RemoveCheat(u32 cheat_id) {
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    
+    if (!HasActiveCheatProcess()) {
+        return ResultDmntCheatNotAttached;
+    }
+    
+    if (cheat_id >= DmntCheatManager::MaxCheatCount) {
+        return ResultDmntCheatUnknownChtId;
+    }
+    
+    ResetCheatEntry(cheat_id);
+    return 0;
 }
 
 Handle DmntCheatManager::PrepareDebugNextApplication() {

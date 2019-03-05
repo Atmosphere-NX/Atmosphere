@@ -36,6 +36,7 @@ class DmntCheatManager {
         static void ResetCheatEntry(size_t i);
         static void ResetAllCheatEntries();
         static CheatEntry *GetFreeCheatEntry();
+        static CheatEntry *GetCheatEntryById(size_t i);
         static bool ParseCheats(const char *cht_txt, size_t len);
         static bool LoadCheats(u64 title_id, const u8 *build_id);
     public:
@@ -52,6 +53,13 @@ class DmntCheatManager {
         static Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size);
         static Result WriteCheatProcessMemory(u64 proc_addr, const void *data, size_t size);
         static Result QueryCheatProcessMemory(MemoryInfo *mapping, u64 address);
+        
+        static Result GetCheatCount(u64 *out_count);
+        static Result GetCheats(CheatEntry *cheats, size_t max_count, u64 *out_count, u64 offset);
+        static Result GetCheatById(CheatEntry *out_cheat, u32 cheat_id);
+        static Result ToggleCheat(u32 cheat_id);
+        static Result AddCheat(u32 *out_id, CheatDefinition *def, bool enabled);
+        static Result RemoveCheat(u32 cheat_id);
         
         static void InitializeCheatManager();
 };

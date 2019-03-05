@@ -18,6 +18,10 @@
 #include "dmnt_cheat_service.hpp"
 #include "dmnt_cheat_manager.hpp"
 
+/* ========================================================================================= */
+/* ====================================  Meta Commands  ==================================== */
+/* ========================================================================================= */
+
 void DmntCheatService::HasCheatProcess(Out<bool> out) {
     out.SetValue(DmntCheatManager::GetHasActiveCheatProcess());
 }
@@ -40,6 +44,9 @@ Result DmntCheatService::ForceOpenCheatProcess() {
     return rc;
 }
 
+/* ========================================================================================= */
+/* ===================================  Memory Commands  =================================== */
+/* ========================================================================================= */
 
 Result DmntCheatService::GetCheatProcessMappingCount(Out<u64> out_count) {
     return DmntCheatManager::GetCheatProcessMappingCount(out_count.GetPointer());
@@ -83,37 +90,57 @@ Result DmntCheatService::QueryCheatProcessMemory(Out<MemoryInfo> mapping, u64 ad
     return DmntCheatManager::QueryCheatProcessMemory(mapping.GetPointer(), address);
 }
 
+/* ========================================================================================= */
+/* ===================================  Cheat Commands  ==================================== */
+/* ========================================================================================= */
 
 Result DmntCheatService::GetCheatCount(Out<u64> out_count) {
-    /* TODO */
-    return 0xF601;
+    return DmntCheatManager::GetCheatCount(out_count.GetPointer());
 }
 
 Result DmntCheatService::GetCheats(OutBuffer<CheatEntry> cheats, Out<u64> out_count, u64 offset) {
-    /* TODO */
-    return 0xF601;
+    if (cheats.buffer == nullptr) {
+        return ResultDmntCheatNullBuffer;
+    }
+    
+    return DmntCheatManager::GetCheats(cheats.buffer, cheats.num_elements, out_count.GetPointer(), offset);
 }
 
 Result DmntCheatService::GetCheatById(OutBuffer<CheatEntry> cheat, u32 cheat_id) {
-    /* TODO */
-    return 0xF601;
+    if (cheat.buffer == nullptr) {
+        return ResultDmntCheatNullBuffer;
+    }
+    
+    if (cheat.num_elements < 1) {
+        return ResultDmntCheatInvalidBuffer;
+    }
+    
+    return DmntCheatManager::GetCheatById(cheat.buffer, cheat_id);
 }
 
 Result DmntCheatService::ToggleCheat(u32 cheat_id) {
-    /* TODO */
-    return 0xF601;
+    return DmntCheatManager::ToggleCheat(cheat_id);
 }
 
 Result DmntCheatService::AddCheat(InBuffer<CheatDefinition> cheat, Out<u32> out_cheat_id, bool enabled) {
-    /* TODO */
-    return 0xF601;
+    if (cheat.buffer == nullptr) {
+        return ResultDmntCheatNullBuffer;
+    }
+    
+    if (cheat.num_elements < 1) {
+        return ResultDmntCheatInvalidBuffer;
+    }
+    
+    return DmntCheatManager::AddCheat(out_cheat_id.GetPointer(), cheat.buffer, enabled);
 }
 
 Result DmntCheatService::RemoveCheat(u32 cheat_id) {
-    /* TODO */
-    return 0xF601;
+    return DmntCheatManager::RemoveCheat(cheat_id);
 }
 
+/* ========================================================================================= */
+/* ===================================  Address Commands  ================================== */
+/* ========================================================================================= */
 
 Result DmntCheatService::GetFrozenAddressCount(Out<u64> out_count) {
     /* TODO */
