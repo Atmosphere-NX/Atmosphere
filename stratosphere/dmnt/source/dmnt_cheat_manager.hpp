@@ -67,7 +67,7 @@ class DmntCheatManager {
         static Result GetFrozenAddressCount(u64 *out_count);
         static Result GetFrozenAddresses(FrozenAddressEntry *frz_addrs, size_t max_count, u64 *out_count, u64 offset);
         static Result GetFrozenAddress(FrozenAddressEntry *frz_addr, u64 address);
-        static Result EnableFrozenAddress(u64 address, u64 width);
+        static Result EnableFrozenAddress(u64 *out_value, u64 address, u64 width);
         static Result DisableFrozenAddress(u64 address);
         
         static void InitializeCheatManager();

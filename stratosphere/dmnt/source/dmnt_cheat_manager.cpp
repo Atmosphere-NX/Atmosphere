@@ -531,7 +531,7 @@ Result  DmntCheatManager::GetFrozenAddress(FrozenAddressEntry *frz_addr, u64 add
     return 0;
 }
 
-Result DmntCheatManager::EnableFrozenAddress(u64 address, u64 width) {
+Result DmntCheatManager::EnableFrozenAddress(u64 *out_value, u64 address, u64 width) {
     std::scoped_lock<HosMutex> lk(g_cheat_lock);
     
     if (!HasActiveCheatProcess()) {
@@ -555,6 +555,7 @@ Result DmntCheatManager::EnableFrozenAddress(u64 address, u64 width) {
     }
     
     g_frozen_addresses_map[address] = value;
+    *out_value = value.value;
     return 0;
 }
 

@@ -158,7 +158,7 @@ Result DmntCheatService::GetFrozenAddress(Out<FrozenAddressEntry> entry, u64 add
     return DmntCheatManager::GetFrozenAddress(entry.GetPointer(), address);
 }
 
-Result DmntCheatService::EnableFrozenAddress(u64 address, u64 width) {
+Result DmntCheatService::EnableFrozenAddress(Out<u64> out_value, u64 address, u64 width) {
     switch (width) {
         case 1:
         case 2:
@@ -169,7 +169,7 @@ Result DmntCheatService::EnableFrozenAddress(u64 address, u64 width) {
             return ResultDmntCheatInvalidFreezeWidth;
     }
     
-    return DmntCheatManager::EnableFrozenAddress(address, width);
+    return DmntCheatManager::EnableFrozenAddress(out_value.GetPointer(), address, width);
 }
 
 Result DmntCheatService::DisableFrozenAddress(u64 address) {

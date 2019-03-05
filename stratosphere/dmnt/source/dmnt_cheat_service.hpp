@@ -73,7 +73,7 @@ class DmntCheatService final : public IServiceObject {
         Result GetFrozenAddressCount(Out<u64> out_count);
         Result GetFrozenAddresses(OutBuffer<FrozenAddressEntry> addresses, Out<u64> out_count, u64 offset);
         Result GetFrozenAddress(Out<FrozenAddressEntry> entry, u64 address);
-        Result EnableFrozenAddress(u64 address, u64 width);
+        Result EnableFrozenAddress(Out<u64> out_value, u64 address, u64 width);
         Result DisableFrozenAddress(u64 address);
 
     public:
