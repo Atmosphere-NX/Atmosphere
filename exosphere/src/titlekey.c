@@ -1,8 +1,25 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <stdint.h>
 #include <string.h>
 
 #include "utils.h"
 #include "arm.h"
+#include "exocfg.h"
 
 #include "titlekey.h"
 #include "masterkey.h"
@@ -10,6 +27,7 @@
 
 static uint64_t g_tkey_expected_label_hash[4];
 static unsigned int g_tkey_master_key_rev = MASTERKEY_REVISION_MAX;
+static unsigned int g_tkey_type = 0;
 
 /* Set the expected db prefix. */
 void tkey_set_expected_label_hash(uint64_t *label_hash) {
@@ -23,6 +41,17 @@ void tkey_set_master_key_rev(unsigned int master_key_rev) {
         generic_panic();
     }
     g_tkey_master_key_rev = master_key_rev;
+}
+
+static void tkey_validate_type(unsigned int type) {
+    if (type > TITLEKEY_TYPE_MAX || (type > 0 && exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_600)) {
+        generic_panic();
+    }
+}
+
+void tkey_set_type(unsigned int type) {
+    tkey_validate_type(type);
+    g_tkey_type = type;
 }
 
 /* Reference for MGF1 can be found here: https://en.wikipedia.org/wiki/Mask_generation_function#MGF1 */
@@ -136,18 +165,19 @@ size_t tkey_rsa_oaep_unwrap(void *dst, size_t dst_size, void *src, size_t src_si
     return wrapped_titlekey_size;
 }
 
+static const uint8_t titlekek_sources[TITLEKEY_TYPE_MAX+1][0x10] = {
+    {0x1E, 0xDC, 0x7B, 0x3B, 0x60, 0xE6, 0xB4, 0xD8, 0x78, 0xB8, 0x17, 0x15, 0x98, 0x5E, 0x62, 0x9B},
+    {0x3B, 0x78, 0xF2, 0x61, 0x0F, 0x9D, 0x5A, 0xE2, 0x7B, 0x4E, 0x45, 0xAF, 0xCB, 0x0B, 0x67, 0x4D}
+};
+
 void tkey_aes_unwrap(void *dst, size_t dst_size, const void *src, size_t src_size) {
     if (g_tkey_master_key_rev >= MASTERKEY_REVISION_MAX || dst_size != 0x10 || src_size != 0x10) {
         generic_panic();
     }
-
-    const uint8_t titlekek_source[0x10] = {
-       0x1E, 0xDC, 0x7B, 0x3B, 0x60, 0xE6, 0xB4, 0xD8, 0x78, 0xB8, 0x17, 0x15, 0x98, 0x5E, 0x62, 0x9B
-    };
-
+    
     /* Generate the appropriate titlekek into keyslot 9. */
     unsigned int master_keyslot = mkey_get_keyslot(g_tkey_master_key_rev);
-    decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, master_keyslot, titlekek_source, 0x10);
+    decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, master_keyslot, titlekek_sources[g_tkey_type], 0x10);
 
     /* Unwrap the titlekey using the titlekek. */
     se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_TEMPKEY, dst, 0x10, src, 0x10);

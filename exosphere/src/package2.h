@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #ifndef EXOSPHERE_PACKAGE2_H
 #define EXOSPHERE_PACKAGE2_H
 
@@ -5,18 +21,19 @@
 
 #include "utils.h"
 #include "bootconfig.h"
+#include "exocfg.h"
 #include "memory_map.h"
 
 /* Physaddr 0x40002EF8 */
-static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
-    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_NXBOOTLOADER_MAILBOX);
+static inline uintptr_t get_nx_bootloader_mailbox_base(unsigned int targetfw) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_NXBOOTLOADER_MAILBOX) + ((targetfw >= ATMOSPHERE_TARGET_FIRMWARE_700) ? (0x000ull) : (0xE00ull));
 }
 
-#define MAILBOX_NX_BOOTLOADER_BASE (get_nx_bootloader_mailbox_base())
+#define MAILBOX_NX_BOOTLOADER_BASE(targetfw) (get_nx_bootloader_mailbox_base(targetfw))
 
-#define MAILBOX_NX_SECMON_BOOT_TIME       MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE + 0xE08ull)
+#define MAILBOX_NX_SECMON_BOOT_TIME(targetfw)       MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE(targetfw) + 0x08ull)
 
-#define MAILBOX_NX_BOOTLOADER_SETUP_STATE MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE + 0xEF8ull)
+#define MAILBOX_NX_BOOTLOADER_SETUP_STATE(targetfw) MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE(targetfw) + 0xF8ull)
 
 #define NX_BOOTLOADER_STATE_INIT 0
 #define NX_BOOTLOADER_STATE_MOVED_BOOTCONFIG 1
@@ -29,11 +46,12 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
 #define NX_BOOTLOADER_STATE_FINISHED_4X 4
 
 /* Physaddr 0x40002EFC */
-#define MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE + 0xEFCULL)
+#define MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE(targetfw) MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE(targetfw) + 0xFCULL)
 
-#define MAILBOX_NX_BOOTLOADER_BOOT_REASON (MAILBOX_NX_BOOTLOADER_BASE + 0xE10ULL)
+#define MAILBOX_NX_BOOTLOADER_BOOT_REASON(targetfw) (MAILBOX_NX_BOOTLOADER_BASE(targetfw) + 0x10ULL)
 
 #define NX_BOOTLOADER_BOOTCONFIG_POINTER ((void *)(0x4003D000ull))
+#define NX_BOOTLOADER_BOOTCONFIG_POINTER_6X ((void *)(0x4003F800ull))
 
 #define NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS ((void *)(0xA9800000ull))
 
@@ -49,14 +67,20 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(void) {
 #define PACKAGE2_MAXVER_300 0x4
 #define PACKAGE2_MAXVER_302 0x5
 #define PACKAGE2_MAXVER_400_410 0x6
-#define PACKAGE2_MAXVER_500_CURRENT 0x7
+#define PACKAGE2_MAXVER_500_510 0x7
+#define PACKAGE2_MAXVER_600_610 0x8
+#define PACKAGE2_MAXVER_620 0x9
+#define PACKAGE2_MAXVER_700_CURRENT 0xA
 
 #define PACKAGE2_MINVER_100 0x3
 #define PACKAGE2_MINVER_200 0x4
 #define PACKAGE2_MINVER_300 0x5
 #define PACKAGE2_MINVER_302 0x6
 #define PACKAGE2_MINVER_400_410 0x7
-#define PACKAGE2_MINVER_500_CURRENT 0x8
+#define PACKAGE2_MINVER_500_510 0x8
+#define PACKAGE2_MINVER_600_610 0x9
+#define PACKAGE2_MINVER_620 0xA
+#define PACKAGE2_MINVER_700_CURRENT 0xB
 
 typedef struct {
     union {

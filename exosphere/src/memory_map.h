@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #ifndef EXOSPHERE_MEMORY_MAP_H
 #define EXOSPHERE_MEMORY_MAP_H
 
@@ -32,7 +48,32 @@
 #define _MMAPDEV15      ( 0x6000D000ull, 0x1000ull, true  ) /* GPIO-1 - GPIO-8 */
 #define _MMAPDEV16      ( 0x7000C000ull, 0x1000ull, true  ) /* I2C-I2C4 */
 #define _MMAPDEV17      ( 0x6000F000ull, 0x1000ull, true  ) /* Exception vectors */
-#define _MMAPDEV18      ( 0x40038000ull, 0x8000ull, true  ) /* DEBUG: IRAM */
+#define _MMAPDEV18      ( 0x00000000ull, 0x1000ull, true  ) /* AMS irampage, NOT mapped at startup */
+#define _MMAPDEV19      ( 0x00000000ull, 0x1000ull, true  ) /* AMS userpage, NOT mapped at startup */
+#define _MMAPDEV20      ( 0x40038000ull, 0x5000ull, true  ) /* DEBUG: IRAM */
+
+/* MMIO 7.0.0+. (addr).  */
+#define _MMAPDEV7X0       ( 0x50041000ull ) /* ARM Interrupt Distributor */
+#define _MMAPDEV7X1       ( 0x50042000ull ) /* Interrupt Controller Physical CPU interface */
+#define _MMAPDEV7X2       ( 0x70006000ull ) /* UART */
+#define _MMAPDEV7X3       ( 0x60006000ull ) /* Clock and Reset */
+#define _MMAPDEV7X4       ( 0x7000E000ull ) /* RTC, PMC */
+#define _MMAPDEV7X5       ( 0x60005000ull ) /* TMRs, WDTs */
+#define _MMAPDEV7X6       ( 0x6000C000ull ) /* System Registers */
+#define _MMAPDEV7X7       ( 0x70012000ull ) /* SE */
+#define _MMAPDEV7X8       ( 0x700F0000ull ) /* SYSCTR0 */
+#define _MMAPDEV7X9       ( 0x70019000ull ) /* MC */
+#define _MMAPDEV7X10      ( 0x7000F000ull ) /* FUSE (0x7000F800) */
+#define _MMAPDEV7X11      ( 0x70000000ull ) /* MISC */
+#define _MMAPDEV7X12      ( 0x60007000ull ) /* Flow Controller */
+#define _MMAPDEV7X13      ( 0x40000000ull ) /* NX bootloader mailbox page */
+#define _MMAPDEV7X14      ( 0x7000D000ull ) /* I2C-5,6 - SPI 2B-1 to 4 */
+#define _MMAPDEV7X15      ( 0x6000D000ull ) /* GPIO-1 - GPIO-8 */
+#define _MMAPDEV7X16      ( 0x7000C000ull ) /* I2C-I2C4 */
+#define _MMAPDEV7X17      ( 0x6000F000ull ) /* Exception vectors */
+#define _MMAPDEV7X18      ( 0x00000000ull ) /* AMS irampage, NOT mapped at startup */
+#define _MMAPDEV7X19      ( 0x00000000ull ) /* AMS userpage, NOT mapped at startup */
+#define _MMAPDEV7X20      ( 0x40038000ull ) /* DEBUG: IRAM */
 
 /* LP0 entry ram segments (addr, size, additional attributes) */
 #define _MMAPLP0ES0  ( 0x40020000ull, 0x10000ull, MMU_PTE_BLOCK_NS | ATTRIB_MEMTYPE_DEVICE ) /* Encrypted TZRAM */
@@ -52,6 +93,16 @@
 #define _MMAPTZS5   (                0ull,                    0x1000ull, 0x02000ull,  true ) /* Secure Monitor exception vectors, some init stacks */
 #define _MMAPTZS6   (           0x1000ull,                    0x1000ull, 0x02000ull, false ) /* L2 translation table */
 #define _MMAPTZS7   (           0x2000ull,                    0x1000ull, 0x02000ull, false ) /* L3 translation table */
+
+/* TZRAM segments for 5.0.0+. (offset).  */
+#define _MMAPTZ5XS0   (           0x3000ull ) /* Warmboot crt0 sections and main code segment */
+#define _MMAPTZ5XS1   (                0ull ) /* pk2ldr segment */
+#define _MMAPTZ5XS2   (                0ull ) /* SPL .bss buffer, NOT mapped at startup */
+#define _MMAPTZ5XS3   (                0ull ) /* Core 0ull1,2 stack */
+#define _MMAPTZ5XS4   (           0x1000ull ) /* Core 3 stack */
+#define _MMAPTZ5XS5   (           0x2000ull ) /* Secure Monitor exception vectors, some init stacks */
+#define _MMAPTZ5XS6   ( 0x10000 - 0x2000ull ) /* L2 translation table */
+#define _MMAPTZ5XS7   ( 0x10000 - 0x1000ull ) /* L3 translation table */
 
 #define MMIO_BASE                       0x1F0080000ull
 #define LP0_ENTRY_RAM_SEGMENT_BASE      (MMIO_BASE + 0x000100000ull)
@@ -82,8 +133,10 @@
 #define MMIO_DEVID_GPIO                 15
 #define MMIO_DEVID_DTV_I2C234           16
 #define MMIO_DEVID_EXCEPTION_VECTORS    17
-#define MMIO_DEVID_DEBUG_IRAM           18
-#define MMIO_DEVID_MAX                  19
+#define MMIO_DEVID_AMS_IRAM_PAGE        18
+#define MMIO_DEVID_AMS_USER_PAGE        19
+#define MMIO_DEVID_DEBUG_IRAM           20
+#define MMIO_DEVID_MAX                  21
 
 #define LP0_ENTRY_RAM_SEGMENT_ID_ENCRYPTED_TZRAM    0
 #define LP0_ENTRY_RAM_SEGMENT_ID_LP0_ENTRY_CODE     1
@@ -110,6 +163,7 @@
 #define IDENTITY_IS_MAPPING_BLOCK_RANGE(mapping_id)     (TUPLE_ELEM_3(CAT(_MMAPID, EVAL(mapping_id))))
 
 #define MMIO_GET_DEVICE_PA(device_id)                   (TUPLE_ELEM_0(CAT(_MMAPDEV, EVAL(device_id))))
+#define MMIO_GET_DEVICE_7X_PA(device_id)                (TUPLE_ELEM_0(CAT(_MMAPDEV, EVAL(device_id))))
 #define MMIO_GET_DEVICE_ADDRESS(device_id)\
 (\
     (TUPLE_FOLD_LEFT_1(EVAL(device_id), _MMAPDEV, PLUS) EVAL(MMIO_BASE)) +\
@@ -129,6 +183,7 @@
 #define WARMBOOT_GET_RAM_SEGMENT_ATTRIBS(segment_id)    (TUPLE_ELEM_2(CAT(_MMAPWBS, EVAL(segment_id))))
 
 #define TZRAM_GET_SEGMENT_PA(segment_id)            (0x7C010000ull + (TUPLE_ELEM_0(CAT(_MMAPTZS, EVAL(segment_id)))))
+#define TZRAM_GET_SEGMENT_5X_PA(segment_id)         (0x7C010000ull + (TUPLE_ELEM_0(CAT(_MMAPTZ5XS, EVAL(segment_id)))))
 #define TZRAM_GET_SEGMENT_ADDRESS(segment_id)       (TUPLE_FOLD_LEFT_2(EVAL(segment_id), _MMAPTZS, PLUS) EVAL(TZRAM_SEGMENT_BASE))
 #define TZRAM_GET_SEGMENT_SIZE(segment_id)          (TUPLE_ELEM_1(CAT(_MMAPTZS, EVAL(segment_id))))
 #define TZRAM_IS_SEGMENT_EXECUTABLE(segment_id)     (TUPLE_ELEM_3(CAT(_MMAPTZS, EVAL(segment_id))))

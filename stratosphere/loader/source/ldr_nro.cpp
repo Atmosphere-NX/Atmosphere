@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <switch.h>
 #include <algorithm>
 #include <cstdio>
@@ -36,7 +52,7 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
     unsigned int i;
     Result rc;
     u8 nro_hash[0x20];
-    SHA256_CTX sha_ctx;
+    struct sha256_state sha_ctx;
     /* Ensure there is an available NRO slot. */
     if (std::all_of(target_proc->nro_infos.begin(), target_proc->nro_infos.end(), std::mem_fn(&Registration::NroInfo::in_use))) {
         return 0x6E09;
@@ -78,7 +94,8 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
     
     sha256_init(&sha_ctx);
     sha256_update(&sha_ctx, (u8 *)nro, nro->nro_size);
-    sha256_final(&sha_ctx, nro_hash);
+    sha256_finalize(&sha_ctx);
+    sha256_finish(&sha_ctx, nro_hash);
     
     if (!Registration::IsNroHashPresent(target_proc->index, nro_hash)) {
         rc = 0x6C09;

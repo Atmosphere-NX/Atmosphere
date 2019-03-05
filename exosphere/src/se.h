@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #ifndef EXOSPHERE_SE_H
 #define EXOSPHERE_SE_H
 
@@ -26,6 +42,11 @@
 
 /* This keyslot was added in 5.0.0. */
 #define KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY 0xA
+
+/* This keyslot was added in 6.00. */
+#define KEYSLOT_SWITCH_6XTSECKEY 0xC
+#define KEYSLOT_SWITCH_6XTSECROOTKEY 0xD
+#define KEYSLOT_SWITCH_6XSBK 0xE
 
 #define KEYSLOT_AES_MAX 0x10
 #define KEYSLOT_RSA_MAX 0x2
@@ -81,7 +102,7 @@
 
 #define RSA_2048_BYTES 0x100
 
-typedef struct security_engine {
+typedef struct {
     uint32_t _0x0;
     uint32_t _0x4;
     uint32_t OPERATION_REG;
@@ -141,15 +162,13 @@ typedef struct security_engine {
     uint32_t FLAGS_REG;
     uint32_t ERR_STATUS_REG;
     uint32_t _0x808;
-    uint32_t _0x80C;
+    uint32_t SPARE_0;
     uint32_t _0x810;
     uint32_t _0x814;
     uint32_t _0x818;
     uint32_t _0x81C;
     uint8_t _0x820[0x17E0];
-} security_engine_t;
-
-static_assert(sizeof(security_engine_t) == 0x2000, "Mis-defined Security Engine Registers!");
+} tegra_se_t;
 
 typedef struct {
     uint32_t address;
@@ -161,14 +180,9 @@ typedef struct {
     se_addr_info_t addr_info; /* This should really be an array...but for our use case it works. */
 } se_ll_t;
 
-
-/* WIP, API subject to change. */
-
-static inline volatile security_engine_t *get_security_engine(void) {
-    return (volatile security_engine_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_SE));
+static inline volatile tegra_se_t *se_get_regs(void) {
+    return (volatile tegra_se_t *)(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_SE));
 }
-
-#define SECURITY_ENGINE (get_security_engine())
 
 /* This function MUST be registered to fire on the appropriate interrupt. */
 void se_operation_completed(void);
@@ -192,7 +206,6 @@ void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_sr
 void set_rsa_keyslot(unsigned int keyslot, const void *modulus, size_t modulus_size, const void *exponent, size_t exp_size);
 void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size);
 void set_se_ctr(const void *ctr);
-
 
 /* Insecure AES API */
 void se_aes_ctr_crypt_insecure(unsigned int keyslot, uint32_t out_ll_paddr, uint32_t in_ll_paddr, size_t size, const void *ctr, unsigned int (*callback)(void));

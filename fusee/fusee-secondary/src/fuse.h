@@ -1,8 +1,26 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #ifndef FUSEE_FUSE_H
 #define FUSEE_FUSE_H
 
-#include <stdbool.h>
-#include <stdint.h>
+#define FUSE_BASE 0x7000F800
+#define FUSE_CHIP_BASE (FUSE_BASE + 0x100)
+#define MAKE_FUSE_REG(n) MAKE_REG32(FUSE_BASE + n)
+#define MAKE_FUSE_CHIP_REG(n) MAKE_REG32(FUSE_CHIP_BASE + n)
 
 typedef struct {
     uint32_t FUSE_CTRL;
@@ -20,7 +38,7 @@ typedef struct {
     uint32_t FUSE_WRITE_ACCESS;
     uint32_t FUSE_PWR_GOOD_SW;
     uint32_t _0x38[0x32];
-} fuse_registers_t;
+} tegra_fuse_t;
 
 typedef struct {
     uint32_t FUSE_PRODUCTION_MODE;
@@ -163,17 +181,15 @@ typedef struct {
     uint32_t _0x278;
     uint32_t _0x27C;
     uint32_t FUSE_SPARE_BIT[0x20];
-} fuse_chip_registers_t;
+} tegra_fuse_chip_t;
 
-static inline volatile fuse_registers_t *get_fuse_regs(void) {
-    return (volatile fuse_registers_t *)(0x7000F000 + 0x800);
+static inline volatile tegra_fuse_t *fuse_get_regs(void) {
+    return (volatile tegra_fuse_t *)FUSE_BASE;
 }
 
-static inline volatile fuse_chip_registers_t *get_fuse_chip_regs(void) {
-    return (volatile fuse_chip_registers_t *)(0x7000F000 + 0x900);
+static inline volatile tegra_fuse_chip_t *fuse_chip_get_regs(void) {
+    return (volatile tegra_fuse_chip_t *)FUSE_CHIP_BASE;
 }
-#define FUSE_REGS       (get_fuse_regs())
-#define FUSE_CHIP_REGS  (get_fuse_chip_regs())
 
 void fuse_init(void);
 

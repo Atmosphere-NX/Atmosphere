@@ -1,7 +1,24 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/iosupport.h>
@@ -104,7 +121,7 @@ int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool
     fsdev_device_t *device = fsdev_find_device(name);
     FRESULT rc;
     char drname[40];
-
+    
     if (device != NULL) {
         errno = EEXIST; /* Device already exists */
         return -1;
@@ -153,7 +170,7 @@ int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool
         VolumeStr[device - g_fsdev_devices] = FKNAM;
         return fsdev_convert_rc(NULL, rc);
     }
-
+    
     device->setup = true;
     device->registered = false;
 
@@ -358,6 +375,8 @@ static void fsdev_filinfo_to_st(struct stat *st, const FILINFO *info) {
     date.tm_sec  = (info->ftime << 1) & 63;
     date.tm_min  = (info->ftime >> 5) & 63;
     date.tm_hour = (info->ftime >> 11) & 31;
+    
+    date.tm_isdst = 0;
 
     st->st_atime = st->st_mtime = st->st_ctime = mktime(&date);
     st->st_size = (off_t)info->fsize;
@@ -439,7 +458,7 @@ static ssize_t fsdev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
 }
 
 static off_t fsdev_seek(struct _reent *r, void *fd, off_t pos, int whence) {
-    FIL *f = (FIL *)f;
+    FIL *f = (FIL *)fd;
     FSIZE_t off;
     int ret;
 
@@ -458,7 +477,7 @@ static off_t fsdev_seek(struct _reent *r, void *fd, off_t pos, int whence) {
             return -1;
     }
 
-    if(pos < 0 && pos + off < 0) {
+    if ((FSIZE_t)pos < 0 && (FSIZE_t)pos + off < 0) {
         /* don't allow seek to before the beginning of the file */
         r->_errno = EINVAL;
         return -1;

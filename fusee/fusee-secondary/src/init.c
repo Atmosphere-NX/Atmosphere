@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -35,8 +51,11 @@ static void __program_init_newlib_hooks(void) {
 static void __program_move_additional_sections(void) {
 #if defined(FUSEE_STAGE1_SRC) || defined(FUSEE_STAGE2_SRC)
     extern uint8_t __chainloader_lma__[], __chainloader_start__[], __chainloader_bss_start__[], __chainloader_end__[];
+    extern uint8_t __nxboot_lma__[], __nxboot_start__[], __nxboot_bss_start__[], __nxboot_end__[];
     memcpy(__chainloader_start__, __chainloader_lma__, __chainloader_bss_start__ - __chainloader_start__);
     memset(__chainloader_bss_start__, 0, __chainloader_end__ - __chainloader_bss_start__);
+    memcpy(__nxboot_start__, __nxboot_lma__, __nxboot_bss_start__ - __nxboot_start__);
+    memset(__nxboot_bss_start__, 0, __nxboot_end__ - __nxboot_bss_start__);
 #endif
 }
 

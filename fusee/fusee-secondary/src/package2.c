@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include "utils.h"
@@ -7,10 +23,12 @@
 #include "kernel_patches.h"
 #include "kip.h"
 #include "se.h"
+#include "fs_utils.h"
 
 #define u8 uint8_t
 #define u32 uint32_t
 #include "thermosphere_bin.h"
+#include "lib/log.h"
 #undef u8
 #undef u32
 
@@ -30,13 +48,14 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     size_t rebuilt_package2_size;
     void *kernel;
     size_t kernel_size;
+    bool is_sd_kernel = false;
     void *thermosphere;
     size_t thermosphere_size;
     ini1_header_t *orig_ini1, *rebuilt_ini1;
 
     /* First things first: Decrypt Package2 in place. */
     package2_decrypt(package2);
-    printf("Decrypted package2!\n");
+    print(SCREEN_LOG_LEVEL_DEBUG, "Decrypted package2!\n");
 
     kernel_size = package2_get_src_section(&kernel, package2, PACKAGE2_SECTION_KERNEL);
 
@@ -46,15 +65,34 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     if (thermosphere_size != 0 && package2->metadata.section_sizes[PACKAGE2_SECTION_UNUSED] != 0) {
         fatal_error(u8"Error: Package2 has no unused section for Thermosphère!\n");
     }
+    
+    /* Load Kernel from SD, if possible. */
+    {
+        size_t sd_kernel_size = get_file_size("atmosphere/kernel.bin");
+        if (sd_kernel_size != 0) {
+            if (sd_kernel_size > PACKAGE2_SIZE_MAX) {
+                fatal_error("Error: atmosphere/kernel.bin is too large!\n");
+            }
+            kernel = malloc(sd_kernel_size);
+            if (kernel == NULL) {
+                fatal_error("Error: failed to allocate kernel!\n");
+            }
+            if (read_from_file(kernel, sd_kernel_size, "atmosphere/kernel.bin") != sd_kernel_size) {
+                fatal_error("Error: failed to read atmosphere/kernel.bin!\n");
+            }
+            kernel_size = sd_kernel_size;
+            is_sd_kernel = true;
+        }
+    }
 
     /* Perform any patches we want to the NX kernel. */
-    package2_patch_kernel(kernel, kernel_size);
+    package2_patch_kernel(kernel, kernel_size, is_sd_kernel);
 
-    printf("Rebuilding the INI1 section...\n");
+    print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilding the INI1 section...\n");
     package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);
     /* Perform any patches to the INI1, rebuilding it (This is where our built-in sysmodules will be added.) */
     rebuilt_ini1 = package2_rebuild_ini1(orig_ini1, target_firmware);
-    printf("Rebuilt INI1...\n");
+    print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilt INI1...\n");
 
     /* Allocate the rebuilt package2. */
     rebuilt_package2_size = sizeof(package2_header_t) + kernel_size + align_to_4(thermosphere_size) + align_to_4(rebuilt_ini1->size);
@@ -84,7 +122,6 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     free(rebuilt_ini1);
     free(rebuilt_package2);
 }
-
 
 static void package2_crypt_ctr(unsigned int master_key_rev, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
     /* Derive package2 key. */
@@ -177,7 +214,7 @@ static bool package2_validate_metadata(package2_meta_t *metadata, uint8_t data[]
 
     /* Perform version checks. */
     /* We will be compatible with all package2s released before current, but not newer ones. */
-    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_500_CURRENT) {
+    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_700_CURRENT) {
         return true;
     }
 
@@ -206,7 +243,7 @@ static uint32_t package2_decrypt_and_validate_header(package2_header_t *header, 
 
         /* Ensure we successfully decrypted the header. */
         if (mkey_rev > mkey_get_revision()) {
-            fatal_error("failed to decrypt the Package2 header (master key revision %u)!\n", mkey_get_revision());
+            fatal_error("Failed to decrypt the Package2 header (master key revision %u)!\n", mkey_get_revision());
         }
     } else if (!package2_validate_metadata(&header->metadata, header->data)) {
         fatal_error("Failed to validate the Package2 header!\n");
@@ -262,14 +299,12 @@ static size_t package2_get_thermosphere(void **thermosphere) {
     return 0;
 }
 
-
-
-
 static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware) {
     /* TODO: Do we want to support loading another INI from sd:/whatever/INI1.bin? */
     ini1_header_t *inis_to_merge[STRATOSPHERE_INI1_MAX] = {0};
     ini1_header_t *merged;
 
+    inis_to_merge[STRATOSPHERE_INI1_SDFILES]  = stratosphere_get_sd_files_ini1();
     inis_to_merge[STRATOSPHERE_INI1_EMBEDDED] = stratosphere_get_ini1(target_firmware);
     inis_to_merge[STRATOSPHERE_INI1_PACKAGE2] = ini1;
 

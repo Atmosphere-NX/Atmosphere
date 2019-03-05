@@ -9,6 +9,13 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/libnx/switch_rules
 
+AMSBRANCH := $(shell git symbolic-ref --short HEAD)
+AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
+
+ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
+    AMSREV := $(AMSREV)-dirty
+endif
+
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
 # BUILD is the directory where object files & intermediate files will be placed
@@ -21,10 +28,10 @@ TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include ../../common/include
 EXEFS_SRC	:=	exefs_src
 
-DEFINES	:=	-DDISABLE_IPC
+DEFINES	:=	-DDISABLE_IPC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -34,7 +41,7 @@ ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)
 
-CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DSM_ENABLE_SMHAX -DSM_ENABLE_MITM -DSM_MINIMUM_SESSION_LIMIT=8
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DSM_ENABLE_MITM -DSM_ENABLE_INIT_DEFERS -DSM_MINIMUM_SESSION_LIMIT=8
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 

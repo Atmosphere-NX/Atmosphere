@@ -1,5 +1,22 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <switch.h>
 #include <algorithm>
+#include <stratosphere.hpp>
 
 #include "ldr_process_creation.hpp"
 #include "ldr_registration.hpp"
@@ -31,12 +48,19 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
         return 0x809;
     }
     out_proc_info->process_flags = (npdm->header->mmu_flags & 0xF);
+    
     /* Set Bit 4 (?) and EnableAslr based on argument flags. */
     out_proc_info->process_flags |= ((arg_flags & 3) << 4) ^ 0x20;
     /* Set UseSystemMemBlocks if application type is 1. */
     u32 application_type = NpdmUtils::GetApplicationType((u32 *)npdm->aci0_kac, npdm->aci0->kac_size / sizeof(u32));
     if ((application_type & 3) == 1) {
         out_proc_info->process_flags |= 0x40;
+        /* 7.0.0+: Set unknown bit related to system resource heap if relevant. */
+        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+            if ((npdm->header->mmu_flags & 0x10)) {
+                out_proc_info->process_flags |= 0x800;
+            }
+        }
     }
     
     /* 3.0.0+ System Resource Size. */
@@ -48,7 +72,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
             if ((out_proc_info->process_flags & 6) == 0) {
                 return 0x809;
             }
-            if ((application_type & 3) != 1) {
+            if (!(((application_type & 3) == 1) || (kernelAbove600() && (application_type & 3) == 2))) {
                 return 0x809;
             }
             if (npdm->header->system_resource_size > 0x1FE00000) {
@@ -62,7 +86,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
     
     /* 5.0.0+ Pool Partition. */
     if (kernelAbove500()) {
-        u32 pool_partition_id = (npdm->acid->is_retail >> 2) & 0xF;
+        u32 pool_partition_id = (npdm->acid->flags >> 2) & 0xF;
         switch (pool_partition_id) {
             case 0: /* Application. */
                 if ((application_type & 3) == 2) {
@@ -93,6 +117,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     Registration::Process *target_process;
     Handle process_h = 0;
     u64 process_id = 0;
+    bool mounted_code = false;
     Result rc;
     
     /* Get the process from the registration queue. */
@@ -102,9 +127,16 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     }
     
     /* Mount the title's exefs. */
-    rc = ContentManagement::MountCodeForTidSid(&target_process->tid_sid);  
-    if (R_FAILED(rc)) {
-        return rc;
+    if (target_process->tid_sid.storage_id != FsStorageId_None) {
+        rc = ContentManagement::MountCodeForTidSid(&target_process->tid_sid);  
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        mounted_code = true;
+    } else {
+        if (R_SUCCEEDED(ContentManagement::MountCodeNspOnSd(target_process->tid_sid.title_id))) {
+            mounted_code = true;
+        }
     }
     
     /* Load the process's NPDM. */
@@ -190,12 +222,18 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     Registration::AssociatePidTidForMitM(index);
     
     rc = 0;  
-CREATE_PROCESS_END:
-    if (R_SUCCEEDED(rc)) {
-        rc = ContentManagement::UnmountCode();
-    } else {
-        ContentManagement::UnmountCode();
+
+    /* ECS is a one-shot operation, but we don't clear on failure. */
+    ContentManagement::ClearExternalContentSource(target_process->tid_sid.title_id);
+    if (mounted_code) {
+        if (R_SUCCEEDED(rc) && target_process->tid_sid.storage_id != FsStorageId_None) {
+            rc = ContentManagement::UnmountCode();
+        } else {
+            ContentManagement::UnmountCode();
+        }
     }
+
+CREATE_PROCESS_END:
     if (R_SUCCEEDED(rc)) {
         *out_process_h = process_h;
     } else {

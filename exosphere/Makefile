@@ -9,6 +9,13 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/devkitA64/base_rules
 
+AMSBRANCH := $(shell git symbolic-ref --short HEAD)
+AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
+
+ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
+    AMSREV := $(AMSREV)-dirty
+endif
+
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
 # BUILD is the directory where object files & intermediate files will be placed
@@ -20,30 +27,32 @@ TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src src/dbg
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include ../common/include
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57
-DEFINES	:=	-D__CCPLEX__
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only #<- important
+DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
 CFLAGS	:= \
 	-g \
 	-O2 \
 	-ffunction-sections \
 	-fdata-sections \
 	-fomit-frame-pointer \
+    -fno-asynchronous-unwind-tables \
+    -fno-unwind-tables \
 	-std=gnu11 \
 	-Werror \
 	-Wall \
 	$(ARCH) $(DEFINES)
 
-CFLAGS	+=	$(INCLUDE)
+CFLAGS	+=	$(INCLUDE) 
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -nostartfiles -nostdlib -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=
 
@@ -66,14 +75,16 @@ export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(TOPDIR)/bpmpfw
+			$(TOPDIR)/lp0fw \
+			$(TOPDIR)/sc7fw \
+			$(TOPDIR)/rebootstub
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) bpmpfw.bin
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) sc7fw.bin lp0fw.bin rebootstub.bin
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -100,22 +111,30 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) build_bpmpfw clean all
+.PHONY: $(BUILD) build_sc7fw build_lp0fw build_rebootstub clean all
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
 
-check_bpmpfw:
-	@$(MAKE) -C bpmpfw all
+check_sc7fw:
+	@$(MAKE) -C sc7fw all
 
-$(BUILD): check_bpmpfw
+check_lp0fw:
+	@$(MAKE) -C lp0fw all
+
+check_rebootstub:
+	@$(MAKE) -C rebootstub all
+
+$(BUILD): check_sc7fw check_lp0fw check_rebootstub
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@$(MAKE) -C $(TOPDIR)/bpmpfw clean
+	@$(MAKE) -C $(TOPDIR)/sc7fw clean
+	@$(MAKE) -C $(TOPDIR)/lp0fw clean
+	@$(MAKE) -C $(TOPDIR)/rebootstub clean
 	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
 
 

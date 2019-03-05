@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -138,9 +154,9 @@ void bootconfig_get_package2_hash_for_recovery(uint64_t *out_hash) {
 }
 
 bool bootconfig_is_recovery_boot(void) {
-    return (g_boot_reason.is_recovery_boot != 0);
+    return ((g_boot_reason.bootloader_attribute & 0x01) != 0);
 }
 
 uint64_t bootconfig_get_boot_reason(void) {
-    return ((uint64_t)g_boot_reason.boot_reason_high << 24) | (g_boot_reason.boot_reason_low & 0xFFFFFF);
+    return ((uint64_t)g_boot_reason.boot_reason_state << 24) | (g_boot_reason.boot_reason_value & 0xFFFFFF);
 }

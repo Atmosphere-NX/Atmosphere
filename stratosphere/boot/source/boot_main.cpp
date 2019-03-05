@@ -1,9 +1,26 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
 #include <malloc.h>
 
 #include <switch.h>
+#include <atmosphere.h>
 #include <stratosphere.hpp>
 
 #define CAR_BASE 0x60006000
@@ -48,6 +65,8 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     Result rc;
+    
+    SetFirmwareVersionForLibnx();
 
     /* Initialize services we need (TODO: NCM) */
     rc = smInitialize();
@@ -67,6 +86,8 @@ void __appInit(void) {
         fatalSimple(0xCAFE << 4 | 2);
     
     fsdevMountSdmc();
+    
+    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {

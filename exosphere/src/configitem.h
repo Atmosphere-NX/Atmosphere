@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #ifndef EXOSPHERE_CFG_ITEM_H
 #define EXOSPHERE_CFG_ITEM_H
 
@@ -18,21 +34,30 @@ typedef enum {
     CONFIGITEM_ISDEBUGMODE = 11,
     CONFIGITEM_KERNELMEMORYCONFIGURATION = 12,
     CONFIGITEM_BATTERYPROFILE = 13,
-    CONFIGITEM_ODM4BIT10_4X = 14,
+    CONFIGITEM_ISQUESTUNIT = 14,
     CONFIGITEM_NEWHARDWARETYPE_5X = 15,
     CONFIGITEM_NEWKEYGENERATION_5X = 16,
     CONFIGITEM_PACKAGE2HASH_5X = 17,
     
     /* These are unofficial, for usage by Exosphere. */
-    CONFIGITEM_EXOSPHERE_VERSION = 65000
+    CONFIGITEM_EXOSPHERE_VERSION = 65000,
+    CONFIGITEM_NEEDS_REBOOT = 65001,
+    CONFIGITEM_NEEDS_SHUTDOWN = 65002,
 } ConfigItem;
 
-uint32_t configitem_set(ConfigItem item, uint64_t value);
-uint32_t configitem_get(ConfigItem item, uint64_t *p_outvalue);
+#define REBOOT_KIND_NO_REBOOT     0
+#define REBOOT_KIND_TO_RCM        1
+#define REBOOT_KIND_TO_WB_PAYLOAD 2
+
+uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value);
+uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue);
 
 bool configitem_is_recovery_boot(void);
 bool configitem_is_retail(void);
 bool configitem_should_profile_battery(void);
+bool configitem_is_debugmode_priv(void);
+
+void configitem_set_debugmode_override(bool user, bool priv);
 
 uint64_t configitem_get_hardware_type(void);
 

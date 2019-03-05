@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <stdbool.h>
 #include <string.h>
 #include "utils.h"
@@ -14,14 +30,15 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
         APBDEV_PMC_SCRATCH200_0 = code;
     }
     
-    /* Uncomment for Debugging.
+    /* // Uncomment for Debugging.
     uint64_t temp_reg;
     MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM)) = APBDEV_PMC_SCRATCH200_0;
     SAVE_SYSREG64(ESR_EL3, 0x10);
     SAVE_SYSREG64(ELR_EL3, 0x18);
     SAVE_SYSREG64(FAR_EL3, 0x20);
     MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x2;
-    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10; */
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
+    */
     
     /* TODO: Custom Panic Driver, which displays to screen without rebooting. */
     /* For now, just use NX BOOTLOADER's panic. */
@@ -32,7 +49,7 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
 }
 
 __attribute__ ((noreturn)) void generic_panic(void) {
-    /* Uncomment for Debugging.
+    /* //Uncomment for Debugging.
     uint64_t temp_reg;    
     do { __asm__ __volatile__ ("mov %0, LR" : "=r"(temp_reg) :: "memory"); } while (false);
     MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM) + 0x28) = (uint32_t)((temp_reg >> 0) & 0xFFFFFFFFULL);

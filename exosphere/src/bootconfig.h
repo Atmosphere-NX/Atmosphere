@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #ifndef EXOSPHERE_BOOTCONFIG_H
 #define EXOSPHERE_BOOTCONFIG_H
 
@@ -26,7 +42,6 @@ typedef struct {
     bootconfig_unsigned_config_t unsigned_config;
     uint8_t signature[0x100];
     bootconfig_signed_config_t signed_config;
-    uint8_t unused_space[0x240]; /* remaining space in the evt page */
 } bootconfig_t;
 
 static inline bootconfig_t *get_loaded_bootconfig(void) {
@@ -35,11 +50,12 @@ static inline bootconfig_t *get_loaded_bootconfig(void) {
 }
 
 typedef struct {
-    uint64_t _0x00;
-    uint32_t _0x08;
-    uint32_t is_recovery_boot;
-    uint32_t boot_reason_low;
-    uint32_t boot_reason_high;
+    uint32_t bootloader_version;
+    uint32_t bootloader_start_block;
+    uint32_t bootloader_start_page;
+    uint32_t bootloader_attribute;
+    uint32_t boot_reason_value;
+    uint32_t boot_reason_state;
 } boot_reason_t;
 
 void bootconfig_load_and_verify(const bootconfig_t *bootconfig);

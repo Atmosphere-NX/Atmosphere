@@ -1,12 +1,32 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include "utils.h"
 #include "memory_map.h"
 #include "mc.h"
 #include "arm.h"
 #include "synchronization.h"
 #include "exocfg.h"
+#include "pmc.h"
 
 #undef  MC_BASE
 #define MC_BASE (MMIO_GET_DEVICE_PA(MMIO_DEVID_MC))
+
+#define WARMBOOT_GET_TZRAM_SEGMENT_PA(x) ((g_exosphere_target_firmware_for_init < ATMOSPHERE_TARGET_FIRMWARE_500) \
+                                            ? TZRAM_GET_SEGMENT_PA(x) : TZRAM_GET_SEGMENT_5X_PA(x))
 
 /* start.s */
 void __set_memory_registers(uintptr_t ttbr0, uintptr_t vbar, uint64_t cpuectlr, uint32_t scr,
@@ -15,16 +35,16 @@ void __set_memory_registers(uintptr_t ttbr0, uintptr_t vbar, uint64_t cpuectlr, 
 unsigned int g_exosphere_target_firmware_for_init = 0;
 
 uintptr_t get_warmboot_crt0_stack_address(void) {
-    return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x800;
+    return WARMBOOT_GET_TZRAM_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE012_STACK) + 0x800;
 }
 
 uintptr_t get_warmboot_crt0_stack_address_critsec_enter(void) {
     unsigned int core_id = get_core_id();
 
-    if (core_id) {
-        return TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x1000;
+    if (core_id == 3) {
+        return WARMBOOT_GET_TZRAM_SEGMENT_PA(TZRAM_SEGMENT_ID_CORE3_STACK) + 0x1000;
     } else {
-        return TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x80 * (core_id + 1);
+        return WARMBOOT_GET_TZRAM_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x80 * (core_id + 1);
     }
 }
 
@@ -33,7 +53,7 @@ void warmboot_crt0_critical_section_enter(volatile critical_section_t *critical_
 }
 
 void init_dma_controllers(unsigned int target_firmware) {
-    if (target_firmware >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         /* Set some unknown registers in HOST1X. */
         MAKE_REG32(0x500038F8) &= 0xFFFFFFFE;
         MAKE_REG32(0x50003300) = 0;
@@ -89,9 +109,8 @@ void init_dma_controllers(unsigned int target_firmware) {
     }
 }
 
-void set_memory_registers_enable_mmu(void) {
+void _set_memory_registers_enable_mmu(const uintptr_t ttbr0) {
     static const uintptr_t vbar  = TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800;
-    static const uintptr_t ttbr0 = TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64;
 
     /*
         - Disable table walk descriptor access prefetch.
@@ -142,12 +161,22 @@ void set_memory_registers_enable_mmu(void) {
     __set_memory_registers(ttbr0, vbar, cpuectlr, scr, tcr, cptr, mair, sctlr);
 }
 
+void set_memory_registers_enable_mmu_1x_ttbr0(void) {
+    static const uintptr_t ttbr0 = TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64;
+    _set_memory_registers_enable_mmu(ttbr0);
+}
+
+void set_memory_registers_enable_mmu_5x_ttbr0(void) {
+    static const uintptr_t ttbr0 = TZRAM_GET_SEGMENT_5X_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64;
+    _set_memory_registers_enable_mmu(ttbr0);
+}
+
 #if 0 /* Since we decided not to identity-unmap TZRAM */
 static void identity_remap_tzram(void) {
     /* See also: configure_ttbls (in coldboot_init.c). */
-    uintptr_t *mmu_l1_tbl = (uintptr_t *)(TZRAM_GET_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
-    uintptr_t *mmu_l2_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
-    uintptr_t *mmu_l3_tbl = (uintptr_t *)TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
+    uintptr_t *mmu_l1_tbl = (uintptr_t *)(WARMBOOT_GET_TZRAM_SEGMENT_PA(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800 - 64);
+    uintptr_t *mmu_l2_tbl = (uintptr_t *)WARMBOOT_GET_TZRAM_SEGMENT_PA(TZRAM_SEGMENT_ID_L2_TRANSLATION_TABLE);
+    uintptr_t *mmu_l3_tbl = (uintptr_t *)WARMBOOT_GET_TZRAM_SEGMENT_PA(TZRAM_SEGMENT_ID_L3_TRANSLATION_TABLE);
 
     mmu_map_table(1, mmu_l1_tbl, 0x40000000, mmu_l2_tbl, 0);
     mmu_map_table(2, mmu_l2_tbl, 0x7C000000, mmu_l3_tbl, 0);
@@ -168,13 +197,17 @@ void warmboot_init(void) {
     */
     flush_dcache_all();
     invalidate_icache_all();
-
+    
     /* On warmboot (not cpu_on) only */
-    if (MC_SECURITY_CFG3_0 == 0) {
+    if (VIRT_MC_SECURITY_CFG3 == 0) {
         init_dma_controllers(g_exosphere_target_firmware_for_init);
     }
-
+    
     /*identity_remap_tzram();*/
     /* Nintendo pointlessly fully invalidate the TLB & invalidate the data cache on the modified ranges here */
-    set_memory_registers_enable_mmu();
+    if (g_exosphere_target_firmware_for_init < ATMOSPHERE_TARGET_FIRMWARE_500) {
+        set_memory_registers_enable_mmu_1x_ttbr0();
+    } else {
+        set_memory_registers_enable_mmu_5x_ttbr0();
+    }
 }

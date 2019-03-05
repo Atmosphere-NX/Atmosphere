@@ -1,6 +1,22 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #pragma once
 #include <switch.h>
-#include <stratosphere/iserviceobject.hpp>
+#include <stratosphere.hpp>
 
 #include "pm_registration.hpp"
 
@@ -27,29 +43,52 @@ enum ShellCmd_5X {
     Shell_Cmd_5X_GetProcessEventType = 4,
     Shell_Cmd_5X_NotifyBootFinished = 5,
     Shell_Cmd_5X_GetApplicationProcessId = 6,
-    Shell_Cmd_5X_BoostSystemMemoryResourceLimit = 7
+    Shell_Cmd_5X_BoostSystemMemoryResourceLimit = 7,
+    
+    Shell_Cmd_BoostSystemThreadsResourceLimit = 8
 };
 
-class ShellService final : public IServiceObject {
-    public:
-        Result dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) override;
-        Result handle_deferred() override;
-        
-        ShellService *clone() override {
-            return new ShellService(*this);
-        }
-        
-        
+class ShellService final : public IServiceObject {    
     private:
         /* Actual commands. */
-        std::tuple<Result, u64> launch_process(u64 launch_flags, Registration::TidSid tid_sid);
-        std::tuple<Result> terminate_process_id(u64 pid);
-        std::tuple<Result> terminate_title_id(u64 tid);
-        std::tuple<Result, CopiedHandle> get_process_wait_event();
-        std::tuple<Result, u64, u64> get_process_event_type();
-        std::tuple<Result> finalize_exited_process(u64 pid);
-        std::tuple<Result> clear_process_notification_flag(u64 pid);
-        std::tuple<Result> notify_boot_finished();
-        std::tuple<Result, u64> get_application_process_id();
-        std::tuple<Result> boost_system_memory_resource_limit(u64 sysmem_size);
+        Result LaunchProcess(Out<u64> pid, Registration::TidSid tid_sid, u32 launch_flags);
+        Result TerminateProcessId(u64 pid);
+        Result TerminateTitleId(u64 tid);
+        void GetProcessWaitEvent(Out<CopiedHandle> event);
+        void GetProcessEventType(Out<u64> type, Out<u64> pid);
+        Result FinalizeExitedProcess(u64 pid);
+        Result ClearProcessNotificationFlag(u64 pid);
+        void NotifyBootFinished();
+        Result GetApplicationProcessId(Out<u64> pid);
+        Result BoostSystemMemoryResourceLimit(u64 sysmem_size);
+        Result BoostSystemThreadsResourceLimit();
+    public:
+        DEFINE_SERVICE_DISPATCH_TABLE {
+            /* 1.0.0-4.0.0 */
+            MakeServiceCommandMeta<Shell_Cmd_LaunchProcess, &ShellService::LaunchProcess, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Shell_Cmd_TerminateProcessId, &ShellService::TerminateProcessId, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Shell_Cmd_TerminateTitleId, &ShellService::TerminateTitleId, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Shell_Cmd_GetProcessWaitEvent, &ShellService::GetProcessWaitEvent, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Shell_Cmd_GetProcessEventType, &ShellService::GetProcessEventType, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Shell_Cmd_FinalizeExitedProcess, &ShellService::FinalizeExitedProcess, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Shell_Cmd_ClearProcessNotificationFlag, &ShellService::ClearProcessNotificationFlag, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Shell_Cmd_NotifyBootFinished, &ShellService::NotifyBootFinished, FirmwareVersion_Min, FirmwareVersion_400>(),
+            MakeServiceCommandMeta<Shell_Cmd_GetApplicationProcessId, &ShellService::GetApplicationProcessId, FirmwareVersion_Min, FirmwareVersion_400>(),
+            
+            /* 4.0.0-4.0.0 */
+            MakeServiceCommandMeta<Shell_Cmd_BoostSystemMemoryResourceLimit, &ShellService::BoostSystemMemoryResourceLimit, FirmwareVersion_400, FirmwareVersion_400>(),
+            
+            /* 5.0.0-* */
+            MakeServiceCommandMeta<Shell_Cmd_5X_LaunchProcess, &ShellService::LaunchProcess, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Shell_Cmd_5X_TerminateProcessId, &ShellService::TerminateProcessId, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Shell_Cmd_5X_TerminateTitleId, &ShellService::TerminateTitleId, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Shell_Cmd_5X_GetProcessWaitEvent, &ShellService::GetProcessWaitEvent, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Shell_Cmd_5X_GetProcessEventType, &ShellService::GetProcessEventType, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Shell_Cmd_5X_NotifyBootFinished, &ShellService::NotifyBootFinished, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Shell_Cmd_5X_GetApplicationProcessId, &ShellService::GetApplicationProcessId, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Shell_Cmd_5X_BoostSystemMemoryResourceLimit, &ShellService::BoostSystemMemoryResourceLimit, FirmwareVersion_500>(),
+            
+            /* 7.0.0-* */
+            MakeServiceCommandMeta<Shell_Cmd_BoostSystemThreadsResourceLimit, &ShellService::BoostSystemThreadsResourceLimit, FirmwareVersion_700>(),
+        };
 };

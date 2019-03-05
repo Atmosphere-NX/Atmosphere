@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 /* For some reason GAS doesn't know about it, even with .cpu cortex-a57 */
 #define cpuactlr_el1 s3_1_c15_c2_0
 #define cpuectlr_el1 s3_1_c15_c2_1
@@ -101,8 +117,11 @@ __start_cold:
     br   x16
 
 _post_cold_crt0_reloc:
-
+    /* Setup stack for coldboot crt0. */
     msr  spsel, #0
+    bl   get_coldboot_crt0_temp_stack_address
+    mov  sp, x0
+    mov  fp, #0
     bl   get_coldboot_crt0_stack_address
     mov  sp, x0
     mov  fp, #0
@@ -128,6 +147,7 @@ _post_cold_crt0_reloc:
     ldr x1, =0x80010000
     /* Set size in coldboot relocation list. */
     str x21, [x0, #0x8]
+    
     bl   coldboot_init
 
     ldr  x16, =__jump_to_main_cold
@@ -219,8 +239,8 @@ __jump_to_main_warm:
     bl   __set_exception_entry_stack_pointer
 
     mov  w0, #0 /* use core0,1,2 stack bottom + 0x800 (VA of warmboot crt0 sp) temporarily */
-    bl   get_exception_entry_stack_address
-    add  sp, x0, #0x800
+    bl   get_warmboot_main_stack_address
+    mov  sp, x0
     bl   warmboot_main
 
 .section    .text.__set_exception_entry_stack, "ax", %progbits
@@ -244,12 +264,14 @@ __set_exception_entry_stack_pointer:
 .type       __jump_to_lower_el, %function
 __jump_to_lower_el:
     /* x0: arg (context ID), x1: entrypoint, w2: spsr */
+    mov x19, x0
     mov  w2, w2
 
     msr  elr_el3, x1
     msr  spsr_el3, x2
 
     bl __set_exception_entry_stack_pointer
+    mov x0, x19
 
     isb
     eret

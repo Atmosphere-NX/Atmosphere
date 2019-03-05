@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <switch.h>
 #include <algorithm>
 #include <cstdio>
@@ -7,11 +23,25 @@
 #include "ldr_nso.hpp"
 #include "ldr_map.hpp"
 #include "ldr_random.hpp"
+#include "ldr_patcher.hpp"
+#include "ldr_content_management.hpp"
 
 static NsoUtils::NsoHeader g_nso_headers[NSO_NUM_MAX] = {0};
 static bool g_nso_present[NSO_NUM_MAX] = {0};
 
 static char g_nso_path[FS_MAX_PATH] = {0};
+
+FILE *NsoUtils::OpenNsoFromECS(unsigned int index, ContentManagement::ExternalContentSource *ecs) {
+    std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
+    snprintf(g_nso_path, FS_MAX_PATH, "%s:/%s", ecs->mountpoint, NsoUtils::GetNsoFileName(index));
+    return fopen(g_nso_path, "rb");
+}
+
+FILE *NsoUtils::OpenNsoFromHBL(unsigned int index) {
+    std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
+    snprintf(g_nso_path, FS_MAX_PATH, "hbl:/%s", NsoUtils::GetNsoFileName(index));
+    return fopen(g_nso_path, "rb");
+}
 
 FILE *NsoUtils::OpenNsoFromExeFS(unsigned int index) {
     std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
@@ -37,14 +67,28 @@ bool NsoUtils::CheckNsoStubbed(unsigned int index, u64 title_id) {
 }
 
 FILE *NsoUtils::OpenNso(unsigned int index, u64 title_id) {
-    FILE *f_out = OpenNsoFromSdCard(index, title_id);
-    if (f_out != NULL) {
-        return f_out;
-    } else if (CheckNsoStubbed(index, title_id)) {
-        return NULL;
-    } else {
-        return OpenNsoFromExeFS(index);
+    ContentManagement::ExternalContentSource *ecs = nullptr;
+    if ((ecs = ContentManagement::GetExternalContentSource(title_id)) != nullptr) {
+        return OpenNsoFromECS(index, ecs);
     }
+    
+    /* First, check HBL. */
+    if (ContentManagement::ShouldOverrideContentsWithHBL(title_id)) {
+        return OpenNsoFromHBL(index);
+    }
+
+    /* Next, check secondary override. */
+    if (ContentManagement::ShouldOverrideContentsWithSD(title_id)) {
+        FILE *f_out = OpenNsoFromSdCard(index, title_id);
+        if (f_out != NULL) {
+            return f_out;
+        } else if (CheckNsoStubbed(index, title_id)) {
+            return NULL;
+        }
+    }
+    
+    /* Finally, default to exefs. */
+    return OpenNsoFromExeFS(index);
 }
 
 bool NsoUtils::IsNsoPresent(unsigned int index) {
@@ -199,6 +243,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
 }
 
 
+
 Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int segment, FILE *f_nso, u8 *map_base, u8 *map_end) {
     bool is_compressed = ((g_nso_headers[index].flags >> segment) & 1) != 0;
     bool check_hash = ((g_nso_headers[index].flags >> (segment + 3)) & 1) != 0;
@@ -230,10 +275,11 @@ Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int s
     
     if (check_hash) {
         u8 hash[0x20] = {0};
-        SHA256_CTX sha_ctx;
+        struct sha256_state sha_ctx;
         sha256_init(&sha_ctx);
         sha256_update(&sha_ctx, dst_addr, out_size);
-        sha256_final(&sha_ctx, hash);
+        sha256_finalize(&sha_ctx);
+        sha256_finish(&sha_ctx, hash);
 
         if (std::memcmp(g_nso_headers[index].section_hashes[segment], hash, sizeof(hash))) {
             return 0xA09;
@@ -280,6 +326,9 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
             /* Zero out .bss. */
             u64 bss_base = rw_start + g_nso_headers[i].segments[2].decomp_size, bss_size = g_nso_headers[i].segments[2].align_or_total_size;
             std::fill(map_base + bss_base, map_base + bss_base + bss_size, 0);
+            
+            /* Apply patches to loaded module. */
+            PatchUtils::ApplyPatches(&g_nso_headers[i], map_base, bss_base);
             
             nso_map.Close();
             

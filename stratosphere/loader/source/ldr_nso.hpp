@@ -1,6 +1,24 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #pragma once
 #include <switch.h>
 #include <cstdio>
+
+#include "ldr_content_management.hpp" /* for ExternalContentSource */
 
 #define MAGIC_NSO0 0x304F534E
 #define NSO_NUM_MAX 13
@@ -80,7 +98,9 @@ class NsoUtils {
                     return "?";
             }
         }
-        
+
+        static FILE *OpenNsoFromECS(unsigned int index, ContentManagement::ExternalContentSource *ecs);
+        static FILE *OpenNsoFromHBL(unsigned int index);
         static FILE *OpenNsoFromExeFS(unsigned int index);
         static FILE *OpenNsoFromSdCard(unsigned int index, u64 title_id);
         static bool CheckNsoStubbed(unsigned int index, u64 title_id);

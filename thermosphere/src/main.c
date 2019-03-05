@@ -1,6 +1,17 @@
-/**
- * Thermosphère hypervisor -- primary setup code
- * Copyright (c) 2018 Kate J. Temkin <k@ktemkin.com>
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <stdint.h>
@@ -130,5 +141,5 @@ void main_el1(void * fdt)
     }
 
     // If we've made it here, we failed to boot, and we can't recover.
-    panic("We should launch Horizon, here!");
+    panic("We should launch Horizon here!");
 }

@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <stdbool.h>
 #include <stdarg.h>
 #include "utils.h"
@@ -7,11 +23,24 @@
 #include "timers.h"
 #include "panic.h"
 #include "car.h"
+#include "btn.h"
 
-#include "lib/printk.h"
-#include "hwinit/btn.h"
+#include "lib/log.h"
 
 #include <inttypes.h>
+
+#define u8 uint8_t
+#define u32 uint32_t
+#include "rebootstub_bin.h"
+#undef u8
+#undef u32
+
+void wait(uint32_t microseconds) {
+    uint32_t old_time = TIMERUS_CNTR_1US_0;
+    while (TIMERUS_CNTR_1US_0 - old_time <= microseconds) {
+        /* Spin-lock. */
+    }
+}
 
 __attribute__((noreturn)) void watchdog_reboot(void) {
     volatile watchdog_timers_t *wdt = GET_WDT(4);
@@ -36,13 +65,21 @@ __attribute__((noreturn)) void pmc_reboot(uint32_t scratch0) {
     }
 }
 
-__attribute__((noreturn)) void car_reboot(void) {
-    /* Reset the processor. */
-    car_get_regs()->rst_dev_l |= 1<<2;
-
-    while (true) {
-        /* Wait for reboot. */
+__attribute__((noreturn)) void reboot_to_self(void) {
+    /* Patch SDRAM init to perform an SVC immediately after second write */
+    APBDEV_PMC_SCRATCH45_0 = 0x2E38DFFF;
+    APBDEV_PMC_SCRATCH46_0 = 0x6001DC28;
+    /* Set SVC handler to jump to reboot stub in IRAM. */
+    APBDEV_PMC_SCRATCH33_0 = 0x4003F000;
+    APBDEV_PMC_SCRATCH40_0 = 0x6000F208;
+    
+    /* Copy reboot stub into IRAM high. */
+    for (size_t i = 0; i < rebootstub_bin_size; i += sizeof(uint32_t)) {
+        write32le((void *)0x4003F000, i, read32le(rebootstub_bin, i));
     }
+    
+    /* Trigger warm reboot. */
+    pmc_reboot(1 << 0);
 }
 
 __attribute__((noreturn)) void wait_for_button_and_reboot(void) {
@@ -50,7 +87,7 @@ __attribute__((noreturn)) void wait_for_button_and_reboot(void) {
     while (true) {
         button = btn_read();
         if (button & BTN_POWER) {
-            car_reboot();
+            reboot_to_self();
         }
     }
 }
@@ -61,11 +98,11 @@ __attribute__ ((noreturn)) void generic_panic(void) {
 
 __attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
     va_list args;
-    printk("Fatal error: ");
+    print(SCREEN_LOG_LEVEL_ERROR, "Fatal error: ");
     va_start(args, fmt);
-    vprintk(fmt, args);
+    vprint(SCREEN_LOG_LEVEL_ERROR, fmt, args);
     va_end(args);
-    printk("\nPress POWER to reboot\n");
+    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"\nPress POWER to reboot\n");
     wait_for_button_and_reboot();
 }
 
@@ -86,27 +123,27 @@ void hexdump(const void* data, size_t size, uintptr_t addrbase) {
 
     for (size_t i = 0; i < size; i++) {
         if (i % 16 == 0) {
-            printk("%0*" PRIXPTR ": | ", 2 * sizeof(addrbase), addrbase + i);
+            print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "%0*" PRIXPTR ": | ", 2 * sizeof(addrbase), addrbase + i);
         }
-        printk("%02X ", d[i]);
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "%02X ", d[i]);
         if (d[i] >= ' ' && d[i] <= '~') {
             ascii[i % 16] = d[i];
         } else {
             ascii[i % 16] = '.';
         }
         if ((i+1) % 8 == 0 || i+1 == size) {
-            printk(" ");
+            print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, " ");
             if ((i+1) % 16 == 0) {
-                printk("|  %s \n", ascii);
+                print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "|  %s \n", ascii);
             } else if (i+1 == size) {
                 ascii[(i+1) % 16] = '\0';
                 if ((i+1) % 16 <= 8) {
-                    printk(" ");
+                    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, " ");
                 }
                 for (size_t j = (i+1) % 16; j < 16; j++) {
-                    printk("   ");
+                    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "   ");
                 }
-                printk("|  %s \n", ascii);
+                print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "|  %s \n", ascii);
             }
         }
     }

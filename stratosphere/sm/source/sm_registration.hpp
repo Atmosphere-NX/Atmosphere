@@ -1,5 +1,23 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #pragma once
 #include <switch.h>
+
+#include "sm_types.hpp"
 
 #define REGISTRATION_LIST_MAX_PROCESS (0x40)
 #define REGISTRATION_LIST_MAX_SERVICE (0x100)
@@ -27,9 +45,16 @@ class Registration {
             u64 mitm_pid;
             Handle mitm_port_h;
             Handle mitm_query_h;
+            
+            bool mitm_waiting_ack;
+            u64 mitm_waiting_ack_pid;
+            Handle mitm_fwd_sess_h;
         };
         
         /* Utilities. */
+        static void EndInitDefers();
+        static bool ShouldInitDefer(u64 service);
+        
         static Registration::Process *GetProcessForPid(u64 pid);
         static Registration::Process *GetFreeProcess();
         static Registration::Service *GetService(u64 service);
@@ -46,6 +71,7 @@ class Registration {
         
         /* Service management. */
         static bool HasService(u64 service);
+        static bool HasMitm(u64 service);
         static Result GetServiceHandle(u64 pid, u64 service, Handle *out);
         static Result GetServiceForPid(u64 pid, u64 service, Handle *out);
         static Result RegisterServiceForPid(u64 pid, u64 service, u64 max_sessions, bool is_light, Handle *out);
@@ -55,5 +81,10 @@ class Registration {
         /* Extension. */
         static Result InstallMitmForPid(u64 pid, u64 service, Handle *out, Handle *query_out);
         static Result UninstallMitmForPid(u64 pid, u64 service);
+        static Result AcknowledgeMitmSessionForPid(u64 pid, u64 service, Handle *out, u64 *out_pid);
         static Result AssociatePidTidForMitm(u64 pid, u64 tid);
+        
+        static void   ConvertServiceToRecord(Registration::Service *service, SmServiceRecord *record);
+        static Result GetServiceRecord(u64 service, SmServiceRecord *out);
+        static void   ListServiceRecords(u64 offset, u64 max_out, SmServiceRecord *out, u64 *out_count);
 };

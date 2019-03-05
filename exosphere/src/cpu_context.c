@@ -1,7 +1,25 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <stdbool.h>
 #include <stdint.h>
 #include "arm.h"
 #include "cpu_context.h"
+#include "car.h"
+#include "exocfg.h"
 #include "flow.h"
 #include "pmc.h"
 #include "timers.h"
@@ -13,12 +31,12 @@
 #define SAVE_SYSREG64(reg) do { __asm__ __volatile__ ("mrs %0, " #reg : "=r"(temp_reg) :: "memory"); g_cpu_contexts[current_core].reg = temp_reg; } while(false)
 #define SAVE_SYSREG32(reg) do { __asm__ __volatile__ ("mrs %0, " #reg : "=r"(temp_reg) :: "memory"); g_cpu_contexts[current_core].reg = (uint32_t)temp_reg; } while(false)
 #define SAVE_BP_REG(i, _) SAVE_SYSREG64(DBGBVR##i##_EL1); SAVE_SYSREG64(DBGBCR##i##_EL1);
-#define SAVE_WP_REG(i, _) SAVE_SYSREG64(DBGBVR##i##_EL1); SAVE_SYSREG64(DBGBCR##i##_EL1);
+#define SAVE_WP_REG(i, _) SAVE_SYSREG64(DBGWVR##i##_EL1); SAVE_SYSREG64(DBGWCR##i##_EL1);
 
 #define RESTORE_SYSREG64(reg) do { temp_reg = g_cpu_contexts[current_core].reg; __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
 #define RESTORE_SYSREG32(reg) RESTORE_SYSREG64(reg)
 #define RESTORE_BP_REG(i, _) RESTORE_SYSREG64(DBGBVR##i##_EL1); RESTORE_SYSREG64(DBGBCR##i##_EL1);
-#define RESTORE_WP_REG(i, _) RESTORE_SYSREG64(DBGBVR##i##_EL1); RESTORE_SYSREG64(DBGBCR##i##_EL1);
+#define RESTORE_WP_REG(i, _) RESTORE_SYSREG64(DBGWVR##i##_EL1); RESTORE_SYSREG64(DBGWCR##i##_EL1);
 
 /* start.s */
 void __attribute__((noreturn)) __jump_to_lower_el(uint64_t arg, uintptr_t ep, uint32_t spsr);
@@ -79,8 +97,13 @@ uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
 
     set_core_entrypoint_and_argument(core, entrypoint_addr, argument);
 
-    const uint32_t status_masks[NUM_CPU_CORES] = {0x4000, 0x200, 0x400, 0x800};
-    const uint32_t toggle_vals[NUM_CPU_CORES] = {0xE, 0x9, 0xA, 0xB};
+    static const uint32_t status_masks[NUM_CPU_CORES] = {0x4000, 0x200, 0x400, 0x800};
+    static const uint32_t toggle_vals[NUM_CPU_CORES] = {0xE, 0x9, 0xA, 0xB};
+    
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
+        /* Reset the core */
+        CLK_RST_CONTROLLER_RST_CPUG_CMPLX_SET_0 = (1 << (core + 0x10)) | (1 << core);
+    }
 
     /* Check if we're already in the correct state. */
     if ((APBDEV_PMC_PWRGATE_STATUS_0 & status_masks[core]) != status_masks[core]) {
@@ -91,7 +114,7 @@ uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
             wait(1);
             counter--;
             if (counter < 1) {
-                return 0;
+                goto CPU_ON_SUCCESS;
             }
         }
 
@@ -108,6 +131,13 @@ uint32_t cpu_on(uint32_t core, uintptr_t entrypoint_addr, uint64_t argument) {
             counter--;
         }
     }
+
+CPU_ON_SUCCESS:
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
+        /* Start the core */
+        CLK_RST_CONTROLLER_RST_CPUG_CMPLX_CLR_0 = (1 << (core + 0x10)) | (1 << core);
+    }
+    
     return 0;
 }
 
@@ -145,6 +175,7 @@ void save_current_core_context(void) {
     /* Save system registers. */
 
     SAVE_SYSREG32(OSDTRRX_EL1);
+    SAVE_SYSREG32(OSDTRTX_EL1);
     SAVE_SYSREG32(MDSCR_EL1);
     SAVE_SYSREG32(OSECCR_EL1);
     SAVE_SYSREG32(MDCCINT_EL1);
@@ -168,6 +199,7 @@ void restore_current_core_context(void) {
 
     if (g_cpu_contexts[current_core].is_saved) {
         RESTORE_SYSREG32(OSDTRRX_EL1);
+        RESTORE_SYSREG32(OSDTRTX_EL1);
         RESTORE_SYSREG32(MDSCR_EL1);
         RESTORE_SYSREG32(OSECCR_EL1);
         RESTORE_SYSREG32(MDCCINT_EL1);

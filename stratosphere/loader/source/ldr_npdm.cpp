@@ -1,10 +1,28 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <switch.h>
 #include <algorithm>
 #include <cstdio>
 #include "ldr_npdm.hpp"
 #include "ldr_registration.hpp"
+#include "ldr_content_management.hpp"
 
 static NpdmUtils::NpdmCache g_npdm_cache = {0};
+static NpdmUtils::NpdmCache g_original_npdm_cache = {0};
 static char g_npdm_path[FS_MAX_PATH] = {0};
 
 Result NpdmUtils::LoadNpdmFromCache(u64 tid, NpdmInfo *out) {
@@ -13,6 +31,18 @@ Result NpdmUtils::LoadNpdmFromCache(u64 tid, NpdmInfo *out) {
     }
     *out = g_npdm_cache.info;
     return 0;
+}
+
+FILE *NpdmUtils::OpenNpdmFromECS(ContentManagement::ExternalContentSource *ecs) {
+    std::fill(g_npdm_path, g_npdm_path + FS_MAX_PATH, 0);
+    snprintf(g_npdm_path, FS_MAX_PATH, "%s:/main.npdm", ecs->mountpoint);
+    return fopen(g_npdm_path, "rb");
+}
+
+FILE *NpdmUtils::OpenNpdmFromHBL() {
+    std::fill(g_npdm_path, g_npdm_path + FS_MAX_PATH, 0);
+    snprintf(g_npdm_path, FS_MAX_PATH, "hbl:/main.npdm");
+    return fopen(g_npdm_path, "rb");
 }
 
 FILE *NpdmUtils::OpenNpdmFromExeFS() {
@@ -29,30 +59,47 @@ FILE *NpdmUtils::OpenNpdmFromSdCard(u64 title_id) {
 
 
 FILE *NpdmUtils::OpenNpdm(u64 title_id) {
-    FILE *f_out = OpenNpdmFromSdCard(title_id);
-    if (f_out != NULL) {
-        return f_out;
+    ContentManagement::ExternalContentSource *ecs = nullptr;
+    if ((ecs = ContentManagement::GetExternalContentSource(title_id)) != nullptr) {
+        return OpenNpdmFromECS(ecs);
     }
+    
+    /* First, check HBL. */
+    if (ContentManagement::ShouldOverrideContentsWithHBL(title_id)) {
+        return OpenNpdmFromHBL();
+    }
+    
+    /* Next, check other override. */
+    if (ContentManagement::ShouldOverrideContentsWithSD(title_id)) {
+        FILE *f_out = OpenNpdmFromSdCard(title_id);
+        if (f_out != NULL) {
+            return f_out;
+        }
+    }
+    
+    /* Last resort: real exefs. */
     return OpenNpdmFromExeFS();
 }
 
-Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
+Result NpdmUtils::LoadNpdmInternal(FILE *f_npdm, NpdmUtils::NpdmCache *cache) {
     Result rc;
     
-    g_npdm_cache.info = (const NpdmUtils::NpdmInfo){0};
-    
-    FILE *f_npdm = OpenNpdm(tid);
+    cache->info = (const NpdmUtils::NpdmInfo){0};
+
+    rc = 0x202;
     if (f_npdm == NULL) {
         /* For generic "Couldn't open the file" error, just say the file doesn't exist. */
-        return 0x202;
+        return rc;
     }
     
     fseek(f_npdm, 0, SEEK_END);
     size_t npdm_size = ftell(f_npdm);
     fseek(f_npdm, 0, SEEK_SET);
     
-    if (npdm_size > sizeof(g_npdm_cache.buffer) || fread(g_npdm_cache.buffer, 1, npdm_size, f_npdm) != npdm_size) {
-        return 0x609;
+    rc = 0x609;
+    if ((npdm_size > sizeof(cache->buffer)) || (fread(cache->buffer, 1, npdm_size, f_npdm) != npdm_size)) {
+        fclose(f_npdm);
+        return rc;
     }
     
     fclose(f_npdm);
@@ -63,8 +110,8 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
     }
     
     /* For ease of access... */
-    g_npdm_cache.info.header = (NpdmUtils::NpdmHeader *)(g_npdm_cache.buffer);
-    NpdmInfo *info = &g_npdm_cache.info;
+    cache->info.header = (NpdmUtils::NpdmHeader *)(cache->buffer);
+    NpdmInfo *info = &cache->info;
     
     if (info->header->magic != MAGIC_META) {
         return rc;
@@ -78,7 +125,7 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
         return rc;
     }
     
-    info->aci0 = (NpdmAci0 *)(g_npdm_cache.buffer + info->header->aci0_offset);
+    info->aci0 = (NpdmAci0 *)(cache->buffer + info->header->aci0_offset);
     
     if (info->aci0->magic != MAGIC_ACI0) {
         return rc;
@@ -106,7 +153,7 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
         return rc;
     }
     
-    info->acid = (NpdmAcid *)(g_npdm_cache.buffer + info->header->acid_offset);
+    info->acid = (NpdmAcid *)(cache->buffer + info->header->acid_offset);
     
     if (info->acid->magic != MAGIC_ACID) {
         return rc;
@@ -132,7 +179,47 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
     
     info->acid_kac = (void *)((uintptr_t)info->acid + info->acid->kac_offset);
     
+    rc = 0;
+    return rc;
+}
+
+Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
+    Result rc;
+        
+    rc = LoadNpdmInternal(OpenNpdm(tid), &g_npdm_cache);
     
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    NpdmInfo *info = &g_npdm_cache.info;
+    /* Override the ACID/ACI0 title ID, in order to facilitate HBL takeover of any title. */
+    info->acid->title_id_range_min = tid;
+    info->acid->title_id_range_max = tid;
+    info->aci0->title_id = tid;
+    
+    if (ContentManagement::ShouldOverrideContentsWithHBL(tid) && R_SUCCEEDED(LoadNpdmInternal(OpenNpdmFromExeFS(), &g_original_npdm_cache))) {
+        NpdmInfo *original_info = &g_original_npdm_cache.info;
+        /* Fix pool partition. */
+        if (kernelAbove500()) {
+            info->acid->flags = (info->acid->flags & 0xFFFFFFC3) | (original_info->acid->flags & 0x0000003C);
+        }
+        /* Fix application type. */
+        const u32 original_application_type = GetApplicationTypeRaw((u32 *)original_info->aci0_kac, original_info->aci0->kac_size/sizeof(u32)) & 7;
+        u32 *caps = (u32 *)info->aci0_kac;
+        for (unsigned int i = 0; i < info->aci0->kac_size/sizeof(u32); i++) {
+            if ((caps[i] & 0x3FFF) == 0x1FFF) {
+                caps[i] = (caps[i] & 0xFFFE3FFF) | (original_application_type << 14);
+            }
+        }
+        caps = (u32 *)info->acid_kac;
+        for (unsigned int i = 0; i < info->acid->kac_size/sizeof(u32); i++) {
+            if ((caps[i] & 0x3FFF) == 0x1FFF) {
+                caps[i] = (caps[i] & 0xFFFE3FFF) | (original_application_type << 14);
+            }
+        }
+    }
+        
     /* We validated! */
     info->title_id = tid;
     *out = *info;
@@ -417,4 +504,21 @@ u32 NpdmUtils::GetApplicationType(u32 *caps, size_t num_caps) {
         }
     }
     return application_type;
+}
+
+/* Like GetApplicationType, except this returns the raw kac descriptor value. */
+u32 NpdmUtils::GetApplicationTypeRaw(u32 *caps, size_t num_caps) {
+    u32 application_type = 0;
+    for (unsigned int i = 0; i < num_caps; i++) {
+        if ((caps[i] & 0x3FFF) == 0x1FFF) {
+            return (caps[i] >> 14) & 7;
+        }
+    }
+    return application_type;
+}
+
+void NpdmUtils::InvalidateCache(u64 tid) {
+    if (g_npdm_cache.info.title_id == tid) {
+        g_npdm_cache.info = (const NpdmUtils::NpdmInfo){0};
+    }
 }

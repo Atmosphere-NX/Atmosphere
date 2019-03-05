@@ -1,176 +1,113 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "pm_registration.hpp"
 #include "pm_resource_limits.hpp"
 #include "pm_shell.hpp"
+#include "pm_boot2.hpp"
 
 static bool g_has_boot_finished = false;
 
-Result ShellService::dispatch(IpcParsedCommand &r, IpcCommand &out_c, u64 cmd_id, u8 *pointer_buffer, size_t pointer_buffer_size) {
-    Result rc = 0xF601;
-
-    if (kernelAbove500()) {
-        switch ((ShellCmd_5X)cmd_id) {
-            case Shell_Cmd_5X_LaunchProcess:
-                rc = WrapIpcCommandImpl<&ShellService::launch_process>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_5X_TerminateProcessId:
-                rc = WrapIpcCommandImpl<&ShellService::terminate_process_id>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_5X_TerminateTitleId:
-                rc = WrapIpcCommandImpl<&ShellService::terminate_title_id>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_5X_GetProcessWaitEvent:
-                rc = WrapIpcCommandImpl<&ShellService::get_process_wait_event>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_5X_GetProcessEventType:
-                rc = WrapIpcCommandImpl<&ShellService::get_process_event_type>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_5X_NotifyBootFinished:
-                rc = WrapIpcCommandImpl<&ShellService::notify_boot_finished>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_5X_GetApplicationProcessId:
-                rc = WrapIpcCommandImpl<&ShellService::get_application_process_id>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_5X_BoostSystemMemoryResourceLimit:
-                rc = WrapIpcCommandImpl<&ShellService::boost_system_memory_resource_limit>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            default:
-                break;
-        }
-    } else {
-        switch ((ShellCmd)cmd_id) {
-            case Shell_Cmd_LaunchProcess:
-                rc = WrapIpcCommandImpl<&ShellService::launch_process>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_TerminateProcessId:
-                rc = WrapIpcCommandImpl<&ShellService::terminate_process_id>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_TerminateTitleId:
-                rc = WrapIpcCommandImpl<&ShellService::terminate_title_id>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_GetProcessWaitEvent:
-                rc = WrapIpcCommandImpl<&ShellService::get_process_wait_event>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_GetProcessEventType:
-                rc = WrapIpcCommandImpl<&ShellService::get_process_event_type>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_FinalizeExitedProcess:
-                rc = WrapIpcCommandImpl<&ShellService::finalize_exited_process>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_ClearProcessNotificationFlag:
-                rc = WrapIpcCommandImpl<&ShellService::clear_process_notification_flag>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_NotifyBootFinished:
-                rc = WrapIpcCommandImpl<&ShellService::notify_boot_finished>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_GetApplicationProcessId:
-                rc = WrapIpcCommandImpl<&ShellService::get_application_process_id>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            case Shell_Cmd_BoostSystemMemoryResourceLimit:
-                rc = WrapIpcCommandImpl<&ShellService::boost_system_memory_resource_limit>(this, r, out_c, pointer_buffer, pointer_buffer_size);
-                break;
-            default:
-                break;
-        }
-    }
-    
-    return rc;
+Result ShellService::LaunchProcess(Out<u64> pid, Registration::TidSid tid_sid, u32 launch_flags) {
+    return Registration::LaunchProcessByTidSid(tid_sid, launch_flags, pid.GetPointer());
 }
 
-Result ShellService::handle_deferred() {
-    /* This service is never deferrable. */
-    return 0;
-}
-
-std::tuple<Result, u64> ShellService::launch_process(u64 launch_flags, Registration::TidSid tid_sid) {
-    u64 pid = 0;
-    Result rc = Registration::LaunchProcessByTidSid(tid_sid, launch_flags, &pid);
-    return {rc, pid};
-}
-
-std::tuple<Result> ShellService::terminate_process_id(u64 pid) {
+Result ShellService::TerminateProcessId(u64 pid) {
     auto auto_lock = Registration::GetProcessListUniqueLock();
     
-    std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
+    auto proc = Registration::GetProcess(pid);
+    if (proc != nullptr) {
+        return svcTerminateProcess(proc->handle);
+    } else {
+        return 0x20F;
+    }
+}
+
+Result ShellService::TerminateTitleId(u64 tid) {
+    auto auto_lock = Registration::GetProcessListUniqueLock();
+    
+    auto proc = Registration::GetProcessByTitleId(tid);
     if (proc != NULL) {
-        return {svcTerminateProcess(proc->handle)};
+        return svcTerminateProcess(proc->handle);
     } else {
-        return {0x20F};
+        return 0x20F;
     }
 }
 
-std::tuple<Result> ShellService::terminate_title_id(u64 tid) {
+void ShellService::GetProcessWaitEvent(Out<CopiedHandle> event) {
+    event.SetValue(Registration::GetProcessEventHandle());
+}
+
+void ShellService::GetProcessEventType(Out<u64> type, Out<u64> pid) {
+    Registration::GetProcessEventType(pid.GetPointer(), type.GetPointer());
+}
+
+Result ShellService::FinalizeExitedProcess(u64 pid) {
     auto auto_lock = Registration::GetProcessListUniqueLock();
     
-    std::shared_ptr<Registration::Process> proc = Registration::GetProcessByTitleId(tid);
-    if (proc != NULL) {
-        return {svcTerminateProcess(proc->handle)};
-    } else {
-        return {0x20F};
-    }
-}
-
-std::tuple<Result, CopiedHandle> ShellService::get_process_wait_event() {
-    return {0x0, Registration::GetProcessEventHandle()};
-}
-
-std::tuple<Result, u64, u64> ShellService::get_process_event_type() {
-    u64 type, pid;
-    Registration::GetProcessEventType(&pid, &type);
-    return {0x0, type, pid};
-}
-
-std::tuple<Result> ShellService::finalize_exited_process(u64 pid) {
-    auto auto_lock = Registration::GetProcessListUniqueLock();
-    
-    std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
+    auto proc = Registration::GetProcess(pid);
     if (proc == NULL) {
-        return {0x20F};
+        return 0x20F;
     } else if (proc->state != ProcessState_Exited) {
-        return {0x60F};
+        return 0x60F;
     } else {
         Registration::FinalizeExitedProcess(proc);
-        return {0x0};
+        return 0x0;
     }
 }
 
-std::tuple<Result> ShellService::clear_process_notification_flag(u64 pid) {
+Result ShellService::ClearProcessNotificationFlag(u64 pid) {
     auto auto_lock = Registration::GetProcessListUniqueLock();
     
-    std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
+    auto proc = Registration::GetProcess(pid);
     if (proc != NULL) {
-        proc->flags &= ~2;
-        return {0x0};
+        proc->flags &= ~PROCESSFLAGS_CRASHED;
+        return 0x0;
     } else {
-        return {0x20F};
+        return 0x20F;
     }
 }
 
-std::tuple<Result> ShellService::notify_boot_finished() {
-    u64 boot2_pid;
+void ShellService::NotifyBootFinished() {
     if (!g_has_boot_finished) {
         g_has_boot_finished = true;
-        return {Registration::LaunchProcess(BOOT2_TITLE_ID, FsStorageId_NandSystem, 0, &boot2_pid)};
+        EmbeddedBoot2::Main();
     }
-    return {0};
 }
 
-std::tuple<Result, u64> ShellService::get_application_process_id() {
+Result ShellService::GetApplicationProcessId(Out<u64> pid) {
     auto auto_lock = Registration::GetProcessListUniqueLock();
     
     std::shared_ptr<Registration::Process> app_proc;
     if (Registration::HasApplicationProcess(&app_proc)) {
-        return {0, app_proc->pid};
+        pid.SetValue(app_proc->pid);
+        return 0;
     }
-    return {0x20F, 0};
+    return 0x20F;
 }
 
-std::tuple<Result> ShellService::boost_system_memory_resource_limit(u64 sysmem_size) {
-    if (!kernelAbove400()) {
-        return {0xF601};
-    }
-    
-    /* TODO */
-    return {ResourceLimitUtils::BoostSystemMemoryResourceLimit(sysmem_size)};
+Result ShellService::BoostSystemMemoryResourceLimit(u64 sysmem_size) {
+    return ResourceLimitUtils::BoostSystemMemoryResourceLimit(sysmem_size);
+}
+
+Result ShellService::BoostSystemThreadsResourceLimit() {
+    /* Starting in 7.0.0, Nintendo reduces the number of system threads from 0x260 to 0x60, */
+    /* Until this command is called to double that amount to 0xC0. */
+    /* We will simply not reduce the number of system threads available for no reason. */
+    return 0x0;
 }

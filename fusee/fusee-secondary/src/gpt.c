@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <string.h>
 #include <errno.h>
 #include "gpt.h"
@@ -79,7 +95,7 @@ int gpt_iterate_through_entries(FILE *disk, size_t sector_size, gpt_entry_iterat
 
     /* Iterate through the entries. */
     for (uint32_t i = 0; i < hdr.entry_count; i++) {
-        if (fread(&entry, sizeof(efi_entry_t), 1, disk) == 0) {
+        if (!fread(&entry, sizeof(efi_entry_t), 1, disk)) {
             return -1;
         }
 

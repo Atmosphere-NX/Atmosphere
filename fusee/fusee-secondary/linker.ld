@@ -6,6 +6,7 @@ PHDRS
 {
     crt0        PT_LOAD;
     chainloader PT_LOAD;
+    nxboot      PT_LOAD;
     main        PT_LOAD;
 }
 
@@ -13,16 +14,17 @@ PHDRS
 MEMORY
 {
     main        : ORIGIN = 0xF0000000, LENGTH = 0x10000000
+    high_iram   : ORIGIN = 0x40010000, LENGTH = 0x20000
     low_iram    : ORIGIN = 0x40003000, LENGTH = 0x8000
 }
 
 SECTIONS
 {
     PROVIDE(__start__           = 0xF0000000);
-    PROVIDE(__stack_top__       = 0x40010000);
-    PROVIDE(__stack_bottom__    = 0x4000C000);
-    PROVIDE(__heap_start__      = 0xE0000000);
-    PROVIDE(__heap_end__        = 0xF0000000);
+    PROVIDE(__stack_top__       = 0x90020000);
+    PROVIDE(__stack_bottom__    = 0x90010000);
+    PROVIDE(__heap_start__      = 0x90020000);
+    PROVIDE(__heap_end__        = 0xA0020000);
 
     . = __start__;
 
@@ -53,6 +55,27 @@ SECTIONS
         . = ALIGN(32);
         PROVIDE (__chainloader_end__ = ABSOLUTE(.));
     } >low_iram :NONE
+    
+    .nxboot_loadable :
+    {
+        . = ALIGN(32);
+        PROVIDE (__nxboot_start__  = ABSOLUTE(.));
+        PROVIDE (__nxboot_lma__    = LOADADDR(.nxboot_loadable));
+        KEEP(*(.nxboot.text.start))
+        nxboot_iram.o(.text*)
+        nxboot_iram.o(.rodata*)
+        nxboot_iram.o(.data*)
+        . = ALIGN(32);
+    } >high_iram AT>main :nxboot
+
+    .nxboot_bss (NOLOAD) :
+    {
+        . = ALIGN(32);
+        PROVIDE (__nxboot_bss_start__ = ABSOLUTE(.));
+        nxboot_iram.o(.bss* COMMON)
+        . = ALIGN(32);
+        PROVIDE (__nxboot_end__ = ABSOLUTE(.));
+    } >high_iram :NONE
 
     .text :
     {
@@ -134,6 +157,9 @@ SECTIONS
         CONSTRUCTORS
         . = ALIGN(32);
     } >main
+    
+    __data_end__ = ABSOLUTE(.);
+    PROVIDE (__total_size__ = (__data_end__ - __start__));
 
     .bss (NOLOAD) :
     {
@@ -188,4 +214,36 @@ SECTIONS
     .debug_str      0 : { *(.debug_str) }
     .debug_loc      0 : { *(.debug_loc) }
     .debug_macinfo  0 : { *(.debug_macinfo) }
+
+    /* =======================
+       ==== Embedded Data ====
+       ======================= */
+    PROVIDE(__ams_mitm_kip_start__ = ams_mitm_kip - __start__);
+    PROVIDE(__ams_mitm_kip_size__ = ams_mitm_kip_end - ams_mitm_kip);
+    PROVIDE(__boot_100_kip_start__ = boot_100_kip - __start__);
+    PROVIDE(__boot_100_kip_size__ = boot_100_kip_end - boot_100_kip);
+    PROVIDE(__boot_200_kip_start__ = boot_200_kip - __start__);
+    PROVIDE(__boot_200_kip_size__ = boot_200_kip_end - boot_200_kip);
+    PROVIDE(__exosphere_bin_start__ = exosphere_bin - __start__);
+    PROVIDE(__exosphere_bin_size__ = exosphere_bin_end - exosphere_bin);
+    PROVIDE(__fusee_primary_bin_start__ = fusee_primary_bin - __start__);
+    PROVIDE(__fusee_primary_bin_size__ = fusee_primary_bin_end - fusee_primary_bin);
+    PROVIDE(__loader_kip_start__ = loader_kip - __start__);
+    PROVIDE(__loader_kip_size__ = loader_kip_end - loader_kip);
+    PROVIDE(__lp0fw_bin_start__ = lp0fw_bin - __start__);
+    PROVIDE(__lp0fw_bin_size__ = lp0fw_bin_end - lp0fw_bin);
+    PROVIDE(__pm_kip_start__ = pm_kip - __start__);
+    PROVIDE(__pm_kip_size__ = pm_kip_end - pm_kip);
+    PROVIDE(__rebootstub_bin_start__ = rebootstub_bin - __start__);
+    PROVIDE(__rebootstub_bin_size__ = rebootstub_bin_end - rebootstub_bin);
+    PROVIDE(__sept_primary_bin_start__ = sept_primary_bin - __start__);
+    PROVIDE(__sept_primary_bin_size__ = sept_primary_bin_end - sept_primary_bin);
+    PROVIDE(__sept_secondary_enc_start__ = sept_secondary_enc - __start__);
+    PROVIDE(__sept_secondary_enc_size__ = sept_secondary_enc_end - sept_secondary_enc);
+    PROVIDE(__sm_kip_start__ = sm_kip - __start__);
+    PROVIDE(__sm_kip_size__ = sm_kip_end - sm_kip);
+    PROVIDE(__splash_screen_bmp_start__ = splash_screen_bmp - __start__);
+    PROVIDE(__splash_screen_bmp_size__ = splash_screen_bmp_end - splash_screen_bmp);
+    PROVIDE(__thermosphere_bin_start__ = thermosphere_bin - __start__);
+    PROVIDE(__thermosphere_bin_size__ = thermosphere_bin_end - thermosphere_bin);
 }

@@ -25,11 +25,10 @@ DSTATUS disk_status (
 )
 {
 	device_partition_t *devpart = g_volume_to_devparts[pdrv];
-	if (devpart == NULL) {
-		return STA_NODISK;
-	} else {
-		return devpart->initialized ? 0 : STA_NOINIT;
-	}
+    if (devpart)
+        return devpart->initialized ? RES_OK : STA_NOINIT;
+    else
+        return STA_NODISK;
 }
 
 
@@ -44,14 +43,12 @@ DSTATUS disk_initialize (
 {
 	/* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
 	device_partition_t *devpart = g_volume_to_devparts[pdrv];
-	if (devpart == NULL) {
+	if (!devpart)
 		return STA_NODISK;
-	} else if (devpart->initializer != NULL) {
-		int rc = devpart->initializer(devpart);
-		return rc == 0 ? 0 : STA_NOINIT;
-	} else {
-		return 0;
-	}
+	else if (devpart->initializer)
+		return devpart->initializer(devpart) ? STA_NOINIT : RES_OK;
+	else 
+		return RES_OK;
 }
 
 
@@ -69,14 +66,12 @@ DRESULT disk_read (
 {
 	/* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
 	device_partition_t *devpart = g_volume_to_devparts[pdrv];
-	if (devpart == NULL) {
+	if (!devpart)
 		return RES_PARERR;
-	} else if (devpart->reader != NULL) {
-		int rc = device_partition_read_data(devpart, buff, sector, count);
-		return rc == 0 ? 0 : RES_ERROR;
-	} else {
+	else if (devpart->reader)
+		return device_partition_read_data(devpart, buff, sector, count) ? RES_ERROR : RES_OK;
+	else
 		return RES_ERROR;
-	}
 }
 
 
@@ -94,14 +89,12 @@ DRESULT disk_write (
 {
 	/* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
 	device_partition_t *devpart = g_volume_to_devparts[pdrv];
-	if (devpart == NULL) {
+	if (!devpart)
 		return RES_PARERR;
-	} else if (devpart->writer != NULL) {
-		int rc = device_partition_write_data(devpart, buff, sector, count);
-		return rc == 0 ? 0 : RES_ERROR;
-	} else {
+	else if (devpart->writer)
+		return device_partition_write_data(devpart, buff, sector, count) ? RES_ERROR : RES_OK;
+	else
 		return RES_ERROR;
-	}
 }
 
 
@@ -118,11 +111,11 @@ DRESULT disk_ioctl (
 {
 	device_partition_t *devpart = g_volume_to_devparts[pdrv];
 	switch (cmd) {
-			case GET_SECTOR_SIZE:
-				*(WORD *)buff = devpart != NULL ? (WORD)devpart->sector_size : 512;
-				return 0;
-			default:
-				return 0;
+        case GET_SECTOR_SIZE:
+            *(WORD *)buff = devpart ? (WORD)devpart->sector_size : 512;
+            return RES_OK;
+        default:
+            return RES_OK;
 	}
 }
 

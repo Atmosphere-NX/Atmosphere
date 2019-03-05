@@ -1,8 +1,6 @@
-KIPS := loader pm sm boot
+MODULES := loader pm sm boot ams_mitm eclct.stub creport fatal dmnt
 
-#TODO: boot2 ?
-
-SUBFOLDERS := libstratosphere $(KIPS)
+SUBFOLDERS := libstratosphere $(MODULES)
 
 TOPTARGETS := all clean
 
@@ -11,6 +9,6 @@ $(TOPTARGETS): $(SUBFOLDERS)
 $(SUBFOLDERS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
-$(KIPS): libstratosphere
+$(MODULES): libstratosphere
 
 .PHONY: $(TOPTARGETS) $(SUBFOLDERS)

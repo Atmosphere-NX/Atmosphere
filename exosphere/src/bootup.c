@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -15,6 +31,7 @@
 #include "configitem.h"
 #include "timers.h"
 #include "misc.h"
+#include "uart.h"
 #include "bpmp.h"
 #include "sysreg.h"
 #include "interrupt.h"
@@ -29,6 +46,20 @@
 #include "synchronization.h"
 
 static bool g_has_booted_up = false;
+
+void setup_dram_magic_numbers(void) {
+    /* These DRAM writes test and set values for the GPU UCODE carveout. */
+    unsigned int target_fw = exosphere_get_target_firmware();
+    (*(volatile uint32_t *)(0x8005FFFC)) = 0xC0EDBBCC;              /* Access test value. */
+    flush_dcache_range((void *)0x8005FFFC, (void *)0x80060000);
+    if (ATMOSPHERE_TARGET_FIRMWARE_600 <= target_fw) {
+        (*(volatile uint32_t *)(0x8005FF00)) = 0x00000083;          /* SKU code. */
+        (*(volatile uint32_t *)(0x8005FF04)) = 0x00000002;
+        (*(volatile uint32_t *)(0x8005FF08)) = 0x00000210;          /* Tegra210 code. */
+        flush_dcache_range((void *)0x8005FF00, (void *)0x8005FF0C);
+    }
+    __dsb_sy();
+}
 
 void bootup_misc_mmio(void) {
     /* Initialize Fuse registers. */
@@ -50,47 +81,42 @@ void bootup_misc_mmio(void) {
     se_generate_random_key(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY);
     se_generate_srk(KEYSLOT_SWITCH_SRKGENKEY);
 
-    /* TODO: Why does this DRAM write occur? */
-    if (!g_has_booted_up && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
-        /* 4.x writes this magic number into DRAM. Why? */
-        (*(volatile uint32_t *)(0x8005FFFC)) = 0xC0EDBBCC;
+    if (!g_has_booted_up && (ATMOSPHERE_TARGET_FIRMWARE_600 > exosphere_get_target_firmware())) {
+        setup_dram_magic_numbers();
     }
 
-    /* Todo: What? */
-    MAKE_TIMERS_REG(0x1A4) = 0xF1E0;
+    /* Mark TMR5, TMR6, TMR7, TMR8, WDT0, WDT1, WDT2 and WDT3 as secure. */
+    SHARED_TIMER_SECURE_CFG_0 = 0xF1E0;
 
-    FLOW_CTLR_BPMP_CLUSTER_CONTROL_0 = 4; /* ACTIVE_CLUSTER_LOCK. */
-    FLOW_CTLR_FLOW_DBG_QUAL_0 = 0x10000000; /* Enable FIQ2CCPLEX */
+    FLOW_CTLR_BPMP_CLUSTER_CONTROL_0 = 4;       /* ACTIVE_CLUSTER_LOCK. */
+    FLOW_CTLR_FLOW_DBG_QUAL_0 = 0x10000000;     /* Enable FIQ2CCPLEX */
 
     /* Disable Deep Power Down. */
     APBDEV_PMC_DPD_ENABLE_0 = 0;
 
-    /* Setup MC. */
-    /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x984) = 1;
-    MAKE_MC_REG(0x648) = 0;
-    MAKE_MC_REG(0x64C) = 0;
-    MAKE_MC_REG(0x650) = 1;
-    MAKE_MC_REG(0x670) = 0;
-    MAKE_MC_REG(0x674) = 0;
-    MAKE_MC_REG(0x678) = 1;
-    MAKE_MC_REG(0x9A0) = 0;
-    MAKE_MC_REG(0x9A4) = 0;
-    MAKE_MC_REG(0x9A8) = 0;
-    MAKE_MC_REG(0x9AC) = 1;
-    MC_SECURITY_CFG0_0 = 0;
-    MC_SECURITY_CFG1_0 = 0;
-    MC_SECURITY_CFG3_0 = 3;
+    /* Setup MC carveouts. */
+    MAKE_MC_REG(MC_VIDEO_PROTECT_GPU_OVERRIDE_0) = 1;
+    MAKE_MC_REG(MC_VIDEO_PROTECT_GPU_OVERRIDE_1) = 0;
+    MAKE_MC_REG(MC_VIDEO_PROTECT_BOM) = 0;
+    MAKE_MC_REG(MC_VIDEO_PROTECT_SIZE_MB) = 0;
+    MAKE_MC_REG(MC_VIDEO_PROTECT_REG_CTRL) = 1;
+    MAKE_MC_REG(MC_SEC_CARVEOUT_BOM) = 0;
+    MAKE_MC_REG(MC_SEC_CARVEOUT_SIZE_MB) = 0;
+    MAKE_MC_REG(MC_SEC_CARVEOUT_REG_CTRL) = 1;
+    MAKE_MC_REG(MC_MTS_CARVEOUT_BOM) = 0;
+    MAKE_MC_REG(MC_MTS_CARVEOUT_SIZE_MB) = 0;
+    MAKE_MC_REG(MC_MTS_CARVEOUT_ADR_HI) = 0;
+    MAKE_MC_REG(MC_MTS_CARVEOUT_REG_CTRL) = 1;
+    MAKE_MC_REG(MC_SECURITY_CFG0) = 0;
+    MAKE_MC_REG(MC_SECURITY_CFG1) = 0;
+    MAKE_MC_REG(MC_SECURITY_CFG3) = 3;
     configure_default_carveouts();
-    
-    
-
+        
     /* Mark registers secure world only. */
-    if (exosphere_get_target_firmware() == EXOSPHERE_TARGET_FIRMWARE_100) {
-        /* TODO: Switch these to use the enum. */
-        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = 0x500244;
-        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = 0xA3700000;
-        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = 0x304;
+    if (exosphere_get_target_firmware() == ATMOSPHERE_TARGET_FIRMWARE_100) {
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = APB_SSER0_SATA_AUX | APB_SSER0_DTV | APB_SSER0_QSPI | APB_SSER0_SATA | APB_SSER0_LA;
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 = APB_SSER1_SPI1 | APB_SSER1_SPI2 | APB_SSER1_SPI3 | APB_SSER1_SPI5 | APB_SSER1_SPI6 | APB_SSER1_I2C4 | APB_SSER1_I2C6;
+        APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = 1 << 4 | 1 << 5 | APB_SSER2_DDS; /* bits 4 and 5 are not labeled in 21.1.7.3 */
     } else {
         /* Mark SATA_AUX, DTV, QSPI, SE, SATA, LA secure only. */
         APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 = APB_SSER0_SATA_AUX | APB_SSER0_DTV | APB_SSER0_QSPI | APB_SSER0_SE | APB_SSER0_SATA | APB_SSER0_LA;
@@ -104,7 +130,7 @@ void bootup_misc_mmio(void) {
             /* Also mark I2C4 secure only, */
             sec_disable_1 |= APB_SSER1_I2C4;
         }
-        if (hardware_type != 0 && exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+        if (hardware_type != 0 && exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
             /* Starting on 4.x on non-dev units, mark UARTB, UARTC, SPI4, I2C3 secure only. */
             sec_disable_1 |= APB_SSER1_UART_B | APB_SSER1_UART_C | APB_SSER1_SPI4 | APB_SSER1_I2C3;
             /* Starting on 4.x on non-dev units, mark SDMMC1 secure only. */
@@ -114,40 +140,50 @@ void bootup_misc_mmio(void) {
         APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = sec_disable_2;
     }
 
+    /* Reset Translation Enable Registers. */
+    MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_0) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_1) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_2) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_3) = 0xFFFFFFFF;
+    MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_4) = 0xFFFFFFFF;
+
     /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x228) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x22C) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x230) = 0xFFFFFFFF;
-    MAKE_MC_REG(0x234) = 0xFFFFFFFF;
-    MAKE_MC_REG(0xB98) = 0xFFFFFFFF;
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         MAKE_MC_REG(0x038) = 0xE;
     } else {
         MAKE_MC_REG(0x038) = 0x0;
     }
     MAKE_MC_REG(0x03C) = 0;
+
+    /* MISC registers. */
     MAKE_MC_REG(0x9E0) = 0;
     MAKE_MC_REG(0x9E4) = 0;
     MAKE_MC_REG(0x9E8) = 0;
     MAKE_MC_REG(0x9EC) = 0;
     MAKE_MC_REG(0x9F0) = 0;
     MAKE_MC_REG(0x9F4) = 0;
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
-        MAKE_MC_REG(0x01C) = 0;
+
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
+        MAKE_MC_REG(MC_SMMU_PTB_ASID) = 0;
     }
-    MAKE_MC_REG(0x020) = 0;
-    MAKE_MC_REG(0x014) = 0x30000030;
-    MAKE_MC_REG(0x018) = 0x2800003F;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x034) = 0;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x030) = 0;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x010) = 1;
-    (void)(MAKE_MC_REG(0x014));
+    MAKE_MC_REG(MC_SMMU_PTB_DATA) = 0;
+    MAKE_MC_REG(MC_SMMU_TLB_CONFIG) = 0x30000030;
+    MAKE_MC_REG(MC_SMMU_PTC_CONFIG) = 0x2800003F;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_PTC_FLUSH) = 0;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_TLB_FLUSH) = 0;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_CONFIG) = 1;        /* Enable SMMU. */
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
     
     /* Clear RESET Vector, setup CPU Secure Boot RESET Vectors. */
-    uint32_t reset_vec = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
+    uint32_t reset_vec;
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
+        reset_vec = TZRAM_GET_SEGMENT_5X_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
+    } else {
+        reset_vec = TZRAM_GET_SEGMENT_PA(TZRAM_SEGMENT_ID_WARMBOOT_CRT0_AND_MAIN);
+    }
     EVP_CPU_RESET_VECTOR_0 = 0;
     SB_AA64_RESET_LOW_0 = reset_vec | 1;
     SB_AA64_RESET_HIGH_0 = 0;
@@ -162,14 +198,14 @@ void bootup_misc_mmio(void) {
 
     /* Setup FIQs. */
 
-
     /* And assign "se_operation_completed" to Interrupt 0x5A. */
     intr_set_priority(INTERRUPT_ID_SECURITY_ENGINE, 0);
     intr_set_group(INTERRUPT_ID_SECURITY_ENGINE, 0);
     intr_set_enabled(INTERRUPT_ID_SECURITY_ENGINE, 1);
     intr_set_cpu_mask(INTERRUPT_ID_SECURITY_ENGINE, 8);
     intr_set_edge_level(INTERRUPT_ID_SECURITY_ENGINE, 0);
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+    
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         intr_set_priority(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
         intr_set_group(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 0);
         intr_set_enabled(INTERRUPT_ID_ACTIVITY_MONITOR_4X, 1);
@@ -178,29 +214,39 @@ void bootup_misc_mmio(void) {
     }
 
     if (!g_has_booted_up) {
+        /* N doesn't do this, but we should for compatibility. */
+        uart_select(UART_A);
+        clkrst_reboot(CARDEVICE_UARTA);
+        uart_init(UART_A, 115200);
+        
         intr_register_handler(INTERRUPT_ID_SECURITY_ENGINE, se_operation_completed);
-        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
             intr_register_handler(INTERRUPT_ID_ACTIVITY_MONITOR_4X, actmon_interrupt_handler);
         }
         for (unsigned int core = 1; core < NUM_CPU_CORES; core++) {
             set_core_is_active(core, false);
         }
         g_has_booted_up = true;
-    } else if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400) {
-        /* TODO: What are these MC reg writes? */
-        MAKE_MC_REG(0x65C) = 0xFFFFF000;
-        MAKE_MC_REG(0x660) = 0;
-        MAKE_MC_REG(0x964) |= 1;
+    } else if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_400) {
+        /* Disable AHB redirect. */
+        MAKE_MC_REG(MC_IRAM_BOM) = 0xFFFFF000;
+        MAKE_MC_REG(MC_IRAM_TOM) = 0;
+        MAKE_MC_REG(MC_IRAM_REG_CTRL) |= 1;
         CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
     }
 }
 
 void setup_4x_mmio(void) {
-    /* TODO: What are these MC reg writes? */
-    MAKE_MC_REG(0x65C) = 0xFFFFF000;
-    MAKE_MC_REG(0x660) = 0;
-    MAKE_MC_REG(0x964) |= 1;
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_600) {
+        configure_gpu_ucode_carveout();
+    }
+
+    /* Disable AHB redirect. */
+    MAKE_MC_REG(MC_IRAM_BOM) = 0xFFFFF000;
+    MAKE_MC_REG(MC_IRAM_TOM) = 0;
+    MAKE_MC_REG(MC_IRAM_REG_CTRL) |= 1;
     CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD_0 &= 0xFFF7FFFF;
+
     /* TODO: What are these PMC scratch writes? */
     APBDEV_PMC_SECURE_SCRATCH51_0 = (APBDEV_PMC_SECURE_SCRATCH51_0 & 0xFFFF8000) | 0x4000;
     APBDEV_PMC_SECURE_SCRATCH16_0 &= 0x3FFFFFFF;
@@ -216,6 +262,7 @@ void setup_4x_mmio(void) {
     APBDEV_PMC_SECURE_SCRATCH102_0 = 0x0;
     APBDEV_PMC_SECURE_SCRATCH103_0 = 0x0;
     APBDEV_PMC_SECURE_SCRATCH39_0 = (APBDEV_PMC_SECURE_SCRATCH39_0 & 0xF8000000) | 0x88;
+
     /* TODO: Do we want to bother locking the secure scratch registers? */
     /* 4.x Jamais Vu mitigations. */
     /* Overwrite exception vectors. */
@@ -227,23 +274,27 @@ void setup_4x_mmio(void) {
     BPMP_VECTOR_UNK = BPMP_MITIGATION_RESET_VAL;
     BPMP_VECTOR_IRQ = BPMP_MITIGATION_RESET_VAL;
     BPMP_VECTOR_FIQ = BPMP_MITIGATION_RESET_VAL;
+
     /* Disable AHB arbitration for the BPMP. */
     AHB_ARBITRATION_DISABLE_0 |= 2;
+
     /* Set SMMU for BPMP/APB-DMA to point to TZRAM. */
-    MC_SMMU_PTB_ASID_0 = 1;
-    (void)(MAKE_MC_REG(0x014));
-    MC_SMMU_PTB_DATA_0 = 0x70012;
-    MC_SMMU_AVPC_ASID_0 = 0x80000001;
-    MC_SMMU_PPCS1_ASID_0 = 0x80000001;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x34) = 0;
-    (void)(MAKE_MC_REG(0x014));
-    MAKE_MC_REG(0x30) = 0;
-    (void)(MAKE_MC_REG(0x014));
+    MAKE_MC_REG(MC_SMMU_PTB_ASID) = 1;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_PTB_DATA) = 0x70012;
+    MAKE_MC_REG(MC_SMMU_AVPC_ASID) = 0x80000001;
+    MAKE_MC_REG(MC_SMMU_PPCS1_ASID) = 0x80000001;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_PTC_FLUSH) = 0;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+    MAKE_MC_REG(MC_SMMU_TLB_FLUSH) = 0;
+    (void)MAKE_MC_REG(MC_SMMU_TLB_CONFIG);
+
     /* Wait for the BPMP to halt. */
     while ((FLOW_CTLR_HALT_COP_EVENTS_0 >> 29) != 2) {
         wait(1);
     }
+
     /* If not in a debugging context, setup the activity monitor. */
     if ((get_debug_authentication_status() & 3) != 3) {
         FLOW_CTLR_HALT_COP_EVENTS_0 = 0x40000000;
@@ -263,7 +314,7 @@ void setup_current_core_state(void) {
     uint64_t temp_reg;
 
     /* Setup system registers. */
-    SET_SYSREG(spsr_el3, 0b1111 << 6 | 0b1001); /* use EL2h+DAIF set initially, may be overwritten later. Not in official code */
+    SET_SYSREG(spsr_el3, 0b1111 << 6 | 0b0101); /* use EL2h+DAIF set initially, may be overwritten later. Not in official code */
 
     SET_SYSREG(actlr_el3, 0x73ull);
     SET_SYSREG(actlr_el2, 0x73ull);
@@ -274,7 +325,7 @@ void setup_current_core_state(void) {
 
     __isb();
 
-    SET_SYSREG(cntfrq_el0, MAKE_SYSCTR0_REG(0x20)); /* TODO: Reg name. */
+    SET_SYSREG(cntfrq_el0, SYSCTR0_CNTFID0_0);
     SET_SYSREG(cnthctl_el2, 3ull);
 
     __isb();
@@ -309,9 +360,9 @@ void identity_unmap_iram_cd_tzram(void) {
 }
 
 void secure_additional_devices(void) {
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_200) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_200) {
         APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0 |= APB_SSER0_PMC; /* make PMC secure-only (2.x+) */
-        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400) {
+        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
             APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0 |= APB_SSER1_MC0 | APB_SSER1_MC1 | APB_SSER1_MCB;  /* make MC0, MC1, MCB secure-only (4.x+) */
         }
     }

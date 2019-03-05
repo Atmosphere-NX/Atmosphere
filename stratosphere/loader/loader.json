@@ -1,13 +1,18 @@
 {
-    "name" : "Loader",
-    "title_id" : "0x0100000000000001",
-    "main_thread_stack_size" : "0x4000",
-    "main_thread_priority" : 49,
-    "default_cpu_id" : 3,
-    "process_category" : 1,
-    "kernel_capabilities" : {
-        "handle_table_size" : 128,
-        "syscalls" : {
+    "name": "Loader",
+    "title_id": "0x0100000000000001",
+    "main_thread_stack_size": "0x4000",
+    "main_thread_priority": 49,
+    "default_cpu_id": 3,
+    "process_category": 1,
+    "kernel_capabilities": [
+        {
+            "type": "handle_table_size",
+            "value": 128
+        },
+        {
+            "type": "syscalls",
+            "value": {
             "svcSetHeapSize"                     : "0x01",
             "svcSetMemoryPermission"             : "0x02",
             "svcSetMemoryAttribute"              : "0x03",
@@ -56,12 +61,17 @@
             "svcReplyAndReceiveLight"            : "0x42",
             "svcReplyAndReceive"                 : "0x43",
             "svcReplyAndReceiveWithUserBuffer"   : "0x44",
+			      "svcCreateEvent"                     : "0x45",
+            "svcReadWriteRegister"               : "0x4E",
+			      "svcQueryIoMapping"                  : "0x55",
             "svcSetProcessMemoryPermission"      : "0x73",
             "svcMapProcessMemory"                : "0x74",
             "svcUnmapProcessMemory"              : "0x75",
             "svcMapProcessCodeMemory"            : "0x77",
             "svcUnmapProcessCodeMemory"          : "0x78",
-            "svcCreateProcess"                   : "0x79"
+            "svcCreateProcess"                   : "0x79",
+                "svcCallSecureMonitor": "0x7F"
+            }
         }
-    }
+    ]
 }

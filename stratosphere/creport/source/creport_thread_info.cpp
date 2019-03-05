@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <switch.h>
 #include <cstring>
 
@@ -12,16 +28,16 @@ void ThreadInfo::SaveToFile(FILE *f_report) {
     fprintf(f_report, "    Registers:\n");
     {
         for (unsigned int i = 0; i <= 28; i++) {  
-            fprintf(f_report, "        X[%02u]:                   %016lx\n", i, this->context.x[i]);
+            fprintf(f_report, "        X[%02u]:                   %s\n", i, this->code_list->GetFormattedAddressString(this->context.cpu_gprs[i].x));
         }
-        fprintf(f_report, "        FP:                      %016lx\n", this->context.fp);
-        fprintf(f_report, "        LR:                      %016lx\n", this->context.lr);
-        fprintf(f_report, "        SP:                      %016lx\n", this->context.sp);
-        fprintf(f_report, "        PC:                      %016lx\n", this->context.pc);
+        fprintf(f_report, "        FP:                      %s\n", this->code_list->GetFormattedAddressString(this->context.fp));
+        fprintf(f_report, "        LR:                      %s\n", this->code_list->GetFormattedAddressString(this->context.lr));
+        fprintf(f_report, "        SP:                      %s\n", this->code_list->GetFormattedAddressString(this->context.sp));
+        fprintf(f_report, "        PC:                      %s\n", this->code_list->GetFormattedAddressString(this->context.pc.x));
     }
     fprintf(f_report, "    Stack Trace:\n");
     for (unsigned int i = 0; i < this->stack_trace_size; i++) {
-        fprintf(f_report, "        ReturnAddress[%02u]:       %016lx\n", i, this->stack_trace[i]);
+        fprintf(f_report, "        ReturnAddress[%02u]:       %s\n", i, this->code_list->GetFormattedAddressString(this->stack_trace[i]));
     }
 }
 
@@ -42,7 +58,7 @@ bool ThreadInfo::ReadFromProcess(Handle debug_handle, u64 thread_id, bool is_64_
     }
     
     /* Get the thread context. */
-    if (R_FAILED(svcGetDebugThreadContext((u8 *)&this->context, debug_handle, this->thread_id, 0xF))) {
+    if (R_FAILED(svcGetDebugThreadContext(&this->context, debug_handle, this->thread_id, 0xF))) {
         return false;
     }
     

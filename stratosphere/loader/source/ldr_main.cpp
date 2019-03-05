@@ -1,9 +1,26 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
 #include <malloc.h>
 
 #include <switch.h>
+#include <atmosphere.h>
 #include <stratosphere.hpp>
 
 #include "ldr_process_manager.hpp"
@@ -16,7 +33,7 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x200000
+    #define INNER_HEAP_SIZE 0x20000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
     
@@ -41,6 +58,8 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     Result rc;
+    
+    SetFirmwareVersionForLibnx();
 
     /* Initialize services we need (TODO: SPL) */
     rc = smInitialize();
@@ -64,19 +83,7 @@ void __appInit(void) {
         fatalSimple(0xCAFE << 4 | 2);
     }
     
-    rc = splInitialize();
-    if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 3);
-    }
-    
-    /* Check for exosphere API compatibility. */
-    u64 exosphere_cfg;
-    if (R_FAILED(splGetConfig((SplConfigItem)65000, &exosphere_cfg))) {
-        //fatalSimple(0xCAFE << 4 | 0xFF);
-        /* TODO: Does Loader need to know about target firmware/master key revision? If so, extract from exosphere_cfg. */
-    }
-    
-    //splExit();
+    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {
@@ -88,24 +95,31 @@ void __appExit(void) {
     smExit();
 }
 
+struct LoaderServerOptions {
+    static constexpr size_t PointerBufferSize = 0x400;
+    static constexpr size_t MaxDomains = 0;
+    static constexpr size_t MaxDomainObjects = 0;
+};
+
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
+            
+    auto server_manager = new WaitableManager<LoaderServerOptions>(1);
         
-    /* TODO: What's a good timeout value to use here? */
-    auto server_manager = std::make_unique<WaitableManager>(U64_MAX);
-    
     /* Add services to manager. */
-    server_manager->add_waitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
-    server_manager->add_waitable(new ServiceServer<ShellService>("ldr:shel", 3));
-    server_manager->add_waitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
-    if (!kernelAbove300()) {
+    server_manager->AddWaitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
+    server_manager->AddWaitable(new ServiceServer<ShellService>("ldr:shel", 3));
+    server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
+    if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
         /* On 1.0.0-2.3.0, Loader services ldr:ro instead of ro. */
-        server_manager->add_waitable(new ServiceServer<RelocatableObjectsService>("ldr:ro", 0x20));
+        server_manager->AddWaitable(new ServiceServer<RelocatableObjectsService>("ldr:ro", 0x20));
     }
-    
+        
     /* Loop forever, servicing our services. */
-    server_manager->process();
+    server_manager->Process();
+    
+    delete server_manager;
     
 	return 0;
 }

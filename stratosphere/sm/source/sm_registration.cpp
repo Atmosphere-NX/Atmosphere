@@ -1,6 +1,22 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <switch.h>
 #include <algorithm>
-#include <stratosphere/servicesession.hpp>
+#include <stratosphere.hpp>
 #include "sm_registration.hpp"
 #include "meta_tools.hpp"
 
@@ -10,6 +26,7 @@ static std::array<Registration::Service, REGISTRATION_LIST_MAX_SERVICE> g_servic
 static u64 g_initial_process_id_low = 0;
 static u64 g_initial_process_id_high = 0;
 static bool g_determined_initial_process_ids = false;
+static bool g_end_init_defers = false;
 
 u64 GetServiceNameLength(u64 service) {
     u64 service_name_len = 0;
@@ -18,6 +35,38 @@ u64 GetServiceNameLength(u64 service) {
         service >>= 8;
     }
     return service_name_len;
+}
+
+/* Atmosphere extension utilities. */
+void Registration::EndInitDefers() {
+    g_end_init_defers = true;
+}
+
+constexpr u64 EncodeNameConstant(const char *name) {
+    u64 service = 0;
+    for (unsigned int i = 0; i < sizeof(service); i++) {
+        if (name[i] == '\x00') {
+            break;
+        }
+        service |= ((u64)name[i]) << (8 * i);
+    }
+    return service;
+}
+
+bool Registration::ShouldInitDefer(u64 service) {
+    /* Only enable if compile-time generated. */
+#ifndef SM_ENABLE_INIT_DEFERS
+    return false;
+#endif
+
+    if (g_end_init_defers) {
+        return false;
+    }
+    
+    /* This is a mechanism by which certain services will always be deferred until sm:m receives a special command. */
+    /* This can be extended with more services as needed at a later date. */
+    constexpr u64 FSP_SRV = EncodeNameConstant("fsp-srv");
+    return service == FSP_SRV;
 }
 
 /* Utilities. */
@@ -131,6 +180,9 @@ bool Registration::IsInitialProcess(u64 pid) {
 
 u64 Registration::GetInitialProcessId() {
     CacheInitialProcessIdLimits();
+    if (IsInitialProcess(1)) {
+        return 1;
+    }
     return g_initial_process_id_low;
 }
 
@@ -170,9 +222,14 @@ bool Registration::HasService(u64 service) {
     return std::any_of(g_service_list.begin(), g_service_list.end(), member_equals_fn(&Service::service_name, service));
 }
 
+bool Registration::HasMitm(u64 service) {
+    Registration::Service *target_service = GetService(service);
+    return target_service != NULL && target_service->mitm_pid != 0;
+}
+
 Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
     Registration::Service *target_service = GetService(service);
-    if (target_service == NULL) {
+    if (target_service == NULL || ShouldInitDefer(service) || target_service->mitm_waiting_ack) {
         /* Note: This defers the result until later. */
         return RESULT_DEFER_SESSION;
     }
@@ -199,12 +256,22 @@ Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
             struct {
                 u64 magic;
                 u64 result;
-                u64 should_mitm;
+                bool should_mitm;
             } *resp = ((decltype(resp))r.Raw);
             rc = resp->result;
             if (R_SUCCEEDED(rc)) {
                 if (resp->should_mitm) {
-                    rc = svcConnectToPort(out, target_service->mitm_port_h);
+                    rc = svcConnectToPort(&target_service->mitm_fwd_sess_h, target_service->port_h);
+                    if (R_SUCCEEDED(rc)) {   
+                        rc = svcConnectToPort(out, target_service->mitm_port_h);
+                        if (R_SUCCEEDED(rc)) {
+                            target_service->mitm_waiting_ack_pid = pid;
+                            target_service->mitm_waiting_ack = true;
+                        } else {
+                            svcCloseHandle(target_service->mitm_fwd_sess_h);
+                            target_service->mitm_fwd_sess_h = 0;
+                        }
+                    }
                 } else {
                     rc = svcConnectToPort(out, target_service->port_h);
                 }
@@ -400,7 +467,7 @@ Result Registration::InstallMitmForPid(u64 pid, u64 service, Handle *out, Handle
     /* Verify the service exists. */
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL) {
-        return 0xE15;
+        return RESULT_DEFER_SESSION;
     }
     
     /* Verify the service isn't already being mitm'd. */
@@ -446,6 +513,35 @@ Result Registration::UninstallMitmForPid(u64 pid, u64 service) {
     return 0;
 }
 
+Result Registration::AcknowledgeMitmSessionForPid(u64 pid, u64 service, Handle *out, u64 *out_pid) {
+    if (!service) {
+        return 0xC15;
+    }
+    
+    u64 service_name_len = GetServiceNameLength(service);
+    
+    /* If the service has bytes after a null terminator, that's no good. */
+    if (service_name_len != 8 && (service >> (8 * service_name_len))) {
+        return 0xC15;
+    }
+    
+    Registration::Service *target_service = GetService(service);
+    if (target_service == NULL) {
+        return 0xE15;
+    }
+
+    if ((!IsInitialProcess(pid) && target_service->mitm_pid != pid) || !target_service->mitm_waiting_ack) {
+        return 0x1015;
+    }
+    
+    *out = target_service->mitm_fwd_sess_h;
+    *out_pid = target_service->mitm_waiting_ack_pid;
+    target_service->mitm_fwd_sess_h = 0;
+    target_service->mitm_waiting_ack_pid = 0;
+    target_service->mitm_waiting_ack = false;
+    return 0;
+}
+
 Result Registration::AssociatePidTidForMitm(u64 pid, u64 tid) {
     for (auto &service : g_service_list) {
         if (service.mitm_pid) {
@@ -465,4 +561,52 @@ Result Registration::AssociatePidTidForMitm(u64 pid, u64 tid) {
         }
     }
     return 0x0;
+}
+
+void Registration::ConvertServiceToRecord(Registration::Service *service, SmServiceRecord *record) {
+    record->service_name         = service->service_name;
+    record->owner_pid            = service->owner_pid;
+    record->max_sessions         = service->max_sessions;
+    record->mitm_pid             = service->mitm_pid;
+    record->mitm_waiting_ack_pid = service->mitm_waiting_ack_pid;
+    record->is_light             = service->is_light;
+    record->mitm_waiting_ack     = service->mitm_waiting_ack;
+}
+
+Result Registration::GetServiceRecord(u64 service, SmServiceRecord *out) {
+    if (!service) {
+        return 0xC15;
+    }
+    
+    u64 service_name_len = GetServiceNameLength(service);
+    
+    /* If the service has bytes after a null terminator, that's no good. */
+    if (service_name_len != 8 && (service >> (8 * service_name_len))) {
+        return 0xC15;
+    }
+    
+    Registration::Service *target_service = GetService(service);
+    if (target_service == NULL) {
+        return 0xE15;
+    }
+    
+    ConvertServiceToRecord(target_service, out);
+    return 0x0;
+}
+
+void Registration::ListServiceRecords(u64 offset, u64 max_out, SmServiceRecord *out, u64 *out_count) {
+    u64 count = 0;
+    
+    for (auto it = g_service_list.begin(); it != g_service_list.end() && count < max_out; it++) {
+        if (it->service_name != 0) {
+            if (offset > 0) {
+                offset--;
+            } else {
+                ConvertServiceToRecord(it, out++);
+                count++;
+            }
+        }
+    }
+    
+    *out_count = count;
 }

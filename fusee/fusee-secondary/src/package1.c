@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <errno.h>
 #include <stdlib.h>
 #include <malloc.h>
@@ -65,7 +81,7 @@ int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_
 
     /* Read the full keyblob area.*/
     for (size_t i = 0; i < 32; i++) {
-        if (fread(d.sector, 0x200, 1, boot0) == 0) {
+        if (!fread(d.sector, 0x200, 1, boot0)) {
             return -1;
         }
         keyblobs[i] = d.keyblob;
@@ -74,15 +90,19 @@ int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_
     return 0;
 }
 
-size_t package1_get_tsec_fw(void **tsec_fw, const void *package1loader, size_t package1loader_size) {
+bool package1_get_tsec_fw(void **tsec_fw, const void *package1loader, size_t package1loader_size) {
     /* The TSEC firmware is always located at a 256-byte aligned address. */
-    /* We're looking for its 4 first bytes. We assume its size is always 0xF00 bytes. */
+    /* We're looking for its 4 first bytes. */
     const uint32_t *pos;
     uintptr_t pk1l = (uintptr_t)package1loader;
-    for (pos = (const uint32_t *)pk1l; (uintptr_t)pos < pk1l + package1loader_size && *pos != 0xCF42004D; pos += 0x40);
-
-    (*tsec_fw) = (void *)pos;
-    return 0xF00;
+    for (pos = (const uint32_t *)pk1l; (uintptr_t)pos < pk1l + package1loader_size; pos += 0x40) {
+        if (*pos == 0xCF42004D) {
+            (*tsec_fw) = (void *)pos;
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 size_t package1_get_encrypted_package1(package1_header_t **package1, uint8_t *ctr, const void *package1loader, size_t package1loader_size) {
@@ -111,7 +131,7 @@ void *package1_get_warmboot_fw(const package1_header_t *package1) {
         https://github.com/ARM-software/arm-trusted-firmware/blob/master/plat/nvidia/tegra/common/aarch64/tegra_helpers.S#L312
         and thus by 0xD5034FDF.
 
-        Nx-bootloader seems to always start by 0xE328F0C0 (msr cpsr_f, 0xc0).
+        Nx-bootloader starts by 0xE328F0C0 (msr cpsr_f, 0xc0) before 6.2.0 and by 0xF0C0A7F0 afterwards.
     */
     const uint32_t *data = (const uint32_t *)package1->data;
     for (size_t i = 0; i < 3; i++) {
@@ -120,6 +140,7 @@ void *package1_get_warmboot_fw(const package1_header_t *package1) {
                 data += package1->secmon_size / 4;
                 break;
             case 0xE328F0C0:
+            case 0xF0C0A7F0:
                 data += package1->nx_bootloader_size / 4;
                 break;
             default:

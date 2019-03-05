@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <cstdio>
 #include <cstring>
 #include <sys/stat.h>
@@ -11,19 +27,53 @@ void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
     this->has_extra_info = has_extra_info;
     if (OpenProcess(pid)) {
         ProcessExceptions();
-        if (kernelAbove500()) {
-            this->code_list.ReadCodeRegionsFromProcess(this->debug_handle, this->crashed_thread_info.GetPC(), this->crashed_thread_info.GetLR());
-            this->thread_list.ReadThreadsFromProcess(this->debug_handle, Is64Bit());
-        }
+        this->code_list.ReadCodeRegionsFromThreadInfo(this->debug_handle, &this->crashed_thread_info);
+        this->thread_list.ReadThreadsFromProcess(this->debug_handle, Is64Bit());
+        this->crashed_thread_info.SetCodeList(&this->code_list);
+        this->thread_list.SetCodeList(&this->code_list);
         
         if (IsApplication()) {
             ProcessDyingMessage();
+        }
+        
+        /* Real creport only does this if application, but there's no reason not to do it all the time. */
+        for (u32 i = 0; i < this->thread_list.GetThreadCount(); i++) {
+            this->code_list.ReadCodeRegionsFromThreadInfo(this->debug_handle, this->thread_list.GetThreadInfo(i));
         }
         
         /* Real creport builds the report here. We do it later. */
         
         Close();
     }
+}
+
+FatalContext *CrashReport::GetFatalContext() {
+    FatalContext *ctx = new FatalContext;
+    *ctx = (FatalContext){0};
+    
+    ctx->is_aarch32 = false;
+    ctx->type = static_cast<u32>(this->exception_info.type);
+    
+    for (size_t i = 0; i < 29; i++) {
+        ctx->aarch64_ctx.x[i] = this->crashed_thread_info.context.cpu_gprs[i].x;
+    }
+    ctx->aarch64_ctx.fp = this->crashed_thread_info.context.fp;
+    ctx->aarch64_ctx.lr = this->crashed_thread_info.context.lr;
+    ctx->aarch64_ctx.pc = this->crashed_thread_info.context.pc.x;
+    
+    ctx->aarch64_ctx.stack_trace_size = this->crashed_thread_info.stack_trace_size;
+    for (size_t i = 0; i < ctx->aarch64_ctx.stack_trace_size; i++) {
+        ctx->aarch64_ctx.stack_trace[i] = this->crashed_thread_info.stack_trace[i];
+    }
+    
+    if (this->code_list.code_count) {
+        ctx->aarch64_ctx.start_address = this->code_list.code_infos[0].start_address;
+    }
+    
+    /* For ams fatal... */
+    ctx->aarch64_ctx.afsr0 = this->process_info.title_id;
+    
+    return ctx;
 }
 
 void CrashReport::ProcessExceptions() {
@@ -105,8 +155,15 @@ void CrashReport::HandleException(DebugEventInfo &d) {
         case DebugExceptionType::UserBreak:
             this->result = (Result)CrashReportResult::UserBreak;
             /* Try to parse out the user break result. */
-            if (kernelAbove500() && IsAddressReadable(d.info.exception.specific.user_break.address, sizeof(this->result))) {
-                svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
+            if (kernelAbove500()) {
+                Result user_result = 0;
+                if (IsAddressReadable(d.info.exception.specific.user_break.address, sizeof(user_result))) {
+                    svcReadDebugProcessMemory(&user_result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(user_result));
+                }
+                /* Only copy over the user result if it gives us information (as by default nnSdk uses the success code, which is confusing). */
+                if (R_FAILED(user_result)) {
+                    this->result = user_result;
+                }
             }
             break;
         case DebugExceptionType::BadSvc:
@@ -205,14 +262,14 @@ void CrashReport::EnsureReportDirectories() {
     char path[FS_MAX_PATH];  
     strcpy(path, "sdmc:/atmosphere");
     mkdir(path, S_IRWXU);
-    strcat(path, "/crash reports");
+    strcat(path, "/crash_reports");
     mkdir(path, S_IRWXU);
     strcat(path, "/dumps");
     mkdir(path, S_IRWXU);
 }
 
 void CrashReport::SaveReport() {
-    /* TODO: Save the report to the SD card. */
+    /* Save the report to the SD card. */
     char report_path[FS_MAX_PATH];
     
     /* Ensure path exists. */
@@ -225,7 +282,7 @@ void CrashReport::SaveReport() {
     }
     
     /* Open report file. */
-    snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash reports/%011lu_%016lx.log", timestamp, process_info.title_id);
+    snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash_reports/%011lu_%016lx.log", timestamp, process_info.title_id);
     FILE *f_report = fopen(report_path, "w");
     if (f_report == NULL) {
         return;
@@ -234,7 +291,7 @@ void CrashReport::SaveReport() {
     fclose(f_report);
     
     /* Dump threads. */
-    snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash reports/dumps/%011lu_%016lx_thread_info.bin", timestamp, process_info.title_id);
+    snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash_reports/dumps/%011lu_%016lx_thread_info.bin", timestamp, process_info.title_id);
     f_report = fopen(report_path, "wb");
     this->thread_list.DumpBinary(f_report, this->crashed_thread_info.GetId());
     fclose(f_report);
@@ -242,7 +299,7 @@ void CrashReport::SaveReport() {
 
 void CrashReport::SaveToFile(FILE *f_report) {
     char buf[0x10] = {0};
-    fprintf(f_report, "Atmosphère Crash Report (v1.0):\n");
+    fprintf(f_report, "Atmosphère Crash Report (v1.2):\n");
     fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->result, R_MODULE(this->result), R_DESCRIPTION(this->result));
     
     /* Process Info. */
@@ -253,12 +310,12 @@ void CrashReport::SaveToFile(FILE *f_report) {
     fprintf(f_report, "    Process ID:                  %016lx\n", this->process_info.process_id);
     fprintf(f_report, "    Process Flags:               %08x\n", this->process_info.flags);
     if (kernelAbove500()) {
-        fprintf(f_report, "    User Exception Address:      %016lx\n", this->process_info.user_exception_context_address);
+        fprintf(f_report, "    User Exception Address:      %s\n", this->code_list.GetFormattedAddressString(this->process_info.user_exception_context_address));
     }
     
     fprintf(f_report, "Exception Info:\n");
     fprintf(f_report, "    Type:                        %s\n", GetDebugExceptionTypeStr(this->exception_info.type));
-    fprintf(f_report, "    Address:                     %016lx\n", this->exception_info.address);
+    fprintf(f_report, "    Address:                     %s\n", this->code_list.GetFormattedAddressString(this->exception_info.address));
     switch (this->exception_info.type) {
         case DebugExceptionType::UndefinedInstruction:
             fprintf(f_report, "    Opcode:                      %08x\n", this->exception_info.specific.undefined_instruction.insn);
@@ -266,11 +323,16 @@ void CrashReport::SaveToFile(FILE *f_report) {
         case DebugExceptionType::DataAbort:
         case DebugExceptionType::AlignmentFault:
             if (this->exception_info.specific.raw != this->exception_info.address) { 
-                fprintf(f_report, "    Fault Address:               %016lx\n", this->exception_info.specific.raw);
+                fprintf(f_report, "    Fault Address:               %s\n", this->code_list.GetFormattedAddressString(this->exception_info.specific.raw));
             }
             break;
         case DebugExceptionType::BadSvc:
             fprintf(f_report, "    Svc Id:                      0x%02x\n", this->exception_info.specific.bad_svc.id);
+            break;
+        case DebugExceptionType::UserBreak:
+            fprintf(f_report, "    Break Reason:                0x%lx\n", this->exception_info.specific.user_break.break_reason);
+            fprintf(f_report, "    Break Address:               %s\n", this->code_list.GetFormattedAddressString(this->exception_info.specific.user_break.address));
+            fprintf(f_report, "    Break Size:                  0x%lx\n", this->exception_info.specific.user_break.size);
             break;
         default:
             break;
@@ -282,15 +344,15 @@ void CrashReport::SaveToFile(FILE *f_report) {
     if (kernelAbove500()) {
         if (this->dying_message_size) {
             fprintf(f_report, "Dying Message Info:\n");
-            fprintf(f_report, "    Address:                     0x%016lx\n", this->dying_message_address);
+            fprintf(f_report, "    Address:                     0x%s\n", this->code_list.GetFormattedAddressString(this->dying_message_address));
             fprintf(f_report, "    Size:                        0x%016lx\n", this->dying_message_size);
             CrashReport::Memdump(f_report, "    Dying Message:              ", this->dying_message, this->dying_message_size);
         }
-        fprintf(f_report, "Code Region Info:\n");
-        this->code_list.SaveToFile(f_report);
-        fprintf(f_report, "\nThread Report:\n");
-        this->thread_list.SaveToFile(f_report);
     }
+    fprintf(f_report, "Code Region Info:\n");
+    this->code_list.SaveToFile(f_report);
+    fprintf(f_report, "\nThread Report:\n");
+    this->thread_list.SaveToFile(f_report);
 }
 
 /* Lifted from hactool. */

@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <stdatomic.h>
 #include <stdint.h>
 
@@ -15,20 +31,24 @@
 #include "sealedkeys.h"
 #include "smc_api.h"
 #include "smc_user.h"
+#include "smc_ams.h"
 #include "se.h"
 #include "userpage.h"
 #include "titlekey.h"
-#include "lp0.h"
+#include "sc7.h"
 #include "exocfg.h"
 
 #define SMC_USER_HANDLERS 0x13
 #define SMC_PRIV_HANDLERS 0x9
 
+#define SMC_AMS_HANDLERS 0x2
+
 #define DEBUG_LOG_SMCS 0
+#define DEBUG_PANIC_ON_FAILURE 0
 
 /* User SMC prototypes */
-uint32_t smc_set_config(smc_args_t *args);
-uint32_t smc_get_config(smc_args_t *args);
+uint32_t smc_set_config_user(smc_args_t *args);
+uint32_t smc_get_config_user(smc_args_t *args);
 uint32_t smc_check_status(smc_args_t *args);
 uint32_t smc_get_result(smc_args_t *args);
 uint32_t smc_exp_mod(smc_args_t *args);
@@ -54,11 +74,14 @@ uint32_t smc_decrypt_or_import_rsa_key(smc_args_t *args);
 uint32_t smc_cpu_suspend(smc_args_t *args);
 uint32_t smc_cpu_off(smc_args_t *args);
 uint32_t smc_cpu_on(smc_args_t *args);
-/* uint32_t smc_get_config(smc_args_t *args); */
+uint32_t smc_get_config_priv(smc_args_t *args);
 uint32_t smc_get_random_bytes_for_priv(smc_args_t *args);
 uint32_t smc_panic(smc_args_t *args);
 uint32_t smc_configure_carveout(smc_args_t *args);
 uint32_t smc_read_write_register(smc_args_t *args);
+
+/* Atmosphere SMC prototypes */
+uint32_t smc_ams_iram_copy(smc_args_t *args);
 
 typedef struct {
     uint32_t id;
@@ -72,8 +95,8 @@ typedef struct {
 
 static smc_table_entry_t g_smc_user_table[SMC_USER_HANDLERS] = {
     {0, NULL},
-    {0xC3000401, smc_set_config},
-    {0xC3000002, smc_get_config},
+    {0xC3000401, smc_set_config_user},
+    {0xC3000002, smc_get_config_user},
     {0xC3000003, smc_check_status},
     {0xC3000404, smc_get_result},
     {0xC3000E05, smc_exp_mod},
@@ -97,14 +120,20 @@ static smc_table_entry_t g_smc_priv_table[SMC_PRIV_HANDLERS] = {
     {0xC4000001, smc_cpu_suspend},
     {0x84000002, smc_cpu_off},
     {0xC4000003, smc_cpu_on},
-    {0xC3000004, smc_get_config}, /* NOTE: Same function as for USER */
+    {0xC3000004, smc_get_config_priv},
     {0xC3000005, smc_get_random_bytes_for_priv},
     {0xC3000006, smc_panic},
     {0xC3000007, smc_configure_carveout},
     {0xC3000008, smc_read_write_register}
 };
 
-static smc_table_t g_smc_tables[2] = {
+/* This is a table used for atmosphere-specific SMCs. */
+static smc_table_entry_t g_smc_ams_table[SMC_AMS_HANDLERS] = {
+    {0, NULL},
+    {0xF0000201, smc_ams_iram_copy},
+};
+
+static smc_table_t g_smc_tables[SMC_HANDLER_COUNT + 1] = {
     { /* SMC_HANDLER_USER */
         g_smc_user_table,
         SMC_USER_HANDLERS
@@ -112,6 +141,10 @@ static smc_table_t g_smc_tables[2] = {
     { /* SMC_HANDLER_PRIV */
         g_smc_priv_table,
         SMC_PRIV_HANDLERS
+    },
+    { /* SMC_HANDLER_AMS */
+        g_smc_ams_table,
+        SMC_AMS_HANDLERS
     }
 };
 
@@ -121,21 +154,29 @@ static atomic_flag g_is_priv_smc_in_progress = ATOMIC_FLAG_INIT;
 /* Global for smc_configure_carveout. */
 static bool g_configured_carveouts[2] = {false, false};
 
+static bool g_has_suspended = false;
+void set_suspend_for_debug(void) {
+    g_has_suspended = true;
+}
+
 void set_version_specific_smcs(void) {
     switch (exosphere_get_target_firmware()) {
-        case EXOSPHERE_TARGET_FIRMWARE_100:
+        case ATMOSPHERE_TARGET_FIRMWARE_100:
             /* 1.0.0 doesn't have ConfigureCarveout or ReadWriteRegister. */
             g_smc_priv_table[7].handler = NULL;
             g_smc_priv_table[8].handler = NULL;
             /* 1.0.0 doesn't have UnwrapAesWrappedTitlekey. */
             g_smc_user_table[0x12].handler = NULL;
             break;
-        case EXOSPHERE_TARGET_FIRMWARE_200:
-        case EXOSPHERE_TARGET_FIRMWARE_300:
-        case EXOSPHERE_TARGET_FIRMWARE_400:
+        case ATMOSPHERE_TARGET_FIRMWARE_200:
+        case ATMOSPHERE_TARGET_FIRMWARE_300:
+        case ATMOSPHERE_TARGET_FIRMWARE_400:
             /* Do nothing. */
             break;
-        case EXOSPHERE_TARGET_FIRMWARE_500:
+        case ATMOSPHERE_TARGET_FIRMWARE_500:
+        case ATMOSPHERE_TARGET_FIRMWARE_600:
+        case ATMOSPHERE_TARGET_FIRMWARE_620:
+        case ATMOSPHERE_TARGET_FIRMWARE_700:
             /* No more LoadSecureExpModKey. */
             g_smc_user_table[0xE].handler = NULL;
             g_smc_user_table[0xC].id = 0xC300D60C;
@@ -204,19 +245,25 @@ void clear_smc_callback(uint64_t key) {
 _Atomic uint64_t num_smcs_called = 0;
 
 void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
-    unsigned char smc_id;
+    unsigned char smc_id, call_range;
     unsigned int result;
     unsigned int (*smc_handler)(smc_args_t *args);
-
+    
     /* Validate top-level handler. */
-    if (handler_id != SMC_HANDLER_USER && handler_id != SMC_HANDLER_PRIV) {
+    if (handler_id >= SMC_HANDLER_COUNT) {
         generic_panic();
     }
 
-    /* Validate core is appropriate for handler. */
-    if (handler_id == SMC_HANDLER_USER && get_core_id() != 3) {
-        /* USER SMCs must be called via svcCallSecureMonitor on core 3 (where spl runs) */
-        generic_panic();
+    /* If user-handler, detect if talking to Atmosphere/validate calling core. */
+    if (handler_id == SMC_HANDLER_USER) {
+        if ((call_range = (unsigned char)((args->X[0] >> 24) & 0x3F)) == SMC_CALL_RANGE_TRUSTED_APP) {
+            /* Nintendo's SMCs are all OEM-specific. */
+            /* Pending a reason not to, we will treat Trusted Application SMCs as intended to talk to Atmosphere. */
+            handler_id = SMC_HANDLER_AMS;
+        } else if (get_core_id() != 3) {
+            /* USER SMCs must be called via svcCallSecureMonitor on core 3 (where spl runs) */
+            generic_panic();
+        }
     }
 
     /* Validate sub-handler index */
@@ -255,7 +302,8 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     }
 #endif
     
-    if (args->X[0] && (!is_aes_kek || args->X[3] <= EXOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG)) 
+#if DEBUG_PANIC_ON_FAILURE
+    if (args->X[0] && (!is_aes_kek || args->X[3] <= ATMOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG)) 
     {
         MAKE_REG32(get_iram_address_for_debug() + 0x4FF0) = handler_id;
         MAKE_REG32(get_iram_address_for_debug() + 0x4FF4) = smc_id;
@@ -263,6 +311,9 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
         *(volatile smc_args_t *)(get_iram_address_for_debug() + 0x4F00) = *args;
         panic(PANIC_REBOOT);
     }
+#else
+    (void)(is_aes_kek);
+#endif
     (void)result; /* FIXME: result unused */
 }
 
@@ -301,15 +352,15 @@ uint32_t smc_wrapper_async(smc_args_t *args, uint32_t (*handler)(smc_args_t *), 
     return result;
 }
 
-uint32_t smc_set_config(smc_args_t *args) {
+uint32_t smc_set_config_user(smc_args_t *args) {
     /* Actual value presumed in X3 on hardware. */
-    return configitem_set((ConfigItem)args->X[1], args->X[3]);
+    return configitem_set(false, (ConfigItem)args->X[1], args->X[3]);
 }
 
-uint32_t smc_get_config(smc_args_t *args) {
+uint32_t smc_get_config_user(smc_args_t *args) {
     uint64_t out_item = 0;
     uint32_t result;
-    result = configitem_get((ConfigItem)args->X[1], &out_item);
+    result = configitem_get(false, (ConfigItem)args->X[1], &out_item);
     args->X[1] = out_item;
     return result;
 }
@@ -506,6 +557,14 @@ uint32_t smc_cpu_suspend(smc_args_t *args) {
     return smc_wrapper_sync(args, cpu_suspend_wrapper);
 }
 
+uint32_t smc_get_config_priv(smc_args_t *args) {
+    uint64_t out_item = 0;
+    uint32_t result;
+    result = configitem_get(true, (ConfigItem)args->X[1], &out_item);
+    args->X[1] = out_item;
+    return result;
+}
+
 uint32_t smc_get_random_bytes_for_priv(smc_args_t *args) {
     /* This is an interesting SMC. */
     /* The kernel must NEVER be unable to get random bytes, if it needs them */
@@ -558,7 +617,7 @@ uint32_t smc_read_write_register(smc_args_t *args) {
         } else {
             return 2;
         }
-    } else if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_400 && MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) <= address &&
+    } else if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400 && MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) <= address &&
                address < MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) + MMIO_GET_DEVICE_SIZE(MMIO_DEVID_MC)) {
         /* Memory Controller RW supported only on 4.0.0+ */
         const uint8_t mc_whitelist[0x68] = {
@@ -631,8 +690,10 @@ uint32_t smc_configure_carveout(smc_args_t *args) {
     }
 
     /* Configuration is one-shot, and cannot be done multiple times. */
-    if (g_configured_carveouts[carveout_id]) {
-        return 2;
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_300) { 
+        if (g_configured_carveouts[carveout_id]) {
+            return 2;
+        }
     }
 
     configure_kernel_carveout(carveout_id + 4, address, size);
@@ -644,4 +705,8 @@ uint32_t smc_panic(smc_args_t *args) {
     /* Swap RGB values from args. */
     uint32_t color = ((args->X[1] & 0xF) << 8) | ((args->X[1] & 0xF0)) | ((args->X[1] & 0xF00) >> 8);
     panic((color << 20) | 0x40);
+}
+
+uint32_t smc_ams_iram_copy(smc_args_t *args) {
+    return smc_wrapper_sync(args, ams_iram_copy);
 }

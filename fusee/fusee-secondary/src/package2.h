@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #ifndef FUSEE_PACKAGE2_H
 #define FUSEE_PACKAGE2_H
 
@@ -17,14 +33,20 @@
 #define PACKAGE2_MAXVER_300 0x4
 #define PACKAGE2_MAXVER_302 0x5
 #define PACKAGE2_MAXVER_400_410 0x6
-#define PACKAGE2_MAXVER_500_CURRENT 0x7
+#define PACKAGE2_MAXVER_500_510 0x7
+#define PACKAGE2_MAXVER_600_610 0x8
+#define PACKAGE2_MAXVER_620 0x9
+#define PACKAGE2_MAXVER_700_CURRENT 0xA
 
 #define PACKAGE2_MINVER_100 0x3
 #define PACKAGE2_MINVER_200 0x4
 #define PACKAGE2_MINVER_300 0x5
 #define PACKAGE2_MINVER_302 0x6
 #define PACKAGE2_MINVER_400_410 0x7
-#define PACKAGE2_MINVER_500_CURRENT 0x8
+#define PACKAGE2_MINVER_500_510 0x8
+#define PACKAGE2_MINVER_600_610 0x9
+#define PACKAGE2_MINVER_620 0xA
+#define PACKAGE2_MINVER_700_CURRENT 0xB
 
 #define NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS ((void *)(0xA9800000ull))
 

@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -23,6 +39,22 @@ static bool g_exp_mod_done = false;
 static uint8_t g_imported_exponents[4][0x100];
 
 static uint8_t g_rsausecase_to_cryptousecase[5] = {1, 2, 3, 5, 6};
+
+static bool is_user_keyslot_valid(unsigned int keyslot) {
+    switch (exosphere_get_target_firmware()) {
+        case ATMOSPHERE_TARGET_FIRMWARE_100:
+        case ATMOSPHERE_TARGET_FIRMWARE_200:
+        case ATMOSPHERE_TARGET_FIRMWARE_300:
+        case ATMOSPHERE_TARGET_FIRMWARE_400:
+        case ATMOSPHERE_TARGET_FIRMWARE_500:
+            return keyslot <= 3;
+        case ATMOSPHERE_TARGET_FIRMWARE_600:
+        case ATMOSPHERE_TARGET_FIRMWARE_620:
+        case ATMOSPHERE_TARGET_FIRMWARE_700:
+        default:
+            return keyslot <= 5;
+    }
+}
 
 void set_exp_mod_done(bool done) {
     g_exp_mod_done = done;
@@ -126,7 +158,7 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
     uint8_t mask_id = (uint8_t)((packed_options >> 1) & 3);
 
     /* Switches the output based on how it will be used. */
-    uint8_t usecase = (uint8_t)((packed_options >> 5) & (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500 ? 7 : 3));
+    uint8_t usecase = (uint8_t)((packed_options >> 5) & (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500 ? 7 : 3));
 
     /* Switched the output based on whether it should be console unique. */
     bool is_personalized = (int)(packed_options & 1);
@@ -134,9 +166,9 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
     bool is_recovery_boot = configitem_is_recovery_boot();
     
     /* 5.0.0+ Bounds checking. */
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
         if (is_personalized) {
-            if (master_key_rev > MASTERKEY_REVISION_500_CURRENT || ((1 << (master_key_rev + 1)) & 0x33) == 0) {
+            if (master_key_rev >= MASTERKEY_REVISION_MAX || (MASTERKEY_REVISION_300 <= master_key_rev && master_key_rev < MASTERKEY_REVISION_400_410)) {
                 return 2;
             }
             if (mask_id > 3 || usecase >= CRYPTOUSECASE_MAX_5X) {
@@ -163,11 +195,15 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
 
     /* Masks 0, 3 are allowed all the time. */
 
-    const uint8_t kek_seeds[4][0x10] = {
+    const uint8_t kek_seeds[7][0x10] = {
         {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
         {0xA2, 0xAB, 0xBF, 0x9C, 0x92, 0x2F, 0xBB, 0xE3, 0x78, 0x79, 0x9B, 0xC0, 0xCC, 0xEA, 0xA5, 0x74},
         {0x57, 0xE2, 0xD9, 0x45, 0xE4, 0x92, 0xF4, 0xFD, 0xC3, 0xF9, 0x86, 0x38, 0x89, 0x78, 0x9F, 0x3C},
-        {0xE5, 0x4D, 0x9A, 0x02, 0xF0, 0x4F, 0x5F, 0xA8, 0xAD, 0x76, 0x0A, 0xF6, 0x32, 0x95, 0x59, 0xBB}
+        {0xE5, 0x4D, 0x9A, 0x02, 0xF0, 0x4F, 0x5F, 0xA8, 0xAD, 0x76, 0x0A, 0xF6, 0x32, 0x95, 0x59, 0xBB},
+        /* 5.0.0+ KEK seeds. */
+        {0x59, 0xD9, 0x31, 0xF4, 0xA7, 0x97, 0xB8, 0x14, 0x40, 0xD6, 0xA2, 0x60, 0x2B, 0xED, 0x15, 0x31},
+        {0xFD, 0x6A, 0x25, 0xE5, 0xD8, 0x38, 0x7F, 0x91, 0x49, 0xDA, 0xF8, 0x59, 0xA8, 0x28, 0xE6, 0x75},
+        {0x89, 0x96, 0x43, 0x9A, 0x7C, 0xD5, 0x59, 0x55, 0x24, 0xD5, 0x24, 0x18, 0xAB, 0x6C, 0x04, 0x61}
     };
     const uint8_t kek_masks[4][0x10] = {
         {0x4D, 0x87, 0x09, 0x86, 0xC4, 0x5D, 0x20, 0x72, 0x2F, 0xBA, 0x10, 0x53, 0xDA, 0x92, 0xE8, 0xA9},
@@ -184,9 +220,9 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
     unsigned int keyslot;
     if (is_personalized) {
         /* Behavior changed in 4.0.0, and in 5.0.0. */
-        if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
             keyslot = devkey_get_keyslot(master_key_rev);
-        } else if (exosphere_get_target_firmware() == EXOSPHERE_TARGET_FIRMWARE_400) {
+        } else if (exosphere_get_target_firmware() == ATMOSPHERE_TARGET_FIRMWARE_400) {
             if (master_key_rev >= 1) {
                 keyslot = KEYSLOT_SWITCH_DEVICEKEY; /* New device key, 4.x. */
             } else {
@@ -218,7 +254,7 @@ uint32_t user_load_aes_key(smc_args_t *args) {
     uint64_t wrapped_key[2];
 
     uint32_t keyslot = (uint32_t)args->X[1];
-    if (keyslot > 3) {
+    if (!is_user_keyslot_valid(keyslot)) {
         return 2;
     }
 
@@ -258,6 +294,10 @@ uint32_t crypt_aes_done_handler(void) {
 uint32_t user_crypt_aes(smc_args_t *args) {
     uint32_t keyslot = args->X[1] & 3;
     uint32_t mode = (args->X[1] >> 4) & 3;
+    
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_600) {
+        keyslot = args->X[1] & 7;
+    }
 
     uint64_t iv_ctr[2];
     iv_ctr[0] = args->X[2];
@@ -267,11 +307,11 @@ uint32_t user_crypt_aes(smc_args_t *args) {
     uint32_t out_ll_paddr = (uint32_t)(args->X[5]);
 
     size_t size = args->X[6];
-    if (size & 0xF) {
+    if (!is_user_keyslot_valid(keyslot) || size & 0xF) {
         return 2;
     }
 
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
         /* Disallow dma lists outside of safe range. */
         if (in_ll_paddr - 0x80000000 >= 0x3FF7F5) {
             return 2;
@@ -319,7 +359,7 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
     if (master_key_rev > 0) {
         master_key_rev -= 1;
     }
-    if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_400) {
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_400) {
         master_key_rev = 0;
     }
 
@@ -335,9 +375,9 @@ uint32_t user_generate_specific_aes_key(smc_args_t *args) {
     unsigned int keyslot;
 
     /* Behavior changed in 5.0.0. */
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
         keyslot = devkey_get_keyslot(master_key_rev);
-    } else if (exosphere_get_target_firmware() == EXOSPHERE_TARGET_FIRMWARE_400) {
+    } else if (exosphere_get_target_firmware() == ATMOSPHERE_TARGET_FIRMWARE_400) {
         if (master_key_rev >= 1) {
             keyslot = KEYSLOT_SWITCH_DEVICEKEY; /* New device key, 4.x. */
         } else {
@@ -386,7 +426,7 @@ uint32_t user_compute_cmac(smc_args_t *args) {
     upage_ref_t page_ref;
 
     /* Validate keyslot and size. */
-    if (keyslot > 3 || args->X[3] > 0x400) {
+    if (!is_user_keyslot_valid(keyslot) || args->X[3] > 0x400) {
         return 2;
     }
 
@@ -416,7 +456,7 @@ uint32_t user_load_rsa_oaep_key(smc_args_t *args) {
     upage_ref_t page_ref;
 
     /* This function no longer exists in 5.x+. */
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
         generic_panic();
     }
 
@@ -465,7 +505,7 @@ uint32_t user_decrypt_rsa_private_key(smc_args_t *args) {
     upage_ref_t page_ref;
 
     /* This function no longer exists in 5.x+. */
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
         generic_panic();
     }
 
@@ -523,7 +563,7 @@ uint32_t user_load_secure_exp_mod_key(smc_args_t *args) {
     upage_ref_t page_ref;
 
     /* This function no longer exists in 5.x+. */
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
         generic_panic();
     }
 
@@ -579,7 +619,7 @@ uint32_t user_secure_exp_mod(smc_args_t *args) {
     void *user_modulus = (void *)args->X[2];
 
     unsigned int exponent_id = 1;
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
         switch (args->X[3]) {
             case 0:
                 exponent_id = 1;
@@ -622,13 +662,22 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
 
     void *user_wrapped_key = (void *)args->X[1];
     void *user_modulus = (void *)args->X[2];
-    unsigned int master_key_rev = (unsigned int)args->X[7];
+    unsigned int option = (unsigned int)args->X[7];
+    unsigned int master_key_rev;
+    unsigned int titlekey_type;
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_600) {
+        master_key_rev = option & 0x3F;
+        titlekey_type = (option >> 6) & 1;
+    } else {
+        master_key_rev = option;
+        titlekey_type = 0;
+    }
 
     if(master_key_rev > 0) {
         master_key_rev -= 1;
     }
 
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_300) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_300) {
         if (master_key_rev >= MASTERKEY_REVISION_MAX) {
             return 2;
         }
@@ -653,6 +702,7 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
     tkey_set_expected_label_hash(&args->X[3]);
 
     tkey_set_master_key_rev(master_key_rev);
+    tkey_set_type(titlekey_type);
 
     /* Hardcode RSA keyslot 0. */
     set_rsa_keyslot(0, modulus, 0x100, g_imported_exponents[0], 0x100);
@@ -666,7 +716,7 @@ uint32_t user_load_titlekey(smc_args_t *args) {
     uint64_t sealed_titlekey[2];
 
     uint32_t keyslot = (uint32_t)args->X[1];
-    if (keyslot > 3) {
+    if (!is_user_keyslot_valid(keyslot)) {
         return 2;
     }
 
@@ -692,7 +742,7 @@ uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
     if (master_key_rev > 0) {
         master_key_rev -= 1;
     }
-    if (exosphere_get_target_firmware() >= EXOSPHERE_TARGET_FIRMWARE_300) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_300) {
         if (master_key_rev >= MASTERKEY_REVISION_MAX) {
             return 2;
         }
@@ -701,6 +751,7 @@ uint32_t user_unwrap_aes_wrapped_titlekey(smc_args_t *args) {
     }
 
     tkey_set_master_key_rev(master_key_rev);
+    tkey_set_type(0);
 
     tkey_aes_unwrap(titlekey, 0x10, aes_wrapped_titlekey, 0x10);
     seal_titlekey(sealed_titlekey, 0x10, titlekey, 0x10);
@@ -787,7 +838,7 @@ uint32_t user_decrypt_or_import_rsa_key(smc_args_t *args) {
     upage_ref_t page_ref;
 
     /* This function only exists in 5.x+. */
-    if (exosphere_get_target_firmware() < EXOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_500) {
         generic_panic();
     }
 

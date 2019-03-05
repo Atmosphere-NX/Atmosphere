@@ -41,7 +41,9 @@
 *.nso
 *.nro
 *.nacp
+*.npdm
 *.pfs0
+*.nsp
 *.kip
 
 # Debug files
@@ -59,10 +61,27 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# Distribution files
+*.tgz
+*.zip
+
+# IDA binaries
+*.id0
+*.id1
+*.id2
+*.idb
+*.nam
+*.til
+
+# KEYS file for sept-secondary.
+*.pyc
+sept/sept-secondary/KEYS.py
+
 .**/
 
 # NOTE: make sure to make exceptions to this pattern when needed!
 *.bin
+*.enc
 
 **/out
 **/build

@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #include "chainloader.h"
 
 int g_chainloader_argc = 0;
@@ -17,7 +33,7 @@ static void *xmemmove(void *dst, const void *src, size_t len)
         for (size_t i = 0; i < len; i++) {
             dst8[i] = src8[i];
         }
-    } else if (src8 > dst8) {
+    } else if (dst8 > src8) {
         for (size_t i = len; len > 0; len--)
             dst8[i - 1] = src8[i - 1];
     }

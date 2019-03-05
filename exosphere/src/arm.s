@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
 #define cpuactlr_el1 s3_1_c15_c2_0
 #define cpuectlr_el1 s3_1_c15_c2_1
 
@@ -51,7 +67,7 @@ tlb_invalidate_page_inner_shareable:
  *
  * This file is based on sample code from ARMv8 ARM.
  *
- * SPDX-License-Identifier:	GPL-2.0+
+ * SPDX-License-Identifier:    GPL-2.0+
  */
 
 /*
@@ -84,7 +100,7 @@ __asm_dcache_level:
     /* x5 <- bit position of #ways */
 
 loop_set:
-    mov	x6, x3          /* x6 <- working copy of #ways */
+    mov    x6, x3          /* x6 <- working copy of #ways */
 loop_way:
     lsl x7, x6, x5
     orr x9, x12, x7     /* map way and level to cisw value */
