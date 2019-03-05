@@ -27,7 +27,8 @@
         "bsdcfg",
         "set",
         "fsp-srv",
-        "fatal:u"
+        "fatal:u",
+        "hid"
     ],
 	"service_host":	[
         "dmnt:-",
