@@ -99,6 +99,11 @@ void __appInit(void) {
         fatalSimple(rc);
     }
     
+    rc = hidInitialize();
+    if (R_FAILED(rc)) {
+        fatalSimple(rc);
+    }
+    
     rc = fsInitialize();
     if (R_FAILED(rc)) {
         fatalSimple(rc);
@@ -116,6 +121,7 @@ void __appExit(void) {
     /* Cleanup services. */
     fsdevUnmountAll();
     fsExit();
+    hidExit();
     setExit();
     lrExit();
     nsdevExit();

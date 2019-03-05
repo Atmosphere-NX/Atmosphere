@@ -16,17 +16,17 @@
  
 #include <switch.h>
 #include <string.h>
+#include <stratosphere.hpp>
 
 #include "dmnt_hid.hpp"
 
+static HosMutex g_hid_keys_down_lock;
+
 Result HidManagement::GetKeysDown(u64 *keys) {
-    if (R_FAILED(hidInitialize())) {
-        return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
-    }
+    std::scoped_lock<HosMutex> lk(g_hid_keys_down_lock);
     
     hidScanInput();
     *keys = hidKeysDown(CONTROLLER_P1_AUTO);
     
-    hidExit();
     return 0x0;
 }
