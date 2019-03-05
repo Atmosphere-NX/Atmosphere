@@ -112,15 +112,6 @@ Result ShowFatalTask::PrepareScreenForDrawing() {
         return rc;
     }
     
-    {
-        u64 layer_z = 0xCAFEBABE;
-        if (R_SUCCEEDED((rc = viGetDisplayMaximumZ(&this->display, &layer_z)))) {
-            FILE *f_dumb = fopen("layerz.txt", "w");
-            fprintf(f_dumb, "%016lx\n", layer_z);
-            fclose(f_dumb);
-        }
-    }
-    
     /* Reset the display magnification to its default value. */
     u32 display_width, display_height;
     if (R_FAILED((rc = viGetDisplayLogicalResolution(&this->display, &display_width, &display_height)))) {
