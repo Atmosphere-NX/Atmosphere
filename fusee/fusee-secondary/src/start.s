@@ -85,11 +85,20 @@ _metadata:
 #undef  TO_WORD_
 #undef  TO_WORD
 
+#define CONTENT_TYPE_FSP 0
+#define CONTENT_TYPE_EXO 1
+#define CONTENT_TYPE_WBT 2
+#define CONTENT_TYPE_RBT 3
+#define CONTENT_TYPE_SP1 4
+#define CONTENT_TYPE_SP2 5
+#define CONTENT_TYPE_KIP 6
+#define CONTENT_TYPE_BMP 7
+
 _content_headers:
 /* ams_mitm content header */
 .word __ams_mitm_kip_start__
 .word __ams_mitm_kip_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_KIP
 .word 0xCCCCCCCC
 .asciz "ams_mitm"
 .align 5
@@ -97,7 +106,7 @@ _content_headers:
 /* boot_100 content header */
 .word __boot_100_kip_start__
 .word __boot_100_kip_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_KIP
 .word 0xCCCCCCCC
 .asciz "boot_100"
 .align 5
@@ -105,7 +114,7 @@ _content_headers:
 /* boot_200 content header */
 .word __boot_200_kip_start__
 .word __boot_200_kip_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_KIP
 .word 0xCCCCCCCC
 .asciz "boot_200"
 .align 5
@@ -113,7 +122,7 @@ _content_headers:
 /* exosphere content header */
 .word __exosphere_bin_start__
 .word __exosphere_bin_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_EXO
 .word 0xCCCCCCCC
 .asciz "exosphere"
 .align 5
@@ -121,7 +130,7 @@ _content_headers:
 /* fusee_primary content header */
 .word __fusee_primary_bin_start__
 .word __fusee_primary_bin_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_FSP
 .word 0xCCCCCCCC
 .asciz "fusee_primary"
 .align 5
@@ -129,7 +138,7 @@ _content_headers:
 /* loader content header */
 .word __loader_kip_start__
 .word __loader_kip_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_KIP
 .word 0xCCCCCCCC
 .asciz "loader"
 .align 5
@@ -137,7 +146,7 @@ _content_headers:
 /* lp0fw content header */
 .word __lp0fw_bin_start__
 .word __lp0fw_bin_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_WBT
 .word 0xCCCCCCCC
 .asciz "lp0fw"
 .align 5
@@ -145,7 +154,7 @@ _content_headers:
 /* pm content header */
 .word __pm_kip_start__
 .word __pm_kip_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_KIP
 .word 0xCCCCCCCC
 .asciz "pm"
 .align 5
@@ -153,7 +162,7 @@ _content_headers:
 /* rebootstub content header */
 .word __rebootstub_bin_start__
 .word __rebootstub_bin_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_RBT
 .word 0xCCCCCCCC
 .asciz "rebootstub"
 .align 5
@@ -161,7 +170,7 @@ _content_headers:
 /* sept_primary content header */
 .word __sept_primary_bin_start__
 .word __sept_primary_bin_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_SP1
 .word 0xCCCCCCCC
 .asciz "sept_primary"
 .align 5
@@ -169,7 +178,7 @@ _content_headers:
 /* sept_secondary content header */
 .word __sept_secondary_enc_start__
 .word __sept_secondary_enc_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_SP2
 .word 0xCCCCCCCC
 .asciz "sept_secondary"
 .align 5
@@ -177,7 +186,7 @@ _content_headers:
 /* sm content header */
 .word __sm_kip_start__
 .word __sm_kip_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_KIP
 .word 0xCCCCCCCC
 .asciz "sm"
 .align 5
@@ -185,7 +194,7 @@ _content_headers:
 /* splash_screen content header */
 .word __splash_screen_bmp_start__
 .word __splash_screen_bmp_size__
-.word 0xCCCCCCCC
+.word CONTENT_TYPE_BMP
 .word 0xCCCCCCCC
 .asciz "splash_screen"
 .align 5
