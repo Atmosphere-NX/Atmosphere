@@ -223,8 +223,6 @@ void Utils::InitializeThreadFunc(void *args) {
         
         hidExit();
     }
-    
-    svcExitThread();
 }
 
 bool Utils::IsSdInitialized() {

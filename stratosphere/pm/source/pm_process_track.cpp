@@ -28,5 +28,4 @@ void ProcessTracking::MainLoop(void *arg) {
     process_waiter->Process();
     
     delete process_waiter;
-    svcExitThread();
 }

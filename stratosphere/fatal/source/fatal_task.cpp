@@ -39,7 +39,6 @@ static void RunTaskThreadFunc(void *arg) {
     }
     
     /* Finish. */
-    svcExitThread();
 }
 
 static void RunTask(IFatalTask *task, u32 stack_size = 0x4000) {    
