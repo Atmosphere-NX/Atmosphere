@@ -108,9 +108,18 @@ Result DmntCheatManager::WriteCheatProcessMemoryForVm(u64 proc_addr, const void 
         
         /* We might have a frozen address. Update it if we do! */
         if (R_SUCCEEDED(rc)) {
-            auto it = g_frozen_addresses_map.find(proc_addr);
-            if (it != g_frozen_addresses_map.end()) {
-                memcpy(&it->second.value, data, size < sizeof(it->second.value) ? size : sizeof(it->second.value));
+            for (auto & [address, value] : g_frozen_addresses_map) {
+                /* Map is in order, so break here. */
+                if (address >= proc_addr + size) {
+                    break;
+                }
+                
+                /* Check if we need to write. */
+                if (proc_addr <= address) {
+                    const size_t offset = (address - proc_addr);
+                    const size_t size_to_copy = size - offset;
+                    memcpy(&value.value, (void *)((uintptr_t)data + offset), size_to_copy < sizeof(value.value) ? size_to_copy : sizeof(value.value));
+                }
             }
         }
         
