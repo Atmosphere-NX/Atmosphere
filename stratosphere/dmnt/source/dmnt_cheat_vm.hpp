@@ -187,6 +187,7 @@ class DmntCheatVm {
             return this->num_opcodes;
         }
         
+        bool LoadProgram(const CheatEntry *cheats, size_t num_cheats);
         void Execute(const CheatProcessMetadata *metadata);
 #ifdef DMNT_CHEAT_VM_DEBUG_LOG
     private:

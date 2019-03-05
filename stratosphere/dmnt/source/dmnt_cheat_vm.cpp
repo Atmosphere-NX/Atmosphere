@@ -353,6 +353,26 @@ void DmntCheatVm::ResetState() {
     this->decode_success = true;
 }
 
+bool DmntCheatVm::LoadProgram(const CheatEntry *cheats, size_t num_cheats) {
+    /* Reset opcode count. */
+    this->num_opcodes = 0;
+    
+    for (size_t i = 0; i < num_cheats; i++) {
+        if (cheats[i].enabled) {
+            /* Bounds check. */
+            if (cheats[i].definition.num_opcodes + this->num_opcodes > MaximumProgramOpcodeCount) {
+                return false;
+            }
+            
+            for (size_t n = 0; n < cheats[i].definition.num_opcodes; n++) {
+                this->program[this->num_opcodes++] = cheats[i].definition.opcodes[n];
+            }
+        }
+    }
+    
+    return true;
+}
+
 void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
     CheatVmOpcode cur_opcode;
     u64 kDown = 0;

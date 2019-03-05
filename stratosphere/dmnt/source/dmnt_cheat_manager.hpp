@@ -21,6 +21,8 @@
 #include "dmnt_cheat_types.hpp"
 
 class DmntCheatManager {
+    public:
+        static constexpr size_t MaxCheatCount = 0x80;
     private:
         static Handle PrepareDebugNextApplication();
         static void OnNewApplicationLaunch();
@@ -30,6 +32,12 @@ class DmntCheatManager {
         static bool HasActiveCheatProcess();
         static void CloseActiveCheatProcess();
         static void ContinueCheatProcess();
+        
+        static void ResetCheatEntry(size_t i);
+        static void ResetAllCheatEntries();
+        static CheatEntry *GetFreeCheatEntry();
+        static bool ParseCheats(const char *cht_txt, size_t len);
+        static bool LoadCheats(u64 title_id, const u8 *build_id);
     public:
         static bool GetHasActiveCheatProcess();
         static Handle GetCheatProcessEventHandle();

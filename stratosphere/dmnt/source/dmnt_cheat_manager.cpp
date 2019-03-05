@@ -29,11 +29,20 @@ static DmntCheatVm *g_cheat_vm;
 static CheatProcessMetadata g_cheat_process_metadata = {0};
 static Handle g_cheat_process_debug_hnd = 0;
 
+/* Global cheat entry storage. */
+static CheatEntry g_cheat_entries[DmntCheatManager::MaxCheatCount];
+
 void DmntCheatManager::CloseActiveCheatProcess() {
     if (g_cheat_process_debug_hnd != 0) {
+        /* Close process resources. */
         svcCloseHandle(g_cheat_process_debug_hnd);
         g_cheat_process_debug_hnd = 0;
         g_cheat_process_metadata = (CheatProcessMetadata){0};
+        
+        /* Clear cheat list. */
+        ResetAllCheatEntries();
+        
+        /* Signal to our fans. */
         g_cheat_process_event->Signal();
     }
 }
@@ -177,6 +186,166 @@ Result DmntCheatManager::QueryCheatProcessMemory(MemoryInfo *mapping, u64 addres
     return ResultDmntCheatNotAttached;
 }
 
+void DmntCheatManager::ResetCheatEntry(size_t i) {
+    if (i < DmntCheatManager::MaxCheatCount) {
+        g_cheat_entries[i].enabled = false;
+        g_cheat_entries[i].cheat_id = i;
+        g_cheat_entries[i].definition = {0};
+    }
+}
+
+void DmntCheatManager::ResetAllCheatEntries() {
+    for (size_t i = 0; i < DmntCheatManager::MaxCheatCount; i++) {
+        ResetCheatEntry(i);
+    }
+}
+
+CheatEntry *DmntCheatManager::GetFreeCheatEntry() {
+    /* Check all non-master cheats for availability. */
+    for (size_t i = 1; i < DmntCheatManager::MaxCheatCount; i++) {
+        if (g_cheat_entries[i].definition.num_opcodes == 0) {
+            return &g_cheat_entries[i];
+        }
+    }
+    
+    return nullptr;
+}
+
+bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
+    size_t i = 0;
+    CheatEntry *cur_entry = NULL;
+    
+    while (i < len) {
+        if (isspace(s[i])) {
+            /* Just ignore space. */
+            i++;
+        } else if (s[i] == '[') {
+            /* Parse a readable cheat name. */
+            cur_entry = GetFreeCheatEntry();
+            if (cur_entry == NULL) {
+                return false;
+            }
+            
+            /* Extract name bounds. */
+            size_t j = i + 1;
+            while (s[j] != ']') {
+                j++;
+                if (j >= len || (j - i - 1) >= sizeof(cur_entry->definition.readable_name)) {
+                    return false;
+                }
+            }
+            
+            /* s[i+1:j] is cheat name. */
+            const size_t cheat_name_len = (j - i - 1);
+            memcpy(cur_entry->definition.readable_name, &s[i+1], cheat_name_len);
+            cur_entry->definition.readable_name[cheat_name_len] = 0;
+            
+            /* Skip onwards. */
+            i = j + 1;
+        } else if (s[i] == '{') {
+            /* We're parsing a master cheat. */
+            cur_entry = &g_cheat_entries[0];
+            
+            /* There can only be one master cheat. */
+            if (cur_entry->definition.num_opcodes > 0) {
+                return false;
+            }
+            
+            /* Extract name bounds */
+            size_t j = i + 1;
+            while (s[j] != '}') {
+                j++;
+                if (j >= len || (j - i - 1) >= sizeof(cur_entry->definition.readable_name)) {
+                    return false;
+                }
+            }
+            
+            /* s[i+1:j] is cheat name. */
+            const size_t cheat_name_len = (j - i - 1);
+            memcpy(cur_entry->definition.readable_name, &s[i+1], cheat_name_len);
+            cur_entry->definition.readable_name[cheat_name_len] = 0;
+            
+            /* Skip onwards. */
+            i = j + 1;
+        } else if (isxdigit(s[i])) {
+            /* Make sure that we have a cheat open. */
+            if (cur_entry == NULL) {
+                return false;
+            }
+            
+            /* We're parsing an instruction, so validate it's 8 hex digits. */
+            for (size_t j = 1; j < 8; j++) {
+                /* Validate 8 hex chars. */
+                if (i + j >= len || !isxdigit(s[i+j])) {
+                    return false;
+                }
+            }
+           
+            /* Parse the new opcode. */
+            char hex_str[9] = {0};
+            memcpy(hex_str, &s[i], 8);
+            cur_entry->definition.opcodes[cur_entry->definition.num_opcodes++] = strtoul(hex_str, NULL, 16);
+            
+            /* Skip onwards. */
+            i += 8;
+        } else {
+            /* Unexpected character encountered. */
+            return false;
+        }
+    }
+    
+    /* Enable all entries we parsed. */
+    for (size_t i = 0; i < DmntCheatManager::MaxCheatCount; i++) {
+        if (g_cheat_entries[i].definition.num_opcodes > 0) {
+            g_cheat_entries[i].enabled = true;
+        }
+    }
+    
+    return true;
+}
+
+bool DmntCheatManager::LoadCheats(u64 title_id, const u8 *build_id) {
+    /* Reset existing entries. */
+    ResetAllCheatEntries();
+        
+    FILE *f_cht = NULL;
+    /* Open the file for title/build_id. */
+    {
+        char path[FS_MAX_PATH+1] = {0};
+        snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/cheats/%02x%02x%02x%02x%02x%02x%02x%02x.txt", title_id,
+                build_id[0], build_id[1], build_id[2], build_id[3], build_id[4], build_id[5], build_id[6], build_id[7]); 
+
+        f_cht = fopen(path, "rb");
+    }
+    
+    /* Check for NULL */
+    if (f_cht == NULL) {
+        return false;
+    }
+    ON_SCOPE_EXIT { fclose(f_cht); };
+    
+    /* Get file size. */
+    fseek(f_cht, 0L, SEEK_END);
+    const size_t cht_sz = ftell(f_cht);
+    fseek(f_cht, 0L, SEEK_SET);
+        
+    /* Allocate cheat txt buffer. */
+    char *cht_txt = (char *)malloc(cht_sz + 1);
+    if (cht_txt == NULL) {
+        return false;
+    }
+    ON_SCOPE_EXIT { free(cht_txt); };
+    
+    /* Read cheats into buffer. */
+    if (fread(cht_txt, 1, cht_sz, f_cht) != cht_sz) {
+        return false;
+    }
+    cht_txt[cht_sz] = 0;
+        
+    /* Parse cheat buffer. */
+    return ParseCheats(cht_txt, strlen(cht_txt));
+}
+
 Handle DmntCheatManager::PrepareDebugNextApplication() {
     Result rc;
     Handle event_h;
@@ -267,7 +436,9 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
         memcpy(g_cheat_process_metadata.main_nso_build_id, proc_module->build_id, sizeof(g_cheat_process_metadata.main_nso_build_id));
     }
     
-    /* TODO: Read cheats off the SD. */
+    /* Read cheats off the SD. */
+    /* This is allowed to fail. We may not have any cheats. */
+    LoadCheats(g_cheat_process_metadata.title_id, g_cheat_process_metadata.main_nso_build_id);
     
     /* Open a debug handle. */
     if (R_FAILED((rc = svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id)))) {
@@ -344,7 +515,13 @@ void DmntCheatManager::OnNewApplicationLaunch() {
         memcpy(g_cheat_process_metadata.main_nso_build_id, proc_modules[1].build_id, sizeof(g_cheat_process_metadata.main_nso_build_id));
     }
         
-    /* TODO: Read cheats off the SD. */
+    /* Read cheats off the SD. */
+    if (!LoadCheats(g_cheat_process_metadata.title_id, g_cheat_process_metadata.main_nso_build_id)) {
+        /* If we don't have cheats, or cheats are malformed, don't attach. */
+        StartDebugProcess(g_cheat_process_metadata.process_id);
+        g_cheat_process_metadata.process_id = 0;
+        return;
+    }
     
     /* Open a debug handle. */
     if (R_FAILED((rc = svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id)))) {
@@ -389,8 +566,10 @@ void DmntCheatManager::VmThread(void *arg) {
                 ContinueCheatProcess();
                 
                 /* Execute VM. */
-                if (g_cheat_vm->GetProgramSize() != 0) {
-                    g_cheat_vm->Execute(&g_cheat_process_metadata);
+                if (g_cheat_vm->LoadProgram(g_cheat_entries, DmntCheatManager::MaxCheatCount)) {
+                    if (g_cheat_vm->GetProgramSize() != 0) {
+                        g_cheat_vm->Execute(&g_cheat_process_metadata);
+                    }
                 }
             }
         }
