@@ -273,6 +273,11 @@ bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
                 return false;
             }
             
+            /* Bounds check the opcode count. */
+            if (cur_entry->definition.num_opcodes >= sizeof(cur_entry->definition.opcodes)/sizeof(cur_entry->definition.opcodes[0])) {
+                return false;
+            }
+            
             /* We're parsing an instruction, so validate it's 8 hex digits. */
             for (size_t j = 1; j < 8; j++) {
                 /* Validate 8 hex chars. */
@@ -285,6 +290,7 @@ bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
             char hex_str[9] = {0};
             memcpy(hex_str, &s[i], 8);
             cur_entry->definition.opcodes[cur_entry->definition.num_opcodes++] = strtoul(hex_str, NULL, 16);
+            
             
             /* Skip onwards. */
             i += 8;
