@@ -137,7 +137,7 @@ void Utils::InitializeThreadFunc(void *args) {
             
             if (!has_auto_backup) {
                 fsFileSetSize(&g_cal0_file, ProdinfoSize);
-                fsFileWrite(&g_cal0_file, 0, g_cal0_backup, ProdinfoSize);
+                fsFileWrite(&g_cal0_file, 0, g_cal0_storage_backup, ProdinfoSize);
                 fsFileFlush(&g_cal0_file);
             }
             
