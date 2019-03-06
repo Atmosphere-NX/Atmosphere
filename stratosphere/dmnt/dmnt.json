@@ -26,6 +26,7 @@
         "sfdnsres",
         "bsdcfg",
         "set",
+        "set:sys",
         "fsp-srv",
         "fatal:u",
         "hid"

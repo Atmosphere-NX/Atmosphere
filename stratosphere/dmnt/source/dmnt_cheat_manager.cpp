@@ -30,6 +30,9 @@ static DmntCheatVm *g_cheat_vm;
 static CheatProcessMetadata g_cheat_process_metadata = {0};
 static Handle g_cheat_process_debug_hnd = 0;
 
+/* Should we enable cheats by default? */
+static bool g_enable_cheats_by_default = true;
+
 /* For debug event thread management. */
 static HosMutex g_debug_event_thread_lock;
 static bool g_has_debug_events_thread = false;
@@ -75,7 +78,7 @@ void DmntCheatManager::WaitDebugEventsThread() {
 }
 
 void DmntCheatManager::CloseActiveCheatProcess() {
-    if (g_cheat_process_debug_hnd != 0) {      
+    if (g_cheat_process_debug_hnd != 0) {
         /* Close process resources. */
         svcCloseHandle(g_cheat_process_debug_hnd);
         g_cheat_process_debug_hnd = 0;
@@ -107,7 +110,7 @@ bool DmntCheatManager::HasActiveCheatProcess() {
     if (has_cheat_process) {
         has_cheat_process &= tmp == g_cheat_process_metadata.process_id;
     }
-    
+
     if (!has_cheat_process) {
         CloseActiveCheatProcess();
     }
@@ -122,7 +125,7 @@ void DmntCheatManager::ContinueCheatProcess() {
         while (R_SUCCEEDED(svcGetDebugEvent((u8 *)debug_event_buf, g_cheat_process_debug_hnd))) {
             /* ... */
         }
-                
+
         /* Continue the process. */
         if (kernelAbove300()) {
             svcContinueDebugEvent(g_cheat_process_debug_hnd, 5, nullptr, 0);
@@ -383,10 +386,15 @@ bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
         }
     }
     
+    /* Master cheat can't be disabled. */
+    if (g_cheat_entries[0].definition.num_opcodes > 0) {
+        g_cheat_entries[0].enabled = true;
+    }
+    
     /* Enable all entries we parsed. */
-    for (size_t i = 0; i < DmntCheatManager::MaxCheatCount; i++) {
+    for (size_t i = 1; i < DmntCheatManager::MaxCheatCount; i++) {
         if (g_cheat_entries[i].definition.num_opcodes > 0) {
-            g_cheat_entries[i].enabled = true;
+            g_cheat_entries[i].enabled = g_enable_cheats_by_default;
         }
     }
     
@@ -499,6 +507,10 @@ Result DmntCheatManager::ToggleCheat(u32 cheat_id) {
     CheatEntry *entry = GetCheatEntryById(cheat_id);
     if (entry == nullptr || entry->definition.num_opcodes == 0) {
         return ResultDmntCheatUnknownChtId;
+    }
+    
+    if (cheat_id == 0) {
+        return ResultDmntCheatCannotDisableMasterCheat;
     }
     
     entry->enabled = !entry->enabled;
@@ -934,6 +946,14 @@ void DmntCheatManager::InitializeCheatManager() {
     
     /* Create cheat vm. */
     g_cheat_vm = new DmntCheatVm();
+    
+    /* Learn whether we should enable cheats by default. */
+    {
+        u8 en;
+        if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "dmnt_cheats_enabled_by_default", &en, sizeof(en)))) {
+            g_enable_cheats_by_default = (en != 0);
+        }
+    }
     
     /* Spawn application detection thread, spawn cheat vm thread. */
     if (R_FAILED(g_detect_thread.Initialize(&DmntCheatManager::DetectThread, nullptr, 0x4000, 39))) {

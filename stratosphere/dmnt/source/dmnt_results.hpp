@@ -23,12 +23,13 @@ static constexpr u32 Module_Dmnt = 13;
 static constexpr Result ResultDmntUnknown           = MAKERESULT(Module_Dmnt, 1);
 static constexpr Result ResultDmntDebuggingDisabled = MAKERESULT(Module_Dmnt, 2);
 
-static constexpr Result ResultDmntCheatNotAttached   = MAKERESULT(Module_Dmnt, 6500);
-static constexpr Result ResultDmntCheatNullBuffer    = MAKERESULT(Module_Dmnt, 6501);
-static constexpr Result ResultDmntCheatInvalidBuffer = MAKERESULT(Module_Dmnt, 6502);
-static constexpr Result ResultDmntCheatUnknownChtId  = MAKERESULT(Module_Dmnt, 6503);
-static constexpr Result ResultDmntCheatOutOfCheats   = MAKERESULT(Module_Dmnt, 6504);
-static constexpr Result ResultDmntCheatInvalidCheat  = MAKERESULT(Module_Dmnt, 6505);
+static constexpr Result ResultDmntCheatNotAttached               = MAKERESULT(Module_Dmnt, 6500);
+static constexpr Result ResultDmntCheatNullBuffer                = MAKERESULT(Module_Dmnt, 6501);
+static constexpr Result ResultDmntCheatInvalidBuffer             = MAKERESULT(Module_Dmnt, 6502);
+static constexpr Result ResultDmntCheatUnknownChtId              = MAKERESULT(Module_Dmnt, 6503);
+static constexpr Result ResultDmntCheatOutOfCheats               = MAKERESULT(Module_Dmnt, 6504);
+static constexpr Result ResultDmntCheatInvalidCheat              = MAKERESULT(Module_Dmnt, 6505);
+static constexpr Result ResultDmntCheatCannotDisableMasterCheat  = MAKERESULT(Module_Dmnt, 6505);
 
 static constexpr Result ResultDmntCheatInvalidFreezeWidth     = MAKERESULT(Module_Dmnt, 6600);
 static constexpr Result ResultDmntCheatAddressAlreadyFrozen   = MAKERESULT(Module_Dmnt, 6601);

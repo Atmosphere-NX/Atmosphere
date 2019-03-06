@@ -99,6 +99,11 @@ void __appInit(void) {
         fatalSimple(rc);
     }
     
+    rc = setsysInitialize();
+    if (R_FAILED(rc)) {
+        fatalSimple(rc);
+    }
+    
     rc = hidInitialize();
     if (R_FAILED(rc)) {
         fatalSimple(rc);
@@ -122,6 +127,7 @@ void __appExit(void) {
     fsdevUnmountAll();
     fsExit();
     hidExit();
+    setsysExit();
     setExit();
     lrExit();
     nsdevExit();
