@@ -117,8 +117,12 @@ Result ShowFatalTask::PrepareScreenForDrawing() {
     if (R_FAILED((rc = viGetDisplayLogicalResolution(&this->display, &display_width, &display_height)))) {
         return rc;
     }
-    if (R_FAILED((rc = viSetDisplayMagnification(&this->display, 0, 0, display_width, display_height)))) {
-        return rc;
+    
+    /* viSetDisplayMagnification was added in 3.0.0. */
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+        if (R_FAILED((rc = viSetDisplayMagnification(&this->display, 0, 0, display_width, display_height)))) {
+            return rc;
+        }
     }
     
     /* Create layer to draw to. */
