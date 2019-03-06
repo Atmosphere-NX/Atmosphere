@@ -22,13 +22,19 @@
 #include "pm_shim.h"
 
 static HosMutex g_cheat_lock;
-static HosThread g_detect_thread, g_vm_thread;
+static HosThread g_detect_thread, g_vm_thread, g_debug_events_thread;
 
 static IEvent *g_cheat_process_event;
 static DmntCheatVm *g_cheat_vm;
 
 static CheatProcessMetadata g_cheat_process_metadata = {0};
 static Handle g_cheat_process_debug_hnd = 0;
+
+/* For signalling the debug events thread. */
+static HosSignal g_has_cheat_process_signal;
+
+/* To save some copying. */
+static bool g_needs_reload_vm_program = false;
 
 /* Global cheat entry storage. */
 static CheatEntry g_cheat_entries[DmntCheatManager::MaxCheatCount];
@@ -38,6 +44,9 @@ static std::map<u64, FrozenAddressValue> g_frozen_addresses_map;
 
 void DmntCheatManager::CloseActiveCheatProcess() {
     if (g_cheat_process_debug_hnd != 0) {
+        /* We're no longer in possession of a debug process. */
+        g_has_cheat_process_signal.Reset();
+        
         /* Close process resources. */
         svcCloseHandle(g_cheat_process_debug_hnd);
         g_cheat_process_debug_hnd = 0;
@@ -60,10 +69,6 @@ bool DmntCheatManager::HasActiveCheatProcess() {
     
     if (has_cheat_process) {
         has_cheat_process &= R_SUCCEEDED(svcGetProcessId(&tmp, g_cheat_process_debug_hnd));
-    }
-    
-    if (has_cheat_process) {
-        has_cheat_process &= R_SUCCEEDED(pmdmntGetApplicationPid(&tmp));
     }
     
     if (has_cheat_process) {
@@ -222,6 +227,9 @@ void DmntCheatManager::ResetCheatEntry(size_t i) {
         g_cheat_entries[i].enabled = false;
         g_cheat_entries[i].cheat_id = i;
         g_cheat_entries[i].definition = {0};
+        
+        /* Trigger a VM reload. */
+        g_needs_reload_vm_program = true;
     }
 }
 
@@ -253,6 +261,9 @@ CheatEntry *DmntCheatManager::GetCheatEntryById(size_t i) {
 bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
     size_t i = 0;
     CheatEntry *cur_entry = NULL;
+        
+    /* Trigger a VM reload. */
+    g_needs_reload_vm_program = true;
     
     while (i < len) {
         if (isspace(s[i])) {
@@ -458,6 +469,9 @@ Result DmntCheatManager::ToggleCheat(u32 cheat_id) {
     }
     
     entry->enabled = !entry->enabled;
+    
+    /* Trigger a VM reload. */
+    g_needs_reload_vm_program = true;
     return 0;
 }
 
@@ -479,6 +493,9 @@ Result DmntCheatManager::AddCheat(u32 *out_id, CheatDefinition *def, bool enable
     
     new_entry->enabled = enabled;
     new_entry->definition = *def;
+    
+    /* Trigger a VM reload. */
+    g_needs_reload_vm_program = true;
     return 0;
 }
 
@@ -494,6 +511,9 @@ Result DmntCheatManager::RemoveCheat(u32 cheat_id) {
     }
     
     ResetCheatEntry(cheat_id);
+    
+    /* Trigger a VM reload. */
+    g_needs_reload_vm_program = true;
     return 0;
 }
 
@@ -696,6 +716,9 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
     /* Continue debug events, etc. */
     ContinueCheatProcess();
     
+    /* Signal to debug event swallower. */
+    g_has_cheat_process_signal.Signal();
+    
     /* Signal to our fans. */
     g_cheat_process_event->Signal();
     
@@ -782,6 +805,9 @@ void DmntCheatManager::OnNewApplicationLaunch() {
     /* Continue debug events, etc. */
     ContinueCheatProcess();
     
+    /* Signal to debug event swallower. */
+    g_has_cheat_process_signal.Signal();
+    
     /* Signal to our fans. */
     g_cheat_process_event->Signal();
 }
@@ -810,11 +836,12 @@ void DmntCheatManager::VmThread(void *arg) {
             std::scoped_lock<HosMutex> lk(g_cheat_lock);
             
             if (HasActiveCheatProcess()) {
-                /* Handle any pending debug events. */
-                ContinueCheatProcess();
-                
                 /* Execute VM. */
-                if (g_cheat_vm->LoadProgram(g_cheat_entries, DmntCheatManager::MaxCheatCount)) {
+                if (!g_needs_reload_vm_program || (g_cheat_vm->LoadProgram(g_cheat_entries, DmntCheatManager::MaxCheatCount))) {
+                    /* Program: reloaded. */
+                    g_needs_reload_vm_program = false;
+                    
+                    /* Execute program if it's present. */
                     if (g_cheat_vm->GetProgramSize() != 0) {
                         g_cheat_vm->Execute(&g_cheat_process_metadata);
                     }
@@ -826,7 +853,30 @@ void DmntCheatManager::VmThread(void *arg) {
                 }
             }
         }
-        svcSleepThread(0x5000000ul);
+        
+        constexpr u64 ONE_SECOND = 1000000000ul;
+        constexpr u64 NUM_TIMES = 12;
+        constexpr u64 DELAY = ONE_SECOND / NUM_TIMES;
+        svcSleepThread(DELAY);
+    }
+}
+
+void DmntCheatManager::DebugEventsThread(void *arg) {
+    while (true) {
+        /* Wait to have a cheat process. */
+        g_has_cheat_process_signal.Wait();
+        
+        while (g_cheat_process_debug_hnd != 0 && R_SUCCEEDED(svcWaitSynchronizationSingle(g_cheat_process_debug_hnd, U64_MAX))) {
+            {
+                std::scoped_lock<HosMutex> lk(g_cheat_lock);
+                /* Handle any pending debug events. */
+                if (HasActiveCheatProcess()) {
+                    ContinueCheatProcess();
+                }
+            }
+            
+            svcSleepThread(1000000ull);
+        }
     }
 }
 
@@ -859,15 +909,20 @@ void DmntCheatManager::InitializeCheatManager() {
     g_cheat_vm = new DmntCheatVm();
     
     /* Spawn application detection thread, spawn cheat vm thread. */
-    if (R_FAILED(g_detect_thread.Initialize(&DmntCheatManager::DetectThread, nullptr, 0x4000, 28))) {
+    if (R_FAILED(g_detect_thread.Initialize(&DmntCheatManager::DetectThread, nullptr, 0x4000, 39))) {
         std::abort();
     }
-    if (R_FAILED(g_vm_thread.Initialize(&DmntCheatManager::VmThread, nullptr, 0x4000, 28))) {
+    
+    if (R_FAILED(g_vm_thread.Initialize(&DmntCheatManager::VmThread, nullptr, 0x4000, 48))) {
+        std::abort();
+    }
+    
+    if (R_FAILED(g_debug_events_thread.Initialize(&DmntCheatManager::DebugEventsThread, nullptr, 0x4000, 48))) {
         std::abort();
     }
     
     /* Start threads. */
-    if (R_FAILED(g_detect_thread.Start()) || R_FAILED(g_vm_thread.Start())) {
+    if (R_FAILED(g_detect_thread.Start()) || R_FAILED(g_vm_thread.Start()) || R_FAILED(g_debug_events_thread.Start())) {
         std::abort();
     }
 }

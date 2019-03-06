@@ -441,6 +441,7 @@ bool DmntCheatVm::LoadProgram(const CheatEntry *cheats, size_t num_cheats) {
         if (cheats[i].enabled) {
             /* Bounds check. */
             if (cheats[i].definition.num_opcodes + this->num_opcodes > MaximumProgramOpcodeCount) {
+                this->num_opcodes = 0;
                 return false;
             }
             
