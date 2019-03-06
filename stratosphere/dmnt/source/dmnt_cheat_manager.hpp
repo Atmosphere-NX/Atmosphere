@@ -31,6 +31,9 @@ class DmntCheatManager {
         static void VmThread(void *arg);
         static void DebugEventsThread(void *arg);
         
+        static void StartDebugEventsThread();
+        static void WaitDebugEventsThread();
+        
         static bool HasActiveCheatProcess();
         static void CloseActiveCheatProcess();
         static void ContinueCheatProcess();

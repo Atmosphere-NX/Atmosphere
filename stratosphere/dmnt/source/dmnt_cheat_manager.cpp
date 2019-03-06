@@ -30,8 +30,9 @@ static DmntCheatVm *g_cheat_vm;
 static CheatProcessMetadata g_cheat_process_metadata = {0};
 static Handle g_cheat_process_debug_hnd = 0;
 
-/* For signalling the debug events thread. */
-static HosSignal g_has_cheat_process_signal;
+/* For debug event thread management. */
+static HosMutex g_debug_event_thread_lock;
+static bool g_has_debug_events_thread = false;
 
 /* To save some copying. */
 static bool g_needs_reload_vm_program = false;
@@ -42,11 +43,39 @@ static CheatEntry g_cheat_entries[DmntCheatManager::MaxCheatCount];
 /* Global frozen address storage. */
 static std::map<u64, FrozenAddressValue> g_frozen_addresses_map;
 
-void DmntCheatManager::CloseActiveCheatProcess() {
-    if (g_cheat_process_debug_hnd != 0) {
-        /* We're no longer in possession of a debug process. */
-        g_has_cheat_process_signal.Reset();
+void DmntCheatManager::StartDebugEventsThread() {
+    std::scoped_lock<HosMutex> lk(g_debug_event_thread_lock);
+    
+    /* Spawn the debug events thread. */
+    if (!g_has_debug_events_thread) {
+        Result rc;
         
+        if (R_FAILED((rc = g_debug_events_thread.Initialize(&DmntCheatManager::DebugEventsThread, nullptr, 0x4000, 48)))) {
+            return fatalSimple(rc);
+        }
+        
+        if (R_FAILED((rc = g_debug_events_thread.Start()))) {
+            return fatalSimple(rc);
+        }
+        
+        g_has_debug_events_thread = true;
+    }
+}
+
+void DmntCheatManager::WaitDebugEventsThread() {
+    std::scoped_lock<HosMutex> lk(g_debug_event_thread_lock);
+    
+    /* Wait for the thread to exit. */
+    if (g_has_debug_events_thread) {
+        g_debug_events_thread.CancelSynchronization();
+        g_debug_events_thread.Join();
+        
+        g_has_debug_events_thread = false;
+    }
+}
+
+void DmntCheatManager::CloseActiveCheatProcess() {
+    if (g_cheat_process_debug_hnd != 0) {      
         /* Close process resources. */
         svcCloseHandle(g_cheat_process_debug_hnd);
         g_cheat_process_debug_hnd = 0;
@@ -72,6 +101,10 @@ bool DmntCheatManager::HasActiveCheatProcess() {
     }
     
     if (has_cheat_process) {
+        has_cheat_process &= R_SUCCEEDED(pmdmntGetApplicationPid(&tmp));
+    }
+    
+    if (has_cheat_process) {
         has_cheat_process &= tmp == g_cheat_process_metadata.process_id;
     }
     
@@ -89,7 +122,7 @@ void DmntCheatManager::ContinueCheatProcess() {
         while (R_SUCCEEDED(svcGetDebugEvent((u8 *)debug_event_buf, g_cheat_process_debug_hnd))) {
             /* ... */
         }
-        
+                
         /* Continue the process. */
         if (kernelAbove300()) {
             svcContinueDebugEvent(g_cheat_process_debug_hnd, 5, nullptr, 0);
@@ -652,6 +685,11 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
         return 0;
     }
     
+    /* Close the current application, if it's open. */
+    CloseActiveCheatProcess();
+    /* Wait to not have debug events thread. */
+    WaitDebugEventsThread();
+    
     /* Get the current application process ID. */
     if (R_FAILED((rc = pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id)))) {
         return rc;
@@ -712,13 +750,10 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
     if (R_FAILED((rc = svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id)))) {
         return rc;
     }
+
+    /* Start debug events thread. */
+    StartDebugEventsThread();
         
-    /* Continue debug events, etc. */
-    ContinueCheatProcess();
-    
-    /* Signal to debug event swallower. */
-    g_has_cheat_process_signal.Signal();
-    
     /* Signal to our fans. */
     g_cheat_process_event->Signal();
     
@@ -731,6 +766,9 @@ void DmntCheatManager::OnNewApplicationLaunch() {
     
     /* Close the current application, if it's open. */
     CloseActiveCheatProcess();
+    
+    /* Wait to not have debug events thread. */
+    WaitDebugEventsThread();
     
     /* Get the new application's process ID. */
     if (R_FAILED((rc = pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id)))) {
@@ -801,13 +839,10 @@ void DmntCheatManager::OnNewApplicationLaunch() {
     
     /* Start the process. */
     StartDebugProcess(g_cheat_process_metadata.process_id);
-    
-    /* Continue debug events, etc. */
-    ContinueCheatProcess();
-    
-    /* Signal to debug event swallower. */
-    g_has_cheat_process_signal.Signal();
-    
+
+    /* Start debug events thread. */
+    StartDebugEventsThread();
+        
     /* Signal to our fans. */
     g_cheat_process_event->Signal();
 }
@@ -862,20 +897,12 @@ void DmntCheatManager::VmThread(void *arg) {
 }
 
 void DmntCheatManager::DebugEventsThread(void *arg) {
-    while (true) {
-        /* Wait to have a cheat process. */
-        g_has_cheat_process_signal.Wait();
+    while (R_SUCCEEDED(svcWaitSynchronizationSingle(g_cheat_process_debug_hnd, U64_MAX))) {
+        std::scoped_lock<HosMutex> lk(g_cheat_lock);
         
-        while (g_cheat_process_debug_hnd != 0 && R_SUCCEEDED(svcWaitSynchronizationSingle(g_cheat_process_debug_hnd, U64_MAX))) {
-            {
-                std::scoped_lock<HosMutex> lk(g_cheat_lock);
-                /* Handle any pending debug events. */
-                if (HasActiveCheatProcess()) {
-                    ContinueCheatProcess();
-                }
-            }
-            
-            svcSleepThread(1000000ull);
+        /* Handle any pending debug events. */
+        if (HasActiveCheatProcess()) {
+            ContinueCheatProcess();
         }
     }
 }
@@ -917,12 +944,8 @@ void DmntCheatManager::InitializeCheatManager() {
         std::abort();
     }
     
-    if (R_FAILED(g_debug_events_thread.Initialize(&DmntCheatManager::DebugEventsThread, nullptr, 0x4000, 48))) {
-        std::abort();
-    }
-    
     /* Start threads. */
-    if (R_FAILED(g_detect_thread.Start()) || R_FAILED(g_vm_thread.Start()) || R_FAILED(g_debug_events_thread.Start())) {
+    if (R_FAILED(g_detect_thread.Start()) || R_FAILED(g_vm_thread.Start())) {
         std::abort();
     }
 }
