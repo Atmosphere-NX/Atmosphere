@@ -316,7 +316,7 @@ int nxfs_mount_all(void) {
     model = g_mmc_devpart_template;
     model.device_struct = &g_emmc_user_mmcpart;
     model.start_sector = 0;
-    model.num_sectors = *(uint32_t*)&g_emmc_user_mmcpart.device->ext_csd.raw_sectors[0];
+    model.num_sectors = (256ull << 30) / model.sector_size;
     
     rc = rawdev_mount_device("rawnand", &model, false);
     
