@@ -209,6 +209,7 @@ Note that for multiple button combinations, the bitmasks should be ORd together.
 
 Note: This is the direct output of `hidKeysDown()`.
 
++ 0000001: A
 + 0000002: B
 + 0000004: X
 + 0000008: Y
@@ -232,6 +233,8 @@ Note: This is the direct output of `hidKeysDown()`.
 + 0200000: Right Stick Up
 + 0400000: Right Stick Right
 + 0800000: Right Stick Down
++ 1000000: SL
++ 2000000: SR
 
 ---
 

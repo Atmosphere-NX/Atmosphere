@@ -1,4 +1,22 @@
 # Changelog
+## 0.8.5
++ Support was added for overriding content on a per-title basis, separate from HBL override.
+  + This allows for using mods on the same title that one uses to launch HBL.
+  + By default, `!L` is used for title content override (this is configurable by editing `default_config!override_key` in `loader.ini`)
+  + This key combination can be set on a per-title basis by creating a `atmosphere/titles/<title id>/config.ini`, and editing `override_config!override_key`.
++ Content headers were added for the embedded files inside of fusee-secondary.
+  + This will allow non-fusee bootloaders (like `hekate`) to extract the components bundled inside release binaries.
+  + This should greatly simplify the update process in the future, for users who do not launch Atmosphère using fusee.
++ Support for cheat codes was added.
+  + These are handled by a new `dmnt` sysmodule, which will also reimplement Nintendo's Debug Monitor in the future.
+  + Cheat codes are fully backwards compatible with the pre-existing format, although a number of bugs have been fixed and some new features have been added.
+    + For details, please see [the compatibility documentation](https://github.com/Atmosphere-NX/Atmosphere/blob/master/docs/cheats.md#cheat-code-compatibility).
+  + An HIPC service API was added (`dmnt:cht`), that will allow user homebrew to interface with and control Atmosphère's cheat manager.
+    + Please see [the relevant documentation](https://github.com/Atmosphere-NX/Atmosphere/blob/master/docs/modules/dmnt.md).
+    + Full client code can be found in [libstratosphere](https://github.com/Atmosphere-NX/libstratosphere/blob/master/include/stratosphere/services/dmntcht.h).
+    + Users interested in interfacing should see [EdiZon](https://github.com/WerWolv/EdiZon), which should have support for interfacing with Atmosphère's API shortly after 0.8.5 releases.
++ A bug was fixed that would cause Atmosphère's fatal screen to not show on 1.0.0-2.3.0.
++ General system stability improvements to enhance the user's experience.
 ## 0.8.4
 + Support for 7.0.0/7.0.1 was added.
   + This is facilitated through a new payload, `sept`, which can be signed, encrypted, and then loaded by Nintendo's TSEC firmware.
