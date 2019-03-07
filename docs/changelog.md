@@ -9,6 +9,8 @@
   + This should greatly simplify the update process in the future, for users who do not launch Atmosphère using fusee.
 + Support for cheat codes was added.
   + These are handled by a new `dmnt` sysmodule, which will also reimplement Nintendo's Debug Monitor in the future.
+  + Cheat codes can be enabled/disabled at application launch via a per-title key combination. 
+    + For details, please see the [cheat loading documentation](https://github.com/Atmosphere-NX/Atmosphere/blob/master/docs/cheats.md#cheat-loating-process).
   + Cheat codes are fully backwards compatible with the pre-existing format, although a number of bugs have been fixed and some new features have been added.
     + For details, please see [the compatibility documentation](https://github.com/Atmosphere-NX/Atmosphere/blob/master/docs/cheats.md#cheat-code-compatibility).
   + An HIPC service API was added (`dmnt:cht`), that will allow user homebrew to interface with and control Atmosphère's cheat manager.
@@ -16,6 +18,7 @@
     + Full client code can be found in [libstratosphere](https://github.com/Atmosphere-NX/libstratosphere/blob/master/include/stratosphere/services/dmntcht.h).
     + Users interested in interfacing should see [EdiZon](https://github.com/WerWolv/EdiZon), which should have support for interfacing with Atmosphère's API shortly after 0.8.5 releases.
 + A bug was fixed that would cause Atmosphère's fatal screen to not show on 1.0.0-2.3.0.
++ A bug was fixed that caused Atmosphère's automatic ProdInfo backups to be corrupt.
 + General system stability improvements to enhance the user's experience.
 ## 0.8.4
 + Support for 7.0.0/7.0.1 was added.
