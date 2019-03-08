@@ -49,7 +49,7 @@ void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirector
             strcat(child->path + parent->path_len, this->dir_entry.name);
                                     
             if (!this->AddDirectory(parent, child, NULL)) {
-                delete child->path;
+                delete[] child->path;
                 delete child;
             } else {
                 child_dirs.push_back(child);
@@ -72,7 +72,7 @@ void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirector
             child->size = this->dir_entry.fileSize;
                                     
             if (!this->AddFile(parent, child)) {
-                delete child->path;
+                delete[] child->path;
                 delete child;
             }
         } else {
@@ -125,7 +125,7 @@ void RomFSBuildContext::VisitDirectory(RomFSBuildDirectoryContext *parent, u32 p
             child->source = this->cur_source_type;
             child->orig_offset = cur_file->offset;
             if (!this->AddFile(parent, child)) {
-                delete child->path;
+                delete[] child->path;
                 delete child;
             }
             if (cur_file->sibling == ROMFS_ENTRY_EMPTY) {
@@ -153,7 +153,7 @@ void RomFSBuildContext::VisitDirectory(RomFSBuildDirectoryContext *parent, u32 p
             
             RomFSBuildDirectoryContext *real = NULL;
             if (!this->AddDirectory(parent, child, &real)) {
-                delete child->path;
+                delete[] child->path;
                 delete child;
             }
             if (real == NULL) {
@@ -246,8 +246,10 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     this->file_hash_table_size = 4 * file_hash_table_entry_count;
     
     /* Assign metadata pointers */
-    RomFSHeader *header = new RomFSHeader({0});
-    u8 *metadata = new u8[this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size];
+    auto *header = reinterpret_cast<RomFSHeader*>(std::malloc(sizeof(RomFSHeader)));
+    *header = {};
+    const size_t metadata_size = this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size;
+    u8 *metadata = reinterpret_cast<u8*>(std::malloc(metadata_size));
     u32 *dir_hash_table = (u32 *)((uintptr_t)metadata);
     RomFSDirectoryEntry *dir_table = (RomFSDirectoryEntry *)((uintptr_t)dir_hash_table + this->dir_hash_table_size);
     u32 *file_hash_table = (u32 *)((uintptr_t)dir_table + this->dir_table_size);
@@ -372,7 +374,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     /* Delete directories. */
     for (const auto &it : this->directories) {
         cur_dir = it.second;
-        delete cur_dir->path;
+        delete[] cur_dir->path;
         delete cur_dir;
     }
     this->root = NULL;
@@ -381,7 +383,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     /* Delete files. */
     for (const auto &it : this->files) {
         cur_file = it.second;
-        delete cur_file->path;
+        delete[] cur_file->path;
         delete cur_file;
     }
     this->files.clear();
@@ -397,13 +399,11 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     header->dir_table_ofs = header->dir_hash_table_ofs + header->dir_hash_table_size;
     header->file_hash_table_ofs = header->dir_table_ofs + header->dir_table_size;
     header->file_table_ofs = header->file_hash_table_ofs + header->file_hash_table_size;
-    
-    const size_t metadata_size = this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size;
-    
+
     /* Try to save metadata to the SD card, to save on memory space. */
     if (R_SUCCEEDED(Utils::SaveSdFileForAtmosphere(this->title_id, ROMFS_METADATA_FILE_PATH, metadata, metadata_size))) {
         out_infos->emplace_back(header->dir_hash_table_ofs, metadata_size, RomFSDataSource::MetaData);
-        delete metadata;
+        std::free(metadata);
     } else {
         out_infos->emplace_back(header->dir_hash_table_ofs, metadata_size, metadata, RomFSDataSource::Memory);
     }
