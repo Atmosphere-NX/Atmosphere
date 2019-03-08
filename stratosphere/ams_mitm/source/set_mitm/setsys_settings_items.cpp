@@ -257,7 +257,7 @@ void SettingsItemManager::LoadConfiguration() {
     char *config_buf = new char[0x10000];
     std::memset(config_buf, 0, 0x10000);
     ON_SCOPE_EXIT {
-        delete config_buf;
+        delete[] config_buf;
     };
     
     /* Read from file. */
