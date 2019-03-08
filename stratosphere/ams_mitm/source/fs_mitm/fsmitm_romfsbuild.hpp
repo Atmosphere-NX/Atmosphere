@@ -15,6 +15,7 @@
  */
  
 #pragma once
+#include <cstdlib>
 #include <switch.h>
 #include <map>
 
@@ -120,10 +121,10 @@ struct RomFSSourceInfo {
             case RomFSDataSource::MetaData:
                 break;
             case RomFSDataSource::LooseFile:
-                delete this->loose_source_info.path;
+                delete[] this->loose_source_info.path;
                 break;
             case RomFSDataSource::Memory:
-                delete this->memory_source_info.data;
+                std::free((void*)this->memory_source_info.data);
                 break;
             default:
                 fatalSimple(0xF601);
