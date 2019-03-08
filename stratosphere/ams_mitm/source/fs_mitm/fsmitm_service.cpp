@@ -99,7 +99,7 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
         FsStorage bis_storage;
         rc = fsOpenBisStorageFwd(this->forward_service.get(), &bis_storage, bis_partition_id);
         if (R_SUCCEEDED(rc)) {
-            const bool is_sysmodule = this->title_id < 0x0100000000001000;
+            const bool is_sysmodule = this->title_id < 0x0100000000001000ul;
             const bool has_bis_write_flag = Utils::HasFlag(this->title_id, "bis_write");
             const bool has_cal0_read_flag = Utils::HasFlag(this->title_id, "cal_read");
             if (bis_partition_id == BisStorageId_Boot0) {

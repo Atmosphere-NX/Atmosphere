@@ -392,14 +392,14 @@ bool Utils::HasTitleFlag(u64 tid, const char *flag) {
         
         memset(flag_path, 0, sizeof(flag_path));
         snprintf(flag_path, sizeof(flag_path) - 1, "flags/%s.flag", flag);
-        if (OpenSdFileForAtmosphere(tid, flag_path, FS_OPEN_READ, &f)) {
+        if (R_SUCCEEDED(OpenSdFileForAtmosphere(tid, flag_path, FS_OPEN_READ, &f))) {
             fsFileClose(&f);
             return true;
         }
         
         /* TODO: Deprecate. */
         snprintf(flag_path, sizeof(flag_path) - 1, "%s.flag", flag);
-        if (OpenSdFileForAtmosphere(tid, flag_path, FS_OPEN_READ, &f)) {
+        if (R_SUCCEEDED(OpenSdFileForAtmosphere(tid, flag_path, FS_OPEN_READ, &f))) {
             fsFileClose(&f);
             return true;
         }
@@ -412,7 +412,7 @@ bool Utils::HasGlobalFlag(const char *flag) {
         FsFile f;
         char flag_path[FS_MAX_PATH] = {0};
         snprintf(flag_path, sizeof(flag_path), "/atmosphere/flags/%s.flag", flag);
-        if (fsFsOpenFile(&g_sd_filesystem, flag_path, FS_OPEN_READ, &f)) {
+        if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, flag_path, FS_OPEN_READ, &f))) {
             fsFileClose(&f);
             return true;
         }
