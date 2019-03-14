@@ -315,6 +315,7 @@ void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr,
     se->ERR_STATUS_REG = se->ERR_STATUS_REG;
     se->INT_STATUS_REG = se->INT_STATUS_REG;
     se->OPERATION_REG = 1;
+    (void)(se->OPERATION_REG);
 
     /* Ensure writes go through. */
     __dsb_ish();
@@ -477,6 +478,7 @@ void trigger_se_rsa_op(void *buf, size_t size) {
     se->ERR_STATUS_REG = se->ERR_STATUS_REG;
     se->INT_STATUS_REG = se->INT_STATUS_REG;
     se->OPERATION_REG = 1;
+    (void)(se->OPERATION_REG);
 
     /* Ensure writes go through. */
     __dsb_ish();
@@ -500,6 +502,9 @@ void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const v
     se->ERR_STATUS_REG = se->ERR_STATUS_REG;
     se->INT_STATUS_REG = se->INT_STATUS_REG;
     se->OPERATION_REG = op;
+    (void)(se->OPERATION_REG);
+    
+    __dsb_ish();
 
     while (!(se->INT_STATUS_REG & 0x10)) { /* Wait a while */ }
 
