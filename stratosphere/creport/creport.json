@@ -23,6 +23,7 @@
         "erpt:c",
         "fatal:u",
         "ns:dev",
+        "time:*",
         "fsp-srv"
     ],
     "kernel_capabilities": [
