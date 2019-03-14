@@ -34,7 +34,7 @@ static Handle g_cheat_process_debug_hnd = 0;
 static bool g_enable_cheats_by_default = true;
 
 /* For debug event thread management. */
-static HosMutex g_debug_event_thread_lock;
+static HosMutex g_debug_event_thread_lock, g_attach_lock;
 static bool g_has_debug_events_thread = false;
 
 /* To save some copying. */
@@ -45,6 +45,10 @@ static CheatEntry g_cheat_entries[DmntCheatManager::MaxCheatCount];
 
 /* Global frozen address storage. */
 static std::map<u64, FrozenAddressValue> g_frozen_addresses_map;
+
+/* WORKAROUND: These prevent a kernel deadlock from occurring on 6.0.0+ */
+static HosThread g_workaround_threads[4];
+static void KernelWorkaroundThreadFunc(void *arg) { svcSleepThread(INT64_MAX); }
 
 void DmntCheatManager::StartDebugEventsThread() {
     std::scoped_lock<HosMutex> lk(g_debug_event_thread_lock);
@@ -119,19 +123,17 @@ bool DmntCheatManager::HasActiveCheatProcess() {
 }
 
 void DmntCheatManager::ContinueCheatProcess() {
-    if (HasActiveCheatProcess()) {
-        /* Loop getting debug events. */
-        u64 debug_event_buf[0x50];
-        while (R_SUCCEEDED(svcGetDebugEvent((u8 *)debug_event_buf, g_cheat_process_debug_hnd))) {
-            /* ... */
-        }
+    /* Loop getting debug events. */
+    u8 debug_event_buf[0x50];
+    while (R_SUCCEEDED(svcGetDebugEvent((u8 *)debug_event_buf, g_cheat_process_debug_hnd))) {
+        /* ... */
+    }
 
-        /* Continue the process. */
-        if (kernelAbove300()) {
-            svcContinueDebugEvent(g_cheat_process_debug_hnd, 5, nullptr, 0);
-        } else {
-            svcLegacyContinueDebugEvent(g_cheat_process_debug_hnd, 5, 0);
-        }
+    /* Continue the process, if needed. */
+    if (kernelAbove300()) {
+        svcContinueDebugEvent(g_cheat_process_debug_hnd, 5, nullptr, 0);
+    } else {
+        svcLegacyContinueDebugEvent(g_cheat_process_debug_hnd, 5, 0);
     }
 }
 
@@ -690,17 +692,27 @@ static void StartDebugProcess(u64 pid) {
 }
 
 Result DmntCheatManager::ForceOpenCheatProcess() {
-    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    std::scoped_lock<HosMutex> attach_lk(g_attach_lock);
     Result rc;
     
-    if (HasActiveCheatProcess()) {
-        return 0;
+    /* Acquire the cheat lock for long enough to close the process if needed. */
+    {
+        std::scoped_lock<HosMutex> lk(g_cheat_lock);
+        
+        if (HasActiveCheatProcess()) {
+            return 0;
+        }
+        
+        /* Close the current application, if it's open. */
+        CloseActiveCheatProcess();
     }
     
-    /* Close the current application, if it's open. */
-    CloseActiveCheatProcess();
+    /* Intentionally yield the cheat lock to the debug events thread. */
     /* Wait to not have debug events thread. */
     WaitDebugEventsThread();
+    
+    /* At this point, we can re-acquire the lock for the rest of the function. */
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
     
     /* Get the current application process ID. */
     if (R_FAILED((rc = pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id)))) {
@@ -762,7 +774,6 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
     if (R_FAILED((rc = svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id)))) {
         return rc;
     }
-
     /* Start debug events thread. */
     StartDebugEventsThread();
         
@@ -773,14 +784,21 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
 }
 
 void DmntCheatManager::OnNewApplicationLaunch() {
-    std::scoped_lock<HosMutex> lk(g_cheat_lock);
+    std::scoped_lock<HosMutex> attach_lk(g_attach_lock);
     Result rc;
     
-    /* Close the current application, if it's open. */
-    CloseActiveCheatProcess();
+    {
+        std::scoped_lock<HosMutex> lk(g_cheat_lock);
+        /* Close the current application, if it's open. */
+        CloseActiveCheatProcess();
+    }
     
+    /* Intentionally yield the cheat lock to the debug events thread. */
     /* Wait to not have debug events thread. */
     WaitDebugEventsThread();
+    
+    /* At this point, we can re-acquire the lock for the rest of the function. */
+    std::scoped_lock<HosMutex> lk(g_cheat_lock);
     
     /* Get the new application's process ID. */
     if (R_FAILED((rc = pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id)))) {
@@ -909,13 +927,15 @@ void DmntCheatManager::VmThread(void *arg) {
 }
 
 void DmntCheatManager::DebugEventsThread(void *arg) {
-    while (R_SUCCEEDED(svcWaitSynchronizationSingle(g_cheat_process_debug_hnd, U64_MAX))) {
+    
+    while (R_SUCCEEDED(svcWaitSynchronizationSingle(g_cheat_process_debug_hnd, U64_MAX))) {        
         std::scoped_lock<HosMutex> lk(g_cheat_lock);
         
         /* Handle any pending debug events. */
         if (HasActiveCheatProcess()) {
             ContinueCheatProcess();
         }
+        
     }
 }
 
@@ -952,6 +972,20 @@ void DmntCheatManager::InitializeCheatManager() {
         u8 en;
         if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "dmnt_cheats_enabled_by_default", &en, sizeof(en)))) {
             g_enable_cheats_by_default = (en != 0);
+        }
+    }
+    
+    /* WORKAROUND: On 6.0.0+, we must ensure that every core has at least one non-game thread. */
+    /* This prevents a kernel deadlock when continuing debug events. */
+    if (kernelAbove600()) {
+        for (size_t i = 0; i < sizeof(g_workaround_threads) / sizeof(g_workaround_threads[0]); i++) {
+            if (R_FAILED(g_workaround_threads[i].Initialize(&KernelWorkaroundThreadFunc, nullptr, 0x1000, 0, i))) {
+                std::abort();
+            }
+            
+            if (R_FAILED(g_workaround_threads[i].Start())) {
+                std::abort();
+            }
         }
     }
     

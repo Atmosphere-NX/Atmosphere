@@ -24,7 +24,7 @@
 void DmntCheatVm::OpenDebugLogFile() {
     #ifdef DMNT_CHEAT_VM_DEBUG_LOG
     CloseDebugLogFile();
-    this->debug_log_file = fopen("cheat_vm_log.txt", "wb");
+    this->debug_log_file = fopen("cheat_vm_log.txt", "ab");
     #endif
 }
 
