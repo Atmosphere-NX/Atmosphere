@@ -19,6 +19,7 @@
 #include "dmnt_cheat_manager.hpp"
 #include "dmnt_cheat_vm.hpp"
 #include "dmnt_config.hpp"
+#include "dmnt_cheat_debug_events_manager.hpp"
 #include "pm_shim.h"
 
 static HosMutex g_cheat_lock;
@@ -45,10 +46,6 @@ static CheatEntry g_cheat_entries[DmntCheatManager::MaxCheatCount];
 
 /* Global frozen address storage. */
 static std::map<u64, FrozenAddressValue> g_frozen_addresses_map;
-
-/* WORKAROUND: These prevent a kernel deadlock from occurring on 6.0.0+ */
-static HosThread g_workaround_threads[4];
-static void KernelWorkaroundThreadFunc(void *arg) { svcSleepThread(INT64_MAX); }
 
 void DmntCheatManager::StartDebugEventsThread() {
     std::scoped_lock<HosMutex> lk(g_debug_event_thread_lock);
@@ -120,21 +117,6 @@ bool DmntCheatManager::HasActiveCheatProcess() {
     }
     
     return has_cheat_process;
-}
-
-void DmntCheatManager::ContinueCheatProcess() {
-    /* Loop getting debug events. */
-    u8 debug_event_buf[0x50];
-    while (R_SUCCEEDED(svcGetDebugEvent((u8 *)debug_event_buf, g_cheat_process_debug_hnd))) {
-        /* ... */
-    }
-
-    /* Continue the process, if needed. */
-    if (kernelAbove300()) {
-        svcContinueDebugEvent(g_cheat_process_debug_hnd, 5, nullptr, 0);
-    } else {
-        svcLegacyContinueDebugEvent(g_cheat_process_debug_hnd, 5, 0);
-    }
 }
 
 Result DmntCheatManager::ReadCheatProcessMemoryForVm(u64 proc_addr, void *out_data, size_t size) {
@@ -933,7 +915,7 @@ void DmntCheatManager::DebugEventsThread(void *arg) {
         
         /* Handle any pending debug events. */
         if (HasActiveCheatProcess()) {
-            ContinueCheatProcess();
+            DmntCheatDebugEventsManager::ContinueCheatProcess(g_cheat_process_debug_hnd);
         }
         
     }
@@ -975,19 +957,8 @@ void DmntCheatManager::InitializeCheatManager() {
         }
     }
     
-    /* WORKAROUND: On 6.0.0+, we must ensure that every core has at least one non-game thread. */
-    /* This prevents a kernel deadlock when continuing debug events. */
-    if (kernelAbove600()) {
-        for (size_t i = 0; i < sizeof(g_workaround_threads) / sizeof(g_workaround_threads[0]); i++) {
-            if (R_FAILED(g_workaround_threads[i].Initialize(&KernelWorkaroundThreadFunc, nullptr, 0x1000, 0, i))) {
-                std::abort();
-            }
-            
-            if (R_FAILED(g_workaround_threads[i].Start())) {
-                std::abort();
-            }
-        }
-    }
+    /* Initialize debug events manager. */
+    DmntCheatDebugEventsManager::Initialize();
     
     /* Spawn application detection thread, spawn cheat vm thread. */
     if (R_FAILED(g_detect_thread.Initialize(&DmntCheatManager::DetectThread, nullptr, 0x4000, 39))) {
