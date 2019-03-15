@@ -35,10 +35,14 @@ enum CheatVmOpcodeType : u32 {
     /* These are not implemented by Gateway's VM. */
     CheatVmOpcodeType_PerformArithmeticRegister = 9,
     CheatVmOpcodeType_StoreRegisterToAddress = 10,
+    CheatVmOpcodeType_Reserved11 = 11,
     
     /* This is a meta entry, and not a real opcode. */
-    /* This is to facilitate multi-nybble instruction decoding in the future. */
+    /* This is to facilitate multi-nybble instruction decoding. */
     CheatVmOpcodeType_ExtendedWidth = 12,
+    
+    /* Extended width opcodes. */
+    CheatVmOpcodeType_BeginRegisterConditionalBlock = 0xC0,
 };
 
 enum MemoryAccessType : u32 {
@@ -75,6 +79,14 @@ enum StoreRegisterOffsetType : u32 {
     StoreRegisterOffsetType_None = 0,
     StoreRegisterOffsetType_Reg = 1,
     StoreRegisterOffsetType_Imm = 2,
+};
+
+enum CompareRegisterValueType : u32 {
+    CompareRegisterValueType_MemoryRelAddr = 0,
+    CompareRegisterValueType_MemoryOfsReg = 1,
+    CompareRegisterValueType_RegisterRelAddr = 2,
+    CompareRegisterValueType_RegisterOfsReg = 3,
+    CompareRegisterValueType_StaticValue = 4,
 };
 
 union VmInt {
@@ -161,6 +173,18 @@ struct StoreRegisterToAddressOpcode {
     u64 rel_address;
 };
 
+struct BeginRegisterConditionalOpcode {
+    u32 bit_width;
+    ConditionalComparisonType cond_type;
+    u32 val_reg_index;
+    CompareRegisterValueType comp_type;
+    MemoryAccessType mem_type;
+    u32 addr_reg_index;
+    u32 ofs_reg_index;
+    u64 rel_address;
+    VmInt value;
+};
+
 
 struct CheatVmOpcode {
     CheatVmOpcodeType opcode;
@@ -177,6 +201,7 @@ struct CheatVmOpcode {
         BeginKeypressConditionalOpcode begin_keypress_cond;
         PerformArithmeticRegisterOpcode perform_math_reg;
         StoreRegisterToAddressOpcode str_register;
+        BeginRegisterConditionalOpcode begin_reg_cond;
     };
 };
 
