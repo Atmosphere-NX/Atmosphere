@@ -131,7 +131,7 @@ Result MapUtils::MapCodeMemoryForProcessModern(Handle process_h, u64 base_addres
     AddressSpaceInfo address_space = {0};
     Result rc;
     
-    if (R_FAILED((rc = GetAddressSpaceInfo(&address_space, CUR_PROCESS_HANDLE)))) {
+    if (R_FAILED((rc = GetAddressSpaceInfo(&address_space, process_h)))) {
         return rc;
     }
 
@@ -193,22 +193,22 @@ Result MapUtils::MapCodeMemoryForProcessDeprecated(Handle process_h, bool is_64_
 
 Result MapUtils::GetAddressSpaceInfo(AddressSpaceInfo *out, Handle process_h) {
     Result rc;
-    if (R_FAILED((rc = svcGetInfo(&out->heap_base, 4, CUR_PROCESS_HANDLE, 0)))) {
+    if (R_FAILED((rc = svcGetInfo(&out->heap_base, 4, process_h, 0)))) {
         return rc;
     }
-    if (R_FAILED((rc = svcGetInfo(&out->heap_size, 5, CUR_PROCESS_HANDLE, 0)))) {
+    if (R_FAILED((rc = svcGetInfo(&out->heap_size, 5, process_h, 0)))) {
         return rc;
     }
-    if (R_FAILED((rc = svcGetInfo(&out->map_base, 2, CUR_PROCESS_HANDLE, 0)))) {
+    if (R_FAILED((rc = svcGetInfo(&out->map_base, 2, process_h, 0)))) {
         return rc;
     }
-    if (R_FAILED((rc = svcGetInfo(&out->map_size, 3, CUR_PROCESS_HANDLE, 0)))) {
+    if (R_FAILED((rc = svcGetInfo(&out->map_size, 3, process_h, 0)))) {
         return rc;
     }
-    if (R_FAILED((rc = svcGetInfo(&out->addspace_base, 12, CUR_PROCESS_HANDLE, 0)))) {
+    if (R_FAILED((rc = svcGetInfo(&out->addspace_base, 12, process_h, 0)))) {
         return rc;
     }
-    if (R_FAILED((rc = svcGetInfo(&out->addspace_size, 13, CUR_PROCESS_HANDLE, 0)))) {
+    if (R_FAILED((rc = svcGetInfo(&out->addspace_size, 13, process_h, 0)))) {
         return rc;
     }
     out->heap_end = out->heap_base + out->heap_size;
