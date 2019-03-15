@@ -70,6 +70,7 @@ dkms.conf
 *.id1
 *.id2
 *.idb
+*.i64
 *.nam
 *.til
 
