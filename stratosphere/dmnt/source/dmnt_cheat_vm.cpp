@@ -401,7 +401,7 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
                 /* c = condition type. */
                 /* S = source register. */
                 /* X = value operand type, 0 = main/heap with relative offset, 1 = main/heap with offset register, */
-                /*     1 = register with relative offset, 2 = register with offset register, 3 = static value. */
+                /*     2 = register with relative offset, 3 = register with offset register, 4 = static value. */
                 /* M = memory type. */
                 /* a = relative address. */
                 /* r = offset register. */
