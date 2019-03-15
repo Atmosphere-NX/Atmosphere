@@ -87,6 +87,7 @@ enum CompareRegisterValueType : u32 {
     CompareRegisterValueType_RegisterRelAddr = 2,
     CompareRegisterValueType_RegisterOfsReg = 3,
     CompareRegisterValueType_StaticValue = 4,
+    CompareRegisterValueType_OtherRegister = 5,
 };
 
 union VmInt {
@@ -180,6 +181,7 @@ struct BeginRegisterConditionalOpcode {
     CompareRegisterValueType comp_type;
     MemoryAccessType mem_type;
     u32 addr_reg_index;
+    u32 other_reg_index;
     u32 ofs_reg_index;
     u64 rel_address;
     VmInt value;
