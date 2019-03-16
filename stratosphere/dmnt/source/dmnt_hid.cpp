@@ -26,7 +26,7 @@ Result HidManagement::GetKeysDown(u64 *keys) {
     std::scoped_lock<HosMutex> lk(g_hid_keys_down_lock);
     
     hidScanInput();
-    *keys = hidKeysDown(CONTROLLER_P1_AUTO);
+    *keys = hidKeysHeld(CONTROLLER_P1_AUTO);
     
     return 0x0;
 }

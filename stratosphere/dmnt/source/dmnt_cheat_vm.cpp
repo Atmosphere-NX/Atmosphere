@@ -147,6 +147,7 @@ void DmntCheatVm::LogOpcode(const CheatVmOpcode *opcode) {
         case CheatVmOpcodeType_BeginRegisterConditionalBlock: 
             this->LogToDebugFile("Opcode: Begin Register Conditional\n");
             this->LogToDebugFile("Bit Width: %x\n", opcode->begin_reg_cond.bit_width);
+            this->LogToDebugFile("Cond Type: %x\n", opcode->begin_reg_cond.cond_type);
             this->LogToDebugFile("V Reg Idx: %x\n", opcode->begin_reg_cond.val_reg_index);
                 switch (opcode->begin_reg_cond.comp_type) {
                     case CompareRegisterValueType_StaticValue:
@@ -300,7 +301,7 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
             {
                 /* 400R0000 VVVVVVVV VVVVVVVV */
                 /* Read additional words. */
-                opcode.ldr_static.reg_index = ((first_dword >> 20) & 0xF);
+                opcode.ldr_static.reg_index = ((first_dword >> 16) & 0xF);
                 opcode.ldr_static.value = (((u64)GetNextDword()) << 32ul) | ((u64)GetNextDword());
             }
             break;
@@ -461,7 +462,7 @@ void DmntCheatVm::SkipConditionalBlock() {
         const size_t desired_depth = this->condition_depth - 1;
         
         CheatVmOpcode skip_opcode;
-        while (this->DecodeNextOpcode(&skip_opcode) && this->condition_depth > desired_depth) {
+        while (this->condition_depth > desired_depth && this->DecodeNextOpcode(&skip_opcode)) {
             /* Decode instructions until we see end of the current conditional block. */
             /* NOTE: This is broken in gateway's implementation. */
             /* Gateway currently checks for "0x2" instead of "0x20000000" */
