@@ -21,13 +21,16 @@
 #include "ldr_hid.hpp"
 
 Result HidManagement::GetKeysDown(u64 *keys) {
-    if (!ContentManagement::HasCreatedTitle(0x0100000000000013) || R_FAILED(hidInitialize())) {
+    if (!ContentManagement::HasCreatedTitle(0x0100000000000013)) {
+        return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
+    }
+    
+    if (!serviceIsActive(hidGetSessionService()) && R_FAILED(hidInitialize())) {
         return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
     }
     
     hidScanInput();
     *keys = hidKeysDown(CONTROLLER_P1_AUTO);
     
-    hidExit();
     return 0x0;
 }

@@ -220,8 +220,6 @@ void Utils::InitializeThreadFunc(void *args) {
         }
         
         g_has_hid_session = true;
-        
-        hidExit();
     }
 }
 
@@ -449,14 +447,13 @@ bool Utils::HasSdDisableMitMFlag(u64 tid) {
 }
 
 Result Utils::GetKeysDown(u64 *keys) {
-    if (!Utils::IsHidAvailable() || R_FAILED(hidInitialize())) {
+    if (!Utils::IsHidAvailable()) {
         return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
     }
     
     hidScanInput();
-    *keys = hidKeysDown(CONTROLLER_P1_AUTO);
+    *keys = hidKeysHeld(CONTROLLER_P1_AUTO);
     
-    hidExit();
     return 0x0;
 }
 
