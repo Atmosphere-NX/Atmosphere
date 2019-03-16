@@ -290,7 +290,7 @@ Code type 10 allows writing a register to memory.
 + R: Register to use as base address.
 + I: Increment register flag (0 = do not increment R, 1 = increment R by T).
 + O: Offset type, see below.
-+ x: Register used as offset when O is 1, Memory type when O is 3.
++ x: Register used as offset when O is 1, Memory type when O is 3, 4 or 5.
 + a: Value used as offset when O is 2, 4 or 5.
 
 #### Offset Types
@@ -298,7 +298,7 @@ Code type 10 allows writing a register to memory.
 + 0: No Offset
 + 1: Use Offset Register
 + 2: Use Fixed Offset
-+ 3: Memory Region + Offset Register
++ 3: Memory Region + Base Register
 + 4: Memory Region + Relative Address (ignore address register)
 + 5: Memory Region + Relative Address + Offset Register
 ---
