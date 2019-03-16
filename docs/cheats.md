@@ -283,24 +283,22 @@ Code type 10 allows writing a register to memory.
 
 #### Encoding
 
-`ATSRIOxa (aaaaaaaa)`
+`ATSRIOra (aaaaaaaa)`
 
 + T: width of memory write (1, 2, 4, or 8 bytes)
 + S: Register to write to memory.
 + R: Register to use as base address.
 + I: Increment register flag (0 = do not increment R, 1 = increment R by T).
 + O: Offset type, see below.
-+ x: Register used as offset when O is 1, Memory type when O is 3, 4 or 5.
-+ a: Value used as offset when O is 2, 4 or 5.
++ r: Register used as offset when O is 1.
++ a: Value used as offset when O is 2.
 
 #### Offset Types
 
 + 0: No Offset
 + 1: Use Offset Register
 + 2: Use Fixed Offset
-+ 3: Memory Region + Base Register
-+ 4: Memory Region + Relative Address (ignore address register)
-+ 5: Memory Region + Relative Address + Offset Register
+
 ---
 
 ### Code Type 11: Reserved
@@ -316,50 +314,3 @@ Code Types 12-15 signal to the VM to treat the upper two nybbles of the first dw
 This reserves an additional 64 opcodes for future use.
 
 ---
-
-### Code Type 0xC0: Begin Register Conditional Block
-
-Code type 0xC0 performs a comparison of the contents of a register and another value. This code support multiple operand types, see below.
-
-If the condition is not met, all instructions until the appropriate conditional block terminator are skipped.
-
-#### Encoding
-
-```
-C0TcSX##
-C0TcS0Ma aaaaaaaa
-C0TcS1Mr
-C0TcS2Ra aaaaaaaa
-C0TcS3Rr
-C0TcS400 VVVVVVVV (VVVVVVVV)
-C0TcS5X0
-```
-
-+ T: width of memory write (1, 2, 4, or 8 bytes)
-+ c: Condition to use, see below.
-+ S: Source Register
-+ X: Operand Type, see below.
-+ M: Memory Type (operand types 0 and 1)
-+ R: Address Register (operand types 2 and 3)
-+ a: Relative Address (operand types 0 and 2)
-+ r: Offset Register (operand types 1 and 3)
-+ X: Other Register (used for operand type 5)
-+ V: Value to compare to (operand type 4)
-
-#### Operand Type
-
-+ 0: Memory Base + Relative Offset
-+ 1: Memory Base + Offset Register
-+ 2: Register + Relative Offset
-+ 3: Register + Offset Register
-+ 4: Static Value
-+ 5: Other Register
-
-#### Conditions
-
-+ 1: >
-+ 2: >=
-+ 3: <
-+ 4: <=
-+ 5: ==
-+ 6: !=
