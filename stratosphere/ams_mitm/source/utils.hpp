@@ -76,7 +76,7 @@ class Utils {
         
         
         static bool IsHidAvailable();
-        static Result GetKeysDown(u64 *keys);
+        static Result GetKeysHeld(u64 *keys);
         
         static OverrideKey GetTitleOverrideKey(u64 tid);
         static bool HasOverrideButton(u64 tid);

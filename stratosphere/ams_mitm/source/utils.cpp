@@ -446,7 +446,7 @@ bool Utils::HasSdDisableMitMFlag(u64 tid) {
     return false;
 }
 
-Result Utils::GetKeysDown(u64 *keys) {
+Result Utils::GetKeysHeld(u64 *keys) {
     if (!Utils::IsHidAvailable()) {
         return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
     }
@@ -459,7 +459,7 @@ Result Utils::GetKeysDown(u64 *keys) {
 
 static bool HasOverrideKey(OverrideKey *cfg) {
     u64 kDown = 0;
-    bool keys_triggered = (R_SUCCEEDED(Utils::GetKeysDown(&kDown)) && ((kDown & cfg->key_combination) != 0));
+    bool keys_triggered = (R_SUCCEEDED(Utils::GetKeysHeld(&kDown)) && ((kDown & cfg->key_combination) != 0));
     return Utils::IsSdInitialized() && (cfg->override_by_default ^ keys_triggered);
 }
 

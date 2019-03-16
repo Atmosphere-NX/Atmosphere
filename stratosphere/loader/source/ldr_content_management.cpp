@@ -376,7 +376,7 @@ OverrideKey ContentManagement::GetTitleOverrideKey(u64 tid) {
 
 static bool ShouldOverrideContents(OverrideKey *cfg) {
     u64 kDown = 0;
-    bool keys_triggered = (R_SUCCEEDED(HidManagement::GetKeysDown(&kDown)) && ((kDown & cfg->key_combination) != 0));
+    bool keys_triggered = (R_SUCCEEDED(HidManagement::GetKeysHeld(&kDown)) && ((kDown & cfg->key_combination) != 0));
     return g_has_initialized_fs_dev && (cfg->override_by_default ^ keys_triggered);
 }
 

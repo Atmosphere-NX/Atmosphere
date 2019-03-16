@@ -19,5 +19,5 @@
 
 class HidManagement {
     public:
-        static Result GetKeysDown(u64 *keys);
+        static Result GetKeysHeld(u64 *keys);
 };

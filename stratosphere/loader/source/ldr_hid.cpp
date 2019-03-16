@@ -20,7 +20,7 @@
 #include "ldr_content_management.hpp"
 #include "ldr_hid.hpp"
 
-Result HidManagement::GetKeysDown(u64 *keys) {
+Result HidManagement::GetKeysHeld(u64 *keys) {
     if (!ContentManagement::HasCreatedTitle(0x0100000000000013)) {
         return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
     }
