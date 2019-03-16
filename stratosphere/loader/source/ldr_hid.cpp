@@ -30,7 +30,7 @@ Result HidManagement::GetKeysDown(u64 *keys) {
     }
     
     hidScanInput();
-    *keys = hidKeysDown(CONTROLLER_P1_AUTO);
+    *keys = hidKeysHeld(CONTROLLER_P1_AUTO);
     
     return 0x0;
 }
