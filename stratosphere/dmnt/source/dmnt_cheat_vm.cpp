@@ -142,6 +142,14 @@ void DmntCheatVm::LogOpcode(const CheatVmOpcode *opcode) {
                 case StoreRegisterOffsetType_Imm:
                     this->LogToDebugFile("Rel Addr:  %lx\n", opcode->str_register.rel_address);
                     break;
+                case StoreRegisterOffsetType_MemReg:
+                    this->LogToDebugFile("Mem Type:  %x\n", opcode->str_register.mem_type);
+                    break;
+                case StoreRegisterOffsetType_MemImm:
+                case StoreRegisterOffsetType_MemImmReg:
+                    this->LogToDebugFile("Mem Type:  %x\n", opcode->str_register.mem_type);
+                    this->LogToDebugFile("Rel Addr:  %lx\n", opcode->str_register.rel_address);
+                    break;
             }
             break;
         case CheatVmOpcodeType_BeginRegisterConditionalBlock: 
@@ -364,15 +372,16 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
             break;
         case CheatVmOpcodeType_StoreRegisterToAddress:
             {
-                /* ATSRIOra (aaaaaaaa) */
+                /* ATSRIOxa (aaaaaaaa) */
                 /* A = opcode 10 */
                 /* T = bit width */
                 /* S = src register index */
                 /* R = address register index */
                 /* I = 1 if increment address register, 0 if not increment address register */
-                /* O = offset type, 0 = None, 1 = Register, 2 = Immediate */
-                /* r = offset register (for offset type 1) */
-                /* a = relative address (for offset type 2) */
+                /* O = offset type, 0 = None, 1 = Register, 2 = Immediate, 3 = Memory Region,
+                        4 = Memory Region + Relative Address (ignore address register), 5 = Memory Region + Relative Address */
+                /* x = offset register (for offset type 1), memory type (for offset type 3) */
+                /* a = relative address (for offset type 2+3) */
                 opcode.str_register.bit_width = (first_dword >> 24) & 0xF;
                 opcode.str_register.str_reg_index  = ((first_dword >> 20) & 0xF);
                 opcode.str_register.addr_reg_index = ((first_dword >> 16) & 0xF);
@@ -385,6 +394,14 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
                         /* Nothing more to do */
                         break;
                     case StoreRegisterOffsetType_Imm:
+                        opcode.str_register.rel_address = (((u64)(first_dword & 0xF) << 32ul) | ((u64)GetNextDword()));
+                        break;
+                    case StoreRegisterOffsetType_MemReg:
+                        opcode.str_register.mem_type = (MemoryAccessType)((first_dword >> 4) & 0xF);
+                        break;
+                    case StoreRegisterOffsetType_MemImm:
+                    case StoreRegisterOffsetType_MemImmReg:
+                        opcode.str_register.mem_type = (MemoryAccessType)((first_dword >> 4) & 0xF);
                         opcode.str_register.rel_address = (((u64)(first_dword & 0xF) << 32ul) | ((u64)GetNextDword()));
                         break;
                     default:
@@ -824,6 +841,15 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                             break;
                         case StoreRegisterOffsetType_Imm:
                             dst_address += cur_opcode.str_register.rel_address;
+                            break;
+                        case StoreRegisterOffsetType_MemReg:
+                            dst_address = GetCheatProcessAddress(metadata, cur_opcode.str_register.mem_type, this->registers[cur_opcode.str_register.addr_reg_index]);
+                            break;
+                        case StoreRegisterOffsetType_MemImm:
+                            dst_address = GetCheatProcessAddress(metadata, cur_opcode.str_register.mem_type, cur_opcode.str_register.rel_address);
+                            break;
+                        case StoreRegisterOffsetType_MemImmReg:
+                            dst_address = GetCheatProcessAddress(metadata, cur_opcode.str_register.mem_type, this->registers[cur_opcode.str_register.addr_reg_index] + cur_opcode.str_register.rel_address);
                             break;
                     }
                     

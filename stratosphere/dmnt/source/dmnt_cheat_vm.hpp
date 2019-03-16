@@ -79,6 +79,9 @@ enum StoreRegisterOffsetType : u32 {
     StoreRegisterOffsetType_None = 0,
     StoreRegisterOffsetType_Reg = 1,
     StoreRegisterOffsetType_Imm = 2,
+    StoreRegisterOffsetType_MemReg = 3,
+    StoreRegisterOffsetType_MemImm = 4,
+    StoreRegisterOffsetType_MemImmReg = 5,
 };
 
 enum CompareRegisterValueType : u32 {
@@ -170,6 +173,7 @@ struct StoreRegisterToAddressOpcode {
     u32 addr_reg_index;
     bool increment_reg;
     StoreRegisterOffsetType ofs_type;
+    MemoryAccessType mem_type;
     u32 ofs_reg_index;
     u64 rel_address;
 };
