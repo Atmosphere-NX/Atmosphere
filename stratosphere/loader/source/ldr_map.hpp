@@ -151,13 +151,15 @@ struct MappedCodeMemory {
         return rc;
     }
     
-    void Unmap() {
+    Result Unmap() {
+        Result rc = 0;
         if (this->IsMapped()) {
-            if (R_FAILED(svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->code_memory_address, this->size))) {
+            if (R_FAILED((rc = svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->code_memory_address, this->size)))) {
                 /* TODO: panic(). */
             }
         }
         this->mapped_address = NULL;
+        return rc;
     }
     
     void Close() {
