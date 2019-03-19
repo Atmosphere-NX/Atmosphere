@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstring>
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -68,44 +68,44 @@ static std::map<u64, ContentManagement::ExternalContentSource> g_external_conten
 Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     char path[FS_MAX_PATH] = {0};
     Result rc;
-    
+
     /* We defer SD card mounting, so if relevant ensure it is mounted. */
-    if (!g_has_initialized_fs_dev) {   
+    if (!g_has_initialized_fs_dev) {
         TryMountSdCard();
     }
-    
+
     if (g_has_initialized_fs_dev) {
         RefreshConfigurationData();
     }
-    
+
     if (ShouldOverrideContentsWithSD(tid) && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
         return 0x0;
     }
-        
+
     if (R_FAILED(rc = ResolveContentPath(path, tid, sid))) {
         return rc;
     }
-    
+
     /* Fix up path. */
     for (unsigned int i = 0; i < FS_MAX_PATH && path[i] != '\x00'; i++) {
         if (path[i] == '\\') {
             path[i] = '/';
         }
     }
-    
+
     /* Always re-initialize fsp-ldr, in case it's closed */
     if (R_FAILED(rc = fsldrInitialize())) {
         return rc;
     }
-    
+
     if (R_FAILED(rc = fsldrOpenCodeFileSystem(tid, path, &g_CodeFileSystem))) {
         fsldrExit();
         return rc;
     }
-    
+
     fsdevMountDevice("code", g_CodeFileSystem);
     TryMountHblNspOnSd();
-    
+
     fsldrExit();
     return rc;
 }
@@ -121,14 +121,15 @@ Result ContentManagement::UnmountCode() {
 
 
 void ContentManagement::TryMountHblNspOnSd() {
-    char path[FS_MAX_PATH + 1] = {0};
+    char path[FS_MAX_PATH + 1];
     strncpy(path, g_hbl_sd_path, FS_MAX_PATH);
+    path[FS_MAX_PATH] = 0;
     for (unsigned int i = 0; i < FS_MAX_PATH && path[i] != '\x00'; i++) {
         if (path[i] == '\\') {
             path[i] = '/';
         }
     }
-    if (g_has_initialized_fs_dev && !g_mounted_hbl_nsp && R_SUCCEEDED(fsOpenFileSystemWithId(&g_HblFileSystem, 0, FsFileSystemType_ApplicationPackage, path))) {   
+    if (g_has_initialized_fs_dev && !g_mounted_hbl_nsp && R_SUCCEEDED(fsOpenFileSystemWithId(&g_HblFileSystem, 0, FsFileSystemType_ApplicationPackage, path))) {
         fsdevMountDevice("hbl", g_HblFileSystem);
         g_mounted_hbl_nsp = true;
     }
@@ -136,14 +137,14 @@ void ContentManagement::TryMountHblNspOnSd() {
 
 Result ContentManagement::MountCodeNspOnSd(u64 tid) {
     char path[FS_MAX_PATH+1] = {0};
-    snprintf(path, FS_MAX_PATH, "@Sdcard:/atmosphere/titles/%016lx/exefs.nsp", tid); 
+    snprintf(path, FS_MAX_PATH, "@Sdcard:/atmosphere/titles/%016lx/exefs.nsp", tid);
     Result rc = fsOpenFileSystemWithId(&g_CodeFileSystem, 0, FsFileSystemType_ApplicationPackage, path);
-    
+
     if (R_SUCCEEDED(rc)) {
         fsdevMountDevice("code", g_CodeFileSystem);
         TryMountHblNspOnSd();
     }
-    
+
     return rc;
 }
 
@@ -156,34 +157,34 @@ Result ContentManagement::ResolveContentPath(char *out_path, u64 tid, FsStorageI
     LrRegisteredLocationResolver reg;
     LrLocationResolver lr;
     char path[FS_MAX_PATH] = {0};
-    
+
     /* Try to get the path from the registered resolver. */
     if (R_FAILED(rc = lrOpenRegisteredLocationResolver(&reg))) {
         return rc;
     }
-    
+
     if (R_SUCCEEDED(rc = lrRegLrResolveProgramPath(&reg, tid, path))) {
         strncpy(out_path, path, FS_MAX_PATH);
     } else if (rc != 0x408) {
         return rc;
     }
-    
+
     serviceClose(&reg.s);
     if (R_SUCCEEDED(rc)) {
         return rc;
     }
-    
+
     /* If getting the path from the registered resolver fails, fall back to the normal resolver. */
     if (R_FAILED(rc = lrOpenLocationResolver(sid, &lr))) {
         return rc;
     }
-    
+
     if (R_SUCCEEDED(rc = lrLrResolveProgramPath(&lr, tid, path))) {
         strncpy(out_path, path, FS_MAX_PATH);
     }
-    
+
     serviceClose(&lr.s);
-    
+
     return rc;
 }
 
@@ -194,15 +195,15 @@ Result ContentManagement::ResolveContentPathForTidSid(char *out_path, Registrati
 Result ContentManagement::RedirectContentPath(const char *path, u64 tid, FsStorageId sid) {
     Result rc;
     LrLocationResolver lr;
-    
+
     if (R_FAILED(rc = lrOpenLocationResolver(sid, &lr))) {
         return rc;
     }
-    
+
     rc = lrLrRedirectProgramPath(&lr, tid, path);
-    
+
     serviceClose(&lr.s);
-    
+
     return rc;
 }
 
@@ -222,7 +223,7 @@ void ContentManagement::SetCreatedTitle(u64 tid) {
 
 static OverrideKey ParseOverrideKey(const char *value) {
     OverrideKey cfg;
-    
+
     /* Parse on by default. */
     if (value[0] == '!') {
         cfg.override_by_default = true;
@@ -230,7 +231,7 @@ static OverrideKey ParseOverrideKey(const char *value) {
     } else {
         cfg.override_by_default = false;
     }
-    
+
     /* Parse key combination. */
     if (strcasecmp(value, "A") == 0) {
         cfg.key_combination = KEY_A;
@@ -271,7 +272,7 @@ static OverrideKey ParseOverrideKey(const char *value) {
     } else {
         cfg.key_combination = 0;
     }
-    
+
     return cfg;
 }
 
@@ -310,7 +311,7 @@ static int LoaderIniHandler(void *user, const char *section, const char *name, c
 static int LoaderTitleSpecificIniHandler(void *user, const char *section, const char *name, const char *value) {
     /* We'll output an override key when relevant. */
     OverrideKey *user_cfg = reinterpret_cast<OverrideKey *>(user);
-    
+
     if (strcasecmp(section, "override_config") == 0) {
         if (strcasecmp(name, "override_key") == 0) {
             *user_cfg = ParseOverrideKey(value);
@@ -326,11 +327,11 @@ void ContentManagement::RefreshConfigurationData() {
     if (config == NULL) {
         return;
     }
-    
+
     std::fill(g_config_ini_data, g_config_ini_data + 0x800, 0);
     fread(g_config_ini_data, 1, 0x7FF, config);
     fclose(config);
-    
+
     ini_parse_string(g_config_ini_data, LoaderIniHandler, NULL);
 }
 
@@ -343,10 +344,10 @@ void ContentManagement::TryMountSdCard() {
             if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
                 return;
             } else {
-                svcCloseHandle(tmp_hnd);   
+                svcCloseHandle(tmp_hnd);
             }
         }
-        
+
         if (R_SUCCEEDED(fsdevMountSdmc())) {
             g_has_initialized_fs_dev = true;
         }
@@ -360,9 +361,9 @@ static bool IsHBLTitleId(u64 tid) {
 OverrideKey ContentManagement::GetTitleOverrideKey(u64 tid) {
     OverrideKey cfg = g_default_override_key;
     char path[FS_MAX_PATH+1] = {0};
-    snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/config.ini", tid); 
-    
-    
+    snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/config.ini", tid);
+
+
     FILE *config = fopen(path, "r");
     if (config != NULL) {
         ON_SCOPE_EXIT { fclose(config); };
@@ -370,7 +371,7 @@ OverrideKey ContentManagement::GetTitleOverrideKey(u64 tid) {
         /* Parse current title ini. */
         ini_parse_file(config, LoaderTitleSpecificIniHandler, &cfg);
     }
-    
+
     return cfg;
 }
 
