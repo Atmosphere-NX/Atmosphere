@@ -60,3 +60,14 @@ target_firmware = X
 ```
 
 Note that 6.X.X indicates 6.0.0 through 6.1.0.
+
+## Configuring Debugging Modes
+By default, Atmosphere signals to the Horizon kernel that debugging is enabled while leaving usermode debugging disabled, since this can cause undesirable side-effects. If you wish to change these behaviours, go to the `exosphere` section and change the value of `X` according to the following list.
+```
+debugmode = X
+debugmode_user = X
+```
+```
+1 = enable
+0 = disable
+```
