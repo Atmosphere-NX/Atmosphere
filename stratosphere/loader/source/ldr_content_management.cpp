@@ -211,6 +211,31 @@ Result ContentManagement::RedirectContentPathForTidSid(const char *path, Registr
     return RedirectContentPath(path, tid_sid->title_id, tid_sid->storage_id);
 }
 
+void ContentManagement::RedirectHtmlDocumentPathForHbl(u64 tid, FsStorageId sid) {
+    LrLocationResolver lr;
+    char path[FS_MAX_PATH] = {0};
+
+    /* Open resolver. */
+    if (R_FAILED(lrOpenLocationResolver(sid, &lr))) {
+        return;
+    }
+
+    /* Ensure close on exit. */
+    ON_SCOPE_EXIT { serviceClose(&lr.s); };
+
+    /* Only redirect the HTML document path if there is not one already. */
+    if (R_SUCCEEDED(lrLrResolveApplicationHtmlDocumentPath(&lr, tid, path))) {
+        return;
+    }
+
+    /* We just need to set this to any valid NCA path. Let's use the executable path. */
+    if (R_FAILED(lrLrResolveProgramPath(&lr, tid, path))) {
+        return;
+    }
+
+    lrLrRedirectApplicationHtmlDocumentPath(&lr, tid, path);
+}
+
 bool ContentManagement::HasCreatedTitle(u64 tid) {
     return std::find(g_created_titles.begin(), g_created_titles.end(), tid) != g_created_titles.end();
 }

@@ -36,12 +36,14 @@ class ContentManagement {
         static Result RedirectContentPath(const char *path, u64 tid, FsStorageId sid);
         static Result ResolveContentPathForTidSid(char *out_path, Registration::TidSid *tid_sid);
         static Result RedirectContentPathForTidSid(const char *path, Registration::TidSid *tid_sid);
-        
+
+        static void   RedirectHtmlDocumentPathForHbl(u64 tid, FsStorageId sid);
+
         static bool HasCreatedTitle(u64 tid);
         static void SetCreatedTitle(u64 tid);
         static void RefreshConfigurationData();
         static void TryMountSdCard();
-        
+
         static OverrideKey GetTitleOverrideKey(u64 tid);
         static bool ShouldOverrideContentsWithSD(u64 tid);
         static bool ShouldOverrideContentsWithHBL(u64 tid);

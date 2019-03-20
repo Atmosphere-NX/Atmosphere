@@ -221,10 +221,16 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     /* Send the pid/tid pair to anyone interested in man-in-the-middle-attacking it. */
     Registration::AssociatePidTidForMitM(index);
     
-    rc = 0;  
+    rc = 0;
+
+    /* If HBL, override HTML document path. */
+    if (ContentManagement::ShouldOverrideContentsWithHBL(target_process->tid_sid.title_id)) {
+        ContentManagement::RedirectHtmlDocumentPathForHbl(target_process->tid_sid.title_id, target_process->tid_sid.storage_id);
+    }
 
     /* ECS is a one-shot operation, but we don't clear on failure. */
     ContentManagement::ClearExternalContentSource(target_process->tid_sid.title_id);
+
     if (mounted_code) {
         if (R_SUCCEEDED(rc) && target_process->tid_sid.storage_id != FsStorageId_None) {
             rc = ContentManagement::UnmountCode();
