@@ -79,7 +79,7 @@ class IFile {
         }
         
         Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) {
-            if (operation_type != 3) {
+            if (operation_type == 3) {
                 return OperateRangeImpl(operation_type, offset, size, out_range_info);
             }
             return ResultFsUnsupportedOperation;
