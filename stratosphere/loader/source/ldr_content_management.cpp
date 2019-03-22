@@ -306,9 +306,10 @@ static int LoaderIniHandler(void *user, const char *section, const char *name, c
     if (strcasecmp(section, "hbl_config") == 0) {
         if (strcasecmp(name, "title_id") == 0) {
             if (strcasecmp(value, "app") == 0) {
+                /* DEPRECATED */
                 g_hbl_override_config.override_any_app = true;
-            }
-            else {
+                g_hbl_override_config.title_id = 0;
+            } else {
                 u64 override_tid = strtoul(value, NULL, 16);
                 if (override_tid != 0) {
                     g_hbl_override_config.title_id = override_tid;
@@ -322,6 +323,14 @@ static int LoaderIniHandler(void *user, const char *section, const char *name, c
             g_hbl_sd_path[FS_MAX_PATH] = 0;
         } else if (strcasecmp(name, "override_key") == 0) {
             g_hbl_override_config.override_key = ParseOverrideKey(value);
+        } else if (strcasecmp(name, "override_any_app") == 0) {
+            if (strcasecmp(value, "true") == 0 || strcasecmp(value, "1") == 0) {
+                g_hbl_override_config.override_any_app = true;
+            } else if (strcasecmp(value, "false") == 0 || strcasecmp(value, "0") == 0) {
+                g_hbl_override_config.override_any_app = false;
+            } else {
+                /* I guess we default to not changing the value? */
+            }
         }
     } else if (strcasecmp(section, "default_config") == 0) {
         if (strcasecmp(name, "override_key") == 0) {
@@ -380,7 +389,7 @@ void ContentManagement::TryMountSdCard() {
 }
 
 static bool IsHBLTitleId(u64 tid) {
-    return ((g_hbl_override_config.override_any_app && IsApplicationTid(tid)) || (!g_hbl_override_config.override_any_app && tid == g_hbl_override_config.title_id));
+    return ((g_hbl_override_config.override_any_app && IsApplicationTid(tid)) || (tid == g_hbl_override_config.title_id));
 }
 
 OverrideKey ContentManagement::GetTitleOverrideKey(u64 tid) {
