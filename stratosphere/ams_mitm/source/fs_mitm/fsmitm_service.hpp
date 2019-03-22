@@ -18,16 +18,25 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "fs_istorage.hpp"
+#include "fs_ifilesystem.hpp"
 #include "../utils.hpp"
 
 enum FspSrvCmd : u32 {
+    FspSrvCmd_OpenFileSystemDeprecated = 0,
+    
     FspSrvCmd_SetCurrentProcess = 1,
+    
+    FspSrvCmd_OpenFileSystemWithPatch = 7,
+    FspSrvCmd_OpenFileSystemWithId = 8,
+    
     FspSrvCmd_OpenBisStorage = 12,
     FspSrvCmd_OpenDataStorageByCurrentProcess = 200,
     FspSrvCmd_OpenDataStorageByDataId = 202,
 };
 
 class FsMitmService : public IMitmServiceObject {
+    private:
+        static constexpr const char *AtmosphereHblWebContentDir = "/atmosphere/hbl_html";
     private:
         bool has_initialized = false;
         bool should_override_contents;
@@ -58,14 +67,20 @@ class FsMitmService : public IMitmServiceObject {
         }
         
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
-            
+    private:
+        Result OpenHblWebContentFileSystem(Out<std::shared_ptr<IFileSystemInterface>> &out);
     protected:
         /* Overridden commands. */
+        Result OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInterface>> out, u64 title_id, u32 filesystem_type);
+        Result OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterface>> out, InPointer<char> path, u64 title_id, u32 filesystem_type);
         Result OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out, u32 bis_partition_id);
         Result OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStorageInterface>> out);
         Result OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterface>> out, u64 data_id, u8 storage_id);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
+            /* TODO MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemDeprecated, &FsMitmService::OpenFileSystemDeprecated>(), */
+            MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemWithPatch, &FsMitmService::OpenFileSystemWithPatch, FirmwareVersion_200>(),
+            MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemDeprecated, &FsMitmService::OpenFileSystemWithId, FirmwareVersion_200>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenBisStorage, &FsMitmService::OpenBisStorage>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenDataStorageByCurrentProcess, &FsMitmService::OpenDataStorageByCurrentProcess>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenDataStorageByDataId, &FsMitmService::OpenDataStorageByDataId>(),
