@@ -33,6 +33,14 @@ class FsPathUtils {
             return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
         }
         
+        static bool IsCurrentDirectory(const char *path) {
+            return path[0] == '.' && (path[1] == 0 || path[1] == '/');
+        }
+        
+        static bool IsParentDirectory(const char *path) {
+            return path[0] == '.' && path[1] == '.' && (path[2] == 0 || path[2] == '/');
+        }
+        
         static bool IsWindowsAbsolutePath(const char *path) {
             /* Nintendo uses this in path comparisons... */
             return IsWindowsDriveLetter(path[0]) && path[1] == ':';
