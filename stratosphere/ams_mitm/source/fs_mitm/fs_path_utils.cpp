@@ -185,7 +185,9 @@ Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, s
             if (!skip_next_sep) {
                 if (len + 1 == max_out_size) {
                     out[len] = 0;
-                    *out_len = len;
+                    if (out_len != nullptr) {
+                        *out_len = len;
+                    }
                     return ResultFsTooLongPath;
                 }
                 
@@ -227,7 +229,9 @@ Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, s
                     out[len++] = src[i+j];
                 }
                 out[len] = 0;
-                *out_len = len;
+                if (out_len != nullptr) {
+                    *out_len = len;
+                }
                 return ResultFsTooLongPath;
             }
         }
@@ -249,7 +253,9 @@ Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, s
     
     /* NULL terminate. */
     out[len] = 0;
-    *out_len = len;
+    if (out_len != nullptr) {
+        *out_len = len;
+    }
     
     /* Assert normalized. */
     bool normalized = false;
