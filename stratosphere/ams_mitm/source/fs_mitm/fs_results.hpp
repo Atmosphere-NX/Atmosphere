@@ -22,10 +22,15 @@ static constexpr u32 Module_Fs = 2;
 static constexpr Result ResultFsNotImplemented       = MAKERESULT(Module_Fs, 3001);
 static constexpr Result ResultFsOutOfRange           = MAKERESULT(Module_Fs, 3005);
 
-static constexpr Result ResultFsInvalidArgument      = MAKERESULT(Module_Fs, 6001);
-static constexpr Result ResultFsInvalidPath          = MAKERESULT(Module_Fs, 6002);
-static constexpr Result ResultFsTooLongPath          = MAKERESULT(Module_Fs, 6003);
-static constexpr Result ResultFsInvalidCharacter     = MAKERESULT(Module_Fs, 6004);
+static constexpr Result ResultFsAllocationFailureInSubDirectoryFileSystem = MAKERESULT(Module_Fs, 3355);
+
+static constexpr Result ResultFsInvalidArgument       = MAKERESULT(Module_Fs, 6001);
+static constexpr Result ResultFsInvalidPath           = MAKERESULT(Module_Fs, 6002);
+static constexpr Result ResultFsTooLongPath           = MAKERESULT(Module_Fs, 6003);
+static constexpr Result ResultFsInvalidCharacter      = MAKERESULT(Module_Fs, 6004);
+static constexpr Result ResultFsInvalidPathFormat     = MAKERESULT(Module_Fs, 6005);
+static constexpr Result ResultFsDirectoryUnobtainable = MAKERESULT(Module_Fs, 6006);
+static constexpr Result ResultFsNotNormalized         = MAKERESULT(Module_Fs, 6007);
 
 static constexpr Result ResultFsInvalidOffset        = MAKERESULT(Module_Fs, 6061);
 static constexpr Result ResultFsInvalidSize          = MAKERESULT(Module_Fs, 6062);

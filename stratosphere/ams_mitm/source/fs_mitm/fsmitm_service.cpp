@@ -28,7 +28,7 @@
 #include "fsmitm_romstorage.hpp"
 #include "fsmitm_layeredrom.hpp"
 
-#include "fs_ifilesystem.hpp"
+#include "fs_subdirectory_filesystem.hpp"
 
 #include "../debug.hpp"
 

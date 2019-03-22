@@ -71,3 +71,98 @@ Result FsPathUtils::ConvertPathForServiceObject(FsPath *out, const char *path) {
     const size_t max_len = (FS_MAX_PATH-1) - prefix_len;
     return FsPathUtils::VerifyPath(out->str + prefix_len, max_len, max_len);
 }
+
+Result FsPathUtils::IsNormalized(bool *out, const char *path) {
+    /* Nintendo uses a state machine here. */
+    enum class PathState {
+        Start,
+        Normal,
+        FirstSeparator,
+        Separator,
+        CurrentDir,
+        ParentDir,
+        WindowsDriveLetter,
+    };
+    
+    PathState state = PathState::Start;
+    
+    for (const char *cur = path; *cur != 0; cur++) {
+        const char c = *cur;
+        switch (state) {
+            case PathState::Start:
+                if (IsWindowsDriveLetter(c)) {
+                    state = PathState::WindowsDriveLetter;
+                } else if (c == '/') {
+                    state = PathState::FirstSeparator;
+                } else {
+                    return ResultFsInvalidPathFormat;
+                }
+                break;
+            case PathState::Normal:
+                if (c == '/') {
+                    state = PathState::Separator;
+                }
+                break;
+            case PathState::FirstSeparator:
+            case PathState::Separator:
+                /* It is unclear why first separator and separator are separate states... */
+                if (c == '/') {
+                    *out = false;
+                    return 0;
+                } else if (c == '.') {
+                    state = PathState::CurrentDir;
+                } else {
+                    state = PathState::Normal;
+                }
+                break;
+            case PathState::CurrentDir:
+                if (c == '/') {
+                    *out = false;
+                    return 0;
+                } else if (c == '.') {
+                    state = PathState::ParentDir;
+                } else {
+                    state = PathState::Normal;
+                }
+                break;
+            case PathState::ParentDir:
+                if (c == '/') {
+                    *out = false;
+                    return 0;
+                } else {
+                    state = PathState::Normal;
+                }
+                break;
+            case PathState::WindowsDriveLetter:
+                if (c == ':') {
+                    *out = true;
+                    return 0;
+                } else {
+                    return ResultFsInvalidPathFormat;
+                }
+                break;
+        }
+    }
+    
+    switch (state) {
+        case PathState::Start:
+        case PathState::WindowsDriveLetter:
+            return ResultFsInvalidPathFormat;
+        case PathState::FirstSeparator:
+        case PathState::Separator:
+            *out = false;
+            break;
+        case PathState::Normal:
+        case PathState::CurrentDir:
+        case PathState::ParentDir:
+            *out = true;
+            break;
+    }
+    
+    return 0;
+}
+
+Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, size_t *out_size) {
+    /* TODO */
+    return ResultFsNotImplemented;
+}

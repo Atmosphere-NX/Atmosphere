@@ -25,10 +25,16 @@ class FsPathUtils {
     public:
         static Result VerifyPath(const char *path, size_t max_path_len, size_t max_name_len);
         static Result ConvertPathForServiceObject(FsPath *out, const char *path);
+        
+        static Result IsNormalized(bool *out, const char *path);
+        static Result Normalize(char *out, size_t max_out_size, const char *src, size_t *out_size);
 
+        static bool IsWindowsDriveLetter(const char c) {
+            return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
+        }
+        
         static bool IsWindowsAbsolutePath(const char *path) {
             /* Nintendo uses this in path comparisons... */
-            return (('a' <= path[0] && path[0] <= 'z') || (('A' <= path[0] && path[0] <= 'Z'))) &&
-                    path[0] != 0 && path[1] == ':';
+            return IsWindowsDriveLetter(path[0]) && path[1] == ':';
         }
 };
