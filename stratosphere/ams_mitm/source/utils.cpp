@@ -544,8 +544,7 @@ static int FsMitmIniHandler(void *user, const char *section, const char *name, c
                 /* DEPRECATED */
                 g_hbl_override_config.override_any_app = true;
                 g_hbl_override_config.title_id = 0;
-            }
-            else {
+            } else {
                 u64 override_tid = strtoul(value, NULL, 16);
                 if (override_tid != 0) {
                     g_hbl_override_config.title_id = override_tid;
