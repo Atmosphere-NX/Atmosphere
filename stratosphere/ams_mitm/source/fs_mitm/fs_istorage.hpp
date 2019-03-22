@@ -19,6 +19,8 @@
 #include <stratosphere.hpp>
 #include "fs_shim.h"
 
+#include "fs_results.hpp"
+
 #include "../debug.hpp"
 
 enum FsIStorageCmd : u32 {
@@ -33,13 +35,17 @@ enum FsIStorageCmd : u32 {
 class IStorage {
     public:
         virtual ~IStorage();
-                
+
         virtual Result Read(void *buffer, size_t size, u64 offset) = 0;
         virtual Result Write(void *buffer, size_t size, u64 offset) = 0;
         virtual Result Flush() = 0;
         virtual Result SetSize(u64 size) = 0;
         virtual Result GetSize(u64 *out_size) = 0;
         virtual Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) = 0;
+
+        static inline bool IsRangeValid(uint64_t offset, uint64_t size, uint64_t total_size) {
+            return size <= total_size && offset <= total_size - size;
+        }
 };
 
 class IStorageInterface : public IServiceObject {
@@ -49,7 +55,7 @@ class IStorageInterface : public IServiceObject {
         IStorageInterface(IStorage *s) : base_storage(s) {
             /* ... */
         };
-                
+
         ~IStorageInterface() {
             delete base_storage;
         };
@@ -95,14 +101,14 @@ class IROStorage : public IStorage {
             (void)(buffer);
             (void)(offset);
             (void)(size);
-            return 0x313802;
+            return ResultFsUnsupportedOperation;
         };
         virtual Result Flush() final {
             return 0x0;
         };
         virtual Result SetSize(u64 size) final {
             (void)(size);
-            return 0x313802;
+            return ResultFsUnsupportedOperation;
         };
         virtual Result GetSize(u64 *out_size) = 0;
         virtual Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) = 0;

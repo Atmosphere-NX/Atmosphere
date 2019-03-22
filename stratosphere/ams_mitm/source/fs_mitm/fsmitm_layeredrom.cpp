@@ -17,6 +17,8 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "fs_results.hpp"
+
 #include "fsmitm_layeredrom.hpp"
 #include "../utils.hpp"
 #include "../debug.hpp"
@@ -54,7 +56,7 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
     /* Validate size. */
     u64 virt_size = (*this->p_source_infos)[this->p_source_infos->size() - 1].virtual_offset + (*this->p_source_infos)[this->p_source_infos->size() - 1].size;
     if (offset >= virt_size) {
-        return 0x2F5A02;
+        return ResultFsInvalidOffset;
     }
     if (virt_size - offset < size) {
         size = virt_size - offset;

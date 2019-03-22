@@ -28,6 +28,8 @@
 #include "fsmitm_romstorage.hpp"
 #include "fsmitm_layeredrom.hpp"
 
+#include "fs_ifilesystem.hpp"
+
 #include "../debug.hpp"
 
 static HosMutex g_StorageCacheLock;
