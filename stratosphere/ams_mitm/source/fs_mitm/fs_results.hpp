@@ -24,6 +24,8 @@ static constexpr Result ResultFsOutOfRange           = MAKERESULT(Module_Fs, 300
 
 static constexpr Result ResultFsInvalidArgument      = MAKERESULT(Module_Fs, 6001);
 static constexpr Result ResultFsInvalidPath          = MAKERESULT(Module_Fs, 6002);
+static constexpr Result ResultFsTooLongPath          = MAKERESULT(Module_Fs, 6003);
+static constexpr Result ResultFsInvalidCharacter     = MAKERESULT(Module_Fs, 6004);
 
 static constexpr Result ResultFsInvalidOffset        = MAKERESULT(Module_Fs, 6061);
 static constexpr Result ResultFsInvalidSize          = MAKERESULT(Module_Fs, 6062);
