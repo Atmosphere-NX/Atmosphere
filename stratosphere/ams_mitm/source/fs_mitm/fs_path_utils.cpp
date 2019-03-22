@@ -24,7 +24,7 @@ Result FsPathUtils::VerifyPath(const char *path, size_t max_path_len, size_t max
     size_t name_len = 0;
 
     for (size_t path_len = 0; path_len <= max_path_len && name_len <= max_name_len; path_len++) {
-        const char c = *cur;
+        const char c = *(cur++);
         /* If terminated, we're done. */
         if (c == 0) {
             return 0;
