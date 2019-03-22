@@ -19,6 +19,7 @@
 #include <stratosphere.hpp>
 
 #include "fs_results.hpp"
+#include "fs_shim.h"
 
 enum FsIFileCmd : u32 {
     FsIFileCmd_Read = 0,
@@ -28,11 +29,11 @@ enum FsIFileCmd : u32 {
     FsIFileCmd_GetSize = 4,
     FsIFileCmd_OperateRange = 5,
 };
-    
+
 class IFile {
     public:
         virtual ~IFile() {}
-        
+
         Result Read(uint64_t *out, uint64_t offset, void *buffer, uint64_t size, uint32_t flags) {
             (void)(flags);
             if (out == nullptr) {
@@ -47,18 +48,18 @@ class IFile {
             }
             return ReadImpl(out, offset, buffer, size);
         }
-        
+
         Result GetSize(uint64_t *out) {
             if (out == nullptr) {
                 return ResultFsNullptrArgument;
             }
             return GetSizeImpl(out);
         }
-        
+
         Result Flush() {
             return FlushImpl();
         }
-        
+
         Result Write(uint64_t offset, void *buffer, uint64_t size, uint32_t flags) {
             if (size == 0) {
                 return 0;
@@ -69,22 +70,22 @@ class IFile {
             const bool flush = (flags & 1) != 0;
             return WriteImpl(offset, buffer, size, flush);
         }
-        
+
         Result Write(uint64_t offset, void *buffer, uint64_t size) {
             return Write(offset, buffer, size, false);
         }
-        
+
         Result SetSize(uint64_t size) {
             return SetSizeImpl(size);
         }
-        
+
         Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) {
             if (operation_type == 3) {
                 return OperateRangeImpl(operation_type, offset, size, out_range_info);
             }
             return ResultFsUnsupportedOperation;
         }
-        
+
     protected:
         /* ...? */
     private:
@@ -135,8 +136,60 @@ class IFileInterface : public IServiceObject {
             MakeServiceCommandMeta<FsIFileCmd_Flush, &IFileInterface::Flush>(),
             MakeServiceCommandMeta<FsIFileCmd_SetSize, &IFileInterface::SetSize>(),
             MakeServiceCommandMeta<FsIFileCmd_GetSize, &IFileInterface::GetSize>(),
-            
+
             /* 4.0.0- */
             MakeServiceCommandMeta<FsIFileCmd_OperateRange, &IFileInterface::OperateRange, FirmwareVersion_400>(),
         };
+};
+
+class ProxyFile : public IFile {
+    private:
+        std::unique_ptr<FsFile> base_file;
+    public:
+        ProxyFile(FsFile *f) : base_file(f) {
+            /* ... */
+        }
+
+        ProxyFile(std::unique_ptr<FsFile> f) : base_file(std::move(f)) {
+            /* ... */
+        }
+
+        ProxyFile(FsFile f) {
+            this->base_file = std::make_unique<FsFile>(f);
+        }
+
+        virtual ~ProxyFile() {
+            fsFileClose(this->base_file.get());
+        }
+    public:
+        virtual Result ReadImpl(u64 *out, u64 offset, void *buffer, u64 size) {
+            size_t out_sz;
+
+            Result rc = fsFileRead(this->base_file.get(), offset, buffer, size, &out_sz);
+            if (R_SUCCEEDED(rc)) {
+                *out = out_sz;
+            }
+
+            return rc;
+        }
+        virtual Result GetSizeImpl(u64 *out) {
+            return fsFileGetSize(this->base_file.get(), out);
+        }
+        virtual Result FlushImpl() {
+            return fsFileFlush(this->base_file.get());
+        }
+        virtual Result WriteImpl(u64 offset, void *buffer, u64 size, bool flush) {
+            Result rc = fsFileWrite(this->base_file.get(), offset, buffer, size);
+            if (R_SUCCEEDED(rc)) {
+                /* libnx doesn't allow passing the flush flag. */
+                rc = fsFileFlush(this->base_file.get());
+            }
+            return rc;
+        }
+        virtual Result SetSizeImpl(u64 size) {
+            return fsFileSetSize(this->base_file.get(), size);
+        }
+        virtual Result OperateRangeImpl(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) {
+            return fsFileOperateRange(this->base_file.get(), operation_type, offset, size, out_range_info);
+        }
 };

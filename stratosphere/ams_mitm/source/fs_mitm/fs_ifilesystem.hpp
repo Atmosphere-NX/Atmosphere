@@ -429,3 +429,109 @@ class IFileSystemInterface : public IServiceObject {
             MakeServiceCommandMeta<FsIFileSystemCmd_QueryEntry, &IFileSystemInterface::QueryEntry, FirmwareVersion_400>(),
         };
 };
+
+class ProxyFileSystem : public IFileSystem {
+    private:
+        std::unique_ptr<FsFileSystem> base_fs;
+    public:
+        ProxyFileSystem(FsFileSystem *fs) : base_fs(fs) {
+            /* ... */
+        }
+
+        ProxyFileSystem(std::unique_ptr<FsFileSystem> fs) : base_fs(std::move(fs)) {
+            /* ... */
+        }
+
+        ProxyFileSystem(FsFileSystem fs) {
+            this->base_fs = std::make_unique<FsFileSystem>(fs);
+        }
+
+        virtual ~ProxyFileSystem() {
+            fsFsClose(this->base_fs.get());
+        }
+
+    public:
+        virtual Result CreateFileImpl(FsPath &path, uint64_t size, int flags) {
+            return fsFsCreateFile(this->base_fs.get(), path.str, size, flags);
+        }
+
+        virtual Result DeleteFileImpl(FsPath &path) {
+            return fsFsDeleteFile(this->base_fs.get(), path.str);
+        }
+
+        virtual Result CreateDirectoryImpl(FsPath &path) {
+            return fsFsCreateDirectory(this->base_fs.get(), path.str);
+        }
+
+        virtual Result DeleteDirectoryImpl(FsPath &path) {
+            return fsFsDeleteDirectory(this->base_fs.get(), path.str);
+        }
+
+        virtual Result DeleteDirectoryRecursivelyImpl(FsPath &path) {
+            return fsFsDeleteDirectoryRecursively(this->base_fs.get(), path.str);
+        }
+
+        virtual Result RenameFileImpl(FsPath &old_path, FsPath &new_path) {
+            return fsFsRenameFile(this->base_fs.get(), old_path.str, new_path.str);
+        }
+
+        virtual Result RenameDirectoryImpl(FsPath &old_path, FsPath &new_path) {
+            return fsFsRenameDirectory(this->base_fs.get(), old_path.str, new_path.str);
+        }
+
+        virtual Result GetEntryTypeImpl(DirectoryEntryType *out, FsPath &path) {
+            FsEntryType type;
+
+            Result rc = fsFsGetEntryType(this->base_fs.get(), path.str, &type);
+            if (R_SUCCEEDED(rc)) {
+                *out = static_cast<DirectoryEntryType>(static_cast<u32>(type));
+            }
+
+            return rc;
+        }
+        virtual Result OpenFileImpl(std::unique_ptr<IFile> &out_file, FsPath &path, OpenMode mode) {
+            FsFile f;
+
+            Result rc = fsFsOpenFile(this->base_fs.get(), path.str, static_cast<int>(mode), &f);
+            if (R_SUCCEEDED(rc)) {
+                out_file = std::make_unique<ProxyFile>(f);
+            }
+
+            return rc;
+        }
+
+        virtual Result OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, FsPath &path, DirectoryOpenMode mode) {
+            FsDir d;
+
+            Result rc = fsFsOpenDirectory(this->base_fs.get(), path.str, static_cast<int>(mode), &d);
+            if (R_SUCCEEDED(rc)) {
+                out_dir = std::make_unique<ProxyDirectory>(d);
+            }
+
+            return rc;
+        }
+
+        virtual Result CommitImpl() {
+            return fsFsCommit(this->base_fs.get());
+        }
+
+        virtual Result GetFreeSpaceSizeImpl(uint64_t *out, FsPath &path) {
+            return fsFsGetFreeSpace(this->base_fs.get(), path.str, out);
+        }
+
+        virtual Result GetTotalSpaceSizeImpl(uint64_t *out, FsPath &path) {
+            return fsFsGetTotalSpace(this->base_fs.get(), path.str, out);
+        }
+
+        virtual Result CleanDirectoryRecursivelyImpl(FsPath &path) {
+            return fsFsCleanDirectoryRecursively(this->base_fs.get(), path.str);
+        }
+
+        virtual Result GetFileTimeStampRawImpl(FsTimeStampRaw *out, FsPath &path) {
+            return fsFsGetFileTimeStampRaw(this->base_fs.get(), path.str, out);
+        }
+
+        virtual Result QueryEntryImpl(char *out, uint64_t out_size, const char *in, uint64_t in_size, int query, FsPath &path) {
+            return fsFsQueryEntry(this->base_fs.get(), out, out_size, in, in_size, path.str,static_cast<FsFileSystemQueryType>(query));
+        }
+};

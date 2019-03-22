@@ -28,7 +28,7 @@ enum FsIDirectoryCmd : u32 {
 class IDirectory {
     public:
         virtual ~IDirectory() {}
-        
+
         Result Read(uint64_t *out_count, FsDirectoryEntry *out_entries, uint64_t max_entries) {
             if (out_count == nullptr) {
                 return ResultFsNullptrArgument;
@@ -42,14 +42,14 @@ class IDirectory {
             }
             return ReadImpl(out_count, out_entries, max_entries);
         }
-        
+
         Result GetEntryCount(uint64_t *count) {
             if (count == nullptr) {
                 return ResultFsNullptrArgument;
             }
             return GetEntryCountImpl(count);
         }
-        
+
     protected:
         /* ...? */
     private:
@@ -82,4 +82,39 @@ class IDirectoryInterface : public IServiceObject {
             MakeServiceCommandMeta<FsIDirectoryCmd_Read, &IDirectoryInterface::Read>(),
             MakeServiceCommandMeta<FsIDirectoryCmd_GetEntryCount, &IDirectoryInterface::GetEntryCount>(),
         };
+};
+
+class ProxyDirectory : public IDirectory {
+    private:
+        std::unique_ptr<FsDir> base_dir;
+    public:
+        ProxyDirectory(FsDir *d) : base_dir(d) {
+            /* ... */
+        }
+
+        ProxyDirectory(std::unique_ptr<FsDir> d) : base_dir(std::move(d)) {
+            /* ... */
+        }
+
+        ProxyDirectory(FsDir d) {
+            this->base_dir = std::make_unique<FsDir>(d);
+        }
+
+        virtual ~ProxyDirectory() {
+            fsDirClose(this->base_dir.get());
+        }
+    public:
+        virtual Result ReadImpl(uint64_t *out_count, FsDirectoryEntry *out_entries, uint64_t max_entries) {
+            size_t count;
+
+            Result rc = fsDirRead(this->base_dir.get(), 0, &count, max_entries, out_entries);
+            if (R_SUCCEEDED(rc)) {
+                *out_count = count;
+            }
+
+            return rc;
+        }
+        virtual Result GetEntryCountImpl(uint64_t *count) {
+            return fsDirGetEntryCount(this->base_dir.get(), count);
+        }
 };
