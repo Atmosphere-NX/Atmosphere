@@ -92,9 +92,6 @@ class IFileSystem {
         }
 
         Result OpenFile(std::unique_ptr<IFile> &out_file, FsPath &path, OpenMode mode) {
-            if (out_file == nullptr) {
-                return ResultFsNullptrArgument;
-            }
             if (!(mode & OpenMode_ReadWrite)) {
                 return ResultFsInvalidArgument;
             }
@@ -105,9 +102,6 @@ class IFileSystem {
         }
 
         Result OpenDirectory(std::unique_ptr<IDirectory> &out_dir, FsPath &path, DirectoryOpenMode mode) {
-            if (out_dir == nullptr) {
-                return ResultFsNullptrArgument;
-            }
             if (!(mode & DirectoryOpenMode_All)) {
                 return ResultFsInvalidArgument;
             }
