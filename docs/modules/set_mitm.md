@@ -50,5 +50,22 @@ upload_enabled = u8!0x0
 
 ### Atmosphère Custom Settings
 
-At present, Atmosphère implements no custom settings. However, this is subject to change in the future, and any\
-custom settings will be documented here as they are added.
+At the time of writing, Atmosphère implements two custom settings, found in the `atmosphere` section.\
+
+While not used for set_mitm, `power_menu_reboot_function` is loaded and controls the reboot behaviour of the console. By default, this value\
+is "payload", where the console will automatically reboot into the RCM payload stored in `sdmc:/atmosphere/reboot_payload.bin`.\
+(This payload is also used for fatal, upon a serious crash.) Setting the value to "rcm" reboots directly into RCM, and setting the value\
+to "normal" skips these behaviours.
+
+```
+[atmosphere]
+power_menu_reboot_function = str!payload
+```
+
+`dmnt_cheats_enabled_by_default` controls the behaviour of dmnt's cheat functionality. By default, this value is "0x1", enabling any cheats\
+defined by the user. Check [cheats](../cheats.md) for more information about Atmosphère's cheat functionality.
+
+```
+[atmosphere]
+dmnt_cheats_enabled_by_default = u8!0x1
+```
