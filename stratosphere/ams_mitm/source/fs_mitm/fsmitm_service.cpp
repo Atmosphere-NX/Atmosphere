@@ -166,9 +166,10 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
                 if (is_sysmodule || has_bis_write_flag) {
                     /* Sysmodules should still be allowed to read and write. */
                     storage = std::make_shared<IStorageInterface>(new ProxyStorage(bis_storage));
-                } else if (Utils::IsHblTid(this->title_id) && (BisStorageId_BcPkg2_1 <= bis_partition_id && bis_partition_id <= BisStorageId_BcPkg2_6)) {
-                    /* Allow HBL to write to package2. */
-                    /* This is needed to not break compatibility with ChoiDujourNX, which does not check error codes. */
+                } else if (Utils::IsHblTid(this->title_id) && 
+                    ((BisStorageId_BcPkg2_1 <= bis_partition_id && bis_partition_id <= BisStorageId_BcPkg2_6) || bis_partition_id == BisStorageId_Boot1)) {
+                    /* Allow HBL to write to boot1 (safe firm) + package2. */
+                    /* This is needed to not break compatibility with ChoiDujourNX, which does not check for write access before beginning an update. */
                     /* TODO: get fixed so that this can be turned off without causing bricks :/ */
                     storage = std::make_shared<IStorageInterface>(new ProxyStorage(bis_storage));
                 } else {
