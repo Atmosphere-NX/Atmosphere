@@ -231,6 +231,8 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     /* ECS is a one-shot operation, but we don't clear on failure. */
     ContentManagement::ClearExternalContentSource(target_process->tid_sid.title_id);
 
+
+CREATE_PROCESS_END:
     if (mounted_code) {
         if (R_SUCCEEDED(rc) && target_process->tid_sid.storage_id != FsStorageId_None) {
             rc = ContentManagement::UnmountCode();
@@ -238,8 +240,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
             ContentManagement::UnmountCode();
         }
     }
-
-CREATE_PROCESS_END:
+    
     if (R_SUCCEEDED(rc)) {
         *out_process_h = process_h;
     } else {
