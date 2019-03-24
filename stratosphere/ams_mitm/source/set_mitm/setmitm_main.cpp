@@ -26,6 +26,7 @@
 #include "setmitm_main.hpp"
 #include "setsys_mitm_service.hpp"
 #include "setsys_settings_items.hpp"
+#include "setsys_firmware_version.hpp"
 
 #include "../utils.hpp"
 
@@ -40,6 +41,9 @@ using SetMitmManager = WaitableManager<SetSysManagerOptions>;
 void SetMitmMain(void *arg) {
     /* Wait for SD to initialize. */
     Utils::WaitSdInitialized();
+
+    /* Initialize version manager. */
+    VersionManager::Initialize();
             
     /* Create server manager */
     auto server_manager = new SetMitmManager(3);

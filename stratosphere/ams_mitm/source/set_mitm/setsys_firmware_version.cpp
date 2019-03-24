@@ -21,35 +21,65 @@
 
 static HosMutex g_version_mutex;
 static bool g_got_version = false;
+static SetSysFirmwareVersion g_ams_fw_version = {0};
 static SetSysFirmwareVersion g_fw_version = {0};
 
-Result VersionManager::GetFirmwareVersion(u64 title_id, SetSysFirmwareVersion *out) {
+void VersionManager::Initialize() {
     std::scoped_lock<HosMutex> lock(g_version_mutex);
-    if (!g_got_version) {
-        Result rc = setsysGetFirmwareVersion(&g_fw_version);
-        if (R_FAILED(rc)) {
-            return rc;
-        }
-        
-        /* Modify the output firmware version. */
-        {
-            u32 major, minor, micro;
-            char display_version[sizeof(g_fw_version.display_version)] = {0};
-            
-            GetAtmosphereApiVersion(&major, &minor, &micro, nullptr, nullptr);
-            snprintf(display_version, sizeof(display_version), "%s (AMS %u.%u.%u)", g_fw_version.display_version, major, minor, micro);
-            
-            memcpy(g_fw_version.display_version, display_version, sizeof(g_fw_version.display_version));
-        }
-        
-        g_got_version = true;
+
+    if (g_got_version) {
+        return;
     }
+
+    /* Mount firmware version data archive. */
+    if (R_SUCCEEDED(romfsMountFromDataArchive(0x0100000000000809ul, FsStorageId_NandSystem, "809"))) {
+        ON_SCOPE_EXIT { romfsUnmount("809"); };
+
+        SetSysFirmwareVersion fw_ver;
+
+        /* Firmware version file must exist. */
+        FILE *f = fopen("809:/file", "rb");
+        if (f == NULL) {
+            std::abort();
+        }
+
+        /* Must be possible to read firmware version from file. */
+        if (fread(&fw_ver, sizeof(fw_ver), 1, f) != 1) {
+            std::abort();
+        }
+
+        fclose(f);
+
+        g_fw_version = fw_ver;
+        g_ams_fw_version = fw_ver;
+    } else {
+        /* Failure to open data archive is an abort. */
+        std::abort();
+    }
+
+    /* Modify the output firmware version. */
+    {
+        u32 major, minor, micro;
+        char display_version[sizeof(g_ams_fw_version.display_version)] = {0};
+        
+        GetAtmosphereApiVersion(&major, &minor, &micro, nullptr, nullptr);
+        snprintf(display_version, sizeof(display_version), "%s (AMS %u.%u.%u)", g_ams_fw_version.display_version, major, minor, micro);
+
+        memcpy(g_ams_fw_version.display_version, display_version, sizeof(g_ams_fw_version.display_version));
+    }
+
+    g_got_version = true;
+}
+
+Result VersionManager::GetFirmwareVersion(u64 title_id, SetSysFirmwareVersion *out) {
+    VersionManager::Initialize();
     
     /* Report atmosphere string to qlaunch, maintenance and nothing else. */
     if (title_id == 0x0100000000001000ULL || title_id == 0x0100000000001015ULL) {
-        *out = g_fw_version;
-        return 0;
+        *out = g_ams_fw_version;
     } else {
-        return setsysGetFirmwareVersion(out);
+        *out = g_fw_version;
     }
+
+    return 0;
 }

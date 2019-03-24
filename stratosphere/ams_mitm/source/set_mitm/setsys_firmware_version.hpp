@@ -20,5 +20,6 @@
 
 class VersionManager {
     public:
+        static void Initialize();
         static Result GetFirmwareVersion(u64 title_id, SetSysFirmwareVersion *out);
 };
