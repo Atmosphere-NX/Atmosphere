@@ -42,8 +42,13 @@ class DmntCheatManager {
         static void ResetAllCheatEntries();
         static CheatEntry *GetFreeCheatEntry();
         static CheatEntry *GetCheatEntryById(size_t i);
+        static CheatEntry *GetCheatEntryByReadableName(const char *readable_name);
         static bool ParseCheats(const char *cht_txt, size_t len);
         static bool LoadCheats(u64 title_id, const u8 *build_id);
+
+        static bool ParseCheatToggles(const char *s, size_t len);
+        static bool LoadCheatToggles(u64 title_id);
+        static void SaveCheatToggles(u64 title_id);
         
         static void ResetFrozenAddresses();
     public:
