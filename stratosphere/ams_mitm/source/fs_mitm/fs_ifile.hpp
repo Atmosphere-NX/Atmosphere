@@ -72,7 +72,7 @@ class IFile {
         }
 
         Result Write(uint64_t offset, void *buffer, uint64_t size) {
-            return Write(offset, buffer, size, false);
+            return WriteImpl(offset, buffer, size, false);
         }
 
         Result SetSize(uint64_t size) {

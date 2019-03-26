@@ -65,6 +65,7 @@ class Utils {
         static void InitializeThreadFunc(void *args);
         
         static bool IsHblTid(u64 tid);
+        static bool IsWebAppletTid(u64 tid);
         
         static bool HasTitleFlag(u64 tid, const char *flag);
         static bool HasHblFlag(const char *flag);

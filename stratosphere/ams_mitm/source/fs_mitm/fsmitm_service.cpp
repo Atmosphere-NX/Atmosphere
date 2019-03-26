@@ -111,7 +111,8 @@ Result FsMitmService::OpenHblWebContentFileSystem(Out<std::shared_ptr<IFileSyste
 
 Result FsMitmService::OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInterface>> out_fs, u64 title_id, u32 filesystem_type) {
     FsDir d;
-    if (filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) || R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
+    if (!Utils::IsWebAppletTid(this->title_id) || filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) ||
+        R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
         return RESULT_FORWARD_TO_SESSION;
     }
     fsDirClose(&d);
@@ -121,11 +122,12 @@ Result FsMitmService::OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInt
 
 Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterface>> out_fs, InPointer<char> path, u64 title_id, u32 filesystem_type) {
     FsDir d;
-    if (filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) || R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
+    if (!Utils::IsWebAppletTid(this->title_id) || filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) || 
+        R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
         return RESULT_FORWARD_TO_SESSION;
     }
     fsDirClose(&d);
-    
+
     return this->OpenHblWebContentFileSystem(out_fs);
 }
 

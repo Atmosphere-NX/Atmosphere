@@ -18,6 +18,8 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "../utils.hpp"
+
 #include "fs_results.hpp"
 #include "fs_filesystem_types.hpp"
 #include "fs_path_utils.hpp"
@@ -108,7 +110,7 @@ class IFileSystem {
             if (mode & ~DirectoryOpenMode_All) {
                 return ResultFsInvalidArgument;
             }
-            return OpenDirectory(out_dir, path, mode);
+            return OpenDirectoryImpl(out_dir, path, mode);
         }
 
         Result Commit() {
@@ -333,10 +335,12 @@ class IFileSystemInterface : public IServiceObject {
             }
 
             rc = this->base_fs->OpenDirectory(out_dir, path, static_cast<DirectoryOpenMode>(mode));
+
             if (R_SUCCEEDED(rc)) {
                 out_intf.SetValue(std::make_shared<IDirectoryInterface>(std::move(out_dir)));
                 /* TODO: Nintendo checks allocation success here, should we?. */
             }
+
             return rc;
         }
 

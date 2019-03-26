@@ -80,7 +80,7 @@ class FsMitmService : public IMitmServiceObject {
         DEFINE_SERVICE_DISPATCH_TABLE {
             /* TODO MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemDeprecated, &FsMitmService::OpenFileSystemDeprecated>(), */
             MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemWithPatch, &FsMitmService::OpenFileSystemWithPatch, FirmwareVersion_200>(),
-            MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemDeprecated, &FsMitmService::OpenFileSystemWithId, FirmwareVersion_200>(),
+            MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemWithId, &FsMitmService::OpenFileSystemWithId, FirmwareVersion_200>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenBisStorage, &FsMitmService::OpenBisStorage>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenDataStorageByCurrentProcess, &FsMitmService::OpenDataStorageByCurrentProcess>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenDataStorageByDataId, &FsMitmService::OpenDataStorageByDataId>(),

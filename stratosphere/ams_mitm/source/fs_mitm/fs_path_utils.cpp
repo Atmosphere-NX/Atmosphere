@@ -150,13 +150,13 @@ Result FsPathUtils::IsNormalized(bool *out, const char *path) {
         case PathState::WindowsDriveLetter:
             return ResultFsInvalidPathFormat;
         case PathState::FirstSeparator:
-        case PathState::Separator:
-            *out = false;
-            break;
         case PathState::Normal:
+            *out = true;
+            break;
         case PathState::CurrentDir:
         case PathState::ParentDir:
-            *out = true;
+        case PathState::Separator:
+            *out = false;
             break;
     }
     

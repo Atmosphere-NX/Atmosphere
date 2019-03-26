@@ -383,6 +383,10 @@ bool Utils::IsHblTid(u64 tid) {
     return (g_hbl_override_config.override_any_app && IsApplicationTid(tid)) || (tid == g_hbl_override_config.title_id);
 }
 
+bool Utils::IsWebAppletTid(u64 tid) {
+    return tid == 0x010000000000100Aul || tid == 0x010000000000100Ful || tid == 0x0100000000001010ul || tid == 0x0100000000001011ul;
+}
+
 bool Utils::HasTitleFlag(u64 tid, const char *flag) {
     if (IsSdInitialized()) {
         FsFile f;

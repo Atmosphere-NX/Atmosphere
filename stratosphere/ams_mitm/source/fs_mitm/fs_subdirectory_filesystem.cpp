@@ -18,6 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "../utils.hpp"
 #include "fs_subdirectory_filesystem.hpp"
 #include "fs_path_utils.hpp"
 
