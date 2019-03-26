@@ -37,7 +37,7 @@ Result NsWebMitmService::GetDocumentInterface(Out<std::shared_ptr<NsDocumentServ
         }
     };
     
-    /* Mount the SD card using fs.mitm's session. */
+    /* Open a document interface. */
     NsDocumentInterface doc;
     rc = nsGetDocumentInterfaceFwd(this->forward_service.get(), &doc);
     if (R_SUCCEEDED(rc)) {
