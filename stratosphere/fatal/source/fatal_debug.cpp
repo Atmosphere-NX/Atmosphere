@@ -238,29 +238,45 @@ void TryCollectDebugInformation(FatalThrowContext *ctx, u64 pid) {
                 break;
             }
         }
-        
-        /* Parse the starting address. */
-        {
-            u64 guess = thread_ctx.pc.x;
+
+        /* Helper to guess start address. */
+        auto TryGuessStartAddress = [&](u64 guess) {
             MemoryInfo mi;
             u32 pi;
             if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess)) || mi.perm != Perm_Rx) {
-                return;
+                return false;
             }
             
             /* Iterate backwards until we find the memory before the code region. */
             while (mi.addr > 0) {
                 if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
-                    return;
+                    return false;
                 }
                 
                 if (mi.type == MemType_Unmapped) {
                     /* Code region will be at the end of the unmapped region preceding it. */
                     ctx->cpu_ctx.aarch64_ctx.start_address = mi.addr + mi.size;
-                    break;
+                    return true;
                 }
                 
                 guess -= 4;
+            }
+
+            return false;
+        };
+        
+        /* Parse the starting address. */
+        {
+            if (TryGuessStartAddress(thread_ctx.pc.x)) {
+                return;
+            }
+            if (TryGuessStartAddress(thread_ctx.lr)) {
+                return;
+            }
+            for (size_t i = 0; i < ctx->cpu_ctx.aarch64_ctx.stack_trace_size; i++) {
+                if (TryGuessStartAddress(ctx->cpu_ctx.aarch64_ctx.stack_trace[i])) {
+                    return;
+                }
             }
         }
     }
