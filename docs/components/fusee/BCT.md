@@ -30,15 +30,15 @@ custom_splash = /path/to/your/bootlogo.bmp
 The boot splashscreen must be a BMP file, it must be 720x1280 (1280x720 rotated 90 degrees left/counterclockwise/anti-clockwise) resolution, and be in 32-bit ARGB format. You can use image editing software such as GIMP or Photoshop to export the image in this format.
 
 ## Configuring "nogc" Protection
-Nogc is a feature provided by fusée-secondary which disables the Nintendo Switch's Game Card reader. Its purpose is to prevent the reader from being updated when the console has been updated without burning fuses from a firmware lower than 4.0.0, to a newer firmware that is at least 4.0.0 or higher. By default, Atmosphere will protect the Game Card reader automatically, but you are free to change it.
+Nogc is a feature provided by fusée-secondary which disables the Nintendo Switch's Game Card reader. Its purpose is to prevent the reader from being updated when the console has been updated without burning fuses from a firmware lower than 4.0.0, to a newer firmware that is at least 4.0.0 or higher. By default, Atmosphère will protect the Game Card reader automatically, but you are free to change it.
 
 To change its functionality, add the following line to the `stratosphere` section and change the value of `X` according to the following list.
 ```
 nogc = X
 ```
 ```
-1 = force-enable nogc, so Atmosphere will always disable the Game Card reader.
-0 = force-disable nogc, so Atmosphere will always enable the Game Card reader.
+1 = force-enable nogc, so Atmosphère will always disable the Game Card reader.
+0 = force-disable nogc, so Atmosphère will always enable the Game Card reader.
 ```
 
 
@@ -62,7 +62,7 @@ target_firmware = X
 Note that 6.X.X indicates 6.0.0 through 6.1.0.
 
 ## Configuring Debugging Modes
-By default, Atmosphere signals to the Horizon kernel that debugging is enabled while leaving usermode debugging disabled, since this can cause undesirable side-effects. If you wish to change these behaviours, go to the `exosphere` section and change the value of `X` according to the following list.
+By default, Atmosphère signals to the Horizon kernel that debugging is enabled while leaving usermode debugging disabled, since this can cause undesirable side-effects. If you wish to change these behaviours, go to the `exosphere` section and change the value of `X` according to the following list.
 ```
 debugmode = X
 debugmode_user = X
