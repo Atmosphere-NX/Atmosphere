@@ -110,23 +110,49 @@ Result FsMitmService::OpenHblWebContentFileSystem(Out<std::shared_ptr<IFileSyste
 }
 
 Result FsMitmService::OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInterface>> out_fs, u64 title_id, u32 filesystem_type) {
-    FsDir d;
-    if (!Utils::IsWebAppletTid(this->title_id) || filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) ||
-        R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
-        return RESULT_FORWARD_TO_SESSION;
+    /* Check for eligibility. */
+    {
+        FsDir d;
+        if (!Utils::IsWebAppletTid(this->title_id) || filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) ||
+            R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
+            return RESULT_FORWARD_TO_SESSION;
+        }
+        fsDirClose(&d);
     }
-    fsDirClose(&d);
+
+    /* If there's an existing filesystem, don't override. */
+    /* TODO: Multiplex, overriding existing content with HBL content. */
+    {
+        FsFileSystem fs;
+        if (R_SUCCEEDED(fsOpenFileSystemWithPatchFwd(this->forward_service.get(), &fs, title_id, static_cast<FsFileSystemType>(filesystem_type)))) {
+            fsFsClose(&fs);
+            return RESULT_FORWARD_TO_SESSION;
+        }
+    }
     
     return this->OpenHblWebContentFileSystem(out_fs);
 }
 
 Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterface>> out_fs, InPointer<char> path, u64 title_id, u32 filesystem_type) {
-    FsDir d;
-    if (!Utils::IsWebAppletTid(this->title_id) || filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) || 
-        R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
-        return RESULT_FORWARD_TO_SESSION;
+    /* Check for eligibility. */
+    {
+        FsDir d;
+        if (!Utils::IsWebAppletTid(this->title_id) || filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) || 
+            R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
+            return RESULT_FORWARD_TO_SESSION;
+        }
+        fsDirClose(&d);
     }
-    fsDirClose(&d);
+
+    /* If there's an existing filesystem, don't override. */
+    /* TODO: Multiplex, overriding existing content with HBL content. */
+    {
+        FsFileSystem fs;
+        if (R_SUCCEEDED(fsOpenFileSystemWithIdFwd(this->forward_service.get(), &fs, title_id, static_cast<FsFileSystemType>(filesystem_type), path.pointer))) {
+            fsFsClose(&fs);
+            return RESULT_FORWARD_TO_SESSION;
+        }
+    }
 
     return this->OpenHblWebContentFileSystem(out_fs);
 }
