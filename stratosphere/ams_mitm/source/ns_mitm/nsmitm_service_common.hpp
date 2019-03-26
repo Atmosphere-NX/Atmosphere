@@ -15,17 +15,17 @@
  */
  
 #pragma once
+#include <switch.h>
+#include <stratosphere.hpp>
 
-enum MitmModuleId : u32 {
-    MitmModuleId_FsMitm = 0,
-    MitmModuleId_SetMitm = 1,
-    MitmModuleId_BpcMitm = 2,
-    MitmModuleId_NsMitm = 3,
-    
-    /* Always keep this at the end. */
-    MitmModuleId_Count,
+#include "../utils.hpp"
+
+enum NsGetterCmd : u32 {
+    NsGetterCmd_GetDocumentInterface = 7999,
 };
 
-void LaunchAllMitmModules();
-
-void WaitAllMitmModules();
+enum NsSrvCmd : u32 {
+    NsSrvCmd_GetApplicationContentPath = 21,
+    NsSrvCmd_ResolveApplicationContentPath = 23,
+    NsSrvCmd_GetRunningApplicationProgramId = 92,
+};

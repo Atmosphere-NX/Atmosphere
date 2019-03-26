@@ -14,18 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#pragma once
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
+#include <malloc.h>
 
-enum MitmModuleId : u32 {
-    MitmModuleId_FsMitm = 0,
-    MitmModuleId_SetMitm = 1,
-    MitmModuleId_BpcMitm = 2,
-    MitmModuleId_NsMitm = 3,
-    
-    /* Always keep this at the end. */
-    MitmModuleId_Count,
-};
+#include <switch.h>
+#include <atmosphere.h>
+#include <stratosphere.hpp>
 
-void LaunchAllMitmModules();
+constexpr u32 NsMitmPriority = 48;
+constexpr u32 NsMitmStackSize = 0x4000;
 
-void WaitAllMitmModules();
+void NsMitmMain(void *arg);
