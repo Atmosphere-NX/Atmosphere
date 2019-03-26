@@ -28,7 +28,7 @@ Result ShellService::LaunchProcess(Out<u64> pid, Registration::TidSid tid_sid, u
 }
 
 Result ShellService::TerminateProcessId(u64 pid) {
-    auto auto_lock = Registration::GetProcessListUniqueLock();
+    std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
     
     auto proc = Registration::GetProcess(pid);
     if (proc != nullptr) {
@@ -39,7 +39,7 @@ Result ShellService::TerminateProcessId(u64 pid) {
 }
 
 Result ShellService::TerminateTitleId(u64 tid) {
-    auto auto_lock = Registration::GetProcessListUniqueLock();
+    std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
     
     auto proc = Registration::GetProcessByTitleId(tid);
     if (proc != NULL) {
@@ -58,7 +58,7 @@ void ShellService::GetProcessEventType(Out<u64> type, Out<u64> pid) {
 }
 
 Result ShellService::FinalizeExitedProcess(u64 pid) {
-    auto auto_lock = Registration::GetProcessListUniqueLock();
+    std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
     
     auto proc = Registration::GetProcess(pid);
     if (proc == NULL) {
@@ -72,7 +72,7 @@ Result ShellService::FinalizeExitedProcess(u64 pid) {
 }
 
 Result ShellService::ClearProcessNotificationFlag(u64 pid) {
-    auto auto_lock = Registration::GetProcessListUniqueLock();
+    std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
     
     auto proc = Registration::GetProcess(pid);
     if (proc != NULL) {
@@ -91,7 +91,7 @@ void ShellService::NotifyBootFinished() {
 }
 
 Result ShellService::GetApplicationProcessId(Out<u64> pid) {
-    auto auto_lock = Registration::GetProcessListUniqueLock();
+    std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
     
     std::shared_ptr<Registration::Process> app_proc;
     if (Registration::HasApplicationProcess(&app_proc)) {

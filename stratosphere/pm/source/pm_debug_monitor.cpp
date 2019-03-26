@@ -42,7 +42,7 @@ Result DebugMonitorService::LaunchDebugProcess(u64 pid) {
 }
 
 Result DebugMonitorService::GetTitleProcessId(Out<u64> pid, u64 tid) {
-    auto auto_lock = Registration::GetProcessListUniqueLock();
+    std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
     
     std::shared_ptr<Registration::Process> proc = Registration::GetProcessByTitleId(tid);
     if (proc != nullptr) {
@@ -57,7 +57,7 @@ Result DebugMonitorService::EnableDebugForTitleId(Out<CopiedHandle> event, u64 t
 }
 
 Result DebugMonitorService::GetApplicationProcessId(Out<u64> pid) {
-    auto auto_lock = Registration::GetProcessListUniqueLock();
+    std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
     
     std::shared_ptr<Registration::Process> app_proc;
     if (Registration::HasApplicationProcess(&app_proc)) {

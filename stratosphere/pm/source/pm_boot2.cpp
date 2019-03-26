@@ -283,13 +283,10 @@ void EmbeddedBoot2::Main() {
         }
         closedir(titles_dir);
     }
-    
-    /* Free the memory used to track what boot2 launches. */
-    ClearLaunchedTitles();
         
     /* We no longer need the SD card. */
     fsdevUnmountAll();
     
-    /* Clear titles. */
+    /* Free the memory used to track what boot2 launches. */
     ClearLaunchedTitles();
 }

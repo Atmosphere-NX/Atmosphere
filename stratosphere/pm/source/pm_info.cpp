@@ -19,7 +19,7 @@
 #include "pm_info.hpp"
 
 Result InformationService::GetTitleId(Out<u64> tid, u64 pid) {
-    auto auto_lock = Registration::GetProcessListUniqueLock();
+    std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
     
     std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
     if (proc != NULL) {
