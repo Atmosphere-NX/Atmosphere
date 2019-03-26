@@ -69,3 +69,11 @@ defined by the user. Check [cheats](../cheats.md) for more information about Atm
 [atmosphere]
 dmnt_cheats_enabled_by_default = u8!0x1
 ```
+
+`dmnt_always_save_cheat_toggles` controls the behaviour of dmnt's cheat toggle functionality. By default, this value is "0x0", causing toggles to\
+only be saved on game quit if a toggle file existed on game boot. Check [cheats](../cheats.md) for more information about Atmosphère's cheat functionality.
+
+```
+[atmosphere]
+dmnt_always_save_cheat_toggles = u8!0x0
+```
