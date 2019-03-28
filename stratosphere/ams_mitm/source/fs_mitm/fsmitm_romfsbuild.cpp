@@ -43,7 +43,7 @@ void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirector
             child->path = new char[child->path_len + 1];
             strcpy(child->path, parent->path);
             if (child->path_len > FS_MAX_PATH - 1) {
-                fatalSimple(0xF601);
+                fatalSimple(ResultFsTooLongPath);
             }
             strcat(child->path + parent->path_len, "/");
             strcat(child->path + parent->path_len, this->dir_entry.name);
@@ -62,7 +62,7 @@ void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirector
             child->path = new char[child->path_len + 1];
             strcpy(child->path, parent->path);
             if (child->path_len > FS_MAX_PATH - 1) {
-                fatalSimple(0xF601);
+                fatalSimple(ResultFsTooLongPath);
             }
             strcat(child->path + parent->path_len, "/");
             strcat(child->path + parent->path_len, this->dir_entry.name);
@@ -116,7 +116,7 @@ void RomFSBuildContext::VisitDirectory(RomFSBuildDirectoryContext *parent, u32 p
             child->path = new char[child->path_len + 1];
             strcpy(child->path, parent->path);
             if (child->path_len > FS_MAX_PATH - 1) {
-                fatalSimple(0xF601);
+                fatalSimple(ResultFsTooLongPath);
             }
             strcat(child->path + parent->path_len, "/");
             strncat(child->path + parent->path_len, cur_file->name, cur_file->name_size);
@@ -146,7 +146,7 @@ void RomFSBuildContext::VisitDirectory(RomFSBuildDirectoryContext *parent, u32 p
             child->path = new char[child->path_len + 1];
             strcpy(child->path, parent->path);
             if (child->path_len > FS_MAX_PATH - 1) {
-                fatalSimple(0xF601);
+                fatalSimple(ResultFsTooLongPath);
             }
             strcat(child->path + parent->path_len, "/");
             strncat(child->path + parent->path_len, cur_child->name, cur_child->name_size);
@@ -157,7 +157,8 @@ void RomFSBuildContext::VisitDirectory(RomFSBuildDirectoryContext *parent, u32 p
                 delete child;
             }
             if (real == NULL) {
-                fatalSimple(0xF601);
+                /* TODO: Better error. */
+                fatalSimple(ResultKernelConnectionClosed);
             }
             
             this->VisitDirectory(real, cur_child_offset, dir_table, dir_table_size, file_table, file_table_size);
@@ -278,7 +279,8 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
             if (expected != cur_file->orig_offset) {
                 if (expected > cur_file->orig_offset) {
                     /* This case should NEVER happen. */
-                    fatalSimple(0xF601);
+                    /* TODO: Better error. */
+                    fatalSimple(ResultKernelConnectionClosed);
                 }
                 this->file_partition_size += cur_file->orig_offset - expected;
             }
@@ -348,7 +350,9 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
                 }
                 break;
             default:
-                fatalSimple(0xF601);
+                /* TODO: Better error. */
+                fatalSimple(ResultKernelConnectionClosed);
+                break;
         }
     }
         

@@ -142,7 +142,9 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                     }
                     break;
                 default:
-                    fatalSimple(0xF601);
+                    /* TODO: Better error. */
+                    fatalSimple(ResultKernelConnectionClosed);
+                    break;
             }
             read_so_far += cur_read_size;
             offset += cur_read_size;

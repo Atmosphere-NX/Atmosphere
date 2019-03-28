@@ -62,15 +62,15 @@ static void LaunchTitle(Boot2KnownTitleId title_id, FsStorageId storage_id, u32 
     
     Result rc = Registration::LaunchProcessByTidSid(Registration::TidSid{(u64)title_id, storage_id}, launch_flags, &local_pid);
     switch (rc) {
-        case 0xCE01:
+        case ResultKernelResourceExhausted:
             /* Out of resource! */
             std::abort();
             break;
-        case 0xDE01:
+        case ResultKernelOutOfMemory:
             /* Out of memory! */
             std::abort();
             break;
-        case 0xD001:
+        case ResultKernelLimitReached:
             /* Limit Reached! */
             std::abort();
             break;

@@ -104,7 +104,8 @@ static void FixPath(char *dst, size_t dst_size, InBuffer<char> &path) {
 
 Result DebugMonitorService::TargetIO_FileOpen(OutBuffer<u64> out_hnd, InBuffer<char> path, int open_mode, u32 create_mode) {
     if (out_hnd.num_elements != 1) {
-        return 0xF601;
+        /* Serialization error. */
+        return ResultKernelConnectionClosed;
     }
     
     Result rc = EnsureSdInitialized();
@@ -151,7 +152,8 @@ Result DebugMonitorService::TargetIO_FileOpen(OutBuffer<u64> out_hnd, InBuffer<c
 
 Result DebugMonitorService::TargetIO_FileClose(InBuffer<u64> hnd) {
     if (hnd.num_elements != 1) {
-        return 0xF601;
+        /* Serialization error. */
+        return ResultKernelConnectionClosed;
     }
     
     return CloseFileByHandle(hnd[0]);
@@ -159,7 +161,8 @@ Result DebugMonitorService::TargetIO_FileClose(InBuffer<u64> hnd) {
 
 Result DebugMonitorService::TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8, BufferType_Type1> out_data, Out<u32> out_read, u64 offset) {
     if (hnd.num_elements != 1) {
-        return 0xF601;
+        /* Serialization error. */
+        return ResultKernelConnectionClosed;
     }
     
     FsFile f;
@@ -176,7 +179,8 @@ Result DebugMonitorService::TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8, B
 
 Result DebugMonitorService::TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8, BufferType_Type1> data, Out<u32> out_written, u64 offset) {
     if (hnd.num_elements != 1) {
-        return 0xF601;
+        /* Serialization error. */
+        return ResultKernelConnectionClosed;
     }
     
     FsFile f;
@@ -201,7 +205,8 @@ Result DebugMonitorService::TargetIO_FileSetAttributes(InBuffer<char> path, InBu
 
 Result DebugMonitorService::TargetIO_FileGetInformation(InBuffer<char> path, OutBuffer<u64> out_info, Out<int> is_directory) {
     if (out_info.num_elements != 4) {
-        return 0xF601;
+        /* Serialization error. */
+        return ResultKernelConnectionClosed;
     }
     
     Result rc = EnsureSdInitialized();

@@ -209,7 +209,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
                 break;
             default:
                 /* TODO: Panic. */
-                return 0xD001;
+                return ResultKernelOutOfMemory;
         }
     } else {
         if (addspace_type & 2) {
@@ -221,7 +221,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
         }
     }
     if (extents->total_size > addspace_size) {
-        return 0xD001;
+        return ResultKernelOutOfMemory;
     }
     
     u64 aslr_slide = 0;

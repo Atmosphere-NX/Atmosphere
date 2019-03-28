@@ -50,7 +50,7 @@ Result MapUtils::LocateSpaceForMapModern(u64 *out, u64 out_size) {
     
     cur_base = address_space.addspace_base;
     
-    rc = 0xD001;
+    rc = ResultKernelOutOfMemory;
     cur_end = cur_base + out_size;
     if (cur_end <= cur_base) {
         return rc;
@@ -103,7 +103,7 @@ Result MapUtils::LocateSpaceForMapDeprecated(u64 *out, u64 out_size) {
         return rc;
     }
     
-    rc = 0xD001;
+    rc = ResultKernelOutOfMemory;
     while (true) {
         if (mem_info.type == 0x10) {
                 return rc;
@@ -152,7 +152,7 @@ Result MapUtils::MapCodeMemoryForProcessModern(Handle process_h, u64 base_addres
             break;
         }
         rc = svcMapProcessCodeMemory(process_h, try_address, base_address, size);
-        if (rc != 0xD401) {
+        if (rc != ResultKernelInvalidMemoryState) {
             break;
         }
     }
@@ -181,7 +181,7 @@ Result MapUtils::MapCodeMemoryForProcessDeprecated(Handle process_h, bool is_64_
     for (unsigned int i = 0; i < 0x200; i++) {
         try_address = addspace_base + (RandomUtils::GetRandomU64((u64)(addspace_size - size) >> 12) << 12);
         rc = svcMapProcessCodeMemory(process_h, try_address, base_address, size);
-        if (rc != 0xD401) {
+        if (rc != ResultKernelInvalidMemoryState) {
             break;
         }
     }

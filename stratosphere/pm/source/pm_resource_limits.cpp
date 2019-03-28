@@ -276,7 +276,7 @@ Result ResourceLimitUtils::BoostSystemMemoryResourceLimit(u64 boost_size) {
             }
         }
     } else {
-        rc = 0xF601;
+        rc = ResultKernelConnectionClosed;
     }
     if (R_SUCCEEDED(rc)) {
         g_system_boost_size = boost_size;

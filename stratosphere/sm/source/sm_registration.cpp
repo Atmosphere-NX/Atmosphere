@@ -282,7 +282,7 @@ Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
         }
     }
     if (R_FAILED(rc)) {
-        if ((rc & 0x3FFFFF) == 0xE01) {
+        if ((rc & 0x3FFFFF) == ResultKernelOutOfSessions) {
             return ResultSmInsufficientSessions;
         }
     }

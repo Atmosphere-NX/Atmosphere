@@ -89,7 +89,7 @@ Result DebugMonitorService::AtmosphereGetProcessInfo(Out<CopiedHandle> proc_hand
 Result DebugMonitorService::AtmosphereGetCurrentLimitInfo(Out<u64> cur_val, Out<u64> lim_val, u32 category, u32 resource) {
     Result rc;
     if(category > ResourceLimitUtils::ResourceLimitCategory::ResourceLimitCategory_Applet) {
-        return 0xF001;
+        return ResultKernelInvalidEnumValue;
     }
 
     Handle limit_h = ResourceLimitUtils::GetResourceLimitHandleByCategory((ResourceLimitUtils::ResourceLimitCategory) category);

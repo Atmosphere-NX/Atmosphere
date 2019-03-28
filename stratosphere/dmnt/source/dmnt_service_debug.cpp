@@ -40,8 +40,8 @@ Result DebugMonitorService::GetProcessId(Out<u64> out_pid, Handle hnd) {
 
 Result DebugMonitorService::GetProcessHandle(Out<Handle> out_hnd, u64 pid) {
     Result rc = svcDebugActiveProcess(out_hnd.GetPointer(), pid);
-    if (rc == 0xF401) {
-        rc = 0x4B7;
+    if (rc == ResultKernelAlreadyExists) {
+        rc = ResultDebugAlreadyAttached;
     }
     return rc;
 }

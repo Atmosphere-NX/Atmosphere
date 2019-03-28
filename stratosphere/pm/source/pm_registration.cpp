@@ -275,7 +275,7 @@ Result Registration::HandleSignaledProcess(std::shared_ptr<Registration::Process
             } else {
                 FinalizeExitedProcess(process);
             }
-            return 0xF601;
+            return ResultKernelConnectionClosed;
         case ProcessState_DebugSuspended:
             if (process->flags & PROCESSFLAGS_NOTIFYDEBUGEVENTS) {
                 process->flags |= (PROCESSFLAGS_DEBUGEVENTPENDING | PROCESSFLAGS_DEBUGSUSPENDED);
