@@ -15,6 +15,7 @@
  */
  
 #include <switch.h>
+#include <string.h>
 #include "fs_shim.h"
 
 /* Missing fsp-srv commands. */
