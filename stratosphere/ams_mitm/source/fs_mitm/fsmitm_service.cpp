@@ -29,6 +29,7 @@
 #include "fsmitm_layeredrom.hpp"
 
 #include "fs_subdirectory_filesystem.hpp"
+#include "fs_directory_savedata_filesystem.hpp"
 
 #include "../debug.hpp"
 

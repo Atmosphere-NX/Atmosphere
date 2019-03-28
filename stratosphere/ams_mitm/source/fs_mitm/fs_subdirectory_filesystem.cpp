@@ -71,7 +71,7 @@ Result SubDirectoryFileSystem::GetFullPath(char *out, size_t out_size, const cha
     return FsPathUtils::Normalize(out + this->base_path_len - 2, out_size - (this->base_path_len - 2), relative_path, nullptr);
 }
 
-Result SubDirectoryFileSystem::CreateFileImpl(FsPath &path, uint64_t size, int flags) {
+Result SubDirectoryFileSystem::CreateFileImpl(const FsPath &path, uint64_t size, int flags) {
     Result rc;
     FsPath full_path;
     
@@ -82,7 +82,7 @@ Result SubDirectoryFileSystem::CreateFileImpl(FsPath &path, uint64_t size, int f
     return this->base_fs->CreateFile(full_path, size, flags);
 }
 
-Result SubDirectoryFileSystem::DeleteFileImpl(FsPath &path) {
+Result SubDirectoryFileSystem::DeleteFileImpl(const FsPath &path) {
     Result rc;
     FsPath full_path;
     
@@ -93,7 +93,7 @@ Result SubDirectoryFileSystem::DeleteFileImpl(FsPath &path) {
     return this->base_fs->DeleteFile(full_path);
 }
 
-Result SubDirectoryFileSystem::CreateDirectoryImpl(FsPath &path) {
+Result SubDirectoryFileSystem::CreateDirectoryImpl(const FsPath &path) {
     Result rc;
     FsPath full_path;
     
@@ -104,7 +104,7 @@ Result SubDirectoryFileSystem::CreateDirectoryImpl(FsPath &path) {
     return this->base_fs->CreateDirectory(full_path);
 }
 
-Result SubDirectoryFileSystem::DeleteDirectoryImpl(FsPath &path) {
+Result SubDirectoryFileSystem::DeleteDirectoryImpl(const FsPath &path) {
     Result rc;
     FsPath full_path;
     
@@ -115,7 +115,7 @@ Result SubDirectoryFileSystem::DeleteDirectoryImpl(FsPath &path) {
     return this->base_fs->DeleteDirectory(full_path);
 }
 
-Result SubDirectoryFileSystem::DeleteDirectoryRecursivelyImpl(FsPath &path) {
+Result SubDirectoryFileSystem::DeleteDirectoryRecursivelyImpl(const FsPath &path) {
     Result rc;
     FsPath full_path;
     
@@ -126,7 +126,7 @@ Result SubDirectoryFileSystem::DeleteDirectoryRecursivelyImpl(FsPath &path) {
     return this->base_fs->DeleteDirectoryRecursively(full_path);
 }
 
-Result SubDirectoryFileSystem::RenameFileImpl(FsPath &old_path, FsPath &new_path) {
+Result SubDirectoryFileSystem::RenameFileImpl(const FsPath &old_path, const FsPath &new_path) {
     Result rc;
     FsPath full_old_path, full_new_path;
     
@@ -141,7 +141,7 @@ Result SubDirectoryFileSystem::RenameFileImpl(FsPath &old_path, FsPath &new_path
     return this->base_fs->RenameFile(full_old_path, full_new_path);
 }
 
-Result SubDirectoryFileSystem::RenameDirectoryImpl(FsPath &old_path, FsPath &new_path) {
+Result SubDirectoryFileSystem::RenameDirectoryImpl(const FsPath &old_path, const FsPath &new_path) {
     Result rc;
     FsPath full_old_path, full_new_path;
     
@@ -156,7 +156,7 @@ Result SubDirectoryFileSystem::RenameDirectoryImpl(FsPath &old_path, FsPath &new
     return this->base_fs->RenameDirectory(full_old_path, full_new_path);
 }
 
-Result SubDirectoryFileSystem::GetEntryTypeImpl(DirectoryEntryType *out, FsPath &path) {
+Result SubDirectoryFileSystem::GetEntryTypeImpl(DirectoryEntryType *out, const FsPath &path) {
     Result rc;
     FsPath full_path;
     
@@ -167,7 +167,7 @@ Result SubDirectoryFileSystem::GetEntryTypeImpl(DirectoryEntryType *out, FsPath 
     return this->base_fs->GetEntryType(out, full_path);
 }
 
-Result SubDirectoryFileSystem::OpenFileImpl(std::unique_ptr<IFile> &out_file, FsPath &path, OpenMode mode) {
+Result SubDirectoryFileSystem::OpenFileImpl(std::unique_ptr<IFile> &out_file, const FsPath &path, OpenMode mode) {
     Result rc;
     FsPath full_path;
     
@@ -178,7 +178,7 @@ Result SubDirectoryFileSystem::OpenFileImpl(std::unique_ptr<IFile> &out_file, Fs
     return this->base_fs->OpenFile(out_file, full_path, mode);
 }
 
-Result SubDirectoryFileSystem::OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, FsPath &path, DirectoryOpenMode mode) {
+Result SubDirectoryFileSystem::OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, const FsPath &path, DirectoryOpenMode mode) {
     Result rc;
     FsPath full_path;
     
@@ -193,7 +193,7 @@ Result SubDirectoryFileSystem::CommitImpl() {
     return this->base_fs->Commit();
 }
 
-Result SubDirectoryFileSystem::GetFreeSpaceSizeImpl(uint64_t *out, FsPath &path) {
+Result SubDirectoryFileSystem::GetFreeSpaceSizeImpl(uint64_t *out, const FsPath &path) {
     Result rc;
     FsPath full_path;
     
@@ -204,7 +204,7 @@ Result SubDirectoryFileSystem::GetFreeSpaceSizeImpl(uint64_t *out, FsPath &path)
     return this->base_fs->GetFreeSpaceSize(out, full_path);
 }
 
-Result SubDirectoryFileSystem::GetTotalSpaceSizeImpl(uint64_t *out, FsPath &path) {
+Result SubDirectoryFileSystem::GetTotalSpaceSizeImpl(uint64_t *out, const FsPath &path) {
     Result rc;
     FsPath full_path;
     
@@ -215,7 +215,7 @@ Result SubDirectoryFileSystem::GetTotalSpaceSizeImpl(uint64_t *out, FsPath &path
     return this->base_fs->GetTotalSpaceSize(out, full_path);
 }   
 
-Result SubDirectoryFileSystem::CleanDirectoryRecursivelyImpl(FsPath &path) {
+Result SubDirectoryFileSystem::CleanDirectoryRecursivelyImpl(const FsPath &path) {
     Result rc;
     FsPath full_path;
     
@@ -226,7 +226,7 @@ Result SubDirectoryFileSystem::CleanDirectoryRecursivelyImpl(FsPath &path) {
     return this->base_fs->CleanDirectoryRecursively(full_path);
 }
 
-Result SubDirectoryFileSystem::GetFileTimeStampRawImpl(FsTimeStampRaw *out, FsPath &path) {
+Result SubDirectoryFileSystem::GetFileTimeStampRawImpl(FsTimeStampRaw *out, const FsPath &path) {
     Result rc;
     FsPath full_path;
     
@@ -237,7 +237,7 @@ Result SubDirectoryFileSystem::GetFileTimeStampRawImpl(FsTimeStampRaw *out, FsPa
     return this->base_fs->GetFileTimeStampRaw(out, full_path);
 }
 
-Result SubDirectoryFileSystem::QueryEntryImpl(char *out, uint64_t out_size, const char *in, uint64_t in_size, int query, FsPath &path) {
+Result SubDirectoryFileSystem::QueryEntryImpl(char *out, uint64_t out_size, const char *in, uint64_t in_size, int query, const FsPath &path) {
     Result rc;
     FsPath full_path;
     

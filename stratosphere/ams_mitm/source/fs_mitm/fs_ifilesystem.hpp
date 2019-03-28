@@ -58,42 +58,46 @@ class IFileSystem {
     public:
         virtual ~IFileSystem() {}
 
-        Result CreateFile(FsPath &path, uint64_t size, int flags) {
+        Result CreateFile(const FsPath &path, uint64_t size, int flags) {
             return CreateFileImpl(path, size, flags);
         }
 
-        Result DeleteFile(FsPath &path) {
+        Result CreateFile(const FsPath &path, uint64_t size) {
+            return CreateFileImpl(path, size, 0);
+        }
+
+        Result DeleteFile(const FsPath &path) {
             return DeleteFileImpl(path);
         }
 
-        Result CreateDirectory(FsPath &path) {
+        Result CreateDirectory(const FsPath &path) {
             return CreateDirectoryImpl(path);
         }
 
-        Result DeleteDirectory(FsPath &path) {
+        Result DeleteDirectory(const FsPath &path) {
             return DeleteDirectoryImpl(path);
         }
 
-        Result DeleteDirectoryRecursively(FsPath &path) {
+        Result DeleteDirectoryRecursively(const FsPath &path) {
             return DeleteDirectoryRecursivelyImpl(path);
         }
 
-        Result RenameFile(FsPath &old_path, FsPath &new_path) {
+        Result RenameFile(const FsPath &old_path, const FsPath &new_path) {
             return RenameFileImpl(old_path, new_path);
         }
 
-        Result RenameDirectory(FsPath &old_path, FsPath &new_path) {
+        Result RenameDirectory(const FsPath &old_path, const FsPath &new_path) {
             return RenameDirectoryImpl(old_path, new_path);
         }
 
-        Result GetEntryType(DirectoryEntryType *out, FsPath &path) {
+        Result GetEntryType(DirectoryEntryType *out, const FsPath &path) {
             if (out == nullptr) {
                 return ResultFsNullptrArgument;
             }
             return GetEntryTypeImpl(out, path);
         }
 
-        Result OpenFile(std::unique_ptr<IFile> &out_file, FsPath &path, OpenMode mode) {
+        Result OpenFile(std::unique_ptr<IFile> &out_file, const FsPath &path, OpenMode mode) {
             if (!(mode & OpenMode_ReadWrite)) {
                 return ResultFsInvalidArgument;
             }
@@ -103,7 +107,7 @@ class IFileSystem {
             return OpenFileImpl(out_file, path, mode);
         }
 
-        Result OpenDirectory(std::unique_ptr<IDirectory> &out_dir, FsPath &path, DirectoryOpenMode mode) {
+        Result OpenDirectory(std::unique_ptr<IDirectory> &out_dir, const FsPath &path, DirectoryOpenMode mode) {
             if (!(mode & DirectoryOpenMode_All)) {
                 return ResultFsInvalidArgument;
             }
@@ -117,32 +121,32 @@ class IFileSystem {
             return CommitImpl();
         }
 
-        Result GetFreeSpaceSize(uint64_t *out, FsPath &path) {
+        Result GetFreeSpaceSize(uint64_t *out, const FsPath &path) {
             if (out == nullptr) {
                 return ResultFsNullptrArgument;
             }
             return GetFreeSpaceSizeImpl(out, path);
         }
 
-        Result GetTotalSpaceSize(uint64_t *out, FsPath &path) {
+        Result GetTotalSpaceSize(uint64_t *out, const FsPath &path) {
             if (out == nullptr) {
                 return ResultFsNullptrArgument;
             }
             return GetTotalSpaceSizeImpl(out, path);
         }
 
-        Result CleanDirectoryRecursively(FsPath &path) {
+        Result CleanDirectoryRecursively(const FsPath &path) {
             return CleanDirectoryRecursivelyImpl(path);
         }
 
-        Result GetFileTimeStampRaw(FsTimeStampRaw *out, FsPath &path) {
+        Result GetFileTimeStampRaw(FsTimeStampRaw *out, const FsPath &path) {
             if (out == nullptr) {
                 return ResultFsNullptrArgument;
             }
             return GetFileTimeStampRawImpl(out, path);
         }
 
-        Result QueryEntry(char *out, uint64_t out_size, const char *in, uint64_t in_size, int query, FsPath &path) {
+        Result QueryEntry(char *out, uint64_t out_size, const char *in, uint64_t in_size, int query, const FsPath &path) {
             return QueryEntryImpl(out, out_size, in, in_size, query, path);
         }
 
@@ -150,39 +154,39 @@ class IFileSystem {
     protected:
         /* ...? */
     private:
-        virtual Result CreateFileImpl(FsPath &path, uint64_t size, int flags) = 0;
-        virtual Result DeleteFileImpl(FsPath &path) = 0;
-        virtual Result CreateDirectoryImpl(FsPath &path) = 0;
-        virtual Result DeleteDirectoryImpl(FsPath &path) = 0;
-        virtual Result DeleteDirectoryRecursivelyImpl(FsPath &path) = 0;
-        virtual Result RenameFileImpl(FsPath &old_path, FsPath &new_path) = 0;
-        virtual Result RenameDirectoryImpl(FsPath &old_path, FsPath &new_path) = 0;
-        virtual Result GetEntryTypeImpl(DirectoryEntryType *out, FsPath &path) = 0;
-        virtual Result OpenFileImpl(std::unique_ptr<IFile> &out_file, FsPath &path, OpenMode mode) = 0;
-        virtual Result OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, FsPath &path, DirectoryOpenMode mode) = 0;
+        virtual Result CreateFileImpl(const FsPath &path, uint64_t size, int flags) = 0;
+        virtual Result DeleteFileImpl(const FsPath &path) = 0;
+        virtual Result CreateDirectoryImpl(const FsPath &path) = 0;
+        virtual Result DeleteDirectoryImpl(const FsPath &path) = 0;
+        virtual Result DeleteDirectoryRecursivelyImpl(const FsPath &path) = 0;
+        virtual Result RenameFileImpl(const FsPath &old_path, const FsPath &new_path) = 0;
+        virtual Result RenameDirectoryImpl(const FsPath &old_path, const FsPath &new_path) = 0;
+        virtual Result GetEntryTypeImpl(DirectoryEntryType *out, const FsPath &path) = 0;
+        virtual Result OpenFileImpl(std::unique_ptr<IFile> &out_file, const FsPath &path, OpenMode mode) = 0;
+        virtual Result OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, const FsPath &path, DirectoryOpenMode mode) = 0;
         virtual Result CommitImpl() = 0;
 
-        virtual Result GetFreeSpaceSizeImpl(uint64_t *out, FsPath &path) {
+        virtual Result GetFreeSpaceSizeImpl(uint64_t *out, const FsPath &path) {
             (void)(out);
             (void)(path);
             return ResultFsNotImplemented;
         }
 
-        virtual Result GetTotalSpaceSizeImpl(uint64_t *out, FsPath &path) {
+        virtual Result GetTotalSpaceSizeImpl(uint64_t *out, const FsPath &path) {
             (void)(out);
             (void)(path);
             return ResultFsNotImplemented;
         }
 
-        virtual Result CleanDirectoryRecursivelyImpl(FsPath &path) = 0;
+        virtual Result CleanDirectoryRecursivelyImpl(const FsPath &path) = 0;
 
-        virtual Result GetFileTimeStampRawImpl(FsTimeStampRaw *out, FsPath &path) {
+        virtual Result GetFileTimeStampRawImpl(FsTimeStampRaw *out, const FsPath &path) {
             (void)(out);
             (void)(path);
             return ResultFsNotImplemented;
         }
 
-        virtual Result QueryEntryImpl(char *out, uint64_t out_size, const char *in, uint64_t in_size, int query, FsPath &path) {
+        virtual Result QueryEntryImpl(char *out, uint64_t out_size, const char *in, uint64_t in_size, int query, const FsPath &path) {
             (void)(out);
             (void)(out_size);
             (void)(in);
@@ -449,35 +453,35 @@ class ProxyFileSystem : public IFileSystem {
         }
 
     public:
-        virtual Result CreateFileImpl(FsPath &path, uint64_t size, int flags) {
+        virtual Result CreateFileImpl(const FsPath &path, uint64_t size, int flags) {
             return fsFsCreateFile(this->base_fs.get(), path.str, size, flags);
         }
 
-        virtual Result DeleteFileImpl(FsPath &path) {
+        virtual Result DeleteFileImpl(const FsPath &path) {
             return fsFsDeleteFile(this->base_fs.get(), path.str);
         }
 
-        virtual Result CreateDirectoryImpl(FsPath &path) {
+        virtual Result CreateDirectoryImpl(const FsPath &path) {
             return fsFsCreateDirectory(this->base_fs.get(), path.str);
         }
 
-        virtual Result DeleteDirectoryImpl(FsPath &path) {
+        virtual Result DeleteDirectoryImpl(const FsPath &path) {
             return fsFsDeleteDirectory(this->base_fs.get(), path.str);
         }
 
-        virtual Result DeleteDirectoryRecursivelyImpl(FsPath &path) {
+        virtual Result DeleteDirectoryRecursivelyImpl(const FsPath &path) {
             return fsFsDeleteDirectoryRecursively(this->base_fs.get(), path.str);
         }
 
-        virtual Result RenameFileImpl(FsPath &old_path, FsPath &new_path) {
+        virtual Result RenameFileImpl(const FsPath &old_path, const FsPath &new_path) {
             return fsFsRenameFile(this->base_fs.get(), old_path.str, new_path.str);
         }
 
-        virtual Result RenameDirectoryImpl(FsPath &old_path, FsPath &new_path) {
+        virtual Result RenameDirectoryImpl(const FsPath &old_path, const FsPath &new_path) {
             return fsFsRenameDirectory(this->base_fs.get(), old_path.str, new_path.str);
         }
 
-        virtual Result GetEntryTypeImpl(DirectoryEntryType *out, FsPath &path) {
+        virtual Result GetEntryTypeImpl(DirectoryEntryType *out, const FsPath &path) {
             FsEntryType type;
 
             Result rc = fsFsGetEntryType(this->base_fs.get(), path.str, &type);
@@ -487,7 +491,7 @@ class ProxyFileSystem : public IFileSystem {
 
             return rc;
         }
-        virtual Result OpenFileImpl(std::unique_ptr<IFile> &out_file, FsPath &path, OpenMode mode) {
+        virtual Result OpenFileImpl(std::unique_ptr<IFile> &out_file, const FsPath &path, OpenMode mode) {
             FsFile f;
 
             Result rc = fsFsOpenFile(this->base_fs.get(), path.str, static_cast<int>(mode), &f);
@@ -498,7 +502,7 @@ class ProxyFileSystem : public IFileSystem {
             return rc;
         }
 
-        virtual Result OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, FsPath &path, DirectoryOpenMode mode) {
+        virtual Result OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, const FsPath &path, DirectoryOpenMode mode) {
             FsDir d;
 
             Result rc = fsFsOpenDirectory(this->base_fs.get(), path.str, static_cast<int>(mode), &d);
@@ -513,23 +517,23 @@ class ProxyFileSystem : public IFileSystem {
             return fsFsCommit(this->base_fs.get());
         }
 
-        virtual Result GetFreeSpaceSizeImpl(uint64_t *out, FsPath &path) {
+        virtual Result GetFreeSpaceSizeImpl(uint64_t *out, const FsPath &path) {
             return fsFsGetFreeSpace(this->base_fs.get(), path.str, out);
         }
 
-        virtual Result GetTotalSpaceSizeImpl(uint64_t *out, FsPath &path) {
+        virtual Result GetTotalSpaceSizeImpl(uint64_t *out, const FsPath &path) {
             return fsFsGetTotalSpace(this->base_fs.get(), path.str, out);
         }
 
-        virtual Result CleanDirectoryRecursivelyImpl(FsPath &path) {
+        virtual Result CleanDirectoryRecursivelyImpl(const FsPath &path) {
             return fsFsCleanDirectoryRecursively(this->base_fs.get(), path.str);
         }
 
-        virtual Result GetFileTimeStampRawImpl(FsTimeStampRaw *out, FsPath &path) {
+        virtual Result GetFileTimeStampRawImpl(FsTimeStampRaw *out, const FsPath &path) {
             return fsFsGetFileTimeStampRaw(this->base_fs.get(), path.str, out);
         }
 
-        virtual Result QueryEntryImpl(char *out, uint64_t out_size, const char *in, uint64_t in_size, int query, FsPath &path) {
+        virtual Result QueryEntryImpl(char *out, uint64_t out_size, const char *in, uint64_t in_size, int query, const FsPath &path) {
             return fsFsQueryEntry(this->base_fs.get(), out, out_size, in, in_size, path.str,static_cast<FsFileSystemQueryType>(query));
         }
 };

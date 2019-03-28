@@ -21,7 +21,31 @@ struct FsPath {
     char str[FS_MAX_PATH];
 };
 
+constexpr FsPath EncodeConstantFsPath(const char *p) {
+    FsPath path = {0};
+    for (size_t i = 0; i < sizeof(path) - 1; i++) {
+        path.str[i] = p[i];
+        if (p[i] == 0) {
+            break;
+        }
+    }
+    return path;
+}
+
+constexpr size_t GetConstantFsPathLen(FsPath path) {
+    size_t len = 0;
+    for (size_t i = 0; i < sizeof(path) - 1; i++) {
+        if (path.str[i] == 0) {
+            break;
+        }
+        len++;
+    }
+    return len;
+}
+
 class FsPathUtils {
+    public:
+        static constexpr FsPath RootPath = EncodeConstantFsPath("/");
     public:
         static Result VerifyPath(const char *path, size_t max_path_len, size_t max_name_len);
         static Result ConvertPathForServiceObject(FsPath *out, const char *path);

@@ -21,42 +21,64 @@
 #include "fs_ifilesystem.hpp"
 #include "fs_path_utils.hpp"
 
-class SubDirectoryFileSystem : public IFileSystem {
+class DirectorySaveDataFileSystem : public IFileSystem {
     private:
-        std::shared_ptr<IFileSystem> base_fs;
-        char *base_path = nullptr;
-        size_t base_path_len = 0;
-        
+        static constexpr FsPath CommittedDirectoryPath     = EncodeConstantFsPath("/0/");
+        static constexpr FsPath WorkingDirectoryPath       = EncodeConstantFsPath("/1/");
+        static constexpr FsPath SynchronizingDirectoryPath = EncodeConstantFsPath("/_/");
+
+        static constexpr size_t CommittedDirectoryPathLen     = GetConstantFsPathLen(CommittedDirectoryPath);
+        static constexpr size_t WorkingDirectoryPathLen       = GetConstantFsPathLen(WorkingDirectoryPath);
+        static constexpr size_t SynchronizingDirectoryPathLen = GetConstantFsPathLen(SynchronizingDirectoryPath);
+
+        static constexpr size_t IdealWorkBuffersize = 0x100000; /* 1 MB */
+    private:
+        std::shared_ptr<IFileSystem> shared_fs;
+        std::unique_ptr<IFileSystem> unique_fs;
+        IFileSystem *fs;
+        HosMutex lock;
+        size_t open_writable_files = 0;
+
     public:
-        SubDirectoryFileSystem(IFileSystem *fs, const char *bp) : base_fs(fs) {
-            Result rc = this->Initialize(bp);
+        DirectorySaveDataFileSystem(IFileSystem *fs) : unique_fs(fs) {
+            this->fs = this->unique_fs.get();
+            Result rc = this->Initialize();
             if (R_FAILED(rc)) {
                 fatalSimple(rc);
             }
         }
 
-        SubDirectoryFileSystem(std::shared_ptr<IFileSystem> fs, const char *bp) : base_fs(fs) {
-            Result rc = this->Initialize(bp);
+        DirectorySaveDataFileSystem(std::unique_ptr<IFileSystem> fs) : unique_fs(std::move(fs)) {
+            this->fs = this->unique_fs.get();
+            Result rc = this->Initialize();
+            if (R_FAILED(rc)) {
+                fatalSimple(rc);
+            }
+        }
+
+        DirectorySaveDataFileSystem(std::shared_ptr<IFileSystem> fs) : shared_fs(fs) {
+            this->fs = this->shared_fs.get();
+            Result rc = this->Initialize();
             if (R_FAILED(rc)) {
                 fatalSimple(rc);
             }
         }
 
 
-        virtual ~SubDirectoryFileSystem() {
-            if (this->base_path != nullptr) {
-                free(this->base_path);
-            }
-        }
-        
+        virtual ~DirectorySaveDataFileSystem() { }
+
     private:
-        Result Initialize(const char *bp);
+        Result Initialize();
     protected:
+        Result SynchronizeDirectory(const FsPath &dst_dir, const FsPath &src_dir);
+        Result AllocateWorkBuffer(void **out_buf, size_t *out_size, const size_t ideal_size);
+
         Result GetFullPath(char *out, size_t out_size, const char *relative_path);
         Result GetFullPath(FsPath &full_path, const FsPath &relative_path) {
             return GetFullPath(full_path.str, sizeof(full_path.str), relative_path.str);
         }
-        
+    public:
+        void OnWritableFileClose();
     public:
         virtual Result CreateFileImpl(const FsPath &path, uint64_t size, int flags) override;
         virtual Result DeleteFileImpl(const FsPath &path) override;
