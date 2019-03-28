@@ -19,8 +19,6 @@
 #include <stratosphere.hpp>
 #include "fs_shim.h"
 
-#include "fs_results.hpp"
-
 #include "../debug.hpp"
 
 enum FsIStorageCmd : u32 {

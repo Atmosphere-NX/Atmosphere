@@ -18,7 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "fs_results.hpp"
 #include "fs_shim.h"
 
 enum FsIFileCmd : u32 {

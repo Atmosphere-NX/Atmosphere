@@ -18,8 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "fs_results.hpp"
-
 enum FsIDirectoryCmd : u32 {
     FsIDirectoryCmd_Read = 0,
     FsIDirectoryCmd_GetEntryCount = 1,

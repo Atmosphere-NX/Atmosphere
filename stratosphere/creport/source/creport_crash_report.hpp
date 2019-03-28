@@ -17,31 +17,18 @@
 #pragma once
 
 #include <switch.h>
+#include <stratosphere.hpp>
 #include <cstdio>
 
 #include "creport_debug_types.hpp"
 #include "creport_thread_info.hpp"
 #include "creport_code_info.hpp"
 
-enum class CrashReportResult : Result {
-    UndefinedInstruction = 0x00A8,
-    InstructionAbort = 0x02A8,
-    DataAbort = 0x04A8,
-    AlignmentFault = 0x06A8,
-    DebuggerAttached = 0x08A8,
-    BreakPoint = 0x0AA8,
-    UserBreak = 0x0CA8,
-    DebuggerBreak = 0x0EA8,
-    BadSvc = 0x10A8,
-    UnknownNine = 0x12A8,
-    IncompleteReport = 0xC6A8,
-};
-
 class CrashReport {
     private:
         Handle debug_handle = INVALID_HANDLE;
         bool has_extra_info;
-        Result result = static_cast<Result>(CrashReportResult::IncompleteReport);
+        Result result = ResultCreportIncompleteReport;
         
         /* Attach Process Info. */ 
         AttachProcessInfo process_info{};
@@ -73,7 +60,7 @@ class CrashReport {
         }
         
         bool WasSuccessful() {
-            return this->result != (Result)CrashReportResult::IncompleteReport;
+            return this->result != ResultCreportIncompleteReport;
         }
         
         bool OpenProcess(u64 pid) {

@@ -49,7 +49,7 @@ enum class DebugExceptionType : u32 {
     UserBreak = 6,
     DebuggerBreak = 7,
     BadSvc = 8,
-    UnknownNine = 9,
+    SystemMemoryError = 9,
 };
 
 static inline const char *GetDebugExceptionTypeStr(DebugExceptionType type) {
@@ -72,8 +72,8 @@ static inline const char *GetDebugExceptionTypeStr(DebugExceptionType type) {
             return "Debugger Break";
         case DebugExceptionType::BadSvc:
             return "Bad Svc";
-        case DebugExceptionType::UnknownNine:
-            return "Unknown Nine";
+        case DebugExceptionType::SystemMemoryError:
+            return "System Memory Error";
         default:
             return "Unknown";
     }

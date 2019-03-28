@@ -17,8 +17,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "fs_results.hpp"
-
 #include "fsmitm_layeredrom.hpp"
 #include "../utils.hpp"
 #include "../debug.hpp"

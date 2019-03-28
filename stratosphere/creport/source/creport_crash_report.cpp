@@ -140,20 +140,20 @@ void CrashReport::HandleAttachProcess(DebugEventInfo &d) {
 void CrashReport::HandleException(DebugEventInfo &d) {
     switch (d.info.exception.type) {
         case DebugExceptionType::UndefinedInstruction:
-            this->result = (Result)CrashReportResult::UndefinedInstruction;
+            this->result = ResultCreportUndefinedInstruction;
             break;
         case DebugExceptionType::InstructionAbort:
-            this->result = (Result)CrashReportResult::InstructionAbort;
+            this->result = ResultCreportInstructionAbort;
             d.info.exception.specific.raw = 0;
             break;
         case DebugExceptionType::DataAbort:
-            this->result = (Result)CrashReportResult::DataAbort;
+            this->result = ResultCreportDataAbort;
             break;
         case DebugExceptionType::AlignmentFault:
-            this->result = (Result)CrashReportResult::AlignmentFault;
+            this->result = ResultCreportAlignmentFault;
             break;
         case DebugExceptionType::UserBreak:
-            this->result = (Result)CrashReportResult::UserBreak;
+            this->result = ResultCreportUserBreak;
             /* Try to parse out the user break result. */
             if (kernelAbove500()) {
                 Result user_result = 0;
@@ -167,10 +167,10 @@ void CrashReport::HandleException(DebugEventInfo &d) {
             }
             break;
         case DebugExceptionType::BadSvc:
-            this->result = (Result)CrashReportResult::BadSvc;
+            this->result = ResultCreportBadSvc;
             break;
-        case DebugExceptionType::UnknownNine:
-            this->result = (Result)CrashReportResult::UnknownNine;
+        case DebugExceptionType::SystemMemoryError:
+            this->result = ResultCreportSystemMemoryError;
             d.info.exception.specific.raw = 0;
             break;
         case DebugExceptionType::DebuggerAttached:

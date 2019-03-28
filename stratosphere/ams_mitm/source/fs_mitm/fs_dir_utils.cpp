@@ -16,7 +16,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <switch.h>
-#include "fs_results.hpp"
+
 #include "fs_dir_utils.hpp"
 #include "fs_ifile.hpp"
 

@@ -18,8 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "dmnt_results.hpp"
-
 struct MemoryRegionExtents {
     u64 base;
     u64 size;

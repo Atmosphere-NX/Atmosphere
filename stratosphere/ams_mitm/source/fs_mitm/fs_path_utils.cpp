@@ -16,8 +16,9 @@
 #include <cstring>
 #include <cstdlib>
 #include <switch.h>
+#include <stratosphere.hpp>
+
 #include "fs_path_utils.hpp"
-#include "fs_results.hpp"
 
 Result FsPathUtils::VerifyPath(const char *path, size_t max_path_len, size_t max_name_len) {
     const char *cur = path;
