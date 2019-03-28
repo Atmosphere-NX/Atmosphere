@@ -27,24 +27,24 @@
 Result RelocatableObjectsService::LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
     Registration::Process *target_proc = NULL;
     if (!this->has_initialized || this->process_id != pid_desc.pid) {
-        return 0xAE09;
+        return ResultLoaderInvalidProcess;
     }
     if (nro_address & 0xFFF) {
-        return 0xA209;
+        return ResultLoaderInvalidAddress;
     }
     if (nro_address + nro_size <= nro_address || !nro_size || (nro_size & 0xFFF)) {
-        return 0xA409;
+        return ResultLoaderInvalidSize;
     }
     if (bss_size && bss_address + bss_size <= bss_address) {
-        return 0xA409;
+        return ResultLoaderInvalidSize;
     }
     /* Ensure no overflow for combined sizes. */
     if (U64_MAX - nro_size < bss_size) {
-        return 0xA409;
+        return ResultLoaderInvalidSize;
     }
     target_proc = Registration::GetProcessByProcessId(pid_desc.pid);
     if (target_proc == NULL || (target_proc->owner_ro_service != NULL && (RelocatableObjectsService *)(target_proc->owner_ro_service) != this)) {
-        return 0xAC09;
+        return ResultLoaderInvalidSession;
     }
     target_proc->owner_ro_service = this;
     
@@ -54,15 +54,15 @@ Result RelocatableObjectsService::LoadNro(Out<u64> load_address, PidDescriptor p
 Result RelocatableObjectsService::UnloadNro(PidDescriptor pid_desc, u64 nro_address) {
     Registration::Process *target_proc = NULL;
     if (!this->has_initialized || this->process_id != pid_desc.pid) {
-        return 0xAE09;
+        return ResultLoaderInvalidProcess;
     }
     if (nro_address & 0xFFF) {
-        return 0xA209;
+        return ResultLoaderInvalidAddress;
     }
     
     target_proc = Registration::GetProcessByProcessId(pid_desc.pid);
     if (target_proc == NULL || (target_proc->owner_ro_service != NULL && (RelocatableObjectsService *)(target_proc->owner_ro_service) != this)) {
-        return 0xAC09;
+        return ResultLoaderInvalidSession;
     }
     target_proc->owner_ro_service = this;
     
@@ -80,21 +80,21 @@ Result RelocatableObjectsService::LoadNrr(PidDescriptor pid_desc, u64 nrr_addres
     };
     
     if (!this->has_initialized || this->process_id != pid_desc.pid) {
-        rc = 0xAE09;
+        rc = ResultLoaderInvalidProcess;
         return rc;
     }
     if (nrr_address & 0xFFF) {
-        rc = 0xA209;
+        rc = ResultLoaderInvalidAddress;
         return rc;
     }
     if (nrr_address + nrr_size <= nrr_address || !nrr_size || (nrr_size & 0xFFF)) {
-        rc = 0xA409;
+        rc = ResultLoaderInvalidSize;
         return rc;
     }
     
     target_proc = Registration::GetProcessByProcessId(pid_desc.pid);
     if (target_proc == NULL || (target_proc->owner_ro_service != NULL && (RelocatableObjectsService *)(target_proc->owner_ro_service) != this)) {
-        rc = 0xAC09;
+        rc = ResultLoaderInvalidSession;
         return rc;
     }
     target_proc->owner_ro_service = this;
@@ -118,15 +118,15 @@ Result RelocatableObjectsService::LoadNrr(PidDescriptor pid_desc, u64 nrr_addres
 Result RelocatableObjectsService::UnloadNrr(PidDescriptor pid_desc, u64 nrr_address) {
     Registration::Process *target_proc = NULL;
     if (!this->has_initialized || this->process_id != pid_desc.pid) {
-        return 0xAE09;
+        return ResultLoaderInvalidProcess;
     }
     if (nrr_address & 0xFFF) {
-        return 0xA209;
+        return ResultLoaderInvalidAddress;
     }
     
     target_proc = Registration::GetProcessByProcessId(pid_desc.pid);
     if (target_proc == NULL || (target_proc->owner_ro_service != NULL && (RelocatableObjectsService *)(target_proc->owner_ro_service) != this)) {
-        return 0xAC09;
+        return ResultLoaderInvalidSession;
     }
     target_proc->owner_ro_service = this;
     
@@ -144,5 +144,5 @@ Result RelocatableObjectsService::Initialize(PidDescriptor pid_desc, CopiedHandl
         this->has_initialized = true;
         return 0;
     }
-    return 0xAE09;
+    return ResultLoaderInvalidProcess;
 }

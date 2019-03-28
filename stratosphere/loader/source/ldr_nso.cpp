@@ -114,7 +114,7 @@ Result NsoUtils::LoadNsoHeaders(u64 title_id) {
         f_nso = OpenNso(i, title_id);
         if (f_nso != NULL) {
             if (fread(&g_nso_headers[i], 1, sizeof(NsoUtils::NsoHeader), f_nso) != sizeof(NsoUtils::NsoHeader)) {
-                return 0xA09;
+                return ResultLoaderInvalidNso;
             }
             g_nso_present[i] = true;
             fclose(f_nso);
@@ -133,7 +133,7 @@ Result NsoUtils::LoadNsoHeaders(u64 title_id) {
 Result NsoUtils::ValidateNsoLoadSet() {
     /* We *must* have a "main" NSO. */
     if (!g_nso_present[1]) {
-        return 0xA09;
+        return ResultLoaderInvalidNso;
     }
     
     /* Behavior switches depending on whether we have an rtld. */
@@ -141,19 +141,19 @@ Result NsoUtils::ValidateNsoLoadSet() {
          /* If we have an rtld, dst offset for .text must be 0 for all other NSOs. */
         for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
             if (g_nso_present[i] && g_nso_headers[i].segments[0].dst_offset != 0) {
-                return 0xA09;
+                return ResultLoaderInvalidNso;
             }
         }
     } else {
         /* If we don't have an rtld, we must ONLY have a main. */
         for (unsigned int i = 2; i < NSO_NUM_MAX; i++) {
             if (g_nso_present[i]) {
-                return 0xA09;
+                return ResultLoaderInvalidNso;
             }
         }
         /* That main's .text must be at dst_offset 0. */
         if (g_nso_headers[1].segments[0].dst_offset != 0) {
-            return 0xA09;
+            return ResultLoaderInvalidNso;
         }
     }
     
@@ -250,10 +250,10 @@ Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int s
     size_t out_size = g_nso_headers[index].segments[segment].decomp_size;
     size_t size = is_compressed ? g_nso_headers[index].compressed_sizes[segment] : out_size;
     if (size > out_size) {
-        return 0xA09;
+        return ResultLoaderInvalidNso;
     }
     if ((u32)(size | out_size) >> 31) {
-        return 0xA09;
+        return ResultLoaderInvalidNso;
     }
     
     u8 *dst_addr = map_base + g_nso_headers[index].segments[segment].dst_offset;
@@ -262,13 +262,13 @@ Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int s
     
     fseek(f_nso, g_nso_headers[index].segments[segment].file_offset, SEEK_SET);
     if (fread(load_addr, 1, size, f_nso) != size) {
-        return 0xA09;
+        return ResultLoaderInvalidNso;
     }
     
     
     if (is_compressed) {
         if (LZ4_decompress_safe((char *)load_addr, (char *)dst_addr, size, out_size) != (int)out_size) {
-            return 0xA09;
+            return ResultLoaderInvalidNso;
         }
     }
 
@@ -282,7 +282,7 @@ Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int s
         sha256_finish(&sha_ctx, hash);
 
         if (std::memcmp(g_nso_headers[index].section_hashes[segment], hash, sizeof(hash))) {
-            return 0xA09;
+            return ResultLoaderInvalidNso;
         }
     }
     
@@ -290,7 +290,7 @@ Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int s
 }
 
 Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLoadExtents *extents, u8 *args, u32 args_size) {
-    Result rc = 0xA09;
+    Result rc = ResultLoaderInvalidNso;
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         if (g_nso_present[i]) {
             AutoCloseMap nso_map;
@@ -302,8 +302,8 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
                         
             FILE *f_nso = OpenNso(i, title_id);
             if (f_nso == NULL) {
-                /* Is there a better error to return here? */
-                return 0xA09;
+                /* TODO: Is there a better error to return here? */
+                return ResultLoaderInvalidNso;
             }
             for (unsigned int seg = 0; seg < 3; seg++) {
                 if (R_FAILED((rc = LoadNsoSegment(title_id, i, seg, f_nso, map_base, map_base + extents->nso_sizes[i])))) {

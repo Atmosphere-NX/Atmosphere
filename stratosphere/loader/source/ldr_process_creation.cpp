@@ -45,7 +45,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
     /* Set IsAddressSpace64Bit, AddressSpaceType. */
     if (npdm->header->mmu_flags & 8) {
         /* Invalid Address Space Type. */
-        return 0x809;
+        return ResultLoaderInvalidMeta;
     }
     out_proc_info->process_flags = (npdm->header->mmu_flags & 0xF);
     
@@ -66,17 +66,17 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
     /* 3.0.0+ System Resource Size. */
     if (kernelAbove300()) {
         if (npdm->header->system_resource_size & 0x1FFFFF) {
-            return 0xA409;
+            return ResultLoaderInvalidSize;
         }
         if (npdm->header->system_resource_size) {
             if ((out_proc_info->process_flags & 6) == 0) {
-                return 0x809;
+                return ResultLoaderInvalidMeta;
             }
             if (!(((application_type & 3) == 1) || (kernelAbove600() && (application_type & 3) == 2))) {
-                return 0x809;
+                return ResultLoaderInvalidMeta;
             }
             if (npdm->header->system_resource_size > 0x1FE00000) {
-                return 0x809;
+                return ResultLoaderInvalidMeta;
             }
         }
         out_proc_info->system_resource_num_pages = npdm->header->system_resource_size >> 12;
@@ -103,7 +103,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
                 out_proc_info->process_flags |= 0x180;
                 break;
             default:
-                return 0x809;
+                return ResultLoaderInvalidMeta;
         }
     }
     
@@ -123,7 +123,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     /* Get the process from the registration queue. */
     target_process = Registration::GetProcess(index);
     if (target_process == NULL) {
-        return 0x1009;
+        return ResultLoaderProcessNotRegistered;
     }
     
     /* Mount the title's exefs. */
@@ -147,7 +147,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     
     /* Validate the title we're loading is what we expect. */
     if (npdm_info.aci0->title_id < npdm_info.acid->title_id_range_min || npdm_info.aci0->title_id > npdm_info.acid->title_id_range_max) {
-        rc = 0x1209;
+        rc = ResultLoaderInvalidProgramId;
         goto CREATE_PROCESS_END;
     }
     

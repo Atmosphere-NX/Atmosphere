@@ -453,7 +453,7 @@ ContentManagement::ExternalContentSource *ContentManagement::GetExternalContentS
 
 Result ContentManagement::SetExternalContentSource(u64 tid, FsFileSystem filesystem) {
     if (g_external_content_sources.size() >= 16) {
-        return 0x409; /* LAUNCH_QUEUE_FULL */
+        return ResultLoaderTooManyArguments; /* TODO: Is this an appropriate error? */
     }
 
     /* Remove any existing ECS for this title. */

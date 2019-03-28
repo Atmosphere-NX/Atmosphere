@@ -136,7 +136,7 @@ Result MapUtils::MapCodeMemoryForProcessModern(Handle process_h, u64 base_addres
     }
 
     if (size > address_space.addspace_size) {
-        return 0x6609;
+        return ResultLoaderInsufficientAddressSpace;
     }
     
     u64 try_address;
@@ -174,7 +174,7 @@ Result MapUtils::MapCodeMemoryForProcessDeprecated(Handle process_h, bool is_64_
     }
     
     if (size > addspace_size) {
-        return 0x6609;
+        return ResultLoaderInsufficientAddressSpace;
     }
         
     u64 try_address;

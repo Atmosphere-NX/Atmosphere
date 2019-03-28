@@ -15,6 +15,7 @@
  */
  
 #include <switch.h>
+#include <stratosphere.hpp>
 #include <algorithm>
 #include <array>
 #include <cstdio>
@@ -24,13 +25,14 @@
 static std::array<LaunchQueue::LaunchItem, LAUNCH_QUEUE_SIZE> g_launch_queue = {0};
 
 Result LaunchQueue::Add(u64 tid, const char *args, u64 arg_size) {
-    if(arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {
-        return 0x209;
+    if (arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {
+        return ResultLoaderTooLongArgument;
     }
     
     int idx = GetFreeIndex(tid);
-    if(idx == LAUNCH_QUEUE_FULL)
-        return 0x409;
+    if (idx == LAUNCH_QUEUE_FULL) {
+        return ResultLoaderTooManyArguments;
+    }
     
     g_launch_queue[idx].tid = tid;
     g_launch_queue[idx].arg_size = arg_size;
@@ -50,13 +52,14 @@ Result LaunchQueue::AddCopy(u64 tid_base, u64 tid) {
 
 
 Result LaunchQueue::AddItem(const LaunchItem *item) {
-    if(item->arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {
-        return 0x209;
+    if (item->arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {
+        return ResultLoaderTooLongArgument;
     }
     
     int idx = GetFreeIndex(item->tid);
-    if(idx == LAUNCH_QUEUE_FULL)
-        return 0x409;
+    if (idx == LAUNCH_QUEUE_FULL) {
+        return ResultLoaderTooManyArguments;
+    }
     
     g_launch_queue[idx] = *item;
     return 0x0;
@@ -71,8 +74,8 @@ int LaunchQueue::GetIndex(u64 tid) {
 }
 
 int LaunchQueue::GetFreeIndex(u64 tid) {
-    for(unsigned int i = 0; i < LAUNCH_QUEUE_SIZE; i++) {
-        if(g_launch_queue[i].tid == tid || g_launch_queue[i].tid == 0x0) {
+    for (unsigned int i = 0; i < LAUNCH_QUEUE_SIZE; i++) {
+        if (g_launch_queue[i].tid == tid || g_launch_queue[i].tid == 0x0) {
             return i;
         }
     }

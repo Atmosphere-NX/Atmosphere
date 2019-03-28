@@ -90,7 +90,7 @@ bool Registration::UnregisterIndex(u64 index) {
 Result Registration::GetRegisteredTidSid(u64 index, Registration::TidSid *out) {
     Registration::Process *target_process = GetProcess(index);
     if (target_process == NULL) {
-        return 0x1009;
+        return ResultLoaderProcessNotRegistered;
     }
     
     *out = target_process->tid_sid;
@@ -140,13 +140,13 @@ void Registration::CloseRoService(void *service, Handle process_h) {
 Result Registration::AddNrrInfo(u64 index, MappedCodeMemory *nrr_info) {
     Registration::Process *target_process = GetProcess(index);
     if (target_process == NULL) {
-        /* TODO: panic() */
-        return 0x7009;
+        /* TODO: std::abort(); */
+        return ResultLoaderProcessNotRegistered;
     }
     
     auto nrr_info_it = std::find_if_not(target_process->nrr_infos.begin(), target_process->nrr_infos.end(), std::mem_fn(&MappedCodeMemory::IsActive));
     if (nrr_info_it == target_process->nrr_infos.end()) {
-        return 0x7009;
+        return ResultLoaderInsufficientNrrRegistrations;
     }
     *nrr_info_it = *nrr_info;
     return 0;
@@ -156,7 +156,7 @@ Result Registration::RemoveNrrInfo(u64 index, u64 base_address) {
     Registration::Process *target_process = GetProcess(index);
     if (target_process == NULL) {
         /* Despite the fact that this should really be a panic condition, Nintendo returns 0x1009 in this case. */
-        return 0x1009;
+        return ResultLoaderProcessNotRegistered;
     }
     
     for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
@@ -165,7 +165,7 @@ Result Registration::RemoveNrrInfo(u64 index, u64 base_address) {
             return 0;
         }
     }
-    return 0xAA09;
+    return ResultLoaderNotRegistered;
 }
 
 
@@ -238,7 +238,7 @@ void Registration::AddNroToProcess(u64 index, MappedCodeMemory *nro, MappedCodeM
 Result Registration::RemoveNroInfo(u64 index, Handle process_h, u64 nro_heap_address) {
     Registration::Process *target_process = GetProcess(index);
     if (target_process == NULL) {
-        return 0xA809;
+        return ResultLoaderProcessNotRegistered;
     }
     
     for (unsigned int i = 0; i < NRO_INFO_MAX; i++) {
@@ -255,13 +255,13 @@ Result Registration::RemoveNroInfo(u64 index, Handle process_h, u64 nro_heap_add
             return rc;
         }
     }
-    return 0xA809;
+    return ResultLoaderNotLoaded;
 }
 
 Result Registration::GetNsoInfosForProcessId(Registration::NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written) {
     Registration::Process *target_process = GetProcessByProcessId(process_id);
     if (target_process == NULL) {
-        return 0x1009;
+        return ResultLoaderProcessNotRegistered;
     }
     u32 cur = 0;
     

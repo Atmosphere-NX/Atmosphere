@@ -89,11 +89,11 @@ Result ProcessManagerService::GetProgramInfo(OutPointerWithServerSize<ProcessMan
 }
 
 Result ProcessManagerService::RegisterTitle(Out<u64> index, Registration::TidSid tid_sid) {
-    return Registration::RegisterTidSid(&tid_sid, index.GetPointer()) ? 0 : 0xE09;
+    return Registration::RegisterTidSid(&tid_sid, index.GetPointer()) ? 0 : ResultLoaderTooManyProcesses;
 }
 
 Result ProcessManagerService::UnregisterTitle(u64 index) {
-    return Registration::UnregisterIndex(index) ? 0 : 0x1009;
+    return Registration::UnregisterIndex(index) ? 0 : ResultLoaderProcessNotRegistered;
 }
 
 
@@ -133,7 +133,7 @@ Result ProcessManagerService::PopulateProgramInfoBuffer(ProcessManagerService::P
     out->aci0_fah_size = info.aci0->fah_size;
     
     size_t offset = 0;
-    rc = 0x19009;
+    rc = ResultLoaderInternalError;
     if (offset + info.acid->sac_size < sizeof(out->ac_buffer)) {
         out->acid_sac_size = info.acid->sac_size;
         std::memcpy(out->ac_buffer + offset, info.acid_sac, out->acid_sac_size);

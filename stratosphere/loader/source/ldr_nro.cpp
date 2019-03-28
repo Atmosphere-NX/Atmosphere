@@ -28,19 +28,19 @@
 
 Result NroUtils::ValidateNrrHeader(NrrHeader *header, u64 size, u64 title_id_min) {
     if (header->magic != MAGIC_NRR0) {
-        return 0x6A09;
+        return ResultLoaderInvalidNrr;
     }
     if (header->nrr_size != size) {
-        return 0xA409;
+        return ResultLoaderInvalidSize;
     }
     
     /* TODO: Check NRR signature. */
     if (false) {
-        return 0x6C09;
+        return ResultLoaderInvalidSignature;
     }
     
     if (header->title_id_min != title_id_min) {
-        return 0x6A09;
+        return ResultLoaderInvalidNrr;
     }
     
     return 0x0;
@@ -65,7 +65,7 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
 
     /* Ensure there is an available NRO slot. */
     if (std::all_of(target_proc->nro_infos.begin(), target_proc->nro_infos.end(), std::mem_fn(&Registration::NroInfo::in_use))) {
-        rc = 0x6E09;
+        rc = ResultLoaderInsufficientNroRegistrations;
         return rc;
     }
     for (i = 0; i < 0x200; i++) {
@@ -78,7 +78,7 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
         }
     }
     if (i >= 0x200) {
-        rc = 0x6609;
+        rc = ResultLoaderInsufficientAddressSpace;
         return rc;
     }
 
@@ -92,19 +92,19 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
         nro_hdr = *((NroHeader *)mcm_nro.mapped_address);
 
         if (nro_hdr.magic != MAGIC_NRO0) {
-            rc = 0x6809;
+            rc = ResultLoaderInvalidNro;
             return rc;
         }
         if (nro_hdr.nro_size != nro_heap_size || nro_hdr.bss_size != bss_heap_size) {
-            rc = 0x6809;
+            rc = ResultLoaderInvalidNro;
             return rc;
         }
         if ((nro_hdr.text_size & 0xFFF) || (nro_hdr.ro_size & 0xFFF) || (nro_hdr.rw_size & 0xFFF) || (nro_hdr.bss_size & 0xFFF)) {
-            rc = 0x6809;
+            rc = ResultLoaderInvalidNro;
             return rc;
         }
         if (nro_hdr.text_offset != 0 || nro_hdr.text_offset + nro_hdr.text_size != nro_hdr.ro_offset || nro_hdr.ro_offset + nro_hdr.ro_size != nro_hdr.rw_offset || nro_hdr.rw_offset + nro_hdr.rw_size != nro_hdr.nro_size) {
-            rc = 0x6809;
+            rc = ResultLoaderInvalidNro;
             return rc;
         }
         
@@ -120,12 +120,12 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
     }
     
     if (!Registration::IsNroHashPresent(target_proc->index, nro_hash)) {
-        rc = 0x6C09;
+        rc = ResultLoaderInvalidSignature;
         return rc;
     }
 
     if (Registration::IsNroAlreadyLoaded(target_proc->index, nro_hash)) {
-        rc = 0x7209;
+        rc = ResultLoaderNroAlreadyLoaded;
         return rc;
     }
     
