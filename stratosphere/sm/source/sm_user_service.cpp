@@ -27,7 +27,7 @@ Result UserService::Initialize(PidDescriptor pid) {
 
 Result UserService::GetService(Out<MovedHandle> out_h, SmServiceName service) {
     Handle session_h = 0;
-    Result rc = 0x415;
+    Result rc = ResultSmInvalidClient;
     
 #ifdef SM_ENABLE_SMHAX
     if (!this->has_initialized) {
@@ -46,7 +46,7 @@ Result UserService::GetService(Out<MovedHandle> out_h, SmServiceName service) {
 
 Result UserService::RegisterService(Out<MovedHandle> out_h, SmServiceName service, u32 max_sessions, bool is_light) {
     Handle service_h = 0;
-    Result rc = 0x415;
+    Result rc = ResultSmInvalidClient;
 #ifdef SM_ENABLE_SMHAX
     if (!this->has_initialized) {
         rc = Registration::RegisterServiceForPid(Registration::GetInitialProcessId(), smEncodeName(service.name), max_sessions, (is_light & 1) != 0, &service_h);
@@ -63,7 +63,7 @@ Result UserService::RegisterService(Out<MovedHandle> out_h, SmServiceName servic
 }
 
 Result UserService::UnregisterService(SmServiceName service) {
-    Result rc = 0x415;
+    Result rc = ResultSmInvalidClient;
 #ifdef SM_ENABLE_SMHAX
     if (!this->has_initialized) {
         rc = Registration::UnregisterServiceForPid(Registration::GetInitialProcessId(), smEncodeName(service.name));
@@ -78,7 +78,7 @@ Result UserService::UnregisterService(SmServiceName service) {
 Result UserService::AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandle> qry_h, SmServiceName service) {
     Handle service_h = 0;
     Handle query_h = 0;
-    Result rc = 0x415;
+    Result rc = ResultSmInvalidClient;
     if (this->has_initialized) {
         rc = Registration::InstallMitmForPid(this->pid, smEncodeName(service.name), &service_h, &query_h);
     }
@@ -91,7 +91,7 @@ Result UserService::AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandl
 }
 
 Result UserService::AtmosphereUninstallMitm(SmServiceName service) {
-    Result rc = 0x415;
+    Result rc = ResultSmInvalidClient;
     if (this->has_initialized) {
         rc = Registration::UninstallMitmForPid(this->pid, smEncodeName(service.name));
     }
@@ -99,7 +99,7 @@ Result UserService::AtmosphereUninstallMitm(SmServiceName service) {
 }
 
 Result UserService::AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<MovedHandle> fwd_h, SmServiceName service) {
-    Result rc = 0x415;
+    Result rc = ResultSmInvalidClient;
     Handle out_fwd_h = 0;
     if (this->has_initialized) {
         rc = Registration::AcknowledgeMitmSessionForPid(this->pid, smEncodeName(service.name), &out_fwd_h, client_pid.GetPointer());
@@ -113,10 +113,10 @@ Result UserService::AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<Mo
 }
 
 Result UserService::AtmosphereAssociatePidTidForMitm(u64 pid, u64 tid) {
-    Result rc = 0x415;
+    Result rc = ResultSmInvalidClient;
     if (this->has_initialized) {
         if (Registration::IsInitialProcess(pid)) {
-            rc = 0x1015;
+            rc = ResultSmNotAllowed;
         } else {
             rc = Registration::AssociatePidTidForMitm(pid, tid);
         }
