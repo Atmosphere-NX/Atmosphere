@@ -38,7 +38,7 @@ Result FatalEventManager::GetEvent(Handle *out) {
     
     /* Only allow GetEvent to succeed NumFatalEvents times. */
     if (this->events_gotten >= FatalEventManager::NumFatalEvents) {
-        return FatalResult_TooManyEvents;
+        return ResultFatalTooManyEvents;
     }
     
     *out = this->events[this->events_gotten++].revent;

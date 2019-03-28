@@ -97,10 +97,10 @@ static bool InRepairWithoutTimeReviserCartridge() {
 
 void CheckRepairStatus() {
     if (InRepairWithoutVolHeld()) {
-        ThrowFatalForSelf(FatalResult_InRepairWithoutVolHeld);
+        ThrowFatalForSelf(ResultFatalInRepairWithoutVolHeld);
     }
     
     if (InRepairWithoutTimeReviserCartridge()) {
-        ThrowFatalForSelf(FatalResult_InRepairWithoutTimeReviserCartridge);
+        ThrowFatalForSelf(ResultFatalInRepairWithoutTimeReviserCartridge);
     }
 }

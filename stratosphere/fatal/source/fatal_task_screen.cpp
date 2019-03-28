@@ -186,7 +186,7 @@ Result ShowFatalTask::ShowFatal() {
     /* Dequeue a buffer. */
     u16 *tiled_buf = reinterpret_cast<u16 *>(framebufferBegin(&this->fb, NULL));
     if (tiled_buf == nullptr) {
-        return FatalResult_NullGfxBuffer;
+        return ResultFatalNullGraphicsBuffer;
     }
     
     /* Let the font manager know about our framebuffer. */

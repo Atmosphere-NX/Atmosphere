@@ -26,7 +26,7 @@ static bool g_thrown = false;
 static Result SetThrown() {
     /* This should be fine, since fatal only has a single IPC thread. */
     if (g_thrown) {
-        return FatalResult_AlreadyThrown;
+        return ResultFatalAlreadyThrown;
     }
     
     g_thrown = true;
