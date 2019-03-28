@@ -239,7 +239,7 @@ Handle ResourceLimitUtils::GetResourceLimitHandleByCategory(ResourceLimitCategor
 Result ResourceLimitUtils::BoostSystemMemoryResourceLimit(u64 boost_size) {
     Result rc = 0;
     if (boost_size > g_memory_resource_limits[g_memory_limit_type][ResourceLimitCategory_Application]) {
-        return 0xC0F;
+        return ResultPmInvalidSize;
     }
     u64 app_size = g_memory_resource_limits[g_memory_limit_type][ResourceLimitCategory_Application] - boost_size;
     if (kernelAbove500()) {

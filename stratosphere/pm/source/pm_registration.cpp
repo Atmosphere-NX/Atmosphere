@@ -80,7 +80,7 @@ void Registration::HandleProcessLaunch() {
         
     /* Get the resource limit handle, ensure that we can launch the program. */
     if ((program_info.application_type & 3) == 1 && HasApplicationProcess(NULL)) {
-        rc = 0xA0F;
+        rc = ResultPmApplicationRunning;
         goto HANDLE_PROCESS_LAUNCH_END;
     }
     
@@ -190,11 +190,11 @@ Result Registration::LaunchDebugProcess(u64 pid) {
     
     std::shared_ptr<Registration::Process> proc = GetProcess(pid);
     if (proc == NULL) {
-        return 0x20F;
+        return ResultPmProcessNotFound;
     }
     
     if (proc->state >= ProcessState_Running) {
-        return 0x40F;
+        return ResultPmAlreadyStarted;
     }
     
     /* Check that this is a real program. */
@@ -480,7 +480,7 @@ Result Registration::EnableDebugForTitleId(u64 tid, Handle *out) {
     u64 old = g_debug_on_launch_tid.exchange(tid);
     if (old) {
         g_debug_on_launch_tid = old;
-        return 0x80F;
+        return ResultPmDebugHookInUse;
     }
     *out = g_debug_title_event->GetHandle();
     return 0x0;

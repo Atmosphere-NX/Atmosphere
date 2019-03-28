@@ -24,7 +24,7 @@
 Result DebugMonitorService::GetUnknownStub(Out<u32> count, OutBuffer<u8> out_buf, u64 in_unk) {
     /* This command seems stubbed. */
     if (out_buf.num_elements >> 31) {
-        return 0xC0F;
+        return ResultPmInvalidSize;
     }
     count.SetValue(0);
     return 0x0;
@@ -32,7 +32,7 @@ Result DebugMonitorService::GetUnknownStub(Out<u32> count, OutBuffer<u8> out_buf
 
 Result DebugMonitorService::GetDebugProcessIds(Out<u32> count, OutBuffer<u64> out_pids) {
     if (out_pids.num_elements >> 31) {
-        return 0xC0F;
+        return ResultPmInvalidSize;
     }
     return Registration::GetDebugProcessIds(out_pids.buffer, out_pids.num_elements, count.GetPointer());
 }
@@ -49,7 +49,7 @@ Result DebugMonitorService::GetTitleProcessId(Out<u64> pid, u64 tid) {
         pid.SetValue(proc->pid);
         return 0;
     }
-    return 0x20F;
+    return ResultPmProcessNotFound;
 }
 
 Result DebugMonitorService::EnableDebugForTitleId(Out<CopiedHandle> event, u64 tid) {
@@ -64,7 +64,7 @@ Result DebugMonitorService::GetApplicationProcessId(Out<u64> pid) {
         pid.SetValue(app_proc->pid);
         return 0x0;
     }
-    return 0x20F;
+    return ResultPmProcessNotFound;
 }
 
 Result DebugMonitorService::EnableDebugForApplication(Out<CopiedHandle> event) {
@@ -83,7 +83,7 @@ Result DebugMonitorService::AtmosphereGetProcessInfo(Out<CopiedHandle> proc_hand
         tid_sid.SetValue(proc->tid_sid);
         return 0;
     }
-    return 0x20F;
+    return ResultPmProcessNotFound;
 }
 
 Result DebugMonitorService::AtmosphereGetCurrentLimitInfo(Out<u64> cur_val, Out<u64> lim_val, u32 category, u32 resource) {

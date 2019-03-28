@@ -26,5 +26,5 @@ Result InformationService::GetTitleId(Out<u64> tid, u64 pid) {
         tid.SetValue(proc->tid_sid.title_id);
         return 0;
     }
-    return 0x20F;
+    return ResultPmProcessNotFound;
 }
