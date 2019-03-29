@@ -260,6 +260,10 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             /* UNOFFICIAL: The fact that we are executing means we aren't in the process of shutting down. */
             *p_outvalue = 0;
             break;
+        case CONFIGITEM_EXOSPHERE_VERHASH:
+            /* UNOFFICIAL: Gets information about the current exosphere git commit hash. */
+            *p_outvalue = ATMOSPHERE_RELEASE_VERSION_HASH;
+            break;
         default:
             result = 2;
             break;
