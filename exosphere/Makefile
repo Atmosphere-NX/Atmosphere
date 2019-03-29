@@ -10,6 +10,7 @@ TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/devkitA64/base_rules
 
 AMSBRANCH := $(shell git symbolic-ref --short HEAD)
+AMSHASH = $(shell git rev-parse --short=16 HEAD)
 AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
 
 ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
@@ -33,7 +34,7 @@ INCLUDES	:=	include ../common/include
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only #<- important
-DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
+DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\" -DATMOSPHERE_RELEASE_VERSION_HASH="0x$(AMSHASH)"
 CFLAGS	:= \
 	-g \
 	-O2 \
