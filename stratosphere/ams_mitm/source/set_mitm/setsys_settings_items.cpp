@@ -87,7 +87,7 @@ Result SettingsItemManager::ValidateName(const char *name, size_t max_size) {
         return 0x20A69;
     }
     
-    return 0x0;
+    return ResultSuccess;
 }
 
 Result SettingsItemManager::ValidateName(const char *name) {
@@ -110,7 +110,7 @@ Result SettingsItemManager::ValidateKey(const char *key, size_t max_size) {
         return 0x20C69;
     }
     
-    return 0x0;
+    return ResultSuccess;
 }
 
 Result SettingsItemManager::ValidateKey(const char *key) {
@@ -222,7 +222,7 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
     }
     
     g_settings_items[kv] = value;
-    return 0x0;
+    return ResultSuccess;
 }
 
 static int SettingsItemIniHandler(void *user, const char *name, const char *key, const char *value) {
@@ -287,7 +287,7 @@ Result SettingsItemManager::GetValueSize(const char *name, const char *key, u64 
     }
     
     *out_size = it->second.size;
-    return 0x0;
+    return ResultSuccess;
 }
 
 Result SettingsItemManager::GetValue(const char *name, const char *key, void *out, size_t max_size, u64 *out_size) {
@@ -305,5 +305,5 @@ Result SettingsItemManager::GetValue(const char *name, const char *key, void *ou
     *out_size = copy_size;
     
     memcpy(out, it->second.data, copy_size);
-    return 0x0;
+    return ResultSuccess;
 }

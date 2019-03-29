@@ -30,7 +30,7 @@ Result NpdmUtils::LoadNpdmFromCache(u64 tid, NpdmInfo *out) {
         return LoadNpdm(tid, out);
     }
     *out = g_npdm_cache.info;
-    return 0;
+    return ResultSuccess;
 }
 
 FILE *NpdmUtils::OpenNpdmFromECS(ContentManagement::ExternalContentSource *ecs) {
@@ -179,7 +179,7 @@ Result NpdmUtils::LoadNpdmInternal(FILE *f_npdm, NpdmUtils::NpdmCache *cache) {
     
     info->acid_kac = (void *)((uintptr_t)info->acid + info->acid->kac_offset);
     
-    rc = 0;
+    rc = ResultSuccess;
     return rc;
 }
 
@@ -223,13 +223,13 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
     /* We validated! */
     info->title_id = tid;
     *out = *info;
-    rc = 0;
+    rc = ResultSuccess;
     
     return rc;
 }
 
 Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size_t num_restrict_caps, u32 *&cur_cap, size_t &caps_remaining) {
-    Result rc = 0;
+    Result rc = ResultSuccess;
     u32 desc = *cur_cap++;
     caps_remaining--;
     unsigned int low_bits = 0;
@@ -278,7 +278,7 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                        break;
                     }       
                     /* Valid! */
-                    rc = 0;
+                    rc = ResultSuccess;
                     break;
                 }
             }
@@ -299,7 +299,7 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                         break;
                     }
                     /* Valid! */
-                    rc = 0;
+                    rc = ResultSuccess;
                     break;
                 }
             }
@@ -353,7 +353,7 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                             continue;
                         }
                         /* Valid! */
-                        rc = 0;
+                        rc = ResultSuccess;
                         break;
                     }
                 }
@@ -368,13 +368,13 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                         continue;
                     }
                     /* Valid! */
-                    rc = 0;
+                    rc = ResultSuccess;
                     break;
                 }
             }
             break;
         case 11: /* IRQ Pair. */ 
-            rc = 0x0;
+            rc = ResultSuccess;
             for (unsigned int irq_i = 0; irq_i < 2; irq_i++) {
                 u32 irq = desc & 0x3FF;
                 desc >>= 10;
@@ -411,7 +411,7 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
             }
             if (desc == r_desc) {
                 /* Valid! */
-                rc = 0;
+                rc = ResultSuccess;
             }
             break;
         case 14: /* Kernel Release Version. */
@@ -428,7 +428,7 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
             }
             if (desc == r_desc) {
                 /* Valid! */
-                rc = 0;
+                rc = ResultSuccess;
             }
             break;
         case 15: /* Handle Table Size. */
@@ -442,7 +442,7 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                         break;
                     }
                     /* Valid! */
-                    rc = 0;
+                    rc = ResultSuccess;
                     break;
                 }
             }
@@ -461,11 +461,11 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
             }
             if ((desc & ~r_desc) == 0) {
                 /* Valid! */
-                rc = 0;
+                rc = ResultSuccess;
             }
             break;
         case 32: /* Empty Descriptor. */
-            rc = 0;
+            rc = ResultSuccess;
             break;
         default: /* Unrecognized Descriptor. */
             rc = ResultLoaderUnknownCapability;
@@ -475,7 +475,7 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
 }
 
 Result NpdmUtils::ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32 *aci0_caps, size_t num_aci0_caps) {
-    Result rc = 0;
+    Result rc = ResultSuccess;
     size_t remaining = num_aci0_caps;
     u32 *cur_cap = aci0_caps;
     while (remaining) {

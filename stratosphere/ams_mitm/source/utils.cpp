@@ -343,7 +343,7 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
         return ResultFsSdCardNotPresent;
     }
     
-    Result rc = 0;
+    Result rc = ResultSuccess;
     
     char path[FS_MAX_PATH];
     if (*fn == '/') {
@@ -458,7 +458,7 @@ Result Utils::GetKeysHeld(u64 *keys) {
     hidScanInput();
     *keys = hidKeysHeld(CONTROLLER_P1_AUTO);
     
-    return 0x0;
+    return ResultSuccess;
 }
 
 static bool HasOverrideKey(OverrideKey *cfg) {

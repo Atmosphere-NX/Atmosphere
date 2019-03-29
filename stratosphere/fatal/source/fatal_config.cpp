@@ -41,7 +41,7 @@ IEvent *GetFatalSettingsEvent() {
             if (R_SUCCEEDED(setsysGetFatalDirtyFlags(&flags_0, &flags_1)) && (flags_0 & 1)) { 
                 UpdateLanguageCode();
             }
-            return 0;
+            return ResultSuccess;
         }, true);
     }
     

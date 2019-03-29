@@ -30,7 +30,7 @@ static Result SetThrown() {
     }
     
     g_thrown = true;
-    return 0;
+    return ResultSuccess;
 }
 
 Result ThrowFatalForSelf(u32 error) {
@@ -41,7 +41,7 @@ Result ThrowFatalForSelf(u32 error) {
 }
 
 Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu_ctx) {
-    Result rc = 0;
+    Result rc = ResultSuccess;
     FatalThrowContext ctx = {0};
     ctx.error_code = error;
     if (cpu_ctx != nullptr) {
@@ -102,7 +102,7 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
                     RunFatalTasks(&ctx, title_id, policy == FatalType_ErrorReportAndErrorScreen, &erpt_event, &battery_event);
                 } else {
                     /* If flag is not set, don't show the fatal screen. */
-                    return 0;
+                    return ResultSuccess;
                 }
                 
             }
@@ -112,5 +112,5 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
             std::abort();
     }
     
-    return 0;
+    return ResultSuccess;
 }

@@ -32,5 +32,5 @@ Result HidManagement::GetKeysHeld(u64 *keys) {
     hidScanInput();
     *keys = hidKeysHeld(CONTROLLER_P1_AUTO);
     
-    return 0x0;
+    return ResultSuccess;
 }

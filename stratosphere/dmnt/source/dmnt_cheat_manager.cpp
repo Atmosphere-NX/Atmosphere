@@ -190,7 +190,7 @@ Result DmntCheatManager::GetCheatProcessMappingCount(u64 *out_count) {
         address = mem_info.addr + mem_info.size;
     } while (address != 0);
 
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::GetCheatProcessMappings(MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset) {
@@ -221,7 +221,7 @@ Result DmntCheatManager::GetCheatProcessMappings(MemoryInfo *mappings, size_t ma
         address = mem_info.addr + mem_info.size;
     } while (address != 0 && *out_count < max_count);
 
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size) {
@@ -601,7 +601,7 @@ Result DmntCheatManager::GetCheatCount(u64 *out_count) {
         }
     }
 
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::GetCheats(CheatEntry *cheats, size_t max_count, u64 *out_count, u64 offset) {
@@ -622,7 +622,7 @@ Result DmntCheatManager::GetCheats(CheatEntry *cheats, size_t max_count, u64 *ou
         }
     }
 
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::GetCheatById(CheatEntry *out_cheat, u32 cheat_id) {
@@ -638,7 +638,7 @@ Result DmntCheatManager::GetCheatById(CheatEntry *out_cheat, u32 cheat_id) {
     }
 
     *out_cheat = *entry;
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::ToggleCheat(u32 cheat_id) {
@@ -661,7 +661,7 @@ Result DmntCheatManager::ToggleCheat(u32 cheat_id) {
 
     /* Trigger a VM reload. */
     g_needs_reload_vm_program = true;
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::AddCheat(u32 *out_id, CheatDefinition *def, bool enabled) {
@@ -685,7 +685,7 @@ Result DmntCheatManager::AddCheat(u32 *out_id, CheatDefinition *def, bool enable
 
     /* Trigger a VM reload. */
     g_needs_reload_vm_program = true;
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::RemoveCheat(u32 cheat_id) {
@@ -703,7 +703,7 @@ Result DmntCheatManager::RemoveCheat(u32 cheat_id) {
 
     /* Trigger a VM reload. */
     g_needs_reload_vm_program = true;
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::GetFrozenAddressCount(u64 *out_count) {
@@ -714,7 +714,7 @@ Result DmntCheatManager::GetFrozenAddressCount(u64 *out_count) {
     }
 
     *out_count = g_frozen_addresses_map.size();
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::GetFrozenAddresses(FrozenAddressEntry *frz_addrs, size_t max_count, u64 *out_count, u64 offset) {
@@ -739,7 +739,7 @@ Result DmntCheatManager::GetFrozenAddresses(FrozenAddressEntry *frz_addrs, size_
         }
     }
 
-    return 0;
+    return ResultSuccess;
 }
 
 Result  DmntCheatManager::GetFrozenAddress(FrozenAddressEntry *frz_addr, u64 address) {
@@ -756,7 +756,7 @@ Result  DmntCheatManager::GetFrozenAddress(FrozenAddressEntry *frz_addr, u64 add
 
     frz_addr->address = it->first;
     frz_addr->value = it->second;
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::EnableFrozenAddress(u64 *out_value, u64 address, u64 width) {
@@ -784,7 +784,7 @@ Result DmntCheatManager::EnableFrozenAddress(u64 *out_value, u64 address, u64 wi
 
     g_frozen_addresses_map[address] = value;
     *out_value = value.value;
-    return 0;
+    return ResultSuccess;
 }
 
 Result DmntCheatManager::DisableFrozenAddress(u64 address) {
@@ -800,7 +800,7 @@ Result DmntCheatManager::DisableFrozenAddress(u64 address) {
     }
 
     g_frozen_addresses_map.erase(address);
-    return 0;
+    return ResultSuccess;
 }
 
 Handle DmntCheatManager::PrepareDebugNextApplication() {
@@ -842,7 +842,7 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
         std::scoped_lock<HosMutex> lk(g_cheat_lock);
 
         if (HasActiveCheatProcess()) {
-            return 0;
+            return ResultSuccess;
         }
 
         /* Close the current application, if it's open. */
@@ -1031,7 +1031,7 @@ void DmntCheatManager::DetectThread(void *arg) {
         /* Setup detection for the next application, and close the duplicate handle. */
         svcCloseHandle(PrepareDebugNextApplication());
 
-        return 0x0;
+        return ResultSuccess;
     }, true));
 
     waiter->Process();
@@ -1099,7 +1099,7 @@ Result DmntCheatManager::GetCheatProcessMetadata(CheatProcessMetadata *out) {
 
     if (HasActiveCheatProcess()) {
         *out = g_cheat_process_metadata;
-        return 0;
+        return ResultSuccess;
     }
 
     return ResultDmntCheatNotAttached;

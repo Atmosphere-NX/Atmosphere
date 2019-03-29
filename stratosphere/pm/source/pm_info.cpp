@@ -24,7 +24,7 @@ Result InformationService::GetTitleId(Out<u64> tid, u64 pid) {
     std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
     if (proc != NULL) {
         tid.SetValue(proc->tid_sid.title_id);
-        return 0;
+        return ResultSuccess;
     }
     return ResultPmProcessNotFound;
 }

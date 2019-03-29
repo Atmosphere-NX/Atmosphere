@@ -127,7 +127,7 @@ Result NsoUtils::LoadNsoHeaders(u64 title_id) {
         }
     }
     
-    return 0x0;
+    return ResultSuccess;
 }
 
 Result NsoUtils::ValidateNsoLoadSet() {
@@ -157,7 +157,7 @@ Result NsoUtils::ValidateNsoLoadSet() {
         }
     }
     
-    return 0x0;
+    return ResultSuccess;
 }
 
 
@@ -239,7 +239,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
         extents->args_address += extents->base_address;
     }
     
-    return 0x0;
+    return ResultSuccess;
 }
 
 
@@ -286,7 +286,7 @@ Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int s
         }
     }
     
-    return 0x0;
+    return ResultSuccess;
 }
 
 Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLoadExtents *extents, u8 *args, u32 args_size) {

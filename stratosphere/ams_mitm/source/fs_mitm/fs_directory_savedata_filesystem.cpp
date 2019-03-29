@@ -129,7 +129,7 @@ Result DirectorySaveDataFileSystem::AllocateWorkBuffer(void **out_buf, size_t *o
         if (buf != nullptr) {
             *out_buf = buf;
             *out_size = try_size;
-            return 0;
+            return ResultSuccess;
         }
 
         /* Divide size by two. */
@@ -303,7 +303,7 @@ Result DirectorySaveDataFileSystem::OpenFileImpl(std::unique_ptr<IFile> &out_fil
         this->open_writable_files++;
     }
 
-    return 0;
+    return ResultSuccess;
 }
 
 Result DirectorySaveDataFileSystem::OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, const FsPath &path, DirectoryOpenMode mode) {

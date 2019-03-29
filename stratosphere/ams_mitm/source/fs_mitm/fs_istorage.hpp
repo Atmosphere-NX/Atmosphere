@@ -102,7 +102,7 @@ class IROStorage : public IStorage {
             return ResultFsUnsupportedOperation;
         };
         virtual Result Flush() final {
-            return 0x0;
+            return ResultSuccess;
         };
         virtual Result SetSize(u64 size) final {
             (void)(size);

@@ -79,7 +79,7 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     }
 
     if (ShouldOverrideContentsWithSD(tid) && R_SUCCEEDED(MountCodeNspOnSd(tid))) {
-        return 0x0;
+        return ResultSuccess;
     }
 
     if (R_FAILED(rc = ResolveContentPath(path, tid, sid))) {
@@ -116,7 +116,7 @@ Result ContentManagement::UnmountCode() {
         g_mounted_hbl_nsp = false;
     }
     fsdevUnmountDevice("code");
-    return 0;
+    return ResultSuccess;
 }
 
 
@@ -469,7 +469,7 @@ Result ContentManagement::SetExternalContentSource(u64 tid, FsFileSystem filesys
         std::make_tuple(tid),
         std::make_tuple(tid, mountpoint));
 
-    return 0;
+    return ResultSuccess;
 }
 
 void ContentManagement::ClearExternalContentSource(u64 tid) {

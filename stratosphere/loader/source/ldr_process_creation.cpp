@@ -107,7 +107,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
         }
     }
     
-    return 0x0;
+    return ResultSuccess;
 }
 
 Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nca_path, LaunchQueue::LaunchItem *launch_item, u64 arg_flags, Handle reslimit_h) {
@@ -221,7 +221,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     /* Send the pid/tid pair to anyone interested in man-in-the-middle-attacking it. */
     Registration::AssociatePidTidForMitM(index);
     
-    rc = 0;
+    rc = ResultSuccess;
 
     /* If HBL, override HTML document path. */
     if (ContentManagement::ShouldOverrideContentsWithHBL(target_process->tid_sid.title_id)) {

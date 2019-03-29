@@ -70,7 +70,7 @@ Result RelocatableObjectsService::UnloadNro(PidDescriptor pid_desc, u64 nro_addr
 }
 
 Result RelocatableObjectsService::LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size) {
-    Result rc = 0;
+    Result rc = ResultSuccess;
     Registration::Process *target_proc = NULL;
     MappedCodeMemory nrr_info = {0};
     ON_SCOPE_EXIT {
@@ -142,7 +142,7 @@ Result RelocatableObjectsService::Initialize(PidDescriptor pid_desc, CopiedHandl
         this->process_handle = process_h.handle;
         this->process_id = handle_pid;
         this->has_initialized = true;
-        return 0;
+        return ResultSuccess;
     }
     return ResultLoaderInvalidProcess;
 }

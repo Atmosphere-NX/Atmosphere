@@ -72,7 +72,7 @@ static u64 g_system_boost_size = 0;
 
 /* Tries to set Resource limits for a category. */
 static Result SetResourceLimits(ResourceLimitUtils::ResourceLimitCategory category, u64 new_memory_size) {
-    Result rc = 0;
+    Result rc = ResultSuccess;
     u64 old_memory_size = g_resource_limits[category][LimitableResource_Memory];
     g_resource_limits[category][LimitableResource_Memory] = new_memory_size;
     for (unsigned int r = 0; r < 5; r++) {
@@ -86,7 +86,7 @@ static Result SetResourceLimits(ResourceLimitUtils::ResourceLimitCategory catego
 
 
 static Result SetNewMemoryResourceLimit(ResourceLimitUtils::ResourceLimitCategory category, u64 new_memory_size) {
-    Result rc = 0;
+    Result rc = ResultSuccess;
     u64 old_memory_size = g_resource_limits[category][LimitableResource_Memory];
     g_resource_limits[category][LimitableResource_Memory] = new_memory_size;
     if (R_FAILED((rc = svcSetResourceLimitLimitValue(g_resource_limit_handles[category], LimitableResource_Memory, g_resource_limits[category][LimitableResource_Memory])))) {
@@ -237,7 +237,7 @@ Handle ResourceLimitUtils::GetResourceLimitHandleByCategory(ResourceLimitCategor
 }
 
 Result ResourceLimitUtils::BoostSystemMemoryResourceLimit(u64 boost_size) {
-    Result rc = 0;
+    Result rc = ResultSuccess;
     if (boost_size > g_memory_resource_limits[g_memory_limit_type][ResourceLimitCategory_Application]) {
         return ResultPmInvalidSize;
     }

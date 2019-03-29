@@ -92,10 +92,10 @@ Result BpcRebootManager::PerformReboot() {
             return ResultAtmosphereMitmShouldForwardToSession;
         case BpcRebootType::ToRcm:
             RebootToRcm();
-            return 0;
+            return ResultSuccess;
         case BpcRebootType::ToPayload:
         default:
             DoRebootToPayload();
-            return 0;
+            return ResultSuccess;
     }
 }

@@ -42,7 +42,7 @@ Result FatalEventManager::GetEvent(Handle *out) {
     }
     
     *out = this->events[this->events_gotten++].revent;
-    return 0;
+    return ResultSuccess;
 }
 
 void FatalEventManager::SignalEvents() {

@@ -86,7 +86,7 @@ void FsMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx
 Result FsMitmService::OpenHblWebContentFileSystem(Out<std::shared_ptr<IFileSystemInterface>> &out_fs) {
     std::shared_ptr<IFileSystemInterface> fs = nullptr;
     u32 out_domain_id = 0;
-    Result rc = 0;
+    Result rc = ResultSuccess;
     
     ON_SCOPE_EXIT {
         if (R_SUCCEEDED(rc)) {
@@ -162,7 +162,7 @@ Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterf
 Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out_storage, u32 bis_partition_id) {
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;
-    Result rc = 0;
+    Result rc = ResultSuccess;
     
     ON_SCOPE_EXIT {
         if (R_SUCCEEDED(rc)) {
@@ -219,7 +219,7 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
 Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStorageInterface>> out_storage) {
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;
-    Result rc = 0;
+    Result rc = ResultSuccess;
     
     if (!this->should_override_contents) {
         return ResultAtmosphereMitmShouldForwardToSession;
@@ -249,7 +249,7 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
                 out_domain_id = s.s.object_id;
             }
         } else {
-            rc = 0;
+            rc = ResultSuccess;
         }
         if (R_FAILED(rc)) {
             storage.reset();
@@ -295,7 +295,7 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
         
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;
-    Result rc = 0;
+    Result rc = ResultSuccess;
     
     bool has_cache = StorageCacheGetEntry(data_id, &storage);
     
@@ -320,7 +320,7 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
                 out_domain_id = s.s.object_id;
             }
         } else {
-            rc = 0;
+            rc = ResultSuccess;
         }
         if (R_FAILED(rc)) {
             storage.reset();

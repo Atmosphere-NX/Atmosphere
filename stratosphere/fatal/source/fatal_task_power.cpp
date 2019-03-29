@@ -120,7 +120,7 @@ void PowerButtonObserveTask::WaitForPowerButton() {
     BpcSleepButtonState state;
     GpioValue val;
     while (true) {
-        Result rc = 0;
+        Result rc = ResultSuccess;
         
         if (check_vol_up && R_SUCCEEDED((rc = gpioPadGetValue(&vol_up_btn, &val))) && val == GpioValue_Low) {
             bpcRebootSystem();
@@ -142,16 +142,16 @@ void PowerButtonObserveTask::WaitForPowerButton() {
 
 Result PowerControlTask::Run() {
     MonitorBatteryState();
-    return 0;
+    return ResultSuccess;
 }
 
 Result PowerButtonObserveTask::Run() {
     WaitForPowerButton();
-    return 0;
+    return ResultSuccess;
 }
 
 Result StateTransitionStopTask::Run() {
     /* Nintendo ignores the output of this call... */
     spsmPutErrorState();
-    return 0;
+    return ResultSuccess;
 }

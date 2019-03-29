@@ -95,7 +95,7 @@ Result Registration::GetRegisteredTidSid(u64 index, Registration::TidSid *out) {
     
     *out = target_process->tid_sid;
     
-    return 0;
+    return ResultSuccess;
 }
 
 void Registration::SetProcessIdTidAndIs64BitAddressSpace(u64 index, u64 process_id, u64 tid, bool is_64_bit_addspace) {
@@ -149,7 +149,7 @@ Result Registration::AddNrrInfo(u64 index, MappedCodeMemory *nrr_info) {
         return ResultLoaderInsufficientNrrRegistrations;
     }
     *nrr_info_it = *nrr_info;
-    return 0;
+    return ResultSuccess;
 }
 
 Result Registration::RemoveNrrInfo(u64 index, u64 base_address) {
@@ -162,7 +162,7 @@ Result Registration::RemoveNrrInfo(u64 index, u64 base_address) {
     for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
         if (target_process->nrr_infos[i].IsActive() && target_process->nrr_infos[i].base_address == base_address) {
             target_process->nrr_infos[i].Close();
-            return 0;
+            return ResultSuccess;
         }
     }
     return ResultLoaderNotRegistered;
@@ -273,7 +273,7 @@ Result Registration::GetNsoInfosForProcessId(Registration::NsoInfo *out, u32 max
     
     *num_written = cur;
 
-    return 0;
+    return ResultSuccess;
 }
 
 void Registration::AssociatePidTidForMitM(u64 index) {

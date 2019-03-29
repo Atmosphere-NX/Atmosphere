@@ -136,5 +136,5 @@ Result ErrorReportTask::Run() {
     eventFire(this->erpt_event);
     
     
-    return 0;
+    return ResultSuccess;
 }

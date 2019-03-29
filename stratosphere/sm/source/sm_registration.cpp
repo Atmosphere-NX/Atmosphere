@@ -204,7 +204,7 @@ Result Registration::RegisterProcess(u64 pid, u8 *acid_sac, size_t acid_sac_size
     proc->pid = pid;
     proc->sac_size = aci0_sac_size;
     std::copy(aci0_sac, aci0_sac + aci0_sac_size, proc->sac);
-    return 0;
+    return ResultSuccess;
 }
 
 Result Registration::UnregisterProcess(u64 pid) {
@@ -214,7 +214,7 @@ Result Registration::UnregisterProcess(u64 pid) {
     }
     
     proc->pid = 0;
-    return 0;
+    return ResultSuccess;
 }
 
 /* Service management. */
@@ -436,7 +436,7 @@ Result Registration::UnregisterServiceForPid(u64 pid, u64 service) {
     svcCloseHandle(target_service->mitm_port_h);
     svcCloseHandle(target_service->mitm_query_h);
     *target_service = (const Registration::Service){0};
-    return 0;
+    return ResultSuccess;
 }
 
 
@@ -510,7 +510,7 @@ Result Registration::UninstallMitmForPid(u64 pid, u64 service) {
     svcCloseHandle(target_service->mitm_port_h);
     svcCloseHandle(target_service->mitm_query_h);
     target_service->mitm_pid = 0;
-    return 0;
+    return ResultSuccess;
 }
 
 Result Registration::AcknowledgeMitmSessionForPid(u64 pid, u64 service, Handle *out, u64 *out_pid) {
@@ -539,7 +539,7 @@ Result Registration::AcknowledgeMitmSessionForPid(u64 pid, u64 service, Handle *
     target_service->mitm_fwd_sess_h = 0;
     target_service->mitm_waiting_ack_pid = 0;
     target_service->mitm_waiting_ack = false;
-    return 0;
+    return ResultSuccess;
 }
 
 Result Registration::AssociatePidTidForMitm(u64 pid, u64 tid) {
@@ -560,7 +560,7 @@ Result Registration::AssociatePidTidForMitm(u64 pid, u64 tid) {
             ipcDispatch(service.mitm_query_h);
         }
     }
-    return 0x0;
+    return ResultSuccess;
 }
 
 void Registration::ConvertServiceToRecord(Registration::Service *service, SmServiceRecord *record) {
@@ -591,7 +591,7 @@ Result Registration::GetServiceRecord(u64 service, SmServiceRecord *out) {
     }
     
     ConvertServiceToRecord(target_service, out);
-    return 0x0;
+    return ResultSuccess;
 }
 
 void Registration::ListServiceRecords(u64 offset, u64 max_out, SmServiceRecord *out, u64 *out_count) {

@@ -22,7 +22,7 @@
 Result UserService::Initialize(PidDescriptor pid) {
     this->pid = pid.pid;
     this->has_initialized = true;
-    return 0;
+    return ResultSuccess;
 }
 
 Result UserService::GetService(Out<MovedHandle> out_h, SmServiceName service) {

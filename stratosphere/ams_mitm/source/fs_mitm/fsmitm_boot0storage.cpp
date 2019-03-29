@@ -36,7 +36,7 @@ Result Boot0Storage::Read(void *_buffer, size_t size, u64 offset) {
 Result Boot0Storage::Write(void *_buffer, size_t size, u64 offset) {
     std::scoped_lock<HosMutex> lk{g_boot0_mutex};
     
-    Result rc = 0;
+    Result rc = ResultSuccess;
     u8 *buffer = static_cast<u8 *>(_buffer);
     
     /* Protect the keyblob region from writes. */
@@ -61,7 +61,7 @@ Result Boot0Storage::Write(void *_buffer, size_t size, u64 offset) {
         if (offset < EksEnd) {
             if (offset + size < EksEnd) {
                 /* Ignore writes falling strictly within the region. */
-                return 0;
+                return ResultSuccess;
             } else {
                 /* Only write past the end of the keyblob region. */
                 buffer = buffer + (EksEnd - offset);
@@ -74,7 +74,7 @@ Result Boot0Storage::Write(void *_buffer, size_t size, u64 offset) {
     }
     
     if (size == 0) {
-        return 0;
+        return ResultSuccess;
     }
     
     /* We care about protecting autorcm from NS. */

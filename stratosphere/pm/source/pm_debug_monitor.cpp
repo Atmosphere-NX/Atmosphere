@@ -27,7 +27,7 @@ Result DebugMonitorService::GetUnknownStub(Out<u32> count, OutBuffer<u8> out_buf
         return ResultPmInvalidSize;
     }
     count.SetValue(0);
-    return 0x0;
+    return ResultSuccess;
 }
 
 Result DebugMonitorService::GetDebugProcessIds(Out<u32> count, OutBuffer<u64> out_pids) {
@@ -47,7 +47,7 @@ Result DebugMonitorService::GetTitleProcessId(Out<u64> pid, u64 tid) {
     std::shared_ptr<Registration::Process> proc = Registration::GetProcessByTitleId(tid);
     if (proc != nullptr) {
         pid.SetValue(proc->pid);
-        return 0;
+        return ResultSuccess;
     }
     return ResultPmProcessNotFound;
 }
@@ -62,7 +62,7 @@ Result DebugMonitorService::GetApplicationProcessId(Out<u64> pid) {
     std::shared_ptr<Registration::Process> app_proc;
     if (Registration::HasApplicationProcess(&app_proc)) {
         pid.SetValue(app_proc->pid);
-        return 0x0;
+        return ResultSuccess;
     }
     return ResultPmProcessNotFound;
 }
@@ -81,7 +81,7 @@ Result DebugMonitorService::AtmosphereGetProcessInfo(Out<CopiedHandle> proc_hand
     if (proc != nullptr) {
         proc_hand.SetValue(proc->handle);
         tid_sid.SetValue(proc->tid_sid);
-        return 0;
+        return ResultSuccess;
     }
     return ResultPmProcessNotFound;
 }
@@ -104,5 +104,5 @@ Result DebugMonitorService::AtmosphereGetCurrentLimitInfo(Out<u64> cur_val, Out<
         return rc;
     }
 
-    return 0;
+    return ResultSuccess;
 }

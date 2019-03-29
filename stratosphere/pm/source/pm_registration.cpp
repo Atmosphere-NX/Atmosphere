@@ -56,7 +56,7 @@ void Registration::InitializeSystemResources() {
 Result Registration::ProcessLaunchStartCallback(u64 timeout) {
     g_process_launch_start_event->Clear();
     Registration::HandleProcessLaunch();
-    return 0;
+    return ResultSuccess;
 }
 
 IWaitable *Registration::GetProcessLaunchStartEvent() {
@@ -137,13 +137,13 @@ void Registration::HandleProcessLaunch() {
     if (new_process.tid_sid.title_id == g_debug_on_launch_tid.load()) {
         g_debug_title_event->Signal();
         g_debug_on_launch_tid = 0;
-        rc = 0;
+        rc = ResultSuccess;
     } else if ((new_process.flags & PROCESSFLAGS_APPLICATION) && g_debug_next_application.load()) {
         g_debug_application_event->Signal();
         g_debug_next_application = false;
-        rc = 0;
+        rc = ResultSuccess;
     } else if (LAUNCHFLAGS_STARTSUSPENDED(launch_flags)) {
-        rc = 0;
+        rc = ResultSuccess;
     } else {
         rc = svcStartProcess(new_process.handle, program_info.main_thread_priority, program_info.default_cpu_id, program_info.main_thread_stack_size);
     
@@ -283,7 +283,7 @@ Result Registration::HandleSignaledProcess(std::shared_ptr<Registration::Process
             }
             break;
     }
-    return 0;
+    return ResultSuccess;
 }
 
 void Registration::FinalizeExitedProcess(std::shared_ptr<Registration::Process> process) {
@@ -414,7 +414,7 @@ Result Registration::GetDebugProcessIds(u64 *out_pids, u32 max_out, u32 *num_out
     }
     
     *num_out = num;
-    return 0;
+    return ResultSuccess;
 }
 
 Handle Registration::GetProcessEventHandle() {
@@ -483,13 +483,13 @@ Result Registration::EnableDebugForTitleId(u64 tid, Handle *out) {
         return ResultPmDebugHookInUse;
     }
     *out = g_debug_title_event->GetHandle();
-    return 0x0;
+    return ResultSuccess;
 }
 
 Result Registration::EnableDebugForApplication(Handle *out) {
     g_debug_next_application = true;
     *out = g_debug_application_event->GetHandle();
-    return 0;
+    return ResultSuccess;
 }
 
 Result Registration::DisableDebug(u32 which) {
@@ -499,5 +499,5 @@ Result Registration::DisableDebug(u32 which) {
     if (which & 2) {
         g_debug_next_application = false;
     }
-    return 0;
+    return ResultSuccess;
 }

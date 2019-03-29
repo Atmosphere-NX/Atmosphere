@@ -72,7 +72,7 @@ class AutoCloseMap {
             this->process_handle = process_h;
             this->base_address = address;
             this->size = size;
-            return 0;
+            return ResultSuccess;
         }
         
         void Close() {
@@ -153,7 +153,7 @@ struct MappedCodeMemory {
     }
     
     Result Unmap() {
-        Result rc = 0;
+        Result rc = ResultSuccess;
         if (this->IsMapped()) {
             if (R_FAILED((rc = svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->code_memory_address, this->size)))) {
                 /* TODO: panic(). */

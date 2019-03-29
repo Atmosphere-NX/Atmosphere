@@ -26,7 +26,7 @@ void NsWebMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *
 Result NsWebMitmService::GetDocumentInterface(Out<std::shared_ptr<NsDocumentService>> out_intf) {
     std::shared_ptr<NsDocumentService> intf = nullptr;
     u32 out_domain_id = 0;
-    Result rc = 0;
+    Result rc = ResultSuccess;
     
     ON_SCOPE_EXIT {
         if (R_SUCCEEDED(rc)) {

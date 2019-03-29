@@ -84,7 +84,7 @@ class FsDirUtils {
                 work_path.str[parent_len] = 0;
             }
 
-            return 0;
+            return ResultSuccess;
         }
 
     public:
@@ -137,7 +137,7 @@ class FsDirUtils {
         template<typename F>
         static Result RetryUntilTargetNotLocked(F f) {
             const size_t MaxRetries = 10;
-            Result rc = 0;
+            Result rc = ResultSuccess;
 
             for (size_t i = 0; i < MaxRetries; i++) {
                 rc = f();

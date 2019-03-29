@@ -23,7 +23,7 @@ Result AdjustClockTask::AdjustClock() {
     constexpr u32 CPU_CLOCK_1020MHZ = 0x3CCBF700L;
     constexpr u32 GPU_CLOCK_307MHZ = 0x124F8000L;
     constexpr u32 EMC_CLOCK_1331MHZ = 0x4F588000L;
-    Result rc = 0;
+    Result rc = ResultSuccess;
     
     if (R_FAILED((rc = pcvSetClockRate(PcvModule_Cpu, CPU_CLOCK_1020MHZ)))) {
         return rc;

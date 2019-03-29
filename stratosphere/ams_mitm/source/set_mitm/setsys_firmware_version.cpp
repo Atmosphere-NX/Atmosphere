@@ -81,5 +81,5 @@ Result VersionManager::GetFirmwareVersion(u64 title_id, SetSysFirmwareVersion *o
         *out = g_fw_version;
     }
 
-    return 0;
+    return ResultSuccess;
 }

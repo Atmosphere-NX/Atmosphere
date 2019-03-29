@@ -1934,7 +1934,7 @@ static int pmc_init_wake_events(u64 pmc_base_vaddr, bool is_blink) {
         pmc_dpd_pads_oride_val = *((u32 *)pmc_base_vaddr + 0x1C);
     }
     
-    rc = 0;
+    rc = ResultSuccess;
     return rc;
 }
 
@@ -2217,7 +2217,7 @@ static int pmc_set_wake_event_level(u64 pmc_base_vaddr, unsigned int wake_pin_id
         /* Invalid */
     }
     
-    rc = 0;
+    rc = ResultSuccess;
     return rc;
 }
 
@@ -2279,7 +2279,7 @@ static int pmc_set_wake_event_enabled(u64 pmc_base_vaddr, unsigned int wake_pin_
         pmc_wake_mask_val = *((u32 *)pmc_base_vaddr + pmc_wake_mask_reg_offset);
     }
     
-    rc = 0;
+    rc = ResultSuccess;
     return rc;
 }
 
@@ -2535,6 +2535,6 @@ int main(int argc, char **argv)
     
     /* pmshellNotifyBootFinished(); */
     
-    rc = 0;
+    rc = ResultSuccess;
     return rc;
 }

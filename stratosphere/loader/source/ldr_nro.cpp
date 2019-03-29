@@ -43,7 +43,7 @@ Result NroUtils::ValidateNrrHeader(NrrHeader *header, u64 size, u64 title_id_min
         return ResultLoaderInvalidNrr;
     }
     
-    return 0x0;
+    return ResultSuccess;
 }
 
 Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size, u64 *out_address) {
@@ -51,7 +51,7 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
     MappedCodeMemory mcm_nro = {0};
     MappedCodeMemory mcm_bss = {0};
     unsigned int i;
-    Result rc = 0;
+    Result rc = ResultSuccess;
     u8 nro_hash[0x20];
     struct sha256_state sha_ctx;
 
@@ -143,7 +143,7 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
     
     Registration::AddNroToProcess(target_proc->index, &mcm_nro, &mcm_bss, nro_hdr.text_size, nro_hdr.ro_size, nro_hdr.rw_size, nro_hdr.build_id);
     *out_address = mcm_nro.code_memory_address;
-    rc = 0x0;
+    rc = ResultSuccess;
 
     return rc;
 }

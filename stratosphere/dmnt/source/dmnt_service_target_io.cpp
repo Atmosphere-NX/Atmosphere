@@ -38,7 +38,7 @@ static std::unordered_map<u64, FsFile> g_file_handles;
 static Result EnsureSdInitialized() {
     std::scoped_lock<HosMutex> lk(g_sd_lock);
     if (g_sd_initialized) {
-        return 0;
+        return ResultSuccess;
     }
     
     Result rc = fsMountSdcard(&g_sd_fs);
@@ -60,7 +60,7 @@ static Result GetFileByHandle(FsFile *out, u64 handle) {
     std::scoped_lock<HosMutex> lk(g_file_handle_lock);
     if (g_file_handles.find(handle) != g_file_handles.end()) {
         *out = g_file_handles[handle];
-        return 0;
+        return ResultSuccess;
     }
     return ResultFsInvalidArgument;
 }
@@ -70,7 +70,7 @@ static Result CloseFileByHandle(u64 handle) {
     if (g_file_handles.find(handle) != g_file_handles.end()) {
         fsFileClose(&g_file_handles[handle]);
         g_file_handles.erase(handle);
-        return 0;
+        return ResultSuccess;
     }
     return ResultFsInvalidArgument;
 }
@@ -199,8 +199,8 @@ Result DebugMonitorService::TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8, B
 
 Result DebugMonitorService::TargetIO_FileSetAttributes(InBuffer<char> path, InBuffer<u8> attributes) {
     /* I don't really know why this command exists, Horizon doesn't allow you to set any attributes. */
-    /* N just returns 0x0 unconditionally here. */
-    return 0x0;
+    /* N just returns ResultSuccess unconditionally here. */
+    return ResultSuccess;
 }
 
 Result DebugMonitorService::TargetIO_FileGetInformation(InBuffer<char> path, OutBuffer<u64> out_info, Out<int> is_directory) {
@@ -245,7 +245,7 @@ Result DebugMonitorService::TargetIO_FileGetInformation(InBuffer<char> path, Out
 
 Result DebugMonitorService::TargetIO_FileSetTime(InBuffer<char> path, u64 create, u64 access, u64 modify) {
     /* This is another function that doesn't really need to exist, because Horizon doesn't let you set anything. */
-    return 0x0;
+    return ResultSuccess;
 }
 
 Result DebugMonitorService::TargetIO_FileSetSize(InBuffer<char> input, u64 size) {

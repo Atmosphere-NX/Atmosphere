@@ -40,7 +40,7 @@ class IFile {
             }
             if (size == 0) {
                 *out = 0;
-                return 0;
+                return ResultSuccess;
             }
             if (buffer == nullptr) {
                 return ResultFsNullptrArgument;
@@ -65,7 +65,7 @@ class IFile {
 
         Result Write(uint64_t offset, void *buffer, uint64_t size, uint32_t flags) {
             if (size == 0) {
-                return 0;
+                return ResultSuccess;
             }
             if (buffer == nullptr) {
                 return ResultFsNullptrArgument;
@@ -76,7 +76,7 @@ class IFile {
 
         Result Write(uint64_t offset, void *buffer, uint64_t size, bool flush = false) {
             if (size == 0) {
-                return 0;
+                return ResultSuccess;
             }
             if (buffer == nullptr) {
                 return ResultFsNullptrArgument;

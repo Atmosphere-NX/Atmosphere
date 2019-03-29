@@ -69,5 +69,5 @@ void StopSoundTask::StopSound() {
 
 Result StopSoundTask::Run() {
     StopSound();
-    return 0;
+    return ResultSuccess;
 }

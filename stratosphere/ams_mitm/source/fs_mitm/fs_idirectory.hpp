@@ -33,7 +33,7 @@ class IDirectory {
             }
             if (max_entries == 0) {
                 *out_count = 0;
-                return 0;
+                return ResultSuccess;
             }
             if (out_entries == nullptr) {
                 return ResultFsNullptrArgument;

@@ -150,7 +150,7 @@ Result ProcessManagerService::PopulateProgramInfoBuffer(ProcessManagerService::P
                     out->aci0_fah_size = info.aci0->fah_size;
                     std::memcpy(out->ac_buffer + offset, info.aci0_fah, out->aci0_fah_size);
                     offset += out->aci0_fah_size;
-                    rc = 0;
+                    rc = ResultSuccess;
                 }
             }
         }

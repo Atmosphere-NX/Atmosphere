@@ -75,7 +75,7 @@ Result MapUtils::LocateSpaceForMapModern(u64 *out, u64 out_size) {
             }
             if (mem_info.type == 0 && mem_info.addr - cur_base + mem_info.size >= out_size) {
                 *out = cur_base;
-                return 0x0;
+                return ResultSuccess;
             }
             if (mem_info.addr + mem_info.size <= cur_base) {
                 return rc;
@@ -110,7 +110,7 @@ Result MapUtils::LocateSpaceForMapDeprecated(u64 *out, u64 out_size) {
         }
         if (mem_info.type == 0 && mem_info.addr - cur_base + mem_info.size >= out_size) {
             *out = cur_base;
-            return 0x0;
+            return ResultSuccess;
         }
         u64 mem_end = mem_info.addr + mem_info.size;
         if (mem_end < cur_base) {
@@ -214,5 +214,5 @@ Result MapUtils::GetAddressSpaceInfo(AddressSpaceInfo *out, Handle process_h) {
     out->heap_end = out->heap_base + out->heap_size;
     out->map_end = out->map_base + out->map_size;
     out->addspace_end = out->addspace_base + out->addspace_size;
-    return 0;
+    return ResultSuccess;
 }

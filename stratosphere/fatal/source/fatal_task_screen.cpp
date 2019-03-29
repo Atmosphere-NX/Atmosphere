@@ -48,7 +48,7 @@ Result ShowFatalTask::SetupDisplayInternal() {
     /* Try to open the display. */
     if (R_FAILED((rc = viOpenDisplay("Internal", &display)))) {
         if (rc == ResultViNotFound) {
-            return 0;
+            return ResultSuccess;
         } else {
             return rc;
         }
@@ -75,7 +75,7 @@ Result ShowFatalTask::SetupDisplayExternal() {
     /* Try to open the display. */
     if (R_FAILED((rc = viOpenDisplay("External", &display)))) {
         if (rc == ResultViNotFound) {
-            return 0;
+            return ResultSuccess;
         } else {
             return rc;
         }
@@ -92,7 +92,7 @@ Result ShowFatalTask::SetupDisplayExternal() {
 }
 
 Result ShowFatalTask::PrepareScreenForDrawing() {
-    Result rc = 0;
+    Result rc = ResultSuccess;
     
     /* Connect to vi. */
     if (R_FAILED((rc = viInitialize(ViServiceType_Manager)))) {
@@ -175,7 +175,7 @@ Result ShowFatalTask::PrepareScreenForDrawing() {
 }
 
 Result ShowFatalTask::ShowFatal() {
-    Result rc = 0;
+    Result rc = ResultSuccess;
     const FatalConfig *config = GetFatalConfig();
 
     if (R_FAILED((rc = PrepareScreenForDrawing()))) {
@@ -420,5 +420,5 @@ void BacklightControlTask::TurnOnBacklight() {
 
 Result BacklightControlTask::Run() {
     TurnOnBacklight();
-    return 0;
+    return ResultSuccess;
 }
