@@ -237,7 +237,7 @@ bool Utils::IsHidAvailable() {
 
 Result Utils::OpenSdFile(const char *fn, int flags, FsFile *out) {
     if (!IsSdInitialized()) {
-        return 0xFA202;
+        return ResultFsSdCardNotPresent;
     }
     
     return fsFsOpenFile(&g_sd_filesystem, fn, flags, out);
@@ -245,7 +245,7 @@ Result Utils::OpenSdFile(const char *fn, int flags, FsFile *out) {
 
 Result Utils::OpenSdFileForAtmosphere(u64 title_id, const char *fn, int flags, FsFile *out) {
     if (!IsSdInitialized()) {
-        return 0xFA202;
+        return ResultFsSdCardNotPresent;
     }
     
     char path[FS_MAX_PATH];
@@ -259,7 +259,7 @@ Result Utils::OpenSdFileForAtmosphere(u64 title_id, const char *fn, int flags, F
 
 Result Utils::OpenRomFSSdFile(u64 title_id, const char *fn, int flags, FsFile *out) {
     if (!IsSdInitialized()) {
-        return 0xFA202;
+        return ResultFsSdCardNotPresent;
     }
     
     return OpenRomFSFile(&g_sd_filesystem, title_id, fn, flags, out);
@@ -267,7 +267,7 @@ Result Utils::OpenRomFSSdFile(u64 title_id, const char *fn, int flags, FsFile *o
 
 Result Utils::OpenSdDir(const char *path, FsDir *out) {
     if (!IsSdInitialized()) {
-        return 0xFA202;
+        return ResultFsSdCardNotPresent;
     }
     
     return fsFsOpenDirectory(&g_sd_filesystem, path, FS_DIROPEN_DIRECTORY | FS_DIROPEN_FILE, out);
@@ -275,7 +275,7 @@ Result Utils::OpenSdDir(const char *path, FsDir *out) {
 
 Result Utils::OpenSdDirForAtmosphere(u64 title_id, const char *path, FsDir *out) {
     if (!IsSdInitialized()) {
-        return 0xFA202;
+        return ResultFsSdCardNotPresent;
     }
     
     char safe_path[FS_MAX_PATH];
@@ -289,7 +289,7 @@ Result Utils::OpenSdDirForAtmosphere(u64 title_id, const char *path, FsDir *out)
 
 Result Utils::OpenRomFSSdDir(u64 title_id, const char *path, FsDir *out) {
     if (!IsSdInitialized()) {
-        return 0xFA202;
+        return ResultFsSdCardNotPresent;
     }
     
     return OpenRomFSDir(&g_sd_filesystem, title_id, path, out);
@@ -340,7 +340,7 @@ bool Utils::HasSdRomfsContent(u64 title_id) {
 
 Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, size_t size) {
     if (!IsSdInitialized()) {
-        return 0xFA202;
+        return ResultFsSdCardNotPresent;
     }
     
     Result rc = 0;

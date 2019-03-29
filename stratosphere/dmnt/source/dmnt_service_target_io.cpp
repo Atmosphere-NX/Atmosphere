@@ -62,7 +62,7 @@ static Result GetFileByHandle(FsFile *out, u64 handle) {
         *out = g_file_handles[handle];
         return 0;
     }
-    return 0x2EE202;
+    return ResultFsInvalidArgument;
 }
 
 static Result CloseFileByHandle(u64 handle) {
@@ -72,7 +72,7 @@ static Result CloseFileByHandle(u64 handle) {
         g_file_handles.erase(handle);
         return 0;
     }
-    return 0x2EE202;
+    return ResultFsInvalidArgument;
 }
 
 static void FixPath(char *dst, size_t dst_size, InBuffer<char> &path) {

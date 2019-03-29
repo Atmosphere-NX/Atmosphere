@@ -462,7 +462,7 @@ Result ContentManagement::SetExternalContentSource(u64 tid, FsFileSystem filesys
     char mountpoint[32];
     ExternalContentSource::GenerateMountpointName(tid, mountpoint, sizeof(mountpoint));
     if (fsdevMountDevice(mountpoint, filesystem) == -1) {
-        return 0x7802; /* specified mount name already exists */
+        return ResultFsMountNameAlreadyExists;
     }
     g_external_content_sources.emplace(
         std::piecewise_construct,
