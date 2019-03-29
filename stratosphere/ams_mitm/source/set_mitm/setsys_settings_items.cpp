@@ -73,18 +73,18 @@ static bool IsCorrectFormat(const char *str, size_t len) {
 
 Result SettingsItemManager::ValidateName(const char *name, size_t max_size) {
     if (name == nullptr) {
-        return 0x19269;
+        return ResultSettingsItemNameNull;
     }
     
     const size_t name_len = strnlen(name, std::min(max_size, MaxNameLength + 1));
     if (name_len == 0) {
-        return 0x1BA69;
+        return ResultSettingsItemNameEmpty;
     } else if (name_len > MaxNameLength) {
-        return 0x1E269;
+        return ResultSettingsItemNameTooLong;
     }
     
     if (!IsCorrectFormat(name, name_len)) {
-        return 0x20A69;
+        return ResultSettingsItemNameInvalidFormat;
     }
     
     return ResultSuccess;
@@ -96,18 +96,18 @@ Result SettingsItemManager::ValidateName(const char *name) {
 
 Result SettingsItemManager::ValidateKey(const char *key, size_t max_size) {
     if (key == nullptr) {
-        return 0x19469;
+        return ResultSettingsItemKeyNull;
     }
     
     const size_t key_len = strnlen(key, std::min(max_size, MaxKeyLength + 1));
     if (key_len == 0) {
-        return 0x1BC69;
+        return ResultSettingsItemKeyEmpty;
     } else if (key_len > MaxKeyLength) {
-        return 0x1E469;
+        return ResultSettingsItemKeyTooLong;
     }
     
     if (!IsCorrectFormat(key, key_len)) {
-        return 0x20C69;
+        return ResultSettingsItemKeyInvalidFormat;
     }
     
     return ResultSuccess;
@@ -141,7 +141,7 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
     const char *type = val_tup;
     
     if (delimiter == NULL) {
-        return 0x20E69;
+        return ResultSettingsItemValueInvalidFormat;
     }
     
     while (isspace(*type) && type != delimiter) {
@@ -151,7 +151,7 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
     size_t type_len = delimiter - type;
     size_t value_len = strlen(value_str);
     if (delimiter == NULL || value_len == 0 || type_len == 0) {
-        return 0x20E69;
+        return ResultSettingsItemValueInvalidFormat;
     }
     
     std::string kv = std::string(name) + "!" + std::string(key);
@@ -162,17 +162,17 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
         value.size = value_len + 1;
         value.data = reinterpret_cast<u8 *>(strdup(value_str));
         if (value.data == nullptr) {
-            return 0xCC69;
+            return ResultSettingsItemValueAllocationFailed;
         }
     } else if (strncasecmp(type, "hex", type_len) == 0 || strncasecmp(type, "bytes", type_len) == 0) {
         /* hex */
         if (value_len % 2 || !IsHexadecimal(value_str)) {
-            return 0x20E69;
+            return ResultSettingsItemValueInvalidFormat;
         }
         value.size = value_len / 2;
         u8 *data = reinterpret_cast<u8 *>(malloc(value.size));
         if (data == nullptr) {
-            return 0xCC69;
+            return ResultSettingsItemValueAllocationFailed;
         }
         
         memset(data, 0, value.size);
@@ -186,7 +186,7 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
         value.size = sizeof(u8);
         u8 *data = reinterpret_cast<u8 *>(malloc(value.size));
         if (data == nullptr) {
-            return 0xCC69;
+            return ResultSettingsItemValueAllocationFailed;
         }
         *data = (u8)(strtoul(value_str, nullptr, 0));
         value.data = reinterpret_cast<u8 *>(data);
@@ -195,7 +195,7 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
         value.size = sizeof(u16);
         u16 *data = reinterpret_cast<u16 *>(malloc(value.size));
         if (data == nullptr) {
-            return 0xCC69;
+            return ResultSettingsItemValueAllocationFailed;
         }
         *data = (u16)(strtoul(value_str, nullptr, 0));
         value.data = reinterpret_cast<u8 *>(data);
@@ -204,7 +204,7 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
         value.size = sizeof(u32);
         u32 *data = reinterpret_cast<u32 *>(malloc(value.size));
         if (data == nullptr) {
-            return 0xCC69;
+            return ResultSettingsItemValueAllocationFailed;
         }
         *data = (u32)(strtoul(value_str, nullptr, 0));
         value.data = reinterpret_cast<u8 *>(data);
@@ -213,12 +213,12 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
         value.size = sizeof(u64);
         u64 *data = reinterpret_cast<u64 *>(malloc(value.size));
         if (data == nullptr) {
-            return 0xCC69;
+            return ResultSettingsItemValueAllocationFailed;
         }
         *data = (u64)(strtoul(value_str, nullptr, 0));
         value.data = reinterpret_cast<u8 *>(data);
     } else {
-        return 0x20E69;
+        return ResultSettingsItemValueInvalidFormat;
     }
     
     g_settings_items[kv] = value;
@@ -283,7 +283,7 @@ Result SettingsItemManager::GetValueSize(const char *name, const char *key, u64 
     
     auto it = g_settings_items.find(kv);
     if (it == g_settings_items.end()) {
-        return 0x1669;
+        return ResultSettingsItemNotFound;
     }
     
     *out_size = it->second.size;
@@ -295,7 +295,7 @@ Result SettingsItemManager::GetValue(const char *name, const char *key, void *ou
     
     auto it = g_settings_items.find(kv);
     if (it == g_settings_items.end()) {
-        return 0x1669;
+        return ResultSettingsItemNotFound;
     }
     
     size_t copy_size = it->second.size;

@@ -90,7 +90,7 @@ Result SetSysMitmService::GetSettingsItemValue(Out<u64> out_size, OutBuffer<u8> 
     }
     
     if (out_value.buffer == nullptr) {
-        return 0x19A69;
+        return ResultSettingsItemValueBufferNull;
     }
     
     if (in_name.num_elements < SET_MAX_NAME_SIZE) {
