@@ -214,7 +214,7 @@ Result ShowFatalTask::ShowFatal() {
     FontManager::AddSpacingLines(0.5f);
     FontManager::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", GetFatalConfig()->firmware_version.display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
     FontManager::AddSpacingLines(1.5f);
-    if (this->ctx->error_code != 0xCAFEF) {
+    if (this->ctx->error_code != ResultAtmosphereVersionMismatch) {
         FontManager::Print(config->error_desc);
     } else {
         /* Print a special message for atmosphere version mismatch. */

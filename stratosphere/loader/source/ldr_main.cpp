@@ -64,23 +64,22 @@ void __appInit(void) {
     /* Initialize services we need (TODO: SPL) */
     rc = smInitialize();
     if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
+        std::abort();
     }
     
     rc = fsInitialize();
     if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+        std::abort();
     }
         
-    
     rc = lrInitialize();
     if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 1);
+        std::abort();
     }
     
     rc = fsldrInitialize();
     if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 2);
+        std::abort();
     }
     
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);

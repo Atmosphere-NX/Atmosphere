@@ -116,7 +116,7 @@ Result FsMitmService::OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInt
         FsDir d;
         if (!Utils::IsWebAppletTid(this->title_id) || filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) ||
             R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
-            return RESULT_FORWARD_TO_SESSION;
+            return ResultAtmosphereMitmShouldForwardToSession;
         }
         fsDirClose(&d);
     }
@@ -127,7 +127,7 @@ Result FsMitmService::OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInt
         FsFileSystem fs;
         if (R_SUCCEEDED(fsOpenFileSystemWithPatchFwd(this->forward_service.get(), &fs, title_id, static_cast<FsFileSystemType>(filesystem_type)))) {
             fsFsClose(&fs);
-            return RESULT_FORWARD_TO_SESSION;
+            return ResultAtmosphereMitmShouldForwardToSession;
         }
     }
     
@@ -140,7 +140,7 @@ Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterf
         FsDir d;
         if (!Utils::IsWebAppletTid(this->title_id) || filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) || 
             R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
-            return RESULT_FORWARD_TO_SESSION;
+            return ResultAtmosphereMitmShouldForwardToSession;
         }
         fsDirClose(&d);
     }
@@ -151,7 +151,7 @@ Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterf
         FsFileSystem fs;
         if (R_SUCCEEDED(fsOpenFileSystemWithIdFwd(this->forward_service.get(), &fs, title_id, static_cast<FsFileSystemType>(filesystem_type), path.pointer))) {
             fsFsClose(&fs);
-            return RESULT_FORWARD_TO_SESSION;
+            return ResultAtmosphereMitmShouldForwardToSession;
         }
     }
 
@@ -222,7 +222,7 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
     Result rc = 0;
     
     if (!this->should_override_contents) {
-        return RESULT_FORWARD_TO_SESSION;
+        return ResultAtmosphereMitmShouldForwardToSession;
     }
     
     bool has_cache = StorageCacheGetEntry(this->title_id, &storage);
@@ -275,7 +275,7 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
             } else {
                 /* If we don't have anything to modify, there's no sense in maintaining a copy of the metadata tables. */
                 fsStorageClose(&data_storage);
-                rc = RESULT_FORWARD_TO_SESSION;
+                rc = ResultAtmosphereMitmShouldForwardToSession;
             }
         }
     }
@@ -290,7 +290,7 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
     FsFile data_file;
     
     if (!this->should_override_contents) {
-        return RESULT_FORWARD_TO_SESSION;
+        return ResultAtmosphereMitmShouldForwardToSession;
     }
         
     std::shared_ptr<IStorageInterface> storage = nullptr;
@@ -342,7 +342,7 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
             } else {
                 /* If we don't have anything to modify, there's no sense in maintaining a copy of the metadata tables. */
                 fsStorageClose(&data_storage);
-                rc = RESULT_FORWARD_TO_SESSION;
+                rc = ResultAtmosphereMitmShouldForwardToSession;
             }
         }
     }

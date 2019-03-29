@@ -90,12 +90,12 @@ void __appInit(void) {
 
     rc = smInitialize();
     if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
+        std::abort();
     }
     
     rc = fsprInitialize();
     if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 1);
+        std::abort();
     }
     
     /* This works around a bug with process permissions on < 4.0.0. */
@@ -105,32 +105,32 @@ void __appInit(void) {
     if (R_SUCCEEDED(rc)) {
         smManagerAmsEndInitialDefers();
     } else {
-        fatalSimple(0xCAFE << 4 | 2);
+        std::abort();
     }
     
     rc = smManagerInitialize();
     if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 3);
+        std::abort();
     }
         
     rc = lrInitialize();
     if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 4);
+        std::abort();
     }
     
     rc = ldrPmInitialize();
     if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 5);
+        std::abort();
     }
     
     rc = splInitialize();
     if (R_FAILED(rc))  {
-        fatalSimple(0xCAFE << 4 | 6);
+        std::abort();
     }
     
     rc = fsInitialize();
     if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+        std::abort();
     }
     
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
