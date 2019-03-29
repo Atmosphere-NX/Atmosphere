@@ -231,7 +231,7 @@ Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL || ShouldInitDefer(service) || target_service->mitm_waiting_ack) {
         /* Note: This defers the result until later. */
-        return RESULT_DEFER_SESSION;
+        return ResultServiceFrameworkRequestDeferredByUser;
     }
     
     *out = 0;
@@ -467,7 +467,7 @@ Result Registration::InstallMitmForPid(u64 pid, u64 service, Handle *out, Handle
     /* Verify the service exists. */
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL) {
-        return RESULT_DEFER_SESSION;
+        return ResultServiceFrameworkRequestDeferredByUser;
     }
     
     /* Verify the service isn't already being mitm'd. */
