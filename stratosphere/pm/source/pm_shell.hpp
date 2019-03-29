@@ -20,8 +20,6 @@
 
 #include "pm_registration.hpp"
 
-#define BOOT2_TITLE_ID (0x0100000000000008ULL)
-
 enum ShellCmd {
     Shell_Cmd_LaunchProcess = 0,
     Shell_Cmd_TerminateProcessId = 1,

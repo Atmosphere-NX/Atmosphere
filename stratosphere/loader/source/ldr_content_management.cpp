@@ -55,7 +55,7 @@ static HblOverrideConfig g_hbl_override_config = {
         .key_combination = KEY_R,
         .override_by_default = true
     },
-    .title_id = 0x010000000000100D,
+    .title_id = TitleId_AppletPhotoViewer,
     .override_any_app = false
 };
 
@@ -371,7 +371,7 @@ void ContentManagement::RefreshConfigurationData() {
 
 void ContentManagement::TryMountSdCard() {
     /* Mount SD card, if psc, bus, and pcv have been created. */
-    if (!g_has_initialized_fs_dev && HasCreatedTitle(0x0100000000000021) && HasCreatedTitle(0x010000000000000A) && HasCreatedTitle(0x010000000000001A)) {
+    if (!g_has_initialized_fs_dev && HasCreatedTitle(TitleId_Psc) && HasCreatedTitle(TitleId_Bus) && HasCreatedTitle(TitleId_Pcv)) {
         Handle tmp_hnd = 0;
         static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
         for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
@@ -389,7 +389,7 @@ void ContentManagement::TryMountSdCard() {
 }
 
 static bool IsHBLTitleId(u64 tid) {
-    return ((g_hbl_override_config.override_any_app && IsApplicationTid(tid)) || (tid == g_hbl_override_config.title_id));
+    return ((g_hbl_override_config.override_any_app && TitleIdIsApplication(tid)) || (tid == g_hbl_override_config.title_id));
 }
 
 OverrideKey ContentManagement::GetTitleOverrideKey(u64 tid) {
@@ -416,7 +416,7 @@ static bool ShouldOverrideContents(OverrideKey *cfg) {
 }
 
 bool ContentManagement::ShouldOverrideContentsWithHBL(u64 tid) {
-    if (g_mounted_hbl_nsp && tid >= 0x0100000000001000 && HasCreatedTitle(0x0100000000001000)) {
+    if (g_mounted_hbl_nsp && tid >= TitleId_AppletStart && HasCreatedTitle(TitleId_AppletQlaunch)) {
         /* Return whether we should override contents with HBL. */
         return IsHBLTitleId(tid) && ShouldOverrideContents(&g_hbl_override_config.override_key);
     } else {
@@ -427,7 +427,7 @@ bool ContentManagement::ShouldOverrideContentsWithHBL(u64 tid) {
 
 bool ContentManagement::ShouldOverrideContentsWithSD(u64 tid) {
     if (g_has_initialized_fs_dev) {
-        if (tid >= 0x0100000000001000 && HasCreatedTitle(0x0100000000001000)) {
+        if (tid >= TitleId_AppletStart && HasCreatedTitle(TitleId_AppletQlaunch)) {
             /* Check whether we should override with non-HBL. */
             OverrideKey title_cfg = GetTitleOverrideKey(tid);
             return ShouldOverrideContents(&title_cfg);

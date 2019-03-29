@@ -45,7 +45,7 @@ class FsMitmService : public IMitmServiceObject {
             if (Utils::HasSdDisableMitMFlag(this->title_id)) {
                 this->should_override_contents = false;
             } else {
-                this->should_override_contents = (this->title_id >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(this->title_id)) && Utils::HasOverrideButton(this->title_id);
+                this->should_override_contents = (this->title_id >= TitleId_ApplicationStart || Utils::HasSdMitMFlag(this->title_id)) && Utils::HasOverrideButton(this->title_id);
             }
         }
         
@@ -59,11 +59,11 @@ class FsMitmService : public IMitmServiceObject {
 
             /* TODO: intercepting everything seems to cause issues with sleep mode, for some reason. */
             /* Figure out why, and address it. */
-            if (tid == 0x0100000000001000ULL) {
+            if (tid == TitleId_AppletQlaunch) {
                 has_launched_qlaunch = true;
             }
             
-            return has_launched_qlaunch || tid == 0x010000000000001FULL || tid >= 0x0100000000010000ULL || Utils::HasSdMitMFlag(tid);
+            return has_launched_qlaunch || tid == TitleId_Ns || tid >= TitleId_ApplicationStart || Utils::HasSdMitMFlag(tid);
         }
         
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);

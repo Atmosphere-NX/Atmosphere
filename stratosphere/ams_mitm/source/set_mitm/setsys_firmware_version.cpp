@@ -32,13 +32,13 @@ void VersionManager::Initialize() {
     }
 
     /* Mount firmware version data archive. */
-    if (R_SUCCEEDED(romfsMountFromDataArchive(0x0100000000000809ul, FsStorageId_NandSystem, "809"))) {
-        ON_SCOPE_EXIT { romfsUnmount("809"); };
+    if (R_SUCCEEDED(romfsMountFromDataArchive(TitleId_ArchiveSystemVersion, FsStorageId_NandSystem, "sysver"))) {
+        ON_SCOPE_EXIT { romfsUnmount("sysver"); };
 
         SetSysFirmwareVersion fw_ver;
 
         /* Firmware version file must exist. */
-        FILE *f = fopen("809:/file", "rb");
+        FILE *f = fopen("sysver:/file", "rb");
         if (f == NULL) {
             std::abort();
         }
@@ -75,7 +75,7 @@ Result VersionManager::GetFirmwareVersion(u64 title_id, SetSysFirmwareVersion *o
     VersionManager::Initialize();
     
     /* Report atmosphere string to qlaunch, maintenance and nothing else. */
-    if (title_id == 0x0100000000001000ULL || title_id == 0x0100000000001015ULL) {
+    if (title_id == TitleId_AppletQlaunch || title_id == TitleId_AppletMaintenanceMenu) {
         *out = g_ams_fw_version;
     } else {
         *out = g_fw_version;

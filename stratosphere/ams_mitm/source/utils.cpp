@@ -52,7 +52,7 @@ static HblOverrideConfig g_hbl_override_config = {
         .key_combination = KEY_L,
         .override_by_default = true
     },
-    .title_id = 0x010000000000100D,
+    .title_id = TitleId_AppletPhotoViewer,
     .override_any_app = false
 };
 
@@ -380,11 +380,11 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
 }
 
 bool Utils::IsHblTid(u64 tid) {
-    return (g_hbl_override_config.override_any_app && IsApplicationTid(tid)) || (tid == g_hbl_override_config.title_id);
+    return (g_hbl_override_config.override_any_app && TitleIdIsApplication(tid)) || (tid == g_hbl_override_config.title_id);
 }
 
 bool Utils::IsWebAppletTid(u64 tid) {
-    return tid == 0x010000000000100Aul || tid == 0x010000000000100Ful || tid == 0x0100000000001010ul || tid == 0x0100000000001011ul;
+    return tid == TitleId_AppletWeb || tid == TitleId_AppletOfflineWeb || tid == TitleId_AppletLoginShare || tid == TitleId_AppletWifiWebAuth;
 }
 
 bool Utils::HasTitleFlag(u64 tid, const char *flag) {
@@ -469,7 +469,7 @@ static bool HasOverrideKey(OverrideKey *cfg) {
 
 
 bool Utils::HasOverrideButton(u64 tid) {
-    if ((!IsApplicationTid(tid)) || (!IsSdInitialized())) {
+    if ((!TitleIdIsApplication(tid)) || (!IsSdInitialized())) {
         /* Disable button override disable for non-applications. */
         return true;
     }

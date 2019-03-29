@@ -24,7 +24,7 @@ static HosMutex g_boot0_mutex;
 static u8 g_boot0_bct_buffer[Boot0Storage::BctEndOffset];
 
 bool Boot0Storage::CanModifyBctPubks() {
-    return this->title_id != 0x010000000000001FULL;
+    return this->title_id != TitleId_Ns;
 }
 
 Result Boot0Storage::Read(void *_buffer, size_t size, u64 offset) {
