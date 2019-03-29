@@ -165,7 +165,7 @@ Result ContentManagement::ResolveContentPath(char *out_path, u64 tid, FsStorageI
 
     if (R_SUCCEEDED(rc = lrRegLrResolveProgramPath(&reg, tid, path))) {
         strncpy(out_path, path, FS_MAX_PATH);
-    } else if (rc != 0x408) {
+    } else if (rc != ResultLrProgramNotFound) {
         return rc;
     }
 
