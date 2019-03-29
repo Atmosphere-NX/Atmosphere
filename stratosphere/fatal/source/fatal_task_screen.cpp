@@ -47,7 +47,7 @@ Result ShowFatalTask::SetupDisplayInternal() {
     ViDisplay display;
     /* Try to open the display. */
     if (R_FAILED((rc = viOpenDisplay("Internal", &display)))) {
-        if (rc == 0xE72) {
+        if (rc == ResultViNotFound) {
             return 0;
         } else {
             return rc;
@@ -74,7 +74,7 @@ Result ShowFatalTask::SetupDisplayExternal() {
     ViDisplay display;
     /* Try to open the display. */
     if (R_FAILED((rc = viOpenDisplay("External", &display)))) {
-        if (rc == 0xE72) {
+        if (rc == ResultViNotFound) {
             return 0;
         } else {
             return rc;
