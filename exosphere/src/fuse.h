@@ -74,7 +74,7 @@ typedef struct {
     uint32_t FUSE_CP_REV;
     uint32_t _0x94;
     uint32_t FUSE_TSENSOR_0;
-    uint32_t FUSE_FIRST_BOOTROM_PATCH_SIZE_REG;
+    uint32_t FUSE_FIRST_BOOTROM_PATCH_SIZE;
     uint32_t FUSE_SECURITY_MODE;
     uint32_t FUSE_PRIVATE_KEY[0x4];
     uint32_t FUSE_DEVICE_KEY;
