@@ -264,6 +264,10 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             /* UNOFFICIAL: Gets information about the current exosphere git commit hash. */
             *p_outvalue = ATMOSPHERE_RELEASE_VERSION_HASH;
             break;
+        case CONFIGITEM_HAS_RCM_BUG_PATCH:
+            /* UNOFFICIAL: Gets whether this unit has the RCM bug patched. */
+            *p_outvalue = (int)(fuse_has_rcm_bug_patch());;
+            break;
         default:
             result = 2;
             break;

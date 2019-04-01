@@ -215,4 +215,6 @@ uint32_t fuse_get_hardware_type(void);
 uint32_t fuse_get_retail_type(void);
 void fuse_get_hardware_info(void *dst);
 
+bool fuse_has_rcm_bug_patch(void);
+
 #endif

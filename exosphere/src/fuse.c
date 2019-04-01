@@ -23,6 +23,7 @@
 #include "exocfg.h"
 
 #include "masterkey.h"
+
 /* Prototypes for internal commands. */
 void fuse_make_regs_visible(void);
 
@@ -256,4 +257,10 @@ void fuse_get_hardware_info(void *dst) {
     hw_info[3] = (uint32_t)(vendor_code);
 
     memcpy(dst, hw_info, 0x10);
+}
+
+bool fuse_has_rcm_bug_patch(void) {
+    /* Patched units have this bit set in reserved_sw, according to reports. */
+    /* TODO: Is there an ipatch we should check? This should be researched. */
+    return (FUSE_CHIP_REGS->FUSE_RESERVED_SW & 0x80) != 0;
 }
