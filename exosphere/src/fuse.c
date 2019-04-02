@@ -40,6 +40,11 @@ void fuse_init(void)
     fuse_make_regs_visible();
     fuse_secondary_private_key_disable();
     fuse_disable_programming();
+    
+    /* TODO: Should we allow this to be done later? */
+    if (!g_has_checked_for_rcm_bug_patch) {
+        (void)(fuse_has_rcm_bug_patch());
+    }
 
     /* TODO: Overrides (iROM patches) and various reads happen here */
 }

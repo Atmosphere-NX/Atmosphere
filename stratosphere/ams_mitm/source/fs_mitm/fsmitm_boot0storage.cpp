@@ -24,7 +24,16 @@ static HosMutex g_boot0_mutex;
 static u8 g_boot0_bct_buffer[Boot0Storage::BctEndOffset];
 
 bool Boot0Storage::CanModifyBctPubks() {
-    return this->title_id != TitleId_Ns;
+    if (IsRcmBugPatched()) {
+        /* RCM bug patched. */
+        /* Only allow NS to update the BCT pubks. */
+        /* AutoRCM on a patched unit will cause a brick, so homebrew should NOT be allowed to write. */
+        return this->title_id == TitleId_Ns;
+    } else {
+        /* RCM bug unpatched. */
+        /* Allow homebrew but not NS to update the BCT pubks. */
+        return this->title_id != TitleId_Ns;
+    }
 }
 
 Result Boot0Storage::Read(void *_buffer, size_t size, u64 offset) {
