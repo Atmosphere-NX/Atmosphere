@@ -194,6 +194,13 @@ void DmntCheatVm::LogOpcode(const CheatVmOpcode *opcode) {
             this->LogToDebugFile("Src Idx:   %x\n", opcode->save_restore_reg.src_index);
             this->LogToDebugFile("Is Save:   %d\n", opcode->save_restore_reg.is_save);
             break;
+        case CheatVmOpcodeType_SaveRestoreRegisterMask: 
+            this->LogToDebugFile("Opcode: Save or Restore Register Mask\n");
+            this->LogToDebugFile("Is Save:   %d\n", opcode->save_restore_regmask.is_save);
+            for (size_t i = 0; i < NumRegisters; i++) {
+                this->LogToDebugFile("Act[%02x]:   %d\n", i, opcode->save_restore_regmask.should_save_or_restore[i]);
+            }
+            break;
         default:
             this->LogToDebugFile("Unknown opcode: %x\n", opcode->opcode);
             break;
@@ -479,6 +486,18 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
                 opcode.save_restore_reg.dst_index = (first_dword >> 16) & 0xF;
                 opcode.save_restore_reg.src_index = (first_dword >> 8) & 0xF;
                 opcode.save_restore_reg.is_save = ((first_dword >> 4) & 0xF) != 0;
+            }
+            break;
+        case CheatVmOpcodeType_SaveRestoreRegisterMask:
+            {
+                /* C2x0XXXX */
+                /* C2 = opcode 0xC2 */
+                /* x = 1 if saving, 0 if restoring. */
+                /* X = 16-bit bitmask, bit i --> save or restore register i. */
+                opcode.save_restore_regmask.is_save = ((first_dword >> 20) & 0xF) != 0;
+                for (size_t i = 0; i < NumRegisters; i++) {
+                    opcode.save_restore_regmask.should_save_or_restore[i] = (first_dword & (1u << i)) != 0;
+                }
             }
             break;
         case CheatVmOpcodeType_ExtendedWidth:
@@ -994,6 +1013,23 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                     this->saved_values[cur_opcode.save_restore_reg.dst_index] = this->registers[cur_opcode.save_restore_reg.src_index];
                 } else {
                     this->registers[cur_opcode.save_restore_reg.dst_index] = this->saved_values[cur_opcode.save_restore_reg.src_index];
+                }
+                break;
+            case CheatVmOpcodeType_SaveRestoreRegisterMask:
+                /* Save or restore register mask. */
+                u64 *src;
+                u64 *dst;
+                if (cur_opcode.save_restore_regmask.is_save) {
+                    src = this->registers;
+                    dst = this->saved_values;
+                } else {
+                    src = this->registers;
+                    dst = this->saved_values;
+                }
+                for (size_t i = 0; i < NumRegisters; i++) {
+                    if (cur_opcode.save_restore_regmask.should_save_or_restore[i]) {
+                        dst[i] = src[i];
+                    }
                 }
                 break;
             default:

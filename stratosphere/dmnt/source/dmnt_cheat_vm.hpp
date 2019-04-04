@@ -44,6 +44,7 @@ enum CheatVmOpcodeType : u32 {
     /* Extended width opcodes. */
     CheatVmOpcodeType_BeginRegisterConditionalBlock = 0xC0,
     CheatVmOpcodeType_SaveRestoreRegister = 0xC1,
+    CheatVmOpcodeType_SaveRestoreRegisterMask = 0xC2,
 };
 
 enum MemoryAccessType : u32 {
@@ -198,6 +199,11 @@ struct SaveRestoreRegisterOpcode {
     bool is_save;
 };
 
+struct SaveRestoreRegisterMaskOpcode {
+    bool is_save;
+    bool should_save_or_restore[0x10];
+};
+
 struct CheatVmOpcode {
     CheatVmOpcodeType opcode;
     bool begin_conditional_block;
@@ -215,6 +221,7 @@ struct CheatVmOpcode {
         StoreRegisterToAddressOpcode str_register;
         BeginRegisterConditionalOpcode begin_reg_cond;
         SaveRestoreRegisterOpcode save_restore_reg;
+        SaveRestoreRegisterMaskOpcode save_restore_regmask;
     };
 };
 
