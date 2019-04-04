@@ -188,6 +188,12 @@ void DmntCheatVm::LogOpcode(const CheatVmOpcode *opcode) {
                         break;
                 }
             break;
+        case CheatVmOpcodeType_SaveRestoreRegister: 
+            this->LogToDebugFile("Opcode: Save or Restore Register\n");
+            this->LogToDebugFile("Dst Idx:   %x\n", opcode->save_restore_reg.dst_index);
+            this->LogToDebugFile("Src Idx:   %x\n", opcode->save_restore_reg.src_index);
+            this->LogToDebugFile("Is Save:   %d\n", opcode->save_restore_reg.is_save);
+            break;
         default:
             this->LogToDebugFile("Unknown opcode: %x\n", opcode->opcode);
             break;
@@ -462,6 +468,19 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
                 }
             }
             break;
+        case CheatVmOpcodeType_SaveRestoreRegister:
+            {
+                /* C10D0Sx0 */
+                /* C1 = opcode 0xC1 */
+                /* D = destination index. */
+                /* S = source index. */
+                /* x = 1 if saving a register, 0 if restoring a register. */
+                /* NOTE: If we add more save slots later, current encoding is backwards compatible. */
+                opcode.save_restore_reg.dst_index = (first_dword >> 16) & 0xF;
+                opcode.save_restore_reg.src_index = (first_dword >> 8) & 0xF;
+                opcode.save_restore_reg.is_save = ((first_dword >> 4) & 0xF) != 0;
+            }
+            break;
         case CheatVmOpcodeType_ExtendedWidth:
         default:
             /* Unrecognized instruction cannot be decoded. */
@@ -532,6 +551,7 @@ u64 DmntCheatVm::GetCheatProcessAddress(const CheatProcessMetadata* metadata, Me
 void DmntCheatVm::ResetState() {
     for (size_t i = 0; i < DmntCheatVm::NumRegisters; i++) {
         this->registers[i] = 0;
+        this->saved_values[i] = 0;
         this->loop_tops[i] = 0;
     }
     this->instruction_ptr = 0;
@@ -584,6 +604,10 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
 
         for (size_t i = 0; i < NumRegisters; i++) {
             this->LogToDebugFile("Registers[%02x]: %016lx\n", i, this->registers[i]);
+        }
+
+        for (size_t i = 0; i < NumRegisters; i++) {
+            this->LogToDebugFile("SavedRegs[%02x]: %016lx\n", i, this->saved_values[i]);
         }
         this->LogOpcode(&cur_opcode);
         
@@ -962,6 +986,14 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                     if (!cond_met) {
                         this->SkipConditionalBlock();
                     }
+                }
+                break;
+            case CheatVmOpcodeType_SaveRestoreRegister:
+                /* Save or restore a register. */
+                if (cur_opcode.save_restore_reg.is_save) {
+                    this->saved_values[cur_opcode.save_restore_reg.dst_index] = this->registers[cur_opcode.save_restore_reg.src_index];
+                } else {
+                    this->registers[cur_opcode.save_restore_reg.dst_index] = this->saved_values[cur_opcode.save_restore_reg.src_index];
                 }
                 break;
             default:

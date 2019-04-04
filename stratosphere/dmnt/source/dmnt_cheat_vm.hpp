@@ -43,6 +43,7 @@ enum CheatVmOpcodeType : u32 {
     
     /* Extended width opcodes. */
     CheatVmOpcodeType_BeginRegisterConditionalBlock = 0xC0,
+    CheatVmOpcodeType_SaveRestoreRegister = 0xC1,
 };
 
 enum MemoryAccessType : u32 {
@@ -191,6 +192,11 @@ struct BeginRegisterConditionalOpcode {
     VmInt value;
 };
 
+struct SaveRestoreRegisterOpcode {
+    u32 dst_index;
+    u32 src_index;
+    bool is_save;
+};
 
 struct CheatVmOpcode {
     CheatVmOpcodeType opcode;
@@ -208,6 +214,7 @@ struct CheatVmOpcode {
         PerformArithmeticRegisterOpcode perform_math_reg;
         StoreRegisterToAddressOpcode str_register;
         BeginRegisterConditionalOpcode begin_reg_cond;
+        SaveRestoreRegisterOpcode save_restore_reg;
     };
 };
 
@@ -222,6 +229,7 @@ class DmntCheatVm {
         bool decode_success = false;
         u32 program[MaximumProgramOpcodeCount] = {0};
         u64 registers[NumRegisters] = {0};
+        u64 saved_values[NumRegisters] = {0};
         size_t loop_tops[NumRegisters] = {0};
     private:
         bool DecodeNextOpcode(CheatVmOpcode *out);
