@@ -23,7 +23,6 @@
 #include "debug.hpp"
 #include "utils.hpp"
 #include "ini.h"
-#include "sha256.h"
 
 #include "set_mitm/setsys_settings_items.hpp"
 
@@ -124,12 +123,8 @@ void Utils::InitializeThreadFunc(void *args) {
                 u32 cal0_size = ((u32 *)g_cal0_backup)[2];
                 is_cal0_valid &= cal0_size + 0x40 <= ProdinfoSize;
                 if (is_cal0_valid) {
-                    struct sha256_state sha_ctx;
                     u8 calc_hash[0x20];
-                    sha256_init(&sha_ctx);
-                    sha256_update(&sha_ctx, g_cal0_backup + 0x40, cal0_size);
-                    sha256_finalize(&sha_ctx);
-                    sha256_finish(&sha_ctx, calc_hash);
+                    sha256CalculateHash(calc_hash, g_cal0_backup + 0x40, cal0_size);
                     is_cal0_valid &= memcmp(calc_hash, g_cal0_backup + 0x20, sizeof(calc_hash)) == 0;
                 }
                 has_auto_backup = is_cal0_valid;

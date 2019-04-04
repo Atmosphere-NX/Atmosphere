@@ -20,7 +20,6 @@
 #include <cstdio>
 #include <functional>
 #include <cstring>
-#include "sha256.h"
 #include "ldr_nro.hpp"
 #include "ldr_registration.hpp"
 #include "ldr_map.hpp"
@@ -53,7 +52,6 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
     unsigned int i;
     Result rc = ResultSuccess;
     u8 nro_hash[0x20];
-    struct sha256_state sha_ctx;
 
     /* Perform cleanup on failure. */
     ON_SCOPE_EXIT {
@@ -108,10 +106,7 @@ Result NroUtils::LoadNro(Registration::Process *target_proc, Handle process_h, u
             return rc;
         }
         
-        sha256_init(&sha_ctx);
-        sha256_update(&sha_ctx, (u8 *)mcm_nro.mapped_address, nro_hdr.nro_size);
-        sha256_finalize(&sha_ctx);
-        sha256_finish(&sha_ctx, nro_hash);
+        sha256CalculateHash(nro_hash, mcm_nro.mapped_address, nro_hdr.nro_size);
     }
 
     /* Unmap the NRO. */

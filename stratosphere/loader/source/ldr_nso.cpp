@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
-#include "sha256.h"
 #include "lz4.h"
 #include "ldr_nso.hpp"
 #include "ldr_map.hpp"
@@ -275,11 +274,7 @@ Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int s
     
     if (check_hash) {
         u8 hash[0x20] = {0};
-        struct sha256_state sha_ctx;
-        sha256_init(&sha_ctx);
-        sha256_update(&sha_ctx, dst_addr, out_size);
-        sha256_finalize(&sha_ctx);
-        sha256_finish(&sha_ctx, hash);
+        sha256CalculateHash(hash, dst_addr, out_size);
 
         if (std::memcmp(g_nso_headers[index].section_hashes[segment], hash, sizeof(hash))) {
             return ResultLoaderInvalidNso;
