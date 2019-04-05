@@ -98,7 +98,8 @@ enum CompareRegisterValueType : u32 {
 enum SaveRestoreRegisterOpType : u32 {
     SaveRestoreRegisterOpType_Restore = 0,
     SaveRestoreRegisterOpType_Save = 1,
-    SaveRestoreRegisterOpType_Clear = 2,
+    SaveRestoreRegisterOpType_ClearSaved = 2,
+    SaveRestoreRegisterOpType_ClearRegs = 3,
 };
 
 union VmInt {

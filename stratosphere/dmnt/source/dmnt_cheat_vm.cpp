@@ -481,7 +481,7 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
                 /* C1 = opcode 0xC1 */
                 /* D = destination index. */
                 /* S = source index. */
-                /* x = 2 if clearing saved value, 1 if saving a register, 0 if restoring a register. */
+                /* x = 3 if clearing reg, 2 if clearing saved value, 1 if saving a register, 0 if restoring a register. */
                 /* NOTE: If we add more save slots later, current encoding is backwards compatible. */
                 opcode.save_restore_reg.dst_index = (first_dword >> 16) & 0xF;
                 opcode.save_restore_reg.src_index = (first_dword >> 8) & 0xF;
@@ -492,7 +492,7 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
             {
                 /* C2x0XXXX */
                 /* C2 = opcode 0xC2 */
-                /* x = 2 if clearing saved value, 1 if saving, 0 if restoring. */
+                /* x = 3 if clearing reg, 2 if clearing saved value, 1 if saving, 0 if restoring. */
                 /* X = 16-bit bitmask, bit i --> save or restore register i. */
                 opcode.save_restore_regmask.op_type = (SaveRestoreRegisterOpType)((first_dword >> 20) & 0xF);
                 for (size_t i = 0; i < NumRegisters; i++) {
@@ -1010,7 +1010,10 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
             case CheatVmOpcodeType_SaveRestoreRegister:
                 /* Save or restore a register. */
                 switch (cur_opcode.save_restore_reg.op_type) {
-                    case SaveRestoreRegisterOpType_Clear:
+                    case SaveRestoreRegisterOpType_ClearRegs:
+                        this->registers[cur_opcode.save_restore_reg.dst_index] = 0ul;
+                        break;
+                    case SaveRestoreRegisterOpType_ClearSaved:
                         this->saved_values[cur_opcode.save_restore_reg.dst_index] = 0ul;
                         break;
                     case SaveRestoreRegisterOpType_Save:
@@ -1024,21 +1027,15 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                 break;
             case CheatVmOpcodeType_SaveRestoreRegisterMask:
                 /* Save or restore register mask. */
-                if (cur_opcode.save_restore_reg.op_type == SaveRestoreRegisterOpType_Clear) {
-                    for (size_t i = 0; i < NumRegisters; i++) {
-                        if (cur_opcode.save_restore_regmask.should_operate[i]) {
-                            this->saved_values[i] = 0;
-                        }
-                    }
-                    break;
-                }
                 u64 *src;
                 u64 *dst;
                 switch (cur_opcode.save_restore_regmask.op_type) {
+                    case SaveRestoreRegisterOpType_ClearSaved:
                     case SaveRestoreRegisterOpType_Save:
                         src = this->registers;
                         dst = this->saved_values;
                         break;
+                    case SaveRestoreRegisterOpType_ClearRegs:
                     case SaveRestoreRegisterOpType_Restore:
                     default:
                         src = this->registers;
@@ -1047,7 +1044,17 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                 }
                 for (size_t i = 0; i < NumRegisters; i++) {
                     if (cur_opcode.save_restore_regmask.should_operate[i]) {
-                        dst[i] = src[i];
+                        switch (cur_opcode.save_restore_regmask.op_type) {
+                            case SaveRestoreRegisterOpType_ClearSaved:
+                            case SaveRestoreRegisterOpType_ClearRegs:
+                                dst[i] = 0ul;
+                                break;
+                            case SaveRestoreRegisterOpType_Save:
+                            case SaveRestoreRegisterOpType_Restore:
+                            default:
+                                dst[i] = src[i];
+                                break;
+                        }
                     }
                 }
                 break;
