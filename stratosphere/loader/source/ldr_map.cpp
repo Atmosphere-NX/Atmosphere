@@ -38,8 +38,8 @@ Result MapUtils::MapCodeMemoryForProcess(Handle process_h, bool is_64_bit_addres
 }
 
 Result MapUtils::LocateSpaceForMapModern(u64 *out, u64 out_size) {
-    MemoryInfo mem_info = {0};
-    AddressSpaceInfo address_space = {0};
+    MemoryInfo mem_info = {};
+    AddressSpaceInfo address_space = {};
     u32 page_info = 0;
     u64 cur_base = 0, cur_end = 0;
     Result rc;
@@ -94,7 +94,7 @@ Result MapUtils::LocateSpaceForMapModern(u64 *out, u64 out_size) {
 
 
 Result MapUtils::LocateSpaceForMapDeprecated(u64 *out, u64 out_size) {
-    MemoryInfo mem_info = {0};
+    MemoryInfo mem_info = {};
     u32 page_info = 0;
     Result rc;
     
@@ -128,7 +128,7 @@ Result MapUtils::LocateSpaceForMapDeprecated(u64 *out, u64 out_size) {
 }
 
 Result MapUtils::MapCodeMemoryForProcessModern(Handle process_h, u64 base_address, u64 size, u64 *out_code_memory_address) {
-    AddressSpaceInfo address_space = {0};
+    AddressSpaceInfo address_space = {};
     Result rc;
     
     if (R_FAILED((rc = GetAddressSpaceInfo(&address_space, process_h)))) {

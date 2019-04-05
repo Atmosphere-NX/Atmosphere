@@ -107,7 +107,7 @@ Result NsoUtils::LoadNsoHeaders(u64 title_id) {
     
     /* Zero out the cache. */
     std::fill(g_nso_present, g_nso_present + NSO_NUM_MAX, false);
-    std::fill(g_nso_headers, g_nso_headers + NSO_NUM_MAX, (const NsoUtils::NsoHeader &){0});
+    std::fill(g_nso_headers, g_nso_headers + NSO_NUM_MAX, NsoUtils::NsoHeader{});
     
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         f_nso = OpenNso(i, title_id);
@@ -161,7 +161,8 @@ Result NsoUtils::ValidateNsoLoadSet() {
 
 
 Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLoadExtents *extents) {
-    *extents = (const NsoUtils::NsoLoadExtents){0};
+    *extents = {};
+
     /* Calculate base offsets. */
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         if (g_nso_present[i]) {

@@ -63,7 +63,7 @@ Result ProcessManagerService::GetProgramInfo(OutPointerWithServerSize<ProcessMan
     Result rc;
     char nca_path[FS_MAX_PATH] = {0};
     /* Zero output. */
-    std::fill(out_program_info.pointer, out_program_info.pointer + out_program_info.num_elements, (const ProcessManagerService::ProgramInfo){0});
+    std::fill(out_program_info.pointer, out_program_info.pointer + out_program_info.num_elements, ProcessManagerService::ProgramInfo{});
     
     rc = PopulateProgramInfoBuffer(out_program_info.pointer, &tid_sid);
     
