@@ -32,7 +32,7 @@ class FsDirUtils {
                 return rc;
             }
 
-            const size_t parent_len = strnlen(work_path.str, sizeof(work_path.str - 1));
+            const size_t parent_len = strnlen(work_path.str, sizeof(work_path.str) - 1);
 
             /* Read and handle entries. */
             while (true) {
