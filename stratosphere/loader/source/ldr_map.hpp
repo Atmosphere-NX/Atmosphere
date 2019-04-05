@@ -170,6 +170,6 @@ struct MappedCodeMemory {
                 /* TODO: panic(). */
             }
         }
-        *this = (const MappedCodeMemory){0};
+        *this = {};
     }
 };
