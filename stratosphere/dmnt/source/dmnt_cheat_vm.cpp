@@ -192,13 +192,13 @@ void DmntCheatVm::LogOpcode(const CheatVmOpcode *opcode) {
             this->LogToDebugFile("Opcode: Save or Restore Register\n");
             this->LogToDebugFile("Dst Idx:   %x\n", opcode->save_restore_reg.dst_index);
             this->LogToDebugFile("Src Idx:   %x\n", opcode->save_restore_reg.src_index);
-            this->LogToDebugFile("Is Save:   %d\n", opcode->save_restore_reg.is_save);
+            this->LogToDebugFile("Op Type:   %d\n", opcode->save_restore_reg.op_type);
             break;
         case CheatVmOpcodeType_SaveRestoreRegisterMask: 
             this->LogToDebugFile("Opcode: Save or Restore Register Mask\n");
-            this->LogToDebugFile("Is Save:   %d\n", opcode->save_restore_regmask.is_save);
+            this->LogToDebugFile("Op Type:   %d\n", opcode->save_restore_regmask.op_type);
             for (size_t i = 0; i < NumRegisters; i++) {
-                this->LogToDebugFile("Act[%02x]:   %d\n", i, opcode->save_restore_regmask.should_save_or_restore[i]);
+                this->LogToDebugFile("Act[%02x]:   %d\n", i, opcode->save_restore_regmask.should_operate[i]);
             }
             break;
         default:
@@ -481,22 +481,22 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
                 /* C1 = opcode 0xC1 */
                 /* D = destination index. */
                 /* S = source index. */
-                /* x = 1 if saving a register, 0 if restoring a register. */
+                /* x = 2 if clearing saved value, 1 if saving a register, 0 if restoring a register. */
                 /* NOTE: If we add more save slots later, current encoding is backwards compatible. */
                 opcode.save_restore_reg.dst_index = (first_dword >> 16) & 0xF;
                 opcode.save_restore_reg.src_index = (first_dword >> 8) & 0xF;
-                opcode.save_restore_reg.is_save = ((first_dword >> 4) & 0xF) != 0;
+                opcode.save_restore_reg.op_type = (SaveRestoreRegisterOpType)((first_dword >> 4) & 0xF);
             }
             break;
         case CheatVmOpcodeType_SaveRestoreRegisterMask:
             {
                 /* C2x0XXXX */
                 /* C2 = opcode 0xC2 */
-                /* x = 1 if saving, 0 if restoring. */
+                /* x = 2 if clearing saved value, 1 if saving, 0 if restoring. */
                 /* X = 16-bit bitmask, bit i --> save or restore register i. */
-                opcode.save_restore_regmask.is_save = ((first_dword >> 20) & 0xF) != 0;
+                opcode.save_restore_regmask.op_type = (SaveRestoreRegisterOpType)((first_dword >> 20) & 0xF);
                 for (size_t i = 0; i < NumRegisters; i++) {
-                    opcode.save_restore_regmask.should_save_or_restore[i] = (first_dword & (1u << i)) != 0;
+                    opcode.save_restore_regmask.should_operate[i] = (first_dword & (1u << i)) != 0;
                 }
             }
             break;
@@ -1009,25 +1009,44 @@ void DmntCheatVm::Execute(const CheatProcessMetadata *metadata) {
                 break;
             case CheatVmOpcodeType_SaveRestoreRegister:
                 /* Save or restore a register. */
-                if (cur_opcode.save_restore_reg.is_save) {
-                    this->saved_values[cur_opcode.save_restore_reg.dst_index] = this->registers[cur_opcode.save_restore_reg.src_index];
-                } else {
-                    this->registers[cur_opcode.save_restore_reg.dst_index] = this->saved_values[cur_opcode.save_restore_reg.src_index];
+                switch (cur_opcode.save_restore_reg.op_type) {
+                    case SaveRestoreRegisterOpType_Clear:
+                        this->saved_values[cur_opcode.save_restore_reg.dst_index] = 0ul;
+                        break;
+                    case SaveRestoreRegisterOpType_Save:
+                        this->saved_values[cur_opcode.save_restore_reg.dst_index] = this->registers[cur_opcode.save_restore_reg.src_index];
+                        break;
+                    case SaveRestoreRegisterOpType_Restore:
+                    default:
+                        this->registers[cur_opcode.save_restore_reg.dst_index] = this->saved_values[cur_opcode.save_restore_reg.src_index];
+                        break;
                 }
                 break;
             case CheatVmOpcodeType_SaveRestoreRegisterMask:
                 /* Save or restore register mask. */
+                if (cur_opcode.save_restore_reg.op_type == SaveRestoreRegisterOpType_Clear) {
+                    for (size_t i = 0; i < NumRegisters; i++) {
+                        if (cur_opcode.save_restore_regmask.should_operate[i]) {
+                            this->saved_values[i] = 0;
+                        }
+                    }
+                    break;
+                }
                 u64 *src;
                 u64 *dst;
-                if (cur_opcode.save_restore_regmask.is_save) {
-                    src = this->registers;
-                    dst = this->saved_values;
-                } else {
-                    src = this->registers;
-                    dst = this->saved_values;
+                switch (cur_opcode.save_restore_regmask.op_type) {
+                    case SaveRestoreRegisterOpType_Save:
+                        src = this->registers;
+                        dst = this->saved_values;
+                        break;
+                    case SaveRestoreRegisterOpType_Restore:
+                    default:
+                        src = this->registers;
+                        dst = this->saved_values;
+                        break;
                 }
                 for (size_t i = 0; i < NumRegisters; i++) {
-                    if (cur_opcode.save_restore_regmask.should_save_or_restore[i]) {
+                    if (cur_opcode.save_restore_regmask.should_operate[i]) {
                         dst[i] = src[i];
                     }
                 }

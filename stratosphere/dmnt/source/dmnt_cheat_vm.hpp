@@ -95,6 +95,12 @@ enum CompareRegisterValueType : u32 {
     CompareRegisterValueType_OtherRegister = 5,
 };
 
+enum SaveRestoreRegisterOpType : u32 {
+    SaveRestoreRegisterOpType_Restore = 0,
+    SaveRestoreRegisterOpType_Save = 1,
+    SaveRestoreRegisterOpType_Clear = 2,
+};
+
 union VmInt {
     u8  bit8;
     u16 bit16;
@@ -196,12 +202,12 @@ struct BeginRegisterConditionalOpcode {
 struct SaveRestoreRegisterOpcode {
     u32 dst_index;
     u32 src_index;
-    bool is_save;
+    SaveRestoreRegisterOpType op_type;
 };
 
 struct SaveRestoreRegisterMaskOpcode {
-    bool is_save;
-    bool should_save_or_restore[0x10];
+    SaveRestoreRegisterOpType op_type;
+    bool should_operate[0x10];
 };
 
 struct CheatVmOpcode {
