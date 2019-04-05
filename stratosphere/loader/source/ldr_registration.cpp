@@ -22,7 +22,7 @@
 #include "ldr_registration.hpp"
 #include "ldr_nro.hpp"
 
-static Registration::List g_registration_list = {0};
+static Registration::List g_registration_list = {};
 static u64 g_num_registered = 1;
 
 Registration::Process *Registration::GetFreeProcess() {
@@ -67,7 +67,7 @@ bool Registration::RegisterTidSid(const TidSid *tid_sid, u64 *out_index) {
     }
     
     /* Reset the process. */
-    *free_process = {0};
+    *free_process = {};
     free_process->tid_sid = *tid_sid;
     free_process->in_use = true;
     free_process->index = g_num_registered++;
@@ -82,7 +82,7 @@ bool Registration::UnregisterIndex(u64 index) {
     }
     
     /* Reset the process. */
-    *target_process = {0};
+    *target_process = {};
     return true;
 }
 
@@ -251,7 +251,7 @@ Result Registration::RemoveNroInfo(u64 index, Handle process_h, u64 nro_heap_add
                     rc = svcUnmapProcessCodeMemory(process_h, info->base_address, nro_heap_address, info->text_size + info->ro_size);
                 }
             }
-            target_process->nro_infos[i] = (const NroInfo ){0};
+            target_process->nro_infos[i] = {};
             return rc;
         }
     }
