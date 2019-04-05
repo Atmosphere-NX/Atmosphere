@@ -35,12 +35,13 @@ class DirectorySaveDataFileSystem : public IFileSystem {
     private:
         std::shared_ptr<IFileSystem> shared_fs;
         std::unique_ptr<IFileSystem> unique_fs;
+        std::unique_ptr<IFileSystem> proxy_save_fs;
         IFileSystem *fs;
         HosMutex lock;
         size_t open_writable_files = 0;
 
     public:
-        DirectorySaveDataFileSystem(IFileSystem *fs) : unique_fs(fs) {
+        DirectorySaveDataFileSystem(IFileSystem *fs, std::unique_ptr<IFileSystem> pfs) : unique_fs(fs), proxy_save_fs(std::move(pfs)) {
             this->fs = this->unique_fs.get();
             Result rc = this->Initialize();
             if (R_FAILED(rc)) {
@@ -48,7 +49,7 @@ class DirectorySaveDataFileSystem : public IFileSystem {
             }
         }
 
-        DirectorySaveDataFileSystem(std::unique_ptr<IFileSystem> fs) : unique_fs(std::move(fs)) {
+        DirectorySaveDataFileSystem(std::unique_ptr<IFileSystem> fs, std::unique_ptr<IFileSystem> pfs) : unique_fs(std::move(fs)), proxy_save_fs(std::move(pfs)) {
             this->fs = this->unique_fs.get();
             Result rc = this->Initialize();
             if (R_FAILED(rc)) {
@@ -56,14 +57,13 @@ class DirectorySaveDataFileSystem : public IFileSystem {
             }
         }
 
-        DirectorySaveDataFileSystem(std::shared_ptr<IFileSystem> fs) : shared_fs(fs) {
+        DirectorySaveDataFileSystem(std::shared_ptr<IFileSystem> fs, std::unique_ptr<IFileSystem> pfs) : shared_fs(fs), proxy_save_fs(std::move(pfs)) {
             this->fs = this->shared_fs.get();
             Result rc = this->Initialize();
             if (R_FAILED(rc)) {
                 fatalSimple(rc);
             }
         }
-
 
         virtual ~DirectorySaveDataFileSystem() { }
 
@@ -79,6 +79,7 @@ class DirectorySaveDataFileSystem : public IFileSystem {
         }
     public:
         void OnWritableFileClose();
+        Result CopySaveFromProxy();
     public:
         virtual Result CreateFileImpl(const FsPath &path, uint64_t size, int flags) override;
         virtual Result DeleteFileImpl(const FsPath &path) override;

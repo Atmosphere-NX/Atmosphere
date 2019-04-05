@@ -640,3 +640,15 @@ Result Utils::GetSettingsItemValueSize(const char *name, const char *key, u64 *o
 Result Utils::GetSettingsItemValue(const char *name, const char *key, void *out, size_t max_size, u64 *out_size) {
     return SettingsItemManager::GetValue(name, key, out, max_size, out_size);
 }
+
+Result Utils::GetSettingsItemBooleanValue(const char *name, const char *key, bool *out) {
+    u8 val = 0;
+    u64 out_size;
+    Result rc = Utils::GetSettingsItemValue(name, key, &val, sizeof(val), &out_size);
+    if (R_SUCCEEDED(rc)) {
+        if (out) {
+            *out = val != 0;
+        }
+    }
+    return rc;
+}

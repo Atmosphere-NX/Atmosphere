@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <map>
 #include <memory>
 #include <mutex>
@@ -28,6 +28,8 @@
 #include "fsmitm_romstorage.hpp"
 #include "fsmitm_layeredrom.hpp"
 
+#include "fs_dir_utils.hpp"
+#include "fs_save_utils.hpp"
 #include "fs_subdirectory_filesystem.hpp"
 #include "fs_directory_savedata_filesystem.hpp"
 
@@ -41,7 +43,7 @@ static bool StorageCacheGetEntry(u64 title_id, std::shared_ptr<IStorageInterface
     if (g_StorageCache.find(title_id) == g_StorageCache.end()) {
         return false;
     }
-    
+
     auto intf = g_StorageCache[title_id].lock();
     if (intf != nullptr) {
         *out = intf;
@@ -52,7 +54,7 @@ static bool StorageCacheGetEntry(u64 title_id, std::shared_ptr<IStorageInterface
 
 static void StorageCacheSetEntry(u64 title_id, std::shared_ptr<IStorageInterface> *ptr) {
     std::scoped_lock<HosMutex> lock(g_StorageCacheLock);
-    
+
     /* Ensure we always use the cached copy if present. */
     if (g_StorageCache.find(title_id) != g_StorageCache.end()) {
         auto intf = g_StorageCache[title_id].lock();
@@ -60,7 +62,7 @@ static void StorageCacheSetEntry(u64 title_id, std::shared_ptr<IStorageInterface
             *ptr = intf;
         }
     }
-    
+
     g_StorageCache[title_id] = *ptr;
 }
 
@@ -87,7 +89,7 @@ Result FsMitmService::OpenHblWebContentFileSystem(Out<std::shared_ptr<IFileSyste
     std::shared_ptr<IFileSystemInterface> fs = nullptr;
     u32 out_domain_id = 0;
     Result rc = ResultSuccess;
-    
+
     ON_SCOPE_EXIT {
         if (R_SUCCEEDED(rc)) {
             out_fs.SetValue(std::move(fs));
@@ -96,12 +98,13 @@ Result FsMitmService::OpenHblWebContentFileSystem(Out<std::shared_ptr<IFileSyste
             }
         }
     };
-    
+
     /* Mount the SD card using fs.mitm's session. */
     FsFileSystem sd_fs;
     rc = fsMountSdcard(&sd_fs);
     if (R_SUCCEEDED(rc)) {
-        fs = std::make_shared<IFileSystemInterface>(std::make_unique<SubDirectoryFileSystem>(std::make_shared<ProxyFileSystem>(sd_fs), AtmosphereHblWebContentDir));
+        std::unique_ptr<IFileSystem> web_ifs = std::make_unique<SubDirectoryFileSystem>(std::make_shared<ProxyFileSystem>(sd_fs), AtmosphereHblWebContentDir);
+        fs = std::make_shared<IFileSystemInterface>(std::move(web_ifs));
         if (out_fs.IsDomain()) {
             out_domain_id = sd_fs.s.object_id;
         }
@@ -130,7 +133,7 @@ Result FsMitmService::OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInt
             return ResultAtmosphereMitmShouldForwardToSession;
         }
     }
-    
+
     return this->OpenHblWebContentFileSystem(out_fs);
 }
 
@@ -138,7 +141,7 @@ Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterf
     /* Check for eligibility. */
     {
         FsDir d;
-        if (!Utils::IsWebAppletTid(this->title_id) || filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) || 
+        if (!Utils::IsWebAppletTid(this->title_id) || filesystem_type != FsFileSystemType_ContentManual || !Utils::IsHblTid(title_id) ||
             R_FAILED(Utils::OpenSdDir(AtmosphereHblWebContentDir, &d))) {
             return ResultAtmosphereMitmShouldForwardToSession;
         }
@@ -158,12 +161,90 @@ Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterf
     return this->OpenHblWebContentFileSystem(out_fs);
 }
 
+Result FsMitmService::OpenSaveDataFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out_fs, u8 space_id, FsSave save_struct) {
+    bool should_redirect_saves = false;
+    if (R_FAILED(Utils::GetSettingsItemBooleanValue("atmosphere", "fsmitm_redirect_saves_to_sd", &should_redirect_saves))) {
+        return ResultAtmosphereMitmShouldForwardToSession;
+    }
+
+    /* For now, until we're sure this is robust, only intercept normal savedata. */
+    if (!should_redirect_saves || save_struct.SaveDataType != FsSaveDataType_SaveData) {
+        return ResultAtmosphereMitmShouldForwardToSession;
+    }
+
+    /* Verify we can open the save. */
+    FsFileSystem save_fs;
+    if (R_FAILED(fsOpenSaveDataFileSystemFwd(this->forward_service.get(), &save_fs, space_id, &save_struct))) {
+        return ResultAtmosphereMitmShouldForwardToSession;
+    }
+    std::unique_ptr<IFileSystem> save_ifs = std::make_unique<ProxyFileSystem>(save_fs);
+
+    {
+        std::shared_ptr<IFileSystemInterface> fs = nullptr;
+        u32 out_domain_id = 0;
+        Result rc = ResultSuccess;
+
+        ON_SCOPE_EXIT {
+            if (R_SUCCEEDED(rc)) {
+                out_fs.SetValue(std::move(fs));
+                if (out_fs.IsDomain()) {
+                    out_fs.ChangeObjectId(out_domain_id);
+                }
+            }
+        };
+
+        /* Mount the SD card using fs.mitm's session. */
+        FsFileSystem sd_fs;
+        if (R_FAILED((rc = fsMountSdcard(&sd_fs)))) {
+            return rc;
+        }
+        std::shared_ptr<IFileSystem> sd_ifs = std::make_shared<ProxyFileSystem>(sd_fs);
+
+
+        /* Verify that we can open the save directory, and that it exists. */
+        const u64 target_tid = save_struct.titleID == 0 ? this->title_id : save_struct.titleID;
+        FsPath save_dir_path;
+        if (R_FAILED((rc = FsSaveUtils::GetSaveDataDirectoryPath(save_dir_path, space_id, save_struct.SaveDataType, target_tid, save_struct.userID, save_struct.saveID)))) {
+            return rc;
+        }
+
+        /* Check if this is the first time we're making the save. */
+        bool is_new_save = false;
+        {
+            DirectoryEntryType ent;
+            if (sd_ifs->GetEntryType(&ent, save_dir_path) == ResultFsPathNotFound) {
+                is_new_save = true;
+            }
+        }
+
+        /* Ensure the directory exists. */
+        if (R_FAILED((rc = FsDirUtils::EnsureDirectoryExists(sd_ifs.get(), save_dir_path)))) {
+            return rc;
+        }
+
+        std::shared_ptr<DirectorySaveDataFileSystem> dirsave_ifs = std::make_shared<DirectorySaveDataFileSystem>(new SubDirectoryFileSystem(sd_ifs, save_dir_path.str), std::move(save_ifs));
+
+        /* If it's the first time we're making the save, copy existing savedata over. */
+        if (is_new_save) {
+            /* TODO: Check error? */
+            dirsave_ifs->CopySaveFromProxy();
+        }
+
+        fs = std::make_shared<IFileSystemInterface>(static_cast<std::shared_ptr<IFileSystem>>(dirsave_ifs));
+        if (out_fs.IsDomain()) {
+            out_domain_id = sd_fs.s.object_id;
+        }
+
+        return rc;
+    }
+}
+
 /* Gate access to the BIS partitions. */
 Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out_storage, u32 bis_partition_id) {
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;
     Result rc = ResultSuccess;
-    
+
     ON_SCOPE_EXIT {
         if (R_SUCCEEDED(rc)) {
             out_storage.SetValue(std::move(storage));
@@ -172,7 +253,7 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
             }
         }
     };
-    
+
     {
         FsStorage bis_storage;
         rc = fsOpenBisStorageFwd(this->forward_service.get(), &bis_storage, bis_partition_id);
@@ -195,7 +276,7 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
                 if (is_sysmodule || has_bis_write_flag) {
                     /* Sysmodules should still be allowed to read and write. */
                     storage = std::make_shared<IStorageInterface>(new ProxyStorage(bis_storage));
-                } else if (Utils::IsHblTid(this->title_id) && 
+                } else if (Utils::IsHblTid(this->title_id) &&
                     ((BisStorageId_BcPkg2_1 <= bis_partition_id && bis_partition_id <= BisStorageId_BcPkg2_6) || bis_partition_id == BisStorageId_Boot1)) {
                     /* Allow HBL to write to boot1 (safe firm) + package2. */
                     /* This is needed to not break compatibility with ChoiDujourNX, which does not check for write access before beginning an update. */
@@ -211,7 +292,7 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
             }
         }
     }
-    
+
     return rc;
 }
 
@@ -220,27 +301,27 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;
     Result rc = ResultSuccess;
-    
+
     if (!this->should_override_contents) {
         return ResultAtmosphereMitmShouldForwardToSession;
     }
-    
+
     bool has_cache = StorageCacheGetEntry(this->title_id, &storage);
-    
+
     ON_SCOPE_EXIT {
         if (R_SUCCEEDED(rc)) {
             if (!has_cache) {
                 StorageCacheSetEntry(this->title_id, &storage);
             }
-            
+
             out_storage.SetValue(std::move(storage));
             if (out_storage.IsDomain()) {
                 out_storage.ChangeObjectId(out_domain_id);
             }
         }
     };
-    
-    
+
+
     if (has_cache) {
         if (out_storage.IsDomain()) {
             FsStorage s = {0};
@@ -257,7 +338,7 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
     } else {
         FsStorage data_storage;
         FsFile data_file;
-        
+
         rc = fsOpenDataStorageByCurrentProcessFwd(this->forward_service.get(), &data_storage);
 
         Log(armGetTls(), 0x100);
@@ -279,7 +360,7 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
             }
         }
     }
-    
+
     return rc;
 }
 
@@ -288,30 +369,30 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
     FsStorageId storage_id = (FsStorageId)sid;
     FsStorage data_storage;
     FsFile data_file;
-    
+
     if (!this->should_override_contents) {
         return ResultAtmosphereMitmShouldForwardToSession;
     }
-        
+
     std::shared_ptr<IStorageInterface> storage = nullptr;
     u32 out_domain_id = 0;
     Result rc = ResultSuccess;
-    
+
     bool has_cache = StorageCacheGetEntry(data_id, &storage);
-    
+
     ON_SCOPE_EXIT {
         if (R_SUCCEEDED(rc)) {
             if (!has_cache) {
                 StorageCacheSetEntry(data_id, &storage);
             }
-            
+
             out_storage.SetValue(std::move(storage));
             if (out_storage.IsDomain()) {
                 out_storage.ChangeObjectId(out_domain_id);
             }
         }
     };
-    
+
     if (has_cache) {
         if (out_storage.IsDomain()) {
             FsStorage s = {0};
@@ -346,6 +427,6 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
             }
         }
     }
-    
+
     return rc;
 }

@@ -132,6 +132,9 @@ class FsDirUtils {
         static Result CopyDirectoryRecursively(IFileSystem *fs, const FsPath &dst_path, const FsPath &src_path, void *work_buf, size_t work_buf_size) {
             return CopyDirectoryRecursively(fs, fs, dst_path, src_path, work_buf, work_buf_size);
         }
+        
+        /* Ensure directory existence. */
+        static Result EnsureDirectoryExists(IFileSystem *fs, const FsPath &path);
 
         /* Other Utility. */
         template<typename F>

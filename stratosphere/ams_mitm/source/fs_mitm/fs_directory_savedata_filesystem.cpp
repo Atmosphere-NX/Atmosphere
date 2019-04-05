@@ -166,6 +166,27 @@ void DirectorySaveDataFileSystem::OnWritableFileClose() {
     /* TODO: Abort if < 0? N does not. */
 }
 
+Result DirectorySaveDataFileSystem::CopySaveFromProxy() {
+    if (this->proxy_save_fs != nullptr) {
+        Result rc;
+
+        /* Get a buffer to work with. */
+        void *work_buf = nullptr;
+        size_t work_buf_size = 0;
+        if (R_FAILED((rc = this->AllocateWorkBuffer(&work_buf, &work_buf_size, IdealWorkBuffersize)))) {
+            return rc;
+        }
+        ON_SCOPE_EXIT { free(work_buf); };
+
+        rc = FsDirUtils::CopyDirectoryRecursively(this, this->proxy_save_fs.get(), FsPathUtils::RootPath, FsPathUtils::RootPath, work_buf, work_buf_size);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        return this->Commit();
+    }
+    return ResultSuccess;
+}
+
 /* ================================================================================================ */
 
 Result DirectorySaveDataFileSystem::CreateFileImpl(const FsPath &path, uint64_t size, int flags) {

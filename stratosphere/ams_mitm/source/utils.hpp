@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -46,45 +46,47 @@ class Utils {
     public:
         static bool IsSdInitialized();
         static void WaitSdInitialized();
-        
+
         static Result OpenSdFile(const char *fn, int flags, FsFile *out);
         static Result OpenSdFileForAtmosphere(u64 title_id, const char *fn, int flags, FsFile *out);
         static Result OpenRomFSSdFile(u64 title_id, const char *fn, int flags, FsFile *out);
         static Result OpenSdDir(const char *path, FsDir *out);
         static Result OpenSdDirForAtmosphere(u64 title_id, const char *path, FsDir *out);
-        static Result OpenRomFSSdDir(u64 title_id, const char *path, FsDir *out);        
-        
+        static Result OpenRomFSSdDir(u64 title_id, const char *path, FsDir *out);
+
         static Result OpenRomFSFile(FsFileSystem *fs, u64 title_id, const char *fn, int flags, FsFile *out);
         static Result OpenRomFSDir(FsFileSystem *fs, u64 title_id, const char *path, FsDir *out);
-        
+
         static Result SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, size_t size);
-        
+
         static bool HasSdRomfsContent(u64 title_id);
-        
+
         /* Delayed Initialization + MitM detection. */
         static void InitializeThreadFunc(void *args);
-        
+
         static bool IsHblTid(u64 tid);
         static bool IsWebAppletTid(u64 tid);
-        
+
         static bool HasTitleFlag(u64 tid, const char *flag);
         static bool HasHblFlag(const char *flag);
         static bool HasGlobalFlag(const char *flag);
         static bool HasFlag(u64 tid, const char *flag);
-        
+
         static bool HasSdMitMFlag(u64 tid);
         static bool HasSdDisableMitMFlag(u64 tid);
-        
-        
+
+
         static bool IsHidAvailable();
         static Result GetKeysHeld(u64 *keys);
-        
+
         static OverrideKey GetTitleOverrideKey(u64 tid);
         static bool HasOverrideButton(u64 tid);
-        
+
         /* Settings! */
         static Result GetSettingsItemValueSize(const char *name, const char *key, u64 *out_size);
         static Result GetSettingsItemValue(const char *name, const char *key, void *out, size_t max_size, u64 *out_size);
+
+        static Result GetSettingsItemBooleanValue(const char *name, const char *key, bool *out);
     private:
         static void RefreshConfiguration();
 };

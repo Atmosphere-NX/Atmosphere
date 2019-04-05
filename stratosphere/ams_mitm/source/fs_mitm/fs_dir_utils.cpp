@@ -60,20 +60,20 @@ Result FsDirUtils::CopyFile(IFileSystem *dst_fs, IFileSystem *src_fs, const FsPa
 
         offset += read_size;
     }
-    
+
     return ResultSuccess;
 }
 
 Result FsDirUtils::CopyDirectoryRecursively(IFileSystem *dst_fs, IFileSystem *src_fs, const FsPath &dst_path, const FsPath &src_path, void *work_buf, size_t work_buf_size) {
     FsPath work_path = dst_path;
 
-    return IterateDirectoryRecursively(src_fs, src_path, 
+    return IterateDirectoryRecursively(src_fs, src_path,
         [&](const FsPath &path, const FsDirectoryEntry *dir_ent) -> Result { /* On Enter Directory */
             /* Update path, create new dir. */
             strncat(work_path.str, dir_ent->name, sizeof(work_path) - strnlen(work_path.str, sizeof(work_path) - 1) - 1);
             strncat(work_path.str, "/", sizeof(work_path) - strnlen(work_path.str, sizeof(work_path) - 1) - 1);
             return dst_fs->CreateDirectory(work_path);
-        }, 
+        },
         [&](const FsPath &path, const FsDirectoryEntry *dir_ent) -> Result { /* On Exit Directory */
             /* Check we have a parent directory. */
             const size_t work_path_len = strnlen(work_path.str, sizeof(work_path));
@@ -89,9 +89,45 @@ Result FsDirUtils::CopyDirectoryRecursively(IFileSystem *dst_fs, IFileSystem *sr
             p[1] = 0;
 
             return ResultSuccess;
-        }, 
+        },
         [&](const FsPath &path, const FsDirectoryEntry *dir_ent) -> Result { /* On File */
             /* Just copy the file to the new fs. */
             return CopyFile(dst_fs, src_fs, work_path, path, dir_ent, work_buf, work_buf_size);
         });
+}
+
+Result FsDirUtils::EnsureDirectoryExists(IFileSystem *fs, const FsPath &path) {
+    FsPath normal_path;
+    size_t normal_path_len;
+    Result rc;
+
+    /* Normalize the path. */
+    if (R_FAILED((rc = FsPathUtils::Normalize(normal_path.str, sizeof(normal_path.str) - 1, path.str, &normal_path_len)))) {
+        return rc;
+    }
+
+    /* Repeatedly call CreateDirectory on each directory leading to the target. */
+    for (size_t i = 1; i < normal_path_len; i++) {
+        /* If we detect a separator, we're done. */
+        if (normal_path.str[i] == '/') {
+            normal_path.str[i] = 0;
+            {
+                rc = fs->CreateDirectory(normal_path);
+                if (rc == ResultFsPathAlreadyExists) {
+                    rc = ResultSuccess;
+                }
+                if (R_FAILED(rc)) {
+                    return rc;
+                }
+            }
+            normal_path.str[i] = '/';
+        }
+    }
+
+    /* Call CreateDirectory on the final path. */
+    rc = fs->CreateDirectory(normal_path);
+    if (rc == ResultFsPathAlreadyExists) {
+        rc = ResultSuccess;
+    }
+    return rc;
 }
