@@ -27,7 +27,7 @@
 
 Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle reslimit_h, u64 arg_flags, ProcessInfo *out_proc_info) {
     /* Initialize a ProcessInfo using an npdm. */
-    *out_proc_info = (const ProcessCreation::ProcessInfo){0};
+    *out_proc_info = {};
     
     /* Copy all but last char of name, insert NULL terminator. */
     std::copy(npdm->header->title_name, npdm->header->title_name + sizeof(out_proc_info->name) - 1, out_proc_info->name);
@@ -111,9 +111,9 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
 }
 
 Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nca_path, LaunchQueue::LaunchItem *launch_item, u64 arg_flags, Handle reslimit_h) {
-    NpdmUtils::NpdmInfo npdm_info = {0};
-    ProcessInfo process_info = {0};
-    NsoUtils::NsoLoadExtents nso_extents = {0};
+    NpdmUtils::NpdmInfo npdm_info = {};
+    ProcessInfo process_info = {};
+    NsoUtils::NsoLoadExtents nso_extents = {};
     Registration::Process *target_process;
     Handle process_h = 0;
     u64 process_id = 0;

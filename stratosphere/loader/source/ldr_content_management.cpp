@@ -29,8 +29,8 @@
 
 #include "ini.h"
 
-static FsFileSystem g_CodeFileSystem = {0};
-static FsFileSystem g_HblFileSystem = {0};
+static FsFileSystem g_CodeFileSystem = {};
+static FsFileSystem g_HblFileSystem = {};
 
 static std::vector<u64> g_created_titles;
 static bool g_has_initialized_fs_dev = false;

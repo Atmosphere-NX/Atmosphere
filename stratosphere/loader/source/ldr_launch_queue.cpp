@@ -22,7 +22,7 @@
 #include "ldr_launch_queue.hpp"
 #include "meta_tools.hpp"
 
-static std::array<LaunchQueue::LaunchItem, LAUNCH_QUEUE_SIZE> g_launch_queue = {0};
+static std::array<LaunchQueue::LaunchItem, LAUNCH_QUEUE_SIZE> g_launch_queue = {};
 
 Result LaunchQueue::Add(u64 tid, const char *args, u64 arg_size) {
     if (arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {

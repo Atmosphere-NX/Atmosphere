@@ -33,7 +33,7 @@ void DebugMonitorService::ClearLaunchQueue() {
 
 Result DebugMonitorService::GetNsoInfo(Out<u32> count, OutPointerWithClientSize<Registration::NsoInfo> out, u64 pid) {
     /* Zero out the output memory. */
-    std::fill(out.pointer, out.pointer + out.num_elements, (const Registration::NsoInfo){0});
+    std::fill(out.pointer, out.pointer + out.num_elements, Registration::NsoInfo{});
     /* Actually return the nso infos. */
     return Registration::GetNsoInfosForProcessId(out.pointer, out.num_elements, pid, count.GetPointer());
 }

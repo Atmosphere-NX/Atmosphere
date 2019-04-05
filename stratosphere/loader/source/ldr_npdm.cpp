@@ -84,7 +84,7 @@ FILE *NpdmUtils::OpenNpdm(u64 title_id) {
 Result NpdmUtils::LoadNpdmInternal(FILE *f_npdm, NpdmUtils::NpdmCache *cache) {
     Result rc;
     
-    cache->info = (const NpdmUtils::NpdmInfo){0};
+    cache->info = {};
 
     rc = ResultFsPathNotFound;
     if (f_npdm == NULL) {
@@ -519,6 +519,6 @@ u32 NpdmUtils::GetApplicationTypeRaw(u32 *caps, size_t num_caps) {
 
 void NpdmUtils::InvalidateCache(u64 tid) {
     if (g_npdm_cache.info.title_id == tid) {
-        g_npdm_cache.info = (const NpdmUtils::NpdmInfo){0};
+        g_npdm_cache.info = {};
     }
 }
