@@ -59,8 +59,9 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
         }
     } else {
         std::memset(&ctx.cpu_ctx, 0, sizeof(ctx.cpu_ctx));
-        cpu_ctx = &ctx.cpu_ctx;
     }
+    /* Reassign this unconditionally, for convenience. */
+    cpu_ctx = &ctx.cpu_ctx;
     
     /* Get config. */
     const FatalConfig *config = GetFatalConfig();
