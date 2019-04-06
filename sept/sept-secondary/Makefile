@@ -153,7 +153,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 all	:	$(OUTPUT).enc
 
 $(OUTPUT).enc	:	$(OUTPUT).bin
-	@python $(TOPDIR)/sept_sign.py $< $@
+	@python2 $(TOPDIR)/sept_sign.py $< $@
 	@echo built ... $(notdir $@)
 
 $(OUTPUT).bin	:	$(OUTPUT).elf
