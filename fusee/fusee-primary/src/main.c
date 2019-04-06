@@ -35,7 +35,14 @@ extern void (*__program_exit_callback)(int rc);
 static void *g_framebuffer;
 static char g_bct0_buffer[BCTO_MAX_SIZE];
 
+typedef struct {
+    bool enabled;
+    char* path;
+} emunand_config_t;
+
 #define CONFIG_LOG_LEVEL_KEY "log_level"
+#define EMUNAND_ENABLED_KEY "emunand_enabled"
+#define EMUNAND_PATH_KEY "emunand_path"
 
 #define DEFAULT_BCT0_FOR_DEBUG \
 "BCT0\n"\
@@ -75,6 +82,26 @@ static int config_ini_handler(void *user, const char *section, const char *name,
             int log_level = 0;
             sscanf(value, "%d", &log_level);
             *config_log_level = (ScreenLogLevel)log_level;
+        } else {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+static int emunand_ini_handler(void *user, const char *section, const char *name, const char *value) {
+    emunand_config_t *emunand_cfg = (emunand_config_t *)user;
+    if (strcmp(section, "emunand") == 0) {
+        if (strcmp(name, EMUNAND_ENABLED_KEY) == 0) {
+            int tmp = 0;
+            sscanf(value, "%d", &tmp);
+            emunand_cfg->enabled = (tmp != 0);
+        }
+        if (strcmp(name, EMUNAND_PATH_KEY) == 0) {
+            strncpy(emunand_cfg->path, value, sizeof(emunand_cfg->path) - 1);
+            emunand_cfg->path[sizeof(emunand_cfg->path) - 1]  = '\0';
         } else {
             return 0;
         }
@@ -132,6 +159,11 @@ int main(void) {
     stage2_args_t *stage2_args;
     uint32_t stage2_version = 0;
     ScreenLogLevel log_level = SCREEN_LOG_LEVEL_MANDATORY;
+    emunand_config_t emunand_cfg = {0};
+    
+    /* Set default values for emunand settings. */
+    emunand_cfg.enabled = false;
+    emunand_cfg.path = "atmosphere/emunand";
     
     /* Override the global logging level. */
     log_set_log_level(log_level);
@@ -142,8 +174,9 @@ int main(void) {
     /* Load the BCT0 configuration ini off of the SD. */
     bct0 = load_config();
 
-    /* Extract the logging level from the BCT.ini file. */
-    if (ini_parse_string(bct0, config_ini_handler, &log_level) < 0) {
+    /* Extract the logging level and emunand settings from the BCT.ini file. */
+    if ((ini_parse_string(bct0, config_ini_handler, &log_level) < 0) ||
+        (ini_parse_string(bct0, emunand_ini_handler, &emunand_cfg) < 0)) {
         fatal_error("Failed to parse BCT.ini!\n");
     }
     
@@ -161,6 +194,9 @@ int main(void) {
     memcpy(&stage2_args->version, &stage2_version, 4);
     memcpy(&stage2_args->log_level, &log_level, sizeof(log_level));
     stage2_args->display_initialized = false;
+    stage2_args->emunand_enabled = emunand_cfg.enabled;
+    strncpy(stage2_args->emunand_path, emunand_cfg.path, sizeof(stage2_args->emunand_path) - 1);
+    stage2_args->emunand_path[sizeof(stage2_args->emunand_path) - 1]  = '\0';
     strcpy(stage2_args->bct0, bct0);
     g_chainloader_argc = 2;
     

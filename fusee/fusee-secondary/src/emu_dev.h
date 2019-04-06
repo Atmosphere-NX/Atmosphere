@@ -14,14 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#ifndef FUSEE_NX_FS_H
-#define FUSEE_NX_FS_H
+#ifndef FUSEE_EMU_DEV_H
+#define FUSEE_EMU_DEV_H
 
-#include "fs_dev.h"
-#include "raw_dev.h"
-#include "emu_dev.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include "device_partition.h"
 
-int nxfs_mount_all(bool emunand_enabled, const char *emunand_path);
-int nxfs_unmount_all();
+#define EMUDEV_MAX_DEVICES 16
+
+int emudev_mount_device(const char *name, const char *origin_path, const device_partition_t *devpart);
+int emudev_register_device(const char *name);
+
+int emudev_unregister_device(const char *name);
+int emudev_unmount_device(const char *name); /* also unregisters. */
+int emudev_unmount_all(void);
 
 #endif

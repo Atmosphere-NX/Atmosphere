@@ -51,8 +51,8 @@ static void setup_env(void) {
     /* Set up exception handlers. */
     setup_exception_handlers();
 
-    if (nxfs_mount_all() < 0) {
-        fatal_error("Failed to mount at least one parition: %s\n", strerror(errno));
+    if (nxfs_mount_all(g_stage2_args->emunand_enabled, g_stage2_args->emunand_path) < 0) {
+        fatal_error("Failed to mount at least one partition: %s\n", strerror(errno));
     }
     
     /* Train DRAM. */
