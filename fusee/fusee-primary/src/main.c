@@ -37,7 +37,7 @@ static char g_bct0_buffer[BCTO_MAX_SIZE];
 
 typedef struct {
     bool enabled;
-    char* path;
+    char path[0x100];
 } emunand_config_t;
 
 #define CONFIG_LOG_LEVEL_KEY "log_level"
@@ -159,11 +159,7 @@ int main(void) {
     stage2_args_t *stage2_args;
     uint32_t stage2_version = 0;
     ScreenLogLevel log_level = SCREEN_LOG_LEVEL_MANDATORY;
-    emunand_config_t emunand_cfg = {0};
-    
-    /* Set default values for emunand settings. */
-    emunand_cfg.enabled = false;
-    emunand_cfg.path = "atmosphere/emunand";
+    emunand_config_t emunand_cfg = {.enabled = false, .path = ""};
     
     /* Override the global logging level. */
     log_set_log_level(log_level);

@@ -294,9 +294,12 @@ int nxfs_mount_all(bool emunand_enabled, const char *emunand_path) {
         char emu_boot0_path[0x100];
         char emu_boot1_path[0x100];
         char emu_rawnand_path[0x100];
-        snprintf(emu_boot0_path, sizeof(emu_boot0_path) - 1, "sdmc:/%s/%s", emunand_path, "boot0");
-        snprintf(emu_boot1_path, sizeof(emu_boot1_path) - 1, "sdmc:/%s/%s", emunand_path, "boot1");
-        snprintf(emu_rawnand_path, sizeof(emu_rawnand_path) - 1, "sdmc:/%s/%s", emunand_path, "rawnand");
+        memset(emu_boot0_path, 0, sizeof(emu_boot0_path));
+        memset(emu_boot1_path, 0, sizeof(emu_boot1_path));
+        memset(emu_rawnand_path, 0, sizeof(emu_rawnand_path));
+        snprintf(emu_boot0_path, sizeof(emu_boot0_path), "sdmc:/%s/%s", emunand_path, "boot0");
+        snprintf(emu_boot1_path, sizeof(emu_boot1_path), "sdmc:/%s/%s", emunand_path, "boot1");
+        snprintf(emu_rawnand_path, sizeof(emu_rawnand_path), "sdmc:/%s/%s", emunand_path, "rawnand");
     
         /* Setup an emulation template for boot0. */
         model = g_emummc_devpart_template;
