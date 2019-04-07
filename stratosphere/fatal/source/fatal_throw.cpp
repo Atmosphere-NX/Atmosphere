@@ -50,10 +50,18 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
         for (u32 i = 0; i < NumAarch64Gprs; i++) {
             ctx.has_gprs[i] = true;
         }
+        /* Cap the stack trace size at a sane limit. */
+        /* TODO: Better to set to zero, in order to manually collect debug info ourselves instead? */
+        if (cpu_ctx->is_aarch32) {
+            ctx.cpu_ctx.aarch32_ctx.stack_trace_size = std::max(ctx.cpu_ctx.aarch32_ctx.stack_trace_size, static_cast<u32>(Aarch32CpuContext::MaxStackTraceDepth));
+        } else {
+            ctx.cpu_ctx.aarch64_ctx.stack_trace_size = std::max(ctx.cpu_ctx.aarch64_ctx.stack_trace_size, static_cast<u32>(Aarch64CpuContext::MaxStackTraceDepth));
+        }
     } else {
         std::memset(&ctx.cpu_ctx, 0, sizeof(ctx.cpu_ctx));
-        cpu_ctx = &ctx.cpu_ctx;
     }
+    /* Reassign this unconditionally, for convenience. */
+    cpu_ctx = &ctx.cpu_ctx;
     
     /* Get config. */
     const FatalConfig *config = GetFatalConfig();
@@ -70,7 +78,7 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
     
     /* Atmosphere extension: automatic debug info collection. */
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 && !ctx.is_creport) {
-        if ((cpu_ctx->is_aarch32 && cpu_ctx->aarch32_ctx.stack_trace_size == 0) || (!cpu_ctx->is_aarch32 && cpu_ctx->aarch32_ctx.stack_trace_size == 0)) {
+        if ((cpu_ctx->is_aarch32 && cpu_ctx->aarch32_ctx.stack_trace_size == 0) || (!cpu_ctx->is_aarch32 && cpu_ctx->aarch64_ctx.stack_trace_size == 0)) {
             TryCollectDebugInformation(&ctx, pid);
         }
     }
