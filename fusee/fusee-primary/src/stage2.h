@@ -46,8 +46,6 @@ typedef struct {
     uint32_t version;
     ScreenLogLevel log_level;
     bool display_initialized;
-    bool emunand_enabled;
-    char emunand_path[0x100];
     char bct0[BCTO_MAX_SIZE];
 } stage2_args_t;
 

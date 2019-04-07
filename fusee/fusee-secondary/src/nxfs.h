@@ -21,7 +21,14 @@
 #include "raw_dev.h"
 #include "emu_dev.h"
 
-int nxfs_mount_all(bool emunand_enabled, const char *emunand_path);
-int nxfs_unmount_all();
+int nxfs_init();
+int nxfs_end();
+
+int nxfs_mount_sd();
+int nxfs_mount_emmc();
+int nxfs_mount_emu_emmc(const char *emunand_path);
+int nxfs_unmount_sd();
+int nxfs_unmount_emmc();
+int nxfs_unmount_emu_emmc();
 
 #endif

@@ -51,8 +51,9 @@ static void setup_env(void) {
     /* Set up exception handlers. */
     setup_exception_handlers();
 
-    if (nxfs_mount_all(g_stage2_args->emunand_enabled, g_stage2_args->emunand_path) < 0) {
-        fatal_error("Failed to mount at least one partition: %s\n", strerror(errno));
+    /* Initialize the file system by mounting the SD card. */
+    if (nxfs_init() < 0) {
+        fatal_error("Failed to initialize the file system: %s\n", strerror(errno));
     }
     
     /* Train DRAM. */
@@ -61,7 +62,7 @@ static void setup_env(void) {
 
 static void cleanup_env(void) {
     /* Unmount everything (this causes all open files to be flushed and closed) */
-    nxfs_unmount_all();
+    nxfs_end();
     //console_end();
 }
 

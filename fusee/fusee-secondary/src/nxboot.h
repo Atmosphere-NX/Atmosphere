@@ -19,6 +19,14 @@
 
 #include "utils.h"
 
+#define EMUNAND_ENABLED_KEY "emunand_enabled"
+#define EMUNAND_PATH_KEY "emunand_path"
+
+typedef struct {
+    bool enabled;
+    char path[0x100];
+} emunand_config_t;
+
 #define MAILBOX_NX_BOOTLOADER_BASE_100_620 0x40002E00
 #define MAILBOX_NX_BOOTLOADER_BASE_700     0x40000000
 #define MAILBOX_NX_BOOTLOADER_BASE(targetfw) ((targetfw >= ATMOSPHERE_TARGET_FIRMWARE_700) ? (MAILBOX_NX_BOOTLOADER_BASE_700) : (MAILBOX_NX_BOOTLOADER_BASE_100_620))

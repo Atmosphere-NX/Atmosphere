@@ -100,6 +100,26 @@ static const uint8_t dev_pkc_modulus[0x100] = {
     0xD5, 0x52, 0xDA, 0xEC, 0x41, 0xA4, 0xAD, 0x7B, 0x36, 0x86, 0x18, 0xB4, 0x5B, 0xD1, 0x30, 0xBB
 };
 
+static int emunand_ini_handler(void *user, const char *section, const char *name, const char *value) {
+    emunand_config_t *emunand_cfg = (emunand_config_t *)user;
+    if (strcmp(section, "emunand") == 0) {
+        if (strcmp(name, EMUNAND_ENABLED_KEY) == 0) {
+            int tmp = 0;
+            sscanf(value, "%d", &tmp);
+            emunand_cfg->enabled = (tmp != 0);
+        }
+        if (strcmp(name, EMUNAND_PATH_KEY) == 0) {
+            strncpy(emunand_cfg->path, value, sizeof(emunand_cfg->path) - 1);
+            emunand_cfg->path[sizeof(emunand_cfg->path) - 1]  = '\0';
+        } else {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
 static int exosphere_ini_handler(void *user, const char *section, const char *name, const char *value) {
     exosphere_config_t *exo_cfg = (exosphere_config_t *)user;
     int tmp = 0;
@@ -175,6 +195,44 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
         default:
             fatal_error("[NXBOOT]: Unable to identify package1!\n");
     }
+}
+
+static bool nxboot_configure_emunand() {
+    emunand_config_t emunand_cfg = {.enabled = false, .path = ""};
+    
+    /* Load emunand settings from BCT.ini file. */
+    if (ini_parse_string(get_loader_ctx()->bct0, emunand_ini_handler, &emunand_cfg) < 0) {
+        fatal_error("[NXBOOT]: Failed to parse BCT.ini!\n");
+    }
+    
+    if (emunand_cfg.enabled) {
+        bool do_nand_backup = false;
+        
+        /* TODO: Check if the supplied path is valid. */
+        
+        /* TODO: Check if all emunand image files are present. */
+
+        if (do_nand_backup) {
+            /* Mount real NAND. */
+            if (nxfs_mount_emmc() < 0) {
+                fatal_error("[NXBOOT]: Failed to mount eMMC!\n");
+            }
+            
+            /* TODO: Read real NAND and create a backup image. */
+            
+            /* Unmount real NAND. */
+            if (nxfs_unmount_emmc() < 0) {
+                fatal_error("[NXBOOT]: Failed to unmount eMMC!\n");
+            }
+        }
+        
+        /* Mount emulated NAND. */
+        if (nxfs_mount_emu_emmc(emunand_cfg.path) < 0) {
+            fatal_error("[NXBOOT]: Failed to mount emulated eMMC!\n");
+        }
+    }
+    
+    return emunand_cfg.enabled;
 }
 
 static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int keygen_type) {
@@ -334,6 +392,13 @@ uint32_t nxboot_main(void) {
     uint32_t available_revision;
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
+    
+    /* Configure emunand or mount the real NAND. */
+    if (!nxboot_configure_emunand()) {
+        if (nxfs_mount_emmc() < 0) {
+            fatal_error("[NXBOOT]: Failed to mount eMMC!\n");
+        }
+    }
 
     /* Allocate memory for reading Package2. */
     package2 = memalign(0x1000, PACKAGE2_SIZE_MAX);
@@ -601,7 +666,7 @@ uint32_t nxboot_main(void) {
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT]: Powering on the CCPLEX...\n");
     
     /* Unmount everything. */
-    nxfs_unmount_all();
+    nxfs_end();
     
     /* Return the memory address for booting CPU0. */
     return (uint32_t)exosphere_memaddr;
