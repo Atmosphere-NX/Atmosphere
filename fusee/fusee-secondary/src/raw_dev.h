@@ -24,7 +24,7 @@
 
 #define RAWDEV_MAX_DEVICES 16
 
-int rawdev_mount_device(const char *name, const device_partition_t *device, bool mount_immediately);
+int rawdev_mount_device(const char *name, const device_partition_t *devpart, bool initialize_immediately);
 int rawdev_register_device(const char *name);
 
 int rawdev_unregister_device(const char *name);
