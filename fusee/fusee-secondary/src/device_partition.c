@@ -13,7 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+#include <stdio.h> 
 #include <string.h>
 #include "device_partition.h"
 
@@ -71,4 +72,30 @@ int device_partition_write_data(device_partition_t *devpart, const void *src, ui
     } else {
         return devpart->writer(devpart, src, sector, num_sectors);
     }
+}
+
+int emu_device_partition_read_data(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors, const char *origin_path)
+{
+    int rc = 0;
+    
+    /* Read partition data using our backing file. */
+    FILE *origin = fopen(origin_path, "rb");
+    fseek(origin, sector * devpart->sector_size, SEEK_CUR);
+    rc = (fread(dst, devpart->sector_size, num_sectors, origin) > 0) ? 0 : -1;
+    fclose(origin);
+    
+    return rc;
+}
+
+int emu_device_partition_write_data(device_partition_t *devpart, const void *src, uint64_t sector, uint64_t num_sectors, const char *origin_path)
+{
+    int rc = 0;
+    
+    /* Write partition data using our backing file. */
+    FILE *origin = fopen(origin_path, "wb");
+    fseek(origin, sector * devpart->sector_size, SEEK_CUR);
+    rc = (fwrite(src, devpart->sector_size, num_sectors, origin) > 0) ? 0 : -1;
+    fclose(origin);
+    
+    return rc;
 }

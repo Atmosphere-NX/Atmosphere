@@ -246,6 +246,19 @@ int fsdev_set_default_device(const char *name) {
     return ret;
 }
 
+int fsdev_is_exfat(const char *name) {
+    fsdev_device_t *device = fsdev_find_device(name);
+
+    if (device != NULL) {
+        if (device->registered) {
+            return ((device->fatfs.fs_type == FS_EXFAT) ? 1 : 0);
+        }
+    }
+
+    errno = ENOENT;
+    return -1;
+}
+
 int fsdev_unmount_device(const char *name) {
     int ret;
     char drname[40];

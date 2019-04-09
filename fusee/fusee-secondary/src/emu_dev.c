@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Atmosphère-NX
+ * Copyright (c) 2018-2019 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -38,7 +38,7 @@ static int       emudev_fsync(struct _reent *r, void *fd);
 typedef struct emudev_device_t {
     devoptab_t devoptab;
 
-    FILE *origin;
+    char origin_path[0x300+1];
     uint8_t *tmp_sector;
     device_partition_t devpart;
     char name[32+1];
@@ -77,7 +77,7 @@ static emudev_device_t *emudev_find_device(const char *name) {
     return NULL;
 }
 
-int emudev_mount_device(const char *name, const char *origin_path, const device_partition_t *devpart) {
+int emudev_mount_device(const char *name, const device_partition_t *devpart, const char *origin_path) {
     emudev_device_t *device = NULL;
 
     if (name[0] == '\0' || devpart == NULL) {
@@ -112,21 +112,10 @@ int emudev_mount_device(const char *name, const char *origin_path, const device_
     strcpy(device->name, name);
     strcpy(device->root_path, name);
     strcat(device->root_path, ":/");
-
+    strcpy(device->origin_path, origin_path);
+    
     device->devoptab.name = device->name;
     device->devoptab.deviceData = device;
-
-    /* Try to open the backing file for this emulated device. */
-    FILE *origin = fopen(origin_path, "rb");
-    
-    /* Return invalid if we can't open the file. */
-    if (origin == NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-    
-    /* Bind the backing file to this device. */
-    device->origin = origin;
 
     /* Allocate memory for our intermediate sector. */
     device->tmp_sector = (uint8_t *)malloc(devpart->sector_size);
@@ -201,10 +190,6 @@ int emudev_unmount_device(const char *name) {
     if (rc == -1) {
         return -1;
     }
-
-    /* Close the backing file, if there is one. */
-    if (device->origin != NULL)
-        fclose(device->origin);
     
     free(device->tmp_sector);
     memset(device, 0, sizeof(emudev_device_t));
@@ -280,11 +265,7 @@ static ssize_t emudev_write(struct _reent *r, void *fd, const char *ptr, size_t 
     /* Unaligned at the start, we need to read the sector and incorporate the data. */
     if (f->offset % sector_size != 0) {
         size_t nb = (size_t)(len <= (sector_size - (f->offset % sector_size)) ? len : sector_size - (f->offset % sector_size));
-        
-        /* Read partition data using our backing file. */
-        fseek(device->origin, sector_begin, SEEK_CUR);
-        no = (fread(device->tmp_sector, sector_size, 1, device->origin) > 0) ? 0 : EIO;
-        
+        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_begin, 1, device->origin_path);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -292,10 +273,7 @@ static ssize_t emudev_write(struct _reent *r, void *fd, const char *ptr, size_t 
     
         memcpy(device->tmp_sector + (f->offset % sector_size), data, nb);
 
-        /* Write partition data using our backing file. */
-        fseek(device->origin, sector_begin, SEEK_CUR);
-        no = (fwrite(device->tmp_sector, sector_size, 1, device->origin) > 0) ? 0 : EIO;
-        
+        no = emu_device_partition_write_data(&device->devpart, device->tmp_sector, sector_begin, 1, device->origin_path);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -314,10 +292,7 @@ static ssize_t emudev_write(struct _reent *r, void *fd, const char *ptr, size_t 
 
     /* Write all of the sector-aligned data. */
     if (current_sector != sector_end_aligned) {
-        /* Write partition data using our backing file. */
-        fseek(device->origin, current_sector, SEEK_CUR);
-        no = (fwrite(device->tmp_sector, sector_size, sector_end_aligned - current_sector, device->origin) > 0) ? 0 : EIO;
-        
+        no = emu_device_partition_write_data(&device->devpart, data, current_sector, sector_end_aligned - current_sector, device->origin_path);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -329,10 +304,7 @@ static ssize_t emudev_write(struct _reent *r, void *fd, const char *ptr, size_t 
 
     /* Unaligned at the end, we need to read the sector and incorporate the data. */
     if (sector_end != sector_end_aligned) {        
-        /* Read partition data using our backing file. */
-        fseek(device->origin, sector_end_aligned, SEEK_CUR);
-        no = (fread(device->tmp_sector, sector_size, 1, device->origin) > 0) ? 0 : EIO;
-
+        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_end_aligned, 1, device->origin_path);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -340,10 +312,7 @@ static ssize_t emudev_write(struct _reent *r, void *fd, const char *ptr, size_t 
     
         memcpy(device->tmp_sector, data, (size_t)((f->offset + len) % sector_size));
         
-        /* Write partition data using our backing file. */
-        fseek(device->origin, sector_end_aligned, SEEK_CUR);
-        no = (fwrite(device->tmp_sector, sector_size, 1, device->origin) > 0) ? 0 : EIO;
-
+        no = emu_device_partition_write_data(&device->devpart, device->tmp_sector, sector_end_aligned, 1, device->origin_path);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -384,11 +353,7 @@ static ssize_t emudev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
     /* Unaligned at the start, we need to read the sector and incorporate the data. */
     if (f->offset % sector_size != 0) {
         size_t nb = (size_t)(len <= (sector_size - (f->offset % sector_size)) ? len : sector_size - (f->offset % sector_size));
-        
-        /* Read partition data using our backing file. */
-        fseek(device->origin, sector_begin, SEEK_CUR);
-        no = (fread(device->tmp_sector, sector_size, 1, device->origin) > 0) ? 0 : EIO;
-
+        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_begin, 1, device->origin_path);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -409,10 +374,7 @@ static ssize_t emudev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
 
     /* Read all of the sector-aligned data. */
     if (current_sector != sector_end_aligned) {        
-        /* Read partition data using our backing file. */
-        fseek(device->origin, current_sector, SEEK_CUR);
-        no = (fread(device->tmp_sector, sector_size, sector_end_aligned - current_sector, device->origin) > 0) ? 0 : EIO;
-
+        no = emu_device_partition_read_data(&device->devpart, data, current_sector, sector_end_aligned - current_sector, device->origin_path);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -424,10 +386,7 @@ static ssize_t emudev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
 
     /* Unaligned at the end, we need to read the sector and incorporate the data. */
     if (sector_end != sector_end_aligned) {
-        /* Read partition data using our backing file. */
-        fseek(device->origin, sector_end_aligned, SEEK_CUR);
-        no = (fread(device->tmp_sector, sector_size, 1, device->origin) > 0) ? 0 : EIO;
-
+        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_end_aligned, 1, device->origin_path);
         if (no != 0) {
             r->_errno = no;
             return -1;

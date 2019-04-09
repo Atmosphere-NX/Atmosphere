@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Atmosphère-NX
+ * Copyright (c) 2018-2019 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,11 +24,11 @@
 
 #define EMUDEV_MAX_DEVICES 16
 
-int emudev_mount_device(const char *name, const char *origin_path, const device_partition_t *devpart);
+int emudev_mount_device(const char *name, const device_partition_t *devpart, const char *origin_path);
 int emudev_register_device(const char *name);
-
 int emudev_unregister_device(const char *name);
-int emudev_unmount_device(const char *name); /* also unregisters. */
+int emudev_unmount_device(const char *name);        /* also unregisters. */
+
 int emudev_unmount_all(void);
 
 #endif

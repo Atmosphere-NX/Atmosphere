@@ -380,29 +380,30 @@ int nxfs_mount_emmc() {
     return rc;
 }
 
-int nxfs_mount_emu_emmc(const char *emunand_path) {
+int nxfs_mount_emu_emmc(const char *emunand_boot0_path, const char *emunand_boot1_path, const char *emunand_rawnand_base_path) {
     device_partition_t model;
     int rc;
     FILE *rawnand;
+    bool is_exfat;
     
-    /* Setup emunand paths. */
-    char emu_boot0_path[0x100];
-    char emu_boot1_path[0x100];
-    char emu_rawnand_path[0x100];
-    memset(emu_boot0_path, 0, sizeof(emu_boot0_path));
-    memset(emu_boot1_path, 0, sizeof(emu_boot1_path));
-    memset(emu_rawnand_path, 0, sizeof(emu_rawnand_path));
-    snprintf(emu_boot0_path, sizeof(emu_boot0_path), "sdmc:/%s/%s", emunand_path, "boot0");
-    snprintf(emu_boot1_path, sizeof(emu_boot1_path), "sdmc:/%s/%s", emunand_path, "boot1");
-    snprintf(emu_rawnand_path, sizeof(emu_rawnand_path), "sdmc:/%s/%s", emunand_path, "rawnand");
-
+    /* Check if the SD card is EXFAT formatted. */
+    rc = fsdev_is_exfat("sdmc");
+    
+    /* Failed to detect file system type. */
+    if (rc == -1) {
+        return -1;
+    }
+    
+    /* Set EXFAT status. */
+    is_exfat = (rc == 1);
+    
     /* Setup an emulation template for boot0. */
     model = g_emummc_devpart_template;
     model.start_sector = 0;
     model.num_sectors = 0x184000 / model.sector_size;
     
     /* Mount emulated boot0 device. */
-    rc = emudev_mount_device("boot0", emu_boot0_path, &model);
+    rc = emudev_mount_device("boot0", &model, emunand_boot0_path);
     
     if (rc == -1) {
         return -1;
@@ -421,7 +422,7 @@ int nxfs_mount_emu_emmc(const char *emunand_path) {
     model.num_sectors = 0x80000 / model.sector_size;
     
     /* Mount emulated boot1 device. */
-    rc = emudev_mount_device("boot1", emu_boot1_path, &model);
+    rc = emudev_mount_device("boot1", &model, emunand_boot1_path);
     
     if (rc == -1) {
         return -1;
@@ -434,31 +435,35 @@ int nxfs_mount_emu_emmc(const char *emunand_path) {
     model.start_sector = 0;
     model.num_sectors = (256ull << 30) / model.sector_size;
     
-    /* Mount emulated raw NAND device. */
-    rc = emudev_mount_device("rawnand", emu_rawnand_path, &model);
-    
-    if (rc == -1) {
-        return -1;
+    if (!is_exfat) {
+        /* TODO: Use file concatenation for FAT32. */
+    } else {
+        /* Mount emulated raw NAND device. */
+        rc = emudev_mount_device("rawnand", &model, emunand_rawnand_base_path);
+        
+        if (rc == -1) {
+            return -1;
+        }
+        
+        /* Register emulated raw NAND device. */
+        rc = emudev_register_device("rawnand");
+        if (rc == -1) {
+            return -1;
+        }
+        
+        /* Open emulated raw NAND device. */
+        rawnand = fopen("rawnand:/", "rb");
+        
+        if (rawnand == NULL) {
+            return -1;
+        }
+        
+        /* Iterate the GPT and mount each emulated raw NAND partition. */
+        rc = gpt_iterate_through_entries(rawnand, model.sector_size, nxfs_mount_partition_gpt_callback, &model);
+        
+        /* Close emulated raw NAND device. */
+        fclose(rawnand);
     }
-    
-    /* Register emulated raw NAND device. */
-    rc = emudev_register_device("rawnand");
-    if (rc == -1) {
-        return -1;
-    }
-    
-    /* Open emulated raw NAND device. */
-    rawnand = fopen("rawnand:/", "rb");
-    
-    if (rawnand == NULL) {
-        return -1;
-    }
-    
-    /* Iterate the GPT and mount each emulated raw NAND partition. */
-    rc = gpt_iterate_through_entries(rawnand, model.sector_size, nxfs_mount_partition_gpt_callback, &model);
-    
-    /* Close emulated raw NAND device. */
-    fclose(rawnand);
     
     /* All emulated devices are ready. */
     if (rc == 0) {

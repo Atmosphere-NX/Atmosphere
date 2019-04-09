@@ -69,5 +69,7 @@ typedef struct device_partition_t {
 
 int device_partition_read_data(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors);
 int device_partition_write_data(device_partition_t *devpart, const void *src, uint64_t sector, uint64_t num_sectors);
+int emu_device_partition_read_data(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors, const char *origin_path);
+int emu_device_partition_write_data(device_partition_t *devpart, const void *src, uint64_t sector, uint64_t num_sectors, const char *origin_path);
 
 #endif
