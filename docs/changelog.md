@@ -1,4 +1,19 @@
 # Changelog
+## 0.8.7
++ A few bugs were fixed that could cause fatal to fail to show an error under certain circumstances.
++ A bug was fixed that caused an error when launching certain games (e.g. Hellblade: Senua's Sacrifice).
+  + Loader had support added in ams-0.8.4 for a new (7.0.0+) flag bit in NPDMs during process creation, but forgot to allow this bit to be set when validating the NPDM.
++ dmnt's cheat virtual machine received new instructions.
+  + These allow for saving, restoring, or clearing registers to a secondary bank, effectively doubling the number of values that can be stored.
++ SHA256 code has been swapped from linux code to libnx's new hw-accelerated cryptography API.
++ Extensions were added to smcGetInfo:
+  + A ConfigItem was added to detect whether the current unit has the RCM bug patched.
+  + A ConfigItem was added to retrieve the current Atmosphère build hash.
++ Exosphère now tells the kernel to enable user-mode exception handlers, which should allow for better crash reporting/detection from Atmosphère's modules in the future..
++ Opt-in support was added for redirecting game save files to directories on the SD card.
+  + Please note, this feature is **experimental**, and may cause problems. Please use at your own risk (and back up your saves before enabling it), as it still needs testing.
+  + This can be enabled by setting `atmosphere!fsmitm_redirect_saves_to_sd` to 1 in `system_settings.ini`.
++ General system stability improvements to enhance the user's experience.
 ## 0.8.6
 + A number of bugs were fixed, including:
   + A case of inverted logic was fixed in fs.mitm which prevented the flags system from working correctly.
