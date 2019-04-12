@@ -25,6 +25,7 @@
 
 #include "bpcmitm_main.hpp"
 #include "bpc_mitm_service.hpp"
+#include "bpc_ams_service.hpp"
 #include "bpcmitm_reboot_manager.hpp"
 
 #include "../utils.hpp"
@@ -45,6 +46,10 @@ void BpcMitmMain(void *arg) {
         service_name = "bpc:c";
     }
     AddMitmServerToManager<BpcMitmService>(server_manager, service_name, 13);
+
+    /* Extension: Allow for reboot-to-error. */
+    /* Must be managed port in order for sm to be able to access. */
+    server_manager->AddWaitable(new ManagedPortServer<BpcAtmosphereService>("bpc:ams", 1));
 
     /* Loop forever, servicing our services. */
     server_manager->Process();

@@ -18,20 +18,17 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#define IRAM_BASE             0x40000000ull
-#define IRAM_SIZE             0x40000
-#define IRAM_PAYLOAD_MAX_SIZE 0x2E000
-#define IRAM_PAYLOAD_BASE 0x40010000ull
+#include "../utils.hpp"
 
-enum class BpcRebootType : u32 {
-    Standard,
-    ToRcm,
-    ToPayload,
+enum BpcAtmosphereCmd : u32 {
+    BpcAtmosphereCmd_RebootToFatalError = 65000,
 };
 
-class BpcRebootManager {
+class BpcAtmosphereService : public IServiceObject {
+    private:
+        Result RebootToFatalError(InBuffer<AtmosphereFatalErrorContext> ctx);
     public:
-        static void Initialize();
-        static Result PerformReboot();
-        static void RebootForFatalError(AtmosphereFatalErrorContext *ctx);
+        DEFINE_SERVICE_DISPATCH_TABLE {
+            MakeServiceCommandMeta<BpcAtmosphereCmd_RebootToFatalError, &BpcAtmosphereService::RebootToFatalError>(),
+        };
 };

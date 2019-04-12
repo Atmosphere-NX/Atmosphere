@@ -13,25 +13,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#pragma once
+
+#include <mutex>
 #include <switch.h>
 #include <stratosphere.hpp>
+#include "bpc_ams_service.hpp"
+#include "bpcmitm_reboot_manager.hpp"
 
-#define IRAM_BASE             0x40000000ull
-#define IRAM_SIZE             0x40000
-#define IRAM_PAYLOAD_MAX_SIZE 0x2E000
-#define IRAM_PAYLOAD_BASE 0x40010000ull
-
-enum class BpcRebootType : u32 {
-    Standard,
-    ToRcm,
-    ToPayload,
-};
-
-class BpcRebootManager {
-    public:
-        static void Initialize();
-        static Result PerformReboot();
-        static void RebootForFatalError(AtmosphereFatalErrorContext *ctx);
-};
+Result BpcAtmosphereService::RebootToFatalError(InBuffer<AtmosphereFatalErrorContext> ctx) {
+    if (ctx.buffer == nullptr || ctx.num_elements != 1) {
+        return ResultKernelConnectionClosed;
+    }
+    
+    /* Reboot to fusee with the input context. */
+    BpcRebootManager::RebootForFatalError(ctx.buffer);
+    
+    return ResultSuccess;
+}

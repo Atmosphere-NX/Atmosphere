@@ -25,6 +25,7 @@
 #include "ini.h"
 
 #include "set_mitm/setsys_settings_items.hpp"
+#include "bpc_mitm/bpcmitm_reboot_manager.hpp"
 
 static FsFileSystem g_sd_filesystem = {0};
 static HosSignal g_sd_signal;
@@ -651,4 +652,8 @@ Result Utils::GetSettingsItemBooleanValue(const char *name, const char *key, boo
         }
     }
     return rc;
+}
+
+void Utils::RebootToFatalError(AtmosphereFatalErrorContext *ctx) {
+    BpcRebootManager::RebootForFatalError(ctx);
 }

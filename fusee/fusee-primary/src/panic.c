@@ -14,15 +14,75 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
+#include <stdio.h>
 #include "panic.h"
 #include "di.h"
 #include "pmc.h"
 #include "fuse.h"
 #include "utils.h"
+#include "fs_utils.h"
+#include "lib/log.h"
 
 static uint32_t g_panic_code = 0;
 
+static const char *get_error_desc_str(uint32_t error_desc) {
+    switch (error_desc) {
+        case 0x100:
+            return "Instruction Abort";
+        case 0x101:
+            return "Data Abort";
+        case 0x102:
+            return "PC Misalignment";
+        case 0x103:
+            return "SP Misalignment";
+        case 0x104:
+            return "Trap";
+        case 0x106:
+            return "SError";
+        case 0x301:
+            return "Bad SVC";
+        default:
+            return "Unknown";
+    }
+}
+
+static void _check_and_display_atmosphere_fatal_error(void) {
+    /* Check for valid magic. */
+    if (ATMOSPHERE_FATAL_ERROR_CONTEXT->magic != ATMOSPHERE_REBOOT_TO_FATAL_MAGIC) {
+        return;
+    }
+
+    {
+        /* Copy fatal error context to the stack. */
+        atmosphere_fatal_error_ctx ctx = *(ATMOSPHERE_FATAL_ERROR_CONTEXT);
+
+        /* Change magic to invalid, to prevent double-display of error/bootlooping. */
+        ATMOSPHERE_FATAL_ERROR_CONTEXT->magic = 0xCCCCCCCC;
+
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "A fatal error occurred when running Atmosph\xe8re.\n");
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Title ID:   %016llx\n", ctx.title_id);
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Error Desc: %s (0x%x)\n", get_error_desc_str(ctx.error_desc), ctx.error_desc);
+
+        /* Save context to the SD card. */
+        {
+            char filepath[0x40];
+            snprintf(filepath, sizeof(filepath) - 1, "/atmosphere/fatal_errors/report_%016llx.bin", ctx.report_identifier);
+            filepath[sizeof(filepath)-1] = 0;
+            write_to_file(&ctx, sizeof(ctx), filepath);
+            print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"Report saved to %s\n", filepath);
+        }
+
+        /* Display error. */
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"\nPress POWER to reboot\n");
+    }
+
+    wait_for_button_and_reboot();
+}
+
 void check_and_display_panic(void) {
+    /* Handle a panic sent via a stratosphere module. */
+    _check_and_display_atmosphere_fatal_error();
+    
     /* We also handle our own panics. */
     /* In the case of our own panics, we assume that the display has already been initialized. */
     bool has_panic = APBDEV_PMC_RST_STATUS_0 != 0 || g_panic_code != 0;

@@ -41,6 +41,16 @@ extern "C" {
     void __appInit(void);
     void __appExit(void);
 
+    /* Exception handling. */
+    alignas(16) u8 __nx_exception_stack[0x1000];
+    u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
+    void __libnx_exception_handler(ThreadExceptionDump *ctx);
+    u64 __stratosphere_title_id = TitleId_Loader;
+    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
+}
+
+void __libnx_exception_handler(ThreadExceptionDump *ctx) {
+    StratosphereCrashHandler(ctx);
 }
 
 
@@ -103,9 +113,9 @@ struct LoaderServerOptions {
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
-            
+
     auto server_manager = new WaitableManager<LoaderServerOptions>(1);
-        
+
     /* Add services to manager. */
     server_manager->AddWaitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
     server_manager->AddWaitable(new ServiceServer<ShellService>("ldr:shel", 3));
