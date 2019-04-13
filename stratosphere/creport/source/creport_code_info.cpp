@@ -136,7 +136,7 @@ bool CodeList::TryFindCodeRegion(Handle debug_handle, u64 guess, u64 *address) {
             return true;
         }
         
-        guess -= 4;
+        guess = mi.addr - 4;
     }
     return false;
 }
