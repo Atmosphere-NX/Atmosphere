@@ -207,6 +207,8 @@ static bool nxboot_configure_emunand() {
     
     if (emunand_cfg.enabled) {
         bool do_nand_backup = false;
+        int num_parts = 0;
+        uint64_t part_limit = 0;
         char emunand_boot0_path[0x300 + 1] = {0};
         char emunand_boot1_path[0x300 + 1] = {0};
         char emunand_rawnand_base_path[0x300 + 1] = {0};
@@ -219,9 +221,32 @@ static bool nxboot_configure_emunand() {
             fatal_error("[NXBOOT] Failed to find EmuNAND folder!\n");
         }
         
-        /* Check if all emunand image files are present. */
-        if (!is_valid_file(emunand_boot0_path) || !is_valid_file(emunand_boot1_path) || !is_valid_file(emunand_rawnand_base_path)) {
-            fatal_error("[NXBOOT] Failed to find EmuNAND image files!\n");
+        /* Check if boot0 and boot1 image files are present. */
+        if (!is_valid_file(emunand_boot0_path) || !is_valid_file(emunand_boot1_path)) {
+            fatal_error("[NXBOOT] Failed to find EmuNAND boot0/boot1 image files!\n");
+        }
+        
+        /* Check if full rawnand image file is present. */
+        if (!is_valid_file(emunand_rawnand_base_path)) {
+            char emunand_rawnand_path[0x300 + 3 + 1] = {0};
+            
+            /* Search for rawnand part files instead. */
+            for (int i = 0; i < 64; i++) {
+                snprintf(emunand_rawnand_path, sizeof(emunand_rawnand_path) - 1, "%s%02d", emunand_rawnand_base_path, i);
+                if (is_valid_file(emunand_rawnand_path)) {
+                    if (i == 0) {
+                        /* The size of the first part file should tell us the part limit. */
+                        part_limit = get_file_size(emunand_rawnand_path);
+                    }
+                    num_parts++;
+                }
+            }
+
+            /* Check if at least the first part of the rawnand image file is present. */
+            /* TODO: This fully trusts the user to provide properly split files. Do better checks? */
+            if ((num_parts == 0) || (part_limit == 0)) {
+                fatal_error("[NXBOOT] Failed to find EmuNAND rawnand image files!\n");
+            }
         }
 
         if (do_nand_backup) {
@@ -239,7 +264,7 @@ static bool nxboot_configure_emunand() {
         }
         
         /* Mount emulated NAND. */
-        if (nxfs_mount_emu_emmc(emunand_boot0_path, emunand_boot1_path, emunand_rawnand_base_path) < 0) {
+        if (nxfs_mount_emu_emmc(emunand_boot0_path, emunand_boot1_path, emunand_rawnand_base_path, num_parts, part_limit) < 0) {
             fatal_error("[NXBOOT] Failed to mount emulated eMMC!\n");
         }
     }

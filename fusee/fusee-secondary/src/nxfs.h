@@ -26,7 +26,7 @@ int nxfs_end();
 
 int nxfs_mount_sd();
 int nxfs_mount_emmc();
-int nxfs_mount_emu_emmc(const char *emunand_boot0_path, const char *emunand_boot1_path, const char *emunand_rawnand_base_path);
+int nxfs_mount_emu_emmc(const char *emunand_boot0_path, const char *emunand_boot1_path, const char *emunand_rawnand_base_path, int num_parts, uint64_t part_limit);
 int nxfs_unmount_sd();
 int nxfs_unmount_emmc();
 int nxfs_unmount_emu_emmc();

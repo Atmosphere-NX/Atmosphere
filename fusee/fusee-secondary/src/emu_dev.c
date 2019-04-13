@@ -39,6 +39,8 @@ typedef struct emudev_device_t {
     devoptab_t devoptab;
 
     char origin_path[0x300+1];
+    int num_parts;
+    uint64_t part_limit;
     uint8_t *tmp_sector;
     device_partition_t devpart;
     char name[32+1];
@@ -113,9 +115,92 @@ int emudev_mount_device(const char *name, const device_partition_t *devpart, con
     strcpy(device->root_path, name);
     strcat(device->root_path, ":/");
     strcpy(device->origin_path, origin_path);
+    device->num_parts = 0;
+    device->part_limit = 0;
     
     device->devoptab.name = device->name;
     device->devoptab.deviceData = device;
+    
+    /* Initialize immediately. */
+    int rc = device->devpart.initializer(&device->devpart);
+    if (rc != 0) {
+        errno = rc;
+        return -1;
+    }
+
+    /* Allocate memory for our intermediate sector. */
+    device->tmp_sector = (uint8_t *)malloc(devpart->sector_size);
+    if (device->tmp_sector == NULL) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    device->setup = true;
+    device->registered = false;
+
+    return 0;
+}
+
+int emudev_mount_device_multipart(const char *name, const device_partition_t *devpart, const char *origin_path, int num_parts, uint64_t part_limit) {
+    emudev_device_t *device = NULL;
+
+    if (name[0] == '\0' || devpart == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (strlen(name) > 32) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+    if (emudev_find_device(name) != NULL) {
+        errno = EEXIST; /* Device already exists */
+        return -1;
+    }
+    
+    /* Invalid number of parts. */
+    if (num_parts <= 1) {
+        errno = EINVAL;
+        return -1;
+    }
+    
+    /* Part limit is invalid. */
+    if ((part_limit % (1ull << 30)) != 0) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    /* Find an unused slot. */
+    for (size_t i = 0; i < EMUDEV_MAX_DEVICES; i++) {
+        if (!g_emudev_devices[i].setup) {
+            device = &g_emudev_devices[i];
+            break;
+        }
+    }
+    if (device == NULL) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    memset(device, 0, sizeof(emudev_device_t));
+    device->devoptab = g_emudev_devoptab;
+    device->devpart = *devpart;
+    strcpy(device->name, name);
+    strcpy(device->root_path, name);
+    strcat(device->root_path, ":/");
+    strcpy(device->origin_path, origin_path);
+    device->num_parts = num_parts;
+    device->part_limit = part_limit;
+    
+    device->devoptab.name = device->name;
+    device->devoptab.deviceData = device;
+    
+    /* Initialize immediately. */
+    int rc = device->devpart.initializer(&device->devpart);
+    if (rc != 0) {
+        errno = rc;
+        return -1;
+    }
 
     /* Allocate memory for our intermediate sector. */
     device->tmp_sector = (uint8_t *)malloc(devpart->sector_size);
@@ -192,6 +277,7 @@ int emudev_unmount_device(const char *name) {
     }
     
     free(device->tmp_sector);
+    device->devpart.finalizer(&device->devpart);
     memset(device, 0, sizeof(emudev_device_t));
 
     return 0;
@@ -265,7 +351,7 @@ static ssize_t emudev_write(struct _reent *r, void *fd, const char *ptr, size_t 
     /* Unaligned at the start, we need to read the sector and incorporate the data. */
     if (f->offset % sector_size != 0) {
         size_t nb = (size_t)(len <= (sector_size - (f->offset % sector_size)) ? len : sector_size - (f->offset % sector_size));
-        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_begin, 1, device->origin_path);
+        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_begin, 1, device->origin_path, device->num_parts, device->part_limit);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -273,7 +359,7 @@ static ssize_t emudev_write(struct _reent *r, void *fd, const char *ptr, size_t 
     
         memcpy(device->tmp_sector + (f->offset % sector_size), data, nb);
 
-        no = emu_device_partition_write_data(&device->devpart, device->tmp_sector, sector_begin, 1, device->origin_path);
+        no = emu_device_partition_write_data(&device->devpart, device->tmp_sector, sector_begin, 1, device->origin_path, device->num_parts, device->part_limit);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -292,7 +378,7 @@ static ssize_t emudev_write(struct _reent *r, void *fd, const char *ptr, size_t 
 
     /* Write all of the sector-aligned data. */
     if (current_sector != sector_end_aligned) {
-        no = emu_device_partition_write_data(&device->devpart, data, current_sector, sector_end_aligned - current_sector, device->origin_path);
+        no = emu_device_partition_write_data(&device->devpart, data, current_sector, sector_end_aligned - current_sector, device->origin_path, device->num_parts, device->part_limit);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -304,7 +390,7 @@ static ssize_t emudev_write(struct _reent *r, void *fd, const char *ptr, size_t 
 
     /* Unaligned at the end, we need to read the sector and incorporate the data. */
     if (sector_end != sector_end_aligned) {        
-        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_end_aligned, 1, device->origin_path);
+        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_end_aligned, 1, device->origin_path, device->num_parts, device->part_limit);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -312,7 +398,7 @@ static ssize_t emudev_write(struct _reent *r, void *fd, const char *ptr, size_t 
     
         memcpy(device->tmp_sector, data, (size_t)((f->offset + len) % sector_size));
         
-        no = emu_device_partition_write_data(&device->devpart, device->tmp_sector, sector_end_aligned, 1, device->origin_path);
+        no = emu_device_partition_write_data(&device->devpart, device->tmp_sector, sector_end_aligned, 1, device->origin_path, device->num_parts, device->part_limit);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -353,7 +439,7 @@ static ssize_t emudev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
     /* Unaligned at the start, we need to read the sector and incorporate the data. */
     if (f->offset % sector_size != 0) {
         size_t nb = (size_t)(len <= (sector_size - (f->offset % sector_size)) ? len : sector_size - (f->offset % sector_size));
-        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_begin, 1, device->origin_path);
+        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_begin, 1, device->origin_path, device->num_parts, device->part_limit);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -374,7 +460,7 @@ static ssize_t emudev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
 
     /* Read all of the sector-aligned data. */
     if (current_sector != sector_end_aligned) {        
-        no = emu_device_partition_read_data(&device->devpart, data, current_sector, sector_end_aligned - current_sector, device->origin_path);
+        no = emu_device_partition_read_data(&device->devpart, data, current_sector, sector_end_aligned - current_sector, device->origin_path, device->num_parts, device->part_limit);
         if (no != 0) {
             r->_errno = no;
             return -1;
@@ -386,7 +472,7 @@ static ssize_t emudev_read(struct _reent *r, void *fd, char *ptr, size_t len) {
 
     /* Unaligned at the end, we need to read the sector and incorporate the data. */
     if (sector_end != sector_end_aligned) {
-        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_end_aligned, 1, device->origin_path);
+        no = emu_device_partition_read_data(&device->devpart, device->tmp_sector, sector_end_aligned, 1, device->origin_path, device->num_parts, device->part_limit);
         if (no != 0) {
             r->_errno = no;
             return -1;
