@@ -64,8 +64,8 @@ static void ClearIram() {
     memset(g_work_page, 0xFF, sizeof(g_work_page));
     
     /* Overwrite all of IRAM with FFs. */
-    for (size_t ofs = 0; ofs < IRAM_PAYLOAD_MAX_SIZE; ofs += sizeof(g_work_page)) {
-        CopyToIram(IRAM_PAYLOAD_BASE + ofs, g_work_page, sizeof(g_work_page));
+    for (size_t ofs = 0; ofs < IRAM_SIZE; ofs += sizeof(g_work_page)) {
+        CopyToIram(IRAM_BASE + ofs, g_work_page, sizeof(g_work_page));
     }
 }
 
@@ -98,4 +98,25 @@ Result BpcRebootManager::PerformReboot() {
             DoRebootToPayload();
             return ResultSuccess;
     }
+}
+
+void BpcRebootManager::RebootForFatalError(AtmosphereFatalErrorContext *ctx) {
+    /* If we don't actually have a payload loaded, just go to RCM. */
+    if (!g_payload_loaded) {
+        RebootToRcm();
+    }
+    
+    /* Ensure clean IRAM state. */
+    ClearIram();
+    
+    
+    /* Copy in payload. */
+    for (size_t ofs = 0; ofs < sizeof(g_reboot_payload); ofs += 0x1000) {
+        CopyToIram(IRAM_PAYLOAD_BASE + ofs, &g_reboot_payload[ofs], 0x1000);
+    }
+    
+    memcpy(g_work_page, ctx, sizeof(*ctx));
+    CopyToIram(IRAM_PAYLOAD_BASE + IRAM_PAYLOAD_MAX_SIZE, g_work_page, sizeof(g_work_page));
+    
+    RebootToIramPayload();
 }

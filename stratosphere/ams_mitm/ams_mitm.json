@@ -71,6 +71,7 @@
                 "svcMapDeviceAddressSpaceAligned":	"0x5a",
                 "svcUnmapDeviceAddressSpace":	"0x5c",
                 "svcGetSystemInfo":	"0x6f",
+                "svcManageNamedPort": "0x71",
                 "svcCallSecureMonitor": "0x7F"
             }
         }

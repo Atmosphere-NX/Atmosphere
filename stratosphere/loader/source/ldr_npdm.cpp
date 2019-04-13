@@ -117,8 +117,15 @@ Result NpdmUtils::LoadNpdmInternal(FILE *f_npdm, NpdmUtils::NpdmCache *cache) {
         return rc;
     }
     
-    if (info->header->mmu_flags > 0xF) {
-        return rc;
+    /* 7.0.0 added 0x10 as a valid bit to NPDM flags. */
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+        if (info->header->mmu_flags > 0x1F) {
+            return rc;
+        }
+    } else {
+        if (info->header->mmu_flags > 0xF) {
+            return rc;
+        }
     }
     
     if (info->header->aci0_offset < sizeof(NpdmUtils::NpdmHeader) || info->header->aci0_size < sizeof(NpdmUtils::NpdmAci0) || info->header->aci0_offset + info->header->aci0_size > npdm_size) {

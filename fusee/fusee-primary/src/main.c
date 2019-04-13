@@ -90,9 +90,6 @@ static void setup_env(void) {
     /* Initialize hardware. */
     nx_hwinit();
 
-    /* Check for panics. */
-    check_and_display_panic();
-
     /* Zero-fill the framebuffer and register it as printk provider. */
     video_init(g_framebuffer);
 
@@ -138,6 +135,9 @@ int main(void) {
     
     /* Initialize the display, console, etc. */
     setup_env();
+
+    /* Check for panics. */
+    check_and_display_panic();
     
     /* Load the BCT0 configuration ini off of the SD. */
     bct0 = load_config();

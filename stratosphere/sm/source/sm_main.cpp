@@ -39,6 +39,17 @@ extern "C" {
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
+
+    /* Exception handling. */
+    alignas(16) u8 __nx_exception_stack[0x1000];
+    u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
+    void __libnx_exception_handler(ThreadExceptionDump *ctx);
+    u64 __stratosphere_title_id = TitleId_Sm;
+    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
+}
+
+void __libnx_exception_handler(ThreadExceptionDump *ctx) {
+    StratosphereCrashHandler(ctx);
 }
 
 
@@ -73,7 +84,7 @@ int main(int argc, char **argv)
     
     /* TODO: What's a good timeout value to use here? */
     auto server_manager = new WaitableManager(1);
-            
+
     /* Create sm:, (and thus allow things to register to it). */
     server_manager->AddWaitable(new ManagedPortServer<UserService>("sm:", 0x40));
         

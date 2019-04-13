@@ -53,6 +53,7 @@ dist: all
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000036
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000034
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/fatal_errors
 	cp fusee/fusee-primary/fusee-primary.bin atmosphere-$(AMSVER)/atmosphere/reboot_payload.bin
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/010000000000000D
 	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin

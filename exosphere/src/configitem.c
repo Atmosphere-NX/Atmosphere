@@ -206,8 +206,13 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
                 *p_outvalue = (int)(bootconfig_is_debug_mode());
             }
             break;
-        case CONFIGITEM_KERNELMEMORYCONFIGURATION:
-            *p_outvalue = bootconfig_get_kernel_memory_configuration();
+        case CONFIGITEM_KERNELCONFIGURATION:
+            {
+                uint64_t config = bootconfig_get_kernel_configuration();
+                /* Always enable usermode exception handlers. */
+                config |= KERNELCONFIGFLAG_ENABLE_USER_EXCEPTION_HANDLERS;
+                *p_outvalue = config;
+            }
             break;
         case CONFIGITEM_BATTERYPROFILE:
             *p_outvalue = (int)g_battery_profile;
