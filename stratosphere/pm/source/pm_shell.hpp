@@ -43,7 +43,8 @@ enum ShellCmd_5X {
     Shell_Cmd_5X_GetApplicationProcessId = 6,
     Shell_Cmd_5X_BoostSystemMemoryResourceLimit = 7,
     
-    Shell_Cmd_BoostSystemThreadsResourceLimit = 8
+    Shell_Cmd_BoostSystemThreadsResourceLimit = 8,
+    Shell_Cmd_GetUnimplementedEventHandle = 9 /* TODO: Rename when Nintendo implements this. */
 };
 
 class ShellService final : public IServiceObject {    
@@ -60,6 +61,7 @@ class ShellService final : public IServiceObject {
         Result GetApplicationProcessId(Out<u64> pid);
         Result BoostSystemMemoryResourceLimit(u64 sysmem_size);
         Result BoostSystemThreadsResourceLimit();
+        Result GetUnimplementedEventHandle(Out<CopiedHandle> event);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             /* 1.0.0-4.0.0 */
@@ -88,5 +90,8 @@ class ShellService final : public IServiceObject {
             
             /* 7.0.0-* */
             MakeServiceCommandMeta<Shell_Cmd_BoostSystemThreadsResourceLimit, &ShellService::BoostSystemThreadsResourceLimit, FirmwareVersion_700>(),
+            
+            /* 8.0.0-* */
+            MakeServiceCommandMeta<Shell_Cmd_GetUnimplementedEventHandle, &ShellService::GetUnimplementedEventHandle, FirmwareVersion_800>(),
         };
 };
