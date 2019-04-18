@@ -170,8 +170,10 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
                 fatal_error("[NXBOOT]: Unable to identify package1!\n");
             }
         }
-        case 0x0F:
+        case 0x0F:          /* 7.0.0 - 7.0.1 */
             return ATMOSPHERE_TARGET_FIRMWARE_700;
+        case 0x10:          /* 8.0.0 */
+            return ATMOSPHERE_TARGET_FIRMWARE_800;
         default:
             fatal_error("[NXBOOT]: Unable to identify package1!\n");
     }
@@ -412,7 +414,7 @@ uint32_t nxboot_main(void) {
         if (!package1_get_tsec_fw(&tsec_fw, package1loader, package1loader_size)) {
             fatal_error("[NXBOOT]: Failed to read the TSEC firmware from Package1loader!\n");
         }
-        if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_700) { 
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_700) { 
             tsec_fw_size = 0x3000;
         } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_620) {
             tsec_fw_size = 0x2900;

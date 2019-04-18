@@ -149,6 +149,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
                 desired_keyblob = MASTERKEY_REVISION_620;
                 break;
             case ATMOSPHERE_TARGET_FIRMWARE_700:
+            case ATMOSPHERE_TARGET_FIRMWARE_800:
                 desired_keyblob = MASTERKEY_REVISION_700_CURRENT;
                 break;
             default:
@@ -223,6 +224,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
         case ATMOSPHERE_TARGET_FIRMWARE_600:
         case ATMOSPHERE_TARGET_FIRMWARE_620:
         case ATMOSPHERE_TARGET_FIRMWARE_700:
+        case ATMOSPHERE_TARGET_FIRMWARE_800:
             decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
             decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
             decrypt_data_into_keyslot(0xE, 0xC, masterkey_4x_seed, 0x10);

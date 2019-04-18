@@ -144,6 +144,7 @@ static void setup_se(void) {
                 master_kek_source_ind = MASTERKEY_REVISION_620 - MASTERKEY_REVISION_620;
                 break;
             case ATMOSPHERE_TARGET_FIRMWARE_700:
+            case ATMOSPHERE_TARGET_FIRMWARE_800:
                 master_kek_source_ind = MASTERKEY_REVISION_700_CURRENT - MASTERKEY_REVISION_620;
                 break;
             default:
@@ -179,6 +180,7 @@ static void setup_se(void) {
         case ATMOSPHERE_TARGET_FIRMWARE_600:
         case ATMOSPHERE_TARGET_FIRMWARE_620:
         case ATMOSPHERE_TARGET_FIRMWARE_700:
+        case ATMOSPHERE_TARGET_FIRMWARE_800:
             derive_new_device_keys(KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY);
             break;
     }
@@ -487,6 +489,7 @@ static void copy_warmboot_bin_to_dram() {
             warmboot_src = (uint8_t *)0x4003D800;
             break;
         case ATMOSPHERE_TARGET_FIRMWARE_700:
+        case ATMOSPHERE_TARGET_FIRMWARE_800:
             warmboot_src = (uint8_t *)0x4003E000;
             break;
     }
@@ -554,6 +557,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
                 MAKE_REG32(PMC_BASE + 0x360) = 0xA8;
                 break;
             case ATMOSPHERE_TARGET_FIRMWARE_700:
+            case ATMOSPHERE_TARGET_FIRMWARE_800:
                 MAKE_REG32(PMC_BASE + 0x360) = 0x129;
                 break;
         }

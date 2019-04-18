@@ -39,6 +39,17 @@ uintptr_t get_warmboot_main_stack_address(void) {
     return TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x780;
 }
 
+static void warmboot_configure_hiz_mode(void) {
+    /* Enable input to I2C1 */
+    PINMUX_AUX_GEN1_I2C_SCL_0 = 0x40;
+    PINMUX_AUX_GEN1_I2C_SDA_0 = 0x40;
+
+    clkrst_reboot(CARDEVICE_I2C1);
+    i2c_init(0);
+    i2c_clear_ti_charger_bit_7();
+    clkrst_disable(CARDEVICE_I2C1);
+}
+
 void __attribute__((noreturn)) warmboot_main(void) {
     /*
         This function and its callers are reached in either of the following events, under normal conditions:
@@ -79,15 +90,10 @@ void __attribute__((noreturn)) warmboot_main(void) {
         /* Make PMC (2.x+), MC (4.x+) registers secure-only */
         secure_additional_devices();
 
-        if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_400 || configitem_get_hardware_type() == 0) {
-            /* Enable input to I2C1 */
-            PINMUX_AUX_GEN1_I2C_SCL_0 = 0x40;
-            PINMUX_AUX_GEN1_I2C_SDA_0 = 0x40;
-
-            clkrst_reboot(CARDEVICE_I2C1);
-            i2c_init(0);
-            i2c_clear_ti_charger_bit_7();
-            clkrst_disable(CARDEVICE_I2C1);
+        if ((exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_400) || 
+           ((exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_800) && configitem_get_hardware_type() == 0) ||
+           (configitem_is_hiz_mode_enabled())) {
+            warmboot_configure_hiz_mode();
         }
 
         clear_user_smc_in_progress();

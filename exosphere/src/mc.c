@@ -140,13 +140,19 @@ void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint6
     carveout->size_big_pages = (uint32_t)(size >> 17);
     carveout->client_access_0 = (BIT(CSR_PTCR) | BIT(CSR_DISPLAY0A) | BIT(CSR_DISPLAY0AB) | BIT(CSR_DISPLAY0B) | BIT(CSR_DISPLAY0BB) | BIT(CSR_DISPLAY0C) | BIT(CSR_DISPLAY0CB) | BIT(CSR_AFIR) | BIT(CSR_DISPLAYHC) | BIT(CSR_DISPLAYHCB) | BIT(CSR_HDAR) | BIT(CSR_HOST1XDMAR) | BIT(CSR_HOST1XR) | BIT(CSR_NVENCSRD) | BIT(CSR_PPCSAHBDMAR) | BIT(CSR_PPCSAHBSLVR));
     carveout->client_access_1 = (BIT(CSR_MPCORER) | BIT(CSW_NVENCSWR) | BIT(CSW_AFIW) | BIT(CSW_HDAW) | BIT(CSW_HOST1XW) | BIT(CSW_MPCOREW) | BIT(CSW_PPCSAHBDMAW) | BIT(CSW_PPCSAHBSLVW));
-    carveout->client_access_2 = (BIT(CSR_XUSB_HOSTR) | BIT(CSW_XUSB_HOSTW) | BIT(CSR_XUSB_DEVR) | BIT(CSW_XUSB_DEVW) | BIT(CSR_TSECSRD) | BIT(CSW_TSECSWR));
-    carveout->client_access_3 = (BIT(CSR_SDMMCRA) | BIT(CSR_SDMMCRAA) | BIT(CSR_SDMMCRAB) | BIT(CSW_SDMMCWA) | BIT(CSW_SDMMCWAA) | BIT(CSW_SDMMCWAB) | BIT(CSR_VICSRD) | BIT(CSW_VICSWR) | BIT(CSR_DISPLAYD) | BIT(CSR_NVDECSRD) | BIT(CSW_NVDECSWR) | BIT(CSR_APER) | BIT(CSW_APEW) | BIT(CSR_NVJPGSRD) | BIT(CSW_NVJPGSWR));
-    carveout->client_access_4 = (BIT(CSR_SESRD) | BIT(CSW_SESWR));
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_800) {
+        carveout->client_access_2 = (BIT(CSR_XUSB_HOSTR) | BIT(CSW_XUSB_HOSTW) | BIT(CSR_XUSB_DEVR) | BIT(CSW_XUSB_DEVW)); 
+        carveout->client_access_3 = (BIT(CSR_SDMMCRA) | BIT(CSR_SDMMCRAA) | BIT(CSR_SDMMCRAB) | BIT(CSW_SDMMCWA) | BIT(CSW_SDMMCWAA) | BIT(CSW_SDMMCWAB) | BIT(CSR_VICSRD) | BIT(CSW_VICSWR) | BIT(CSR_DISPLAYD) | BIT(CSR_NVDECSRD) | BIT(CSW_NVDECSWR) | BIT(CSR_APER) | BIT(CSW_APEW) | BIT(CSR_NVJPGSRD) | BIT(CSW_NVJPGSWR));
+        carveout->client_access_4 = (BIT(CSR_SESRD) | BIT(CSW_SESWR) | BIT(CSR_TSECSRDB) | BIT(CSW_TSECSWRB));
+    } else {
+        carveout->client_access_2 = (BIT(CSR_XUSB_HOSTR) | BIT(CSW_XUSB_HOSTW) | BIT(CSR_XUSB_DEVR) | BIT(CSW_XUSB_DEVW) | BIT(CSR_TSECSRD) | BIT(CSW_TSECSWR));
+        carveout->client_access_3 = (BIT(CSR_SDMMCRA) | BIT(CSR_SDMMCRAA) | BIT(CSR_SDMMCRAB) | BIT(CSW_SDMMCWA) | BIT(CSW_SDMMCWAA) | BIT(CSW_SDMMCWAB) | BIT(CSR_VICSRD) | BIT(CSW_VICSWR) | BIT(CSR_DISPLAYD) | BIT(CSR_NVDECSRD) | BIT(CSW_NVDECSWR) | BIT(CSR_APER) | BIT(CSW_APEW) | BIT(CSR_NVJPGSRD) | BIT(CSW_NVJPGSWR));
+        carveout->client_access_4 = (BIT(CSR_SESRD) | BIT(CSW_SESWR));
+    }
     carveout->client_force_internal_access_0 = ((exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) && (carveout_id == 4)) ? BIT(CSR_AVPCARM7R) : 0;
     carveout->client_force_internal_access_1 = ((exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) && (carveout_id == 4)) ? BIT(CSW_AVPCARM7W) : 0;
     carveout->client_force_internal_access_2 = 0;
     carveout->client_force_internal_access_3 = 0;
     carveout->client_force_internal_access_4 = 0;
-    carveout->config = 0x8B;
+    carveout->config = (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_800) ? 0x4CB : 0x8B;
 }

@@ -67,8 +67,8 @@ void init_dma_controllers(unsigned int target_firmware) {
         /* MSELECT_CONFIG_0 |= WRAP_TO_INCR_SLAVE0(APC) | WRAP_TO_INCR_SLAVE1(PCIe) | WRAP_TO_INCR_SLAVE2(GPU) */
         MAKE_REG32(0x50060000) |= 0x38000000;
 
-        /* AHB_ARBITRATION_DISABLE_0 - Disables USB and USB2 from arbitration */
-        MAKE_REG32(0x6000C004) = 0x40040;
+        /* AHB_ARBITRATION_DISABLE_0 - Disables USB, USB2, and AHB-DMA from arbitration */
+        MAKE_REG32(0x6000C004) = 0x40060;
 
         /* AHB_ARBITRATION_PRIORITY_CTRL_0 - Select high prio group with prio 7 */
         MAKE_REG32(0x6000C008) = 0xE0000001;
