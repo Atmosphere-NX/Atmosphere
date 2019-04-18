@@ -83,8 +83,12 @@ uint32_t smc_read_write_register(smc_args_t *args);
 /* Atmosphere SMC prototypes */
 uint32_t smc_ams_iram_copy(smc_args_t *args);
 
+/* TODO: Provide a way to set this. It's 0 on non-recovery boot anyway... */
+static uint32_t g_smc_blacklist_mask = 0;
+
 typedef struct {
     uint32_t id;
+    uint32_t blacklist_mask;
     uint32_t (*handler)(smc_args_t *args);
 } smc_table_entry_t;
 
@@ -94,43 +98,43 @@ typedef struct {
 } smc_table_t;
 
 static smc_table_entry_t g_smc_user_table[SMC_USER_HANDLERS] = {
-    {0, NULL},
-    {0xC3000401, smc_set_config_user},
-    {0xC3000002, smc_get_config_user},
-    {0xC3000003, smc_check_status},
-    {0xC3000404, smc_get_result},
-    {0xC3000E05, smc_exp_mod},
-    {0xC3000006, smc_get_random_bytes_for_user},
-    {0xC3000007, smc_generate_aes_kek},
-    {0xC3000008, smc_load_aes_key},
-    {0xC3000009, smc_crypt_aes},
-    {0xC300000A, smc_generate_specific_aes_key},
-    {0xC300040B, smc_compute_cmac},
-    {0xC300100C, smc_load_rsa_oaep_key},
-    {0xC300100D, smc_decrypt_rsa_private_key},
-    {0xC300100E, smc_load_secure_exp_mod_key},
-    {0xC300060F, smc_secure_exp_mod},
-    {0xC3000610, smc_unwrap_rsa_oaep_wrapped_titlekey},
-    {0xC3000011, smc_load_titlekey},
-    {0xC3000012, smc_unwrap_aes_wrapped_titlekey}
+    {0, 4, NULL},
+    {0xC3000401, 4, smc_set_config_user},
+    {0xC3000002, 1, smc_get_config_user},
+    {0xC3000003, 1, smc_check_status},
+    {0xC3000404, 1, smc_get_result},
+    {0xC3000E05, 4, smc_exp_mod},
+    {0xC3000006, 1, smc_get_random_bytes_for_user},
+    {0xC3000007, 1, smc_generate_aes_kek},
+    {0xC3000008, 1, smc_load_aes_key},
+    {0xC3000009, 1, smc_crypt_aes},
+    {0xC300000A, 1, smc_generate_specific_aes_key},
+    {0xC300040B, 1, smc_compute_cmac},
+    {0xC300100C, 1, smc_load_rsa_oaep_key},
+    {0xC300100D, 2, smc_decrypt_rsa_private_key},
+    {0xC300100E, 4, smc_load_secure_exp_mod_key},
+    {0xC300060F, 2, smc_secure_exp_mod},
+    {0xC3000610, 4, smc_unwrap_rsa_oaep_wrapped_titlekey},
+    {0xC3000011, 4, smc_load_titlekey},
+    {0xC3000012, 4, smc_unwrap_aes_wrapped_titlekey}
 };
 
 static smc_table_entry_t g_smc_priv_table[SMC_PRIV_HANDLERS] = {
-    {0, NULL},
-    {0xC4000001, smc_cpu_suspend},
-    {0x84000002, smc_cpu_off},
-    {0xC4000003, smc_cpu_on},
-    {0xC3000004, smc_get_config_priv},
-    {0xC3000005, smc_get_random_bytes_for_priv},
-    {0xC3000006, smc_panic},
-    {0xC3000007, smc_configure_carveout},
-    {0xC3000008, smc_read_write_register}
+    {0, 4, NULL},
+    {0xC4000001, 4, smc_cpu_suspend},
+    {0x84000002, 4, smc_cpu_off},
+    {0xC4000003, 1, smc_cpu_on},
+    {0xC3000004, 1, smc_get_config_priv},
+    {0xC3000005, 1, smc_get_random_bytes_for_priv},
+    {0xC3000006, 1, smc_panic},
+    {0xC3000007, 1, smc_configure_carveout},
+    {0xC3000008, 1, smc_read_write_register}
 };
 
 /* This is a table used for atmosphere-specific SMCs. */
 static smc_table_entry_t g_smc_ams_table[SMC_AMS_HANDLERS] = {
-    {0, NULL},
-    {0xF0000201, smc_ams_iram_copy},
+    {0, 4, NULL},
+    {0xF0000201, 0, smc_ams_iram_copy},
 };
 
 static smc_table_t g_smc_tables[SMC_HANDLER_COUNT + 1] = {
@@ -177,6 +181,7 @@ void set_version_specific_smcs(void) {
         case ATMOSPHERE_TARGET_FIRMWARE_600:
         case ATMOSPHERE_TARGET_FIRMWARE_620:
         case ATMOSPHERE_TARGET_FIRMWARE_700:
+        case ATMOSPHERE_TARGET_FIRMWARE_800:
             /* No more LoadSecureExpModKey. */
             g_smc_user_table[0xE].handler = NULL;
             g_smc_user_table[0xC].id = 0xC300D60C;
@@ -292,13 +297,17 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
 #endif
      
     /* Call function. */
-    args->X[0] = smc_handler(args);
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_800 ||
+       (g_smc_tables[handler_id].handlers[smc_id].blacklist_mask & g_smc_blacklist_mask) == 0) {
+        args->X[0] = smc_handler(args);
+    } else {
+        /* Call not allowed due to current boot conditions. */
+        args->X[0] = 6;
+    }
+    
 #if DEBUG_LOG_SMCS    
     if (handler_id == SMC_HANDLER_USER) {
         *(volatile smc_args_t *)(get_iram_address_for_debug() + 0x100 + ((0x80 * num + 0x40) & 0x3FFF)) = *args;
-        /*if (num >= 0x69) {
-            panic(PANIC_REBOOT);
-        }*/
     }
 #endif
     

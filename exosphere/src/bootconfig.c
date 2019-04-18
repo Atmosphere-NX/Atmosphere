@@ -100,6 +100,8 @@ uint64_t bootconfig_get_value_for_sysctr0(void) {
 }
 
 uint64_t bootconfig_get_memory_arrangement(void) {
+    /* TODO: This function has changed pretty significantly since we implemented it. */
+    /* Not relevant for retail, but we'll probably want this to be accurate sooner or later. */
     if (bootconfig_is_debug_mode()) {
         if (fuse_get_dram_id() == 4) {
             if (LOADED_BOOTCONFIG->unsigned_config.data[0x23]) {
