@@ -111,3 +111,15 @@ Result ShellService::BoostSystemThreadsResourceLimit() {
     /* We will simply not reduce the number of system threads available for no reason. */
     return ResultSuccess;
 }
+
+
+Result ShellService::GetUnimplementedEventHandle(Out<CopiedHandle> event) {
+    /* In 8.0.0, Nintendo added this command which should return an event handle. */
+    /* In addition, they also added code to create a new event in the global PM constructor. */
+    /* However, nothing signals this event, and this command currently does std::abort();. */
+    /* We will oblige. */
+    std::abort();
+    
+    /* TODO: Return an event handle, once N makes this command a real thing in the future. */
+    /* TODO: return ResultSuccess; */
+}
