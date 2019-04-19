@@ -61,7 +61,7 @@ class FsMitmService : public IMitmServiceObject {
 
             /* TODO: intercepting everything seems to cause issues with sleep mode, for some reason. */
             /* Figure out why, and address it. */
-            if (tid == TitleId_AppletQlaunch) {
+            if (tid == TitleId_AppletQlaunch || tid == TitleId_AppletMaintenanceMenu) {
                 has_launched_qlaunch = true;
             }
 
