@@ -247,6 +247,11 @@ void EmbeddedBoot2::Main() {
         if (!maintenance || std::get<bool>(launch_program)) {
             LaunchTitle(std::get<u64>(launch_program), FsStorageId_NandSystem, 0, NULL);
         }
+
+        /* In 7.0.0, Npns was added to the list of titles to launch during maintenance. */
+        if (maintenance && std::get<u64>(launch_program) == TitleId_Npns && GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+            LaunchTitle(TitleId_Npns, FsStorageId_NandSystem, 0, NULL);
+        }
     }
     
     /* Allow for user-customizable programs. */
