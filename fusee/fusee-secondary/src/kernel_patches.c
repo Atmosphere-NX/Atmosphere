@@ -41,6 +41,7 @@ typedef struct {
 
 typedef struct {
     uint8_t hash[0x20]; /* TODO: Come up with a better way to identify kernels, that doesn't rely on hashing them. */
+    size_t hash_size; /* Only hash the first N bytes of the kernel, if this is set. */
     size_t free_code_space_offset;
     unsigned int num_patches;
     const kernel_patch_t *patches;
@@ -371,6 +372,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(700, proc_id_recv)[] = {0xA9BF
 static const instruction_t MAKE_KERNEL_PATCH_NAME(500, svc_control_codememory)[] = {MAKE_NOP};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(600, svc_control_codememory)[] = {MAKE_NOP};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(700, svc_control_codememory)[] = {MAKE_NOP};
+static const instruction_t MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory)[] = {MAKE_NOP};
 
 /* Hook Definitions. */
 static const kernel_patch_t g_kernel_patches_100[] = {
@@ -532,6 +534,14 @@ static const kernel_patch_t g_kernel_patches_700[] = {
         .patch_offset = 0x3C6E0,
     }
 };
+static const kernel_patch_t g_kernel_patches_800[] = {
+    /* TODO: Send, Receive. */
+    {   /* svcControlCodeMemory Patch. */
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory))/sizeof(instruction_t),
+        .payload = MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory),
+        .patch_offset = 0x3FAD0,
+    }
+};
 
 #define KERNEL_PATCHES(vers) .num_patches = sizeof(g_kernel_patches_##vers)/sizeof(kernel_patch_t), .patches = g_kernel_patches_##vers,
 
@@ -581,6 +591,12 @@ static const kernel_info_t g_kernel_infos[] = {
         .hash = {0xA2, 0x5E, 0x47, 0x0C, 0x8E, 0x6D, 0x2F, 0xD7, 0x5D, 0xAD, 0x24, 0xD7, 0xD8, 0x24, 0x34, 0xFB, 0xCD, 0x77, 0xBB, 0xE6, 0x66, 0x03, 0xCB, 0xAF, 0xAB, 0x85, 0x45, 0xA0, 0x91, 0xAF, 0x34, 0x25},
         .free_code_space_offset = 0x5FEC0,
         KERNEL_PATCHES(700)
+    },
+    {   /* 8.0.0. */
+        .hash = {0x8C, 0x2E, 0x2C, 0x0D, 0x89, 0x19, 0x4A, 0x07, 0xF0, 0xE0, 0x7B, 0x44, 0xA7, 0x3D, 0x91, 0x81, 0x24, 0xFB, 0x67, 0x0D, 0x5B, 0xD5, 0x3F, 0x0F, 0x1C, 0xD3, 0x48, 0x06, 0x19, 0xD1, 0x27, 0xE6},
+        .hash_size = 0x95000,
+        .free_code_space_offset = 0x607F0,
+        KERNEL_PATCHES(800)
     }
 };
 
@@ -607,10 +623,19 @@ uint8_t *search_pattern(void *_mem, size_t mem_size, const void *_pattern, size_
 
 const kernel_info_t *get_kernel_info(void *kernel, size_t size) {
     uint8_t calculated_hash[0x20];
+    uint8_t calculated_partial_hash[0x20];
     se_calculate_sha256(calculated_hash, kernel, size);
+    
     for (unsigned int i = 0; i < sizeof(g_kernel_infos)/sizeof(kernel_info_t); i++) {
-        if (memcmp(calculated_hash, g_kernel_infos[i].hash, sizeof(calculated_hash)) == 0) {
-            return &g_kernel_infos[i];
+        if (g_kernel_infos[i].hash_size == 0 || size <= g_kernel_infos[i].hash_size) {
+            if (memcmp(calculated_hash, g_kernel_infos[i].hash, sizeof(calculated_hash)) == 0) {
+                return &g_kernel_infos[i];
+            }
+        } else {
+            se_calculate_sha256(calculated_partial_hash, kernel, g_kernel_infos[i].hash_size);
+            if (memcmp(calculated_partial_hash, g_kernel_infos[i].hash, sizeof(calculated_partial_hash)) == 0) {
+                return &g_kernel_infos[i];
+            }
         }
     }
     return NULL;
