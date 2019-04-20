@@ -59,10 +59,10 @@ static void setup_env(void) {
     train_dram();
 }
 
+
 static void cleanup_env(void) {
     /* Unmount everything (this causes all open files to be flushed and closed) */
     nxfs_unmount_all();
-    //console_end();
 }
 
 static void exit_callback(int rc) {
@@ -118,6 +118,8 @@ int main(int argc, void **argv) {
         uint32_t boot_memaddr = nxboot_main();
         /* Wait for the splash screen to have been displayed as long as it should be. */
         splash_screen_wait_delay();
+        /* Cleanup environment. */
+        cleanup_env();
         /* Finish boot. */
         nxboot_finish(boot_memaddr);
     } else {

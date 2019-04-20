@@ -42,6 +42,8 @@ typedef struct {
 typedef struct {
     uint8_t hash[0x20]; /* TODO: Come up with a better way to identify kernels, that doesn't rely on hashing them. */
     size_t hash_size; /* Only hash the first N bytes of the kernel, if this is set. */
+    size_t embedded_ini_offset; /* 8.0.0+ embeds the INI in kernel section. */
+    size_t embedded_ini_ptr;    /* 8.0.0+ embeds the INI in kernel section. */
     size_t free_code_space_offset;
     unsigned int num_patches;
     const kernel_patch_t *patches;
@@ -367,6 +369,61 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(700, proc_id_send)[] = {0xA9BF
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(700, proc_id_recv)[] = {0x68, 0x03, 0x40, 0xF9, 0x08, 0x1D, 0x40, 0xF9, 0xE0, 0x03, 0x1B, 0xAA, 0x00, 0x01, 0x3F, 0xD6, 0xA9, 0x83, 0x50, 0xF8, 0xE8, 0x03, 0x16, 0x2A, 0xD6, 0x0A, 0x00, 0x11};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(700, proc_id_recv)[] = {0xA9BF2FEA, 0xF9404FEB, 0x2A1603EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF9400368, 0xF9401D08, 0xAA1B03E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
 
+/*
+    stp x10, x11, [sp, #-0x10]!
+    ldr x11, [sp, #0x70]
+    mov w10, w25
+    lsl x10, x10, #2
+    ldr x10, [x11, x10]
+    mov x9, #0x0000ffffffffffff
+    and x8, x10, x9
+    mov x9, #0xffff000000000000
+    and x10, x10, x9
+    mov x9, #0xfffe000000000000
+    cmp x10, x9
+    beq #0x20
+    
+    stp x8, x9, [sp, #-0x10]!
+    ldr x8, [x21]
+    ldr x8, [x8, #0x38]
+    mov x0, x21
+    blr x8
+    ldp x8, x9, [sp],#0x10
+    mov x8, x0
+    
+    ldp x10, x11, [sp],#0x10
+    mov x0, x8
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(800, proc_id_send)[] = {0xA8, 0x02, 0x40, 0xF9, 0x08, 0x1D, 0x40, 0xF9, 0xE0, 0x03, 0x15, 0xAA, 0x00, 0x01, 0x3F, 0xD6, 0xE8, 0x03, 0x19, 0x2A, 0x39, 0x0B, 0x00, 0x11, 0x08, 0xF5, 0x7E, 0xD3};
+static const instruction_t MAKE_KERNEL_PATCH_NAME(800, proc_id_send)[] = {0xA9BF2FEA, 0xF9403BEB, 0x2A1903EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF94002A8, 0xF9401D08, 0xAA1503E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
+/*  
+    stp x10, x11, [sp, #-0x10]!
+    ldr x11, [sp, #0x98]
+    mov w10, w22
+    lsl x10, x10, #2
+    ldr x10, [x11, x10]
+    mov x9, #0x0000ffffffffffff
+    and x8, x10, x9
+    mov x9, #0xffff000000000000
+    and x10, x10, x9
+    mov x9, #0xfffe000000000000
+    cmp x10, x9
+    beq #0x20
+    
+    stp x8, x9, [sp, #-0x10]!
+    ldr x8, [x27]
+    ldr x8, [x8, #0x38]
+    mov x0, x27
+    blr x8
+    ldp x8, x9, [sp],#0x10
+    mov x8, x0
+    
+    ldp x10, x11, [sp],#0x10
+    mov x0, x8
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(800, proc_id_recv)[] = {0x68, 0x03, 0x40, 0xF9, 0x08, 0x1D, 0x40, 0xF9, 0xE0, 0x03, 0x1B, 0xAA, 0x00, 0x01, 0x3F, 0xD6, 0xA9, 0x83, 0x50, 0xF8, 0xE8, 0x03, 0x16, 0x2A, 0xD6, 0x0A, 0x00, 0x11};
+static const instruction_t MAKE_KERNEL_PATCH_NAME(800, proc_id_recv)[] = {0xA9BF2FEA, 0xF9404FEB, 0x2A1603EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF9400368, 0xF9401D08, 0xAA1B03E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
+
 /* svcControlCodeMemory Patches */
 /* b.eq -> nop */
 static const instruction_t MAKE_KERNEL_PATCH_NAME(500, svc_control_codememory)[] = {MAKE_NOP};
@@ -535,7 +592,22 @@ static const kernel_patch_t g_kernel_patches_700[] = {
     }
 };
 static const kernel_patch_t g_kernel_patches_800[] = {
-    /* TODO: Send, Receive. */
+    {   /* Send Message Process ID Patch. */
+        .pattern_size = 0x1C,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(800, proc_id_send),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(800, proc_id_send))/sizeof(instruction_t),
+        .branch_back_offset = 0x10,
+        .payload = MAKE_KERNEL_PATCH_NAME(800, proc_id_send)
+    },
+    {   /* Receive Message Process ID Patch. */
+        .pattern_size = 0x1C,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(800, proc_id_recv),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(800, proc_id_recv))/sizeof(instruction_t),
+        .branch_back_offset = 0x10,
+        .payload = MAKE_KERNEL_PATCH_NAME(800, proc_id_recv)
+    },
     {   /* svcControlCodeMemory Patch. */
         .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory))/sizeof(instruction_t),
         .payload = MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory),
@@ -593,8 +665,10 @@ static const kernel_info_t g_kernel_infos[] = {
         KERNEL_PATCHES(700)
     },
     {   /* 8.0.0. */
-        .hash = {0x8C, 0x2E, 0x2C, 0x0D, 0x89, 0x19, 0x4A, 0x07, 0xF0, 0xE0, 0x7B, 0x44, 0xA7, 0x3D, 0x91, 0x81, 0x24, 0xFB, 0x67, 0x0D, 0x5B, 0xD5, 0x3F, 0x0F, 0x1C, 0xD3, 0x48, 0x06, 0x19, 0xD1, 0x27, 0xE6},
+        .hash = {0x24, 0x2A, 0x50, 0x42, 0xFC, 0x6C, 0x0A, 0x64, 0xE7, 0xC2, 0x16, 0x0F, 0xD8, 0x53, 0x1E, 0xFC, 0x5C, 0x25, 0xCA, 0xC0, 0x5A, 0xED, 0x01, 0xA7, 0xE3, 0x11, 0x78, 0x6C, 0x07, 0x10, 0x32, 0xA1},
         .hash_size = 0x95000,
+        .embedded_ini_offset = 0x95000,
+        .embedded_ini_ptr = 0x168,
         .free_code_space_offset = 0x607F0,
         KERNEL_PATCHES(800)
     }
@@ -641,8 +715,9 @@ const kernel_info_t *get_kernel_info(void *kernel, size_t size) {
     return NULL;
 }
 
-void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel) {
+void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel, void **out_ini1) {
     const kernel_info_t *kernel_info = get_kernel_info(_kernel, size);
+    *out_ini1 = NULL;
     
     /* Apply IPS patches. */
     apply_kernel_ips_patches(_kernel, size);
@@ -654,6 +729,11 @@ void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel) {
     
     if (kernel_info == NULL && is_sd_kernel) {
         return;
+    }
+    
+    if (kernel_info->embedded_ini_offset != 0) {
+        *out_ini1 = (void *)((uintptr_t)_kernel + kernel_info->embedded_ini_offset);
+        *((volatile uint64_t *)((uintptr_t)_kernel + kernel_info->embedded_ini_ptr)) = (uint64_t)size;
     }
     
     /* Apply hooks and patches. */
