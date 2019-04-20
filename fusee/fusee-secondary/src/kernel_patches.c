@@ -41,7 +41,8 @@ typedef struct {
 
 typedef struct {
     uint8_t hash[0x20]; /* TODO: Come up with a better way to identify kernels, that doesn't rely on hashing them. */
-    size_t hash_size; /* Only hash the first N bytes of the kernel, if this is set. */
+    size_t hash_offset; /* Start hashing at offset N, if this is set. */
+    size_t hash_size;   /* Only hash the first N bytes of the kernel, if this is set. */
     size_t embedded_ini_offset; /* 8.0.0+ embeds the INI in kernel section. */
     size_t embedded_ini_ptr;    /* 8.0.0+ embeds the INI in kernel section. */
     size_t free_code_space_offset;
@@ -665,8 +666,9 @@ static const kernel_info_t g_kernel_infos[] = {
         KERNEL_PATCHES(700)
     },
     {   /* 8.0.0. */
-        .hash = {0x24, 0x2A, 0x50, 0x42, 0xFC, 0x6C, 0x0A, 0x64, 0xE7, 0xC2, 0x16, 0x0F, 0xD8, 0x53, 0x1E, 0xFC, 0x5C, 0x25, 0xCA, 0xC0, 0x5A, 0xED, 0x01, 0xA7, 0xE3, 0x11, 0x78, 0x6C, 0x07, 0x10, 0x32, 0xA1},
-        .hash_size = 0x95000,
+        .hash = {0xA6, 0xAD, 0x5D, 0x7F, 0xCF, 0x25, 0x80, 0xAE, 0xE6, 0x57, 0x9F, 0x6F, 0xC5, 0xC5, 0xF6, 0x13, 0x77, 0x23, 0xAC, 0x88, 0x79, 0x76, 0xF7, 0x25, 0x06, 0x16, 0x35, 0x3B, 0x3F, 0xA7, 0x59, 0x49},
+        .hash_offset = 0x1A8,
+        .hash_size = 0x95000 - 0x1A8,
         .embedded_ini_offset = 0x95000,
         .embedded_ini_ptr = 0x168,
         .free_code_space_offset = 0x607F0,
@@ -706,7 +708,7 @@ const kernel_info_t *get_kernel_info(void *kernel, size_t size) {
                 return &g_kernel_infos[i];
             }
         } else {
-            se_calculate_sha256(calculated_partial_hash, kernel, g_kernel_infos[i].hash_size);
+            se_calculate_sha256(calculated_partial_hash, (void *)((uintptr_t)kernel + g_kernel_infos[i].hash_offset), g_kernel_infos[i].hash_size);
             if (memcmp(calculated_partial_hash, g_kernel_infos[i].hash, sizeof(calculated_partial_hash)) == 0) {
                 return &g_kernel_infos[i];
             }
