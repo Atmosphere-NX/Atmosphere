@@ -18,7 +18,6 @@
 #include <cstdio>
 
 #include "ldr_map.hpp"
-#include "ldr_random.hpp"
 
 Result MapUtils::LocateSpaceForMap(u64 *out, u64 out_size) {
     if (kernelAbove200()) {
@@ -142,7 +141,7 @@ Result MapUtils::MapCodeMemoryForProcessModern(Handle process_h, u64 base_addres
     u64 try_address;
     for (unsigned int i = 0; i < 0x200; i++) {
         while (true) {
-            try_address = address_space.addspace_base + (RandomUtils::GetRandomU64((u64)(address_space.addspace_size - size) >> 12) << 12);
+            try_address = address_space.addspace_base + (StratosphereRandomUtils::GetRandomU64((u64)(address_space.addspace_size - size) >> 12) << 12);
             if (address_space.heap_size && (address_space.heap_base <= try_address + size - 1 && try_address <= address_space.heap_end - 1)) {
                 continue;
             }
@@ -179,7 +178,7 @@ Result MapUtils::MapCodeMemoryForProcessDeprecated(Handle process_h, bool is_64_
         
     u64 try_address;
     for (unsigned int i = 0; i < 0x200; i++) {
-        try_address = addspace_base + (RandomUtils::GetRandomU64((u64)(addspace_size - size) >> 12) << 12);
+        try_address = addspace_base + (StratosphereRandomUtils::GetRandomU64((u64)(addspace_size - size) >> 12) << 12);
         rc = svcMapProcessCodeMemory(process_h, try_address, base_address, size);
         if (rc != ResultKernelInvalidMemoryState) {
             break;

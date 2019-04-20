@@ -23,7 +23,6 @@
 #include "ldr_nro.hpp"
 #include "ldr_registration.hpp"
 #include "ldr_map.hpp"
-#include "ldr_random.hpp"
 
 Result NroUtils::ValidateNrrHeader(NrrHeader *header, u64 size, u64 title_id_min) {
     if (header->magic != MAGIC_NRR0) {
