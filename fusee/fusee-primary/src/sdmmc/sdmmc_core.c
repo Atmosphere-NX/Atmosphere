@@ -1202,6 +1202,9 @@ void sdmmc_finish(sdmmc_t *sdmmc)
             
             /* Power cycle for 100ms without power. */
             mdelay(100);
+            
+            /* Disable the regulator. */
+            max77620_regulator_enable(REGULATOR_LDO2, 0);
         }
         
         /* Force a register read to refresh the clock control value. */

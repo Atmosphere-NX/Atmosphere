@@ -52,7 +52,8 @@ SdmmcPartitionNum g_current_emmc_partition = SDMMC_PARTITION_INVALID;
 static int mmc_partition_initialize(device_partition_t *devpart) {
     mmc_partition_info_t *mmcpart = (mmc_partition_info_t *)devpart->device_struct;
     
-    if (devpart->read_cipher != NULL || devpart->write_cipher != NULL) {
+    /* Allocate the crypto work buffer. */
+    if ((devpart->read_cipher != NULL) || (devpart->write_cipher != NULL)) {
         devpart->crypto_work_buffer = memalign(16, devpart->sector_size * 16);
         if (devpart->crypto_work_buffer == NULL) {
             return ENOMEM;
@@ -70,6 +71,7 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
         g_ahb_redirect_enabled = true;
     }
 
+    /* Initialize hardware. */
     if (mmcpart->device == &g_sd_device) {
         if (!g_sd_device_initialized) {
             int rc = sdmmc_device_sd_init(mmcpart->device, &g_sd_sdmmc, SDMMC_BUS_WIDTH_4BIT, SDMMC_SPEED_SDR104) ? 0 : EIO;
@@ -94,12 +96,32 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
 }
 
 static void mmc_partition_finalize(device_partition_t *devpart) {
-    free(devpart->crypto_work_buffer);
+    mmc_partition_info_t *mmcpart = (mmc_partition_info_t *)devpart->device_struct;
+    
+    /* Finalize hardware. */
+    if (mmcpart->device == &g_sd_device) {
+        if (g_sd_device_initialized) {
+            sdmmc_device_finish(&g_sd_device);
+            g_sd_device_initialized = false;
+        }
+        devpart->initialized = false;
+    } else if (mmcpart->device == &g_emmc_device) {
+        if (g_emmc_device_initialized) {
+            sdmmc_device_finish(&g_emmc_device);
+            g_emmc_device_initialized = false;
+        }
+        devpart->initialized = false;
+    }
     
     /* Disable AHB redirection if necessary. */
     if (g_ahb_redirect_enabled) {
         mc_disable_ahb_redirect();
         g_ahb_redirect_enabled = false;
+    }
+    
+    /* Free the crypto work buffer. */
+    if (devpart->crypto_work_buffer != NULL) {
+        free(devpart->crypto_work_buffer);
     }
 }
 
