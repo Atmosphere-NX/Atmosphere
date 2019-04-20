@@ -16,6 +16,7 @@
  
 #include <stdio.h>
 #include <stdlib.h>
+#include <atmosphere.h>
 #include "utils.h"
 #include "masterkey.h"
 #include "stratosphere.h"
@@ -86,10 +87,22 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     }
 
     /* Perform any patches we want to the NX kernel. */
-    package2_patch_kernel(kernel, kernel_size, is_sd_kernel);
-
+    package2_patch_kernel(kernel, kernel_size, is_sd_kernel, (void *)&orig_ini1);
+    
+    /* Ensure we know where embedded INI is if present, and we don't if not. */
+    if ((target_firmware < ATMOSPHERE_TARGET_FIRMWARE_800 && orig_ini1 != NULL) || 
+        (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_800 && orig_ini1 == NULL)) {
+        fatal_error("Error: inappropriate kernel embedded ini context");
+    }
+    
     print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilding the INI1 section...\n");
-    package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_800) {
+        package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);
+    } else {
+        /* On 8.0.0, place INI1 right after kernelldr for our sanity. */
+        package2->metadata.section_offsets[PACKAGE2_SECTION_INI1] = package2->metadata.section_offsets[PACKAGE2_SECTION_KERNEL] + package2->metadata.section_sizes[PACKAGE2_SECTION_KERNEL];
+    }
+
     /* Perform any patches to the INI1, rebuilding it (This is where our built-in sysmodules will be added.) */
     rebuilt_ini1 = package2_rebuild_ini1(orig_ini1, target_firmware);
     print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilt INI1...\n");
@@ -187,10 +200,15 @@ static bool package2_validate_metadata(package2_meta_t *metadata, uint8_t data[]
         }
 
         /* Ensure no overlap with later sections. */
-        for (unsigned int later_section = section + 1; later_section < PACKAGE2_SECTION_MAX; later_section++) {
-            uint32_t later_section_end = metadata->section_offsets[later_section] + metadata->section_sizes[later_section];
-            if (overlaps(metadata->section_offsets[section], section_end, metadata->section_offsets[later_section], later_section_end)) {
-                return false;
+        if (metadata->section_sizes[section] != 0) {
+            for (unsigned int later_section = section + 1; later_section < PACKAGE2_SECTION_MAX; later_section++) {
+                if (metadata->section_sizes[later_section] == 0) {
+                    continue;
+                }
+                uint32_t later_section_end = metadata->section_offsets[later_section] + metadata->section_sizes[later_section];
+                if (overlaps(metadata->section_offsets[section], section_end, metadata->section_offsets[later_section], later_section_end)) {
+                    return false;
+                }
             }
         }
 

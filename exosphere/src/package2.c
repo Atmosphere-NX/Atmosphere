@@ -336,10 +336,15 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
         }
 
         /* Ensure no overlap with later sections. */
-        for (unsigned int later_section = section + 1; later_section < PACKAGE2_SECTION_MAX; later_section++) {
-            uint32_t later_section_end = metadata->section_offsets[later_section] + metadata->section_sizes[later_section];
-            if (overlaps(metadata->section_offsets[section], section_end, metadata->section_offsets[later_section], later_section_end)) {
-                return false;
+        if (metadata->section_sizes[section] != 0) {
+            for (unsigned int later_section = section + 1; later_section < PACKAGE2_SECTION_MAX; later_section++) {
+                if (metadata->section_sizes[later_section] == 0) {
+                    continue;
+                }
+                uint32_t later_section_end = metadata->section_offsets[later_section] + metadata->section_sizes[later_section];
+                if (overlaps(metadata->section_offsets[section], section_end, metadata->section_offsets[later_section], later_section_end)) {
+                    return false;
+                }
             }
         }
 
@@ -392,7 +397,7 @@ static uint32_t decrypt_and_validate_header(package2_header_t *header) {
         }
 
         /* Ensure we successfully decrypted the header. */
-        if (mkey_rev > mkey_get_revision()) {        
+        if (mkey_rev > mkey_get_revision()) {
             panic(0xFAF00003);
         }
     } else if (!validate_package2_metadata(&header->metadata)) {
