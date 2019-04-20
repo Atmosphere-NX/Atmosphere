@@ -1,4 +1,10 @@
 # Changelog
+## 0.8.8
++ Support was added for firmware version 8.0.0.
++ Custom exception handlers were added to stratosphere modules.
+  + If a crash happens in a core atmosphere module now, instead of silently failing a reboot will occur to log the information to the SD card.
++ A bug was fixed in creport that caused games to hang when crashing under certain circumstances.
++ General system stability improvements to enhance the user's experience.
 ## 0.8.7
 + A few bugs were fixed that could cause fatal to fail to show an error under certain circumstances.
 + A bug was fixed that caused an error when launching certain games (e.g. Hellblade: Senua's Sacrifice).
