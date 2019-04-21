@@ -15,12 +15,15 @@
  */
  
 #include <switch.h>
-#include <cstdio>
-#include <algorithm>
 #include <stratosphere.hpp>
+#include <climits>
+
 #include "ro_debug_monitor.hpp"
+#include "ro_registration.hpp"
 
 Result DebugMonitorService::GetProcessModuleInfo(Out<u32> count, OutBuffer<LoaderModuleInfo> out_infos, u64 pid) {
-    /* TODO: Implement. */
-    return ResultKernelConnectionClosed;
+    if (out_infos.num_elements > INT_MAX) {
+        return ResultRoInvalidSize;
+    }
+    return Registration::GetProcessModuleInfo(count.GetPointer(), out_infos.buffer, out_infos.num_elements, pid);
 }

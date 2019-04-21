@@ -20,9 +20,12 @@
 #include <stratosphere.hpp>
 
 #include "ro_service.hpp"
+#include "ro_registration.hpp"
 
 RelocatableObjectsService::~RelocatableObjectsService() {
-    /* TODO */
+    if (this->IsInitialized()) {
+        Registration::UnregisterProcess(this->context);
+    }
 }
 
 Result RelocatableObjectsService::LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {

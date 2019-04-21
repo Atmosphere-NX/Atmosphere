@@ -19,6 +19,8 @@
 
 #include <stratosphere.hpp>
 
+#include "ro_registration.hpp"
+
 enum RoServiceCmd {
     Ro_Cmd_LoadNro = 0,
     Ro_Cmd_UnloadNro = 1,
@@ -34,16 +36,17 @@ enum RoServiceType : u32 {
 };
 
 class RelocatableObjectsService final : public IServiceObject {
-    Handle process_handle = 0;
-    u64 process_id = U64_MAX;
-    bool has_initialized = false;
+    Registration::RoProcessContext *context = nullptr;
     RoServiceType type;
     public:
         explicit RelocatableObjectsService(RoServiceType t) : type(t) {
             /* ... */
         }
         virtual ~RelocatableObjectsService() override;
-
+    private:
+        bool IsInitialized() const {
+            return this->context != nullptr;
+        }
     private:
         /* Actual commands. */
         Result LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
