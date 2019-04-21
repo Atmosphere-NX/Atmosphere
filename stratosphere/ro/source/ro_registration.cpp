@@ -20,6 +20,8 @@
 #include <stratosphere.hpp>
 
 #include "ro_registration.hpp"
+#include "ro_map.hpp"
+#include "ro_nrr.hpp"
 
 /* Declare process contexts as global array. */
 static Registration::RoProcessContext g_process_contexts[Registration::MaxSessions] = {};
@@ -43,6 +45,18 @@ void Registration::Initialize() {
         }
         g_is_development_function_enabled = out_val != 0;
     }
+}
+
+bool Registration::ShouldEaseNroRestriction() {
+    bool should_ease = false;
+    
+    if (R_FAILED(setsysGetSettingsItemValue("ro", "ease_nro_restriction", &should_ease, sizeof(should_ease)))) {
+        return false;
+    }
+    
+    /* Nintendo only allows easing restriction on dev, we will allow on production, as well. */
+    /* should_ease &= g_is_development_function_enabled; */
+    return should_ease;
 }
 
 Result Registration::RegisterProcess(RoProcessContext **out_context, Handle process_handle, u64 process_id) {
@@ -132,7 +146,7 @@ Result Registration::LoadNrr(RoProcessContext *context, u64 title_id, u64 nrr_ad
     /* Map. */
     NrrHeader *header = nullptr;
     u64 mapped_code_address = 0;
-    Result rc = MapAndValidateNrr(&header, &mapped_code_address, context->process_handle, title_id, nrr_address, nrr_size);
+    Result rc = MapAndValidateNrr(&header, &mapped_code_address, context->process_handle, title_id, nrr_address, nrr_size, expected_type, enforce_type);
     if (R_FAILED(rc)) {
         return rc;
     }
@@ -179,9 +193,45 @@ Result Registration::UnloadNrr(RoProcessContext *context, u64 nrr_address) {
     return UnmapNrr(context->process_handle, nrr_info.header, nrr_info.nrr_heap_address, nrr_info.nrr_heap_size, nrr_info.mapped_code_address);
 }
 
-Result Registration::MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, u64 title_id, u64 nrr_heap_address, u64 nrr_heap_size) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+Result Registration::MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, u64 title_id, u64 nrr_heap_address, u64 nrr_heap_size, RoModuleType expected_type, bool enforce_type) {
+    Result rc;
+    MappedCodeMemory nrr_mcm;
+    
+    /* First, map the NRR. */
+    if (R_FAILED((rc = MapUtils::MapCodeMemoryForProcess(nrr_mcm, process_handle, true, nrr_heap_address, nrr_heap_size)))) {
+        if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
+            /* Try mapping as 32-bit, since we might have guessed wrong on < 3.0.0. */
+            rc = MapUtils::MapCodeMemoryForProcess(nrr_mcm, process_handle, false, nrr_heap_address, nrr_heap_size);
+        }
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+    }
+    
+    const u64 code_address = nrr_mcm.GetDstAddress();
+    u64 map_address;
+    if (R_FAILED(MapUtils::LocateSpaceForMap(&map_address, nrr_heap_size))) {
+        return ResultRoInsufficientAddressSpace;
+    }
+    
+    /* Nintendo...does not check the return value of this map. We will check, instead of aborting if it fails. */
+    AutoCloseMap nrr_map(map_address, process_handle, code_address, nrr_heap_size);
+    if (!nrr_map.IsSuccess()) {
+        return nrr_map.GetResult();
+    }
+    
+    NrrHeader *nrr_header = reinterpret_cast<NrrHeader *>(map_address);
+    if (R_FAILED((rc = NrrUtils::ValidateNrr(nrr_header, nrr_heap_size, title_id, expected_type, enforce_type)))) {
+        return rc;
+    }
+    
+    /* Invalidation here actually prevents them from unmapping at scope exit. */
+    nrr_map.Invalidate();
+    nrr_mcm.Invalidate();
+    
+    *out_header = nrr_header;
+    *out_mapped_code_address = code_address;
+    return ResultSuccess;
 }
 
 Result Registration::UnmapNrr(Handle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address) {
