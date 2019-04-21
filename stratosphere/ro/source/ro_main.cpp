@@ -106,7 +106,7 @@ void __appExit(void) {
 
 /* Helpers to create RO objects. */
 static const auto MakeRoServiceForSelf = []() { return std::make_shared<RelocatableObjectsService>(RoServiceType_ForSelf); };
-static const auto MakeRoServiceForOthers = []() { return std::make_shared<RelocatableObjectsService>(RoServiceType_ForSelf); };
+static const auto MakeRoServiceForOthers = []() { return std::make_shared<RelocatableObjectsService>(RoServiceType_ForOthers); };
 
 int main(int argc, char **argv)
 {
