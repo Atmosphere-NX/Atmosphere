@@ -23,6 +23,8 @@
 #include <atmosphere.h>
 #include <stratosphere.hpp>
 
+#include "ro_debug_monitor.hpp"
+
 extern "C" {
     extern u32 __start__;
 
@@ -104,12 +106,13 @@ void __appExit(void) {
 int main(int argc, char **argv)
 {
     /* Static server manager. */
-    static auto g_server_manager = WaitableManager(1);
+    static auto s_server_manager = WaitableManager(1);
     
     /* TODO: Create services. */
+    s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ro:dmnt", 1));
 
     /* Loop forever, servicing our services. */
-    g_server_manager.Process();
+    s_server_manager.Process();
 
     /* Cleanup */
     return 0;
