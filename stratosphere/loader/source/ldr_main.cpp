@@ -26,7 +26,6 @@
 #include "ldr_process_manager.hpp"
 #include "ldr_debug_monitor.hpp"
 #include "ldr_shell.hpp"
-#include "ldr_ro_service.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -114,21 +113,15 @@ int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
 
-    auto server_manager = new WaitableManager<LoaderServerOptions>(1);
+    static auto s_server_manager = WaitableManager<LoaderServerOptions>(1);
 
     /* Add services to manager. */
-    server_manager->AddWaitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
-    server_manager->AddWaitable(new ServiceServer<ShellService>("ldr:shel", 3));
-    server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
-    if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
-        /* On 1.0.0-2.3.0, Loader services ldr:ro instead of ro. */
-        server_manager->AddWaitable(new ServiceServer<RelocatableObjectsService>("ldr:ro", 0x20));
-    }
+    s_server_manager.AddWaitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
+    s_server_manager.AddWaitable(new ServiceServer<ShellService>("ldr:shel", 3));
+    s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
         
     /* Loop forever, servicing our services. */
-    server_manager->Process();
-    
-    delete server_manager;
+    s_server_manager.Process();
     
 	return 0;
 }
