@@ -25,6 +25,7 @@
 RelocatableObjectsService::~RelocatableObjectsService() {
     if (this->IsInitialized()) {
         Registration::UnregisterProcess(this->context);
+        this->context = nullptr;
     }
 }
 
@@ -57,13 +58,19 @@ u64 RelocatableObjectsService::GetTitleId(Handle process_handle) {
 }
 
 Result RelocatableObjectsService::LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    if (!this->IsProcessIdValid(pid_desc.pid)) {
+        return ResultRoInvalidProcess;
+    }
+    
+    return Registration::LoadNro(load_address.GetPointer(), this->context, nro_address, nro_size, bss_address, bss_size);
 }
 
 Result RelocatableObjectsService::UnloadNro(PidDescriptor pid_desc, u64 nro_address) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    if (!this->IsProcessIdValid(pid_desc.pid)) {
+        return ResultRoInvalidProcess;
+    }
+    
+    return Registration::UnloadNro(this->context, nro_address);
 }
 
 Result RelocatableObjectsService::LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size) {
