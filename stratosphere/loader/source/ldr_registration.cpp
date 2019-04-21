@@ -34,7 +34,7 @@ Registration::Process *Registration::GetFreeProcess() {
 }
 
 Registration::Process *Registration::GetProcess(u64 index) {
-    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX; i++) {
+    for (unsigned int i = 0; i < Registration::MaxProcesses; i++) {
         if (g_registration_list.processes[i].in_use && g_registration_list.processes[i].index == index) {
             return &g_registration_list.processes[i];
         }
@@ -43,7 +43,7 @@ Registration::Process *Registration::GetProcess(u64 index) {
 }
 
 Registration::Process *Registration::GetProcessByProcessId(u64 pid) {
-    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX; i++) {
+    for (unsigned int i = 0; i < Registration::MaxProcesses; i++) {
         if (g_registration_list.processes[i].in_use && g_registration_list.processes[i].process_id == pid) {
             return &g_registration_list.processes[i];
         }
@@ -52,7 +52,7 @@ Registration::Process *Registration::GetProcessByProcessId(u64 pid) {
 }
 
 Registration::Process *Registration::GetProcessByRoService(void *service) {
-    for (unsigned int i = 0; i < REGISTRATION_LIST_MAX; i++) {
+    for (unsigned int i = 0; i < Registration::MaxProcesses; i++) {
         if (g_registration_list.processes[i].in_use && g_registration_list.processes[i].owner_ro_service == service) {
             return &g_registration_list.processes[i];
         }
@@ -109,17 +109,17 @@ void Registration::SetProcessIdTidAndIs64BitAddressSpace(u64 index, u64 process_
     target_process->is_64_bit_addspace = is_64_bit_addspace;
 }
 
-void Registration::AddNsoInfo(u64 index, u64 base_address, u64 size, const unsigned char *build_id) {
+void Registration::AddModuleInfo(u64 index, u64 base_address, u64 size, const unsigned char *build_id) {
     Registration::Process *target_process = GetProcess(index);
     if (target_process == NULL) {
         return;
     }
 
-    auto nso_info_it = std::find_if_not(target_process->nso_infos.begin(), target_process->nso_infos.end(), std::mem_fn(&Registration::NsoInfoHolder::in_use));
-    if (nso_info_it != target_process->nso_infos.end()) {
+    auto nso_info_it = std::find_if_not(target_process->module_infos.begin(), target_process->module_infos.end(), std::mem_fn(&Registration::ModuleInfoHolder::in_use));
+    if (nso_info_it != target_process->module_infos.end()) {
         nso_info_it->info.base_address = base_address;
         nso_info_it->info.size = size;
-        std::copy(build_id, build_id + sizeof(nso_info_it->info.build_id), nso_info_it->info.build_id);
+        memcpy(nso_info_it->info.build_id, build_id, sizeof(nso_info_it->info.build_id));
         nso_info_it->in_use = true;
     }
 }
@@ -129,7 +129,7 @@ void Registration::CloseRoService(void *service, Handle process_h) {
     if (target_process == NULL) {
         return;
     }
-    for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
+    for (unsigned int i = 0; i < Registration::MaxNrrInfos; i++) {
         if (target_process->nrr_infos[i].IsActive() && target_process->nrr_infos[i].process_handle == process_h) {
             target_process->nrr_infos[i].Close();
         }
@@ -159,7 +159,7 @@ Result Registration::RemoveNrrInfo(u64 index, u64 base_address) {
         return ResultLoaderProcessNotRegistered;
     }
     
-    for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
+    for (unsigned int i = 0; i < Registration::MaxNrrInfos; i++) {
         if (target_process->nrr_infos[i].IsActive() && target_process->nrr_infos[i].base_address == base_address) {
             target_process->nrr_infos[i].Close();
             return ResultSuccess;
@@ -176,7 +176,7 @@ bool Registration::IsNroHashPresent(u64 index, u8 *nro_hash) {
         return false;
     }
     
-    for (unsigned int i = 0; i < NRR_INFO_MAX; i++) {
+    for (unsigned int i = 0; i < Registration::MaxNrrInfos; i++) {
         if (target_process->nrr_infos[i].IsActive()) {
             NroUtils::NrrHeader *nrr = (NroUtils::NrrHeader *)target_process->nrr_infos[i].mapped_address;
             /* Binary search. */
@@ -205,7 +205,7 @@ bool Registration::IsNroAlreadyLoaded(u64 index, u8 *build_id) {
         return true;
     }
     
-    for (unsigned int i = 0; i < NRO_INFO_MAX; i++) {
+    for (unsigned int i = 0; i < Registration::MaxNroInfos; i++) {
         if (target_process->nro_infos[i].in_use && std::equal(build_id, build_id + 0x20, target_process->nro_infos[i].build_id)) {
             return true;
         }
@@ -241,7 +241,7 @@ Result Registration::RemoveNroInfo(u64 index, Handle process_h, u64 nro_heap_add
         return ResultLoaderProcessNotRegistered;
     }
     
-    for (unsigned int i = 0; i < NRO_INFO_MAX; i++) {
+    for (unsigned int i = 0; i < Registration::MaxNroInfos; i++) {
         if (target_process->nro_infos[i].in_use && target_process->nro_infos[i].nro_heap_address == nro_heap_address) {
             NroInfo *info = &target_process->nro_infos[i];
             Result rc = svcUnmapProcessCodeMemory(process_h, info->base_address + info->text_size + info->ro_size + info->rw_size, info->bss_heap_address, info->bss_heap_size);
@@ -258,16 +258,16 @@ Result Registration::RemoveNroInfo(u64 index, Handle process_h, u64 nro_heap_add
     return ResultLoaderNotLoaded;
 }
 
-Result Registration::GetNsoInfosForProcessId(Registration::NsoInfo *out, u32 max_out, u64 process_id, u32 *num_written) {
+Result Registration::GetProcessModuleInfo(LoaderModuleInfo *out, u32 max_out, u64 process_id, u32 *num_written) {
     Registration::Process *target_process = GetProcessByProcessId(process_id);
     if (target_process == NULL) {
         return ResultLoaderProcessNotRegistered;
     }
     u32 cur = 0;
     
-    for (unsigned int i = 0; i < NSO_INFO_MAX && cur < max_out; i++) {
-        if (target_process->nso_infos[i].in_use) {
-            out[cur++] = target_process->nso_infos[i].info;
+    for (unsigned int i = 0; i < Registration::MaxModuleInfos && cur < max_out; i++) {
+        if (target_process->module_infos[i].in_use) {
+            out[cur++] = target_process->module_infos[i].info;
         }
     }
     
