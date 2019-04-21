@@ -24,6 +24,7 @@
 #include <stratosphere.hpp>
 
 #include "ro_debug_monitor.hpp"
+#include "ro_service.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -103,13 +104,24 @@ void __appExit(void) {
     smExit();
 }
 
+/* Helpers to create RO objects. */
+static const auto MakeRoServiceForSelf = []() { return std::make_shared<RelocatableObjectsService>(RoServiceType_ForSelf); };
+static const auto MakeRoServiceForOthers = []() { return std::make_shared<RelocatableObjectsService>(RoServiceType_ForSelf); };
+
 int main(int argc, char **argv)
 {
     /* Static server manager. */
     static auto s_server_manager = WaitableManager(1);
     
-    /* TODO: Create services. */
+    /* Create services. */
     s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ro:dmnt", 1));
+    {
+
+        s_server_manager.AddWaitable(new ServiceServer<RelocatableObjectsService, +MakeRoServiceForSelf>("ldr:ro", 32));
+        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+            s_server_manager.AddWaitable(new ServiceServer<RelocatableObjectsService, +MakeRoServiceForOthers>("ro:1", 2));
+        }
+    }
 
     /* Loop forever, servicing our services. */
     s_server_manager.Process();
