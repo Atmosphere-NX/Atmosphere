@@ -21,8 +21,29 @@
 
 #include "ro_registration.hpp"
 
-/* Declare process contexts as static to this function. */
+/* Declare process contexts as global array. */
 static Registration::RoProcessContext g_process_contexts[Registration::MaxSessions] = {};
+
+static bool g_is_development_hardware, g_is_development_function_enabled;
+
+void Registration::Initialize() {
+    if (R_FAILED(splInitialize())) {
+        std::abort();
+    }
+    ON_SCOPE_EXIT { splExit(); };
+    
+    if (R_FAILED(splIsDevelopment(&g_is_development_hardware))) {
+        std::abort();
+    }
+    
+    {
+        u64 out_val = 0;
+        if (R_FAILED(splGetConfig(SplConfigItem_IsDebugMode, &out_val))) {
+            std::abort();
+        }
+        g_is_development_function_enabled = out_val != 0;
+    }
+}
 
 Result Registration::RegisterProcess(RoProcessContext **out_context, Handle process_handle, u64 process_id) {
     /* Check if a process context already exists. */
@@ -56,6 +77,7 @@ void Registration::UnregisterProcess(RoProcessContext *context) {
             }
         }
     }
+    std::memset(context, 0, sizeof(*context));
 }
 
 Result Registration::GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count, u64 process_id) {
@@ -83,6 +105,83 @@ Result Registration::GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_
 
     *out_count = static_cast<u32>(count);
     return ResultSuccess;
+}
+
+Result Registration::LoadNrr(RoProcessContext *context, u64 title_id, u64 nrr_address, u64 nrr_size, RoModuleType expected_type, bool enforce_type) {
+    /* Validate address/size. */
+    if (nrr_address & 0xFFF) {
+        return ResultRoInvalidAddress;
+    }
+    if (nrr_size == 0 || (nrr_size & 0xFFF) || !(nrr_address < nrr_address + nrr_size)) {
+        return ResultRoInvalidSize;
+    }
+    
+    /* Check we have space for a new NRR. */
+    size_t slot = 0;
+    for (slot = 0; slot < Registration::MaxNrrInfos; slot++) {
+        if (!context->nrr_in_use[slot]) {
+            break;
+        }
+    }
+    if (slot == Registration::MaxNrrInfos) {
+        return ResultRoTooManyNrr;
+    }
+    
+    NrrInfo *nrr_info = &context->nrr_infos[slot];
+    
+    /* Map. */
+    NrrHeader *header = nullptr;
+    u64 mapped_code_address = 0;
+    Result rc = MapAndValidateNrr(&header, &mapped_code_address, context->process_handle, title_id, nrr_address, nrr_size);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    
+    /* Set NRR info. */
+    nrr_info->header = header;
+    nrr_info->nrr_heap_address = nrr_address;
+    nrr_info->nrr_heap_size = nrr_size;
+    nrr_info->mapped_code_address = mapped_code_address;
+    context->nrr_in_use[slot] = true;
+    
+    /* TODO. */
+    return ResultSuccess;
+}
+
+Result Registration::UnloadNrr(RoProcessContext *context, u64 nrr_address) {
+    /* Validate address. */
+    if (nrr_address & 0xFFF) {
+        return ResultRoInvalidAddress;
+    }
+
+    /* Check the NRR is loaded. */
+    size_t slot = 0;
+    for (slot = 0; slot < Registration::MaxNrrInfos; slot++) {
+        if (!context->nrr_in_use[slot]) {
+            continue;
+        }
+        
+        if (context->nrr_infos[slot].nrr_heap_address == nrr_address) {
+            break;
+        }
+    }
+    if (slot == Registration::MaxNrrInfos) {
+        return ResultRoNotRegistered;
+    }
+
+    /* Unmap. */
+    const NrrInfo nrr_info = context->nrr_infos[slot];
+    {
+        /* Nintendo does this unconditionally, whether or not the actual unmap succeeds. */
+        context->nrr_in_use[slot] = false;
+        std::memset(&context->nrr_infos[slot], 0, sizeof(context->nrr_infos[slot]));
+    }
+    return UnmapNrr(context->process_handle, nrr_info.header, nrr_info.nrr_heap_address, nrr_info.nrr_heap_size, nrr_info.mapped_code_address);
+}
+
+Result Registration::MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, u64 title_id, u64 nrr_heap_address, u64 nrr_heap_size) {
+    /* TODO */
+    return ResultKernelConnectionClosed;
 }
 
 Result Registration::UnmapNrr(Handle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address) {

@@ -180,7 +180,7 @@ int main(int argc, char **argv)
     server_manager->AddWaitable(new ServiceServer<ShellService>("pm:shell", 3));
     server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 2));
     server_manager->AddWaitable(new ServiceServer<BootModeService>("pm:bm", 6));
-    server_manager->AddWaitable(new ServiceServer<InformationService>("pm:info", 1));
+    server_manager->AddWaitable(new ServiceServer<InformationService>("pm:info", 2));
     
     /* Loop forever, servicing our services. */
     server_manager->Process();

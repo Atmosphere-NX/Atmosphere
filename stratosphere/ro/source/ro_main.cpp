@@ -25,6 +25,7 @@
 
 #include "ro_debug_monitor.hpp"
 #include "ro_service.hpp"
+#include "ro_registration.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -77,15 +78,17 @@ void __appInit(void) {
     if (R_FAILED(rc)) {
         std::abort();
     }
-
-    rc = splInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
     
     rc = fsInitialize();
     if (R_FAILED(rc)) {
         std::abort();
+    }
+    
+    if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
+        rc = pminfoInitialize();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
     }
         
     rc = fsdevMountSdmc();
@@ -99,23 +102,29 @@ void __appInit(void) {
 void __appExit(void) {
     fsdevUnmountAll();
     fsExit();
-    splExit();
+    if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
+        pminfoExit();
+    }
     setsysExit();
     smExit();
 }
 
 /* Helpers to create RO objects. */
-static const auto MakeRoServiceForSelf = []() { return std::make_shared<RelocatableObjectsService>(RoServiceType_ForSelf); };
-static const auto MakeRoServiceForOthers = []() { return std::make_shared<RelocatableObjectsService>(RoServiceType_ForOthers); };
+static const auto MakeRoServiceForSelf = []() { return std::make_shared<RelocatableObjectsService>(RoModuleType_ForSelf); };
+static const auto MakeRoServiceForOthers = []() { return std::make_shared<RelocatableObjectsService>(RoModuleType_ForOthers); };
 
 int main(int argc, char **argv)
 {
+    /* Initialize. */
+    Registration::Initialize();
+
     /* Static server manager. */
     static auto s_server_manager = WaitableManager(1);
     
     /* Create services. */
     s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ro:dmnt", 2));
-    s_server_manager.AddWaitable(new ServiceServer<RelocatableObjectsService, +MakeRoServiceForSelf>("ldr:ro", 32));
+    /* NOTE: Official code passes 32 for ldr:ro max sessions. We will pass 2, because that's the actual limit. */
+    s_server_manager.AddWaitable(new ServiceServer<RelocatableObjectsService, +MakeRoServiceForSelf>("ldr:ro", 2));
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
         s_server_manager.AddWaitable(new ServiceServer<RelocatableObjectsService, +MakeRoServiceForOthers>("ro:1", 2));
     }

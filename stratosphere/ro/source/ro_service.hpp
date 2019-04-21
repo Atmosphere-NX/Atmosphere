@@ -30,16 +30,12 @@ enum RoServiceCmd {
     Ro_Cmd_LoadNrrEx = 10,
 };
 
-enum RoServiceType : u32 {
-    RoServiceType_ForSelf = 0,
-    RoServiceType_ForOthers = 1,
-};
-
 class RelocatableObjectsService final : public IServiceObject {
-    Registration::RoProcessContext *context = nullptr;
-    RoServiceType type;
+    private:
+        Registration::RoProcessContext *context = nullptr;
+        RoModuleType type;
     public:
-        explicit RelocatableObjectsService(RoServiceType t) : type(t) {
+        explicit RelocatableObjectsService(RoModuleType t) : type(t) {
             /* ... */
         }
         virtual ~RelocatableObjectsService() override;
@@ -47,6 +43,8 @@ class RelocatableObjectsService final : public IServiceObject {
         bool IsInitialized() const {
             return this->context != nullptr;
         }
+        bool IsProcessIdValid(u64 process_id);
+        static u64 GetTitleId(Handle process_handle);
     private:
         /* Actual commands. */
         Result LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);

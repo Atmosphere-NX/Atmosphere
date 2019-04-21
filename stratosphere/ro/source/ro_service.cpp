@@ -28,6 +28,34 @@ RelocatableObjectsService::~RelocatableObjectsService() {
     }
 }
 
+bool RelocatableObjectsService::IsProcessIdValid(u64 process_id) {
+    if (!this->IsInitialized()) {
+        return false;
+    }
+    
+    return this->context->process_id == process_id;
+}
+
+u64 RelocatableObjectsService::GetTitleId(Handle process_handle) {
+    u64 title_id = 0;
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+        /* 3.0.0+: Use svcGetInfo. */
+        if (R_FAILED(svcGetInfo(&title_id, 18, process_handle, 0))) {
+            std::abort();
+        }
+    } else {
+        /* 1.0.0-2.3.0: We're not inside loader, so ask pm. */
+        u64 process_id = 0;
+        if (R_FAILED(svcGetProcessId(&process_id, process_handle))) {
+            std::abort();
+        }
+        if (R_FAILED(pminfoGetTitleId(&title_id, process_id))) {
+            std::abort();
+        }
+    }
+    return title_id;
+}
+
 Result RelocatableObjectsService::LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
     /* TODO */
     return ResultKernelConnectionClosed;
@@ -39,21 +67,35 @@ Result RelocatableObjectsService::UnloadNro(PidDescriptor pid_desc, u64 nro_addr
 }
 
 Result RelocatableObjectsService::LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    if (!this->IsProcessIdValid(pid_desc.pid)) {
+        return ResultRoInvalidProcess;
+    }
+
+    return Registration::LoadNrr(this->context, GetTitleId(this->context->process_handle), nrr_address, nrr_size, RoModuleType_ForSelf, true);
 }
 
 Result RelocatableObjectsService::UnloadNrr(PidDescriptor pid_desc, u64 nrr_address) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    if (!this->IsProcessIdValid(pid_desc.pid)) {
+        return ResultRoInvalidProcess;
+    }
+
+    return Registration::UnloadNrr(this->context, nrr_address);
 }
 
 Result RelocatableObjectsService::Initialize(PidDescriptor pid_desc, CopiedHandle process_h) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    /* Validate the input pid/process handle. */
+    u64 handle_pid = 0;
+    if (R_FAILED(svcGetProcessId(&handle_pid, process_h.handle)) || handle_pid != pid_desc.pid) {
+        return ResultRoInvalidProcess;
+    }
+
+    return Registration::RegisterProcess(&this->context, process_h.handle, pid_desc.pid);
 }
 
 Result RelocatableObjectsService::LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size, CopiedHandle process_h) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    if (!this->IsProcessIdValid(pid_desc.pid)) {
+        return ResultRoInvalidProcess;
+    }
+
+    return Registration::LoadNrr(this->context, GetTitleId(process_h.handle), nrr_address, nrr_size, this->type, this->type == RoModuleType_ForOthers);
 }

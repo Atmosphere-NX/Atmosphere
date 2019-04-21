@@ -19,9 +19,15 @@
 
 #include <stratosphere.hpp>
 
+enum RoModuleType : u32 {
+    RoModuleType_ForSelf = 0,
+    RoModuleType_ForOthers = 1,
+};
+
 class Registration {
     public:
-        static constexpr size_t MaxSessions = 0x8;
+        /* NOTE: 2 ldr:ro, 2 ro:1. Nintendo only actually supports 2 total, but we'll be a little more generous. */
+        static constexpr size_t MaxSessions = 0x4; 
         static constexpr size_t MaxNrrInfos = 0x40;
         static constexpr size_t MaxNroInfos = 0x40;
     public:
@@ -98,11 +104,17 @@ class Registration {
             u64 process_id;
             bool in_use;
         };
+    private:
+        static Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, u64 title_id, u64 nrr_heap_address, u64 nrr_heap_size);
+        static Result UnmapNrr(Handle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address);
     public:
+        static void Initialize();
+
         static Result RegisterProcess(RoProcessContext **out_context, Handle process_handle, u64 process_id);
         static void   UnregisterProcess(RoProcessContext *context);
+        
+        static Result LoadNrr(RoProcessContext *context, u64 title_id, u64 nrr_address, u64 nrr_size, RoModuleType expected_type, bool enforce_type);
+        static Result UnloadNrr(RoProcessContext *context, u64 nrr_address);
 
         static Result GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count, u64 process_id);
-
-        static Result UnmapNrr(Handle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address);
 };
