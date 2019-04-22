@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+ 
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -23,9 +23,9 @@
 #include <atmosphere.h>
 #include <stratosphere.hpp>
 
-#include "ldr_process_manager.hpp"
-#include "ldr_debug_monitor.hpp"
-#include "ldr_shell.hpp"
+#include "ro_debug_monitor.hpp"
+#include "ro_service.hpp"
+#include "ro_registration.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -35,7 +35,7 @@ extern "C" {
     #define INNER_HEAP_SIZE 0x30000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
-
+    
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
@@ -44,14 +44,13 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[0x1000];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
-    u64 __stratosphere_title_id = TitleId_Loader;
+    u64 __stratosphere_title_id = TitleId_Ro;
     void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
 }
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     StratosphereCrashHandler(ctx);
 }
-
 
 void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;
@@ -67,59 +66,73 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     Result rc;
-
+    
     SetFirmwareVersionForLibnx();
-
-    /* Initialize services we need (TODO: SPL) */
-    DoWithSmSession([&]() {
-        rc = fsInitialize();
+    
+    rc = smInitialize();
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+    
+    rc = setsysInitialize();
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+    
+    rc = fsInitialize();
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+    
+    if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
+        rc = pminfoInitialize();
         if (R_FAILED(rc)) {
             std::abort();
         }
-
-        rc = lrInitialize();
-        if (R_FAILED(rc))  {
-            std::abort();
-        }
-
-        rc = fsldrInitialize();
-        if (R_FAILED(rc))  {
-            std::abort();
-        }
-    });
-
-
+    }
+        
+    rc = fsdevMountSdmc();
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+    
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {
-    /* Cleanup services. */
     fsdevUnmountAll();
-    fsldrExit();
-    lrExit();
     fsExit();
+    if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
+        pminfoExit();
+    }
+    setsysExit();
+    smExit();
 }
 
-struct LoaderServerOptions {
-    static constexpr size_t PointerBufferSize = 0x400;
-    static constexpr size_t MaxDomains = 0;
-    static constexpr size_t MaxDomainObjects = 0;
-};
+/* Helpers to create RO objects. */
+static const auto MakeRoServiceForSelf = []() { return std::make_shared<RelocatableObjectsService>(RoModuleType_ForSelf); };
+static const auto MakeRoServiceForOthers = []() { return std::make_shared<RelocatableObjectsService>(RoModuleType_ForOthers); };
 
 int main(int argc, char **argv)
 {
-    consoleDebugInit(debugDevice_SVC);
+    /* Initialize. */
+    Registration::Initialize();
 
-    static auto s_server_manager = WaitableManager<LoaderServerOptions>(1);
+    /* Static server manager. */
+    static auto s_server_manager = WaitableManager(1);
+    
+    /* Create services. */
+    s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ro:dmnt", 2));
+    /* NOTE: Official code passes 32 for ldr:ro max sessions. We will pass 2, because that's the actual limit. */
+    s_server_manager.AddWaitable(new ServiceServer<RelocatableObjectsService, +MakeRoServiceForSelf>("ldr:ro", 2));
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+        s_server_manager.AddWaitable(new ServiceServer<RelocatableObjectsService, +MakeRoServiceForOthers>("ro:1", 2));
+    }
 
-    /* Add services to manager. */
-    s_server_manager.AddWaitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
-    s_server_manager.AddWaitable(new ServiceServer<ShellService>("ldr:shel", 3));
-    s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
-        
     /* Loop forever, servicing our services. */
     s_server_manager.Process();
-    
-	return 0;
+
+    /* Cleanup */
+    return 0;
 }
 

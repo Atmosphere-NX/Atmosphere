@@ -164,26 +164,24 @@ int main(int argc, char **argv)
     /* Initialize and spawn the Process Tracking thread. */
     Registration::InitializeSystemResources();
     if (R_FAILED(process_track_thread.Initialize(&ProcessTracking::MainLoop, NULL, 0x4000, 0x15))) {
-        /* TODO: Panic. */
+        std::abort();
     }
     if (R_FAILED(process_track_thread.Start())) {
-        /* TODO: Panic. */
+        std::abort();
     }
 
-    /* TODO: What's a good timeout value to use here? */
-    auto server_manager = new WaitableManager(1);
+    /* Create Server Manager. */
+    static auto s_server_manager = WaitableManager(1);
 
     /* TODO: Create services. */
-    server_manager->AddWaitable(new ServiceServer<ShellService>("pm:shell", 3));
-    server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 2));
-    server_manager->AddWaitable(new ServiceServer<BootModeService>("pm:bm", 6));
-    server_manager->AddWaitable(new ServiceServer<InformationService>("pm:info", 1));
-
+    s_server_manager.AddWaitable(new ServiceServer<ShellService>("pm:shell", 3));
+    s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 2));
+    s_server_manager.AddWaitable(new ServiceServer<BootModeService>("pm:bm", 6));
+    s_server_manager.AddWaitable(new ServiceServer<InformationService>("pm:info", 2));
+    
     /* Loop forever, servicing our services. */
     server_manager->Process();
 
-    /* Cleanup. */
-    delete server_manager;
     return 0;
 }
 

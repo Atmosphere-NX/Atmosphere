@@ -20,7 +20,6 @@
 #include <cstring>
 #include <functional>
 #include "ldr_registration.hpp"
-#include "ldr_nro.hpp"
 
 static Registration::List g_registration_list = {};
 static u64 g_num_registered = 1;
@@ -45,15 +44,6 @@ Registration::Process *Registration::GetProcess(u64 index) {
 Registration::Process *Registration::GetProcessByProcessId(u64 pid) {
     for (unsigned int i = 0; i < Registration::MaxProcesses; i++) {
         if (g_registration_list.processes[i].in_use && g_registration_list.processes[i].process_id == pid) {
-            return &g_registration_list.processes[i];
-        }
-    }
-    return NULL;
-}
-
-Registration::Process *Registration::GetProcessByRoService(void *service) {
-    for (unsigned int i = 0; i < Registration::MaxProcesses; i++) {
-        if (g_registration_list.processes[i].in_use && g_registration_list.processes[i].owner_ro_service == service) {
             return &g_registration_list.processes[i];
         }
     }
@@ -122,140 +112,6 @@ void Registration::AddModuleInfo(u64 index, u64 base_address, u64 size, const un
         memcpy(nso_info_it->info.build_id, build_id, sizeof(nso_info_it->info.build_id));
         nso_info_it->in_use = true;
     }
-}
-
-void Registration::CloseRoService(void *service, Handle process_h) {
-    Registration::Process *target_process = GetProcessByRoService(service);
-    if (target_process == NULL) {
-        return;
-    }
-    for (unsigned int i = 0; i < Registration::MaxNrrInfos; i++) {
-        if (target_process->nrr_infos[i].IsActive() && target_process->nrr_infos[i].process_handle == process_h) {
-            target_process->nrr_infos[i].Close();
-        }
-    }
-    target_process->owner_ro_service = NULL;
-}
-
-Result Registration::AddNrrInfo(u64 index, MappedCodeMemory *nrr_info) {
-    Registration::Process *target_process = GetProcess(index);
-    if (target_process == NULL) {
-        /* TODO: std::abort(); */
-        return ResultLoaderProcessNotRegistered;
-    }
-    
-    auto nrr_info_it = std::find_if_not(target_process->nrr_infos.begin(), target_process->nrr_infos.end(), std::mem_fn(&MappedCodeMemory::IsActive));
-    if (nrr_info_it == target_process->nrr_infos.end()) {
-        return ResultLoaderInsufficientNrrRegistrations;
-    }
-    *nrr_info_it = *nrr_info;
-    return ResultSuccess;
-}
-
-Result Registration::RemoveNrrInfo(u64 index, u64 base_address) {
-    Registration::Process *target_process = GetProcess(index);
-    if (target_process == NULL) {
-        /* Despite the fact that this should really be a panic condition, Nintendo returns 0x1009 in this case. */
-        return ResultLoaderProcessNotRegistered;
-    }
-    
-    for (unsigned int i = 0; i < Registration::MaxNrrInfos; i++) {
-        if (target_process->nrr_infos[i].IsActive() && target_process->nrr_infos[i].base_address == base_address) {
-            target_process->nrr_infos[i].Close();
-            return ResultSuccess;
-        }
-    }
-    return ResultLoaderNotRegistered;
-}
-
-
-bool Registration::IsNroHashPresent(u64 index, u8 *nro_hash) {
-    Registration::Process *target_process = GetProcess(index);
-    if (target_process == NULL) {
-        /* TODO: panic */
-        return false;
-    }
-    
-    for (unsigned int i = 0; i < Registration::MaxNrrInfos; i++) {
-        if (target_process->nrr_infos[i].IsActive()) {
-            NroUtils::NrrHeader *nrr = (NroUtils::NrrHeader *)target_process->nrr_infos[i].mapped_address;
-            /* Binary search. */
-            int low = 0, high = (int)(nrr->num_hashes - 1);
-            while (low <= high) {
-                int mid = (low + high) / 2;
-                u8 *hash_in_nrr = (u8 *)nrr + nrr->hash_offset + 0x20 * mid;
-                int ret = std::memcmp(hash_in_nrr, nro_hash, 0x20);
-                if (ret == 0) {
-                    return true;
-                } else if (ret > 0) {
-                    high = mid - 1;
-                } else {
-                    low = mid + 1;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-bool Registration::IsNroAlreadyLoaded(u64 index, u8 *build_id) {
-    Registration::Process *target_process = GetProcess(index);
-    if (target_process == NULL) {
-        /* TODO: panic */
-        return true;
-    }
-    
-    for (unsigned int i = 0; i < Registration::MaxNroInfos; i++) {
-        if (target_process->nro_infos[i].in_use && std::equal(build_id, build_id + 0x20, target_process->nro_infos[i].build_id)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void Registration::AddNroToProcess(u64 index, MappedCodeMemory *nro, MappedCodeMemory *bss, u32 text_size, u32 ro_size, u32 rw_size, u8 *build_id) {
-    Registration::Process *target_process = GetProcess(index);
-    if (target_process == NULL) {
-        /* TODO: panic */
-        return;
-    }
-    
-    auto nro_info_it = std::find_if_not(target_process->nro_infos.begin(), target_process->nro_infos.end(), std::mem_fn(&Registration::NroInfo::in_use));
-    if (nro_info_it != target_process->nro_infos.end()) {
-        nro_info_it->base_address = nro->code_memory_address;
-        nro_info_it->nro_heap_address = nro->base_address;
-        nro_info_it->nro_heap_size = nro->size;
-        nro_info_it->bss_heap_address = bss->base_address;
-        nro_info_it->bss_heap_size = bss->size;
-        nro_info_it->text_size = text_size;
-        nro_info_it->ro_size = ro_size;
-        nro_info_it->rw_size = rw_size;
-        std::copy(build_id, build_id + sizeof(nro_info_it->build_id), nro_info_it->build_id);
-        nro_info_it->in_use = true;
-    }
-}
-
-Result Registration::RemoveNroInfo(u64 index, Handle process_h, u64 nro_heap_address) {
-    Registration::Process *target_process = GetProcess(index);
-    if (target_process == NULL) {
-        return ResultLoaderProcessNotRegistered;
-    }
-    
-    for (unsigned int i = 0; i < Registration::MaxNroInfos; i++) {
-        if (target_process->nro_infos[i].in_use && target_process->nro_infos[i].nro_heap_address == nro_heap_address) {
-            NroInfo *info = &target_process->nro_infos[i];
-            Result rc = svcUnmapProcessCodeMemory(process_h, info->base_address + info->text_size + info->ro_size + info->rw_size, info->bss_heap_address, info->bss_heap_size);
-            if (R_SUCCEEDED(rc)) {
-                rc = svcUnmapProcessCodeMemory(process_h, info->base_address + info->text_size + info->ro_size, nro_heap_address + info->text_size + info->ro_size, info->rw_size);
-                if (R_SUCCEEDED(rc)) {
-                    rc = svcUnmapProcessCodeMemory(process_h, info->base_address, nro_heap_address, info->text_size + info->ro_size);
-                }
-            }
-            target_process->nro_infos[i] = {};
-            return rc;
-        }
-    }
-    return ResultLoaderNotLoaded;
 }
 
 Result Registration::GetProcessModuleInfo(LoaderModuleInfo *out, u32 max_out, u64 process_id, u32 *num_written) {

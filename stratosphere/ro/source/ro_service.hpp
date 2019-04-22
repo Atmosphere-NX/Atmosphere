@@ -18,7 +18,8 @@
 #include <switch.h>
 
 #include <stratosphere.hpp>
-#include "ldr_registration.hpp"
+
+#include "ro_registration.hpp"
 
 enum RoServiceCmd {
     Ro_Cmd_LoadNro = 0,
@@ -30,17 +31,20 @@ enum RoServiceCmd {
 };
 
 class RelocatableObjectsService final : public IServiceObject {
-    Handle process_handle = 0;
-    u64 process_id = U64_MAX;
-    bool has_initialized = false;
+    private:
+        Registration::RoProcessContext *context = nullptr;
+        RoModuleType type;
     public:
-        virtual ~RelocatableObjectsService() override {
-            Registration::CloseRoService(this, this->process_handle);
-            if (this->has_initialized) {
-                svcCloseHandle(this->process_handle);
-            }
+        explicit RelocatableObjectsService(RoModuleType t) : type(t) {
+            /* ... */
         }
-        
+        virtual ~RelocatableObjectsService() override;
+    private:
+        bool IsInitialized() const {
+            return this->context != nullptr;
+        }
+        bool IsProcessIdValid(u64 process_id);
+        static u64 GetTitleId(Handle process_handle);
     private:
         /* Actual commands. */
         Result LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
@@ -56,5 +60,6 @@ class RelocatableObjectsService final : public IServiceObject {
             MakeServiceCommandMeta<Ro_Cmd_LoadNrr, &RelocatableObjectsService::LoadNrr>(),
             MakeServiceCommandMeta<Ro_Cmd_UnloadNrr, &RelocatableObjectsService::UnloadNrr>(),
             MakeServiceCommandMeta<Ro_Cmd_Initialize, &RelocatableObjectsService::Initialize>(),
+            MakeServiceCommandMeta<Ro_Cmd_LoadNrrEx, &RelocatableObjectsService::LoadNrrEx, FirmwareVersion_700>(),
         };
 };

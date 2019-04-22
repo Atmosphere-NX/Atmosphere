@@ -50,12 +50,13 @@ dist: all
 	mkdir atmosphere-$(AMSVER)/atmosphere
 	mkdir atmosphere-$(AMSVER)/sept
 	mkdir atmosphere-$(AMSVER)/switch
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000036
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000034
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/010000000000000D
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000034
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000036
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000037
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/fatal_errors
 	cp fusee/fusee-primary/fusee-primary.bin atmosphere-$(AMSVER)/atmosphere/reboot_payload.bin
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/010000000000000D
 	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
 	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/sept/payload.bin
 	cp sept/sept-primary/sept-primary.bin atmosphere-$(AMSVER)/sept/sept-primary.bin
@@ -66,13 +67,16 @@ dist: all
 	cp common/defaults/system_settings.ini atmosphere-$(AMSVER)/atmosphere/system_settings.ini
 	cp -r common/defaults/kip_patches atmosphere-$(AMSVER)/atmosphere/kip_patches
 	cp -r common/defaults/hbl_html atmosphere-$(AMSVER)/atmosphere/hbl_html
-	cp stratosphere/creport/creport.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000036/exefs.nsp
-	cp stratosphere/fatal/fatal.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000034/exefs.nsp
+	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/atmosphere/titles/010000000000000D/exefs.nsp
 	cp stratosphere/eclct.stub/eclct.stub.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032/exefs.nsp
-	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro
+	cp stratosphere/fatal/fatal.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000034/exefs.nsp
+	cp stratosphere/creport/creport.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000036/exefs.nsp
+	cp stratosphere/ro/ro.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000037/exefs.nsp
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032/flags
 	touch atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032/flags/boot2.flag
-	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/atmosphere/titles/010000000000000D/exefs.nsp
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000037/flags
+	touch atmosphere-$(AMSVER)/atmosphere/titles/0100000000000037/flags/boot2.flag
+	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)
 	mkdir out

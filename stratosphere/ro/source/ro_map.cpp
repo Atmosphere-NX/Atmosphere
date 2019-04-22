@@ -17,13 +17,41 @@
 #include <switch.h>
 #include <cstdio>
 
-#include "ldr_map.hpp"
+#include "ro_map.hpp"
+
+bool MapUtils::CanAddGuardRegions(Handle process_handle, u64 address, u64 size) {
+    MemoryInfo mem_info;
+    u32 page_info;
+    
+    /* Nintendo doesn't validate SVC return values at all. */
+    /* TODO: Should we allow these to fail? */
+    if (R_FAILED(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address - 1))) {
+        std::abort();
+    }
+    if (mem_info.type == MemType_Unmapped && address - GuardRegionSize >= mem_info.addr) {
+        if (R_FAILED(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address + size))) {
+            std::abort();
+        }
+        return mem_info.type == MemType_Unmapped && address + size + GuardRegionSize <= mem_info.addr + mem_info.size;
+    }
+    
+    return false;
+}
 
 Result MapUtils::LocateSpaceForMap(u64 *out, u64 out_size) {
-    if (kernelAbove200()) {
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
         return LocateSpaceForMapModern(out, out_size);
     } else {
         return LocateSpaceForMapDeprecated(out, out_size);
+    }
+}
+
+
+Result MapUtils::MapCodeMemoryForProcess(MappedCodeMemory &out_mcm, Handle process_handle, bool is_64_bit, u64 base_address, u64 size) {
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
+        return MapCodeMemoryForProcessModern(out_mcm, process_handle, base_address, size);
+    } else {
+        return MapCodeMemoryForProcessDeprecated(out_mcm, process_handle, is_64_bit, base_address, size);
     }
 }
 
@@ -96,7 +124,7 @@ Result MapUtils::LocateSpaceForMapDeprecated(u64 *out, u64 out_size) {
     rc = ResultKernelOutOfMemory;
     while (true) {
         if (mem_info.type == 0x10) {
-            return rc;
+                return rc;
         }
         if (mem_info.type == 0 && mem_info.addr - cur_base + mem_info.size >= out_size) {
             *out = cur_base;
@@ -115,6 +143,91 @@ Result MapUtils::LocateSpaceForMapDeprecated(u64 *out, u64 out_size) {
         }
     }
     return rc;
+}
+
+Result MapUtils::MapCodeMemoryForProcessModern(MappedCodeMemory &out_mcm, Handle process_handle, u64 base_address, u64 size) {
+    AddressSpaceInfo address_space = {};
+    Result rc;
+    
+    if (R_FAILED((rc = GetAddressSpaceInfo(&address_space, process_handle)))) {
+        return rc;
+    }
+
+    if (size > address_space.addspace_size) {
+        return ResultRoInsufficientAddressSpace;
+    }
+    
+    u64 try_address;
+    for (unsigned int i = 0; i < LocateRetryCount; i++) {
+        while (true) {
+            try_address = address_space.addspace_base + (StratosphereRandomUtils::GetRandomU64((u64)(address_space.addspace_size - size) >> 12) << 12);
+            if (address_space.heap_size && (address_space.heap_base <= try_address + size - 1 && try_address <= address_space.heap_end - 1)) {
+                continue;
+            }
+            if (address_space.map_size && (address_space.map_base <= try_address + size - 1 && try_address <= address_space.map_end - 1)) {
+                continue;
+            }
+            break;
+        }
+        MappedCodeMemory tmp_mcm(process_handle, try_address, base_address, size);
+        rc = tmp_mcm.GetResult();
+        if (rc == ResultKernelInvalidMemoryState) {
+            continue;
+        }
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        if (!CanAddGuardRegions(process_handle, try_address, size)) {
+            continue;
+        }
+        
+        /* We're done searching. */
+        out_mcm = std::move(tmp_mcm);
+        return ResultSuccess;
+    }
+    
+    return ResultRoInsufficientAddressSpace;
+}
+
+Result MapUtils::MapCodeMemoryForProcessDeprecated(MappedCodeMemory &out_mcm, Handle process_handle, bool is_64_bit, u64 base_address, u64 size) {
+    Result rc;
+    u64 addspace_base, addspace_size;
+    if (is_64_bit) {
+        addspace_base = 0x8000000ULL;
+        addspace_size = 0x78000000ULL;
+    } else {
+        addspace_base = 0x200000ULL;
+        addspace_size = 0x3FE0000ULL;
+    }
+    
+    if (size > addspace_size) {
+        return ResultRoInsufficientAddressSpace;
+    }
+
+    u64 try_address;
+    for (unsigned int i = 0; i < LocateRetryCount; i++) {
+        try_address = addspace_base + (StratosphereRandomUtils::GetRandomU64((u64)(addspace_size - size) >> 12) << 12);
+
+        MappedCodeMemory tmp_mcm(process_handle, try_address, base_address, size);
+        rc = tmp_mcm.GetResult();
+        if (rc == ResultKernelInvalidMemoryState) {
+            continue;
+        }
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        
+        if (!CanAddGuardRegions(process_handle, try_address, size)) {
+            continue;
+        }
+        
+        /* We're done searching. */
+        out_mcm = std::move(tmp_mcm);
+        return ResultSuccess;
+    }
+    
+    return ResultRoInsufficientAddressSpace;
 }
 
 Result MapUtils::GetAddressSpaceInfo(AddressSpaceInfo *out, Handle process_h) {
