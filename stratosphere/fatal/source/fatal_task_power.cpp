@@ -96,7 +96,7 @@ void PowerButtonObserveTask::WaitForPowerButton() {
     const FatalConfig *config = GetFatalConfig();
     TimeoutHelper reboot_helper(config->quest_reboot_interval_second * 1000000000UL);
     
-    if (config->fatal_auto_reboot_interval != -1) {
+    if (config->fatal_auto_reboot_interval > -1) {
         svcSleepThread(config->fatal_auto_reboot_interval);
         bpcRebootSystem();
         return;
