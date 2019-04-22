@@ -27,15 +27,6 @@ Result MapUtils::LocateSpaceForMap(u64 *out, u64 out_size) {
     }
 }
 
-
-Result MapUtils::MapCodeMemoryForProcess(Handle process_h, bool is_64_bit_address_space, u64 base_address, u64 size, u64 *out_code_memory_address) {
-    if (kernelAbove200()) {
-        return MapCodeMemoryForProcessModern(process_h, base_address, size, out_code_memory_address);
-    } else {
-        return MapCodeMemoryForProcessDeprecated(process_h, is_64_bit_address_space, base_address, size, out_code_memory_address);
-    }
-}
-
 Result MapUtils::LocateSpaceForMapModern(u64 *out, u64 out_size) {
     MemoryInfo mem_info = {};
     AddressSpaceInfo address_space = {};
@@ -122,70 +113,6 @@ Result MapUtils::LocateSpaceForMapDeprecated(u64 *out, u64 out_size) {
         if (R_FAILED((rc = svcQueryMemory(&mem_info, &page_info, cur_base)))) {
             return rc;
         }
-    }
-    return rc;
-}
-
-Result MapUtils::MapCodeMemoryForProcessModern(Handle process_h, u64 base_address, u64 size, u64 *out_code_memory_address) {
-    AddressSpaceInfo address_space = {};
-    Result rc;
-    
-    if (R_FAILED((rc = GetAddressSpaceInfo(&address_space, process_h)))) {
-        return rc;
-    }
-
-    if (size > address_space.addspace_size) {
-        return ResultLoaderInsufficientAddressSpace;
-    }
-    
-    u64 try_address;
-    for (unsigned int i = 0; i < 0x200; i++) {
-        while (true) {
-            try_address = address_space.addspace_base + (StratosphereRandomUtils::GetRandomU64((u64)(address_space.addspace_size - size) >> 12) << 12);
-            if (address_space.heap_size && (address_space.heap_base <= try_address + size - 1 && try_address <= address_space.heap_end - 1)) {
-                continue;
-            }
-            if (address_space.map_size && (address_space.map_base <= try_address + size - 1 && try_address <= address_space.map_end - 1)) {
-                continue;
-            }
-            break;
-        }
-        rc = svcMapProcessCodeMemory(process_h, try_address, base_address, size);
-        if (rc != ResultKernelInvalidMemoryState) {
-            break;
-        }
-    }
-    if (R_SUCCEEDED(rc)) {
-        *out_code_memory_address = try_address;
-    }
-    return rc;
-}
-
-Result MapUtils::MapCodeMemoryForProcessDeprecated(Handle process_h, bool is_64_bit_address_space, u64 base_address, u64 size, u64 *out_code_memory_address) {
-    Result rc;
-    u64 addspace_base, addspace_size;
-    if (is_64_bit_address_space) {
-        addspace_base = 0x8000000ULL;
-        addspace_size = 0x78000000ULL;
-    } else {
-        addspace_base = 0x200000ULL;
-        addspace_size = 0x3FE0000ULL;
-    }
-    
-    if (size > addspace_size) {
-        return ResultLoaderInsufficientAddressSpace;
-    }
-        
-    u64 try_address;
-    for (unsigned int i = 0; i < 0x200; i++) {
-        try_address = addspace_base + (StratosphereRandomUtils::GetRandomU64((u64)(addspace_size - size) >> 12) << 12);
-        rc = svcMapProcessCodeMemory(process_h, try_address, base_address, size);
-        if (rc != ResultKernelInvalidMemoryState) {
-            break;
-        }
-    }
-    if (R_SUCCEEDED(rc)) {
-        *out_code_memory_address = try_address;
     }
     return rc;
 }
