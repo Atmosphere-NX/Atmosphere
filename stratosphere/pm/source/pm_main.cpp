@@ -180,7 +180,7 @@ int main(int argc, char **argv)
     s_server_manager.AddWaitable(new ServiceServer<InformationService>("pm:info", 2));
     
     /* Loop forever, servicing our services. */
-    server_manager->Process();
+    s_server_manager.Process();
 
     return 0;
 }
