@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -36,7 +36,7 @@ extern "C" {
     #define INNER_HEAP_SIZE 0x80000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
-    
+
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
@@ -68,64 +68,61 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     Result rc;
-    
+
     SetFirmwareVersionForLibnx();
-    
-    rc = smInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
-    }
-    
-    rc = pmdmntInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
-    rc = ldrDmntInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
-    rc = roDmntInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
-    rc = nsdevInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
-    rc = lrInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
-    rc = setInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
-    rc = setsysInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
-    rc = hidInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
-    rc = fsInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    
+
+    DoWithSmSession([&]() {
+        rc = pmdmntInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(rc);
+        }
+
+        rc = ldrDmntInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(rc);
+        }
+
+        rc = roDmntInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(rc);
+        }
+
+        rc = nsdevInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(rc);
+        }
+
+        rc = lrInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(rc);
+        }
+
+        rc = setInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(rc);
+        }
+
+        rc = setsysInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(rc);
+        }
+
+        rc = hidInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(rc);
+        }
+
+        rc = fsInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(rc);
+        }
+    });
+
     rc = fsdevMountSdmc();
     if (R_FAILED(rc)) {
         fatalSimple(rc);
     }
-    
+
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
@@ -141,28 +138,27 @@ void __appExit(void) {
     roDmntExit();
     ldrDmntExit();
     pmdmntExit();
-    smExit();
 }
 
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
-    
+
     /* Initialize configuration manager. */
     DmntConfigManager::RefreshConfiguration();
-    
+
     /* Start cheat manager. */
     DmntCheatManager::InitializeCheatManager();
-    
+
     /* Nintendo uses four threads. Add a fifth for our cheat service. */
     auto server_manager = new WaitableManager(5);
-    
+
     /* Create services. */
-    
+
     /* TODO: Implement rest of dmnt:- in ams.tma development branch. */
     /* server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("dmnt:-", 4)); */
-    
-    
+
+
     server_manager->AddWaitable(new ServiceServer<DmntCheatService>("dmnt:cht", 1));
 
     /* Loop forever, servicing our services. */

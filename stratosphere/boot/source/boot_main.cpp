@@ -80,30 +80,27 @@ void __appInit(void) {
     SetFirmwareVersionForLibnx();
 
     /* Initialize services we need (TODO: NCM) */
-    rc = smInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
-    
-    rc = fsInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
-    
-    rc = splInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
-    
-    rc = pmshellInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
-    
-    rc = fsdevMountSdmc();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
+    DoWithSmSession([&]() {
+        rc = fsInitialize();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
+        
+        rc = splInitialize();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
+        
+        rc = pmshellInitialize();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
+        
+        rc = fsdevMountSdmc();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
+    });
     
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
@@ -114,7 +111,6 @@ void __appExit(void) {
     pmshellExit(); 
     splExit();
     fsExit();
-    smExit();
 }
 
 typedef enum {

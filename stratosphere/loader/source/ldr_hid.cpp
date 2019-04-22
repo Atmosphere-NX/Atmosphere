@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <string.h>
 
@@ -24,13 +24,19 @@ Result HidManagement::GetKeysHeld(u64 *keys) {
     if (!ContentManagement::HasCreatedTitle(TitleId_Hid)) {
         return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
     }
-    
-    if (!serviceIsActive(hidGetSessionService()) && R_FAILED(hidInitialize())) {
-        return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
+
+    if (!serviceIsActive(hidGetSessionService())) {
+        Result rc;
+        DoWithSmSession([&]() {
+            rc = hidInitialize();
+        });
+        if (R_FAILED(rc)) {
+            return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
+        }
     }
-    
+
     hidScanInput();
     *keys = hidKeysHeld(CONTROLLER_P1_AUTO);
-    
+
     return ResultSuccess;
 }

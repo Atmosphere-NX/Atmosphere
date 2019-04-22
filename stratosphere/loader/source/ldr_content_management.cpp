@@ -94,19 +94,20 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     }
 
     /* Always re-initialize fsp-ldr, in case it's closed */
-    if (R_FAILED(rc = fsldrInitialize())) {
+    DoWithSmSession([&]() {
+        rc = fsldrInitialize();
+    });
+    if (R_FAILED(rc)) {
         return rc;
     }
+    ON_SCOPE_EXIT { fsldrExit(); };
 
     if (R_FAILED(rc = fsldrOpenCodeFileSystem(tid, path, &g_CodeFileSystem))) {
-        fsldrExit();
         return rc;
     }
 
     fsdevMountDevice("code", g_CodeFileSystem);
     TryMountHblNspOnSd();
-
-    fsldrExit();
     return rc;
 }
 
@@ -372,17 +373,21 @@ void ContentManagement::RefreshConfigurationData() {
 void ContentManagement::TryMountSdCard() {
     /* Mount SD card, if psc, bus, and pcv have been created. */
     if (!g_has_initialized_fs_dev && HasCreatedTitle(TitleId_Psc) && HasCreatedTitle(TitleId_Bus) && HasCreatedTitle(TitleId_Pcv)) {
-        Handle tmp_hnd = 0;
-        static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
-        for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
-            if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
-                return;
-            } else {
-                svcCloseHandle(tmp_hnd);
+        bool can_mount = true;
+        DoWithSmSession([&]() {
+            Handle tmp_hnd = 0;
+            static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
+            for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
+                if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
+                    can_mount = false;
+                    break;
+                } else {
+                    svcCloseHandle(tmp_hnd);   
+                }
             }
-        }
+        });
 
-        if (R_SUCCEEDED(fsdevMountSdmc())) {
+        if (can_mount && R_SUCCEEDED(fsdevMountSdmc())) {
             g_has_initialized_fs_dev = true;
         }
     }

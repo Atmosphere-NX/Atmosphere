@@ -68,16 +68,13 @@ void __appInit(void) {
     Result rc;
     
     SetFirmwareVersionForLibnx();
-
-    rc = smInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
-    }
     
-    rc = fsInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
-    }
+    DoWithSmSession([&]() {
+        rc = fsInitialize();
+        if (R_FAILED(rc)) {
+            fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+        }
+    });
     
     rc = fsdevMountSdmc();
     if (R_FAILED(rc)) {
@@ -89,7 +86,6 @@ void __appExit(void) {
     /* Cleanup services. */
     fsdevUnmountAll();
     fsExit();
-    smExit();
 }
 
 static u64 creport_parse_u64(char *s) {
@@ -127,10 +123,12 @@ int main(int argc, char **argv) {
     if (g_Creport.WasSuccessful()) {
         g_Creport.SaveReport();
         
-        if (R_SUCCEEDED(nsdevInitialize())) {
-            nsdevTerminateProcess(crashed_pid);
-            nsdevExit();
-        }
+        DoWithSmSession([&]() {
+            if (R_SUCCEEDED(nsdevInitialize())) {
+                nsdevTerminateProcess(crashed_pid);
+                nsdevExit();
+            }
+        });
         
         /* Don't fatal if we have extra info. */
         if (kernelAbove500()) {

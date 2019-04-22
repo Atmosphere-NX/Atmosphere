@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -36,7 +36,7 @@ extern "C" {
     #define INNER_HEAP_SIZE 0x30000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
-    
+
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
@@ -68,30 +68,28 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     Result rc;
-    
+
     SetFirmwareVersionForLibnx();
 
     /* Initialize services we need (TODO: SPL) */
-    rc = smInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
-    
-    rc = fsInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
-        
-    rc = lrInitialize();
-    if (R_FAILED(rc))  {
-        std::abort();
-    }
-    
-    rc = fsldrInitialize();
-    if (R_FAILED(rc))  {
-        std::abort();
-    }
-    
+    DoWithSmSession([&]() {
+        rc = fsInitialize();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
+
+        rc = lrInitialize();
+        if (R_FAILED(rc))  {
+            std::abort();
+        }
+
+        rc = fsldrInitialize();
+        if (R_FAILED(rc))  {
+            std::abort();
+        }
+    });
+
+
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
@@ -101,7 +99,6 @@ void __appExit(void) {
     fsldrExit();
     lrExit();
     fsExit();
-    smExit();
 }
 
 struct LoaderServerOptions {
@@ -124,12 +121,12 @@ int main(int argc, char **argv)
         /* On 1.0.0-2.3.0, Loader services ldr:ro instead of ro. */
         server_manager->AddWaitable(new ServiceServer<RelocatableObjectsService>("ldr:ro", 0x20));
     }
-        
+
     /* Loop forever, servicing our services. */
     server_manager->Process();
-    
+
     delete server_manager;
-    
+
 	return 0;
 }
 
