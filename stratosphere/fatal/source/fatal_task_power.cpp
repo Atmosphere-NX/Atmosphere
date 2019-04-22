@@ -96,6 +96,12 @@ void PowerButtonObserveTask::WaitForPowerButton() {
     const FatalConfig *config = GetFatalConfig();
     TimeoutHelper reboot_helper(config->quest_reboot_interval_second * 1000000000UL);
     
+    if (config->fatal_auto_reboot_interval != -1) {
+        svcSleepThread(config->fatal_auto_reboot_interval);
+        bpcRebootSystem();
+        return;
+    }
+
     bool check_vol_up = true, check_vol_down = true;
     GpioPadSession vol_up_btn, vol_down_btn;
     if (R_FAILED(gpioOpenSession(&vol_up_btn, GpioPadName_ButtonVolUp))) {

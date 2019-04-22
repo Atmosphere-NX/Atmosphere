@@ -84,5 +84,10 @@ void InitializeFatalConfig() {
     
     setsysGetFlag(SetSysFlag_Quest, &config->quest_flag);
     
+    if(R_FAILED(setsysGetSettingsItemValue("atmosphere", "fatal_auto_reboot_interval", &config->fatal_auto_reboot_interval, sizeof(config->fatal_auto_reboot_interval)))) {
+        config->fatal_auto_reboot_interval = -1;
+    }
+    
+    
     SetupConfigLanguages();
 }
