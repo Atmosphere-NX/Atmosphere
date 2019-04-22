@@ -86,14 +86,10 @@ void __appInit(void) {
         fatalSimple(rc);
     }
     
-    /*
-    if (kernelAbove300()) {
-        rc = roDmntInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
+    rc = roDmntInitialize();
+    if (R_FAILED(rc)) {
+        fatalSimple(rc);
     }
-    */
     
     rc = nsdevInitialize();
     if (R_FAILED(rc)) {
@@ -142,7 +138,7 @@ void __appExit(void) {
     setExit();
     lrExit();
     nsdevExit();
-    /* if (kernelAbove300()) { roDmntExit(); } */
+    roDmntExit();
     ldrDmntExit();
     pmdmntExit();
     smExit();
