@@ -13,24 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 
 #include <stratosphere.hpp>
 
 #include "ro_nrr.hpp"
+#include "ro_types.hpp"
 
 class Registration {
     public:
         /* NOTE: 2 ldr:ro, 2 ro:1. Nintendo only actually supports 2 total, but we'll be a little more generous. */
-        static constexpr size_t MaxSessions = 0x4; 
+        static constexpr size_t MaxSessions = 0x4;
         static constexpr size_t MaxNrrInfos = 0x40;
         static constexpr size_t MaxNroInfos = 0x40;
-        
+
         static constexpr u32 MagicNro0 = 0x304F524E;
     public:
-
         struct NroHeader {
             u32 entrypoint_insn;
             u32 mod_offset;
@@ -51,29 +51,6 @@ class Registration {
             u8 _0x60[0x20];
         };
         static_assert(sizeof(NroHeader) == 0x80, "NroHeader definition!");
-
-        struct ModuleId {
-            u8 build_id[0x20];
-        };
-        static_assert(sizeof(ModuleId) == sizeof(LoaderModuleInfo::build_id), "ModuleId definition!");
-        
-        struct Sha256Hash {
-            u8 hash[0x20];
-
-            bool operator==(const Sha256Hash &o) const {
-                return std::memcmp(this, &o, sizeof(*this)) == 0;
-            }
-            bool operator!=(const Sha256Hash &o) const {
-                return std::memcmp(this, &o, sizeof(*this)) != 0;
-            }
-            bool operator<(const Sha256Hash &o) const {
-                return std::memcmp(this, &o, sizeof(*this)) < 0;
-            }
-            bool operator>(const Sha256Hash &o) const {
-                return std::memcmp(this, &o, sizeof(*this)) > 0;
-            }
-        };
-        static_assert(sizeof(Sha256Hash) == sizeof(Sha256Hash::hash), "Sha256Hash definition!");
 
         struct NroInfo {
             u64 base_address;
@@ -104,7 +81,7 @@ class Registration {
         static Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, u64 title_id, u64 nrr_heap_address, u64 nrr_heap_size, RoModuleType expected_type, bool enforce_type);
         static Result UnmapNrr(Handle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address);
         static bool IsNroHashPresent(RoProcessContext *context, const Sha256Hash *hash);
-        
+
         static Result MapNro(u64 *out_base_address, Handle process_handle, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size);
         static Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, RoProcessContext *context, u64 base_address, u64 nro_size, u64 bss_size);
         static Result SetNroPerms(Handle process_handle, u64 base_address, u64 rx_size, u64 ro_size, u64 rw_size);
@@ -115,7 +92,7 @@ class Registration {
 
         static Result RegisterProcess(RoProcessContext **out_context, Handle process_handle, u64 process_id);
         static void   UnregisterProcess(RoProcessContext *context);
-        
+
         static Result LoadNrr(RoProcessContext *context, u64 title_id, u64 nrr_address, u64 nrr_size, RoModuleType expected_type, bool enforce_type);
         static Result UnloadNrr(RoProcessContext *context, u64 nrr_address);
         static Result LoadNro(u64 *out_address, RoProcessContext *context, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);

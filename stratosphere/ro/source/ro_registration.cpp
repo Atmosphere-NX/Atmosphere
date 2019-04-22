@@ -22,6 +22,7 @@
 #include "ro_registration.hpp"
 #include "ro_map.hpp"
 #include "ro_nrr.hpp"
+#include "ro_patcher.hpp"
 
 /* Declare process contexts as global array. */
 static Registration::RoProcessContext g_process_contexts[Registration::MaxSessions] = {};
@@ -322,6 +323,9 @@ Result Registration::ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 
             }
         }
     }
+
+    /* Apply patches to NRO. */
+    PatchUtils::ApplyPatches(&module_id, reinterpret_cast<u8 *>(map_address), nro_size);
 
     *out_module_id = module_id;
     *out_rx_size = header->text_size;
