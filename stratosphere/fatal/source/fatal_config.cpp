@@ -18,7 +18,7 @@
 #include "fatal_types.hpp"
 #include "fatal_config.hpp"
 
-static FatalConfig g_fatal_config;
+static FatalConfig g_fatal_config = {};
 
 static IEvent *g_fatal_settings_event = nullptr;
 
@@ -84,5 +84,8 @@ void InitializeFatalConfig() {
     
     setsysGetFlag(SetSysFlag_Quest, &config->quest_flag);
     
+    config->is_auto_reboot_enabled = R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "fatal_auto_reboot_interval", &config->fatal_auto_reboot_interval, sizeof(config->fatal_auto_reboot_interval)));
+    config->is_auto_reboot_enabled &= (config->fatal_auto_reboot_interval != 0);
+
     SetupConfigLanguages();
 }
