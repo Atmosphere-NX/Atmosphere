@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -35,7 +35,7 @@ extern "C" {
     #define INNER_HEAP_SIZE 0x30000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
-    
+
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
@@ -66,36 +66,33 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     Result rc;
-    
+
     SetFirmwareVersionForLibnx();
-    
-    rc = smInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
-    
-    rc = setsysInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
-    
-    rc = fsInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
-    
-    if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
-        rc = pminfoInitialize();
+
+    DoWithSmSession([&]() {
+        rc = setsysInitialize();
         if (R_FAILED(rc)) {
             std::abort();
         }
-    }
-        
-    rc = fsdevMountSdmc();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
-    
+
+        rc = fsInitialize();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
+
+        if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
+            rc = pminfoInitialize();
+            if (R_FAILED(rc)) {
+                std::abort();
+            }
+        }
+
+        rc = fsdevMountSdmc();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
+    });
+
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
@@ -106,7 +103,6 @@ void __appExit(void) {
         pminfoExit();
     }
     setsysExit();
-    smExit();
 }
 
 /* Helpers to create RO objects. */
@@ -120,7 +116,7 @@ int main(int argc, char **argv)
 
     /* Static server manager. */
     static auto s_server_manager = WaitableManager(1);
-    
+
     /* Create services. */
     s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ro:dmnt", 2));
     /* NOTE: Official code passes 32 for ldr:ro max sessions. We will pass 2, because that's the actual limit. */

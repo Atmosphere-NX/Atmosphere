@@ -30,9 +30,11 @@ static Registration::RoProcessContext g_process_contexts[Registration::MaxSessio
 static bool g_is_development_hardware, g_is_development_function_enabled;
 
 void Registration::Initialize() {
-    if (R_FAILED(splInitialize())) {
-        std::abort();
-    }
+    DoWithSmSession([&]() {
+        if (R_FAILED(splInitialize())) {
+            std::abort();
+        }
+    });
     ON_SCOPE_EXIT { splExit(); };
 
     if (R_FAILED(splIsDevelopment(&g_is_development_hardware))) {
