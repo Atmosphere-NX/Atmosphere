@@ -362,11 +362,11 @@ Result Registration::UnloadNro(RoProcessContext *context, u64 nro_address) {
             continue;
         }
 
-        if (context->nro_infos[slot].nro_heap_address == nro_address) {
+        if (context->nro_infos[slot].base_address == nro_address) {
             break;
         }
     }
-    if (slot == Registration::MaxNrrInfos) {
+    if (slot == Registration::MaxNroInfos) {
         return ResultRoNotLoaded;
     }
 
