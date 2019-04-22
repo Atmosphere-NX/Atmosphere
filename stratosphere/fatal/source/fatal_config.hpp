@@ -29,7 +29,8 @@ struct FatalConfig {
     const char *error_msg;
     const char *error_desc;
     const char *quest_desc;
-    s64 fatal_auto_reboot_interval;
+    u64 fatal_auto_reboot_interval;
+    bool is_auto_reboot_enabled;
 };
 
 IEvent *GetFatalSettingsEvent();
