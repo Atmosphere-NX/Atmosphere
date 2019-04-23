@@ -107,7 +107,6 @@ static void ApplyIpsPatch(u8 *mapped_nro, size_t mapped_size, bool is_ips32, FIL
                 }
             } else {
                 IPS_RLE_PATCH_OFFSET_WITHIN_BOUNDS:
-                patch_offset -= sizeof(Registration::NroHeader);
                 if (patch_offset + rle_size > mapped_size) {
                     rle_size = mapped_size - patch_offset;
                 }
@@ -126,7 +125,6 @@ static void ApplyIpsPatch(u8 *mapped_nro, size_t mapped_size, bool is_ips32, FIL
                 }
             } else {
                 IPS_DATA_PATCH_OFFSET_WITHIN_BOUNDS:
-                patch_offset -= sizeof(Registration::NroHeader);
                 u32 read_size = patch_size;
                 if (patch_offset + read_size > mapped_size) {
                     read_size = mapped_size - patch_offset;
