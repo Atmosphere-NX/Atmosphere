@@ -95,10 +95,7 @@ Result ShowFatalTask::PrepareScreenForDrawing() {
     Result rc = ResultSuccess;
 
     /* Connect to vi. */
-    DoWithSmSession([&]() {
-        rc = viInitialize(ViServiceType_Manager);
-    });
-    if (R_FAILED(rc)) {
+    if (R_FAILED((rc = viInitialize(ViServiceType_Manager)))) {
         return rc;
     }
 
@@ -181,7 +178,10 @@ Result ShowFatalTask::ShowFatal() {
     Result rc = ResultSuccess;
     const FatalConfig *config = GetFatalConfig();
 
-    if (R_FAILED((rc = PrepareScreenForDrawing()))) {
+    DoWithSmSession([&]() {
+        rc = PrepareScreenForDrawing();
+    });
+    if (R_FAILED(rc)) {
         *(volatile u32 *)(0xCAFEBABE) = rc;
         return rc;
     }
