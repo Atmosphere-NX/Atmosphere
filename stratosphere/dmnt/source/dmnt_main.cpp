@@ -82,9 +82,12 @@ void __appInit(void) {
             fatalSimple(rc);
         }
 
-        rc = roDmntInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
+        /* TODO: We provide this on every sysver via ro. Do we need a shim? */
+        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+            rc = roDmntInitialize();
+            if (R_FAILED(rc)) {
+                fatalSimple(rc);
+            }
         }
 
         rc = nsdevInitialize();
