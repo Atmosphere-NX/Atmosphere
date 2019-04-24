@@ -17,6 +17,31 @@
 #include <switch.h>
 #include "fatal_task_clock.hpp"
 
+Result AdjustClockTask::AdjustClockForModule(PcvModule module, u32 hz) {
+    Result rc;
+
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_800) {
+        /* On 8.0.0+, convert to module id + use clkrst API. */
+        PcvModuleId module_id;
+        if (R_FAILED((rc = pcvGetModuleId(&module_id, module)))) {
+            return rc;
+        }
+
+        ClkrstSession session;
+        Result rc = clkrstOpenSession(&session, module_id, 3);
+        if (R_FAILED(rc)) {
+            return rc;
+        }
+        ON_SCOPE_EXIT { clkrstCloseSession(&session); };
+
+        rc = clkrstSetClockRate(&session, hz);
+    } else {
+        /* On 1.0.0-7.0.1, use pcv API. */
+        rc = pcvSetClockRate(module, hz);
+    }
+
+    return rc;
+}
 
 Result AdjustClockTask::AdjustClock() {
     /* Fatal sets the CPU to 1020MHz, the GPU to 307 MHz, and the EMC to 1331MHz. */
@@ -24,19 +49,19 @@ Result AdjustClockTask::AdjustClock() {
     constexpr u32 GPU_CLOCK_307MHZ = 0x124F8000L;
     constexpr u32 EMC_CLOCK_1331MHZ = 0x4F588000L;
     Result rc = ResultSuccess;
-    
-    if (R_FAILED((rc = pcvSetClockRate(PcvModule_Cpu, CPU_CLOCK_1020MHZ)))) {
+
+    if (R_FAILED((rc = AdjustClockForModule(PcvModule_CpuBus, CPU_CLOCK_1020MHZ)))) {
         return rc;
     }
-    
-    if (R_FAILED((rc = pcvSetClockRate(PcvModule_Gpu, GPU_CLOCK_307MHZ)))) {
+
+    if (R_FAILED((rc = AdjustClockForModule(PcvModule_GPU, GPU_CLOCK_307MHZ)))) {
         return rc;
     }
-    
-    if (R_FAILED((rc = pcvSetClockRate(PcvModule_Emc, EMC_CLOCK_1331MHZ)))) {
+
+    if (R_FAILED((rc = AdjustClockForModule(PcvModule_EMC, EMC_CLOCK_1331MHZ)))) {
         return rc;
     }
-    
+
     return rc;
 }
 

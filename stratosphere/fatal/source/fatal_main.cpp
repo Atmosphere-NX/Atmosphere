@@ -102,9 +102,16 @@ void __appInit(void) {
             std::abort();
         }
 
-        rc = pcvInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
+        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_800) {
+            rc = clkrstInitialize();
+            if (R_FAILED(rc)) {
+                std::abort();
+            }
+        } else {
+            rc = pcvInitialize();
+            if (R_FAILED(rc)) {
+                std::abort();
+            }
         }
 
         rc = lblInitialize();
@@ -155,7 +162,11 @@ void __appExit(void) {
     spsmExit();
     psmExit();
     lblExit();
-    pcvExit();
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_800) {
+        clkrstExit();
+    } else {
+        pcvExit();
+    }
     bpcExit();
     i2cExit();
     pminfoExit();
