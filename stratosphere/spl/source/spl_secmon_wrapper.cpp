@@ -21,10 +21,20 @@
 #include "spl_smc_wrapper.hpp"
 #include "spl_ctr_drbg.hpp"
 
+/* Convenient. */
+constexpr size_t DeviceAddressSpaceAlignSize = 0x400000;
+constexpr size_t DeviceAddressSpaceAlignMask = DeviceAddressSpaceAlignSize - 1;
+constexpr u32 DeviceMapBase = 0x80000000u;
+
 /* Globals. */
 static CtrDrbg g_drbg;
 static Event g_se_event;
+
+static Handle g_se_das_hnd;
+static u32 g_se_mapped_work_buffer_addr;
 static __attribute__((aligned(0x1000))) u8 g_work_buffer[0x1000];
+
+static HosMutex g_se_lock;
 
 void SecureMonitorWrapper::InitializeCtrDrbg() {
     u8 seed[CtrDrbg::SeedSize];
@@ -46,11 +56,38 @@ void SecureMonitorWrapper::InitializeSeInterruptEvent() {
     eventLoadRemote(&g_se_event, hnd, true);
 }
 
+void SecureMonitorWrapper::InitializeDeviceAddressSpace() {
+    constexpr u64 DeviceName_SE = 29;
+
+    /* Create Address Space. */
+    if (R_FAILED(svcCreateDeviceAddressSpace(&g_se_das_hnd, 0, (1ul << 32)))) {
+        std::abort();
+    }
+    /* Attach it to the SE. */
+    if (R_FAILED(svcAttachDeviceAddressSpace(DeviceName_SE, g_se_das_hnd))) {
+        std::abort();
+    }
+    
+    const u64 work_buffer_addr = reinterpret_cast<u64>(g_work_buffer);
+    g_se_mapped_work_buffer_addr = 0x80000000u + (work_buffer_addr & DeviceAddressSpaceAlignMask);
+    
+    /* Map the work buffer for the SE. */
+    if (R_FAILED(svcMapDeviceAddressSpaceAligned(g_se_das_hnd, CUR_PROCESS_HANDLE, work_buffer_addr, sizeof(g_work_buffer), g_se_mapped_work_buffer_addr, 3))) {
+        std::abort();
+    }
+}
+
 void SecureMonitorWrapper::Initialize() {
     /* Initialize the Drbg. */
     InitializeCtrDrbg();
     /* Initialize SE interrupt event. */
     InitializeSeInterruptEvent();
+    /* Initialize DAS for the SE. */
+    InitializeDeviceAddressSpace();
+}
+
+void SecureMonitorWrapper::WaitSeOperationComplete() {
+    eventWait(&g_se_event, U64_MAX);
 }
 
 Result SecureMonitorWrapper::ConvertToSplResult(SmcResult result) {
@@ -61,6 +98,30 @@ Result SecureMonitorWrapper::ConvertToSplResult(SmcResult result) {
         return MAKERESULT(Module_Spl, static_cast<u32>(result));
     }
     return ResultSplUnknownSmcResult;
+}
+
+SmcResult SecureMonitorWrapper::WaitCheckStatus(AsyncOperationKey op_key) {
+    WaitSeOperationComplete();
+    
+    SmcResult op_res;
+    SmcResult res = SmcWrapper::CheckStatus(&op_res, op_key);
+    if (res != SmcResult_Success) {
+        return res;
+    }
+    
+    return op_res;
+}
+
+SmcResult SecureMonitorWrapper::WaitGetResult(void *out_buf, size_t out_buf_size, AsyncOperationKey op_key) {
+    WaitSeOperationComplete();
+    
+    SmcResult op_res;
+    SmcResult res = SmcWrapper::GetResult(&op_res, out_buf, out_buf_size, op_key);
+    if (res != SmcResult_Success) {
+        return res;
+    }
+    
+    return op_res;
 }
 
 Result SecureMonitorWrapper::GetConfig(u64 *out, SplConfigItem which) {
@@ -86,8 +147,52 @@ Result SecureMonitorWrapper::GetConfig(u64 *out, SplConfigItem which) {
 }
 
 Result SecureMonitorWrapper::ExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *exp, size_t exp_size, const void *mod, size_t mod_size) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    struct ExpModLayout {
+        u8 base[0x100];
+        u8 exp[0x100];
+        u8 mod[0x100];
+    };
+    ExpModLayout *layout = reinterpret_cast<ExpModLayout *>(g_work_buffer);
+    
+    /* Validate sizes. */
+    if (base_size > sizeof(layout->base)) {
+        return ResultSplInvalidSize;
+    }
+    if (exp_size > sizeof(layout->exp)) {
+        return ResultSplInvalidSize;
+    }
+    if (mod_size > sizeof(layout->mod)) {
+        return ResultSplInvalidSize;
+    }
+    if (out_size > sizeof(g_work_buffer) / 2) {
+        return ResultSplInvalidSize;
+    }
+    
+    /* Copy data into work buffer. */
+    const size_t base_ofs = sizeof(layout->base) - base_size;
+    const size_t mod_ofs = sizeof(layout->mod) - mod_size;
+    std::memset(layout, 0, sizeof(*layout));
+    std::memcpy(layout->base + base_ofs, base, base_size);
+    std::memcpy(layout->exp, exp, exp_size);
+    std::memcpy(layout->mod + mod_ofs, mod, mod_size);
+    
+    /* Do exp mod operation. */
+    {
+        std::scoped_lock<HosMutex> lk(g_se_lock);
+        AsyncOperationKey op_key;
+        
+        SmcResult res = SmcWrapper::ExpMod(&op_key, layout->base, layout->exp, exp_size, layout->mod);
+        if (res != SmcResult_Success) {
+            return ConvertToSplResult(res);
+        }
+        
+        if ((res = WaitGetResult(g_work_buffer, out_size, op_key)) != SmcResult_Success) {
+            return ConvertToSplResult(res);
+        }
+    }
+    
+    std::memcpy(out, g_work_buffer, out_size);
+    return ResultSuccess;
 }
 
 Result SecureMonitorWrapper::SetConfig(SplConfigItem which, u64 value) {

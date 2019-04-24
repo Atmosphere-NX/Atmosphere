@@ -43,10 +43,14 @@ class SecureMonitorWrapper {
     private:
         static void InitializeCtrDrbg();
         static void InitializeSeInterruptEvent();
+        static void InitializeDeviceAddressSpace();
     public:
         static void Initialize();
     private:
         Result GenerateRandomBytesInternal(void *out, size_t size);
+        void WaitSeOperationComplete();
+        SmcResult WaitCheckStatus(AsyncOperationKey op_key);
+        SmcResult WaitGetResult(void *out_buf, size_t out_buf_size, AsyncOperationKey op_key);
     public:
         Result GetConfig(u64 *out, SplConfigItem which);
         Result ExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *exp, size_t exp_size, const void *mod, size_t mod_size);
