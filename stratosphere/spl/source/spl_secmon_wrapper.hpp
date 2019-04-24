@@ -40,8 +40,13 @@ class SecureMonitorWrapper {
             return this->boot_reason_set;
         }
         static Result ConvertToSplResult(SmcResult result);
+    private:
+        static void InitializeCtrDrbg();
+        static void InitializeSeInterruptEvent();
     public:
-        void Initialize();
+        static void Initialize();
+    private:
+        Result GenerateRandomBytesInternal(void *out, size_t size);
     public:
         Result GetConfig(u64 *out, SplConfigItem which);
         Result ExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *exp, size_t exp_size, const void *mod, size_t mod_size);

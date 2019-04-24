@@ -66,12 +66,20 @@ struct IvCtr {
 };
 
 struct Cmac {
-    u8 data[AES_128_KEY_SIZE];
+    union {
+        u8 data[AES_128_KEY_SIZE];
+        u8 data64[AES_128_KEY_SIZE / sizeof(u64)];
+    };
 };
+static_assert(alignof(Cmac) == alignof(u8), "Cmac definition!");
 
 struct AccessKey {
-    u8 data[AES_128_KEY_SIZE];
+    union {
+        u8 data[AES_128_KEY_SIZE];
+        u8 data64[AES_128_KEY_SIZE / sizeof(u64)];
+    };
 };
+static_assert(alignof(AccessKey) == alignof(u8), "AccessKey definition!");
 
 struct KeySource {
     u8 data[AES_128_KEY_SIZE];

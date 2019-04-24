@@ -89,12 +89,15 @@ static const auto MakeGeneralService = []() { return std::make_shared<GeneralSer
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
+    
+    /* Initialize global context. */
+    SecureMonitorWrapper::Initialize();
 
     /* Create server manager. */
     static auto s_server_manager = WaitableManager<SplServerOptions>(1);
 
     /* Create services. */
-    s_server_manager.AddWaitable(new ServiceServer<RandomService, +MakeRandomService>("csrng", 9));
+    s_server_manager.AddWaitable(new ServiceServer<RandomService, +MakeRandomService>("csrng", 3));
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
         s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeGeneralService>("spl:", 9));
         /* TODO: Other services. */
