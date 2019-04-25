@@ -425,7 +425,7 @@ Result SecureMonitorWrapper::CryptAesCtr(void *dst, size_t dst_size, u32 keyslot
     const u32 src_se_map_addr = CryptAesInMapBase + (src_addr_page_aligned & DeviceAddressSpaceAlignMask);
     const u32 dst_se_map_addr = CryptAesOutMapBase + (dst_addr_page_aligned & DeviceAddressSpaceAlignMask);
     const u32 src_se_addr = CryptAesInMapBase + (src_addr & DeviceAddressSpaceAlignMask);
-    const u32 dst_se_addr = CryptAesInMapBase + (dst_addr & DeviceAddressSpaceAlignMask);
+    const u32 dst_se_addr = CryptAesOutMapBase + (dst_addr & DeviceAddressSpaceAlignMask);
 
     /* Validate aligned sizes. */
     if (src_size_page_aligned > CryptAesSizeMax || dst_size_page_aligned > CryptAesSizeMax) {
