@@ -555,6 +555,113 @@ Result SecureMonitorWrapper::DecryptRsaPrivateKey(void *dst, size_t dst_size, co
     return ConvertToSplResult(smc_res);
 }
 
+Result SecureMonitorWrapper::ImportSecureExpModKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
+    struct ImportSecureExpModKeyLayout {
+        u8 data[RsaPrivateKeyMetaSize + 2 * RsaPrivateKeySize];
+    };
+    ImportSecureExpModKeyLayout *layout = reinterpret_cast<ImportSecureExpModKeyLayout *>(g_work_buffer);
+
+    /* Validate size. */
+    if (src_size > sizeof(ImportSecureExpModKeyLayout)) {
+        return ResultSplInvalidSize;
+    }
+
+    std::memcpy(layout, src, src_size);
+
+    armDCacheFlush(layout, sizeof(*layout));
+    SmcResult smc_res;
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+        smc_res = SmcWrapper::DecryptOrImportRsaPrivateKey(layout->data, src_size, access_key, key_source, option);
+    } else {
+        smc_res = SmcWrapper::ImportSecureExpModKey(layout->data, src_size, access_key, key_source, option);
+    }
+
+    return ConvertToSplResult(smc_res);
+}
+
+Result SecureMonitorWrapper::SecureExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size, u32 option) {
+    struct SecureExpModLayout {
+        u8 base[0x100];
+        u8 mod[0x100];
+    };
+    SecureExpModLayout *layout = reinterpret_cast<SecureExpModLayout *>(g_work_buffer);
+
+    /* Validate sizes. */
+    if (base_size > sizeof(layout->base)) {
+        return ResultSplInvalidSize;
+    }
+    if (mod_size > sizeof(layout->mod)) {
+        return ResultSplInvalidSize;
+    }
+    if (out_size > MaxWorkBufferSize) {
+        return ResultSplInvalidSize;
+    }
+
+    /* Copy data into work buffer. */
+    const size_t base_ofs = sizeof(layout->base) - base_size;
+    const size_t mod_ofs = sizeof(layout->mod) - mod_size;
+    std::memset(layout, 0, sizeof(*layout));
+    std::memcpy(layout->base + base_ofs, base, base_size);
+    std::memcpy(layout->mod + mod_ofs, mod, mod_size);
+
+    /* Do exp mod operation. */
+    armDCacheFlush(layout, sizeof(*layout));
+    {
+        std::scoped_lock<HosMutex> lk(g_async_op_lock);
+        AsyncOperationKey op_key;
+
+        SmcResult res = SmcWrapper::SecureExpMod(&op_key, layout->base, layout->mod, option);
+        if (res != SmcResult_Success) {
+            return ConvertToSplResult(res);
+        }
+
+        if ((res = WaitGetResult(g_work_buffer, out_size, op_key)) != SmcResult_Success) {
+            return ConvertToSplResult(res);
+        }
+    }
+    armDCacheFlush(g_work_buffer, sizeof(out_size));
+
+    std::memcpy(out, g_work_buffer, out_size);
+    return ResultSuccess;
+}
+
+Result SecureMonitorWrapper::ImportSslKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source) {
+    return ImportSecureExpModKey(src, src_size, access_key, key_source, SmcDecryptOrImportMode_ImportSslKey);
+}
+
+Result SecureMonitorWrapper::SslExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size) {
+    return SecureExpMod(out, out_size, base, base_size, mod, mod_size, SmcSecureExpModMode_Ssl);
+}
+
+Result SecureMonitorWrapper::ImportEsKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+        return ImportSecureExpModKey(src, src_size, access_key, key_source, SmcDecryptOrImportMode_ImportEsKey);
+    } else {
+        struct ImportEsKeyLayout {
+            u8 data[RsaPrivateKeyMetaSize + 2 * RsaPrivateKeySize];
+        };
+        ImportEsKeyLayout *layout = reinterpret_cast<ImportEsKeyLayout *>(g_work_buffer);
+
+        /* Validate size. */
+        if (src_size > sizeof(ImportEsKeyLayout)) {
+            return ResultSplInvalidSize;
+        }
+
+        std::memcpy(layout, src, src_size);
+
+        armDCacheFlush(layout, sizeof(*layout));
+        return ConvertToSplResult(SmcWrapper::ImportEsKey(layout->data, src_size, access_key, key_source, option));
+    }
+}
+
+Result SecureMonitorWrapper::ImportDrmKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source) {
+    return ImportSecureExpModKey(src, src_size, access_key, key_source, SmcDecryptOrImportMode_ImportDrmKey);
+}
+
+Result SecureMonitorWrapper::DrmExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size) {
+    return SecureExpMod(out, out_size, base, base_size, mod, mod_size, SmcSecureExpModMode_Drm);
+}
+
 Result SecureMonitorWrapper::FreeAesKeyslots(const void *owner) {
     for (size_t i = 0; i < GetMaxKeyslots(); i++) {
         if (this->keyslot_owners[i] == owner) {

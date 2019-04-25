@@ -53,6 +53,8 @@ class SecureMonitorWrapper {
         SmcResult WaitGetResult(void *out_buf, size_t out_buf_size, AsyncOperationKey op_key);
         Result ValidateAesKeyslot(u32 keyslot, const void *owner);
         SmcResult DecryptAesBlock(u32 keyslot, void *dst, const void *src);
+        Result ImportSecureExpModKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
+        Result SecureExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size, u32 option);
     public:
         /* General. */
         Result GetConfig(u64 *out, SplConfigItem which);
@@ -72,9 +74,18 @@ class SecureMonitorWrapper {
         Result ComputeCmac(Cmac *out_cmac, u32 keyslot, const void *owner, const void *data, size_t size);
         Result AllocateAesKeyslot(u32 *out_keyslot, const void *owner);
         Result FreeAesKeyslot(u32 keyslot, const void *owner);
-        
+
         /* RSA. */
         Result DecryptRsaPrivateKey(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
+
+        /* SSL */
+        Result ImportSslKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source);
+        Result SslExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size);
+
+        /* ES */
+        Result ImportEsKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
+        Result ImportDrmKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source);
+        Result DrmExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size);
 
         /* Helper. */
         Result FreeAesKeyslots(const void *owner);
