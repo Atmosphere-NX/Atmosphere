@@ -93,7 +93,9 @@ class SecureMonitorWrapper {
         Result LoadElicenseKey(u32 keyslot, const void *owner, const AccessKey &access_key);
 
         /* FS */
+        Result GenerateSpecificAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 which);
         Result LoadTitleKey(u32 keyslot, const void *owner, const AccessKey &access_key);
+        Result GetPackage2Hash(void *dst, const size_t size);
 
         /* Manu. */
         Result ReEncryptRsaPrivateKey(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option);

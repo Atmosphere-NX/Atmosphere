@@ -168,7 +168,7 @@ SmcResult SmcWrapper::CryptAes(AsyncOperationKey *out_op, u32 mode, const IvCtr 
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::GenerateSpecificAesKey(u64 *out, const KeySource &source, u32 generation, u32 which) {
+SmcResult SmcWrapper::GenerateSpecificAesKey(AesKey *out_key, const KeySource &source, u32 generation, u32 which) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_GenerateSpecificAesKey;
@@ -178,6 +178,8 @@ SmcResult SmcWrapper::GenerateSpecificAesKey(u64 *out, const KeySource &source, 
     args.X[4] = which;
     svcCallSecureMonitor(&args);
 
+    out_key->data64[0] = args.X[1];
+    out_key->data64[1] = args.X[2];
     return static_cast<SmcResult>(args.X[0]);
 }
 

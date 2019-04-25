@@ -726,12 +726,32 @@ Result SecureMonitorWrapper::LoadElicenseKey(u32 keyslot, const void *owner, con
     return LoadTitleKey(keyslot, owner, access_key);
 }
 
+Result SecureMonitorWrapper::GenerateSpecificAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 which) {
+    return ConvertToSplResult(SmcWrapper::GenerateSpecificAesKey(out_key, key_source, generation, which));
+}
+
 Result SecureMonitorWrapper::LoadTitleKey(u32 keyslot, const void *owner, const AccessKey &access_key) {
     Result rc = ValidateAesKeyslot(keyslot, owner);
     if (R_FAILED(rc)) {
         return rc;
     }
     return ConvertToSplResult(SmcWrapper::LoadTitleKey(keyslot, access_key));
+}
+
+Result SecureMonitorWrapper::GetPackage2Hash(void *dst, const size_t size) {
+    u64 hash[4];
+    
+    if (size < sizeof(hash)) {
+        return ResultSplInvalidSize;
+    }
+    
+    SmcResult smc_res;
+    if ((smc_res = SmcWrapper::GetConfig(hash, 4, SplConfigItem_Package2Hash)) != SmcResult_Success) {
+        return ConvertToSplResult(smc_res);
+    }
+    
+    std::memcpy(dst, hash, sizeof(hash));
+    return ResultSuccess;
 }
 
 Result SecureMonitorWrapper::ReEncryptRsaPrivateKey(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option) {

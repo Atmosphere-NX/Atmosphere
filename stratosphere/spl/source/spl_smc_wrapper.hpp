@@ -38,7 +38,7 @@ class SmcWrapper {
         static SmcResult GenerateAesKek(AccessKey *out, const KeySource &source, u32 generation, u32 option);
         static SmcResult LoadAesKey(u32 keyslot, const AccessKey &access_key, const KeySource &source);
         static SmcResult CryptAes(AsyncOperationKey *out_op, u32 mode, const IvCtr &iv_ctr, u32 dst_addr, u32 src_addr, size_t size);
-        static SmcResult GenerateSpecificAesKey(u64 *out, const KeySource &source, u32 generation, u32 which);
+        static SmcResult GenerateSpecificAesKey(AesKey *out_key, const KeySource &source, u32 generation, u32 which);
         static SmcResult ComputeCmac(Cmac *out_mac, u32 keyslot, const void *data, size_t size);
         static SmcResult ReEncryptRsaPrivateKey(void *data, size_t size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option);
         static SmcResult DecryptOrImportRsaPrivateKey(void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option);
