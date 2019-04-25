@@ -14,7 +14,7 @@
 	"filesystem_access":	{
 		"permissions":	"0xFFFFFFFFFFFFFFFF"
 	},
-	"service_access":	["bpc", "bpc:c", "erpt:c", "fsp-srv", "gpio", "i2c", "lbl", "lm", "nvdrv:s", "pcv", "pl:u", "pm:info", "psm", "set", "set:sys", "spsm", "spl:", "time:*", "vi:m", "vi:s"],
+	"service_access":	["bpc", "bpc:c", "erpt:c", "fsp-srv", "gpio", "i2c", "lbl", "lm", "nvdrv:s", "clkrst", "pcv", "pl:u", "pm:info", "psm", "set", "set:sys", "spsm", "spl:", "time:*", "vi:m", "vi:s"],
 	"service_host":	["fatal:p", "fatal:u", "time:s"],
 	"kernel_capabilities":	[{
 			"type":	"kernel_flags",
