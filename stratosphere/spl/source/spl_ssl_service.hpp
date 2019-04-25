@@ -53,8 +53,8 @@ class SslService : public RsaService {
             MakeServiceCommandMeta<Spl_Cmd_FreeAesKeyslot, &SslService::FreeAesKeyslot, FirmwareVersion_200>(),
             MakeServiceCommandMeta<Spl_Cmd_GetAesKeyslotAvailableEvent, &SslService::GetAesKeyslotAvailableEvent, FirmwareVersion_200>(),
             MakeServiceCommandMeta<Spl_Cmd_DecryptRsaPrivateKey, &SslService::DecryptRsaPrivateKey>(),
-            MakeServiceCommandMeta<Spl_Cmd_DecryptRsaPrivateKey, &SslService::ImportSslKey, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Spl_Cmd_DecryptRsaPrivateKey, &SslService::SslExpMod, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Spl_Cmd_ImportSslKey, &SslService::ImportSslKey, FirmwareVersion_500>(),
+            MakeServiceCommandMeta<Spl_Cmd_SslExpMod, &SslService::SslExpMod, FirmwareVersion_500>(),
 
         };
 };

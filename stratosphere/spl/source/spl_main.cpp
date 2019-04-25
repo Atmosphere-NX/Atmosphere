@@ -25,6 +25,8 @@
 #include "spl_random_service.hpp"
 #include "spl_general_service.hpp"
 #include "spl_crypto_service.hpp"
+#include "spl_ssl_service.hpp"
+#include "spl_es_service.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -87,6 +89,8 @@ static SecureMonitorWrapper s_secmon_wrapper;
 static const auto MakeRandomService  = []() { return std::make_shared<RandomService>(&s_secmon_wrapper); };
 static const auto MakeGeneralService = []() { return std::make_shared<GeneralService>(&s_secmon_wrapper); };
 static const auto MakeCryptoService  = []() { return std::make_shared<CryptoService>(&s_secmon_wrapper); };
+static const auto MakeSslService  = []() { return std::make_shared<SslService>(&s_secmon_wrapper); };
+static const auto MakeEsService  = []() { return std::make_shared<EsService>(&s_secmon_wrapper); };
 
 int main(int argc, char **argv)
 {
@@ -103,6 +107,8 @@ int main(int argc, char **argv)
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
         s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeGeneralService>("spl:", 9));
         s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeCryptoService>("spl:mig", 6));
+        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeCryptoService>("spl:ssl", 2));
+        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeCryptoService>("spl:es", 2));
         /* TODO: Other services. */
     } else {
         /* TODO, DeprecatedGeneralService */
