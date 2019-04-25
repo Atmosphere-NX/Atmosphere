@@ -26,9 +26,9 @@ void CtrDrbg::Update(const void *data) {
         IncrementCounter(this->counter);
         aes128EncryptBlock(&this->aes_ctx, &this->work[1][offset], this->counter);
     }
-    
+
     Xor(this->work[1], data, sizeof(this->work[1]));
-    
+
     std::memcpy(this->key, &this->work[1][0], sizeof(this->key));
     std::memcpy(this->counter, &this->work[1][BlockSize], sizeof(this->key));
 }
@@ -51,31 +51,31 @@ bool CtrDrbg::GenerateRandomBytes(void *out, size_t size) {
     if (size > MaxRequestSize) {
         return false;
     }
-    
+
     if (this->reseed_counter > ReseedInterval) {
         return false;
     }
-    
+
     aes128ContextCreate(&this->aes_ctx, this->key, true);
     u8 *cur_dst = reinterpret_cast<u8 *>(out);
-    
+
     size_t aligned_size = (size & ~(BlockSize - 1));
     for (size_t offset = 0; offset < aligned_size; offset += BlockSize) {
         IncrementCounter(this->counter);
         aes128EncryptBlock(&this->aes_ctx, cur_dst, this->counter);
         cur_dst += BlockSize;
     }
-    
+
     if (size > aligned_size) {
         IncrementCounter(this->counter);
         aes128EncryptBlock(&this->aes_ctx, this->work[1], this->counter);
         std::memcpy(cur_dst, this->work[1], size - aligned_size);
     }
-    
+
     std::memset(this->work[0], 0, sizeof(this->work[0]));
     this->Update(this->work[0]);
-    
+
     this->reseed_counter++;
     return true;
-    
+
 }

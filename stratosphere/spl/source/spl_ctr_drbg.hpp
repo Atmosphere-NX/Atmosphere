@@ -42,10 +42,10 @@ class CtrDrbg {
                 dst_u8[i] = src_u8[i];
             }
         }
-        
+
         static void IncrementCounter(void *ctr) {
             u64 *ctr_64 = reinterpret_cast<u64 *>(ctr);
-            
+
             ctr_64[1] = __builtin_bswap64(__builtin_bswap64(ctr_64[1]) + 1);
             if (!ctr_64[1]) {
                 ctr_64[0] = __builtin_bswap64(__builtin_bswap64(ctr_64[0]) + 1);

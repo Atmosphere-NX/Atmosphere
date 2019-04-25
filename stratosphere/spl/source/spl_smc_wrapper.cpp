@@ -123,12 +123,12 @@ SmcResult SmcWrapper::GenerateRandomBytes(void *out, size_t size) {
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::GenerateAesKek(AccessKey *out, const u64 *source, u32 generation, u32 option) {
+SmcResult SmcWrapper::GenerateAesKek(AccessKey *out, const KeySource &source, u32 generation, u32 option) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_GenerateAesKek;
-    args.X[1] = source[0];
-    args.X[2] = source[1];
+    args.X[1] = source.data64[0];
+    args.X[2] = source.data64[1];
     args.X[3] = generation;
     args.X[4] = option;
     svcCallSecureMonitor(&args);
@@ -138,27 +138,27 @@ SmcResult SmcWrapper::GenerateAesKek(AccessKey *out, const u64 *source, u32 gene
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::LoadAesKey(u32 keyslot, const AccessKey &access_key, const u64 *source) {
+SmcResult SmcWrapper::LoadAesKey(u32 keyslot, const AccessKey &access_key, const KeySource &source) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_LoadAesKey;
     args.X[1] = keyslot;
     args.X[2] = access_key.data64[0];
     args.X[3] = access_key.data64[1];
-    args.X[4] = source[0];
-    args.X[5] = source[1];
+    args.X[4] = source.data64[0];
+    args.X[5] = source.data64[1];
     svcCallSecureMonitor(&args);
 
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::CryptAes(AsyncOperationKey *out_op, u32 mode, const u64 *iv_ctr, u32 dst_addr, u32 src_addr, size_t size) {
+SmcResult SmcWrapper::CryptAes(AsyncOperationKey *out_op, u32 mode, const IvCtr &iv_ctr, u32 dst_addr, u32 src_addr, size_t size) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_CryptAes;
     args.X[1] = mode;
-    args.X[2] = iv_ctr[0];
-    args.X[3] = iv_ctr[1];
+    args.X[2] = iv_ctr.data64[0];
+    args.X[3] = iv_ctr.data64[1];
     args.X[4] = src_addr;
     args.X[5] = dst_addr;
     args.X[6] = size;
@@ -168,12 +168,12 @@ SmcResult SmcWrapper::CryptAes(AsyncOperationKey *out_op, u32 mode, const u64 *i
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::GenerateSpecificAesKey(u64 *out, const u64 *source, u32 generation, u32 which) {
+SmcResult SmcWrapper::GenerateSpecificAesKey(u64 *out, const KeySource &source, u32 generation, u32 which) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_GenerateSpecificAesKey;
-    args.X[1] = source[0];
-    args.X[2] = source[1];
+    args.X[1] = source.data64[0];
+    args.X[2] = source.data64[1];
     args.X[3] = generation;
     args.X[4] = which;
     svcCallSecureMonitor(&args);
@@ -181,7 +181,7 @@ SmcResult SmcWrapper::GenerateSpecificAesKey(u64 *out, const u64 *source, u32 ge
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::ComputeCmac(Cmac &out_mac, u32 keyslot, const void *data, size_t size) {
+SmcResult SmcWrapper::ComputeCmac(Cmac *out_mac, u32 keyslot, const void *data, size_t size) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_ComputeCmac;
@@ -190,12 +190,12 @@ SmcResult SmcWrapper::ComputeCmac(Cmac &out_mac, u32 keyslot, const void *data, 
     args.X[3] = size;
     svcCallSecureMonitor(&args);
 
-    out_mac.data64[0] = args.X[1];
-    out_mac.data64[1] = args.X[2];
+    out_mac->data64[0] = args.X[1];
+    out_mac->data64[1] = args.X[2];
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::ReEncryptRsaPrivateKey(void *data, size_t size, const AccessKey &access_key_dec, const u64 *source_dec, const AccessKey &access_key_enc, const u64 *source_enc, u32 option) {
+SmcResult SmcWrapper::ReEncryptRsaPrivateKey(void *data, size_t size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_ReEncryptRsaPrivateKey;
@@ -204,14 +204,14 @@ SmcResult SmcWrapper::ReEncryptRsaPrivateKey(void *data, size_t size, const Acce
     args.X[3] = option;
     args.X[4] = reinterpret_cast<u64>(data);
     args.X[5] = size;
-    args.X[6] = reinterpret_cast<u64>(source_dec);
-    args.X[7] = reinterpret_cast<u64>(source_enc);
+    args.X[6] = reinterpret_cast<u64>(&source_dec);
+    args.X[7] = reinterpret_cast<u64>(&source_enc);
     svcCallSecureMonitor(&args);
 
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::DecryptOrImportRsaPrivateKey(void *data, size_t size, const AccessKey &access_key, const u64 *source, u32 option) {
+SmcResult SmcWrapper::DecryptOrImportRsaPrivateKey(void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_DecryptOrImportRsaPrivateKey;
@@ -220,8 +220,8 @@ SmcResult SmcWrapper::DecryptOrImportRsaPrivateKey(void *data, size_t size, cons
     args.X[3] = option;
     args.X[4] = reinterpret_cast<u64>(data);
     args.X[5] = size;
-    args.X[6] = source[0];
-    args.X[7] = source[1];
+    args.X[6] = source.data64[0];
+    args.X[7] = source.data64[1];
     svcCallSecureMonitor(&args);
 
     return static_cast<SmcResult>(args.X[0]);
@@ -267,12 +267,12 @@ SmcResult SmcWrapper::LoadTitleKey(u32 keyslot, const AccessKey &access_key) {
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::UnwrapCommonTitleKey(AccessKey *out, const u64 *source, u32 generation) {
+SmcResult SmcWrapper::UnwrapCommonTitleKey(AccessKey *out, const KeySource &source, u32 generation) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_UnwrapCommonTitleKey;
-    args.X[1] = source[0];
-    args.X[2] = source[1];
+    args.X[1] = source.data64[0];
+    args.X[2] = source.data64[1];
     args.X[3] = generation;
     svcCallSecureMonitor(&args);
 
@@ -283,7 +283,7 @@ SmcResult SmcWrapper::UnwrapCommonTitleKey(AccessKey *out, const u64 *source, u3
 
 
 /* Deprecated functions. */
-SmcResult SmcWrapper::ImportEsKey(const void *data, size_t size, const AccessKey &access_key, const u64 *source, u32 option) {
+SmcResult SmcWrapper::ImportEsKey(const void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_ImportEsKey;
@@ -292,14 +292,14 @@ SmcResult SmcWrapper::ImportEsKey(const void *data, size_t size, const AccessKey
     args.X[3] = option;
     args.X[4] = reinterpret_cast<u64>(data);
     args.X[5] = size;
-    args.X[6] = source[0];
-    args.X[7] = source[1];
+    args.X[6] = source.data64[0];
+    args.X[7] = source.data64[1];
     svcCallSecureMonitor(&args);
 
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::DecryptRsaPrivateKey(size_t *out_size, void *data, size_t size, const AccessKey &access_key, const u64 *source, u32 option) {
+SmcResult SmcWrapper::DecryptRsaPrivateKey(size_t *out_size, void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_DecryptRsaPrivateKey;
@@ -308,15 +308,15 @@ SmcResult SmcWrapper::DecryptRsaPrivateKey(size_t *out_size, void *data, size_t 
     args.X[3] = option;
     args.X[4] = reinterpret_cast<u64>(data);
     args.X[5] = size;
-    args.X[6] = source[0];
-    args.X[7] = source[1];
+    args.X[6] = source.data64[0];
+    args.X[7] = source.data64[1];
     svcCallSecureMonitor(&args);
 
     *out_size = static_cast<size_t>(args.X[1]);
     return static_cast<SmcResult>(args.X[0]);
 }
 
-SmcResult SmcWrapper::ImportSecureExpModKey(const void *data, size_t size, const AccessKey &access_key, const u64 *source, u32 option) {
+SmcResult SmcWrapper::ImportSecureExpModKey(const void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option) {
     SecmonArgs args;
 
     args.X[0] = SmcFunctionId_ImportSecureExpModKey;
@@ -325,8 +325,8 @@ SmcResult SmcWrapper::ImportSecureExpModKey(const void *data, size_t size, const
     args.X[3] = option;
     args.X[4] = reinterpret_cast<u64>(data);
     args.X[5] = size;
-    args.X[6] = source[0];
-    args.X[7] = source[1];
+    args.X[6] = source.data64[0];
+    args.X[7] = source.data64[1];
     svcCallSecureMonitor(&args);
 
     return static_cast<SmcResult>(args.X[0]);

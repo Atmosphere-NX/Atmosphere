@@ -37,7 +37,6 @@ enum SmcCipherMode : u32 {
     SmcCipherMode_CbcEncrypt = 0,
     SmcCipherMode_CbcDecrypt = 1,
     SmcCipherMode_Ctr = 2,
-    SmcCipherMode_Cmac = 3,
 };
 
 enum EsKeyType : u32 {
@@ -58,12 +57,20 @@ struct BootReasonValue {
 static_assert(sizeof(BootReasonValue) == sizeof(u32), "BootReasonValue definition!");
 
 struct AesKey {
-    u8 data[AES_128_KEY_SIZE];
+    union {
+        u8 data[AES_128_KEY_SIZE];
+        u8 data64[AES_128_KEY_SIZE / sizeof(u64)];
+    };
 };
+static_assert(alignof(AesKey) == alignof(u8), "AesKey definition!");
 
 struct IvCtr {
-    u8 data[AES_128_KEY_SIZE];
+    union {
+        u8 data[AES_128_KEY_SIZE];
+        u8 data64[AES_128_KEY_SIZE / sizeof(u64)];
+    };
 };
+static_assert(alignof(IvCtr) == alignof(u8), "IvCtr definition!");
 
 struct Cmac {
     union {
@@ -82,8 +89,12 @@ struct AccessKey {
 static_assert(alignof(AccessKey) == alignof(u8), "AccessKey definition!");
 
 struct KeySource {
-    u8 data[AES_128_KEY_SIZE];
+    union {
+        u8 data[AES_128_KEY_SIZE];
+        u8 data64[AES_128_KEY_SIZE / sizeof(u64)];
+    };
 };
+static_assert(alignof(AccessKey) == alignof(u8), "KeySource definition!");
 
 enum SplServiceCmd {
     /* 1.0.0+ */
@@ -110,7 +121,7 @@ enum SplServiceCmd {
     Spl_Cmd_UnwrapCommonTitleKey = 20,
     Spl_Cmd_AllocateAesKeyslot = 21,
     Spl_Cmd_FreeAesKeyslot = 22,
-    Spl_Cmd_GetAesKeyslotEvent = 23,
+    Spl_Cmd_GetAesKeyslotAvailableEvent = 23,
 
     /* 3.0.0+ */
     Spl_Cmd_SetBootReason = 24,

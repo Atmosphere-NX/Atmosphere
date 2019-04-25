@@ -24,6 +24,7 @@
 
 #include "spl_random_service.hpp"
 #include "spl_general_service.hpp"
+#include "spl_crypto_service.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -83,8 +84,9 @@ struct SplServerOptions {
 static SecureMonitorWrapper s_secmon_wrapper;
 
 /* Helpers for creating services. */
-static const auto MakeRandomService = []() { return std::make_shared<RandomService>(&s_secmon_wrapper); };
+static const auto MakeRandomService  = []() { return std::make_shared<RandomService>(&s_secmon_wrapper); };
 static const auto MakeGeneralService = []() { return std::make_shared<GeneralService>(&s_secmon_wrapper); };
+static const auto MakeCryptoService  = []() { return std::make_shared<CryptoService>(&s_secmon_wrapper); };
 
 int main(int argc, char **argv)
 {
@@ -100,6 +102,7 @@ int main(int argc, char **argv)
     s_server_manager.AddWaitable(new ServiceServer<RandomService, +MakeRandomService>("csrng", 3));
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
         s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeGeneralService>("spl:", 9));
+        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeCryptoService>("spl:mig", 6));
         /* TODO: Other services. */
     } else {
         /* TODO, DeprecatedGeneralService */

@@ -21,7 +21,7 @@
 #include "spl_types.hpp"
 #include "spl_secmon_wrapper.hpp"
 
-class GeneralService final : public IServiceObject {
+class GeneralService : public IServiceObject {
     private:
         SecureMonitorWrapper *secmon_wrapper;
     public:
@@ -30,7 +30,11 @@ class GeneralService final : public IServiceObject {
         }
 
         virtual ~GeneralService() { /* ... */ }
-    private:
+    protected:
+        SecureMonitorWrapper *GetSecureMonitorWrapper() const {
+            return this->secmon_wrapper;
+        }
+    protected:
         /* Actual commands. */
         virtual Result GetConfig(Out<u64> out, u32 which);
         virtual Result ExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> exp, InPointer<u8> mod);

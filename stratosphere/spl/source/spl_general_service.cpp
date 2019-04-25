@@ -20,29 +20,29 @@
 #include "spl_general_service.hpp"
 
 Result GeneralService::GetConfig(Out<u64> out, u32 which) {
-    return this->secmon_wrapper->GetConfig(out.GetPointer(), static_cast<SplConfigItem>(which));
+    return this->GetSecureMonitorWrapper()->GetConfig(out.GetPointer(), static_cast<SplConfigItem>(which));
 }
 
 Result GeneralService::ExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> exp, InPointer<u8> mod) {
-    return this->secmon_wrapper->ExpMod(out.pointer, out.num_elements, base.pointer, base.num_elements, exp.pointer, exp.num_elements, mod.pointer, mod.num_elements);
+    return this->GetSecureMonitorWrapper()->ExpMod(out.pointer, out.num_elements, base.pointer, base.num_elements, exp.pointer, exp.num_elements, mod.pointer, mod.num_elements);
 }
 
 Result GeneralService::SetConfig(u32 which, u64 value) {
-    return this->secmon_wrapper->SetConfig(static_cast<SplConfigItem>(which), value);
+    return this->GetSecureMonitorWrapper()->SetConfig(static_cast<SplConfigItem>(which), value);
 }
 
 Result GeneralService::GenerateRandomBytes(OutPointerWithClientSize<u8> out) {
-    return this->secmon_wrapper->GenerateRandomBytes(out.pointer, out.num_elements);
+    return this->GetSecureMonitorWrapper()->GenerateRandomBytes(out.pointer, out.num_elements);
 }
 
 Result GeneralService::IsDevelopment(Out<bool> is_dev) {
-    return this->secmon_wrapper->IsDevelopment(is_dev.GetPointer());
+    return this->GetSecureMonitorWrapper()->IsDevelopment(is_dev.GetPointer());
 }
 
 Result GeneralService::SetBootReason(BootReasonValue boot_reason) {
-    return this->secmon_wrapper->SetBootReason(boot_reason);
+    return this->GetSecureMonitorWrapper()->SetBootReason(boot_reason);
 }
 
 Result GeneralService::GetBootReason(Out<BootReasonValue> out) {
-    return this->secmon_wrapper->GetBootReason(out.GetPointer());
+    return this->GetSecureMonitorWrapper()->GetBootReason(out.GetPointer());
 }
