@@ -30,6 +30,8 @@
 #include "spl_fs_service.hpp"
 #include "spl_manu_service.hpp"
 
+#include "spl_deprecated_service.hpp"
+
 extern "C" {
     extern u32 __start__;
 
@@ -96,6 +98,8 @@ static const auto MakeEsService  = []() { return std::make_shared<EsService>(&s_
 static const auto MakeFsService  = []() { return std::make_shared<FsService>(&s_secmon_wrapper); };
 static const auto MakeManuService  = []() { return std::make_shared<ManuService>(&s_secmon_wrapper); };
 
+static const auto MakeDeprecatedService  = []() { return std::make_shared<DeprecatedService>(&s_secmon_wrapper); };
+
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
@@ -118,7 +122,7 @@ int main(int argc, char **argv)
             s_server_manager.AddWaitable(new ServiceServer<ManuService, +MakeManuService>("spl:manu", 1));
         }
     } else {
-        /* TODO, DeprecatedGeneralService */
+        s_server_manager.AddWaitable(new ServiceServer<DeprecatedService, +MakeDeprecatedService>("spl:", 12));
     }
     
     /* Loop forever, servicing our services. */

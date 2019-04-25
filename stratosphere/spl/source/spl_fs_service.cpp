@@ -24,11 +24,7 @@ Result FsService::ImportLotusKey(InPointer<u8> src, AccessKey access_key, KeySou
 }
 
 Result FsService::DecryptLotusMessage(Out<u32> out_size, OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest) {
-    Result rc = this->GetSecureMonitorWrapper()->DecryptLotusMessage(out_size.GetPointer(), out.pointer, out.num_elements, base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements);
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
-    return rc;
+    return this->GetSecureMonitorWrapper()->DecryptLotusMessage(out_size.GetPointer(), out.pointer, out.num_elements, base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements);
 }
 
 Result FsService::GenerateSpecificAesKey(Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which) {
