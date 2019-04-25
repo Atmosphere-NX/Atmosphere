@@ -121,8 +121,6 @@ int main(int argc, char **argv)
         /* TODO, DeprecatedGeneralService */
     }
     
-    RebootToRcm();
-
     /* Loop forever, servicing our services. */
     s_server_manager.Process();
 

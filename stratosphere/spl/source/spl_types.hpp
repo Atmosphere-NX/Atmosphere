@@ -70,10 +70,11 @@ struct BootReasonValue {
 };
 static_assert(sizeof(BootReasonValue) == sizeof(u32), "BootReasonValue definition!");
 
+#pragma pack(push, 1)
 struct AesKey {
     union {
         u8 data[AES_128_KEY_SIZE];
-        u8 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
     };
 };
 static_assert(alignof(AesKey) == alignof(u8), "AesKey definition!");
@@ -81,7 +82,7 @@ static_assert(alignof(AesKey) == alignof(u8), "AesKey definition!");
 struct IvCtr {
     union {
         u8 data[AES_128_KEY_SIZE];
-        u8 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
     };
 };
 static_assert(alignof(IvCtr) == alignof(u8), "IvCtr definition!");
@@ -89,7 +90,7 @@ static_assert(alignof(IvCtr) == alignof(u8), "IvCtr definition!");
 struct Cmac {
     union {
         u8 data[AES_128_KEY_SIZE];
-        u8 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
     };
 };
 static_assert(alignof(Cmac) == alignof(u8), "Cmac definition!");
@@ -97,7 +98,7 @@ static_assert(alignof(Cmac) == alignof(u8), "Cmac definition!");
 struct AccessKey {
     union {
         u8 data[AES_128_KEY_SIZE];
-        u8 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
     };
 };
 static_assert(alignof(AccessKey) == alignof(u8), "AccessKey definition!");
@@ -105,10 +106,15 @@ static_assert(alignof(AccessKey) == alignof(u8), "AccessKey definition!");
 struct KeySource {
     union {
         u8 data[AES_128_KEY_SIZE];
-        u8 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
     };
 };
 static_assert(alignof(AccessKey) == alignof(u8), "KeySource definition!");
+#pragma pack(pop)
+
+enum CsrngCmd {
+    Csrng_Cmd_GenerateRandomBytes = 0,
+};
 
 enum SplServiceCmd {
     /* 1.0.0+ */

@@ -39,7 +39,7 @@ class CtrDrbg {
             u8 *dst_u8 = reinterpret_cast<u8 *>(dst);
 
             for (size_t i = 0; i < size; i++) {
-                dst_u8[i] = src_u8[i];
+                dst_u8[i] ^= src_u8[i];
             }
         }
 

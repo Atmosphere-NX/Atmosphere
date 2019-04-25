@@ -35,7 +35,7 @@ Result CryptoService::DecryptAesKey(Out<AesKey> out_key, KeySource key_source, u
     return this->GetSecureMonitorWrapper()->DecryptAesKey(out_key.GetPointer(), key_source, generation, option);
 }
 
-Result CryptoService::CryptAesCtr(OutBuffer<u8> out_buf, u32 keyslot, InBuffer<u8> in_buf, IvCtr iv_ctr) {
+Result CryptoService::CryptAesCtr(OutBuffer<u8, BufferType_Type1> out_buf, u32 keyslot, InBuffer<u8, BufferType_Type1> in_buf, IvCtr iv_ctr) {
     return this->GetSecureMonitorWrapper()->CryptAesCtr(out_buf.buffer, out_buf.num_elements, keyslot, this, in_buf.buffer, in_buf.num_elements, iv_ctr);
 }
 

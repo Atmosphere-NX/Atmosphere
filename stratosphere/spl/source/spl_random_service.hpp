@@ -35,6 +35,6 @@ class RandomService final : public IServiceObject {
         virtual Result GenerateRandomBytes(OutBuffer<u8> out);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<Spl_Cmd_GenerateRandomBytes, &RandomService::GenerateRandomBytes>(),
+            MakeServiceCommandMeta<Csrng_Cmd_GenerateRandomBytes, &RandomService::GenerateRandomBytes>(),
         };
 };
