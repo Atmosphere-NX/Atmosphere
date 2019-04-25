@@ -39,6 +39,20 @@ enum SmcCipherMode : u32 {
     SmcCipherMode_Ctr = 2,
 };
 
+enum SmcDecryptOrImportMode : u32 {
+    SmcDecryptOrImportMode_DecryptRsaPrivateKey = 0,
+    SmcDecryptOrImportMode_ImportLotusKey = 1,
+    SmcDecryptOrImportMode_ImportEsKey = 2,
+    SmcDecryptOrImportMode_ImportSslKey = 3,
+    SmcDecryptOrImportMode_ImportDrmKey = 4,
+};
+
+enum SmcSecureExpModMode : u32 {
+    SmcSecureExpModMode_Lotus = 0,
+    SmcSecureExpModMode_Ssl = 1,
+    SmcSecureExpModMode_Drm = 2,
+};
+
 enum EsKeyType : u32 {
     EsKeyType_TitleKey = 0,
     EsKeyType_ElicenseKey = 1,

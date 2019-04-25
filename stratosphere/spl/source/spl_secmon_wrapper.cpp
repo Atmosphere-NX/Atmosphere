@@ -29,6 +29,9 @@ constexpr u32 CryptAesInMapBase  = 0x90000000u;
 constexpr u32 CryptAesOutMapBase = 0xC0000000u;
 constexpr size_t CryptAesSizeMax = static_cast<size_t>(CryptAesOutMapBase - CryptAesInMapBase);
 
+constexpr size_t RsaPrivateKeySize = 0x100;
+constexpr size_t RsaPrivateKeyMetaSize = 0x30;
+
 /* Types. */
 struct SeLinkedListEntry {
     u32 num_entries;
@@ -518,6 +521,38 @@ Result SecureMonitorWrapper::FreeAesKeyslot(u32 keyslot, const void *owner) {
     this->keyslot_owners[keyslot] = nullptr;
     g_se_keyslot_available_event->Signal();
     return ResultSuccess;
+}
+
+Result SecureMonitorWrapper::DecryptRsaPrivateKey(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
+    struct DecryptRsaPrivateKeyLayout {
+        u8 data[RsaPrivateKeySize + RsaPrivateKeyMetaSize];
+    };
+    DecryptRsaPrivateKeyLayout *layout = reinterpret_cast<DecryptRsaPrivateKeyLayout *>(g_work_buffer);
+
+    /* Validate size. */
+    if (src_size < RsaPrivateKeyMetaSize || src_size > sizeof(DecryptRsaPrivateKeyLayout)) {
+        return ResultSplInvalidSize;
+    }
+
+    std::memcpy(layout->data, src, src_size);
+    armDCacheFlush(layout, sizeof(*layout));
+
+    SmcResult smc_res;
+    size_t copy_size = 0;
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+        copy_size = std::min(dst_size, src_size - RsaPrivateKeyMetaSize);
+        smc_res = SmcWrapper::DecryptOrImportRsaPrivateKey(layout->data, src_size, access_key, key_source, SmcDecryptOrImportMode_DecryptRsaPrivateKey);
+    } else {
+        smc_res = SmcWrapper::DecryptRsaPrivateKey(&copy_size, layout->data, src_size, access_key, key_source, option);
+        copy_size = std::min(dst_size, copy_size);
+    }
+
+    armDCacheFlush(layout, sizeof(*layout));
+    if (smc_res == SmcResult_Success) {
+        std::memcpy(dst, layout->data, copy_size);
+    }
+
+    return ConvertToSplResult(smc_res);
 }
 
 Result SecureMonitorWrapper::FreeAesKeyslots(const void *owner) {

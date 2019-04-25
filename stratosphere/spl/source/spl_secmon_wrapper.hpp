@@ -72,6 +72,9 @@ class SecureMonitorWrapper {
         Result ComputeCmac(Cmac *out_cmac, u32 keyslot, const void *owner, const void *data, size_t size);
         Result AllocateAesKeyslot(u32 *out_keyslot, const void *owner);
         Result FreeAesKeyslot(u32 keyslot, const void *owner);
+        
+        /* RSA. */
+        Result DecryptRsaPrivateKey(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
 
         /* Helper. */
         Result FreeAesKeyslots(const void *owner);
