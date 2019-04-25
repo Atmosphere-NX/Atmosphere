@@ -20,15 +20,15 @@
 #include "spl_fs_service.hpp"
 
 Result FsService::ImportLotusKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
-    return ResultSuccess;
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    return this->GetSecureMonitorWrapper()->ImportLotusKey(src.pointer, src.num_elements, access_key, key_source, option);
 }
 
-Result FsService::DecryptLotusMessage(Out<size_t> out_size, OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest) {
-    return ResultSuccess;
-    /* TODO */
-    return ResultKernelConnectionClosed;
+Result FsService::DecryptLotusMessage(Out<u32> out_size, OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest) {
+    Result rc = this->GetSecureMonitorWrapper()->DecryptLotusMessage(out_size.GetPointer(), out.pointer, out.num_elements, base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements);
+    if (R_FAILED(rc)) {
+        fatalSimple(rc);
+    }
+    return rc;
 }
 
 Result FsService::GenerateSpecificAesKey(Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which) {

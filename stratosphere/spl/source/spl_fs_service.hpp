@@ -33,7 +33,7 @@ class FsService : public CryptoService {
     protected:
         /* Actual commands. */
         virtual Result ImportLotusKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option);
-        virtual Result DecryptLotusMessage(Out<size_t> out_size, OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest);
+        virtual Result DecryptLotusMessage(Out<u32> out_size, OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest);
         virtual Result GenerateSpecificAesKey(Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which);
         virtual Result LoadTitleKey(u32 keyslot, AccessKey access_key);
         virtual Result GetPackage2Hash(OutPointerWithClientSize<u8> dst);

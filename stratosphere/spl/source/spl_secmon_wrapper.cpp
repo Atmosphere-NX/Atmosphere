@@ -130,6 +130,82 @@ void SecureMonitorWrapper::Initialize() {
     InitializeDeviceAddressSpace();
 }
 
+void SecureMonitorWrapper::CalcMgf1AndXor(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    uint8_t *dst_u8 = reinterpret_cast<u8 *>(dst);
+
+    u32 ctr = 0;
+    while (dst_size > 0) {
+        size_t cur_size = SHA256_HASH_SIZE;
+        if (cur_size > dst_size) {
+            cur_size = dst_size;
+        }
+        dst_size -= cur_size;
+
+        u32 ctr_be = __builtin_bswap32(ctr++);
+        u8 hash[SHA256_HASH_SIZE];
+        {
+            Sha256Context ctx;
+            sha256ContextCreate(&ctx);
+            sha256ContextUpdate(&ctx, src, src_size);
+            sha256ContextUpdate(&ctx, &ctr_be, sizeof(ctr_be));
+            sha256ContextGetHash(&ctx, hash);
+        }
+
+        for (size_t i = 0; i < cur_size; i++) {
+            *(dst_u8++) ^= hash[i];
+        }
+    }
+}
+
+size_t SecureMonitorWrapper::DecodeRsaOaep(void *dst, size_t dst_size, const void *label_digest, size_t label_digest_size, const void *src, size_t src_size) {
+    /* Very basic validation. */
+    if (dst_size == 0 || src_size != 0x100 || label_digest_size != SHA256_HASH_SIZE) {
+        return 0;
+    }
+
+    u8 block[0x100];
+    std::memcpy(block, src, sizeof(block));
+
+    /* First, validate byte 0 == 0, and unmask DB. */
+    int invalid = block[0];
+    u8 *salt = block + 1;
+    u8 *db = salt + SHA256_HASH_SIZE;
+    CalcMgf1AndXor(salt, SHA256_HASH_SIZE, db, src_size - (1 + SHA256_HASH_SIZE));
+    CalcMgf1AndXor(db, src_size - (1 + SHA256_HASH_SIZE), salt, SHA256_HASH_SIZE);
+
+    /* Validate label digest. */
+    for (size_t i = 0; i < SHA256_HASH_SIZE; i++) {
+        invalid |= db[i] ^ reinterpret_cast<const u8 *>(label_digest)[i];
+    }
+
+    /* Locate message after 00...0001 padding. */
+    const u8 *padded_msg = db + SHA256_HASH_SIZE;
+    size_t padded_msg_size = src_size - (1 + 2 * SHA256_HASH_SIZE);
+    size_t msg_ind = 0;
+    int not_found = 1;
+    int wrong_padding = 0;
+    size_t i = 0;
+    while (i < padded_msg_size) {
+        int zero = (padded_msg[i] == 0);
+        int one = (padded_msg[i] == 1);
+        msg_ind += static_cast<size_t>(not_found & one) * (++i);
+        not_found &= ~one;
+        wrong_padding |= (not_found & ~zero);
+    }
+
+    if (invalid | not_found | wrong_padding) {
+        return 0;
+    }
+
+    /* Copy message out. */
+    size_t msg_size = padded_msg_size - msg_ind;
+    if (msg_size > dst_size) {
+        return 0;
+    }
+    std::memcpy(dst, padded_msg + msg_ind, msg_size);
+    return msg_size;
+}
+
 void SecureMonitorWrapper::WaitSeOperationComplete() {
     eventWait(&g_se_event, U64_MAX);
 }
@@ -726,6 +802,34 @@ Result SecureMonitorWrapper::LoadElicenseKey(u32 keyslot, const void *owner, con
     return LoadTitleKey(keyslot, owner, access_key);
 }
 
+Result SecureMonitorWrapper::ImportLotusKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+        option = SmcDecryptOrImportMode_ImportLotusKey;
+    }
+    return ImportSecureExpModKey(src, src_size, access_key, key_source, option);
+}
+
+Result SecureMonitorWrapper::DecryptLotusMessage(u32 *out_size, void *dst, size_t dst_size, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size) {
+    /* Validate sizes. */
+    if (dst_size > MaxWorkBufferSize || label_digest_size != LabelDigestSizeMax) {
+        return ResultSplInvalidSize;
+    }
+
+    /* Nintendo doesn't check this result code, but we will. */
+    Result rc = SecureExpMod(g_work_buffer, 0x100, base, base_size, mod, mod_size, SmcSecureExpModMode_Lotus);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+
+    size_t data_size = DecodeRsaOaep(dst, dst_size, label_digest, label_digest_size, g_work_buffer, 0x100);
+    if (data_size == 0) {
+        return ResultSplDecryptionFailed;
+    }
+
+    *out_size = static_cast<u32>(data_size);
+    return ResultSuccess;
+}
+
 Result SecureMonitorWrapper::GenerateSpecificAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 which) {
     return ConvertToSplResult(SmcWrapper::GenerateSpecificAesKey(out_key, key_source, generation, which));
 }
@@ -740,16 +844,16 @@ Result SecureMonitorWrapper::LoadTitleKey(u32 keyslot, const void *owner, const 
 
 Result SecureMonitorWrapper::GetPackage2Hash(void *dst, const size_t size) {
     u64 hash[4];
-    
+
     if (size < sizeof(hash)) {
         return ResultSplInvalidSize;
     }
-    
+
     SmcResult smc_res;
     if ((smc_res = SmcWrapper::GetConfig(hash, 4, SplConfigItem_Package2Hash)) != SmcResult_Success) {
         return ConvertToSplResult(smc_res);
     }
-    
+
     std::memcpy(dst, hash, sizeof(hash));
     return ResultSuccess;
 }

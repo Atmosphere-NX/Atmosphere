@@ -44,6 +44,9 @@ class SecureMonitorWrapper {
         static void InitializeCtrDrbg();
         static void InitializeSeEvents();
         static void InitializeDeviceAddressSpace();
+
+        static void CalcMgf1AndXor(void *dst, size_t dst_size, const void *src, size_t src_size);
+        static size_t DecodeRsaOaep(void *dst, size_t dst_size, const void *label_digest, size_t label_digest_size, const void *src, size_t src_size);
     public:
         static void Initialize();
     private:
@@ -93,6 +96,8 @@ class SecureMonitorWrapper {
         Result LoadElicenseKey(u32 keyslot, const void *owner, const AccessKey &access_key);
 
         /* FS */
+        Result ImportLotusKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
+        Result DecryptLotusMessage(u32 *out_size, void *dst, size_t dst_size, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size);
         Result GenerateSpecificAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 which);
         Result LoadTitleKey(u32 keyslot, const void *owner, const AccessKey &access_key);
         Result GetPackage2Hash(void *dst, const size_t size);
