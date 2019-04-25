@@ -560,6 +560,12 @@ Result SecureMonitorWrapper::ComputeCmac(Cmac *out_cmac, u32 keyslot, const void
 }
 
 Result SecureMonitorWrapper::AllocateAesKeyslot(u32 *out_keyslot, const void *owner) {
+    if (GetRuntimeFirmwareVersion() <= FirmwareVersion_100) {
+        /* On 1.0.0, keyslots were kind of a wild west. */
+        *out_keyslot = 0;
+        return ResultSuccess;
+    }
+
     for (size_t i = 0; i < GetMaxKeyslots(); i++) {
         if (this->keyslot_owners[i] == 0) {
             this->keyslot_owners[i] = owner;
@@ -576,13 +582,18 @@ Result SecureMonitorWrapper::ValidateAesKeyslot(u32 keyslot, const void *owner) 
     if (keyslot >= GetMaxKeyslots()) {
         return ResultSplInvalidKeyslot;
     }
-    if (this->keyslot_owners[keyslot] != owner) {
+    if (this->keyslot_owners[keyslot] != owner && GetRuntimeFirmwareVersion() > FirmwareVersion_100) {
         return ResultSplInvalidKeyslot;
     }
     return ResultSuccess;
 }
 
 Result SecureMonitorWrapper::FreeAesKeyslot(u32 keyslot, const void *owner) {
+    if (GetRuntimeFirmwareVersion() <= FirmwareVersion_100) {
+        /* On 1.0.0, keyslots were kind of a wild west. */
+        return ResultSuccess;
+    }
+
     Result rc = ValidateAesKeyslot(keyslot, owner);
     if (R_FAILED(rc)) {
         return rc;
