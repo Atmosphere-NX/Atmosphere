@@ -24,13 +24,11 @@ Result EsService::ImportEsKey(InPointer<u8> src, AccessKey access_key, KeySource
 }
 
 Result EsService::UnwrapTitleKey(Out<AccessKey> out_access_key, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest, u32 generation) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    return this->GetSecureMonitorWrapper()->UnwrapTitleKey(out_access_key.GetPointer(), base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements, generation);
 }
 
 Result EsService::UnwrapCommonTitleKey(Out<AccessKey> out_access_key, KeySource key_source, u32 generation) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    return this->GetSecureMonitorWrapper()->UnwrapCommonTitleKey(out_access_key.GetPointer(), key_source, generation);
 }
 
 Result EsService::ImportDrmKey(InPointer<u8> src, AccessKey access_key, KeySource key_source) {
@@ -42,11 +40,9 @@ Result EsService::DrmExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base
 }
 
 Result EsService::UnwrapElicenseKey(Out<AccessKey> out_access_key, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest, u32 generation) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    return this->GetSecureMonitorWrapper()->UnwrapElicenseKey(out_access_key.GetPointer(), base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements, generation);
 }
 
 Result EsService::LoadElicenseKey(u32 keyslot, AccessKey access_key) {
-    /* TODO */
-    return ResultKernelConnectionClosed;
+    return this->GetSecureMonitorWrapper()->LoadElicenseKey(keyslot, this, access_key);
 }

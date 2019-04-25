@@ -25,6 +25,9 @@ class SmcWrapper {
         static inline u32 GetCryptAesMode(SmcCipherMode mode, u32 keyslot) {
             return static_cast<u32>((mode << 4) | (keyslot & 7));
         }
+        static inline u32 GetUnwrapEsKeyOption(EsKeyType type, u32 generation) {
+            return static_cast<u32>((type << 6) | (generation & 0x3F));
+        }
     public:
         static SmcResult SetConfig(SplConfigItem which, const u64 *value, size_t num_qwords);
         static SmcResult GetConfig(u64 *out, size_t num_qwords, SplConfigItem which);

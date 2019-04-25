@@ -55,6 +55,7 @@ class SecureMonitorWrapper {
         SmcResult DecryptAesBlock(u32 keyslot, void *dst, const void *src);
         Result ImportSecureExpModKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
         Result SecureExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size, u32 option);
+        Result UnwrapEsRsaOaepWrappedKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation, EsKeyType type);
     public:
         /* General. */
         Result GetConfig(u64 *out, SplConfigItem which);
@@ -84,8 +85,15 @@ class SecureMonitorWrapper {
 
         /* ES */
         Result ImportEsKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
+        Result UnwrapTitleKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation);
+        Result UnwrapCommonTitleKey(AccessKey *out_access_key, const KeySource &key_source, u32 generation);
         Result ImportDrmKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source);
         Result DrmExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size);
+        Result UnwrapElicenseKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation);
+        Result LoadElicenseKey(u32 keyslot, const void *owner, const AccessKey &access_key);
+
+        /* FS */
+        Result LoadTitleKey(u32 keyslot, const void *owner, const AccessKey &access_key);
 
         /* Helper. */
         Result FreeAesKeyslots(const void *owner);

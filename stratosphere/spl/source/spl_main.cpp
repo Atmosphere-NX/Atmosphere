@@ -107,8 +107,8 @@ int main(int argc, char **argv)
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
         s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeGeneralService>("spl:", 9));
         s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeCryptoService>("spl:mig", 6));
-        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeCryptoService>("spl:ssl", 2));
-        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeCryptoService>("spl:es", 2));
+        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeSslService>("spl:ssl", 2));
+        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeEsService>("spl:es", 2));
         /* TODO: Other services. */
     } else {
         /* TODO, DeprecatedGeneralService */

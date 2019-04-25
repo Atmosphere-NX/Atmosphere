@@ -31,6 +31,7 @@ constexpr size_t CryptAesSizeMax = static_cast<size_t>(CryptAesOutMapBase - Cryp
 
 constexpr size_t RsaPrivateKeySize = 0x100;
 constexpr size_t RsaPrivateKeyMetaSize = 0x30;
+constexpr size_t LabelDigestSizeMax = 0x20;
 
 /* Types. */
 struct SeLinkedListEntry {
@@ -654,12 +655,83 @@ Result SecureMonitorWrapper::ImportEsKey(const void *src, size_t src_size, const
     }
 }
 
+Result SecureMonitorWrapper::UnwrapEsRsaOaepWrappedKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation, EsKeyType type) {
+    struct UnwrapEsKeyLayout {
+        u8 base[0x100];
+        u8 mod[0x100];
+    };
+    UnwrapEsKeyLayout *layout = reinterpret_cast<UnwrapEsKeyLayout *>(g_work_buffer);
+
+    /* Validate sizes. */
+    if (base_size > sizeof(layout->base)) {
+        return ResultSplInvalidSize;
+    }
+    if (mod_size > sizeof(layout->mod)) {
+        return ResultSplInvalidSize;
+    }
+    if (label_digest_size > LabelDigestSizeMax) {
+        return ResultSplInvalidSize;
+    }
+
+    /* Copy data into work buffer. */
+    const size_t base_ofs = sizeof(layout->base) - base_size;
+    const size_t mod_ofs = sizeof(layout->mod) - mod_size;
+    std::memset(layout, 0, sizeof(*layout));
+    std::memcpy(layout->base + base_ofs, base, base_size);
+    std::memcpy(layout->mod + mod_ofs, mod, mod_size);
+
+    /* Do exp mod operation. */
+    armDCacheFlush(layout, sizeof(*layout));
+    {
+        std::scoped_lock<HosMutex> lk(g_async_op_lock);
+        AsyncOperationKey op_key;
+
+        SmcResult res = SmcWrapper::UnwrapTitleKey(&op_key, layout->base, layout->mod, label_digest, label_digest_size, SmcWrapper::GetUnwrapEsKeyOption(type, generation));
+        if (res != SmcResult_Success) {
+            return ConvertToSplResult(res);
+        }
+
+        if ((res = WaitGetResult(g_work_buffer, sizeof(*out_access_key), op_key)) != SmcResult_Success) {
+            return ConvertToSplResult(res);
+        }
+    }
+    armDCacheFlush(g_work_buffer, sizeof(*out_access_key));
+
+    std::memcpy(out_access_key, g_work_buffer, sizeof(*out_access_key));
+    return ResultSuccess;
+}
+
+Result SecureMonitorWrapper::UnwrapTitleKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation) {
+    return UnwrapEsRsaOaepWrappedKey(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, generation, EsKeyType_TitleKey);
+}
+
+Result SecureMonitorWrapper::UnwrapCommonTitleKey(AccessKey *out_access_key, const KeySource &key_source, u32 generation) {
+    return ConvertToSplResult(SmcWrapper::UnwrapCommonTitleKey(out_access_key, key_source, generation));
+}
+
 Result SecureMonitorWrapper::ImportDrmKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source) {
     return ImportSecureExpModKey(src, src_size, access_key, key_source, SmcDecryptOrImportMode_ImportDrmKey);
 }
 
 Result SecureMonitorWrapper::DrmExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size) {
     return SecureExpMod(out, out_size, base, base_size, mod, mod_size, SmcSecureExpModMode_Drm);
+}
+
+Result SecureMonitorWrapper::UnwrapElicenseKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation) {
+    return UnwrapEsRsaOaepWrappedKey(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, generation, EsKeyType_ElicenseKey);
+}
+
+Result SecureMonitorWrapper::LoadElicenseKey(u32 keyslot, const void *owner, const AccessKey &access_key) {
+    /* Right now, this is just literally the same function as LoadTitleKey in N's impl. */
+    return LoadTitleKey(keyslot, owner, access_key);
+}
+
+Result SecureMonitorWrapper::LoadTitleKey(u32 keyslot, const void *owner, const AccessKey &access_key) {
+    Result rc = ValidateAesKeyslot(keyslot, owner);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    return ConvertToSplResult(SmcWrapper::LoadTitleKey(keyslot, access_key));
 }
 
 Result SecureMonitorWrapper::FreeAesKeyslots(const void *owner) {
