@@ -558,7 +558,7 @@ Result SecureMonitorWrapper::DecryptRsaPrivateKey(void *dst, size_t dst_size, co
 
 Result SecureMonitorWrapper::ImportSecureExpModKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
     struct ImportSecureExpModKeyLayout {
-        u8 data[RsaPrivateKeyMetaSize + 2 * RsaPrivateKeySize];
+        u8 data[RsaPrivateKeyMetaSize + 2 * RsaPrivateKeySize + 0x10];
     };
     ImportSecureExpModKeyLayout *layout = reinterpret_cast<ImportSecureExpModKeyLayout *>(g_work_buffer);
 
@@ -639,7 +639,7 @@ Result SecureMonitorWrapper::ImportEsKey(const void *src, size_t src_size, const
         return ImportSecureExpModKey(src, src_size, access_key, key_source, SmcDecryptOrImportMode_ImportEsKey);
     } else {
         struct ImportEsKeyLayout {
-            u8 data[RsaPrivateKeyMetaSize + 2 * RsaPrivateKeySize];
+            u8 data[RsaPrivateKeyMetaSize + 2 * RsaPrivateKeySize + 0x10];
         };
         ImportEsKeyLayout *layout = reinterpret_cast<ImportEsKeyLayout *>(g_work_buffer);
 
@@ -732,6 +732,40 @@ Result SecureMonitorWrapper::LoadTitleKey(u32 keyslot, const void *owner, const 
         return rc;
     }
     return ConvertToSplResult(SmcWrapper::LoadTitleKey(keyslot, access_key));
+}
+
+Result SecureMonitorWrapper::ReEncryptRsaPrivateKey(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option) {
+    struct ReEncryptRsaPrivateKeyLayout {
+        u8 data[RsaPrivateKeyMetaSize + 2 * RsaPrivateKeySize + 0x10];
+        AccessKey access_key_dec;
+        KeySource source_dec;
+        AccessKey access_key_enc;
+        KeySource source_enc;
+    };
+    ReEncryptRsaPrivateKeyLayout *layout = reinterpret_cast<ReEncryptRsaPrivateKeyLayout *>(g_work_buffer);
+
+    /* Validate size. */
+    if (src_size < RsaPrivateKeyMetaSize || src_size > sizeof(ReEncryptRsaPrivateKeyLayout)) {
+        return ResultSplInvalidSize;
+    }
+
+    std::memcpy(layout, src, src_size);
+    layout->access_key_dec = access_key_dec;
+    layout->source_dec = source_dec;
+    layout->access_key_enc = access_key_enc;
+    layout->source_enc = source_enc;
+
+    armDCacheFlush(layout, sizeof(*layout));
+
+    SmcResult smc_res = SmcWrapper::ReEncryptRsaPrivateKey(layout->data, src_size, layout->access_key_dec, layout->source_dec, layout->access_key_enc, layout->source_enc, option);
+    if (smc_res == SmcResult_Success) {
+        size_t copy_size = std::min(dst_size, src_size);
+        armDCacheFlush(layout, copy_size);
+        std::memcpy(dst, layout->data, copy_size);
+    }
+
+    return ConvertToSplResult(smc_res);
+
 }
 
 Result SecureMonitorWrapper::FreeAesKeyslots(const void *owner) {

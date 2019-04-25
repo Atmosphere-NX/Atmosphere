@@ -95,6 +95,9 @@ class SecureMonitorWrapper {
         /* FS */
         Result LoadTitleKey(u32 keyslot, const void *owner, const AccessKey &access_key);
 
+        /* Manu. */
+        Result ReEncryptRsaPrivateKey(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option);
+
         /* Helper. */
         Result FreeAesKeyslots(const void *owner);
         Handle GetAesKeyslotAvailableEventHandle();

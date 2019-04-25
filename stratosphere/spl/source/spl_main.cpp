@@ -27,6 +27,7 @@
 #include "spl_crypto_service.hpp"
 #include "spl_ssl_service.hpp"
 #include "spl_es_service.hpp"
+#include "spl_manu_service.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -91,6 +92,7 @@ static const auto MakeGeneralService = []() { return std::make_shared<GeneralSer
 static const auto MakeCryptoService  = []() { return std::make_shared<CryptoService>(&s_secmon_wrapper); };
 static const auto MakeSslService  = []() { return std::make_shared<SslService>(&s_secmon_wrapper); };
 static const auto MakeEsService  = []() { return std::make_shared<EsService>(&s_secmon_wrapper); };
+static const auto MakeManuService  = []() { return std::make_shared<ManuService>(&s_secmon_wrapper); };
 
 int main(int argc, char **argv)
 {
@@ -106,10 +108,13 @@ int main(int argc, char **argv)
     s_server_manager.AddWaitable(new ServiceServer<RandomService, +MakeRandomService>("csrng", 3));
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
         s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeGeneralService>("spl:", 9));
-        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeCryptoService>("spl:mig", 6));
-        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeSslService>("spl:ssl", 2));
-        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeEsService>("spl:es", 2));
-        /* TODO: Other services. */
+        s_server_manager.AddWaitable(new ServiceServer<CryptoService, +MakeCryptoService>("spl:mig", 6));
+        s_server_manager.AddWaitable(new ServiceServer<SslService, +MakeSslService>("spl:ssl", 2));
+        s_server_manager.AddWaitable(new ServiceServer<EsService, +MakeEsService>("spl:es", 2));
+        /* TODO: spl:fs. */
+        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+            s_server_manager.AddWaitable(new ServiceServer<ManuService, +MakeManuService>("spl:manu", 1));
+        }
     } else {
         /* TODO, DeprecatedGeneralService */
     }
