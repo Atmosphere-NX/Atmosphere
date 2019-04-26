@@ -41,6 +41,8 @@ static const char *get_error_desc_str(uint32_t error_desc) {
             return "SError";
         case 0x301:
             return "Bad SVC";
+        case 0xFFE:
+            return "std::abort() called";
         default:
             return "Unknown";
     }
@@ -48,7 +50,8 @@ static const char *get_error_desc_str(uint32_t error_desc) {
 
 static void _check_and_display_atmosphere_fatal_error(void) {
     /* Check for valid magic. */
-    if (ATMOSPHERE_FATAL_ERROR_CONTEXT->magic != ATMOSPHERE_REBOOT_TO_FATAL_MAGIC) {
+    if (ATMOSPHERE_FATAL_ERROR_CONTEXT->magic != ATMOSPHERE_REBOOT_TO_FATAL_MAGIC &&
+        ATMOSPHERE_FATAL_ERROR_CONTEXT->magic != ATMOSPHERE_REBOOT_TO_FATAL_MAGIC_0) {
         return;
     }
 
