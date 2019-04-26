@@ -52,7 +52,7 @@ class RsaService : public CryptoService {
             MakeServiceCommandMetaEx<Spl_Cmd_AllocateAesKeyslot, &RsaService::AllocateAesKeyslot, RsaService, FirmwareVersion_200>(),
             MakeServiceCommandMetaEx<Spl_Cmd_FreeAesKeyslot, &RsaService::FreeAesKeyslot, RsaService, FirmwareVersion_200>(),
             MakeServiceCommandMetaEx<Spl_Cmd_GetAesKeyslotAvailableEvent, &RsaService::GetAesKeyslotAvailableEvent, RsaService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &RsaService::DecryptRsaPrivateKeyDeprecated, RsaService, FirmwareVersion_400, FirmwareVersion_500>(),
+            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &RsaService::DecryptRsaPrivateKeyDeprecated, RsaService, FirmwareVersion_400, FirmwareVersion_400>(),
             MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &RsaService::DecryptRsaPrivateKey, RsaService, FirmwareVersion_500>(),
 
         };
