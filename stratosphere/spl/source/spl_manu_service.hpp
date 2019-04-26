@@ -51,7 +51,8 @@ class ManuService : public RsaService {
             MakeServiceCommandMetaEx<Spl_Cmd_AllocateAesKeyslot, &ManuService::AllocateAesKeyslot, ManuService, FirmwareVersion_200>(),
             MakeServiceCommandMetaEx<Spl_Cmd_FreeAesKeyslot, &ManuService::FreeAesKeyslot, ManuService, FirmwareVersion_200>(),
             MakeServiceCommandMetaEx<Spl_Cmd_GetAesKeyslotAvailableEvent, &ManuService::GetAesKeyslotAvailableEvent, ManuService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &ManuService::DecryptRsaPrivateKey, ManuService>(),
+            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &ManuService::DecryptRsaPrivateKeyDeprecated, ManuService, FirmwareVersion_400, FirmwareVersion_400>(),
+            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &ManuService::DecryptRsaPrivateKey, ManuService, FirmwareVersion_500>(),
             MakeServiceCommandMetaEx<Spl_Cmd_ReEncryptRsaPrivateKey, &ManuService::ReEncryptRsaPrivateKey, ManuService, FirmwareVersion_500>(),
 
         };
