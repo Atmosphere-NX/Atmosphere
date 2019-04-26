@@ -242,6 +242,8 @@ SECTIONS
     PROVIDE(__sept_secondary_enc_size__ = sept_secondary_enc_end - sept_secondary_enc);
     PROVIDE(__sm_kip_start__ = sm_kip - __start__);
     PROVIDE(__sm_kip_size__ = sm_kip_end - sm_kip);
+    PROVIDE(__spl_kip_start__ = spl_kip - __start__);
+    PROVIDE(__spl_kip_size__ = spl_kip_end - spl_kip);
     PROVIDE(__splash_screen_bmp_start__ = splash_screen_bmp - __start__);
     PROVIDE(__splash_screen_bmp_size__ = splash_screen_bmp_end - splash_screen_bmp);
     PROVIDE(__thermosphere_bin_start__ = thermosphere_bin - __start__);
