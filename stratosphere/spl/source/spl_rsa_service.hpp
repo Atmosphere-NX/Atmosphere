@@ -32,7 +32,8 @@ class RsaService : public CryptoService {
         }
     protected:
         /* Actual commands. */
-        virtual Result DecryptRsaPrivateKey(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option);
+        virtual Result DecryptRsaPrivateKeyDeprecated(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option);
+        virtual Result DecryptRsaPrivateKey(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMetaEx<Spl_Cmd_GetConfig, &RsaService::GetConfig, RsaService>(),
@@ -51,7 +52,8 @@ class RsaService : public CryptoService {
             MakeServiceCommandMetaEx<Spl_Cmd_AllocateAesKeyslot, &RsaService::AllocateAesKeyslot, RsaService, FirmwareVersion_200>(),
             MakeServiceCommandMetaEx<Spl_Cmd_FreeAesKeyslot, &RsaService::FreeAesKeyslot, RsaService, FirmwareVersion_200>(),
             MakeServiceCommandMetaEx<Spl_Cmd_GetAesKeyslotAvailableEvent, &RsaService::GetAesKeyslotAvailableEvent, RsaService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &RsaService::DecryptRsaPrivateKey, RsaService>(),
+            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &RsaService::DecryptRsaPrivateKeyDeprecated, RsaService, FirmwareVersion_400, FirmwareVersion_500>(),
+            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &RsaService::DecryptRsaPrivateKey, RsaService, FirmwareVersion_500>(),
 
         };
 };

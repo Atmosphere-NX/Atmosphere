@@ -19,6 +19,10 @@
 
 #include "spl_rsa_service.hpp"
 
-Result RsaService::DecryptRsaPrivateKey(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
+Result RsaService::DecryptRsaPrivateKeyDeprecated(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
     return this->GetSecureMonitorWrapper()->DecryptRsaPrivateKey(dst.pointer, dst.num_elements, src.pointer, src.num_elements, access_key, key_source, option);
+}
+
+Result RsaService::DecryptRsaPrivateKey(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source) {
+    return this->GetSecureMonitorWrapper()->DecryptRsaPrivateKey(dst.pointer, dst.num_elements, src.pointer, src.num_elements, access_key, key_source, SmcDecryptOrImportMode_DecryptRsaPrivateKey);
 }
