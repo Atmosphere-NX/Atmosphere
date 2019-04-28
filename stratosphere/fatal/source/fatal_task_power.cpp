@@ -96,6 +96,8 @@ void PowerButtonObserveTask::WaitForPowerButton() {
     const FatalConfig *config = GetFatalConfig();
     TimeoutHelper reboot_helper(config->quest_reboot_interval_second * 1000000000UL);
     
+    TimeoutHelper auto_reboot_helper(config->fatal_auto_reboot_interval * 1000000);
+    
     bool check_vol_up = true, check_vol_down = true;
     GpioPadSession vol_up_btn, vol_down_btn;
     if (R_FAILED(gpioOpenSession(&vol_up_btn, GpioPadName_ButtonVolUp))) {
@@ -121,6 +123,11 @@ void PowerButtonObserveTask::WaitForPowerButton() {
     GpioValue val;
     while (true) {
         Result rc = ResultSuccess;
+
+        if (config->is_auto_reboot_enabled && auto_reboot_helper.TimedOut() ) {
+            bpcRebootSystem();
+            return;
+        }
         
         if (check_vol_up && R_SUCCEEDED((rc = gpioPadGetValue(&vol_up_btn, &val))) && val == GpioValue_Low) {
             bpcRebootSystem();

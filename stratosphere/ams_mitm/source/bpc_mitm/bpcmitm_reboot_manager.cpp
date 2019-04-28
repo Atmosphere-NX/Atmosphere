@@ -101,11 +101,6 @@ Result BpcRebootManager::PerformReboot() {
 }
 
 void BpcRebootManager::RebootForFatalError(AtmosphereFatalErrorContext *ctx) {
-    /* If we don't actually have a payload loaded, just go to RCM. */
-    if (!g_payload_loaded) {
-        RebootToRcm();
-    }
-    
     /* Ensure clean IRAM state. */
     ClearIram();
     
@@ -118,5 +113,10 @@ void BpcRebootManager::RebootForFatalError(AtmosphereFatalErrorContext *ctx) {
     memcpy(g_work_page, ctx, sizeof(*ctx));
     CopyToIram(IRAM_PAYLOAD_BASE + IRAM_PAYLOAD_MAX_SIZE, g_work_page, sizeof(g_work_page));
     
+    /* If we don't actually have a payload loaded, just go to RCM. */
+    if (!g_payload_loaded) {
+        RebootToRcm();
+    }
+
     RebootToIramPayload();
 }

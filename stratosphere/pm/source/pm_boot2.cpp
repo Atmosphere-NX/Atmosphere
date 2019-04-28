@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstdio>
@@ -54,12 +54,12 @@ static void ClearLaunchedTitles() {
 
 static void LaunchTitle(u64 title_id, FsStorageId storage_id, u32 launch_flags, u64 *pid) {
     u64 local_pid = 0;
-    
+
     /* Don't launch a title twice during boot2. */
     if (HasLaunchedTitle(title_id)) {
         return;
     }
-    
+
     Result rc = Registration::LaunchProcessByTidSid(Registration::TidSid{title_id, storage_id}, launch_flags, &local_pid);
     switch (rc) {
         case ResultKernelResourceExhausted:
@@ -81,7 +81,7 @@ static void LaunchTitle(u64 title_id, FsStorageId storage_id, u32 launch_flags, 
     if (pid) {
         *pid = local_pid;
     }
-    
+
     if (R_SUCCEEDED(rc)) {
         SetLaunchedTitle(title_id);
     }
@@ -92,22 +92,26 @@ static bool GetGpioPadLow(GpioPadName pad) {
     if (R_FAILED(gpioOpenSession(&button, pad))) {
         return false;
     }
-    
+
     /* Ensure we close even on early return. */
     ON_SCOPE_EXIT { gpioPadClose(&button); };
-    
+
     /* Set direction input. */
     gpioPadSetDirection(&button, GpioDirection_Input);
-    
+
     GpioValue val;
     return R_SUCCEEDED(gpioPadGetValue(&button, &val)) && val == GpioValue_Low;
 }
 
 static bool IsMaintenanceMode() {
     /* Contact set:sys, retrieve boot!force_maintenance. */
-    if (R_SUCCEEDED(setsysInitialize())) {
+    Result rc;
+    DoWithSmSession([&]() {
+        rc = setsysInitialize();
+    });
+    if (R_SUCCEEDED(rc)) {
         ON_SCOPE_EXIT { setsysExit(); };
-        
+
         u8 force_maintenance = 1;
         setsysGetSettingsItemValue("boot", "force_maintenance", &force_maintenance, sizeof(force_maintenance));
         if (force_maintenance != 0) {
@@ -116,12 +120,15 @@ static bool IsMaintenanceMode() {
     }
 
     /* Contact GPIO, read plus/minus buttons. */
-    if (R_SUCCEEDED(gpioInitialize())) {
+    DoWithSmSession([&]() {
+        rc = gpioInitialize();
+    });
+    if (R_SUCCEEDED(rc)) {
         ON_SCOPE_EXIT { gpioExit(); };
-        
+
         return GetGpioPadLow(GpioPadName_ButtonVolUp) && GetGpioPadLow(GpioPadName_ButtonVolDown);
     }
-    
+
     return false;
 }
 
@@ -168,42 +175,48 @@ static const std::tuple<u64, bool> g_additional_launch_programs[] = {
 };
 
 static void MountSdCard() {
-    Handle tmp_hnd = 0;
-    static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
-    for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
-        if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
-            /* TODO: Panic */
-        } else {
-            svcCloseHandle(tmp_hnd);   
+    DoWithSmSession([&]() {
+        Handle tmp_hnd = 0;
+        static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
+        for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
+            if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
+                /* TODO: Panic */
+            } else {
+                svcCloseHandle(tmp_hnd);
+            }
         }
-    }
+    });
     fsdevMountSdmc();
 }
 
 static void WaitForMitm(const char *service) {
     bool mitm_installed = false;
 
-    Result rc = smManagerAmsInitialize();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
+    Result rc;
+    DoWithSmSession([&]() {
+        if (R_FAILED((rc = smManagerAmsInitialize()))) {
+            std::abort();
+        }
+    });
+
     while (R_FAILED((rc = smManagerAmsHasMitm(&mitm_installed, service))) || !mitm_installed) {
         if (R_FAILED(rc)) {
             std::abort();
         }
         svcSleepThread(1000000ull);
     }
+
     smManagerAmsExit();
 }
 
 void EmbeddedBoot2::Main() {
     /* Wait until fs.mitm has installed itself. We want this to happen as early as possible. */
     WaitForMitm("fsp-srv");
-    
+
     /* Clear titles. */
     ClearLaunchedTitles();
 
-    /* psc, bus, pcv is the minimal set of required titles to get SD card. */ 
+    /* psc, bus, pcv is the minimal set of required titles to get SD card. */
     /* bus depends on pcie, and pcv depends on settings. */
     /* Launch psc. */
     LaunchTitle(TitleId_Psc, FsStorageId_NandSystem, 0, NULL);
@@ -215,16 +228,16 @@ void EmbeddedBoot2::Main() {
     LaunchTitle(TitleId_Settings, FsStorageId_NandSystem, 0, NULL);
     /* Launch pcv. */
     LaunchTitle(TitleId_Pcv, FsStorageId_NandSystem, 0, NULL);
-    
+
     /* At this point, the SD card can be mounted. */
     MountSdCard();
-    
+
     /* Find out whether we are maintenance mode. */
     bool maintenance = IsMaintenanceMode();
     if (maintenance) {
         BootModeService::SetMaintenanceBootForEmbeddedBoot2();
     }
-        
+
     /* Wait for other atmosphere mitm modules to initialize. */
     WaitForMitm("set:sys");
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
@@ -232,23 +245,28 @@ void EmbeddedBoot2::Main() {
     } else {
         WaitForMitm("bpc:c");
     }
-    
+
     /* Launch usb. */
     LaunchTitle(TitleId_Usb, FsStorageId_NandSystem, 0, NULL);
-    
+
     /* Launch tma. */
     LaunchTitle(TitleId_Tma, FsStorageId_NandSystem, 0, NULL);
-      
+
     /* Launch Atmosphere dmnt, using FsStorageId_None to force SD card boot. */
     LaunchTitle(TitleId_Dmnt, FsStorageId_None, 0, NULL);
-    
+
     /* Launch default programs. */
     for (auto &launch_program : g_additional_launch_programs) {
         if (!maintenance || std::get<bool>(launch_program)) {
             LaunchTitle(std::get<u64>(launch_program), FsStorageId_NandSystem, 0, NULL);
         }
+
+        /* In 7.0.0, Npns was added to the list of titles to launch during maintenance. */
+        if (maintenance && std::get<u64>(launch_program) == TitleId_Npns && GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+            LaunchTitle(TitleId_Npns, FsStorageId_NandSystem, 0, NULL);
+        }
     }
-    
+
     /* Allow for user-customizable programs. */
     DIR *titles_dir = opendir("sdmc:/atmosphere/titles");
     struct dirent *ent;
@@ -283,10 +301,10 @@ void EmbeddedBoot2::Main() {
         }
         closedir(titles_dir);
     }
-        
+
     /* We no longer need the SD card. */
     fsdevUnmountAll();
-    
+
     /* Free the memory used to track what boot2 launches. */
     ClearLaunchedTitles();
 }

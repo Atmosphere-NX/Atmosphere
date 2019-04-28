@@ -1,4 +1,36 @@
 # Changelog
+## 0.8.9
++ A number of bugs were fixed, including:
+  + A data abort was fixed when mounting certain partitions on NAND.
+  + All Stratosphère system modules now only maintain a connection to `sm` when actively using it.
+    + This helps mitigate the scenario where sm hits the limit of 64 active connections and crashes.
+    + This sometimes caused crashes when custom non-Atmosphère sysmodules were active and the user played certain games (ex: Smash's Stage Builder).
+  + fatal now uses the 8.0.0 clkrst API, instead of silently failing to adjust clock rates on that firmware version.
+  + A wait loop is now performed when trying to get a session to `sm`, in the case where `sm:` is not yet registered.
+    + This fixes a race condition that could cause a failure to boot under certain circumstances.
+  + libstratosphere's handling of domain object closing has been improved.
+    + Previously, this code could cause crashes/extremely odd behavior (misinterpreting what object a service is) under certain circumstances.
++ An optional automatic reboot timer was added to fatal.
+  + By setting the system setting `atmosphere!fatal_auto_reboot_interval` to a non-zero u64 value, fatal can be made to automatically reboot after a certain number of milliseconds.
+  + If the setting is zero or not present, fatal will wait for user input as usual.
++ Atmosphère now provides a reimplementation of the `ro` system module.
+  + `ro` is responsible for loading dynamic libraries (NROs) on 3.0.0+.
+    + On 1.0.0-2.3.0, this is handled by `loader`.
+  + Atmosphere's `ro` provides this functionality (`ldr:ro`, `ro:dmnt`) on all firmware versions.
+  + An extension was implemented to provide support for applying IPS patches to NROs.
+    + All patches at paths like /atmosphere/nro_patches/<user-defined patch name>/<Hex Build-ID for NRO to patch>.ips will be applied, allowing for easy distribution of patches.
+    + Both the IPS and IPS32 formats are supported.
++ Atmosphère now provides a reimplementation of the `spl` system module.
+  + `spl` (Secure Platform Services) is responsible for cryptographic operations, including all communications with the secure monitor (exosphère).
+  + In the future, this may be used to provide extensions to the API for interacting with exosphère from userland.
++ General system stability improvements to enhance the user's experience.
+## 0.8.8
++ Support was added for firmware version 8.0.0.
++ Custom exception handlers were added to stratosphere modules.
+  + If a crash happens in a core atmosphere module now, instead of silently failing a reboot will occur to log the information to the SD card.
++ A bug was fixed in creport that caused games to hang when crashing under certain circumstances.
++ A bug was fixed that prevented maintenance mode from booting on 7.0.0+.
++ General system stability improvements to enhance the user's experience.
 ## 0.8.7
 + A few bugs were fixed that could cause fatal to fail to show an error under certain circumstances.
 + A bug was fixed that caused an error when launching certain games (e.g. Hellblade: Senua's Sacrifice).

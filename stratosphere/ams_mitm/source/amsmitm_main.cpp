@@ -73,15 +73,12 @@ void __appInit(void) {
     
     SetFirmwareVersionForLibnx();
     
-    rc = smInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
-    }
-    
-    rc = fsInitialize();
-    if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
-    }
+    DoWithSmSession([&]() {
+        rc = fsInitialize();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
+    });
     
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
@@ -89,7 +86,6 @@ void __appInit(void) {
 void __appExit(void) {
     /* Cleanup services. */
     fsExit();
-    smExit();
 }
 
 int main(int argc, char **argv)
@@ -100,10 +96,10 @@ int main(int argc, char **argv)
     LaunchAllMitmModules();
 
     if (R_FAILED(initializer_thread.Initialize(&Utils::InitializeThreadFunc, NULL, 0x4000, 0x15))) {
-        /* TODO: Panic. */
+        std::abort();
     }
     if (R_FAILED(initializer_thread.Start())) {
-        /* TODO: Panic. */
+        std::abort();
     }
         
     /* Wait for all mitm modules to end. */

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 
 #include <atmosphere/version.h>
@@ -55,17 +55,17 @@ Result ShowFatalTask::SetupDisplayInternal() {
     }
     /* Guarantee we close the display. */
     ON_SCOPE_EXIT { viCloseDisplay(&display); };
-    
+
     /* Turn on the screen. */
     if (R_FAILED((rc = viSetDisplayPowerState(&display, ViPowerState_On)))) {
         return rc;
     }
-    
+
     /* Set alpha to 1.0f. */
     if (R_FAILED((rc = viSetDisplayAlpha(&display, 1.0f)))) {
         return rc;
     }
-    
+
     return rc;
 }
 
@@ -82,54 +82,54 @@ Result ShowFatalTask::SetupDisplayExternal() {
     }
     /* Guarantee we close the display. */
     ON_SCOPE_EXIT { viCloseDisplay(&display); };
-    
+
     /* Set alpha to 1.0f. */
     if (R_FAILED((rc = viSetDisplayAlpha(&display, 1.0f)))) {
         return rc;
     }
-    
+
     return rc;
 }
 
 Result ShowFatalTask::PrepareScreenForDrawing() {
     Result rc = ResultSuccess;
-    
+
     /* Connect to vi. */
     if (R_FAILED((rc = viInitialize(ViServiceType_Manager)))) {
         return rc;
     }
-    
+
     /* Close other content. */
     viSetContentVisibility(false);
-    
+
     /* Setup the two displays. */
     if (R_FAILED((rc = SetupDisplayInternal())) || R_FAILED((rc = SetupDisplayExternal()))) {
         return rc;
     }
-    
+
     /* Open the default display. */
     if (R_FAILED((rc = viOpenDefaultDisplay(&this->display)))) {
         return rc;
     }
-    
+
     /* Reset the display magnification to its default value. */
     u32 display_width, display_height;
     if (R_FAILED((rc = viGetDisplayLogicalResolution(&this->display, &display_width, &display_height)))) {
         return rc;
     }
-    
+
     /* viSetDisplayMagnification was added in 3.0.0. */
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
         if (R_FAILED((rc = viSetDisplayMagnification(&this->display, 0, 0, display_width, display_height)))) {
             return rc;
         }
     }
-    
+
     /* Create layer to draw to. */
     if (R_FAILED((rc = viCreateLayer(&this->display, &this->layer)))) {
         return rc;
     }
-    
+
     /* Setup the layer. */
     {
         /* Display a layer of 1280 x 720 at 1.5x magnification */
@@ -139,15 +139,15 @@ Result ShowFatalTask::PrepareScreenForDrawing() {
         constexpr u32 raw_height = FatalScreenHeight;
         constexpr u32 layer_width = ((raw_width) * 3) / 2;
         constexpr u32 layer_height = ((raw_height) * 3) / 2;
-        
+
         const float layer_x = static_cast<float>((display_width - layer_width) / 2);
         const float layer_y = static_cast<float>((display_height - layer_height) / 2);
         u64 layer_z;
-        
+
         if (R_FAILED((rc = viSetLayerSize(&this->layer, layer_width, layer_height)))) {
             return rc;
         }
-        
+
         /* Set the layer's Z at display maximum, to be above everything else .*/
         /* NOTE: Fatal hardcodes 100 here. */
         if (R_SUCCEEDED((rc = viGetDisplayMaximumZ(&this->display, &layer_z)))) {
@@ -155,12 +155,12 @@ Result ShowFatalTask::PrepareScreenForDrawing() {
                 return rc;
             }
         }
-        
+
         /* Center the layer in the screen. */
         if (R_FAILED((rc = viSetLayerPosition(&this->layer, layer_x, layer_y)))) {
             return rc;
         }
-    
+
         /* Create framebuffer. */
         if (R_FAILED(rc = nwindowCreateFromLayer(&this->win, &this->layer))) {
             return rc;
@@ -169,7 +169,7 @@ Result ShowFatalTask::PrepareScreenForDrawing() {
             return rc;
         }
     }
-    
+
 
     return rc;
 }
@@ -178,33 +178,36 @@ Result ShowFatalTask::ShowFatal() {
     Result rc = ResultSuccess;
     const FatalConfig *config = GetFatalConfig();
 
-    if (R_FAILED((rc = PrepareScreenForDrawing()))) {
+    DoWithSmSession([&]() {
+        rc = PrepareScreenForDrawing();
+    });
+    if (R_FAILED(rc)) {
         *(volatile u32 *)(0xCAFEBABE) = rc;
         return rc;
     }
-    
+
     /* Dequeue a buffer. */
     u16 *tiled_buf = reinterpret_cast<u16 *>(framebufferBegin(&this->fb, NULL));
     if (tiled_buf == nullptr) {
         return ResultFatalNullGraphicsBuffer;
     }
-    
+
     /* Let the font manager know about our framebuffer. */
     FontManager::ConfigureFontFramebuffer(tiled_buf, GetPixelOffset);
     FontManager::SetFontColor(0xFFFF);
-    
+
     /* Draw a background. */
     for (size_t i = 0; i < this->fb.fb_size / sizeof(*tiled_buf); i++) {
         tiled_buf[i] = 0x39C9;
     }
-    
+
     /* Draw the atmosphere logo in the bottom right corner. */
     for (size_t y = 0; y < AMS_LOGO_HEIGHT; y++) {
         for (size_t x = 0; x < AMS_LOGO_WIDTH; x++) {
             tiled_buf[GetPixelOffset(FatalScreenWidth - AMS_LOGO_WIDTH - 32 + x, 32 + y)] = AMS_LOGO_BIN[y * AMS_LOGO_WIDTH + x];
         }
     }
-    
+
     /* TODO: Actually draw meaningful shit here. */
     FontManager::SetPosition(32, 64);
     FontManager::SetFontSize(16.0f);
@@ -225,18 +228,18 @@ Result ShowFatalTask::ShowFatal() {
                            u8"Please ensure that all Atmosphère components are updated.\n"
                            u8"github.com/Atmosphere-NX/Atmosphere/releases\n");
     }
-    
+
     /* Add a line. */
     for (size_t x = 32; x < FatalScreenWidth - 32; x++) {
         tiled_buf[GetPixelOffset(x, FontManager::GetY())] = 0xFFFF;
     }
-    
-    
+
+
     FontManager::AddSpacingLines(1.5f);
-    
+
     u32 backtrace_y = FontManager::GetY();
     u32 backtrace_x = 0;
-    
+
     /* Print GPRs. */
     FontManager::SetFontSize(14.0f);
     FontManager::Print("General Purpose Registers      ");
@@ -278,7 +281,7 @@ Result ShowFatalTask::ShowFatal() {
                 FontManager::Print("    ");
                 backtrace_x = FontManager::GetX();
             }
-            
+
             FontManager::PrintLine("");
             FontManager::SetPosition(32, FontManager::GetY());
         }
@@ -306,12 +309,12 @@ Result ShowFatalTask::ShowFatal() {
                 FontManager::Print("    ");
                 backtrace_x = FontManager::GetX();
             }
-            
+
             FontManager::PrintLine("");
             FontManager::SetPosition(32, FontManager::GetY());
         }
     }
-    
+
     /* Print Backtrace. */
     u32 bt_size;
     if (this->ctx->cpu_ctx.is_aarch32) {
@@ -319,8 +322,8 @@ Result ShowFatalTask::ShowFatal() {
     } else {
         bt_size = this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size;
     }
-    
-    
+
+
     FontManager::SetPosition(backtrace_x, backtrace_y);
     if (bt_size == 0) {
         if (this->ctx->cpu_ctx.is_aarch32) {
@@ -346,7 +349,7 @@ Result ShowFatalTask::ShowFatal() {
                 if (i + Aarch32CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
                     bt_next = this->ctx->cpu_ctx.aarch32_ctx.stack_trace[i + Aarch32CpuContext::MaxStackTraceDepth / 2];
                 }
-                
+
                 if (i < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
                     u32 x = FontManager::GetX();
                     FontManager::PrintFormat("BT[%02d]: ", i);
@@ -354,14 +357,14 @@ Result ShowFatalTask::ShowFatal() {
                     FontManager::PrintMonospaceU32(bt_cur);
                     FontManager::Print("  ");
                 }
-                
+
                 if (i + Aarch32CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
                     u32 x = FontManager::GetX();
                     FontManager::PrintFormat("BT[%02d]: ", i + Aarch32CpuContext::MaxStackTraceDepth / 2);
                     FontManager::SetPosition(x + 72, FontManager::GetY());
                     FontManager::PrintMonospaceU32(bt_next);
                 }
-                
+
                 FontManager::PrintLine("");
                 FontManager::SetPosition(backtrace_x, FontManager::GetY());
             }
@@ -378,7 +381,7 @@ Result ShowFatalTask::ShowFatal() {
                 if (i + Aarch64CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
                     bt_next = this->ctx->cpu_ctx.aarch64_ctx.stack_trace[i + Aarch64CpuContext::MaxStackTraceDepth / 2];
                 }
-                
+
                 if (i < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
                     u32 x = FontManager::GetX();
                     FontManager::PrintFormat("BT[%02d]: ", i);
@@ -386,24 +389,24 @@ Result ShowFatalTask::ShowFatal() {
                     FontManager::PrintMonospaceU64(bt_cur);
                     FontManager::Print("  ");
                 }
-                
+
                 if (i + Aarch64CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
                     u32 x = FontManager::GetX();
                     FontManager::PrintFormat("BT[%02d]: ", i + Aarch64CpuContext::MaxStackTraceDepth / 2);
                     FontManager::SetPosition(x + 72, FontManager::GetY());
                     FontManager::PrintMonospaceU64(bt_next);
                 }
-                
+
                 FontManager::PrintLine("");
                 FontManager::SetPosition(backtrace_x, FontManager::GetY());
             }
         }
     }
-    
-    
+
+
     /* Enqueue the buffer. */
     framebufferEnd(&fb);
-    
+
     return rc;
 }
 

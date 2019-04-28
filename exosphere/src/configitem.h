@@ -33,7 +33,7 @@ typedef enum {
     CONFIGITEM_MEMORYARRANGE = 10,
     CONFIGITEM_ISDEBUGMODE = 11,
     CONFIGITEM_KERNELCONFIGURATION = 12,
-    CONFIGITEM_BATTERYPROFILE = 13,
+    CONFIGITEM_HIZMODE = 13,
     CONFIGITEM_ISQUESTUNIT = 14,
     CONFIGITEM_NEWHARDWARETYPE_5X = 15,
     CONFIGITEM_NEWKEYGENERATION_5X = 16,
@@ -56,10 +56,11 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue);
 
 bool configitem_is_recovery_boot(void);
 bool configitem_is_retail(void);
-bool configitem_should_profile_battery(void);
+bool configitem_is_hiz_mode_enabled(void);
 bool configitem_is_debugmode_priv(void);
 
 void configitem_set_debugmode_override(bool user, bool priv);
+void configitem_set_hiz_mode_enabled(bool enabled);
 
 uint64_t configitem_get_hardware_type(void);
 

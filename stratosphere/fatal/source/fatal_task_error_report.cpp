@@ -38,19 +38,28 @@ bool ErrorReportTask::GetCurrentTime(u64 *out) {
     
     /* Verify that pcv isn't dead. */
     {
-        Handle dummy;
-        if (R_SUCCEEDED(smRegisterService(&dummy, "time:s", false, 0x20))) {
-            svcCloseHandle(dummy);
+        bool has_time_service;
+        DoWithSmSession([&]() {
+            Handle dummy;
+            if (R_SUCCEEDED(smRegisterService(&dummy, "time:s", false, 0x20))) {
+                svcCloseHandle(dummy);
+                has_time_service = false;
+            } else {
+                has_time_service = true;
+            }
+        });
+        if (!has_time_service) {
             return false;
         }
     }
     
     /* Try to get the current time. */
-    bool success = false;
-    if (R_SUCCEEDED(timeInitialize())) {
-        if (R_SUCCEEDED(timeGetCurrentTime(TimeType_LocalSystemClock, out))) {
-            success = true;
-        }
+    bool success = true;
+    DoWithSmSession([&]() {
+        success &= R_SUCCEEDED(timeInitialize());
+    });
+    if (success) {
+        success &= R_SUCCEEDED(timeGetCurrentTime(TimeType_LocalSystemClock, out));
         timeExit();
     }
     return success;

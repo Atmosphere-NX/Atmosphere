@@ -35,12 +35,12 @@ void NsMitmMain(void *arg) {
     Utils::WaitSdInitialized();
 
     /* Ensure we can talk to NS. */
-    {
+    DoWithSmSession([&]() {
         if (R_FAILED(nsInitialize())) {
             std::abort();
         }
         nsExit();
-    }
+    });
 
     /* Create server manager */
     auto server_manager = new WaitableManager(1);

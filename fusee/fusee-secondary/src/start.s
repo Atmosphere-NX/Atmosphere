@@ -191,6 +191,14 @@ _content_headers:
 .asciz "sm"
 .align 5
 
+/* spl content header */
+.word __spl_kip_start__
+.word __spl_kip_size__
+.word CONTENT_TYPE_KIP
+.word 0xCCCCCCCC
+.asciz "spl"
+.align 5
+
 /* splash_screen content header */
 .word __splash_screen_bmp_start__
 .word __splash_screen_bmp_size__

@@ -21,7 +21,6 @@
 #include "lz4.h"
 #include "ldr_nso.hpp"
 #include "ldr_map.hpp"
-#include "ldr_random.hpp"
 #include "ldr_patcher.hpp"
 #include "ldr_content_management.hpp"
 
@@ -226,7 +225,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
     
     u64 aslr_slide = 0;
     if (addspace_type & 0x20) {
-        aslr_slide = RandomUtils::GetRandomU64((addspace_size - extents->total_size) >> 21) << 21;
+        aslr_slide = StratosphereRandomUtils::GetRandomU64((addspace_size - extents->total_size) >> 21) << 21;
     }
     
     extents->base_address = addspace_start + aslr_slide;

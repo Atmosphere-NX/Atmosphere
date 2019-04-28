@@ -214,7 +214,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     Registration::SetProcessIdTidAndIs64BitAddressSpace(index, process_id, npdm_info.aci0->title_id, is_64_bit_addspace);
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         if (NsoUtils::IsNsoPresent(i)) {   
-            Registration::AddNsoInfo(index, nso_extents.nso_addresses[i], nso_extents.nso_sizes[i], NsoUtils::GetNsoBuildId(i));
+            Registration::AddModuleInfo(index, nso_extents.nso_addresses[i], nso_extents.nso_sizes[i], NsoUtils::GetNsoBuildId(i));
         }
     }
     

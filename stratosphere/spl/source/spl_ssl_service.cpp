@@ -13,13 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#pragma once
-#include <switch.h>
 
-class RandomUtils {
-    public:
-        static u32 GetNext();
-        static u32 GetRandomU32(u32 max);
-        static u64 GetRandomU64(u64 max);
-};
+#include <switch.h>
+#include <stratosphere.hpp>
+
+#include "spl_ssl_service.hpp"
+
+Result SslService::ImportSslKey(InPointer<u8> src, AccessKey access_key, KeySource key_source) {
+    return this->GetSecureMonitorWrapper()->ImportSslKey(src.pointer, src.num_elements, access_key, key_source);
+}
+
+Result SslService::SslExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod) {
+    return this->GetSecureMonitorWrapper()->SslExpMod(out.pointer, out.num_elements, base.pointer, base.num_elements, mod.pointer, mod.num_elements);
+}

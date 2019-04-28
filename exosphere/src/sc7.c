@@ -44,11 +44,11 @@
 #undef u8
 #undef u32
 
-static void configure_battery_hi_z_mode(void) {
+static void configure_battery_hiz_mode(void) {
     clkrst_reboot(CARDEVICE_I2C1);
 
-    if (configitem_should_profile_battery() && !i2c_query_ti_charger_bit_7()) {
-        /* Profile the battery. */
+    if (configitem_is_hiz_mode_enabled() && !i2c_query_ti_charger_bit_7()) {
+        /* Configure HiZ mode. */
         i2c_set_ti_charger_bit_7();
         uint32_t start_time = get_time();
         bool should_wait = true;
@@ -109,7 +109,7 @@ static void mitigate_jamais_vu(void) {
     }
 
     /* Jamais Vu mitigation #3: Ensure all relevant DMA controllers are held in reset. */
-    if ((CLK_RST_CONTROLLER_RST_DEVICES_H_0 & 0x4000004) != 0x4000004) {
+    if ((CLK_RST_CONTROLLER_RST_DEVICES_H_0 & 0x4000006) != 0x4000006) {
         generic_panic();
     }
 }
@@ -262,7 +262,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     }
 
     /* Perform I2C comms with TI charger if required. */
-    configure_battery_hi_z_mode();
+    configure_battery_hiz_mode();
 
     /* Enable LP0 Wake Event Detection. */
     enable_lp0_wake_events();

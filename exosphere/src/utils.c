@@ -37,8 +37,8 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
     SAVE_SYSREG64(ELR_EL3, 0x18);
     SAVE_SYSREG64(FAR_EL3, 0x20);
     MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x2;
-    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
-    */
+    MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10; */
+    
     
     /* TODO: Custom Panic Driver, which displays to screen without rebooting. */
     /* For now, just use NX BOOTLOADER's panic. */
@@ -68,9 +68,9 @@ __attribute__ ((noreturn)) void panic_predefined(uint32_t which) {
 
 __attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be)
 {
-    if(as <= bs && bs <= ae)
+    if(as <= bs && bs < ae)
         return true;
-    if(bs <= as && as <= be)
+    if(bs <= as && as < be)
         return true;
     return false;
 }

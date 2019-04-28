@@ -21,6 +21,7 @@
 
 class AdjustClockTask : public IFatalTask {
     private:
+        Result AdjustClockForModule(PcvModule module, u32 hz);
         Result AdjustClock();
     public:
         AdjustClockTask(FatalThrowContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
