@@ -27,6 +27,9 @@ int fsdev_register_device(const char *name);
 int fsdev_unregister_device(const char *name);
 int fsdev_unmount_device(const char *name);         /* also unregisters. */
 
+int fsdev_set_attr(const char *file, int attr, int mask);       /* Non-standard function to set file DOS attributes. */
+int fsdev_get_attr(const char *file);                           /* Non-standard function to get file DOS attributes. */
+
 int fsdev_set_default_device(const char *name);     /* must be registered. */
 int fsdev_is_exfat(const char *name);               /* must be registered. */
 

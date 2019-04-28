@@ -104,7 +104,8 @@ int emu_device_partition_read_data(device_partition_t *devpart, void *dst, uint6
             }
         }
         
-        snprintf(target_path, sizeof(target_path) - 1, "%s%02d", origin_path, target_part);
+        /* Treat the path as a folder with each part inside. */
+        snprintf(target_path, sizeof(target_path) - 1, "%s/%02d", origin_path, target_part);
     } else {
         target_sector = sector;
         strcpy(target_path, origin_path);
@@ -176,7 +177,8 @@ int emu_device_partition_write_data(device_partition_t *devpart, const void *src
             }
         }
         
-        snprintf(target_path, sizeof(target_path) - 1, "%s%02d", origin_path, target_part);
+        /* Treat the path as a folder with each part inside. */
+        snprintf(target_path, sizeof(target_path) - 1, "%s/%02d", origin_path, target_part);
     } else {
         target_sector = sector;
         strcpy(target_path, origin_path);

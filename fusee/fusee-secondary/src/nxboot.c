@@ -230,11 +230,12 @@ static bool nxboot_configure_emunand() {
         
         /* Check if full rawnand image file is present. */
         if (!is_valid_file(emunand_rawnand_base_path)) {
-            char emunand_rawnand_path[0x300 + 3 + 1] = {0};
+            char emunand_rawnand_path[0x300 + 4 + 1] = {0};
             
             /* Search for rawnand part files instead. */
             for (int i = 0; i < 64; i++) {
-                snprintf(emunand_rawnand_path, sizeof(emunand_rawnand_path) - 1, "%s%02d", emunand_rawnand_base_path, i);
+                /* Treat rawnand as a folder with each part inside. */
+                snprintf(emunand_rawnand_path, sizeof(emunand_rawnand_path) - 1, "%s/%02d", emunand_rawnand_base_path, i);
                 if (is_valid_file(emunand_rawnand_path)) {
                     if (i == 0) {
                         /* The size of the first part file should tell us the part limit. */

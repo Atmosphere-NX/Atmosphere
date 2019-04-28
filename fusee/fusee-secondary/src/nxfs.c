@@ -26,6 +26,8 @@
 #include "utils.h"
 #include "sdmmc/sdmmc.h"
 
+#include "lib/fatfs/ff.h"
+
 static bool g_ahb_redirect_enabled = false;
 static bool g_sd_device_initialized = false;
 static bool g_emmc_device_initialized = false;
@@ -154,6 +156,7 @@ static int mmc_partition_write(device_partition_t *devpart, const void *src, uin
 }
 
 static int emummc_partition_initialize(device_partition_t *devpart) {
+    /* Allocate the crypto work buffer. */
     if ((devpart->read_cipher != NULL) || (devpart->write_cipher != NULL)) {
         devpart->crypto_work_buffer = memalign(16, devpart->sector_size * 16);
         if (devpart->crypto_work_buffer == NULL) {
@@ -166,11 +169,15 @@ static int emummc_partition_initialize(device_partition_t *devpart) {
         devpart->crypto_work_buffer_num_sectors = 0;
     }
     devpart->initialized = true;
+    
     return 0;
 }
 
-static void emummc_partition_finalize(device_partition_t *devpart) {
-    free(devpart->crypto_work_buffer);
+static void emummc_partition_finalize(device_partition_t *devpart) {    
+    /* Free the crypto work buffer. */
+    if (devpart->crypto_work_buffer != NULL) {
+        free(devpart->crypto_work_buffer);
+    }
 }
 
 static int nxfs_bis_crypto_decrypt(device_partition_t *devpart, uint64_t sector, uint64_t num_sectors) {
@@ -566,6 +573,30 @@ int nxfs_mount_emu_emmc(const char *emunand_boot0_path, const char *emunand_boot
     model.num_sectors = (256ull << 30) / model.sector_size;
     
     if (!is_exfat) {
+        /* For multiple parts we want a folder with the archive bit set. */
+        rc = fsdev_get_attr(emunand_rawnand_base_path);
+        
+        /* Failed to get file DOS attributes. */
+        if (rc == -1) {
+            return -1;
+        }
+        
+        /* Our path is not a directory. */
+        if (!(rc & AM_DIR)) {
+            return -1;
+        }
+        
+        /* Check if the archive bit is not set. */
+        if (!(rc & AM_ARC)) {
+            /* Try to set the archive bit. */
+            rc = fsdev_set_attr(emunand_rawnand_base_path, AM_ARC, AM_ARC);
+            
+            /* Failed to set file DOS attributes. */
+            if (rc == -1) {
+                return -1;
+            }
+        }
+        
         /* Mount emulated raw NAND device from multiple parts. */
         rc = emudev_mount_device_multipart("rawnand", &model, emunand_rawnand_base_path, num_parts, part_limit);
         
