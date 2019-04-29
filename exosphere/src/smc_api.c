@@ -168,7 +168,9 @@ void set_version_specific_smcs(void) {
         case ATMOSPHERE_TARGET_FIRMWARE_100:
             /* 1.0.0 doesn't have ConfigureCarveout or ReadWriteRegister. */
             g_smc_priv_table[7].handler = NULL;
-            g_smc_priv_table[8].handler = NULL;
+            /* However, it is in our interest to enable ReadWriteRegister. */
+            /* So we will not actually NOP it out. */
+            /* g_smc_priv_table[8].handler = NULL; */
             /* 1.0.0 doesn't have UnwrapAesWrappedTitlekey. */
             g_smc_user_table[0x12].handler = NULL;
             break;
