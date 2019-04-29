@@ -100,5 +100,28 @@ int main(int argc, char **argv)
     
     /* TODO: Implement the boot sysmodule -- boot_old to be broadly rewritten. */
     
+    /* TODO: Explicitly: */
+    
+    /* TODO: ChangeGpioVoltageTo1_8v(); */
+    
+    /* TODO: SetInitialGpioConfiguration(); */
+    
+    /* TODO: CheckClock(); */
+    
+    /* TODO: DetectBootReason(); */
+    
+    /* TODO: ShowSplashScreen(); */
+    
+    /* TODO: ConfigurePinmux(); */
+    
+    /* TODO: SetInitialWakePinConfiguration(); */
+    
+    /* TODO: SetInitialClockConfiguration(); */
+    
+    /* TODO: CheckAndRepairBootImages(); */
+    
+    /* TODO: NotifyBootFinished(); */
+    
+    
     return 0;
 }
