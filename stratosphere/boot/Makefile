@@ -128,7 +128,7 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET)_100.kip $(TARGET)_100.elf $(TARGET)_200.kip $(TARGET)_200.elf
+	@rm -fr $(BUILD) $(TARGET).kip $(TARGET).elf
 
 
 #---------------------------------------------------------------------------------
@@ -140,16 +140,11 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all	:	$(OUTPUT)_100.kip $(OUTPUT)_200.kip
+all	:	$(OUTPUT).kip
 
-$(OUTPUT)_100.kip	:	$(OUTPUT)_100.elf 
-$(OUTPUT)_200.kip	:	$(OUTPUT)_200.elf
+$(OUTPUT).kip	:	$(OUTPUT).elf
 
-$(OUTPUT)_100.kip	:	APP_JSON = $(TOPDIR)/boot_100.json
-$(OUTPUT)_200.kip	:	APP_JSON = $(TOPDIR)/boot_200.json
-
-$(OUTPUT)_100.elf	:	$(OFILES)
-$(OUTPUT)_200.elf	:	$(OFILES)
+$(OUTPUT).elf	:	$(OFILES)
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data

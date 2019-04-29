@@ -1,0 +1,165 @@
+{
+    "name": "boot",
+    "title_id": "0x0100000000000005",
+    "main_thread_stack_size": "0x1000",
+    "main_thread_priority": 27,
+    "default_cpu_id": 3,
+    "process_category": 1,
+    "kernel_capabilities": [
+        {
+            "type": "handle_table_size",
+            "value": 128
+        },
+        {
+            "type": "syscalls",
+            "value": {
+                "svcSetHeapSize": "0x01",
+                "svcSetMemoryPermission": "0x02",
+                "svcSetMemoryAttribute": "0x03",
+                "svcMapMemory": "0x04",
+                "svcUnmapMemory": "0x05",
+                "svcQueryMemory": "0x06",
+                "svcExitProcess": "0x07",
+                "svcCreateThread": "0x08",
+                "svcStartThread": "0x09",
+                "svcExitThread": "0x0A",
+                "svcSleepThread": "0x0B",
+                "svcGetThreadPriority": "0x0C",
+                "svcSetThreadPriority": "0x0D",
+                "svcGetThreadCoreMask": "0x0E",
+                "svcSetThreadCoreMask": "0x0F",
+                "svcGetCurrentProcessorNumber": "0x10",
+                "svcSignalEvent": "0x11",
+                "svcClearEvent": "0x12",
+                "svcMapSharedMemory": "0x13",
+                "svcUnmapSharedMemory": "0x14",
+                "svcCreateTransferMemory": "0x15",
+                "svcCloseHandle": "0x16",
+                "svcResetSignal": "0x17",
+                "svcWaitSynchronization": "0x18",
+                "svcCancelSynchronization": "0x19",
+                "svcArbitrateLock": "0x1A",
+                "svcArbitrateUnlock": "0x1B",
+                "svcWaitProcessWideKeyAtomic": "0x1C",
+                "svcSignalProcessWideKey": "0x1D",
+                "svcGetSystemTick": "0x1E",
+                "svcConnectToNamedPort": "0x1F",
+                "svcSendSyncRequestLight": "0x20",
+                "svcSendSyncRequest": "0x21",
+                "svcSendSyncRequestWithUserBuffer": "0x22",
+                "svcSendAsyncRequestWithUserBuffer": "0x23",
+                "svcGetProcessId": "0x24",
+                "svcGetThreadId": "0x25",
+                "svcBreak": "0x26",
+                "svcOutputDebugString": "0x27",
+                "svcReturnFromException": "0x28",
+                "svcGetInfo": "0x29",
+                "svcWaitForAddress": "0x34",
+                "svcSignalToAddress": "0x35",
+                "svcReadWriteRegister": "0x4E",
+                "svcCreateInterruptEvent": "0x53",
+                "svcQueryIoMapping": "0x55",
+                "svcCreateDeviceAddressSpace": "0x56",
+                "svcAttachDeviceAddressSpace": "0x57",
+                "svcDetachDeviceAddressSpace": "0x58",
+                "svcMapDeviceAddressSpaceAligned": "0x5A",
+                "svcUnmapDeviceAddressSpace": "0x5C",
+                "svcFlushProcessDataCache": "0x5F",
+                "svcCallSecureMonitor": "0x7F"
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x50003000",
+                "size": "0x1000",
+                "is_ro": false,
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x54200000",
+                "size": "0x3000",
+                "is_ro": false,
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x54300000",
+                "size": "0x1000",
+                "is_ro": false,
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x60006000",
+                "size": "0x1000",
+                "is_ro": false,
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x6000D000",
+                "size": "0x1000",
+                "is_ro": false,
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x70000000",
+                "size": "0x4000",
+                "is_ro": false,
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x7000C000",
+                "size": "0x2000",
+                "is_ro": false,
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x700E3000",
+                "size": "0x1000",
+                "is_ro": false,
+                "is_io": true
+            }
+        },
+        {
+            "type": "irq_pair",
+            "value": [
+                70,
+                116
+            ]
+        },
+        {
+            "type": "irq_pair",
+            "value": [
+                124,
+                152
+            ]
+        },
+        {
+            "type": "irq_pair",
+            "value": [
+                85,
+                95
+            ]
+        }
+    ]
+}

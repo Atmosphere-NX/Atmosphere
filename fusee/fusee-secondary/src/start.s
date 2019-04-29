@@ -103,20 +103,12 @@ _content_headers:
 .asciz "ams_mitm"
 .align 5
 
-/* boot_100 content header */
-.word __boot_100_kip_start__
-.word __boot_100_kip_size__
+/* boot content header */
+.word __boot_kip_start__
+.word __boot_kip_size__
 .word CONTENT_TYPE_KIP
 .word 0xCCCCCCCC
-.asciz "boot_100"
-.align 5
-
-/* boot_200 content header */
-.word __boot_200_kip_start__
-.word __boot_200_kip_size__
-.word CONTENT_TYPE_KIP
-.word 0xCCCCCCCC
-.asciz "boot_200"
+.asciz "boot"
 .align 5
 
 /* exosphere content header */
