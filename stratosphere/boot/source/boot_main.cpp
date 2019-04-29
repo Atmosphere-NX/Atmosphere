@@ -23,6 +23,8 @@
 #include <atmosphere.h>
 #include <stratosphere.hpp>
 
+#include "boot_functions.hpp"
+
 extern "C" {
     extern u32 __start__;
 
@@ -102,7 +104,8 @@ int main(int argc, char **argv)
     
     /* TODO: Explicitly: */
     
-    /* TODO: ChangeGpioVoltageTo1_8v(); */
+    /* Change voltage from 3.3v to 1.8v for select devices. */
+    Boot::ChangeGpioVoltageTo1_8v();
     
     /* TODO: SetInitialGpioConfiguration(); */
     
