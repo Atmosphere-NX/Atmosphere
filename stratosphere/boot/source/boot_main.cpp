@@ -107,7 +107,8 @@ int main(int argc, char **argv)
     /* Change voltage from 3.3v to 1.8v for select devices. */
     Boot::ChangeGpioVoltageTo1_8v();
     
-    /* TODO: SetInitialGpioConfiguration(); */
+    /* Setup GPIO. */
+    Boot::SetInitialGpioConfiguration();
     
     /* TODO: CheckClock(); */
     

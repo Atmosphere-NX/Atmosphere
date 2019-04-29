@@ -18,12 +18,25 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "boot_types.hpp"
+
 class Boot {
+    public:
+        static constexpr u32 GpioPhysicalBase = 0x6000D000;
     public:
         /* Functions for actually booting. */
         static void ChangeGpioVoltageTo1_8v();
+        static void SetInitialGpioConfiguration();
 
         /* Register Utilities. */
         static u32 ReadPmcRegister(u32 phys_addr);
         static void WritePmcRegister(u32 phys_addr, u32 value, u32 mask = UINT32_MAX);
+        
+        /* GPIO Utilities. */
+        static u32 GpioConfigure(u32 gpio_pad_name);
+        static u32 GpioSetDirection(u32 gpio_pad_name, GpioDirection dir);
+        static u32 GpioSetValue(u32 gpio_pad_name, GpioValue val);
+        
+        /* SPL Utilities. */
+        static HardwareType GetHardwareType();
 };
