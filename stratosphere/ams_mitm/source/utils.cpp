@@ -139,6 +139,8 @@ void Utils::InitializeThreadFunc(void *args) {
                 fsFileFlush(&g_cal0_file);
             }
             
+            Utils::CreateBlankProdinfoIfNeeded();
+
             /* NOTE: g_cal0_file is intentionally not closed here. This prevents any other process from opening it. */
             memset(g_cal0_storage_backup, 0, sizeof(g_cal0_storage_backup));
             memset(g_cal0_backup, 0, sizeof(g_cal0_backup));
@@ -664,4 +666,89 @@ Result Utils::GetSettingsItemBooleanValue(const char *name, const char *key, boo
 
 void Utils::RebootToFatalError(AtmosphereFatalErrorContext *ctx) {
     BpcRebootManager::RebootForFatalError(ctx);
+}
+
+void Utils::CreateBlankProdinfoIfNeeded() {
+    /* if (!Utils::HasGlobalFlag("blank_prodinfo")) {
+        return;
+    } */
+
+    Result rc;
+
+    u8* buffer = g_cal0_backup;
+
+    // big brain: modify buffer inline
+
+    const char* serial = "XAW00000000000"; // TODO: Make this configurable?
+
+    memcpy(&buffer[0x250], serial, strlen(serial));
+
+    const u64 erasePoints[14] = {0xAE0, 0x800, 0x3AE0, 0x130, 0x35E1, 0x6, 0x36E1, 0x6, 0x2B0, 0x180, 0x3D70, 0x240, 0x3FC0, 0x240}; // offset, size
+
+    for (u64 i = 0; i < 14; i = i + 2) {
+        u64 offset = erasePoints[i];
+        u64 size = erasePoints[i + 1];
+
+        memset(&buffer[offset], 0, size);
+    }
+
+    const u64 hashPoints[6] = {0x12E0, 0xAE0, buffer[0xAD0], 0x20, 0x40, buffer[0x8]}; // hash offset, data offset, data size
+
+    for (u64 i = 0; i < 6; i = i + 3) {
+        u64 hashOffset = hashPoints[i];
+        u64 dataOffset = hashPoints[i + 1];
+        u64 dataSize = hashPoints[i + 2];
+
+        u8 data[dataSize];
+
+        memset(&data, buffer[dataOffset], dataSize);
+
+        u8 hash[0x20];
+
+        Sha256Context ctx;
+        sha256ContextCreate(&ctx);
+
+        sha256ContextUpdate(&ctx, data, dataSize);
+
+        sha256ContextGetHash(&ctx, &hash);
+
+        memcpy(&buffer[hashOffset], hash, 0x20);
+    }
+
+    rc = fsFsCreateFile(&g_sd_filesystem, "/atmosphere/automatic_backups/prodinfo_blank.bin", ProdinfoSize, 0);
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+
+    FsFile file;
+
+    rc = fsFsOpenFile(&g_sd_filesystem, "/atmosphere/automatic_backups/prodinfo_blank.bin", FS_OPEN_WRITE, &file);
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+
+    rc = fsFileSetSize(&file, ProdinfoSize);
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+
+    rc = fsFileWrite(&file, 0, buffer, ProdinfoSize);
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+
+    rc = fsFileFlush(&file);
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+
+    fsFileClose(&file);
+}
+
+FsFile Utils::GetBlankProdinfoFileHandle() {
+    FsFile file;
+
+    fsFsOpenFile(&g_sd_filesystem, "/atmosphere/automatic_backups/prodinfo_blank.bin", FS_OPEN_READ, &file);
+
+    return file;
 }

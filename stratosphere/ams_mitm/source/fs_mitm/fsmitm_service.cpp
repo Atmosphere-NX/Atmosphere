@@ -32,6 +32,7 @@
 #include "fs_save_utils.hpp"
 #include "fs_subdirectory_filesystem.hpp"
 #include "fs_directory_savedata_filesystem.hpp"
+#include "fs_file_storage.hpp"
 
 #include "../debug.hpp"
 
@@ -264,9 +265,15 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
             if (bis_partition_id == BisStorageId_Boot0) {
                 storage = std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, this->title_id));
             } else if (bis_partition_id == BisStorageId_Prodinfo) {
+                bool has_blank_cal0_flag = true; // See PR details
+
                 /* PRODINFO should *never* be writable. */
                 if (is_sysmodule || has_cal0_read_flag) {
                     storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
+                } else if (has_blank_cal0_flag) {
+                    FsFile file = Utils::GetBlankProdinfoFileHandle();
+                    
+                    storage = std::make_shared<IStorageInterface>(new FileStorage(std::make_shared<ProxyFile>(&file)));
                 } else {
                     /* Do not allow non-sysmodules to read *or* write CAL0. */
                     fsStorageClose(&bis_storage);

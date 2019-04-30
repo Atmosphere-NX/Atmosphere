@@ -90,6 +90,9 @@ class Utils {
         
         /* Error occurred. */
         static void RebootToFatalError(AtmosphereFatalErrorContext *ctx);
+
+        static FsFile GetBlankProdinfoFileHandle();
     private:
         static void RefreshConfiguration();
+        static void CreateBlankProdinfoIfNeeded();
 };
