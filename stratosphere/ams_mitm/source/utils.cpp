@@ -708,7 +708,7 @@ void Utils::CreateBlankProdinfoIfNeeded() {
 
         u8 data[data_size];
 
-        memcpy(&data, p ? g_cal0_backup[data_offset] : g_cal0_storage_backup[data_offset], data_size);
+        memcpy(&data, p ? &g_cal0_backup[data_offset] : &g_cal0_storage_backup[data_offset], data_size);
 
         u8 hash[0x20];
 
