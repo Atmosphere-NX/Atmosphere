@@ -262,18 +262,22 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
             const bool is_sysmodule = TitleIdIsSystem(this->title_id);
             const bool has_bis_write_flag = Utils::HasFlag(this->title_id, "bis_write");
             const bool has_cal0_read_flag = Utils::HasFlag(this->title_id, "cal_read");
+            const bool has_blank_cal0_flag = Utils::HasGlobalFlag("blank_prodinfo");
             if (bis_partition_id == BisStorageId_Boot0) {
                 storage = std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, this->title_id));
             } else if (bis_partition_id == BisStorageId_Prodinfo) {
-                bool has_blank_cal0_flag = true; // See PR details
+                if (has_blank_cal0_flag) {
+                    FsFile file;
 
-                /* PRODINFO should *never* be writable. */
-                if (is_sysmodule || has_cal0_read_flag) {
-                    storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
-                } else if (has_blank_cal0_flag) {
-                    FsFile file = Utils::GetBlankProdinfoFileHandle();
+                    rc = Utils::OpenBlankProdinfoFile(&file);
+                    if (R_FAILED(rc)) {
+                        return rc;
+                    }
                     
-                    storage = std::make_shared<IStorageInterface>(new FileStorage(std::make_shared<ProxyFile>(&file)));
+                    storage = std::make_shared<IStorageInterface>(new FileStorage(new ProxyFile(&file))); /* Should we make this read-only? */
+                } else if (is_sysmodule || has_cal0_read_flag) {
+                    /* PRODINFO should *never* be writable. */
+                    storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
                 } else {
                     /* Do not allow non-sysmodules to read *or* write CAL0. */
                     fsStorageClose(&bis_storage);
