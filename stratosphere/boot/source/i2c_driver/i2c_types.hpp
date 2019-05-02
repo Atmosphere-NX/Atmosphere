@@ -43,6 +43,11 @@ enum DriverCommand {
     DriverCommand_Receive = 1,
 };
 
+struct I2cSessionImpl {
+    I2cBus bus;
+    size_t session_id;
+};
+
 bool IsI2cDeviceSupported(I2cDevice dev);
 I2cBus GetI2cDeviceBus(I2cDevice dev);
 u32 GetI2cDeviceSlaveAddress(I2cDevice dev);
