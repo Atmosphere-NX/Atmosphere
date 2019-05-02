@@ -673,7 +673,7 @@ void Utils::RebootToFatalError(AtmosphereFatalErrorContext *ctx) {
 void Utils::CreateBlankProdInfoIfNeeded() {
     Result rc;
 
-    rc = fsFsOpenFile(&g_sd_filesystem, "/atmosphere/automatic_backups/prodinfo_blank.bin", FS_OPEN_READ | FS_OPEN_WRITE, &g_blank_prodinfo_file);
+    rc = fsFsOpenFile(&g_sd_filesystem, "/atmosphere/automatic_backups/prodinfo_blank.bin", FS_OPEN_READ, &g_blank_prodinfo_file);
     if (R_SUCCEEDED(rc)) {
         return;
     }
@@ -723,22 +723,31 @@ void Utils::CreateBlankProdInfoIfNeeded() {
         memcpy(&p[hash_offset], hash, 0x20);
     }
 
-    rc = fsFsOpenFile(&g_sd_filesystem, "/atmosphere/automatic_backups/prodinfo_blank.bin", FS_OPEN_READ | FS_OPEN_WRITE, &g_blank_prodinfo_file);
+    FsFile file;
+
+    rc = fsFsOpenFile(&g_sd_filesystem, "/atmosphere/automatic_backups/prodinfo_blank.bin", FS_OPEN_WRITE, &file);
     if (R_FAILED(rc)) {
         std::abort();
     }
 
-    rc = fsFileSetSize(&g_blank_prodinfo_file, ProdinfoSize);
+    rc = fsFileSetSize(&file, ProdinfoSize);
     if (R_FAILED(rc)) {
         std::abort();
     }
 
-    rc = fsFileWrite(&g_blank_prodinfo_file, 0, p, ProdinfoSize);
+    rc = fsFileWrite(&file, 0, p, ProdinfoSize);
     if (R_FAILED(rc)) {
         std::abort();
     }
 
-    rc = fsFileFlush(&g_blank_prodinfo_file);
+    rc = fsFileFlush(&file);
+    if (R_FAILED(rc)) {
+        std::abort();
+    }
+
+    fsFileClose(&file);
+
+    rc = fsFsOpenFile(&g_sd_filesystem, "/atmosphere/automatic_backups/prodinfo_blank.bin", FS_OPEN_READ, &g_blank_prodinfo_file);
     if (R_FAILED(rc)) {
         std::abort();
     }
