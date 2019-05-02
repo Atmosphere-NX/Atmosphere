@@ -269,12 +269,12 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
                 if (has_blank_cal0_flag) {
                     FsFile file;
 
-                    rc = Utils::OpenBlankProdinfoFile(&file);
+                    rc = Utils::OpenBlankProdInfoFile(&file);
                     if (R_FAILED(rc)) {
                         return rc;
                     }
                     
-                    storage = std::make_shared<IStorageInterface>(new FileStorage(new ProxyFile(&file))); /* Should we make this read-only? */
+                    storage = std::make_shared<IStorageInterface>(new FileStorage(new ProxyFile(&file)));
                 } else if (is_sysmodule || has_cal0_read_flag) {
                     /* PRODINFO should *never* be writable. */
                     storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));

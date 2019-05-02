@@ -91,9 +91,10 @@ class Utils {
         /* Error occurred. */
         static void RebootToFatalError(AtmosphereFatalErrorContext *ctx);
 
-        static Result OpenBlankProdinfoFile(FsFile *out);
+        static Result OpenBlankProdInfoFile(FsFile *out);
     private:
         static void RefreshConfiguration();
-        static void CreateBlankProdinfoIfNeeded();
-        static bool GetCAL0BackupBufferToBlank();
+        static void CreateBlankProdInfoIfNeeded();
+        static bool IsCal0Valid(u8* cal0);
+        static u8* GetCal0BufferToBlank();
 };
