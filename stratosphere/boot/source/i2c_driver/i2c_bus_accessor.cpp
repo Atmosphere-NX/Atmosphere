@@ -129,6 +129,19 @@ bool I2cBusAccessor::GetBusy() const {
     return false;
 }
 
+void I2cBusAccessor::OnStartTransaction() const {
+    /* Nothing actually happens here. */
+}
+
+void I2cBusAccessor::OnStopTransaction() const {
+    /* Nothing actually happens here. */
+}
+
+Result I2cBusAccessor::StartTransaction(DriverCommand command, AddressingMode addressing_mode, u32 slave_address) {
+    /* Nothing actually happens here... */
+    return ResultSuccess;
+}
+
 Result I2cBusAccessor::Send(const u8 *data, size_t num_bytes, I2cTransactionOption option, AddressingMode addressing_mode, u32 slave_address) {
     std::scoped_lock<HosMutex> lk(this->register_mutex);
     const u8 *cur_src = data;

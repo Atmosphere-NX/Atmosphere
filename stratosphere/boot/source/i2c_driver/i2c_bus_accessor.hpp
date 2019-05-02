@@ -74,6 +74,9 @@ class I2cBusAccessor {
         size_t GetOpenSessions() const;
         bool GetBusy() const;
 
+        void OnStartTransaction() const;
+        Result StartTransaction(DriverCommand command, AddressingMode addressing_mode, u32 slave_address);
         Result Send(const u8 *data, size_t num_bytes, I2cTransactionOption option, AddressingMode addressing_mode, u32 slave_address);
         Result Receive(u8 *out_data, size_t num_bytes, I2cTransactionOption option, AddressingMode addressing_mode, u32 slave_address);
+        void OnStopTransaction() const;
 };

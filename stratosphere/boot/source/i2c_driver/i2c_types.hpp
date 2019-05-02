@@ -38,6 +38,11 @@ enum I2cBus {
     I2cBus_I2c6 = 5,
 };
 
+enum DriverCommand {
+    DriverCommand_Send = 0,
+    DriverCommand_Receive = 1,
+};
+
 bool IsI2cDeviceSupported(I2cDevice dev);
 I2cBus GetI2cDeviceBus(I2cDevice dev);
 u32 GetI2cDeviceSlaveAddress(I2cDevice dev);
