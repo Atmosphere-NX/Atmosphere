@@ -19,6 +19,7 @@
 #include <stratosphere.hpp>
 
 #include "boot_types.hpp"
+#include "i2c_driver/i2c_types.hpp"
 
 class Boot {
     public:
@@ -39,4 +40,8 @@ class Boot {
         
         /* SPL Utilities. */
         static HardwareType GetHardwareType();
+
+        /* I2C Utilities. */
+        static Result ReadI2cRegister(I2cSessionImpl &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size);
+        static Result WriteI2cRegister(I2cSessionImpl &session, const u8 *src, size_t src_size, const u8 *cmd, size_t cmd_size);
 };

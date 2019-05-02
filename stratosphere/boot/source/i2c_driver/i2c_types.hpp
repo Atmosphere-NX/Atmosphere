@@ -48,6 +48,18 @@ struct I2cSessionImpl {
     size_t session_id;
 };
 
+enum I2cCommand {
+    I2cCommand_Send = 0,
+    I2cCommand_Receive = 1,
+    I2cCommand_SubCommand = 2,
+    I2cCommand_Count,
+};
+
+enum I2cSubCommand {
+    I2cSubCommand_Sleep = 0,
+    I2cSubCommand_Count,
+};
+
 bool IsI2cDeviceSupported(I2cDevice dev);
 I2cBus GetI2cDeviceBus(I2cDevice dev);
 u32 GetI2cDeviceSlaveAddress(I2cDevice dev);
