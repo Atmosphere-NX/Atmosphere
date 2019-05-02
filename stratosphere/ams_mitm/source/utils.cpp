@@ -754,7 +754,14 @@ void Utils::CreateBlankProdInfoIfNeeded() {
 }
 
 Result Utils::OpenBlankProdInfoFile(FsFile *out) {
-    return ipcCloneSession(g_blank_prodinfo_file.s.handle, 1, &out->s.handle);
+    FsFile file = g_blank_prodinfo_file;
+
+    Result rc = ipcCloneSession(g_blank_prodinfo_file.s.handle, 1, &file.s.handle);
+    if (R_SUCCEEDED(rc)) {
+        *out = file;
+    }
+
+    return rc;
 }
 
 bool Utils::IsCal0Valid(u8* cal0) {
