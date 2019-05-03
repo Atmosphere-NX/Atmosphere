@@ -17,6 +17,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include <strings.h>
+#include "boot_functions.hpp"
 #include "boot_reboot_manager.hpp"
 #include "fusee-primary_bin.h"
 
@@ -65,4 +66,10 @@ void BootRebootManager::RebootForFatalError(AtmosphereFatalErrorContext *ctx) {
     CopyToIram(IRAM_PAYLOAD_BASE + IRAM_PAYLOAD_MAX_SIZE, g_work_page, sizeof(g_work_page));
 
     RebootToIramPayload();
+}
+
+void Boot::RebootSystem() {
+    if (R_FAILED(BootRebootManager::PerformReboot())) {
+        std::abort();
+    }
 }

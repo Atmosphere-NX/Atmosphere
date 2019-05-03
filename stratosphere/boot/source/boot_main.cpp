@@ -116,7 +116,8 @@ int main(int argc, char **argv)
     /* Setup GPIO. */
     Boot::SetInitialGpioConfiguration();
     
-    /* TODO: CheckClock(); */
+    /* Check USB PLL/UTMIP clock. */
+    Boot::CheckClock();
     
     /* TODO: DetectBootReason(); */
     
