@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -34,7 +34,7 @@ extern "C" {
     #define INNER_HEAP_SIZE 0x200000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
-    
+
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
@@ -70,7 +70,7 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     Result rc;
-    
+
     SetFirmwareVersionForLibnx();
 
     /* Initialize services we need (TODO: NCM) */
@@ -79,25 +79,25 @@ void __appInit(void) {
         if (R_FAILED(rc)) {
             std::abort();
         }
-        
+
         rc = splInitialize();
         if (R_FAILED(rc)) {
             std::abort();
         }
-        
+
         rc = pmshellInitialize();
         if (R_FAILED(rc)) {
             std::abort();
         }
     });
-    
+
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {
     /* Cleanup services. */
     fsdevUnmountAll();
-    pmshellExit(); 
+    pmshellExit();
     splExit();
     fsExit();
 }
@@ -105,36 +105,40 @@ void __appExit(void) {
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
-    
+
     /* TODO: Implement the boot sysmodule -- boot_old to be broadly rewritten. */
 
     /* Change voltage from 3.3v to 1.8v for select devices. */
     Boot::ChangeGpioVoltageTo1_8v();
-    
+
     /* Setup GPIO. */
     Boot::SetInitialGpioConfiguration();
-    
+
     /* Check USB PLL/UTMIP clock. */
     Boot::CheckClock();
-    
+
     /* Talk to PMIC/RTC, set boot reason with SPL. */
     Boot::DetectBootReason();
-    
+
     /* Display splash screen for two seconds. */
     Boot::ShowSplashScreen();
-    
-    /* TODO: ConfigurePinmux(); */
-    
+
+    /* Check that the battery has enough to boot. */
+    /* TODO: Boot::CheckBatteryCharge(); */
+
+    /* Configure pinmux + drive pads. */
+    Boot::ConfigurePinmux();
+
     /* TODO: SetInitialWakePinConfiguration(); */
-    
+
     Boot::SetInitialClockConfiguration();
-    
+
     /* TODO: CheckAndRepairBootImages(); */
-    
+
     /* Tell PM to start boot2. */
     if (R_FAILED(pmshellNotifyBootFinished())) {
         std::abort();
     }
-    
+
     return 0;
 }

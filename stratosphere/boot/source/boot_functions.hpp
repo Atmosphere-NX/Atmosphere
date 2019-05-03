@@ -24,6 +24,7 @@
 class Boot {
     public:
         static constexpr u32 GpioPhysicalBase = 0x6000D000;
+        static constexpr u32 ApbMiscPhysicalBase = 0x70000000;
     public:
         /* Functions for actually booting. */
         static void ChangeGpioVoltageTo1_8v();
@@ -31,7 +32,11 @@ class Boot {
         static void CheckClock();
         static void DetectBootReason();
         static void ShowSplashScreen();
+        static void CheckBatteryCharge();
         static void SetInitialClockConfiguration();
+        static void ConfigurePinmux();
+        static void SetInitialWakePinConfiguration();
+        static void CheckAndRepairBootImages();
 
         /* Power utilities. */
         static void RebootSystem();
@@ -45,6 +50,13 @@ class Boot {
         static u32 GpioConfigure(u32 gpio_pad_name);
         static u32 GpioSetDirection(u32 gpio_pad_name, GpioDirection dir);
         static u32 GpioSetValue(u32 gpio_pad_name, GpioValue val);
+
+        /* Pinmux Utilities. */
+        static u32 PinmuxUpdatePark(u32 pinmux_name);
+        static u32 PinmuxUpdatePad(u32 pinmux_name, u32 config_val, u32 config_mask);
+        static u32 PinmuxUpdateDrivePad(u32 pinmux_drivepad_name, u32 config_val, u32 config_mask);
+        static void ConfigurePinmuxInitialPads();
+        static void ConfigurePinmuxInitialDrivePads();
 
         /* SPL Utilities. */
         static HardwareType GetHardwareType();

@@ -30,3 +30,9 @@ struct GpioInitialConfig {
     GpioDirection direction;
     GpioValue value;
 };
+
+struct PinmuxInitialConfig {
+    u32 name;
+    u32 val;
+    u32 mask;
+};
