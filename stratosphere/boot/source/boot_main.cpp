@@ -107,9 +107,7 @@ int main(int argc, char **argv)
     consoleDebugInit(debugDevice_SVC);
     
     /* TODO: Implement the boot sysmodule -- boot_old to be broadly rewritten. */
-    
-    /* TODO: Explicitly: */
-    
+
     /* Change voltage from 3.3v to 1.8v for select devices. */
     Boot::ChangeGpioVoltageTo1_8v();
     
@@ -129,12 +127,14 @@ int main(int argc, char **argv)
     
     /* TODO: SetInitialWakePinConfiguration(); */
     
-    /* TODO: SetInitialClockConfiguration(); */
+    Boot::SetInitialClockConfiguration();
     
     /* TODO: CheckAndRepairBootImages(); */
     
-    /* TODO: NotifyBootFinished(); */
-    
+    /* Tell PM to start boot2. */
+    if (R_FAILED(pmshellNotifyBootFinished())) {
+        std::abort();
+    }
     
     return 0;
 }

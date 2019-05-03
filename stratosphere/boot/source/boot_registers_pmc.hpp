@@ -39,6 +39,7 @@ static constexpr u32 PMC_CRYPTO_OP_SE_DISABLE = 1;
 static constexpr size_t APBDEV_PMC_SCRATCH33 = 0x120;
 static constexpr size_t APBDEV_PMC_SCRATCH40 = 0x13C;
 static constexpr size_t APBDEV_PMC_OSC_EDPD_OVER = 0x1A4;
+static constexpr size_t APBDEV_PMC_CLK_OUT_CNTRL = 0x1A8;
 static constexpr size_t APBDEV_PMC_RST_STATUS = 0x1B4;
 static constexpr size_t APBDEV_PMC_IO_DPD_REQ = 0x1B8;
 static constexpr size_t APBDEV_PMC_IO_DPD2_REQ = 0x1C0;

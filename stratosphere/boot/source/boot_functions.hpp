@@ -31,6 +31,7 @@ class Boot {
         static void CheckClock();
         static void DetectBootReason();
         static void ShowSplashScreen();
+        static void SetInitialClockConfiguration();
 
         /* Power utilities. */
         static void RebootSystem();
