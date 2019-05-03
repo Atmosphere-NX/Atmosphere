@@ -29,6 +29,7 @@ class Boot {
         static void ChangeGpioVoltageTo1_8v();
         static void SetInitialGpioConfiguration();
         static void CheckClock();
+        static void DetectBootReason();
 
         /* Power utilities. */
         static void RebootSystem();
@@ -45,6 +46,8 @@ class Boot {
 
         /* SPL Utilities. */
         static HardwareType GetHardwareType();
+        static u32 GetBootReason();
+        static bool IsRecoveryBoot();
 
         /* I2C Utilities. */
         static Result ReadI2cRegister(I2cSessionImpl &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size);

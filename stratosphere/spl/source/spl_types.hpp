@@ -65,7 +65,7 @@ struct AsyncOperationKey {
 struct BootReasonValue {
     u8 power_intr;
     u8 rtc_intr;
-    u8 _0x3;
+    u8 nv_erc;
     u8 boot_reason;
 };
 static_assert(sizeof(BootReasonValue) == sizeof(u32), "BootReasonValue definition!");

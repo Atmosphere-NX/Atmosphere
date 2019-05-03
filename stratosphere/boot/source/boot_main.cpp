@@ -119,7 +119,8 @@ int main(int argc, char **argv)
     /* Check USB PLL/UTMIP clock. */
     Boot::CheckClock();
     
-    /* TODO: DetectBootReason(); */
+    /* Talk to PMIC/RTC, set boot reason with SPL. */
+    Boot::DetectBootReason();
     
     /* TODO: ShowSplashScreen(); */
     

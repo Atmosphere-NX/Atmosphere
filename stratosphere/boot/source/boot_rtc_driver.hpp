@@ -13,21 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#include "boot_functions.hpp"
 
-HardwareType Boot::GetHardwareType() {
-    u64 out_val = 0;
-    if (R_FAILED(splGetConfig(SplConfigItem_HardwareType, &out_val))) {
-        std::abort();
-    }
-    return static_cast<HardwareType>(out_val);
-}
+#pragma once
+#include <switch.h>
+#include <stratosphere.hpp>
 
-bool Boot::IsRecoveryBoot() {
-    u64 val = 0;
-    if (R_FAILED(splGetConfig(SplConfigItem_IsRecoveryBoot, &val))) {
-        std::abort();
-    }
-    return val != 0;
-}
+#include "i2c_driver/i2c_api.hpp"
+
+class RtcDriver {
+    private:
+        I2cSessionImpl i2c_session;
+    public:
+        RtcDriver() {
+            I2cDriver::Initialize();
+            I2cDriver::OpenSession(&this->i2c_session, I2cDevice_Max77620Rtc);
+        }
+
+        ~RtcDriver() {
+            I2cDriver::CloseSession(this->i2c_session);
+            I2cDriver::Finalize();
+        }
+    private:
+        Result ReadRtcRegister(u8 *out, u8 address);
+    public:
+        Result GetRtcIntr(u8 *out);
+        Result GetRtcIntrM(u8 *out);
+};
