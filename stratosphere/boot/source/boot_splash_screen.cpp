@@ -13,35 +13,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include "boot_functions.hpp"
+#include "boot_splash_screen_notext.hpp"
+/* TODO: Compile-time switch for splash_screen_text.hpp? */
 
-HardwareType Boot::GetHardwareType() {
-    u64 out_val = 0;
-    if (R_FAILED(splGetConfig(SplConfigItem_HardwareType, &out_val))) {
-        std::abort();
+void Boot::ShowSplashScreen() {
+    const u32 boot_reason = Boot::GetBootReason();
+    if (boot_reason == 1 || boot_reason == 4) {
+        return;
     }
-    return static_cast<HardwareType>(out_val);
-}
 
-bool Boot::IsRecoveryBoot() {
-    u64 val = 0;
-    if (R_FAILED(splGetConfig(SplConfigItem_IsRecoveryBoot, &val))) {
-        std::abort();
+    Boot::InitializeDisplay();
+    {
+        /* Splash screen is shown for 2 seconds. */
+        Boot::ShowDisplay(SplashScreenX, SplashScreenY, SplashScreenW, SplashScreenH, SplashScreen);
+        svcSleepThread(2'000'000'000ul);
     }
-    return val != 0;
-}
-
-bool Boot::IsMariko() {
-    HardwareType hw_type = GetHardwareType();
-    switch (hw_type) {
-        case HardwareType_Icosa:
-        case HardwareType_Copper:
-            return false;
-        case HardwareType_Hoag:
-        case HardwareType_Iowa:
-            return true;
-        default:
-            std::abort();
-    }
+    Boot::FinalizeDisplay();
 }

@@ -30,6 +30,7 @@ class Boot {
         static void SetInitialGpioConfiguration();
         static void CheckClock();
         static void DetectBootReason();
+        static void ShowSplashScreen();
 
         /* Power utilities. */
         static void RebootSystem();
@@ -48,8 +49,15 @@ class Boot {
         static HardwareType GetHardwareType();
         static u32 GetBootReason();
         static bool IsRecoveryBoot();
+        static bool IsMariko();
 
         /* I2C Utilities. */
         static Result ReadI2cRegister(I2cSessionImpl &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size);
         static Result WriteI2cRegister(I2cSessionImpl &session, const u8 *src, size_t src_size, const u8 *cmd, size_t cmd_size);
+        static Result WriteI2cRegister(I2cSessionImpl &session, const u8 address, const u8 value);
+
+        /* Splash Screen/Display utilities. */
+        static void InitializeDisplay();
+        static void ShowDisplay(size_t x, size_t y, size_t width, size_t height, const u32 *img);
+        static void FinalizeDisplay();
 };

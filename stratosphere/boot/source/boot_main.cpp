@@ -122,7 +122,8 @@ int main(int argc, char **argv)
     /* Talk to PMIC/RTC, set boot reason with SPL. */
     Boot::DetectBootReason();
     
-    /* TODO: ShowSplashScreen(); */
+    /* Display splash screen for two seconds. */
+    Boot::ShowSplashScreen();
     
     /* TODO: ConfigurePinmux(); */
     

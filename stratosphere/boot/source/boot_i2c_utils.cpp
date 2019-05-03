@@ -69,3 +69,7 @@ Result Boot::WriteI2cRegister(I2cSessionImpl &session, const u8 *src, size_t src
 
     return RetryUntilSuccess([&]() { return I2cDriver::Send(session, cmd_list, src_size + cmd_size, static_cast<I2cTransactionOption>(I2cTransactionOption_Start | I2cTransactionOption_Stop)); });
 }
+
+Result Boot::WriteI2cRegister(I2cSessionImpl &session, const u8 address, const u8 value) {
+    return Boot::WriteI2cRegister(session, &value, sizeof(value), &address, sizeof(address));
+}
