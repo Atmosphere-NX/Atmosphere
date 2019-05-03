@@ -24,6 +24,7 @@
 #include <stratosphere.hpp>
 
 #include "boot_functions.hpp"
+#include "boot_reboot_manager.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -48,6 +49,11 @@ extern "C" {
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     StratosphereCrashHandler(ctx);
+}
+
+void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx) {
+    /* We're boot sysmodule, so manually reboot to fatal error. */
+    BootRebootManager::RebootForFatalError(ctx);
 }
 
 void __libnx_initheap(void) {
