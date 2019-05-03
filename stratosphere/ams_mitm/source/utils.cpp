@@ -754,14 +754,7 @@ void Utils::CreateBlankProdInfoIfNeeded() {
 }
 
 Result Utils::OpenBlankProdInfoFile(FsFile *out) {
-    FsFile file = g_blank_prodinfo_file;
-
-    Result rc = ipcCloneSession(g_blank_prodinfo_file.s.handle, 1, &file.s.handle);
-    if (R_SUCCEEDED(rc)) {
-        *out = file;
-    }
-
-    return rc;
+    return fsFsOpenFile(&g_sd_filesystem, "/atmosphere/automatic_backups/prodinfo_blank.bin", FS_OPEN_READ, out);
 }
 
 bool Utils::IsCal0Valid(u8* cal0) {
