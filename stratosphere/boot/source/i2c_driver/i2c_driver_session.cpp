@@ -51,6 +51,7 @@ void I2cDriverSession::Close(){
     if (this->open) {
         this->bus_accessor->Close();
         this->bus_accessor = nullptr;
+        this->open = false;
     }
 }
 

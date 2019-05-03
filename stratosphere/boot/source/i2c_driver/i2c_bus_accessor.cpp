@@ -500,7 +500,7 @@ void I2cBusAccessor::WriteTransferHeader(TransferMode transfer_mode, I2cTransact
     hdr_val |= ((transfer_mode == TransferMode_Receive) & 1) << 19;
     hdr_val |= ((addressing_mode != AddressingMode_7Bit) & 1) << 18;
     hdr_val |= (1 << 17);
-    hdr_val |= (((option & I2cTransactionOption_Stop) != 0) & 1) << 18;
+    hdr_val |= (((option & I2cTransactionOption_Stop) == 0) & 1) << 16;
     hdr_val |= slave_addr_val;
 
     WriteRegister(&this->i2c_registers->I2C_I2C_TX_PACKET_FIFO_0, hdr_val);
