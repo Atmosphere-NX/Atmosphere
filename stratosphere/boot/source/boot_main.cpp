@@ -124,7 +124,7 @@ int main(int argc, char **argv)
     Boot::ShowSplashScreen();
 
     /* Check that the battery has enough to boot. */
-    /* TODO: Boot::CheckBatteryCharge(); */
+    Boot::CheckBatteryCharge();
 
     /* Configure pinmux + drive pads. */
     Boot::ConfigurePinmux();

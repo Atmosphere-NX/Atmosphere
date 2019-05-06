@@ -53,4 +53,5 @@ class BatteryDriver {
 
     public:
         Result InitializeBatteryParameters();
+        Result IsBatteryRemoved(bool *out);
 };

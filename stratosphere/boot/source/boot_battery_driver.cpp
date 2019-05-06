@@ -296,3 +296,14 @@ Result BatteryDriver::InitializeBatteryParameters() {
 
     return ResultSuccess;
 }
+
+Result BatteryDriver::IsBatteryRemoved(bool *out) {
+    /* N doesn't check result, but we will. */
+    u16 val = 0;
+    Result rc = this->Read(Max17050Status, &val);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    *out = (val & 0x0008) == 0x0008;
+    return ResultSuccess;
+}
