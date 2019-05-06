@@ -73,4 +73,9 @@ class Boot {
         static void InitializeDisplay();
         static void ShowDisplay(size_t x, size_t y, size_t width, size_t height, const u32 *img);
         static void FinalizeDisplay();
+
+        /* Calibration utilities. */
+        static u16 GetCrc16(const void *data, size_t size);
+        static u32 GetBatteryVersion();
+        static u32 GetBatteryVendor();
 };
