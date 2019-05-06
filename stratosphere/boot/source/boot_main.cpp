@@ -133,6 +133,18 @@ int main(int argc, char **argv)
 
     Boot::SetInitialClockConfiguration();
 
+    Boot::ShowLowBatteryIcon();
+
+    Boot::StartShowChargingIcon(0, true);
+    Boot::EndShowChargingIcon();
+
+    Boot::StartShowChargingIcon(15, true);
+    Boot::EndShowChargingIcon();
+
+    Boot::StartShowChargingIcon(100, true);
+    Boot::EndShowChargingIcon();
+    while (1) { }
+
     /* TODO: CheckAndRepairBootImages(); */
 
     /* Tell PM to start boot2. */

@@ -154,10 +154,7 @@ static void InitializeFrameBuffer() {
     } else {
         const uintptr_t frame_buffer_aligned = ((reinterpret_cast<uintptr_t>(g_frame_buffer_storage) + DeviceAddressSpaceAlignMask) & ~uintptr_t(DeviceAddressSpaceAlignMask));
         g_frame_buffer = reinterpret_cast<u32 *>(frame_buffer_aligned);
-        for (size_t i = 0; i < FrameBufferSize / sizeof(u32); i++) {
-            g_frame_buffer[i] = 0xFF0000FF;
-        }
-        //std::memset(g_frame_buffer, 0xCC, FrameBufferSize);
+        std::memset(g_frame_buffer, 0x00, FrameBufferSize);
         armDCacheFlush(g_frame_buffer, FrameBufferSize);
 
         constexpr u64 DeviceName_DC = 2;

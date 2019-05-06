@@ -74,6 +74,11 @@ class Boot {
         static void ShowDisplay(size_t x, size_t y, size_t width, size_t height, const u32 *img);
         static void FinalizeDisplay();
 
+        /* Battery Display utilities. */
+        static void ShowLowBatteryIcon();
+        static void StartShowChargingIcon(size_t battery_percentage, bool wait);
+        static void EndShowChargingIcon();
+
         /* Calibration utilities. */
         static u16 GetCrc16(const void *data, size_t size);
         static u32 GetBatteryVersion();
