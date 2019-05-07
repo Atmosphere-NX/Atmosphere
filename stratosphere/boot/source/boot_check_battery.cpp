@@ -211,7 +211,7 @@ static CheckBatteryResult LoopCheckBattery(PmicDriver *pmic_driver, ChargerDrive
             is_showing_charging_icon = true;
         }
 
-        svcSleepThread(2'000'000'000ul);
+        svcSleepThread(20'000'000ul);
         UpdateCharger(pmic_driver, charger_driver, battery_driver, params, charge_voltage_limit);
     }
 }
