@@ -83,7 +83,7 @@ Result Pcv::SetReset(PcvModule module, bool reset) {
     if (reset) {
         SetRegisterBits(regs.rst_reg, regs.mask);
     } else {
-        ClearRegisterBits(regs.rst_reg, regs.mask);
+        ClearRegisterBits(regs.rst_reg, ~regs.mask);
     }
 
     return ResultSuccess;

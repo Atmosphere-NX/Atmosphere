@@ -87,7 +87,7 @@ u32 Boot::GpioSetDirection(u32 gpio_pad_name, GpioDirection dir) {
     *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset + 0x90)) = gpio_oe_val;
 
     /* Do a dummy read from GPIO_OE_x register (lower offset) */
-    gpio_oe_val = *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset));
+    gpio_oe_val = *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset + 0x10));
 
     return gpio_oe_val;
 }
@@ -113,7 +113,7 @@ u32 Boot::GpioSetValue(u32 gpio_pad_name, GpioValue val) {
     *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset + 0xA0)) = gpio_out_val;
 
     /* Do a dummy read from GPIO_OUT_x register (lower offset) */
-    gpio_out_val = *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset));
+    gpio_out_val = *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset + 0x20));
 
     return gpio_out_val;
 }

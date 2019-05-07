@@ -25,6 +25,7 @@
 
 #include "boot_functions.hpp"
 #include "boot_reboot_manager.hpp"
+#include "i2c_driver/i2c_api.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -120,18 +121,25 @@ int main(int argc, char **argv)
     /* Talk to PMIC/RTC, set boot reason with SPL. */
     Boot::DetectBootReason();
 
-    /* Display splash screen for two seconds. */
-    Boot::ShowSplashScreen();
+    const HardwareType hw_type = Boot::GetHardwareType();
+    if (hw_type != HardwareType_Copper) {
+        /* Display splash screen for two seconds. */
+        Boot::ShowSplashScreen();
 
-    /* Check that the battery has enough to boot. */
-    Boot::CheckBatteryCharge();
+        /* Check that the battery has enough to boot. */
+        Boot::CheckBatteryCharge();
+    }
 
     /* Configure pinmux + drive pads. */
     Boot::ConfigurePinmux();
 
     /* TODO: SetInitialWakePinConfiguration(); */
 
-    Boot::SetInitialClockConfiguration();
+    if (hw_type != HardwareType_Copper) {
+        Boot::SetInitialClockConfiguration();
+    }
+
+    Boot::SetFanEnabled();
 
     /* TODO: CheckAndRepairBootImages(); */
 
