@@ -36,3 +36,9 @@ struct PinmuxInitialConfig {
     u32 val;
     u32 mask;
 };
+
+struct WakePinConfig {
+    u32 index;
+    bool enabled;
+    u32 level;
+};

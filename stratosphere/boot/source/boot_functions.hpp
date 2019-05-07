@@ -84,4 +84,8 @@ class Boot {
         static u16 GetCrc16(const void *data, size_t size);
         static u32 GetBatteryVersion();
         static u32 GetBatteryVendor();
+
+        /* Wake pin utiliies. */
+        static void SetWakeEventLevel(u32 index, u32 level);
+        static void SetWakeEventEnabled(u32 index, bool enabled);
 };
