@@ -107,8 +107,6 @@ int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
 
-    /* TODO: Implement the boot sysmodule -- boot_old to be broadly rewritten. */
-
     /* Change voltage from 3.3v to 1.8v for select devices. */
     Boot::ChangeGpioVoltageTo1_8v();
 
@@ -133,7 +131,8 @@ int main(int argc, char **argv)
     /* Configure pinmux + drive pads. */
     Boot::ConfigurePinmux();
 
-    /* TODO: SetInitialWakePinConfiguration(); */
+    /* Configure the PMC wake pin settings. */
+    Boot::SetInitialWakePinConfiguration();
 
     if (hw_type != HardwareType_Copper) {
         Boot::SetInitialClockConfiguration();
