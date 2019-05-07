@@ -57,6 +57,16 @@ Result PmicDriver::GetNvErc(u8 *out) {
     return Boot::ReadI2cRegister(this->i2c_session, out, sizeof(*out), &addr, sizeof(addr));
 }
 
+Result PmicDriver::GetPowerButtonPressed(bool *out) {
+    u8 power_intr;
+    Result rc = this->GetPowerIntr(&power_intr);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    *out = (power_intr & 0x08) != 0;
+    return ResultSuccess;
+}
+
 Result PmicDriver::ShutdownSystem(bool reboot) {
     /* TODO: Implement this. */
     std::abort();

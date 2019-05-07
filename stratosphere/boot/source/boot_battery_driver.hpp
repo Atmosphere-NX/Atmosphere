@@ -54,4 +54,8 @@ class BatteryDriver {
     public:
         Result InitializeBatteryParameters();
         Result IsBatteryRemoved(bool *out);
+        Result GetTemperature(double *out);
+        Result GetAverageVCell(u32 *out);
+        Result GetSocRep(double *out);
+        Result GetBatteryPercentage(size_t *out);
 };

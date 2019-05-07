@@ -307,3 +307,50 @@ Result BatteryDriver::IsBatteryRemoved(bool *out) {
     *out = (val & 0x0008) == 0x0008;
     return ResultSuccess;
 }
+
+Result BatteryDriver::GetTemperature(double *out) {
+    u16 val = 0;
+    Result rc = this->Read(Max17050Temperature, &val);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    *out = static_cast<double>(val) * double(0.00390625);
+    return ResultSuccess;
+}
+
+Result BatteryDriver::GetAverageVCell(u32 *out) {
+    u16 val = 0;
+    Result rc = this->Read(Max17050AverageVCell, &val);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    *out = (625 * u32(val >> 3)) / 1000;
+    return ResultSuccess;
+}
+
+Result BatteryDriver::GetSocRep(double *out) {
+    u16 val = 0;
+    Result rc = this->Read(Max17050SocRep, &val);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    *out = static_cast<double>(val) * double(0.00390625);
+    return ResultSuccess;
+}
+
+Result BatteryDriver::GetBatteryPercentage(size_t *out) {
+    double raw_charge;
+    Result rc = this->GetSocRep(&raw_charge);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    int converted_percentage = (((raw_charge - 3.93359375) * 98.0) / 94.2304688) + 2.0;
+    if (converted_percentage < 1) {
+        *out = 1;
+    } else if (converted_percentage > 100) {
+        *out = 100;
+    } else {
+        *out = static_cast<size_t>(converted_percentage);
+    }
+    return ResultSuccess;
+}

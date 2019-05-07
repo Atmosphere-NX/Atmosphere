@@ -42,4 +42,5 @@ class PmicDriver {
         Result GetAcOk(bool *out);
         Result GetPowerIntr(u8 *out);
         Result GetNvErc(u8 *out);
+        Result GetPowerButtonPressed(bool *out);
 };
