@@ -36,6 +36,7 @@ class Boot {
         static void SetInitialClockConfiguration();
         static void ConfigurePinmux();
         static void SetInitialWakePinConfiguration();
+        static void SetFanEnabled();
         static void CheckAndRepairBootImages();
 
         /* Power utilities. */
