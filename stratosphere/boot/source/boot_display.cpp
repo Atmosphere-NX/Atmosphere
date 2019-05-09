@@ -363,6 +363,7 @@ void Boot::InitializeDisplay() {
             WriteRegister(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x9483FFB9);
             WriteRegister(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
             svcSleepThread(5'000'000ul);
+            WriteRegister(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x739);
             WriteRegister(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x751548B1);
             WriteRegister(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x143209);
             WriteRegister(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
