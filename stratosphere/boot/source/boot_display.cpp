@@ -135,11 +135,10 @@ static inline void DoDsiSleepOrRegisterWrites(const DsiSleepOrRegisterWrite *reg
         if (reg_writes[i].kind == DsiSleepOrRegisterWriteKind_Write) {
             *(reinterpret_cast<volatile u32 *>(g_dsi_regs + sizeof(u32) * reg_writes[i].offset)) = reg_writes[i].value;
         } else if (reg_writes[i].kind == DsiSleepOrRegisterWriteKind_Sleep) {
-            svcSleepThread(1'000'000ul * reg_writes[i].offset);
+            svcSleepThread(1'000'000ul * u64(reg_writes[i].offset));
         } else {
             std::abort();
         }
-
     }
 }
 

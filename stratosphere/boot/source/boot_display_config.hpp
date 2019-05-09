@@ -403,7 +403,7 @@ static constexpr RegisterWrite DisplayConfigMipiCal03Erista[] = {
     {0x64, 0x200002},
     {0x68, 0x200002},
     {0x14, 0},
-    {0x14, 0},
+    {0x18, 0},
 };
 
 static constexpr RegisterWrite DisplayConfigMipiCal03Mariko[] = {
@@ -411,8 +411,8 @@ static constexpr RegisterWrite DisplayConfigMipiCal03Mariko[] = {
     {0x3C, 0x200006},
     {0x64, 0x260000},
     {0x68, 0x260000},
-    {0x14, 0x200000},
-    {0x14, 0x200000},
+    {0x14, 0},
+    {0x18, 0},
 };
 
 static constexpr RegisterWrite DisplayConfigMipiCal04[] = {
