@@ -208,7 +208,7 @@ static void WaitDsiTrigger() {
         }
     }
 
-    svcSleepThread(5'000ul);
+    svcSleepThread(5'000'000ul);
 }
 
 static void WaitDsiHostControl() {
