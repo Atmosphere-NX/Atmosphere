@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include "boot_functions.hpp"
 
 static constexpr u32 SmcFunctionId_AtmosphereReadWriteRegister = 0xF0000002;

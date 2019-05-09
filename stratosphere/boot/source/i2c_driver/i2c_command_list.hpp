@@ -39,14 +39,14 @@ class I2cCommandListFormatter {
         ~I2cCommandListFormatter() {
             this->cmd_list = nullptr;
         }
-        
+
     private:
         Result CanEnqueue(size_t size) const;
     public:
         size_t GetCurrentSize() const {
             return this->cur_index;
         }
-        
+
         Result EnqueueSendCommand(I2cTransactionOption option, const void *src, size_t size);
         Result EnqueueReceiveCommand(I2cTransactionOption option, size_t size);
         Result EnqueueSleepCommand(size_t us);

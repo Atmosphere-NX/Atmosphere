@@ -81,7 +81,7 @@ static constexpr u32 GpioMap[] = {
     0x00000058,   /* Port L, Pin 0 */
     0x0000003E,   /* Port H, Pin 6 */
     0x00000026,   /* Port E, Pin 6 */
-    
+
     /* Copper only */
     GpioInvalid,  /* Invalid */
     0x00000033,   /* Port G, Pin 3 */
@@ -99,11 +99,11 @@ static constexpr u32 GpioMap[] = {
     0x00000012,   /* Port C, Pin 2 */
     0x00000042,   /* Port I, Pin 2 */
     0x000000E6,   /* Port CC, Pin 6 */
-    
+
     /* 2.0.0+ Copper only */
     0x000000AC,   /* Port V, Pin 4 */
     0x000000E1,   /* Port CC, Pin 1 */
-    
+
     /* 5.0.0+ Copper only (unused) */
     0x00000056,   /* Port K, Pin 6 */
 };

@@ -191,7 +191,7 @@ static constexpr PinmuxDefinition PinmuxMap[] = {
     {0x00003288, 0x72FF, 0x01},   /* GpioPz3 */
     {0x0000328C, 0x72FF, 0x01},   /* GpioPz4 */
     {0x00003290, 0x72FF, 0x01},   /* GpioPz5 */
-    
+
     /* 5.0.0+ only */
     {0x00003294, 0x1F2FF, 0x02},   /* Sdmmc2Dat0 */
     {0x00003298, 0x1F2FF, 0x02},   /* Sdmmc2Dat1 */
