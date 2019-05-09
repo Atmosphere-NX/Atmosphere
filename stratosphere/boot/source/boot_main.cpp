@@ -134,13 +134,16 @@ int main(int argc, char **argv)
     /* Configure the PMC wake pin settings. */
     Boot::SetInitialWakePinConfiguration();
 
+    /* Configure output clock. */
     if (hw_type != HardwareType_Copper) {
         Boot::SetInitialClockConfiguration();
     }
 
+    /* Set Fan enable config (Copper only). */
     Boot::SetFanEnabled();
 
-    /* TODO: CheckAndRepairBootImages(); */
+    /* Repair boot partitions in NAND if needed. */
+    Boot::CheckAndRepairBootImages();
 
     /* Tell PM to start boot2. */
     if (R_FAILED(pmshellNotifyBootFinished())) {
