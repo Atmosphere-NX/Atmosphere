@@ -267,7 +267,7 @@ void Boot::CheckBatteryCharge() {
             pmic_driver.ShutdownSystem();
             break;
         case CheckBatteryResult_Reboot:
-            pmic_driver.RebootSystem();
+            Boot::RebootSystem();
             break;
         default:
             std::abort();

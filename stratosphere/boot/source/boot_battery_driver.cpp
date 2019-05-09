@@ -354,3 +354,21 @@ Result BatteryDriver::GetBatteryPercentage(size_t *out) {
     }
     return ResultSuccess;
 }
+
+Result BatteryDriver::SetShutdownTimer() {
+    return this->Write(Max17050ShdnTimer, 0xE000);
+}
+
+Result BatteryDriver::GetShutdownEnabled(bool *out) {
+    u16 val = 0;
+    Result rc = this->Read(Max17050Config, &val);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    *out = (val & 0x0040) != 0;
+    return ResultSuccess;
+}
+
+Result BatteryDriver::SetShutdownEnabled(bool enabled) {
+    return this->ReadWrite(Max17050Config, 0x0040, enabled ? 0x0040 : 0x0000);
+}

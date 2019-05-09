@@ -25,7 +25,6 @@
 
 #include "boot_functions.hpp"
 #include "boot_reboot_manager.hpp"
-#include "i2c_driver/i2c_api.hpp"
 
 extern "C" {
     extern u32 __start__;

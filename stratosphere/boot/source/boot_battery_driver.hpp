@@ -58,4 +58,7 @@ class BatteryDriver {
         Result GetAverageVCell(u32 *out);
         Result GetSocRep(double *out);
         Result GetBatteryPercentage(size_t *out);
+        Result SetShutdownTimer();
+        Result GetShutdownEnabled(bool *out);
+        Result SetShutdownEnabled(bool enabled);
 };

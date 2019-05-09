@@ -68,6 +68,65 @@ Result PmicDriver::GetPowerButtonPressed(bool *out) {
 }
 
 Result PmicDriver::ShutdownSystem(bool reboot) {
-    /* TODO: Implement this. */
+    const u8 on_off_1_addr = 0x41;
+    const u8 on_off_2_addr = 0x42;
+
+    /* Get value, set or clear software reset mask. */
+    u8 on_off_2_val = 0;
+    if (R_FAILED(Boot::ReadI2cRegister(this->i2c_session, &on_off_2_val, sizeof(on_off_2_val), &on_off_2_addr, sizeof(on_off_2_addr)))) {
+        std::abort();
+    }
+    if (reboot) {
+        on_off_2_val |= 0x80;
+    } else {
+        on_off_2_val &= ~0x80;
+    }
+    if (R_FAILED(Boot::WriteI2cRegister(this->i2c_session, &on_off_2_val, sizeof(on_off_2_val), &on_off_2_addr, sizeof(on_off_2_addr)))) {
+        std::abort();
+    }
+
+    /* Get value, set software reset mask. */
+    u8 on_off_1_val = 0;
+    if (R_FAILED(Boot::ReadI2cRegister(this->i2c_session, &on_off_1_val, sizeof(on_off_1_val), &on_off_1_addr, sizeof(on_off_1_addr)))) {
+        std::abort();
+    }
+    on_off_1_val |= 0x80;
+
+    /* Finalize the battery. */
+    {
+        BatteryDriver battery_driver;
+        this->FinalizeBattery(&battery_driver);
+    }
+
+    /* Actually write the value to trigger shutdown/reset. */
+    if (R_FAILED(Boot::WriteI2cRegister(this->i2c_session, &on_off_1_val, sizeof(on_off_1_val), &on_off_1_addr, sizeof(on_off_1_addr)))) {
+        std::abort();
+    }
+
+    /* Allow up to 5 seconds for shutdown/reboot to take place. */
+    svcSleepThread(5'000'000'000ul);
     std::abort();
+}
+
+void PmicDriver::FinalizeBattery(BatteryDriver *battery_driver) {
+    /* Set shutdown timer. */
+    battery_driver->SetShutdownTimer();
+
+    /* Get whether shutdown is enabled. */
+    bool shutdown_enabled;
+    if (R_FAILED(battery_driver->GetShutdownEnabled(&shutdown_enabled))) {
+        return;
+    }
+
+    bool ac_ok;
+    bool desired_shutdown_enabled;
+    if (R_FAILED(this->GetAcOk(&ac_ok)) || ac_ok) {
+        desired_shutdown_enabled = false;
+    } else {
+        desired_shutdown_enabled = true;
+    }
+
+    if (shutdown_enabled != desired_shutdown_enabled) {
+        battery_driver->SetShutdownEnabled(desired_shutdown_enabled);
+    }
 }

@@ -19,6 +19,7 @@
 #include <stratosphere.hpp>
 
 #include "i2c_driver/i2c_api.hpp"
+#include "boot_battery_driver.hpp"
 
 class PmicDriver {
     private:
@@ -36,6 +37,7 @@ class PmicDriver {
     private:
         Result GetPowerStatus(u8 *out);
         Result ShutdownSystem(bool reboot);
+        void FinalizeBattery(BatteryDriver *battery_driver);
     public:
         void ShutdownSystem();
         void RebootSystem();
