@@ -46,7 +46,7 @@ static bool g_stratosphere_sm_enabled = true;
 static bool g_stratosphere_pm_enabled = true;
 static bool g_stratosphere_ams_mitm_enabled = true;
 static bool g_stratosphere_spl_enabled = true;
-static bool g_stratosphere_boot_enabled = false;
+static bool g_stratosphere_boot_enabled = true;
 
 extern const uint8_t loader_kip[], pm_kip[], sm_kip[], spl_kip[], boot_kip[], ams_mitm_kip[];
 extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size, spl_kip_size, boot_kip_size, ams_mitm_kip_size;
