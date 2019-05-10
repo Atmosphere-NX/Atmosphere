@@ -668,7 +668,7 @@ static int sdmmc_int_clk_enable(sdmmc_t *sdmmc)
 
     /* Clock failed to stabilize. */
     if (is_timeout) {
-        sdmmc_error(sdmmc, "clock never stabilized!");
+        sdmmc_error(sdmmc, "Clock never stabilized!");
         return 0;
     }
 
@@ -1353,8 +1353,11 @@ static int sdmmc_dma_init(sdmmc_t *sdmmc, sdmmc_request_t *req)
 {
     /* Invalid block count or size. */
     if (!req->blksz || !req->num_blocks)
+    {
+        sdmmc_error(sdmmc, "Empty DMA request!");
         return 0;
-
+    }
+    
     uint32_t blkcnt = req->num_blocks;
     
     /* Truncate block count. Length can't be over 65536 bytes. */
@@ -1366,8 +1369,11 @@ static int sdmmc_dma_init(sdmmc_t *sdmmc, sdmmc_request_t *req)
 
     /* DMA buffer address must be aligned to 4 bytes. */
     if ((4 - (dma_base_addr & 0x03)) & 0x03)
+    {
+        sdmmc_error(sdmmc, "Invalid DMA request data buffer: 0x%08X", dma_base_addr);
         return 0;
-
+    }
+    
     /* Write our address to the registers. */
     if (sdmmc->use_adma)
     {
