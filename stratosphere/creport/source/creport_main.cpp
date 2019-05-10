@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
         });
         
         /* Don't fatal if we have extra info. */
-        if (kernelAbove500()) {
+        if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
             if (g_Creport.IsApplication()) {
                 return 0;
             }

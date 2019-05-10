@@ -20,7 +20,7 @@
 #include "ldr_map.hpp"
 
 Result MapUtils::LocateSpaceForMap(u64 *out, u64 out_size) {
-    if (kernelAbove200()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200)) {
         return LocateSpaceForMapModern(out, out_size);
     } else {
         return LocateSpaceForMapDeprecated(out, out_size);

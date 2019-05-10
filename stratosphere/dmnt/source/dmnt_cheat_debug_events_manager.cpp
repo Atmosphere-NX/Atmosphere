@@ -39,7 +39,7 @@ void DmntCheatDebugEventsManager::PerCoreThreadFunc(void *arg) {
         }
         
         /* Continue the process, if needed. */
-        if (kernelAbove300()) {
+        if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_300)) {
             svcContinueDebugEvent(debug_handle, 5, nullptr, 0);
         } else {
             svcLegacyContinueDebugEvent(debug_handle, 5, 0);

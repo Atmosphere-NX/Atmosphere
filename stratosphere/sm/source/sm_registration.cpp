@@ -163,7 +163,7 @@ void Registration::CacheInitialProcessIdLimits() {
     if (g_determined_initial_process_ids) {
         return;
     }
-    if (kernelAbove500()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
         svcGetSystemInfo(&g_initial_process_id_low, 2, 0, 0);
         svcGetSystemInfo(&g_initial_process_id_high, 2, 0, 1);
     } else {

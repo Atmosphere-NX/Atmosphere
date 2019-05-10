@@ -101,7 +101,7 @@ void CrashReport::ProcessExceptions() {
 
 void CrashReport::HandleAttachProcess(DebugEventInfo &d) {
     this->process_info = d.info.attach_process;
-    if (kernelAbove500() && IsApplication()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500) && IsApplication()) {
         /* Parse out user data. */
         u64 address = this->process_info.user_exception_context_address;
         u64 userdata_address = 0;
@@ -155,7 +155,7 @@ void CrashReport::HandleException(DebugEventInfo &d) {
         case DebugExceptionType::UserBreak:
             this->result = ResultCreportUserBreak;
             /* Try to parse out the user break result. */
-            if (kernelAbove500()) {
+            if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
                 Result user_result = 0;
                 if (IsAddressReadable(d.info.exception.specific.user_break.address, sizeof(user_result))) {
                     svcReadDebugProcessMemory(&user_result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(user_result));
@@ -186,7 +186,7 @@ void CrashReport::HandleException(DebugEventInfo &d) {
 
 void CrashReport::ProcessDyingMessage() {
     /* Dying message is only stored starting in 5.0.0. */
-    if (!kernelAbove500()) {
+    if ((GetRuntimeFirmwareVersion() < FirmwareVersion_500)) {
         return;
     }
     
@@ -318,7 +318,7 @@ void CrashReport::SaveToFile(FILE *f_report) {
     fprintf(f_report, "    Title ID:                    %016lx\n", this->process_info.title_id);
     fprintf(f_report, "    Process ID:                  %016lx\n", this->process_info.process_id);
     fprintf(f_report, "    Process Flags:               %08x\n", this->process_info.flags);
-    if (kernelAbove500()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
         fprintf(f_report, "    User Exception Address:      %s\n", this->code_list.GetFormattedAddressString(this->process_info.user_exception_context_address));
     }
     
@@ -350,7 +350,7 @@ void CrashReport::SaveToFile(FILE *f_report) {
     fprintf(f_report, "Crashed Thread Info:\n");
     this->crashed_thread_info.SaveToFile(f_report);
     
-    if (kernelAbove500()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
         if (this->dying_message_size) {
             fprintf(f_report, "Dying Message Info:\n");
             fprintf(f_report, "    Address:                     0x%s\n", this->code_list.GetFormattedAddressString(this->dying_message_address));

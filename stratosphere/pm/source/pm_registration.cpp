@@ -120,13 +120,13 @@ void Registration::HandleProcessLaunch() {
     if (program_info.application_type & 1) {
         new_process.flags |= PROCESSFLAGS_APPLICATION;
     }
-    if (kernelAbove200() && LAUNCHFLAGS_NOTIYDEBUGSPECIAL(launch_flags) && (program_info.application_type & 4)) { 
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200) && LAUNCHFLAGS_NOTIYDEBUGSPECIAL(launch_flags) && (program_info.application_type & 4)) { 
         new_process.flags |= PROCESSFLAGS_NOTIFYDEBUGSPECIAL;
     }
     if (LAUNCHFLAGS_NOTIFYWHENEXITED(launch_flags)) {
         new_process.flags |= PROCESSFLAGS_NOTIFYWHENEXITED;
     }
-    if (LAUNCHFLAGS_NOTIFYDEBUGEVENTS(launch_flags) && (!kernelAbove200() || (program_info.application_type & 4))) {
+    if (LAUNCHFLAGS_NOTIFYDEBUGEVENTS(launch_flags) && (GetRuntimeFirmwareVersion() < FirmwareVersion_200 || (program_info.application_type & 4))) {
         new_process.flags |= PROCESSFLAGS_NOTIFYDEBUGEVENTS;
     }
     
@@ -253,7 +253,7 @@ Result Registration::HandleSignaledProcess(std::shared_ptr<Registration::Process
                 process->flags |= PROCESSFLAGS_DEBUGEVENTPENDING;
                 g_process_event->Signal();
             }
-            if (kernelAbove200() && process->flags & PROCESSFLAGS_NOTIFYDEBUGSPECIAL) {
+            if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200) && process->flags & PROCESSFLAGS_NOTIFYDEBUGSPECIAL) {
                 process->flags &= ~(PROCESSFLAGS_NOTIFYDEBUGSPECIAL | PROCESSFLAGS_DEBUGDETACHED);
                 process->flags |= PROCESSFLAGS_DEBUGDETACHED;
             }
@@ -270,7 +270,7 @@ Result Registration::HandleSignaledProcess(std::shared_ptr<Registration::Process
             }
             break;
         case ProcessState_Exited:
-            if (process->flags & PROCESSFLAGS_NOTIFYWHENEXITED && !kernelAbove500()) {
+            if (process->flags & PROCESSFLAGS_NOTIFYWHENEXITED && GetRuntimeFirmwareVersion() < FirmwareVersion_500) {
                 g_process_event->Signal();
             } else {
                 FinalizeExitedProcess(process);
@@ -293,7 +293,7 @@ void Registration::FinalizeExitedProcess(std::shared_ptr<Registration::Process> 
     {
         std::scoped_lock<ProcessList &> lk(GetProcessList());
 
-        signal_debug_process_5x = kernelAbove500() && process->flags & PROCESSFLAGS_NOTIFYWHENEXITED;
+        signal_debug_process_5x = (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) && process->flags & PROCESSFLAGS_NOTIFYWHENEXITED;
 
         /* Unregister with FS. */
         if (R_FAILED(fsprUnregisterProgram(process->pid))) {
@@ -427,17 +427,17 @@ void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
         std::scoped_lock<ProcessList &> lk(GetProcessList());
         
         for (auto &p : g_process_list.processes) {
-            if (kernelAbove200() && p->state >= ProcessState_Running && p->flags & PROCESSFLAGS_DEBUGDETACHED) {
+            if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200) && p->state >= ProcessState_Running && p->flags & PROCESSFLAGS_DEBUGDETACHED) {
                 p->flags &= ~PROCESSFLAGS_DEBUGDETACHED;
                 *out_pid = p->pid;
-                *out_type = kernelAbove500() ? PROCESSEVENTTYPE_500_DEBUGDETACHED : PROCESSEVENTTYPE_DEBUGDETACHED;
+                *out_type = (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) ? PROCESSEVENTTYPE_500_DEBUGDETACHED : PROCESSEVENTTYPE_DEBUGDETACHED;
                 return;
             }
             if (p->flags & PROCESSFLAGS_DEBUGEVENTPENDING) {
                 u64 old_flags = p->flags;
                 p->flags &= ~PROCESSFLAGS_DEBUGEVENTPENDING;
                 *out_pid = p->pid;
-                *out_type = kernelAbove500() ?
+                *out_type = (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) ?
                     ((old_flags & PROCESSFLAGS_DEBUGSUSPENDED) ?
                         PROCESSEVENTTYPE_500_SUSPENDED :
                         PROCESSEVENTTYPE_500_RUNNING) :
@@ -448,10 +448,10 @@ void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
             }
             if (p->flags & PROCESSFLAGS_CRASHED) {
                 *out_pid = p->pid;
-                *out_type = kernelAbove500() ? PROCESSEVENTTYPE_500_CRASH : PROCESSEVENTTYPE_CRASH;
+                *out_type = (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) ? PROCESSEVENTTYPE_500_CRASH : PROCESSEVENTTYPE_CRASH;
                 return;
             }
-            if (!kernelAbove500() && p->flags & PROCESSFLAGS_NOTIFYWHENEXITED && p->state == ProcessState_Exited) {
+            if (GetRuntimeFirmwareVersion() < FirmwareVersion_500 && p->flags & PROCESSFLAGS_NOTIFYWHENEXITED && p->state == ProcessState_Exited) {
                 *out_pid = p->pid;
                 *out_type = PROCESSEVENTTYPE_EXIT;
                 return;
@@ -462,7 +462,7 @@ void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
         *out_type = 0;
     }
     
-    if (kernelAbove500()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
         std::scoped_lock<ProcessList &> dead_lk(g_dead_process_list);
 
         if (g_dead_process_list.processes.size()) {

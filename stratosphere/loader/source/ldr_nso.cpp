@@ -191,7 +191,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
     
     /* Calculate ASLR extents for address space type. */
     u64 addspace_start, addspace_size;
-    if (kernelAbove200()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200)) {
         switch (addspace_type & 0xE) {
             case 0:
             case 4:
