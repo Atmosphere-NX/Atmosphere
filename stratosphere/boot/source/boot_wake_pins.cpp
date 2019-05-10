@@ -49,7 +49,7 @@ static void InitializePmcWakeConfiguration(const bool is_blink) {
 void Boot::SetWakeEventLevel(u32 index, u32 level) {
     u32 pmc_wake_level_reg_offset = index <= 0x1F ? APBDEV_PMC_WAKE_LVL : APBDEV_PMC_WAKE2_LVL;
     u32 pmc_wake_level_mask_reg_offset = index <= 0x1F ? APBDEV_PMC_AUTO_WAKE_LVL_MASK : APBDEV_PMC_AUTO_WAKE2_LVL_MASK;
-    if (level == 2) {
+    if (level != 2) {
         std::swap(pmc_wake_level_reg_offset, pmc_wake_level_mask_reg_offset);
     }
 
