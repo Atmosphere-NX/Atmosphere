@@ -39,6 +39,7 @@
 
 extern void (*__program_exit_callback)(int rc);
 
+static __attribute__((__aligned__(0x200))) stage2_args_t g_stage2_args_store;
 static stage2_args_t *g_stage2_args;
 static bool g_do_nxboot;
 
@@ -84,7 +85,8 @@ int main(int argc, void **argv) {
         generic_panic();
     }
     
-    g_stage2_args = (stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT];
+    g_stage2_args = &g_stage2_args_store;
+    memcpy(g_stage2_args, (stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT], sizeof(*g_stage2_args));
 
     if (g_stage2_args->version != 0) {
         generic_panic();
@@ -101,10 +103,11 @@ int main(int argc, void **argv) {
     
     /* Load BCT0 from SD if needed. */
     if (strcmp(g_stage2_args->bct0, "") == 0) {
-        read_from_file(g_stage2_args->bct0, sizeof(g_stage2_args->bct0) - 1, "atmosphere/BCT.ini");
-        if (!read_from_file(g_stage2_args->bct0, sizeof(g_stage2_args->bct0) - 1, "atmosphere/BCT.ini")) {
+        uint32_t bct_tmp_buf[sizeof(g_stage2_args->bct0) / sizeof(uint32_t)] = {0};
+        if (!read_from_file(bct_tmp_buf, sizeof(bct_tmp_buf) - 1, "atmosphere/BCT.ini")) {
             fatal_error("Failed to read BCT0 from SD!\n");
         }
+        memcpy(g_stage2_args->bct0, bct_tmp_buf, sizeof(bct_tmp_buf));
     }
 
     /* This will load all remaining binaries off of the SD. */
