@@ -220,10 +220,8 @@ SECTIONS
        ======================= */
     PROVIDE(__ams_mitm_kip_start__ = ams_mitm_kip - __start__);
     PROVIDE(__ams_mitm_kip_size__ = ams_mitm_kip_end - ams_mitm_kip);
-    PROVIDE(__boot_100_kip_start__ = boot_100_kip - __start__);
-    PROVIDE(__boot_100_kip_size__ = boot_100_kip_end - boot_100_kip);
-    PROVIDE(__boot_200_kip_start__ = boot_200_kip - __start__);
-    PROVIDE(__boot_200_kip_size__ = boot_200_kip_end - boot_200_kip);
+    PROVIDE(__boot_kip_start__ = boot_kip - __start__);
+    PROVIDE(__boot_kip_size__ = boot_kip_end - boot_kip);
     PROVIDE(__exosphere_bin_start__ = exosphere_bin - __start__);
     PROVIDE(__exosphere_bin_size__ = exosphere_bin_end - exosphere_bin);
     PROVIDE(__fusee_primary_bin_start__ = fusee_primary_bin - __start__);
