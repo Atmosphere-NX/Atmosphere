@@ -75,3 +75,11 @@ unsigned int exosphere_should_override_debugmode_user(void) {
     
     return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_IS_DEBUGMODE_USER);
 }
+
+unsigned int exosphere_should_disable_usermode_exception_handlers(void) {
+    if (!g_has_loaded_config) {
+        generic_panic();
+    }
+    
+    return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS);
+}

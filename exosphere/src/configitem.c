@@ -37,6 +37,7 @@
 
 static bool g_hiz_mode_enabled = false;
 static bool g_debugmode_override_user = false, g_debugmode_override_priv = false;
+static bool g_enable_usermode_exception_handlers = true;
 
 uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
     switch (item) {
@@ -163,6 +164,10 @@ void configitem_set_debugmode_override(bool user, bool priv) {
     g_debugmode_override_priv = priv;
 }
 
+void configitem_disable_usermode_exception_handlers(void) {
+    g_enable_usermode_exception_handlers = false;
+}
+
 uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) {
     uint32_t result = 0;
     switch (item) {
@@ -213,8 +218,10 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
         case CONFIGITEM_KERNELCONFIGURATION:
             {
                 uint64_t config = bootconfig_get_kernel_configuration();
-                /* Always enable usermode exception handlers. */
-                config |= KERNELCONFIGFLAG_ENABLE_USER_EXCEPTION_HANDLERS;
+                /* Enable usermode exception handlers by default. */
+                if (g_enable_usermode_exception_handlers) {
+                    config |= KERNELCONFIGFLAG_ENABLE_USER_EXCEPTION_HANDLERS;
+                }
                 *p_outvalue = config;
             }
             break;

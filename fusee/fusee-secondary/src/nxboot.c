@@ -106,21 +106,26 @@ static int exosphere_ini_handler(void *user, const char *section, const char *na
     if (strcmp(section, "exosphere") == 0) {
         if (strcmp(name, EXOSPHERE_TARGETFW_KEY) == 0) {
             sscanf(value, "%d", &exo_cfg->target_firmware);
-        } 
-        if (strcmp(name, EXOSPHERE_DEBUGMODE_PRIV_KEY) == 0) {
+        } else if (strcmp(name, EXOSPHERE_DEBUGMODE_PRIV_KEY) == 0) {
             sscanf(value, "%d", &tmp);
             if (tmp) {
                 exo_cfg->flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV;
             } else {
                 exo_cfg->flags &= ~(EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV);
             }
-        } 
-        if (strcmp(name, EXOSPHERE_DEBUGMODE_USER_KEY) == 0) {
+        } else if (strcmp(name, EXOSPHERE_DEBUGMODE_USER_KEY) == 0) {
             sscanf(value, "%d", &tmp);
             if (tmp) {
                 exo_cfg->flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_USER;
             } else {
                 exo_cfg->flags &= ~(EXOSPHERE_FLAG_IS_DEBUGMODE_USER);
+            }
+        } else if (strcmp(name, EXOSPHERE_DISABLE_USERMODE_EXCEPTION_HANDLERS_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (tmp) {
+                exo_cfg->flags |= EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS;
+            } else {
+                exo_cfg->flags &= ~(EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS);
             }
         } else {
             return 0;

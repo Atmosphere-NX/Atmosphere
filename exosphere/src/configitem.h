@@ -60,6 +60,7 @@ bool configitem_is_hiz_mode_enabled(void);
 bool configitem_is_debugmode_priv(void);
 
 void configitem_set_debugmode_override(bool user, bool priv);
+void configitem_disable_usermode_exception_handlers(void);
 void configitem_set_hiz_mode_enabled(bool enabled);
 
 uint64_t configitem_get_hardware_type(void);

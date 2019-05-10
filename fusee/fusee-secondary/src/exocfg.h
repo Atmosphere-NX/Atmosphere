@@ -24,10 +24,11 @@
 /* "EXO0" */
 #define MAGIC_EXOSPHERE_CONFIG (0x304F5845)
 
-#define EXOSPHERE_FLAGS_DEFAULT 0x00000000
-#define EXOSPHERE_FLAG_PERFORM_620_KEYGEN (1 << 0u)
-#define EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV  (1 << 1u)
-#define EXOSPHERE_FLAG_IS_DEBUGMODE_USER  (1 << 2u)
+#define EXOSPHERE_FLAG_PERFORM_620_KEYGEN                   (1 << 0u)
+#define EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV                    (1 << 1u)
+#define EXOSPHERE_FLAG_IS_DEBUGMODE_USER                    (1 << 2u)
+#define EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS  (1 << 3u)
+#define EXOSPHERE_FLAGS_DEFAULT (EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV)
 
 typedef struct {
     unsigned int magic;
@@ -41,5 +42,6 @@ typedef struct {
 #define EXOSPHERE_TARGETFW_KEY "target_firmware"
 #define EXOSPHERE_DEBUGMODE_PRIV_KEY "debugmode"
 #define EXOSPHERE_DEBUGMODE_USER_KEY "debugmode_user"
+#define EXOSPHERE_DISABLE_USERMODE_EXCEPTION_HANDLERS_KEY "disable_user_exception_handlers"
 
 #endif
