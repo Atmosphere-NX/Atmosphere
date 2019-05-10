@@ -40,6 +40,15 @@ static const u64 g_memory_resource_limits_4x[5][3] = {
     {0x028D00000ULL, 0x0CD500000ULL, 0x089700000ULL}  /* No changes. */
 };
 
+/* These limits were altered again in 5.x. */
+static const u64 g_memory_resource_limits_5x[5][3] = {
+    {0x012300000ULL, 0x0CD500000ULL, 0x020100000ULL}, /* 12 MB was taken from applet over 4.x and given to system. */
+    {0x01E100000ULL, 0x080000000ULL, 0x061800000ULL}, /* No changes. */
+    {0x015E00000ULL, 0x0CD500000ULL, 0x01C600000ULL}, /* 12 MB was taken from applet over 4.x and given to system. */
+    {0x028D00000ULL, 0x133400000ULL, 0x023800000ULL}, /* No changes. */
+    {0x028D00000ULL, 0x0CD500000ULL, 0x089700000ULL}  /* No changes. */
+};
+
 /* These are the limits for LimitableResources. */
 /* Memory, Threads, Events, TransferMemories, Sessions. */
 static u64 g_resource_limits_deprecated[3][5] = {
@@ -100,21 +109,24 @@ void ResourceLimitUtils::InitializeLimits() {
     for (unsigned int i = 0; i < 3; i++) {
         if (i > 0) {
             if (R_FAILED(svcCreateResourceLimit(&g_resource_limit_handles[i]))) {
-                /* TODO: Panic. */
+                std::abort();
             }
         } else {
             u64 out = 0;
             if (R_FAILED(svcGetInfo(&out, 9, 0, 0))) {
-                /* TODO: Panic. */
+                std::abort();
             }
             g_resource_limit_handles[i] = (Handle)out;
         }
     }
     /* Set global aliases. */
-    if (kernelAbove600()) {
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_600) {
         /* 6.0.0 did away with hardcoded memory resource limit values. */
         memcpy(&g_resource_limits, &g_resource_limits_6x, sizeof(g_resource_limits));
-    } else if (kernelAbove400()) {
+    } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+        memcpy(&g_memory_resource_limits, &g_memory_resource_limits_5x, sizeof(g_memory_resource_limits_5x));
+        memcpy(&g_resource_limits, &g_resource_limits_4x, sizeof(g_resource_limits));
+    } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
         memcpy(&g_memory_resource_limits, &g_memory_resource_limits_4x, sizeof(g_memory_resource_limits_4x));
         memcpy(&g_resource_limits, &g_resource_limits_4x, sizeof(g_resource_limits));
     } else {
@@ -125,7 +137,7 @@ void ResourceLimitUtils::InitializeLimits() {
     /* 7.0.0+: Nintendo restricts the number of system threads here, from 0x260 -> 0x60. */
     /* We will not do this. */
     
-    if (kernelAbove600()) {
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_600) {
         /* NOTE: 5 is a fake type, official code does not do this. */
         /* This is done for ease of backwards compatibility. */
         g_memory_limit_type = 5;
@@ -136,13 +148,13 @@ void ResourceLimitUtils::InitializeLimits() {
         /* Get total memory available. */
         u64 total_memory = 0;
         if (R_FAILED(svcGetResourceLimitLimitValue(&total_memory, g_resource_limit_handles[0], LimitableResource_Memory))) {
-            /* TODO: Panic. */
+            std::abort();
         }
         
         /* Get and save application + applet memory. */
         if (R_FAILED(svcGetSystemInfo(&g_memory_resource_limits[g_memory_limit_type][1], 0, 0, 0)) ||
             R_FAILED(svcGetSystemInfo(&g_memory_resource_limits[g_memory_limit_type][2], 0, 0, 1))) {
-                /* TODO: Panic. */
+                std::abort();
             }
         
         const u64 application_size = g_memory_resource_limits[g_memory_limit_type][1];
@@ -151,7 +163,7 @@ void ResourceLimitUtils::InitializeLimits() {
             
         /* Ensure there's enough memory for system region. */
         if (reserved_nonsys_size > total_memory) {
-            /* TODO: Panic. */
+            std::abort();
         }
         
         /* Set System memory. */
@@ -160,7 +172,7 @@ void ResourceLimitUtils::InitializeLimits() {
         /* Get memory limits. */
         u64 memory_arrangement;
         if (R_FAILED(splGetConfig(SplConfigItem_MemoryArrange, &memory_arrangement))) {
-            /* TODO: panic. */
+            std::abort();
         }
         memory_arrangement &= 0x3F;
         switch (memory_arrangement) {
@@ -186,7 +198,7 @@ void ResourceLimitUtils::InitializeLimits() {
     for (unsigned int i = 0; i < 6; i++) {
         g_memory_resource_limits[i][0] += ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
         /* On < 3.0.0, taking from application instead of applet fixes a rare hang on boot. */
-        if (kernelAbove300()) {
+        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
             g_memory_resource_limits[i][2] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
         } else {
             g_memory_resource_limits[i][1] -= ATMOSPHERE_EXTRA_SYSTEM_MEMORY_FOR_SYSMODULES;
@@ -197,7 +209,7 @@ void ResourceLimitUtils::InitializeLimits() {
     for (unsigned int i = 0; i < 3; i++) {
         g_resource_limits[i][LimitableResource_Memory] = g_memory_resource_limits[g_memory_limit_type][i];
         if (R_FAILED(SetResourceLimits((ResourceLimitCategory)i, g_memory_resource_limits[g_memory_limit_type][i]))) {
-            /* TODO: Panic. */
+            std::abort();
         }
     }
 }
@@ -213,11 +225,11 @@ void ResourceLimitUtils::EnsureApplicationResourcesAvailable() {
             svcSleepThread(1000000ULL);
         } while (result);
     }
-    if (kernelAbove500()) {
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
         u64 result;
         do {
             if (R_FAILED(svcGetSystemInfo(&result, 1, 0, 0))) {
-                /* TODO: Panic. */
+                std::abort();
             }
             svcSleepThread(1000000ULL);
         } while (result);
@@ -242,7 +254,7 @@ Result ResourceLimitUtils::BoostSystemMemoryResourceLimit(u64 boost_size) {
         return ResultPmInvalidSize;
     }
     u64 app_size = g_memory_resource_limits[g_memory_limit_type][ResourceLimitCategory_Application] - boost_size;
-    if (kernelAbove500()) {
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
         if (boost_size < g_system_boost_size) {
             if (R_FAILED((rc = svcSetUnsafeLimit(boost_size)))) {
                 return rc;
@@ -258,7 +270,7 @@ Result ResourceLimitUtils::BoostSystemMemoryResourceLimit(u64 boost_size) {
                 return rc;
             }
         }
-    } else if (kernelAbove400()) {
+    } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
         u64 sys_size = g_memory_resource_limits[g_memory_limit_type][ResourceLimitCategory_System] + boost_size;
         if (boost_size < g_system_boost_size) {
             if (R_FAILED((rc = SetResourceLimits(ResourceLimitCategory_System, sys_size)))) {
