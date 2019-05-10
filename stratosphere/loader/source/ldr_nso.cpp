@@ -207,8 +207,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
                 addspace_size = 0x7FF8000000ULL;
                 break;
             default:
-                /* TODO: Panic. */
-                return ResultKernelOutOfMemory;
+                std::abort();
         }
     } else {
         if (addspace_type & 2) {
