@@ -44,7 +44,7 @@ class FsMitmService : public IMitmServiceObject {
         bool should_override_contents;
     public:
         FsMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
-            if (Utils::HasSdDisableMitMFlag(this->title_id)) {
+            if (this->title_id == TitleId_Settings || Utils::HasSdDisableMitMFlag(this->title_id)) {
                 this->should_override_contents = false;
             } else {
                 this->should_override_contents = (this->title_id >= TitleId_ApplicationStart || Utils::HasSdMitMFlag(this->title_id)) && Utils::HasOverrideButton(this->title_id);
@@ -65,7 +65,7 @@ class FsMitmService : public IMitmServiceObject {
                 has_launched_qlaunch = true;
             }
 
-            return has_launched_qlaunch || tid == TitleId_Ns || tid >= TitleId_ApplicationStart || Utils::HasSdMitMFlag(tid);
+            return has_launched_qlaunch || tid == TitleId_Settings || tid == TitleId_Ns || tid >= TitleId_ApplicationStart || Utils::HasSdMitMFlag(tid);
         }
 
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);

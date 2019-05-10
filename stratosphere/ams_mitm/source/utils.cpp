@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 #include <atomic>
@@ -60,10 +60,13 @@ static HblOverrideConfig g_hbl_override_config = {
 static char g_config_ini_data[0x800];
 
 /* Backup file for CAL0 partition. */
-static constexpr size_t ProdinfoSize = 0x8000;
+static constexpr size_t ProdInfoSize = 0x8000;
+static constexpr const char *BlankProdInfoPath = "/atmosphere/automatic_backups/BLANK_PRODINFO.bin";
 static FsFile g_cal0_file = {0};
-static u8 g_cal0_storage_backup[ProdinfoSize];
-static u8 g_cal0_backup[ProdinfoSize];
+static u8 g_cal0_storage_backup[ProdInfoSize];
+static u8 g_cal0_backup[ProdInfoSize];
+
+static FsFile g_blank_prodinfo_file = {0};
 
 static bool IsHexadecimal(const char *str) {
     while (*str) {
@@ -85,37 +88,37 @@ void Utils::InitializeThreadFunc(void *args) {
             if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
                 std::abort();
             } else {
-                svcCloseHandle(tmp_hnd);   
+                svcCloseHandle(tmp_hnd);
             }
         }
     });
-    
+
     /* Mount SD. */
     while (R_FAILED(fsMountSdcard(&g_sd_filesystem))) {
         svcSleepThread(1000000ULL);
     }
-    
+
     /* Back up CAL0, if it's not backed up already. */
     fsFsCreateDirectory(&g_sd_filesystem, "/atmosphere/automatic_backups");
     {
         FsStorage cal0_storage;
-        if (R_FAILED(fsOpenBisStorage(&cal0_storage, BisStorageId_Prodinfo)) || R_FAILED(fsStorageRead(&cal0_storage, 0, g_cal0_storage_backup, ProdinfoSize))) {
+        if (R_FAILED(fsOpenBisStorage(&cal0_storage, BisStorageId_Prodinfo)) || R_FAILED(fsStorageRead(&cal0_storage, 0, g_cal0_storage_backup, ProdInfoSize))) {
             std::abort();
         }
         fsStorageClose(&cal0_storage);
-        
+
         char serial_number[0x40] = {0};
         memcpy(serial_number, g_cal0_storage_backup + 0x250, 0x18);
-        
-        
+
+
         char prodinfo_backup_path[FS_MAX_PATH] = {0};
         if (strlen(serial_number) > 0) {
             snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/%s_PRODINFO.bin", serial_number);
         } else {
             snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/PRODINFO.bin");
         }
-        
-        fsFsCreateFile(&g_sd_filesystem, prodinfo_backup_path, ProdinfoSize, 0);
+
+        fsFsCreateFile(&g_sd_filesystem, prodinfo_backup_path, ProdInfoSize, 0);
         if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, prodinfo_backup_path, FS_OPEN_READ | FS_OPEN_WRITE, &g_cal0_file))) {
             bool has_auto_backup = false;
             size_t read = 0;
@@ -124,7 +127,7 @@ void Utils::InitializeThreadFunc(void *args) {
                 is_cal0_valid &= memcmp(g_cal0_backup, "CAL0", 4) == 0;
                 is_cal0_valid &= memcmp(g_cal0_backup + 0x250, serial_number, 0x18) == 0;
                 u32 cal0_size = ((u32 *)g_cal0_backup)[2];
-                is_cal0_valid &= cal0_size + 0x40 <= ProdinfoSize;
+                is_cal0_valid &= cal0_size + 0x40 <= ProdInfoSize;
                 if (is_cal0_valid) {
                     u8 calc_hash[0x20];
                     sha256CalculateHash(calc_hash, g_cal0_backup + 0x40, cal0_size);
@@ -132,19 +135,22 @@ void Utils::InitializeThreadFunc(void *args) {
                 }
                 has_auto_backup = is_cal0_valid;
             }
-            
+
             if (!has_auto_backup) {
-                fsFileSetSize(&g_cal0_file, ProdinfoSize);
-                fsFileWrite(&g_cal0_file, 0, g_cal0_storage_backup, ProdinfoSize);
+                fsFileSetSize(&g_cal0_file, ProdInfoSize);
+                fsFileWrite(&g_cal0_file, 0, g_cal0_storage_backup, ProdInfoSize);
                 fsFileFlush(&g_cal0_file);
             }
-            
+
+            /* Use one of the storages to make a blank prodinfo file. */
+            Utils::CreateBlankProdInfo();
+
             /* NOTE: g_cal0_file is intentionally not closed here. This prevents any other process from opening it. */
-            memset(g_cal0_storage_backup, 0, sizeof(g_cal0_storage_backup));
-            memset(g_cal0_backup, 0, sizeof(g_cal0_backup));
+            std::memset(g_cal0_storage_backup, 0, sizeof(g_cal0_storage_backup));
+            std::memset(g_cal0_backup, 0, sizeof(g_cal0_backup));
         }
     }
-    
+
     /* Check for MitM flags. */
     FsDir titles_dir;
     if (R_SUCCEEDED(fsFsOpenDirectory(&g_sd_filesystem, "/atmosphere/titles", FS_DIROPEN_DIRECTORY, &titles_dir))) {
@@ -172,7 +178,7 @@ void Utils::InitializeThreadFunc(void *args) {
                         fsFileClose(&f);
                     }
                 }
-                
+
                 memset(title_path, 0, sizeof(title_path));
                 strcpy(title_path, "/atmosphere/titles/");
                 strcat(title_path, dir_entry.name);
@@ -195,25 +201,25 @@ void Utils::InitializeThreadFunc(void *args) {
         }
         fsDirClose(&titles_dir);
     }
-    
+
     Utils::RefreshConfiguration();
-    
+
     /* Initialize set:sys. */
     DoWithSmSession([&]() {
         if (R_FAILED(setsysInitialize())) {
             std::abort();
         }
     });
-    
+
     /* Signal SD is initialized. */
     g_has_initialized = true;
-    
+
     /* Load custom settings configuration. */
     SettingsItemManager::LoadConfiguration();
-    
+
     /* Signal to waiters that we are ready. */
     g_sd_signal.Signal();
-    
+
     /* Initialize HID. */
     while (!g_has_hid_session) {
         DoWithSmSession([&]() {
@@ -243,7 +249,7 @@ Result Utils::OpenSdFile(const char *fn, int flags, FsFile *out) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     return fsFsOpenFile(&g_sd_filesystem, fn, flags, out);
 }
 
@@ -251,7 +257,7 @@ Result Utils::OpenSdFileForAtmosphere(u64 title_id, const char *fn, int flags, F
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     char path[FS_MAX_PATH];
     if (*fn == '/') {
         snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", title_id, fn);
@@ -265,7 +271,7 @@ Result Utils::OpenRomFSSdFile(u64 title_id, const char *fn, int flags, FsFile *o
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     return OpenRomFSFile(&g_sd_filesystem, title_id, fn, flags, out);
 }
 
@@ -273,7 +279,7 @@ Result Utils::OpenSdDir(const char *path, FsDir *out) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     return fsFsOpenDirectory(&g_sd_filesystem, path, FS_DIROPEN_DIRECTORY | FS_DIROPEN_FILE, out);
 }
 
@@ -281,7 +287,7 @@ Result Utils::OpenSdDirForAtmosphere(u64 title_id, const char *path, FsDir *out)
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     char safe_path[FS_MAX_PATH];
     if (*path == '/') {
         snprintf(safe_path, sizeof(safe_path), "/atmosphere/titles/%016lx%s", title_id, path);
@@ -295,7 +301,7 @@ Result Utils::OpenRomFSSdDir(u64 title_id, const char *path, FsDir *out) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     return OpenRomFSDir(&g_sd_filesystem, title_id, path, out);
 }
 
@@ -327,7 +333,7 @@ bool Utils::HasSdRomfsContent(u64 title_id) {
         fsFileClose(&data_file);
         return true;
     }
-    
+
     /* Check for romfs folder with non-zero content. */
     FsDir dir;
     if (R_FAILED(Utils::OpenRomFSSdDir(title_id, "", &dir))) {
@@ -336,7 +342,7 @@ bool Utils::HasSdRomfsContent(u64 title_id) {
     ON_SCOPE_EXIT {
         fsDirClose(&dir);
     };
-    
+
     FsDirectoryEntry dir_entry;
     u64 read_entries;
     return R_SUCCEEDED(fsDirRead(&dir, 0, &read_entries, 1, &dir_entry)) && read_entries == 1;
@@ -346,40 +352,40 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     Result rc = ResultSuccess;
-    
+
     char path[FS_MAX_PATH];
     if (*fn == '/') {
         snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", title_id, fn);
     } else {
         snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/%s", title_id, fn);
     }
-    
+
     /* Unconditionally create. */
     FsFile f;
     fsFsCreateFile(&g_sd_filesystem, path, size, 0);
-    
+
     /* Try to open. */
     rc = fsFsOpenFile(&g_sd_filesystem, path, FS_OPEN_READ | FS_OPEN_WRITE, &f);
     if (R_FAILED(rc)) {
         return rc;
     }
-    
+
     /* Always close, if we opened. */
     ON_SCOPE_EXIT {
         fsFileClose(&f);
     };
-    
+
     /* Try to make it big enough. */
     rc = fsFileSetSize(&f, size);
     if (R_FAILED(rc)) {
         return rc;
     }
-    
+
     /* Try to write the data. */
     rc = fsFileWrite(&f, 0, data, size);
-    
+
     return rc;
 }
 
@@ -395,14 +401,14 @@ bool Utils::HasTitleFlag(u64 tid, const char *flag) {
     if (IsSdInitialized()) {
         FsFile f;
         char flag_path[FS_MAX_PATH];
-        
+
         memset(flag_path, 0, sizeof(flag_path));
         snprintf(flag_path, sizeof(flag_path) - 1, "flags/%s.flag", flag);
         if (R_SUCCEEDED(OpenSdFileForAtmosphere(tid, flag_path, FS_OPEN_READ, &f))) {
             fsFileClose(&f);
             return true;
         }
-        
+
         /* TODO: Deprecate. */
         snprintf(flag_path, sizeof(flag_path) - 1, "%s.flag", flag);
         if (R_SUCCEEDED(OpenSdFileForAtmosphere(tid, flag_path, FS_OPEN_READ, &f))) {
@@ -440,7 +446,7 @@ bool Utils::HasSdMitMFlag(u64 tid) {
     if (IsHblTid(tid)) {
         return true;
     }
-    
+
     if (IsSdInitialized()) {
         return std::find(g_mitm_flagged_tids.begin(), g_mitm_flagged_tids.end(), tid) != g_mitm_flagged_tids.end();
     }
@@ -458,10 +464,10 @@ Result Utils::GetKeysHeld(u64 *keys) {
     if (!Utils::IsHidAvailable()) {
         return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
     }
-    
+
     hidScanInput();
     *keys = hidKeysHeld(CONTROLLER_P1_AUTO);
-    
+
     return ResultSuccess;
 }
 
@@ -477,21 +483,21 @@ bool Utils::HasOverrideButton(u64 tid) {
         /* Disable button override disable for non-applications. */
         return true;
     }
-    
+
     /* Unconditionally refresh loader.ini contents. */
     RefreshConfiguration();
-    
+
     if (IsHblTid(tid) && HasOverrideKey(&g_hbl_override_config.override_key)) {
         return true;
     }
-    
+
     OverrideKey title_cfg = GetTitleOverrideKey(tid);
     return HasOverrideKey(&title_cfg);
 }
 
 static OverrideKey ParseOverrideKey(const char *value) {
     OverrideKey cfg;
-    
+
     /* Parse on by default. */
     if (value[0] == '!') {
         cfg.override_by_default = true;
@@ -499,7 +505,7 @@ static OverrideKey ParseOverrideKey(const char *value) {
     } else {
         cfg.override_by_default = false;
     }
-    
+
     /* Parse key combination. */
     if (strcasecmp(value, "A") == 0) {
         cfg.key_combination = KEY_A;
@@ -540,7 +546,7 @@ static OverrideKey ParseOverrideKey(const char *value) {
     } else {
         cfg.key_combination = 0;
     }
-    
+
     return cfg;
 }
 
@@ -582,7 +588,7 @@ static int FsMitmIniHandler(void *user, const char *section, const char *name, c
 static int FsMitmTitleSpecificIniHandler(void *user, const char *section, const char *name, const char *value) {
     /* We'll output an override key when relevant. */
     OverrideKey *user_cfg = reinterpret_cast<OverrideKey *>(user);
-    
+
     if (strcasecmp(section, "override_config") == 0) {
         if (strcasecmp(name, "override_key") == 0) {
             *user_cfg = ParseOverrideKey(value);
@@ -596,27 +602,27 @@ static int FsMitmTitleSpecificIniHandler(void *user, const char *section, const 
 OverrideKey Utils::GetTitleOverrideKey(u64 tid) {
     OverrideKey cfg = g_default_override_key;
     char path[FS_MAX_PATH+1] = {0};
-    snprintf(path, FS_MAX_PATH, "/atmosphere/titles/%016lx/config.ini", tid); 
+    snprintf(path, FS_MAX_PATH, "/atmosphere/titles/%016lx/config.ini", tid);
     FsFile cfg_file;
-    
+
     if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, path, FS_OPEN_READ, &cfg_file))) {
         ON_SCOPE_EXIT { fsFileClose(&cfg_file); };
-        
+
         size_t config_file_size = 0x20000;
         fsFileGetSize(&cfg_file, &config_file_size);
-        
+
         char *config_buf = reinterpret_cast<char *>(calloc(1, config_file_size + 1));
         if (config_buf != NULL) {
             ON_SCOPE_EXIT { free(config_buf); };
-            
+
             /* Read title ini contents. */
             fsFileRead(&cfg_file, 0, config_buf, config_file_size, &config_file_size);
-            
+
             /* Parse title ini. */
             ini_parse_string(config_buf, FsMitmTitleSpecificIniHandler, &cfg);
         }
     }
-    
+
     return cfg;
 }
 
@@ -625,20 +631,20 @@ void Utils::RefreshConfiguration() {
     if (R_FAILED(fsFsOpenFile(&g_sd_filesystem, "/atmosphere/loader.ini", FS_OPEN_READ, &config_file))) {
         return;
     }
-    
+
     u64 size;
     if (R_FAILED(fsFileGetSize(&config_file, &size))) {
         return;
     }
-    
+
     size = std::min(size, (decltype(size))0x7FF);
-    
+
     /* Read in string. */
     std::fill(g_config_ini_data, g_config_ini_data + 0x800, 0);
     size_t r_s;
     fsFileRead(&config_file, 0, g_config_ini_data, size, &r_s);
     fsFileClose(&config_file);
-    
+
     ini_parse_string(g_config_ini_data, FsMitmIniHandler, NULL);
 }
 
@@ -664,4 +670,116 @@ Result Utils::GetSettingsItemBooleanValue(const char *name, const char *key, boo
 
 void Utils::RebootToFatalError(AtmosphereFatalErrorContext *ctx) {
     BpcRebootManager::RebootForFatalError(ctx);
+}
+
+void Utils::CreateBlankProdInfo() {
+    Result rc;
+
+    u8 *cal0;
+    if (IsCal0Valid(g_cal0_backup)) {
+        cal0 = g_cal0_backup;
+    } else if (IsCal0Valid(g_cal0_storage_backup)) {
+        cal0 = g_cal0_storage_backup;
+    } else {
+        std::abort();
+    }
+
+    const char blank_serial[] = "XAW00000000000";
+    std::memcpy(&cal0[0x250], blank_serial, sizeof(blank_serial) - 1);
+
+    static constexpr size_t NumErase = 7;
+
+    for (size_t i = 0; i < NumErase; i++) {
+        static constexpr size_t s_erase_offsets[NumErase] = {0xAE0, 0x3AE0, 0x35E1, 0x36E1, 0x2B0, 0x3D70, 0x3FC0};
+        static constexpr size_t s_erase_sizes[NumErase] = {0x800, 0x130, 0x6, 0x6, 0x180, 0x240, 0x240};
+        std::memset(&cal0[s_erase_offsets[i]], 0, s_erase_sizes[i]);
+    }
+
+    static constexpr size_t NumHashes = 2;
+    {
+        static constexpr size_t s_hash_offsets[NumHashes] = {0x12E0, 0x20};
+        static constexpr size_t s_data_offsets[NumHashes] = {0xAE0, 0x40};
+        const size_t data_sizes[NumHashes] = {*reinterpret_cast<u32 *>(&cal0[0xAD0]), *reinterpret_cast<u32 *>(&cal0[0x8])};
+        for (size_t i = 0; i < NumHashes; i++) {
+            u8 hash[SHA256_HASH_SIZE];
+            sha256CalculateHash(hash, &cal0[s_data_offsets[i]], data_sizes[i]);
+            std::memcpy(&cal0[s_hash_offsets[i]], hash, sizeof(hash));
+        }
+    }
+
+    /* File creation is allowed to fail, because it may already exist. */
+    fsFsCreateFile(&g_sd_filesystem, BlankProdInfoPath, ProdInfoSize, 0);
+
+    FsFile f;
+    if (R_FAILED((rc = fsFsOpenFile(&g_sd_filesystem, BlankProdInfoPath, FS_OPEN_READ | FS_OPEN_WRITE, &f)))) {
+        std::abort();
+    }
+
+    if (R_FAILED((rc = fsFileSetSize(&f, ProdInfoSize)))) {
+        std::abort();
+    }
+
+    if (R_FAILED((rc = fsFileWrite(&f, 0, cal0, ProdInfoSize)))) {
+        std::abort();
+    }
+
+    if (R_FAILED((rc = fsFileFlush(&f)))) {
+        std::abort();
+    }
+
+    fsFileClose(&f);
+
+    if (R_FAILED((rc = fsFsOpenFile(&g_sd_filesystem, BlankProdInfoPath, FS_OPEN_READ, &g_blank_prodinfo_file)))) {
+        std::abort();
+    }
+}
+
+bool Utils::IsCal0Valid(const u8 *cal0) {
+    char serial_number[0x40] = {0};
+    std::memcpy(serial_number, cal0 + 0x250, 0x18);
+
+    bool is_cal0_valid = true;
+    is_cal0_valid &= std::memcmp(g_cal0_backup, "CAL0", 4) == 0;
+    is_cal0_valid &= std::memcmp(g_cal0_backup + 0x250, serial_number, 0x18) == 0;
+    u32 cal0_size = ((u32 *)g_cal0_backup)[2];
+    is_cal0_valid &= cal0_size + 0x40 <= ProdInfoSize;
+    if (is_cal0_valid) {
+        u8 calc_hash[0x20];
+        sha256CalculateHash(calc_hash, g_cal0_backup + 0x40, cal0_size);
+        is_cal0_valid &= std::memcmp(calc_hash, g_cal0_backup + 0x20, sizeof(calc_hash)) == 0;
+    }
+
+    return is_cal0_valid;
+}
+
+u16 Utils::GetCrc16(const void *data, size_t size) {
+    static constexpr u16 s_crc_table[0x10] = {
+        0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,
+        0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400
+    };
+
+    if (data == nullptr) {
+        std::abort();
+    }
+
+    u16 crc16 = 0x55AA;
+    const u8 *data_u8 = reinterpret_cast<const u8 *>(data);
+    for (size_t i = 0; i < size; i++) {
+        crc16 = (crc16 >> 4) ^ (s_crc_table[crc16 & 0xF]) ^ (s_crc_table[data_u8[i] & 0xF]);
+        crc16 = (crc16 >> 4) ^ (s_crc_table[crc16 & 0xF]) ^ (s_crc_table[(data_u8[i] >> 4) & 0xF]);
+    }
+    return crc16;
+}
+
+Result Utils::OpenBlankProdInfoFile(FsFile *out) {
+    if (!IsSdInitialized()) {
+        std::abort();
+        return ResultFsSdCardNotPresent;
+    }
+
+    Result rc = OpenSdFile(BlankProdInfoPath, FS_OPEN_READ, out);
+    if (R_FAILED((rc))) {
+        std::abort();
+    }
+    return rc;
 }

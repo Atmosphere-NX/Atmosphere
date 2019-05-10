@@ -61,6 +61,8 @@ class Utils {
 
         static bool HasSdRomfsContent(u64 title_id);
 
+        static Result OpenBlankProdInfoFile(FsFile *out);
+
         /* Delayed Initialization + MitM detection. */
         static void InitializeThreadFunc(void *args);
 
@@ -87,9 +89,15 @@ class Utils {
         static Result GetSettingsItemValue(const char *name, const char *key, void *out, size_t max_size, u64 *out_size);
 
         static Result GetSettingsItemBooleanValue(const char *name, const char *key, bool *out);
-        
+
+        /* CRC util. */
+        static u16 GetCrc16(const void *data, size_t size);
+
         /* Error occurred. */
         static void RebootToFatalError(AtmosphereFatalErrorContext *ctx);
     private:
         static void RefreshConfiguration();
+
+        static void CreateBlankProdInfo();
+        static bool IsCal0Valid(const u8 *cal0);
 };
