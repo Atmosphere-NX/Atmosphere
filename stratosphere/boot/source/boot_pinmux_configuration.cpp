@@ -28,6 +28,11 @@ void Boot::ConfigurePinmux() {
         Boot::PinmuxUpdatePark(static_cast<u32>(i));
     }
 
+    /* Dummy read all drive pads. */
+    for (size_t i = 0; i < PinmuxDrivePadNameMax; i++) {
+        Boot::PinmuxDummyReadDrivePad(static_cast<u32>(i));
+    }
+
     /* Set initial pad configs. */
     Boot::ConfigurePinmuxInitialPads();
 

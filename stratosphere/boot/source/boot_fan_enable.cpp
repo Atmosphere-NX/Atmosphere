@@ -20,6 +20,7 @@ static constexpr u32 GpioPadName_FanEnable = 0x4B;
 
 void Boot::SetFanEnabled() {
     if (Boot::GetHardwareType() == HardwareType_Copper) {
+        Boot::GpioConfigure(GpioPadName_FanEnable);
         Boot::GpioSetDirection(GpioPadName_FanEnable, GpioDirection_Output);
         Boot::GpioSetValue(GpioPadName_FanEnable, GpioValue_High);
     }

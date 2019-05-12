@@ -98,20 +98,16 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
     u32 pinmux_val = *pinmux_reg;
 
     /* This PINMUX register is locked */
-    if (pinmux_val & 0x80)
-        return pinmux_val;
+    if (pinmux_val & 0x80) {
+        std::abort();
+    }
 
-    u32 pm_config_val = (pinmux_config_val & 0x07);
-    u32 pm_val = pm_config_val;
+    u32 pm_val = (pinmux_config_val & 0x07);
 
     /* Adjust PM */
     if (pinmux_config_mask_val & 0x07) {
-        /* Default to safe value */
-        if (pm_config_val >= 0x06)
-            pm_val = 0x04;
-
         /* Apply additional changes first */
-        if (pm_config_val == 0x05) {
+        if (pm_val == 0x05) {
             /* This pin supports PUPD change */
             if (pinmux_mask_val & 0x0C) {
                 /* Change PUPD */
@@ -136,14 +132,15 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
                     pinmux_val &= 0xFFFFFFBF;
                 }
             }
-
+        } else if (pm_val >= 0x06) {
             /* Default to safe value */
             pm_val = 0x04;
         }
 
         /* Translate PM value if necessary */
-        if ((pm_val & 0xFF) == 0x04)
+        if (pm_val == 0x04 || pm_val == 0x05) {
             pm_val = pinmux_def->pm_val;
+        }
 
         /* This pin supports PM change */
         if (pinmux_mask_val & 0x03) {
@@ -163,7 +160,7 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
             /* This pin supports PUPD change */
             if (pinmux_mask_val & 0x0C) {
                 /* Change PUPD */
-                if ((pinmux_val & 0x0C) != (pupd_config_val >> 0x03)) {
+                if (((pinmux_val >> 0x02) & 0x03) != (pupd_config_val >> 0x03)) {
                     pinmux_val &= 0xFFFFFFF3;
                     pinmux_val |= (pupd_config_val >> 0x01);
                 }
@@ -288,7 +285,7 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
         }
     }
 
-    u32 ioreset_config_val = ((pinmux_config_val >> 0x08) & 0x10000);
+    u32 ioreset_config_val = (((pinmux_config_val >> 0x08) & 0x1) << 0x10);
 
     /* Adjust IoReset */
     if (pinmux_config_mask_val & 0x100) {
@@ -296,12 +293,13 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
         if (pinmux_mask_val & 0x10000) {
             /* Change IoReset */
             if (((pinmux_val >> 0x10) ^ (pinmux_config_val >> 0x08)) & 0x01) {
+                pinmux_val &= 0xFFFEFFFF;
                 pinmux_val |= ioreset_config_val;
             }
         }
     }
 
-    u32 park_config_val = ((pinmux_config_val >> 0x0A) & 0x20);
+    u32 park_config_val = (((pinmux_config_val >> 0x0A) & 0x1) << 0x5);
 
     /* Adjust Park */
     if (pinmux_config_mask_val & 0x400) {
@@ -309,12 +307,13 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
         if (pinmux_mask_val & 0x20) {
             /* Change Park */
             if (((pinmux_val >> 0x05) ^ (pinmux_config_val >> 0x0A)) & 0x01) {
+                pinmux_val &= 0xFFFFFFDF;
                 pinmux_val |= park_config_val;
             }
         }
     }
 
-    u32 elpdr_config_val = ((pinmux_config_val >> 0x0B) & 0x100);
+    u32 elpdr_config_val = (((pinmux_config_val >> 0x0B) & 0x1) << 0x08);
 
     /* Adjust ELpdr */
     if (pinmux_config_mask_val & 0x800) {
@@ -322,12 +321,13 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
         if (pinmux_mask_val & 0x100) {
             /* Change ELpdr */
             if (((pinmux_val >> 0x08) ^ (pinmux_config_val >> 0x0B)) & 0x01) {
+                pinmux_val &= 0xFFFFFEFF;
                 pinmux_val |= elpdr_config_val;
             }
         }
     }
 
-    u32 ehsm_config_val = ((pinmux_config_val >> 0x0C) & 0x200);
+    u32 ehsm_config_val = (((pinmux_config_val >> 0x0C) & 0x1) << 0x09);
 
     /* Adjust EHsm */
     if (pinmux_config_mask_val & 0x1000) {
@@ -335,12 +335,13 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
         if (pinmux_mask_val & 0x200) {
             /* Change EHsm */
             if (((pinmux_val >> 0x09) ^ (pinmux_config_val >> 0x0C)) & 0x01) {
+                pinmux_val &= 0xFFFFFDFF;
                 pinmux_val |= ehsm_config_val;
             }
         }
     }
 
-    u32 eiohv_config_val = ((pinmux_config_val >> 0x09) & 0x400);
+    u32 eiohv_config_val = (((pinmux_config_val >> 0x09) & 0x1) << 0x0A);
 
     /* Adjust EIoHv */
     if (pinmux_config_mask_val & 0x200) {
@@ -348,12 +349,13 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
         if (pinmux_mask_val & 0x400) {
             /* Change EIoHv */
             if (((pinmux_val >> 0x0A) ^ (pinmux_config_val >> 0x09)) & 0x01) {
+                pinmux_val &= 0xFFFFFBFF;
                 pinmux_val |= eiohv_config_val;
             }
         }
     }
 
-    u32 eschmt_config_val = ((pinmux_config_val >> 0x0D) & 0x1000);
+    u32 eschmt_config_val = (((pinmux_config_val >> 0x0D) & 0x1) << 0x0C);
 
     /* Adjust ESchmt */
     if (pinmux_config_mask_val & 0x2000) {
@@ -361,12 +363,13 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
         if (pinmux_mask_val & 0x1000) {
             /* Change ESchmt */
             if (((pinmux_val >> 0x0C) ^ (pinmux_config_val >> 0x0D)) & 0x01) {
+                pinmux_val &= 0xFFFFEFFF;
                 pinmux_val |= eschmt_config_val;
             }
         }
     }
 
-    u32 preemp_config_val = ((pinmux_config_val >> 0x0D) & 0x8000);
+    u32 preemp_config_val = (((pinmux_config_val >> 0x10) & 0x1) << 0xF);
 
     /* Adjust Preemp */
     if (pinmux_config_mask_val & 0x10000) {
@@ -374,12 +377,13 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
         if (pinmux_mask_val & 0x8000) {
             /* Change Preemp */
             if (((pinmux_val >> 0x0F) ^ (pinmux_config_val >> 0x10)) & 0x01) {
+                pinmux_val &= 0xFFFF7FFF;
                 pinmux_val |= preemp_config_val;
             }
         }
     }
 
-    u32 drvtype_config_val = ((pinmux_config_val >> 0x0E) & 0x6000);
+    u32 drvtype_config_val = (((pinmux_config_val >> 0x0E) & 0x3) << 0xD);
 
     /* Adjust DrvType */
     if (pinmux_config_mask_val & 0xC000) {
@@ -387,6 +391,7 @@ u32 Boot::PinmuxUpdatePad(u32 pinmux_name, u32 pinmux_config_val, u32 pinmux_con
         if (pinmux_mask_val & 0x6000) {
             /* Change DrvType */
             if (((pinmux_val >> 0x0D) ^ (pinmux_config_val >> 0x0E)) & 0x03) {
+                pinmux_val &= 0xFFFF9FFF;
                 pinmux_val |= drvtype_config_val;
             }
         }
@@ -484,4 +489,17 @@ u32 Boot::PinmuxUpdateDrivePad(u32 pinmux_drivepad_name, u32 pinmux_drivepad_con
     pinmux_drivepad_val = *pinmux_drivepad_reg;
 
     return pinmux_drivepad_val;
+}
+
+u32 Boot::PinmuxDummyReadDrivePad(u32 pinmux_drivepad_name) {
+    const uintptr_t pinmux_base_vaddr = GetPinmuxBaseAddress();
+    const PinmuxDrivePadDefinition *pinmux_drivepad_def = GetPinmuxDrivePadDefinition(pinmux_drivepad_name);
+
+    /* Fetch this PINMUX drive group's register offset */
+    u32 pinmux_drivepad_reg_offset = pinmux_drivepad_def->reg_offset;
+
+    /* Get current register ptr. */
+    volatile u32 *pinmux_drivepad_reg = reinterpret_cast<volatile u32 *>(pinmux_base_vaddr + pinmux_drivepad_reg_offset);
+
+    return *pinmux_drivepad_reg;
 }

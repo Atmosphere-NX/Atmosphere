@@ -74,7 +74,9 @@ void Boot::SetInitialGpioConfiguration() {
         /* Set the GPIO's direction. */
         Boot::GpioSetDirection(configs[i].pad_name, configs[i].direction);
 
-        /* Set the GPIO's value. */
-        Boot::GpioSetValue(configs[i].pad_name, configs[i].value);
+        if (configs[i].direction == GpioDirection_Output) {
+            /* Set the GPIO's value. */
+            Boot::GpioSetValue(configs[i].pad_name, configs[i].value);
+        }
     }
 }

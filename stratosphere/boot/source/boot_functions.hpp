@@ -56,6 +56,7 @@ class Boot {
         static u32 PinmuxUpdatePark(u32 pinmux_name);
         static u32 PinmuxUpdatePad(u32 pinmux_name, u32 config_val, u32 config_mask);
         static u32 PinmuxUpdateDrivePad(u32 pinmux_drivepad_name, u32 config_val, u32 config_mask);
+        static u32 PinmuxDummyReadDrivePad(u32 pinmux_drivepad_name);
         static void ConfigurePinmuxInitialPads();
         static void ConfigurePinmuxInitialDrivePads();
 

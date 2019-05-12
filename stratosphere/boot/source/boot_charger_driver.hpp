@@ -32,6 +32,7 @@ class ChargerDriver {
             I2cDriver::Initialize();
             I2cDriver::OpenSession(&this->i2c_session, I2cDevice_Bq24193);
 
+            Boot::GpioConfigure(GpioPadName_Bq24193Charger);
             Boot::GpioSetDirection(GpioPadName_Bq24193Charger, GpioDirection_Output);
         }
 
