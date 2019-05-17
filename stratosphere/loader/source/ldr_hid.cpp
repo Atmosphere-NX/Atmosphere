@@ -36,7 +36,11 @@ Result HidManagement::GetKeysHeld(u64 *keys) {
     }
 
     hidScanInput();
-    *keys = hidKeysHeld(CONTROLLER_P1_AUTO);
+    *keys = 0;
+
+    for (int controller = 0; controller < 10; controller++) {
+        *keys |= hidKeysHeld((HidControllerID) controller);
+    }
 
     return ResultSuccess;
 }
