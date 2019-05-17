@@ -168,7 +168,7 @@ Result FsMitmService::OpenSaveDataFileSystem(Out<std::shared_ptr<IFileSystemInte
         return ResultAtmosphereMitmShouldForwardToSession;
     }
 
-    /* For now, until we're sure this is robust, only intercept normal savedata , checkk if flag exist*/
+    /* For now, until we're sure this is robust, only intercept normal savedata , check if flag exist*/
     if (!has_redirect_save_flags || !should_redirect_saves || save_struct.SaveDataType != FsSaveDataType_SaveData) {
         return ResultAtmosphereMitmShouldForwardToSession;
     }
