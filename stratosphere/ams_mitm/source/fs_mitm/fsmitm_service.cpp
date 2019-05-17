@@ -162,13 +162,13 @@ Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterf
 }
 
 Result FsMitmService::OpenSaveDataFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out_fs, u8 space_id, FsSave save_struct) {
-    const bool has_redirect_save_flags = Utils::HasFlag(this->title_id, "redirect_save");
+    const bool has_sd_save_flags = Utils::HasFlag(this->title_id, "sd_save");
     bool should_redirect_saves = false;
     if (R_FAILED(Utils::GetSettingsItemBooleanValue("atmosphere", "fsmitm_redirect_saves_to_sd", &should_redirect_saves))) {
         return ResultAtmosphereMitmShouldForwardToSession;
     }
-	//check if flag exist
-	if (!has_redirect_save_flags) {
+	
+	if (!has_sd_save_flags) {
 	should_redirect_saves = false;
     }
 
