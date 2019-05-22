@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 #include <atomic>
@@ -85,16 +85,16 @@ void Utils::InitializeThreadFunc(void *args) {
             if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
                 std::abort();
             } else {
-                svcCloseHandle(tmp_hnd);   
+                svcCloseHandle(tmp_hnd);
             }
         }
     });
-    
+
     /* Mount SD. */
     while (R_FAILED(fsMountSdcard(&g_sd_filesystem))) {
         svcSleepThread(1000000ULL);
     }
-    
+
     /* Back up CAL0, if it's not backed up already. */
     fsFsCreateDirectory(&g_sd_filesystem, "/atmosphere/automatic_backups");
     {
@@ -103,18 +103,18 @@ void Utils::InitializeThreadFunc(void *args) {
             std::abort();
         }
         fsStorageClose(&cal0_storage);
-        
+
         char serial_number[0x40] = {0};
         memcpy(serial_number, g_cal0_storage_backup + 0x250, 0x18);
-        
-        
+
+
         char prodinfo_backup_path[FS_MAX_PATH] = {0};
         if (strlen(serial_number) > 0) {
             snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/%s_PRODINFO.bin", serial_number);
         } else {
             snprintf(prodinfo_backup_path, sizeof(prodinfo_backup_path) - 1, "/atmosphere/automatic_backups/PRODINFO.bin");
         }
-        
+
         fsFsCreateFile(&g_sd_filesystem, prodinfo_backup_path, ProdinfoSize, 0);
         if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, prodinfo_backup_path, FS_OPEN_READ | FS_OPEN_WRITE, &g_cal0_file))) {
             bool has_auto_backup = false;
@@ -132,19 +132,19 @@ void Utils::InitializeThreadFunc(void *args) {
                 }
                 has_auto_backup = is_cal0_valid;
             }
-            
+
             if (!has_auto_backup) {
                 fsFileSetSize(&g_cal0_file, ProdinfoSize);
                 fsFileWrite(&g_cal0_file, 0, g_cal0_storage_backup, ProdinfoSize);
                 fsFileFlush(&g_cal0_file);
             }
-            
+
             /* NOTE: g_cal0_file is intentionally not closed here. This prevents any other process from opening it. */
             memset(g_cal0_storage_backup, 0, sizeof(g_cal0_storage_backup));
             memset(g_cal0_backup, 0, sizeof(g_cal0_backup));
         }
     }
-    
+
     /* Check for MitM flags. */
     FsDir titles_dir;
     if (R_SUCCEEDED(fsFsOpenDirectory(&g_sd_filesystem, "/atmosphere/titles", FS_DIROPEN_DIRECTORY, &titles_dir))) {
@@ -172,7 +172,7 @@ void Utils::InitializeThreadFunc(void *args) {
                         fsFileClose(&f);
                     }
                 }
-                
+
                 memset(title_path, 0, sizeof(title_path));
                 strcpy(title_path, "/atmosphere/titles/");
                 strcat(title_path, dir_entry.name);
@@ -195,25 +195,25 @@ void Utils::InitializeThreadFunc(void *args) {
         }
         fsDirClose(&titles_dir);
     }
-    
+
     Utils::RefreshConfiguration();
-    
+
     /* Initialize set:sys. */
     DoWithSmSession([&]() {
         if (R_FAILED(setsysInitialize())) {
             std::abort();
         }
     });
-    
+
     /* Signal SD is initialized. */
     g_has_initialized = true;
-    
+
     /* Load custom settings configuration. */
     SettingsItemManager::LoadConfiguration();
-    
+
     /* Signal to waiters that we are ready. */
     g_sd_signal.Signal();
-    
+
     /* Initialize HID. */
     while (!g_has_hid_session) {
         DoWithSmSession([&]() {
@@ -243,7 +243,7 @@ Result Utils::OpenSdFile(const char *fn, int flags, FsFile *out) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     return fsFsOpenFile(&g_sd_filesystem, fn, flags, out);
 }
 
@@ -251,7 +251,7 @@ Result Utils::OpenSdFileForAtmosphere(u64 title_id, const char *fn, int flags, F
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     char path[FS_MAX_PATH];
     if (*fn == '/') {
         snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", title_id, fn);
@@ -265,7 +265,7 @@ Result Utils::OpenRomFSSdFile(u64 title_id, const char *fn, int flags, FsFile *o
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     return OpenRomFSFile(&g_sd_filesystem, title_id, fn, flags, out);
 }
 
@@ -273,7 +273,7 @@ Result Utils::OpenSdDir(const char *path, FsDir *out) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     return fsFsOpenDirectory(&g_sd_filesystem, path, FS_DIROPEN_DIRECTORY | FS_DIROPEN_FILE, out);
 }
 
@@ -281,7 +281,7 @@ Result Utils::OpenSdDirForAtmosphere(u64 title_id, const char *path, FsDir *out)
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     char safe_path[FS_MAX_PATH];
     if (*path == '/') {
         snprintf(safe_path, sizeof(safe_path), "/atmosphere/titles/%016lx%s", title_id, path);
@@ -295,7 +295,7 @@ Result Utils::OpenRomFSSdDir(u64 title_id, const char *path, FsDir *out) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     return OpenRomFSDir(&g_sd_filesystem, title_id, path, out);
 }
 
@@ -327,7 +327,7 @@ bool Utils::HasSdRomfsContent(u64 title_id) {
         fsFileClose(&data_file);
         return true;
     }
-    
+
     /* Check for romfs folder with non-zero content. */
     FsDir dir;
     if (R_FAILED(Utils::OpenRomFSSdDir(title_id, "", &dir))) {
@@ -336,7 +336,7 @@ bool Utils::HasSdRomfsContent(u64 title_id) {
     ON_SCOPE_EXIT {
         fsDirClose(&dir);
     };
-    
+
     FsDirectoryEntry dir_entry;
     u64 read_entries;
     return R_SUCCEEDED(fsDirRead(&dir, 0, &read_entries, 1, &dir_entry)) && read_entries == 1;
@@ -346,40 +346,40 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
-    
+
     Result rc = ResultSuccess;
-    
+
     char path[FS_MAX_PATH];
     if (*fn == '/') {
         snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", title_id, fn);
     } else {
         snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/%s", title_id, fn);
     }
-    
+
     /* Unconditionally create. */
     FsFile f;
     fsFsCreateFile(&g_sd_filesystem, path, size, 0);
-    
+
     /* Try to open. */
     rc = fsFsOpenFile(&g_sd_filesystem, path, FS_OPEN_READ | FS_OPEN_WRITE, &f);
     if (R_FAILED(rc)) {
         return rc;
     }
-    
+
     /* Always close, if we opened. */
     ON_SCOPE_EXIT {
         fsFileClose(&f);
     };
-    
+
     /* Try to make it big enough. */
     rc = fsFileSetSize(&f, size);
     if (R_FAILED(rc)) {
         return rc;
     }
-    
+
     /* Try to write the data. */
     rc = fsFileWrite(&f, 0, data, size);
-    
+
     return rc;
 }
 
@@ -395,14 +395,14 @@ bool Utils::HasTitleFlag(u64 tid, const char *flag) {
     if (IsSdInitialized()) {
         FsFile f;
         char flag_path[FS_MAX_PATH];
-        
+
         memset(flag_path, 0, sizeof(flag_path));
         snprintf(flag_path, sizeof(flag_path) - 1, "flags/%s.flag", flag);
         if (R_SUCCEEDED(OpenSdFileForAtmosphere(tid, flag_path, FS_OPEN_READ, &f))) {
             fsFileClose(&f);
             return true;
         }
-        
+
         /* TODO: Deprecate. */
         snprintf(flag_path, sizeof(flag_path) - 1, "%s.flag", flag);
         if (R_SUCCEEDED(OpenSdFileForAtmosphere(tid, flag_path, FS_OPEN_READ, &f))) {
@@ -440,7 +440,7 @@ bool Utils::HasSdMitMFlag(u64 tid) {
     if (IsHblTid(tid)) {
         return true;
     }
-    
+
     if (IsSdInitialized()) {
         return std::find(g_mitm_flagged_tids.begin(), g_mitm_flagged_tids.end(), tid) != g_mitm_flagged_tids.end();
     }
@@ -458,14 +458,14 @@ Result Utils::GetKeysHeld(u64 *keys) {
     if (!Utils::IsHidAvailable()) {
         return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
     }
-    
+
     hidScanInput();
     *keys = 0;
 
     for (int controller = 0; controller < 10; controller++) {
         *keys |= hidKeysHeld((HidControllerID) controller);
     }
-    
+
     return ResultSuccess;
 }
 
@@ -481,21 +481,21 @@ bool Utils::HasOverrideButton(u64 tid) {
         /* Disable button override disable for non-applications. */
         return true;
     }
-    
+
     /* Unconditionally refresh loader.ini contents. */
     RefreshConfiguration();
-    
+
     if (IsHblTid(tid) && HasOverrideKey(&g_hbl_override_config.override_key)) {
         return true;
     }
-    
+
     OverrideKey title_cfg = GetTitleOverrideKey(tid);
     return HasOverrideKey(&title_cfg);
 }
 
 static OverrideKey ParseOverrideKey(const char *value) {
     OverrideKey cfg;
-    
+
     /* Parse on by default. */
     if (value[0] == '!') {
         cfg.override_by_default = true;
@@ -503,7 +503,7 @@ static OverrideKey ParseOverrideKey(const char *value) {
     } else {
         cfg.override_by_default = false;
     }
-    
+
     /* Parse key combination. */
     if (strcasecmp(value, "A") == 0) {
         cfg.key_combination = KEY_A;
@@ -544,7 +544,7 @@ static OverrideKey ParseOverrideKey(const char *value) {
     } else {
         cfg.key_combination = 0;
     }
-    
+
     return cfg;
 }
 
@@ -586,7 +586,7 @@ static int FsMitmIniHandler(void *user, const char *section, const char *name, c
 static int FsMitmTitleSpecificIniHandler(void *user, const char *section, const char *name, const char *value) {
     /* We'll output an override key when relevant. */
     OverrideKey *user_cfg = reinterpret_cast<OverrideKey *>(user);
-    
+
     if (strcasecmp(section, "override_config") == 0) {
         if (strcasecmp(name, "override_key") == 0) {
             *user_cfg = ParseOverrideKey(value);
@@ -600,28 +600,86 @@ static int FsMitmTitleSpecificIniHandler(void *user, const char *section, const 
 OverrideKey Utils::GetTitleOverrideKey(u64 tid) {
     OverrideKey cfg = g_default_override_key;
     char path[FS_MAX_PATH+1] = {0};
-    snprintf(path, FS_MAX_PATH, "/atmosphere/titles/%016lx/config.ini", tid); 
+    snprintf(path, FS_MAX_PATH, "/atmosphere/titles/%016lx/config.ini", tid);
     FsFile cfg_file;
-    
+
     if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, path, FS_OPEN_READ, &cfg_file))) {
         ON_SCOPE_EXIT { fsFileClose(&cfg_file); };
-        
+
         size_t config_file_size = 0x20000;
         fsFileGetSize(&cfg_file, &config_file_size);
-        
+
         char *config_buf = reinterpret_cast<char *>(calloc(1, config_file_size + 1));
         if (config_buf != NULL) {
             ON_SCOPE_EXIT { free(config_buf); };
-            
+
             /* Read title ini contents. */
             fsFileRead(&cfg_file, 0, config_buf, config_file_size, &config_file_size);
-            
+
             /* Parse title ini. */
             ini_parse_string(config_buf, FsMitmTitleSpecificIniHandler, &cfg);
         }
     }
-    
+
     return cfg;
+}
+
+static int FsMitmTitleSpecificLocaleIniHandler(void *user, const char *section, const char *name, const char *value) {
+    /* We'll output an override locale when relevant. */
+    OverrideLocale *user_locale = reinterpret_cast<OverrideLocale *>(user);
+
+    if (strcasecmp(section, "override_config") == 0) {
+        if (strcasecmp(name, "override_language") == 0) {
+            user_locale->language_code = EncodeLanguageCode(value);
+        } else if (strcasecmp(name, "override_region") == 0) {
+            if (strcasecmp(value, "jpn") == 0) {
+                user_locale->region_code = RegionCode_Japan;
+            } else if (strcasecmp(value, "usa") == 0) {
+                user_locale->region_code = RegionCode_America;
+            } else if (strcasecmp(value, "eur") == 0) {
+                user_locale->region_code = RegionCode_Europe;
+            } else if (strcasecmp(value, "aus") == 0) {
+                user_locale->region_code = RegionCode_Australia;
+            } else if (strcasecmp(value, "chn") == 0) {
+                user_locale->region_code = RegionCode_China;
+            } else if (strcasecmp(value, "kor") == 0) {
+                user_locale->region_code = RegionCode_Korea;
+            } else if (strcasecmp(value, "twn") == 0) {
+                user_locale->region_code = RegionCode_Taiwan;
+            }
+        }
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+OverrideLocale Utils::GetTitleOverrideLocale(u64 tid) {
+    OverrideLocale locale;
+    std::memset(&locale, 0xCC, sizeof(locale));
+    char path[FS_MAX_PATH+1] = {0};
+    snprintf(path, FS_MAX_PATH, "/atmosphere/titles/%016lx/config.ini", tid);
+    FsFile cfg_file;
+
+    if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, path, FS_OPEN_READ, &cfg_file))) {
+        ON_SCOPE_EXIT { fsFileClose(&cfg_file); };
+
+        size_t config_file_size = 0x20000;
+        fsFileGetSize(&cfg_file, &config_file_size);
+
+        char *config_buf = reinterpret_cast<char *>(calloc(1, config_file_size + 1));
+        if (config_buf != NULL) {
+            ON_SCOPE_EXIT { free(config_buf); };
+
+            /* Read title ini contents. */
+            fsFileRead(&cfg_file, 0, config_buf, config_file_size, &config_file_size);
+
+            /* Parse title ini. */
+            ini_parse_string(config_buf, FsMitmTitleSpecificLocaleIniHandler, &locale);
+        }
+    }
+
+    return locale;
 }
 
 void Utils::RefreshConfiguration() {
@@ -629,20 +687,20 @@ void Utils::RefreshConfiguration() {
     if (R_FAILED(fsFsOpenFile(&g_sd_filesystem, "/atmosphere/loader.ini", FS_OPEN_READ, &config_file))) {
         return;
     }
-    
+
     u64 size;
     if (R_FAILED(fsFileGetSize(&config_file, &size))) {
         return;
     }
-    
+
     size = std::min(size, (decltype(size))0x7FF);
-    
+
     /* Read in string. */
     std::fill(g_config_ini_data, g_config_ini_data + 0x800, 0);
     size_t r_s;
     fsFileRead(&config_file, 0, g_config_ini_data, size, &r_s);
     fsFileClose(&config_file);
-    
+
     ini_parse_string(g_config_ini_data, FsMitmIniHandler, NULL);
 }
 

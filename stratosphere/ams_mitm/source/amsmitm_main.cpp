@@ -78,6 +78,16 @@ void __appInit(void) {
         if (R_FAILED(rc)) {
             std::abort();
         }
+
+        rc = pmdmntInitialize();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
+
+        rc = pminfoInitialize();
+        if (R_FAILED(rc)) {
+            std::abort();
+        }
     });
     
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
