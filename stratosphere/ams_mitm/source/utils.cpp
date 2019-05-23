@@ -60,13 +60,13 @@ static HblOverrideConfig g_hbl_override_config = {
 static char g_config_ini_data[0x800];
 
 /* Backup file for CAL0 partition. */
-static constexpr size_t ProdInfoSize = 0x8000;
-static constexpr const char *BlankProdInfoPath = "/atmosphere/automatic_backups/BLANK_PRODINFO.bin";
 static FsFile g_cal0_file = {0};
 static u8 g_cal0_storage_backup[ProdInfoSize];
 static u8 g_cal0_backup[ProdInfoSize];
 
-static FsFile g_blank_prodinfo_file = {0};
+static HosMutex g_blank_cal0_lock;
+static bool g_initialized_blank_cal0 = false;
+static u8 g_blank_cal0[ProdInfoSize];
 
 static bool IsHexadecimal(const char *str) {
     while (*str) {
@@ -141,9 +141,6 @@ void Utils::InitializeThreadFunc(void *args) {
                 fsFileWrite(&g_cal0_file, 0, g_cal0_storage_backup, ProdInfoSize);
                 fsFileFlush(&g_cal0_file);
             }
-
-            /* Use one of the storages to make a blank prodinfo file. */
-            Utils::CreateBlankProdInfo();
 
             /* NOTE: g_cal0_file is intentionally not closed here. This prevents any other process from opening it. */
             std::memset(g_cal0_storage_backup, 0, sizeof(g_cal0_storage_backup));
@@ -672,81 +669,60 @@ void Utils::RebootToFatalError(AtmosphereFatalErrorContext *ctx) {
     BpcRebootManager::RebootForFatalError(ctx);
 }
 
-void Utils::CreateBlankProdInfo() {
-    Result rc;
+void Utils::EnsureBlankProdInfo() {
+    std::scoped_lock<HosMutex> lk(g_blank_cal0_lock);
+    if (g_initialized_blank_cal0) {
+        return;
+    }
 
-    u8 *cal0;
-    if (IsCal0Valid(g_cal0_backup)) {
-        cal0 = g_cal0_backup;
-    } else if (IsCal0Valid(g_cal0_storage_backup)) {
-        cal0 = g_cal0_storage_backup;
-    } else {
+    /* Read CAL0 in from NAND. */
+    {
+        FsStorage cal0_storage;
+        if (R_FAILED(fsOpenBisStorage(&cal0_storage, BisStorageId_Prodinfo)) || R_FAILED(fsStorageRead(&cal0_storage, 0, g_blank_cal0, ProdInfoSize))) {
+            std::abort();
+        }
+        fsStorageClose(&cal0_storage);
+    }
+
+    if (!IsCal0Valid(g_blank_cal0)) {
         std::abort();
     }
 
     const char blank_serial[] = "XAW00000000000";
-    std::memcpy(&cal0[0x250], blank_serial, sizeof(blank_serial) - 1);
+    std::memcpy(&g_blank_cal0[0x250], blank_serial, sizeof(blank_serial) - 1);
 
     static constexpr size_t NumErase = 7;
 
     for (size_t i = 0; i < NumErase; i++) {
         static constexpr size_t s_erase_offsets[NumErase] = {0xAE0, 0x3AE0, 0x35E1, 0x36E1, 0x2B0, 0x3D70, 0x3FC0};
         static constexpr size_t s_erase_sizes[NumErase] = {0x800, 0x130, 0x6, 0x6, 0x180, 0x240, 0x240};
-        std::memset(&cal0[s_erase_offsets[i]], 0, s_erase_sizes[i]);
+        std::memset(&g_blank_cal0[s_erase_offsets[i]], 0, s_erase_sizes[i]);
     }
 
     static constexpr size_t NumHashes = 2;
     {
         static constexpr size_t s_hash_offsets[NumHashes] = {0x12E0, 0x20};
         static constexpr size_t s_data_offsets[NumHashes] = {0xAE0, 0x40};
-        const size_t data_sizes[NumHashes] = {*reinterpret_cast<u32 *>(&cal0[0xAD0]), *reinterpret_cast<u32 *>(&cal0[0x8])};
+        const size_t data_sizes[NumHashes] = {*reinterpret_cast<u32 *>(&g_blank_cal0[0xAD0]), *reinterpret_cast<u32 *>(&g_blank_cal0[0x8])};
         for (size_t i = 0; i < NumHashes; i++) {
             u8 hash[SHA256_HASH_SIZE];
-            sha256CalculateHash(hash, &cal0[s_data_offsets[i]], data_sizes[i]);
-            std::memcpy(&cal0[s_hash_offsets[i]], hash, sizeof(hash));
+            sha256CalculateHash(hash, &g_blank_cal0[s_data_offsets[i]], data_sizes[i]);
+            std::memcpy(&g_blank_cal0[s_hash_offsets[i]], hash, sizeof(hash));
         }
     }
 
-    /* File creation is allowed to fail, because it may already exist. */
-    fsFsCreateFile(&g_sd_filesystem, BlankProdInfoPath, ProdInfoSize, 0);
-
-    FsFile f;
-    if (R_FAILED((rc = fsFsOpenFile(&g_sd_filesystem, BlankProdInfoPath, FS_OPEN_READ | FS_OPEN_WRITE, &f)))) {
-        std::abort();
-    }
-
-    if (R_FAILED((rc = fsFileSetSize(&f, ProdInfoSize)))) {
-        std::abort();
-    }
-
-    if (R_FAILED((rc = fsFileWrite(&f, 0, cal0, ProdInfoSize)))) {
-        std::abort();
-    }
-
-    if (R_FAILED((rc = fsFileFlush(&f)))) {
-        std::abort();
-    }
-
-    fsFileClose(&f);
-
-    if (R_FAILED((rc = fsFsOpenFile(&g_sd_filesystem, BlankProdInfoPath, FS_OPEN_READ, &g_blank_prodinfo_file)))) {
-        std::abort();
-    }
+    g_initialized_blank_cal0 = true;
 }
 
 bool Utils::IsCal0Valid(const u8 *cal0) {
-    char serial_number[0x40] = {0};
-    std::memcpy(serial_number, cal0 + 0x250, 0x18);
-
     bool is_cal0_valid = true;
-    is_cal0_valid &= std::memcmp(g_cal0_backup, "CAL0", 4) == 0;
-    is_cal0_valid &= std::memcmp(g_cal0_backup + 0x250, serial_number, 0x18) == 0;
-    u32 cal0_size = ((u32 *)g_cal0_backup)[2];
+    is_cal0_valid &= std::memcmp(cal0, "CAL0", 4) == 0;
+    u32 cal0_size = ((u32 *)cal0)[2];
     is_cal0_valid &= cal0_size + 0x40 <= ProdInfoSize;
     if (is_cal0_valid) {
         u8 calc_hash[0x20];
-        sha256CalculateHash(calc_hash, g_cal0_backup + 0x40, cal0_size);
-        is_cal0_valid &= std::memcmp(calc_hash, g_cal0_backup + 0x20, sizeof(calc_hash)) == 0;
+        sha256CalculateHash(calc_hash, cal0 + 0x40, cal0_size);
+        is_cal0_valid &= std::memcmp(calc_hash, cal0 + 0x20, sizeof(calc_hash)) == 0;
     }
 
     return is_cal0_valid;
@@ -771,15 +747,7 @@ u16 Utils::GetCrc16(const void *data, size_t size) {
     return crc16;
 }
 
-Result Utils::OpenBlankProdInfoFile(FsFile *out) {
-    if (!IsSdInitialized()) {
-        std::abort();
-        return ResultFsSdCardNotPresent;
-    }
-
-    Result rc = OpenSdFile(BlankProdInfoPath, FS_OPEN_READ, out);
-    if (R_FAILED((rc))) {
-        std::abort();
-    }
-    return rc;
+const void *Utils::GetBlankProdInfoBuffer() {
+    EnsureBlankProdInfo();
+    return g_blank_cal0;
 }

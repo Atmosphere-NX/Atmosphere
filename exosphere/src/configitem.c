@@ -282,7 +282,11 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             break;
         case CONFIGITEM_HAS_RCM_BUG_PATCH:
             /* UNOFFICIAL: Gets whether this unit has the RCM bug patched. */
-            *p_outvalue = (int)(fuse_has_rcm_bug_patch());;
+            *p_outvalue = (int)(fuse_has_rcm_bug_patch());
+            break;
+        case CONFIGITEM_SHOULD_BLANK_PROD_INFO:
+            /* UNOFFICIAL: Gets whether we should blank out certain parts of PRODINFO. */
+            *p_outvalue = (int)(exosphere_should_blank_prod_info() != 0);
             break;
         default:
             result = 2;

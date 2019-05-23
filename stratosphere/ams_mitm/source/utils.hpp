@@ -37,6 +37,8 @@ enum BisStorageId : u32 {
     BisStorageId_SystemProperPartition = 33,
 };
 
+static constexpr size_t ProdInfoSize = 0x8000;
+
 struct OverrideKey {
     u64 key_combination;
     bool override_by_default;
@@ -61,7 +63,7 @@ class Utils {
 
         static bool HasSdRomfsContent(u64 title_id);
 
-        static Result OpenBlankProdInfoFile(FsFile *out);
+        static const void *GetBlankProdInfoBuffer();
 
         /* Delayed Initialization + MitM detection. */
         static void InitializeThreadFunc(void *args);
@@ -98,6 +100,6 @@ class Utils {
     private:
         static void RefreshConfiguration();
 
-        static void CreateBlankProdInfo();
+        static void EnsureBlankProdInfo();
         static bool IsCal0Valid(const u8 *cal0);
 };

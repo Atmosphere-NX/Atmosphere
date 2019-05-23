@@ -27,12 +27,14 @@
 #include "fsmitm_boot0storage.hpp"
 #include "fsmitm_romstorage.hpp"
 #include "fsmitm_layeredrom.hpp"
+#include "fsmitm_utils.hpp"
 
 #include "fs_dir_utils.hpp"
 #include "fs_save_utils.hpp"
 #include "fs_subdirectory_filesystem.hpp"
 #include "fs_directory_savedata_filesystem.hpp"
 #include "fs_file_storage.hpp"
+#include "fs_memory_storage.hpp"
 
 #include "../debug.hpp"
 
@@ -262,23 +264,13 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
             const bool is_sysmodule = TitleIdIsSystem(this->title_id);
             const bool has_bis_write_flag = Utils::HasFlag(this->title_id, "bis_write");
             const bool has_cal0_read_flag = Utils::HasFlag(this->title_id, "cal_read");
-            const bool has_blank_cal0_flag = Utils::HasGlobalFlag("blank_prodinfo");
+            const bool has_blank_cal0_flag = ShouldBlankProdInfo();
             if (bis_partition_id == BisStorageId_Boot0) {
                 storage = std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, this->title_id));
             } else if (bis_partition_id == BisStorageId_Prodinfo) {
                 /* PRODINFO should *never* be writable. */
                 if (has_blank_cal0_flag) {
-                    FsFile file;
-
-                    if (R_FAILED((rc = Utils::OpenBlankProdInfoFile(&file)))) {
-                        return rc;
-                    }
-
-                    storage = std::make_shared<IStorageInterface>(new FileStorage(new ProxyFile(&file)));
-                    if (out_storage.IsDomain()) {
-                        out_domain_id = file.s.object_id;
-                    }
-                    return rc;
+                    storage = std::make_shared<IStorageInterface>(new MitmProxyStorage(std::make_unique<ReadOnlyMemoryStorage>(Utils::GetBlankProdInfoBuffer(), ProdInfoSize), bis_storage.s));
                 } else if (is_sysmodule || has_cal0_read_flag) {
                     storage = std::make_shared<IStorageInterface>(new ROProxyStorage(bis_storage));
                 } else {

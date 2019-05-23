@@ -199,6 +199,14 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
         fatal_error("[NXBOOT]: Failed to parse BCT.ini!\n");
     }
 
+    {
+        FILE *flag = fopen("atmosphere/flags/blank_prodinfo.flag", "rb");
+        if (flag != NULL) {
+            exo_cfg.flags |= EXOSPHERE_FLAG_SHOULD_BLANK_PRODINFO;
+            fclose(flag);
+        }
+    }
+
     if ((exo_cfg.target_firmware < ATMOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX)) {
         fatal_error("[NXBOOT]: Invalid Exosphere target firmware!\n");
     }
