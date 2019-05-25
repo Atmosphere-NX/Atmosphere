@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstdio>
@@ -34,7 +34,7 @@ extern "C" {
     #define INNER_HEAP_SIZE 0x100000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
-    
+
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
@@ -66,16 +66,16 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     Result rc;
-    
+
     SetFirmwareVersionForLibnx();
-    
+
     DoWithSmSession([&]() {
         rc = fsInitialize();
         if (R_FAILED(rc)) {
             fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
         }
     });
-    
+
     rc = fsdevMountSdmc();
     if (R_FAILED(rc)) {
         fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
@@ -114,22 +114,22 @@ int main(int argc, char **argv) {
             return 0;
         }
     }
-    
+
     /* Parse crashed PID. */
     u64 crashed_pid = creport_parse_u64(argv[0]);
-    
+
     /* Try to debug the crashed process. */
     g_Creport.BuildReport(crashed_pid, argv[1][0] == '1');
     if (g_Creport.WasSuccessful()) {
         g_Creport.SaveReport();
-        
+
         DoWithSmSession([&]() {
             if (R_SUCCEEDED(nsdevInitialize())) {
                 nsdevTerminateProcess(crashed_pid);
                 nsdevExit();
             }
         });
-        
+
         /* Don't fatal if we have extra info. */
         if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
             if (g_Creport.IsApplication()) {
@@ -138,15 +138,15 @@ int main(int argc, char **argv) {
         } else if (argv[1][0] == '1') {
             return 0;
         }
-        
+
         /* Also don't fatal if we're a user break. */
         if (g_Creport.IsUserBreak()) {
             return 0;
         }
-        
+
         FatalContext *ctx = g_Creport.GetFatalContext();
-        
+
         fatalWithContext(g_Creport.GetResult(), FatalType_ErrorScreen, ctx);
     }
-    
+
 }

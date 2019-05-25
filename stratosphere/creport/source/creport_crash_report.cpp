@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdio>
 #include <cstring>
 #include <sys/stat.h>
@@ -28,21 +28,21 @@ void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
     if (OpenProcess(pid)) {
         ProcessExceptions();
         this->code_list.ReadCodeRegionsFromThreadInfo(this->debug_handle, &this->crashed_thread_info);
-        this->thread_list.ReadThreadsFromProcess(this->debug_handle, Is64Bit());
+        this->thread_list.ReadThreadsFromProcess(this->thread_tls_map, this->debug_handle, Is64Bit());
         this->crashed_thread_info.SetCodeList(&this->code_list);
         this->thread_list.SetCodeList(&this->code_list);
-        
+
         if (IsApplication()) {
             ProcessDyingMessage();
         }
-        
+
         /* Real creport only does this if application, but there's no reason not to do it all the time. */
         for (u32 i = 0; i < this->thread_list.GetThreadCount(); i++) {
             this->code_list.ReadCodeRegionsFromThreadInfo(this->debug_handle, this->thread_list.GetThreadInfo(i));
         }
-        
+
         /* Real creport builds the report here. We do it later. */
-        
+
         Close();
     }
 }
@@ -50,29 +50,29 @@ void CrashReport::BuildReport(u64 pid, bool has_extra_info) {
 FatalContext *CrashReport::GetFatalContext() {
     FatalContext *ctx = new FatalContext;
     *ctx = (FatalContext){0};
-    
+
     ctx->is_aarch32 = false;
     ctx->type = static_cast<u32>(this->exception_info.type);
-    
+
     for (size_t i = 0; i < 29; i++) {
         ctx->aarch64_ctx.x[i] = this->crashed_thread_info.context.cpu_gprs[i].x;
     }
     ctx->aarch64_ctx.fp = this->crashed_thread_info.context.fp;
     ctx->aarch64_ctx.lr = this->crashed_thread_info.context.lr;
     ctx->aarch64_ctx.pc = this->crashed_thread_info.context.pc.x;
-    
+
     ctx->aarch64_ctx.stack_trace_size = this->crashed_thread_info.stack_trace_size;
     for (size_t i = 0; i < ctx->aarch64_ctx.stack_trace_size; i++) {
         ctx->aarch64_ctx.stack_trace[i] = this->crashed_thread_info.stack_trace[i];
     }
-    
+
     if (this->code_list.code_count) {
         ctx->aarch64_ctx.start_address = this->code_list.code_infos[0].start_address;
     }
-    
+
     /* For ams fatal... */
     ctx->aarch64_ctx.afsr0 = this->process_info.title_id;
-    
+
     return ctx;
 }
 
@@ -80,7 +80,7 @@ void CrashReport::ProcessExceptions() {
     if (!IsOpen()) {
         return;
     }
-    
+
     DebugEventInfo d;
     while (R_SUCCEEDED(svcGetDebugEvent((u8 *)&d, this->debug_handle))) {
         switch (d.type) {
@@ -91,12 +91,16 @@ void CrashReport::ProcessExceptions() {
                 HandleException(d);
                 break;
             case DebugEventType::AttachThread:
+                HandleAttachThread(d);
             case DebugEventType::ExitProcess:
             case DebugEventType::ExitThread:
             default:
                 break;
         }
     }
+
+    /* Parse crashing thread info. */
+    this->crashed_thread_info.ReadFromProcess(this->thread_tls_map, this->debug_handle, this->crashed_thread_id, Is64Bit());
 }
 
 void CrashReport::HandleAttachProcess(DebugEventInfo &d) {
@@ -106,31 +110,31 @@ void CrashReport::HandleAttachProcess(DebugEventInfo &d) {
         u64 address = this->process_info.user_exception_context_address;
         u64 userdata_address = 0;
         u64 userdata_size = 0;
-        
+
         if (!IsAddressReadable(address, sizeof(userdata_address) + sizeof(userdata_size))) {
             return;
         }
-        
+
         /* Read userdata address. */
         if (R_FAILED(svcReadDebugProcessMemory(&userdata_address, this->debug_handle, address, sizeof(userdata_address)))) {
             return;
         }
-        
+
         /* Validate userdata address. */
         if (userdata_address == 0 || userdata_address & 0xFFF) {
             return;
         }
-        
+
         /* Read userdata size. */
         if (R_FAILED(svcReadDebugProcessMemory(&userdata_size, this->debug_handle, address + sizeof(userdata_address), sizeof(userdata_size)))) {
             return;
         }
-        
+
         /* Cap userdata size. */
         if (userdata_size > sizeof(this->dying_message)) {
             userdata_size = sizeof(this->dying_message);
         }
-        
+
         /* Assign. */
         this->dying_message_address = userdata_address;
         this->dying_message_size = userdata_size;
@@ -180,8 +184,11 @@ void CrashReport::HandleException(DebugEventInfo &d) {
             return;
     }
     this->exception_info = d.info.exception;
-    /* Parse crashing thread info. */
-    this->crashed_thread_info.ReadFromProcess(this->debug_handle, d.thread_id, Is64Bit());
+    this->crashed_thread_id = d.thread_id;
+}
+
+void CrashReport::HandleAttachThread(DebugEventInfo &d) {
+    this->thread_tls_map[d.info.attach_thread.thread_id] = d.info.attach_thread.tls_address;
 }
 
 void CrashReport::ProcessDyingMessage() {
@@ -189,7 +196,7 @@ void CrashReport::ProcessDyingMessage() {
     if ((GetRuntimeFirmwareVersion() < FirmwareVersion_500)) {
         return;
     }
-    
+
     /* Validate the message address/size. */
     if (this->dying_message_address == 0 || this->dying_message_address & 0xFFF) {
         return;
@@ -197,36 +204,36 @@ void CrashReport::ProcessDyingMessage() {
     if (this->dying_message_size > sizeof(this->dying_message)) {
         return;
     }
-    
+
     /* Validate that the report isn't garbage. */
     if (!IsOpen() || !WasSuccessful()) {
         return;
     }
-    
+
     if (!IsAddressReadable(this->dying_message_address, this->dying_message_size)) {
         return;
     }
-    
+
     svcReadDebugProcessMemory(this->dying_message, this->debug_handle, this->dying_message_address, this->dying_message_size);
 }
 
 bool CrashReport::IsAddressReadable(u64 address, u64 size, MemoryInfo *o_mi) {
     MemoryInfo mi;
     u32 pi;
-    
+
     if (o_mi == NULL) {
         o_mi = &mi;
     }
-    
+
     if (R_FAILED(svcQueryDebugProcessMemory(o_mi, &pi, this->debug_handle, address))) {
         return false;
     }
-    
+
     /* Must be read or read-write */
     if ((o_mi->perm | Perm_W) != Perm_Rw) {
         return false;
     }
-    
+
     /* Must have space for both userdata address and userdata size. */
     if (address < o_mi->addr || o_mi->addr + o_mi->size < address + size) {
         return false;
@@ -237,7 +244,7 @@ bool CrashReport::IsAddressReadable(u64 address, u64 size, MemoryInfo *o_mi) {
 
 bool CrashReport::GetCurrentTime(u64 *out) {
     *out = 0;
-    
+
     /* Verify that pcv isn't dead. */
     {
         bool has_time_service;
@@ -254,7 +261,7 @@ bool CrashReport::GetCurrentTime(u64 *out) {
             return false;
         }
     }
-    
+
     /* Try to get the current time. */
     bool success = true;
     DoWithSmSession([&]() {
@@ -268,7 +275,7 @@ bool CrashReport::GetCurrentTime(u64 *out) {
 }
 
 void CrashReport::EnsureReportDirectories() {
-    char path[FS_MAX_PATH];  
+    char path[FS_MAX_PATH];
     strcpy(path, "sdmc:/atmosphere");
     mkdir(path, S_IRWXU);
     strcat(path, "/crash_reports");
@@ -280,16 +287,16 @@ void CrashReport::EnsureReportDirectories() {
 void CrashReport::SaveReport() {
     /* Save the report to the SD card. */
     char report_path[FS_MAX_PATH];
-    
+
     /* Ensure path exists. */
     EnsureReportDirectories();
-    
+
     /* Get a timestamp. */
     u64 timestamp;
     if (!GetCurrentTime(&timestamp)) {
         timestamp = svcGetSystemTick();
     }
-    
+
     /* Open report file. */
     snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash_reports/%011lu_%016lx.log", timestamp, process_info.title_id);
     FILE *f_report = fopen(report_path, "w");
@@ -298,7 +305,7 @@ void CrashReport::SaveReport() {
     }
     this->SaveToFile(f_report);
     fclose(f_report);
-    
+
     /* Dump threads. */
     snprintf(report_path, sizeof(report_path) - 1, "sdmc:/atmosphere/crash_reports/dumps/%011lu_%016lx_thread_info.bin", timestamp, process_info.title_id);
     f_report = fopen(report_path, "wb");
@@ -308,9 +315,9 @@ void CrashReport::SaveReport() {
 
 void CrashReport::SaveToFile(FILE *f_report) {
     char buf[0x10] = {0};
-    fprintf(f_report, "Atmosphère Crash Report (v1.2):\n");
+    fprintf(f_report, "Atmosphère Crash Report (v1.3):\n");
     fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->result, R_MODULE(this->result), R_DESCRIPTION(this->result));
-    
+
     /* Process Info. */
     memcpy(buf, this->process_info.name, sizeof(this->process_info.name));
     fprintf(f_report, "Process Info:\n");
@@ -321,7 +328,7 @@ void CrashReport::SaveToFile(FILE *f_report) {
     if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
         fprintf(f_report, "    User Exception Address:      %s\n", this->code_list.GetFormattedAddressString(this->process_info.user_exception_context_address));
     }
-    
+
     fprintf(f_report, "Exception Info:\n");
     fprintf(f_report, "    Type:                        %s\n", GetDebugExceptionTypeStr(this->exception_info.type));
     fprintf(f_report, "    Address:                     %s\n", this->code_list.GetFormattedAddressString(this->exception_info.address));
@@ -331,7 +338,7 @@ void CrashReport::SaveToFile(FILE *f_report) {
             break;
         case DebugExceptionType::DataAbort:
         case DebugExceptionType::AlignmentFault:
-            if (this->exception_info.specific.raw != this->exception_info.address) { 
+            if (this->exception_info.specific.raw != this->exception_info.address) {
                 fprintf(f_report, "    Fault Address:               %s\n", this->code_list.GetFormattedAddressString(this->exception_info.specific.raw));
             }
             break;
@@ -346,10 +353,10 @@ void CrashReport::SaveToFile(FILE *f_report) {
         default:
             break;
     }
-    
+
     fprintf(f_report, "Crashed Thread Info:\n");
     this->crashed_thread_info.SaveToFile(f_report);
-    
+
     if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
         if (this->dying_message_size) {
             fprintf(f_report, "Dying Message Info:\n");

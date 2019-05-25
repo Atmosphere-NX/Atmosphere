@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <cstdio>
@@ -33,10 +33,10 @@ class CodeList {
         static const size_t max_code_count = 0x60;
         u32 code_count = 0;
         CodeInfo code_infos[max_code_count];
-        
+
         /* For pretty-printing. */
         char address_str_buf[0x280];
-    public:        
+    public:
         void ReadCodeRegionsFromThreadInfo(Handle debug_handle, const ThreadInfo *thread);
         const char *GetFormattedAddressString(u64 address);
         void SaveToFile(FILE *f_report);
