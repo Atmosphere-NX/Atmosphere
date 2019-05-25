@@ -75,9 +75,11 @@ bool ThreadInfo::ReadFromProcess(std::map<u64, u64> &tls_map, Handle debug_handl
         return false;
     }
 
-    /* Don't try to parse stack frames if 32-bit. */
+    /* In AArch32 mode the LR, FP, and SP registers aren't set correctly in the ThreadContext by svcGetDebugThreadParam... */
     if (!is_64_bit) {
-        return true;
+        this->context.fp = this->context.cpu_gprs[11].x;
+        this->context.sp = this->context.cpu_gprs[13].x;
+        this->context.lr = this->context.cpu_gprs[14].x;
     }
 
     /* Parse information from TLS if present. */
@@ -104,21 +106,41 @@ bool ThreadInfo::ReadFromProcess(std::map<u64, u64> &tls_map, Handle debug_handl
     TryGetStackInfo(debug_handle);
 
     u64 cur_fp = this->context.fp;
-    for (unsigned int i = 0; i < sizeof(this->stack_trace)/sizeof(u64); i++) {
-        /* Validate the current frame. */
-        if (cur_fp == 0 || (cur_fp & 0xF)) {
-            break;
-        }
 
-        /* Read a new frame. */
-        StackFrame cur_frame;
-        if (R_FAILED(svcReadDebugProcessMemory(&cur_frame, debug_handle, cur_fp, sizeof(StackFrame)))) {
-            break;
-        }
+    if (is_64_bit) {
+        for (unsigned int i = 0; i < sizeof(this->stack_trace)/sizeof(u64); i++) {
+            /* Validate the current frame. */
+            if (cur_fp == 0 || (cur_fp & 0xF)) {
+                break;
+            }
 
-        /* Advance to the next frame. */
-        this->stack_trace[this->stack_trace_size++] = cur_frame.lr;
-        cur_fp = cur_frame.fp;
+            /* Read a new frame. */
+            StackFrame64 cur_frame;
+            if (R_FAILED(svcReadDebugProcessMemory(&cur_frame, debug_handle, cur_fp, sizeof(StackFrame64)))) {
+                break;
+            }
+
+            /* Advance to the next frame. */
+            this->stack_trace[this->stack_trace_size++] = cur_frame.lr;
+            cur_fp = cur_frame.fp;
+        }
+    } else {
+        for (unsigned int i = 0; i < sizeof(this->stack_trace)/sizeof(u64); i++) {
+            /* Validate the current frame. */
+            if (cur_fp == 0 || (cur_fp & 0x7)) {
+                break;
+            }
+
+            /* Read a new frame. */
+            StackFrame32 cur_frame;
+            if (R_FAILED(svcReadDebugProcessMemory(&cur_frame, debug_handle, cur_fp, sizeof(StackFrame32)))) {
+                break;
+            }
+
+            /* Advance to the next frame. */
+            this->stack_trace[this->stack_trace_size++] = cur_frame.lr;
+            cur_fp = cur_frame.fp;
+        }
     }
 
     return true;

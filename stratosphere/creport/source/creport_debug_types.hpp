@@ -17,9 +17,14 @@
 #pragma once
 #include <switch.h>
 
-struct StackFrame {
+struct StackFrame64 {
     u64 fp;
     u64 lr;
+};
+
+struct StackFrame32 {
+    u32 fp;
+    u32 lr;
 };
 
 struct AttachProcessInfo {
