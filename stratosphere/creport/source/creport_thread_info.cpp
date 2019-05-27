@@ -115,14 +115,14 @@ bool ThreadInfo::ReadFromProcess(std::map<u64, u64> &tls_map, Handle debug_handl
             }
 
             /* Read a new frame. */
-            StackFrame64 cur_frame;
-            if (R_FAILED(svcReadDebugProcessMemory(&cur_frame, debug_handle, cur_fp, sizeof(StackFrame64)))) {
+            StackFrame cur_frame;
+            if (R_FAILED(svcReadDebugProcessMemory(&cur_frame, debug_handle, cur_fp, sizeof(cur_frame.frame_64)))) {
                 break;
             }
 
             /* Advance to the next frame. */
-            this->stack_trace[this->stack_trace_size++] = cur_frame.lr;
-            cur_fp = cur_frame.fp;
+            this->stack_trace[this->stack_trace_size++] = cur_frame.frame_64.lr;
+            cur_fp = cur_frame.frame_64.fp;
         }
     } else {
         for (unsigned int i = 0; i < sizeof(this->stack_trace)/sizeof(u64); i++) {
@@ -132,14 +132,14 @@ bool ThreadInfo::ReadFromProcess(std::map<u64, u64> &tls_map, Handle debug_handl
             }
 
             /* Read a new frame. */
-            StackFrame32 cur_frame;
-            if (R_FAILED(svcReadDebugProcessMemory(&cur_frame, debug_handle, cur_fp, sizeof(StackFrame32)))) {
+            StackFrame cur_frame;
+            if (R_FAILED(svcReadDebugProcessMemory(&cur_frame, debug_handle, cur_fp, sizeof(cur_frame.frame_32)))) {
                 break;
             }
 
             /* Advance to the next frame. */
-            this->stack_trace[this->stack_trace_size++] = cur_frame.lr;
-            cur_fp = cur_frame.fp;
+            this->stack_trace[this->stack_trace_size++] = cur_frame.frame_32.lr;
+            cur_fp = cur_frame.frame_32.fp;
         }
     }
 
