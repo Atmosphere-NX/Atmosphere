@@ -23,11 +23,11 @@
 class ProcessList;
 
 #define LAUNCHFLAGS_NOTIFYWHENEXITED(flags) (flags & 1)
-#define LAUNCHFLAGS_STARTSUSPENDED(flags) (flags & (kernelAbove500() ? 0x10 : 0x2))
-#define LAUNCHFLAGS_ARGLOW(flags) (kernelAbove500() ? ((flags & 0x14) != 0x10) : (kernelAbove200() ? ((flags & 0x6) != 0x2) : ((flags >> 2) & 1)))
-#define LAUNCHFLAGS_ARGHIGH(flags) ((flags & (kernelAbove500() ? 0x20 : 0x8)) ? 2 : 0)
-#define LAUNCHFLAGS_NOTIFYDEBUGEVENTS(flags) (flags & (kernelAbove500() ? 0x8 : 0x10))
-#define LAUNCHFLAGS_NOTIYDEBUGSPECIAL(flags) (flags & (kernelAbove500() ? 0x2 : (kernelAbove200() ? 0x20 : 0x0)))
+#define LAUNCHFLAGS_STARTSUSPENDED(flags) (flags & (GetRuntimeFirmwareVersion() >= FirmwareVersion_500 ? 0x10 : 0x2))
+#define LAUNCHFLAGS_ARGLOW(flags) (GetRuntimeFirmwareVersion() >= FirmwareVersion_500 ? ((flags & 0x14) != 0x10) : (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 ? ((flags & 0x6) != 0x2) : ((flags >> 2) & 1)))
+#define LAUNCHFLAGS_ARGHIGH(flags) ((flags & (GetRuntimeFirmwareVersion() >= FirmwareVersion_500 ? 0x20 : 0x8)) ? 2 : 0)
+#define LAUNCHFLAGS_NOTIFYDEBUGEVENTS(flags) (flags & (GetRuntimeFirmwareVersion() >= FirmwareVersion_500 ? 0x8 : 0x10))
+#define LAUNCHFLAGS_NOTIYDEBUGSPECIAL(flags) (flags & (GetRuntimeFirmwareVersion() >= FirmwareVersion_500 ? 0x2 : (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 ? 0x20 : 0x0)))
 
 // none of these names are official or authoritative in any way
 enum {

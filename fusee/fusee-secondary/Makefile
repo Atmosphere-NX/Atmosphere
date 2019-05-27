@@ -96,7 +96,7 @@ export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-KIPFILES 	:=	loader.kip pm.kip sm.kip ams_mitm.kip spl.kip boot_100.kip boot_200.kip
+KIPFILES 	:=	loader.kip pm.kip sm.kip ams_mitm.kip spl.kip boot.kip
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary.bin \
 				exosphere.bin lp0fw.bin rebootstub.bin thermosphere.bin splash_screen.bmp \
 				sept-primary.bin sept-secondary.enc \

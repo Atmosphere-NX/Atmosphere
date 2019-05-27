@@ -13,10 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <cstdio>
+#include <map>
 
 #include "creport_debug_types.hpp"
 
@@ -30,15 +31,18 @@ class ThreadInfo {
         u64 stack_bottom = 0;
         u64 stack_trace[0x20]{};
         u32 stack_trace_size = 0;
+        u64 tls_address = 0;
+        u8  tls[0x100]{};
+        char name[0x40]{};
         CodeList *code_list;
-    public:        
+    public:
         u64 GetPC() const { return context.pc.x; }
         u64 GetLR() const { return context.lr; }
         u64 GetId() const { return thread_id; }
         u32 GetStackTraceSize() const { return stack_trace_size; }
         u64 GetStackTrace(u32 i) const { return stack_trace[i]; }
-        
-        bool ReadFromProcess(Handle debug_handle, u64 thread_id, bool is_64_bit);
+
+        bool ReadFromProcess(std::map<u64, u64> &tls_map, Handle debug_handle, u64 thread_id, bool is_64_bit);
         void SaveToFile(FILE *f_report);
         void DumpBinary(FILE *f_bin);
         void SetCodeList(CodeList *cl) { this->code_list = cl; }
@@ -54,11 +58,11 @@ class ThreadList {
     public:
         u32 GetThreadCount() const { return thread_count; }
         const ThreadInfo *GetThreadInfo(u32 i) const { return &thread_infos[i]; }
-        
+
         void SaveToFile(FILE *f_report);
         void DumpBinary(FILE *f_bin, u64 crashed_id);
-        void ReadThreadsFromProcess(Handle debug_handle, bool is_64_bit);
-        void SetCodeList(CodeList *cl) { 
+        void ReadThreadsFromProcess(std::map<u64, u64> &tls_map, Handle debug_handle, bool is_64_bit);
+        void SetCodeList(CodeList *cl) {
             for (u32 i = 0; i < thread_count; i++) {
                 thread_infos[i].SetCodeList(cl);
             }

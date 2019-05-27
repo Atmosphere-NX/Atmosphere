@@ -191,7 +191,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
     
     /* Calculate ASLR extents for address space type. */
     u64 addspace_start, addspace_size;
-    if (kernelAbove200()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200)) {
         switch (addspace_type & 0xE) {
             case 0:
             case 4:
@@ -207,8 +207,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
                 addspace_size = 0x7FF8000000ULL;
                 break;
             default:
-                /* TODO: Panic. */
-                return ResultKernelOutOfMemory;
+                std::abort();
         }
     } else {
         if (addspace_type & 2) {

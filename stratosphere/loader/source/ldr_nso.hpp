@@ -94,8 +94,7 @@ class NsoUtils {
                 case 12:
                     return "sdk";
                 default:
-                    /* TODO: Panic. */
-                    return "?";
+                    std::abort();
             }
         }
 

@@ -33,8 +33,7 @@
 #include "pm_kip.h"
 #include "sm_kip.h"
 #include "ams_mitm_kip.h"
-#include "boot_100_kip.h"
-#include "boot_200_kip.h"
+#include "boot_kip.h"
 #include "spl_kip.h"
 #undef u8
 #undef u32
@@ -47,31 +46,19 @@ static bool g_stratosphere_sm_enabled = true;
 static bool g_stratosphere_pm_enabled = true;
 static bool g_stratosphere_ams_mitm_enabled = true;
 static bool g_stratosphere_spl_enabled = true;
-static bool g_stratosphere_boot_enabled = false;
+static bool g_stratosphere_boot_enabled = true;
 
-extern const uint8_t boot_100_kip[], boot_200_kip[];
-extern const uint8_t loader_kip[], pm_kip[], sm_kip[], spl_kip[], ams_mitm_kip[];
-extern const uint32_t boot_100_kip_size, boot_200_kip_size;
-extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size, spl_kip_size, ams_mitm_kip_size;
+extern const uint8_t loader_kip[], pm_kip[], sm_kip[], spl_kip[], boot_kip[], ams_mitm_kip[];
+extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size, spl_kip_size, boot_kip_size, ams_mitm_kip_size;
 
 /* GCC doesn't consider the size as const... we have to write it ourselves. */
 
 ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
-    const uint8_t *boot_kip = NULL;
-    uint32_t boot_kip_size = 0;
     uint32_t num_processes = 0;
     uint8_t *data;
 
     if (g_stratosphere_ini1 != NULL) {
         return g_stratosphere_ini1;
-    }
-
-    if (target_firmware <= ATMOSPHERE_TARGET_FIRMWARE_100) {
-        boot_kip = boot_100_kip;
-        boot_kip_size = boot_100_kip_size;
-    } else {
-        boot_kip = boot_200_kip;
-        boot_kip_size = boot_200_kip_size;
     }
 
     size_t size = sizeof(ini1_header_t);

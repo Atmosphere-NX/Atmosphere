@@ -122,4 +122,4 @@ By default, the Stratosphere implementation of PM will raise any session limits 
 
 ### Weak Service Verification
 
-In system firmware versions before 3.0.1, if a process did not call the [Initialize](https://reswitched.github.io/SwIPC/ifaces.html#nn::sm::detail::IUserInterface(0)) command on its `sm:` session, normally used to inform sm of the process's identity, sm would assume that the process was a kernel internal process and skip any service registration or access checks. The Stratosphere implementation of sm reimplements this vulnerability, allowing homebrew processes to skip service registration and access checks.
+In system firmware versions before 3.0.1, if a process did not call the [Initialize](https://reswitched.github.io/SwIPC/ifaces.html#nn::sm::detail::IUserInterface(0)) command on its `sm:` session, normally used to inform sm of the process's identity, sm would assume that the process was a kernel internal process and skip any service registration or access checks. The Stratosphere implementation of sm does not implement this vulnerability, and initialization is required on all firmware versions.

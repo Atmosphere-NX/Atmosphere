@@ -38,11 +38,6 @@
 #include "sc7.h"
 #include "exocfg.h"
 
-#define SMC_USER_HANDLERS 0x13
-#define SMC_PRIV_HANDLERS 0x9
-
-#define SMC_AMS_HANDLERS 0x2
-
 #define DEBUG_LOG_SMCS 0
 #define DEBUG_PANIC_ON_FAILURE 0
 
@@ -97,7 +92,7 @@ typedef struct {
     uint32_t num_handlers;
 } smc_table_t;
 
-static smc_table_entry_t g_smc_user_table[SMC_USER_HANDLERS] = {
+static smc_table_entry_t g_smc_user_table[] = {
     {0, 4, NULL},
     {0xC3000401, 4, smc_set_config_user},
     {0xC3000002, 1, smc_get_config_user},
@@ -118,8 +113,9 @@ static smc_table_entry_t g_smc_user_table[SMC_USER_HANDLERS] = {
     {0xC3000011, 4, smc_load_titlekey},
     {0xC3000012, 4, smc_unwrap_aes_wrapped_titlekey}
 };
+#define SMC_USER_HANDLERS (sizeof(g_smc_user_table) / sizeof(g_smc_user_table[0]))
 
-static smc_table_entry_t g_smc_priv_table[SMC_PRIV_HANDLERS] = {
+static smc_table_entry_t g_smc_priv_table[] = {
     {0, 4, NULL},
     {0xC4000001, 4, smc_cpu_suspend},
     {0x84000002, 4, smc_cpu_off},
@@ -130,12 +126,15 @@ static smc_table_entry_t g_smc_priv_table[SMC_PRIV_HANDLERS] = {
     {0xC3000007, 1, smc_configure_carveout},
     {0xC3000008, 1, smc_read_write_register}
 };
+#define SMC_PRIV_HANDLERS (sizeof(g_smc_priv_table) / sizeof(g_smc_priv_table[0]))
 
 /* This is a table used for atmosphere-specific SMCs. */
-static smc_table_entry_t g_smc_ams_table[SMC_AMS_HANDLERS] = {
+static smc_table_entry_t g_smc_ams_table[] = {
     {0, 4, NULL},
     {0xF0000201, 0, smc_ams_iram_copy},
+    {0xF0000002, 0, smc_read_write_register},
 };
+#define SMC_AMS_HANDLERS (sizeof(g_smc_ams_table) / sizeof(g_smc_ams_table[0]))
 
 static smc_table_t g_smc_tables[SMC_HANDLER_COUNT + 1] = {
     { /* SMC_HANDLER_USER */

@@ -1,4 +1,20 @@
 # Changelog
+## 0.8.10
++ A bug was fixed that could cause incorrect system memory allocation on 5.0.0.
+  + 5.0.0 should now correctly have an additional 12 MiB allocated for sysmodules.
++ Atmosphère features which check button presses now consider all controllers, isntead of just P1.
++ Support was added for configuring language/region on a per-game basis.
+  + This is managed by editing `atmosphere/titles/<title id>/config.ini` for the game.
+  + To edit title language, edit `override_config!override_language`.
+    + The languages supported are `ja`, `en-US`, `fr`, `de`, `it`, `es`, `zh-CN`, `ko`, `nl`, `pt`, `ru`, `zh-TW`, `en-GB`, `fr-CA`, `es-419`, `zh-Hans`, `zh-Hant`.
+  + To edit title region, edit `override_config!override_region`.
+    + The regions supported are `jpn`, `usa`, `eur`, `aus`, `chn`, `kor`, `twn`.
++ Atmosphère now provides a reimplementation of the `boot` system module.
+  + `boot` is responsible for performing hardware initialization, showing the Nintendo logo, and repairing NAND on system update failure.
+  + Atmosphère's `boot` implementation preserves AutoRCM during NAND repair.
+    + NAND repair occurs when an unexpected shutdown or error happens during a system update.
+    + This fixes a final edge case where AutoRCM might be removed by HOS, which could cause a user to burn fuses.
++ General system stability improvements to enhance the user's experience.
 ## 0.8.9
 + A number of bugs were fixed, including:
   + A data abort was fixed when mounting certain partitions on NAND.

@@ -35,10 +35,11 @@
 /* Exosphere config in DRAM shares physical/virtual mapping. */
 #define MAILBOX_EXOSPHERE_CONFIG_PHYS MAILBOX_EXOSPHERE_CONFIG
 
-#define EXOSPHERE_FLAGS_DEFAULT 0x00000000
-#define EXOSPHERE_FLAG_PERFORM_620_KEYGEN (1 << 0u)
-#define EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV  (1 << 1u)
-#define EXOSPHERE_FLAG_IS_DEBUGMODE_USER  (1 << 2u)
+#define EXOSPHERE_FLAG_PERFORM_620_KEYGEN                   (1 << 0u)
+#define EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV                    (1 << 1u)
+#define EXOSPHERE_FLAG_IS_DEBUGMODE_USER                    (1 << 2u)
+#define EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS  (1 << 3u)
+#define EXOSPHERE_FLAGS_DEFAULT (EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV)
 
 typedef struct {
     unsigned int magic;
@@ -52,6 +53,7 @@ unsigned int exosphere_get_target_firmware(void);
 unsigned int exosphere_should_perform_620_keygen(void);
 unsigned int exosphere_should_override_debugmode_priv(void);
 unsigned int exosphere_should_override_debugmode_user(void);
+unsigned int exosphere_should_disable_usermode_exception_handlers(void);
 
 static inline unsigned int exosphere_get_target_firmware_for_init(void) {
     const unsigned int magic = MAILBOX_EXOSPHERE_CONFIG_PHYS.magic;

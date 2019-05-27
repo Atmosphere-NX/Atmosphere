@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -27,6 +27,8 @@
 #include "setsys_mitm_service.hpp"
 #include "setsys_settings_items.hpp"
 #include "setsys_firmware_version.hpp"
+
+#include "set_mitm_service.hpp"
 
 #include "../utils.hpp"
 
@@ -44,17 +46,20 @@ void SetMitmMain(void *arg) {
 
     /* Initialize version manager. */
     VersionManager::Initialize();
-            
+
     /* Create server manager */
-    auto server_manager = new SetMitmManager(3);
-    
+    auto server_manager = new SetMitmManager(4);
+
     /* Create set:sys mitm. */
     AddMitmServerToManager<SetSysMitmService>(server_manager, "set:sys", 60);
-    
+
+    /* Create set mitm. */
+    AddMitmServerToManager<SetMitmService>(server_manager, "set", 60);
+
     /* Loop forever, servicing our services. */
     server_manager->Process();
-    
+
     delete server_manager;
-    
+
 }
 

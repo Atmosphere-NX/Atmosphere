@@ -64,7 +64,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
     }
     
     /* 3.0.0+ System Resource Size. */
-    if (kernelAbove300()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_300)) {
         if (npdm->header->system_resource_size & 0x1FFFFF) {
             return ResultLoaderInvalidSize;
         }
@@ -72,7 +72,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
             if ((out_proc_info->process_flags & 6) == 0) {
                 return ResultLoaderInvalidMeta;
             }
-            if (!(((application_type & 3) == 1) || (kernelAbove600() && (application_type & 3) == 2))) {
+            if (!(((application_type & 3) == 1) || ((GetRuntimeFirmwareVersion() >= FirmwareVersion_600) && (application_type & 3) == 2))) {
                 return ResultLoaderInvalidMeta;
             }
             if (npdm->header->system_resource_size > 0x1FE00000) {
@@ -85,7 +85,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
     }
     
     /* 5.0.0+ Pool Partition. */
-    if (kernelAbove500()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
         u32 pool_partition_id = (npdm->acid->flags >> 2) & 0xF;
         switch (pool_partition_id) {
             case 0: /* Application. */
@@ -206,7 +206,7 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     /* Update the list of registered processes with the new process. */
     svcGetProcessId(&process_id, process_h);
     bool is_64_bit_addspace;
-    if (kernelAbove200()) {
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200)) {
         is_64_bit_addspace = (((npdm_info.header->mmu_flags >> 1) & 5) | 2) == 3;
     } else {
         is_64_bit_addspace = (npdm_info.header->mmu_flags & 0xE) == 0x2;

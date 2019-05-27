@@ -874,7 +874,7 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
         /* Get memory extents. */
         PopulateMemoryExtents(&g_cheat_process_metadata.heap_extents, proc_h, 4, 5);
         PopulateMemoryExtents(&g_cheat_process_metadata.alias_extents, proc_h, 2, 3);
-        if (kernelAbove200()) {
+        if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200)) {
             PopulateMemoryExtents(&g_cheat_process_metadata.address_space_extents, proc_h, 12, 13);
         } else {
             g_cheat_process_metadata.address_space_extents.base = 0x08000000UL;
@@ -962,7 +962,7 @@ void DmntCheatManager::OnNewApplicationLaunch() {
         /* Get memory extents. */
         PopulateMemoryExtents(&g_cheat_process_metadata.heap_extents, proc_h, 4, 5);
         PopulateMemoryExtents(&g_cheat_process_metadata.alias_extents, proc_h, 2, 3);
-        if (kernelAbove200()) {
+        if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200)) {
             PopulateMemoryExtents(&g_cheat_process_metadata.address_space_extents, proc_h, 12, 13);
         } else {
             g_cheat_process_metadata.address_space_extents.base = 0x08000000UL;
