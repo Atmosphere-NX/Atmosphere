@@ -284,6 +284,9 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             /* UNOFFICIAL: Gets whether this unit has the RCM bug patched. */
             *p_outvalue = (int)(fuse_has_rcm_bug_patch());;
             break;
+        case CONFIGITEM_EMUNAND_CONFIG:
+            /* UNOFFICIAL: Gets configuration meta for emunand. */
+            *p_outvalue = exosphere_get_emunand_config();
         default:
             result = 2;
             break;

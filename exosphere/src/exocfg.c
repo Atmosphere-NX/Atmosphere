@@ -83,3 +83,11 @@ unsigned int exosphere_should_disable_usermode_exception_handlers(void) {
     
     return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS);
 }
+
+uint64_t exosphere_get_emunand_config(void) {
+    if (!g_has_loaded_config) {
+        generic_panic();
+    }
+
+    return g_exosphere_cfg.emunand_config;
+}

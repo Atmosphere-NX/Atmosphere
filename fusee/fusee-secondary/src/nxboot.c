@@ -125,7 +125,7 @@ static int exosphere_ini_handler(void *user, const char *section, const char *na
     int tmp = 0;
     if (strcmp(section, "exosphere") == 0) {
         if (strcmp(name, EXOSPHERE_TARGETFW_KEY) == 0) {
-            sscanf(value, "%d", &exo_cfg->target_firmware);
+            sscanf(value, "%ld", &exo_cfg->target_firmware);
         } else if (strcmp(name, EXOSPHERE_DEBUGMODE_PRIV_KEY) == 0) {
             sscanf(value, "%d", &tmp);
             if (tmp) {

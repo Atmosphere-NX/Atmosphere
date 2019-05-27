@@ -42,11 +42,14 @@
 #define EXOSPHERE_FLAGS_DEFAULT (EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV)
 
 typedef struct {
-    unsigned int magic;
-    unsigned int target_firmware;
-    unsigned int flags;
-    unsigned int reserved;
+    uint32_t magic;
+    uint32_t target_firmware;
+    uint32_t flags;
+    uint32_t reserved;
+    uint64_t emunand_config;
 } exosphere_config_t;
+
+_Static_assert(sizeof(exosphere_config_t) == 0x18, "exosphere config definition");
 
 unsigned int exosphere_load_config(void);
 unsigned int exosphere_get_target_firmware(void);
@@ -54,6 +57,8 @@ unsigned int exosphere_should_perform_620_keygen(void);
 unsigned int exosphere_should_override_debugmode_priv(void);
 unsigned int exosphere_should_override_debugmode_user(void);
 unsigned int exosphere_should_disable_usermode_exception_handlers(void);
+
+uint64_t exosphere_get_emunand_config(void);
 
 static inline unsigned int exosphere_get_target_firmware_for_init(void) {
     const unsigned int magic = MAILBOX_EXOSPHERE_CONFIG_PHYS.magic;
