@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "pm_process_track.hpp"
@@ -23,9 +23,9 @@ void ProcessTracking::MainLoop(void *arg) {
     /* Make a new waitable manager. */
     auto process_waiter = new WaitableManager(1);
     process_waiter->AddWaitable(Registration::GetProcessLaunchStartEvent());
-    
+
     /* Service processes. */
     process_waiter->Process();
-    
+
     delete process_waiter;
 }
