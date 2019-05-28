@@ -159,11 +159,12 @@ uint32_t ams_iram_copy(smc_args_t *args) {
 uint32_t ams_write_address(smc_args_t *args) {
     /* Implements a write to a DRAM page. */
     /* This operation can be used to write to read-only pages. */
-    /* args->X[1] = DRAM address (translated by kernel), must be size-bytes aligned. */
+    /* args->X[1] = Virtual address, must be size-bytes aligned and readable by EL0. */
     /* args->X[2] = Value. */
     /* args->X[3] = size (must be 1, 2, 4, or 8). */
 
-    const uintptr_t dram_address = (uintptr_t)args->X[1];
+    const uintptr_t el0_virtual_address = (uintptr_t)args->X[1];
+    const uintptr_t dram_address = get_physical_address_el0(el0_virtual_address);
     const uintptr_t dram_page_offset = (dram_address & 0xFFFULL);
     const size_t size = (size_t)(args->X[3]);
 

@@ -134,7 +134,7 @@ static smc_table_entry_t g_smc_ams_table[] = {
     {0, 4, NULL},
     {0xF0000201, 0, smc_ams_iram_copy},
     {0xF0000002, 0, smc_read_write_register},
-    {0xF0000203, 0, smc_ams_write_address},
+    {0xF0000003, 0, smc_ams_write_address},
 };
 #define SMC_AMS_HANDLERS (sizeof(g_smc_ams_table) / sizeof(g_smc_ams_table[0]))
 

@@ -286,7 +286,8 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             break;
         case CONFIGITEM_EMUNAND_CONFIG:
             /* UNOFFICIAL: Gets configuration meta for emunand. */
-            *p_outvalue = exosphere_get_emunand_config();
+            *p_outvalue = 1; //exosphere_get_emunand_config();
+            break;
         default:
             result = 2;
             break;
