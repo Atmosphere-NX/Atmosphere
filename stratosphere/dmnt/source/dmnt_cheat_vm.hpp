@@ -45,6 +45,10 @@ enum CheatVmOpcodeType : u32 {
     CheatVmOpcodeType_BeginRegisterConditionalBlock = 0xC0,
     CheatVmOpcodeType_SaveRestoreRegister = 0xC1,
     CheatVmOpcodeType_SaveRestoreRegisterMask = 0xC2,
+
+    /* This is a meta entry, and not a real opcode. */
+    /* This is to facilitate multi-nybble instruction decoding. */
+    CheatVmOpcodeType_DoubleExtendedWidth = 0xF0,
 };
 
 enum MemoryAccessType : u32 {

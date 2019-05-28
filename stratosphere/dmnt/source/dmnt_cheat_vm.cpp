@@ -260,6 +260,9 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
     if (opcode.opcode >= CheatVmOpcodeType_ExtendedWidth) {
         opcode.opcode = (CheatVmOpcodeType)((((u32)opcode.opcode) << 4) | ((first_dword >> 24) & 0xF));
     }
+    if (opcode.opcode >= CheatVmOpcodeType_DoubleExtendedWidth) {
+        opcode.opcode = (CheatVmOpcodeType)((((u32)opcode.opcode) << 4) | ((first_dword >> 20) & 0xF));
+    }
     
     /* detect condition start. */
     switch (opcode.opcode) {
@@ -501,6 +504,7 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode *out) {
             }
             break;
         case CheatVmOpcodeType_ExtendedWidth:
+        case CheatVmOpcodeType_DoubleExtendedWidth:
         default:
             /* Unrecognized instruction cannot be decoded. */
             valid = false;
