@@ -77,6 +77,7 @@ uint32_t smc_read_write_register(smc_args_t *args);
 
 /* Atmosphere SMC prototypes */
 uint32_t smc_ams_iram_copy(smc_args_t *args);
+uint32_t smc_ams_write_address(smc_args_t *args);
 
 /* TODO: Provide a way to set this. It's 0 on non-recovery boot anyway... */
 static uint32_t g_smc_blacklist_mask = 0;
@@ -133,6 +134,7 @@ static smc_table_entry_t g_smc_ams_table[] = {
     {0, 4, NULL},
     {0xF0000201, 0, smc_ams_iram_copy},
     {0xF0000002, 0, smc_read_write_register},
+    {0xF0000203, 0, smc_ams_write_address},
 };
 #define SMC_AMS_HANDLERS (sizeof(g_smc_ams_table) / sizeof(g_smc_ams_table[0]))
 
@@ -717,4 +719,8 @@ uint32_t smc_panic(smc_args_t *args) {
 
 uint32_t smc_ams_iram_copy(smc_args_t *args) {
     return smc_wrapper_sync(args, ams_iram_copy);
+}
+
+uint32_t smc_ams_write_address(smc_args_t *args) {
+    return smc_wrapper_sync(args, ams_write_address);
 }

@@ -155,3 +155,69 @@ uint32_t ams_iram_copy(smc_args_t *args) {
     
     return 0;
 }
+
+uint32_t ams_write_address(smc_args_t *args) {
+    /* Implements a write to a DRAM page. */
+    /* This operation can be used to write to read-only pages. */
+    /* args->X[1] = DRAM address (translated by kernel), must be size-bytes aligned. */
+    /* args->X[2] = Value. */
+    /* args->X[3] = size (must be 1, 2, 4, or 8). */
+
+    const uintptr_t dram_address = (uintptr_t)args->X[1];
+    const uintptr_t dram_page_offset = (dram_address & 0xFFFULL);
+    const size_t size = (size_t)(args->X[3]);
+
+    /* Validate addresses. */
+    if (!ams_is_user_addr_valid(dram_address)) {
+        return 2;
+    }
+
+    /* Validate size. */
+    switch (size) {
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+            if ((size + dram_page_offset) > 0x1000) {
+                return 2;
+            }
+            break;
+        default:
+            return 2;
+    }
+
+    /* Validate alignment. */
+    if (dram_page_offset % size) {
+        return 2;
+    }
+
+    /* Map pages. */
+    ams_map_userpage(dram_address);
+
+    /* Write data. */
+    uintptr_t dram_ptr = (uintptr_t)(AMS_USER_PAGE_SECURE_MONITOR_ADDR + dram_page_offset);
+    switch (size) {
+        case 1:
+            *((volatile uint8_t *)dram_ptr) = (uint8_t)(args->X[2]);
+            break;
+        case 2:
+            *((volatile uint16_t *)dram_ptr) = (uint16_t)(args->X[2]);
+            break;
+        case 4:
+            *((volatile uint32_t *)dram_ptr) = (uint32_t)(args->X[2]);
+            break;
+        case 8:
+            *((volatile uint64_t *)dram_ptr) = args->X[2];
+            break;
+        default:
+            generic_panic();
+    }
+
+    /* Flush! */
+    flush_dcache_range((void *)dram_ptr, (void *)(dram_ptr + size));
+
+    /* Unmap pages. */
+    ams_unmap_userpage();
+
+    return 0;
+}
