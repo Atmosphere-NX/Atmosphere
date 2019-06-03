@@ -19,9 +19,8 @@
 #include <switch.h>
 #include <map>
 
-#include "fsmitm_romstorage.hpp"
-
 #include "../debug.hpp"
+#include "fs_istorage.hpp"
 
 #define ROMFS_ENTRY_EMPTY 0xFFFFFFFF
 #define ROMFS_FILEPARTITION_OFS 0x200
@@ -65,7 +64,7 @@ struct RomFSSourceInfo {
         RomFSFileSourceInfo file_source_info;
         RomFSLooseSourceInfo loose_source_info;
         RomFSMemorySourceInfo memory_source_info;
-        RomFSMemorySourceInfo metadata_source_info;
+        RomFSMetaDataSourceInfo metadata_source_info;
     };
     RomFSDataSource type;
     

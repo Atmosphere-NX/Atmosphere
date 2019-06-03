@@ -25,10 +25,10 @@ class BisAccessor {
         static constexpr size_t SectorAlignment = 0x200;
     private:
         FsStorage storage = {};
-        u32 partition_id;
+        FsBisStorageId partition_id;
         bool active;
     public:
-        BisAccessor(u32 id) : partition_id(id), active(false) { }
+        BisAccessor(FsBisStorageId id) : partition_id(id), active(false) { }
         ~BisAccessor() {
             if (this->active) {
                 fsStorageClose(&storage);
@@ -126,7 +126,7 @@ class PartitionAccessor : public BisAccessor {
         using EnumType = typename Meta::EnumType;
         using OffsetSizeType = typename Meta::OffsetSizeType;
     public:
-        PartitionAccessor(u32 id) : BisAccessor(id) { }
+        PartitionAccessor(FsBisStorageId id) : BisAccessor(id) { }
     private:
         constexpr const OffsetSizeType *FindEntry(EnumType which) {
             for (size_t i = 0; i < Meta::NumEntries; i++) {
@@ -177,9 +177,6 @@ class PartitionAccessor : public BisAccessor {
         }
 };
 
-static constexpr u32 BisStorageId_Boot0 = 0;
-static constexpr u32 BisStorageId_Boot1 = 10;
-
 enum class Package2Type {
     NormalMain,
     NormalSub,
@@ -189,20 +186,20 @@ enum class Package2Type {
     RepairSub,
 };
 
-static constexpr u32 GetPackage2StorageId(Package2Type which) {
+static constexpr FsBisStorageId GetPackage2StorageId(Package2Type which) {
     switch (which) {
         case Package2Type::NormalMain:
-            return 21;
+            return FsBisStorageId_BootConfigAndPackage2NormalMain;
         case Package2Type::NormalSub:
-            return 22;
+            return FsBisStorageId_BootConfigAndPackage2NormalSub;
         case Package2Type::SafeMain:
-            return 23;
+            return FsBisStorageId_BootConfigAndPackage2SafeMain;
         case Package2Type::SafeSub:
-            return 24;
+            return FsBisStorageId_BootConfigAndPackage2SafeSub;
         case Package2Type::RepairMain:
-            return 25;
+            return FsBisStorageId_BootConfigAndPackage2RepairMain;
         case Package2Type::RepairSub:
-            return 26;
+            return FsBisStorageId_BootConfigAndPackage2RepairSub;
         default:
             std::abort();
     }
@@ -210,7 +207,7 @@ static constexpr u32 GetPackage2StorageId(Package2Type which) {
 
 class Boot0Accessor : public PartitionAccessor<Boot0Meta> {
     public:
-        static constexpr u32 PartitionId = 0;
+        static constexpr FsBisStorageId PartitionId = FsBisStorageId_Boot0;
         static constexpr size_t BctPubkOffset = 0x210;
         static constexpr size_t BctPubkSize = 0x100;
         static constexpr size_t BctEksOffset = 0x450;
@@ -230,7 +227,7 @@ class Boot0Accessor : public PartitionAccessor<Boot0Meta> {
 
 class Boot1Accessor : public PartitionAccessor<Boot1Meta> {
     public:
-        static constexpr u32 PartitionId = 10;
+        static constexpr FsBisStorageId PartitionId = FsBisStorageId_Boot1;
     public:
         Boot1Accessor() : PartitionAccessor<Boot1Meta>(PartitionId) { }
 };
