@@ -35,6 +35,7 @@ static std::atomic<u64> g_debug_on_launch_tid(0);
 static IEvent *g_process_event = nullptr;
 static IEvent *g_debug_title_event = nullptr;
 static IEvent *g_debug_application_event = nullptr;
+static IEvent *g_boot_finished_event = nullptr;
 
 static u8 g_ac_buf[4 * sizeof(LoaderProgramInfo)];
 
@@ -46,10 +47,11 @@ void Registration::InitializeSystemResources() {
     g_process_event = CreateWriteOnlySystemEvent();
     g_debug_title_event = CreateWriteOnlySystemEvent();
     g_debug_application_event = CreateWriteOnlySystemEvent();
-    
+    g_boot_finished_event = CreateWriteOnlySystemEvent();
+
     /* Auto-clear non-system event. */
     g_process_launch_start_event = CreateHosEvent(&Registration::ProcessLaunchStartCallback);
-    
+
     ResourceLimitUtils::InitializeLimits();
 }
 
@@ -72,55 +74,55 @@ void Registration::HandleProcessLaunch() {
     new_process.tid_sid = g_process_launch_state.tid_sid;
     std::memset(g_ac_buf, 0xCC, sizeof(g_ac_buf));
     u8 *acid_sac = g_ac_buf, *aci0_sac = acid_sac + sizeof(LoaderProgramInfo), *fac = aci0_sac + sizeof(LoaderProgramInfo), *fah = fac + sizeof(LoaderProgramInfo);
-            
+
     /* Check that this is a real program. */
     if (R_FAILED((rc = ldrPmGetProgramInfo(new_process.tid_sid.title_id, new_process.tid_sid.storage_id, &program_info)))) {
         goto HANDLE_PROCESS_LAUNCH_END;
     }
-        
+
     /* Get the resource limit handle, ensure that we can launch the program. */
     if ((program_info.application_type & 3) == 1 && HasApplicationProcess(NULL)) {
         rc = ResultPmApplicationRunning;
         goto HANDLE_PROCESS_LAUNCH_END;
     }
-    
+
     /* Try to register the title for launch in loader... */
     if (R_FAILED((rc = ldrPmRegisterTitle(new_process.tid_sid.title_id, new_process.tid_sid.storage_id, &new_process.ldr_queue_index)))) {
         goto HANDLE_PROCESS_LAUNCH_END;
     }
-        
+
     /* Make sure the previous application is cleaned up. */
     if ((program_info.application_type & 3) == 1) {
         ResourceLimitUtils::EnsureApplicationResourcesAvailable();
     }
-        
+
     /* Try to create the process... */
     if (R_FAILED((rc = ldrPmCreateProcess(LAUNCHFLAGS_ARGLOW(launch_flags) | LAUNCHFLAGS_ARGHIGH(launch_flags), new_process.ldr_queue_index, ResourceLimitUtils::GetResourceLimitHandle(program_info.application_type), &new_process.handle)))) {
         goto PROCESS_CREATION_FAILED;
     }
-        
+
     /* Get the new process's id. */
     svcGetProcessId(&new_process.pid, new_process.handle);
-        
+
     /* Register with FS. */
     memcpy(fac, program_info.ac_buffer + program_info.acid_sac_size + program_info.aci0_sac_size, program_info.acid_fac_size);
     memcpy(fah, program_info.ac_buffer + program_info.acid_sac_size + program_info.aci0_sac_size + program_info.acid_fac_size, program_info.aci0_fah_size);
     if (R_FAILED((rc = fsprRegisterProgram(new_process.pid, new_process.tid_sid.title_id, new_process.tid_sid.storage_id, fah, program_info.aci0_fah_size, fac, program_info.acid_fac_size)))) {
         goto FS_REGISTRATION_FAILED;
     }
-        
+
     /* Register with SM. */
     memcpy(acid_sac, program_info.ac_buffer, program_info.acid_sac_size);
     memcpy(aci0_sac, program_info.ac_buffer + program_info.acid_sac_size, program_info.aci0_sac_size);
     if (R_FAILED((rc = smManagerRegisterProcess(new_process.pid, acid_sac, program_info.acid_sac_size, aci0_sac, program_info.aci0_sac_size)))) {
         goto SM_REGISTRATION_FAILED;
     }
-        
+
     /* Setup process flags. */
     if (program_info.application_type & 1) {
         new_process.flags |= PROCESSFLAGS_APPLICATION;
     }
-    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200) && LAUNCHFLAGS_NOTIYDEBUGSPECIAL(launch_flags) && (program_info.application_type & 4)) { 
+    if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200) && LAUNCHFLAGS_NOTIYDEBUGSPECIAL(launch_flags) && (program_info.application_type & 4)) {
         new_process.flags |= PROCESSFLAGS_NOTIFYDEBUGSPECIAL;
     }
     if (LAUNCHFLAGS_NOTIFYWHENEXITED(launch_flags)) {
@@ -129,10 +131,10 @@ void Registration::HandleProcessLaunch() {
     if (LAUNCHFLAGS_NOTIFYDEBUGEVENTS(launch_flags) && (GetRuntimeFirmwareVersion() < FirmwareVersion_200 || (program_info.application_type & 4))) {
         new_process.flags |= PROCESSFLAGS_NOTIFYDEBUGEVENTS;
     }
-    
+
     /* Add process to the list. */
     Registration::AddProcessToList(std::make_shared<Registration::Process>(new_process));
-    
+
     /* Signal, if relevant. */
     if (new_process.tid_sid.title_id == g_debug_on_launch_tid.load()) {
         g_debug_title_event->Signal();
@@ -146,39 +148,39 @@ void Registration::HandleProcessLaunch() {
         rc = ResultSuccess;
     } else {
         rc = svcStartProcess(new_process.handle, program_info.main_thread_priority, program_info.default_cpu_id, program_info.main_thread_stack_size);
-    
+
         if (R_SUCCEEDED(rc)) {
             SetProcessState(new_process.pid, ProcessState_Running);
         }
     }
-    
+
     if (R_FAILED(rc)) {
         Registration::RemoveProcessFromList(new_process.pid);
         smManagerUnregisterProcess(new_process.pid);
     }
-    
+
 SM_REGISTRATION_FAILED:
     if (R_FAILED(rc)) {
         fsprUnregisterProgram(new_process.pid);
     }
-    
+
 FS_REGISTRATION_FAILED:
     if (R_FAILED(rc)) {
         svcCloseHandle(new_process.handle);
         new_process.handle = 0;
     }
-    
+
 PROCESS_CREATION_FAILED:
     if (R_FAILED(rc)) {
         ldrPmUnregisterTitle(new_process.ldr_queue_index);
     }
-    
+
 HANDLE_PROCESS_LAUNCH_END:
     g_process_launch_state.result = rc;
     if (R_SUCCEEDED(rc)) {
         *out_pid = new_process.pid;
     }
-    
+
     g_sema_finish_launch.Signal();
 }
 
@@ -187,25 +189,25 @@ Result Registration::LaunchDebugProcess(u64 pid) {
     std::scoped_lock<ProcessList &> lk(GetProcessList());
     LoaderProgramInfo program_info = {0};
     Result rc;
-    
+
     std::shared_ptr<Registration::Process> proc = GetProcess(pid);
     if (proc == NULL) {
         return ResultPmProcessNotFound;
     }
-    
+
     if (proc->state >= ProcessState_Running) {
         return ResultPmAlreadyStarted;
     }
-    
+
     /* Check that this is a real program. */
     if (R_FAILED((rc = ldrPmGetProgramInfo(proc->tid_sid.title_id, proc->tid_sid.storage_id, &program_info)))) {
         return rc;
     }
-    
+
     if (R_SUCCEEDED((rc = svcStartProcess(proc->handle, program_info.main_thread_priority, program_info.default_cpu_id, program_info.main_thread_stack_size)))) {
         proc->state = ProcessState_Running;
     }
-    
+
     return rc;
 }
 
@@ -216,11 +218,11 @@ Result Registration::LaunchProcess(u64 title_id, FsStorageId storage_id, u64 lau
     g_process_launch_state.tid_sid.storage_id = storage_id;
     g_process_launch_state.launch_flags = launch_flags;
     g_process_launch_state.out_pid = out_pid;
-    
+
     /* Start a launch, and wait for it to exit. */
     g_process_launch_start_event->Signal();
     g_sema_finish_launch.Wait();
-        
+
     return g_process_launch_state.result;
 }
 
@@ -230,15 +232,15 @@ Result Registration::LaunchProcessByTidSid(TidSid tid_sid, u64 launch_flags, u64
 
 Result Registration::HandleSignaledProcess(std::shared_ptr<Registration::Process> process) {
     u64 tmp;
-     
+
     /* Reset the signal. */
     svcResetSignal(process->handle);
-    
+
     ProcessState old_state;
     old_state = process->state;
     svcGetProcessInfo(&tmp, process->handle, ProcessInfoType_ProcessState);
     process->state = (ProcessState)tmp;
-    
+
     if (old_state == ProcessState_Crashed && process->state != ProcessState_Crashed) {
         process->flags &= ~PROCESSFLAGS_CRASH_DEBUG;
     }
@@ -307,18 +309,18 @@ void Registration::FinalizeExitedProcess(std::shared_ptr<Registration::Process> 
         if (R_FAILED(ldrPmUnregisterTitle(process->ldr_queue_index))) {
             std::abort();
         }
-        
+
         /* Close the process's handle. */
         svcCloseHandle(process->handle);
         process->handle = 0;
-        
+
         /* Insert into dead process list, if relevant. */
         if (signal_debug_process_5x) {
             std::scoped_lock<ProcessList &> dead_lk(g_dead_process_list);
 
             g_dead_process_list.processes.push_back(process);
         }
-        
+
         /* Remove NOTE: This probably frees process. */
         RemoveProcessFromList(process->pid);
     }
@@ -337,7 +339,7 @@ void Registration::AddProcessToList(std::shared_ptr<Registration::Process> proce
 
 void Registration::RemoveProcessFromList(u64 pid) {
     std::scoped_lock<ProcessList &> lk(GetProcessList());
-    
+
     /* Remove process from list. */
     for (unsigned int i = 0; i < g_process_list.processes.size(); i++) {
         std::shared_ptr<Registration::Process> process = g_process_list.processes[i];
@@ -352,10 +354,10 @@ void Registration::RemoveProcessFromList(u64 pid) {
 
 void Registration::SetProcessState(u64 pid, ProcessState new_state) {
     std::scoped_lock<ProcessList &> lk(GetProcessList());
-    
+
     /* Set process state. */
     for (auto &process : g_process_list.processes) {
-        if (process->pid == pid) {      
+        if (process->pid == pid) {
             process->state = new_state;
             break;
         }
@@ -364,7 +366,7 @@ void Registration::SetProcessState(u64 pid, ProcessState new_state) {
 
 bool Registration::HasApplicationProcess(std::shared_ptr<Registration::Process> *out) {
     std::scoped_lock<ProcessList &> lk(GetProcessList());
-    
+
     for (auto &process : g_process_list.processes) {
         if (process->flags & PROCESSFLAGS_APPLICATION) {
             if (out != nullptr) {
@@ -373,31 +375,31 @@ bool Registration::HasApplicationProcess(std::shared_ptr<Registration::Process> 
             return true;
         }
     }
-    
+
     return false;
 }
 
 std::shared_ptr<Registration::Process> Registration::GetProcess(u64 pid) {
     std::scoped_lock<ProcessList &> lk(GetProcessList());
-    
+
     for (auto &process : g_process_list.processes) {
         if (process->pid == pid) {
             return process;
         }
     }
-    
+
     return nullptr;
 }
 
 std::shared_ptr<Registration::Process> Registration::GetProcessByTitleId(u64 tid) {
     std::scoped_lock<ProcessList &> lk(GetProcessList());
-    
+
     for (auto &process : g_process_list.processes) {
         if (process->tid_sid.title_id == tid) {
             return process;
         }
     }
-    
+
     return nullptr;
 }
 
@@ -405,14 +407,14 @@ std::shared_ptr<Registration::Process> Registration::GetProcessByTitleId(u64 tid
 Result Registration::GetDebugProcessIds(u64 *out_pids, u32 max_out, u32 *num_out) {
     std::scoped_lock<ProcessList &> lk(GetProcessList());
     u32 num = 0;
-    
+
 
     for (auto &process : g_process_list.processes) {
         if (process->flags & PROCESSFLAGS_CRASH_DEBUG && num < max_out) {
             out_pids[num++] = process->pid;
         }
     }
-    
+
     *num_out = num;
     return ResultSuccess;
 }
@@ -425,7 +427,7 @@ void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
     /* Scope to manage process list lock. */
     {
         std::scoped_lock<ProcessList &> lk(GetProcessList());
-        
+
         for (auto &p : g_process_list.processes) {
             if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200) && p->state >= ProcessState_Running && p->flags & PROCESSFLAGS_DEBUGDETACHED) {
                 p->flags &= ~PROCESSFLAGS_DEBUGDETACHED;
@@ -461,7 +463,7 @@ void Registration::GetProcessEventType(u64 *out_pid, u64 *out_type) {
         *out_pid = 0;
         *out_type = 0;
     }
-    
+
     if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
         std::scoped_lock<ProcessList &> dead_lk(g_dead_process_list);
 
@@ -500,4 +502,20 @@ Result Registration::DisableDebug(u32 which) {
         g_debug_next_application = false;
     }
     return ResultSuccess;
+}
+
+Handle Registration::GetDebugTitleEventHandle() {
+    return g_debug_title_event->GetHandle();
+}
+
+Handle Registration::GetDebugApplicationEventHandle() {
+    return g_debug_application_event->GetHandle();
+}
+
+Handle Registration::GetBootFinishedEventHandle() {
+    return g_boot_finished_event->GetHandle();
+}
+
+void Registration::SignalBootFinished() {
+    g_boot_finished_event->Signal();
 }

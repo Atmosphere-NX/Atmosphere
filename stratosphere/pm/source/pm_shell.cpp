@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "pm_registration.hpp"
@@ -29,7 +29,7 @@ Result ShellService::LaunchProcess(Out<u64> pid, Registration::TidSid tid_sid, u
 
 Result ShellService::TerminateProcessId(u64 pid) {
     std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
-    
+
     auto proc = Registration::GetProcess(pid);
     if (proc != nullptr) {
         return svcTerminateProcess(proc->handle);
@@ -40,7 +40,7 @@ Result ShellService::TerminateProcessId(u64 pid) {
 
 Result ShellService::TerminateTitleId(u64 tid) {
     std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
-    
+
     auto proc = Registration::GetProcessByTitleId(tid);
     if (proc != NULL) {
         return svcTerminateProcess(proc->handle);
@@ -59,7 +59,7 @@ void ShellService::GetProcessEventType(Out<u64> type, Out<u64> pid) {
 
 Result ShellService::FinalizeExitedProcess(u64 pid) {
     std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
-    
+
     auto proc = Registration::GetProcess(pid);
     if (proc == NULL) {
         return ResultPmProcessNotFound;
@@ -73,7 +73,7 @@ Result ShellService::FinalizeExitedProcess(u64 pid) {
 
 Result ShellService::ClearProcessNotificationFlag(u64 pid) {
     std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
-    
+
     auto proc = Registration::GetProcess(pid);
     if (proc != NULL) {
         proc->flags &= ~PROCESSFLAGS_CRASHED;
@@ -86,13 +86,14 @@ Result ShellService::ClearProcessNotificationFlag(u64 pid) {
 void ShellService::NotifyBootFinished() {
     if (!g_has_boot_finished) {
         g_has_boot_finished = true;
+        Registration::SignalBootFinished();
         EmbeddedBoot2::Main();
     }
 }
 
 Result ShellService::GetApplicationProcessId(Out<u64> pid) {
     std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
-    
+
     std::shared_ptr<Registration::Process> app_proc;
     if (Registration::HasApplicationProcess(&app_proc)) {
         pid.SetValue(app_proc->pid);
@@ -113,13 +114,15 @@ Result ShellService::BoostSystemThreadsResourceLimit() {
 }
 
 
-Result ShellService::GetUnimplementedEventHandle(Out<CopiedHandle> event) {
-    /* In 8.0.0, Nintendo added this command which should return an event handle. */
-    /* In addition, they also added code to create a new event in the global PM constructor. */
-    /* However, nothing signals this event, and this command currently does std::abort();. */
-    /* We will oblige. */
-    std::abort();
-    
-    /* TODO: Return an event handle, once N makes this command a real thing in the future. */
-    /* TODO: return ResultSuccess; */
+void ShellService::GetBootFinishedEvent(Out<CopiedHandle> event) {
+    /* In 8.0.0, Nintendo added this command, which signals that the boot sysmodule has finished. */
+    /* Nintendo only signals it in safe mode FIRM, and this function aborts on normal FIRM. */
+    /* We will signal it always, but only allow this function to succeed on safe mode. */
+    {
+        u64 is_recovery_boot = 0;
+        if (R_FAILED(SmcGetConfig(SplConfigItem_IsRecoveryBoot, &is_recovery_boot)) || !is_recovery_boot) {
+            std::abort();
+        }
+    }
+    event.SetValue(Registration::GetBootFinishedEventHandle());
 }

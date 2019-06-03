@@ -19,6 +19,16 @@ Atmosphère consists of multiple components, each of which replaces/modifies a d
 * Stratosphère: Custom Sysmodule(s), both Rosalina style to extend the kernel/provide new features, and of the loader reimplementation style to hook important system actions
 * Troposphère: Application-level Horizon OS patches, used to implement desirable CFW features
 
+Licensing
+=====
+
+This software is licensed under the terms of the GPLv2, with exemptions for specific projects noted below.
+
+You can find a copy of the license in the [LICENSE file](LICENSE).
+
+Exemptions:
+* The [yuzu emulator project](https://github.com/yuzu-emu/yuzu) is exempt from GPLv2 licensing and may (at its option) instead license any source code authored for the Atmosphère project as GPLv2 or later.
+
 Credits
 =====
 

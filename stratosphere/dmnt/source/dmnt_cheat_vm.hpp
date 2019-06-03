@@ -45,6 +45,13 @@ enum CheatVmOpcodeType : u32 {
     CheatVmOpcodeType_BeginRegisterConditionalBlock = 0xC0,
     CheatVmOpcodeType_SaveRestoreRegister = 0xC1,
     CheatVmOpcodeType_SaveRestoreRegisterMask = 0xC2,
+
+    /* This is a meta entry, and not a real opcode. */
+    /* This is to facilitate multi-nybble instruction decoding. */
+    CheatVmOpcodeType_DoubleExtendedWidth = 0xF0,
+    
+    /* Double-extended width opcodes. */
+    CheatVmOpcodeType_DebugLog = 0xFFF,
 };
 
 enum MemoryAccessType : u32 {
@@ -100,6 +107,14 @@ enum SaveRestoreRegisterOpType : u32 {
     SaveRestoreRegisterOpType_Save = 1,
     SaveRestoreRegisterOpType_ClearSaved = 2,
     SaveRestoreRegisterOpType_ClearRegs = 3,
+};
+
+enum DebugLogValueType : u32 {
+    DebugLogValueType_MemoryRelAddr = 0,
+    DebugLogValueType_MemoryOfsReg = 1,
+    DebugLogValueType_RegisterRelAddr = 2,
+    DebugLogValueType_RegisterOfsReg = 3,
+    DebugLogValueType_RegisterValue = 4,
 };
 
 union VmInt {
@@ -211,6 +226,17 @@ struct SaveRestoreRegisterMaskOpcode {
     bool should_operate[0x10];
 };
 
+struct DebugLogOpcode {
+    u32 bit_width;
+    u32 log_id;
+    DebugLogValueType val_type;
+    MemoryAccessType mem_type;
+    u32 addr_reg_index;
+    u32 val_reg_index;
+    u32 ofs_reg_index;
+    u64 rel_address;
+};
+
 struct CheatVmOpcode {
     CheatVmOpcodeType opcode;
     bool begin_conditional_block;
@@ -229,6 +255,7 @@ struct CheatVmOpcode {
         BeginRegisterConditionalOpcode begin_reg_cond;
         SaveRestoreRegisterOpcode save_restore_reg;
         SaveRestoreRegisterMaskOpcode save_restore_regmask;
+        DebugLogOpcode debug_log;
     };
 };
 
@@ -249,6 +276,9 @@ class DmntCheatVm {
         bool DecodeNextOpcode(CheatVmOpcode *out);
         void SkipConditionalBlock();
         void ResetState();
+        
+        /* For implementing the DebugLog opcode. */
+        void DebugLog(u32 log_id, u64 value);
         
         /* For debugging. These will be IFDEF'd out normally. */
         void OpenDebugLogFile();

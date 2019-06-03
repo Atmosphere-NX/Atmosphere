@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -98,7 +98,7 @@ enum {
             - and PROCESSFLAGS_NOTIFYDEBUGEVENTS is set
      */
     PROCESSFLAGS_DEBUGSUSPENDED = 0x020,
-    
+
     /*
         set in HandleProcessLaunch when
             - program_info.application_type & 1
@@ -148,7 +148,7 @@ enum {
     PROCESSEVENTTYPE_500_RUNNING = 4, // debug detached or running
     PROCESSEVENTTYPE_500_SUSPENDED = 5, // debug suspended
 };
-    
+
 class Registration {
     public:
         struct TidSid {
@@ -163,7 +163,7 @@ class Registration {
             ProcessState state;
             u32 flags;
         };
-        
+
         struct ProcessLaunchState {
             TidSid tid_sid;
             u64 launch_flags;
@@ -175,14 +175,14 @@ class Registration {
         static IWaitable *GetProcessLaunchStartEvent();
         static ProcessList &GetProcessList();
         static Result ProcessLaunchStartCallback(u64 timeout);
-        
+
         static Result HandleSignaledProcess(std::shared_ptr<Process> process);
         static void FinalizeExitedProcess(std::shared_ptr<Process> process);
-        
+
         static void AddProcessToList(std::shared_ptr<Process> process);
         static void RemoveProcessFromList(u64 pid);
         static void SetProcessState(u64 pid, ProcessState new_state);
-        
+
         static std::shared_ptr<Registration::Process> GetProcess(u64 pid);
         static std::shared_ptr<Registration::Process> GetProcessByTitleId(u64 tid);
         static Result GetDebugProcessIds(u64 *out_pids, u32 max_out, u32 *num_out);
@@ -193,13 +193,16 @@ class Registration {
         static Result DisableDebug(u32 which);
         static Handle GetDebugTitleEventHandle();
         static Handle GetDebugApplicationEventHandle();
-        
+        static Handle GetBootFinishedEventHandle();
+
         static void HandleProcessLaunch();
         static Result LaunchDebugProcess(u64 pid);
         static void SignalFinishLaunchProcess();
         static Result LaunchProcess(u64 title_id, FsStorageId storage_id, u64 launch_flags, u64 *out_pid);
         static Result LaunchProcessByTidSid(TidSid tid_sid, u64 launch_flags, u64 *out_pid);
-        
+
+        static void SignalBootFinished();
+
         static bool HasApplicationProcess(std::shared_ptr<Process> *out);
 };
 

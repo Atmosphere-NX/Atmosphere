@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -42,12 +42,12 @@ enum ShellCmd_5X {
     Shell_Cmd_5X_NotifyBootFinished = 5,
     Shell_Cmd_5X_GetApplicationProcessId = 6,
     Shell_Cmd_5X_BoostSystemMemoryResourceLimit = 7,
-    
+
     Shell_Cmd_BoostSystemThreadsResourceLimit = 8,
-    Shell_Cmd_GetUnimplementedEventHandle = 9 /* TODO: Rename when Nintendo implements this. */
+    Shell_Cmd_GetBootFinishedEvent = 9,
 };
 
-class ShellService final : public IServiceObject {    
+class ShellService final : public IServiceObject {
     private:
         /* Actual commands. */
         Result LaunchProcess(Out<u64> pid, Registration::TidSid tid_sid, u32 launch_flags);
@@ -61,7 +61,7 @@ class ShellService final : public IServiceObject {
         Result GetApplicationProcessId(Out<u64> pid);
         Result BoostSystemMemoryResourceLimit(u64 sysmem_size);
         Result BoostSystemThreadsResourceLimit();
-        Result GetUnimplementedEventHandle(Out<CopiedHandle> event);
+        void GetBootFinishedEvent(Out<CopiedHandle> event);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             /* 1.0.0-4.0.0 */
@@ -74,10 +74,10 @@ class ShellService final : public IServiceObject {
             MakeServiceCommandMeta<Shell_Cmd_ClearProcessNotificationFlag, &ShellService::ClearProcessNotificationFlag, FirmwareVersion_Min, FirmwareVersion_400>(),
             MakeServiceCommandMeta<Shell_Cmd_NotifyBootFinished, &ShellService::NotifyBootFinished, FirmwareVersion_Min, FirmwareVersion_400>(),
             MakeServiceCommandMeta<Shell_Cmd_GetApplicationProcessId, &ShellService::GetApplicationProcessId, FirmwareVersion_Min, FirmwareVersion_400>(),
-            
+
             /* 4.0.0-4.0.0 */
             MakeServiceCommandMeta<Shell_Cmd_BoostSystemMemoryResourceLimit, &ShellService::BoostSystemMemoryResourceLimit, FirmwareVersion_400, FirmwareVersion_400>(),
-            
+
             /* 5.0.0-* */
             MakeServiceCommandMeta<Shell_Cmd_5X_LaunchProcess, &ShellService::LaunchProcess, FirmwareVersion_500>(),
             MakeServiceCommandMeta<Shell_Cmd_5X_TerminateProcessId, &ShellService::TerminateProcessId, FirmwareVersion_500>(),
@@ -87,11 +87,11 @@ class ShellService final : public IServiceObject {
             MakeServiceCommandMeta<Shell_Cmd_5X_NotifyBootFinished, &ShellService::NotifyBootFinished, FirmwareVersion_500>(),
             MakeServiceCommandMeta<Shell_Cmd_5X_GetApplicationProcessId, &ShellService::GetApplicationProcessId, FirmwareVersion_500>(),
             MakeServiceCommandMeta<Shell_Cmd_5X_BoostSystemMemoryResourceLimit, &ShellService::BoostSystemMemoryResourceLimit, FirmwareVersion_500>(),
-            
+
             /* 7.0.0-* */
             MakeServiceCommandMeta<Shell_Cmd_BoostSystemThreadsResourceLimit, &ShellService::BoostSystemThreadsResourceLimit, FirmwareVersion_700>(),
-            
+
             /* 8.0.0-* */
-            MakeServiceCommandMeta<Shell_Cmd_GetUnimplementedEventHandle, &ShellService::GetUnimplementedEventHandle, FirmwareVersion_800>(),
+            MakeServiceCommandMeta<Shell_Cmd_GetBootFinishedEvent, &ShellService::GetBootFinishedEvent, FirmwareVersion_800>(),
         };
 };
