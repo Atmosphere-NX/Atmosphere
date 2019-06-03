@@ -39,7 +39,7 @@ void BpcRebootManager::Initialize() {
     
     /* Read payload file. */
     size_t actual_size;
-    fsFileRead(&payload_file, 0, g_reboot_payload, IRAM_PAYLOAD_MAX_SIZE, &actual_size);
+    fsFileRead(&payload_file, 0, g_reboot_payload, IRAM_PAYLOAD_MAX_SIZE, FS_READOPTION_NONE, &actual_size);
     
     g_payload_loaded = true;
     

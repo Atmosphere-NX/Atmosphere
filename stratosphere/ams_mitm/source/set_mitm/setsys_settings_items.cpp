@@ -263,7 +263,7 @@ void SettingsItemManager::LoadConfiguration() {
     /* Read from file. */
     if (R_SUCCEEDED(rc)) {
         size_t actual_size;
-        rc = fsFileRead(&config_file, 0, config_buf, 0xFFFF, &actual_size);
+        rc = fsFileRead(&config_file, 0, config_buf, 0xFFFF, FS_READOPTION_NONE, &actual_size);
     }
     
     if (R_SUCCEEDED(rc)) {

@@ -19,7 +19,7 @@
 #include "fs_shim.h"
 
 /* Missing fsp-srv commands. */
-Result fsOpenBisStorageFwd(Service* s, FsStorage* out, u32 PartitionId) {
+Result fsOpenBisStorageFwd(Service* s, FsStorage* out, FsBisStorageId PartitionId) {
     IpcCommand c;
     ipcInitialize(&c);
 
@@ -260,88 +260,6 @@ Result fsOpenSaveDataFileSystemFwd(Service *s, FsFileSystem* out, u8 inval, FsSa
         if (R_SUCCEEDED(rc)) {
             serviceCreateSubservice(&out->s, s, &r, 0);
         }
-    }
-
-    return rc;
-}
-
-/* Missing FS File commands. */
-Result fsFileOperateRange(FsFile* f, u32 op_id, u64 off, u64 len, FsRangeInfo *out) {
-    IpcCommand c;
-    ipcInitialize(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        u32 op_id;
-        u64 off;
-        u64 len;
-    } *raw;
-
-    raw = serviceIpcPrepareHeader(&f->s, &c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 5;
-    raw->op_id = op_id;
-    raw->off = off;
-    raw->len = len;
-
-    Result rc = serviceIpcDispatch(&f->s);
-
-    if (R_SUCCEEDED(rc)) {
-        IpcParsedCommand r;
-        struct {
-            u64 magic;
-            u64 result;
-            FsRangeInfo range_info;
-        } *resp;
-        
-        serviceIpcParse(&f->s, &r, sizeof(*resp));
-        resp = r.Raw;
-
-        rc = resp->result;
-        if (R_SUCCEEDED(rc) && out) *out = resp->range_info;
-    }
-
-    return rc;
-}
-
-/* Missing FS Storage commands. */
-Result fsStorageOperateRange(FsStorage* s, u32 op_id, u64 off, u64 len, FsRangeInfo *out) {
-    IpcCommand c;
-    ipcInitialize(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        u32 op_id;
-        u64 off;
-        u64 len;
-    } *raw;
-
-    raw = serviceIpcPrepareHeader(&s->s, &c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 5;
-    raw->op_id = op_id;
-    raw->off = off;
-    raw->len = len;
-
-    Result rc = serviceIpcDispatch(&s->s);
-
-    if (R_SUCCEEDED(rc)) {
-        IpcParsedCommand r;
-        struct {
-            u64 magic;
-            u64 result;
-            FsRangeInfo range_info;
-        } *resp;
-        
-        serviceIpcParse(&s->s, &r, sizeof(*resp));
-        resp = r.Raw;
-
-        rc = resp->result;
-        if (R_SUCCEEDED(rc) && out) *out = resp->range_info;
     }
 
     return rc;

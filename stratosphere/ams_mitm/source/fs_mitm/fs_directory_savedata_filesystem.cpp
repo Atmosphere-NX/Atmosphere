@@ -48,13 +48,13 @@ class DirectorySaveDataFile : public IFile {
         virtual Result FlushImpl() override {
             return this->base_file->Flush();
         }
-        virtual Result WriteImpl(u64 offset, void *buffer, u64 size, bool flush) override {
-            return this->base_file->Write(offset, buffer, size, flush);
+        virtual Result WriteImpl(u64 offset, void *buffer, u64 size, u32 option) override {
+            return this->base_file->Write(offset, buffer, size, option);
         }
         virtual Result SetSizeImpl(u64 size) override {
             return this->base_file->SetSize(size);
         }
-        virtual Result OperateRangeImpl(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override {
+        virtual Result OperateRangeImpl(FsOperationId operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override {
             return this->base_file->OperateRange(operation_type, offset, size, out_range_info);
         }
 };

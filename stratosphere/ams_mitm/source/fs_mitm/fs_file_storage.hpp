@@ -50,5 +50,5 @@ class FileStorage : public IStorage {
         virtual Result Flush() override;
         virtual Result GetSize(u64 *out_size) override;
         virtual Result SetSize(u64 size) override;
-        virtual Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override;
+        virtual Result OperateRange(FsOperationId operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override;
 };

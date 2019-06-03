@@ -21,8 +21,6 @@ static constexpr size_t BatteryLotSize = 0x20;
 static constexpr size_t BatteryVersionOffset = 0x4310;
 static constexpr size_t BatteryVersionSize = 0x10;
 
-static constexpr u32 BisStorageId_Prodinfo = 27;
-
 static constexpr u32 DefaultBatteryVendor = static_cast<u32>('A');
 static constexpr u32 DefaultBatteryVersion = 0;
 
@@ -57,7 +55,7 @@ static Result ValidateCalibrationCrc16(const void *data, size_t size) {
 
 static Result GetBatteryVendorImpl(u32 *vendor) {
     FsStorage s;
-    Result rc = fsOpenBisStorage(&s, BisStorageId_Prodinfo);
+    Result rc = fsOpenBisStorage(&s, FsBisStorageId_CalibrationBinary);
     if (R_FAILED(rc)) {
         return rc;
     }
@@ -78,7 +76,7 @@ static Result GetBatteryVendorImpl(u32 *vendor) {
 
 static Result GetBatteryVersionImpl(u32 *version) {
     FsStorage s;
-    Result rc = fsOpenBisStorage(&s, BisStorageId_Prodinfo);
+    Result rc = fsOpenBisStorage(&s, FsBisStorageId_CalibrationBinary);
     if (R_FAILED(rc)) {
         return rc;
     }

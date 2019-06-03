@@ -45,7 +45,12 @@ Result FileStorage::Read(void *buffer, size_t size, u64 offset) {
         return ResultFsOutOfRange;
     }
 
-    return this->file->Read(&read_size, offset, buffer, size);
+    /* Nintendo doesn't do check output read size, but we will for safety. */
+    R_TRY(this->file->Read(&read_size, offset, buffer, size));
+    if (read_size != size && read_size) {
+        return this->Read(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + read_size), size - read_size, offset + read_size);
+    }
+    return ResultSuccess;
 }
 
 Result FileStorage::Write(void *buffer, size_t size, u64 offset) {
@@ -85,14 +90,14 @@ Result FileStorage::SetSize(u64 size) {
     return this->file->SetSize(size);
 }
 
-Result FileStorage::OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) {
+Result FileStorage::OperateRange(FsOperationId operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) {
     Result rc;
 
     switch (operation_type) {
-        case 2: /* TODO: OperationType_Invalidate */
-        case 3: /* TODO: OperationType_Query */
+        case FsOperationId_InvalidateCache:
+        case FsOperationId_QueryRange:
             if (size == 0) {
-                if (operation_type == 3) {
+                if (operation_type == FsOperationId_QueryRange) {
                     if (out_range_info == nullptr) {
                         return ResultFsNullptrArgument;
                     }

@@ -18,25 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-enum BisStorageId : u32 {
-    BisStorageId_Boot0 = 0,
-    BisStorageId_Boot1 = 10,
-    BisStorageId_RawNand = 20,
-    BisStorageId_BcPkg2_1 = 21,
-    BisStorageId_BcPkg2_2 = 22,
-    BisStorageId_BcPkg2_3 = 23,
-    BisStorageId_BcPkg2_4 = 24,
-    BisStorageId_BcPkg2_5 = 25,
-    BisStorageId_BcPkg2_6 = 26,
-    BisStorageId_Prodinfo = 27,
-    BisStorageId_ProdinfoF = 28,
-    BisStorageId_Safe = 29,
-    BisStorageId_User = 30,
-    BisStorageId_System = 31,
-    BisStorageId_SystemProperEncryption = 32,
-    BisStorageId_SystemProperPartition = 33,
-};
-
 struct OverrideKey {
     u64 key_combination;
     bool override_by_default;

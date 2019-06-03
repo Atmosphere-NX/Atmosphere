@@ -38,7 +38,7 @@ class RomFileStorage : public IROStorage {
     public:
         Result Read(void *buffer, size_t size, u64 offset) override {
             size_t out_sz = 0;
-            Result rc = fsFileRead(this->base_file, offset, buffer, size, &out_sz);
+            Result rc = fsFileRead(this->base_file, offset, buffer, size, FS_READOPTION_NONE, &out_sz);
             if (R_SUCCEEDED(rc) && out_sz != size && out_sz) {
                 return this->Read((void *)((uintptr_t)buffer + out_sz), size - out_sz, offset + out_sz);
             }
@@ -47,7 +47,7 @@ class RomFileStorage : public IROStorage {
         Result GetSize(u64 *out_size) override {
             return fsFileGetSize(this->base_file, out_size);
         };
-        Result OperateRange(u32 operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override {
+        Result OperateRange(FsOperationId operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) override {
             /* TODO: Merge into libnx? */
             return fsFileOperateRange(this->base_file, operation_type, offset, size, out_range_info);
         };
