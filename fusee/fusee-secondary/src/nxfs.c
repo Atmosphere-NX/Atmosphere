@@ -517,11 +517,14 @@ int nxfs_mount_emmc() {
     return rc;
 }
 
-int nxfs_mount_emu_emmc(const char *emunand_boot0_path, const char *emunand_boot1_path, const char *emunand_rawnand_base_path, int num_parts, uint64_t part_limit) {
+int nxfs_mount_emu_emmc(const char *emunand_path, int num_parts, uint64_t part_limit) {
     device_partition_t model;
     int rc;
     FILE *rawnand;
     bool is_exfat;
+    char emunand_boot0_path[0x300 + 1] = {0};
+    char emunand_boot1_path[0x300 + 1] = {0};
+    char emunand_rawnand_path[0x300 + 1] = {0};
     
     /* Check if the SD card is EXFAT formatted. */
     rc = fsdev_is_exfat("sdmc");
@@ -534,14 +537,42 @@ int nxfs_mount_emu_emmc(const char *emunand_boot0_path, const char *emunand_boot
     /* Set EXFAT status. */
     is_exfat = (rc == 1);
     
+    /* We want a folder with the archive bit set. */
+    rc = fsdev_get_attr(emunand_path);
+    
+    /* Failed to get file DOS attributes. */
+    if (rc == -1) {
+        return -1;
+    }
+    
+    /* Our path is not a directory. */
+    if (!(rc & AM_DIR)) {
+        return -1;
+    }
+    
+    /* Check if the archive bit is not set. */
+    if (!(rc & AM_ARC)) {
+        /* Try to set the archive bit. */
+        rc = fsdev_set_attr(emunand_path, AM_ARC, AM_ARC);
+        
+        /* Failed to set file DOS attributes. */
+        if (rc == -1) {
+            return -1;
+        }
+    }
+    
     /* Setup an emulation template for boot0. */
     model = g_emummc_devpart_template;
     model.start_sector = 0;
     model.num_sectors = 0x184000 / model.sector_size;
     
+    /* Prepare boot0 file path. */
+    snprintf(emunand_boot0_path, sizeof(emunand_boot0_path) - 1, "sdmc:/%s/%s", emunand_path, "boot0");
+    
     /* Mount emulated boot0 device. */
     rc = emudev_mount_device("boot0", &model, emunand_boot0_path);
     
+    /* Failed to mount boot0 device. */
     if (rc == -1) {
         return -1;
     }
@@ -549,6 +580,7 @@ int nxfs_mount_emu_emmc(const char *emunand_boot0_path, const char *emunand_boot
     /* Register emulated boot0 device. */
     rc = emudev_register_device("boot0");
     
+    /* Failed to register boot0 device. */
     if (rc == -1) {
         return -1;
     }
@@ -558,9 +590,13 @@ int nxfs_mount_emu_emmc(const char *emunand_boot0_path, const char *emunand_boot
     model.start_sector = 0;
     model.num_sectors = 0x80000 / model.sector_size;
     
+    /* Prepare boot1 file path. */
+    snprintf(emunand_boot1_path, sizeof(emunand_boot1_path) - 1, "sdmc:/%s/%s", emunand_path, "boot1");
+    
     /* Mount emulated boot1 device. */
     rc = emudev_mount_device("boot1", &model, emunand_boot1_path);
     
+    /* Failed to mount boot1. */
     if (rc == -1) {
         return -1;
     }
@@ -572,48 +608,25 @@ int nxfs_mount_emu_emmc(const char *emunand_boot0_path, const char *emunand_boot
     model.start_sector = 0;
     model.num_sectors = (256ull << 30) / model.sector_size;
     
+    /* Prepare single raw NAND file path. */
+    snprintf(emunand_rawnand_path, sizeof(emunand_rawnand_path) - 1, "sdmc:/%s/%02d", emunand_path, 0);
+    
+    /* Mount emulated raw NAND device from single or multiple parts. */
     if (!is_exfat) {
-        /* For multiple parts we want a folder with the archive bit set. */
-        rc = fsdev_get_attr(emunand_rawnand_base_path);
-        
-        /* Failed to get file DOS attributes. */
-        if (rc == -1) {
-            return -1;
-        }
-        
-        /* Our path is not a directory. */
-        if (!(rc & AM_DIR)) {
-            return -1;
-        }
-        
-        /* Check if the archive bit is not set. */
-        if (!(rc & AM_ARC)) {
-            /* Try to set the archive bit. */
-            rc = fsdev_set_attr(emunand_rawnand_base_path, AM_ARC, AM_ARC);
-            
-            /* Failed to set file DOS attributes. */
-            if (rc == -1) {
-                return -1;
-            }
-        }
-        
-        /* Mount emulated raw NAND device from multiple parts. */
-        rc = emudev_mount_device_multipart("rawnand", &model, emunand_rawnand_base_path, num_parts, part_limit);
-        
-        if (rc == -1) {
-            return -1;
-        }
+        rc = emudev_mount_device_multipart("rawnand", &model, emunand_path, num_parts, part_limit);
     } else {
-        /* Mount emulated raw NAND device. */
-        rc = emudev_mount_device("rawnand", &model, emunand_rawnand_base_path);
-        
-        if (rc == -1) {
-            return -1;
-        }
+        rc = emudev_mount_device("rawnand", &model, emunand_rawnand_path);
+    }
+    
+    /* Failed to mount raw NAND. */
+    if (rc == -1) {
+        return -1;
     }
     
     /* Register emulated raw NAND device. */
     rc = emudev_register_device("rawnand");
+    
+    /* Failed to register raw NAND device. */
     if (rc == -1) {
         return -1;
     }
@@ -621,13 +634,18 @@ int nxfs_mount_emu_emmc(const char *emunand_boot0_path, const char *emunand_boot
     /* Open emulated raw NAND device. */
     rawnand = fopen("rawnand:/", "rb");
     
+    /* Failed to open emulated raw NAND device. */
     if (rawnand == NULL) {
         return -1;
     }
     
     /* Iterate the GPT and mount each emulated raw NAND partition. */
-    rc = gpt_iterate_through_emu_entries(rawnand, model.sector_size, nxfs_mount_emu_partition_gpt_callback, &model, emunand_rawnand_base_path, !is_exfat, num_parts, part_limit);
-    
+    if (!is_exfat) {
+        rc = gpt_iterate_through_emu_entries(rawnand, model.sector_size, nxfs_mount_emu_partition_gpt_callback, &model, emunand_path, true, num_parts, part_limit);
+    } else {
+        rc = gpt_iterate_through_emu_entries(rawnand, model.sector_size, nxfs_mount_emu_partition_gpt_callback, &model, emunand_rawnand_path, false, num_parts, part_limit);
+    }
+
     /* Close emulated raw NAND device. */
     fclose(rawnand);
     

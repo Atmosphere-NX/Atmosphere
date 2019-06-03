@@ -213,66 +213,45 @@ static bool nxboot_configure_emunand() {
     }
     
     if (emunand_cfg.enabled) {
-        bool do_nand_backup = false;
         int num_parts = 0;
         uint64_t part_limit = 0;
         char emunand_boot0_path[0x300 + 1] = {0};
         char emunand_boot1_path[0x300 + 1] = {0};
-        char emunand_rawnand_base_path[0x300 + 1] = {0};
-        snprintf(emunand_boot0_path, sizeof(emunand_boot0_path) - 1, "sdmc:/%s/%s", emunand_cfg.path, "boot0");
-        snprintf(emunand_boot1_path, sizeof(emunand_boot1_path) - 1, "sdmc:/%s/%s", emunand_cfg.path, "boot1");
-        snprintf(emunand_rawnand_base_path, sizeof(emunand_rawnand_base_path) - 1, "sdmc:/%s/%s", emunand_cfg.path, "rawnand");
+        char emunand_rawnand_path[0x300 + 1] = {0};
         
         /* Check if the supplied path is valid. */
         if (!is_valid_folder(emunand_cfg.path)) {
             fatal_error("[NXBOOT] Failed to find EmuNAND folder!\n");
         }
         
+        /* Prepare expected file paths. */
+        snprintf(emunand_boot0_path, sizeof(emunand_boot0_path) - 1, "sdmc:/%s/%s", emunand_cfg.path, "boot0");
+        snprintf(emunand_boot1_path, sizeof(emunand_boot1_path) - 1, "sdmc:/%s/%s", emunand_cfg.path, "boot1");
+        
         /* Check if boot0 and boot1 image files are present. */
         if (!is_valid_file(emunand_boot0_path) || !is_valid_file(emunand_boot1_path)) {
             fatal_error("[NXBOOT] Failed to find EmuNAND boot0/boot1 image files!\n");
         }
         
-        /* Check if full rawnand image file is present. */
-        if (!is_valid_file(emunand_rawnand_base_path)) {
-            char emunand_rawnand_path[0x300 + 4 + 1] = {0};
-            
-            /* Search for rawnand part files instead. */
-            for (int i = 0; i < 64; i++) {
-                /* Treat rawnand as a folder with each part inside. */
-                snprintf(emunand_rawnand_path, sizeof(emunand_rawnand_path) - 1, "%s/%02d", emunand_rawnand_base_path, i);
-                if (is_valid_file(emunand_rawnand_path)) {
-                    if (i == 0) {
-                        /* The size of the first part file should tell us the part limit. */
-                        part_limit = get_file_size(emunand_rawnand_path);
-                    }
-                    num_parts++;
+        /* Find raw image files (single or multi part). */
+        for (int i = 0; i < 64; i++) {
+            snprintf(emunand_rawnand_path, sizeof(emunand_rawnand_path) - 1, "sdmc:/%s/%02d", emunand_cfg.path, i);
+            if (is_valid_file(emunand_rawnand_path)) {
+                if (i == 0) {
+                    /* The size of the first file should tell us the part limit. */
+                    part_limit = get_file_size(emunand_rawnand_path);
                 }
-            }
-
-            /* Check if at least the first part of the rawnand image file is present. */
-            /* TODO: This fully trusts the user to provide properly split files. Do better checks? */
-            if ((num_parts == 0) || (part_limit == 0)) {
-                fatal_error("[NXBOOT] Failed to find EmuNAND rawnand image files!\n");
+                num_parts++;
             }
         }
 
-        if (do_nand_backup) {
-            /* Mount real NAND. */
-            if (nxfs_mount_emmc() < 0) {
-                fatal_error("[NXBOOT] Failed to mount eMMC!\n");
-            }
-            
-            /* TODO: Read real NAND and create a backup image. */
-            
-            /* Unmount real NAND. */
-            if (nxfs_unmount_emmc() < 0) {
-                fatal_error("[NXBOOT] Failed to unmount eMMC!\n");
-            }
+        /* Check if at least one raw image file is present. */
+        if ((num_parts == 0) || (part_limit == 0)) {
+            fatal_error("[NXBOOT] Failed to find EmuNAND raw image files!\n");
         }
         
         /* Mount emulated NAND. */
-        if (nxfs_mount_emu_emmc(emunand_boot0_path, emunand_boot1_path, emunand_rawnand_base_path, num_parts, part_limit) < 0) {
+        if (nxfs_mount_emu_emmc(emunand_cfg.path, num_parts, part_limit) < 0) {
             fatal_error("[NXBOOT] Failed to mount emulated eMMC!\n");
         }
     }
