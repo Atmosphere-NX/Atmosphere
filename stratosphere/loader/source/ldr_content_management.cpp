@@ -34,9 +34,11 @@ static FsFileSystem g_HblFileSystem = {};
 
 static std::vector<u64> g_created_titles;
 static bool g_has_initialized_fs_dev = false;
+
 /* Default to Key R, hold disables override, HBL at atmosphere/hbl.nsp. */
 static bool g_mounted_hbl_nsp = false;
 static char g_hbl_sd_path[FS_MAX_PATH+1] = "@Sdcard:/atmosphere/hbl.nsp\x00";
+
 static OverrideKey g_default_override_key = {
     .key_combination = KEY_L,
     .override_by_default = true
@@ -103,6 +105,7 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     if (R_FAILED(rc = fsldrOpenCodeFileSystem(tid, path, &g_CodeFileSystem))) {
         return rc;
     }
+
     fsdevMountDevice("code", g_CodeFileSystem);
     TryMountHblNspOnSd();
     return rc;
@@ -416,6 +419,7 @@ static bool ShouldOverrideContents(OverrideKey *cfg) {
     bool keys_triggered = (R_SUCCEEDED(HidManagement::GetKeysHeld(&kDown)) && ((kDown & cfg->key_combination) != 0));
     return g_has_initialized_fs_dev && (cfg->override_by_default ^ keys_triggered);
 }
+
 bool ContentManagement::ShouldOverrideContentsWithHBL(u64 tid) {
     if (g_mounted_hbl_nsp && tid >= TitleId_AppletStart && HasCreatedTitle(TitleId_AppletQlaunch)) {
         /* Return whether we should override contents with HBL. */
@@ -425,11 +429,23 @@ bool ContentManagement::ShouldOverrideContentsWithHBL(u64 tid) {
         return false;
     }
 }
-bool ContentManagement::ShouldOverrideContentsWithSD(u64 tid){
-	// Aliases
-	Result rc = ContentManagement::ShouldOverrideContentsWithHBL(tid);
-	return rc;
+
+bool ContentManagement::ShouldOverrideContentsWithSD(u64 tid) {
+    if (g_has_initialized_fs_dev) {
+        if (tid >= TitleId_AppletStart && HasCreatedTitle(TitleId_AppletQlaunch)) {
+            /* Check whether we should override with non-HBL. */
+            OverrideKey title_cfg = GetTitleOverrideKey(tid);
+            return ShouldOverrideContents(&title_cfg);
+        } else {
+            /* Always redirect before qlaunch. */
+            return true;
+        }
+    } else {
+        /* Never redirect before we can do so. */
+        return false;
+    }
 }
+
 /* SetExternalContentSource extension */
 ContentManagement::ExternalContentSource *ContentManagement::GetExternalContentSource(u64 tid) {
     auto i = g_external_content_sources.find(tid);
