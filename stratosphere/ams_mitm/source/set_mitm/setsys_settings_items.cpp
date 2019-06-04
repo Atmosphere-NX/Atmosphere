@@ -153,8 +153,8 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
     if (delimiter == NULL || value_len == 0 || type_len == 0) {
         return ResultSettingsItemValueInvalidFormat;
     }
-    
-    std::string kv = std::string(name) + "!" + std::string(key);
+
+    std::string kv = std::string(name).append("!").append(key);
     SettingsItemValue value;
     
     if (strncasecmp(type, "str", type_len) == 0 || strncasecmp(type, "string", type_len) == 0) {
@@ -242,7 +242,7 @@ static int SettingsItemIniHandler(void *user, const char *name, const char *key,
     return R_SUCCEEDED(rc) ? 1 : 0;
 }
 
-void SettingsItemManager::LoadConfiguration() {    
+void SettingsItemManager::LoadConfiguration() {
     /* Open file. */
     FsFile config_file;
     Result rc = Utils::OpenSdFile("/atmosphere/system_settings.ini", FS_OPEN_READ, &config_file);
@@ -275,31 +275,31 @@ void SettingsItemManager::LoadConfiguration() {
 }
 
 Result SettingsItemManager::GetValueSize(const char *name, const char *key, u64 *out_size) {
-    std::string kv = std::string(name) + "!" + std::string(key);
-    
+    const std::string kv = std::string(name).append("!").append(key);
+
     auto it = g_settings_items.find(kv);
     if (it == g_settings_items.end()) {
         return ResultSettingsItemNotFound;
     }
-    
+
     *out_size = it->second.size;
     return ResultSuccess;
 }
 
 Result SettingsItemManager::GetValue(const char *name, const char *key, void *out, size_t max_size, u64 *out_size) {
-    std::string kv = std::string(name) + "!" + std::string(key);
-    
+    const std::string kv = std::string(name).append("!").append(key);
+
     auto it = g_settings_items.find(kv);
     if (it == g_settings_items.end()) {
         return ResultSettingsItemNotFound;
     }
-    
+
     size_t copy_size = it->second.size;
     if (max_size < copy_size) {
         copy_size = max_size;
     }
     *out_size = copy_size;
-    
+
     memcpy(out, it->second.data, copy_size);
     return ResultSuccess;
 }
