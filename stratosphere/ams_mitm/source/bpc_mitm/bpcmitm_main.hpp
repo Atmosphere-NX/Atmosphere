@@ -16,14 +16,7 @@
 
 #pragma once
 
-#include <cstdlib>
-#include <cstdint>
-#include <cstring>
-#include <malloc.h>
-
 #include <switch.h>
-#include <atmosphere.h>
-#include <stratosphere.hpp>
 
 constexpr u32 BpcMitmPriority = 32;
 constexpr u32 BpcMitmStackSize = 0x8000;
