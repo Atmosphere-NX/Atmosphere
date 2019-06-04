@@ -45,9 +45,6 @@ typedef enum {
     CONFIGITEM_NEEDS_SHUTDOWN = 65002,
     CONFIGITEM_EXOSPHERE_VERHASH = 65003,
     CONFIGITEM_HAS_RCM_BUG_PATCH = 65004,
-
-    /* These are unofficial, emunand-related. */
-    CONFIGITEM_EMUNAND_CONFIG = 65100,
 } ConfigItem;
 
 #define REBOOT_KIND_NO_REBOOT     0

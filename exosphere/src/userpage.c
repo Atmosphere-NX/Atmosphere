@@ -23,7 +23,7 @@
 
 static uintptr_t g_user_page_user_address = 0ull;
 
-static inline uintptr_t get_page_for_address(void *address) {
+static inline uintptr_t get_page_for_address(const void *address) {
     return ((uintptr_t)(address)) & ~0xFFFULL;
 }
 
@@ -56,7 +56,7 @@ bool upage_init(upage_ref_t *upage, void *user_address) {
     return upage->secure_monitor_address != 0ull;
 }
 
-bool user_copy_to_secure(upage_ref_t *upage, void *secure_dst, void *user_src, size_t size) {
+bool user_copy_to_secure(upage_ref_t *upage, void *secure_dst, const void *user_src, size_t size) {
     /* Fail if the page doesn't match. */
     if (get_page_for_address(user_src) != upage->user_address) {
         return false;
@@ -67,14 +67,14 @@ bool user_copy_to_secure(upage_ref_t *upage, void *secure_dst, void *user_src, s
         return false;
     }
 
-    void *secure_src = (void *)(upage->secure_monitor_address + ((uintptr_t)user_src - upage->user_address));
+    const void *secure_src = (const void *)(upage->secure_monitor_address + ((uintptr_t)user_src - upage->user_address));
     if (size != 0) {
         memcpy(secure_dst, secure_src, size);
     }
     return true;
 }
 
-bool secure_copy_to_user(upage_ref_t *upage, void *user_dst, void *secure_src, size_t size) {
+bool secure_copy_to_user(upage_ref_t *upage, void *user_dst, const void *secure_src, size_t size) {
     /* Fail if the page doesn't match. */
     if (get_page_for_address(user_dst) != upage->user_address) {
         return false;

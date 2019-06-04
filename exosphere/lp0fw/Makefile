@@ -29,7 +29,7 @@ ARCH	:=	-march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
 
 CFLAGS	:= \
 		-g \
-		-O2 \
+		-Os \
 		-ffunction-sections \
 		-fdata-sections \
 		-fomit-frame-pointer \
