@@ -26,7 +26,8 @@
 #include "ldr_process_manager.hpp"
 #include "ldr_debug_monitor.hpp"
 #include "ldr_shell.hpp"
-
+// For stub rnx service
+#include "ldr_rei.hpp"
 extern "C" {
     extern u32 __start__;
 
@@ -113,6 +114,7 @@ int main(int argc, char **argv)
     static auto s_server_manager = WaitableManager<LoaderServerOptions>(1);
 
     /* Add services to manager. */
+    s_server_manager.AddWaitable(new ServiceServer<RNXService>("rnx", 1));
     s_server_manager.AddWaitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
     s_server_manager.AddWaitable(new ServiceServer<ShellService>("ldr:shel", 3));
     s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
