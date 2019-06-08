@@ -321,13 +321,14 @@ bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
             size_t j = i + 1;
             while (s[j] != ']') {
                 j++;
-                if (j >= len || (j - i - 1) >= sizeof(cur_entry->definition.readable_name)) {
+                if (j >= len) {
                     return false;
                 }
             }
 
             /* s[i+1:j] is cheat name. */
-            const size_t cheat_name_len = (j - i - 1);
+            /* Truncate the cheat name if it's too long */
+            const size_t cheat_name_len = std::min(j - i - 1, sizeof(cur_entry->definition.readable_name));
             memcpy(cur_entry->definition.readable_name, &s[i+1], cheat_name_len);
             cur_entry->definition.readable_name[cheat_name_len] = 0;
 
@@ -346,13 +347,14 @@ bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
             size_t j = i + 1;
             while (s[j] != '}') {
                 j++;
-                if (j >= len || (j - i - 1) >= sizeof(cur_entry->definition.readable_name)) {
+                if (j >= len) {
                     return false;
                 }
             }
 
             /* s[i+1:j] is cheat name. */
-            const size_t cheat_name_len = (j - i - 1);
+            /* Truncate the master cheat name if it's too long */
+            const size_t cheat_name_len = std::min(j - i - 1, sizeof(cur_entry->definition.readable_name));
             memcpy(cur_entry->definition.readable_name, &s[i+1], cheat_name_len);
             cur_entry->definition.readable_name[cheat_name_len] = 0;
 
