@@ -29,7 +29,7 @@ static OverrideKey g_default_cheat_enable_key = {
 };
 
 /* Static buffer for loader.ini contents at runtime. */
-static char g_config_ini_data[0xFFF];
+static char g_config_ini_data[0x800];
 
 static OverrideKey ParseOverrideKey(const char *value) {
     OverrideKey cfg;

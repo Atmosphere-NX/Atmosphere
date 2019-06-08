@@ -36,7 +36,7 @@ struct CheatProcessMetadata {
 struct CheatDefinition {
     char readable_name[0x40];
     uint32_t num_opcodes;
-    uint32_t opcodes[0x200];
+    uint32_t opcodes[0x100];
 };
 
 struct CheatEntry {
