@@ -114,7 +114,11 @@ int emudev_mount_device(const char *name, const device_partition_t *devpart, con
     strcpy(device->name, name);
     strcpy(device->root_path, name);
     strcat(device->root_path, ":/");
-    strcpy(device->origin_path, origin_path);
+    
+    /* Copy the file path for file mode. */
+    if (devpart->emu_use_file)
+        strcpy(device->origin_path, origin_path);
+    
     device->num_parts = 0;
     device->part_limit = 0;
     

@@ -19,13 +19,15 @@
 
 #include "utils.h"
 
-#define EMUNAND_ENABLED_KEY "emunand_enabled"
-#define EMUNAND_PATH_KEY "emunand_path"
+#define EMUMMC_ENABLED_KEY "emummc_enabled"
+#define EMUMMC_SECTOR_KEY "emummc_sector"
+#define EMUMMC_PATH_KEY "emummc_path"
 
 typedef struct {
     bool enabled;
+    uint64_t sector;
     char path[0x100];
-} emunand_config_t;
+} emummc_config_t;
 
 #define MAILBOX_NX_BOOTLOADER_BASE_100_620 0x40002E00
 #define MAILBOX_NX_BOOTLOADER_BASE_700     0x40000000

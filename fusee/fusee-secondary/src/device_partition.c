@@ -88,27 +88,33 @@ int emu_device_partition_read_data(device_partition_t *devpart, void *dst, uint6
         }
     }
     
-    /* Handle data in multiple parts, if necessary. */
-    if (num_parts > 0) {
-        int target_part = 0;
-        uint64_t data_offset = sector * devpart->sector_size;
-        
-        if (data_offset >= part_limit) {
-            uint64_t data_offset_aligned = (data_offset + (part_limit - 1)) & ~(part_limit - 1);
-            target_part = (data_offset_aligned == data_offset) ? (data_offset / part_limit) : (data_offset_aligned / part_limit) - 1;
-            target_sector = (data_offset - (target_part * part_limit)) / devpart->sector_size;
+    /* Prepare the right file path if using file mode. */
+    if (devpart->emu_use_file && (origin_path != NULL)) {
+        /* Handle data in multiple parts, if necessary. */
+        if (num_parts > 0) {
+            int target_part = 0;
+            uint64_t data_offset = sector * devpart->sector_size;
             
-            /* Target part is invalid. */
-            if (target_part > num_parts) {
-                return -1;
+            if (data_offset >= part_limit) {
+                uint64_t data_offset_aligned = (data_offset + (part_limit - 1)) & ~(part_limit - 1);
+                target_part = (data_offset_aligned == data_offset) ? (data_offset / part_limit) : (data_offset_aligned / part_limit) - 1;
+                target_sector = (data_offset - (target_part * part_limit)) / devpart->sector_size;
+                
+                /* Target part is invalid. */
+                if (target_part > num_parts) {
+                    return -1;
+                }
             }
+            
+            /* Treat the path as a folder with each part inside. */
+            snprintf(target_path, sizeof(target_path) - 1, "%s/%02d", origin_path, target_part);
+        } else {
+            target_sector = sector;
+            strcpy(target_path, origin_path);
         }
         
-        /* Treat the path as a folder with each part inside. */
-        snprintf(target_path, sizeof(target_path) - 1, "%s/%02d", origin_path, target_part);
-    } else {
-        target_sector = sector;
-        strcpy(target_path, origin_path);
+        /* Update the target file path. */
+        devpart->emu_file_path = target_path;
     }
     
     /* Read the partition data. */
@@ -116,11 +122,8 @@ int emu_device_partition_read_data(device_partition_t *devpart, void *dst, uint6
         for (uint64_t i = 0; i < num_sectors; i += devpart->crypto_work_buffer_num_sectors) {
             uint64_t n = (i + devpart->crypto_work_buffer_num_sectors > num_sectors) ? (num_sectors - i) : devpart->crypto_work_buffer_num_sectors;
             
-            /* Read partition data using our backing file. */
-            FILE *origin = fopen(target_path, "rb");
-            fseek(origin, (target_sector + i) * devpart->sector_size, SEEK_CUR);
-            rc = (fread(dst, devpart->sector_size, n, origin) > 0) ? 0 : -1;
-            fclose(origin);
+            /* Read partition data. */
+            rc = devpart->reader(devpart, devpart->crypto_work_buffer, target_sector + i, n);
             
             if (rc != 0) {
                 return rc;
@@ -137,11 +140,8 @@ int emu_device_partition_read_data(device_partition_t *devpart, void *dst, uint6
             memcpy(dst + (size_t)(devpart->sector_size * i), devpart->crypto_work_buffer, (size_t)(devpart->sector_size * n)); 
         }
     } else {
-        /* Read partition data using our backing file. */
-        FILE *origin = fopen(target_path, "rb");
-        fseek(origin, target_sector * devpart->sector_size, SEEK_CUR);
-        rc = (fread(dst, devpart->sector_size, num_sectors, origin) > 0) ? 0 : -1;
-        fclose(origin);
+        /* Read partition data. */
+        rc = devpart->reader(devpart, dst, target_sector, num_sectors);
     }
     
     return rc;
@@ -161,27 +161,33 @@ int emu_device_partition_write_data(device_partition_t *devpart, const void *src
         }
     }
     
-    /* Handle data in multiple parts, if necessary. */
-    if (num_parts > 0) {
-        int target_part = 0;
-        uint64_t data_offset = sector * devpart->sector_size;
-        
-        if (data_offset >= part_limit) {
-            uint64_t data_offset_aligned = (data_offset + (part_limit - 1)) & ~(part_limit - 1);
-            target_part = (data_offset_aligned == data_offset) ? (data_offset / part_limit) : (data_offset_aligned / part_limit) - 1;
-            target_sector = (data_offset - (target_part * part_limit)) / devpart->sector_size;
+    /* Prepare the right file path if using file mode. */
+    if (devpart->emu_use_file && (origin_path != NULL)) {
+        /* Handle data in multiple parts, if necessary. */
+        if (num_parts > 0) {
+            int target_part = 0;
+            uint64_t data_offset = sector * devpart->sector_size;
             
-            /* Target part is invalid. */
-            if (target_part > num_parts) {
-                return -1;
+            if (data_offset >= part_limit) {
+                uint64_t data_offset_aligned = (data_offset + (part_limit - 1)) & ~(part_limit - 1);
+                target_part = (data_offset_aligned == data_offset) ? (data_offset / part_limit) : (data_offset_aligned / part_limit) - 1;
+                target_sector = (data_offset - (target_part * part_limit)) / devpart->sector_size;
+                
+                /* Target part is invalid. */
+                if (target_part > num_parts) {
+                    return -1;
+                }
             }
+            
+            /* Treat the path as a folder with each part inside. */
+            snprintf(target_path, sizeof(target_path) - 1, "%s/%02d", origin_path, target_part);
+        } else {
+            target_sector = sector;
+            strcpy(target_path, origin_path);
         }
         
-        /* Treat the path as a folder with each part inside. */
-        snprintf(target_path, sizeof(target_path) - 1, "%s/%02d", origin_path, target_part);
-    } else {
-        target_sector = sector;
-        strcpy(target_path, origin_path);
+        /* Update the target file path. */
+        devpart->emu_file_path = target_path;
     }
     
     /* Write the partition data. */
@@ -199,22 +205,16 @@ int emu_device_partition_write_data(device_partition_t *devpart, const void *src
                 return rc;
             }
             
-            /* Write partition data using our backing file. */
-            FILE *origin = fopen(target_path, "wb");
-            fseek(origin, (target_sector + i) * devpart->sector_size, SEEK_CUR);
-            rc = (fwrite(src, devpart->sector_size, n, origin) > 0) ? 0 : -1;
-            fclose(origin);
+            /* Write partition data. */
+            rc = devpart->writer(devpart, devpart->crypto_work_buffer, target_sector + i, n);
             
             if (rc != 0) {
                 return rc;
             }
         }
     } else {
-        /* Write partition data using our backing file. */
-        FILE *origin = fopen(target_path, "wb");
-        fseek(origin, sector * devpart->sector_size, SEEK_CUR);
-        rc = (fwrite(src, devpart->sector_size, num_sectors, origin) > 0) ? 0 : -1;
-        fclose(origin);
+        /* Write partition data. */
+        rc = devpart->writer(devpart, src, sector, num_sectors);
     }
     
     return rc;

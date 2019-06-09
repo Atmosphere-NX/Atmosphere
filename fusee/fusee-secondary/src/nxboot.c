@@ -100,17 +100,21 @@ static const uint8_t dev_pkc_modulus[0x100] = {
     0xD5, 0x52, 0xDA, 0xEC, 0x41, 0xA4, 0xAD, 0x7B, 0x36, 0x86, 0x18, 0xB4, 0x5B, 0xD1, 0x30, 0xBB
 };
 
-static int emunand_ini_handler(void *user, const char *section, const char *name, const char *value) {
-    emunand_config_t *emunand_cfg = (emunand_config_t *)user;
-    if (strcmp(section, "emunand") == 0) {
-        if (strcmp(name, EMUNAND_ENABLED_KEY) == 0) {
+static int emummc_ini_handler(void *user, const char *section, const char *name, const char *value) {
+    emummc_config_t *emummc_cfg = (emummc_config_t *)user;
+    if (strcmp(section, "emummc") == 0) {
+        if (strcmp(name, EMUMMC_ENABLED_KEY) == 0) {
             int tmp = 0;
             sscanf(value, "%d", &tmp);
-            emunand_cfg->enabled = (tmp != 0);
+            emummc_cfg->enabled = (tmp != 0);
         }
-        if (strcmp(name, EMUNAND_PATH_KEY) == 0) {
-            strncpy(emunand_cfg->path, value, sizeof(emunand_cfg->path) - 1);
-            emunand_cfg->path[sizeof(emunand_cfg->path) - 1]  = '\0';
+        if (strcmp(name, EMUMMC_SECTOR_KEY) == 0) {
+            uint64_t sector = 0;
+            sscanf(value, "%llu", &sector);
+            emummc_cfg->sector = sector;
+        } else if (strcmp(name, EMUMMC_PATH_KEY) == 0) {
+            strncpy(emummc_cfg->path, value, sizeof(emummc_cfg->path) - 1);
+            emummc_cfg->path[sizeof(emummc_cfg->path) - 1]  = '\0';
         } else {
             return 0;
         }
@@ -204,59 +208,63 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
     }
 }
 
-static bool nxboot_configure_emunand() {
-    emunand_config_t emunand_cfg = {.enabled = false, .path = ""};
+static bool nxboot_configure_emummc() {
+    emummc_config_t emummc_cfg = {.enabled = false, .sector = -1, .path = ""};
     
-    /* Load emunand settings from BCT.ini file. */
-    if (ini_parse_string(get_loader_ctx()->bct0, emunand_ini_handler, &emunand_cfg) < 0) {
+    /* Load emummc settings from BCT.ini file. */
+    if (ini_parse_string(get_loader_ctx()->bct0, emummc_ini_handler, &emummc_cfg) < 0) {
         fatal_error("[NXBOOT] Failed to parse BCT.ini!\n");
     }
     
-    if (emunand_cfg.enabled) {
-        int num_parts = 0;
-        uint64_t part_limit = 0;
-        char emunand_boot0_path[0x300 + 1] = {0};
-        char emunand_boot1_path[0x300 + 1] = {0};
-        char emunand_rawnand_path[0x300 + 1] = {0};
-        
-        /* Check if the supplied path is valid. */
-        if (!is_valid_folder(emunand_cfg.path)) {
-            fatal_error("[NXBOOT] Failed to find EmuNAND folder!\n");
-        }
-        
-        /* Prepare expected file paths. */
-        snprintf(emunand_boot0_path, sizeof(emunand_boot0_path) - 1, "sdmc:/%s/%s", emunand_cfg.path, "boot0");
-        snprintf(emunand_boot1_path, sizeof(emunand_boot1_path) - 1, "sdmc:/%s/%s", emunand_cfg.path, "boot1");
-        
-        /* Check if boot0 and boot1 image files are present. */
-        if (!is_valid_file(emunand_boot0_path) || !is_valid_file(emunand_boot1_path)) {
-            fatal_error("[NXBOOT] Failed to find EmuNAND boot0/boot1 image files!\n");
-        }
-        
-        /* Find raw image files (single or multi part). */
-        for (int i = 0; i < 64; i++) {
-            snprintf(emunand_rawnand_path, sizeof(emunand_rawnand_path) - 1, "sdmc:/%s/%02d", emunand_cfg.path, i);
-            if (is_valid_file(emunand_rawnand_path)) {
-                if (i == 0) {
-                    /* The size of the first file should tell us the part limit. */
-                    part_limit = get_file_size(emunand_rawnand_path);
-                }
-                num_parts++;
+    if (emummc_cfg.enabled) {
+        if (emummc_cfg.sector >= 0) {
+            /* Mount emulated NAND from SD card partition. */
+            if (nxfs_mount_emummc_partition(emummc_cfg.sector) < 0) {
+                fatal_error("[NXBOOT] Failed to mount EmuMMC from SD card partition!\n");
             }
-        }
-
-        /* Check if at least one raw image file is present. */
-        if ((num_parts == 0) || (part_limit == 0)) {
-            fatal_error("[NXBOOT] Failed to find EmuNAND raw image files!\n");
-        }
+        } else if (is_valid_folder(emummc_cfg.path)) {
+            int num_parts = 0;
+            uint64_t part_limit = 0;
+            char emummc_boot0_path[0x300 + 1] = {0};
+            char emummc_boot1_path[0x300 + 1] = {0};
+            char emummc_rawnand_path[0x300 + 1] = {0};
         
-        /* Mount emulated NAND. */
-        if (nxfs_mount_emu_emmc(emunand_cfg.path, num_parts, part_limit) < 0) {
-            fatal_error("[NXBOOT] Failed to mount emulated eMMC!\n");
+            /* Prepare expected file paths. */
+            snprintf(emummc_boot0_path, sizeof(emummc_boot0_path) - 1, "sdmc:/%s/%s", emummc_cfg.path, "boot0");
+            snprintf(emummc_boot1_path, sizeof(emummc_boot1_path) - 1, "sdmc:/%s/%s", emummc_cfg.path, "boot1");
+        
+            /* Check if boot0 and boot1 image files are present. */
+            if (!is_valid_file(emummc_boot0_path) || !is_valid_file(emummc_boot1_path)) {
+                fatal_error("[NXBOOT] Failed to find EmuMMC boot0/boot1 image files!\n");
+            }
+        
+            /* Find raw image files (single or multi part). */
+            for (int i = 0; i < 64; i++) {
+                snprintf(emummc_rawnand_path, sizeof(emummc_rawnand_path) - 1, "sdmc:/%s/%02d", emummc_cfg.path, i);
+                if (is_valid_file(emummc_rawnand_path)) {
+                    if (i == 0) {
+                        /* The size of the first file should tell us the part limit. */
+                        part_limit = get_file_size(emummc_rawnand_path);
+                    }
+                    num_parts++;
+                }
+            }
+
+            /* Check if at least one raw image file is present. */
+            if ((num_parts == 0) || (part_limit == 0)) {
+                fatal_error("[NXBOOT] Failed to find EmuMMC raw image files!\n");
+            }
+        
+            /* Mount emulated NAND from files. */
+            if (nxfs_mount_emummc_file(emummc_cfg.path, num_parts, part_limit) < 0) {
+                fatal_error("[NXBOOT] Failed to mount EmuMMC from files!\n");
+            }
+        } else {
+            fatal_error("[NXBOOT] Invalid EmuMMC setting!\n");
         }
     }
     
-    return emunand_cfg.enabled;
+    return emummc_cfg.enabled;
 }
 
 static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int keygen_type) {
@@ -417,8 +425,8 @@ uint32_t nxboot_main(void) {
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
     
-    /* Configure emunand or mount the real NAND. */
-    if (!nxboot_configure_emunand()) {
+    /* Configure emummc or mount the real NAND. */
+    if (!nxboot_configure_emummc()) {
         if (nxfs_mount_emmc() < 0) {
             fatal_error("[NXBOOT] Failed to mount eMMC!\n");
         }
