@@ -172,7 +172,7 @@ Result DebugMonitorService::TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8, B
     }
     
     size_t read = 0;
-    rc = fsFileRead(&f, offset, out_data.buffer, out_data.num_elements, &read);
+    rc = fsFileRead(&f, offset, out_data.buffer, out_data.num_elements, FS_READOPTION_NONE, &read);
     out_read.SetValue(static_cast<u32>(read));
     return rc;
 }
@@ -189,7 +189,7 @@ Result DebugMonitorService::TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8, B
         return rc;
     }
     
-    rc = fsFileWrite(&f, offset, data.buffer, data.num_elements);
+    rc = fsFileWrite(&f, offset, data.buffer, data.num_elements, FS_WRITEOPTION_NONE);
     if (R_SUCCEEDED(rc)) {
         out_written.SetValue(data.num_elements);
     }
