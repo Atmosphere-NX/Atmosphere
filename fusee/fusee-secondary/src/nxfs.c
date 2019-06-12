@@ -554,8 +554,8 @@ int nxfs_mount_emummc_partition(uint64_t emummc_start_sector) {
     
     /* Setup an emulation template for boot0. */
     model = g_emummc_devpart_template;
-    model.start_sector = emummc_start_sector;
-    model.num_sectors = 0x184000 / model.sector_size;
+    model.start_sector = emummc_start_sector + (0x400000 * 0 / model.sector_size);
+    model.num_sectors = 0x400000 / model.sector_size;
     model.emu_use_file = false;
 
     /* Mount emulated boot0 device. */
@@ -576,8 +576,8 @@ int nxfs_mount_emummc_partition(uint64_t emummc_start_sector) {
     
     /* Setup an emulation template for boot1. */
     model = g_emummc_devpart_template;
-    model.start_sector = emummc_start_sector;
-    model.num_sectors = 0x80000 / model.sector_size;
+    model.start_sector = emummc_start_sector + (0x400000 * 1 / model.sector_size);
+    model.num_sectors = 0x400000 / model.sector_size;
     model.emu_use_file = false;
 
     /* Mount emulated boot1 device. */
@@ -592,7 +592,7 @@ int nxfs_mount_emummc_partition(uint64_t emummc_start_sector) {
 
     /* Setup a template for raw NAND. */
     model = g_emummc_devpart_template;
-    model.start_sector = emummc_start_sector;
+    model.start_sector = emummc_start_sector + (0x400000 * 2 / model.sector_size);
     model.num_sectors = (256ull << 30) / model.sector_size;
     model.emu_use_file = false;
     
@@ -681,7 +681,7 @@ int nxfs_mount_emummc_file(const char *emummc_path, int num_parts, uint64_t part
     /* Setup an emulation template for boot0. */
     model = g_emummc_devpart_template;
     model.start_sector = 0;
-    model.num_sectors = 0x184000 / model.sector_size;
+    model.num_sectors = 0x400000 / model.sector_size;
     model.emu_use_file = true;
     
     /* Prepare boot0 file path. */
@@ -706,7 +706,7 @@ int nxfs_mount_emummc_file(const char *emummc_path, int num_parts, uint64_t part
     /* Setup an emulation template for boot1. */
     model = g_emummc_devpart_template;
     model.start_sector = 0;
-    model.num_sectors = 0x80000 / model.sector_size;
+    model.num_sectors = 0x400000 / model.sector_size;
     model.emu_use_file = true;
     
     /* Prepare boot1 file path. */
