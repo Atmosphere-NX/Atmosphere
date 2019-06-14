@@ -71,7 +71,7 @@ static inline char *pack_hex_byte(char *buf, uint8_t byte)
  */
 static char *skip_spaces(const char *str)
 {
-	while (isspace(*str))
+	while (isspace((unsigned char)*str))
 		++str;
 	return (char *)str;
 }
@@ -83,7 +83,7 @@ static char *skip_spaces(const char *str)
 static unsigned int simple_guess_base(const char *cp)
 {
 	if (cp[0] == '0') {
-		if (TOLOWER(cp[1]) == 'x' && isxdigit(cp[2]))
+		if (TOLOWER(cp[1]) == 'x' && isxdigit((unsigned char)cp[2]))
 			return 16;
 		else
 			return 8;
@@ -108,10 +108,10 @@ unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int bas
 	if (base == 16 && cp[0] == '0' && TOLOWER(cp[1]) == 'x')
 		cp += 2;
 
-	while (isxdigit(*cp)) {
+	while (isxdigit((unsigned char)*cp)) {
 		unsigned int value;
 
-		value = isdigit(*cp) ? *cp - '0' : TOLOWER(*cp) - 'a' + 10;
+		value = isdigit((unsigned char)*cp) ? *cp - '0' : TOLOWER(*cp) - 'a' + 10;
 		if (value >= base)
 			break;
 		result = result * base + value;
@@ -167,7 +167,7 @@ int skip_atoi(const char **s)
 {
 	int i = 0;
 
-	while (isdigit(**s))
+	while (isdigit((unsigned char)**s))
 		i = i*10 + *((*s)++) - '0';
 
 	return i;
@@ -654,7 +654,7 @@ int format_decode(const char *fmt, struct printf_spec *spec)
 	/* get field width */
 	spec->field_width = -1;
 
-	if (isdigit(*fmt))
+	if (isdigit((unsigned char)*fmt))
 		spec->field_width = skip_atoi(&fmt);
 	else if (*fmt == '*') {
 		/* it's the next argument */
@@ -667,7 +667,7 @@ precision:
 	spec->precision = -1;
 	if (*fmt == '.') {
 		++fmt;
-		if (isdigit(*fmt)) {
+		if (isdigit((unsigned char)*fmt)) {
 			spec->precision = skip_atoi(&fmt);
 			if (spec->precision < 0)
 				spec->precision = 0;
@@ -882,7 +882,7 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		case FORMAT_TYPE_PTR:
 			str = pointer(fmt+1, str, end, va_arg(args, void *),
 				      spec);
-			while (isalnum(*fmt))
+			while (isalnum((unsigned char)*fmt))
 				fmt++;
 			break;
 
@@ -1456,7 +1456,7 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
 		/* white space in format matchs any amount of
 		 * white space, including none, in the input.
 		 */
-		if (isspace(*fmt)) {
+		if (isspace((unsigned char)*fmt)) {
 			fmt = skip_spaces(++fmt);
 			str = skip_spaces(str);
 		}
@@ -1476,16 +1476,16 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
 		 * advance both strings to next white space
 		 */
 		if (*fmt == '*') {
-			while (!isspace(*fmt) && *fmt != '%' && *fmt)
+			while (!isspace((unsigned char)*fmt) && *fmt != '%' && *fmt)
 				fmt++;
-			while (!isspace(*str) && *str)
+			while (!isspace((unsigned char)*str) && *str)
 				str++;
 			continue;
 		}
 
 		/* get field width */
 		field_width = -1;
-		if (isdigit(*fmt))
+		if (isdigit((unsigned char)*fmt))
 			field_width = skip_atoi(&fmt);
 
 		/* get conversion qualifier */
@@ -1531,7 +1531,7 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
 			str = skip_spaces(str);
 
 			/* now copy until next white space */
-			while (*str && !isspace(*str) && field_width--)
+			while (*str && !isspace((unsigned char)*str) && field_width--)
 				*s++ = *str++;
 			*s = '\0';
 			num++;
