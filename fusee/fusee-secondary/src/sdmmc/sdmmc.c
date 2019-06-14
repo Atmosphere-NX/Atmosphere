@@ -494,7 +494,7 @@ static int sdmmc_sd_send_op_cond(sdmmc_device_t *device, bool is_sd_ver2, bool i
                 device->is_block_sdhc = true;
 
             /* We asked for low voltage support and the card accepted. */
-            if (is_uhs_en && (resp & SD_ROCR_S18A))
+            if (false && is_uhs_en && (resp & SD_ROCR_S18A))
             {
                 /* Voltage switching is only valid for SDMMC1. */
                 if (device->sdmmc->controller == SDMMC_1)

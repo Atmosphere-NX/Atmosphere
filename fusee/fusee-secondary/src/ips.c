@@ -21,6 +21,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "utils.h"
+#include "exocfg.h"
 #include "se.h"
 #include "lib/log.h"
 #include "ips.h"
@@ -343,7 +344,7 @@ static void kip1_blz_uncompress(void *hdr_end) {
     }
 }
 
-static kip1_header_t *kip1_uncompress(kip1_header_t *kip, size_t *size) {
+kip1_header_t *kip1_uncompress(kip1_header_t *kip, size_t *size) {
     kip1_header_t new_header = *kip;
     for (unsigned int i = 0; i < 3; i++) {
         new_header.section_headers[i].compressed_size = new_header.section_headers[i].out_size;
@@ -372,9 +373,59 @@ static kip1_header_t *kip1_uncompress(kip1_header_t *kip, size_t *size) {
     return (kip1_header_t *)new_kip;
 }
 
-kip1_header_t *apply_kip_ips_patches(kip1_header_t *kip, size_t kip_size) {
+static const uint8_t g_fs_hashes[FS_VER_MAX][0x8] = {
+    "\xde\x9f\xdd\xa4\x08\x5d\xd5\xfe", /* FS_VER_1_0_0 */
+
+    "\xcd\x7b\xbe\x18\xd6\x13\x0b\x28", /* FS_VER_2_0_0 */
+    "\xe7\x66\x92\xdf\xaa\x04\x20\xe9", /* FS_VER_2_0_0_EXFAT */
+
+    "\x0d\x70\x05\x62\x7b\x07\x76\x7c", /* FS_VER_2_1_0 */
+    "\xdb\xd8\x5f\xca\xcc\x19\x3d\xa8", /* FS_VER_2_1_0_EXFAT */
+
+    "\xa8\x6d\xa5\xe8\x7e\xf1\x09\x7b", /* FS_VER_3_0_0 */
+    "\x98\x1c\x57\xe7\xf0\x2f\x70\xf7", /* FS_VER_3_0_0_EXFAT */
+
+    "\x57\x39\x7c\x06\x3f\x10\xb6\x31", /* FS_VER_3_0_1 */
+    "\x07\x30\x99\xd7\xc6\xad\x7d\x89", /* FS_VER_3_0_1_EXFAT */
+
+    "\x06\xe9\x07\x19\x59\x5a\x01\x0c", /* FS_VER_4_0_0 */
+    "\x54\x9b\x0f\x8d\x6f\x72\xc4\xe9", /* FS_VER_4_0_0_EXFAT */
+
+    "\x80\x96\xaf\x7c\x6a\x35\xaa\x82", /* FS_VER_4_1_0 */
+    "\x02\xd5\xab\xaa\xfd\x20\xc8\xb0", /* FS_VER_4_1_0_EXFAT */
+
+    "\xa6\xf2\x7a\xd9\xac\x7c\x73\xad", /* FS_VER_5_0_0 */
+    "\xce\x3e\xcb\xa2\xf2\xf0\x62\xf5", /* FS_VER_5_0_0_EXFAT */
+
+    "\x76\xf8\x74\x02\xc9\x38\x7c\x0f", /* FS_VER_5_1_0 */
+    "\x10\xb2\xd8\x16\x05\x48\x85\x99", /* FS_VER_5_1_0_EXFAT */
+
+    "\x3a\x57\x4d\x43\x61\x86\x19\x1d", /* FS_VER_6_0_0 */
+    "\x33\x05\x53\xf6\xb5\xfb\x55\xc4", /* FS_VER_6_0_0_EXFAT */
+
+    "\x2A\xDB\xE9\x7E\x9B\x5F\x41\x77", /* FS_VER_7_0_0 */
+    "\x2C\xCE\x65\x9C\xEC\x53\x6A\x8E", /* FS_VER_7_0_0_EXFAT */
+
+    "\xB2\xF5\x17\x6B\x35\x48\x36\x4D", /* FS_VER_8_0_0 */
+    "\xDB\xD9\x41\xC0\xC5\x3C\x52\xCC", /* FS_VER_8_0_0_EXFAT */
+};
+
+kip1_header_t *apply_kip_ips_patches(kip1_header_t *kip, size_t kip_size, emummc_fs_ver_t *out_fs_ver) {
     uint8_t hash[0x20];
     se_calculate_sha256(hash, kip, kip_size);
+    
+    if (kip->title_id == FS_TITLE_ID) {
+        bool found = false;
+        for (size_t i = 0; i < FS_VER_MAX; i++) {
+            if (memcmp(hash, g_fs_hashes[i], 0x8) == 0) {
+                found = true;
+                *out_fs_ver = (emummc_fs_ver_t)i;
+            }
+        }
+        if (!found) {
+            fatal_error("[NXBOOT]: Failed to identify FS version...");
+        }
+    }
     
     if (!has_needed_default_kip_patches(kip->title_id, hash, sizeof(hash))) {
         fatal_error("[NXBOOT]: Missing default patch for KIP %08x%08x...\n", (uint32_t)(kip->title_id >> 32), (uint32_t)kip->title_id);

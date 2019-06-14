@@ -109,8 +109,8 @@ static int emummc_ini_handler(void *user, const char *section, const char *name,
             emummc_cfg->enabled = (tmp != 0);
         }
         if (strcmp(name, EMUMMC_SECTOR_KEY) == 0) {
-            uint64_t sector = 0;
-            sscanf(value, "%llu", &sector);
+            uintptr_t sector = 0;
+            sscanf(value, "%x", &sector);
             emummc_cfg->sector = sector;
         } else if (strcmp(name, EMUMMC_PATH_KEY) == 0) {
             strncpy(emummc_cfg->path, value, sizeof(emummc_cfg->path) - 1);
@@ -208,7 +208,7 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
     }
 }
 
-static bool nxboot_configure_emummc() {
+static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
     emummc_config_t emummc_cfg = {.enabled = false, .sector = -1, .path = ""};
     
     /* Load emummc settings from BCT.ini file. */
@@ -216,13 +216,25 @@ static bool nxboot_configure_emummc() {
         fatal_error("[NXBOOT] Failed to parse BCT.ini!\n");
     }
     
+    memset(exo_emummc_config, 0, sizeof(*exo_emummc_config));
+    exo_emummc_config->base_cfg.magic      = MAGIC_EMUMMC_CONFIG;
+    exo_emummc_config->base_cfg.type       = EMUMMC_TYPE_NONE;
+    exo_emummc_config->base_cfg.id         = 0; /* TODO: Multiple ID support. */
+    exo_emummc_config->base_cfg.fs_version = FS_VER_1_0_0; /* Will be filled out later. */
+    
     if (emummc_cfg.enabled) {
         if (emummc_cfg.sector >= 0) {
+            exo_emummc_config->base_cfg.type  = EMUMMC_TYPE_PARTITION;
+            exo_emummc_config->partition_cfg.start_sector = emummc_cfg.sector;
+            
             /* Mount emulated NAND from SD card partition. */
             if (nxfs_mount_emummc_partition(emummc_cfg.sector) < 0) {
                 fatal_error("[NXBOOT] Failed to mount EmuMMC from SD card partition!\n");
             }
         } else if (is_valid_folder(emummc_cfg.path)) {
+            exo_emummc_config->base_cfg.type  = EMUMMC_TYPE_FILES;
+            strncpy(exo_emummc_config->file_cfg.path, emummc_cfg.path, sizeof(exo_emummc_config->file_cfg.path) - 1);
+            
             int num_parts = 0;
             uint64_t part_limit = 0;
             char emummc_boot0_path[0x300 + 1] = {0};
@@ -267,11 +279,13 @@ static bool nxboot_configure_emummc() {
     return emummc_cfg.enabled;
 }
 
-static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int keygen_type) {
+static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int keygen_type, exo_emummc_config_t *exo_emummc_cfg) {
     exosphere_config_t exo_cfg = {0};
 
     exo_cfg.magic = MAGIC_EXOSPHERE_CONFIG;
     exo_cfg.target_firmware = target_firmware;
+    memcpy(&exo_cfg.emummc_cfg, exo_emummc_cfg, sizeof(*exo_emummc_cfg));
+
     if (keygen_type) {
         exo_cfg.flags = EXOSPHERE_FLAGS_DEFAULT | EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
     } else {
@@ -421,14 +435,34 @@ uint32_t nxboot_main(void) {
     void *warmboot_memaddr;
     void *package1loader;
     size_t package1loader_size;
+    void *emummc_kip;
+    size_t emummc_kip_size;
     uint32_t available_revision;
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
+    exo_emummc_config_t exo_emummc_cfg;
     
     /* Configure emummc or mount the real NAND. */
-    if (!nxboot_configure_emummc()) {
+    if (!nxboot_configure_emummc(&exo_emummc_cfg)) {
+        emummc_kip = NULL;
+        emummc_kip_size = 0;
         if (nxfs_mount_emmc() < 0) {
             fatal_error("[NXBOOT] Failed to mount eMMC!\n");
+        }
+    } else {
+        emummc_kip_size = get_file_size("atmosphere/emummc.kip");
+        if (emummc_kip_size == 0) {
+            fatal_error("[NXBOOT] Could not read emummc kip!\n");
+        }
+        
+        /* Allocate memory for the TSEC firmware. */
+        emummc_kip = memalign(0x100, emummc_kip_size);
+        
+        if (emummc_kip == NULL) {
+            fatal_error("[NXBOOT] Out of memory!\n");
+        }
+        if (read_from_file(emummc_kip, emummc_kip_size, "atmosphere/emummc.kip") != emummc_kip_size) {
+            fatal_error("[NXBOOT] Could not read the emummc kip!\n");
         }
     }
 
@@ -562,7 +596,7 @@ uint32_t nxboot_main(void) {
     }
 
     /* Setup boot configuration for Exosphère. */
-    nxboot_configure_exosphere(target_firmware, keygen_type);
+    nxboot_configure_exosphere(target_firmware, keygen_type, &exo_emummc_cfg);
 
     /* Initialize Boot Reason on older firmware versions. */
     if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
@@ -644,7 +678,10 @@ uint32_t nxboot_main(void) {
     print(SCREEN_LOG_LEVEL_INFO, u8"[NXBOOT] Configured Stratosphere...\n");
 
     /* Patch package2, adding Thermosphère + custom KIPs. */
-    package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
+    package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware, emummc_kip, emummc_kip_size);
+
+    /* Set detected FS version. */
+    MAILBOX_EXOSPHERE_CONFIGURATION->emummc_cfg.base_cfg.fs_version = stratosphere_get_fs_version();
 
     print(SCREEN_LOG_LEVEL_INFO, u8"[NXBOOT] Reading Exosphère...\n");
 

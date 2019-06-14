@@ -77,7 +77,7 @@ int device_partition_write_data(device_partition_t *devpart, const void *src, ui
 int emu_device_partition_read_data(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors, const char *origin_path, int num_parts, uint64_t part_limit)
 {
     int rc = 0;
-    uint64_t target_sector = 0;
+    uint64_t target_sector = sector;
     char target_path[0x300 + 1] = {0};
     
     /* Perform initialization steps, if necessary. */
@@ -150,7 +150,7 @@ int emu_device_partition_read_data(device_partition_t *devpart, void *dst, uint6
 int emu_device_partition_write_data(device_partition_t *devpart, const void *src, uint64_t sector, uint64_t num_sectors, const char *origin_path, int num_parts, uint64_t part_limit)
 {
     int rc = 0;
-    uint64_t target_sector = 0;
+    uint64_t target_sector = sector;
     char target_path[0x300 + 1] = {0};
     
     /* Perform initialization steps, if necessary. */
@@ -214,7 +214,7 @@ int emu_device_partition_write_data(device_partition_t *devpart, const void *src
         }
     } else {
         /* Write partition data. */
-        rc = devpart->writer(devpart, src, sector, num_sectors);
+        rc = devpart->writer(devpart, src, target_sector, num_sectors);
     }
     
     return rc;

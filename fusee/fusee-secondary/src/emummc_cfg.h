@@ -19,7 +19,6 @@
 
 #include <stdint.h>
 #include <atmosphere.h>
-#include "utils.h"
 
 /* "EFS0" */
 #define MAGIC_EMUMMC_CONFIG (0x30534645)
@@ -37,6 +36,46 @@ typedef enum {
     EMUMMC_MMC_SD = 1,
     EMUMMC_MMC_GC = 2,
 } emummc_mmc_t;
+
+typedef enum {
+    FS_VER_1_0_0 = 0,
+
+    FS_VER_2_0_0,
+    FS_VER_2_0_0_EXFAT,
+
+    FS_VER_2_1_0,
+    FS_VER_2_1_0_EXFAT,
+
+    FS_VER_3_0_0,
+    FS_VER_3_0_0_EXFAT,
+
+    FS_VER_3_0_1,
+    FS_VER_3_0_1_EXFAT,
+
+    FS_VER_4_0_0,
+    FS_VER_4_0_0_EXFAT,
+
+    FS_VER_4_1_0,
+    FS_VER_4_1_0_EXFAT,
+
+    FS_VER_5_0_0,
+    FS_VER_5_0_0_EXFAT,
+
+    FS_VER_5_1_0,
+    FS_VER_5_1_0_EXFAT,
+
+    FS_VER_6_0_0,
+    FS_VER_6_0_0_EXFAT,
+
+    FS_VER_7_0_0,
+    FS_VER_7_0_0_EXFAT,
+
+    FS_VER_8_0_0,
+    FS_VER_8_0_0_EXFAT,
+
+    FS_VER_MAX,
+} emummc_fs_ver_t;
+
 
 typedef struct {
     uint32_t magic;

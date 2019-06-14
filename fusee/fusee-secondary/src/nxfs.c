@@ -36,6 +36,8 @@ static bool g_fsdev_ready = false;
 static bool g_rawdev_ready = false;
 static bool g_emudev_ready = false;
 
+static bool g_is_emummc = false;
+
 static sdmmc_t g_sd_sdmmc = {0};
 static sdmmc_t g_emmc_sdmmc = {0};
 
@@ -106,6 +108,9 @@ static void mmc_partition_finalize(device_partition_t *devpart) {
     
     /* Finalize hardware. */
     if (mmcpart->device == &g_sd_device) {
+        if (g_is_emummc) {
+            return;
+        }
         if (g_sd_device_initialized) {
             sdmmc_device_finish(&g_sd_device);
             g_sd_device_initialized = false;
@@ -189,7 +194,7 @@ static int emummc_partition_read(device_partition_t *devpart, void *dst, uint64_
         rc = (fread(dst, devpart->sector_size, num_sectors, emummc_file) > 0) ? 0 : -1;
         fclose(emummc_file);
         return rc;
-    } else {
+    } else {       
         /* Read partition data directly from the SD card device. */
         return sdmmc_device_read(&g_sd_device, (uint32_t)(devpart->start_sector + sector), (uint32_t)num_sectors, dst) ? 0 : EIO;
     }    
@@ -571,7 +576,7 @@ int nxfs_mount_emummc_partition(uint64_t emummc_start_sector) {
     
     /* Failed to register boot0 device. */
     if (rc == -1) {
-        return -1;
+        return -2;
     }
     
     /* Setup an emulation template for boot1. */
@@ -585,7 +590,7 @@ int nxfs_mount_emummc_partition(uint64_t emummc_start_sector) {
     
     /* Failed to mount boot1. */
     if (rc == -1) {
-        return -1;
+        return -3;
     }
 
     /* Don't register emulated boot1 for now. */
@@ -595,13 +600,13 @@ int nxfs_mount_emummc_partition(uint64_t emummc_start_sector) {
     model.start_sector = emummc_start_sector + (0x400000 * 2 / model.sector_size);
     model.num_sectors = (256ull << 30) / model.sector_size;
     model.emu_use_file = false;
-    
+        
     /* Mount emulated raw NAND device. */
     rc = emudev_mount_device("rawnand", &model, NULL);
     
     /* Failed to mount raw NAND. */
     if (rc == -1) {
-        return -1;
+        return -4;
     }
     
     /* Register emulated raw NAND device. */
@@ -609,7 +614,7 @@ int nxfs_mount_emummc_partition(uint64_t emummc_start_sector) {
     
     /* Failed to register raw NAND device. */
     if (rc == -1) {
-        return -1;
+        return -5;
     }
     
     /* Open emulated raw NAND device. */
@@ -617,7 +622,7 @@ int nxfs_mount_emummc_partition(uint64_t emummc_start_sector) {
     
     /* Failed to open emulated raw NAND device. */
     if (rawnand == NULL) {
-        return -1;
+        return -6;
     }
     
     /* Iterate the GPT and mount each emulated raw NAND partition. */
@@ -629,6 +634,7 @@ int nxfs_mount_emummc_partition(uint64_t emummc_start_sector) {
     /* All emulated devices are ready. */
     if (rc == 0) {
         g_emudev_ready = true;
+        g_is_emummc = true;
     }
     
     return rc;
@@ -772,6 +778,7 @@ int nxfs_mount_emummc_file(const char *emummc_path, int num_parts, uint64_t part
     /* All emulated devices are ready. */
     if (rc == 0) {
         g_emudev_ready = true;
+        g_is_emummc = true;
     }
     
     return rc;

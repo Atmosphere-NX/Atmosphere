@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include "emu_dev.h"
+#include "utils.h"
 
 static int       emudev_open(struct _reent *r, void *fileStruct, const char *path, int flags, int mode);
 static int       emudev_close(struct _reent *r, void *fd);
