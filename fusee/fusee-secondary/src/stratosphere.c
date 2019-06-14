@@ -210,7 +210,7 @@ static kip1_header_t *inject_emummc_kip(kip1_header_t *fs_kip, kip1_header_t *em
     /* Add extra cap for 1.0.0 */
     if (stratosphere_get_fs_version() == FS_VER_1_0_0) {
         for (size_t i = 0; i < 0x20; i++) {
-            if (injected_kip->capabilities[i] = 0xFFFFFFFF) {
+            if (injected_kip->capabilities[i] == 0xFFFFFFFF) {
                 /* Map PMC registers in. */
                 injected_kip->capabilities[i] = 0x07000E7F;
                 break;

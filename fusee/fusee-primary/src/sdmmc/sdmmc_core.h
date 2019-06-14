@@ -210,33 +210,33 @@ typedef enum {
 } SdmmcBusWidth;
 
 typedef enum {
-    SDMMC_SPEED_INIT_HS     = 0,
-    SDMMC_SPEED_HS26        = 1,
-    SDMMC_SPEED_HS52        = 2,
-    SDMMC_SPEED_HS200       = 3,
-    SDMMC_SPEED_HS400       = 4,
-    SDMMC_SPEED_INIT_SDR    = 5,
-    SDMMC_SPEED_UNK6        = 6,
-    SDMMC_SPEED_SDR25       = 7,
-    SDMMC_SPEED_SDR12       = 8,
-    SDMMC_SPEED_UNK9        = 9,
-    SDMMC_SPEED_SDR50       = 10,
-    SDMMC_SPEED_SDR104      = 11,
-    SDMMC_SPEED_UNK12       = 12,
-    SDMMC_SPEED_DDR50       = 13,
-    SDMMC_SPEED_UNK14       = 14,
+    SDMMC_SPEED_MMC_INIT        = 0,
+    SDMMC_SPEED_MMC_LEGACY      = 1,
+    SDMMC_SPEED_MMC_HS          = 2,
+    SDMMC_SPEED_MMC_HS200       = 3,
+    SDMMC_SPEED_MMC_HS400       = 4,
+    SDMMC_SPEED_SD_INIT         = 5,
+    SDMMC_SPEED_SD_LEGACY       = 6,
+    SDMMC_SPEED_SD_HS           = 7,
+    SDMMC_SPEED_UHS_SDR12       = 8,
+    SDMMC_SPEED_UHS_SDR25       = 9,
+    SDMMC_SPEED_UHS_SDR50       = 10,
+    SDMMC_SPEED_UHS_SDR104      = 11,
+    SDMMC_SPEED_UHS_RESERVED    = 12,
+    SDMMC_SPEED_UHS_DDR50       = 13,
+    SDMMC_SPEED_MMC_DDR52       = 14,
+    SDMMC_SPEED_EMU_SDR104      = 255, /* Custom speed mode. Prevents low voltage switch in MMC emulation. */
 } SdmmcBusSpeed;
 
 typedef enum {
-    SDMMC_CAR_DIVIDER_SDR12  = 31, // (16.5 * 2) - 2
-    SDMMC_CAR_DIVIDER_SDR25  = 15, // (8.5 * 2) - 2
-    SDMMC_CAR_DIVIDER_SDR50  = 7,  // (4.5 * 2) - 2
-    SDMMC_CAR_DIVIDER_SDR104 = 2,  // (2 * 2) - 2
-    SDMMC_CAR_DIVIDER_DDR50  = 18, // (5 * 2 * 2) - 2
-    SDMMC_CAR_DIVIDER_HS26   = 30, // (16 * 2) - 2
-    SDMMC_CAR_DIVIDER_HS52   = 14, // (8 * 2) - 2
-    SDMMC_CAR_DIVIDER_HS200  = 3,  // (2.5 * 2) - 2 (for PLLP_OUT0)
-    SDMMC_CAR_DIVIDER_HS400  = 3,  // (2.5 * 2) - 2 (for PLLP_OUT0)
+    SDMMC_CAR_DIVIDER_UHS_SDR12     = 31, /* (16.5 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_UHS_SDR25     = 15, /* (8.5 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_UHS_SDR50     = 7,  /* (4.5 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_UHS_SDR104    = 2,  /* (2 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_UHS_DDR50     = 18, /* (5 * 2 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_MMC_LEGACY    = 30, /* (16 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_MMC_HS        = 14, /* (8 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_MMC_HS200     = 3,  /* (2.5 * 2) - 2 (for PLLP_OUT0, same as HS400) */
 } SdmmcCarDivider;
 
 /* Structure for describing a SDMMC device. */
@@ -272,7 +272,7 @@ typedef struct {
     uint32_t    opcode;
     uint32_t    arg;
     uint32_t    resp[4];
-    uint32_t    flags;      /* expected response type */
+    uint32_t    flags;      /* Expected response type. */
 } sdmmc_command_t;
 
 /* Structure for describing a SDMMC request. */

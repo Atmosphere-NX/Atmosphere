@@ -82,7 +82,7 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
     /* Initialize hardware. */
     if (mmcpart->device == &g_sd_device) {
         if (!g_sd_device_initialized) {
-            int rc = sdmmc_device_sd_init(mmcpart->device, &g_sd_sdmmc, SDMMC_BUS_WIDTH_4BIT, SDMMC_SPEED_SDR104) ? 0 : EIO;
+            int rc = sdmmc_device_sd_init(mmcpart->device, &g_sd_sdmmc, SDMMC_BUS_WIDTH_4BIT, SDMMC_SPEED_EMU_SDR104) ? 0 : EIO;
             if (rc)
                 return rc;
             g_sd_device_initialized = true;
@@ -91,7 +91,7 @@ static int mmc_partition_initialize(device_partition_t *devpart) {
         return 0;
     } else if (mmcpart->device == &g_emmc_device) {
         if (!g_emmc_device_initialized) {
-            int rc = sdmmc_device_mmc_init(mmcpart->device, &g_emmc_sdmmc, SDMMC_BUS_WIDTH_8BIT, SDMMC_SPEED_HS400) ? 0 : EIO;
+            int rc = sdmmc_device_mmc_init(mmcpart->device, &g_emmc_sdmmc, SDMMC_BUS_WIDTH_8BIT, SDMMC_SPEED_MMC_HS400) ? 0 : EIO;
             if (rc)
                 return rc;
             g_emmc_device_initialized = true;
