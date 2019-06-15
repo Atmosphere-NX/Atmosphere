@@ -223,9 +223,9 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
         return false;
     }
 
-    /* Load emummc settings from BCT.ini file. */
+    /* Load emummc settings from emummc.ini file. */
     if (ini_parse_string(emummc_ini, emummc_ini_handler, &emummc_cfg) < 0) {
-        fatal_error("[NXBOOT] Failed to parse BCT.ini!\n");
+        fatal_error("[NXBOOT] Failed to parse emummc.ini!\n");
     }
 
     free(emummc_ini);
