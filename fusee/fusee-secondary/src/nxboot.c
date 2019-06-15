@@ -254,13 +254,22 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
 
             int num_parts = 0;
             uint64_t part_limit = 0;
+            char emummc_path[0x300 + 1] = {0};
             char emummc_boot0_path[0x300 + 1] = {0};
             char emummc_boot1_path[0x300 + 1] = {0};
             char emummc_rawnand_path[0x300 + 1] = {0};
+            
+            /* Prepare base folder path. */
+            snprintf(emummc_path, sizeof(emummc_path) - 1, "sdmc:/%s/%s", emummc_cfg.path, "eMMC");
+            
+            /* Check if eMMC folder is present. */
+            if (!is_valid_folder(emummc_path)) {
+                fatal_error("[NXBOOT] Failed to find EmuMMC eMMC folder!\n");
+            }
         
             /* Prepare expected file paths. */
-            snprintf(emummc_boot0_path, sizeof(emummc_boot0_path) - 1, "sdmc:/%s/%s", emummc_cfg.path, "boot0");
-            snprintf(emummc_boot1_path, sizeof(emummc_boot1_path) - 1, "sdmc:/%s/%s", emummc_cfg.path, "boot1");
+            snprintf(emummc_boot0_path, sizeof(emummc_boot0_path) - 1, "sdmc:/%s/%s", emummc_path, "boot0");
+            snprintf(emummc_boot1_path, sizeof(emummc_boot1_path) - 1, "sdmc:/%s/%s", emummc_path, "boot1");
         
             /* Check if boot0 and boot1 image files are present. */
             if (!is_valid_file(emummc_boot0_path) || !is_valid_file(emummc_boot1_path)) {
@@ -269,7 +278,7 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
         
             /* Find raw image files (single or multi part). */
             for (int i = 0; i < 64; i++) {
-                snprintf(emummc_rawnand_path, sizeof(emummc_rawnand_path) - 1, "sdmc:/%s/%02d", emummc_cfg.path, i);
+                snprintf(emummc_rawnand_path, sizeof(emummc_rawnand_path) - 1, "sdmc:/%s/%02d", emummc_path, i);
                 if (is_valid_file(emummc_rawnand_path)) {
                     if (i == 0) {
                         /* The size of the first file should tell us the part limit. */
@@ -285,7 +294,7 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
             }
         
             /* Mount emulated NAND from files. */
-            if (nxfs_mount_emummc_file(emummc_cfg.path, num_parts, part_limit) < 0) {
+            if (nxfs_mount_emummc_file(emummc_path, num_parts, part_limit) < 0) {
                 fatal_error("[NXBOOT] Failed to mount EmuMMC from files!\n");
             }
         } else {
