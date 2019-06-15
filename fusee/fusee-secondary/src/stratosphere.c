@@ -367,7 +367,6 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, size_t num_inis, vo
             
             if (current_kip->title_id == FS_TITLE_ID && emummc != NULL) {
                 patched_kip = inject_emummc_kip(patched_kip != NULL ? patched_kip : current_kip, (kip1_header_t *)emummc);
-                dump_to_file(patched_kip, kip1_get_size_from_header(patched_kip), "DEBUG_EMUMMC.kip");
             }
             
             if (patched_kip != NULL) {
