@@ -55,6 +55,7 @@
 #include "exosphere_bin.h"
 #include "sept_secondary_enc.h"
 #include "lp0fw_bin.h"
+#include "emummc_kip.h"
 #include "lib/log.h"
 #undef u8
 #undef u32
@@ -451,8 +452,8 @@ uint32_t nxboot_main(void) {
     void *warmboot_memaddr;
     void *package1loader;
     size_t package1loader_size;
-    void *emummc_kip;
-    size_t emummc_kip_size;
+    void *emummc;
+    size_t emummc_size;
     uint32_t available_revision;
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
@@ -460,25 +461,33 @@ uint32_t nxboot_main(void) {
     
     /* Configure emummc or mount the real NAND. */
     if (!nxboot_configure_emummc(&exo_emummc_cfg)) {
-        emummc_kip = NULL;
-        emummc_kip_size = 0;
+        emummc = NULL;
+        emummc_size = 0;
         if (nxfs_mount_emmc() < 0) {
             fatal_error("[NXBOOT] Failed to mount eMMC!\n");
         }
     } else {
-        emummc_kip_size = get_file_size("atmosphere/emummc.kip");
-        if (emummc_kip_size == 0) {
-            fatal_error("[NXBOOT] Could not read emummc kip!\n");
-        }
-        
-        /* Allocate memory for the TSEC firmware. */
-        emummc_kip = memalign(0x100, emummc_kip_size);
-        
-        if (emummc_kip == NULL) {
-            fatal_error("[NXBOOT] Out of memory!\n");
-        }
-        if (read_from_file(emummc_kip, emummc_kip_size, "atmosphere/emummc.kip") != emummc_kip_size) {
-            fatal_error("[NXBOOT] Could not read the emummc kip!\n");
+        emummc_size = get_file_size("atmosphere/emummc.kip");
+        if (emummc_size != 0) {
+            /* Allocate memory for the TSEC firmware. */
+            emummc = memalign(0x100, emummc_size);
+
+            if (emummc == NULL) {
+                fatal_error("[NXBOOT] Out of memory!\n");
+            }
+            if (read_from_file(emummc, emummc_size, "atmosphere/emummc.kip") != emummc_size) {
+                fatal_error("[NXBOOT] Could not read the emummc kip!\n");
+            }
+        } else {
+            /* Use embedded copy. */
+            emummc_size = emummc_kip_size;
+            emummc = memalign(0x100, emummc_size);
+
+            if (emummc == NULL) {
+                fatal_error("[NXBOOT] Out of memory!\n");
+            }
+
+            memcpy(emummc, emummc_kip, emummc_size);
         }
     }
 
@@ -694,7 +703,7 @@ uint32_t nxboot_main(void) {
     print(SCREEN_LOG_LEVEL_INFO, u8"[NXBOOT] Configured Stratosphere...\n");
 
     /* Patch package2, adding Thermosphère + custom KIPs. */
-    package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware, emummc_kip, emummc_kip_size);
+    package2_rebuild_and_copy(package2, MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware, emummc, emummc_size);
 
     /* Set detected FS version. */
     MAILBOX_EXOSPHERE_CONFIGURATION->emummc_cfg.base_cfg.fs_version = stratosphere_get_fs_version();
