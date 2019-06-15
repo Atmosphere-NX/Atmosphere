@@ -16,7 +16,7 @@
   + Support is included for redirecting NAND to a partition on the SD card.
     + This can be done by setting `emummc!emummc_sector` to the start sector of your partition (e.g., `emummc_sector = 0x1A010000`).
   + Support is also included for redirecting NAND to a collection of loose files on the SD card.
-    + This can be done by setting `emummc!emummc_path` to the folder (with archive bit set) containing the boot0, boot1, and 00/01 rawnand images.
+    + This can be done by setting `emummc!emummc_path` to the folder (with archive bit set) containing the NAND boot partitions' files "boot0" and "boot1", and the raw NAND image files "00", "01", "02", etc. (single "00" file with the whole NAND image requires exFAT mode while multipart NAND can be used in both exFAT and FAT32 modes).
   + The `Nintendo` contents directory can be redirected arbitrarily.
     + By default, it will be redirected to `emummc/Nintendo_XXXX`, where `XXXX` is the hexadecimal representation of the emummc's ID.
       + The current emummc ID may be selected by changing `emummc!emummc_id` in emummc.ini.
