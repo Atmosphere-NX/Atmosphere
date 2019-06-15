@@ -216,11 +216,19 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
 static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
     emummc_config_t emummc_cfg = {.enabled = false, .id = 0, .sector = -1, .path = "", .nintendo_path = ""};
     
+    char *emummc_ini = calloc(1, 0x10000);
+    if (!read_from_file(emummc_ini, 0xFFFF, "emummc/emummc.ini")) {
+        free(emummc_ini);
+        return false;
+    }
+
     /* Load emummc settings from BCT.ini file. */
-    if (ini_parse_string(get_loader_ctx()->bct0, emummc_ini_handler, &emummc_cfg) < 0) {
+    if (ini_parse_string(emummc_ini, emummc_ini_handler, &emummc_cfg) < 0) {
         fatal_error("[NXBOOT] Failed to parse BCT.ini!\n");
     }
-    
+
+    free(emummc_ini);
+
     memset(exo_emummc_config, 0, sizeof(*exo_emummc_config));
     exo_emummc_config->base_cfg.magic      = MAGIC_EMUMMC_CONFIG;
     exo_emummc_config->base_cfg.type       = EMUMMC_TYPE_NONE;
