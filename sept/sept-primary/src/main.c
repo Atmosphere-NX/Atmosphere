@@ -190,7 +190,7 @@ int load_tsec_fw(void) {
 int main(void) {    
     /* Setup vectors */
     setup_exception_vectors();
-    
+
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_car_t *car = car_get_regs();
     

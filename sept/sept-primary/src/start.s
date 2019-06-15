@@ -93,6 +93,10 @@ ipatch_word:
 .global jump_to_main
 .type   jump_to_main, %function
 jump_to_main:
+    /* Insert 0x40 of NOPs, for version compatibility. */
+.rept 16
+    nop
+.endr
     /* Just jump to main */
     ldr sp, =__stack_top__
     b main
