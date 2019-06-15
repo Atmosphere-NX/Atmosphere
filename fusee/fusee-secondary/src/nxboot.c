@@ -112,9 +112,14 @@ static int emummc_ini_handler(void *user, const char *section, const char *name,
             uintptr_t sector = 0;
             sscanf(value, "%x", &sector);
             emummc_cfg->sector = sector;
+        } else if (strcmp(name, EMUMMC_ID_KEY) == 0) {
+            sscanf(value, "%lx", &emummc_cfg->id);
         } else if (strcmp(name, EMUMMC_PATH_KEY) == 0) {
             strncpy(emummc_cfg->path, value, sizeof(emummc_cfg->path) - 1);
             emummc_cfg->path[sizeof(emummc_cfg->path) - 1]  = '\0';
+        } else if (strcmp(name, EMUMMC_NINTENDO_PATH_KEY) == 0) {
+            strncpy(emummc_cfg->nintendo_path, value, sizeof(emummc_cfg->nintendo_path) - 1);
+            emummc_cfg->nintendo_path[sizeof(emummc_cfg->nintendo_path) - 1]  = '\0';
         } else {
             return 0;
         }
@@ -209,7 +214,7 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
 }
 
 static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
-    emummc_config_t emummc_cfg = {.enabled = false, .sector = -1, .path = ""};
+    emummc_config_t emummc_cfg = {.enabled = false, .id = 0, .sector = -1, .path = "", .nintendo_path = ""};
     
     /* Load emummc settings from BCT.ini file. */
     if (ini_parse_string(get_loader_ctx()->bct0, emummc_ini_handler, &emummc_cfg) < 0) {
@@ -219,8 +224,10 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
     memset(exo_emummc_config, 0, sizeof(*exo_emummc_config));
     exo_emummc_config->base_cfg.magic      = MAGIC_EMUMMC_CONFIG;
     exo_emummc_config->base_cfg.type       = EMUMMC_TYPE_NONE;
-    exo_emummc_config->base_cfg.id         = 0; /* TODO: Multiple ID support. */
+    exo_emummc_config->base_cfg.id         = emummc_cfg.id;
     exo_emummc_config->base_cfg.fs_version = FS_VER_1_0_0; /* Will be filled out later. */
+    strncpy(exo_emummc_config->emu_dir_path, emummc_cfg.nintendo_path, sizeof(exo_emummc_config->emu_dir_path));
+    exo_emummc_config->emu_dir_path[sizeof(exo_emummc_config->emu_dir_path) - 1] = '\0';
     
     if (emummc_cfg.enabled) {
         if (emummc_cfg.sector >= 0) {
@@ -233,8 +240,9 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
             }
         } else if (is_valid_folder(emummc_cfg.path)) {
             exo_emummc_config->base_cfg.type  = EMUMMC_TYPE_FILES;
-            strncpy(exo_emummc_config->file_cfg.path, emummc_cfg.path, sizeof(exo_emummc_config->file_cfg.path) - 1);
-            
+            strncpy(exo_emummc_config->file_cfg.path, emummc_cfg.path, sizeof(exo_emummc_config->file_cfg.path));
+            exo_emummc_config->file_cfg.path[sizeof(exo_emummc_config->file_cfg.path) - 1] = '\0';
+
             int num_parts = 0;
             uint64_t part_limit = 0;
             char emummc_boot0_path[0x300 + 1] = {0};

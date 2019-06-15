@@ -22,11 +22,15 @@
 #define EMUMMC_ENABLED_KEY "emummc_enabled"
 #define EMUMMC_SECTOR_KEY "emummc_sector"
 #define EMUMMC_PATH_KEY "emummc_path"
+#define EMUMMC_NINTENDO_PATH_KEY "emummc_nintendo_path"
+#define EMUMMC_ID_KEY "emummc_id"
 
 typedef struct {
     bool enabled;
+    uint32_t id;
     uint64_t sector;
-    char path[0x100];
+    char path[0x80];
+    char nintendo_path[0x80];
 } emummc_config_t;
 
 #define MAILBOX_NX_BOOTLOADER_BASE_100_620 0x40002E00

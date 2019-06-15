@@ -163,11 +163,11 @@ Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterf
 }
 
 Result FsMitmService::OpenSdCardFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out_fs) {
-    /* We only care about redirecting this for NS/Emunand. */
-    if (!IsEmunand()) {
+    /* We only care about redirecting this for NS/Emummc. */
+    if (this->title_id != TitleId_Ns) {
         return ResultAtmosphereMitmShouldForwardToSession;
     }
-    if (this->title_id != TitleId_Ns) {
+    if (!IsEmummc()) {
         return ResultAtmosphereMitmShouldForwardToSession;
     }
 
@@ -190,7 +190,7 @@ Result FsMitmService::OpenSdCardFileSystem(Out<std::shared_ptr<IFileSystemInterf
         return rc;
     }
 
-    std::shared_ptr<IFileSystem> redir_fs = std::make_shared<DirectoryRedirectionFileSystem>(new ProxyFileSystem(sd_fs), "/Nintendo", "/Emu/0000" /* TODO: Real Path */);
+    std::shared_ptr<IFileSystem> redir_fs = std::make_shared<DirectoryRedirectionFileSystem>(new ProxyFileSystem(sd_fs), "/Nintendo", GetEmummcNintendoDirPath());
     fs = std::make_shared<IFileSystemInterface>(redir_fs);
     if (out_fs.IsDomain()) {
         out_domain_id = sd_fs.s.object_id;

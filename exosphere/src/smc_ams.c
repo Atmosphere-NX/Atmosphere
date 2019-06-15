@@ -228,46 +228,63 @@ uint32_t ams_write_address(smc_args_t *args) {
 uint32_t ams_get_emummc_config(smc_args_t *args) {
     /* This retrieves configuration for the current emummc context. */
     /* args->X[1] = MMC id, must be size-bytes aligned and readable by EL0. */
-    /* args->X[2] = Pointer to output (for path for filebased), must be at least 0x80 bytes. */
-    upage_ref_t page_ref;
+    /* args->X[2] = Pointer to output (for paths for filebased + nintendo dir), must be at least 0x100 bytes. */
     const uint32_t mmc_id = (uint32_t)args->X[1];
-    void *user_address = (void *)args->X[2];
+    const uintptr_t dram_address = args->X[2];
+    const uintptr_t dram_page_offset = (dram_address & 0xFFFULL);
     const exo_emummc_config_t *emummc_cfg = exosphere_get_emummc_config();
 
     if (mmc_id != EMUMMC_MMC_NAND) {
         /* Emummc config for non-NAND storage is not yet implemented. */
         return 1;
     }
+    
+    /* Require page alignment for input address. */
+    if (!ams_is_user_addr_valid(dram_address) || dram_page_offset > 0x1000 - 0x100) {
+        return 2;
+    }
+
+    /* Map pages. */
+    ams_map_userpage(dram_address);
+    
+    void *user_address = (void *)(AMS_USER_PAGE_SECURE_MONITOR_ADDR + dram_page_offset);
+    
+    /* Copy redirection dir out to user. */
+    memcpy((void *)((uintptr_t)user_address + sizeof(emummc_cfg->file_cfg)), emummc_cfg->emu_dir_path, sizeof(emummc_cfg->emu_dir_path));
 
     if (emummc_cfg->base_cfg.type == EMUMMC_TYPE_NONE) {
         /* Just copy base config. */
         memset(args, 0, sizeof(*args));
         memcpy(&args->X[1], emummc_cfg, sizeof(emummc_cfg->base_cfg));
         _Static_assert(sizeof(emummc_cfg->base_cfg) <= sizeof(*args) - sizeof(args->X[0]), "Emunand base config too big!");
+
+        /* Unmap pages. */
+        ams_unmap_userpage();
         return 0;
     } else if (emummc_cfg->base_cfg.type == EMUMMC_TYPE_PARTITION) {
         /* Copy base config and partition config. */
         memset(args, 0, sizeof(*args));
         memcpy(&args->X[1], emummc_cfg, sizeof(emummc_cfg->base_cfg) + sizeof(emummc_cfg->partition_cfg));
         _Static_assert(sizeof(emummc_cfg->base_cfg) + sizeof(emummc_cfg->partition_cfg) <= sizeof(*args) - sizeof(args->X[0]), "Emunand partition config too big!");
+
+        /* Unmap pages. */
+        ams_unmap_userpage();
         return 0;
     } else if (emummc_cfg->base_cfg.type == EMUMMC_TYPE_FILES) {
-        /* Copy path to userpage. */
-        /* Initialize page reference. */
-        if (upage_init(&page_ref, user_address) == 0) {
-            return 2;
-        }
-        /* Copy result output back to user. */
-        if (secure_copy_to_user(&page_ref, user_address, &emummc_cfg->file_cfg, sizeof(emummc_cfg->file_cfg)) == 0) {
-            return 2;
-        }
+        /* Copy file dir path output to user. */
+        memcpy(user_address, &emummc_cfg->file_cfg, sizeof(emummc_cfg->file_cfg));
 
         /* Copy base config afterwards, since this can't fail. */
         memset(args, 0, sizeof(*args));
         memcpy(&args->X[1], emummc_cfg, sizeof(emummc_cfg->base_cfg));
         _Static_assert(sizeof(emummc_cfg->base_cfg) <= sizeof(*args) - sizeof(args->X[0]), "Emunand base config too big!");
+
+        /* Unmap pages. */
+        ams_unmap_userpage();
         return 0;
     } else {
+        /* Unmap pages. */
+        ams_unmap_userpage();
         return 2;
     }
 }

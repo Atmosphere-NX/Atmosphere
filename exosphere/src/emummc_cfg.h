@@ -59,9 +59,9 @@ typedef struct {
         emummc_partition_config_t partition_cfg;
         emummc_file_config_t file_cfg;
     };
-    //char emu_dir_path[EMUMMC_FILE_PATH_MAX];
+    char emu_dir_path[EMUMMC_FILE_PATH_MAX];
 } exo_emummc_config_t;
 
-_Static_assert(sizeof(exo_emummc_config_t) == 0x90, "exo_emummc_config_t definition!");
+_Static_assert(sizeof(exo_emummc_config_t) == 0x110, "exo_emummc_config_t definition!");
 
 #endif
