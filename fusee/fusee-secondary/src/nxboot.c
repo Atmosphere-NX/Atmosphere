@@ -239,7 +239,7 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
     exo_emummc_config->emu_dir_path[sizeof(exo_emummc_config->emu_dir_path) - 1] = '\0';
     
     if (emummc_cfg.enabled) {
-        if (emummc_cfg.sector >= 0) {
+        if (emummc_cfg.sector != -1) {
             exo_emummc_config->base_cfg.type  = EMUMMC_TYPE_PARTITION;
             exo_emummc_config->partition_cfg.start_sector = emummc_cfg.sector;
             
@@ -254,13 +254,13 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
 
             int num_parts = 0;
             uint64_t part_limit = 0;
-            char emummc_path[0x300 + 1] = {0};
+            char emummc_path[0x100 + 1] = {0};
             char emummc_boot0_path[0x300 + 1] = {0};
             char emummc_boot1_path[0x300 + 1] = {0};
             char emummc_rawnand_path[0x300 + 1] = {0};
             
             /* Prepare base folder path. */
-            snprintf(emummc_path, sizeof(emummc_path) - 1, "sdmc:/%s/%s", emummc_cfg.path, "eMMC");
+            snprintf(emummc_path, sizeof(emummc_path) - 1, "%s/%s", emummc_cfg.path, "eMMC");
             
             /* Check if eMMC folder is present. */
             if (!is_valid_folder(emummc_path)) {
@@ -268,8 +268,8 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
             }
         
             /* Prepare expected file paths. */
-            snprintf(emummc_boot0_path, sizeof(emummc_boot0_path) - 1, "sdmc:/%s/%s", emummc_path, "boot0");
-            snprintf(emummc_boot1_path, sizeof(emummc_boot1_path) - 1, "sdmc:/%s/%s", emummc_path, "boot1");
+            snprintf(emummc_boot0_path, sizeof(emummc_boot0_path) - 1, "%s/%s", emummc_path, "boot0");
+            snprintf(emummc_boot1_path, sizeof(emummc_boot1_path) - 1, "%s/%s", emummc_path, "boot1");
         
             /* Check if boot0 and boot1 image files are present. */
             if (!is_valid_file(emummc_boot0_path) || !is_valid_file(emummc_boot1_path)) {
@@ -278,7 +278,7 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
         
             /* Find raw image files (single or multi part). */
             for (int i = 0; i < 64; i++) {
-                snprintf(emummc_rawnand_path, sizeof(emummc_rawnand_path) - 1, "sdmc:/%s/%02d", emummc_path, i);
+                snprintf(emummc_rawnand_path, sizeof(emummc_rawnand_path) - 1, "%s/%02d", emummc_path, i);
                 if (is_valid_file(emummc_rawnand_path)) {
                     if (i == 0) {
                         /* The size of the first file should tell us the part limit. */
