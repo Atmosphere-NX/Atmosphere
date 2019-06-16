@@ -36,7 +36,7 @@
 static void package2_decrypt(package2_header_t *package2);
 static size_t package2_get_src_section(void **section, package2_header_t *package2, unsigned int id);
 static size_t package2_get_thermosphere(void **thermosphere);
-static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware);
+static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware, void *emummc, size_t emummc_size);
 static void package2_append_section(unsigned int id, package2_header_t *package2, void *data, size_t size);
 static void package2_fixup_header_and_section_hashes(package2_header_t *package2, size_t size);
 
@@ -44,7 +44,7 @@ static inline size_t align_to_4(size_t s) {
     return ((s + 3) >> 2) << 2;
 }
 
-void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware) {
+void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware, void *emummc, size_t emummc_size) {
     package2_header_t *rebuilt_package2;
     size_t rebuilt_package2_size;
     void *kernel;
@@ -104,7 +104,7 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     }
 
     /* Perform any patches to the INI1, rebuilding it (This is where our built-in sysmodules will be added.) */
-    rebuilt_ini1 = package2_rebuild_ini1(orig_ini1, target_firmware);
+    rebuilt_ini1 = package2_rebuild_ini1(orig_ini1, target_firmware, emummc, emummc_size);
     print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilt INI1...\n");
 
     /* Allocate the rebuilt package2. */
@@ -317,7 +317,7 @@ static size_t package2_get_thermosphere(void **thermosphere) {
     return 0;
 }
 
-static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware) {
+static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target_firmware, void *emummc, size_t emummc_size) {
     /* TODO: Do we want to support loading another INI from sd:/whatever/INI1.bin? */
     ini1_header_t *inis_to_merge[STRATOSPHERE_INI1_MAX] = {0};
     ini1_header_t *merged;
@@ -327,7 +327,7 @@ static ini1_header_t *package2_rebuild_ini1(ini1_header_t *ini1, uint32_t target
     inis_to_merge[STRATOSPHERE_INI1_PACKAGE2] = ini1;
 
     /* Merge all of the INI1s. */
-    merged = stratosphere_merge_inis(inis_to_merge, STRATOSPHERE_INI1_MAX);
+    merged = stratosphere_merge_inis(inis_to_merge, STRATOSPHERE_INI1_MAX, emummc, emummc_size);
 
     /* Free temporary buffer. */
     stratosphere_free_ini1();

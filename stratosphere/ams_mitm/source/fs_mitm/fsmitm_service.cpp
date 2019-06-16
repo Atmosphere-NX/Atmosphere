@@ -31,6 +31,7 @@
 #include "fs_save_utils.hpp"
 #include "fs_file_storage.hpp"
 #include "fs_subdirectory_filesystem.hpp"
+#include "fs_directory_redirection_filesystem.hpp"
 #include "fs_directory_savedata_filesystem.hpp"
 
 #include "../debug.hpp"
@@ -159,6 +160,43 @@ Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterf
     }
 
     return this->OpenHblWebContentFileSystem(out_fs);
+}
+
+Result FsMitmService::OpenSdCardFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out_fs) {
+    /* We only care about redirecting this for NS/Emummc. */
+    if (this->title_id != TitleId_Ns) {
+        return ResultAtmosphereMitmShouldForwardToSession;
+    }
+    if (!IsEmummc()) {
+        return ResultAtmosphereMitmShouldForwardToSession;
+    }
+
+    std::shared_ptr<IFileSystemInterface> fs = nullptr;
+    u32 out_domain_id = 0;
+    Result rc = ResultSuccess;
+
+    ON_SCOPE_EXIT {
+        if (R_SUCCEEDED(rc)) {
+            out_fs.SetValue(std::move(fs));
+            if (out_fs.IsDomain()) {
+                out_fs.ChangeObjectId(out_domain_id);
+            }
+        }
+    };
+
+    /* Mount the SD card. */
+    FsFileSystem sd_fs;
+    if (R_FAILED((rc = fsMountSdcard(&sd_fs)))) {
+        return rc;
+    }
+
+    std::shared_ptr<IFileSystem> redir_fs = std::make_shared<DirectoryRedirectionFileSystem>(new ProxyFileSystem(sd_fs), "/Nintendo", GetEmummcNintendoDirPath());
+    fs = std::make_shared<IFileSystemInterface>(redir_fs);
+    if (out_fs.IsDomain()) {
+        out_domain_id = sd_fs.s.object_id;
+    }
+
+    return rc;
 }
 
 Result FsMitmService::OpenSaveDataFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out_fs, u8 space_id, FsSave save_struct) {

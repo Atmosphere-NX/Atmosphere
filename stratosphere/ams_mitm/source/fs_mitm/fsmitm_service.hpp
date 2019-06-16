@@ -29,6 +29,8 @@ enum FspSrvCmd : u32 {
     FspSrvCmd_OpenFileSystemWithPatch = 7,
     FspSrvCmd_OpenFileSystemWithId = 8,
 
+    FspSrvCmd_OpenSdCardFileSystem = 18,
+
     FspSrvCmd_OpenSaveDataFileSystem = 51,
 
     FspSrvCmd_OpenBisStorage = 12,
@@ -75,6 +77,7 @@ class FsMitmService : public IMitmServiceObject {
         /* Overridden commands. */
         Result OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInterface>> out, u64 title_id, u32 filesystem_type);
         Result OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterface>> out, InPointer<char> path, u64 title_id, u32 filesystem_type);
+        Result OpenSdCardFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out);
         Result OpenSaveDataFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out, u8 space_id, FsSave save_struct);
         Result OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out, u32 bis_partition_id);
         Result OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStorageInterface>> out);
@@ -84,6 +87,7 @@ class FsMitmService : public IMitmServiceObject {
             /* TODO MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemDeprecated, &FsMitmService::OpenFileSystemDeprecated>(), */
             MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemWithPatch, &FsMitmService::OpenFileSystemWithPatch, FirmwareVersion_200>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemWithId, &FsMitmService::OpenFileSystemWithId, FirmwareVersion_200>(),
+            MakeServiceCommandMeta<FspSrvCmd_OpenSdCardFileSystem, &FsMitmService::OpenSdCardFileSystem>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenSaveDataFileSystem, &FsMitmService::OpenSaveDataFileSystem>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenBisStorage, &FsMitmService::OpenBisStorage>(),
             MakeServiceCommandMeta<FspSrvCmd_OpenDataStorageByCurrentProcess, &FsMitmService::OpenDataStorageByCurrentProcess>(),

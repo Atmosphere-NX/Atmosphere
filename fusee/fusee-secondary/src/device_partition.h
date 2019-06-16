@@ -65,9 +65,14 @@ typedef struct device_partition_t {
     uint8_t __attribute__((aligned(16))) keys[DEVPART_KEY_MAX][DEVPART_KEY_MAX_SIZE]; /* Key. */
     uint8_t __attribute__((aligned(16))) iv[DEVPART_IV_MAX_SIZE]; /* IV. */
     bool initialized;
+    
+    char *emu_file_path;     /* Emulated device file path. */
+    bool emu_use_file;
 } device_partition_t;
 
 int device_partition_read_data(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors);
 int device_partition_write_data(device_partition_t *devpart, const void *src, uint64_t sector, uint64_t num_sectors);
+int emu_device_partition_read_data(device_partition_t *devpart, void *dst, uint64_t sector, uint64_t num_sectors, const char *origin_path, int num_parts, uint64_t part_limit);
+int emu_device_partition_write_data(device_partition_t *devpart, const void *src, uint64_t sector, uint64_t num_sectors, const char *origin_path, int num_parts, uint64_t part_limit);
 
 #endif

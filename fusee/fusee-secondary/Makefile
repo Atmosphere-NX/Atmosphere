@@ -89,7 +89,7 @@ export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
 			$(AMS)/exosphere $(AMS)/exosphere/lp0fw $(AMS)/exosphere/rebootstub \
 			$(AMS)/thermosphere $(AMS)/fusee/fusee-primary $(AMS)/sept/sept-primary \
-			$(AMS)/sept/sept-secondary $(KIPDIRS)
+			$(AMS)/sept/sept-secondary $(AMS)/emummc $(KIPDIRS)
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
@@ -99,7 +99,7 @@ SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 KIPFILES 	:=	loader.kip pm.kip sm.kip ams_mitm.kip spl.kip boot.kip
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary.bin \
 				exosphere.bin lp0fw.bin rebootstub.bin thermosphere.bin splash_screen.bmp \
-				sept-primary.bin sept-secondary.enc \
+				sept-primary.bin sept-secondary.enc emummc.kip \
 				$(KIPFILES)
 
 #---------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 .PHONY: $(BUILD) clean all
-.PHONY: check_fusee_primary check_exosphere check_sept check_thermosphere check_stratosphere
+.PHONY: check_fusee_primary check_exosphere check_sept check_emummc check_thermosphere check_stratosphere
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
@@ -142,6 +142,9 @@ check_exosphere:
 check_sept:
 	@$(MAKE) -C $(AMS)/sept all
 
+check_emummc:
+	@$(MAKE) -C $(AMS)/emummc EMUMMCDIR=$(AMS)/emummc all
+
 check_thermosphere:
 	@$(MAKE) -C $(AMS)/thermosphere all
 
@@ -149,7 +152,7 @@ check_stratosphere:
 	@$(MAKE) -C $(AMS)/stratosphere all
 
 
-$(BUILD): check_fusee_primary check_exosphere check_sept check_thermosphere check_stratosphere
+$(BUILD): check_fusee_primary check_exosphere check_sept check_emummc check_thermosphere check_stratosphere
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
@@ -161,6 +164,7 @@ clean:
 	@$(MAKE) -C $(AMS)/thermosphere clean
 	@$(MAKE) -C $(AMS)/stratosphere clean
 	@$(MAKE) -C $(AMS)/sept clean
+	@$(MAKE) -C $(AMS)/emummc clean
 	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
 
 #---------------------------------------------------------------------------------

@@ -12,7 +12,7 @@ PHDRS
 MEMORY
 {
     NULL        : ORIGIN = 0x00000000, LENGTH = 0x1000
-    main        : ORIGIN = 0x40010040, LENGTH = 0x1000
+    main        : ORIGIN = 0x40010000, LENGTH = 0x1000
     high_iram   : ORIGIN = 0x4003F000, LENGTH = 0x1000
     low_iram    : ORIGIN = 0x40003000, LENGTH = 0x8000
 }
@@ -20,7 +20,7 @@ MEMORY
 SECTIONS
 {
     PROVIDE(__crt0_start__      = 0x4003F000);
-    PROVIDE(__main_start__      = 0x40010040);
+    PROVIDE(__main_start__      = 0x40010000);
     PROVIDE(__stack_top__       = 0x40010000);
     PROVIDE(__stack_bottom__    = 0x4000C000);
     PROVIDE(__heap_start__      = 0);

@@ -246,6 +246,19 @@ int fsdev_set_default_device(const char *name) {
     return ret;
 }
 
+int fsdev_is_exfat(const char *name) {
+    fsdev_device_t *device = fsdev_find_device(name);
+
+    if (device != NULL) {
+        if (device->registered) {
+            return ((device->fatfs.fs_type == FS_EXFAT) ? 1 : 0);
+        }
+    }
+
+    errno = ENOENT;
+    return -1;
+}
+
 int fsdev_unmount_device(const char *name) {
     int ret;
     char drname[40];
@@ -285,6 +298,21 @@ int fsdev_unmount_all(void) {
     }
 
     return 0;
+}
+
+int fsdev_set_attr(const char *file, int attr, int mask) {
+    return fsdev_convert_rc(NULL, f_chmod(file, (BYTE)attr, (BYTE)mask));
+}
+
+int fsdev_get_attr(const char *file) {
+    FILINFO info;
+    FRESULT rc = f_stat(file, &info);
+
+    if (rc == FR_OK) {
+        return info.fattrib;
+    }
+
+    return fsdev_convert_rc(NULL, rc);
 }
 
 /* Adapted from https://github.com/benemorius/openOBC-devboard/blob/bf0a4a33e22d24e7c299f921d185da27377310e0/lib/fatfs/FatFS.cpp#L173 */

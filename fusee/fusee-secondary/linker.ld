@@ -246,4 +246,6 @@ SECTIONS
     PROVIDE(__splash_screen_bmp_size__ = splash_screen_bmp_end - splash_screen_bmp);
     PROVIDE(__thermosphere_bin_start__ = thermosphere_bin - __start__);
     PROVIDE(__thermosphere_bin_size__ = thermosphere_bin_end - thermosphere_bin);
+    PROVIDE(__emummc_kip_start__ = emummc_kip - __start__);
+    PROVIDE(__emummc_kip_size__ = emummc_kip_end - emummc_kip);
 }

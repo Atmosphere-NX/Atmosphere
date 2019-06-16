@@ -18,7 +18,6 @@
 #define FUSEE_STAGE2_H
 
 #include "lib/log.h"
-#include "sdmmc/sdmmc.h"
 #include "utils.h"
 
 /* TODO: Is there a more concise way to do this? */

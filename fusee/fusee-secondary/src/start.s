@@ -93,6 +93,7 @@ _metadata:
 #define CONTENT_TYPE_SP2 5
 #define CONTENT_TYPE_KIP 6
 #define CONTENT_TYPE_BMP 7
+#define CONTENT_TYPE_EMC 8
 
 _content_headers:
 /* ams_mitm content header */
@@ -189,6 +190,14 @@ _content_headers:
 .word CONTENT_TYPE_KIP
 .word 0xCCCCCCCC
 .asciz "spl"
+.align 5
+
+/* emummc content header */
+.word __emummc_kip_start__
+.word __emummc_kip_size__
+.word CONTENT_TYPE_EMC
+.word 0xCCCCCCCC
+.asciz "emummc"
 .align 5
 
 /* splash_screen content header */

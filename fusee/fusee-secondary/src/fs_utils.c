@@ -48,3 +48,21 @@ size_t dump_to_file(const void *src, size_t src_size, const char *filename) {
         return sz;
     }
 }
+
+bool is_valid_folder(const char *path) {
+    struct stat st;
+    if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+        return true;
+    }
+    
+    return false;
+}
+
+bool is_valid_file(const char *path) {
+    struct stat st;
+    if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
+        return true;
+    }
+    
+    return false;
+}

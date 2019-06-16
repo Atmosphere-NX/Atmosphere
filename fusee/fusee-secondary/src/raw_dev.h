@@ -26,9 +26,9 @@
 
 int rawdev_mount_device(const char *name, const device_partition_t *devpart, bool initialize_immediately);
 int rawdev_register_device(const char *name);
-
 int rawdev_unregister_device(const char *name);
-int rawdev_unmount_device(const char *name); /* also unregisters. */
+int rawdev_unmount_device(const char *name);        /* also unregisters. */
+
 int rawdev_unmount_all(void);
 
 #endif

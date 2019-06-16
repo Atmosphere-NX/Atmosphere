@@ -19,6 +19,7 @@
 
 #include "utils.h"
 #include "kip.h"
+#include "exocfg.h"
 
 #define STRATOSPHERE_INI1_SDFILES  0x0
 #define STRATOSPHERE_INI1_EMBEDDED 0x1
@@ -29,7 +30,9 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware);
 ini1_header_t *stratosphere_get_sd_files_ini1(void);
 void stratosphere_free_ini1(void);
 
-ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, unsigned int num_inis);
+emummc_fs_ver_t stratosphere_get_fs_version(void);
+
+ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, unsigned int num_inis, void *emummc, size_t emummc_size);
 
 typedef struct {
     bool has_nogc_config;

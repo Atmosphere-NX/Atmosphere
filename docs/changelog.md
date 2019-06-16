@@ -1,4 +1,28 @@
 # Changelog
+## 0.9.0
++ Creport output was improved significantly.
+  + Thread names are now dumped on crash in addition to 0x100 of TLS from each thread.
+    + This significantly aids debugging efforts for crashes.
+  + Support was added for 32-bit stackframes, so reports can now be generated for 32-bit games.
++ `dmnt`'s Cheat VM was extended to add a new debug opcode.
++ With thanks to/collaboration with @m4xw and @CTCaer, support was added for redirecting NAND to the SD card (emummc).
+  + Please note, this support is very much **beta/experimental**.
+    + It is quite likely we have not identified all bugs -- those will be fixed as they are reported over the next few days/weeks.
+    + In addition, some niceties (e.g. having a separate Atmosphere folder per emummc instance) still need some thought put in before they can be implemented in a way that makes everyone happy.
+    + If you are not an advanced user, you may wish to think about waiting for the inevitable 0.9.1 bugfix update before using emummc as your default boot option.
+      + You may especially wish to consider waiting if you are using Atmosphere on a unit with the RCM bug patched.
+  + Emummc is managed by editing the emummc section of "emummc/emummc.ini".
+    + To enable emummc, set `emummc!emummc_enabled` = 1.
+  + Support is included for redirecting NAND to a partition on the SD card.
+    + This can be done by setting `emummc!emummc_sector` to the start sector of your partition (e.g., `emummc_sector = 0x1A010000`).
+  + Support is also included for redirecting NAND to a collection of loose files on the SD card.
+    + This can be done by setting `emummc!emummc_path` to the folder (with archive bit set) containing the NAND boot partitions' files "boot0" and "boot1", and the raw NAND image files "00", "01", "02", etc. (single "00" file with the whole NAND image requires exFAT mode while multipart NAND can be used in both exFAT and FAT32 modes).
+  + The `Nintendo` contents directory can be redirected arbitrarily.
+    + By default, it will be redirected to `emummc/Nintendo_XXXX`, where `XXXX` is the hexadecimal representation of the emummc's ID.
+      + The current emummc ID may be selected by changing `emummc!emummc_id` in emummc.ini.
+    + This can be set to any arbitrary directory by setting `emummc!emummc_nintendo_path`.
+  + To create a backup usable for emummc, users may use tools provided by the [hekate](https://github.com/CTCaer/hekate) project.
+  + If, when using emummc, you encounter a bug, *please be sure to report it* -- that's the only way we can fix it. :)
 ## 0.8.10
 + A bug was fixed that could cause incorrect system memory allocation on 5.0.0.
   + 5.0.0 should now correctly have an additional 12 MiB allocated for sysmodules.

@@ -37,7 +37,7 @@ ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only #<- important
 DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\" -DATMOSPHERE_RELEASE_VERSION_HASH="0x$(AMSHASH)"
 CFLAGS	:= \
 	-g \
-	-O2 \
+	-Os \
 	-ffunction-sections \
 	-fdata-sections \
 	-fomit-frame-pointer \

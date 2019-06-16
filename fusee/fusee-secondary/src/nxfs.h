@@ -19,8 +19,17 @@
 
 #include "fs_dev.h"
 #include "raw_dev.h"
+#include "emu_dev.h"
 
-int nxfs_mount_all(void);
-int nxfs_unmount_all(void);
+int nxfs_init();
+int nxfs_end();
+
+int nxfs_mount_sd();
+int nxfs_mount_emmc();
+int nxfs_mount_emummc_partition(uint64_t emummc_start_sector);
+int nxfs_mount_emummc_file(const char *emummc_path, int num_parts, uint64_t part_limit);
+int nxfs_unmount_sd();
+int nxfs_unmount_emmc();
+int nxfs_unmount_emummc();
 
 #endif

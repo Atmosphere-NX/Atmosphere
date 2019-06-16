@@ -20,6 +20,9 @@
 #include "smc_api.h"
 
 uint32_t ams_iram_copy(smc_args_t *args);
+uint32_t ams_write_address(smc_args_t *args);
+
+uint32_t ams_get_emummc_config(smc_args_t *args);
 
 void ams_map_irampage(uintptr_t iram_address);
 void ams_unmap_irampage(void);

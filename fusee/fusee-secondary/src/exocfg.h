@@ -17,7 +17,9 @@
 #ifndef FUSEE_EXOSPHERE_CONFIG_H
 #define FUSEE_EXOSPHERE_CONFIG_H
 
+#include <stdint.h>
 #include <atmosphere.h>
+#include "emummc_cfg.h"
 
 /* This serves to set configuration for *exosphere itself*, separate from the SecMon Exosphere mimics. */
 
@@ -31,11 +33,14 @@
 #define EXOSPHERE_FLAGS_DEFAULT (EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV)
 
 typedef struct {
-    unsigned int magic;
-    unsigned int target_firmware;
-    unsigned int flags;
-    unsigned int reserved;
+    uint32_t magic;
+    uint32_t target_firmware;
+    uint32_t flags;
+    uint32_t reserved[5];
+    exo_emummc_config_t emummc_cfg;
 } exosphere_config_t;
+
+_Static_assert(sizeof(exosphere_config_t) == 0x20 + sizeof(exo_emummc_config_t), "exosphere config definition");
 
 #define MAILBOX_EXOSPHERE_CONFIGURATION ((volatile exosphere_config_t *)(0x8000F000ull))
 
