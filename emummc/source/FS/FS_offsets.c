@@ -1,0 +1,143 @@
+/*
+ * Copyright (c) 2019 m4xw <m4x@m4xw.net>
+ * Copyright (c) 2019 Atmosphere-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "FS_offsets.h"
+#include "offsets/100.h"
+#include "offsets/200.h"
+#include "offsets/200_exfat.h"
+#include "offsets/210.h"
+#include "offsets/210_exfat.h"
+#include "offsets/300.h"
+#include "offsets/300_exfat.h"
+#include "offsets/301.h"
+#include "offsets/301_exfat.h"
+#include "offsets/400.h"
+#include "offsets/400_exfat.h"
+#include "offsets/410.h"
+#include "offsets/410_exfat.h"
+#include "offsets/500.h"
+#include "offsets/500_exfat.h"
+#include "offsets/510.h"
+#include "offsets/510_exfat.h"
+#include "offsets/600.h"
+#include "offsets/600_exfat.h"
+#include "offsets/700.h"
+#include "offsets/700_exfat.h"
+#include "offsets/800.h"
+#include "offsets/800_exfat.h"
+#include "../utils/fatal.h"
+
+#define GET_OFFSET_STRUCT_NAME(vers) g_offsets##vers
+
+#define DEFINE_OFFSET_STRUCT(vers) \
+static const fs_offsets_t GET_OFFSET_STRUCT_NAME(vers) = { \
+    .sdmmc_accessor_gc           = FS_OFFSET##vers##_SDMMC_ACCESSOR_GC, \
+    .sdmmc_accessor_sd           = FS_OFFSET##vers##_SDMMC_ACCESSOR_SD, \
+    .sdmmc_accessor_nand         = FS_OFFSET##vers##_SDMMC_ACCESSOR_NAND, \
+    .sdmmc_wrapper_read          = FS_OFFSET##vers##_SDMMC_WRAPPER_READ, \
+    .sdmmc_wrapper_write         = FS_OFFSET##vers##_SDMMC_WRAPPER_WRITE, \
+    .clkrst_set_min_v_clock_rate = FS_OFFSET##vers##_CLKRST_SET_MIN_V_CLK_RATE, \
+    .rtld                        = FS_OFFSET##vers##_RTLD, \
+    .rtld_destination            = FS_OFFSET##vers##_RTLD_DESTINATION, \
+    .lock_mutex                  = FS_OFFSET##vers##_LOCK_MUTEX, \
+    .unlock_mutex                = FS_OFFSET##vers##_UNLOCK_MUTEX, \
+    .sd_mutex                    = FS_OFFSET##vers##_SD_MUTEX, \
+    .nand_mutex                  = FS_OFFSET##vers##_NAND_MUTEX, \
+    .active_partition            = FS_OFFSET##vers##_ACTIVE_PARTITION, \
+    .sdmmc_das_handle            = FS_OFFSET##vers##_SDMMC_DAS_HANDLE, \
+    .shutdown_sd                 = FS_OFFSET##vers##_SHUTDOWN_SD, \
+    .sd_das_init                 = FS_OFFSET##vers##_SD_DAS_INIT, \
+    .nintendo_paths              = FS_OFFSET##vers##_NINTENDO_PATHS, \
+}
+
+// Actually define offset structs
+DEFINE_OFFSET_STRUCT(_100);
+DEFINE_OFFSET_STRUCT(_200);
+DEFINE_OFFSET_STRUCT(_200_EXFAT);
+DEFINE_OFFSET_STRUCT(_210);
+DEFINE_OFFSET_STRUCT(_210_EXFAT);
+DEFINE_OFFSET_STRUCT(_300);
+DEFINE_OFFSET_STRUCT(_300_EXFAT);
+DEFINE_OFFSET_STRUCT(_301);
+DEFINE_OFFSET_STRUCT(_301_EXFAT);
+DEFINE_OFFSET_STRUCT(_400);
+DEFINE_OFFSET_STRUCT(_400_EXFAT);
+DEFINE_OFFSET_STRUCT(_410);
+DEFINE_OFFSET_STRUCT(_410_EXFAT);
+DEFINE_OFFSET_STRUCT(_500);
+DEFINE_OFFSET_STRUCT(_500_EXFAT);
+DEFINE_OFFSET_STRUCT(_510);
+DEFINE_OFFSET_STRUCT(_510_EXFAT);
+DEFINE_OFFSET_STRUCT(_600);
+DEFINE_OFFSET_STRUCT(_600_EXFAT);
+DEFINE_OFFSET_STRUCT(_700);
+DEFINE_OFFSET_STRUCT(_700_EXFAT);
+DEFINE_OFFSET_STRUCT(_800);
+DEFINE_OFFSET_STRUCT(_800_EXFAT);
+
+const fs_offsets_t *get_fs_offsets(enum FS_VER version) {
+    switch (version) {
+        case FS_VER_1_0_0:
+            return &(GET_OFFSET_STRUCT_NAME(_100));
+        case FS_VER_2_0_0:
+            return &(GET_OFFSET_STRUCT_NAME(_200));
+        case FS_VER_2_0_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_200_EXFAT));
+        case FS_VER_2_1_0:
+            return &(GET_OFFSET_STRUCT_NAME(_210));
+        case FS_VER_2_1_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_210_EXFAT));
+        case FS_VER_3_0_0:
+            return &(GET_OFFSET_STRUCT_NAME(_300));
+        case FS_VER_3_0_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_300_EXFAT));
+        case FS_VER_3_0_1:
+            return &(GET_OFFSET_STRUCT_NAME(_301));
+        case FS_VER_3_0_1_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_301_EXFAT));
+        case FS_VER_4_0_0:
+            return &(GET_OFFSET_STRUCT_NAME(_400));
+        case FS_VER_4_0_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_400_EXFAT));
+        case FS_VER_4_1_0:
+            return &(GET_OFFSET_STRUCT_NAME(_410));
+        case FS_VER_4_1_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_410_EXFAT));
+        case FS_VER_5_0_0:
+            return &(GET_OFFSET_STRUCT_NAME(_500));
+        case FS_VER_5_0_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_500_EXFAT));
+        case FS_VER_5_1_0:
+            return &(GET_OFFSET_STRUCT_NAME(_510));
+        case FS_VER_5_1_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_510_EXFAT));
+        case FS_VER_6_0_0:
+            return &(GET_OFFSET_STRUCT_NAME(_600));
+        case FS_VER_6_0_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_600_EXFAT));
+        case FS_VER_7_0_0:
+            return &(GET_OFFSET_STRUCT_NAME(_700));
+        case FS_VER_7_0_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_700_EXFAT));
+        case FS_VER_8_0_0:
+            return &(GET_OFFSET_STRUCT_NAME(_800));
+        case FS_VER_8_0_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_800_EXFAT));
+        default:
+            fatal_abort(Fatal_UnknownVersion);
+    }
+}

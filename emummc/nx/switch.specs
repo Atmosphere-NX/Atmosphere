@@ -1,0 +1,8 @@
+%rename link                old_link
+
+*link:
+%(old_link) -T %:getenv(PWD /nx/switch.ld) -pie --gc-sections -z text -z nodynamic-undefined-weak --build-id=sha1 --nx-module-name
+
+*startfile:
+crti%O%s crtbegin%O%s
+

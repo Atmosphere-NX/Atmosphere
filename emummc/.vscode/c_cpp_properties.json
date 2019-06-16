@@ -1,0 +1,35 @@
+{
+    "configurations": [
+        {
+            "name": "Switch",
+            "includePath": [
+                "/opt/devkitpro/devkitA64/aarch64-none-elf/include",
+                "/opt/devkitpro/devkitA64/lib/gcc/aarch64-none-elf/8.3.0/include",
+                "${workspaceFolder}/libnx-patched/nx/include",
+                "/opt/devkitpro/portlibs/switch/include",
+                "/opt/devkitpro/portlibs/switch/include/freetype2",
+                "${workspaceFolder}/source",
+                "${workspaceFolder}/source/emmc",
+                "${workspaceFolder}/source/libs/fatfs",
+                "${workspaceFolder}/source/power",
+                "${workspaceFolder}/source/soc",
+                "${workspaceFolder}/source/utils",
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "__aarch64__",
+                "__SWITCH__",
+                "INNER_HEAP_SIZE=0x80000"
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "/opt/devkitpro/devkitA64/bin/aarch64-none-elf-gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}

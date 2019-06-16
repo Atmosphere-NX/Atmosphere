@@ -1,0 +1,81 @@
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPro)
+endif
+
+include $(DEVKITPRO)/devkitA64/base_rules
+
+PORTLIBS	:=	$(PORTLIBS_PATH)/switch
+PATH	:=	$(PORTLIBS)/bin:$(PATH)
+
+LIBNX	?=	$(DEVKITPRO)/libnx
+
+ifeq ($(strip $(APP_TITLE)),)
+APP_TITLE	:=	$(notdir $(OUTPUT))
+endif
+
+ifeq ($(strip $(APP_AUTHOR)),)
+APP_AUTHOR	:=	Unspecified Author
+endif
+
+ifeq ($(strip $(APP_VERSION)),)
+APP_VERSION	:=	1.0.0
+endif
+
+ifeq ($(strip $(APP_ICON)),)
+APP_ICON	:=	$(LIBNX)/default_icon.jpg
+endif
+
+#---------------------------------------------------------------------------------
+%.nacp: $(MAKEFILE_LIST)
+	@nacptool --create "$(APP_TITLE)" "$(APP_AUTHOR)" "$(APP_VERSION)" $@ $(NACPFLAGS)
+	@echo built ... $(notdir $@)
+
+#---------------------------------------------------------------------------------
+%.npdm: $(APP_JSON)
+	@npdmtool $< $@
+	@echo built ... $(notdir $@)
+
+#---------------------------------------------------------------------------------
+define make_pfs0
+	@mkdir -p exefs
+	@[ $(BUILD_EXEFS_SRC) ] && [ -d $(BUILD_EXEFS_SRC) ] && cp -R $(BUILD_EXEFS_SRC)/* exefs || echo > /dev/null
+	@cp $*.nso exefs/main
+	@[ $(APP_JSON) ] && cp $*.npdm exefs/main.npdm || echo > /dev/null
+	@build_pfs0 exefs $@
+	@echo built ... $(notdir $@)
+endef
+
+ifeq ($(strip $(APP_JSON)),)
+%.pfs0: %.nso
+else
+%.pfs0: %.nso %.npdm
+endif
+	$(make_pfs0)
+
+ifeq ($(strip $(APP_JSON)),)
+%.nsp: %.nso
+else
+%.nsp: %.nso %.npdm
+endif
+	$(make_pfs0)
+
+#---------------------------------------------------------------------------------
+%.nso: %.elf
+	@elf2nso $< $@
+	@echo built ... $(notdir $@)
+
+#---------------------------------------------------------------------------------
+%.nro: %.elf
+	@elf2nro $< $@ $(NROFLAGS)
+	@echo built ... $(notdir $@)
+
+#---------------------------------------------------------------------------------
+%.kip: %.elf
+	@elf2kip $< $(APP_JSON) $@
+	@echo built ... $(notdir $@)
+
+#---------------------------------------------------------------------------------
+%.elf:
+	@echo linking $(notdir $@)
+	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	@$(NM) -CSn $@ > $(notdir $*.lst)
