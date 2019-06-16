@@ -17,7 +17,7 @@ else
 EMUMMCDIR ?= $(CURDIR)/../
 endif
 
-include $(EMUMMCDIR)/nx/switch_rules
+include $(DEVKITPRO)/libnx/switch_rules
 
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 
@@ -31,7 +31,7 @@ CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(EMUMMCDIR)/nx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 

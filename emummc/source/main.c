@@ -40,7 +40,7 @@ uintptr_t text_base;
 char inner_heap[INNER_HEAP_SIZE];
 size_t inner_heap_size = INNER_HEAP_SIZE;
 extern char _start;
-extern char __injected_size__;
+extern char __argdata__;
 
 // Nintendo Path
 // TODO
@@ -53,7 +53,7 @@ static char nintendo_path_contents_100[0x100] = "/Nintendo/Contents";
 static const fs_offsets_t *fs_offsets;
 
 // Defined by linkerscript
-#define INJECTED_SIZE ((uintptr_t)&__injected_size__ - (uintptr_t)&_start)
+#define INJECTED_SIZE ((uintptr_t)&__argdata__ - (uintptr_t)&_start)
 #define INJECT_OFFSET(type, offset) (type)(text_base + INJECTED_SIZE + offset)
 
 #define GENERATE_ADD(register, register_target, value) (0x91000000 | value << 10 | register << 5 | register_target)

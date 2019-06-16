@@ -78,7 +78,7 @@ startup:
 
     MOV W0, #0xFFFF8001
     ADR X1, __data_start
-    ADR X2, __end__
+    ADR X2, __argdata__
     SUB X2, X2, X1
     MOV X3, #3
     SVC 0x73
@@ -127,5 +127,5 @@ bss_loop:
     MOV X30, X27
 
     # FS main
-    ADR X16, __injected_size__
+    ADRP X16, __argdata__
     BR X16
