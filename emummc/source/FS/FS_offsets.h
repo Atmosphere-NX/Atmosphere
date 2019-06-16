@@ -24,6 +24,7 @@
 typedef struct {
     int opcode_reg;
     uint32_t adrp_offset;
+    uint32_t add_rel_offset;
 } fs_offsets_nintendo_path_t;
 
 typedef struct {

@@ -154,15 +154,14 @@ void write_nop(uintptr_t source)
     smcWriteAddress32((void *)source, GENERATE_NOP());
 }
 
-void write_adrp_add(int reg, uintptr_t pc, intptr_t destination)
+void write_adrp_add(int reg, uintptr_t pc, uintptr_t add_rel_offset, intptr_t destination)
 {
-    uintptr_t add_opcode_location = pc + sizeof(uint32_t);
+    uintptr_t add_opcode_location = pc + add_rel_offset;
 
     intptr_t offset = (destination & 0xFFFFF000) - (pc & 0xFFFFF000);
     uint32_t opcode_adrp = GENERATE_ADRP(reg, offset);
     uint32_t opcode_add = GENERATE_ADD(reg, reg, (destination & 0x00000FFF));
 
-    // TODO: use 64 write?
     smcWriteAddress32((void *)pc, opcode_adrp);
     smcWriteAddress32((void *)add_opcode_location, opcode_add);
 }
@@ -268,7 +267,7 @@ void setup_nintendo_paths(void)
         {
             intptr_t nintendo_path_location = (intptr_t)&nintendo_path;
             uintptr_t fs_adrp_opcode_location = INJECT_OFFSET(uintptr_t, fs_offsets->nintendo_paths[i].adrp_offset);
-            write_adrp_add(fs_offsets->nintendo_paths[i].opcode_reg, fs_adrp_opcode_location, nintendo_path_location);
+            write_adrp_add(fs_offsets->nintendo_paths[i].opcode_reg, fs_adrp_opcode_location, fs_offsets->nintendo_paths[i].add_rel_offset, nintendo_path_location);
         }
     }
     else
@@ -281,8 +280,8 @@ void setup_nintendo_paths(void)
             intptr_t album_path_location = nintendo_album_path_location + path_len - 6; // "/Album"
             uintptr_t fs_n_adrp_opcode_location = INJECT_OFFSET(uintptr_t, fs_offsets->nintendo_paths[0].adrp_offset);
             uintptr_t fs_adrp_opcode_location = INJECT_OFFSET(uintptr_t, fs_offsets->nintendo_paths[1].adrp_offset);
-            write_adrp_add(fs_offsets->nintendo_paths[0].opcode_reg, fs_n_adrp_opcode_location, nintendo_album_path_location);
-            write_adrp_add(fs_offsets->nintendo_paths[1].opcode_reg, fs_adrp_opcode_location, album_path_location);
+            write_adrp_add(fs_offsets->nintendo_paths[0].opcode_reg, fs_n_adrp_opcode_location, fs_offsets->nintendo_paths[0].add_rel_offset, nintendo_album_path_location);
+            write_adrp_add(fs_offsets->nintendo_paths[1].opcode_reg, fs_adrp_opcode_location, fs_offsets->nintendo_paths[1].add_rel_offset, album_path_location);
         }
         // Do contents path
         {
@@ -291,8 +290,8 @@ void setup_nintendo_paths(void)
             intptr_t contents_path_location = nintendo_contents_path_location + path_len - 9; // "/Contents"
             uintptr_t fs_n_adrp_opcode_location = INJECT_OFFSET(uintptr_t, fs_offsets->nintendo_paths[2].adrp_offset);
             uintptr_t fs_adrp_opcode_location = INJECT_OFFSET(uintptr_t, fs_offsets->nintendo_paths[3].adrp_offset);
-            write_adrp_add(fs_offsets->nintendo_paths[2].opcode_reg, fs_n_adrp_opcode_location, nintendo_contents_path_location);
-            write_adrp_add(fs_offsets->nintendo_paths[3].opcode_reg, fs_adrp_opcode_location, contents_path_location);
+            write_adrp_add(fs_offsets->nintendo_paths[2].opcode_reg, fs_n_adrp_opcode_location, fs_offsets->nintendo_paths[2].add_rel_offset, nintendo_contents_path_location);
+            write_adrp_add(fs_offsets->nintendo_paths[3].opcode_reg, fs_adrp_opcode_location, fs_offsets->nintendo_paths[3].add_rel_offset, contents_path_location);
         }
     }
 }

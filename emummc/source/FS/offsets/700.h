@@ -47,12 +47,12 @@
 // Nintendo Paths
 #define FS_OFFSET_700_NINTENDO_PATHS \
 { \
-    {.opcode_reg = 3, .adrp_offset = 0x0007DA90}, \
-    {.opcode_reg = 3, .adrp_offset = 0x0007F344}, \
-    {.opcode_reg = 3, .adrp_offset = 0x0007F538}, \
-    {.opcode_reg = 3, .adrp_offset = 0x0007F914}, \
-    {.opcode_reg = 4, .adrp_offset = 0x0007FAD8}, \
-    {.opcode_reg = 0, .adrp_offset = 0}, \
+    {.opcode_reg = 3, .adrp_offset = 0x0007DA90, .add_rel_offset = 4}, \
+    {.opcode_reg = 3, .adrp_offset = 0x0007F344, .add_rel_offset = 4}, \
+    {.opcode_reg = 3, .adrp_offset = 0x0007F538, .add_rel_offset = 4}, \
+    {.opcode_reg = 3, .adrp_offset = 0x0007F914, .add_rel_offset = 4}, \
+    {.opcode_reg = 4, .adrp_offset = 0x0007FAD8, .add_rel_offset = 4}, \
+    {.opcode_reg = 0, .adrp_offset = 0, .add_rel_offset = 0}, \
 }
 
 #endif // __FS_700_H__
