@@ -285,6 +285,9 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
                         part_limit = get_file_size(emummc_rawnand_path);
                     }
                     num_parts++;
+                } else {
+                    /* No more image files. */
+                    break;
                 }
             }
 
