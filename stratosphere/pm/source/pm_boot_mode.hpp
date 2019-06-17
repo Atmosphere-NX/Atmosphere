@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -23,7 +23,7 @@ enum BootModeCmd {
     BootMode_Cmd_SetMaintenanceBoot = 1
 };
 
-class BootModeService final : public IServiceObject {        
+class BootModeService final : public IServiceObject {
     private:
         /* Actual commands. */
         void GetBootMode(Out<u32> out);

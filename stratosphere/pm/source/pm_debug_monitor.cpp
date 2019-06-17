@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "pm_registration.hpp"
@@ -43,7 +43,7 @@ Result DebugMonitorService::LaunchDebugProcess(u64 pid) {
 
 Result DebugMonitorService::GetTitleProcessId(Out<u64> pid, u64 tid) {
     std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
-    
+
     std::shared_ptr<Registration::Process> proc = Registration::GetProcessByTitleId(tid);
     if (proc != nullptr) {
         pid.SetValue(proc->pid);
@@ -58,7 +58,7 @@ Result DebugMonitorService::EnableDebugForTitleId(Out<CopiedHandle> event, u64 t
 
 Result DebugMonitorService::GetApplicationProcessId(Out<u64> pid) {
     std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
-    
+
     std::shared_ptr<Registration::Process> app_proc;
     if (Registration::HasApplicationProcess(&app_proc)) {
         pid.SetValue(app_proc->pid);
@@ -87,22 +87,14 @@ Result DebugMonitorService::AtmosphereGetProcessInfo(Out<CopiedHandle> proc_hand
 }
 
 Result DebugMonitorService::AtmosphereGetCurrentLimitInfo(Out<u64> cur_val, Out<u64> lim_val, u32 category, u32 resource) {
-    Result rc;
     if(category > ResourceLimitUtils::ResourceLimitCategory::ResourceLimitCategory_Applet) {
         return ResultKernelInvalidEnumValue;
     }
 
     Handle limit_h = ResourceLimitUtils::GetResourceLimitHandleByCategory((ResourceLimitUtils::ResourceLimitCategory) category);
 
-    rc = svcGetResourceLimitCurrentValue(cur_val.GetPointer(), limit_h, (LimitableResource) resource);
-    if(R_FAILED(rc)) {
-        return rc;
-    }
-
-    rc = svcGetResourceLimitLimitValue(lim_val.GetPointer(), limit_h, (LimitableResource) resource);
-    if(R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(svcGetResourceLimitCurrentValue(cur_val.GetPointer(), limit_h, (LimitableResource) resource));
+    R_TRY(svcGetResourceLimitLimitValue(lim_val.GetPointer(), limit_h, (LimitableResource) resource));
 
     return ResultSuccess;
 }

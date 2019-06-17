@@ -178,7 +178,7 @@ int main(int argc, char **argv)
     s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 3));
     s_server_manager.AddWaitable(new ServiceServer<BootModeService>("pm:bm", 6));
     s_server_manager.AddWaitable(new ServiceServer<InformationService>("pm:info", 3));
-    
+
     /* Loop forever, servicing our services. */
     s_server_manager.Process();
 

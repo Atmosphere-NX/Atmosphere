@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <mutex>
 #include <switch.h>
@@ -23,27 +23,27 @@
 class ProcessWaiter final : public IWaitable {
     public:
         std::shared_ptr<Registration::Process> process;
-        
+
         ProcessWaiter(std::shared_ptr<Registration::Process> p) : process(p) {
             /* ... */
         }
-        
-        std::shared_ptr<Registration::Process> GetProcess() { 
-            return this->process; 
+
+        std::shared_ptr<Registration::Process> GetProcess() {
+            return this->process;
         }
-        
-        /* IWaitable */        
+
+        /* IWaitable */
         Handle GetHandle() override {
             return this->process->handle;
         }
-        
+
         Result HandleSignaled(u64 timeout) override {
             return Registration::HandleSignaledProcess(this->GetProcess());
         }
 };
 
 class ProcessList final {
-    private:      
+    private:
         HosRecursiveMutex m;
 
         HosRecursiveMutex *GetMutex() {
@@ -51,15 +51,15 @@ class ProcessList final {
         }
     public:
         std::vector<std::shared_ptr<Registration::Process>> processes;
-        
+
         void lock() {
             GetMutex()->lock();
         }
-        
+
         void unlock() {
             GetMutex()->unlock();
         }
-        
+
         void try_lock() {
             GetMutex()->try_lock();
         }

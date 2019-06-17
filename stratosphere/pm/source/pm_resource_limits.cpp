@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 
@@ -81,27 +81,24 @@ static u64 g_system_boost_size = 0;
 
 /* Tries to set Resource limits for a category. */
 static Result SetResourceLimits(ResourceLimitUtils::ResourceLimitCategory category, u64 new_memory_size) {
-    Result rc = ResultSuccess;
     u64 old_memory_size = g_resource_limits[category][LimitableResource_Memory];
     g_resource_limits[category][LimitableResource_Memory] = new_memory_size;
     for (unsigned int r = 0; r < 5; r++) {
-        if (R_FAILED((rc = svcSetResourceLimitLimitValue(g_resource_limit_handles[category], (LimitableResource)r, g_resource_limits[category][r])))) {
+        R_TRY_CLEANUP(svcSetResourceLimitLimitValue(g_resource_limit_handles[category], (LimitableResource)r, g_resource_limits[category][r]), {
             g_resource_limits[category][LimitableResource_Memory] = old_memory_size;
-            return rc;
-        }
+        });
     }
-    return rc;
+    return ResultSuccess;
 }
 
 
 static Result SetNewMemoryResourceLimit(ResourceLimitUtils::ResourceLimitCategory category, u64 new_memory_size) {
-    Result rc = ResultSuccess;
     u64 old_memory_size = g_resource_limits[category][LimitableResource_Memory];
     g_resource_limits[category][LimitableResource_Memory] = new_memory_size;
-    if (R_FAILED((rc = svcSetResourceLimitLimitValue(g_resource_limit_handles[category], LimitableResource_Memory, g_resource_limits[category][LimitableResource_Memory])))) {
+    R_TRY_CLEANUP(svcSetResourceLimitLimitValue(g_resource_limit_handles[category], LimitableResource_Memory, g_resource_limits[category][LimitableResource_Memory]), {
         g_resource_limits[category][LimitableResource_Memory] = old_memory_size;
-    }
-    return rc;
+    });
+    return ResultSuccess;
 }
 
 void ResourceLimitUtils::InitializeLimits() {
@@ -133,39 +130,39 @@ void ResourceLimitUtils::InitializeLimits() {
         memcpy(&g_memory_resource_limits, &g_memory_resource_limits_deprecated, sizeof(g_memory_resource_limits_deprecated));
         memcpy(&g_resource_limits, &g_resource_limits_deprecated, sizeof(g_resource_limits));
     }
-    
+
     /* 7.0.0+: Nintendo restricts the number of system threads here, from 0x260 -> 0x60. */
     /* We will not do this. */
-    
+
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_600) {
         /* NOTE: 5 is a fake type, official code does not do this. */
         /* This is done for ease of backwards compatibility. */
         g_memory_limit_type = 5;
-        
+
         /* Starting 6.x, 5 MB of memory is always reserved for system. */
         const u64 reserved_system_size_6x = 0x500000;
-                
+
         /* Get total memory available. */
         u64 total_memory = 0;
         if (R_FAILED(svcGetResourceLimitLimitValue(&total_memory, g_resource_limit_handles[0], LimitableResource_Memory))) {
             std::abort();
         }
-        
+
         /* Get and save application + applet memory. */
         if (R_FAILED(svcGetSystemInfo(&g_memory_resource_limits[g_memory_limit_type][1], 0, 0, 0)) ||
             R_FAILED(svcGetSystemInfo(&g_memory_resource_limits[g_memory_limit_type][2], 0, 0, 1))) {
                 std::abort();
             }
-        
+
         const u64 application_size = g_memory_resource_limits[g_memory_limit_type][1];
         const u64 applet_size = g_memory_resource_limits[g_memory_limit_type][2];
         const u64 reserved_nonsys_size = (application_size + applet_size + reserved_system_size_6x);
-            
+
         /* Ensure there's enough memory for system region. */
         if (reserved_nonsys_size > total_memory) {
             std::abort();
         }
-        
+
         /* Set System memory. */
         g_memory_resource_limits[g_memory_limit_type][0] = total_memory - (reserved_nonsys_size);
     } else {
@@ -249,49 +246,32 @@ Handle ResourceLimitUtils::GetResourceLimitHandleByCategory(ResourceLimitCategor
 }
 
 Result ResourceLimitUtils::BoostSystemMemoryResourceLimit(u64 boost_size) {
-    Result rc = ResultSuccess;
     if (boost_size > g_memory_resource_limits[g_memory_limit_type][ResourceLimitCategory_Application]) {
         return ResultPmInvalidSize;
     }
+
     u64 app_size = g_memory_resource_limits[g_memory_limit_type][ResourceLimitCategory_Application] - boost_size;
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
         if (boost_size < g_system_boost_size) {
-            if (R_FAILED((rc = svcSetUnsafeLimit(boost_size)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = SetNewMemoryResourceLimit(ResourceLimitCategory_Application, app_size)))) {
-                return rc;
-            }
+            R_TRY(svcSetUnsafeLimit(boost_size));
+            R_TRY(SetNewMemoryResourceLimit(ResourceLimitCategory_Application, app_size));
         } else {
-            if (R_FAILED((rc = SetNewMemoryResourceLimit(ResourceLimitCategory_Application, app_size)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = svcSetUnsafeLimit(boost_size)))) {
-                return rc;
-            }
+            R_TRY(SetNewMemoryResourceLimit(ResourceLimitCategory_Application, app_size));
+            R_TRY(svcSetUnsafeLimit(boost_size));
         }
     } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
         u64 sys_size = g_memory_resource_limits[g_memory_limit_type][ResourceLimitCategory_System] + boost_size;
         if (boost_size < g_system_boost_size) {
-            if (R_FAILED((rc = SetResourceLimits(ResourceLimitCategory_System, sys_size)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = SetResourceLimits(ResourceLimitCategory_Application, app_size)))) {
-                return rc;
-            }
+            R_TRY(SetResourceLimits(ResourceLimitCategory_System,      sys_size));
+            R_TRY(SetResourceLimits(ResourceLimitCategory_Application, app_size));
         } else {
-            if (R_FAILED((rc = SetResourceLimits(ResourceLimitCategory_Application, app_size)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = SetResourceLimits(ResourceLimitCategory_System, sys_size)))) {
-                return rc;
-            }
+            R_TRY(SetResourceLimits(ResourceLimitCategory_Application, app_size));
+            R_TRY(SetResourceLimits(ResourceLimitCategory_System,      sys_size));
         }
     } else {
-        rc = ResultKernelConnectionClosed;
+        return ResultKernelConnectionClosed;
     }
-    if (R_SUCCEEDED(rc)) {
-        g_system_boost_size = boost_size;
-    }
-    return rc;
+
+    g_system_boost_size = boost_size;
+    return ResultSuccess;
 }

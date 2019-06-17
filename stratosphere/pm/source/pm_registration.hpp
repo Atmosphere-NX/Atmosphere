@@ -170,7 +170,10 @@ class Registration {
             u64* out_pid;
             Result result;
         };
-
+    private:
+        static Result LaunchProcess(u64 *out_pid, const TidSid tid_sid, const u64 launch_flags);
+    public:
+        /* TODO: Better evaluate public vs private API. */
         static void InitializeSystemResources();
         static IWaitable *GetProcessLaunchStartEvent();
         static ProcessList &GetProcessList();
@@ -203,7 +206,7 @@ class Registration {
 
         static void SignalBootFinished();
 
-        static bool HasApplicationProcess(std::shared_ptr<Process> *out);
+        static bool HasApplicationProcess(std::shared_ptr<Process> *out = nullptr);
 };
 
 #include "pm_process_wait.hpp"

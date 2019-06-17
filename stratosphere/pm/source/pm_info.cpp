@@ -13,14 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include "pm_registration.hpp"
 #include "pm_info.hpp"
 
 Result InformationService::GetTitleId(Out<u64> tid, u64 pid) {
     std::scoped_lock<ProcessList &> lk(Registration::GetProcessList());
-    
+
     std::shared_ptr<Registration::Process> proc = Registration::GetProcess(pid);
     if (proc != NULL) {
         tid.SetValue(proc->tid_sid.title_id);
