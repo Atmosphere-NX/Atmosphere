@@ -387,10 +387,7 @@ Result SecureMonitorWrapper::GenerateRandomBytes(void *out, size_t size) {
     for (size_t ofs = 0; ofs < size; ofs += CtrDrbg::MaxRequestSize) {
         const size_t cur_size = std::min(size - ofs, CtrDrbg::MaxRequestSize);
 
-        Result rc = GenerateRandomBytesInternal(cur_dst, size);
-        if (R_FAILED(rc)) {
-            return rc;
-        }
+        R_TRY(GenerateRandomBytesInternal(cur_dst, size));
         cur_dst += cur_size;
     }
 
@@ -399,10 +396,7 @@ Result SecureMonitorWrapper::GenerateRandomBytes(void *out, size_t size) {
 
 Result SecureMonitorWrapper::IsDevelopment(bool *out) {
     u64 is_retail;
-    Result rc = this->GetConfig(&is_retail, SplConfigItem_IsRetail);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->GetConfig(&is_retail, SplConfigItem_IsRetail));
 
     *out = (is_retail == 0);
     return ResultSuccess;
@@ -432,15 +426,11 @@ Result SecureMonitorWrapper::GenerateAesKek(AccessKey *out_access_key, const Key
 }
 
 Result SecureMonitorWrapper::LoadAesKey(u32 keyslot, const void *owner, const AccessKey &access_key, const KeySource &key_source) {
-    Result rc = ValidateAesKeyslot(keyslot, owner);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(ValidateAesKeyslot(keyslot, owner));
     return ConvertToSplResult(SmcWrapper::LoadAesKey(keyslot, access_key, key_source));
 }
 
 Result SecureMonitorWrapper::GenerateAesKey(AesKey *out_key, const AccessKey &access_key, const KeySource &key_source) {
-    Result rc;
     SmcResult smc_rc;
 
     static const KeySource s_generate_aes_key_source = {
@@ -448,9 +438,7 @@ Result SecureMonitorWrapper::GenerateAesKey(AesKey *out_key, const AccessKey &ac
     };
 
     ScopedAesKeyslot keyslot_holder(this);
-    if (R_FAILED((rc = keyslot_holder.Allocate()))) {
-        return rc;
-    }
+    R_TRY(keyslot_holder.Allocate());
 
     smc_rc = SmcWrapper::LoadAesKey(keyslot_holder.GetKeyslot(), access_key, s_generate_aes_key_source);
     if (smc_rc == SmcResult_Success) {
@@ -461,25 +449,18 @@ Result SecureMonitorWrapper::GenerateAesKey(AesKey *out_key, const AccessKey &ac
 }
 
 Result SecureMonitorWrapper::DecryptAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 option) {
-    Result rc;
-
     static const KeySource s_decrypt_aes_key_source = {
         .data = {0x11, 0x70, 0x24, 0x2B, 0x48, 0x69, 0x11, 0xF1, 0x11, 0xB0, 0x0C, 0x47, 0x7C, 0xC3, 0xEF, 0x7E}
     };
 
     AccessKey access_key;
-    if (R_FAILED((rc = GenerateAesKek(&access_key, s_decrypt_aes_key_source, generation, option)))) {
-        return rc;
-    }
+    R_TRY(GenerateAesKek(&access_key, s_decrypt_aes_key_source, generation, option));
 
     return GenerateAesKey(out_key, access_key, key_source);
 }
 
 Result SecureMonitorWrapper::CryptAesCtr(void *dst, size_t dst_size, u32 keyslot, const void *owner, const void *src, size_t src_size, const IvCtr &iv_ctr) {
-    Result rc = ValidateAesKeyslot(keyslot, owner);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(ValidateAesKeyslot(keyslot, owner));
 
     /* Succeed immediately if there's nothing to crypt. */
     if (src_size == 0) {
@@ -546,10 +527,7 @@ Result SecureMonitorWrapper::CryptAesCtr(void *dst, size_t dst_size, u32 keyslot
 }
 
 Result SecureMonitorWrapper::ComputeCmac(Cmac *out_cmac, u32 keyslot, const void *owner, const void *data, size_t size) {
-    Result rc = ValidateAesKeyslot(keyslot, owner);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(ValidateAesKeyslot(keyslot, owner));
 
     if (size > MaxWorkBufferSize) {
         return ResultSplInvalidSize;
@@ -594,10 +572,7 @@ Result SecureMonitorWrapper::FreeAesKeyslot(u32 keyslot, const void *owner) {
         return ResultSuccess;
     }
 
-    Result rc = ValidateAesKeyslot(keyslot, owner);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(ValidateAesKeyslot(keyslot, owner));
 
     /* Clear the keyslot. */
     {
@@ -827,10 +802,7 @@ Result SecureMonitorWrapper::DecryptLotusMessage(u32 *out_size, void *dst, size_
     }
 
     /* Nintendo doesn't check this result code, but we will. */
-    Result rc = SecureExpMod(g_work_buffer, 0x100, base, base_size, mod, mod_size, SmcSecureExpModMode_Lotus);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(SecureExpMod(g_work_buffer, 0x100, base, base_size, mod, mod_size, SmcSecureExpModMode_Lotus));
 
     size_t data_size = DecodeRsaOaep(dst, dst_size, label_digest, label_digest_size, g_work_buffer, 0x100);
     if (data_size == 0) {
@@ -846,10 +818,7 @@ Result SecureMonitorWrapper::GenerateSpecificAesKey(AesKey *out_key, const KeySo
 }
 
 Result SecureMonitorWrapper::LoadTitleKey(u32 keyslot, const void *owner, const AccessKey &access_key) {
-    Result rc = ValidateAesKeyslot(keyslot, owner);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(ValidateAesKeyslot(keyslot, owner));
     return ConvertToSplResult(SmcWrapper::LoadTitleKey(keyslot, access_key));
 }
 

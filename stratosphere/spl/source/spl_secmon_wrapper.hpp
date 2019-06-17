@@ -129,11 +129,9 @@ class SecureMonitorWrapper {
                 }
 
                 Result Allocate() {
-                    Result rc = this->secmon_wrapper->AllocateAesKeyslot(&this->slot, this);
-                    if (R_SUCCEEDED(rc)) {
-                        this->has_slot = true;
-                    }
-                    return rc;
+                    R_TRY(this->secmon_wrapper->AllocateAesKeyslot(&this->slot, this));
+                    this->has_slot = true;
+                    return ResultSuccess;
                 }
         };
 };
