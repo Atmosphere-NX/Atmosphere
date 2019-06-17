@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 #include "ldr_shell.hpp"
@@ -34,10 +34,7 @@ Result ShellService::SetExternalContentSource(Out<MovedHandle> out, u64 tid) {
     Handle server_h;
     Handle client_h;
 
-    Result rc;
-    if (R_FAILED(rc = svcCreateSession(&server_h, &client_h, 0, 0))) {
-        return rc;
-    }
+    R_TRY(svcCreateSession(&server_h, &client_h, 0, 0));
 
     Service service;
     serviceCreate(&service, client_h);

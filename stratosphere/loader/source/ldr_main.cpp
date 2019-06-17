@@ -116,10 +116,10 @@ int main(int argc, char **argv)
     s_server_manager.AddWaitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
     s_server_manager.AddWaitable(new ServiceServer<ShellService>("ldr:shel", 3));
     s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
-        
+
     /* Loop forever, servicing our services. */
     s_server_manager.Process();
-    
+
 	return 0;
 }
 

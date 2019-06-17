@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 #include <algorithm>
@@ -28,15 +28,15 @@ Result LaunchQueue::Add(u64 tid, const char *args, u64 arg_size) {
     if (arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {
         return ResultLoaderTooLongArgument;
     }
-    
+
     int idx = GetFreeIndex(tid);
     if (idx == LAUNCH_QUEUE_FULL) {
         return ResultLoaderTooManyArguments;
     }
-    
+
     g_launch_queue[idx].tid = tid;
     g_launch_queue[idx].arg_size = arg_size;
-    
+
     std::copy(args, args + arg_size, g_launch_queue[idx].args);
     return ResultSuccess;
 }
@@ -46,7 +46,7 @@ Result LaunchQueue::AddCopy(u64 tid_base, u64 tid) {
     if (idx == LAUNCH_QUEUE_FULL) {
         return ResultSuccess;
     }
-    
+
     return Add(tid, g_launch_queue[idx].args, g_launch_queue[idx].arg_size);
 }
 
@@ -55,12 +55,12 @@ Result LaunchQueue::AddItem(const LaunchItem *item) {
     if (item->arg_size > LAUNCH_QUEUE_ARG_SIZE_MAX) {
         return ResultLoaderTooLongArgument;
     }
-    
+
     int idx = GetFreeIndex(item->tid);
     if (idx == LAUNCH_QUEUE_FULL) {
         return ResultLoaderTooManyArguments;
     }
-    
+
     g_launch_queue[idx] = *item;
     return ResultSuccess;
 }

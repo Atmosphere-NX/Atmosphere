@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstdio>
@@ -49,14 +49,14 @@ static bool MatchesBuildId(const char *name, size_t name_len, const u8 *build_id
                 return false;
         }
     }
-    
+
     /* Read build id from name. */
     u8 build_id_from_name[0x20] = {0};
     for (unsigned int name_ofs = 0, id_ofs = 0; name_ofs < name_len - 4; id_ofs++) {
         build_id_from_name[id_ofs] |= HexNybbleToU8(name[name_ofs++]) << 4;
         build_id_from_name[id_ofs] |= HexNybbleToU8(name[name_ofs++]);
     }
-    
+
     return memcmp(build_id, build_id_from_name, sizeof(build_id_from_name)) == 0;
 }
 
@@ -68,7 +68,7 @@ static void ApplyIpsPatch(u8 *mapped_nso, size_t mapped_size, bool is_ips32, FIL
         } else if (!is_ips32 && memcmp(buffer, IPS_TAIL, 3) == 0) {
             break;
         }
-        
+
         /* Offset of patch. */
         u32 patch_offset;
         if (is_ips32) {
@@ -76,27 +76,27 @@ static void ApplyIpsPatch(u8 *mapped_nso, size_t mapped_size, bool is_ips32, FIL
         } else {
            patch_offset = (buffer[0] << 16) | (buffer[1] << 8) | (buffer[2]);
         }
-        
+
         /* Size of patch. */
         if (fread(buffer, 2, 1, f_ips) != 1) {
             break;
         }
         u32 patch_size = (buffer[0] << 8) | (buffer[1]);
-        
+
         /* Check for RLE encoding. */
         if (patch_size == 0) {
             /* Size of RLE. */
             if (fread(buffer, 2, 1, f_ips) != 1) {
                 break;
             }
-            
+
             u32 rle_size = (buffer[0] << 8) | (buffer[1]);
-            
+
             /* Value for RLE. */
             if (fread(buffer, 1, 1, f_ips) != 1) {
                 break;
             }
-            
+
             if (patch_offset < sizeof(NsoUtils::NsoHeader)) {
                 if (patch_offset + rle_size > sizeof(NsoUtils::NsoHeader)) {
                     u32 diff = sizeof(NsoUtils::NsoHeader) - patch_offset;

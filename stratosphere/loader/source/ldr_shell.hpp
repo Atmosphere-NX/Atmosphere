@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -31,7 +31,7 @@ class ShellService final : public IServiceObject {
         /* Actual commands. */
         Result AddTitleToLaunchQueue(u64 tid, InPointer<char> args, u32 args_size);
         void ClearLaunchQueue();
-        
+
         /* Atmosphere commands. */
         Result SetExternalContentSource(Out<MovedHandle> out, u64 tid);
         void ClearExternalContentSource(u64 tid);

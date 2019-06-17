@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 
@@ -25,7 +25,7 @@ enum DebugMonitorServiceCmd {
     Dmnt_Cmd_GetProcessModuleInfo = 2
 };
 
-class DebugMonitorService final : public IServiceObject {        
+class DebugMonitorService final : public IServiceObject {
     private:
         /* Actual commands. */
         Result AddTitleToLaunchQueue(u64 tid, InPointer<char> args, u32 args_size);

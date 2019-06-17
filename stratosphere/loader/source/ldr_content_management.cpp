@@ -67,7 +67,6 @@ static std::map<u64, ContentManagement::ExternalContentSource> g_external_conten
 
 Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
     char path[FS_MAX_PATH] = {0};
-    Result rc;
 
     /* We defer SD card mounting, so if relevant ensure it is mounted. */
     if (!g_has_initialized_fs_dev) {
@@ -82,9 +81,7 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
         return ResultSuccess;
     }
 
-    if (R_FAILED(rc = ResolveContentPath(path, tid, sid))) {
-        return rc;
-    }
+    R_TRY(ResolveContentPath(path, tid, sid));
 
     /* Fix up path. */
     for (unsigned int i = 0; i < FS_MAX_PATH && path[i] != '\x00'; i++) {
@@ -95,20 +92,17 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
 
     /* Always re-initialize fsp-ldr, in case it's closed */
     DoWithSmSession([&]() {
-        rc = fsldrInitialize();
+        if (R_FAILED(fsldrInitialize())) {
+            std::abort();
+        }
     });
-    if (R_FAILED(rc)) {
-        return rc;
-    }
     ON_SCOPE_EXIT { fsldrExit(); };
 
-    if (R_FAILED(rc = fsldrOpenCodeFileSystem(tid, path, &g_CodeFileSystem))) {
-        return rc;
-    }
+    R_TRY(fsldrOpenCodeFileSystem(tid, path, &g_CodeFileSystem));
 
     fsdevMountDevice("code", g_CodeFileSystem);
     TryMountHblNspOnSd();
-    return rc;
+    return ResultSuccess;
 }
 
 Result ContentManagement::UnmountCode() {
@@ -139,14 +133,12 @@ void ContentManagement::TryMountHblNspOnSd() {
 Result ContentManagement::MountCodeNspOnSd(u64 tid) {
     char path[FS_MAX_PATH+1] = {0};
     snprintf(path, FS_MAX_PATH, "@Sdcard:/atmosphere/titles/%016lx/exefs.nsp", tid);
-    Result rc = fsOpenFileSystemWithId(&g_CodeFileSystem, 0, FsFileSystemType_ApplicationPackage, path);
 
-    if (R_SUCCEEDED(rc)) {
-        fsdevMountDevice("code", g_CodeFileSystem);
-        TryMountHblNspOnSd();
-    }
+    R_TRY(fsOpenFileSystemWithId(&g_CodeFileSystem, 0, FsFileSystemType_ApplicationPackage, path));
+    fsdevMountDevice("code", g_CodeFileSystem);
+    TryMountHblNspOnSd();
 
-    return rc;
+    return ResultSuccess;
 }
 
 Result ContentManagement::MountCodeForTidSid(Registration::TidSid *tid_sid) {
@@ -154,39 +146,29 @@ Result ContentManagement::MountCodeForTidSid(Registration::TidSid *tid_sid) {
 }
 
 Result ContentManagement::ResolveContentPath(char *out_path, u64 tid, FsStorageId sid) {
-    Result rc;
-    LrRegisteredLocationResolver reg;
-    LrLocationResolver lr;
     char path[FS_MAX_PATH] = {0};
 
     /* Try to get the path from the registered resolver. */
-    if (R_FAILED(rc = lrOpenRegisteredLocationResolver(&reg))) {
-        return rc;
-    }
+    LrRegisteredLocationResolver reg;
+    R_TRY(lrOpenRegisteredLocationResolver(&reg));
+    ON_SCOPE_EXIT { serviceClose(&reg.s); };
 
-    if (R_SUCCEEDED(rc = lrRegLrResolveProgramPath(&reg, tid, path))) {
-        strncpy(out_path, path, FS_MAX_PATH);
-    } else if (rc != ResultLrProgramNotFound) {
-        return rc;
-    }
+    R_TRY_CATCH(lrRegLrResolveProgramPath(&reg, tid, path)) {
+        R_CATCH(ResultLrProgramNotFound) {
+            /* Program wasn't found via registered resolver, fall back to the normal resolver. */
+            LrLocationResolver lr;
+            R_TRY(lrOpenLocationResolver(sid, &lr));
+            ON_SCOPE_EXIT { serviceClose(&lr.s); };
 
-    serviceClose(&reg.s);
-    if (R_SUCCEEDED(rc)) {
-        return rc;
-    }
+            R_TRY(lrLrResolveProgramPath(&lr, tid, path));
 
-    /* If getting the path from the registered resolver fails, fall back to the normal resolver. */
-    if (R_FAILED(rc = lrOpenLocationResolver(sid, &lr))) {
-        return rc;
-    }
+            strncpy(out_path, path, FS_MAX_PATH);
+            return ResultSuccess;
+        }
+    } R_END_TRY_CATCH;
 
-    if (R_SUCCEEDED(rc = lrLrResolveProgramPath(&lr, tid, path))) {
-        strncpy(out_path, path, FS_MAX_PATH);
-    }
-
-    serviceClose(&lr.s);
-
-    return rc;
+    strncpy(out_path, path, FS_MAX_PATH);
+    return ResultSuccess;
 }
 
 Result ContentManagement::ResolveContentPathForTidSid(char *out_path, Registration::TidSid *tid_sid) {
@@ -194,18 +176,11 @@ Result ContentManagement::ResolveContentPathForTidSid(char *out_path, Registrati
 }
 
 Result ContentManagement::RedirectContentPath(const char *path, u64 tid, FsStorageId sid) {
-    Result rc;
     LrLocationResolver lr;
+    R_TRY(lrOpenLocationResolver(sid, &lr));
+    ON_SCOPE_EXIT { serviceClose(&lr.s); };
 
-    if (R_FAILED(rc = lrOpenLocationResolver(sid, &lr))) {
-        return rc;
-    }
-
-    rc = lrLrRedirectProgramPath(&lr, tid, path);
-
-    serviceClose(&lr.s);
-
-    return rc;
+    return lrLrRedirectProgramPath(&lr, tid, path);
 }
 
 Result ContentManagement::RedirectContentPathForTidSid(const char *path, Registration::TidSid *tid_sid) {
@@ -382,7 +357,7 @@ void ContentManagement::TryMountSdCard() {
                     can_mount = false;
                     break;
                 } else {
-                    svcCloseHandle(tmp_hnd);   
+                    svcCloseHandle(tmp_hnd);
                 }
             }
         });

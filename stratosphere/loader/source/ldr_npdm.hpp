@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <cstdio>
@@ -25,7 +25,7 @@
 #define MAGIC_ACI0 0x30494341
 #define MAGIC_ACID 0x44494341
 
-class NpdmUtils { 
+class NpdmUtils {
     public:
         struct NpdmHeader {
             u32 magic;
@@ -91,17 +91,17 @@ class NpdmUtils {
             NpdmInfo info;
             u8 buffer[0x8000];
         };
-        
+
         static_assert(sizeof(NpdmHeader) == 0x80, "Incorrectly defined NpdmHeader!");
         static_assert(sizeof(NpdmAcid) == 0x240, "Incorrectly defined NpdmAcid!");
         static_assert(sizeof(NpdmAci0) == 0x40, "Incorrectly defined NpdmAci0!");
-        
-        static u32 GetApplicationType(u32 *caps, size_t num_caps);
-        static u32 GetApplicationTypeRaw(u32 *caps, size_t num_caps);
-        
-        static Result ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size_t num_restrict_caps, u32 *&cur_cap, size_t &caps_remaining);
-        static Result ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32 *aci0_caps, size_t num_aci0_caps);
-        
+
+        static u32 GetApplicationType(const u32 *caps, size_t num_caps);
+        static u32 GetApplicationTypeRaw(const u32 *caps, size_t num_caps);
+
+        static Result ValidateCapabilityAgainstRestrictions(const u32 *restrict_caps, size_t num_restrict_caps, const u32 *&cur_cap, size_t &caps_remaining);
+        static Result ValidateCapabilities(const u32 *acid_caps, size_t num_acid_caps, const u32 *aci0_caps, size_t num_aci0_caps);
+
         static FILE *OpenNpdmFromECS(ContentManagement::ExternalContentSource *ecs);
         static FILE *OpenNpdmFromHBL();
         static FILE *OpenNpdmFromExeFS();

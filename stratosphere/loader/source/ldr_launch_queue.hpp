@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 
@@ -22,16 +22,16 @@
 
 #define LAUNCH_QUEUE_ARG_SIZE_MAX (0x8000)
 
-class LaunchQueue { 
+class LaunchQueue {
     public:
         struct LaunchItem {
             u64 tid;
             u64 arg_size;
             char args[LAUNCH_QUEUE_ARG_SIZE_MAX];
         };
-        
+
         static LaunchQueue::LaunchItem *GetItem(u64 tid);
-        
+
         static Result Add(u64 tid, const char *args, u64 arg_size);
         static Result AddItem(const LaunchItem *item);
         static Result AddCopy(u64 tid_base, u64 new_tid);

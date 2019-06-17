@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <algorithm>
 #include <cstdio>
@@ -47,7 +47,7 @@ FILE *NsoUtils::OpenNsoFromExeFS(unsigned int index) {
     return fopen(g_nso_path, "rb");
 }
 
-FILE *NsoUtils::OpenNsoFromSdCard(unsigned int index, u64 title_id) {  
+FILE *NsoUtils::OpenNsoFromSdCard(unsigned int index, u64 title_id) {
     std::fill(g_nso_path, g_nso_path + FS_MAX_PATH, 0);
     snprintf(g_nso_path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/exefs/%s", title_id, NsoUtils::GetNsoFileName(index));
     return fopen(g_nso_path, "rb");
@@ -69,7 +69,7 @@ FILE *NsoUtils::OpenNso(unsigned int index, u64 title_id) {
     if ((ecs = ContentManagement::GetExternalContentSource(title_id)) != nullptr) {
         return OpenNsoFromECS(index, ecs);
     }
-    
+
     /* First, check HBL. */
     if (ContentManagement::ShouldOverrideContentsWithHBL(title_id)) {
         return OpenNsoFromHBL(index);
@@ -84,7 +84,7 @@ FILE *NsoUtils::OpenNso(unsigned int index, u64 title_id) {
             return NULL;
         }
     }
-    
+
     /* Finally, default to exefs. */
     return OpenNsoFromExeFS(index);
 }
@@ -103,11 +103,11 @@ unsigned char *NsoUtils::GetNsoBuildId(unsigned int index) {
 
 Result NsoUtils::LoadNsoHeaders(u64 title_id) {
     FILE *f_nso;
-    
+
     /* Zero out the cache. */
     std::fill(g_nso_present, g_nso_present + NSO_NUM_MAX, false);
     std::fill(g_nso_headers, g_nso_headers + NSO_NUM_MAX, NsoUtils::NsoHeader{});
-    
+
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         f_nso = OpenNso(i, title_id);
         if (f_nso != NULL) {
@@ -124,7 +124,7 @@ Result NsoUtils::LoadNsoHeaders(u64 title_id) {
             i = 11;
         }
     }
-    
+
     return ResultSuccess;
 }
 
@@ -133,7 +133,7 @@ Result NsoUtils::ValidateNsoLoadSet() {
     if (!g_nso_present[1]) {
         return ResultLoaderInvalidNso;
     }
-    
+
     /* Behavior switches depending on whether we have an rtld. */
     if (g_nso_present[0]) {
          /* If we have an rtld, dst offset for .text must be 0 for all other NSOs. */
@@ -154,7 +154,7 @@ Result NsoUtils::ValidateNsoLoadSet() {
             return ResultLoaderInvalidNso;
         }
     }
-    
+
     return ResultSuccess;
 }
 
@@ -188,7 +188,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
             }
         }
     }
-    
+
     /* Calculate ASLR extents for address space type. */
     u64 addspace_start, addspace_size;
     if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_200)) {
@@ -221,12 +221,12 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
     if (extents->total_size > addspace_size) {
         return ResultKernelOutOfMemory;
     }
-    
+
     u64 aslr_slide = 0;
     if (addspace_type & 0x20) {
         aslr_slide = StratosphereRandomUtils::GetRandomU64((addspace_size - extents->total_size) >> 21) << 21;
     }
-    
+
     extents->base_address = addspace_start + aslr_slide;
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         if (g_nso_present[i]) {
@@ -236,7 +236,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
     if (extents->args_address) {
         extents->args_address += extents->base_address;
     }
-    
+
     return ResultSuccess;
 }
 
@@ -253,24 +253,24 @@ Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int s
     if ((u32)(size | out_size) >> 31) {
         return ResultLoaderInvalidNso;
     }
-    
+
     u8 *dst_addr = map_base + g_nso_headers[index].segments[segment].dst_offset;
     u8 *load_addr = is_compressed ? map_end - size : dst_addr;
-    
-    
+
+
     fseek(f_nso, g_nso_headers[index].segments[segment].file_offset, SEEK_SET);
     if (fread(load_addr, 1, size, f_nso) != size) {
         return ResultLoaderInvalidNso;
     }
-    
-    
+
+
     if (is_compressed) {
         if (LZ4_decompress_safe((char *)load_addr, (char *)dst_addr, size, out_size) != (int)out_size) {
             return ResultLoaderInvalidNso;
         }
     }
 
-    
+
     if (check_hash) {
         u8 hash[0x20] = {0};
         sha256CalculateHash(hash, dst_addr, out_size);
@@ -279,35 +279,32 @@ Result NsoUtils::LoadNsoSegment(u64 title_id, unsigned int index, unsigned int s
             return ResultLoaderInvalidNso;
         }
     }
-    
+
     return ResultSuccess;
 }
 
-Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLoadExtents *extents, u8 *args, u32 args_size) {
-    Result rc = ResultLoaderInvalidNso;
+Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLoadExtents *extents, const u8 *args, u32 args_size) {
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
         if (g_nso_present[i]) {
             AutoCloseMap nso_map;
-            if (R_FAILED((rc = nso_map.Open(process_h, extents->nso_addresses[i], extents->nso_sizes[i])))) {
-                return rc;
-            }
-            
+            R_TRY(nso_map.Open(process_h, extents->nso_addresses[i], extents->nso_sizes[i]));
+
             u8 *map_base = (u8 *)nso_map.GetMappedAddress();
-                        
-            FILE *f_nso = OpenNso(i, title_id);
-            if (f_nso == NULL) {
-                /* TODO: Is there a better error to return here? */
-                return ResultLoaderInvalidNso;
-            }
-            for (unsigned int seg = 0; seg < 3; seg++) {
-                if (R_FAILED((rc = LoadNsoSegment(title_id, i, seg, f_nso, map_base, map_base + extents->nso_sizes[i])))) {
-                    fclose(f_nso);
-                    return rc;
+
+            /* Load NSO segments from file. */
+            {
+                FILE *f_nso = OpenNso(i, title_id);
+                if (f_nso == NULL) {
+                    /* TODO: Is there a better error to return here? */
+                    return ResultLoaderInvalidNso;
+                }
+                ON_SCOPE_EXIT { fclose(f_nso); };
+
+                for (unsigned int seg = 0; seg < 3; seg++) {
+                    R_TRY(LoadNsoSegment(title_id, i, seg, f_nso, map_base, map_base + extents->nso_sizes[i]));
                 }
             }
-            
-            fclose(f_nso);
-            f_nso = NULL;
+
             /* Zero out memory before .text. */
             u64 text_base = 0, text_start = g_nso_headers[i].segments[0].dst_offset;
             std::fill(map_base + text_base, map_base + text_start, 0);
@@ -320,12 +317,12 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
             /* Zero out .bss. */
             u64 bss_base = rw_start + g_nso_headers[i].segments[2].decomp_size, bss_size = g_nso_headers[i].segments[2].align_or_total_size;
             std::fill(map_base + bss_base, map_base + bss_base + bss_size, 0);
-            
+
             /* Apply patches to loaded module. */
             PatchUtils::ApplyPatches(&g_nso_headers[i], map_base, bss_base);
-            
+
             nso_map.Close();
-            
+
             for (unsigned int seg = 0; seg < 3; seg++) {
                 u64 size = g_nso_headers[i].segments[seg].decomp_size;
                 if (seg == 2) {
@@ -334,33 +331,27 @@ Result NsoUtils::LoadNsosIntoProcessMemory(Handle process_h, u64 title_id, NsoLo
                 size += 0xFFF;
                 size &= ~0xFFFULL;
                 const static unsigned int segment_perms[3] = {5, 1, 3};
-                if (R_FAILED((rc = svcSetProcessMemoryPermission(process_h, extents->nso_addresses[i] + g_nso_headers[i].segments[seg].dst_offset, size, segment_perms[seg])))) {
-                    return rc;
-                }
+                R_TRY(svcSetProcessMemoryPermission(process_h, extents->nso_addresses[i] + g_nso_headers[i].segments[seg].dst_offset, size, segment_perms[seg]));
             }
         }
     }
-    
+
     /* Map in arguments. */
-    if (args != NULL && args_size) {
+    if (args != nullptr && args_size) {
         AutoCloseMap args_map;
-        if (R_FAILED((rc = args_map.Open(process_h, extents->args_address, extents->args_size)))) {
-            return rc;
-        }
-        
+        R_TRY(args_map.Open(process_h, extents->args_address, extents->args_size));
+
         NsoArgument *arg_map_base = (NsoArgument *)args_map.GetMappedAddress();
-        
+
         arg_map_base->allocated_space = extents->args_size;
         arg_map_base->args_size = args_size;
         std::fill(arg_map_base->_0x8, arg_map_base->_0x8 + sizeof(arg_map_base->_0x8), 0);
         std::copy(args, args + args_size, arg_map_base->arguments);
-        
-        args_map.Close();  
-        
-        if (R_FAILED((rc = svcSetProcessMemoryPermission(process_h, extents->args_address, extents->args_size, 3)))) {
-            return rc;
-        }
+
+        args_map.Close();
+
+        R_TRY(svcSetProcessMemoryPermission(process_h, extents->args_address, extents->args_size, 3));
     }
-    
-    return rc;
+
+    return ResultSuccess;
 }

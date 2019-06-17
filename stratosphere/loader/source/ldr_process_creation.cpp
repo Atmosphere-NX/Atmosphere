@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <algorithm>
 #include <stratosphere.hpp>
@@ -28,27 +28,27 @@
 Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle reslimit_h, u64 arg_flags, ProcessInfo *out_proc_info) {
     /* Initialize a ProcessInfo using an npdm. */
     *out_proc_info = {};
-    
+
     /* Copy all but last char of name, insert NULL terminator. */
     std::copy(npdm->header->title_name, npdm->header->title_name + sizeof(out_proc_info->name) - 1, out_proc_info->name);
     out_proc_info->name[sizeof(out_proc_info->name) - 1] = 0;
-    
+
     /* Set title id. */
     out_proc_info->title_id = npdm->aci0->title_id;
-    
+
     /* Set process category. */
     out_proc_info->process_category = npdm->header->process_category;
-    
+
     /* Copy reslimit handle raw. */
     out_proc_info->reslimit_h = reslimit_h;
-    
+
     /* Set IsAddressSpace64Bit, AddressSpaceType. */
     if (npdm->header->mmu_flags & 8) {
         /* Invalid Address Space Type. */
         return ResultLoaderInvalidMeta;
     }
     out_proc_info->process_flags = (npdm->header->mmu_flags & 0xF);
-    
+
     /* Set Bit 4 (?) and EnableAslr based on argument flags. */
     out_proc_info->process_flags |= ((arg_flags & 3) << 4) ^ 0x20;
     /* Set UseSystemMemBlocks if application type is 1. */
@@ -62,7 +62,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
             }
         }
     }
-    
+
     /* 3.0.0+ System Resource Size. */
     if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_300)) {
         if (npdm->header->system_resource_size & 0x1FFFFF) {
@@ -83,7 +83,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
     } else {
         out_proc_info->system_resource_num_pages = 0;
     }
-    
+
     /* 5.0.0+ Pool Partition. */
     if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_500)) {
         u32 pool_partition_id = (npdm->acid->flags >> 2) & 0xF;
@@ -106,7 +106,7 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
                 return ResultLoaderInvalidMeta;
         }
     }
-    
+
     return ResultSuccess;
 }
 
@@ -117,92 +117,82 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     Registration::Process *target_process;
     Handle process_h = 0;
     u64 process_id = 0;
-    bool mounted_code = false;
-    Result rc;
-    
+
     /* Get the process from the registration queue. */
     target_process = Registration::GetProcess(index);
-    if (target_process == NULL) {
+    if (target_process == nullptr) {
         return ResultLoaderProcessNotRegistered;
     }
-    
+
     /* Mount the title's exefs. */
+    bool mounted_code = false;
     if (target_process->tid_sid.storage_id != FsStorageId_None) {
-        rc = ContentManagement::MountCodeForTidSid(&target_process->tid_sid);  
-        if (R_FAILED(rc)) {
-            return rc;
-        }
+        R_TRY(ContentManagement::MountCodeForTidSid(&target_process->tid_sid));
         mounted_code = true;
     } else {
         if (R_SUCCEEDED(ContentManagement::MountCodeNspOnSd(target_process->tid_sid.title_id))) {
             mounted_code = true;
         }
     }
-    
+    ON_SCOPE_EXIT {
+        if (mounted_code) {
+            if (R_FAILED(ContentManagement::UnmountCode()) && target_process->tid_sid.storage_id != FsStorageId_None) {
+                std::abort();
+            }
+        }
+    };
+
     /* Load the process's NPDM. */
-    rc = NpdmUtils::LoadNpdmFromCache(target_process->tid_sid.title_id, &npdm_info);
-    if (R_FAILED(rc)) {
-        goto CREATE_PROCESS_END;
-    }
-    
+    R_TRY(NpdmUtils::LoadNpdmFromCache(target_process->tid_sid.title_id, &npdm_info));
+
     /* Validate the title we're loading is what we expect. */
     if (npdm_info.aci0->title_id < npdm_info.acid->title_id_range_min || npdm_info.aci0->title_id > npdm_info.acid->title_id_range_max) {
-        rc = ResultLoaderInvalidProgramId;
-        goto CREATE_PROCESS_END;
+        return ResultLoaderInvalidProgramId;
     }
-    
+
     /* Validate that the ACI0 Kernel Capabilities are valid and restricted by the ACID Kernel Capabilities. */
-    rc = NpdmUtils::ValidateCapabilities((u32 *)npdm_info.acid_kac, npdm_info.acid->kac_size/sizeof(u32), (u32 *)npdm_info.aci0_kac, npdm_info.aci0->kac_size/sizeof(u32));
-    if (R_FAILED(rc)) {
-        goto CREATE_PROCESS_END;
-    }
-    
+    const u32 *acid_caps = reinterpret_cast<u32 *>(npdm_info.acid_kac);
+    const u32 *aci0_caps = reinterpret_cast<u32 *>(npdm_info.aci0_kac);
+    const size_t num_acid_caps = npdm_info.acid->kac_size / sizeof(*acid_caps);
+    const size_t num_aci0_caps = npdm_info.aci0->kac_size / sizeof(*aci0_caps);
+    R_TRY(NpdmUtils::ValidateCapabilities(acid_caps, num_acid_caps, aci0_caps, num_aci0_caps));
+
     /* Read in all NSO headers, see what NSOs are present. */
-    rc = NsoUtils::LoadNsoHeaders(npdm_info.aci0->title_id);
-    if (R_FAILED(rc)) {
-        goto CREATE_PROCESS_END;
-    }
-    
+    R_TRY(NsoUtils::LoadNsoHeaders(npdm_info.aci0->title_id));
+
     /* Validate that the set of NSOs to be loaded is correct. */
-    rc = NsoUtils::ValidateNsoLoadSet();
-    if (R_FAILED(rc)) {
-        goto CREATE_PROCESS_END;
-    }
-    
+    R_TRY(NsoUtils::ValidateNsoLoadSet());
+
     /* Initialize the ProcessInfo. */
-    rc = ProcessCreation::InitializeProcessInfo(&npdm_info, reslimit_h, arg_flags, &process_info);
-    if (R_FAILED(rc)) {
-        goto CREATE_PROCESS_END;
-    }
-        
+    R_TRY(ProcessCreation::InitializeProcessInfo(&npdm_info, reslimit_h, arg_flags, &process_info));
+
     /* Figure out where NSOs will be mapped, and how much space they (and arguments) will take up. */
-    rc = NsoUtils::CalculateNsoLoadExtents(process_info.process_flags, launch_item != NULL ? launch_item->arg_size : 0, &nso_extents);
-    if (R_FAILED(rc)) {
-        goto CREATE_PROCESS_END;
-    }
-    
+    R_TRY(NsoUtils::CalculateNsoLoadExtents(process_info.process_flags, launch_item != nullptr ? launch_item->arg_size : 0, &nso_extents));
+
     /* Set Address Space information in ProcessInfo. */
     process_info.code_addr = nso_extents.base_address;
     process_info.code_num_pages = nso_extents.total_size + 0xFFF;
     process_info.code_num_pages >>= 12;
-    
+
     /* Call svcCreateProcess(). */
-    rc = svcCreateProcess(&process_h, &process_info, (u32 *)npdm_info.aci0_kac, npdm_info.aci0->kac_size/sizeof(u32));
-    if (R_FAILED(rc)) {
-        goto CREATE_PROCESS_END;
-    }
-    
-    
+    R_TRY(svcCreateProcess(&process_h, &process_info, (u32 *)npdm_info.aci0_kac, npdm_info.aci0->kac_size/sizeof(u32)));
+    auto proc_handle_guard = SCOPE_GUARD {
+        svcCloseHandle(process_h);
+    };
+
+
     /* Load all NSOs into Process memory, and set permissions accordingly. */
-    if (launch_item != NULL) {
-        rc = NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, (u8 *)launch_item->args, launch_item->arg_size); 
-    } else {
-        rc = NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, NULL, 0);    
+    {
+        const u8 *launch_args = nullptr;
+        size_t launch_args_size = 0;
+        if (launch_item != nullptr) {
+            launch_args = reinterpret_cast<const u8 *>(launch_item->args);
+            launch_args_size = launch_item->arg_size;
+        }
+
+        R_TRY(NsoUtils::LoadNsosIntoProcessMemory(process_h, npdm_info.aci0->title_id, &nso_extents, launch_args, launch_args_size));
     }
-    if (R_FAILED(rc)) {
-        goto CREATE_PROCESS_END;
-    }
-    
+
     /* Update the list of registered processes with the new process. */
     svcGetProcessId(&process_id, process_h);
     bool is_64_bit_addspace;
@@ -213,15 +203,13 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     }
     Registration::SetProcessIdTidAndIs64BitAddressSpace(index, process_id, npdm_info.aci0->title_id, is_64_bit_addspace);
     for (unsigned int i = 0; i < NSO_NUM_MAX; i++) {
-        if (NsoUtils::IsNsoPresent(i)) {   
+        if (NsoUtils::IsNsoPresent(i)) {
             Registration::AddModuleInfo(index, nso_extents.nso_addresses[i], nso_extents.nso_sizes[i], NsoUtils::GetNsoBuildId(i));
         }
     }
-    
+
     /* Send the pid/tid pair to anyone interested in man-in-the-middle-attacking it. */
     Registration::AssociatePidTidForMitM(index);
-    
-    rc = ResultSuccess;
 
     /* If HBL, override HTML document path. */
     if (ContentManagement::ShouldOverrideContentsWithHBL(target_process->tid_sid.title_id)) {
@@ -231,20 +219,10 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     /* ECS is a one-shot operation, but we don't clear on failure. */
     ContentManagement::ClearExternalContentSource(target_process->tid_sid.title_id);
 
+    /* Cancel the process handle guard. */
+    proc_handle_guard.Cancel();
 
-CREATE_PROCESS_END:
-    if (mounted_code) {
-        if (R_SUCCEEDED(rc) && target_process->tid_sid.storage_id != FsStorageId_None) {
-            rc = ContentManagement::UnmountCode();
-        } else {
-            ContentManagement::UnmountCode();
-        }
-    }
-    
-    if (R_SUCCEEDED(rc)) {
-        *out_process_h = process_h;
-    } else {
-        svcCloseHandle(process_h);
-    }
-    return rc;
+    /* Write process handle to output. */
+    *out_process_h = process_h;
+    return ResultSuccess;
 }

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -41,15 +41,15 @@ class ProcessManagerService final : public IServiceObject {
         u32 aci0_fah_size;
         u8 ac_buffer[0x3E0];
     };
-    
-    static_assert(sizeof(ProcessManagerService::ProgramInfo) == 0x400, "Incorrect ProgramInfo definition.");      
+
+    static_assert(sizeof(ProcessManagerService::ProgramInfo) == 0x400, "Incorrect ProgramInfo definition.");
     private:
         /* Actual commands. */
         Result CreateProcess(Out<MovedHandle> proc_h, u64 index, u32 flags, CopiedHandle reslimit_h);
         Result GetProgramInfo(OutPointerWithServerSize<ProcessManagerService::ProgramInfo, 0x1> out_program_info, Registration::TidSid tid_sid);
         Result RegisterTitle(Out<u64> index, Registration::TidSid tid_sid);
         Result UnregisterTitle(u64 index);
-        
+
         /* Utilities */
         Result PopulateProgramInfoBuffer(ProcessManagerService::ProgramInfo *out, Registration::TidSid *tid_sid);
     public:

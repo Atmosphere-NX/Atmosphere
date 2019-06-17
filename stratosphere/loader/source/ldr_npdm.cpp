@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <algorithm>
 #include <cstdio>
@@ -51,7 +51,7 @@ FILE *NpdmUtils::OpenNpdmFromExeFS() {
     return fopen(g_npdm_path, "rb");
 }
 
-FILE *NpdmUtils::OpenNpdmFromSdCard(u64 title_id) {  
+FILE *NpdmUtils::OpenNpdmFromSdCard(u64 title_id) {
     std::fill(g_npdm_path, g_npdm_path + FS_MAX_PATH, 0);
     snprintf(g_npdm_path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/exefs/main.npdm", title_id);
     return fopen(g_npdm_path, "rb");
@@ -63,12 +63,12 @@ FILE *NpdmUtils::OpenNpdm(u64 title_id) {
     if ((ecs = ContentManagement::GetExternalContentSource(title_id)) != nullptr) {
         return OpenNpdmFromECS(ecs);
     }
-    
+
     /* First, check HBL. */
     if (ContentManagement::ShouldOverrideContentsWithHBL(title_id)) {
         return OpenNpdmFromHBL();
     }
-    
+
     /* Next, check other override. */
     if (ContentManagement::ShouldOverrideContentsWithSD(title_id)) {
         FILE *f_out = OpenNpdmFromSdCard(title_id);
@@ -76,135 +76,124 @@ FILE *NpdmUtils::OpenNpdm(u64 title_id) {
             return f_out;
         }
     }
-    
+
     /* Last resort: real exefs. */
     return OpenNpdmFromExeFS();
 }
 
 Result NpdmUtils::LoadNpdmInternal(FILE *f_npdm, NpdmUtils::NpdmCache *cache) {
-    Result rc;
-    
     cache->info = {};
 
-    rc = ResultFsPathNotFound;
     if (f_npdm == NULL) {
         /* For generic "Couldn't open the file" error, just say the file doesn't exist. */
-        return rc;
+        return ResultFsPathNotFound;
     }
-    
+
     fseek(f_npdm, 0, SEEK_END);
     size_t npdm_size = ftell(f_npdm);
     fseek(f_npdm, 0, SEEK_SET);
-    
-    rc = ResultLoaderTooLargeMeta;
+
     if ((npdm_size > sizeof(cache->buffer)) || (fread(cache->buffer, 1, npdm_size, f_npdm) != npdm_size)) {
         fclose(f_npdm);
-        return rc;
+        return ResultLoaderTooLargeMeta;
     }
-    
+
     fclose(f_npdm);
-    
-    rc = ResultLoaderInvalidMeta;
+
     if (npdm_size < sizeof(NpdmUtils::NpdmHeader)) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     /* For ease of access... */
     cache->info.header = (NpdmUtils::NpdmHeader *)(cache->buffer);
     NpdmInfo *info = &cache->info;
-    
+
     if (info->header->magic != MAGIC_META) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     /* 7.0.0 added 0x10 as a valid bit to NPDM flags. */
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
         if (info->header->mmu_flags > 0x1F) {
-            return rc;
+            return ResultLoaderInvalidMeta;
         }
     } else {
         if (info->header->mmu_flags > 0xF) {
-            return rc;
+            return ResultLoaderInvalidMeta;
         }
     }
-    
+
     if (info->header->aci0_offset < sizeof(NpdmUtils::NpdmHeader) || info->header->aci0_size < sizeof(NpdmUtils::NpdmAci0) || info->header->aci0_offset + info->header->aci0_size > npdm_size) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     info->aci0 = (NpdmAci0 *)(cache->buffer + info->header->aci0_offset);
-    
+
     if (info->aci0->magic != MAGIC_ACI0) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     if (info->aci0->fah_size > info->header->aci0_size || info->aci0->fah_offset < sizeof(NpdmUtils::NpdmAci0) || info->aci0->fah_offset + info->aci0->fah_size > info->header->aci0_size) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     info->aci0_fah = (void *)((uintptr_t)info->aci0 + info->aci0->fah_offset);
-    
+
     if (info->aci0->sac_size > info->header->aci0_size || info->aci0->sac_offset < sizeof(NpdmUtils::NpdmAci0) || info->aci0->sac_offset + info->aci0->sac_size > info->header->aci0_size) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     info->aci0_sac = (void *)((uintptr_t)info->aci0 + info->aci0->sac_offset);
-    
+
     if (info->aci0->kac_size > info->header->aci0_size || info->aci0->kac_offset < sizeof(NpdmUtils::NpdmAci0) || info->aci0->kac_offset + info->aci0->kac_size > info->header->aci0_size) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     info->aci0_kac = (void *)((uintptr_t)info->aci0 + info->aci0->kac_offset);
-    
+
     if (info->header->acid_offset < sizeof(NpdmUtils::NpdmHeader) || info->header->acid_size < sizeof(NpdmUtils::NpdmAcid) || info->header->acid_offset + info->header->acid_size > npdm_size) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     info->acid = (NpdmAcid *)(cache->buffer + info->header->acid_offset);
-    
+
     if (info->acid->magic != MAGIC_ACID) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     /* TODO: Check if retail flag is set if not development hardware. */
-    
+
     if (info->acid->fac_size > info->header->acid_size || info->acid->fac_offset < sizeof(NpdmUtils::NpdmAcid) || info->acid->fac_offset + info->acid->fac_size > info->header->acid_size) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     info->acid_fac = (void *)((uintptr_t)info->acid + info->acid->fac_offset);
-    
+
     if (info->acid->sac_size > info->header->acid_size || info->acid->sac_offset < sizeof(NpdmUtils::NpdmAcid) || info->acid->sac_offset + info->acid->sac_size > info->header->acid_size) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     info->acid_sac = (void *)((uintptr_t)info->acid + info->acid->sac_offset);
-    
+
     if (info->acid->kac_size > info->header->acid_size || info->acid->kac_offset < sizeof(NpdmUtils::NpdmAcid) || info->acid->kac_offset + info->acid->kac_size > info->header->acid_size) {
-        return rc;
+        return ResultLoaderInvalidMeta;
     }
-    
+
     info->acid_kac = (void *)((uintptr_t)info->acid + info->acid->kac_offset);
-    
-    rc = ResultSuccess;
-    return rc;
+
+    return ResultSuccess;
 }
 
 Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
-    Result rc;
-        
-    rc = LoadNpdmInternal(OpenNpdm(tid), &g_npdm_cache);
-    
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-    
+    /* Load and validate the NPDM. */
+    R_TRY(LoadNpdmInternal(OpenNpdm(tid), &g_npdm_cache));
+
     NpdmInfo *info = &g_npdm_cache.info;
     /* Override the ACID/ACI0 title ID, in order to facilitate HBL takeover of any title. */
     info->acid->title_id_range_min = tid;
     info->acid->title_id_range_max = tid;
     info->aci0->title_id = tid;
-    
+
     if (ContentManagement::ShouldOverrideContentsWithHBL(tid) && R_SUCCEEDED(LoadNpdmInternal(OpenNpdmFromExeFS(), &g_original_npdm_cache))) {
         NpdmInfo *original_info = &g_original_npdm_cache.info;
         /* Fix pool partition. */
@@ -226,17 +215,15 @@ Result NpdmUtils::LoadNpdm(u64 tid, NpdmInfo *out) {
             }
         }
     }
-        
+
     /* We validated! */
     info->title_id = tid;
     *out = *info;
-    rc = ResultSuccess;
-    
-    return rc;
+
+    return ResultSuccess;
 }
 
-Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size_t num_restrict_caps, u32 *&cur_cap, size_t &caps_remaining) {
-    Result rc = ResultSuccess;
+Result NpdmUtils::ValidateCapabilityAgainstRestrictions(const u32 *restrict_caps, size_t num_restrict_caps, const u32 *&cur_cap, size_t &caps_remaining) {
     u32 desc = *cur_cap++;
     caps_remaining--;
     unsigned int low_bits = 0;
@@ -248,7 +235,6 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
     u32 r_desc = 0;
     switch (low_bits) {
         case 3: /* Kernel flags. */
-            rc = ResultLoaderInvalidCapabilityKernelFlags;
             for (size_t i = 0; i < num_restrict_caps; i++) {
                 if ((restrict_caps[i] & 0xF) == 0x7) {
                     r_desc = restrict_caps[i] >> 4;
@@ -283,18 +269,16 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                     }
                     if (highest_cpu_id > r_highest_cpu_id) {
                        break;
-                    }       
+                    }
                     /* Valid! */
-                    rc = ResultSuccess;
-                    break;
+                    return ResultSuccess;
                 }
             }
-            break;
+            return ResultLoaderInvalidCapabilityKernelFlags;
         case 4: /* Syscall mask. */
-            rc = ResultLoaderInvalidCapabilitySyscallMask;
             for (size_t i = 0; i < num_restrict_caps; i++) {
                 if ((restrict_caps[i] & 0x1F) == 0xF) {
-                    r_desc = restrict_caps[i] >> 5;              
+                    r_desc = restrict_caps[i] >> 5;
                     u32 syscall_base = (desc >> 24);
                     u32 r_syscall_base = (r_desc >> 24);
                     if (syscall_base != r_syscall_base) {
@@ -306,32 +290,31 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                         break;
                     }
                     /* Valid! */
-                    rc = ResultSuccess;
-                    break;
+                    return ResultSuccess;
                 }
             }
-            break;
-        case 6: /* Map IO/Normal. */ {
-                rc = ResultLoaderInvalidCapabilityMapRange;
+            return ResultLoaderInvalidCapabilitySyscallMask;
+        case 6: /* Map IO/Normal. */
+            {
                 if (caps_remaining == 0) {
-                    break;
+                    return ResultLoaderInvalidCapabilityMapRange;
                 }
                 u32 next_cap = *cur_cap++;
                 caps_remaining--;
                 if ((next_cap & 0x7F) != 0x3F) {
-                    break;
+                    return ResultLoaderInvalidCapabilityMapRange;
                 }
                 u32 next_desc = next_cap >> 7;
                 u32 base_addr = desc & 0xFFFFFF;
                 u32 base_size = next_desc & 0xFFFFFF;
                 /* Size check the mapping. */
                 if (base_size >> 20) {
-                    break;
+                    return ResultLoaderInvalidCapabilityMapRange;
                 }
                 u32 base_end = base_addr + base_size;
                 /* Validate it's possible to validate this mapping. */
                 if (num_restrict_caps < 2) {
-                    break;
+                    return ResultLoaderInvalidCapabilityMapRange;
                 }
                 for (size_t i = 0; i < num_restrict_caps - 1; i++) {
                     if ((restrict_caps[i] & 0x7F) == 0x3F) {
@@ -360,28 +343,24 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                             continue;
                         }
                         /* Valid! */
-                        rc = ResultSuccess;
-                        break;
+                        return ResultSuccess;
                     }
                 }
             }
-            break;
+            return ResultLoaderInvalidCapabilityMapRange;
         case 7: /* Map Normal Page. */
-            rc = ResultLoaderInvalidCapabilityMapPage;
             for (size_t i = 0; i < num_restrict_caps; i++) {
                 if ((restrict_caps[i] & 0xFF) == 0x7F) {
-                    r_desc = restrict_caps[i] >> 8;              
+                    r_desc = restrict_caps[i] >> 8;
                     if (r_desc != desc) {
                         continue;
                     }
                     /* Valid! */
-                    rc = ResultSuccess;
-                    break;
+                    return ResultSuccess;
                 }
             }
-            break;
-        case 11: /* IRQ Pair. */ 
-            rc = ResultSuccess;
+            return ResultLoaderInvalidCapabilityMapPage;
+        case 11: /* IRQ Pair. */
             for (unsigned int irq_i = 0; irq_i < 2; irq_i++) {
                 u32 irq = desc & 0x3FF;
                 desc >>= 10;
@@ -398,18 +377,16 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
                         }
                     }
                     if (!found) {
-                        rc = ResultLoaderInvalidCapabilityInterruptPair;
-                        break;
+                        return ResultLoaderInvalidCapabilityInterruptPair;
                     }
                 }
             }
-            break;
+            return ResultSuccess;
         case 13: /* App Type. */
-            rc = ResultLoaderInvalidCapabilityApplicationType;
             if (num_restrict_caps) {
                 for (size_t i = 0; i < num_restrict_caps; i++) {
                     if ((restrict_caps[i] & 0x3FFF) == 0x1FFF) {
-                        r_desc = restrict_caps[i] >> 14;              
+                        r_desc = restrict_caps[i] >> 14;
                         break;
                     }
                 }
@@ -418,15 +395,14 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
             }
             if (desc == r_desc) {
                 /* Valid! */
-                rc = ResultSuccess;
+                return ResultSuccess;
             }
-            break;
+            return ResultLoaderInvalidCapabilityApplicationType;
         case 14: /* Kernel Release Version. */
-            rc = ResultLoaderInvalidCapabilityKernelVersion;
             if (num_restrict_caps) {
                 for (size_t i = 0; i < num_restrict_caps; i++) {
                     if ((restrict_caps[i] & 0x7FFF) == 0x3FFF) {
-                        r_desc = restrict_caps[i] >> 15;              
+                        r_desc = restrict_caps[i] >> 15;
                         break;
                     }
                 }
@@ -435,31 +411,28 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
             }
             if (desc == r_desc) {
                 /* Valid! */
-                rc = ResultSuccess;
+                return ResultSuccess;
             }
-            break;
+            return ResultLoaderInvalidCapabilityKernelVersion;
         case 15: /* Handle Table Size. */
-            rc = ResultLoaderInvalidCapabilityHandleTable;
             for (size_t i = 0; i < num_restrict_caps; i++) {
                 if ((restrict_caps[i] & 0xFFFF) == 0x7FFF) {
-                    r_desc = restrict_caps[i] >> 16;    
+                    r_desc = restrict_caps[i] >> 16;
                     desc &= 0x3FF;
                     r_desc &= 0x3FF;
                     if (desc > r_desc) {
                         break;
                     }
                     /* Valid! */
-                    rc = ResultSuccess;
-                    break;
+                    return ResultSuccess;
                 }
             }
-            break;
+            return ResultLoaderInvalidCapabilityHandleTable;
         case 16: /* Debug Flags. */
-            rc = ResultLoaderInvalidCapabilityDebugFlags;
             if (num_restrict_caps) {
                 for (size_t i = 0; i < num_restrict_caps; i++) {
                     if ((restrict_caps[i] & 0x1FFFF) == 0xFFFF) {
-                        r_desc = restrict_caps[i] >> 17;              
+                        r_desc = restrict_caps[i] >> 17;
                         break;
                     }
                 }
@@ -468,33 +441,29 @@ Result NpdmUtils::ValidateCapabilityAgainstRestrictions(u32 *restrict_caps, size
             }
             if ((desc & ~r_desc) == 0) {
                 /* Valid! */
-                rc = ResultSuccess;
+                return ResultSuccess;
             }
-            break;
+            return ResultLoaderInvalidCapabilityDebugFlags;
         case 32: /* Empty Descriptor. */
-            rc = ResultSuccess;
-            break;
+            return ResultSuccess;
         default: /* Unrecognized Descriptor. */
-            rc = ResultLoaderUnknownCapability;
-            break;
+            return ResultLoaderUnknownCapability;
     }
-    return rc;
 }
 
-Result NpdmUtils::ValidateCapabilities(u32 *acid_caps, size_t num_acid_caps, u32 *aci0_caps, size_t num_aci0_caps) {
-    Result rc = ResultSuccess;
+Result NpdmUtils::ValidateCapabilities(const u32 *acid_caps, size_t num_acid_caps, const u32 *aci0_caps, size_t num_aci0_caps) {
+    const u32 *cur_cap = aci0_caps;
     size_t remaining = num_aci0_caps;
-    u32 *cur_cap = aci0_caps;
+
     while (remaining) {
-        if (R_FAILED((rc = ValidateCapabilityAgainstRestrictions(acid_caps, num_acid_caps, cur_cap, remaining)))) {
-            break;
-        }
+        /* Validate, update capabilities. cur_cap and remaining passed by reference. */
+        R_TRY(ValidateCapabilityAgainstRestrictions(acid_caps, num_acid_caps, cur_cap, remaining));
     }
 
-    return rc;
+    return ResultSuccess;
 }
 
-u32 NpdmUtils::GetApplicationType(u32 *caps, size_t num_caps) {
+u32 NpdmUtils::GetApplicationType(const u32 *caps, size_t num_caps) {
     u32 application_type = 0;
     for (unsigned int i = 0; i < num_caps; i++) {
         if ((caps[i] & 0x3FFF) == 0x1FFF) {
@@ -514,7 +483,7 @@ u32 NpdmUtils::GetApplicationType(u32 *caps, size_t num_caps) {
 }
 
 /* Like GetApplicationType, except this returns the raw kac descriptor value. */
-u32 NpdmUtils::GetApplicationTypeRaw(u32 *caps, size_t num_caps) {
+u32 NpdmUtils::GetApplicationTypeRaw(const u32 *caps, size_t num_caps) {
     u32 application_type = 0;
     for (unsigned int i = 0; i < num_caps; i++) {
         if ((caps[i] & 0x3FFF) == 0x1FFF) {

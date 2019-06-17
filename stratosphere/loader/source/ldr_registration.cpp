@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <algorithm>
 #include <cstdio>
@@ -50,12 +50,12 @@ Registration::Process *Registration::GetProcessByProcessId(u64 pid) {
     return NULL;
 }
 
-bool Registration::RegisterTidSid(const TidSid *tid_sid, u64 *out_index) { 
+bool Registration::RegisterTidSid(const TidSid *tid_sid, u64 *out_index) {
     Registration::Process *free_process = GetFreeProcess();
     if (free_process == NULL) {
         return false;
     }
-    
+
     /* Reset the process. */
     *free_process = {};
     free_process->tid_sid = *tid_sid;
@@ -70,7 +70,7 @@ bool Registration::UnregisterIndex(u64 index) {
     if (target_process == NULL) {
         return false;
     }
-    
+
     /* Reset the process. */
     *target_process = {};
     return true;
@@ -82,9 +82,9 @@ Result Registration::GetRegisteredTidSid(u64 index, Registration::TidSid *out) {
     if (target_process == NULL) {
         return ResultLoaderProcessNotRegistered;
     }
-    
+
     *out = target_process->tid_sid;
-    
+
     return ResultSuccess;
 }
 
@@ -93,7 +93,7 @@ void Registration::SetProcessIdTidAndIs64BitAddressSpace(u64 index, u64 process_
     if (target_process == NULL) {
         return;
     }
-    
+
     target_process->process_id = process_id;
     target_process->title_id = tid;
     target_process->is_64_bit_addspace = is_64_bit_addspace;
@@ -120,13 +120,13 @@ Result Registration::GetProcessModuleInfo(LoaderModuleInfo *out, u32 max_out, u6
         return ResultLoaderProcessNotRegistered;
     }
     u32 cur = 0;
-    
+
     for (unsigned int i = 0; i < Registration::MaxModuleInfos && cur < max_out; i++) {
         if (target_process->module_infos[i].in_use) {
             out[cur++] = target_process->module_infos[i].info;
         }
     }
-    
+
     *num_written = cur;
 
     return ResultSuccess;
@@ -137,7 +137,7 @@ void Registration::AssociatePidTidForMitM(u64 index) {
     if (target_process == NULL) {
         return;
     }
-    
+
     Handle sm_hnd;
     Result rc = svcConnectToNamedPort(&sm_hnd, "sm:");
     if (R_SUCCEEDED(rc)) {
@@ -182,12 +182,12 @@ void Registration::AssociatePidTidForMitM(u64 index) {
                 u64 process_id;
                 u64 title_id;
             } *raw = (decltype(raw))ipcPrepareHeader(&c, sizeof(*raw));
-            
+
             raw->magic = SFCI_MAGIC;
             raw->cmd_id = 65002;
             raw->process_id = target_process->process_id;
             raw->title_id = target_process->tid_sid.title_id;
-            
+
             ipcDispatch(sm_hnd);
         }
         svcCloseHandle(sm_hnd);

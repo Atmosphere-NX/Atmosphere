@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <array>
@@ -34,7 +34,7 @@ class Registration {
             u64 title_id;
             FsStorageId storage_id;
         };
-        
+
         struct Process {
             bool in_use;
             bool is_64_bit_addspace;
@@ -44,12 +44,12 @@ class Registration {
             Registration::TidSid tid_sid;
             std::array<Registration::ModuleInfoHolder, MaxModuleInfos> module_infos;
         };
-        
+
         struct List {
             std::array<Registration::Process, MaxProcesses> processes;
             u64 num_processes;
         };
-        
+
         static Registration::Process *GetFreeProcess();
         static Registration::Process *GetProcess(u64 index);
         static Registration::Process *GetProcessByProcessId(u64 pid);
@@ -59,7 +59,7 @@ class Registration {
         static void SetProcessIdTidAndIs64BitAddressSpace(u64 index, u64 process_id, u64 tid, bool is_64_bit_addspace);
         static void AddModuleInfo(u64 index, u64 base_address, u64 size, const unsigned char *build_id);
         static Result GetProcessModuleInfo(LoaderModuleInfo *out, u32 max_out, u64 process_id, u32 *num_written);
-        
+
         /* Atmosphere MitM Extension. */
         static void AssociatePidTidForMitM(u64 index);
 };

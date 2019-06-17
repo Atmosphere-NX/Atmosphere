@@ -13,12 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
 
-class MapUtils { 
+class MapUtils {
     public:
         struct AddressSpaceInfo {
             u64 heap_base;
@@ -47,29 +47,28 @@ class AutoCloseMap {
         ~AutoCloseMap() {
             Close();
         }
-        
+
         void *GetMappedAddress() {
             return this->mapped_address;
         }
-        
+
         Result Open(Handle process_h, u64 address, u64 size) {
-            Result rc;
             u64 try_address;
-            if (R_FAILED(rc = MapUtils::LocateSpaceForMap(&try_address, size))) {
-                return rc;
-            }
-            
-            if (R_FAILED((rc = svcMapProcessMemory((void *)try_address, process_h, address, size)))) {
-                return rc;
-            }
-            
-            this->mapped_address = (void *)try_address;
+
+            /* Find an address to map at. */
+            R_TRY(MapUtils::LocateSpaceForMap(&try_address, size));
+
+            /* Actually map at address. */
+            void *try_map_address = reinterpret_cast<void *>(try_address);
+            R_TRY(svcMapProcessMemory(try_map_address, process_h, address, size));
+
+            this->mapped_address = try_map_address;
             this->process_handle = process_h;
             this->base_address = address;
             this->size = size;
             return ResultSuccess;
         }
-        
+
         void Close() {
             if (this->mapped_address) {
                 if (R_FAILED(svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size))) {
