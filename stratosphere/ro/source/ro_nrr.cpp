@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <cstdio>
 #include <algorithm>
@@ -24,22 +24,22 @@
 
 Result NrrUtils::ValidateNrrSignature(const NrrHeader *header) {
     /* TODO: Implement RSA-2048 PSS..... */
-    
+
     /* TODO: Check PSS fixed-key signature. */
     if (false) {
         return ResultRoNotAuthorized;
     }
-    
+
     /* Check TitleID pattern is valid. */
     if ((header->title_id & header->title_id_mask) != header->title_id_pattern) {
         return ResultRoNotAuthorized;
     }
-    
+
     /* TODO: Check PSS signature over hashes. */
     if (false) {
         return ResultRoNotAuthorized;
     }
-    
+
     return ResultSuccess;
 }
 
@@ -50,24 +50,21 @@ Result NrrUtils::ValidateNrr(const NrrHeader *header, u64 size, u64 title_id, Ro
     if (header->nrr_size != size) {
         return ResultRoInvalidSize;
     }
-    
+
     bool ease_nro_restriction = Registration::ShouldEaseNroRestriction();
-    
+
     /* Check signature. */
-    Result rc = ValidateNrrSignature(header);
-    if (R_FAILED(rc)) {
-        if (!ease_nro_restriction) {
-            return rc;
-        }
+    if (!ease_nro_restriction) {
+        R_TRY(ValidateNrrSignature(header));
     }
-    
+
     /* Check title id. */
     if (title_id != header->title_id) {
         if (!ease_nro_restriction) {
             return ResultRoInvalidNrr;
         }
     }
-    
+
     /* Check type. */
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
         if (!enforce_type || expected_type != static_cast<RoModuleType>(header->nrr_type)) {
@@ -76,6 +73,6 @@ Result NrrUtils::ValidateNrr(const NrrHeader *header, u64 size, u64 title_id, Ro
             }
         }
     }
-    
+
     return ResultSuccess;
 }

@@ -151,10 +151,7 @@ Result Registration::LoadNrr(RoProcessContext *context, u64 title_id, u64 nrr_ad
     /* Map. */
     NrrHeader *header = nullptr;
     u64 mapped_code_address = 0;
-    Result rc = MapAndValidateNrr(&header, &mapped_code_address, context->process_handle, title_id, nrr_address, nrr_size, expected_type, enforce_type);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(MapAndValidateNrr(&header, &mapped_code_address, context->process_handle, title_id, nrr_address, nrr_size, expected_type, enforce_type));
 
     /* Set NRR info. */
     nrr_info->header = header;
@@ -237,23 +234,18 @@ Result Registration::LoadNro(u64 *out_address, RoProcessContext *context, u64 nr
     nro_info->bss_heap_size = bss_size;
 
     /* Map the NRO. */
-    Result rc = MapNro(&nro_info->base_address, context->process_handle, nro_address, nro_size, bss_address, bss_size);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(MapNro(&nro_info->base_address, context->process_handle, nro_address, nro_size, bss_address, bss_size));
 
     /* Validate the NRO (parsing region extents). */
     u64 rx_size, ro_size, rw_size;
-    if (R_FAILED((rc = ValidateNro(&nro_info->module_id, &rx_size, &ro_size, &rw_size, context, nro_info->base_address, nro_size, bss_size)))) {
+    R_TRY_CLEANUP(ValidateNro(&nro_info->module_id, &rx_size, &ro_size, &rw_size, context, nro_info->base_address, nro_size, bss_size), {
         UnmapNro(context->process_handle, nro_info->base_address, nro_address, bss_address, bss_size, nro_size, 0);
-        return rc;
-    }
+    });
 
     /* Set NRO perms. */
-    if (R_FAILED((rc = SetNroPerms(context->process_handle, nro_info->base_address, rx_size, ro_size, rw_size + bss_size)))) {
+    R_TRY_CLEANUP(SetNroPerms(context->process_handle, nro_info->base_address, rx_size, ro_size, rw_size + bss_size), {
         UnmapNro(context->process_handle, nro_info->base_address, nro_address, bss_address, bss_size, rx_size + ro_size, rw_size);
-        return rc;
-    }
+    });
 
     nro_info->code_size = rx_size + ro_size;
     nro_info->rw_size = rw_size;
@@ -337,20 +329,13 @@ Result Registration::ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 
 }
 
 Result Registration::SetNroPerms(Handle process_handle, u64 base_address, u64 rx_size, u64 ro_size, u64 rw_size) {
-    Result rc;
     const u64 rx_offset = 0;
     const u64 ro_offset = rx_offset + rx_size;
     const u64 rw_offset = ro_offset + ro_size;
 
-    if (R_FAILED((rc = svcSetProcessMemoryPermission(process_handle, base_address + rx_offset, rx_size, 5)))) {
-        return rc;
-    }
-    if (R_FAILED((rc = svcSetProcessMemoryPermission(process_handle, base_address + ro_offset, ro_size, 1)))) {
-        return rc;
-    }
-    if (R_FAILED((rc = svcSetProcessMemoryPermission(process_handle, base_address + rw_offset, rw_size, 3)))) {
-        return rc;
-    }
+    R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + rx_offset, rx_size, Perm_Rx));
+    R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + ro_offset, ro_size, Perm_R ));
+    R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + rw_offset, rw_size, Perm_Rw));
 
     return ResultSuccess;
 }
@@ -387,19 +372,10 @@ Result Registration::UnloadNro(RoProcessContext *context, u64 nro_address) {
 }
 
 Result Registration::MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, u64 title_id, u64 nrr_heap_address, u64 nrr_heap_size, RoModuleType expected_type, bool enforce_type) {
-    Result rc;
     MappedCodeMemory nrr_mcm;
 
     /* First, map the NRR. */
-    if (R_FAILED((rc = MapUtils::MapCodeMemoryForProcess(nrr_mcm, process_handle, true, nrr_heap_address, nrr_heap_size)))) {
-        if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
-            /* Try mapping as 32-bit, since we might have guessed wrong on < 3.0.0. */
-            rc = MapUtils::MapCodeMemoryForProcess(nrr_mcm, process_handle, false, nrr_heap_address, nrr_heap_size);
-        }
-        if (R_FAILED(rc)) {
-            return rc;
-        }
-    }
+    R_TRY(MapUtils::MapCodeMemoryForProcess(nrr_mcm, process_handle, nrr_heap_address, nrr_heap_size));
 
     const u64 code_address = nrr_mcm.GetDstAddress();
     u64 map_address;
@@ -414,9 +390,7 @@ Result Registration::MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_c
     }
 
     NrrHeader *nrr_header = reinterpret_cast<NrrHeader *>(map_address);
-    if (R_FAILED((rc = NrrUtils::ValidateNrr(nrr_header, nrr_heap_size, title_id, expected_type, enforce_type)))) {
-        return rc;
-    }
+    R_TRY(NrrUtils::ValidateNrr(nrr_header, nrr_heap_size, title_id, expected_type, enforce_type));
 
     /* Invalidation here actually prevents them from unmapping at scope exit. */
     nrr_map.Invalidate();
@@ -428,16 +402,11 @@ Result Registration::MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_c
 }
 
 Result Registration::UnmapNrr(Handle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address) {
-    Result rc = svcUnmapProcessMemory((void *)header, process_handle, mapped_code_address, nrr_heap_size);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-
+    R_TRY(svcUnmapProcessMemory((void *)header, process_handle, mapped_code_address, nrr_heap_size));
     return svcUnmapProcessCodeMemory(process_handle, mapped_code_address, nrr_heap_address, nrr_heap_size);
 }
 
 Result Registration::MapNro(u64 *out_base_address, Handle process_handle, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size) {
-    Result rc;
     MappedCodeMemory nro_mcm;
     MappedCodeMemory bss_mcm;
     u64 base_address;
@@ -446,28 +415,16 @@ Result Registration::MapNro(u64 *out_base_address, Handle process_handle, u64 nr
     size_t i = 0;
     for (i = 0; i < MapUtils::LocateRetryCount; i++) {
         MappedCodeMemory tmp_nro_mcm;
-        bool is_64_bit = true;
-        if (R_FAILED((rc = MapUtils::MapCodeMemoryForProcess(tmp_nro_mcm, process_handle, is_64_bit, nro_heap_address, nro_heap_size)))) {
-            if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
-                /* Try mapping as 32-bit, since we might have guessed wrong on < 3.0.0. */
-                is_64_bit = false;
-                rc = MapUtils::MapCodeMemoryForProcess(tmp_nro_mcm, process_handle, is_64_bit, nro_heap_address, nro_heap_size);
-            }
-            if (R_FAILED(rc)) {
-                return rc;
-            }
-        }
+        R_TRY(MapUtils::MapCodeMemoryForProcess(tmp_nro_mcm, process_handle, nro_heap_address, nro_heap_size));
         base_address = tmp_nro_mcm.GetDstAddress();
 
         if (bss_heap_size > 0) {
             MappedCodeMemory tmp_bss_mcm(process_handle, base_address + nro_heap_size, bss_heap_address, bss_heap_size);
-            rc = tmp_bss_mcm.GetResult();
-            if (rc == ResultKernelInvalidMemoryState) {
-                continue;
-            }
-            if (R_FAILED(rc)) {
-                return rc;
-            }
+            R_TRY_CATCH(tmp_bss_mcm.GetResult()) {
+                R_CATCH(ResultKernelInvalidMemoryState) {
+                    continue;
+                }
+            } R_END_TRY_CATCH;
 
             if (!MapUtils::CanAddGuardRegions(process_handle, base_address, nro_heap_size + bss_heap_size)) {
                 continue;
@@ -495,26 +452,18 @@ Result Registration::MapNro(u64 *out_base_address, Handle process_handle, u64 nr
 }
 
 Result Registration::UnmapNro(Handle process_handle, u64 base_address, u64 nro_heap_address, u64 bss_heap_address, u64 bss_heap_size, u64 code_size, u64 rw_size) {
-    Result rc;
-
     /* First, unmap bss. */
     if (bss_heap_size > 0) {
-        if (R_FAILED((rc = svcUnmapProcessCodeMemory(process_handle, base_address + code_size + rw_size, bss_heap_address, bss_heap_size)))) {
-            return rc;
-        }
+        R_TRY(svcUnmapProcessCodeMemory(process_handle, base_address + code_size + rw_size, bss_heap_address, bss_heap_size));
     }
 
     /* Next, unmap .rwdata */
     if (rw_size > 0) {
-        if (R_FAILED((rc = svcUnmapProcessCodeMemory(process_handle, base_address + code_size, nro_heap_address + code_size, rw_size)))) {
-            return rc;
-        }
+        R_TRY(svcUnmapProcessCodeMemory(process_handle, base_address + code_size, nro_heap_address + code_size, rw_size));
     }
 
     /* Finally, unmap .text + .rodata. */
-    if (R_FAILED((rc = svcUnmapProcessCodeMemory(process_handle, base_address, nro_heap_address, code_size)))) {
-        return rc;
-    }
+    R_TRY(svcUnmapProcessCodeMemory(process_handle, base_address, nro_heap_address, code_size));
 
     return ResultSuccess;
 }

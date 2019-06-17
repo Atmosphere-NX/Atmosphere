@@ -131,6 +131,6 @@ class MapUtils {
         static Result MapCodeMemoryForProcessModern(MappedCodeMemory &out_mcm, Handle process_handle, u64 base_address, u64 size);
     public:
         static Result LocateSpaceForMap(u64 *out, u64 out_size);
-        static Result MapCodeMemoryForProcess(MappedCodeMemory &out_mcm, Handle process_handle, bool is_64_bit, u64 base_address, u64 size);
+        static Result MapCodeMemoryForProcess(MappedCodeMemory &out_mcm, Handle process_handle, u64 base_address, u64 size);
         static bool CanAddGuardRegions(Handle process_handle, u64 address, u64 size);
 };
