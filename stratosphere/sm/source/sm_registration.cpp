@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <algorithm>
 #include <stratosphere.hpp>
@@ -62,7 +62,7 @@ bool Registration::ShouldInitDefer(u64 service) {
     if (g_end_init_defers) {
         return false;
     }
-    
+
     /* This is a mechanism by which certain services will always be deferred until sm:m receives a special command. */
     /* This can be extended with more services as needed at a later date. */
     constexpr u64 FSP_SRV = EncodeNameConstant("fsp-srv");
@@ -196,11 +196,11 @@ Result Registration::RegisterProcess(u64 pid, u8 *acid_sac, size_t acid_sac_size
     if (proc == NULL) {
         return ResultSmInsufficientProcesses;
     }
-    
+
     if (aci0_sac_size && !ValidateSacAgainstRestriction(acid_sac, acid_sac_size, aci0_sac, aci0_sac_size)) {
         return ResultSmNotAllowed;
     }
-    
+
     proc->pid = pid;
     proc->sac_size = aci0_sac_size;
     std::copy(aci0_sac, aci0_sac + aci0_sac_size, proc->sac);
@@ -212,7 +212,7 @@ Result Registration::UnregisterProcess(u64 pid) {
     if (proc == NULL) {
         return ResultSmInvalidClient;
     }
-    
+
     proc->pid = 0;
     return ResultSuccess;
 }
@@ -233,7 +233,7 @@ Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
         /* Note: This defers the result until later. */
         return ResultServiceFrameworkRequestDeferredByUser;
     }
-    
+
     *out = 0;
     Result rc;
     if (target_service->mitm_pid == 0 || target_service->mitm_pid == pid) {
@@ -262,7 +262,7 @@ Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
             if (R_SUCCEEDED(rc)) {
                 if (resp->should_mitm) {
                     rc = svcConnectToPort(&target_service->mitm_fwd_sess_h, target_service->port_h);
-                    if (R_SUCCEEDED(rc)) {   
+                    if (R_SUCCEEDED(rc)) {
                         rc = svcConnectToPort(out, target_service->mitm_port_h);
                         if (R_SUCCEEDED(rc)) {
                             target_service->mitm_waiting_ack_pid = pid;
@@ -281,22 +281,23 @@ Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
             rc = svcConnectToPort(out, target_service->port_h);
         }
     }
-    if (R_FAILED(rc)) {
-        if ((rc & 0x3FFFFF) == ResultKernelOutOfSessions) {
+    /* Convert Kernel result to SM result. */
+    R_TRY_CATCH(rc) {
+        R_CATCH(ResultKernelOutOfSessions) {
             return ResultSmInsufficientSessions;
         }
-    }
+    } R_END_TRY_CATCH;
 
-    return rc;
+    return ResultSuccess;
 }
 
 Result Registration::GetServiceForPid(u64 pid, u64 service, Handle *out) {
     if (!service) {
         return ResultSmInvalidServiceName;
     }
-    
+
     u64 service_name_len = GetServiceNameLength(service);
-    
+
     /* If the service has bytes after a null terminator, that's no good. */
     if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return ResultSmInvalidServiceName;
@@ -310,18 +311,18 @@ Result Registration::GetServiceForPid(u64 pid, u64 service, Handle *out) {
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_800 && service == EncodeNameConstant("apm:p")) {
         return ResultSmNotAllowed;
     }
-    
+
     if (!IsInitialProcess(pid)) {
         Registration::Process *proc = GetProcessForPid(pid);
         if (proc == NULL) {
             return ResultSmInvalidClient;
         }
-        
+
         if (!IsValidForSac(proc->sac, proc->sac_size, service, false)) {
             return ResultSmNotAllowed;
         }
     }
-    
+
     return GetServiceHandle(pid, service, out);
 }
 
@@ -329,29 +330,29 @@ Result Registration::RegisterServiceForPid(u64 pid, u64 service, u64 max_session
     if (!service) {
         return ResultSmInvalidServiceName;
     }
-    
+
     u64 service_name_len = GetServiceNameLength(service);
-    
+
     /* If the service has bytes after a null terminator, that's no good. */
     if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return ResultSmInvalidServiceName;
     }
-    
+
     if (!IsInitialProcess(pid)) {
         Registration::Process *proc = GetProcessForPid(pid);
         if (proc == NULL) {
             return ResultSmInvalidClient;
         }
-        
+
         if (!IsValidForSac(proc->sac, proc->sac_size, service, true)) {
             return ResultSmNotAllowed;
         }
     }
-    
+
     if (HasService(service)) {
         return ResultSmAlreadyRegistered;
     }
-    
+
 #ifdef SM_MINIMUM_SESSION_LIMIT
     if (max_sessions < SM_MINIMUM_SESSION_LIMIT) {
         max_sessions = SM_MINIMUM_SESSION_LIMIT;
@@ -362,35 +363,30 @@ Result Registration::RegisterServiceForPid(u64 pid, u64 service, u64 max_session
     if (free_service == NULL) {
         return ResultSmInsufficientServices;
     }
-    
+
     *out = 0;
     *free_service = (const Registration::Service){0};
-    Result rc = svcCreatePort(out, &free_service->port_h, max_sessions, is_light, (char *)&free_service->service_name);
-    
-    if (R_SUCCEEDED(rc)) {
-        free_service->service_name = service;
-        free_service->owner_pid = pid;
-        free_service->max_sessions = max_sessions;
-        free_service->is_light = is_light;
-    }
-    
-    return rc;
+    R_TRY(svcCreatePort(out, &free_service->port_h, max_sessions, is_light, (char *)&free_service->service_name));
+
+    free_service->service_name = service;
+    free_service->owner_pid = pid;
+    free_service->max_sessions = max_sessions;
+    free_service->is_light = is_light;
+
+    return ResultSuccess;
 }
 
 Result Registration::RegisterServiceForSelf(u64 service, u64 max_sessions, bool is_light, Handle *out) {
     u64 pid;
-    Result rc = svcGetProcessId(&pid, CUR_PROCESS_HANDLE);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-    
+    R_TRY(svcGetProcessId(&pid, CUR_PROCESS_HANDLE));
+
     u64 service_name_len = GetServiceNameLength(service);
-    
+
     /* If the service has bytes after a null terminator, that's no good. */
     if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return ResultSmInvalidServiceName;
     }
-        
+
     if (HasService(service)) {
         return ResultSmAlreadyRegistered;
     }
@@ -400,38 +396,36 @@ Result Registration::RegisterServiceForSelf(u64 service, u64 max_sessions, bool 
         max_sessions = SM_MINIMUM_SESSION_LIMIT;
     }
 #endif
-    
+
     Registration::Service *free_service = GetFreeService();
     if (free_service == NULL) {
         return ResultSmInsufficientServices;
     }
-    
+
     *out = 0;
     *free_service = (const Registration::Service){0};
-    rc = svcCreatePort(out, &free_service->port_h, max_sessions, is_light, (char *)&free_service->service_name);
-    
-    if (R_SUCCEEDED(rc)) {
-        free_service->service_name = service;
-        free_service->owner_pid = pid;
-        free_service->max_sessions = max_sessions;
-        free_service->is_light = is_light;
-    }
-    
-    return rc;
+    R_TRY(svcCreatePort(out, &free_service->port_h, max_sessions, is_light, (char *)&free_service->service_name));
+
+    free_service->service_name = service;
+    free_service->owner_pid = pid;
+    free_service->max_sessions = max_sessions;
+    free_service->is_light = is_light;
+
+    return ResultSuccess;
 }
 
 Result Registration::UnregisterServiceForPid(u64 pid, u64 service) {
     if (!service) {
         return ResultSmInvalidServiceName;
     }
-    
+
     u64 service_name_len = GetServiceNameLength(service);
-    
+
     /* If the service has bytes after a null terminator, that's no good. */
     if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return ResultSmInvalidServiceName;
     }
-    
+
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL) {
         return ResultSmNotRegistered;
@@ -440,7 +434,7 @@ Result Registration::UnregisterServiceForPid(u64 pid, u64 service) {
     if (!IsInitialProcess(pid) && target_service->owner_pid != pid) {
         return ResultSmNotAllowed;
     }
-    
+
     svcCloseHandle(target_service->port_h);
     svcCloseHandle(target_service->mitm_port_h);
     svcCloseHandle(target_service->mitm_query_h);
@@ -453,60 +447,59 @@ Result Registration::InstallMitmForPid(u64 pid, u64 service, Handle *out, Handle
     if (!service) {
         return ResultSmInvalidServiceName;
     }
-    
+
     u64 service_name_len = GetServiceNameLength(service);
-    
+
     /* If the service has bytes after a null terminator, that's no good. */
     if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return ResultSmInvalidServiceName;
     }
-    
+
     /* Verify we're allowed to mitm the service. */
     if (!IsInitialProcess(pid)) {
         Registration::Process *proc = GetProcessForPid(pid);
         if (proc == NULL) {
             return ResultSmInvalidClient;
         }
-        
+
         if (!IsValidForSac(proc->sac, proc->sac_size, service, true)) {
             return ResultSmNotAllowed;
         }
     }
-    
+
     /* Verify the service exists. */
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL) {
         return ResultServiceFrameworkRequestDeferredByUser;
     }
-    
+
     /* Verify the service isn't already being mitm'd. */
     if (target_service->mitm_pid != 0) {
         return ResultSmAlreadyRegistered;
     }
-    
+
     *out = 0;
     u64 x = 0;
-    Result rc = svcCreatePort(out, &target_service->mitm_port_h, target_service->max_sessions, target_service->is_light, (char *)&x);
-    
-    if (R_SUCCEEDED(rc) && R_SUCCEEDED((rc = svcCreateSession(query_out, &target_service->mitm_query_h, 0, 0)))) {
-        target_service->mitm_pid = pid;
-    }
-    
-    return rc;
+    R_TRY(svcCreatePort(out, &target_service->mitm_port_h, target_service->max_sessions, target_service->is_light, (char *)&x));
+    R_TRY(svcCreateSession(query_out, &target_service->mitm_query_h, 0, 0));
+
+    target_service->mitm_pid = pid;
+
+    return ResultSuccess;
 }
 
 Result Registration::UninstallMitmForPid(u64 pid, u64 service) {
     if (!service) {
         return ResultSmInvalidServiceName;
     }
-    
+
     u64 service_name_len = GetServiceNameLength(service);
-    
+
     /* If the service has bytes after a null terminator, that's no good. */
     if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return ResultSmInvalidServiceName;
     }
-    
+
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL) {
         return ResultSmNotRegistered;
@@ -515,7 +508,7 @@ Result Registration::UninstallMitmForPid(u64 pid, u64 service) {
     if (!IsInitialProcess(pid) && target_service->mitm_pid != pid) {
         return ResultSmNotAllowed;
     }
-    
+
     svcCloseHandle(target_service->mitm_port_h);
     svcCloseHandle(target_service->mitm_query_h);
     target_service->mitm_pid = 0;
@@ -526,14 +519,14 @@ Result Registration::AcknowledgeMitmSessionForPid(u64 pid, u64 service, Handle *
     if (!service) {
         return ResultSmInvalidServiceName;
     }
-    
+
     u64 service_name_len = GetServiceNameLength(service);
-    
+
     /* If the service has bytes after a null terminator, that's no good. */
     if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return ResultSmInvalidServiceName;
     }
-    
+
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL) {
         return ResultSmNotRegistered;
@@ -542,7 +535,7 @@ Result Registration::AcknowledgeMitmSessionForPid(u64 pid, u64 service, Handle *
     if ((!IsInitialProcess(pid) && target_service->mitm_pid != pid) || !target_service->mitm_waiting_ack) {
         return ResultSmNotAllowed;
     }
-    
+
     *out = target_service->mitm_fwd_sess_h;
     *out_pid = target_service->mitm_waiting_ack_pid;
     target_service->mitm_fwd_sess_h = 0;
@@ -586,26 +579,26 @@ Result Registration::GetServiceRecord(u64 service, SmServiceRecord *out) {
     if (!service) {
         return ResultSmInvalidServiceName;
     }
-    
+
     u64 service_name_len = GetServiceNameLength(service);
-    
+
     /* If the service has bytes after a null terminator, that's no good. */
     if (service_name_len != 8 && (service >> (8 * service_name_len))) {
         return ResultSmInvalidServiceName;
     }
-    
+
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL) {
         return ResultSmNotRegistered;
     }
-    
+
     ConvertServiceToRecord(target_service, out);
     return ResultSuccess;
 }
 
 void Registration::ListServiceRecords(u64 offset, u64 max_out, SmServiceRecord *out, u64 *out_count) {
     u64 count = 0;
-    
+
     for (auto it = g_service_list.begin(); it != g_service_list.end() && count < max_out; it++) {
         if (it->service_name != 0) {
             if (offset > 0) {
@@ -616,6 +609,6 @@ void Registration::ListServiceRecords(u64 offset, u64 max_out, SmServiceRecord *
             }
         }
     }
-    
+
     *out_count = count;
 }

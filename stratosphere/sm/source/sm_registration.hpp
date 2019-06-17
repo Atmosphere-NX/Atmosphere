@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 
@@ -31,30 +31,30 @@ class Registration {
             u64 sac_size;
             u8 sac[REGISTRATION_MAX_SAC_SIZE];
         };
-        
+
         struct Service {
             u64 service_name;
             u64 owner_pid;
             Handle port_h;
-            
+
             /* Debug. */
             u64 max_sessions;
             bool is_light;
-            
+
             /* Extension. */
             u64 mitm_pid;
             Handle mitm_port_h;
             Handle mitm_query_h;
-            
+
             bool mitm_waiting_ack;
             u64 mitm_waiting_ack_pid;
             Handle mitm_fwd_sess_h;
         };
-        
+
         /* Utilities. */
         static void EndInitDefers();
         static bool ShouldInitDefer(u64 service);
-        
+
         static Registration::Process *GetProcessForPid(u64 pid);
         static Registration::Process *GetFreeProcess();
         static Registration::Service *GetService(u64 service);
@@ -64,11 +64,11 @@ class Registration {
         static void CacheInitialProcessIdLimits();
         static bool IsInitialProcess(u64 pid);
         static u64 GetInitialProcessId();
-        
+
         /* Process management. */
         static Result RegisterProcess(u64 pid, u8 *acid_sac, size_t acid_sac_size, u8 *aci0_sac, size_t aci0_sac_size);
         static Result UnregisterProcess(u64 pid);
-        
+
         /* Service management. */
         static bool HasService(u64 service);
         static bool HasMitm(u64 service);
@@ -77,13 +77,13 @@ class Registration {
         static Result RegisterServiceForPid(u64 pid, u64 service, u64 max_sessions, bool is_light, Handle *out);
         static Result RegisterServiceForSelf(u64 service, u64 max_sessions, bool is_light, Handle *out);
         static Result UnregisterServiceForPid(u64 pid, u64 service);
-        
+
         /* Extension. */
         static Result InstallMitmForPid(u64 pid, u64 service, Handle *out, Handle *query_out);
         static Result UninstallMitmForPid(u64 pid, u64 service);
         static Result AcknowledgeMitmSessionForPid(u64 pid, u64 service, Handle *out, u64 *out_pid);
         static Result AssociatePidTidForMitm(u64 pid, u64 tid);
-        
+
         static void   ConvertServiceToRecord(Registration::Service *service, SmServiceRecord *record);
         static Result GetServiceRecord(u64 service, SmServiceRecord *out);
         static void   ListServiceRecords(u64 offset, u64 max_out, SmServiceRecord *out, u64 *out_count);

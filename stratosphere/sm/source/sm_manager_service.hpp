@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -22,7 +22,7 @@
 enum ManagerServiceCmd {
     Manager_Cmd_RegisterProcess = 0,
     Manager_Cmd_UnregisterProcess = 1,
-    
+
     Manager_Cmd_AtmosphereEndInitDefers = 65000,
     Manager_Cmd_AtmosphereHasMitm = 65001,
 };
@@ -38,7 +38,7 @@ class ManagerService final : public IServiceObject {
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<Manager_Cmd_RegisterProcess, &ManagerService::RegisterProcess>(),
             MakeServiceCommandMeta<Manager_Cmd_UnregisterProcess, &ManagerService::UnregisterProcess>(),
-            
+
             MakeServiceCommandMeta<Manager_Cmd_AtmosphereEndInitDefers, &ManagerService::AtmosphereEndInitDefers>(),
             MakeServiceCommandMeta<Manager_Cmd_AtmosphereHasMitm, &ManagerService::AtmosphereHasMitm>(),
         };

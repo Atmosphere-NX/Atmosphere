@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -35,7 +35,7 @@ extern "C" {
     #define INNER_HEAP_SIZE 0x20000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
-    
+
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
@@ -67,7 +67,7 @@ void __libnx_initheap(void) {
 
 void __appInit(void) {
     SetFirmwareVersionForLibnx();
-    
+
     /* We must do no service setup here, because we are sm. */
 }
 
@@ -81,34 +81,34 @@ void __appExit(void) {
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
-    
+
     /* TODO: What's a good timeout value to use here? */
     auto server_manager = new WaitableManager(1);
 
     /* Create sm:, (and thus allow things to register to it). */
     server_manager->AddWaitable(new ManagedPortServer<UserService>("sm:", 0x40));
-        
+
     /* Create sm:m manually. */
     Handle smm_h;
     if (R_FAILED(Registration::RegisterServiceForSelf(smEncodeName("sm:m"), 1, false, &smm_h))) {
         std::abort();
     }
-    
+
     server_manager->AddWaitable(new ExistingPortServer<ManagerService>(smm_h, 1));
-    
+
     /*===== ATMOSPHERE EXTENSION =====*/
     /* Create sm:dmnt manually. */
     Handle smdmnt_h;
     if (R_FAILED(Registration::RegisterServiceForSelf(smEncodeName("sm:dmnt"), 1, false, &smdmnt_h))) {
         std::abort();
     }
-    
+
     server_manager->AddWaitable(new ExistingPortServer<DmntService>(smm_h, 1));;
     /*================================*/
-        
+
     /* Loop forever, servicing our services. */
     server_manager->Process();
-    
+
     /* Cleanup. */
     delete server_manager;
 	return 0;
