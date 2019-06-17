@@ -43,92 +43,69 @@ u32 GetPixelOffset(uint32_t x, uint32_t y)
 }
 
 Result ShowFatalTask::SetupDisplayInternal() {
-    Result rc;
     ViDisplay display;
     /* Try to open the display. */
-    if (R_FAILED((rc = viOpenDisplay("Internal", &display)))) {
-        if (rc == ResultViNotFound) {
+    R_TRY_CATCH(viOpenDisplay("Internal", &display)) {
+        R_CATCH(ResultViNotFound) {
             return ResultSuccess;
-        } else {
-            return rc;
         }
-    }
+    } R_END_TRY_CATCH;
+
     /* Guarantee we close the display. */
     ON_SCOPE_EXIT { viCloseDisplay(&display); };
 
     /* Turn on the screen. */
-    if (R_FAILED((rc = viSetDisplayPowerState(&display, ViPowerState_On)))) {
-        return rc;
-    }
+    R_TRY(viSetDisplayPowerState(&display, ViPowerState_On));
 
     /* Set alpha to 1.0f. */
-    if (R_FAILED((rc = viSetDisplayAlpha(&display, 1.0f)))) {
-        return rc;
-    }
+    R_TRY(viSetDisplayAlpha(&display, 1.0f));
 
-    return rc;
+    return ResultSuccess;
 }
 
 Result ShowFatalTask::SetupDisplayExternal() {
-    Result rc;
     ViDisplay display;
     /* Try to open the display. */
-    if (R_FAILED((rc = viOpenDisplay("External", &display)))) {
-        if (rc == ResultViNotFound) {
+    R_TRY_CATCH(viOpenDisplay("External", &display)) {
+        R_CATCH(ResultViNotFound) {
             return ResultSuccess;
-        } else {
-            return rc;
         }
-    }
+    } R_END_TRY_CATCH;
+
     /* Guarantee we close the display. */
     ON_SCOPE_EXIT { viCloseDisplay(&display); };
 
     /* Set alpha to 1.0f. */
-    if (R_FAILED((rc = viSetDisplayAlpha(&display, 1.0f)))) {
-        return rc;
-    }
+    R_TRY(viSetDisplayAlpha(&display, 1.0f));
 
-    return rc;
+    return ResultSuccess;
 }
 
 Result ShowFatalTask::PrepareScreenForDrawing() {
-    Result rc = ResultSuccess;
-
     /* Connect to vi. */
-    if (R_FAILED((rc = viInitialize(ViServiceType_Manager)))) {
-        return rc;
-    }
+    R_TRY(viInitialize(ViServiceType_Manager));
 
     /* Close other content. */
     viSetContentVisibility(false);
 
     /* Setup the two displays. */
-    if (R_FAILED((rc = SetupDisplayInternal())) || R_FAILED((rc = SetupDisplayExternal()))) {
-        return rc;
-    }
+    R_TRY(SetupDisplayInternal());
+    R_TRY(SetupDisplayExternal());
 
     /* Open the default display. */
-    if (R_FAILED((rc = viOpenDefaultDisplay(&this->display)))) {
-        return rc;
-    }
+    R_TRY(viOpenDefaultDisplay(&this->display));
 
     /* Reset the display magnification to its default value. */
     u32 display_width, display_height;
-    if (R_FAILED((rc = viGetDisplayLogicalResolution(&this->display, &display_width, &display_height)))) {
-        return rc;
-    }
+    R_TRY(viGetDisplayLogicalResolution(&this->display, &display_width, &display_height));
 
     /* viSetDisplayMagnification was added in 3.0.0. */
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
-        if (R_FAILED((rc = viSetDisplayMagnification(&this->display, 0, 0, display_width, display_height)))) {
-            return rc;
-        }
+        R_TRY(viSetDisplayMagnification(&this->display, 0, 0, display_width, display_height));
     }
 
     /* Create layer to draw to. */
-    if (R_FAILED((rc = viCreateLayer(&this->display, &this->layer)))) {
-        return rc;
-    }
+    R_TRY(viCreateLayer(&this->display, &this->layer));
 
     /* Setup the layer. */
     {
@@ -144,47 +121,36 @@ Result ShowFatalTask::PrepareScreenForDrawing() {
         const float layer_y = static_cast<float>((display_height - layer_height) / 2);
         u64 layer_z;
 
-        if (R_FAILED((rc = viSetLayerSize(&this->layer, layer_width, layer_height)))) {
-            return rc;
-        }
+        R_TRY(viSetLayerSize(&this->layer, layer_width, layer_height));
 
         /* Set the layer's Z at display maximum, to be above everything else .*/
         /* NOTE: Fatal hardcodes 100 here. */
-        if (R_SUCCEEDED((rc = viGetDisplayMaximumZ(&this->display, &layer_z)))) {
-            if (R_FAILED((rc = viSetLayerZ(&this->layer, layer_z)))) {
-                return rc;
-            }
+        if (R_SUCCEEDED(viGetDisplayMaximumZ(&this->display, &layer_z))) {
+            R_TRY(viSetLayerZ(&this->layer, layer_z));
         }
 
         /* Center the layer in the screen. */
-        if (R_FAILED((rc = viSetLayerPosition(&this->layer, layer_x, layer_y)))) {
-            return rc;
-        }
+        R_TRY(viSetLayerPosition(&this->layer, layer_x, layer_y));
 
         /* Create framebuffer. */
-        if (R_FAILED(rc = nwindowCreateFromLayer(&this->win, &this->layer))) {
-            return rc;
-        }
-        if (R_FAILED(rc = framebufferCreate(&this->fb, &this->win, raw_width, raw_height, PIXEL_FORMAT_RGB_565, 1))) {
-            return rc;
-        }
+        R_TRY(nwindowCreateFromLayer(&this->win, &this->layer));
+        R_TRY(framebufferCreate(&this->fb, &this->win, raw_width, raw_height, PIXEL_FORMAT_RGB_565, 1));
     }
 
-
-    return rc;
+    return ResultSuccess;
 }
 
 Result ShowFatalTask::ShowFatal() {
-    Result rc = ResultSuccess;
     const FatalConfig *config = GetFatalConfig();
 
+    /* Prepare screen for drawing. */
     DoWithSmSession([&]() {
-        rc = PrepareScreenForDrawing();
+        Result rc = PrepareScreenForDrawing();
+        if (R_FAILED(rc)) {
+            *(volatile u32 *)(0xCAFEBABE) = rc;
+            std::abort();
+        }
     });
-    if (R_FAILED(rc)) {
-        *(volatile u32 *)(0xCAFEBABE) = rc;
-        return rc;
-    }
 
     /* Dequeue a buffer. */
     u16 *tiled_buf = reinterpret_cast<u16 *>(framebufferBegin(&this->fb, NULL));
@@ -407,7 +373,7 @@ Result ShowFatalTask::ShowFatal() {
     /* Enqueue the buffer. */
     framebufferEnd(&fb);
 
-    return rc;
+    return ResultSuccess;
 }
 
 Result ShowFatalTask::Run() {

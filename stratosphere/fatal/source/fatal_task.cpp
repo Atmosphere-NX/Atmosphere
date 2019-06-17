@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include "fatal_types.hpp"
 #include "fatal_task.hpp"
@@ -32,22 +32,22 @@ static size_t g_num_threads = 0;
 
 static void RunTaskThreadFunc(void *arg) {
     IFatalTask *task = reinterpret_cast<IFatalTask *>(arg);
-    
+
     Result rc = task->Run();
     if (R_FAILED(rc)) {
         /* TODO: Log task failure, somehow? */
     }
-    
+
     /* Finish. */
 }
 
-static void RunTask(IFatalTask *task, u32 stack_size = 0x4000) {    
+static void RunTask(IFatalTask *task, u32 stack_size = 0x4000) {
     if (g_num_threads >= MaxTasks) {
         std::abort();
     }
-    
+
     HosThread *cur_thread = &g_task_threads[g_num_threads++];
-    
+
     cur_thread->Initialize(&RunTaskThreadFunc, task, stack_size, 15);
     cur_thread->Start();
 }

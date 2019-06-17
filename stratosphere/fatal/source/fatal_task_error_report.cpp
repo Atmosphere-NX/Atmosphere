@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdio>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -24,7 +24,7 @@
 #include "fatal_config.hpp"
 
 void ErrorReportTask::EnsureReportDirectories() {
-    char path[FS_MAX_PATH];  
+    char path[FS_MAX_PATH];
     strcpy(path, "sdmc:/atmosphere");
     mkdir(path, S_IRWXU);
     strcat(path, "/fatal_reports");
@@ -35,7 +35,7 @@ void ErrorReportTask::EnsureReportDirectories() {
 
 bool ErrorReportTask::GetCurrentTime(u64 *out) {
     *out = 0;
-    
+
     /* Verify that pcv isn't dead. */
     {
         bool has_time_service;
@@ -52,7 +52,7 @@ bool ErrorReportTask::GetCurrentTime(u64 *out) {
             return false;
         }
     }
-    
+
     /* Try to get the current time. */
     bool success = true;
     DoWithSmSession([&]() {
@@ -67,22 +67,22 @@ bool ErrorReportTask::GetCurrentTime(u64 *out) {
 
 void ErrorReportTask::SaveReportToSdCard() {
     char file_path[FS_MAX_PATH];
-    
+
     /* Ensure path exists. */
     EnsureReportDirectories();
-    
+
     /* Get a timestamp. */
     u64 timestamp;
     if (!GetCurrentTime(&timestamp)) {
         timestamp = svcGetSystemTick();
     }
-    
+
     /* Open report file. */
     snprintf(file_path, sizeof(file_path) - 1, "sdmc:/atmosphere/fatal_reports/%011lu_%016lx.log", timestamp, this->title_id);
     FILE *f_report = fopen(file_path, "w");
     if (f_report != NULL) {
         ON_SCOPE_EXIT { fclose(f_report); };
-        
+
         fprintf(f_report, "Atmosphère Fatal Report (v1.0):\n");
         fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->ctx->error_code, R_MODULE(this->ctx->error_code), R_DESCRIPTION(this->ctx->error_code));
         fprintf(f_report, "Title ID:                        %016lx\n", this->title_id);
@@ -90,7 +90,7 @@ void ErrorReportTask::SaveReportToSdCard() {
             fprintf(f_report, "Process Name:                    %s\n", this->ctx->proc_name);
         }
         fprintf(f_report, u8"Firmware:                        %s (Atmosphère %u.%u.%u-%s)\n", GetFatalConfig()->firmware_version.display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
-        
+
         if (this->ctx->cpu_ctx.is_aarch32) {
             fprintf(f_report, "General Purpose Registers:\n");
             for (size_t i = 0; i < NumAarch32Gprs; i++) {
@@ -118,15 +118,15 @@ void ErrorReportTask::SaveReportToSdCard() {
                 fprintf(f_report, "        ReturnAddress[%02u]:       %016lx\n", i, this->ctx->cpu_ctx.aarch64_ctx.stack_trace[i]);
             }
         }
-        
+
     }
-    
+
     if (this->ctx->stack_dump_size) {
         snprintf(file_path, sizeof(file_path) - 1, "sdmc:/atmosphere/fatal_reports/dumps/%011lu_%016lx.bin", timestamp, this->title_id);
         FILE *f_stackdump = fopen(file_path, "wb");
         if (f_stackdump == NULL) { return; }
         ON_SCOPE_EXIT { fclose(f_stackdump); };
-        
+
         fwrite(this->ctx->stack_dump, this->ctx->stack_dump_size, 1, f_stackdump);
     }
 }
@@ -135,15 +135,15 @@ Result ErrorReportTask::Run() {
     if (this->create_report) {
         /* Here, Nintendo creates an error report with erpt. AMS will not do that. */
     }
-    
+
     /* Save report to SD card. */
     if (!this->ctx->is_creport) {
         SaveReportToSdCard();
     }
-    
+
     /* Signal we're done with our job. */
     eventFire(this->erpt_event);
-    
-    
+
+
     return ResultSuccess;
 }

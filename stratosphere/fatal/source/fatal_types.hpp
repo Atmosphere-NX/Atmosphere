@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -24,7 +24,7 @@ static constexpr size_t NumAarch32Gprs = 16;
 struct Aarch64CpuContext {
     using RegisterType = u64;
     static constexpr size_t MaxStackTraceDepth = 0x20;
-    
+
     /* Registers, exception context. N left names for these fields in fatal .rodata. */
     union {
         RegisterType x[NumAarch64Gprs];
@@ -41,7 +41,7 @@ struct Aarch64CpuContext {
     RegisterType afsr1;
     RegisterType esr;
     RegisterType far;
-    
+
     /* Misc. */
     RegisterType stack_trace[MaxStackTraceDepth];
     RegisterType start_address;
@@ -52,7 +52,7 @@ struct Aarch64CpuContext {
 struct Aarch32CpuContext {
     using RegisterType = u32;
     static constexpr size_t MaxStackTraceDepth = 0x20;
-    
+
     /* Registers, exception context. N left names for these fields in fatal .rodata. */
     union {
         RegisterType r[NumAarch32Gprs];
@@ -70,7 +70,7 @@ struct Aarch32CpuContext {
     RegisterType afsr1;
     RegisterType esr;
     RegisterType far;
-    
+
     /* Misc. Yes, stack_trace_size is really laid out differently than aarch64... */
     RegisterType stack_trace[MaxStackTraceDepth];
     u32 stack_trace_size;
@@ -83,7 +83,7 @@ struct FatalCpuContext {
         Aarch64CpuContext aarch64_ctx;
         Aarch32CpuContext aarch32_ctx;
     };
-    
+
     bool is_aarch32;
     u32 type;
 };

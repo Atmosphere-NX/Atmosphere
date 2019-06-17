@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include "fatal_task_sound.hpp"
 
@@ -40,17 +40,17 @@ void StopSoundTask::StopSound() {
             cmd.dev = 0xC802;
             cmd.val = 200;
             i2csessionSendAuto(&audio, &cmd, sizeof(cmd), I2cTransactionOption_All);
-            
+
             for (u16 dev = 97; dev <= 102; dev++) {
                 cmd.dev = dev;
                 cmd.val = 0;
                 i2csessionSendAuto(&audio, &cmd, sizeof(cmd), I2cTransactionOption_All);
             }
-            
+
             i2csessionClose(&audio);
         }
     }
-    
+
     /* Talk to the ALC5639 over GPIO, and disable audio output */
     {
         GpioPadSession audio;
@@ -58,10 +58,10 @@ void StopSoundTask::StopSound() {
             /* Set direction output, sleep 200 ms so it can take effect. */
             gpioPadSetDirection(&audio, GpioDirection_Output);
             svcSleepThread(200000000UL);
-            
+
             /* Pull audio codec low. */
             gpioPadSetValue(&audio, GpioValue_Low);
-            
+
             gpioPadClose(&audio);
         }
     }

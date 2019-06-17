@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include "fatal_throw.hpp"
 #include "fatal_event_manager.hpp"
@@ -28,20 +28,19 @@ static Result SetThrown() {
     if (g_thrown) {
         return ResultFatalAlreadyThrown;
     }
-    
+
     g_thrown = true;
     return ResultSuccess;
 }
 
 Result ThrowFatalForSelf(u32 error) {
     u64 pid = 0;
-    
+
     svcGetProcessId(&pid, CUR_PROCESS_HANDLE);
     return ThrowFatalImpl(error, pid, FatalType_ErrorScreen, nullptr);
 }
 
 Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu_ctx) {
-    Result rc = ResultSuccess;
     FatalThrowContext ctx = {0};
     ctx.error_code = error;
     if (cpu_ctx != nullptr) {
@@ -62,27 +61,27 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
     }
     /* Reassign this unconditionally, for convenience. */
     cpu_ctx = &ctx.cpu_ctx;
-    
+
     /* Get config. */
     const FatalConfig *config = GetFatalConfig();
-    
+
     /* Get title id. On failure, it'll be zero. */
     u64 title_id = 0;
-    pminfoGetTitleId(&title_id, pid);   
+    pminfoGetTitleId(&title_id, pid);
     ctx.is_creport = title_id == TitleId_Creport;
-    
+
     /* Support for ams creport. TODO: Make this its own command? */
     if (ctx.is_creport && !cpu_ctx->is_aarch32 && cpu_ctx->aarch64_ctx.afsr0 != 0) {
         title_id = cpu_ctx->aarch64_ctx.afsr0;
     }
-    
+
     /* Atmosphere extension: automatic debug info collection. */
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 && !ctx.is_creport) {
         if ((cpu_ctx->is_aarch32 && cpu_ctx->aarch32_ctx.stack_trace_size == 0) || (!cpu_ctx->is_aarch32 && cpu_ctx->aarch64_ctx.stack_trace_size == 0)) {
             TryCollectDebugInformation(&ctx, pid);
         }
     }
-    
+
     switch (policy) {
         case FatalType_ErrorReport:
             /* TODO: Don't write an error report. */
@@ -91,20 +90,18 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
         case FatalType_ErrorScreen:
             {
                 /* Ensure we only throw once. */
-                if (R_FAILED((rc = SetThrown()))) {
-                    return rc;
-                }
-                                
+                R_TRY(SetThrown());
+
                 /* Signal that fatal is about to happen. */
                 GetEventManager()->SignalEvents();
-                
+
                 /* Create events. */
                 Event erpt_event;
                 Event battery_event;
                 if (R_FAILED(eventCreate(&erpt_event, false)) || R_FAILED(eventCreate(&battery_event, false))) {
                     std::abort();
                 }
-                
+
                 /* Run tasks. */
                 if (config->transition_to_fatal) {
                     RunFatalTasks(&ctx, title_id, policy == FatalType_ErrorReportAndErrorScreen, &erpt_event, &battery_event);
@@ -112,13 +109,13 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
                     /* If flag is not set, don't show the fatal screen. */
                     return ResultSuccess;
                 }
-                
+
             }
             break;
         default:
             /* N aborts here. Should we just return an error code? */
             std::abort();
     }
-    
+
     return ResultSuccess;
 }

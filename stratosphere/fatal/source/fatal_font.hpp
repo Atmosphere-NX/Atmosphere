@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <cstdarg>
 #include <switch.h>
@@ -24,7 +24,7 @@
 #define RGB565_GET_G8(c) ((((c >> 5) & 0x3F) << 2) | ((c >> 9) & 3))
 #define RGB565_GET_B8(c) ((((c >> 0) & 0x1F) << 3) | ((c >> 2) & 7))
 
-class FontManager {        
+class FontManager {
     public:
         static Result InitializeSharedFont();
         static void ConfigureFontFramebuffer(u16 *fb, u32 (*unswizzle_func)(u32, u32));

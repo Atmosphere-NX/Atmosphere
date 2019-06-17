@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include "fatal_types.hpp"
 #include "fatal_event_manager.hpp"
@@ -35,12 +35,12 @@ FatalEventManager::FatalEventManager() {
 
 Result FatalEventManager::GetEvent(Handle *out) {
     std::scoped_lock<HosMutex> lk{this->lock};
-    
+
     /* Only allow GetEvent to succeed NumFatalEvents times. */
     if (this->events_gotten >= FatalEventManager::NumFatalEvents) {
         return ResultFatalTooManyEvents;
     }
-    
+
     *out = this->events[this->events_gotten++].revent;
     return ResultSuccess;
 }

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -21,7 +21,7 @@
 class FatalEventManager {
     private:
         static constexpr size_t NumFatalEvents = 3;
-        
+
         HosMutex lock;
         size_t events_gotten = 0;
         Event events[NumFatalEvents];

@@ -13,34 +13,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include "fatal_task_clock.hpp"
 
 Result AdjustClockTask::AdjustClockForModule(PcvModule module, u32 hz) {
-    Result rc;
-
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_800) {
         /* On 8.0.0+, convert to module id + use clkrst API. */
         PcvModuleId module_id;
-        if (R_FAILED((rc = pcvGetModuleId(&module_id, module)))) {
-            return rc;
-        }
+        R_TRY(pcvGetModuleId(&module_id, module));
 
         ClkrstSession session;
-        Result rc = clkrstOpenSession(&session, module_id, 3);
-        if (R_FAILED(rc)) {
-            return rc;
-        }
+        R_TRY(clkrstOpenSession(&session, module_id, 3));
         ON_SCOPE_EXIT { clkrstCloseSession(&session); };
 
-        rc = clkrstSetClockRate(&session, hz);
+        R_TRY(clkrstSetClockRate(&session, hz));
     } else {
         /* On 1.0.0-7.0.1, use pcv API. */
-        rc = pcvSetClockRate(module, hz);
+        R_TRY(pcvSetClockRate(module, hz));
     }
 
-    return rc;
+    return ResultSuccess;
 }
 
 Result AdjustClockTask::AdjustClock() {
@@ -48,21 +41,12 @@ Result AdjustClockTask::AdjustClock() {
     constexpr u32 CPU_CLOCK_1020MHZ = 0x3CCBF700L;
     constexpr u32 GPU_CLOCK_307MHZ = 0x124F8000L;
     constexpr u32 EMC_CLOCK_1331MHZ = 0x4F588000L;
-    Result rc = ResultSuccess;
 
-    if (R_FAILED((rc = AdjustClockForModule(PcvModule_CpuBus, CPU_CLOCK_1020MHZ)))) {
-        return rc;
-    }
+    R_TRY(AdjustClockForModule(PcvModule_CpuBus, CPU_CLOCK_1020MHZ));
+    R_TRY(AdjustClockForModule(PcvModule_GPU,    GPU_CLOCK_307MHZ));
+    R_TRY(AdjustClockForModule(PcvModule_EMC,    EMC_CLOCK_1331MHZ));
 
-    if (R_FAILED((rc = AdjustClockForModule(PcvModule_GPU, GPU_CLOCK_307MHZ)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = AdjustClockForModule(PcvModule_EMC, EMC_CLOCK_1331MHZ)))) {
-        return rc;
-    }
-
-    return rc;
+    return ResultSuccess;
 }
 
 Result AdjustClockTask::Run() {
