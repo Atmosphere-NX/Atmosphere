@@ -75,14 +75,17 @@ void derive_keys(void) {
         /* Derive master key, device master key. */
         decrypt_data_into_keyslot(0xC, 0xE, masterkey_seed, 0x10);
         decrypt_data_into_keyslot(0xE, 0xE, masterkey_4x_seed, 0x10);
+        clear_aes_keyslot(0xD);
 
         /* Derive device keys. */
         decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
         decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
+        clear_aes_keyslot(0xD);
 
         /* Derive firmware specific device key. */
         se_aes_ecb_decrypt_block(0xA, work_buffer, 0x10, master_devkey_seeds[derivation_id], 0x10);
         decrypt_data_into_keyslot(0xE, 0xE, work_buffer, 0x10);
+        clear_aes_keyslot(0xD);
 
         /* Clear work buffer. */
         for (size_t i = 0; i < 4; i++) {
