@@ -17,8 +17,15 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include "utils.h"
+#include "se.h"
 #include <inttypes.h>
 
 __attribute__ ((noreturn)) void generic_panic(void) {
+    /* Clear keyslots. */
+    clear_aes_keyslot(0xD);
+    for (size_t i = 0; i < 0x10; i++) {
+        clear_aes_keyslot(i);
+    }
+    clear_aes_keyslot(0xD);
     while(1) { /* ... */ }
 }

@@ -222,6 +222,4 @@ void se_set_in_context_save_mode(bool is_context_save_mode);
 void se_generate_random_key(unsigned int dst_keyslot, unsigned int rng_keyslot);
 void se_save_context(unsigned int srk_keyslot, unsigned int rng_keyslot, void *dst);
 
-void se_save_partial_context(unsigned int srk_keyslot, unsigned int rng_keyslot, void *dst);
-
 #endif

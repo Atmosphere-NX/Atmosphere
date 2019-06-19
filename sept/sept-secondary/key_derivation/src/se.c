@@ -203,12 +203,37 @@ void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_sr
         generic_panic();
     }
 
+    /* Write config, validate. */
     se->CONFIG_REG = (ALG_AES_DEC | DST_KEYTAB);
+    if (se->CONFIG_REG != (ALG_AES_DEC | DST_KEYTAB)) {
+        generic_panic();
+    }
     se->CRYPTO_REG = keyslot_src << 24;
+    if (se->CRYPTO_REG != (keyslot_src << 24)) {
+        generic_panic();
+    }
     se->BLOCK_COUNT_REG = 0;
+    if (se->BLOCK_COUNT_REG != 0) {
+        generic_panic();
+    }
     se->CRYPTO_KEYTABLE_DST_REG = keyslot_dst << 8;
+    if (se->CRYPTO_KEYTABLE_DST_REG != (keyslot_dst << 8)) {
+        generic_panic();
+    }
+
+    /* Clear address context. */
+    se->IN_LL_ADDR_REG = 0;
+    se->OUT_LL_ADDR_REG = 0;
+    if (se->IN_LL_ADDR_REG != 0 || se->OUT_LL_ADDR_REG != 0) {
+        generic_panic();
+    }
 
     trigger_se_blocking_op(OP_START, NULL, 0, wrapped_key, wrapped_key_size);
+
+    /* Validate address context. */
+    if (se->IN_LL_ADDR_REG == 0 || se->OUT_LL_ADDR_REG == 0) {
+        generic_panic();
+    }
 }
 
 void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
@@ -320,6 +345,11 @@ void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const v
     /* Set registers for operation. */
     se->ERR_STATUS_REG = se->ERR_STATUS_REG;
     se->INT_STATUS_REG = se->INT_STATUS_REG;
+
+    if (se->IN_LL_ADDR_REG != (uint32_t) get_physical_address(&in_ll) || se->OUT_LL_ADDR_REG != (uint32_t) get_physical_address(&out_ll) || (se->INT_STATUS_REG & 0x10)) {
+        generic_panic();
+    }
+
     se->OPERATION_REG = op;
 
     while (!(se->INT_STATUS_REG & 0x10)) { /* Wait a while */ }
@@ -717,42 +747,6 @@ void se_save_context(unsigned int srkgen_keyslot, unsigned int rng_keyslot, void
     se->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_MEM);
     se->BLOCK_COUNT_REG = 0;
     se_encrypt_with_srk(dst + 0x830, 0x10, context_save_known_pattern, 0x10);
-
-    /* Save SRK into PMC registers. */
-    se->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_SRK);
-    se->BLOCK_COUNT_REG = 0;
-    se_encrypt_with_srk(work_buf, 0, NULL, 0);
-    se->CONFIG_REG = 0;
-    se_encrypt_with_srk(work_buf, 0, NULL, 0);
-}
-
-void se_save_partial_context(unsigned int srkgen_keyslot, unsigned int rng_keyslot, void *dst) {
-    volatile tegra_se_t *se = se_get_regs();
-    uint8_t _work_buf[0x80];
-    uint8_t *work_buf = (uint8_t *)(((uintptr_t)_work_buf + 0x7F) & ~0x3F);
-
-    /* Generate the SRK (context save encryption key). */
-    se_generate_random_key(srkgen_keyslot, rng_keyslot);
-    se_generate_srk(srkgen_keyslot);
-
-    se_generate_random(rng_keyslot, work_buf, 0x10);
-
-    /* Save known pattern. */
-    static const uint8_t context_save_known_pattern[0x10] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
-    se->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_MEM);
-    se->BLOCK_COUNT_REG = 0;
-    se_encrypt_with_srk(dst + 0x00, 0x10, context_save_known_pattern, 0x10);
-
-    /* Save specific keyslots 0xC, 0xD, 0xE. */
-    se->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_KEYTABLE_AES) | (0xE << CTX_SAVE_KEY_INDEX_SHIFT) | (CTX_SAVE_KEY_LOW_BITS);
-    se->BLOCK_COUNT_REG = 0;
-    se_encrypt_with_srk(dst + 0x10, 0x10, NULL, 0);
-    se->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_KEYTABLE_AES) | (0xC << CTX_SAVE_KEY_INDEX_SHIFT) | (CTX_SAVE_KEY_LOW_BITS);
-    se->BLOCK_COUNT_REG = 0;
-    se_encrypt_with_srk(dst + 0x20, 0x10, NULL, 0);
-    se->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_KEYTABLE_AES) | (0xD << CTX_SAVE_KEY_INDEX_SHIFT) | (CTX_SAVE_KEY_LOW_BITS);
-    se->BLOCK_COUNT_REG = 0;
-    se_encrypt_with_srk(dst + 0x30, 0x10, NULL, 0);
 
     /* Save SRK into PMC registers. */
     se->CONTEXT_SAVE_CONFIG_REG = (CTX_SAVE_SRC_SRK);
