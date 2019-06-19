@@ -1,4 +1,8 @@
 # Changelog
+## 0.9.1
++ Support was added for 8.1.0.
++ Please note, emummc is still considered **beta/experimental** -- this is not the inevitable bugfix update for it, although some number of bugs have been fixed. :)
++ General system stability improvements to enhance the user's experience.
 ## 0.9.0
 + Creport output was improved significantly.
   + Thread names are now dumped on crash in addition to 0x100 of TLS from each thread.
@@ -133,7 +137,7 @@
   + This should greatly simplify the update process in the future, for users who do not launch Atmosphère using fusee.
 + Support for cheat codes was added.
   + These are handled by a new `dmnt` sysmodule, which will also reimplement Nintendo's Debug Monitor in the future.
-  + Cheat codes can be enabled/disabled at application launch via a per-title key combination. 
+  + Cheat codes can be enabled/disabled at application launch via a per-title key combination.
     + For details, please see the [cheat loading documentation](https://github.com/Atmosphere-NX/Atmosphere/blob/master/docs/cheats.md#cheat-loating-process).
   + Cheat codes are fully backwards compatible with the pre-existing format, although a number of bugs have been fixed and some new features have been added.
     + For details, please see [the compatibility documentation](https://github.com/Atmosphere-NX/Atmosphere/blob/master/docs/cheats.md#cheat-code-compatibility).
@@ -206,7 +210,7 @@
     + This should prevent running FS without `nogc` patches after updating to an unsupported system version.
 + An extension was added to `exosphere` allowing userland applications to cause the system to reboot into RCM:
   + This is done by calling smcSetConfig(id=65001, value=<nonzero>); user homebrew can use splSetConfig for this.
-+ On fatal error, the user can now choose to perform a standard reboot via the power button, or a reboot into RCM via either volume button. 
++ On fatal error, the user can now choose to perform a standard reboot via the power button, or a reboot into RCM via either volume button.
 + A custom message was added to `fatal` for when an Atmosphère API version mismatch is detected (2495-1623).
 + General system stability improvements to enhance the user's experience.
 ## 0.8.0
@@ -249,7 +253,7 @@
   + Instead of only checking one of the crashing thread's PC/LR for code region presence, creport now checks both + every address in the stacktrace. This is also now done for every thread.
     + This matches the improvement Nintendo added to official creport in 6.1.0.
   + The code region detection heuristic was further improved by checking whether an address points to .rodata or .rwdata, instead of just .text.
-  + This means that a crash appears in a loaded NRO (or otherwise discontiguous) code region, creport will be able to detect all active code regions, and not just that one. 
+  + This means that a crash appears in a loaded NRO (or otherwise discontiguous) code region, creport will be able to detect all active code regions, and not just that one.
 ## 0.7.4
 + [libstratosphere](https://github.com/Atmosphere-NX/libstratosphere) has been completely refactored/rewritten, and split into its own, separate submodule.
   + While this is mostly "under the hood" for end-users, the refactor is faster (improving both boot-time and runtime performance), more accurate (many of the internal IPC structures are now bug-for-bug compatible with Nintendo's implementations), and significantly more stable (it fixes a large number of bugs present in the old library).
