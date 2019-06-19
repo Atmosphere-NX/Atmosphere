@@ -23,9 +23,11 @@
 __attribute__ ((noreturn)) void generic_panic(void) {
     /* Clear keyslots. */
     clear_aes_keyslot(0xD);
+    clear_aes_keyslot(0xE);
     for (size_t i = 0; i < 0x10; i++) {
         clear_aes_keyslot(i);
     }
     clear_aes_keyslot(0xD);
+    clear_aes_keyslot(0xE);
     while(1) { /* ... */ }
 }

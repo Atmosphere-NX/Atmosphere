@@ -346,7 +346,7 @@ void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const v
     se->ERR_STATUS_REG = se->ERR_STATUS_REG;
     se->INT_STATUS_REG = se->INT_STATUS_REG;
 
-    if (se->IN_LL_ADDR_REG != (uint32_t) get_physical_address(&in_ll) || se->OUT_LL_ADDR_REG != (uint32_t) get_physical_address(&out_ll) || (se->FLAGS_REG & 0x3)) {
+    if (se->IN_LL_ADDR_REG != (uint32_t) get_physical_address(&in_ll) || se->OUT_LL_ADDR_REG != (uint32_t) get_physical_address(&out_ll) || (se->INT_STATUS_REG & 0x10) || (se->FLAGS_REG & 0x3)) {
         generic_panic();
     }
 
