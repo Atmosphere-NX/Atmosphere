@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -53,7 +53,8 @@
 #define u8 uint8_t
 #define u32 uint32_t
 #include "exosphere_bin.h"
-#include "sept_secondary_enc.h"
+#include "sept_secondary_00_enc.h"
+#include "sept_secondary_01_enc.h"
 #include "lp0fw_bin.h"
 #include "emummc_kip.h"
 #include "lib/log.h"
@@ -207,8 +208,15 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
         }
         case 0x0F:          /* 7.0.0 - 7.0.1 */
             return ATMOSPHERE_TARGET_FIRMWARE_700;
-        case 0x10:          /* 8.0.0 */
-            return ATMOSPHERE_TARGET_FIRMWARE_800;
+        case 0x10: {        /* 8.0.0 - 8.1.0 */
+            if (memcmp(package1loader_header->build_timestamp, "20190314", 8) == 0) {
+                return ATMOSPHERE_TARGET_FIRMWARE_800;
+            } else if (memcmp(package1loader_header->build_timestamp, "20190531", 8) == 0) {
+                return ATMOSPHERE_TARGET_FIRMWARE_810;
+            } else {
+                fatal_error("[NXBOOT] Unable to identify package1!\n");
+            }
+        }
         default:
             fatal_error("[NXBOOT] Unable to identify package1!\n");
     }
@@ -216,7 +224,7 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
 
 static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
     emummc_config_t emummc_cfg = {.enabled = false, .id = 0, .sector = -1, .path = "", .nintendo_path = ""};
-    
+
     char *emummc_ini = calloc(1, 0x10000);
     if (!read_from_file(emummc_ini, 0xFFFF, "emummc/emummc.ini")) {
         free(emummc_ini);
@@ -237,12 +245,12 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
     exo_emummc_config->base_cfg.fs_version = FS_VER_1_0_0; /* Will be filled out later. */
     strncpy(exo_emummc_config->emu_dir_path, emummc_cfg.nintendo_path, sizeof(exo_emummc_config->emu_dir_path));
     exo_emummc_config->emu_dir_path[sizeof(exo_emummc_config->emu_dir_path) - 1] = '\0';
-    
+
     if (emummc_cfg.enabled) {
         if (emummc_cfg.sector != -1) {
             exo_emummc_config->base_cfg.type  = EMUMMC_TYPE_PARTITION;
             exo_emummc_config->partition_cfg.start_sector = emummc_cfg.sector;
-            
+
             /* Mount emulated NAND from SD card partition. */
             if (nxfs_mount_emummc_partition(emummc_cfg.sector) < 0) {
                 fatal_error("[NXBOOT] Failed to mount EmuMMC from SD card partition!\n");
@@ -258,24 +266,24 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
             char emummc_boot0_path[0x300 + 1] = {0};
             char emummc_boot1_path[0x300 + 1] = {0};
             char emummc_rawnand_path[0x300 + 1] = {0};
-            
+
             /* Prepare base folder path. */
             snprintf(emummc_path, sizeof(emummc_path) - 1, "%s/%s", emummc_cfg.path, "eMMC");
-            
+
             /* Check if eMMC folder is present. */
             if (!is_valid_folder(emummc_path)) {
                 fatal_error("[NXBOOT] Failed to find EmuMMC eMMC folder!\n");
             }
-        
+
             /* Prepare expected file paths. */
             snprintf(emummc_boot0_path, sizeof(emummc_boot0_path) - 1, "%s/%s", emummc_path, "boot0");
             snprintf(emummc_boot1_path, sizeof(emummc_boot1_path) - 1, "%s/%s", emummc_path, "boot1");
-        
+
             /* Check if boot0 and boot1 image files are present. */
             if (!is_valid_file(emummc_boot0_path) || !is_valid_file(emummc_boot1_path)) {
                 fatal_error("[NXBOOT] Failed to find EmuMMC boot0/boot1 image files!\n");
             }
-        
+
             /* Find raw image files (single or multi part). */
             for (int i = 0; i < 64; i++) {
                 snprintf(emummc_rawnand_path, sizeof(emummc_rawnand_path) - 1, "%s/%02d", emummc_path, i);
@@ -295,7 +303,7 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
             if ((num_parts == 0) || (part_limit == 0)) {
                 fatal_error("[NXBOOT] Failed to find EmuMMC raw image files!\n");
             }
-        
+
             /* Mount emulated NAND from files. */
             if (nxfs_mount_emummc_file(emummc_path, num_parts, part_limit) < 0) {
                 fatal_error("[NXBOOT] Failed to mount EmuMMC from files!\n");
@@ -304,7 +312,7 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
             fatal_error("[NXBOOT] Invalid EmuMMC setting!\n");
         }
     }
-    
+
     return emummc_cfg.enabled;
 }
 
@@ -337,7 +345,7 @@ static void nxboot_configure_stratosphere(uint32_t target_firmware) {
     if (ini_parse_string(get_loader_ctx()->bct0, stratosphere_ini_handler, &strat_cfg) < 0) {
         fatal_error("[NXBOOT] Failed to parse BCT.ini!\n");
     }
-    
+
     /* Enable NOGC patches if the user requested it, or if the user is booting into 4.0.0+ with 3.0.2- fuses. */
     if (strat_cfg.has_nogc_config) {
         if (strat_cfg.enable_nogc) {
@@ -353,7 +361,7 @@ static void nxboot_configure_stratosphere(uint32_t target_firmware) {
 
 static void nxboot_set_bootreason(void *bootreason_base) {
     boot_reason_t boot_reason = {0};
-    FILE *boot0; 
+    FILE *boot0;
     nvboot_config_table *bct;
     nv_bootloader_info *bootloader_info;
 
@@ -362,7 +370,7 @@ static void nxboot_set_bootreason(void *bootreason_base) {
     if (bct == NULL) {
         fatal_error("[NXBOOT] Out of memory!\n");
     }
-    
+
     /* Open boot0. */
     boot0 = fopen("boot0:/", "rb");
     if (boot0 == NULL) {
@@ -373,25 +381,25 @@ static void nxboot_set_bootreason(void *bootreason_base) {
     if (fread(bct, sizeof(nvboot_config_table), 1, boot0) == 0) {
         fatal_error("[NXBOOT] Failed to read the BCT!\n");
     }
-    
+
     /* Close boot0. */
     fclose(boot0);
-    
+
     /* Populate bootloader parameters. */
     bootloader_info = &bct->bootloader[0];
     boot_reason.bootloader_version = bootloader_info->version;
     boot_reason.bootloader_start_block = bootloader_info->start_blk;
     boot_reason.bootloader_start_page = bootloader_info->start_page;
     boot_reason.bootloader_attribute = bootloader_info->attribute;
-    
+
     uint8_t power_key_intr = 0;
     uint8_t rtc_intr = 0;
     i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFIRQ, &power_key_intr, 1);
     i2c_query(I2C_5, MAX77620_RTC_I2C_ADDR, MAX77620_REG_RTCINT, &rtc_intr, 1);
-    
+
     /* Set PMIC value. */
     boot_reason.boot_reason_value = ((rtc_intr << 0x08) | power_key_intr);
-    
+
     /* TODO: Find out what these mean. */
     if (power_key_intr & 0x80)
         boot_reason.boot_reason_state = 0x01;
@@ -401,10 +409,10 @@ static void nxboot_set_bootreason(void *bootreason_base) {
         boot_reason.boot_reason_state = 0x03;
     else if (rtc_intr & 0x04)
         boot_reason.boot_reason_state = 0x04;
-    
+
     /* Set in memory. */
     memcpy(bootreason_base, &boot_reason, sizeof(boot_reason));
-    
+
     /* Clean up. */
     free(bct);
 }
@@ -414,13 +422,13 @@ static void nxboot_move_bootconfig() {
     void *bootconfig;
     uint32_t bootconfig_addr;
     uint32_t bootconfig_size;
-    
+
     /* Allocate memory for reading BootConfig. */
     bootconfig = memalign(0x1000, 0x4000);
     if (bootconfig == NULL) {
         fatal_error("[NXBOOT] Out of memory!\n");
     }
-    
+
     /* Get BootConfig from the Package2 partition. */
     bcfile = fopen("bcpkg21:/", "rb");
     if (bcfile == NULL) {
@@ -431,15 +439,15 @@ static void nxboot_move_bootconfig() {
         fatal_error("[NXBOOT] Failed to read BootConfig!\n");
     }
     fclose(bcfile);
-    
+
     /* Select the actual BootConfig size and destination address. */
     bootconfig_addr = (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_600) ? 0x4003D000 : 0x4003F800;
     bootconfig_size = (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) ? 0x3000 : 0x1000;
-    
+
     /* Copy the BootConfig into IRAM. */
     memset((void *)bootconfig_addr, 0, bootconfig_size);
     memcpy((void *)bootconfig_addr, bootconfig, bootconfig_size);
-    
+
     /* Clean up. */
     free(bootconfig);
 }
@@ -459,6 +467,8 @@ uint32_t nxboot_main(void) {
     size_t package2_size;
     void *tsec_fw;
     size_t tsec_fw_size;
+    const void *sept_secondary_enc = NULL;
+    size_t sept_secondary_enc_size = 0;
     void *warmboot_fw;
     size_t warmboot_fw_size;
     void *warmboot_memaddr;
@@ -470,7 +480,7 @@ uint32_t nxboot_main(void) {
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
     exo_emummc_config_t exo_emummc_cfg;
-    
+
     /* Configure emummc or mount the real NAND. */
     if (!nxboot_configure_emummc(&exo_emummc_cfg)) {
         emummc = NULL;
@@ -542,7 +552,7 @@ uint32_t nxboot_main(void) {
         fatal_error("[NXBOOT] Failed to read Package2!\n");
     }
     fclose(pk2file);
-    
+
     /* Read and parse boot0. */
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Reading boot0...\n");
     boot0 = fopen("boot0:/", "rb");
@@ -550,7 +560,7 @@ uint32_t nxboot_main(void) {
         fatal_error("[NXBOOT] Couldn't parse boot0: %s!\n", strerror(errno));
     }
     fclose(boot0);
-    
+
     /* Find the system's target firmware. */
     uint32_t target_firmware = nxboot_get_target_firmware(package1loader);
     if (!target_firmware)
@@ -561,26 +571,42 @@ uint32_t nxboot_main(void) {
     /* Read the TSEC firmware from a file, otherwise from PK1L. */
     if (loader_ctx->tsecfw_path[0] != '\0') {
         tsec_fw_size = get_file_size(loader_ctx->tsecfw_path);
-        if ((tsec_fw_size != 0) && (tsec_fw_size != 0xF00 && tsec_fw_size != 0x2900 && tsec_fw_size != 0x3000)) {
+        if ((tsec_fw_size != 0) && (tsec_fw_size != 0xF00 && tsec_fw_size != 0x2900 && tsec_fw_size != 0x3000 && tsec_fw_size != 0x3300)) {
             fatal_error("[NXBOOT] TSEC firmware from %s has a wrong size!\n", loader_ctx->tsecfw_path);
         } else if (tsec_fw_size == 0) {
             fatal_error("[NXBOOT] Could not read the TSEC firmware from %s!\n", loader_ctx->tsecfw_path);
         }
-        
+
         /* Allocate memory for the TSEC firmware. */
         tsec_fw = memalign(0x100, tsec_fw_size);
-        
+
         if (tsec_fw == NULL) {
             fatal_error("[NXBOOT] Out of memory!\n");
         }
         if (read_from_file(tsec_fw, tsec_fw_size, loader_ctx->tsecfw_path) != tsec_fw_size) {
             fatal_error("[NXBOOT] Could not read the TSEC firmware from %s!\n", loader_ctx->tsecfw_path);
         }
+
+        if (tsec_fw_size == 0x3000) {
+            sept_secondary_enc = sept_secondary_00_enc;
+            sept_secondary_enc_size = sept_secondary_00_enc_size;
+        } else if (tsec_fw_size == 0x3300) {
+            sept_secondary_enc = sept_secondary_01_enc;
+            sept_secondary_enc_size = sept_secondary_01_enc_size;
+        } else {
+            fatal_error("[NXBOOT] Unable to identify sept revision to run.");
+        }
     } else {
         if (!package1_get_tsec_fw(&tsec_fw, package1loader, package1loader_size)) {
             fatal_error("[NXBOOT] Failed to read the TSEC firmware from Package1loader!\n");
         }
-        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_700) { 
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_810) {
+            sept_secondary_enc = sept_secondary_01_enc;
+            sept_secondary_enc_size = sept_secondary_01_enc_size;
+            tsec_fw_size = 0x3300;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_700) {
+            sept_secondary_enc = sept_secondary_00_enc;
+            sept_secondary_enc_size = sept_secondary_00_enc_size;
             tsec_fw_size = 0x3000;
         } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_620) {
             tsec_fw_size = 0x2900;
@@ -606,10 +632,10 @@ uint32_t nxboot_main(void) {
         get_and_clear_has_run_sept();
     } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_620) {
         uint8_t tsec_keys[0x20] = {0};
-        
+
         /* Emulate the TSEC payload on 6.2.0+. */
         smmu_emulate_tsec((void *)tsec_keys, package1loader, package1loader_size, package1loader);
-        
+
         /* Copy back the keys. */
         memcpy((void *)tsec_key, (void *)tsec_keys, 0x10);
         memcpy((void *)tsec_root_keys, (void *)tsec_keys + 0x10, 0x10);
@@ -619,11 +645,11 @@ uint32_t nxboot_main(void) {
             fatal_error("[NXBOOT] Failed to get TSEC key!\n");
         }
     }
-    
+
     //fatal_error("Ran sept!");
     /* Display splash screen. */
     display_splash_screen_bmp(loader_ctx->custom_splash_path, (void *)0xC0000000);
-    
+
     /* Derive keydata. If on 7.0.0+, sept has already derived keys for us. */
     unsigned int keygen_type = 0;
     if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_700) {
@@ -665,27 +691,27 @@ uint32_t nxboot_main(void) {
         if (warmboot_fw == NULL) {
             fatal_error("[NXBOOT] Out of memory!\n");
         }
-        
+
         memcpy(warmboot_fw, lp0fw_bin, warmboot_fw_size);
-        
+
         if (warmboot_fw_size == 0) {
             fatal_error("[NXBOOT] Could not read the warmboot firmware from Package1!\n");
         }
     }
-    
+
     /* Patch warmboot firmware for atmosphere. */
     if (warmboot_fw != NULL && warmboot_fw_size >= sizeof(warmboot_ams_header_t)) {
         warmboot_ams_header_t *ams_header = (warmboot_ams_header_t *)warmboot_fw;
         if (ams_header->ams_metadata.magic == WARMBOOT_MAGIC) {
             /* Set target firmware */
             ams_header->ams_metadata.target_firmware = target_firmware;
-            
+
             /* Set RSA modulus */
             const uint8_t *pkc_modulus = fuse_get_retail_type() != 0 ? retail_pkc_modulus : dev_pkc_modulus;
             memcpy(ams_header->rsa_modulus, pkc_modulus, sizeof(ams_header->rsa_modulus));
         }
     }
-        
+
 
     /* Select the right address for the warmboot firmware. */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
@@ -708,7 +734,7 @@ uint32_t nxboot_main(void) {
     }
 
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Rebuilding package2...\n");
-    
+
     /* Parse stratosphere config. */
     nxboot_configure_stratosphere(MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware);
 
@@ -770,10 +796,10 @@ uint32_t nxboot_main(void) {
     free(package2);
 
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Powering on the CCPLEX...\n");
-    
+
     /* Unmount everything. */
     nxfs_end();
-    
+
     /* Return the memory address for booting CPU0. */
     return (uint32_t)exosphere_memaddr;
 }

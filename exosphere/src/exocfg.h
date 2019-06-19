@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_EXOSPHERE_CONFIG_H
 #define EXOSPHERE_EXOSPHERE_CONFIG_H
 
@@ -36,7 +36,7 @@
 /* Exosphere config in DRAM shares physical/virtual mapping. */
 #define MAILBOX_EXOSPHERE_CONFIG_PHYS MAILBOX_EXOSPHERE_CONFIG
 
-#define EXOSPHERE_FLAG_PERFORM_620_KEYGEN                   (1 << 0u)
+#define EXOSPHERE_FLAG_PERFORM_620_KEYGEN_DEPRECATED        (1 << 0u)
 #define EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV                    (1 << 1u)
 #define EXOSPHERE_FLAG_IS_DEBUGMODE_USER                    (1 << 2u)
 #define EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS  (1 << 3u)

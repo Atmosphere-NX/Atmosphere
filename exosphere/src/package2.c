@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <string.h>
 
 #include "utils.h"
@@ -43,6 +43,7 @@ static const uint8_t new_device_key_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10]
     {0x70, 0x08, 0x1B, 0x97, 0x44, 0x64, 0xF8, 0x91, 0x54, 0x9D, 0xC6, 0x84, 0x8F, 0x1A, 0xB2, 0xE4}, /* 6.x   New Device Key Source. */
     {0x8E, 0x09, 0x1F, 0x7A, 0xBB, 0xCA, 0x6A, 0xFB, 0xB8, 0x9B, 0xD5, 0xC1, 0x25, 0x9C, 0xA9, 0x17}, /* 6.2.0 New Device Key Source. */
     {0x8F, 0x77, 0x5A, 0x96, 0xB0, 0x94, 0xFD, 0x8D, 0x28, 0xE4, 0x19, 0xC8, 0x16, 0x1C, 0xDB, 0x3D}, /* 7.0.0 New Device Key Source. */
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* TODO: 8.1.0 New Device Key Source to be added on next change-of-keys. */
 };
 
 static const uint8_t new_device_keygen_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
@@ -51,6 +52,7 @@ static const uint8_t new_device_keygen_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x
     {0x99, 0xFA, 0x98, 0xBD, 0x15, 0x1C, 0x72, 0xFD, 0x7D, 0x9A, 0xD5, 0x41, 0x00, 0xFD, 0xB2, 0xEF}, /* 6.x   New Device Keygen Source. */
     {0x81, 0x3C, 0x6C, 0xBF, 0x5D, 0x21, 0xDE, 0x77, 0x20, 0xD9, 0x6C, 0xE3, 0x22, 0x06, 0xAE, 0xBB}, /* 6.2.0 New Device Keygen Source. */
     {0x86, 0x61, 0xB0, 0x16, 0xFA, 0x7A, 0x9A, 0xEA, 0xF6, 0xF5, 0xBE, 0x1A, 0x13, 0x5B, 0x6D, 0x9E}, /* 7.0.0 New Device Keygen Source. */
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* TODO: 8.1.0 New Device Key Source to be added on next change-of-keys. */
 };
 
 static const uint8_t new_device_keygen_sources_dev[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
@@ -58,45 +60,28 @@ static const uint8_t new_device_keygen_sources_dev[MASTERKEY_NUM_NEW_DEVICE_KEYS
     {0x59, 0x2D, 0x20, 0x69, 0x33, 0xB5, 0x17, 0xBA, 0xCF, 0xB1, 0x4E, 0xFD, 0xE4, 0xC2, 0x7B, 0xA8}, /* 5.x   New Device Keygen Source. */
     {0xF6, 0xD8, 0x59, 0x63, 0x8F, 0x47, 0xCB, 0x4A, 0xD8, 0x74, 0x05, 0x7F, 0x88, 0x92, 0x33, 0xA5}, /* 6.x   New Device Keygen Source. */
     {0x20, 0xAB, 0xF2, 0x0F, 0x05, 0xE3, 0xDE, 0x2E, 0xA1, 0xFB, 0x37, 0x5E, 0x8B, 0x22, 0x1A, 0x38}, /* 6.2.0 New Device Keygen Source. */
-    {0x60, 0xAE, 0x56, 0x68, 0x11, 0xE2, 0x0C, 0x99, 0xDE, 0x05, 0xAE, 0x68, 0x78, 0x85, 0x04, 0xAE}, /* 6.2.0 New Device Keygen Source. */
-};
-
-static const uint8_t new_master_kek_sources[MASTERKEY_REVISION_700_CURRENT - MASTERKEY_REVISION_600_610][0x10] = {
-    {0x37, 0x4B, 0x77, 0x29, 0x59, 0xB4, 0x04, 0x30, 0x81, 0xF6, 0xE5, 0x8C, 0x6D, 0x36, 0x17, 0x9A}, /* 6.2.0 Master Kek Source. */
-    {0x9A, 0x3E, 0xA9, 0xAB, 0xFD, 0x56, 0x46, 0x1C, 0x9B, 0xF6, 0x48, 0x7F, 0x5C, 0xFA, 0x09, 0x5C}, /* 7.0.0 Master Kek Source. */
-};
-
-static const uint8_t keyblob_key_seed_00[0x10] = {
-    0xDF, 0x20, 0x6F, 0x59, 0x44, 0x54, 0xEF, 0xDC, 0x70, 0x74, 0x48, 0x3B, 0x0D, 0xED, 0x9F, 0xD3
-};
-
-static const uint8_t devicekey_seed[0x10] = {
-    0x4F, 0x02, 0x5F, 0x0E, 0xB6, 0x6D, 0x11, 0x0E, 0xDC, 0x32, 0x7D, 0x41, 0x86, 0xC2, 0xF4, 0x78
-};
-
-static const uint8_t devicekey_4x_seed[0x10] = {
-    0x0C, 0x91, 0x09, 0xDB, 0x93, 0x93, 0x07, 0x81, 0x07, 0x3C, 0xC4, 0x16, 0x22, 0x7C, 0x6C, 0x28
-};
-
-static const uint8_t masterkey_seed[0x10] = {
-    0xD8, 0xA2, 0x41, 0x0A, 0xC6, 0xC5, 0x90, 0x01, 0xC6, 0x1D, 0x6A, 0x26, 0x7C, 0x51, 0x3F, 0x3C
-};
-
-static const uint8_t devicekek_4x_seed[0x10] = {
-    0x2D, 0xC1, 0xF4, 0x8D, 0xF3, 0x5B, 0x69, 0x33, 0x42, 0x10, 0xAC, 0x65, 0xDA, 0x90, 0x46, 0x66
+    {0x60, 0xAE, 0x56, 0x68, 0x11, 0xE2, 0x0C, 0x99, 0xDE, 0x05, 0xAE, 0x68, 0x78, 0x85, 0x04, 0xAE}, /* 7.0.0 New Device Keygen Source. */
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* TODO: 8.1.0 New Device Key Source to be added on next change-of-keys. */
 };
 
 static void derive_new_device_keys(unsigned int keygen_keyslot) {
     uint8_t work_buffer[0x10];
     bool is_retail = configitem_is_retail();
     for (unsigned int revision = 0; revision < MASTERKEY_NUM_NEW_DEVICE_KEYS; revision++) {
+        const unsigned int relative_revision = revision + MASTERKEY_REVISION_400_410;
+
         se_aes_ecb_decrypt_block(keygen_keyslot, work_buffer, 0x10, new_device_key_sources[revision], 0x10);
         decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, mkey_get_keyslot(0), is_retail ? new_device_keygen_sources[revision] : new_device_keygen_sources_dev[revision], 0x10);
-        if (revision < MASTERKEY_NUM_NEW_DEVICE_KEYS - 1) {
-            se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10, work_buffer, 0x10);
-            set_old_devkey(revision + MASTERKEY_REVISION_400_410, work_buffer);
+        if (relative_revision > mkey_get_revision()) {
+            break;
+        } else if (relative_revision == mkey_get_revision()) {
+            /* On 7.0.0, sept will have derived this key for us already. */
+            if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_700) {
+                decrypt_data_into_keyslot(KEYSLOT_SWITCH_DEVICEKEY, KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10);
+            }
         } else {
-            decrypt_data_into_keyslot(KEYSLOT_SWITCH_DEVICEKEY, KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10);
+            se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10, work_buffer, 0x10);
+            set_old_devkey(relative_revision, work_buffer);
         }
     }
     set_aes_keyslot_flags(KEYSLOT_SWITCH_DEVICEKEY, 0xFF);
@@ -118,7 +103,8 @@ static void setup_se(void) {
     se->_0x0 &= 0xFFFEFFFF; /* Clear bit 16. */
     (void)(se->FLAGS_REG);
     __dsb_sy();
-    
+
+    /* NOTE: On 8.1.0+, Nintendo does not make keyslots 0-5 unreadable. */
     se->_0x4 = 0;
     se->AES_KEY_READ_DISABLE_REG = 0;
     se->RSA_KEY_READ_DISABLE_REG = 0;
@@ -135,33 +121,6 @@ static void setup_se(void) {
 
     for (unsigned int i = 0; i < KEYSLOT_RSA_MAX; i++) {
         set_rsa_keyslot_flags(i, 0x41);
-    }
-    
-    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_620 && exosphere_should_perform_620_keygen()) {
-        unsigned int master_kek_source_ind;
-        switch (exosphere_get_target_firmware()) {
-            case ATMOSPHERE_TARGET_FIRMWARE_620:
-                master_kek_source_ind = MASTERKEY_REVISION_620 - MASTERKEY_REVISION_620;
-                break;
-            case ATMOSPHERE_TARGET_FIRMWARE_700:
-            case ATMOSPHERE_TARGET_FIRMWARE_800:
-                master_kek_source_ind = MASTERKEY_REVISION_700_CURRENT - MASTERKEY_REVISION_620;
-                break;
-            default:
-                generic_panic();
-                break;
-        }
-        /* Start by generating device keys. */
-        se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_6XTSECKEY, work_buffer, 0x10, keyblob_key_seed_00, 0x10);
-        decrypt_data_into_keyslot(KEYSLOT_SWITCH_4XOLDDEVICEKEY, KEYSLOT_SWITCH_6XSBK, work_buffer, 0x10);
-        decrypt_data_into_keyslot(KEYSLOT_SWITCH_4XNEWCONSOLEKEYGENKEY, KEYSLOT_SWITCH_4XOLDDEVICEKEY, devicekey_4x_seed, 0x10);
-        decrypt_data_into_keyslot(KEYSLOT_SWITCH_4XOLDDEVICEKEY, KEYSLOT_SWITCH_4XOLDDEVICEKEY, devicekey_seed, 0x10);
-        
-        /* Next, generate the master kek, and from there master key/device kek. We use different keyslots than Nintendo, here. */
-        decrypt_data_into_keyslot(KEYSLOT_SWITCH_6XTSECROOTKEY, KEYSLOT_SWITCH_6XTSECROOTKEY, new_master_kek_sources[master_kek_source_ind], 0x10);
-        decrypt_data_into_keyslot(KEYSLOT_SWITCH_MASTERKEY, KEYSLOT_SWITCH_6XTSECROOTKEY, masterkey_seed, 0x10);
-        decrypt_data_into_keyslot(KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, KEYSLOT_SWITCH_6XTSECROOTKEY, devicekek_4x_seed, 0x10);
-        clear_aes_keyslot(KEYSLOT_SWITCH_6XTSECROOTKEY);  
     }
 
     /* Detect Master Key revision. */
@@ -181,6 +140,7 @@ static void setup_se(void) {
         case ATMOSPHERE_TARGET_FIRMWARE_620:
         case ATMOSPHERE_TARGET_FIRMWARE_700:
         case ATMOSPHERE_TARGET_FIRMWARE_800:
+        case ATMOSPHERE_TARGET_FIRMWARE_810:
             derive_new_device_keys(KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY);
             break;
     }
@@ -198,7 +158,7 @@ static void setup_se(void) {
     set_aes_keyslot_flags(KEYSLOT_SWITCH_SESSIONKEY, 0xFF);
 
     /* Generate test vector for our keys. */
-    se_generate_stored_vector();  
+    se_generate_stored_vector();
 }
 
 static void setup_boot_config(void) {
@@ -287,7 +247,7 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
     if (metadata->magic != MAGIC_PK21) {
         return false;
     }
-    
+
 
     /* Package2 size, version number is stored XORed in header CTR. */
     /* Nintendo, what the fuck? */
@@ -370,7 +330,7 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
 
     /* Perform version checks. */
     /* We will be compatible with all package2s released before current, but not newer ones. */
-    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_700_CURRENT) {
+    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_810_CURRENT) {
         return true;
     }
 
@@ -495,21 +455,22 @@ static void copy_warmboot_bin_to_dram() {
             break;
         case ATMOSPHERE_TARGET_FIRMWARE_700:
         case ATMOSPHERE_TARGET_FIRMWARE_800:
+        case ATMOSPHERE_TARGET_FIRMWARE_810:
             warmboot_src = (uint8_t *)0x4003E000;
             break;
     }
     uint8_t *warmboot_dst = (uint8_t *)0x8000D000;
     const size_t warmboot_size = 0x2000;
-    
+
     /* Flush cache, to ensure warmboot is where we need it to be. */
     flush_dcache_range(warmboot_src, warmboot_src + warmboot_size);
     __dsb_sy();
-    
+
     /* Copy warmboot. */
     for (size_t i = 0; i < warmboot_size; i += sizeof(uint32_t)) {
         write32le(warmboot_dst, i, read32le(warmboot_src, i));
     }
-    
+
     /* Flush cache, to ensure warmboot is where we need it to be. */
     flush_dcache_range(warmboot_dst, warmboot_dst + warmboot_size);
     __dsb_sy();
@@ -544,12 +505,12 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     /* Setup the Security Engine. */
     setup_se();
-    
+
     /* Perform initial PMC register writes, if relevant. */
     if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
-        MAKE_REG32(PMC_BASE + 0x054) = 0x8000D000; 
-        MAKE_REG32(PMC_BASE + 0x0A0) &= 0xFFF3FFFF; 
-        MAKE_REG32(PMC_BASE + 0x818) &= 0xFFFFFFFE; 
+        MAKE_REG32(PMC_BASE + 0x054) = 0x8000D000;
+        MAKE_REG32(PMC_BASE + 0x0A0) &= 0xFFF3FFFF;
+        MAKE_REG32(PMC_BASE + 0x818) &= 0xFFFFFFFE;
         MAKE_REG32(PMC_BASE + 0x334) |= 0x10;
         switch (exosphere_get_target_firmware()) {
             case ATMOSPHERE_TARGET_FIRMWARE_400:
@@ -568,6 +529,9 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
             case ATMOSPHERE_TARGET_FIRMWARE_800:
                 MAKE_REG32(PMC_BASE + 0x360) = 0x129;
                 break;
+            case ATMOSPHERE_TARGET_FIRMWARE_810:
+                MAKE_REG32(PMC_BASE + 0x360) = 0x14A;
+                break;
         }
     }
 
@@ -585,7 +549,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     /* memclear the initial copy of Exosphere running in IRAM (relocated to TZRAM by earlier code). */
     /* memset((void *)reloc_list->reloc_base, 0, reloc_list->loaded_bin_size); */
-    
+
     /* Let NX Bootloader know that we're running. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE(exosphere_get_target_firmware()) = 1;
 
@@ -597,7 +561,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     /* Load Boot Config into global. */
     setup_boot_config();
-    
+
     /* Set sysctr0 registers based on bootconfig. */
     if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         uint64_t sysctr0_val = bootconfig_get_value_for_sysctr0();
@@ -620,7 +584,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     /* Make PMC (2.x+), MC (4.x+) registers secure-only */
     secure_additional_devices();
-    
+
     /* Remove the identity mapping for iRAM-C+D & TZRAM */
     /* For our crt0 to work, this doesn't actually unmap TZRAM */
     identity_unmap_iram_cd_tzram();
@@ -630,7 +594,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     flush_dcache_range((uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, (uint8_t *)NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS + sizeof(header));
     memcpy(&header, NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, sizeof(header));
     flush_dcache_range((uint8_t *)&header, (uint8_t *)&header + sizeof(header));
-    
+
     /* Perform signature checks. */
     /* Special exosphere patching enable: All-zeroes signature + decrypted header implies unsigned and decrypted package2. */
     if (header.signature[0] == 0 && memcmp(header.signature, header.signature + 1, sizeof(header.signature) - 1) == 0 && header.metadata.magic == MAGIC_PK21) {
@@ -641,7 +605,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     /* Decrypt header, get key revision required. */
     uint32_t package2_mkey_rev = decrypt_and_validate_header(&header);
-    
+
     /* Copy hash, if necessary. */
     if (bootconfig_is_recovery_boot()) {
         bootconfig_set_package2_hash_for_recovery(NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS, get_package2_size(&header.metadata));
@@ -649,7 +613,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
 
     /* Load Package2 Sections. */
     load_package2_sections(&header.metadata, package2_mkey_rev);
-    
+
     /* Clean up cache. */
     flush_dcache_all();
     invalidate_icache_all(); /* non-broadcasting */
@@ -660,7 +624,7 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     /* Remove the DRAM identity mapping. */
     if (0) {
         identity_unmap_dram();
-    } 
+    }
 
     /* Synchronize with NX BOOTLOADER. */
     if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {

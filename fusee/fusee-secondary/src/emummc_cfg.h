@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_EMUMMC_CONFIG_H
 #define EXOSPHERE_EMUMMC_CONFIG_H
 
@@ -72,6 +72,9 @@ typedef enum {
 
     FS_VER_8_0_0,
     FS_VER_8_0_0_EXFAT,
+
+    FS_VER_8_1_0,
+    FS_VER_8_1_0_EXFAT,
 
     FS_VER_MAX,
 } emummc_fs_ver_t;

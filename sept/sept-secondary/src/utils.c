@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdbool.h>
 #include <stdarg.h>
 #include "utils.h"
@@ -66,13 +66,16 @@ __attribute__((noreturn)) void pmc_reboot(uint32_t scratch0) {
 }
 
 void prepare_for_reboot_to_self(void) {
+    /* Write warmboot to scratch0. */
+    APBDEV_PMC_SCRATCH0_0  = 0x00000001;
+
     /* Patch SDRAM init to perform an SVC immediately after second write */
     APBDEV_PMC_SCRATCH45_0 = 0x2E38DFFF;
     APBDEV_PMC_SCRATCH46_0 = 0x6001DC28;
     /* Set SVC handler to jump to reboot stub in IRAM. */
     APBDEV_PMC_SCRATCH33_0 = 0x4003F000;
     APBDEV_PMC_SCRATCH40_0 = 0x6000F208;
-    
+
     /* Copy reboot stub into IRAM high. */
     for (size_t i = 0; i < rebootstub_bin_size; i += sizeof(uint32_t)) {
         write32le((void *)0x4003F000, i, read32le(rebootstub_bin, i));
@@ -82,7 +85,7 @@ void prepare_for_reboot_to_self(void) {
 __attribute__((noreturn)) void reboot_to_self(void) {
     /* Prep IRAM for reboot. */
     prepare_for_reboot_to_self();
-    
+
     /* Trigger warm reboot. */
     pmc_reboot(1 << 0);
 }

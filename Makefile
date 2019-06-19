@@ -61,7 +61,8 @@ dist: all
 	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/sept/payload.bin
 	cp sept/sept-primary/sept-primary.bin atmosphere-$(AMSVER)/sept/sept-primary.bin
 	cp sept/sept-secondary/sept-secondary.bin atmosphere-$(AMSVER)/sept/sept-secondary.bin
-	cp sept/sept-secondary/sept-secondary.enc atmosphere-$(AMSVER)/sept/sept-secondary.enc
+	cp sept/sept-secondary/sept-secondary_00.enc atmosphere-$(AMSVER)/sept/sept-secondary_00.enc
+	cp sept/sept-secondary/sept-secondary_01.enc atmosphere-$(AMSVER)/sept/sept-secondary_01.enc
 	cp common/defaults/BCT.ini atmosphere-$(AMSVER)/atmosphere/BCT.ini
 	cp common/defaults/loader.ini atmosphere-$(AMSVER)/atmosphere/loader.ini
 	cp common/defaults/system_settings.ini atmosphere-$(AMSVER)/atmosphere/system_settings.ini

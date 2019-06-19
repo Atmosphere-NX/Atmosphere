@@ -17,64 +17,65 @@
 #include <stdio.h>
 #include "key_derivation.h"
 #include "se.h"
+#include "cluster.h"
+#include "timers.h"
 #include "fuse.h"
 #include "utils.h"
 
-#define AL16 ALIGN(16)
+#define u8 uint8_t
+#define u32 uint32_t
+#include "key_derivation_bin.h"
+#undef u8
+#undef u32
 
-static const uint8_t AL16 keyblob_seed_00[0x10] = {
-    0xDF, 0x20, 0x6F, 0x59, 0x44, 0x54, 0xEF, 0xDC, 0x70, 0x74, 0x48, 0x3B, 0x0D, 0xED, 0x9F, 0xD3
-};
 
-static const uint8_t AL16 masterkey_seed[0x10] = {
-    0xD8, 0xA2, 0x41, 0x0A, 0xC6, 0xC5, 0x90, 0x01, 0xC6, 0x1D, 0x6A, 0x26, 0x7C, 0x51, 0x3F, 0x3C
-};
+void derive_keys(uint32_t version) {
+    /* Clear mailbox. */
+    volatile uint32_t *mailbox = (volatile uint32_t *)0x4003FF00;
+    while (*mailbox != 0) {
+        *mailbox = 0;
+    }
 
-static const uint8_t AL16 devicekey_seed[0x10] = {
-    0x4F, 0x02, 0x5F, 0x0E, 0xB6, 0x6D, 0x11, 0x0E, 0xDC, 0x32, 0x7D, 0x41, 0x86, 0xC2, 0xF4, 0x78
-};
+    /* Set derivation id. */
+    *((volatile uint32_t *)0x4003E800) = version;
 
-static const uint8_t AL16 devicekey_4x_seed[0x10] = {
-    0x0C, 0x91, 0x09, 0xDB, 0x93, 0x93, 0x07, 0x81, 0x07, 0x3C, 0xC4, 0x16, 0x22, 0x7C, 0x6C, 0x28
-};
+    /* Copy key derivation stub into IRAM high. */
+    for (size_t i = 0; i < key_derivation_bin_size; i += sizeof(uint32_t)) {
+        write32le((void *)0x4003D000, i, read32le(key_derivation_bin, i));
+    }
 
-static const uint8_t AL16 masterkey_4x_seed[0x10] = {
-    0x2D, 0xC1, 0xF4, 0x8D, 0xF3, 0x5B, 0x69, 0x33, 0x42, 0x10, 0xAC, 0x65, 0xDA, 0x90, 0x46, 0x66
-};
+    cluster_boot_cpu0(0x4003D000);
 
-static const uint8_t AL16 new_master_kek_seed_7x[0x10] = {
-    0x9A, 0x3E, 0xA9, 0xAB, 0xFD, 0x56, 0x46, 0x1C, 0x9B, 0xF6, 0x48, 0x7F, 0x5C, 0xFA, 0x09, 0x5C
-};
+    while (*mailbox != 7) {
+        /* Wait until keys have been derived. */
+    }
+}
 
-void derive_7x_keys(const void *tsec_key, void *tsec_root_key) {
-    uint8_t AL16 work_buffer[0x10];
+void load_keys(const uint8_t *se_state) {
+    /* Clear keyslots up to 0xA. */
+    for (size_t i = 0; i < 0xA; i++) {
+        clear_aes_keyslot(i);
+    }
 
-    /* Set keyslot flags properly in preparation of derivation. */
+    /* Copy device keygen key out of state keyslot 0xA into keyslot 0xA. */
+    set_aes_keyslot(0xA, se_state + 0x30 + (0xA * 0x20), 0x10);
+
+    /* Clear keyslot 0xB. */
+    clear_aes_keyslot(0xB);
+
+    /* Copy master key out of state keyslot 0xC into keyslot 0xC. */
+    set_aes_keyslot(0xC, se_state + 0x30 + (0xC * 0x20), 0x10);
+
+    /* Copy firmware device key out of state keyslot 0xE into keyslot 0xD. */
+    set_aes_keyslot(0xD, se_state + 0x30 + (0xE * 0x20), 0x10);
+
+    /* Clear keyslot 0xE. */
+    clear_aes_keyslot(0xE);
+
+    /* Copy device key out of state keyslot 0xF into keyslot 0xF. */
+    set_aes_keyslot(0xF, se_state + 0x30 + (0xF * 0x20), 0x10);
+
+    /* Set keyslot flags properly in preparation for secmon. */
     set_aes_keyslot_flags(0xE, 0x15);
     set_aes_keyslot_flags(0xD, 0x15);
-    
-    /* Set the TSEC key. */
-    set_aes_keyslot(0xD, tsec_key, 0x10);
-    
-    /* Derive keyblob key 0. */
-    se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, keyblob_seed_00, 0x10);
-    decrypt_data_into_keyslot(0xF, 0xE, work_buffer, 0x10);
-    
-    /* Clear the SBK. */
-    clear_aes_keyslot(0xE);
-    
-    /* Derive the master kek. */
-    set_aes_keyslot(0xC, tsec_root_key, 0x10);
-    decrypt_data_into_keyslot(0xC, 0xC, new_master_kek_seed_7x, 0x10);
-    
-    /* Derive keys for exosphere. */
-    decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
-    decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
-    decrypt_data_into_keyslot(0xE, 0xC, masterkey_4x_seed, 0x10);
-    decrypt_data_into_keyslot(0xC, 0xC, masterkey_seed, 0x10);
-    
-    /* Clear master kek from memory. */
-    for (size_t i = 0; i < sizeof(work_buffer); i++) {
-        work_buffer[i] = 0xCC;
-    }
 }

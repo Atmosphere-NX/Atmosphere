@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_PANIC_H
 #define FUSEE_PANIC_H
 
@@ -28,7 +28,6 @@
 
 #define PANIC_CODE_SAFEMODE 0x00000020
 
-void check_and_display_panic(void);
 __attribute__ ((noreturn)) void panic(uint32_t code);
 
 #endif

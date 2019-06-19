@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -42,6 +42,7 @@ static const uint8_t mkey_vectors_dev[MASTERKEY_REVISION_MAX][0x10] =
     {0x78, 0xD5, 0xF1, 0x20, 0x3D, 0x16, 0xE9, 0x30, 0x32, 0x27, 0x34, 0x6F, 0xCF, 0xE0, 0x27, 0xDC}, /* Master key 04 encrypted with Master key 05. */
     {0x6F, 0xD2, 0x84, 0x1D, 0x05, 0xEC, 0x40, 0x94, 0x5F, 0x18, 0xB3, 0x81, 0x09, 0x98, 0x8D, 0x4E}, /* Master key 05 encrypted with Master key 06. */
     {0x37, 0xAF, 0xAB, 0x35, 0x79, 0x09, 0xD9, 0x48, 0x29, 0xD2, 0xDB, 0xA5, 0xA5, 0xF5, 0x30, 0x19}, /* Master key 06 encrypted with Master key 07. */
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* TODO: Master key 07 encrypted with Master key 08. */
 };
 
 /* Retail unit keys. */
@@ -55,6 +56,7 @@ static const uint8_t mkey_vectors[MASTERKEY_REVISION_MAX][0x10] =
     {0xEB, 0xF5, 0x6F, 0x83, 0x61, 0x9E, 0xF8, 0xFA, 0xE0, 0x87, 0xD7, 0xA1, 0x4E, 0x25, 0x36, 0xEE}, /* Master key 04 encrypted with Master key 05. */
     {0x1E, 0x1E, 0x22, 0xC0, 0x5A, 0x33, 0x3C, 0xB9, 0x0B, 0xA9, 0x03, 0x04, 0xBA, 0xDB, 0x07, 0x57}, /* Master key 05 encrypted with Master key 06. */
     {0xA4, 0xD4, 0x52, 0x6F, 0xD1, 0xE4, 0x36, 0xAA, 0x9F, 0xCB, 0x61, 0x27, 0x1C, 0x67, 0x65, 0x1F}, /* Master key 06 encrypted with Master key 07. */
+    {0xEA, 0x60, 0xB3, 0xEA, 0xCE, 0x8F, 0x24, 0x46, 0x7D, 0x33, 0x9C, 0xD1, 0xBC, 0x24, 0x98, 0x29}, /* Master key 07 encrypted with Master key 08. */
 };
 
 bool check_mkey_revision(unsigned int revision, bool is_retail) {
@@ -83,7 +85,7 @@ void mkey_detect_revision(void) {
     if (g_determined_mkey_revision) {
         generic_panic();
     }
-    
+
     for (unsigned int rev = 0; rev < MASTERKEY_REVISION_MAX; rev++) {
         if (check_mkey_revision(rev, configitem_is_retail())) {
             g_determined_mkey_revision = true;
@@ -91,7 +93,7 @@ void mkey_detect_revision(void) {
             break;
         }
     }
-    
+
     /* We must have determined the master key, or we're not running on a Switch. */
     if (!g_determined_mkey_revision) {
         /* Panic in bright red. */
@@ -125,7 +127,6 @@ unsigned int mkey_get_keyslot(unsigned int revision) {
     }
 }
 
-
 void set_old_devkey(unsigned int revision, const uint8_t *key) {
     if (revision < MASTERKEY_REVISION_400_410 || MASTERKEY_REVISION_MAX <= revision) {
         generic_panic();
@@ -135,23 +136,17 @@ void set_old_devkey(unsigned int revision, const uint8_t *key) {
 }
 
 unsigned int devkey_get_keyslot(unsigned int revision) {
-    if (!g_determined_mkey_revision || revision >= MASTERKEY_REVISION_MAX) {
+    if (!g_determined_mkey_revision || revision > g_mkey_revision) {
         generic_panic();
     }
 
-    if (revision > g_mkey_revision) {
-        generic_panic();
-    }
-
-    if (revision >= 1) {
-        if (revision == MASTERKEY_REVISION_MAX) {
-            return KEYSLOT_SWITCH_DEVICEKEY;
-        } else {
-            /* Load into a temp keyslot. */
-            set_aes_keyslot(KEYSLOT_SWITCH_TEMPKEY, g_old_devicekeys[revision - MASTERKEY_REVISION_400_410], 0x10);
-            return KEYSLOT_SWITCH_TEMPKEY;
-        }
-    } else {
+    if (revision < MASTERKEY_REVISION_400_410) {
         return KEYSLOT_SWITCH_4XOLDDEVICEKEY;
+    } else if (revision < g_mkey_revision) {
+        /* Load into a temp keyslot. */
+        set_aes_keyslot(KEYSLOT_SWITCH_TEMPKEY, g_old_devicekeys[revision - MASTERKEY_REVISION_400_410], 0x10);
+        return KEYSLOT_SWITCH_TEMPKEY;
+    } else {
+        return KEYSLOT_SWITCH_DEVICEKEY;
     }
 }

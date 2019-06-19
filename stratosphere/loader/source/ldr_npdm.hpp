@@ -37,7 +37,7 @@ class NpdmUtils {
             u8 default_cpuid;
             u32 _0x10;
             u32 system_resource_size;
-            u32 process_category;
+            u32 version;
             u32 main_stack_size;
             char title_name[0x50];
             u32 aci0_offset;

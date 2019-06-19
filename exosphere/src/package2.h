@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_PACKAGE2_H
 #define EXOSPHERE_PACKAGE2_H
 
@@ -70,7 +70,8 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(unsigned int targetfw) {
 #define PACKAGE2_MAXVER_500_510 0x7
 #define PACKAGE2_MAXVER_600_610 0x8
 #define PACKAGE2_MAXVER_620 0x9
-#define PACKAGE2_MAXVER_700_CURRENT 0xA
+#define PACKAGE2_MAXVER_700_800 0xA
+#define PACKAGE2_MAXVER_810_CURRENT 0xB
 
 #define PACKAGE2_MINVER_100 0x3
 #define PACKAGE2_MINVER_200 0x4
@@ -80,7 +81,8 @@ static inline uintptr_t get_nx_bootloader_mailbox_base(unsigned int targetfw) {
 #define PACKAGE2_MINVER_500_510 0x8
 #define PACKAGE2_MINVER_600_610 0x9
 #define PACKAGE2_MINVER_620 0xA
-#define PACKAGE2_MINVER_700_CURRENT 0xB
+#define PACKAGE2_MINVER_700_800 0xB
+#define PACKAGE2_MINVER_810_CURRENT 0xC
 
 typedef struct {
     union {

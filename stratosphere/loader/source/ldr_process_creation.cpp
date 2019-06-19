@@ -25,6 +25,35 @@
 #include "ldr_npdm.hpp"
 #include "ldr_nso.hpp"
 
+static inline bool IsDisallowedVersion810(const u64 title_id, const u32 version) {
+    return version == 0 &&
+    (title_id == TitleId_Settings ||
+     title_id == TitleId_Bus ||
+     title_id == TitleId_Audio ||
+     title_id == TitleId_NvServices ||
+     title_id == TitleId_Ns ||
+     title_id == TitleId_Ssl ||
+     title_id == TitleId_Es ||
+     title_id == TitleId_Creport ||
+     title_id == TitleId_Ro);
+}
+
+Result ProcessCreation::ValidateProcessVersion(u64 title_id, u32 version) {
+    if (GetRuntimeFirmwareVersion() < FirmwareVersion_810) {
+        return ResultSuccess;
+    } else {
+#ifdef LDR_VALIDATE_PROCESS_VERSION
+        if (IsDisallowedVersion810(title_id, version)) {
+            return ResultLoaderInvalidVersion;
+        } else {
+            return ResultSuccess;
+        }
+#else
+        return ResultSuccess;
+#endif
+    }
+}
+
 Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle reslimit_h, u64 arg_flags, ProcessInfo *out_proc_info) {
     /* Initialize a ProcessInfo using an npdm. */
     *out_proc_info = {};
@@ -36,8 +65,8 @@ Result ProcessCreation::InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle 
     /* Set title id. */
     out_proc_info->title_id = npdm->aci0->title_id;
 
-    /* Set process category. */
-    out_proc_info->process_category = npdm->header->process_category;
+    /* Set version. */
+    out_proc_info->version = npdm->header->version;
 
     /* Copy reslimit handle raw. */
     out_proc_info->reslimit_h = reslimit_h;
@@ -144,6 +173,9 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
 
     /* Load the process's NPDM. */
     R_TRY(NpdmUtils::LoadNpdmFromCache(target_process->tid_sid.title_id, &npdm_info));
+
+    /* Validate version. */
+    R_TRY(ValidateProcessVersion(target_process->tid_sid.title_id, npdm_info.header->version));
 
     /* Validate the title we're loading is what we expect. */
     if (npdm_info.aci0->title_id < npdm_info.acid->title_id_range_min || npdm_info.aci0->title_id > npdm_info.acid->title_id_range_max) {

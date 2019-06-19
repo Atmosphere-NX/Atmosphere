@@ -13,31 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdint.h>
+
+#ifndef SEPT_KEYDERIVATION_H
+#define SEPT_KEYDERIVATION_H
+
 #include <stddef.h>
-#include "panic.h"
-#include "di.h"
-#include "pmc.h"
-#include "se.h"
-#include "fuse.h"
-#include "utils.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-static uint32_t g_panic_code = 0;
+void derive_keys(void);
 
-__attribute__ ((noreturn)) void panic(uint32_t code) {
-    /* Set panic code. */
-    if (g_panic_code == 0) {
-        g_panic_code = code;
-        APBDEV_PMC_SCRATCH200_0 = code;
-    }
-
-    /* Clear all keyslots. */
-    for (size_t i = 0; i < 0x10; i++) {
-        clear_aes_keyslot(i);
-    }
-
-    fuse_disable_programming();
-    APBDEV_PMC_CRYPTO_OP_0 = 1; /* Disable all SE operations. */
-
-    while(true);
-}
+#endif

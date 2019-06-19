@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef ATMOSPHERE_VERSION_H
 #define ATMOSPHERE_VERSION_H
 
@@ -22,7 +22,7 @@
 #define ATMOSPHERE_RELEASE_VERSION_MICRO    0
 
 #define ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR 8
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR 0
-#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO 1
+#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR 1
+#define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO 0
 
 #endif

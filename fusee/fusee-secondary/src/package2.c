@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <atmosphere.h>
@@ -66,7 +66,7 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     if (thermosphere_size != 0 && package2->metadata.section_sizes[PACKAGE2_SECTION_UNUSED] != 0) {
         fatal_error(u8"Error: Package2 has no unused section for Thermosphère!\n");
     }
-    
+
     /* Load Kernel from SD, if possible. */
     {
         size_t sd_kernel_size = get_file_size("atmosphere/kernel.bin");
@@ -88,13 +88,13 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
 
     /* Perform any patches we want to the NX kernel. */
     package2_patch_kernel(kernel, kernel_size, is_sd_kernel, (void *)&orig_ini1);
-    
+
     /* Ensure we know where embedded INI is if present, and we don't if not. */
-    if ((target_firmware < ATMOSPHERE_TARGET_FIRMWARE_800 && orig_ini1 != NULL) || 
+    if ((target_firmware < ATMOSPHERE_TARGET_FIRMWARE_800 && orig_ini1 != NULL) ||
         (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_800 && orig_ini1 == NULL)) {
         fatal_error("Error: inappropriate kernel embedded ini context");
     }
-    
+
     print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilding the INI1 section...\n");
     if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_800) {
         package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);
@@ -232,7 +232,7 @@ static bool package2_validate_metadata(package2_meta_t *metadata, uint8_t data[]
 
     /* Perform version checks. */
     /* We will be compatible with all package2s released before current, but not newer ones. */
-    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_700_CURRENT) {
+    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_810_CURRENT) {
         return true;
     }
 

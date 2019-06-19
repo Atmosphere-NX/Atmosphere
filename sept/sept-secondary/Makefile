@@ -77,14 +77,15 @@ export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(AMS)/exosphere/rebootstub
+			$(AMS)/exosphere/rebootstub \
+			$(TOPDIR)/key_derivation
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) rebootstub.bin
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) rebootstub.bin key_derivation.bin
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -111,33 +112,38 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) clean all check_rebootstub
+.PHONY: $(BUILD) clean all check_rebootstub check_key_derivation
 
 #---------------------------------------------------------------------------------
-all: check_rebootstub $(BUILD)
+all: check_rebootstub check_key_derivation $(BUILD)
 
 check_rebootstub:
 	@$(MAKE) -C $(AMS)/exosphere/rebootstub all
 
-$(BUILD):
-ifeq ($(strip $(SEPT_ENC_PATH)),)
+check_key_derivation:
+	@$(MAKE) -C key_derivation
+
+$(BUILD): check_rebootstub check_key_derivation
+ifeq ($(strip $(SEPT_00_ENC_PATH)),)
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 else
 	@touch $(TOPDIR)/$(TARGET).bin
-	@cp $(SEPT_ENC_PATH) $(TOPDIR)/$(TARGET).enc
+	@cp $(SEPT_00_ENC_PATH) $(TOPDIR)/$(TARGET)_00.enc
+	@cp $(SEPT_01_ENC_PATH) $(TOPDIR)/$(TARGET)_01.enc
 endif
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(AMS)/exosphere/rebootstub clean
-	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).enc $(TARGET).elf
+	@$(MAKE) -C key_derivation clean
+	@rm -fr $(BUILD) $(TARGET).bin $(TARGET)_*.enc $(TARGET).elf
 
 
 #---------------------------------------------------------------------------------
 else
-.PHONY:	all
+.PHONY:	all $(OUTPUT).bin
 
 DEPENDS	:=	$(OFILES:.o=.d)
 

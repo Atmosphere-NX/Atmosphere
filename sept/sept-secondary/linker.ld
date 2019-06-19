@@ -20,8 +20,8 @@ MEMORY
 SECTIONS
 {
     PROVIDE(__start__           = 0x40010000);
-    PROVIDE(__stack_top__       = 0x40010000);
-    PROVIDE(__stack_bottom__    = 0x4000C000);
+    PROVIDE(__stack_top__       = 0x4003C000);
+    PROVIDE(__stack_bottom__    = 0x40038000);
     PROVIDE(__heap_start__      = 0);
     PROVIDE(__heap_end__        = 0);
 
