@@ -54,7 +54,8 @@ static const uint8_t AL16 masterkey_4x_seed[0x10] = {
     0x2D, 0xC1, 0xF4, 0x8D, 0xF3, 0x5B, 0x69, 0x33, 0x42, 0x10, 0xAC, 0x65, 0xDA, 0x90, 0x46, 0x66
 };
 
-static const uint8_t AL16 new_master_kek_seeds[MASTERKEY_REVISION_700_CURRENT - MASTERKEY_REVISION_600_610][0x10] = {
+/* TODO: Bother adding 8.1.0 here? We'll never call into here... */
+static const uint8_t AL16 new_master_kek_seeds[MASTERKEY_REVISION_700_800 - MASTERKEY_REVISION_600_610][0x10] = {
     {0x37, 0x4B, 0x77, 0x29, 0x59, 0xB4, 0x04, 0x30, 0x81, 0xF6, 0xE5, 0x8C, 0x6D, 0x36, 0x17, 0x9A}, /* MasterKek seed 06. */
     {0x9A, 0x3E, 0xA9, 0xAB, 0xFD, 0x56, 0x46, 0x1C, 0x9B, 0xF6, 0x48, 0x7F, 0x5C, 0xFA, 0x09, 0x5C}, /* MasterKek seed 07. */
 };
@@ -93,17 +94,17 @@ static int decrypt_keyblob(const nx_keyblob_t *keyblobs, uint32_t revision, uint
     if (get_keyblob(&keyblob, revision, keyblobs, available_revision) != 0) {
         return -1;
     }
-    
+
     se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, keyblob_seeds[revision], 0x10);
     decrypt_data_into_keyslot(keyslot, 0xE, work_buffer, 0x10);
     decrypt_data_into_keyslot(0xB, keyslot, keyblob_mac_seed, 0x10);
-    
+
     /* Validate keyblob. */
     se_compute_aes_128_cmac(0xB, work_buffer, 0x10, keyblob.mac + sizeof(keyblob.mac), sizeof(keyblob) - sizeof(keyblob.mac));
     if (safe_memcmp(keyblob.mac, work_buffer, 0x10)) {
         return -1;
     }
-    
+
     /* Decrypt keyblob. */
     se_aes_ctr_crypt(keyslot, &g_dec_keyblobs[revision], sizeof(g_dec_keyblobs[revision]), keyblob.data, sizeof(keyblob.data), keyblob.ctr, sizeof(keyblob.ctr));
     return 0;
@@ -113,7 +114,7 @@ int load_package1_key(uint32_t revision) {
     if (revision > MASTERKEY_REVISION_600_610) {
         return -1;
     }
-    
+
     set_aes_keyslot(0xB, g_dec_keyblobs[revision].package1_key, 0x10);
     return 0;
 }
@@ -122,17 +123,17 @@ int load_package1_key(uint32_t revision) {
 int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_key, void *tsec_root_keys, unsigned int *out_keygen_type) {
     uint8_t AL16 work_buffer[0x10];
     uint8_t AL16 zeroes[0x10] = {0};
-    
+
     /* Initialize keygen type. */
     *out_keygen_type = 0;
 
     /* TODO: Set keyslot flags properly in preparation of derivation. */
     set_aes_keyslot_flags(0xE, 0x15);
     set_aes_keyslot_flags(0xD, 0x15);
-    
+
     /* Set the TSEC key. */
     set_aes_keyslot(0xD, tsec_key, 0x10);
-        
+
     /* Decrypt all keyblobs, setting keyslot 0xF correctly. */
     for (unsigned int rev = 0; rev <= MASTERKEY_REVISION_600_610; rev++) {
         int ret = decrypt_keyblob(keyblobs, rev, available_revision);
@@ -150,13 +151,16 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
                 break;
             case ATMOSPHERE_TARGET_FIRMWARE_700:
             case ATMOSPHERE_TARGET_FIRMWARE_800:
-                desired_keyblob = MASTERKEY_REVISION_700_CURRENT;
+                desired_keyblob = MASTERKEY_REVISION_700_800;
+                break;
+            case ATMOSPHERE_TARGET_FIRMWARE_810:
+                desired_keyblob = MASTERKEY_REVISION_810_CURRENT;
                 break;
             default:
                 fatal_error("Unknown target firmware: %02x!", target_firmware);
                 break;
         }
-        
+
         /* Try emulation result. */
         for (unsigned int rev = MASTERKEY_REVISION_620; rev < MASTERKEY_REVISION_MAX; rev++) {
             void *tsec_root_key = (void *)((uintptr_t)tsec_root_keys + 0x10 * (rev - MASTERKEY_REVISION_620));
@@ -167,7 +171,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
                 memcpy(g_dec_keyblobs[rev].master_kek, work_buffer, 0x10);
             }
         }
-        
+
         if (memcmp(g_dec_keyblobs[desired_keyblob].master_kek, zeroes, 0x10) == 0) {
             /* Try reading the keys from a file. */
             const char *keyfile = fuse_get_retail_type() != 0 ? "atmosphere/prod.keys" : "atmosphere/dev.keys";
@@ -188,13 +192,13 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
                 }
             }
         }
-        
-        
+
+
         if (memcmp(g_dec_keyblobs[available_revision].master_kek, zeroes, 0x10) == 0) {
             fatal_error("Error: failed to derive master_kek_%02x!", available_revision);
         }
     }
-    
+
     /* Clear the SBK. */
     clear_aes_keyslot(0xE);
 
@@ -225,6 +229,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
         case ATMOSPHERE_TARGET_FIRMWARE_620:
         case ATMOSPHERE_TARGET_FIRMWARE_700:
         case ATMOSPHERE_TARGET_FIRMWARE_800:
+        case ATMOSPHERE_TARGET_FIRMWARE_810:
             decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
             decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
             decrypt_data_into_keyslot(0xE, 0xC, masterkey_4x_seed, 0x10);

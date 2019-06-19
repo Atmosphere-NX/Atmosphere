@@ -29,7 +29,7 @@
 #undef u32
 
 
-void derive_keys(void) {
+void derive_keys(uint32_t version) {
     /* Clear mailbox. */
     volatile uint32_t *mailbox = (volatile uint32_t *)0x4003FF00;
     while (*mailbox != 0) {
@@ -37,7 +37,7 @@ void derive_keys(void) {
     }
 
     /* Set derivation id. */
-    *((volatile uint32_t *)0x4003E800) = 0x0;
+    *((volatile uint32_t *)0x4003E800) = version;
 
     /* Copy key derivation stub into IRAM high. */
     for (size_t i = 0; i < key_derivation_bin_size; i += sizeof(uint32_t)) {

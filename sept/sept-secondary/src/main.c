@@ -48,7 +48,7 @@ static void set_has_rebooted(bool rebooted) {
 }
 
 
-static void exfiltrate_keys_and_reboot_if_needed(void) {
+static void exfiltrate_keys_and_reboot_if_needed(uint32_t version) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     uint8_t *enc_se_state = (uint8_t *)0x4003E000;
     uint8_t *dec_se_state = (uint8_t *)0x4003F000;
@@ -59,7 +59,7 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
         set_has_rebooted(true);
 
         /* Derive keys. */
-        derive_keys();
+        derive_keys(version);
 
         reboot_to_self();
     } else {
@@ -135,14 +135,14 @@ static void exit_callback(int rc) {
     relocate_and_chainload();
 }
 
-int main(void) {
+int sept_main(uint32_t version) {
     const char *stage2_path;
     stage2_args_t *stage2_args;
     uint32_t stage2_version = 0;
     ScreenLogLevel log_level = SCREEN_LOG_LEVEL_NONE;
 
     /* Extract keys from the security engine, which TSEC FW locked down. */
-    exfiltrate_keys_and_reboot_if_needed();
+    exfiltrate_keys_and_reboot_if_needed(version);
 
     /* Override the global logging level. */
     log_set_log_level(log_level);

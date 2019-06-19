@@ -55,7 +55,7 @@ SECTIONS
         . = ALIGN(32);
         PROVIDE (__chainloader_end__ = ABSOLUTE(.));
     } >low_iram :NONE
-    
+
     .nxboot_loadable :
     {
         . = ALIGN(32);
@@ -157,7 +157,7 @@ SECTIONS
         CONSTRUCTORS
         . = ALIGN(32);
     } >main
-    
+
     __data_end__ = ABSOLUTE(.);
     PROVIDE (__total_size__ = (__data_end__ - __start__));
 
@@ -236,8 +236,10 @@ SECTIONS
     PROVIDE(__rebootstub_bin_size__ = rebootstub_bin_end - rebootstub_bin);
     PROVIDE(__sept_primary_bin_start__ = sept_primary_bin - __start__);
     PROVIDE(__sept_primary_bin_size__ = sept_primary_bin_end - sept_primary_bin);
-    PROVIDE(__sept_secondary_enc_start__ = sept_secondary_enc - __start__);
-    PROVIDE(__sept_secondary_enc_size__ = sept_secondary_enc_end - sept_secondary_enc);
+    PROVIDE(__sept_secondary_00_enc_start__ = sept_secondary_00_enc - __start__);
+    PROVIDE(__sept_secondary_00_enc_size__ = sept_secondary_00_enc_end - sept_secondary_00_enc);
+    PROVIDE(__sept_secondary_01_enc_start__ = sept_secondary_01_enc - __start__);
+    PROVIDE(__sept_secondary_01_enc_size__ = sept_secondary_01_enc_end - sept_secondary_01_enc);
     PROVIDE(__sm_kip_start__ = sm_kip - __start__);
     PROVIDE(__sm_kip_size__ = sm_kip_end - sm_kip);
     PROVIDE(__spl_kip_start__ = spl_kip - __start__);

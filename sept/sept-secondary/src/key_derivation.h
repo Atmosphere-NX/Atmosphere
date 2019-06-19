@@ -21,7 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-void derive_keys(void);
+void derive_keys(uint32_t version);
 void load_keys(const uint8_t *se_state);
 
 #endif

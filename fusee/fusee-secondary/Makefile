@@ -99,7 +99,7 @@ SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 KIPFILES 	:=	loader.kip pm.kip sm.kip ams_mitm.kip spl.kip boot.kip
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary.bin \
 				exosphere.bin lp0fw.bin rebootstub.bin thermosphere.bin splash_screen.bmp \
-				sept-primary.bin sept-secondary.enc emummc.kip \
+				sept-primary.bin sept-secondary_00.enc sept-secondary_01.enc emummc.kip \
 				$(KIPFILES)
 
 #---------------------------------------------------------------------------------
@@ -198,22 +198,27 @@ fusee_primary.bin.o	fusee_primary_bin.h:	fusee-primary.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(_bin2o)
-    
+
 sept_primary.bin.o	sept_primary_bin.h:	sept-primary.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(_bin2o)
-    
-sept_secondary.enc.o	sept_secondary_enc.h:	sept-secondary.enc
+
+sept_secondary_00.enc.o	sept_secondary_00.h:	sept-secondary_00.enc
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(_bin2o)
-    
+
+sept_secondary_01.enc.o	sept_secondary_01_enc.h:	sept-secondary_01.enc
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(_bin2o)
+
 %.bin.o	%_bin.h:	%.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-    
+
 %.bmp.o	%_bmp.h:	%.bmp
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys
+import sys, os
 from struct import pack as pk, unpack as up
 from Crypto.Cipher import AES
 from Crypto.Hash import CMAC
@@ -41,13 +41,16 @@ def get_last_block_for_desired_mac(key, data, desired_mac):
     return last_block
 
 
-def sign_encrypt_code(code, sig_key, enc_key, iv, desired_mac):
+def sign_encrypt_code(code, sig_key, enc_key, iv, desired_mac, version):
     # Pad with 0x20 of zeroes.
     code = code + bytearray(0x20)
     code_len = len(code)
     code_len += 0xFFF
     code_len &= ~0xFFF
     code = code + bytearray(code_len - len(code))
+
+    # Insert version
+    code = code[:8] + pk('<I', version) + code[12:]
 
     # Add empty trustzone, warmboot segments.
     code = code + bytearray(0x1FE0 - 0x10)
@@ -69,8 +72,10 @@ def main(argc, argv):
     if len(code) & 0xF:
         code = code + bytearray(0x10 - (len(code) & 0xF))
     # TODO: Support dev unit crypto
-    with open(argv[2], 'wb') as f:
-        f.write(sign_encrypt_code(code, KEYS.HOVI_SIG_KEY_PRD, KEYS.HOVI_ENC_KEY_PRD, KEYS.IV, b'THANKS_NVIDIA_<3'))
+    fn, fext = os.path.splitext(argv[2])
+    for key in range(KEYS.NUM_KEYS):
+        with open(fn + ('_%02X' % key) + fext, 'wb') as f:
+            f.write(sign_encrypt_code(code, KEYS.HOVI_SIG_KEY_PRD[key], KEYS.HOVI_ENC_KEY_PRD[key], KEYS.IV[key], b'THANKS_NVIDIA_<3', key))
     return 0
 
 

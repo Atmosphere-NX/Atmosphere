@@ -137,12 +137,12 @@ clean:
 	@echo clean ...
 	@$(MAKE) -C $(AMS)/exosphere/rebootstub clean
 	@$(MAKE) -C key_derivation clean
-	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).enc $(TARGET).elf
+	@rm -fr $(BUILD) $(TARGET).bin $(TARGET)_*.enc $(TARGET).elf
 
 
 #---------------------------------------------------------------------------------
 else
-.PHONY:	all
+.PHONY:	all $(OUTPUT).bin
 
 DEPENDS	:=	$(OFILES:.o=.d)
 

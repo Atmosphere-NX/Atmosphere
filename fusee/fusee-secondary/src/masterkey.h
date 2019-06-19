@@ -13,14 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_MASTERKEY_H
 #define FUSEE_MASTERKEY_H
 
 /* This is glue code to enable master key support across versions. */
 
-/* TODO: Update to 0x8 on release of new master key. */
-#define MASTERKEY_REVISION_MAX 0x8
+/* TODO: Update to 0xA on release of new master key. */
+#define MASTERKEY_REVISION_MAX 0x9
 
 #define MASTERKEY_REVISION_100_230     0x00
 #define MASTERKEY_REVISION_300         0x01
@@ -29,7 +29,8 @@
 #define MASTERKEY_REVISION_500_510     0x04
 #define MASTERKEY_REVISION_600_610     0x05
 #define MASTERKEY_REVISION_620         0x06
-#define MASTERKEY_REVISION_700_CURRENT 0x07
+#define MASTERKEY_REVISION_700_800     0x07
+#define MASTERKEY_REVISION_810_CURRENT 0x08
 
 #define MASTERKEY_NUM_NEW_DEVICE_KEYS (MASTERKEY_REVISION_MAX - MASTERKEY_REVISION_400_410)
 

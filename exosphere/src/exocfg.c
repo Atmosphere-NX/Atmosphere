@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -34,13 +34,13 @@ unsigned int exosphere_load_config(void) {
         generic_panic();
     }
     g_has_loaded_config = true;
-    
+
     const unsigned int magic = MAILBOX_EXOSPHERE_CONFIG.magic;
-    
+
     if (magic == MAGIC_EXOSPHERE_CONFIG) {
         g_exosphere_cfg = MAILBOX_EXOSPHERE_CONFIG;
     }
-    
+
     return g_exosphere_cfg.target_firmware;
 }
 
@@ -48,7 +48,7 @@ unsigned int exosphere_get_target_firmware(void) {
     if (!g_has_loaded_config) {
         generic_panic();
     }
-    
+
     return g_exosphere_cfg.target_firmware;
 }
 
@@ -56,15 +56,15 @@ unsigned int exosphere_should_perform_620_keygen(void) {
     if (!g_has_loaded_config) {
         generic_panic();
     }
-    
-    return g_exosphere_cfg.target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_620 && EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_PERFORM_620_KEYGEN);
+
+    return false;
 }
 
 unsigned int exosphere_should_override_debugmode_priv(void) {
     if (!g_has_loaded_config) {
         generic_panic();
     }
-    
+
     return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV);
 }
 
@@ -72,7 +72,7 @@ unsigned int exosphere_should_override_debugmode_user(void) {
     if (!g_has_loaded_config) {
         generic_panic();
     }
-    
+
     return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_IS_DEBUGMODE_USER);
 }
 
@@ -80,7 +80,7 @@ unsigned int exosphere_should_disable_usermode_exception_handlers(void) {
     if (!g_has_loaded_config) {
         generic_panic();
     }
-    
+
     return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS);
 }
 
