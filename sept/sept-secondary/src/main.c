@@ -22,6 +22,7 @@
 #include "se.h"
 #include "pmc.h"
 #include "emc.h"
+#include "sysreg.h"
 #include "key_derivation.h"
 #include "timers.h"
 #include "fs_utils.h"
@@ -96,9 +97,6 @@ static void setup_env(void) {
     /* Initialize hardware. */
     nx_hwinit();
 
-    /* Check for panics. */
-    check_and_display_panic();
-
     /* Zero-fill the framebuffer and register it as printk provider. */
     video_init(g_framebuffer);
 
@@ -140,6 +138,11 @@ int sept_main(uint32_t version) {
     stage2_args_t *stage2_args;
     uint32_t stage2_version = 0;
     ScreenLogLevel log_level = SCREEN_LOG_LEVEL_NONE;
+
+    /* Validate that we can safely boot the CCPLEX. */
+    if (SB_CSR_0 & 2) {
+        generic_panic();
+    }
 
     /* Extract keys from the security engine, which TSEC FW locked down. */
     exfiltrate_keys_and_reboot_if_needed(version);

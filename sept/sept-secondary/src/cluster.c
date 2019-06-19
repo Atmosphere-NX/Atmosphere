@@ -138,6 +138,11 @@ void cluster_boot_cpu0(uint32_t entry)
 
     MAKE_EXCP_VEC_REG(0x100) = 0;
 
+    /* Check for reset vector lock. */
+    if (SB_CSR_0 & 2) {
+        generic_panic();
+    }
+
     /* Set reset vector. */
     SB_AA64_RESET_LOW_0 = (entry | 1);
     SB_AA64_RESET_HIGH_0 = 0;
@@ -145,6 +150,15 @@ void cluster_boot_cpu0(uint32_t entry)
     /* Non-secure reset vector write disable. */
     SB_CSR_0 = 2;
     (void)SB_CSR_0;
+
+    /* Validate reset vector lock + RESET_LOW/HIGH values. */
+    if (!(SB_CSR_0 & 2)) {
+        generic_panic();
+    }
+
+    if (SB_AA64_RESET_LOW_0 != (entry | 1) || SB_AA64_RESET_HIGH_0 != 0) {
+        generic_panic();
+    }
 
     /* Set CPU_STRICT_TZ_APERTURE_CHECK. */
     /* NOTE: [4.0.0+] This was added, but it breaks Exosphère. */
