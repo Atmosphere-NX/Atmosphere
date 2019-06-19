@@ -52,9 +52,9 @@ void derive_keys(uint32_t version) {
 }
 
 void load_keys(const uint8_t *se_state) {
-    /* Clear keyslot 0xA. */
+    /* Clear keyslots up to 0xA. */
     for (size_t i = 0; i < 0xA; i++) {
-        clear_aes_keyslot(0xA);
+        clear_aes_keyslot(i);
     }
 
     /* Copy device keygen key out of state keyslot 0xA into keyslot 0xA. */
@@ -75,7 +75,7 @@ void load_keys(const uint8_t *se_state) {
     /* Copy device key out of state keyslot 0xF into keyslot 0xF. */
     set_aes_keyslot(0xF, se_state + 0x30 + (0xF * 0x20), 0x10);
 
-    /* Set keyslot flags properly in preparation of derivation. */
+    /* Set keyslot flags properly in preparation for secmon. */
     set_aes_keyslot_flags(0xE, 0x15);
     set_aes_keyslot_flags(0xD, 0x15);
 }
