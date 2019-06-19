@@ -156,7 +156,8 @@ void cluster_boot_cpu0(uint32_t entry)
         generic_panic();
     }
 
-    if (SB_AA64_RESET_LOW_0 != (entry | 1) || SB_AA64_RESET_HIGH_0 != 0) {
+    /* TODO: Should we even bother taking as a parameter? */
+    if (SB_AA64_RESET_LOW_0 != (0x4003D000 | 1) || SB_AA64_RESET_HIGH_0 != 0) {
         generic_panic();
     }
 
