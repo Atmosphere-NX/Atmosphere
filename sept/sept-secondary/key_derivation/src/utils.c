@@ -14,14 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SEPT_KEYDERIVATION_H
-#define SEPT_KEYDERIVATION_H
-
-#include <stddef.h>
 #include <stdbool.h>
-#include <stdint.h>
+#include <stdarg.h>
+#include "utils.h"
+#include <inttypes.h>
 
-void derive_keys(void);
-void load_keys(const uint8_t *se_state);
-
-#endif
+__attribute__ ((noreturn)) void generic_panic(void) {
+    while(1) { /* ... */ }
+}

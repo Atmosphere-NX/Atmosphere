@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2018 naehrwert
  * Copyright (c) 2018-2019 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -13,15 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+ 
+#ifndef FUSEE_CLUSTER_H_
+#define FUSEE_CLUSTER_H_
 
-#ifndef SEPT_KEYDERIVATION_H
-#define SEPT_KEYDERIVATION_H
-
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
-
-void derive_keys(void);
-void load_keys(const uint8_t *se_state);
+void cluster_boot_cpu0(uint32_t entry);
 
 #endif

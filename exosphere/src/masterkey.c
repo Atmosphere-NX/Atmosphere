@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -83,7 +83,7 @@ void mkey_detect_revision(void) {
     if (g_determined_mkey_revision) {
         generic_panic();
     }
-    
+
     for (unsigned int rev = 0; rev < MASTERKEY_REVISION_MAX; rev++) {
         if (check_mkey_revision(rev, configitem_is_retail())) {
             g_determined_mkey_revision = true;
@@ -91,7 +91,7 @@ void mkey_detect_revision(void) {
             break;
         }
     }
-    
+
     /* We must have determined the master key, or we're not running on a Switch. */
     if (!g_determined_mkey_revision) {
         /* Panic in bright red. */
@@ -135,23 +135,17 @@ void set_old_devkey(unsigned int revision, const uint8_t *key) {
 }
 
 unsigned int devkey_get_keyslot(unsigned int revision) {
-    if (!g_determined_mkey_revision || revision >= MASTERKEY_REVISION_MAX) {
+    if (!g_determined_mkey_revision || revision > g_mkey_revision) {
         generic_panic();
     }
 
-    if (revision > g_mkey_revision) {
-        generic_panic();
-    }
-
-    if (revision >= 1) {
-        if (revision == MASTERKEY_REVISION_MAX) {
-            return KEYSLOT_SWITCH_DEVICEKEY;
-        } else {
-            /* Load into a temp keyslot. */
-            set_aes_keyslot(KEYSLOT_SWITCH_TEMPKEY, g_old_devicekeys[revision - MASTERKEY_REVISION_400_410], 0x10);
-            return KEYSLOT_SWITCH_TEMPKEY;
-        }
-    } else {
+    if (revision < MASTERKEY_REVISION_400_410) {
         return KEYSLOT_SWITCH_4XOLDDEVICEKEY;
+    } else if (revision < g_mkey_revision) {
+        /* Load into a temp keyslot. */
+        set_aes_keyslot(KEYSLOT_SWITCH_TEMPKEY, g_old_devicekeys[revision - MASTERKEY_REVISION_400_410], 0x10);
+        return KEYSLOT_SWITCH_TEMPKEY;
+    } else {
+        return KEYSLOT_SWITCH_DEVICEKEY;
     }
 }

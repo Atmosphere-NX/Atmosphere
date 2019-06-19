@@ -22,6 +22,5 @@
 #include <stdint.h>
 
 void derive_keys(void);
-void load_keys(const uint8_t *se_state);
 
 #endif

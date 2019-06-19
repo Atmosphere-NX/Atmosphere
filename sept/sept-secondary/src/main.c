@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include "utils.h"
 #include "exception_handlers.h"
 #include "panic.h"
@@ -39,9 +39,6 @@ extern void (*__program_exit_callback)(int rc);
 
 static void *g_framebuffer;
 
-static uint32_t g_tsec_root_key[0x4] = {0};
-static uint32_t g_tsec_key[0x4] = {0};
-
 static bool has_rebooted(void) {
     return MAKE_REG32(0x4003FFFC) == 0xFAFAFAFA;
 }
@@ -55,23 +52,15 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     uint8_t *enc_se_state = (uint8_t *)0x4003E000;
     uint8_t *dec_se_state = (uint8_t *)0x4003F000;
-    
+
     if (!has_rebooted()) {
         /* Prepare for a reboot before doing anything else. */
         prepare_for_reboot_to_self();
         set_has_rebooted(true);
-        
-        /* Save the security engine context. */
-        se_get_regs()->_0x4 = 0x0;
-        se_set_in_context_save_mode(true);
-        se_save_context(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY, enc_se_state);
-        se_set_in_context_save_mode(false);
-                
-        /* Clear all keyslots. */
-        for (size_t k = 0; k < 0x10; k++) {
-            clear_aes_keyslot(k);
-        }
-        
+
+        /* Derive keys. */
+        derive_keys();
+
         reboot_to_self();
     } else {
         /* Decrypt the security engine state. */
@@ -82,13 +71,10 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
         context_key[3] = pmc->secure_scratch7;
         set_aes_keyslot(0xC, context_key, sizeof(context_key));
         se_aes_128_cbc_decrypt(0xC, dec_se_state, 0x840, enc_se_state, 0x840);
-        
-        /* Copy out tsec key + tsec root key. */
-        for (size_t i = 0; i < 0x10; i += 4) {
-            g_tsec_key[i/4] = MAKE_REG32((uintptr_t)(dec_se_state) + 0x1B0 + i);
-            g_tsec_root_key[i/4] = MAKE_REG32((uintptr_t)(dec_se_state) + 0x1D0 + i);
-        }
-        
+
+        /* Load keys in from decrypted state. */
+        load_keys(dec_se_state);
+
         /* Clear the security engine state. */
         for (size_t i = 0; i < 0x840; i += 4) {
             MAKE_REG32((uintptr_t)(enc_se_state) + i) = 0xCCCCCCCC;
@@ -101,11 +87,6 @@ static void exfiltrate_keys_and_reboot_if_needed(void) {
         pmc->secure_scratch5 = 0xCCCCCCCC;
         pmc->secure_scratch6 = 0xCCCCCCCC;
         pmc->secure_scratch7 = 0xCCCCCCCC;
-        
-        /* Clear all keyslots except for SBK/SSK. */
-        for (size_t k = 0; k < 0xE; k++) {
-            clear_aes_keyslot(k);
-        }
     }
 }
 
@@ -126,7 +107,7 @@ static void setup_env(void) {
 
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
-    
+
     /* Draw splash. */
     draw_splash((volatile uint32_t *)g_framebuffer);
 
@@ -136,7 +117,7 @@ static void setup_env(void) {
 
     /* Set up the exception handlers. */
     setup_exception_handlers();
-        
+
     /* Mount the SD card. */
     mount_sd();
 }
@@ -159,28 +140,19 @@ int main(void) {
     stage2_args_t *stage2_args;
     uint32_t stage2_version = 0;
     ScreenLogLevel log_level = SCREEN_LOG_LEVEL_NONE;
-    
+
     /* Extract keys from the security engine, which TSEC FW locked down. */
     exfiltrate_keys_and_reboot_if_needed();
-    
+
     /* Override the global logging level. */
     log_set_log_level(log_level);
-    
+
     /* Initialize the display, console, etc. */
     setup_env();
-        
-    /* Derive keys. */
-    derive_7x_keys(g_tsec_key, g_tsec_root_key);
-    
-    /* Cleanup keys in memory. */
-    for (size_t i = 0; i < 0x10; i += 4) {
-        g_tsec_root_key[i/4] = 0xCCCCCCCC;
-        g_tsec_key[i/4] = 0xCCCCCCCC;
-    }
-    
+
     /* Mark EMC scratch to say that sept has run. */
     MAKE_EMC_REG(EMC_SCRATCH0) |= 0x80000000;
-    
+
     /* Load the loader payload into DRAM. */
     load_stage2();
 
@@ -194,10 +166,10 @@ int main(void) {
     stage2_args->display_initialized = false;
     strcpy(stage2_args->bct0, "");
     g_chainloader_argc = 2;
-    
+
     /* Wait a while. */
     mdelay(1500);
-    
+
     /* Deinitialize the display, console, etc. */
     cleanup_env();
 
