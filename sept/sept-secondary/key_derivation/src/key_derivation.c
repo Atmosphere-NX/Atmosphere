@@ -58,67 +58,23 @@ void derive_keys(void) {
     const uint32_t derivation_id = *((volatile uint32_t *)0x4003E800);
 
     if (derivation_id < DERIVATION_ID_MAX) {
-        uint8_t *partial_se_state = (uint8_t *)0x4000FFC0;
         uint8_t *enc_se_state = (uint8_t *)0x4003E000;
 
-        volatile tegra_pmc_t *pmc = pmc_get_regs();
         uint32_t AL16 work_buffer[4];
 
-        /* Save a partial context, only the keyslots we want. */
-        /* We can't avoid touching memory, but save to a location that the bootrom will overwrite during init. */
-        se_set_in_context_save_mode(true);
-        se_save_partial_context(KEYSLOT_SWITCH_SRKGENKEY, KEYSLOT_SWITCH_RNGKEY, partial_se_state);
-        se_set_in_context_save_mode(false);
-
-        /* Clear the copy of the root key still inside the SE. */
-        clear_aes_keyslot(0xD);
-
-        /* Copy SRK into keyslot 0xE, clear it. */
-        {
-            work_buffer[0] = pmc->secure_scratch4;
-            pmc->secure_scratch4 = 0xCCCCCCCC;
-            work_buffer[1] = pmc->secure_scratch5;
-            pmc->secure_scratch5 = 0xCCCCCCCC;
-            work_buffer[2] = pmc->secure_scratch6;
-            pmc->secure_scratch6 = 0xCCCCCCCC;
-            work_buffer[3] = pmc->secure_scratch7;
-            pmc->secure_scratch7 = 0xCCCCCCCC;
-            set_aes_keyslot(0xE, work_buffer, 0x10);
-            for (size_t i = 0; i < 4; i++) {
-                work_buffer[i] = 0xCCCCCCCC;
-            }
-        }
-
-        /* Decrypt SE state. */
-        se_aes_128_cbc_decrypt(0xE, partial_se_state, 0x40, partial_se_state, 0x40);
-
-        /* Clear keyslots to wipe IVs. */
-        clear_aes_keyslot(0xE);
-        clear_aes_keyslot(0xF);
-
-        /* Mov root key into keyslot 0xE. */
-        set_aes_keyslot(0xE, partial_se_state + 0x30, 0x10);
-        for (size_t i = 0; i < 4; i++) {
-            *((volatile uint32_t *)(partial_se_state + 0x30)) = 0xCCCCCCCC;
-        }
+        /* Derive Keyblob Key 00. */
+        se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, keyblob_seed_00, 0x10);
+        decrypt_data_into_keyslot(0xF, 0xE, work_buffer, 0x10);
 
         /* Derive master kek. */
-        decrypt_data_into_keyslot(0xE, 0xE, master_kek_seeds[derivation_id], 0x10);
+        decrypt_data_into_keyslot(0xE, 0xD, master_kek_seeds[derivation_id], 0x10);
+
+        /* Clear the copy of the root key inside the SE. */
+        clear_aes_keyslot(0xD);
 
         /* Derive master key, device master key. */
         decrypt_data_into_keyslot(0xC, 0xE, masterkey_seed, 0x10);
         decrypt_data_into_keyslot(0xE, 0xE, masterkey_4x_seed, 0x10);
-
-        /* Derive Keyblob Key 00. */
-        set_aes_keyslot(0xF, partial_se_state + 0x20, 0x10);
-        se_aes_ecb_decrypt_block(0xF, work_buffer, 0x10, keyblob_seed_00, 0x10);
-        set_aes_keyslot(0xF, partial_se_state + 0x10, 0x10);
-        decrypt_data_into_keyslot(0xF, 0xF, work_buffer, 0x10);
-
-        /* Clear TSEC key + SBK. */
-        for (size_t i = 0; i < 8; i++) {
-            *((volatile uint32_t *)(partial_se_state + 0x10)) = 0xCCCCCCCC;
-        }
 
         /* Derive device keys. */
         decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
@@ -143,8 +99,6 @@ void derive_keys(void) {
     for (size_t i = 0; i < 0x10; i++) {
         clear_aes_keyslot(i);
     }
-
-    *(volatile uint32_t *)(0x4003FFC0) = 0xCACACACA;
 
     *mailbox = 7;
     while (1) { /* Wait for sept to handle the rest. */ }
