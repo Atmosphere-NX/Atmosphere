@@ -19,6 +19,7 @@
 #define _SDMMC_H_
 
 #include "../utils/types.h"
+#include "../FS/FS.h"
 #include "sdmmc_driver.h"
 
 typedef struct _mmc_cid
@@ -102,6 +103,9 @@ typedef struct _sdmmc_storage_t
 	sd_ssr_t      ssr;
 } sdmmc_storage_t;
 
+extern sdmmc_accessor_t *_current_accessor;
+extern bool sdmmc_memcpy_buf;
+
 int sdmmc_storage_end(sdmmc_storage_t *storage);
 int sdmmc_storage_read(sdmmc_storage_t *storage, u32 sector, u32 num_sectors, void *buf);
 int sdmmc_storage_write(sdmmc_storage_t *storage, u32 sector, u32 num_sectors, void *buf);
@@ -109,5 +113,7 @@ int sdmmc_storage_init_mmc(sdmmc_storage_t *storage, sdmmc_t *sdmmc, u32 id, u32
 int sdmmc_storage_set_mmc_partition(sdmmc_storage_t *storage, u32 partition);
 int sdmmc_storage_init_sd(sdmmc_storage_t *storage, sdmmc_t *sdmmc, u32 id, u32 bus_width, u32 type);
 int sdmmc_storage_init_gc(sdmmc_storage_t *storage, sdmmc_t *sdmmc);
+intptr_t sdmmc_calculate_dma_addr(sdmmc_accessor_t *_this, void *buf, unsigned int num_sectors);
+int sdmmc_get_fitting_dma_index(sdmmc_accessor_t *_this, unsigned int num_sectors);
 
 #endif

@@ -83,7 +83,7 @@ typedef struct _sdmmc_t
 	int venclkctl_set;
 	u32 venclkctl_tap;
 	u32 expected_rsp_type;
-    u64 dma_addr_fs;
+	u64 last_dma_idx;
 	u64 dma_addr_next;
 	u32 rsp[4];
 	u32 rsp3;

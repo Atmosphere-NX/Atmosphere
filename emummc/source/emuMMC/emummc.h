@@ -50,8 +50,6 @@ sdmmc_accessor_t *sdmmc_accessor_get(int mmc_id);
 void mutex_lock_handler(int mmc_id);
 void mutex_unlock_handler(int mmc_id);
 
-intptr_t sdmmc_calculate_dma_addr(sdmmc_accessor_t *_this, void *buf, unsigned int num_sectors);
-
 uint64_t sdmmc_wrapper_read(void *buf, uint64_t bufSize, int mmc_id, unsigned int sector, unsigned int num_sectors);
 uint64_t sdmmc_wrapper_write(int mmc_id, unsigned int sector, unsigned int num_sectors, void *buf, uint64_t bufSize);
 

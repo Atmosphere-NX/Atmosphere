@@ -316,6 +316,4 @@ void __init()
     populate_function_pointers();
     write_nops();
     setup_nintendo_paths();
-
-    sdmmc_initialize();
 }

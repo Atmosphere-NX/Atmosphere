@@ -47,10 +47,10 @@
 // Nintendo Paths
 #define FS_OFFSET_300_EXFAT_NINTENDO_PATHS \
 { \
-    {.opcode_reg = 3, .adrp_offset = 0x000391F4, .add_rel_offset = 4}, \
-    {.opcode_reg = 3, .adrp_offset = 0x0003A480, .add_rel_offset = 4}, \
-    {.opcode_reg = 3, .adrp_offset = 0x0003A778, .add_rel_offset = 4}, \
-    {.opcode_reg = 0, .adrp_offset = 0, .add_rel_offset = 0}, \
+	{.opcode_reg = 3, .adrp_offset = 0x000391F4, .add_rel_offset = 0x00000004}, \
+	{.opcode_reg = 3, .adrp_offset = 0x0003A480, .add_rel_offset = 0x0000000C}, \
+	{.opcode_reg = 3, .adrp_offset = 0x0003A778, .add_rel_offset = 0x0000000C}, \
+	{.opcode_reg = 0, .adrp_offset = 0, .add_rel_offset = 0}, \
 }
 
 #endif // __FS_300_EXFAT_H__

@@ -23,8 +23,12 @@
 #include "sd.h"
 #include "../utils/types.h"
 #include "../utils/util.h"
+#include "../utils/fatal.h"
 
 #define DPRINTF(...) //fprintf(stdout, __VA_ARGS__)
+
+sdmmc_accessor_t *_current_accessor = NULL;
+bool sdmmc_memcpy_buf = false;
 
 static inline u32 unstuff_bits(u32 *resp, u32 start, u32 size)
 {
@@ -40,6 +44,80 @@ static inline u32 unstuff_bits(u32 *resp, u32 start, u32 size)
 /*
 * Common functions for SD and MMC.
 */
+
+// FS DMA calculations.
+intptr_t sdmmc_calculate_dma_addr(sdmmc_accessor_t *_this, void *buf, unsigned int num_sectors)
+{
+    int dma_buf_idx = 0;
+    char *_buf = (char *)buf;
+    char *actual_buf_start = _buf;
+    char *actual_buf_end = &_buf[512 * num_sectors];
+    char *dma_buffer_start = _this->parent->dmaBuffers[FS_SDMMC_EMMC].device_addr_buffer;
+
+    if (dma_buffer_start <= _buf && actual_buf_end <= &dma_buffer_start[_this->parent->dmaBuffers[FS_SDMMC_EMMC].device_addr_buffer_size])
+    {
+        dma_buf_idx = FS_SDMMC_EMMC;
+    }
+    else
+    {
+        dma_buffer_start = _this->parent->dmaBuffers[FS_SDMMC_SD].device_addr_buffer;
+        if (dma_buffer_start <= actual_buf_start && actual_buf_end <= &dma_buffer_start[_this->parent->dmaBuffers[FS_SDMMC_SD].device_addr_buffer_size])
+        {
+            dma_buf_idx = FS_SDMMC_SD;
+        }
+        else
+        {
+            dma_buffer_start = _this->parent->dmaBuffers[FS_SDMMC_GC].device_addr_buffer;
+            if (dma_buffer_start <= actual_buf_start && actual_buf_end <= &dma_buffer_start[_this->parent->dmaBuffers[FS_SDMMC_GC].device_addr_buffer_size])
+            {
+                dma_buf_idx = FS_SDMMC_GC;
+            }
+            else
+            {
+                // If buffer is on a random heap
+                return 0;
+            }
+        }
+    }
+
+	sdmmc_memcpy_buf = false;
+
+    intptr_t admaaddr = (intptr_t)&_this->parent->dmaBuffers[dma_buf_idx].device_addr_buffer_masked[actual_buf_start - dma_buffer_start];
+    return admaaddr;
+}
+
+int sdmmc_get_fitting_dma_index(sdmmc_accessor_t *_this, unsigned int num_sectors)
+{
+    int dma_buf_idx = 0;
+	int blkSize = num_sectors * 512;
+
+    if (_this->parent->dmaBuffers[FS_SDMMC_EMMC].device_addr_buffer_size >= blkSize)
+    {
+        dma_buf_idx = FS_SDMMC_EMMC;
+    }
+    else
+    {
+        if (_this->parent->dmaBuffers[FS_SDMMC_SD].device_addr_buffer_size >= blkSize)
+        {
+            dma_buf_idx = FS_SDMMC_SD;
+        }
+        else
+        {
+            if (_this->parent->dmaBuffers[FS_SDMMC_GC].device_addr_buffer_size >= blkSize)
+            {
+                dma_buf_idx = FS_SDMMC_GC;
+            }
+            else
+            {
+                // If buffer is on a random heap
+                return 0;
+            }
+        }
+    }
+	
+	sdmmc_memcpy_buf = true;
+    return dma_buf_idx;
+}
 
 static int _sdmmc_storage_check_result(u32 res)
 {
@@ -129,9 +207,11 @@ static int _sdmmc_storage_check_status(sdmmc_storage_t *storage)
 static int _sdmmc_storage_readwrite_ex(sdmmc_storage_t *storage, u32 *blkcnt_out, u32 sector, u32 num_sectors, void *buf, u32 is_write)
 {
 	sdmmc_cmd_t cmdbuf;
+	sdmmc_req_t reqbuf;
+	u32 tmp = 0;
+
 	sdmmc_init_cmd(&cmdbuf, is_write ? MMC_WRITE_MULTIPLE_BLOCK : MMC_READ_MULTIPLE_BLOCK, sector, SDMMC_RSP_TYPE_1, 0);
 
-	sdmmc_req_t reqbuf;
 	reqbuf.buf = buf;
 	reqbuf.num_sectors = num_sectors;
 	reqbuf.blksize = 512;
@@ -140,12 +220,12 @@ static int _sdmmc_storage_readwrite_ex(sdmmc_storage_t *storage, u32 *blkcnt_out
 	reqbuf.is_auto_cmd12 = 1;
 
 	if (!sdmmc_execute_cmd(storage->sdmmc, &cmdbuf, &reqbuf, blkcnt_out))
-	{
-		u32 tmp = 0;
+	{			
 		sdmmc_stop_transmission(storage->sdmmc, &tmp);
 		_sdmmc_storage_get_status(storage, &tmp, 0);
 		return 0;
 	}
+	
 	return 1;
 }
 

@@ -24,6 +24,7 @@
 #include "emummc.h"
 #include "emummc_ctx.h"
 
+static bool sdmmc_first_init = false;
 static bool storageMMCinitialized = false;
 static bool storageSDinitialized = false;
 
@@ -68,15 +69,25 @@ static void _sdmmc_ensure_device_attached(void)
 
 static void _sdmmc_ensure_initialized(void)
 {
-    // The boot sysmodule will eventually kill power to SD. Detect this, and reinitialize when it happens.
     static bool init_done = false;
-    if (!init_done)
+
+    // First Initial init
+    if (!sdmmc_first_init)
     {
-        if (gpio_read(GPIO_PORT_E, GPIO_PIN_4) == 0)
+        sdmmc_initialize();
+        sdmmc_first_init = true;
+    }
+    else
+    {
+        // The boot sysmodule will eventually kill power to SD. Detect this, and reinitialize when it happens.
+        if (!init_done)
         {
-            sdmmc_finalize();
-            sdmmc_initialize();
-            init_done = true;
+            if (gpio_read(GPIO_PORT_E, GPIO_PIN_4) == 0)
+            {
+                sdmmc_finalize();
+                sdmmc_initialize();
+                init_done = true;
+            }
         }
     }
 }
@@ -128,7 +139,7 @@ static void _file_based_emmc_initialize(void)
     memset(&f_emu, 0, sizeof(file_based_ctxt));
 
     memcpy(path, (void *)emuMMC_ctx.storagePath, sizeof(emuMMC_ctx.storagePath));
-    strcat(path, "/eMMC");
+    strcat(path, "/eMMC/");
     int path_len = strlen(path);
 
     // Open BOOT0 physical partition.
@@ -188,61 +199,39 @@ bool sdmmc_initialize(void)
 
     if (!storageSDinitialized)
     {
-        if (sdmmc_storage_init_sd(&sd_storage, &sd_sdmmc, SDMMC_1, SDMMC_BUS_WIDTH_4, 11))
+        int retries = 5;
+        while (retries)
         {
-            storageSDinitialized = true;
-
-            // File based emummc.
-            if ((emuMMC_ctx.EMMC_Type == emuMMC_SD_File) && !fat_mounted)
+            if (sdmmc_storage_init_sd(&sd_storage, &sd_sdmmc, SDMMC_1, SDMMC_BUS_WIDTH_4, 11))
             {
-                f_emu.sd_fs = (FATFS *)malloc(sizeof(FATFS));
-                if (f_mount(f_emu.sd_fs, "", 1) != FR_OK)
-                    fatal_abort(Fatal_InitSD);
-                else
-                    fat_mounted = true;
+                storageSDinitialized = true;
 
-                _file_based_emmc_initialize();
+                // File based emummc.
+                if ((emuMMC_ctx.EMMC_Type == emuMMC_SD_File) && !fat_mounted)
+                {
+                    f_emu.sd_fs = (FATFS *)malloc(sizeof(FATFS));
+                    if (f_mount(f_emu.sd_fs, "", 1) != FR_OK)
+                        fatal_abort(Fatal_InitSD);
+                    else
+                        fat_mounted = true;
+
+                    _file_based_emmc_initialize();
+                }
+
+                break;
             }
+
+            retries--;
+            msleep(100);
         }
-        else
+
+        if (!storageSDinitialized)
         {
             fatal_abort(Fatal_InitSD);
         }
     }
 
     return storageMMCinitialized && storageSDinitialized;
-}
-
-// FS DMA calculations.
-intptr_t sdmmc_calculate_dma_addr(sdmmc_accessor_t *_this, void *buf, unsigned int num_sectors)
-{
-    int dma_buf_idx = 0;
-    char *_buf = (char *)buf;
-    char *actual_buf_start = _buf;
-    char *actual_buf_end = &_buf[512 * num_sectors];
-    char *dma_buffer_start = _this->parent->dmaBuffers[FS_SDMMC_EMMC].device_addr_buffer;
-
-    if (dma_buffer_start <= _buf && actual_buf_end <= &dma_buffer_start[_this->parent->dmaBuffers[FS_SDMMC_EMMC].device_addr_buffer_size])
-    {
-        dma_buf_idx = FS_SDMMC_EMMC;
-    }
-    else
-    {
-        dma_buffer_start = _this->parent->dmaBuffers[FS_SDMMC_SD].device_addr_buffer;
-        if (dma_buffer_start <= actual_buf_start && actual_buf_end <= &dma_buffer_start[_this->parent->dmaBuffers[FS_SDMMC_SD].device_addr_buffer_size])
-        {
-            dma_buf_idx = FS_SDMMC_SD;
-        }
-        else
-        {
-            dma_buffer_start = _this->parent->dmaBuffers[FS_SDMMC_GC].device_addr_buffer;
-            dma_buf_idx = FS_SDMMC_GC;
-        }
-    }
-
-    intptr_t admaaddr = (intptr_t)&_this->parent->dmaBuffers[dma_buf_idx].device_addr_buffer_masked[actual_buf_start - dma_buffer_start];
-
-    return admaaddr;
 }
 
 sdmmc_accessor_t *sdmmc_accessor_get(int mmc_id)
@@ -354,6 +343,8 @@ uint64_t sdmmc_wrapper_read(void *buf, uint64_t bufSize, int mmc_id, unsigned in
         if (mmc_id == FS_SDMMC_EMMC || mmc_id == FS_SDMMC_SD)
         {
             mutex_lock_handler(mmc_id);
+            // Assign FS accessor to the SDMMC driver
+            _current_accessor = _this;
             // Make sure we're attached to the device address space.
             _sdmmc_ensure_device_attached();
             // Make sure we're still initialized if boot killed sd card power.
@@ -362,8 +353,6 @@ uint64_t sdmmc_wrapper_read(void *buf, uint64_t bufSize, int mmc_id, unsigned in
 
         if (mmc_id == FS_SDMMC_EMMC)
         {
-            sd_storage.sdmmc->dma_addr_fs = (u64)sdmmc_calculate_dma_addr(_this, buf, num_sectors);
-
             // Call hekates driver.
             if (emummc_read_write_inner(buf, sector, num_sectors, false))
             {
@@ -377,8 +366,6 @@ uint64_t sdmmc_wrapper_read(void *buf, uint64_t bufSize, int mmc_id, unsigned in
 
         if (mmc_id == FS_SDMMC_SD)
         {
-            sd_storage.sdmmc->dma_addr_fs = (u64)sdmmc_calculate_dma_addr(_this, buf, num_sectors);
-
             // Call hekates driver.
             if (sdmmc_storage_read(&sd_storage, sector, num_sectors, buf))
             {
@@ -410,8 +397,7 @@ uint64_t sdmmc_wrapper_write(int mmc_id, unsigned int sector, unsigned int num_s
         if (mmc_id == FS_SDMMC_EMMC)
         {
             mutex_lock_handler(mmc_id);
-
-            sd_storage.sdmmc->dma_addr_fs = (u64)sdmmc_calculate_dma_addr(_this, buf, num_sectors);
+            _current_accessor = _this;
 
             // Call hekates driver.
             if (emummc_read_write_inner(buf, sector, num_sectors, true))
@@ -427,9 +413,9 @@ uint64_t sdmmc_wrapper_write(int mmc_id, unsigned int sector, unsigned int num_s
         if (mmc_id == FS_SDMMC_SD)
         {
             mutex_lock_handler(mmc_id);
+            _current_accessor = _this;
 
             sector += 0;
-            sd_storage.sdmmc->dma_addr_fs = (u64)sdmmc_calculate_dma_addr(_this, buf, num_sectors);
 
             // Call hekates driver.
             if (sdmmc_storage_write(&sd_storage, sector, num_sectors, buf))

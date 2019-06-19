@@ -27,6 +27,7 @@
 #include "../soc/pmc.h"
 #include "../soc/pinmux.h"
 #include "../soc/gpio.h"
+#include "../utils/fatal.h"
 
 #define DPRINTF(...)
 
@@ -640,6 +641,23 @@ static int _sdmmc_autocal_config_offset(sdmmc_t *sdmmc, u32 power)
 
 static void _sdmmc_autocal_execute(sdmmc_t *sdmmc, u32 power)
 {
+	if(sdmmc->id == SDMMC_1)
+	{
+		static int last_power = SDMMC_POWER_3_3;
+		if(power == SDMMC_POWER_1_8 && last_power == SDMMC_POWER_3_3)
+		{
+			last_power = power = SDMMC_POWER_1_8;
+			if (!_sdmmc_autocal_config_offset(sdmmc, power))
+				return;
+		} 
+		else if(power == SDMMC_POWER_3_3 && last_power == SDMMC_POWER_1_8)
+		{
+			last_power = power = SDMMC_POWER_3_3;
+			if (!_sdmmc_autocal_config_offset(sdmmc, power))
+				return;
+		}
+	}
+		
 	bool should_enable_sd_clock = false;
 	if (sdmmc->regs->clkcon & TEGRA_MMC_CLKCON_SD_CLOCK_ENABLE)
 	{
@@ -788,7 +806,15 @@ static int _sdmmc_config_dma(sdmmc_t *sdmmc, u32 *blkcnt_out, sdmmc_req_t *req)
 	u32 blkcnt = req->num_sectors;
 	if (blkcnt >= 0xFFFF)
 		blkcnt = 0xFFFF;
-	u64 admaaddr = sdmmc->dma_addr_fs;
+		
+	u64 admaaddr = (u64)sdmmc_calculate_dma_addr(_current_accessor, req->buf, blkcnt);
+	if (!admaaddr)
+	{
+		// buf is on a heap
+		int dma_idx = sdmmc_get_fitting_dma_index(_current_accessor, blkcnt);
+		admaaddr = (u64)&_current_accessor->parent->dmaBuffers[dma_idx].device_addr_buffer_masked[0];
+		sdmmc->last_dma_idx = dma_idx;
+	}
 
 	//Check alignment.
 	if (admaaddr & 7)
@@ -870,7 +896,22 @@ static int _sdmmc_execute_cmd_inner(sdmmc_t *sdmmc, sdmmc_cmd_t *cmd, sdmmc_req_
 	if (req)
 	{
 		_sdmmc_config_dma(sdmmc, &blkcnt, req);
-		armDCacheFlush(req->buf, req->blksize * blkcnt);
+		if(!sdmmc_memcpy_buf)
+		{
+			// Flush from/to phys
+			armDCacheFlush(req->buf, req->blksize * blkcnt);
+		}
+		else
+		{
+			if(req->is_write)
+			{
+				void* dma_addr = &_current_accessor->parent->dmaBuffers[sdmmc->last_dma_idx].device_addr_buffer[0];
+				memcpy(dma_addr, req->buf, req->blksize * blkcnt);
+
+				// Flush to phys
+				armDCacheFlush(dma_addr, req->blksize * blkcnt);
+			}
+		}
 
 		_sdmmc_enable_interrupts(sdmmc);
 		is_data_present = true;
@@ -892,8 +933,15 @@ static int _sdmmc_execute_cmd_inner(sdmmc_t *sdmmc, sdmmc_cmd_t *cmd, sdmmc_req_
 		{
 			sdmmc->expected_rsp_type = cmd->rsp_type;
 			_sdmmc_cache_rsp(sdmmc, sdmmc->rsp, 0x10, cmd->rsp_type);
+            
+			/*if(sdmmc->rsp[0] & 0xFDF9A080)
+			{
+				res = 0;
+				sdmmc->rsp[0] = 0; // Reset error
+			}*/
 		}
-		if (req)
+		
+		if (res && req) 
 			_sdmmc_update_dma(sdmmc);
 	}
 
@@ -903,7 +951,22 @@ static int _sdmmc_execute_cmd_inner(sdmmc_t *sdmmc, sdmmc_cmd_t *cmd, sdmmc_req_
 	{
 		if (req)
 		{
-			armDCacheFlush(req->buf, req->blksize * blkcnt);
+			if(!req->is_write)
+			{
+				if(!sdmmc_memcpy_buf)
+				{
+					// Flush from phys
+					armDCacheFlush(req->buf, req->blksize * blkcnt);
+				}
+				else
+				{
+					void* dma_addr = &_current_accessor->parent->dmaBuffers[sdmmc->last_dma_idx].device_addr_buffer[0];
+					// Flush from phys
+					armDCacheFlush(dma_addr, req->blksize * blkcnt);
+					// Copy to buffer
+					memcpy(req->buf, dma_addr, req->blksize * blkcnt);
+				}
+			}
 
 			if (blkcnt_out)
 				*blkcnt_out = blkcnt;
