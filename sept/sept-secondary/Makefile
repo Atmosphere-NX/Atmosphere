@@ -124,12 +124,13 @@ check_key_derivation:
 	@$(MAKE) -C key_derivation
 
 $(BUILD): check_rebootstub check_key_derivation
-ifeq ($(strip $(SEPT_ENC_PATH)),)
+ifeq ($(strip $(SEPT_ENC_00_PATH)),)
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 else
 	@touch $(TOPDIR)/$(TARGET).bin
-	@cp $(SEPT_ENC_PATH) $(TOPDIR)/$(TARGET).enc
+	@cp $(SEPT_ENC_00_PATH) $(TOPDIR)/$(TARGET)_00.enc
+	@cp $(SEPT_ENC_01_PATH) $(TOPDIR)/$(TARGET)_01.enc
 endif
 
 #---------------------------------------------------------------------------------
