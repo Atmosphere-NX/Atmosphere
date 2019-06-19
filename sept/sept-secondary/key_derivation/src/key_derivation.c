@@ -98,7 +98,20 @@ void derive_keys(void) {
         clear_aes_keyslot(0xD);
 
         /* Test against a vector. */
+        for (size_t i = 0; i < 4; i++) {
+            work_buffer[i] = 0;
+        }
+        if (memcmp(work_buffer, zeroes, 0x10) != 0) {
+            clear_aes_keyslot(0xE);
+            clear_aes_keyslot(0xD);
+            clear_aes_keyslot(0xC);
+            clear_aes_keyslot(0xA);
+            clear_aes_keyslot(0xF);
+            generic_panic();
+        }
+
         se_aes_ecb_decrypt_block(0xE, work_buffer, 0x10, master_devkey_vectors[derivation_id], 0x10);
+
         if (memcmp(work_buffer, zeroes, 0x10) == 0) {
             clear_aes_keyslot(0xE);
             clear_aes_keyslot(0xD);
