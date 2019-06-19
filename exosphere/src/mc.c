@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdint.h>
 
 #include "memory_map.h"
@@ -28,7 +28,7 @@ typedef struct {
 static saved_carveout_info_t g_saved_carveouts[2] = {
     {0x80060000ull, KERNEL_CARVEOUT_SIZE_MAX},
     {0x00000000ull, 0x00000000ull}
-};    
+};
 
 volatile security_carveout_t *get_carveout_by_id(unsigned int carveout) {
     if (CARVEOUT_ID_MIN <= carveout && carveout <= CARVEOUT_ID_MAX) {
@@ -130,7 +130,7 @@ void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint6
     if (carveout_id != 4 && carveout_id != 5) {
         generic_panic();
     }
-    
+
     g_saved_carveouts[carveout_id-4].address = address;
     g_saved_carveouts[carveout_id-4].size = size;
 
@@ -140,8 +140,12 @@ void configure_kernel_carveout(unsigned int carveout_id, uint64_t address, uint6
     carveout->size_big_pages = (uint32_t)(size >> 17);
     carveout->client_access_0 = (BIT(CSR_PTCR) | BIT(CSR_DISPLAY0A) | BIT(CSR_DISPLAY0AB) | BIT(CSR_DISPLAY0B) | BIT(CSR_DISPLAY0BB) | BIT(CSR_DISPLAY0C) | BIT(CSR_DISPLAY0CB) | BIT(CSR_AFIR) | BIT(CSR_DISPLAYHC) | BIT(CSR_DISPLAYHCB) | BIT(CSR_HDAR) | BIT(CSR_HOST1XDMAR) | BIT(CSR_HOST1XR) | BIT(CSR_NVENCSRD) | BIT(CSR_PPCSAHBDMAR) | BIT(CSR_PPCSAHBSLVR));
     carveout->client_access_1 = (BIT(CSR_MPCORER) | BIT(CSW_NVENCSWR) | BIT(CSW_AFIW) | BIT(CSW_HDAW) | BIT(CSW_HOST1XW) | BIT(CSW_MPCOREW) | BIT(CSW_PPCSAHBDMAW) | BIT(CSW_PPCSAHBSLVW));
-    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_800) {
-        carveout->client_access_2 = (BIT(CSR_XUSB_HOSTR) | BIT(CSW_XUSB_HOSTW) | BIT(CSR_XUSB_DEVR) | BIT(CSW_XUSB_DEVW)); 
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_810) {
+        carveout->client_access_2 = (BIT(CSR_XUSB_HOSTR) | BIT(CSW_XUSB_HOSTW) | BIT(CSR_XUSB_DEVR) | BIT(CSW_XUSB_DEVW));
+        carveout->client_access_3 = (BIT(CSR_SDMMCRA) | BIT(CSR_SDMMCRAA) | BIT(CSR_SDMMCRAB) | BIT(CSW_SDMMCWA) | BIT(CSW_SDMMCWAA) | BIT(CSW_SDMMCWAB) | BIT(CSR_VICSRD) | BIT(CSW_VICSWR) | BIT(CSR_DISPLAYD) | BIT(CSR_APER) | BIT(CSW_APEW) | BIT(CSR_NVJPGSRD) | BIT(CSW_NVJPGSWR));
+        carveout->client_access_4 = (BIT(CSR_SESRD) | BIT(CSW_SESWR));
+    } else if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_800) {
+        carveout->client_access_2 = (BIT(CSR_XUSB_HOSTR) | BIT(CSW_XUSB_HOSTW) | BIT(CSR_XUSB_DEVR) | BIT(CSW_XUSB_DEVW));
         carveout->client_access_3 = (BIT(CSR_SDMMCRA) | BIT(CSR_SDMMCRAA) | BIT(CSR_SDMMCRAB) | BIT(CSW_SDMMCWA) | BIT(CSW_SDMMCWAA) | BIT(CSW_SDMMCWAB) | BIT(CSR_VICSRD) | BIT(CSW_VICSWR) | BIT(CSR_DISPLAYD) | BIT(CSR_NVDECSRD) | BIT(CSW_NVDECSWR) | BIT(CSR_APER) | BIT(CSW_APEW) | BIT(CSR_NVJPGSRD) | BIT(CSW_NVJPGSWR));
         carveout->client_access_4 = (BIT(CSR_SESRD) | BIT(CSW_SESWR) | BIT(CSR_TSECSRDB) | BIT(CSW_TSECSWRB));
     } else {

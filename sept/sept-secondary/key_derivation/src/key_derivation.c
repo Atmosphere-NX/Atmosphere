@@ -96,7 +96,7 @@ void derive_keys(void) {
         clear_aes_keyslot(0xE);
         clear_aes_keyslot(0xF);
 
-        /* Mov root key into keyslot 0xE. Clear first to wipe from IV. */
+        /* Mov root key into keyslot 0xE. */
         set_aes_keyslot(0xE, partial_se_state + 0x30, 0x10);
         for (size_t i = 0; i < 4; i++) {
             *((volatile uint32_t *)(partial_se_state + 0x30)) = 0xCCCCCCCC;

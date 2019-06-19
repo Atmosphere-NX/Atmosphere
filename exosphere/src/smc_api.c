@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdatomic.h>
 #include <stdint.h>
 
@@ -185,6 +185,7 @@ void set_version_specific_smcs(void) {
         case ATMOSPHERE_TARGET_FIRMWARE_620:
         case ATMOSPHERE_TARGET_FIRMWARE_700:
         case ATMOSPHERE_TARGET_FIRMWARE_800:
+        case ATMOSPHERE_TARGET_FIRMWARE_810:
             /* No more LoadSecureExpModKey. */
             g_smc_user_table[0xE].handler = NULL;
             g_smc_user_table[0xC].id = 0xC300D60C;
@@ -256,7 +257,7 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     unsigned char smc_id, call_range;
     unsigned int result;
     unsigned int (*smc_handler)(smc_args_t *args);
-    
+
     /* Validate top-level handler. */
     if (handler_id >= SMC_HANDLER_COUNT) {
         generic_panic();
@@ -288,17 +289,17 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
     if ((smc_handler = g_smc_tables[handler_id].handlers[smc_id].handler) == NULL) {
         generic_panic();
     }
-    
+
     bool is_aes_kek = handler_id == SMC_HANDLER_USER && args->X[0] == 0xC3000007;
 
-#if DEBUG_LOG_SMCS  
-    uint64_t num;  
+#if DEBUG_LOG_SMCS
+    uint64_t num;
     if (handler_id == SMC_HANDLER_USER) {
         num = atomic_fetch_add(&num_smcs_called, 1);
         *(volatile smc_args_t *)(get_iram_address_for_debug() + 0x100 + ((0x80 * num) & 0x3FFF)) = *args;
     }
 #endif
-     
+
     /* Call function. */
     if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_800 ||
        (g_smc_tables[handler_id].handlers[smc_id].blacklist_mask & g_smc_blacklist_mask) == 0) {
@@ -307,15 +308,15 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
         /* Call not allowed due to current boot conditions. */
         args->X[0] = 6;
     }
-    
-#if DEBUG_LOG_SMCS    
+
+#if DEBUG_LOG_SMCS
     if (handler_id == SMC_HANDLER_USER) {
         *(volatile smc_args_t *)(get_iram_address_for_debug() + 0x100 + ((0x80 * num + 0x40) & 0x3FFF)) = *args;
     }
 #endif
-    
+
 #if DEBUG_PANIC_ON_FAILURE
-    if (args->X[0] && (!is_aes_kek || args->X[3] <= ATMOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG)) 
+    if (args->X[0] && (!is_aes_kek || args->X[3] <= ATMOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG))
     {
         MAKE_REG32(get_iram_address_for_debug() + 0x4FF0) = handler_id;
         MAKE_REG32(get_iram_address_for_debug() + 0x4FF4) = smc_id;
@@ -695,14 +696,14 @@ uint32_t smc_configure_carveout(smc_args_t *args) {
     if (size > KERNEL_CARVEOUT_SIZE_MAX) {
         return 2;
     }
-    
+
     /* Ensure validity of carveout index. */
     if (carveout_id > 1) {
         return 2;
     }
 
     /* Configuration is one-shot, and cannot be done multiple times. */
-    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_300) { 
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_300) {
         if (g_configured_carveouts[carveout_id]) {
             return 2;
         }

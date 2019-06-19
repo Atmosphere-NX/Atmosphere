@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -52,6 +52,7 @@ static bool is_user_keyslot_valid(unsigned int keyslot) {
         case ATMOSPHERE_TARGET_FIRMWARE_620:
         case ATMOSPHERE_TARGET_FIRMWARE_700:
         case ATMOSPHERE_TARGET_FIRMWARE_800:
+        case ATMOSPHERE_TARGET_FIRMWARE_810:
         default:
             return keyslot <= 5;
     }
@@ -165,7 +166,7 @@ uint32_t user_generate_aes_kek(smc_args_t *args) {
     bool is_personalized = (int)(packed_options & 1);
 
     bool is_recovery_boot = configitem_is_recovery_boot();
-    
+
     /* 5.0.0+ Bounds checking. */
     if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
         if (is_personalized) {
@@ -295,7 +296,7 @@ uint32_t crypt_aes_done_handler(void) {
 uint32_t user_crypt_aes(smc_args_t *args) {
     uint32_t keyslot = args->X[1] & 3;
     uint32_t mode = (args->X[1] >> 4) & 3;
-    
+
     if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_600) {
         keyslot = args->X[1] & 7;
     }
@@ -791,7 +792,7 @@ uint32_t user_encrypt_rsa_key_for_import(smc_args_t *args) {
 
     if (usecase > CRYPTOUSECASE_RSAIMPORT) {
         return 2;
-    } 
+    }
     if (usecase == 0) {
         if (size < 0x31 || size > 0x240) {
             return 2;
@@ -823,7 +824,7 @@ uint32_t user_encrypt_rsa_key_for_import(smc_args_t *args) {
 
     if (secure_copy_to_user(&page_ref, user_address, user_data, size) == 0) {
         return 2;
-    } 
+    }
 
     return 0;
 }
@@ -854,7 +855,7 @@ uint32_t user_decrypt_or_import_rsa_key(smc_args_t *args) {
 
     if (usecase > CRYPTOUSECASE_RSAIMPORT) {
         return 2;
-    } 
+    }
     if (usecase == 0) {
         if (size < 0x31 || size > 0x240) {
             return 2;
@@ -881,7 +882,7 @@ uint32_t user_decrypt_or_import_rsa_key(smc_args_t *args) {
         case 0:
             if (secure_copy_to_user(&page_ref, user_address, user_data, size) == 0) {
                 return 2;
-            } 
+            }
             return 0;
         case 1:
             exponent_id = 1;
