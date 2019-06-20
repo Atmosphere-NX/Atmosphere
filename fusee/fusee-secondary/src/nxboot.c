@@ -225,6 +225,13 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
 static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
     emummc_config_t emummc_cfg = {.enabled = false, .id = 0, .sector = -1, .path = "", .nintendo_path = ""};
 
+    /* Initialize some defaults. */
+    memset(exo_emummc_config, 0, sizeof(*exo_emummc_config));
+    exo_emummc_config->base_cfg.magic      = MAGIC_EMUMMC_CONFIG;
+    exo_emummc_config->base_cfg.type       = EMUMMC_TYPE_NONE;
+    exo_emummc_config->base_cfg.id         = 0;
+    exo_emummc_config->base_cfg.fs_version = FS_VER_1_0_0; /* Will be filled out later. */
+
     char *emummc_ini = calloc(1, 0x10000);
     if (!read_from_file(emummc_ini, 0xFFFF, "emummc/emummc.ini")) {
         free(emummc_ini);
@@ -238,11 +245,8 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
 
     free(emummc_ini);
 
-    memset(exo_emummc_config, 0, sizeof(*exo_emummc_config));
-    exo_emummc_config->base_cfg.magic      = MAGIC_EMUMMC_CONFIG;
-    exo_emummc_config->base_cfg.type       = EMUMMC_TYPE_NONE;
+    /* Initialize values from emummc config. */
     exo_emummc_config->base_cfg.id         = emummc_cfg.id;
-    exo_emummc_config->base_cfg.fs_version = FS_VER_1_0_0; /* Will be filled out later. */
     strncpy(exo_emummc_config->emu_dir_path, emummc_cfg.nintendo_path, sizeof(exo_emummc_config->emu_dir_path));
     exo_emummc_config->emu_dir_path[sizeof(exo_emummc_config->emu_dir_path) - 1] = '\0';
 
