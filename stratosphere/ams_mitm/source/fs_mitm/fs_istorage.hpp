@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -57,7 +57,7 @@ class IStorageInterface : public IServiceObject {
         ~IStorageInterface() {
             delete base_storage;
         };
-        
+
     private:
         /* Actual command API. */
         virtual Result Read(OutBuffer<u8, BufferType_Type1> buffer, u64 offset, u64 size) final {
@@ -86,7 +86,7 @@ class IStorageInterface : public IServiceObject {
             MakeServiceCommandMeta<FsIStorageCmd_Flush, &IStorageInterface::Flush>(),
             MakeServiceCommandMeta<FsIStorageCmd_SetSize, &IStorageInterface::SetSize>(),
             MakeServiceCommandMeta<FsIStorageCmd_GetSize, &IStorageInterface::GetSize>(),
-            
+
             /* 4.0.0- */
             MakeServiceCommandMeta<FsIStorageCmd_OperateRange, &IStorageInterface::OperateRange, FirmwareVersion_400>(),
         };

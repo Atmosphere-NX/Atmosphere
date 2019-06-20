@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 #include <strings.h>
@@ -33,16 +33,16 @@ void BpcRebootManager::Initialize() {
         return;
     }
     ON_SCOPE_EXIT { fsFileClose(&payload_file); };
-    
+
     /* Clear payload buffer */
     std::memset(g_reboot_payload, 0xFF, sizeof(g_reboot_payload));
-    
+
     /* Read payload file. */
     size_t actual_size;
     fsFileRead(&payload_file, 0, g_reboot_payload, IRAM_PAYLOAD_MAX_SIZE, FS_READOPTION_NONE, &actual_size);
-    
+
     g_payload_loaded = true;
-    
+
     /* Figure out what kind of reboot we're gonna be doing. */
     {
         char reboot_type[0x40] = {0};
@@ -62,7 +62,7 @@ void BpcRebootManager::Initialize() {
 static void ClearIram() {
     /* Make page FFs. */
     memset(g_work_page, 0xFF, sizeof(g_work_page));
-    
+
     /* Overwrite all of IRAM with FFs. */
     for (size_t ofs = 0; ofs < IRAM_SIZE; ofs += sizeof(g_work_page)) {
         CopyToIram(IRAM_BASE + ofs, g_work_page, sizeof(g_work_page));
@@ -74,15 +74,15 @@ static void DoRebootToPayload() {
     if (!g_payload_loaded) {
         RebootToRcm();
     }
-    
+
     /* Ensure clean IRAM state. */
     ClearIram();
-    
+
     /* Copy in payload. */
     for (size_t ofs = 0; ofs < sizeof(g_reboot_payload); ofs += 0x1000) {
         CopyToIram(IRAM_PAYLOAD_BASE + ofs, &g_reboot_payload[ofs], 0x1000);
     }
-    
+
     RebootToIramPayload();
 }
 
@@ -103,16 +103,16 @@ Result BpcRebootManager::PerformReboot() {
 void BpcRebootManager::RebootForFatalError(AtmosphereFatalErrorContext *ctx) {
     /* Ensure clean IRAM state. */
     ClearIram();
-    
-    
+
+
     /* Copy in payload. */
     for (size_t ofs = 0; ofs < sizeof(g_reboot_payload); ofs += 0x1000) {
         CopyToIram(IRAM_PAYLOAD_BASE + ofs, &g_reboot_payload[ofs], 0x1000);
     }
-    
+
     memcpy(g_work_page, ctx, sizeof(*ctx));
     CopyToIram(IRAM_PAYLOAD_BASE + IRAM_PAYLOAD_MAX_SIZE, g_work_page, sizeof(g_work_page));
-    
+
     /* If we don't actually have a payload loaded, just go to RCM. */
     if (!g_payload_loaded) {
         RebootToRcm();

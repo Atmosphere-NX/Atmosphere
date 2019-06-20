@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <string.h>
 #include "fs_shim.h"
@@ -79,7 +79,7 @@ Result fsOpenDataStorageByCurrentProcessFwd(Service* s, FsStorage* out) {
             u64 magic;
             u64 result;
         } *resp;
-        
+
         serviceIpcParse(s, &r, sizeof(*resp));
         resp = r.Raw;
 
@@ -119,7 +119,7 @@ Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorageId storage_id, u64 data
             u64 magic;
             u64 result;
         } *resp;
-        
+
         serviceIpcParse(s, &r, sizeof(*resp));
         resp = r.Raw;
 

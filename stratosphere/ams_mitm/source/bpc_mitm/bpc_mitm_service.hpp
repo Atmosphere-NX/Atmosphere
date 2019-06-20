@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -30,7 +30,7 @@ class BpcMitmService : public IMitmServiceObject {
         BpcMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
             /* ... */
         }
-        
+
         static bool ShouldMitm(u64 pid, u64 tid) {
             /* We will mitm:
              * - am, to intercept the Reboot/Power buttons in the overlay menu.
@@ -39,9 +39,9 @@ class BpcMitmService : public IMitmServiceObject {
              */
             return tid == TitleId_Am || tid == TitleId_Fatal || TitleIdIsApplication(tid) || Utils::IsHblTid(tid);
         }
-        
+
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
-                    
+
     protected:
         /* Overridden commands. */
         Result ShutdownSystem();

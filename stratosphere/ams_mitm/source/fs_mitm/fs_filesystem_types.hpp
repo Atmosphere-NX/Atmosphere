@@ -15,12 +15,12 @@
  */
 
 #pragma once
-    
+
 enum OpenMode {
     OpenMode_Read = (1 << 0),
     OpenMode_Write = (1 << 1),
     OpenMode_Append = (1 << 2),
-    
+
     OpenMode_ReadWrite = OpenMode_Read | OpenMode_Write,
     OpenMode_All = OpenMode_ReadWrite | OpenMode_Append,
 };
@@ -28,7 +28,7 @@ enum OpenMode {
 enum DirectoryOpenMode {
     DirectoryOpenMode_Directories = (1 << 0),
     DirectoryOpenMode_Files = (1 << 1),
-    
+
     DirectoryOpenMode_All = (DirectoryOpenMode_Directories | DirectoryOpenMode_Files),
 };
 

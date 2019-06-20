@@ -49,22 +49,22 @@ class FsPathUtils {
     public:
         static Result VerifyPath(const char *path, size_t max_path_len, size_t max_name_len);
         static Result ConvertPathForServiceObject(FsPath *out, const char *path);
-        
+
         static Result IsNormalized(bool *out, const char *path);
         static Result Normalize(char *out, size_t max_out_size, const char *src, size_t *out_size);
 
         static bool IsWindowsDriveLetter(const char c) {
             return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
         }
-        
+
         static bool IsCurrentDirectory(const char *path) {
             return path[0] == '.' && (path[1] == 0 || path[1] == '/');
         }
-        
+
         static bool IsParentDirectory(const char *path) {
             return path[0] == '.' && path[1] == '.' && (path[2] == 0 || path[2] == '/');
         }
-        
+
         static bool IsWindowsAbsolutePath(const char *path) {
             /* Nintendo uses this in path comparisons... */
             return IsWindowsDriveLetter(path[0]) && path[1] == ':';

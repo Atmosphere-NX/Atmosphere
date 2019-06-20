@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -33,13 +33,13 @@
 void BpcMitmMain(void *arg) {
     /* Wait for initialization to occur */
     Utils::WaitSdInitialized();
-    
+
     /* Load a payload off of the SD */
     BpcRebootManager::Initialize();
-    
+
     /* Create server manager */
     auto server_manager = new WaitableManager(2);
-    
+
     /* Create bpc mitm. */
     const char *service_name = "bpc";
     if (GetRuntimeFirmwareVersion() < FirmwareVersion_200) {
@@ -53,8 +53,8 @@ void BpcMitmMain(void *arg) {
 
     /* Loop forever, servicing our services. */
     server_manager->Process();
-    
+
     delete server_manager;
-    
+
 }
 

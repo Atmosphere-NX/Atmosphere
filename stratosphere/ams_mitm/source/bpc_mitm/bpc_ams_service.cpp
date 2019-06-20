@@ -24,9 +24,9 @@ Result BpcAtmosphereService::RebootToFatalError(InBuffer<AtmosphereFatalErrorCon
     if (ctx.buffer == nullptr || ctx.num_elements != 1) {
         return ResultKernelConnectionClosed;
     }
-    
+
     /* Reboot to fusee with the input context. */
     BpcRebootManager::RebootForFatalError(ctx.buffer);
-    
+
     return ResultSuccess;
 }

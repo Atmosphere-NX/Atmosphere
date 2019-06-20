@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 
 enum MitmModuleId : u32 {
@@ -21,7 +21,7 @@ enum MitmModuleId : u32 {
     MitmModuleId_SetMitm = 1,
     MitmModuleId_BpcMitm = 2,
     MitmModuleId_NsMitm = 3,
-    
+
     /* Always keep this at the end. */
     MitmModuleId_Count,
 };

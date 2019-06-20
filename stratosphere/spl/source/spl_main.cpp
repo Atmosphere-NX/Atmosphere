@@ -103,7 +103,7 @@ static const auto MakeDeprecatedService  = []() { return std::make_shared<Deprec
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
-    
+
     /* Initialize global context. */
     SecureMonitorWrapper::Initialize();
 
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
     } else {
         s_server_manager.AddWaitable(new ServiceServer<DeprecatedService, +MakeDeprecatedService>("spl:", 12));
     }
-    
+
     /* Loop forever, servicing our services. */
     s_server_manager.Process();
 

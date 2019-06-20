@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -31,7 +31,7 @@ extern "C" {
     #define INNER_HEAP_SIZE 0x8000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
-    
+
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);

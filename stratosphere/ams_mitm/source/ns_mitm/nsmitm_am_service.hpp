@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -22,21 +22,21 @@
 
 #include "nsmitm_service_common.hpp"
 
-class NsAmMitmService : public IMitmServiceObject {      
+class NsAmMitmService : public IMitmServiceObject {
     public:
         NsAmMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
             /* ... */
         }
-        
+
         static bool ShouldMitm(u64 pid, u64 tid) {
             /* We will mitm:
              * - web applets, to facilitate hbl web browser launching.
              */
             return Utils::IsWebAppletTid(tid);
         }
-        
+
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
-                    
+
     protected:
         /* Overridden commands. */
         Result GetApplicationContentPath(OutBuffer<u8> out_path, u64 app_id, u8 storage_type);

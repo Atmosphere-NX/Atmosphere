@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -56,21 +56,21 @@ class NsDocumentService : public IServiceObject {
         };
 };
 
-class NsWebMitmService : public IMitmServiceObject {      
+class NsWebMitmService : public IMitmServiceObject {
     public:
         NsWebMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
             /* ... */
         }
-        
+
         static bool ShouldMitm(u64 pid, u64 tid) {
             /* We will mitm:
              * - web applets, to facilitate hbl web browser launching.
              */
             return Utils::IsWebAppletTid(tid);
         }
-        
+
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
-                    
+
     protected:
         /* Overridden commands. */
         Result GetDocumentInterface(Out<std::shared_ptr<NsDocumentService>> out_intf);
