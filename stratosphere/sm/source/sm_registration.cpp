@@ -227,6 +227,71 @@ bool Registration::HasMitm(u64 service) {
     return target_service != NULL && target_service->mitm_pid != 0;
 }
 
+Result Registration::GetMitmServiceHandleImpl(Registration::Service *target_service, u64 pid, Handle *out) {
+    /* Send command to query if we should mitm. */
+    IpcCommand c;
+    ipcInitialize(&c);
+    struct {
+        u64 magic;
+        u64 cmd_id;
+        u64 pid;
+    } *info = ((decltype(info))ipcPrepareHeader(&c, sizeof(*info)));
+    info->magic = SFCI_MAGIC;
+    info->cmd_id = 65000;
+    info->pid = pid;
+    R_TRY(ipcDispatch(target_service->mitm_query_h));
+
+    /* Parse response to see if we should mitm. */
+    bool should_mitm;
+    {
+        IpcParsedCommand r;
+        ipcParse(&r);
+        struct {
+            u64 magic;
+            u64 result;
+            bool should_mitm;
+        } *resp = ((decltype(resp))r.Raw);
+
+        R_TRY(resp->result);
+        should_mitm = resp->should_mitm;
+    }
+
+    /* If we shouldn't mitm, give normal session. */
+    if (!should_mitm) {
+        return svcConnectToPort(out, target_service->port_h);
+    }
+
+    /* Create both handles. If the second fails, close the first to prevent leak. */
+    R_TRY(svcConnectToPort(&target_service->mitm_fwd_sess_h, target_service->port_h));
+    R_TRY_CLEANUP(svcConnectToPort(out, target_service->mitm_port_h), {
+        svcCloseHandle(target_service->mitm_fwd_sess_h);
+        target_service->mitm_fwd_sess_h = 0;
+    });
+
+    target_service->mitm_waiting_ack_pid = pid;
+    target_service->mitm_waiting_ack = true;
+
+    return ResultSuccess;
+}
+
+Result Registration::GetServiceHandleImpl(Registration::Service *target_service, u64 pid, Handle *out) {
+    /* Clear handle output. */
+    *out = 0;
+
+    /* If not mitm'd or mitm service is requesting, get normal session. */
+    if (target_service->mitm_pid == 0 || target_service->mitm_pid == pid) {
+        return svcConnectToPort(out, target_service->port_h);
+    }
+
+    /* We're mitm'd. */
+    if (R_FAILED(GetMitmServiceHandleImpl(target_service, pid, out))) {
+        /* If the Mitm service is dead, just give a normal session. */
+        return svcConnectToPort(out, target_service->port_h);
+    }
+
+    return ResultSuccess;
+}
+
 Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
     Registration::Service *target_service = GetService(service);
     if (target_service == NULL || ShouldInitDefer(service) || target_service->mitm_waiting_ack) {
@@ -234,55 +299,8 @@ Result Registration::GetServiceHandle(u64 pid, u64 service, Handle *out) {
         return ResultServiceFrameworkRequestDeferredByUser;
     }
 
-    *out = 0;
-    Result rc;
-    if (target_service->mitm_pid == 0 || target_service->mitm_pid == pid) {
-        rc = svcConnectToPort(out, target_service->port_h);
-    } else {
-        IpcCommand c;
-        ipcInitialize(&c);
-        struct {
-            u64 magic;
-            u64 cmd_id;
-            u64 pid;
-        } *info = ((decltype(info))ipcPrepareHeader(&c, sizeof(*info)));
-        info->magic = SFCI_MAGIC;
-        info->cmd_id = 65000;
-        info->pid = pid;
-        rc = ipcDispatch(target_service->mitm_query_h);
-        if (R_SUCCEEDED(rc)) {
-            IpcParsedCommand r;
-            ipcParse(&r);
-            struct {
-                u64 magic;
-                u64 result;
-                bool should_mitm;
-            } *resp = ((decltype(resp))r.Raw);
-            rc = resp->result;
-            if (R_SUCCEEDED(rc)) {
-                if (resp->should_mitm) {
-                    rc = svcConnectToPort(&target_service->mitm_fwd_sess_h, target_service->port_h);
-                    if (R_SUCCEEDED(rc)) {
-                        rc = svcConnectToPort(out, target_service->mitm_port_h);
-                        if (R_SUCCEEDED(rc)) {
-                            target_service->mitm_waiting_ack_pid = pid;
-                            target_service->mitm_waiting_ack = true;
-                        } else {
-                            svcCloseHandle(target_service->mitm_fwd_sess_h);
-                            target_service->mitm_fwd_sess_h = 0;
-                        }
-                    }
-                } else {
-                    rc = svcConnectToPort(out, target_service->port_h);
-                }
-            }
-        }
-        if (R_FAILED(rc)) {
-            rc = svcConnectToPort(out, target_service->port_h);
-        }
-    }
-    /* Convert Kernel result to SM result. */
-    R_TRY_CATCH(rc) {
+    R_TRY_CATCH(GetServiceHandleImpl(target_service, pid, out)) {
+        /* Convert Kernel result to SM result. */
         R_CATCH(ResultKernelOutOfSessions) {
             return ResultSmInsufficientSessions;
         }
