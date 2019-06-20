@@ -20,11 +20,9 @@
 #include "updater_bis_management.hpp"
 
 Result BisAccessor::Initialize() {
-    Result rc = fsOpenBisStorage(&this->storage, this->partition_id);
-    if (R_SUCCEEDED(rc)) {
-        this->active = true;
-    }
-    return rc;
+    R_TRY(fsOpenBisStorage(&this->storage, this->partition_id));
+    this->active = true;
+    return ResultSuccess;
 }
 
 void BisAccessor::Finalize() {
@@ -49,7 +47,6 @@ Result BisAccessor::Write(u64 offset, const void *src, size_t size) {
 }
 
 Result BisAccessor::Write(u64 offset, size_t size, const char *bip_path, void *work_buffer, size_t work_buffer_size) {
-    Result rc;
     if (offset % SectorAlignment != 0 || work_buffer_size % SectorAlignment != 0) {
         std::abort();
     }
@@ -74,9 +71,7 @@ Result BisAccessor::Write(u64 offset, size_t size, const char *bip_path, void *w
         }
 
         size_t aligned_size = ((read_size + SectorAlignment - 1) / SectorAlignment) * SectorAlignment;
-        if (R_FAILED((rc = this->Write(offset + written, work_buffer, aligned_size)))) {
-            return rc;
-        }
+        R_TRY(this->Write(offset + written, work_buffer, aligned_size));
         written += read_size;
 
         if (read_size != work_buffer_size) {
@@ -87,7 +82,6 @@ Result BisAccessor::Write(u64 offset, size_t size, const char *bip_path, void *w
 }
 
 Result BisAccessor::Clear(u64 offset, u64 size, void *work_buffer, size_t work_buffer_size) {
-    Result rc;
     if (offset % SectorAlignment != 0 || work_buffer_size % SectorAlignment != 0) {
         std::abort();
     }
@@ -97,16 +91,13 @@ Result BisAccessor::Clear(u64 offset, u64 size, void *work_buffer, size_t work_b
     size_t written = 0;
     while (written < size) {
         size_t cur_write_size = std::min(work_buffer_size, size - written);
-        if (R_FAILED((rc = this->Write(offset + written, work_buffer, cur_write_size)))) {
-            return rc;
-        }
+        R_TRY(this->Write(offset + written, work_buffer, cur_write_size));
         written += cur_write_size;
     }
     return ResultSuccess;
 }
 
 Result BisAccessor::GetHash(void *dst, u64 offset, u64 size, u64 hash_size, void *work_buffer, size_t work_buffer_size) {
-    Result rc;
     if (offset % SectorAlignment != 0 || work_buffer_size % SectorAlignment != 0) {
         std::abort();
     }
@@ -118,9 +109,7 @@ Result BisAccessor::GetHash(void *dst, u64 offset, u64 size, u64 hash_size, void
     while (total_read < hash_size) {
         size_t cur_read_size = std::min(work_buffer_size, size - total_read);
         size_t cur_update_size = std::min(cur_read_size, hash_size - total_read);
-        if (R_FAILED((rc = this->Read(work_buffer, cur_read_size, offset + total_read)))) {
-            return rc;
-        }
+        R_TRY(this->Read(work_buffer, cur_read_size, offset + total_read));
         sha256ContextUpdate(&sha_ctx, work_buffer, cur_update_size);
         total_read += cur_read_size;
     }
@@ -152,10 +141,7 @@ void Boot0Accessor::CopyEks(void *dst_bct, const void *src_eks, size_t eks_index
 
 Result Boot0Accessor::UpdateEks(void *dst_bct, void *eks_work_buffer) {
     size_t read_size;
-    Result rc = this->Read(&read_size, eks_work_buffer, EksSize, Boot0Partition::Eks);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->Read(&read_size, eks_work_buffer, EksSize, Boot0Partition::Eks));
 
     return this->UpdateEksManually(dst_bct, eks_work_buffer);
 }
@@ -169,10 +155,7 @@ Result Boot0Accessor::PreserveAutoRcm(void *dst_bct, void *work_buffer, Boot0Par
     std::memset(work_buffer, 0, BctSize);
 
     size_t read_size;
-    Result rc = this->Read(&read_size, work_buffer, BctSize, which);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->Read(&read_size, work_buffer, BctSize, which));
 
     void *dst_pubk = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(dst_bct) + BctPubkOffset);
     void *src_pubk = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctPubkOffset);

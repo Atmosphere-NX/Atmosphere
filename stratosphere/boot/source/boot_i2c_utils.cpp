@@ -24,16 +24,14 @@ static Result RetryUntilSuccess(F f) {
 
     u64 cur_time = 0;
     while (true) {
-        Result rc = f();
-        if (R_SUCCEEDED(rc)) {
-            return rc;
-        } else {
+        R_TRY_CLEANUP(f(), {
             cur_time += retry_interval;
-            if (cur_time >= timeout) {
-                return rc;
+            if (cur_time < timeout) {
+                svcSleepThread(retry_interval);
+                continue;
             }
-        }
-        svcSleepThread(retry_interval);
+        });
+        return ResultSuccess;
     }
 }
 

@@ -146,7 +146,6 @@ Result I2cBusAccessor::Send(const u8 *data, size_t num_bytes, I2cTransactionOpti
     std::scoped_lock<HosMutex> lk(this->register_mutex);
     const u8 *cur_src = data;
     size_t remaining = num_bytes;
-    Result rc;
 
     /* Set interrupt enable, clear interrupt status. */
     WriteRegister(&this->i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0,   0x8E);
@@ -185,25 +184,19 @@ Result I2cBusAccessor::Send(const u8 *data, size_t num_bytes, I2cTransactionOpti
             return ResultI2cTimedOut;
         }
 
-        if (R_FAILED((rc = this->GetAndHandleTransactionResult()))) {
-            return rc;
-        }
+        R_TRY(this->GetAndHandleTransactionResult());
     }
 
     WriteRegister(&this->i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0, 0x8C);
 
     /* Wait for successful completion. */
     while (true) {
-        if (R_FAILED((rc = this->GetAndHandleTransactionResult()))) {
-            return rc;
-        }
+        R_TRY(this->GetAndHandleTransactionResult());
 
         /* Check PACKET_XFER_COMPLETE */
         const u32 interrupt_status = ReadRegister(&this->i2c_registers->I2C_INTERRUPT_STATUS_REGISTER_0);
         if (interrupt_status & 0x80) {
-            if (R_FAILED((rc = this->GetAndHandleTransactionResult()))) {
-                return rc;
-            }
+            R_TRY(this->GetAndHandleTransactionResult());
             break;
         }
 
@@ -222,7 +215,6 @@ Result I2cBusAccessor::Receive(u8 *out_data, size_t num_bytes, I2cTransactionOpt
     std::scoped_lock<HosMutex> lk(this->register_mutex);
     u8 *cur_dst = out_data;
     size_t remaining = num_bytes;
-    Result rc;
 
     /* Set interrupt enable, clear interrupt status. */
     WriteRegister(&this->i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0,   0x8D);
@@ -241,9 +233,7 @@ Result I2cBusAccessor::Receive(u8 *out_data, size_t num_bytes, I2cTransactionOpt
             return ResultI2cTimedOut;
         }
 
-        if (R_FAILED((rc = this->GetAndHandleTransactionResult()))) {
-            return rc;
-        }
+        R_TRY(this->GetAndHandleTransactionResult());
 
         const u32 fifo_status = ReadRegister(&this->i2c_registers->I2C_FIFO_STATUS_0);
         const size_t fifo_cnt = std::min((remaining + 3) >> 2, static_cast<size_t>(fifo_status & 0xF));
@@ -477,14 +467,12 @@ void I2cBusAccessor::HandleTransactionResult(Result result) {
 }
 
 Result I2cBusAccessor::GetAndHandleTransactionResult() {
-    Result rc = this->GetTransactionResult();
-    this->HandleTransactionResult(rc);
-
-    if (R_FAILED(rc)) {
+    const Result transaction_res = this->GetTransactionResult();
+    R_TRY_CLEANUP(transaction_res, {
+        this->HandleTransactionResult(transaction_res);
         this->ClearInterruptMask();
         eventClear(&this->interrupt_event);
-        return rc;
-    }
+    });
     return ResultSuccess;
 }
 

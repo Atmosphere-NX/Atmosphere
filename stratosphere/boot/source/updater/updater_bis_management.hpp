@@ -143,10 +143,7 @@ class PartitionAccessor : public BisAccessor {
                 std::abort();
             }
 
-            Result rc = BisAccessor::Read(dst, entry->size, entry->offset);
-            if (R_FAILED(rc)) {
-                return rc;
-            }
+            R_TRY(BisAccessor::Read(dst, entry->size, entry->offset));
 
             *out_size = entry->size;
             return ResultSuccess;

@@ -22,10 +22,7 @@
 Result RtcDriver::ReadRtcRegister(u8 *out, u8 address) {
     const u8 update_addr = 0x04;
     const u8 update_val = 0x10;
-    Result rc = Boot::WriteI2cRegister(this->i2c_session, &update_val, sizeof(update_val), &update_addr, sizeof(update_addr));
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(Boot::WriteI2cRegister(this->i2c_session, &update_val, sizeof(update_val), &update_addr, sizeof(update_addr)));
     svcSleepThread(16'000'000ul);
     return Boot::ReadI2cRegister(this->i2c_session, out, sizeof(*out), &address, sizeof(address));
 }

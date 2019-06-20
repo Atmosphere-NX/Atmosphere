@@ -852,7 +852,7 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
 
     /* Get the current application process ID. */
     R_TRY(pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id));
-    auto proc_guard = SCOPE_EXIT {
+    auto proc_guard = SCOPE_GUARD {
         g_cheat_process_metadata.process_id = 0;
     };
 

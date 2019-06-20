@@ -31,10 +31,7 @@ static Result I2cSendHandler(const u8 **cur_cmd, u8 **cur_dst, I2cSessionImpl& s
     size_t num_bytes = (**cur_cmd);
     (*cur_cmd)++;
 
-    Result rc = I2cDriver::Send(session, *cur_cmd, num_bytes, option);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(I2cDriver::Send(session, *cur_cmd, num_bytes, option));
     (*cur_cmd) += num_bytes;
 
     return ResultSuccess;
@@ -49,10 +46,7 @@ static Result I2cReceiveHandler(const u8 **cur_cmd, u8 **cur_dst, I2cSessionImpl
     size_t num_bytes = (**cur_cmd);
     (*cur_cmd)++;
 
-    Result rc = I2cDriver::Receive(session, *cur_dst, num_bytes, option);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(I2cDriver::Receive(session, *cur_dst, num_bytes, option));
     (*cur_dst) += num_bytes;
 
     return ResultSuccess;
@@ -156,10 +150,7 @@ Result I2cDriver::ExecuteCommandList(I2cSessionImpl &session, void *dst, size_t 
             std::abort();
         }
 
-        Result rc = g_cmd_handlers[cmd](&cur_cmd, &cur_dst, session);
-        if (R_FAILED(rc)) {
-            return rc;
-        }
+        R_TRY(g_cmd_handlers[cmd](&cur_cmd, &cur_dst, session));
     }
 
     return ResultSuccess;

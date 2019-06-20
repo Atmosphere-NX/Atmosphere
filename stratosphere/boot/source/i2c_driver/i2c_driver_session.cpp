@@ -57,49 +57,43 @@ bool I2cDriverSession::IsOpen() const{
 
 Result I2cDriverSession::DoTransaction(void *dst, const void *src, size_t num_bytes, I2cTransactionOption option, DriverCommand command){
     std::scoped_lock<HosMutex> lk(this->bus_accessor_mutex);
-    Result rc;
 
     if (this->bus_accessor->GetBusy()) {
         return ResultI2cBusBusy;
     }
 
     this->bus_accessor->OnStartTransaction();
+    ON_SCOPE_EXIT { this->bus_accessor->OnStopTransaction(); };
 
-    if (R_SUCCEEDED((rc = this->bus_accessor->StartTransaction(command, this->addressing_mode, this->slave_address)))) {
-        switch (command) {
-            case DriverCommand_Send:
-                rc = this->bus_accessor->Send(reinterpret_cast<const u8 *>(src), num_bytes, option, this->addressing_mode, this->slave_address);
-                break;
-            case DriverCommand_Receive:
-                rc = this->bus_accessor->Receive(reinterpret_cast<u8 *>(dst), num_bytes, option, this->addressing_mode, this->slave_address);
-                break;
-            default:
-                std::abort();
-        }
+    R_TRY(this->bus_accessor->StartTransaction(command, this->addressing_mode, this->slave_address));
+
+    switch (command) {
+        case DriverCommand_Send:
+            R_TRY(this->bus_accessor->Send(reinterpret_cast<const u8 *>(src), num_bytes, option, this->addressing_mode, this->slave_address));
+            break;
+        case DriverCommand_Receive:
+            R_TRY(this->bus_accessor->Receive(reinterpret_cast<u8 *>(dst), num_bytes, option, this->addressing_mode, this->slave_address));
+            break;
+        default:
+            std::abort();
     }
 
-    this->bus_accessor->OnStopTransaction();
-
-    return rc;
+    return ResultSuccess;
 }
 
 Result I2cDriverSession::DoTransactionWithRetry(void *dst, const void *src, size_t num_bytes, I2cTransactionOption option, DriverCommand command){
-    Result rc;
-
     size_t i = 0;
     while (true) {
-        rc = this->DoTransaction(dst, src, num_bytes, option, command);
-        if (rc == ResultI2cTimedOut) {
-            i++;
-            if (i <= this->max_retries) {
-                svcSleepThread(this->retry_wait_time);
-                continue;
+        R_TRY_CATCH(this->DoTransaction(dst, src, num_bytes, option, command)) {
+            R_CATCH(ResultI2cTimedOut) {
+                i++;
+                if (i <= this->max_retries) {
+                    svcSleepThread(this->retry_wait_time);
+                    continue;
+                }
+                return ResultI2cBusBusy;
             }
-            return ResultI2cBusBusy;
-        } else if (R_FAILED(rc)) {
-            return rc;
-        }
+        } R_END_TRY_CATCH;
         return ResultSuccess;
     }
-    return rc;
 }

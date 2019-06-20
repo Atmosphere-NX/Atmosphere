@@ -27,8 +27,7 @@ Result I2cCommandListFormatter::CanEnqueue(size_t size) const {
 }
 
 Result I2cCommandListFormatter::EnqueueSendCommand(I2cTransactionOption option, const void *src, size_t size) {
-    Result rc = this->CanEnqueue(SendCommandSize + size);
-    if (R_FAILED(rc)) { return rc; }
+    R_TRY(this->CanEnqueue(SendCommandSize + size));
 
     this->cmd_list[this->cur_index] = I2cCommand_Send;
     this->cmd_list[this->cur_index] |= ((option & I2cTransactionOption_Start) != 0) << 6;
@@ -45,8 +44,7 @@ Result I2cCommandListFormatter::EnqueueSendCommand(I2cTransactionOption option, 
 }
 
 Result I2cCommandListFormatter::EnqueueReceiveCommand(I2cTransactionOption option, size_t size) {
-    Result rc = this->CanEnqueue(ReceiveCommandSize);
-    if (R_FAILED(rc)) { return rc; }
+    R_TRY(this->CanEnqueue(ReceiveCommandSize));
 
     this->cmd_list[this->cur_index] = I2cCommand_Receive;
     this->cmd_list[this->cur_index] |= ((option & I2cTransactionOption_Start) != 0) << 6;
@@ -58,8 +56,7 @@ Result I2cCommandListFormatter::EnqueueReceiveCommand(I2cTransactionOption optio
 }
 
 Result I2cCommandListFormatter::EnqueueSleepCommand(size_t us) {
-    Result rc = this->CanEnqueue(SleepCommandSize);
-    if (R_FAILED(rc)) { return rc; }
+    R_TRY(this->CanEnqueue(SleepCommandSize));
 
     this->cmd_list[this->cur_index] = I2cCommand_SubCommand;
     this->cmd_list[this->cur_index] |= I2cSubCommand_Sleep << 2;

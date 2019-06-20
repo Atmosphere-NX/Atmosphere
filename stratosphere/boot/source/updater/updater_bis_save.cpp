@@ -35,10 +35,7 @@ Result BisSave::Initialize(void *work_buffer, size_t work_buffer_size) {
         std::abort();
     }
 
-    Result rc = this->accessor.Initialize();
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->accessor.Initialize());
     this->save_buffer = work_buffer;
     return ResultSuccess;
 }

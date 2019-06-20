@@ -27,16 +27,11 @@ Result ChargerDriver::Write(u8 addr, u8 val) {
 }
 
 Result ChargerDriver::ReadWrite(u8 addr, u8 mask, u8 val) {
-    Result rc;
     u8 cur_val;
-    if (R_FAILED((rc = this->Read(addr, &cur_val)))) {
-        return rc;
-    }
+    R_TRY(this->Read(addr, &cur_val));
 
     const u8 new_val = (cur_val & ~mask) | val;
-    if (R_FAILED((rc = this->Write(addr, new_val)))) {
-        return rc;
-    }
+    R_TRY(this->Write(addr, new_val));
     return ResultSuccess;
 }
 
@@ -45,56 +40,21 @@ Result ChargerDriver::Initialize() {
 }
 
 Result ChargerDriver::Initialize(bool set_input_current_limit) {
-    Result rc;
     if (set_input_current_limit) {
-        if (R_FAILED((rc = this->SetInputCurrentLimit(InputCurrentLimit_500mA)))) {
-            return rc;
-        }
+        R_TRY(this->SetInputCurrentLimit(InputCurrentLimit_500mA));
     }
 
-    if (R_FAILED((rc = this->SetChargeVoltageLimit(4208)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = this->SetFastChargeCurrentLimit(512)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = this->SetForce20PercentChargeCurrent(false)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = this->SetPreChargeCurrentLimit(128)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = this->SetTerminationCurrentLimit(128)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = this->SetMinimumSystemVoltageLimit(3000)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = this->SetWatchdogTimerSetting(WatchdogTimerSetting_Disabled)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = this->SetChargingSafetyTimerEnabled(false)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = this->ResetWatchdogTimer()))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = this->SetBoostModeCurrentLimit(BoostModeCurrentLimit_500mA)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = this->SetHiZEnabled(false)))) {
-        return rc;
-    }
+    R_TRY(this->SetChargeVoltageLimit(4208));
+    R_TRY(this->SetFastChargeCurrentLimit(512));
+    R_TRY(this->SetForce20PercentChargeCurrent(false));
+    R_TRY(this->SetPreChargeCurrentLimit(128));
+    R_TRY(this->SetTerminationCurrentLimit(128));
+    R_TRY(this->SetMinimumSystemVoltageLimit(3000));
+    R_TRY(this->SetWatchdogTimerSetting(WatchdogTimerSetting_Disabled));
+    R_TRY(this->SetChargingSafetyTimerEnabled(false));
+    R_TRY(this->ResetWatchdogTimer());
+    R_TRY(this->SetBoostModeCurrentLimit(BoostModeCurrentLimit_500mA));
+    R_TRY(this->SetHiZEnabled(false));
 
     return ResultSuccess;
 }
@@ -158,20 +118,14 @@ Result ChargerDriver::SetHiZEnabled(bool enabled) {
 
 Result ChargerDriver::GetInputCurrentLimit(InputCurrentLimit *out) {
     u8 limit;
-    Result rc = this->Read(Bq24193InputSourceControl, &limit);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->Read(Bq24193InputSourceControl, &limit));
     *out = static_cast<InputCurrentLimit>(limit);
     return ResultSuccess;
 }
 
 Result ChargerDriver::GetChargeVoltageLimit(u32 *out) {
     u8 reg;
-    Result rc = this->Read(Bq24193ChargeVoltageControl, &reg);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->Read(Bq24193ChargeVoltageControl, &reg));
     *out = DecodeChargeVoltageLimit(reg);
     return ResultSuccess;
 }

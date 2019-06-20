@@ -33,11 +33,7 @@ void PmicDriver::RebootSystem() {
 
 Result PmicDriver::GetAcOk(bool *out) {
     u8 power_status;
-    Result rc = this->GetPowerStatus(&power_status);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-
+    R_TRY(this->GetPowerStatus(&power_status));
     *out = (power_status & 0x02) != 0;
     return ResultSuccess;
 }
@@ -59,10 +55,7 @@ Result PmicDriver::GetNvErc(u8 *out) {
 
 Result PmicDriver::GetPowerButtonPressed(bool *out) {
     u8 power_intr;
-    Result rc = this->GetPowerIntr(&power_intr);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->GetPowerIntr(&power_intr));
     *out = (power_intr & 0x08) != 0;
     return ResultSuccess;
 }

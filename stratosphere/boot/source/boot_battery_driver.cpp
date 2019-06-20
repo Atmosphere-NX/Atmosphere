@@ -53,16 +53,12 @@ Result BatteryDriver::Write(u8 addr, u16 val) {
 }
 
 Result BatteryDriver::ReadWrite(u8 addr, u16 mask, u16 val) {
-    Result rc;
     u16 cur_val;
-    if (R_FAILED((rc = this->Read(addr, &cur_val)))) {
-        return rc;
-    }
+    R_TRY(this->Read(addr, &cur_val));
 
     const u16 new_val = (cur_val & ~mask) | val;
-    if (R_FAILED((rc = this->Write(addr, new_val)))) {
-        return rc;
-    }
+    R_TRY(this->Write(addr, new_val));
+
     return ResultSuccess;
 }
 
@@ -93,35 +89,21 @@ Result BatteryDriver::UnlockVfSoc() {
 }
 
 Result BatteryDriver::LockModelTable() {
-    Result rc;
-    if (R_FAILED((rc = this->Write(Max17050ModelAccess0, 0x0000)))) {
-        return rc;
-    }
-    if (R_FAILED((rc = this->Write(Max17050ModelAccess1, 0x0000)))) {
-        return rc;
-    }
+    R_TRY(this->Write(Max17050ModelAccess0, 0x0000));
+    R_TRY(this->Write(Max17050ModelAccess1, 0x0000));
     return ResultSuccess;
 }
 
 Result BatteryDriver::UnlockModelTable() {
-    Result rc;
-    if (R_FAILED((rc = this->Write(Max17050ModelAccess0, 0x0059)))) {
-        return rc;
-    }
-    if (R_FAILED((rc = this->Write(Max17050ModelAccess1, 0x00C4)))) {
-        return rc;
-    }
+    R_TRY(this->Write(Max17050ModelAccess0, 0x0059));
+    R_TRY(this->Write(Max17050ModelAccess1, 0x00C4));
     return ResultSuccess;
 }
 
 Result BatteryDriver::SetModelTable(const u16 *model_table) {
-    Result rc;
     for (size_t i = 0; i < Max17050ModelChrTblSize; i++) {
-        if (R_FAILED((rc = this->Write(Max17050ModelChrTblStart + i, model_table[i])))) {
-            return rc;
-        }
+        R_TRY(this->Write(Max17050ModelChrTblStart + i, model_table[i]));
     }
-
     return ResultSuccess;
 }
 
@@ -151,52 +133,31 @@ bool BatteryDriver::IsModelTableSet(const u16 *model_table) {
 
 Result BatteryDriver::InitializeBatteryParameters() {
     const Max17050Parameters *params = GetBatteryParameters();
-    Result rc = ResultSuccess;
 
     if (IsPowerOnReset()) {
         /* Do initial config. */
-        if (R_FAILED((rc = this->ReadWrite(Max17050MiscCfg, 0x8000, 0x8000)))) {
-            return rc;
-        }
+        R_TRY(this->ReadWrite(Max17050MiscCfg, 0x8000, 0x8000));
 
         svcSleepThread(500'000'000ul);
 
-        if (R_FAILED((rc = this->Write(Max17050Config, 0x7210)))) {
-            return rc;
-        }
-        if (R_FAILED((rc = this->Write(Max17050FilterCfg, 0x8784)))) {
-            return rc;
-        }
-        if (R_FAILED((rc = this->Write(Max17050RelaxCfg, params->relaxcfg)))) {
-            return rc;
-        }
-        if (R_FAILED((rc = this->Write(Max17050LearnCfg, 0x2603)))) {
-            return rc;
-        }
-        if (R_FAILED((rc = this->Write(Max17050FullSocThr, params->fullsocthr)))) {
-            return rc;
-        }
-        if (R_FAILED((rc = this->Write(Max17050IAvgEmpty, params->iavgempty)))) {
-            return rc;
-        }
+        R_TRY(this->Write(Max17050Config, 0x7210));
+        R_TRY(this->Write(Max17050FilterCfg, 0x8784));
+        R_TRY(this->Write(Max17050RelaxCfg, params->relaxcfg));
+        R_TRY(this->Write(Max17050LearnCfg, 0x2603));
+        R_TRY(this->Write(Max17050FullSocThr, params->fullsocthr));
+        R_TRY(this->Write(Max17050IAvgEmpty, params->iavgempty));
 
         /* Unlock model table, write model table. */
         do {
-            if (R_FAILED((rc = this->UnlockModelTable()))) {
-                return rc;
-            }
-            if (R_FAILED((rc = this->SetModelTable(params->modeltbl)))) {
-                return rc;
-            }
+            R_TRY(this->UnlockModelTable());
+            R_TRY(this->SetModelTable(params->modeltbl));
         } while (!this->IsModelTableSet(params->modeltbl));
 
         /* Lock model table. */
         size_t lock_i = 0;
         while (true) {
             lock_i++;
-            if (R_FAILED((rc = this->LockModelTable()))) {
-                return rc;
-            }
+            R_TRY(this->LockModelTable());
 
             if (this->IsModelTableLocked()) {
                 break;
@@ -212,15 +173,9 @@ Result BatteryDriver::InitializeBatteryParameters() {
         while (!this->WriteValidate(Max17050RComp0, params->rcomp0)) { /* ... */ }
         while (!this->WriteValidate(Max17050TempCo, params->tempco)) { /* ... */ }
 
-        if (R_FAILED((rc = this->Write(Max17050IChgTerm, params->ichgterm)))) {
-            return rc;
-        }
-        if (R_FAILED((rc = this->Write(Max17050TGain, params->tgain)))) {
-            return rc;
-        }
-        if (R_FAILED((rc = this->Write(Max17050TOff, params->toff)))) {
-            return rc;
-        }
+        R_TRY(this->Write(Max17050IChgTerm, params->ichgterm));
+        R_TRY(this->Write(Max17050TGain, params->tgain));
+        R_TRY(this->Write(Max17050TOff, params->toff));
 
         while (!this->WriteValidate(Max17050VEmpty, params->vempty)) { /* ... */ }
         while (!this->WriteValidate(Max17050QResidual00, params->qresidual00)) { /* ... */ }
@@ -231,9 +186,7 @@ Result BatteryDriver::InitializeBatteryParameters() {
 
         /* Write full capacity parameters. */
         while (!this->WriteValidate(Max17050FullCap, params->fullcap)) { /* ... */ }
-        if (R_FAILED((rc = this->Write(Max17050DesignCap, params->vffullcap)))) {
-            return rc;
-        }
+        R_TRY(this->Write(Max17050DesignCap, params->vffullcap));
         while (!this->WriteValidate(Max17050FullCapNom, params->vffullcap)) { /* ... */ }
 
         svcSleepThread(350'000'000ul);
@@ -241,24 +194,12 @@ Result BatteryDriver::InitializeBatteryParameters() {
         /* Write VFSOC to VFSOC 0. */
         u16 vfsoc, qh;
         {
-            if (R_FAILED((rc = this->Read(Max17050SocVf, &vfsoc)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = this->UnlockVfSoc()))) {
-                return rc;
-            }
-            if (R_FAILED((rc = this->Write(Max17050SocVf0, vfsoc)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = this->Read(Max17050Qh, &qh)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = this->Write(Max17050Qh0, qh)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = this->LockVfSoc()))) {
-                return rc;
-            }
+            R_TRY(this->Read(Max17050SocVf, &vfsoc));
+            R_TRY(this->UnlockVfSoc());
+            R_TRY(this->Write(Max17050SocVf0, vfsoc));
+            R_TRY(this->Read(Max17050Qh, &qh));
+            R_TRY(this->Write(Max17050Qh0, qh));
+            R_TRY(this->LockVfSoc());
         }
 
         /* Write cycles. */
@@ -273,25 +214,17 @@ Result BatteryDriver::InitializeBatteryParameters() {
         while (!this->WriteValidate(Max17050DPAcc, 0x0C80)) { /* ... */ }
         while (!this->WriteValidate(Max17050DQAcc, dqacc)) { /* ... */ }
         while (!this->WriteValidate(Max17050FullCap, params->fullcap)) { /* ... */ }
-        if (R_FAILED((rc = this->Write(Max17050DesignCap, params->vffullcap)))) {
-            return rc;
-        }
+        R_TRY(this->Write(Max17050DesignCap, params->vffullcap));
         while (!this->WriteValidate(Max17050FullCapNom, params->vffullcap)) { /* ... */ }
-        if (R_FAILED((rc = this->Write(Max17050SocRep, vfsoc)))) {
-            return rc;
-        }
+        R_TRY(this->Write(Max17050SocRep, vfsoc));
 
         /* Finish initialization. */
         {
             u16 status;
-            if (R_FAILED((rc = this->Read(Max17050Status, &status)))) {
-                return rc;
-            }
+            R_TRY(this->Read(Max17050Status, &status));
             while (!this->WriteValidate(Max17050Status, status & 0xFFFD)) { /* ... */ }
         }
-        if (R_FAILED((rc = this->Write(Max17050CGain, 0x7FFF)))) {
-            return rc;
-        }
+        R_TRY(this->Write(Max17050CGain, 0x7FFF));
     }
 
     return ResultSuccess;
@@ -300,50 +233,35 @@ Result BatteryDriver::InitializeBatteryParameters() {
 Result BatteryDriver::IsBatteryRemoved(bool *out) {
     /* N doesn't check result, but we will. */
     u16 val = 0;
-    Result rc = this->Read(Max17050Status, &val);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->Read(Max17050Status, &val));
     *out = (val & 0x0008) == 0x0008;
     return ResultSuccess;
 }
 
 Result BatteryDriver::GetTemperature(double *out) {
     u16 val = 0;
-    Result rc = this->Read(Max17050Temperature, &val);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->Read(Max17050Temperature, &val));
     *out = static_cast<double>(val) * double(0.00390625);
     return ResultSuccess;
 }
 
 Result BatteryDriver::GetAverageVCell(u32 *out) {
     u16 val = 0;
-    Result rc = this->Read(Max17050AverageVCell, &val);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->Read(Max17050AverageVCell, &val));
     *out = (625 * u32(val >> 3)) / 1000;
     return ResultSuccess;
 }
 
 Result BatteryDriver::GetSocRep(double *out) {
     u16 val = 0;
-    Result rc = this->Read(Max17050SocRep, &val);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->Read(Max17050SocRep, &val));
     *out = static_cast<double>(val) * double(0.00390625);
     return ResultSuccess;
 }
 
 Result BatteryDriver::GetBatteryPercentage(size_t *out) {
     double raw_charge;
-    Result rc = this->GetSocRep(&raw_charge);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->GetSocRep(&raw_charge));
     int converted_percentage = (((raw_charge - 3.93359375) * 98.0) / 94.2304688) + 2.0;
     if (converted_percentage < 1) {
         *out = 1;
@@ -361,10 +279,7 @@ Result BatteryDriver::SetShutdownTimer() {
 
 Result BatteryDriver::GetShutdownEnabled(bool *out) {
     u16 val = 0;
-    Result rc = this->Read(Max17050Config, &val);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->Read(Max17050Config, &val));
     *out = (val & 0x0040) != 0;
     return ResultSuccess;
 }

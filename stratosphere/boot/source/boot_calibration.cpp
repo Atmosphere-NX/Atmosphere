@@ -55,20 +55,13 @@ static Result ValidateCalibrationCrc16(const void *data, size_t size) {
 
 static Result GetBatteryVendorImpl(u32 *vendor) {
     FsStorage s;
-    Result rc = fsOpenBisStorage(&s, FsBisStorageId_CalibrationBinary);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(fsOpenBisStorage(&s, FsBisStorageId_CalibrationBinary));
     ON_SCOPE_EXIT { fsStorageClose(&s); };
 
     u8 battery_lot[BatteryLotSize];
-    if (R_FAILED((rc = fsStorageRead(&s, BatteryLotOffset, battery_lot, sizeof(battery_lot))))) {
-        return rc;
-    }
+    R_TRY(fsStorageRead(&s, BatteryLotOffset, battery_lot, sizeof(battery_lot)));
 
-    if (R_FAILED((rc = ValidateCalibrationCrc16(battery_lot, sizeof(battery_lot))))) {
-        return rc;
-    }
+    R_TRY(ValidateCalibrationCrc16(battery_lot, sizeof(battery_lot)));
 
     *vendor = battery_lot[7];
     return ResultSuccess;
@@ -76,20 +69,13 @@ static Result GetBatteryVendorImpl(u32 *vendor) {
 
 static Result GetBatteryVersionImpl(u32 *version) {
     FsStorage s;
-    Result rc = fsOpenBisStorage(&s, FsBisStorageId_CalibrationBinary);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(fsOpenBisStorage(&s, FsBisStorageId_CalibrationBinary));
     ON_SCOPE_EXIT { fsStorageClose(&s); };
 
     u8 battery_version[BatteryVersionSize];
-    if (R_FAILED((rc = fsStorageRead(&s, BatteryVersionOffset, battery_version, sizeof(battery_version))))) {
-        return rc;
-    }
+    R_TRY(fsStorageRead(&s, BatteryVersionOffset, battery_version, sizeof(battery_version)));
 
-    if (R_FAILED((rc = ValidateCalibrationCrc16(battery_version, sizeof(battery_version))))) {
-        return rc;
-    }
+    R_TRY(ValidateCalibrationCrc16(battery_version, sizeof(battery_version)));
 
     *version = battery_version[0];
     return ResultSuccess;
