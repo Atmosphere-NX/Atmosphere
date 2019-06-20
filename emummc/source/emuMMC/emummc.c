@@ -103,15 +103,7 @@ void sdmmc_finalize(void)
 
 static void _file_based_update_filename(char *outFilename, u32 sd_path_len, u32 part_idx)
 {
-    if (part_idx < 10)
-    {
-        outFilename[sd_path_len] = '0';
-        itoa(part_idx, &outFilename[sd_path_len + 1], 10);
-    }
-    else
-    {
-        itoa(part_idx, &outFilename[sd_path_len], 10);
-    }
+    snprintf(outFilename + sd_path_len, 3, "%02d", part_idx);
 }
 
 static void _file_based_emmc_finalize(void)
@@ -119,11 +111,13 @@ static void _file_based_emmc_finalize(void)
     if ((emuMMC_ctx.EMMC_Type == emuMMC_SD_File) && fat_mounted)
     {
         // Close all open handles.
-        f_close(f_emu.fp_boot0);
-        f_close(f_emu.fp_boot1);
+        f_close(&f_emu.fp_boot0);
+        f_close(&f_emu.fp_boot1);
 
         for (int i = 0; i < f_emu.parts; i++)
-            f_close(f_emu.fp_gpp[i]);
+        {
+            f_close(&f_emu.fp_gpp[i]);
+        }
 
         // Force unmount FAT volume.
         f_mount(NULL, "", 1);
@@ -143,36 +137,32 @@ static void _file_based_emmc_initialize(void)
     int path_len = strlen(path);
 
     // Open BOOT0 physical partition.
-    f_emu.fp_boot0 = (FIL *)malloc(sizeof(FIL));
     memcpy(path + path_len, "BOOT0", 6);
-    if (f_open(f_emu.fp_boot0, path, FA_READ | FA_WRITE) != FR_OK)
+    if (f_open(&f_emu.fp_boot0, path, FA_READ | FA_WRITE) != FR_OK)
         fatal_abort(Fatal_InitSD);
 
     // Open BOOT1 physical partition.
-    f_emu.fp_boot1 = (FIL *)malloc(sizeof(FIL));
     memcpy(path + path_len, "BOOT1", 6);
-    if (f_open(f_emu.fp_boot1, path, FA_READ | FA_WRITE) != FR_OK)
+    if (f_open(&f_emu.fp_boot1, path, FA_READ | FA_WRITE) != FR_OK)
         fatal_abort(Fatal_InitSD);
 
     // Open handles for GPP physical partition files.
     _file_based_update_filename(path, path_len, 00);
-    if (f_open(f_emu.fp_gpp[0], path, FA_READ | FA_WRITE) != FR_OK)
+
+    if (f_open(&f_emu.fp_gpp[0], path, FA_READ | FA_WRITE) != FR_OK)
         fatal_abort(Fatal_InitSD);
 
-    f_emu.part_size = f_size(f_emu.fp_gpp[0]);
+    f_emu.part_size = f_size(&f_emu.fp_gpp[0]) >> 9;
 
     // Iterate folder for split parts and stop if next doesn't exist.
     // Supports up to 32 parts of any size.
     // TODO: decide on max parts and define them. (hekate produces up to 30 parts on 1GB mode.)
     for (f_emu.parts = 1; f_emu.parts < 32; f_emu.parts++)
     {
-        f_emu.fp_gpp[f_emu.parts] = (FIL *)malloc(sizeof(FIL));
         _file_based_update_filename(path, path_len, f_emu.parts);
 
-        if (f_open(f_emu.fp_gpp[f_emu.parts], path, FA_READ | FA_WRITE) != FR_OK)
+        if (f_open(&f_emu.fp_gpp[f_emu.parts], path, FA_READ | FA_WRITE) != FR_OK)
         {
-            free(f_emu.fp_gpp[f_emu.parts]);
-
             // Check if single file.
             if (f_emu.parts == 1)
                 f_emu.parts = 0;
@@ -303,19 +293,19 @@ static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned
     case FS_EMMC_PARTITION_GPP:
         if (f_emu.parts)
         {
-            fp_tmp = f_emu.fp_gpp[sector / f_emu.part_size];
+            fp_tmp = &f_emu.fp_gpp[sector / f_emu.part_size];
             sector = sector % f_emu.part_size;
         }
         else
         {
-            fp_tmp = f_emu.fp_gpp[0];
+            fp_tmp = &f_emu.fp_gpp[0];
         }
         break;
     case FS_EMMC_PARTITION_BOOT1:
-        fp_tmp = f_emu.fp_boot1;
+        fp_tmp = &f_emu.fp_boot1;
         break;
     case FS_EMMC_PARTITION_BOOT0:
-        fp_tmp = f_emu.fp_boot0;
+        fp_tmp = &f_emu.fp_boot0;
         break;
     }
 
@@ -324,10 +314,22 @@ static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned
         ; //TODO. Out of range. close stuff and fatal?
     }
 
+    uint64_t res = 0;
     if (!is_write)
-        return !(f_read(fp_tmp, buf, num_sectors << 9, NULL));
+        res = !(f_read(fp_tmp, buf, num_sectors << 9, NULL));
     else
-        return !(f_write(fp_tmp, buf, num_sectors << 9, NULL));
+        res = !(f_write(fp_tmp, buf, num_sectors << 9, NULL));
+
+    if (res)
+    {
+        if (is_write)
+        {
+            // TODO
+            f_sync(fp_tmp);
+        }
+    }
+
+    return res;
 }
 
 // FS read wrapper.
