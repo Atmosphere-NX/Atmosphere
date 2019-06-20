@@ -21,11 +21,9 @@
 
 void ProcessTracking::MainLoop(void *arg) {
     /* Make a new waitable manager. */
-    auto process_waiter = new WaitableManager(1);
-    process_waiter->AddWaitable(Registration::GetProcessLaunchStartEvent());
+    static auto s_process_waiter = WaitableManager(1);
+    s_process_waiter.AddWaitable(Registration::GetProcessLaunchStartEvent());
 
     /* Service processes. */
-    process_waiter->Process();
-
-    delete process_waiter;
+    s_process_waiter.Process();
 }

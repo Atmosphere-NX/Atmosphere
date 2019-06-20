@@ -987,8 +987,8 @@ void DmntCheatManager::OnNewApplicationLaunch() {
 }
 
 void DmntCheatManager::DetectThread(void *arg) {
-    auto waiter = new WaitableManager(1);
-    waiter->AddWaitable(LoadReadOnlySystemEvent(PrepareDebugNextApplication(), [](u64 timeout) {
+    static auto s_waiter = WaitableManager(1);
+    s_waiter.AddWaitable(LoadReadOnlySystemEvent(PrepareDebugNextApplication(), [](u64 timeout) {
         /* Process stuff for new application. */
         DmntCheatManager::OnNewApplicationLaunch();
 
@@ -998,8 +998,7 @@ void DmntCheatManager::DetectThread(void *arg) {
         return ResultSuccess;
     }, true));
 
-    waiter->Process();
-    delete waiter;
+    s_waiter.Process();
 }
 
 void DmntCheatManager::VmThread(void *arg) {
@@ -1092,16 +1091,10 @@ void DmntCheatManager::InitializeCheatManager() {
     DmntCheatDebugEventsManager::Initialize();
 
     /* Spawn application detection thread, spawn cheat vm thread. */
-    if (R_FAILED(g_detect_thread.Initialize(&DmntCheatManager::DetectThread, nullptr, 0x4000, 39))) {
-        std::abort();
-    }
-
-    if (R_FAILED(g_vm_thread.Initialize(&DmntCheatManager::VmThread, nullptr, 0x4000, 48))) {
-        std::abort();
-    }
+    R_ASSERT(g_detect_thread.Initialize(&DmntCheatManager::DetectThread, nullptr, 0x4000, 39));
+    R_ASSERT(g_vm_thread.Initialize(&DmntCheatManager::VmThread, nullptr, 0x4000, 48));
 
     /* Start threads. */
-    if (R_FAILED(g_detect_thread.Start()) || R_FAILED(g_vm_thread.Start())) {
-        std::abort();
-    }
+    R_ASSERT(g_detect_thread.Start());
+    R_ASSERT(g_vm_thread.Start());
 }

@@ -83,30 +83,29 @@ int main(int argc, char **argv)
     consoleDebugInit(debugDevice_SVC);
 
     /* TODO: What's a good timeout value to use here? */
-    auto server_manager = new WaitableManager(1);
+    static auto s_server_manager = WaitableManager(1);
 
     /* Create sm:, (and thus allow things to register to it). */
-    server_manager->AddWaitable(new ManagedPortServer<UserService>("sm:", 0x40));
+    s_server_manager.AddWaitable(new ManagedPortServer<UserService>("sm:", 0x40));
 
     /* Create sm:m manually. */
     Handle smm_h;
     R_ASSERT(Registration::RegisterServiceForSelf(smEncodeName("sm:m"), 1, false, &smm_h));
 
-    server_manager->AddWaitable(new ExistingPortServer<ManagerService>(smm_h, 1));
+    s_server_manager.AddWaitable(new ExistingPortServer<ManagerService>(smm_h, 1));
 
     /*===== ATMOSPHERE EXTENSION =====*/
     /* Create sm:dmnt manually. */
     Handle smdmnt_h;
     R_ASSERT(Registration::RegisterServiceForSelf(smEncodeName("sm:dmnt"), 1, false, &smdmnt_h));
 
-    server_manager->AddWaitable(new ExistingPortServer<DmntService>(smm_h, 1));;
+    s_server_manager.AddWaitable(new ExistingPortServer<DmntService>(smm_h, 1));;
     /*================================*/
 
     /* Loop forever, servicing our services. */
-    server_manager->Process();
+    s_server_manager.Process();
 
     /* Cleanup. */
-    delete server_manager;
 	return 0;
 }
 

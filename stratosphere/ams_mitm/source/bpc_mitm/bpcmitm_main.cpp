@@ -38,23 +38,20 @@ void BpcMitmMain(void *arg) {
     BpcRebootManager::Initialize();
 
     /* Create server manager */
-    auto server_manager = new WaitableManager(2);
+    static auto s_server_manager = WaitableManager(2);
 
     /* Create bpc mitm. */
     const char *service_name = "bpc";
     if (GetRuntimeFirmwareVersion() < FirmwareVersion_200) {
         service_name = "bpc:c";
     }
-    AddMitmServerToManager<BpcMitmService>(server_manager, service_name, 13);
+    AddMitmServerToManager<BpcMitmService>(&s_server_manager, service_name, 13);
 
     /* Extension: Allow for reboot-to-error. */
     /* Must be managed port in order for sm to be able to access. */
-    server_manager->AddWaitable(new ManagedPortServer<BpcAtmosphereService>("bpc:ams", 1));
+    s_server_manager.AddWaitable(new ManagedPortServer<BpcAtmosphereService>("bpc:ams", 1));
 
     /* Loop forever, servicing our services. */
-    server_manager->Process();
-
-    delete server_manager;
-
+    s_server_manager.Process();
 }
 

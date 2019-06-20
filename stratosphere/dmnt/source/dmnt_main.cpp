@@ -106,7 +106,7 @@ int main(int argc, char **argv)
     DmntCheatManager::InitializeCheatManager();
 
     /* Nintendo uses four threads. Add a fifth for our cheat service. */
-    auto server_manager = new WaitableManager(5);
+    static auto s_server_manager = WaitableManager(5);
 
     /* Create services. */
 
@@ -114,12 +114,10 @@ int main(int argc, char **argv)
     /* server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("dmnt:-", 4)); */
 
 
-    server_manager->AddWaitable(new ServiceServer<DmntCheatService>("dmnt:cht", 1));
+    s_server_manager.AddWaitable(new ServiceServer<DmntCheatService>("dmnt:cht", 1));
 
     /* Loop forever, servicing our services. */
-    server_manager->Process();
-
-    delete server_manager;
+    s_server_manager.Process();
 
     return 0;
 }

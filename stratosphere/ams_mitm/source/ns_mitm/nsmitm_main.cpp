@@ -41,19 +41,16 @@ void NsMitmMain(void *arg) {
     nsExit();
 
     /* Create server manager */
-    auto server_manager = new WaitableManager(1);
+    static auto s_server_manager = WaitableManager(1);
 
     /* Create ns mitm. */
     if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
-        AddMitmServerToManager<NsAmMitmService>(server_manager, "ns:am", 5);
+        AddMitmServerToManager<NsAmMitmService>(&s_server_manager, "ns:am", 5);
     } else {
-        AddMitmServerToManager<NsWebMitmService>(server_manager, "ns:web", 5);
+        AddMitmServerToManager<NsWebMitmService>(&s_server_manager, "ns:web", 5);
     }
 
     /* Loop forever, servicing our services. */
-    server_manager->Process();
-
-    delete server_manager;
-
+    s_server_manager.Process();
 }
 

@@ -48,18 +48,15 @@ void SetMitmMain(void *arg) {
     VersionManager::Initialize();
 
     /* Create server manager */
-    auto server_manager = new SetMitmManager(4);
+    static auto s_server_manager = SetMitmManager(4);
 
     /* Create set:sys mitm. */
-    AddMitmServerToManager<SetSysMitmService>(server_manager, "set:sys", 60);
+    AddMitmServerToManager<SetSysMitmService>(&s_server_manager, "set:sys", 60);
 
     /* Create set mitm. */
-    AddMitmServerToManager<SetMitmService>(server_manager, "set", 60);
+    AddMitmServerToManager<SetMitmService>(&s_server_manager, "set", 60);
 
     /* Loop forever, servicing our services. */
-    server_manager->Process();
-
-    delete server_manager;
-
+    s_server_manager.Process();
 }
 

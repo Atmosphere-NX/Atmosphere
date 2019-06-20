@@ -135,17 +135,15 @@ int main(int argc, char **argv)
     CheckRepairStatus();
 
     /* TODO: What's a good timeout value to use here? */
-    auto server_manager = new WaitableManager(1);
+    static auto s_server_manager = WaitableManager(1);
 
     /* Create services. */
-    server_manager->AddWaitable(new ServiceServer<PrivateService>("fatal:p", 4));
-    server_manager->AddWaitable(new ServiceServer<UserService>("fatal:u", 4));
-    server_manager->AddWaitable(GetFatalSettingsEvent());
+    s_server_manager.AddWaitable(new ServiceServer<PrivateService>("fatal:p", 4));
+    s_server_manager.AddWaitable(new ServiceServer<UserService>("fatal:u", 4));
+    s_server_manager.AddWaitable(GetFatalSettingsEvent());
 
     /* Loop forever, servicing our services. */
-    server_manager->Process();
-
-    delete server_manager;
+    s_server_manager.Process();
 
     return 0;
 }
