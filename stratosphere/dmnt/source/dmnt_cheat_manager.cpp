@@ -139,26 +139,24 @@ Result DmntCheatManager::ReadCheatProcessMemoryForVm(u64 proc_addr, void *out_da
 
 Result DmntCheatManager::WriteCheatProcessMemoryForVm(u64 proc_addr, const void *data, size_t size) {
     if (HasActiveCheatProcess()) {
-        Result rc = svcWriteDebugProcessMemory(g_cheat_process_debug_hnd, data, proc_addr, size);
+        R_TRY(svcWriteDebugProcessMemory(g_cheat_process_debug_hnd, data, proc_addr, size));
 
         /* We might have a frozen address. Update it if we do! */
-        if (R_SUCCEEDED(rc)) {
-            for (auto & [address, value] : g_frozen_addresses_map) {
-                /* Map is in order, so break here. */
-                if (address >= proc_addr + size) {
-                    break;
-                }
+        for (auto & [address, value] : g_frozen_addresses_map) {
+            /* Map is in order, so break here. */
+            if (address >= proc_addr + size) {
+                break;
+            }
 
-                /* Check if we need to write. */
-                if (proc_addr <= address) {
-                    const size_t offset = (address - proc_addr);
-                    const size_t size_to_copy = size - offset;
-                    memcpy(&value.value, (void *)((uintptr_t)data + offset), size_to_copy < sizeof(value.value) ? size_to_copy : sizeof(value.value));
-                }
+            /* Check if we need to write. */
+            if (proc_addr <= address) {
+                const size_t offset = (address - proc_addr);
+                const size_t size_to_copy = size - offset;
+                memcpy(&value.value, (void *)((uintptr_t)data + offset), size_to_copy < sizeof(value.value) ? size_to_copy : sizeof(value.value));
             }
         }
 
-        return rc;
+        return ResultSuccess;
     }
 
     return ResultDmntCheatNotAttached;
@@ -775,12 +773,9 @@ Result DmntCheatManager::EnableFrozenAddress(u64 *out_value, u64 address, u64 wi
         return ResultDmntCheatAddressAlreadyFrozen;
     }
 
-    Result rc;
     FrozenAddressValue value = {0};
     value.width = width;
-    if (R_FAILED((rc = ReadCheatProcessMemoryForVm(address, &value.value, width)))) {
-        return rc;
-    }
+    R_TRY(ReadCheatProcessMemoryForVm(address, &value.value, width));
 
     g_frozen_addresses_map[address] = value;
     *out_value = value.value;
@@ -835,7 +830,6 @@ static void StartDebugProcess(u64 pid) {
 
 Result DmntCheatManager::ForceOpenCheatProcess() {
     std::scoped_lock<HosMutex> attach_lk(g_attach_lock);
-    Result rc;
 
     /* Acquire the cheat lock for long enough to close the process if needed. */
     {
@@ -857,19 +851,17 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
     std::scoped_lock<HosMutex> lk(g_cheat_lock);
 
     /* Get the current application process ID. */
-    if (R_FAILED((rc = pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id)))) {
-        return rc;
-    }
-    ON_SCOPE_EXIT { if (R_FAILED(rc)) { g_cheat_process_metadata.process_id = 0; } };
+    R_TRY(pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id));
+    auto proc_guard = SCOPE_EXIT {
+        g_cheat_process_metadata.process_id = 0;
+    };
 
     /* Get process handle, use it to learn memory extents. */
     {
         Handle proc_h = 0;
         ON_SCOPE_EXIT { if (proc_h != 0) { svcCloseHandle(proc_h); } };
 
-        if (R_FAILED((rc = pmdmntAtmosphereGetProcessInfo(&proc_h, &g_cheat_process_metadata.title_id, nullptr, g_cheat_process_metadata.process_id)))) {
-            return rc;
-        }
+        R_TRY(pmdmntAtmosphereGetProcessInfo(&proc_h, &g_cheat_process_metadata.title_id, nullptr, g_cheat_process_metadata.process_id));
 
         /* Get memory extents. */
         PopulateMemoryExtents(&g_cheat_process_metadata.heap_extents, proc_h, 4, 5);
@@ -886,9 +878,7 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
     {
         LoaderModuleInfo proc_modules[2];
         u32 num_modules;
-        if (R_FAILED((rc = ldrDmntGetModuleInfos(g_cheat_process_metadata.process_id, proc_modules, sizeof(proc_modules)/sizeof(proc_modules[0]), &num_modules)))) {
-            return rc;
-        }
+        R_TRY(ldrDmntGetModuleInfos(g_cheat_process_metadata.process_id, proc_modules, sizeof(proc_modules)/sizeof(proc_modules[0]), &num_modules));
 
         /* All applications must have two modules. */
         /* However, this is a force-open, so we will accept one module. */
@@ -899,8 +889,7 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
         } else if (num_modules == 1) {
             proc_module = &proc_modules[0];
         } else {
-            rc = ResultDmntCheatNotAttached;
-            return rc;
+            return ResultDmntCheatNotAttached;
         }
 
         g_cheat_process_metadata.main_nso_extents.base = proc_module->base_address;
@@ -916,16 +905,18 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
     LoadCheatToggles(g_cheat_process_metadata.title_id);
 
     /* Open a debug handle. */
-    if (R_FAILED((rc = svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id)))) {
-        return rc;
-    }
+    R_TRY(svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id));
+
+    /* Cancel process guard. */
+    proc_guard.Cancel();
+
     /* Start debug events thread. */
     StartDebugEventsThread();
 
     /* Signal to our fans. */
     g_cheat_process_event->Signal();
 
-    return rc;
+    return ResultSuccess;
 }
 
 void DmntCheatManager::OnNewApplicationLaunch() {

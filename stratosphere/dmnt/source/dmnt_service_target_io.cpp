@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <unordered_map>
 #include <switch.h>
 #include "dmnt_service.hpp"
@@ -40,17 +40,15 @@ static Result EnsureSdInitialized() {
     if (g_sd_initialized) {
         return ResultSuccess;
     }
-    
-    Result rc = fsMountSdcard(&g_sd_fs);
-    if (R_SUCCEEDED(rc)) {
-        g_sd_initialized = true;
-    }
-    return rc;
+
+    R_TRY(fsMountSdcard(&g_sd_fs));
+    g_sd_initialized = true;
+    return ResultSuccess;
 }
 
-static u64 GetFileHandle(FsFile f) {
+static u64 GetNewFileHandle(FsFile f) {
     std::scoped_lock<HosMutex> lk(g_file_handle_lock);
-    
+
     u64 fd = g_cur_fd++;
     g_file_handles[fd] = f;
     return fd;
@@ -58,45 +56,49 @@ static u64 GetFileHandle(FsFile f) {
 
 static Result GetFileByHandle(FsFile *out, u64 handle) {
     std::scoped_lock<HosMutex> lk(g_file_handle_lock);
+
     if (g_file_handles.find(handle) != g_file_handles.end()) {
         *out = g_file_handles[handle];
         return ResultSuccess;
     }
+
     return ResultFsInvalidArgument;
 }
 
 static Result CloseFileByHandle(u64 handle) {
     std::scoped_lock<HosMutex> lk(g_file_handle_lock);
+
     if (g_file_handles.find(handle) != g_file_handles.end()) {
         fsFileClose(&g_file_handles[handle]);
         g_file_handles.erase(handle);
         return ResultSuccess;
     }
+
     return ResultFsInvalidArgument;
 }
 
 static void FixPath(char *dst, size_t dst_size, InBuffer<char> &path) {
     dst[dst_size - 1] = 0;
     strncpy(dst, "/", dst_size - 1);
-    
+
     const char *src = path.buffer;
     size_t src_idx = 0;
     size_t dst_idx = 1;
     while (src_idx < path.num_elements && (src[src_idx] == '/' || src[src_idx] == '\\')) {
         src_idx++;
     }
-    
+
     while (src_idx < path.num_elements && dst_idx < dst_size - 1 && src[src_idx] != 0) {
         if (src[src_idx] == '\\') {
             dst[dst_idx] = '/';
         } else {
             dst[dst_idx] = src[src_idx];
         }
-        
+
         src_idx++;
         dst_idx++;
     }
-    
+
     if (dst_idx < dst_size) {
         dst[dst_idx] = 0;
     }
@@ -107,47 +109,39 @@ Result DebugMonitorService::TargetIO_FileOpen(OutBuffer<u64> out_hnd, InBuffer<c
         /* Serialization error. */
         return ResultKernelConnectionClosed;
     }
-    
-    Result rc = EnsureSdInitialized();
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-    
+
+    R_TRY(EnsureSdInitialized());
+
     char fs_path[FS_MAX_PATH];
     FixPath(fs_path, sizeof(fs_path), path);
-    
+
+    /* Create file as required by mode. */
     if (create_mode == TIOCreateOption_CreateAlways) {
         fsFsDeleteFile(&g_sd_fs, fs_path);
-        rc = fsFsCreateFile(&g_sd_fs, fs_path, 0, 0);
+        R_TRY(fsFsCreateFile(&g_sd_fs, fs_path, 0, 0));
     } else if (create_mode == TIOCreateOption_CreateNew) {
-        rc = fsFsCreateFile(&g_sd_fs, fs_path, 0, 0);
+        R_TRY(fsFsCreateFile(&g_sd_fs, fs_path, 0, 0));
+    } else if (create_mode == TIOCreateOption_OpenAlways) {
+        fsFsCreateFile(&g_sd_fs, fs_path, 0, 0);
     }
-    
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-    
+
+    /* Open the file, guard to prevent failure to close. */
     FsFile f;
-    rc = fsFsOpenFile(&g_sd_fs, fs_path, open_mode, &f);
-    if (R_FAILED(rc)) {
-        if (create_mode == TIOCreateOption_OpenAlways) {
-            fsFsCreateFile(&g_sd_fs, fs_path, 0, 0);
-            rc = fsFsOpenFile(&g_sd_fs, fs_path, open_mode, &f);
-        }
+    R_TRY(fsFsOpenFile(&g_sd_fs, fs_path, open_mode, &f));
+    auto file_guard = SCOPE_GUARD {
+        fsFileClose(&f);
+    };
+
+    /* Set size if needed. */
+    if (create_mode == TIOCreateOption_ResetSize) {
+        R_TRY(fsFileSetSize(&f, 0));
     }
-    
-    if (R_SUCCEEDED(rc)) {
-        if (create_mode == TIOCreateOption_ResetSize) {
-            rc = fsFileSetSize(&f, 0);
-        }
-        if (R_SUCCEEDED(rc)) {
-            out_hnd[0] = GetFileHandle(f);
-        } else {
-            fsFileClose(&f);
-        }
-    }
-    
-    return rc;
+
+    /* Cancel guard, output file handle. */
+    file_guard.Cancel();
+    out_hnd[0] = GetNewFileHandle(f);
+
+    return ResultSuccess;
 }
 
 Result DebugMonitorService::TargetIO_FileClose(InBuffer<u64> hnd) {
@@ -155,7 +149,7 @@ Result DebugMonitorService::TargetIO_FileClose(InBuffer<u64> hnd) {
         /* Serialization error. */
         return ResultKernelConnectionClosed;
     }
-    
+
     return CloseFileByHandle(hnd[0]);
 }
 
@@ -164,17 +158,15 @@ Result DebugMonitorService::TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8, B
         /* Serialization error. */
         return ResultKernelConnectionClosed;
     }
-    
+
     FsFile f;
-    Result rc = GetFileByHandle(&f, hnd[0]);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-    
     size_t read = 0;
-    rc = fsFileRead(&f, offset, out_data.buffer, out_data.num_elements, FS_READOPTION_NONE, &read);
+
+    R_TRY(GetFileByHandle(&f, hnd[0]));
+    R_TRY(fsFileRead(&f, offset, out_data.buffer, out_data.num_elements, FS_READOPTION_NONE, &read));
+
     out_read.SetValue(static_cast<u32>(read));
-    return rc;
+    return ResultSuccess;
 }
 
 Result DebugMonitorService::TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8, BufferType_Type1> data, Out<u32> out_written, u64 offset) {
@@ -182,19 +174,14 @@ Result DebugMonitorService::TargetIO_FileWrite(InBuffer<u64> hnd, InBuffer<u8, B
         /* Serialization error. */
         return ResultKernelConnectionClosed;
     }
-    
+
     FsFile f;
-    Result rc = GetFileByHandle(&f, hnd[0]);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-    
-    rc = fsFileWrite(&f, offset, data.buffer, data.num_elements, FS_WRITEOPTION_NONE);
-    if (R_SUCCEEDED(rc)) {
-        out_written.SetValue(data.num_elements);
-    }
-    
-    return rc;
+
+    R_TRY(GetFileByHandle(&f, hnd[0]));
+    R_TRY(fsFileWrite(&f, offset, data.buffer, data.num_elements, FS_WRITEOPTION_NONE));
+
+    out_written.SetValue(data.num_elements);
+    return ResultSuccess;
 }
 
 Result DebugMonitorService::TargetIO_FileSetAttributes(InBuffer<char> path, InBuffer<u8> attributes) {
@@ -208,39 +195,33 @@ Result DebugMonitorService::TargetIO_FileGetInformation(InBuffer<char> path, Out
         /* Serialization error. */
         return ResultKernelConnectionClosed;
     }
-    
-    Result rc = EnsureSdInitialized();
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-    
+
+    R_TRY(EnsureSdInitialized());
+
     char fs_path[FS_MAX_PATH];
     FixPath(fs_path, sizeof(fs_path), path);
-    
+
     for (size_t i = 0; i < out_info.num_elements; i++) {
         out_info[i] = 0;
     }
     is_directory.SetValue(0);
-    
+
     FsFile f;
-    rc = fsFsOpenFile(&g_sd_fs, fs_path, FS_OPEN_READ, &f);
-    if (R_SUCCEEDED(rc)) {
+    if (R_SUCCEEDED(fsFsOpenFile(&g_sd_fs, fs_path, FS_OPEN_READ, &f))) {
         ON_SCOPE_EXIT { fsFileClose(&f); };
-        
+
         /* N doesn't check this return code. */
         fsFileGetSize(&f, &out_info[0]);
-        
+
         /* TODO: N does not call fsFsGetFileTimestampRaw here, but we possibly could. */
     } else {
         FsDir dir;
-        rc = fsFsOpenDirectory(&g_sd_fs, fs_path, FS_DIROPEN_FILE | FS_DIROPEN_DIRECTORY, &dir);
-        if (R_SUCCEEDED(rc)) {
-            fsDirClose(&dir);
-            is_directory.SetValue(1);
-        }
+        R_TRY(fsFsOpenDirectory(&g_sd_fs, fs_path, FS_DIROPEN_FILE | FS_DIROPEN_DIRECTORY, &dir));
+        fsDirClose(&dir);
+        is_directory.SetValue(1);
     }
-    
-    return rc;
+
+    return ResultSuccess;
 }
 
 Result DebugMonitorService::TargetIO_FileSetTime(InBuffer<char> path, u64 create, u64 access, u64 modify) {
@@ -250,7 +231,7 @@ Result DebugMonitorService::TargetIO_FileSetTime(InBuffer<char> path, u64 create
 
 Result DebugMonitorService::TargetIO_FileSetSize(InBuffer<char> input, u64 size) {
     /* Why does this function take in a path and not a file handle? */
-    
+
     /* We will try to be better than N, here. N only treats input as a path. */
     if (input.num_elements == sizeof(u64)) {
         FsFile f;
@@ -258,47 +239,35 @@ Result DebugMonitorService::TargetIO_FileSetSize(InBuffer<char> input, u64 size)
             return fsFileSetSize(&f, size);
         }
     }
-    
-    Result rc = EnsureSdInitialized();
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-    
+
+    R_TRY(EnsureSdInitialized());
+
     char fs_path[FS_MAX_PATH];
     FixPath(fs_path, sizeof(fs_path), input);
-    
+
     FsFile f;
-    rc = fsFsOpenFile(&g_sd_fs, fs_path, FS_OPEN_WRITE, &f);
-    if (R_SUCCEEDED(rc)) {
-        rc = fsFileSetSize(&f, size);
-        fsFileClose(&f);
-    }
-    
-    return rc;
+    R_TRY(fsFsOpenFile(&g_sd_fs, fs_path, FS_OPEN_WRITE, &f));
+    ON_SCOPE_EXIT { fsFileClose(&f); };
+
+    return fsFileSetSize(&f, size);
 }
 
 Result DebugMonitorService::TargetIO_FileDelete(InBuffer<char> path) {
-    Result rc = EnsureSdInitialized();
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-    
+    R_TRY(EnsureSdInitialized());
+
     char fs_path[FS_MAX_PATH];
     FixPath(fs_path, sizeof(fs_path), path);
-    
+
     return fsFsDeleteFile(&g_sd_fs, fs_path);
 }
 
 Result DebugMonitorService::TargetIO_FileMove(InBuffer<char> path0, InBuffer<char> path1) {
-    Result rc = EnsureSdInitialized();
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-    
+    R_TRY(EnsureSdInitialized());
+
     char fs_path0[FS_MAX_PATH];
     char fs_path1[FS_MAX_PATH];
     FixPath(fs_path0, sizeof(fs_path0), path0);
     FixPath(fs_path1, sizeof(fs_path1), path1);
-    
+
     return fsFsRenameFile(&g_sd_fs, fs_path0, fs_path1);
 }

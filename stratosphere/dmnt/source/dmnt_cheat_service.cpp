@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include "dmnt_cheat_service.hpp"
 #include "dmnt_cheat_manager.hpp"
@@ -35,13 +35,11 @@ Result DmntCheatService::GetCheatProcessMetadata(Out<CheatProcessMetadata> out_m
 }
 
 Result DmntCheatService::ForceOpenCheatProcess() {
-    Result rc = DmntCheatManager::ForceOpenCheatProcess();
-    
-    if (R_FAILED(rc)) {
-        rc = ResultDmntCheatNotAttached;
+    if (R_FAILED(DmntCheatManager::ForceOpenCheatProcess())) {
+        return ResultDmntCheatNotAttached;
     }
-    
-    return rc;
+
+    return ResultSuccess;
 }
 
 /* ========================================================================================= */
@@ -56,7 +54,7 @@ Result DmntCheatService::GetCheatProcessMappings(OutBuffer<MemoryInfo> mappings,
     if (mappings.buffer == nullptr) {
         return ResultDmntCheatNullBuffer;
     }
-    
+
     return DmntCheatManager::GetCheatProcessMappings(mappings.buffer, mappings.num_elements, out_count.GetPointer(), offset);
 }
 
@@ -64,12 +62,12 @@ Result DmntCheatService::ReadCheatProcessMemory(OutBuffer<u8> buffer, u64 addres
     if (buffer.buffer == nullptr) {
         return ResultDmntCheatNullBuffer;
     }
-    
+
     u64 sz = out_size;
     if (buffer.num_elements < sz) {
         sz = buffer.num_elements;
     }
-    
+
     return DmntCheatManager::ReadCheatProcessMemory(address, buffer.buffer, sz);
 }
 
@@ -77,12 +75,12 @@ Result DmntCheatService::WriteCheatProcessMemory(InBuffer<u8> buffer, u64 addres
     if (buffer.buffer == nullptr) {
         return ResultDmntCheatNullBuffer;
     }
-    
+
     u64 sz = in_size;
     if (buffer.num_elements < sz) {
         sz = buffer.num_elements;
     }
-    
+
     return DmntCheatManager::WriteCheatProcessMemory(address, buffer.buffer, sz);
 }
 
@@ -102,7 +100,7 @@ Result DmntCheatService::GetCheats(OutBuffer<CheatEntry> cheats, Out<u64> out_co
     if (cheats.buffer == nullptr) {
         return ResultDmntCheatNullBuffer;
     }
-    
+
     return DmntCheatManager::GetCheats(cheats.buffer, cheats.num_elements, out_count.GetPointer(), offset);
 }
 
@@ -110,11 +108,11 @@ Result DmntCheatService::GetCheatById(OutBuffer<CheatEntry> cheat, u32 cheat_id)
     if (cheat.buffer == nullptr) {
         return ResultDmntCheatNullBuffer;
     }
-    
+
     if (cheat.num_elements < 1) {
         return ResultDmntCheatInvalidBuffer;
     }
-    
+
     return DmntCheatManager::GetCheatById(cheat.buffer, cheat_id);
 }
 
@@ -126,11 +124,11 @@ Result DmntCheatService::AddCheat(InBuffer<CheatDefinition> cheat, Out<u32> out_
     if (cheat.buffer == nullptr) {
         return ResultDmntCheatNullBuffer;
     }
-    
+
     if (cheat.num_elements < 1) {
         return ResultDmntCheatInvalidBuffer;
     }
-    
+
     return DmntCheatManager::AddCheat(out_cheat_id.GetPointer(), cheat.buffer, enabled);
 }
 
@@ -150,7 +148,7 @@ Result DmntCheatService::GetFrozenAddresses(OutBuffer<FrozenAddressEntry> frz_ad
     if (frz_addrs.buffer == nullptr) {
         return ResultDmntCheatNullBuffer;
     }
-    
+
     return DmntCheatManager::GetFrozenAddresses(frz_addrs.buffer, frz_addrs.num_elements, out_count.GetPointer(), offset);
 }
 
@@ -168,7 +166,7 @@ Result DmntCheatService::EnableFrozenAddress(Out<u64> out_value, u64 address, u6
         default:
             return ResultDmntCheatInvalidFreezeWidth;
     }
-    
+
     return DmntCheatManager::EnableFrozenAddress(out_value.GetPointer(), address, width);
 }
 

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include "dmnt_service.hpp"
 
@@ -39,11 +39,13 @@ Result DebugMonitorService::GetProcessId(Out<u64> out_pid, Handle hnd) {
 }
 
 Result DebugMonitorService::GetProcessHandle(Out<Handle> out_hnd, u64 pid) {
-    Result rc = svcDebugActiveProcess(out_hnd.GetPointer(), pid);
-    if (rc == ResultKernelAlreadyExists) {
-        rc = ResultDebugAlreadyAttached;
-    }
-    return rc;
+    R_TRY_CATCH(svcDebugActiveProcess(out_hnd.GetPointer(), pid)) {
+        R_CATCH(ResultKernelAlreadyExists) {
+            return ResultDebugAlreadyAttached;
+        }
+    } R_END_TRY_CATCH;
+
+    return ResultSuccess;
 }
 
 Result DebugMonitorService::WaitSynchronization(Handle hnd, u64 ns) {
