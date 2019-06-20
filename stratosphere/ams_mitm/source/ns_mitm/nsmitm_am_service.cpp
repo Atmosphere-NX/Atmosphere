@@ -29,10 +29,13 @@ Result NsAmMitmService::GetApplicationContentPath(OutBuffer<u8> out_path, u64 ap
 }
 
 Result NsAmMitmService::ResolveApplicationContentPath(u64 title_id, u8 storage_type) {
-    Result rc = nsamResolveApplicationContentPathFwd(this->forward_service.get(), title_id, static_cast<FsStorageId>(storage_type));
-
     /* Always succeed for web applet asking about HBL. */
-    return (Utils::IsWebAppletTid(this->title_id) && Utils::IsHblTid(title_id)) ? 0 : rc;
+    if (Utils::IsWebAppletTid(this->title_id) && Utils::IsHblTid(title_id)) {
+        nsamResolveApplicationContentPathFwd(this->forward_service.get(), title_id, static_cast<FsStorageId>(storage_type));
+        return ResultSuccess;
+    }
+
+    return nsamResolveApplicationContentPathFwd(this->forward_service.get(), title_id, static_cast<FsStorageId>(storage_type));
 }
 
 Result NsAmMitmService::GetRunningApplicationProgramId(Out<u64> out_tid, u64 app_id) {

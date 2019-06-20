@@ -172,13 +172,10 @@ class ProxyFile : public IFile {
     public:
         virtual Result ReadImpl(u64 *out, u64 offset, void *buffer, u64 size) override {
             size_t out_sz;
+            R_TRY(fsFileRead(this->base_file.get(), offset, buffer, size, FS_READOPTION_NONE, &out_sz));
 
-            Result rc = fsFileRead(this->base_file.get(), offset, buffer, size, FS_READOPTION_NONE, &out_sz);
-            if (R_SUCCEEDED(rc)) {
-                *out = out_sz;
-            }
-
-            return rc;
+            *out = out_sz;
+            return ResultSuccess;
         }
         virtual Result GetSizeImpl(u64 *out) override {
             return fsFileGetSize(this->base_file.get(), out);

@@ -85,9 +85,9 @@ Result FsPathUtils::IsNormalized(bool *out, const char *path) {
         ParentDir,
         WindowsDriveLetter,
     };
-    
+
     PathState state = PathState::Start;
-    
+
     for (const char *cur = path; *cur != 0; cur++) {
         const char c = *cur;
         switch (state) {
@@ -145,7 +145,7 @@ Result FsPathUtils::IsNormalized(bool *out, const char *path) {
                 break;
         }
     }
-    
+
     switch (state) {
         case PathState::Start:
         case PathState::WindowsDriveLetter:
@@ -160,7 +160,7 @@ Result FsPathUtils::IsNormalized(bool *out, const char *path) {
             *out = false;
             break;
     }
-    
+
     return ResultSuccess;
 }
 
@@ -169,11 +169,11 @@ Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, s
     if (src[0] != '/') {
         return ResultFsInvalidPathFormat;
     }
-    
+
     bool skip_next_sep = false;
     size_t i = 0;
     size_t len = 0;
-    
+
     while (src[i] != 0) {
         if (src[i] == '/') {
             /* Swallow separators. */
@@ -181,7 +181,7 @@ Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, s
             if (src[i] == 0) {
                 break;
             }
-            
+
             /* Handle skip if needed */
             if (!skip_next_sep) {
                 if (len + 1 == max_out_size) {
@@ -191,28 +191,28 @@ Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, s
                     }
                     return ResultFsTooLongPath;
                 }
-                
+
                 out[len++] = '/';
-                
+
                 /* TODO: N has some weird windows support stuff here under a bool. */
                 /* Boolean is normally false though? */
             }
             skip_next_sep = false;
         }
-        
+
         /* See length of current dir. */
         size_t dir_len = 0;
         while (src[i+dir_len] != '/' && src[i+dir_len] != 0) {
             dir_len++;
         }
-        
+
         if (FsPathUtils::IsCurrentDirectory(&src[i])) {
             skip_next_sep = true;
         } else if (FsPathUtils::IsParentDirectory(&src[i])) {
             if (len == 1) {
                 return ResultFsDirectoryUnobtainable;
             }
-            
+
             /* Walk up a directory. */
             len -= 2;
             while (out[len] != '/') {
@@ -236,33 +236,34 @@ Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, s
                 return ResultFsTooLongPath;
             }
         }
-        
+
         i += dir_len;
     }
-    
+
     if (skip_next_sep) {
         len--;
     }
-    
+
     if (len == 0 && max_out_size) {
         out[len++] = '/';
     }
-    
+
     if (max_out_size < len - 1) {
         return ResultFsTooLongPath;
     }
-    
+
     /* NULL terminate. */
     out[len] = 0;
     if (out_len != nullptr) {
         *out_len = len;
     }
-    
+
     /* Assert normalized. */
     bool normalized = false;
-    if (R_FAILED(FsPathUtils::IsNormalized(&normalized, out)) || !normalized) {
+    R_ASSERT(FsPathUtils::IsNormalized(&normalized, out));
+    if (!normalized) {
         std::abort();
     }
-    
+
     return ResultSuccess;
 }

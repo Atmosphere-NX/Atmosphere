@@ -21,15 +21,12 @@
 #include "fs_ifile.hpp"
 
 Result FsDirUtils::CopyFile(IFileSystem *dst_fs, IFileSystem *src_fs, const FsPath &dst_parent_path, const FsPath &src_path, const FsDirectoryEntry *dir_ent, void *work_buf, size_t work_buf_size) {
-    Result rc;
     std::unique_ptr<IFile> src_file;
     std::unique_ptr<IFile> dst_file;
     const u64 file_size = dir_ent->fileSize;
 
     /* Open source file for reading. */
-    if (R_FAILED((rc = src_fs->OpenFile(src_file, src_path, OpenMode_Read)))) {
-        return rc;
-    }
+    R_TRY(src_fs->OpenFile(src_file, src_path, OpenMode_Read));
 
     /* Create and open destination file. */
     {
@@ -39,24 +36,16 @@ Result FsDirUtils::CopyFile(IFileSystem *dst_fs, IFileSystem *src_fs, const FsPa
             std::abort();
         }
 
-        if (R_FAILED((rc = dst_fs->CreateFile(dst_path, file_size)))) {
-            return rc;
-        }
-        if (R_FAILED((rc = dst_fs->OpenFile(dst_file, dst_path, OpenMode_Write)))) {
-            return rc;
-        }
+        R_TRY(dst_fs->CreateFile(dst_path, file_size));
+        R_TRY(dst_fs->OpenFile(dst_file, dst_path, OpenMode_Write));
     }
 
     /* Read/Write work_buf_size chunks. */
     u64 offset = 0;
     while (offset < file_size) {
         u64 read_size;
-        if (R_FAILED((rc = src_file->Read(&read_size, offset, work_buf, work_buf_size)))) {
-            return rc;
-        }
-        if (R_FAILED((rc = dst_file->Write(offset, work_buf, read_size)))) {
-            return rc;
-        }
+        R_TRY(src_file->Read(&read_size, offset, work_buf, work_buf_size));
+        R_TRY(dst_file->Write(offset, work_buf, read_size));
 
         offset += read_size;
     }
@@ -99,12 +88,9 @@ Result FsDirUtils::CopyDirectoryRecursively(IFileSystem *dst_fs, IFileSystem *sr
 Result FsDirUtils::EnsureDirectoryExists(IFileSystem *fs, const FsPath &path) {
     FsPath normal_path;
     size_t normal_path_len;
-    Result rc;
 
     /* Normalize the path. */
-    if (R_FAILED((rc = FsPathUtils::Normalize(normal_path.str, sizeof(normal_path.str) - 1, path.str, &normal_path_len)))) {
-        return rc;
-    }
+    R_TRY(FsPathUtils::Normalize(normal_path.str, sizeof(normal_path.str) - 1, path.str, &normal_path_len));
 
     /* Repeatedly call CreateDirectory on each directory leading to the target. */
     for (size_t i = 1; i < normal_path_len; i++) {
@@ -112,22 +98,22 @@ Result FsDirUtils::EnsureDirectoryExists(IFileSystem *fs, const FsPath &path) {
         if (normal_path.str[i] == '/') {
             normal_path.str[i] = 0;
             {
-                rc = fs->CreateDirectory(normal_path);
-                if (rc == ResultFsPathAlreadyExists) {
-                    rc = ResultSuccess;
-                }
-                if (R_FAILED(rc)) {
-                    return rc;
-                }
+                R_TRY_CATCH(fs->CreateDirectory(normal_path)) {
+                    R_CATCH(ResultFsPathAlreadyExists) {
+                        /* If path already exists, there's no problem. */
+                    }
+                } R_END_TRY_CATCH;
             }
             normal_path.str[i] = '/';
         }
     }
 
     /* Call CreateDirectory on the final path. */
-    rc = fs->CreateDirectory(normal_path);
-    if (rc == ResultFsPathAlreadyExists) {
-        rc = ResultSuccess;
-    }
-    return rc;
+    R_TRY_CATCH(fs->CreateDirectory(normal_path)) {
+        R_CATCH(ResultFsPathAlreadyExists) {
+            /* If path already exists, there's no problem. */
+        }
+    } R_END_TRY_CATCH;
+
+    return ResultSuccess;
 }

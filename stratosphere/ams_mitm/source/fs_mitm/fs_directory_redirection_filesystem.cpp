@@ -26,11 +26,7 @@ static char *GetNormalizedDirectory(const char *dir_prefix) {
     /* Normalize the path. */
     char normal_path[FS_MAX_PATH + 1];
     size_t normal_path_len;
-    Result rc = FsPathUtils::Normalize(normal_path, sizeof(normal_path), dir_prefix, &normal_path_len);
-    if (R_FAILED(rc)) {
-        /* N calls svcBreak here. */
-        std::abort();
-    }
+    R_ASSERT(FsPathUtils::Normalize(normal_path, sizeof(normal_path), dir_prefix, &normal_path_len));
 
     /* Ensure terminating '/' */
     if (normal_path[normal_path_len-1] != '/') {
@@ -69,10 +65,7 @@ Result DirectoryRedirectionFileSystem::Initialize(const char *before, const char
 
 Result DirectoryRedirectionFileSystem::GetFullPath(char *out, size_t out_size, const char *relative_path) {
     FsPath tmp_rel_path;
-    Result rc = FsPathUtils::Normalize(tmp_rel_path.str, sizeof(tmp_rel_path), relative_path, nullptr);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(FsPathUtils::Normalize(tmp_rel_path.str, sizeof(tmp_rel_path), relative_path, nullptr));
 
     if (std::strncmp(tmp_rel_path.str, this->before_dir, this->before_dir_len) == 0) {
         if (this->after_dir_len + strnlen(tmp_rel_path.str, FS_MAX_PATH) - this->before_dir_len > out_size) {
@@ -99,120 +92,64 @@ Result DirectoryRedirectionFileSystem::GetFullPath(char *out, size_t out_size, c
 }
 
 Result DirectoryRedirectionFileSystem::CreateFileImpl(const FsPath &path, uint64_t size, int flags) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->CreateFile(full_path, size, flags);
 }
 
 Result DirectoryRedirectionFileSystem::DeleteFileImpl(const FsPath &path) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->DeleteFile(full_path);
 }
 
 Result DirectoryRedirectionFileSystem::CreateDirectoryImpl(const FsPath &path) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->CreateDirectory(full_path);
 }
 
 Result DirectoryRedirectionFileSystem::DeleteDirectoryImpl(const FsPath &path) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->DeleteDirectory(full_path);
 }
 
 Result DirectoryRedirectionFileSystem::DeleteDirectoryRecursivelyImpl(const FsPath &path) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->DeleteDirectoryRecursively(full_path);
 }
 
 Result DirectoryRedirectionFileSystem::RenameFileImpl(const FsPath &old_path, const FsPath &new_path) {
-    Result rc;
     FsPath full_old_path, full_new_path;
-
-    if (R_FAILED((rc = GetFullPath(full_old_path, old_path)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = GetFullPath(full_new_path, new_path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_old_path, old_path));
+    R_TRY(GetFullPath(full_new_path, new_path));
     return this->base_fs->RenameFile(full_old_path, full_new_path);
 }
 
 Result DirectoryRedirectionFileSystem::RenameDirectoryImpl(const FsPath &old_path, const FsPath &new_path) {
-    Result rc;
     FsPath full_old_path, full_new_path;
-
-    if (R_FAILED((rc = GetFullPath(full_old_path, old_path)))) {
-        return rc;
-    }
-
-    if (R_FAILED((rc = GetFullPath(full_new_path, new_path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_old_path, old_path));
+    R_TRY(GetFullPath(full_new_path, new_path));
     return this->base_fs->RenameDirectory(full_old_path, full_new_path);
 }
 
 Result DirectoryRedirectionFileSystem::GetEntryTypeImpl(DirectoryEntryType *out, const FsPath &path) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->GetEntryType(out, full_path);
 }
 
 Result DirectoryRedirectionFileSystem::OpenFileImpl(std::unique_ptr<IFile> &out_file, const FsPath &path, OpenMode mode) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->OpenFile(out_file, full_path, mode);
 }
 
 Result DirectoryRedirectionFileSystem::OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, const FsPath &path, DirectoryOpenMode mode) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->OpenDirectory(out_dir, full_path, mode);
 }
 
@@ -221,56 +158,31 @@ Result DirectoryRedirectionFileSystem::CommitImpl() {
 }
 
 Result DirectoryRedirectionFileSystem::GetFreeSpaceSizeImpl(uint64_t *out, const FsPath &path) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->GetFreeSpaceSize(out, full_path);
 }
 
 Result DirectoryRedirectionFileSystem::GetTotalSpaceSizeImpl(uint64_t *out, const FsPath &path) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->GetTotalSpaceSize(out, full_path);
 }
 
 Result DirectoryRedirectionFileSystem::CleanDirectoryRecursivelyImpl(const FsPath &path) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->CleanDirectoryRecursively(full_path);
 }
 
 Result DirectoryRedirectionFileSystem::GetFileTimeStampRawImpl(FsTimeStampRaw *out, const FsPath &path) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->GetFileTimeStampRaw(out, full_path);
 }
 
 Result DirectoryRedirectionFileSystem::QueryEntryImpl(char *out, uint64_t out_size, const char *in, uint64_t in_size, int query, const FsPath &path) {
-    Result rc;
     FsPath full_path;
-
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-
+    R_TRY(GetFullPath(full_path, path));
     return this->base_fs->QueryEntry(out, out_size, in, in_size, query, full_path);
 }

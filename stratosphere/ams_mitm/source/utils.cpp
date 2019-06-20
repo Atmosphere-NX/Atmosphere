@@ -85,11 +85,8 @@ void Utils::InitializeThreadFunc(void *args) {
         Handle tmp_hnd = 0;
         static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
         for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
-            if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
-                std::abort();
-            } else {
-                svcCloseHandle(tmp_hnd);
-            }
+            R_ASSERT(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])));
+            svcCloseHandle(tmp_hnd);
         }
     });
 
@@ -102,9 +99,8 @@ void Utils::InitializeThreadFunc(void *args) {
     fsFsCreateDirectory(&g_sd_filesystem, "/atmosphere/automatic_backups");
     {
         FsStorage cal0_storage;
-        if (R_FAILED(fsOpenBisStorage(&cal0_storage, FsBisStorageId_CalibrationBinary)) || R_FAILED(fsStorageRead(&cal0_storage, 0, g_cal0_storage_backup, ProdinfoSize))) {
-            std::abort();
-        }
+        R_ASSERT(fsOpenBisStorage(&cal0_storage, FsBisStorageId_CalibrationBinary));
+        R_ASSERT(fsStorageRead(&cal0_storage, 0, g_cal0_storage_backup, ProdinfoSize));
         fsStorageClose(&cal0_storage);
 
         char serial_number[0x40] = {0};
@@ -199,7 +195,7 @@ void Utils::InitializeThreadFunc(void *args) {
     }
 
     Utils::RefreshConfiguration();
-    
+
     /* If we're emummc, persist a write handle to prevent other processes from touching the image. */
     if (IsEmummc()) {
         const char *emummc_file_path = GetEmummcFilePath();
@@ -213,9 +209,7 @@ void Utils::InitializeThreadFunc(void *args) {
 
     /* Initialize set:sys. */
     DoWithSmSession([&]() {
-        if (R_FAILED(setsysInitialize())) {
-            std::abort();
-        }
+        R_ASSERT(setsysInitialize());
     });
 
     /* Signal SD is initialized. */
@@ -360,8 +354,6 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
         return ResultFsSdCardNotPresent;
     }
 
-    Result rc = ResultSuccess;
-
     char path[FS_MAX_PATH];
     if (*fn == '/') {
         snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", title_id, fn);
@@ -374,26 +366,16 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
     fsFsCreateFile(&g_sd_filesystem, path, size, 0);
 
     /* Try to open. */
-    rc = fsFsOpenFile(&g_sd_filesystem, path, FS_OPEN_READ | FS_OPEN_WRITE, &f);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
-
-    /* Always close, if we opened. */
-    ON_SCOPE_EXIT {
-        fsFileClose(&f);
-    };
+    R_TRY(fsFsOpenFile(&g_sd_filesystem, path, FS_OPEN_READ | FS_OPEN_WRITE, &f));
+    ON_SCOPE_EXIT { fsFileClose(&f); };
 
     /* Try to make it big enough. */
-    rc = fsFileSetSize(&f, size);
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(fsFileSetSize(&f, size));
 
     /* Try to write the data. */
-    rc = fsFileWrite(&f, 0, data, size, FS_WRITEOPTION_FLUSH);
+    R_TRY(fsFileWrite(&f, 0, data, size, FS_WRITEOPTION_FLUSH));
 
-    return rc;
+    return ResultSuccess;
 }
 
 bool Utils::IsHblTid(u64 tid) {
@@ -728,13 +710,12 @@ Result Utils::GetSettingsItemValue(const char *name, const char *key, void *out,
 Result Utils::GetSettingsItemBooleanValue(const char *name, const char *key, bool *out) {
     u8 val = 0;
     u64 out_size;
-    Result rc = Utils::GetSettingsItemValue(name, key, &val, sizeof(val), &out_size);
-    if (R_SUCCEEDED(rc)) {
-        if (out) {
-            *out = val != 0;
-        }
+    R_TRY(Utils::GetSettingsItemValue(name, key, &val, sizeof(val), &out_size));
+
+    if (out) {
+        *out = val != 0;
     }
-    return rc;
+    return ResultSuccess;
 }
 
 void Utils::RebootToFatalError(AtmosphereFatalErrorContext *ctx) {

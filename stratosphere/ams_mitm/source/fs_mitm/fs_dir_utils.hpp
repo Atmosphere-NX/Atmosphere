@@ -24,13 +24,10 @@ class FsDirUtils {
     private:
         template<typename OnEnterDir, typename OnExitDir, typename OnFile>
         static Result IterateDirectoryRecursivelyInternal(IFileSystem *fs, FsPath &work_path, FsDirectoryEntry *ent_buf, OnEnterDir on_enter_dir, OnExitDir on_exit_dir, OnFile on_file) {
-            Result rc;
             std::unique_ptr<IDirectory> dir;
 
             /* Open the directory. */
-            if (R_FAILED((rc = fs->OpenDirectory(dir, work_path, DirectoryOpenMode_All)))) {
-                return rc;
-            }
+            R_TRY(fs->OpenDirectory(dir, work_path, DirectoryOpenMode_All));
 
             const size_t parent_len = strnlen(work_path.str, sizeof(work_path.str) - 1);
 
@@ -38,9 +35,7 @@ class FsDirUtils {
             while (true) {
                 /* Read a single entry. */
                 u64 read_count;
-                if (R_FAILED((rc = dir->Read(&read_count, ent_buf, 1)))) {
-                    return rc;
-                }
+                R_TRY(dir->Read(&read_count, ent_buf, 1));
 
                 /* If we're out of entries, we're done. */
                 if (read_count == 0) {
@@ -59,25 +54,17 @@ class FsDirUtils {
                 strncat(work_path.str, ent_buf->name, sizeof(work_path.str) - 1 - parent_len);
                 if (is_dir) {
                     /* Enter directory. */
-                    if (R_FAILED((rc = on_enter_dir(work_path, ent_buf)))) {
-                        return rc;
-                    }
+                    R_TRY(on_enter_dir(work_path, ent_buf));
 
                     /* Append separator, recurse. */
                     strncat(work_path.str, "/", sizeof(work_path.str) - 1 - parent_len - child_name_len);
-                    if (R_FAILED((rc = IterateDirectoryRecursivelyInternal(fs, work_path, ent_buf, on_enter_dir, on_exit_dir, on_file)))) {
-                        return rc;
-                    }
+                    R_TRY(IterateDirectoryRecursivelyInternal(fs, work_path, ent_buf, on_enter_dir, on_exit_dir, on_file));
 
                     /* Exit directory. */
-                    if (R_FAILED((rc = on_exit_dir(work_path, ent_buf)))) {
-                        return rc;
-                    }
+                    R_TRY(on_exit_dir(work_path, ent_buf));
                 } else {
                     /* Call file handler. */
-                    if (R_FAILED((rc = on_file(work_path, ent_buf)))) {
-                        return rc;
-                    }
+                    R_TRY(on_file(work_path, ent_buf));
                 }
 
                 /* Restore parent path. */
@@ -132,7 +119,7 @@ class FsDirUtils {
         static Result CopyDirectoryRecursively(IFileSystem *fs, const FsPath &dst_path, const FsPath &src_path, void *work_buf, size_t work_buf_size) {
             return CopyDirectoryRecursively(fs, fs, dst_path, src_path, work_buf, work_buf_size);
         }
-        
+
         /* Ensure directory existence. */
         static Result EnsureDirectoryExists(IFileSystem *fs, const FsPath &path);
 
@@ -140,19 +127,16 @@ class FsDirUtils {
         template<typename F>
         static Result RetryUntilTargetNotLocked(F f) {
             const size_t MaxRetries = 10;
-            Result rc = ResultSuccess;
 
             for (size_t i = 0; i < MaxRetries; i++) {
-                rc = f();
-
-                if (rc != ResultFsTargetLocked) {
-                    break;
-                }
-
-                /* If target is locked, wait 100ms and try again. */
-                svcSleepThread(100'000'000ul);
+                R_TRY_CATCH(f()) {
+                    R_CATCH(ResultFsTargetLocked) {
+                        /* If target is locked, wait 100ms and try again. */
+                        svcSleepThread(100'000'000ul);
+                    }
+                } R_END_TRY_CATCH;
             }
 
-            return rc;
+            return ResultSuccess;
         }
 };

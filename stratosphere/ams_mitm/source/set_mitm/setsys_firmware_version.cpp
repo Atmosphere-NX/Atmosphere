@@ -32,7 +32,8 @@ void VersionManager::Initialize() {
     }
 
     /* Mount firmware version data archive. */
-    if (R_SUCCEEDED(romfsMountFromDataArchive(TitleId_ArchiveSystemVersion, FsStorageId_NandSystem, "sysver"))) {
+    R_ASSERT(romfsMountFromDataArchive(TitleId_ArchiveSystemVersion, FsStorageId_NandSystem, "sysver"));
+    {
         ON_SCOPE_EXIT { romfsUnmount("sysver"); };
 
         SetSysFirmwareVersion fw_ver;
@@ -52,16 +53,13 @@ void VersionManager::Initialize() {
 
         g_fw_version = fw_ver;
         g_ams_fw_version = fw_ver;
-    } else {
-        /* Failure to open data archive is an abort. */
-        std::abort();
     }
 
     /* Modify the output firmware version. */
     {
         u32 major, minor, micro;
         char display_version[sizeof(g_ams_fw_version.display_version)] = {0};
-        
+
         GetAtmosphereApiVersion(&major, &minor, &micro, nullptr, nullptr);
         snprintf(display_version, sizeof(display_version), "%s (AMS %u.%u.%u)", g_ams_fw_version.display_version, major, minor, micro);
 
@@ -73,7 +71,7 @@ void VersionManager::Initialize() {
 
 Result VersionManager::GetFirmwareVersion(u64 title_id, SetSysFirmwareVersion *out) {
     VersionManager::Initialize();
-    
+
     /* Report atmosphere string to qlaunch, maintenance and nothing else. */
     if (title_id == TitleId_AppletQlaunch || title_id == TitleId_AppletMaintenanceMenu) {
         *out = g_ams_fw_version;

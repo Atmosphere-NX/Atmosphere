@@ -104,13 +104,10 @@ class ProxyDirectory : public IDirectory {
     public:
         virtual Result ReadImpl(uint64_t *out_count, FsDirectoryEntry *out_entries, uint64_t max_entries) {
             size_t count;
+            R_TRY(fsDirRead(this->base_dir.get(), 0, &count, max_entries, out_entries));
 
-            Result rc = fsDirRead(this->base_dir.get(), 0, &count, max_entries, out_entries);
-            if (R_SUCCEEDED(rc)) {
-                *out_count = count;
-            }
-
-            return rc;
+            *out_count = count;
+            return ResultSuccess;
         }
         virtual Result GetEntryCountImpl(uint64_t *count) {
             return fsDirGetEntryCount(this->base_dir.get(), count);

@@ -38,11 +38,8 @@ static bool g_threw_fatal = false;
 static HosThread g_fatal_thread;
 
 static void FatalThreadFunc(void *arg) {
-    Result rc = (Result)((uintptr_t)arg);
-    
     svcSleepThread(5000000000ULL);
-    
-    fatalSimple(rc);
+    fatalSimple(static_cast<Result>(reinterpret_cast<uintptr_t>(arg)));
 }
 
 static bool IsCorrectFormat(const char *str, size_t len) {
@@ -75,18 +72,18 @@ Result SettingsItemManager::ValidateName(const char *name, size_t max_size) {
     if (name == nullptr) {
         return ResultSettingsItemNameNull;
     }
-    
+
     const size_t name_len = strnlen(name, std::min(max_size, MaxNameLength + 1));
     if (name_len == 0) {
         return ResultSettingsItemNameEmpty;
     } else if (name_len > MaxNameLength) {
         return ResultSettingsItemNameTooLong;
     }
-    
+
     if (!IsCorrectFormat(name, name_len)) {
         return ResultSettingsItemNameInvalidFormat;
     }
-    
+
     return ResultSuccess;
 }
 
@@ -98,18 +95,18 @@ Result SettingsItemManager::ValidateKey(const char *key, size_t max_size) {
     if (key == nullptr) {
         return ResultSettingsItemKeyNull;
     }
-    
+
     const size_t key_len = strnlen(key, std::min(max_size, MaxKeyLength + 1));
     if (key_len == 0) {
         return ResultSettingsItemKeyEmpty;
     } else if (key_len > MaxKeyLength) {
         return ResultSettingsItemKeyTooLong;
     }
-    
+
     if (!IsCorrectFormat(key, key_len)) {
         return ResultSettingsItemKeyInvalidFormat;
     }
-    
+
     return ResultSuccess;
 }
 
@@ -139,15 +136,15 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
     const char *delimiter = strchr(val_tup, '!');
     const char *value_str = delimiter + 1;
     const char *type = val_tup;
-    
+
     if (delimiter == NULL) {
         return ResultSettingsItemValueInvalidFormat;
     }
-    
+
     while (isspace(*type) && type != delimiter) {
         type++;
     }
-    
+
     size_t type_len = delimiter - type;
     size_t value_len = strlen(value_str);
     if (delimiter == NULL || value_len == 0 || type_len == 0) {
@@ -156,7 +153,7 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
 
     std::string kv = std::string(name).append("!").append(key);
     SettingsItemValue value;
-    
+
     if (strncasecmp(type, "str", type_len) == 0 || strncasecmp(type, "string", type_len) == 0) {
         /* String */
         value.size = value_len + 1;
@@ -174,12 +171,12 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
         if (data == nullptr) {
             return ResultSettingsItemValueAllocationFailed;
         }
-        
+
         memset(data, 0, value.size);
         for (size_t i = 0; i < value_len; i++) {
-            data[i >> 1] |= hextoi(value_str[i]) << (4 * (i & 1)); 
+            data[i >> 1] |= hextoi(value_str[i]) << (4 * (i & 1));
         }
-        
+
         value.data = data;
     }  else if (strncasecmp(type, "u8", type_len) == 0) {
         /* u8 */
@@ -220,35 +217,35 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
     } else {
         return ResultSettingsItemValueInvalidFormat;
     }
-    
+
     g_settings_items[kv] = value;
     return ResultSuccess;
 }
 
-static int SettingsItemIniHandler(void *user, const char *name, const char *key, const char *value) {
-    Result rc = *(reinterpret_cast<Result *>(user));
-    ON_SCOPE_EXIT { *(reinterpret_cast<Result *>(user)) = rc; };
-    
-    if (R_SUCCEEDED(rc)) {
-        rc = SettingsItemManager::ValidateName(name);
-    }
-    if (R_SUCCEEDED(rc)) {
-        rc = SettingsItemManager::ValidateKey(name);
-    }
-    if (R_SUCCEEDED(rc)) {
-        rc = ParseValue(name, key, value);
-    }
-    
-    return R_SUCCEEDED(rc) ? 1 : 0;
+static Result ParseSettingsItemValue(const char *name, const char *key, const char *value) {
+    /* Validate name and key, then parse value. */
+    R_TRY(SettingsItemManager::ValidateName(name));
+    R_TRY(SettingsItemManager::ValidateKey(name));
+    R_TRY(ParseValue(name, key, value));
+    return ResultSuccess;
 }
 
-void SettingsItemManager::LoadConfiguration() {
+static int SettingsItemIniHandler(void *user, const char *name, const char *key, const char *value) {
+    Result *user_res = reinterpret_cast<Result *>(user);
+
+    /* Stop parsing after we fail to parse a value. */
+    if (R_FAILED(*user_res)) {
+        return 0;
+    }
+
+    *user_res = ParseSettingsItemValue(name, key, value);
+    return R_SUCCEEDED(*user_res) ? 1 : 0;
+}
+
+static Result LoadConfigurationImpl() {
     /* Open file. */
     FsFile config_file;
-    Result rc = Utils::OpenSdFile("/atmosphere/system_settings.ini", FS_OPEN_READ, &config_file);
-    if (R_FAILED(rc)) {
-        return;
-    }
+    R_TRY(Utils::OpenSdFile("/atmosphere/system_settings.ini", FS_OPEN_READ, &config_file));
     ON_SCOPE_EXIT {
         fsFileClose(&config_file);
     };
@@ -257,19 +254,21 @@ void SettingsItemManager::LoadConfiguration() {
     std::string config_buf(0xFFFF, '\0');
 
     /* Read from file. */
-    if (R_SUCCEEDED(rc)) {
-        size_t actual_size;
-        rc = fsFileRead(&config_file, 0, config_buf.data(), config_buf.size(), FS_READOPTION_NONE, &actual_size);
-    }
+    size_t actual_size;
+    R_TRY(fsFileRead(&config_file, 0, config_buf.data(), config_buf.size(), FS_READOPTION_NONE, &actual_size));
 
-    if (R_SUCCEEDED(rc)) {
-        ini_parse_string(config_buf.c_str(), SettingsItemIniHandler, &rc);
-    }
+    /* Parse. */
+    Result parse_res = ResultSuccess;
+    ini_parse_string(config_buf.c_str(), SettingsItemIniHandler, &parse_res);
+    return parse_res;
+}
 
-    /* Report error if we encountered one. */
-    if (R_FAILED(rc) && !g_threw_fatal) {
+void SettingsItemManager::LoadConfiguration() {
+    const Result load_res = LoadConfigurationImpl();
+    if (R_FAILED(load_res) && !g_threw_fatal) {
+        /* Report error if we encountered one. */
         g_threw_fatal = true;
-        g_fatal_thread.Initialize(&FatalThreadFunc, reinterpret_cast<void *>(rc), 0x1000, 49);
+        g_fatal_thread.Initialize(&FatalThreadFunc, reinterpret_cast<void *>(load_res), 0x1000, 49);
         g_fatal_thread.Start();
     }
 }

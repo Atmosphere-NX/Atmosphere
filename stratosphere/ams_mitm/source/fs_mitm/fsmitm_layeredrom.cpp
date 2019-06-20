@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 
@@ -50,7 +50,7 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
     if (size == 0) {
         return ResultSuccess;
     }
-    
+
     /* Validate size. */
     u64 virt_size = (*this->p_source_infos)[this->p_source_infos->size() - 1].virtual_offset + (*this->p_source_infos)[this->p_source_infos->size() - 1].size;
     if (offset >= virt_size) {
@@ -77,8 +77,7 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
             low = mid + 1;
         }
     }
-    
-    Result rc;
+
     size_t read_so_far = 0;
     while (read_so_far < size) {
         RomFSSourceInfo *cur_source = &((*this->p_source_infos)[cur_source_ind]);
@@ -91,15 +90,11 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                 case RomFSDataSource::MetaData:
                     {
                         FsFile file;
-                        if (R_FAILED((rc = Utils::OpenSdFileForAtmosphere(this->title_id, ROMFS_METADATA_FILE_PATH, FS_OPEN_READ, &file)))) {
-                            fatalSimple(rc);
-                        }
+                        R_ASSERT(Utils::OpenSdFileForAtmosphere(this->title_id, ROMFS_METADATA_FILE_PATH, FS_OPEN_READ, &file));
                         size_t out_read;
-                        if (R_FAILED((rc = fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, FS_READOPTION_NONE, &out_read)))) {
-                            fatalSimple(rc);
-                        }
+                        R_ASSERT(fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, FS_READOPTION_NONE, &out_read));
                         if (out_read != cur_read_size) {
-                            Reboot();
+                            std::abort();
                         }
                         fsFileClose(&file);
                     }
@@ -107,15 +102,11 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                 case RomFSDataSource::LooseFile:
                     {
                         FsFile file;
-                        if (R_FAILED((rc = Utils::OpenRomFSSdFile(this->title_id, cur_source->loose_source_info.path, FS_OPEN_READ, &file)))) {
-                            fatalSimple(rc);
-                        }
+                        R_ASSERT(Utils::OpenRomFSSdFile(this->title_id, cur_source->loose_source_info.path, FS_OPEN_READ, &file));
                         size_t out_read;
-                        if (R_FAILED((rc = fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, FS_READOPTION_NONE, &out_read)))) {
-                            fatalSimple(rc);
-                        }
+                        R_ASSERT(fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, FS_READOPTION_NONE, &out_read));
                         if (out_read != cur_read_size) {
-                            Reboot();
+                            std::abort();
                         }
                         fsFileClose(&file);
                     }
@@ -127,23 +118,16 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                     break;
                 case RomFSDataSource::BaseRomFS:
                     {
-                        if (R_FAILED((rc = this->storage_romfs->Read((void *)((uintptr_t)buffer + read_so_far), cur_read_size, cur_source->base_source_info.offset + (offset - cur_source->virtual_offset))))) {
-                            /* TODO: Can this ever happen? */
-                            /* fatalSimple(rc); */
-                            return rc;
-                        }
+                        R_ASSERT(this->storage_romfs->Read((void *)((uintptr_t)buffer + read_so_far), cur_read_size, cur_source->base_source_info.offset + (offset - cur_source->virtual_offset)));
                     }
                     break;
                 case RomFSDataSource::FileRomFS:
                     {
-                        if (R_FAILED((rc = this->file_romfs->Read((void *)((uintptr_t)buffer + read_so_far), cur_read_size, cur_source->base_source_info.offset + (offset - cur_source->virtual_offset))))) {
-                            fatalSimple(rc);
-                        }
+                        R_ASSERT(this->file_romfs->Read((void *)((uintptr_t)buffer + read_so_far), cur_read_size, cur_source->base_source_info.offset + (offset - cur_source->virtual_offset)));
                     }
                     break;
                 default:
-                    /* TODO: Better error. */
-                    fatalSimple(ResultKernelConnectionClosed);
+                    std::abort();
                     break;
             }
             read_so_far += cur_read_size;
@@ -157,7 +141,7 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
             offset = ((*this->p_source_infos)[cur_source_ind]).virtual_offset;
         }
     }
-    
+
     return ResultSuccess;
 }
 Result LayeredRomFS::GetSize(u64 *out_size)  {

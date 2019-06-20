@@ -63,7 +63,7 @@ bool SetMitmService::IsValidRegionCode(u32 region_code) {
     return region_code < RegionCode_Max;
 }
 
-void SetMitmService::EnsureLocale() {
+Result SetMitmService::EnsureLocale() {
     std::scoped_lock<HosMutex> lk(this->lock);
 
     if (!this->got_locale) {
@@ -71,19 +71,16 @@ void SetMitmService::EnsureLocale() {
         if (this->title_id == TitleId_Ns) {
             u64 app_pid = 0;
             u64 app_tid = 0;
-            Result rc;
-            if (R_FAILED((rc = pmdmntGetApplicationPid(&app_pid)))) {
-                return;
-            }
-            if (R_FAILED((rc = pminfoGetTitleId(&app_tid, app_pid)))) {
-                return;
-            }
+            R_TRY(pmdmntGetApplicationPid(&app_pid));
+            R_TRY(pminfoGetTitleId(&app_tid, app_pid));
             this->locale = Utils::GetTitleOverrideLocale(app_tid);
         } else {
             this->locale = Utils::GetTitleOverrideLocale(this->title_id);
             this->got_locale = true;
         }
     }
+
+    return ResultSuccess;
 }
 
 Result SetMitmService::GetLanguageCode(Out<u64> out_lang_code) {

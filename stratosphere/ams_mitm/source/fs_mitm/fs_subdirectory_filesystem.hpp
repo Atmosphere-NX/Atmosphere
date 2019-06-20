@@ -26,20 +26,14 @@ class SubDirectoryFileSystem : public IFileSystem {
         std::shared_ptr<IFileSystem> base_fs;
         char *base_path = nullptr;
         size_t base_path_len = 0;
-        
+
     public:
         SubDirectoryFileSystem(IFileSystem *fs, const char *bp) : base_fs(fs) {
-            Result rc = this->Initialize(bp);
-            if (R_FAILED(rc)) {
-                fatalSimple(rc);
-            }
+            R_ASSERT(this->Initialize(bp));
         }
 
         SubDirectoryFileSystem(std::shared_ptr<IFileSystem> fs, const char *bp) : base_fs(fs) {
-            Result rc = this->Initialize(bp);
-            if (R_FAILED(rc)) {
-                fatalSimple(rc);
-            }
+            R_ASSERT(this->Initialize(bp));
         }
 
 
@@ -48,7 +42,7 @@ class SubDirectoryFileSystem : public IFileSystem {
                 free(this->base_path);
             }
         }
-        
+
     private:
         Result Initialize(const char *bp);
     protected:
@@ -56,7 +50,7 @@ class SubDirectoryFileSystem : public IFileSystem {
         Result GetFullPath(FsPath &full_path, const FsPath &relative_path) {
             return GetFullPath(full_path.str, sizeof(full_path.str), relative_path.str);
         }
-        
+
     public:
         virtual Result CreateFileImpl(const FsPath &path, uint64_t size, int flags) override;
         virtual Result DeleteFileImpl(const FsPath &path) override;

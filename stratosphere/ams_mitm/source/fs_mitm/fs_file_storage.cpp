@@ -29,7 +29,6 @@ Result FileStorage::UpdateSize() {
 }
 
 Result FileStorage::Read(void *buffer, size_t size, u64 offset) {
-    Result rc;
     u64 read_size;
 
     if (size == 0) {
@@ -38,9 +37,7 @@ Result FileStorage::Read(void *buffer, size_t size, u64 offset) {
     if (buffer == nullptr) {
         return ResultFsNullptrArgument;
     }
-    if (R_FAILED((rc = this->UpdateSize()))) {
-        return rc;
-    }
+    R_TRY(this->UpdateSize());
     if (!IStorage::IsRangeValid(offset, size, this->size)) {
         return ResultFsOutOfRange;
     }
@@ -54,17 +51,13 @@ Result FileStorage::Read(void *buffer, size_t size, u64 offset) {
 }
 
 Result FileStorage::Write(void *buffer, size_t size, u64 offset) {
-    Result rc;
-
     if (size == 0) {
         return ResultSuccess;
     }
     if (buffer == nullptr) {
         return ResultFsNullptrArgument;
     }
-    if (R_FAILED((rc = this->UpdateSize()))) {
-        return rc;
-    }
+    R_TRY(this->UpdateSize());
     if (!IStorage::IsRangeValid(offset, size, this->size)) {
         return ResultFsOutOfRange;
     }
@@ -77,10 +70,7 @@ Result FileStorage::Flush() {
 }
 
 Result FileStorage::GetSize(u64 *out_size) {
-    Result rc = this->UpdateSize();
-    if (R_FAILED(rc)) {
-        return rc;
-    }
+    R_TRY(this->UpdateSize());
     *out_size = this->size;
     return ResultSuccess;
 }
@@ -91,8 +81,6 @@ Result FileStorage::SetSize(u64 size) {
 }
 
 Result FileStorage::OperateRange(FsOperationId operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) {
-    Result rc;
-
     switch (operation_type) {
         case FsOperationId_InvalidateCache:
         case FsOperationId_QueryRange:
@@ -106,9 +94,7 @@ Result FileStorage::OperateRange(FsOperationId operation_type, u64 offset, u64 s
                 }
                 return ResultSuccess;
             }
-            if (R_FAILED((rc = this->UpdateSize()))) {
-                return rc;
-            }
+            R_TRY(this->UpdateSize());
             /* N checks for positivity + signed overflow on offset/size here, but we're using unsigned types... */
             return this->file->OperateRange(operation_type, offset, size, out_range_info);
         default:

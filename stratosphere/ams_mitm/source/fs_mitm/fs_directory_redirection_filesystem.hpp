@@ -31,17 +31,11 @@ class DirectoryRedirectionFileSystem : public IFileSystem {
 
     public:
         DirectoryRedirectionFileSystem(IFileSystem *fs, const char *before, const char *after) : base_fs(fs) {
-            Result rc = this->Initialize(before, after);
-            if (R_FAILED(rc)) {
-                fatalSimple(rc);
-            }
+            R_ASSERT(this->Initialize(before, after));
         }
 
         DirectoryRedirectionFileSystem(std::shared_ptr<IFileSystem> fs, const char *before, const char *after) : base_fs(fs) {
-            Result rc = this->Initialize(before, after);
-            if (R_FAILED(rc)) {
-                fatalSimple(rc);
-            }
+            R_ASSERT(this->Initialize(before, after));
         }
 
 

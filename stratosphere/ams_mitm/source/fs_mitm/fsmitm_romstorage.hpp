@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -38,11 +38,11 @@ class RomFileStorage : public IROStorage {
     public:
         Result Read(void *buffer, size_t size, u64 offset) override {
             size_t out_sz = 0;
-            Result rc = fsFileRead(this->base_file, offset, buffer, size, FS_READOPTION_NONE, &out_sz);
-            if (R_SUCCEEDED(rc) && out_sz != size && out_sz) {
-                return this->Read((void *)((uintptr_t)buffer + out_sz), size - out_sz, offset + out_sz);
+            R_TRY(fsFileRead(this->base_file, offset, buffer, size, FS_READOPTION_NONE, &out_sz));
+            if (out_sz != size && out_sz) {
+                R_TRY(this->Read((void *)((uintptr_t)buffer + out_sz), size - out_sz, offset + out_sz));
             }
-            return rc;
+            return ResultSuccess;
         };
         Result GetSize(u64 *out_size) override {
             return fsFileGetSize(this->base_file, out_size);

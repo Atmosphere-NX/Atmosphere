@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -36,15 +36,13 @@ void NsMitmMain(void *arg) {
 
     /* Ensure we can talk to NS. */
     DoWithSmSession([&]() {
-        if (R_FAILED(nsInitialize())) {
-            std::abort();
-        }
-        nsExit();
+        R_ASSERT(nsInitialize());
     });
+    nsExit();
 
     /* Create server manager */
     auto server_manager = new WaitableManager(1);
-    
+
     /* Create ns mitm. */
     if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
         AddMitmServerToManager<NsAmMitmService>(server_manager, "ns:am", 5);
@@ -54,8 +52,8 @@ void NsMitmMain(void *arg) {
 
     /* Loop forever, servicing our services. */
     server_manager->Process();
-    
+
     delete server_manager;
-    
+
 }
 

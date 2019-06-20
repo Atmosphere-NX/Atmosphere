@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <stratosphere.hpp>
 #include <cstring>
@@ -43,16 +43,12 @@ void LaunchAllMitmModules() {
     /* Create thread for each module. */
     for (u32 i = 0; i < static_cast<u32>(MitmModuleId_Count); i++) {
         const auto cur_module = &g_module_definitions[i];
-        if (R_FAILED(g_module_threads[i].Initialize(cur_module->main, nullptr, cur_module->stack_size, cur_module->priority))) {
-            std::abort();
-        }
+        R_ASSERT(g_module_threads[i].Initialize(cur_module->main, nullptr, cur_module->stack_size, cur_module->priority));
     }
-    
+
     /* Start thread for each module. */
     for (u32 i = 0; i < static_cast<u32>(MitmModuleId_Count); i++) {
-        if (R_FAILED(g_module_threads[i].Start())) {
-            std::abort();
-        }
+        R_ASSERT(g_module_threads[i].Start());
     }
 }
 

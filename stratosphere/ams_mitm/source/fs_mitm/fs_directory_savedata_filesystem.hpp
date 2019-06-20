@@ -43,26 +43,17 @@ class DirectorySaveDataFileSystem : public IFileSystem {
     public:
         DirectorySaveDataFileSystem(IFileSystem *fs, std::unique_ptr<IFileSystem> pfs) : unique_fs(fs), proxy_save_fs(std::move(pfs)) {
             this->fs = this->unique_fs.get();
-            Result rc = this->Initialize();
-            if (R_FAILED(rc)) {
-                fatalSimple(rc);
-            }
+            R_ASSERT(this->Initialize());
         }
 
         DirectorySaveDataFileSystem(std::unique_ptr<IFileSystem> fs, std::unique_ptr<IFileSystem> pfs) : unique_fs(std::move(fs)), proxy_save_fs(std::move(pfs)) {
             this->fs = this->unique_fs.get();
-            Result rc = this->Initialize();
-            if (R_FAILED(rc)) {
-                fatalSimple(rc);
-            }
+            R_ASSERT(this->Initialize());
         }
 
         DirectorySaveDataFileSystem(std::shared_ptr<IFileSystem> fs, std::unique_ptr<IFileSystem> pfs) : shared_fs(fs), proxy_save_fs(std::move(pfs)) {
             this->fs = this->shared_fs.get();
-            Result rc = this->Initialize();
-            if (R_FAILED(rc)) {
-                fatalSimple(rc);
-            }
+            R_ASSERT(this->Initialize());
         }
 
         virtual ~DirectorySaveDataFileSystem() { }

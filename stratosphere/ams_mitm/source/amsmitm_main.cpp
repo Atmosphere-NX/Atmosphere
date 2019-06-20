@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -34,7 +34,7 @@ extern "C" {
     #define INNER_HEAP_SIZE 0x1000000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
-    
+
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
@@ -69,27 +69,14 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    Result rc;
-    
     SetFirmwareVersionForLibnx();
-    
+
     DoWithSmSession([&]() {
-        rc = fsInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = pmdmntInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = pminfoInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
+        R_ASSERT(fsInitialize());
+        R_ASSERT(pmdmntInitialize());
+        R_ASSERT(pminfoInitialize());
     });
-    
+
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
@@ -102,19 +89,15 @@ int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
     HosThread initializer_thread;
-    
+
     LaunchAllMitmModules();
 
-    if (R_FAILED(initializer_thread.Initialize(&Utils::InitializeThreadFunc, NULL, 0x4000, 0x15))) {
-        std::abort();
-    }
-    if (R_FAILED(initializer_thread.Start())) {
-        std::abort();
-    }
-        
+    R_ASSERT(initializer_thread.Initialize(&Utils::InitializeThreadFunc, NULL, 0x4000, 0x15));
+    R_ASSERT(initializer_thread.Start());
+
     /* Wait for all mitm modules to end. */
     WaitAllMitmModules();
-    
+
     return 0;
 }
 

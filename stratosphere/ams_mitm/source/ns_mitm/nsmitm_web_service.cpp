@@ -24,30 +24,17 @@ void NsWebMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *
 }
 
 Result NsWebMitmService::GetDocumentInterface(Out<std::shared_ptr<NsDocumentService>> out_intf) {
-    std::shared_ptr<NsDocumentService> intf = nullptr;
-    u32 out_domain_id = 0;
-    Result rc = ResultSuccess;
-    
-    ON_SCOPE_EXIT {
-        if (R_SUCCEEDED(rc)) {
-            out_intf.SetValue(std::move(intf));
-            if (out_intf.IsDomain()) {
-                out_intf.ChangeObjectId(out_domain_id);
-            }
-        }
-    };
-    
     /* Open a document interface. */
     NsDocumentInterface doc;
-    rc = nsGetDocumentInterfaceFwd(this->forward_service.get(), &doc);
-    if (R_SUCCEEDED(rc)) {
-        intf = std::make_shared<NsDocumentService>(this->title_id, doc);
-        if (out_intf.IsDomain()) {
-            out_domain_id = doc.s.object_id;
-        }
+    R_TRY(nsGetDocumentInterfaceFwd(this->forward_service.get(), &doc));
+
+    /* Set output interface. */
+    out_intf.SetValue(std::move(std::make_shared<NsDocumentService>(this->title_id, doc)));
+    if (out_intf.IsDomain()) {
+        out_intf.ChangeObjectId(doc.s.object_id);
     }
 
-    return rc;
+    return ResultSuccess;
 }
 
 Result NsDocumentService::GetApplicationContentPath(OutBuffer<u8> out_path, u64 app_id, u8 storage_type) {
@@ -55,10 +42,13 @@ Result NsDocumentService::GetApplicationContentPath(OutBuffer<u8> out_path, u64 
 }
 
 Result NsDocumentService::ResolveApplicationContentPath(u64 title_id, u8 storage_type) {
-    Result rc = nswebResolveApplicationContentPath(this->srv.get(), title_id, static_cast<FsStorageId>(storage_type));
-
     /* Always succeed for web applet asking about HBL. */
-    return (Utils::IsWebAppletTid(this->title_id) && Utils::IsHblTid(title_id)) ? 0 : rc;
+    if (Utils::IsWebAppletTid(this->title_id) && Utils::IsHblTid(title_id)) {
+        nswebResolveApplicationContentPath(this->srv.get(), title_id, static_cast<FsStorageId>(storage_type));
+        return ResultSuccess;
+    }
+
+    return nswebResolveApplicationContentPath(this->srv.get(), title_id, static_cast<FsStorageId>(storage_type));
 }
 
 Result NsDocumentService::GetRunningApplicationProgramId(Out<u64> out_tid, u64 app_id) {

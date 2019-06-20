@@ -31,7 +31,7 @@ DATA		:=	data
 INCLUDES	:=	include ../../common/include
 EXEFS_SRC	:=	exefs_src
 
-DEFINES	:=	-DDISABLE_IPC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
+DEFINES	:=	-DRESULT_ABORT_ON_ASSERT -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
 
 #---------------------------------------------------------------------------------
 # options for code generation

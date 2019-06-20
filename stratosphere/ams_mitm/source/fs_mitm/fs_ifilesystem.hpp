@@ -216,55 +216,35 @@ class IFileSystemInterface : public IServiceObject {
         /* Actual command API. */
         virtual Result CreateFile(InPointer<char> in_path, uint64_t size, int flags) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             return this->base_fs->CreateFile(path, size, flags);
         }
 
         virtual Result DeleteFile(InPointer<char> in_path) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             return this->base_fs->DeleteFile(path);
         }
 
         virtual Result CreateDirectory(InPointer<char> in_path) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             return this->base_fs->CreateDirectory(path);
         }
 
         virtual Result DeleteDirectory(InPointer<char> in_path) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             return this->base_fs->DeleteDirectory(path);
         }
 
         virtual Result DeleteDirectoryRecursively(InPointer<char> in_path) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             return this->base_fs->DeleteDirectoryRecursively(path);
         }
@@ -272,14 +252,8 @@ class IFileSystemInterface : public IServiceObject {
         virtual Result RenameFile(InPointer<char> in_old_path, InPointer<char> in_new_path) final {
             FsPath old_path;
             FsPath new_path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&old_path, in_old_path.pointer)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&new_path, in_new_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&old_path, in_old_path.pointer));
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&new_path, in_new_path.pointer));
 
             return this->base_fs->RenameFile(old_path, new_path);
         }
@@ -287,14 +261,8 @@ class IFileSystemInterface : public IServiceObject {
         virtual Result RenameDirectory(InPointer<char> in_old_path, InPointer<char> in_new_path) final {
             FsPath old_path;
             FsPath new_path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&old_path, in_old_path.pointer)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&new_path, in_new_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&old_path, in_old_path.pointer));
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&new_path, in_new_path.pointer));
 
             return this->base_fs->RenameDirectory(old_path, new_path);
         }
@@ -302,54 +270,35 @@ class IFileSystemInterface : public IServiceObject {
 
         virtual Result GetEntryType(Out<u32> out_type, InPointer<char> in_path) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             DirectoryEntryType type;
-            rc = this->base_fs->GetEntryType(&type, path);
-            if (R_SUCCEEDED(rc)) {
-                out_type.SetValue(type);
-            }
-            return rc;
+            R_TRY(this->base_fs->GetEntryType(&type, path));
+
+            out_type.SetValue(type);
+            return ResultSuccess;
         }
 
         virtual Result OpenFile(Out<std::shared_ptr<IFileInterface>> out_intf, InPointer<char> in_path, uint32_t mode) final {
             FsPath path;
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
+
             std::unique_ptr<IFile> out_file;
+            R_TRY(this->base_fs->OpenFile(out_file, path, static_cast<OpenMode>(mode)));
 
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
-
-            rc = this->base_fs->OpenFile(out_file, path, static_cast<OpenMode>(mode));
-            if (R_SUCCEEDED(rc)) {
-                out_intf.SetValue(std::make_shared<IFileInterface>(std::move(out_file)));
-                /* TODO: Nintendo checks allocation success here, should we?. */
-            }
-            return rc;
+            out_intf.SetValue(std::make_shared<IFileInterface>(std::move(out_file)));
+            return ResultSuccess;
         }
 
         virtual Result OpenDirectory(Out<std::shared_ptr<IDirectoryInterface>> out_intf, InPointer<char> in_path, uint32_t mode) final {
             FsPath path;
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
+
             std::unique_ptr<IDirectory> out_dir;
+            R_TRY(this->base_fs->OpenDirectory(out_dir, path, static_cast<DirectoryOpenMode>(mode)));
 
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
-
-            rc = this->base_fs->OpenDirectory(out_dir, path, static_cast<DirectoryOpenMode>(mode));
-
-            if (R_SUCCEEDED(rc)) {
-                out_intf.SetValue(std::make_shared<IDirectoryInterface>(std::move(out_dir)));
-                /* TODO: Nintendo checks allocation success here, should we?. */
-            }
-
-            return rc;
+            out_intf.SetValue(std::make_shared<IDirectoryInterface>(std::move(out_dir)));
+            return ResultSuccess;
         }
 
         virtual Result Commit() final {
@@ -358,55 +307,35 @@ class IFileSystemInterface : public IServiceObject {
 
         virtual Result GetFreeSpaceSize(Out<uint64_t> out_size, InPointer<char> in_path) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             return this->base_fs->GetFreeSpaceSize(out_size.GetPointer(), path);
         }
 
         virtual Result GetTotalSpaceSize(Out<uint64_t> out_size, InPointer<char> in_path) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             return this->base_fs->GetTotalSpaceSize(out_size.GetPointer(), path);
         }
 
         virtual Result CleanDirectoryRecursively(InPointer<char> in_path) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             return this->base_fs->CleanDirectoryRecursively(path);
         }
 
         virtual Result GetFileTimeStampRaw(Out<FsTimeStampRaw> out_timestamp, InPointer<char> in_path) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             return this->base_fs->GetFileTimeStampRaw(out_timestamp.GetPointer(), path);
         }
 
         virtual Result QueryEntry(OutBuffer<char, BufferType_Type1> out_buffer, InBuffer<char, BufferType_Type1> in_buffer, int query, InPointer<char> in_path) final {
             FsPath path;
-
-            Result rc;
-            if (R_FAILED((rc = FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer)))) {
-                return rc;
-            }
+            R_TRY(FsPathUtils::ConvertPathForServiceObject(&path, in_path.pointer));
 
             return this->base_fs->QueryEntry(out_buffer.buffer, out_buffer.num_elements, in_buffer.buffer, in_buffer.num_elements, query, path);
         }
@@ -487,34 +416,25 @@ class ProxyFileSystem : public IFileSystem {
 
         virtual Result GetEntryTypeImpl(DirectoryEntryType *out, const FsPath &path) {
             FsEntryType type;
+            R_TRY(fsFsGetEntryType(this->base_fs.get(), path.str, &type));
 
-            Result rc = fsFsGetEntryType(this->base_fs.get(), path.str, &type);
-            if (R_SUCCEEDED(rc)) {
-                *out = static_cast<DirectoryEntryType>(static_cast<u32>(type));
-            }
-
-            return rc;
+            *out = static_cast<DirectoryEntryType>(static_cast<u32>(type));
+            return ResultSuccess;
         }
         virtual Result OpenFileImpl(std::unique_ptr<IFile> &out_file, const FsPath &path, OpenMode mode) {
             FsFile f;
+            R_TRY(fsFsOpenFile(this->base_fs.get(), path.str, static_cast<int>(mode), &f));
 
-            Result rc = fsFsOpenFile(this->base_fs.get(), path.str, static_cast<int>(mode), &f);
-            if (R_SUCCEEDED(rc)) {
-                out_file = std::make_unique<ProxyFile>(f);
-            }
-
-            return rc;
+            out_file = std::make_unique<ProxyFile>(f);
+            return ResultSuccess;
         }
 
         virtual Result OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, const FsPath &path, DirectoryOpenMode mode) {
             FsDir d;
+            R_TRY(fsFsOpenDirectory(this->base_fs.get(), path.str, static_cast<int>(mode), &d));
 
-            Result rc = fsFsOpenDirectory(this->base_fs.get(), path.str, static_cast<int>(mode), &d);
-            if (R_SUCCEEDED(rc)) {
-                out_dir = std::make_unique<ProxyDirectory>(d);
-            }
-
-            return rc;
+            out_dir = std::make_unique<ProxyDirectory>(d);
+            return ResultSuccess;
         }
 
         virtual Result CommitImpl() {

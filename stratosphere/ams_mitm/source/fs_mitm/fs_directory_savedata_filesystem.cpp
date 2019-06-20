@@ -62,59 +62,44 @@ class DirectorySaveDataFile : public IFile {
 /* ================================================================================================ */
 
 Result DirectorySaveDataFileSystem::Initialize() {
-    Result rc;
     DirectoryEntryType ent_type;
 
     /* Check that the working directory exists. */
-    if (R_FAILED((rc = this->fs->GetEntryType(&ent_type, WorkingDirectoryPath)))) {
+    R_TRY_CATCH(this->fs->GetEntryType(&ent_type, WorkingDirectoryPath)) {
         /* If path isn't found, create working directory and committed directory. */
-        if (rc == ResultFsPathNotFound) {
-            if (R_FAILED((rc = this->fs->CreateDirectory(WorkingDirectoryPath)))) {
-                return rc;
-            }
-            if (R_FAILED((rc = this->fs->CreateDirectory(CommittedDirectoryPath)))) {
-                return rc;
-            }
-        } else {
-            return rc;
+        R_CATCH(ResultFsPathNotFound) {
+            R_TRY(this->fs->CreateDirectory(WorkingDirectoryPath));
+            R_TRY(this->fs->CreateDirectory(CommittedDirectoryPath));
         }
-    }
+    } R_END_TRY_CATCH;
 
     /* Now check for the committed directory. */
-    rc = this->fs->GetEntryType(&ent_type, CommittedDirectoryPath);
-    if (R_SUCCEEDED(rc)) {
-        /* If committed exists, synchronize it to the working directory. */
-        return this->SynchronizeDirectory(WorkingDirectoryPath, CommittedDirectoryPath);
-    } else if (rc == ResultFsPathNotFound) {
-        if (R_FAILED((rc = this->SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath)))) {
-            return rc;
+    R_TRY_CATCH(this->fs->GetEntryType(&ent_type, CommittedDirectoryPath)) {
+        /* Committed doesn't exist, so synchronize and rename. */
+        R_CATCH(ResultFsPathNotFound) {
+            R_TRY(this->SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath));
+            return this->fs->RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
         }
-        return this->fs->RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath);
-    } else {
-        return rc;
-    }
+    } R_END_TRY_CATCH;
+
+    /* If committed exists, synchronize it to the working directory. */
+    return this->SynchronizeDirectory(WorkingDirectoryPath, CommittedDirectoryPath);
 }
 
 Result DirectorySaveDataFileSystem::SynchronizeDirectory(const FsPath &dst_dir, const FsPath &src_dir) {
-    Result rc;
-
     /* Delete destination dir and recreate it. */
-    if (R_FAILED((rc = this->fs->DeleteDirectoryRecursively(dst_dir)))) {
-        /* Nintendo returns error unconditionally, but I think that's a bug in their code. */
-        if (rc != ResultFsPathNotFound) {
-            return rc;
+    R_TRY_CATCH(this->fs->DeleteDirectoryRecursively(dst_dir)) {
+        R_CATCH(ResultFsPathNotFound) {
+            /* Nintendo returns error unconditionally, but I think that's a bug in their code. */
         }
-    }
-    if (R_FAILED((rc = this->fs->CreateDirectory(dst_dir)))) {
-        return rc;
-    }
+    } R_END_TRY_CATCH;
+
+    R_TRY(this->fs->CreateDirectory(dst_dir));
 
     /* Get a buffer to work with. */
     void *work_buf = nullptr;
     size_t work_buf_size = 0;
-    if (R_FAILED((rc = this->AllocateWorkBuffer(&work_buf, &work_buf_size, IdealWorkBuffersize)))) {
-        return rc;
-    }
+    R_TRY(this->AllocateWorkBuffer(&work_buf, &work_buf_size, IdealWorkBuffersize));
     ON_SCOPE_EXIT { free(work_buf); };
 
     return FsDirUtils::CopyDirectoryRecursively(this->fs, dst_dir, src_dir, work_buf, work_buf_size);
@@ -149,11 +134,11 @@ Result DirectorySaveDataFileSystem::GetFullPath(char *out, size_t out_size, cons
     if (relative_path[0] != '/') {
         return ResultFsInvalidPath;
     }
-    
+
     /* Copy working directory path. */
     std::strncpy(out, WorkingDirectoryPath.str, out_size);
     out[out_size-1] = 0;
-    
+
     /* Normalize it. */
     constexpr size_t working_len = WorkingDirectoryPathLen - 1;
     return FsPathUtils::Normalize(out + working_len, out_size - working_len, relative_path, nullptr);
@@ -168,20 +153,13 @@ void DirectorySaveDataFileSystem::OnWritableFileClose() {
 
 Result DirectorySaveDataFileSystem::CopySaveFromProxy() {
     if (this->proxy_save_fs != nullptr) {
-        Result rc;
-
         /* Get a buffer to work with. */
         void *work_buf = nullptr;
         size_t work_buf_size = 0;
-        if (R_FAILED((rc = this->AllocateWorkBuffer(&work_buf, &work_buf_size, IdealWorkBuffersize)))) {
-            return rc;
-        }
+        R_TRY(this->AllocateWorkBuffer(&work_buf, &work_buf_size, IdealWorkBuffersize));
         ON_SCOPE_EXIT { free(work_buf); };
 
-        rc = FsDirUtils::CopyDirectoryRecursively(this, this->proxy_save_fs.get(), FsPathUtils::RootPath, FsPathUtils::RootPath, work_buf, work_buf_size);
-        if (R_FAILED(rc)) {
-            return rc;
-        }
+        R_TRY(FsDirUtils::CopyDirectoryRecursively(this, this->proxy_save_fs.get(), FsPathUtils::RootPath, FsPathUtils::RootPath, work_buf, work_buf_size));
         return this->Commit();
     }
     return ResultSuccess;
@@ -190,125 +168,81 @@ Result DirectorySaveDataFileSystem::CopySaveFromProxy() {
 /* ================================================================================================ */
 
 Result DirectorySaveDataFileSystem::CreateFileImpl(const FsPath &path, uint64_t size, int flags) {
-    Result rc;
     FsPath full_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-    
+    R_TRY(GetFullPath(full_path, path));
+
     std::scoped_lock<HosMutex> lk(this->lock);
     return this->fs->CreateFile(full_path, size, flags);
 }
 
 Result DirectorySaveDataFileSystem::DeleteFileImpl(const FsPath &path) {
-    Result rc;
     FsPath full_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-    
+    R_TRY(GetFullPath(full_path, path));
+
     std::scoped_lock<HosMutex> lk(this->lock);
     return this->fs->DeleteFile(full_path);
 }
 
 Result DirectorySaveDataFileSystem::CreateDirectoryImpl(const FsPath &path) {
-    Result rc;
     FsPath full_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-    
+    R_TRY(GetFullPath(full_path, path));
+
     std::scoped_lock<HosMutex> lk(this->lock);
     return this->fs->CreateDirectory(full_path);
 }
 
 Result DirectorySaveDataFileSystem::DeleteDirectoryImpl(const FsPath &path) {
-    Result rc;
     FsPath full_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-    
+    R_TRY(GetFullPath(full_path, path));
+
     std::scoped_lock<HosMutex> lk(this->lock);
     return this->fs->DeleteDirectory(full_path);
 }
 
 Result DirectorySaveDataFileSystem::DeleteDirectoryRecursivelyImpl(const FsPath &path) {
-    Result rc;
     FsPath full_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-    
+    R_TRY(GetFullPath(full_path, path));
+
     std::scoped_lock<HosMutex> lk(this->lock);
     return this->fs->DeleteDirectoryRecursively(full_path);
 }
 
 Result DirectorySaveDataFileSystem::RenameFileImpl(const FsPath &old_path, const FsPath &new_path) {
-    Result rc;
     FsPath full_old_path, full_new_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_old_path, old_path)))) {
-        return rc;
-    }
-    
-    if (R_FAILED((rc = GetFullPath(full_new_path, new_path)))) {
-        return rc;
-    }
-    
+    R_TRY(GetFullPath(full_old_path, old_path));
+    R_TRY(GetFullPath(full_new_path, new_path));
+
     std::scoped_lock<HosMutex> lk(this->lock);
     return this->fs->RenameFile(full_old_path, full_new_path);
 }
 
 Result DirectorySaveDataFileSystem::RenameDirectoryImpl(const FsPath &old_path, const FsPath &new_path) {
-    Result rc;
     FsPath full_old_path, full_new_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_old_path, old_path)))) {
-        return rc;
-    }
-    
-    if (R_FAILED((rc = GetFullPath(full_new_path, new_path)))) {
-        return rc;
-    }
-    
+    R_TRY(GetFullPath(full_old_path, old_path));
+    R_TRY(GetFullPath(full_new_path, new_path));
+
     std::scoped_lock<HosMutex> lk(this->lock);
     return this->fs->RenameDirectory(full_old_path, full_new_path);
 }
 
 Result DirectorySaveDataFileSystem::GetEntryTypeImpl(DirectoryEntryType *out, const FsPath &path) {
-    Result rc;
     FsPath full_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
+    R_TRY(GetFullPath(full_path, path));
 
     std::scoped_lock<HosMutex> lk(this->lock);
     return this->fs->GetEntryType(out, full_path);
 }
 
 Result DirectorySaveDataFileSystem::OpenFileImpl(std::unique_ptr<IFile> &out_file, const FsPath &path, OpenMode mode) {
-    Result rc;
     FsPath full_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
+    R_TRY(GetFullPath(full_path, path));
 
     std::scoped_lock<HosMutex> lk(this->lock);
 
     {
         /* Open the raw file. */
         std::unique_ptr<IFile> file;
-        if (R_FAILED((rc = this->fs->OpenFile(file, full_path, mode)))) {
-            return rc;
-        }
+        R_TRY(this->fs->OpenFile(file, full_path, mode));
 
         /* Create DirectorySaveDataFile wrapper. */
         out_file = std::make_unique<DirectorySaveDataFile>(std::move(file), this, mode);
@@ -328,13 +262,9 @@ Result DirectorySaveDataFileSystem::OpenFileImpl(std::unique_ptr<IFile> &out_fil
 }
 
 Result DirectorySaveDataFileSystem::OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, const FsPath &path, DirectoryOpenMode mode) {
-    Result rc;
     FsPath full_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-    
+    R_TRY(GetFullPath(full_path, path));
+
     std::scoped_lock<HosMutex> lk(this->lock);
     return this->fs->OpenDirectory(out_dir, full_path, mode);
 }
@@ -349,7 +279,6 @@ Result DirectorySaveDataFileSystem::CommitImpl() {
     /* Instead, we will synchronize first, then delete committed, then rename. */
 
     std::scoped_lock<HosMutex> lk(this->lock);
-    Result rc;
 
     /* Ensure we don't have any open writable files. */
     if (this->open_writable_files != 0) {
@@ -361,25 +290,20 @@ Result DirectorySaveDataFileSystem::CommitImpl() {
     const auto RenameSynchDir = [&]() { return this->fs->RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath); };
 
     /* Synchronize working directory. */
-    if (R_FAILED((rc = FsDirUtils::RetryUntilTargetNotLocked(std::move(SynchronizeWorkingDir))))) {
-        return rc;
-    }
+    R_TRY(FsDirUtils::RetryUntilTargetNotLocked(std::move(SynchronizeWorkingDir)));
 
     /* Delete committed directory. */
-    if (R_FAILED((rc = FsDirUtils::RetryUntilTargetNotLocked(std::move(DeleteCommittedDir))))) {
-        /* It is okay for us to not have a committed directory here. */
-        if (rc != ResultFsPathNotFound) {
-            return rc;
+    R_TRY_CATCH(FsDirUtils::RetryUntilTargetNotLocked(std::move(DeleteCommittedDir))) {
+        R_CATCH(ResultFsPathNotFound) {
+            /* It is okay for us to not have a committed directory here. */
         }
-    }
+    } R_END_TRY_CATCH;
 
     /* Rename synchronizing directory to committed directory. */
-    if (R_FAILED((rc = FsDirUtils::RetryUntilTargetNotLocked(std::move(RenameSynchDir))))) {
-        return rc;
-    }
+    R_TRY(FsDirUtils::RetryUntilTargetNotLocked(std::move(RenameSynchDir)));
 
     /* TODO: Should I call this->fs->Commit()? Nintendo does not. */
-    return rc;
+    return ResultSuccess;
 }
 
 Result DirectorySaveDataFileSystem::GetFreeSpaceSizeImpl(uint64_t *out, const FsPath &path) {
@@ -393,13 +317,9 @@ Result DirectorySaveDataFileSystem::GetTotalSpaceSizeImpl(uint64_t *out, const F
 }
 
 Result DirectorySaveDataFileSystem::CleanDirectoryRecursivelyImpl(const FsPath &path) {
-    Result rc;
     FsPath full_path;
-    
-    if (R_FAILED((rc = GetFullPath(full_path, path)))) {
-        return rc;
-    }
-    
+    R_TRY(GetFullPath(full_path, path));
+
     std::scoped_lock<HosMutex> lk(this->lock);
     return this->fs->CleanDirectoryRecursively(full_path);
 }

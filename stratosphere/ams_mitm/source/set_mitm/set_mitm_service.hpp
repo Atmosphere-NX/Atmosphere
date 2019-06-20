@@ -50,7 +50,7 @@ class SetMitmService : public IMitmServiceObject {
         static bool IsValidLanguageCode(u64 lang_code);
         static bool IsValidRegionCode(u32 region_code);
 
-        void EnsureLocale();
+        Result EnsureLocale();
     protected:
         /* Overridden commands. */
         Result GetLanguageCode(Out<u64> out_lang_code);

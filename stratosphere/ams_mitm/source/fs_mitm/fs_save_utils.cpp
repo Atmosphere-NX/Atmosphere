@@ -100,12 +100,10 @@ Result FsSaveUtils::GetSaveDataTypeString(const char **out_str, u8 save_data_typ
 
 Result FsSaveUtils::GetSaveDataDirectoryPath(FsPath &out_path, u8 space_id, u8 save_data_type, u64 title_id, u128 user_id, u64 save_id) {
     const char *space_id_str, *save_type_str;
-    Result rc;
 
     /* Get space_id, save_data_type strings. */
-    if (R_FAILED((rc = GetSaveDataSpaceIdString(&space_id_str, space_id))) || R_FAILED((rc = GetSaveDataTypeString(&save_type_str, save_data_type)))) {
-        return rc;
-    }
+    R_TRY(GetSaveDataSpaceIdString(&space_id_str, space_id));
+    R_TRY(GetSaveDataTypeString(&save_type_str, save_data_type));
 
     /* Clear and initialize the path. */
     std::memset(&out_path, 0, sizeof(out_path));
