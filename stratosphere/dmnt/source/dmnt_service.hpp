@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -81,7 +81,7 @@ class DebugMonitorService final : public IServiceObject {
         Result GetProcessId(Out<u64> out_pid, Handle hnd);
         Result GetProcessHandle(Out<Handle> out_hnd, u64 pid);
         Result WaitSynchronization(Handle hnd, u64 ns);
-        
+
         Result TargetIO_FileOpen(OutBuffer<u64> out_hnd, InBuffer<char> path, int open_mode, u32 create_mode);
         Result TargetIO_FileClose(InBuffer<u64> hnd);
         Result TargetIO_FileRead(InBuffer<u64> hnd, OutBuffer<u8, BufferType_Type1> out_data, Out<u32> out_read, u64 offset);

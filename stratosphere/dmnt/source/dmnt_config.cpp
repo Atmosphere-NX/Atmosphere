@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <string.h>
 #include <stratosphere.hpp>
@@ -33,7 +33,7 @@ static char g_config_ini_data[0x800];
 
 static OverrideKey ParseOverrideKey(const char *value) {
     OverrideKey cfg;
-    
+
     /* Parse on by default. */
     if (value[0] == '!') {
         cfg.override_by_default = true;
@@ -41,7 +41,7 @@ static OverrideKey ParseOverrideKey(const char *value) {
     } else {
         cfg.override_by_default = false;
     }
-    
+
     /* Parse key combination. */
     if (strcasecmp(value, "A") == 0) {
         cfg.key_combination = KEY_A;
@@ -82,7 +82,7 @@ static OverrideKey ParseOverrideKey(const char *value) {
     } else {
         cfg.key_combination = 0;
     }
-    
+
     return cfg;
 }
 
@@ -101,7 +101,7 @@ static int DmntIniHandler(void *user, const char *section, const char *name, con
 static int DmntTitleSpecificIniHandler(void *user, const char *section, const char *name, const char *value) {
     /* We'll output an override key when relevant. */
     OverrideKey *user_cfg = reinterpret_cast<OverrideKey *>(user);
-    
+
     if (strcasecmp(section, "override_config") == 0) {
         if (strcasecmp(name, "cheat_enable_key") == 0) {
             *user_cfg = ParseOverrideKey(value);
@@ -117,20 +117,20 @@ void DmntConfigManager::RefreshConfiguration() {
     if (config == NULL) {
         return;
     }
-    
+
     memset(g_config_ini_data, 0, sizeof(g_config_ini_data));
     fread(g_config_ini_data, 1, sizeof(g_config_ini_data) - 1, config);
     fclose(config);
-    
+
     ini_parse_string(g_config_ini_data, DmntIniHandler, NULL);
 }
 
 OverrideKey DmntConfigManager::GetTitleCheatEnableKey(u64 tid) {
     OverrideKey cfg = g_default_cheat_enable_key;
     char path[FS_MAX_PATH+1] = {0};
-    snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/config.ini", tid); 
-    
-    
+    snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/config.ini", tid);
+
+
     FILE *config = fopen(path, "r");
     if (config != NULL) {
         ON_SCOPE_EXIT { fclose(config); };
@@ -138,7 +138,7 @@ OverrideKey DmntConfigManager::GetTitleCheatEnableKey(u64 tid) {
         /* Parse current title ini. */
         ini_parse_file(config, DmntTitleSpecificIniHandler, &cfg);
     }
-    
+
     return cfg;
 }
 
@@ -151,7 +151,7 @@ static bool HasOverrideKey(OverrideKey *cfg) {
 bool DmntConfigManager::HasCheatEnableButton(u64 tid) {
     /* Unconditionally refresh loader.ini contents. */
     RefreshConfiguration();
-    
+
     OverrideKey title_cfg = GetTitleCheatEnableKey(tid);
     return HasOverrideKey(&title_cfg);
 }

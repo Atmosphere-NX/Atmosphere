@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stdarg.h>
@@ -31,16 +31,16 @@ enum CheatVmOpcodeType : u32 {
     CheatVmOpcodeType_StoreStaticToAddress = 6,
     CheatVmOpcodeType_PerformArithmeticStatic = 7,
     CheatVmOpcodeType_BeginKeypressConditionalBlock = 8,
-    
+
     /* These are not implemented by Gateway's VM. */
     CheatVmOpcodeType_PerformArithmeticRegister = 9,
     CheatVmOpcodeType_StoreRegisterToAddress = 10,
     CheatVmOpcodeType_Reserved11 = 11,
-    
+
     /* This is a meta entry, and not a real opcode. */
     /* This is to facilitate multi-nybble instruction decoding. */
     CheatVmOpcodeType_ExtendedWidth = 12,
-    
+
     /* Extended width opcodes. */
     CheatVmOpcodeType_BeginRegisterConditionalBlock = 0xC0,
     CheatVmOpcodeType_SaveRestoreRegister = 0xC1,
@@ -49,7 +49,7 @@ enum CheatVmOpcodeType : u32 {
     /* This is a meta entry, and not a real opcode. */
     /* This is to facilitate multi-nybble instruction decoding. */
     CheatVmOpcodeType_DoubleExtendedWidth = 0xF0,
-    
+
     /* Double-extended width opcodes. */
     CheatVmOpcodeType_DebugLog = 0xFFF,
 };
@@ -74,13 +74,13 @@ enum RegisterArithmeticType : u32 {
     RegisterArithmeticType_Multiplication = 2,
     RegisterArithmeticType_LeftShift = 3,
     RegisterArithmeticType_RightShift = 4,
-    
+
     /* These are not supported by Gateway's VM. */
     RegisterArithmeticType_LogicalAnd = 5,
     RegisterArithmeticType_LogicalOr = 6,
     RegisterArithmeticType_LogicalNot = 7,
     RegisterArithmeticType_LogicalXor = 8,
-    
+
     RegisterArithmeticType_None = 9,
 };
 
@@ -276,25 +276,25 @@ class DmntCheatVm {
         bool DecodeNextOpcode(CheatVmOpcode *out);
         void SkipConditionalBlock();
         void ResetState();
-        
+
         /* For implementing the DebugLog opcode. */
         void DebugLog(u32 log_id, u64 value);
-        
+
         /* For debugging. These will be IFDEF'd out normally. */
         void OpenDebugLogFile();
         void CloseDebugLogFile();
         void LogToDebugFile(const char *format, ...);
         void LogOpcode(const CheatVmOpcode *opcode);
-        
+
         static u64 GetVmInt(VmInt value, u32 bit_width);
         static u64 GetCheatProcessAddress(const CheatProcessMetadata* metadata, MemoryAccessType mem_type, u64 rel_address);
     public:
         DmntCheatVm() { }
-        
+
         size_t GetProgramSize() {
             return this->num_opcodes;
         }
-        
+
         bool LoadProgram(const CheatEntry *cheats, size_t num_cheats);
         void Execute(const CheatProcessMetadata *metadata);
 #ifdef DMNT_CHEAT_VM_DEBUG_LOG

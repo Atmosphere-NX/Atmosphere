@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 
@@ -25,7 +25,7 @@ struct OverrideKey {
 class DmntConfigManager {
     public:
         static void RefreshConfiguration();
-    
+
         static OverrideKey GetTitleCheatEnableKey(u64 tid);
         static bool HasCheatEnableButton(u64 tid);
 };

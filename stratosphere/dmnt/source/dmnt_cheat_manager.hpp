@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -30,14 +30,14 @@ class DmntCheatManager {
         static void DetectThread(void *arg);
         static void VmThread(void *arg);
         static void DebugEventsThread(void *arg);
-        
+
         static void StartDebugEventsThread();
         static void WaitDebugEventsThread();
-        
+
         static bool HasActiveCheatProcess();
         static void CloseActiveCheatProcess();
         static void ContinueCheatProcess();
-        
+
         static void ResetCheatEntry(size_t i);
         static void ResetAllCheatEntries();
         static CheatEntry *GetFreeCheatEntry();
@@ -49,35 +49,35 @@ class DmntCheatManager {
         static bool ParseCheatToggles(const char *s, size_t len);
         static bool LoadCheatToggles(u64 title_id);
         static void SaveCheatToggles(u64 title_id);
-        
+
         static void ResetFrozenAddresses();
     public:
         static bool GetHasActiveCheatProcess();
         static Handle GetCheatProcessEventHandle();
         static Result GetCheatProcessMetadata(CheatProcessMetadata *out);
         static Result ForceOpenCheatProcess();
-        
+
         static Result ReadCheatProcessMemoryForVm(u64 proc_addr, void *out_data, size_t size);
         static Result WriteCheatProcessMemoryForVm(u64 proc_addr, const void *data, size_t size);
-        
+
         static Result GetCheatProcessMappingCount(u64 *out_count);
         static Result GetCheatProcessMappings(MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset);
         static Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size);
         static Result WriteCheatProcessMemory(u64 proc_addr, const void *data, size_t size);
         static Result QueryCheatProcessMemory(MemoryInfo *mapping, u64 address);
-        
+
         static Result GetCheatCount(u64 *out_count);
         static Result GetCheats(CheatEntry *cheats, size_t max_count, u64 *out_count, u64 offset);
         static Result GetCheatById(CheatEntry *out_cheat, u32 cheat_id);
         static Result ToggleCheat(u32 cheat_id);
         static Result AddCheat(u32 *out_id, CheatDefinition *def, bool enabled);
         static Result RemoveCheat(u32 cheat_id);
-        
+
         static Result GetFrozenAddressCount(u64 *out_count);
         static Result GetFrozenAddresses(FrozenAddressEntry *frz_addrs, size_t max_count, u64 *out_count, u64 offset);
         static Result GetFrozenAddress(FrozenAddressEntry *frz_addr, u64 address);
         static Result EnableFrozenAddress(u64 *out_value, u64 address, u64 width);
         static Result DisableFrozenAddress(u64 address);
-        
+
         static void InitializeCheatManager();
 };

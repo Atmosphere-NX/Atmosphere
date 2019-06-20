@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include "pm_shim.h"
 
@@ -53,7 +53,7 @@ Result pmdmntAtmosphereGetProcessInfo(Handle* out, u64 *tid_out, FsStorageId *si
 
         if (R_SUCCEEDED(rc)) {
             if (out) {
-               *out = r.Handles[0]; 
+               *out = r.Handles[0];
             } else {
                 svcCloseHandle(r.Handles[0]);
             }

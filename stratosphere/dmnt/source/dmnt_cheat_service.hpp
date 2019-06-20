@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -26,14 +26,14 @@ enum DmntCheatCmd {
     DmntCheat_Cmd_GetCheatProcessEvent = 65001,
     DmntCheat_Cmd_GetCheatProcessMetadata = 65002,
     DmntCheat_Cmd_ForceOpenCheatProcess = 65003,
-    
+
     /* Interact with Memory */
     DmntCheat_Cmd_GetCheatProcessMappingCount = 65100,
     DmntCheat_Cmd_GetCheatProcessMappings = 65101,
     DmntCheat_Cmd_ReadCheatProcessMemory = 65102,
     DmntCheat_Cmd_WriteCheatProcessMemory = 65103,
     DmntCheat_Cmd_QueryCheatProcessMemory = 65104,
-    
+
     /* Interact with Cheats */
     DmntCheat_Cmd_GetCheatCount = 65200,
     DmntCheat_Cmd_GetCheats = 65201,
@@ -41,7 +41,7 @@ enum DmntCheatCmd {
     DmntCheat_Cmd_ToggleCheat = 65203,
     DmntCheat_Cmd_AddCheat = 65204,
     DmntCheat_Cmd_RemoveCheat = 65205,
-    
+
     /* Interact with Frozen Addresses */
     DmntCheat_Cmd_GetFrozenAddressCount = 65300,
     DmntCheat_Cmd_GetFrozenAddresses = 65301,
@@ -56,20 +56,20 @@ class DmntCheatService final : public IServiceObject {
         void GetCheatProcessEvent(Out<CopiedHandle> out_event);
         Result GetCheatProcessMetadata(Out<CheatProcessMetadata> out_metadata);
         Result ForceOpenCheatProcess();
-        
+
         Result GetCheatProcessMappingCount(Out<u64> out_count);
         Result GetCheatProcessMappings(OutBuffer<MemoryInfo> mappings, Out<u64> out_count, u64 offset);
         Result ReadCheatProcessMemory(OutBuffer<u8> buffer, u64 address, u64 out_size);
         Result WriteCheatProcessMemory(InBuffer<u8> buffer, u64 address, u64 in_size);
         Result QueryCheatProcessMemory(Out<MemoryInfo> mapping, u64 address);
-        
+
         Result GetCheatCount(Out<u64> out_count);
         Result GetCheats(OutBuffer<CheatEntry> cheats, Out<u64> out_count, u64 offset);
         Result GetCheatById(OutBuffer<CheatEntry> cheat, u32 cheat_id);
         Result ToggleCheat(u32 cheat_id);
         Result AddCheat(InBuffer<CheatDefinition> cheat, Out<u32> out_cheat_id, bool enabled);
         Result RemoveCheat(u32 cheat_id);
-        
+
         Result GetFrozenAddressCount(Out<u64> out_count);
         Result GetFrozenAddresses(OutBuffer<FrozenAddressEntry> addresses, Out<u64> out_count, u64 offset);
         Result GetFrozenAddress(Out<FrozenAddressEntry> entry, u64 address);

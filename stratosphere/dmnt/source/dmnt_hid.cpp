@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <string.h>
 #include <stratosphere.hpp>
@@ -24,13 +24,13 @@ static HosMutex g_hid_keys_down_lock;
 
 Result HidManagement::GetKeysDown(u64 *keys) {
     std::scoped_lock<HosMutex> lk(g_hid_keys_down_lock);
-    
+
     hidScanInput();
     *keys = 0;
 
     for (int controller = 0; controller < 10; controller++) {
         *keys |= hidKeysHeld((HidControllerID) controller);
     }
-    
+
     return ResultSuccess;
 }

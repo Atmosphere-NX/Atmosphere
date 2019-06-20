@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <map>
 #include <switch.h>
 #include "dmnt_config.hpp"
@@ -37,14 +37,14 @@ void DmntCheatDebugEventsManager::PerCoreThreadFunc(void *arg) {
             g_per_core_queues[current_core]->Receive(&x);
             debug_handle = static_cast<Handle>(x);
         }
-        
+
         /* Continue the process, if needed. */
         if ((GetRuntimeFirmwareVersion() >= FirmwareVersion_300)) {
             svcContinueDebugEvent(debug_handle, 5, nullptr, 0);
         } else {
             svcLegacyContinueDebugEvent(debug_handle, 5, 0);
         }
-        
+
         g_continued_signal.Signal();
     }
 }
@@ -55,7 +55,7 @@ void DmntCheatDebugEventsManager::ContinueCheatProcess(Handle cheat_dbg_hnd) {
     while (R_SUCCEEDED(svcGetDebugEvent((u8 *)&dbg_event, cheat_dbg_hnd))) {
         /* ... */
     }
-    
+
     size_t target_core = DmntCheatDebugEventsManager::NumCores - 1;
     /* Retrieve correct core for new thread event. */
     if (dbg_event.type == DebugEventType::AttachThread) {
@@ -65,14 +65,14 @@ void DmntCheatDebugEventsManager::ContinueCheatProcess(Handle cheat_dbg_hnd) {
         if (R_FAILED(rc)) {
             fatalSimple(rc);
         }
-        
-        
+
+
         target_core = out32;
     }
-    
+
     /* Make appropriate thread continue. */
     g_per_core_queues[target_core]->Send(static_cast<uintptr_t>(cheat_dbg_hnd));
-    
+
     /* Wait. */
     g_continued_signal.Wait();
     g_continued_signal.Reset();
@@ -83,17 +83,17 @@ void DmntCheatDebugEventsManager::Initialize() {
     for (size_t i = 0; i < DmntCheatDebugEventsManager::NumCores; i++) {
         /* Create queue. */
         g_per_core_queues[i] = new HosMessageQueue(1);
-        
+
         /* Create thread. */
         if (R_FAILED(g_per_core_threads[i].Initialize(&DmntCheatDebugEventsManager::PerCoreThreadFunc, reinterpret_cast<void *>(i), 0x1000, 24, i))) {
             std::abort();
         }
-        
+
         /* Set core mask. */
         if (R_FAILED(svcSetThreadCoreMask(g_per_core_threads[i].GetHandle(), i, (1u << i)))) {
             std::abort();
         }
-        
+
         /* Start thread. */
         if (R_FAILED(g_per_core_threads[i].Start())) {
             std::abort();
