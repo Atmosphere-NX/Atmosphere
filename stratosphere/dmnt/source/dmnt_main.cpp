@@ -59,64 +59,23 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    Result rc;
-
     SetFirmwareVersionForLibnx();
 
     DoWithSmSession([&]() {
-        rc = pmdmntInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
-
-        rc = ldrDmntInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
-
+        R_ASSERT(pmdmntInitialize());
+        R_ASSERT(ldrDmntInitialize());
         /* TODO: We provide this on every sysver via ro. Do we need a shim? */
         if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
-            rc = roDmntInitialize();
-            if (R_FAILED(rc)) {
-                fatalSimple(rc);
-            }
+            R_ASSERT(roDmntInitialize());
         }
-
-        rc = nsdevInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
-
-        rc = lrInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
-
-        rc = setInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
-
-        rc = setsysInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
-
-        rc = hidInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
-
-        rc = fsInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
+        R_ASSERT(nsdevInitialize());
+        R_ASSERT(lrInitialize());
+        R_ASSERT(setInitialize());
+        R_ASSERT(setsysInitialize());
+        R_ASSERT(fsInitialize());
     });
 
-    rc = fsdevMountSdmc();
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
+    R_ASSERT(fsdevMountSdmc());
 
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }

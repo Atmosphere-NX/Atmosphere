@@ -36,7 +36,6 @@ static Result RetryUntilSuccess(F f) {
 }
 
 Result Boot::ReadI2cRegister(I2cSessionImpl &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size) {
-    Result rc;
     if (dst == nullptr || dst_size == 0 || cmd == nullptr || cmd_size == 0) {
         std::abort();
     }
@@ -44,12 +43,8 @@ Result Boot::ReadI2cRegister(I2cSessionImpl &session, u8 *dst, size_t dst_size, 
     u8 cmd_list[I2cCommandListFormatter::MaxCommandListSize];
 
     I2cCommandListFormatter formatter(cmd_list, sizeof(cmd_list));
-    if (R_FAILED((rc = formatter.EnqueueSendCommand(I2cTransactionOption_Start, cmd, cmd_size)))) {
-        std::abort();
-    }
-    if (R_FAILED((rc = formatter.EnqueueReceiveCommand(static_cast<I2cTransactionOption>(I2cTransactionOption_Start | I2cTransactionOption_Stop), dst_size)))) {
-        std::abort();
-    }
+    R_ASSERT(formatter.EnqueueSendCommand(I2cTransactionOption_Start, cmd, cmd_size));
+    R_ASSERT(formatter.EnqueueReceiveCommand(static_cast<I2cTransactionOption>(I2cTransactionOption_Start | I2cTransactionOption_Stop), dst_size));
 
     return RetryUntilSuccess([&]() { return I2cDriver::ExecuteCommandList(session, dst, dst_size, cmd_list, formatter.GetCurrentSize()); });
 }

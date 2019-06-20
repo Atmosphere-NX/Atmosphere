@@ -92,9 +92,7 @@ Result ContentManagement::MountCode(u64 tid, FsStorageId sid) {
 
     /* Always re-initialize fsp-ldr, in case it's closed */
     DoWithSmSession([&]() {
-        if (R_FAILED(fsldrInitialize())) {
-            std::abort();
-        }
+        R_ASSERT(fsldrInitialize());
     });
     ON_SCOPE_EXIT { fsldrExit(); };
 

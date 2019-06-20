@@ -69,26 +69,13 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    Result rc;
-
     SetFirmwareVersionForLibnx();
 
     /* Initialize services we need (TODO: NCM) */
     DoWithSmSession([&]() {
-        rc = fsInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = splInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = pmshellInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
+        R_ASSERT(fsInitialize());
+        R_ASSERT(splInitialize());
+        R_ASSERT(pmshellInitialize());
     });
 
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);

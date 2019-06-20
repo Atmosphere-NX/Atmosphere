@@ -60,31 +60,26 @@ static void LaunchTitle(u64 title_id, FsStorageId storage_id, u32 launch_flags, 
         return;
     }
 
-    Result rc = Registration::LaunchProcessByTidSid(Registration::TidSid{title_id, storage_id}, launch_flags, &local_pid);
-    switch (rc) {
+    switch (Registration::LaunchProcessByTidSid(Registration::TidSid{title_id, storage_id}, launch_flags, &local_pid)) {
         case ResultKernelResourceExhausted:
             /* Out of resource! */
             std::abort();
-            break;
         case ResultKernelOutOfMemory:
             /* Out of memory! */
             std::abort();
-            break;
         case ResultKernelLimitReached:
             /* Limit Reached! */
             std::abort();
-            break;
         default:
             /* We don't care about other issues. */
             break;
     }
+
     if (pid) {
         *pid = local_pid;
     }
 
-    if (R_SUCCEEDED(rc)) {
-        SetLaunchedTitle(title_id);
-    }
+    SetLaunchedTitle(title_id);
 }
 
 static bool GetGpioPadLow(GpioPadName pad) {
@@ -105,11 +100,10 @@ static bool GetGpioPadLow(GpioPadName pad) {
 
 static bool IsMaintenanceMode() {
     /* Contact set:sys, retrieve boot!force_maintenance. */
-    Result rc;
     DoWithSmSession([&]() {
-        rc = setsysInitialize();
+        R_ASSERT(setsysInitialize());
     });
-    if (R_SUCCEEDED(rc)) {
+    {
         ON_SCOPE_EXIT { setsysExit(); };
 
         u8 force_maintenance = 1;
@@ -121,9 +115,9 @@ static bool IsMaintenanceMode() {
 
     /* Contact GPIO, read plus/minus buttons. */
     DoWithSmSession([&]() {
-        rc = gpioInitialize();
+        R_ASSERT(gpioInitialize());
     });
-    if (R_SUCCEEDED(rc)) {
+    {
         ON_SCOPE_EXIT { gpioExit(); };
 
         return GetGpioPadLow(GpioPadName_ButtonVolUp) && GetGpioPadLow(GpioPadName_ButtonVolDown);
@@ -179,11 +173,8 @@ static void MountSdCard() {
         Handle tmp_hnd = 0;
         static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
         for (unsigned int i = 0; i < sizeof(required_active_services) / sizeof(required_active_services[0]); i++) {
-            if (R_FAILED(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])))) {
-                std::abort();
-            } else {
-                svcCloseHandle(tmp_hnd);
-            }
+            R_ASSERT(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])));
+            svcCloseHandle(tmp_hnd);
         }
     });
     fsdevMountSdmc();
@@ -192,21 +183,17 @@ static void MountSdCard() {
 static void WaitForMitm(const char *service) {
     bool mitm_installed = false;
 
-    Result rc;
     DoWithSmSession([&]() {
-        if (R_FAILED((rc = smManagerAmsInitialize()))) {
-            std::abort();
-        }
+        R_ASSERT(smManagerAmsInitialize());
     });
+    ON_SCOPE_EXIT { smManagerAmsExit(); };
 
-    while (R_FAILED((rc = smManagerAmsHasMitm(&mitm_installed, service))) || !mitm_installed) {
-        if (R_FAILED(rc)) {
-            std::abort();
+    while (!mitm_installed) {
+        R_ASSERT(smManagerAmsHasMitm(&mitm_installed, service));
+        if (!mitm_installed) {
+            svcSleepThread(1000000ull);
         }
-        svcSleepThread(1000000ull);
     }
-
-    smManagerAmsExit();
 }
 
 void EmbeddedBoot2::Main() {

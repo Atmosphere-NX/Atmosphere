@@ -100,9 +100,7 @@ Result Registration::LaunchProcess(u64 *out_pid, const TidSid tid_sid, const u64
     };
 
     /* Get the new process's id. */
-    if (R_FAILED(svcGetProcessId(&new_process.pid, new_process.handle))) {
-        std::abort();
-    }
+    R_ASSERT(svcGetProcessId(&new_process.pid, new_process.handle));
 
     /* Register with FS. */
     memcpy(fac, program_info.ac_buffer + program_info.acid_sac_size + program_info.aci0_sac_size, program_info.acid_fac_size);
@@ -283,18 +281,10 @@ void Registration::FinalizeExitedProcess(std::shared_ptr<Registration::Process> 
 
         signal_debug_process_5x = (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) && process->flags & PROCESSFLAGS_NOTIFYWHENEXITED;
 
-        /* Unregister with FS. */
-        if (R_FAILED(fsprUnregisterProgram(process->pid))) {
-            std::abort();
-        }
-        /* Unregister with SM. */
-        if (R_FAILED(smManagerUnregisterProcess(process->pid))) {
-            std::abort();
-        }
-        /* Unregister with LDR. */
-        if (R_FAILED(ldrPmUnregisterTitle(process->ldr_queue_index))) {
-            std::abort();
-        }
+        /* Unregister with FS, SM, and LDR. */
+        R_ASSERT(fsprUnregisterProgram(process->pid));
+        R_ASSERT(smManagerUnregisterProcess(process->pid));
+        R_ASSERT(ldrPmUnregisterTitle(process->ldr_queue_index));
 
         /* Close the process's handle. */
         svcCloseHandle(process->handle);

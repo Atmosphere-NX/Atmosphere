@@ -145,9 +145,7 @@ Result ShowFatalTask::ShowFatal() {
 
     /* Prepare screen for drawing. */
     DoWithSmSession([&]() {
-        Result rc = PrepareScreenForDrawing();
-        if (R_FAILED(rc)) {
-            *(volatile u32 *)(0xCAFEBABE) = rc;
+        if (R_FAILED(PrepareScreenForDrawing())) {
             std::abort();
         }
     });

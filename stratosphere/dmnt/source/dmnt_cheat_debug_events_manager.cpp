@@ -61,12 +61,7 @@ void DmntCheatDebugEventsManager::ContinueCheatProcess(Handle cheat_dbg_hnd) {
     if (dbg_event.type == DebugEventType::AttachThread) {
         u64 out64;
         u32 out32;
-        Result rc = svcGetDebugThreadParam(&out64, &out32, cheat_dbg_hnd, dbg_event.info.attach_thread.thread_id, DebugThreadParam_CurrentCore);
-        if (R_FAILED(rc)) {
-            fatalSimple(rc);
-        }
-
-
+        R_ASSERT(svcGetDebugThreadParam(&out64, &out32, cheat_dbg_hnd, dbg_event.info.attach_thread.thread_id, DebugThreadParam_CurrentCore));
         target_core = out32;
     }
 

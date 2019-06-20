@@ -105,14 +105,10 @@ void ResourceLimitUtils::InitializeLimits() {
     /* Create Resource Limits. */
     for (unsigned int i = 0; i < 3; i++) {
         if (i > 0) {
-            if (R_FAILED(svcCreateResourceLimit(&g_resource_limit_handles[i]))) {
-                std::abort();
-            }
+            R_ASSERT(svcCreateResourceLimit(&g_resource_limit_handles[i]));
         } else {
             u64 out = 0;
-            if (R_FAILED(svcGetInfo(&out, 9, 0, 0))) {
-                std::abort();
-            }
+            R_ASSERT(svcGetInfo(&out, 9, 0, 0));
             g_resource_limit_handles[i] = (Handle)out;
         }
     }
@@ -144,15 +140,11 @@ void ResourceLimitUtils::InitializeLimits() {
 
         /* Get total memory available. */
         u64 total_memory = 0;
-        if (R_FAILED(svcGetResourceLimitLimitValue(&total_memory, g_resource_limit_handles[0], LimitableResource_Memory))) {
-            std::abort();
-        }
+        R_ASSERT(svcGetResourceLimitLimitValue(&total_memory, g_resource_limit_handles[0], LimitableResource_Memory));
 
         /* Get and save application + applet memory. */
-        if (R_FAILED(svcGetSystemInfo(&g_memory_resource_limits[g_memory_limit_type][1], 0, 0, 0)) ||
-            R_FAILED(svcGetSystemInfo(&g_memory_resource_limits[g_memory_limit_type][2], 0, 0, 1))) {
-                std::abort();
-            }
+        R_ASSERT(svcGetSystemInfo(&g_memory_resource_limits[g_memory_limit_type][1], 0, 0, 0));
+        R_ASSERT(svcGetSystemInfo(&g_memory_resource_limits[g_memory_limit_type][2], 0, 0, 1));
 
         const u64 application_size = g_memory_resource_limits[g_memory_limit_type][1];
         const u64 applet_size = g_memory_resource_limits[g_memory_limit_type][2];
@@ -168,9 +160,7 @@ void ResourceLimitUtils::InitializeLimits() {
     } else {
         /* Get memory limits. */
         u64 memory_arrangement;
-        if (R_FAILED(splGetConfig(SplConfigItem_MemoryArrange, &memory_arrangement))) {
-            std::abort();
-        }
+        R_ASSERT(splGetConfig(SplConfigItem_MemoryArrange, &memory_arrangement));
         memory_arrangement &= 0x3F;
         switch (memory_arrangement) {
             case 2:
@@ -205,9 +195,7 @@ void ResourceLimitUtils::InitializeLimits() {
     /* Set resource limits. */
     for (unsigned int i = 0; i < 3; i++) {
         g_resource_limits[i][LimitableResource_Memory] = g_memory_resource_limits[g_memory_limit_type][i];
-        if (R_FAILED(SetResourceLimits((ResourceLimitCategory)i, g_memory_resource_limits[g_memory_limit_type][i]))) {
-            std::abort();
-        }
+        R_ASSERT(SetResourceLimits((ResourceLimitCategory)i, g_memory_resource_limits[g_memory_limit_type][i]));
     }
 }
 
@@ -225,9 +213,7 @@ void ResourceLimitUtils::EnsureApplicationResourcesAvailable() {
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
         u64 result;
         do {
-            if (R_FAILED(svcGetSystemInfo(&result, 1, 0, 0))) {
-                std::abort();
-            }
+            R_ASSERT(svcGetSystemInfo(&result, 1, 0, 0));
             svcSleepThread(1000000ULL);
         } while (result);
     }

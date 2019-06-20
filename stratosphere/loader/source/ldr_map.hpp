@@ -71,9 +71,7 @@ class AutoCloseMap {
 
         void Close() {
             if (this->mapped_address) {
-                if (R_FAILED(svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size))) {
-                    std::abort();
-                }
+                R_ASSERT(svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size));
                 this->mapped_address = NULL;
             }
         }

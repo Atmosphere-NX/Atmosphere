@@ -66,26 +66,13 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    Result rc;
-
     SetFirmwareVersionForLibnx();
 
     /* Initialize services we need (TODO: SPL) */
     DoWithSmSession([&]() {
-        rc = fsInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = lrInitialize();
-        if (R_FAILED(rc))  {
-            std::abort();
-        }
-
-        rc = fsldrInitialize();
-        if (R_FAILED(rc))  {
-            std::abort();
-        }
+        R_ASSERT(fsInitialize());
+        R_ASSERT(lrInitialize());
+        R_ASSERT(fsldrInitialize());
     });
 
 

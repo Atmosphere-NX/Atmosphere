@@ -56,9 +56,7 @@ Result MapUtils::LocateSpaceForMapModern(u64 *out, u64 out_size) {
             }
             cur_base = address_space.map_end;
         } else {
-            if (R_FAILED(svcQueryMemory(&mem_info, &page_info, cur_base))) {
-                std::abort();
-            }
+            R_ASSERT(svcQueryMemory(&mem_info, &page_info, cur_base));
             if (mem_info.type == 0 && mem_info.addr - cur_base + mem_info.size >= out_size) {
                 *out = cur_base;
                 return ResultSuccess;

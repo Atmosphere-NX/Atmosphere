@@ -90,18 +90,14 @@ int main(int argc, char **argv)
 
     /* Create sm:m manually. */
     Handle smm_h;
-    if (R_FAILED(Registration::RegisterServiceForSelf(smEncodeName("sm:m"), 1, false, &smm_h))) {
-        std::abort();
-    }
+    R_ASSERT(Registration::RegisterServiceForSelf(smEncodeName("sm:m"), 1, false, &smm_h));
 
     server_manager->AddWaitable(new ExistingPortServer<ManagerService>(smm_h, 1));
 
     /*===== ATMOSPHERE EXTENSION =====*/
     /* Create sm:dmnt manually. */
     Handle smdmnt_h;
-    if (R_FAILED(Registration::RegisterServiceForSelf(smEncodeName("sm:dmnt"), 1, false, &smdmnt_h))) {
-        std::abort();
-    }
+    R_ASSERT(Registration::RegisterServiceForSelf(smEncodeName("sm:dmnt"), 1, false, &smdmnt_h));
 
     server_manager->AddWaitable(new ExistingPortServer<DmntService>(smm_h, 1));;
     /*================================*/

@@ -23,8 +23,7 @@ void Boot::CheckAndRepairBootImages() {
     const BootImageUpdateType boot_image_update_type = Updater::GetBootImageUpdateType(Boot::GetHardwareType());
 
     bool repaired_normal, repaired_safe;
-    Result rc = Updater::VerifyBootImagesAndRepairIfNeeded(&repaired_normal, &repaired_safe, g_boot_image_work_buffer, sizeof(g_boot_image_work_buffer), boot_image_update_type);
-    if (R_SUCCEEDED(rc) && repaired_normal) {
+    if (R_SUCCEEDED(Updater::VerifyBootImagesAndRepairIfNeeded(&repaired_normal, &repaired_safe, g_boot_image_work_buffer, sizeof(g_boot_image_work_buffer), boot_image_update_type)) && repaired_normal) {
         /* Nintendo only performs a reboot on successful normal repair. */
         Boot::RebootSystem();
     }

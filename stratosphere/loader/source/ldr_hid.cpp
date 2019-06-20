@@ -26,11 +26,13 @@ Result HidManagement::GetKeysHeld(u64 *keys) {
     }
 
     if (!serviceIsActive(hidGetSessionService())) {
-        Result rc;
+        bool initialized = false;
         DoWithSmSession([&]() {
-            rc = hidInitialize();
+            if (R_SUCCEEDED(hidInitialize())) {
+                initialized = true;
+            }
         });
-        if (R_FAILED(rc)) {
+        if (!initialized) {
             return MAKERESULT(Module_Libnx, LibnxError_InitFail_HID);
         }
     }

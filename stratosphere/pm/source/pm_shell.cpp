@@ -120,7 +120,8 @@ void ShellService::GetBootFinishedEvent(Out<CopiedHandle> event) {
     /* We will signal it always, but only allow this function to succeed on safe mode. */
     {
         u64 is_recovery_boot = 0;
-        if (R_FAILED(SmcGetConfig(SplConfigItem_IsRecoveryBoot, &is_recovery_boot)) || !is_recovery_boot) {
+        R_ASSERT(SmcGetConfig(SplConfigItem_IsRecoveryBoot, &is_recovery_boot));
+        if (!is_recovery_boot) {
             std::abort();
         }
     }

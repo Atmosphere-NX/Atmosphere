@@ -122,22 +122,20 @@ void PowerButtonObserveTask::WaitForPowerButton() {
     BpcSleepButtonState state;
     GpioValue val;
     while (true) {
-        Result rc = ResultSuccess;
-
         if (config->is_auto_reboot_enabled && auto_reboot_helper.TimedOut() ) {
             bpcRebootSystem();
             return;
         }
 
-        if (check_vol_up && R_SUCCEEDED((rc = gpioPadGetValue(&vol_up_btn, &val))) && val == GpioValue_Low) {
+        if (check_vol_up && R_SUCCEEDED(gpioPadGetValue(&vol_up_btn, &val)) && val == GpioValue_Low) {
             bpcRebootSystem();
         }
 
-        if (check_vol_down && R_SUCCEEDED((rc = gpioPadGetValue(&vol_down_btn, &val))) && val == GpioValue_Low) {
+        if (check_vol_down && R_SUCCEEDED(gpioPadGetValue(&vol_down_btn, &val)) && val == GpioValue_Low) {
             bpcRebootSystem();
         }
 
-        if ((R_SUCCEEDED(rc = bpcGetSleepButtonState(&state)) && state == BpcSleepButtonState_Held) || (config->quest_flag && reboot_helper.TimedOut())) {
+        if ((R_SUCCEEDED(bpcGetSleepButtonState(&state)) && state == BpcSleepButtonState_Held) || (config->quest_flag && reboot_helper.TimedOut())) {
             bpcRebootSystem();
             return;
         }

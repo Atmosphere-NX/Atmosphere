@@ -61,33 +61,17 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    Result rc;
-
     SetFirmwareVersionForLibnx();
 
     DoWithSmSession([&]() {
-        rc = setsysInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = fsInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
+        R_ASSERT(setsysInitialize());
+        R_ASSERT(fsInitialize());
         if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
-            rc = pminfoInitialize();
-            if (R_FAILED(rc)) {
-                std::abort();
-            }
-        }
-
-        rc = fsdevMountSdmc();
-        if (R_FAILED(rc)) {
-            std::abort();
+            R_ASSERT(pminfoInitialize());
         }
     });
+
+    R_ASSERT(fsdevMountSdmc());
 
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }

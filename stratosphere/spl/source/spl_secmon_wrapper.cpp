@@ -54,14 +54,10 @@ class DeviceAddressSpaceMapHelper {
         u32 perm;
     public:
         DeviceAddressSpaceMapHelper(Handle h, u64 dst, u64 src, size_t sz, u32 p) : das_hnd(h), dst_addr(dst), src_addr(src), size(sz), perm(p) {
-            if (R_FAILED(svcMapDeviceAddressSpaceAligned(this->das_hnd, CUR_PROCESS_HANDLE, this->src_addr, this->size, this->dst_addr, this->perm))) {
-                std::abort();
-            }
+            R_ASSERT(svcMapDeviceAddressSpaceAligned(this->das_hnd, CUR_PROCESS_HANDLE, this->src_addr, this->size, this->dst_addr, this->perm));
         }
         ~DeviceAddressSpaceMapHelper() {
-            if (R_FAILED(svcUnmapDeviceAddressSpace(this->das_hnd, CUR_PROCESS_HANDLE, this->src_addr, this->size, this->dst_addr))) {
-                std::abort();
-            }
+            R_ASSERT(svcUnmapDeviceAddressSpace(this->das_hnd, CUR_PROCESS_HANDLE, this->src_addr, this->size, this->dst_addr));
         }
 };
 
@@ -91,9 +87,7 @@ void SecureMonitorWrapper::InitializeSeEvents() {
     u64 irq_num;
     SmcWrapper::GetConfig(&irq_num, 1, SplConfigItem_SecurityEngineIrqNumber);
     Handle hnd;
-    if (R_FAILED(svcCreateInterruptEvent(&hnd, irq_num, 1))) {
-        std::abort();
-    }
+    R_ASSERT(svcCreateInterruptEvent(&hnd, irq_num, 1));
     eventLoadRemote(&g_se_event, hnd, true);
 
     g_se_keyslot_available_event = CreateWriteOnlySystemEvent();
@@ -104,21 +98,16 @@ void SecureMonitorWrapper::InitializeDeviceAddressSpace() {
     constexpr u64 DeviceName_SE = 29;
 
     /* Create Address Space. */
-    if (R_FAILED(svcCreateDeviceAddressSpace(&g_se_das_hnd, 0, (1ul << 32)))) {
-        std::abort();
-    }
+    R_ASSERT(svcCreateDeviceAddressSpace(&g_se_das_hnd, 0, (1ul << 32)));
+
     /* Attach it to the SE. */
-    if (R_FAILED(svcAttachDeviceAddressSpace(DeviceName_SE, g_se_das_hnd))) {
-        std::abort();
-    }
+    R_ASSERT(svcAttachDeviceAddressSpace(DeviceName_SE, g_se_das_hnd));
 
     const u64 work_buffer_addr = reinterpret_cast<u64>(g_work_buffer);
     g_se_mapped_work_buffer_addr = WorkBufferMapBase + (work_buffer_addr & DeviceAddressSpaceAlignMask);
 
     /* Map the work buffer for the SE. */
-    if (R_FAILED(svcMapDeviceAddressSpaceAligned(g_se_das_hnd, CUR_PROCESS_HANDLE, work_buffer_addr, sizeof(g_work_buffer), g_se_mapped_work_buffer_addr, 3))) {
-        std::abort();
-    }
+    R_ASSERT(svcMapDeviceAddressSpaceAligned(g_se_das_hnd, CUR_PROCESS_HANDLE, work_buffer_addr, sizeof(g_work_buffer), g_se_mapped_work_buffer_addr, 3));
 }
 
 void SecureMonitorWrapper::Initialize() {

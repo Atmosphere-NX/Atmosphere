@@ -139,8 +139,9 @@ void Registration::AssociatePidTidForMitM(u64 index) {
     }
 
     Handle sm_hnd;
-    Result rc = svcConnectToNamedPort(&sm_hnd, "sm:");
-    if (R_SUCCEEDED(rc)) {
+    if (R_SUCCEEDED(svcConnectToNamedPort(&sm_hnd, "sm:"))) {
+        ON_SCOPE_EXIT { svcCloseHandle(sm_hnd); };
+
         /* Initialize. */
         {
             IpcCommand c;
@@ -158,22 +159,25 @@ void Registration::AssociatePidTidForMitM(u64 index) {
             raw->cmd_id = 0;
             raw->zero = 0;
 
-            rc = ipcDispatch(sm_hnd);
+            if (R_FAILED(ipcDispatch(sm_hnd))) {
+                return;
+            }
 
-            if (R_SUCCEEDED(rc)) {
-                IpcParsedCommand r;
-                ipcParse(&r);
+            IpcParsedCommand r;
+            ipcParse(&r);
 
-                struct {
-                    u64 magic;
-                    u64 result;
-                } *resp = (decltype(resp))r.Raw;
+            struct {
+                u64 magic;
+                u64 result;
+            } *resp = (decltype(resp))r.Raw;
 
-                rc = resp->result;
+            if (R_FAILED(resp->result)) {
+                return;
             }
         }
+
         /* Associate. */
-        if (R_SUCCEEDED(rc)) {
+        {
             IpcCommand c;
             ipcInitialize(&c);
             struct {
@@ -190,6 +194,5 @@ void Registration::AssociatePidTidForMitM(u64 index) {
 
             ipcDispatch(sm_hnd);
         }
-        svcCloseHandle(sm_hnd);
     }
 }

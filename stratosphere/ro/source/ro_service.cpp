@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <switch.h>
 #include <cstdio>
 #include <algorithm>
@@ -33,7 +33,7 @@ bool RelocatableObjectsService::IsProcessIdValid(u64 process_id) {
     if (!this->IsInitialized()) {
         return false;
     }
-    
+
     return this->context->process_id == process_id;
 }
 
@@ -41,18 +41,12 @@ u64 RelocatableObjectsService::GetTitleId(Handle process_handle) {
     u64 title_id = 0;
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
         /* 3.0.0+: Use svcGetInfo. */
-        if (R_FAILED(svcGetInfo(&title_id, 18, process_handle, 0))) {
-            std::abort();
-        }
+        R_ASSERT(svcGetInfo(&title_id, 18, process_handle, 0));
     } else {
         /* 1.0.0-2.3.0: We're not inside loader, so ask pm. */
         u64 process_id = 0;
-        if (R_FAILED(svcGetProcessId(&process_id, process_handle))) {
-            std::abort();
-        }
-        if (R_FAILED(pminfoGetTitleId(&title_id, process_id))) {
-            std::abort();
-        }
+        R_ASSERT(svcGetProcessId(&process_id, process_handle));
+        R_ASSERT(pminfoGetTitleId(&title_id, process_id));
     }
     return title_id;
 }
@@ -61,7 +55,7 @@ Result RelocatableObjectsService::LoadNro(Out<u64> load_address, PidDescriptor p
     if (!this->IsProcessIdValid(pid_desc.pid)) {
         return ResultRoInvalidProcess;
     }
-    
+
     return Registration::LoadNro(load_address.GetPointer(), this->context, nro_address, nro_size, bss_address, bss_size);
 }
 
@@ -69,7 +63,7 @@ Result RelocatableObjectsService::UnloadNro(PidDescriptor pid_desc, u64 nro_addr
     if (!this->IsProcessIdValid(pid_desc.pid)) {
         return ResultRoInvalidProcess;
     }
-    
+
     return Registration::UnloadNro(this->context, nro_address);
 }
 

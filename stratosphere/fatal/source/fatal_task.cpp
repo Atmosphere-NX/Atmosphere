@@ -33,8 +33,7 @@ static size_t g_num_threads = 0;
 static void RunTaskThreadFunc(void *arg) {
     IFatalTask *task = reinterpret_cast<IFatalTask *>(arg);
 
-    Result rc = task->Run();
-    if (R_FAILED(rc)) {
+    if (R_FAILED(task->Run())) {
         /* TODO: Log task failure, somehow? */
     }
 

@@ -25,13 +25,9 @@ bool MapUtils::CanAddGuardRegions(Handle process_handle, u64 address, u64 size) 
 
     /* Nintendo doesn't validate SVC return values at all. */
     /* TODO: Should we allow these to fail? */
-    if (R_FAILED(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address - 1))) {
-        std::abort();
-    }
+    R_ASSERT(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address - 1));
     if (mem_info.type == MemType_Unmapped && address - GuardRegionSize >= mem_info.addr) {
-        if (R_FAILED(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address + size))) {
-            std::abort();
-        }
+        R_ASSERT(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address + size));
         return mem_info.type == MemType_Unmapped && address + size + GuardRegionSize <= mem_info.addr + mem_info.size;
     }
 
@@ -50,11 +46,10 @@ Result MapUtils::MapCodeMemoryForProcess(MappedCodeMemory &out_mcm, Handle proce
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
         return MapCodeMemoryForProcessModern(out_mcm, process_handle, base_address, size);
     } else {
-        Result rc = MapCodeMemoryForProcessDeprecated(out_mcm, process_handle, true, base_address, size);
-        if (R_FAILED(rc)) {
-            rc = MapCodeMemoryForProcessDeprecated(out_mcm, process_handle, false, base_address, size);
+        if (R_FAILED(MapCodeMemoryForProcessDeprecated(out_mcm, process_handle, true, base_address, size))) {
+            R_TRY(MapCodeMemoryForProcessDeprecated(out_mcm, process_handle, false, base_address, size));
         }
-        return rc;
+        return ResultSuccess;
     }
 }
 
@@ -87,9 +82,7 @@ Result MapUtils::LocateSpaceForMapModern(u64 *out, u64 out_size) {
             }
             cur_base = address_space.map_end;
         } else {
-            if (R_FAILED(svcQueryMemory(&mem_info, &page_info, cur_base))) {
-                std::abort();
-            }
+            R_ASSERT(svcQueryMemory(&mem_info, &page_info, cur_base));
             if (mem_info.type == 0 && mem_info.addr - cur_base + mem_info.size >= out_size) {
                 *out = cur_base;
                 return ResultSuccess;

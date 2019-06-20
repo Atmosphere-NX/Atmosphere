@@ -165,8 +165,9 @@ Result ProcessCreation::CreateProcess(Handle *out_process_h, u64 index, char *nc
     }
     ON_SCOPE_EXIT {
         if (mounted_code) {
-            if (R_FAILED(ContentManagement::UnmountCode()) && target_process->tid_sid.storage_id != FsStorageId_None) {
-                std::abort();
+            const Result unmount_res = ContentManagement::UnmountCode();
+            if (target_process->tid_sid.storage_id != FsStorageId_None) {
+                R_ASSERT(unmount_res);
             }
         }
     };

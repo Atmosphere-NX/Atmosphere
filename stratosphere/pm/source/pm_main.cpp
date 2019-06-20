@@ -95,51 +95,26 @@ void RegisterPrivilegedProcessesWithFs() {
 }
 
 void __appInit(void) {
-    Result rc;
-
     SetFirmwareVersionForLibnx();
 
     DoWithSmSession([&]() {
-        rc = fsprInitialize();
-        if (R_FAILED(rc))  {
-            std::abort();
-        }
+        R_ASSERT(fsprInitialize());
 
         /* This works around a bug with process permissions on < 4.0.0. */
         RegisterPrivilegedProcessesWithFs();
 
-        rc = smManagerAmsInitialize();
-        if (R_SUCCEEDED(rc)) {
+        /* Use AMS manager extension to tell SM that FS has been worked around. */
+        {
+            R_ASSERT(smManagerAmsInitialize());
             smManagerAmsEndInitialDefers();
             smManagerAmsExit();
-        } else {
-            std::abort();
         }
 
-        rc = smManagerInitialize();
-        if (R_FAILED(rc))  {
-            std::abort();
-        }
-
-        rc = lrInitialize();
-        if (R_FAILED(rc))  {
-            std::abort();
-        }
-
-        rc = ldrPmInitialize();
-        if (R_FAILED(rc))  {
-            std::abort();
-        }
-
-        rc = splInitialize();
-        if (R_FAILED(rc))  {
-            std::abort();
-        }
-
-        rc = fsInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
+        R_ASSERT(smManagerInitialize());
+        R_ASSERT(lrInitialize());
+        R_ASSERT(ldrPmInitialize());
+        R_ASSERT(splInitialize());
+        R_ASSERT(fsInitialize());
     });
 
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
@@ -163,12 +138,8 @@ int main(int argc, char **argv)
 
     /* Initialize and spawn the Process Tracking thread. */
     Registration::InitializeSystemResources();
-    if (R_FAILED(process_track_thread.Initialize(&ProcessTracking::MainLoop, NULL, 0x4000, 0x15))) {
-        std::abort();
-    }
-    if (R_FAILED(process_track_thread.Start())) {
-        std::abort();
-    }
+    R_ASSERT(process_track_thread.Initialize(&ProcessTracking::MainLoop, NULL, 0x4000, 0x15));
+    R_ASSERT(process_track_thread.Start());
 
     /* Create Server Manager. */
     static auto s_server_manager = WaitableManager(1);

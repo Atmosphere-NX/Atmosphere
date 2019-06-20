@@ -54,15 +54,8 @@ void DmntCheatManager::StartDebugEventsThread() {
 
     /* Spawn the debug events thread. */
     if (!g_has_debug_events_thread) {
-        Result rc;
-
-        if (R_FAILED((rc = g_debug_events_thread.Initialize(&DmntCheatManager::DebugEventsThread, nullptr, 0x4000, 48)))) {
-            return fatalSimple(rc);
-        }
-
-        if (R_FAILED((rc = g_debug_events_thread.Start()))) {
-            return fatalSimple(rc);
-        }
+        R_ASSERT(g_debug_events_thread.Initialize(&DmntCheatManager::DebugEventsThread, nullptr, 0x4000, 48));
+        R_ASSERT(g_debug_events_thread.Start());
 
         g_has_debug_events_thread = true;
     }
@@ -799,33 +792,22 @@ Result DmntCheatManager::DisableFrozenAddress(u64 address) {
 }
 
 Handle DmntCheatManager::PrepareDebugNextApplication() {
-    Result rc;
     Handle event_h;
-    if (R_FAILED((rc = pmdmntEnableDebugForApplication(&event_h)))) {
-        fatalSimple(rc);
-    }
+    R_ASSERT(pmdmntEnableDebugForApplication(&event_h));
 
     return event_h;
 }
 
 static void PopulateMemoryExtents(MemoryRegionExtents *extents, Handle p_h, u64 id_base, u64 id_size) {
-    Result rc;
     /* Get base extent. */
-    if (R_FAILED((rc = svcGetInfo(&extents->base, id_base, p_h, 0)))) {
-        fatalSimple(rc);
-    }
+    R_ASSERT(svcGetInfo(&extents->base, id_base, p_h, 0));
 
     /* Get size extent. */
-    if (R_FAILED((rc = svcGetInfo(&extents->size, id_size, p_h, 0)))) {
-        fatalSimple(rc);
-    }
+    R_ASSERT(svcGetInfo(&extents->size, id_size, p_h, 0));
 }
 
 static void StartDebugProcess(u64 pid) {
-    Result rc = pmdmntStartProcess(pid);
-    if (R_FAILED(rc)) {
-        fatalSimple(rc);
-    }
+    R_ASSERT(pmdmntStartProcess(pid));
 }
 
 Result DmntCheatManager::ForceOpenCheatProcess() {
@@ -921,7 +903,6 @@ Result DmntCheatManager::ForceOpenCheatProcess() {
 
 void DmntCheatManager::OnNewApplicationLaunch() {
     std::scoped_lock<HosMutex> attach_lk(g_attach_lock);
-    Result rc;
 
     {
         std::scoped_lock<HosMutex> lk(g_cheat_lock);
@@ -937,18 +918,14 @@ void DmntCheatManager::OnNewApplicationLaunch() {
     std::scoped_lock<HosMutex> lk(g_cheat_lock);
 
     /* Get the new application's process ID. */
-    if (R_FAILED((rc = pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id)))) {
-        fatalSimple(rc);
-    }
+    R_ASSERT(pmdmntGetApplicationPid(&g_cheat_process_metadata.process_id));
 
     /* Get process handle, use it to learn memory extents. */
     {
         Handle proc_h = 0;
         ON_SCOPE_EXIT { if (proc_h != 0) { svcCloseHandle(proc_h); } };
 
-        if (R_FAILED((rc = pmdmntAtmosphereGetProcessInfo(&proc_h, &g_cheat_process_metadata.title_id, nullptr, g_cheat_process_metadata.process_id)))) {
-            fatalSimple(rc);
-        }
+        R_ASSERT(pmdmntAtmosphereGetProcessInfo(&proc_h, &g_cheat_process_metadata.title_id, nullptr, g_cheat_process_metadata.process_id));
 
         /* Get memory extents. */
         PopulateMemoryExtents(&g_cheat_process_metadata.heap_extents, proc_h, 4, 5);
@@ -972,9 +949,7 @@ void DmntCheatManager::OnNewApplicationLaunch() {
     {
         LoaderModuleInfo proc_modules[2];
         u32 num_modules;
-        if (R_FAILED((rc = ldrDmntGetModuleInfos(g_cheat_process_metadata.process_id, proc_modules, sizeof(proc_modules)/sizeof(proc_modules[0]), &num_modules)))) {
-            fatalSimple(rc);
-        }
+        R_ASSERT(ldrDmntGetModuleInfos(g_cheat_process_metadata.process_id, proc_modules, sizeof(proc_modules)/sizeof(proc_modules[0]), &num_modules));
 
         /* All applications must have two modules. */
         /* If we only have one, we must be e.g. mitming HBL. */
@@ -999,9 +974,7 @@ void DmntCheatManager::OnNewApplicationLaunch() {
     }
 
     /* Open a debug handle. */
-    if (R_FAILED((rc = svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id)))) {
-        fatalSimple(rc);
-    }
+    R_ASSERT(svcDebugActiveProcess(&g_cheat_process_debug_hnd, g_cheat_process_metadata.process_id));
 
     /* Start the process. */
     StartDebugProcess(g_cheat_process_metadata.process_id);

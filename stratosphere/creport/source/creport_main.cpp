@@ -65,21 +65,13 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    Result rc;
-
     SetFirmwareVersionForLibnx();
 
     DoWithSmSession([&]() {
-        rc = fsInitialize();
-        if (R_FAILED(rc)) {
-            fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
-        }
+        R_ASSERT(fsInitialize());
     });
 
-    rc = fsdevMountSdmc();
-    if (R_FAILED(rc)) {
-        fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
-    }
+    R_ASSERT(fsdevMountSdmc());
 }
 
 void __appExit(void) {

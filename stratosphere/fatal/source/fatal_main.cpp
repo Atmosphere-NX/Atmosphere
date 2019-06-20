@@ -72,83 +72,30 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    Result rc;
-
     SetFirmwareVersionForLibnx();
 
     DoWithSmSession([&]() {
-        rc = setInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = setsysInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = pminfoInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = i2cInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = bpcInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
+        R_ASSERT(setInitialize());
+        R_ASSERT(setsysInitialize());
+        R_ASSERT(pminfoInitialize());
+        R_ASSERT(i2cInitialize());
+        R_ASSERT(bpcInitialize());
 
         if (GetRuntimeFirmwareVersion() >= FirmwareVersion_800) {
-            rc = clkrstInitialize();
-            if (R_FAILED(rc)) {
-                std::abort();
-            }
+            R_ASSERT(clkrstInitialize());
         } else {
-            rc = pcvInitialize();
-            if (R_FAILED(rc)) {
-                std::abort();
-            }
+            R_ASSERT(pcvInitialize());
         }
 
-        rc = lblInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = psmInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = spsmInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = plInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = gpioInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
-
-        rc = fsInitialize();
-        if (R_FAILED(rc)) {
-            std::abort();
-        }
+        R_ASSERT(lblInitialize());
+        R_ASSERT(psmInitialize());
+        R_ASSERT(spsmInitialize());
+        R_ASSERT(plInitialize());
+        R_ASSERT(gpioInitialize());
+        R_ASSERT(fsInitialize());
     });
 
-    rc = fsdevMountSdmc();
-    if (R_FAILED(rc)) {
-        std::abort();
-    }
+    R_ASSERT(fsdevMountSdmc());
 
     /* fatal cannot throw fatal, so don't do: CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION); */
 }

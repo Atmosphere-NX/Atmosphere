@@ -31,21 +31,15 @@ static bool g_is_development_hardware, g_is_development_function_enabled;
 
 void Registration::Initialize() {
     DoWithSmSession([&]() {
-        if (R_FAILED(splInitialize())) {
-            std::abort();
-        }
+        R_ASSERT(splInitialize());
     });
     ON_SCOPE_EXIT { splExit(); };
 
-    if (R_FAILED(splIsDevelopment(&g_is_development_hardware))) {
-        std::abort();
-    }
+    R_ASSERT(splIsDevelopment(&g_is_development_hardware));
 
     {
         u64 out_val = 0;
-        if (R_FAILED(splGetConfig(SplConfigItem_IsDebugMode, &out_val))) {
-            std::abort();
-        }
+        R_ASSERT(splGetConfig(SplConfigItem_IsDebugMode, &out_val));
         g_is_development_function_enabled = out_val != 0;
     }
 }

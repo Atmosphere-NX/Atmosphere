@@ -36,9 +36,7 @@ class MappedCodeMemory {
 
         ~MappedCodeMemory() {
             if (this->process_handle != INVALID_HANDLE && this->size > 0 && R_SUCCEEDED(this->result)) {
-                if (R_FAILED((this->result = svcUnmapProcessCodeMemory(this->process_handle, this->dst_address, this->src_address, this->size)))) {
-                    std::abort();
-                }
+                R_ASSERT((this->result = svcUnmapProcessCodeMemory(this->process_handle, this->dst_address, this->src_address, this->size)));
             }
         }
 
@@ -86,9 +84,7 @@ class AutoCloseMap {
 
         ~AutoCloseMap() {
             if (this->process_handle != INVALID_HANDLE && R_SUCCEEDED(this->result)) {
-                if (R_FAILED((this->result = svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size)))) {
-                    std::abort();
-                }
+                R_ASSERT((this->result = svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size)));
             }
         }
 
