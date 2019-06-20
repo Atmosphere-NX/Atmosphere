@@ -72,6 +72,7 @@ void __appInit(void) {
         R_ASSERT(lrInitialize());
         R_ASSERT(setInitialize());
         R_ASSERT(setsysInitialize());
+        R_ASSERT(hidInitialize());
         R_ASSERT(fsInitialize());
     });
 
