@@ -22,10 +22,10 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "sm_manager_service.hpp"
+#include "sm_service_manager.hpp"
 #include "sm_user_service.hpp"
+#include "sm_manager_service.hpp"
 #include "sm_dmnt_service.hpp"
-#include "sm_registration.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -75,31 +75,28 @@ void __appExit(void) {
     /* Nothing to clean up, because we're sm. */
 }
 
-
-
-
 int main(int argc, char **argv)
 {
-    consoleDebugInit(debugDevice_SVC);
+    /* Initialize service manager. */
+    sts::sm::InitializeRegistrationLists();
 
     /* TODO: What's a good timeout value to use here? */
     static auto s_server_manager = WaitableManager(1);
 
     /* Create sm:, (and thus allow things to register to it). */
-    s_server_manager.AddWaitable(new ManagedPortServer<UserService>("sm:", 0x40));
+    s_server_manager.AddWaitable(new ManagedPortServer<sts::sm::UserService>("sm:", 0x40));
 
     /* Create sm:m manually. */
     Handle smm_h;
-    R_ASSERT(Registration::RegisterServiceForSelf(smEncodeName("sm:m"), 1, false, &smm_h));
-
-    s_server_manager.AddWaitable(new ExistingPortServer<ManagerService>(smm_h, 1));
+    R_ASSERT(sts::sm::RegisterServiceForSelf(&smm_h, sts::sm::ServiceName::Encode("sm:m"), 1));
+    s_server_manager.AddWaitable(new ExistingPortServer<sts::sm::ManagerService>(smm_h, 1));
 
     /*===== ATMOSPHERE EXTENSION =====*/
     /* Create sm:dmnt manually. */
     Handle smdmnt_h;
-    R_ASSERT(Registration::RegisterServiceForSelf(smEncodeName("sm:dmnt"), 1, false, &smdmnt_h));
+    R_ASSERT(sts::sm::RegisterServiceForSelf(&smdmnt_h, sts::sm::ServiceName::Encode("sm:dmnt"), 1));
+    s_server_manager.AddWaitable(new ExistingPortServer<sts::sm::DmntService>(smm_h, 1));;
 
-    s_server_manager.AddWaitable(new ExistingPortServer<DmntService>(smm_h, 1));;
     /*================================*/
 
     /* Loop forever, servicing our services. */
@@ -108,4 +105,3 @@ int main(int argc, char **argv)
     /* Cleanup. */
 	return 0;
 }
-

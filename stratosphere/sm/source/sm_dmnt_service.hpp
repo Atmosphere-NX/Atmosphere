@@ -19,22 +19,28 @@
 #include <stratosphere.hpp>
 #include "sm_types.hpp"
 
-enum DmntServiceCmd {
-    Dmnt_Cmd_AtmosphereGetRecord = 65000,
-    Dmnt_Cmd_AtmosphereListRecords = 65001,
-    Dmnt_Cmd_AtmosphereGetRecordSize = 65002,
-};
+namespace sts { namespace sm {
 
-class DmntService final : public IServiceObject {
-    private:
-        /* Actual commands. */
-        virtual Result AtmosphereGetRecord(Out<SmServiceRecord> record, SmServiceName service);
-        virtual void AtmosphereListRecords(OutBuffer<SmServiceRecord> records, Out<u64> out_count, u64 offset);
-        virtual void AtmosphereGetRecordSize(Out<u64> record_size);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetRecord, &DmntService::AtmosphereGetRecord>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereListRecords, &DmntService::AtmosphereListRecords>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetRecordSize, &DmntService::AtmosphereGetRecordSize>(),
-        };
-};
+    /* Command IDs. */
+    enum DmntServiceCmd {
+        Dmnt_Cmd_AtmosphereGetRecord = 65000,
+        Dmnt_Cmd_AtmosphereListRecords = 65001,
+        Dmnt_Cmd_AtmosphereGetRecordSize = 65002,
+    };
+
+    /* Service definition. */
+    class DmntService final : public IServiceObject {
+        private:
+            /* Actual commands. */
+            virtual Result AtmosphereGetRecord(Out<ServiceRecord> record, ServiceName service);
+            virtual void AtmosphereListRecords(OutBuffer<ServiceRecord> records, Out<u64> out_count, u64 offset);
+            virtual void AtmosphereGetRecordSize(Out<u64> record_size);
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetRecord, &DmntService::AtmosphereGetRecord>(),
+                MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereListRecords, &DmntService::AtmosphereListRecords>(),
+                MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetRecordSize, &DmntService::AtmosphereGetRecordSize>(),
+            };
+    };
+
+}}

@@ -16,18 +16,22 @@
 
 #include <switch.h>
 #include <stratosphere.hpp>
+
 #include "sm_dmnt_service.hpp"
-#include "sm_registration.hpp"
+#include "sm_service_manager.hpp"
 
-Result DmntService::AtmosphereGetRecord(Out<SmServiceRecord> record, SmServiceName service) {
-    return Registration::GetServiceRecord(smEncodeName(service.name), record.GetPointer());
-}
+namespace sts { namespace sm {
 
-void DmntService::AtmosphereListRecords(OutBuffer<SmServiceRecord> records, Out<u64> out_count, u64 offset) {
-    Registration::ListServiceRecords(offset, records.num_elements, records.buffer, out_count.GetPointer());
-}
+    Result DmntService::AtmosphereGetRecord(Out<ServiceRecord> record, ServiceName service) {
+        return sm::GetServiceRecord(record.GetPointer(), service);
+    }
 
-void DmntService::AtmosphereGetRecordSize(Out<u64> record_size) {
-    record_size.SetValue(sizeof(SmServiceRecord));
-}
+    void DmntService::AtmosphereListRecords(OutBuffer<ServiceRecord> records, Out<u64> out_count, u64 offset) {
+        R_ASSERT(sm::ListServiceRecords(records.buffer, out_count.GetPointer(), offset, records.num_elements));
+    }
 
+    void DmntService::AtmosphereGetRecordSize(Out<u64> record_size) {
+        record_size.SetValue(sizeof(ServiceRecord));
+    }
+
+}}
