@@ -164,7 +164,7 @@ int emudev_mount_device_multipart(const char *name, const device_partition_t *de
     }
     
     /* Invalid number of parts. */
-    if (num_parts <= 1) {
+    if (num_parts < 1) {
         errno = EINVAL;
         return -1;
     }
