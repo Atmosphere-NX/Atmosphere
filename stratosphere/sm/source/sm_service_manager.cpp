@@ -48,7 +48,7 @@ namespace sts::sm {
         struct ServiceInfo {
             ServiceName name;
             u64 owner_pid;
-            Handle port_h;
+            AutoHandle port_h;
 
             /* Debug. */
             u64 max_sessions;
@@ -56,13 +56,13 @@ namespace sts::sm {
 
             /* Mitm Extension. */
             u64 mitm_pid;
-            Handle mitm_port_h;
-            Handle mitm_query_h;
+            AutoHandle mitm_port_h;
+            AutoHandle mitm_query_h;
 
             /* Acknowledgement members. */
             bool mitm_waiting_ack;
             u64 mitm_waiting_ack_pid;
-            Handle mitm_fwd_sess_h;
+            AutoHandle mitm_fwd_sess_h;
 
             ServiceInfo() {
                 this->Free();
@@ -70,52 +70,36 @@ namespace sts::sm {
 
             void Free() {
                 /* Close any open handles. */
-                if (this->port_h != INVALID_HANDLE) {
-                    svcCloseHandle(this->port_h);
-                }
-                if (this->mitm_port_h != INVALID_HANDLE) {
-                    svcCloseHandle(this->mitm_port_h);
-                }
-                if (this->mitm_query_h != INVALID_HANDLE) {
-                    svcCloseHandle(this->mitm_query_h);
-                }
+                this->port_h.Clear();
+                this->mitm_port_h.Clear();
+                this->mitm_query_h.Clear();
+                this->mitm_fwd_sess_h.Clear();
 
-                /* Reset all members. */
+                /* Reset all other members. */
                 this->name = InvalidServiceName;
                 this->owner_pid = InvalidProcessId;
-                this->port_h = INVALID_HANDLE;
                 this->max_sessions = 0;
                 this->is_light = false;
                 this->mitm_pid = InvalidProcessId;
-                this->mitm_port_h = INVALID_HANDLE;
-                this->mitm_query_h = INVALID_HANDLE;
                 this->mitm_waiting_ack = false;
                 this->mitm_waiting_ack_pid = InvalidProcessId;
-                this->mitm_fwd_sess_h = INVALID_HANDLE;
             }
 
             void FreeMitm() {
                 /* Close mitm handles. */
-                if (this->mitm_port_h != INVALID_HANDLE) {
-                    svcCloseHandle(this->mitm_port_h);
-                }
-                if (this->mitm_query_h != INVALID_HANDLE) {
-                    svcCloseHandle(this->mitm_query_h);
-                }
+                this->mitm_port_h.Clear();
+                this->mitm_query_h.Clear();
 
                 /* Reset mitm members. */
                 this->mitm_pid = InvalidProcessId;
-                this->mitm_port_h = INVALID_HANDLE;
-                this->mitm_query_h = INVALID_HANDLE;
             }
 
             void AcknowledgeMitmSession(u64 *out_pid, Handle *out_hnd) {
                 /* Copy to output. */
                 *out_pid = this->mitm_waiting_ack_pid;
-                *out_hnd = this->mitm_fwd_sess_h;
+                *out_hnd = this->mitm_fwd_sess_h.Move();
                 this->mitm_waiting_ack = false;
                 this->mitm_waiting_ack_pid = InvalidProcessId;
-                this->mitm_fwd_sess_h = INVALID_HANDLE;
             }
         };
 
@@ -340,7 +324,7 @@ namespace sts::sm {
                 info->magic = SFCI_MAGIC;
                 info->cmd_id = 65000;
                 info->pid = pid;
-                R_TRY(ipcDispatch(service_info->mitm_query_h));
+                R_TRY(ipcDispatch(service_info->mitm_query_h.Get()));
             }
 
             /* Parse response to see if we should mitm. */
@@ -360,15 +344,17 @@ namespace sts::sm {
 
             /* If we shouldn't mitm, give normal session. */
             if (!should_mitm) {
-                return svcConnectToPort(out, service_info->port_h);
+                return svcConnectToPort(out, service_info->port_h.Get());
             }
 
-            /* Create both handles. If the second fails, close the first to prevent leak. */
-            R_TRY(svcConnectToPort(&service_info->mitm_fwd_sess_h, service_info->port_h));
-            R_TRY_CLEANUP(svcConnectToPort(out, service_info->mitm_port_h), {
-                svcCloseHandle(service_info->mitm_fwd_sess_h);
-                service_info->mitm_fwd_sess_h = 0;
-            });
+            /* Create both handles. */
+            {
+                AutoHandle fwd_hnd, hnd;
+                R_TRY(svcConnectToPort(fwd_hnd.GetPointer(), service_info->port_h.Get()));
+                R_TRY(svcConnectToPort(hnd.GetPointer(), service_info->mitm_port_h.Get()));
+                service_info->mitm_fwd_sess_h = std::move(fwd_hnd);
+                *out = hnd.Move();
+            }
 
             service_info->mitm_waiting_ack_pid = pid;
             service_info->mitm_waiting_ack = true;
@@ -382,7 +368,7 @@ namespace sts::sm {
 
             /* If not mitm'd or mitm service is requesting, get normal session. */
             if (!IsValidProcessId(service_info->mitm_pid) || service_info->mitm_pid == pid) {
-                return svcConnectToPort(out, service_info->port_h);
+                return svcConnectToPort(out, service_info->port_h.Get());
             }
 
             /* We're mitm'd. Assert, because mitm service host dead is an error state. */
@@ -413,8 +399,8 @@ namespace sts::sm {
             }
 
             /* Create the new service. */
-            *out = 0;
-            R_TRY(svcCreatePort(out, &free_service->port_h, max_sessions, is_light, free_service->name.name));
+            *out = INVALID_HANDLE;
+            R_TRY(svcCreatePort(out, free_service->port_h.GetPointerAndClear(), max_sessions, is_light, free_service->name.name));
 
             /* Save info. */
             free_service->name = service;
@@ -482,7 +468,7 @@ namespace sts::sm {
             return ResultSmNotAllowed;
         }
 
-        /* Check that the process is registered and allowed to register the service. */
+        /* Check that the process is registered and allowed to get the service. */
         if (!IsInitialProcess(pid)) {
             ProcessInfo *proc = GetProcessInfo(pid);
             if (proc == nullptr) {
@@ -605,20 +591,19 @@ namespace sts::sm {
         *out_query = INVALID_HANDLE;
 
         /* Create mitm handles. */
-        Handle hnd = 0;
-        Handle qry_hnd = 0;
-        u64 x = 0;
-        R_TRY(svcCreatePort(&hnd, &service_info->mitm_port_h, service_info->max_sessions, service_info->is_light, reinterpret_cast<char *>(&x)));
-        R_TRY_CLEANUP(svcCreateSession(&qry_hnd, &service_info->mitm_query_h, 0, 0), {
-            svcCloseHandle(hnd);
-            svcCloseHandle(service_info->mitm_port_h);
-            service_info->mitm_port_h = 0;
-        });
-        service_info->mitm_pid = pid;
+        {
+            AutoHandle hnd, port_hnd, qry_hnd, mitm_qry_hnd;
+            u64 x = 0;
+            R_TRY(svcCreatePort(hnd.GetPointer(), port_hnd.GetPointer(), service_info->max_sessions, service_info->is_light, reinterpret_cast<char *>(&x)));
+            R_TRY(svcCreateSession(qry_hnd.GetPointer(), mitm_qry_hnd.GetPointer(), 0, 0));
 
-        /* Set output. */
-        *out = hnd;
-        *out_query = qry_hnd;
+            /* Copy to output. */
+            service_info->mitm_pid = pid;
+            service_info->mitm_port_h = std::move(port_hnd);
+            service_info->mitm_query_h = std::move(mitm_qry_hnd);
+            *out = hnd.Move();
+            *out_query = qry_hnd.Move();
+        }
 
         return ResultSuccess;
     }
@@ -696,7 +681,7 @@ namespace sts::sm {
                 info->cmd_id = 65001;
                 info->pid = pid;
                 info->tid = tid;
-                ipcDispatch(service_info->mitm_query_h);
+                ipcDispatch(service_info->mitm_query_h.Get());
             }
         }
         return ResultSuccess;
