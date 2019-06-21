@@ -21,17 +21,17 @@
 
 namespace sts::sm {
 
-    /* Command IDs. */
-    enum ManagerServiceCmd {
-        Manager_Cmd_RegisterProcess = 0,
-        Manager_Cmd_UnregisterProcess = 1,
-
-        Manager_Cmd_AtmosphereEndInitDefers = 65000,
-        Manager_Cmd_AtmosphereHasMitm = 65001,
-    };
-
     /* Service definition. */
     class ManagerService final : public IServiceObject {
+        protected:
+            /* Command IDs. */
+            enum class CommandId {
+                RegisterProcess         = 0,
+                UnregisterProcess       = 1,
+
+                AtmosphereEndInitDefers = 65000,
+                AtmosphereHasMitm       = 65001,
+            };
         private:
             /* Actual commands. */
             virtual Result RegisterProcess(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac);
@@ -40,11 +40,11 @@ namespace sts::sm {
             virtual void AtmosphereHasMitm(Out<bool> out, ServiceName service);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MakeServiceCommandMeta<Manager_Cmd_RegisterProcess, &ManagerService::RegisterProcess>(),
-                MakeServiceCommandMeta<Manager_Cmd_UnregisterProcess, &ManagerService::UnregisterProcess>(),
+                MakeServiceCommandMeta<CommandId::RegisterProcess, &ManagerService::RegisterProcess>(),
+                MakeServiceCommandMeta<CommandId::UnregisterProcess, &ManagerService::UnregisterProcess>(),
 
-                MakeServiceCommandMeta<Manager_Cmd_AtmosphereEndInitDefers, &ManagerService::AtmosphereEndInitDefers>(),
-                MakeServiceCommandMeta<Manager_Cmd_AtmosphereHasMitm, &ManagerService::AtmosphereHasMitm>(),
+                MakeServiceCommandMeta<CommandId::AtmosphereEndInitDefers, &ManagerService::AtmosphereEndInitDefers>(),
+                MakeServiceCommandMeta<CommandId::AtmosphereHasMitm, &ManagerService::AtmosphereHasMitm>(),
             };
     };
 

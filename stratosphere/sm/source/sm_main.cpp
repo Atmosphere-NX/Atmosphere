@@ -77,10 +77,7 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
-    /* Initialize service manager. */
-    sts::sm::InitializeRegistrationLists();
-
-    /* TODO: What's a good timeout value to use here? */
+    /* Create service waitable manager. */
     static auto s_server_manager = WaitableManager(1);
 
     /* Create sm:, (and thus allow things to register to it). */

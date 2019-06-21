@@ -33,6 +33,16 @@ namespace sts::sm {
             u64 pid;
             size_t access_control_size;
             u8 access_control[AccessControlSizeMax];
+
+            ProcessInfo() {
+                this->Free();
+            }
+
+            void Free() {
+                this->pid = InvalidProcessId;
+                this->access_control_size = 0;
+                std::memset(this->access_control, 0, sizeof(this->access_control));
+            }
         };
 
         struct ServiceInfo {
@@ -53,19 +63,73 @@ namespace sts::sm {
             bool mitm_waiting_ack;
             u64 mitm_waiting_ack_pid;
             Handle mitm_fwd_sess_h;
+
+            ServiceInfo() {
+                this->Free();
+            }
+
+            void Free() {
+                /* Close any open handles. */
+                if (this->port_h != INVALID_HANDLE) {
+                    svcCloseHandle(this->port_h);
+                }
+                if (this->mitm_port_h != INVALID_HANDLE) {
+                    svcCloseHandle(this->mitm_port_h);
+                }
+                if (this->mitm_query_h != INVALID_HANDLE) {
+                    svcCloseHandle(this->mitm_query_h);
+                }
+
+                /* Reset all members. */
+                this->name = InvalidServiceName;
+                this->owner_pid = InvalidProcessId;
+                this->port_h = INVALID_HANDLE;
+                this->max_sessions = 0;
+                this->is_light = false;
+                this->mitm_pid = InvalidProcessId;
+                this->mitm_port_h = INVALID_HANDLE;
+                this->mitm_query_h = INVALID_HANDLE;
+                this->mitm_waiting_ack = false;
+                this->mitm_waiting_ack_pid = InvalidProcessId;
+                this->mitm_fwd_sess_h = INVALID_HANDLE;
+            }
+
+            void FreeMitm() {
+                /* Close mitm handles. */
+                if (this->mitm_port_h != INVALID_HANDLE) {
+                    svcCloseHandle(this->mitm_port_h);
+                }
+                if (this->mitm_query_h != INVALID_HANDLE) {
+                    svcCloseHandle(this->mitm_query_h);
+                }
+
+                /* Reset mitm members. */
+                this->mitm_pid = InvalidProcessId;
+                this->mitm_port_h = INVALID_HANDLE;
+                this->mitm_query_h = INVALID_HANDLE;
+            }
+
+            void AcknowledgeMitmSession(u64 *out_pid, Handle *out_hnd) {
+                /* Copy to output. */
+                *out_pid = this->mitm_waiting_ack_pid;
+                *out_hnd = this->mitm_fwd_sess_h;
+                this->mitm_waiting_ack = false;
+                this->mitm_waiting_ack_pid = InvalidProcessId;
+                this->mitm_fwd_sess_h = INVALID_HANDLE;
+            }
         };
 
         class AccessControlEntry {
             private:
                 const u8 *entry;
-                size_t size;
+                size_t capacity;
             public:
-                AccessControlEntry(const void *e, size_t sz) : entry(reinterpret_cast<const u8 *>(e)), size(sz) {
+                AccessControlEntry(const void *e, size_t c) : entry(reinterpret_cast<const u8 *>(e)), capacity(c) {
                     /* ... */
                 }
 
                 AccessControlEntry GetNextEntry() const {
-                    return AccessControlEntry(this->entry + this->GetSize(), this->size - this->GetSize());
+                    return AccessControlEntry(this->entry + this->GetSize(), this->capacity - this->GetSize());
                 }
 
                 size_t GetSize() const {
@@ -90,12 +154,12 @@ namespace sts::sm {
 
                 bool IsValid() const {
                     /* Validate that we can access data. */
-                    if (this->entry == nullptr || this->size == 0) {
+                    if (this->entry == nullptr || this->capacity == 0) {
                         return false;
                     }
 
                     /* Validate that the size is correct. */
-                    return this->GetSize() <= this->size;
+                    return this->GetSize() <= this->capacity;
                 }
         };
 
@@ -109,11 +173,15 @@ namespace sts::sm {
             public:
                 InitialProcessIdLimits() {
                     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
-                        /* On 5.0.0+, we can get precise limits from the kernel. */
+                        /* On 5.0.0+, we can get precise limits from svcGetSystemInfo. */
                         R_ASSERT(svcGetSystemInfo(&this->min, 2, 0, 0));
                         R_ASSERT(svcGetSystemInfo(&this->max, 2, 0, 1));
+                    } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
+                        /* On 4.0.0-4.1.0, we can get the precise limits from normal svcGetInfo. */
+                        R_ASSERT(svcGetInfo(&this->min, 19, 0, 0));
+                        R_ASSERT(svcGetInfo(&this->max, 19, 0, 1));
                     } else {
-                        /* On < 5.0.0, we just use hardcoded extents. */
+                        /* On < 4.0.0, we just use hardcoded extents. */
                         this->min = InitialProcessIdMin;
                         this->max = InitialProcessIdMax;
                     }
@@ -152,11 +220,6 @@ namespace sts::sm {
             return GetProcessInfo(InvalidProcessId);
         }
 
-        void FreeProcessInfo(ProcessInfo *process_info) {
-            std::memset(process_info, 0, sizeof(*process_info));
-            process_info->pid = InvalidProcessId;
-        }
-
         bool HasProcessInfo(u64 pid) {
             return GetProcessInfo(pid) != nullptr;
         }
@@ -174,6 +237,10 @@ namespace sts::sm {
             return GetServiceInfo(InvalidServiceName);
         }
 
+        bool HasServiceInfo(ServiceName service) {
+            return GetServiceInfo(service) != nullptr;
+        }
+
         void GetServiceInfoRecord(ServiceRecord *out_record, const ServiceInfo *service_info) {
             out_record->service              = service_info->name;
             out_record->owner_pid            = service_info->owner_pid;
@@ -182,26 +249,6 @@ namespace sts::sm {
             out_record->mitm_waiting_ack_pid = service_info->mitm_waiting_ack_pid;
             out_record->is_light             = service_info->is_light;
             out_record->mitm_waiting_ack     = service_info->mitm_waiting_ack;
-        }
-
-        void FreeServiceInfo(ServiceInfo *service_info) {
-            if (service_info->port_h != INVALID_HANDLE) {
-                svcCloseHandle(service_info->port_h);
-            }
-            if (service_info->mitm_port_h != INVALID_HANDLE) {
-                svcCloseHandle(service_info->mitm_port_h);
-            }
-            if (service_info->mitm_query_h != INVALID_HANDLE) {
-                svcCloseHandle(service_info->mitm_query_h);
-            }
-            std::memset(service_info, 0, sizeof(*service_info));
-            service_info->owner_pid = InvalidProcessId;
-            service_info->mitm_pid = InvalidProcessId;
-            service_info->mitm_waiting_ack_pid = InvalidProcessId;
-        }
-
-        bool HasServiceInfo(ServiceName service) {
-            return GetServiceInfo(service) != nullptr;
         }
 
         Result ValidateAccessControl(AccessControlEntry access_control, ServiceName service, bool is_host, bool is_wildcard) {
@@ -244,12 +291,11 @@ namespace sts::sm {
             }
 
             /* Get name length. */
-            size_t name_len = 1;
-            while (name_len < sizeof(service)) {
+            size_t name_len;
+            for (name_len = 1; name_len < sizeof(service); name_len++) {
                 if (service.name[name_len] == 0) {
                     break;
                 }
-                name_len++;
             }
 
             /* Names must be all-zero after they end. */
@@ -332,19 +378,15 @@ namespace sts::sm {
 
         Result GetServiceHandleImpl(Handle *out, ServiceInfo *service_info, u64 pid) {
             /* Clear handle output. */
-            *out = 0;
+            *out = INVALID_HANDLE;
 
             /* If not mitm'd or mitm service is requesting, get normal session. */
             if (!IsValidProcessId(service_info->mitm_pid) || service_info->mitm_pid == pid) {
                 return svcConnectToPort(out, service_info->port_h);
             }
 
-            /* We're mitm'd. */
-            if (R_FAILED(GetMitmServiceHandleImpl(out, service_info, pid))) {
-                /* If the Mitm service is dead, just give a normal session. */
-                return svcConnectToPort(out, service_info->port_h);
-            }
-
+            /* We're mitm'd. Assert, because mitm service host dead is an error state. */
+            R_ASSERT(GetMitmServiceHandleImpl(out, service_info, pid));
             return ResultSuccess;
         }
 
@@ -384,18 +426,6 @@ namespace sts::sm {
         }
     }
 
-    /* Initialization. */
-    void InitializeRegistrationLists() {
-        /* Free all services. */
-        for (size_t i = 0; i < ServiceCountMax; i++) {
-            FreeServiceInfo(&g_service_list[i]);
-        }
-        /* Free all processes. */
-        for (size_t i = 0; i < ProcessCountMax; i++) {
-            FreeProcessInfo(&g_process_list[i]);
-        }
-    }
-
     /* Process management. */
     Result RegisterProcess(u64 pid, const void *acid_sac, size_t acid_sac_size, const void *aci0_sac, size_t aci0_sac_size) {
         /* Check that access control will fit in the ServiceInfo. */
@@ -429,7 +459,7 @@ namespace sts::sm {
             return ResultSmInvalidClient;
         }
 
-        FreeProcessInfo(proc);
+        proc->Free();
         return ResultSuccess;
     }
 
@@ -530,7 +560,7 @@ namespace sts::sm {
         }
 
         /* Unregister the service. */
-        FreeServiceInfo(service_info);
+        service_info->Free();
         return ResultSuccess;
     }
 
@@ -571,8 +601,8 @@ namespace sts::sm {
         }
 
         /* Always clear output. */
-        *out = 0;
-        *out_query = 0;
+        *out = INVALID_HANDLE;
+        *out_query = INVALID_HANDLE;
 
         /* Create mitm handles. */
         Handle hnd = 0;
@@ -617,9 +647,7 @@ namespace sts::sm {
         }
 
         /* Free Mitm session info. */
-        svcCloseHandle(service_info->mitm_port_h);
-        svcCloseHandle(service_info->mitm_query_h);
-        service_info->mitm_pid = InvalidProcessId;
+        service_info->FreeMitm();
         return ResultSuccess;
     }
 
@@ -646,14 +674,8 @@ namespace sts::sm {
             return ResultSmNotAllowed;
         }
 
-        /* Copy to output. */
-        *out_pid = service_info->mitm_waiting_ack_pid;
-        *out_hnd = service_info->mitm_fwd_sess_h;
-
-        /* Clear pending acknowledgement. */
-        service_info->mitm_fwd_sess_h = 0;
-        service_info->mitm_waiting_ack_pid = 0;
-        service_info->mitm_waiting_ack = false;
+        /* Acknowledge. */
+        service_info->AcknowledgeMitmSession(out_pid, out_hnd);
         return ResultSuccess;
     }
 

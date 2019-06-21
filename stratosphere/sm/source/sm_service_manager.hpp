@@ -20,9 +20,6 @@
 
 namespace sts::sm {
 
-    /* Initialization. */
-    void InitializeRegistrationLists();
-
     /* Process management. */
     Result RegisterProcess(u64 pid, const void *acid_sac, size_t acid_sac_size, const void *aci0_sac, size_t aci0_sac_size);
     Result UnregisterProcess(u64 pid);

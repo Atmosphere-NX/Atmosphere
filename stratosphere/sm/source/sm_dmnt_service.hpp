@@ -21,15 +21,15 @@
 
 namespace sts::sm {
 
-    /* Command IDs. */
-    enum DmntServiceCmd {
-        Dmnt_Cmd_AtmosphereGetRecord = 65000,
-        Dmnt_Cmd_AtmosphereListRecords = 65001,
-        Dmnt_Cmd_AtmosphereGetRecordSize = 65002,
-    };
-
     /* Service definition. */
     class DmntService final : public IServiceObject {
+        protected:
+            /* Command IDs. */
+            enum class CommandId {
+                AtmosphereGetRecord     = 65000,
+                AtmosphereListRecords   = 65001,
+                AtmosphereGetRecordSize = 65002,
+            };
         private:
             /* Actual commands. */
             virtual Result AtmosphereGetRecord(Out<ServiceRecord> record, ServiceName service);
@@ -37,9 +37,9 @@ namespace sts::sm {
             virtual void AtmosphereGetRecordSize(Out<u64> record_size);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetRecord, &DmntService::AtmosphereGetRecord>(),
-                MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereListRecords, &DmntService::AtmosphereListRecords>(),
-                MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetRecordSize, &DmntService::AtmosphereGetRecordSize>(),
+                MakeServiceCommandMeta<CommandId::AtmosphereGetRecord, &DmntService::AtmosphereGetRecord>(),
+                MakeServiceCommandMeta<CommandId::AtmosphereListRecords, &DmntService::AtmosphereListRecords>(),
+                MakeServiceCommandMeta<CommandId::AtmosphereGetRecordSize, &DmntService::AtmosphereGetRecordSize>(),
             };
     };
 

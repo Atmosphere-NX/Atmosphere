@@ -21,21 +21,21 @@
 
 namespace sts::sm {
 
-    /* Command IDs. */
-    enum UserServiceCmd {
-        User_Cmd_Initialize = 0,
-        User_Cmd_GetService = 1,
-        User_Cmd_RegisterService = 2,
-        User_Cmd_UnregisterService = 3,
-
-        User_Cmd_AtmosphereInstallMitm = 65000,
-        User_Cmd_AtmosphereUninstallMitm = 65001,
-        User_Cmd_AtmosphereAssociatePidTidForMitm = 65002,
-        User_Cmd_AtmosphereAcknowledgeMitmSession = 65003,
-    };
-
     /* Service definition. */
     class UserService final : public IServiceObject {
+        protected:
+            /* Command IDs. */
+            enum class CommandId {
+                Initialize                       = 0,
+                GetService                       = 1,
+                RegisterService                  = 2,
+                UnregisterService                = 3,
+
+                AtmosphereInstallMitm            = 65000,
+                AtmosphereUninstallMitm          = 65001,
+                AtmosphereAssociatePidTidForMitm = 65002,
+                AtmosphereAcknowledgeMitmSession = 65003,
+            };
         private:
             u64 pid = InvalidProcessId;
             bool has_initialized = false;
@@ -55,15 +55,15 @@ namespace sts::sm {
             virtual Result AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<MovedHandle> fwd_h, ServiceName service);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MakeServiceCommandMeta<User_Cmd_Initialize, &UserService::Initialize>(),
-                MakeServiceCommandMeta<User_Cmd_GetService, &UserService::GetService>(),
-                MakeServiceCommandMeta<User_Cmd_RegisterService, &UserService::RegisterService>(),
-                MakeServiceCommandMeta<User_Cmd_UnregisterService, &UserService::UnregisterService>(),
+                MakeServiceCommandMeta<CommandId::Initialize, &UserService::Initialize>(),
+                MakeServiceCommandMeta<CommandId::GetService, &UserService::GetService>(),
+                MakeServiceCommandMeta<CommandId::RegisterService, &UserService::RegisterService>(),
+                MakeServiceCommandMeta<CommandId::UnregisterService, &UserService::UnregisterService>(),
 
-                MakeServiceCommandMeta<User_Cmd_AtmosphereInstallMitm, &UserService::AtmosphereInstallMitm>(),
-                MakeServiceCommandMeta<User_Cmd_AtmosphereUninstallMitm, &UserService::AtmosphereUninstallMitm>(),
-                MakeServiceCommandMeta<User_Cmd_AtmosphereAssociatePidTidForMitm, &UserService::AtmosphereAssociatePidTidForMitm>(),
-                MakeServiceCommandMeta<User_Cmd_AtmosphereAcknowledgeMitmSession, &UserService::AtmosphereAcknowledgeMitmSession>(),
+                MakeServiceCommandMeta<CommandId::AtmosphereInstallMitm, &UserService::AtmosphereInstallMitm>(),
+                MakeServiceCommandMeta<CommandId::AtmosphereUninstallMitm, &UserService::AtmosphereUninstallMitm>(),
+                MakeServiceCommandMeta<CommandId::AtmosphereAssociatePidTidForMitm, &UserService::AtmosphereAssociatePidTidForMitm>(),
+                MakeServiceCommandMeta<CommandId::AtmosphereAcknowledgeMitmSession, &UserService::AtmosphereAcknowledgeMitmSession>(),
             };
     };
 
