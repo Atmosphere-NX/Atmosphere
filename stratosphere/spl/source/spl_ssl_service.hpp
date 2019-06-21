@@ -21,41 +21,40 @@
 #include "spl_types.hpp"
 #include "spl_rsa_service.hpp"
 
-class SslService : public RsaService {
-    public:
-        SslService(SecureMonitorWrapper *sw) : RsaService(sw) {
-            /* ... */
-        }
+namespace sts::spl {
 
-        virtual ~SslService() {
-            /* ... */
-        }
-    protected:
-        /* Actual commands. */
-        virtual Result ImportSslKey(InPointer<u8> src, AccessKey access_key, KeySource key_source);
-        virtual Result SslExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMetaEx<Spl_Cmd_GetConfig, &SslService::GetConfig, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ExpMod, &SslService::ExpMod, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_SetConfig, &SslService::SetConfig, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateRandomBytes, &SslService::GenerateRandomBytes, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_IsDevelopment, &SslService::IsDevelopment, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_SetBootReason, &SslService::SetBootReason, SslService, FirmwareVersion_300>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GetBootReason, &SslService::GetBootReason, SslService, FirmwareVersion_300>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateAesKek, &SslService::GenerateAesKek, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_LoadAesKey, &SslService::LoadAesKey, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateAesKey, &SslService::GenerateAesKey, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptAesKey, &SslService::DecryptAesKey, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_CryptAesCtr, &SslService::CryptAesCtr, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ComputeCmac, &SslService::ComputeCmac, SslService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_AllocateAesKeyslot, &SslService::AllocateAesKeyslot, SslService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_FreeAesKeyslot, &SslService::FreeAesKeyslot, SslService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GetAesKeyslotAvailableEvent, &SslService::GetAesKeyslotAvailableEvent, SslService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &SslService::DecryptRsaPrivateKeyDeprecated, SslService, FirmwareVersion_400, FirmwareVersion_400>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &SslService::DecryptRsaPrivateKey, SslService, FirmwareVersion_500>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ImportSslKey, &SslService::ImportSslKey, SslService, FirmwareVersion_500>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_SslExpMod, &SslService::SslExpMod, SslService, FirmwareVersion_500>(),
+    class SslService : public RsaService {
+        public:
+            SslService() : RsaService() { /* ... */ }
+            virtual ~SslService() { /* ... */ }
+        protected:
+            /* Actual commands. */
+            virtual Result ImportSslKey(InPointer<u8> src, AccessKey access_key, KeySource key_source);
+            virtual Result SslExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod);
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MakeServiceCommandMetaEx<CommandId::GetConfig, &SslService::GetConfig, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::ExpMod, &SslService::ExpMod, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::SetConfig, &SslService::SetConfig, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateRandomBytes, &SslService::GenerateRandomBytes, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::IsDevelopment, &SslService::IsDevelopment, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::SetBootReason, &SslService::SetBootReason, SslService, FirmwareVersion_300>(),
+                MakeServiceCommandMetaEx<CommandId::GetBootReason, &SslService::GetBootReason, SslService, FirmwareVersion_300>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateAesKek, &SslService::GenerateAesKek, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::LoadAesKey, &SslService::LoadAesKey, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateAesKey, &SslService::GenerateAesKey, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptAesKey, &SslService::DecryptAesKey, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::CryptAesCtr, &SslService::CryptAesCtr, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::ComputeCmac, &SslService::ComputeCmac, SslService>(),
+                MakeServiceCommandMetaEx<CommandId::AllocateAesKeyslot, &SslService::AllocateAesKeyslot, SslService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::FreeAesKeyslot, &SslService::FreeAesKeyslot, SslService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::GetAesKeyslotAvailableEvent, &SslService::GetAesKeyslotAvailableEvent, SslService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptRsaPrivateKey, &SslService::DecryptRsaPrivateKeyDeprecated, SslService, FirmwareVersion_400, FirmwareVersion_400>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptRsaPrivateKey, &SslService::DecryptRsaPrivateKey, SslService, FirmwareVersion_500>(),
+                MakeServiceCommandMetaEx<CommandId::ImportSslKey, &SslService::ImportSslKey, SslService, FirmwareVersion_500>(),
+                MakeServiceCommandMetaEx<CommandId::SslExpMod, &SslService::SslExpMod, SslService, FirmwareVersion_500>(),
 
-        };
-};
+            };
+    };
+
+}

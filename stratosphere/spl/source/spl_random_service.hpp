@@ -19,22 +19,24 @@
 #include <stratosphere.hpp>
 
 #include "spl_types.hpp"
-#include "spl_secmon_wrapper.hpp"
 
-class RandomService final : public IServiceObject {
-    private:
-        SecureMonitorWrapper *secmon_wrapper;
-    public:
-        RandomService(SecureMonitorWrapper *sw) : secmon_wrapper(sw) {
-            /* ... */
-        }
+namespace sts::spl {
 
-        virtual ~RandomService() { /* ... */ }
-    private:
-        /* Actual commands. */
-        virtual Result GenerateRandomBytes(OutBuffer<u8> out);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<Csrng_Cmd_GenerateRandomBytes, &RandomService::GenerateRandomBytes>(),
-        };
-};
+    class RandomService final : public IServiceObject {
+        protected:
+            enum class CommandId {
+                GenerateRandomBytes = 0,
+            };
+        public:
+            RandomService() { /* ... */ }
+            virtual ~RandomService() { /* ... */ }
+        private:
+            /* Actual commands. */
+            virtual Result GenerateRandomBytes(OutBuffer<u8> out);
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MakeServiceCommandMeta<CommandId::GenerateRandomBytes, &RandomService::GenerateRandomBytes>(),
+            };
+    };
+
+}

@@ -21,45 +21,43 @@
 #include "spl_types.hpp"
 #include "spl_crypto_service.hpp"
 
-class FsService : public CryptoService {
-    public:
-        FsService(SecureMonitorWrapper *sw) : CryptoService(sw) {
-            /* ... */
-        }
+namespace sts::spl {
 
-        virtual ~FsService() {
-            /* ... */
-        }
-    protected:
-        /* Actual commands. */
-        virtual Result ImportLotusKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option);
-        virtual Result DecryptLotusMessage(Out<u32> out_size, OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest);
-        virtual Result GenerateSpecificAesKey(Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which);
-        virtual Result LoadTitleKey(u32 keyslot, AccessKey access_key);
-        virtual Result GetPackage2Hash(OutPointerWithClientSize<u8> dst);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMetaEx<Spl_Cmd_GetConfig, &FsService::GetConfig, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ExpMod, &FsService::ExpMod, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_SetConfig, &FsService::SetConfig, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateRandomBytes, &FsService::GenerateRandomBytes, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_IsDevelopment, &FsService::IsDevelopment, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_SetBootReason, &FsService::SetBootReason, FsService, FirmwareVersion_300>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GetBootReason, &FsService::GetBootReason, FsService, FirmwareVersion_300>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateAesKek, &FsService::GenerateAesKek, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_LoadAesKey, &FsService::LoadAesKey, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateAesKey, &FsService::GenerateAesKey, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptAesKey, &FsService::DecryptAesKey, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_CryptAesCtr, &FsService::CryptAesCtr, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ComputeCmac, &FsService::ComputeCmac, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_AllocateAesKeyslot, &FsService::AllocateAesKeyslot, FsService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_FreeAesKeyslot, &FsService::FreeAesKeyslot, FsService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GetAesKeyslotAvailableEvent, &FsService::GetAesKeyslotAvailableEvent, FsService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ImportLotusKey, &FsService::ImportLotusKey, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptLotusMessage, &FsService::DecryptLotusMessage, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateSpecificAesKey, &FsService::GenerateSpecificAesKey, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_LoadTitleKey, &FsService::LoadTitleKey, FsService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GetPackage2Hash, &FsService::GetPackage2Hash, FsService, FirmwareVersion_500>(),
+    class FsService : public CryptoService {
+        public:
+            FsService() : CryptoService() { /* ... */ }
+            virtual ~FsService() { /* ... */ }
+        protected:
+            /* Actual commands. */
+            virtual Result ImportLotusKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option);
+            virtual Result DecryptLotusMessage(Out<u32> out_size, OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest);
+            virtual Result GenerateSpecificAesKey(Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which);
+            virtual Result LoadTitleKey(u32 keyslot, AccessKey access_key);
+            virtual Result GetPackage2Hash(OutPointerWithClientSize<u8> dst);
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MakeServiceCommandMetaEx<CommandId::GetConfig, &FsService::GetConfig, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::ExpMod, &FsService::ExpMod, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::SetConfig, &FsService::SetConfig, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateRandomBytes, &FsService::GenerateRandomBytes, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::IsDevelopment, &FsService::IsDevelopment, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::SetBootReason, &FsService::SetBootReason, FsService, FirmwareVersion_300>(),
+                MakeServiceCommandMetaEx<CommandId::GetBootReason, &FsService::GetBootReason, FsService, FirmwareVersion_300>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateAesKek, &FsService::GenerateAesKek, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::LoadAesKey, &FsService::LoadAesKey, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateAesKey, &FsService::GenerateAesKey, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptAesKey, &FsService::DecryptAesKey, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::CryptAesCtr, &FsService::CryptAesCtr, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::ComputeCmac, &FsService::ComputeCmac, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::AllocateAesKeyslot, &FsService::AllocateAesKeyslot, FsService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::FreeAesKeyslot, &FsService::FreeAesKeyslot, FsService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::GetAesKeyslotAvailableEvent, &FsService::GetAesKeyslotAvailableEvent, FsService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::ImportLotusKey, &FsService::ImportLotusKey, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptLotusMessage, &FsService::DecryptLotusMessage, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateSpecificAesKey, &FsService::GenerateSpecificAesKey, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::LoadTitleKey, &FsService::LoadTitleKey, FsService>(),
+                MakeServiceCommandMetaEx<CommandId::GetPackage2Hash, &FsService::GetPackage2Hash, FsService, FirmwareVersion_500>(),
+            };
+    };
 
-        };
-};
+}
