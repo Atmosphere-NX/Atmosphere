@@ -20,7 +20,7 @@
 #include "sm_dmnt_service.hpp"
 #include "sm_service_manager.hpp"
 
-namespace sts { namespace sm {
+namespace sts::sm {
 
     Result DmntService::AtmosphereGetRecord(Out<ServiceRecord> record, ServiceName service) {
         return sm::GetServiceRecord(record.GetPointer(), service);
@@ -34,4 +34,4 @@ namespace sts { namespace sm {
         record_size.SetValue(sizeof(ServiceRecord));
     }
 
-}}
+}

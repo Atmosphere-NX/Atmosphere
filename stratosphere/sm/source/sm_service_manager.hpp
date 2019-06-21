@@ -18,7 +18,7 @@
 #include <switch.h>
 #include "sm_types.hpp"
 
-namespace sts { namespace sm {
+namespace sts::sm {
 
     /* Initialization. */
     void InitializeRegistrationLists();
@@ -48,4 +48,4 @@ namespace sts { namespace sm {
     /* Deferral extension (works around FS bug). */
     Result EndInitialDefers();
 
-}}
+}

@@ -19,7 +19,7 @@
 
 #include "sm_service_manager.hpp"
 
-namespace sts { namespace sm {
+namespace sts::sm {
 
     /* Anonymous namespace for implementation details. */
     namespace {
@@ -720,4 +720,4 @@ namespace sts { namespace sm {
         return ResultSuccess;
     }
 
-}}
+}

@@ -20,7 +20,7 @@
 #include "sm_manager_service.hpp"
 #include "sm_service_manager.hpp"
 
-namespace sts { namespace sm {
+namespace sts::sm {
 
     Result ManagerService::RegisterProcess(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac) {
         return sm::RegisterProcess(pid, acid_sac.buffer, acid_sac.num_elements, aci0_sac.buffer, aci0_sac.num_elements);
@@ -38,4 +38,4 @@ namespace sts { namespace sm {
         R_ASSERT(sm::HasMitm(out.GetPointer(), service));
     }
 
-}}
+}

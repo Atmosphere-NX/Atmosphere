@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include "sm_types.hpp"
 
-namespace sts { namespace sm {
+namespace sts::sm {
 
     /* Command IDs. */
     enum UserServiceCmd {
@@ -67,4 +67,4 @@ namespace sts { namespace sm {
             };
     };
 
-}}
+}

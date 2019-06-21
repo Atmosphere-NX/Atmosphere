@@ -17,7 +17,7 @@
 #pragma once
 #include <cstring>
 
-namespace sts { namespace sm {
+namespace sts::sm {
 
     struct ServiceName {
         static constexpr size_t MaxLength = 8;
@@ -68,4 +68,4 @@ namespace sts { namespace sm {
     /* For process validation. */
     static constexpr u64 InvalidProcessId = static_cast<u64>(-1ull);
 
-}}
+}

@@ -20,7 +20,7 @@
 #include "sm_user_service.hpp"
 #include "sm_service_manager.hpp"
 
-namespace sts { namespace sm {
+namespace sts::sm {
 
     Result UserService::Initialize(PidDescriptor pid) {
         this->pid = pid.pid;
@@ -70,4 +70,4 @@ namespace sts { namespace sm {
         return sm::AssociatePidTidForMitm(pid, tid);
     }
 
-}}
+}
