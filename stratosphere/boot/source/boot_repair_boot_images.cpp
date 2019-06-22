@@ -14,9 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stratosphere/spl.hpp>
+
 #include "boot_power_utils.hpp"
 #include "boot_repair_boot_images.hpp"
-#include "boot_spl_utils.hpp"
 
 #include "updater/updater_api.hpp"
 

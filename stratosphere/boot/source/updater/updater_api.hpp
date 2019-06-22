@@ -17,6 +17,7 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include <stratosphere/spl/spl_types.hpp>
 
 #include "updater_types.hpp"
 

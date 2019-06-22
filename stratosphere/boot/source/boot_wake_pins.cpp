@@ -14,8 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stratosphere/spl.hpp>
+
 #include "boot_pmc_wrapper.hpp"
-#include "boot_spl_utils.hpp"
 #include "boot_wake_pins.hpp"
 
 #include "boot_registers_pmc.hpp"

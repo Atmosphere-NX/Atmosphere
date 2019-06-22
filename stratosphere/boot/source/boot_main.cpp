@@ -22,6 +22,7 @@
 #include <switch.h>
 #include <atmosphere.h>
 #include <stratosphere.hpp>
+#include <stratosphere/spl.hpp>
 
 #include "boot_boot_reason.hpp"
 #include "boot_change_voltage.hpp"
@@ -37,7 +38,6 @@
 #include "pinmux/pinmux_initial_configuration.hpp"
 
 #include "boot_power_utils.hpp"
-#include "boot_spl_utils.hpp"
 
 using namespace sts;
 

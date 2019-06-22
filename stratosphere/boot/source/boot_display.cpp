@@ -15,11 +15,11 @@
  */
 
 #include <stratosphere/reg.hpp>
+#include <stratosphere/spl.hpp>
 
 #include "boot_display.hpp"
 #include "boot_i2c_utils.hpp"
 #include "boot_pmc_wrapper.hpp"
-#include "boot_spl_utils.hpp"
 
 #include "boot_registers_clkrst.hpp"
 #include "boot_registers_di.hpp"

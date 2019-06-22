@@ -14,11 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stratosphere/spl.hpp>
+
 #include "gpio_initial_configuration.hpp"
 #include "gpio_utils.hpp"
-
-/* TODO: Better way? */
-#include "../boot_spl_utils.hpp"
 
 namespace sts::gpio {
 

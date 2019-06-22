@@ -18,9 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-/* TODO: Better way to do this? */
-#include "../boot_spl_utils.hpp"
-
 namespace sts::updater {
 
     /* Types. */

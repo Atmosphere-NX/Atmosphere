@@ -22,6 +22,8 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "spl_api_impl.hpp"
+
 #include "spl_random_service.hpp"
 #include "spl_general_service.hpp"
 #include "spl_crypto_service.hpp"
@@ -31,8 +33,6 @@
 #include "spl_manu_service.hpp"
 
 #include "spl_deprecated_service.hpp"
-
-#include "spl_api.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -91,7 +91,7 @@ struct SplServerOptions {
 int main(int argc, char **argv)
 {
     /* Initialize global context. */
-    sts::spl::Initialize();
+    sts::spl::impl::Initialize();
 
     /* Create server manager. */
     static auto s_server_manager = WaitableManager<SplServerOptions>(1);

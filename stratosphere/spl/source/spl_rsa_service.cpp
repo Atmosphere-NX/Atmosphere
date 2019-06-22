@@ -17,17 +17,17 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "spl_api_impl.hpp"
 #include "spl_rsa_service.hpp"
-#include "spl_api.hpp"
 
 namespace sts::spl {
 
     Result RsaService::DecryptRsaPrivateKeyDeprecated(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
-        return spl::DecryptRsaPrivateKey(dst.pointer, dst.num_elements, src.pointer, src.num_elements, access_key, key_source, option);
+        return impl::DecryptRsaPrivateKey(dst.pointer, dst.num_elements, src.pointer, src.num_elements, access_key, key_source, option);
     }
 
     Result RsaService::DecryptRsaPrivateKey(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source) {
-        return spl::DecryptRsaPrivateKey(dst.pointer, dst.num_elements, src.pointer, src.num_elements, access_key, key_source, static_cast<u32>(smc::DecryptOrImportMode::DecryptRsaPrivateKey));
+        return impl::DecryptRsaPrivateKey(dst.pointer, dst.num_elements, src.pointer, src.num_elements, access_key, key_source, static_cast<u32>(smc::DecryptOrImportMode::DecryptRsaPrivateKey));
     }
 
 }

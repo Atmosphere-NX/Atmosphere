@@ -14,8 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stratosphere/spl.hpp>
+
 #include "boot_fan_enable.hpp"
-#include "boot_spl_utils.hpp"
 
 #include "gpio/gpio_utils.hpp"
 

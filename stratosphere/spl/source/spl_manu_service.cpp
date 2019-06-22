@@ -17,13 +17,13 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "spl_api_impl.hpp"
 #include "spl_manu_service.hpp"
-#include "spl_api.hpp"
 
 namespace sts::spl {
 
     Result ManuService::ReEncryptRsaPrivateKey(OutPointerWithClientSize<u8> out, InPointer<u8> src, AccessKey access_key_dec, KeySource source_dec, AccessKey access_key_enc, KeySource source_enc, u32 option) {
-        return spl::ReEncryptRsaPrivateKey(out.pointer, out.num_elements, src.pointer, src.num_elements, access_key_dec, source_dec, access_key_enc, source_enc, option);
+        return impl::ReEncryptRsaPrivateKey(out.pointer, out.num_elements, src.pointer, src.num_elements, access_key_dec, source_dec, access_key_enc, source_enc, option);
     }
 
 }

@@ -17,37 +17,37 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
+#include "spl_api_impl.hpp"
 #include "spl_general_service.hpp"
-#include "spl_api.hpp"
 
 namespace sts::spl {
 
     Result GeneralService::GetConfig(Out<u64> out, u32 which) {
-        return spl::GetConfig(out.GetPointer(), static_cast<SplConfigItem>(which));
+        return impl::GetConfig(out.GetPointer(), static_cast<SplConfigItem>(which));
     }
 
     Result GeneralService::ExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> exp, InPointer<u8> mod) {
-        return spl::ExpMod(out.pointer, out.num_elements, base.pointer, base.num_elements, exp.pointer, exp.num_elements, mod.pointer, mod.num_elements);
+        return impl::ExpMod(out.pointer, out.num_elements, base.pointer, base.num_elements, exp.pointer, exp.num_elements, mod.pointer, mod.num_elements);
     }
 
     Result GeneralService::SetConfig(u32 which, u64 value) {
-        return spl::SetConfig(static_cast<SplConfigItem>(which), value);
+        return impl::SetConfig(static_cast<SplConfigItem>(which), value);
     }
 
     Result GeneralService::GenerateRandomBytes(OutPointerWithClientSize<u8> out) {
-        return spl::GenerateRandomBytes(out.pointer, out.num_elements);
+        return impl::GenerateRandomBytes(out.pointer, out.num_elements);
     }
 
     Result GeneralService::IsDevelopment(Out<bool> is_dev) {
-        return spl::IsDevelopment(is_dev.GetPointer());
+        return impl::IsDevelopment(is_dev.GetPointer());
     }
 
     Result GeneralService::SetBootReason(BootReasonValue boot_reason) {
-        return spl::SetBootReason(boot_reason);
+        return impl::SetBootReason(boot_reason);
     }
 
     Result GeneralService::GetBootReason(Out<BootReasonValue> out) {
-        return spl::GetBootReason(out.GetPointer());
+        return impl::GetBootReason(out.GetPointer());
     }
 
 }

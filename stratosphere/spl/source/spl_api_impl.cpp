@@ -16,13 +16,13 @@
 
 #include <switch.h>
 #include <stratosphere.hpp>
+#include <stratosphere/spl.hpp>
 
-#include "spl_api.hpp"
-#include "spl_smc.hpp"
+#include "spl_api_impl.hpp"
 
 #include "spl_ctr_drbg.hpp"
 
-namespace sts::spl {
+namespace sts::spl::impl {
 
     namespace {
 
@@ -59,7 +59,7 @@ namespace sts::spl {
                 }
                 ~ScopedAesKeyslot() {
                     if (has_slot) {
-                        spl::FreeAesKeyslot(slot, this);
+                        FreeAesKeyslot(slot, this);
                     }
                 }
 
@@ -68,7 +68,7 @@ namespace sts::spl {
                 }
 
                 Result Allocate() {
-                    R_TRY(spl::AllocateAesKeyslot(&this->slot, this));
+                    R_TRY(AllocateAesKeyslot(&this->slot, this));
                     this->has_slot = true;
                     return ResultSuccess;
                 }
