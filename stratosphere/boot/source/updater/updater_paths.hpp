@@ -22,8 +22,10 @@
 
 namespace sts::updater {
 
-    /* Public API. */
-    BootImageUpdateType GetBootImageUpdateType(HardwareType hw_type);
-    Result VerifyBootImagesAndRepairIfNeeded(bool *out_repaired_normal, bool *out_repaired_safe, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
+    /* Path functionality. */
+    const char *GetBootImagePackageMountPath();
+    const char *GetBctPath(BootImageUpdateType boot_image_update_type);
+    const char *GetPackage1Path(BootImageUpdateType boot_image_update_type);
+    const char *GetPackage2Path(BootImageUpdateType boot_image_update_type);
 
 }

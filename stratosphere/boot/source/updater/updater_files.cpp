@@ -19,50 +19,54 @@
 
 #include "updater_api.hpp"
 
-Result Updater::ReadFile(size_t *out_size, void *dst, size_t dst_size, const char *path) {
-    FILE *fp = fopen(path, "rb");
-    if (fp == NULL) {
-        return ResultUpdaterInvalidBootImagePackage;
-    }
-    ON_SCOPE_EXIT { fclose(fp); };
+namespace sts::updater {
 
-    std::memset(dst, 0, dst_size);
-    size_t read_size = fread(dst, 1, dst_size, fp);
-    if (ferror(fp)) {
-        return fsdevGetLastResult();
-    }
-    *out_size = read_size;
-    return ResultSuccess;
-}
+    Result ReadFile(size_t *out_size, void *dst, size_t dst_size, const char *path) {
+        FILE *fp = fopen(path, "rb");
+        if (fp == NULL) {
+            return ResultUpdaterInvalidBootImagePackage;
+        }
+        ON_SCOPE_EXIT { fclose(fp); };
 
-Result Updater::GetFileHash(size_t *out_size, void *dst_hash, const char *path, void *work_buffer, size_t work_buffer_size) {
-    FILE *fp = fopen(path, "rb");
-    if (fp == NULL) {
-        return ResultUpdaterInvalidBootImagePackage;
-    }
-    ON_SCOPE_EXIT { fclose(fp); };
-
-    Sha256Context sha_ctx;
-    sha256ContextCreate(&sha_ctx);
-
-    size_t total_size = 0;
-    while (true) {
-        size_t read_size = fread(work_buffer, 1, work_buffer_size, fp);
+        std::memset(dst, 0, dst_size);
+        size_t read_size = fread(dst, 1, dst_size, fp);
         if (ferror(fp)) {
             return fsdevGetLastResult();
         }
-        if (read_size == 0) {
-            break;
-        }
-
-        sha256ContextUpdate(&sha_ctx, work_buffer, read_size);
-        total_size += read_size;
-        if (read_size != work_buffer_size) {
-            break;
-        }
+        *out_size = read_size;
+        return ResultSuccess;
     }
 
-    sha256ContextGetHash(&sha_ctx, dst_hash);
-    *out_size = total_size;
-    return ResultSuccess;
+    Result GetFileHash(size_t *out_size, void *dst_hash, const char *path, void *work_buffer, size_t work_buffer_size) {
+        FILE *fp = fopen(path, "rb");
+        if (fp == NULL) {
+            return ResultUpdaterInvalidBootImagePackage;
+        }
+        ON_SCOPE_EXIT { fclose(fp); };
+
+        Sha256Context sha_ctx;
+        sha256ContextCreate(&sha_ctx);
+
+        size_t total_size = 0;
+        while (true) {
+            size_t read_size = fread(work_buffer, 1, work_buffer_size, fp);
+            if (ferror(fp)) {
+                return fsdevGetLastResult();
+            }
+            if (read_size == 0) {
+                break;
+            }
+
+            sha256ContextUpdate(&sha_ctx, work_buffer, read_size);
+            total_size += read_size;
+            if (read_size != work_buffer_size) {
+                break;
+            }
+        }
+
+        sha256ContextGetHash(&sha_ctx, dst_hash);
+        *out_size = total_size;
+        return ResultSuccess;
+    }
+
 }

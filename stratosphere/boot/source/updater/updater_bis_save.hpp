@@ -21,22 +21,26 @@
 #include "updater_types.hpp"
 #include "updater_bis_management.hpp"
 
-class BisSave {
-    public:
-        static constexpr size_t SaveSize = BctSize;
-    private:
-        Boot0Accessor accessor;
-        void *save_buffer;
-    public:
-        BisSave() : save_buffer(nullptr) { }
-    private:
-        static size_t GetVerificationFlagOffset(BootModeType mode);
-    public:
-        Result Initialize(void *work_buffer, size_t work_buffer_size);
-        void Finalize();
+namespace sts::updater {
 
-        Result Load();
-        Result Save();
-        bool GetNeedsVerification(BootModeType mode);
-        void SetNeedsVerification(BootModeType mode, bool needs_verification);
-};
+    class BisSave {
+        public:
+            static constexpr size_t SaveSize = BctSize;
+        private:
+            Boot0Accessor accessor;
+            void *save_buffer;
+        public:
+            BisSave() : save_buffer(nullptr) { }
+        private:
+            static size_t GetVerificationFlagOffset(BootModeType mode);
+        public:
+            Result Initialize(void *work_buffer, size_t work_buffer_size);
+            void Finalize();
+
+            Result Load();
+            Result Save();
+            bool GetNeedsVerification(BootModeType mode);
+            void SetNeedsVerification(BootModeType mode, bool needs_verification);
+    };
+
+}

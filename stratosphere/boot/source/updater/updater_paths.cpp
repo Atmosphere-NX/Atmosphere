@@ -18,89 +18,102 @@
 #include <stratosphere.hpp>
 #include <sys/stat.h>
 
-#include "updater_api.hpp"
+#include "updater_paths.hpp"
 
-static const char *BootImagePackageMountPath = "bip";
-static const char *BctPathNx = "bip:/nx/bct";
-static const char *Package1PathNx = "bip:/nx/package1";
-static const char *Package2PathNx = "bip:/nx/package2";
-static const char *BctPathA = "bip:/a/bct";
-static const char *Package1PathA = "bip:/a/package1";
-static const char *Package2PathA = "bip:/a/package2";
+namespace sts::updater {
 
-const char *Updater::GetBootImagePackageMountPath() {
-    return BootImagePackageMountPath;
-}
+    namespace {
 
-static const char *ChooseCandidatePath(const char **candidates, size_t num_candidates) {
-    if (num_candidates == 0) {
-        std::abort();
-    }
+        /* Actual paths. */
+        constexpr const char *BootImagePackageMountPath = "bip";
+        constexpr const char *BctPathNx = "bip:/nx/bct";
+        constexpr const char *Package1PathNx = "bip:/nx/package1";
+        constexpr const char *Package2PathNx = "bip:/nx/package2";
+        constexpr const char *BctPathA = "bip:/a/bct";
+        constexpr const char *Package1PathA = "bip:/a/package1";
+        constexpr const char *Package2PathA = "bip:/a/package2";
 
-    for (size_t i = 0; i < num_candidates; i++) {
-        struct stat buf;
-        if (stat(candidates[i], &buf) != 0) {
-            continue;
+        const char *ChooseCandidatePath(const char * const *candidates, size_t num_candidates) {
+            if (num_candidates == 0) {
+                std::abort();
+            }
+
+            for (size_t i = 0; i < num_candidates; i++) {
+                struct stat buf;
+                if (stat(candidates[i], &buf) != 0) {
+                    continue;
+                }
+
+                if (!S_ISREG(buf.st_mode)) {
+                    continue;
+                }
+
+                return candidates[i];
+            }
+
+            /* Nintendo just uses the last candidate if they all fail...should we abort? */
+            return candidates[num_candidates - 1];
         }
 
-        if (!S_ISREG(buf.st_mode)) {
-            continue;
+    }
+
+    const char *GetBootImagePackageMountPath() {
+        return BootImagePackageMountPath;
+    }
+
+
+    const char *GetBctPath(BootImageUpdateType boot_image_update_type) {
+        switch (boot_image_update_type) {
+            case BootImageUpdateType::Erista:
+                {
+                    constexpr const char *candidates[] = {BctPathNx};
+                    return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
+                }
+            case BootImageUpdateType::Mariko:
+                {
+                    constexpr const char *candidates[] = {BctPathA, BctPathNx};
+                    return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
+                }
+            default:
+                std::abort();
         }
-
-        return candidates[i];
     }
 
-    /* Nintendo just uses the last candidate if they all fail...should we abort? */
-    return candidates[num_candidates - 1];
+    const char *GetPackage1Path(BootImageUpdateType boot_image_update_type) {
+        switch (boot_image_update_type) {
+            case BootImageUpdateType::Erista:
+                {
+                    constexpr const char *candidates[] = {Package1PathNx};
+                    return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
+                }
+            case BootImageUpdateType::Mariko:
+                {
+                    constexpr const char *candidates[] = {Package1PathA, Package1PathNx};
+                    return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
+                }
+            default:
+                std::abort();
+        }
+    }
+
+    const char *GetPackage2Path(BootImageUpdateType boot_image_update_type) {
+        switch (boot_image_update_type) {
+            case BootImageUpdateType::Erista:
+                {
+                    constexpr const char *candidates[] = {Package2PathNx};
+                    return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
+                }
+            case BootImageUpdateType::Mariko:
+                {
+                    constexpr const char *candidates[] = {Package2PathA, Package2PathNx};
+                    return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
+                }
+            default:
+                std::abort();
+        }
+    }
+
 }
 
-const char *Updater::GetBctPath(BootImageUpdateType boot_image_update_type) {
-    switch (boot_image_update_type) {
-        case BootImageUpdateType_Erista:
-            {
-                const char *candidates[] = {BctPathNx};
-                return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
-            }
-        case BootImageUpdateType_Mariko:
-            {
-                const char *candidates[] = {BctPathA, BctPathNx};
-                return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
-            }
-        default:
-            std::abort();
-    }
-}
 
-const char *Updater::GetPackage1Path(BootImageUpdateType boot_image_update_type) {
-    switch (boot_image_update_type) {
-        case BootImageUpdateType_Erista:
-            {
-                const char *candidates[] = {Package1PathNx};
-                return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
-            }
-        case BootImageUpdateType_Mariko:
-            {
-                const char *candidates[] = {Package1PathA, Package1PathNx};
-                return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
-            }
-        default:
-            std::abort();
-    }
-}
 
-const char *Updater::GetPackage2Path(BootImageUpdateType boot_image_update_type) {
-    switch (boot_image_update_type) {
-        case BootImageUpdateType_Erista:
-            {
-                const char *candidates[] = {Package2PathNx};
-                return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
-            }
-        case BootImageUpdateType_Mariko:
-            {
-                const char *candidates[] = {Package2PathA, Package2PathNx};
-                return ChooseCandidatePath(candidates, sizeof(candidates) / sizeof(candidates[0]));
-            }
-        default:
-            std::abort();
-    }
-}

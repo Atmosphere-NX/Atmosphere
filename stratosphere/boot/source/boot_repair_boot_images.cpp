@@ -20,10 +20,10 @@
 static u8 __attribute__((__aligned__(0x1000))) g_boot_image_work_buffer[0x10000];
 
 void Boot::CheckAndRepairBootImages() {
-    const BootImageUpdateType boot_image_update_type = Updater::GetBootImageUpdateType(Boot::GetHardwareType());
+    const auto boot_image_update_type = sts::updater::GetBootImageUpdateType(Boot::GetHardwareType());
 
     bool repaired_normal, repaired_safe;
-    if (R_SUCCEEDED(Updater::VerifyBootImagesAndRepairIfNeeded(&repaired_normal, &repaired_safe, g_boot_image_work_buffer, sizeof(g_boot_image_work_buffer), boot_image_update_type)) && repaired_normal) {
+    if (R_SUCCEEDED(sts::updater::VerifyBootImagesAndRepairIfNeeded(&repaired_normal, &repaired_safe, g_boot_image_work_buffer, sizeof(g_boot_image_work_buffer), boot_image_update_type)) && repaired_normal) {
         /* Nintendo only performs a reboot on successful normal repair. */
         Boot::RebootSystem();
     }

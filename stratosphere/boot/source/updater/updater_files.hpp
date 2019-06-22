@@ -22,8 +22,8 @@
 
 namespace sts::updater {
 
-    /* Public API. */
-    BootImageUpdateType GetBootImageUpdateType(HardwareType hw_type);
-    Result VerifyBootImagesAndRepairIfNeeded(bool *out_repaired_normal, bool *out_repaired_safe, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
+    /* File helpers. */
+    Result ReadFile(size_t *out_size, void *dst, size_t dst_size, const char *path);
+    Result GetFileHash(size_t *out_size, void *dst_hash, const char *path, void *work_buffer, size_t work_buffer_size);
 
 }

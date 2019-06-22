@@ -21,22 +21,28 @@
 /* TODO: Better way to do this? */
 #include "../boot_types.hpp"
 
-enum BootImageUpdateType {
-    BootImageUpdateType_Erista,
-    BootImageUpdateType_Mariko,
-};
+namespace sts::updater {
 
-enum BootModeType {
-    BootModeType_Normal,
-    BootModeType_Safe,
-};
+    /* Types. */
+    enum class BootImageUpdateType {
+        Erista,
+        Mariko,
+    };
 
-static constexpr size_t BctSize = 0x4000;
-static constexpr size_t EksSize = 0x4000;
-static constexpr size_t EksEntrySize = 0x200;
-static constexpr size_t EksBlobSize = 0xB0;
+    enum class BootModeType {
+        Normal,
+        Safe,
+    };
 
-struct VerificationState {
-    bool needs_verify_normal;
-    bool needs_verify_safe;
-};
+    struct VerificationState {
+        bool needs_verify_normal;
+        bool needs_verify_safe;
+    };
+
+    /* Convenience size definitions. */
+    constexpr size_t BctSize = 0x4000;
+    constexpr size_t EksSize = 0x4000;
+    constexpr size_t EksEntrySize = 0x200;
+    constexpr size_t EksBlobSize = 0xB0;
+
+}
