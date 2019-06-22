@@ -158,12 +158,12 @@ namespace sts::sm {
                 InitialProcessIdLimits() {
                     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
                         /* On 5.0.0+, we can get precise limits from svcGetSystemInfo. */
-                        R_ASSERT(svcGetSystemInfo(&this->min, 2, 0, 0));
-                        R_ASSERT(svcGetSystemInfo(&this->max, 2, 0, 1));
+                        R_ASSERT(svcGetSystemInfo(&this->min, SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
+                        R_ASSERT(svcGetSystemInfo(&this->max, SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
                     } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
                         /* On 4.0.0-4.1.0, we can get the precise limits from normal svcGetInfo. */
-                        R_ASSERT(svcGetInfo(&this->min, 19, 0, 0));
-                        R_ASSERT(svcGetInfo(&this->max, 19, 0, 1));
+                        R_ASSERT(svcGetInfo(&this->min, InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
+                        R_ASSERT(svcGetInfo(&this->max, InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
                     } else {
                         /* On < 4.0.0, we just use hardcoded extents. */
                         this->min = InitialProcessIdMin;
