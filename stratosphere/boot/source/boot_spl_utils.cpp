@@ -14,34 +14,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "boot_functions.hpp"
+#include "boot_spl_utils.hpp"
 
-HardwareType Boot::GetHardwareType() {
-    u64 out_val = 0;
-    if (R_FAILED(splGetConfig(SplConfigItem_HardwareType, &out_val))) {
-        std::abort();
-    }
-    return static_cast<HardwareType>(out_val);
-}
+namespace sts::boot {
 
-bool Boot::IsRecoveryBoot() {
-    u64 val = 0;
-    if (R_FAILED(splGetConfig(SplConfigItem_IsRecoveryBoot, &val))) {
-        std::abort();
+    spl::HardwareType GetHardwareType() {
+        u64 out_val = 0;
+        R_ASSERT(splGetConfig(SplConfigItem_HardwareType, &out_val));
+        return static_cast<spl::HardwareType>(out_val);
     }
-    return val != 0;
-}
 
-bool Boot::IsMariko() {
-    HardwareType hw_type = GetHardwareType();
-    switch (hw_type) {
-        case HardwareType_Icosa:
-        case HardwareType_Copper:
-            return false;
-        case HardwareType_Hoag:
-        case HardwareType_Iowa:
-            return true;
-        default:
-            std::abort();
+    bool IsRecoveryBoot() {
+        u64 val = 0;
+        R_ASSERT(splGetConfig(SplConfigItem_IsRecoveryBoot, &val));
+        return val != 0;
     }
+
+    bool IsMariko() {
+        const auto hw_type = GetHardwareType();
+        switch (hw_type) {
+            case spl::HardwareType::Icosa:
+            case spl::HardwareType::Copper:
+                return false;
+            case spl::HardwareType::Hoag:
+            case spl::HardwareType::Iowa:
+                return true;
+            default:
+                std::abort();
+        }
+    }
+
 }

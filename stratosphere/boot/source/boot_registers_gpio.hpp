@@ -17,8 +17,6 @@
 #pragma once
 #include <switch.h>
 
-#include "boot_types.hpp"
-
 static constexpr size_t GPIO_PORT3_CNF_0 = 0x200;
 static constexpr size_t GPIO_PORT3_OE_0  = 0x210;
 static constexpr size_t GPIO_PORT3_OUT_0 = 0x220;

@@ -14,69 +14,88 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "boot_functions.hpp"
-#include "boot_gpio_initial_configuration_icosa.hpp"
-#include "boot_gpio_initial_configuration_copper.hpp"
-#include "boot_gpio_initial_configuration_hoag.hpp"
-#include "boot_gpio_initial_configuration_iowa.hpp"
+#include "boot_gpio_initial_configuration.hpp"
+#include "boot_gpio_utils.hpp"
+#include "boot_spl_utils.hpp"
 
-void Boot::SetInitialGpioConfiguration() {
-    const GpioInitialConfig *configs = nullptr;
-    size_t num_configs = 0;
-    const HardwareType hw_type = Boot::GetHardwareType();
-    const FirmwareVersion fw_ver = GetRuntimeFirmwareVersion();
+namespace sts::boot::gpio {
 
-    /* Choose GPIO map. */
-    if (fw_ver >= FirmwareVersion_200) {
-        switch (hw_type) {
-            case HardwareType_Icosa:
-                {
-                    if (fw_ver >= FirmwareVersion_400) {
-                        configs = GpioInitialConfigsIcosa4x;
-                        num_configs = GpioNumInitialConfigsIcosa4x;
-                    } else {
-                        configs = GpioInitialConfigsIcosa;
-                        num_configs = GpioNumInitialConfigsIcosa;
+    namespace {
+
+        struct InitialConfig {
+            u32 pad_name;
+            GpioDirection direction;
+            GpioValue value;
+        };
+
+        /* Include all initial configuration definitions. */
+#include "boot_gpio_initial_configuration_icosa.inc"
+#include "boot_gpio_initial_configuration_copper.inc"
+#include "boot_gpio_initial_configuration_hoag.inc"
+#include "boot_gpio_initial_configuration_iowa.inc"
+
+    }
+
+    void SetInitialConfiguration() {
+        const InitialConfig *configs = nullptr;
+        size_t num_configs = 0;
+        const auto hw_type = GetHardwareType();
+        const FirmwareVersion fw_ver = GetRuntimeFirmwareVersion();
+
+        /* Choose GPIO map. */
+        if (fw_ver >= FirmwareVersion_200) {
+            switch (hw_type) {
+                case spl::HardwareType::Icosa:
+                    {
+                        if (fw_ver >= FirmwareVersion_400) {
+                            configs = InitialConfigsIcosa4x;
+                            num_configs = NumInitialConfigsIcosa4x;
+                        } else {
+                            configs = InitialConfigsIcosa;
+                            num_configs = NumInitialConfigsIcosa;
+                        }
                     }
-                }
-                break;
-            case HardwareType_Copper:
-                configs = GpioInitialConfigsCopper;
-                num_configs = GpioNumInitialConfigsCopper;
-                break;
-            case HardwareType_Hoag:
-                configs = GpioInitialConfigsHoag;
-                num_configs = GpioNumInitialConfigsHoag;
-                break;
-            case HardwareType_Iowa:
-                configs = GpioInitialConfigsIowa;
-                num_configs = GpioNumInitialConfigsIowa;
-                break;
-            default:
-                /* Unknown hardware type, we can't proceed. */
-                std::abort();
+                    break;
+                case spl::HardwareType::Copper:
+                    configs = InitialConfigsCopper;
+                    num_configs = NumInitialConfigsCopper;
+                    break;
+                case spl::HardwareType::Hoag:
+                    configs = InitialConfigsHoag;
+                    num_configs = NumInitialConfigsHoag;
+                    break;
+                case spl::HardwareType::Iowa:
+                    configs = InitialConfigsIowa;
+                    num_configs = NumInitialConfigsIowa;
+                    break;
+                default:
+                    /* Unknown hardware type, we can't proceed. */
+                    std::abort();
+            }
+        } else {
+            /* Until 2.0.0, the GPIO map for Icosa was used for all hardware types. */
+            configs = InitialConfigsIcosa;
+            num_configs = NumInitialConfigsIcosa;
         }
-    } else {
-        /* Until 2.0.0, the GPIO map for Icosa was used for all hardware types. */
-        configs = GpioInitialConfigsIcosa;
-        num_configs = GpioNumInitialConfigsIcosa;
-    }
 
-    /* Ensure we found an appropriate config. */
-    if (configs == nullptr) {
-        std::abort();
-    }
+        /* Ensure we found an appropriate config. */
+        if (configs == nullptr) {
+            std::abort();
+        }
 
-    for (size_t i = 0; i < num_configs; i++) {
-        /* Configure the GPIO. */
-        Boot::GpioConfigure(configs[i].pad_name);
+        for (size_t i = 0; i < num_configs; i++) {
+            /* Configure the GPIO. */
+            Configure(configs[i].pad_name);
 
-        /* Set the GPIO's direction. */
-        Boot::GpioSetDirection(configs[i].pad_name, configs[i].direction);
+            /* Set the GPIO's direction. */
+            SetDirection(configs[i].pad_name, configs[i].direction);
 
-        if (configs[i].direction == GpioDirection_Output) {
-            /* Set the GPIO's value. */
-            Boot::GpioSetValue(configs[i].pad_name, configs[i].value);
+            if (configs[i].direction == GpioDirection_Output) {
+                /* Set the GPIO's value. */
+                SetValue(configs[i].pad_name, configs[i].value);
+            }
         }
     }
+
 }
+

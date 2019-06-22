@@ -18,31 +18,36 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "i2c/driver/i2c_api.hpp"
 #include "boot_battery_driver.hpp"
 
-class PmicDriver {
-    private:
-        sts::i2c::driver::Session i2c_session;
-    public:
-        PmicDriver() {
-            sts::i2c::driver::Initialize();
-            sts::i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Max77620Pmic);
-        }
+namespace sts::boot {
 
-        ~PmicDriver() {
-            sts::i2c::driver::CloseSession(this->i2c_session);
-            sts::i2c::driver::Finalize();
-        }
-    private:
-        Result GetPowerStatus(u8 *out);
-        Result ShutdownSystem(bool reboot);
-        void FinalizeBattery(BatteryDriver *battery_driver);
-    public:
-        void ShutdownSystem();
-        void RebootSystem();
-        Result GetAcOk(bool *out);
-        Result GetPowerIntr(u8 *out);
-        Result GetNvErc(u8 *out);
-        Result GetPowerButtonPressed(bool *out);
-};
+    /* Driver object. */
+    class PmicDriver {
+        private:
+            i2c::driver::Session i2c_session;
+        public:
+            PmicDriver() {
+                i2c::driver::Initialize();
+                i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Max77620Pmic);
+            }
+
+            ~PmicDriver() {
+                i2c::driver::CloseSession(this->i2c_session);
+                i2c::driver::Finalize();
+            }
+        private:
+            Result GetPowerStatus(u8 *out);
+            Result ShutdownSystem(bool reboot);
+            void FinalizeBattery(BatteryDriver *battery_driver);
+        public:
+            void ShutdownSystem();
+            void RebootSystem();
+            Result GetAcOk(bool *out);
+            Result GetPowerIntr(u8 *out);
+            Result GetNvErc(u8 *out);
+            Result GetPowerButtonPressed(bool *out);
+    };
+
+}
+

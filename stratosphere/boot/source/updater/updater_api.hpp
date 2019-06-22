@@ -23,7 +23,7 @@
 namespace sts::updater {
 
     /* Public API. */
-    BootImageUpdateType GetBootImageUpdateType(HardwareType hw_type);
+    BootImageUpdateType GetBootImageUpdateType(spl::HardwareType hw_type);
     Result VerifyBootImagesAndRepairIfNeeded(bool *out_repaired_normal, bool *out_repaired_safe, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
 
 }

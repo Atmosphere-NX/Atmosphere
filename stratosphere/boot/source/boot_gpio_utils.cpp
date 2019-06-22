@@ -14,102 +14,119 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "boot_functions.hpp"
-#include "boot_gpio_map.hpp"
+#include <stratosphere/reg.hpp>
 
-static bool g_initialized_gpio_vaddr = false;
-static uintptr_t g_gpio_vaddr = 0;
+#include "boot_gpio_utils.hpp"
 
-static inline u32 GetGpioPadDescriptor(u32 gpio_pad_name) {
-    if (gpio_pad_name >= GpioPadNameMax) {
-        std::abort();
+namespace sts::boot::gpio {
+
+    namespace {
+
+        /* Pull in GPIO map definitions. */
+#include "boot_gpio_map.inc"
+
+        constexpr u32 PhysicalBase = 0x6000D000;
+
+        /* Globals. */
+        bool g_initialized_gpio_vaddr = false;
+        uintptr_t g_gpio_vaddr = 0;
+
+        /* Helpers. */
+        inline u32 GetPadDescriptor(u32 gpio_pad_name) {
+            if (gpio_pad_name >= PadNameMax) {
+                std::abort();
+            }
+
+            return Map[gpio_pad_name];
+        }
+
+        uintptr_t GetBaseAddress() {
+            if (!g_initialized_gpio_vaddr) {
+                g_gpio_vaddr = GetIoMapping(PhysicalBase, 0x1000);
+                g_initialized_gpio_vaddr = true;
+            }
+            return g_gpio_vaddr;
+        }
+
+
     }
 
-    return GpioMap[gpio_pad_name];
-}
+    u32 Configure(u32 gpio_pad_name) {
+        uintptr_t gpio_base_vaddr = GetBaseAddress();
 
-static uintptr_t GetGpioBaseAddress() {
-    if (!g_initialized_gpio_vaddr) {
-        g_gpio_vaddr = GetIoMapping(Boot::GpioPhysicalBase, 0x1000);
-        g_initialized_gpio_vaddr = true;
-    }
-    return g_gpio_vaddr;
-}
+        /* Fetch this GPIO's pad descriptor */
+        const u32 gpio_pad_desc = GetPadDescriptor(gpio_pad_name);
 
-u32 Boot::GpioConfigure(u32 gpio_pad_name) {
-    uintptr_t gpio_base_vaddr = GetGpioBaseAddress();
+        /* Discard invalid GPIOs */
+        if (gpio_pad_desc == InvalidPadName) {
+            return InvalidPadName;
+        }
 
-    /* Fetch this GPIO's pad descriptor */
-    const u32 gpio_pad_desc = GetGpioPadDescriptor(gpio_pad_name);
+        /* Convert the GPIO pad descriptor into its register offset */
+        u32 gpio_reg_offset = (((gpio_pad_desc << 0x03) & 0xFFFFFF00) | ((gpio_pad_desc >> 0x01) & 0x0C));
 
-    /* Discard invalid GPIOs */
-    if (gpio_pad_desc == GpioInvalid) {
-        return GpioInvalid;
-    }
+        /* Extract the bit and lock values from the GPIO pad descriptor */
+        u32 gpio_cnf_val = ((0x01 << ((gpio_pad_desc & 0x07) | 0x08)) | (0x01 << (gpio_pad_desc & 0x07)));
 
-    /* Convert the GPIO pad descriptor into its register offset */
-    u32 gpio_reg_offset = (((gpio_pad_desc << 0x03) & 0xFFFFFF00) | ((gpio_pad_desc >> 0x01) & 0x0C));
+        /* Write to the appropriate GPIO_CNF_x register (upper offset) */
+        reg::Write(gpio_base_vaddr + gpio_reg_offset + 0x80, gpio_cnf_val);
 
-    /* Extract the bit and lock values from the GPIO pad descriptor */
-    u32 gpio_cnf_val = ((0x01 << ((gpio_pad_desc & 0x07) | 0x08)) | (0x01 << (gpio_pad_desc & 0x07)));
+        /* Do a dummy read from GPIO_CNF_x register (lower offset) */
+        gpio_cnf_val = reg::Read(gpio_base_vaddr + gpio_reg_offset + 0x00);
 
-    /* Write to the appropriate GPIO_CNF_x register (upper offset) */
-    *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset + 0x80)) = gpio_cnf_val;
-
-    /* Do a dummy read from GPIO_CNF_x register (lower offset) */
-    gpio_cnf_val = *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset));
-
-    return gpio_cnf_val;
-}
-
-u32 Boot::GpioSetDirection(u32 gpio_pad_name, GpioDirection dir) {
-    uintptr_t gpio_base_vaddr = GetGpioBaseAddress();
-
-    /* Fetch this GPIO's pad descriptor */
-    const u32 gpio_pad_desc = GetGpioPadDescriptor(gpio_pad_name);
-
-    /* Discard invalid GPIOs */
-    if (gpio_pad_desc == GpioInvalid) {
-        return GpioInvalid;
+        return gpio_cnf_val;
     }
 
-    /* Convert the GPIO pad descriptor into its register offset */
-    u32 gpio_reg_offset = (((gpio_pad_desc << 0x03) & 0xFFFFFF00) | ((gpio_pad_desc >> 0x01) & 0x0C));
+    u32 SetDirection(u32 gpio_pad_name, GpioDirection dir) {
+        uintptr_t gpio_base_vaddr = GetBaseAddress();
 
-    /* Set the direction bit and lock values */
-    u32 gpio_oe_val = ((0x01 << ((gpio_pad_desc & 0x07) | 0x08)) | (static_cast<u32>(dir) << (gpio_pad_desc & 0x07)));
+        /* Fetch this GPIO's pad descriptor */
+        const u32 gpio_pad_desc = GetPadDescriptor(gpio_pad_name);
 
-    /* Write to the appropriate GPIO_OE_x register (upper offset) */
-    *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset + 0x90)) = gpio_oe_val;
+        /* Discard invalid GPIOs */
+        if (gpio_pad_desc == InvalidPadName) {
+            return InvalidPadName;
+        }
 
-    /* Do a dummy read from GPIO_OE_x register (lower offset) */
-    gpio_oe_val = *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset + 0x10));
+        /* Convert the GPIO pad descriptor into its register offset */
+        u32 gpio_reg_offset = (((gpio_pad_desc << 0x03) & 0xFFFFFF00) | ((gpio_pad_desc >> 0x01) & 0x0C));
 
-    return gpio_oe_val;
-}
+        /* Set the direction bit and lock values */
+        u32 gpio_oe_val = ((0x01 << ((gpio_pad_desc & 0x07) | 0x08)) | (static_cast<u32>(dir) << (gpio_pad_desc & 0x07)));
 
-u32 Boot::GpioSetValue(u32 gpio_pad_name, GpioValue val) {
-    uintptr_t gpio_base_vaddr = GetGpioBaseAddress();
+        /* Write to the appropriate GPIO_OE_x register (upper offset) */
+        reg::Write(gpio_base_vaddr + gpio_reg_offset + 0x90, gpio_oe_val);
 
-    /* Fetch this GPIO's pad descriptor */
-    const u32 gpio_pad_desc = GetGpioPadDescriptor(gpio_pad_name);
+        /* Do a dummy read from GPIO_OE_x register (lower offset) */
+        gpio_oe_val = reg::Read(gpio_base_vaddr + gpio_reg_offset + 0x10);
 
-    /* Discard invalid GPIOs */
-    if (gpio_pad_desc == GpioInvalid) {
-        return GpioInvalid;
+        return gpio_oe_val;
     }
 
-    /* Convert the GPIO pad descriptor into its register offset */
-    u32 gpio_reg_offset = (((gpio_pad_desc << 0x03) & 0xFFFFFF00) | ((gpio_pad_desc >> 0x01) & 0x0C));
+    u32 SetValue(u32 gpio_pad_name, GpioValue val) {
+        uintptr_t gpio_base_vaddr = GetBaseAddress();
 
-    /* Set the output bit and lock values */
-    u32 gpio_out_val = ((0x01 << ((gpio_pad_desc & 0x07) | 0x08)) | (static_cast<u32>(val) << (gpio_pad_desc & 0x07)));
+        /* Fetch this GPIO's pad descriptor */
+        const u32 gpio_pad_desc = GetPadDescriptor(gpio_pad_name);
 
-    /* Write to the appropriate GPIO_OUT_x register (upper offset) */
-    *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset + 0xA0)) = gpio_out_val;
+        /* Discard invalid GPIOs */
+        if (gpio_pad_desc == InvalidPadName) {
+            return InvalidPadName;
+        }
 
-    /* Do a dummy read from GPIO_OUT_x register (lower offset) */
-    gpio_out_val = *(reinterpret_cast<volatile u32 *>(gpio_base_vaddr + gpio_reg_offset + 0x20));
+        /* Convert the GPIO pad descriptor into its register offset */
+        u32 gpio_reg_offset = (((gpio_pad_desc << 0x03) & 0xFFFFFF00) | ((gpio_pad_desc >> 0x01) & 0x0C));
 
-    return gpio_out_val;
+        /* Set the output bit and lock values */
+        u32 gpio_out_val = ((0x01 << ((gpio_pad_desc & 0x07) | 0x08)) | (static_cast<u32>(val) << (gpio_pad_desc & 0x07)));
+
+        /* Write to the appropriate GPIO_OUT_x register (upper offset) */
+        reg::Write(gpio_base_vaddr + gpio_reg_offset + 0xA0, gpio_out_val);
+
+        /* Do a dummy read from GPIO_OUT_x register (lower offset) */
+        gpio_out_val = reg::Read(gpio_base_vaddr + gpio_reg_offset + 0x20);
+
+        return gpio_out_val;
+    }
+
 }

@@ -129,8 +129,8 @@ namespace sts::i2c::driver::impl {
         size_t remaining = num_bytes;
 
         /* Set interrupt enable, clear interrupt status. */
-        WriteRegister(&this->i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0,   0x8E);
-        WriteRegister(&this->i2c_registers->I2C_INTERRUPT_STATUS_REGISTER_0, 0xFC);
+        reg::Write(&this->i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0,   0x8E);
+        reg::Write(&this->i2c_registers->I2C_INTERRUPT_STATUS_REGISTER_0, 0xFC);
 
         ON_SCOPE_EXIT { this->ClearInterruptMask(); };
 
@@ -139,7 +139,7 @@ namespace sts::i2c::driver::impl {
 
         /* Send bytes. */
         while (true) {
-            const u32 fifo_status = ReadRegister(&this->i2c_registers->I2C_FIFO_STATUS_0);
+            const u32 fifo_status = reg::Read(&this->i2c_registers->I2C_FIFO_STATUS_0);
             const size_t fifo_cnt = (fifo_status >> 4);
 
             for (size_t fifo_idx = 0; remaining > 0 && fifo_idx < fifo_cnt; fifo_idx++) {
@@ -148,7 +148,7 @@ namespace sts::i2c::driver::impl {
                 for (size_t i = 0; i < cur_bytes; i++) {
                     val |= cur_src[i] << (8 * i);
                 }
-                WriteRegister(&this->i2c_registers->I2C_I2C_TX_PACKET_FIFO_0, val);
+                reg::Write(&this->i2c_registers->I2C_I2C_TX_PACKET_FIFO_0, val);
 
                 cur_src += cur_bytes;
                 remaining -= cur_bytes;
@@ -168,14 +168,14 @@ namespace sts::i2c::driver::impl {
             R_TRY(this->GetAndHandleTransactionResult());
         }
 
-        WriteRegister(&this->i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0, 0x8C);
+        reg::Write(&this->i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0, 0x8C);
 
         /* Wait for successful completion. */
         while (true) {
             R_TRY(this->GetAndHandleTransactionResult());
 
             /* Check PACKET_XFER_COMPLETE */
-            const u32 interrupt_status = ReadRegister(&this->i2c_registers->I2C_INTERRUPT_STATUS_REGISTER_0);
+            const u32 interrupt_status = reg::Read(&this->i2c_registers->I2C_INTERRUPT_STATUS_REGISTER_0);
             if (interrupt_status & 0x80) {
                 R_TRY(this->GetAndHandleTransactionResult());
                 break;
@@ -198,8 +198,8 @@ namespace sts::i2c::driver::impl {
         size_t remaining = num_bytes;
 
         /* Set interrupt enable, clear interrupt status. */
-        WriteRegister(&this->i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0,   0x8D);
-        WriteRegister(&this->i2c_registers->I2C_INTERRUPT_STATUS_REGISTER_0, 0xFC);
+        reg::Write(&this->i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0,   0x8D);
+        reg::Write(&this->i2c_registers->I2C_INTERRUPT_STATUS_REGISTER_0, 0xFC);
 
         /* Send header. */
         this->WriteTransferHeader(TransferMode::Receive, option, addressing_mode, slave_address, num_bytes);
@@ -216,11 +216,11 @@ namespace sts::i2c::driver::impl {
 
             R_TRY(this->GetAndHandleTransactionResult());
 
-            const u32 fifo_status = ReadRegister(&this->i2c_registers->I2C_FIFO_STATUS_0);
+            const u32 fifo_status = reg::Read(&this->i2c_registers->I2C_FIFO_STATUS_0);
             const size_t fifo_cnt = std::min((remaining + 3) >> 2, static_cast<size_t>(fifo_status & 0xF));
 
             for (size_t fifo_idx = 0; remaining > 0 && fifo_idx < fifo_cnt; fifo_idx++) {
-                const u32 val = ReadRegister(&this->i2c_registers->I2C_I2C_RX_FIFO_0);
+                const u32 val = reg::Read(&this->i2c_registers->I2C_I2C_RX_FIFO_0);
                 const size_t cur_bytes = std::min(remaining, sizeof(u32));
                 for (size_t i = 0; i < cur_bytes; i++) {
                     cur_dst[i] = static_cast<u8>((val >> (8 * i)) & 0xFF);
@@ -296,15 +296,15 @@ namespace sts::i2c::driver::impl {
         }
 
         if (speed_mode == SpeedMode::HighSpeed) {
-            WriteRegister(&this->i2c_registers->I2C_I2C_HS_INTERFACE_TIMING_0_0, (t_high << 8) | (t_low));
-            WriteRegister(&this->i2c_registers->I2C_I2C_CLK_DIVISOR_REGISTER_0, clk_div);
+            reg::Write(&this->i2c_registers->I2C_I2C_HS_INTERFACE_TIMING_0_0, (t_high << 8) | (t_low));
+            reg::Write(&this->i2c_registers->I2C_I2C_CLK_DIVISOR_REGISTER_0, clk_div);
         } else {
-            WriteRegister(&this->i2c_registers->I2C_I2C_INTERFACE_TIMING_0_0, (t_high << 8) | (t_low));
-            WriteRegister(&this->i2c_registers->I2C_I2C_CLK_DIVISOR_REGISTER_0, (clk_div << 16));
+            reg::Write(&this->i2c_registers->I2C_I2C_INTERFACE_TIMING_0_0, (t_high << 8) | (t_low));
+            reg::Write(&this->i2c_registers->I2C_I2C_CLK_DIVISOR_REGISTER_0, (clk_div << 16));
         }
 
-        WriteRegister(&this->i2c_registers->I2C_I2C_CNFG_0, debounce);
-        ReadRegister(&this->i2c_registers->I2C_I2C_CNFG_0);
+        reg::Write(&this->i2c_registers->I2C_I2C_CNFG_0, debounce);
+        reg::Read(&this->i2c_registers->I2C_I2C_CNFG_0);
 
         if (this->pcv_module != PcvModule_I2C5) {
             if (R_FAILED(pcv::SetReset(this->pcv_module, true))) {
@@ -340,14 +340,14 @@ namespace sts::i2c::driver::impl {
 
             this->ResetController();
 
-            WriteRegister(&this->i2c_registers->I2C_I2C_BUS_CLEAR_CONFIG_0, 0x90000);
-            SetRegisterBits(&this->i2c_registers->I2C_I2C_BUS_CLEAR_CONFIG_0, 0x4);
-            SetRegisterBits(&this->i2c_registers->I2C_I2C_BUS_CLEAR_CONFIG_0, 0x2);
+            reg::Write(&this->i2c_registers->I2C_I2C_BUS_CLEAR_CONFIG_0, 0x90000);
+            reg::SetBits(&this->i2c_registers->I2C_I2C_BUS_CLEAR_CONFIG_0, 0x4);
+            reg::SetBits(&this->i2c_registers->I2C_I2C_BUS_CLEAR_CONFIG_0, 0x2);
 
-            SetRegisterBits(&this->i2c_registers->I2C_I2C_CONFIG_LOAD_0, 0x1);
+            reg::SetBits(&this->i2c_registers->I2C_I2C_CONFIG_LOAD_0, 0x1);
             {
                 u64 start_tick = armGetSystemTick();
-                while (ReadRegister(&this->i2c_registers->I2C_I2C_CONFIG_LOAD_0) & 1) {
+                while (reg::Read(&this->i2c_registers->I2C_I2C_CONFIG_LOAD_0) & 1) {
                     if (armTicksToNs(armGetSystemTick() - start_tick) > 1'000'000) {
                         success = false;
                         break;
@@ -358,10 +358,10 @@ namespace sts::i2c::driver::impl {
                 continue;
             }
 
-            SetRegisterBits(&this->i2c_registers->I2C_I2C_BUS_CLEAR_CONFIG_0, 0x1);
+            reg::SetBits(&this->i2c_registers->I2C_I2C_BUS_CLEAR_CONFIG_0, 0x1);
             {
                 u64 start_tick = armGetSystemTick();
-                while (ReadRegister(&this->i2c_registers->I2C_I2C_BUS_CLEAR_CONFIG_0) & 1) {
+                while (reg::Read(&this->i2c_registers->I2C_I2C_BUS_CLEAR_CONFIG_0) & 1) {
                     if (armTicksToNs(armGetSystemTick() - start_tick) > 1'000'000) {
                         success = false;
                         break;
@@ -374,7 +374,7 @@ namespace sts::i2c::driver::impl {
 
             {
                 u64 start_tick = armGetSystemTick();
-                while (ReadRegister(&this->i2c_registers->I2C_I2C_BUS_CLEAR_STATUS_0) & 1) {
+                while (reg::Read(&this->i2c_registers->I2C_I2C_BUS_CLEAR_STATUS_0) & 1) {
                     if (armTicksToNs(armGetSystemTick() - start_tick) > 1'000'000) {
                         success = false;
                         break;
@@ -395,19 +395,19 @@ namespace sts::i2c::driver::impl {
 
     void BusAccessor::SetPacketMode() {
         /* Set PACKET_MODE_EN, MSTR_CONFIG_LOAD */
-        SetRegisterBits(&this->i2c_registers->I2C_I2C_CNFG_0, 0x400);
-        SetRegisterBits(&this->i2c_registers->I2C_I2C_CONFIG_LOAD_0, 0x1);
+        reg::SetBits(&this->i2c_registers->I2C_I2C_CNFG_0, 0x400);
+        reg::SetBits(&this->i2c_registers->I2C_I2C_CONFIG_LOAD_0, 0x1);
 
         /* Set TX_FIFO_TRIGGER, RX_FIFO_TRIGGER */
-        WriteRegister(&this->i2c_registers->I2C_FIFO_CONTROL_0, 0xFC);
+        reg::Write(&this->i2c_registers->I2C_FIFO_CONTROL_0, 0xFC);
     }
 
     Result BusAccessor::FlushFifos() {
-        WriteRegister(&this->i2c_registers->I2C_FIFO_CONTROL_0, 0xFF);
+        reg::Write(&this->i2c_registers->I2C_FIFO_CONTROL_0, 0xFF);
 
         /* Wait for flush to finish, check every ms for 5 ms. */
         for (size_t i = 0; i < 5; i++) {
-            if (!(ReadRegister(&this->i2c_registers->I2C_FIFO_CONTROL_0) & 3)) {
+            if (!(reg::Read(&this->i2c_registers->I2C_FIFO_CONTROL_0) & 3)) {
                 return ResultSuccess;
             }
             svcSleepThread(1'000'000ul);
@@ -417,8 +417,8 @@ namespace sts::i2c::driver::impl {
     }
 
     Result BusAccessor::GetTransactionResult() const {
-        const u32 packet_status = ReadRegister(&this->i2c_registers->I2C_PACKET_TRANSFER_STATUS_0);
-        const u32 interrupt_status = ReadRegister(&this->i2c_registers->I2C_INTERRUPT_STATUS_REGISTER_0);
+        const u32 packet_status = reg::Read(&this->i2c_registers->I2C_PACKET_TRANSFER_STATUS_0);
+        const u32 interrupt_status = reg::Read(&this->i2c_registers->I2C_INTERRUPT_STATUS_REGISTER_0);
 
         /* Check for no ack. */
         if ((packet_status & 0xC) || (interrupt_status & 0x8)) {
@@ -460,8 +460,8 @@ namespace sts::i2c::driver::impl {
     void BusAccessor::WriteTransferHeader(TransferMode transfer_mode, I2cTransactionOption option, AddressingMode addressing_mode, u32 slave_address, size_t num_bytes) {
         this->FlushFifos();
 
-        WriteRegister(&this->i2c_registers->I2C_I2C_TX_PACKET_FIFO_0, 0x10);
-        WriteRegister(&this->i2c_registers->I2C_I2C_TX_PACKET_FIFO_0, static_cast<u32>(num_bytes - 1) & 0xFFF);
+        reg::Write(&this->i2c_registers->I2C_I2C_TX_PACKET_FIFO_0, 0x10);
+        reg::Write(&this->i2c_registers->I2C_I2C_TX_PACKET_FIFO_0, static_cast<u32>(num_bytes - 1) & 0xFFF);
 
         const u32 slave_addr_val = ((transfer_mode == TransferMode::Receive) & 1) | ((slave_address & 0x7F) << 1);
         u32 hdr_val = 0;
@@ -472,7 +472,7 @@ namespace sts::i2c::driver::impl {
         hdr_val |= (((option & I2cTransactionOption_Stop) == 0) & 1) << 16;
         hdr_val |= slave_addr_val;
 
-        WriteRegister(&this->i2c_registers->I2C_I2C_TX_PACKET_FIFO_0, hdr_val);
+        reg::Write(&this->i2c_registers->I2C_I2C_TX_PACKET_FIFO_0, hdr_val);
     }
 
 }

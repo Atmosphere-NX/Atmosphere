@@ -17,6 +17,7 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include <stratosphere/reg.hpp>
 
 #include "i2c_driver_types.hpp"
 
@@ -68,9 +69,9 @@ namespace sts::i2c::driver::impl {
 
     struct ClkRstRegisters {
         public:
-            volatile u32 *clk_src_reg;
-            volatile u32 *clk_en_reg;
-            volatile u32 *rst_reg;
+            uintptr_t clk_src_reg;
+            uintptr_t clk_en_reg;
+            uintptr_t rst_reg;
             u32 mask;
         public:
             void SetBus(Bus bus) {
@@ -89,9 +90,9 @@ namespace sts::i2c::driver::impl {
 
                 const uintptr_t registers = GetIoMapping(0x60006000ul, 0x1000);
                 const size_t idx = ConvertToIndex(bus);
-                this->clk_src_reg = reinterpret_cast<volatile u32 *>(registers + s_clk_src_offsets[idx]);
-                this->clk_en_reg  = reinterpret_cast<volatile u32 *>(registers + s_clk_en_offsets[idx]);
-                this->rst_reg     = reinterpret_cast<volatile u32 *>(registers + s_rst_offsets[idx]);
+                this->clk_src_reg = registers + s_clk_src_offsets[idx];
+                this->clk_en_reg  = registers + s_clk_en_offsets[idx];
+                this->rst_reg     = registers + s_rst_offsets[idx];
                 this->mask        = (1u << s_bit_shifts[idx]);
             }
     };
@@ -103,27 +104,6 @@ namespace sts::i2c::driver::impl {
 
         const uintptr_t registers = GetIoMapping(0x7000c000ul, 0x2000) + s_offsets[ConvertToIndex(bus)];
         return reinterpret_cast<Registers *>(registers);
-    }
-
-    inline void WriteRegister(volatile u32 *reg, u32 val) {
-        *reg = val;
-    }
-
-    inline u32 ReadRegister(volatile u32 *reg) {
-        u32 val = *reg;
-        return val;
-    }
-
-    inline void SetRegisterBits(volatile u32 *reg, u32 mask) {
-        *reg |= mask;
-    }
-
-    inline void ClearRegisterBits(volatile u32 *reg, u32 mask) {
-        *reg &= mask;
-    }
-
-    inline void ReadWriteRegisterBits(volatile u32 *reg, u32 val, u32 mask) {
-        *reg = (*reg & (~mask)) | (val & mask);
     }
 
 }

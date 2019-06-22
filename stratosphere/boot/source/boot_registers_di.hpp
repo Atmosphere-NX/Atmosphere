@@ -19,8 +19,6 @@
 #pragma once
 #include <switch.h>
 
-#include "boot_types.hpp"
-
 #define DC_CMD_GENERAL_INCR_SYNCPT 0x00
 
 #define DC_CMD_GENERAL_INCR_SYNCPT_CNTRL 0x01

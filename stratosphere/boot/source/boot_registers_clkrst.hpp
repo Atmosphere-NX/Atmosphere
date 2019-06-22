@@ -17,8 +17,6 @@
 #pragma once
 #include <switch.h>
 
-#include "boot_types.hpp"
-
 static constexpr size_t CLK_RST_CONTROLLER_RST_SOURCE = 0x0;
 static constexpr size_t CLK_RST_CONTROLLER_RST_DEVICES_L = 0x4;
 static constexpr size_t CLK_RST_CONTROLLER_RST_DEVICES_H = 0x8;

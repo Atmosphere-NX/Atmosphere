@@ -45,8 +45,8 @@ namespace sts::i2c::driver::impl {
             BusAccessor() { /* ... */ }
         private:
             inline void ClearInterruptMask() const {
-                WriteRegister(&i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0, 0);
-                ReadRegister(&i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0);
+                reg::Write(&i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0, 0);
+                reg::Read(&i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0);
             }
 
             void SetBus(Bus bus);

@@ -38,10 +38,10 @@ namespace sts::pcv {
         ClkRstRegisters regs;
         regs.SetBus(ConvertFromPcvModule(module));
         /* Set clock enabled/source. */
-        SetRegisterBits(regs.clk_en_reg, regs.mask);
-        ReadWriteRegisterBits(regs.clk_src_reg, 0x4, 0xFF);
+        reg::SetBits(regs.clk_en_reg, regs.mask);
+        reg::ReadWrite(regs.clk_src_reg, 0x4, 0xFF);
         svcSleepThread(1000ul);
-        ReadWriteRegisterBits(regs.clk_src_reg, 0, 0xE0000000);
+        reg::ReadWrite(regs.clk_src_reg, 0, 0xE0000000);
         svcSleepThread(2000ul);
 
         return ResultSuccess;
@@ -66,9 +66,9 @@ namespace sts::pcv {
 
         /* Set/clear reset. */
         if (reset) {
-            SetRegisterBits(regs.rst_reg, regs.mask);
+            reg::SetBits(regs.rst_reg, regs.mask);
         } else {
-            ClearRegisterBits(regs.rst_reg, ~regs.mask);
+            reg::ClearBits(regs.rst_reg, regs.mask);
         }
 
         return ResultSuccess;

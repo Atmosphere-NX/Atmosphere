@@ -501,13 +501,13 @@ namespace sts::updater {
 
     }
 
-    BootImageUpdateType GetBootImageUpdateType(HardwareType hw_type) {
+    BootImageUpdateType GetBootImageUpdateType(spl::HardwareType hw_type) {
         switch (hw_type) {
-            case HardwareType_Icosa:
-            case HardwareType_Copper:
+            case spl::HardwareType::Icosa:
+            case spl::HardwareType::Copper:
                 return BootImageUpdateType::Erista;
-            case HardwareType_Hoag:
-            case HardwareType_Iowa:
+            case spl::HardwareType::Hoag:
+            case spl::HardwareType::Iowa:
                 return BootImageUpdateType::Mariko;
             default:
                 std::abort();
