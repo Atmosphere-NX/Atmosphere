@@ -15,11 +15,10 @@
  */
 
 #include <stratosphere/spl.hpp>
+#include <stratosphere/updater.hpp>
 
 #include "boot_power_utils.hpp"
 #include "boot_repair_boot_images.hpp"
-
-#include "updater/updater_api.hpp"
 
 namespace sts::boot {
 
