@@ -18,21 +18,21 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "i2c_driver/i2c_api.hpp"
+#include "i2c/driver/i2c_api.hpp"
 #include "boot_battery_parameters.hpp"
 
 class BatteryDriver {
     private:
-        I2cSessionImpl i2c_session;
+        sts::i2c::driver::Session i2c_session;
     public:
         BatteryDriver() {
-            I2cDriver::Initialize();
-            I2cDriver::OpenSession(&this->i2c_session, I2cDevice_Max17050);
+            sts::i2c::driver::Initialize();
+            sts::i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Max17050);
         }
 
         ~BatteryDriver() {
-            I2cDriver::CloseSession(this->i2c_session);
-            I2cDriver::Finalize();
+            sts::i2c::driver::CloseSession(this->i2c_session);
+            sts::i2c::driver::Finalize();
         }
     private:
         static const Max17050Parameters *GetBatteryParameters();

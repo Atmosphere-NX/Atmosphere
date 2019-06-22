@@ -16,7 +16,7 @@
 
 #include "boot_functions.hpp"
 #include "boot_display_config.hpp"
-#include "i2c_driver/i2c_api.hpp"
+#include "i2c/driver/i2c_api.hpp"
 
 /* Helpful defines. */
 constexpr size_t DeviceAddressSpaceAlignSize = 0x400000;
@@ -55,16 +55,6 @@ static uintptr_t g_clk_rst_regs = 0;
 static uintptr_t g_gpio_regs = 0;
 static uintptr_t g_apb_misc_regs = 0;
 static uintptr_t g_mipi_cal_regs = 0;
-
-static inline uintptr_t QueryVirtualAddress(uintptr_t phys, size_t size) {
-    uintptr_t aligned_phys = phys & ~0xFFFul;
-    size_t aligned_size = size + (phys - aligned_phys);
-    uintptr_t aligned_virt;
-    if (R_FAILED(svcQueryIoMapping(&aligned_virt, aligned_phys, aligned_size))) {
-        std::abort();
-    }
-    return aligned_virt + (phys - aligned_phys);
-}
 
 static inline void WriteRegister(volatile u32 *reg, u32 val) {
     *reg = val;
@@ -108,12 +98,12 @@ static inline void ReadWriteRegisterBits(uintptr_t reg, u32 val, u32 mask) {
 }
 
 static void InitializeRegisterBaseAddresses() {
-    g_disp1_regs    = QueryVirtualAddress(Disp1Base, Disp1Size);
-    g_dsi_regs      = QueryVirtualAddress(DsiBase, DsiSize);
-    g_clk_rst_regs  = QueryVirtualAddress(ClkRstBase, ClkRstSize);
-    g_gpio_regs     = QueryVirtualAddress(GpioBase, GpioSize);
-    g_apb_misc_regs = QueryVirtualAddress(ApbMiscBase, ApbMiscSize);
-    g_mipi_cal_regs = QueryVirtualAddress(MipiCalBase, MipiCalSize);
+    g_disp1_regs    = GetIoMapping(Disp1Base, Disp1Size);
+    g_dsi_regs      = GetIoMapping(DsiBase, DsiSize);
+    g_clk_rst_regs  = GetIoMapping(ClkRstBase, ClkRstSize);
+    g_gpio_regs     = GetIoMapping(GpioBase, GpioSize);
+    g_apb_misc_regs = GetIoMapping(ApbMiscBase, ApbMiscSize);
+    g_mipi_cal_regs = GetIoMapping(MipiCalBase, MipiCalSize);
 }
 
 static inline void DoRegisterWrites(uintptr_t base_address, const RegisterWrite *reg_writes, size_t num_writes) {
@@ -232,17 +222,17 @@ void Boot::InitializeDisplay() {
 
     /* Turn on DSI/voltage rail. */
     {
-        I2cSessionImpl i2c_session;
-        I2cDriver::Initialize();
-        I2cDriver::OpenSession(&i2c_session, I2cDevice_Max77620Pmic);
+        sts::i2c::driver::Session i2c_session;
+        sts::i2c::driver::Initialize();
+        ON_SCOPE_EXIT { sts::i2c::driver::Finalize(); };
+
+        sts::i2c::driver::OpenSession(&i2c_session, I2cDevice_Max77620Pmic);
 
         if (g_is_mariko) {
             Boot::WriteI2cRegister(i2c_session, 0x18, 0x3A);
             Boot::WriteI2cRegister(i2c_session, 0x1F, 0x71);
         }
         Boot::WriteI2cRegister(i2c_session, 0x23, 0xD0);
-
-        I2cDriver::Finalize();
     }
 
     /* Enable MIPI CAL, DSI, DISP1, HOST1X, UART_FST_MIPI_CAL, DSIA LP clocks. */
@@ -449,7 +439,7 @@ void Boot::FinalizeDisplay() {
 
     /* Nintendo waits 5 frames before continuing. */
     {
-        const uintptr_t host1x_vaddr = QueryVirtualAddress(0x500030a4, 4);
+        const uintptr_t host1x_vaddr = GetIoMapping(0x500030a4, 4);
         const u32 start_val = ReadRegister(host1x_vaddr);
         while (ReadRegister(host1x_vaddr) < start_val + 5) {
             /* spinlock here. */

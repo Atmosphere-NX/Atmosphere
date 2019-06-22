@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "i2c_driver/i2c_api.hpp"
+#include "i2c/driver/i2c_api.hpp"
 #include "boot_functions.hpp"
 #include "boot_bq24193_charger.hpp"
 
@@ -26,19 +26,19 @@ class ChargerDriver {
     private:
         static constexpr u32 GpioPadName_Bq24193Charger = 0xA;
     private:
-        I2cSessionImpl i2c_session;
+        sts::i2c::driver::Session i2c_session;
     public:
         ChargerDriver() {
-            I2cDriver::Initialize();
-            I2cDriver::OpenSession(&this->i2c_session, I2cDevice_Bq24193);
+            sts::i2c::driver::Initialize();
+            sts::i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Bq24193);
 
             Boot::GpioConfigure(GpioPadName_Bq24193Charger);
             Boot::GpioSetDirection(GpioPadName_Bq24193Charger, GpioDirection_Output);
         }
 
         ~ChargerDriver() {
-            I2cDriver::CloseSession(this->i2c_session);
-            I2cDriver::Finalize();
+            sts::i2c::driver::CloseSession(this->i2c_session);
+            sts::i2c::driver::Finalize();
         }
     private:
         Result Read(u8 addr, u8 *out_data);

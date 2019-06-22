@@ -19,7 +19,8 @@
 #include <stratosphere.hpp>
 
 #include "boot_types.hpp"
-#include "i2c_driver/i2c_types.hpp"
+#include "i2c/i2c_types.hpp"
+#include "i2c/driver/i2c_api.hpp"
 
 class Boot {
     public:
@@ -67,9 +68,9 @@ class Boot {
         static bool IsMariko();
 
         /* I2C Utilities. */
-        static Result ReadI2cRegister(I2cSessionImpl &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size);
-        static Result WriteI2cRegister(I2cSessionImpl &session, const u8 *src, size_t src_size, const u8 *cmd, size_t cmd_size);
-        static Result WriteI2cRegister(I2cSessionImpl &session, const u8 address, const u8 value);
+        static Result ReadI2cRegister(sts::i2c::driver::Session &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size);
+        static Result WriteI2cRegister(sts::i2c::driver::Session &session, const u8 *src, size_t src_size, const u8 *cmd, size_t cmd_size);
+        static Result WriteI2cRegister(sts::i2c::driver::Session &session, const u8 address, const u8 value);
 
         /* Splash Screen/Display utilities. */
         static void InitializeDisplay();

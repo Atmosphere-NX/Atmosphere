@@ -18,16 +18,16 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-/* pcv isn't alive at the time boot runs, but nn::i2c::driver needs nn::pcv. */
-/* These are the overrides N puts in boot. */
+/* This forward declares the functionality from pcv that i2c::driver uses. */
+/* This allows for overriding at compile-time (e.g., for boot sysmodule). */
+namespace sts::pcv {
 
-class Pcv {
-    public:
-        static void Initialize();
-        static void Finalize();
-        static Result SetClockRate(PcvModule module, u32 hz);
-        static Result SetClockEnabled(PcvModule module, bool enabled);
-        static Result SetVoltageEnabled(u32 domain, bool enabled);
-        static Result SetVoltageValue(u32 domain, u32 voltage);
-        static Result SetReset(PcvModule module, bool reset);
-};
+    void Initialize();
+    void Finalize();
+    Result SetClockRate(PcvModule module, u32 hz);
+    Result SetClockEnabled(PcvModule module, bool enabled);
+    Result SetVoltageEnabled(u32 domain, bool enabled);
+    Result SetVoltageValue(u32 domain, u32 voltage);
+    Result SetReset(PcvModule module, bool reset);
+
+}

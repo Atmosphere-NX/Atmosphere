@@ -38,11 +38,7 @@ static inline const PinmuxDrivePadDefinition *GetPinmuxDrivePadDefinition(u32 pi
 
 static uintptr_t GetPinmuxBaseAddress() {
     if (!g_initialized_pinmux_vaddr) {
-        u64 vaddr;
-        if (R_FAILED(svcQueryIoMapping(&vaddr, Boot::ApbMiscPhysicalBase, 0x4000))) {
-            std::abort();
-        }
-        g_pinmux_vaddr = vaddr;
+        g_pinmux_vaddr = GetIoMapping(Boot::ApbMiscPhysicalBase, 0x4000);
         g_initialized_pinmux_vaddr = true;
     }
     return g_pinmux_vaddr;

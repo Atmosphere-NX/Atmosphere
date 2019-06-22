@@ -30,11 +30,7 @@ static inline u32 GetGpioPadDescriptor(u32 gpio_pad_name) {
 
 static uintptr_t GetGpioBaseAddress() {
     if (!g_initialized_gpio_vaddr) {
-        u64 vaddr;
-        if (R_FAILED(svcQueryIoMapping(&vaddr, Boot::GpioPhysicalBase, 0x1000))) {
-            std::abort();
-        }
-        g_gpio_vaddr = vaddr;
+        g_gpio_vaddr = GetIoMapping(Boot::GpioPhysicalBase, 0x1000);
         g_initialized_gpio_vaddr = true;
     }
     return g_gpio_vaddr;

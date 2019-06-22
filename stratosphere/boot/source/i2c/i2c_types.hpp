@@ -18,24 +18,17 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "i2c/driver/i2c_api.hpp"
+namespace sts::i2c {
 
-class RtcDriver {
-    private:
-        sts::i2c::driver::Session i2c_session;
-    public:
-        RtcDriver() {
-            sts::i2c::driver::Initialize();
-            sts::i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Max77620Rtc);
-        }
+    enum class AddressingMode {
+        SevenBit = 0,
+    };
 
-        ~RtcDriver() {
-            sts::i2c::driver::CloseSession(this->i2c_session);
-            sts::i2c::driver::Finalize();
-        }
-    private:
-        Result ReadRtcRegister(u8 *out, u8 address);
-    public:
-        Result GetRtcIntr(u8 *out);
-        Result GetRtcIntrM(u8 *out);
-};
+    enum class SpeedMode {
+        Normal    = 100000,
+        Fast      = 400000,
+        FastPlus  = 1000000,
+        HighSpeed = 3400000,
+    };
+
+}

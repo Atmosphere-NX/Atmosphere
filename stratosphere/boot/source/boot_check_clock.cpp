@@ -28,11 +28,7 @@ static constexpr u32 ExpectedUtmipVal  = (ExpectedUtmipDivN | ExpectedUtmipDivM)
 static constexpr u32 ExpectedUtmipMask = 0xFFFF00;
 
 static bool IsUsbClockValid() {
-    u64 _vaddr;
-    if (R_FAILED(svcQueryIoMapping(&_vaddr, 0x60006000ul, 0x1000))) {
-        std::abort();
-    }
-    volatile u32 *car_regs = reinterpret_cast<volatile u32 *>(_vaddr);
+    volatile u32 *car_regs = reinterpret_cast<volatile u32 *>(GetIoMapping(0x60006000ul, 0x1000));
 
     const u32 pllu = car_regs[0xC0 >> 2];
     const u32 utmip = car_regs[0x480 >> 2];
