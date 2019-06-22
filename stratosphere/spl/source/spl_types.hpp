@@ -21,141 +21,136 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-enum SmcResult : u32 {
-    SmcResult_Success = 0,
-    SmcResult_NotImplemented = 1,
-    SmcResult_InvalidArgument = 2,
-    SmcResult_InProgress = 3,
-    SmcResult_NoAsyncOperation = 4,
-    SmcResult_InvalidAsyncOperation = 5,
-    SmcResult_Blacklisted = 6,
+namespace sts::spl {
 
-    SmcResult_Max = 99,
-};
+    namespace smc {
 
-enum SmcCipherMode : u32 {
-    SmcCipherMode_CbcEncrypt = 0,
-    SmcCipherMode_CbcDecrypt = 1,
-    SmcCipherMode_Ctr = 2,
-};
+        enum class FunctionId : u32 {
+            SetConfig                     = 0xC3000401,
+            GetConfig                     = 0xC3000002,
+            CheckStatus                   = 0xC3000003,
+            GetResult                     = 0xC3000404,
+            ExpMod                        = 0xC3000E05,
+            GenerateRandomBytes           = 0xC3000006,
+            GenerateAesKek                = 0xC3000007,
+            LoadAesKey                    = 0xC3000008,
+            CryptAes                      = 0xC3000009,
+            GenerateSpecificAesKey        = 0xC300000A,
+            ComputeCmac                   = 0xC300040B,
+            ReEncryptRsaPrivateKey        = 0xC300D60C,
+            DecryptOrImportRsaPrivateKey  = 0xC300100D,
 
-enum SmcDecryptOrImportMode : u32 {
-    SmcDecryptOrImportMode_DecryptRsaPrivateKey = 0,
-    SmcDecryptOrImportMode_ImportLotusKey = 1,
-    SmcDecryptOrImportMode_ImportEsKey = 2,
-    SmcDecryptOrImportMode_ImportSslKey = 3,
-    SmcDecryptOrImportMode_ImportDrmKey = 4,
-};
+            SecureExpMod                  = 0xC300060F,
+            UnwrapTitleKey                = 0xC3000610,
+            LoadTitleKey                  = 0xC3000011,
+            UnwrapCommonTitleKey          = 0xC3000012,
 
-enum SmcSecureExpModMode : u32 {
-    SmcSecureExpModMode_Lotus = 0,
-    SmcSecureExpModMode_Ssl = 1,
-    SmcSecureExpModMode_Drm = 2,
-};
+            /* Deprecated functions. */
+            ImportEsKey                   = 0xC300100C,
+            DecryptRsaPrivateKey          = 0xC300100D,
+            ImportSecureExpModKey         = 0xC300100E,
+        };
 
-enum EsKeyType : u32 {
-    EsKeyType_TitleKey = 0,
-    EsKeyType_ElicenseKey = 1,
-};
+        enum class Result {
+            Success               = 0,
+            NotImplemented        = 1,
+            InvalidArgument       = 2,
+            InProgress            = 3,
+            NoAsyncOperation      = 4,
+            InvalidAsyncOperation = 5,
+            Blacklisted           = 6,
 
-struct AsyncOperationKey {
-    u64 value;
-};
+            Max                   = 99,
+        };
 
-struct BootReasonValue {
-    u8 power_intr;
-    u8 rtc_intr;
-    u8 nv_erc;
-    u8 boot_reason;
-};
-static_assert(sizeof(BootReasonValue) == sizeof(u32), "BootReasonValue definition!");
+        inline ::Result ConvertResult(Result result) {
+            if (result == Result::Success) {
+                return ResultSuccess;
+            }
+            if (result < Result::Max) {
+                return MAKERESULT(Module_Spl, static_cast<u32>(result));
+            }
+            return ResultSplUnknownSmcResult;
+        }
 
-#pragma pack(push, 1)
-struct AesKey {
-    union {
-        u8 data[AES_128_KEY_SIZE];
-        u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        enum class CipherMode {
+            CbcEncrypt = 0,
+            CbcDecrypt = 1,
+            Ctr        = 2,
+        };
+
+        enum class DecryptOrImportMode {
+            DecryptRsaPrivateKey = 0,
+            ImportLotusKey       = 1,
+            ImportEsKey          = 2,
+            ImportSslKey         = 3,
+            ImportDrmKey         = 4,
+        };
+
+        enum class SecureExpModMode {
+            Lotus = 0,
+            Ssl   = 1,
+            Drm   = 2,
+        };
+
+        enum class EsKeyType {
+            TitleKey    = 0,
+            ElicenseKey = 1,
+        };
+
+        struct AsyncOperationKey {
+            u64 value;
+        };
+    }
+
+    struct BootReasonValue {
+        u8 power_intr;
+        u8 rtc_intr;
+        u8 nv_erc;
+        u8 boot_reason;
     };
-};
-static_assert(alignof(AesKey) == alignof(u8), "AesKey definition!");
+    static_assert(sizeof(BootReasonValue) == sizeof(u32), "BootReasonValue definition!");
 
-struct IvCtr {
-    union {
-        u8 data[AES_128_KEY_SIZE];
-        u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+    #pragma pack(push, 1)
+    struct AesKey {
+        union {
+            u8 data[AES_128_KEY_SIZE];
+            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        };
     };
-};
-static_assert(alignof(IvCtr) == alignof(u8), "IvCtr definition!");
+    static_assert(alignof(AesKey) == alignof(u8), "AesKey definition!");
 
-struct Cmac {
-    union {
-        u8 data[AES_128_KEY_SIZE];
-        u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+    struct IvCtr {
+        union {
+            u8 data[AES_128_KEY_SIZE];
+            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        };
     };
-};
-static_assert(alignof(Cmac) == alignof(u8), "Cmac definition!");
+    static_assert(alignof(IvCtr) == alignof(u8), "IvCtr definition!");
 
-struct AccessKey {
-    union {
-        u8 data[AES_128_KEY_SIZE];
-        u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+    struct Cmac {
+        union {
+            u8 data[AES_128_KEY_SIZE];
+            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        };
     };
-};
-static_assert(alignof(AccessKey) == alignof(u8), "AccessKey definition!");
+    static_assert(alignof(Cmac) == alignof(u8), "Cmac definition!");
 
-struct KeySource {
-    union {
-        u8 data[AES_128_KEY_SIZE];
-        u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+    struct AccessKey {
+        union {
+            u8 data[AES_128_KEY_SIZE];
+            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        };
     };
-};
-static_assert(alignof(AccessKey) == alignof(u8), "KeySource definition!");
-#pragma pack(pop)
+    static_assert(alignof(AccessKey) == alignof(u8), "AccessKey definition!");
 
-enum CsrngCmd {
-    Csrng_Cmd_GenerateRandomBytes = 0,
-};
+    struct KeySource {
+        union {
+            u8 data[AES_128_KEY_SIZE];
+            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+        };
+    };
+    static_assert(alignof(AccessKey) == alignof(u8), "KeySource definition!");
+    #pragma pack(pop)
 
-enum SplServiceCmd {
-    /* 1.0.0+ */
-    Spl_Cmd_GetConfig = 0,
-    Spl_Cmd_ExpMod = 1,
-    Spl_Cmd_GenerateAesKek = 2,
-    Spl_Cmd_LoadAesKey = 3,
-    Spl_Cmd_GenerateAesKey = 4,
-    Spl_Cmd_SetConfig = 5,
-    Spl_Cmd_GenerateRandomBytes = 7,
-    Spl_Cmd_ImportLotusKey = 9,
-    Spl_Cmd_DecryptLotusMessage = 10,
-    Spl_Cmd_IsDevelopment = 11,
-    Spl_Cmd_GenerateSpecificAesKey = 12,
-    Spl_Cmd_DecryptRsaPrivateKey = 13,
-    Spl_Cmd_DecryptAesKey = 14,
-    Spl_Cmd_CryptAesCtr = 15,
-    Spl_Cmd_ComputeCmac = 16,
-    Spl_Cmd_ImportEsKey = 17,
-    Spl_Cmd_UnwrapTitleKey = 18,
-    Spl_Cmd_LoadTitleKey = 19,
-
-    /* 2.0.0+ */
-    Spl_Cmd_UnwrapCommonTitleKey = 20,
-    Spl_Cmd_AllocateAesKeyslot = 21,
-    Spl_Cmd_FreeAesKeyslot = 22,
-    Spl_Cmd_GetAesKeyslotAvailableEvent = 23,
-
-    /* 3.0.0+ */
-    Spl_Cmd_SetBootReason = 24,
-    Spl_Cmd_GetBootReason = 25,
-
-    /* 5.0.0+ */
-    Spl_Cmd_ImportSslKey = 26,
-    Spl_Cmd_SslExpMod = 27,
-    Spl_Cmd_ImportDrmKey = 28,
-    Spl_Cmd_DrmExpMod = 29,
-    Spl_Cmd_ReEncryptRsaPrivateKey = 30,
-    Spl_Cmd_GetPackage2Hash = 31,
-
-    /* 6.0.0+ */
-    Spl_Cmd_UnwrapElicenseKey = 31, /* re-used command id :( */
-    Spl_Cmd_LoadElicenseKey = 32,
-};
+}

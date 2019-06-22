@@ -18,31 +18,36 @@
 #include <stratosphere.hpp>
 
 #include "spl_es_service.hpp"
+#include "spl_api.hpp"
 
-Result EsService::ImportEsKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
-    return this->GetSecureMonitorWrapper()->ImportEsKey(src.pointer, src.num_elements, access_key, key_source, option);
-}
+namespace sts::spl {
 
-Result EsService::UnwrapTitleKey(Out<AccessKey> out_access_key, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest, u32 generation) {
-    return this->GetSecureMonitorWrapper()->UnwrapTitleKey(out_access_key.GetPointer(), base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements, generation);
-}
+    Result EsService::ImportEsKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
+        return spl::ImportEsKey(src.pointer, src.num_elements, access_key, key_source, option);
+    }
 
-Result EsService::UnwrapCommonTitleKey(Out<AccessKey> out_access_key, KeySource key_source, u32 generation) {
-    return this->GetSecureMonitorWrapper()->UnwrapCommonTitleKey(out_access_key.GetPointer(), key_source, generation);
-}
+    Result EsService::UnwrapTitleKey(Out<AccessKey> out_access_key, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest, u32 generation) {
+        return spl::UnwrapTitleKey(out_access_key.GetPointer(), base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements, generation);
+    }
 
-Result EsService::ImportDrmKey(InPointer<u8> src, AccessKey access_key, KeySource key_source) {
-    return this->GetSecureMonitorWrapper()->ImportDrmKey(src.pointer, src.num_elements, access_key, key_source);
-}
+    Result EsService::UnwrapCommonTitleKey(Out<AccessKey> out_access_key, KeySource key_source, u32 generation) {
+        return spl::UnwrapCommonTitleKey(out_access_key.GetPointer(), key_source, generation);
+    }
 
-Result EsService::DrmExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod) {
-    return this->GetSecureMonitorWrapper()->DrmExpMod(out.pointer, out.num_elements, base.pointer, base.num_elements, mod.pointer, mod.num_elements);
-}
+    Result EsService::ImportDrmKey(InPointer<u8> src, AccessKey access_key, KeySource key_source) {
+        return spl::ImportDrmKey(src.pointer, src.num_elements, access_key, key_source);
+    }
 
-Result EsService::UnwrapElicenseKey(Out<AccessKey> out_access_key, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest, u32 generation) {
-    return this->GetSecureMonitorWrapper()->UnwrapElicenseKey(out_access_key.GetPointer(), base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements, generation);
-}
+    Result EsService::DrmExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod) {
+        return spl::DrmExpMod(out.pointer, out.num_elements, base.pointer, base.num_elements, mod.pointer, mod.num_elements);
+    }
 
-Result EsService::LoadElicenseKey(u32 keyslot, AccessKey access_key) {
-    return this->GetSecureMonitorWrapper()->LoadElicenseKey(keyslot, this, access_key);
+    Result EsService::UnwrapElicenseKey(Out<AccessKey> out_access_key, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest, u32 generation) {
+        return spl::UnwrapElicenseKey(out_access_key.GetPointer(), base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements, generation);
+    }
+
+    Result EsService::LoadElicenseKey(u32 keyslot, AccessKey access_key) {
+        return spl::LoadElicenseKey(keyslot, this, access_key);
+    }
+
 }

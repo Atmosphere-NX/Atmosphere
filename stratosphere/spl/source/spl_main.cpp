@@ -32,6 +32,8 @@
 
 #include "spl_deprecated_service.hpp"
 
+#include "spl_api.hpp"
+
 extern "C" {
     extern u32 __start__;
 
@@ -86,43 +88,27 @@ struct SplServerOptions {
     static constexpr size_t MaxDomainObjects = 0;
 };
 
-/* Single secure monitor wrapper singleton. */
-static SecureMonitorWrapper s_secmon_wrapper;
-
-/* Helpers for creating services. */
-static const auto MakeRandomService  = []() { return std::make_shared<RandomService>(&s_secmon_wrapper); };
-static const auto MakeGeneralService = []() { return std::make_shared<GeneralService>(&s_secmon_wrapper); };
-static const auto MakeCryptoService  = []() { return std::make_shared<CryptoService>(&s_secmon_wrapper); };
-static const auto MakeSslService  = []() { return std::make_shared<SslService>(&s_secmon_wrapper); };
-static const auto MakeEsService  = []() { return std::make_shared<EsService>(&s_secmon_wrapper); };
-static const auto MakeFsService  = []() { return std::make_shared<FsService>(&s_secmon_wrapper); };
-static const auto MakeManuService  = []() { return std::make_shared<ManuService>(&s_secmon_wrapper); };
-
-static const auto MakeDeprecatedService  = []() { return std::make_shared<DeprecatedService>(&s_secmon_wrapper); };
-
 int main(int argc, char **argv)
 {
-    consoleDebugInit(debugDevice_SVC);
-
     /* Initialize global context. */
-    SecureMonitorWrapper::Initialize();
+    sts::spl::Initialize();
 
     /* Create server manager. */
     static auto s_server_manager = WaitableManager<SplServerOptions>(1);
 
     /* Create services. */
-    s_server_manager.AddWaitable(new ServiceServer<RandomService, +MakeRandomService>("csrng", 3));
+    s_server_manager.AddWaitable(new ServiceServer<sts::spl::RandomService>("csrng", 3));
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
-        s_server_manager.AddWaitable(new ServiceServer<GeneralService, +MakeGeneralService>("spl:", 9));
-        s_server_manager.AddWaitable(new ServiceServer<CryptoService, +MakeCryptoService>("spl:mig", 6));
-        s_server_manager.AddWaitable(new ServiceServer<SslService, +MakeSslService>("spl:ssl", 2));
-        s_server_manager.AddWaitable(new ServiceServer<EsService, +MakeEsService>("spl:es", 2));
-        s_server_manager.AddWaitable(new ServiceServer<FsService, +MakeFsService>("spl:fs", 2));
+        s_server_manager.AddWaitable(new ServiceServer<sts::spl::GeneralService>("spl:", 9));
+        s_server_manager.AddWaitable(new ServiceServer<sts::spl::CryptoService>("spl:mig", 6));
+        s_server_manager.AddWaitable(new ServiceServer<sts::spl::SslService>("spl:ssl", 2));
+        s_server_manager.AddWaitable(new ServiceServer<sts::spl::EsService>("spl:es", 2));
+        s_server_manager.AddWaitable(new ServiceServer<sts::spl::FsService>("spl:fs", 2));
         if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
-            s_server_manager.AddWaitable(new ServiceServer<ManuService, +MakeManuService>("spl:manu", 1));
+            s_server_manager.AddWaitable(new ServiceServer<sts::spl::ManuService>("spl:manu", 1));
         }
     } else {
-        s_server_manager.AddWaitable(new ServiceServer<DeprecatedService, +MakeDeprecatedService>("spl:", 12));
+        s_server_manager.AddWaitable(new ServiceServer<sts::spl::DeprecatedService>("spl:", 12));
     }
 
     /* Loop forever, servicing our services. */
@@ -130,4 +116,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-

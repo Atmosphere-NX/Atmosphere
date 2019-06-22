@@ -21,39 +21,38 @@
 #include "spl_types.hpp"
 #include "spl_rsa_service.hpp"
 
-class ManuService : public RsaService {
-    public:
-        ManuService(SecureMonitorWrapper *sw) : RsaService(sw) {
-            /* ... */
-        }
+namespace sts::spl {
 
-        virtual ~ManuService() {
-            /* ... */
-        }
-    protected:
-        /* Actual commands. */
-        virtual Result ReEncryptRsaPrivateKey(OutPointerWithClientSize<u8> out, InPointer<u8> src, AccessKey access_key_dec, KeySource source_dec, AccessKey access_key_enc, KeySource source_enc, u32 option);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMetaEx<Spl_Cmd_GetConfig, &ManuService::GetConfig, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ExpMod, &ManuService::ExpMod, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_SetConfig, &ManuService::SetConfig, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateRandomBytes, &ManuService::GenerateRandomBytes, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_IsDevelopment, &ManuService::IsDevelopment, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_SetBootReason, &ManuService::SetBootReason, ManuService, FirmwareVersion_300>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GetBootReason, &ManuService::GetBootReason, ManuService, FirmwareVersion_300>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateAesKek, &ManuService::GenerateAesKek, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_LoadAesKey, &ManuService::LoadAesKey, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateAesKey, &ManuService::GenerateAesKey, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptAesKey, &ManuService::DecryptAesKey, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_CryptAesCtr, &ManuService::CryptAesCtr, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ComputeCmac, &ManuService::ComputeCmac, ManuService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_AllocateAesKeyslot, &ManuService::AllocateAesKeyslot, ManuService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_FreeAesKeyslot, &ManuService::FreeAesKeyslot, ManuService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GetAesKeyslotAvailableEvent, &ManuService::GetAesKeyslotAvailableEvent, ManuService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &ManuService::DecryptRsaPrivateKeyDeprecated, ManuService, FirmwareVersion_400, FirmwareVersion_400>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &ManuService::DecryptRsaPrivateKey, ManuService, FirmwareVersion_500>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ReEncryptRsaPrivateKey, &ManuService::ReEncryptRsaPrivateKey, ManuService, FirmwareVersion_500>(),
+    class ManuService : public RsaService {
+        public:
+            ManuService() : RsaService() { /* ... */ }
 
-        };
-};
+            virtual ~ManuService() { /* ... */ }
+        protected:
+            /* Actual commands. */
+            virtual Result ReEncryptRsaPrivateKey(OutPointerWithClientSize<u8> out, InPointer<u8> src, AccessKey access_key_dec, KeySource source_dec, AccessKey access_key_enc, KeySource source_enc, u32 option);
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MakeServiceCommandMetaEx<CommandId::GetConfig, &ManuService::GetConfig, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::ExpMod, &ManuService::ExpMod, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::SetConfig, &ManuService::SetConfig, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateRandomBytes, &ManuService::GenerateRandomBytes, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::IsDevelopment, &ManuService::IsDevelopment, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::SetBootReason, &ManuService::SetBootReason, ManuService, FirmwareVersion_300>(),
+                MakeServiceCommandMetaEx<CommandId::GetBootReason, &ManuService::GetBootReason, ManuService, FirmwareVersion_300>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateAesKek, &ManuService::GenerateAesKek, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::LoadAesKey, &ManuService::LoadAesKey, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateAesKey, &ManuService::GenerateAesKey, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptAesKey, &ManuService::DecryptAesKey, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::CryptAesCtr, &ManuService::CryptAesCtr, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::ComputeCmac, &ManuService::ComputeCmac, ManuService>(),
+                MakeServiceCommandMetaEx<CommandId::AllocateAesKeyslot, &ManuService::AllocateAesKeyslot, ManuService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::FreeAesKeyslot, &ManuService::FreeAesKeyslot, ManuService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::GetAesKeyslotAvailableEvent, &ManuService::GetAesKeyslotAvailableEvent, ManuService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptRsaPrivateKey, &ManuService::DecryptRsaPrivateKeyDeprecated, ManuService, FirmwareVersion_400, FirmwareVersion_400>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptRsaPrivateKey, &ManuService::DecryptRsaPrivateKey, ManuService, FirmwareVersion_500>(),
+                MakeServiceCommandMetaEx<CommandId::ReEncryptRsaPrivateKey, &ManuService::ReEncryptRsaPrivateKey, ManuService, FirmwareVersion_500>(),
+            };
+    };
+
+}

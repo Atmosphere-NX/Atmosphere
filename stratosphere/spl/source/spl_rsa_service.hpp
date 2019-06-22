@@ -21,39 +21,37 @@
 #include "spl_types.hpp"
 #include "spl_crypto_service.hpp"
 
-class RsaService : public CryptoService {
-    public:
-        RsaService(SecureMonitorWrapper *sw) : CryptoService(sw) {
-            /* ... */
-        }
+namespace sts::spl {
 
-        virtual ~RsaService() {
-            /* ... */
-        }
-    protected:
-        /* Actual commands. */
-        virtual Result DecryptRsaPrivateKeyDeprecated(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option);
-        virtual Result DecryptRsaPrivateKey(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMetaEx<Spl_Cmd_GetConfig, &RsaService::GetConfig, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ExpMod, &RsaService::ExpMod, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_SetConfig, &RsaService::SetConfig, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateRandomBytes, &RsaService::GenerateRandomBytes, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_IsDevelopment, &RsaService::IsDevelopment, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_SetBootReason, &RsaService::SetBootReason, RsaService, FirmwareVersion_300>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GetBootReason, &RsaService::GetBootReason, RsaService, FirmwareVersion_300>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateAesKek, &RsaService::GenerateAesKek, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_LoadAesKey, &RsaService::LoadAesKey, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GenerateAesKey, &RsaService::GenerateAesKey, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptAesKey, &RsaService::DecryptAesKey, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_CryptAesCtr, &RsaService::CryptAesCtr, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_ComputeCmac, &RsaService::ComputeCmac, RsaService>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_AllocateAesKeyslot, &RsaService::AllocateAesKeyslot, RsaService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_FreeAesKeyslot, &RsaService::FreeAesKeyslot, RsaService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_GetAesKeyslotAvailableEvent, &RsaService::GetAesKeyslotAvailableEvent, RsaService, FirmwareVersion_200>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &RsaService::DecryptRsaPrivateKeyDeprecated, RsaService, FirmwareVersion_400, FirmwareVersion_400>(),
-            MakeServiceCommandMetaEx<Spl_Cmd_DecryptRsaPrivateKey, &RsaService::DecryptRsaPrivateKey, RsaService, FirmwareVersion_500>(),
+    class RsaService : public CryptoService {
+        public:
+            RsaService() : CryptoService() { /* ... */ }
+            virtual ~RsaService() { /* ... */ }
+        protected:
+            /* Actual commands. */
+            virtual Result DecryptRsaPrivateKeyDeprecated(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option);
+            virtual Result DecryptRsaPrivateKey(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source);
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MakeServiceCommandMetaEx<CommandId::GetConfig, &RsaService::GetConfig, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::ExpMod, &RsaService::ExpMod, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::SetConfig, &RsaService::SetConfig, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateRandomBytes, &RsaService::GenerateRandomBytes, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::IsDevelopment, &RsaService::IsDevelopment, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::SetBootReason, &RsaService::SetBootReason, RsaService, FirmwareVersion_300>(),
+                MakeServiceCommandMetaEx<CommandId::GetBootReason, &RsaService::GetBootReason, RsaService, FirmwareVersion_300>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateAesKek, &RsaService::GenerateAesKek, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::LoadAesKey, &RsaService::LoadAesKey, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::GenerateAesKey, &RsaService::GenerateAesKey, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptAesKey, &RsaService::DecryptAesKey, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::CryptAesCtr, &RsaService::CryptAesCtr, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::ComputeCmac, &RsaService::ComputeCmac, RsaService>(),
+                MakeServiceCommandMetaEx<CommandId::AllocateAesKeyslot, &RsaService::AllocateAesKeyslot, RsaService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::FreeAesKeyslot, &RsaService::FreeAesKeyslot, RsaService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::GetAesKeyslotAvailableEvent, &RsaService::GetAesKeyslotAvailableEvent, RsaService, FirmwareVersion_200>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptRsaPrivateKey, &RsaService::DecryptRsaPrivateKeyDeprecated, RsaService, FirmwareVersion_400, FirmwareVersion_400>(),
+                MakeServiceCommandMetaEx<CommandId::DecryptRsaPrivateKey, &RsaService::DecryptRsaPrivateKey, RsaService, FirmwareVersion_500>(),
+            };
+    };
 
-        };
-};
+}
