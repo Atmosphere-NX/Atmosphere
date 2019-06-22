@@ -30,10 +30,10 @@ namespace sts::boot {
     }
 
     void CheckAndRepairBootImages() {
-        const auto boot_image_update_type = sts::updater::GetBootImageUpdateType(GetHardwareType());
+        const auto boot_image_update_type = updater::GetBootImageUpdateType(GetHardwareType());
 
         bool repaired_normal, repaired_safe;
-        if (R_SUCCEEDED(sts::updater::VerifyBootImagesAndRepairIfNeeded(&repaired_normal, &repaired_safe, g_boot_image_work_buffer, sizeof(g_boot_image_work_buffer), boot_image_update_type)) && repaired_normal) {
+        if (R_SUCCEEDED(updater::VerifyBootImagesAndRepairIfNeeded(&repaired_normal, &repaired_safe, g_boot_image_work_buffer, sizeof(g_boot_image_work_buffer), boot_image_update_type)) && repaired_normal) {
             /* Nintendo only performs a reboot on successful normal repair. */
             RebootSystem();
         }
