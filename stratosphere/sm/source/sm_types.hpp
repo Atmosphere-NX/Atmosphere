@@ -15,21 +15,57 @@
  */
 
 #pragma once
-struct SmServiceName {
-    char name[sizeof(u64)];
-};
+#include <cstring>
 
-static_assert(__alignof__(SmServiceName) == 1, "SmServiceName definition!");
+namespace sts::sm {
 
-/* For Debug Monitor extensions. */
-struct SmServiceRecord {
-    u64 service_name;
-    u64 owner_pid;
-    u64 max_sessions;
-    u64 mitm_pid;
-    u64 mitm_waiting_ack_pid;
-    bool is_light;
-    bool mitm_waiting_ack;
-};
+    struct ServiceName {
+        static constexpr size_t MaxLength = 8;
 
-static_assert(sizeof(SmServiceRecord) == 0x30, "SmServiceRecord definition!");
+        char name[MaxLength];
+
+        static constexpr ServiceName Encode(const char *name, size_t name_size) {
+            ServiceName out{};
+
+            for (size_t i = 0; i < MaxLength; i++) {
+                if (i < name_size) {
+                    out.name[i] = name[i];
+                } else {
+                    out.name[i] = 0;
+                }
+            }
+
+            return out;
+        }
+
+        static constexpr ServiceName Encode(const char *name) {
+            return Encode(name, std::strlen(name));
+        }
+    };
+    static constexpr ServiceName InvalidServiceName = ServiceName::Encode("");
+    static_assert(alignof(ServiceName) == 1, "ServiceName definition!");
+
+    inline bool operator==(const ServiceName &lhs, const ServiceName &rhs) {
+        return std::memcmp(&lhs, &rhs, sizeof(ServiceName)) == 0;
+    }
+
+    inline bool operator!=(const ServiceName &lhs, const ServiceName &rhs) {
+        return !(lhs == rhs);
+    }
+
+    /* For Debug Monitor extensions. */
+    struct ServiceRecord {
+        ServiceName service;
+        u64 owner_pid;
+        u64 max_sessions;
+        u64 mitm_pid;
+        u64 mitm_waiting_ack_pid;
+        bool is_light;
+        bool mitm_waiting_ack;
+    };
+    static_assert(sizeof(ServiceRecord) == 0x30, "ServiceRecord definition!");
+
+    /* For process validation. */
+    static constexpr u64 InvalidProcessId = static_cast<u64>(-1ull);
+
+}
