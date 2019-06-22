@@ -16,14 +16,14 @@
 
 #include <stratosphere/reg.hpp>
 
-#include "boot_gpio_utils.hpp"
+#include "gpio_utils.hpp"
 
-namespace sts::boot::gpio {
+namespace sts::gpio {
 
     namespace {
 
         /* Pull in GPIO map definitions. */
-#include "boot_gpio_map.inc"
+#include "gpio_map.inc"
 
         constexpr u32 PhysicalBase = 0x6000D000;
 

@@ -18,13 +18,16 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "i2c/driver/i2c_api.hpp"
+namespace sts::pinmux {
 
-namespace sts::boot::gpio {
+    /* Pinmux Utilities. */
+    u32 UpdatePark(u32 pinmux_name);
+    u32 UpdatePad(u32 pinmux_name, u32 config_val, u32 config_mask);
+    u32 UpdateDrivePad(u32 pinmux_drivepad_name, u32 config_val, u32 config_mask);
+    u32 DummyReadDrivePad(u32 pinmux_drivepad_name);
 
-    /* GPIO Utilities. */
-    u32 Configure(u32 gpio_pad_name);
-    u32 SetDirection(u32 gpio_pad_name, GpioDirection dir);
-    u32 SetValue(u32 gpio_pad_name, GpioValue val);
+    /* Helper API. */
+    void UpdateAllParks();
+    void DummyReadAllDrivePads();
 
 }

@@ -15,8 +15,9 @@
  */
 
 #include "boot_fan_enable.hpp"
-#include "boot_gpio_utils.hpp"
 #include "boot_spl_utils.hpp"
+
+#include "gpio/gpio_utils.hpp"
 
 namespace sts::boot {
 
@@ -28,7 +29,7 @@ namespace sts::boot {
     }
 
     void SetFanEnabled() {
-        if (GetHardwareType() == spl::HardwareType::Copper) {
+        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
             gpio::Configure(GpioPadName_FanEnable);
             gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output);
             gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);

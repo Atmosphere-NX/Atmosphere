@@ -30,7 +30,7 @@ namespace sts::boot {
     }
 
     void CheckAndRepairBootImages() {
-        const auto boot_image_update_type = updater::GetBootImageUpdateType(GetHardwareType());
+        const auto boot_image_update_type = updater::GetBootImageUpdateType(spl::GetHardwareType());
 
         bool repaired_normal, repaired_safe;
         if (R_SUCCEEDED(updater::VerifyBootImagesAndRepairIfNeeded(&repaired_normal, &repaired_safe, g_boot_image_work_buffer, sizeof(g_boot_image_work_buffer), boot_image_update_type)) && repaired_normal) {

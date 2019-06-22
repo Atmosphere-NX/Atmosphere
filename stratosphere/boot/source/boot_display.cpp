@@ -199,7 +199,7 @@ namespace sts::boot {
     void InitializeDisplay() {
         /* Setup globals. */
         InitializeRegisterBaseAddresses();
-        g_is_mariko = IsMariko();
+        g_is_mariko = spl::IsMariko();
         InitializeFrameBuffer();
 
         /* Turn on DSI/voltage rail. */

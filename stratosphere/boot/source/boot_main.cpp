@@ -29,11 +29,12 @@
 #include "boot_check_clock.hpp"
 #include "boot_clock_initial_configuration.hpp"
 #include "boot_fan_enable.hpp"
-#include "boot_gpio_initial_configuration.hpp"
-#include "boot_pinmux_initial_configuration.hpp"
 #include "boot_repair_boot_images.hpp"
 #include "boot_splash_screen.hpp"
 #include "boot_wake_pins.hpp"
+
+#include "gpio/gpio_initial_configuration.hpp"
+#include "pinmux/pinmux_initial_configuration.hpp"
 
 #include "boot_power_utils.hpp"
 #include "boot_spl_utils.hpp"
@@ -111,7 +112,7 @@ int main(int argc, char **argv)
     boot::ChangeGpioVoltageTo1_8v();
 
     /* Setup GPIO. */
-    boot::gpio::SetInitialConfiguration();
+    gpio::SetInitialConfiguration();
 
     /* Check USB PLL/UTMIP clock. */
     boot::CheckClock();
@@ -119,7 +120,7 @@ int main(int argc, char **argv)
     /* Talk to PMIC/RTC, set boot reason with SPL. */
     boot::DetectBootReason();
 
-    const auto hw_type = boot::GetHardwareType();
+    const auto hw_type = spl::GetHardwareType();
     if (hw_type != spl::HardwareType::Copper) {
         /* Display splash screen for two seconds. */
         boot::ShowSplashScreen();
@@ -129,7 +130,7 @@ int main(int argc, char **argv)
     }
 
     /* Configure pinmux + drive pads. */
-    boot::pinmux::SetInitialConfiguration();
+    pinmux::SetInitialConfiguration();
 
     /* Configure the PMC wake pin settings. */
     boot::SetInitialWakePinConfiguration();

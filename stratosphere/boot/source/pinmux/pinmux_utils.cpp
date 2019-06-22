@@ -16,14 +16,14 @@
 
 #include <stratosphere/reg.hpp>
 
-#include "boot_pinmux_utils.hpp"
+#include "pinmux_utils.hpp"
 
-namespace sts::boot::pinmux {
+namespace sts::pinmux {
 
     namespace {
 
         /* Pull in Pinmux map definitions. */
-#include "boot_pinmux_map.inc"
+#include "pinmux_map.inc"
 
         constexpr u32 ApbMiscPhysicalBase = 0x70000000;
 

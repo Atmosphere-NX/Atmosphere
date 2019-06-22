@@ -16,7 +16,7 @@
 
 #include "boot_spl_utils.hpp"
 
-namespace sts::boot {
+namespace sts::spl {
 
     spl::HardwareType GetHardwareType() {
         u64 out_val = 0;

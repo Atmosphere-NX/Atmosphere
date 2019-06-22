@@ -18,8 +18,11 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::boot::gpio {
+namespace sts::gpio {
 
-    void SetInitialConfiguration();
+    /* GPIO Utilities. */
+    u32 Configure(u32 gpio_pad_name);
+    u32 SetDirection(u32 gpio_pad_name, GpioDirection dir);
+    u32 SetValue(u32 gpio_pad_name, GpioValue val);
 
 }

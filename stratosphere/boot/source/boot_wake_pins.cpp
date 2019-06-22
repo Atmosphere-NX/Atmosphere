@@ -95,7 +95,7 @@ namespace sts::boot {
         /* Set wake event levels, wake event enables. */
         const WakePinConfig *configs;
         size_t num_configs;
-        if (GetHardwareType() == spl::HardwareType::Copper) {
+        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
             configs = WakePinConfigsCopper;
             num_configs = NumWakePinConfigsCopper;
         } else {

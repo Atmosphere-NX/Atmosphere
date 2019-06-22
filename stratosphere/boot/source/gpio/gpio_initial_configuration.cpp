@@ -14,11 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "boot_gpio_initial_configuration.hpp"
-#include "boot_gpio_utils.hpp"
-#include "boot_spl_utils.hpp"
+#include "gpio_initial_configuration.hpp"
+#include "gpio_utils.hpp"
 
-namespace sts::boot::gpio {
+/* TODO: Better way? */
+#include "../boot_spl_utils.hpp"
+
+namespace sts::gpio {
 
     namespace {
 
@@ -29,17 +31,17 @@ namespace sts::boot::gpio {
         };
 
         /* Include all initial configuration definitions. */
-#include "boot_gpio_initial_configuration_icosa.inc"
-#include "boot_gpio_initial_configuration_copper.inc"
-#include "boot_gpio_initial_configuration_hoag.inc"
-#include "boot_gpio_initial_configuration_iowa.inc"
+#include "gpio_initial_configuration_icosa.inc"
+#include "gpio_initial_configuration_copper.inc"
+#include "gpio_initial_configuration_hoag.inc"
+#include "gpio_initial_configuration_iowa.inc"
 
     }
 
     void SetInitialConfiguration() {
         const InitialConfig *configs = nullptr;
         size_t num_configs = 0;
-        const auto hw_type = GetHardwareType();
+        const auto hw_type = spl::GetHardwareType();
         const FirmwareVersion fw_ver = GetRuntimeFirmwareVersion();
 
         /* Choose GPIO map. */

@@ -18,16 +18,8 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::boot::pinmux {
+namespace sts::gpio {
 
-    /* Pinmux Utilities. */
-    u32 UpdatePark(u32 pinmux_name);
-    u32 UpdatePad(u32 pinmux_name, u32 config_val, u32 config_mask);
-    u32 UpdateDrivePad(u32 pinmux_drivepad_name, u32 config_val, u32 config_mask);
-    u32 DummyReadDrivePad(u32 pinmux_drivepad_name);
-
-    /* Helper API. */
-    void UpdateAllParks();
-    void DummyReadAllDrivePads();
+    void SetInitialConfiguration();
 
 }

@@ -19,8 +19,9 @@
 #include <stratosphere.hpp>
 
 #include "boot_bq24193_charger.hpp"
-#include "boot_gpio_utils.hpp"
 #include "boot_i2c_utils.hpp"
+
+#include "gpio/gpio_utils.hpp"
 
 namespace sts::boot {
 

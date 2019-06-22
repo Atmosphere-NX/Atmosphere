@@ -15,11 +15,13 @@
  */
 
 
-#include "boot_pinmux_initial_configuration.hpp"
-#include "boot_pinmux_utils.hpp"
-#include "boot_spl_utils.hpp"
+#include "pinmux_initial_configuration.hpp"
+#include "pinmux_utils.hpp"
 
-namespace sts::boot::pinmux {
+/* TODO: Better way? */
+#include "../boot_spl_utils.hpp"
+
+namespace sts::pinmux {
 
     namespace {
 
@@ -30,18 +32,18 @@ namespace sts::boot::pinmux {
         };
 
         /* Include all initial configuration definitions. */
-#include "boot_pinmux_initial_configuration_icosa.inc"
-#include "boot_pinmux_initial_configuration_copper.inc"
-#include "boot_pinmux_initial_configuration_hoag.inc"
-#include "boot_pinmux_initial_configuration_iowa.inc"
-#include "boot_pinmux_initial_drive_pad_configuration.inc"
+#include "pinmux_initial_configuration_icosa.inc"
+#include "pinmux_initial_configuration_copper.inc"
+#include "pinmux_initial_configuration_hoag.inc"
+#include "pinmux_initial_configuration_iowa.inc"
+#include "pinmux_initial_drive_pad_configuration.inc"
 
 
         /* Configuration helpers. */
         void ConfigureInitialPads() {
             const InitialConfig *configs = nullptr;
             size_t num_configs = 0;
-            const auto hw_type = GetHardwareType();
+            const auto hw_type = spl::GetHardwareType();
 
             switch (hw_type) {
                 case spl::HardwareType::Icosa:

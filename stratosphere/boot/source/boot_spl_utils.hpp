@@ -27,12 +27,8 @@ namespace sts::spl {
         Iowa = 3,
     };
 
-}
-
-namespace sts::boot {
-
     /* SPL Utilities. */
-    spl::HardwareType GetHardwareType();
+    HardwareType GetHardwareType();
     bool IsRecoveryBoot();
     bool IsMariko();
 

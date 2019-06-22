@@ -52,7 +52,7 @@ namespace sts::boot {
                 return 1;
             }
             if (rtc_intr & 0x04) {
-                if (nv_erc != 0x80 && !IsRecoveryBoot()) {
+                if (nv_erc != 0x80 && !spl::IsRecoveryBoot()) {
                     return 4;
                 }
             }
