@@ -52,10 +52,10 @@ typedef struct efi_header {
 } __attribute__((packed, aligned(4))) efi_header_t;
 
 typedef int (*gpt_entry_iterator_t)(const efi_entry_t *entry, void *param, size_t entry_offset, FILE *disk);
-typedef int (*gpt_emu_entry_iterator_t)(const efi_entry_t *entry, void *param, size_t entry_offset, FILE *disk, const char *origin_path, bool is_multipart, int num_parts, uint64_t part_limit);
+typedef int (*gpt_emu_entry_iterator_t)(const efi_entry_t *entry, void *param, size_t entry_offset, FILE *disk, const char *origin_path, int num_parts, uint64_t part_limit);
 
 int gpt_get_header(efi_header_t *out, FILE *disk, size_t sector_size);
 int gpt_iterate_through_entries(FILE *disk, size_t sector_size, gpt_entry_iterator_t callback, void *param);
-int gpt_iterate_through_emu_entries(FILE *disk, size_t sector_size, gpt_emu_entry_iterator_t callback, void *param, const char *origin_path, bool is_multipart, int num_parts, uint64_t part_limit);
+int gpt_iterate_through_emu_entries(FILE *disk, size_t sector_size, gpt_emu_entry_iterator_t callback, void *param, const char *origin_path, int num_parts, uint64_t part_limit);
 
 #endif

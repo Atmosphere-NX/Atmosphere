@@ -24,8 +24,7 @@
 
 #define EMUDEV_MAX_DEVICES 16
 
-int emudev_mount_device(const char *name, const device_partition_t *devpart, const char *origin_path);
-int emudev_mount_device_multipart(const char *name, const device_partition_t *devpart, const char *origin_path, int num_parts, uint64_t part_limit);
+int emudev_mount_device(const char *name, const device_partition_t *devpart, const char *origin_path, int num_parts, uint64_t part_limit);
 int emudev_register_device(const char *name);
 int emudev_unregister_device(const char *name);
 int emudev_unmount_device(const char *name);        /* also unregisters. */

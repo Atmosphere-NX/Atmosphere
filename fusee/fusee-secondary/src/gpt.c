@@ -113,7 +113,7 @@ int gpt_iterate_through_entries(FILE *disk, size_t sector_size, gpt_entry_iterat
     return 0;
 }
 
-int gpt_iterate_through_emu_entries(FILE *disk, size_t sector_size, gpt_emu_entry_iterator_t callback, void *param, const char *origin_path, bool is_multipart, int num_parts, uint64_t part_limit) {
+int gpt_iterate_through_emu_entries(FILE *disk, size_t sector_size, gpt_emu_entry_iterator_t callback, void *param, const char *origin_path, int num_parts, uint64_t part_limit) {
     efi_header_t hdr;
     efi_entry_t entry;
     size_t offset = 2 * 512; /* Sector #2. */
@@ -138,7 +138,7 @@ int gpt_iterate_through_emu_entries(FILE *disk, size_t sector_size, gpt_emu_entr
             return -1;
         }
 
-        if (callback(&entry, param, offset, disk, origin_path, is_multipart, num_parts, part_limit) != 0) {
+        if (callback(&entry, param, offset, disk, origin_path, num_parts, part_limit) != 0) {
             return -1;
         }
 
