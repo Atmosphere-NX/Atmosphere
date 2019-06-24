@@ -18,16 +18,20 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-enum DebugMonitorServiceCmd {
-    Dmnt_Cmd_GetProcessModuleInfo = 0
-};
+namespace sts::ro {
 
-class DebugMonitorService final : public IServiceObject {
-    private:
-        /* Actual commands. */
-        Result GetProcessModuleInfo(Out<u32> count, OutBuffer<LoaderModuleInfo> out_infos, u64 pid);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<Dmnt_Cmd_GetProcessModuleInfo, &DebugMonitorService::GetProcessModuleInfo>(),
-        };
-};
+    class DebugMonitorService final : public IServiceObject {
+        protected:
+            enum class CommandId {
+                GetProcessModuleInfo = 0,
+            };
+        private:
+            /* Actual commands. */
+            Result GetProcessModuleInfo(Out<u32> count, OutBuffer<LoaderModuleInfo> out_infos, u64 pid);
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MakeServiceCommandMeta<CommandId::GetProcessModuleInfo, &DebugMonitorService::GetProcessModuleInfo>(),
+            };
+    };
+
+}

@@ -22,10 +22,11 @@
 #include <switch.h>
 #include <atmosphere.h>
 #include <stratosphere.hpp>
+#include <stratosphere/ro.hpp>
+#include <stratosphere/spl.hpp>
 
 #include "ro_debug_monitor.hpp"
 #include "ro_service.hpp"
-#include "ro_registration.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -85,24 +86,34 @@ void __appExit(void) {
     setsysExit();
 }
 
+using namespace sts;
+
 /* Helpers to create RO objects. */
-static const auto MakeRoServiceForSelf = []() { return std::make_shared<RelocatableObjectsService>(RoModuleType_ForSelf); };
-static const auto MakeRoServiceForOthers = []() { return std::make_shared<RelocatableObjectsService>(RoModuleType_ForOthers); };
+static const auto MakeRoServiceForSelf = []() { return std::make_shared<ro::Service>(ro::ModuleType::ForSelf); };
+static const auto MakeRoServiceForOthers = []() { return std::make_shared<ro::Service>(ro::ModuleType::ForOthers); };
 
 int main(int argc, char **argv)
 {
-    /* Initialize. */
-    Registration::Initialize();
+    /* Initialize Debug config. */
+    {
+        DoWithSmSession([]() {
+            R_ASSERT(splInitialize());
+        });
+        ON_SCOPE_EXIT { splExit(); };
+
+        ro::SetDevelopmentHardware(spl::IsDevelopmentHardware());
+        ro::SetDevelopmentFunctionEnabled(spl::IsDevelopmentFunctionEnabled());
+    }
 
     /* Static server manager. */
     static auto s_server_manager = WaitableManager(1);
 
     /* Create services. */
-    s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ro:dmnt", 2));
+    s_server_manager.AddWaitable(new ServiceServer<ro::DebugMonitorService>("ro:dmnt", 2));
     /* NOTE: Official code passes 32 for ldr:ro max sessions. We will pass 2, because that's the actual limit. */
-    s_server_manager.AddWaitable(new ServiceServer<RelocatableObjectsService, +MakeRoServiceForSelf>("ldr:ro", 2));
+    s_server_manager.AddWaitable(new ServiceServer<ro::Service, +MakeRoServiceForSelf>("ldr:ro", 2));
     if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
-        s_server_manager.AddWaitable(new ServiceServer<RelocatableObjectsService, +MakeRoServiceForOthers>("ro:1", 2));
+        s_server_manager.AddWaitable(new ServiceServer<ro::Service, +MakeRoServiceForOthers>("ro:1", 2));
     }
 
     /* Loop forever, servicing our services. */

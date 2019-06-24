@@ -18,48 +18,48 @@
 #include <switch.h>
 
 #include <stratosphere.hpp>
+#include <stratosphere/ro.hpp>
 
-#include "ro_registration.hpp"
+namespace sts::ro {
 
-enum RoServiceCmd {
-    Ro_Cmd_LoadNro = 0,
-    Ro_Cmd_UnloadNro = 1,
-    Ro_Cmd_LoadNrr = 2,
-    Ro_Cmd_UnloadNrr = 3,
-    Ro_Cmd_Initialize = 4,
-    Ro_Cmd_LoadNrrEx = 10,
-};
+    /* Access utilities. */
+    void SetDevelopmentHardware(bool is_development_hardware);
+    void SetDevelopmentFunctionEnabled(bool is_development_function_enabled);
 
-class RelocatableObjectsService final : public IServiceObject {
-    private:
-        Registration::RoProcessContext *context = nullptr;
-        RoModuleType type;
-    public:
-        explicit RelocatableObjectsService(RoModuleType t) : type(t) {
-            /* ... */
-        }
-        virtual ~RelocatableObjectsService() override;
-    private:
-        bool IsInitialized() const {
-            return this->context != nullptr;
-        }
-        bool IsProcessIdValid(u64 process_id);
-        static u64 GetTitleId(Handle process_handle);
-    private:
-        /* Actual commands. */
-        Result LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
-        Result UnloadNro(PidDescriptor pid_desc, u64 nro_address);
-        Result LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size);
-        Result UnloadNrr(PidDescriptor pid_desc, u64 nrr_address);
-        Result Initialize(PidDescriptor pid_desc, CopiedHandle process_h);
-        Result LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size, CopiedHandle process_h);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<Ro_Cmd_LoadNro, &RelocatableObjectsService::LoadNro>(),
-            MakeServiceCommandMeta<Ro_Cmd_UnloadNro, &RelocatableObjectsService::UnloadNro>(),
-            MakeServiceCommandMeta<Ro_Cmd_LoadNrr, &RelocatableObjectsService::LoadNrr>(),
-            MakeServiceCommandMeta<Ro_Cmd_UnloadNrr, &RelocatableObjectsService::UnloadNrr>(),
-            MakeServiceCommandMeta<Ro_Cmd_Initialize, &RelocatableObjectsService::Initialize>(),
-            MakeServiceCommandMeta<Ro_Cmd_LoadNrrEx, &RelocatableObjectsService::LoadNrrEx, FirmwareVersion_700>(),
-        };
-};
+    class Service final : public IServiceObject {
+        protected:
+            enum class CommandId {
+                LoadNro     = 0,
+                UnloadNro   = 1,
+                LoadNrr     = 2,
+                UnloadNrr   = 3,
+                Initialize  = 4,
+                LoadNrrEx   = 10,
+            };
+        private:
+            size_t context_id;
+            ModuleType type;
+        public:
+            explicit Service(ModuleType t);
+            virtual ~Service() override;
+        private:
+            /* Actual commands. */
+            Result LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
+            Result UnloadNro(PidDescriptor pid_desc, u64 nro_address);
+            Result LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size);
+            Result UnloadNrr(PidDescriptor pid_desc, u64 nrr_address);
+            Result Initialize(PidDescriptor pid_desc, CopiedHandle process_h);
+            Result LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size, CopiedHandle process_h);
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MakeServiceCommandMeta<CommandId::LoadNro, &Service::LoadNro>(),
+                MakeServiceCommandMeta<CommandId::UnloadNro, &Service::UnloadNro>(),
+                MakeServiceCommandMeta<CommandId::LoadNrr, &Service::LoadNrr>(),
+                MakeServiceCommandMeta<CommandId::UnloadNrr, &Service::UnloadNrr>(),
+                MakeServiceCommandMeta<CommandId::Initialize, &Service::Initialize>(),
+                MakeServiceCommandMeta<CommandId::LoadNrrEx, &Service::LoadNrrEx, FirmwareVersion_700>(),
+            };
+
+    };
+
+}

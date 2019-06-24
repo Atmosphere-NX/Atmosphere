@@ -16,11 +16,11 @@
 
 #pragma once
 #include <switch.h>
-#include <cstdio>
+#include <stratosphere/ro.hpp>
 
-#include "ro_types.hpp"
+namespace sts::ro::impl {
 
-class PatchUtils {
-    public:
-        static void ApplyPatches(const ModuleId *module_id, u8 *mapped_nro, size_t mapped_size);
-};
+    /* Apply IPS patches. */
+    void LocateAndApplyIpsPatchesToModule(const ModuleId *module_id, u8 *mapped_nro, size_t mapped_size);
+
+}
