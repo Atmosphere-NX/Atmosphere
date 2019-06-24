@@ -16,8 +16,8 @@
 
 #include <switch.h>
 #include <stratosphere.hpp>
+#include <stratosphere/spl/spl_types.hpp>
 
-#include "spl_types.hpp"
 #include "spl_ctr_drbg.hpp"
 
 namespace sts::spl {

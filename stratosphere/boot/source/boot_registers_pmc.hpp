@@ -17,8 +17,6 @@
 #pragma once
 #include <switch.h>
 
-#include "boot_types.hpp"
-
 static constexpr uintptr_t PmcBase = 0x7000E400ul;
 
 static constexpr size_t APBDEV_PMC_CNTRL = 0x0;

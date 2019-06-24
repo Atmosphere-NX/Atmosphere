@@ -14,23 +14,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "boot_functions.hpp"
+#include "boot_change_voltage.hpp"
+#include "boot_pmc_wrapper.hpp"
 
-static constexpr u32 Sdmmc3VoltageBit = (1 << 13); /* SDMMC3 */
-static constexpr u32 AudioVoltageBit  = (1 << 18); /* AUDIO_HV */
-static constexpr u32 GpioVoltageBit   = (1 << 21); /* GPIO */
-static constexpr u32 SpiVoltageBit    = (1 << 23); /* SPI_HV */
+namespace sts::boot {
 
-static constexpr u32 VoltageChangeMask = SpiVoltageBit | GpioVoltageBit | AudioVoltageBit | Sdmmc3VoltageBit;
+    namespace {
 
-static constexpr u32 PmcPwrDet    = 0x7000E448;
-static constexpr u32 PmcPwrDetVal = 0x7000E4E4;
+        /* Convenience definitions. */
+        constexpr u32 Sdmmc3VoltageBit = (1 << 13); /* SDMMC3 */
+        constexpr u32 AudioVoltageBit  = (1 << 18); /* AUDIO_HV */
+        constexpr u32 GpioVoltageBit   = (1 << 21); /* GPIO */
+        constexpr u32 SpiVoltageBit    = (1 << 23); /* SPI_HV */
 
-void Boot::ChangeGpioVoltageTo1_8v() {
-    /* Write mask to APBDEV_PMC_PWR_DET, then clear APBDEV_PMC_PWR_DET_VAL. */
-    WritePmcRegister(PmcPwrDet, VoltageChangeMask, VoltageChangeMask);
-    WritePmcRegister(PmcPwrDetVal, 0, VoltageChangeMask);
+        constexpr u32 VoltageChangeMask = SpiVoltageBit | GpioVoltageBit | AudioVoltageBit | Sdmmc3VoltageBit;
 
-    /* Sleep for 100 us. */
-    svcSleepThread(100'000ul);
+        constexpr u32 PmcPwrDet    = 0x7000E448;
+        constexpr u32 PmcPwrDetVal = 0x7000E4E4;
+
+    }
+
+    void ChangeGpioVoltageTo1_8v() {
+        /* Write mask to APBDEV_PMC_PWR_DET, then clear APBDEV_PMC_PWR_DET_VAL. */
+        WritePmcRegister(PmcPwrDet, VoltageChangeMask, VoltageChangeMask);
+        WritePmcRegister(PmcPwrDetVal, 0, VoltageChangeMask);
+
+        /* Sleep for 100 us. */
+        svcSleepThread(100'000ul);
+    }
+
 }

@@ -18,51 +18,56 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "i2c_driver/i2c_api.hpp"
-#include "boot_functions.hpp"
 #include "boot_bq24193_charger.hpp"
+#include "boot_i2c_utils.hpp"
 
-class ChargerDriver {
-    private:
-        static constexpr u32 GpioPadName_Bq24193Charger = 0xA;
-    private:
-        I2cSessionImpl i2c_session;
-    public:
-        ChargerDriver() {
-            I2cDriver::Initialize();
-            I2cDriver::OpenSession(&this->i2c_session, I2cDevice_Bq24193);
+#include "gpio/gpio_utils.hpp"
 
-            Boot::GpioConfigure(GpioPadName_Bq24193Charger);
-            Boot::GpioSetDirection(GpioPadName_Bq24193Charger, GpioDirection_Output);
-        }
+namespace sts::boot {
 
-        ~ChargerDriver() {
-            I2cDriver::CloseSession(this->i2c_session);
-            I2cDriver::Finalize();
-        }
-    private:
-        Result Read(u8 addr, u8 *out_data);
-        Result Write(u8 addr, u8 val);
-        Result ReadWrite(u8 addr, u8 mask, u8 val);
+    class ChargerDriver {
+        private:
+            static constexpr u32 GpioPadName_Bq24193Charger = 0xA;
+        private:
+            i2c::driver::Session i2c_session;
+        public:
+            ChargerDriver() {
+                i2c::driver::Initialize();
+                i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Bq24193);
 
-        Result SetInputCurrentLimit(InputCurrentLimit current);
-        Result SetForce20PercentChargeCurrent(bool force);
-        Result SetPreChargeCurrentLimit(u32 current);
-        Result SetTerminationCurrentLimit(u32 current);
-        Result SetMinimumSystemVoltageLimit(u32 voltage);
-        Result SetWatchdogTimerSetting(WatchdogTimerSetting setting);
-        Result SetChargingSafetyTimerEnabled(bool enabled);
-        Result ResetWatchdogTimer();
-        Result SetBoostModeCurrentLimit(BoostModeCurrentLimit current);
-        Result SetHiZEnabled(bool enabled);
+                gpio::Configure(GpioPadName_Bq24193Charger);
+                gpio::SetDirection(GpioPadName_Bq24193Charger, GpioDirection_Output);
+            }
 
-    public:
-        Result Initialize();
-        Result Initialize(bool set_input_current_limit);
-        Result SetChargeVoltageLimit(u32 voltage);
-        Result SetFastChargeCurrentLimit(u32 current);
-        Result SetChargeEnabled(bool enabled);
-        Result SetChargerConfiguration(ChargerConfiguration config);
-        Result GetInputCurrentLimit(InputCurrentLimit *out);
-        Result GetChargeVoltageLimit(u32 *out);
-};
+            ~ChargerDriver() {
+                i2c::driver::CloseSession(this->i2c_session);
+                i2c::driver::Finalize();
+            }
+        private:
+            Result Read(u8 addr, u8 *out_data);
+            Result Write(u8 addr, u8 val);
+            Result ReadWrite(u8 addr, u8 mask, u8 val);
+
+            Result SetInputCurrentLimit(bq24193::InputCurrentLimit current);
+            Result SetForce20PercentChargeCurrent(bool force);
+            Result SetPreChargeCurrentLimit(u32 current);
+            Result SetTerminationCurrentLimit(u32 current);
+            Result SetMinimumSystemVoltageLimit(u32 voltage);
+            Result SetWatchdogTimerSetting(bq24193::WatchdogTimerSetting setting);
+            Result SetChargingSafetyTimerEnabled(bool enabled);
+            Result ResetWatchdogTimer();
+            Result SetBoostModeCurrentLimit(bq24193::BoostModeCurrentLimit current);
+            Result SetHiZEnabled(bool enabled);
+
+        public:
+            Result Initialize();
+            Result Initialize(bool set_input_current_limit);
+            Result SetChargeVoltageLimit(u32 voltage);
+            Result SetFastChargeCurrentLimit(u32 current);
+            Result SetChargeEnabled(bool enabled);
+            Result SetChargerConfiguration(bq24193::ChargerConfiguration config);
+            Result GetInputCurrentLimit(bq24193::InputCurrentLimit *out);
+            Result GetChargeVoltageLimit(u32 *out);
+    };
+
+}

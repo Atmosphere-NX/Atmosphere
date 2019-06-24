@@ -18,24 +18,28 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "i2c_driver/i2c_api.hpp"
+#include "boot_i2c_utils.hpp"
 
-class RtcDriver {
-    private:
-        I2cSessionImpl i2c_session;
-    public:
-        RtcDriver() {
-            I2cDriver::Initialize();
-            I2cDriver::OpenSession(&this->i2c_session, I2cDevice_Max77620Rtc);
-        }
+namespace sts::boot {
 
-        ~RtcDriver() {
-            I2cDriver::CloseSession(this->i2c_session);
-            I2cDriver::Finalize();
-        }
-    private:
-        Result ReadRtcRegister(u8 *out, u8 address);
-    public:
-        Result GetRtcIntr(u8 *out);
-        Result GetRtcIntrM(u8 *out);
-};
+    class RtcDriver {
+        private:
+            i2c::driver::Session i2c_session;
+        public:
+            RtcDriver() {
+                i2c::driver::Initialize();
+                i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Max77620Rtc);
+            }
+
+            ~RtcDriver() {
+                i2c::driver::CloseSession(this->i2c_session);
+                i2c::driver::Finalize();
+            }
+        private:
+            Result ReadRtcRegister(u8 *out, u8 address);
+        public:
+            Result GetRtcIntr(u8 *out);
+            Result GetRtcIntrM(u8 *out);
+    };
+
+}

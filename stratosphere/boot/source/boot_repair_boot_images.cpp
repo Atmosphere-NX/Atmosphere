@@ -14,17 +14,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "boot_functions.hpp"
-#include "updater/updater_api.hpp"
+#include <stratosphere/spl.hpp>
+#include <stratosphere/updater.hpp>
 
-static u8 __attribute__((__aligned__(0x1000))) g_boot_image_work_buffer[0x10000];
+#include "boot_power_utils.hpp"
+#include "boot_repair_boot_images.hpp"
 
-void Boot::CheckAndRepairBootImages() {
-    const BootImageUpdateType boot_image_update_type = Updater::GetBootImageUpdateType(Boot::GetHardwareType());
+namespace sts::boot {
 
-    bool repaired_normal, repaired_safe;
-    if (R_SUCCEEDED(Updater::VerifyBootImagesAndRepairIfNeeded(&repaired_normal, &repaired_safe, g_boot_image_work_buffer, sizeof(g_boot_image_work_buffer), boot_image_update_type)) && repaired_normal) {
-        /* Nintendo only performs a reboot on successful normal repair. */
-        Boot::RebootSystem();
+    namespace {
+
+        /* Globals. */
+        u8 __attribute__((aligned(0x1000))) g_boot_image_work_buffer[0x10000];
+
     }
+
+    void CheckAndRepairBootImages() {
+        const auto boot_image_update_type = updater::GetBootImageUpdateType(spl::GetHardwareType());
+
+        bool repaired_normal, repaired_safe;
+        if (R_SUCCEEDED(updater::VerifyBootImagesAndRepairIfNeeded(&repaired_normal, &repaired_safe, g_boot_image_work_buffer, sizeof(g_boot_image_work_buffer), boot_image_update_type)) && repaired_normal) {
+            /* Nintendo only performs a reboot on successful normal repair. */
+            RebootSystem();
+        }
+    }
+
 }

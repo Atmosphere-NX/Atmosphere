@@ -16,23 +16,27 @@
 
 #include <switch.h>
 #include <stratosphere.hpp>
-#include "boot_functions.hpp"
+
 #include "boot_rtc_driver.hpp"
 
-Result RtcDriver::ReadRtcRegister(u8 *out, u8 address) {
-    const u8 update_addr = 0x04;
-    const u8 update_val = 0x10;
-    R_TRY(Boot::WriteI2cRegister(this->i2c_session, &update_val, sizeof(update_val), &update_addr, sizeof(update_addr)));
-    svcSleepThread(16'000'000ul);
-    return Boot::ReadI2cRegister(this->i2c_session, out, sizeof(*out), &address, sizeof(address));
-}
+namespace sts::boot {
 
-Result RtcDriver::GetRtcIntr(u8 *out) {
-    const u8 addr = 0x00;
-    return Boot::ReadI2cRegister(this->i2c_session, out, sizeof(*out), &addr, sizeof(addr));
-}
+    Result RtcDriver::ReadRtcRegister(u8 *out, u8 address) {
+        const u8 update_addr = 0x04;
+        const u8 update_val = 0x10;
+        R_TRY(WriteI2cRegister(this->i2c_session, &update_val, sizeof(update_val), &update_addr, sizeof(update_addr)));
+        svcSleepThread(16'000'000ul);
+        return ReadI2cRegister(this->i2c_session, out, sizeof(*out), &address, sizeof(address));
+    }
 
-Result RtcDriver::GetRtcIntrM(u8 *out) {
-    const u8 addr = 0x01;
-    return this->ReadRtcRegister(out, addr);
+    Result RtcDriver::GetRtcIntr(u8 *out) {
+        const u8 addr = 0x00;
+        return ReadI2cRegister(this->i2c_session, out, sizeof(*out), &addr, sizeof(addr));
+    }
+
+    Result RtcDriver::GetRtcIntrM(u8 *out) {
+        const u8 addr = 0x01;
+        return this->ReadRtcRegister(out, addr);
+    }
+
 }

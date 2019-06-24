@@ -14,70 +14,82 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "boot_functions.hpp"
-#include "boot_battery_icon_low.hpp"
-#include "boot_battery_icon_charging.hpp"
-#include "boot_battery_icon_charging_red.hpp"
+#include "boot_battery_icons.hpp"
+#include "boot_display.hpp"
 
-void Boot::ShowLowBatteryIcon() {
-    Boot::InitializeDisplay();
-    {
-        /* Low battery icon is shown for 5 seconds. */
-        Boot::ShowDisplay(LowBatteryX, LowBatteryY, LowBatteryW, LowBatteryH, LowBattery);
-        svcSleepThread(5'000'000'000ul);
-    }
-    Boot::FinalizeDisplay();
-}
+namespace sts::boot {
 
-static void FillBatteryMeter(u32 *icon, const size_t icon_w, const size_t icon_h, const size_t meter_x, const size_t meter_y, const size_t meter_w, const size_t meter_h, const size_t fill_w) {
-    const size_t fill_x = meter_x + meter_w - fill_w;
+    namespace {
 
-    if (fill_x + fill_w > icon_w || meter_y + meter_h > icon_h || fill_x == 0) {
-        return;
-    }
+        /* Pull in icon definitions. */
+#include "boot_battery_icon_low.inc"
+#include "boot_battery_icon_charging.inc"
+#include "boot_battery_icon_charging_red.inc"
 
-    u32 *cur_row = icon + meter_y * icon_w + fill_x;
-    for (size_t y = 0; y < meter_h; y++) {
-        /* Make last column of meter identical to first column of meter. */
-        cur_row[-1] = icon[(meter_y + y) * icon_w + meter_x];
+        /* Helpers. */
+        void FillBatteryMeter(u32 *icon, const size_t icon_w, const size_t icon_h, const size_t meter_x, const size_t meter_y, const size_t meter_w, const size_t meter_h, const size_t fill_w) {
+            const size_t fill_x = meter_x + meter_w - fill_w;
 
-        /* Black out further pixels. */
-        for (size_t x = 0; x < fill_w; x++) {
-            cur_row[x] = 0xFF000000;
+            if (fill_x + fill_w > icon_w || meter_y + meter_h > icon_h || fill_x == 0) {
+                return;
+            }
+
+            u32 *cur_row = icon + meter_y * icon_w + fill_x;
+            for (size_t y = 0; y < meter_h; y++) {
+                /* Make last column of meter identical to first column of meter. */
+                cur_row[-1] = icon[(meter_y + y) * icon_w + meter_x];
+
+                /* Black out further pixels. */
+                for (size_t x = 0; x < fill_w; x++) {
+                    cur_row[x] = 0xFF000000;
+                }
+                cur_row += icon_w;
+            }
         }
-        cur_row += icon_w;
-    }
-}
 
-void Boot::StartShowChargingIcon(size_t battery_percentage, bool wait) {
-    const bool is_red = battery_percentage <= 15;
-
-    const size_t IconX = is_red ? ChargingRedBatteryX : ChargingBatteryX;
-    const size_t IconY = is_red ? ChargingRedBatteryY : ChargingBatteryY;
-    const size_t IconW = is_red ? ChargingRedBatteryW : ChargingBatteryW;
-    const size_t IconH = is_red ? ChargingRedBatteryH : ChargingBatteryH;
-    const size_t IconMeterX = is_red ? ChargingRedBatteryMeterX : ChargingBatteryMeterX;
-    const size_t IconMeterY = is_red ? ChargingRedBatteryMeterY : ChargingBatteryMeterY;
-    const size_t IconMeterW = is_red ? ChargingRedBatteryMeterW : ChargingBatteryMeterW;
-    const size_t IconMeterH = is_red ? ChargingRedBatteryMeterH : ChargingBatteryMeterH;
-    const size_t MeterFillW = static_cast<size_t>(IconMeterW * (1.0 - (0.0404 + 0.0096 * battery_percentage)) + 0.5);
-
-    /* Create stack buffer, copy icon into it, draw fill meter, draw. */
-    {
-        u32 Icon[IconW * IconH];
-        std::memcpy(Icon, is_red ? ChargingRedBattery : ChargingBattery, sizeof(Icon));
-        FillBatteryMeter(Icon, IconW, IconH, IconMeterX, IconMeterY, IconMeterW, IconMeterH, MeterFillW);
-
-        Boot::InitializeDisplay();
-        Boot::ShowDisplay(IconX, IconY, IconW, IconH, Icon);
     }
 
-    /* Wait for 2 seconds if we're supposed to. */
-    if (wait) {
-        svcSleepThread(2'000'000'000ul);
+    void ShowLowBatteryIcon() {
+        InitializeDisplay();
+        {
+            /* Low battery icon is shown for 5 seconds. */
+            ShowDisplay(LowBatteryX, LowBatteryY, LowBatteryW, LowBatteryH, LowBattery);
+            svcSleepThread(5'000'000'000ul);
+        }
+        FinalizeDisplay();
     }
-}
 
-void Boot::EndShowChargingIcon() {
-    Boot::FinalizeDisplay();
+    void StartShowChargingIcon(size_t battery_percentage, bool wait) {
+        const bool is_red = battery_percentage <= 15;
+
+        const size_t IconX = is_red ? ChargingRedBatteryX : ChargingBatteryX;
+        const size_t IconY = is_red ? ChargingRedBatteryY : ChargingBatteryY;
+        const size_t IconW = is_red ? ChargingRedBatteryW : ChargingBatteryW;
+        const size_t IconH = is_red ? ChargingRedBatteryH : ChargingBatteryH;
+        const size_t IconMeterX = is_red ? ChargingRedBatteryMeterX : ChargingBatteryMeterX;
+        const size_t IconMeterY = is_red ? ChargingRedBatteryMeterY : ChargingBatteryMeterY;
+        const size_t IconMeterW = is_red ? ChargingRedBatteryMeterW : ChargingBatteryMeterW;
+        const size_t IconMeterH = is_red ? ChargingRedBatteryMeterH : ChargingBatteryMeterH;
+        const size_t MeterFillW = static_cast<size_t>(IconMeterW * (1.0 - (0.0404 + 0.0096 * battery_percentage)) + 0.5);
+
+        /* Create stack buffer, copy icon into it, draw fill meter, draw. */
+        {
+            u32 Icon[IconW * IconH];
+            std::memcpy(Icon, is_red ? ChargingRedBattery : ChargingBattery, sizeof(Icon));
+            FillBatteryMeter(Icon, IconW, IconH, IconMeterX, IconMeterY, IconMeterW, IconMeterH, MeterFillW);
+
+            InitializeDisplay();
+            ShowDisplay(IconX, IconY, IconW, IconH, Icon);
+        }
+
+        /* Wait for 2 seconds if we're supposed to. */
+        if (wait) {
+            svcSleepThread(2'000'000'000ul);
+        }
+    }
+
+    void EndShowChargingIcon() {
+        FinalizeDisplay();
+    }
+
 }

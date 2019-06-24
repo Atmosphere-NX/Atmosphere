@@ -33,7 +33,7 @@ endef
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/i2c_driver source/updater
+SOURCES		:=	source source/i2c source/i2c/driver source/i2c/driver/impl source/gpio source/pinmux
 DATA		:=	data
 INCLUDES	:=	include ../../common/include
 EXEFS_SRC	:=	exefs_src

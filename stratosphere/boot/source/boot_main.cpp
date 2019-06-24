@@ -22,9 +22,24 @@
 #include <switch.h>
 #include <atmosphere.h>
 #include <stratosphere.hpp>
+#include <stratosphere/spl.hpp>
 
-#include "boot_functions.hpp"
-#include "boot_reboot_manager.hpp"
+#include "boot_boot_reason.hpp"
+#include "boot_change_voltage.hpp"
+#include "boot_check_battery.hpp"
+#include "boot_check_clock.hpp"
+#include "boot_clock_initial_configuration.hpp"
+#include "boot_fan_enable.hpp"
+#include "boot_repair_boot_images.hpp"
+#include "boot_splash_screen.hpp"
+#include "boot_wake_pins.hpp"
+
+#include "gpio/gpio_initial_configuration.hpp"
+#include "pinmux/pinmux_initial_configuration.hpp"
+
+#include "boot_power_utils.hpp"
+
+using namespace sts;
 
 extern "C" {
     extern u32 __start__;
@@ -53,7 +68,7 @@ void __libnx_exception_handler(ThreadExceptionDump *ctx) {
 
 void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx) {
     /* We're boot sysmodule, so manually reboot to fatal error. */
-    BootRebootManager::RebootForFatalError(ctx);
+    boot::RebootForFatalError(ctx);
 }
 
 void __libnx_initheap(void) {
@@ -94,47 +109,45 @@ int main(int argc, char **argv)
     consoleDebugInit(debugDevice_SVC);
 
     /* Change voltage from 3.3v to 1.8v for select devices. */
-    Boot::ChangeGpioVoltageTo1_8v();
+    boot::ChangeGpioVoltageTo1_8v();
 
     /* Setup GPIO. */
-    Boot::SetInitialGpioConfiguration();
+    gpio::SetInitialConfiguration();
 
     /* Check USB PLL/UTMIP clock. */
-    Boot::CheckClock();
+    boot::CheckClock();
 
     /* Talk to PMIC/RTC, set boot reason with SPL. */
-    Boot::DetectBootReason();
+    boot::DetectBootReason();
 
-    const HardwareType hw_type = Boot::GetHardwareType();
-    if (hw_type != HardwareType_Copper) {
+    const auto hw_type = spl::GetHardwareType();
+    if (hw_type != spl::HardwareType::Copper) {
         /* Display splash screen for two seconds. */
-        Boot::ShowSplashScreen();
+        boot::ShowSplashScreen();
 
         /* Check that the battery has enough to boot. */
-        Boot::CheckBatteryCharge();
+        boot::CheckBatteryCharge();
     }
 
     /* Configure pinmux + drive pads. */
-    Boot::ConfigurePinmux();
+    pinmux::SetInitialConfiguration();
 
     /* Configure the PMC wake pin settings. */
-    Boot::SetInitialWakePinConfiguration();
+    boot::SetInitialWakePinConfiguration();
 
     /* Configure output clock. */
-    if (hw_type != HardwareType_Copper) {
-        Boot::SetInitialClockConfiguration();
+    if (hw_type != spl::HardwareType::Copper) {
+        boot::SetInitialClockConfiguration();
     }
 
     /* Set Fan enable config (Copper only). */
-    Boot::SetFanEnabled();
+    boot::SetFanEnabled();
 
     /* Repair boot partitions in NAND if needed. */
-    Boot::CheckAndRepairBootImages();
+    boot::CheckAndRepairBootImages();
 
     /* Tell PM to start boot2. */
-    if (R_FAILED(pmshellNotifyBootFinished())) {
-        std::abort();
-    }
+    R_ASSERT(pmshellNotifyBootFinished());
 
     return 0;
 }

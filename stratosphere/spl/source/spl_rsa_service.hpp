@@ -17,8 +17,8 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include <stratosphere/spl/spl_types.hpp>
 
-#include "spl_types.hpp"
 #include "spl_crypto_service.hpp"
 
 namespace sts::spl {

@@ -17,8 +17,7 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
-
-#include "spl_types.hpp"
+#include <stratosphere/spl/spl_types.hpp>
 
 namespace sts::spl {
 

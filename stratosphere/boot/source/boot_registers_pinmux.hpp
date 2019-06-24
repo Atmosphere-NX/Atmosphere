@@ -17,8 +17,6 @@
 #pragma once
 #include <switch.h>
 
-#include "boot_types.hpp"
-
 static constexpr size_t APB_MISC_GP_SDMMC1_CLK_LPBK_CONTROL = 0x8D4;
 static constexpr size_t APB_MISC_GP_SDMMC3_CLK_LPBK_CONTROL = 0x8D8;
 static constexpr size_t APB_MISC_GP_SDMMC1_PAD_CFGPADCTRL   = 0xA98;
