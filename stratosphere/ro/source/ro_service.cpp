@@ -20,83 +20,53 @@
 #include <stratosphere.hpp>
 
 #include "ro_service.hpp"
-#include "ro_registration.hpp"
+#include "impl/ro_service_impl.hpp"
 
-RelocatableObjectsService::~RelocatableObjectsService() {
-    if (this->IsInitialized()) {
-        Registration::UnregisterProcess(this->context);
-        this->context = nullptr;
-    }
-}
+namespace sts::ro {
 
-bool RelocatableObjectsService::IsProcessIdValid(u64 process_id) {
-    if (!this->IsInitialized()) {
-        return false;
+    void SetDevelopmentHardware(bool is_development_hardware) {
+        impl::SetDevelopmentHardware(is_development_hardware);
     }
 
-    return this->context->process_id == process_id;
-}
-
-u64 RelocatableObjectsService::GetTitleId(Handle process_handle) {
-    u64 title_id = 0;
-    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
-        /* 3.0.0+: Use svcGetInfo. */
-        R_ASSERT(svcGetInfo(&title_id, 18, process_handle, 0));
-    } else {
-        /* 1.0.0-2.3.0: We're not inside loader, so ask pm. */
-        u64 process_id = 0;
-        R_ASSERT(svcGetProcessId(&process_id, process_handle));
-        R_ASSERT(pminfoGetTitleId(&title_id, process_id));
-    }
-    return title_id;
-}
-
-Result RelocatableObjectsService::LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
-    if (!this->IsProcessIdValid(pid_desc.pid)) {
-        return ResultRoInvalidProcess;
+    void SetDevelopmentFunctionEnabled(bool is_development_function_enabled) {
+        impl::SetDevelopmentFunctionEnabled(is_development_function_enabled);
     }
 
-    return Registration::LoadNro(load_address.GetPointer(), this->context, nro_address, nro_size, bss_address, bss_size);
-}
-
-Result RelocatableObjectsService::UnloadNro(PidDescriptor pid_desc, u64 nro_address) {
-    if (!this->IsProcessIdValid(pid_desc.pid)) {
-        return ResultRoInvalidProcess;
+    Service::Service(ModuleType t) : context_id(impl::InvalidContextId), type(t) {
+        /* ... */
     }
 
-    return Registration::UnloadNro(this->context, nro_address);
-}
-
-Result RelocatableObjectsService::LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size) {
-    if (!this->IsProcessIdValid(pid_desc.pid)) {
-        return ResultRoInvalidProcess;
+    Service::~Service() {
+        impl::UnregisterProcess(this->context_id);
     }
 
-    return Registration::LoadNrr(this->context, GetTitleId(this->context->process_handle), nrr_address, nrr_size, RoModuleType_ForSelf, true);
-}
-
-Result RelocatableObjectsService::UnloadNrr(PidDescriptor pid_desc, u64 nrr_address) {
-    if (!this->IsProcessIdValid(pid_desc.pid)) {
-        return ResultRoInvalidProcess;
+    Result Service::LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
+        R_TRY(impl::ValidateProcess(this->context_id, pid_desc.pid));
+        return impl::LoadNro(load_address.GetPointer(), this->context_id, nro_address, nro_size, bss_address, bss_size);
     }
 
-    return Registration::UnloadNrr(this->context, nrr_address);
-}
-
-Result RelocatableObjectsService::Initialize(PidDescriptor pid_desc, CopiedHandle process_h) {
-    /* Validate the input pid/process handle. */
-    u64 handle_pid = 0;
-    if (R_FAILED(svcGetProcessId(&handle_pid, process_h.handle)) || handle_pid != pid_desc.pid) {
-        return ResultRoInvalidProcess;
+    Result Service::UnloadNro(PidDescriptor pid_desc, u64 nro_address) {
+        R_TRY(impl::ValidateProcess(this->context_id, pid_desc.pid));
+        return impl::UnloadNro(this->context_id, nro_address);
     }
 
-    return Registration::RegisterProcess(&this->context, process_h.handle, pid_desc.pid);
-}
-
-Result RelocatableObjectsService::LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size, CopiedHandle process_h) {
-    if (!this->IsProcessIdValid(pid_desc.pid)) {
-        return ResultRoInvalidProcess;
+    Result Service::LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size) {
+        R_TRY(impl::ValidateProcess(this->context_id, pid_desc.pid));
+        return impl::LoadNrr(this->context_id, INVALID_HANDLE, nrr_address, nrr_size, ModuleType::ForSelf, true);
     }
 
-    return Registration::LoadNrr(this->context, GetTitleId(process_h.handle), nrr_address, nrr_size, this->type, this->type == RoModuleType_ForOthers);
+    Result Service::UnloadNrr(PidDescriptor pid_desc, u64 nrr_address) {
+        R_TRY(impl::ValidateProcess(this->context_id, pid_desc.pid));
+        return impl::UnloadNrr(this->context_id, nrr_address);
+    }
+
+    Result Service::Initialize(PidDescriptor pid_desc, CopiedHandle process_h) {
+        return impl::RegisterProcess(&this->context_id, process_h.handle, pid_desc.pid);
+    }
+
+    Result Service::LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size, CopiedHandle process_h) {
+        R_TRY(impl::ValidateProcess(this->context_id, pid_desc.pid));
+        return impl::LoadNrr(this->context_id, process_h.handle, nrr_address, nrr_size, this->type, this->type == ModuleType::ForOthers);
+    }
+
 }

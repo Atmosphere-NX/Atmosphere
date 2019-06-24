@@ -14,20 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <climits>
+#pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include <stratosphere/ro.hpp>
 
-#include "ro_debug_monitor.hpp"
-#include "impl/ro_service_impl.hpp"
+namespace sts::ro::impl {
 
-namespace sts::ro {
-
-    Result DebugMonitorService::GetProcessModuleInfo(Out<u32> count, OutBuffer<LoaderModuleInfo> out_infos, u64 pid) {
-        if (out_infos.num_elements > INT_MAX) {
-            return ResultRoInvalidSize;
-        }
-        return impl::GetProcessModuleInfo(count.GetPointer(), out_infos.buffer, out_infos.num_elements, pid);
-    }
+    /* Utilities for working with NRRs. */
+    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, u64 title_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type);
+    Result UnmapNrr(Handle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address);
 
 }
