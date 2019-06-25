@@ -22,6 +22,7 @@
 #include <switch.h>
 #include <atmosphere.h>
 #include <stratosphere.hpp>
+#include <stratosphere/sm/sm_manager_api.hpp>
 
 #include "pm_boot_mode.hpp"
 #include "pm_info.hpp"
@@ -99,18 +100,14 @@ void __appInit(void) {
 
     DoWithSmSession([&]() {
         R_ASSERT(fsprInitialize());
+        R_ASSERT(smManagerInitialize());
 
         /* This works around a bug with process permissions on < 4.0.0. */
         RegisterPrivilegedProcessesWithFs();
 
         /* Use AMS manager extension to tell SM that FS has been worked around. */
-        {
-            R_ASSERT(smManagerAmsInitialize());
-            smManagerAmsEndInitialDefers();
-            smManagerAmsExit();
-        }
+        R_ASSERT(sts::sm::manager::EndInitialDefers());
 
-        R_ASSERT(smManagerInitialize());
         R_ASSERT(lrInitialize());
         R_ASSERT(ldrPmInitialize());
         R_ASSERT(splInitialize());

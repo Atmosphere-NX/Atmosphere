@@ -18,16 +18,16 @@
 #include <stratosphere.hpp>
 
 #include "sm_dmnt_service.hpp"
-#include "sm_service_manager.hpp"
+#include "impl/sm_service_manager.hpp"
 
 namespace sts::sm {
 
     Result DmntService::AtmosphereGetRecord(Out<ServiceRecord> record, ServiceName service) {
-        return sm::GetServiceRecord(record.GetPointer(), service);
+        return impl::GetServiceRecord(record.GetPointer(), service);
     }
 
     void DmntService::AtmosphereListRecords(OutBuffer<ServiceRecord> records, Out<u64> out_count, u64 offset) {
-        R_ASSERT(sm::ListServiceRecords(records.buffer, out_count.GetPointer(), offset, records.num_elements));
+        R_ASSERT(impl::ListServiceRecords(records.buffer, out_count.GetPointer(), offset, records.num_elements));
     }
 
     void DmntService::AtmosphereGetRecordSize(Out<u64> record_size) {

@@ -18,24 +18,24 @@
 #include <stratosphere.hpp>
 
 #include "sm_manager_service.hpp"
-#include "sm_service_manager.hpp"
+#include "impl/sm_service_manager.hpp"
 
 namespace sts::sm {
 
     Result ManagerService::RegisterProcess(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac) {
-        return sm::RegisterProcess(pid, acid_sac.buffer, acid_sac.num_elements, aci0_sac.buffer, aci0_sac.num_elements);
+        return impl::RegisterProcess(pid, acid_sac.buffer, acid_sac.num_elements, aci0_sac.buffer, aci0_sac.num_elements);
     }
 
     Result ManagerService::UnregisterProcess(u64 pid) {
-        return sm::UnregisterProcess(pid);
+        return impl::UnregisterProcess(pid);
     }
 
     void ManagerService::AtmosphereEndInitDefers() {
-        R_ASSERT(sm::EndInitialDefers());
+        R_ASSERT(impl::EndInitialDefers());
     }
 
     void ManagerService::AtmosphereHasMitm(Out<bool> out, ServiceName service) {
-        R_ASSERT(sm::HasMitm(out.GetPointer(), service));
+        R_ASSERT(impl::HasMitm(out.GetPointer(), service));
     }
 
 }

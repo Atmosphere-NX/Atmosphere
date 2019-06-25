@@ -16,10 +16,11 @@
 
 #include <switch.h>
 #include <stratosphere.hpp>
+#include <stratosphere/sm.hpp>
 
 #include "sm_service_manager.hpp"
 
-namespace sts::sm {
+namespace sts::sm::impl {
 
     /* Anonymous namespace for implementation details. */
     namespace {
@@ -451,6 +452,9 @@ namespace sts::sm {
 
     /* Service management. */
     Result HasService(bool *out, ServiceName service) {
+        /* Validate service name. */
+        R_TRY(ValidateServiceName(service));
+
         *out = HasServiceInfo(service);
         return ResultSuccess;
     }

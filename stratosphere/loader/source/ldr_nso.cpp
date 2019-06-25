@@ -224,7 +224,7 @@ Result NsoUtils::CalculateNsoLoadExtents(u32 addspace_type, u32 args_size, NsoLo
 
     u64 aslr_slide = 0;
     if (addspace_type & 0x20) {
-        aslr_slide = StratosphereRandomUtils::GetRandomU64((addspace_size - extents->total_size) >> 21) << 21;
+        aslr_slide = sts::rnd::GenerateRandomU64((addspace_size - extents->total_size) >> 21) << 21;
     }
 
     extents->base_address = addspace_start + aslr_slide;

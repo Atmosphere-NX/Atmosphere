@@ -18,7 +18,7 @@
 #include <stratosphere.hpp>
 
 #include "sm_user_service.hpp"
-#include "sm_service_manager.hpp"
+#include "impl/sm_service_manager.hpp"
 
 namespace sts::sm {
 
@@ -37,37 +37,47 @@ namespace sts::sm {
 
     Result UserService::GetService(Out<MovedHandle> out_h, ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return sm::GetServiceHandle(out_h.GetHandlePointer(), this->pid, service);
+        return impl::GetServiceHandle(out_h.GetHandlePointer(), this->pid, service);
     }
 
     Result UserService::RegisterService(Out<MovedHandle> out_h, ServiceName service, u32 max_sessions, bool is_light) {
         R_TRY(this->EnsureInitialized());
-        return sm::RegisterService(out_h.GetHandlePointer(), this->pid, service, max_sessions, is_light);
+        return impl::RegisterService(out_h.GetHandlePointer(), this->pid, service, max_sessions, is_light);
     }
 
     Result UserService::UnregisterService(ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return sm::UnregisterService(this->pid, service);
+        return impl::UnregisterService(this->pid, service);
     }
 
     Result UserService::AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandle> qry_h, ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return sm::InstallMitm(srv_h.GetHandlePointer(), qry_h.GetHandlePointer(), this->pid, service);
+        return impl::InstallMitm(srv_h.GetHandlePointer(), qry_h.GetHandlePointer(), this->pid, service);
     }
 
     Result UserService::AtmosphereUninstallMitm(ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return sm::UninstallMitm(this->pid, service);
+        return impl::UninstallMitm(this->pid, service);
     }
 
     Result UserService::AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<MovedHandle> fwd_h, ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return sm::AcknowledgeMitmSession(client_pid.GetPointer(), fwd_h.GetHandlePointer(), this->pid, service);
+        return impl::AcknowledgeMitmSession(client_pid.GetPointer(), fwd_h.GetHandlePointer(), this->pid, service);
     }
 
     Result UserService::AtmosphereAssociatePidTidForMitm(u64 pid, u64 tid) {
         R_TRY(this->EnsureInitialized());
-        return sm::AssociatePidTidForMitm(pid, tid);
+        return impl::AssociatePidTidForMitm(pid, tid);
+    }
+
+    Result UserService::AtmosphereHasMitm(Out<bool> out, ServiceName service) {
+        R_TRY(this->EnsureInitialized());
+        return impl::HasMitm(out.GetPointer(), service);
+    }
+
+    Result UserService::AtmosphereHasService(Out<bool> out, ServiceName service) {
+        R_TRY(this->EnsureInitialized());
+        return impl::HasService(out.GetPointer(), service);
     }
 
 }

@@ -23,6 +23,8 @@
 
 #include <switch.h>
 #include <stratosphere.hpp>
+#include <stratosphere/sm/sm_manager_api.hpp>
+
 #include "pm_boot2.hpp"
 #include "pm_registration.hpp"
 #include "pm_boot_mode.hpp"
@@ -181,18 +183,15 @@ static void MountSdCard() {
 }
 
 static void WaitForMitm(const char *service) {
-    bool mitm_installed = false;
+    const auto name = sts::sm::ServiceName::Encode(service);
 
-    DoWithSmSession([&]() {
-        R_ASSERT(smManagerAmsInitialize());
-    });
-    ON_SCOPE_EXIT { smManagerAmsExit(); };
-
-    while (!mitm_installed) {
-        R_ASSERT(smManagerAmsHasMitm(&mitm_installed, service));
-        if (!mitm_installed) {
-            svcSleepThread(1000000ull);
+    while (true) {
+        bool mitm_installed = false;
+        R_ASSERT(sts::sm::manager::HasMitm(&mitm_installed, name));
+        if (mitm_installed) {
+            break;
         }
+        svcSleepThread(1000000ull);
     }
 }
 

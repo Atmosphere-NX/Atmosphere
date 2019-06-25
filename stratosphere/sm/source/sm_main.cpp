@@ -22,10 +22,11 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "sm_service_manager.hpp"
 #include "sm_user_service.hpp"
 #include "sm_manager_service.hpp"
 #include "sm_dmnt_service.hpp"
+
+#include "impl/sm_service_manager.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -75,24 +76,26 @@ void __appExit(void) {
     /* Nothing to clean up, because we're sm. */
 }
 
+using namespace sts;
+
 int main(int argc, char **argv)
 {
     /* Create service waitable manager. */
     static auto s_server_manager = WaitableManager(1);
 
     /* Create sm:, (and thus allow things to register to it). */
-    s_server_manager.AddWaitable(new ManagedPortServer<sts::sm::UserService>("sm:", 0x40));
+    s_server_manager.AddWaitable(new ManagedPortServer<sm::UserService>("sm:", 0x40));
 
     /* Create sm:m manually. */
     Handle smm_h;
-    R_ASSERT(sts::sm::RegisterServiceForSelf(&smm_h, sts::sm::ServiceName::Encode("sm:m"), 1));
-    s_server_manager.AddWaitable(new ExistingPortServer<sts::sm::ManagerService>(smm_h, 1));
+    R_ASSERT(sm::impl::RegisterServiceForSelf(&smm_h, sm::ServiceName::Encode("sm:m"), 1));
+    s_server_manager.AddWaitable(new ExistingPortServer<sm::ManagerService>(smm_h, 1));
 
     /*===== ATMOSPHERE EXTENSION =====*/
     /* Create sm:dmnt manually. */
     Handle smdmnt_h;
-    R_ASSERT(sts::sm::RegisterServiceForSelf(&smdmnt_h, sts::sm::ServiceName::Encode("sm:dmnt"), 1));
-    s_server_manager.AddWaitable(new ExistingPortServer<sts::sm::DmntService>(smm_h, 1));;
+    R_ASSERT(sm::impl::RegisterServiceForSelf(&smdmnt_h, sm::ServiceName::Encode("sm:dmnt"), 1));
+    s_server_manager.AddWaitable(new ExistingPortServer<sm::DmntService>(smm_h, 1));;
 
     /*================================*/
 

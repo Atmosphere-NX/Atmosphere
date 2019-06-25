@@ -17,7 +17,7 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
-#include "sm_types.hpp"
+#include <stratosphere/sm.hpp>
 
 namespace sts::sm {
 
@@ -35,6 +35,9 @@ namespace sts::sm {
                 AtmosphereUninstallMitm          = 65001,
                 AtmosphereAssociatePidTidForMitm = 65002,
                 AtmosphereAcknowledgeMitmSession = 65003,
+                AtmosphereHasMitm                = 65004,
+
+                AtmosphereHasService             = 65100,
             };
         private:
             u64 pid = InvalidProcessId;
@@ -53,6 +56,9 @@ namespace sts::sm {
             virtual Result AtmosphereUninstallMitm(ServiceName service);
             virtual Result AtmosphereAssociatePidTidForMitm(u64 pid, u64 tid);
             virtual Result AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<MovedHandle> fwd_h, ServiceName service);
+            virtual Result AtmosphereHasMitm(Out<bool> out, ServiceName service);
+
+            virtual Result AtmosphereHasService(Out<bool> out, ServiceName service);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MakeServiceCommandMeta<CommandId::Initialize, &UserService::Initialize>(),
@@ -64,6 +70,9 @@ namespace sts::sm {
                 MakeServiceCommandMeta<CommandId::AtmosphereUninstallMitm, &UserService::AtmosphereUninstallMitm>(),
                 MakeServiceCommandMeta<CommandId::AtmosphereAssociatePidTidForMitm, &UserService::AtmosphereAssociatePidTidForMitm>(),
                 MakeServiceCommandMeta<CommandId::AtmosphereAcknowledgeMitmSession, &UserService::AtmosphereAcknowledgeMitmSession>(),
+                MakeServiceCommandMeta<CommandId::AtmosphereHasMitm, &UserService::AtmosphereHasMitm>(),
+
+                MakeServiceCommandMeta<CommandId::AtmosphereHasService, &UserService::AtmosphereHasService>(),
             };
     };
 

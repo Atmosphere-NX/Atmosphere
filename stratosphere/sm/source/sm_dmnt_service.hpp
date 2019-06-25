@@ -17,7 +17,7 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
-#include "sm_types.hpp"
+#include <stratosphere/sm.hpp>
 
 namespace sts::sm {
 
