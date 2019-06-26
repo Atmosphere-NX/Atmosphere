@@ -37,7 +37,7 @@ static std::atomic_bool g_has_hid_session = false;
 
 /* Content override support variables/types */
 static OverrideKey g_default_override_key = {
-    .key_combination = KEY_R,
+    .key_combination = KEY_L,
     .override_by_default = true
 };
 
@@ -49,11 +49,11 @@ struct HblOverrideConfig {
 
 static HblOverrideConfig g_hbl_override_config = {
     .override_key = {
-        .key_combination = KEY_L,
-        .override_by_default = true
+        .key_combination = KEY_R,
+        .override_by_default = false
     },
     .title_id = TitleId_AppletPhotoViewer,
-    .override_any_app = false
+    .override_any_app = true
 };
 
 /* Static buffer for loader.ini contents at runtime. */

@@ -16,11 +16,13 @@
 
 #pragma once
 #include <switch.h>
+#include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
 namespace sts::ldr {
 
-    /* Apply IPS patches. */
-    void LocateAndApplyIpsPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size);
+    /* Launch Record API. */
+    bool HasLaunchedTitle(ncm::TitleId title_id);
+    void SetLaunchedTitle(ncm::TitleId title_id);
 
 }

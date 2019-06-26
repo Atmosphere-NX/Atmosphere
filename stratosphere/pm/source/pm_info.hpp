@@ -20,14 +20,23 @@
 
 enum InformationCmd {
     Information_Cmd_GetTitleId = 0,
+
+    Information_Cmd_AtmosphereGetProcessId = 65000,
+    Information_Cmd_AtmosphereHasCreatedTitle = 65001,
 };
 
 class InformationService final : public IServiceObject {
     private:
         /* Actual commands. */
         Result GetTitleId(Out<u64> tid, u64 pid);
+
+        /* Atmosphere commands. */
+        Result AtmosphereGetProcessId(Out<u64> pid, u64 tid);
+        Result AtmosphereHasLaunchedTitle(Out<bool> out, u64 tid);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MakeServiceCommandMeta<Information_Cmd_GetTitleId, &InformationService::GetTitleId>(),
+            MakeServiceCommandMeta<Information_Cmd_AtmosphereGetProcessId, &InformationService::AtmosphereGetProcessId>(),
+            MakeServiceCommandMeta<Information_Cmd_AtmosphereHasCreatedTitle, &InformationService::AtmosphereHasLaunchedTitle>(),
         };
 };

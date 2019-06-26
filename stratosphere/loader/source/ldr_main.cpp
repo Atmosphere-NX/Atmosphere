@@ -22,10 +22,10 @@
 #include <switch.h>
 #include <atmosphere.h>
 #include <stratosphere.hpp>
+#include <stratosphere/ncm.hpp>
+#include <stratosphere/ldr.hpp>
 
-#include "ldr_process_manager.hpp"
-#include "ldr_debug_monitor.hpp"
-#include "ldr_shell.hpp"
+#include "ldr_loader_service.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -68,13 +68,12 @@ void __libnx_initheap(void) {
 void __appInit(void) {
     SetFirmwareVersionForLibnx();
 
-    /* Initialize services we need (TODO: SPL) */
+    /* Initialize services we need. */
     DoWithSmSession([&]() {
         R_ASSERT(fsInitialize());
         R_ASSERT(lrInitialize());
         R_ASSERT(fsldrInitialize());
     });
-
 
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
@@ -95,14 +94,12 @@ struct LoaderServerOptions {
 
 int main(int argc, char **argv)
 {
-    consoleDebugInit(debugDevice_SVC);
-
     static auto s_server_manager = WaitableManager<LoaderServerOptions>(1);
 
     /* Add services to manager. */
-    s_server_manager.AddWaitable(new ServiceServer<ProcessManagerService>("ldr:pm", 1));
-    s_server_manager.AddWaitable(new ServiceServer<ShellService>("ldr:shel", 3));
-    s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("ldr:dmnt", 2));
+    s_server_manager.AddWaitable(new ServiceServer<sts::ldr::pm::ProcessManagerInterface>("ldr:pm", 1));
+    s_server_manager.AddWaitable(new ServiceServer<sts::ldr::shell::ShellInterface>("ldr:shel", 3));
+    s_server_manager.AddWaitable(new ServiceServer<sts::ldr::dmnt::DebugMonitorInterface>("ldr:dmnt", 2));
 
     /* Loop forever, servicing our services. */
     s_server_manager.Process();

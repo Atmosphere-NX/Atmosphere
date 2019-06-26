@@ -36,7 +36,7 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x30000
+    #define INNER_HEAP_SIZE 0x40000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -100,12 +100,12 @@ void __appInit(void) {
 
     DoWithSmSession([&]() {
         R_ASSERT(fsprInitialize());
-        R_ASSERT(smManagerInitialize());
 
         /* This works around a bug with process permissions on < 4.0.0. */
         RegisterPrivilegedProcessesWithFs();
 
         /* Use AMS manager extension to tell SM that FS has been worked around. */
+        R_ASSERT(smManagerInitialize());
         R_ASSERT(sts::sm::manager::EndInitialDefers());
 
         R_ASSERT(lrInitialize());
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
     s_server_manager.AddWaitable(new ServiceServer<ShellService>("pm:shell", 3));
     s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 3));
     s_server_manager.AddWaitable(new ServiceServer<BootModeService>("pm:bm", 6));
-    s_server_manager.AddWaitable(new ServiceServer<InformationService>("pm:info", 3));
+    s_server_manager.AddWaitable(new ServiceServer<InformationService>("pm:info", 19));
 
     /* Loop forever, servicing our services. */
     s_server_manager.Process();

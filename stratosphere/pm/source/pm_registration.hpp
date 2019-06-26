@@ -204,6 +204,8 @@ class Registration {
         static Result LaunchProcess(u64 title_id, FsStorageId storage_id, u64 launch_flags, u64 *out_pid);
         static Result LaunchProcessByTidSid(TidSid tid_sid, u64 launch_flags, u64 *out_pid);
 
+        static bool HasLaunchedTitle(u64 title_id);
+
         static void SignalBootFinished();
 
         static bool HasApplicationProcess(std::shared_ptr<Process> *out = nullptr);

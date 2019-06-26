@@ -16,8 +16,22 @@
 
 #pragma once
 #include <switch.h>
+#include <stratosphere.hpp>
+#include <stratosphere/ldr.hpp>
 
-class HidManagement {
-    public:
-        static Result GetKeysHeld(u64 *keys);
-};
+namespace sts::ldr::args {
+
+    constexpr size_t ArgumentSizeMax = 0x8000;
+
+    struct ArgumentInfo {
+        ncm::TitleId title_id;
+        size_t args_size;
+        u8 args[ArgumentSizeMax];
+    };
+
+    /* API. */
+    const ArgumentInfo *Get(ncm::TitleId title_id);
+    Result Set(ncm::TitleId title_id, const void *args, size_t args_size);
+    Result Clear();
+
+}
