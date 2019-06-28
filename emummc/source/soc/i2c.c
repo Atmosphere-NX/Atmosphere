@@ -20,7 +20,8 @@
 #include "../utils/util.h"
 #include "t210.h"
 
-static u32 i2c_addrs[] = {
+// TODO: not hardcode I2C_5
+static u64 i2c_addrs[] = {
 	0x7000C000, 0x7000C400, 0x7000C500,
 	0x7000C700, 0x7000D000, 0x7000D100
 };
@@ -28,6 +29,7 @@ static u32 i2c_addrs[] = {
 static void _i2c_wait(vu32 *base)
 {
 	base[I2C_CONFIG_LOAD] = 0x25;
+
 	for (u32 i = 0; i < 20; i++)
 	{
 		usleep(1);
@@ -44,8 +46,7 @@ static int _i2c_send_pkt(u32 idx, u32 x, u8 *buf, u32 size)
 	u32 tmp = 0;
 	memcpy(&tmp, buf, size);
 
-	vu32 *base = (vu32 *)QueryIoMapping(i2c_addrs[0], 0x2000);
-    base = base + (i2c_addrs[idx] - i2c_addrs[0]);
+	vu32 *base = (vu32 *)QueryIoMapping(i2c_addrs[I2C_5], 0x1000);
 	base[I2C_CMD_ADDR0] = x << 1; //Set x (send mode).
 	base[I2C_CMD_DATA1] = tmp;    //Set value.
 	base[I2C_CNFG] = (2 * size - 2) | 0x2800; //Set size and send mode.
@@ -66,8 +67,7 @@ static int _i2c_recv_pkt(u32 idx, u8 *buf, u32 size, u32 x)
 	if (size > 8)
 		return 0;
 
-	vu32 *base = (vu32 *)QueryIoMapping(i2c_addrs[0], 0x2000);
-    base = base + (i2c_addrs[idx] - i2c_addrs[0]);
+	vu32 *base = (vu32 *)QueryIoMapping(i2c_addrs[I2C_5], 0x1000);
 
 	base[I2C_CMD_ADDR0] = (x << 1) | 1; // Set x (recv mode).
 	base[I2C_CNFG] = (size - 1) << 1 | 0x2840; // Set size and recv mode.
@@ -93,10 +93,9 @@ static int _i2c_recv_pkt(u32 idx, u8 *buf, u32 size, u32 x)
 	return 1;
 }
 
-void i2c_init(u32 idx)
+void i2c_init()
 {
-	vu32 *base = (vu32 *)QueryIoMapping(i2c_addrs[0], 0x2000);
-    base = base + (i2c_addrs[idx] - i2c_addrs[0]);
+	vu32 *base = (vu32 *)QueryIoMapping(i2c_addrs[I2C_5], 0x1000);
     
 	base[I2C_CLK_DIVISOR_REGISTER] = 0x50001;
 	base[I2C_BUS_CLEAR_CONFIG] = 0x90003;
@@ -104,7 +103,6 @@ void i2c_init(u32 idx)
 
 	for (u32 i = 0; i < 10; i++)
 	{
-		usleep(20000);
 		if (base[INTERRUPT_STATUS_REGISTER] & 0x800)
 			break;
 	}

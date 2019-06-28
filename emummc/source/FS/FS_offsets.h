@@ -41,13 +41,13 @@ typedef struct {
     // Misc funcs
     uintptr_t lock_mutex;
     uintptr_t unlock_mutex;
+    uintptr_t sdmmc_accessor_controller_close;
     // Misc data
     uintptr_t sd_mutex;
     uintptr_t nand_mutex;
     uintptr_t active_partition;
     uintptr_t sdmmc_das_handle;
     // NOPs
-    uintptr_t shutdown_sd;
     uintptr_t sd_das_init;
     // Nintendo Paths
     fs_offsets_nintendo_path_t nintendo_paths[];

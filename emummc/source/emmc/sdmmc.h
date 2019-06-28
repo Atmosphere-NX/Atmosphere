@@ -114,6 +114,7 @@ int sdmmc_storage_set_mmc_partition(sdmmc_storage_t *storage, u32 partition);
 int sdmmc_storage_init_sd(sdmmc_storage_t *storage, sdmmc_t *sdmmc, u32 id, u32 bus_width, u32 type);
 int sdmmc_storage_init_gc(sdmmc_storage_t *storage, sdmmc_t *sdmmc);
 intptr_t sdmmc_calculate_dma_addr(sdmmc_accessor_t *_this, void *buf, unsigned int num_sectors);
-int sdmmc_get_fitting_dma_index(sdmmc_accessor_t *_this, unsigned int num_sectors);
+int sdmmc_calculate_dma_index(sdmmc_accessor_t *_this, void *buf, unsigned int num_sectors);
+int sdmmc_calculate_fitting_dma_index(sdmmc_accessor_t *_this, unsigned int num_sectors);
 
 #endif

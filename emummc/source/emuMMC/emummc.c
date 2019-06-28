@@ -92,15 +92,6 @@ static void _sdmmc_ensure_initialized(void)
     }
 }
 
-void sdmmc_finalize(void)
-{
-    if (!sdmmc_storage_end(&sd_storage))
-    {
-        fatal_abort(Fatal_InitSD);
-    }
-    storageSDinitialized = false;
-}
-
 static void _file_based_update_filename(char *outFilename, u32 sd_path_len, u32 part_idx)
 {
     snprintf(outFilename + sd_path_len, 3, "%02d", part_idx);
@@ -124,6 +115,18 @@ static void _file_based_emmc_finalize(void)
 
         fat_mounted = false;
     }
+}
+
+void sdmmc_finalize(void)
+{
+    _file_based_emmc_finalize();
+
+    if (!sdmmc_storage_end(&sd_storage))
+    {
+        fatal_abort(Fatal_InitSD);
+    }
+
+    storageSDinitialized = false;
 }
 
 static void _file_based_emmc_initialize(void)
@@ -247,14 +250,20 @@ sdmmc_accessor_t *sdmmc_accessor_get(int mmc_id)
 
 void mutex_lock_handler(int mmc_id)
 {
-    lock_mutex(sd_mutex);
+    if (custom_driver)
+    {
+        lock_mutex(sd_mutex);
+    }
     lock_mutex(nand_mutex);
 }
 
 void mutex_unlock_handler(int mmc_id)
 {
     unlock_mutex(nand_mutex);
-    unlock_mutex(sd_mutex);
+    if (custom_driver)
+    {
+        unlock_mutex(sd_mutex);
+    }
 }
 
 int sdmmc_nand_get_active_partition_index()
@@ -320,16 +329,38 @@ static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned
     else
         res = !(f_write(fp_tmp, buf, num_sectors << 9, NULL));
 
-    if (res)
+    return res;
+}
+
+// Controller close wrapper
+uint64_t sdmmc_wrapper_controller_close(int mmc_id)
+{
+    sdmmc_accessor_t *_this;
+    _this = sdmmc_accessor_get(mmc_id);
+
+    if (_this != NULL)
     {
-        if (is_write)
+        if (mmc_id == FS_SDMMC_SD)
         {
-            // TODO
-            f_sync(fp_tmp);
+            return 0;
         }
+        
+        if (mmc_id == FS_SDMMC_EMMC)
+        {
+            // Close file handles and unmount
+            _file_based_emmc_finalize();
+
+            // Close SD
+            sdmmc_accessor_get(FS_SDMMC_SD)->vtab->sdmmc_accessor_controller_close(sdmmc_accessor_get(FS_SDMMC_SD));
+
+            // Close eMMC
+            return _this->vtab->sdmmc_accessor_controller_close(_this);
+        }
+
+        return _this->vtab->sdmmc_accessor_controller_close(_this);
     }
 
-    return res;
+    fatal_abort(Fatal_CloseAccessor);
 }
 
 // FS read wrapper.
@@ -368,6 +399,18 @@ uint64_t sdmmc_wrapper_read(void *buf, uint64_t bufSize, int mmc_id, unsigned in
 
         if (mmc_id == FS_SDMMC_SD)
         {
+            static bool first_sd_read = true;
+            if (first_sd_read)
+            {
+                first_sd_read = false;
+                // Because some SD cards have issues with emuMMC's driver
+                // we currently swap to FS's driver after first SD read
+                // TODO: Fix remaining driver issues
+                custom_driver = false;
+                // FS will handle sd mutex w/o custom driver from here on
+                unlock_mutex(sd_mutex);
+            }
+
             // Call hekates driver.
             if (sdmmc_storage_read(&sd_storage, sector, num_sectors, buf))
             {

@@ -37,7 +37,7 @@
 #define I2C_BUS_CLEAR_STATUS 0x22
 #define I2C_CONFIG_LOAD 0x23
 
-void i2c_init(u32 idx);
+void i2c_init();
 int i2c_send_buf_small(u32 idx, u32 x, u32 y, u8 *buf, u32 size);
 int i2c_recv_buf_small(u8 *buf, u32 size, u32 idx, u32 x, u32 y);
 int i2c_send_byte(u32 idx, u32 x, u32 y, u8 b);

@@ -116,6 +116,7 @@
                 "svcReplyAndReceive": "0x43",
                 "svcReplyAndReceiveWithUserBuffer": "0x44",
                 "svcCreateEvent": "0x45",
+                "svcReadWriteRegister": "0x4E",
                 "svcCreateInterruptEvent": "0x53",
                 "svcQueryIoMapping": "0x55",
                 "svcCreateDeviceAddressSpace": "0x56",

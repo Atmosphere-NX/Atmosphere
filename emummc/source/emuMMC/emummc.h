@@ -50,6 +50,8 @@ sdmmc_accessor_t *sdmmc_accessor_get(int mmc_id);
 void mutex_lock_handler(int mmc_id);
 void mutex_unlock_handler(int mmc_id);
 
+// Hooks
+uint64_t sdmmc_wrapper_controller_close(int mmc_id);
 uint64_t sdmmc_wrapper_read(void *buf, uint64_t bufSize, int mmc_id, unsigned int sector, unsigned int num_sectors);
 uint64_t sdmmc_wrapper_write(int mmc_id, unsigned int sector, unsigned int num_sectors, void *buf, uint64_t bufSize);
 

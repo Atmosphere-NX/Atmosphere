@@ -34,6 +34,8 @@
 #define FS_OFFSET_600_LOCK_MUTEX          0x1412C0
 #define FS_OFFSET_600_UNLOCK_MUTEX        0x141310
 
+#define FS_OFFSET_600_SDMMC_WRAPPER_CONTROLLER_CLOSE 0x148500
+
 // Misc Data
 #define FS_OFFSET_600_SD_MUTEX            0xF06268
 #define FS_OFFSET_600_NAND_MUTEX          0xF01BA0
@@ -41,7 +43,6 @@
 #define FS_OFFSET_600_SDMMC_DAS_HANDLE    0xE01670
 
 // NOPs
-#define FS_OFFSET_600_SHUTDOWN_SD         0xB2F28
 #define FS_OFFSET_600_SD_DAS_INIT         0x0
 
 // Nintendo Paths

@@ -28,6 +28,7 @@ enum FatalReason {
     Fatal_UnknownVersion,
     Fatal_BadResult,
     Fatal_GetConfig,
+    Fatal_CloseAccessor,
     Fatal_Max
 };
 
