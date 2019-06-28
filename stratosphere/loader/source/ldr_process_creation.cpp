@@ -520,7 +520,7 @@ namespace sts::ldr {
             }
 
             /* Validate size. */
-            if (file_size > segment->size || file_size > std::numeric_limits<int>::max() || segment->size > std::numeric_limits<int>::max()) {
+            if (file_size > segment->size || file_size > std::numeric_limits<s32>::max() || segment->size > std::numeric_limits<s32>::max()) {
                 return ResultLoaderInvalidNso;
             }
 

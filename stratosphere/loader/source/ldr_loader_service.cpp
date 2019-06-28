@@ -81,7 +81,7 @@ namespace sts::ldr {
     }
 
     Result LoaderService::GetProcessModuleInfo(Out<u32> count, OutPointerWithClientSize<ModuleInfo> out, u64 process_id) {
-        if (out.num_elements > std::numeric_limits<int>::max()) {
+        if (out.num_elements > std::numeric_limits<s32>::max()) {
             return ResultLoaderInvalidSize;
         }
 
