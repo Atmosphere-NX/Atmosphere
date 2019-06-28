@@ -21,6 +21,7 @@
 
 #include "ldr_capabilities.hpp"
 #include "ldr_content_management.hpp"
+#include "ldr_ecs.hpp"
 #include "ldr_launch_record.hpp"
 #include "ldr_meta.hpp"
 #include "ldr_patcher.hpp"
@@ -669,9 +670,9 @@ namespace sts::ldr {
             R_TRY(LoadNsosIntoProcessMemory(&info, loc.title_id, nso_headers, has_nso, arg_info));
 
             /* Register NSOs with ro manager. */
+            u64 process_id;
             {
                 /* Nintendo doesn't validate this result, but we will. */
-                u64 process_id;
                 R_ASSERT(svcGetProcessId(&process_id, info.process_handle.Get()));
 
                 /* Register new process. */
@@ -685,12 +686,24 @@ namespace sts::ldr {
                 }
             }
 
+            /* Inform SM about the title for association purposes. */
+            R_ASSERT(sm::mitm::AssociateProcessIdAndTitleId(process_id, static_cast<u64>(loc.title_id)));
+
+            /* If we're overriding for HBL, perform HTML document redirection. */
+            if (mount.IsHblMounted()) {
+                /* Don't validate result, failure is okay. */
+                RedirectHtmlDocumentPathForHbl(loc);
+            }
+
+            /* Clear the ECS entry for the title. */
+            R_ASSERT(ecs::Clear(loc.title_id));
+
+            /* Note that we've created the title. */
+            SetLaunchedTitle(loc.title_id);
+
             /* Move the process handle to output. */
             *out = info.process_handle.Move();
         }
-
-        /* Note that we've created the title. */
-        SetLaunchedTitle(loc.title_id);
 
         return ResultSuccess;
     }
