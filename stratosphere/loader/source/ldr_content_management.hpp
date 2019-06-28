@@ -41,7 +41,7 @@ namespace sts::ldr {
             }
 
             bool IsHblMounted() const {
-                return this->is_code_mounted;
+                return this->is_hbl_mounted;
             }
 
         private:
