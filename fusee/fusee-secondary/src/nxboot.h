@@ -19,11 +19,11 @@
 
 #include "utils.h"
 
-#define EMUMMC_ENABLED_KEY "emummc_enabled"
-#define EMUMMC_SECTOR_KEY "emummc_sector"
-#define EMUMMC_PATH_KEY "emummc_path"
-#define EMUMMC_NINTENDO_PATH_KEY "emummc_nintendo_path"
-#define EMUMMC_ID_KEY "emummc_id"
+#define EMUMMC_ENABLED_KEY "enabled"
+#define EMUMMC_SECTOR_KEY "sector"
+#define EMUMMC_PATH_KEY "path"
+#define EMUMMC_NINTENDO_PATH_KEY "nintendo_path"
+#define EMUMMC_ID_KEY "id"
 
 typedef struct {
     bool enabled;
