@@ -175,16 +175,16 @@ namespace sts::ldr {
 #undef COPY_ACCESS_CONTROL
 
             /* Copy flags. */
-            out->flags = GetProgramInfoFlags(meta->acid_kac, meta->acid->kac_size);
+            out->flags = caps::GetProgramInfoFlags(meta->acid_kac, meta->acid->kac_size);
             return ResultSuccess;
         }
 
         bool IsApplet(const Meta *meta) {
-            return (GetProgramInfoFlags(meta->aci_kac, meta->aci->kac_size) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet;
+            return (caps::GetProgramInfoFlags(meta->aci_kac, meta->aci->kac_size) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet;
         }
 
         bool IsApplication(const Meta *meta) {
-            return (GetProgramInfoFlags(meta->aci_kac, meta->aci->kac_size) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Application;
+            return (caps::GetProgramInfoFlags(meta->aci_kac, meta->aci->kac_size) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Application;
         }
 
         Npdm::AddressSpaceType GetAddressSpaceType(const Meta *meta) {
@@ -278,8 +278,8 @@ namespace sts::ldr {
                 return ResultLoaderInvalidProgramId;
             }
 
-            /* Validate the kernel capacilities. */
-            R_TRY(ValidateCapabilities(meta->acid_kac, meta->acid->kac_size, meta->aci_kac, meta->aci->kac_size));
+            /* Validate the kernel capabilities. */
+            R_TRY(caps::ValidateCapabilities(meta->acid_kac, meta->acid->kac_size, meta->aci_kac, meta->aci->kac_size));
 
             /* All good. */
             return ResultSuccess;
@@ -510,7 +510,7 @@ namespace sts::ldr {
             R_TRY(DecideAddressSpaceLayout(out, &cpi, nso_headers, has_nso, arg_info));
 
             /* Actually create process. const_cast necessary because libnx doesn't declare svcCreateProcess with const u32*. */
-            return svcCreateProcess(out->process_handle.GetPointer(), &cpi, const_cast<u32 *>(reinterpret_cast<const u32 *>(meta->aci_kac)), meta->aci->kac_size / sizeof(u32));
+            return svcCreateProcess(out->process_handle.GetPointer(), &cpi, reinterpret_cast<const u32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(u32));
         }
 
         Result LoadNsoSegment(FILE *f, const NsoHeader::SegmentInfo *segment, size_t file_size, const u8 *file_hash, bool is_compressed, bool check_hash, uintptr_t map_base, uintptr_t map_end) {
@@ -647,8 +647,8 @@ namespace sts::ldr {
 
         {
             /* Mount code. */
-            ScopedCodeMount mount;
-            R_TRY(MountCode(mount, loc));
+            ScopedCodeMount mount(loc);
+            R_TRY(mount.GetResult());
 
             /* Load meta, possibly from cache. */
             Meta meta;
@@ -700,8 +700,8 @@ namespace sts::ldr {
 
         /* Load Meta. */
         {
-            ScopedCodeMount mount;
-            R_TRY(MountCode(mount, loc));
+            ScopedCodeMount mount(loc);
+            R_TRY(mount.GetResult());
             R_TRY(LoadMeta(&meta, loc.title_id));
         }
 

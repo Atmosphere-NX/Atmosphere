@@ -25,36 +25,15 @@ namespace sts::ldr {
     class ScopedCodeMount {
         NON_COPYABLE(ScopedCodeMount);
         private:
+            Result result;
             bool is_code_mounted;
             bool is_hbl_mounted;
         public:
-            ScopedCodeMount() : is_code_mounted(false), is_hbl_mounted(false) { /* ... */ }
-            ScopedCodeMount(bool c, bool h) : is_code_mounted(c), is_hbl_mounted(h) { /* ... */ }
+            ScopedCodeMount(const ncm::TitleLocation &loc);
             ~ScopedCodeMount();
 
-            ScopedCodeMount(ScopedCodeMount&& rhs) {
-                this->is_code_mounted = rhs.is_code_mounted;
-                this->is_hbl_mounted = rhs.is_hbl_mounted;
-                rhs.is_code_mounted = false;
-                rhs.is_hbl_mounted = false;
-            }
-
-            ScopedCodeMount& operator=(ScopedCodeMount&& rhs) {
-                rhs.Swap(*this);
-                return *this;
-            }
-
-            void Swap(ScopedCodeMount& rhs) {
-                std::swap(this->is_code_mounted, rhs.is_code_mounted);
-                std::swap(this->is_hbl_mounted, rhs.is_hbl_mounted);
-            }
-
-            void SetCodeMounted() {
-                this->is_code_mounted = true;
-            }
-
-            void SetHblMounted() {
-                this->is_hbl_mounted = true;
+            Result GetResult() const {
+                return this->result;
             }
 
             bool IsCodeMounted() const {
@@ -62,12 +41,18 @@ namespace sts::ldr {
             }
 
             bool IsHblMounted() const {
-                return this->is_hbl_mounted;
+                return this->is_code_mounted;
             }
+
+        private:
+            Result Initialize(const ncm::TitleLocation &loc);
+
+            Result MountCodeFileSystem(const ncm::TitleLocation &loc);
+            Result MountSdCardCodeFileSystem(const ncm::TitleLocation &loc);
+            Result MountHblFileSystem();
     };
 
     /* Content Management API. */
-    Result MountCode(ScopedCodeMount &out, const ncm::TitleLocation &loc);
     Result OpenCodeFile(FILE *&out, ncm::TitleId title_id, const char *relative_path);
     Result OpenCodeFileFromBaseExefs(FILE *&out, ncm::TitleId title_id, const char *relative_path);
 

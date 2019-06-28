@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <dirent.h>
- #include <stratosphere/cfg.hpp>
+#include <stratosphere/cfg.hpp>
 
 #include "ldr_content_management.hpp"
 #include "ldr_ecs.hpp"
@@ -39,6 +39,7 @@ namespace sts::ldr {
 
         /* Helpers. */
         inline void FixFileSystemPath(char *path) {
+            /* Paths will fail when passed to FS if they use the wrong kinds of slashes. */
             for (size_t i = 0; i < FS_MAX_PATH && path[i]; i++) {
                 if (path[i] == '\\') {
                     path[i] = '/';
@@ -47,6 +48,7 @@ namespace sts::ldr {
         }
 
         inline const char *GetRelativePathStart(const char *relative_path) {
+            /* We assume filenames don't start with slashes when formatting. */
             while (*relative_path == '/' || *relative_path == '\\') {
                 relative_path++;
             }
@@ -81,40 +83,7 @@ namespace sts::ldr {
         Result MountNspFileSystem(const char *device_name, const char *path) {
             FsFileSystem fs;
             R_TRY(fsOpenFileSystemWithId(&fs, 0, FsFileSystemType_ApplicationPackage, path));
-            if(fsdevMountDevice(device_name, fs) == -1) {
-                std::abort();
-            }
-            return ResultSuccess;
-        }
-
-        Result MountHblFileSystem() {
-            char path[FS_MAX_PATH];
-
-            /* Print and fix path. */
-            std::snprintf(path, FS_MAX_PATH, "%s:/%s", SdCardStorageMountPoint, GetRelativePathStart(cfg::GetHblPath()));
-            FixFileSystemPath(path);
-            return MountNspFileSystem(HblFileSystemDeviceName, path);
-        }
-
-        Result MountSdCardCodeFileSystem(ncm::TitleId title_id) {
-            char path[FS_MAX_PATH];
-
-            /* Print and fix path. */
-            std::snprintf(path, FS_MAX_PATH, "%s:/atmosphere/titles/%016lx/exefs.nsp", SdCardStorageMountPoint, static_cast<u64>(title_id));
-            FixFileSystemPath(path);
-            return MountNspFileSystem(CodeFileSystemDeviceName, path);
-        }
-
-        Result MountCodeFileSystem(const ncm::TitleLocation &loc) {
-            char path[FS_MAX_PATH];
-
-            /* Try to get the content path. */
-            R_TRY(ResolveContentPath(path, loc));
-
-            /* Try to mount the content path. */
-            FsFileSystem fs;
-            R_TRY(fsldrOpenCodeFileSystem(static_cast<u64>(loc.title_id), path, &fs));
-            if(fsdevMountDevice(CodeFileSystemDeviceName, fs) == -1) {
+            if(fsdevMountDevice(device_name, fs) < 0) {
                 std::abort();
             }
             return ResultSuccess;
@@ -166,17 +135,6 @@ namespace sts::ldr {
             return true;
         }
 
-        bool IsMounted(const char *device_name) {
-            /* Allow nullptr device_name -- those are simply not openable. */
-            if (device_name == nullptr) {
-                return false;
-            }
-
-            char path[FS_MAX_PATH];
-            std::snprintf(path, FS_MAX_PATH, "%s:", device_name);
-            return FindDevice(device_name) >= 0;
-        }
-
         FILE *OpenBaseExefsFile(ncm::TitleId title_id, const char *relative_path) {
             /* Allow nullptr relative path -- those are simply not openable. */
             if (relative_path == nullptr) {
@@ -193,6 +151,11 @@ namespace sts::ldr {
 
     }
 
+    /* ScopedCodeMount functionality. */
+    ScopedCodeMount::ScopedCodeMount(const ncm::TitleLocation &loc) : is_code_mounted(false), is_hbl_mounted(false) {
+        this->result = this->Initialize(loc);
+    }
+
     ScopedCodeMount::~ScopedCodeMount() {
         /* Unmount devices. */
         if (this->is_code_mounted) {
@@ -206,9 +169,52 @@ namespace sts::ldr {
         InvalidateShouldOverrideCache();
     }
 
-    Result MountCode(ScopedCodeMount &out, const ncm::TitleLocation &loc) {
-        ScopedCodeMount mount;
+    Result ScopedCodeMount::MountCodeFileSystem(const ncm::TitleLocation &loc) {
+        char path[FS_MAX_PATH];
 
+        /* Try to get the content path. */
+        R_TRY(ResolveContentPath(path, loc));
+
+        /* Try to mount the content path. */
+        FsFileSystem fs;
+        R_TRY(fsldrOpenCodeFileSystem(static_cast<u64>(loc.title_id), path, &fs));
+        if(fsdevMountDevice(CodeFileSystemDeviceName, fs) == -1) {
+            std::abort();
+        }
+
+        /* Note that we mounted code. */
+        this->is_code_mounted = true;
+        return ResultSuccess;
+    }
+
+    Result ScopedCodeMount::MountSdCardCodeFileSystem(const ncm::TitleLocation &loc) {
+        char path[FS_MAX_PATH];
+
+        /* Print and fix path. */
+        std::snprintf(path, FS_MAX_PATH, "%s:/atmosphere/titles/%016lx/exefs.nsp", SdCardStorageMountPoint, static_cast<u64>(loc.title_id));
+        FixFileSystemPath(path);
+        R_TRY(MountNspFileSystem(CodeFileSystemDeviceName, path));
+
+        /* Note that we mounted code. */
+        this->is_code_mounted = true;
+        return ResultSuccess;
+    }
+
+    Result ScopedCodeMount::MountHblFileSystem() {
+        char path[FS_MAX_PATH];
+
+        /* Print and fix path. */
+        std::snprintf(path, FS_MAX_PATH, "%s:/%s", SdCardStorageMountPoint, GetRelativePathStart(cfg::GetHblPath()));
+        FixFileSystemPath(path);
+        R_TRY(MountNspFileSystem(HblFileSystemDeviceName, path));
+
+        /* Note that we mounted HBL. */
+        this->is_hbl_mounted = true;
+        return ResultSuccess;
+    }
+
+
+    Result ScopedCodeMount::Initialize(const ncm::TitleLocation &loc) {
         bool is_sd_initialized = cfg::IsSdCardInitialized();
 
         /* Check if we're ready to mount the SD card. */
@@ -222,25 +228,18 @@ namespace sts::ldr {
         /* Check if we should override contents. */
         if (ShouldOverrideWithHbl(loc.title_id)) {
             /* Try to mount HBL. */
-            if (R_SUCCEEDED(MountHblFileSystem())) {
-                mount.SetHblMounted();
-            }
+            this->MountHblFileSystem();
         }
         if (ShouldOverrideWithSd(loc.title_id)) {
             /* Try to mount Code NSP on SD. */
-            if (R_SUCCEEDED(MountSdCardCodeFileSystem(loc.title_id))) {
-                mount.SetCodeMounted();
-            }
+            this->MountSdCardCodeFileSystem(loc);
         }
 
         /* If we haven't already mounted code, mount it. */
-        if (!mount.IsCodeMounted()) {
-            R_TRY(MountCodeFileSystem(loc));
-            mount.SetCodeMounted();
+        if (!this->IsCodeMounted()) {
+            R_TRY(this->MountCodeFileSystem(loc));
         }
 
-        /* Set out to scoped holder. */
-        out = std::move(mount);
         return ResultSuccess;
     }
 
@@ -248,11 +247,11 @@ namespace sts::ldr {
         FILE *f = nullptr;
         const char *ecs_device_name = ecs::Get(title_id);
 
-        if (IsMounted(ecs_device_name)) {
+        if (ecs_device_name != nullptr) {
             /* First priority: Open from external content. */
             f = OpenFile(ecs_device_name, relative_path);
         } else if (ShouldOverrideWithHbl(title_id)) {
-            /* Next, try to mount from HBL. */
+            /* Next, try to open from HBL. */
             f = OpenFile(HblFileSystemDeviceName, relative_path);
         } else {
             /* If not ECS or HBL, try a loose file on the SD. */
@@ -323,7 +322,7 @@ namespace sts::ldr {
     Result RedirectHtmlDocumentPathForHbl(const ncm::TitleLocation &loc) {
         char path[FS_MAX_PATH];
 
-        /* Open a locaiton resolver. */
+        /* Open a location resolver. */
         LrLocationResolver lr;
         R_TRY(lrOpenLocationResolver(static_cast<FsStorageId>(loc.storage_id), &lr));
         ON_SCOPE_EXIT { serviceClose(&lr.s); };

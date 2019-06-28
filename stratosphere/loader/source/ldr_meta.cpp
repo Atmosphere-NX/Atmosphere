@@ -187,9 +187,9 @@ namespace sts::ldr {
                     }
 
                     /* Fix flags. */
-                    const u16 program_info_flags = GetProgramInfoFlags(o_meta->aci_kac, o_meta->aci->kac_size);
-                    SetProgramInfoFlags(program_info_flags, meta->acid_kac, meta->acid->kac_size);
-                    SetProgramInfoFlags(program_info_flags, meta->aci_kac, meta->aci->kac_size);
+                    const u16 program_info_flags = caps::GetProgramInfoFlags(o_meta->aci_kac, o_meta->aci->kac_size);
+                    caps::SetProgramInfoFlags(program_info_flags, meta->acid_kac, meta->acid->kac_size);
+                    caps::SetProgramInfoFlags(program_info_flags, meta->aci_kac, meta->aci->kac_size);
                 }
             }
         }

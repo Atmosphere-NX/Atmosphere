@@ -74,12 +74,7 @@ namespace sts::ldr::ecs {
 
         /* Create session. */
         AutoHandle server, client;
-        {
-            Handle s_h, c_h;
-            R_TRY(svcCreateSession(&s_h, &c_h, 0, 0));
-            server.Reset(s_h);
-            client.Reset(c_h);
-        }
+        R_TRY(svcCreateSession(server.GetPointer(), client.GetPointer(), 0, 0));
 
         /* Create service. */
         Service srv;
@@ -100,10 +95,7 @@ namespace sts::ldr::ecs {
 
     Result Clear(ncm::TitleId title_id) {
         /* Delete if present. */
-        auto it = g_map.find(static_cast<u64>(title_id));
-        if (it != g_map.end()) {
-            g_map.erase(it);
-        }
+        g_map.erase(static_cast<u64>(title_id));
         return ResultSuccess;
     }
 

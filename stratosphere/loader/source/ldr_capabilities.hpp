@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
-namespace sts::ldr {
+namespace sts::ldr::caps {
 
     /* Capabilities API. */
     Result ValidateCapabilities(const void *acid_kac, size_t acid_kac_size, const void *aci_kac, size_t aci_kac_size);

@@ -16,7 +16,7 @@
 
 #include "ldr_capabilities.hpp"
 
-namespace sts::ldr {
+namespace sts::ldr::caps {
 
     namespace {
 
@@ -39,10 +39,10 @@ namespace sts::ldr {
             return static_cast<CapabilityId>(__builtin_ctz(~cap));
         }
 
-        template<CapabilityId id>
+        template<CapabilityId Id>
         class Capability {
             public:
-                static constexpr u32 ValueShift = static_cast<u32>(id) + 1;
+                static constexpr u32 ValueShift = static_cast<u32>(Id) + 1;
                 static constexpr u32 IdMask = (1u << (ValueShift - 1)) - 1;
             private:
                 u32 value;
@@ -50,7 +50,7 @@ namespace sts::ldr {
                 Capability(u32 v) : value(v) { /* ... */ }
 
                 CapabilityId GetId() const {
-                    return id;
+                    return Id;
                 }
 
                 u32 GetValue() const {
@@ -92,16 +92,16 @@ namespace sts::ldr {
             bool IsValid(const u32 *kac, size_t kac_count) const {
                 for (size_t i = 0; i < kac_count; i++) {
                     if (GetCapabilityId(kac[i]) == this->GetId()) {
-                        const auto restrict = Decode(kac[i]);
+                        const auto restriction = Decode(kac[i]);
 
-                        if (this->GetMinimumThreadPriority() < restrict.GetMinimumThreadPriority() ||
-                            this->GetMaximumThreadPriority() > restrict.GetMaximumThreadPriority() ||
+                        if (this->GetMinimumThreadPriority() < restriction.GetMinimumThreadPriority() ||
+                            this->GetMaximumThreadPriority() > restriction.GetMaximumThreadPriority() ||
                             this->GetMinimumThreadPriority() > this->GetMaximumThreadPriority()) {
                             return false;
                         }
 
-                        if (this->GetMinimumCoreId() < restrict.GetMinimumCoreId() ||
-                            this->GetMaximumCoreId() > restrict.GetMaximumCoreId() ||
+                        if (this->GetMinimumCoreId() < restriction.GetMinimumCoreId() ||
+                            this->GetMaximumCoreId() > restriction.GetMaximumCoreId() ||
                             this->GetMinimumCoreId() > this->GetMaximumCoreId()) {
                             return false;
                         }
@@ -125,9 +125,9 @@ namespace sts::ldr {
             bool IsValid(const u32 *kac, size_t kac_count) const {
                 for (size_t i = 0; i < kac_count; i++) {
                     if (GetCapabilityId(kac[i]) == this->GetId()) {
-                        const auto restrict = Decode(kac[i]);
+                        const auto restriction = Decode(kac[i]);
 
-                        if (this->GetIndex() == restrict.GetIndex() && this->GetMask() == restrict.GetMask()) {
+                        if (this->GetIndex() == restriction.GetIndex() && this->GetMask() == restriction.GetMask()) {
                             return true;
                         }
                     }
@@ -162,22 +162,21 @@ namespace sts::ldr {
 
                 for (size_t i = 0; i < kac_count; i++) {
                     if (GetCapabilityId(kac[i]) == this->GetId()) {
-                        const auto restrict = Decode(kac[i]);
-                        i++;
+                        const auto restriction = Decode(kac[i++]);
                         if (i >= kac_count || GetCapabilityId(kac[i]) != this->GetId()) {
                             return false;
                         }
-                        const auto restrict_next = Decode(kac[i]);
-                        const u32 restrict_start = restrict.GetAddressSize();
-                        const u32 restrict_size = restrict_next.GetAddressSize();
-                        const u32 restrict_end = restrict_start + restrict_size;
+                        const auto restriction_next = Decode(kac[i]);
+                        const u32 restriction_start = restriction.GetAddressSize();
+                        const u32 restriction_size = restriction_next.GetAddressSize();
+                        const u32 restriction_end = restriction_start + restriction_size;
 
-                        if (restrict_size >= SizeMax) {
+                        if (restriction_size >= SizeMax) {
                             continue;
                         }
 
-                        if (this->GetFlag() == restrict.GetFlag() && next.GetFlag() == restrict_next.GetFlag()) {
-                            if (restrict_start <= start && start <= restrict_end && end <= restrict_end) {
+                        if (this->GetFlag() == restriction.GetFlag() && next.GetFlag() == restriction_next.GetFlag()) {
+                            if (restriction_start <= start && start <= restriction_end && end <= restriction_end) {
                                 return true;
                             }
                         }
@@ -195,9 +194,9 @@ namespace sts::ldr {
             bool IsValid(const u32 *kac, size_t kac_count) const {
                 for (size_t i = 0; i < kac_count; i++) {
                     if (GetCapabilityId(kac[i]) == this->GetId()) {
-                        const auto restrict = Decode(kac[i]);
+                        const auto restriction = Decode(kac[i]);
 
-                        if (this->GetValue() == restrict.GetValue()) {
+                        if (this->GetValue() == restriction.GetValue()) {
                             return true;
                         }
                     }
@@ -207,8 +206,6 @@ namespace sts::ldr {
         );
 
         DEFINE_CAPABILITY_CLASS(InterruptPair,
-            Result Validate(const u32 *kac, size_t kac_count) const;
-
             static constexpr u32 EmptyInterruptId = 0x3FF;
 
             u32 GetInterruptId0() const {
@@ -222,13 +219,13 @@ namespace sts::ldr {
             bool IsSingleIdValid(const u32 id, const u32 *kac, size_t kac_count) const {
                 for (size_t i = 0; i < kac_count; i++) {
                     if (GetCapabilityId(kac[i]) == this->GetId()) {
-                        const auto restrict = Decode(kac[i]);
+                        const auto restriction = Decode(kac[i]);
 
-                        if (restrict.GetInterruptId0() == EmptyInterruptId && restrict.GetInterruptId1() == EmptyInterruptId) {
+                        if (restriction.GetInterruptId0() == EmptyInterruptId && restriction.GetInterruptId1() == EmptyInterruptId) {
                             return true;
                         }
 
-                        if (restrict.GetInterruptId0() == id || restrict.GetInterruptId1() == id) {
+                        if (restriction.GetInterruptId0() == id || restriction.GetInterruptId1() == id) {
                             return true;
                         }
                     }
@@ -249,9 +246,9 @@ namespace sts::ldr {
             bool IsValid(const u32 *kac, size_t kac_count) const {
                 for (size_t i = 0; i < kac_count; i++) {
                     if (GetCapabilityId(kac[i]) == this->GetId()) {
-                        const auto restrict = Decode(kac[i]);
+                        const auto restriction = Decode(kac[i]);
 
-                        return restrict.GetValue() == this->GetValue();
+                        return restriction.GetValue() == this->GetValue();
                     }
                 }
                 return false;
@@ -275,9 +272,9 @@ namespace sts::ldr {
             bool IsValid(const u32 *kac, size_t kac_count) const {
                 for (size_t i = 0; i < kac_count; i++) {
                     if (GetCapabilityId(kac[i]) == this->GetId()) {
-                        const auto restrict = Decode(kac[i]);
+                        const auto restriction = Decode(kac[i]);
 
-                        return restrict.GetValue() == this->GetValue();
+                        return restriction.GetValue() == this->GetValue();
                     }
                 }
                 return false;
@@ -292,9 +289,9 @@ namespace sts::ldr {
             bool IsValid(const u32 *kac, size_t kac_count) const {
                 for (size_t i = 0; i < kac_count; i++) {
                     if (GetCapabilityId(kac[i]) == this->GetId()) {
-                        const auto restrict = Decode(kac[i]);
+                        const auto restriction = Decode(kac[i]);
 
-                        return this->GetSize() <= restrict.GetSize();
+                        return this->GetSize() <= restriction.GetSize();
                     }
                 }
                 return false;
@@ -303,19 +300,19 @@ namespace sts::ldr {
 
         DEFINE_CAPABILITY_CLASS(DebugFlags,
             bool GetAllowDebug() const {
-                return ((this->GetValue() >> 0) & 1) != 0;
+                return (this->GetValue() >> 0) & 1;
             }
 
             bool GetForceDebug() const {
-                return ((this->GetValue() >> 1) & 1) != 0;
+                return (this->GetValue() >> 1) & 1;
             }
 
             bool IsValid(const u32 *kac, size_t kac_count) const {
                 for (size_t i = 0; i < kac_count; i++) {
                     if (GetCapabilityId(kac[i]) == this->GetId()) {
-                        const auto restrict = Decode(kac[i]);
+                        const auto restriction = Decode(kac[i]);
 
-                        return (restrict.GetValue() & this->GetValue()) == this->GetValue();
+                        return (restriction.GetValue() & this->GetValue()) == this->GetValue();
                     }
                 }
                 return false;

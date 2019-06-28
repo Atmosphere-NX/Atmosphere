@@ -28,7 +28,7 @@ namespace sts::ldr::args {
         ArgumentInfo g_argument_infos[MaxArgumentInfos];
 
         /* Helpers. */
-        ArgumentInfo *GetArgumentInfo(ncm::TitleId title_id) {
+        ArgumentInfo *FindArgumentInfo(ncm::TitleId title_id) {
             for (size_t i = 0; i < MaxArgumentInfos; i++) {
                 if (g_argument_infos[i].title_id == title_id) {
                     return &g_argument_infos[i];
@@ -37,15 +37,15 @@ namespace sts::ldr::args {
             return nullptr;
         }
 
-        ArgumentInfo *GetFreeArgumentInfo() {
-            return GetArgumentInfo(FreeTitleId);
+        ArgumentInfo *FindFreeArgumentInfo() {
+            return FindArgumentInfo(FreeTitleId);
         }
 
     }
 
     /* API. */
     const ArgumentInfo *Get(ncm::TitleId title_id) {
-        return GetArgumentInfo(title_id);
+        return FindArgumentInfo(title_id);
     }
 
     Result Set(ncm::TitleId title_id, const void *args, size_t args_size) {
@@ -53,9 +53,9 @@ namespace sts::ldr::args {
             return ResultLoaderTooLongArgument;
         }
 
-        ArgumentInfo *arg_info = GetArgumentInfo(title_id);
+        ArgumentInfo *arg_info = FindArgumentInfo(title_id);
         if (arg_info == nullptr) {
-            arg_info = GetFreeArgumentInfo();
+            arg_info = FindFreeArgumentInfo();
         }
         if (arg_info == nullptr) {
             return ResultLoaderTooManyArguments;
