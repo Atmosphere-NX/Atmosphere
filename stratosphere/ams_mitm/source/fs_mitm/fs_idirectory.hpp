@@ -18,11 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-enum FsIDirectoryCmd : u32 {
-    FsIDirectoryCmd_Read = 0,
-    FsIDirectoryCmd_GetEntryCount = 1,
-};
-
 class IDirectory {
     public:
         virtual ~IDirectory() {}
@@ -57,6 +52,11 @@ class IDirectory {
 
 class IDirectoryInterface : public IServiceObject {
     private:
+        enum class CommandId {
+            Read          = 0,
+            GetEntryCount = 1,
+        };
+    private:
         std::unique_ptr<IDirectory> base_dir;
     public:
         IDirectoryInterface(IDirectory *d) : base_dir(d) {
@@ -77,8 +77,8 @@ class IDirectoryInterface : public IServiceObject {
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             /* 1.0.0- */
-            MakeServiceCommandMeta<FsIDirectoryCmd_Read, &IDirectoryInterface::Read>(),
-            MakeServiceCommandMeta<FsIDirectoryCmd_GetEntryCount, &IDirectoryInterface::GetEntryCount>(),
+            MAKE_SERVICE_COMMAND_META(IDirectoryInterface, Read),
+            MAKE_SERVICE_COMMAND_META(IDirectoryInterface, GetEntryCount),
         };
 };
 

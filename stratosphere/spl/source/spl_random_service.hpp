@@ -34,7 +34,7 @@ namespace sts::spl {
             virtual Result GenerateRandomBytes(OutBuffer<u8> out);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MakeServiceCommandMeta<CommandId::GenerateRandomBytes, &RandomService::GenerateRandomBytes>(),
+                MAKE_SERVICE_COMMAND_META(RandomService, GenerateRandomBytes),
             };
     };
 

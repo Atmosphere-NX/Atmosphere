@@ -20,15 +20,6 @@
 
 #include "fs_shim.h"
 
-enum FsIFileCmd : u32 {
-    FsIFileCmd_Read = 0,
-    FsIFileCmd_Write = 1,
-    FsIFileCmd_Flush = 2,
-    FsIFileCmd_SetSize = 3,
-    FsIFileCmd_GetSize = 4,
-    FsIFileCmd_OperateRange = 5,
-};
-
 class IFile {
     public:
         virtual ~IFile() {}
@@ -107,6 +98,15 @@ class IFile {
 
 class IFileInterface : public IServiceObject {
     private:
+        enum class CommandId {
+            Read         = 0,
+            Write        = 1,
+            Flush        = 2,
+            SetSize      = 3,
+            GetSize      = 4,
+            OperateRange = 5,
+        };
+    private:
         std::unique_ptr<IFile> base_file;
     public:
         IFileInterface(IFile *f) : base_file(f) {
@@ -139,14 +139,14 @@ class IFileInterface : public IServiceObject {
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             /* 1.0.0- */
-            MakeServiceCommandMeta<FsIFileCmd_Read, &IFileInterface::Read>(),
-            MakeServiceCommandMeta<FsIFileCmd_Write, &IFileInterface::Write>(),
-            MakeServiceCommandMeta<FsIFileCmd_Flush, &IFileInterface::Flush>(),
-            MakeServiceCommandMeta<FsIFileCmd_SetSize, &IFileInterface::SetSize>(),
-            MakeServiceCommandMeta<FsIFileCmd_GetSize, &IFileInterface::GetSize>(),
+            MAKE_SERVICE_COMMAND_META(IFileInterface, Read),
+            MAKE_SERVICE_COMMAND_META(IFileInterface, Write),
+            MAKE_SERVICE_COMMAND_META(IFileInterface, Flush),
+            MAKE_SERVICE_COMMAND_META(IFileInterface, SetSize),
+            MAKE_SERVICE_COMMAND_META(IFileInterface, GetSize),
 
             /* 4.0.0- */
-            MakeServiceCommandMeta<FsIFileCmd_OperateRange, &IFileInterface::OperateRange, FirmwareVersion_400>(),
+            MAKE_SERVICE_COMMAND_META(IFileInterface, OperateRange, FirmwareVersion_400),
         };
 };
 

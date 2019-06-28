@@ -20,9 +20,13 @@
 
 #include "../utils.hpp"
 
-#include "nsmitm_service_common.hpp"
-
 class NsAmMitmService : public IMitmServiceObject {
+    private:
+        enum class CommandId {
+            GetApplicationContentPath      = 21,
+            ResolveApplicationContentPath  = 23,
+            GetRunningApplicationProgramId = 92,
+        };
     public:
         NsAmMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
             /* ... */
@@ -44,8 +48,8 @@ class NsAmMitmService : public IMitmServiceObject {
         Result GetRunningApplicationProgramId(Out<u64> out_tid, u64 app_id);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<NsSrvCmd_GetApplicationContentPath, &NsAmMitmService::GetApplicationContentPath>(),
-            MakeServiceCommandMeta<NsSrvCmd_ResolveApplicationContentPath, &NsAmMitmService::ResolveApplicationContentPath>(),
-            MakeServiceCommandMeta<NsSrvCmd_GetRunningApplicationProgramId, &NsAmMitmService::GetRunningApplicationProgramId, FirmwareVersion_600>(),
+            MAKE_SERVICE_COMMAND_META(NsAmMitmService, GetApplicationContentPath),
+            MAKE_SERVICE_COMMAND_META(NsAmMitmService, ResolveApplicationContentPath),
+            MAKE_SERVICE_COMMAND_META(NsAmMitmService, GetRunningApplicationProgramId, FirmwareVersion_600),
         };
 };

@@ -20,35 +20,22 @@
 
 #include "pm_registration.hpp"
 
-enum ShellCmd {
-    Shell_Cmd_LaunchProcess = 0,
-    Shell_Cmd_TerminateProcessId = 1,
-    Shell_Cmd_TerminateTitleId = 2,
-    Shell_Cmd_GetProcessWaitEvent = 3,
-    Shell_Cmd_GetProcessEventType = 4,
-    Shell_Cmd_FinalizeExitedProcess = 5,
-    Shell_Cmd_ClearProcessNotificationFlag = 6,
-    Shell_Cmd_NotifyBootFinished = 7,
-    Shell_Cmd_GetApplicationProcessId = 8,
-    Shell_Cmd_BoostSystemMemoryResourceLimit = 9
-};
-
-enum ShellCmd_5X {
-    Shell_Cmd_5X_LaunchProcess = 0,
-    Shell_Cmd_5X_TerminateProcessId = 1,
-    Shell_Cmd_5X_TerminateTitleId = 2,
-    Shell_Cmd_5X_GetProcessWaitEvent = 3,
-    Shell_Cmd_5X_GetProcessEventType = 4,
-    Shell_Cmd_5X_NotifyBootFinished = 5,
-    Shell_Cmd_5X_GetApplicationProcessId = 6,
-    Shell_Cmd_5X_BoostSystemMemoryResourceLimit = 7,
-
-    Shell_Cmd_BoostSystemThreadsResourceLimit = 8,
-    Shell_Cmd_GetBootFinishedEvent = 9,
-};
-
-class ShellService final : public IServiceObject {
+/* Represents modern ShellService (5.0.0+) */
+class ShellService : public IServiceObject {
     private:
+        enum class CommandId {
+            LaunchProcess                   = 0,
+            TerminateProcessId              = 1,
+            TerminateTitleId                = 2,
+            GetProcessWaitEvent             = 3,
+            GetProcessEventType             = 4,
+            NotifyBootFinished              = 5,
+            GetApplicationProcessId         = 6,
+            BoostSystemMemoryResourceLimit  = 7,
+            BoostSystemThreadsResourceLimit = 8,
+            GetBootFinishedEvent            = 9,
+        };
+    protected:
         /* Actual commands. */
         Result LaunchProcess(Out<u64> pid, Registration::TidSid tid_sid, u32 launch_flags);
         Result TerminateProcessId(u64 pid);
@@ -64,34 +51,53 @@ class ShellService final : public IServiceObject {
         void GetBootFinishedEvent(Out<CopiedHandle> event);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            /* 1.0.0-4.0.0 */
-            MakeServiceCommandMeta<Shell_Cmd_LaunchProcess, &ShellService::LaunchProcess, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Shell_Cmd_TerminateProcessId, &ShellService::TerminateProcessId, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Shell_Cmd_TerminateTitleId, &ShellService::TerminateTitleId, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Shell_Cmd_GetProcessWaitEvent, &ShellService::GetProcessWaitEvent, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Shell_Cmd_GetProcessEventType, &ShellService::GetProcessEventType, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Shell_Cmd_FinalizeExitedProcess, &ShellService::FinalizeExitedProcess, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Shell_Cmd_ClearProcessNotificationFlag, &ShellService::ClearProcessNotificationFlag, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Shell_Cmd_NotifyBootFinished, &ShellService::NotifyBootFinished, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Shell_Cmd_GetApplicationProcessId, &ShellService::GetApplicationProcessId, FirmwareVersion_Min, FirmwareVersion_400>(),
-
-            /* 4.0.0-4.0.0 */
-            MakeServiceCommandMeta<Shell_Cmd_BoostSystemMemoryResourceLimit, &ShellService::BoostSystemMemoryResourceLimit, FirmwareVersion_400, FirmwareVersion_400>(),
-
             /* 5.0.0-* */
-            MakeServiceCommandMeta<Shell_Cmd_5X_LaunchProcess, &ShellService::LaunchProcess, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Shell_Cmd_5X_TerminateProcessId, &ShellService::TerminateProcessId, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Shell_Cmd_5X_TerminateTitleId, &ShellService::TerminateTitleId, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Shell_Cmd_5X_GetProcessWaitEvent, &ShellService::GetProcessWaitEvent, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Shell_Cmd_5X_GetProcessEventType, &ShellService::GetProcessEventType, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Shell_Cmd_5X_NotifyBootFinished, &ShellService::NotifyBootFinished, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Shell_Cmd_5X_GetApplicationProcessId, &ShellService::GetApplicationProcessId, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Shell_Cmd_5X_BoostSystemMemoryResourceLimit, &ShellService::BoostSystemMemoryResourceLimit, FirmwareVersion_500>(),
+            MAKE_SERVICE_COMMAND_META(ShellService, LaunchProcess),
+            MAKE_SERVICE_COMMAND_META(ShellService, TerminateProcessId),
+            MAKE_SERVICE_COMMAND_META(ShellService, TerminateTitleId),
+            MAKE_SERVICE_COMMAND_META(ShellService, GetProcessWaitEvent),
+            MAKE_SERVICE_COMMAND_META(ShellService, GetProcessEventType),
+            MAKE_SERVICE_COMMAND_META(ShellService, NotifyBootFinished),
+            MAKE_SERVICE_COMMAND_META(ShellService, GetApplicationProcessId),
+            MAKE_SERVICE_COMMAND_META(ShellService, BoostSystemMemoryResourceLimit),
 
             /* 7.0.0-* */
-            MakeServiceCommandMeta<Shell_Cmd_BoostSystemThreadsResourceLimit, &ShellService::BoostSystemThreadsResourceLimit, FirmwareVersion_700>(),
+            MAKE_SERVICE_COMMAND_META(ShellService, BoostSystemThreadsResourceLimit, FirmwareVersion_700),
 
             /* 8.0.0-* */
-            MakeServiceCommandMeta<Shell_Cmd_GetBootFinishedEvent, &ShellService::GetBootFinishedEvent, FirmwareVersion_800>(),
+            MAKE_SERVICE_COMMAND_META(ShellService, GetBootFinishedEvent,            FirmwareVersion_800),
+        };
+};
+
+/* Represents deprecated ShellService (1.0.0-4.1.0). */
+class ShellServiceDeprecated : public ShellService {
+    private:
+        enum class CommandId {
+            LaunchProcess                  = 0,
+            TerminateProcessId             = 1,
+            TerminateTitleId               = 2,
+            GetProcessWaitEvent            = 3,
+            GetProcessEventType            = 4,
+            FinalizeExitedProcess          = 5,
+            ClearProcessNotificationFlag   = 6,
+            NotifyBootFinished             = 7,
+            GetApplicationProcessId        = 8,
+            BoostSystemMemoryResourceLimit = 9,
+        };
+    public:
+        DEFINE_SERVICE_DISPATCH_TABLE {
+            /* 1.0.0- */
+            MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, LaunchProcess),
+            MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, TerminateProcessId),
+            MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, TerminateTitleId),
+            MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, GetProcessWaitEvent),
+            MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, GetProcessEventType),
+            MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, FinalizeExitedProcess),
+            MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, ClearProcessNotificationFlag),
+            MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, NotifyBootFinished),
+            MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, GetApplicationProcessId),
+
+            /* 4.0.0- */
+            MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, BoostSystemMemoryResourceLimit, FirmwareVersion_400),
         };
 };

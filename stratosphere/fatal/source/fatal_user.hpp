@@ -20,13 +20,13 @@
 
 #include "fatal_types.hpp"
 
-enum UserCmd {
-    User_Cmd_ThrowFatal = 0,
-    User_Cmd_ThrowFatalWithPolicy = 1,
-    User_Cmd_ThrowFatalWithCpuContext = 2,
-};
-
 class UserService final : public IServiceObject {
+    private:
+        enum class CommandId {
+            ThrowFatal               = 0,
+            ThrowFatalWithPolicy     = 1,
+            ThrowFatalWithCpuContext = 2,
+        };
     private:
         /* Actual commands. */
         Result ThrowFatal(u32 error, PidDescriptor pid_desc);
@@ -34,8 +34,8 @@ class UserService final : public IServiceObject {
         Result ThrowFatalWithCpuContext(u32 error, PidDescriptor pid_desc, FatalType policy, InBuffer<u8> _ctx);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<User_Cmd_ThrowFatal, &UserService::ThrowFatal>(),
-            MakeServiceCommandMeta<User_Cmd_ThrowFatalWithPolicy, &UserService::ThrowFatalWithPolicy>(),
-            MakeServiceCommandMeta<User_Cmd_ThrowFatalWithCpuContext, &UserService::ThrowFatalWithCpuContext>(),
+            MAKE_SERVICE_COMMAND_META(UserService, ThrowFatal),
+            MAKE_SERVICE_COMMAND_META(UserService, ThrowFatalWithPolicy),
+            MAKE_SERVICE_COMMAND_META(UserService, ThrowFatalWithCpuContext),
         };
 };

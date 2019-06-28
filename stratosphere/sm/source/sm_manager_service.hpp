@@ -40,11 +40,11 @@ namespace sts::sm {
             virtual void AtmosphereHasMitm(Out<bool> out, ServiceName service);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MakeServiceCommandMeta<CommandId::RegisterProcess, &ManagerService::RegisterProcess>(),
-                MakeServiceCommandMeta<CommandId::UnregisterProcess, &ManagerService::UnregisterProcess>(),
+                MAKE_SERVICE_COMMAND_META(ManagerService, RegisterProcess),
+                MAKE_SERVICE_COMMAND_META(ManagerService, UnregisterProcess),
 
-                MakeServiceCommandMeta<CommandId::AtmosphereEndInitDefers, &ManagerService::AtmosphereEndInitDefers>(),
-                MakeServiceCommandMeta<CommandId::AtmosphereHasMitm, &ManagerService::AtmosphereHasMitm>(),
+                MAKE_SERVICE_COMMAND_META(ManagerService, AtmosphereEndInitDefers),
+                MAKE_SERVICE_COMMAND_META(ManagerService, AtmosphereHasMitm),
             };
     };
 

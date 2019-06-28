@@ -18,12 +18,12 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-enum BootModeCmd {
-    BootMode_Cmd_GetBootMode = 0,
-    BootMode_Cmd_SetMaintenanceBoot = 1
-};
-
 class BootModeService final : public IServiceObject {
+    private:
+        enum class CommandId {
+            GetBootMode        = 0,
+            SetMaintenanceBoot = 1,
+        };
     private:
         /* Actual commands. */
         void GetBootMode(Out<u32> out);
@@ -32,7 +32,7 @@ class BootModeService final : public IServiceObject {
         static void SetMaintenanceBootForEmbeddedBoot2();
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<BootMode_Cmd_GetBootMode, &BootModeService::GetBootMode>(),
-            MakeServiceCommandMeta<BootMode_Cmd_SetMaintenanceBoot, &BootModeService::SetMaintenanceBoot>(),
+            MAKE_SERVICE_COMMAND_META(BootModeService, GetBootMode),
+            MAKE_SERVICE_COMMAND_META(BootModeService, SetMaintenanceBoot),
         };
 };

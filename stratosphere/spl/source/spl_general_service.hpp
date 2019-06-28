@@ -80,13 +80,13 @@ namespace sts::spl {
             virtual Result GetBootReason(Out<BootReasonValue> out);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MakeServiceCommandMeta<CommandId::GetConfig, &GeneralService::GetConfig>(),
-                MakeServiceCommandMeta<CommandId::ExpMod, &GeneralService::ExpMod>(),
-                MakeServiceCommandMeta<CommandId::SetConfig, &GeneralService::SetConfig>(),
-                MakeServiceCommandMeta<CommandId::GenerateRandomBytes, &GeneralService::GenerateRandomBytes>(),
-                MakeServiceCommandMeta<CommandId::IsDevelopment, &GeneralService::IsDevelopment>(),
-                MakeServiceCommandMeta<CommandId::SetBootReason, &GeneralService::SetBootReason, FirmwareVersion_300>(),
-                MakeServiceCommandMeta<CommandId::GetBootReason, &GeneralService::GetBootReason, FirmwareVersion_300>(),
+                MAKE_SERVICE_COMMAND_META(GeneralService, GetConfig),
+                MAKE_SERVICE_COMMAND_META(GeneralService, ExpMod),
+                MAKE_SERVICE_COMMAND_META(GeneralService, SetConfig),
+                MAKE_SERVICE_COMMAND_META(GeneralService, GenerateRandomBytes),
+                MAKE_SERVICE_COMMAND_META(GeneralService, IsDevelopment),
+                MAKE_SERVICE_COMMAND_META(GeneralService, SetBootReason,        FirmwareVersion_300),
+                MAKE_SERVICE_COMMAND_META(GeneralService, GetBootReason,        FirmwareVersion_300),
             };
     };
 

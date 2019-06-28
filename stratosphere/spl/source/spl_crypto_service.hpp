@@ -40,22 +40,22 @@ namespace sts::spl {
             virtual void GetAesKeyslotAvailableEvent(Out<CopiedHandle> out_hnd);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MakeServiceCommandMetaEx<CommandId::GetConfig, &CryptoService::GetConfig, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::ExpMod, &CryptoService::ExpMod, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::SetConfig, &CryptoService::SetConfig, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::GenerateRandomBytes, &CryptoService::GenerateRandomBytes, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::IsDevelopment, &CryptoService::IsDevelopment, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::SetBootReason, &CryptoService::SetBootReason, CryptoService, FirmwareVersion_300>(),
-                MakeServiceCommandMetaEx<CommandId::GetBootReason, &CryptoService::GetBootReason, CryptoService, FirmwareVersion_300>(),
-                MakeServiceCommandMetaEx<CommandId::GenerateAesKek, &CryptoService::GenerateAesKek, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::LoadAesKey, &CryptoService::LoadAesKey, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::GenerateAesKey, &CryptoService::GenerateAesKey, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::DecryptAesKey, &CryptoService::DecryptAesKey, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::CryptAesCtr, &CryptoService::CryptAesCtr, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::ComputeCmac, &CryptoService::ComputeCmac, CryptoService>(),
-                MakeServiceCommandMetaEx<CommandId::AllocateAesKeyslot, &CryptoService::AllocateAesKeyslot, CryptoService, FirmwareVersion_200>(),
-                MakeServiceCommandMetaEx<CommandId::FreeAesKeyslot, &CryptoService::FreeAesKeyslot, CryptoService, FirmwareVersion_200>(),
-                MakeServiceCommandMetaEx<CommandId::GetAesKeyslotAvailableEvent, &CryptoService::GetAesKeyslotAvailableEvent, CryptoService, FirmwareVersion_200>(),
+                MAKE_SERVICE_COMMAND_META(CryptoService, GetConfig),
+                MAKE_SERVICE_COMMAND_META(CryptoService, ExpMod),
+                MAKE_SERVICE_COMMAND_META(CryptoService, SetConfig),
+                MAKE_SERVICE_COMMAND_META(CryptoService, GenerateRandomBytes),
+                MAKE_SERVICE_COMMAND_META(CryptoService, IsDevelopment),
+                MAKE_SERVICE_COMMAND_META(CryptoService, SetBootReason,               FirmwareVersion_300),
+                MAKE_SERVICE_COMMAND_META(CryptoService, GetBootReason,               FirmwareVersion_300),
+                MAKE_SERVICE_COMMAND_META(CryptoService, GenerateAesKek),
+                MAKE_SERVICE_COMMAND_META(CryptoService, LoadAesKey),
+                MAKE_SERVICE_COMMAND_META(CryptoService, GenerateAesKey),
+                MAKE_SERVICE_COMMAND_META(CryptoService, DecryptAesKey),
+                MAKE_SERVICE_COMMAND_META(CryptoService, CryptAesCtr),
+                MAKE_SERVICE_COMMAND_META(CryptoService, ComputeCmac),
+                MAKE_SERVICE_COMMAND_META(CryptoService, AllocateAesKeyslot,          FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(CryptoService, FreeAesKeyslot,              FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(CryptoService, GetAesKeyslotAvailableEvent, FirmwareVersion_200),
             };
     };
 

@@ -30,7 +30,7 @@ namespace sts::ro {
             Result GetProcessModuleInfo(Out<u32> count, OutBuffer<LoaderModuleInfo> out_infos, u64 pid);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MakeServiceCommandMeta<CommandId::GetProcessModuleInfo, &DebugMonitorService::GetProcessModuleInfo>(),
+                MAKE_SERVICE_COMMAND_META(DebugMonitorService, GetProcessModuleInfo),
             };
     };
 

@@ -142,8 +142,13 @@ int main(int argc, char **argv)
     static auto s_server_manager = WaitableManager(1);
 
     /* TODO: Create services. */
-    s_server_manager.AddWaitable(new ServiceServer<ShellService>("pm:shell", 3));
-    s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 3));
+    if (GetRuntimeFirmwareVersion() <= FirmwareVersion_400) {
+        s_server_manager.AddWaitable(new ServiceServer<ShellServiceDeprecated>("pm:shell", 3));
+        s_server_manager.AddWaitable(new ServiceServer<DebugMonitorServiceDeprecated>("pm:dmnt", 3));
+    } else {
+        s_server_manager.AddWaitable(new ServiceServer<ShellService>("pm:shell", 3));
+        s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 3));
+    }
     s_server_manager.AddWaitable(new ServiceServer<BootModeService>("pm:bm", 6));
     s_server_manager.AddWaitable(new ServiceServer<InformationService>("pm:info", 19));
 

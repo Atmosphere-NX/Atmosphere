@@ -56,12 +56,12 @@ namespace sts::ldr {
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
-                    MakeServiceCommandMetaEx<CommandId::CreateProcess,  &ProcessManagerInterface::CreateProcess, ProcessManagerInterface>(),
-                    MakeServiceCommandMetaEx<CommandId::GetProgramInfo, &ProcessManagerInterface::GetProgramInfo, ProcessManagerInterface>(),
-                    MakeServiceCommandMetaEx<CommandId::PinTitle,       &ProcessManagerInterface::PinTitle, ProcessManagerInterface>(),
-                    MakeServiceCommandMetaEx<CommandId::UnpinTitle,     &ProcessManagerInterface::UnpinTitle, ProcessManagerInterface>(),
+                    MAKE_SERVICE_COMMAND_META(ProcessManagerInterface, CreateProcess),
+                    MAKE_SERVICE_COMMAND_META(ProcessManagerInterface, GetProgramInfo),
+                    MAKE_SERVICE_COMMAND_META(ProcessManagerInterface, PinTitle),
+                    MAKE_SERVICE_COMMAND_META(ProcessManagerInterface, UnpinTitle),
 
-                    MakeServiceCommandMetaEx<CommandId::AtmosphereHasLaunchedTitle, &ProcessManagerInterface::AtmosphereHasLaunchedTitle, ProcessManagerInterface>(),
+                    MAKE_SERVICE_COMMAND_META(ProcessManagerInterface, AtmosphereHasLaunchedTitle),
                 };
         };
 
@@ -80,11 +80,11 @@ namespace sts::ldr {
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
-                    MakeServiceCommandMetaEx<CommandId::SetTitleArguments,    &DebugMonitorInterface::SetTitleArguments, DebugMonitorInterface>(),
-                    MakeServiceCommandMetaEx<CommandId::ClearArguments,       &DebugMonitorInterface::ClearArguments, DebugMonitorInterface>(),
-                    MakeServiceCommandMetaEx<CommandId::GetProcessModuleInfo, &DebugMonitorInterface::GetProcessModuleInfo, DebugMonitorInterface>(),
+                    MAKE_SERVICE_COMMAND_META(DebugMonitorInterface, SetTitleArguments),
+                    MAKE_SERVICE_COMMAND_META(DebugMonitorInterface, ClearArguments),
+                    MAKE_SERVICE_COMMAND_META(DebugMonitorInterface, GetProcessModuleInfo),
 
-                    MakeServiceCommandMetaEx<CommandId::AtmosphereHasLaunchedTitle, &DebugMonitorInterface::AtmosphereHasLaunchedTitle, DebugMonitorInterface>(),
+                    MAKE_SERVICE_COMMAND_META(DebugMonitorInterface, AtmosphereHasLaunchedTitle),
                 };
         };
 
@@ -103,11 +103,11 @@ namespace sts::ldr {
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
-                    MakeServiceCommandMetaEx<CommandId::SetTitleArguments,    &ShellInterface::SetTitleArguments, ShellInterface>(),
-                    MakeServiceCommandMetaEx<CommandId::ClearArguments,       &ShellInterface::ClearArguments, ShellInterface>(),
+                    MAKE_SERVICE_COMMAND_META(ShellInterface, SetTitleArguments),
+                    MAKE_SERVICE_COMMAND_META(ShellInterface, ClearArguments),
 
-                    MakeServiceCommandMetaEx<CommandId::AtmosphereSetExternalContentSource,   &ShellInterface::AtmosphereSetExternalContentSource, ShellInterface>(),
-                    MakeServiceCommandMetaEx<CommandId::AtmosphereClearExternalContentSource, &ShellInterface::AtmosphereClearExternalContentSource, ShellInterface>(),
+                    MAKE_SERVICE_COMMAND_META(ShellInterface, AtmosphereSetExternalContentSource),
+                    MAKE_SERVICE_COMMAND_META(ShellInterface, AtmosphereClearExternalContentSource),
                 };
         };
 

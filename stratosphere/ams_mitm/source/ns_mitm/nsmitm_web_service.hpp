@@ -20,10 +20,15 @@
 
 #include "../utils.hpp"
 
-#include "nsmitm_service_common.hpp"
 #include "ns_shim.h"
 
 class NsDocumentService : public IServiceObject {
+    private:
+        enum class CommandId {
+            GetApplicationContentPath      = 21,
+            ResolveApplicationContentPath  = 23,
+            GetRunningApplicationProgramId = 92,
+        };
     private:
         u64 title_id;
         std::unique_ptr<NsDocumentInterface> srv;
@@ -50,13 +55,17 @@ class NsDocumentService : public IServiceObject {
         Result GetRunningApplicationProgramId(Out<u64> out_tid, u64 app_id);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<NsSrvCmd_GetApplicationContentPath, &NsDocumentService::GetApplicationContentPath>(),
-            MakeServiceCommandMeta<NsSrvCmd_ResolveApplicationContentPath, &NsDocumentService::ResolveApplicationContentPath>(),
-            MakeServiceCommandMeta<NsSrvCmd_GetRunningApplicationProgramId, &NsDocumentService::GetRunningApplicationProgramId, FirmwareVersion_600>(),
+            MAKE_SERVICE_COMMAND_META(NsDocumentService, GetApplicationContentPath),
+            MAKE_SERVICE_COMMAND_META(NsDocumentService, ResolveApplicationContentPath),
+            MAKE_SERVICE_COMMAND_META(NsDocumentService, GetRunningApplicationProgramId, FirmwareVersion_600),
         };
 };
 
 class NsWebMitmService : public IMitmServiceObject {
+    private:
+        enum class CommandId {
+            GetDocumentInterface = 7999,
+        };
     public:
         NsWebMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
             /* ... */
@@ -76,6 +85,6 @@ class NsWebMitmService : public IMitmServiceObject {
         Result GetDocumentInterface(Out<std::shared_ptr<NsDocumentService>> out_intf);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<NsGetterCmd_GetDocumentInterface, &NsWebMitmService::GetDocumentInterface, FirmwareVersion_300>(),
+            MAKE_SERVICE_COMMAND_META(NsWebMitmService, GetDocumentInterface, FirmwareVersion_300),
         };
 };

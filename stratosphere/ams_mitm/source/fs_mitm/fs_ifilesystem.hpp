@@ -26,30 +26,6 @@
 #include "fs_ifile.hpp"
 #include "fs_idirectory.hpp"
 
-enum FsIFileSystemCmd : u32 {
-    /* 1.0.0+ */
-    FsIFileSystemCmd_CreateFile = 0,
-    FsIFileSystemCmd_DeleteFile = 1,
-    FsIFileSystemCmd_CreateDirectory = 2,
-    FsIFileSystemCmd_DeleteDirectory = 3,
-    FsIFileSystemCmd_DeleteDirectoryRecursively = 4,
-    FsIFileSystemCmd_RenameFile = 5,
-    FsIFileSystemCmd_RenameDirectory = 6,
-    FsIFileSystemCmd_GetEntryType = 7,
-    FsIFileSystemCmd_OpenFile = 8,
-    FsIFileSystemCmd_OpenDirectory = 9,
-    FsIFileSystemCmd_Commit = 10,
-    FsIFileSystemCmd_GetFreeSpaceSize = 11,
-    FsIFileSystemCmd_GetTotalSpaceSize = 12,
-
-    /* 3.0.0+ */
-    FsIFileSystemCmd_CleanDirectoryRecursively = 13,
-    FsIFileSystemCmd_GetFileTimeStampRaw = 14,
-
-    /* 4.0.0+ */
-    FsIFileSystemCmd_QueryEntry = 15,
-};
-
 class IFile;
 class IDirectory;
 
@@ -198,6 +174,30 @@ class IFileSystem {
 
 class IFileSystemInterface : public IServiceObject {
     private:
+        enum class CommandId {
+            /* 1.0.0+ */
+            CreateFile                  = 0,
+            DeleteFile                  = 1,
+            CreateDirectory             = 2,
+            DeleteDirectory             = 3,
+            DeleteDirectoryRecursively  = 4,
+            RenameFile                  = 5,
+            RenameDirectory             = 6,
+            GetEntryType                = 7,
+            OpenFile                    = 8,
+            OpenDirectory               = 9,
+            Commit                      = 10,
+            GetFreeSpaceSize            = 11,
+            GetTotalSpaceSize           = 12,
+
+            /* 3.0.0+ */
+            CleanDirectoryRecursively   = 13,
+            GetFileTimeStampRaw         = 14,
+
+            /* 4.0.0+ */
+            QueryEntry                  = 15,
+        };
+    private:
         std::unique_ptr<IFileSystem> unique_fs;
         std::shared_ptr<IFileSystem> shared_fs;
         IFileSystem *base_fs;
@@ -342,26 +342,26 @@ class IFileSystemInterface : public IServiceObject {
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             /* 1.0.0- */
-            MakeServiceCommandMeta<FsIFileSystemCmd_CreateFile, &IFileSystemInterface::CreateFile>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_DeleteFile, &IFileSystemInterface::DeleteFile>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_CreateDirectory, &IFileSystemInterface::CreateDirectory>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_DeleteDirectory, &IFileSystemInterface::DeleteDirectory>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_DeleteDirectoryRecursively, &IFileSystemInterface::DeleteDirectoryRecursively>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_RenameFile, &IFileSystemInterface::RenameFile>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_RenameDirectory, &IFileSystemInterface::RenameDirectory>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_GetEntryType, &IFileSystemInterface::GetEntryType>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_OpenFile, &IFileSystemInterface::OpenFile>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_OpenDirectory, &IFileSystemInterface::OpenDirectory>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_Commit, &IFileSystemInterface::Commit>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_GetFreeSpaceSize, &IFileSystemInterface::GetFreeSpaceSize>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_GetTotalSpaceSize, &IFileSystemInterface::GetTotalSpaceSize>(),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, CreateFile),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, DeleteFile),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, CreateDirectory),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, DeleteDirectory),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, DeleteDirectoryRecursively),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, RenameFile),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, RenameDirectory),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, GetEntryType),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, OpenFile),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, OpenDirectory),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, Commit),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, GetFreeSpaceSize),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, GetTotalSpaceSize),
 
             /* 3.0.0- */
-            MakeServiceCommandMeta<FsIFileSystemCmd_CleanDirectoryRecursively, &IFileSystemInterface::CleanDirectoryRecursively, FirmwareVersion_300>(),
-            MakeServiceCommandMeta<FsIFileSystemCmd_GetFileTimeStampRaw, &IFileSystemInterface::GetFileTimeStampRaw, FirmwareVersion_300>(),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, CleanDirectoryRecursively, FirmwareVersion_300),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, GetFileTimeStampRaw,       FirmwareVersion_300),
 
             /* 4.0.0- */
-            MakeServiceCommandMeta<FsIFileSystemCmd_QueryEntry, &IFileSystemInterface::QueryEntry, FirmwareVersion_400>(),
+            MAKE_SERVICE_COMMAND_META(IFileSystemInterface, QueryEntry,                FirmwareVersion_400),
         };
 };
 

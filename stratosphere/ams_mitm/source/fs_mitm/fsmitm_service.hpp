@@ -21,24 +21,23 @@
 #include "fs_ifilesystem.hpp"
 #include "../utils.hpp"
 
-enum FspSrvCmd : u32 {
-    FspSrvCmd_OpenFileSystemDeprecated = 0,
-
-    FspSrvCmd_SetCurrentProcess = 1,
-
-    FspSrvCmd_OpenFileSystemWithPatch = 7,
-    FspSrvCmd_OpenFileSystemWithId = 8,
-
-    FspSrvCmd_OpenSdCardFileSystem = 18,
-
-    FspSrvCmd_OpenSaveDataFileSystem = 51,
-
-    FspSrvCmd_OpenBisStorage = 12,
-    FspSrvCmd_OpenDataStorageByCurrentProcess = 200,
-    FspSrvCmd_OpenDataStorageByDataId = 202,
-};
-
 class FsMitmService : public IMitmServiceObject {
+    private:
+        enum class CommandId {
+            OpenFileSystemDeprecated        = 0,
+
+            SetCurrentProcess               = 1,
+            OpenFileSystemWithPatch         = 7,
+            OpenFileSystemWithId            = 8,
+
+            OpenSdCardFileSystem            = 18,
+
+            OpenSaveDataFileSystem          = 51,
+
+            OpenBisStorage                  = 12,
+            OpenDataStorageByCurrentProcess = 200,
+            OpenDataStorageByDataId         = 202,
+        };
     private:
         static constexpr const char *AtmosphereHblWebContentDir = "/atmosphere/hbl_html";
     private:
@@ -84,13 +83,13 @@ class FsMitmService : public IMitmServiceObject {
         Result OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterface>> out, u64 data_id, u8 storage_id);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            /* TODO MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemDeprecated, &FsMitmService::OpenFileSystemDeprecated>(), */
-            MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemWithPatch, &FsMitmService::OpenFileSystemWithPatch, FirmwareVersion_200>(),
-            MakeServiceCommandMeta<FspSrvCmd_OpenFileSystemWithId, &FsMitmService::OpenFileSystemWithId, FirmwareVersion_200>(),
-            MakeServiceCommandMeta<FspSrvCmd_OpenSdCardFileSystem, &FsMitmService::OpenSdCardFileSystem>(),
-            MakeServiceCommandMeta<FspSrvCmd_OpenSaveDataFileSystem, &FsMitmService::OpenSaveDataFileSystem>(),
-            MakeServiceCommandMeta<FspSrvCmd_OpenBisStorage, &FsMitmService::OpenBisStorage>(),
-            MakeServiceCommandMeta<FspSrvCmd_OpenDataStorageByCurrentProcess, &FsMitmService::OpenDataStorageByCurrentProcess>(),
-            MakeServiceCommandMeta<FspSrvCmd_OpenDataStorageByDataId, &FsMitmService::OpenDataStorageByDataId>(),
+            /* TODO MAKE_SERVICE_COMMAND_META(FsMitmService, OpenFileSystemDeprecated), */
+            MAKE_SERVICE_COMMAND_META(FsMitmService, OpenFileSystemWithPatch, FirmwareVersion_200),
+            MAKE_SERVICE_COMMAND_META(FsMitmService, OpenFileSystemWithId, FirmwareVersion_200),
+            MAKE_SERVICE_COMMAND_META(FsMitmService, OpenSdCardFileSystem),
+            MAKE_SERVICE_COMMAND_META(FsMitmService, OpenSaveDataFileSystem),
+            MAKE_SERVICE_COMMAND_META(FsMitmService, OpenBisStorage),
+            MAKE_SERVICE_COMMAND_META(FsMitmService, OpenDataStorageByCurrentProcess),
+            MAKE_SERVICE_COMMAND_META(FsMitmService, OpenDataStorageByDataId),
         };
 };

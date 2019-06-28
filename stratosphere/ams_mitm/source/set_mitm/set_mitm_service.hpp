@@ -20,16 +20,16 @@
 
 #include "../utils.hpp"
 
-enum SetCmd : u32 {
-    SetCmd_GetLanguageCode = 0,
-    SetCmd_GetRegionCode = 4,
-
-    /* Commands for which set:sys *must* act as a passthrough. */
-    /* TODO: Solve the relevant IPC detection problem. */
-    SetCmd_GetAvailableLanguageCodes = 1,
-};
-
 class SetMitmService : public IMitmServiceObject {
+    private:
+        enum class CommandId {
+            GetLanguageCode = 0,
+            GetRegionCode   = 4,
+
+            /* Commands for which set:sys *must* act as a passthrough. */
+            /* TODO: Solve the relevant IPC detection problem. */
+            GetAvailableLanguageCodes = 1,
+        };
     private:
         HosMutex lock;
         OverrideLocale locale;
@@ -60,9 +60,9 @@ class SetMitmService : public IMitmServiceObject {
         Result GetAvailableLanguageCodes(OutPointerWithClientSize<u64> out_language_codes, Out<s32> out_count);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<SetCmd_GetLanguageCode, &SetMitmService::GetLanguageCode>(),
-            MakeServiceCommandMeta<SetCmd_GetRegionCode, &SetMitmService::GetRegionCode>(),
+            MAKE_SERVICE_COMMAND_META(SetMitmService, GetLanguageCode),
+            MAKE_SERVICE_COMMAND_META(SetMitmService, GetRegionCode),
 
-            MakeServiceCommandMeta<SetCmd_GetAvailableLanguageCodes, &SetMitmService::GetAvailableLanguageCodes>(),
+            MAKE_SERVICE_COMMAND_META(SetMitmService, GetAvailableLanguageCodes),
         };
 };

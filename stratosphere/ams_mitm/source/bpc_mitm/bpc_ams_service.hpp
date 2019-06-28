@@ -20,15 +20,14 @@
 
 #include "../utils.hpp"
 
-enum BpcAtmosphereCmd : u32 {
-    BpcAtmosphereCmd_RebootToFatalError = 65000,
-};
-
 class BpcAtmosphereService : public IServiceObject {
+    enum class CommandId {
+        RebootToFatalError = 65000,
+    };
     private:
         Result RebootToFatalError(InBuffer<AtmosphereFatalErrorContext> ctx);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<BpcAtmosphereCmd_RebootToFatalError, &BpcAtmosphereService::RebootToFatalError>(),
+            MAKE_SERVICE_COMMAND_META(BpcAtmosphereService, RebootToFatalError),
         };
 };

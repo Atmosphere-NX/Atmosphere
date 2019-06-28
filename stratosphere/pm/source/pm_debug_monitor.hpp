@@ -20,30 +20,23 @@
 
 #include "pm_registration.hpp"
 
-enum DmntCmd {
-    Dmnt_Cmd_GetUnknownStub = 0,
-    Dmnt_Cmd_GetDebugProcessIds = 1,
-    Dmnt_Cmd_LaunchDebugProcess = 2,
-    Dmnt_Cmd_GetTitleProcessId = 3,
-    Dmnt_Cmd_EnableDebugForTitleId = 4,
-    Dmnt_Cmd_GetApplicationProcessId = 5,
-    Dmnt_Cmd_EnableDebugForApplication = 6,
-
-    Dmnt_Cmd_5X_GetDebugProcessIds = 0,
-    Dmnt_Cmd_5X_LaunchDebugProcess = 1,
-    Dmnt_Cmd_5X_GetTitleProcessId = 2,
-    Dmnt_Cmd_5X_EnableDebugForTitleId = 3,
-    Dmnt_Cmd_5X_GetApplicationProcessId = 4,
-    Dmnt_Cmd_5X_EnableDebugForApplication = 5,
-
-    Dmnt_Cmd_6X_DisableDebug = 6,
-
-    Dmnt_Cmd_AtmosphereGetProcessInfo = 65000,
-    Dmnt_Cmd_AtmosphereGetCurrentLimitInfo = 65001,
-};
-
-class DebugMonitorService final : public IServiceObject {
+/* Represents modern DebugMonitorService (5.0.0+) */
+class DebugMonitorService : public IServiceObject {
     private:
+        enum class CommandId {
+            GetDebugProcessIds            = 0,
+            LaunchDebugProcess            = 1,
+            GetTitleProcessId             = 2,
+            EnableDebugForTitleId         = 3,
+            GetApplicationProcessId       = 4,
+            EnableDebugForApplication     = 5,
+
+            DisableDebug                  = 6,
+
+            AtmosphereGetProcessInfo      = 65000,
+            AtmosphereGetCurrentLimitInfo = 65001,
+        };
+    protected:
         /* Actual commands. */
         Result GetUnknownStub(Out<u32> count, OutBuffer<u8> out_buf, u64 in_unk);
         Result GetDebugProcessIds(Out<u32> count, OutBuffer<u64> out_pids);
@@ -59,28 +52,51 @@ class DebugMonitorService final : public IServiceObject {
         Result AtmosphereGetCurrentLimitInfo(Out<u64> cur_val, Out<u64> lim_val, u32 category, u32 resource);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            /* 1.0.0-4.1.0 */
-            MakeServiceCommandMeta<Dmnt_Cmd_GetUnknownStub, &DebugMonitorService::GetUnknownStub, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_GetDebugProcessIds, &DebugMonitorService::GetDebugProcessIds, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_LaunchDebugProcess, &DebugMonitorService::LaunchDebugProcess, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_GetTitleProcessId, &DebugMonitorService::GetTitleProcessId, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_EnableDebugForTitleId, &DebugMonitorService::EnableDebugForTitleId, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_GetApplicationProcessId, &DebugMonitorService::GetApplicationProcessId, FirmwareVersion_Min, FirmwareVersion_400>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_EnableDebugForApplication, &DebugMonitorService::EnableDebugForApplication, FirmwareVersion_Min, FirmwareVersion_400>(),
-
             /* 5.0.0-* */
-            MakeServiceCommandMeta<Dmnt_Cmd_5X_GetDebugProcessIds, &DebugMonitorService::GetDebugProcessIds, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_5X_LaunchDebugProcess, &DebugMonitorService::LaunchDebugProcess, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_5X_GetTitleProcessId, &DebugMonitorService::GetTitleProcessId, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_5X_EnableDebugForTitleId, &DebugMonitorService::EnableDebugForTitleId, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_5X_GetApplicationProcessId, &DebugMonitorService::GetApplicationProcessId, FirmwareVersion_500>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_5X_EnableDebugForApplication, &DebugMonitorService::EnableDebugForApplication, FirmwareVersion_500>(),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorService, GetDebugProcessIds),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorService, LaunchDebugProcess),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorService, GetTitleProcessId),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorService, EnableDebugForTitleId),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorService, GetApplicationProcessId),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorService, EnableDebugForApplication),
 
             /* 6.0.0-* */
-            MakeServiceCommandMeta<Dmnt_Cmd_6X_DisableDebug, &DebugMonitorService::DisableDebug, FirmwareVersion_600>(),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorService, DisableDebug, FirmwareVersion_600),
 
             /* Atmosphere extensions. */
-            MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetProcessInfo, &DebugMonitorService::AtmosphereGetProcessInfo>(),
-            MakeServiceCommandMeta<Dmnt_Cmd_AtmosphereGetCurrentLimitInfo, &DebugMonitorService::AtmosphereGetCurrentLimitInfo>(),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorService, AtmosphereGetProcessInfo),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorService, AtmosphereGetCurrentLimitInfo),
+        };
+};
+
+/* Represents deprecated DebugMonitorService (1.0.0-4.1.0). */
+class DebugMonitorServiceDeprecated : public DebugMonitorService {
+    private:
+        enum class CommandId {
+            GetUnknownStub                = 0,
+            GetDebugProcessIds            = 1,
+            LaunchDebugProcess            = 2,
+            GetTitleProcessId             = 3,
+            EnableDebugForTitleId         = 4,
+            GetApplicationProcessId       = 5,
+            EnableDebugForApplication     = 6,
+
+            AtmosphereGetProcessInfo      = 65000,
+            AtmosphereGetCurrentLimitInfo = 65001,
+        };
+    public:
+        DEFINE_SERVICE_DISPATCH_TABLE {
+            /* 1.0.0-4.1.0 */
+            MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, GetUnknownStub),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, GetDebugProcessIds),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, LaunchDebugProcess),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, GetTitleProcessId),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, EnableDebugForTitleId),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, GetApplicationProcessId),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, EnableDebugForApplication),
+
+            /* Atmosphere extensions. */
+            MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, AtmosphereGetProcessInfo),
+            MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, AtmosphereGetCurrentLimitInfo),
         };
 };

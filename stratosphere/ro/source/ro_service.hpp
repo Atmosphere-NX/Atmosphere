@@ -52,12 +52,12 @@ namespace sts::ro {
             Result LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size, CopiedHandle process_h);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MakeServiceCommandMeta<CommandId::LoadNro, &Service::LoadNro>(),
-                MakeServiceCommandMeta<CommandId::UnloadNro, &Service::UnloadNro>(),
-                MakeServiceCommandMeta<CommandId::LoadNrr, &Service::LoadNrr>(),
-                MakeServiceCommandMeta<CommandId::UnloadNrr, &Service::UnloadNrr>(),
-                MakeServiceCommandMeta<CommandId::Initialize, &Service::Initialize>(),
-                MakeServiceCommandMeta<CommandId::LoadNrrEx, &Service::LoadNrrEx, FirmwareVersion_700>(),
+                MAKE_SERVICE_COMMAND_META(Service, LoadNro),
+                MAKE_SERVICE_COMMAND_META(Service, UnloadNro),
+                MAKE_SERVICE_COMMAND_META(Service, LoadNrr),
+                MAKE_SERVICE_COMMAND_META(Service, UnloadNrr),
+                MAKE_SERVICE_COMMAND_META(Service, Initialize),
+                MAKE_SERVICE_COMMAND_META(Service, LoadNrrEx,   FirmwareVersion_700),
             };
 
     };

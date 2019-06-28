@@ -18,16 +18,16 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-enum PrivateCmd {
-    Private_Cmd_GetFatalEvent = 0,
-};
-
 class PrivateService final : public IServiceObject {
+    private:
+        enum class CommandId {
+            GetFatalEvent = 0,
+        };
     private:
         /* Actual commands. */
         Result GetFatalEvent(Out<CopiedHandle> out_h);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<Private_Cmd_GetFatalEvent, &PrivateService::GetFatalEvent>(),
+            MAKE_SERVICE_COMMAND_META(PrivateService, GetFatalEvent),
         };
 };

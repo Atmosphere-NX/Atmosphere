@@ -20,18 +20,18 @@
 
 #include "setsys_shim.h"
 
-enum SetSysCmd : u32 {
-    SetSysCmd_GetFirmwareVersion = 3,
-    SetSysCmd_GetFirmwareVersion2 = 4,
-    SetSysCmd_GetSettingsItemValueSize = 37,
-    SetSysCmd_GetSettingsItemValue = 38,
-
-    /* Commands for which set:sys *must* act as a passthrough. */
-    /* TODO: Solve the relevant IPC detection problem. */
-    SetSysCmd_GetEdid = 41,
-};
-
 class SetSysMitmService : public IMitmServiceObject {
+    private:
+        enum class CommandId {
+            GetFirmwareVersion       = 3,
+            GetFirmwareVersion2      = 4,
+            GetSettingsItemValueSize = 37,
+            GetSettingsItemValue     = 38,
+
+            /* Commands for which set:sys *must* act as a passthrough. */
+            /* TODO: Solve the relevant IPC detection problem. */
+            GetEdid = 41,
+        };
     public:
         SetSysMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
             /* ... */
@@ -55,11 +55,11 @@ class SetSysMitmService : public IMitmServiceObject {
         Result GetEdid(OutPointerWithServerSize<SetSysEdid, 0x1> out);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<SetSysCmd_GetFirmwareVersion, &SetSysMitmService::GetFirmwareVersion>(),
-            MakeServiceCommandMeta<SetSysCmd_GetFirmwareVersion2, &SetSysMitmService::GetFirmwareVersion2>(),
-            MakeServiceCommandMeta<SetSysCmd_GetSettingsItemValueSize, &SetSysMitmService::GetSettingsItemValueSize>(),
-            MakeServiceCommandMeta<SetSysCmd_GetSettingsItemValue, &SetSysMitmService::GetSettingsItemValue>(),
+            MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetFirmwareVersion),
+            MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetFirmwareVersion2),
+            MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetSettingsItemValueSize),
+            MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetSettingsItemValue),
 
-            MakeServiceCommandMeta<SetSysCmd_GetEdid, &SetSysMitmService::GetEdid>(),
+            MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetEdid),
         };
 };

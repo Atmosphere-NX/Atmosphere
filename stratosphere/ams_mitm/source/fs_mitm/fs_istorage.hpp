@@ -21,15 +21,6 @@
 
 #include "../debug.hpp"
 
-enum FsIStorageCmd : u32 {
-    FsIStorageCmd_Read = 0,
-    FsIStorageCmd_Write = 1,
-    FsIStorageCmd_Flush = 2,
-    FsIStorageCmd_SetSize = 3,
-    FsIStorageCmd_GetSize = 4,
-    FsIStorageCmd_OperateRange = 5,
-};
-
 class IStorage {
     public:
         virtual ~IStorage();
@@ -47,6 +38,15 @@ class IStorage {
 };
 
 class IStorageInterface : public IServiceObject {
+    private:
+        enum class CommandId {
+            Read         = 0,
+            Write        = 1,
+            Flush        = 2,
+            SetSize      = 3,
+            GetSize      = 4,
+            OperateRange = 5,
+        };
     private:
         IStorage *base_storage;
     public:
@@ -81,14 +81,14 @@ class IStorageInterface : public IServiceObject {
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             /* 1.0.0- */
-            MakeServiceCommandMeta<FsIStorageCmd_Read, &IStorageInterface::Read>(),
-            MakeServiceCommandMeta<FsIStorageCmd_Write, &IStorageInterface::Write>(),
-            MakeServiceCommandMeta<FsIStorageCmd_Flush, &IStorageInterface::Flush>(),
-            MakeServiceCommandMeta<FsIStorageCmd_SetSize, &IStorageInterface::SetSize>(),
-            MakeServiceCommandMeta<FsIStorageCmd_GetSize, &IStorageInterface::GetSize>(),
+            MAKE_SERVICE_COMMAND_META(IStorageInterface, Read),
+            MAKE_SERVICE_COMMAND_META(IStorageInterface, Write),
+            MAKE_SERVICE_COMMAND_META(IStorageInterface, Flush),
+            MAKE_SERVICE_COMMAND_META(IStorageInterface, SetSize),
+            MAKE_SERVICE_COMMAND_META(IStorageInterface, GetSize),
 
             /* 4.0.0- */
-            MakeServiceCommandMeta<FsIStorageCmd_OperateRange, &IStorageInterface::OperateRange, FirmwareVersion_400>(),
+            MAKE_SERVICE_COMMAND_META(IStorageInterface, OperateRange, FirmwareVersion_400),
         };
 };
 

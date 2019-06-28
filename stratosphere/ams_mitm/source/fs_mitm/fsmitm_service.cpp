@@ -69,8 +69,8 @@ static void StorageCacheSetEntry(u64 title_id, std::shared_ptr<IStorageInterface
 
 void FsMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx) {
     auto this_ptr = static_cast<FsMitmService *>(obj);
-    switch ((FspSrvCmd)ctx->cmd_id) {
-        case FspSrvCmd_SetCurrentProcess:
+    switch (static_cast<CommandId>(ctx->cmd_id)) {
+        case CommandId::SetCurrentProcess:
             if (R_SUCCEEDED(ctx->rc)) {
                 this_ptr->has_initialized = true;
                 this_ptr->process_id = ctx->request.Pid;

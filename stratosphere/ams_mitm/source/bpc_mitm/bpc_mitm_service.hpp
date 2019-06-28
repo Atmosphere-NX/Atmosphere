@@ -20,12 +20,12 @@
 
 #include "../utils.hpp"
 
-enum BpcCmd : u32 {
-    BpcCmd_ShutdownSystem = 0,
-    BpcCmd_RebootSystem = 1,
-};
-
 class BpcMitmService : public IMitmServiceObject {
+    private:
+        enum class CommandId {
+            ShutdownSystem = 0,
+            RebootSystem   = 1,
+        };
     public:
         BpcMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
             /* ... */
@@ -48,7 +48,7 @@ class BpcMitmService : public IMitmServiceObject {
         Result RebootSystem();
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MakeServiceCommandMeta<BpcCmd_ShutdownSystem, &BpcMitmService::ShutdownSystem>(),
-            MakeServiceCommandMeta<BpcCmd_RebootSystem, &BpcMitmService::RebootSystem>(),
+            MAKE_SERVICE_COMMAND_META(BpcMitmService, ShutdownSystem),
+            MAKE_SERVICE_COMMAND_META(BpcMitmService, RebootSystem),
         };
 };

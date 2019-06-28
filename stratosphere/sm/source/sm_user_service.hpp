@@ -61,18 +61,18 @@ namespace sts::sm {
             virtual Result AtmosphereHasService(Out<bool> out, ServiceName service);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MakeServiceCommandMeta<CommandId::Initialize, &UserService::Initialize>(),
-                MakeServiceCommandMeta<CommandId::GetService, &UserService::GetService>(),
-                MakeServiceCommandMeta<CommandId::RegisterService, &UserService::RegisterService>(),
-                MakeServiceCommandMeta<CommandId::UnregisterService, &UserService::UnregisterService>(),
+                MAKE_SERVICE_COMMAND_META(UserService, Initialize),
+                MAKE_SERVICE_COMMAND_META(UserService, GetService),
+                MAKE_SERVICE_COMMAND_META(UserService, RegisterService),
+                MAKE_SERVICE_COMMAND_META(UserService, UnregisterService),
 
-                MakeServiceCommandMeta<CommandId::AtmosphereInstallMitm, &UserService::AtmosphereInstallMitm>(),
-                MakeServiceCommandMeta<CommandId::AtmosphereUninstallMitm, &UserService::AtmosphereUninstallMitm>(),
-                MakeServiceCommandMeta<CommandId::AtmosphereAssociatePidTidForMitm, &UserService::AtmosphereAssociatePidTidForMitm>(),
-                MakeServiceCommandMeta<CommandId::AtmosphereAcknowledgeMitmSession, &UserService::AtmosphereAcknowledgeMitmSession>(),
-                MakeServiceCommandMeta<CommandId::AtmosphereHasMitm, &UserService::AtmosphereHasMitm>(),
+                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereInstallMitm),
+                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereUninstallMitm),
+                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereAssociatePidTidForMitm),
+                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereAcknowledgeMitmSession),
+                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereHasMitm),
 
-                MakeServiceCommandMeta<CommandId::AtmosphereHasService, &UserService::AtmosphereHasService>(),
+                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereHasService),
             };
     };
 
