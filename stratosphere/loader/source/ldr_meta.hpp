@@ -16,11 +16,28 @@
 
 #pragma once
 #include <switch.h>
+#include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
 namespace sts::ldr {
 
-    /* Apply IPS patches. */
-    void LocateAndApplyIpsPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size);
+    struct Meta {
+        Npdm *npdm;
+        Acid *acid;
+        Aci *aci;
+
+        void *acid_fac;
+        void *acid_sac;
+        void *acid_kac;
+
+        void *aci_fah;
+        void *aci_sac;
+        void *aci_kac;
+    };
+
+    /* Meta API. */
+    Result LoadMeta(Meta *out_meta, ncm::TitleId title_id);
+    Result LoadMetaFromCache(Meta *out_meta, ncm::TitleId title_id);
+    void   InvalidateMetaCache();
 
 }

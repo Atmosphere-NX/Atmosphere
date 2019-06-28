@@ -16,11 +16,17 @@
 
 #pragma once
 #include <switch.h>
+#include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
-namespace sts::ldr {
+namespace sts::ldr::ro {
 
-    /* Apply IPS patches. */
-    void LocateAndApplyIpsPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size);
+    /* RO Manager API. */
+    Result PinTitle(PinId *out, const ncm::TitleLocation &loc);
+    Result UnpinTitle(PinId id);
+    Result GetTitleLocation(ncm::TitleLocation *out, PinId id);
+    Result RegisterProcess(PinId id, u64 process_id, ncm::TitleId title_id);
+    Result RegisterModule(PinId id, const u8 *build_id, uintptr_t address, size_t size);
+    Result GetProcessModuleInfo(u32 *out_count, ModuleInfo *out, size_t max_out_count, u64 process_id);
 
 }

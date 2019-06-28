@@ -29,7 +29,6 @@
 #include "pm_registration.hpp"
 #include "pm_boot_mode.hpp"
 
-static std::vector<u64> g_launched_titles;
 
 static bool IsHexadecimal(const char *str) {
     while (*str) {
@@ -42,23 +41,11 @@ static bool IsHexadecimal(const char *str) {
     return true;
 }
 
-static bool HasLaunchedTitle(u64 title_id) {
-    return std::find(g_launched_titles.begin(), g_launched_titles.end(), title_id) != g_launched_titles.end();
-}
-
-static void SetLaunchedTitle(u64 title_id) {
-    g_launched_titles.push_back(title_id);
-}
-
-static void ClearLaunchedTitles() {
-    g_launched_titles.clear();
-}
-
 static void LaunchTitle(u64 title_id, FsStorageId storage_id, u32 launch_flags, u64 *pid) {
     u64 local_pid = 0;
 
     /* Don't launch a title twice during boot2. */
-    if (HasLaunchedTitle(title_id)) {
+    if (Registration::HasLaunchedTitle(title_id)) {
         return;
     }
 
@@ -80,8 +67,6 @@ static void LaunchTitle(u64 title_id, FsStorageId storage_id, u32 launch_flags, 
     if (pid) {
         *pid = local_pid;
     }
-
-    SetLaunchedTitle(title_id);
 }
 
 static bool GetGpioPadLow(GpioPadName pad) {
@@ -199,9 +184,6 @@ void EmbeddedBoot2::Main() {
     /* Wait until fs.mitm has installed itself. We want this to happen as early as possible. */
     WaitForMitm("fsp-srv");
 
-    /* Clear titles. */
-    ClearLaunchedTitles();
-
     /* psc, bus, pcv is the minimal set of required titles to get SD card. */
     /* bus depends on pcie, and pcv depends on settings. */
     /* Launch psc. */
@@ -260,7 +242,7 @@ void EmbeddedBoot2::Main() {
         while ((ent = readdir(titles_dir)) != NULL) {
             if (strlen(ent->d_name) == 0x10 && IsHexadecimal(ent->d_name)) {
                 u64 title_id = (u64)strtoul(ent->d_name, NULL, 16);
-                if (HasLaunchedTitle(title_id)) {
+                if (Registration::HasLaunchedTitle(title_id)) {
                     continue;
                 }
                 char title_path[FS_MAX_PATH] = {0};
@@ -290,7 +272,4 @@ void EmbeddedBoot2::Main() {
 
     /* We no longer need the SD card. */
     fsdevUnmountAll();
-
-    /* Free the memory used to track what boot2 launches. */
-    ClearLaunchedTitles();
 }

@@ -16,11 +16,14 @@
 
 #pragma once
 #include <switch.h>
+#include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
-namespace sts::ldr {
+namespace sts::ldr::caps {
 
-    /* Apply IPS patches. */
-    void LocateAndApplyIpsPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size);
+    /* Capabilities API. */
+    Result ValidateCapabilities(const void *acid_kac, size_t acid_kac_size, const void *aci_kac, size_t aci_kac_size);
+    u16    GetProgramInfoFlags(const void *kac, size_t kac_size);
+    void   SetProgramInfoFlags(u16 flags, void *kac, size_t kac_size);
 
 }

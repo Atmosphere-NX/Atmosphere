@@ -13,9 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <atomic>
 #include <switch.h>
 #include <stratosphere.hpp>
-#include <atomic>
+#include <stratosphere/ldr.hpp>
+#include <stratosphere/ldr/ldr_pm_api.hpp>
 
 #include "pm_registration.hpp"
 #include "pm_resource_limits.hpp"
@@ -490,6 +493,12 @@ Handle Registration::GetDebugApplicationEventHandle() {
 
 Handle Registration::GetBootFinishedEventHandle() {
     return g_boot_finished_event->GetHandle();
+}
+
+bool Registration::HasLaunchedTitle(u64 title_id) {
+    bool has_launched = false;
+    R_ASSERT(sts::ldr::pm::HasLaunchedTitle(&has_launched, sts::ncm::TitleId{title_id}));
+    return has_launched;
 }
 
 void Registration::SignalBootFinished() {

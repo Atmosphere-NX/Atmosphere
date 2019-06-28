@@ -16,26 +16,15 @@
 
 #pragma once
 #include <switch.h>
+#include <stratosphere.hpp>
+#include <stratosphere/ldr.hpp>
 
-#include "ldr_registration.hpp"
-#include "ldr_launch_queue.hpp"
-#include "ldr_npdm.hpp"
+#include "ldr_arguments.hpp"
 
-/* Utilities for Process Creation, for Loader. */
+namespace sts::ldr {
 
-class ProcessCreation {
-    public:
-        struct ProcessInfo {
-            u8 name[12];
-            u32 version;
-            u64 title_id;
-            u64 code_addr;
-            u32 code_num_pages;
-            u32 process_flags;
-            Handle reslimit_h;
-            u32 system_resource_num_pages;
-        };
-        static Result ValidateProcessVersion(u64 title_id, u32 version);
-        static Result InitializeProcessInfo(NpdmUtils::NpdmInfo *npdm, Handle reslimit_h, u64 arg_flags, ProcessInfo *out_proc_info);
-        static Result CreateProcess(Handle *out_process_h, u64 index, char *nca_path, LaunchQueue::LaunchItem *launch_item, u64 arg_flags, Handle reslimit_h);
-};
+    /* Process Creation API. */
+    Result CreateProcess(Handle *out, PinId pin_id, const ncm::TitleLocation &loc, const char *path, u32 flags, Handle reslimit_h);
+    Result GetProgramInfo(ProgramInfo *out, const ncm::TitleLocation &loc);
+
+}
