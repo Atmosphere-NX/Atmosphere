@@ -223,7 +223,7 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
 }
 
 static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
-    emummc_config_t emummc_cfg = {.enabled = false, .id = 0, .sector = -1, .path = "", .nintendo_path = ""};
+    emummc_config_t emummc_cfg = {.enabled = false, .id = 0, .sector = 0, .path = "", .nintendo_path = ""};
 
     /* Initialize some defaults. */
     memset(exo_emummc_config, 0, sizeof(*exo_emummc_config));
@@ -251,7 +251,7 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
     exo_emummc_config->emu_dir_path[sizeof(exo_emummc_config->emu_dir_path) - 1] = '\0';
 
     if (emummc_cfg.enabled) {
-        if (emummc_cfg.sector != -1) {
+        if (emummc_cfg.sector > 0) {
             exo_emummc_config->base_cfg.type  = EMUMMC_TYPE_PARTITION;
             exo_emummc_config->partition_cfg.start_sector = emummc_cfg.sector;
 
