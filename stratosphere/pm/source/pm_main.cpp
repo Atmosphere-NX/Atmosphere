@@ -22,14 +22,15 @@
 #include <switch.h>
 #include <atmosphere.h>
 #include <stratosphere.hpp>
+#include <stratosphere/cfg.hpp>
 #include <stratosphere/sm/sm_manager_api.hpp>
 
-#include "pm_boot_mode.hpp"
-#include "pm_info.hpp"
-#include "pm_shell.hpp"
-#include "pm_process_track.hpp"
-#include "pm_registration.hpp"
-#include "pm_debug_monitor.hpp"
+#include "pm_boot_mode_service.hpp"
+#include "pm_debug_monitor_service.hpp"
+#include "pm_info_service.hpp"
+#include "pm_shell_service.hpp"
+
+#include "impl/pm_process_manager.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -56,7 +57,6 @@ void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     StratosphereCrashHandler(ctx);
 }
 
-
 void __libnx_initheap(void) {
     void*  addr = nx_inner_heap;
     size_t size = nx_inner_heap_size;
@@ -69,30 +69,35 @@ void __libnx_initheap(void) {
     fake_heap_end   = (char*)addr + size;
 }
 
-void RegisterPrivilegedProcessesWithFs() {
-    /* Ensures that all privileged processes are registered with full FS permissions. */
-    constexpr u64 PRIVILEGED_PROCESS_MIN = 0;
-    constexpr u64 PRIVILEGED_PROCESS_MAX = 0x4F;
+namespace {
 
-    const u32 PRIVILEGED_FAH[0x1C/sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x0000001C, 0x00000000, 0x0000001C, 0x00000000};
-    const u32 PRIVILEGED_FAC[0x2C/sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF};
+    static constexpr u32 PrivilegedFileAccessHeader[0x1C / sizeof(u32)]  = {0x00000001, 0x00000000, 0x80000000, 0x0000001C, 0x00000000, 0x0000001C, 0x00000000};
+    static constexpr u32 PrivilegedFileAccessControl[0x2C / sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF};
+    static constexpr size_t ProcessCountMax = 0x40;
 
-    u32 num_pids;
-    u64 pids[PRIVILEGED_PROCESS_MAX+1];
-    if (R_SUCCEEDED(svcGetProcessList(&num_pids, pids, sizeof(pids)/sizeof(pids[0])))) {
-        for (u32 i = 0; i < num_pids; i++) {
-            const u64 pid = pids[i];
-            if (PRIVILEGED_PROCESS_MIN <= pid && pid <= PRIVILEGED_PROCESS_MAX) {
-                fsprUnregisterProgram(pid);
-                fsprRegisterProgram(pid, pid, FsStorageId_NandSystem,  PRIVILEGED_FAH, sizeof(PRIVILEGED_FAH), PRIVILEGED_FAC, sizeof(PRIVILEGED_FAC));
+    /* This works around a bug fixed by FS in 4.0.0. */
+    /* Not doing so will cause KIPs with higher process IDs than 7 to be unable to use filesystem services. */
+    void RegisterPrivilegedProcessWithFs(u64 process_id) {
+        fsprUnregisterProgram(process_id);
+        fsprRegisterProgram(process_id, process_id, FsStorageId_NandSystem, PrivilegedFileAccessHeader, sizeof(PrivilegedFileAccessHeader), PrivilegedFileAccessControl, sizeof(PrivilegedFileAccessControl));
+    }
+
+    void RegisterPrivilegedProcessesWithFs() {
+        /* Get privileged process range. */
+        u64 min_priv_process_id = 0, max_priv_process_id = 0;
+        sts::cfg::GetInitialProcessRange(&min_priv_process_id, &max_priv_process_id);
+
+        /* Get list of processes, register all privileged ones. */
+        u32 num_pids;
+        u64 pids[ProcessCountMax];
+        R_ASSERT(svcGetProcessList(&num_pids, pids, ProcessCountMax));
+        for (size_t i = 0; i < num_pids; i++) {
+            if (min_priv_process_id <= pids[i] && pids[i] <= max_priv_process_id) {
+                RegisterPrivilegedProcessWithFs(pids[i]);
             }
         }
-    } else {
-        for (u64 pid = PRIVILEGED_PROCESS_MIN; pid <= PRIVILEGED_PROCESS_MAX; pid++) {
-            fsprUnregisterProgram(pid);
-            fsprRegisterProgram(pid, pid, FsStorageId_NandSystem,  PRIVILEGED_FAH, sizeof(PRIVILEGED_FAH), PRIVILEGED_FAC, sizeof(PRIVILEGED_FAC));
-        }
     }
+
 }
 
 void __appInit(void) {
@@ -120,37 +125,34 @@ void __appInit(void) {
 void __appExit(void) {
     /* Cleanup services. */
     fsdevUnmountAll();
-    splExit();
-    smManagerExit();
-    ldrPmExit();
-    fsprExit();
-    lrExit();
     fsExit();
+    splExit();
+    ldrPmExit();
+    lrExit();
+    smManagerExit();
+    fsprExit();
 }
 
 int main(int argc, char **argv)
 {
-    HosThread process_track_thread;
-    consoleDebugInit(debugDevice_SVC);
-
-    /* Initialize and spawn the Process Tracking thread. */
-    Registration::InitializeSystemResources();
-    R_ASSERT(process_track_thread.Initialize(&ProcessTracking::MainLoop, NULL, 0x4000, 0x15));
-    R_ASSERT(process_track_thread.Start());
+    /* Initialize process manager implementation. */
+    R_ASSERT(sts::pm::impl::InitializeProcessManager());
 
     /* Create Server Manager. */
     static auto s_server_manager = WaitableManager(1);
 
-    /* TODO: Create services. */
-    if (GetRuntimeFirmwareVersion() <= FirmwareVersion_400) {
-        s_server_manager.AddWaitable(new ServiceServer<ShellServiceDeprecated>("pm:shell", 3));
-        s_server_manager.AddWaitable(new ServiceServer<DebugMonitorServiceDeprecated>("pm:dmnt", 3));
+    /* Create Services. */
+    /* NOTE: Extra sessions have been added to pm:bm and pm:info to facilitate access by the rest of stratosphere. */
+    /* Also Note: PM was rewritten in 5.0.0, so the shell and dmnt services are different before/after. */
+    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+        s_server_manager.AddWaitable(new ServiceServer<sts::pm::shell::ShellService>("pm:shell", 3));
+        s_server_manager.AddWaitable(new ServiceServer<sts::pm::dmnt::DebugMonitorService>("pm:dmnt", 3));
     } else {
-        s_server_manager.AddWaitable(new ServiceServer<ShellService>("pm:shell", 3));
-        s_server_manager.AddWaitable(new ServiceServer<DebugMonitorService>("pm:dmnt", 3));
+        s_server_manager.AddWaitable(new ServiceServer<sts::pm::shell::ShellServiceDeprecated>("pm:shell", 3));
+        s_server_manager.AddWaitable(new ServiceServer<sts::pm::dmnt::DebugMonitorServiceDeprecated>("pm:dmnt", 3));
     }
-    s_server_manager.AddWaitable(new ServiceServer<BootModeService>("pm:bm", 6));
-    s_server_manager.AddWaitable(new ServiceServer<InformationService>("pm:info", 19));
+    s_server_manager.AddWaitable(new ServiceServer<sts::pm::bm::BootModeService>("pm:bm", 6));
+    s_server_manager.AddWaitable(new ServiceServer<sts::pm::info::InformationService>("pm:info", 19));
 
     /* Loop forever, servicing our services. */
     s_server_manager.Process();

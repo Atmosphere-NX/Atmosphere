@@ -17,17 +17,19 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include <stratosphere/ldr.hpp>
+#include <stratosphere/pm.hpp>
 
-class ResourceLimitUtils {
-    public:
-        enum ResourceLimitCategory {
-            ResourceLimitCategory_System = 0,
-            ResourceLimitCategory_Application = 1,
-            ResourceLimitCategory_Applet = 2
-        };
-        static void InitializeLimits();
-        static void EnsureApplicationResourcesAvailable();
-        static Handle GetResourceLimitHandle(u16 application_type);
-        static Handle GetResourceLimitHandleByCategory(ResourceLimitCategory category);
-        static Result BoostSystemMemoryResourceLimit(u64 boost_size);
-};
+namespace sts::pm::resource {
+
+    /* Resource API. */
+    Result InitializeResourceManager();
+    Result BoostSystemMemoryResourceLimit(u64 boost_size);
+    Result BoostSystemThreadResourceLimit();
+    Handle GetResourceLimitHandle(ResourceLimitGroup group);
+    Handle GetResourceLimitHandle(const ldr::ProgramInfo *info);
+    void   WaitResourceAvailable(const ldr::ProgramInfo *info);
+
+    Result GetResourceLimitValues(u64 *out_cur, u64 *out_lim, ResourceLimitGroup group, LimitableResource resource);
+
+}
