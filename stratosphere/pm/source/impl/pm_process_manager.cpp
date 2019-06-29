@@ -450,7 +450,8 @@ namespace sts::pm::impl {
     }
 
     Result GetProcessEventHandle(Handle *out) {
-        return g_process_event->GetHandle();
+        *out = g_process_event->GetHandle();
+        return ResultSuccess;
     }
 
     Result GetProcessEventInfo(ProcessEventInfo *out) {
