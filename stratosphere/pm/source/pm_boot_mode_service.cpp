@@ -14,9 +14,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "pm_boot_mode_service.hpp"
 
-class EmbeddedBoot2 {
-    public:
-        static void Main();
-};
+namespace sts::pm::bm {
+
+    namespace {
+
+        /* Global bootmode. */
+        BootMode g_boot_mode = BootMode::Normal;
+
+    }
+
+    /* Override of weakly linked boot_mode_api functions. */
+    BootMode GetBootMode() {
+        return g_boot_mode;
+    }
+
+    void SetMaintenanceBoot() {
+        g_boot_mode = BootMode::Maintenance;
+    }
+
+    /* Service command implementations. */
+    void BootModeService::GetBootMode(Out<u32> out) {
+        out.SetValue(static_cast<u32>(pm::bm::GetBootMode()));
+    }
+
+    void BootModeService::SetMaintenanceBoot() {
+        pm::bm::SetMaintenanceBoot();
+    }
+
+}

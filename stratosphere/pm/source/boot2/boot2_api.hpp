@@ -18,21 +18,9 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-class BootModeService final : public IServiceObject {
-    private:
-        enum class CommandId {
-            GetBootMode        = 0,
-            SetMaintenanceBoot = 1,
-        };
-    private:
-        /* Actual commands. */
-        void GetBootMode(Out<u32> out);
-        void SetMaintenanceBoot();
-    public:
-        static void SetMaintenanceBootForEmbeddedBoot2();
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MAKE_SERVICE_COMMAND_META(BootModeService, GetBootMode),
-            MAKE_SERVICE_COMMAND_META(BootModeService, SetMaintenanceBoot),
-        };
-};
+namespace sts::boot2 {
+
+    /* Boot2 API. */
+    void LaunchBootPrograms();
+
+}

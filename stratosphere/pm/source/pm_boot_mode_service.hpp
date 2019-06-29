@@ -14,16 +14,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
-#include "pm_process_track.hpp"
-#include "pm_registration.hpp"
+#include <stratosphere/pm.hpp>
 
-void ProcessTracking::MainLoop(void *arg) {
-    /* Make a new waitable manager. */
-    static auto s_process_waiter = WaitableManager(1);
-    s_process_waiter.AddWaitable(Registration::GetProcessLaunchStartEvent());
+namespace sts::pm::bm {
 
-    /* Service processes. */
-    s_process_waiter.Process();
+    class BootModeService final : public IServiceObject {
+        private:
+            enum class CommandId {
+                GetBootMode        = 0,
+                SetMaintenanceBoot = 1,
+            };
+        private:
+            /* Actual command implementations. */
+            void GetBootMode(Out<u32> out);
+            void SetMaintenanceBoot();
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MAKE_SERVICE_COMMAND_META(BootModeService, GetBootMode),
+                MAKE_SERVICE_COMMAND_META(BootModeService, SetMaintenanceBoot),
+            };
+    };
+
 }
