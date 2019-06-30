@@ -1,4 +1,27 @@
 # Changelog
+## 0.9.2
++ A number of emummc bugfixes were added (all thanks to @m4xw's hard work). The following is a summary of emummc changes:
+  + Support for file-based emummc instances was fixed.
+    + Please note: file-based emummc is still unoptimized, and so may be much slower than partition-based.
+    + This speed differential should hopefully be made better in a future emummc update.
+  + The way emummc handles power management was completely overhauled.
+    + Emummc now properly handles init/de-init, and now supports low voltage mode.
+    + Much better support for shutdown was added, which should assuage corruption/synchronization problems.
+    + This should also improve support for more types of SD cards.
+  + A bug was fixed that caused emummc to not work on lower system versions due to missing SVC access.
+  + **Please note**: The configuration entries used for emummc have been changed.
+    + `emummc_` prefixes have been removed, since they are superfluous given the `emummc` category they are under.
+    + As an example, `emummc!emummc_enabled` is now `emummc!enabled`.
+    + INI configurations made by @CTCaer's [tool](https://github.com/ctcaer/hekate/releases/latest) (which is the recommended way to manage emummc) should automatically work as expected/be corrected.
+      + **If you do not wish to use the above, you will need to manually correct your configuration file**.
+  + General system stability improvements to enhance the user's experience.
++ Stratosphere is currently in the process of being re-written/refactored.
+  + Stratosphere was my (SciresM's) first C++ project, ever -- the code written for it a year ago when I was learning C++ is/was of much lower quality than code written more recently.
+  + Code is thus being re-rwitten for clarity/stlye/to de-duplicate functionality, with much being moved into libstratosphere.
+  + Stratosphere will, after the rewrite, globally use the `sts::` namespace -- this should greatly enhancing libstratosphere's ability to provide functionality for system modules.
+  + The rewritten modules consistently have lower memory footprints, and should be easier to maintain going forwards.
+  + The `sm`, `boot`, `spl`, `ro`, and `loader` modules have been tackled so far.
++ General system stability improvements to enhance the user's experience.
 ## 0.9.1
 + Support was added for 8.1.0.
 + Please note, emummc is still considered **beta/experimental** -- this is not the inevitable bugfix update for it, although some number of bugs have been fixed. :)
