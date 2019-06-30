@@ -136,13 +136,14 @@ namespace sts::ldr::ro {
         /* Nintendo doesn't actually care about successful allocation. */
         for (size_t i = 0; i < ModuleCountMax; i++) {
             ModuleInfo *module = &info->modules[i];
-            if (!module->in_use) {
+            if (module->in_use) {
                 continue;
             }
 
             std::memcpy(module->info.build_id, build_id, sizeof(module->info.build_id));
             module->info.base_address = address;
             module->info.size = size;
+            module->in_use = true;
             break;
         }
 

@@ -70,7 +70,7 @@ static FsFile g_emummc_file = {0};
 
 static bool IsHexadecimal(const char *str) {
     while (*str) {
-        if (isxdigit(*str)) {
+        if (isxdigit((unsigned char)*str)) {
             str++;
         } else {
             return false;

@@ -83,7 +83,7 @@ static char *skip_spaces(const char *str)
 static unsigned int simple_guess_base(const char *cp)
 {
 	if (cp[0] == '0') {
-		if (TOLOWER(cp[1]) == 'x' && isxdigit(cp[2]))
+		if (TOLOWER(cp[1]) == 'x' && isxdigit((unsigned char)cp[2]))
 			return 16;
 		else
 			return 8;
@@ -108,10 +108,10 @@ unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int bas
 	if (base == 16 && cp[0] == '0' && TOLOWER(cp[1]) == 'x')
 		cp += 2;
 
-	while (isxdigit(*cp)) {
+	while (isxdigit((unsigned char)*cp)) {
 		unsigned int value;
 
-		value = isdigit(*cp) ? *cp - '0' : TOLOWER(*cp) - 'a' + 10;
+		value = isdigit((unsigned char)*cp) ? *cp - '0' : TOLOWER(*cp) - 'a' + 10;
 		if (value >= base)
 			break;
 		result = result * base + value;
@@ -167,7 +167,7 @@ int skip_atoi(const char **s)
 {
 	int i = 0;
 
-	while (isdigit(**s))
+	while (isdigit((unsigned char)**s))
 		i = i*10 + *((*s)++) - '0';
 
 	return i;
@@ -654,7 +654,7 @@ int format_decode(const char *fmt, struct printf_spec *spec)
 	/* get field width */
 	spec->field_width = -1;
 
-	if (isdigit(*fmt))
+	if (isdigit((unsigned char)*fmt))
 		spec->field_width = skip_atoi(&fmt);
 	else if (*fmt == '*') {
 		/* it's the next argument */
@@ -667,7 +667,7 @@ precision:
 	spec->precision = -1;
 	if (*fmt == '.') {
 		++fmt;
-		if (isdigit(*fmt)) {
+		if (isdigit((unsigned char)*fmt)) {
 			spec->precision = skip_atoi(&fmt);
 			if (spec->precision < 0)
 				spec->precision = 0;
@@ -1485,7 +1485,7 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
 
 		/* get field width */
 		field_width = -1;
-		if (isdigit(*fmt))
+		if (isdigit((unsigned char)*fmt))
 			field_width = skip_atoi(&fmt);
 
 		/* get conversion qualifier */
@@ -1577,10 +1577,10 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
 			digit = *(str + 1);
 
 		if (!digit
-		    || (base == 16 && !isxdigit(digit))
-		    || (base == 10 && !isdigit(digit))
-		    || (base == 8 && (!isdigit(digit) || digit > '7'))
-		    || (base == 0 && !isdigit(digit)))
+		    || (base == 16 && !isxdigit((unsigned char)digit))
+		    || (base == 10 && !isdigit((unsigned char)digit))
+		    || (base == 8 && (!isdigit((unsigned char)digit) || digit > '7'))
+		    || (base == 0 && !isdigit((unsigned char)digit)))
 			break;
 
 		switch (qualifier) {

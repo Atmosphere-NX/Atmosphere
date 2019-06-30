@@ -349,7 +349,7 @@ bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
 
             /* Skip onwards. */
             i = j + 1;
-        } else if (isxdigit(s[i])) {
+        } else if (isxdigit((unsigned char)s[i])) {
             /* Make sure that we have a cheat open. */
             if (cur_entry == NULL) {
                 return false;
@@ -363,7 +363,7 @@ bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
             /* We're parsing an instruction, so validate it's 8 hex digits. */
             for (size_t j = 1; j < 8; j++) {
                 /* Validate 8 hex chars. */
-                if (i + j >= len || !isxdigit(s[i+j])) {
+                if (i + j >= len || !isxdigit((unsigned char)s[i+j])) {
                     return false;
                 }
             }

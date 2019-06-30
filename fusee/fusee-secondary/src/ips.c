@@ -176,7 +176,7 @@ static inline uint8_t hex_nybble_to_u8(const char nybble) {
 static bool name_matches_hash(const char *name, size_t name_len, const void *hash, size_t hash_size) {
     /* Validate name is hex build id. */
     for (unsigned int i = 0; i < name_len - 4; i++) {
-        if (isxdigit(name[i]) == 0) {
+        if (isxdigit((unsigned char)name[i]) == 0) {
                 return false;
         }
     }

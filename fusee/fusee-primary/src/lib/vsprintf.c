@@ -1577,10 +1577,10 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
 			digit = *(str + 1);
 
 		if (!digit
-		    || (base == 16 && !isxdigit(digit))
-		    || (base == 10 && !isdigit(digit))
-		    || (base == 8 && (!isdigit(digit) || digit > '7'))
-		    || (base == 0 && !isdigit(digit)))
+		    || (base == 16 && !isxdigit((unsigned char)digit))
+		    || (base == 10 && !isdigit((unsigned char)digit))
+		    || (base == 8 && (!isdigit((unsigned char)digit) || digit > '7'))
+		    || (base == 0 && !isdigit((unsigned char)digit)))
 			break;
 
 		switch (qualifier) {
