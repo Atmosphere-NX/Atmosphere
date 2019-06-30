@@ -173,7 +173,7 @@ _content_headers:
 .word __sept_secondary_00_enc_size__
 .word CONTENT_TYPE_SP2
 .word 0xCCCCCCCC
-.asciz "sept_secondary_00"
+.asciz "septsecondary00"
 .align 5
 
 /* sept_secondary 01 content header */
@@ -181,7 +181,7 @@ _content_headers:
 .word __sept_secondary_01_enc_size__
 .word CONTENT_TYPE_SP2
 .word 0xCCCCCCCC
-.asciz "sept_secondary_01"
+.asciz "septsecondary01"
 .align 5
 
 /* sm content header */
