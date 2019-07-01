@@ -298,7 +298,7 @@ bool DmntCheatManager::ParseCheats(const char *s, size_t len) {
     g_needs_reload_vm_program = true;
 
     while (i < len) {
-        if (isspace(s[i])) {
+        if (isspace((unsigned char)s[i])) {
             /* Just ignore space. */
             i++;
         } else if (s[i] == '[') {
@@ -445,7 +445,7 @@ bool DmntCheatManager::ParseCheatToggles(const char *s, size_t len) {
     char toggle[8];
 
     while (i < len) {
-        if (isspace(s[i])) {
+        if (isspace((unsigned char)s[i])) {
             /* Just ignore space. */
             i++;
         } else if (s[i] == '[') {
@@ -468,13 +468,13 @@ bool DmntCheatManager::ParseCheatToggles(const char *s, size_t len) {
             i = j + 1;
 
             /* Skip whitespace. */
-            while (isspace(s[i])) {
+            while (isspace((unsigned char)s[i])) {
                 i++;
             }
 
             /* Parse whether to toggle. */
             j = i + 1;
-            while (!isspace(s[j])) {
+            while (!isspace((unsigned char)s[j])) {
                 j++;
                 if (j >= len || (j - i) >= sizeof(toggle)) {
                     return false;

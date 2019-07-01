@@ -71,7 +71,7 @@ static inline char *pack_hex_byte(char *buf, uint8_t byte)
  */
 static char *skip_spaces(const char *str)
 {
-	while (isspace(*str))
+	while (isspace((unsigned char)*str))
 		++str;
 	return (char *)str;
 }
@@ -1456,7 +1456,7 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
 		/* white space in format matchs any amount of
 		 * white space, including none, in the input.
 		 */
-		if (isspace(*fmt)) {
+		if (isspace((unsigned char)*fmt)) {
 			fmt = skip_spaces(++fmt);
 			str = skip_spaces(str);
 		}
@@ -1476,9 +1476,9 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
 		 * advance both strings to next white space
 		 */
 		if (*fmt == '*') {
-			while (!isspace(*fmt) && *fmt != '%' && *fmt)
+			while (!isspace((unsigned char)*fmt) && *fmt != '%' && *fmt)
 				fmt++;
-			while (!isspace(*str) && *str)
+			while (!isspace((unsigned char)*str) && *str)
 				str++;
 			continue;
 		}
@@ -1531,7 +1531,7 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
 			str = skip_spaces(str);
 
 			/* now copy until next white space */
-			while (*str && !isspace(*str) && field_width--)
+			while (*str && !isspace((unsigned char)*str) && field_width--)
 				*s++ = *str++;
 			*s = '\0';
 			num++;

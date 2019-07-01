@@ -141,7 +141,7 @@ static Result ParseValue(const char *name, const char *key, const char *val_tup)
         return ResultSettingsItemValueInvalidFormat;
     }
 
-    while (isspace(*type) && type != delimiter) {
+    while (isspace((unsigned char)*type) && type != delimiter) {
         type++;
     }
 
