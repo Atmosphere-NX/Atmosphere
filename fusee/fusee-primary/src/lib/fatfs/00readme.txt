@@ -1,4 +1,4 @@
-FatFs Module Source Files R0.13b
+FatFs Module Source Files R0.13c
 
 
 FILES
@@ -10,7 +10,6 @@ FILES
   ff.h           Common include file for FatFs and application module.
   diskio.h       Common include file for FatFs and disk I/O module.
   diskio.c       An example of glue function to attach existing disk I/O module to FatFs.
-  integer.h      Integer type definitions for FatFs.
   ffunicode.c    Optional Unicode utility functions.
   ffsystem.c     An example of optional O/S related functions.
 

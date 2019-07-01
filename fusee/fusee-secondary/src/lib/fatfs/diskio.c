@@ -9,7 +9,8 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include "diskio.h"		/* FatFs lower layer API */
+#include "ff.h"			/* Obtains integer types */
+#include "diskio.h"		/* Declarations of disk functions */
 #include "ffconf.h"
 #include "../../device_partition.h"
 
@@ -48,7 +49,7 @@ DSTATUS disk_initialize (
 	else if (devpart->initializer)
 		return devpart->initializer(devpart) ? STA_NOINIT : RES_OK;
 	else 
-		return RES_OK;
+        return RES_OK;
 }
 
 
@@ -71,7 +72,7 @@ DRESULT disk_read (
 	else if (devpart->reader)
 		return device_partition_read_data(devpart, buff, sector, count) ? RES_ERROR : RES_OK;
 	else
-		return RES_ERROR;
+        return RES_ERROR;
 }
 
 
@@ -79,6 +80,8 @@ DRESULT disk_read (
 /*-----------------------------------------------------------------------*/
 /* Write Sector(s)                                                       */
 /*-----------------------------------------------------------------------*/
+
+#if FF_FS_READONLY == 0
 
 DRESULT disk_write (
 	BYTE pdrv,			/* Physical drive nmuber to identify the drive */
@@ -94,9 +97,10 @@ DRESULT disk_write (
 	else if (devpart->writer)
 		return device_partition_write_data(devpart, buff, sector, count) ? RES_ERROR : RES_OK;
 	else
-		return RES_ERROR;
+        return RES_ERROR;
 }
 
+#endif
 
 
 /*-----------------------------------------------------------------------*/
@@ -116,6 +120,6 @@ DRESULT disk_ioctl (
             return RES_OK;
         default:
             return RES_OK;
-	}
+    }
 }
 

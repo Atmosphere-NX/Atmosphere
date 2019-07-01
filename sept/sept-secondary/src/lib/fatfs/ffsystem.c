@@ -1,11 +1,10 @@
 /*------------------------------------------------------------------------*/
 /* Sample Code of OS Dependent Functions for FatFs                        */
-/* (C)ChaN, 2017                                                          */
+/* (C)ChaN, 2018                                                          */
 /*------------------------------------------------------------------------*/
 
 
 #include "ff.h"
-
 
 
 #if FF_USE_LFN == 3	/* Dynamic memory allocation */
@@ -14,7 +13,7 @@
 /* Allocate a memory block                                                */
 /*------------------------------------------------------------------------*/
 
-void* ff_memalloc (	/* Returns pointer to the allocated memory block (null on not enough core) */
+void* ff_memalloc (	/* Returns pointer to the allocated memory block (null if not enough core) */
 	UINT msize		/* Number of bytes to allocate */
 )
 {
@@ -27,7 +26,7 @@ void* ff_memalloc (	/* Returns pointer to the allocated memory block (null on no
 /*------------------------------------------------------------------------*/
 
 void ff_memfree (
-	void* mblock	/* Pointer to the memory block to free (nothing to do for null) */
+	void* mblock	/* Pointer to the memory block to free (nothing to do if null) */
 )
 {
 	free(mblock);	/* Free the memory block with POSIX API */
@@ -47,7 +46,7 @@ void ff_memfree (
 /  When a 0 is returned, the f_mount() function fails with FR_INT_ERR.
 */
 
-//const osMutexDef_t Mutex[FF_VOLUMES];	/* CMSIS-RTOS */
+//const osMutexDef_t Mutex[FF_VOLUMES];	/* Table of CMSIS-RTOS mutex */
 
 
 int ff_cre_syncobj (	/* 1:Function succeeded, 0:Could not create the sync object */
@@ -74,7 +73,7 @@ int ff_cre_syncobj (	/* 1:Function succeeded, 0:Could not create the sync object
 //	return (int)(*sobj != NULL);
 
 	/* CMSIS-RTOS */
-//	*sobj = osMutexCreate(Mutex + vol);
+//	*sobj = osMutexCreate(&Mutex[vol]);
 //	return (int)(*sobj != NULL);
 }
 
