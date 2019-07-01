@@ -49,7 +49,7 @@ namespace sts::spl {
                 MAKE_SERVICE_COMMAND_META(ManuService, AllocateAesKeyslot,          FirmwareVersion_200),
                 MAKE_SERVICE_COMMAND_META(ManuService, FreeAesKeyslot,              FirmwareVersion_200),
                 MAKE_SERVICE_COMMAND_META(ManuService, GetAesKeyslotAvailableEvent, FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ManuService, DecryptRsaPrivateKey,        FirmwareVersion_400, FirmwareVersion_400),
+                MAKE_SERVICE_COMMAND_META(ManuService, DecryptRsaPrivateKeyDeprecated,        FirmwareVersion_400, FirmwareVersion_400),
                 MAKE_SERVICE_COMMAND_META(ManuService, DecryptRsaPrivateKey,        FirmwareVersion_500),
                 MAKE_SERVICE_COMMAND_META(ManuService, ReEncryptRsaPrivateKey,      FirmwareVersion_500),
             };

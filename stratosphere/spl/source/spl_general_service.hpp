@@ -37,6 +37,7 @@ namespace sts::spl {
                 IsDevelopment               = 11,
                 GenerateSpecificAesKey      = 12,
                 DecryptRsaPrivateKey        = 13,
+                DecryptRsaPrivateKeyDeprecated        = 13,
                 DecryptAesKey               = 14,
                 CryptAesCtr                 = 15,
                 ComputeCmac                 = 16,

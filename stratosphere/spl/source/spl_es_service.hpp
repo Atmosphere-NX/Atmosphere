@@ -54,7 +54,7 @@ namespace sts::spl {
                 MAKE_SERVICE_COMMAND_META(EsService, AllocateAesKeyslot,          FirmwareVersion_200),
                 MAKE_SERVICE_COMMAND_META(EsService, FreeAesKeyslot,              FirmwareVersion_200),
                 MAKE_SERVICE_COMMAND_META(EsService, GetAesKeyslotAvailableEvent, FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(EsService, DecryptRsaPrivateKey,        FirmwareVersion_400, FirmwareVersion_400),
+                MAKE_SERVICE_COMMAND_META(EsService, DecryptRsaPrivateKeyDeprecated,        FirmwareVersion_400, FirmwareVersion_400),
                 MAKE_SERVICE_COMMAND_META(EsService, DecryptRsaPrivateKey,        FirmwareVersion_500),
                 MAKE_SERVICE_COMMAND_META(EsService, ImportEsKey),
                 MAKE_SERVICE_COMMAND_META(EsService, UnwrapTitleKey),
