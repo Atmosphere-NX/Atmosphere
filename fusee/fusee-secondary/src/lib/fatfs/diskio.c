@@ -9,8 +9,8 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include "ff.h"			/* Obtains integer types */
-#include "diskio.h"		/* Declarations of disk functions */
+#include "ff.h"         /* Obtains integer types */
+#include "diskio.h"     /* Declarations of disk functions */
 #include "ffconf.h"
 #include "../../device_partition.h"
 
@@ -22,10 +22,10 @@ extern device_partition_t *g_volume_to_devparts[FF_VOLUMES];
 /*-----------------------------------------------------------------------*/
 
 DSTATUS disk_status (
-	BYTE pdrv		/* Physical drive nmuber to identify the drive */
+    BYTE pdrv       /* Physical drive nmuber to identify the drive */
 )
 {
-	device_partition_t *devpart = g_volume_to_devparts[pdrv];
+    device_partition_t *devpart = g_volume_to_devparts[pdrv];
     if (devpart)
         return devpart->initialized ? RES_OK : STA_NOINIT;
     else
@@ -39,16 +39,16 @@ DSTATUS disk_status (
 /*-----------------------------------------------------------------------*/
 
 DSTATUS disk_initialize (
-	BYTE pdrv				/* Physical drive nmuber to identify the drive */
+    BYTE pdrv               /* Physical drive nmuber to identify the drive */
 )
 {
-	/* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
-	device_partition_t *devpart = g_volume_to_devparts[pdrv];
-	if (!devpart)
-		return STA_NODISK;
-	else if (devpart->initializer)
-		return devpart->initializer(devpart) ? STA_NOINIT : RES_OK;
-	else 
+    /* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
+    device_partition_t *devpart = g_volume_to_devparts[pdrv];
+    if (!devpart)
+        return STA_NODISK;
+    else if (devpart->initializer)
+        return devpart->initializer(devpart) ? STA_NOINIT : RES_OK;
+    else 
         return RES_OK;
 }
 
@@ -59,19 +59,19 @@ DSTATUS disk_initialize (
 /*-----------------------------------------------------------------------*/
 
 DRESULT disk_read (
-	BYTE pdrv,		/* Physical drive nmuber to identify the drive */
-	BYTE *buff,		/* Data buffer to store read data */
-	DWORD sector,	/* Start sector in LBA */
-	UINT count		/* Number of sectors to read */
+    BYTE pdrv,      /* Physical drive nmuber to identify the drive */
+    BYTE *buff,     /* Data buffer to store read data */
+    DWORD sector,   /* Start sector in LBA */
+    UINT count      /* Number of sectors to read */
 )
 {
-	/* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
-	device_partition_t *devpart = g_volume_to_devparts[pdrv];
-	if (!devpart)
-		return RES_PARERR;
-	else if (devpart->reader)
-		return device_partition_read_data(devpart, buff, sector, count) ? RES_ERROR : RES_OK;
-	else
+    /* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
+    device_partition_t *devpart = g_volume_to_devparts[pdrv];
+    if (!devpart)
+        return RES_PARERR;
+    else if (devpart->reader)
+        return device_partition_read_data(devpart, buff, sector, count) ? RES_ERROR : RES_OK;
+    else
         return RES_ERROR;
 }
 
@@ -84,19 +84,19 @@ DRESULT disk_read (
 #if FF_FS_READONLY == 0
 
 DRESULT disk_write (
-	BYTE pdrv,			/* Physical drive nmuber to identify the drive */
-	const BYTE *buff,	/* Data to be written */
-	DWORD sector,		/* Start sector in LBA */
-	UINT count			/* Number of sectors to write */
+    BYTE pdrv,          /* Physical drive nmuber to identify the drive */
+    const BYTE *buff,   /* Data to be written */
+    DWORD sector,       /* Start sector in LBA */
+    UINT count          /* Number of sectors to write */
 )
 {
-	/* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
-	device_partition_t *devpart = g_volume_to_devparts[pdrv];
-	if (!devpart)
-		return RES_PARERR;
-	else if (devpart->writer)
-		return device_partition_write_data(devpart, buff, sector, count) ? RES_ERROR : RES_OK;
-	else
+    /* We aren't using FF_MULTI_PARTITION, so pdrv = volume id. */
+    device_partition_t *devpart = g_volume_to_devparts[pdrv];
+    if (!devpart)
+        return RES_PARERR;
+    else if (devpart->writer)
+        return device_partition_write_data(devpart, buff, sector, count) ? RES_ERROR : RES_OK;
+    else
         return RES_ERROR;
 }
 
@@ -108,13 +108,13 @@ DRESULT disk_write (
 /*-----------------------------------------------------------------------*/
 
 DRESULT disk_ioctl (
-	BYTE pdrv,		/* Physical drive nmuber (0..) */
-	BYTE cmd,		/* Control code */
-	void *buff		/* Buffer to send/receive control data */
+    BYTE pdrv,      /* Physical drive nmuber (0..) */
+    BYTE cmd,       /* Control code */
+    void *buff      /* Buffer to send/receive control data */
 )
 {
-	device_partition_t *devpart = g_volume_to_devparts[pdrv];
-	switch (cmd) {
+    device_partition_t *devpart = g_volume_to_devparts[pdrv];
+    switch (cmd) {
         case GET_SECTOR_SIZE:
             *(WORD *)buff = devpart ? (WORD)devpart->sector_size : 512;
             return RES_OK;
