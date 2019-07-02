@@ -29,7 +29,7 @@ namespace sts::pm::resource {
             LimitableResource_TransferMemories,
             LimitableResource_Sessions,
         };
-        constexpr size_t LimitableResource_Count = sizeof(LimitableResources) / sizeof(LimitableResources[0]);
+        constexpr size_t LimitableResource_Count = util::size(LimitableResources);
 
         constexpr size_t Megabyte = 0x100000;
 

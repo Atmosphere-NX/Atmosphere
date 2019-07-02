@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include <stratosphere/reg.hpp>
 #include <stratosphere/spl.hpp>
 
@@ -112,9 +113,9 @@ namespace sts::boot {
             }
         }
 
-#define DO_REGISTER_WRITES(base_address, writes) DoRegisterWrites(base_address, writes, sizeof(writes) / sizeof(writes[0]))
-#define DO_SOC_DEPENDENT_REGISTER_WRITES(base_address, writes) DoSocDependentRegisterWrites(base_address, writes##Erista, sizeof(writes##Erista) / sizeof(writes##Erista[0]), writes##Mariko, sizeof(writes##Mariko) / sizeof(writes##Mariko[0]))
-#define DO_DSI_SLEEP_OR_REGISTER_WRITES(writes) DoDsiSleepOrRegisterWrites(writes, sizeof(writes) / sizeof(writes[0]))
+#define DO_REGISTER_WRITES(base_address, writes) DoRegisterWrites(base_address, writes, util::size(writes))
+#define DO_SOC_DEPENDENT_REGISTER_WRITES(base_address, writes) DoSocDependentRegisterWrites(base_address, writes##Erista, util::size(writes##Erista), writes##Mariko, util::size(writes##Mariko))
+#define DO_DSI_SLEEP_OR_REGISTER_WRITES(writes) DoDsiSleepOrRegisterWrites(writes, util::size(writes))
 
         void InitializeFrameBuffer() {
             if (g_frame_buffer != nullptr) {
@@ -296,7 +297,7 @@ namespace sts::boot {
         /* Parse LCD vendor. */
         {
             u32 host_response[3];
-            for (size_t i = 0; i < sizeof(host_response) / sizeof(host_response[0]); i++) {
+            for (size_t i = 0; i < util::size(host_response); i++) {
                 host_response[i] = reg::Read(g_dsi_regs + sizeof(u32) * DSI_RD_DATA);
             }
 

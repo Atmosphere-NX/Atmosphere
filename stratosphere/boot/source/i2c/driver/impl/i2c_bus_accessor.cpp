@@ -245,7 +245,7 @@ namespace sts::i2c::driver::impl {
         static constexpr u64 s_interrupts[] = {
             0x46, 0x74, 0x7C, 0x98, 0x55, 0x5F
         };
-        if (ConvertToIndex(bus) >= sizeof(s_interrupts) / sizeof(s_interrupts[0])) {
+        if (ConvertToIndex(bus) >= util::size(s_interrupts)) {
             std::abort();
         }
 

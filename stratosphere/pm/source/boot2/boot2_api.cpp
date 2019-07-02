@@ -36,7 +36,7 @@ namespace sts::boot2 {
             ncm::TitleId{TitleId_Settings},    /* settings */
             ncm::TitleId{TitleId_Pcv},         /* pcv */
         };
-        constexpr size_t NumPreSdCardLaunchPrograms = sizeof(PreSdCardLaunchPrograms) / sizeof(PreSdCardLaunchPrograms[0]);
+        constexpr size_t NumPreSdCardLaunchPrograms = util::size(PreSdCardLaunchPrograms);
 
         constexpr ncm::TitleId AdditionalLaunchPrograms[] = {
             ncm::TitleId{TitleId_Usb},         /* usb */
@@ -81,7 +81,7 @@ namespace sts::boot2 {
             ncm::TitleId{TitleId_Grc},         /* grc */
             ncm::TitleId{TitleId_Olsc},        /* olsc */
         };
-        constexpr size_t NumAdditionalLaunchPrograms = sizeof(AdditionalLaunchPrograms) / sizeof(AdditionalLaunchPrograms[0]);
+        constexpr size_t NumAdditionalLaunchPrograms = util::size(AdditionalLaunchPrograms);
 
         constexpr ncm::TitleId AdditionalMaintenanceLaunchPrograms[] = {
             ncm::TitleId{TitleId_Usb},         /* usb */
@@ -122,7 +122,7 @@ namespace sts::boot2 {
             ncm::TitleId{TitleId_Grc},         /* grc */
             ncm::TitleId{TitleId_Olsc},        /* olsc */
         };
-        constexpr size_t NumAdditionalMaintenanceLaunchPrograms = sizeof(AdditionalMaintenanceLaunchPrograms) / sizeof(AdditionalMaintenanceLaunchPrograms[0]);
+        constexpr size_t NumAdditionalMaintenanceLaunchPrograms = util::size(AdditionalMaintenanceLaunchPrograms);
 
         /* Helpers. */
         inline bool IsHexadecimal(const char *str) {
