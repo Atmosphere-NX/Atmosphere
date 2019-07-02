@@ -58,12 +58,13 @@ void VersionManager::Initialize() {
     /* Modify the output firmware version. */
     {
         u32 major, minor, micro;
-        char display_version[sizeof(g_ams_fw_version.display_version)] = {0};
-
         GetAtmosphereApiVersion(&major, &minor, &micro, nullptr, nullptr);
-        snprintf(display_version, sizeof(display_version), "%s (AMS %u.%u.%u)", g_ams_fw_version.display_version, major, minor, micro);
-
-        memcpy(g_ams_fw_version.display_version, display_version, sizeof(g_ams_fw_version.display_version));
+        const char emummc_char = IsEmummc() ? 'E' : 'S';
+        {
+            char display_version[sizeof(g_ams_fw_version.display_version)] = {0};
+            std::snprintf(display_version, sizeof(display_version), "%s|AMS %u.%u.%u|%c", g_ams_fw_version.display_version, major, minor, micro, emummc_char);
+            std::memcpy(g_ams_fw_version.display_version, display_version, sizeof(g_ams_fw_version.display_version));
+        }
     }
 
     g_got_version = true;
