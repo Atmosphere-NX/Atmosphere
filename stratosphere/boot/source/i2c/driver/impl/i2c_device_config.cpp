@@ -67,7 +67,7 @@ namespace sts::i2c::driver::impl {
             {I2cDevice_Ina226VddDdr0V6, Bus::I2C2, 0x4e, AddressingMode::SevenBit, SpeedMode::Fast,   3, 5'000'000},
         };
 
-        constexpr size_t NumDeviceConfigs = sizeof(g_device_configs) / sizeof(g_device_configs[0]);
+        constexpr size_t NumDeviceConfigs = util::size(g_device_configs);
 
         constexpr size_t DeviceInvalidIndex = static_cast<size_t>(-1);
 

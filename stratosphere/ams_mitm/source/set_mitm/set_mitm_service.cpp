@@ -44,7 +44,7 @@ bool SetMitmService::IsValidLanguageCode(u64 lang_code) {
         LanguageCode_SimplifiedChinese,
         LanguageCode_TraditionalChinese,
     };
-    size_t num_language_codes = sizeof(s_valid_language_codes) / sizeof(s_valid_language_codes[0]);
+    size_t num_language_codes = sts::util::size(s_valid_language_codes);
     if (GetRuntimeFirmwareVersion() < FirmwareVersion_400) {
         /* 4.0.0 added simplified and traditional chinese. */
         num_language_codes -= 2;

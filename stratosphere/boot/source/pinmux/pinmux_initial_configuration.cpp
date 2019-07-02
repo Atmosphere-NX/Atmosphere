@@ -79,7 +79,7 @@ namespace sts::pinmux {
                 static constexpr u32 ExtraIowaPadNames[] = {
                     0xAA, 0xAC, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9
                 };
-                for (size_t i = 0; i < sizeof(ExtraIowaPadNames) / sizeof(ExtraIowaPadNames[0]); i++) {
+                for (size_t i = 0; i < util::size(ExtraIowaPadNames); i++) {
                     UpdatePad(ExtraIowaPadNames[i], 0x2000, 0x2000);
                 }
             }
