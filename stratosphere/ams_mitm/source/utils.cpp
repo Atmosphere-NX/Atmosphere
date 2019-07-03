@@ -52,7 +52,7 @@ static HblOverrideConfig g_hbl_override_config = {
         .key_combination = KEY_R,
         .override_by_default = false
     },
-    .title_id = TitleId_AppletPhotoViewer,
+    .title_id = static_cast<u64>(sts::ncm::TitleId::AppletPhotoViewer),
     .override_any_app = true
 };
 
@@ -378,12 +378,14 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
     return ResultSuccess;
 }
 
-bool Utils::IsHblTid(u64 tid) {
-    return (g_hbl_override_config.override_any_app && TitleIdIsApplication(tid)) || (tid == g_hbl_override_config.title_id);
+bool Utils::IsHblTid(u64 _tid) {
+    const sts::ncm::TitleId tid{_tid};
+    return (g_hbl_override_config.override_any_app && sts::ncm::IsApplicationTitleId(tid)) || (_tid == g_hbl_override_config.title_id);
 }
 
-bool Utils::IsWebAppletTid(u64 tid) {
-    return tid == TitleId_AppletWeb || tid == TitleId_AppletOfflineWeb || tid == TitleId_AppletLoginShare || tid == TitleId_AppletWifiWebAuth;
+bool Utils::IsWebAppletTid(u64 _tid) {
+    const sts::ncm::TitleId tid{_tid};
+    return tid == sts::ncm::TitleId::AppletWeb || tid == sts::ncm::TitleId::AppletOfflineWeb || tid == sts::ncm::TitleId::AppletLoginShare || tid == sts::ncm::TitleId::AppletWifiWebAuth;
 }
 
 bool Utils::HasTitleFlag(u64 tid, const char *flag) {
@@ -472,7 +474,7 @@ static bool HasOverrideKey(OverrideKey *cfg) {
 
 
 bool Utils::HasOverrideButton(u64 tid) {
-    if ((!TitleIdIsApplication(tid)) || (!IsSdInitialized())) {
+    if ((!sts::ncm::IsApplicationTitleId(sts::ncm::TitleId{tid})) || (!IsSdInitialized())) {
         /* Disable button override disable for non-applications. */
         return true;
     }

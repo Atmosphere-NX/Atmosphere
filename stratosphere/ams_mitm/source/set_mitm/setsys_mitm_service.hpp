@@ -37,7 +37,7 @@ class SetSysMitmService : public IMitmServiceObject {
             /* ... */
         }
 
-        static bool ShouldMitm(u64 pid, u64 tid) {
+        static bool ShouldMitm(u64 pid, sts::ncm::TitleId tid) {
             /* Mitm everything. */
             return true;
         }

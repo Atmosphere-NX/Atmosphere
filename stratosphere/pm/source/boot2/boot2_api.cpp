@@ -30,97 +30,97 @@ namespace sts::boot2 {
         /* psc, bus, pcv is the minimal set of required titles to get SD card. */
         /* bus depends on pcie, and pcv depends on settings. */
         constexpr ncm::TitleId PreSdCardLaunchPrograms[] = {
-            ncm::TitleId{TitleId_Psc},         /* psc */
-            ncm::TitleId{TitleId_Pcie},        /* pcie */
-            ncm::TitleId{TitleId_Bus},         /* bus */
-            ncm::TitleId{TitleId_Settings},    /* settings */
-            ncm::TitleId{TitleId_Pcv},         /* pcv */
+            ncm::TitleId::Psc,         /* psc */
+            ncm::TitleId::Pcie,        /* pcie */
+            ncm::TitleId::Bus,         /* bus */
+            ncm::TitleId::Settings,    /* settings */
+            ncm::TitleId::Pcv,         /* pcv */
         };
         constexpr size_t NumPreSdCardLaunchPrograms = util::size(PreSdCardLaunchPrograms);
 
         constexpr ncm::TitleId AdditionalLaunchPrograms[] = {
-            ncm::TitleId{TitleId_Usb},         /* usb */
-            ncm::TitleId{TitleId_Tma},         /* tma */
-            ncm::TitleId{TitleId_Am},          /* am */
-            ncm::TitleId{TitleId_NvServices},  /* nvservices */
-            ncm::TitleId{TitleId_NvnFlinger},  /* nvnflinger */
-            ncm::TitleId{TitleId_Vi},          /* vi */
-            ncm::TitleId{TitleId_Ns},          /* ns */
-            ncm::TitleId{TitleId_LogManager},  /* lm */
-            ncm::TitleId{TitleId_Ppc},         /* ppc */
-            ncm::TitleId{TitleId_Ptm},         /* ptm */
-            ncm::TitleId{TitleId_Hid},         /* hid */
-            ncm::TitleId{TitleId_Audio},       /* audio */
-            ncm::TitleId{TitleId_Lbl},         /* lbl */
-            ncm::TitleId{TitleId_Wlan},        /* wlan */
-            ncm::TitleId{TitleId_Bluetooth},   /* bluetooth */
-            ncm::TitleId{TitleId_BsdSockets},  /* bsdsockets */
-            ncm::TitleId{TitleId_Nifm},        /* nifm */
-            ncm::TitleId{TitleId_Ldn},         /* ldn */
-            ncm::TitleId{TitleId_Account},     /* account */
-            ncm::TitleId{TitleId_Friends},     /* friends */
-            ncm::TitleId{TitleId_Nfc},         /* nfc */
-            ncm::TitleId{TitleId_JpegDec},     /* jpegdec */
-            ncm::TitleId{TitleId_CapSrv},      /* capsrv */
-            ncm::TitleId{TitleId_Ssl},         /* ssl */
-            ncm::TitleId{TitleId_Nim},         /* nim */
-            ncm::TitleId{TitleId_Bcat},        /* bcat */
-            ncm::TitleId{TitleId_Erpt},        /* erpt */
-            ncm::TitleId{TitleId_Es},          /* es */
-            ncm::TitleId{TitleId_Pctl},        /* pctl */
-            ncm::TitleId{TitleId_Btm},         /* btm */
-            ncm::TitleId{TitleId_Eupld},       /* eupld */
-            ncm::TitleId{TitleId_Glue},        /* glue */
-         /* ncm::TitleId{TitleId_Eclct}, */    /* eclct */      /* Skip launching error collection in Atmosphere to lessen telemetry. */
-            ncm::TitleId{TitleId_Npns},        /* npns */
-            ncm::TitleId{TitleId_Fatal},       /* fatal */
-            ncm::TitleId{TitleId_Ro},          /* ro */
-            ncm::TitleId{TitleId_Profiler},    /* profiler */
-            ncm::TitleId{TitleId_Sdb},         /* sdb */
-            ncm::TitleId{TitleId_Migration},   /* migration */
-            ncm::TitleId{TitleId_Grc},         /* grc */
-            ncm::TitleId{TitleId_Olsc},        /* olsc */
+            ncm::TitleId::Usb,         /* usb */
+            ncm::TitleId::Tma,         /* tma */
+            ncm::TitleId::Am,          /* am */
+            ncm::TitleId::NvServices,  /* nvservices */
+            ncm::TitleId::NvnFlinger,  /* nvnflinger */
+            ncm::TitleId::Vi,          /* vi */
+            ncm::TitleId::Ns,          /* ns */
+            ncm::TitleId::LogManager,  /* lm */
+            ncm::TitleId::Ppc,         /* ppc */
+            ncm::TitleId::Ptm,         /* ptm */
+            ncm::TitleId::Hid,         /* hid */
+            ncm::TitleId::Audio,       /* audio */
+            ncm::TitleId::Lbl,         /* lbl */
+            ncm::TitleId::Wlan,        /* wlan */
+            ncm::TitleId::Bluetooth,   /* bluetooth */
+            ncm::TitleId::BsdSockets,  /* bsdsockets */
+            ncm::TitleId::Nifm,        /* nifm */
+            ncm::TitleId::Ldn,         /* ldn */
+            ncm::TitleId::Account,     /* account */
+            ncm::TitleId::Friends,     /* friends */
+            ncm::TitleId::Nfc,         /* nfc */
+            ncm::TitleId::JpegDec,     /* jpegdec */
+            ncm::TitleId::CapSrv,      /* capsrv */
+            ncm::TitleId::Ssl,         /* ssl */
+            ncm::TitleId::Nim,         /* nim */
+            ncm::TitleId::Bcat,        /* bcat */
+            ncm::TitleId::Erpt,        /* erpt */
+            ncm::TitleId::Es,          /* es */
+            ncm::TitleId::Pctl,        /* pctl */
+            ncm::TitleId::Btm,         /* btm */
+            ncm::TitleId::Eupld,       /* eupld */
+            ncm::TitleId::Glue,        /* glue */
+         /* ncm::TitleId::Eclct, */    /* eclct */      /* Skip launching error collection in Atmosphere to lessen telemetry. */
+            ncm::TitleId::Npns,        /* npns */
+            ncm::TitleId::Fatal,       /* fatal */
+            ncm::TitleId::Ro,          /* ro */
+            ncm::TitleId::Profiler,    /* profiler */
+            ncm::TitleId::Sdb,         /* sdb */
+            ncm::TitleId::Migration,   /* migration */
+            ncm::TitleId::Grc,         /* grc */
+            ncm::TitleId::Olsc,        /* olsc */
         };
         constexpr size_t NumAdditionalLaunchPrograms = util::size(AdditionalLaunchPrograms);
 
         constexpr ncm::TitleId AdditionalMaintenanceLaunchPrograms[] = {
-            ncm::TitleId{TitleId_Usb},         /* usb */
-            ncm::TitleId{TitleId_Tma},         /* tma */
-            ncm::TitleId{TitleId_Am},          /* am */
-            ncm::TitleId{TitleId_NvServices},  /* nvservices */
-            ncm::TitleId{TitleId_NvnFlinger},  /* nvnflinger */
-            ncm::TitleId{TitleId_Vi},          /* vi */
-            ncm::TitleId{TitleId_Ns},          /* ns */
-            ncm::TitleId{TitleId_LogManager},  /* lm */
-            ncm::TitleId{TitleId_Ppc},         /* ppc */
-            ncm::TitleId{TitleId_Ptm},         /* ptm */
-            ncm::TitleId{TitleId_Hid},         /* hid */
-            ncm::TitleId{TitleId_Audio},       /* audio */
-            ncm::TitleId{TitleId_Lbl},         /* lbl */
-            ncm::TitleId{TitleId_Wlan},        /* wlan */
-            ncm::TitleId{TitleId_Bluetooth},   /* bluetooth */
-            ncm::TitleId{TitleId_BsdSockets},  /* bsdsockets */
-            ncm::TitleId{TitleId_Nifm},        /* nifm */
-            ncm::TitleId{TitleId_Ldn},         /* ldn */
-            ncm::TitleId{TitleId_Account},     /* account */
-            ncm::TitleId{TitleId_Nfc},         /* nfc */
-            ncm::TitleId{TitleId_JpegDec},     /* jpegdec */
-            ncm::TitleId{TitleId_CapSrv},      /* capsrv */
-            ncm::TitleId{TitleId_Ssl},         /* ssl */
-            ncm::TitleId{TitleId_Nim},         /* nim */
-            ncm::TitleId{TitleId_Erpt},        /* erpt */
-            ncm::TitleId{TitleId_Es},          /* es */
-            ncm::TitleId{TitleId_Pctl},        /* pctl */
-            ncm::TitleId{TitleId_Btm},         /* btm */
-            ncm::TitleId{TitleId_Glue},        /* glue */
-         /* ncm::TitleId{TitleId_Eclct}, */    /* eclct */      /* Skip launching error collection in Atmosphere to lessen telemetry. */
-            ncm::TitleId{TitleId_Fatal},       /* fatal */
-            ncm::TitleId{TitleId_Ro},          /* ro */
-            ncm::TitleId{TitleId_Profiler},    /* profiler */
-            ncm::TitleId{TitleId_Sdb},         /* sdb */
-            ncm::TitleId{TitleId_Migration},   /* migration */
-            ncm::TitleId{TitleId_Grc},         /* grc */
-            ncm::TitleId{TitleId_Olsc},        /* olsc */
+            ncm::TitleId::Usb,         /* usb */
+            ncm::TitleId::Tma,         /* tma */
+            ncm::TitleId::Am,          /* am */
+            ncm::TitleId::NvServices,  /* nvservices */
+            ncm::TitleId::NvnFlinger,  /* nvnflinger */
+            ncm::TitleId::Vi,          /* vi */
+            ncm::TitleId::Ns,          /* ns */
+            ncm::TitleId::LogManager,  /* lm */
+            ncm::TitleId::Ppc,         /* ppc */
+            ncm::TitleId::Ptm,         /* ptm */
+            ncm::TitleId::Hid,         /* hid */
+            ncm::TitleId::Audio,       /* audio */
+            ncm::TitleId::Lbl,         /* lbl */
+            ncm::TitleId::Wlan,        /* wlan */
+            ncm::TitleId::Bluetooth,   /* bluetooth */
+            ncm::TitleId::BsdSockets,  /* bsdsockets */
+            ncm::TitleId::Nifm,        /* nifm */
+            ncm::TitleId::Ldn,         /* ldn */
+            ncm::TitleId::Account,     /* account */
+            ncm::TitleId::Nfc,         /* nfc */
+            ncm::TitleId::JpegDec,     /* jpegdec */
+            ncm::TitleId::CapSrv,      /* capsrv */
+            ncm::TitleId::Ssl,         /* ssl */
+            ncm::TitleId::Nim,         /* nim */
+            ncm::TitleId::Erpt,        /* erpt */
+            ncm::TitleId::Es,          /* es */
+            ncm::TitleId::Pctl,        /* pctl */
+            ncm::TitleId::Btm,         /* btm */
+            ncm::TitleId::Glue,        /* glue */
+         /* ncm::TitleId::Eclct, */    /* eclct */      /* Skip launching error collection in Atmosphere to lessen telemetry. */
+            ncm::TitleId::Fatal,       /* fatal */
+            ncm::TitleId::Ro,          /* ro */
+            ncm::TitleId::Profiler,    /* profiler */
+            ncm::TitleId::Sdb,         /* sdb */
+            ncm::TitleId::Migration,   /* migration */
+            ncm::TitleId::Grc,         /* grc */
+            ncm::TitleId::Olsc,        /* olsc */
         };
         constexpr size_t NumAdditionalMaintenanceLaunchPrograms = util::size(AdditionalMaintenanceLaunchPrograms);
 
@@ -164,7 +164,7 @@ namespace sts::boot2 {
 
         void LaunchList(const ncm::TitleId *launch_list, size_t num_entries) {
             for (size_t i = 0; i < num_entries; i++) {
-                LaunchTitle(nullptr, ncm::MakeTitleLocation(launch_list[i], ncm::StorageId::NandSystem), 0);
+                LaunchTitle(nullptr, ncm::TitleLocation::Make(launch_list[i], ncm::StorageId::NandSystem), 0);
             }
         }
 
@@ -239,7 +239,7 @@ namespace sts::boot2 {
                         FILE *f_flag = fopen(title_path, "rb");
                         if (f_flag != NULL) {
                             fclose(f_flag);
-                            LaunchTitle(nullptr, ncm::MakeTitleLocation(title_id, ncm::StorageId::None), 0);
+                            LaunchTitle(nullptr, ncm::TitleLocation::Make(title_id, ncm::StorageId::None), 0);
                         }
                     }
                 }
@@ -275,7 +275,7 @@ namespace sts::boot2 {
         }
 
         /* Launch Atmosphere dmnt, using FsStorageId_None to force SD card boot. */
-        LaunchTitle(nullptr, ncm::MakeTitleLocation(ncm::TitleId{TitleId_Dmnt}, ncm::StorageId::None), 0);
+        LaunchTitle(nullptr, ncm::TitleLocation::Make(ncm::TitleId::Dmnt, ncm::StorageId::None), 0);
 
         /* Launch additional programs. */
         if (maintenance) {

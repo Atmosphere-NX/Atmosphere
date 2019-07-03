@@ -208,7 +208,7 @@ namespace sts::pm::impl {
             }
 
             /* Fix the title location to use the right title id. */
-            const ncm::TitleLocation location = ncm::MakeTitleLocation(program_info.title_id, static_cast<ncm::StorageId>(args->location.storage_id));
+            const ncm::TitleLocation location = ncm::TitleLocation::Make(program_info.title_id, static_cast<ncm::StorageId>(args->location.storage_id));
 
             /* Pin the program with loader. */
             ldr::PinId pin_id;
@@ -256,7 +256,7 @@ namespace sts::pm::impl {
             /* Process hooks/signaling. */
             if (location.title_id == g_title_id_hook) {
                 g_hook_to_create_process_event->Signal();
-                g_title_id_hook = ncm::InvalidTitleId;
+                g_title_id_hook = ncm::TitleId::Invalid;
             } else if (is_application && g_application_hook) {
                 g_hook_to_create_application_process_event->Signal();
                 g_application_hook = false;
@@ -611,7 +611,7 @@ namespace sts::pm::impl {
     Result HookToCreateProcess(Handle *out_hook, ncm::TitleId title_id) {
         *out_hook = INVALID_HANDLE;
 
-        ncm::TitleId old_value = ncm::InvalidTitleId;
+        ncm::TitleId old_value = ncm::TitleId::Invalid;
         if (!g_title_id_hook.compare_exchange_strong(old_value, title_id)) {
             return ResultPmDebugHookInUse;
         }
@@ -634,7 +634,7 @@ namespace sts::pm::impl {
 
     Result ClearHook(u32 which) {
         if (which & HookType_TitleId) {
-            g_title_id_hook = ncm::InvalidTitleId;
+            g_title_id_hook = ncm::TitleId::Invalid;
         }
         if (which & HookType_Application) {
             g_application_hook = false;

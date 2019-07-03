@@ -21,5 +21,5 @@
 class VersionManager {
     public:
         static void Initialize();
-        static Result GetFirmwareVersion(u64 title_id, SetSysFirmwareVersion *out);
+        static Result GetFirmwareVersion(sts::ncm::TitleId title_id, SetSysFirmwareVersion *out);
 };
