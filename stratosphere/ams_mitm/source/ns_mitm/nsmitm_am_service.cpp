@@ -30,7 +30,7 @@ Result NsAmMitmService::GetApplicationContentPath(OutBuffer<u8> out_path, u64 ap
 
 Result NsAmMitmService::ResolveApplicationContentPath(u64 title_id, u8 storage_type) {
     /* Always succeed for web applet asking about HBL. */
-    if (Utils::IsWebAppletTid(this->title_id) && Utils::IsHblTid(title_id)) {
+    if (Utils::IsWebAppletTid(static_cast<u64>(this->title_id)) && Utils::IsHblTid(title_id)) {
         nsamResolveApplicationContentPathFwd(this->forward_service.get(), title_id, static_cast<FsStorageId>(storage_type));
         return ResultSuccess;
     }

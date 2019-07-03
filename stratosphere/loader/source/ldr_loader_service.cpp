@@ -50,7 +50,7 @@ namespace sts::ldr {
 
         if (loc.storage_id != static_cast<u8>(ncm::StorageId::None) && loc.title_id != out->title_id) {
             char path[FS_MAX_PATH];
-            const ncm::TitleLocation new_loc = ncm::MakeTitleLocation(out->title_id, static_cast<ncm::StorageId>(loc.storage_id));
+            const ncm::TitleLocation new_loc = ncm::TitleLocation::Make(out->title_id, static_cast<ncm::StorageId>(loc.storage_id));
 
             R_TRY(ResolveContentPath(path, loc));
             R_TRY(RedirectContentPath(path, new_loc));

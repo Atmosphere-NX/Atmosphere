@@ -196,17 +196,17 @@ namespace sts::ldr {
             return static_cast<Acid::PoolPartition>((meta->acid->flags & Acid::AcidFlag_PoolPartitionMask) >> Acid::AcidFlag_PoolPartitionShift);
         }
 
-        constexpr bool IsDisallowedVersion810(const u64 title_id, const u32 version) {
+        constexpr bool IsDisallowedVersion810(const ncm::TitleId title_id, const u32 version) {
             return version == 0 &&
-                (title_id == TitleId_Settings ||
-                 title_id == TitleId_Bus ||
-                 title_id == TitleId_Audio ||
-                 title_id == TitleId_NvServices ||
-                 title_id == TitleId_Ns ||
-                 title_id == TitleId_Ssl ||
-                 title_id == TitleId_Es ||
-                 title_id == TitleId_Creport ||
-                 title_id == TitleId_Ro);
+                (title_id == ncm::TitleId::Settings ||
+                 title_id == ncm::TitleId::Bus ||
+                 title_id == ncm::TitleId::Audio ||
+                 title_id == ncm::TitleId::NvServices ||
+                 title_id == ncm::TitleId::Ns ||
+                 title_id == ncm::TitleId::Ssl ||
+                 title_id == ncm::TitleId::Es ||
+                 title_id == ncm::TitleId::Creport ||
+                 title_id == ncm::TitleId::Ro);
         }
 
         Result ValidateTitleVersion(ncm::TitleId title_id, u32 version) {
@@ -214,7 +214,7 @@ namespace sts::ldr {
                 return ResultSuccess;
             } else {
 #ifdef LDR_VALIDATE_PROCESS_VERSION
-                if (IsDisallowedVersion810(static_cast<u64>(title_id), version)) {
+                if (IsDisallowedVersion810(title_id, version)) {
                     return ResultLoaderInvalidVersion;
                 } else {
                     return ResultSuccess;

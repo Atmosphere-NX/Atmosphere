@@ -66,13 +66,13 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
     const FatalConfig *config = GetFatalConfig();
 
     /* Get title id. On failure, it'll be zero. */
-    u64 title_id = 0;
-    pminfoGetTitleId(&title_id, pid);
-    ctx.is_creport = title_id == TitleId_Creport;
+    sts::ncm::TitleId title_id = sts::ncm::TitleId::Invalid;
+    sts::pm::info::GetTitleId(&title_id, pid);
+    ctx.is_creport = title_id == sts::ncm::TitleId::Creport;
 
     /* Support for ams creport. TODO: Make this its own command? */
     if (ctx.is_creport && !cpu_ctx->is_aarch32 && cpu_ctx->aarch64_ctx.afsr0 != 0) {
-        title_id = cpu_ctx->aarch64_ctx.afsr0;
+        title_id = sts::ncm::TitleId{cpu_ctx->aarch64_ctx.afsr0};
     }
 
     /* Atmosphere extension: automatic debug info collection. */
@@ -104,7 +104,7 @@ Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu
 
                 /* Run tasks. */
                 if (config->transition_to_fatal) {
-                    RunFatalTasks(&ctx, title_id, policy == FatalType_ErrorReportAndErrorScreen, &erpt_event, &battery_event);
+                    RunFatalTasks(&ctx, static_cast<u64>(title_id), policy == FatalType_ErrorReportAndErrorScreen, &erpt_event, &battery_event);
                 } else {
                     /* If flag is not set, don't show the fatal screen. */
                     return ResultSuccess;

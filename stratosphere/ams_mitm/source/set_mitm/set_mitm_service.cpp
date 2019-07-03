@@ -68,14 +68,14 @@ Result SetMitmService::EnsureLocale() {
 
     if (!this->got_locale) {
         std::memset(&this->locale, 0xCC, sizeof(this->locale));
-        if (this->title_id == TitleId_Ns) {
+        if (this->title_id == sts::ncm::TitleId::Ns) {
             u64 app_pid = 0;
             u64 app_tid = 0;
             R_TRY(pmdmntGetApplicationPid(&app_pid));
             R_TRY(pminfoGetTitleId(&app_tid, app_pid));
             this->locale = Utils::GetTitleOverrideLocale(app_tid);
         } else {
-            this->locale = Utils::GetTitleOverrideLocale(this->title_id);
+            this->locale = Utils::GetTitleOverrideLocale(static_cast<u64>(this->title_id));
             this->got_locale = true;
         }
     }

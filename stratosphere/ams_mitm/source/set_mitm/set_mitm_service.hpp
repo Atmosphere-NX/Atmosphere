@@ -39,9 +39,9 @@ class SetMitmService : public IMitmServiceObject {
             this->got_locale = false;
         }
 
-        static bool ShouldMitm(u64 pid, u64 tid) {
+        static bool ShouldMitm(u64 pid, sts::ncm::TitleId tid) {
             /* Mitm all applications. */
-            return tid == TitleId_Ns || TitleIdIsApplication(tid);
+            return tid == sts::ncm::TitleId::Ns || sts::ncm::IsApplicationTitleId(tid);
         }
 
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);

@@ -40,11 +40,10 @@ extern "C" {
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
-
-    /* Exception handling. */
-    u64 __stratosphere_title_id = TitleId_Dmnt;
 }
 
+/* Exception handling. */
+sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Dmnt;
 
 void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;

@@ -32,7 +32,7 @@ void VersionManager::Initialize() {
     }
 
     /* Mount firmware version data archive. */
-    R_ASSERT(romfsMountFromDataArchive(TitleId_ArchiveSystemVersion, FsStorageId_NandSystem, "sysver"));
+    R_ASSERT(romfsMountFromDataArchive(static_cast<u64>(sts::ncm::TitleId::ArchiveSystemVersion), FsStorageId_NandSystem, "sysver"));
     {
         ON_SCOPE_EXIT { romfsUnmount("sysver"); };
 
@@ -70,11 +70,11 @@ void VersionManager::Initialize() {
     g_got_version = true;
 }
 
-Result VersionManager::GetFirmwareVersion(u64 title_id, SetSysFirmwareVersion *out) {
+Result VersionManager::GetFirmwareVersion(sts::ncm::TitleId title_id, SetSysFirmwareVersion *out) {
     VersionManager::Initialize();
 
     /* Report atmosphere string to qlaunch, maintenance and nothing else. */
-    if (title_id == TitleId_AppletQlaunch || title_id == TitleId_AppletMaintenanceMenu) {
+    if (title_id == sts::ncm::TitleId::AppletQlaunch || title_id == sts::ncm::TitleId::AppletMaintenanceMenu) {
         *out = g_ams_fw_version;
     } else {
         *out = g_fw_version;

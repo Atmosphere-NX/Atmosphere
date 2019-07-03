@@ -131,12 +131,12 @@ class Boot0Storage : public SectoredProxyStorage<0x200> {
         static constexpr u64 EksSize = 0x4000;
         static constexpr u64 EksEnd = EksStart + EksSize;
     private:
-        u64 title_id;
+        sts::ncm::TitleId title_id;
     private:
         bool CanModifyBctPubks();
     public:
-        Boot0Storage(FsStorage *s, u64 t) : Base(s), title_id(t) { }
-        Boot0Storage(FsStorage s, u64 t) : Base(s), title_id(t) { }
+        Boot0Storage(FsStorage *s, sts::ncm::TitleId t) : Base(s), title_id(t) { }
+        Boot0Storage(FsStorage s, sts::ncm::TitleId t) : Base(s), title_id(t) { }
     public:
         virtual Result Read(void *_buffer, size_t size, u64 offset) override;
         virtual Result Write(void *_buffer, size_t size, u64 offset) override;

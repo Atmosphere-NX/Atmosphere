@@ -43,8 +43,8 @@ namespace sts::ldr {
 /* This is necessary to prevent circular dependencies. */
 namespace sts::pm::info {
 
-    Result HasLaunchedTitle(bool *out, u64 title_id) {
-        *out = ldr::HasLaunchedTitle(ncm::TitleId{title_id});
+    Result HasLaunchedTitle(bool *out, ncm::TitleId title_id) {
+        *out = ldr::HasLaunchedTitle(title_id);
         return ResultSuccess;
     }
 
