@@ -26,6 +26,7 @@ namespace sts::sm::impl {
 
     /* Service management. */
     Result HasService(bool *out, ServiceName service);
+    Result WaitService(ServiceName service);
     Result GetServiceHandle(Handle *out, u64 pid, ServiceName service);
     Result RegisterService(Handle *out, u64 pid, ServiceName service, size_t max_sessions, bool is_light);
     Result RegisterServiceForSelf(Handle *out, ServiceName service, size_t max_sessions);
@@ -33,6 +34,7 @@ namespace sts::sm::impl {
 
     /* Mitm extensions. */
     Result HasMitm(bool *out, ServiceName service);
+    Result WaitMitm(ServiceName service);
     Result InstallMitm(Handle *out, Handle *out_query, u64 pid, ServiceName service);
     Result UninstallMitm(u64 pid, ServiceName service);
     Result AcknowledgeMitmSession(u64 *out_pid, Handle *out_hnd, u64 pid, ServiceName service);

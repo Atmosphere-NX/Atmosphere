@@ -459,6 +459,17 @@ namespace sts::sm::impl {
         return ResultSuccess;
     }
 
+    Result WaitService(ServiceName service) {
+        bool has_service = false;
+        R_TRY(impl::HasService(&has_service, service));
+
+        /* Wait until we have the service. */
+        if (!has_service) {
+            return ResultServiceFrameworkRequestDeferredByUser;
+        }
+        return ResultSuccess;
+    }
+
     Result GetServiceHandle(Handle *out, u64 pid, ServiceName service) {
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
@@ -561,6 +572,17 @@ namespace sts::sm::impl {
 
         const ServiceInfo *service_info = GetServiceInfo(service);
         *out = service_info != nullptr && IsValidProcessId(service_info->mitm_pid);
+        return ResultSuccess;
+    }
+
+    Result WaitMitm(ServiceName service) {
+        bool has_mitm = false;
+        R_TRY(impl::HasMitm(&has_mitm, service));
+
+        /* Wait until we have the mitm. */
+        if (!has_mitm) {
+            return ResultServiceFrameworkRequestDeferredByUser;
+        }
         return ResultSuccess;
     }
 

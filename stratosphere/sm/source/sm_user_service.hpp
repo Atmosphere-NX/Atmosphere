@@ -36,8 +36,10 @@ namespace sts::sm {
                 AtmosphereAssociatePidTidForMitm = 65002,
                 AtmosphereAcknowledgeMitmSession = 65003,
                 AtmosphereHasMitm                = 65004,
+                AtmosphereWaitMitm               = 65005,
 
                 AtmosphereHasService             = 65100,
+                AtmosphereWaitService            = 65101,
             };
         private:
             u64 pid = InvalidProcessId;
@@ -57,8 +59,10 @@ namespace sts::sm {
             virtual Result AtmosphereAssociatePidTidForMitm(u64 pid, u64 tid);
             virtual Result AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<MovedHandle> fwd_h, ServiceName service);
             virtual Result AtmosphereHasMitm(Out<bool> out, ServiceName service);
+            virtual Result AtmosphereWaitMitm(ServiceName service);
 
             virtual Result AtmosphereHasService(Out<bool> out, ServiceName service);
+            virtual Result AtmosphereWaitService(ServiceName service);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(UserService, Initialize),
@@ -71,8 +75,10 @@ namespace sts::sm {
                 MAKE_SERVICE_COMMAND_META(UserService, AtmosphereAssociatePidTidForMitm),
                 MAKE_SERVICE_COMMAND_META(UserService, AtmosphereAcknowledgeMitmSession),
                 MAKE_SERVICE_COMMAND_META(UserService, AtmosphereHasMitm),
+                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereWaitMitm),
 
                 MAKE_SERVICE_COMMAND_META(UserService, AtmosphereHasService),
+                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereWaitService),
             };
     };
 

@@ -141,20 +141,20 @@ namespace sts::pm::impl {
 
         /* Process Tracking globals. */
         HosThread g_process_track_thread;
-        SessionManagerBase *g_process_waitable_manager = nullptr;
+        auto g_process_waitable_manager = WaitableManager(1);
 
         /* Process lists. */
         ProcessList g_process_list;
         ProcessList g_dead_process_list;
 
         /* Global events. */
-        IEvent *g_process_event = nullptr;
-        IEvent *g_hook_to_create_process_event = nullptr;
-        IEvent *g_hook_to_create_application_process_event = nullptr;
-        IEvent *g_boot_finished_event = nullptr;
+        IEvent *g_process_event = CreateWriteOnlySystemEvent();
+        IEvent *g_hook_to_create_process_event = CreateWriteOnlySystemEvent();
+        IEvent *g_hook_to_create_application_process_event = CreateWriteOnlySystemEvent();
+        IEvent *g_boot_finished_event = CreateWriteOnlySystemEvent();
 
         /* Process Launch synchronization globals. */
-        IEvent *g_process_launch_start_event = nullptr;
+        IEvent *g_process_launch_start_event = CreateWriteOnlySystemEvent();
         HosSignal g_process_launch_finish_signal;
         Result g_process_launch_result = ResultSuccess;
         LaunchProcessArgs g_process_launch_args = {};
@@ -167,13 +167,9 @@ namespace sts::pm::impl {
         void ProcessTrackingMain(void *arg) {
             /* This is the main loop of the process tracking thread. */
 
-            /* Create waitable manager. */
-            static auto s_process_waiter = WaitableManager(1);
-            g_process_waitable_manager = &s_process_waiter;
-
             /* Service processes. */
-            g_process_waitable_manager->AddWaitable(g_process_launch_start_event);
-            g_process_waitable_manager->Process();
+            g_process_waitable_manager.AddWaitable(g_process_launch_start_event);
+            g_process_waitable_manager.Process();
         }
 
         inline u32 GetLoaderCreateProcessFlags(u32 launch_flags) {
@@ -187,6 +183,18 @@ namespace sts::pm::impl {
             }
 
             return ldr_flags;
+        }
+
+        bool HasApplicationProcess() {
+            ProcessListAccessor list(g_process_list);
+
+            for (size_t i = 0; i < list->GetSize(); i++) {
+                if (list[i]->IsApplication()) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         Result StartProcess(std::shared_ptr<ProcessInfo> process_info, const ldr::ProgramInfo *program_info) {
@@ -203,7 +211,7 @@ namespace sts::pm::impl {
             const bool allow_debug    = (program_info.flags & ldr::ProgramInfoFlag_AllowDebug) || GetRuntimeFirmwareVersion() < FirmwareVersion_200;
 
             /* Ensure we only try to run one application. */
-            if (is_application) {
+            if (is_application && HasApplicationProcess()) {
                 return ResultPmApplicationRunning;
             }
 
@@ -268,7 +276,7 @@ namespace sts::pm::impl {
             {
                 ProcessListAccessor list(g_process_list);
                 list->Add(process_info);
-                g_process_waitable_manager->AddWaitable(new ProcessInfoWaiter(process_info));
+                g_process_waitable_manager.AddWaitable(new ProcessInfoWaiter(process_info));
             }
 
             *args->out_process_id = process_id;
@@ -395,7 +403,7 @@ namespace sts::pm::impl {
     Result LaunchTitle(u64 *out_process_id, const ncm::TitleLocation &loc, u32 flags) {
         /* Ensure we only try to launch one title at a time. */
         static HosMutex s_lock;
-        std::scoped_lock<HosMutex> lk(s_lock);
+        std::scoped_lock lk(s_lock);
 
         /* Set global arguments, signal, wait. */
         g_process_launch_args = {

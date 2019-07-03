@@ -47,7 +47,7 @@ namespace sts::pm::dmnt {
     class DebugMonitorService final : public DebugMonitorServiceBase {
         private:
             enum class CommandId {
-                GetExceptionProcessIdList        = 0,
+                GetExceptionProcessIdList       = 0,
                 StartProcess                    = 1,
                 GetProcessId                    = 2,
                 HookToCreateProcess             = 3,
@@ -83,7 +83,7 @@ namespace sts::pm::dmnt {
         private:
             enum class CommandId {
                 GetModuleIdList                 = 0,
-                GetExceptionProcessIdList        = 1,
+                GetExceptionProcessIdList       = 1,
                 StartProcess                    = 2,
                 GetProcessId                    = 3,
                 HookToCreateProcess             = 4,

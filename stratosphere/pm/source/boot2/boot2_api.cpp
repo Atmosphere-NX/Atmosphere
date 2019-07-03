@@ -137,11 +137,6 @@ namespace sts::boot2 {
         void LaunchTitle(u64 *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
             u64 process_id = 0;
 
-            /* Don't launch a title twice during boot2. */
-            if (pm::info::HasLaunchedTitle(loc.title_id)) {
-                return;
-            }
-
             switch (pm::shell::LaunchTitle(&process_id, loc, launch_flags)) {
                 case ResultKernelResourceExhausted:
                     /* Out of resource! */
@@ -186,11 +181,9 @@ namespace sts::boot2 {
 
         bool IsMaintenanceMode() {
             /* Contact set:sys, retrieve boot!force_maintenance. */
-            DoWithSmSession([&]() {
-                R_ASSERT(setsysInitialize());
-            });
             {
-                ON_SCOPE_EXIT { setsysExit(); };
+                auto set_sys_holder = sm::ScopedServiceHolder<setsysInitialize, setsysExit>();
+                R_ASSERT(set_sys_holder.GetResult());
 
                 u8 force_maintenance = 1;
                 setsysGetSettingsItemValue("boot", "force_maintenance", &force_maintenance, sizeof(force_maintenance));
@@ -200,26 +193,11 @@ namespace sts::boot2 {
             }
 
             /* Contact GPIO, read plus/minus buttons. */
-            DoWithSmSession([&]() {
-                R_ASSERT(gpioInitialize());
-            });
             {
-                ON_SCOPE_EXIT { gpioExit(); };
+                auto gpio_holder = sm::ScopedServiceHolder<gpioInitialize, gpioExit>();
+                R_ASSERT(gpio_holder.GetResult());
 
                 return GetGpioPadLow(GpioPadName_ButtonVolUp) && GetGpioPadLow(GpioPadName_ButtonVolDown);
-            }
-        }
-
-        void WaitForMitm(const char *service) {
-            const auto name = sts::sm::ServiceName::Encode(service);
-
-            while (true) {
-                bool mitm_installed = false;
-                R_ASSERT(sts::sm::mitm::HasMitm(&mitm_installed, name));
-                if (mitm_installed) {
-                    break;
-                }
-                svcSleepThread(1'000'000ull);
             }
         }
 
@@ -227,23 +205,24 @@ namespace sts::boot2 {
             /* Allow for user-customizable programs. */
             DIR *titles_dir = opendir("sdmc:/atmosphere/titles");
             struct dirent *ent;
-            if (titles_dir != NULL) {
-                while ((ent = readdir(titles_dir)) != NULL) {
+            if (titles_dir != nullptr) {
+                ON_SCOPE_EXIT { closedir(titles_dir); };
+
+                while ((ent = readdir(titles_dir)) != nullptr) {
                     if (strlen(ent->d_name) == 2 * sizeof(u64) && IsHexadecimal(ent->d_name)) {
-                        ncm::TitleId title_id{strtoul(ent->d_name, NULL, 16)};
+                        ncm::TitleId title_id{strtoul(ent->d_name, nullptr, 16)};
                         if (pm::info::HasLaunchedTitle(title_id)) {
                             return;
                         }
                         char title_path[FS_MAX_PATH];
                         std::snprintf(title_path, sizeof(title_path), "sdmc:/atmosphere/titles/%s/flags/boot2.flag", ent->d_name);
                         FILE *f_flag = fopen(title_path, "rb");
-                        if (f_flag != NULL) {
+                        if (f_flag != nullptr) {
                             fclose(f_flag);
                             LaunchTitle(nullptr, ncm::TitleLocation::Make(title_id, ncm::StorageId::None), 0);
                         }
                     }
                 }
-                closedir(titles_dir);
             }
         }
 
@@ -252,7 +231,7 @@ namespace sts::boot2 {
     /* Boot2 API. */
     void LaunchBootPrograms() {
         /* Wait until fs.mitm has installed itself. We want this to happen as early as possible. */
-        WaitForMitm("fsp-srv");
+        R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("fsp-srv")));
 
         /* Launch programs required to mount the SD card. */
         LaunchList(PreSdCardLaunchPrograms, NumPreSdCardLaunchPrograms);
@@ -268,10 +247,11 @@ namespace sts::boot2 {
         }
 
         /* Wait for other atmosphere mitm modules to initialize. */
+        R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("set:sys")));
         if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
-            WaitForMitm("bpc");
+            R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
         } else {
-            WaitForMitm("bpc:c");
+            R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
         }
 
         /* Launch Atmosphere dmnt, using FsStorageId_None to force SD card boot. */
