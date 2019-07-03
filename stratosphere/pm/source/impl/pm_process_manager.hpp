@@ -54,7 +54,7 @@ namespace sts::pm::impl {
 
     /* Resource Limit API. */
     Result BoostSystemMemoryResourceLimit(u64 boost_size);
-    Result BoostSystemThreadResourceLimit();
+    Result BoostApplicationThreadResourceLimit();
     Result AtmosphereGetCurrentLimitInfo(u64 *out_cur_val, u64 *out_lim_val, u32 group, u32 resource);
 
 }

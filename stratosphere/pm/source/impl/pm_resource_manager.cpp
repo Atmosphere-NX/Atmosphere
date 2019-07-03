@@ -49,6 +49,7 @@ namespace sts::pm::resource {
         Handle g_resource_limit_handles[ResourceLimitGroup_Count];
         spl::MemoryArrangement g_memory_arrangement = spl::MemoryArrangement_Standard;
         u64 g_system_memory_boost_size = 0;
+        u64 g_extra_application_threads_available = 0;
 
         u64 g_resource_limits[ResourceLimitGroup_Count][LimitableResource_Count] = {
             [ResourceLimitGroup_System] = {
@@ -205,8 +206,25 @@ namespace sts::pm::resource {
             g_resource_limits[ResourceLimitGroup_System][LimitableResource_Sessions] += ExtraSystemSessionCount600;
         }
 
-        /* 7.0.0+: Nintendo restricts the number of system threads here, from 0x260 -> 0x60. */
-        /* We will not do this. */
+        /* 7.0.0+: Calculate the number of extra application threads available. */
+        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+            /* See how many threads we have available. */
+            u64 total_threads_available = 0;
+            R_ASSERT(svcGetResourceLimitLimitValue(&total_threads_available, GetResourceLimitHandle(ResourceLimitGroup_System), LimitableResource_Threads));
+
+            /* See how many threads we're expecting. */
+            const size_t total_threads_allocated = g_resource_limits[ResourceLimitGroup_System][LimitableResource_Threads] -
+                                                       g_resource_limits[ResourceLimitGroup_Application][LimitableResource_Threads] -
+                                                       g_resource_limits[ResourceLimitGroup_Applet][LimitableResource_Threads];
+
+            /* Ensure we don't over-commit threads. */
+            if (total_threads_available < total_threads_allocated) {
+                std::abort();
+            }
+
+            /* Set number of extra threads. */
+            g_extra_application_threads_available = total_threads_available;
+        }
 
         /* Choose and initialize memory arrangement. */
         if (firmware_version >= FirmwareVersion_600) {
@@ -248,7 +266,7 @@ namespace sts::pm::resource {
 
         /* Actually set resource limits. */
         {
-            std::scoped_lock<HosMutex> lk(g_resource_limit_lock);
+            std::scoped_lock lk(g_resource_limit_lock);
 
             for (size_t group = 0; group < ResourceLimitGroup_Count; group++) {
                 R_ASSERT(SetResourceLimitLimitValues(static_cast<ResourceLimitGroup>(group), g_memory_resource_limits[g_memory_arrangement][group]));
@@ -266,7 +284,7 @@ namespace sts::pm::resource {
 
         const u64 new_app_size = g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application] - boost_size;
         {
-            std::scoped_lock<HosMutex> lk(g_resource_limit_lock);
+            std::scoped_lock lk(g_resource_limit_lock);
 
             if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
                 /* Starting in 5.0.0, PM does not allow for only one of the sets to fail. */
@@ -294,10 +312,16 @@ namespace sts::pm::resource {
         return ResultSuccess;
     }
 
-    Result BoostSystemThreadResourceLimit() {
-        /* Starting in 7.0.0, Nintendo reduces the number of system threads from 0x260 to 0x60, */
-        /* Until this command is called to double that amount to 0xC0. */
-        /* We will simply not reduce the number of system threads available for no reason. */
+    Result BoostApplicationThreadResourceLimit() {
+        std::scoped_lock lk(g_resource_limit_lock);
+        /* Set new limit. */
+        const u64 new_thread_count = g_resource_limits[ResourceLimitGroup_Application][LimitableResource_Threads] + g_extra_application_threads_available;
+        R_TRY(svcSetResourceLimitLimitValue(GetResourceLimitHandle(ResourceLimitGroup_Application), LimitableResource_Threads, new_thread_count));
+
+        /* Record that we did so. */
+        g_resource_limits[ResourceLimitGroup_Application][LimitableResource_Threads] = new_thread_count;
+        g_extra_application_threads_available = 0;
+
         return ResultSuccess;
     }
 

@@ -35,7 +35,7 @@ namespace sts::pm::shell {
             virtual void   NotifyBootFinished();
             virtual Result GetApplicationProcessIdForShell(Out<u64> out);
             virtual Result BoostSystemMemoryResourceLimit(u64 boost_size);
-            virtual Result BoostSystemThreadResourceLimit();
+            virtual Result BoostApplicationThreadResourceLimit();
             virtual void   GetBootFinishedEventHandle(Out<CopiedHandle> out);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
@@ -47,16 +47,16 @@ namespace sts::pm::shell {
     class ShellService final : public ShellServiceBase {
         private:
             enum class CommandId {
-                LaunchTitle                     = 0,
-                TerminateProcess                = 1,
-                TerminateTitle                  = 2,
-                GetProcessEventHandle           = 3,
-                GetProcessEventInfo             = 4,
-                NotifyBootFinished              = 5,
-                GetApplicationProcessIdForShell = 6,
-                BoostSystemMemoryResourceLimit  = 7,
-                BoostSystemThreadResourceLimit  = 8,
-                GetBootFinishedEventHandle      = 9,
+                LaunchTitle                         = 0,
+                TerminateProcess                    = 1,
+                TerminateTitle                      = 2,
+                GetProcessEventHandle               = 3,
+                GetProcessEventInfo                 = 4,
+                NotifyBootFinished                  = 5,
+                GetApplicationProcessIdForShell     = 6,
+                BoostSystemMemoryResourceLimit      = 7,
+                BoostApplicationThreadResourceLimit = 8,
+                GetBootFinishedEventHandle          = 9,
             };
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
@@ -71,7 +71,7 @@ namespace sts::pm::shell {
                 MAKE_SERVICE_COMMAND_META(ShellService, BoostSystemMemoryResourceLimit),
 
                 /* 7.0.0-* */
-                MAKE_SERVICE_COMMAND_META(ShellService, BoostSystemThreadResourceLimit, FirmwareVersion_700),
+                MAKE_SERVICE_COMMAND_META(ShellService, BoostApplicationThreadResourceLimit, FirmwareVersion_700),
 
                 /* 8.0.0-* */
                 MAKE_SERVICE_COMMAND_META(ShellService, GetBootFinishedEventHandle,     FirmwareVersion_800),

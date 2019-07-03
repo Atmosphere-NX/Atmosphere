@@ -669,8 +669,8 @@ namespace sts::pm::impl {
         return resource::BoostSystemMemoryResourceLimit(boost_size);
     }
 
-    Result BoostSystemThreadResourceLimit() {
-        return resource::BoostSystemThreadResourceLimit();
+    Result BoostApplicationThreadResourceLimit() {
+        return resource::BoostApplicationThreadResourceLimit();
     }
 
     Result AtmosphereGetCurrentLimitInfo(u64 *out_cur_val, u64 *out_lim_val, u32 group, u32 resource) {

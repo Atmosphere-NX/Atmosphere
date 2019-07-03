@@ -65,8 +65,8 @@ namespace sts::pm::shell {
         return impl::BoostSystemMemoryResourceLimit(boost_size);
     }
 
-    Result ShellServiceBase::BoostSystemThreadResourceLimit() {
-        return impl::BoostSystemThreadResourceLimit();
+    Result ShellServiceBase::BoostApplicationThreadResourceLimit() {
+        return impl::BoostApplicationThreadResourceLimit();
     }
 
     void ShellServiceBase::GetBootFinishedEventHandle(Out<CopiedHandle> out) {

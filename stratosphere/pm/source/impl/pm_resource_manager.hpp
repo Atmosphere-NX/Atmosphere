@@ -25,7 +25,7 @@ namespace sts::pm::resource {
     /* Resource API. */
     Result InitializeResourceManager();
     Result BoostSystemMemoryResourceLimit(u64 boost_size);
-    Result BoostSystemThreadResourceLimit();
+    Result BoostApplicationThreadResourceLimit();
     Handle GetResourceLimitHandle(ResourceLimitGroup group);
     Handle GetResourceLimitHandle(const ldr::ProgramInfo *info);
     void   WaitResourceAvailable(const ldr::ProgramInfo *info);
