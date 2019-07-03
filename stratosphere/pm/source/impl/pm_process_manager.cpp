@@ -470,11 +470,13 @@ namespace sts::pm::impl {
             for (size_t i = 0; i < list->GetSize(); i++) {
                 auto process_info = list[i];
                 if (process_info->HasStarted() && process_info->HasStartedStateChanged()) {
+                    process_info->ClearStartedStateChanged();
                     out->event = GetProcessEventValue(ProcessEvent::Started);
                     out->process_id = process_info->GetProcessId();
                     return ResultSuccess;
                 }
                 if (process_info->HasSuspendedStateChanged()) {
+                    process_info->ClearSuspendedStateChanged();
                     if (process_info->IsSuspended()) {
                         out->event = GetProcessEventValue(ProcessEvent::DebugSuspended);
                     } else {
