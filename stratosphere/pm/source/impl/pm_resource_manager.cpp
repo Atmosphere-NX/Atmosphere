@@ -124,7 +124,7 @@ namespace sts::pm::resource {
                 if (resource == LimitableResource_Memory) {
                     continue;
                 }
-                R_TRY(svcSetResourceLimitLimitValue(GetResourceLimitHandle(group), LimitableResources[resource], g_resource_limits[group][resource]));
+                R_TRY(svcSetResourceLimitLimitValue(GetResourceLimitHandle(group), resource, g_resource_limits[group][resource]));
             }
             return ResultSuccess;
         }
@@ -223,7 +223,7 @@ namespace sts::pm::resource {
             }
 
             /* Set number of extra threads. */
-            g_extra_application_threads_available = total_threads_available;
+            g_extra_application_threads_available = total_threads_available - total_threads_allocated;
         }
 
         /* Choose and initialize memory arrangement. */
