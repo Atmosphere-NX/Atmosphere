@@ -86,63 +86,6 @@ namespace sts::pm::impl {
                 this->state = state;
             }
 
-            void SetSignalOnExit() {
-                this->SetFlag(Flag_SignalOnExit);
-            }
-
-            void SetExceptionOccurred() {
-                this->SetFlag(Flag_ExceptionOccurred);
-                this->SetFlag(Flag_ExceptionWaitingAttach);
-            }
-
-            void ClearExceptionOccurred() {
-                this->ClearFlag(Flag_ExceptionOccurred);
-            }
-
-            void ClearExceptionWaitingAttach() {
-                this->ClearFlag(Flag_ExceptionWaitingAttach);
-            }
-
-            void SetSignalOnDebugEvent() {
-                this->SetFlag(Flag_SignalOnDebugEvent);
-            }
-
-            void SetSuspendedStateChanged() {
-                this->SetFlag(Flag_SuspendedStateChanged);
-            }
-
-            void ClearSuspendedStateChanged() {
-                this->ClearFlag(Flag_SuspendedStateChanged);
-            }
-
-            void SetSuspended() {
-                this->SetFlag(Flag_Suspended);
-            }
-
-            void ClearSuspended() {
-                this->ClearFlag(Flag_Suspended);
-            }
-
-            void SetApplication() {
-                this->SetFlag(Flag_Application);
-            }
-
-            void SetSignalOnStart() {
-                this->SetFlag(Flag_SignalOnStart);
-            }
-
-            void ClearSignalOnStart() {
-                this->ClearFlag(Flag_SignalOnStart);
-            }
-
-            void SetStartedStateChanged() {
-                this->SetFlag(Flag_StartedStateChanged);
-            }
-
-            void ClearStartedStateChanged() {
-                this->ClearFlag(Flag_StartedStateChanged);
-            }
-
             bool HasStarted() const {
                 return this->state != ProcessState_Created && this->state != ProcessState_CreatedAttached;
             }
@@ -151,41 +94,60 @@ namespace sts::pm::impl {
                 return this->state == ProcessState_Exited;
             }
 
-            bool ShouldSignalOnExit() const {
-                return this->HasFlag(Flag_SignalOnExit);
+#define DEFINE_FLAG_SET(flag) \
+            void Set##flag() { \
+                this->SetFlag(Flag_##flag); \
             }
 
-            bool HasExceptionOccurred() const {
-                return this->HasFlag(Flag_ExceptionOccurred);
+#define DEFINE_FLAG_GET(get, flag) \
+            bool get##flag() const { \
+                return this->HasFlag(Flag_##flag); \
             }
 
-            bool HasExceptionWaitingAttach() const {
-                return this->HasFlag(Flag_ExceptionWaitingAttach);
+#define DEFINE_FLAG_CLEAR(flag) \
+            void Clear##flag() { \
+                this->ClearFlag(Flag_##flag); \
             }
 
-            bool ShouldSignalOnDebugEvent() const {
-                return this->HasFlag(Flag_SignalOnDebugEvent);
+            DEFINE_FLAG_SET(SignalOnExit)
+            DEFINE_FLAG_GET(Should, SignalOnExit)
+
+            /* This needs a manual setter, because it sets two flags. */
+            void SetExceptionOccurred() {
+                this->SetFlag(Flag_ExceptionOccurred);
+                this->SetFlag(Flag_ExceptionWaitingAttach);
             }
 
-            bool ShouldSignalOnStart() const {
-                return this->HasFlag(Flag_SignalOnStart);
-            }
+            DEFINE_FLAG_GET(Has, ExceptionOccurred)
+            DEFINE_FLAG_GET(Has, ExceptionWaitingAttach)
+            DEFINE_FLAG_CLEAR(ExceptionOccurred)
+            DEFINE_FLAG_CLEAR(ExceptionWaitingAttach)
 
-            bool HasSuspendedStateChanged() const {
-                return this->HasFlag(Flag_SuspendedStateChanged);
-            }
+            DEFINE_FLAG_SET(SignalOnDebugEvent)
+            DEFINE_FLAG_GET(Should, SignalOnDebugEvent)
 
-            bool IsSuspended() const {
-                return this->HasFlag(Flag_Suspended);
-            }
+            DEFINE_FLAG_SET(SuspendedStateChanged)
+            DEFINE_FLAG_GET(Has, SuspendedStateChanged)
+            DEFINE_FLAG_CLEAR(SuspendedStateChanged)
 
-            bool IsApplication() const {
-                return this->HasFlag(Flag_Application);
-            }
+            DEFINE_FLAG_SET(Suspended)
+            DEFINE_FLAG_GET(Is, Suspended)
+            DEFINE_FLAG_CLEAR(Suspended)
 
-            bool HasStartedStateChanged() const {
-                return this->HasFlag(Flag_StartedStateChanged);
-            }
+            DEFINE_FLAG_SET(Application)
+            DEFINE_FLAG_GET(Is, Application)
+
+            DEFINE_FLAG_SET(SignalOnStart)
+            DEFINE_FLAG_GET(Should, SignalOnStart)
+            DEFINE_FLAG_CLEAR(SignalOnStart)
+
+            DEFINE_FLAG_SET(StartedStateChanged)
+            DEFINE_FLAG_GET(Has, StartedStateChanged)
+            DEFINE_FLAG_CLEAR(StartedStateChanged)
+
+#undef DEFINE_FLAG_SET
+#undef DEFINE_FLAG_GET
+#undef DEFINE_FLAG_CLEAR
 
     };
 
@@ -195,7 +157,7 @@ namespace sts::pm::impl {
         private:
             std::shared_ptr<ProcessInfo> process_info;
         public:
-            ProcessInfoWaiter(std::shared_ptr<ProcessInfo> p) : process_info(p) { /* ... */ }
+            ProcessInfoWaiter(std::shared_ptr<ProcessInfo> p) : process_info(std::move(p)) { /* ... */ }
 
             /* IWaitable */
             Handle GetHandle() override {
@@ -235,27 +197,27 @@ namespace sts::pm::impl {
             }
 
             void Remove(u64 process_id) {
-                for (size_t i = 0; i < this->processes.size(); i++) {
-                    if (this->processes[i]->GetProcessId() == process_id) {
-                        this->processes.erase(this->processes.begin() + i);
+                for (auto it = this->processes.begin(); it != this->processes.end(); it++) {
+                    if ((*it)->GetProcessId() == process_id) {
+                        this->processes.erase(it);
                         break;
                     }
                 }
             }
 
             std::shared_ptr<ProcessInfo> Find(u64 process_id) {
-                for (size_t i = 0; i < this->processes.size(); i++) {
-                    if (this->processes[i]->GetProcessId() == process_id) {
-                        return this->processes[i];
+                for (auto it = this->processes.begin(); it != this->processes.end(); it++) {
+                    if ((*it)->GetProcessId() == process_id) {
+                        return *it;
                     }
                 }
                 return nullptr;
             }
 
             std::shared_ptr<ProcessInfo> Find(ncm::TitleId title_id) {
-                for (size_t i = 0; i < this->processes.size(); i++) {
-                    if (this->processes[i]->GetTitleLocation().title_id == title_id) {
-                        return this->processes[i];
+                for (auto it = this->processes.begin(); it != this->processes.end(); it++) {
+                    if ((*it)->GetTitleLocation().title_id == title_id) {
+                        return *it;
                     }
                 }
                 return nullptr;
