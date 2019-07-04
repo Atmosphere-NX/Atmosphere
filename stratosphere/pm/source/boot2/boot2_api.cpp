@@ -221,13 +221,9 @@ namespace sts::boot2 {
                     }
 
                     /* Check if the title is flagged. */
-                    char title_path[FS_MAX_PATH];
-                    std::snprintf(title_path, sizeof(title_path), "sdmc:/atmosphere/titles/%s/flags/boot2.flag", ent->d_name);
-                    FILE *f_flag = fopen(title_path, "rb");
-                    if (f_flag == nullptr) {
+                    if (!cfg::HasTitleSpecificFlag(title_id, "boot2")) {
                         continue;
                     }
-                    fclose(f_flag);
 
                     /* Actually launch the title. */
                     LaunchTitle(nullptr, ncm::TitleLocation::Make(title_id, ncm::StorageId::None), 0);
