@@ -202,26 +202,35 @@ namespace sts::boot2 {
         }
 
         void LaunchFlaggedProgramsFromSdCard() {
-            /* Allow for user-customizable programs. */
+            /* Validate that the titles directory exists. */
             DIR *titles_dir = opendir("sdmc:/atmosphere/titles");
-            struct dirent *ent;
-            if (titles_dir != nullptr) {
-                ON_SCOPE_EXIT { closedir(titles_dir); };
+            if (titles_dir == nullptr) {
+                return;
+            }
+            ON_SCOPE_EXIT { closedir(titles_dir); };
 
-                while ((ent = readdir(titles_dir)) != nullptr) {
-                    if (strlen(ent->d_name) == 2 * sizeof(u64) && IsHexadecimal(ent->d_name)) {
-                        ncm::TitleId title_id{strtoul(ent->d_name, nullptr, 16)};
-                        if (pm::info::HasLaunchedTitle(title_id)) {
-                            return;
-                        }
-                        char title_path[FS_MAX_PATH];
-                        std::snprintf(title_path, sizeof(title_path), "sdmc:/atmosphere/titles/%s/flags/boot2.flag", ent->d_name);
-                        FILE *f_flag = fopen(title_path, "rb");
-                        if (f_flag != nullptr) {
-                            fclose(f_flag);
-                            LaunchTitle(nullptr, ncm::TitleLocation::Make(title_id, ncm::StorageId::None), 0);
-                        }
+            /* Iterate over entries in the titles directory */
+            struct dirent *ent;
+            while ((ent = readdir(titles_dir)) != nullptr) {
+                /* Check that the subdirectory can be converted to a title id. */
+                if (std::strlen(ent->d_name) == 2 * sizeof(ncm::TitleId) && IsHexadecimal(ent->d_name)) {
+                    /* Check if we've already launched the title. */
+                    ncm::TitleId title_id{std::strtoul(ent->d_name, nullptr, 16)};
+                    if (pm::info::HasLaunchedTitle(title_id)) {
+                        continue;
                     }
+
+                    /* Check if the title is flagged. */
+                    char title_path[FS_MAX_PATH];
+                    std::snprintf(title_path, sizeof(title_path), "sdmc:/atmosphere/titles/%s/flags/boot2.flag", ent->d_name);
+                    FILE *f_flag = fopen(title_path, "rb");
+                    if (f_flag == nullptr) {
+                        continue;
+                    }
+                    fclose(f_flag);
+
+                    /* Actually launch the title. */
+                    LaunchTitle(nullptr, ncm::TitleLocation::Make(title_id, ncm::StorageId::None), 0);
                 }
             }
         }
