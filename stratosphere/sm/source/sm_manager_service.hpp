@@ -18,6 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 #include <stratosphere/sm.hpp>
+#include <stratosphere/ncm.hpp>
 
 namespace sts::sm {
 
@@ -26,18 +27,20 @@ namespace sts::sm {
         protected:
             /* Command IDs. */
             enum class CommandId {
-                RegisterProcess         = 0,
-                UnregisterProcess       = 1,
+                RegisterProcess           = 0,
+                UnregisterProcess         = 1,
 
-                AtmosphereEndInitDefers = 65000,
-                AtmosphereHasMitm       = 65001,
+                AtmosphereEndInitDefers   = 65000,
+                AtmosphereHasMitm         = 65001,
+                AtmosphereRegisterProcess = 65002,
             };
         private:
             /* Actual commands. */
-            virtual Result RegisterProcess(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci0_sac);
+            virtual Result RegisterProcess(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci_sac);
             virtual Result UnregisterProcess(u64 pid);
             virtual void AtmosphereEndInitDefers();
             virtual void AtmosphereHasMitm(Out<bool> out, ServiceName service);
+            virtual Result AtmosphereRegisterProcess(u64 pid, ncm::TitleId tid, InBuffer<u8> acid_sac, InBuffer<u8> aci_sac);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(ManagerService, RegisterProcess),
@@ -45,6 +48,7 @@ namespace sts::sm {
 
                 MAKE_SERVICE_COMMAND_META(ManagerService, AtmosphereEndInitDefers),
                 MAKE_SERVICE_COMMAND_META(ManagerService, AtmosphereHasMitm),
+                MAKE_SERVICE_COMMAND_META(ManagerService, AtmosphereRegisterProcess),
             };
     };
 

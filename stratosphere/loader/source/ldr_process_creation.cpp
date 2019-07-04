@@ -686,9 +686,6 @@ namespace sts::ldr {
                 }
             }
 
-            /* Inform SM about the title for association purposes. */
-            R_ASSERT(sm::mitm::AssociateProcessIdAndTitleId(process_id, static_cast<u64>(loc.title_id)));
-
             /* If we're overriding for HBL, perform HTML document redirection. */
             if (mount.IsHblMounted()) {
                 /* Don't validate result, failure is okay. */

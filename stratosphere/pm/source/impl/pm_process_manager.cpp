@@ -245,7 +245,7 @@ namespace sts::pm::impl {
 
             /* Register with FS and SM. */
             R_TRY(fsprRegisterProgram(process_id, static_cast<u64>(location.title_id), static_cast<FsStorageId>(location.storage_id), aci_fah, program_info.aci_fah_size, acid_fac, program_info.acid_fac_size));
-            R_TRY(sm::manager::RegisterProcess(process_id, acid_sac, program_info.acid_sac_size, aci_sac, program_info.aci_sac_size));
+            R_TRY(sm::manager::RegisterProcess(process_id, location.title_id, acid_sac, program_info.acid_sac_size, aci_sac, program_info.aci_sac_size));
 
             /* Set flags. */
             if (is_application) {

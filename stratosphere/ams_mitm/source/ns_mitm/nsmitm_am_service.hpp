@@ -28,7 +28,7 @@ class NsAmMitmService : public IMitmServiceObject {
             GetRunningApplicationProgramId = 92,
         };
     public:
-        NsAmMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
+        NsAmMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             /* ... */
         }
 

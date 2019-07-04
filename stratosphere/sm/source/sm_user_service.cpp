@@ -60,14 +60,9 @@ namespace sts::sm {
         return impl::UninstallMitm(this->pid, service);
     }
 
-    Result UserService::AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<MovedHandle> fwd_h, ServiceName service) {
+    Result UserService::AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<ncm::TitleId> client_tid, Out<MovedHandle> fwd_h, ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return impl::AcknowledgeMitmSession(client_pid.GetPointer(), fwd_h.GetHandlePointer(), this->pid, service);
-    }
-
-    Result UserService::AtmosphereAssociatePidTidForMitm(u64 pid, u64 tid) {
-        R_TRY(this->EnsureInitialized());
-        return impl::AssociatePidTidForMitm(pid, tid);
+        return impl::AcknowledgeMitmSession(client_pid.GetPointer(), client_tid.GetPointer(), fwd_h.GetHandlePointer(), this->pid, service);
     }
 
     Result UserService::AtmosphereHasMitm(Out<bool> out, ServiceName service) {
