@@ -27,7 +27,7 @@ class BpcMitmService : public IMitmServiceObject {
             RebootSystem   = 1,
         };
     public:
-        BpcMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
+        BpcMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             /* ... */
         }
 

@@ -44,7 +44,7 @@ class FsMitmService : public IMitmServiceObject {
         bool has_initialized = false;
         bool should_override_contents;
     public:
-        FsMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
+        FsMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             if (Utils::HasSdDisableMitMFlag(static_cast<u64>(this->title_id))) {
                 this->should_override_contents = false;
             } else {

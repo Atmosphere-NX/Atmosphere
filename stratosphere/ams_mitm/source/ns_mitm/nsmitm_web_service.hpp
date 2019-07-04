@@ -67,7 +67,7 @@ class NsWebMitmService : public IMitmServiceObject {
             GetDocumentInterface = 7999,
         };
     public:
-        NsWebMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
+        NsWebMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             /* ... */
         }
 

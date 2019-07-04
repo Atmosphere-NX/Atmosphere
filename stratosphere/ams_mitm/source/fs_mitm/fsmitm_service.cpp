@@ -73,12 +73,6 @@ void FsMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx
         case CommandId::SetCurrentProcess:
             if (R_SUCCEEDED(ctx->rc)) {
                 this_ptr->has_initialized = true;
-                this_ptr->process_id = ctx->request.Pid;
-                this_ptr->title_id = sts::ncm::TitleId{this_ptr->process_id};
-                if (R_FAILED(MitmQueryUtils::GetAssociatedTidForPid(this_ptr->process_id, &this_ptr->title_id))) {
-                    /* Log here, if desired. */
-                }
-                break;
             }
             break;
         default:

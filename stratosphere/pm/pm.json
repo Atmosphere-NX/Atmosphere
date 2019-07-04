@@ -65,6 +65,8 @@
                 "svcReplyAndReceiveWithUserBuffer":	"0x44",
                 "svcCreateEvent":	"0x45",
                 "svcSetUnsafeLimit":	"0x4a",
+                "svcDebugActiveProcess":	"0x60",
+                "svcGetDebugEvent":	"0x63",
                 "svcGetProcessList":	"0x65",
                 "svcStartProcess":	"0x7a",
                 "svcTerminateProcess":	"0x7b",
@@ -73,6 +75,13 @@
                 "svcSetResourceLimitLimitValue":	"0x7e",
                 "svcGetSystemInfo":	"0x6f",
                 "svcCallSecureMonitor": "0x7F"
+            }
+        },
+        {
+            "type": "debug_flags",
+            "value": {
+                "allow_debug": false,
+                "force_debug": true
             }
         }
     ]

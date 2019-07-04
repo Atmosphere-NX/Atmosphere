@@ -74,16 +74,78 @@ namespace {
 
     constexpr u32 PrivilegedFileAccessHeader[0x1C / sizeof(u32)]  = {0x00000001, 0x00000000, 0x80000000, 0x0000001C, 0x00000000, 0x0000001C, 0x00000000};
     constexpr u32 PrivilegedFileAccessControl[0x2C / sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF};
+    constexpr u8  PrivilegedServiceAccessControl[] = {0x80, '*', 0x00, '*'};
     constexpr size_t ProcessCountMax = 0x40;
+
+    /* TODO: Libstratosphere this stuff during fatal/creport rewrite. */
+    enum class DebugEventType : u32 {
+        AttachProcess = 0,
+        AttachThread = 1,
+        ExitProcess = 2,
+        ExitThread = 3,
+        Exception = 4
+    };
+
+    struct AttachProcessInfo {
+        sts::ncm::TitleId title_id;
+        u64 process_id;
+        char name[0xC];
+        u32 flags;
+        u64 user_exception_context_address; /* 5.0.0+ */
+    };
+
+    union DebugInfo {
+        AttachProcessInfo attach_process;
+    };
+
+    struct DebugEventInfo {
+        DebugEventType type;
+        u32 flags;
+        u64 thread_id;
+        union {
+            DebugInfo info;
+            u64 _[0x40/sizeof(u64)];
+        };
+    };
+
+    /* This uses debugging SVCs to retrieve a process's title id. */
+    sts::ncm::TitleId GetProcessTitleId(u64 process_id) {
+        /* Get a debug handle, or return our title id. */
+        AutoHandle debug_handle;
+        if (R_FAILED(svcDebugActiveProcess(debug_handle.GetPointer(), process_id))) {
+            u64 current_process_id = 0;
+            R_ASSERT(svcGetProcessId(&current_process_id, CUR_PROCESS_HANDLE));
+            if (current_process_id == process_id) {
+                return __stratosphere_title_id;
+            } else {
+                /* If we fail to debug a process other than our own, abort. */
+                std::abort();
+            }
+        }
+
+        /* Loop until we get the event that tells us about the process. */
+        DebugEventInfo d;
+        while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()))) {
+            if (d.type == DebugEventType::AttachProcess) {
+                return d.info.attach_process.title_id;
+            }
+        }
+
+        /* If we somehow didn't get the event, abort. */
+        std::abort();
+    }
 
     /* This works around a bug fixed by FS in 4.0.0. */
     /* Not doing so will cause KIPs with higher process IDs than 7 to be unable to use filesystem services. */
-    void RegisterPrivilegedProcessWithFs(u64 process_id) {
+    /* It also registers privileged processes with SM, so that their title IDs can be known. */
+    void RegisterPrivilegedProcess(u64 process_id) {
         fsprUnregisterProgram(process_id);
         fsprRegisterProgram(process_id, process_id, FsStorageId_NandSystem, PrivilegedFileAccessHeader, sizeof(PrivilegedFileAccessHeader), PrivilegedFileAccessControl, sizeof(PrivilegedFileAccessControl));
+        sts::sm::manager::UnregisterProcess(process_id);
+        sts::sm::manager::RegisterProcess(process_id, GetProcessTitleId(process_id), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
     }
 
-    void RegisterPrivilegedProcessesWithFs() {
+    void RegisterPrivilegedProcesses() {
         /* Get privileged process range. */
         u64 min_priv_process_id = 0, max_priv_process_id = 0;
         sts::cfg::GetInitialProcessRange(&min_priv_process_id, &max_priv_process_id);
@@ -94,7 +156,7 @@ namespace {
         R_ASSERT(svcGetProcessList(&num_pids, pids, ProcessCountMax));
         for (size_t i = 0; i < num_pids; i++) {
             if (min_priv_process_id <= pids[i] && pids[i] <= max_priv_process_id) {
-                RegisterPrivilegedProcessWithFs(pids[i]);
+                RegisterPrivilegedProcess(pids[i]);
             }
         }
     }
@@ -106,12 +168,13 @@ void __appInit(void) {
 
     DoWithSmSession([&]() {
         R_ASSERT(fsprInitialize());
+        R_ASSERT(smManagerInitialize());
 
         /* This works around a bug with process permissions on < 4.0.0. */
-        RegisterPrivilegedProcessesWithFs();
+        /* It also informs SM of privileged process information. */
+        RegisterPrivilegedProcesses();
 
         /* Use AMS manager extension to tell SM that FS has been worked around. */
-        R_ASSERT(smManagerInitialize());
         R_ASSERT(sts::sm::manager::EndInitialDefers());
 
         R_ASSERT(lrInitialize());

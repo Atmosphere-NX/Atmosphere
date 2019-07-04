@@ -17,11 +17,12 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere/sm.hpp>
+#include <stratosphere/ncm.hpp>
 
 namespace sts::sm::impl {
 
     /* Process management. */
-    Result RegisterProcess(u64 pid, const void *acid_sac, size_t acid_sac_size, const void *aci0_sac, size_t aci0_sac_size);
+    Result RegisterProcess(u64 pid, ncm::TitleId tid, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
     Result UnregisterProcess(u64 pid);
 
     /* Service management. */
@@ -37,8 +38,7 @@ namespace sts::sm::impl {
     Result WaitMitm(ServiceName service);
     Result InstallMitm(Handle *out, Handle *out_query, u64 pid, ServiceName service);
     Result UninstallMitm(u64 pid, ServiceName service);
-    Result AcknowledgeMitmSession(u64 *out_pid, Handle *out_hnd, u64 pid, ServiceName service);
-    Result AssociatePidTidForMitm(u64 pid, u64 tid);
+    Result AcknowledgeMitmSession(u64 *out_pid, ncm::TitleId *out_tid, Handle *out_hnd, u64 pid, ServiceName service);
 
     /* Dmnt record extensions. */
     Result GetServiceRecord(ServiceRecord *out, ServiceName service);

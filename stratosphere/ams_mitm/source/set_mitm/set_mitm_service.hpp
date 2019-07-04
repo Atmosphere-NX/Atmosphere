@@ -35,7 +35,7 @@ class SetMitmService : public IMitmServiceObject {
         OverrideLocale locale;
         bool got_locale;
     public:
-        SetMitmService(std::shared_ptr<Service> s, u64 pid) : IMitmServiceObject(s, pid) {
+        SetMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             this->got_locale = false;
         }
 

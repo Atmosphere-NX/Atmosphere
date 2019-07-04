@@ -245,12 +245,6 @@ namespace sts::boot2 {
         cfg::WaitSdCardInitialized();
         R_ASSERT(fsdevMountSdmc());
 
-        /* Find out whether we are maintenance mode. */
-        const bool maintenance = IsMaintenanceMode();
-        if (maintenance) {
-            pm::bm::SetMaintenanceBoot();
-        }
-
         /* Wait for other atmosphere mitm modules to initialize. */
         R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("set:sys")));
         if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
@@ -259,15 +253,25 @@ namespace sts::boot2 {
             R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
         }
 
+        /* Find out whether we are maintenance mode. */
+        const bool maintenance = IsMaintenanceMode();
+        if (maintenance) {
+            pm::bm::SetMaintenanceBoot();
+        }
         /* Launch Atmosphere dmnt, using FsStorageId_None to force SD card boot. */
         LaunchTitle(nullptr, ncm::TitleLocation::Make(ncm::TitleId::Dmnt, ncm::StorageId::None), 0);
 
         /* Launch additional programs. */
         if (maintenance) {
             LaunchList(AdditionalMaintenanceLaunchPrograms, NumAdditionalMaintenanceLaunchPrograms);
+            /* Starting in 7.0.0, npns is launched during maintenance boot. */
+            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+                LaunchTitle(nullptr, ncm::TitleLocation::Make(ncm::TitleId::Npns, ncm::StorageId::NandSystem), 0);
+            }
         } else {
             LaunchList(AdditionalLaunchPrograms, NumAdditionalLaunchPrograms);
         }
+
 
         /* Launch user programs off of the SD. */
         LaunchFlaggedProgramsFromSdCard();
