@@ -42,7 +42,7 @@ typedef enum {
     CARDEVICE_UARTC = ((1 << 5) | 0x17),
     CARDEVICE_I2C1 = ((0 << 5) | 0xC),
     CARDEVICE_I2C5 = ((1 << 5) | 0xF),
-    CARDEVICE_UNK = ((3 << 5) | 0x1E),
+    CARDEVICE_TZRAM = ((3 << 5) | 0x1E),
     CARDEVICE_SE = ((3 << 5) | 0x1F),
     CARDEVICE_HOST1X = ((0 << 5) | 0x1C),
     CARDEVICE_TSEC = ((2 << 5) | 0x13),

@@ -48,7 +48,6 @@ static void set_has_rebooted(bool rebooted) {
     MAKE_REG32(0x4003FFFC) = rebooted ? 0xFAFAFAFA : 0x00000000;
 }
 
-
 static void exfiltrate_keys_and_reboot_if_needed(uint32_t version) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     uint8_t *enc_se_state = (uint8_t *)0x4003E000;
@@ -124,7 +123,10 @@ static void cleanup_env(void) {
     /* Unmount the SD card. */
     unmount_sd();
 
+    /* Turn off the backlight. */
     display_backlight(false);
+    
+    /* Terminate the display. */
     display_end();
 }
 
@@ -150,7 +152,7 @@ int sept_main(uint32_t version) {
     /* Override the global logging level. */
     log_set_log_level(log_level);
 
-    /* Initialize the display, console, etc. */
+    /* Initialize the boot environment. */
     setup_env();
 
     /* Mark EMC scratch to say that sept has run. */
@@ -166,14 +168,10 @@ int sept_main(uint32_t version) {
     stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1); /* May be unaligned. */
     memcpy(&stage2_args->version, &stage2_version, 4);
     memcpy(&stage2_args->log_level, &log_level, sizeof(log_level));
-    stage2_args->display_initialized = false;
     strcpy(stage2_args->bct0, "");
     g_chainloader_argc = 2;
 
-    /* Wait a while. */
-    mdelay(1500);
-
-    /* Deinitialize the display, console, etc. */
+    /* Terminate the boot environment. */
     cleanup_env();
 
     /* Finally, after the cleanup routines (__libc_fini_array, etc.) are called, jump to Stage2. */

@@ -650,7 +650,6 @@ uint32_t nxboot_main(void) {
         }
     }
 
-    //fatal_error("Ran sept!");
     /* Display splash screen. */
     display_splash_screen_bmp(loader_ctx->custom_splash_path, (void *)0xC0000000);
 
@@ -800,9 +799,6 @@ uint32_t nxboot_main(void) {
     free(package2);
 
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Powering on the CCPLEX...\n");
-
-    /* Unmount everything. */
-    nxfs_end();
 
     /* Return the memory address for booting CPU0. */
     return (uint32_t)exosphere_memaddr;

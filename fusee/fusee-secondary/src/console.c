@@ -97,26 +97,23 @@ static ssize_t decode_utf8(uint32_t *out, const uint8_t *in) {
 }
 
 static void console_init_display(void) {
-    if (!g_display_initialized) {
-        /* Initialize the display. */
-        display_init();
-    }
+    /* Initialize the display. */
+    display_init();
 
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
 
     /* Turn on the backlight after initializing the lfb */
     /* to avoid flickering. */
-    if (!g_display_initialized) {
-        display_backlight(true);
-    }
+    display_backlight(true);
 
+    /* Display is initialized. */
     g_display_initialized = true;
 }
 
 static ssize_t console_write(struct _reent *r, void *fd, const char *ptr, size_t len) {
     size_t i = 0;
-    if (!g_display_initialized) {
+    if (!g_display_initialized && (g_framebuffer != NULL)) {
         console_init_display();
     }
     while (i < len) {
@@ -138,6 +135,8 @@ static int console_create(void) {
         errno = EEXIST;
         return -1;
     }
+    
+    /* Allocate memory for the framebuffer. */
     g_framebuffer = memalign(0x1000, CONFIG_VIDEO_VISIBLE_ROWS * CONFIG_VIDEO_COLS * CONFIG_VIDEO_PIXEL_SIZE);
 
     if (g_framebuffer == NULL) {
@@ -154,9 +153,7 @@ static int console_create(void) {
     return 0;
 }
 
-int console_init(bool display_initialized) {
-    g_display_initialized = display_initialized;
-
+int console_init(void) {
     if (console_create() == -1) {
         return -1;
     }
@@ -171,15 +168,15 @@ int console_init(bool display_initialized) {
     return 0;
 }
 
-void *console_get_framebuffer(bool enable_display) {
-    if (g_framebuffer != NULL && enable_display) {
+void *console_get_framebuffer(void) {
+    if (!g_display_initialized && (g_framebuffer != NULL)) {
         console_init_display();
     }
     return g_framebuffer;
 }
 
 int console_display(const void *framebuffer) {
-    if (!g_display_initialized) {
+    if (!g_display_initialized && (g_framebuffer != NULL)) {
         console_init_display();
     }
     display_init_framebuffer((void *)framebuffer);
@@ -187,7 +184,7 @@ int console_display(const void *framebuffer) {
 }
 
 int console_resume(void) {
-    if (!g_display_initialized) {
+    if (!g_display_initialized && (g_framebuffer != NULL)) {
         console_init_display();
     } else {
         display_init_framebuffer(g_framebuffer);
@@ -196,10 +193,15 @@ int console_resume(void) {
 }
 
 int console_end(void) {
-    /* Deinitialize the framebuffer and display */
-    if (g_display_initialized) {
+    if (g_display_initialized) {    
+        /* Turn off the backlight. */
         display_backlight(false);
+        
+        /* Terminate the display. */
         display_end();
+        
+        /* Display is terminated. */
+        g_display_initialized = false;
     }
     free(g_framebuffer);
     g_framebuffer = NULL;

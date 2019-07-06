@@ -22,6 +22,7 @@
 #include "utils.h"
 #include "fs_utils.h"
 #include "lib/log.h"
+#include "display/video_fb.h"
 
 static uint32_t g_panic_code = 0;
 
@@ -56,6 +57,22 @@ static void _check_and_display_atmosphere_fatal_error(void) {
     }
 
     {
+        /* Zero-fill the framebuffer and register it as printk provider. */
+        video_init((void *)0xC0000000);
+
+        /* Initialize the display. */
+        display_init();
+
+        /* Set the framebuffer. */
+        display_init_framebuffer((void *)0xC0000000);
+
+        /* Turn on the backlight after initializing the lfb */
+        /* to avoid flickering. */
+        display_backlight(true);
+        
+        /* Override the global logging level. */
+        log_set_log_level(SCREEN_LOG_LEVEL_ERROR);
+    
         /* Copy fatal error context to the stack. */
         atmosphere_fatal_error_ctx ctx = *(ATMOSPHERE_FATAL_ERROR_CONTEXT);
 
@@ -79,6 +96,7 @@ static void _check_and_display_atmosphere_fatal_error(void) {
         print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"\nPress POWER to reboot\n");
     }
 
+    /* Wait for button and reboot. */
     wait_for_button_and_reboot();
 }
 
@@ -87,11 +105,9 @@ void check_and_display_panic(void) {
     _check_and_display_atmosphere_fatal_error();
     
     /* We also handle our own panics. */
-    /* In the case of our own panics, we assume that the display has already been initialized. */
-    bool has_panic = APBDEV_PMC_RST_STATUS_0 != 0 || g_panic_code != 0;
-    uint32_t code = g_panic_code == 0 ? APBDEV_PMC_SCRATCH200_0 : g_panic_code;
-
-    has_panic = has_panic && !(APBDEV_PMC_RST_STATUS_0 != 1 && code == PANIC_CODE_SAFEMODE);
+    bool has_panic = ((APBDEV_PMC_RST_STATUS_0 != 0) || (g_panic_code != 0));
+    uint32_t code = (g_panic_code == 0) ? APBDEV_PMC_SCRATCH200_0 : g_panic_code;
+    has_panic = has_panic && !((APBDEV_PMC_RST_STATUS_0 != 1) && (code == PANIC_CODE_SAFEMODE));
 
     if (has_panic) {
         uint32_t color;
@@ -134,11 +150,13 @@ void check_and_display_panic(void) {
                 break;
         }
 
-        if (g_panic_code == 0) {
-            display_init();
-        }
-
+        /* Initialize the display. */
+        display_init();
+        
+        /* Fill the screen. */
         display_color_screen(color);
+        
+        /* Wait for button and reboot. */
         wait_for_button_and_reboot();
     } else {
         g_panic_code = 0;

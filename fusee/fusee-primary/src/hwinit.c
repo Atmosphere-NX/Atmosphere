@@ -236,8 +236,8 @@ void nx_hwinit()
     /* NOTE: [4.0.0+] This was removed. */
     /* clkrst_reboot(CARDEVICE_SE); */
     
-    /* Reboot unknown device. */
-    clkrst_reboot(CARDEVICE_UNK);
+    /* Reboot TZRAM. */
+    clkrst_reboot(CARDEVICE_TZRAM);
 
     /* Initialize I2C1. */
     /* NOTE: [6.0.0+] This was moved to after the PMIC is configured. */

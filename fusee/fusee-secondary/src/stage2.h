@@ -30,7 +30,6 @@
 typedef struct {
     uint32_t version;
     ScreenLogLevel log_level;
-    bool display_initialized;
     char bct0[BCTO_MAX_SIZE];
 } stage2_args_t;
 

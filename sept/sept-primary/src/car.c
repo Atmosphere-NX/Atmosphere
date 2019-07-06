@@ -25,7 +25,7 @@ static inline uint32_t get_clk_source_reg(CarDevice dev) {
         case CARDEVICE_UARTC: return 0x1A0;
         case CARDEVICE_I2C1: return 0x124;
         case CARDEVICE_I2C5: return 0x128;
-        case CARDEVICE_UNK: return 0;
+        case CARDEVICE_TZRAM: return 0;
         case CARDEVICE_SE: return 0x42C;
         case CARDEVICE_HOST1X: return 0x180;
         case CARDEVICE_TSEC: return 0x1F4;
@@ -48,7 +48,7 @@ static inline uint32_t get_clk_source_val(CarDevice dev) {
         case CARDEVICE_UARTC: return 0;
         case CARDEVICE_I2C1: return 6;
         case CARDEVICE_I2C5: return 6;
-        case CARDEVICE_UNK: return 0;
+        case CARDEVICE_TZRAM: return 0;
         case CARDEVICE_SE: return 0;
         case CARDEVICE_HOST1X: return 4;
         case CARDEVICE_TSEC: return 0;
@@ -71,7 +71,7 @@ static inline uint32_t get_clk_source_div(CarDevice dev) {
         case CARDEVICE_UARTC: return 0;
         case CARDEVICE_I2C1: return 0;
         case CARDEVICE_I2C5: return 0;
-        case CARDEVICE_UNK: return 0;
+        case CARDEVICE_TZRAM: return 0;
         case CARDEVICE_SE: return 0;
         case CARDEVICE_HOST1X: return 3;
         case CARDEVICE_TSEC: return 2;

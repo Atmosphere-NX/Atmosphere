@@ -34,6 +34,7 @@
 #define STAGE2_NAME_KEY "stage2_path"
 #define STAGE2_ADDRESS_KEY "stage2_addr"
 #define STAGE2_ENTRYPOINT_KEY "stage2_entrypoint"
+
 #define BCTO_MAX_SIZE 0x5800
 
 typedef struct {
@@ -45,7 +46,6 @@ typedef struct {
 typedef struct {
     uint32_t version;
     ScreenLogLevel log_level;
-    bool display_initialized;
     char bct0[BCTO_MAX_SIZE];
 } stage2_args_t;
 
