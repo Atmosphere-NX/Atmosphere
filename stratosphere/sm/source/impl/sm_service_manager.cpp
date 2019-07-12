@@ -27,8 +27,9 @@ namespace sts::sm::impl {
     /* Anonymous namespace for implementation details. */
     namespace {
         /* Constexpr definitions. */
-        static constexpr size_t ProcessCountMax = 0x40;
-        static constexpr size_t ServiceCountMax = 0x100;
+        static constexpr size_t ProcessCountMax      = 0x40;
+        static constexpr size_t ServiceCountMax      = 0x100;
+        static constexpr size_t FutureMitmCountMax   = 0x20;
         static constexpr size_t AccessControlSizeMax = 0x200;
 
         /* Types. */
@@ -182,6 +183,7 @@ namespace sts::sm::impl {
         /* Static members. */
         ProcessInfo g_process_list[ProcessCountMax];
         ServiceInfo g_service_list[ServiceCountMax];
+        ServiceName g_future_mitm_list[FutureMitmCountMax];
         InitialProcessIdLimits g_initial_process_id_limits;
         bool g_ended_initial_defers;
 
@@ -203,6 +205,14 @@ namespace sts::sm::impl {
             return GetProcessInfo(pid) != nullptr;
         }
 
+        bool IsInitialProcess(u64 pid) {
+            return g_initial_process_id_limits.IsInitialProcess(pid);
+        }
+
+        bool IsValidProcessId(u64 pid) {
+            return pid != InvalidProcessId;
+        }
+
         ServiceInfo *GetServiceInfo(ServiceName service_name) {
             for (size_t i = 0; i < ServiceCountMax; i++) {
                 if (g_service_list[i].name == service_name) {
@@ -218,6 +228,53 @@ namespace sts::sm::impl {
 
         bool HasServiceInfo(ServiceName service) {
             return GetServiceInfo(service) != nullptr;
+        }
+
+        bool HasMitm(ServiceName service) {
+            const ServiceInfo *service_info = GetServiceInfo(service);
+            return service_info != nullptr && IsValidProcessId(service_info->mitm_pid);
+        }
+
+        ncm::TitleId GetTitleIdForMitm(u64 pid) {
+            /* Anything that can request a mitm session must have a process info. */
+            const auto process_info = GetProcessInfo(pid);
+            if (process_info == nullptr) {
+                std::abort();
+            }
+            return process_info->tid;
+        }
+
+        bool IsMitmDisallowed(ncm::TitleId title_id) {
+            /* Mitm used on certain titles can prevent the boot process from completing. */
+            /* TODO: Is there a way to do this that's less hardcoded? Needs design thought. */
+            return title_id == ncm::TitleId::Loader || title_id == ncm::TitleId::Boot || title_id == ncm::TitleId::AtmosphereMitm;
+        }
+
+        Result AddFutureMitmDeclaration(ServiceName service) {
+            for (size_t i = 0; i < FutureMitmCountMax; i++) {
+                if (g_future_mitm_list[i] == InvalidServiceName) {
+                    g_future_mitm_list[i] = service;
+                    return ResultSuccess;
+                }
+            }
+            return ResultSmInsufficientServices;
+        }
+
+        bool HasFutureMitmDeclaration(ServiceName service) {
+            for (size_t i = 0; i < FutureMitmCountMax; i++) {
+                if (g_future_mitm_list[i] == service) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        void ClearFutureMitmDeclaration(ServiceName service) {
+            for (size_t i = 0; i < FutureMitmCountMax; i++) {
+                if (g_future_mitm_list[i] == service) {
+                    g_future_mitm_list[i] = InvalidServiceName;
+                }
+            }
         }
 
         void GetServiceInfoRecord(ServiceRecord *out_record, const ServiceInfo *service_info) {
@@ -287,23 +344,6 @@ namespace sts::sm::impl {
             return ResultSuccess;
         }
 
-        bool IsInitialProcess(u64 pid) {
-            return g_initial_process_id_limits.IsInitialProcess(pid);
-        }
-
-        bool IsValidProcessId(u64 pid) {
-            return pid != InvalidProcessId;
-        }
-
-        ncm::TitleId GetTitleIdForMitm(u64 pid) {
-            /* Anything that can request a mitm session must have a process info. */
-            const auto process_info = GetProcessInfo(pid);
-            if (process_info == nullptr) {
-                std::abort();
-            }
-            return process_info->tid;
-        }
-
         bool ShouldDeferForInit(ServiceName service) {
             /* Once end has been called, we're done. */
             if (g_ended_initial_defers) {
@@ -315,7 +355,7 @@ namespace sts::sm::impl {
             return service == ServiceName::Encode("fsp-srv");
         }
 
-        Result GetMitmServiceHandleImpl(Handle *out, ServiceInfo *service_info, u64 pid) {
+        Result GetMitmServiceHandleImpl(Handle *out, ServiceInfo *service_info, u64 pid, ncm::TitleId title_id) {
             /* Send command to query if we should mitm. */
             {
                 IpcCommand c;
@@ -329,7 +369,7 @@ namespace sts::sm::impl {
                 info->magic = SFCI_MAGIC;
                 info->cmd_id = 65000;
                 info->pid = pid;
-                info->tid = GetTitleIdForMitm(pid);
+                info->tid = title_id;
                 R_TRY(ipcDispatch(service_info->mitm_query_h.Get()));
             }
 
@@ -372,14 +412,19 @@ namespace sts::sm::impl {
             /* Clear handle output. */
             *out = INVALID_HANDLE;
 
-            /* If not mitm'd or mitm service is requesting, get normal session. */
-            if (!IsValidProcessId(service_info->mitm_pid) || service_info->mitm_pid == pid) {
-                return svcConnectToPort(out, service_info->port_h.Get());
+            /* Check if we should return a mitm handle. */
+            if (IsValidProcessId(service_info->mitm_pid) && service_info->mitm_pid != pid) {
+                /* Get title id, ensure that we're allowed to mitm the given title. */
+                const ncm::TitleId title_id = GetTitleIdForMitm(pid);
+                if (!IsMitmDisallowed(title_id)) {
+                    /* We're mitm'd. Assert, because mitm service host dead is an error state. */
+                    R_ASSERT(GetMitmServiceHandleImpl(out, service_info, pid, title_id));
+                    return ResultSuccess;
+                }
             }
 
-            /* We're mitm'd. Assert, because mitm service host dead is an error state. */
-            R_ASSERT(GetMitmServiceHandleImpl(out, service_info, pid));
-            return ResultSuccess;
+            /* We're not returning a mitm handle, so just return a normal port handle. */
+            return svcConnectToPort(out, service_info->port_h.Get());
         }
 
         Result RegisterServiceImpl(Handle *out, u64 pid, ServiceName service, size_t max_sessions, bool is_light) {
@@ -501,7 +546,7 @@ namespace sts::sm::impl {
 
         /* Get service info. Check to see if we need to defer this until later. */
         ServiceInfo *service_info = GetServiceInfo(service);
-        if (service_info == nullptr || ShouldDeferForInit(service) || service_info->mitm_waiting_ack) {
+        if (service_info == nullptr || ShouldDeferForInit(service) || HasFutureMitmDeclaration(service) || service_info->mitm_waiting_ack) {
             return ResultServiceFrameworkRequestDeferredByUser;
         }
 
@@ -637,6 +682,9 @@ namespace sts::sm::impl {
             *out_query = qry_hnd.Move();
         }
 
+        /* Clear the future declaration, if one exists. */
+        ClearFutureMitmDeclaration(service);
+
         return ResultSuccess;
     }
 
@@ -665,6 +713,30 @@ namespace sts::sm::impl {
 
         /* Free Mitm session info. */
         service_info->FreeMitm();
+        return ResultSuccess;
+    }
+
+    Result DeclareFutureMitm(u64 pid, ServiceName service) {
+        /* Validate service name. */
+        R_TRY(ValidateServiceName(service));
+
+        /* Check that the process is registered and allowed to register the service. */
+        if (!IsInitialProcess(pid)) {
+            ProcessInfo *proc = GetProcessInfo(pid);
+            if (proc == nullptr) {
+                return ResultSmInvalidClient;
+            }
+
+            R_TRY(ValidateAccessControl(AccessControlEntry(proc->access_control, proc->access_control_size), service, true, false));
+        }
+
+        /* Check that mitm hasn't already been registered or declared. */
+        if (HasMitm(service) || HasFutureMitmDeclaration(service)) {
+            return ResultSmAlreadyRegistered;
+        }
+
+        /* Try to forward declare it. */
+        R_TRY(AddFutureMitmDeclaration(service));
         return ResultSuccess;
     }
 

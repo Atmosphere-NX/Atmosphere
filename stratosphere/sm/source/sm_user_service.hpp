@@ -38,6 +38,7 @@ namespace sts::sm {
                 AtmosphereAcknowledgeMitmSession = 65003,
                 AtmosphereHasMitm                = 65004,
                 AtmosphereWaitMitm               = 65005,
+                AtmosphereDeclareFutureMitm      = 65006,
 
                 AtmosphereHasService             = 65100,
                 AtmosphereWaitService            = 65101,
@@ -60,6 +61,7 @@ namespace sts::sm {
             virtual Result AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<ncm::TitleId> client_tid, Out<MovedHandle> fwd_h, ServiceName service);
             virtual Result AtmosphereHasMitm(Out<bool> out, ServiceName service);
             virtual Result AtmosphereWaitMitm(ServiceName service);
+            virtual Result AtmosphereDeclareFutureMitm(ServiceName service);
 
             virtual Result AtmosphereHasService(Out<bool> out, ServiceName service);
             virtual Result AtmosphereWaitService(ServiceName service);
@@ -75,6 +77,7 @@ namespace sts::sm {
                 MAKE_SERVICE_COMMAND_META(UserService, AtmosphereAcknowledgeMitmSession),
                 MAKE_SERVICE_COMMAND_META(UserService, AtmosphereHasMitm),
                 MAKE_SERVICE_COMMAND_META(UserService, AtmosphereWaitMitm),
+                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereDeclareFutureMitm),
 
                 MAKE_SERVICE_COMMAND_META(UserService, AtmosphereHasService),
                 MAKE_SERVICE_COMMAND_META(UserService, AtmosphereWaitService),

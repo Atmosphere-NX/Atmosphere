@@ -134,6 +134,10 @@ namespace sts::boot2 {
             return true;
         }
 
+        inline bool IsNewLine(char c) {
+            return c == '\r' || c == '\n';
+        }
+
         void LaunchTitle(u64 *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
             u64 process_id = 0;
 
@@ -201,7 +205,8 @@ namespace sts::boot2 {
             }
         }
 
-        void LaunchFlaggedProgramsFromSdCard() {
+        template<typename F>
+        void IterateOverFlaggedTitlesOnSdCard(F f) {
             /* Validate that the titles directory exists. */
             DIR *titles_dir = opendir("sdmc:/atmosphere/titles");
             if (titles_dir == nullptr) {
@@ -216,19 +221,90 @@ namespace sts::boot2 {
                 if (std::strlen(ent->d_name) == 2 * sizeof(ncm::TitleId) && IsHexadecimal(ent->d_name)) {
                     /* Check if we've already launched the title. */
                     ncm::TitleId title_id{std::strtoul(ent->d_name, nullptr, 16)};
-                    if (pm::info::HasLaunchedTitle(title_id)) {
-                        continue;
-                    }
 
                     /* Check if the title is flagged. */
                     if (!cfg::HasTitleSpecificFlag(title_id, "boot2")) {
                         continue;
                     }
 
-                    /* Actually launch the title. */
-                    LaunchTitle(nullptr, ncm::TitleLocation::Make(title_id, ncm::StorageId::None), 0);
+                    /* Call the iteration callback. */
+                    f(title_id);
                 }
             }
+        }
+
+        void DetectAndDeclareFutureMitms() {
+            IterateOverFlaggedTitlesOnSdCard([](ncm::TitleId title_id) {
+                /* When we find a flagged program, check if it has a mitm list. */
+                char mitm_list[0x400];
+                size_t mitm_list_size = 0;
+
+                /* Read the mitm list off the SD card. */
+                {
+                    char path[FS_MAX_PATH];
+                    std::snprintf(mitm_list, sizeof(mitm_list), "sdmc:/atmosphere/titles/%016lx/mitm.lst", static_cast<u64>(title_id));
+                    FILE *f = fopen(path, "rb");
+                    if (f == nullptr) {
+                        return;
+                    }
+                    mitm_list_size = static_cast<size_t>(fread(mitm_list, 1, sizeof(mitm_list), f));
+                    fclose(f);
+                }
+
+                /* Validate read size. */
+                if (mitm_list_size > sizeof(mitm_list) || mitm_list_size == 0) {
+                    return;
+                }
+
+                /* Iterate over the contents of the file. */
+                /* We expect one service name per non-empty line, 1-8 characters. */
+                size_t offset = 0;
+                while (offset < mitm_list_size) {
+                    /* Continue to the start of the next name. */
+                    while (IsNewLine(mitm_list[offset])) {
+                        offset++;
+                    }
+                    if (offset >= mitm_list_size) {
+                        break;
+                    }
+
+                    /* Get the length of the current name. */
+                    size_t name_len;
+                    for (name_len = 0; name_len <= sizeof(sm::ServiceName) && offset + name_len < mitm_list_size; name_len++) {
+                        if (IsNewLine(mitm_list[offset + name_len])) {
+                            break;
+                        }
+                    }
+
+                    /* Allow empty lines. */
+                    if (name_len == 0) {
+                        continue;
+                    }
+
+                    /* Don't allow invalid lines. */
+                    if (name_len > sizeof(sm::ServiceName)) {
+                        std::abort();
+                    }
+
+                    /* Declare the service. */
+                    R_ASSERT(sm::mitm::DeclareFutureMitm(sm::ServiceName::Encode(mitm_list + offset, name_len)));
+
+                    /* Advance to the next line. */
+                    offset += name_len;
+                }
+            });
+        }
+
+        void LaunchFlaggedProgramsOnSdCard() {
+            IterateOverFlaggedTitlesOnSdCard([](ncm::TitleId title_id) {
+                /* Check if we've already launched the title. */
+                if (pm::info::HasLaunchedTitle(title_id)) {
+                    return;
+                }
+
+                /* Launch the title. */
+                LaunchTitle(nullptr, ncm::TitleLocation::Make(title_id, ncm::StorageId::None), 0);
+            });
         }
 
     }
@@ -258,8 +334,12 @@ namespace sts::boot2 {
         if (maintenance) {
             pm::bm::SetMaintenanceBoot();
         }
+
         /* Launch Atmosphere dmnt, using FsStorageId_None to force SD card boot. */
         LaunchTitle(nullptr, ncm::TitleLocation::Make(ncm::TitleId::Dmnt, ncm::StorageId::None), 0);
+
+        /* Check for and forward declare non-atmosphere mitm modules. */
+        DetectAndDeclareFutureMitms();
 
         /* Launch additional programs. */
         if (maintenance) {
@@ -272,9 +352,8 @@ namespace sts::boot2 {
             LaunchList(AdditionalLaunchPrograms, NumAdditionalLaunchPrograms);
         }
 
-
         /* Launch user programs off of the SD. */
-        LaunchFlaggedProgramsFromSdCard();
+        LaunchFlaggedProgramsOnSdCard();
 
         /* We no longer need the SD card. */
         fsdevUnmountAll();

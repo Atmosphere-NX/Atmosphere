@@ -38,6 +38,7 @@ namespace sts::sm::impl {
     Result WaitMitm(ServiceName service);
     Result InstallMitm(Handle *out, Handle *out_query, u64 pid, ServiceName service);
     Result UninstallMitm(u64 pid, ServiceName service);
+    Result DeclareFutureMitm(u64 pid, ServiceName service);
     Result AcknowledgeMitmSession(u64 *out_pid, ncm::TitleId *out_tid, Handle *out_hnd, u64 pid, ServiceName service);
 
     /* Dmnt record extensions. */
