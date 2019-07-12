@@ -75,6 +75,12 @@ namespace sts::sm {
         return impl::WaitMitm(service);
     }
 
+    Result UserService::AtmosphereDeclareFutureMitm(ServiceName service) {
+        R_TRY(this->EnsureInitialized());
+        return impl::DeclareFutureMitm(this->pid, service);
+    }
+
+
     Result UserService::AtmosphereHasService(Out<bool> out, ServiceName service) {
         R_TRY(this->EnsureInitialized());
         return impl::HasService(out.GetPointer(), service);
