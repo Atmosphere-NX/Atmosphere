@@ -251,7 +251,7 @@ namespace sts::creport {
                 this->result = ResultCreportUserBreak;
                 /* Try to parse out the user break result. */
                 if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
-                    if (IsAddressReadable(this->debug_handle, d.info.exception.specific.user_break.address, sizeof(user_result))) {
+                    if (IsAddressReadable(this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result))) {
                         svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
                     }
                 }
