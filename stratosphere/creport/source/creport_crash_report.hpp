@@ -15,94 +15,87 @@
  */
 
 #pragma once
-
 #include <switch.h>
 #include <stratosphere.hpp>
-#include <cstdio>
 #include <map>
 
-#include "creport_debug_types.hpp"
-#include "creport_thread_info.hpp"
-#include "creport_code_info.hpp"
+#include "creport_threads.hpp"
+#include "creport_modules.hpp"
 
-class CrashReport {
-    private:
-        Handle debug_handle = INVALID_HANDLE;
-        bool has_extra_info;
-        Result result = ResultCreportIncompleteReport;
+namespace sts::creport {
 
-        /* Attach Process Info. */
-        AttachProcessInfo process_info{};
-        u64 dying_message_address = 0;
-        u64 dying_message_size = 0;
-        u8 dying_message[0x1000]{};
+    class CrashReport {
+        private:
+            static constexpr size_t DyingMessageSizeMax = 0x1000;
+        private:
+            Handle debug_handle = INVALID_HANDLE;
+            bool has_extra_info = true;
+            Result result = ResultCreportIncompleteReport;
 
-        static_assert(sizeof(dying_message) == 0x1000, "Incorrect definition for dying message!");
+            /* Attach process info. */
+            svc::DebugInfoAttachProcess process_info = {};
+            u64 dying_message_address = 0;
+            u64 dying_message_size = 0;
+            u8  dying_message[DyingMessageSizeMax] = {};
 
-        /* Exception Info. */
-        ExceptionInfo exception_info{};
-        u64 crashed_thread_id = 0;
-        ThreadInfo crashed_thread_info;
+            /* Exception info. */
+            svc::DebugInfoException exception_info = {};
+            u64 crashed_thread_id = 0;
+            ThreadInfo crashed_thread;
 
-        /* Extra Info. */
-        CodeList code_list;
-        ThreadList thread_list;
+            /* Lists. */
+            ModuleList module_list;
+            ThreadList thread_list;
 
-        /* Meta, used for building list. */
-        std::map<u64, u64> thread_tls_map;
-
-    public:
-        void BuildReport(u64 pid, bool has_extra_info);
-        FatalContext *GetFatalContext();
-        void SaveReport();
-
-        bool IsAddressReadable(u64 address, u64 size, MemoryInfo *mi = NULL);
-
-        static void Memdump(FILE *f, const char *prefix, const void *data, size_t size);
-
-        Result GetResult() {
-            return this->result;
-        }
-
-        bool WasSuccessful() {
-            return this->result != ResultCreportIncompleteReport;
-        }
-
-        bool OpenProcess(u64 pid) {
-            return R_SUCCEEDED(svcDebugActiveProcess(&debug_handle, pid));
-        }
-
-        bool IsOpen() {
-            return this->debug_handle != INVALID_HANDLE;
-        }
-
-        void Close() {
-            if (IsOpen()) {
-                svcCloseHandle(debug_handle);
-                debug_handle = INVALID_HANDLE;
+            /* Meta, used for building module/thread list. */
+            std::map<u64, u64> thread_tls_map;
+        public:
+            Result GetResult() const {
+                return this->result;
             }
-        }
 
-        bool IsApplication() {
-            return (process_info.flags & 0x40) != 0;
-        }
+            bool IsComplete() const {
+                return this->result != ResultCreportIncompleteReport;
+            }
 
-        bool Is64Bit() {
-            return (process_info.flags & 0x01) != 0;
-        }
+            bool IsOpen() const {
+                return this->debug_handle != INVALID_HANDLE;
+            }
 
-        bool IsUserBreak() {
-            return this->exception_info.type == DebugExceptionType::UserBreak;
-        }
-    private:
-        void ProcessExceptions();
-        void ProcessDyingMessage();
-        void HandleAttachProcess(DebugEventInfo &d);
-        void HandleException(DebugEventInfo &d);
-        void HandleAttachThread(DebugEventInfo &d);
+            bool IsApplication() const {
+                return (this->process_info.flags & svc::CreateProcessFlag_IsApplication) != 0;
+            }
 
-        void SaveToFile(FILE *f);
+            bool Is64Bit() const {
+                return (this->process_info.flags & svc::CreateProcessFlag_Is64Bit) != 0;
+            }
 
-        void EnsureReportDirectories();
-        bool GetCurrentTime(u64 *out);
-};
+            bool IsUserBreak() const {
+                return this->exception_info.type == svc::DebugExceptionType::UserBreak;
+            }
+
+            bool OpenProcess(u64 process_id) {
+                return R_SUCCEEDED(svcDebugActiveProcess(&this->debug_handle, process_id));
+            }
+
+            void Close() {
+                if (this->IsOpen()) {
+                    svcCloseHandle(this->debug_handle);
+                    this->debug_handle = INVALID_HANDLE;
+                }
+            }
+
+            void BuildReport(u64 process_id, bool has_extra_info);
+            void GetFatalContext(FatalContext *out) const;
+            void SaveReport();
+        private:
+            void ProcessExceptions();
+            void ProcessDyingMessage();
+            void HandleDebugEventInfoAttachProcess(const svc::DebugEventInfo &d);
+            void HandleDebugEventInfoAttachThread(const svc::DebugEventInfo &d);
+            void HandleDebugEventInfoException(const svc::DebugEventInfo &d);
+
+            void SaveToFile(FILE *f_report);
+    };
+
+}
