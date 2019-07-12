@@ -251,13 +251,8 @@ namespace sts::creport {
                 this->result = ResultCreportUserBreak;
                 /* Try to parse out the user break result. */
                 if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
-                    Result user_result = ResultSuccess;
                     if (IsAddressReadable(this->debug_handle, d.info.exception.specific.user_break.address, sizeof(user_result))) {
-                        svcReadDebugProcessMemory(&user_result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(user_result));
-                    }
-                    /* Only copy over the user result if it gives us information (as by default nnSdk uses the success code, which is confusing). */
-                    if (R_FAILED(user_result)) {
-                        this->result = user_result;
+                        svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
                     }
                 }
                 break;
