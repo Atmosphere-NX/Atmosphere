@@ -28,51 +28,6 @@
 #include "ldr_process_creation.hpp"
 #include "ldr_ro_manager.hpp"
 
-/* TODO: Move into libstratosphere header? */
-namespace sts::svc {
-
-    namespace {
-
-        enum CreateProcessFlag : u32 {
-            /* Is 64 bit? */
-            CreateProcessFlag_Is64Bit       = (1 << 0),
-
-            /* What kind of address space? */
-            CreateProcessFlag_AddressSpaceShift             = 1,
-            CreateProcessFlag_AddressSpaceMask              = (7 << CreateProcessFlag_AddressSpaceShift),
-            CreateProcessFlag_AddressSpace32Bit             = (ldr::Npdm::AddressSpaceType_32Bit << CreateProcessFlag_AddressSpaceShift),
-            CreateProcessFlag_AddressSpace64BitDeprecated   = (ldr::Npdm::AddressSpaceType_64BitDeprecated << CreateProcessFlag_AddressSpaceShift),
-            CreateProcessFlag_AddressSpace32BitWithoutAlias = (ldr::Npdm::AddressSpaceType_32BitWithoutAlias << CreateProcessFlag_AddressSpaceShift),
-            CreateProcessFlag_AddressSpace64Bit             = (ldr::Npdm::AddressSpaceType_64Bit << CreateProcessFlag_AddressSpaceShift),
-
-            /* Should JIT debug be done on crash? */
-            CreateProcessFlag_EnableDebug   = (1 << 4),
-
-            /* Should ASLR be enabled for the process? */
-            CreateProcessFlag_EnableAslr    = (1 << 5),
-
-            /* Is the process an application? */
-            CreateProcessFlag_IsApplication = (1 << 6),
-
-            /* 4.x deprecated: Should use secure memory? */
-            CreateProcessFlag_DeprecatedUseSecureMemory = (1 << 7),
-
-            /* 5.x+ Pool partition type. */
-            CreateProcessFlag_PoolPartitionShift            = 7,
-            CreateProcessFlag_PoolPartitionMask             = (0xF << CreateProcessFlag_PoolPartitionShift),
-            CreateProcessFlag_PoolPartitionApplication      = (ldr::Acid::PoolPartition_Application << CreateProcessFlag_PoolPartitionShift),
-            CreateProcessFlag_PoolPartitionApplet           = (ldr::Acid::PoolPartition_Applet << CreateProcessFlag_PoolPartitionShift),
-            CreateProcessFlag_PoolPartitionSystem           = (ldr::Acid::PoolPartition_System << CreateProcessFlag_PoolPartitionShift),
-            CreateProcessFlag_PoolPartitionSystemNonSecure  = (ldr::Acid::PoolPartition_SystemNonSecure << CreateProcessFlag_PoolPartitionShift),
-
-            /* 7.x+ Should memory allocation be optimized? This requires IsApplication. */
-            CreateProcessFlag_OptimizeMemoryAllocation = (1 << 11),
-        };
-
-    }
-
-}
-
 namespace sts::ldr {
 
     namespace {

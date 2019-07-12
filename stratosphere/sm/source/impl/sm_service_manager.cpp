@@ -247,7 +247,10 @@ namespace sts::sm::impl {
         bool IsMitmDisallowed(ncm::TitleId title_id) {
             /* Mitm used on certain titles can prevent the boot process from completing. */
             /* TODO: Is there a way to do this that's less hardcoded? Needs design thought. */
-            return title_id == ncm::TitleId::Loader || title_id == ncm::TitleId::Boot || title_id == ncm::TitleId::AtmosphereMitm;
+            return title_id == ncm::TitleId::Loader ||
+                   title_id == ncm::TitleId::Boot ||
+                   title_id == ncm::TitleId::AtmosphereMitm ||
+                   title_id == ncm::TitleId::Creport;
         }
 
         Result AddFutureMitmDeclaration(ServiceName service) {
