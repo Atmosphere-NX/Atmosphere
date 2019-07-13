@@ -108,8 +108,8 @@ int main(int argc, char **argv) {
 
     /* Try to terminate the process. */
     {
-        auto ns_holder = sts::sm::ScopedServiceHolder<nsdevInitialize, nsdevExit>();
-        if (R_SUCCEEDED(ns_holder.GetResult())) {
+        sts::sm::ScopedServiceHolder<nsdevInitialize, nsdevExit> ns_holder;
+        if (ns_holder) {
             nsdevTerminateProcess(crashed_pid);
         }
     }
