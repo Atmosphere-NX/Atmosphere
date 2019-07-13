@@ -29,26 +29,6 @@ namespace sts::creport {
         constexpr size_t DyingMessageAddressOffset = 0x1C0;
 
         /* Helper functions. */
-        bool IsAddressReadable(Handle debug_handle, u64 address, size_t size) {
-            MemoryInfo mi;
-            u32 pi;
-            if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, address))) {
-                return false;
-            }
-
-            /* Must be read or read-write */
-            if ((mi.perm | Perm_W) != Perm_Rw) {
-                return false;
-            }
-
-            /* Must have space for both userdata address and userdata size. */
-            if (address < mi.addr || mi.addr + mi.size < address + size) {
-                return false;
-            }
-
-            return true;
-        }
-
         bool TryGetCurrentTimestamp(u64 *out) {
             /* Clear output. */
             *out = 0;
@@ -63,12 +43,12 @@ namespace sts::creport {
 
             /* Try to get the current time. */
             {
-                auto time_holder = sm::ScopedServiceHolder<timeInitialize, timeExit>();
-                return R_SUCCEEDED(time_holder.GetResult()) && R_SUCCEEDED(timeGetCurrentTime(TimeType_LocalSystemClock, out));
+                sm::ScopedServiceHolder<timeInitialize, timeExit> time_holder;
+                return time_holder && R_SUCCEEDED(timeGetCurrentTime(TimeType_LocalSystemClock, out));
             }
         }
 
-        void EnsureReportDirectories() {
+        void TryCreateReportDirectories() {
             mkdir("sdmc:/atmosphere", S_IRWXU);
             mkdir("sdmc:/atmosphere/crash_reports", S_IRWXU);
             mkdir("sdmc:/atmosphere/crash_reports/dumps", S_IRWXU);
@@ -131,13 +111,14 @@ namespace sts::creport {
                 this->module_list.FindModulesFromThreadInfo(this->debug_handle, this->thread_list.GetThreadInfo(i));
             }
 
-            /* Nintendo's creport builds the report here, but we'll do it later. */
+            /* Nintendo's creport saves the report to erpt here, but we'll save to SD card later. */
         }
     }
 
     void CrashReport::GetFatalContext(FatalContext *out) const {
         std::memset(out, 0, sizeof(*out));
 
+        /* TODO: Support generating 32-bit fatal contexts? */
         out->is_aarch32 = false;
         out->type = static_cast<u32>(this->exception_info.type);
 
@@ -162,10 +143,6 @@ namespace sts::creport {
     }
 
     void CrashReport::ProcessExceptions() {
-        if (!this->IsOpen()) {
-            return;
-        }
-
         /* Loop all debug events. */
         svc::DebugEventInfo d;
         while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), this->debug_handle))) {
@@ -201,10 +178,6 @@ namespace sts::creport {
         const u64 address = this->process_info.user_exception_context_address + DyingMessageAddressOffset;
         u64 userdata_address = 0;
         u64 userdata_size = 0;
-
-        if (!IsAddressReadable(this->debug_handle, address, sizeof(userdata_address) + sizeof(userdata_size))) {
-            return;
-        }
 
         /* Read userdata address. */
         if (R_FAILED(svcReadDebugProcessMemory(&userdata_address, this->debug_handle, address, sizeof(userdata_address)))) {
@@ -251,9 +224,7 @@ namespace sts::creport {
                 this->result = ResultCreportUserBreak;
                 /* Try to parse out the user break result. */
                 if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
-                    if (IsAddressReadable(this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result))) {
-                        svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
-                    }
+                    svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
                 }
                 break;
             case svc::DebugExceptionType::UndefinedSystemCall:
@@ -292,18 +263,13 @@ namespace sts::creport {
             return;
         }
 
-        /* Validate that we can read the dying message. */
-        if (!IsAddressReadable(this->debug_handle, this->dying_message_address, this->dying_message_size)) {
-            return;
-        }
-
         /* Read the dying message. */
         svcReadDebugProcessMemory(this->dying_message, this->debug_handle, this->dying_message_address, this->dying_message_size);
     }
 
     void CrashReport::SaveReport() {
-        /* Ensure path exists. */
-        EnsureReportDirectories();
+        /* Try to ensure path exists. */
+        TryCreateReportDirectories();
 
         /* Get a timestamp. */
         u64 timestamp;

@@ -136,7 +136,7 @@ namespace sts::creport {
             return false;
         }
 
-        /* In aarch32 mode svcGetDebugThreadParam does not set the LR, FP, and SP registers correctly. */
+        /* In aarch32 mode svcGetDebugThreadContext does not set the LR, FP, and SP registers correctly. */
         if (!is_64_bit) {
             this->context.fp = this->context.cpu_gprs[11].x;
             this->context.sp = this->context.cpu_gprs[13].x;

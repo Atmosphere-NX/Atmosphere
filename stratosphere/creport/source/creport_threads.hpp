@@ -45,6 +45,7 @@ namespace sts::creport {
             u64 GetGeneralPurposeRegister(size_t i) const {
                 return this->context.cpu_gprs[i].x;
             }
+
             u64 GetPC() const {
                 return this->context.pc.x;
             }
