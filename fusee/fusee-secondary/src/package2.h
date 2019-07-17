@@ -55,6 +55,7 @@
 #define PACKAGE2_MINVER_910_CURRENT 0xE
 
 #define NX_BOOTLOADER_PACKAGE2_LOAD_ADDRESS ((void *)(0xA9800000ull))
+#define DRAM_BASE_PHYSICAL (0x80000000)
 
 typedef struct {
     union {

@@ -315,7 +315,7 @@ void setup_current_core_state(void) {
     uint64_t temp_reg;
 
     /* Setup system registers. */
-    SET_SYSREG(spsr_el3, 0b1111 << 6 | 0b0101); /* use EL2h+DAIF set initially, may be overwritten later. Not in official code */
+    SET_SYSREG(spsr_el3, 0b1111 << 6 | 0b1001); /* use EL2h+DAIF set initially, may be overwritten later. Not in official code */
 
     SET_SYSREG(actlr_el3, 0x73ull);
     SET_SYSREG(actlr_el2, 0x73ull);
