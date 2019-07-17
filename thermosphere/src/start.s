@@ -24,8 +24,23 @@
 .type       _start, %function
 
 _start:
+    b       start
+
+.global     g_kernelEntrypoint
+g_kernelEntrypoint:
+    .quad   0
+
+start:
     // Disable interrupts
     msr     daifset, 0b1111
+
+    // Save arg, load entrypoint & spsr
+    mov     x19, x0
+    ldr     x8, g_kernelEntrypoint
+    msr     elr_el2, x8
+    mov     x8, #(0b1111 << 6 | 0b0101) // EL1h+DAIF
+    msr     spsr_el2, x8
+    eret
 
     // Set VBAR
     ldr     x8, =__vectors_start__
@@ -43,6 +58,10 @@ _start:
     sub     x2, x2, x0
     bl      memset
 
-    b       . // FIXME!
+    // TODO
+
+    // Jump to kernel
+    mov     x0, x19
+    eret
 
 .pool
