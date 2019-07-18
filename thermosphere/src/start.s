@@ -18,13 +18,14 @@
 #define cpuactlr_el1 s3_1_c15_c2_0
 #define cpuectlr_el1 s3_1_c15_c2_1
 
-.section    .text.start, "ax", %progbits
+.section    .crt0, "ax", %progbits
 .align      3
 .global     _start
 .type       _start, %function
 
 _start:
     b       start
+    nop
 
 .global     g_kernelEntrypoint
 g_kernelEntrypoint:
@@ -40,7 +41,10 @@ start:
     msr     elr_el2, x8
     mov     x8, #(0b1111 << 6 | 0b0101) // EL1h+DAIF
     msr     spsr_el2, x8
-    eret
+
+    // Make sure the regs have been set
+    dsb     sy
+    isb
 
     // Set VBAR
     ldr     x8, =__vectors_start__
@@ -49,6 +53,10 @@ start:
     // Set tmp stack
     ldr     x8, =__stacks_top__
     mov     sp, x8
+
+    // Make sure the regs have been set
+    dsb     sy
+    isb
 
     // Don't call init array to save space?
     // Clear BSS
@@ -59,9 +67,12 @@ start:
     bl      memset
 
     // TODO
+    bl      main
 
     // Jump to kernel
     mov     x0, x19
+    dsb     sy
+    isb
     eret
 
 .pool

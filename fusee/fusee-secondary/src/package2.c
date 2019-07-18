@@ -362,7 +362,7 @@ static void package2_fixup_thermosphere_and_entrypoint(package2_header_t *packag
     }
 
     /* Swap kernel entrypoint with Thermosphère */
-    *(uint32_t *)(dst + 4) = DRAM_BASE_PHYSICAL + package2->metadata.entrypoint;
+    *(uint64_t *)(dst + 8) = DRAM_BASE_PHYSICAL + package2->metadata.entrypoint;
     package2->metadata.entrypoint = 0;
 }
 

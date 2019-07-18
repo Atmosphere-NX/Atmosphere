@@ -15,8 +15,7 @@ SECTIONS
     .text :
     {
         . = ALIGN(8);
-        __main_start__  = ABSOLUTE(.);
-        *(.text.start*)
+        KEEP(*(.crt0*));
         *(.text.unlikely .text.*_unlikely .text.unlikely.*)
         *(.text.exit .text.exit.*)
         *(.text.startup .text.startup.*)
@@ -24,7 +23,7 @@ SECTIONS
         *(.text .stub .text.* .gnu.linkonce.t.*)
         . = ALIGN(0x800);
         __vectors_start__ = ABSOLUTE(.);
-        *(.vectors*);
+        KEEP(*(.vectors*));
         . = ALIGN(8);
     } >main
 
