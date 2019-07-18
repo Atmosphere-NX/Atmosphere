@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2019 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,12 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "utils.h"
-#include "timers.h"
+#pragma once
+#include <stdarg.h>
 
-void wait(u32 microseconds) {
-    u32 old_time = TIMERUS_CNTR_1US_0;
-    while (TIMERUS_CNTR_1US_0 - old_time <= microseconds) {
-        /* Spin-lock. */
-    }
-}
+int serialLog(const char *fmt, ...);
