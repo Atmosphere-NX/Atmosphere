@@ -103,11 +103,11 @@ namespace sts::util {
             }
 
             IntrusiveListNode *GetNext() {
-                return this->prev;
+                return this->next;
             }
 
             const IntrusiveListNode *GetNext() const {
-                return this->prev;
+                return this->next;
             }
     };
 
