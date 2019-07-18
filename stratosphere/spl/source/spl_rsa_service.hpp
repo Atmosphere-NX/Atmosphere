@@ -31,27 +31,6 @@ namespace sts::spl {
             /* Actual commands. */
             virtual Result DecryptRsaPrivateKeyDeprecated(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option);
             virtual Result DecryptRsaPrivateKey(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(RsaService, GetConfig),
-                MAKE_SERVICE_COMMAND_META(RsaService, ExpMod),
-                MAKE_SERVICE_COMMAND_META(RsaService, SetConfig),
-                MAKE_SERVICE_COMMAND_META(RsaService, GenerateRandomBytes),
-                MAKE_SERVICE_COMMAND_META(RsaService, IsDevelopment),
-                MAKE_SERVICE_COMMAND_META(RsaService, SetBootReason,                  FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(RsaService, GetBootReason,                  FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(RsaService, GenerateAesKek),
-                MAKE_SERVICE_COMMAND_META(RsaService, LoadAesKey),
-                MAKE_SERVICE_COMMAND_META(RsaService, GenerateAesKey),
-                MAKE_SERVICE_COMMAND_META(RsaService, DecryptAesKey),
-                MAKE_SERVICE_COMMAND_META(RsaService, CryptAesCtr),
-                MAKE_SERVICE_COMMAND_META(RsaService, ComputeCmac),
-                MAKE_SERVICE_COMMAND_META(RsaService, AllocateAesKeyslot,             FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(RsaService, FreeAesKeyslot,                 FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(RsaService, GetAesKeyslotAvailableEvent,    FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(RsaService, DecryptRsaPrivateKeyDeprecated, FirmwareVersion_400, FirmwareVersion_400),
-                MAKE_SERVICE_COMMAND_META(RsaService, DecryptRsaPrivateKey,           FirmwareVersion_500),
-            };
     };
 
 }
