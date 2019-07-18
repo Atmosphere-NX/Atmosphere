@@ -1,0 +1,94 @@
+/*
+ * Copyright (c) 2018-2019 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+#include <switch.h>
+#include "../defines.hpp"
+#include "../results.hpp"
+
+namespace sts::kvdb {
+
+    class AutoBuffer {
+        NON_COPYABLE(AutoBuffer);
+        private:
+            u8 *buffer;
+            size_t size;
+        public:
+            AutoBuffer() : buffer(nullptr), size(0) { /* ... */ }
+
+            ~AutoBuffer() {
+                this->Reset();
+            }
+
+            AutoBuffer(AutoBuffer &&rhs) {
+                this->buffer = rhs.buffer;
+                this->size = rhs.size;
+                rhs.buffer = nullptr;
+                rhs.size = 0;
+            }
+
+            AutoBuffer& operator=(AutoBuffer &&rhs) {
+                rhs.Swap(*this);
+                return *this;
+            }
+
+            void Swap(AutoBuffer &rhs) {
+                std::swap(this->buffer, rhs.buffer);
+                std::swap(this->size, rhs.size);
+            }
+
+            void Reset() {
+                if (this->buffer != nullptr) {
+                    std::free(this->buffer);
+                    this->buffer = nullptr;
+                    this->size = 0;
+                }
+            }
+
+            u8 *Get() const {
+                return this->buffer;
+            }
+
+            size_t GetSize() const {
+                return this->size;
+            }
+
+            Result Initialize(size_t size) {
+                /* Check that we're not already initialized. */
+                if (this->buffer != nullptr) {
+                    std::abort();
+                }
+
+                /* Allocate a buffer. */
+                this->buffer = static_cast<u8 *>(std::malloc(size));
+                if (this->buffer == nullptr) {
+                    return ResultKvdbAllocationFailed;
+                }
+                this->size = size;
+                return ResultSuccess;
+            }
+
+            Result Initialize(const void *buf, size_t size) {
+                /* Create a new buffer of the right size. */
+                R_TRY(this->Initialize(size));
+
+                /* Copy the input data in. */
+                std::memcpy(this->buffer, buf, size);
+
+                return ResultSuccess;
+            }
+    };
+}

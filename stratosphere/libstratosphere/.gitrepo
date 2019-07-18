@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/Atmosphere-NX/libstratosphere
+	branch = master
+	commit = 0c5dab8022aee28e8e22db7ca144471557a18ff2
+	parent = 3ea9f444dbcd362dc0d07f350dac4898ad98cc83
+	method = merge
+	cmdver = 0.4.0
