@@ -156,7 +156,7 @@ typedef struct {
 } uart_t;
 
 void uart_select(UartDevice dev);
-void uart_init(UartDevice dev, u32 baud);
+void uart_init(UartDevice dev, u32 baud, bool txInverted);
 void uart_wait_idle(UartDevice dev, UartVendorStatus status);
 void uart_send(UartDevice dev, const void *buf, size_t len);
 void uart_recv(UartDevice dev, void *buf, size_t len);

@@ -27,7 +27,7 @@ void uart_select(UartDevice dev) {
     PINMUX_AUX_UARTn_CTS_0(id) = 0x44; /* UART, enable, pull down */
 }
 
-void uart_init(UartDevice dev, u32 baud) {
+void uart_init(UartDevice dev, u32 baud, bool txInverted) {
     volatile uart_t *uart = get_uart_device(dev);
 
     /* Set baud rate. */
@@ -41,11 +41,11 @@ void uart_init(UartDevice dev, u32 baud) {
     uart->UART_IER_DLAB = 0;
     uart->UART_IIR_FCR = UART_FCR_FCR_EN_FIFO | UART_FCR_RX_CLR | UART_FCR_TX_CLR; /* Enable and clear TX and RX FIFOs. */
     uart->UART_LSR;
-    wait(3 * ((baud + 999999) / baud));
+    udelay(3 * ((baud + 999999) / baud));
     uart->UART_LCR = UART_LCR_WD_LENGTH_8; /* Set word length 8. */
     uart->UART_MCR = 0;
     uart->UART_MSR = 0;
-    uart->UART_IRDA_CSR = 0;
+    uart->UART_IRDA_CSR = txInverted ? 2 : 0;
     uart->UART_RX_FIFO_CFG = 1; /* Set RX_FIFO trigger level */
     uart->UART_MIE = 0;
     uart->UART_ASR = 0;
