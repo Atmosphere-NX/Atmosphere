@@ -30,6 +30,8 @@ void uart_select(UartDevice dev) {
 void uart_init(UartDevice dev, u32 baud, bool txInverted) {
     volatile uart_t *uart = get_uart_device(dev);
 
+    uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE);
+
     /* Set baud rate. */
     u32 rate = (8 * baud + 408000000) / (16 * baud);
     uart->UART_LCR = UART_LCR_DLAB; /* Enable DLAB. */
@@ -49,6 +51,8 @@ void uart_init(UartDevice dev, u32 baud, bool txInverted) {
     uart->UART_RX_FIFO_CFG = 1; /* Set RX_FIFO trigger level */
     uart->UART_MIE = 0;
     uart->UART_ASR = 0;
+
+    uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE | UART_VENDOR_STATE_RX_IDLE);
 }
 
 /* This function blocks until the UART device (dev) is in the desired state (status). Make sure the desired state can be reached! */
