@@ -18,4 +18,8 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-void CheckRepairStatus();
+namespace sts::fatal::srv {
+
+    void CheckRepairStatus();
+
+}

@@ -14,39 +14,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <switch.h>
-#include "fatal_types.hpp"
 #include "fatal_event_manager.hpp"
 
-static FatalEventManager g_event_manager;
+namespace sts::fatal::srv {
 
-FatalEventManager *GetEventManager() {
-    return &g_event_manager;
-}
-
-FatalEventManager::FatalEventManager() {
-    /* Just create all the events. */
-    for (size_t i = 0; i < FatalEventManager::NumFatalEvents; i++) {
-        if (R_FAILED(eventCreate(&this->events[i], true))) {
-            std::abort();
+    FatalEventManager::FatalEventManager() {
+        /* Just create all the events. */
+        for (size_t i = 0; i < FatalEventManager::NumFatalEvents; i++) {
+            R_ASSERT(eventCreate(&this->events[i], true));
         }
     }
-}
 
-Result FatalEventManager::GetEvent(Handle *out) {
-    std::scoped_lock<HosMutex> lk{this->lock};
+    Result FatalEventManager::GetEvent(Handle *out) {
+        std::scoped_lock lk{this->lock};
 
-    /* Only allow GetEvent to succeed NumFatalEvents times. */
-    if (this->events_gotten >= FatalEventManager::NumFatalEvents) {
-        return ResultFatalTooManyEvents;
+        /* Only allow GetEvent to succeed NumFatalEvents times. */
+        if (this->num_events_gotten >= FatalEventManager::NumFatalEvents) {
+            return ResultFatalTooManyEvents;
+        }
+
+        *out = this->events[this->num_events_gotten++].revent;
+        return ResultSuccess;
     }
 
-    *out = this->events[this->events_gotten++].revent;
-    return ResultSuccess;
-}
-
-void FatalEventManager::SignalEvents() {
-    for (size_t i = 0; i < FatalEventManager::NumFatalEvents; i++) {
-        eventFire(&this->events[i]);
+    void FatalEventManager::SignalEvents() {
+        for (size_t i = 0; i < FatalEventManager::NumFatalEvents; i++) {
+            eventFire(&this->events[i]);
+        }
     }
+
 }

@@ -18,17 +18,19 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-class FatalEventManager {
-    private:
-        static constexpr size_t NumFatalEvents = 3;
+namespace sts::fatal::srv {
 
-        HosMutex lock;
-        size_t events_gotten = 0;
-        Event events[NumFatalEvents];
-    public:
-        FatalEventManager();
-        Result GetEvent(Handle *out);
-        void SignalEvents();
-};
+    class FatalEventManager {
+        private:
+            static constexpr size_t NumFatalEvents = 3;
 
-FatalEventManager *GetEventManager();
+            HosMutex lock;
+            size_t num_events_gotten = 0;
+            Event events[NumFatalEvents];
+        public:
+            FatalEventManager();
+            Result GetEvent(Handle *out);
+            void SignalEvents();
+    };
+
+}

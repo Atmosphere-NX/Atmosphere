@@ -15,22 +15,10 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
 #include "fatal_task.hpp"
 
-class ErrorReportTask : public IFatalTask {
-    private:
-        bool create_report;
-        Event *erpt_event;
-    private:
-        void EnsureReportDirectories();
-        bool GetCurrentTime(u64 *out);
-        void SaveReportToSdCard();
-    public:
-        ErrorReportTask(FatalThrowContext *ctx, u64 title_id, bool error_report, Event *evt) : IFatalTask(ctx, title_id), create_report(error_report), erpt_event(evt) { }
-        virtual Result Run() override;
-        virtual const char *GetName() const override {
-            return "WriteErrorReport";
-        }
-};
+namespace sts::fatal::srv {
+
+    ITask *GetErrorReportTask(const ThrowContext *ctx);
+
+}

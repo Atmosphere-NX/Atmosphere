@@ -17,16 +17,29 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
-#include "fatal_types.hpp"
+#include "fatal_service.hpp"
 
-class IFatalTask {
-    protected:
-        FatalThrowContext *ctx;
-        u64 title_id;
-    public:
-        IFatalTask(FatalThrowContext *ctx, u64 tid) : ctx(ctx), title_id(tid) { }
-        virtual Result Run() = 0;
-        virtual const char *GetName() const = 0;
-};
+namespace sts::fatal::srv {
 
-void RunFatalTasks(FatalThrowContext *ctx, u64 title_id, bool error_report, Event *erpt_event, Event *battery_event);
+    class ITask {
+        public:
+            static constexpr size_t DefaultStackSize = 0x1000;
+        protected:
+            const ThrowContext *context = nullptr;
+        public:
+            void Initialize(const ThrowContext *context) {
+                this->context = context;
+            }
+
+            virtual Result Run() = 0;
+
+            virtual const char *GetName() const = 0;
+
+            virtual size_t GetStackSize() const {
+                return DefaultStackSize;
+            }
+    };
+
+    void RunTasks(const ThrowContext *ctx);
+
+}

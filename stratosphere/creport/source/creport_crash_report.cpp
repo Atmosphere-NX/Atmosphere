@@ -115,19 +115,22 @@ namespace sts::creport {
         }
     }
 
-    void CrashReport::GetFatalContext(FatalContext *out) const {
+    void CrashReport::GetFatalContext(FatalContext *_out) const {
+        static_assert(sizeof(*_out) == sizeof(sts::fatal::CpuContext));
+        sts::fatal::CpuContext *out = reinterpret_cast<sts::fatal::CpuContext *>(_out);
         std::memset(out, 0, sizeof(*out));
 
         /* TODO: Support generating 32-bit fatal contexts? */
-        out->is_aarch32 = false;
+        out->architecture = fatal::CpuContext::Architecture_Aarch64;
         out->type = static_cast<u32>(this->exception_info.type);
 
-        for (size_t i = 0; i < 29; i++) {
-            out->aarch64_ctx.x[i] = this->crashed_thread.GetGeneralPurposeRegister(i);
+        for (size_t i = 0; i < fatal::aarch64::RegisterName_FP; i++) {
+            out->aarch64_ctx.SetRegisterValue(static_cast<fatal::aarch64::RegisterName>(i), this->crashed_thread.GetGeneralPurposeRegister(i));
         }
-        out->aarch64_ctx.fp = this->crashed_thread.GetFP();
-        out->aarch64_ctx.lr = this->crashed_thread.GetLR();
-        out->aarch64_ctx.pc = this->crashed_thread.GetPC();
+        out->aarch64_ctx.SetRegisterValue(fatal::aarch64::RegisterName_FP, this->crashed_thread.GetFP());
+        out->aarch64_ctx.SetRegisterValue(fatal::aarch64::RegisterName_LR, this->crashed_thread.GetLR());
+        out->aarch64_ctx.SetRegisterValue(fatal::aarch64::RegisterName_SP, this->crashed_thread.GetSP());
+        out->aarch64_ctx.SetRegisterValue(fatal::aarch64::RegisterName_PC, this->crashed_thread.GetPC());
 
         out->aarch64_ctx.stack_trace_size = this->crashed_thread.GetStackTraceSize();
         for (size_t i = 0; i < out->aarch64_ctx.stack_trace_size; i++) {
@@ -135,11 +138,11 @@ namespace sts::creport {
         }
 
         if (this->module_list.GetModuleCount()) {
-            out->aarch64_ctx.start_address = this->module_list.GetModuleStartAddress(0);
+            out->aarch64_ctx.SetBaseAddress(this->module_list.GetModuleStartAddress(0));
         }
 
         /* For ams fatal, which doesn't use afsr0, pass title_id instead. */
-        out->aarch64_ctx.afsr0 = this->process_info.title_id;
+        out->aarch64_ctx.SetTitleIdForAtmosphere(ncm::TitleId{this->process_info.title_id});
     }
 
     void CrashReport::ProcessExceptions() {

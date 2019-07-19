@@ -15,17 +15,10 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
 #include "fatal_task.hpp"
 
-class StopSoundTask : public IFatalTask {
-    private:
-        void StopSound();
-    public:
-        StopSoundTask(FatalThrowContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
-        virtual Result Run() override;
-        virtual const char *GetName() const override {
-            return "SoundTask";
-        }
-};
+namespace sts::fatal::srv {
+
+    ITask *GetStopSoundTask(const ThrowContext *ctx);
+
+}
