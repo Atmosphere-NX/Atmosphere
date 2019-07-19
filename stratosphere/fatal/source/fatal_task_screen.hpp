@@ -15,37 +15,11 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
 #include "fatal_task.hpp"
 
-class ShowFatalTask : public IFatalTask {
-    private:
-        Event *battery_event;
-        ViDisplay display;
-        ViLayer layer;
-        NWindow win;
-        Framebuffer fb;
-    private:
-        Result SetupDisplayInternal();
-        Result SetupDisplayExternal();
-        Result PrepareScreenForDrawing();
-        Result ShowFatal();
-    public:
-        ShowFatalTask(FatalThrowContext *ctx, u64 title_id, Event *evt) : IFatalTask(ctx, title_id), battery_event(evt) { }
-        virtual Result Run() override;
-        virtual const char *GetName() const override {
-            return "ShowFatal";
-        }
-};
+namespace sts::fatal::srv {
 
-class BacklightControlTask : public IFatalTask {
-    private:
-        void TurnOnBacklight();
-    public:
-        BacklightControlTask(FatalThrowContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
-        virtual Result Run() override;
-        virtual const char *GetName() const override {
-            return "BacklightControlTask";
-        }
-};
+    ITask *GetShowFatalTask(const ThrowContext *ctx);
+    ITask *GetBacklightControlTask(const ThrowContext *ctx);
+
+}

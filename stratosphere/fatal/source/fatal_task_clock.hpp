@@ -15,18 +15,10 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
 #include "fatal_task.hpp"
 
-class AdjustClockTask : public IFatalTask {
-    private:
-        Result AdjustClockForModule(PcvModule module, u32 hz);
-        Result AdjustClock();
-    public:
-        AdjustClockTask(FatalThrowContext *ctx, u64 title_id) : IFatalTask(ctx, title_id) { }
-        virtual Result Run() override;
-        virtual const char *GetName() const override {
-            return "AdjustClockTask";
-        }
-};
+namespace sts::fatal::srv {
+
+    ITask *GetAdjustClockTask(const ThrowContext *ctx);
+
+}

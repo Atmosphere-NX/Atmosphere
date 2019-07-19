@@ -14,10 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 #include <switch.h>
-#include "fatal_private.hpp"
-#include "fatal_event_manager.hpp"
 
-Result PrivateService::GetFatalEvent(Out<CopiedHandle> out_h) {
-    return GetEventManager()->GetEvent(out_h.GetHandlePointer());
+namespace sts::fatal::srv {
+
+    Result ThrowFatalForSelf(Result error_code);
+
 }

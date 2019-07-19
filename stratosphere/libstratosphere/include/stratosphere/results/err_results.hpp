@@ -16,18 +16,8 @@
 
 #pragma once
 #include <switch.h>
-#include <stratosphere.hpp>
 
-class PrivateService final : public IServiceObject {
-    private:
-        enum class CommandId {
-            GetFatalEvent = 0,
-        };
-    private:
-        /* Actual commands. */
-        Result GetFatalEvent(Out<CopiedHandle> out_h);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MAKE_SERVICE_COMMAND_META(PrivateService, GetFatalEvent),
-        };
-};
+static constexpr u32 Module_Err = 162;
+
+static constexpr Result ResultErrApplicationAborted  = MAKERESULT(Module_Err, 1);
+static constexpr Result ResultErrSystemModuleAborted = MAKERESULT(Module_Err, 2);

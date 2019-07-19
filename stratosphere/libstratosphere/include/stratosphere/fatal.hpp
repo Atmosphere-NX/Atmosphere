@@ -16,9 +16,5 @@
 
 #pragma once
 #include <switch.h>
-#include <stratosphere.hpp>
 
-#include "fatal_types.hpp"
-
-Result ThrowFatalForSelf(u32 error);
-Result ThrowFatalImpl(u32 error, u64 pid, FatalType policy, FatalCpuContext *cpu_ctx);
+#include "fatal/fatal_types.hpp"

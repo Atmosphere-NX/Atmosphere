@@ -14,378 +14,434 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <switch.h>
-
 #include <atmosphere/version.h>
 
 #include "fatal_task_screen.hpp"
 #include "fatal_config.hpp"
 #include "fatal_font.hpp"
-#include "ams_logo.hpp"
 
-static constexpr u32 FatalScreenWidth = 1280;
-static constexpr u32 FatalScreenHeight = 720;
-static constexpr u32 FatalScreenBpp = 2;
+namespace sts::fatal::srv {
 
-static constexpr u32 FatalScreenWidthAlignedBytes = (FatalScreenWidth * FatalScreenBpp + 63) & ~63;
-static constexpr u32 FatalScreenWidthAligned = FatalScreenWidthAlignedBytes / FatalScreenBpp;
+    /* Include Atmosphere logo into its own anonymous namespace. */
 
-u32 GetPixelOffset(uint32_t x, uint32_t y)
-{
-    u32 tmp_pos;
+    namespace {
 
-    tmp_pos = ((y & 127) / 16) + (x/32*8) + ((y/16/8)*(((FatalScreenWidthAligned/2)/16*8)));
-    tmp_pos *= 16*16 * 4;
+        #include "fatal_ams_logo.inc"
 
-    tmp_pos += ((y%16)/8)*512 + ((x%32)/16)*256 + ((y%8)/2)*64 + ((x%16)/8)*32 + (y%2)*16 + (x%8)*2;//This line is a modified version of code from the Tegra X1 datasheet.
+    }
 
-    return tmp_pos / 2;
-}
+    namespace {
 
-Result ShowFatalTask::SetupDisplayInternal() {
-    ViDisplay display;
-    /* Try to open the display. */
-    R_TRY_CATCH(viOpenDisplay("Internal", &display)) {
-        R_CATCH(ResultViNotFound) {
+        /* Screen definitions. */
+        constexpr u32 FatalScreenWidth = 1280;
+        constexpr u32 FatalScreenHeight = 720;
+        constexpr u32 FatalScreenBpp = 2;
+        constexpr u32 FatalLayerZ = 100;
+
+        constexpr u32 FatalScreenWidthAlignedBytes = (FatalScreenWidth * FatalScreenBpp + 63) & ~63;
+        constexpr u32 FatalScreenWidthAligned = FatalScreenWidthAlignedBytes / FatalScreenBpp;
+
+        /* Pixel calculation helper. */
+        constexpr u32 GetPixelOffset(u32 x, u32 y) {
+            u32 tmp_pos = ((y & 127) / 16) + (x/32*8) + ((y/16/8)*(((FatalScreenWidthAligned/2)/16*8)));
+            tmp_pos *= 16*16 * 4;
+
+            tmp_pos += ((y%16)/8)*512 + ((x%32)/16)*256 + ((y%8)/2)*64 + ((x%16)/8)*32 + (y%2)*16 + (x%8)*2;//This line is a modified version of code from the Tegra X1 datasheet.
+
+            return tmp_pos / 2;
+        }
+
+        /* Task definitions. */
+        class ShowFatalTask : public ITask {
+            private:
+                ViDisplay display;
+                ViLayer layer;
+                NWindow win;
+                Framebuffer fb;
+            private:
+                Result SetupDisplayInternal();
+                Result SetupDisplayExternal();
+                Result PrepareScreenForDrawing();
+                Result ShowFatal();
+            public:
+                virtual Result Run() override;
+                virtual const char *GetName() const override {
+                    return "ShowFatal";
+                }
+                virtual size_t GetStackSize() const override {
+                    return 0x8000;
+                }
+        };
+
+        class BacklightControlTask : public ITask {
+            private:
+                void TurnOnBacklight();
+            public:
+                virtual Result Run() override;
+                virtual const char *GetName() const override {
+                    return "BacklightControlTask";
+                }
+        };
+
+        /* Task globals. */
+        ShowFatalTask g_show_fatal_task;
+        BacklightControlTask g_backlight_control_task;
+
+        /* Task implementations. */
+        Result ShowFatalTask::SetupDisplayInternal() {
+            ViDisplay temp_display;
+            /* Try to open the display. */
+            R_TRY_CATCH(viOpenDisplay("Internal", &temp_display)) {
+                R_CATCH(ResultViNotFound) {
+                    return ResultSuccess;
+                }
+            } R_END_TRY_CATCH;
+
+            /* Guarantee we close the display. */
+            ON_SCOPE_EXIT { viCloseDisplay(&temp_display); };
+
+            /* Turn on the screen. */
+            R_TRY(viSetDisplayPowerState(&temp_display, ViPowerState_On));
+
+            /* Set alpha to 1.0f. */
+            R_TRY(viSetDisplayAlpha(&temp_display, 1.0f));
+
             return ResultSuccess;
         }
-    } R_END_TRY_CATCH;
 
-    /* Guarantee we close the display. */
-    ON_SCOPE_EXIT { viCloseDisplay(&display); };
+        Result ShowFatalTask::SetupDisplayExternal() {
+            ViDisplay temp_display;
+            /* Try to open the display. */
+            R_TRY_CATCH(viOpenDisplay("External", &temp_display)) {
+                R_CATCH(ResultViNotFound) {
+                    return ResultSuccess;
+                }
+            } R_END_TRY_CATCH;
 
-    /* Turn on the screen. */
-    R_TRY(viSetDisplayPowerState(&display, ViPowerState_On));
+            /* Guarantee we close the display. */
+            ON_SCOPE_EXIT { viCloseDisplay(&temp_display); };
 
-    /* Set alpha to 1.0f. */
-    R_TRY(viSetDisplayAlpha(&display, 1.0f));
+            /* Set alpha to 1.0f. */
+            R_TRY(viSetDisplayAlpha(&temp_display, 1.0f));
 
-    return ResultSuccess;
-}
-
-Result ShowFatalTask::SetupDisplayExternal() {
-    ViDisplay display;
-    /* Try to open the display. */
-    R_TRY_CATCH(viOpenDisplay("External", &display)) {
-        R_CATCH(ResultViNotFound) {
             return ResultSuccess;
         }
-    } R_END_TRY_CATCH;
 
-    /* Guarantee we close the display. */
-    ON_SCOPE_EXIT { viCloseDisplay(&display); };
+        Result ShowFatalTask::PrepareScreenForDrawing() {
+            /* Connect to vi. */
+            R_TRY(viInitialize(ViServiceType_Manager));
 
-    /* Set alpha to 1.0f. */
-    R_TRY(viSetDisplayAlpha(&display, 1.0f));
+            /* Close other content. */
+            viSetContentVisibility(false);
 
-    return ResultSuccess;
-}
+            /* Setup the two displays. */
+            R_TRY(SetupDisplayInternal());
+            R_TRY(SetupDisplayExternal());
 
-Result ShowFatalTask::PrepareScreenForDrawing() {
-    /* Connect to vi. */
-    R_TRY(viInitialize(ViServiceType_Manager));
+            /* Open the default display. */
+            R_TRY(viOpenDefaultDisplay(&this->display));
 
-    /* Close other content. */
-    viSetContentVisibility(false);
+            /* Reset the display magnification to its default value. */
+            u32 display_width, display_height;
+            R_TRY(viGetDisplayLogicalResolution(&this->display, &display_width, &display_height));
 
-    /* Setup the two displays. */
-    R_TRY(SetupDisplayInternal());
-    R_TRY(SetupDisplayExternal());
+            /* viSetDisplayMagnification was added in 3.0.0. */
+            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+                R_TRY(viSetDisplayMagnification(&this->display, 0, 0, display_width, display_height));
+            }
 
-    /* Open the default display. */
-    R_TRY(viOpenDefaultDisplay(&this->display));
+            /* Create layer to draw to. */
+            R_TRY(viCreateLayer(&this->display, &this->layer));
 
-    /* Reset the display magnification to its default value. */
-    u32 display_width, display_height;
-    R_TRY(viGetDisplayLogicalResolution(&this->display, &display_width, &display_height));
+            /* Setup the layer. */
+            {
+                /* Display a layer of 1280 x 720 at 1.5x magnification */
+                /* NOTE: N uses 2 (770x400) RGBA4444 buffers (tiled buffer + linear). */
+                /* We use a single 1280x720 tiled RGB565 buffer. */
+                constexpr u32 raw_width = FatalScreenWidth;
+                constexpr u32 raw_height = FatalScreenHeight;
+                constexpr u32 layer_width = ((raw_width) * 3) / 2;
+                constexpr u32 layer_height = ((raw_height) * 3) / 2;
 
-    /* viSetDisplayMagnification was added in 3.0.0. */
-    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
-        R_TRY(viSetDisplayMagnification(&this->display, 0, 0, display_width, display_height));
-    }
+                const float layer_x = static_cast<float>((display_width - layer_width) / 2);
+                const float layer_y = static_cast<float>((display_height - layer_height) / 2);
 
-    /* Create layer to draw to. */
-    R_TRY(viCreateLayer(&this->display, &this->layer));
+                R_TRY(viSetLayerSize(&this->layer, layer_width, layer_height));
 
-    /* Setup the layer. */
-    {
-        /* Display a layer of 1280 x 720 at 1.5x magnification */
-        /* NOTE: N uses 2 (770x400) RGBA4444 buffers (tiled buffer + linear). */
-        /* We use a single 1280x720 tiled RGB565 buffer. */
-        constexpr u32 raw_width = FatalScreenWidth;
-        constexpr u32 raw_height = FatalScreenHeight;
-        constexpr u32 layer_width = ((raw_width) * 3) / 2;
-        constexpr u32 layer_height = ((raw_height) * 3) / 2;
+                /* Set the layer's Z at display maximum, to be above everything else .*/
+                R_TRY(viSetLayerZ(&this->layer, FatalLayerZ));
 
-        const float layer_x = static_cast<float>((display_width - layer_width) / 2);
-        const float layer_y = static_cast<float>((display_height - layer_height) / 2);
-        u64 layer_z;
+                /* Center the layer in the screen. */
+                R_TRY(viSetLayerPosition(&this->layer, layer_x, layer_y));
 
-        R_TRY(viSetLayerSize(&this->layer, layer_width, layer_height));
+                /* Create framebuffer. */
+                R_TRY(nwindowCreateFromLayer(&this->win, &this->layer));
+                R_TRY(framebufferCreate(&this->fb, &this->win, raw_width, raw_height, PIXEL_FORMAT_RGB_565, 1));
+            }
 
-        /* Set the layer's Z at display maximum, to be above everything else .*/
-        /* NOTE: Fatal hardcodes 100 here. */
-        if (R_SUCCEEDED(viGetDisplayMaximumZ(&this->display, &layer_z))) {
-            R_TRY(viSetLayerZ(&this->layer, layer_z));
+            return ResultSuccess;
         }
 
-        /* Center the layer in the screen. */
-        R_TRY(viSetLayerPosition(&this->layer, layer_x, layer_y));
+        Result ShowFatalTask::ShowFatal() {
+            const FatalConfig &config = GetFatalConfig();
 
-        /* Create framebuffer. */
-        R_TRY(nwindowCreateFromLayer(&this->win, &this->layer));
-        R_TRY(framebufferCreate(&this->fb, &this->win, raw_width, raw_height, PIXEL_FORMAT_RGB_565, 1));
-    }
+            /* Prepare screen for drawing. */
+            DoWithSmSession([&]() {
+                R_ASSERT(PrepareScreenForDrawing());
+            });
 
-    return ResultSuccess;
-}
+            /* Dequeue a buffer. */
+            u16 *tiled_buf = reinterpret_cast<u16 *>(framebufferBegin(&this->fb, NULL));
+            if (tiled_buf == nullptr) {
+                return ResultFatalNullGraphicsBuffer;
+            }
 
-Result ShowFatalTask::ShowFatal() {
-    const FatalConfig *config = GetFatalConfig();
+            /* Let the font manager know about our framebuffer. */
+            font::ConfigureFontFramebuffer(tiled_buf, GetPixelOffset);
+            font::SetFontColor(0xFFFF);
 
-    /* Prepare screen for drawing. */
-    DoWithSmSession([&]() {
-        if (R_FAILED(PrepareScreenForDrawing())) {
-            std::abort();
-        }
-    });
+            /* Draw a background. */
+            for (size_t i = 0; i < this->fb.fb_size / sizeof(*tiled_buf); i++) {
+                tiled_buf[i] = 0x39C9;
+            }
 
-    /* Dequeue a buffer. */
-    u16 *tiled_buf = reinterpret_cast<u16 *>(framebufferBegin(&this->fb, NULL));
-    if (tiled_buf == nullptr) {
-        return ResultFatalNullGraphicsBuffer;
-    }
+            /* Draw the atmosphere logo in the bottom right corner. */
+            for (size_t y = 0; y < AtmosphereLogoHeight; y++) {
+                for (size_t x = 0; x < AtmosphereLogoWidth; x++) {
+                    tiled_buf[GetPixelOffset(FatalScreenWidth - AtmosphereLogoWidth - 32 + x, 32 + y)] = AtmosphereLogoData[y * AtmosphereLogoWidth + x];
+                }
+            }
 
-    /* Let the font manager know about our framebuffer. */
-    FontManager::ConfigureFontFramebuffer(tiled_buf, GetPixelOffset);
-    FontManager::SetFontColor(0xFFFF);
-
-    /* Draw a background. */
-    for (size_t i = 0; i < this->fb.fb_size / sizeof(*tiled_buf); i++) {
-        tiled_buf[i] = 0x39C9;
-    }
-
-    /* Draw the atmosphere logo in the bottom right corner. */
-    for (size_t y = 0; y < AMS_LOGO_HEIGHT; y++) {
-        for (size_t x = 0; x < AMS_LOGO_WIDTH; x++) {
-            tiled_buf[GetPixelOffset(FatalScreenWidth - AMS_LOGO_WIDTH - 32 + x, 32 + y)] = AMS_LOGO_BIN[y * AMS_LOGO_WIDTH + x];
-        }
-    }
-
-    /* TODO: Actually draw meaningful shit here. */
-    FontManager::SetPosition(32, 64);
-    FontManager::SetFontSize(16.0f);
-    FontManager::PrintFormat(config->error_msg, R_MODULE(this->ctx->error_code), R_DESCRIPTION(this->ctx->error_code), this->ctx->error_code);
-    FontManager::AddSpacingLines(0.5f);
-    FontManager::PrintFormatLine("Title: %016lX", this->title_id);
-    FontManager::AddSpacingLines(0.5f);
-    FontManager::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", GetFatalConfig()->firmware_version.display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
-    FontManager::AddSpacingLines(1.5f);
-    if (this->ctx->error_code != ResultAtmosphereVersionMismatch) {
-        FontManager::Print(config->error_desc);
-    } else {
-        /* Print a special message for atmosphere version mismatch. */
-        FontManager::Print(u8"Atmosphère version mismatch detected.\n\n"
-                           u8"Please press the POWER Button to restart the console normally, or a VOL button\n"
-                           u8"to reboot to a payload (or RCM, if none is present). If you are unable to\n"
-                           u8"restart the console, hold the POWER Button for 12 seconds to turn the console off.\n\n"
-                           u8"Please ensure that all Atmosphère components are updated.\n"
-                           u8"github.com/Atmosphere-NX/Atmosphere/releases\n");
-    }
-
-    /* Add a line. */
-    for (size_t x = 32; x < FatalScreenWidth - 32; x++) {
-        tiled_buf[GetPixelOffset(x, FontManager::GetY())] = 0xFFFF;
-    }
-
-
-    FontManager::AddSpacingLines(1.5f);
-
-    u32 backtrace_y = FontManager::GetY();
-    u32 backtrace_x = 0;
-
-    /* Print GPRs. */
-    FontManager::SetFontSize(14.0f);
-    FontManager::Print("General Purpose Registers      ");
-    {
-        FontManager::SetPosition(FontManager::GetX() + 2, FontManager::GetY());
-        u32 x = FontManager::GetX();
-        FontManager::Print("PC: ");
-        FontManager::SetPosition(x + 47, FontManager::GetY());
-    }
-    if (this->ctx->cpu_ctx.is_aarch32) {
-        FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.pc);
-    } else {
-        FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.pc);
-    }
-    FontManager::PrintLine("");
-    FontManager::SetPosition(32, FontManager::GetY());
-    FontManager::AddSpacingLines(0.5f);
-    if (this->ctx->cpu_ctx.is_aarch32) {
-        for (size_t i = 0; i < (NumAarch32Gprs / 2); i++) {
-            u32 x = FontManager::GetX();
-            FontManager::PrintFormat("%s:", Aarch32GprNames[i]);
-            FontManager::SetPosition(x + 47, FontManager::GetY());
-            if (this->ctx->has_gprs[i]) {
-                FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.r[i]);
+            /* TODO: Actually draw meaningful shit here. */
+            font::SetPosition(32, 64);
+            font::SetFontSize(16.0f);
+            font::PrintFormat(config.GetErrorMessage(), R_MODULE(this->context->error_code), R_DESCRIPTION(this->context->error_code), this->context->error_code);
+            font::AddSpacingLines(0.5f);
+            font::PrintFormatLine("Title: %016lX", static_cast<u64>(this->context->title_id));
+            font::AddSpacingLines(0.5f);
+            font::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", config.GetFirmwareVersion().display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
+            font::AddSpacingLines(1.5f);
+            if (this->context->error_code != ResultAtmosphereVersionMismatch) {
+                font::Print(config.GetErrorDescription());
             } else {
-                FontManager::PrintMonospaceBlank(8);
+                /* Print a special message for atmosphere version mismatch. */
+                font::Print(u8"Atmosphère version mismatch detected.\n\n"
+                                   u8"Please press the POWER Button to restart the console normally, or a VOL button\n"
+                                   u8"to reboot to a payload (or RCM, if none is present). If you are unable to\n"
+                                   u8"restart the console, hold the POWER Button for 12 seconds to turn the console off.\n\n"
+                                   u8"Please ensure that all Atmosphère components are updated.\n"
+                                   u8"github.com/Atmosphere-NX/Atmosphere/releases\n");
             }
-            FontManager::Print("  ");
-            x = FontManager::GetX();
-            FontManager::PrintFormat("%s:", Aarch32GprNames[i + (NumAarch32Gprs / 2)]);
-            FontManager::SetPosition(x + 47, FontManager::GetY());
-            if (this->ctx->has_gprs[i + (NumAarch32Gprs / 2)]) {
-                FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.r[i + (NumAarch32Gprs / 2)]);
+
+            /* Add a line. */
+            for (size_t x = 32; x < FatalScreenWidth - 32; x++) {
+                tiled_buf[GetPixelOffset(x, font::GetY())] = 0xFFFF;
+            }
+
+            font::AddSpacingLines(1.5f);
+
+            u32 backtrace_y = font::GetY();
+            u32 backtrace_x = 0;
+
+            /* Note architecutre. */
+            const bool is_aarch32 = this->context->cpu_ctx.architecture == CpuContext::Architecture_Aarch32;
+
+            /* Print GPRs. */
+            font::SetFontSize(14.0f);
+            font::Print("General Purpose Registers      ");
+            {
+                font::SetPosition(font::GetX() + 2, font::GetY());
+                u32 x = font::GetX();
+                font::Print("PC: ");
+                font::SetPosition(x + 47, font::GetY());
+            }
+            if (is_aarch32) {
+                font::PrintMonospaceU32(this->context->cpu_ctx.aarch32_ctx.pc);
             } else {
-                FontManager::PrintMonospaceBlank(8);
+                font::PrintMonospaceU64(this->context->cpu_ctx.aarch64_ctx.pc);
+            }
+            font::PrintLine("");
+            font::SetPosition(32, font::GetY());
+            font::AddSpacingLines(0.5f);
+            if (is_aarch32) {
+                for (size_t i = 0; i < (aarch32::RegisterName_GeneralPurposeCount / 2); i++) {
+                    u32 x = font::GetX();
+                    font::PrintFormat("%s:", aarch32::CpuContext::RegisterNameStrings[i]);
+                    font::SetPosition(x + 47, font::GetY());
+                    if (this->context->cpu_ctx.aarch32_ctx.HasRegisterValue(static_cast<aarch32::RegisterName>(i))) {
+                        font::PrintMonospaceU32(this->context->cpu_ctx.aarch32_ctx.r[i]);
+                    } else {
+                        font::PrintMonospaceBlank(8);
+                    }
+                    font::Print("  ");
+                    x = font::GetX();
+                    font::PrintFormat("%s:", aarch32::CpuContext::RegisterNameStrings[i + (aarch32::RegisterName_GeneralPurposeCount / 2)]);
+                    font::SetPosition(x + 47, font::GetY());
+                    if (this->context->cpu_ctx.aarch32_ctx.HasRegisterValue(static_cast<aarch32::RegisterName>(i + (aarch32::RegisterName_GeneralPurposeCount / 2)))) {
+                        font::PrintMonospaceU32(this->context->cpu_ctx.aarch32_ctx.r[i + (aarch32::RegisterName_GeneralPurposeCount / 2)]);
+                    } else {
+                        font::PrintMonospaceBlank(8);
+                    }
+
+                    if (i == (aarch32::RegisterName_GeneralPurposeCount / 2) - 1) {
+                        font::Print("    ");
+                        backtrace_x = font::GetX();
+                    }
+
+                    font::PrintLine("");
+                    font::SetPosition(32, font::GetY());
+                }
+            } else {
+                for (size_t i = 0; i < aarch64::RegisterName_GeneralPurposeCount / 2; i++) {
+                    u32 x = font::GetX();
+                    font::PrintFormat("%s:", aarch64::CpuContext::RegisterNameStrings[i]);
+                    font::SetPosition(x + 47, font::GetY());
+                    if (this->context->cpu_ctx.aarch64_ctx.HasRegisterValue(static_cast<aarch64::RegisterName>(i))) {
+                        font::PrintMonospaceU64(this->context->cpu_ctx.aarch64_ctx.x[i]);
+                    } else {
+                        font::PrintMonospaceBlank(16);
+                    }
+                    font::Print("  ");
+                    x = font::GetX();
+                    font::PrintFormat("%s:", aarch64::CpuContext::RegisterNameStrings[i + (aarch64::RegisterName_GeneralPurposeCount / 2)]);
+                    font::SetPosition(x + 47, font::GetY());
+                    if (this->context->cpu_ctx.aarch64_ctx.HasRegisterValue(static_cast<aarch64::RegisterName>(i + (aarch64::RegisterName_GeneralPurposeCount / 2)))) {
+                        font::PrintMonospaceU64(this->context->cpu_ctx.aarch64_ctx.x[i + (aarch64::RegisterName_GeneralPurposeCount / 2)]);
+                    } else {
+                        font::PrintMonospaceBlank(16);
+                    }
+
+                    if (i == (aarch64::RegisterName_GeneralPurposeCount / 2) - 1) {
+                        font::Print("    ");
+                        backtrace_x = font::GetX();
+                    }
+
+                    font::PrintLine("");
+                    font::SetPosition(32, font::GetY());
+                }
             }
 
-            if (i == (NumAarch32Gprs / 2) - 1) {
-                FontManager::Print("    ");
-                backtrace_x = FontManager::GetX();
+            /* Print Backtrace. */
+            u32 bt_size;
+            if (is_aarch32) {
+                bt_size = this->context->cpu_ctx.aarch32_ctx.stack_trace_size;
+            } else {
+                bt_size = this->context->cpu_ctx.aarch64_ctx.stack_trace_size;
             }
 
-            FontManager::PrintLine("");
-            FontManager::SetPosition(32, FontManager::GetY());
+
+            font::SetPosition(backtrace_x, backtrace_y);
+            if (bt_size == 0) {
+                if (is_aarch32) {
+                    font::Print("Start Address: ");
+                    font::PrintMonospaceU32(this->context->cpu_ctx.aarch32_ctx.base_address);
+                    font::PrintLine("");
+                } else {
+                    font::Print("Start Address: ");
+                    font::PrintMonospaceU64(this->context->cpu_ctx.aarch64_ctx.base_address);
+                    font::PrintLine("");
+                }
+            } else {
+                if (is_aarch32) {
+                    font::Print("Backtrace - Start Address: ");
+                    font::PrintMonospaceU32(this->context->cpu_ctx.aarch32_ctx.base_address);
+                    font::PrintLine("");
+                    font::AddSpacingLines(0.5f);
+                    for (u32 i = 0; i < aarch32::CpuContext::MaxStackTraceDepth / 2; i++) {
+                        u32 bt_cur = 0, bt_next = 0;
+                        if (i < this->context->cpu_ctx.aarch32_ctx.stack_trace_size) {
+                            bt_cur = this->context->cpu_ctx.aarch32_ctx.stack_trace[i];
+                        }
+                        if (i + aarch32::CpuContext::MaxStackTraceDepth / 2 < this->context->cpu_ctx.aarch32_ctx.stack_trace_size) {
+                            bt_next = this->context->cpu_ctx.aarch32_ctx.stack_trace[i + aarch32::CpuContext::MaxStackTraceDepth / 2];
+                        }
+
+                        if (i < this->context->cpu_ctx.aarch32_ctx.stack_trace_size) {
+                            u32 x = font::GetX();
+                            font::PrintFormat("BT[%02d]: ", i);
+                            font::SetPosition(x + 72, font::GetY());
+                            font::PrintMonospaceU32(bt_cur);
+                            font::Print("  ");
+                        }
+
+                        if (i + aarch32::CpuContext::MaxStackTraceDepth / 2 < this->context->cpu_ctx.aarch32_ctx.stack_trace_size) {
+                            u32 x = font::GetX();
+                            font::PrintFormat("BT[%02d]: ", i + aarch32::CpuContext::MaxStackTraceDepth / 2);
+                            font::SetPosition(x + 72, font::GetY());
+                            font::PrintMonospaceU32(bt_next);
+                        }
+
+                        font::PrintLine("");
+                        font::SetPosition(backtrace_x, font::GetY());
+                    }
+                } else {
+                    font::Print("Backtrace - Start Address: ");
+                    font::PrintMonospaceU64(this->context->cpu_ctx.aarch64_ctx.base_address);
+                    font::PrintLine("");
+                    font::AddSpacingLines(0.5f);
+                    for (u32 i = 0; i < aarch64::CpuContext::MaxStackTraceDepth / 2; i++) {
+                        u64 bt_cur = 0, bt_next = 0;
+                        if (i < this->context->cpu_ctx.aarch64_ctx.stack_trace_size) {
+                            bt_cur = this->context->cpu_ctx.aarch64_ctx.stack_trace[i];
+                        }
+                        if (i + aarch64::CpuContext::MaxStackTraceDepth / 2 < this->context->cpu_ctx.aarch64_ctx.stack_trace_size) {
+                            bt_next = this->context->cpu_ctx.aarch64_ctx.stack_trace[i + aarch64::CpuContext::MaxStackTraceDepth / 2];
+                        }
+
+                        if (i < this->context->cpu_ctx.aarch64_ctx.stack_trace_size) {
+                            u32 x = font::GetX();
+                            font::PrintFormat("BT[%02d]: ", i);
+                            font::SetPosition(x + 72, font::GetY());
+                            font::PrintMonospaceU64(bt_cur);
+                            font::Print("  ");
+                        }
+
+                        if (i + aarch64::CpuContext::MaxStackTraceDepth / 2 < this->context->cpu_ctx.aarch64_ctx.stack_trace_size) {
+                            u32 x = font::GetX();
+                            font::PrintFormat("BT[%02d]: ", i + aarch64::CpuContext::MaxStackTraceDepth / 2);
+                            font::SetPosition(x + 72, font::GetY());
+                            font::PrintMonospaceU64(bt_next);
+                        }
+
+                        font::PrintLine("");
+                        font::SetPosition(backtrace_x, font::GetY());
+                    }
+                }
+            }
+
+
+            /* Enqueue the buffer. */
+            framebufferEnd(&fb);
+
+            return ResultSuccess;
         }
-    } else {
-        for (size_t i = 0; i < NumAarch64Gprs / 2; i++) {
-            u32 x = FontManager::GetX();
-            FontManager::PrintFormat("%s:", Aarch64GprNames[i]);
-            FontManager::SetPosition(x + 47, FontManager::GetY());
-            if (this->ctx->has_gprs[i]) {
-                FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.x[i]);
-            } else {
-                FontManager::PrintMonospaceBlank(16);
-            }
-            FontManager::Print("  ");
-            x = FontManager::GetX();
-            FontManager::PrintFormat("%s:", Aarch64GprNames[i + (NumAarch64Gprs / 2)]);
-            FontManager::SetPosition(x + 47, FontManager::GetY());
-            if (this->ctx->has_gprs[i + (NumAarch64Gprs / 2)]) {
-                FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.x[i + (NumAarch64Gprs / 2)]);
-            } else {
-                FontManager::PrintMonospaceBlank(16);
-            }
 
-            if (i == (NumAarch64Gprs / 2) - 1) {
-                FontManager::Print("    ");
-                backtrace_x = FontManager::GetX();
-            }
+        Result ShowFatalTask::Run() {
+            /* Don't show the fatal error screen until we've verified the battery is okay. */
+            eventWait(const_cast<Event *>(&this->context->battery_event), U64_MAX);
 
-            FontManager::PrintLine("");
-            FontManager::SetPosition(32, FontManager::GetY());
+            return ShowFatal();
         }
+
+        void BacklightControlTask::TurnOnBacklight() {
+            lblSwitchBacklightOn(0);
+        }
+
+        Result BacklightControlTask::Run() {
+            TurnOnBacklight();
+            return ResultSuccess;
+        }
+
     }
 
-    /* Print Backtrace. */
-    u32 bt_size;
-    if (this->ctx->cpu_ctx.is_aarch32) {
-        bt_size = this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size;
-    } else {
-        bt_size = this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size;
+    ITask *GetShowFatalTask(const ThrowContext *ctx) {
+        g_show_fatal_task.Initialize(ctx);
+        return &g_show_fatal_task;
     }
 
-
-    FontManager::SetPosition(backtrace_x, backtrace_y);
-    if (bt_size == 0) {
-        if (this->ctx->cpu_ctx.is_aarch32) {
-            FontManager::Print("Start Address: ");
-            FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.start_address);
-            FontManager::PrintLine("");
-        } else {
-            FontManager::Print("Start Address: ");
-            FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.start_address);
-            FontManager::PrintLine("");
-        }
-    } else {
-        if (this->ctx->cpu_ctx.is_aarch32) {
-            FontManager::Print("Backtrace - Start Address: ");
-            FontManager::PrintMonospaceU32(this->ctx->cpu_ctx.aarch32_ctx.start_address);
-            FontManager::PrintLine("");
-            FontManager::AddSpacingLines(0.5f);
-            for (u32 i = 0; i < Aarch32CpuContext::MaxStackTraceDepth / 2; i++) {
-                u32 bt_cur = 0, bt_next = 0;
-                if (i < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
-                    bt_cur = this->ctx->cpu_ctx.aarch32_ctx.stack_trace[i];
-                }
-                if (i + Aarch32CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
-                    bt_next = this->ctx->cpu_ctx.aarch32_ctx.stack_trace[i + Aarch32CpuContext::MaxStackTraceDepth / 2];
-                }
-
-                if (i < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
-                    u32 x = FontManager::GetX();
-                    FontManager::PrintFormat("BT[%02d]: ", i);
-                    FontManager::SetPosition(x + 72, FontManager::GetY());
-                    FontManager::PrintMonospaceU32(bt_cur);
-                    FontManager::Print("  ");
-                }
-
-                if (i + Aarch32CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch32_ctx.stack_trace_size) {
-                    u32 x = FontManager::GetX();
-                    FontManager::PrintFormat("BT[%02d]: ", i + Aarch32CpuContext::MaxStackTraceDepth / 2);
-                    FontManager::SetPosition(x + 72, FontManager::GetY());
-                    FontManager::PrintMonospaceU32(bt_next);
-                }
-
-                FontManager::PrintLine("");
-                FontManager::SetPosition(backtrace_x, FontManager::GetY());
-            }
-        } else {
-            FontManager::Print("Backtrace - Start Address: ");
-            FontManager::PrintMonospaceU64(this->ctx->cpu_ctx.aarch64_ctx.start_address);
-            FontManager::PrintLine("");
-            FontManager::AddSpacingLines(0.5f);
-            for (u32 i = 0; i < Aarch64CpuContext::MaxStackTraceDepth / 2; i++) {
-                u64 bt_cur = 0, bt_next = 0;
-                if (i < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
-                    bt_cur = this->ctx->cpu_ctx.aarch64_ctx.stack_trace[i];
-                }
-                if (i + Aarch64CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
-                    bt_next = this->ctx->cpu_ctx.aarch64_ctx.stack_trace[i + Aarch64CpuContext::MaxStackTraceDepth / 2];
-                }
-
-                if (i < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
-                    u32 x = FontManager::GetX();
-                    FontManager::PrintFormat("BT[%02d]: ", i);
-                    FontManager::SetPosition(x + 72, FontManager::GetY());
-                    FontManager::PrintMonospaceU64(bt_cur);
-                    FontManager::Print("  ");
-                }
-
-                if (i + Aarch64CpuContext::MaxStackTraceDepth / 2 < this->ctx->cpu_ctx.aarch64_ctx.stack_trace_size) {
-                    u32 x = FontManager::GetX();
-                    FontManager::PrintFormat("BT[%02d]: ", i + Aarch64CpuContext::MaxStackTraceDepth / 2);
-                    FontManager::SetPosition(x + 72, FontManager::GetY());
-                    FontManager::PrintMonospaceU64(bt_next);
-                }
-
-                FontManager::PrintLine("");
-                FontManager::SetPosition(backtrace_x, FontManager::GetY());
-            }
-        }
+    ITask *GetBacklightControlTask(const ThrowContext *ctx) {
+        g_backlight_control_task.Initialize(ctx);
+        return &g_backlight_control_task;
     }
 
-
-    /* Enqueue the buffer. */
-    framebufferEnd(&fb);
-
-    return ResultSuccess;
-}
-
-Result ShowFatalTask::Run() {
-    /* Don't show the fatal error screen until we've verified the battery is okay. */
-    eventWait(this->battery_event, U64_MAX);
-
-    return ShowFatal();
-}
-
-void BacklightControlTask::TurnOnBacklight() {
-    lblSwitchBacklightOn(0);
-}
-
-Result BacklightControlTask::Run() {
-    TurnOnBacklight();
-    return ResultSuccess;
 }

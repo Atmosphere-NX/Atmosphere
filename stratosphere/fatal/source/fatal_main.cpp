@@ -23,9 +23,7 @@
 #include <atmosphere.h>
 #include <stratosphere.hpp>
 
-#include "fatal_types.hpp"
-#include "fatal_private.hpp"
-#include "fatal_user.hpp"
+#include "fatal_service.hpp"
 #include "fatal_config.hpp"
 #include "fatal_repair.hpp"
 #include "fatal_font.hpp"
@@ -123,24 +121,19 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
-    /* Load settings from set:sys. */
-    InitializeFatalConfig();
-
     /* Load shared font. */
-    if (R_FAILED(FontManager::InitializeSharedFont())) {
-        std::abort();
-    }
+    R_ASSERT(sts::fatal::srv::font::InitializeSharedFont());
 
     /* Check whether we should throw fatal due to repair process. */
-    CheckRepairStatus();
+    sts::fatal::srv::CheckRepairStatus();
 
-    /* TODO: What's a good timeout value to use here? */
+    /* Create waitable manager. */
     static auto s_server_manager = WaitableManager(1);
 
     /* Create services. */
-    s_server_manager.AddWaitable(new ServiceServer<PrivateService>("fatal:p", 4));
-    s_server_manager.AddWaitable(new ServiceServer<UserService>("fatal:u", 4));
-    s_server_manager.AddWaitable(GetFatalSettingsEvent());
+    s_server_manager.AddWaitable(new ServiceServer<sts::fatal::srv::PrivateService>("fatal:p", 4));
+    s_server_manager.AddWaitable(new ServiceServer<sts::fatal::srv::UserService>("fatal:u", 4));
+    s_server_manager.AddWaitable(sts::fatal::srv::GetFatalDirtyEvent());
 
     /* Loop forever, servicing our services. */
     s_server_manager.Process();

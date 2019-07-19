@@ -23,6 +23,7 @@
 #include "results/creport_results.hpp"
 #include "results/debug_results.hpp"
 #include "results/dmnt_results.hpp"
+#include "results/err_results.hpp"
 #include "results/fatal_results.hpp"
 #include "results/fs_results.hpp"
 #include "results/hipc_results.hpp"

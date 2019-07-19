@@ -92,5 +92,12 @@
 		}, {
 			"type":	"handle_table_size",
 			"value":	128
-		}]
+		},
+        {
+            "type": "debug_flags",
+            "value": {
+                "allow_debug": false,
+                "force_debug": true
+            }
+        }]
 }

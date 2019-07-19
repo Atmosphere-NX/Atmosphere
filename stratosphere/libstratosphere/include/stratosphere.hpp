@@ -45,6 +45,7 @@
 
 #include "stratosphere/svc.hpp"
 #include "stratosphere/cfg.hpp"
+#include "stratosphere/fatal.hpp"
 #include "stratosphere/hid.hpp"
 #include "stratosphere/ncm.hpp"
 #include "stratosphere/pm.hpp"
