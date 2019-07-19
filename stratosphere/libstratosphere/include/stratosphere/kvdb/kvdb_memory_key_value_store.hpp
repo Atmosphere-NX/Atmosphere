@@ -21,7 +21,6 @@
 #include "kvdb_auto_buffer.hpp"
 #include "kvdb_archive.hpp"
 #include "kvdb_bounded_string.hpp"
-#include "kvdb_memory_key_value_store.hpp"
 
 namespace sts::kvdb {
 
@@ -405,8 +404,8 @@ namespace sts::kvdb {
                     return ResultKvdbKeyNotFound;
                 }
 
-                size_t size = std::min(max_out_size, it.GetValueSize());
-                std::memcpy(out_value, it.GetValuePointer(), size);
+                size_t size = std::min(max_out_size, it->GetValueSize());
+                std::memcpy(out_value, it->GetValuePointer(), size);
                 *out_size = size;
                 return ResultSuccess;
             }
