@@ -18,10 +18,10 @@
 #pragma once
 #include "utils.h"
 
-#define UART_BASE 0x70006000ull
+#define UART_BASE 0x70006000
 
-#define BAUD_115200 115200
-
+#define BAUD_115200     115200
+#define UART_CLKRATE    408000000
 /* Exosphère: add the clkreset values for UART C,D,E */
 typedef enum {
     UART_A = 0,
@@ -156,10 +156,13 @@ typedef struct {
 } uart_t;
 
 void uart_select(UartDevice dev);
+void uart_set_baudrate(UartDevice dev, u32 baud);
+void uart_flush_fifos(UartDevice dev, u32 baud, bool reset);
 void uart_init(UartDevice dev, u32 baud, bool txInverted);
 void uart_wait_idle(UartDevice dev, UartVendorStatus status);
 void uart_send(UartDevice dev, const void *buf, size_t len);
 void uart_recv(UartDevice dev, void *buf, size_t len);
+size_t uart_recv_max(UartDevice dev, void *buf, size_t maxlen);
 
 static inline volatile uart_t *get_uart_device(UartDevice dev) {
     static const size_t offsets[] = {0, 0x40, 0x200, 0x300, 0x400};
