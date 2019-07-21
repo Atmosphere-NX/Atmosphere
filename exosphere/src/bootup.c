@@ -215,7 +215,7 @@ void bootup_misc_mmio(void) {
 
     if (!g_has_booted_up) {
         /* N doesn't do this, but we should for compatibility. */
-        uart_select(UART_A);
+        uart_config(UART_A);
         clkrst_reboot(CARDEVICE_UARTA);
         uart_init(UART_A, 115200);
         

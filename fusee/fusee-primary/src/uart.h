@@ -157,6 +157,7 @@ typedef struct {
     uint32_t UART_ASR;
 } tegra_uart_t;
 
+void uart_config(UartDevice dev);
 void uart_init(UartDevice dev, uint32_t baud);
 void uart_wait_idle(UartDevice dev, UartVendorStatus status);
 void uart_send(UartDevice dev, const void *buf, size_t len);

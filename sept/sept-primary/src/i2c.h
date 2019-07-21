@@ -24,19 +24,21 @@
 #define I2C1234_BASE    0x7000C000
 #define I2C56_BASE      0x7000D000
 
-#define I2C_1 0
-#define I2C_2 1
-#define I2C_3 2
-#define I2C_4 3
-#define I2C_5 4
-#define I2C_6 5
-
 #define MAX77621_CPU_I2C_ADDR       0x1B
 #define MAX77621_GPU_I2C_ADDR       0x1C
 #define MAX17050_I2C_ADDR           0x36
 #define MAX77620_PWR_I2C_ADDR       0x3C
 #define MAX77620_RTC_I2C_ADDR       0x68
 #define BQ24193_I2C_ADDR            0x6B
+
+typedef enum {
+    I2C_1 = 0,
+    I2C_2 = 1,
+    I2C_3 = 2,
+    I2C_4 = 3,
+    I2C_5 = 4,
+    I2C_6 = 5,
+} I2CDevice;
 
 typedef struct {
     uint32_t I2C_I2C_CNFG_0;
@@ -89,9 +91,11 @@ typedef struct {
 #define I2C5_REGS ((volatile tegra_i2c_t *)(I2C56_BASE + 0x000))
 #define I2C6_REGS ((volatile tegra_i2c_t *)(I2C56_BASE + 0x100))
 
-void i2c_init(unsigned int id);
-bool i2c_query(unsigned int id, uint8_t device, uint8_t r, void *dst, size_t dst_size);
-bool i2c_send(unsigned int id, uint8_t device, uint8_t r, void *src, size_t src_size);
+void i2c_config(I2CDevice id);
+
+void i2c_init(I2CDevice id);
+bool i2c_query(I2CDevice id, uint8_t device, uint8_t r, void *dst, size_t dst_size);
+bool i2c_send(I2CDevice id, uint8_t device, uint8_t r, void *src, size_t src_size);
 
 void i2c_send_pmic_cpu_shutdown_cmd(void);
 bool i2c_query_ti_charger_bit_7(void);

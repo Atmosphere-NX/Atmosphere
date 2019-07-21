@@ -24,7 +24,6 @@
 #include "bootup.h"
 #include "smc_api.h"
 #include "exocfg.h"
-
 #include "se.h"
 #include "mc.h"
 #include "car.h"
@@ -32,7 +31,6 @@
 #include "misc.h"
 #include "uart.h"
 #include "interrupt.h"
-
 #include "pmc.h"
 
 uintptr_t get_warmboot_main_stack_address(void) {
@@ -41,8 +39,7 @@ uintptr_t get_warmboot_main_stack_address(void) {
 
 static void warmboot_configure_hiz_mode(void) {
     /* Enable input to I2C1 */
-    PINMUX_AUX_GEN1_I2C_SCL_0 = 0x40;
-    PINMUX_AUX_GEN1_I2C_SDA_0 = 0x40;
+    i2c_config(I2C_1);
 
     clkrst_reboot(CARDEVICE_I2C1);
     i2c_init(0);
@@ -69,7 +66,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
     if (VIRT_MC_SECURITY_CFG3 == 0) {
         /* N only does this on dev units, but we will do it unconditionally. */
         {
-            uart_select(UART_A);
+            uart_config(UART_A);
             clkrst_reboot(CARDEVICE_UARTA);
             uart_init(UART_A, 115200);
         }

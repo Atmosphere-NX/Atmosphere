@@ -14,25 +14,56 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#include <string.h>
-
 #include "i2c.h"
 #include "utils.h"
 #include "timers.h"
+#include "pinmux.h"
 
 /* Prototypes for internal commands. */
-volatile i2c_registers_t *i2c_get_registers_from_id(unsigned int id);
-void i2c_load_config(volatile i2c_registers_t *regs);
+volatile tegra_i2c_t *i2c_get_registers_from_id(I2CDevice id);
+void i2c_load_config(volatile tegra_i2c_t *regs);
 
-bool i2c_query(unsigned int id, uint8_t device, uint8_t r, void *dst, size_t dst_size);
-bool i2c_send(unsigned int id, uint8_t device, uint8_t r, void *src, size_t src_size);
+bool i2c_query(I2CDevice id, uint8_t device, uint8_t r, void *dst, size_t dst_size);
+bool i2c_send(I2CDevice id, uint8_t device, uint8_t r, void *src, size_t src_size);
 
-bool i2c_write(volatile i2c_registers_t *regs, uint8_t device, void *src, size_t src_size);
-bool i2c_read(volatile i2c_registers_t *regs, uint8_t device, void *dst, size_t dst_size);
+bool i2c_write(volatile tegra_i2c_t *regs, uint8_t device, void *src, size_t src_size);
+bool i2c_read(volatile tegra_i2c_t *regs, uint8_t device, void *dst, size_t dst_size);
+
+/* Configure I2C pinmux. */
+void i2c_config(I2CDevice id) {
+    volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
+    
+    switch (id) {
+        case I2C_1:
+            pinmux->gen1_i2c_scl = PINMUX_INPUT;
+            pinmux->gen1_i2c_sda = PINMUX_INPUT;
+            break;
+        case I2C_2:
+            pinmux->gen2_i2c_scl = PINMUX_INPUT;
+            pinmux->gen2_i2c_sda = PINMUX_INPUT;
+            break;
+        case I2C_3:
+            pinmux->gen3_i2c_scl = PINMUX_INPUT;
+            pinmux->gen3_i2c_sda = PINMUX_INPUT;
+            break;
+        case I2C_4:
+            pinmux->cam_i2c_scl = PINMUX_INPUT;
+            pinmux->cam_i2c_sda = PINMUX_INPUT;
+            break;
+        case I2C_5:
+            pinmux->pwr_i2c_scl = PINMUX_INPUT;
+            pinmux->pwr_i2c_sda = PINMUX_INPUT;
+            break;
+        case I2C_6:
+            /* Unused. */
+            break;
+        default: break;
+    }
+}
 
 /* Initialize I2C based on registers. */
-void i2c_init(unsigned int id) {
-    volatile i2c_registers_t *regs = i2c_get_registers_from_id(id);
+void i2c_init(I2CDevice id) {
+    volatile tegra_i2c_t *regs = i2c_get_registers_from_id(id);
 
     /* Setup divisor, and clear the bus. */
     regs->I2C_I2C_CLK_DIVISOR_REGISTER_0 = 0x50001;
@@ -61,16 +92,16 @@ void i2c_init(unsigned int id) {
 void i2c_send_pmic_cpu_shutdown_cmd(void) {
     uint32_t val = 0;
     /* PMIC == Device 4:3C. */
-    i2c_query(4, 0x3C, 0x41, &val, 1);
+    i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, 0x41, &val, 1);
     val |= 4;
-    i2c_send(4, 0x3C, 0x41, &val, 1);
+    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, 0x41, &val, 1);
 }
 
 /* Queries the value of TI charger bit over I2C. */
 bool i2c_query_ti_charger_bit_7(void) {
     uint32_t val = 0;
     /* TI Charger = Device 0:6B. */
-    i2c_query(0, 0x6B, 0, &val, 1);
+    i2c_query(I2C_1, BQ24193_I2C_ADDR, 0, &val, 1);
     return (val & 0x80) != 0;
 }
 
@@ -78,34 +109,34 @@ bool i2c_query_ti_charger_bit_7(void) {
 void i2c_clear_ti_charger_bit_7(void) {
     uint32_t val = 0;
     /* TI Charger = Device 0:6B. */
-    i2c_query(0, 0x6B, 0, &val, 1);
+    i2c_query(I2C_1, BQ24193_I2C_ADDR, 0, &val, 1);
     val &= 0x7F;
-    i2c_send(0, 0x6B, 0, &val, 1);
+    i2c_send(I2C_1, BQ24193_I2C_ADDR, 0, &val, 1);
 }
 
 /* Sets TI charger bit over I2C. */
 void i2c_set_ti_charger_bit_7(void) {
     uint32_t val = 0;
     /* TI Charger = Device 0:6B. */
-    i2c_query(0, 0x6B, 0, &val, 1);
+    i2c_query(I2C_1, BQ24193_I2C_ADDR, 0, &val, 1);
     val |= 0x80;
-    i2c_send(0, 0x6B, 0, &val, 1);
+    i2c_send(I2C_1, BQ24193_I2C_ADDR, 0, &val, 1);
 }
 
 /* Get registers pointer based on I2C ID. */
-volatile i2c_registers_t *i2c_get_registers_from_id(unsigned int id) {
+volatile tegra_i2c_t *i2c_get_registers_from_id(I2CDevice id) {
     switch (id) {
-        case 0:
+        case I2C_1:
             return I2C1_REGS;
-        case 1:
+        case I2C_2:
             return I2C2_REGS;
-        case 2:
+        case I2C_3:
             return I2C3_REGS;
-        case 3:
+        case I2C_4:
             return I2C4_REGS;
-        case 4:
+        case I2C_5:
             return I2C5_REGS;
-        case 5:
+        case I2C_6:
             return I2C6_REGS;
         default:
             generic_panic();
@@ -114,7 +145,7 @@ volatile i2c_registers_t *i2c_get_registers_from_id(unsigned int id) {
 }
 
 /* Load hardware config for I2C4. */
-void i2c_load_config(volatile i2c_registers_t *regs) {
+void i2c_load_config(volatile tegra_i2c_t *regs) {
     /* Set MSTR_CONFIG_LOAD, TIMEOUT_CONFIG_LOAD, undocumented bit. */
     regs->I2C_I2C_CONFIG_LOAD_0 = 0x25;
 
@@ -128,8 +159,8 @@ void i2c_load_config(volatile i2c_registers_t *regs) {
 }
 
 /* Reads a register from a device over I2C, writes result to output. */
-bool i2c_query(unsigned int id, uint8_t device, uint8_t r, void *dst, size_t dst_size) {
-    volatile i2c_registers_t *regs = i2c_get_registers_from_id(id);
+bool i2c_query(I2CDevice id, uint8_t device, uint8_t r, void *dst, size_t dst_size) {
+    volatile tegra_i2c_t *regs = i2c_get_registers_from_id(id);
     uint32_t val = r;
     
     /* Write single byte register ID to device. */
@@ -145,7 +176,7 @@ bool i2c_query(unsigned int id, uint8_t device, uint8_t r, void *dst, size_t dst
 }
 
 /* Writes a value to a register over I2C. */
-bool i2c_send(unsigned int id, uint8_t device, uint8_t r, void *src, size_t src_size) {    
+bool i2c_send(I2CDevice id, uint8_t device, uint8_t r, void *src, size_t src_size) {    
     uint32_t val = r;
     if (src_size == 0) {
         return true;
@@ -158,7 +189,7 @@ bool i2c_send(unsigned int id, uint8_t device, uint8_t r, void *src, size_t src_
 }
 
 /* Writes bytes to device over I2C. */
-bool i2c_write(volatile i2c_registers_t *regs, uint8_t device, void *src, size_t src_size) {
+bool i2c_write(volatile tegra_i2c_t *regs, uint8_t device, void *src, size_t src_size) {
     if (src_size > 4) {
         return false;
     } else if (src_size == 0) {
@@ -177,8 +208,7 @@ bool i2c_write(volatile i2c_registers_t *regs, uint8_t device, void *src, size_t
     i2c_load_config(regs);
 
     /* Config |= SEND; */
-    regs->I2C_I2C_CNFG_0 |= 0x200;
-
+    regs->I2C_I2C_CNFG_0 = ((regs->I2C_I2C_CNFG_0 & 0xFFFFFDFF) | 0x200);
 
     while (regs->I2C_I2C_STATUS_0 & 0x100) {
         /* Wait until not busy. */
@@ -189,7 +219,7 @@ bool i2c_write(volatile i2c_registers_t *regs, uint8_t device, void *src, size_t
 }
 
 /* Reads bytes from device over I2C. */
-bool i2c_read(volatile i2c_registers_t *regs, uint8_t device, void *dst, size_t dst_size) {
+bool i2c_read(volatile tegra_i2c_t *regs, uint8_t device, void *dst, size_t dst_size) {
     if (dst_size > 4) {
         return false;
     } else if (dst_size == 0) {
@@ -205,8 +235,7 @@ bool i2c_read(volatile i2c_registers_t *regs, uint8_t device, void *dst, size_t 
     i2c_load_config(regs);
 
     /* Config |= SEND; */
-    regs->I2C_I2C_CNFG_0 |= 0x200;
-
+    regs->I2C_I2C_CNFG_0 = ((regs->I2C_I2C_CNFG_0 & 0xFFFFFDFF) | 0x200);
 
     while (regs->I2C_I2C_STATUS_0 & 0x100) {
         /* Wait until not busy. */

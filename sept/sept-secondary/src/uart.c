@@ -17,35 +17,81 @@
  
 #include "uart.h"
 #include "timers.h"
+#include "pinmux.h"
+
+void uart_config(UartDevice dev) {
+    volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
+    
+    switch (dev) {
+        case UART_A:
+            pinmux->uart1_rx = 0;
+            pinmux->uart1_tx = (PINMUX_INPUT | PINMUX_PULL_UP);
+            pinmux->uart1_rts = 0;
+            pinmux->uart1_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
+            break;
+        case UART_B:
+            pinmux->uart2_rx = 0;
+            pinmux->uart2_tx = (PINMUX_INPUT | PINMUX_PULL_UP);
+            pinmux->uart2_rts = 0;
+            pinmux->uart2_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
+            break;
+        case UART_C:
+            pinmux->uart3_rx = 0;
+            pinmux->uart3_tx = (PINMUX_INPUT | PINMUX_PULL_UP);
+            pinmux->uart3_rts = 0;
+            pinmux->uart3_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
+            break;
+        case UART_D:
+            pinmux->uart4_rx = 0;
+            pinmux->uart4_tx = (PINMUX_INPUT | PINMUX_PULL_UP);
+            pinmux->uart4_rts = 0;
+            pinmux->uart4_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
+            break;
+        case UART_E:
+            /* Unused. */
+            break;
+        default: break;
+    }
+}
 
 void uart_init(UartDevice dev, uint32_t baud) {
     volatile tegra_uart_t *uart = uart_get_regs(dev);
 
-    /* Set baud rate. */
-    uint32_t rate = (8 * baud + 408000000) / (16 * baud);
-    uart->UART_LCR = UART_LCR_DLAB; /* Enable DLAB. */
-    uart->UART_THR_DLAB = (uint8_t)rate; /* Divisor latch LSB. */
-    uart->UART_IER_DLAB = (uint8_t)(rate >> 8); /* Divisor latch MSB. */
-    uart->UART_LCR = 0; /* Diable DLAB. */
+    /* Wait for idle state. */
+    uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE);
 
-    /* Setup UART in fifo mode. */
+    /* Calculate baud rate. */
+    uint32_t rate = (8 * baud + 408000000) / (16 * baud);
+
+    /* Setup UART in FIFO mode. */
     uart->UART_IER_DLAB = 0;
-    uart->UART_IIR_FCR = UART_FCR_FCR_EN_FIFO | UART_FCR_RX_CLR | UART_FCR_TX_CLR; /* Enable and clear TX and RX FIFOs. */
-    (void)uart->UART_LSR;
-    udelay(3 * ((baud + 999999) / baud));
-    uart->UART_LCR = UART_LCR_WD_LENGTH_8; /* Set word length 8. */
     uart->UART_MCR = 0;
-    uart->UART_MSR = 0;
-    uart->UART_IRDA_CSR = 0;
-    uart->UART_RX_FIFO_CFG = 1; /* Set RX_FIFO trigger level */
-    uart->UART_MIE = 0;
-    uart->UART_ASR = 0;
+    uart->UART_LCR = (UART_LCR_DLAB | UART_LCR_WD_LENGTH_8);        /* Enable DLAB and set word length 8. */
+    uart->UART_THR_DLAB = (uint8_t)rate;                            /* Divisor latch LSB. */
+    uart->UART_IER_DLAB = (uint8_t)(rate >> 8);                     /* Divisor latch MSB. */
+    uart->UART_LCR &= ~(UART_LCR_DLAB);                             /* Disable DLAB. */
+    
+    /* Flush FIFO. */
+    uart->UART_IIR_FCR = (UART_FCR_FCR_EN_FIFO | UART_FCR_RX_CLR | UART_FCR_TX_CLR);    /* Enable and clear TX and RX FIFOs. */
+    udelay(3 * ((baud + 999999) / baud));
+    
+    /* Wait for idle state. */
+    uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE | UART_VENDOR_STATE_RX_IDLE);
 }
 
-/* This function blocks until the UART device (dev) is in the desired state (status). Make sure the desired state can be reached! */
+/* This function blocks until the UART device is in the desired state. */
 void uart_wait_idle(UartDevice dev, UartVendorStatus status) {
-    while (!(uart_get_regs(dev)->UART_VENDOR_STATUS & status)) {
-        /* Wait */
+    volatile tegra_uart_t *uart = uart_get_regs(dev);
+    
+    if (status & UART_VENDOR_STATE_TX_IDLE) {
+        while (!(uart->UART_LSR & UART_LSR_TMTY)) {
+            /* Wait */
+        }
+    }
+    if (status & UART_VENDOR_STATE_RX_IDLE) {
+        while (uart->UART_LSR & UART_LSR_RDR) {
+            /* Wait */
+        }
     }
 }
 
@@ -53,8 +99,8 @@ void uart_send(UartDevice dev, const void *buf, size_t len) {
     volatile tegra_uart_t *uart = uart_get_regs(dev);
 
     for (size_t i = 0; i < len; i++) {
-        while (uart->UART_LSR & UART_LSR_TX_FIFO_FULL) {
-            /* Wait until the TX FIFO isn't full */
+        while (!(uart->UART_LSR & UART_LSR_THRE)) {
+            /* Wait until it's possible to send data. */
         }
         uart->UART_THR_DLAB = *((const uint8_t *)buf + i);
     }
@@ -64,8 +110,8 @@ void uart_recv(UartDevice dev, void *buf, size_t len) {
     volatile tegra_uart_t *uart = uart_get_regs(dev);
 
     for (size_t i = 0; i < len; i++) {
-        while (uart->UART_LSR & UART_LSR_RX_FIFO_EMPTY) {
-            /* Wait until the RX FIFO isn't empty */
+        while (!(uart->UART_LSR & UART_LSR_RDR)) {
+            /* Wait until it's possible to receive data. */
         }
         *((uint8_t *)buf + i) = uart->UART_THR_DLAB;
     }
