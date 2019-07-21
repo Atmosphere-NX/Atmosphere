@@ -57,6 +57,8 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=
+CXX		:= `which ccache` $(CXX)
+CC		:= `which ccache` $(CC)
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -66,7 +68,7 @@ LIBDIRS	:=
 
 
 #---------------------------------------------------------------------------------
-# no real need to edit anything past this point unless you need to add additional
+# no real need to edit anything past this point unless you need to add additiona
 # rules for different file extensions
 #---------------------------------------------------------------------------------
 ifneq ($(BUILD),$(notdir $(CURDIR)))

@@ -57,6 +57,8 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=
+CXX		:= `which ccache` $(CXX)LIBS
+CC		:= `which ccache` $(CC)
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
