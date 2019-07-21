@@ -96,8 +96,8 @@ static inline volatile tegra_gpio_t *gpio_get_regs(void)
     ((TEGRA_GPIO_PORT_##port * 8) + offset)
 
 /* Mode select */
-#define GPIO_MODE_GPIO          0
-#define GPIO_MODE_SFIO          1
+#define GPIO_MODE_SFIO          0
+#define GPIO_MODE_GPIO          1
 
 /* Direction */
 #define GPIO_DIRECTION_INPUT    0
