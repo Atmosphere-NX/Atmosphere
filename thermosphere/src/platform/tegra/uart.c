@@ -130,3 +130,14 @@ void uart_recv(UartDevice dev, void *buf, size_t len) {
         *((uint8_t *)buf + i) = uart->UART_THR_DLAB;
     }
 }
+
+size_t uart_recv_max(UartDevice dev, void *buf, size_t max_len) {
+    volatile tegra_uart_t *uart = uart_get_regs(dev);
+    size_t i;
+
+    for (i = 0; i < max_len && (uart->UART_LSR & UART_LSR_RDR); i++) {
+        *((uint8_t *)buf + i) = uart->UART_THR_DLAB;
+    }
+
+    return 1 + i;
+}

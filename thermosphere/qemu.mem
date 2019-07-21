@@ -1,0 +1,5 @@
+MEMORY
+{
+    NULL  : ORIGIN = 0,           LENGTH = 0x1000
+    main  : ORIGIN = 0x60000000,  LENGTH = 128M   /* QEMU's memory map changes dynamically? */
+}

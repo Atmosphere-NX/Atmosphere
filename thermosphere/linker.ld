@@ -1,15 +1,9 @@
 OUTPUT_ARCH(aarch64)
 ENTRY(_start)
 
-MEMORY
-{
-    NULL  : ORIGIN = 0,           LENGTH = 0x1000
-    main  : ORIGIN = 0x80000000,  LENGTH = 0xD000 - 0x1000 /* 0x1000 for stacks. */
-}
-
 SECTIONS
 {
-    PROVIDE(__start__ = 0x80000000);
+    PROVIDE(__start__ = ORIGIN(main));
     . = __start__;
 
     .text :

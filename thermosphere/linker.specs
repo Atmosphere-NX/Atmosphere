@@ -1,4 +1,4 @@
 %rename link                old_link
 
 *link:
-%(old_link) -T %:getenv(TOPDIR /linker.ld) --nmagic --gc-sections
+%(old_link) -T %:getenv(TOPDIR /%:getenv(PLATFORM .mem)) -T %:getenv(TOPDIR /linker.ld) --nmagic --gc-sections

@@ -18,7 +18,7 @@
 #include <stdint.h>
 
 #include "gpio.h"
-#include "utils.h"
+#include "../../utils.h"
 
 /**
  * Returns a GPIO bank object that corresponds to the given GPIO pin,
