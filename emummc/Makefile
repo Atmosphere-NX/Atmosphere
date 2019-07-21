@@ -32,6 +32,8 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+CXX		:= `which ccache` $(CXX)
+CC		:= `which ccache` $(CC)
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 
