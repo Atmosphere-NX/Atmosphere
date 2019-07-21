@@ -14,15 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+ 
 #pragma once
-#include "utils.h"
+
+#include "types.h"
 
 #define UART_BASE 0x70006000
 
-#define BAUD_115200     115200
-#define UART_CLKRATE    408000000
-/* Exosphère: add the clkreset values for UART C,D,E */
+#define BAUD_115200 115200
+
+/* UART devices */
 typedef enum {
     UART_A = 0,
     UART_B = 1,
@@ -139,32 +140,30 @@ typedef enum {
 } UartInterruptIdentification;
 
 typedef struct {
-    /* 0x00 */ u32 UART_THR_DLAB;
-    /* 0x04 */ u32 UART_IER_DLAB;
-    /* 0x08 */ u32 UART_IIR_FCR;
-    /* 0x0C */ u32 UART_LCR;
-    /* 0x10 */ u32 UART_MCR;
-    /* 0x14 */ u32 UART_LSR;
-    /* 0x18 */ u32 UART_MSR;
-    /* 0x1C */ u32 UART_SPR;
-    /* 0x20 */ u32 UART_IRDA_CSR;
-    /* 0x24 */ u32 UART_RX_FIFO_CFG;
-    /* 0x28 */ u32 UART_MIE;
-    /* 0x2C */ u32 UART_VENDOR_STATUS;
-    /* 0x30 */ uint8_t _pad_30[0x0C];
-    /* 0x3C */ u32 UART_ASR;
-} uart_t;
+    uint32_t UART_THR_DLAB;
+    uint32_t UART_IER_DLAB;
+    uint32_t UART_IIR_FCR;
+    uint32_t UART_LCR;
+    uint32_t UART_MCR;
+    uint32_t UART_LSR;
+    uint32_t UART_MSR;
+    uint32_t UART_SPR;
+    uint32_t UART_IRDA_CSR;
+    uint32_t UART_RX_FIFO_CFG;
+    uint32_t UART_MIE;
+    uint32_t UART_VENDOR_STATUS;
+    uint8_t _0x30[0x0C];
+    uint32_t UART_ASR;
+} tegra_uart_t;
 
-void uart_select(UartDevice dev);
-void uart_set_baudrate(UartDevice dev, u32 baud);
-void uart_flush_fifos(UartDevice dev, u32 baud, bool reset);
-void uart_init(UartDevice dev, u32 baud, bool txInverted);
+void uart_config(UartDevice dev);
+void uart_reset(UartDevice dev);
+void uart_init(UartDevice dev, uint32_t baud, bool inverted);
 void uart_wait_idle(UartDevice dev, UartVendorStatus status);
 void uart_send(UartDevice dev, const void *buf, size_t len);
 void uart_recv(UartDevice dev, void *buf, size_t len);
-size_t uart_recv_max(UartDevice dev, void *buf, size_t maxlen);
 
-static inline volatile uart_t *get_uart_device(UartDevice dev) {
+static inline volatile tegra_uart_t *uart_get_regs(UartDevice dev) {
     static const size_t offsets[] = {0, 0x40, 0x200, 0x300, 0x400};
-    return (volatile uart_t *)(UART_BASE + offsets[dev]);
+    return (volatile tegra_uart_t *)(UART_BASE + offsets[dev]);
 }
