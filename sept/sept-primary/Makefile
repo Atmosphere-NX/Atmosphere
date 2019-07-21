@@ -68,7 +68,7 @@ LIBDIRS	:=
 
 
 #---------------------------------------------------------------------------------
-# no real need to edit anything past this point unless you need to add additiona
+# no real need to edit anything past this point unless you need to add additional
 # rules for different file extensions
 #---------------------------------------------------------------------------------
 ifneq ($(BUILD),$(notdir $(CURDIR)))
