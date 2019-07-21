@@ -68,10 +68,10 @@ static inline uint32_t get_clk_source_val(CarDevice dev) {
 
 static inline uint32_t get_clk_source_div(CarDevice dev) {
     switch (dev) {
-        case CARDEVICE_UARTA: return 1 << 24; // enable bit
-        case CARDEVICE_UARTB: return 1 << 24; // enable bit
-        case CARDEVICE_UARTC: return 1 << 24; // enable bit
-        case CARDEVICE_UARTD: return 1 << 24; // enable bit
+        case CARDEVICE_UARTA: return 0;
+        case CARDEVICE_UARTB: return 0;
+        case CARDEVICE_UARTC: return 0;
+        case CARDEVICE_UARTD: return 0;
         case CARDEVICE_I2C1: return 0;
         case CARDEVICE_I2C5: return 0;
         case CARDEVICE_TZRAM: return 0;
