@@ -1,5 +1,5 @@
 MEMORY
 {
     NULL  : ORIGIN = 0,           LENGTH = 0x1000
-    main  : ORIGIN = 0x80000000,  LENGTH = 0xD000 - 0x1000 /* 0x1000 for stacks. */
+    main  : ORIGIN = 0x80000000,  LENGTH = 0xD000 - 0x2000 /* 0x2000 for stacks. */
 }

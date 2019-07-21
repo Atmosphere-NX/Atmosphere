@@ -32,8 +32,9 @@ g_kernelEntrypoint:
     .quad   0
 
 start:
-    // Disable interrupts
+    // Disable interrupts, select sp_el2
     msr     daifset, 0b1111
+    msr     spsel, #1
 
     // Save arg, load entrypoint & spsr
     mov     x19, x0

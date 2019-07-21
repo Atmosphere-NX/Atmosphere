@@ -51,7 +51,49 @@
 .endm
 
 .macro save_all_regs
-    sub     sp, sp, #0x110
+    stp     x30, xzr, [sp, #-0x130]
+    bl      _save_all_regs
+.endm
+
+.macro pivot_stack_for_crash
+    // Ditch sp_el0 & elr_el1
+    // We don't use E2H so that's fine.
+    msr     elr_el1, x0
+    mov     x0, sp
+    msr     sp_el0, x0      // save stack pointer for the crash
+    bic     x0, x0, #0xFF
+    bic     x0, x0, #0x700
+    add     x0, x0, #0x1000
+    add     x0, x0, #0x800
+    mov     sp, x0
+    mrs     x0, elr_el1
+.endm
+
+/* Actual Vectors for Thermosphere. */
+.global thermosphere_vectors
+vector_base thermosphere_vectors
+
+/* Current EL, SP0 */
+/* Those are unused by us, except on same-EL double-faults. */
+.global unknown_exception
+unknown_exception:
+vector_entry synch_sp0
+    pivot_stack_for_crash
+    mov     x0, x30
+    adr     x1, thermosphere_vectors + 4
+    sub     x0, x0, x1
+    bl      handleUnknownException
+    b       .
+    check_vector_size synch_sp0
+
+vector_entry irq_sp0
+    bl      unknown_exception
+    .endfunc
+    .cfi_endproc
+    /* To save space, insert in an unused vector segment. */
+    _save_all_regs:
+
+    sub     sp, sp, #0x120
     stp     x0, x1, [sp, #0x00]
     stp     x2, x3, [sp, #0x10]
     stp     x4, x5, [sp, #0x20]
@@ -68,100 +110,35 @@
     stp     x26, x27, [sp, #0xD0]
     stp     x28, x29, [sp, #0xE0]
 
+    mov     x29, x30
+    ldp     x30, xzr, [sp, #-0x10] // See save_all_regs macro
+
     mrs     x20, sp_el1
-    mrs     x21, elr_el2
-    mrs     x22, spsr_el2
+    mrs     x21, sp_el0
+    mrs     x22, elr_el2
+    mrs     x23, spsr_el2
 
     stp     x30, x20, [sp, #0xF0]
     stp     x21, x22, [sp, #0x100]
-.endm
+    stp     x23, xzr, [sp, #0x110]
 
-/* Actual Vectors for Exosphere. */
-.global exosphere_vectors
-vector_base exosphere_vectors
-
-/* Current EL, SP0 */
-.global unknown_exception
-unknown_exception:
-vector_entry synch_sp0
-    b .
-    check_vector_size synch_sp0
-
-vector_entry irq_sp0
-    b unknown_exception
-    check_vector_size irq_sp0
+    mov     x30, x29
+    ret
 
 vector_entry fiq_sp0
-    b unknown_exception
-    check_vector_size fiq_sp0
-
-vector_entry serror_sp0
-    b unknown_exception
-    check_vector_size serror_sp0
-
-/* Current EL, SPx */
-vector_entry synch_spx
-    b unknown_exception
-    check_vector_size synch_spx
-
-vector_entry irq_spx
-    b unknown_exception
-    check_vector_size irq_spx
-
-vector_entry fiq_spx
-    b unknown_exception
-    check_vector_size fiq_spx
-
-vector_entry serror_spx
-    b unknown_exception
-    check_vector_size serror_spx
-    
-/* Lower EL, A64 */
-vector_entry synch_a64
-    save_all_regs
-
-    mov     x0, sp
-    mrs     x1, esr_el2
-
-    bl      . // FIXME!
-
-    b       _restore_all_regs
-    check_vector_size synch_a64
-
-vector_entry irq_a64
-    b unknown_exception
-    check_vector_size irq_a64
-
-vector_entry fiq_a64
-    b unknown_exception
-    check_vector_size fiq_a64
-
-vector_entry serror_a64
-    b unknown_exception
-    check_vector_size serror_a64
-
-
-/* Lower EL, A32 */
-vector_entry synch_a32
-    b unknown_exception
-    check_vector_size synch_a32
-
-vector_entry irq_a32
-    b unknown_exception
-    check_vector_size irq_a32
-
-vector_entry fiq_a32
-    b fiq_a64
+    bl      unknown_exception
     .endfunc
     .cfi_endproc
-/* To save space, insert in an unused vector segment. */
-_restore_all_regs:
+    /* To save space, insert in an unused vector segment. */
+    _restore_all_regs:
     ldp     x30, x20, [sp, #0xF0]
     ldp     x21, x22, [sp, #0x100]
+    ldp     x23, xzr, [sp, #0x110]
 
     msr     sp_el1, x20
-    msr     elr_el2, x21
-    msr     spsr_el2, x22
+    msr     sp_el0, x21
+    msr     elr_el2, x22
+    msr     spsr_el2, x23
 
     ldp     x0, x1, [sp, #0x00]
     ldp     x2, x3, [sp, #0x10]
@@ -179,9 +156,77 @@ _restore_all_regs:
     ldp     x26, x27, [sp, #0xD0]
     ldp     x28, x29, [sp, #0xE0]
 
-    add     sp, sp, #0x110
+    add     sp, sp, #0x210
     eret
 
+vector_entry serror_sp0
+    bl      unknown_exception
+    check_vector_size serror_sp0
+
+/* Current EL, SPx */
+vector_entry synch_spx
+    /* Only crashes go through there! */
+    pivot_stack_for_crash
+
+    save_all_regs
+
+    mov     x0, sp
+    mrs     x1, esr_el2
+
+    bl      handleSameElSyncException
+    b       .
+    check_vector_size synch_spx
+
+vector_entry irq_spx
+    bl      unknown_exception
+    check_vector_size irq_spx
+
+vector_entry fiq_spx
+    bl      unknown_exception
+    check_vector_size fiq_spx
+
+vector_entry serror_spx
+    bl      unknown_exception
+    check_vector_size serror_spx
+
+/* Lower EL, A64 */
+vector_entry synch_a64
+    save_all_regs
+
+    mov     x0, sp
+    mrs     x1, esr_el2
+
+    bl      handleLowerElSyncException
+
+    b       _restore_all_regs
+    check_vector_size synch_a64
+
+vector_entry irq_a64
+    bl      unknown_exception
+    check_vector_size irq_a64
+
+vector_entry fiq_a64
+    bl      unknown_exception
+    check_vector_size fiq_a64
+
+vector_entry serror_a64
+    bl      unknown_exception
+    check_vector_size serror_a64
+
+
+/* Lower EL, A32 */
+vector_entry synch_a32
+    bl      unknown_exception
+    check_vector_size synch_a32
+
+vector_entry irq_a32
+    bl      unknown_exception
+    check_vector_size irq_a32
+
+vector_entry fiq_a32
+    b       fiq_a64
+    check_vector_size fiq_a32
+
 vector_entry serror_a32
-    b unknown_exception
+    bl      unknown_exception
     check_vector_size serror_a32
