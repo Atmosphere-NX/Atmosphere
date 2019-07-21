@@ -26,26 +26,26 @@ void uart_config(UartDevice dev) {
     
     switch (dev) {
         case UART_A:
-            pinmux->uart1_rx = 0;
-            pinmux->uart1_tx = (PINMUX_INPUT | PINMUX_PULL_UP);
+            pinmux->uart1_tx = 0;
+            pinmux->uart1_rx = (PINMUX_INPUT | PINMUX_PULL_UP);
             pinmux->uart1_rts = 0;
             pinmux->uart1_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
             break;
         case UART_B:
-            pinmux->uart2_rx = 0;
-            pinmux->uart2_tx = (PINMUX_INPUT | PINMUX_PULL_UP);
+            pinmux->uart2_tx = 0;
+            pinmux->uart2_rx = (PINMUX_INPUT | PINMUX_PULL_UP);
             pinmux->uart2_rts = 0;
             pinmux->uart2_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
             break;
         case UART_C:
-            pinmux->uart3_rx = 0;
-            pinmux->uart3_tx = (PINMUX_INPUT | PINMUX_PULL_UP);
+            pinmux->uart3_tx = 0;
+            pinmux->uart3_rx = (PINMUX_INPUT | PINMUX_PULL_UP);
             pinmux->uart3_rts = 0;
             pinmux->uart3_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
             break;
         case UART_D:
-            pinmux->uart4_rx = 0;
-            pinmux->uart4_tx = (PINMUX_INPUT | PINMUX_PULL_UP);
+            pinmux->uart4_tx = 0;
+            pinmux->uart4_rx = (PINMUX_INPUT | PINMUX_PULL_UP);
             pinmux->uart4_rts = 0;
             pinmux->uart4_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
             break;
