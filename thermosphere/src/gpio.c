@@ -16,7 +16,6 @@
  
 #include <string.h>
 #include <stdint.h>
-#include <errno.h>
 
 #include "gpio.h"
 #include "utils.h"
