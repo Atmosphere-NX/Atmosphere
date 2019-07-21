@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include "log.h"
-#include "uart.h"
+#include "platform/uart.h"
 #include "utils.h"
 
 // NOTE: UNSAFE!
@@ -28,6 +28,6 @@ int serialLog(const char *fmt, ...)
     int res = vsprintf(buf, fmt, args);
     va_end(args);
 
-    uart_send(UART_C, buf, res);
+    uartWriteData(buf, (size_t)res);
     return res;
 }

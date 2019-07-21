@@ -16,6 +16,8 @@
  
 #pragma once
 
+#include <stdint.h>
+
 #define PINMUX_BASE 0x70003000
 #define MAKE_PINMUX_REG(n) MAKE_REG32(PINMUX_BASE + n)
 

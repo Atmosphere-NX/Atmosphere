@@ -17,6 +17,22 @@ ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
     AMSREV := $(AMSREV)-dirty
 endif
 
+ifeq ($(PLATFORM), qemu)
+
+export PLATFORM	:= qemu
+
+PLATFORM_SOURCES	:= src/platform/qemu
+PLATFORM_DEFINES	:= -DPLATFORM_QEMU
+
+else
+
+export PLATFORM	:= tegra
+
+PLATFORM_SOURCES	:= src/platform/tegra
+PLATFORM_DEFINES	:= -DPLATFORM_TEGRA
+
+endif
+
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
 # BUILD is the directory where object files & intermediate files will be placed
@@ -26,7 +42,7 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src
+SOURCES		:=	src $(PLATFORM_SOURCES)
 DATA		:=	data
 INCLUDES	:=	include ../common/include
 
@@ -34,15 +50,16 @@ INCLUDES	:=	include ../common/include
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only #<- important
-DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\" -DATMOSPHERE_RELEASE_VERSION_HASH="0x$(AMSHASH)"
+DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"\
+			-DATMOSPHERE_RELEASE_VERSION_HASH="0x$(AMSHASH)" $(PLATFORM_DEFINES)
 CFLAGS	:= \
 	-g \
 	-Os \
 	-ffunction-sections \
 	-fdata-sections \
 	-fomit-frame-pointer \
-    -fno-asynchronous-unwind-tables \
-    -fno-unwind-tables \
+	-fno-asynchronous-unwind-tables \
+	-fno-unwind-tables \
 	-std=gnu11 \
 	-Werror \
 	-Wall \
@@ -109,10 +126,26 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) clean all
+.PHONY: $(BUILD) clean all qemu qemudbg
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
+
+ifeq ($(PLATFORM), qemu)
+QEMUFLAGS :=	-nographic -machine virt,secure=on,virtualization=on -cpu cortex-a57 -smp 2 -m 1024\
+			-bios bl1.bin -d unimp -semihosting-config enable,target=native -serial mon:stdio
+
+# NOTE: copy bl1.bin, bl2.bin, bl31.bin from your own build of Arm Trusted Firmware!
+
+qemu: all
+	@cp thermosphere.bin bl33.bin
+	@qemu-system-aarch64 $(QEMUFLAGS)
+
+qemudbg: all
+	@cp thermosphere.bin bl33.bin
+	@qemu-system-aarch64 $(QEMUFLAGS) -s -S
+
+endif
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
@@ -121,7 +154,7 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
+	@rm -fr $(BUILD) $(TARGET).bin bl33.bin $(TARGET).elf
 
 
 #---------------------------------------------------------------------------------

@@ -17,7 +17,7 @@
  
 #pragma once
 
-#include "types.h"
+#include "../../utils.h"
 
 #define UART_BASE 0x70006000
 
@@ -162,6 +162,7 @@ void uart_init(UartDevice dev, uint32_t baud, bool inverted);
 void uart_wait_idle(UartDevice dev, UartVendorStatus status);
 void uart_send(UartDevice dev, const void *buf, size_t len);
 void uart_recv(UartDevice dev, void *buf, size_t len);
+size_t uart_recv_max(UartDevice dev, void *buf, size_t max_len);
 
 static inline volatile tegra_uart_t *uart_get_regs(UartDevice dev) {
     static const size_t offsets[] = {0, 0x40, 0x200, 0x300, 0x400};
