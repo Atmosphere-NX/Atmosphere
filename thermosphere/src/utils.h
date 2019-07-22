@@ -105,3 +105,7 @@ static inline u32 get_spsr(void) {
 static inline bool check_32bit_additive_overflow(u32 a, u32 b) {
     return __builtin_add_overflow_p(a, b, (u32)0);
 }
+
+static inline void panic(void) {
+    for (;;);
+}

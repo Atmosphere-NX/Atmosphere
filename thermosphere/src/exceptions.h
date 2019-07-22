@@ -78,3 +78,5 @@ typedef struct ExceptionSyndromeRegister {
     ExceptionClass ec   :  6;   // Exception Class
     u32 res0            : 32;
 } ExceptionSyndromeRegister;
+
+void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl);
