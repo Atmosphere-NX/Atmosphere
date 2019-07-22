@@ -27,3 +27,54 @@ typedef struct ExceptionStackFrame {
     u64 elr_el2;
     u64 spsr_el2;
 } ExceptionStackFrame;
+
+// Adapted from https://developer.arm.com/docs/ddi0596/a/a64-shared-pseudocode-functions/shared-exceptions-pseudocode
+typedef enum ExceptionClass {
+    Exception_Uncategorized = 0x0,
+    Exception_WFxTrap = 0x1,
+    Exception_CP15RTTrap = 0x3,
+    Exception_CP15RRTTrap = 0x4,
+    Exception_CP14RTTrap = 0x5,
+    Exception_CP14DTTrap = 0x6,
+    Exception_AdvSIMDFPAccessTrap = 0x7,
+    Exception_FPIDTrap = 0x8,
+    Exception_PACTrap = 0x9,
+    Exception_CP14RRTTrap = 0xC,
+    Exception_BranchTargetException = 0xD, // No official enum field name from Arm yet
+    Exception_IllegalState = 0xE,
+    Exception_SupervisorCallA32 = 0x11,
+    Exception_HypervisorCallA32 = 0x12,
+    Exception_MonitorCallA32 = 0x13,
+    Exception_SupervisorCallA64 = 0x15,
+    Exception_HypervisorCallA64 = 0x16,
+    Exception_MonitorCallA64 = 0x17,
+    Exception_SystemRegisterTrap = 0x18,
+    Exception_SVEAccessTrap = 0x19,
+    Exception_ERetTrap = 0x1A,
+    Exception_El3_ImplementationDefined = 0x1F,
+    Exception_InstructionAbortLowerEl = 0x20,
+    Exception_InstructionAbortSameEl = 0x21,
+    Exception_PCAlignment = 0x22,
+    Exception_DataAbortLowerEl = 0x24,
+    Exception_DataAbortSameEl = 0x25,
+    Exception_SPAlignment = 0x26,
+    Exception_FPTrappedExceptionA32 = 0x28,
+    Exception_FPTrappedExceptionA64 = 0x2C,
+    Exception_SError = 0x2F,
+    Exception_BreakpointLowerEl = 0x30,
+    Exception_BreakpointSameEl = 0x31,
+    Exception_SoftwareStepLowerEl = 0x32,
+    Exception_SoftwareStepSameEl = 0x33,
+    Exception_WatchpointLowerEl = 0x34,
+    Exception_WatchpointSameEl = 0x35,
+    Exception_SoftwareBreakpointA32 = 0x38,
+    Exception_VectorCatchA32 = 0x3A,
+    Exception_SoftwareBreakpointA64 = 0x3C,
+} ExceptionClass;
+
+typedef struct ExceptionSyndromeRegister {
+    u32 iss             : 25;   // Instruction Specific Syndrome
+    u32 il              :  1;   // Instruction Length (16 or 32-bit)
+    ExceptionClass ec   :  6;   // Exception Class
+    u32 res0            : 32;
+} ExceptionSyndromeRegister;
