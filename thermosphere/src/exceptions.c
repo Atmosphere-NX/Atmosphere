@@ -14,10 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "exceptions.h"
+#include "hvc.h"
 #include "log.h"
 
-static void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
+void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
 {
 #ifndef NDEBUG
     for (u32 i = 0; i < 30; i += 2) {
@@ -38,8 +38,17 @@ static void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
 
 void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 {
-    serialLog("Lower EL sync exception, EC = 0x%02llx IL=%llu ISS=0x%06llx\r\n", (u64)esr.ec, esr.il, esr.iss);
-    dumpStackFrame(frame, false);
+
+    switch (esr.ec) {
+        case Exception_HypervisorCallA64:
+        case Exception_HypervisorCallA32:
+            handleHypercall(frame, esr);
+            break;
+        default:
+            serialLog("Lower EL sync exception, EC = 0x%02llx IL=%llu ISS=0x%06llx\r\n", (u64)esr.ec, esr.il, esr.iss);
+            dumpStackFrame(frame, false);
+            break;
+    }
 }
 
 void handleSameElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
