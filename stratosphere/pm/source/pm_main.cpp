@@ -110,17 +110,20 @@ namespace {
 
     /* This uses debugging SVCs to retrieve a process's title id. */
     sts::ncm::TitleId GetProcessTitleId(u64 process_id) {
-        /* Get a debug handle, or return our title id. */
+        /* Check if we should return our title id. */
+        /* Doing this here works around a bug fixed in 6.0.0. */
+        /* Not doing so will cause svcDebugActiveProcess to deadlock on lower firmwares if called for it's own process. */
+        u64 current_process_id = 0;
+        R_ASSERT(svcGetProcessId(&current_process_id, CUR_PROCESS_HANDLE));
+        if (current_process_id == process_id) {
+            return __stratosphere_title_id;
+        }
+        
+        /* Get a debug handle. */
         AutoHandle debug_handle;
-        if (R_FAILED(svcDebugActiveProcess(debug_handle.GetPointer(), process_id))) {
-            u64 current_process_id = 0;
-            R_ASSERT(svcGetProcessId(&current_process_id, CUR_PROCESS_HANDLE));
-            if (current_process_id == process_id) {
-                return __stratosphere_title_id;
-            } else {
-                /* If we fail to debug a process other than our own, abort. */
-                std::abort();
-            }
+        if (R_FAILED(svcDebugActiveProcess(debug_handle.GetPointer(), process_id))) {    
+            /* If we fail to debug a process other than our own, abort. */
+            std::abort();
         }
 
         /* Loop until we get the event that tells us about the process. */
