@@ -69,10 +69,16 @@ void uart_config(UartDevice dev) {
 void uart_reset(UartDevice dev)
 {
     CarDevice uartCarDevs[] = { CARDEVICE_UARTA, CARDEVICE_UARTB, CARDEVICE_UARTC, CARDEVICE_UARTD };
+    if (dev == UART_B) {
+        gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_SFIO);
+    } else {
+        gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_GPIO);
+    }
+
     if (dev == UART_C) {
-        gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_GPIO);      // Leave UART-B as GPIO
-        gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_SFIO);      // Change UART-C to SPIO
-        // Fixme other uart?
+        gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_SFIO);
+    } else {
+        gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_GPIO);
     }
 
     uart_config(dev);
