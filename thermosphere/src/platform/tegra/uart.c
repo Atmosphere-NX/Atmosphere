@@ -21,9 +21,19 @@
 #include "gpio.h"
 #include "car.h"
 
+static inline void uart_wait_cycles(uint32_t baud, uint32_t num)
+{
+    udelay((num * 1000000 + 16 * baud - 1) / (16 * baud));
+}
+
+static inline void uart_wait_syms(uint32_t baud, uint32_t num)
+{
+    udelay((num * 1000000 + baud - 1) / baud);
+}
+
 void uart_config(UartDevice dev) {
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
-    
+
     switch (dev) {
         case UART_A:
             pinmux->uart1_tx = 0;
@@ -75,7 +85,7 @@ void uart_init(UartDevice dev, uint32_t baud, bool inverted) {
     /* Wait for idle state. */
     uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE);
 
-    /* Calculate baud rate. */
+    /* Calculate baud rate, round to nearest. */
     uint32_t rate = (8 * baud + 408000000) / (16 * baud);
 
     /* Setup UART in FIFO mode. */
@@ -85,14 +95,20 @@ void uart_init(UartDevice dev, uint32_t baud, bool inverted) {
     uart->UART_THR_DLAB = (uint8_t)rate;                            /* Divisor latch LSB. */
     uart->UART_IER_DLAB = (uint8_t)(rate >> 8);                     /* Divisor latch MSB. */
     uart->UART_LCR &= ~(UART_LCR_DLAB);                             /* Disable DLAB. */
-    
+    uart->UART_SPR;                                                 /* Dummy read. */
+    uart_wait_syms(baud, 3);                                        /* Wait for 3 symbols at the new baudrate. */
+
+    /* Enable FIFO with default settings. */
+    uart->UART_IIR_FCR = UART_FCR_FCR_EN_FIFO;
+    uart->UART_IRDA_CSR = inverted ? 2 : 0;                         /* Invert TX if needed */
+    uart->UART_SPR;                                                 /* Dummy read as mandated by TRM. */
+    uart_wait_cycles(baud, 3);                                      /* Wait for 3 baud cycles, as mandated by TRM (erratum). */
+
     /* Flush FIFO. */
-    uart->UART_IIR_FCR = (UART_FCR_FCR_EN_FIFO | UART_FCR_RX_CLR | UART_FCR_TX_CLR);    /* Enable and clear TX and RX FIFOs. */
-    uart->UART_IRDA_CSR = inverted ? 2 : 0; /* Invert TX */
-    uart->UART_SPR;
-    udelay(3 * ((baud + 999999) / baud));
-    
-    /* Wait for idle state. */
+    uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE);                 /* Make sure there's no data being written in TX FIFO (TRM). */
+    uart->UART_IIR_FCR |= UART_FCR_RX_CLR | UART_FCR_TX_CLR;        /* Clear TX and RX FIFOs. */
+    uart_wait_cycles(baud, 32);                                     /* Wait for 32 baud cycles (TRM, erratum). */
+    /* Wait for idle state (TRM). */
     uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE | UART_VENDOR_STATE_RX_IDLE);
 }
 
