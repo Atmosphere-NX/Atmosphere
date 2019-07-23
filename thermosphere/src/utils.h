@@ -17,7 +17,7 @@
 #pragma once
 
 #include "types.h"
-
+#include "preprocessor.h"
 
 #define BIT(n)      (1u   << (n))
 #define BITL(n)     (1ull << (n))
@@ -32,8 +32,6 @@
 #define PACKED          __attribute__((packed))
 
 #define ALINLINE        __attribute__((always_inline))
-
-#define SET_SYSREG(reg, val) do { temp_reg = (val); __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
 
 bool overlaps(u64 as, u64 ae, u64 bs, u64 be);
 

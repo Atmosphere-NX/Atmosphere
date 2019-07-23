@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2019 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* TuxSH: I added INC/DEC_10 to INC/DEC_32; tuples */
 
 #pragma once
@@ -202,3 +218,6 @@ IIF(BITAND(IS_COMPARABLE(x))(IS_COMPARABLE(y)) ) \
 #define TUPLE_FOLD_LEFT_2(len, T, op) EVAL(REPEAT(len, _TUPLE_FOLD_LEFT_2, T, op))
 #define TUPLE_FOLD_LEFT_3(len, T, op) EVAL(REPEAT(len, _TUPLE_FOLD_LEFT_3, T, op))
 #define TUPLE_FOLD_LEFT_4(len, T, op) EVAL(REPEAT(len, _TUPLE_FOLD_LEFT_4, T, op))
+
+#define STRINGIZE0(x)   #x
+#define STRINGIZE(x)    STRINGIZE0(x)
