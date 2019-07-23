@@ -6,8 +6,8 @@ int main(void)
 {
     uartInit(115200);
 
-    //uart_send(UART_C, "0123\n", 3);
-    serialLog("Hello from Thermosphere!\r\n");
+    serialLog("fifo flush fifo flush\n");
+    serialLog("Hello from Thermosphere!\n");
     __builtin_trap();
     return 0;
 }
