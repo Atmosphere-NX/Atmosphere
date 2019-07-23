@@ -1,10 +1,29 @@
+/*
+ * Copyright (c) 2019 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #include "preprocessor.h"
 
 // Only for most EL1 regs, etc.
 
-#define __BITL(n)               (1ull << (n))
+#ifndef BITL
+#define BITL(n)               (1ull << (n))
+#endif
+
 #define TUP_OSDTRRX_EL1         (2, 0, 0, 0, 2)
 #define TUP_MDCCINT_EL1         (2, 0, 0, 2, 0)
 #define TUP_MDSCR_EL1           (2, 0, 0, 2, 2)
@@ -273,48 +292,111 @@
 #define TUP_ZCR_EL12            (3, 5, 1, 2, 0)
 
 
-#define SCTLR_ELx_DSSBS         __BITL(44)
-#define SCTLR_ELx_ENIA          __BITL(31)
-#define SCTLR_ELx_ENIB          __BITL(30)
-#define SCTLR_ELx_ENDA          __BITL(27)
-#define SCTLR_ELx_EE            __BITL(25)
-#define SCTLR_ELx_IESB          __BITL(21)
-#define SCTLR_ELx_WXN           __BITL(19)
-#define SCTLR_ELx_ENDB          __BITL(13)
-#define SCTLR_ELx_I             __BITL(12)
-#define SCTLR_ELx_SA            __BITL(3)
-#define SCTLR_ELx_C             __BITL(2)
-#define SCTLR_ELx_A             __BITL(1)
-#define SCTLR_ELx_M             __BITL(0)
+#define SCTLR_ELx_DSSBS         BITL(44)
+#define SCTLR_ELx_ENIA          BITL(31)
+#define SCTLR_ELx_ENIB          BITL(30)
+#define SCTLR_ELx_ENDA          BITL(27)
+#define SCTLR_ELx_EE            BITL(25)
+#define SCTLR_ELx_IESB          BITL(21)
+#define SCTLR_ELx_WXN           BITL(19)
+#define SCTLR_ELx_ENDB          BITL(13)
+#define SCTLR_ELx_I             BITL(12)
+#define SCTLR_ELx_SA            BITL(3)
+#define SCTLR_ELx_C             BITL(2)
+#define SCTLR_ELx_A             BITL(1)
+#define SCTLR_ELx_M             BITL(0)
 
 #define SCTLR_ELx_FLAGS         (SCTLR_ELx_M  | SCTLR_ELx_A | SCTLR_ELx_C | SCTLR_ELx_SA | SCTLR_ELx_I | SCTLR_ELx_IESB)
 
-#define SCTLR_EL2_RES1          (__BITL(4) | __BITL(5)  | __BITL(11) | __BITL(16) | \
-                                __BITL(18) | __BITL(22) | __BITL(23) | __BITL(28) | \
-                                __BITL(29))
-#define SCTLR_EL2_RES0          (__BITL(6) | __BITL(7)  | __BITL(8)  | __BITL(9)  | \
-                                __BITL(10) | __BITL(13) | __BITL(14) | __BITL(15) | \
-                                __BITL(17) | __BITL(20) | __BITL(24) | __BITL(26) | \
-                                __BITL(27) | __BITL(30) | __BITL(31) | \
+#define SCTLR_EL2_RES1          (BITL(4) | BITL(5)  | BITL(11) | BITL(16) | \
+                                BITL(18) | BITL(22) | BITL(23) | BITL(28) | \
+                                BITL(29))
+#define SCTLR_EL2_RES0          (BITL(6) | BITL(7)  | BITL(8)  | BITL(9)  | \
+                                BITL(10) | BITL(13) | BITL(14) | BITL(15) | \
+                                BITL(17) | BITL(20) | BITL(24) | BITL(26) | \
+                                BITL(27) | BITL(30) | BITL(31) | \
                                 (0xFFFFEFFFull << 32))
 
-#define SCTLR_EL1_UCI           __BITL(26)
-#define SCTLR_EL1_E0E           __BITL(24)
-#define SCTLR_EL1_SPAN          __BITL(23)
-#define SCTLR_EL1_NTWE          __BITL(18)
-#define SCTLR_EL1_NTWI          __BITL(16)
-#define SCTLR_EL1_UCT           __BITL(15)
-#define SCTLR_EL1_DZE           __BITL(14)
-#define SCTLR_EL1_UMA           __BITL(9)
-#define SCTLR_EL1_SED           __BITL(8)
-#define SCTLR_EL1_ITD           __BITL(7)
-#define SCTLR_EL1_CP15BEN       __BITL(5)
-#define SCTLR_EL1_SA0           __BITL(4)
+#define SCTLR_EL1_UCI           BITL(26)
+#define SCTLR_EL1_E0E           BITL(24)
+#define SCTLR_EL1_SPAN          BITL(23)
+#define SCTLR_EL1_NTWE          BITL(18)
+#define SCTLR_EL1_NTWI          BITL(16)
+#define SCTLR_EL1_UCT           BITL(15)
+#define SCTLR_EL1_DZE           BITL(14)
+#define SCTLR_EL1_UMA           BITL(9)
+#define SCTLR_EL1_SED           BITL(8)
+#define SCTLR_EL1_ITD           BITL(7)
+#define SCTLR_EL1_CP15BEN       BITL(5)
+#define SCTLR_EL1_SA0           BITL(4)
 
-#define SCTLR_EL1_RES1  (__BITL(11) | __BITL(20) | __BITL(22) | __BITL(28) | __BITL(29))
-#define SCTLR_EL1_RES0  (__BITL(6)  | __BITL(10) | __BITL(13) | __BITL(17) | __BITL(27) | __BITL(30) | __BITL(31) | (0xFFFFEFFFull << 32))
+#define SCTLR_EL1_RES1  (BITL(11) | BITL(20) | BITL(22) | BITL(28) | BITL(29))
+#define SCTLR_EL1_RES0  (BITL(6)  | BITL(10) | BITL(13) | BITL(17) | BITL(27) | BITL(30) | BITL(31) | (0xFFFFEFFFull << 32))
 
-#undef __BITL
+
+// HCR Flags
+
+#define HCR_FWB     BITL(46)
+#define HCR_API     BITL(41)
+#define HCR_APK     BITL(40)
+#define HCR_TEA     BITL(37)
+#define HCR_TERR    BITL(36)
+#define HCR_TLOR    BITL(35)
+#define HCR_E2H     BITL(34)
+#define HCR_ID      BITL(33)
+#define HCR_CD      BITL(32)
+#define HCR_RW      BITL(31)
+#define HCR_TRVM    BITL(30)
+#define HCR_HCD     BITL(29)
+#define HCR_TDZ     BITL(28)
+#define HCR_TGE     BITL(27)
+#define HCR_TVM     BITL(26)
+#define HCR_TTLB    BITL(25)
+#define HCR_TPU     BITL(24)
+#define HCR_TPC     BITL(23)
+#define HCR_TSW     BITL(22)
+#define HCR_TAC     BITL(21)
+#define HCR_TIDCP   BITL(20)
+#define HCR_TSC     BITL(19)
+#define HCR_TID3    BITL(18)
+#define HCR_TID2    BITL(17)
+#define HCR_TID1    BITL(16)
+#define HCR_TID0    BITL(15)
+#define HCR_TWE     BITL(14)
+#define HCR_TWI     BITL(13)
+#define HCR_DC      BITL(12)
+#define HCR_BSU     (3ull  << 10)
+#define HCR_BSU_IS  BITL(10)
+#define HCR_FB      BITL(9)
+#define HCR_VSE     BITL(8)
+#define HCR_VI      BITL(7)
+#define HCR_VF      BITL(6)
+#define HCR_AMO     BITL(5)
+#define HCR_IMO     BITL(4)
+#define HCR_FMO     BITL(3)
+#define HCR_PTW     BITL(2)
+#define HCR_SWI     BITL(1)
+#define HCR_VM      BITL(0)
+
+#define HSTR_EL2_T(x)       BITL(x)
+
+#define CPTR_EL2_TCPAC      BITL(31)
+#define CPTR_EL2_TTA        BITL(20)
+#define CPTR_EL2_TFP        BITL(10)
+#define CPTR_EL2_TZ         BITL(8)
+#define CPTR_EL2_RES1       0x000032FF
+
+#define MDCR_EL2_TPMS       BITL(14)
+#define MDCR_EL2_E2PB_MASK  3ull
+#define MDCR_EL2_E2PB_SHIFT 12
+#define MDCR_EL2_TDRA       BITL(11)
+#define MDCR_EL2_TDOSA      BITL(10)
+#define MDCR_EL2_TDA        BITL(9)
+#define MDCR_EL2_TDE        BITL(8)
+#define MDCR_EL2_HPME       BITL(7)
+#define MDCR_EL2_TPM        BITL(6)
+#define MDCR_EL2_TPMCR      BITL(5)
+#define MDCR_EL2_HPMN_MASK  0x1Full
 
 #define ENCODE_SYSREG_FIELDS_MOV(op0, op1, crn, crm, op2) (((op0) << 19) | ((op1) << 16) | ((crn) << 12) | ((crm) << 8) | ((op2) << 5))
 #define ENCODE_SYSREG_MOV(name) EVAL(ENCODE_SYSREG_FIELDS_MOV CAT(TUP_, name))
@@ -323,3 +405,11 @@
 
 #define ENCODE_SYSREG_FIELDS_ISS(op0, op1, crn, crm, op2) (((op0) << 20) | ((op2) << 17) | ((op1) << 14) | ((crn) << 10) | ((crm) << 1))
 #define ENCODE_SYSREG_ISS(name) EVAL(ENCODE_SYSREG_FIELDS_ISS CAT(TUP_, name))
+
+#define GET_SYSREG(r) ({\
+    u64 __val;                                                      \
+    asm volatile("mrs %0, " STRINGIZE(r) : "=r" (__val));           \
+    __val;                                                          \
+})
+
+#define SET_SYSREG(reg, val) do { u64 temp_reg = (val); __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
