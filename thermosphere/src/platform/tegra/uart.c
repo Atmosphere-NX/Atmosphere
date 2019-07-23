@@ -64,6 +64,8 @@ void uart_reset(UartDevice dev)
         gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_SFIO);      // Change UART-C to SPIO
         // Fixme other uart?
     }
+
+    uart_config(dev);
     clkrst_reboot(uartCarDevs[dev]);
 }
 
@@ -87,6 +89,7 @@ void uart_init(UartDevice dev, uint32_t baud, bool inverted) {
     /* Flush FIFO. */
     uart->UART_IIR_FCR = (UART_FCR_FCR_EN_FIFO | UART_FCR_RX_CLR | UART_FCR_TX_CLR);    /* Enable and clear TX and RX FIFOs. */
     uart->UART_IRDA_CSR = inverted ? 2 : 0; /* Invert TX */
+    uart->UART_SPR;
     udelay(3 * ((baud + 999999) / baud));
     
     /* Wait for idle state. */

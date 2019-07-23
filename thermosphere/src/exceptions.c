@@ -21,18 +21,18 @@ void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
 {
 #ifndef NDEBUG
     for (u32 i = 0; i < 30; i += 2) {
-        serialLog("x%u\t\t%08llx\t\tx%u\t\t%08llx\r\n", i, frame->x[i], i + 1, frame->x[i + 1]);
+        serialLog("x%u\t\t%016llx\t\tx%u\t\t%016llx\n", i, frame->x[i], i + 1, frame->x[i + 1]);
     }
 
-    serialLog("x30\t\t%08llx\r\n\r\n", frame->x[30]);
-    serialLog("elr_el2\t\t%08llx\r\n", frame->elr_el2);
-    serialLog("spsr_el2\t%08llx\r\n", frame->spsr_el2);
+    serialLog("x30\t\t%016llx\n\n", frame->x[30]);
+    serialLog("elr_el2\t\t%016llx\n", frame->elr_el2);
+    serialLog("spsr_el2\t%016llx\n", frame->spsr_el2);
     if (sameEl) {
-        serialLog("sp_el2\t\t%08llx\r\n", frame->sp_el2);
+        serialLog("sp_el2\t\t%016llx\n", frame->sp_el2);
     } else {
-        serialLog("sp_el0\t\t%08llx\r\n", frame->sp_el0);
+        serialLog("sp_el0\t\t%016llx\n", frame->sp_el0);
     }
-    serialLog("sp_el1\t\t%08llx\r\n", frame->sp_el1);
+    serialLog("sp_el1\t\t%016llx\n", frame->sp_el1);
 #endif
 }
 
@@ -45,7 +45,7 @@ void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeReg
             handleHypercall(frame, esr);
             break;
         default:
-            serialLog("Lower EL sync exception, EC = 0x%02llx IL=%llu ISS=0x%06llx\r\n", (u64)esr.ec, esr.il, esr.iss);
+            serialLog("Lower EL sync exception, EC = 0x%02llx IL=%llu ISS=0x%06llx\n", (u64)esr.ec, esr.il, esr.iss);
             dumpStackFrame(frame, false);
             break;
     }
@@ -53,11 +53,11 @@ void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeReg
 
 void handleSameElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 {
-    serialLog("Same EL sync exception, EC = 0x%02llx IL=%llu ISS=0x%06llx\r\n", (u64)esr.ec, esr.il, esr.iss);
+    serialLog("Same EL sync exception, EC = 0x%02llx IL=%llu ISS=0x%06llx\n", (u64)esr.ec, esr.il, esr.iss);
     dumpStackFrame(frame, true);
 }
 
 void handleUnknownException(u32 offset)
 {
-    serialLog("Unknown exception! (offset 0x%03lx)\r\n", offset);
+    serialLog("Unknown exception! (offset 0x%03lx)\n", offset);
 }

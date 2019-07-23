@@ -22,7 +22,7 @@ void handleHypercall(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
     u32 id = esr.iss;
     switch (id) {
         default:
-            serialLog("Unhandled hypercall: 0x%x.\r\n");
+            serialLog("Unhandled hypercall: 0x%x.\n");
             dumpStackFrame(frame, false);
             break;
     }
