@@ -403,6 +403,9 @@
 #define MAKE_MSR(name, Rt)      (0xD5000000 | ENCODE_SYSREG_MOV(name) | ((Rt) & 0x1F))
 #define MAKE_MRS(name, Rt)      (0xD5200000 | ENCODE_SYSREG_MOV(name) | ((Rt) & 0x1F))
 
+#define MAKE_MSR_FROM_FIELDS(op0, op1, crn, crm, op2, Rt)    (0xD5000000 | ENCODE_SYSREG_FIELDS_MOV(op0, op1, crn, crm, op2) | ((Rt) & 0x1F))
+#define MAKE_MRS_FROM_FIELDS(op0, op1, crn, crm, op2, Rt)    (0xD5200000 | ENCODE_SYSREG_FIELDS_MOV(op0, op1, crn, crm, op2) | ((Rt) & 0x1F))
+
 #define ENCODE_SYSREG_FIELDS_ISS(op0, op1, crn, crm, op2) (((op0) << 20) | ((op2) << 17) | ((op1) << 14) | ((crn) << 10) | ((crm) << 1))
 #define ENCODE_SYSREG_ISS(name) EVAL(ENCODE_SYSREG_FIELDS_ISS CAT(TUP_, name))
 
@@ -413,3 +416,13 @@
 })
 
 #define SET_SYSREG(reg, val) do { u64 temp_reg = (val); __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
+
+#define SYSREG_OP1_AARCH32_AUTO 0
+#define SYSREG_OP1_AARCH64_EL1  0
+#define SYSREG_OP1_CACHE        1
+#define SYSREG_OP1_CACHESZSEL   2
+#define SYSREG_OP1_EL0          3
+#define SYSREG_OP1_EL2          4
+#define SYSREG_OP1_EL3          6
+#define SYSREG_OP1_AARCH32_JZL  7
+#define SYSREG_OP1_AARCH64_SEL1 7

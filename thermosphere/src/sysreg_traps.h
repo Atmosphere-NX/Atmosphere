@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include "utils.h"
-#include "exceptions.h"
+#include "traps.h"
 
-void enableTraps(void);
+void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg2);
+void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg2);
+
