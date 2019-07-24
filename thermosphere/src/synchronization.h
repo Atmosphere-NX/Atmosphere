@@ -16,7 +16,12 @@
 
 #pragma once
 
-#include "utils.h"
-#include "exceptions.h"
+static inline void __dsb_sy(void)
+{
+    __asm__ __volatile__ ("dsb sy" ::: "memory");
+}
 
-void enableTraps(void);
+static inline void __isb(void)
+{
+    __asm__ __volatile__ ("isb" ::: "memory");
+}
