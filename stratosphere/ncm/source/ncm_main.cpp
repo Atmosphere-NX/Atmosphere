@@ -74,7 +74,6 @@ void __appExit(void) {
     /* Cleanup services. */
     fsdevUnmountAll();
     fsExit();
-    smExit();
 }
 
 int main(int argc, char **argv)
