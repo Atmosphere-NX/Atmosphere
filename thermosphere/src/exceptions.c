@@ -15,6 +15,9 @@
  */
 
 #include "hvc.h"
+#include "traps.h"
+#include "sysreg_traps.h"
+
 #include "log.h"
 
 bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode)
@@ -82,6 +85,20 @@ void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeReg
 {
 
     switch (esr.ec) {
+        case Exception_CP14RTTrap:
+        case Exception_CP15RTTrap:
+            handleMcrMrcTrap(frame, esr);
+            break;
+        case Exception_CP14DTTrap:
+            handleLdcStcTrap(frame, esr);
+            break;
+        case Exception_CP14RRTTrap:
+        case Exception_CP15RRTTrap:
+            handleMcrrMrrcTrap(frame, esr);
+            break;
+        case Exception_SystemRegisterTrap:
+            handleMsrMrsTrap(frame, esr);
+            break;
         case Exception_HypervisorCallA64:
         case Exception_HypervisorCallA32:
             handleHypercall(frame, esr);
