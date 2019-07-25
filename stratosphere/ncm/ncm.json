@@ -59,7 +59,8 @@
                 "svcAcceptSession"                   : "0x41",
                 "svcReplyAndReceiveLight"            : "0x42",
                 "svcReplyAndReceive"                 : "0x43",
-                "svcReplyAndReceiveWithUserBuffer"   : "0x44"
+                "svcReplyAndReceiveWithUserBuffer"   : "0x44",
+                "svcCallSecureMonitor"               : "0x7F"
             }
         }
     ]
