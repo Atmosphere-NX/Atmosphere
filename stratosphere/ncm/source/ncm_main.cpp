@@ -15,6 +15,7 @@
  */
 
 #include <switch.h>
+#include <atmosphere.h>
 #include <stratosphere.hpp>
 
 #include "impl/ncm_content_manager.hpp"
@@ -34,6 +35,17 @@ extern "C" {
     void __appInit(void);
     void __appExit(void);
 
+    /* Exception handling. */
+    alignas(16) u8 __nx_exception_stack[0x1000];
+    u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
+    void __libnx_exception_handler(ThreadExceptionDump *ctx);
+    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
+}
+
+sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Ncm;
+
+void __libnx_exception_handler(ThreadExceptionDump *ctx) {
+    StratosphereCrashHandler(ctx);
 }
 
 void __libnx_initheap(void) {
@@ -51,8 +63,11 @@ void __libnx_initheap(void) {
 void __appInit(void) {
     SetFirmwareVersionForLibnx();
 
-    R_ASSERT(smInitialize());
-    R_ASSERT(fsInitialize());
+    DoWithSmSession([&]() {
+        R_ASSERT(fsInitialize());
+    });
+
+    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
 }
 
 void __appExit(void) {
@@ -64,20 +79,17 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
-    consoleDebugInit(debugDevice_SVC);
-            
-    auto server_manager = new WaitableManager(2);
+    static auto s_server_manager = WaitableManager(2);
     
     /* Initialize content manager implementation. */
     R_ASSERT(sts::ncm::impl::InitializeContentManager());
 
-    server_manager->AddWaitable(new ServiceServer<sts::ncm::ContentManagerService>("ncm", 0x10));
-    server_manager->AddWaitable(new ServiceServer<sts::lr::LocationResolverManagerService>("lr", 0x10));
+    /* Create services. */
+    s_server_manager.AddWaitable(new ServiceServer<sts::ncm::ContentManagerService>("ncm", 0x10));
+    s_server_manager.AddWaitable(new ServiceServer<sts::lr::LocationResolverManagerService>("lr", 0x10));
     
     /* Loop forever, servicing our services. */
-    server_manager->Process();
-    
-    delete server_manager;
+    s_server_manager.Process();
     
     return 0;
 }
