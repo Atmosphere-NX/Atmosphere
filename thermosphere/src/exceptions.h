@@ -79,4 +79,29 @@ typedef struct ExceptionSyndromeRegister {
     u32 res0            : 32;
 } ExceptionSyndromeRegister;
 
+static inline bool spsrIsA32(u64 spsr)
+{
+    return (spsr & 0x10) != 0;
+}
+
+static inline bool spsrIsThumb(u64 spsr)
+{
+    return spsrIsA32(spsr) && (spsr & 0x20) != 0;
+}
+
+static inline u32 spsrGetT32ItFlags(u64 spsr)
+{
+    return (((spsr >> 10) & 0x3F) << 2) | ((spsr >> 25) & 3);
+}
+
+static inline void spsrSetT32ItFlags(u64 *spsr, u32 itFlags)
+{
+    static const u32 itMask = (0x3F << 10) | (3 << 25);
+    *spsr &= ~itMask;
+    *spsr |= (itFlags & 3) << 25;
+    *spsr |= ((itFlags >> 2) & 0x3F) << 10;
+}
+
+bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode);
+void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size);
 void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl);
