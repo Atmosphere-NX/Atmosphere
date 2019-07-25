@@ -21,3 +21,7 @@
 void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg2);
 void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg2);
 
+void handleMsrMrsTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+void handleMcrMrcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+void handleMcrrMrrcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+void handleLdcStcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);

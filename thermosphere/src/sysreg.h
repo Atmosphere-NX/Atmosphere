@@ -225,14 +225,19 @@
 #define TUP_TPIDRRO_EL0         (3, 3, 13, 0, 3)
 
 #define TUP_CNTFRQ_EL0          (3, 3, 14, 0, 0)
+#define TUP_CNTPCT_EL0          (3, 3, 14, 0, 1)
+#define TUP_CNTVCT_EL0          (3, 3, 14, 0, 2)
 
 #define TUP_CNTP_TVAL_EL0       (3, 3, 14, 2, 0)
 #define TUP_CNTP_CTL_EL0        (3, 3, 14, 2, 1)
 #define TUP_CNTP_CVAL_EL0       (3, 3, 14, 2, 2)
 
-#define TUP_AARCH32_CNTP_TVAL   (0, 0, 14, 2, 0)
-#define TUP_AARCH32_CNTP_CTL    (0, 0, 14, 2, 1)
-#define TUP_AARCH32_CNTP_CVAL   (0, 2, 0, 14, 0)
+#define TUP_CNTV_TVAL_EL0       (3, 3, 14, 3, 0)
+#define TUP_CNTV_CTL_EL0        (3, 3, 14, 3, 1)
+#define TUP_CNTV_CVAL_EL0       (3, 3, 14, 3, 2)
+
+#define TUP_CNTVOFF_EL2         (3, 4, 14, 0, 3)
+#define TUP_CNTHP_CVAL_EL2      (3, 4, 14, 2, 2)
 
 #define __field_PMEV_op2(n)     ((n) & 0x7)
 #define __field__CNTR_CRm(n)    (0x8 | (((n) >> 3) & 0x3))

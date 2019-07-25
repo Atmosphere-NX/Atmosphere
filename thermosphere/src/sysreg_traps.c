@@ -172,10 +172,104 @@ void handleMcrMrcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 
     if (esr.iss & BIT(31)) {
         // Error, we shouldn't have trapped those in first place anyway.
+        skipFaultingInstruction(frame, 4);
         return;
     } else if (!evaluateMcrMrcCondition(frame->spsr_el2, condition, condValid)) {
+        skipFaultingInstruction(frame, 4);
         return;
     }
 
     handleMsrMrsTrap(frame, esr);
+}
+
+void handleMcrrMrrcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+{
+    u32 iss = esr.iss;
+    u32 coproc = esr.ec == Exception_CP14RRTTrap ? 14 : 15;
+    bool cv = (iss & BIT(24)) != 0;
+    u32 cond = (iss >> 20) & 0xF;
+    u32 opc1 = (iss >> 16) & 0xF;
+    u32 reg2 = (iss >> 10) & 0x1F;
+    u32 reg1 = (iss >>  5) & 0x1F;
+    u32 crm  = (iss >>  1) & 0xF;
+    u32 dir  = iss & 1;
+
+    if (!evaluateMcrMrcCondition(frame->spsr_el2, cond, cv)) {
+        skipFaultingInstruction(frame, 4);
+        return;
+    }
+
+    u32 sysregIss = -1;
+    // No automatic conversion, handle what we potentiall trap
+    if (coproc == 14) {
+        if (crm == 1 && opc1 == 0) {
+            sysregIss = ENCODE_SYSREG_ISS(MDRAR_EL1);
+        } else if (crm == 2 && opc1 == 0) {
+            // DBGSAR, deprecated in Armv8 and no reg mapping,
+            // we won't handle it
+        }
+    } else {
+        switch (crm) {
+            case 2: {
+                switch (opc1) {
+                    case 0:
+                        sysregIss = ENCODE_SYSREG_ISS(TTBR0_EL1);
+                        break;
+                    case 1:
+                        sysregIss = ENCODE_SYSREG_ISS(TTBR1_EL1);
+                        break;
+                    default:
+                        // other regs are el2 ttbr regs, not trapped here
+                        break;
+                }
+                break;
+            }
+
+            case 7:
+                sysregIss = opc1 == 0 ? ENCODE_SYSREG_ISS(PAR_EL1) : -1;
+                break;
+
+            case 14: {
+                switch (opc1) {
+                    case 0:
+                        sysregIss = ENCODE_SYSREG_ISS(CNTPCT_EL0);
+                        break;
+                    case 1:
+                        sysregIss = ENCODE_SYSREG_ISS(CNTVCT_EL0);
+                        break;
+                    case 2:
+                        sysregIss = ENCODE_SYSREG_ISS(CNTP_CVAL_EL0);
+                        break;
+                    case 3:
+                        sysregIss = ENCODE_SYSREG_ISS(CNTV_CVAL_EL0);
+                        break;
+                    case 4:
+                        sysregIss = ENCODE_SYSREG_ISS(CNTVOFF_EL2);
+                        break;
+                    case 6:
+                        sysregIss = ENCODE_SYSREG_ISS(CNTHP_CVAL_EL2);
+                        break;
+                }
+            }
+        }
+    }
+
+    if (esr.iss & BIT(31)) {
+        // Error, we shouldn't have trapped those in first place anyway.
+        skipFaultingInstruction(frame, 4);
+        return;
+    }
+
+    if (dir == 1) {
+        doSystemRegisterRead(frame, sysregIss, reg1, reg2);
+    } else {
+        doSystemRegisterWrite(frame, sysregIss, reg1, reg2);
+    }
+}
+
+void handleLdcStcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+{
+    // Only used for DBGDTRRXint
+    // Do not execute the read/writes
+    skipFaultingInstruction(frame, esr.il == 0 ? 2 : 4);
 }
