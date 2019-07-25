@@ -17,6 +17,30 @@
 #include "hvc.h"
 #include "log.h"
 
+bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode)
+{
+    if (conditionCode == 14) {
+        // AL
+        return true;
+    } else if (conditionCode == 15) {
+        // Invalid encoding
+        return false;
+    }
+
+    // NZCV
+    bool n = (spsr & BIT(31)) != 0;
+    bool z = (spsr & BIT(30)) != 0;
+    bool c = (spsr & BIT(29)) != 0;
+    bool v = (spsr & BIT(28)) != 0;
+
+    bool tableHalf[] = {
+        // EQ, CS, MI, VS, HI, GE, GT
+        z, c, n, v, c && !z, n == v, !z && n == v,
+    };
+
+    return (conditionCode & 1) == 0 ? tableHalf[conditionCode / 2] : !tableHalf[conditionCode / 2];
+}
+
 void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
 {
 #ifndef NDEBUG
@@ -34,6 +58,24 @@ void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
     }
     serialLog("sp_el1\t\t%016llx\n", frame->sp_el1);
 #endif
+}
+
+static void advanceItState(ExceptionStackFrame *frame)
+{
+    if (!spsrIsThumb(frame->spsr_el2) || spsrGetT32ItFlags(frame->spsr_el2) == 0) {
+        return;
+    }
+
+    u32 it = spsrGetT32ItFlags(frame->spsr_el2);
+
+    // Last instruction of the block => wipe, otherwise advance
+    spsrSetT32ItFlags(&frame->spsr_el2, (it & 7) == 0 ? 0 : (it & 0xE0) | ((it << 1) & 0x1F));
+}
+
+void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size)
+{
+    advanceItState(frame);
+    frame->elr_el2 += size;
 }
 
 void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)

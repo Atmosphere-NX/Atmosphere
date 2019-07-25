@@ -19,7 +19,7 @@
 #include "sysreg.h"
 
 // For a32 mcr/mrc => a64 mrs
-u32 convertMcrMrcIss(u32 *outCondition, u32 a32Iss, u32 coproc, u32 el)
+static u32 convertMcrMrcIss(u32 *outCondition, bool *outCondValid, u32 a32Iss, u32 coproc, u32 el)
 {
     // NOTE: MCRR / MRRC do NOT map for the most part and need to be handled separately
 
@@ -30,9 +30,8 @@ u32 convertMcrMrcIss(u32 *outCondition, u32 a32Iss, u32 coproc, u32 el)
     u32 CRn  = (a32Iss >> 10) & 15;
     //u32 Rt   = (a32Iss >>  5) & 31;
     //u32 CRm  = (a32Iss >>  1) & 15;
-
-    bool condValid = (a32Iss & BIT(24)) != 0;
-    *outCondition = condValid ? ((a32Iss >> 20) & 15): 14; // use "unconditional" by default
+    *outCondValid = (a32Iss & BIT(24)) != 0;
+    *outCondition = (a32Iss >> 20) & 15;
 
     u32 op0 = (16 - coproc) & 3;
     u32 op1;
@@ -82,6 +81,17 @@ u32 convertMcrMrcIss(u32 *outCondition, u32 a32Iss, u32 coproc, u32 el)
     return (a32Iss & ~(MASK2(24, 20) | MASK2(16, 14))) | (op0 << 20) | (op1 << 14);
 }
 
+static bool evaluateMcrMrcCondition(u64 spsr, u32 condition, bool condValid)
+{
+    if (!condValid) {
+        // Only T32 instructions can do that
+        u32 it = spsrGetT32ItFlags(spsr);
+        return it == 0 || spsrEvaluateConditionCode(spsr, it >> 4);
+    } else {
+        return spsrEvaluateConditionCode(spsr, condition);
+    }
+}
+
 static void doSystemRegisterRwImpl(u64 *val, u32 iss)
 {
     u32 op0  = (iss >> 20) & 3;
@@ -109,7 +119,10 @@ void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg
 {
     // reg1 != reg2: mrrc/mcrr
     u64 val = 0;
-    doSystemRegisterRwImpl(&val, iss | 1);
+
+    iss &= ~((0x1F << 5) | 1);
+
+    doSystemRegisterRwImpl(&val, iss);
     if (reg1 == reg2) {
         frame->x[reg1] = val;
     } else {
@@ -117,22 +130,52 @@ void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg
         frame->x[reg2] = val >> 32;
     }
 
-    // Sysreg access are always 4 bit in length even for Aarch32
-    frame->elr_el2 += 4;
+    skipFaultingInstruction(frame, 4);
 }
 
 void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg2)
 {
     // reg1 != reg2: mrrc/mcrr
     u64 val = frame->x[reg1];
+    iss &= ~((0x1F << 5) | 1);
 
     if (reg1 != reg2) {
         val  = (val << 32) >> 32;
         val |= frame->x[reg2] << 32;
     }
 
-    doSystemRegisterRwImpl(&val, iss & ~1);
+    doSystemRegisterRwImpl(&val, iss);
+    skipFaultingInstruction(frame, 4);
+}
 
-    // Sysreg access are always 4 bit in length even for Aarch32
-    frame->elr_el2 += 4;
+void handleMsrMrsTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+{
+    u32 iss = esr.iss;
+    u32 reg = (iss >> 5) & 31;
+    bool isRead = (iss & 1) != 0;
+
+    if (isRead) {
+        doSystemRegisterRead(frame, iss, reg, reg);
+    } else {
+        doSystemRegisterWrite(frame, iss, reg, reg);
+    }
+}
+
+void handleMcrMrcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+{
+    u32 condition;
+    bool condValid;
+    u32 coproc = esr.ec == Exception_CP14RTTrap ? 14 : 15;
+
+    // EL0 if User Mode else EL1
+    esr.iss = convertMcrMrcIss(&condition, &condValid, esr.iss, coproc, (frame->spsr_el2 & 0xF) == 0 ? 0 : 1);
+
+    if (esr.iss & BIT(31)) {
+        // Error, we shouldn't have trapped those in first place anyway.
+        return;
+    } else if (!evaluateMcrMrcCondition(frame->spsr_el2, condition, condValid)) {
+        return;
+    }
+
+    handleMsrMrsTrap(frame, esr);
 }
