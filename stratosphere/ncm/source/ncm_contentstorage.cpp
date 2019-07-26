@@ -586,7 +586,7 @@ namespace sts::ncm {
         this->GetContentPath(content_path, content_id);
 
         errno = 0;
-        f = fopen(content_path, "w+b");
+        f = fopen(content_path, "r+b");
 
         ON_SCOPE_EXIT {
             fclose(f);
