@@ -95,7 +95,7 @@ namespace sts::ncm::impl {
 
         this->GetPlaceHolderPath(placeholder_path, placeholder_id);
         errno = 0;
-        *out_handle = fopen(placeholder_path, "w+b");
+        *out_handle = fopen(placeholder_path, "r+b");
 
         if (errno != 0) {
             return fsdevGetLastResult();
