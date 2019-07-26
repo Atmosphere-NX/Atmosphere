@@ -1,4 +1,4 @@
-SUBFOLDERS := fusee-primary fusee-secondary
+SUBFOLDERS := fusee-primary fusee-mtc fusee-secondary
 
 TOPTARGETS := all clean
 

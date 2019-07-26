@@ -3706,7 +3706,7 @@ static int train_one(int z_val, uint32_t next_rate, uint32_t current_rate, tegra
     return 0;
 }
 
-void train_dram() {
+void train_dram(void) {
     volatile tegra_car_t *car = car_get_regs();
     
     tegra_emc_timing_t *timing_tables;

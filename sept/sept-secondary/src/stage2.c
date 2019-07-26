@@ -25,6 +25,42 @@ const char *stage2_get_program_path(void) {
     return g_stage2_path;
 }
 
+static bool run_mtc(const char *mtc_path, uintptr_t mtc_address) {
+    FILINFO info;
+    size_t size;
+    
+    /* Check if the MTC binary is present. */
+    if (f_stat(mtc_path, &info) != FR_OK) {
+        print(SCREEN_LOG_LEVEL_WARNING, "Stage2's MTC binary not found!\n");
+        return false;
+    }
+    
+    size = (size_t)info.fsize;
+    
+    /* Try to read the MTC binary. */
+    if (read_from_file((void *)mtc_address, size, mtc_path) != size) {
+        print(SCREEN_LOG_LEVEL_WARNING, "Failed to read stage2's MTC binary (%s)!\n", mtc_path);
+        return false;
+    }
+    
+    ScreenLogLevel mtc_log_level = log_get_log_level();
+    bool mtc_res = false;
+    int mtc_argc = 1;
+    char mtc_arg_data[CHAINLOADER_ARG_DATA_MAX_SIZE] = {0};
+    stage2_mtc_args_t *mtc_args = (stage2_mtc_args_t *)mtc_arg_data;
+
+    /* Setup argument data. */
+    memcpy(&mtc_args->log_level, &mtc_log_level, sizeof(mtc_log_level));
+    
+    /* Run the MTC binary. */
+    mtc_res = (((int (*)(int, void *))mtc_address)(mtc_argc, mtc_arg_data) == 0);
+    
+    /* Cleanup right away. */
+    memset((void *)mtc_address, 0, size);
+    
+    return mtc_res;
+}
+
 /* We get the luxury of assuming a constant filename/load address. */
 void load_stage2(void) {
     FILINFO info;
@@ -32,15 +68,22 @@ void load_stage2(void) {
     uintptr_t tmp_addr;
     stage2_config_t config = {
         .path = "sept/payload.bin",
+        .mtc_path = "atmosphere/fusee-mtc.bin",
         .load_address = 0xF0000000,
         .entrypoint = 0xF0000000,
     };
     
     print(SCREEN_LOG_LEVEL_DEBUG, "Stage 2 Config:\n");
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    File Path:    %s\n", config.path);
+    print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    MTC File Path:    %s\n", config.mtc_path);
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    Load Address: 0x%08x\n", config.load_address);
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    Entrypoint:   0x%p\n", config.entrypoint);
 
+    /* Run the MTC binary. */
+    if (!run_mtc(config.mtc_path, config.load_address)) {
+        print(SCREEN_LOG_LEVEL_WARNING, "DRAM training failed! Continuing with untrained DRAM.\n");
+    }
+    
     if (f_stat(config.path, &info) != FR_OK) {
         fatal_error("Failed to stat stage2 (%s)!\n", config.path);
     }
@@ -66,6 +109,7 @@ void load_stage2(void) {
         tmp_addr = config.load_address;
     }
     
+    /* Try to read stage2. */
     if (read_from_file((void *)tmp_addr, size, config.path) != size) {
         fatal_error("Failed to read stage2 (%s)!\n", config.path);
     }

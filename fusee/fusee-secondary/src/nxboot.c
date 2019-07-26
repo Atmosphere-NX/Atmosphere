@@ -48,6 +48,7 @@
 #include "exocfg.h"
 #include "display/video_fb.h"
 #include "lib/ini.h"
+#include "lib/log.h"
 #include "splash_screen.h"
 
 #define u8 uint8_t
@@ -57,7 +58,6 @@
 #include "sept_secondary_01_enc.h"
 #include "lp0fw_bin.h"
 #include "emummc_kip.h"
-#include "lib/log.h"
 #undef u8
 #undef u32
 
@@ -484,7 +484,7 @@ uint32_t nxboot_main(void) {
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
     exo_emummc_config_t exo_emummc_cfg;
-
+    
     /* Configure emummc or mount the real NAND. */
     if (!nxboot_configure_emummc(&exo_emummc_cfg)) {
         emummc = NULL;
@@ -649,7 +649,7 @@ uint32_t nxboot_main(void) {
             fatal_error("[NXBOOT] Failed to get TSEC key!\n");
         }
     }
-
+    
     /* Display splash screen. */
     display_splash_screen_bmp(loader_ctx->custom_splash_path, (void *)0xC0000000);
 
@@ -714,7 +714,6 @@ uint32_t nxboot_main(void) {
             memcpy(ams_header->rsa_modulus, pkc_modulus, sizeof(ams_header->rsa_modulus));
         }
     }
-
 
     /* Select the right address for the warmboot firmware. */
     if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
@@ -800,6 +799,9 @@ uint32_t nxboot_main(void) {
 
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Powering on the CCPLEX...\n");
 
+    /* Wait for the splash screen to have been displayed for as long as it should be. */
+    splash_screen_wait_delay();
+    
     /* Return the memory address for booting CPU0. */
     return (uint32_t)exosphere_memaddr;
 }

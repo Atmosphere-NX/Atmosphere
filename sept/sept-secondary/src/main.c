@@ -90,6 +90,20 @@ static void exfiltrate_keys_and_reboot_if_needed(uint32_t version) {
     }
 }
 
+static void display_splash_screen(void) {
+    /* Draw splash. */
+    draw_splash((volatile uint32_t *)g_framebuffer);
+    
+    /* Turn on the backlight. */
+    display_backlight(true);
+    
+    /* Ensure the splash screen is displayed for at least one second. */
+    mdelay(1000);
+    
+    /* Turn off the backlight. */
+    display_backlight(false);
+}
+
 static void setup_env(void) {
     g_framebuffer = (void *)0xC0000000;
 
@@ -104,14 +118,7 @@ static void setup_env(void) {
 
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
-
-    /* Draw splash. */
-    draw_splash((volatile uint32_t *)g_framebuffer);
-
-    /* Turn on the backlight after initializing the lfb */
-    /* to avoid flickering. */
-    display_backlight(true);
-
+    
     /* Set up the exception handlers. */
     setup_exception_handlers();
 
@@ -122,9 +129,6 @@ static void setup_env(void) {
 static void cleanup_env(void) {
     /* Unmount the SD card. */
     unmount_sd();
-
-    /* Turn off the backlight. */
-    display_backlight(false);
     
     /* Terminate the display. */
     display_end();
@@ -160,9 +164,11 @@ int sept_main(uint32_t version) {
 
     /* Load the loader payload into DRAM. */
     load_stage2();
+    
+    /* Display the splash screen. */
+    display_splash_screen();
 
     /* Setup argument data. */
-    log_level = SCREEN_LOG_LEVEL_MANDATORY;
     stage2_path = stage2_get_program_path();
     strcpy(g_chainloader_arg_data, stage2_path);
     stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1); /* May be unaligned. */

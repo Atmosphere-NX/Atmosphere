@@ -26,13 +26,11 @@
 #include "loader.h"
 #include "chainloader.h"
 #include "stage2.h"
-#include "mtc.h"
 #include "nxboot.h"
 #include "console.h"
 #include "fs_utils.h"
 #include "nxfs.h"
 #include "gpt.h"
-#include "splash_screen.h"
 #include "display/video_fb.h"
 #include "sdmmc/sdmmc.h"
 #include "lib/log.h"
@@ -51,9 +49,6 @@ static void setup_env(void) {
     
     /* Set up exception handlers. */
     setup_exception_handlers();
-
-    /* Train DRAM. */
-    train_dram();
 
     /* Initialize the file system by mounting the SD card. */
     if (nxfs_init() < 0) {
@@ -123,9 +118,6 @@ int main(int argc, void **argv) {
         /* Start boot. */
         uint32_t boot_memaddr = nxboot_main();
         
-        /* Wait for the splash screen to have been displayed as long as it should be. */
-        splash_screen_wait_delay();
-        
         /* Terminate the boot environment. */
         cleanup_env();
         
@@ -134,7 +126,7 @@ int main(int argc, void **argv) {
     } else {
         /* TODO: What else do we want to do in terms of argc/argv? */
         const char *path = get_loader_ctx()->file_paths_to_load[get_loader_ctx()->file_id_of_entrypoint];
-        print(SCREEN_LOG_LEVEL_MANDATORY, "Now chainloading.\n");
+        print(SCREEN_LOG_LEVEL_INFO, "Now chainloading.\n");
         g_chainloader_argc = 1;
         strcpy(g_chainloader_arg_data, path);
         

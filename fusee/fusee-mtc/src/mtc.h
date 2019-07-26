@@ -754,6 +754,6 @@ enum {
 };
 
 /* Train all possible DRAM sequences. */
-void train_dram();
+void train_dram(void);
 
 #endif
