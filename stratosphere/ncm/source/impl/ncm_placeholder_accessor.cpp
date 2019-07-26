@@ -206,12 +206,15 @@ namespace sts::ncm::impl {
         if (cache == nullptr) {
             cache = &this->caches[0];
 
-            /* Flush and close */
-            fsync(fileno(cache->handle));
-            fclose(cache->handle);
+            /* Flush and close any handles. */
+            if (cache->handle) {
+                fsync(fileno(cache->handle));
+                fclose(cache->handle);
+            }
             cache->id = InvalidUuid;
         }
 
+        /* Cache the new placeholder id and its file handle. */
         cache->id = placeholder_id;
         cache->handle = handle;
         cache->counter = this->cur_counter;
