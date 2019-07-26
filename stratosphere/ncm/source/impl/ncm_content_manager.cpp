@@ -202,8 +202,8 @@ namespace sts::ncm::impl {
         R_TRY(ActivateContentMetaDatabase(StorageId::NandSystem));
 
         /* Now for NandUser's content storage entry. */
-        cur_meta_index = g_num_content_meta_entries;
-        g_num_content_meta_entries++;
+        cur_storage_index = g_num_content_storage_entries;
+        g_num_content_storage_entries++;
         storage_entry = &g_content_storage_entries[cur_storage_index];
         storage_entry->Initialize(StorageId::NandUser, FS_CONTENTSTORAGEID_NandUser);
 
