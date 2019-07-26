@@ -25,12 +25,14 @@ namespace sts::ncm {
         errno = 0;
         struct stat st;
 
-        *out = false;
         if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
             *out = true;
+        } else {
+            *out = false;
         }
 
-        if (errno != 0) {
+        /* It is a valid state for the file to not exist. */
+        if (errno != 0 && errno != ENOENT && errno != ENOTDIR) {
             return fsdevGetLastResult();
         }
     
@@ -41,12 +43,14 @@ namespace sts::ncm {
         errno = 0;
         struct stat st;
 
-        *out = false;
         if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
             *out = true;
+        } else {
+            *out = false;
         }
 
-        if (errno != 0) {
+        /* It is a valid state for the directory to not exist. */
+        if (errno != 0 && errno != ENOENT && errno != ENOTDIR) {
             return fsdevGetLastResult();
         }
     

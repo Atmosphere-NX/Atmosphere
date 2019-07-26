@@ -127,8 +127,9 @@ namespace sts::ncm {
     }
 
     Result ContentStorageInterface::HasPlaceHolder(Out<bool> out, PlaceHolderId placeholder_id) {
-        if (this->disabled)
+        if (this->disabled) {
             return ResultNcmInvalidContentStorage;
+        }
 
         char placeholder_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.GetPlaceHolderPath(placeholder_path, placeholder_id);
