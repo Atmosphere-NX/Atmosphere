@@ -62,9 +62,9 @@
     mov     x0, sp
     msr     sp_el0, x0      // save stack pointer for the crash
     bic     x0, x0, #0xFF
-    bic     x0, x0, #0x700
+    bic     x0, x0, #0x300
     add     x0, x0, #0x1000
-    add     x0, x0, #0x800
+    add     x0, x0, #0x400
     mov     sp, x0
     mrs     x0, elr_el1
 .endm

@@ -138,8 +138,8 @@ SECTIONS
     . = ALIGN(0x1000);
     __end__ = ABSOLUTE(.) ;
 
-    __stacks_top__       = ABSOLUTE(. + 0x2000);
-    __excep_stacks_top__ = ABSOLUTE(. + 0x4000); /* Note: potentially overwrites warmboot firmware. */
+    __stacks_top__       = ABSOLUTE(. + 0x1000);
+    __excep_stacks_top__ = ABSOLUTE(. + 0x2000); /* Note: potentially overwrites warmboot firmware. */
 
     . = ALIGN(8);
 

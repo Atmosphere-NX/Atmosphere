@@ -36,7 +36,8 @@ void enableTraps(void)
     u64 hcr = GET_SYSREG(hcr_el2);
 
     // Trap *writes* to memory control registers
-    hcr |= HCR_TVM;
+    //hcr |= HCR_TVM;
+    // actually don't
 
     // Trap SMC instructions
     hcr |= HCR_TSC;
