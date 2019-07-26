@@ -19,19 +19,21 @@
 #include "sysreg.h"
 
 // For a32 mcr/mrc => a64 mrs
-static u32 convertMcrMrcIss(u32 *outCondition, bool *outCondValid, u32 a32Iss, u32 coproc, u32 el)
+static u32 convertMcrMrcIss(u32 *outCondition, bool *outCondValid, u32 *outShift, u32 a32Iss, u32 coproc, u32 el)
 {
     // NOTE: MCRR / MRRC do NOT map for the most part and need to be handled separately
 
     //u32 direction = a32Iss & 1;
 
-    //u32 opc2 = (a32Iss >> 17) & 7;
+    u32 opc2 = (a32Iss >> 17) & 7;
     u32 opc1 = (a32Iss >> 14) & 7;
     u32 CRn  = (a32Iss >> 10) & 15;
     //u32 Rt   = (a32Iss >>  5) & 31;
-    //u32 CRm  = (a32Iss >>  1) & 15;
+    u32 CRm  = (a32Iss >>  1) & 15;
     *outCondValid = (a32Iss & BIT(24)) != 0;
     *outCondition = (a32Iss >> 20) & 15;
+
+    *outShift = 0;
 
     u32 op0 = (16 - coproc) & 3;
     u32 op1;
@@ -39,6 +41,52 @@ static u32 convertMcrMrcIss(u32 *outCondition, bool *outCondValid, u32 a32Iss, u
     // Do NOT translate cp15, 0, c7-8 (Cache, and resp. TLB maintenance coproc regs) as they don't map to Aarch64
     if (coproc == 15 && (CRn == 7 || CRn == 8)) {
         return -2;
+    }
+
+    // A few special cases
+    // We're probably missing some of them
+    // opc1 Crn Crm opc2
+    if (coproc == 15) {
+        /* don't care // ACTLR2
+        if (opc1 == 0 && CRn == 1 && CRm == 0 && opc2 == 3) {
+            *outShift = 32;
+            opc2 = 1;
+        }*/
+
+        // TTBCR2
+        if (opc1 == 0 && CRn == 2 && CRm == 0 && opc2 == 3) {
+            *outShift = 32;
+            opc2 = 2;
+        }
+
+        /* don't care // ERX*2
+        if (opc1 == 0 && CRn == 5 && CRm == 4 && opc2 >= 4) {
+            *outShift = 32;
+            opc2 &= ~4;
+        }*/
+
+        // DFSR -> ESR_EL1
+        if (opc1 == 0 && CRn == 5 && CRm == 0 && opc2 == 0) {
+            CRm = 2;
+        }
+
+        // IFAR -> high FAR_EL1
+        if (opc1 == 0 && CRn == 6 && CRm == 0 && opc2 == 2) {
+            opc2 = 0;
+            *outShift = 32;
+        }
+
+        // MAIR1
+        if (opc1 == 0 && CRn == 10 && CRm == 2 && opc2 == 1) {
+            *outShift = 32;
+            opc2 = 0;
+        }
+
+        // AMAIR1
+        if (opc1 ==0 && CRn == 10 && CRm == 3 && opc2 == 1) {
+            *outShift = 32;
+            opc2 = 0;
+        }
     }
 
     // The difficult part
@@ -78,7 +126,7 @@ static u32 convertMcrMrcIss(u32 *outCondition, bool *outCondValid, u32 a32Iss, u
     }
 
     // Everything but op0 is at its correct place & only op1 needs to be replaced
-    return (a32Iss & ~(MASK2(24, 20) | MASK2(16, 14))) | (op0 << 20) | (op1 << 14);
+    return (a32Iss & ~(MASK2(24, 20) | MASK2(16, 14) | MASK2(19, 17))) | (op0 << 20) | (opc2 << 17) | (op1 << 14);
 }
 
 static bool evaluateMcrMrcCondition(u64 spsr, u32 condition, bool condValid)
@@ -122,12 +170,16 @@ void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg
 
     iss &= ~((0x1F << 5) | 1);
 
-    doSystemRegisterRwImpl(&val, iss);
+    doSystemRegisterRwImpl(&val, iss | 1);
     if (reg1 == reg2) {
         frame->x[reg1] = val;
     } else {
-        frame->x[reg1] = val & 0xFFFFFFFF;
-        frame->x[reg2] = val >> 32;
+        if (reg1 != -1) {
+            frame->x[reg1] = val & 0xFFFFFFFF;
+        }
+        if (reg2 != -1) {
+            frame->x[reg2] = val >> 32;
+        }
     }
 
     skipFaultingInstruction(frame, 4);
@@ -136,14 +188,25 @@ void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg
 void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg2)
 {
     // reg1 != reg2: mrrc/mcrr
-    u64 val = frame->x[reg1];
+    u64 val = 0;
     iss &= ~((0x1F << 5) | 1);
 
-    if (reg1 != reg2) {
-        val  = (val << 32) >> 32;
-        val |= frame->x[reg2] << 32;
+    if (reg1 == -1 || reg2 == -1) {
+        doSystemRegisterRwImpl(&val, iss | 1);
+        if (reg1 == -1) {
+            val = (frame->x[reg2] << 32) | (val & 0xFFFFFFFF);
+        } else {
+            val = ((val >> 32) << 32) | (frame->x[reg1] & 0xFFFFFFFF);
+        }
     }
 
+    else {
+        if (reg1 != reg2) {
+            val |= (frame->x[reg2] << 32) | (frame->x[reg1] & 0xFFFFFFFF);
+        } else {
+            val = frame->x[reg1];
+        }
+    }
     doSystemRegisterRwImpl(&val, iss);
     skipFaultingInstruction(frame, 4);
 }
@@ -166,9 +229,10 @@ void handleMcrMrcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
     u32 condition;
     bool condValid;
     u32 coproc = esr.ec == Exception_CP14RTTrap ? 14 : 15;
+    u32 shift = 0;
 
     // EL0 if User Mode else EL1
-    esr.iss = convertMcrMrcIss(&condition, &condValid, esr.iss, coproc, (frame->spsr_el2 & 0xF) == 0 ? 0 : 1);
+    u32 iss = convertMcrMrcIss(&condition, &condValid, &shift, esr.iss, coproc, (frame->spsr_el2 & 0xF) == 0 ? 0 : 1);
 
     if (esr.iss & BIT(31)) {
         // Error, we shouldn't have trapped those in first place anyway.
@@ -179,7 +243,17 @@ void handleMcrMrcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
         return;
     }
 
-    handleMsrMrsTrap(frame, esr);
+    u32 reg = (iss >> 5) & 31;
+    bool isRead = (iss & 1) != 0;
+
+    u32 reg1 = shift == 32 ? -1 : reg;
+    u32 reg2 = shift == 32 ? reg : -1;
+
+    if (isRead) {
+        doSystemRegisterRead(frame, iss, reg1, reg2);
+    } else {
+        doSystemRegisterRead(frame, iss, reg1, reg2);
+    }
 }
 
 void handleMcrrMrrcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
