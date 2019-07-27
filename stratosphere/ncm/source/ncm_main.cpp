@@ -76,19 +76,48 @@ void __appExit(void) {
     fsExit();
 }
 
+struct ServerOptions {
+    static constexpr size_t PointerBufferSize = 0x400;
+    static constexpr size_t MaxDomains = 0;
+    static constexpr size_t MaxDomainObjects = 0;
+};
+
+void ContentManagerServerMain(void* arg) {
+    static auto s_server_manager = WaitableManager<ServerOptions>(1);
+    
+    /* Create services. */
+    s_server_manager.AddWaitable(new ServiceServer<sts::ncm::ContentManagerService>("ncm", 0x10));
+
+    /* Loop forever, servicing our services. */
+    s_server_manager.Process();
+}
+
+void LocationResolverServerMain(void* arg) {
+    static auto s_server_manager = WaitableManager<ServerOptions>(1);
+    
+    /* Create services. */
+    s_server_manager.AddWaitable(new ServiceServer<sts::lr::LocationResolverManagerService>("lr", 0x10));
+
+    /* Loop forever, servicing our services. */
+    s_server_manager.Process();
+}
+
 int main(int argc, char **argv)
 {
-    static auto s_server_manager = WaitableManager(2);
-    
     /* Initialize content manager implementation. */
     R_ASSERT(sts::ncm::impl::InitializeContentManager());
 
-    /* Create services. */
-    s_server_manager.AddWaitable(new ServiceServer<sts::ncm::ContentManagerService>("ncm", 0x10));
-    s_server_manager.AddWaitable(new ServiceServer<sts::lr::LocationResolverManagerService>("lr", 0x10));
-    
-    /* Loop forever, servicing our services. */
-    s_server_manager.Process();
+    static HosThread s_content_manager_thread;
+    static HosThread s_location_resolver_thread;
+
+    R_ASSERT(s_content_manager_thread.Initialize(&ContentManagerServerMain, nullptr, 0x4000, 0x15));
+    R_ASSERT(s_content_manager_thread.Start());
+
+    R_ASSERT(s_location_resolver_thread.Initialize(&LocationResolverServerMain, nullptr, 0x4000, 0x15));
+    R_ASSERT(s_location_resolver_thread.Start());
+
+    s_content_manager_thread.Join();
+    s_location_resolver_thread.Join();
     
     return 0;
 }
