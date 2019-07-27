@@ -80,10 +80,9 @@ namespace sts::ncm {
         this->ClearContentCache();
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
-        errno = 0;
         this->content_cache_file_handle = fopen(content_path, "rb");
 
-        if (this->content_cache_file_handle == NULL || errno != 0) {
+        if (this->content_cache_file_handle == NULL) {
             R_TRY_CATCH(fsdevGetLastResult()) {
                 R_CATCH(ResultFsPathNotFound) {
                     return ResultNcmContentNotFound;
@@ -159,19 +158,19 @@ namespace sts::ncm {
             }
         } R_END_TRY_CATCH;
 
-        errno = 0;
-        fseek(f, offset, SEEK_SET);
-        fwrite(data.buffer, sizeof(u8), data.num_elements, f);
-
-        if (!this->placeholder_accessor.delay_flush) {
-            fflush(f));
-        }
-
-        this->placeholder_accessor.FlushCache(f, placeholder_id);
-
-        if (errno != 0) {
+        if (!fseek(f, offset, SEEK_SET)) {
             return fsdevGetLastResult();
         }
+
+        if (fwrite(data.buffer, sizeof(u8), data.num_elements, f) != data.num_elements) {
+            return fsdevGetLastResult();
+        }
+
+        if (!this->placeholder_accessor.delay_flush) {
+            fflush(f);
+        }
+
+        this->placeholder_accessor.StoreToCache(f, placeholder_id);
 
         return ResultSuccess;
     }
@@ -189,10 +188,7 @@ namespace sts::ncm {
         this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
         this->GetContentPath(content_path, content_id);
 
-        errno = 0;
-        rename(placeholder_path, content_path);
-
-        if (errno != 0) {
+        if (!rename(placeholder_path, content_path)) {
             R_TRY_CATCH(fsdevGetLastResult()) {
                 R_CATCH(ResultFsPathNotFound) {
                     return ResultNcmPlaceHolderNotFound;
@@ -395,10 +391,7 @@ namespace sts::ncm {
         this->GetContentPath(content_path, content_id);
         struct stat st;
 
-        errno = 0;
-        stat(content_path, &st);
-
-        if (errno != 0) {
+        if (stat(content_path, &st) == -1) {
             return fsdevGetLastResult();
         }
 
@@ -430,10 +423,7 @@ namespace sts::ncm {
 
         R_TRY(this->placeholder_accessor.EnsureRecursively(placeholder_id));
         this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
-        errno = 0;
-        rename(old_content_path, placeholder_path);
-
-        if (errno != 0) {
+        if (!rename(old_content_path, placeholder_path)) {
             R_TRY_CATCH(fsdevGetLastResult()) {
                 R_CATCH(ResultFsPathNotFound) {
                     return ResultNcmPlaceHolderNotFound;
@@ -442,7 +432,7 @@ namespace sts::ncm {
                     return ResultNcmPlaceHolderAlreadyExists;
                 }
             } R_END_TRY_CATCH;
-        } 
+        }
 
         return ResultSuccess;
     }
@@ -470,11 +460,11 @@ namespace sts::ncm {
         this->GetContentPath(content_path, content_id);
         R_TRY(this->OpenCachedContentFile(content_id));
 
-        errno = 0;    
-        fseek(this->content_cache_file_handle, offset, SEEK_SET);
-        fread(buf.buffer, buf.num_elements, 1, this->content_cache_file_handle);
+        if (!fseek(this->content_cache_file_handle, offset, SEEK_SET)) {
+            return fsdevGetLastResult();
+        }
 
-        if (errno != 0) {
+        if (fread(buf.buffer, 1, buf.num_elements, this->content_cache_file_handle) != buf.num_elements && ferror(this->content_cache_file_handle)) {
             return fsdevGetLastResult();
         }
 
@@ -563,8 +553,6 @@ namespace sts::ncm {
     }
 
     Result ContentStorageInterface::WriteContentForDebug(ContentId content_id, u64 offset, InBuffer<u8> data) {
-        FILE* f = nullptr;
-        
         /* Offset is too large */
         if (offset >> 0x3f != 0) {
             return ResultNcmInvalidOffset;
@@ -585,34 +573,31 @@ namespace sts::ncm {
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
 
-        errno = 0;
-        f = fopen(content_path, "r+b");
-
+        FILE* f = fopen(content_path, "r+b");
         ON_SCOPE_EXIT {
             fclose(f);
         };
 
-        if (f == NULL || errno != 0) {
+        if (f == nullptr) {
             return fsdevGetLastResult();
         }
 
-        fseek(f, offset, SEEK_SET);
-        fwrite(data.buffer, sizeof(u8), data.num_elements, f);
-        fflush(f));
-
-        if (errno != 0) {
+        if (!fseek(f, offset, SEEK_SET)) {
             return fsdevGetLastResult();
         }
+
+        if (fwrite(data.buffer, sizeof(u8), data.num_elements, f) != data.num_elements) {
+            return fsdevGetLastResult();
+        }
+
+        fflush(f);
 
         return ResultSuccess;
     }
 
     Result ContentStorageInterface::GetFreeSpaceSize(Out<u64> out_size) {
         struct statvfs st = {0};
-        errno = 0;
-        statvfs(this->root_path, &st);
-
-        if (errno != 0) {
+        if (statvfs(this->root_path, &st) == -1) {
             return fsdevGetLastResult();
         }
 
@@ -622,10 +607,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::GetTotalSpaceSize(Out<u64> out_size) {
         struct statvfs st = {0};
-        errno = 0;
-        statvfs(this->root_path, &st);
-
-        if (errno != 0) {
+        if (statvfs(this->root_path, &st) == -1) {
             return fsdevGetLastResult();
         }
 
@@ -657,11 +639,8 @@ namespace sts::ncm {
         struct stat st;
 
         this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
-        errno = 0;
-        stat(placeholder_path, &st);
-
-        if (errno != 0) {
-            return fsdevGetLastResult();
+        if (stat(placeholder_path, &st) == -1) {
+            return fsdevGetLastResult();;
         }
 
         out_size.SetValue(st.st_size);

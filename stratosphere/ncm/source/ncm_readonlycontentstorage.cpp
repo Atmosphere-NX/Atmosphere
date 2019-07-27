@@ -142,10 +142,7 @@ namespace sts::ncm {
         }
 
         struct stat st;
-        errno = 0;
-        stat(content_path, &st);
-
-        if (errno != 0) {
+        if (stat(content_path, &st) == -1) {
             return fsdevGetLastResult();
         }
 
@@ -186,23 +183,21 @@ namespace sts::ncm {
             path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
         }
    
-        errno = 0;
         FILE* f = fopen(content_path, "rb");
-
         ON_SCOPE_EXIT {
             fclose(f);
         };
 
-        if (f == NULL || errno != 0) {
+        if (f == nullptr) {
             return fsdevGetLastResult();
         }
+   
+        if (!fseek(f, offset, SEEK_SET)) {
+            return fsdevGetLastResult(); 
+        }
 
-        errno = 0;    
-        fseek(f, offset, SEEK_SET);
-        fread(buf.buffer, buf.num_elements, 1, f);
-
-        if (errno != 0) {
-            return fsdevGetLastResult();
+        if (fread(buf.buffer, 1, buf.num_elements, f) != buf.num_elements && ferror(f)) {
+            return fsdevGetLastResult(); 
         }
 
         return ResultSuccess;

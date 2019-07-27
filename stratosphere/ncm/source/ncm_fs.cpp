@@ -22,36 +22,32 @@
 namespace sts::ncm {
 
     Result HasFile(bool* out, const char* path) {
-        errno = 0;
         struct stat st;
 
         if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
             *out = true;
         } else {
-            *out = false;
-        }
-
-        /* It is a valid state for the file to not exist. */
-        if (errno != 0 && errno != ENOENT && errno != ENOTDIR) {
-            return fsdevGetLastResult();
+            R_TRY_CATCH(fsdevGetLastResult()) {
+                R_CATCH(ResultFsPathNotFound) {
+                    *out = false;
+                }
+            } R_END_TRY_CATCH;
         }
     
         return ResultSuccess;
     }
 
     Result HasDirectory(bool* out, const char* path) {
-        errno = 0;
         struct stat st;
 
         if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
             *out = true;
         } else {
-            *out = false;
-        }
-
-        /* It is a valid state for the directory to not exist. */
-        if (errno != 0 && errno != ENOENT && errno != ENOTDIR) {
-            return fsdevGetLastResult();
+            R_TRY_CATCH(fsdevGetLastResult()) {
+                R_CATCH(ResultFsPathNotFound) {
+                    *out = false;
+                }
+            } R_END_TRY_CATCH;
         }
     
         return ResultSuccess;
@@ -60,8 +56,6 @@ namespace sts::ncm {
     Result CheckContentStorageDirectoriesExist(const char* root_path) {
         char content_root[FS_MAX_PATH] = {0};
         char placeholder_root[FS_MAX_PATH] = {0};
-
-        errno = 0;
 
         bool has_root = false;
         R_TRY(HasDirectory(&has_root, root_path));
@@ -118,13 +112,9 @@ namespace sts::ncm {
             if (path_len != 0) {
                 for (size_t i = 0; i < path_len; i++) {
                     if (i != 0 && working_path_buf[i + 1] == '/' && working_path_buf[i] != ':') {
-                        /* Wipe the errno to prevent cross-contamination */
-                        errno = 0;
                         /* Temporarily make the path terminate before the '/' */
                         working_path_buf[i + 1] = 0;
-                        mkdir(working_path_buf + 1, S_IRWXU);
-
-                        if (errno != 0) {
+                        if (mkdir(working_path_buf + 1, S_IRWXU) == -1) {
                             R_TRY_CATCH(fsdevGetLastResult()) {
                                 R_CATCH(ResultFsPathAlreadyExists) {
                                     /* If the path already exists, that's okay. Anything else is an error. */

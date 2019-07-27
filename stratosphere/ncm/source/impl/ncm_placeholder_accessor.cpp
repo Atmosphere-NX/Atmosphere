@@ -49,7 +49,7 @@ namespace sts::ncm::impl {
 
             if (found_cache) {
                 /* Flush and close */
-                fflush(found_cache->handle));
+                fflush(found_cache->handle);
                 fclose(found_cache->handle);
                 std::fill(found_cache->id.uuid, found_cache->id.uuid + sizeof(PlaceHolderId), 0);
             }
@@ -94,23 +94,20 @@ namespace sts::ncm::impl {
         char placeholder_path[FS_MAX_PATH] = {0};
 
         this->GetPlaceHolderPath(placeholder_path, placeholder_id);
-        errno = 0;
-        *out_handle = fopen(placeholder_path, "r+b");
+        FILE* f = fopen(placeholder_path, "r+b");
 
-        if (errno != 0) {
+        if (f == nullptr) {
             return fsdevGetLastResult();
         }
 
+        *out_handle = f;
         return ResultSuccess;
     }
 
     Result PlaceHolderAccessor::SetSize(PlaceHolderId placeholder_id, size_t size) {
         char placeholder_path[FS_MAX_PATH] = {0};
-        errno = 0;
         this->GetPlaceHolderPath(placeholder_path, placeholder_id);
-        truncate(placeholder_path, size);
-
-        if (errno != 0) {
+        if (truncate(placeholder_path, size) == -1) {
             R_TRY_CATCH(fsdevGetLastResult()) {
                 R_CATCH(ResultFsPathNotFound) {
                     return ResultNcmPlaceHolderNotFound;
@@ -144,14 +141,13 @@ namespace sts::ncm::impl {
             f = cache_entry->handle;
         }
 
-        this->FlushCache(f, placeholder_id);
+        this->StoreToCache(f, placeholder_id);
         
-        errno = 0;
-        fseek(f, 0L, SEEK_END);
+        if (!fseek(f, 0L, SEEK_END)) {
+            return fsdevGetLastResult();
+        }
         size_t size = ftell(f);
-        fseek(f, 0L, SEEK_SET);
-
-        if (errno != 0) {
+        if (!fseek(f, 0L, SEEK_SET)) {
             return fsdevGetLastResult();
         }
 
@@ -190,7 +186,7 @@ namespace sts::ncm::impl {
         return nullptr;
     }
 
-    void PlaceHolderAccessor::FlushCache(FILE* handle, PlaceHolderId placeholder_id) {
+    void PlaceHolderAccessor::StoreToCache(FILE* handle, PlaceHolderId placeholder_id) {
         std::scoped_lock<HosMutex> lk(this->cache_mutex);
         CacheEntry* cache = nullptr;
 
@@ -226,7 +222,7 @@ namespace sts::ncm::impl {
             CacheEntry* cache = &this->caches[i];
 
             if (cache->id != InvalidUuid) {
-                fflush(cache->handle));
+                fflush(cache->handle);
                 fclose(cache->handle);
                 cache->id = InvalidUuid;
             }
