@@ -24,55 +24,32 @@ namespace sts::lr {
 
     class ILocationResolver : public IServiceObject {
         protected:
-            enum class CommandId {
-                ResolveProgramPath = 0,
-                RedirectProgramPath = 1,
-                ResolveApplicationControlPath = 2,
-                ResolveApplicationHtmlDocumentPath = 3,
-                ResolveDataPath = 4,
-                RedirectApplicationControlPath = 5,
-                RedirectApplicationHtmlDocumentPath = 6,
-                ResolveApplicationLegalInformationPath = 7,
-                RedirectApplicationLegalInformationPath = 8,
-                Refresh = 9,
-                RedirectApplicationProgramPath = 10,
-                ClearApplicationRedirection = 11,
-                EraseProgramRedirection = 12,
-                EraseApplicationControlRedirection = 13,
-                EraseApplicationHtmlDocumentRedirection = 14,
-                EraseApplicationLegalInformationRedirection = 15,
-                ResolveProgramPathForDebug = 16,
-                RedirectProgramPathForDebug = 17,
-                RedirectApplicationProgramPathForDebug = 18,
-                EraseProgramRedirectionForDebug = 19,
-            };
-        protected:
             impl::LocationRedirector program_redirector;
             impl::LocationRedirector debug_program_redirector;
             impl::LocationRedirector app_control_redirector;
             impl::LocationRedirector html_docs_redirector;
             impl::LocationRedirector legal_info_redirector;
         public:
-            virtual Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) = 0;
-            virtual Result RedirectProgramPath(ncm::TitleId tid, InPointer<const Path> path) = 0;
-            virtual Result ResolveApplicationControlPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) = 0;
-            virtual Result ResolveApplicationHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) = 0;
-            virtual Result ResolveDataPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) = 0;
-            virtual Result RedirectApplicationControlPath(ncm::TitleId tid, InPointer<const Path> path) = 0;
-            virtual Result RedirectApplicationHtmlDocumentPath(ncm::TitleId tid, InPointer<const Path> path) = 0;
-            virtual Result ResolveApplicationLegalInformationPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) = 0;
-            virtual Result RedirectApplicationLegalInformationPath(ncm::TitleId tid, InPointer<const Path> path) = 0;
-            virtual Result Refresh() = 0;
-            virtual Result RedirectApplicationProgramPath(ncm::TitleId tid, InPointer<const Path> path) = 0;
-            virtual Result ClearApplicationRedirection() = 0;
-            virtual Result EraseProgramRedirection(ncm::TitleId tid) = 0;
-            virtual Result EraseApplicationControlRedirection(ncm::TitleId tid) = 0;
-            virtual Result EraseApplicationHtmlDocumentRedirection(ncm::TitleId tid) = 0;
-            virtual Result EraseApplicationLegalInformationRedirection(ncm::TitleId tid) = 0;
-            virtual Result ResolveProgramPathForDebug(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) = 0;
-            virtual Result RedirectProgramPathForDebug(ncm::TitleId tid, InPointer<const Path> path) = 0;
-            virtual Result RedirectApplicationProgramPathForDebug(ncm::TitleId tid, InPointer<const Path> path) = 0;
-            virtual Result EraseProgramRedirectionForDebug(ncm::TitleId tid) = 0;
+            virtual Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
+            virtual Result RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result ResolveApplicationControlPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
+            virtual Result ResolveApplicationHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
+            virtual Result ResolveDataPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
+            virtual Result RedirectApplicationControlPath(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result ResolveApplicationLegalInformationPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
+            virtual Result RedirectApplicationLegalInformationPath(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result Refresh();
+            virtual Result RedirectApplicationProgramPath(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result ClearApplicationRedirection();
+            virtual Result EraseProgramRedirection(ncm::TitleId tid);
+            virtual Result EraseApplicationControlRedirection(ncm::TitleId tid);
+            virtual Result EraseApplicationHtmlDocumentRedirection(ncm::TitleId tid);
+            virtual Result EraseApplicationLegalInformationRedirection(ncm::TitleId tid);
+            virtual Result ResolveProgramPathForDebug(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
+            virtual Result RedirectProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result EraseProgramRedirectionForDebug(ncm::TitleId tid);
             
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {};

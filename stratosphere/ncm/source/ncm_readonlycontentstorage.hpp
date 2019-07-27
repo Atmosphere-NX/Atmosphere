@@ -23,6 +23,37 @@
 namespace sts::ncm {
 
     class ReadOnlyContentStorageInterface : public IContentStorage {
+        private:
+            enum class CommandId {
+                GeneratePlaceHolderId = 0,
+                CreatePlaceHolder = 1,
+                DeletePlaceHolder = 2,
+                HasPlaceHolder = 3,
+                WritePlaceHolder = 4,
+                Register = 5,
+                Delete = 6,
+                Has = 7,
+                GetPath = 8,
+                GetPlaceHolderPath = 9,
+                CleanupAllPlaceHolder = 10,
+                ListPlaceHolder = 11,
+                GetContentCount = 12,
+                ListContentId = 13,
+                GetSizeFromContentId = 14,
+                DisableForcibly = 15,
+                RevertToPlaceHolder = 16,
+                SetPlaceHolderSize = 17,
+                ReadContentIdFile = 18,
+                GetRightsIdFromPlaceHolderId = 19,
+                GetRightsIdFromContentId = 20,
+                WriteContentForDebug = 21,
+                GetFreeSpaceSize = 22,
+                GetTotalSpaceSize = 23,
+                FlushPlaceHolder = 24,
+                GetSizeFromPlaceHolderId = 25,
+                RepairInvalidFileAttribute = 26,
+                GetRightsIdFromPlaceHolderIdWithCache = 27,
+            };
         public:
             Result Initialize(const char* root_path, MakeContentPathFunc content_path_func);
         public:
