@@ -640,7 +640,7 @@ namespace sts::ncm {
 
         this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
         if (stat(placeholder_path, &st) == -1) {
-            return fsdevGetLastResult();;
+            return fsdevGetLastResult();
         }
 
         out_size.SetValue(st.st_size);
