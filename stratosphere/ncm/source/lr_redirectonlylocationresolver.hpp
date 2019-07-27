@@ -23,29 +23,6 @@
 namespace sts::lr {
 
     class RedirectOnlyLocationResolverInterface : public ILocationResolver {
-        private:
-            enum class CommandId {
-                ResolveProgramPath = 0,
-                RedirectProgramPath = 1,
-                ResolveApplicationControlPath = 2,
-                ResolveApplicationHtmlDocumentPath = 3,
-                ResolveDataPath = 4,
-                RedirectApplicationControlPath = 5,
-                RedirectApplicationHtmlDocumentPath = 6,
-                ResolveApplicationLegalInformationPath = 7,
-                RedirectApplicationLegalInformationPath = 8,
-                Refresh = 9,
-                RedirectApplicationProgramPath = 10,
-                ClearApplicationRedirection = 11,
-                EraseProgramRedirection = 12,
-                EraseApplicationControlRedirection = 13,
-                EraseApplicationHtmlDocumentRedirection = 14,
-                EraseApplicationLegalInformationRedirection = 15,
-                ResolveProgramPathForDebug = 16,
-                RedirectProgramPathForDebug = 17,
-                RedirectApplicationProgramPathForDebug = 18,
-                EraseProgramRedirectionForDebug = 19,
-            };
         public:
             ~RedirectOnlyLocationResolverInterface();
         public:

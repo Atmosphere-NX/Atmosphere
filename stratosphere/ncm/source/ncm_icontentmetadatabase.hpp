@@ -25,6 +25,30 @@ namespace sts::ncm {
 
     class IContentMetaDatabase : public IServiceObject {
         protected:
+            enum class CommandId {
+                Set = 0,
+                Get = 1,
+                Remove = 2,
+                GetContentIdByType = 3,
+                ListContentInfo = 4,
+                List = 5,
+                GetLatestContentMetaKey = 6,
+                ListApplication = 7,
+                Has = 8,
+                HasAll = 9,
+                GetSize = 10,
+                GetRequiredSystemVersion = 11,
+                GetPatchId = 12,
+                DisableForcibly = 13,
+                LookupOrphanContent = 14,
+                Commit = 15,
+                HasContent = 16,
+                ListContentMetaInfo = 17,
+                GetAttributes = 18,
+                GetRequiredApplicationVersion = 19,
+                GetContentIdByTypeAndIdOffset = 20,
+            };
+        protected:
             sts::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs;
             char mount_name[16];
             bool disabled;
@@ -67,7 +91,29 @@ namespace sts::ncm {
             virtual Result GetLatestProgram(ContentId* out_content_id, TitleId title_id);
             virtual Result GetLatestData(ContentId* out_content_id, TitleId title_id);
         public:
-            DEFINE_SERVICE_DISPATCH_TABLE {};
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, Set),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, Get),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, Remove),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetContentIdByType),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, ListContentInfo),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, List),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetLatestContentMetaKey),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, ListApplication),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, Has),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, HasAll),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetSize),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetRequiredSystemVersion),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetPatchId),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, DisableForcibly),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, LookupOrphanContent),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, Commit),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, HasContent),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, ListContentMetaInfo),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetAttributes),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetRequiredApplicationVersion, FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetContentIdByTypeAndIdOffset, FirmwareVersion_500),
+            };
     };
 
 }
