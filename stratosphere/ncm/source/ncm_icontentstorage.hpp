@@ -25,6 +25,37 @@ namespace sts::ncm {
     
     class IContentStorage : public IServiceObject {
         protected:
+            enum class CommandId {
+                GeneratePlaceHolderId = 0,
+                CreatePlaceHolder = 1,
+                DeletePlaceHolder = 2,
+                HasPlaceHolder = 3,
+                WritePlaceHolder = 4,
+                Register = 5,
+                Delete = 6,
+                Has = 7,
+                GetPath = 8,
+                GetPlaceHolderPath = 9,
+                CleanupAllPlaceHolder = 10,
+                ListPlaceHolder = 11,
+                GetContentCount = 12,
+                ListContentId = 13,
+                GetSizeFromContentId = 14,
+                DisableForcibly = 15,
+                RevertToPlaceHolder = 16,
+                SetPlaceHolderSize = 17,
+                ReadContentIdFile = 18,
+                GetRightsIdFromPlaceHolderId = 19,
+                GetRightsIdFromContentId = 20,
+                WriteContentForDebug = 21,
+                GetFreeSpaceSize = 22,
+                GetTotalSpaceSize = 23,
+                FlushPlaceHolder = 24,
+                GetSizeFromPlaceHolderId = 25,
+                RepairInvalidFileAttribute = 26,
+                GetRightsIdFromPlaceHolderIdWithCache = 27,
+            };
+        protected:
             char root_path[FS_MAX_PATH-1];
             MakeContentPathFunc make_content_path_func;
             bool disabled;
@@ -58,7 +89,37 @@ namespace sts::ncm {
             virtual Result RepairInvalidFileAttribute();
             virtual Result GetRightsIdFromPlaceHolderIdWithCache(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id);
         public:
-            DEFINE_SERVICE_DISPATCH_TABLE {};
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GeneratePlaceHolderId),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, CreatePlaceHolder),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, DeletePlaceHolder),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, HasPlaceHolder),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, WritePlaceHolder),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, Register),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, Delete),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, Has),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GetPath),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GetPlaceHolderPath),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, CleanupAllPlaceHolder),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, ListPlaceHolder),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GeneratePlaceHolderId),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GetContentCount),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, ListContentId),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GetSizeFromContentId),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, DisableForcibly),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, RevertToPlaceHolder,                   FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, SetPlaceHolderSize,                    FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, ReadContentIdFile,                     FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GetRightsIdFromPlaceHolderId,          FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GetRightsIdFromContentId,              FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, WriteContentForDebug,                  FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GetFreeSpaceSize,                      FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GetTotalSpaceSize,                     FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, FlushPlaceHolder,                      FirmwareVersion_300),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GetSizeFromPlaceHolderId,              FirmwareVersion_400),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, RepairInvalidFileAttribute,            FirmwareVersion_400),
+                MAKE_SERVICE_COMMAND_META(IContentStorage, GetRightsIdFromPlaceHolderIdWithCache, FirmwareVersion_800),
+            };
     };
 
 }

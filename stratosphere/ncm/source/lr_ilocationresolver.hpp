@@ -24,6 +24,29 @@ namespace sts::lr {
 
     class ILocationResolver : public IServiceObject {
         protected:
+            enum class CommandId {
+                ResolveProgramPath = 0,
+                RedirectProgramPath = 1,
+                ResolveApplicationControlPath = 2,
+                ResolveApplicationHtmlDocumentPath = 3,
+                ResolveDataPath = 4,
+                RedirectApplicationControlPath = 5,
+                RedirectApplicationHtmlDocumentPath = 6,
+                ResolveApplicationLegalInformationPath = 7,
+                RedirectApplicationLegalInformationPath = 8,
+                Refresh = 9,
+                RedirectApplicationProgramPath = 10,
+                ClearApplicationRedirection = 11,
+                EraseProgramRedirection = 12,
+                EraseApplicationControlRedirection = 13,
+                EraseApplicationHtmlDocumentRedirection = 14,
+                EraseApplicationLegalInformationRedirection = 15,
+                ResolveProgramPathForDebug = 16,
+                RedirectProgramPathForDebug = 17,
+                RedirectApplicationProgramPathForDebug = 18,
+                EraseProgramRedirectionForDebug = 19,
+            };
+        protected:
             impl::LocationRedirector program_redirector;
             impl::LocationRedirector debug_program_redirector;
             impl::LocationRedirector app_control_redirector;
@@ -50,9 +73,29 @@ namespace sts::lr {
             virtual Result RedirectProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid);
             virtual Result RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid);
             virtual Result EraseProgramRedirectionForDebug(ncm::TitleId tid);
-            
         public:
-            DEFINE_SERVICE_DISPATCH_TABLE {};
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveProgramPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectProgramPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveApplicationControlPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveApplicationHtmlDocumentPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveDataPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationControlPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationHtmlDocumentPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveApplicationLegalInformationPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationLegalInformationPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, Refresh),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationProgramPath,              FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, ClearApplicationRedirection,                 FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseProgramRedirection,                     FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseApplicationControlRedirection,          FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseApplicationHtmlDocumentRedirection,     FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseApplicationLegalInformationRedirection, FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveProgramPathForDebug,                  FirmwareVersion_700),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectProgramPathForDebug,                 FirmwareVersion_700),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationProgramPathForDebug,      FirmwareVersion_700),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseProgramRedirectionForDebug,             FirmwareVersion_700),
+            };
     };
 
 }
