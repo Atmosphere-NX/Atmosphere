@@ -169,7 +169,7 @@ namespace sts::ncm {
                 break;
             }
 
-            if (entry->GetKey().install_type != ContentInstallType::Full) {
+            if (entry->GetKey().install_type == ContentInstallType::Full) {
                 key = entry->GetKey();
                 found_key = true;
             }
