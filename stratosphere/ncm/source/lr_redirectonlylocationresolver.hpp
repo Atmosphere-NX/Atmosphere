@@ -23,28 +23,51 @@
 namespace sts::lr {
 
     class RedirectOnlyLocationResolverInterface : public ILocationResolver {
+        private:
+            enum class CommandId {
+                ResolveProgramPath = 0,
+                RedirectProgramPath = 1,
+                ResolveApplicationControlPath = 2,
+                ResolveApplicationHtmlDocumentPath = 3,
+                ResolveDataPath = 4,
+                RedirectApplicationControlPath = 5,
+                RedirectApplicationHtmlDocumentPath = 6,
+                ResolveApplicationLegalInformationPath = 7,
+                RedirectApplicationLegalInformationPath = 8,
+                Refresh = 9,
+                RedirectApplicationProgramPath = 10,
+                ClearApplicationRedirection = 11,
+                EraseProgramRedirection = 12,
+                EraseApplicationControlRedirection = 13,
+                EraseApplicationHtmlDocumentRedirection = 14,
+                EraseApplicationLegalInformationRedirection = 15,
+                ResolveProgramPathForDebug = 16,
+                RedirectProgramPathForDebug = 17,
+                RedirectApplicationProgramPathForDebug = 18,
+                EraseProgramRedirectionForDebug = 19,
+            };
         public:
             ~RedirectOnlyLocationResolverInterface();
         public:
             virtual Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
-            virtual Result RedirectProgramPath(ncm::TitleId tid, InPointer<const Path> path) override;
+            virtual Result RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid) override;
             virtual Result ResolveApplicationControlPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
             virtual Result ResolveApplicationHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
             virtual Result ResolveDataPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
-            virtual Result RedirectApplicationControlPath(ncm::TitleId tid, InPointer<const Path> path) override;
-            virtual Result RedirectApplicationHtmlDocumentPath(ncm::TitleId tid, InPointer<const Path> path) override;
+            virtual Result RedirectApplicationControlPath(InPointer<const Path> path, ncm::TitleId tid) override;
+            virtual Result RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) override;
             virtual Result ResolveApplicationLegalInformationPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
-            virtual Result RedirectApplicationLegalInformationPath(ncm::TitleId tid, InPointer<const Path> path) override;
+            virtual Result RedirectApplicationLegalInformationPath(InPointer<const Path> path, ncm::TitleId tid) override;
             virtual Result Refresh() override;
-            virtual Result RedirectApplicationProgramPath(ncm::TitleId tid, InPointer<const Path> path) override;
+            virtual Result RedirectApplicationProgramPath(InPointer<const Path> path, ncm::TitleId tid) override;
             virtual Result ClearApplicationRedirection() override;
             virtual Result EraseProgramRedirection(ncm::TitleId tid) override;
             virtual Result EraseApplicationControlRedirection(ncm::TitleId tid) override;
             virtual Result EraseApplicationHtmlDocumentRedirection(ncm::TitleId tid) override;
             virtual Result EraseApplicationLegalInformationRedirection(ncm::TitleId tid) override;
             virtual Result ResolveProgramPathForDebug(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
-            virtual Result RedirectProgramPathForDebug(ncm::TitleId tid, InPointer<const Path> path) override;
-            virtual Result RedirectApplicationProgramPathForDebug(ncm::TitleId tid, InPointer<const Path> path) override;
+            virtual Result RedirectProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid) override;
+            virtual Result RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid) override;
             virtual Result EraseProgramRedirectionForDebug(ncm::TitleId tid) override;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {

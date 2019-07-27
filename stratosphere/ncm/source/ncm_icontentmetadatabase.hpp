@@ -25,30 +25,6 @@ namespace sts::ncm {
 
     class IContentMetaDatabase : public IServiceObject {
         protected:
-            enum class CommandId {
-                Set = 0,
-                Get = 1,
-                Remove = 2,
-                GetContentIdByType = 3,
-                ListContentInfo = 4,
-                List = 5,
-                GetLatestContentMetaKey = 6,
-                ListApplication = 7,
-                Has = 8,
-                HasAll = 9,
-                GetSize = 10,
-                GetRequiredSystemVersion = 11,
-                GetPatchId = 12,
-                DisableForcibly = 13,
-                LookupOrphanContent = 14,
-                Commit = 15,
-                HasContent = 16,
-                ListContentMetaInfo = 17,
-                GetAttributes = 18,
-                GetRequiredApplicationVersion = 19,
-                GetContentIdByTypeAndIdOffset = 20,
-            };
-        protected:
             sts::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs;
             char mount_name[16];
             bool disabled;
@@ -65,31 +41,31 @@ namespace sts::ncm {
             }
         public:
             /* Actual commands. */
-            virtual Result Set(ContentMetaKey key, InBuffer<u8> value) = 0;
-            virtual Result Get(Out<u64> out_size, ContentMetaKey key, OutBuffer<u8> out_value) = 0;
-            virtual Result Remove(ContentMetaKey key) = 0;
-            virtual Result GetContentIdByType(Out<ContentId> out_content_id, ContentMetaKey key, ContentType type) = 0;
-            virtual Result ListContentInfo(Out<u32> out_entries_written, OutBuffer<ContentInfo> out_info, ContentMetaKey key, u32 start_index) = 0;
-            virtual Result List(Out<u32> out_entries_total, Out<u32> out_entries_written, OutBuffer<ContentMetaKey> out_info, ContentMetaType meta_type, TitleId application_title_id, TitleId title_id_min, TitleId title_id_max, ContentInstallType install_type) = 0;
-            virtual Result GetLatestContentMetaKey(Out<ContentMetaKey> out_key, TitleId tid) = 0;
-            virtual Result ListApplication(Out<u32> out_entries_total, Out<u32> out_entries_written, OutBuffer<ApplicationContentMetaKey> out_keys, ContentMetaType meta_type) = 0;
-            virtual Result Has(Out<bool> out, ContentMetaKey key) = 0;
-            virtual Result HasAll(Out<bool> out, InBuffer<ContentMetaKey> keys) = 0;
-            virtual Result GetSize(Out<u64> out_size, ContentMetaKey key) = 0;
-            virtual Result GetRequiredSystemVersion(Out<u32> out_version, ContentMetaKey key) = 0;
-            virtual Result GetPatchId(Out<TitleId> out_patch_id, ContentMetaKey key) = 0;
-            virtual Result DisableForcibly() = 0;
-            virtual Result LookupOrphanContent(OutBuffer<bool> out_orphaned, InBuffer<ContentId> content_ids) = 0;
-            virtual Result Commit() = 0;
-            virtual Result HasContent(Out<bool> out, ContentMetaKey key, ContentId content_id) = 0;
-            virtual Result ListContentMetaInfo(Out<u32> out_entries_written, OutBuffer<ContentMetaInfo> out_meta_info, ContentMetaKey key, u32 start_index) = 0;
-            virtual Result GetAttributes(Out<ContentMetaAttribute> out_attributes, ContentMetaKey key) = 0;
-            virtual Result GetRequiredApplicationVersion(Out<u32> out_version, ContentMetaKey key) = 0;
-            virtual Result GetContentIdByTypeAndIdOffset(Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset) = 0;
+            virtual Result Set(ContentMetaKey key, InBuffer<u8> value);
+            virtual Result Get(Out<u64> out_size, ContentMetaKey key, OutBuffer<u8> out_value);
+            virtual Result Remove(ContentMetaKey key);
+            virtual Result GetContentIdByType(Out<ContentId> out_content_id, ContentMetaKey key, ContentType type);
+            virtual Result ListContentInfo(Out<u32> out_entries_written, OutBuffer<ContentInfo> out_info, ContentMetaKey key, u32 start_index);
+            virtual Result List(Out<u32> out_entries_total, Out<u32> out_entries_written, OutBuffer<ContentMetaKey> out_info, ContentMetaType meta_type, TitleId application_title_id, TitleId title_id_min, TitleId title_id_max, ContentInstallType install_type);
+            virtual Result GetLatestContentMetaKey(Out<ContentMetaKey> out_key, TitleId tid);
+            virtual Result ListApplication(Out<u32> out_entries_total, Out<u32> out_entries_written, OutBuffer<ApplicationContentMetaKey> out_keys, ContentMetaType meta_type);
+            virtual Result Has(Out<bool> out, ContentMetaKey key);
+            virtual Result HasAll(Out<bool> out, InBuffer<ContentMetaKey> keys);
+            virtual Result GetSize(Out<u64> out_size, ContentMetaKey key);
+            virtual Result GetRequiredSystemVersion(Out<u32> out_version, ContentMetaKey key);
+            virtual Result GetPatchId(Out<TitleId> out_patch_id, ContentMetaKey key);
+            virtual Result DisableForcibly();
+            virtual Result LookupOrphanContent(OutBuffer<bool> out_orphaned, InBuffer<ContentId> content_ids);
+            virtual Result Commit();
+            virtual Result HasContent(Out<bool> out, ContentMetaKey key, ContentId content_id);
+            virtual Result ListContentMetaInfo(Out<u32> out_entries_written, OutBuffer<ContentMetaInfo> out_meta_info, ContentMetaKey key, u32 start_index);
+            virtual Result GetAttributes(Out<ContentMetaAttribute> out_attributes, ContentMetaKey key);
+            virtual Result GetRequiredApplicationVersion(Out<u32> out_version, ContentMetaKey key);
+            virtual Result GetContentIdByTypeAndIdOffset(Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset);
 
             /* APIs. */
-            virtual Result GetLatestProgram(ContentId* out_content_id, TitleId title_id) = 0;
-            virtual Result GetLatestData(ContentId* out_content_id, TitleId title_id) = 0;
+            virtual Result GetLatestProgram(ContentId* out_content_id, TitleId title_id);
+            virtual Result GetLatestData(ContentId* out_content_id, TitleId title_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {};
     };

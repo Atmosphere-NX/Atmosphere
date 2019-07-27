@@ -46,13 +46,13 @@ namespace sts::lr {
             ~RegisteredLocationResolverInterface();
 
             Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
-            Result RegisterProgramPath(ncm::TitleId tid, InPointer<const Path> path);
+            Result RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid);
             Result UnregisterProgramPath(ncm::TitleId tid);
-            Result RedirectProgramPath(ncm::TitleId tid, InPointer<const Path> path);
+            Result RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid);
             Result ResolveHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
-            Result RegisterHtmlDocumentPath(ncm::TitleId tid, InPointer<const Path> path);
+            Result RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid);
             Result UnregisterHtmlDocumentPath(ncm::TitleId tid);
-            Result RedirectHtmlDocumentPath(ncm::TitleId tid, InPointer<const Path> path);
+            Result RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid);
             Result Refresh();
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {

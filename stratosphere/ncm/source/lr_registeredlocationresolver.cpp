@@ -42,7 +42,7 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RegisterProgramPath(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RegisteredLocationResolverInterface::RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
         Path tmp_path = *path.pointer;
 
         if (!this->registered_program_redirector.SetRedirection(tid, tmp_path)) {
@@ -58,7 +58,7 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RedirectProgramPath(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RegisteredLocationResolverInterface::RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
         Path tmp_path = *path.pointer;
         this->program_redirector.SetRedirection(tid, tmp_path);
         return ResultSuccess;
@@ -77,7 +77,7 @@ namespace sts::lr {
         return ResultLrHtmlDocumentNotFound;
     }
 
-    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
         Path tmp_path = *path.pointer;
 
         if (!this->registered_html_docs_redirector.SetRedirection(tid, tmp_path)) {
@@ -93,7 +93,7 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPath(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
         Path tmp_path = *path.pointer;
         this->html_docs_redirector.SetRedirection(tid, tmp_path);
         return ResultSuccess;

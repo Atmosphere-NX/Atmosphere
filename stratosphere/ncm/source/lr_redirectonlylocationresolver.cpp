@@ -38,7 +38,7 @@ namespace sts::lr {
         return ResultLrProgramNotFound;
     }
 
-    Result RedirectOnlyLocationResolverInterface::RedirectProgramPath(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RedirectOnlyLocationResolverInterface::RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
         this->program_redirector.SetRedirection(tid, *path.pointer);
         return ResultSuccess;
     }
@@ -69,12 +69,12 @@ namespace sts::lr {
         return ResultLrDataNotFound;
     }
 
-    Result RedirectOnlyLocationResolverInterface::RedirectApplicationControlPath(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RedirectOnlyLocationResolverInterface::RedirectApplicationControlPath(InPointer<const Path> path, ncm::TitleId tid) {
         this->app_control_redirector.SetRedirection(tid, *path.pointer, impl::RedirectionFlags_Application);
         return ResultSuccess;
     }
 
-    Result RedirectOnlyLocationResolverInterface::RedirectApplicationHtmlDocumentPath(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RedirectOnlyLocationResolverInterface::RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
         this->html_docs_redirector.SetRedirection(tid, *path.pointer, impl::RedirectionFlags_Application);
         return ResultSuccess;
     }
@@ -90,7 +90,7 @@ namespace sts::lr {
         return ResultLrLegalInformationNotFound;
     }
 
-    Result RedirectOnlyLocationResolverInterface::RedirectApplicationLegalInformationPath(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RedirectOnlyLocationResolverInterface::RedirectApplicationLegalInformationPath(InPointer<const Path> path, ncm::TitleId tid) {
         this->legal_info_redirector.SetRedirection(tid, *path.pointer, impl::RedirectionFlags_Application);
         return ResultSuccess;
     }
@@ -104,7 +104,7 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RedirectOnlyLocationResolverInterface::RedirectApplicationProgramPath(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RedirectOnlyLocationResolverInterface::RedirectApplicationProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
         this->program_redirector.SetRedirection(tid, *path.pointer, impl::RedirectionFlags_Application);
         return ResultSuccess;
     }
@@ -156,12 +156,12 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RedirectOnlyLocationResolverInterface::RedirectProgramPathForDebug(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RedirectOnlyLocationResolverInterface::RedirectProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid) {
         this->debug_program_redirector.SetRedirection(tid, *path.pointer);
         return ResultSuccess;
     }
 
-    Result RedirectOnlyLocationResolverInterface::RedirectApplicationProgramPathForDebug(ncm::TitleId tid, InPointer<const Path> path) {
+    Result RedirectOnlyLocationResolverInterface::RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid) {
         this->debug_program_redirector.SetRedirection(tid, *path.pointer, impl::RedirectionFlags_Application);
         return ResultSuccess;
     }
