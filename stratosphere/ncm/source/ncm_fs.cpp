@@ -272,7 +272,7 @@ namespace sts::ncm {
             std::abort();
         }
 
-        snprintf(out_common_path, out_len, "%s:/%s", common_mount_name, translated_path);
+        snprintf(out_common_path, out_len, "%s:%s", common_mount_name, translated_path);
         return ResultSuccess;
     }
 

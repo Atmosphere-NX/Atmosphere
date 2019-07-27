@@ -20,13 +20,13 @@ namespace sts::ncm {
 
     void GetStringFromContentId(char* out, ContentId content_id) {
         for (size_t i = 0; i < sizeof(ContentId); i++) {
-            snprintf(out+i, 3, "%02x", content_id.uuid[i]);
+            snprintf(out+i*2, 3, "%02x", content_id.uuid[i]);
         }
     }
 
     void GetStringFromPlaceHolderId(char* out, PlaceHolderId placeholder_id) {
         for (size_t i = 0; i < sizeof(PlaceHolderId); i++) {
-            snprintf(out+i, 3, "%02x", placeholder_id.uuid[i]);
+            snprintf(out+i*2, 3, "%02x", placeholder_id.uuid[i]);
         }
     }
 
