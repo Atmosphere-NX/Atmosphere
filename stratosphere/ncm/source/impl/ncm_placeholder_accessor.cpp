@@ -143,11 +143,11 @@ namespace sts::ncm::impl {
 
         this->StoreToCache(f, placeholder_id);
         
-        if (!fseek(f, 0L, SEEK_END)) {
+        if (fseek(f, 0L, SEEK_END) != 0) {
             return fsdevGetLastResult();
         }
         size_t size = ftell(f);
-        if (!fseek(f, 0L, SEEK_SET)) {
+        if (fseek(f, 0L, SEEK_SET) != 0) {
             return fsdevGetLastResult();
         }
 

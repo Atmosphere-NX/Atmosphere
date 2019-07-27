@@ -158,7 +158,7 @@ namespace sts::ncm {
             }
         } R_END_TRY_CATCH;
 
-        if (!fseek(f, offset, SEEK_SET)) {
+        if (fseek(f, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult();
         }
 
@@ -188,7 +188,7 @@ namespace sts::ncm {
         this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
         this->GetContentPath(content_path, content_id);
 
-        if (!rename(placeholder_path, content_path)) {
+        if (rename(placeholder_path, content_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
                 R_CATCH(ResultFsPathNotFound) {
                     return ResultNcmPlaceHolderNotFound;
@@ -423,7 +423,7 @@ namespace sts::ncm {
 
         R_TRY(this->placeholder_accessor.EnsureRecursively(placeholder_id));
         this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
-        if (!rename(old_content_path, placeholder_path)) {
+        if (rename(old_content_path, placeholder_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
                 R_CATCH(ResultFsPathNotFound) {
                     return ResultNcmPlaceHolderNotFound;
@@ -460,7 +460,7 @@ namespace sts::ncm {
         this->GetContentPath(content_path, content_id);
         R_TRY(this->OpenCachedContentFile(content_id));
 
-        if (!fseek(this->content_cache_file_handle, offset, SEEK_SET)) {
+        if (fseek(this->content_cache_file_handle, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult();
         }
 
@@ -582,7 +582,7 @@ namespace sts::ncm {
             return fsdevGetLastResult();
         }
 
-        if (!fseek(f, offset, SEEK_SET)) {
+        if (fseek(f, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult();
         }
 
