@@ -69,7 +69,7 @@ namespace sts::ncm::impl {
 
             CacheEntry *FindInCache(PlaceHolderId placeholder_id);
             bool LoadFromCache(FILE** out_handle, PlaceHolderId placeholder_id);
-            void FlushCache(FILE* handle, PlaceHolderId placeholder_id);
+            void StoreToCache(FILE* handle, PlaceHolderId placeholder_id);
             void ClearAllCaches();
     };
 
