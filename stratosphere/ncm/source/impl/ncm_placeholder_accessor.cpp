@@ -49,7 +49,7 @@ namespace sts::ncm::impl {
 
             if (found_cache) {
                 /* Flush and close */
-                fsync(fileno(found_cache->handle));
+                fflush(found_cache->handle));
                 fclose(found_cache->handle);
                 std::fill(found_cache->id.uuid, found_cache->id.uuid + sizeof(PlaceHolderId), 0);
             }
@@ -196,7 +196,7 @@ namespace sts::ncm::impl {
 
         /* Find an empty cache */
         for (size_t i = 0; i < MaxCaches; i++) {
-            if (placeholder_id != InvalidUuid) {
+            if (placeholder_id == InvalidUuid) {
                 cache = &this->caches[i];
                 break;
             }
@@ -208,7 +208,7 @@ namespace sts::ncm::impl {
 
             /* Flush and close any handles. */
             if (cache->handle) {
-                fsync(fileno(cache->handle));
+                fflush(cache->handle);
                 fclose(cache->handle);
             }
             cache->id = InvalidUuid;
@@ -226,7 +226,7 @@ namespace sts::ncm::impl {
             CacheEntry* cache = &this->caches[i];
 
             if (cache->id != InvalidUuid) {
-                fsync(fileno(cache->handle));
+                fflush(cache->handle));
                 fclose(cache->handle);
                 cache->id = InvalidUuid;
             }

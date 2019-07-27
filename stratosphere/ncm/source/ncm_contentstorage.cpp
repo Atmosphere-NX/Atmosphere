@@ -163,8 +163,8 @@ namespace sts::ncm {
         fseek(f, offset, SEEK_SET);
         fwrite(data.buffer, sizeof(u8), data.num_elements, f);
 
-        if (this->placeholder_accessor.delay_flush ^ 1) {
-            fsync(fileno(f));
+        if (!this->placeholder_accessor.delay_flush) {
+            fflush(f));
         }
 
         this->placeholder_accessor.FlushCache(f, placeholder_id);
@@ -598,7 +598,7 @@ namespace sts::ncm {
 
         fseek(f, offset, SEEK_SET);
         fwrite(data.buffer, sizeof(u8), data.num_elements, f);
-        fsync(fileno(f));
+        fflush(f));
 
         if (errno != 0) {
             return fsdevGetLastResult();
