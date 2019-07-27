@@ -192,7 +192,7 @@ namespace sts::ncm {
             return fsdevGetLastResult();
         }
    
-        if (!fseek(f, offset, SEEK_SET)) {
+        if (fseek(f, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult(); 
         }
 
