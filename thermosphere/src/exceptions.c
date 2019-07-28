@@ -17,6 +17,7 @@
 #include "hvc.h"
 #include "traps.h"
 #include "sysreg_traps.h"
+#include "core_ctx.h"
 
 #include "log.h"
 
@@ -121,11 +122,11 @@ void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeReg
 
 void handleSameElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 {
-    serialLog("Same EL sync exception, EC = 0x%02llx IL=%llu ISS=0x%06llx\n", (u64)esr.ec, esr.il, esr.iss);
+    serialLog("Same EL sync exception on core %x, EC = 0x%02llx IL=%llu ISS=0x%06llx\n", currentCoreCtx->coreId, (u64)esr.ec, esr.il, esr.iss);
     dumpStackFrame(frame, true);
 }
 
 void handleUnknownException(u32 offset)
 {
-    serialLog("Unknown exception! (offset 0x%03lx)\n", offset);
+    serialLog("Unknown exception on core %x! (offset 0x%03lx)\n", offset, currentCoreCtx->coreId);
 }

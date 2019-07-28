@@ -56,17 +56,17 @@
 .endm
 
 .macro pivot_stack_for_crash
-    // Ditch sp_el0 & elr_el1
-    // We don't use E2H so that's fine.
-    msr     elr_el1, x0
-    mov     x0, sp
-    msr     sp_el0, x0      // save stack pointer for the crash
-    bic     x0, x0, #0xFF
-    bic     x0, x0, #0x300
-    add     x0, x0, #0x1000
-    add     x0, x0, #0x400
-    mov     sp, x0
-    mrs     x0, elr_el1
+    // Note: reset x18 assumed uncorrupted
+    // Note: replace sp_el0 with crashing sp
+    mrs     x18, esr_el2
+    mov     x18, sp
+    msr     sp_el0, x18
+    bic     x18, x18, #0xFF
+    bic     x18, x18, #0x300
+    add     x18, x18, #0x400
+    mov     sp, x18
+    ldp     x18, xzr, [sp, #-0x10]
+    add     sp, sp, #0x1000
 .endm
 
 /* Actual Vectors for Thermosphere. */
@@ -123,6 +123,9 @@ vector_entry irq_sp0
     stp     x23, xzr, [sp, #0x110]
 
     mov     x30, x29
+
+    // Reload our x18 value (currentCoreCtx)
+    ldp     x18, xzr, [sp, #0x120]
     ret
 
 vector_entry fiq_sp0

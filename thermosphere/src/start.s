@@ -25,53 +25,73 @@
 
 _start:
     b       start
-    nop
+    b       start2
 
-.global     g_kernelEntrypoint
-g_kernelEntrypoint:
+_initialKernelEntrypoint:
     .quad   0
 
 start:
+    mov     x19, #1
+    b       _startCommon
+start2:
+    mov     x19, #0
+_startCommon:
     // Disable interrupts, select sp_el2
     msr     daifset, 0b1111
     msr     spsel, #1
 
-    // Save arg, load entrypoint & spsr
-    mov     x19, x0
-    ldr     x8, g_kernelEntrypoint
-    msr     elr_el2, x8
-    mov     x8, #(0b1111 << 6 | 0b0101) // EL1h+DAIF
-    msr     spsr_el2, x8
+    mrs     x20, sctlr_el2
+    // Get core ID
+    mrs     x20, mpidr_el1
+    and     x20, x20, #0xFF
 
-    // Make sure the regs have been set
-    dsb     sy
-    isb
+    // Set tmp stack
+    ldr     x8, =__stacks_top__
+
+    /* lsl     x9, x20, #10
+    sub     x8, x8, x9*/
+    mov     sp, x8
+
+    // Set up x18
+    adrp    x18, g_coreCtxs
+    add     x18, x18, #:lo12:g_coreCtxs
+    add     x18, x18, x20, lsl #3
+    stp     x18, xzr, [sp, #-0x10]!
+
+    // Store entrypoint if first core
+    cbz     x19, _store_arg
+    ldr     x8, _initialKernelEntrypoint
+    str     x8, [x18, #8]
+
+_store_arg:
+    str     x0, [x18, #0]
 
     // Set VBAR
     ldr     x8, =__vectors_start__
     msr     vbar_el2, x8
-
-    // Set tmp stack
-    ldr     x8, =__stacks_top__
-    mov     sp, x8
 
     // Make sure the regs have been set
     dsb     sy
     isb
 
     // Don't call init array to save space?
-    // Clear BSS
+    // Clear BSS & call main for the first core executing this code
+    cbz     x20, _jump_to_kernel
     ldr     x0, =__bss_start__
     mov     w1, #0
     ldr     x2, =__end__
     sub     x2, x2, x0
     bl      memset
 
-    // TODO
     bl      main
 
+_jump_to_kernel:
     // Jump to kernel
-    mov     x0, x19
+    mov     x8, #(0b1111 << 6 | 0b0101) // EL1h+DAIF
+    msr     spsr_el2, x8
+
+    ldp     x0, x1, [x18]
+    msr     elr_el2, x1
     dsb     sy
     isb
     eret
