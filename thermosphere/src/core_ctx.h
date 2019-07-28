@@ -18,8 +18,10 @@
 #include "utils.h"
 
 typedef struct CoreCtx {
-    u32 coreId;
+    u64 kernelArgument;
+    u64 kernelEntrypoint;
+    u32 coreId;             // @ 0x0C
 } CoreCtx;
 
-extern CoreCtx g_coreCtxInstances[4];
+extern CoreCtx g_coreCtxs[4];
 register CoreCtx *currentCoreCtx asm("x18");

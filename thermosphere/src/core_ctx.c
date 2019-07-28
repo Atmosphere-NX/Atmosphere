@@ -16,7 +16,7 @@
 
 #include "core_ctx.h"
 
-CoreCtx g_coreCtxInstances[4] = {
+CoreCtx g_coreCtxs[4] = {
     { .coreId = 0 },
     { .coreId = 1 },
     { .coreId = 2 },

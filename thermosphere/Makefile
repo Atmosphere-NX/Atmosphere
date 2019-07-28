@@ -49,13 +49,12 @@ INCLUDES	:=	include ../common/include
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only #<- important
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only -ffixed-x18 #<- important
 DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"\
 			-DATMOSPHERE_RELEASE_VERSION_HASH="0x$(AMSHASH)" $(PLATFORM_DEFINES)
 CFLAGS	:= \
 	-g \
 	-Os \
-	-ffixed-x18 \
 	-ffunction-sections \
 	-fdata-sections \
 	-fomit-frame-pointer \
@@ -133,7 +132,7 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 all: $(BUILD)
 
 ifeq ($(PLATFORM), qemu)
-QEMUFLAGS :=	-nographic -machine virt,secure=on,virtualization=on -cpu cortex-a57 -smp 2 -m 1024\
+QEMUFLAGS :=	-nographic -machine virt,secure=on,virtualization=on,gic-version=2 -cpu cortex-a57 -smp 2 -m 1024\
 			-bios bl1.bin -d unimp -semihosting-config enable,target=native -serial mon:stdio
 
 # NOTE: copy bl1.bin, bl2.bin, bl31.bin from your own build of Arm Trusted Firmware!
