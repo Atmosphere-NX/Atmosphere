@@ -55,6 +55,7 @@ DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GI
 CFLAGS	:= \
 	-g \
 	-Os \
+	-ffixed-x18 \
 	-ffunction-sections \
 	-fdata-sections \
 	-fomit-frame-pointer \
