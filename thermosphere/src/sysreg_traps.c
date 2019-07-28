@@ -18,6 +18,79 @@
 #include "synchronization.h"
 #include "sysreg.h"
 
+static void doSystemRegisterRwImpl(u64 *val, u32 iss)
+{
+    u32 op0  = (iss >> 20) & 3;
+    u32 op2  = (iss >> 17) & 7;
+    u32 op1  = (iss >> 14) & 7;
+    u32 CRn  = (iss >> 10) & 15;
+    //u32 Rt   = (iss >>  5) & 31;
+    u32 CRm  = (iss >>  1) & 15;
+    u32 dir  = iss & 1;
+
+    u32 codebuf[] = {
+        0,              // TBD
+        0xD65F03C0,     // ret
+    };
+
+    codebuf[0] = dir ? MAKE_MRS_FROM_FIELDS(op0, op1, CRn, CRm, op2, 0) : MAKE_MSR_FROM_FIELDS(op0, op1, CRn, CRm, op2, 0);
+
+    __dsb_sy();
+    __isb();
+
+    *val = ((u64 (*)(u64))codebuf)(*val);
+}
+
+void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg2)
+{
+    // reg1 != reg2: mrrc/mcrr
+    u64 val = 0;
+
+    iss &= ~((0x1F << 5) | 1);
+
+    doSystemRegisterRwImpl(&val, iss | 1);
+    if (reg1 == reg2) {
+        frame->x[reg1] = val;
+    } else {
+        if (reg1 != -1) {
+            frame->x[reg1] = val & 0xFFFFFFFF;
+        }
+        if (reg2 != -1) {
+            frame->x[reg2] = val >> 32;
+        }
+    }
+
+    skipFaultingInstruction(frame, 4);
+}
+
+void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg2)
+{
+    // reg1 != reg2: mrrc/mcrr
+    u64 val = 0;
+    iss &= ~((0x1F << 5) | 1);
+
+    if (reg1 == -1 || reg2 == -1) {
+        doSystemRegisterRwImpl(&val, iss | 1);
+        if (reg1 == -1) {
+            val = (frame->x[reg2] << 32) | (val & 0xFFFFFFFF);
+        } else {
+            val = ((val >> 32) << 32) | (frame->x[reg1] & 0xFFFFFFFF);
+        }
+    }
+
+    else {
+        if (reg1 != reg2) {
+            val |= (frame->x[reg2] << 32) | (frame->x[reg1] & 0xFFFFFFFF);
+        } else {
+            val = frame->x[reg1];
+        }
+    }
+    doSystemRegisterRwImpl(&val, iss);
+    skipFaultingInstruction(frame, 4);
+}
+
+#ifdef A32_SUPPORTED
+
 // For a32 mcr/mrc => a64 mrs
 static u32 convertMcrMrcIss(u32 *outCondition, bool *outCondValid, u32 *outShift, u32 a32Iss, u32 coproc, u32 el)
 {
@@ -140,89 +213,6 @@ static bool evaluateMcrMrcCondition(u64 spsr, u32 condition, bool condValid)
     }
 }
 
-static void doSystemRegisterRwImpl(u64 *val, u32 iss)
-{
-    u32 op0  = (iss >> 20) & 3;
-    u32 op2  = (iss >> 17) & 7;
-    u32 op1  = (iss >> 14) & 7;
-    u32 CRn  = (iss >> 10) & 15;
-    //u32 Rt   = (iss >>  5) & 31;
-    u32 CRm  = (iss >>  1) & 15;
-    u32 dir  = iss & 1;
-
-    u32 codebuf[] = {
-        0,              // TBD
-        0xD65F03C0,     // ret
-    };
-
-    codebuf[0] = dir ? MAKE_MRS_FROM_FIELDS(op0, op1, CRn, CRm, op2, 0) : MAKE_MSR_FROM_FIELDS(op0, op1, CRn, CRm, op2, 0);
-
-    __dsb_sy();
-    __isb();
-
-    *val = ((u64 (*)(u64))codebuf)(*val);
-}
-
-void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg2)
-{
-    // reg1 != reg2: mrrc/mcrr
-    u64 val = 0;
-
-    iss &= ~((0x1F << 5) | 1);
-
-    doSystemRegisterRwImpl(&val, iss | 1);
-    if (reg1 == reg2) {
-        frame->x[reg1] = val;
-    } else {
-        if (reg1 != -1) {
-            frame->x[reg1] = val & 0xFFFFFFFF;
-        }
-        if (reg2 != -1) {
-            frame->x[reg2] = val >> 32;
-        }
-    }
-
-    skipFaultingInstruction(frame, 4);
-}
-
-void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 reg2)
-{
-    // reg1 != reg2: mrrc/mcrr
-    u64 val = 0;
-    iss &= ~((0x1F << 5) | 1);
-
-    if (reg1 == -1 || reg2 == -1) {
-        doSystemRegisterRwImpl(&val, iss | 1);
-        if (reg1 == -1) {
-            val = (frame->x[reg2] << 32) | (val & 0xFFFFFFFF);
-        } else {
-            val = ((val >> 32) << 32) | (frame->x[reg1] & 0xFFFFFFFF);
-        }
-    }
-
-    else {
-        if (reg1 != reg2) {
-            val |= (frame->x[reg2] << 32) | (frame->x[reg1] & 0xFFFFFFFF);
-        } else {
-            val = frame->x[reg1];
-        }
-    }
-    doSystemRegisterRwImpl(&val, iss);
-    skipFaultingInstruction(frame, 4);
-}
-
-void handleMsrMrsTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
-{
-    u32 iss = esr.iss;
-    u32 reg = (iss >> 5) & 31;
-    bool isRead = (iss & 1) != 0;
-
-    if (isRead) {
-        doSystemRegisterRead(frame, iss, reg, reg);
-    } else {
-        doSystemRegisterWrite(frame, iss, reg, reg);
-    }
-}
 
 void handleMcrMrcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 {
@@ -346,4 +336,19 @@ void handleLdcStcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
     // Only used for DBGDTRRXint
     // Do not execute the read/writes
     skipFaultingInstruction(frame, esr.il == 0 ? 2 : 4);
+}
+
+#endif
+
+void handleMsrMrsTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+{
+    u32 iss = esr.iss;
+    u32 reg = (iss >> 5) & 31;
+    bool isRead = (iss & 1) != 0;
+
+    if (isRead) {
+        doSystemRegisterRead(frame, iss, reg, reg);
+    } else {
+        doSystemRegisterWrite(frame, iss, reg, reg);
+    }
 }

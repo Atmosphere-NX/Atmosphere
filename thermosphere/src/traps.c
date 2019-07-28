@@ -42,10 +42,11 @@ void enableTraps(void)
     // Trap SMC instructions
     hcr |= HCR_TSC;
 
-    // Reroute physical IRQ to EL2
+    // Reroute physical IRQs to EL2
     hcr |= HCR_IMO;
 
-    // TODO debug exceptions
+    // Make sure HVC is enabled
+    hcr &= ~HCR_HCD;
 
     SET_SYSREG(hcr_el2, hcr);
 
