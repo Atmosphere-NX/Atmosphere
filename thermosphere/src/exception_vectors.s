@@ -55,6 +55,13 @@
     bl      _save_all_regs
 .endm
 
+.macro save_all_regs_reload_x18
+    save_all_regs
+
+    // Reload our x18 value (currentCoreCtx)
+    ldp     x18, xzr, [sp, #0x120]
+.endm
+
 .macro pivot_stack_for_crash
     // Note: reset x18 assumed uncorrupted
     // Note: replace sp_el0 with crashing sp
@@ -124,8 +131,6 @@ vector_entry irq_sp0
 
     mov     x30, x29
 
-    // Reload our x18 value (currentCoreCtx)
-    ldp     x18, xzr, [sp, #0x120]
     ret
 
 vector_entry fiq_sp0
@@ -194,7 +199,7 @@ vector_entry serror_spx
 
 /* Lower EL, A64 */
 vector_entry synch_a64
-    save_all_regs
+    save_all_regs_reload_x18
 
     mov     x0, sp
     mrs     x1, esr_el2

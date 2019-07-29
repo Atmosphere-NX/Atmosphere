@@ -40,17 +40,35 @@ _startCommon:
     msr     daifset, 0b1111
     msr     spsel, #1
 
-    mrs     x20, sctlr_el2
+    // Set VBAR
+    ldr     x8, =__vectors_start__
+    msr     vbar_el2, x8
+
+    // Set system to sane defaults, aarch64 for el1
+    mov     x4, #0x0838
+    movk    x4, #0xC5, lsl #16
+    orr     x1, x4, #0x30000000
+    mov     x2, #(1 << 31)
+    mov     x3, #0xFFFFFFFF
+
+    msr     sctlr_el2, x1
+    msr     hcr_el2, x2
+    msr     dacr32_el2, x3
+
+    dsb     sy
+    isb
+
+    // Mov x20 (and no other register (?)) with != 0 is needed to unfuck QEMU's JIT
+    mov     x20, #0x31
+
     // Get core ID
-    mrs     x20, mpidr_el1
-    and     x20, x20, #0xFF
+    mrs     x10, mpidr_el1
+    and     x10, x10, #0xFF
 
     // Set tmp stack
     ldr     x8, =__stacks_top__
-
-    /* lsl     x9, x20, #10
-    sub     x8, x8, x9*/
-    mov     sp, x8
+    lsl     x9, x10, #10
+    sub     sp, x8, x9
 
     // Set up x18
     adrp    x18, g_coreCtxs
@@ -66,26 +84,22 @@ _startCommon:
 _store_arg:
     str     x0, [x18, #0]
 
-    // Set VBAR
-    ldr     x8, =__vectors_start__
-    msr     vbar_el2, x8
-
-    // Make sure the regs have been set
-    dsb     sy
-    isb
-
     // Don't call init array to save space?
     // Clear BSS & call main for the first core executing this code
-    cbz     x20, _jump_to_kernel
+    cbz     x20, _jump_to_main
     ldr     x0, =__bss_start__
     mov     w1, #0
     ldr     x2, =__end__
     sub     x2, x2, x0
     bl      memset
 
+    dsb     sy
+    isb
+
+_jump_to_main:
+
     bl      main
 
-_jump_to_kernel:
     // Jump to kernel
     mov     x8, #(0b1111 << 6 | 0b0101) // EL1h+DAIF
     msr     spsr_el2, x8

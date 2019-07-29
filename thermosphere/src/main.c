@@ -1,13 +1,19 @@
 #include "utils.h"
+#include "core_ctx.h"
 #include "log.h"
 #include "platform/uart.h"
 
 int main(void)
 {
-    uartInit(115200);
+    if (currentCoreCtx->coreId == 0) {
+        uartInit(115200);
+        serialLog("Hello from Thermosphere!\n");
+        __builtin_trap();
+    }
 
-    serialLog("fifo flush fifo flush\n");
-    serialLog("Hello from Thermosphere!\n");
-    __builtin_trap();
+    else {
+        serialLog("Core %u booted\n", currentCoreCtx->coreId);
+    }
+
     return 0;
 }
