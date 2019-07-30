@@ -17,6 +17,7 @@
 #include "hvc.h"
 #include "traps.h"
 #include "sysreg_traps.h"
+#include "smc.h"
 #include "core_ctx.h"
 
 #include "log.h"
@@ -107,12 +108,16 @@ void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeReg
             handleHypercall(frame, esr);
             break;
 #endif
-        case Exception_SystemRegisterTrap:
-            handleMsrMrsTrap(frame, esr);
-            break;
         case Exception_HypervisorCallA64:
             handleHypercall(frame, esr);
             break;
+        case Exception_MonitorCallA64:
+            handleSmcTrap(frame, esr);
+            break;
+        case Exception_SystemRegisterTrap:
+            handleMsrMrsTrap(frame, esr);
+            break;
+
         default:
             serialLog("Lower EL sync exception, EC = 0x%02llx IL=%llu ISS=0x%06llx\n", (u64)esr.ec, esr.il, esr.iss);
             dumpStackFrame(frame, false);

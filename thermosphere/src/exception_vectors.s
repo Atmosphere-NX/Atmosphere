@@ -169,7 +169,39 @@ vector_entry fiq_sp0
 
 vector_entry serror_sp0
     bl      unknown_exception
-    check_vector_size serror_sp0
+    .endfunc
+    .cfi_endproc
+    /* To save space, insert in an unused vector segment. */
+
+.global doSmcIndirectCallImpl
+//.type   doSmcIndirectCallImpl, %function
+doSmcIndirectCallImpl:
+    stp     x19, x20, [sp, #-0x10]!
+    mov     x19, x0
+
+    ldp     x0, x1, [x19, #0x00]
+    ldp     x2, x3, [x19, #0x10]
+    ldp     x4, x5, [x19, #0x20]
+    ldp     x6, x7, [x19, #0x30]
+
+    _doSmcIndirectCallImplSmcInstruction:
+    smc     #0
+
+    stp     x0, x1, [x19, #0x00]
+    stp     x2, x3, [x19, #0x10]
+    stp     x4, x5, [x19, #0x20]
+    stp     x6, x7, [x19, #0x30]
+
+    ldp     x19, x20, [sp], #0x10
+    ret
+
+_doSmcIndirectCallImplEnd:
+.global doSmcIndirectCallImplSmcInstructionOffset
+doSmcIndirectCallImplSmcInstructionOffset:
+    .word _doSmcIndirectCallImplSmcInstruction - doSmcIndirectCallImpl
+.global doSmcIndirectCallImplSize
+doSmcIndirectCallImplSize:
+    .word _doSmcIndirectCallImplEnd - doSmcIndirectCallImpl
 
 /* Current EL, SPx */
 vector_entry synch_spx
