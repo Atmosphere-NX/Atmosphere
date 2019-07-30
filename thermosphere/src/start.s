@@ -29,6 +29,8 @@ _initialKernelEntrypoint:
 start:
     mov     x19, #1
     b       _startCommon
+.global start2
+.type   start2, %function
 start2:
     mov     x19, xzr
 _startCommon:
@@ -57,8 +59,12 @@ _startCommon:
     isb
 
     // Get core ID
+    // Ensure Aff0 is 4-1 at most (4 cores), and that Aff1, 2 and 3 are 0 (1 cluster only)
     mrs     x10, mpidr_el1
-    and     x10, x10, #0xFF
+    and     x10, x10, #0x00FFFFFF        // Aff0 to 2
+    and     x10, x10, #(0xFF << 32)      // Aff3
+    cmp     x10, #4
+    bhs     .
 
     // Set tmp stack (__stacks_top__ is aligned)
     adrp    x8, __stacks_top__

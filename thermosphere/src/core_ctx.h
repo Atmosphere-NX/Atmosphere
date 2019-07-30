@@ -19,7 +19,7 @@
 
 typedef struct CoreCtx {
     u64 kernelArgument;
-    u64 kernelEntrypoint;
+    uintptr_t kernelEntrypoint;
     u32 coreId;             // @ 0x0C
 } CoreCtx;
 
