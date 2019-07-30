@@ -58,9 +58,6 @@ _startCommon:
     dsb     sy
     isb
 
-    // Mov x20 (and no other register (?)) with != 0 is needed to unfuck QEMU's JIT
-    mov     x20, #0x31
-
     // Get core ID
     mrs     x10, mpidr_el1
     and     x10, x10, #0xFF
@@ -73,7 +70,7 @@ _startCommon:
     // Set up x18
     adrp    x18, g_coreCtxs
     add     x18, x18, #:lo12:g_coreCtxs
-    add     x18, x18, x20, lsl #3
+    add     x18, x18, x10, lsl #3
     stp     x18, xzr, [sp, #-0x10]!
 
     // Store entrypoint if first core
@@ -86,7 +83,7 @@ _store_arg:
 
     // Don't call init array to save space?
     // Clear BSS & call main for the first core executing this code
-    cbz     x20, _jump_to_main
+    cbz     x19, _jump_to_main
     ldr     x0, =__bss_start__
     mov     w1, #0
     ldr     x2, =__end__
