@@ -13,10 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-/* For some reason GAS doesn't know about it, even with .cpu cortex-a57 */
-#define cpuactlr_el1 s3_1_c15_c2_0
-#define cpuectlr_el1 s3_1_c15_c2_1
 
 .section    .crt0, "ax", %progbits
 .align      3
@@ -34,14 +30,15 @@ start:
     mov     x19, #1
     b       _startCommon
 start2:
-    mov     x19, #0
+    mov     x19, xzr
 _startCommon:
     // Disable interrupts, select sp_el2
     msr     daifset, 0b1111
     msr     spsel, #1
 
     // Set VBAR
-    ldr     x8, =__vectors_start__
+    adrp    x8, __vectors_start__
+    add     x8, x8, #:lo12:__vectors_start__
     msr     vbar_el2, x8
 
     // Set system to sane defaults, aarch64 for el1
@@ -54,6 +51,7 @@ _startCommon:
     msr     sctlr_el2, x1
     msr     hcr_el2, x2
     msr     dacr32_el2, x3
+    msr     sctlr_el1, x4
 
     dsb     sy
     isb
@@ -62,8 +60,8 @@ _startCommon:
     mrs     x10, mpidr_el1
     and     x10, x10, #0xFF
 
-    // Set tmp stack
-    ldr     x8, =__stacks_top__
+    // Set tmp stack (__stacks_top__ is aligned)
+    adrp    x8, __stacks_top__
     lsl     x9, x10, #10
     sub     sp, x8, x9
 
@@ -84,16 +82,18 @@ _store_arg:
     // Don't call init array to save space?
     // Clear BSS & call main for the first core executing this code
     cbz     x19, _jump_to_main
-    ldr     x0, =__bss_start__
-    mov     w1, #0
-    ldr     x2, =__end__
+    adrp    x0, __bss_start__
+    add     x0, x0, #:lo12:__bss_start__
+    mov     w1, wzr
+    adrp    x2, __end__
+    add     x2, x2, #:lo12:__end__
     sub     x2, x2, x0
     bl      memset
 
+_jump_to_main:
+
     dsb     sy
     isb
-
-_jump_to_main:
 
     bl      main
 
