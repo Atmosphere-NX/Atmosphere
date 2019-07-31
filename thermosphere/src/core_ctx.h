@@ -20,7 +20,8 @@
 typedef struct CoreCtx {
     u64 kernelArgument;
     uintptr_t kernelEntrypoint;
-    u32 coreId;             // @ 0x0C
+    u32 coreId;                     // @0x10
+    bool isColdBootCore;            // @0x14
 } CoreCtx;
 
 extern CoreCtx g_coreCtxs[4];

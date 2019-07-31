@@ -17,7 +17,12 @@
 #include <stdio.h>
 #include "debug_log.h"
 #include "platform/uart.h"
+#include "semihosting.h"
 #include "utils.h"
+
+#ifndef DLOG_USE_SEMIHOSTING_WRITE0
+#define DLOG_USE_SEMIHOSTING_WRITE0 0
+#endif
 
 // NOTE: UNSAFE!
 int debugLog(const char *fmt, ...)
@@ -28,6 +33,12 @@ int debugLog(const char *fmt, ...)
     int res = vsprintf(buf, fmt, args);
     va_end(args);
 
-    uartWriteData(buf, (size_t)res);
+    // Use semihosting if available (we assume qemu was launched with -semihosting), otherwise UART
+    if (DLOG_USE_SEMIHOSTING_WRITE0 && semihosting_connection_supported()) {
+        semihosting_write_string(buf);
+    } else {
+        uartWriteData(buf, (size_t)res);
+    }
+
     return res;
 }
