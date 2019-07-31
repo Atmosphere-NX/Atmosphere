@@ -23,7 +23,8 @@ _start:
     b       start
     b       start2
 
-_initialKernelEntrypoint:
+.global g_initialKernelEntrypoint
+g_initialKernelEntrypoint:
     .quad   0
 
 start:
@@ -58,34 +59,26 @@ _startCommon:
     dsb     sy
     isb
 
+    mov     x2, x0
+
     // Get core ID
     // Ensure Aff0 is 4-1 at most (4 cores), and that Aff1, 2 and 3 are 0 (1 cluster only)
-    mrs     x10, mpidr_el1
-    and     x10, x10, #0x00FFFFFF        // Aff0 to 2
-    and     x10, x10, #(0xFF << 32)      // Aff3
-    cmp     x10, #4
+    mrs     x0, mpidr_el1
+    tst     x0, #(0xFF << 32)
+    bne     .
+    and     x0, x0, #0x00FFFFFF        // Aff0 to 2
+    cmp     x0, #4
     bhs     .
 
     // Set tmp stack (__stacks_top__ is aligned)
     adrp    x8, __stacks_top__
-    lsl     x9, x10, #10
+    lsl     x9, x0, #10
     sub     sp, x8, x9
 
     // Set up x18
-    adrp    x18, g_coreCtxs
-    add     x18, x18, #:lo12:g_coreCtxs
-    add     x18, x18, x10, lsl #3
+    mov     w1, w19
+    bl      coreCtxInit
     stp     x18, xzr, [sp, #-0x10]!
-
-    strb    w19, [x18, #0x14]           // isColdbootCore
-
-    // Store entrypoint if first core
-    cbz     x19, _store_arg
-    ldr     x8, _initialKernelEntrypoint
-    str     x8, [x18, #8]
-
-_store_arg:
-    str     x0, [x18, #0]
 
     // Don't call init array to save space?
     // Clear BSS & call main for the first core executing this code

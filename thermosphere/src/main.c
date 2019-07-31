@@ -13,7 +13,7 @@ static void loadKernelViaSemihosting(void)
     uintptr_t buf = (uintptr_t)__start__ + (1<<20);
     long handle = -1, ret;
 
-    DEBUG("Loading kernel via semihosting file I/O... ");
+    DEBUG("Loading kernel via semihosted file I/O... ");
     handle = semihosting_file_open("test_kernel.bin", FOPEN_MODE_RB);
     if (handle < 0) {
         DEBUG("failed to open file (%ld)!\n", handle);
@@ -25,7 +25,7 @@ static void loadKernelViaSemihosting(void)
         panic();
     }
 
-    DEBUG("OK!");
+    DEBUG("OK!\n");
     semihosting_file_close(handle);
     currentCoreCtx->kernelEntrypoint = buf;
 }
@@ -34,9 +34,9 @@ int main(void)
 {
     enableTraps();
 
-    if (currentCoreCtx->isColdBootCore) {
+    if (currentCoreCtx->isColdbootCore) {
         uartInit(115200);
-        DEBUG("Hello from Thermosphere!\n");
+        DEBUG("EL2: core %u reached main first!\n", currentCoreCtx->coreId);
         if (currentCoreCtx->kernelEntrypoint == 0) {
             if (semihosting_connection_supported()) {
                 loadKernelViaSemihosting();
@@ -48,7 +48,7 @@ int main(void)
         }
     }
     else {
-        DEBUG("Core %u booted\n", currentCoreCtx->coreId);
+        DEBUG("EL2: core %u reached main!\n", currentCoreCtx->coreId);
     }
 
     return 0;

@@ -16,9 +16,23 @@
 
 #include "core_ctx.h"
 
+// start.s
+extern uintptr_t g_initialKernelEntrypoint;
+
+// Prevents it from being put in BSS
 CoreCtx g_coreCtxs[4] = {
     { .coreId = 0 },
     { .coreId = 1 },
     { .coreId = 2 },
     { .coreId = 3 },
 };
+
+void coreCtxInit(u32 coreId, bool isColdbootCore, u64 argument)
+{
+    currentCoreCtx = &g_coreCtxs[coreId];
+    currentCoreCtx->isColdbootCore = isColdbootCore;
+    currentCoreCtx->kernelArgument = argument;
+    if (isColdbootCore) {
+        currentCoreCtx->kernelEntrypoint = g_initialKernelEntrypoint;
+    }
+}
