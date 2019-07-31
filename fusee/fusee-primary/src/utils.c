@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include "utils.h"
+#include "di.h"
 #include "se.h"
 #include "fuse.h"
 #include "pmc.h"
@@ -24,8 +25,8 @@
 #include "panic.h"
 #include "car.h"
 #include "btn.h"
-
 #include "lib/log.h"
+#include "display/video_fb.h"
 
 #include <inttypes.h>
 
@@ -97,12 +98,34 @@ __attribute__ ((noreturn)) void generic_panic(void) {
 }
 
 __attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
+    /* Forcefully initialize the screen if logging is disabled. */
+    if (log_get_log_level() == SCREEN_LOG_LEVEL_NONE) {
+        /* Zero-fill the framebuffer and register it as printk provider. */
+        video_init((void *)0xC0000000);
+
+        /* Initialize the display. */
+        display_init();
+
+        /* Set the framebuffer. */
+        display_init_framebuffer((void *)0xC0000000);
+
+        /* Turn on the backlight after initializing the lfb */
+        /* to avoid flickering. */
+        display_backlight(true);
+        
+        /* Override the global logging level. */
+        log_set_log_level(SCREEN_LOG_LEVEL_ERROR);
+    }
+    
+    /* Display fatal error. */
     va_list args;
     print(SCREEN_LOG_LEVEL_ERROR, "Fatal error: ");
     va_start(args, fmt);
     vprint(SCREEN_LOG_LEVEL_ERROR, fmt, args);
     va_end(args);
     print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"\nPress POWER to reboot\n");
+    
+    /* Wait for button and reboot. */
     wait_for_button_and_reboot();
 }
 
