@@ -21,8 +21,10 @@ typedef struct CoreCtx {
     u64 kernelArgument;
     uintptr_t kernelEntrypoint;
     u32 coreId;                     // @0x10
-    bool isColdBootCore;            // @0x14
+    bool isColdbootCore;            // @0x14
 } CoreCtx;
 
 extern CoreCtx g_coreCtxs[4];
 register CoreCtx *currentCoreCtx asm("x18");
+
+void coreCtxInit(u32 coreId, bool isColdbootCore, u64 argument);
