@@ -173,6 +173,12 @@ vector_entry serror_sp0
     .cfi_endproc
     /* To save space, insert in an unused vector segment. */
 
+.global semihosting_call
+.type   semihosting_call, %function
+semihosting_call:
+    hlt     #0xF000
+    ret
+
 .global doSmcIndirectCallImpl
 //.type   doSmcIndirectCallImpl, %function
 doSmcIndirectCallImpl:

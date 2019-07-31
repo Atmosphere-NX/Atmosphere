@@ -105,5 +105,6 @@ static inline bool check_32bit_additive_overflow(u32 a, u32 b) {
 }
 
 static inline void panic(void) {
+    __builtin_trap();
     for (;;);
 }

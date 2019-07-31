@@ -77,6 +77,8 @@ _startCommon:
     add     x18, x18, x10, lsl #3
     stp     x18, xzr, [sp, #-0x10]!
 
+    strb    w19, [x18, #0x14]           // isColdbootCore
+
     // Store entrypoint if first core
     cbz     x19, _store_arg
     ldr     x8, _initialKernelEntrypoint
