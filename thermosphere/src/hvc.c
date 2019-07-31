@@ -15,14 +15,14 @@
  */
 
 #include "hvc.h"
-#include "log.h"
+#include "debug_log.h"
 
 void handleHypercall(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 {
     u32 id = esr.iss;
     switch (id) {
         default:
-            serialLog("Unhandled hypercall: 0x%x.\n");
+            DEBUG("Unhandled hypercall: 0x%x.\n");
             dumpStackFrame(frame, false);
             break;
     }
