@@ -14,20 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include "log.h"
-#include "platform/uart.h"
-#include "utils.h"
+#pragma once
+#include <stdarg.h>
 
-// NOTE: UNSAFE!
-int serialLog(const char *fmt, ...)
-{
-    char buf[128];
-    va_list args;
-    va_start(args, fmt);
-    int res = vsprintf(buf, fmt, args);
-    va_end(args);
+#ifndef NDEBUG
+#define DEBUG(...)  debugLog(__VA_ARGS__)
+#else
+#define DEBUG(...)
+#endif
 
-    uartWriteData(buf, (size_t)res);
-    return res;
-}
+int debugLog(const char *fmt, ...);
