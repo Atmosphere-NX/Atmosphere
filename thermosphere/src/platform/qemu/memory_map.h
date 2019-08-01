@@ -18,4 +18,15 @@
 
 #include "../../types.h"
 
+static inline u64 transformKernelAddress(u64 pa)
+{
+    switch (pa) {
+        // GICv2 CPU -> vCPU interface
+        case 0x08010000:
+            return 0x08040000;
+        default:
+            return pa;
+    }
+}
+
 uintptr_t configureMemoryMap(u32 *addrSpaceSize);
