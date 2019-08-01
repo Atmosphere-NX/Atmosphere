@@ -1,5 +1,6 @@
 MEMORY
 {
     NULL  : ORIGIN = 0,           LENGTH = 0x1000
-    main  : ORIGIN = 0x60000000,  LENGTH = 128M   /* QEMU's memory map changes dynamically? */
+    main  : ORIGIN = 0x60000000,  LENGTH = 64M   /* QEMU's memory map changes dynamically? */
+    temp  : ORIGIN = 0x64000000,  LENGTH = 64M
 }

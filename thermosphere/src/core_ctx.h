@@ -18,10 +18,12 @@
 #include "utils.h"
 
 typedef struct CoreCtx {
-    u64 kernelArgument;
-    uintptr_t kernelEntrypoint;
-    u32 coreId;                     // @0x10
-    bool isColdbootCore;            // @0x14
+    u64 kernelArgument;             // @0x00
+    uintptr_t kernelEntrypoint;     // @0x08
+    u8 *crashStack;                 // @0x10
+    u64 scratch;                    // @0x18
+    u32 coreId;                     // @0x20
+    bool isColdbootCore;            // @0x24
 } CoreCtx;
 
 extern CoreCtx g_coreCtxs[4];

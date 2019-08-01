@@ -1,6 +1,11 @@
 OUTPUT_ARCH(aarch64)
 ENTRY(_start)
 
+PHDRS
+{
+    main PT_LOAD;
+}
+
 SECTIONS
 {
     PROVIDE(__start__ = ORIGIN(main));
@@ -19,37 +24,37 @@ SECTIONS
         __vectors_start__ = ABSOLUTE(.);
         KEEP(*(.vectors*));
         . = ALIGN(8);
-    } >main
+    } >main :main
 
     .init :
     {
         KEEP( *(.init) )
         . = ALIGN(8);
-    } >main
+    } >main :main
 
     .plt :
     {
         *(.plt)
         *(.iplt)
         . = ALIGN(8);
-    } >main
+    } >main :main
 
 
     .fini :
     {
         KEEP( *(.fini) )
         . = ALIGN(8);
-    } >main
+    } >main :main
 
     .rodata :
     {
         *(.rodata .rodata.* .gnu.linkonce.r.*)
         SORT(CONSTRUCTORS)
         . = ALIGN(8);
-    } >main
+    } >main :main
 
-    .got            : { __got_start__ = ABSOLUTE(.); *(.got) *(.igot) } >main
-    .got.plt        : { *(.got.plt)  *(.igot.plt)  __got_end__ = ABSOLUTE(.);} >main
+    .got            : { __got_start__ = ABSOLUTE(.); *(.got) *(.igot) } >main :main
+    .got.plt        : { *(.got.plt)  *(.igot.plt)  __got_end__ = ABSOLUTE(.);} >main :main
 
     .preinit_array :
     {
@@ -58,7 +63,7 @@ SECTIONS
         KEEP (*(.preinit_array))
         PROVIDE (__preinit_array_end = ABSOLUTE(.));
         . = ALIGN(8);
-    } >main
+    } >main :main
 
     .init_array :
     {
@@ -66,7 +71,7 @@ SECTIONS
         KEEP (*(SORT(.init_array.*)))
         KEEP (*(.init_array))
         PROVIDE (__init_array_end = ABSOLUTE(.));
-    } >main
+    } >main :main
 
     .fini_array :
     {
@@ -76,7 +81,7 @@ SECTIONS
         KEEP (*(SORT(.fini_array.*)))
         PROVIDE (__fini_array_end = ABSOLUTE(.));
         . = ALIGN(8);
-    } >main
+    } >main :main
 
     .ctors :
     {
@@ -86,7 +91,7 @@ SECTIONS
         KEEP (*(SORT(.ctors.*)))
         KEEP (*(.ctors))
         . = ALIGN(8);
-    } >main
+    } >main :main
 
     .dtors ALIGN(8) :
     {
@@ -96,35 +101,35 @@ SECTIONS
         KEEP (*(SORT(.dtors.*)))
         KEEP (*(.dtors))
         . = ALIGN(8);
-    } >main
+    } >main :main
 
     .data ALIGN(8) :
     {
         *(.data .data.* .gnu.linkonce.d.*)
         CONSTRUCTORS
         . = ALIGN(8);
-    } >main
+    } >main :main
 
 
-    .eh_frame_hdr     : { *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) } >main
-    .eh_frame         : { KEEP (*(.eh_frame)) *(.eh_frame.*) } >main
-    .gcc_except_table : { *(.gcc_except_table .gcc_except_table.*) } >main
-    .gnu_extab        : { *(.gnu_extab*) } >main
-    .exception_ranges : { *(.exception_ranges .exception_ranges*) } >main
+    .eh_frame_hdr     : { *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) } >main :main
+    .eh_frame         : { KEEP (*(.eh_frame)) *(.eh_frame.*) } >main :main
+    .gcc_except_table : { *(.gcc_except_table .gcc_except_table.*) } >main :main
+    .gnu_extab        : { *(.gnu_extab*) } >main :main
+    .exception_ranges : { *(.exception_ranges .exception_ranges*) } >main :main
 
-    .dynamic           : { *(.dynamic) } >main
-    .interp            : { *(.interp) } >main
-    .note.gnu.build-id : { *(.note.gnu.build-id) } >main
-    .hash              : { *(.hash) } >main
-    .gnu.hash          : { *(.gnu.hash) } >main
-    .gnu.version       : { *(.gnu.version) } >main
-    .gnu.version_d     : { *(.gnu.version_d) } >main
-    .gnu.version_r     : { *(.gnu.version_r) } >main
-    .dynsym            : { *(.dynsym) } >main
-    .dynstr            : { *(.dynstr) } >main
-    .rela.dyn          : { *(.rela.*); __main_end__ = ABSOLUTE(.);} >main
+    .dynamic           : { *(.dynamic) } >main :main
+    .interp            : { *(.interp) } >main :main
+    .note.gnu.build-id : { *(.note.gnu.build-id) } >main :main
+    .hash              : { *(.hash) } >main :main
+    .gnu.hash          : { *(.gnu.hash) } >main :main
+    .gnu.version       : { *(.gnu.version) } >main :main
+    .gnu.version_d     : { *(.gnu.version_d) } >main :main
+    .gnu.version_r     : { *(.gnu.version_r) } >main :main
+    .dynsym            : { *(.dynsym) } >main :main
+    .dynstr            : { *(.dynstr) } >main :main
+    .rela.dyn          : { *(.rela.*); __main_end__ = ABSOLUTE(.);} >main :main
 
-    .bss :
+    .bss (NOLOAD) :
     {
         . = ALIGN(8);
         __bss_start__  = ABSOLUTE(.);
@@ -133,13 +138,22 @@ SECTIONS
         *(COMMON)
         . = ALIGN(8);
         __end__ = ABSOLUTE(.);
-    } >main
+    } >main :NONE
 
     . = ALIGN(0x1000);
     __end__ = ABSOLUTE(.) ;
 
-    __stacks_top__       = ABSOLUTE(. + 0x1000);
-    __excep_stacks_top__ = ABSOLUTE(. + 0x2000); /* Note: potentially overwrites warmboot firmware. */
+    .temp (NOLOAD) :
+    {
+        . = ALIGN(0x1000);
+        __stacks_top__       = ABSOLUTE(. + 0x2000);
+        __crash_stacks_top__ = ABSOLUTE(. + 0x3000);
+        . += 0x3000;
+        *(.temp.*)
+        . = ALIGN(0x1000);
+    } >temp :NONE
+
+
 
     . = ALIGN(8);
 

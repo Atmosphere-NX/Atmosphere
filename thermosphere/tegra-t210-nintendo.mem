@@ -1,0 +1,8 @@
+MEMORY
+{
+    NULL  : ORIGIN = 0,             LENGTH = 0x1000
+    main  : ORIGIN = 0x80000000,    LENGTH = 0xD000
+
+    /* This area is overwritten by the secure monitor when preparing for deep sleep. */
+    temp  : ORIGIN = 0x8000F000,    LENGTH = 0x11000
+}

@@ -63,17 +63,14 @@
 .endm
 
 .macro pivot_stack_for_crash
-    // Note: reset x18 assumed uncorrupted
+    // Note: x18 assumed uncorrupted
     // Note: replace sp_el0 with crashing sp
-    mrs     x18, esr_el2
-    mov     x18, sp
-    msr     sp_el0, x18
-    bic     x18, x18, #0xFF
-    bic     x18, x18, #0x300
-    add     x18, x18, #0x400
-    mov     sp, x18
-    ldp     x18, xzr, [sp, #-0x10]
-    add     sp, sp, #0x1000
+    str     x16, [x18, #0x18]       // currentCoreCtx->scratch = x16
+    mov     x16, sp
+    msr     sp_el0, x16
+    ldr     x16, [x18, #0x10]       // currentCoreCtx->crashStack
+    mov     sp, x16
+    ldr     x16, [x18, #0x18]
 .endm
 
 /* Actual Vectors for Thermosphere. */
