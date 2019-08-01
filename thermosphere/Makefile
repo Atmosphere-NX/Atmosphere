@@ -24,12 +24,19 @@ export PLATFORM	:= qemu
 PLATFORM_SOURCES	:= src/platform/qemu
 PLATFORM_DEFINES	:= -DPLATFORM_QEMU
 
+else ifeq ($(PLATFORM), tegra-t210-arm-tf)
+
+export PLATFORM := tegra-t210-arm-tf
+
+PLATFORM_SOURCES	:= src/platform/tegra
+PLATFORM_DEFINES	:= -DPLATFORM_TEGRA -DPLATFORM_TEGRA_T210_ARM_TF
+
 else
 
 export PLATFORM	:= tegra
 
 PLATFORM_SOURCES	:= src/platform/tegra
-PLATFORM_DEFINES	:= -DPLATFORM_TEGRA
+PLATFORM_DEFINES	:= -DPLATFORM_TEGRA -D DPLATFORM_TEGRA_T210_NINTENDO
 
 endif
 
