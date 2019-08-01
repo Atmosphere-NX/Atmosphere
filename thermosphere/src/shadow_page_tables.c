@@ -16,6 +16,8 @@
 
 
 #include "shadow_page_tables.h"
+#include "platform/memory_map_mmu_cfg.h"
+#include "debug_log.h"
 
 #ifdef A32_SUPPORTED
 static void replacePageTableShortL2(u32 *ttbl)
@@ -91,9 +93,11 @@ static void replacePageTableLongImpl(u64 *ttbl, u32 level, u32 nbits)
                     replacePageTableLongImpl((u64 *)addr, level + 1, 9);
                 } else {
                     u64 pa = ttbl[i] & MASK2L(47, 12);
-                    // FIXME
-                    if (pa == 0x50042000ull) {
-                        ttbl[i] = (ttbl[i] & ~MASK2L(47, 12)) | 0x50046000ull;
+                    u64 newPa = transformKernelAddress(pa);
+                    if (pa != newPa) {
+                        // Note: unreachable on QEMU yet
+                        DEBUG("EL1 in-place page-table entry swap: 0x%08llx => 0x%08llx\n", pa, newPa);
+                        ttbl[i] = (ttbl[i] & ~MASK2L(47, 12)) | newPa;
                     }
                 }
 
@@ -101,6 +105,7 @@ static void replacePageTableLongImpl(u64 *ttbl, u32 level, u32 nbits)
             }
 
             default:
+                __builtin_unreachable();
                 break;
         }
     }
@@ -125,4 +130,9 @@ void replacePageTableLong(u64 *ttbl, u32 txsz)
     } else if (startBit >= 12) {
         replacePageTableLongImpl(ttbl, 3, startBit - 11);
     }
+}
+
+void replaceKernelPageTables(void)
+{
+
 }

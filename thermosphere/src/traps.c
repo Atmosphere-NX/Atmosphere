@@ -36,8 +36,8 @@ void enableTraps(void)
     u64 hcr = GET_SYSREG(hcr_el2);
 
     // Trap *writes* to memory control registers
-    //hcr |= HCR_TVM;
-    // actually don't
+    // Note: QEMU doesn't support this bit as of August 2019...
+    hcr |= HCR_TVM;
 
     // Trap SMC instructions
     hcr |= HCR_TSC;
