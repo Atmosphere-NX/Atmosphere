@@ -82,7 +82,7 @@ _startCommon:
 
     // Don't call init array to save space?
     // Clear BSS & call main for the first core executing this code
-    cbz     x19, _jump_to_main
+    cbz     x19, _enable_mmu
     adrp    x0, __bss_start__
     add     x0, x0, #:lo12:__bss_start__
     mov     w1, wzr
@@ -91,7 +91,9 @@ _startCommon:
     sub     x2, x2, x0
     bl      memset
 
-_jump_to_main:
+_enable_mmu:
+
+    bl      configureMemoryMapEnableMmu
 
     dsb     sy
     isb

@@ -2,6 +2,7 @@
 #include "smc.h"
 #include "synchronization.h"
 #include "core_ctx.h"
+#include "arm.h"
 
 // Currently in exception_vectors.s:
 extern const u32 doSmcIndirectCallImpl[];
@@ -12,12 +13,12 @@ void start2(u64 contextId);
 
 void doSmcIndirectCall(ExceptionStackFrame *frame, u32 smcId)
 {
-    u32 codebuf[doSmcIndirectCallImplSize]; // note: potential VLA
+    u32 codebuf[doSmcIndirectCallImplSize / 4]; // note: potential VLA
     memcpy(codebuf, doSmcIndirectCallImpl, doSmcIndirectCallImplSize);
-    codebuf[doSmcIndirectCallImplSmcInstructionOffset/4] |= smcId << 5;
+    codebuf[doSmcIndirectCallImplSmcInstructionOffset / 4] |= smcId << 5;
 
-    __dsb_sy();
-    __isb();
+    flush_dcache_range(codebuf, codebuf + doSmcIndirectCallImplSize/4);
+    invalidate_icache_all();
 
     ((void (*)(ExceptionStackFrame *))codebuf)(frame);
 }

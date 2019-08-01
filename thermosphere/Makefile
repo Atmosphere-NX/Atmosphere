@@ -42,7 +42,7 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src $(PLATFORM_SOURCES)
+SOURCES		:=	src src/platform $(PLATFORM_SOURCES)
 DATA		:=	data
 INCLUDES	:=	include ../common/include
 
@@ -133,7 +133,7 @@ all: $(BUILD)
 
 ifeq ($(PLATFORM), qemu)
 QEMUFLAGS :=	-nographic -machine virt,secure=on,virtualization=on,gic-version=2 -cpu cortex-a57 -smp 4 -m 1024\
-			-bios bl1.bin -d unimp -semihosting-config enable,target=native -serial mon:stdio
+			-bios bl1.bin -d unimp,int,mmu -semihosting-config enable,target=native -serial mon:stdio
 
 # NOTE: copy bl1.bin, bl2.bin, bl31.bin from your own build of Arm Trusted Firmware!
 

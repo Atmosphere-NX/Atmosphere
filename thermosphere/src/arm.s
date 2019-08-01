@@ -206,9 +206,35 @@ invalidate_icache_all_inner_shareable:
 .type       invalidate_icache_all, %function
 .global     invalidate_icache_all
 invalidate_icache_all:
-    dsb ish
+    dsb sy
     isb
     ic  iallu
-    dsb ish
+    dsb sy
     isb
+    ret
+
+.section    .text.set_memory_registers_enable_mmu, "ax", %progbits
+.type       set_memory_registers_enable_mmu, %function
+.global     set_memory_registers_enable_mmu
+set_memory_registers_enable_mmu:
+    msr     ttbr0_el2, x0
+    msr     tcr_el2, x1
+    msr     mair_el2, x2
+
+    dsb     sy
+    isb
+    tlbi    alle2
+    dsb     sy
+    isb
+
+    // Enable MMU & enable caching
+    mrs     x0, sctlr_el2
+    orr     x0, x0, #1
+    orr     x0, x0, #(1 << 2)
+    orr     x0, x0, #(1 << 12)
+    msr     sctlr_el2, x0
+
+    dsb     sy
+    isb
+
     ret

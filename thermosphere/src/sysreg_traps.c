@@ -17,6 +17,7 @@
 #include "sysreg_traps.h"
 #include "synchronization.h"
 #include "sysreg.h"
+#include "arm.h"
 
 static void doSystemRegisterRwImpl(u64 *val, u32 iss)
 {
@@ -35,8 +36,8 @@ static void doSystemRegisterRwImpl(u64 *val, u32 iss)
 
     codebuf[0] = dir ? MAKE_MRS_FROM_FIELDS(op0, op1, CRn, CRm, op2, 0) : MAKE_MSR_FROM_FIELDS(op0, op1, CRn, CRm, op2, 0);
 
-    __dsb_sy();
-    __isb();
+    flush_dcache_range(codebuf, (u8 *)codebuf + sizeof(codebuf));
+    invalidate_icache_all();
 
     *val = ((u64 (*)(u64))codebuf)(*val);
 }
