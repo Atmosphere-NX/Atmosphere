@@ -68,9 +68,9 @@ void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
 #endif
 }
 
-#ifdef A32_SUPPORTED
 static void advanceItState(ExceptionStackFrame *frame)
 {
+    // Just in case EL0 is executing A32 (& not sure if fully supported)
     if (!spsrIsThumb(frame->spsr_el2) || spsrGetT32ItFlags(frame->spsr_el2) == 0) {
         return;
     }
@@ -80,13 +80,10 @@ static void advanceItState(ExceptionStackFrame *frame)
     // Last instruction of the block => wipe, otherwise advance
     spsrSetT32ItFlags(&frame->spsr_el2, (it & 7) == 0 ? 0 : (it & 0xE0) | ((it << 1) & 0x1F));
 }
-#endif
 
 void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size)
 {
-#ifdef A32_SUPPORTED
     advanceItState(frame);
-#endif
     frame->elr_el2 += size;
 }
 
@@ -94,23 +91,15 @@ void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeReg
 {
 
     switch (esr.ec) {
-
-#ifdef A32_SUPPORTED
-        case Exception_CP14RTTrap:
         case Exception_CP15RTTrap:
-            handleMcrMrcTrap(frame, esr);
-            break;
+        case Exception_CP15RRTTrap: 
+        case Exception_CP14RTTrap:
         case Exception_CP14DTTrap:
-            handleLdcStcTrap(frame, esr);
+        case Exception_CP14RRTTrap: {
+            // A32 stub: Skip instruction, read 0 if necessary (there are debug regs at EL0)
+            handleSysregAccessA32Stub(frame, esr);
             break;
-        case Exception_CP14RRTTrap:
-        case Exception_CP15RRTTrap:
-            handleMcrrMrrcTrap(frame, esr);
-            break;
-        case Exception_HypervisorCallA32:
-            handleHypercall(frame, esr);
-            break;
-#endif
+        }
         case Exception_HypervisorCallA64:
             handleHypercall(frame, esr);
             break;
