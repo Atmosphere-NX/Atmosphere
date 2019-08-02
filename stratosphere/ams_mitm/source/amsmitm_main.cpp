@@ -91,13 +91,13 @@ int main(int argc, char **argv)
     consoleDebugInit(debugDevice_SVC);
     HosThread initializer_thread;
 
-    LaunchAllMitmModules();
+    LaunchAllModules();
 
     R_ASSERT(initializer_thread.Initialize(&Utils::InitializeThreadFunc, NULL, 0x4000, 0x15));
     R_ASSERT(initializer_thread.Start());
 
     /* Wait for all mitm modules to end. */
-    WaitAllMitmModules();
+    WaitAllModules();
 
     return 0;
 }

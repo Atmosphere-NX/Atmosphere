@@ -26,35 +26,38 @@
 #include "bpc_mitm/bpcmitm_main.hpp"
 #include "ns_mitm/nsmitm_main.hpp"
 
-static HosThread g_module_threads[MitmModuleId_Count];
+#include "fsp_usb/fspusb_main.hpp"
+
+static HosThread g_module_threads[ModuleId_Count];
 
 static const struct {
     ThreadFunc main;
     u32 priority;
     u32 stack_size;
-} g_module_definitions[MitmModuleId_Count] = {
+} g_module_definitions[ModuleId_Count] = {
     { &FsMitmMain,  FsMitmPriority,  FsMitmStackSize },  /* FsMitm */
     { &SetMitmMain, SetMitmPriority, SetMitmStackSize }, /* SetMitm */
     { &BpcMitmMain, BpcMitmPriority, BpcMitmStackSize }, /* BpcMitm */
     { &NsMitmMain,  NsMitmPriority,  NsMitmStackSize },  /* NsMitm */
+    { &FspUsbMain,  FspUsbPriority,  FspUsbStackSize },  /* FspUsb */
 };
 
-void LaunchAllMitmModules() {
+void LaunchAllModules() {
     /* Create thread for each module. */
-    for (u32 i = 0; i < static_cast<u32>(MitmModuleId_Count); i++) {
+    for (u32 i = 0; i < static_cast<u32>(ModuleId_Count); i++) {
         const auto cur_module = &g_module_definitions[i];
         R_ASSERT(g_module_threads[i].Initialize(cur_module->main, nullptr, cur_module->stack_size, cur_module->priority));
     }
 
     /* Start thread for each module. */
-    for (u32 i = 0; i < static_cast<u32>(MitmModuleId_Count); i++) {
+    for (u32 i = 0; i < static_cast<u32>(ModuleId_Count); i++) {
         R_ASSERT(g_module_threads[i].Start());
     }
 }
 
-void WaitAllMitmModules() {
+void WaitAllModules() {
     /* Wait on thread for each module. */
-    for (u32 i = 0; i < static_cast<u32>(MitmModuleId_Count); i++) {
+    for (u32 i = 0; i < static_cast<u32>(ModuleId_Count); i++) {
         g_module_threads[i].Join();
     }
 }

@@ -13,20 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+ 
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
+#include <malloc.h>
 
-#pragma once
+#include <switch.h>
+#include <atmosphere.h>
+#include <stratosphere.hpp>
 
-enum ModuleId : u32 {
-    ModuleId_FsMitm = 0,
-    ModuleId_SetMitm = 1,
-    ModuleId_BpcMitm = 2,
-    ModuleId_NsMitm = 3,
-    ModuleId_FspUsb = 4,
+constexpr u32 FspUsbPriority = 43;
+constexpr u32 FspUsbStackSize = 0x8000;
 
-    /* Always keep this at the end. */
-    ModuleId_Count,
-};
-
-void LaunchAllModules();
-
-void WaitAllModules();
+void FspUsbMain(void *arg);

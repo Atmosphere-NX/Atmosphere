@@ -15,18 +15,29 @@
  */
 
 #pragma once
+#include <switch.h>
+#include <stratosphere.hpp>
 
-enum ModuleId : u32 {
-    ModuleId_FsMitm = 0,
-    ModuleId_SetMitm = 1,
-    ModuleId_BpcMitm = 2,
-    ModuleId_NsMitm = 3,
-    ModuleId_FspUsb = 4,
+#include "../fs_mitm/fs_idirectory.hpp"
+#include "fspusb_drive.hpp"
 
-    /* Always keep this at the end. */
-    ModuleId_Count,
+class DriveDirectory : public IDirectory {
+    private:
+        DIR dp;
+        s32 usbid;
+        
+    public:
+        DriveDirectory(DIR fatdp, DriveData *drv) : dp(fatdp) {
+            usbid = drv->usbif.ID;
+        }
+
+        ~DriveDirectory() {
+            f_closedir(&dp);
+        }
+
+        bool IsOk();
+        
+    public:
+        virtual Result ReadImpl(uint64_t *out_count, FsDirectoryEntry *out_entries, uint64_t max_entries) override;
+        virtual Result GetEntryCountImpl(uint64_t *count) override;
 };
-
-void LaunchAllModules();
-
-void WaitAllModules();
