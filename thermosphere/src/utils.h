@@ -33,21 +33,16 @@
 
 #define ALINLINE        __attribute__((always_inline))
 
+#define TEMPORARY       __attribute__((section(".temp")))
+
 bool overlaps(u64 as, u64 ae, u64 bs, u64 be);
 
-
-static inline uintptr_t get_physical_address(const void *vaddr) {
+static inline uintptr_t get_physical_address_el1_stage12(const uintptr_t el1_vaddr) {
+    // NOTE: interrupt must be disabled when calling this func
     uintptr_t PAR;
-    __asm__ __volatile__ ("at s1e3r, %0" :: "r"(vaddr));
+    __asm__ __volatile__ ("at s12e1r, %0" :: "r"(el1_vaddr));
     __asm__ __volatile__ ("mrs %0, par_el1" : "=r"(PAR));
-    return (PAR & 1) ? 0ull : (PAR & MASK2L(40, 12)) | ((uintptr_t)vaddr & MASKL(12));
-}
-
-static inline uintptr_t get_physical_address_el0(const uintptr_t el0_vaddr) {
-    uintptr_t PAR;
-    __asm__ __volatile__ ("at s1e0r, %0" :: "r"(el0_vaddr));
-    __asm__ __volatile__ ("mrs %0, par_el1" : "=r"(PAR));
-    return (PAR & 1) ? 0ull : (PAR & MASK2L(40, 12)) | ((uintptr_t)el0_vaddr & MASKL(12));
+    return (PAR & 1) ? 0ull : (PAR & MASK2L(40, 12)) | ((uintptr_t)el1_vaddr & MASKL(12));
 }
 
 static inline u32 read32le(const volatile void *dword, size_t offset) {

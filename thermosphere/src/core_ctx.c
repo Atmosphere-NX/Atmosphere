@@ -29,14 +29,14 @@ CoreCtx g_coreCtxs[4] = {
     { .coreId = 3 },
 };
 
-void coreCtxInit(u32 coreId, bool isColdbootCore, u64 argument)
+void coreCtxInit(u32 coreId, bool isBootCore, u64 argument)
 {
     size_t crashStackSize = (__crash_stacks_top__ - __stacks_top__) / 4;
     currentCoreCtx = &g_coreCtxs[coreId];
-    currentCoreCtx->isColdbootCore = isColdbootCore;
+    currentCoreCtx->isBootCore = isBootCore;
     currentCoreCtx->kernelArgument = argument;
     currentCoreCtx->crashStack = __crash_stacks_top__ - crashStackSize * coreId;
-    if (isColdbootCore && currentCoreCtx->kernelEntrypoint == 0) {
+    if (isBootCore && currentCoreCtx->kernelEntrypoint == 0) {
         currentCoreCtx->kernelEntrypoint = g_initialKernelEntrypoint;
     }
 }

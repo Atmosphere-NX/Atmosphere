@@ -4,6 +4,7 @@
 #include "platform/uart.h"
 #include "semihosting.h"
 #include "traps.h"
+#include "sysreg.h"
 
 extern const u8 __start__[];
 
@@ -34,7 +35,7 @@ int main(void)
 {
     enableTraps();
 
-    if (currentCoreCtx->isColdbootCore) {
+    if (currentCoreCtx->isBootCore) {
         uartInit(115200);
         DEBUG("EL2: core %u reached main first!\n", currentCoreCtx->coreId);
         if (currentCoreCtx->kernelEntrypoint == 0) {
@@ -49,6 +50,7 @@ int main(void)
     }
     else {
         DEBUG("EL2: core %u reached main!\n", currentCoreCtx->coreId);
+        DEBUG("Test 0x%08llx %016llx\n", get_physical_address_el1_stage12(0x08010000ull), GET_SYSREG(par_el1));
     }
 
     return 0;

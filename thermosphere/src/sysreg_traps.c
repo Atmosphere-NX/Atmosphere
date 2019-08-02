@@ -19,7 +19,6 @@
 #include "sysreg.h"
 #include "arm.h"
 #include "debug_log.h"
-#include "shadow_page_tables.h"
 
 static void doSystemRegisterRwImpl(u64 *val, u32 iss)
 {
@@ -91,42 +90,6 @@ void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg1, u32 re
 
     // Hooks go here:
     switch (iss) {
-        case ENCODE_SYSREG_ISS(SCTLR_EL1): {
-            DEBUG("Hooked sysreg write: SCTLR_EL1 = %0x016llx\n", val);
-            // Possible MMU (re)-enablement
-            if (val & 1) {
-                u64 tcr = GET_SYSREG(tcr_el1);
-                if (((tcr >> 14) & 3) == 0) {
-                    // 4KB granule
-                    replacePageTableLong((u64 *)(GET_SYSREG(ttbr0_el1) & MASK2L(47, 1)), (u32)(tcr & 0x3F));
-                    replacePageTableLong((u64 *)(GET_SYSREG(ttbr1_el1) & MASK2L(47, 1)), (u32)((tcr >> 16) & 0x3F));
-                }
-            }
-
-            break;
-        }
-        case ENCODE_SYSREG_ISS(TTBR1_EL1): {
-            DEBUG("Hooked sysreg write: TTBR1_EL1 = %0x016llx\n", val);
-            u64 tcr = GET_SYSREG(tcr_el1);
-            // MMU enabled & 4KB granule
-            if ((GET_SYSREG(sctlr_el1) & 1) && ((tcr >> 14) & 3) == 0) {
-                // Note: lack of ttbr0 intentional here
-                replacePageTableLong((u64 *)(val & MASK2L(47, 1)), (u32)((tcr >> 16) & 0x3F));
-            }
-            break;
-        }
-        case ENCODE_SYSREG_ISS(TCR_EL1): {
-            DEBUG("Hooked sysreg write: TCR_EL1 = %0x016llx\n", val);
-            u64 tcr = val;
-            // MMU enabled & 4KB granule
-            if ((GET_SYSREG(sctlr_el1) & 1) && ((tcr >> 14) & 3) == 0) {
-                // Note: lack of ttbr0 intentional here
-                replacePageTableLong((u64 *)(GET_SYSREG(ttbr1_el1) & MASK2L(47, 1)), (u32)((tcr >> 16) & 0x3F));
-            }
-            break;
-        }
-        // Note: TTBR0_EL1 deliberately not hooked
-
         default:
             break;
     }
