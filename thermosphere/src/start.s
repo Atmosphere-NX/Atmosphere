@@ -93,7 +93,10 @@ _startCommon:
 
 _enable_mmu:
 
+    // Enable EL2 address translation and caches
     bl      configureMemoryMapEnableMmu
+    // Enable EL1 Stage2 intermediate physical address translation
+    bl      configureMemoryMapEnableStage2
 
     dsb     sy
     isb

@@ -238,3 +238,27 @@ set_memory_registers_enable_mmu:
     isb
 
     ret
+
+.section    .text.set_memory_registers_enable_stage2, "ax", %progbits
+.type       set_memory_registers_enable_stage2, %function
+.global     set_memory_registers_enable_stage2
+set_memory_registers_enable_stage2:
+    msr     vttbr_el2, x0
+    msr     vtcr_el2, x1
+
+    dsb     sy
+    isb
+    // Flushes all stage 1&2 entries, EL1
+    tlbi    alle1
+    dsb     sy
+    isb
+
+    // Enable stage2
+    mrs     x0, hcr_el2
+    orr     x0, x0, #1
+    msr     hcr_el2, x0
+
+    dsb     sy
+    isb
+
+    ret

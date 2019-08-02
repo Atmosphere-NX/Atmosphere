@@ -23,10 +23,10 @@ typedef struct CoreCtx {
     u8 *crashStack;                 // @0x10
     u64 scratch;                    // @0x18
     u32 coreId;                     // @0x20
-    bool isColdbootCore;            // @0x24
+    bool isBootCore;            // @0x24
 } CoreCtx;
 
 extern CoreCtx g_coreCtxs[4];
 register CoreCtx *currentCoreCtx asm("x18");
 
-void coreCtxInit(u32 coreId, bool isColdbootCore, u64 argument);
+void coreCtxInit(u32 coreId, bool isBootCore, u64 argument);

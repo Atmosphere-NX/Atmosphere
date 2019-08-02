@@ -90,7 +90,7 @@
 #define MMU_AP_RO                       (3ull << 6)
 
 /*
- * S2AP[2:1] (for stage2 translations; secmon doesn't use it)
+ * S2AP[1:0] (for stage2 translations; secmon doesn't use it)
  */
 #define MMU_S2AP_NONE                   (0ull << 6)
 #define MMU_S2AP_RO                     (1ull << 6)
@@ -104,9 +104,18 @@
 #define MMU_PMD_ATTRINDX_MASK   (7ull << 2)
 
 /*
+ * MemAttr[3:0] (stage2)
+ * 
+ */
+#define MMU_MEMATTR(x)                              ((x) << 2)
+#define MMU_MEMATTR_DEVICE_NGNRE                    MMU_MEMATTR(2)
+#define MMU_MEMATTR_NORMAL_CACHEABLE_OR_UNCHANGED   MMU_MEMATTR(0xF)
+
+/*
  * TCR flags.
  */
 #define TCR_T0SZ(x)         ((64 - (x)) << 0)
+#define VTCR_SL0(x)         ((x) << 6)
 #define TCR_IRGN_NC         (0 << 8)
 #define TCR_IRGN_WBWA       (1 << 8)
 #define TCR_IRGN_WT         (2 << 8)
@@ -128,6 +137,7 @@
 
 #define TCR_EL1_RSVD        BIT(31)
 #define TCR_EL2_RSVD        (BIT(31) | BIT(23))
+#define VTCR_EL2_RSVD       BIT(31)
 #define TCR_EL3_RSVD        (BIT(31) | BIT(23))
 
 // We define those:

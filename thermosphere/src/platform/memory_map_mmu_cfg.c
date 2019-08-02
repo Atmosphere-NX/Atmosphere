@@ -18,6 +18,7 @@
 #include "../sysreg.h"
 #include "../arm.h"
 #include "../mmu.h"
+#include "../debug_log.h"
 #include "memory_map_mmu_cfg.h"
 
 void configureMemoryMapEnableMmu(void)
@@ -26,16 +27,15 @@ void configureMemoryMapEnableMmu(void)
     uintptr_t ttbr0 = configureMemoryMap(&addrSpaceSize);
 
     u32 ps = GET_SYSREG(id_aa64mmfr0_el1) & 0xF;
-
     /*
         - PA size: from ID_AA64MMFR0_EL1
         - Granule size: 4KB
-        - Shareability attribute for memory associated with translation table walks using TTBR0_EL3: Inner Shareable
-        - Outer cacheability attribute for memory associated with translation table walks using TTBR0_EL3: Normal memory, Outer Write-Back Read-Allocate Write-Allocate Cacheable
-        - Inner cacheability attribute for memory associated with translation table walks using TTBR0_EL3: Normal memory, Inner Write-Back Read-Allocate Write-Allocate Cacheable
+        - Shareability attribute for memory associated with translation table walks using TTBR0_EL2: Inner Shareable
+        - Outer cacheability attribute for memory associated with translation table walks using TTBR0_EL2: Normal memory, Outer Write-Back Read-Allocate Write-Allocate Cacheable
+        - Inner cacheability attribute for memory associated with translation table walks using TTBR0_EL2: Normal memory, Inner Write-Back Read-Allocate Write-Allocate Cacheable
         - T0SZ = from configureMemoryMap
     */
-    u64 tcr = TCR_EL2_RSVD | TCR_PS(ps) | TCR_TG0_4K | TCR_SHARED_INNER | TCR_ORGN_WBWA | TCR_IRGN_WBWA | TCR_T0SZ(64 - addrSpaceSize);
+    u64 tcr = TCR_EL2_RSVD | TCR_PS(ps) | TCR_TG0_4K | TCR_SHARED_INNER | TCR_ORGN_WBWA | TCR_IRGN_WBWA | TCR_T0SZ(addrSpaceSize);
 
 
     /*
@@ -49,4 +49,26 @@ void configureMemoryMapEnableMmu(void)
     invalidate_icache_all();
 
     set_memory_registers_enable_mmu(ttbr0, tcr, mair);
+}
+
+void configureMemoryMapEnableStage2(void)
+{
+    u32 addrSpaceSize;
+    uintptr_t vttbr = configureStage2MemoryMap(&addrSpaceSize);
+
+    u32 ps = GET_SYSREG(id_aa64mmfr0_el1) & 0xF;
+    /*
+        - PA size: from ID_AA64MMFR0_EL1
+        - Granule size: 4KB
+        - Shareability attribute for memory associated with translation table walks using VTTBR_EL2: Inner Shareable
+        - Outer cacheability attribute for memory associated with translation table walks using VTTBR_EL2: Normal memory, Outer Write-Back Read-Allocate Write-Allocate Cacheable
+        - Inner cacheability attribute for memory associated with translation table walks using VTTBR_EL2: Normal memory, Inner Write-Back Read-Allocate Write-Allocate Cacheable
+        - SL0 = start at level 1
+        - T0SZ = from configureMemoryMap
+    */
+    u64 vtcr = VTCR_EL2_RSVD | TCR_PS(ps) | TCR_TG0_4K | TCR_SHARED_INNER | TCR_ORGN_WBWA | TCR_IRGN_WBWA | VTCR_SL0(1) | TCR_T0SZ(addrSpaceSize);
+    flush_dcache_all();
+    invalidate_icache_all();
+
+    set_memory_registers_enable_stage2(vttbr, vtcr);
 }
