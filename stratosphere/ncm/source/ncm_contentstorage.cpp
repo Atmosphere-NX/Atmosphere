@@ -272,7 +272,13 @@ namespace sts::ncm {
         this->placeholder_accessor.ClearAllCaches();
         this->placeholder_accessor.GetPlaceHolderRootPath(placeholder_root_path);
 
+        /* Nintendo uses CleanDirectoryRecursively which is 3.0.0+. 
+           We'll just delete the directory and recreate it to support all firmwares. */
         R_TRY(fsdevDeleteDirectoryRecursively(placeholder_root_path));
+
+        if (mkdir(placeholder_root_path, S_IRWXU) == -1) {
+            return fsdevGetLastResult();
+        }
 
         return ResultSuccess;
     }
