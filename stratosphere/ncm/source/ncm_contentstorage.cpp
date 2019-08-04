@@ -223,16 +223,16 @@ namespace sts::ncm {
         }
 
         this->ClearContentCache();
-
         char content_path[FS_MAX_PATH] = {0};
-
         this->GetContentPath(content_path, content_id);
 
-        R_TRY_CATCH(fsdevDeleteDirectoryRecursively(content_path)) {
-            R_CATCH(ResultFsPathNotFound) {
-                return ResultNcmContentNotFound;
-            }
-        } R_END_TRY_CATCH;
+        if (std::remove(content_path) != 0) {
+            R_TRY_CATCH(fsdevGetLastResult()) {
+                R_CATCH(ResultFsPathNotFound) {
+                    return ResultNcmContentNotFound;
+                }
+            } R_END_TRY_CATCH;
+        }
 
         return ResultSuccess;
         R_DEBUG_END
