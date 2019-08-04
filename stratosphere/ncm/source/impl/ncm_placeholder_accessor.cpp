@@ -80,13 +80,13 @@ namespace sts::ncm::impl {
 
         this->GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
 
-        debug::DebugLog("Deleting %s\n", placeholder_path);
-
-        R_TRY_CATCH(fsdevDeleteDirectoryRecursively(placeholder_path)) {
-            R_CATCH(ResultFsPathNotFound) {
-                return ResultNcmPlaceHolderNotFound;
-            }
-        } R_END_TRY_CATCH;
+        if (std::remove(placeholder_path) != 0) {
+            R_TRY_CATCH(fsdevGetLastResult()) {
+                R_CATCH(ResultFsPathNotFound) {
+                    return ResultNcmPlaceHolderNotFound;
+                }
+            } R_END_TRY_CATCH;
+        }
 
         return ResultSuccess;
     }
