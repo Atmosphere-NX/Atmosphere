@@ -17,6 +17,8 @@
 #include "ncm_contentmetadatabase.hpp"
 #include "ncm_utils.hpp"
 
+#include "debug.hpp"
+
 namespace sts::ncm {
 
     namespace {
@@ -91,9 +93,7 @@ namespace sts::ncm {
     }
 
     Result ContentMetaDatabaseInterface::GetContentIdByTypeImpl(ContentId* out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_TRY(this->EnsureEnabled());
 
         const auto it = this->kvs->lower_bound(key);
         if (it == this->kvs->end() || it->GetKey().id != key.id) {
@@ -146,25 +146,13 @@ namespace sts::ncm {
     }
 
     Result ContentMetaDatabaseInterface::GetLatestContentMetaKeyImpl(ContentMetaKey* out_key, TitleId tid) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_TRY(this->EnsureEnabled());
         
         ContentMetaKey key = {0};
         key.id = tid;
 
-        if (this->kvs->GetCount() == 0) {
-            return ResultNcmContentMetaNotFound; 
-        }
-
-        auto entry = this->kvs->lower_bound(key);
-        if (entry == this->kvs->end()) {
-            return ResultNcmContentMetaNotFound;
-        }
-
         bool found_key = false;
-
-        for (; entry != this->kvs->end(); entry++) {
+        for (auto entry = this->kvs->lower_bound(key); entry != this->kvs->end(); entry++) {
             if (entry->GetKey().id != key.id) {
                 break;
             }
@@ -183,31 +171,41 @@ namespace sts::ncm {
         return ResultSuccess;
     }
 
-    Result ContentMetaDatabaseInterface::Set(ContentMetaKey key, InBuffer<u8> value) {
+    Result ContentMetaDatabaseInterface::EnsureEnabled() {
         if (this->disabled) {
             return ResultNcmInvalidContentMetaDatabase;
         }
+
+        return ResultSuccess;
+    }
+
+
+    Result ContentMetaDatabaseInterface::Set(ContentMetaKey key, InBuffer<u8> value) {
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
+
+        D_LOG("    set title_id: 0x%lx\n", key.id);
+        D_LOG("    set version: 0x%x\n", key.version);
 
         R_TRY(this->kvs->Set(key, value.buffer, value.num_elements));
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::Get(Out<u64> out_size, ContentMetaKey key, OutBuffer<u8> out_value) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
-        
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
         R_TRY(this->kvs->Get(out_size.GetPointer(), out_value.buffer, out_value.num_elements, key));
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::Remove(ContentMetaKey key) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
-
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
         R_TRY(this->kvs->Remove(key));
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::GetContentIdByType(Out<ContentId> out_content_id, ContentMetaKey key, ContentType type) {
@@ -217,45 +215,33 @@ namespace sts::ncm {
         return ResultSuccess;
     }
 
-    Result ContentMetaDatabaseInterface::ListContentInfo(Out<u32> out_entries_written, OutBuffer<ContentInfo> out_info, ContentMetaKey key, u32 start_index) {
-        if (start_index >> 0x1f != 0) {
+    Result ContentMetaDatabaseInterface::ListContentInfo(Out<u32> out_count, OutBuffer<ContentInfo> out_info, ContentMetaKey key, u32 offset) {
+        R_DEBUG_START
+        if (offset >> 0x1f != 0) {
             return ResultNcmInvalidOffset;
         }
 
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_TRY(this->EnsureEnabled());
         
-        const void* value = nullptr;
+        const void *value = nullptr;
         size_t value_size = 0;
         R_TRY(GetContentMetaValuePointer(&value, &value_size, key, this->kvs));
         const auto header = GetValueHeader(value);
         const auto content_infos = GetValueContentInfos(value);
-        size_t entries_written = 0;
-
-        if (out_info.num_elements == 0) {
-            out_entries_written.SetValue(0);
-            return ResultSuccess;
+        
+        size_t count;
+        for (count = 0; offset + count < header->content_count && count < out_info.num_elements; count++) {
+            out_info[count] = content_infos[offset + count];
         }
 
-        for (size_t i = start_index; i < out_info.num_elements; i++) {
-            /* We have no more entries we can read out. */
-            if (header->content_count <= start_index + i) {
-                break;
-            }
-
-            out_info[i] = content_infos[i];
-            entries_written = i + 1;
-        }
-
-        out_entries_written.SetValue(entries_written);
+        out_count.SetValue(count);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::List(Out<u32> out_entries_total, Out<u32> out_entries_written, OutBuffer<ContentMetaKey> out_info, ContentMetaType type, TitleId application_title_id, TitleId title_id_min, TitleId title_id_max, ContentInstallType install_type) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
         
         size_t entries_total = 0;
         size_t entries_written = 0;
@@ -311,23 +297,22 @@ namespace sts::ncm {
         out_entries_total.SetValue(entries_total);
         out_entries_written.SetValue(entries_written);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
-    Result ContentMetaDatabaseInterface::GetLatestContentMetaKey(Out<ContentMetaKey> out_key, TitleId title_id) {        
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
-
+    Result ContentMetaDatabaseInterface::GetLatestContentMetaKey(Out<ContentMetaKey> out_key, TitleId title_id) {   
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
         ContentMetaKey key;        
         R_TRY(this->GetLatestContentMetaKeyImpl(&key, title_id));
         out_key.SetValue(key);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::ListApplication(Out<u32> out_entries_total, Out<u32> out_entries_written, OutBuffer<ApplicationContentMetaKey> out_keys, ContentMetaType type) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
         
         size_t entries_total = 0;
         size_t entries_written = 0;
@@ -377,12 +362,12 @@ namespace sts::ncm {
         out_entries_total.SetValue(entries_total);
         out_entries_written.SetValue(entries_written);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::Has(Out<bool> out, ContentMetaKey key) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
 
         if (this->kvs->GetCount() == 0) {
             out.SetValue(false);
@@ -397,36 +382,26 @@ namespace sts::ncm {
 
         out.SetValue(has);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::HasAll(Out<bool> out, InBuffer<ContentMetaKey> keys) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
 
-        if (keys.num_elements == 0) {
-            out.SetValue(true);
-            return ResultSuccess;
-        }
-
-        for (size_t i = 0; i < keys.num_elements; i++) {
-            bool has = false;
+        bool has = true;
+        for (size_t i = 0; i < keys.num_elements && has; i++) {
             R_TRY(this->Has(&has, keys[i]));
-
-            if (!has) {
-                out.SetValue(false);
-                return ResultSuccess;
-            }
         }
 
-        out.SetValue(true);
+        out.SetValue(has);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::GetSize(Out<u64> out_size, ContentMetaKey key) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
 
         if (this->kvs->GetCount() == 0) {
             return ResultNcmContentMetaNotFound;
@@ -439,12 +414,12 @@ namespace sts::ncm {
 
         out_size.SetValue(it->GetValueSize());
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::GetRequiredSystemVersion(Out<u32> out_version, ContentMetaKey key) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
 
         if (key.type != ContentMetaType::Application && key.type != ContentMetaType::Patch) {
             return ResultNcmInvalidContentMetaKey;
@@ -459,34 +434,41 @@ namespace sts::ncm {
         const auto ext_header = GetValueExtendedHeader<ApplicationMetaExtendedHeader>(value);
         out_version.SetValue(ext_header->required_system_version);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::GetPatchId(Out<TitleId> out_patch_id, ContentMetaKey key) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
 
         if (key.type != ContentMetaType::Application) {
             return ResultNcmInvalidContentMetaKey;
         }
 
+        D_LOG("    key title_id: 0x%lx\n", key.id);
+        D_LOG("    key version: 0x%x\n", key.version);
+
         const void* value = nullptr;
         size_t value_size = 0;
         R_TRY(GetContentMetaValuePointer(&value, &value_size, key, this->kvs));
         const auto ext_header = GetValueExtendedHeader<ApplicationMetaExtendedHeader>(value);
+
         out_patch_id.SetValue(ext_header->patch_id);
+        D_LOG("    patch title_id: 0x%lx\n", *out_patch_id);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::DisableForcibly() {
+        R_DEBUG_START
         this->disabled = true;
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::LookupOrphanContent(OutBuffer<bool> out_orphaned, InBuffer<ContentId> content_ids) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
         
         if (out_orphaned.num_elements < content_ids.num_elements) {
             return ResultNcmBufferInsufficient;
@@ -531,19 +513,20 @@ namespace sts::ncm {
         }
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::Commit() {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
-
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
         R_TRY(this->kvs->Save());
         R_TRY(fsdevCommitDevice(this->mount_name));
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::HasContent(Out<bool> out, ContentMetaKey key, ContentId content_id) {
+        R_DEBUG_START
         const void* value = nullptr;
         size_t value_size = 0;
         R_TRY(GetContentMetaValuePointer(&value, &value_size, key, this->kvs));
@@ -563,16 +546,16 @@ namespace sts::ncm {
 
         out.SetValue(false);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::ListContentMetaInfo(Out<u32> out_entries_written, OutBuffer<ContentMetaInfo> out_meta_info, ContentMetaKey key, u32 start_index) {
+        R_DEBUG_START
         if (start_index >> 0x1f != 0) {
             return ResultNcmInvalidOffset;
         }
 
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_TRY(this->EnsureEnabled());
         
         const void* value = nullptr;
         size_t value_size = 0;
@@ -598,12 +581,12 @@ namespace sts::ncm {
 
         out_entries_written.SetValue(entries_written);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::GetAttributes(Out<ContentMetaAttribute> out_attributes, ContentMetaKey key) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
 
         const void* value = nullptr;
         size_t value_size = 0;
@@ -611,12 +594,12 @@ namespace sts::ncm {
         const auto header = GetValueHeader(value);
         out_attributes.SetValue(header->attributes);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::GetRequiredApplicationVersion(Out<u32> out_version, ContentMetaKey key) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
 
         if (key.type != ContentMetaType::AddOnContent) {
             return ResultNcmInvalidContentMetaKey;
@@ -628,13 +611,16 @@ namespace sts::ncm {
         const auto ext_header = GetValueExtendedHeader<AddOnContentMetaExtendedHeader>(value);
         out_version.SetValue(ext_header->required_application_version);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::GetContentIdByTypeAndIdOffset(Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset) {
+        R_DEBUG_START
         ContentId content_id;
         R_TRY(this->GetContentIdByTypeImpl(&content_id, key, type, std::optional(id_offset)));
         out_content_id.SetValue(content_id);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::GetLatestProgram(ContentId* out_content_id, TitleId title_id) {
@@ -653,33 +639,28 @@ namespace sts::ncm {
         return ResultSuccess;
     }
 
-    Result OnMemoryContentMetaDatabaseInterface::GetLatestContentMetaKey(Out<ContentMetaKey> out_key, TitleId tid) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+    Result OnMemoryContentMetaDatabaseInterface::GetLatestContentMetaKey(Out<ContentMetaKey> out_key, TitleId title_id) {
+        R_DEBUG_START
+        R_TRY(this->EnsureEnabled());
+
+        const ContentMetaKey key = ContentMetaKey::Make(title_id, 0, ContentMetaType::Unknown);
         
-        ContentMetaKey key = {0};
-        key.id = tid;
-
-        if (this->kvs->GetCount() == 0) {
-            return ResultNcmContentMetaNotFound; 
-        }
-
-        auto entry = this->kvs->lower_bound(key);
-        if (entry == this->kvs->end() || entry->GetKey().id != key.id) {
-            return ResultNcmContentMetaNotFound;
-        }
-
-        for (; entry != this->kvs->end(); entry++) {
-            if (entry->GetKey().id != key.id) {
+        std::optional<ContentMetaKey> found_key;
+        for (auto entry = this->kvs->lower_bound(key); entry != this->kvs->end(); entry++) {
+            if (entry->GetKey().id != title_id) {
                 break;
             }
 
-            key = entry->GetKey();
+            found_key = entry->GetKey();
         }
 
-        *out_key = key;
+        if (!found_key) {
+            return ResultNcmContentMetaNotFound;
+        }
+
+        *out_key = *found_key;
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result OnMemoryContentMetaDatabaseInterface::LookupOrphanContent(OutBuffer<bool> out_orphaned, InBuffer<ContentId> content_ids) {
@@ -687,9 +668,7 @@ namespace sts::ncm {
     }
 
     Result OnMemoryContentMetaDatabaseInterface::Commit() {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
+        R_TRY(this->EnsureEnabled());
 
         return ResultSuccess;
     }

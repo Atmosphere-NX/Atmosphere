@@ -20,6 +20,8 @@
 #include "ncm_make_path.hpp"
 #include "ncm_utils.hpp"
 
+#include "debug.hpp"
+
 namespace sts::ncm {
 
     ContentStorageInterface::~ContentStorageInterface() {
@@ -95,15 +97,18 @@ namespace sts::ncm {
     }
 
     Result ContentStorageInterface::GeneratePlaceHolderId(Out<PlaceHolderId> out) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
 
         sts::rnd::GenerateRandomBytes(out.GetPointer(), sizeof(NcmNcaId));
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -115,17 +120,21 @@ namespace sts::ncm {
         R_TRY(this->placeholder_accessor.Create(placeholder_id, size));
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::DeletePlaceHolder(PlaceHolderId placeholder_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
 
         return this->placeholder_accessor.Delete(placeholder_id);
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::HasPlaceHolder(Out<bool> out, PlaceHolderId placeholder_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -138,9 +147,11 @@ namespace sts::ncm {
         out.SetValue(has);
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, InBuffer<u8> data) {
+        R_DEBUG_START
         /* Offset is too large */
         if (offset >> 0x3f != 0) {
             return ResultNcmInvalidOffset;
@@ -173,9 +184,11 @@ namespace sts::ncm {
         this->placeholder_accessor.StoreToCache(f, placeholder_id);
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::Register(PlaceHolderId placeholder_id, ContentId content_id) {
+        R_DEBUG_START
         this->ClearContentCache();
         
         if (this->disabled) {
@@ -200,9 +213,11 @@ namespace sts::ncm {
         }
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::Delete(ContentId content_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -220,9 +235,11 @@ namespace sts::ncm {
         } R_END_TRY_CATCH;
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::Has(Out<bool> out, ContentId content_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -235,9 +252,11 @@ namespace sts::ncm {
         out.SetValue(has);
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::GetPath(OutPointerWithServerSize<lr::Path, 0x1> out, ContentId content_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -248,9 +267,11 @@ namespace sts::ncm {
         R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
         *out.pointer = common_path;
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::GetPlaceHolderPath(OutPointerWithServerSize<lr::Path, 0x1> out, PlaceHolderId placeholder_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -261,9 +282,11 @@ namespace sts::ncm {
         R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
         *out.pointer = common_path;
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::CleanupAllPlaceHolder() {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -281,9 +304,11 @@ namespace sts::ncm {
         }
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::ListPlaceHolder(Out<u32> out_count, OutBuffer<PlaceHolderId> out_buf) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -312,9 +337,11 @@ namespace sts::ncm {
 
         out_count.SetValue(static_cast<u32>(entry_count));
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::GetContentCount(Out<u32> out_count) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -337,9 +364,11 @@ namespace sts::ncm {
 
         out_count.SetValue(content_count);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::ListContentId(Out<u32> out_count, OutBuffer<ContentId> out_buf, u32 start_offset) {    
+        R_DEBUG_START
         if (start_offset >> 0x1f != 0) {
             return ResultNcmInvalidOffset;
         }
@@ -386,9 +415,11 @@ namespace sts::ncm {
 
         out_count.SetValue(static_cast<u32>(entry_count));
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::GetSizeFromContentId(Out<u64> out_size, ContentId content_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -403,16 +434,20 @@ namespace sts::ncm {
 
         out_size.SetValue(st.st_size);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::DisableForcibly() {
+        R_DEBUG_START
         this->disabled = true;
         this->ClearContentCache();
         this->placeholder_accessor.ClearAllCaches();
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -441,18 +476,22 @@ namespace sts::ncm {
         }
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
 
         R_TRY(this->placeholder_accessor.SetSize(placeholder_id, size));
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::ReadContentIdFile(OutBuffer<u8> buf, ContentId content_id, u64 offset) {
+        R_DEBUG_START
         /* Offset is too large */
         if (offset >> 0x3f != 0) {
             return ResultNcmInvalidOffset;
@@ -475,9 +514,11 @@ namespace sts::ncm {
         }
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::GetRightsIdFromPlaceHolderId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -495,9 +536,11 @@ namespace sts::ncm {
         out_key_generation.SetValue(static_cast<u64>(key_generation));
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::GetRightsIdFromContentId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, ContentId content_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -556,9 +599,11 @@ namespace sts::ncm {
         }
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::WriteContentForDebug(ContentId content_id, u64 offset, InBuffer<u8> data) {
+        R_DEBUG_START
         /* Offset is too large */
         if (offset >> 0x3f != 0) {
             return ResultNcmInvalidOffset;
@@ -599,9 +644,11 @@ namespace sts::ncm {
         fflush(f);
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::GetFreeSpaceSize(Out<u64> out_size) {
+        R_DEBUG_START
         struct statvfs st = {0};
         if (statvfs(this->root_path, &st) == -1) {
             return fsdevGetLastResult();
@@ -609,9 +656,11 @@ namespace sts::ncm {
 
         out_size.SetValue(st.f_bfree);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::GetTotalSpaceSize(Out<u64> out_size) {
+        R_DEBUG_START
         struct statvfs st = {0};
         if (statvfs(this->root_path, &st) == -1) {
             return fsdevGetLastResult();
@@ -619,14 +668,18 @@ namespace sts::ncm {
 
         out_size.SetValue(st.f_blocks);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::FlushPlaceHolder() {
+        R_DEBUG_START
         this->placeholder_accessor.ClearAllCaches();
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::GetSizeFromPlaceHolderId(Out<u64> out_size, PlaceHolderId placeholder_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -651,9 +704,11 @@ namespace sts::ncm {
 
         out_size.SetValue(st.st_size);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::RepairInvalidFileAttribute() {
+        R_DEBUG_START
         char content_root_path[FS_MAX_PATH] = {0};
         this->GetContentRootPath(content_root_path);
         unsigned int dir_depth = this->GetContentDirectoryDepth();
@@ -682,9 +737,11 @@ namespace sts::ncm {
         R_TRY(TraverseDirectory(placeholder_root_path, dir_depth, fix_file_attributes));
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentStorageInterface::GetRightsIdFromPlaceHolderIdWithCache(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id) {
+        R_DEBUG_START
         if (this->disabled) {
             return ResultNcmInvalidContentStorage;
         }
@@ -743,6 +800,7 @@ namespace sts::ncm {
         }
 
         return ResultSuccess;
+        R_DEBUG_END
     }
 
 }

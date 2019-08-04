@@ -180,7 +180,15 @@ namespace sts::ncm {
         return ResultSuccess;
     }
 
-    std::map<std::string, FsContentStorageId> g_mount_content_storage;
+    constexpr const char* SystemContentMountName = "@SystemContent";
+    constexpr const char* UserContentMountName = "@UserContent";
+    constexpr const char* SdCardContentMountName = "@SdCardContent";
+    constexpr const char* GameCardMountNameBase = "@Gc";
+
+    constexpr const char* GameCardPartitionLetters[3] = { "U", "N", "S" };
+
+    /* Maps mount names to their common mount names. */
+    std::map<std::string, std::string> g_mount_content_storage;
 
     Result MountContentStorage(const char* mount_point, FsContentStorageId id) {
         if (!mount_point) {
@@ -194,11 +202,30 @@ namespace sts::ncm {
             std::abort();
         }
 
-        g_mount_content_storage[mount_point] = id;
+        switch (id) {
+            case FS_CONTENTSTORAGEID_NandSystem:
+                g_mount_content_storage[mount_point] = SystemContentMountName;
+                break;
+            
+            case FS_CONTENTSTORAGEID_NandUser:
+                g_mount_content_storage[mount_point] = UserContentMountName;
+                break;
+
+            case FS_CONTENTSTORAGEID_SdCard:
+                g_mount_content_storage[mount_point] = SdCardContentMountName;
+                break;
+
+            default:
+                std::abort();
+        };
         return ResultSuccess;
     }
 
     Result MountGameCardPartition(const char* mount_point, const FsGameCardHandle handle, FsGameCardPartiton partition) {
+        if (partition > 2) {
+            std::abort();
+        }
+        
         FsFileSystem fs;
         R_TRY(fsOpenGameCardFileSystem(&fs, &handle, partition));
 
@@ -206,6 +233,9 @@ namespace sts::ncm {
             std::abort();
         }
 
+        MountName mount = {0};
+        snprintf(mount.name, sizeof(MountName), "%s%s%08x", GameCardMountNameBase, GameCardPartitionLetters[partition], handle.value);
+        g_mount_content_storage[mount_point] = mount.name;
         return ResultSuccess;
     }
 
@@ -223,10 +253,6 @@ namespace sts::ncm {
 
         return ResultSuccess;
     }
-
-    constexpr const char* SystemContentMountName = "@SystemContent";
-    constexpr const char* UserContentMountName = "@UserContent";
-    constexpr const char* SdCardContentMountName = "@SdCardContent";
 
     Result ConvertToFsCommonPath(char* out_common_path, size_t out_len, const char* path) {
         if (!out_common_path || !path) {
@@ -247,32 +273,14 @@ namespace sts::ncm {
             return ResultFsMountNameNotFound;
         }
 
-        FsContentStorageId content_storage_id = g_mount_content_storage[mount_name.name];
         char translated_path[FS_MAX_PATH] = {0};
-        const char* common_mount_name;
-
-        switch (content_storage_id) {
-            case FS_CONTENTSTORAGEID_NandSystem:
-                common_mount_name = SystemContentMountName;
-                break;
-            
-            case FS_CONTENTSTORAGEID_NandUser:
-                common_mount_name = UserContentMountName;
-                break;
-
-            case FS_CONTENTSTORAGEID_SdCard:
-                common_mount_name = SdCardContentMountName;
-                break;
-
-            default:
-                std::abort();
-        };
+        std::string common_mount_name = g_mount_content_storage[mount_name.name];
 
         if (fsdevTranslatePath(path, NULL, translated_path) == -1) {
             std::abort();
         }
 
-        snprintf(out_common_path, out_len, "%s:%s", common_mount_name, translated_path);
+        snprintf(out_common_path, out_len, "%s:%s", common_mount_name.c_str(), translated_path);
         return ResultSuccess;
     }
 
