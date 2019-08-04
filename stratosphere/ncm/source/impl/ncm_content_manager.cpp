@@ -257,6 +257,8 @@ namespace sts::ncm::impl {
     }
 
     void FinalizeContentManager() {
+        debug::DebugLog("Finalizing content manager...\n");
+
         {
             std::scoped_lock<HosMutex> lk(g_mutex);
 

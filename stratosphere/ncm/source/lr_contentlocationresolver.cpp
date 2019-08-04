@@ -48,6 +48,7 @@ namespace sts::lr {
         
         R_ASSERT(this->content_storage->GetPath(&path, program_content_id));
         *out.pointer = path;
+        debug::DebugLog("Resolved program path to %s\n", path.path);
         return ResultSuccess;
         R_DEBUG_END
     }
@@ -107,6 +108,7 @@ namespace sts::lr {
     Result ContentLocationResolverInterface::RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
         R_DEBUG_START
         this->html_docs_redirector.SetRedirection(tid, *path.pointer, impl::RedirectionFlags_Application);
+        debug::DebugLog("Redirected application html document path to %s\n", (*path.pointer).path);
         return ResultSuccess;
         R_DEBUG_END
     }

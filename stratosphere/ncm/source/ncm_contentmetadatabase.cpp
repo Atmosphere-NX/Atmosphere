@@ -209,10 +209,12 @@ namespace sts::ncm {
     }
 
     Result ContentMetaDatabaseInterface::GetContentIdByType(Out<ContentId> out_content_id, ContentMetaKey key, ContentType type) {
+        R_DEBUG_START
         ContentId content_id;
         R_TRY(this->GetContentIdByTypeImpl(&content_id, key, type, std::nullopt));
         out_content_id.SetValue(content_id);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result ContentMetaDatabaseInterface::ListContentInfo(Out<u32> out_count, OutBuffer<ContentInfo> out_info, ContentMetaKey key, u32 offset) {
@@ -664,13 +666,16 @@ namespace sts::ncm {
     }
 
     Result OnMemoryContentMetaDatabaseInterface::LookupOrphanContent(OutBuffer<bool> out_orphaned, InBuffer<ContentId> content_ids) {
+        R_DEBUG_START
         return ResultNcmInvalidContentMetaDatabase;
+        R_DEBUG_END
     }
 
     Result OnMemoryContentMetaDatabaseInterface::Commit() {
+        R_DEBUG_START
         R_TRY(this->EnsureEnabled());
-
         return ResultSuccess;
+        R_DEBUG_END
     }
 
 }

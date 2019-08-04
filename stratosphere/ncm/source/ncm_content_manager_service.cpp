@@ -21,10 +21,6 @@
 
 namespace sts::ncm {
 
-    ContentManagerService::~ContentManagerService() {
-        impl::FinalizeContentManager();
-    }
-
     Result ContentManagerService::CreateContentStorage(StorageId storage_id) {
         R_DEBUG_START
         return impl::CreateContentStorage(storage_id);

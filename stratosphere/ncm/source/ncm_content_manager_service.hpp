@@ -41,8 +41,6 @@ namespace sts::ncm {
                 InactivateContentMetaDatabase = 12,
             };
         public:
-            ~ContentManagerService();
-        public:
             virtual Result CreateContentStorage(StorageId storage_id);
             virtual Result CreateContentMetaDatabase(StorageId storage_id);
             virtual Result VerifyContentStorage(StorageId storage_id);
