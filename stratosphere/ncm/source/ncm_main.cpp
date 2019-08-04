@@ -22,6 +22,8 @@
 #include "lr_manager_service.hpp"
 #include "ncm_content_manager_service.hpp"
 
+#include "debug.hpp"
+
 extern "C" {
     extern u32 __start__;
 
@@ -160,6 +162,8 @@ int main(int argc, char **argv)
 
     s_content_manager_thread.Join();
     s_location_resolver_thread.Join();
+
+    sts::ncm::impl::FinalizeContentManager();
     
     return 0;
 }

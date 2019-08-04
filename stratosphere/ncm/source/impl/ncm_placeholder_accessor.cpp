@@ -66,6 +66,7 @@ namespace sts::ncm::impl {
         this->EnsureRecursively(placeholder_id);
         this->GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
 
+        debug::DebugLog("Creating %s\n", placeholder_path);
         R_TRY_CATCH(fsdevCreateFile(placeholder_path, size, FS_CREATE_BIG_FILE)) {
             R_CATCH(ResultFsPathAlreadyExists) {
                 return ResultNcmPlaceHolderAlreadyExists;
@@ -80,6 +81,7 @@ namespace sts::ncm::impl {
 
         this->GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
 
+        debug::DebugLog("Deleting %s\n", placeholder_path);
         if (std::remove(placeholder_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
                 R_CATCH(ResultFsPathNotFound) {

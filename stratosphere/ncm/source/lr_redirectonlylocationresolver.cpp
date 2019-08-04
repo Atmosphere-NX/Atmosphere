@@ -152,21 +152,28 @@ namespace sts::lr {
     }
 
     Result RedirectOnlyLocationResolverInterface::EraseApplicationControlRedirection(ncm::TitleId tid) {
+        R_DEBUG_START
         this->app_control_redirector.EraseRedirection(tid);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RedirectOnlyLocationResolverInterface::EraseApplicationHtmlDocumentRedirection(ncm::TitleId tid) {
+        R_DEBUG_START
         this->html_docs_redirector.EraseRedirection(tid);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RedirectOnlyLocationResolverInterface::EraseApplicationLegalInformationRedirection(ncm::TitleId tid) {
+        R_DEBUG_START
         this->legal_info_redirector.EraseRedirection(tid);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RedirectOnlyLocationResolverInterface::ResolveProgramPathForDebug(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
+        R_DEBUG_START
         Path path;
 
         if (this->debug_program_redirector.FindRedirection(&path, tid)) {
@@ -182,21 +189,28 @@ namespace sts::lr {
         
         *out.pointer = path;
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RedirectOnlyLocationResolverInterface::RedirectProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid) {
+        R_DEBUG_START
         this->debug_program_redirector.SetRedirection(tid, *path.pointer);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RedirectOnlyLocationResolverInterface::RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid) {
+        R_DEBUG_START
         this->debug_program_redirector.SetRedirection(tid, *path.pointer, impl::RedirectionFlags_Application);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RedirectOnlyLocationResolverInterface::EraseProgramRedirectionForDebug(ncm::TitleId tid) {
+        R_DEBUG_START
         this->debug_program_redirector.EraseRedirection(tid);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
 }
