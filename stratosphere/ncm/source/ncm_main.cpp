@@ -27,7 +27,6 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x60000
     #define INNER_HEAP_SIZE 0x100000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
@@ -45,8 +44,50 @@ extern "C" {
 
 sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Ncm;
 
+namespace {
+
+    /* Convenience definitions. */
+    constexpr uintptr_t IramBase = 0x40000000ull;
+    constexpr uintptr_t IramPayloadBase = 0x40010000ull;
+    constexpr size_t IramSize = 0x40000;
+    constexpr size_t IramPayloadMaxSize = 0x2E000;
+
+    /* Globals. */
+    u8 __attribute__ ((aligned (0x1000))) g_work_page[0x1000];
+
+    /* Helpers. */
+    void ClearIram() {
+        /* Make page FFs. */
+        memset(g_work_page, 0xFF, sizeof(g_work_page));
+
+        /* Overwrite all of IRAM with FFs. */
+        for (size_t ofs = 0; ofs < IramSize; ofs += sizeof(g_work_page)) {
+            CopyToIram(IramBase + ofs, g_work_page, sizeof(g_work_page));
+        }
+    }
+
+    void DoReboot(AtmosphereFatalErrorContext *ctx) {
+        /* Ensure clean IRAM state. */
+        ClearIram();
+
+        /* Copy in fatal error context, if relevant. */
+        if (ctx != nullptr) {
+            std::memset(g_work_page, 0xCC, sizeof(g_work_page));
+            std::memcpy(g_work_page, ctx, sizeof(*ctx));
+            CopyToIram(IramPayloadBase + IramPayloadMaxSize, g_work_page, sizeof(g_work_page));
+        }
+
+        RebootToRcm();
+    }
+
+}
+
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     StratosphereCrashHandler(ctx);
+}
+
+void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx) {
+    DoReboot(ctx);
 }
 
 void __libnx_initheap(void) {

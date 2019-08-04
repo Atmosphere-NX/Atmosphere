@@ -20,6 +20,8 @@
 #include "../ncm_make_path.hpp"
 #include "../ncm_path_utils.hpp"
 
+#include "../debug.hpp"
+
 namespace sts::ncm::impl {
 
     unsigned int PlaceHolderAccessor::GetDirectoryDepth() {
@@ -78,6 +80,8 @@ namespace sts::ncm::impl {
 
         this->GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
 
+        debug::DebugLog("Deleting %s\n", placeholder_path);
+
         R_TRY_CATCH(fsdevDeleteDirectoryRecursively(placeholder_path)) {
             R_CATCH(ResultFsPathNotFound) {
                 return ResultNcmPlaceHolderNotFound;
@@ -97,6 +101,7 @@ namespace sts::ncm::impl {
         FILE* f = fopen(placeholder_path, "r+b");
 
         if (f == nullptr) {
+            debug::DebugLog("Failed to open placeholder %s\n", placeholder_path);
             return fsdevGetLastResult();
         }
 

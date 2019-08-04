@@ -19,6 +19,7 @@
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 #include <optional>
 
+#include "../debug.hpp"
 #include "../ncm_contentmetadatabase.hpp"
 #include "../ncm_contentstorage.hpp"
 #include "../ncm_fs.hpp"
@@ -62,7 +63,7 @@ namespace sts::ncm::impl {
             u64 journal_size;
             u32 flags;
             FsSaveDataSpaceId space_id;
-        } PACKED;
+        };
 
         static_assert(sizeof(SaveDataMeta) == 0x20, "SaveDataMeta definition!");
 
@@ -150,6 +151,9 @@ namespace sts::ncm::impl {
             return ResultSuccess;
         }
         
+        R_ASSERT(debug::Initialize());
+        debug::DebugLog("ContentManager::InitializeContentManager\n");
+
         size_t cur_storage_index = g_num_content_storage_entries;
 
         for (size_t i = 0; i < MaxContentStorageEntries; i++) {

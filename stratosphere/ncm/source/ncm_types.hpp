@@ -44,6 +44,7 @@ namespace sts::ncm {
     typedef Uuid PlaceHolderId;
 
     enum class ContentMetaType : u8 {
+        Unknown                = 0x0,
         SystemProgram          = 0x1,
         SystemData             = 0x2,
         SystemUpdate           = 0x3,
@@ -107,29 +108,24 @@ namespace sts::ncm {
         }
 
         bool operator==(const ContentMetaKey& other) const {
-            if (this->id != other.id) {
-                return false;
-            }
-
-            if (this->version != other.version) {
-                return false;
-            }
-
-            if (this->type != other.type) {
-                return false;
-            }
-
-            if (this->install_type != other.install_type) {
-                return false;
-            }
-            
-            return true;
+            return this->id == other.id &&
+                this->version == other.version &&
+                this->type == other.type &&
+                this->install_type == other.install_type;
         }
 
         bool operator!=(const ContentMetaKey& other) const {
             return !(*this == other);
         }
-    } PACKED;
+
+        static constexpr ContentMetaKey Make(TitleId title_id, u32 version, ContentMetaType type) {
+            return { .id = title_id, .version = version, .type = type };
+        }
+
+        static constexpr ContentMetaKey Make(TitleId title_id, u32 version, ContentMetaType type, ContentInstallType install_type) {
+            return { .id = title_id, .version = version, .type = type, .install_type = install_type };
+        }
+    };
 
     static_assert(sizeof(ContentMetaKey) == 0x10, "ContentMetaKey definition!");
 
@@ -139,14 +135,16 @@ namespace sts::ncm {
     struct ApplicationContentMetaKey {
         ContentMetaKey key;
         TitleId application_title_id;
-    } PACKED;
+    };
+
+    static_assert(sizeof(ApplicationContentMetaKey) == 0x18, "ApplicationContentMetaKey definition!");
 
     struct ContentInfo {
         ContentId content_id;
         u8 size[6];
         ContentType content_type;
         u8 id_offset;
-    } PACKED;
+    };
 
     static_assert(sizeof(ContentInfo) == 0x18, "ContentInfo definition!");
 
