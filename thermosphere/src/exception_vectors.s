@@ -135,6 +135,7 @@ vector_entry fiq_sp0
     .endfunc
     .cfi_endproc
     /* To save space, insert in an unused vector segment. */
+    .global _restore_all_regs
     _restore_all_regs:
     ldp     x30, x20, [sp, #0xF0]
     ldp     x21, x22, [sp, #0x100]
@@ -161,7 +162,7 @@ vector_entry fiq_sp0
     ldp     x26, x27, [sp, #0xD0]
     ldp     x28, x29, [sp, #0xE0]
 
-    add     sp, sp, #0x210
+    add     sp, sp, #0x120
     eret
 
 vector_entry serror_sp0
