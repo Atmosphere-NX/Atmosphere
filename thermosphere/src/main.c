@@ -9,6 +9,8 @@
 #include "sysreg.h"
 #include "exceptions.h"
 #include "single_step.h"
+#include "breakpoints.h"
+#include "watchpoints.h"
 
 extern const u8 __start__[];
 
@@ -38,6 +40,8 @@ static void loadKernelViaSemihosting(void)
 void main(ExceptionStackFrame *frame)
 {
     enableTraps();
+    enableAndResetBreakpoints();
+    enableAndResetWatchpoints();
 
     if (currentCoreCtx->isBootCore) {
         uartInit(115200);
@@ -63,5 +67,6 @@ void main(ExceptionStackFrame *frame)
     frame->elr_el2  = currentCoreCtx->kernelEntrypoint;
     frame->x[0]     = currentCoreCtx->kernelArgument;
 
+    // Test
     singleStepSetNextState(frame, SingleStepState_ActivePending);
 }

@@ -403,6 +403,7 @@
 #define MDCR_EL2_TPMCR      BITL(5)
 #define MDCR_EL2_HPMN_MASK  0x1Full
 
+#define MDSCR_EL1_MDE       BITL(15)
 #define MDSCR_EL1_SS        BITL(0)
 
 #define ENCODE_SYSREG_FIELDS_MOV(op0, op1, crn, crm, op2) (((op0) << 19) | ((op1) << 16) | ((crn) << 12) | ((crm) << 8) | ((op2) << 5))
