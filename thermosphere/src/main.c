@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "utils.h"
 #include "core_ctx.h"
 #include "debug_log.h"
@@ -5,6 +7,8 @@
 #include "semihosting.h"
 #include "traps.h"
 #include "sysreg.h"
+#include "exceptions.h"
+#include "single_step.h"
 
 extern const u8 __start__[];
 
@@ -31,9 +35,10 @@ static void loadKernelViaSemihosting(void)
     currentCoreCtx->kernelEntrypoint = buf;
 }
 
-int main(void)
+void main(ExceptionStackFrame *frame)
 {
     enableTraps();
+    enableSingleStepExceptions();
 
     if (currentCoreCtx->isBootCore) {
         uartInit(115200);
@@ -50,8 +55,14 @@ int main(void)
     }
     else {
         DEBUG("EL2: core %u reached main!\n", currentCoreCtx->coreId);
-        DEBUG("Test 0x%08llx %016llx\n", get_physical_address_el1_stage12(0x08010000ull), GET_SYSREG(par_el1));
+        //DEBUG("Test 0x%08llx %016llx\n", get_physical_address_el1_stage12(0x08010000ull), GET_SYSREG(par_el1));
     }
 
-    return 0;
+    // Set up exception frame: init regs to 0, set spsr, elr, etc.
+    memset(frame, 0, sizeof(ExceptionStackFrame));
+    frame->spsr_el2 = (0xF << 6) | (1 << 2) | 1; // EL1h+DAIF
+    frame->elr_el2  = currentCoreCtx->kernelEntrypoint;
+    frame->x[0]     = currentCoreCtx->kernelArgument;
+
+    //setSingleStep(frame, false);
 }

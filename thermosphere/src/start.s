@@ -44,7 +44,7 @@ _startCommon:
     add     x8, x8, #:lo12:__vectors_start__
     msr     vbar_el2, x8
 
-    // Set system to sane defaults, aarch64 for el1
+    // Set system to sane defaults, aarch64 for el1, mmu disabled
     mov     x4, #0x0838
     movk    x4, #0xC5, lsl #16
     orr     x1, x4, #0x30000000
@@ -70,7 +70,7 @@ _startCommon:
     cmp     x0, #4
     bhs     .
 
-    // Set tmp stack (__stacks_top__ is aligned)
+    // Set stack pointer
     adrp    x8, __stacks_top__
     lsl     x9, x0, #10
     sub     sp, x8, x9
@@ -79,6 +79,9 @@ _startCommon:
     mov     w1, w19
     bl      coreCtxInit
     stp     x18, xzr, [sp, #-0x10]!
+
+    // Reserve space for exception frame
+    sub     sp, sp, #0x120
 
     // Don't call init array to save space?
     // Clear BSS & call main for the first core executing this code
@@ -101,16 +104,13 @@ _enable_mmu:
     dsb     sy
     isb
 
+    mov     x0, sp
     bl      main
 
-    // Jump to kernel
-    mov     x8, #(0b1111 << 6 | 0b0101) // EL1h+DAIF
-    msr     spsr_el2, x8
-
-    ldp     x0, x1, [x18]
-    msr     elr_el2, x1
     dsb     sy
     isb
-    eret
+
+    // Jump to kernel
+    b       _restore_all_regs
 
 .pool

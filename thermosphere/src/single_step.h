@@ -15,19 +15,12 @@
  */
 
 #pragma once
+
 #include "utils.h"
+#include "exceptions.h"
 
-typedef struct CoreCtx {
-    u64 kernelArgument;             // @0x00
-    uintptr_t kernelEntrypoint;     // @0x08
-    u8 *crashStack;                 // @0x10
-    u64 scratch;                    // @0x18
-    u32 coreId;                     // @0x20
-    bool isBootCore;                // @0x24
-    bool wasSingleStepping;         // @0x25 (for pIRQ handler)
-} CoreCtx;
+void enableSingleStepExceptions(void);
 
-extern CoreCtx g_coreCtxs[4];
-register CoreCtx *currentCoreCtx asm("x18");
+void setSingleStep(ExceptionStackFrame *frame, bool singleStep);
 
-void coreCtxInit(u32 coreId, bool isBootCore, u64 argument);
+void handleSingleStep(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
