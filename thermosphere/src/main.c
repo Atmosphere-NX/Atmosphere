@@ -38,7 +38,6 @@ static void loadKernelViaSemihosting(void)
 void main(ExceptionStackFrame *frame)
 {
     enableTraps();
-    enableSingleStepExceptions();
 
     if (currentCoreCtx->isBootCore) {
         uartInit(115200);
@@ -64,5 +63,5 @@ void main(ExceptionStackFrame *frame)
     frame->elr_el2  = currentCoreCtx->kernelEntrypoint;
     frame->x[0]     = currentCoreCtx->kernelArgument;
 
-    //setSingleStep(frame, false);
+    singleStepSetNextState(frame, SingleStepState_ActivePending);
 }

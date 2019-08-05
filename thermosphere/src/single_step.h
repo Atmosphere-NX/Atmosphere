@@ -19,8 +19,16 @@
 #include "utils.h"
 #include "exceptions.h"
 
-void enableSingleStepExceptions(void);
+typedef enum SingleStepState {
+    SingleStepState_Inactive            = 0, // Single step disabled OR in the debugger
+    SingleStepState_ActivePending       = 1, // Instruction not yet executed
+    SingleStepState_ActiveNotPending    = 2, // Instruction executed, single-step exception is going to be generated soon
+} SingleStepState;
 
-void setSingleStep(ExceptionStackFrame *frame, bool singleStep);
+/// Get the single-step state machine state (state after eret)
+SingleStepState singleStepGetNextState(ExceptionStackFrame *frame);
+
+/// Set the single-step state machine state (state after eret). Frame can be NULL iff new state is "inactive"
+void singleStepSetNextState(ExceptionStackFrame *frame, SingleStepState state);
 
 void handleSingleStep(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);

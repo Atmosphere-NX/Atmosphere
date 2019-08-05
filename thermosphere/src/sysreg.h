@@ -403,6 +403,8 @@
 #define MDCR_EL2_TPMCR      BITL(5)
 #define MDCR_EL2_HPMN_MASK  0x1Full
 
+#define MDSCR_EL1_SS        BITL(0)
+
 #define ENCODE_SYSREG_FIELDS_MOV(op0, op1, crn, crm, op2) (((op0) << 19) | ((op1) << 16) | ((crn) << 12) | ((crm) << 8) | ((op2) << 5))
 #define ENCODE_SYSREG_MOV(name) EVAL(ENCODE_SYSREG_FIELDS_MOV CAT(TUP_, name))
 #define MAKE_MSR(name, Rt)      (0xD5000000 | ENCODE_SYSREG_MOV(name) | ((Rt) & 0x1F))
@@ -431,3 +433,5 @@
 #define SYSREG_OP1_EL3          6
 #define SYSREG_OP1_AARCH32_JZL  7
 #define SYSREG_OP1_AARCH64_SEL1 7
+
+#define PSTATE_SS               BITL(21)

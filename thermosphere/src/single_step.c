@@ -19,30 +19,52 @@
 #include "sysreg.h"
 #include "debug_log.h"
 
-void enableSingleStepExceptions(void)
+SingleStepState singleStepGetNextState(ExceptionStackFrame *frame)
+{
+    u64 mdscr = GET_SYSREG(mdscr_el1);
+    bool mdscrSS = (mdscr & MDSCR_EL1_SS) != 0;
+    bool pstateSS = (frame->spsr_el2 & PSTATE_SS) != 0;
+
+    if (!mdscrSS) {
+        return SingleStepState_Inactive;
+    } else {
+        return pstateSS ? SingleStepState_ActivePending : SingleStepState_ActiveNotPending;
+    }
+}
+
+void singleStepSetNextState(ExceptionStackFrame *frame, SingleStepState state)
 {
     u64 mdscr = GET_SYSREG(mdscr_el1);
 
-    // Enable Single Step functionality
-    mdscr |= BIT(0);
+    switch (state) {
+        case SingleStepState_Inactive:
+            // Unset mdscr_el1.ss
+            mdscr &= ~MDSCR_EL1_SS;
+            break;
+        case SingleStepState_ActivePending:
+            // Set mdscr_el1.ss and pstate.ss
+            mdscr |= MDSCR_EL1_SS;
+            frame->spsr_el2 |= PSTATE_SS;
+            break;
+        case SingleStepState_ActiveNotPending:
+            // Set mdscr_el1.ss and unset pstate.ss
+            mdscr |= MDSCR_EL1_SS;
+            frame->spsr_el2 |= PSTATE_SS;
+            break;
+        default:
+            break;
+    }
 
     SET_SYSREG(mdscr_el1, mdscr);
 }
 
-void setSingleStep(ExceptionStackFrame *frame, bool singleStep)
-{
-    // Set or clear SPSR.SS
-    if (singleStep) {
-        frame->spsr_el2 |= BITL(22);
-    } else {
-        frame->spsr_el2 &= ~BITL(22);
-    }
-
-    currentCoreCtx->wasSingleStepping = singleStep;
-}
-
 void handleSingleStep(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 {
+    // Disable single-step ASAP
+    singleStepSetNextState(NULL, SingleStepState_Inactive);
+
     DEBUG("Single-step exeception ELR = 0x%016llx, ISV = %u, EX = %u\n", frame->elr_el2, (esr.iss >> 24) & 1, (esr.iss >> 6) & 1);
-    setSingleStep(frame, true); // hehe boi
+
+    // Hehe boi
+    singleStepSetNextState(frame, SingleStepState_ActivePending);
 }
