@@ -66,5 +66,5 @@ void handleSingleStep(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
     DEBUG("Single-step exeception ELR = 0x%016llx, ISV = %u, EX = %u\n", frame->elr_el2, (esr.iss >> 24) & 1, (esr.iss >> 6) & 1);
 
     // Hehe boi
-    singleStepSetNextState(frame, SingleStepState_ActivePending);
+    //singleStepSetNextState(frame, SingleStepState_ActivePending);
 }

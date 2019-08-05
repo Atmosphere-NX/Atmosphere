@@ -262,3 +262,46 @@ set_memory_registers_enable_stage2:
     isb
 
     ret
+
+
+// Precondition: x0 <= 16
+.section    .text.initBreakpointRegs, "ax", %progbits
+.type       initBreakpointRegs, %function
+.global     initBreakpointRegs
+initBreakpointRegs:
+    // x0 = number
+    adr     x16, 1f
+    mov     x1, #(16 * 8)
+    sub     x0, x1, x0,lsl #3
+    add     x16, x16, x0
+    br      x16
+
+    1:
+    .irp    count, 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
+    msr     dbgbcr\count\()_el1, xzr
+    msr     dbgbvr\count\()_el1, xzr
+    .endr
+    dsb     sy
+    isb
+    ret
+
+// Precondition: x0 <= 16
+.section    .text.initBreakpointRegs, "ax", %progbits
+.type       initWatchpointRegs, %function
+.global     initWatchpointRegs
+initWatchpointRegs:
+    // x0 = number
+    adr     x16, 1f
+    mov     x1, #(16 * 8)
+    sub     x0, x1, x0,lsl #3
+    add     x16, x16, x0
+    br      x16
+
+    1:
+    .irp    count, 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
+    msr     dbgwcr\count\()_el1, xzr
+    msr     dbgwvr\count\()_el1, xzr
+    .endr
+    dsb     sy
+    isb
+    ret
