@@ -24,7 +24,7 @@ typedef struct CoreCtx {
     u64 scratch;                    // @0x18
     u32 coreId;                     // @0x20
     bool isBootCore;                // @0x24
-    bool wasSingleStepping;         // @0x25 (for pIRQ handler)
+    //bool wasSingleStepping;         // @0x25 (for pIRQ handler)
 } CoreCtx;
 
 extern CoreCtx g_coreCtxs[4];

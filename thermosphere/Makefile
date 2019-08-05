@@ -140,18 +140,22 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 all: $(BUILD)
 
 ifeq ($(PLATFORM), qemu)
+
+#export QEMU := qemu-system-aarch64
+export QEMU := ~/qemu/aarch64-softmmu/qemu-system-aarch64
+
 QEMUFLAGS :=	-nographic -machine virt,secure=on,virtualization=on,gic-version=2 -cpu cortex-a57 -smp 4 -m 1024\
-			-bios bl1.bin -d unimp,int -semihosting-config enable,target=native -serial mon:stdio
+			-bios bl1.bin -d unimp -semihosting-config enable,target=native -serial mon:stdio
 
 # NOTE: copy bl1.bin, bl2.bin, bl31.bin from your own build of Arm Trusted Firmware!
 
 qemu: all
 	@cp thermosphere.bin bl33.bin
-	@qemu-system-aarch64 $(QEMUFLAGS)
+	@$(QEMU) $(QEMUFLAGS)
 
 qemudbg: all
 	@cp thermosphere.bin bl33.bin
-	@qemu-system-aarch64 $(QEMUFLAGS) -s -S
+	@$(QEMU) $(QEMUFLAGS) -s -S
 
 endif
 
