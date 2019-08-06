@@ -263,6 +263,7 @@ namespace sts::ncm {
         this->GetContentPath(content_path, content_id);
         R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
         *out.pointer = common_path;
+        D_LOG("path: %s\n", common_path);
         return ResultSuccess;
         R_DEBUG_END
     }
@@ -409,6 +410,12 @@ namespace sts::ncm {
 
             return ResultSuccess;
         }));
+
+        for (size_t i = 0; i < entry_count; i++) {
+            char content_name[sizeof(ContentId)*2+1] = {0};
+            GetStringFromContentId(content_name, out_buf[i]);
+            D_LOG("content id: %s.nca\n", content_name);
+        }
 
         out_count.SetValue(static_cast<u32>(entry_count));
         return ResultSuccess;
@@ -649,6 +656,7 @@ namespace sts::ncm {
             return fsdevGetLastResult();
         }
 
+        D_LOG("free space: 0x%x\n", st.f_bfree);
         out_size.SetValue(st.f_bfree);
         return ResultSuccess;
         R_DEBUG_END
@@ -661,6 +669,7 @@ namespace sts::ncm {
             return fsdevGetLastResult();
         }
 
+        D_LOG("total space: 0x%x\n", st.f_blocks);
         out_size.SetValue(st.f_blocks);
         return ResultSuccess;
         R_DEBUG_END

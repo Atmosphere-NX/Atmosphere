@@ -48,7 +48,7 @@ namespace sts::lr {
         
         R_ASSERT(this->content_storage->GetPath(&path, program_content_id));
         *out.pointer = path;
-        debug::DebugLog("Resolved program path to %s\n", path.path);
+        D_LOG("path: %s\n", path.path);
         return ResultSuccess;
         R_DEBUG_END
     }
@@ -56,6 +56,7 @@ namespace sts::lr {
     Result ContentLocationResolverInterface::RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
         R_DEBUG_START
         this->program_redirector.SetRedirection(tid, *path.pointer);
+        D_LOG("path: %s\n", (*path.pointer).path);
         return ResultSuccess;
         R_DEBUG_END
     }
@@ -94,6 +95,7 @@ namespace sts::lr {
         R_TRY(this->content_meta_database->GetLatestData(&data_content_id, tid));
         R_ASSERT(this->content_storage->GetPath(&path, data_content_id));
         *out.pointer = path;
+        D_LOG("path: %s\n", path.path);
         return ResultSuccess;
         R_DEBUG_END
     }
@@ -108,7 +110,7 @@ namespace sts::lr {
     Result ContentLocationResolverInterface::RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
         R_DEBUG_START
         this->html_docs_redirector.SetRedirection(tid, *path.pointer, impl::RedirectionFlags_Application);
-        debug::DebugLog("Redirected application html document path to %s\n", (*path.pointer).path);
+        D_LOG("path: %s\n", (*path.pointer).path);
         return ResultSuccess;
         R_DEBUG_END
     }

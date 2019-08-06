@@ -24,6 +24,7 @@ namespace sts::debug {
 
     size_t g_curr_log_offset = 0;
     size_t g_log_skip = 1000;
+    u32 g_page_num = 0;
 
     char __attribute__ ((aligned (0x1000))) g_work_page[0x1000];
 
@@ -94,8 +95,10 @@ namespace sts::debug {
             }
 
             g_log_skip--;
-            clear_iram();
             g_curr_log_offset = 0;
+            g_page_num++;
+            clear_iram();
+            CopyToIram(IRAM_SAFE_END-sizeof(u32), &g_page_num, sizeof(u32));
         }
 
         /* Fill remainder with 0s. */
