@@ -27,3 +27,4 @@
 #endif
 
 void configureMemoryMapEnableMmu(void);
+void configureMemoryMapEnableStage2(void);

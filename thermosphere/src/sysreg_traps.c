@@ -15,7 +15,6 @@
  */
 
 #include "sysreg_traps.h"
-#include "synchronization.h"
 #include "sysreg.h"
 #include "arm.h"
 #include "debug_log.h"

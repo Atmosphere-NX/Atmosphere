@@ -28,7 +28,7 @@ void initWatchpoints(void)
     recursiveSpinlockLock(&g_watchpointManager.lock);
 
     if (currentCoreCtx->isBootCore && !currentCoreCtx->warmboot) {
-        size_t num = ((GET_SYSREG(id_aa64dfr0_el1) >> 12) & 0xF) + 1;
+        size_t num = ((GET_SYSREG(id_aa64dfr0_el1) >> 20) & 0xF) + 1;
         g_watchpointManager.maxWatchpoints = (u32)num;
         g_watchpointManager.allocationBitmap = 0xFFFF;
     }
