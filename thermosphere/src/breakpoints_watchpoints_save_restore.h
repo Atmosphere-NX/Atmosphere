@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Atmosphère-NX
+ * Copyright (c) 2018-2019 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,18 +15,10 @@
  */
 
 #pragma once
-
 #include "breakpoints_watchpoints_common.h"
-#include "spinlock.h"
 
-/// Structure to synchronize and keep track of watchpoints
-typedef struct WatchpointManager {
-    DebugRegisterPair watchpoints[16];
-    RecursiveSpinlock lock;
-    u32 maxWatchpoints;
-    u16 allocationBitmap;
-} WatchpointManager;
+void loadBreakpointRegs(const DebugRegisterPair *regs, size_t num);
+void saveBreakpointRegs(DebugRegisterPair *regs, size_t num);
 
-extern WatchpointManager g_watchpointManager;
-
-void initWatchpoints(void);
+void loadWatchpointRegs(const DebugRegisterPair *regs, size_t num);
+void saveWatchpointRegs(DebugRegisterPair *regs, size_t num);

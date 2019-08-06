@@ -16,6 +16,17 @@
 
 #pragma once
 
-#include "types.h"
+#include "breakpoints_watchpoints_common.h"
+#include "spinlock.h"
 
-void enableAndResetBreakpoints(void);
+/// Structure to synchronize and keep track of breakpoints
+typedef struct BreakpointManager {
+    DebugRegisterPair breakpoints[16];
+    RecursiveSpinlock lock;
+    u32 maxBreakpoints;
+    u16 allocationBitmap;
+} BreakpointManager;
+
+extern BreakpointManager g_breakpointManager;
+
+void initBreakpoints(void);

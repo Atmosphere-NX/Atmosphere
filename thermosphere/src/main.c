@@ -40,8 +40,10 @@ static void loadKernelViaSemihosting(void)
 void main(ExceptionStackFrame *frame)
 {
     enableTraps();
-    enableAndResetBreakpoints();
-    enableAndResetWatchpoints();
+    enableBreakpointsAndWatchpoints();
+
+    initBreakpoints();
+    initWatchpoints();
 
     if (currentCoreCtx->isBootCore) {
         uartInit(115200);

@@ -14,16 +14,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "breakpoints.h"
+#include "watchpoints.h"
+#include "breakpoints_watchpoints_save_restore.h"
 #include "utils.h"
 #include "sysreg.h"
 #include "arm.h"
 
-void enableAndResetWatchpoints(void)
-{
-    SET_SYSREG(mdscr_el1, GET_SYSREG(mdscr_el1) | MDSCR_EL1_MDE);
+WatchpointManager g_watchpointManager = {0};
 
-    // 20 for watchpoints
-    size_t num = ((GET_SYSREG(id_aa64dfr0_el1) >> 12) & 0xF) + 1;
-    initBreakpointRegs(num);
+// Init the structure (already in BSS, so already zero-initialized) and load the registers
+void initWatchpoints(void)
+{
+    recursiveSpinlockLock(&g_watchpointManager.lock);
+
+    if (currentCoreCtx->isBootCore && !currentCoreCtx->warmboot) {
+        size_t num = ((GET_SYSREG(id_aa64dfr0_el1) >> 12) & 0xF) + 1;
+        g_watchpointManager.maxWatchpoints = (u32)num;
+        g_watchpointManager.allocationBitmap = 0xFFFF;
+    }
+
+    loadWatchpointRegs(g_watchpointManager.watchpoints, g_watchpointManager.maxWatchpoints);
+
+    recursiveSpinlockUnlock(&g_watchpointManager.lock);
 }
