@@ -301,7 +301,7 @@ namespace sts::ncm {
 
         /* We should be given a qualified path. */
         if (!unqual_path || unqual_path > path + 0xf) {
-            return ResultFsUnqualifiedPath;
+            return ResultInvalidMountName;
         }
 
         strncpy(mount_name.name, path, unqual_path - path);
