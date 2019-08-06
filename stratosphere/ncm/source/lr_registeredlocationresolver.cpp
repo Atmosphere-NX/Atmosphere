@@ -16,6 +16,8 @@
 
 #include "lr_registeredlocationresolver.hpp"
 
+#include "debug.hpp"
+
 namespace sts::lr {
 
     RegisteredLocationResolverInterface::RegisteredLocationResolverInterface() {
@@ -30,6 +32,7 @@ namespace sts::lr {
     }
 
     Result RegisteredLocationResolverInterface::ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
+        R_DEBUG_START
         Path path;
         
         if (!this->program_redirector.FindRedirection(&path, tid)) {
@@ -40,9 +43,11 @@ namespace sts::lr {
         
         *out.pointer = path;
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RegisteredLocationResolverInterface::RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
+        R_DEBUG_START
         Path tmp_path = *path.pointer;
 
         if (!this->registered_program_redirector.SetRedirection(tid, tmp_path)) {
@@ -51,20 +56,26 @@ namespace sts::lr {
         }
         
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RegisteredLocationResolverInterface::UnregisterProgramPath(ncm::TitleId tid) {
+        R_DEBUG_START
         this->registered_program_redirector.EraseRedirection(tid);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RegisteredLocationResolverInterface::RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
+        R_DEBUG_START
         Path tmp_path = *path.pointer;
         this->program_redirector.SetRedirection(tid, tmp_path);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RegisteredLocationResolverInterface::ResolveHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
+        R_DEBUG_START
         Path path;
         
         if (!this->html_docs_redirector.FindRedirection(&path, tid)) {
@@ -75,9 +86,11 @@ namespace sts::lr {
         
         *out.pointer = path;
         return ResultLrHtmlDocumentNotFound;
+        R_DEBUG_END
     }
 
     Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
+        R_DEBUG_START
         Path tmp_path = *path.pointer;
 
         if (!this->registered_html_docs_redirector.SetRedirection(tid, tmp_path)) {
@@ -86,23 +99,30 @@ namespace sts::lr {
         }
         
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RegisteredLocationResolverInterface::UnregisterHtmlDocumentPath(ncm::TitleId tid) {
+        R_DEBUG_START
         this->registered_html_docs_redirector.EraseRedirection(tid);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
+        R_DEBUG_START
         Path tmp_path = *path.pointer;
         this->html_docs_redirector.SetRedirection(tid, tmp_path);
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result RegisteredLocationResolverInterface::Refresh() {
+        R_DEBUG_START
         this->registered_program_redirector.ClearRedirections();
         this->registered_html_docs_redirector.ClearRedirections();
         return ResultSuccess;
+        R_DEBUG_END
     }
 
 }

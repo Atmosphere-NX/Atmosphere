@@ -17,6 +17,8 @@
 #include "impl/ncm_content_manager.hpp"
 #include "lr_addoncontentlocationresolver.hpp"
 
+#include "debug.hpp"
+
 namespace sts::lr {
 
     AddOnContentLocationResolverInterface::AddOnContentLocationResolverInterface() {
@@ -24,6 +26,7 @@ namespace sts::lr {
     }
 
     Result AddOnContentLocationResolverInterface::ResolveAddOnContentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
+        R_DEBUG_START
         Path path;
         ncm::StorageId storage_id = ncm::StorageId::None;
 
@@ -42,16 +45,21 @@ namespace sts::lr {
         *out.pointer = path;
         
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::TitleId tid) {
+        R_DEBUG_START
         R_TRY(this->redirector.SetRedirection(tid, storage_id));
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result AddOnContentLocationResolverInterface::UnregisterAllAddOnContentPath() {
+        R_DEBUG_START
         this->redirector.ClearRedirections();
         return ResultSuccess;
+        R_DEBUG_END
     }
 
 }
