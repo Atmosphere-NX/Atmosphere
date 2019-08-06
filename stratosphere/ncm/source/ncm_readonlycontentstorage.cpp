@@ -224,14 +224,12 @@ namespace sts::ncm {
             path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
         }
    
-        FILE* f = fopen(content_path, "rb");
+        FILE* f = nullptr;
+        R_TRY(OpenFile(&f, content_path, FS_OPEN_READ));
+        
         ON_SCOPE_EXIT {
             fclose(f);
         };
-
-        if (f == nullptr) {
-            return fsdevGetLastResult();
-        }
    
         if (fseek(f, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult(); 

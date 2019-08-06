@@ -95,6 +95,8 @@ namespace sts::ncm {
     Result ContentMetaDatabaseInterface::GetContentIdByTypeImpl(ContentId* out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset) {
         R_TRY(this->EnsureEnabled());
 
+        D_LOG("key: 0x%lx\n", key.id);
+
         const auto it = this->kvs->lower_bound(key);
         if (it == this->kvs->end() || it->GetKey().id != key.id) {
             return ResultNcmContentMetaNotFound;
@@ -384,6 +386,7 @@ namespace sts::ncm {
 
         out.SetValue(has);
         return ResultSuccess;
+        debug::DebugLog("Has 0x%lx\n", key.id);
         R_DEBUG_END
     }
 
