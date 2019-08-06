@@ -166,10 +166,14 @@ namespace sts::ncm {
             }
         } R_END_TRY_CATCH;
 
-        auto file_guard = SCOPE_GUARD { fclose(f); };
+        ON_SCOPE_EXIT {
+            this->placeholder_accessor.StoreToCache(f, placeholder_id);
+        };
 
-        u64 size = 0;
-        R_TRY(GetSizeFromPlaceHolderId(&size, placeholder_id));
+        if (fseek(f, 0, SEEK_END) != 0) {
+            return fsdevGetLastResult();
+        }
+        u64 size = ftell(f);
 
         /* We can't disable append with stdio, so check this manually. */
         if (offset + data.num_elements > size) {
@@ -188,8 +192,6 @@ namespace sts::ncm {
             fflush(f);
         }
 
-        this->placeholder_accessor.StoreToCache(f, placeholder_id);
-        file_guard.Cancel();
         return ResultSuccess;
         R_DEBUG_END
     }
@@ -645,8 +647,10 @@ namespace sts::ncm {
             fclose(f);
         };
 
-        u64 size = 0;
-        R_TRY(GetSizeFromContentId(&size, content_id));
+        if (fseek(f, 0, SEEK_END) != 0) {
+            return fsdevGetLastResult();
+        }
+        u64 size = ftell(f);
 
         /* We can't disable append with stdio, so check this manually. */
         if (offset + data.num_elements > size) {
