@@ -155,6 +155,8 @@ namespace sts::ncm {
             }
         } R_END_TRY_CATCH;
 
+        auto file_guard = SCOPE_GUARD { fclose(f); };
+
         if (fseek(f, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult();
         }
@@ -168,7 +170,7 @@ namespace sts::ncm {
         }
 
         this->placeholder_accessor.StoreToCache(f, placeholder_id);
-
+        file_guard.Cancel();
         return ResultSuccess;
     }
 
