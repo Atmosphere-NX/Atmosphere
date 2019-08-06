@@ -101,7 +101,13 @@ namespace sts::fatal::srv {
             ON_SCOPE_EXIT { viCloseDisplay(&temp_display); };
 
             /* Turn on the screen. */
-            R_TRY(viSetDisplayPowerState(&temp_display, ViPowerState_On));
+            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+                R_TRY(viSetDisplayPowerState(&temp_display, ViPowerState_On));
+            } else {
+                /* Prior to 3.0.0, the ViPowerState enum was different (0 = Off, 1 = On). */
+                /* In lieu of a ViPowerState_OnDeprecated entry, just send the correct value manually. */
+                R_TRY(viSetDisplayPowerState(&temp_display, static_cast<ViPowerState>(1)));
+            }
 
             /* Set alpha to 1.0f. */
             R_TRY(viSetDisplayAlpha(&temp_display, 1.0f));
