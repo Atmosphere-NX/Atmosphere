@@ -104,7 +104,7 @@ int main(int argc, char **argv)
         s_server_manager.AddWaitable(new ServiceServer<sts::spl::CryptoService>("spl:mig", 6));
         s_server_manager.AddWaitable(new ServiceServer<sts::spl::SslService>("spl:ssl", 2));
         s_server_manager.AddWaitable(new ServiceServer<sts::spl::EsService>("spl:es", 2));
-        s_server_manager.AddWaitable(new ServiceServer<sts::spl::FsService>("spl:fs", 2));
+        s_server_manager.AddWaitable(new ServiceServer<sts::spl::FsService>("spl:fs", 3));
         if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
             s_server_manager.AddWaitable(new ServiceServer<sts::spl::ManuService>("spl:manu", 1));
         }

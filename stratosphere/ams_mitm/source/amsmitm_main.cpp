@@ -76,6 +76,7 @@ void __appInit(void) {
         R_ASSERT(fsInitialize());
         R_ASSERT(pmdmntInitialize());
         R_ASSERT(pminfoInitialize());
+        R_ASSERT(splFsInitialize());
     });
 
     CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
@@ -83,6 +84,9 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
+    splFsExit();
+    pminfoExit();
+    pmdmntExit();
     fsExit();
 }
 
