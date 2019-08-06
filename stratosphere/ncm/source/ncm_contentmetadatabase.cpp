@@ -95,7 +95,10 @@ namespace sts::ncm {
     Result ContentMetaDatabaseInterface::GetContentIdByTypeImpl(ContentId* out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset) {
         R_TRY(this->EnsureEnabled());
 
-        D_LOG("key: 0x%lx\n", key.id);
+        D_LOG("key id: 0x%lx\n", key.id);
+        D_LOG("key version: 0x%x\n", key.version)
+        D_LOG("type: 0x%x\n", type);
+        D_LOG("id_offset: 0x%x\n", id_offset);
 
         const auto it = this->kvs->lower_bound(key);
         if (it == this->kvs->end() || it->GetKey().id != key.id) {
@@ -143,6 +146,9 @@ namespace sts::ncm {
             return ResultNcmContentNotFound;
         }
 
+        char content_name[sizeof(ContentId)*2+1] = {0};
+        GetStringFromContentId(content_name, found_content_info->content_id);
+        D_LOG("content id: %s.nca\n", content_name);
         *out = found_content_info->content_id;
         return ResultSuccess;
     }
@@ -250,6 +256,12 @@ namespace sts::ncm {
         size_t entries_total = 0;
         size_t entries_written = 0;
 
+        D_LOG("app tid: 0x%x\n", application_title_id);
+        D_LOG("meta type: 0x%x\n", type);
+        D_LOG("install type: 0x%x\n", install_type);
+        D_LOG("tid min: 0x%lx\n", title_id_min);
+        D_LOG("tid max: 0x%lx\n", title_id_max);
+
         /* If there are no entries then we've already successfully listed them all. */
         if (this->kvs->GetCount() == 0) {
             out_entries_total.SetValue(entries_total);
@@ -261,7 +273,7 @@ namespace sts::ncm {
             ContentMetaKey key = entry->GetKey();
 
             /* Check if this entry matches the given filters. */
-            if (!((static_cast<u8>(type) == 0 || key.type == type) && (title_id_min <= key.id && key.id <= title_id_max) && (key.install_type == ContentInstallType::Full || key.install_type == install_type))) {
+            if (!((static_cast<u8>(type) == 0 || key.type == type) && (title_id_min <= key.id && key.id <= title_id_max) && (key.install_type == ContentInstallType::Unknown || key.install_type == install_type))) {
                 continue;
             }
 
@@ -384,9 +396,11 @@ namespace sts::ncm {
             has = it->GetKey() == key;
         }
 
+        D_LOG("key id: 0x%lx\n", key.id);
+        D_LOG("key version: 0x%x\n", key.version);
+        D_LOG("has: %d\n", has);
         out.SetValue(has);
         return ResultSuccess;
-        debug::DebugLog("Has 0x%lx\n", key.id);
         R_DEBUG_END
     }
 
@@ -515,6 +529,13 @@ namespace sts::ncm {
                     }
                 }
             }
+        }
+
+        for (size_t i = 0; i < content_ids.num_elements; i++) {
+            char content_name[sizeof(ContentId)*2+1] = {0};
+            GetStringFromContentId(content_name, content_ids[i]);
+            D_LOG("content id: %s.nca\n", content_name);
+            D_LOG("orphaned: %d\n", out_orphaned[i]);
         }
 
         return ResultSuccess;
