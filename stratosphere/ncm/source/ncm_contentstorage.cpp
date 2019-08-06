@@ -157,6 +157,14 @@ namespace sts::ncm {
 
         auto file_guard = SCOPE_GUARD { fclose(f); };
 
+        u64 size = 0;
+        R_TRY(GetSizeFromPlaceHolderId(&size, placeholder_id));
+
+        /* We can't disable append with stdio, so check this manually. */
+        if (offset + data.num_elements > size) {
+            return ResultFileExtensionWithoutOpenModeAllowAppend;
+        }
+
         if (fseek(f, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult();
         }
@@ -584,6 +592,14 @@ namespace sts::ncm {
         ON_SCOPE_EXIT {
             fclose(f);
         };
+
+        u64 size = 0;
+        R_TRY(GetSizeFromContentId(&size, content_id));
+
+        /* We can't disable append with stdio, so check this manually. */
+        if (offset + data.num_elements > size) {
+            return ResultFileExtensionWithoutOpenModeAllowAppend;
+        }
 
         if (fseek(f, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult();
