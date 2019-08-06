@@ -17,33 +17,23 @@
 
 #include "impl/lr_manager.hpp"
 #include "lr_manager_service.hpp"
-#include "debug.hpp"
 
 namespace sts::lr {
 
     Result LocationResolverManagerService::OpenLocationResolver(Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) {
-        R_DEBUG_START
         return impl::OpenLocationResolver(out, storage_id);
-        R_DEBUG_END
     }
 
     Result LocationResolverManagerService::OpenRegisteredLocationResolver(Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) {
-        R_DEBUG_START
         return impl::OpenRegisteredLocationResolver(out);
-        R_DEBUG_END
     }
 
     Result LocationResolverManagerService::RefreshLocationResolver(ncm::StorageId storage_id) {
-        R_DEBUG_START
-        D_LOG("storage_id: 0x%x\n", static_cast<u8>(storage_id));
         return impl::RefreshLocationResolver(storage_id);
-        R_DEBUG_END
     }
 
     Result LocationResolverManagerService::OpenAddOnContentLocationResolver(Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) {
-        R_DEBUG_START
         return impl::OpenAddOnContentLocationResolver(out);
-        R_DEBUG_END
     }
 
 }
