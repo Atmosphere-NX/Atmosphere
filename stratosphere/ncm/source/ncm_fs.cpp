@@ -15,11 +15,48 @@
  */
 
 #include <map>
+#include <fcntl.h>
+#include <sys/iosupport.h>
 
 #include "ncm_fs.hpp"
 #include "ncm_path_utils.hpp"
 
 namespace sts::ncm {
+
+    Result OpenFile(FILE** out, const char* path, u32 mode) {
+        bool has = false;
+
+        /* Manually check if the file already exists, so it doesn't get created automatically. */
+        R_TRY(HasFile(&has, path));
+        if (!has) {
+            return ResultFsPathNotFound;
+        }
+
+        const char* fopen_mode = "";
+
+        if (mode & FS_OPEN_APPEND) {
+            if (mode & FS_OPEN_READ) {
+                fopen_mode = "r+b";
+            } else if (mode & FS_OPEN_WRITE) {
+                fopen_mode = "w+b";
+            }
+        } else {
+            if (mode & FS_OPEN_READ) {
+                fopen_mode = "rb";
+            } else if (mode & FS_OPEN_WRITE) {
+                fopen_mode = "wb";
+            }
+        }
+
+        FILE* f = fopen(path, fopen_mode);
+
+        if (f == nullptr) {
+            return fsdevGetLastResult();
+        }
+
+        *out = f;
+        return ResultSuccess;
+    }
 
     Result HasFile(bool* out, const char* path) {
         struct stat st;

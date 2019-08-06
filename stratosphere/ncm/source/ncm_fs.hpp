@@ -23,6 +23,7 @@
 
 namespace sts::ncm {
 
+    Result OpenFile(FILE** out, const char* path, u32 mode);
     Result HasFile(bool* out, const char* path);
     Result HasDirectory(bool* out, const char* path);
 

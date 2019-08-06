@@ -82,15 +82,12 @@ namespace sts::ncm {
         this->ClearContentCache();
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
-        this->content_cache_file_handle = fopen(content_path, "rb");
 
-        if (this->content_cache_file_handle == NULL) {
-            R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ResultFsPathNotFound) {
-                    return ResultNcmContentNotFound;
-                }
-            } R_END_TRY_CATCH;
-        }
+        R_TRY_CATCH(OpenFile(&this->content_cache_file_handle, content_path, FS_OPEN_READ)) {
+            R_CATCH(ResultFsPathNotFound) {
+                return ResultNcmContentNotFound;
+            }
+        } R_END_TRY_CATCH;
 
         this->cached_content_id = content_id;
         return ResultSuccess;
@@ -624,14 +621,12 @@ namespace sts::ncm {
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
 
-        FILE* f = fopen(content_path, "r+b");
+        FILE* f = nullptr;
+        R_TRY(OpenFile(&f, content_path, FS_OPEN_WRITE));
+        
         ON_SCOPE_EXIT {
             fclose(f);
         };
-
-        if (f == nullptr) {
-            return fsdevGetLastResult();
-        }
 
         if (fseek(f, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult();

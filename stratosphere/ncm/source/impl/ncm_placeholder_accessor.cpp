@@ -100,12 +100,9 @@ namespace sts::ncm::impl {
         char placeholder_path[FS_MAX_PATH] = {0};
 
         this->GetPlaceHolderPath(placeholder_path, placeholder_id);
-        FILE* f = fopen(placeholder_path, "r+b");
 
-        if (f == nullptr) {
-            debug::DebugLog("Failed to open placeholder %s\n", placeholder_path);
-            return fsdevGetLastResult();
-        }
+        FILE* f = nullptr;
+        R_TRY(OpenFile(&f, placeholder_path, FS_OPEN_WRITE));
 
         *out_handle = f;
         return ResultSuccess;

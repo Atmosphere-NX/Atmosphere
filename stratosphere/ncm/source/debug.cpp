@@ -23,7 +23,7 @@ namespace sts::debug {
     }
 
     size_t g_curr_log_offset = 0;
-    size_t g_log_skip = 4;
+    size_t g_log_skip = 1000;
 
     char __attribute__ ((aligned (0x1000))) g_work_page[0x1000];
 
