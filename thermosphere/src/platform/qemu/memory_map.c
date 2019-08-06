@@ -48,11 +48,9 @@ uintptr_t configureMemoryMap(u32 *addrSpaceSize)
 {
     // QEMU virt RAM address space starts at 0x40000000
     *addrSpaceSize = ADDRSPACESZ;
-    static bool initialized = false;
-    if (currentCoreCtx->isBootCore && !initialized) {
+    if (currentCoreCtx->isBootCore && !currentCoreCtx->warmboot) {
         identityMapL1(g_ttbl, 0x00000000ull, BITL(30), ATTRIB_MEMTYPE_DEVICE);
         identityMapL1(g_ttbl, 0x40000000ull, (BITL(ADDRSPACESZ - 30) - 1ull) << 30, ATTRIB_MEMTYPE_NORMAL);
-        initialized = true;
     }
 
     return (uintptr_t)g_ttbl;

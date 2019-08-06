@@ -140,16 +140,15 @@ SECTIONS
         __end__ = ABSOLUTE(.);
     } >main :NONE
 
-    . = ALIGN(0x1000);
-    __end__ = ABSOLUTE(.) ;
-
     .temp (NOLOAD) :
     {
         . = ALIGN(0x1000);
         __stacks_top__       = ABSOLUTE(. + 0x2000);
         __crash_stacks_top__ = ABSOLUTE(. + 0x3000);
         . += 0x3000;
-        *(.temp.*)
+        __temp_bss_start__ = ABSOLUTE(.);
+        *(.tempbss .tempbss.*)
+        __temp_bss_end__ = ABSOLUTE(.);
         . = ALIGN(0x1000);
     } >temp :NONE
 

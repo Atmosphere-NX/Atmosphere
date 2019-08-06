@@ -48,11 +48,9 @@ static inline void identityMapL3(u64 *tbl, uintptr_t addr, size_t size, u64 attr
 uintptr_t configureMemoryMap(u32 *addrSpaceSize)
 {
     *addrSpaceSize = ADDRSPACESZ;
-    static bool initialized = false;
-    if (currentCoreCtx->isBootCore && !initialized) {
+    if (currentCoreCtx->isBootCore && !currentCoreCtx->warmboot) {
         identityMapL1(g_ttbl, 0x00000000ull, 2 * BITL(30), ATTRIB_MEMTYPE_DEVICE);
         identityMapL1(g_ttbl, 0x80000000ull, (BITL(ADDRSPACESZ - 30) - 2ull) << 30, ATTRIB_MEMTYPE_NORMAL);
-        initialized = true;
     }
 
     return (uintptr_t)g_ttbl;

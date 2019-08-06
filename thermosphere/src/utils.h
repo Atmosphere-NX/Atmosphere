@@ -33,7 +33,17 @@
 
 #define ALINLINE        __attribute__((always_inline))
 
-#define TEMPORARY       __attribute__((section(".temp")))
+#define TEMPORARY       __attribute__((section(".tempbss")))
+
+static inline void __dsb_sy(void)
+{
+    __asm__ __volatile__ ("dsb sy" ::: "memory");
+}
+
+static inline void __isb(void)
+{
+    __asm__ __volatile__ ("isb" ::: "memory");
+}
 
 bool overlaps(u64 as, u64 ae, u64 bs, u64 be);
 

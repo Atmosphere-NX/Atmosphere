@@ -39,23 +39,10 @@ _startCommon:
     msr     daifset, 0b1111
     msr     spsel, #1
 
-    // Set VBAR
-    adrp    x8, __vectors_start__
-    add     x8, x8, #:lo12:__vectors_start__
-    msr     vbar_el2, x8
-
-    // Set system to sane defaults, aarch64 for el1, mmu disabled
-    mov     x4, #0x0838
-    movk    x4, #0xC5, lsl #16
-    orr     x1, x4, #0x30000000
-    mov     x2, #(1 << 31)
-    mov     x3, #0xFFFFFFFF
-
+    // Set sctlr_el2 ASAP to disable mmu/caching if not already done.
+    mov     x1, #0x0838
+    movk    x1, #0x30C5,lsl #16
     msr     sctlr_el2, x1
-    msr     hcr_el2, x2
-    msr     dacr32_el2, x3
-    msr     sctlr_el1, x4
-
     dsb     sy
     isb
 
@@ -75,31 +62,14 @@ _startCommon:
     lsl     x9, x0, #10
     sub     sp, x8, x9
 
-    // Set up x18
-    mov     w1, w19
-    bl      coreCtxInit
-    stp     x18, xzr, [sp, #-0x10]!
-
-    // Reserve space for exception frame
-    sub     sp, sp, #0x120
-
+    // Set up x18, other sysregs, BSS, MMU, etc.
     // Don't call init array to save space?
-    // Clear BSS & call main for the first core executing this code
-    cbz     x19, _enable_mmu
-    adrp    x0, __bss_start__
-    add     x0, x0, #:lo12:__bss_start__
-    mov     w1, wzr
-    adrp    x2, __end__
-    add     x2, x2, #:lo12:__end__
-    sub     x2, x2, x0
-    bl      memset
+    mov     w1, w19
+    bl      initSystem
 
-_enable_mmu:
-
-    // Enable EL2 address translation and caches
-    bl      configureMemoryMapEnableMmu
-    // Enable EL1 Stage2 intermediate physical address translation
-    bl      configureMemoryMapEnableStage2
+    // Save x18, reserve space for exception frame
+    stp     x18, xzr, [sp, #-0x10]!
+    sub     sp, sp, #0x120
 
     dsb     sy
     isb

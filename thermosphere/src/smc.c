@@ -1,6 +1,5 @@
 #include <string.h>
 #include "smc.h"
-#include "synchronization.h"
 #include "core_ctx.h"
 #include "arm.h"
 

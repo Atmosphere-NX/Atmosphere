@@ -56,7 +56,7 @@ typedef enum DebugPmc {
 } DebugPmc;
 
 typedef enum WatchpointLoadStoreControl {
-    WatchpointLoadStoreControl_Load         = 0,
+    WatchpointLoadStoreControl_Load         = 1,
     WatchpointLoadStoreControl_Store        = 2,
     WatchpointLoadStoreControl_LoadStore    = 3,
 } WatchpointLoadStoreControl;

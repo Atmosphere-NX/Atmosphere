@@ -16,7 +16,6 @@
 
 #include "traps.h"
 #include "sysreg.h"
-#include "synchronization.h"
 
 static void enableDebugTraps(void)
 {
