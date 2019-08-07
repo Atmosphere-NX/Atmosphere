@@ -40,33 +40,6 @@ loadBreakpointRegs:
     ret
 
 // Precondition: x1 <= 16
-.section    .text.storeBreakpointRegs, "ax", %progbits
-.type       storeBreakpointRegs, %function
-.global     storBreakpointRegs
-storeBreakpointRegs:
-    // x1 = number
-    dsb     sy
-    isb
-
-    adr     x16, 1f
-    add     x0, x0, #(16 * 8)
-    mov     x4, #(16 * 12)
-    sub     x4, x4, x1,lsl #3
-    sub     x4, x4, x1,lsl #2
-    add     x16, x16, x4
-    br      x16
-
-    1:
-    .irp    count, 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
-    mrs     x2, dbgbcr\count\()_el1
-    mrs     x3, dbgbvr\count\()_el1
-    stp     x2, x3, [x0, #-0x10]!
-
-    .endr
-    ret
-
-
-// Precondition: x1 <= 16
 .section    .text.loadWatchpointRegs, "ax", %progbits
 .type       loadWatchpointRegs, %function
 .global     loadWatchpointRegs
@@ -88,31 +61,4 @@ loadWatchpointRegs:
     .endr
     dsb     sy
     isb
-    ret
-
-// Precondition: x1 <= 16
-.section    .text.storeWatchpointRegs, "ax", %progbits
-.type       storeWatchpointRegs, %function
-.global     storWatchpointRegs
-storeWatchpointRegs:
-    // x1 = number
-
-    dsb     sy
-    isb
-
-    adr     x16, 1f
-    add     x0, x0, #(16 * 8)
-    mov     x4, #(16 * 12)
-    sub     x4, x4, x1,lsl #3
-    sub     x4, x4, x1,lsl #2
-    add     x16, x16, x4
-    br      x16
-
-    1:
-    .irp    count, 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
-    mrs     x2, dbgwcr\count\()_el1
-    mrs     x3, dbgwvr\count\()_el1
-    stp     x2, x3, [x0, #-0x10]!
-
-    .endr
     ret

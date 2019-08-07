@@ -18,7 +18,4 @@
 #include "breakpoints_watchpoints_common.h"
 
 void loadBreakpointRegs(const DebugRegisterPair *regs, size_t num);
-void saveBreakpointRegs(DebugRegisterPair *regs, size_t num);
-
 void loadWatchpointRegs(const DebugRegisterPair *regs, size_t num);
-void saveWatchpointRegs(DebugRegisterPair *regs, size_t num);
