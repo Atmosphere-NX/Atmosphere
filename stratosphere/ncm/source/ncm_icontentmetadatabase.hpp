@@ -52,6 +52,8 @@ namespace sts::ncm {
             sts::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs;
             char mount_name[16];
             bool disabled;
+        protected:
+            Result EnsureEnabled();
         public:
             IContentMetaDatabase(sts::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs) : 
                 kvs(kvs), disabled(false)

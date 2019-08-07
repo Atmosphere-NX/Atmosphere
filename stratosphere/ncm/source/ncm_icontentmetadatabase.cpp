@@ -18,6 +18,14 @@
 
 namespace sts::ncm {
 
+    Result IContentMetaDatabase::EnsureEnabled() {
+        if (this->disabled) {
+            return ResultNcmInvalidContentMetaDatabase;
+        }
+
+        return ResultSuccess;
+    }
+
     Result IContentMetaDatabase::Set(ContentMetaKey key, InBuffer<u8> value) {
         std::abort();
     }

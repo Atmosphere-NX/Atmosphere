@@ -24,9 +24,7 @@ namespace sts::ncm {
 
     Result ReadOnlyContentStorageInterface::Initialize(const char* root_path, MakeContentPathFunc content_path_func) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
 
@@ -84,9 +82,7 @@ namespace sts::ncm {
 
     Result ReadOnlyContentStorageInterface::Has(Out<bool> out, ContentId content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
         this->make_content_path_func(content_path, content_id, this->root_path);
@@ -106,9 +102,7 @@ namespace sts::ncm {
 
     Result ReadOnlyContentStorageInterface::GetPath(OutPointerWithServerSize<lr::Path, 0x1> out, ContentId content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
@@ -160,9 +154,7 @@ namespace sts::ncm {
 
     Result ReadOnlyContentStorageInterface::GetSizeFromContentId(Out<u64> out_size, ContentId content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
         bool is_content_file = false;
@@ -210,9 +202,7 @@ namespace sts::ncm {
             return ResultNcmInvalidOffset;
         }
 
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
         bool is_content_file = false;
@@ -251,9 +241,7 @@ namespace sts::ncm {
 
     Result ReadOnlyContentStorageInterface::GetRightsIdFromContentId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, ContentId content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         FsRightsId rights_id = {0};
         u8 key_generation = 0;

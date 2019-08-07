@@ -29,10 +29,7 @@ namespace sts::ncm {
     }
 
     Result ContentStorageInterface::Initialize(const char* root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush) {
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
-
+        R_TRY(this->EnsureEnabled());
         R_TRY(CheckContentStorageDirectoriesExist(root_path));
         const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
 
@@ -95,9 +92,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::GeneratePlaceHolderId(Out<PlaceHolderId> out) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         sts::rnd::GenerateRandomBytes(out.GetPointer(), sizeof(NcmNcaId));
         return ResultSuccess;
@@ -106,9 +101,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
@@ -122,9 +115,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::DeletePlaceHolder(PlaceHolderId placeholder_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         return this->placeholder_accessor.Delete(placeholder_id);
         R_DEBUG_END
@@ -132,9 +123,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::HasPlaceHolder(Out<bool> out, PlaceHolderId placeholder_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char placeholder_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.GetPlaceHolderPath(placeholder_path, placeholder_id);
@@ -154,9 +143,7 @@ namespace sts::ncm {
             return ResultNcmInvalidOffset;
         }
 
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         FILE* f = nullptr;
 
@@ -199,10 +186,7 @@ namespace sts::ncm {
     Result ContentStorageInterface::Register(PlaceHolderId placeholder_id, ContentId content_id) {
         R_DEBUG_START
         this->ClearContentCache();
-        
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char placeholder_path[FS_MAX_PATH] = {0};
         char content_path[FS_MAX_PATH] = {0};
@@ -227,9 +211,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::Delete(ContentId content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         this->ClearContentCache();
         char content_path[FS_MAX_PATH] = {0};
@@ -249,9 +231,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::Has(Out<bool> out, ContentId content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
@@ -266,9 +246,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::GetPath(OutPointerWithServerSize<lr::Path, 0x1> out, ContentId content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
@@ -282,9 +260,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::GetPlaceHolderPath(OutPointerWithServerSize<lr::Path, 0x1> out, PlaceHolderId placeholder_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
@@ -297,9 +273,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::CleanupAllPlaceHolder() {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char placeholder_root_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.ClearAllCaches();
@@ -319,9 +293,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::ListPlaceHolder(Out<u32> out_count, OutBuffer<PlaceHolderId> out_buf) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char placeholder_root_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.GetPlaceHolderRootPath(placeholder_root_path);
@@ -352,9 +324,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::GetContentCount(Out<u32> out_count) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_root_path[FS_MAX_PATH] = {0};
         this->GetContentRootPath(content_root_path);
@@ -383,9 +353,7 @@ namespace sts::ncm {
             return ResultNcmInvalidOffset;
         }
 
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_root_path[FS_MAX_PATH] = {0};
         this->GetContentRootPath(content_root_path);
@@ -436,9 +404,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::GetSizeFromContentId(Out<u64> out_size, ContentId content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
@@ -464,9 +430,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
         
         char old_content_path[FS_MAX_PATH] = {0};
         char new_content_path[FS_MAX_PATH] = {0};
@@ -497,9 +461,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         R_TRY(this->placeholder_accessor.SetSize(placeholder_id, size));
         return ResultSuccess;
@@ -513,9 +475,7 @@ namespace sts::ncm {
             return ResultNcmInvalidOffset;
         }
 
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
@@ -535,9 +495,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::GetRightsIdFromPlaceHolderId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         FsRightsId rights_id = {0};
         u8 key_generation = 0;
@@ -557,9 +515,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::GetRightsIdFromContentId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, ContentId content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
         
         impl::RightsIdCache* rights_id_cache = impl::GetRightsIdCache();
 
@@ -625,9 +581,7 @@ namespace sts::ncm {
             return ResultNcmInvalidOffset;
         }
 
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         bool is_development = false;
 
@@ -706,9 +660,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::GetSizeFromPlaceHolderId(Out<u64> out_size, PlaceHolderId placeholder_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
 
         bool found_in_cache = false;
         size_t size = 0;
@@ -768,9 +720,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::GetRightsIdFromPlaceHolderIdWithCache(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id) {
         R_DEBUG_START
-        if (this->disabled) {
-            return ResultNcmInvalidContentStorage;
-        }
+        R_TRY(this->EnsureEnabled());
         
         impl::RightsIdCache* rights_id_cache = impl::GetRightsIdCache();
 

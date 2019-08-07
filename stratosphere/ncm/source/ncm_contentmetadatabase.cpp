@@ -179,15 +179,6 @@ namespace sts::ncm {
         return ResultSuccess;
     }
 
-    Result ContentMetaDatabaseInterface::EnsureEnabled() {
-        if (this->disabled) {
-            return ResultNcmInvalidContentMetaDatabase;
-        }
-
-        return ResultSuccess;
-    }
-
-
     Result ContentMetaDatabaseInterface::Set(ContentMetaKey key, InBuffer<u8> value) {
         R_DEBUG_START
         R_TRY(this->EnsureEnabled());

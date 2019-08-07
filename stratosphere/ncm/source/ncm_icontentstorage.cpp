@@ -18,6 +18,14 @@
 
 namespace sts::ncm {
 
+    Result IContentStorage::EnsureEnabled() {
+        if (this->disabled) {
+            return ResultNcmInvalidContentStorage;
+        }
+
+        return ResultSuccess;
+    }
+
     Result IContentStorage::GeneratePlaceHolderId(Out<PlaceHolderId> out) {
         std::abort();
     }
