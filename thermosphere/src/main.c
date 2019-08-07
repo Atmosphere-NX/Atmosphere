@@ -42,12 +42,15 @@ void main(ExceptionStackFrame *frame)
     enableTraps();
     enableBreakpointsAndWatchpoints();
 
+    if (currentCoreCtx->isBootCore) {
+        uartInit(115200);
+        DEBUG("EL2: core %u reached main first!\n", currentCoreCtx->coreId);
+    }
+
     initBreakpoints();
     initWatchpoints();
 
     if (currentCoreCtx->isBootCore) {
-        uartInit(115200);
-        DEBUG("EL2: core %u reached main first!\n", currentCoreCtx->coreId);
         if (currentCoreCtx->kernelEntrypoint == 0) {
             if (semihosting_connection_supported()) {
                 loadKernelViaSemihosting();

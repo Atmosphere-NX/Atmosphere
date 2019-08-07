@@ -58,7 +58,7 @@ static void freeBreakpoint(u32 pos)
 
 static DebugRegisterPair *findBreakpoint(u64 addr)
 {
-    u16 bitmap = g_breakpointManager.allocationBitmap;
+    u16 bitmap = ~g_breakpointManager.allocationBitmap & 0xFFFF;
     while (bitmap != 0) {
         u32 pos = __builtin_ffs(bitmap);
         if (pos == 0) {
@@ -119,6 +119,7 @@ bool removeBreakpoint(u64 addr)
     DebugRegisterPair *regs = findBreakpoint(addr);
 
     if (findBreakpoint(addr) == NULL) {
+        recursiveSpinlockUnlock(&g_breakpointManager.lock);
         return false;
     }
 

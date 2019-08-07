@@ -21,12 +21,17 @@
 
 /// Structure to synchronize and keep track of watchpoints
 typedef struct WatchpointManager {
-    DebugRegisterPair watchpoints[16];
+    DebugRegisterPair splitWatchpoints[16 * 8];
     RecursiveSpinlock lock;
+    u32 numSplitWatchpoints;
     u32 maxWatchpoints;
+    u32 maxSplitWatchpoints;
     u16 allocationBitmap;
 } WatchpointManager;
 
 extern WatchpointManager g_watchpointManager;
 
 void initWatchpoints(void);
+DebugRegisterPair *findSplitWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction, bool strict);
+bool addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction);
+bool removeWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction);
