@@ -59,6 +59,8 @@ namespace sts::ncm {
             char root_path[FS_MAX_PATH-1];
             MakeContentPathFunc make_content_path_func;
             bool disabled;
+        protected:
+            Result EnsureEnabled();
         public:
             virtual Result GeneratePlaceHolderId(Out<PlaceHolderId> out);
             virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size);
