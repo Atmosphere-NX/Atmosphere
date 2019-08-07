@@ -24,6 +24,8 @@
 namespace sts::ncm {
 
     Result OpenFile(FILE** out, const char* path, u32 mode);
+    Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option);
+
     Result HasFile(bool* out, const char* path);
     Result HasDirectory(bool* out, const char* path);
 
