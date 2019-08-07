@@ -105,8 +105,7 @@ namespace sts::fatal::srv {
                 R_TRY(viSetDisplayPowerState(&temp_display, ViPowerState_On));
             } else {
                 /* Prior to 3.0.0, the ViPowerState enum was different (0 = Off, 1 = On). */
-                /* In lieu of a ViPowerState_OnDeprecated entry, just send the correct value manually. */
-                R_TRY(viSetDisplayPowerState(&temp_display, static_cast<ViPowerState>(1)));
+                R_TRY(viSetDisplayPowerState(&temp_display, ViPowerState_On_Deprecated));
             }
 
             /* Set alpha to 1.0f. */
