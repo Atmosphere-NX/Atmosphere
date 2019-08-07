@@ -16,7 +16,7 @@
 
 #include <string.h>
 #include "breakpoints.h"
-#include "breakpoints_watchpoints_save_restore.h"
+#include "breakpoints_watchpoints_load.h"
 #include "utils.h"
 #include "sysreg.h"
 #include "arm.h"
