@@ -157,27 +157,7 @@ namespace sts::ncm {
             this->placeholder_accessor.StoreToCache(f, placeholder_id);
         };
 
-        if (fseek(f, 0, SEEK_END) != 0) {
-            return fsdevGetLastResult();
-        }
-        u64 size = ftell(f);
-
-        /* We can't disable append with stdio, so check this manually. */
-        if (offset + data.num_elements > size) {
-            return ResultFileExtensionWithoutOpenModeAllowAppend;
-        }
-
-        if (fseek(f, offset, SEEK_SET) != 0) {
-            return fsdevGetLastResult();
-        }
-
-        if (fwrite(data.buffer, sizeof(u8), data.num_elements, f) != data.num_elements) {
-            return fsdevGetLastResult();
-        }
-
-        if (!this->placeholder_accessor.delay_flush) {
-            fflush(f);
-        }
+        R_TRY(WriteFile(f, offset, data.buffer, data.num_elements, !this->placeholder_accessor.delay_flush));
 
         return ResultSuccess;
         R_DEBUG_END
@@ -601,25 +581,7 @@ namespace sts::ncm {
             fclose(f);
         };
 
-        if (fseek(f, 0, SEEK_END) != 0) {
-            return fsdevGetLastResult();
-        }
-        u64 size = ftell(f);
-
-        /* We can't disable append with stdio, so check this manually. */
-        if (offset + data.num_elements > size) {
-            return ResultFileExtensionWithoutOpenModeAllowAppend;
-        }
-
-        if (fseek(f, offset, SEEK_SET) != 0) {
-            return fsdevGetLastResult();
-        }
-
-        if (fwrite(data.buffer, sizeof(u8), data.num_elements, f) != data.num_elements) {
-            return fsdevGetLastResult();
-        }
-
-        fflush(f);
+        R_TRY(WriteFile(f, offset, data.buffer, data.num_elements, FS_WRITEOPTION_FLUSH));
 
         return ResultSuccess;
         R_DEBUG_END
