@@ -16,6 +16,8 @@
  
 #include <string.h>
 #include "utils.h"
+#include "arm.h"
+#include "spinlock.h"
 
 __attribute__((noinline)) bool overlaps(u64 as, u64 ae, u64 bs, u64 be)
 {
@@ -24,4 +26,47 @@ __attribute__((noinline)) bool overlaps(u64 as, u64 ae, u64 bs, u64 be)
     if(bs <= as && as < be)
         return true;
     return false;
+}
+
+// TODO: put that elsewhere
+bool readEl1Memory(void *dst, uintptr_t addr, size_t size)
+{
+    bool valid;
+
+    u64 flags = maskIrq();
+    uintptr_t pa = get_physical_address_el1_stage12(&valid, addr);
+    restoreInterruptFlags(flags);
+
+    if (!valid) {
+        return false;
+    }
+
+    flush_dcache_range((const void *)pa, (const void *)(pa + size));
+    memcpy(dst, (const void *)pa, size);
+
+    return true;
+}
+
+bool writeEl1Memory(uintptr_t addr, const void *src, size_t size)
+{
+    bool valid;
+
+    u64 flags = maskIrq();
+    uintptr_t pa = get_physical_address_el1_stage12(&valid, addr);
+    restoreInterruptFlags(flags);
+
+    if (!valid) {
+        return false;
+    }
+
+    flush_dcache_range((const void *)pa, (const void *)(pa + size));
+    memcpy((void *)pa, src, size);
+    flush_dcache_range((const void *)pa, (const void *)(pa + size));
+    invalidate_icache_all();
+
+    __tlb_invalidate_el1_stage12();
+    __dsb_sy();
+    __isb();
+
+    return true;
 }

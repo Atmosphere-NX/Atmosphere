@@ -77,18 +77,20 @@ static DebugRegisterPair *findBreakpoint(u64 addr)
 // Note: A32/T32/T16 support intentionnally left out
 // Note: addresses are supposed to be well-formed regarding the sign extension bits
 
-bool addBreakpoint(u64 addr)
+int addBreakpoint(u64 addr)
 {
     recursiveSpinlockLock(&g_breakpointManager.lock);
 
     // Reject misaligned addresses
     if (addr & 3) {
-        return false;
+        recursiveSpinlockUnlock(&g_breakpointManager.lock);
+        return -EINVAL;
     }
 
     // Breakpoint already added
     if (findBreakpoint(addr) != NULL) {
-        return true;
+        recursiveSpinlockUnlock(&g_breakpointManager.lock);
+        return -EEXIST;
     }
 
     DebugRegisterPair *regs = allocateBreakpoint();
@@ -109,10 +111,10 @@ bool addBreakpoint(u64 addr)
 
     // TODO commit & broadcast
 
-    return true;
+    return 0;
 }
 
-bool removeBreakpoint(u64 addr)
+int removeBreakpoint(u64 addr)
 {
     recursiveSpinlockLock(&g_breakpointManager.lock);
 
@@ -120,7 +122,7 @@ bool removeBreakpoint(u64 addr)
 
     if (findBreakpoint(addr) == NULL) {
         recursiveSpinlockUnlock(&g_breakpointManager.lock);
-        return false;
+        return -ENOENT;
     }
 
     freeBreakpoint(regs - &g_breakpointManager.breakpoints[0]);
@@ -128,5 +130,18 @@ bool removeBreakpoint(u64 addr)
 
     // TODO commit & broadcast
 
-    return true;
+    return 0;
+}
+
+int removeAllBreakpoints(void)
+{
+    recursiveSpinlockLock(&g_breakpointManager.lock);
+    g_breakpointManager.allocationBitmap = BIT(g_breakpointManager.maxBreakpoints) - 1;
+    memset(g_breakpointManager.breakpoints, 0, sizeof(g_breakpointManager.breakpoints));
+
+    // TODO: commit & broadcast
+
+    recursiveSpinlockUnlock(&g_breakpointManager.lock);
+
+    return 0;
 }
