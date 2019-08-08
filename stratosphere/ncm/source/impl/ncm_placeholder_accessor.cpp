@@ -20,6 +20,8 @@
 #include "../ncm_make_path.hpp"
 #include "../ncm_path_utils.hpp"
 
+#include "../debug.hpp"
+
 namespace sts::ncm::impl {
 
     Result PlaceHolderAccessor::Open(FILE** out_handle, PlaceHolderId placeholder_id) {
@@ -126,6 +128,7 @@ namespace sts::ncm::impl {
         this->EnsureRecursively(placeholder_id);
         this->GetPath(placeholder_path, placeholder_id);
 
+        debug::DebugLog("Creating %s\n", placeholder_path);
         R_TRY_CATCH(fsdevCreateFile(placeholder_path, size, FS_CREATE_BIG_FILE)) {
             R_CATCH(ResultFsPathAlreadyExists) {
                 return ResultNcmPlaceHolderAlreadyExists;
@@ -140,6 +143,7 @@ namespace sts::ncm::impl {
 
         this->GetPath(placeholder_path, placeholder_id);
 
+        debug::DebugLog("Deleting %s\n", placeholder_path);
         if (std::remove(placeholder_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
                 R_CATCH(ResultFsPathNotFound) {
