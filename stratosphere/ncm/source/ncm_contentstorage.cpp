@@ -456,18 +456,10 @@ namespace sts::ncm {
         }
 
         R_TRY(this->EnsureEnabled());
-
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
         R_TRY(this->OpenCachedContentFile(content_id));
-
-        if (fseek(this->content_cache_file_handle, offset, SEEK_SET) != 0) {
-            return fsdevGetLastResult();
-        }
-
-        if (fread(buf.buffer, 1, buf.num_elements, this->content_cache_file_handle) != buf.num_elements && ferror(this->content_cache_file_handle)) {
-            return fsdevGetLastResult();
-        }
+        R_TRY(ReadFile(this->content_cache_file_handle, offset, buf.buffer, buf.num_elements));
 
         return ResultSuccess;
         R_DEBUG_END

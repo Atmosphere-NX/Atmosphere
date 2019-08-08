@@ -152,13 +152,13 @@ namespace sts::ncm {
     typedef void (*MakePlaceHolderPathFunc)(char* out, PlaceHolderId placeholder_id, const char* root);
 
     // TODO: Move to libstrat
-    static constexpr Result ResultNcmStoragePathNotFound                  = MAKERESULT(Module_Ncm, 1);
-    static constexpr Result ResultNcmInvalidPlaceHolderDirectoryEntry     = MAKERESULT(Module_Ncm, 170);
-    static constexpr Result ResultNcmInvalidContentStorageOperation       = MAKERESULT(Module_Ncm, 190);
-    static constexpr Result ResultNcmStorageRootNotFound                  = MAKERESULT(Module_Ncm, 310);
+    static constexpr Result ResultNcmStoragePathNotFound                    = MAKERESULT(Module_Ncm, 1);
+    static constexpr Result ResultNcmInvalidPlaceHolderDirectoryEntry       = MAKERESULT(Module_Ncm, 170);
+    static constexpr Result ResultNcmInvalidContentStorageOperation         = MAKERESULT(Module_Ncm, 190);
+    static constexpr Result ResultNcmStorageRootNotFound                    = MAKERESULT(Module_Ncm, 310);
     
-    static constexpr Result ResultFileExtensionWithoutOpenModeAllowAppend = MAKERESULT(Module_Fs, 6201);
-    static constexpr Result ResultInvalidMountName                        = MAKERESULT(Module_Fs, 6065);
-    static constexpr Result ResultFsMountNameNotFound                     = MAKERESULT(Module_Fs, 6905);
+    static constexpr Result ResultFsFileExtensionWithoutOpenModeAllowAppend = MAKERESULT(Module_Fs, 6201);
+    static constexpr Result ResultFsInvalidMountName                        = MAKERESULT(Module_Fs, 6065);
+    static constexpr Result ResultFsMountNameNotFound                       = MAKERESULT(Module_Fs, 6905);
 
 }
