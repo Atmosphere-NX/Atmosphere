@@ -19,7 +19,6 @@
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 #include <optional>
 
-#include "../debug.hpp"
 #include "../ncm_contentmetadatabase.hpp"
 #include "../ncm_contentstorage.hpp"
 #include "../ncm_fs.hpp"
@@ -150,9 +149,6 @@ namespace sts::ncm::impl {
         if (g_initialized) {
             return ResultSuccess;
         }
-        
-        R_ASSERT(debug::Initialize());
-        debug::DebugLog("ContentManager::InitializeContentManager\n");
 
         size_t cur_storage_index = g_num_content_storage_entries;
 
@@ -257,8 +253,6 @@ namespace sts::ncm::impl {
     }
 
     void FinalizeContentManager() {
-        debug::DebugLog("Finalizing content manager...\n");
-
         {
             std::scoped_lock<HosMutex> lk(g_mutex);
 

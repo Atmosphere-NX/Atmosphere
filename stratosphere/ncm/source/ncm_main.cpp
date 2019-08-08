@@ -22,8 +22,6 @@
 #include "lr_manager_service.hpp"
 #include "ncm_content_manager_service.hpp"
 
-#include "debug.hpp"
-
 extern "C" {
     extern u32 __start__;
 

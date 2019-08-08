@@ -21,8 +21,6 @@
 #include "ncm_fs.hpp"
 #include "ncm_path_utils.hpp"
 
-#include "debug.hpp"
-
 namespace sts::ncm {
 
     Result OpenFile(FILE** out, const char* path, u32 mode) {
@@ -61,9 +59,6 @@ namespace sts::ncm {
     }
 
     Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option) {
-        R_DEBUG_START
-        D_LOG("Writing 0x%llx to offset 0x%llx\n", size, offset);
-
         if (fseek(f, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult();
         }
@@ -77,7 +72,6 @@ namespace sts::ncm {
         }
 
         return ResultSuccess;
-        R_DEBUG_END
     }
 
     Result ReadFile(FILE* f, size_t offset, void* buffer, size_t size) {
