@@ -221,13 +221,7 @@ namespace sts::ncm {
             fclose(f);
         };
    
-        if (fseek(f, offset, SEEK_SET) != 0) {
-            return fsdevGetLastResult(); 
-        }
-
-        if (fread(buf.buffer, 1, buf.num_elements, f) != buf.num_elements && ferror(f)) {
-            return fsdevGetLastResult(); 
-        }
+        R_TRY(ReadFile(f, offset, buf.buffer, buf.num_elements));
 
         return ResultSuccess;
         R_DEBUG_END

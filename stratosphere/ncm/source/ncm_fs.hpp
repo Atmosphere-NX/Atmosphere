@@ -25,6 +25,7 @@ namespace sts::ncm {
 
     Result OpenFile(FILE** out, const char* path, u32 mode);
     Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option);
+    Result ReadFile(FILE* f, size_t offset, void* buffer, size_t size);
 
     Result HasFile(bool* out, const char* path);
     Result HasDirectory(bool* out, const char* path);
@@ -40,6 +41,8 @@ namespace sts::ncm {
     Result GetGameCardHandle(FsGameCardHandle* out_handle);
 
     MountName CreateUniqueMountName();
+    Result GetMountNameFromPath(MountName* mount_name, const char* path);
+
     Result MountSystemSaveData(const char* mount_point, FsSaveDataSpaceId space_id, u64 save_id);
     Result MountContentStorage(const char* mount_point, FsContentStorageId id);
     Result MountGameCardPartition(const char* mount_point, const FsGameCardHandle handle, FsGameCardPartiton partition);

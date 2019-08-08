@@ -68,7 +68,7 @@ namespace sts::ncm {
             return fsdevGetLastResult();
         }
 
-        if (fwrite(buffer, size, 1, f) != 1) {
+        if (fwrite(buffer, 1, size, f) != size) {
             return fsdevGetLastResult();
         }
 
@@ -78,6 +78,18 @@ namespace sts::ncm {
 
         return ResultSuccess;
         R_DEBUG_END
+    }
+
+    Result ReadFile(FILE* f, size_t offset, void* buffer, size_t size) {
+        if (fseek(f, offset, SEEK_SET) != 0) {
+            return fsdevGetLastResult();
+        }
+
+        if (fread(buffer, 1, size, f) != size && ferror(f)) {
+            return fsdevGetLastResult();
+        }
+
+        return ResultSuccess;
     }
 
     Result HasFile(bool* out, const char* path) {
@@ -219,6 +231,18 @@ namespace sts::ncm {
         return mount_name;
     }
 
+    Result GetMountNameFromPath(MountName* mount_name, const char* path) {
+        const char* unqual_path = strchr(path, ':');
+
+        /* We should be given a qualified path. */
+        if (!unqual_path || unqual_path > path + 0xf) {
+            return ResultFsInvalidMountName;
+        }
+
+        strncpy(mount_name->name, path, unqual_path - path);
+        return ResultSuccess;
+    }
+
     Result MountSystemSaveData(const char* mount_point, FsSaveDataSpaceId space_id, u64 save_id) {
         if (!mount_point) {
             return ResultFsNullptrArgument;
@@ -319,14 +343,7 @@ namespace sts::ncm {
         }
 
         MountName mount_name = {0};
-        const char* unqual_path = strchr(path, ':');
-
-        /* We should be given a qualified path. */
-        if (!unqual_path || unqual_path > path + 0xf) {
-            return ResultInvalidMountName;
-        }
-
-        strncpy(mount_name.name, path, unqual_path - path);
+        R_TRY(GetMountNameFromPath(&mount_name, path));
     
         if (!fsdevGetDeviceFileSystem(mount_name.name) || g_mount_content_storage.find(mount_name.name) == g_mount_content_storage.end()) {
             return ResultFsMountNameNotFound;
