@@ -19,6 +19,9 @@
 #include "breakpoints_watchpoints_common.h"
 #include "spinlock.h"
 
+#define _REENT_ONLY
+#include <errno.h>
+
 /// Structure to synchronize and keep track of breakpoints
 typedef struct BreakpointManager {
     DebugRegisterPair breakpoints[16];
@@ -30,3 +33,6 @@ typedef struct BreakpointManager {
 extern BreakpointManager g_breakpointManager;
 
 void initBreakpoints(void);
+int addBreakpoint(u64 addr);
+int removeBreakpoint(u64 addr);
+int removeAllBreakpoints(void);

@@ -27,20 +27,20 @@ typedef struct Spinlock {
 typedef struct RecursiveSpinlock {
     Spinlock lock;
     u32 count;
-    u32 tag;
+    vu32 tag;
 } RecursiveSpinlock;
 
 static inline u64 maskIrq(void)
 {
     u64 ret = GET_SYSREG(daif);
-    SET_SYSREG(daifset, BITL(1));
+    SET_SYSREG_IMM(daifset, BITL(1));
     return ret;
 }
 
 static inline u64 unmaskIrq(void)
 {
     u64 ret = GET_SYSREG(daif);
-    SET_SYSREG(daifclr, BITL(1));
+    SET_SYSREG_IMM(daifclr, BITL(1));
     return ret;
 }
 

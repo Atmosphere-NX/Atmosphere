@@ -183,22 +183,22 @@ DebugRegisterPair *findSplitWatchpoint(u64 addr, size_t size, WatchpointLoadStor
     return ret;
 }
 
-bool addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
+int addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
 {
     if (size == 0) {
-        return false;
+        return -EINVAL;
     }
 
     recursiveSpinlockLock(&g_watchpointManager.lock);
 
     if (doFindSplitWatchpoint(addr, size, direction, true)) {
         recursiveSpinlockUnlock(&g_watchpointManager.lock);
-        return true;
+        return -EEXIST;
     }
 
     if (g_watchpointManager.numSplitWatchpoints == g_watchpointManager.maxSplitWatchpoints) {
         recursiveSpinlockUnlock(&g_watchpointManager.lock);
-        return false;
+        return -EBUSY;
     }
 
     size_t oldNumSplitWatchpoints = g_watchpointManager.numSplitWatchpoints;
@@ -213,7 +213,7 @@ bool addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
         if (!combineWatchpoint(wp)) {
             g_watchpointManager.numSplitWatchpoints = oldNumSplitWatchpoints;
             recursiveSpinlockUnlock(&g_watchpointManager.lock);
-            return false;
+            return -EBUSY;
         }
     } else if (size <= 9) {
         // Normal one or 2 up-to-9-bytes wp(s) (ie. never exceeeds two combined wp)
@@ -221,7 +221,7 @@ bool addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
         if (!checkNormalWatchpointRange(addr, size)) {
             g_watchpointManager.numSplitWatchpoints = oldNumSplitWatchpoints;
             recursiveSpinlockUnlock(&g_watchpointManager.lock);
-            return false;
+            return -EINVAL;
         }
 
         u64 addr2 = (addr + size) & ~7ull;
@@ -249,18 +249,18 @@ bool addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
         if (!combineWatchpoint(wp) || (size2 != 0 && !combineWatchpoint(wp2))) {
             g_watchpointManager.numSplitWatchpoints = oldNumSplitWatchpoints;
             recursiveSpinlockUnlock(&g_watchpointManager.lock);
-            return false;
+            return -EBUSY;
         }
     } else {
         recursiveSpinlockUnlock(&g_watchpointManager.lock);
-        return false;
+        return -EINVAL;
     }
 
     recursiveSpinlockUnlock(&g_watchpointManager.lock);
 
     // TODO: commit and broadcast
 
-    return true;
+    return 0;
 }
 
 static void combineAllCurrentWatchpoints(void)
@@ -272,10 +272,10 @@ static void combineAllCurrentWatchpoints(void)
     }
 }
 
-bool removeWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
+int removeWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
 {
     if (size == 0) {
-        return false;
+        return -EINVAL;
     }
 
     recursiveSpinlockLock(&g_watchpointManager.lock);
@@ -291,10 +291,30 @@ bool removeWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl directio
         combineAllCurrentWatchpoints();
     } else {
         DEBUG("watchpoint not found 0x%016llx, size %llu, direction %d\n", addr, size, direction);
+        recursiveSpinlockUnlock(&g_watchpointManager.lock);
+        return -ENOENT;
     }
     recursiveSpinlockUnlock(&g_watchpointManager.lock);
 
     // TODO: commit and broadcast
 
-    return true;
+    return 0;
+}
+
+int removeAllWatchpoints(void)
+{
+    // Yeet it all
+
+    recursiveSpinlockLock(&g_watchpointManager.lock);
+
+    g_watchpointManager.allocationBitmap = BIT(g_watchpointManager.maxWatchpoints) - 1;
+    g_watchpointManager.numSplitWatchpoints = 0;
+    memset(g_watchpointManager.splitWatchpoints, 0, sizeof(g_watchpointManager.splitWatchpoints));
+    memset(g_combinedWatchpoints, 0, sizeof(g_combinedWatchpoints));
+
+    // TODO: commit and broadcast
+
+    recursiveSpinlockUnlock(&g_watchpointManager.lock);
+
+    return 0;
 }

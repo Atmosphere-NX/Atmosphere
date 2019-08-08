@@ -19,23 +19,30 @@
 #define _REENT_ONLY
 #include <errno.h>
 
-#include "breakpoints_watchpoints_common.h"
 #include "spinlock.h"
 
-/// Structure to synchronize and keep track of watchpoints
-typedef struct WatchpointManager {
+#define MAX_SW_BREAKPOINTS  32
+
+typedef struct SoftwareBreakpoint {
+    u64 address; // VA
+    u32 savedInstruction;
+    u32 uid;
+    bool persistent;
+    bool applied;
+} SoftwareBreakpoint;
+
+typedef struct SoftwareBreakpointManager {
     RecursiveSpinlock lock;
-    u32 numSplitWatchpoints;
-    u32 maxWatchpoints;
-    u32 maxSplitWatchpoints;
-    u16 allocationBitmap;
-    DebugRegisterPair splitWatchpoints[16 * 8];
-} WatchpointManager;
+    size_t numBreakpoints;
+    SoftwareBreakpoint breakpoints[MAX_SW_BREAKPOINTS];
+    u32 bpUniqueCounter;
+} SoftwareBreakpointManager;
 
-extern WatchpointManager g_watchpointManager;
+extern SoftwareBreakpointManager g_softwareBreakpointManager;
 
-void initWatchpoints(void);
-DebugRegisterPair *findSplitWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction, bool strict);
-int addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction);
-int removeWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction);
-int removeAllWatchpoints(void);
+bool revertAllSoftwareBreakpoints(void);
+bool applyAllSoftwareBreakpoints(void);
+
+int addSoftwareBreakpoint(u64 addr, bool persistent);
+int removeSoftwareBreakpoint(u64 addr, bool keepPersistent);
+int removeAllSoftwareBreakpoints(bool keepPersistent);

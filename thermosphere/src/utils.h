@@ -45,15 +45,24 @@ static inline void __isb(void)
     __asm__ __volatile__ ("isb" ::: "memory");
 }
 
+static inline void __tlb_invalidate_el1_stage12(void)
+{
+    __asm__ __volatile__ ("tlbi alle1" ::: "memory");
+}
+
 bool overlaps(u64 as, u64 ae, u64 bs, u64 be);
 
-static inline uintptr_t get_physical_address_el1_stage12(const uintptr_t el1_vaddr) {
+static inline uintptr_t get_physical_address_el1_stage12(bool *valid, const uintptr_t el1_vaddr) {
     // NOTE: interrupt must be disabled when calling this func
     uintptr_t PAR;
-    __asm__ __volatile__ ("at s12e1r, %0" :: "r"(el1_vaddr));
+    __asm__ __volatile__ ("at s12e1r, %0" :: "r"(el1_vaddr)); // note: we don't care whether it's writable in EL1&0 translation regime
     __asm__ __volatile__ ("mrs %0, par_el1" : "=r"(PAR));
+    *valid = (PAR & 1) == 0ull;
     return (PAR & 1) ? 0ull : (PAR & MASK2L(40, 12)) | ((uintptr_t)el1_vaddr & MASKL(12));
 }
+
+bool readEl1Memory(void *dst, uintptr_t addr, size_t size);
+bool writeEl1Memory(uintptr_t addr, const void *src, size_t size);
 
 static inline u32 read32le(const volatile void *dword, size_t offset) {
     return *(u32 *)((uintptr_t)dword + offset);

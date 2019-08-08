@@ -34,6 +34,9 @@ void enableTraps(void)
 {
     u64 hcr = GET_SYSREG(hcr_el2);
 
+    // Trap memory-related sysreg writes (note: not supported by QEMU yet)
+    hcr |= HCR_TVM;
+
     // Trap SMC instructions
     hcr |= HCR_TSC;
 

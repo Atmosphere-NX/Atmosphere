@@ -423,7 +423,8 @@
     __val;                                                          \
 })
 
-#define SET_SYSREG(reg, val) do { u64 temp_reg = (val); __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
+#define SET_SYSREG(reg, val)        do { u64 temp_reg = (val); __asm__ __volatile__ ("msr " #reg ", %0" :: "r"(temp_reg) : "memory"); } while(false)
+#define SET_SYSREG_IMM(reg, imm)    do { __asm__ __volatile__ ("msr " #reg ", %0" :: "I"(imm) : "memory"); } while(false)
 
 #define SYSREG_OP1_AARCH32_AUTO 0
 #define SYSREG_OP1_AARCH64_EL1  0
