@@ -39,15 +39,13 @@ namespace sts::ncm {
 
         strncpy(this->root_path, root_path, FS_MAX_PATH-2);
         this->make_content_path_func = *content_path_func;
-        this->placeholder_accessor.root_path = this->root_path;
-        this->placeholder_accessor.make_placeholder_path_func = *placeholder_path_func;
-        this->placeholder_accessor.delay_flush = delay_flush;
+        this->placeholder_accessor.Initialize(this->root_path, *placeholder_path_func, delay_flush);
         return ResultSuccess;
     }
 
     void ContentStorageInterface::Finalize() {
         this->ClearContentCache();
-        this->placeholder_accessor.ClearAllCaches();
+        this->placeholder_accessor.InvalidateAll();
     }
 
     void ContentStorageInterface::ClearContentCache() {
@@ -126,7 +124,7 @@ namespace sts::ncm {
         R_TRY(this->EnsureEnabled());
 
         char placeholder_path[FS_MAX_PATH] = {0};
-        this->placeholder_accessor.GetPlaceHolderPath(placeholder_path, placeholder_id);
+        this->placeholder_accessor.MakePath(placeholder_path, placeholder_id);
         
         bool has = false;
         R_TRY(HasFile(&has, placeholder_path));
@@ -144,21 +142,7 @@ namespace sts::ncm {
         }
 
         R_TRY(this->EnsureEnabled());
-
-        FILE* f = nullptr;
-
-        R_TRY_CATCH(this->placeholder_accessor.Open(&f, placeholder_id)) {
-            R_CATCH(ResultFsPathNotFound) {
-                return ResultNcmPlaceHolderNotFound;
-            }
-        } R_END_TRY_CATCH;
-
-        ON_SCOPE_EXIT {
-            this->placeholder_accessor.StoreToCache(f, placeholder_id);
-        };
-
-        R_TRY(WriteFile(f, offset, data.buffer, data.num_elements, !this->placeholder_accessor.delay_flush));
-
+        R_TRY(this->placeholder_accessor.Write(placeholder_id, offset, data.buffer, data.num_elements));
         return ResultSuccess;
         R_DEBUG_END
     }
@@ -171,7 +155,7 @@ namespace sts::ncm {
         char placeholder_path[FS_MAX_PATH] = {0};
         char content_path[FS_MAX_PATH] = {0};
 
-        this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
+        this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         this->GetContentPath(content_path, content_id);
 
         if (rename(placeholder_path, content_path) != 0) {
@@ -244,7 +228,7 @@ namespace sts::ncm {
 
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
-        this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
+        this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
         *out.pointer = common_path;
         return ResultSuccess;
@@ -256,8 +240,8 @@ namespace sts::ncm {
         R_TRY(this->EnsureEnabled());
 
         char placeholder_root_path[FS_MAX_PATH] = {0};
-        this->placeholder_accessor.ClearAllCaches();
-        this->placeholder_accessor.GetPlaceHolderRootPath(placeholder_root_path);
+        this->placeholder_accessor.InvalidateAll();
+        this->placeholder_accessor.MakeRootPath(placeholder_root_path);
 
         /* Nintendo uses CleanDirectoryRecursively which is 3.0.0+. 
            We'll just delete the directory and recreate it to support all firmwares. */
@@ -276,7 +260,7 @@ namespace sts::ncm {
         R_TRY(this->EnsureEnabled());
 
         char placeholder_root_path[FS_MAX_PATH] = {0};
-        this->placeholder_accessor.GetPlaceHolderRootPath(placeholder_root_path);
+        this->placeholder_accessor.MakeRootPath(placeholder_root_path);
         const unsigned int dir_depth = this->placeholder_accessor.GetDirectoryDepth();
         size_t entry_count = 0;
 
@@ -403,7 +387,7 @@ namespace sts::ncm {
         R_DEBUG_START
         this->disabled = true;
         this->ClearContentCache();
-        this->placeholder_accessor.ClearAllCaches();
+        this->placeholder_accessor.InvalidateAll();
         return ResultSuccess;
         R_DEBUG_END
     }
@@ -423,7 +407,7 @@ namespace sts::ncm {
         R_TRY(EnsureParentDirectoryRecursively(new_content_path));
 
         R_TRY(this->placeholder_accessor.EnsureRecursively(placeholder_id));
-        this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
+        this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         if (rename(old_content_path, placeholder_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
                 R_CATCH(ResultFsPathNotFound) {
@@ -474,7 +458,7 @@ namespace sts::ncm {
 
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
-        this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
+        this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
         R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
@@ -607,7 +591,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::FlushPlaceHolder() {
         R_DEBUG_START
-        this->placeholder_accessor.ClearAllCaches();
+        this->placeholder_accessor.InvalidateAll();
         return ResultSuccess;
         R_DEBUG_END
     }
@@ -629,7 +613,7 @@ namespace sts::ncm {
         char placeholder_path[FS_MAX_PATH] = {0};
         struct stat st;
 
-        this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
+        this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         if (stat(placeholder_path, &st) == -1) {
             return fsdevGetLastResult();
         }
@@ -662,8 +646,8 @@ namespace sts::ncm {
         R_TRY(TraverseDirectory(content_root_path, dir_depth, fix_file_attributes));
 
         char placeholder_root_path[FS_MAX_PATH] = {0};
-        this->placeholder_accessor.ClearAllCaches();
-        this->placeholder_accessor.GetPlaceHolderRootPath(placeholder_root_path);
+        this->placeholder_accessor.InvalidateAll();
+        this->placeholder_accessor.MakeRootPath(placeholder_root_path);
         dir_depth = this->placeholder_accessor.GetDirectoryDepth();
 
         R_TRY(TraverseDirectory(placeholder_root_path, dir_depth, fix_file_attributes));
@@ -699,7 +683,7 @@ namespace sts::ncm {
         u8 key_generation = 0;
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
-        this->placeholder_accessor.GetPlaceHolderPathUncached(placeholder_path, placeholder_id);
+        this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
         R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
