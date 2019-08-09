@@ -508,7 +508,9 @@ namespace sts::ncm::impl {
             Unmount(entry->mount_point);
         };
 
-        R_TRY(EnsureDirectoryRecursively(entry->mount_point));
+        D_LOG("storage id: 0x%x\n", storage_id);
+        D_LOG("creating %s\n", entry->meta_path);
+        R_TRY(EnsureDirectoryRecursively(entry->meta_path));
         R_TRY(fsdevCommitDevice(entry->mount_point));
 
         return ResultSuccess;
@@ -516,6 +518,8 @@ namespace sts::ncm::impl {
 
     Result VerifyContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock<HosMutex> lk(g_mutex);
+
+        D_LOG("storage id: 0x%x\n", storage_id);
 
         if (storage_id == StorageId::GameCard) {
             return ResultSuccess;
@@ -538,14 +542,17 @@ namespace sts::ncm::impl {
             mounted_save_data = true;
         }
 
+        ON_SCOPE_EXIT {
+            if (mounted_save_data) {
+                Unmount(entry->mount_point);
+            }
+        };
+
         bool has_meta_path = false;
         R_TRY(HasDirectory(&has_meta_path, entry->meta_path));
         if (!has_meta_path) {
+            D_LOG("Meta path %s not found\n", entry->meta_path);
             return ResultNcmInvalidContentMetaDatabase;
-        }
-
-        if (mounted_save_data) {
-            Unmount(entry->mount_point);
         }
 
         return ResultSuccess;
@@ -657,8 +664,12 @@ namespace sts::ncm::impl {
         if (storage_id != StorageId::GameCard) {
             R_TRY(MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id));
             auto mount_guard = SCOPE_GUARD { Unmount(entry->mount_point); };
+            D_LOG("storage_id 0x%x\n", storage_id);
+            D_LOG("init\n");
             R_TRY(entry->kvs->Initialize(entry->meta_path, entry->max_content_metas));
+            D_LOG("load\n");
             R_TRY(entry->kvs->Load());
+            D_LOG("loaded\n");
 
             auto content_meta_database = std::make_shared<ContentMetaDatabaseInterface>(&*entry->kvs, entry->mount_point);
             entry->content_meta_database = std::move(content_meta_database);

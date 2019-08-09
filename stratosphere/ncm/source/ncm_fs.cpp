@@ -170,10 +170,18 @@ namespace sts::ncm {
     }
 
     Result EnsureDirectoryRecursively(const char* dir_path) {
-        return EnsureRecursively(dir_path, true);
+        R_TRY(EnsureRecursively(dir_path));
+        if (mkdir(dir_path, S_IRWXU) == -1) {
+            R_TRY_CATCH(fsdevGetLastResult()) {
+                R_CATCH(ResultFsPathAlreadyExists) {
+                    /* If the path already exists, that's okay. Anything else is an error. */
+                }
+            } R_END_TRY_CATCH;
+        }
+        return ResultSuccess;
     }
 
-    Result EnsureRecursively(const char* path, bool is_dir) {
+    Result EnsureRecursively(const char* path) {
         if (!path) {
             return ResultFsNullptrArgument;
         }
@@ -201,6 +209,14 @@ namespace sts::ncm {
                         working_path_buf[i + 1] = '/';
                     }
                 }
+
+                if (mkdir(working_path_buf + 1, S_IRWXU) == -1) {
+                    R_TRY_CATCH(fsdevGetLastResult()) {
+                        R_CATCH(ResultFsPathAlreadyExists) {
+                            /* If the path already exists, that's okay. Anything else is an error. */
+                        }
+                    } R_END_TRY_CATCH;
+                }
             }
         } else {
             return ResultNcmAllocationFailed;
@@ -210,7 +226,7 @@ namespace sts::ncm {
     }
 
     Result EnsureParentDirectoryRecursively(const char* path) {
-        return EnsureRecursively(path, false);
+        return EnsureRecursively(path);
     }
 
     Result GetGameCardHandle(FsGameCardHandle* out_handle) {
