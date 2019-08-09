@@ -26,8 +26,10 @@
 namespace sts::ncm {
 
     Result OpenFile(FILE** out, const char* path, u32 mode) {
+        R_DEBUG_START
         bool has = false;
 
+        D_LOG("path %s\n", path);
         /* Manually check if the file already exists, so it doesn't get created automatically. */
         R_TRY(HasFile(&has, path));
         if (!has) {
@@ -36,18 +38,12 @@ namespace sts::ncm {
 
         const char* fopen_mode = "";
 
-        if (mode & FS_OPEN_APPEND) {
-            if (mode & FS_OPEN_READ) {
-                fopen_mode = "r+b";
-            } else if (mode & FS_OPEN_WRITE) {
-                fopen_mode = "w+b";
-            }
-        } else {
-            if (mode & FS_OPEN_READ) {
-                fopen_mode = "rb";
-            } else if (mode & FS_OPEN_WRITE) {
-                fopen_mode = "wb";
-            }
+        /* Append is forced regardless of whether we set + as the mode. 
+           We do so so the file doesn't get deleted. */
+        if (mode & FS_OPEN_READ) {
+            fopen_mode = "r+b";
+        } else if (mode & FS_OPEN_WRITE) {
+            fopen_mode = "w+b";
         }
 
         FILE* f = fopen(path, fopen_mode);
@@ -58,11 +54,22 @@ namespace sts::ncm {
 
         *out = f;
         return ResultSuccess;
+        R_DEBUG_END
     }
 
     Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option) {
         R_DEBUG_START
         D_LOG("Writing 0x%llx to offset 0x%llx\n", size, offset);
+
+        if (fseek(f, 0, SEEK_END) != 0) {
+            return fsdevGetLastResult();
+        }
+        size_t existing_size = ftell(f);
+
+        if (offset + size > existing_size) {
+            D_LOG("offset: 0x%lx, size: 0x%lx, existing_size: 0x%lx\n", offset, size, existing_size);
+            return ResultFsFileExtensionWithoutOpenModeAllowAppend;
+        }
 
         if (fseek(f, offset, SEEK_SET) != 0) {
             return fsdevGetLastResult();
