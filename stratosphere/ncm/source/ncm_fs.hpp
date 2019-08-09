@@ -34,7 +34,7 @@ namespace sts::ncm {
     Result EnsureContentAndPlaceHolderRoot(const char* root_path);
 
     Result EnsureDirectoryRecursively(const char* dir_path);
-    Result EnsureRecursively(const char* path, bool is_dir);
+    Result EnsureRecursively(const char* path);
     /* Create all parent directories for a file path */
     Result EnsureParentDirectoryRecursively(const char* path);
 
