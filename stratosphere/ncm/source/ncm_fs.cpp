@@ -38,14 +38,11 @@ namespace sts::ncm {
 
         const char* fopen_mode = "";
 
-        /* Append is forced regardless of whether we set + as the mode. 
-           We do so so the file doesn't get deleted. */
-        if (mode & FS_OPEN_READ) {
+        if (mode & FS_OPEN_WRITE) {
             fopen_mode = "r+b";
-        } else if (mode & FS_OPEN_WRITE) {
-            fopen_mode = "w+b";
-        }
-
+        } else if (mode & FS_OPEN_READ) {
+            fopen_mode = "rb";
+        } 
         FILE* f = fopen(path, fopen_mode);
 
         if (f == nullptr) {
