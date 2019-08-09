@@ -45,8 +45,12 @@ namespace sts::ncm {
     struct PlaceHolderId {
         Uuid uuid;
 
-        inline operator Uuid() const {
-            return this->uuid;
+        bool operator==(const PlaceHolderId& other) const {
+            return this->uuid == other.uuid;
+        }
+
+        bool operator!=(const PlaceHolderId& other) const {
+            return this->uuid != other.uuid;
         }
 
         bool operator==(const Uuid& other) const {
@@ -63,8 +67,12 @@ namespace sts::ncm {
     struct ContentId {
         Uuid uuid;
 
-        inline operator Uuid() const {
-            return this->uuid;
+        bool operator==(const ContentId& other) const {
+            return this->uuid == other.uuid;
+        }
+
+        bool operator!=(const ContentId& other) const {
+            return this->uuid != other.uuid;
         }
 
         bool operator==(const Uuid& other) const {
