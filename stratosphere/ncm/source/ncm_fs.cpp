@@ -21,15 +21,11 @@
 #include "ncm_fs.hpp"
 #include "ncm_path_utils.hpp"
 
-#include "debug.hpp"
-
 namespace sts::ncm {
 
     Result OpenFile(FILE** out, const char* path, u32 mode) {
-        R_DEBUG_START
         bool has = false;
 
-        D_LOG("path %s\n", path);
         /* Manually check if the file already exists, so it doesn't get created automatically. */
         R_TRY(HasFile(&has, path));
         if (!has) {
@@ -51,20 +47,15 @@ namespace sts::ncm {
 
         *out = f;
         return ResultSuccess;
-        R_DEBUG_END
     }
 
     Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option) {
-        R_DEBUG_START
-        D_LOG("Writing 0x%llx to offset 0x%llx\n", size, offset);
-
         if (fseek(f, 0, SEEK_END) != 0) {
             return fsdevGetLastResult();
         }
         size_t existing_size = ftell(f);
 
         if (offset + size > existing_size) {
-            D_LOG("offset: 0x%lx, size: 0x%lx, existing_size: 0x%lx\n", offset, size, existing_size);
             return ResultFsFileExtensionWithoutOpenModeAllowAppend;
         }
 
@@ -81,7 +72,6 @@ namespace sts::ncm {
         }
 
         return ResultSuccess;
-        R_DEBUG_END
     }
 
     Result ReadFile(FILE* f, size_t offset, void* buffer, size_t size) {
