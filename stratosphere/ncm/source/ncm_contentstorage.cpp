@@ -93,6 +93,9 @@ namespace sts::ncm {
         R_TRY(this->EnsureEnabled());
 
         sts::rnd::GenerateRandomBytes(out.GetPointer(), sizeof(NcmNcaId));
+        char placeholder_str[FS_MAX_PATH] = {0};
+        GetStringFromPlaceHolderId(placeholder_str, *out.GetPointer());
+        D_LOG("%s\n", placeholder_str);
         return ResultSuccess;
         R_DEBUG_END
     }
