@@ -518,7 +518,7 @@ namespace sts::ncm {
             }
 
             /* Update the cache. */
-            eviction_candidate->uuid = content_id;
+            eviction_candidate->uuid = content_id.uuid;
             eviction_candidate->rights_id = rights_id;
             eviction_candidate->key_generation = key_generation;
             eviction_candidate->last_accessed = rights_id_cache->counter;
@@ -705,7 +705,7 @@ namespace sts::ncm {
             }
 
             /* Update the cache. */
-            eviction_candidate->uuid = cache_content_id;
+            eviction_candidate->uuid = cache_content_id.uuid;
             eviction_candidate->rights_id = rights_id;
             eviction_candidate->key_generation = key_generation;
             eviction_candidate->last_accessed = rights_id_cache->counter;

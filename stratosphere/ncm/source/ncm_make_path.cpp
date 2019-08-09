@@ -45,7 +45,7 @@ namespace sts::ncm::path {
 
     void MakeContentPathDualLayered(char* path_out, ContentId content_id, const char* root) {
         char content_name[FS_MAX_PATH] = {0};
-        const u16 hash = Get16BitSha256HashPrefix(content_id);
+        const u16 hash = Get16BitSha256HashPrefix(content_id.uuid);
         const u32 hash_lower = (hash >> 4) & 0x3f;
         const u32 hash_upper = (hash >> 10) & 0x3f;
 
@@ -57,7 +57,7 @@ namespace sts::ncm::path {
 
     void MakeContentPath10BitLayered(char* path_out, ContentId content_id, const char* root) {
         char content_name[FS_MAX_PATH] = {0};
-        const u32 hash = (Get16BitSha256HashPrefix(content_id) >> 6) & 0x3FF;
+        const u32 hash = (Get16BitSha256HashPrefix(content_id.uuid) >> 6) & 0x3FF;
         GetContentFileName(content_name, content_id);
         if (snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%s", root, hash, content_name) < 0) {
             std::abort();
@@ -66,7 +66,7 @@ namespace sts::ncm::path {
 
     void MakeContentPathHashByteLayered(char* path_out, ContentId content_id, const char* root) {
         char content_name[FS_MAX_PATH] = {0};
-        const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(content_id));
+        const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(content_id.uuid));
         GetContentFileName(content_name, content_id);
         if (snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%s", root, hash_byte, content_name) < 0) {
             std::abort();
@@ -83,7 +83,7 @@ namespace sts::ncm::path {
 
     void MakePlaceHolderPathHashByteLayered(char* path_out, PlaceHolderId placeholder_id, const char* root) {
         char placeholder_name[FS_MAX_PATH] = {0};
-        const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(placeholder_id));
+        const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(placeholder_id.uuid));
         GetPlaceHolderFileName(placeholder_name, placeholder_id);
         if (snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%s", root, hash_byte, placeholder_name) < 0) {
             std::abort();
