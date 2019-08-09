@@ -209,14 +209,6 @@ namespace sts::ncm {
                         working_path_buf[i + 1] = '/';
                     }
                 }
-
-                if (mkdir(working_path_buf + 1, S_IRWXU) == -1) {
-                    R_TRY_CATCH(fsdevGetLastResult()) {
-                        R_CATCH(ResultFsPathAlreadyExists) {
-                            /* If the path already exists, that's okay. Anything else is an error. */
-                        }
-                    } R_END_TRY_CATCH;
-                }
             }
         } else {
             return ResultNcmAllocationFailed;
