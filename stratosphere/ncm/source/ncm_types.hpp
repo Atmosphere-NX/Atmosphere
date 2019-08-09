@@ -34,14 +34,53 @@ namespace sts::ncm {
         bool operator!=(const Uuid& other) const {
             return !(*this == other);
         }
+
+        u8& operator[](size_t i) { 
+            return uuid[i]; 
+        }
     };
 
     static_assert(sizeof(Uuid) == 0x10, "Uuid definition!");
 
-    static constexpr Uuid InvalidUuid = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
+    struct PlaceHolderId {
+        Uuid uuid;
 
-    typedef Uuid ContentId;
-    typedef Uuid PlaceHolderId;
+        inline operator Uuid() const {
+            return this->uuid;
+        }
+
+        bool operator==(const Uuid& other) const {
+            return this->uuid == other;
+        }
+
+        bool operator!=(const Uuid& other) const {
+            return this->uuid != other;
+        }
+    } __attribute__((aligned(8)));
+
+    static_assert(__alignof__(PlaceHolderId) == 8, "PlaceHolderId definition!");
+
+    struct ContentId {
+        Uuid uuid;
+
+        inline operator Uuid() const {
+            return this->uuid;
+        }
+
+        bool operator==(const Uuid& other) const {
+            return this->uuid == other;
+        }
+
+        bool operator!=(const Uuid& other) const {
+            return this->uuid != other;
+        }
+    } __attribute__((aligned(4)));
+
+    static_assert(__alignof__(ContentId) == 4, "ContentId definition!");
+
+    static constexpr Uuid InvalidUuid = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
+    static constexpr PlaceHolderId InvalidPlaceHolderId = { InvalidUuid };
+    static constexpr ContentId InvalidContentId = { InvalidUuid };
 
     enum class ContentMetaType : u8 {
         Unknown                = 0x0,

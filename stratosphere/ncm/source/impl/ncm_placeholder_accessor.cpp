@@ -45,7 +45,7 @@ namespace sts::ncm::impl {
             return false;
         }
         *out_handle = entry->handle;
-        entry->id = InvalidUuid;
+        entry->id = InvalidPlaceHolderId;
         entry->handle = nullptr;
         return true;
     }
@@ -61,7 +61,7 @@ namespace sts::ncm::impl {
 
     PlaceHolderAccessor::CacheEntry *PlaceHolderAccessor::GetFreeEntry() {
         /* Try to find an already free entry. */
-        CacheEntry* entry = this->FindInCache(InvalidUuid);
+        CacheEntry* entry = this->FindInCache(InvalidPlaceHolderId);
         
         if (entry) {
             return entry;
@@ -95,7 +95,7 @@ namespace sts::ncm::impl {
                 fclose(entry->handle);
                 entry->handle = nullptr;
             }
-            entry->id = InvalidUuid;
+            entry->id = InvalidPlaceHolderId;
         }
     }
 
@@ -194,7 +194,7 @@ namespace sts::ncm::impl {
         {
             std::scoped_lock lock(this->cache_mutex);
             
-            if (placeholder_id == InvalidUuid) {
+            if (placeholder_id == InvalidPlaceHolderId) {
                 *found_in_cache = false;
                 return ResultSuccess;
             }
@@ -206,7 +206,7 @@ namespace sts::ncm::impl {
                 return ResultSuccess;
             }
 
-            cache_entry->id = InvalidUuid;
+            cache_entry->id = InvalidPlaceHolderId;
             f = cache_entry->handle;
         }
 
@@ -234,7 +234,7 @@ namespace sts::ncm::impl {
 
     void PlaceHolderAccessor::InvalidateAll() {
         for (auto &entry : this->caches) {
-            if (entry.id != InvalidUuid) {
+            if (entry.id != InvalidPlaceHolderId) {
                 this->Invalidate(&entry);
             }
         }

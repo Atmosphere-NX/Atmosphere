@@ -49,9 +49,9 @@ namespace sts::ncm {
     }
 
     void ContentStorageInterface::ClearContentCache() {
-        if (this->cached_content_id != InvalidUuid) {
+        if (this->cached_content_id != InvalidContentId) {
             fclose(this->content_cache_file_handle);
-            this->cached_content_id = InvalidUuid;
+            this->cached_content_id = InvalidContentId;
         }
     }
 

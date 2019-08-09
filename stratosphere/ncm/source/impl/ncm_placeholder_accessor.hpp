@@ -50,7 +50,7 @@ namespace sts::ncm::impl {
         public:
             PlaceHolderAccessor() : cur_counter(0), delay_flush(false) {
                 for (size_t i = 0; i < MaxCaches; i++) {
-                    caches[i].id = InvalidUuid;
+                    caches[i].id = InvalidPlaceHolderId;
                 }
             }
 
