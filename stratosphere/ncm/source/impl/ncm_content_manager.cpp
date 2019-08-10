@@ -347,21 +347,27 @@ namespace sts::ncm::impl {
         auto content_storage = entry->content_storage;
 
         if (!content_storage) {
-            switch (storage_id) {
-                case StorageId::GameCard:
-                    return ResultNcmGameCardContentStorageNotActive;
+            /* 1.0.0 activates content storages as soon as they are opened. */
+            if (GetRuntimeFirmwareVersion() == FirmwareVersion_100) {
+                R_TRY(ActivateContentStorage(storage_id));
+                content_storage = entry->content_storage;
+            } else {
+                switch (storage_id) {
+                    case StorageId::GameCard:
+                        return ResultNcmGameCardContentStorageNotActive;
 
-                case StorageId::NandSystem:
-                    return ResultNcmNandSystemContentStorageNotActive;
+                    case StorageId::NandSystem:
+                        return ResultNcmNandSystemContentStorageNotActive;
 
-                case StorageId::NandUser:
-                    return ResultNcmNandUserContentStorageNotActive;
+                    case StorageId::NandUser:
+                        return ResultNcmNandUserContentStorageNotActive;
 
-                case StorageId::SdCard:
-                    return ResultNcmSdCardContentStorageNotActive;
+                    case StorageId::SdCard:
+                        return ResultNcmSdCardContentStorageNotActive;
 
-                default:
-                    return ResultNcmUnknownContentStorageNotActive;
+                    default:
+                        return ResultNcmUnknownContentStorageNotActive;
+                }
             }
         } 
 
@@ -563,21 +569,27 @@ namespace sts::ncm::impl {
         std::shared_ptr<IContentMetaDatabase> content_meta_db = entry->content_meta_database;
 
         if (!content_meta_db) {
-            switch (storage_id) {
-                case StorageId::GameCard:
-                    return ResultNcmGameCardContentMetaDatabaseNotActive;
+            /* 1.0.0 activates content meta dbs as soon as they are opened. */
+            if (GetRuntimeFirmwareVersion() == FirmwareVersion_100) {
+                R_TRY(ActivateContentMetaDatabase(storage_id));
+                content_meta_db = entry->content_meta_database;
+            } else {
+                switch (storage_id) {
+                    case StorageId::GameCard:
+                        return ResultNcmGameCardContentMetaDatabaseNotActive;
 
-                case StorageId::NandSystem:
-                    return ResultNcmNandSystemContentMetaDatabaseNotActive;
+                    case StorageId::NandSystem:
+                        return ResultNcmNandSystemContentMetaDatabaseNotActive;
 
-                case StorageId::NandUser:
-                    return ResultNcmNandUserContentMetaDatabaseNotActive;
+                    case StorageId::NandUser:
+                        return ResultNcmNandUserContentMetaDatabaseNotActive;
 
-                case StorageId::SdCard:
-                    return ResultNcmSdCardContentMetaDatabaseNotActive;
+                    case StorageId::SdCard:
+                        return ResultNcmSdCardContentMetaDatabaseNotActive;
 
-                default:
-                    return ResultNcmUnknownContentMetaDatabaseNotActive;
+                    default:
+                        return ResultNcmUnknownContentMetaDatabaseNotActive;
+                }
             }
         } 
 
