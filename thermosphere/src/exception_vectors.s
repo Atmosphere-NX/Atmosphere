@@ -216,13 +216,20 @@ vector_entry synch_spx
 
     mov     x0, sp
     mrs     x1, esr_el2
-
     bl      handleSameElSyncException
     b       .
     check_vector_size synch_spx
 
 vector_entry irq_spx
-    bl      unknown_exception
+    save_all_regs
+
+    mov     x0, sp
+    mov     w1, wzr
+    mov     w2, wzr
+    bl      handleIrqException
+
+    b       _restore_all_regs
+
     check_vector_size irq_spx
 
 vector_entry fiq_spx
@@ -239,14 +246,20 @@ vector_entry synch_a64
 
     mov     x0, sp
     mrs     x1, esr_el2
-
     bl      handleLowerElSyncException
 
     b       _restore_all_regs
     check_vector_size synch_a64
 
 vector_entry irq_a64
-    bl      unknown_exception
+    save_all_regs_reload_x18
+
+    mov     x0, sp
+    mov     w1, #1
+    mov     w2, wzr
+    bl      handleIrqException
+
+    b       _restore_all_regs
     check_vector_size irq_a64
 
 vector_entry fiq_a64
@@ -264,7 +277,14 @@ vector_entry synch_a32
     check_vector_size synch_a32
 
 vector_entry irq_a32
-    bl      unknown_exception
+    save_all_regs_reload_x18
+
+    mov     x0, sp
+    mov     w1, #1
+    mov     w2, #1
+    bl      handleIrqException
+
+    b       _restore_all_regs
     check_vector_size irq_a32
 
 vector_entry fiq_a32

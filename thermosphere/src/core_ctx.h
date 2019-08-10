@@ -23,8 +23,9 @@ typedef struct CoreCtx {
     u8 *crashStack;                 // @0x10
     u64 scratch;                    // @0x18
     u32 coreId;                     // @0x20
-    bool isBootCore;                // @0x24
-    bool warmboot;                  // @0x25
+    u8 gicInterfaceId;              // @0x24
+    bool isBootCore;                // @0x25
+    bool warmboot;                  // @0x26
 } CoreCtx;
 
 extern CoreCtx g_coreCtxs[4];

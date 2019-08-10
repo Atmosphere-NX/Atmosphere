@@ -21,7 +21,9 @@
 // For both guest and host
 #define MAX_NUM_REGISTERED_INTERRUPTS 512
 
-static inline void initGicv2Pointers(ArmGicV2 *gic)
+#define GIC_IRQID_MAINTENANCE  25
+
+static inline void initGicV2Pointers(ArmGicV2 *gic)
 {
     gic->gicd = (volatile ArmGicV2Distributor *)0x08000000ull;
     gic->gicc = (volatile ArmGicV2Controller *)0x08010000ull;
