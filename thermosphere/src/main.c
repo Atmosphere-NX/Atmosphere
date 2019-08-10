@@ -12,6 +12,8 @@
 #include "breakpoints.h"
 #include "watchpoints.h"
 
+#include "irq.h"
+
 extern const u8 __start__[];
 
 static void loadKernelViaSemihosting(void)
@@ -41,6 +43,7 @@ void main(ExceptionStackFrame *frame)
 {
     enableTraps();
     enableBreakpointsAndWatchpoints();
+    initIrq();
 
     if (currentCoreCtx->isBootCore) {
         uartInit(115200);
@@ -74,4 +77,8 @@ void main(ExceptionStackFrame *frame)
 
     // Test
     singleStepSetNextState(frame, SingleStepState_ActivePending);
+
+    // Test
+    unmaskIrq();
+    generateSgiForAll(0);
 }

@@ -18,6 +18,10 @@
 
 #include "types.h"
 
+#define GIC_IRQID_MAX                   1020
+#define GIC_IRQID_SPURIOUS_GRPNEEDACK   (GIC_IRQID_MAX + 2)
+#define GIC_IRQID_SPURIOUS              (GIC_IRQID_MAX + 3)
+
 typedef struct ArmGicV2Distributor {
     u32 ctlr;
     u32 typer;

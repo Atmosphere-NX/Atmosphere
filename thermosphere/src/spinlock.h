@@ -59,7 +59,7 @@ static inline u64 spinlockLockMaskIrq(Spinlock *lock)
     return ret;
 }
 
-static inline void spinlockLockRestoreIrq(Spinlock *lock, u64 flags)
+static inline void spinlockUnlockRestoreIrq(Spinlock *lock, u64 flags)
 {
     spinlockUnlock(lock);
     restoreInterruptFlags(flags);
@@ -91,7 +91,7 @@ static inline u64 recursiveSpinlockLockMaskIrq(RecursiveSpinlock *lock)
     return ret;
 }
 
-static inline void recursiveSpinlockLockRestoreIrq(RecursiveSpinlock *lock, u64 flags)
+static inline void recursiveSpinlockUnlockRestoreIrq(RecursiveSpinlock *lock, u64 flags)
 {
     recursiveSpinlockUnlock(lock);
     restoreInterruptFlags(flags);
