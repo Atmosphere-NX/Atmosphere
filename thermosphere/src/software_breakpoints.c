@@ -54,7 +54,7 @@ static size_t findClosestSoftwareBreakpointSlot(u64 address)
     return b;
 }
 
-static bool doApplySoftwareBreakpoint(size_t id)
+static inline bool doApplySoftwareBreakpoint(size_t id)
 {
     SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
     if (bp->applied) {
@@ -71,7 +71,19 @@ static bool doApplySoftwareBreakpoint(size_t id)
     return false;
 }
 
-static bool doRevertSoftwareBreakpoint(size_t id)
+static void applySoftwareBreakpointHandler(void *p)
+{
+    u64 flags = maskIrq();
+    doApplySoftwareBreakpoint(*(size_t *)p);
+    restoreInterruptFlags(flags);
+}
+
+static void applySoftwareBreakpoint(size_t id)
+{
+    executeFunctionOnAllCores(applySoftwareBreakpointHandler, &id, true);
+}
+
+static inline bool doRevertSoftwareBreakpoint(size_t id)
 {
     SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
     if (!bp->applied) {
@@ -86,30 +98,40 @@ static bool doRevertSoftwareBreakpoint(size_t id)
     return false;
 }
 
-// TODO write SGI handlers for those ^
+static void revertSoftwareBreakpointHandler(void *p)
+{
+    u64 flags = maskIrq();
+    doRevertSoftwareBreakpoint(*(size_t *)p);
+    restoreInterruptFlags(flags);
+}
+
+static void revertSoftwareBreakpoint(size_t id)
+{
+    executeFunctionOnAllCores(revertSoftwareBreakpointHandler, &id, true);
+}
 
 bool applyAllSoftwareBreakpoints(void)
 {
-    recursiveSpinlockLock(&g_softwareBreakpointManager.lock);
+    u64 flags = recursiveSpinlockLockMaskIrq(&g_softwareBreakpointManager.lock);
     bool ret = true;
 
     for (size_t i = 0; i < g_softwareBreakpointManager.numBreakpoints; i++) {
-        ret = ret && doApplySoftwareBreakpoint(i);
+        ret = ret && doApplySoftwareBreakpoint(i); // note: no broadcast intentional
     }
 
-    recursiveSpinlockUnlock(&g_softwareBreakpointManager.lock);
+    recursiveSpinlockUnlockRestoreIrq(&g_softwareBreakpointManager.lock, flags);
     return ret;
 }
 
 bool revertAllSoftwareBreakpoints(void)
 {
-    recursiveSpinlockLock(&g_softwareBreakpointManager.lock);
+    u64 flags = recursiveSpinlockLockMaskIrq(&g_softwareBreakpointManager.lock);
     bool ret = true;
     for (size_t i = 0; i < g_softwareBreakpointManager.numBreakpoints; i++) {
-        ret = ret && doRevertSoftwareBreakpoint(i);
+        ret = ret && doRevertSoftwareBreakpoint(i); // note: no broadcast intentional
     }
 
-    recursiveSpinlockUnlock(&g_softwareBreakpointManager.lock);
+    recursiveSpinlockUnlockRestoreIrq(&g_softwareBreakpointManager.lock, flags);
     return ret;
 }
 
@@ -142,7 +164,7 @@ int addSoftwareBreakpoint(u64 addr, bool persistent)
     bp->applied = false;
     bp->uid = 0x2000 + g_softwareBreakpointManager.bpUniqueCounter++;
 
-    // TODO: write broadcast for apply
+    applySoftwareBreakpoint(id);
     // Note: no way to handle breakpoint failing to apply on 1+ core but not all, we need to assume operation succeeds
     recursiveSpinlockUnlock(&g_softwareBreakpointManager.lock);
 
@@ -166,7 +188,7 @@ int removeSoftwareBreakpoint(u64 addr, bool keepPersistent)
 
     SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
     if (!keepPersistent || !bp->persistent) {
-        // TODO: write broadcast for 'revert'
+        revertSoftwareBreakpoint(id);
         // Note: no way to handle breakpoint failing to revert on 1+ core but not all, we need to assume operation succeeds
     }
 
@@ -189,7 +211,7 @@ int removeAllSoftwareBreakpoints(bool keepPersistent)
     for (size_t id = 0; id < g_softwareBreakpointManager.numBreakpoints; id++) {
         SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
         if (!keepPersistent || !bp->persistent) {
-            // TODO: write broadcast for 'revert'
+            revertSoftwareBreakpoint(id);
             // Note: no way to handle breakpoint failing to revert on 1+ core but not all, we need to assume operation succeeds
         }
     }

@@ -46,6 +46,19 @@ void initWatchpoints(void)
     recursiveSpinlockUnlock(&g_watchpointManager.lock);
 }
 
+static void commitAndBroadcastWatchpointHandler(void *p)
+{
+    (void)p;
+    u64 flags = maskIrq();
+    loadWatchpointRegs(g_combinedWatchpoints, g_watchpointManager.maxWatchpoints);
+    restoreInterruptFlags(flags);
+}
+
+static inline void commitAndBroadcastWatchpoints(void)
+{
+    executeFunctionOnAllCores(commitAndBroadcastWatchpointHandler, NULL, true);
+}
+
 static DebugRegisterPair *findCombinedWatchpoint(u64 addr)
 {
     addr &= ~7ull;
@@ -256,9 +269,9 @@ int addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
         return -EINVAL;
     }
 
-    recursiveSpinlockUnlock(&g_watchpointManager.lock);
+    commitAndBroadcastWatchpoints();
 
-    // TODO: commit and broadcast
+    recursiveSpinlockUnlock(&g_watchpointManager.lock);
 
     return 0;
 }
@@ -294,9 +307,10 @@ int removeWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction
         recursiveSpinlockUnlock(&g_watchpointManager.lock);
         return -ENOENT;
     }
-    recursiveSpinlockUnlock(&g_watchpointManager.lock);
 
-    // TODO: commit and broadcast
+    commitAndBroadcastWatchpoints();
+
+    recursiveSpinlockUnlock(&g_watchpointManager.lock);
 
     return 0;
 }
@@ -312,7 +326,7 @@ int removeAllWatchpoints(void)
     memset(g_watchpointManager.splitWatchpoints, 0, sizeof(g_watchpointManager.splitWatchpoints));
     memset(g_combinedWatchpoints, 0, sizeof(g_combinedWatchpoints));
 
-    // TODO: commit and broadcast
+    commitAndBroadcastWatchpoints();
 
     recursiveSpinlockUnlock(&g_watchpointManager.lock);
 

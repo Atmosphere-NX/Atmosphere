@@ -39,6 +39,19 @@ void initBreakpoints(void)
     recursiveSpinlockUnlock(&g_breakpointManager.lock);
 }
 
+static void commitAndBroadcastBreakpointHandler(void *p)
+{
+    (void)p;
+    u64 flags = maskIrq();
+    loadBreakpointRegs(g_breakpointManager.breakpoints, g_breakpointManager.maxBreakpoints);
+    restoreInterruptFlags(flags);
+}
+
+static inline void commitAndBroadcastBreakpoints(void)
+{
+    executeFunctionOnAllCores(commitAndBroadcastBreakpointHandler, NULL, true);
+}
+
 static DebugRegisterPair *allocateBreakpoint(void)
 {
     u32 pos = __builtin_ffs(g_breakpointManager.allocationBitmap);
@@ -107,9 +120,9 @@ int addBreakpoint(u64 addr)
 
     regs->vr = addr;
 
-    recursiveSpinlockUnlock(&g_breakpointManager.lock);
+    commitAndBroadcastBreakpoints();
 
-    // TODO commit & broadcast
+    recursiveSpinlockUnlock(&g_breakpointManager.lock);
 
     return 0;
 }
@@ -126,9 +139,9 @@ int removeBreakpoint(u64 addr)
     }
 
     freeBreakpoint(regs - &g_breakpointManager.breakpoints[0]);
-    recursiveSpinlockUnlock(&g_breakpointManager.lock);
 
-    // TODO commit & broadcast
+    commitAndBroadcastBreakpoints();
+    recursiveSpinlockUnlock(&g_breakpointManager.lock);
 
     return 0;
 }
@@ -139,7 +152,7 @@ int removeAllBreakpoints(void)
     g_breakpointManager.allocationBitmap = BIT(g_breakpointManager.maxBreakpoints) - 1;
     memset(g_breakpointManager.breakpoints, 0, sizeof(g_breakpointManager.breakpoints));
 
-    // TODO: commit & broadcast
+    commitAndBroadcastBreakpoints();
 
     recursiveSpinlockUnlock(&g_breakpointManager.lock);
 
