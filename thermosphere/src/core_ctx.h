@@ -17,20 +17,23 @@
 #pragma once
 #include "utils.h"
 #include "barrier.h"
+#include "execute_function.h"
 
 typedef struct CoreCtx {
-    u64 kernelArgument;             // @0x00
-    uintptr_t kernelEntrypoint;     // @0x08
-    u8 *crashStack;                 // @0x10
-    u64 scratch;                    // @0x18
-    u32 coreId;                     // @0x20
-    u8 gicInterfaceId;              // @0x24
-    bool isBootCore;                // @0x25
-    bool warmboot;                  // @0x26
+    u64 kernelArgument;                 // @0x00
+    uintptr_t kernelEntrypoint;         // @0x08
+    u8 *crashStack;                     // @0x10
+    u64 scratch;                        // @0x18
+    u32 coreId;                         // @0x20
+    u8 gicInterfaceId;                  // @0x24
+    bool isBootCore;                    // @0x25
+    bool warmboot;                      // @0x26
 
     // "Execute function"
-    void *asyncFunctionArgs;        // @0x28
-    Barrier asyncFunctionBarrier;   // @0x30
+    ExecutedFunction executedFunction;  // @0x28
+    void *executedFunctionArgs;         // @0x30
+    Barrier executedFunctionBarrier;    // @0x38
+    bool executedFunctionSync;          // @0x3C
 } CoreCtx;
 
 extern CoreCtx g_coreCtxs[4];

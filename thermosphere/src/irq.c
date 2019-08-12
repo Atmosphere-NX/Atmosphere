@@ -121,7 +121,10 @@ void initIrq(void)
     initGic();
 
     // Configure the interrupts we use here
-    configureInterrupt(0, 0, false);
+    for (u32 i = 0; i < ThermosphereSgi_Max; i++) {
+        configureInterrupt(i, 0, false);
+    }
+
     configureInterrupt(GIC_IRQID_MAINTENANCE, 0, true);
 
     recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
@@ -136,6 +139,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     // Acknowledge the interrupt. Interrupt goes from pending to active.
     u32 iar = gicc->iar;
     u32 irqId = iar & 0x3FF;
+    u32 srcCore = (iar >> 12) & 7;
 
     DEBUG("Received irq %x\n", irqId);
 
@@ -146,7 +150,17 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 
     bool isGuestInterrupt = false;
 
-    // TODO: handle the interrupt if it's a host interrupt
+    switch (irqId) {
+        case ThermosphereSgi_ExecuteFunction:
+            executeFunctionInterruptHandler(srcCore);
+            break;
+        case GIC_IRQID_MAINTENANCE:
+            /* TODO */
+            break;
+        default:
+            isGuestInterrupt = true;
+            break;
+    }
 
     // Priority drop
     gicc->eoir = iar;

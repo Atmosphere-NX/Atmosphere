@@ -16,6 +16,11 @@
 
 extern const u8 __start__[];
 
+static void testf1(void *p)
+{
+    DEBUG("Hello from sgi 0, p=%016llx\n", p);
+}
+
 static void loadKernelViaSemihosting(void)
 {
     size_t len = 1<<20; // max len
@@ -79,6 +84,9 @@ void main(ExceptionStackFrame *frame)
 
     // Test
     singleStepSetNextState(frame, SingleStepState_ActivePending);
+
+    // Test
+    executeFunctionOnAllCores(testf1, (void *)0x1234567, true);
 
     /*// Test
     unmaskIrq();
