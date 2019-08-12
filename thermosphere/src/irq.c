@@ -37,9 +37,7 @@ static void initGic(void)
         g_irqManager.gic.gicd->ipriorityr[0] = 0xFF;
         g_irqManager.numPriorityLevels = (u8)BIT(__builtin_popcount(g_irqManager.gic.gicd->ipriorityr[0]));
 
-        // same thing for CPU interfaces targets (save for ITARGETSR registers corresponding to SGIs)
-        g_irqManager.gic.gicd->itargetsr[32] = 0xFF;
-        g_irqManager.numCpuInterfaces = (u8)__builtin_popcount(g_irqManager.gic.gicd->itargetsr[32]);
+        g_irqManager.numCpuInterfaces = (u8)(1 + ((g_irqManager.gic.gicd->typer >> 5) & 7));
     }
 
     volatile ArmGicV2Controller *gicc = g_irqManager.gic.gicc;
@@ -60,12 +58,11 @@ static void initGic(void)
 
     // Note: the GICD I...n regs are banked for private interrupts
 
-    // Disable all interrupts, clear active status, clear pending status, also clear secure regs igroupr to be sure
+    // Disable all interrupts, clear active status, clear pending status
     for (u32 i = 0; i < numInterrupts / 32; i++) {
         gicd->icenabler[i] = 0xFFFFFFFF;
         gicd->icactiver[i] = 0xFFFFFFFF;
         gicd->icpendr[i] = 0xFFFFFFFF;
-        gicd->igroupr[i] = 0x00000000;
     }
 
     // Set priorities to lowest

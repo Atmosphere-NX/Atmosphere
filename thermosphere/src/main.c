@@ -75,10 +75,12 @@ void main(ExceptionStackFrame *frame)
     frame->elr_el2  = currentCoreCtx->kernelEntrypoint;
     frame->x[0]     = currentCoreCtx->kernelArgument;
 
+    setCurrentCoreActive();
+
     // Test
     singleStepSetNextState(frame, SingleStepState_ActivePending);
 
-    // Test
+    /*// Test
     unmaskIrq();
-    generateSgiForAll(0);
+    generateSgiForAll(0);*/
 }
