@@ -16,6 +16,7 @@
 
 #pragma once
 #include "utils.h"
+#include "barrier.h"
 
 typedef struct CoreCtx {
     u64 kernelArgument;             // @0x00
@@ -26,9 +27,16 @@ typedef struct CoreCtx {
     u8 gicInterfaceId;              // @0x24
     bool isBootCore;                // @0x25
     bool warmboot;                  // @0x26
+
+    // "Execute function"
+    void *asyncFunctionArgs;        // @0x28
+    Barrier asyncFunctionBarrier;   // @0x30
 } CoreCtx;
 
 extern CoreCtx g_coreCtxs[4];
 register CoreCtx *currentCoreCtx asm("x18");
 
 void coreCtxInit(u32 coreId, bool isBootCore, u64 argument);
+
+void setCurrentCoreActive(void);
+u32 getActiveCoreMask(void);

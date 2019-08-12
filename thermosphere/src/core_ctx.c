@@ -15,11 +15,14 @@
  */
 
 #include "core_ctx.h"
+#include "utils.h"
 
 // start.s
 extern uintptr_t g_initialKernelEntrypoint;
 
 extern u8 __stacks_top__[], __crash_stacks_top__[];
+
+static atomic_uint g_activeCoreMask = 0;
 
 // Prevents it from being put in BSS
 CoreCtx g_coreCtxs[4] = {
@@ -39,4 +42,14 @@ void coreCtxInit(u32 coreId, bool isBootCore, u64 argument)
     if (isBootCore && currentCoreCtx->kernelEntrypoint == 0) {
         currentCoreCtx->kernelEntrypoint = g_initialKernelEntrypoint;
     }
+}
+
+void setCurrentCoreActive(void)
+{
+    atomic_fetch_or(&g_activeCoreMask, BIT(currentCoreCtx->coreId));
+}
+
+u32 getActiveCoreMask(void)
+{
+    return (u32)atomic_load(&g_activeCoreMask);
 }
