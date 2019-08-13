@@ -71,7 +71,8 @@ uintptr_t configureStage2MemoryMap(u32 *addrSpaceSize)
 
         identityMapL3(g_vttbl_l3_0, 0x00000000ull, BITL(21), unchanged);
 
-        // GICv2 CPU -> vCPU interface
+        // GICD -> trapped, GICv2 CPU -> vCPU interface
+        mmu_unmap_page(g_vttbl_l3_0, 0x50401000ull);
         mmu_map_page_range(g_vttbl_l3_0, 0x50042000ull, 0x50046000ull, 0x2000ull, devattrs);
     }
 
