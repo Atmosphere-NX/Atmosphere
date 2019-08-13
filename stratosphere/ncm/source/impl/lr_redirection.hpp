@@ -27,19 +27,7 @@ namespace sts::lr::impl {
         RedirectionFlags_Application = (1 << 0),
     };
 
-    class LocationRedirection  : public util::IntrusiveListBaseNode<LocationRedirection> {
-        NON_COPYABLE(LocationRedirection);
-        NON_MOVEABLE(LocationRedirection);
-
-        public:
-            ncm::TitleId title_id;
-            Path path;
-            u32 flags;
-
-            LocationRedirection(ncm::TitleId title_id, const Path& path, u32 flags) :
-                title_id(title_id), path(path), flags(flags) {
-            }
-    };
+    class LocationRedirection;
 
     class LocationRedirector {
         NON_COPYABLE(LocationRedirector);
@@ -47,7 +35,7 @@ namespace sts::lr::impl {
         private:
             sts::util::IntrusiveListBaseTraits<LocationRedirection>::ListType redirection_list;
         public:
-            LocationRedirector() {}
+            LocationRedirector() { /* ... */ }
 
             bool FindRedirection(Path *out, ncm::TitleId title_id);
             void SetRedirection(ncm::TitleId title_id, const Path &path, u32 flags = RedirectionFlags_None);
