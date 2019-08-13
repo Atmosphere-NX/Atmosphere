@@ -1,7 +1,7 @@
 {
     "name": "NCM",
     "title_id": "0x0100000000000002",
-    "main_thread_stack_size": "0x20000",
+    "main_thread_stack_size": "0x00004000",
     "main_thread_priority": 49,
     "default_cpu_id": 3,
     "process_category": 1,
