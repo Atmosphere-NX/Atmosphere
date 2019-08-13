@@ -19,6 +19,7 @@
 #include <stratosphere.hpp>
 
 #include "impl/lr_redirection.hpp"
+#include "impl/lr_registered_data.hpp"
 #include "lr_types.hpp"
 
 namespace sts::lr {
@@ -38,11 +39,10 @@ namespace sts::lr {
             };
         private:
             impl::LocationRedirector program_redirector;
-            impl::RegisteredLocationRedirector registered_program_redirector;
+            impl::RegisteredLocations<ncm::TitleId, 16> registered_program_locations;
             impl::LocationRedirector html_docs_redirector;
-            impl::RegisteredLocationRedirector registered_html_docs_redirector;
+            impl::RegisteredLocations<ncm::TitleId, 16> registered_html_docs_locations;
         public:
-            RegisteredLocationResolverInterface();
             ~RegisteredLocationResolverInterface();
 
             Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
