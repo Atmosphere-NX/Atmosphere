@@ -20,6 +20,7 @@
 #include "smc.h"
 #include "core_ctx.h"
 #include "single_step.h"
+#include "data_abort.h"
 
 #include "debug_log.h"
 
@@ -110,7 +111,10 @@ void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeReg
         case Exception_SystemRegisterTrap:
             handleMsrMrsTrap(frame, esr);
             break;
-
+        case Exception_DataAbortLowerEl:
+            // Basically, stage2 translation faults
+            handleLowerElDataAbortException(frame, esr);
+            break;
         case Exception_SoftwareStepLowerEl:
             handleSingleStep(frame, esr);
             break;

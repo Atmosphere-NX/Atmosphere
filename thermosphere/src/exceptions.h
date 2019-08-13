@@ -105,3 +105,7 @@ static inline void spsrSetT32ItFlags(u64 *spsr, u32 itFlags)
 bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode);
 void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size);
 void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl);
+
+void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+void handleSameElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+void handleUnknownException(u32 offset);
