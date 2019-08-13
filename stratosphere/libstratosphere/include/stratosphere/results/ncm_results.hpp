@@ -19,6 +19,7 @@
 
 static constexpr u32 Module_Ncm = 5;
 
+static constexpr Result ResultNcmStoragePathNotFound                     = MAKERESULT(Module_Ncm, 1);
 static constexpr Result ResultNcmPlaceHolderAlreadyExists                = MAKERESULT(Module_Ncm, 2);
 static constexpr Result ResultNcmPlaceHolderNotFound                     = MAKERESULT(Module_Ncm, 3);
 static constexpr Result ResultNcmContentAlreadyExists                    = MAKERESULT(Module_Ncm, 4);
@@ -30,7 +31,9 @@ static constexpr Result ResultNcmUnknownStorage                          = MAKER
 static constexpr Result ResultNcmInvalidContentStorage                   = MAKERESULT(Module_Ncm, 100);
 static constexpr Result ResultNcmInvalidContentMetaDatabase              = MAKERESULT(Module_Ncm, 110);
 
+static constexpr Result ResultNcmInvalidPlaceHolderDirectoryEntry        = MAKERESULT(Module_Ncm, 170);
 static constexpr Result ResultNcmBufferInsufficient                      = MAKERESULT(Module_Ncm, 180);
+static constexpr Result ResultNcmInvalidContentStorageOperation          = MAKERESULT(Module_Ncm, 190);
 static constexpr Result ResultNcmInvalidContentMetaKey                   = MAKERESULT(Module_Ncm, 240);
 
 static constexpr Result ResultNcmContentStorageNotActive                 = MAKERESULT(Module_Ncm, 250);
@@ -46,6 +49,8 @@ static constexpr Result ResultNcmNandSystemContentMetaDatabaseNotActive  = MAKER
 static constexpr Result ResultNcmNandUserContentMetaDatabaseNotActive    = MAKERESULT(Module_Ncm, 263);
 static constexpr Result ResultNcmSdCardContentMetaDatabaseNotActive      = MAKERESULT(Module_Ncm, 264);
 static constexpr Result ResultNcmUnknownContentMetaDatabaseNotActive     = MAKERESULT(Module_Ncm, 268);
+
+static constexpr Result ResultNcmStorageRootNotFound                     = MAKERESULT(Module_Ncm, 310);
 
 static constexpr Result ResultNcmInvalidArgument        = MAKERESULT(Module_Ncm, 8181);
 static constexpr Result ResultNcmInvalidOffset          = MAKERESULT(Module_Ncm, 8182);

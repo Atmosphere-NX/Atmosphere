@@ -26,5 +26,6 @@ static constexpr Result ResultLrHtmlDocumentNotFound                     = MAKER
 static constexpr Result ResultLrAddOnContentNotFound                     = MAKERESULT(Module_Lr, 7);
 static constexpr Result ResultLrControlNotFound                          = MAKERESULT(Module_Lr, 8);
 static constexpr Result ResultLrLegalInformationNotFound                 = MAKERESULT(Module_Lr, 9);
+static constexpr Result ResultLrDebugProgramNotFound                     = MAKERESULT(Module_Lr, 10);
 
 static constexpr Result ResultLrTooManyRegisteredPaths = MAKERESULT(Module_Lr, 90);
