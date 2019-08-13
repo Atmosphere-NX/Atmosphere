@@ -56,23 +56,4 @@ namespace sts::lr::impl {
             void ClearRedirections(u32 flags = RedirectionFlags_None);
     };
 
-    class RegisteredLocationRedirector {
-        private:
-            BoundedMap<ncm::TitleId, Path, 16> redirections;
-        public:
-            bool FindRedirection(Path *out, ncm::TitleId title_id);
-            bool SetRedirection(ncm::TitleId title_id, const Path& path);
-            void EraseRedirection(ncm::TitleId title_id);
-            void ClearRedirections();
-    }; 
-
-    class AddOnContentRedirector {
-        private:
-            BoundedMap<ncm::TitleId, ncm::StorageId, 0x800> redirections;
-        public:
-            bool FindRedirection(ncm::StorageId *out, ncm::TitleId title_id);
-            Result SetRedirection(ncm::TitleId title_id, ncm::StorageId storage_id);
-            void ClearRedirections();
-    };
-
 }

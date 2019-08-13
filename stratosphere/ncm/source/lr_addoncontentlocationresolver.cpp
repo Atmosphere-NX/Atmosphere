@@ -19,15 +19,11 @@
 
 namespace sts::lr {
 
-    AddOnContentLocationResolverInterface::AddOnContentLocationResolverInterface() {
-        this->redirector.ClearRedirections();
-    }
-
     Result AddOnContentLocationResolverInterface::ResolveAddOnContentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
         Path path;
         ncm::StorageId storage_id = ncm::StorageId::None;
 
-        if (!this->redirector.FindRedirection(&storage_id, tid)) {
+        if (!this->registered_storages.Find(&storage_id, tid)) {
             return ResultLrAddOnContentNotFound;
         }
 
@@ -45,12 +41,15 @@ namespace sts::lr {
     }
 
     Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::TitleId tid) {
-        R_TRY(this->redirector.SetRedirection(tid, storage_id));
+        if (!this->registered_storages.Register(tid, storage_id)) {
+            return ResultLrTooManyRegisteredPaths;
+        }
+
         return ResultSuccess;
     }
 
     Result AddOnContentLocationResolverInterface::UnregisterAllAddOnContentPath() {
-        this->redirector.ClearRedirections();
+        this->registered_storages.Clear();
         return ResultSuccess;
     }
 

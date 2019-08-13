@@ -75,56 +75,6 @@ namespace sts::lr::impl {
         }
     }
 
-    bool RegisteredLocationRedirector::FindRedirection(Path *out, ncm::TitleId title_id) {
-        auto redirection = this->redirections.Find(title_id);
 
-        if (redirection) {
-            *out = *redirection;
-            return true;
-        }
-        
-        return false;
-    }
-
-    bool RegisteredLocationRedirector::SetRedirection(ncm::TitleId title_id, const Path& path) {
-        if (this->redirections.IsFull()) {
-            return false;
-        }
-
-        this->redirections[title_id] = path;
-        return true;
-    }
-
-    void RegisteredLocationRedirector::EraseRedirection(ncm::TitleId title_id) {
-        this->redirections.Remove(title_id);
-    }
-
-    void RegisteredLocationRedirector::ClearRedirections() {
-        this->redirections.RemoveAll();
-    }
-
-    bool AddOnContentRedirector::FindRedirection(ncm::StorageId *out, ncm::TitleId title_id) {
-        auto redirection = this->redirections.Find(title_id);
-
-        if (redirection) {
-            *out = *redirection;
-            return true;
-        }
-        
-        return false;
-    }
-
-    Result AddOnContentRedirector::SetRedirection(ncm::TitleId title_id, ncm::StorageId storage_id) {
-        if (this->redirections.IsFull()) {
-            return ResultLrTooManyRegisteredPaths;
-        }
-
-        this->redirections[title_id] = storage_id;
-        return ResultSuccess;
-    }
-
-    void AddOnContentRedirector::ClearRedirections() {
-        this->redirections.RemoveAll();
-    }
 
 }
