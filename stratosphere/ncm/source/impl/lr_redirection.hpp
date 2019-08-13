@@ -68,7 +68,7 @@ namespace sts::lr::impl {
 
     class AddOnContentRedirector {
         private:
-            BoundedMap<ncm::TitleId, ncm::StorageId, 128> redirections;
+            BoundedMap<ncm::TitleId, ncm::StorageId, 0x800> redirections;
         public:
             bool FindRedirection(ncm::StorageId *out, ncm::TitleId title_id);
             Result SetRedirection(ncm::TitleId title_id, ncm::StorageId storage_id);
