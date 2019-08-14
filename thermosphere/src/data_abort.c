@@ -46,6 +46,7 @@ void handleLowerElDataAbortException(ExceptionStackFrame *frame, ExceptionSyndro
     memcpy(&dabtIss, &esr, 4);
 
     u64 far = GET_SYSREG(far_el2);
+    u64 farpg = far & ~0xFFFull;
 
     if (!dabtIss.isv || dabtIss.fnv) {
         dumpUnhandledDataAbort(dabtIss, far, "");
@@ -53,9 +54,11 @@ void handleLowerElDataAbortException(ExceptionStackFrame *frame, ExceptionSyndro
 
     // TODO
 
-    if ((far & ~0xFFFull) == (uintptr_t)g_irqManager.gic.gicd) {
+    if (farpg == (uintptr_t)g_irqManager.gic.gicd) {
         // TODO
+    } else if (farpg == (uintptr_t)g_irqManager.gic.gich) {
+        dumpUnhandledDataAbort(dabtIss, far, "GICH");
+    } else {
+        dumpUnhandledDataAbort(dabtIss, far, "(fallback)");
     }
-
-    dumpUnhandledDataAbort(dabtIss, far, "(fallback)");
 }

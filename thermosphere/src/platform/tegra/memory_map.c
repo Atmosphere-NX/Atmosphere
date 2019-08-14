@@ -71,8 +71,10 @@ uintptr_t configureStage2MemoryMap(u32 *addrSpaceSize)
 
         identityMapL3(g_vttbl_l3_0, 0x00000000ull, BITL(21), unchanged);
 
-        // GICD -> trapped, GICv2 CPU -> vCPU interface
+        // GICD -> trapped, GICv2 CPU -> vCPU interface, GICH -> trapped (access denied including for the unused view)
         mmu_unmap_page(g_vttbl_l3_0, 0x50401000ull);
+        mmu_unmap_page(g_vttbl_l3_0, 0x50404000ull);
+        mmu_unmap_page(g_vttbl_l3_0, 0x50405000ull);
         mmu_map_page_range(g_vttbl_l3_0, 0x50042000ull, 0x50046000ull, 0x2000ull, devattrs);
     }
 
