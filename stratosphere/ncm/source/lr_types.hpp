@@ -30,22 +30,19 @@ namespace sts::lr {
         }
 
         Path(const char* path) {
-            strlcpy(this->path, path, MaxPathLen);
+            strncpy(this->path, path, MaxPathLen-1);
+            this->EnsureNullTerminated();
         }
 
         Path& operator=(const Path& other) {
             /* N appears to always memcpy paths, so we will too. */
-            memcpy(this->path, other.path, MaxPathLen);
+            std::memcpy(this->path, other.path, MaxPathLen);
             this->EnsureNullTerminated();
             return *this;
         }
 
         void EnsureNullTerminated() {
-            const size_t len = strnlen(this->path, MaxPathLen);
-
-            if (len == MaxPathLen) {
-                path[MaxPathLen-1] = '\0';
-            }
+            path[MaxPathLen-1] = '\0';
         }
     };
 
