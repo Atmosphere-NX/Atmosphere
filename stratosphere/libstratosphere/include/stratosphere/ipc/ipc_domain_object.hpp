@@ -127,4 +127,8 @@ class Out<std::shared_ptr<ServiceImpl>> : public OutSessionTag {
         void SetValue(std::shared_ptr<ServiceImpl> &&s) {
             *this->srv = std::move(s);
         }
+
+        void SetValue(std::shared_ptr<ServiceImpl> &s) {
+            *this->srv = s;
+        }
 };
