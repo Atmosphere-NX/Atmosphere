@@ -17,12 +17,13 @@
 #include "../lr_contentlocationresolver.hpp"
 #include "../lr_redirectonlylocationresolver.hpp"
 #include "lr_manager.hpp"
+#include "ncm_bounded_map.hpp"
 
 namespace sts::lr::impl {
 
     namespace {
 
-        BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolver>, 5> g_location_resolvers;
+        ncm::impl::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolver>, 5> g_location_resolvers;
         std::shared_ptr<RegisteredLocationResolverInterface> g_registered_location_resolver = nullptr;
         std::shared_ptr<AddOnContentLocationResolverInterface> g_add_on_content_location_resolver = nullptr;
         HosMutex g_mutex;
