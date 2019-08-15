@@ -25,20 +25,17 @@ namespace sts::lr {
     }
 
     Result RegisteredLocationResolverInterface::ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        Path path;
-        
-        if (!this->program_redirector.FindRedirection(&path, tid)) {
-            if (!this->registered_program_locations.Find(&path, tid)) {
+        if (!this->program_redirector.FindRedirection(out.pointer, tid)) {
+            if (!this->registered_program_locations.Find(out.pointer, tid)) {
                 return ResultLrProgramNotFound;
             }
         }
         
-        *out.pointer = path;
         return ResultSuccess;
     }
 
     Result RegisteredLocationResolverInterface::RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
-        Path tmp_path = *path.pointer;
+        const Path& tmp_path = *path.pointer;
 
         if (!this->registered_program_locations.Register(tid, tmp_path)) {
             this->registered_program_locations.Clear();
@@ -60,20 +57,17 @@ namespace sts::lr {
     }
 
     Result RegisteredLocationResolverInterface::ResolveHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        Path path;
-        
-        if (!this->html_docs_redirector.FindRedirection(&path, tid)) {
-            if (!this->registered_html_docs_locations.Find(&path, tid)) {
+        if (!this->html_docs_redirector.FindRedirection(out.pointer, tid)) {
+            if (!this->registered_html_docs_locations.Find(out.pointer, tid)) {
                 return ResultLrProgramNotFound;
             }
         }
         
-        *out.pointer = path;
         return ResultLrHtmlDocumentNotFound;
     }
 
     Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
-        Path tmp_path = *path.pointer;
+        const Path& tmp_path = *path.pointer;
 
         if (!this->registered_html_docs_locations.Register(tid, tmp_path)) {
             this->registered_html_docs_locations.Clear();
