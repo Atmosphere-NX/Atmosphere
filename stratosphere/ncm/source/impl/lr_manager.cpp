@@ -41,11 +41,10 @@ namespace sts::lr::impl {
                 R_TRY(content_resolver->Refresh());
                 g_location_resolvers[storage_id] = std::move(content_resolver);
             }
+            resolver = g_location_resolvers.Find(storage_id);
         }
 
-        /* Make a copy of the resolver for output. */
-        auto tmp_resolver = g_location_resolvers[storage_id];
-        out.SetValue(std::move(tmp_resolver));
+        out.SetValue(*resolver);
         return ResultSuccess;
     }
 
@@ -55,10 +54,8 @@ namespace sts::lr::impl {
         if (!g_registered_location_resolver) {
             g_registered_location_resolver = std::make_shared<RegisteredLocationResolverInterface>();
         }
-        
-        /* Make a copy of the resolver for output. */
-        auto tmp_resolver = g_registered_location_resolver;
-        out.SetValue(std::move(tmp_resolver));
+
+        out.SetValue(g_registered_location_resolver);
         return ResultSuccess;
     }
     
@@ -70,7 +67,10 @@ namespace sts::lr::impl {
             return ResultLrUnknownStorageId;
         }
 
-        (*resolver)->Refresh();
+        if (storage_id != ncm::StorageId::Host) {
+            (*resolver)->Refresh();
+        }
+
         return ResultSuccess;
     }
 
@@ -81,9 +81,7 @@ namespace sts::lr::impl {
             g_add_on_content_location_resolver = std::make_shared<AddOnContentLocationResolverInterface>();
         }
         
-        /* Make a copy of the resolver for output. */
-        auto tmp_resolver = g_add_on_content_location_resolver;
-        out.SetValue(std::move(tmp_resolver));
+        out.SetValue(g_add_on_content_location_resolver);
         return ResultSuccess;
     }
 
