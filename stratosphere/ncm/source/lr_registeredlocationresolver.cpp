@@ -51,8 +51,7 @@ namespace sts::lr {
     }
 
     Result RegisteredLocationResolverInterface::RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
-        Path tmp_path = *path.pointer;
-        this->program_redirector.SetRedirection(tid, tmp_path);
+        this->program_redirector.SetRedirection(tid, *path.pointer);
         return ResultSuccess;
     }
 
@@ -83,8 +82,7 @@ namespace sts::lr {
     }
 
     Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
-        Path tmp_path = *path.pointer;
-        this->html_docs_redirector.SetRedirection(tid, tmp_path);
+        this->html_docs_redirector.SetRedirection(tid, *path.pointer);
         return ResultSuccess;
     }
 
