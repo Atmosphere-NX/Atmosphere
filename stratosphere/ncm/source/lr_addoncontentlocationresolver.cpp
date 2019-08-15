@@ -28,12 +28,13 @@ namespace sts::lr {
         }
 
         std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
-        std::shared_ptr<ncm::IContentStorage> content_storage;
-        R_TRY(ncm::impl::OpenContentMetaDatabase(&content_meta_database, storage_id));
-        R_TRY(ncm::impl::OpenContentStorage(&content_storage, storage_id));
-
+    
         ncm::ContentId data_content_id;
+        R_TRY(ncm::impl::OpenContentMetaDatabase(&content_meta_database, storage_id));
         R_TRY(content_meta_database->GetLatestData(&data_content_id, tid));
+
+        std::shared_ptr<ncm::IContentStorage> content_storage;
+        R_TRY(ncm::impl::OpenContentStorage(&content_storage, storage_id));
         R_ASSERT(content_storage->GetPath(&path, data_content_id));
         *out.pointer = path;
         
