@@ -18,34 +18,8 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::lr {
-
-    constexpr size_t MaxPathLen = 0x300;
-
-    struct Path {
-        char path[MaxPathLen];
-
-        Path() {
-            path[0] = '\0';
-        }
-
-        Path(const char* path) {
-            strncpy(this->path, path, MaxPathLen-1);
-            this->EnsureNullTerminated();
-        }
-
-        Path& operator=(const Path& other) {
-            /* N appears to always memcpy paths, so we will too. */
-            std::memcpy(this->path, other.path, MaxPathLen);
-            this->EnsureNullTerminated();
-            return *this;
-        }
-
-        void EnsureNullTerminated() {
-            path[MaxPathLen-1] = '\0';
-        }
-    };
-
+namespace sts::ncm::impl {
+    
     template<class Key, class Value, size_t N>
     class BoundedMap {
         private:

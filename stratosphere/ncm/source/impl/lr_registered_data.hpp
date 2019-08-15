@@ -18,8 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "../lr_types.hpp"
-
 namespace sts::lr::impl {
 
     template<typename Key, typename Value, size_t NumEntries>

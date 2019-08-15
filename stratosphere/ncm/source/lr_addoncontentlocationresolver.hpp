@@ -19,7 +19,6 @@
 #include <stratosphere.hpp>
 
 #include "impl/lr_registered_data.hpp"
-#include "lr_types.hpp"
 
 namespace sts::lr {
 
