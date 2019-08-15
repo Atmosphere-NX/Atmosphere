@@ -28,10 +28,7 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        Path path;
-
-        if (this->program_redirector.FindRedirection(&path, tid)) {
-            *out.pointer = path;
+        if (this->program_redirector.FindRedirection(out.pointer, tid)) {
             return ResultSuccess;
         }
 
@@ -43,8 +40,7 @@ namespace sts::lr {
             }
         } R_END_TRY_CATCH;
         
-        R_ASSERT(this->content_storage->GetPath(&path, program_content_id));
-        *out.pointer = path;
+        R_ASSERT(this->content_storage->GetPath(out.pointer, program_content_id));
         return ResultSuccess;
     }
 
@@ -54,10 +50,7 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationControlPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        Path path;
-        
-        if (this->app_control_redirector.FindRedirection(&path, tid)) {
-            *out.pointer = path;
+        if (this->app_control_redirector.FindRedirection(out.pointer, tid)) {
             return ResultSuccess;
         }
 
@@ -65,10 +58,7 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        Path path;
-        
-        if (this->html_docs_redirector.FindRedirection(&path, tid)) {
-            *out.pointer = path;
+        if (this->html_docs_redirector.FindRedirection(out.pointer, tid)) {
             return ResultSuccess;
         }
 
@@ -76,12 +66,10 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveDataPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        Path path;
         ncm::ContentId data_content_id;
 
         R_TRY(this->content_meta_database->GetLatestData(&data_content_id, tid));
-        R_ASSERT(this->content_storage->GetPath(&path, data_content_id));
-        *out.pointer = path;
+        R_ASSERT(this->content_storage->GetPath(out.pointer, data_content_id));
         return ResultSuccess;
     }
 
@@ -96,10 +84,7 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationLegalInformationPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        Path path;
-        
-        if (this->legal_info_redirector.FindRedirection(&path, tid)) {
-            *out.pointer = path;
+        if (this->legal_info_redirector.FindRedirection(out.pointer, tid)) {
             return ResultSuccess;
         }
 
@@ -163,20 +148,16 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveProgramPathForDebug(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        Path path;
-
-        if (this->debug_program_redirector.FindRedirection(&path, tid)) {
-            *out.pointer = path;
+        if (this->debug_program_redirector.FindRedirection(out.pointer, tid)) {
             return ResultSuccess;
         }
 
-        R_TRY_CATCH(this->ResolveProgramPath(&path, tid)) {
+        R_TRY_CATCH(this->ResolveProgramPath(out.pointer, tid)) {
             R_CATCH(ResultLrProgramNotFound) {
                 return ResultLrDebugProgramNotFound;
             }
         } R_END_TRY_CATCH;
         
-        *out.pointer = path;
         return ResultSuccess;
     }
 

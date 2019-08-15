@@ -20,7 +20,6 @@
 namespace sts::lr {
 
     Result AddOnContentLocationResolverInterface::ResolveAddOnContentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        Path path;
         ncm::StorageId storage_id = ncm::StorageId::None;
 
         if (!this->registered_storages.Find(&storage_id, tid)) {
@@ -35,8 +34,7 @@ namespace sts::lr {
 
         std::shared_ptr<ncm::IContentStorage> content_storage;
         R_TRY(ncm::impl::OpenContentStorage(&content_storage, storage_id));
-        R_ASSERT(content_storage->GetPath(&path, data_content_id));
-        *out.pointer = path;
+        R_ASSERT(content_storage->GetPath(out.pointer, data_content_id));
         
         return ResultSuccess;
     }
