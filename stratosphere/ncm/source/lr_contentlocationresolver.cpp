@@ -20,15 +20,15 @@
 namespace sts::lr {
 
     ContentLocationResolverInterface::~ContentLocationResolverInterface() {
-        this->program_redirector.ClearRedirections();
-        this->debug_program_redirector.ClearRedirections();
-        this->app_control_redirector.ClearRedirections();
-        this->html_docs_redirector.ClearRedirections();
-        this->legal_info_redirector.ClearRedirections();
+        this->ClearRedirections();
+    }
+
+    void ContentLocationResolverInterface::GetContentStoragePath(Path* out, ncm::ContentId content_id) {
+        R_ASSERT(this->content_storage->GetPath(out, content_id));
     }
 
     Result ContentLocationResolverInterface::ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        if (this->program_redirector.FindRedirection(out.pointer, tid)) {
+        if (this->GetRedirectedPath(out.pointer, &this->program_redirector, tid)) {
             return ResultSuccess;
         }
 
@@ -40,7 +40,7 @@ namespace sts::lr {
             }
         } R_END_TRY_CATCH;
         
-        R_ASSERT(this->content_storage->GetPath(out.pointer, program_content_id));
+        this->GetContentStoragePath(out.pointer, program_content_id);
         return ResultSuccess;
     }
 
@@ -50,7 +50,7 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationControlPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        if (this->app_control_redirector.FindRedirection(out.pointer, tid)) {
+        if (this->GetRedirectedPath(out.pointer, &this->app_control_redirector, tid)) {
             return ResultSuccess;
         }
 
@@ -58,7 +58,7 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        if (this->html_docs_redirector.FindRedirection(out.pointer, tid)) {
+        if (this->GetRedirectedPath(out.pointer, &this->html_docs_redirector, tid)) {
             return ResultSuccess;
         }
 
@@ -69,7 +69,7 @@ namespace sts::lr {
         ncm::ContentId data_content_id;
 
         R_TRY(this->content_meta_database->GetLatestData(&data_content_id, tid));
-        R_ASSERT(this->content_storage->GetPath(out.pointer, data_content_id));
+        this->GetContentStoragePath(out.pointer, data_content_id);
         return ResultSuccess;
     }
 
@@ -84,7 +84,7 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationLegalInformationPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        if (this->legal_info_redirector.FindRedirection(out.pointer, tid)) {
+        if (this->GetRedirectedPath(out.pointer, &this->legal_info_redirector, tid)) {
             return ResultSuccess;
         }
 
@@ -99,16 +99,12 @@ namespace sts::lr {
     Result ContentLocationResolverInterface::Refresh() {
         std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
         std::shared_ptr<ncm::IContentStorage> content_storage;
+
         R_TRY(ncm::impl::OpenContentMetaDatabase(&content_meta_database, this->storage_id));
         R_TRY(ncm::impl::OpenContentStorage(&content_storage, this->storage_id));
         this->content_meta_database = std::move(content_meta_database);
         this->content_storage = std::move(content_storage);
-
-        this->program_redirector.ClearRedirections();
-        this->debug_program_redirector.ClearRedirections();
-        this->app_control_redirector.ClearRedirections();
-        this->html_docs_redirector.ClearRedirections();
-        this->legal_info_redirector.ClearRedirections();
+        this->ClearRedirections();
 
         return ResultSuccess;
     }
@@ -119,11 +115,7 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ClearApplicationRedirection() {
-        this->program_redirector.ClearRedirections(impl::RedirectionFlags_Application);
-        this->debug_program_redirector.ClearRedirections(impl::RedirectionFlags_Application);
-        this->app_control_redirector.ClearRedirections(impl::RedirectionFlags_Application);
-        this->html_docs_redirector.ClearRedirections(impl::RedirectionFlags_Application);
-        this->legal_info_redirector.ClearRedirections(impl::RedirectionFlags_Application);
+        this->ClearRedirections(impl::RedirectionFlags_Application);
         return ResultSuccess;
     }
 
@@ -148,7 +140,7 @@ namespace sts::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveProgramPathForDebug(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        if (this->debug_program_redirector.FindRedirection(out.pointer, tid)) {
+        if (this->GetRedirectedPath(out.pointer, &this->debug_program_redirector, tid)) {
             return ResultSuccess;
         }
 

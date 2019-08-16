@@ -34,6 +34,8 @@ namespace sts::lr {
             ContentLocationResolverInterface(ncm::StorageId storage_id) : storage_id(storage_id) { /* ... */ }
 
             ~ContentLocationResolverInterface();
+        private:
+            void GetContentStoragePath(Path* out, ncm::ContentId content_id);
         public:
             virtual Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
             virtual Result RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid) override;

@@ -52,6 +52,18 @@ namespace sts::lr {
             impl::LocationRedirector app_control_redirector;
             impl::LocationRedirector html_docs_redirector;
             impl::LocationRedirector legal_info_redirector;
+        protected:
+            bool GetRedirectedPath(Path* out, impl::LocationRedirector* redirector, ncm::TitleId tid) {
+                return redirector->FindRedirection(out, tid);
+            }
+
+            void ClearRedirections(u32 flags = impl::RedirectionFlags_None) {
+                this->program_redirector.ClearRedirections(flags);
+                this->debug_program_redirector.ClearRedirections(flags);
+                this->app_control_redirector.ClearRedirections(flags);
+                this->html_docs_redirector.ClearRedirections(flags);
+                this->legal_info_redirector.ClearRedirections(flags);
+            }
         public:
             virtual Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
             virtual Result RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid);
