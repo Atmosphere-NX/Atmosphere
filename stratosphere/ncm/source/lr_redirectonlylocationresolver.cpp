@@ -28,7 +28,7 @@ namespace sts::lr {
     }
 
     Result RedirectOnlyLocationResolverInterface::ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        if (this->program_redirector.FindRedirection(out.pointer, tid)) {
+        if (this->GetRedirectedPath(out.pointer, &this->program_redirector, tid)) {
             return ResultSuccess;
         }
 
@@ -41,7 +41,7 @@ namespace sts::lr {
     }
 
     Result RedirectOnlyLocationResolverInterface::ResolveApplicationControlPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        if (this->app_control_redirector.FindRedirection(out.pointer, tid)) {
+        if (this->GetRedirectedPath(out.pointer, &this->app_control_redirector, tid)) {
             return ResultSuccess;
         }
 
@@ -49,7 +49,7 @@ namespace sts::lr {
     }
 
     Result RedirectOnlyLocationResolverInterface::ResolveApplicationHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        if (this->html_docs_redirector.FindRedirection(out.pointer, tid)) {
+        if (this->GetRedirectedPath(out.pointer, &this->html_docs_redirector, tid)) {
             return ResultSuccess;
         }
 
@@ -71,7 +71,7 @@ namespace sts::lr {
     }
 
     Result RedirectOnlyLocationResolverInterface::ResolveApplicationLegalInformationPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        if (this->legal_info_redirector.FindRedirection(out.pointer, tid)) {
+        if (this->GetRedirectedPath(out.pointer, &this->legal_info_redirector, tid)) {
             return ResultSuccess;
         }
 
@@ -127,7 +127,7 @@ namespace sts::lr {
     }
 
     Result RedirectOnlyLocationResolverInterface::ResolveProgramPathForDebug(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
-        if (this->debug_program_redirector.FindRedirection(out.pointer, tid)) {
+        if (this->GetRedirectedPath(out.pointer, &this->debug_program_redirector, tid)) {
             return ResultSuccess;
         }
 
