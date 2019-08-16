@@ -41,6 +41,10 @@ namespace sts::lr {
             impl::RegisteredLocations<ncm::TitleId, 16> registered_program_locations;
             impl::LocationRedirector html_docs_redirector;
             impl::RegisteredLocations<ncm::TitleId, 16> registered_html_docs_locations;
+        private:
+            void ClearRedirections(u32 flags = impl::RedirectionFlags_None);
+            void RegisterPath(const Path& path, impl::RegisteredLocations<ncm::TitleId, 16>* locations, ncm::TitleId tid);
+            bool ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::TitleId, 16>* locations, ncm::TitleId tid);
         public:
             ~RegisteredLocationResolverInterface();
 
