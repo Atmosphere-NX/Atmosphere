@@ -19,6 +19,7 @@
 #include "sysreg.h"
 #include "debug_log.h"
 #include "irq.h"
+#include "vgic.h"
 
 // Lower el
 
@@ -52,10 +53,8 @@ void handleLowerElDataAbortException(ExceptionStackFrame *frame, ExceptionSyndro
         dumpUnhandledDataAbort(dabtIss, far, "");
     }
 
-    // TODO
-
     if (farpg == (uintptr_t)g_irqManager.gic.gicd) {
-        // TODO
+        handleVgicdMmio(frame, dabtIss, far & 0xFFF);
     } else if (farpg == (uintptr_t)g_irqManager.gic.gich) {
         dumpUnhandledDataAbort(dabtIss, far, "GICH");
     } else {

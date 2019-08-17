@@ -18,6 +18,7 @@
 #include "platform/interrupt_config.h"
 #include "core_ctx.h"
 #include "debug_log.h"
+#include "vgic.h"
 
 IrqManager g_irqManager = {0};
 
@@ -38,6 +39,7 @@ static void initGic(void)
         g_irqManager.numPriorityLevels = (u8)BIT(__builtin_popcount(g_irqManager.gic.gicd->ipriorityr[0]));
 
         g_irqManager.numCpuInterfaces = (u8)(1 + ((g_irqManager.gic.gicd->typer >> 5) & 7));
+        g_irqManager.numListRegisters = (u8)(1 + (g_irqManager.gic.gich->vtr & 0x3F));
     }
 
     volatile ArmGicV2Controller *gicc = g_irqManager.gic.gicc;
@@ -119,6 +121,7 @@ void initIrq(void)
     u64 flags = recursiveSpinlockLockMaskIrq(&g_irqManager.lock);
 
     initGic();
+    vgicInit();
 
     // Configure the interrupts we use here
     for (u32 i = 0; i < ThermosphereSgi_Max; i++) {
@@ -128,6 +131,11 @@ void initIrq(void)
     configureInterrupt(GIC_IRQID_MAINTENANCE, 0, true);
 
     recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
+}
+
+bool isGuestIrq(u16 id)
+{
+    return true;
 }
 
 void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
@@ -149,26 +157,40 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     }
 
     bool isGuestInterrupt = false;
+    bool isMaintenanceInterrupt = false;
 
     switch (irqId) {
         case ThermosphereSgi_ExecuteFunction:
             executeFunctionInterruptHandler(srcCore);
             break;
+        case ThermosphereSgi_VgicUpdate:
+            // Nothing in particular to do here
+            break;
         case GIC_IRQID_MAINTENANCE:
-            /* TODO */
+            isMaintenanceInterrupt = true;
             break;
         default:
-            isGuestInterrupt = true;
+            isGuestInterrupt = irqId >= 16;
             break;
     }
 
     // Priority drop
     gicc->eoir = iar;
 
+    recursiveSpinlockLock(&g_irqManager.lock);
+
     if (!isGuestInterrupt) {
+        if (isMaintenanceInterrupt) {
+            vgicMaintenanceInterruptHandler();
+        }
         // Deactivate the interrupt
         gicc->dir = iar;
     } else {
-        // TODO
+        vgicEnqueuePhysicalIrq(irqId);
     }
+
+    // Update vgic state
+    vgicUpdateState();
+
+    recursiveSpinlockUnlock(&g_irqManager.lock);
 }

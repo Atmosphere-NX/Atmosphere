@@ -35,6 +35,8 @@
 
 #define TEMPORARY       __attribute__((section(".tempbss")))
 
+#define FOREACH_BIT(tmpmsk, var, word) for (u64 tmpmsk = (word), var = __builtin_ctzll(word); tmpmsk != 0; var = __builtin_ctzll(tmpmsk), tmpmsk &= ~BITL(var))
+
 static inline void __dsb_sy(void)
 {
     __asm__ __volatile__ ("dsb sy" ::: "memory");
@@ -63,60 +65,6 @@ static inline uintptr_t get_physical_address_el1_stage12(bool *valid, const uint
 
 bool readEl1Memory(void *dst, uintptr_t addr, size_t size);
 bool writeEl1Memory(uintptr_t addr, const void *src, size_t size);
-
-static inline u32 read32le(const volatile void *dword, size_t offset) {
-    return *(u32 *)((uintptr_t)dword + offset);
-}
-
-static inline u32 read32be(const volatile void *dword, size_t offset) {
-    return __builtin_bswap32(read32le(dword, offset));
-}
-
-static inline u64 read64le(const volatile void *qword, size_t offset) {
-    return *(u64 *)((uintptr_t)qword + offset);
-}
-
-static inline u64 read64be(const volatile void *qword, size_t offset) {
-    return __builtin_bswap64(read64le(qword, offset));
-}
-
-static inline void write32le(volatile void *dword, size_t offset, u32 value) {
-    *(u32 *)((uintptr_t)dword + offset) = value;
-}
-
-static inline void write32be(volatile void *dword, size_t offset, u32 value) {
-    write32le(dword, offset, __builtin_bswap32(value));
-}
-
-static inline void write64le(volatile void *qword, size_t offset, u64 value) {
-    *(u64 *)((uintptr_t)qword + offset) = value;
-}
-
-static inline void write64be(volatile void *qword, size_t offset, u64 value) {
-    write64le(qword, offset, __builtin_bswap64(value));
-}
-
-static inline unsigned int get_core_id(void) {
-    u64 core_id;
-    __asm__ __volatile__ ("mrs %0, mpidr_el1" : "=r"(core_id));
-    return (unsigned int)core_id & 3;
-}
-
-static inline u64 get_debug_authentication_status(void) {
-    u64 debug_auth;
-    __asm__ __volatile__ ("mrs  %0, dbgauthstatus_el1" : "=r"(debug_auth));
-    return debug_auth;
-}
-
-static inline u32 get_spsr(void) {
-    u32 spsr;
-    __asm__ __volatile__ ("mrs  %0, spsr_el2" : "=r"(spsr));
-    return spsr;
-}
-
-static inline bool check_32bit_additive_overflow(u32 a, u32 b) {
-    return __builtin_add_overflow_p(a, b, (u32)0);
-}
 
 static inline void panic(void) {
     __builtin_trap();

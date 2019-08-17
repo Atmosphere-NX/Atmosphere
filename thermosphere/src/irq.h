@@ -21,25 +21,31 @@
 #include "exceptions.h"
 #include "utils.h"
 
+#define IRQ_PRIORITY_HOST       0
+#define IRQ_PRIORITY_GUEST      1
+
 typedef struct IrqManager {
     RecursiveSpinlock lock;
     ArmGicV2 gic;
     u8 numPriorityLevels;
     u8 numCpuInterfaces;
     u8 numSharedInterrupts;
+    u8 numListRegisters;
     // Note: we don't store interrupt handlers since we will handle some SGI + uart interrupt(s)...
 } IrqManager;
 
 typedef enum ThermosphereSgi {
     ThermosphereSgi_ExecuteFunction = 0,
+    ThermosphereSgi_VgicUpdate = 1,
 
-    ThermosphereSgi_Max = 1,
+    ThermosphereSgi_Max = 2,
 } ThermosphereSgi;
 
 extern IrqManager g_irqManager;
 
 void initIrq(void);
 void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32);
+bool isGuestIrq(u16 id);
 
 static inline void generateSgiForAllOthers(ThermosphereSgi id)
 {
