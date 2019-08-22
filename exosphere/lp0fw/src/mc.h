@@ -35,6 +35,14 @@
 #define MC_SMMU_PTB_DATA                                        0x20
 #define MC_SMMU_TLB_FLUSH                                       0x30
 #define MC_SMMU_PTC_FLUSH                                       0x34
+#define MC_SMMU_ASID_SECURITY                                   0x38
+#define MC_SMMU_ASID_SECURITY_1                                 0x3c
+#define MC_SMMU_ASID_SECURITY_2                                 0x9e0
+#define MC_SMMU_ASID_SECURITY_3                                 0x9e4
+#define MC_SMMU_ASID_SECURITY_4                                 0x9e8
+#define MC_SMMU_ASID_SECURITY_5                                 0x9ec
+#define MC_SMMU_ASID_SECURITY_6                                 0x9f0
+#define MC_SMMU_ASID_SECURITY_7                                 0x9f4
 #define MC_SMMU_AFI_ASID                                        0x238
 #define MC_SMMU_AVPC_ASID                                       0x23c
 #define MC_SMMU_PPCS1_ASID                                      0x298

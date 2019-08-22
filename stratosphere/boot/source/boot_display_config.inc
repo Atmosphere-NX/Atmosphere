@@ -624,7 +624,7 @@ constexpr RegisterWrite DisplayConfigJdiSpecificFini01[] = {
     {sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST},
 };
 
-constexpr RegisterWrite DisplayConfigF30SpecificFini01[] = {
+constexpr RegisterWrite DisplayConfigAuoRev1SpecificFini01[] = {
     {sizeof(u32) * DSI_WR_DATA, 0x439},
     {sizeof(u32) * DSI_WR_DATA, 0x9483FFB9},
     {sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST},

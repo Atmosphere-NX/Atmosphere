@@ -140,28 +140,26 @@ void bootup_misc_mmio(void) {
         APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG2_0 = sec_disable_2;
     }
 
-    /* Reset Translation Enable Registers. */
+    /* Reset Translation Enable registers. */
     MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_0) = 0xFFFFFFFF;
     MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_1) = 0xFFFFFFFF;
     MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_2) = 0xFFFFFFFF;
     MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_3) = 0xFFFFFFFF;
     MAKE_MC_REG(MC_SMMU_TRANSLATION_ENABLE_4) = 0xFFFFFFFF;
 
-    /* TODO: What are these MC reg writes? */
+    /* Set SMMU ASID security registers. */
     if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
-        MAKE_MC_REG(0x038) = 0xE;
+        MAKE_MC_REG(MC_SMMU_ASID_SECURITY) = 0xE;
     } else {
-        MAKE_MC_REG(0x038) = 0x0;
+        MAKE_MC_REG(MC_SMMU_ASID_SECURITY) = 0x0;
     }
-    MAKE_MC_REG(0x03C) = 0;
-
-    /* MISC registers. */
-    MAKE_MC_REG(0x9E0) = 0;
-    MAKE_MC_REG(0x9E4) = 0;
-    MAKE_MC_REG(0x9E8) = 0;
-    MAKE_MC_REG(0x9EC) = 0;
-    MAKE_MC_REG(0x9F0) = 0;
-    MAKE_MC_REG(0x9F4) = 0;
+    MAKE_MC_REG(MC_SMMU_ASID_SECURITY_1) = 0;
+    MAKE_MC_REG(MC_SMMU_ASID_SECURITY_2) = 0;
+    MAKE_MC_REG(MC_SMMU_ASID_SECURITY_3) = 0;
+    MAKE_MC_REG(MC_SMMU_ASID_SECURITY_4) = 0;
+    MAKE_MC_REG(MC_SMMU_ASID_SECURITY_5) = 0;
+    MAKE_MC_REG(MC_SMMU_ASID_SECURITY_6) = 0;
+    MAKE_MC_REG(MC_SMMU_ASID_SECURITY_7) = 0;
 
     if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
         MAKE_MC_REG(MC_SMMU_PTB_ASID) = 0;

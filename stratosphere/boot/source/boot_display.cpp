@@ -300,7 +300,12 @@ namespace sts::boot {
             for (size_t i = 0; i < util::size(host_response); i++) {
                 host_response[i] = reg::Read(g_dsi_regs + sizeof(u32) * DSI_RD_DATA);
             }
-
+            
+            /* The last word from host response is: 
+                Bits 0-7: FAB
+                Bits 8-15: REV
+                Bits 16-23: Minor REV
+            */
             if ((host_response[2] & 0xFF) == 0x10) {
                 g_lcd_vendor = 0;
             } else {
@@ -311,7 +316,7 @@ namespace sts::boot {
 
         /* LCD vendor specific configuration. */
         switch (g_lcd_vendor) {
-            case 0xF30: /* TODO: What's this? */
+            case 0xF30: /* AUO first revision screens. */
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x1105);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
                 svcSleepThread(180'000'000ul);
@@ -327,7 +332,7 @@ namespace sts::boot {
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x2905);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
                 break;
-            case 0xF20: /* TODO: What's this? */
+            case 0xF20: /* Innolux first revision screens. */
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x1105);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
                 svcSleepThread(180'000'000ul);
@@ -347,6 +352,7 @@ namespace sts::boot {
                 DO_DSI_SLEEP_OR_REGISTER_WRITES(DisplayConfigJdiSpecificInit01);
                 break;
             default:
+                /* Innolux and AUO second revision screens. */
                 if ((g_lcd_vendor | 0x10) == 0x1030) {
                     reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x1105);
                     reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
@@ -445,11 +451,11 @@ namespace sts::boot {
             case 0x10:   /* Japan Display Inc screens. */
                 DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigJdiSpecificFini01);
                 break;
-            case 0xF30:  /* TODO: What's this? */
-                DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigF30SpecificFini01);
+            case 0xF30:  /* AUO first revision screens. */
+                DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigAuoRev1SpecificFini01);
                 svcSleepThread(5'000'000ul);
                 break;
-            case 0x1020: /* TODO: What's this? */
+            case 0x1020: /* Innolux second revision screens. */
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x439);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x9483FFB9);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
@@ -461,7 +467,7 @@ namespace sts::boot {
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
                 svcSleepThread(5'000'000ul);
                 break;
-            case 0x1030: /* TODO: What's this? */
+            case 0x1030: /* AUO second revision screens. */
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x439);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x9483FFB9);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
