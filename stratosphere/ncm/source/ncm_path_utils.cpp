@@ -66,7 +66,7 @@ namespace sts::ncm::path {
             return false;
         }
 
-        for (size_t i = 0; i < sizeof(Uuid)*2; i++) {
+        for (size_t i = 0; i < sizeof(util::Uuid)*2; i++) {
             if (!std::isxdigit(file_name.at(i))) {
                 return false;
             }

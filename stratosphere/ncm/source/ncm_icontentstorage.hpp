@@ -18,8 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "ncm_types.hpp"
-
 namespace sts::ncm {
     
     class IContentStorage : public IServiceObject {

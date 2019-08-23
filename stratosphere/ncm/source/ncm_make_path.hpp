@@ -18,8 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "ncm_types.hpp"
-
 namespace sts::ncm::path {
 
     void MakeContentPathFlat(char* out_path, ContentId content_id, const char* root);

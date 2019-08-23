@@ -19,8 +19,6 @@
 #include <stratosphere.hpp>
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 
-#include "ncm_types.hpp"
-
 namespace sts::ncm {
 
     class IContentMetaDatabase : public IServiceObject {
