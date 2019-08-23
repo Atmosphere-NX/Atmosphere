@@ -21,3 +21,4 @@
 #include "util/util_ini.hpp"
 #include "util/util_intrusive_list.hpp"
 #include "util/util_intrusive_red_black_tree.hpp"
+#include "util/util_uuid.hpp"

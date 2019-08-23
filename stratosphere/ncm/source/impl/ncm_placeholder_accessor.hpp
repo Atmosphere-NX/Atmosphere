@@ -18,7 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "../ncm_types.hpp"
 #include "../ncm_path_utils.hpp"
 
 namespace sts::ncm::impl {

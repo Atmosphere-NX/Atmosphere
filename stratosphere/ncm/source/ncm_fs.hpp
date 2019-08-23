@@ -19,8 +19,6 @@
 #include <stratosphere.hpp>
 #include <sys/dirent.h>
 
-#include "ncm_types.hpp"
-
 namespace sts::ncm {
 
     Result OpenFile(FILE** out, const char* path, u32 mode);

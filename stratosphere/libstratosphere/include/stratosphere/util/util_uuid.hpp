@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Adubbz
+ * Copyright (c) 2018-2019 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,27 +16,27 @@
 
 #pragma once
 #include <switch.h>
-#include <stratosphere.hpp>
 
-namespace sts::ncm::impl {
+namespace sts::util {
 
-    class RightsIdCache {
-        public:
-            static constexpr size_t MaxEntries = 0x80;
-        public:
-            struct Entry {
-                public:
-                    util::Uuid uuid;
-                    FsRightsId rights_id;
-                    u64 key_generation;
-                    u64 last_accessed = 1;
-            };
+    struct Uuid {
+        u8 uuid[0x10];
 
-            Entry entries[MaxEntries];
-            u64 counter = 2;
-            HosMutex mutex;
+        bool operator==(const Uuid& other) const {
+            return memcmp(this->uuid, other.uuid, sizeof(Uuid)) == 0;
+        }
+
+        bool operator!=(const Uuid& other) const {
+            return !(*this == other);
+        }
+
+        u8& operator[](size_t i) { 
+            return uuid[i]; 
+        }
     };
 
-    RightsIdCache* GetRightsIdCache();
+    static_assert(sizeof(Uuid) == 0x10, "Uuid definition!");
+    
+    static constexpr Uuid InvalidUuid = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
 
 }

@@ -19,8 +19,6 @@
 #include <stratosphere.hpp>
 #include <sys/dirent.h>
 
-#include "ncm_types.hpp"
-
 namespace sts::ncm {
 
     void GetStringFromContentId(char* out, ContentId content_id);

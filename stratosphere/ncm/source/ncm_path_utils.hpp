@@ -18,8 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "ncm_types.hpp"
-
 namespace sts::ncm::path {
 
     inline void GetContentRootPath(char* out_content_root, const char* root_path) {
