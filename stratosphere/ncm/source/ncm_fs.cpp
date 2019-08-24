@@ -21,7 +21,7 @@
 #include "ncm_fs.hpp"
 #include "ncm_path_utils.hpp"
 
-namespace sts::ncm {
+namespace sts::ncm::fs {
 
     Result OpenFile(FILE** out, const char* path, u32 mode) {
         bool has = false;

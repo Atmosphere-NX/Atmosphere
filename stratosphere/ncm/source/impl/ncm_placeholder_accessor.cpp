@@ -30,7 +30,7 @@ namespace sts::ncm::impl {
         this->MakePath(placeholder_path, placeholder_id);
 
         FILE* f = nullptr;
-        R_TRY(OpenFile(&f, placeholder_path, FS_OPEN_WRITE));
+        R_TRY(fs::OpenFile(&f, placeholder_path, FS_OPEN_WRITE));
 
         *out_handle = f;
         return ResultSuccess;
@@ -164,7 +164,7 @@ namespace sts::ncm::impl {
             this->StoreToCache(f, placeholder_id);
         };
 
-        R_TRY(WriteFile(f, offset, buffer, size, !this->delay_flush));
+        R_TRY(fs::WriteFile(f, offset, buffer, size, !this->delay_flush));
         return ResultSuccess;
     }
 
@@ -223,7 +223,7 @@ namespace sts::ncm::impl {
     Result PlaceHolderAccessor::EnsureRecursively(PlaceHolderId placeholder_id) {
         char placeholder_path[FS_MAX_PATH] = {0};
         this->MakePath(placeholder_path, placeholder_id);
-        R_TRY(EnsureParentDirectoryRecursively(placeholder_path));
+        R_TRY(fs::EnsureParentDirectoryRecursively(placeholder_path));
         return ResultSuccess;
     }
 
