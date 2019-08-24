@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <sys/dirent.h>
 
-namespace sts::ncm {
+namespace sts::ncm::fs {
 
     Result OpenFile(FILE** out, const char* path, u32 mode);
     Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option);
@@ -49,12 +49,6 @@ namespace sts::ncm {
 
     Result GetSaveDataFlags(u32* out_flags, u64 save_id);
     Result SetSaveDataFlags(u64 save_id, FsSaveDataSpaceId space_id, u32 flags);
-
-    template<typename F>
-    Result TraverseDirectory(const char* root_path, int max_level, F f) {
-        bool should_continue = false;
-        return TraverseDirectory(&should_continue, root_path, max_level, f);
-    }
 
     template<typename F>
     Result TraverseDirectory(bool* out_should_continue, const char* root_path, int max_level, F f) {
@@ -110,5 +104,11 @@ namespace sts::ncm {
 
         return ResultSuccess;
     };
+
+    template<typename F>
+    Result TraverseDirectory(const char* root_path, int max_level, F f) {
+        bool should_continue = false;
+        return TraverseDirectory(&should_continue, root_path, max_level, f);
+    }
 
 }

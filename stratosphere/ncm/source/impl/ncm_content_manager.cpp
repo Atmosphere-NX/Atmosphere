@@ -50,7 +50,7 @@ namespace sts::ncm::impl {
                 this->storage_id = storage_id;
                 this->content_storage_id = content_storage_id;
                 this->content_storage = nullptr;
-                MountName mount_name = CreateUniqueMountName();
+                MountName mount_name = fs::CreateUniqueMountName();
                 strcpy(this->mount_point, mount_name.name);
                 snprintf(this->root_path, 0x80, "%s:/", this->mount_point);
             }
@@ -90,7 +90,7 @@ namespace sts::ncm::impl {
                 this->save_meta = save_meta;
                 this->content_meta_database = nullptr;
                 this->kvs.reset();
-                MountName mount_name = CreateUniqueMountName();
+                MountName mount_name = fs::CreateUniqueMountName();
                 strcpy(this->mount_point, mount_name.name);
                 this->mount_point[0] = '#';
                 snprintf(this->meta_path, 0x80, "%s:/meta", this->mount_point);
@@ -195,8 +195,8 @@ namespace sts::ncm::impl {
         }
 
         u32 current_flags = 0;
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 && R_SUCCEEDED(GetSaveDataFlags(&current_flags, 0x8000000000000120)) && current_flags != (FsSaveDataFlags_SurviveFactoryReset | FsSaveDataFlags_SurviveFactoryResetForRefurbishment)) {
-            SetSaveDataFlags(0x8000000000000120, FsSaveDataSpaceId_NandSystem, FsSaveDataFlags_SurviveFactoryReset | FsSaveDataFlags_SurviveFactoryResetForRefurbishment);
+        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 && R_SUCCEEDED(fs::GetSaveDataFlags(&current_flags, 0x8000000000000120)) && current_flags != (FsSaveDataFlags_SurviveFactoryReset | FsSaveDataFlags_SurviveFactoryResetForRefurbishment)) {
+            fs::SetSaveDataFlags(0x8000000000000120, FsSaveDataSpaceId_NandSystem, FsSaveDataFlags_SurviveFactoryReset | FsSaveDataFlags_SurviveFactoryResetForRefurbishment);
         }
         
         R_TRY(ActivateContentMetaDatabase(StorageId::NandSystem));
@@ -291,14 +291,14 @@ namespace sts::ncm::impl {
             return ResultNcmUnknownStorage;
         }
 
-        R_TRY(MountContentStorage(entry->mount_point, entry->content_storage_id));
+        R_TRY(fs::MountContentStorage(entry->mount_point, entry->content_storage_id));
 
         ON_SCOPE_EXIT {
-            Unmount(entry->mount_point);
+            fs::Unmount(entry->mount_point);
         };
 
-        R_TRY(EnsureDirectoryRecursively(entry->root_path));
-        R_TRY(EnsureContentAndPlaceHolderRoot(entry->root_path));
+        R_TRY(fs::EnsureDirectoryRecursively(entry->root_path));
+        R_TRY(fs::EnsureContentAndPlaceHolderRoot(entry->root_path));
 
         return ResultSuccess;
     }
@@ -316,17 +316,17 @@ namespace sts::ncm::impl {
             return ResultNcmUnknownStorage;
         }
 
-        MountName mount_name = CreateUniqueMountName();
+        MountName mount_name = fs::CreateUniqueMountName();
         char mount_root[128] = {0};
         strcpy(mount_root, mount_name.name);
         strcat(mount_root, strchr(entry->root_path, ':'));
-        R_TRY(MountContentStorage(mount_name.name, entry->content_storage_id));
+        R_TRY(fs::MountContentStorage(mount_name.name, entry->content_storage_id));
 
         ON_SCOPE_EXIT {
-            Unmount(mount_name.name);
+            fs::Unmount(mount_name.name);
         };
 
-        R_TRY(CheckContentStorageDirectoriesExist(mount_root));
+        R_TRY(fs::CheckContentStorageDirectoriesExist(mount_root));
 
         return ResultSuccess;
     }
@@ -394,7 +394,7 @@ namespace sts::ncm::impl {
 
         /* N doesn't bother checking the result of this */
         entry->content_storage->DisableForcibly();
-        Unmount(entry->mount_point);
+        fs::Unmount(entry->mount_point);
         entry->content_storage = nullptr;
         return ResultSuccess;
     }
@@ -419,17 +419,17 @@ namespace sts::ncm::impl {
 
         if (storage_id == StorageId::GameCard) {
             FsGameCardHandle gc_hnd;
-            R_TRY(GetGameCardHandle(&gc_hnd));
-            R_TRY(MountGameCardPartition(entry->mount_point, gc_hnd, FsGameCardPartiton_Secure));
-            auto mount_guard = SCOPE_GUARD { Unmount(entry->mount_point); };
+            R_TRY(fs::GetGameCardHandle(&gc_hnd));
+            R_TRY(fs::MountGameCardPartition(entry->mount_point, gc_hnd, FsGameCardPartiton_Secure));
+            auto mount_guard = SCOPE_GUARD { fs::Unmount(entry->mount_point); };
             auto content_storage = std::make_shared<ReadOnlyContentStorageInterface>();
             
             R_TRY(content_storage->Initialize(entry->root_path, path::MakeContentPathFlat));
             entry->content_storage = std::move(content_storage);
             mount_guard.Cancel();
         } else {
-            R_TRY(MountContentStorage(entry->mount_point, entry->content_storage_id));
-            auto mount_guard = SCOPE_GUARD { Unmount(entry->mount_point); };
+            R_TRY(fs::MountContentStorage(entry->mount_point, entry->content_storage_id));
+            auto mount_guard = SCOPE_GUARD { fs::Unmount(entry->mount_point); };
             MakeContentPathFunc content_path_func = nullptr;
             MakePlaceHolderPathFunc placeholder_path_func = nullptr;
             bool delay_flush = false;
@@ -477,7 +477,7 @@ namespace sts::ncm::impl {
 
         entry->content_storage->DisableForcibly();
         entry->content_storage = nullptr;
-        Unmount(entry->mount_point);
+        fs::Unmount(entry->mount_point);
         return ResultSuccess;
     }
 
@@ -497,18 +497,18 @@ namespace sts::ncm::impl {
         /* N doesn't bother checking the result of this. */
         fsDisableAutoSaveDataCreation();
 
-        R_TRY_CATCH(MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id)) {
+        R_TRY_CATCH(fs::MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id)) {
             R_CATCH(ResultFsTargetNotFound) {
                 R_TRY(fsCreate_SystemSaveData(entry->save_meta.space_id, entry->save_meta.id, entry->save_meta.size, entry->save_meta.journal_size, entry->save_meta.flags));
-                R_TRY(MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id));
+                R_TRY(fs::MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id));
             }
         } R_END_TRY_CATCH;
 
         ON_SCOPE_EXIT {
-            Unmount(entry->mount_point);
+            fs::Unmount(entry->mount_point);
         };
 
-        R_TRY(EnsureDirectoryRecursively(entry->meta_path));
+        R_TRY(fs::EnsureDirectoryRecursively(entry->meta_path));
         R_TRY(fsdevCommitDevice(entry->mount_point));
 
         return ResultSuccess;
@@ -534,18 +534,18 @@ namespace sts::ncm::impl {
         bool mounted_save_data = false;
 
         if (!entry->content_meta_database) {
-            R_TRY(MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id));
+            R_TRY(fs::MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id));
             mounted_save_data = true;
         }
 
         ON_SCOPE_EXIT {
             if (mounted_save_data) {
-                Unmount(entry->mount_point);
+                fs::Unmount(entry->mount_point);
             }
         };
 
         bool has_meta_path = false;
-        R_TRY(HasDirectory(&has_meta_path, entry->meta_path));
+        R_TRY(fs::HasDirectory(&has_meta_path, entry->meta_path));
         if (!has_meta_path) {
             return ResultNcmInvalidContentMetaDatabase;
         }
@@ -620,7 +620,7 @@ namespace sts::ncm::impl {
         content_meta_db->DisableForcibly();
 
         if (storage_id != StorageId::GameCard) {
-            Unmount(entry->mount_point);
+            fs::Unmount(entry->mount_point);
         }
 
         entry->content_meta_database = nullptr;
@@ -663,8 +663,8 @@ namespace sts::ncm::impl {
         entry->kvs.emplace();
 
         if (storage_id != StorageId::GameCard) {
-            R_TRY(MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id));
-            auto mount_guard = SCOPE_GUARD { Unmount(entry->mount_point); };
+            R_TRY(fs::MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id));
+            auto mount_guard = SCOPE_GUARD { fs::Unmount(entry->mount_point); };
             R_TRY(entry->kvs->Initialize(entry->meta_path, entry->max_content_metas));
             R_TRY(entry->kvs->Load());
 
@@ -701,7 +701,7 @@ namespace sts::ncm::impl {
         entry->kvs.reset();
 
         if (storage_id != StorageId::GameCard) {
-            Unmount(entry->mount_point);
+            fs::Unmount(entry->mount_point);
         }
 
         return ResultSuccess;

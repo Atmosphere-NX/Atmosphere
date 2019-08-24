@@ -69,11 +69,11 @@ namespace sts::ncm {
         this->make_content_path_func(content_path, content_id, this->root_path);
 
         bool has = false;
-        R_TRY(HasFile(&has, content_path));
+        R_TRY(fs::HasFile(&has, content_path));
         
         if (!has) {
             path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
-            R_TRY(HasFile(&has, content_path));
+            R_TRY(fs::HasFile(&has, content_path));
         }
 
         out.SetValue(has);
@@ -88,13 +88,13 @@ namespace sts::ncm {
         bool is_content_meta_file = false;
 
         path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
-        R_TRY(HasFile(&is_content_meta_file, content_path));
+        R_TRY(fs::HasFile(&is_content_meta_file, content_path));
         
         if (!is_content_meta_file) {
             this->make_content_path_func(content_path, content_id, this->root_path);
         }
         
-        R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
         *out.pointer = common_path;
 
         return ResultSuccess;
@@ -127,7 +127,7 @@ namespace sts::ncm {
         bool is_content_file = false;
 
         this->make_content_path_func(content_path, content_id, this->root_path);
-        R_TRY(HasFile(&is_content_file, content_path));
+        R_TRY(fs::HasFile(&is_content_file, content_path));
         
         if (!is_content_file) {
             path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
@@ -167,20 +167,20 @@ namespace sts::ncm {
         bool is_content_file = false;
 
         this->make_content_path_func(content_path, content_id, this->root_path);
-        R_TRY(HasFile(&is_content_file, content_path));
+        R_TRY(fs::HasFile(&is_content_file, content_path));
         
         if (!is_content_file) {
             path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
         }
    
         FILE* f = nullptr;
-        R_TRY(OpenFile(&f, content_path, FS_OPEN_READ));
+        R_TRY(fs::OpenFile(&f, content_path, FS_OPEN_READ));
         
         ON_SCOPE_EXIT {
             fclose(f);
         };
    
-        R_TRY(ReadFile(f, offset, buf.buffer, buf.num_elements));
+        R_TRY(fs::ReadFile(f, offset, buf.buffer, buf.num_elements));
 
         return ResultSuccess;
     }
@@ -200,13 +200,13 @@ namespace sts::ncm {
         bool is_content_meta_file = false;
 
         path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
-        R_TRY(HasFile(&is_content_meta_file, content_path));
+        R_TRY(fs::HasFile(&is_content_meta_file, content_path));
         
         if (!is_content_meta_file) {
             this->make_content_path_func(content_path, content_id, this->root_path);
         }
 
-        R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
         R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
         out_rights_id.SetValue(rights_id);

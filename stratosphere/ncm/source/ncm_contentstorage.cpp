@@ -28,7 +28,7 @@ namespace sts::ncm {
 
     Result ContentStorageInterface::Initialize(const char* root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush) {
         R_TRY(this->EnsureEnabled());
-        R_TRY(CheckContentStorageDirectoriesExist(root_path));
+        R_TRY(fs::CheckContentStorageDirectoriesExist(root_path));
         const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
 
         if (root_path_len >= FS_MAX_PATH-1) {
@@ -76,7 +76,7 @@ namespace sts::ncm {
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
 
-        R_TRY_CATCH(OpenFile(&this->content_cache_file_handle, content_path, FS_OPEN_READ)) {
+        R_TRY_CATCH(fs::OpenFile(&this->content_cache_file_handle, content_path, FS_OPEN_READ)) {
             R_CATCH(ResultFsPathNotFound) {
                 return ResultNcmContentNotFound;
             }
@@ -101,7 +101,7 @@ namespace sts::ncm {
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
 
-        R_TRY(EnsureParentDirectoryRecursively(content_path));
+        R_TRY(fs::EnsureParentDirectoryRecursively(content_path));
         R_TRY(this->placeholder_accessor.Create(placeholder_id, size));
 
         return ResultSuccess;
@@ -119,7 +119,7 @@ namespace sts::ncm {
         this->placeholder_accessor.MakePath(placeholder_path, placeholder_id);
         
         bool has = false;
-        R_TRY(HasFile(&has, placeholder_path));
+        R_TRY(fs::HasFile(&has, placeholder_path));
         out.SetValue(has);
 
         return ResultSuccess;
@@ -185,7 +185,7 @@ namespace sts::ncm {
         this->GetContentPath(content_path, content_id);
 
         bool has = false;
-        R_TRY(HasFile(&has, content_path));
+        R_TRY(fs::HasFile(&has, content_path));
         out.SetValue(has);
 
         return ResultSuccess;
@@ -197,7 +197,7 @@ namespace sts::ncm {
         char content_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
-        R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
         *out.pointer = common_path;
         return ResultSuccess;
     }
@@ -208,7 +208,7 @@ namespace sts::ncm {
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
-        R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
         *out.pointer = common_path;
         return ResultSuccess;
     }
@@ -239,7 +239,7 @@ namespace sts::ncm {
         const unsigned int dir_depth = this->placeholder_accessor.GetDirectoryDepth();
         size_t entry_count = 0;
 
-        R_TRY(TraverseDirectory(placeholder_root_path, dir_depth, [&](bool* should_continue, bool* should_retry_dir_read, const char* current_path, struct dirent* dir_entry) {
+        R_TRY(fs::TraverseDirectory(placeholder_root_path, dir_depth, [&](bool* should_continue, bool* should_retry_dir_read, const char* current_path, struct dirent* dir_entry) {
             *should_continue = true;
             *should_retry_dir_read = false;
             
@@ -268,7 +268,7 @@ namespace sts::ncm {
         const unsigned int dir_depth = this->GetContentDirectoryDepth();
         u32 content_count = 0;
 
-        R_TRY(TraverseDirectory(content_root_path, dir_depth, [&](bool* should_continue, bool* should_retry_dir_read, const char* current_path, struct dirent* dir_entry) {
+        R_TRY(fs::TraverseDirectory(content_root_path, dir_depth, [&](bool* should_continue, bool* should_retry_dir_read, const char* current_path, struct dirent* dir_entry) {
             *should_continue = true;
             *should_retry_dir_read = false;
 
@@ -295,7 +295,7 @@ namespace sts::ncm {
         const unsigned int dir_depth = this->GetContentDirectoryDepth();
         size_t entry_count = 0;
 
-        R_TRY(TraverseDirectory(content_root_path, dir_depth, [&](bool* should_continue,  bool* should_retry_dir_read, const char* current_path, struct dirent* dir_entry) {
+        R_TRY(fs::TraverseDirectory(content_root_path, dir_depth, [&](bool* should_continue,  bool* should_retry_dir_read, const char* current_path, struct dirent* dir_entry) {
             *should_retry_dir_read = false;
             *should_continue = true;
 
@@ -368,7 +368,7 @@ namespace sts::ncm {
 
         /* Ensure the new content path is ready. */
         this->GetContentPath(new_content_path, new_content_id);
-        R_TRY(EnsureParentDirectoryRecursively(new_content_path));
+        R_TRY(fs::EnsureParentDirectoryRecursively(new_content_path));
 
         R_TRY(this->placeholder_accessor.EnsureRecursively(placeholder_id));
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
@@ -402,7 +402,7 @@ namespace sts::ncm {
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
         R_TRY(this->OpenCachedContentFile(content_id));
-        R_TRY(ReadFile(this->content_cache_file_handle, offset, buf.buffer, buf.num_elements));
+        R_TRY(fs::ReadFile(this->content_cache_file_handle, offset, buf.buffer, buf.num_elements));
 
         return ResultSuccess;
     }
@@ -416,7 +416,7 @@ namespace sts::ncm {
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
-        R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
         R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
         out_rights_id.SetValue(rights_id);
@@ -452,7 +452,7 @@ namespace sts::ncm {
         char content_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
-        R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
         R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
         {
@@ -504,13 +504,13 @@ namespace sts::ncm {
         this->GetContentPath(content_path, content_id);
 
         FILE* f = nullptr;
-        R_TRY(OpenFile(&f, content_path, FS_OPEN_WRITE));
+        R_TRY(fs::OpenFile(&f, content_path, FS_OPEN_WRITE));
         
         ON_SCOPE_EXIT {
             fclose(f);
         };
 
-        R_TRY(WriteFile(f, offset, data.buffer, data.num_elements, FS_WRITEOPTION_FLUSH));
+        R_TRY(fs::WriteFile(f, offset, data.buffer, data.num_elements, FS_WRITEOPTION_FLUSH));
 
         return ResultSuccess;
     }
@@ -584,14 +584,14 @@ namespace sts::ncm {
             return ResultSuccess;
         };
 
-        R_TRY(TraverseDirectory(content_root_path, dir_depth, fix_file_attributes));
+        R_TRY(fs::TraverseDirectory(content_root_path, dir_depth, fix_file_attributes));
 
         char placeholder_root_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.InvalidateAll();
         this->placeholder_accessor.MakeRootPath(placeholder_root_path);
         dir_depth = this->placeholder_accessor.GetDirectoryDepth();
 
-        R_TRY(TraverseDirectory(placeholder_root_path, dir_depth, fix_file_attributes));
+        R_TRY(fs::TraverseDirectory(placeholder_root_path, dir_depth, fix_file_attributes));
 
         return ResultSuccess;
     }
@@ -623,7 +623,7 @@ namespace sts::ncm {
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
-        R_TRY(ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
         R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
         {

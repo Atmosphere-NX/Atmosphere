@@ -21,15 +21,15 @@ namespace sts::ncm {
 
     namespace {
 
-        struct InstallContentMetaHeader {
+        struct ContentMetaHeader {
             u16 extended_header_size;
             u16 content_count;
             u16 content_meta_count;
             ContentMetaAttribute attributes;
-            u8 padding;
+            StorageId storage_id;
         };
 
-        static_assert(sizeof(InstallContentMetaHeader) == 0x8, "InstallContentMetaHeader definition!");
+        static_assert(sizeof(ContentMetaHeader) == 0x8, "ContentMetaHeader definition!");
 
         struct ApplicationMetaExtendedHeader {
             TitleId patch_id;
@@ -54,17 +54,17 @@ namespace sts::ncm {
             u32 extended_data_size;
         };
 
-        inline const InstallContentMetaHeader* GetValueHeader(const void* value) {
-            return reinterpret_cast<const InstallContentMetaHeader*>(value);
+        inline const ContentMetaHeader* GetValueHeader(const void* value) {
+            return reinterpret_cast<const ContentMetaHeader*>(value);
         }
 
         template<typename ExtendedHeaderType>
         inline const ExtendedHeaderType* GetValueExtendedHeader(const void* value) {
-            return reinterpret_cast<const ExtendedHeaderType*>(reinterpret_cast<const u8*>(value) + sizeof(InstallContentMetaHeader));
+            return reinterpret_cast<const ExtendedHeaderType*>(reinterpret_cast<const u8*>(value) + sizeof(ContentMetaHeader));
         }
 
         inline const ContentInfo* GetValueContentInfos(const void* value) {
-            return reinterpret_cast<const ContentInfo*>(reinterpret_cast<const u8*>(value) + sizeof(InstallContentMetaHeader) + GetValueHeader(value)->extended_header_size);
+            return reinterpret_cast<const ContentInfo*>(reinterpret_cast<const u8*>(value) + sizeof(ContentMetaHeader) + GetValueHeader(value)->extended_header_size);
         }
 
         inline const ContentMetaInfo* GetValueContentMetaInfos(const void* value) {

@@ -17,9 +17,12 @@
 #pragma once
 
 #include <type_traits>
+#include "../lr/lr_types.hpp"
 #include "../util/util_uuid.hpp"
 
 namespace sts::ncm {
+
+    using Path = lr::Path;
 
     /* Storage IDs. */
     enum class StorageId : u8 {
