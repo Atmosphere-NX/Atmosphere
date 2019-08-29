@@ -70,7 +70,7 @@ namespace sts::pinmux {
                 std::abort();
             }
 
-            for (size_t i = 0; i < num_configs - 1; i++) {
+            for (size_t i = 0; i < num_configs; i++) {
                 UpdatePad(configs[i].name, configs[i].val, configs[i].mask);
             }
 
