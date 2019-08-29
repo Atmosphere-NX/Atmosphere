@@ -148,6 +148,11 @@ void Utils::InitializeThreadFunc(void *args) {
 
         /* Automatically backup BIS keys. */
         {
+            u64 key_generation = 0;
+            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+                R_ASSERT(splGetConfig(SplConfigItem_NewKeyGeneration, &key_generation));
+            }
+
             static constexpr u8 const BisKeySources[4][2][0x10] = {
                 {
                     {0xF8, 0x3F, 0x38, 0x6E, 0x2C, 0xD2, 0xCA, 0x32, 0xA8, 0x9A, 0xB9, 0xAA, 0x29, 0xBF, 0xC7, 0x48},
@@ -172,7 +177,7 @@ void Utils::InitializeThreadFunc(void *args) {
             for (size_t partition = 0; partition < 4; partition++) {
                 if (partition == 0) {
                     for (size_t i = 0; i < 2; i++) {
-                        R_ASSERT(splFsGenerateSpecificAesKey(BisKeySources[partition][i], 0, i, bis_keys[partition][i]));
+                        R_ASSERT(splFsGenerateSpecificAesKey(BisKeySources[partition][i], key_generation, i, bis_keys[partition][i]));
                     }
                 } else {
                     static constexpr u8 const BisKekSource[0x10] = {
@@ -182,7 +187,7 @@ void Utils::InitializeThreadFunc(void *args) {
                     const u32 option = (partition == 3 && sts::spl::IsRecoveryBoot()) ? 0x4 : 0x1;
 
                     u8 access_key[0x10];
-                    R_ASSERT(splCryptoGenerateAesKek(BisKekSource, 0, option, access_key));
+                    R_ASSERT(splCryptoGenerateAesKek(BisKekSource, key_generation, option, access_key));
                     for (size_t i = 0; i < 2; i++) {
                         R_ASSERT(splCryptoGenerateAesKey(access_key, BisKeySources[partition][i], bis_keys[partition][i]));
                     }
