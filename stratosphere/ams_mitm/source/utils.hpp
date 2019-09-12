@@ -108,6 +108,7 @@ class Utils {
 
 
         static bool IsHidAvailable();
+        static void WaitHidAvailable();
         static Result GetKeysHeld(u64 *keys);
 
         static OverrideKey GetTitleOverrideKey(u64 tid);

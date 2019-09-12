@@ -29,7 +29,7 @@
 #include "bpc_mitm/bpcmitm_reboot_manager.hpp"
 
 static FsFileSystem g_sd_filesystem = {0};
-static HosSignal g_sd_signal;
+static HosSignal g_sd_signal, g_hid_signal;
 
 static std::vector<u64> g_mitm_flagged_tids;
 static std::vector<u64> g_disable_mitm_flagged_tids;
@@ -299,6 +299,9 @@ void Utils::InitializeThreadFunc(void *args) {
             svcSleepThread(1000000ULL);
         }
     }
+
+    /* Signal to waiters that we are ready. */
+    g_hid_signal.Signal();
 }
 
 bool Utils::IsSdInitialized() {
@@ -311,6 +314,10 @@ void Utils::WaitSdInitialized() {
 
 bool Utils::IsHidAvailable() {
     return g_has_hid_session;
+}
+
+void Utils::WaitHidAvailable() {
+    g_hid_signal.Wait();
 }
 
 Result Utils::OpenSdFile(const char *fn, int flags, FsFile *out) {
