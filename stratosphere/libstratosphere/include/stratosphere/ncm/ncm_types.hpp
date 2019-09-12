@@ -110,6 +110,7 @@ namespace sts::ncm {
         static const TitleId Olsc;
         static const TitleId Dt;
         static const TitleId Nd;
+        static const TitleId Ngct;
 
         static const TitleId SystemEnd;
 
@@ -279,6 +280,7 @@ namespace sts::ncm {
     inline constexpr const TitleId TitleId::Olsc        = { 0x010000000000003Eul };
     inline constexpr const TitleId TitleId::Dt          = { 0x010000000000003Ful };
     inline constexpr const TitleId TitleId::Nd          = { 0x0100000000000040ul };
+    inline constexpr const TitleId TitleId::Ngct        = { 0x0100000000000041ul };
 
     inline constexpr const TitleId TitleId::SystemEnd   = { 0x01000000000007FFul };
 
