@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <string.h>
 #include "utils.h"
 #include "se.h"
@@ -102,7 +102,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(100, proc_id_recv)[] = {0xA9BF
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(200, proc_id_send)[] = {0x48, 0x31, 0x41, 0xF9, 0xE9, 0x03, 0x18, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0xC8, 0x6A, 0x29, 0xF8};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(200, proc_id_send)[] = {0xA9BF2FEA, 0x2A1803EB, 0xD37EF56B, 0xF86B6B8B, 0x92FFFFE9, 0x8A090168, 0xD2FFFFE9, 0x8A09016B, 0xD2FFFFC9, 0xEB09017F, 0x54000040, 0xF9413148, 0xA8C12FEA};
-/*  
+/*
     stp x10, x11, [sp, #-0x10]!
     mov w10, w15
     lsl x10, x10, #2
@@ -138,7 +138,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(200, proc_id_recv)[] = {0xA9BF
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(300, proc_id_send)[] = {0x48, 0x55, 0x41, 0xF9, 0xE9, 0x03, 0x18, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0xC8, 0x6A, 0x29, 0xF8};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(300, proc_id_send)[] = {0xA9BF2FEA, 0x2A1803EB, 0xD37EF56B, 0xF86B6B8B, 0x92FFFFE9, 0x8A090168, 0xD2FFFFE9, 0x8A09016B, 0xD2FFFFC9, 0xEB09017F, 0x54000040, 0xF9415548, 0xA8C12FEA};
-/*  
+/*
     stp x10, x11, [sp, #-0x10]!
     mov w10, w15
     lsl x10, x10, #2
@@ -174,7 +174,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(300, proc_id_recv)[] = {0xA9BF
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(302, proc_id_send)[] = {0x48, 0x55, 0x41, 0xF9, 0xE9, 0x03, 0x18, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0xC8, 0x6A, 0x29, 0xF8};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(302, proc_id_send)[] = {0xA9BF2FEA, 0x2A1803EB, 0xD37EF56B, 0xF86B6B8B, 0x92FFFFE9, 0x8A090168, 0xD2FFFFE9, 0x8A09016B, 0xD2FFFFC9, 0xEB09017F, 0x54000040, 0xF9415548, 0xA8C12FEA};
-/*  
+/*
     stp x10, x11, [sp, #-0x10]!
     mov w10, w15
     lsl x10, x10, #2
@@ -193,7 +193,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(302, proc_id_send)[] = {0xA9BF
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(302, proc_id_recv)[] = {0x08, 0x55, 0x41, 0xF9, 0xE9, 0x03, 0x0F, 0x2A, 0x29, 0xF5, 0x7E, 0xD3, 0x48, 0x6B, 0x29, 0xF8};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(302, proc_id_recv)[] = {0xA9BF2FEA, 0x2A0F03EA, 0xD37EF54A, 0xF9405FEB, 0xF86A696A, 0xF9407BEB, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000040, 0xF9415568, 0xA8C12FEA};
-/*  
+/*
     mov w10, w23
     lsl x10, x10, #2
     ldr x10, [x28, x10]
@@ -210,7 +210,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(302, proc_id_recv)[] = {0xA9BF
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(400, proc_id_send)[] = {0xEA, 0x53, 0x40, 0xF9, 0x48, 0x59, 0x41, 0xF9, 0xE9, 0x03, 0x17, 0x2A, 0x29, 0xF5, 0x7E, 0xD3};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(400, proc_id_send)[] = {0x2A1703EA, 0xD37EF54A, 0xF86A6B8A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000060, 0xF94053EA, 0xF9415948, 0xF94053EA};
-/*  
+/*
     ldr x13, [sp,#0x70]
     mov w10, w14
     lsl x10, x10, #2
@@ -244,7 +244,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(400, proc_id_recv)[] = {0xF940
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(500, proc_id_send)[] = {0xEA, 0x43, 0x40, 0xF9, 0x48, 0x59, 0x41, 0xF9, 0xE9, 0x03, 0x17, 0x2A, 0x29, 0xF5, 0x7E, 0xD3};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(500, proc_id_send)[] = {0x2A1703EA, 0xD37EF54A, 0xF86A6B6A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000060, 0xF94043EA, 0xF9415948, 0xF94043EA};
-/*  
+/*
     ldr x13, [sp, #0x70]
     mov w10, w21
     lsl x10, x10, #2
@@ -257,7 +257,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(500, proc_id_send)[] = {0x2A17
     cmp x10, x9
     beq #8
     ldr x8, [x24,#0x2b0]
-    ldr x10, [sp,#0xd8] 
+    ldr x10, [sp,#0xd8]
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(500, proc_id_recv)[] = {0x08, 0x5B, 0x41, 0xF9, 0xEA, 0x6F, 0x40, 0xF9, 0xE9, 0x03, 0x15, 0x2A, 0x29, 0xF5, 0x7E, 0xD3};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(500, proc_id_recv)[] = {0xF9403BED, 0x2A1503EA, 0xD37EF54A, 0xF86A69AA, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000040, 0xF9415B08, 0xF9406FEA};
@@ -274,7 +274,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(500, proc_id_recv)[] = {0xF940
     mov x9, #0xfffe000000000000
     cmp x10, x9
     beq #0x20
-    
+
     stp x8, x9, [sp, #-0x10]!
     ldr x8, [x24]
     ldr x8, [x8, #0x38]
@@ -282,13 +282,13 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(500, proc_id_recv)[] = {0xF940
     blr x8
     ldp x8, x9, [sp],#0x10
     mov x8, x0
-    
+
     ldp x10, x11, [sp],#0x10
     mov x0, x8
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(600, proc_id_send)[] = {0x08, 0x03, 0x40, 0xF9, 0x08, 0x1D, 0x40, 0xF9, 0xE0, 0x03, 0x18, 0xAA, 0x00, 0x01, 0x3F, 0xD6, 0xE8, 0x03, 0x15, 0x2A, 0xB5, 0x0A, 0x00, 0x11, 0x08, 0xF5, 0x7E, 0xD3};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(600, proc_id_send)[] = {0xA9BF2FEA, 0xF94037EB, 0x2A1503EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF9400308, 0xF9401D08, 0xAA1803E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
-/*  
+/*
     stp x10, x11, [sp, #-0x10]!
     ldr x11, [sp, #0x80]
     mov w10, w21
@@ -301,7 +301,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(600, proc_id_send)[] = {0xA9BF
     mov x9, #0xfffe000000000000
     cmp x10, x9
     beq #0x20
-    
+
     stp x8, x9, [sp, #-0x10]!
     ldr x8, [x24]
     ldr x8, [x8, #0x38]
@@ -309,7 +309,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(600, proc_id_send)[] = {0xA9BF
     blr x8
     ldp x8, x9, [sp],#0x10
     mov x8, x0
-    
+
     ldp x10, x11, [sp],#0x10
     mov x0, x8
 */
@@ -328,7 +328,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(600, proc_id_recv)[] = {0xA9BF
     mov x9, #0xfffe000000000000
     cmp x10, x9
     beq #0x20
-    
+
     stp x8, x9, [sp, #-0x10]!
     ldr x8, [x21]
     ldr x8, [x8, #0x38]
@@ -336,13 +336,13 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(600, proc_id_recv)[] = {0xA9BF
     blr x8
     ldp x8, x9, [sp],#0x10
     mov x8, x0
-    
+
     ldp x10, x11, [sp],#0x10
     mov x0, x8
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(700, proc_id_send)[] = {0xA8, 0x02, 0x40, 0xF9, 0x08, 0x1D, 0x40, 0xF9, 0xE0, 0x03, 0x15, 0xAA, 0x00, 0x01, 0x3F, 0xD6, 0xE8, 0x03, 0x19, 0x2A, 0x39, 0x0B, 0x00, 0x11, 0x08, 0xF5, 0x7E, 0xD3};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(700, proc_id_send)[] = {0xA9BF2FEA, 0xF9403BEB, 0x2A1903EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF94002A8, 0xF9401D08, 0xAA1503E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
-/*  
+/*
     stp x10, x11, [sp, #-0x10]!
     ldr x11, [sp, #0x98]
     mov w10, w22
@@ -355,7 +355,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(700, proc_id_send)[] = {0xA9BF
     mov x9, #0xfffe000000000000
     cmp x10, x9
     beq #0x20
-    
+
     stp x8, x9, [sp, #-0x10]!
     ldr x8, [x27]
     ldr x8, [x8, #0x38]
@@ -363,7 +363,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(700, proc_id_send)[] = {0xA9BF
     blr x8
     ldp x8, x9, [sp],#0x10
     mov x8, x0
-    
+
     ldp x10, x11, [sp],#0x10
     mov x0, x8
 */
@@ -383,7 +383,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(700, proc_id_recv)[] = {0xA9BF
     mov x9, #0xfffe000000000000
     cmp x10, x9
     beq #0x20
-    
+
     stp x8, x9, [sp, #-0x10]!
     ldr x8, [x21]
     ldr x8, [x8, #0x38]
@@ -391,13 +391,13 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(700, proc_id_recv)[] = {0xA9BF
     blr x8
     ldp x8, x9, [sp],#0x10
     mov x8, x0
-    
+
     ldp x10, x11, [sp],#0x10
     mov x0, x8
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(800, proc_id_send)[] = {0xA8, 0x02, 0x40, 0xF9, 0x08, 0x1D, 0x40, 0xF9, 0xE0, 0x03, 0x15, 0xAA, 0x00, 0x01, 0x3F, 0xD6, 0xE8, 0x03, 0x19, 0x2A, 0x39, 0x0B, 0x00, 0x11, 0x08, 0xF5, 0x7E, 0xD3};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(800, proc_id_send)[] = {0xA9BF2FEA, 0xF9403BEB, 0x2A1903EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF94002A8, 0xF9401D08, 0xAA1503E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
-/*  
+/*
     stp x10, x11, [sp, #-0x10]!
     ldr x11, [sp, #0x98]
     mov w10, w22
@@ -410,7 +410,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(800, proc_id_send)[] = {0xA9BF
     mov x9, #0xfffe000000000000
     cmp x10, x9
     beq #0x20
-    
+
     stp x8, x9, [sp, #-0x10]!
     ldr x8, [x27]
     ldr x8, [x8, #0x38]
@@ -418,12 +418,67 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(800, proc_id_send)[] = {0xA9BF
     blr x8
     ldp x8, x9, [sp],#0x10
     mov x8, x0
-    
+
     ldp x10, x11, [sp],#0x10
     mov x0, x8
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(800, proc_id_recv)[] = {0x68, 0x03, 0x40, 0xF9, 0x08, 0x1D, 0x40, 0xF9, 0xE0, 0x03, 0x1B, 0xAA, 0x00, 0x01, 0x3F, 0xD6, 0xA9, 0x83, 0x50, 0xF8, 0xE8, 0x03, 0x16, 0x2A, 0xD6, 0x0A, 0x00, 0x11};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(800, proc_id_recv)[] = {0xA9BF2FEA, 0xF9404FEB, 0x2A1603EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF9400368, 0xF9401D08, 0xAA1B03E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
+
+/*
+    stp x10, x11, [sp, #-0x10]!
+    ldr x11, [sp, #0x68]
+    mov w10, w22
+    lsl x10, x10, #2
+    ldr x10, [x11, x10]
+    mov x9, #0x0000ffffffffffff
+    and x8, x10, x9
+    mov x9, #0xffff000000000000
+    and x10, x10, x9
+    mov x9, #0xfffe000000000000
+    cmp x10, x9
+    beq #0x20
+
+    stp x8, x9, [sp, #-0x10]!
+    ldr x8, [x23]
+    ldr x8, [x8, #0x38]
+    mov x0, x23
+    blr x8
+    ldp x8, x9, [sp],#0x10
+    mov x8, x0
+
+    ldp x10, x11, [sp],#0x10
+    mov x0, x8
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(900, proc_id_send)[] = {0xE8, 0x02, 0x40, 0xF9, 0x08, 0x1D, 0x40, 0xF9, 0xE0, 0x03, 0x17, 0xAA, 0x00, 0x01, 0x3F, 0xD6, 0xE8, 0x03, 0x16, 0x2A, 0xD6, 0x0A, 0x00, 0x11, 0x08, 0xF5, 0x7E, 0xD3};
+static const instruction_t MAKE_KERNEL_PATCH_NAME(900, proc_id_send)[] = {0xA9BF2FEA, 0xF94037EB, 0x2A1603EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF94002E8, 0xF9401D08, 0xAA1703E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
+/*
+    stp x10, x11, [sp, #-0x10]!
+    ldr x11, [sp, #0x90]
+    mov w10, w23
+    lsl x10, x10, #2
+    ldr x10, [x11, x10]
+    mov x9, #0x0000ffffffffffff
+    and x8, x10, x9
+    mov x9, #0xffff000000000000
+    and x10, x10, x9
+    mov x9, #0xfffe000000000000
+    cmp x10, x9
+    beq #0x20
+
+    stp x8, x9, [sp, #-0x10]!
+    ldr x8, [x27]
+    ldr x8, [x8, #0x38]
+    mov x0, x27
+    blr x8
+    ldp x8, x9, [sp],#0x10
+    mov x8, x0
+
+    ldp x10, x11, [sp],#0x10
+    mov x0, x8
+*/
+static const uint8_t MAKE_KERNEL_PATTERN_NAME(900, proc_id_recv)[] = {0x68, 0x03, 0x40, 0xF9, 0x08, 0x1D, 0x40, 0xF9, 0xE0, 0x03, 0x1B, 0xAA, 0x00, 0x01, 0x3F, 0xD6, 0xE8, 0x03, 0x17, 0x2A, 0xF7, 0x0A, 0x00, 0x11, 0x08, 0xF5, 0x7E, 0xD3};
+static const instruction_t MAKE_KERNEL_PATCH_NAME(900, proc_id_recv)[] = {0xA9BF2FEA, 0xF9404BEB, 0x2A1703EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF9400368, 0xF9401D08, 0xAA1B03E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
 
 /* svcControlCodeMemory Patches */
 /* b.eq -> nop */
@@ -431,6 +486,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(500, svc_control_codememory)[]
 static const instruction_t MAKE_KERNEL_PATCH_NAME(600, svc_control_codememory)[] = {MAKE_NOP};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(700, svc_control_codememory)[] = {MAKE_NOP};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory)[] = {MAKE_NOP};
+static const instruction_t MAKE_KERNEL_PATCH_NAME(900, svc_control_codememory)[] = {MAKE_NOP};
 
 /* Hook Definitions. */
 static const kernel_patch_t g_kernel_patches_100[] = {
@@ -592,6 +648,7 @@ static const kernel_patch_t g_kernel_patches_700[] = {
         .patch_offset = 0x3C6E0,
     }
 };
+
 static const kernel_patch_t g_kernel_patches_800[] = {
     {   /* Send Message Process ID Patch. */
         .pattern_size = 0x1C,
@@ -613,6 +670,30 @@ static const kernel_patch_t g_kernel_patches_800[] = {
         .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory))/sizeof(instruction_t),
         .payload = MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory),
         .patch_offset = 0x3FAD0,
+    }
+};
+
+static const kernel_patch_t g_kernel_patches_900[] = {
+    {   /* Send Message Process ID Patch. */
+        .pattern_size = 0x1C,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(900, proc_id_send),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(900, proc_id_send))/sizeof(instruction_t),
+        .branch_back_offset = 0x10,
+        .payload = MAKE_KERNEL_PATCH_NAME(900, proc_id_send)
+    },
+    {   /* Receive Message Process ID Patch. */
+        .pattern_size = 0x1C,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(900, proc_id_recv),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(900, proc_id_recv))/sizeof(instruction_t),
+        .branch_back_offset = 0x10,
+        .payload = MAKE_KERNEL_PATCH_NAME(900, proc_id_recv)
+    },
+    {   /* svcControlCodeMemory Patch. */
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(900, svc_control_codememory))/sizeof(instruction_t),
+        .payload = MAKE_KERNEL_PATCH_NAME(900, svc_control_codememory),
+        .patch_offset = 0x43DFC,
     }
 };
 
@@ -673,6 +754,15 @@ static const kernel_info_t g_kernel_infos[] = {
         .embedded_ini_ptr = 0x168,
         .free_code_space_offset = 0x607F0,
         KERNEL_PATCHES(800)
+    },
+    {   /* 9.0.0. */
+        .hash = {0xD7, 0x95, 0x65, 0x3A, 0x49, 0x4C, 0x5A, 0x9E, 0x2E, 0x04, 0xD6, 0x30, 0x7D, 0x79, 0xE1, 0xEE, 0x10, 0x2B, 0x30, 0xE0, 0x3E, 0xDD, 0x9F, 0xB3, 0x8A, 0x3C, 0x5E, 0xD3, 0x9B, 0x30, 0x11, 0x9B},
+        .hash_offset = 0x1C0,
+        .hash_size = 0x90000 - 0x1C0,
+        .embedded_ini_offset = 0x90000,
+        .embedded_ini_ptr = 0x180,
+        .free_code_space_offset = 0x65780,
+        KERNEL_PATCHES(900)
     }
 };
 
@@ -680,7 +770,7 @@ static const kernel_info_t g_kernel_infos[] = {
 uint8_t *search_pattern(void *_mem, size_t mem_size, const void *_pattern, size_t pattern_size) {
     const uint8_t *pattern = (const uint8_t *)_pattern;
     uint8_t *mem = (uint8_t *)_mem;
-    
+
     uint32_t table[0x100];
     for (unsigned int i = 0; i < sizeof(table)/sizeof(uint32_t); i++) {
         table[i] = (uint32_t)pattern_size;
@@ -688,7 +778,7 @@ uint8_t *search_pattern(void *_mem, size_t mem_size, const void *_pattern, size_
     for (unsigned int i = 0; i < pattern_size - 1; i++) {
         table[pattern[i]] = (uint32_t)pattern_size - i - 1;
     }
-    
+
     for (unsigned int i = 0; i <= mem_size - pattern_size; i += table[mem[i + pattern_size - 1]]) {
         if (pattern[pattern_size - 1] == mem[i + pattern_size - 1] && memcmp(pattern, mem + i, pattern_size - 1) == 0) {
             return mem + i;
@@ -701,7 +791,7 @@ const kernel_info_t *get_kernel_info(void *kernel, size_t size) {
     uint8_t calculated_hash[0x20];
     uint8_t calculated_partial_hash[0x20];
     se_calculate_sha256(calculated_hash, kernel, size);
-    
+
     for (unsigned int i = 0; i < sizeof(g_kernel_infos)/sizeof(kernel_info_t); i++) {
         if (g_kernel_infos[i].hash_size == 0 || size <= g_kernel_infos[i].hash_size) {
             if (memcmp(calculated_hash, g_kernel_infos[i].hash, sizeof(calculated_hash)) == 0) {
@@ -720,24 +810,24 @@ const kernel_info_t *get_kernel_info(void *kernel, size_t size) {
 void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel, void **out_ini1) {
     const kernel_info_t *kernel_info = get_kernel_info(_kernel, size);
     *out_ini1 = NULL;
-    
+
     /* Apply IPS patches. */
     apply_kernel_ips_patches(_kernel, size);
-    
+
     if (kernel_info == NULL && !is_sd_kernel) {
         /* Should this be fatal? */
         fatal_error("kernel_patcher: unable to identify kernel!\n");
     }
-    
+
     if (kernel_info == NULL && is_sd_kernel) {
         return;
     }
-    
+
     if (kernel_info->embedded_ini_offset != 0) {
         *out_ini1 = (void *)((uintptr_t)_kernel + kernel_info->embedded_ini_offset);
         *((volatile uint64_t *)((uintptr_t)_kernel + kernel_info->embedded_ini_ptr)) = (uint64_t)size;
     }
-    
+
     /* Apply hooks and patches. */
     uint8_t *kernel = (uint8_t *)_kernel;
     size_t free_space_offset = kernel_info->free_code_space_offset;
@@ -759,7 +849,7 @@ void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel, void *
             /* TODO: What should be done in this case? */
             fatal_error("kernel_patcher: insufficient space to apply patches!\n");
         }
-        
+
         uint8_t *pattern_loc = search_pattern(kernel, size, kernel_info->patches[i].pattern, kernel_info->patches[i].pattern_size);
         if (pattern_loc == NULL) {
             /* TODO: Should we print an error/abort here? */
@@ -768,7 +858,7 @@ void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel, void *
         /* Patch kernel to branch to our hook at the desired place. */
         volatile instruction_t *hook_start = (instruction_t *)(pattern_loc + kernel_info->patches[i].pattern_hook_offset);
         *hook_start = MAKE_BRANCH((uint32_t)((uintptr_t)hook_start - (uintptr_t)kernel), free_space_offset);
-        
+
         /* Insert hook into free space. */
         volatile instruction_t *payload = (instruction_t *)(kernel + free_space_offset);
         for (unsigned int p = 0; p < kernel_info->patches[i].payload_num_instructions; p++) {
@@ -777,7 +867,7 @@ void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel, void *
         if (kernel_info->patches[i].branch_back_offset) {
             payload[kernel_info->patches[i].payload_num_instructions] = MAKE_BRANCH(free_space_offset + sizeof(instruction_t) * kernel_info->patches[i].payload_num_instructions, (uint32_t)(kernel_info->patches[i].branch_back_offset + (uintptr_t)hook_start - (uintptr_t)kernel));
         }
-        
+
         free_space_offset += hook_size;
         free_space_size -= hook_size;
     }

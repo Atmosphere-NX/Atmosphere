@@ -35,11 +35,11 @@ namespace sts::boot2 {
             ncm::TitleId::Bus,         /* bus */
             ncm::TitleId::Settings,    /* settings */
             ncm::TitleId::Pcv,         /* pcv */
+            ncm::TitleId::Usb,         /* usb */
         };
         constexpr size_t NumPreSdCardLaunchPrograms = util::size(PreSdCardLaunchPrograms);
 
         constexpr ncm::TitleId AdditionalLaunchPrograms[] = {
-            ncm::TitleId::Usb,         /* usb */
             ncm::TitleId::Tma,         /* tma */
             ncm::TitleId::Am,          /* am */
             ncm::TitleId::NvServices,  /* nvservices */
@@ -80,11 +80,11 @@ namespace sts::boot2 {
             ncm::TitleId::Migration,   /* migration */
             ncm::TitleId::Grc,         /* grc */
             ncm::TitleId::Olsc,        /* olsc */
+            ncm::TitleId::Ngct,        /* ngct */
         };
         constexpr size_t NumAdditionalLaunchPrograms = util::size(AdditionalLaunchPrograms);
 
         constexpr ncm::TitleId AdditionalMaintenanceLaunchPrograms[] = {
-            ncm::TitleId::Usb,         /* usb */
             ncm::TitleId::Tma,         /* tma */
             ncm::TitleId::Am,          /* am */
             ncm::TitleId::NvServices,  /* nvservices */
@@ -121,6 +121,7 @@ namespace sts::boot2 {
             ncm::TitleId::Migration,   /* migration */
             ncm::TitleId::Grc,         /* grc */
             ncm::TitleId::Olsc,        /* olsc */
+            ncm::TitleId::Ngct,        /* ngct */
         };
         constexpr size_t NumAdditionalMaintenanceLaunchPrograms = util::size(AdditionalMaintenanceLaunchPrograms);
 
@@ -155,6 +156,7 @@ namespace sts::boot2 {
                     /* We don't care about other issues. */
                     break;
             }
+
 
             if (out_process_id) {
                 *out_process_id = process_id;

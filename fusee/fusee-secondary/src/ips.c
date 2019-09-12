@@ -411,6 +411,9 @@ static const uint8_t g_fs_hashes[FS_VER_MAX][0x8] = {
 
     "\x6B\x09\xB6\x7B\x29\xC0\x20\x24", /* FS_VER_8_1_0 */
     "\xB4\xCA\xE1\xF2\x49\x65\xD9\x2E", /* FS_VER_8_1_0_EXFAT */
+
+    "\x46\x87\x40\x76\x1E\x19\x3E\xB7", /* FS_VER_9_0_0 */
+    "\x7C\x95\x13\x76\xE5\xC1\x2D\xF8", /* FS_VER_9_0_0_EXFAT */
 };
 
 kip1_header_t *apply_kip_ips_patches(kip1_header_t *kip, size_t kip_size, emummc_fs_ver_t *out_fs_ver) {

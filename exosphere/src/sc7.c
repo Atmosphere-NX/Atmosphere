@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -77,6 +77,7 @@ static void enable_lp0_wake_events(void) {
 
 static void notify_pmic_shutdown(void) {
     clkrst_reboot(CARDEVICE_I2C5);
+    i2c_init(I2C_5);
     if (fuse_get_bootrom_patch_version() >= 0x7F) {
         i2c_send_pmic_cpu_shutdown_cmd();
     }
@@ -132,7 +133,7 @@ static void setup_bpmp_sc7_firmware(void) {
     BPMP_VECTOR_UNK = 0x40003004; /* Reboot. */
     BPMP_VECTOR_IRQ = 0x40003004; /* Reboot. */
     BPMP_VECTOR_FIQ = 0x40003004; /* Reboot. */
-    
+
     /* Hold the BPMP in reset. */
     MAKE_CAR_REG(0x300) = 2;
 
@@ -141,7 +142,7 @@ static void setup_bpmp_sc7_firmware(void) {
     for (unsigned int i = 0; i < sc7fw_bin_size; i += 4) {
         write32le(lp0_entry_code, i, read32le(sc7fw_bin, i));
     }
-        
+
     flush_dcache_range(lp0_entry_code, lp0_entry_code + sc7fw_bin_size);
 
     /* Take the BPMP out of reset. */
@@ -181,7 +182,7 @@ static void save_tzram_state(void) {
     flush_dcache_range(tzram_encryption_dst, tzram_encryption_dst + LP0_TZRAM_SAVE_SIZE);
     flush_dcache_range(tzram_encryption_src, tzram_encryption_src + LP0_TZRAM_SAVE_SIZE);
 
-    /* Use the all-zero cmac buffer as an IV. */    
+    /* Use the all-zero cmac buffer as an IV. */
     se_aes_256_cbc_encrypt(KEYSLOT_SWITCH_LP0TZRAMKEY, tzram_encryption_dst, LP0_TZRAM_SAVE_SIZE, tzram_encryption_src, LP0_TZRAM_SAVE_SIZE, tzram_cmac);
     flush_dcache_range(tzram_encryption_dst, tzram_encryption_dst + LP0_TZRAM_SAVE_SIZE);
 
@@ -189,12 +190,12 @@ static void save_tzram_state(void) {
     for (unsigned int i = 0; i < LP0_TZRAM_SAVE_SIZE; i += 4) {
         write32le(tzram_store_address, i, read32le(tzram_encryption_dst, i));
     }
-    
+
     flush_dcache_range(tzram_store_address, tzram_store_address + LP0_TZRAM_SAVE_SIZE);
 
     /* Compute CMAC. */
     se_compute_aes_256_cmac(KEYSLOT_SWITCH_LP0TZRAMKEY, tzram_cmac, sizeof(tzram_cmac), tzram_encryption_src, LP0_TZRAM_SAVE_SIZE);
-    
+
     /* Write CMAC, lock registers. */
     APBDEV_PMC_SECURE_SCRATCH112_0 = tzram_cmac[0];
     APBDEV_PMC_SECURE_SCRATCH113_0 = tzram_cmac[1];
@@ -240,7 +241,7 @@ void save_se_and_power_down_cpu(void) {
     /* Save context for warmboot to restore. */
     save_tzram_state();
     save_se_state();
-    
+
     /* Patch the bootrom to disable warmboot signature checks. */
     MAKE_REG32(PMC_BASE + 0x118) = 0x2202E012;
     MAKE_REG32(PMC_BASE + 0x11C) = 0x6001DC28;
@@ -248,14 +249,14 @@ void save_se_and_power_down_cpu(void) {
     if (!configitem_is_retail()) {
         uart_send(UART_A, "OYASUMI", 8);
     }
-    
+
     finalize_powerdown();
 }
 
 uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argument) {
     /* TODO: 6.0.0 introduces heavy deja vu mitigations. */
     /* Exosphere may want to implement these. */
-    
+
     /* Ensure SMC call is to enter deep sleep. */
     if ((power_state & 0x17FFF) != 0x1001B) {
         return 0xFFFFFFFD;
@@ -285,7 +286,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
 
     /* Prepare the current core for sleep. */
     configure_flow_regs_for_sleep();
-    
+
     /* Save core context. */
     set_core_entrypoint_and_argument(get_core_id(), entrypoint, argument);
     save_current_core_context();

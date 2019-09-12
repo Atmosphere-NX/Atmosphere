@@ -28,7 +28,7 @@ namespace sts::cfg {
             sm::ServiceName::Encode("pcv"),
             sm::ServiceName::Encode("gpio"),
             sm::ServiceName::Encode("pinmux"),
-            sm::ServiceName::Encode("psc:c")
+            sm::ServiceName::Encode("psc:m"),
         };
         constexpr size_t NumRequiredServicesForSdCardAccess = util::size(RequiredServicesForSdCardAccess);
 
@@ -46,6 +46,7 @@ namespace sts::cfg {
                     return ResultFsSdCardNotPresent;
                 }
             }
+
             R_ASSERT(fsMountSdcard(&g_sd_card_filesystem));
             g_sd_card_initialized = true;
             return ResultSuccess;

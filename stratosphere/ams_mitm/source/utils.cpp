@@ -85,7 +85,7 @@ void Utils::InitializeThreadFunc(void *args) {
     /* Get required services. */
     DoWithSmSession([&]() {
         Handle tmp_hnd = 0;
-        static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:c"};
+        static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:m"};
         for (unsigned int i = 0; i < sts::util::size(required_active_services); i++) {
             R_ASSERT(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])));
             svcCloseHandle(tmp_hnd);

@@ -102,6 +102,136 @@ namespace sts::ldr {
         bool g_has_nso[Nso_Count];
         NsoHeader g_nso_headers[Nso_Count];
 
+        /* Anti-downgrade. */
+        struct MinimumTitleVersion {
+            ncm::TitleId title_id;
+            u32 version;
+        };
+
+        constexpr u32 MakeSystemVersion(u32 major, u32 minor, u32 micro) {
+            return (major << 26) | (minor << 20) | (micro << 16);
+        }
+
+        constexpr MinimumTitleVersion g_MinimumTitleVersions810[] = {
+            {ncm::TitleId::Settings,    1},
+            {ncm::TitleId::Bus,         1},
+            {ncm::TitleId::Audio,       1},
+            {ncm::TitleId::NvServices,  1},
+            {ncm::TitleId::Ns,          1},
+            {ncm::TitleId::Ssl,         1},
+            {ncm::TitleId::Es,          1},
+            {ncm::TitleId::Creport,     1},
+            {ncm::TitleId::Ro,          1},
+        };
+        constexpr size_t g_MinimumTitleVersionsCount810 = util::size(g_MinimumTitleVersions810);
+
+        constexpr MinimumTitleVersion g_MinimumTitleVersions900[] = {
+            /* All non-Development System Modules. */
+            {ncm::TitleId::Usb,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Tma,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Boot2,       MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Settings,    MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Bus,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Bluetooth,   MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Bcat,        MakeSystemVersion(9, 0, 0)},
+         /* {ncm::TitleId::Dmnt,        MakeSystemVersion(9, 0, 0)}, */
+            {ncm::TitleId::Friends,     MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Nifm,        MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Ptm,         MakeSystemVersion(9, 0, 0)},
+         /* {ncm::TitleId::Shell,       MakeSystemVersion(9, 0, 0)}, */
+            {ncm::TitleId::BsdSockets,  MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Hid,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Audio,       MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::LogManager,  MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Wlan,        MakeSystemVersion(9, 0, 0)},
+         /* {ncm::TitleId::Cs,          MakeSystemVersion(9, 0, 0)}, */
+            {ncm::TitleId::Ldn,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::NvServices,  MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Pcv,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Ppc,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::NvnFlinger,  MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Pcie,        MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Account,     MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Ns,          MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Nfc,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Psc,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::CapSrv,      MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Am,          MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Ssl,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Nim,         MakeSystemVersion(9, 0, 0)},
+         /* {ncm::TitleId::Cec,         MakeSystemVersion(9, 0, 0)}, */
+         /* {ncm::TitleId::Tspm,        MakeSystemVersion(9, 0, 0)}, */
+         /* {ncm::TitleId::Spl,         MakeSystemVersion(9, 0, 0)}, */
+            {ncm::TitleId::Lbl,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Btm,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Erpt,        MakeSystemVersion(9, 0, 0)},
+         /* {ncm::TitleId::Time,        MakeSystemVersion(9, 0, 0)}, */
+            {ncm::TitleId::Vi,          MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Pctl,        MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Npns,        MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Eupld,       MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Glue,        MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Eclct,       MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Es,          MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Fatal,       MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Grc,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Creport,     MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Ro,          MakeSystemVersion(9, 0, 0)},
+         /* {ncm::TitleId::Profiler,    MakeSystemVersion(9, 0, 0)}, */
+            {ncm::TitleId::Sdb,         MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Migration,   MakeSystemVersion(9, 0, 0)},
+         /* {ncm::TitleId::Jit,         MakeSystemVersion(9, 0, 0)}, */
+            {ncm::TitleId::JpegDec,     MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::SafeMode,    MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::Olsc,        MakeSystemVersion(9, 0, 0)},
+         /* {ncm::TitleId::Dt,          MakeSystemVersion(9, 0, 0)}, */
+         /* {ncm::TitleId::Nd,          MakeSystemVersion(9, 0, 0)}, */
+            {ncm::TitleId::Ngct,        MakeSystemVersion(9, 0, 0)},
+
+            /* All Web Applets. */
+            {ncm::TitleId::AppletWeb,           MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::AppletShop,          MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::AppletOfflineWeb,    MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::AppletLoginShare,    MakeSystemVersion(9, 0, 0)},
+            {ncm::TitleId::AppletWifiWebAuth,   MakeSystemVersion(9, 0, 0)},
+        };
+        constexpr size_t g_MinimumTitleVersionsCount900 = util::size(g_MinimumTitleVersions900);
+
+        Result ValidateTitleVersion(ncm::TitleId title_id, u32 version) {
+            if (GetRuntimeFirmwareVersion() < FirmwareVersion_810) {
+                return ResultSuccess;
+            } else {
+#ifdef LDR_VALIDATE_PROCESS_VERSION
+                const MinimumTitleVersion *entries = nullptr;
+                size_t num_entries = 0;
+                switch (GetRuntimeFirmwareVersion()) {
+                    case FirmwareVersion_810:
+                        entries = g_MinimumTitleVersions810;
+                        num_entries = g_MinimumTitleVersionsCount810;
+                        break;
+                    case FirmwareVersion_900:
+                        entries = g_MinimumTitleVersions900;
+                        num_entries = g_MinimumTitleVersionsCount900;
+                        break;
+                    default:
+                        entries = nullptr;
+                        num_entries = 0;
+                        break;
+                }
+
+                for (size_t i = 0; i < num_entries; i++) {
+                    if (entries[i].title_id == title_id && entries[i].version > version) {
+                        return ResultLoaderInvalidVersion;
+                    }
+                }
+
+                return ResultSuccess;
+#else
+                return ResultSuccess;
+#endif
+            }
+        }
+
         /* Helpers. */
         Result GetProgramInfoFromMeta(ProgramInfo *out, const Meta *meta) {
             /* Copy basic info. */
@@ -115,7 +245,7 @@ namespace sts::ldr {
 #define COPY_ACCESS_CONTROL(source, which) \
             ({ \
                 const size_t size = meta->source->which##_size; \
-                if (offset + size >= sizeof(out->ac_buffer)) { \
+                if (offset + size > sizeof(out->ac_buffer)) { \
                     return ResultLoaderInternalError; \
                 } \
                 out->source##_##which##_size = size; \
@@ -149,35 +279,6 @@ namespace sts::ldr {
 
         Acid::PoolPartition GetPoolPartition(const Meta *meta) {
             return static_cast<Acid::PoolPartition>((meta->acid->flags & Acid::AcidFlag_PoolPartitionMask) >> Acid::AcidFlag_PoolPartitionShift);
-        }
-
-        constexpr bool IsDisallowedVersion810(const ncm::TitleId title_id, const u32 version) {
-            return version == 0 &&
-                (title_id == ncm::TitleId::Settings ||
-                 title_id == ncm::TitleId::Bus ||
-                 title_id == ncm::TitleId::Audio ||
-                 title_id == ncm::TitleId::NvServices ||
-                 title_id == ncm::TitleId::Ns ||
-                 title_id == ncm::TitleId::Ssl ||
-                 title_id == ncm::TitleId::Es ||
-                 title_id == ncm::TitleId::Creport ||
-                 title_id == ncm::TitleId::Ro);
-        }
-
-        Result ValidateTitleVersion(ncm::TitleId title_id, u32 version) {
-            if (GetRuntimeFirmwareVersion() < FirmwareVersion_810) {
-                return ResultSuccess;
-            } else {
-#ifdef LDR_VALIDATE_PROCESS_VERSION
-                if (IsDisallowedVersion810(title_id, version)) {
-                    return ResultLoaderInvalidVersion;
-                } else {
-                    return ResultSuccess;
-                }
-#else
-                return ResultSuccess;
-#endif
-            }
         }
 
         Result LoadNsoHeaders(ncm::TitleId title_id, NsoHeader *nso_headers, bool *has_nso) {

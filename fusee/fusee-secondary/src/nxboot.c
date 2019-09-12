@@ -208,11 +208,13 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
         }
         case 0x0F:          /* 7.0.0 - 7.0.1 */
             return ATMOSPHERE_TARGET_FIRMWARE_700;
-        case 0x10: {        /* 8.0.0 - 8.1.0 */
+        case 0x10: {        /* 8.0.0 - 9.0.0 */
             if (memcmp(package1loader_header->build_timestamp, "20190314", 8) == 0) {
                 return ATMOSPHERE_TARGET_FIRMWARE_800;
             } else if (memcmp(package1loader_header->build_timestamp, "20190531", 8) == 0) {
                 return ATMOSPHERE_TARGET_FIRMWARE_810;
+            } else if (memcmp(package1loader_header->build_timestamp, "20190809", 8) == 0) {
+                return ATMOSPHERE_TARGET_FIRMWARE_900;
             } else {
                 fatal_error("[NXBOOT] Unable to identify package1!\n");
             }
@@ -360,6 +362,10 @@ static void nxboot_configure_stratosphere(uint32_t target_firmware) {
         if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400 && !(fuse_get_reserved_odm(7) & ~0x0000000F)) {
             kip_patches_set_enable_nogc();
         }
+        /* Check if the fuses are < 9.0.0, but firmware is >= 9.0.0 */
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_900 && !(fuse_get_reserved_odm(7) & ~0x000003FF)) {
+            kip_patches_set_enable_nogc();
+        }
     }
 }
 
@@ -484,7 +490,7 @@ uint32_t nxboot_main(void) {
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
     exo_emummc_config_t exo_emummc_cfg;
-    
+
     /* Configure emummc or mount the real NAND. */
     if (!nxboot_configure_emummc(&exo_emummc_cfg)) {
         emummc = NULL;
@@ -649,7 +655,7 @@ uint32_t nxboot_main(void) {
             fatal_error("[NXBOOT] Failed to get TSEC key!\n");
         }
     }
-    
+
     /* Display splash screen. */
     display_splash_screen_bmp(loader_ctx->custom_splash_path, (void *)0xC0000000);
 
@@ -801,7 +807,7 @@ uint32_t nxboot_main(void) {
 
     /* Wait for the splash screen to have been displayed for as long as it should be. */
     splash_screen_wait_delay();
-    
+
     /* Return the memory address for booting CPU0. */
     return (uint32_t)exosphere_memaddr;
 }

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include "i2c.h"
 #include "utils.h"
 #include "timers.h"
@@ -32,7 +32,7 @@ bool i2c_read(volatile tegra_i2c_t *regs, uint8_t device, void *dst, size_t dst_
 /* Configure I2C pinmux. */
 void i2c_config(I2CDevice id) {
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
-    
+
     switch (id) {
         case I2C_1:
             pinmux->gen1_i2c_scl = PINMUX_INPUT;
@@ -74,7 +74,7 @@ void i2c_init(I2CDevice id) {
 
     /* Wait a while until BUS_CLEAR_DONE is set. */
     for (unsigned int i = 0; i < 10; i++) {
-        wait(20000);
+        wait(25);
         if (regs->I2C_INTERRUPT_STATUS_REGISTER_0 & 0x800) {
             break;
         }
@@ -88,7 +88,7 @@ void i2c_init(I2CDevice id) {
     regs->I2C_INTERRUPT_STATUS_REGISTER_0 = int_status;
 }
 
-/* Sets a bit in a PMIC register over I2C during CPU shutdown. */ 
+/* Sets a bit in a PMIC register over I2C during CPU shutdown. */
 void i2c_send_pmic_cpu_shutdown_cmd(void) {
     uint32_t val = 0;
     /* PMIC == Device 4:3C. */
@@ -162,7 +162,7 @@ void i2c_load_config(volatile tegra_i2c_t *regs) {
 bool i2c_query(I2CDevice id, uint8_t device, uint8_t r, void *dst, size_t dst_size) {
     volatile tegra_i2c_t *regs = i2c_get_registers_from_id(id);
     uint32_t val = r;
-    
+
     /* Write single byte register ID to device. */
     if (!i2c_write(regs, device, &val, 1)) {
         return false;
@@ -171,12 +171,12 @@ bool i2c_query(I2CDevice id, uint8_t device, uint8_t r, void *dst, size_t dst_si
     if (dst_size > 4) {
         return false;
     }
-    
+
     return i2c_read(regs, device, dst, dst_size);
 }
 
 /* Writes a value to a register over I2C. */
-bool i2c_send(I2CDevice id, uint8_t device, uint8_t r, void *src, size_t src_size) {    
+bool i2c_send(I2CDevice id, uint8_t device, uint8_t r, void *src, size_t src_size) {
     uint32_t val = r;
     if (src_size == 0) {
         return true;
@@ -240,7 +240,7 @@ bool i2c_read(volatile tegra_i2c_t *regs, uint8_t device, void *dst, size_t dst_
     while (regs->I2C_I2C_STATUS_0 & 0x100) {
         /* Wait until not busy. */
     }
-    
+
     /* Ensure success. */
     if ((regs->I2C_I2C_STATUS_0 & 0xF) != 0) {
         return false;
