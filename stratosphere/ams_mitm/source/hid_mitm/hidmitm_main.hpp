@@ -16,17 +16,9 @@
 
 #pragma once
 
-enum MitmModuleId : u32 {
-    MitmModuleId_FsMitm = 0,
-    MitmModuleId_SetMitm = 1,
-    MitmModuleId_BpcMitm = 2,
-    MitmModuleId_NsMitm = 3,
-    MitmModuleId_HidMitm = 4,
+#include <switch.h>
 
-    /* Always keep this at the end. */
-    MitmModuleId_Count,
-};
+constexpr u32 HidMitmPriority = 47;
+constexpr u32 HidMitmStackSize = 0x8000;
 
-void LaunchAllMitmModules();
-
-void WaitAllMitmModules();
+void HidMitmMain(void *arg);

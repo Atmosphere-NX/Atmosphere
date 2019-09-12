@@ -26,7 +26,7 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/fs_mitm source/set_mitm source/bpc_mitm source/ns_mitm
+SOURCES		:=	source source/fs_mitm source/set_mitm source/bpc_mitm source/ns_mitm source/hid_mitm
 DATA		:=	data
 INCLUDES	:=	include ../../common/include
 EXEFS_SRC	:=	exefs_src

@@ -14,19 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <switch.h>
+#include <stratosphere.hpp>
 
-enum MitmModuleId : u32 {
-    MitmModuleId_FsMitm = 0,
-    MitmModuleId_SetMitm = 1,
-    MitmModuleId_BpcMitm = 2,
-    MitmModuleId_NsMitm = 3,
-    MitmModuleId_HidMitm = 4,
+#include "hid_shim.h"
+#include "hid_mitm_service.hpp"
 
-    /* Always keep this at the end. */
-    MitmModuleId_Count,
-};
+void HidMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx) {
+    /* Nothing to do here */
+}
 
-void LaunchAllMitmModules();
-
-void WaitAllMitmModules();
+Result HidMitmService::SetSupportedNpadStyleSet(u64 applet_resource_user_id, u32 style_set, PidDescriptor pid_desc) {
+    const HidControllerType new_style_set = static_cast<HidControllerType>(style_set | TYPE_SYSTEM | TYPE_SYSTEM_EXT);
+    return hidSetSupportedNpadStyleSetFwd(this->forward_service.get(), this->process_id, applet_resource_user_id, new_style_set);;
+}
