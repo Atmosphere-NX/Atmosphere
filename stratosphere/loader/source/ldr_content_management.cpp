@@ -334,7 +334,7 @@ namespace sts::ldr {
 
         /* We just need to set this to any valid NCA path. Let's use the executable path. */
         R_TRY(lrLrResolveProgramPath(&lr, static_cast<u64>(loc.title_id), path));
-        R_TRY(lrLrRedirectApplicationHtmlDocumentPath(&lr, static_cast<u64>(loc.title_id), path));
+        R_TRY(lrLrRedirectApplicationHtmlDocumentPath(&lr, static_cast<u64>(loc.title_id), static_cast<u64>(loc.title_id), path));
 
         return ResultSuccess;
     }
