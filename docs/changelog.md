@@ -1,4 +1,23 @@
 # Changelog
+## 0.9.4
++ Support was added for 9.0.0.
+  + **Please note**: 9.0.0 made a number of changes that may cause some issues with homebrew. Details:
+  + 9.0.0 changed HID in a way that causes libnx to be unable to detect button input.
+    + Homebrew should be recompiled with newest libnx to fix this.
+    + Atmosphere now provides a temporary hid-mitm that will cause homebrew to continue to work as expected.
+      + This mitm will be removed in a future Atmosphere revision once homebrew has been updated, to allow users to use a custom hid mitm again if they desire.
+  + 9.0.0 introduced an dependency in FS on the USB system module in order to launch the SD card.
+    + This means the USB system module must now be launched before the SD card is initialized.
+    + Correspondingly, the USB system module can no longer be IPS patched, and its settings cannot be reliably mitm'd.
+    + We know this is frustrating, so we'll be looking into whether there is some way of addressing this in the future.
++ An off-by-one error was fixed in `boot` system module's pinmux initialization.
+  + This could theoretically have caused issues with HdmiCec communication.
+  + No users reported issues, so it's unclear if this was a problem in practice.
++ A bug was fixed that could cause webapplet launching homebrew to improperly set the accessible url whitelist.
++ BIS key generation has been fixed for newer hardware.
+  + Newer hardware uses new, per-firmware device key to generate BIS keys instead of the first device key, so previously the wrong keys were generated as backup.
+  + This only affects units manufactured after ~5.0.0.
++ General system stability improvements to enhance the user's experience.
 ## 0.9.3
 + Thanks to hexkyz, fusee's boot sequence has been greatly optimized.
   + Memory training is now managed by a separate binary (`fusee-mtc`, loaded by fusee-primary before fusee-secondary).
