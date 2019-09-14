@@ -25,10 +25,14 @@ class HidMitmService : public IMitmServiceObject {
         enum class CommandId {
             SetSupportedNpadStyleSet = 100,
         };
+    private:
+        bool should_set_system_ext = false;
     public:
         HidMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             /* ... */
         }
+
+        ~HidMitmService();
 
         static bool ShouldMitm(u64 pid, sts::ncm::TitleId tid) {
             /* TODO: Consider removing in Atmosphere 0.10.0/1.0.0. */
