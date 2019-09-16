@@ -15,17 +15,18 @@
  */
 
 #pragma once
-#include <switch.h>
 
-struct OverrideKey {
-    u64 key_combination;
-    bool override_by_default;
-};
+#include "../ldr.hpp"
+#include "pm_types.hpp"
 
-class DmntConfigManager {
-    public:
-        static void RefreshConfiguration();
+namespace sts::pm::dmnt {
 
-        static OverrideKey GetTitleCheatEnableKey(u64 tid);
-        static bool HasCheatEnableButton(u64 tid);
-};
+    /* Debug Monitor API. */
+    Result StartProcess(u64 process_id);
+    Result GetProcessId(u64 *out_process_id, const ncm::TitleId title_id);
+    Result GetApplicationProcessId(u64 *out_process_id);
+    Result HookToCreateApplicationProcess(Handle *out_handle);
+    Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::TitleLocation *out_loc, u64 process_id);
+    Result AtmosphereGetCurrentLimitInfo(u64 *out_current_value, u64 *out_limit_value, ResourceLimitGroup group, LimitableResource resource);
+
+}

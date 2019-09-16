@@ -17,7 +17,4 @@
 #pragma once
 #include <switch.h>
 
-class HidManagement {
-    public:
-        static Result GetKeysDown(u64 *keys);
-};
+#include "dmnt/dmnt_cheat_types.hpp"

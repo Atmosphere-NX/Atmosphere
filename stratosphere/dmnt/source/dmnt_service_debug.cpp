@@ -14,41 +14,44 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <switch.h>
 #include "dmnt_service.hpp"
 
-Result DebugMonitorService::BreakDebugProcess(Handle debug_hnd) {
-    /* Nintendo discards the output of this command, but we will return it. */
-    return svcBreakDebugProcess(debug_hnd);
-}
+namespace sts::dmnt {
 
-Result DebugMonitorService::TerminateDebugProcess(Handle debug_hnd) {
-    /* Nintendo discards the output of this command, but we will return it. */
-    return svcTerminateDebugProcess(debug_hnd);
-}
+    Result DebugMonitorService::BreakDebugProcess(Handle debug_hnd) {
+        /* Nintendo discards the output of this command, but we will return it. */
+        return svcBreakDebugProcess(debug_hnd);
+    }
 
-Result DebugMonitorService::CloseHandle(Handle debug_hnd) {
-    /* Nintendo discards the output of this command, but we will return it. */
-    /* This command is, entertainingly, also pretty unsafe in general... */
-    return svcCloseHandle(debug_hnd);
-}
+    Result DebugMonitorService::TerminateDebugProcess(Handle debug_hnd) {
+        /* Nintendo discards the output of this command, but we will return it. */
+        return svcTerminateDebugProcess(debug_hnd);
+    }
 
-Result DebugMonitorService::GetProcessId(Out<u64> out_pid, Handle hnd) {
-    /* Nintendo discards the output of this command, but we will return it. */
-    return svcGetProcessId(out_pid.GetPointer(), hnd);
-}
+    Result DebugMonitorService::CloseHandle(Handle debug_hnd) {
+        /* Nintendo discards the output of this command, but we will return it. */
+        /* This command is, entertainingly, also pretty unsafe in general... */
+        return svcCloseHandle(debug_hnd);
+    }
 
-Result DebugMonitorService::GetProcessHandle(Out<Handle> out_hnd, u64 pid) {
-    R_TRY_CATCH(svcDebugActiveProcess(out_hnd.GetPointer(), pid)) {
-        R_CATCH(ResultKernelAlreadyExists) {
-            return ResultDebugAlreadyAttached;
-        }
-    } R_END_TRY_CATCH;
+    Result DebugMonitorService::GetProcessId(Out<u64> out_pid, Handle hnd) {
+        /* Nintendo discards the output of this command, but we will return it. */
+        return svcGetProcessId(out_pid.GetPointer(), hnd);
+    }
 
-    return ResultSuccess;
-}
+    Result DebugMonitorService::GetProcessHandle(Out<Handle> out_hnd, u64 pid) {
+        R_TRY_CATCH(svcDebugActiveProcess(out_hnd.GetPointer(), pid)) {
+            R_CATCH(ResultKernelAlreadyExists) {
+                return ResultDebugAlreadyAttached;
+            }
+        } R_END_TRY_CATCH;
 
-Result DebugMonitorService::WaitSynchronization(Handle hnd, u64 ns) {
-    /* Nintendo discards the output of this command, but we will return it. */
-    return svcWaitSynchronizationSingle(hnd, ns);
+        return ResultSuccess;
+    }
+
+    Result DebugMonitorService::WaitSynchronization(Handle hnd, u64 ns) {
+        /* Nintendo discards the output of this command, but we will return it. */
+        return svcWaitSynchronizationSingle(hnd, ns);
+    }
+
 }
