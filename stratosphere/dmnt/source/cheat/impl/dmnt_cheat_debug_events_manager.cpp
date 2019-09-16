@@ -33,7 +33,7 @@ namespace sts::dmnt::cheat::impl {
                 static void PerCoreThreadFunction(void *_this) {
                     /* This thread will wait on the appropriate message queue. */
                     DebugEventsManager *this_ptr = reinterpret_cast<DebugEventsManager *>(_this);
-                    const u32 current_core = svcGetCurrentProcessorNumber();
+                    const size_t current_core = svcGetCurrentProcessorNumber();
                     while (true) {
                         /* Receive handle. */
                         Handle debug_handle = this_ptr->WaitReceiveHandle(current_core);
@@ -46,9 +46,9 @@ namespace sts::dmnt::cheat::impl {
                     }
                 }
 
-                u32 GetTargetCore(const svc::DebugEventInfo &dbg_event, Handle debug_handle) {
+                size_t GetTargetCore(const svc::DebugEventInfo &dbg_event, Handle debug_handle) {
                     /* If we don't need to continue on a specific core, use the system core. */
-                    u32 target_core = NumCores - 1;
+                    size_t target_core = NumCores - 1;
 
                     /* Retrieve correct core for new thread event. */
                     if (dbg_event.type == svc::DebugEventType::AttachThread) {
@@ -61,11 +61,11 @@ namespace sts::dmnt::cheat::impl {
                     return target_core;
                 }
 
-                void SendHandle(const svc::DebugEventInfo &dbg_event, Handle debug_handle) {
-                    this->message_queues[GetTargetCore(dbg_event, debug_handle)].Send(static_cast<uintptr_t>(debug_handle));
+                void SendHandle(size_t target_core, Handle debug_handle) {
+                    this->message_queues[target_core].Send(static_cast<uintptr_t>(debug_handle));
                 }
 
-                Handle WaitReceiveHandle(u32 core_id) {
+                Handle WaitReceiveHandle(size_t core_id) {
                     uintptr_t x = 0;
                     this->message_queues[core_id].Receive(&x);
                     return static_cast<Handle>(x);
@@ -105,12 +105,15 @@ namespace sts::dmnt::cheat::impl {
                 void ContinueCheatProcess(Handle cheat_dbg_hnd) {
                     /* Loop getting all debug events. */
                     svc::DebugEventInfo d;
+                    size_t target_core = NumCores - 1;
                     while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), cheat_dbg_hnd))) {
-                        /* ... */
+                        if (d.type == svc::DebugEventType::AttachThread) {
+                            target_core = GetTargetCore(d, cheat_dbg_hnd);
+                        }
                     }
 
                     /* Send handle to correct core, wait for continue to finish. */
-                    this->SendHandle(d, cheat_dbg_hnd);
+                    this->SendHandle(target_core, cheat_dbg_hnd);
                     this->WaitContinued();
                 }
         };

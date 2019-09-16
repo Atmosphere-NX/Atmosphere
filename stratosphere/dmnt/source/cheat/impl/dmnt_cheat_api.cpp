@@ -116,6 +116,9 @@ namespace sts::dmnt::cheat::impl {
 
                 void CloseActiveCheatProcess() {
                     if (this->cheat_process_debug_handle != INVALID_HANDLE) {
+                        /* Knock out the debug events thread. */
+                        R_ASSERT(this->debug_events_thread.CancelSynchronization());
+
                         /* Close resources. */
                         R_ASSERT(svcCloseHandle(this->cheat_process_debug_handle));
                         this->cheat_process_debug_handle = INVALID_HANDLE;
@@ -146,6 +149,8 @@ namespace sts::dmnt::cheat::impl {
                     u64 tmp;
                     bool has_cheat_process = this->cheat_process_debug_handle != INVALID_HANDLE;
                     has_cheat_process &= R_SUCCEEDED(svcGetProcessId(&tmp, this->cheat_process_debug_handle));
+                    has_cheat_process &= R_SUCCEEDED(pm::dmnt::GetApplicationProcessId(&tmp));
+                    has_cheat_process &= (tmp == this->cheat_process_metadata.process_id);
 
                     if (!has_cheat_process) {
                         this->CloseActiveCheatProcess();
@@ -609,9 +614,6 @@ namespace sts::dmnt::cheat::impl {
                 /* Detach from the current process, if it's open. */
                 this->CloseActiveCheatProcess();
             }
-
-            /* Knock out the debug events thread. */
-            R_ASSERT(this->debug_events_thread.CancelSynchronization());
 
             /* Get the application process's ID. */
             R_ASSERT_IF_NEW_PROCESS(pm::dmnt::GetApplicationProcessId(&this->cheat_process_metadata.process_id));
