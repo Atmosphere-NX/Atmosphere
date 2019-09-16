@@ -16,6 +16,7 @@
 	},
 	"service_access":	[
         "pm:dmnt",
+        "pm:info",
         "ldr:dmnt",
         "ro:dmnt",
         "ns:dev",

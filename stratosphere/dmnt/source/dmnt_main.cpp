@@ -31,7 +31,7 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x80000
+    #define INNER_HEAP_SIZE 0xC0000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -60,6 +60,7 @@ void __appInit(void) {
 
     DoWithSmSession([&]() {
         R_ASSERT(pmdmntInitialize());
+        R_ASSERT(pminfoInitialize());
         R_ASSERT(ldrDmntInitialize());
         /* TODO: We provide this on every sysver via ro. Do we need a shim? */
         if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
@@ -89,6 +90,7 @@ void __appExit(void) {
     nsdevExit();
     roDmntExit();
     ldrDmntExit();
+    pminfoExit();
     pmdmntExit();
 }
 
