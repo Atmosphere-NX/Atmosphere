@@ -14,23 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 #include <switch.h>
-#include <string.h>
 #include <stratosphere.hpp>
 
-#include "dmnt_hid.hpp"
+namespace sts::dmnt::cheat::impl {
 
-static HosMutex g_hid_keys_down_lock;
+    void ContinueCheatProcess(Handle cheat_dbg_hnd);
 
-Result HidManagement::GetKeysDown(u64 *keys) {
-    std::scoped_lock<HosMutex> lk(g_hid_keys_down_lock);
-
-    hidScanInput();
-    *keys = 0;
-
-    for (int controller = 0; controller < 10; controller++) {
-        *keys |= hidKeysHeld((HidControllerID) controller);
-    }
-
-    return ResultSuccess;
 }

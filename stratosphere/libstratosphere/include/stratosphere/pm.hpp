@@ -21,3 +21,4 @@
 #include "pm/pm_boot_mode_api.hpp"
 #include "pm/pm_info_api.hpp"
 #include "pm/pm_shell_api.hpp"
+#include "pm/pm_dmnt_api.hpp"

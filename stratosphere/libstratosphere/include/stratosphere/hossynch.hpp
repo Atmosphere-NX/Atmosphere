@@ -224,24 +224,33 @@ class HosSignal {
             mutexUnlock(&m);
         }
 
-        void Wait() {
+        void Wait(bool reset = false) {
             mutexLock(&m);
 
             while (!signaled) {
                 condvarWait(&cv, &m);
             }
 
+            if (reset) {
+                this->signaled = false;
+            }
+
             mutexUnlock(&m);
         }
 
-        bool TryWait() {
+        bool TryWait(bool reset = false) {
             mutexLock(&m);
+
             bool success = signaled;
+            if (reset) {
+                this->signaled = false;
+            }
+
             mutexUnlock(&m);
             return success;
         }
 
-        Result TimedWait(u64 ns) {
+        Result TimedWait(u64 ns, bool reset = false) {
             mutexLock(&m);
             TimeoutHelper timeout_helper(ns);
 
@@ -249,6 +258,10 @@ class HosSignal {
                 if (R_FAILED(condvarWaitTimeout(&cv, &m, timeout_helper.NsUntilTimeout()))) {
                     return false;
                 }
+            }
+
+            if (reset) {
+                this->signaled = false;
             }
 
             mutexUnlock(&m);
