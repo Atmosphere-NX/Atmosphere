@@ -200,7 +200,7 @@ namespace sts::dmnt::cheat::impl {
                     /* Spawn application detection thread, spawn cheat vm thread. */
                     R_ASSERT(this->detect_thread.Initialize(&CheatProcessManager::DetectLaunchThread, this, 0x4000, 39));
                     R_ASSERT(this->vm_thread.Initialize(&CheatProcessManager::VirtualMachineThread, this, 0x4000, 48));
-                    R_ASSERT(this->debug_events_thread.Initialize(&CheatProcessManager::DebugEventsThread, this, 0x4000, 48));
+                    R_ASSERT(this->debug_events_thread.Initialize(&CheatProcessManager::DebugEventsThread, this, 0x4000, 24));
 
                     /* Start threads. */
                     R_ASSERT(this->detect_thread.Start());
@@ -547,12 +547,21 @@ namespace sts::dmnt::cheat::impl {
             while (true) {
                 /* Atomically wait (and clear) signal for new process. */
                 this_ptr->debug_events_signal.Wait(true);
-                while (R_SUCCEEDED(svcWaitSynchronizationSingle(this_ptr->GetCheatProcessHandle(), U64_MAX))) {
-                    std::scoped_lock lk(this_ptr->cheat_lock);
+                while (true) {
+                    while (R_SUCCEEDED(svcWaitSynchronizationSingle(this_ptr->GetCheatProcessHandle(), U64_MAX))) {
+                        std::scoped_lock lk(this_ptr->cheat_lock);
 
-                    /* Handle any pending debug events. */
-                    if (this_ptr->HasActiveCheatProcess()) {
-                        dmnt::cheat::impl::ContinueCheatProcess(this_ptr->GetCheatProcessHandle());
+                        /* Handle any pending debug events. */
+                        if (this_ptr->HasActiveCheatProcess()) {
+                            dmnt::cheat::impl::ContinueCheatProcess(this_ptr->GetCheatProcessHandle());
+                        }
+                    }
+
+                    /* WaitSynchronization failed. This means someone canceled our synchronization, possibly us. */
+                    /* Let's check if we should quit! */
+                    std::scoped_lock lk(this_ptr->cheat_lock);
+                    if (!this_ptr->HasActiveCheatProcess()) {
+                        break;
                     }
                 }
             }
