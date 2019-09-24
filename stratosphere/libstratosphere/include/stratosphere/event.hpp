@@ -53,7 +53,7 @@ class IEvent : public IWaitable {
         }
 
         void Clear() {
-            std::scoped_lock<HosMutex> lock(this->sig_lock);
+            std::scoped_lock lock(this->sig_lock);
             this->is_signaled = false;
             if (this->w_h != INVALID_HANDLE) {
                 svcClearEvent(this->w_h);
@@ -63,7 +63,7 @@ class IEvent : public IWaitable {
         }
 
         void Signal() {
-            std::scoped_lock<HosMutex> lock(this->sig_lock);
+            std::scoped_lock lock(this->sig_lock);
 
             if (this->w_h == INVALID_HANDLE && this->r_h != INVALID_HANDLE) {
                 /* We can't signal an event if we only have a read handle. */

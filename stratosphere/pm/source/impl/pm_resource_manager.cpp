@@ -45,7 +45,7 @@ namespace sts::pm::resource {
         constexpr size_t ExtraSystemMemorySizeAtmosphere = 24 * Megabyte;
 
         /* Globals. */
-        HosMutex g_resource_limit_lock;
+        os::Mutex g_resource_limit_lock;
         Handle g_resource_limit_handles[ResourceLimitGroup_Count];
         spl::MemoryArrangement g_memory_arrangement = spl::MemoryArrangement_Standard;
         u64 g_system_memory_boost_size = 0;

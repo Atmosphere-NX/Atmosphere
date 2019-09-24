@@ -1,0 +1,235 @@
+/*
+ * Copyright (c) 2018-2019 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include <stratosphere.hpp>
+
+namespace sts::os {
+
+    void MessageQueue::SendInternal(uintptr_t data) {
+        /* Ensure we don't corrupt the queue, but this should never happen. */
+        if (this->count >= this->capacity) {
+            std::abort();
+        }
+
+        /* Write data to tail of queue. */
+        this->buffer[(this->count++ + this->offset) % this->capacity] = data;
+    }
+
+    void MessageQueue::SendNextInternal(uintptr_t data) {
+        /* Ensure we don't corrupt the queue, but this should never happen. */
+        if (this->count >= this->capacity) {
+            std::abort();
+        }
+
+        /* Write data to head of queue. */
+        this->offset = (this->offset + this->capacity - 1) % this->capacity;
+        this->buffer[this->offset] = data;
+        this->count++;
+    }
+
+    uintptr_t MessageQueue::ReceiveInternal() {
+        /* Ensure we don't corrupt the queue, but this should never happen. */
+        if (this->count == 0) {
+            std::abort();
+        }
+
+        uintptr_t data = this->buffer[this->offset];
+        this->offset = (this->offset + 1) % this->capacity;
+        this->count--;
+        return data;
+    }
+
+    uintptr_t MessageQueue::PeekInternal() {
+        /* Ensure we don't corrupt the queue, but this should never happen. */
+        if (this->count == 0) {
+            std::abort();
+        }
+
+        return this->buffer[this->offset];
+    }
+
+    void MessageQueue::Send(uintptr_t data) {
+        /* Acquire mutex, wait sendable. */
+        std::scoped_lock lock(this->queue_lock);
+
+        while (this->IsFull()) {
+            this->cv_not_full.Wait(&this->queue_lock);
+        }
+
+        /* Send, signal. */
+        this->SendInternal(data);
+        this->cv_not_empty.WakeAll();
+    }
+
+    bool MessageQueue::TrySend(uintptr_t data) {
+        std::scoped_lock lock(this->queue_lock);
+        if (this->IsFull()) {
+            return false;
+        }
+
+        /* Send, signal. */
+        this->SendInternal(data);
+        this->cv_not_empty.WakeAll();
+        return true;
+    }
+
+    bool MessageQueue::TimedSend(uintptr_t data, u64 timeout) {
+        std::scoped_lock lock(this->queue_lock);
+        TimeoutHelper timeout_helper(timeout);
+
+        while (this->IsFull()) {
+            if (timeout_helper.TimedOut()) {
+                return false;
+            }
+
+            this->cv_not_full.TimedWait(&this->queue_lock, timeout);
+        }
+
+        /* Send, signal. */
+        this->SendInternal(data);
+        this->cv_not_empty.WakeAll();
+        return true;
+    }
+
+    void MessageQueue::SendNext(uintptr_t data) {
+        /* Acquire mutex, wait sendable. */
+        std::scoped_lock lock(this->queue_lock);
+
+        while (this->IsFull()) {
+            this->cv_not_full.Wait(&this->queue_lock);
+        }
+
+        /* Send, signal. */
+        this->SendNextInternal(data);
+        this->cv_not_empty.WakeAll();
+    }
+
+    bool MessageQueue::TrySendNext(uintptr_t data) {
+        std::scoped_lock lock(this->queue_lock);
+        if (this->IsFull()) {
+            return false;
+        }
+
+        /* Send, signal. */
+        this->SendNextInternal(data);
+        this->cv_not_empty.WakeAll();
+        return true;
+    }
+
+    bool MessageQueue::TimedSendNext(uintptr_t data, u64 timeout) {
+        std::scoped_lock lock(this->queue_lock);
+        TimeoutHelper timeout_helper(timeout);
+
+        while (this->IsFull()) {
+            if (timeout_helper.TimedOut()) {
+                return false;
+            }
+
+            this->cv_not_full.TimedWait(&this->queue_lock, timeout);
+        }
+
+        /* Send, signal. */
+        this->SendNextInternal(data);
+        this->cv_not_empty.WakeAll();
+        return true;
+    }
+
+    void MessageQueue::Receive(uintptr_t *out) {
+        /* Acquire mutex, wait receivable. */
+        std::scoped_lock lock(this->queue_lock);
+
+        while (this->IsEmpty()) {
+            this->cv_not_empty.Wait(&this->queue_lock);
+        }
+
+        /* Receive, signal. */
+        *out = this->ReceiveInternal();
+        this->cv_not_full.WakeAll();
+    }
+    bool MessageQueue::TryReceive(uintptr_t *out) {
+        /* Acquire mutex, wait receivable. */
+        std::scoped_lock lock(this->queue_lock);
+
+        if (this->IsEmpty()) {
+            return false;
+        }
+
+        /* Receive, signal. */
+        *out = this->ReceiveInternal();
+        this->cv_not_full.WakeAll();
+        return true;
+    }
+
+    bool MessageQueue::TimedReceive(uintptr_t *out, u64 timeout) {
+        std::scoped_lock lock(this->queue_lock);
+        TimeoutHelper timeout_helper(timeout);
+
+        while (this->IsEmpty()) {
+            if (timeout_helper.TimedOut()) {
+                return false;
+            }
+
+            this->cv_not_empty.TimedWait(&this->queue_lock, timeout);
+        }
+
+        /* Receive, signal. */
+        *out = this->ReceiveInternal();
+        this->cv_not_full.WakeAll();
+        return true;
+    }
+
+    void MessageQueue::Peek(uintptr_t *out) {
+        /* Acquire mutex, wait receivable. */
+        std::scoped_lock lock(this->queue_lock);
+
+        while (this->IsEmpty()) {
+            this->cv_not_empty.Wait(&this->queue_lock);
+        }
+
+        /* Peek. */
+        *out = this->PeekInternal();
+    }
+
+    bool MessageQueue::TryPeek(uintptr_t *out) {
+        /* Acquire mutex, wait receivable. */
+        std::scoped_lock lock(this->queue_lock);
+
+        if (this->IsEmpty()) {
+            return false;
+        }
+
+        /* Peek. */
+        *out = this->PeekInternal();
+        return true;
+    }
+
+    bool MessageQueue::TimedPeek(uintptr_t *out, u64 timeout) {
+        std::scoped_lock lock(this->queue_lock);
+        TimeoutHelper timeout_helper(timeout);
+
+        while (this->IsEmpty()) {
+            if (timeout_helper.TimedOut()) {
+                return false;
+            }
+
+            this->cv_not_empty.TimedWait(&this->queue_lock, timeout);
+        }
+
+        /* Peek. */
+        *out = this->PeekInternal();
+        return true;
+    }
+
+}

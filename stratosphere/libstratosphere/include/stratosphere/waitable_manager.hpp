@@ -21,6 +21,7 @@
 #include <functional>
 
 #include "results.hpp"
+#include "os.hpp"
 #include "waitable_manager_base.hpp"
 #include "event.hpp"
 #include "ipc.hpp"
@@ -47,7 +48,7 @@ template<typename ManagerOptions = DefaultManagerOptions>
 class WaitableManager : public SessionManagerBase {
     private:
         /* Domain Manager */
-        HosMutex domain_lock;
+        sts::os::Mutex domain_lock;
         std::array<uintptr_t, ManagerOptions::MaxDomains> domain_keys;
         std::array<bool, ManagerOptions::MaxDomains> is_domain_allocated;
         std::array<DomainEntry, ManagerOptions::MaxDomainObjects> domain_objects;
@@ -58,13 +59,13 @@ class WaitableManager : public SessionManagerBase {
         std::vector<IWaitable *> deferred_waitables;
 
         u32 num_extra_threads = 0;
-        HosThread *threads = nullptr;
+        sts::os::Thread *threads = nullptr;
 
-        HosMutex process_lock;
-        HosMutex signal_lock;
-        HosMutex add_lock;
-        HosMutex cur_thread_lock;
-        HosMutex deferred_lock;
+        sts::os::Mutex process_lock;
+        sts::os::Mutex signal_lock;
+        sts::os::Mutex add_lock;
+        sts::os::Mutex cur_thread_lock;
+        sts::os::Mutex deferred_lock;
         bool has_new_waitables = false;
         std::atomic<bool> should_stop = false;
 
@@ -75,7 +76,7 @@ class WaitableManager : public SessionManagerBase {
         WaitableManager(u32 n, u32 ss = 0x8000) : num_extra_threads(n-1) {
             u32 prio;
             if (num_extra_threads) {
-                threads = new HosThread[num_extra_threads];
+                threads = new sts::os::Thread[num_extra_threads];
                 R_ASSERT(svcGetThreadPriority(&prio, CUR_THREAD_HANDLE));
                 for (unsigned int i = 0; i < num_extra_threads; i++) {
                     R_ASSERT(threads[i].Initialize(&WaitableManager::ProcessLoop, this, ss, prio));
@@ -132,12 +133,12 @@ class WaitableManager : public SessionManagerBase {
         }
     private:
         void SetProcessingThreadHandle(Handle h) {
-            std::scoped_lock<HosMutex> lk{this->cur_thread_lock};
+            std::scoped_lock lk{this->cur_thread_lock};
             this->cur_thread_handle = h;
         }
 
         Handle GetProcessingThreadHandle() {
-            std::scoped_lock<HosMutex> lk{this->cur_thread_lock};
+            std::scoped_lock lk{this->cur_thread_lock};
             return this->cur_thread_handle;
         }
 

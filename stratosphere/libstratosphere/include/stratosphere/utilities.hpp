@@ -16,9 +16,9 @@
 
 #pragma once
 #include <switch.h>
-#include <cstdlib>
-
-#include "hossynch.hpp"
+#include "defines.hpp"
+#include "results.hpp"
+#include "os.hpp"
 
 static inline uintptr_t GetIoMapping(const u64 io_addr, const u64 io_size) {
     u64 vaddr;
@@ -115,11 +115,11 @@ static inline bool ShouldBlankProdInfo() {
     return should_blank_prodinfo;
 }
 
-HosRecursiveMutex &GetSmSessionMutex();
+sts::os::RecursiveMutex &GetSmSessionMutex();
 
 template<typename F>
 static void DoWithSmSession(F f) {
-    std::scoped_lock<HosRecursiveMutex &> lk(GetSmSessionMutex());
+    std::scoped_lock lk(GetSmSessionMutex());
     {
         R_ASSERT(smInitialize());
         f();

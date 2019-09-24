@@ -31,14 +31,14 @@ namespace sts::dmnt::cheat::impl {
         /* Manager class. */
         class CheatProcessManager {
             private:
-                HosMutex cheat_lock;
-                HosSignal debug_events_signal;
-                HosThread detect_thread, debug_events_thread;
+                os::Mutex cheat_lock;
+                os::Event debug_events_event; /* Autoclear. */
+                os::Thread detect_thread, debug_events_thread;
                 IEvent *cheat_process_event;
                 Handle cheat_process_debug_handle = INVALID_HANDLE;
                 CheatProcessMetadata cheat_process_metadata = {};
 
-                HosThread vm_thread;
+                os::Thread vm_thread;
                 bool needs_reload_vm = false;
                 CheatVirtualMachine cheat_vm;
 
@@ -546,7 +546,7 @@ namespace sts::dmnt::cheat::impl {
             CheatProcessManager *this_ptr = reinterpret_cast<CheatProcessManager *>(_this);
             while (true) {
                 /* Atomically wait (and clear) signal for new process. */
-                this_ptr->debug_events_signal.Wait(true);
+                this_ptr->debug_events_event.Wait();
                 while (true) {
                     while (R_SUCCEEDED(svcWaitSynchronizationSingle(this_ptr->GetCheatProcessHandle(), U64_MAX))) {
                         std::scoped_lock lk(this_ptr->cheat_lock);
@@ -707,7 +707,7 @@ namespace sts::dmnt::cheat::impl {
             }
 
             /* Signal to the debug events thread. */
-            this->debug_events_signal.Signal();
+            this->debug_events_event.Signal();
 
             /* Signal to our fans. */
             this->cheat_process_event->Signal();

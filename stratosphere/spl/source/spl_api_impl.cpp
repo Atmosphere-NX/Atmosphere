@@ -110,7 +110,7 @@ namespace sts::spl::impl {
         u32 g_se_mapped_work_buffer_addr;
         u8 __attribute__((aligned(0x1000))) g_work_buffer[2 * WorkBufferSizeMax];
 
-        HosMutex g_async_op_lock;
+        os::Mutex g_async_op_lock;
 
         const void *g_keyslot_owners[MaxAesKeyslots];
         BootReasonValue g_boot_reason;
@@ -320,7 +320,7 @@ namespace sts::spl::impl {
 
             armDCacheFlush(layout, sizeof(*layout));
             {
-                std::scoped_lock<HosMutex> lk(g_async_op_lock);
+                std::scoped_lock lk(g_async_op_lock);
                 smc::AsyncOperationKey op_key;
                 const IvCtr iv_ctr = {};
                 const u32 mode = smc::GetCryptAesMode(smc::CipherMode::CbcDecrypt, keyslot);
@@ -395,7 +395,7 @@ namespace sts::spl::impl {
             /* Do exp mod operation. */
             armDCacheFlush(layout, sizeof(*layout));
             {
-                std::scoped_lock<HosMutex> lk(g_async_op_lock);
+                std::scoped_lock lk(g_async_op_lock);
                 smc::AsyncOperationKey op_key;
 
                 smc::Result res = smc::SecureExpMod(&op_key, layout->base, layout->mod, mode);
@@ -441,7 +441,7 @@ namespace sts::spl::impl {
             /* Do exp mod operation. */
             armDCacheFlush(layout, sizeof(*layout));
             {
-                std::scoped_lock<HosMutex> lk(g_async_op_lock);
+                std::scoped_lock lk(g_async_op_lock);
                 smc::AsyncOperationKey op_key;
 
                 smc::Result res = smc::UnwrapTitleKey(&op_key, layout->base, layout->mod, label_digest, label_digest_size, smc::GetUnwrapEsKeyOption(type, generation));
@@ -528,7 +528,7 @@ namespace sts::spl::impl {
         /* Do exp mod operation. */
         armDCacheFlush(layout, sizeof(*layout));
         {
-            std::scoped_lock<HosMutex> lk(g_async_op_lock);
+            std::scoped_lock lk(g_async_op_lock);
             smc::AsyncOperationKey op_key;
 
             smc::Result res = smc::ExpMod(&op_key, layout->base, layout->exp, exp_size, layout->mod);
@@ -676,7 +676,7 @@ namespace sts::spl::impl {
         armDCacheFlush(const_cast<void *>(src), src_size);
         armDCacheFlush(dst, dst_size);
         {
-            std::scoped_lock<HosMutex> lk(g_async_op_lock);
+            std::scoped_lock lk(g_async_op_lock);
             smc::AsyncOperationKey op_key;
             const u32 mode = smc::GetCryptAesMode(smc::CipherMode::Ctr, keyslot);
             const u32 dst_ll_addr = g_se_mapped_work_buffer_addr + offsetof(SeCryptContext, out);

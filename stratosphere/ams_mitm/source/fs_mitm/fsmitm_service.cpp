@@ -36,11 +36,11 @@
 
 #include "../debug.hpp"
 
-static HosMutex g_StorageCacheLock;
+static sts::os::Mutex g_StorageCacheLock;
 static std::unordered_map<u64, std::weak_ptr<IStorageInterface>> g_StorageCache;
 
 static bool StorageCacheGetEntry(sts::ncm::TitleId title_id, std::shared_ptr<IStorageInterface> *out) {
-    std::scoped_lock<HosMutex> lock(g_StorageCacheLock);
+    std::scoped_lock lock(g_StorageCacheLock);
     if (g_StorageCache.find(static_cast<u64>(title_id)) == g_StorageCache.end()) {
         return false;
     }
@@ -54,7 +54,7 @@ static bool StorageCacheGetEntry(sts::ncm::TitleId title_id, std::shared_ptr<ISt
 }
 
 static void StorageCacheSetEntry(sts::ncm::TitleId title_id, std::shared_ptr<IStorageInterface> *ptr) {
-    std::scoped_lock<HosMutex> lock(g_StorageCacheLock);
+    std::scoped_lock lock(g_StorageCacheLock);
 
     /* Ensure we always use the cached copy if present. */
     if (g_StorageCache.find(static_cast<u64>(title_id)) != g_StorageCache.end()) {

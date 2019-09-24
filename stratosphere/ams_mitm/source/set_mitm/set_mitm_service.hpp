@@ -31,7 +31,7 @@ class SetMitmService : public IMitmServiceObject {
             GetAvailableLanguageCodes = 1,
         };
     private:
-        HosMutex lock;
+        sts::os::Mutex lock;
         OverrideLocale locale;
         bool got_locale;
     public:

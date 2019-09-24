@@ -29,7 +29,9 @@
 #include "bpc_mitm/bpcmitm_reboot_manager.hpp"
 
 static FsFileSystem g_sd_filesystem = {0};
-static HosSignal g_sd_signal, g_hid_signal;
+
+/* Non-autoclear events for SD/HID init. */
+static sts::os::Event g_sd_event(false), g_hid_event(false);
 
 static std::vector<u64> g_mitm_flagged_tids;
 static std::vector<u64> g_disable_mitm_flagged_tids;
@@ -286,7 +288,7 @@ void Utils::InitializeThreadFunc(void *args) {
     SettingsItemManager::LoadConfiguration();
 
     /* Signal to waiters that we are ready. */
-    g_sd_signal.Signal();
+    g_sd_event.Signal();
 
     /* Initialize HID. */
     while (!g_has_hid_session) {
@@ -301,7 +303,7 @@ void Utils::InitializeThreadFunc(void *args) {
     }
 
     /* Signal to waiters that we are ready. */
-    g_hid_signal.Signal();
+    g_hid_event.Signal();
 }
 
 bool Utils::IsSdInitialized() {
@@ -309,7 +311,7 @@ bool Utils::IsSdInitialized() {
 }
 
 void Utils::WaitSdInitialized() {
-    g_sd_signal.Wait();
+    g_sd_event.Wait();
 }
 
 bool Utils::IsHidAvailable() {
@@ -317,7 +319,7 @@ bool Utils::IsHidAvailable() {
 }
 
 void Utils::WaitHidAvailable() {
-    g_hid_signal.Wait();
+    g_hid_event.Wait();
 }
 
 Result Utils::OpenSdFile(const char *fn, int flags, FsFile *out) {

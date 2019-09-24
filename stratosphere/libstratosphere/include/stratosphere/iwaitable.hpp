@@ -17,9 +17,9 @@
 #pragma once
 
 #include <switch.h>
+#include "os.hpp"
 
 #include "waitable_manager_base.hpp"
-#include "hossynch.hpp"
 
 class IWaitable {
     private:
@@ -27,7 +27,7 @@ class IWaitable {
         bool is_deferred = false;
         WaitableManagerBase *manager = nullptr;
     protected:
-        HosMutex sig_lock;
+        sts::os::Mutex sig_lock;
         bool is_signaled = false;
     public:
         virtual ~IWaitable() = default;
@@ -38,7 +38,7 @@ class IWaitable {
         }
 
         bool IsSignaled() {
-            std::scoped_lock<HosMutex> lock(this->sig_lock);
+            std::scoped_lock lock(this->sig_lock);
             return this->is_signaled;
         }
 

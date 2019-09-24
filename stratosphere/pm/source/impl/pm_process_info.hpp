@@ -171,7 +171,7 @@ namespace sts::pm::impl {
 
     class ProcessList final {
         private:
-            HosMutex lock;
+            os::Mutex lock;
             std::vector<std::shared_ptr<ProcessInfo>> processes;
         public:
             void Lock() {

@@ -26,24 +26,20 @@
 #include "stratosphere/version_check.hpp"
 
 #include "stratosphere/auto_handle.hpp"
-#include "stratosphere/hossynch.hpp"
-#include "stratosphere/message_queue.hpp"
 #include "stratosphere/iwaitable.hpp"
 #include "stratosphere/event.hpp"
 
 #include "stratosphere/waitable_manager.hpp"
 
 #include "stratosphere/ipc.hpp"
-
 #include "stratosphere/mitm.hpp"
-
-#include "stratosphere/services.hpp"
 
 #include "stratosphere/results.hpp"
 
 #include "stratosphere/on_crash.hpp"
 
 #include "stratosphere/svc.hpp"
+#include "stratosphere/os.hpp"
 #include "stratosphere/cfg.hpp"
 #include "stratosphere/fatal.hpp"
 #include "stratosphere/hid.hpp"

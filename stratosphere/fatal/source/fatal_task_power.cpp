@@ -59,7 +59,7 @@ namespace sts::fatal::srv {
         /* Task Implementations. */
         bool PowerControlTask::TryShutdown() {
             /* Set a timeout of 30 seconds. */
-            TimeoutHelper timeout_helper(30'000'000'000ul);
+            os::TimeoutHelper timeout_helper(30'000'000'000ul);
 
             bool perform_shutdown = true;
             PsmBatteryVoltageState bv_state = PsmBatteryVoltageState_Normal;
@@ -95,7 +95,7 @@ namespace sts::fatal::srv {
             /* Check the battery state, and shutdown on low voltage. */
             if (R_FAILED(psmGetBatteryVoltageState(&bv_state)) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
                 /* Wait a second for the error report task to finish. */
-                eventWait(const_cast<Event *>(&this->context->erpt_event), TimeoutHelper::NsToTick(1'000'000'000ul));
+                eventWait(const_cast<Event *>(&this->context->erpt_event), os::TimeoutHelper::NsToTick(1'000'000'000ul));
                 this->TryShutdown();
                 return;
             }
@@ -129,12 +129,12 @@ namespace sts::fatal::srv {
 
         void PowerButtonObserveTask::WaitForPowerButton() {
             /* Wait up to a second for error report generation to finish. */
-            eventWait(const_cast<Event *>(&this->context->erpt_event), TimeoutHelper::NsToTick(1'000'000'000ul));
+            eventWait(const_cast<Event *>(&this->context->erpt_event), os::TimeoutHelper::NsToTick(1'000'000'000ul));
 
             /* Force a reboot after some time if kiosk unit. */
             const auto &config = GetFatalConfig();
-            TimeoutHelper quest_reboot_helper(config.GetQuestRebootTimeoutInterval());
-            TimeoutHelper fatal_reboot_helper(config.GetFatalRebootTimeoutInterval());
+            os::TimeoutHelper quest_reboot_helper(config.GetQuestRebootTimeoutInterval());
+            os::TimeoutHelper fatal_reboot_helper(config.GetFatalRebootTimeoutInterval());
 
             bool check_vol_up = true, check_vol_down = true;
             GpioPadSession vol_up_btn, vol_down_btn;

@@ -20,7 +20,7 @@
 
 #include "fsmitm_boot0storage.hpp"
 
-static HosMutex g_boot0_mutex;
+static sts::os::Mutex g_boot0_mutex;
 static u8 g_boot0_bct_buffer[Boot0Storage::BctEndOffset];
 
 bool Boot0Storage::CanModifyBctPubks() {
@@ -37,13 +37,13 @@ bool Boot0Storage::CanModifyBctPubks() {
 }
 
 Result Boot0Storage::Read(void *_buffer, size_t size, u64 offset) {
-    std::scoped_lock<HosMutex> lk{g_boot0_mutex};
+    std::scoped_lock lk{g_boot0_mutex};
 
     return Base::Read(_buffer, size, offset);
 }
 
 Result Boot0Storage::Write(void *_buffer, size_t size, u64 offset) {
-    std::scoped_lock<HosMutex> lk{g_boot0_mutex};
+    std::scoped_lock lk{g_boot0_mutex};
 
     u8 *buffer = static_cast<u8 *>(_buffer);
 

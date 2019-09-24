@@ -132,7 +132,7 @@ namespace sts::i2c::driver {
             std::abort();
         }
 
-        std::scoped_lock<HosMutex &> lk(GetResourceManager().GetTransactionMutex(impl::ConvertFromIndex(session.bus_idx)));
+        std::scoped_lock<os::Mutex &> lk(GetResourceManager().GetTransactionMutex(impl::ConvertFromIndex(session.bus_idx)));
         return GetResourceManager().GetSession(session.session_id).DoTransactionWithRetry(nullptr, src, size, option, impl::Command::Send);
     }
 
@@ -142,7 +142,7 @@ namespace sts::i2c::driver {
             std::abort();
         }
 
-        std::scoped_lock<HosMutex &> lk(GetResourceManager().GetTransactionMutex(impl::ConvertFromIndex(session.bus_idx)));
+        std::scoped_lock<os::Mutex &> lk(GetResourceManager().GetTransactionMutex(impl::ConvertFromIndex(session.bus_idx)));
         return GetResourceManager().GetSession(session.session_id).DoTransactionWithRetry(dst, nullptr, size, option, impl::Command::Receive);
     }
 

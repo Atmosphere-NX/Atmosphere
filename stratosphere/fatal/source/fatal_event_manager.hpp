@@ -24,7 +24,7 @@ namespace sts::fatal::srv {
         private:
             static constexpr size_t NumFatalEvents = 3;
 
-            HosMutex lock;
+            os::Mutex lock;
             size_t num_events_gotten = 0;
             Event events[NumFatalEvents];
         public:

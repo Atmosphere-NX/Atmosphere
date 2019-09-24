@@ -23,7 +23,7 @@
 namespace sts::i2c::driver::impl {
 
     void BusAccessor::Open(Bus bus, SpeedMode speed_mode) {
-        std::scoped_lock<HosMutex> lk(this->open_mutex);
+        std::scoped_lock lk(this->open_mutex);
         /* Open new session. */
         this->open_sessions++;
 
@@ -37,7 +37,7 @@ namespace sts::i2c::driver::impl {
 
         /* Set all members for chosen bus. */
         {
-            std::scoped_lock<HosMutex> lk(this->register_mutex);
+            std::scoped_lock lk(this->register_mutex);
             /* Set bus/registers. */
             this->SetBus(bus);
             /* Set pcv module. */
@@ -50,7 +50,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void BusAccessor::Close() {
-        std::scoped_lock<HosMutex> lk(this->open_mutex);
+        std::scoped_lock lk(this->open_mutex);
         /* Close current session. */
         this->open_sessions--;
         if (this->open_sessions > 0) {
@@ -67,8 +67,8 @@ namespace sts::i2c::driver::impl {
     }
 
     void BusAccessor::Suspend() {
-        std::scoped_lock<HosMutex> lk(this->open_mutex);
-        std::scoped_lock<HosMutex> lk_reg(this->register_mutex);
+        std::scoped_lock lk(this->open_mutex);
+        std::scoped_lock lk_reg(this->register_mutex);
 
         if (!this->suspended) {
             this->suspended = true;
@@ -87,7 +87,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void BusAccessor::DoInitialConfig() {
-        std::scoped_lock<HosMutex> lk(this->register_mutex);
+        std::scoped_lock lk(this->register_mutex);
 
         if (this->pcv_module != PcvModule_I2C5) {
             pcv::Initialize();
@@ -124,7 +124,7 @@ namespace sts::i2c::driver::impl {
     }
 
     Result BusAccessor::Send(const u8 *data, size_t num_bytes, I2cTransactionOption option, AddressingMode addressing_mode, u32 slave_address) {
-        std::scoped_lock<HosMutex> lk(this->register_mutex);
+        std::scoped_lock lk(this->register_mutex);
         const u8 *cur_src = data;
         size_t remaining = num_bytes;
 
@@ -193,7 +193,7 @@ namespace sts::i2c::driver::impl {
     }
 
     Result BusAccessor::Receive(u8 *out_data, size_t num_bytes, I2cTransactionOption option, AddressingMode addressing_mode, u32 slave_address) {
-        std::scoped_lock<HosMutex> lk(this->register_mutex);
+        std::scoped_lock lk(this->register_mutex);
         u8 *cur_dst = out_data;
         size_t remaining = num_bytes;
 

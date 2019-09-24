@@ -25,26 +25,26 @@ namespace sts::pm::info {
     namespace {
 
         /* Global lock. */
-        HosMutex g_info_lock;
+        os::Mutex g_info_lock;
         std::set<u64> g_cached_launched_titles;
 
     }
 
     /* Information API. */
     Result GetTitleId(ncm::TitleId *out_title_id, u64 process_id) {
-        std::scoped_lock<HosMutex> lk(g_info_lock);
+        std::scoped_lock lk(g_info_lock);
 
         return pminfoGetTitleId(reinterpret_cast<u64 *>(out_title_id), process_id);
     }
 
     Result GetProcessId(u64 *out_process_id, ncm::TitleId title_id) {
-        std::scoped_lock<HosMutex> lk(g_info_lock);
+        std::scoped_lock lk(g_info_lock);
 
         return pminfoAtmosphereGetProcessId(out_process_id, static_cast<u64>(title_id));
     }
 
     Result WEAK HasLaunchedTitle(bool *out, ncm::TitleId title_id) {
-        std::scoped_lock<HosMutex> lk(g_info_lock);
+        std::scoped_lock lk(g_info_lock);
 
         if (g_cached_launched_titles.find(static_cast<u64>(title_id)) != g_cached_launched_titles.end()) {
             *out = true;
