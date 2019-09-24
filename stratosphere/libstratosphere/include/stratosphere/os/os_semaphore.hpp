@@ -15,7 +15,35 @@
  */
 
 #pragma once
+#include <switch.h>
 
-#include "ipc.hpp"
+namespace sts::os {
 
-#include "services/dmntcht.h"
+    class Semaphore {
+        NON_COPYABLE(Semaphore);
+        NON_MOVEABLE(Semaphore);
+        private:
+            ::Semaphore s;
+        public:
+            Semaphore() {
+                semaphoreInit(&s, 0);
+            }
+
+            Semaphore(u64 c) {
+                semaphoreInit(&s, c);
+            }
+
+            void Signal() {
+                semaphoreSignal(&s);
+            }
+
+            void Wait() {
+                semaphoreWait(&s);
+            }
+
+            bool TryWait() {
+                return semaphoreTryWait(&s);
+            }
+    };
+
+}

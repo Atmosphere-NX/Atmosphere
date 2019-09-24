@@ -64,7 +64,7 @@ bool SetMitmService::IsValidRegionCode(u32 region_code) {
 }
 
 Result SetMitmService::EnsureLocale() {
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
 
     if (!this->got_locale) {
         std::memset(&this->locale, 0xCC, sizeof(this->locale));

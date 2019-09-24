@@ -31,15 +31,15 @@ namespace sts::dmnt {
 
         /* Nintendo uses actual pointers as file handles. We'll add a layer of indirection... */
         bool g_sd_initialized = false;
-        HosMutex g_sd_lock;
+        os::Mutex g_sd_lock;
         FsFileSystem g_sd_fs;
 
-        HosMutex g_file_handle_lock;
+        os::Mutex g_file_handle_lock;
         u64 g_cur_fd;
         std::unordered_map<u64, FsFile> g_file_handles;
 
         Result EnsureSdInitialized() {
-            std::scoped_lock<HosMutex> lk(g_sd_lock);
+            std::scoped_lock lk(g_sd_lock);
             if (g_sd_initialized) {
                 return ResultSuccess;
             }
@@ -50,7 +50,7 @@ namespace sts::dmnt {
         }
 
         u64 GetNewFileHandle(FsFile f) {
-            std::scoped_lock<HosMutex> lk(g_file_handle_lock);
+            std::scoped_lock lk(g_file_handle_lock);
 
             u64 fd = g_cur_fd++;
             g_file_handles[fd] = f;
@@ -58,7 +58,7 @@ namespace sts::dmnt {
         }
 
         Result GetFileByHandle(FsFile *out, u64 handle) {
-            std::scoped_lock<HosMutex> lk(g_file_handle_lock);
+            std::scoped_lock lk(g_file_handle_lock);
 
             if (g_file_handles.find(handle) != g_file_handles.end()) {
                 *out = g_file_handles[handle];
@@ -69,7 +69,7 @@ namespace sts::dmnt {
         }
 
         Result CloseFileByHandle(u64 handle) {
-            std::scoped_lock<HosMutex> lk(g_file_handle_lock);
+            std::scoped_lock lk(g_file_handle_lock);
 
             if (g_file_handles.find(handle) != g_file_handles.end()) {
                 fsFileClose(&g_file_handles[handle]);

@@ -27,7 +27,7 @@ namespace sts::cfg {
         constexpr u64 InitialProcessIdMaxDeprecated = 0x50;
 
         /* Privileged process globals. */
-        HosMutex g_lock;
+        os::Mutex g_lock;
         bool g_got_privileged_process_status = false;
         u64 g_min_initial_process_id = 0, g_max_initial_process_id = 0;
         u64 g_cur_process_id = 0;
@@ -69,7 +69,7 @@ namespace sts::cfg {
 
     /* Privileged Process utilities. */
     bool IsInitialProcess() {
-        std::scoped_lock<HosMutex> lk(g_lock);
+        std::scoped_lock lk(g_lock);
 
         /* If we've not detected, do detection. */
         if (!g_got_privileged_process_status) {
@@ -81,7 +81,7 @@ namespace sts::cfg {
     }
 
     void GetInitialProcessRange(u64 *out_min, u64 *out_max) {
-        std::scoped_lock<HosMutex> lk(g_lock);
+        std::scoped_lock lk(g_lock);
 
         /* If we've not detected, do detection. */
         if (!g_got_privileged_process_status) {

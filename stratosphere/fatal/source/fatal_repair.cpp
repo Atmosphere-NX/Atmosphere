@@ -45,7 +45,7 @@ namespace sts::fatal::srv {
                 gpioPadSetDirection(&vol_btn, GpioDirection_Input);
 
                 /* Ensure that we're holding the volume button for a full second. */
-                TimeoutHelper timeout_helper(1'000'000'000ul);
+                os::TimeoutHelper timeout_helper(1'000'000'000ul);
                 while (!timeout_helper.TimedOut()) {
                     GpioValue val;
                     if (R_FAILED(gpioPadGetValue(&vol_btn, &val)) || val != GpioValue_Low) {

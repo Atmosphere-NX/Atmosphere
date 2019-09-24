@@ -14,25 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "sm_utils.hpp"
+#pragma once
+#include <switch.h>
 
-namespace sts::sm::impl {
-
-    namespace {
-
-        /* Globals. */
-        os::RecursiveMutex g_user_session_mutex;
-        os::RecursiveMutex g_mitm_session_mutex;
-
-    }
-
-    /* Utilities. */
-    os::RecursiveMutex &GetUserSessionMutex() {
-        return g_user_session_mutex;
-    }
-
-    os::RecursiveMutex &GetMitmSessionMutex() {
-        return g_mitm_session_mutex;
-    }
-
-}
+#include "os/os_mutex.hpp"
+#include "os/os_condvar.hpp"
+#include "os/os_semaphore.hpp"
+#include "os/os_timeout_helper.hpp"
+#include "os/os_event.hpp"
+#include "os/os_thread.hpp"
+#include "os/os_message_queue.hpp"

@@ -24,7 +24,7 @@ namespace sts::hid {
     namespace {
 
         /* Global lock. */
-        HosMutex g_hid_lock;
+        os::Mutex g_hid_lock;
         bool g_initialized_hid = false;
 
         /* Helper. */
@@ -53,7 +53,7 @@ namespace sts::hid {
     }
 
     Result GetKeysHeld(u64 *out) {
-        std::scoped_lock<HosMutex> lk(g_hid_lock);
+        std::scoped_lock lk(g_hid_lock);
 
         R_TRY(EnsureHidInitialized());
 

@@ -25,7 +25,7 @@ namespace sts::i2c::driver::impl {
 
     class Session {
         private:
-            HosMutex bus_accessor_mutex;
+            os::Mutex bus_accessor_mutex;
             BusAccessor *bus_accessor = nullptr;
             Bus bus = Bus::I2C1;
             u32 slave_address = 0;

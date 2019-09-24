@@ -17,14 +17,8 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-static HosRecursiveMutex g_sm_session_lock;
-static HosRecursiveMutex g_sm_mitm_session_lock;
+static sts::os::RecursiveMutex g_sm_session_lock;
 
-
-HosRecursiveMutex &GetSmSessionMutex() {
+sts::os::RecursiveMutex &GetSmSessionMutex() {
     return g_sm_session_lock;
-}
-
-HosRecursiveMutex &GetSmMitmSessionMutex() {
-    return g_sm_mitm_session_lock;
 }

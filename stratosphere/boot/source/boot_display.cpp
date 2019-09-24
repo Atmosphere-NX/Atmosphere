@@ -168,7 +168,7 @@ namespace sts::boot {
         }
 
         void WaitDsiTrigger() {
-            TimeoutHelper timeout_helper(250'000'000ul);
+            os::TimeoutHelper timeout_helper(250'000'000ul);
 
             while (true) {
                 if (timeout_helper.TimedOut()) {
@@ -183,7 +183,7 @@ namespace sts::boot {
         }
 
         void WaitDsiHostControl() {
-            TimeoutHelper timeout_helper(150'000'000ul);
+            os::TimeoutHelper timeout_helper(150'000'000ul);
 
             while (true) {
                 if (timeout_helper.TimedOut()) {

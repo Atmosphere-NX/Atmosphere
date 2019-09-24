@@ -25,12 +25,12 @@
 namespace sts::sm::impl {
 
     /* Utilities. */
-    HosRecursiveMutex &GetUserSessionMutex();
-    HosRecursiveMutex &GetMitmSessionMutex();
+    os::RecursiveMutex &GetUserSessionMutex();
+    os::RecursiveMutex &GetMitmSessionMutex();
 
     template<typename F>
     Result DoWithUserSession(F f) {
-        std::scoped_lock<HosRecursiveMutex &> lk(GetUserSessionMutex());
+        std::scoped_lock<os::RecursiveMutex &> lk(GetUserSessionMutex());
         {
             R_ASSERT(smInitialize());
             ON_SCOPE_EXIT { smExit(); };
@@ -41,7 +41,7 @@ namespace sts::sm::impl {
 
     template<typename F>
     Result DoWithMitmSession(F f) {
-        std::scoped_lock<HosRecursiveMutex &> lk(GetMitmSessionMutex());
+        std::scoped_lock<os::RecursiveMutex &> lk(GetMitmSessionMutex());
         {
             R_ASSERT(smAtmosphereMitmInitialize());
             ON_SCOPE_EXIT { smAtmosphereMitmExit(); };

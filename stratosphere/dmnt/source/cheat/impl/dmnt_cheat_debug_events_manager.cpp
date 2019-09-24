@@ -26,9 +26,9 @@ namespace sts::dmnt::cheat::impl {
             public:
                 static constexpr size_t NumCores = 4;
             private:
-                HosMessageQueue message_queues[NumCores];
-                HosThread threads[NumCores];
-                HosSignal continued_signal;
+                std::array<os::MessageQueue, NumCores> message_queues;
+                std::array<os::Thread, NumCores> threads;
+                os::Event continued_event;
             private:
                 static void PerCoreThreadFunction(void *_this) {
                     /* This thread will wait on the appropriate message queue. */
@@ -80,16 +80,15 @@ namespace sts::dmnt::cheat::impl {
                 }
 
                 void WaitContinued() {
-                    this->continued_signal.Wait();
-                    this->continued_signal.Reset();
+                    this->continued_event.Wait();
                 }
 
                 void SignalContinued() {
-                    this->continued_signal.Signal();
+                    this->continued_event.Signal();
                 }
 
             public:
-                DebugEventsManager() : message_queues{HosMessageQueue(1), HosMessageQueue(1), HosMessageQueue(1), HosMessageQueue(1)} {
+                DebugEventsManager() : message_queues{os::MessageQueue(1), os::MessageQueue(1), os::MessageQueue(1), os::MessageQueue(1)} {
                     for (size_t i = 0; i < NumCores; i++) {
                         /* Create thread. */
                         R_ASSERT(this->threads[i].Initialize(&DebugEventsManager::PerCoreThreadFunction, reinterpret_cast<void *>(this), 0x1000, 24, i));

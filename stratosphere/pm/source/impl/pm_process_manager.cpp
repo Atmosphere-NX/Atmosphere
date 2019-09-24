@@ -140,7 +140,7 @@ namespace sts::pm::impl {
         }
 
         /* Process Tracking globals. */
-        HosThread g_process_track_thread;
+        os::Thread g_process_track_thread;
         auto g_process_waitable_manager = WaitableManager(1);
 
         /* Process lists. */
@@ -155,7 +155,7 @@ namespace sts::pm::impl {
 
         /* Process Launch synchronization globals. */
         IEvent *g_process_launch_start_event = CreateWriteOnlySystemEvent();
-        HosSignal g_process_launch_finish_signal;
+        os::Event g_process_launch_finish_event;
         Result g_process_launch_result = ResultSuccess;
         LaunchProcessArgs g_process_launch_args = {};
 
@@ -286,7 +286,7 @@ namespace sts::pm::impl {
         Result LaunchProcessEventCallback(u64 timeout) {
             g_process_launch_start_event->Clear();
             g_process_launch_result = LaunchProcess(&g_process_launch_args);
-            g_process_launch_finish_signal.Signal();
+            g_process_launch_finish_event.Signal();
             return ResultSuccess;
         }
 
@@ -402,7 +402,7 @@ namespace sts::pm::impl {
     /* Process Management. */
     Result LaunchTitle(u64 *out_process_id, const ncm::TitleLocation &loc, u32 flags) {
         /* Ensure we only try to launch one title at a time. */
-        static HosMutex s_lock;
+        static os::Mutex s_lock;
         std::scoped_lock lk(s_lock);
 
         /* Set global arguments, signal, wait. */
@@ -411,9 +411,8 @@ namespace sts::pm::impl {
             .location = loc,
             .flags = flags,
         };
-        g_process_launch_finish_signal.Reset();
         g_process_launch_start_event->Signal();
-        g_process_launch_finish_signal.Wait();
+        g_process_launch_finish_event.Wait();
 
         return g_process_launch_result;
     }

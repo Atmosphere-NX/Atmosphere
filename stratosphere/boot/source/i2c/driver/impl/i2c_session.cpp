@@ -22,7 +22,7 @@
 namespace sts::i2c::driver::impl {
 
     void Session::Open(Bus bus, u32 slave_address, AddressingMode addr_mode, SpeedMode speed_mode, BusAccessor *bus_accessor, u32 max_retries, u64 retry_wait_time) {
-        std::scoped_lock<HosMutex> lk(this->bus_accessor_mutex);
+        std::scoped_lock lk(this->bus_accessor_mutex);
         if (!this->open) {
             this->bus_accessor = bus_accessor;
             this->bus = bus;
@@ -36,7 +36,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void Session::Start() {
-        std::scoped_lock<HosMutex> lk(this->bus_accessor_mutex);
+        std::scoped_lock lk(this->bus_accessor_mutex);
         if (this->open) {
             if (this->bus_accessor->GetOpenSessions() == 1) {
                 this->bus_accessor->DoInitialConfig();
@@ -45,7 +45,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void Session::Close() {
-        std::scoped_lock<HosMutex> lk(this->bus_accessor_mutex);
+        std::scoped_lock lk(this->bus_accessor_mutex);
         if (this->open) {
             this->bus_accessor->Close();
             this->bus_accessor = nullptr;
@@ -58,7 +58,7 @@ namespace sts::i2c::driver::impl {
     }
 
     Result Session::DoTransaction(void *dst, const void *src, size_t num_bytes, I2cTransactionOption option, Command command) {
-        std::scoped_lock<HosMutex> lk(this->bus_accessor_mutex);
+        std::scoped_lock lk(this->bus_accessor_mutex);
 
         if (this->bus_accessor->GetBusy()) {
             return ResultI2cBusBusy;

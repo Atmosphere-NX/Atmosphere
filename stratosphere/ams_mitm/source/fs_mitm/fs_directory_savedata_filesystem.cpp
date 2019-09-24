@@ -145,7 +145,7 @@ Result DirectorySaveDataFileSystem::GetFullPath(char *out, size_t out_size, cons
 }
 
 void DirectorySaveDataFileSystem::OnWritableFileClose() {
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     this->open_writable_files--;
 
     /* TODO: Abort if < 0? N does not. */
@@ -171,7 +171,7 @@ Result DirectorySaveDataFileSystem::CreateFileImpl(const FsPath &path, uint64_t 
     FsPath full_path;
     R_TRY(GetFullPath(full_path, path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     return this->fs->CreateFile(full_path, size, flags);
 }
 
@@ -179,7 +179,7 @@ Result DirectorySaveDataFileSystem::DeleteFileImpl(const FsPath &path) {
     FsPath full_path;
     R_TRY(GetFullPath(full_path, path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     return this->fs->DeleteFile(full_path);
 }
 
@@ -187,7 +187,7 @@ Result DirectorySaveDataFileSystem::CreateDirectoryImpl(const FsPath &path) {
     FsPath full_path;
     R_TRY(GetFullPath(full_path, path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     return this->fs->CreateDirectory(full_path);
 }
 
@@ -195,7 +195,7 @@ Result DirectorySaveDataFileSystem::DeleteDirectoryImpl(const FsPath &path) {
     FsPath full_path;
     R_TRY(GetFullPath(full_path, path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     return this->fs->DeleteDirectory(full_path);
 }
 
@@ -203,7 +203,7 @@ Result DirectorySaveDataFileSystem::DeleteDirectoryRecursivelyImpl(const FsPath 
     FsPath full_path;
     R_TRY(GetFullPath(full_path, path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     return this->fs->DeleteDirectoryRecursively(full_path);
 }
 
@@ -212,7 +212,7 @@ Result DirectorySaveDataFileSystem::RenameFileImpl(const FsPath &old_path, const
     R_TRY(GetFullPath(full_old_path, old_path));
     R_TRY(GetFullPath(full_new_path, new_path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     return this->fs->RenameFile(full_old_path, full_new_path);
 }
 
@@ -221,7 +221,7 @@ Result DirectorySaveDataFileSystem::RenameDirectoryImpl(const FsPath &old_path, 
     R_TRY(GetFullPath(full_old_path, old_path));
     R_TRY(GetFullPath(full_new_path, new_path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     return this->fs->RenameDirectory(full_old_path, full_new_path);
 }
 
@@ -229,7 +229,7 @@ Result DirectorySaveDataFileSystem::GetEntryTypeImpl(DirectoryEntryType *out, co
     FsPath full_path;
     R_TRY(GetFullPath(full_path, path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     return this->fs->GetEntryType(out, full_path);
 }
 
@@ -237,7 +237,7 @@ Result DirectorySaveDataFileSystem::OpenFileImpl(std::unique_ptr<IFile> &out_fil
     FsPath full_path;
     R_TRY(GetFullPath(full_path, path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
 
     {
         /* Open the raw file. */
@@ -265,7 +265,7 @@ Result DirectorySaveDataFileSystem::OpenDirectoryImpl(std::unique_ptr<IDirectory
     FsPath full_path;
     R_TRY(GetFullPath(full_path, path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     return this->fs->OpenDirectory(out_dir, full_path, mode);
 }
 
@@ -278,7 +278,7 @@ Result DirectorySaveDataFileSystem::CommitImpl() {
     /* will be deleted if there is an error during synchronization. */
     /* Instead, we will synchronize first, then delete committed, then rename. */
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
 
     /* Ensure we don't have any open writable files. */
     if (this->open_writable_files != 0) {
@@ -320,7 +320,7 @@ Result DirectorySaveDataFileSystem::CleanDirectoryRecursivelyImpl(const FsPath &
     FsPath full_path;
     R_TRY(GetFullPath(full_path, path));
 
-    std::scoped_lock<HosMutex> lk(this->lock);
+    std::scoped_lock lk(this->lock);
     return this->fs->CleanDirectoryRecursively(full_path);
 }
 

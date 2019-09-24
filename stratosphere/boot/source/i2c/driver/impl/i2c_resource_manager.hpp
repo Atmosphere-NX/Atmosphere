@@ -31,14 +31,14 @@ namespace sts::i2c::driver::impl {
             static constexpr size_t PowerBusId = ConvertToIndex(Bus::I2C5);
             static constexpr size_t InvalidSessionId = static_cast<size_t>(-1);
         private:
-            HosMutex initialize_mutex;
-            HosMutex session_open_mutex;
+            os::Mutex initialize_mutex;
+            os::Mutex session_open_mutex;
             size_t ref_cnt = 0;
             bool suspended = false;
             bool power_bus_suspended = false;
             Session sessions[MaxDriverSessions];
             BusAccessor bus_accessors[ConvertToIndex(Bus::Count)];
-            HosMutex transaction_mutexes[ConvertToIndex(Bus::Count)];
+            os::Mutex transaction_mutexes[ConvertToIndex(Bus::Count)];
         public:
             ResourceManager() {
                 /* ... */
@@ -60,7 +60,7 @@ namespace sts::i2c::driver::impl {
                 return this->sessions[id];
             }
 
-            HosMutex& GetTransactionMutex(Bus bus) {
+            os::Mutex& GetTransactionMutex(Bus bus) {
                 return this->transaction_mutexes[ConvertToIndex(bus)];
             }
 

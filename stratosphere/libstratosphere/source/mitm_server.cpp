@@ -18,8 +18,8 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-static HosMutex g_server_query_mutex;
-static HosThread g_server_query_manager_thread;
+static sts::os::Mutex g_server_query_mutex;
+static sts::os::Thread g_server_query_manager_thread;
 static SessionManagerBase *g_server_query_manager = nullptr;
 
 static void ServerQueryManagerThreadFunc(void *arg) {
@@ -27,7 +27,7 @@ static void ServerQueryManagerThreadFunc(void *arg) {
 }
 
 void RegisterMitmServerQueryHandle(Handle query_h, ServiceObjectHolder &&service) {
-    std::scoped_lock<HosMutex> lock(g_server_query_mutex);
+    std::scoped_lock lock(g_server_query_mutex);
 
     const bool exists = g_server_query_manager != nullptr;
     if (!exists) {

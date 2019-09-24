@@ -33,7 +33,7 @@ namespace sts::fatal::srv {
             private:
                 static constexpr int TaskThreadPriority = 15;
             private:
-                HosThread thread;
+                os::Thread thread;
             private:
                 static void RunTaskImpl(void *arg) {
                     ITask *task = reinterpret_cast<ITask *>(arg);

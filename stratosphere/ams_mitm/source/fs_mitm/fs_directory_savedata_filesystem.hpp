@@ -37,7 +37,7 @@ class DirectorySaveDataFileSystem : public IFileSystem {
         std::unique_ptr<IFileSystem> unique_fs;
         std::unique_ptr<IFileSystem> proxy_save_fs;
         IFileSystem *fs;
-        HosMutex lock;
+        sts::os::Mutex lock;
         size_t open_writable_files = 0;
 
     public:

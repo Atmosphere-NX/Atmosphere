@@ -23,12 +23,12 @@
 namespace sts::i2c::driver::impl {
 
     void ResourceManager::Initialize() {
-        std::scoped_lock<HosMutex> lk(this->initialize_mutex);
+        std::scoped_lock lk(this->initialize_mutex);
         this->ref_cnt++;
     }
 
     void ResourceManager::Finalize() {
-        std::scoped_lock<HosMutex> lk(this->initialize_mutex);
+        std::scoped_lock lk(this->initialize_mutex);
         if (this->ref_cnt == 0) {
             std::abort();
         }
@@ -38,7 +38,7 @@ namespace sts::i2c::driver::impl {
         }
 
         {
-            std::scoped_lock<HosMutex> sess_lk(this->session_open_mutex);
+            std::scoped_lock sess_lk(this->session_open_mutex);
             for (size_t i = 0; i < MaxDriverSessions; i++) {
                 this->sessions[i].Close();
             }
@@ -60,7 +60,7 @@ namespace sts::i2c::driver::impl {
         size_t session_id = InvalidSessionId;
         /* Get, open session. */
         {
-            std::scoped_lock<HosMutex> lk(this->session_open_mutex);
+            std::scoped_lock lk(this->session_open_mutex);
             if (out_session == nullptr || bus >= Bus::Count) {
                 std::abort();
             }
@@ -98,7 +98,7 @@ namespace sts::i2c::driver::impl {
         bool need_disable_ldo6 = false;
         /* Get, open session. */
         {
-            std::scoped_lock<HosMutex> lk(this->session_open_mutex);
+            std::scoped_lock lk(this->session_open_mutex);
             if (!this->sessions[session.session_id].IsOpen()) {
                 std::abort();
             }
@@ -128,7 +128,7 @@ namespace sts::i2c::driver::impl {
 
         if (!this->suspended) {
             {
-                std::scoped_lock<HosMutex> lk(this->session_open_mutex);
+                std::scoped_lock lk(this->session_open_mutex);
                 this->suspended = true;
                 for (size_t i = 0; i < ConvertToIndex(Bus::Count); i++) {
                     if (i != PowerBusId && this->bus_accessors[i].GetOpenSessions() > 0) {
@@ -162,7 +162,7 @@ namespace sts::i2c::driver::impl {
                 svcSleepThread(1'560'000ul);
             }
             {
-                std::scoped_lock<HosMutex> lk(this->session_open_mutex);
+                std::scoped_lock lk(this->session_open_mutex);
                 for (size_t i = 0; i < ConvertToIndex(Bus::Count); i++) {
                     if (i != PowerBusId && this->bus_accessors[i].GetOpenSessions() > 0) {
                         this->bus_accessors[i].Resume();
@@ -177,7 +177,7 @@ namespace sts::i2c::driver::impl {
         if (this->ref_cnt == 0) {
             std::abort();
         }
-        std::scoped_lock<HosMutex> lk(this->session_open_mutex);
+        std::scoped_lock lk(this->session_open_mutex);
 
         if (!this->power_bus_suspended) {
             this->power_bus_suspended = true;
@@ -191,7 +191,7 @@ namespace sts::i2c::driver::impl {
         if (this->ref_cnt == 0) {
             std::abort();
         }
-        std::scoped_lock<HosMutex> lk(this->session_open_mutex);
+        std::scoped_lock lk(this->session_open_mutex);
 
         if (this->power_bus_suspended) {
             if (this->bus_accessors[PowerBusId].GetOpenSessions() > 0) {

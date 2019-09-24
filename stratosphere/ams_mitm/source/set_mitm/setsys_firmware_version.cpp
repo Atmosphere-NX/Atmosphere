@@ -19,13 +19,13 @@
 
 #include "setsys_firmware_version.hpp"
 
-static HosMutex g_version_mutex;
+static sts::os::Mutex g_version_mutex;
 static bool g_got_version = false;
 static SetSysFirmwareVersion g_ams_fw_version = {0};
 static SetSysFirmwareVersion g_fw_version = {0};
 
 void VersionManager::Initialize() {
-    std::scoped_lock<HosMutex> lock(g_version_mutex);
+    std::scoped_lock lock(g_version_mutex);
 
     if (g_got_version) {
         return;

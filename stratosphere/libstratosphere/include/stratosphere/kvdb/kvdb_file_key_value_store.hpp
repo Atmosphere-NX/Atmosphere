@@ -17,6 +17,7 @@
 #pragma once
 #include <optional>
 #include <switch.h>
+#include "../os.hpp"
 
 #include "kvdb_bounded_string.hpp"
 
@@ -66,7 +67,7 @@ namespace sts::kvdb {
                     bool Contains(const void *key, size_t key_size);
             };
         private:
-            HosMutex lock;
+            os::Mutex lock;
             Path dir_path;
             Cache cache;
         private:
