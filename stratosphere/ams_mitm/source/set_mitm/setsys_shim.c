@@ -19,39 +19,6 @@
 #include "setsys_shim.h"
 
 /* Command forwarders. */
-Result setsysGetEdidFwd(Service* s, SetSysEdid* out) {
-    IpcCommand c;
-    ipcInitialize(&c);
-    ipcAddRecvStatic(&c, out, sizeof(*out), 0);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-    } *raw;
-
-    raw = serviceIpcPrepareHeader(s, &c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 41;
-
-    Result rc = serviceIpcDispatch(s);
-
-    if (R_SUCCEEDED(rc)) {
-        IpcParsedCommand r;
-        struct {
-            u64 magic;
-            u64 result;
-        } *resp;
-
-        serviceIpcParse(s, &r, sizeof(*resp));
-        resp = r.Raw;
-
-        rc = resp->result;
-    }
-
-    return rc;
-}
-
 Result setsysGetSettingsItemValueFwd(Service *s, const char *name, const char *item_key, void *value_out, size_t value_out_size, u64 *size_out) {
     char send_name[SET_MAX_NAME_SIZE];
     char send_item_key[SET_MAX_NAME_SIZE];

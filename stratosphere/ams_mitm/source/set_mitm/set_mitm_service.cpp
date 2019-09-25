@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <switch.h>
 #include "set_mitm_service.hpp"
-#include "set_shim.h"
 
 void SetMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx) {
     /* No commands need postprocessing. */
@@ -103,8 +102,4 @@ Result SetMitmService::GetRegionCode(Out<u32> out_region_code) {
 
     out_region_code.SetValue(this->locale.region_code);
     return ResultSuccess;
-}
-
-Result SetMitmService::GetAvailableLanguageCodes(OutPointerWithClientSize<u64> out_language_codes, Out<s32> out_count) {
-    return setGetAvailableLanguageCodesFwd(this->forward_service.get(), out_count.GetPointer(), out_language_codes.pointer, out_language_codes.num_elements);
 }

@@ -25,10 +25,6 @@ class SetMitmService : public IMitmServiceObject {
         enum class CommandId {
             GetLanguageCode = 0,
             GetRegionCode   = 4,
-
-            /* Commands for which set:sys *must* act as a passthrough. */
-            /* TODO: Solve the relevant IPC detection problem. */
-            GetAvailableLanguageCodes = 1,
         };
     private:
         sts::os::Mutex lock;
@@ -55,14 +51,9 @@ class SetMitmService : public IMitmServiceObject {
         /* Overridden commands. */
         Result GetLanguageCode(Out<u64> out_lang_code);
         Result GetRegionCode(Out<u32> out_region_code);
-
-        /* Forced passthrough commands. */
-        Result GetAvailableLanguageCodes(OutPointerWithClientSize<u64> out_language_codes, Out<s32> out_count);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MAKE_SERVICE_COMMAND_META(SetMitmService, GetLanguageCode),
             MAKE_SERVICE_COMMAND_META(SetMitmService, GetRegionCode),
-
-            MAKE_SERVICE_COMMAND_META(SetMitmService, GetAvailableLanguageCodes),
         };
 };

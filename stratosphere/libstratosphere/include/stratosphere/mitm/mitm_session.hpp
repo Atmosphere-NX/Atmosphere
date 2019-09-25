@@ -80,6 +80,23 @@ class MitmSession final : public ServiceSession {
         }
 
         Result ForwardRequest(IpcResponseContext *ctx) {
+            /* Mitm forward specific preprocessing. */
+            if (ctx->request.NumStaticsOut) {
+                u32 *cmdbuf = (u32 *)armGetTls();
+                /* Overwrite the number of C descriptors to only use a single buffer. */
+                cmdbuf[1] = (cmdbuf[1] & (~u32(0xF << 10))) | (0x2 << 10);
+
+                IpcStaticRecvDescriptor *c_desc = (IpcStaticRecvDescriptor *)(reinterpret_cast<uintptr_t>(ctx->request.RawWithoutPadding) + ctx->request.RawSize);
+                /* Don't write out of bounds, though this should never happen. */
+                if (reinterpret_cast<uintptr_t>(c_desc) + sizeof(*c_desc) <= reinterpret_cast<uintptr_t>(cmdbuf) + 0x100) {
+                    uintptr_t ptr = reinterpret_cast<uintptr_t>(this->pointer_buffer.data());
+                    c_desc->Addr = ptr;
+                    c_desc->Packed = (ptr >> 32) | (this->pointer_buffer.size() << 16);
+                } else {
+                    std::abort();
+                }
+            }
+
             /* Dispatch forwards. */
             R_TRY(serviceIpcDispatch(this->forward_service.get()));
 

@@ -98,7 +98,3 @@ Result SetSysMitmService::GetSettingsItemValue(Out<u64> out_size, OutBuffer<u8> 
 
     return ResultSuccess;
 }
-
-Result SetSysMitmService::GetEdid(OutPointerWithServerSize<SetSysEdid, 0x1> out) {
-    return setsysGetEdidFwd(this->forward_service.get(), out.pointer);
-}
