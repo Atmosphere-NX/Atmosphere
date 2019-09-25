@@ -27,10 +27,6 @@ class SetSysMitmService : public IMitmServiceObject {
             GetFirmwareVersion2      = 4,
             GetSettingsItemValueSize = 37,
             GetSettingsItemValue     = 38,
-
-            /* Commands for which set:sys *must* act as a passthrough. */
-            /* TODO: Solve the relevant IPC detection problem. */
-            GetEdid = 41,
         };
     public:
         SetSysMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
@@ -50,16 +46,11 @@ class SetSysMitmService : public IMitmServiceObject {
         Result GetFirmwareVersion2(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out);
         Result GetSettingsItemValueSize(Out<u64> out_size, InPointer<char> name, InPointer<char> key);
         Result GetSettingsItemValue(Out<u64> out_size, OutBuffer<u8> out_value, InPointer<char> name, InPointer<char> key);
-
-        /* Forced passthrough commands. */
-        Result GetEdid(OutPointerWithServerSize<SetSysEdid, 0x1> out);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
             MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetFirmwareVersion),
             MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetFirmwareVersion2),
             MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetSettingsItemValueSize),
             MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetSettingsItemValue),
-
-            MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetEdid),
         };
 };
