@@ -653,7 +653,8 @@ int nxfs_mount_emummc_file(const char *emummc_path, int num_parts, uint64_t part
     is_exfat = (rc == 1);
     
     /* Reject single part in FAT32. */
-    if (!is_exfat && (num_parts <= 1)) {
+    /* NOTE: This check has no effect in the current design. */
+    if (!is_exfat && (num_parts < 1)) {
         return -2;
     }
     
