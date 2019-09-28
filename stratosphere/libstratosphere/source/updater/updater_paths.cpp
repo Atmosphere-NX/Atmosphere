@@ -72,8 +72,7 @@ namespace sts::updater {
                     constexpr const char *candidates[] = {BctPathA, BctPathNx};
                     return ChooseCandidatePath(candidates, util::size(candidates));
                 }
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
@@ -89,8 +88,7 @@ namespace sts::updater {
                     constexpr const char *candidates[] = {Package1PathA, Package1PathNx};
                     return ChooseCandidatePath(candidates, util::size(candidates));
                 }
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
@@ -106,8 +104,7 @@ namespace sts::updater {
                     constexpr const char *candidates[] = {Package2PathA, Package2PathNx};
                     return ChooseCandidatePath(candidates, util::size(candidates));
                 }
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();;
         }
     }
 

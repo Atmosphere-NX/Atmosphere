@@ -109,7 +109,7 @@ Result DirectorySaveDataFileSystem::AllocateWorkBuffer(void **out_buf, size_t *o
     size_t try_size = ideal_size;
 
     /* Repeatedly try to allocate until success. */
-    while (try_size > 0x200) {
+    while (true) {
         void *buf = malloc(try_size);
         if (buf != nullptr) {
             *out_buf = buf;
@@ -119,11 +119,11 @@ Result DirectorySaveDataFileSystem::AllocateWorkBuffer(void **out_buf, size_t *o
 
         /* Divide size by two. */
         try_size >>= 1;
+        STS_ASSERT(try_size > 0x200);
     }
 
     /* TODO: Return a result here? Nintendo does not, but they have other allocation failed results. */
     /* Consider returning ResultFsAllocationFailureInDirectorySaveDataFileSystem? */
-    std::abort();
 }
 
 Result DirectorySaveDataFileSystem::GetFullPath(char *out, size_t out_size, const char *relative_path) {

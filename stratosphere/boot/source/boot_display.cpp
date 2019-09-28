@@ -110,8 +110,7 @@ namespace sts::boot {
                     case DsiSleepOrRegisterWriteKind_Sleep:
                         svcSleepThread(1'000'000ul * u64(reg_writes[i].offset));
                         break;
-                    default:
-                        std::abort();
+                    STS_UNREACHABLE_DEFAULT_CASE();
                 }
             }
         }

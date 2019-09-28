@@ -122,9 +122,7 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                         R_ASSERT(this->file_romfs->Read((void *)((uintptr_t)buffer + read_so_far), cur_read_size, cur_source->base_source_info.offset + (offset - cur_source->virtual_offset)));
                     }
                     break;
-                default:
-                    std::abort();
-                    break;
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
             read_so_far += cur_read_size;
             offset += cur_read_size;

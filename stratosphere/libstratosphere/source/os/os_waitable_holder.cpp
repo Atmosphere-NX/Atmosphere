@@ -48,8 +48,7 @@ namespace sts::os {
                 new (GetPointer(this->impl_storage)) impl::WaitableHolderOfInterProcessEvent(&event->GetInterProcessEvent());
                 break;
             case SystemEventState::Uninitialized:
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
 
         /* Set user-data. */
@@ -81,8 +80,7 @@ namespace sts::os {
             case MessageQueueWaitKind::ForNotEmpty:
                 new (GetPointer(this->impl_storage)) impl::WaitableHolderOfMessageQueueForNotEmpty(message_queue);
                 break;
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
 
         /* Set user-data. */

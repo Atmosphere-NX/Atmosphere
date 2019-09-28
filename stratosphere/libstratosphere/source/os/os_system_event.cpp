@@ -116,8 +116,7 @@ namespace sts::os {
             case SystemEventState::InterProcessEvent:
                 this->GetInterProcessEvent().~InterProcessEvent();
                 break;
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
         this->state = SystemEventState::Uninitialized;
     }
@@ -131,8 +130,7 @@ namespace sts::os {
                 this->GetInterProcessEvent().Signal();
                 break;
             case SystemEventState::Uninitialized:
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
@@ -145,8 +143,7 @@ namespace sts::os {
                 this->GetInterProcessEvent().Reset();
                 break;
             case SystemEventState::Uninitialized:
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
     void SystemEvent::Wait() {
@@ -158,8 +155,7 @@ namespace sts::os {
                 this->GetInterProcessEvent().Wait();
                 break;
             case SystemEventState::Uninitialized:
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
@@ -170,8 +166,7 @@ namespace sts::os {
             case SystemEventState::InterProcessEvent:
                 return this->GetInterProcessEvent().TryWait();
             case SystemEventState::Uninitialized:
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
@@ -182,8 +177,7 @@ namespace sts::os {
             case SystemEventState::InterProcessEvent:
                 return this->GetInterProcessEvent().TimedWait(ns);
             case SystemEventState::Uninitialized:
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 }

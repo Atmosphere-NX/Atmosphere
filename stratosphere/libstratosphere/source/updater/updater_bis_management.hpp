@@ -130,12 +130,16 @@ namespace sts::updater {
             PartitionAccessor(FsBisStorageId id) : BisAccessor(id) { }
         private:
             constexpr const OffsetSizeType *FindEntry(EnumType which) {
+                const OffsetSizeType *entry = nullptr;
                 for (size_t i = 0; i < Meta::NumEntries; i++) {
                     if (Meta::Entries[i].which == which) {
-                        return &Meta::Entries[i];
+                        entry = &Meta::Entries[i];
+                        break;
                     }
                 }
-                std::abort();
+
+                STS_ASSERT(entry != nullptr);
+                return entry;
             }
         public:
             Result Read(size_t *out_size, void *dst, size_t size, EnumType which) {
@@ -194,8 +198,7 @@ namespace sts::updater {
                 return FsBisStorageId_BootConfigAndPackage2RepairMain;
             case Package2Type::RepairSub:
                 return FsBisStorageId_BootConfigAndPackage2RepairSub;
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 

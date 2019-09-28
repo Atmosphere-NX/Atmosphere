@@ -144,14 +144,9 @@ namespace sts::boot2 {
 
             switch (pm::shell::LaunchTitle(&process_id, loc, launch_flags)) {
                 case ResultKernelResourceExhausted:
-                    /* Out of resource! */
-                    std::abort();
                 case ResultKernelOutOfMemory:
-                    /* Out of memory! */
-                    std::abort();
                 case ResultKernelLimitReached:
-                    /* Limit Reached! */
-                    std::abort();
+                    STS_ASSERT(false);
                 default:
                     /* We don't care about other issues. */
                     break;

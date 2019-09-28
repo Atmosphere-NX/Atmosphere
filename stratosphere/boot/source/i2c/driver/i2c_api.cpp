@@ -70,8 +70,7 @@ namespace sts::i2c::driver {
                         svcSleepThread(us * 1'000ul);
                     }
                     break;
-                default:
-                    std::abort();
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
             return ResultSuccess;
         }

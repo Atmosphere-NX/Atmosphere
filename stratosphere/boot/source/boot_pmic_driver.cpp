@@ -89,7 +89,7 @@ namespace sts::boot {
 
         /* Allow up to 5 seconds for shutdown/reboot to take place. */
         svcSleepThread(5'000'000'000ul);
-        std::abort();
+        STS_ASSERT(false);
     }
 
     void PmicDriver::FinalizeBattery(BatteryDriver *battery_driver) {

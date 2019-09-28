@@ -72,8 +72,7 @@ namespace sts::updater {
                     return true;
                 case BootImageUpdateType::Mariko:
                     return false;
-                default:
-                    std::abort();
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -83,8 +82,7 @@ namespace sts::updater {
                     return true;
                 case BootImageUpdateType::Mariko:
                     return false;
-                default:
-                    std::abort();
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -94,8 +92,7 @@ namespace sts::updater {
                     return NcmContentMetaType_BootImagePackage;
                 case BootModeType::Safe:
                     return NcmContentMetaType_BootImagePackageSafe;
-                default:
-                    std::abort();
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -185,8 +182,7 @@ namespace sts::updater {
                     return VerifyBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type);
                 case BootModeType::Safe:
                     return VerifyBootImagesSafe(data_id, work_buffer, work_buffer_size, boot_image_update_type);
-                default:
-                    std::abort();
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -311,8 +307,7 @@ namespace sts::updater {
                     return UpdateBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type);
                 case BootModeType::Safe:
                     return UpdateBootImagesSafe(data_id, work_buffer, work_buffer_size, boot_image_update_type);
-                default:
-                    std::abort();
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -505,8 +500,7 @@ namespace sts::updater {
             case spl::HardwareType::Hoag:
             case spl::HardwareType::Iowa:
                 return BootImageUpdateType::Mariko;
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
