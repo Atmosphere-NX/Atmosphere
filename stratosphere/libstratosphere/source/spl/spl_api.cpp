@@ -70,8 +70,7 @@ namespace sts::spl {
             case HardwareType::Hoag:
             case HardwareType::Iowa:
                 return true;
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 

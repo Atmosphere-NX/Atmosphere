@@ -60,9 +60,8 @@ namespace sts::pinmux {
                     configs = InitialConfigsIowa;
                     num_configs = NumInitialConfigsIowa;
                     break;
-                default:
-                    /* Unknown hardware type, we can't proceed. */
-                    std::abort();
+                /* Unknown hardware type, we can't proceed. */
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
 
             /* Ensure we found an appropriate config. */

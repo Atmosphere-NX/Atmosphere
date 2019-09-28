@@ -61,8 +61,7 @@ namespace sts::i2c::driver::impl {
                 return PcvModule_I2C5;
             case Bus::I2C6:
                 return PcvModule_I2C6;
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
@@ -80,8 +79,7 @@ namespace sts::i2c::driver::impl {
                 return Bus::I2C5;
             case PcvModule_I2C6:
                 return Bus::I2C6;
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 

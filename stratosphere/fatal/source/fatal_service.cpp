@@ -122,9 +122,8 @@ namespace sts::fatal::srv {
                         RunTasks(&this->context);
                     }
                     break;
-                default:
-                    /* N aborts here. Should we just return an error code? */
-                    std::abort();
+                /* N aborts here. Should we just return an error code? */
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
 
             return ResultSuccess;

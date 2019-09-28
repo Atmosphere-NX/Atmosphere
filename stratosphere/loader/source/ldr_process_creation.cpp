@@ -515,8 +515,7 @@ namespace sts::ldr {
                         aslr_start = map::AslrBase64Bit;
                         aslr_size  = map::AslrSize64Bit;
                         break;
-                    default:
-                        std::abort();
+                    STS_UNREACHABLE_DEFAULT_CASE();
                 }
             } else {
                 /* On 1.0.0, only 2 address space types existed. */

@@ -77,9 +77,7 @@ static void _CacheValues(void)
         case AtmosphereTargetFirmware_900:
             g_firmware_version = FirmwareVersion_900;
             break;
-        default:
-            std::abort();
-            break;
+        STS_UNREACHABLE_DEFAULT_CASE();
     }
 
     __atomic_store_n(&g_HasCached, true, __ATOMIC_SEQ_CST);
@@ -145,9 +143,7 @@ void SetFirmwareVersionForLibnx() {
             minor = 0;
             micro = 0;
             break;
-        default:
-            std::abort();
-            break;
+        STS_UNREACHABLE_DEFAULT_CASE();
     }
     hosversionSet(MAKEHOSVERSION(major, minor, micro));
 }

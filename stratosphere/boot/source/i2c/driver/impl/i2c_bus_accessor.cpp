@@ -282,8 +282,7 @@ namespace sts::i2c::driver::impl {
                 src_div = 0x02;
                 debounce = 0;
                 break;
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
 
         if (speed_mode == SpeedMode::HighSpeed) {

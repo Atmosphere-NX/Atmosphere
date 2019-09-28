@@ -76,8 +76,7 @@ namespace sts::i2c::driver::impl {
             case Command::Receive:
                 R_TRY(this->bus_accessor->Receive(reinterpret_cast<u8 *>(dst), num_bytes, option, this->addressing_mode, this->slave_address));
                 break;
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
 
         return ResultSuccess;

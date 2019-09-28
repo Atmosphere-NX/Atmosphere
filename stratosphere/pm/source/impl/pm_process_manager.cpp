@@ -134,8 +134,7 @@ namespace sts::pm::impl {
                     return static_cast<u32>(ProcessEventDeprecated::DebugRunning);
                 case ProcessEvent::DebugSuspended:
                     return static_cast<u32>(ProcessEventDeprecated::DebugSuspended);
-                default:
-                    std::abort();
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 

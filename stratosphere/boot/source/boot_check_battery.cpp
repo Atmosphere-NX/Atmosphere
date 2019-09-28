@@ -100,8 +100,7 @@ namespace sts::boot {
                     return &BatteryChargeParameters1;
                 case 2:
                     return &BatteryChargeParameters2;
-                default:
-                    std::abort();
+                STS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -281,8 +280,7 @@ namespace sts::boot {
             case CheckBatteryResult::Reboot:
                 RebootSystem();
                 break;
-            default:
-                std::abort();
+            STS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
