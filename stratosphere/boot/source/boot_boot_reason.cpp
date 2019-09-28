@@ -75,26 +75,16 @@ namespace sts::boot {
         /* Get values from PMIC. */
         {
             PmicDriver pmic_driver;
-            if (R_FAILED(pmic_driver.GetPowerIntr(&power_intr))) {
-                std::abort();
-            }
-            if (R_FAILED(pmic_driver.GetNvErc(&nv_erc))) {
-                std::abort();
-            }
-            if (R_FAILED(pmic_driver.GetAcOk(&ac_ok))) {
-                std::abort();
-            }
+            R_ASSERT(pmic_driver.GetPowerIntr(&power_intr));
+            R_ASSERT(pmic_driver.GetNvErc(&nv_erc));
+            R_ASSERT(pmic_driver.GetAcOk(&ac_ok));
         }
 
         /* Get values from RTC. */
         {
             RtcDriver rtc_driver;
-            if (R_FAILED(rtc_driver.GetRtcIntr(&rtc_intr))) {
-                std::abort();
-            }
-            if (R_FAILED(rtc_driver.GetRtcIntrM(&rtc_intr_m))) {
-                std::abort();
-            }
+            R_ASSERT(rtc_driver.GetRtcIntr(&rtc_intr));
+            R_ASSERT(rtc_driver.GetRtcIntrM(&rtc_intr_m));
         }
 
         /* Set global derived boot reason. */
@@ -107,19 +97,14 @@ namespace sts::boot {
             boot_reason_value.rtc_intr = rtc_intr & ~rtc_intr_m;
             boot_reason_value.nv_erc = nv_erc;
             boot_reason_value.boot_reason = g_boot_reason;
-            if (R_FAILED(splSetBootReason(boot_reason_value.value))) {
-                std::abort();
-            }
+            R_ASSERT(splSetBootReason(boot_reason_value.value));
         }
 
         g_detected_boot_reason = true;
     }
 
     u32 GetBootReason() {
-        if (!g_detected_boot_reason) {
-            std::abort();
-        }
-
+        STS_ASSERT(g_detected_boot_reason);
         return g_boot_reason;
     }
 

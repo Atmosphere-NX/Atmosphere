@@ -16,7 +16,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 # INCLUDES is a list of directories containing header files
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
-SOURCES		:=	source source/os source/spl source/spl/smc source/updater source/patcher source/map source/rnd source/util source/sm source/cfg source/pm source/hid source/ldr source/kvdb
+SOURCES		:=	source source/os source/os/impl source/spl source/spl/smc source/updater source/patcher source/map source/rnd source/util source/sm source/cfg source/pm source/hid source/ldr source/kvdb
 DATA		:=	data
 INCLUDES	:=  include
 

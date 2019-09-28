@@ -29,9 +29,7 @@ namespace sts::i2c::driver::impl {
 
         /* Ensure we're good if this isn't our first session. */
         if (this->open_sessions > 1) {
-            if (this->speed_mode != speed_mode) {
-                std::abort();
-            }
+            STS_ASSERT(this->speed_mode == speed_mode);
             return;
         }
 
@@ -58,7 +56,7 @@ namespace sts::i2c::driver::impl {
         }
 
         /* Close interrupt event. */
-        eventClose(&this->interrupt_event);
+        this->interrupt_event.Finalize();
 
         /* Close PCV. */
         pcv::Finalize();
@@ -158,10 +156,10 @@ namespace sts::i2c::driver::impl {
                 break;
             }
 
-            eventClear(&this->interrupt_event);
-            if (R_FAILED(eventWait(&this->interrupt_event, InterruptTimeout))) {
+            this->interrupt_event.Reset();
+            if (!this->interrupt_event.TimedWait(InterruptTimeout)) {
                 this->HandleTransactionResult(ResultI2cBusBusy);
-                eventClear(&this->interrupt_event);
+                this->interrupt_event.Reset();
                 return ResultI2cTimedOut;
             }
 
@@ -181,10 +179,10 @@ namespace sts::i2c::driver::impl {
                 break;
             }
 
-            eventClear(&this->interrupt_event);
-            if (R_FAILED(eventWait(&this->interrupt_event, InterruptTimeout))) {
+            this->interrupt_event.Reset();
+            if (!this->interrupt_event.TimedWait(InterruptTimeout)) {
                 this->HandleTransactionResult(ResultI2cBusBusy);
-                eventClear(&this->interrupt_event);
+                this->interrupt_event.Reset();
                 return ResultI2cTimedOut;
             }
         }
@@ -206,11 +204,11 @@ namespace sts::i2c::driver::impl {
 
         /* Receive bytes. */
         while (remaining > 0) {
-            eventClear(&this->interrupt_event);
-            if (R_FAILED(eventWait(&this->interrupt_event, InterruptTimeout))) {
+            this->interrupt_event.Reset();
+            if (!this->interrupt_event.TimedWait(InterruptTimeout)) {
                 this->HandleTransactionResult(ResultI2cBusBusy);
                 this->ClearInterruptMask();
-                eventClear(&this->interrupt_event);
+                this->interrupt_event.Reset();
                 return ResultI2cTimedOut;
             }
 
@@ -245,16 +243,9 @@ namespace sts::i2c::driver::impl {
         static constexpr u64 s_interrupts[] = {
             0x46, 0x74, 0x7C, 0x98, 0x55, 0x5F
         };
-        if (ConvertToIndex(bus) >= util::size(s_interrupts)) {
-            std::abort();
-        }
-
-        Handle evt_h;
-        if (R_FAILED(svcCreateInterruptEvent(&evt_h, s_interrupts[ConvertToIndex(bus)], 1))) {
-            std::abort();
-        }
-
-        eventLoadRemote(&this->interrupt_event, evt_h, false);
+        const auto index = ConvertToIndex(bus);
+        STS_ASSERT(index < util::size(s_interrupts));
+        R_ASSERT(this->interrupt_event.Initialize(s_interrupts[index], false));
     }
 
     void BusAccessor::SetClock(SpeedMode speed_mode) {
@@ -307,29 +298,17 @@ namespace sts::i2c::driver::impl {
         reg::Read(&this->i2c_registers->I2C_I2C_CNFG_0);
 
         if (this->pcv_module != PcvModule_I2C5) {
-            if (R_FAILED(pcv::SetReset(this->pcv_module, true))) {
-                std::abort();
-            }
-            if (R_FAILED(pcv::SetClockRate(this->pcv_module, (408'000'000) / (src_div + 1)))) {
-                std::abort();
-            }
-            if (R_FAILED(pcv::SetReset(this->pcv_module, false))) {
-                std::abort();
-            }
+            R_ASSERT(pcv::SetReset(this->pcv_module, true));
+            R_ASSERT(pcv::SetClockRate(this->pcv_module, (408'000'000) / (src_div + 1)));
+            R_ASSERT(pcv::SetReset(this->pcv_module, false));
         }
     }
 
     void BusAccessor::ResetController() const {
         if (this->pcv_module != PcvModule_I2C5) {
-            if (R_FAILED(pcv::SetReset(this->pcv_module, true))) {
-                std::abort();
-            }
-            if (R_FAILED(pcv::SetClockRate(this->pcv_module, 81'600'000))) {
-                std::abort();
-            }
-            if (R_FAILED(pcv::SetReset(this->pcv_module, false))) {
-                std::abort();
-            }
+            R_ASSERT(pcv::SetReset(this->pcv_module, true));
+            R_ASSERT(pcv::SetClockRate(this->pcv_module, 81'600'000));
+            R_ASSERT(pcv::SetReset(this->pcv_module, false));
         }
     }
 
@@ -388,9 +367,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void BusAccessor::DisableClock() {
-        if (R_FAILED(pcv::SetClockEnabled(this->pcv_module, false))) {
-            std::abort();
-        }
+        R_ASSERT(pcv::SetClockEnabled(this->pcv_module, false));
     }
 
     void BusAccessor::SetPacketMode() {
@@ -435,24 +412,21 @@ namespace sts::i2c::driver::impl {
     }
 
     void BusAccessor::HandleTransactionResult(Result result) {
-        if (R_FAILED(result)) {
-            if (result == ResultI2cNoAck || result == ResultI2cBusBusy) {
+        R_TRY_CATCH(result) {
+            R_CATCH_MANY(ResultI2cNoAck, ResultI2cBusBusy) {
                 this->ResetController();
                 this->SetClock(this->speed_mode);
                 this->SetPacketMode();
                 this->FlushFifos();
-            } else {
-                std::abort();
             }
-        }
+        } R_END_TRY_CATCH_WITH_ASSERT;
     }
 
     Result BusAccessor::GetAndHandleTransactionResult() {
-        const Result transaction_res = this->GetTransactionResult();
-        R_TRY_CLEANUP(transaction_res, {
-            this->HandleTransactionResult(transaction_res);
+        R_TRY_CLEANUP(this->GetTransactionResult(), {
+            this->HandleTransactionResult(R_CLEANUP_RESULT);
             this->ClearInterruptMask();
-            eventClear(&this->interrupt_event);
+            this->interrupt_event.Reset();
         });
         return ResultSuccess;
     }

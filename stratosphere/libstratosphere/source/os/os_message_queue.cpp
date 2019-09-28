@@ -14,14 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "impl/os_waitable_object_list.hpp"
 
 namespace sts::os {
 
+    MessageQueue::MessageQueue(std::unique_ptr<uintptr_t[]> buf, size_t c): buffer(std::move(buf)), capacity(c) {
+        new (GetPointer(this->waitable_object_list_storage)) impl::WaitableObjectList();
+    }
+
+    MessageQueue::~MessageQueue() {
+        GetReference(this->waitable_object_list_storage).~WaitableObjectList();
+    }
+
     void MessageQueue::SendInternal(uintptr_t data) {
         /* Ensure we don't corrupt the queue, but this should never happen. */
-        if (this->count >= this->capacity) {
-            std::abort();
-        }
+        STS_ASSERT(this->count < this->capacity);
 
         /* Write data to tail of queue. */
         this->buffer[(this->count++ + this->offset) % this->capacity] = data;
@@ -29,9 +36,7 @@ namespace sts::os {
 
     void MessageQueue::SendNextInternal(uintptr_t data) {
         /* Ensure we don't corrupt the queue, but this should never happen. */
-        if (this->count >= this->capacity) {
-            std::abort();
-        }
+        STS_ASSERT(this->count < this->capacity);
 
         /* Write data to head of queue. */
         this->offset = (this->offset + this->capacity - 1) % this->capacity;
@@ -41,9 +46,7 @@ namespace sts::os {
 
     uintptr_t MessageQueue::ReceiveInternal() {
         /* Ensure we don't corrupt the queue, but this should never happen. */
-        if (this->count == 0) {
-            std::abort();
-        }
+        STS_ASSERT(this->count > 0);
 
         uintptr_t data = this->buffer[this->offset];
         this->offset = (this->offset + 1) % this->capacity;
@@ -53,9 +56,7 @@ namespace sts::os {
 
     uintptr_t MessageQueue::PeekInternal() {
         /* Ensure we don't corrupt the queue, but this should never happen. */
-        if (this->count == 0) {
-            std::abort();
-        }
+        STS_ASSERT(this->count > 0);
 
         return this->buffer[this->offset];
     }

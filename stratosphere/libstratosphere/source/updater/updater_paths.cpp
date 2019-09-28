@@ -34,9 +34,7 @@ namespace sts::updater {
         constexpr const char *Package2PathA = "bip:/a/package2";
 
         const char *ChooseCandidatePath(const char * const *candidates, size_t num_candidates) {
-            if (num_candidates == 0) {
-                std::abort();
-            }
+            STS_ASSERT(num_candidates > 0);
 
             for (size_t i = 0; i < num_candidates; i++) {
                 struct stat buf;

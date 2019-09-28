@@ -156,7 +156,7 @@ namespace sts::fatal::srv {
 
     void TryCollectDebugInformation(ThrowContext *ctx, u64 process_id) {
         /* Try to debug the process. This may fail, if we called into ourself. */
-        AutoHandle debug_handle;
+        os::ManagedHandle debug_handle;
         if (R_FAILED(svcDebugActiveProcess(debug_handle.GetPointer(), process_id))) {
             return;
         }

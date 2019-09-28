@@ -114,9 +114,7 @@ namespace sts::sm {
             }
 
             Result Initialize() {
-                if (this->has_initialized) {
-                    std::abort();
-                }
+                STS_ASSERT(!this->has_initialized);
 
                 DoWithSmSession([&]() {
                     this->result = Initializer();
@@ -127,9 +125,7 @@ namespace sts::sm {
             }
 
             void Finalize() {
-                if (!this->has_initialized) {
-                    std::abort();
-                }
+                STS_ASSERT(this->has_initialized);
                 Finalizer();
                 this->has_initialized = false;
             }

@@ -43,9 +43,7 @@ namespace sts::i2c::driver::impl {
     }
 
     constexpr inline Bus ConvertFromIndex(size_t idx) {
-        if (idx >= static_cast<size_t>(Bus::Count)) {
-            std::abort();
-        }
+        STS_ASSERT(idx < static_cast<size_t>(Bus::Count));
         return static_cast<Bus>(idx);
     }
 

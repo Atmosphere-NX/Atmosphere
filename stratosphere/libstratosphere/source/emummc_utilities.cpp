@@ -81,9 +81,7 @@ static void _CacheValues(void)
         args.X[1] = 0; /* NAND */
         args.X[2] = reinterpret_cast<u64>(&paths); /* path output */
         R_ASSERT(svcCallSecureMonitor(&args));
-        if (args.X[0] != 0) {
-            std::abort();
-        }
+        STS_ASSERT(args.X[0] == 0);
         std::memcpy(&g_exo_emummc_config, &args.X[1], sizeof(args) - sizeof(args.X[0]));
     }
 

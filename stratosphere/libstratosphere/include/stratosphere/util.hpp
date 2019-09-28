@@ -17,7 +17,11 @@
 #pragma once
 #include <switch.h>
 
-#include "util/util_compression.hpp"
-#include "util/util_ini.hpp"
+#include "util/util_alignment.hpp"
+#include "util/util_size.hpp"
+#include "util/util_scope_guard.hpp"
+#include "util/util_typed_storage.hpp"
 #include "util/util_intrusive_list.hpp"
 #include "util/util_intrusive_red_black_tree.hpp"
+#include "util/util_compression.hpp"
+#include "util/util_ini.hpp"

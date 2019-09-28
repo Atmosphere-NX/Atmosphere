@@ -66,9 +66,7 @@ namespace sts::pinmux {
             }
 
             /* Ensure we found an appropriate config. */
-            if (configs == nullptr) {
-                std::abort();
-            }
+            STS_ASSERT(configs != nullptr);
 
             for (size_t i = 0; i < num_configs; i++) {
                 UpdatePad(configs[i].name, configs[i].val, configs[i].mask);

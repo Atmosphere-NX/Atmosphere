@@ -93,9 +93,7 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                         R_ASSERT(Utils::OpenSdFileForAtmosphere(this->title_id, ROMFS_METADATA_FILE_PATH, FS_OPEN_READ, &file));
                         size_t out_read;
                         R_ASSERT(fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, FS_READOPTION_NONE, &out_read));
-                        if (out_read != cur_read_size) {
-                            std::abort();
-                        }
+                        STS_ASSERT(out_read == cur_read_size);
                         fsFileClose(&file);
                     }
                     break;
@@ -105,9 +103,7 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                         R_ASSERT(Utils::OpenRomFSSdFile(this->title_id, cur_source->loose_source_info.path, FS_OPEN_READ, &file));
                         size_t out_read;
                         R_ASSERT(fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, FS_READOPTION_NONE, &out_read));
-                        if (out_read != cur_read_size) {
-                            std::abort();
-                        }
+                        STS_ASSERT(out_read == cur_read_size);
                         fsFileClose(&file);
                     }
                     break;

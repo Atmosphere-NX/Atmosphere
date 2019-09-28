@@ -83,9 +83,7 @@ namespace sts::ldr {
         Result MountNspFileSystem(const char *device_name, const char *path) {
             FsFileSystem fs;
             R_TRY(fsOpenFileSystemWithId(&fs, 0, FsFileSystemType_ApplicationPackage, path));
-            if(fsdevMountDevice(device_name, fs) < 0) {
-                std::abort();
-            }
+            STS_ASSERT(fsdevMountDevice(device_name, fs) >= 0);
             return ResultSuccess;
         }
 
@@ -178,9 +176,7 @@ namespace sts::ldr {
         /* Try to mount the content path. */
         FsFileSystem fs;
         R_TRY(fsldrOpenCodeFileSystem(static_cast<u64>(loc.title_id), path, &fs));
-        if(fsdevMountDevice(CodeFileSystemDeviceName, fs) == -1) {
-            std::abort();
-        }
+        STS_ASSERT(fsdevMountDevice(CodeFileSystemDeviceName, fs) != -1);
 
         /* Note that we mounted code. */
         this->is_code_mounted = true;

@@ -28,6 +28,14 @@ extern "C" {
 #define R_ASSERT_IMPL(res) fatalSimple(res)
 #endif
 
+/// Evaluates a boolean expression, and returns a result unless that expression is true.
+#define R_UNLESS(expr, res) \
+    ({ \
+        if (!(expr)) { \
+            return static_cast<Result>(res); \
+        } \
+    })
+
 #define R_ASSERT(res_expr) \
     ({ \
         const Result _tmp_r_assert_rc = res_expr; \
@@ -82,6 +90,14 @@ extern "C" {
             } \
         } \
     })
+
+#define R_END_TRY_CATCH_WITH_ASSERT \
+            else { \
+                R_ASSERT(R_TRY_CATCH_RESULT); \
+            } \
+        } \
+    })
+
 
 /// Evaluates an expression that returns a result, and returns the result (after evaluating a cleanup expression) if it would fail.
 #define R_CLEANUP_RESULT _tmp_r_try_cleanup_rc

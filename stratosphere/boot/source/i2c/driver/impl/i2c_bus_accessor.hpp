@@ -31,7 +31,7 @@ namespace sts::i2c::driver::impl {
             };
             static constexpr u64 InterruptTimeout = 100'000'000ul;
         private:
-            Event interrupt_event;
+            os::InterruptEvent interrupt_event;
             os::Mutex open_mutex;
             os::Mutex register_mutex;
             Registers *i2c_registers = nullptr;

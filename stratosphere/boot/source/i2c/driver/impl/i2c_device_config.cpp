@@ -88,37 +88,37 @@ namespace sts::i2c::driver::impl {
 
     Bus GetDeviceBus(I2cDevice dev) {
         const size_t dev_idx = GetDeviceIndex(dev);
-        if (dev_idx == DeviceInvalidIndex) { std::abort(); }
+        STS_ASSERT(dev_idx != DeviceInvalidIndex);
         return g_device_configs[dev_idx].bus;
     }
 
     u32 GetDeviceSlaveAddress(I2cDevice dev) {
         const size_t dev_idx = GetDeviceIndex(dev);
-        if (dev_idx == DeviceInvalidIndex) { std::abort(); }
+        STS_ASSERT(dev_idx != DeviceInvalidIndex);
         return g_device_configs[dev_idx].slave_address;
     }
 
     AddressingMode GetDeviceAddressingMode(I2cDevice dev) {
         const size_t dev_idx = GetDeviceIndex(dev);
-        if (dev_idx == DeviceInvalidIndex) { std::abort(); }
+        STS_ASSERT(dev_idx != DeviceInvalidIndex);
         return g_device_configs[dev_idx].addressing_mode;
     }
 
     SpeedMode GetDeviceSpeedMode(I2cDevice dev) {
         const size_t dev_idx = GetDeviceIndex(dev);
-        if (dev_idx == DeviceInvalidIndex) { std::abort(); }
+        STS_ASSERT(dev_idx != DeviceInvalidIndex);
         return g_device_configs[dev_idx].speed_mode;
     }
 
     u32 GetDeviceMaxRetries(I2cDevice dev) {
         const size_t dev_idx = GetDeviceIndex(dev);
-        if (dev_idx == DeviceInvalidIndex) { std::abort(); }
+        STS_ASSERT(dev_idx != DeviceInvalidIndex);
         return g_device_configs[dev_idx].max_retries;
     }
 
     u64 GetDeviceRetryWaitTime(I2cDevice dev) {
         const size_t dev_idx = GetDeviceIndex(dev);
-        if (dev_idx == DeviceInvalidIndex) { std::abort(); }
+        STS_ASSERT(dev_idx != DeviceInvalidIndex);
         return g_device_configs[dev_idx].retry_wait_time;
     }
 

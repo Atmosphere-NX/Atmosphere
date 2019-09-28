@@ -56,9 +56,7 @@ namespace sts::ldr {
         };
 
         constexpr const char *GetNsoName(size_t idx) {
-            if (idx >= Nso_Count) {
-                std::abort();
-            }
+            STS_ASSERT(idx < Nso_Count);
 
             constexpr const char *NsoNames[Nso_Count] = {
                 "rtld",
@@ -91,7 +89,7 @@ namespace sts::ldr {
         static_assert(sizeof(CreateProcessInfo) == 0x30, "CreateProcessInfo definition!");
 
         struct ProcessInfo {
-            AutoHandle process_handle;
+            os::ManagedHandle process_handle;
             uintptr_t args_address;
             size_t    args_size;
             uintptr_t nso_address[Nso_Count];

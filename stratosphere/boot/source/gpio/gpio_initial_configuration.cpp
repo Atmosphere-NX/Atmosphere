@@ -80,9 +80,7 @@ namespace sts::gpio {
         }
 
         /* Ensure we found an appropriate config. */
-        if (configs == nullptr) {
-            std::abort();
-        }
+        STS_ASSERT(configs != nullptr);
 
         for (size_t i = 0; i < num_configs; i++) {
             /* Configure the GPIO. */

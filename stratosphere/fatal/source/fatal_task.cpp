@@ -60,10 +60,7 @@ namespace sts::fatal::srv {
             public:
                 TaskManager() { /* ... */ }
                 void StartTask(ITask *task) {
-                    if (this->task_count >= MaxTasks) {
-                        std::abort();
-                    }
-
+                    STS_ASSERT(this->task_count < MaxTasks);
                     this->task_threads[this->task_count++].StartTask(task);
                 }
         };

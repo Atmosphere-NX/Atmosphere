@@ -24,20 +24,29 @@ namespace sts::fatal::srv {
         FatalConfig g_config;
 
         /* Event creator. */
-        IEvent *CreateFatalDirtyEvent() {
+        Handle GetFatalDirtyEventReadableHandle() {
             Event evt;
             R_ASSERT(setsysBindFatalDirtyFlagEvent(&evt));
-            return LoadReadOnlySystemEvent(evt.revent, [](u64 timeout) {
-                u64 flags_0, flags_1;
-                if (R_SUCCEEDED(setsysGetFatalDirtyFlags(&flags_0, &flags_1)) && (flags_0 & 1)) {
-                    g_config.UpdateLanguageCode();
-                }
-                return ResultSuccess;
-            }, true);
+            return evt.revent;
         }
 
         /* Global event. */
-        IEvent *g_fatal_dirty_event = CreateFatalDirtyEvent();
+        os::SystemEvent g_fatal_dirty_event(GetFatalDirtyEventReadableHandle(), true, false);
+        os::WaitableHolder g_fatal_dirty_waitable_holder(&g_fatal_dirty_event);
+
+    }
+
+    os::WaitableHolder *GetFatalDirtyWaitableHolder() {
+        return &g_fatal_dirty_waitable_holder;
+    }
+
+    void OnFatalDirtyEvent() {
+        g_fatal_dirty_event.Reset();
+
+        u64 flags_0, flags_1;
+        if (R_SUCCEEDED(setsysGetFatalDirtyFlags(&flags_0, &flags_1)) && (flags_0 & 1)) {
+            g_config.UpdateLanguageCode();
+        }
     }
 
     FatalConfig::FatalConfig() {
@@ -82,10 +91,6 @@ namespace sts::fatal::srv {
             /* FsStorage message_storage; */
             /* TODO: if (R_SUCCEEDED(fsOpenDataStorageByDataId(0x010000000000081D, "fatal_msg"))) { ... } */
         }
-    }
-
-    IEvent *GetFatalDirtyEvent() {
-        return g_fatal_dirty_event;
     }
 
     const FatalConfig &GetFatalConfig() {

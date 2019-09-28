@@ -33,10 +33,7 @@ namespace sts::gpio {
 
         /* Helpers. */
         inline u32 GetPadDescriptor(u32 gpio_pad_name) {
-            if (gpio_pad_name >= PadNameMax) {
-                std::abort();
-            }
-
+            STS_ASSERT(gpio_pad_name < PadNameMax);
             return Map[gpio_pad_name];
         }
 

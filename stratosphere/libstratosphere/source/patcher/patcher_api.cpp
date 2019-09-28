@@ -101,15 +101,11 @@ namespace sts::patcher {
 
         void ApplyIpsPatch(u8 *mapped_module, size_t mapped_size, size_t protected_size, size_t offset, bool is_ips32, FILE *f_ips) {
             /* Validate offset/protected size. */
-            if (offset > protected_size) {
-                std::abort();
-            }
+            STS_ASSERT(offset <= protected_size);
 
             u8 buffer[sizeof(Ips32TailMagic)];
             while (true) {
-                if (fread(buffer, is_ips32 ? sizeof(Ips32TailMagic) : sizeof(IpsTailMagic), 1, f_ips) != 1) {
-                    std::abort();
-                }
+                STS_ASSERT(fread(buffer, is_ips32 ? sizeof(Ips32TailMagic) : sizeof(IpsTailMagic), 1, f_ips) == 1);
 
                 if (IsIpsTail(is_ips32, buffer)) {
                     break;
@@ -119,24 +115,18 @@ namespace sts::patcher {
                 u32 patch_offset = GetIpsPatchOffset(is_ips32, buffer);
 
                 /* Size of patch. */
-                if (fread(buffer, 2, 1, f_ips) != 1) {
-                    std::abort();
-                }
+                STS_ASSERT(fread(buffer, 2, 1, f_ips) == 1);
                 u32 patch_size = GetIpsPatchSize(is_ips32, buffer);
 
                 /* Check for RLE encoding. */
                 if (patch_size == 0) {
                     /* Size of RLE. */
-                    if (fread(buffer, 2, 1, f_ips) != 1) {
-                        std::abort();
-                    }
+                    STS_ASSERT(fread(buffer, 2, 1, f_ips) == 1);
 
                     u32 rle_size = (buffer[0] << 8) | (buffer[1]);
 
                     /* Value for RLE. */
-                    if (fread(buffer, 1, 1, f_ips) != 1) {
-                        std::abort();
-                    }
+                    STS_ASSERT(fread(buffer, 1, 1, f_ips) == 1);
 
                     /* Ensure we don't write to protected region. */
                     if (patch_offset < protected_size) {
@@ -179,9 +169,7 @@ namespace sts::patcher {
                     if (patch_offset + read_size > mapped_size) {
                         read_size = mapped_size - patch_offset;
                     }
-                    if (fread(mapped_module + patch_offset, read_size, 1, f_ips) != 1) {
-                        std::abort();
-                    }
+                    STS_ASSERT(fread(mapped_module + patch_offset, read_size, 1, f_ips) == 1);
                     if (patch_size > read_size) {
                         fseek(f_ips, patch_size - read_size, SEEK_CUR);
                     }

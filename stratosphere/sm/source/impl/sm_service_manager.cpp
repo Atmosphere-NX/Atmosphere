@@ -57,7 +57,7 @@ namespace sts::sm::impl {
         struct ServiceInfo {
             ServiceName name;
             u64 owner_pid;
-            AutoHandle port_h;
+            os::ManagedHandle port_h;
 
             /* Debug. */
             u64 max_sessions;
@@ -65,13 +65,13 @@ namespace sts::sm::impl {
 
             /* Mitm Extension. */
             u64 mitm_pid;
-            AutoHandle mitm_port_h;
-            AutoHandle mitm_query_h;
+            os::ManagedHandle mitm_port_h;
+            os::ManagedHandle mitm_query_h;
 
             /* Acknowledgement members. */
             bool mitm_waiting_ack;
             u64 mitm_waiting_ack_pid;
-            AutoHandle mitm_fwd_sess_h;
+            os::ManagedHandle mitm_fwd_sess_h;
 
             ServiceInfo() {
                 this->Free();
@@ -167,15 +167,11 @@ namespace sts::sm::impl {
                     cfg::GetInitialProcessRange(&this->min, &this->max);
 
                     /* Ensure range is sane. */
-                    if (this->min > this->max) {
-                        std::abort();
-                    }
+                    STS_ASSERT(this->min <= this->max);
                 }
 
                 bool IsInitialProcess(u64 pid) const {
-                    if (pid == InvalidProcessId) {
-                        std::abort();
-                    }
+                    STS_ASSERT(pid != InvalidProcessId);
                     return this->min <= pid && pid <= this->max;
                 }
         };
@@ -238,9 +234,7 @@ namespace sts::sm::impl {
         ncm::TitleId GetTitleIdForMitm(u64 pid) {
             /* Anything that can request a mitm session must have a process info. */
             const auto process_info = GetProcessInfo(pid);
-            if (process_info == nullptr) {
-                std::abort();
-            }
+            STS_ASSERT(process_info != nullptr);
             return process_info->tid;
         }
 
@@ -398,7 +392,7 @@ namespace sts::sm::impl {
 
             /* Create both handles. */
             {
-                AutoHandle fwd_hnd, hnd;
+                os::ManagedHandle fwd_hnd, hnd;
                 R_TRY(svcConnectToPort(fwd_hnd.GetPointer(), service_info->port_h.Get()));
                 R_TRY(svcConnectToPort(hnd.GetPointer(), service_info->mitm_port_h.Get()));
                 service_info->mitm_fwd_sess_h = std::move(fwd_hnd);
@@ -672,7 +666,7 @@ namespace sts::sm::impl {
 
         /* Create mitm handles. */
         {
-            AutoHandle hnd, port_hnd, qry_hnd, mitm_qry_hnd;
+            os::ManagedHandle hnd, port_hnd, qry_hnd, mitm_qry_hnd;
             u64 x = 0;
             R_TRY(svcCreatePort(hnd.GetPointer(), port_hnd.GetPointer(), service_info->max_sessions, service_info->is_light, reinterpret_cast<char *>(&x)));
             R_TRY(svcCreateSession(qry_hnd.GetPointer(), mitm_qry_hnd.GetPointer(), 0, 0));

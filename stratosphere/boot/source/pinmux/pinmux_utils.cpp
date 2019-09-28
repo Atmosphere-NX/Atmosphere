@@ -33,19 +33,13 @@ namespace sts::pinmux {
 
         /* Helpers. */
         inline const Definition *GetDefinition(u32 pinmux_name) {
-            if (pinmux_name >= PadNameMax) {
-                std::abort();
-            }
-
+            STS_ASSERT(pinmux_name < PadNameMax);
             return &Map[pinmux_name];
         }
 
-        inline const DrivePadDefinition *GetDrivePadDefinition(u32 pinmux_name) {
-            if (pinmux_name >= DrivePadNameMax) {
-                std::abort();
-            }
-
-            return &DrivePadMap[pinmux_name];
+        inline const DrivePadDefinition *GetDrivePadDefinition(u32 drivepad_name) {
+            STS_ASSERT(drivepad_name < DrivePadNameMax);
+            return &DrivePadMap[drivepad_name];
         }
 
         uintptr_t GetBaseAddress() {
@@ -110,9 +104,7 @@ namespace sts::pinmux {
         u32 pinmux_val = reg::Read(pinmux_reg);
 
         /* This PINMUX register is locked */
-        if (pinmux_val & 0x80) {
-            std::abort();
-        }
+        STS_ASSERT((pinmux_val & 0x80) == 0);
 
         u32 pm_val = (pinmux_config_val & 0x07);
 

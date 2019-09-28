@@ -23,11 +23,10 @@
 #include "results.hpp"
 #include "os.hpp"
 #include "waitable_manager_base.hpp"
-#include "event.hpp"
 #include "ipc.hpp"
 #include "servers.hpp"
 
-#include "scope_guard.hpp"
+#include "util.hpp"
 
 static inline Handle GetCurrentThreadHandle() {
     return threadGetCurHandle();

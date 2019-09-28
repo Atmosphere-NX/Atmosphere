@@ -29,9 +29,7 @@ namespace sts::i2c::driver::impl {
 
     void ResourceManager::Finalize() {
         std::scoped_lock lk(this->initialize_mutex);
-        if (this->ref_cnt == 0) {
-            std::abort();
-        }
+        STS_ASSERT(this->ref_cnt > 0);
         this->ref_cnt--;
         if (this->ref_cnt > 0) {
             return;
@@ -61,14 +59,11 @@ namespace sts::i2c::driver::impl {
         /* Get, open session. */
         {
             std::scoped_lock lk(this->session_open_mutex);
-            if (out_session == nullptr || bus >= Bus::Count) {
-                std::abort();
-            }
+            STS_ASSERT(out_session != nullptr);
+            STS_ASSERT(bus < Bus::Count);
 
             session_id = GetFreeSessionId();
-            if (session_id == InvalidSessionId) {
-                std::abort();
-            }
+            STS_ASSERT(session_id != InvalidSessionId);
 
 
             if ((bus == Bus::I2C2 || bus == Bus::I2C3) && (this->bus_accessors[ConvertToIndex(Bus::I2C2)].GetOpenSessions() == 0 && this->bus_accessors[ConvertToIndex(Bus::I2C3)].GetOpenSessions() == 0)) {
@@ -83,12 +78,8 @@ namespace sts::i2c::driver::impl {
         this->sessions[session_id].Start();
         if (need_enable_ldo6) {
             pcv::Initialize();
-            if (R_FAILED(pcv::SetVoltageValue(10, 2'900'000))) {
-                std::abort();
-            }
-            if (R_FAILED(pcv::SetVoltageEnabled(10, true))) {
-                std::abort();
-            }
+            R_ASSERT(pcv::SetVoltageValue(10, 2'900'000));
+            R_ASSERT(pcv::SetVoltageEnabled(10, true));
             pcv::Finalize();
             svcSleepThread(560'000ul);
         }
@@ -99,9 +90,7 @@ namespace sts::i2c::driver::impl {
         /* Get, open session. */
         {
             std::scoped_lock lk(this->session_open_mutex);
-            if (!this->sessions[session.session_id].IsOpen()) {
-                std::abort();
-            }
+            STS_ASSERT(this->sessions[session.session_id].IsOpen());
 
             this->sessions[session.session_id].Close();
 
@@ -113,18 +102,14 @@ namespace sts::i2c::driver::impl {
 
         if (need_disable_ldo6) {
             pcv::Initialize();
-            if (R_FAILED(pcv::SetVoltageEnabled(10, false))) {
-                std::abort();
-            }
+            R_ASSERT(pcv::SetVoltageEnabled(10, false));
             pcv::Finalize();
         }
 
     }
 
     void ResourceManager::SuspendBuses() {
-        if (this->ref_cnt == 0) {
-            std::abort();
-        }
+        STS_ASSERT(this->ref_cnt > 0);
 
         if (!this->suspended) {
             {
@@ -137,27 +122,19 @@ namespace sts::i2c::driver::impl {
                 }
             }
             pcv::Initialize();
-            if (R_FAILED(pcv::SetVoltageEnabled(10, false))) {
-                std::abort();
-            }
+            R_ASSERT(pcv::SetVoltageEnabled(10, false));
             pcv::Finalize();
         }
     }
 
     void ResourceManager::ResumeBuses() {
-        if (this->ref_cnt == 0) {
-            std::abort();
-        }
+        STS_ASSERT(this->ref_cnt > 0);
 
         if (this->suspended) {
             if (this->bus_accessors[ConvertToIndex(Bus::I2C2)].GetOpenSessions() > 0 || this->bus_accessors[ConvertToIndex(Bus::I2C3)].GetOpenSessions() > 0) {
                 pcv::Initialize();
-                if (R_FAILED(pcv::SetVoltageValue(10, 2'900'000))) {
-                    std::abort();
-                }
-                if (R_FAILED(pcv::SetVoltageEnabled(10, true))) {
-                    std::abort();
-                }
+                R_ASSERT(pcv::SetVoltageValue(10, 2'900'000));
+                R_ASSERT(pcv::SetVoltageEnabled(10, true));
                 pcv::Finalize();
                 svcSleepThread(1'560'000ul);
             }
@@ -174,9 +151,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void ResourceManager::SuspendPowerBus() {
-        if (this->ref_cnt == 0) {
-            std::abort();
-        }
+        STS_ASSERT(this->ref_cnt > 0);
         std::scoped_lock lk(this->session_open_mutex);
 
         if (!this->power_bus_suspended) {
@@ -188,9 +163,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void ResourceManager::ResumePowerBus() {
-        if (this->ref_cnt == 0) {
-            std::abort();
-        }
+        STS_ASSERT(this->ref_cnt > 0);
         std::scoped_lock lk(this->session_open_mutex);
 
         if (this->power_bus_suspended) {

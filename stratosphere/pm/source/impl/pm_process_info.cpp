@@ -21,8 +21,8 @@
 
 namespace sts::pm::impl {
 
-    ProcessInfo::ProcessInfo(Handle h, u64 pid, ldr::PinId pin, const ncm::TitleLocation &l) : process_id(pid), pin_id(pin), loc(l), handle(h), state(ProcessState_Created), flags(0) {
-        /* ... */
+    ProcessInfo::ProcessInfo(Handle h, u64 pid, ldr::PinId pin, const ncm::TitleLocation &l) : process_id(pid), pin_id(pin), loc(l), handle(h), state(ProcessState_Created), flags(0), waitable_holder(h) {
+        this->waitable_holder.SetUserData(reinterpret_cast<uintptr_t>(this));
     }
 
     ProcessInfo::~ProcessInfo() {
@@ -39,6 +39,9 @@ namespace sts::pm::impl {
             /* Close the process's handle. */
             svcCloseHandle(this->handle);
             this->handle = INVALID_HANDLE;
+
+            /* Unlink the process from its waitable manager. */
+            this->waitable_holder.UnlinkFromWaitableManager();
         }
     }
 

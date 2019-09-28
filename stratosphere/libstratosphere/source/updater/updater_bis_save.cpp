@@ -33,9 +33,9 @@ namespace sts::updater {
     }
 
     Result BisSave::Initialize(void *work_buffer, size_t work_buffer_size) {
-        if (work_buffer_size < SaveSize || reinterpret_cast<uintptr_t>(work_buffer) & 0xFFF || work_buffer_size & 0x1FF) {
-            std::abort();
-        }
+        STS_ASSERT(work_buffer_size >= SaveSize);
+        STS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(work_buffer), 0x1000));
+        STS_ASSERT(util::IsAligned(work_buffer_size, 0x200));
 
         R_TRY(this->accessor.Initialize());
         this->save_buffer = work_buffer;
