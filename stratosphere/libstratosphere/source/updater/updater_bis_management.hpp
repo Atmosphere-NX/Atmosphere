@@ -140,9 +140,7 @@ namespace sts::updater {
         public:
             Result Read(size_t *out_size, void *dst, size_t size, EnumType which) {
                 const auto entry = FindEntry(which);
-                if (size < entry->size) {
-                    std::abort();
-                }
+                STS_ASSERT(size >= entry->size);
 
                 R_TRY(BisAccessor::Read(dst, entry->size, entry->offset));
 
@@ -152,10 +150,8 @@ namespace sts::updater {
 
             Result Write(const void *src, size_t size, EnumType which) {
                 const auto entry = FindEntry(which);
-                if (size > entry->size || size % BisAccessor::SectorAlignment != 0) {
-                    std::abort();
-                }
-
+                STS_ASSERT(size <= entry->size);
+                STS_ASSERT((size % BisAccessor::SectorAlignment) == 0);
                 return BisAccessor::Write(entry->offset, src, size);
             }
 

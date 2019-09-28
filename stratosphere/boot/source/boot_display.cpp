@@ -103,12 +103,15 @@ namespace sts::boot {
 
         inline void DoDsiSleepOrRegisterWrites(const DsiSleepOrRegisterWrite *reg_writes, size_t num_writes) {
             for (size_t i = 0; i < num_writes; i++) {
-                if (reg_writes[i].kind == DsiSleepOrRegisterWriteKind_Write) {
-                    reg::Write(g_dsi_regs + sizeof(u32) * reg_writes[i].offset, reg_writes[i].value);
-                } else if (reg_writes[i].kind == DsiSleepOrRegisterWriteKind_Sleep) {
-                    svcSleepThread(1'000'000ul * u64(reg_writes[i].offset));
-                } else {
-                    std::abort();
+                switch (reg_writes[i].kind) {
+                    case DsiSleepOrRegisterWriteKind_Write:
+                        reg::Write(g_dsi_regs + sizeof(u32) * reg_writes[i].offset, reg_writes[i].value);
+                        break;
+                    case DsiSleepOrRegisterWriteKind_Sleep:
+                        svcSleepThread(1'000'000ul * u64(reg_writes[i].offset));
+                        break;
+                    default:
+                        std::abort();
                 }
             }
         }
@@ -130,18 +133,12 @@ namespace sts::boot {
                 constexpr u64 DeviceName_DC = 2;
 
                 /* Create Address Space. */
-                if (R_FAILED(svcCreateDeviceAddressSpace(&g_dc_das_hnd, 0, (1ul << 32)))) {
-                    std::abort();
-                }
+                R_ASSERT(svcCreateDeviceAddressSpace(&g_dc_das_hnd, 0, (1ul << 32)));
                 /* Attach it to the DC. */
-                if (R_FAILED(svcAttachDeviceAddressSpace(DeviceName_DC, g_dc_das_hnd))) {
-                    std::abort();
-                }
+                R_ASSERT(svcAttachDeviceAddressSpace(DeviceName_DC, g_dc_das_hnd));
 
                 /* Map the framebuffer for the DC as read-only. */
-                if (R_FAILED(svcMapDeviceAddressSpaceAligned(g_dc_das_hnd, CUR_PROCESS_HANDLE, frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr, 1))) {
-                    std::abort();
-                }
+                R_ASSERT(svcMapDeviceAddressSpaceAligned(g_dc_das_hnd, CUR_PROCESS_HANDLE, frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr, 1));
             }
         }
 
@@ -151,17 +148,11 @@ namespace sts::boot {
                 constexpr u64 DeviceName_DC = 2;
 
                 /* Unmap the framebuffer from the DC. */
-                if (R_FAILED(svcUnmapDeviceAddressSpace(g_dc_das_hnd, CUR_PROCESS_HANDLE, frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr))) {
-                    std::abort();
-                }
+                R_ASSERT(svcUnmapDeviceAddressSpace(g_dc_das_hnd, CUR_PROCESS_HANDLE, frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr));
                 /* Detach address space from the DC. */
-                if (R_FAILED(svcDetachDeviceAddressSpace(DeviceName_DC, g_dc_das_hnd))) {
-                    std::abort();
-                }
+                R_ASSERT(svcDetachDeviceAddressSpace(DeviceName_DC, g_dc_das_hnd));
                 /* Close the address space. */
-                if (R_FAILED(svcCloseHandle(g_dc_das_hnd))) {
-                    std::abort();
-                }
+                R_ASSERT(svcCloseHandle(g_dc_das_hnd));
                 g_dc_das_hnd = INVALID_HANDLE;
                 g_frame_buffer = nullptr;
             }
@@ -300,8 +291,8 @@ namespace sts::boot {
             for (size_t i = 0; i < util::size(host_response); i++) {
                 host_response[i] = reg::Read(g_dsi_regs + sizeof(u32) * DSI_RD_DATA);
             }
-            
-            /* The last word from host response is: 
+
+            /* The last word from host response is:
                 Bits 0-7: FAB
                 Bits 8-15: REV
                 Bits 16-23: Minor REV

@@ -248,11 +248,10 @@ namespace sts::ro::impl {
         ProcessContext *GetContextById(size_t context_id) {
             if (context_id == InvalidContextId) {
                 return nullptr;
-            } else if (context_id < MaxSessions) {
-                return &g_process_contexts[context_id];
-            } else {
-                std::abort();
             }
+
+            STS_ASSERT(context_id < MaxSessions);
+            return &g_process_contexts[context_id];
         }
 
         ProcessContext *GetContextByProcessId(u64 process_id) {
@@ -268,6 +267,7 @@ namespace sts::ro::impl {
             /* Find a free process context. */
             for (size_t i = 0; i < MaxSessions; i++) {
                 ProcessContext *context = &g_process_contexts[i];
+
                 if (!context->in_use) {
                     std::memset(context, 0, sizeof(*context));
                     context->process_id = process_id;
@@ -276,9 +276,8 @@ namespace sts::ro::impl {
                     return i;
                 }
             }
-
             /* Failure to find a free context is actually an abort condition. */
-            std::abort();
+            STS_ASSERT(false);
         }
 
         void FreeContext(size_t context_id) {
@@ -370,9 +369,7 @@ namespace sts::ro::impl {
     Result LoadNrr(size_t context_id, Handle process_h, u64 nrr_address, u64 nrr_size, ModuleType expected_type, bool enforce_type) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        if (context == nullptr) {
-            std::abort();
-        }
+        STS_ASSERT(context != nullptr);
 
         /* Get title id. */
         const u64 title_id = context->GetTitleId(process_h);
@@ -407,9 +404,7 @@ namespace sts::ro::impl {
     Result UnloadNrr(size_t context_id, u64 nrr_address) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        if (context == nullptr) {
-            std::abort();
-        }
+        STS_ASSERT(context != nullptr);
 
         /* Validate address. */
         if (nrr_address & 0xFFF) {
@@ -433,9 +428,7 @@ namespace sts::ro::impl {
     Result LoadNro(u64 *out_address, size_t context_id, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        if (context == nullptr) {
-            std::abort();
-        }
+        STS_ASSERT(context != nullptr);
 
         /* Validate address/size. */
         if (nro_address & 0xFFF) {
@@ -488,9 +481,7 @@ namespace sts::ro::impl {
     Result UnloadNro(size_t context_id, u64 nro_address) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        if (context == nullptr) {
-            std::abort();
-        }
+        STS_ASSERT(context != nullptr);
 
         /* Validate address. */
         if (nro_address & 0xFFF) {

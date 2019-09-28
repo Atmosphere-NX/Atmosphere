@@ -37,6 +37,10 @@ namespace sts::os {
                 return threadStart(&this->thr);
             }
 
+            Result Wait() {
+                return threadWaitForExit(&this->thr);
+            }
+
             Result Join() {
                 R_TRY(threadWaitForExit(&this->thr));
                 R_TRY(threadClose(&this->thr));

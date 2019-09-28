@@ -142,9 +142,7 @@ namespace sts::updater {
         Result GetBootImagePackageDataId(u64 *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size) {
             /* Ensure we can read content metas. */
             constexpr size_t MaxContentMetas = 0x40;
-            if (work_buffer_size < sizeof(NcmMetaRecord) * MaxContentMetas) {
-                std::abort();
-            }
+            STS_ASSERT(work_buffer_size >= sizeof(NcmMetaRecord) * MaxContentMetas);
 
             /* Open NAND System meta database, list contents. */
             NcmContentMetaDatabase meta_db;
@@ -161,9 +159,7 @@ namespace sts::updater {
                 return ResultUpdaterBootImagePackageNotFound;
             }
 
-            if (total_entries != written_entries) {
-                std::abort();
-            }
+            STS_ASSERT(total_entries == written_entries);
 
             /* Output is sorted, return the lowest valid exfat entry. */
             if (total_entries > 1) {
@@ -203,7 +199,7 @@ namespace sts::updater {
                     return ResultUpdaterBootImagePackageNotFound;
                 }
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { if (R_FAILED(romfsUnmount(GetBootImagePackageMountPath()))) { std::abort(); } };
+            ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
 
             /* Read and validate hashes of boot images. */
             {
@@ -258,7 +254,7 @@ namespace sts::updater {
                     return ResultUpdaterBootImagePackageNotFound;
                 }
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { if (R_FAILED(romfsUnmount(GetBootImagePackageMountPath()))) { std::abort(); } };
+            ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
 
             /* Read and validate hashes of boot images. */
             {
@@ -329,7 +325,7 @@ namespace sts::updater {
                     return ResultUpdaterBootImagePackageNotFound;
                 }
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { if (R_FAILED(romfsUnmount(GetBootImagePackageMountPath()))) { std::abort(); } };
+            ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
 
             {
                 Boot0Accessor boot0_accessor;
@@ -386,7 +382,7 @@ namespace sts::updater {
                     return ResultUpdaterBootImagePackageNotFound;
                 }
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { if (R_FAILED(romfsUnmount(GetBootImagePackageMountPath()))) { std::abort(); } };
+            ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
 
             {
                 Boot0Accessor boot0_accessor;
@@ -533,9 +529,7 @@ namespace sts::updater {
 
         /* Get a session to ncm. */
         DoWithSmSession([&]() {
-            if (R_FAILED(ncmInitialize())) {
-                std::abort();
-            }
+            R_ASSERT(ncmInitialize());
         });
         ON_SCOPE_EXIT { ncmExit(); };
 

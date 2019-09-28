@@ -50,9 +50,7 @@ namespace sts::util::ini {
             size_t try_read = std::min(size_t(num - 1), ctx->num_left);
             size_t actually_read;
             R_ASSERT(fsFileRead(ctx->f, ctx->offset, str, try_read, FS_READOPTION_NONE, &actually_read));
-            if (actually_read != try_read) {
-                std::abort();
-            }
+            STS_ASSERT(actually_read == try_read);
 
             /* Only "read" up to the first \n. */
             size_t offset = actually_read;

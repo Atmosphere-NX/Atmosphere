@@ -38,9 +38,9 @@ namespace sts::boot::bq24193 {
     constexpr u32 ChargeVoltageLimitMax = 4208;
 
     inline u8 EncodeChargeVoltageLimit(u32 voltage) {
-        if (voltage < ChargeVoltageLimitMin || voltage > ChargeVoltageLimitMax) {
-            std::abort();
-        }
+        STS_ASSERT(voltage >= ChargeVoltageLimitMin);
+        STS_ASSERT(voltage <= ChargeVoltageLimitMax);
+
         voltage -= ChargeVoltageLimitMin;
         voltage >>= 4;
         return static_cast<u8>(voltage << 2);
@@ -54,9 +54,9 @@ namespace sts::boot::bq24193 {
     constexpr u32 FastChargeCurrentLimitMax = 4544;
 
     inline u8 EncodeFastChargeCurrentLimit(u32 current) {
-        if (current < FastChargeCurrentLimitMin || current > FastChargeCurrentLimitMax) {
-            std::abort();
-        }
+        STS_ASSERT(current >= FastChargeCurrentLimitMin);
+        STS_ASSERT(current <= FastChargeCurrentLimitMax);
+
         current -= FastChargeCurrentLimitMin;
         current >>= 6;
         return static_cast<u8>(current << 2);
@@ -81,9 +81,9 @@ namespace sts::boot::bq24193 {
     constexpr u32 PreChargeCurrentLimitMax = 2048;
 
     inline u8 EncodePreChargeCurrentLimit(u32 current) {
-        if (current < PreChargeCurrentLimitMin || current > PreChargeCurrentLimitMax) {
-            std::abort();
-        }
+        STS_ASSERT(current >= PreChargeCurrentLimitMin);
+        STS_ASSERT(current <= PreChargeCurrentLimitMax);
+
         current -= PreChargeCurrentLimitMin;
         current >>= 7;
         return static_cast<u8>(current << 4);
@@ -97,9 +97,9 @@ namespace sts::boot::bq24193 {
     constexpr u32 TerminationCurrentLimitMax = 2048;
 
     inline u8 EncodeTerminationCurrentLimit(u32 current) {
-        if (current < TerminationCurrentLimitMin || current > TerminationCurrentLimitMax) {
-            std::abort();
-        }
+        STS_ASSERT(current >= TerminationCurrentLimitMin);
+        STS_ASSERT(current <= TerminationCurrentLimitMax);
+
         current -= TerminationCurrentLimitMin;
         current >>= 7;
         return static_cast<u8>(current);
@@ -113,9 +113,9 @@ namespace sts::boot::bq24193 {
     constexpr u32 MinimumSystemVoltageLimitMax = 3700;
 
     inline u8 EncodeMinimumSystemVoltageLimit(u32 voltage) {
-        if (voltage < MinimumSystemVoltageLimitMin || voltage > MinimumSystemVoltageLimitMax) {
-            std::abort();
-        }
+        STS_ASSERT(voltage >= MinimumSystemVoltageLimitMin);
+        STS_ASSERT(voltage <= MinimumSystemVoltageLimitMax);
+
         voltage -= MinimumSystemVoltageLimitMin;
         voltage /= 100;
         return static_cast<u8>(voltage << 1);

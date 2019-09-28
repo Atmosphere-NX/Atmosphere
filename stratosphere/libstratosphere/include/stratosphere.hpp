@@ -21,13 +21,9 @@
 #include "stratosphere/utilities.hpp"
 #include "stratosphere/emummc_utilities.hpp"
 
-#include "stratosphere/scope_guard.hpp"
-
 #include "stratosphere/version_check.hpp"
 
-#include "stratosphere/auto_handle.hpp"
 #include "stratosphere/iwaitable.hpp"
-#include "stratosphere/event.hpp"
 
 #include "stratosphere/waitable_manager.hpp"
 

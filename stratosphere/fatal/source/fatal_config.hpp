@@ -90,7 +90,8 @@ namespace sts::fatal::srv {
             }
     };
 
-    IEvent *GetFatalDirtyEvent();
+    os::WaitableHolder *GetFatalDirtyWaitableHolder();
+    void OnFatalDirtyEvent();
     const FatalConfig &GetFatalConfig();
 
 }

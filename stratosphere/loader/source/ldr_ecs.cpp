@@ -73,7 +73,7 @@ namespace sts::ldr::ecs {
         std::snprintf(device_name, DeviceNameSizeMax, "ecs-%016lx", static_cast<u64>(title_id));
 
         /* Create session. */
-        AutoHandle server, client;
+        os::ManagedHandle server, client;
         R_TRY(svcCreateSession(server.GetPointer(), client.GetPointer(), 0, 0));
 
         /* Create service. */

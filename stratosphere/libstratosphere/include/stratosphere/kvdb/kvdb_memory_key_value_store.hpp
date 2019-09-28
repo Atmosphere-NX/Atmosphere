@@ -18,6 +18,9 @@
 #include <algorithm>
 #include <switch.h>
 #include <sys/stat.h>
+#include "../defines.hpp"
+#include "../results.hpp"
+#include "../util.hpp"
 #include "kvdb_auto_buffer.hpp"
 #include "kvdb_archive.hpp"
 #include "kvdb_bounded_string.hpp"
@@ -47,9 +50,7 @@ namespace sts::kvdb {
                     Value *GetValuePointer() {
                         /* Size check. Note: Nintendo does not size check. */
                         if constexpr (!std::is_same<Value, void>::value) {
-                            if (sizeof(Value) > this->value_size) {
-                                std::abort();
-                            }
+                            STS_ASSERT(sizeof(Value) <= this->value_size);
                             /* Ensure we only get pod. */
                             static_assert(std::is_pod<Value>::value, "KeyValueStore Values must be pod");
                         }
@@ -60,9 +61,7 @@ namespace sts::kvdb {
                     const Value *GetValuePointer() const {
                         /* Size check. Note: Nintendo does not size check. */
                         if constexpr (!std::is_same<Value, void>::value) {
-                            if (sizeof(Value) > this->value_size) {
-                                std::abort();
-                            }
+                            STS_ASSERT(sizeof(Value) <= this->value_size);
                             /* Ensure we only get pod. */
                             static_assert(std::is_pod<Value>::value, "KeyValueStore Values must be pod");
                         }

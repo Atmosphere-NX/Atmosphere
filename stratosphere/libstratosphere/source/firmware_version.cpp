@@ -40,9 +40,7 @@ static void _CacheValues(void)
         args.X[0] = 0xC3000002; /* smcGetConfig */
         args.X[1] = 65000; /* ConfigItem_ExosphereVersion */
         R_ASSERT(svcCallSecureMonitor(&args));
-        if (args.X[0] != 0) {
-            std::abort();
-        }
+        STS_ASSERT(args.X[0] == 0);
 
         target_fw = (args.X[1] >> 0x08) & 0xFF;
     }

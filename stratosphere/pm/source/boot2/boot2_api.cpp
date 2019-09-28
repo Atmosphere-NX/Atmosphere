@@ -284,9 +284,7 @@ namespace sts::boot2 {
                     }
 
                     /* Don't allow invalid lines. */
-                    if (name_len > sizeof(sm::ServiceName)) {
-                        std::abort();
-                    }
+                    STS_ASSERT(name_len <= sizeof(sm::ServiceName));
 
                     /* Declare the service. */
                     R_ASSERT(sm::mitm::DeclareFutureMitm(sm::ServiceName::Encode(mitm_list + offset, name_len)));

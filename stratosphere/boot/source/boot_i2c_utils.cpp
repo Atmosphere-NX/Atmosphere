@@ -41,9 +41,8 @@ namespace sts::boot {
     }
 
     Result ReadI2cRegister(i2c::driver::Session &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size) {
-        if (dst == nullptr || dst_size == 0 || cmd == nullptr || cmd_size == 0) {
-            std::abort();
-        }
+        STS_ASSERT(dst != nullptr && dst_size > 0);
+        STS_ASSERT(cmd != nullptr && cmd_size > 0);
 
         u8 cmd_list[i2c::CommandListFormatter::MaxCommandListSize];
 
@@ -55,9 +54,8 @@ namespace sts::boot {
     }
 
     Result WriteI2cRegister(i2c::driver::Session &session, const u8 *src, size_t src_size, const u8 *cmd, size_t cmd_size) {
-        if (src == nullptr || src_size == 0 || cmd == nullptr || cmd_size == 0) {
-            std::abort();
-        }
+        STS_ASSERT(src != nullptr && src_size > 0);
+        STS_ASSERT(cmd != nullptr && cmd_size > 0);
 
         u8 cmd_list[0x20];
 

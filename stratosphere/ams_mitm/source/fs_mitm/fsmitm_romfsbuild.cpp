@@ -39,6 +39,7 @@ void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirector
                 break;
             }
 
+            STS_ASSERT(this->dir_entry.type == ENTRYTYPE_DIR || this->dir_entry.type == ENTRYTYPE_FILE);
             if (this->dir_entry.type == ENTRYTYPE_DIR) {
                 RomFSBuildDirectoryContext *child = new RomFSBuildDirectoryContext({0});
                 /* Set child's path. */
@@ -58,7 +59,7 @@ void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirector
                 } else {
                     child_dirs.push_back(child);
                 }
-            } else if (this->dir_entry.type == ENTRYTYPE_FILE) {
+            } else /* if (this->dir_entry.type == ENTRYTYPE_FILE) */ {
                 RomFSBuildFileContext *child = new RomFSBuildFileContext({0});
                 /* Set child's path. */
                 child->cur_path_ofs = parent->path_len + 1;
@@ -79,8 +80,6 @@ void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirector
                     delete[] child->path;
                     delete child;
                 }
-            } else {
-                std::abort();
             }
         }
     }
@@ -180,10 +179,7 @@ void RomFSBuildContext::VisitDirectory(RomFSBuildDirectoryContext *parent, u32 p
 void RomFSBuildContext::MergeRomStorage(IROStorage *storage, RomFSDataSource source) {
     RomFSHeader header;
     R_ASSERT(storage->Read(&header, sizeof(header), 0));
-    if (header.header_size != sizeof(header)) {
-        /* what */
-        std::abort();
-    }
+    STS_ASSERT(header.header_size == sizeof(header));
 
     /* Read tables. */
     auto dir_table = std::make_unique<u8[]>(header.dir_table_size);

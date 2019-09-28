@@ -16,15 +16,28 @@
 
 #pragma once
 #include <memory>
+#include "os_common_types.hpp"
 #include "os_mutex.hpp"
 #include "os_condvar.hpp"
 
 namespace sts::os {
 
+    namespace impl {
+
+        class WaitableObjectList;
+
+        template<MessageQueueWaitKind WaitKind>
+        class WaitableHolderOfMessageQueue;
+
+    }
+
     class MessageQueue {
+        template<MessageQueueWaitKind WaitKind>
+        friend class impl::WaitableHolderOfMessageQueue;
         NON_COPYABLE(MessageQueue);
         NON_MOVEABLE(MessageQueue);
         private:
+            util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitable_object_list_storage;
             Mutex queue_lock;
             ConditionVariable cv_not_full;
             ConditionVariable cv_not_empty;
@@ -47,11 +60,11 @@ namespace sts::os {
             uintptr_t ReceiveInternal();
             uintptr_t PeekInternal();
         public:
-            MessageQueue(size_t c) : capacity(c) {
-                this->buffer = std::make_unique<uintptr_t[]>(this->capacity);
-            }
+            MessageQueue(std::unique_ptr<uintptr_t[]> buf, size_t c);
+            ~MessageQueue();
 
-            MessageQueue(std::unique_ptr<uintptr_t[]> buf, size_t c) : buffer(std::move(buf)), capacity(c) { }
+            /* For convenience. */
+            MessageQueue(size_t c) : MessageQueue(std::make_unique<uintptr_t[]>(c), c) { /* ... */ }
 
             /* Sending (FIFO functionality) */
             void Send(uintptr_t data);

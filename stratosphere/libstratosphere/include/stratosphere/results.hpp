@@ -32,6 +32,7 @@
 #include "results/kvdb_results.hpp"
 #include "results/loader_results.hpp"
 #include "results/lr_results.hpp"
+#include "results/os_results.hpp"
 #include "results/ncm_results.hpp"
 #include "results/pm_results.hpp"
 #include "results/ro_results.hpp"

@@ -141,20 +141,19 @@ namespace sts::pm::impl {
 
         /* Process Tracking globals. */
         os::Thread g_process_track_thread;
-        auto g_process_waitable_manager = WaitableManager(1);
 
         /* Process lists. */
         ProcessList g_process_list;
         ProcessList g_dead_process_list;
 
         /* Global events. */
-        IEvent *g_process_event = CreateWriteOnlySystemEvent();
-        IEvent *g_hook_to_create_process_event = CreateWriteOnlySystemEvent();
-        IEvent *g_hook_to_create_application_process_event = CreateWriteOnlySystemEvent();
-        IEvent *g_boot_finished_event = CreateWriteOnlySystemEvent();
+        os::SystemEvent g_process_event;
+        os::SystemEvent g_hook_to_create_process_event;
+        os::SystemEvent g_hook_to_create_application_process_event;
+        os::SystemEvent g_boot_finished_event;
 
         /* Process Launch synchronization globals. */
-        IEvent *g_process_launch_start_event = CreateWriteOnlySystemEvent();
+        os::Event g_process_launch_start_event;
         os::Event g_process_launch_finish_event;
         Result g_process_launch_result = ResultSuccess;
         LaunchProcessArgs g_process_launch_args = {};
@@ -163,13 +162,34 @@ namespace sts::pm::impl {
         std::atomic<ncm::TitleId> g_title_id_hook;
         std::atomic<bool> g_application_hook;
 
+        /* Forward declarations. */
+        Result LaunchProcess(os::WaitableManager &waitable_manager, const LaunchProcessArgs &args);
+        Result OnProcessSignaled(ProcessListAccessor &list, ProcessInfo *process_info);
+
         /* Helpers. */
         void ProcessTrackingMain(void *arg) {
             /* This is the main loop of the process tracking thread. */
 
-            /* Service processes. */
-            g_process_waitable_manager.AddWaitable(g_process_launch_start_event);
-            g_process_waitable_manager.Process();
+            /* Setup waitable manager. */
+            os::WaitableManager process_waitable_manager;
+            os::WaitableHolder start_event_holder(&g_process_launch_start_event);
+            process_waitable_manager.LinkWaitableHolder(&start_event_holder);
+
+            while (true) {
+                auto signaled_holder = process_waitable_manager.WaitAny();
+                if (signaled_holder == &start_event_holder) {
+                    /* Launch start event signaled. */
+                    /* TryWait will clear signaled, preventing duplicate notifications. */
+                    if (g_process_launch_start_event.TryWait()) {
+                        g_process_launch_result = LaunchProcess(process_waitable_manager, g_process_launch_args);
+                        g_process_launch_finish_event.Signal();
+                    }
+                } else {
+                    /* Some process was signaled. */
+                    ProcessListAccessor list(g_process_list);
+                    OnProcessSignaled(list, reinterpret_cast<ProcessInfo *>(signaled_holder->GetUserData()));
+                }
+            }
         }
 
         inline u32 GetLoaderCreateProcessFlags(u32 launch_flags) {
@@ -188,8 +208,8 @@ namespace sts::pm::impl {
         bool HasApplicationProcess() {
             ProcessListAccessor list(g_process_list);
 
-            for (size_t i = 0; i < list->GetSize(); i++) {
-                if (list[i]->IsApplication()) {
+            for (auto &process : *list) {
+                if (process.IsApplication()) {
                     return true;
                 }
             }
@@ -197,16 +217,24 @@ namespace sts::pm::impl {
             return false;
         }
 
-        Result StartProcess(std::shared_ptr<ProcessInfo> process_info, const ldr::ProgramInfo *program_info) {
+        Result StartProcess(ProcessInfo *process_info, const ldr::ProgramInfo *program_info) {
             R_TRY(svcStartProcess(process_info->GetHandle(), program_info->main_thread_priority, program_info->default_cpu_id, program_info->main_thread_stack_size));
             process_info->SetState(ProcessState_Running);
             return ResultSuccess;
         }
 
-        Result LaunchProcess(const LaunchProcessArgs *args) {
+        void CleanupProcessInfo(ProcessListAccessor &list, ProcessInfo *process_info) {
+            /* Remove the process from the list. */
+            list->Remove(process_info);
+
+            /* Delete the process. */
+            delete process_info;
+        }
+
+        Result LaunchProcess(os::WaitableManager &waitable_manager, const LaunchProcessArgs &args) {
             /* Get Program Info. */
             ldr::ProgramInfo program_info;
-            R_TRY(ldr::pm::GetProgramInfo(&program_info, args->location));
+            R_TRY(ldr::pm::GetProgramInfo(&program_info, args.location));
             const bool is_application = (program_info.flags & ldr::ProgramInfoFlag_ApplicationTypeMask) == ldr::ProgramInfoFlag_Application;
             const bool allow_debug    = (program_info.flags & ldr::ProgramInfoFlag_AllowDebug) || GetRuntimeFirmwareVersion() < FirmwareVersion_200;
 
@@ -216,7 +244,7 @@ namespace sts::pm::impl {
             }
 
             /* Fix the title location to use the right title id. */
-            const ncm::TitleLocation location = ncm::TitleLocation::Make(program_info.title_id, static_cast<ncm::StorageId>(args->location.storage_id));
+            const ncm::TitleLocation location = ncm::TitleLocation::Make(program_info.title_id, static_cast<ncm::StorageId>(args.location.storage_id));
 
             /* Pin the program with loader. */
             ldr::PinId pin_id;
@@ -227,7 +255,7 @@ namespace sts::pm::impl {
 
             /* Actually create the process. */
             Handle process_handle;
-            R_TRY_CLEANUP(ldr::pm::CreateProcess(&process_handle, pin_id, GetLoaderCreateProcessFlags(args->flags), resource::GetResourceLimitHandle(&program_info)), {
+            R_TRY_CLEANUP(ldr::pm::CreateProcess(&process_handle, pin_id, GetLoaderCreateProcessFlags(args.flags), resource::GetResourceLimitHandle(&program_info)), {
                 ldr::pm::UnpinTitle(pin_id);
             });
 
@@ -236,7 +264,21 @@ namespace sts::pm::impl {
             R_ASSERT(svcGetProcessId(&process_id, process_handle));
 
             /* Make new process info. */
-            auto process_info = std::make_shared<ProcessInfo>(process_handle, process_id, pin_id, location);
+            ProcessInfo *process_info = new ProcessInfo(process_handle, process_id, pin_id, location);
+
+            /* Link new process info. */
+            {
+                ProcessListAccessor list(g_process_list);
+                list->push_back(*process_info);
+                process_info->LinkToWaitableManager(waitable_manager);
+            }
+
+            /* Prevent resource leakage if register fails. */
+            auto cleanup_guard = SCOPE_GUARD {
+                ProcessListAccessor list(g_process_list);
+                process_info->Cleanup();
+                CleanupProcessInfo(list, process_info);
+            };
 
             const u8 *acid_sac = program_info.ac_buffer;
             const u8 *aci_sac  = acid_sac + program_info.acid_sac_size;
@@ -251,62 +293,116 @@ namespace sts::pm::impl {
             if (is_application) {
                 process_info->SetApplication();
             }
-            if (ShouldSignalOnStart(args->flags) && allow_debug) {
+            if (ShouldSignalOnStart(args.flags) && allow_debug) {
                 process_info->SetSignalOnStart();
             }
-            if (ShouldSignalOnExit(args->flags)) {
+            if (ShouldSignalOnExit(args.flags)) {
                 process_info->SetSignalOnExit();
             }
-            if (ShouldSignalOnDebugEvent(args->flags) && allow_debug) {
+            if (ShouldSignalOnDebugEvent(args.flags) && allow_debug) {
                 process_info->SetSignalOnDebugEvent();
             }
 
             /* Process hooks/signaling. */
             if (location.title_id == g_title_id_hook) {
-                g_hook_to_create_process_event->Signal();
+                g_hook_to_create_process_event.Signal();
                 g_title_id_hook = ncm::TitleId::Invalid;
             } else if (is_application && g_application_hook) {
-                g_hook_to_create_application_process_event->Signal();
+                g_hook_to_create_application_process_event.Signal();
                 g_application_hook = false;
-            } else if (!ShouldStartSuspended(args->flags)) {
+            } else if (!ShouldStartSuspended(args.flags)) {
                 R_TRY(StartProcess(process_info, &program_info));
             }
 
-            /* Add process to list. */
+            /* We succeeded, so we can cancel our cleanup. */
+            cleanup_guard.Cancel();
+
+            *args.out_process_id = process_id;
+            return ResultSuccess;
+        }
+
+        Result OnProcessSignaled(ProcessListAccessor &list, ProcessInfo *process_info) {
+            /* Resest the process's signal. */
+            svcResetSignal(process_info->GetHandle());
+
+            /* Update the process's state. */
+            const ProcessState old_state = process_info->GetState();
             {
-                ProcessListAccessor list(g_process_list);
-                list->Add(process_info);
-                g_process_waitable_manager.AddWaitable(new ProcessInfoWaiter(process_info));
+                u64 tmp = 0;
+                R_ASSERT(svcGetProcessInfo(&tmp, process_info->GetHandle(), ProcessInfoType_ProcessState));
+                process_info->SetState(static_cast<ProcessState>(tmp));
+            }
+            const ProcessState new_state = process_info->GetState();
+
+            /* If we're transitioning away from crashed, clear waiting attached. */
+            if (old_state == ProcessState_Crashed && new_state != ProcessState_Crashed) {
+                process_info->ClearExceptionWaitingAttach();
             }
 
-            *args->out_process_id = process_id;
-            return ResultSuccess;
-        }
+            switch (new_state) {
+                case ProcessState_Created:
+                case ProcessState_CreatedAttached:
+                case ProcessState_Exiting:
+                    break;
+                case ProcessState_Running:
+                    if (process_info->ShouldSignalOnDebugEvent()) {
+                        process_info->ClearSuspended();
+                        process_info->SetSuspendedStateChanged();
+                        g_process_event.Signal();
+                    } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 && process_info->ShouldSignalOnStart()) {
+                        process_info->SetStartedStateChanged();
+                        process_info->ClearSignalOnStart();
+                        g_process_event.Signal();
+                    }
+                    break;
+                case ProcessState_Crashed:
+                    process_info->SetExceptionOccurred();
+                    g_process_event.Signal();
+                    break;
+                case ProcessState_RunningAttached:
+                    if (process_info->ShouldSignalOnDebugEvent()) {
+                        process_info->ClearSuspended();
+                        process_info->SetSuspendedStateChanged();
+                        g_process_event.Signal();
+                    }
+                    break;
+                case ProcessState_Exited:
+                    if (GetRuntimeFirmwareVersion() < FirmwareVersion_500 && process_info->ShouldSignalOnExit()) {
+                        g_process_event.Signal();
+                    } else {
+                        /* Free process resources, unlink from waitable manager. */
+                        process_info->Cleanup();
 
-        Result LaunchProcessEventCallback(u64 timeout) {
-            g_process_launch_start_event->Clear();
-            g_process_launch_result = LaunchProcess(&g_process_launch_args);
-            g_process_launch_finish_event.Signal();
-            return ResultSuccess;
-        }
+                        /* Handle the case where we need to keep the process alive some time longer. */
+                        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500 && process_info->ShouldSignalOnExit()) {
+                            /* Remove from the living list. */
+                            list->Remove(process_info);
 
-        void CleanupProcess(ProcessListAccessor &list, std::shared_ptr<ProcessInfo> process_info) {
-            /* Remove the process from the list. */
-            list->Remove(process_info->GetProcessId());
+                            /* Add the process to the list of dead processes. */
+                            {
+                                ProcessListAccessor dead_list(g_dead_process_list);
+                                dead_list->push_back(*process_info);
+                            }
 
-            /* Close process resources. */
-            process_info->Cleanup();
-
-            /* Handle the case where we need to keep the process alive some time longer. */
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500 && process_info->ShouldSignalOnExit()) {
-                /* Add the process to the list of dead processes. */
-                {
-                    ProcessListAccessor dead_list(g_dead_process_list);
-                    dead_list->Add(process_info);
-                }
-                /* Signal. */
-                g_process_event->Signal();
+                            /* Signal. */
+                            g_process_event.Signal();
+                        } else {
+                            /* Actually delete process. */
+                            CleanupProcessInfo(list, process_info);
+                        }
+                    }
+                    /* Return ConnectionClosed to cause libstratosphere to stop waiting on the process. */
+                    return ResultKernelConnectionClosed;
+                case ProcessState_DebugSuspended:
+                    if (process_info->ShouldSignalOnDebugEvent()) {
+                        process_info->SetSuspended();
+                        process_info->SetSuspendedStateChanged();
+                        g_process_event.Signal();
+                    }
+                    break;
             }
+
+            return ResultSuccess;
         }
 
     }
@@ -314,13 +410,10 @@ namespace sts::pm::impl {
     /* Initialization. */
     Result InitializeProcessManager() {
         /* Create events. */
-        g_process_event = CreateWriteOnlySystemEvent();
-        g_hook_to_create_process_event = CreateWriteOnlySystemEvent();
-        g_hook_to_create_application_process_event = CreateWriteOnlySystemEvent();
-        g_boot_finished_event = CreateWriteOnlySystemEvent();
-
-        /* Process launch is signaled via non-system event. */
-        g_process_launch_start_event = CreateHosEvent(&LaunchProcessEventCallback);
+        R_ASSERT(g_process_event.InitializeAsInterProcessEvent());
+        R_ASSERT(g_hook_to_create_process_event.InitializeAsInterProcessEvent());
+        R_ASSERT(g_hook_to_create_application_process_event.InitializeAsInterProcessEvent());
+        R_ASSERT(g_boot_finished_event.InitializeAsInterProcessEvent());
 
         /* Initialize resource limits. */
         R_TRY(resource::InitializeResourceManager());
@@ -328,73 +421,6 @@ namespace sts::pm::impl {
         /* Start thread. */
         R_ASSERT(g_process_track_thread.Initialize(&ProcessTrackingMain, nullptr, 0x4000, 0x15));
         R_ASSERT(g_process_track_thread.Start());
-
-        return ResultSuccess;
-    }
-
-    /* Process Info API. */
-    Result OnProcessSignaled(std::shared_ptr<ProcessInfo> process_info) {
-        /* Resest the process's signal. */
-        svcResetSignal(process_info->GetHandle());
-
-        /* Update the process's state. */
-        const ProcessState old_state = process_info->GetState();
-        {
-            u64 tmp = 0;
-            R_ASSERT(svcGetProcessInfo(&tmp, process_info->GetHandle(), ProcessInfoType_ProcessState));
-            process_info->SetState(static_cast<ProcessState>(tmp));
-        }
-        const ProcessState new_state = process_info->GetState();
-
-        /* If we're transitioning away from crashed, clear waiting attached. */
-        if (old_state == ProcessState_Crashed && new_state != ProcessState_Crashed) {
-            process_info->ClearExceptionWaitingAttach();
-        }
-
-        switch (new_state) {
-            case ProcessState_Created:
-            case ProcessState_CreatedAttached:
-            case ProcessState_Exiting:
-                break;
-            case ProcessState_Running:
-                if (process_info->ShouldSignalOnDebugEvent()) {
-                    process_info->ClearSuspended();
-                    process_info->SetSuspendedStateChanged();
-                    g_process_event->Signal();
-                } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 && process_info->ShouldSignalOnStart()) {
-                    process_info->SetStartedStateChanged();
-                    process_info->ClearSignalOnStart();
-                    g_process_event->Signal();
-                }
-                break;
-            case ProcessState_Crashed:
-                process_info->SetExceptionOccurred();
-                g_process_event->Signal();
-                break;
-            case ProcessState_RunningAttached:
-                if (process_info->ShouldSignalOnDebugEvent()) {
-                    process_info->ClearSuspended();
-                    process_info->SetSuspendedStateChanged();
-                    g_process_event->Signal();
-                }
-                break;
-            case ProcessState_Exited:
-                if (GetRuntimeFirmwareVersion() < FirmwareVersion_500 && process_info->ShouldSignalOnExit()) {
-                    g_process_event->Signal();
-                } else {
-                    ProcessListAccessor list(g_process_list);
-                    CleanupProcess(list, process_info);
-                }
-                /* Return ConnectionClosed to cause libstratosphere to stop waiting on the process. */
-                return ResultKernelConnectionClosed;
-            case ProcessState_DebugSuspended:
-                if (process_info->ShouldSignalOnDebugEvent()) {
-                    process_info->SetSuspended();
-                    process_info->SetSuspendedStateChanged();
-                    g_process_event->Signal();
-                }
-                break;
-        }
 
         return ResultSuccess;
     }
@@ -411,7 +437,7 @@ namespace sts::pm::impl {
             .location = loc,
             .flags = flags,
         };
-        g_process_launch_start_event->Signal();
+        g_process_launch_start_event.Signal();
         g_process_launch_finish_event.Wait();
 
         return g_process_launch_result;
@@ -457,7 +483,7 @@ namespace sts::pm::impl {
     }
 
     Result GetProcessEventHandle(Handle *out) {
-        *out = g_process_event->GetHandle();
+        *out = g_process_event.GetReadableHandle();
         return ResultSuccess;
     }
 
@@ -466,33 +492,33 @@ namespace sts::pm::impl {
         {
             ProcessListAccessor list(g_process_list);
 
-            for (size_t i = 0; i < list->GetSize(); i++) {
-                auto process_info = list[i];
-                if (process_info->HasStarted() && process_info->HasStartedStateChanged()) {
-                    process_info->ClearStartedStateChanged();
+
+            for (auto &process : *list) {
+                if (process.HasStarted() && process.HasStartedStateChanged()) {
+                    process.ClearStartedStateChanged();
                     out->event = GetProcessEventValue(ProcessEvent::Started);
-                    out->process_id = process_info->GetProcessId();
+                    out->process_id = process.GetProcessId();
                     return ResultSuccess;
                 }
-                if (process_info->HasSuspendedStateChanged()) {
-                    process_info->ClearSuspendedStateChanged();
-                    if (process_info->IsSuspended()) {
+                if (process.HasSuspendedStateChanged()) {
+                    process.ClearSuspendedStateChanged();
+                    if (process.IsSuspended()) {
                         out->event = GetProcessEventValue(ProcessEvent::DebugSuspended);
                     } else {
                         out->event = GetProcessEventValue(ProcessEvent::DebugRunning);
                     }
-                    out->process_id = process_info->GetProcessId();
+                    out->process_id = process.GetProcessId();
                     return ResultSuccess;
                 }
-                if (process_info->HasExceptionOccurred()) {
-                    process_info->ClearExceptionOccurred();
+                if (process.HasExceptionOccurred()) {
+                    process.ClearExceptionOccurred();
                     out->event = GetProcessEventValue(ProcessEvent::Exception);
-                    out->process_id = process_info->GetProcessId();
+                    out->process_id = process.GetProcessId();
                     return ResultSuccess;
                 }
-                if (GetRuntimeFirmwareVersion() < FirmwareVersion_500 && process_info->ShouldSignalOnExit() && process_info->HasExited()) {
+                if (GetRuntimeFirmwareVersion() < FirmwareVersion_500 && process.ShouldSignalOnExit() && process.HasExited()) {
                     out->event = GetProcessEventValue(ProcessEvent::Exited);
-                    out->process_id = process_info->GetProcessId();
+                    out->process_id = process.GetProcessId();
                     return ResultSuccess;
                 }
             }
@@ -502,10 +528,12 @@ namespace sts::pm::impl {
         if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
             ProcessListAccessor dead_list(g_dead_process_list);
 
-            if (dead_list->GetSize() > 0) {
-                auto process_info = dead_list->Pop();
+            if (!dead_list->empty()) {
+                auto &process_info = dead_list->front();
                 out->event = GetProcessEventValue(ProcessEvent::Exited);
-                out->process_id = process_info->GetProcessId();
+                out->process_id = process_info.GetProcessId();
+
+                CleanupProcessInfo(dead_list, &process_info);
                 return ResultSuccess;
             }
         }
@@ -527,7 +555,7 @@ namespace sts::pm::impl {
             return ResultPmNotExited;
         }
 
-        CleanupProcess(list, process_info);
+        CleanupProcessInfo(list, process_info);
         return ResultSuccess;
     }
 
@@ -554,13 +582,11 @@ namespace sts::pm::impl {
         ProcessListAccessor list(g_process_list);
 
         size_t count = 0;
-        for (size_t i = 0; i < list->GetSize() && count < max_out_count; i++) {
-            auto process_info = list[i];
-            if (process_info->HasExceptionWaitingAttach()) {
-                out_process_ids[count++] = process_info->GetProcessId();
+        for (auto &process : *list) {
+            if (process.HasExceptionWaitingAttach()) {
+                out_process_ids[count++] = process.GetProcessId();
             }
         }
-
         *out_count = static_cast<u32>(count);
         return ResultSuccess;
     }
@@ -592,10 +618,9 @@ namespace sts::pm::impl {
     Result GetApplicationProcessId(u64 *out_process_id) {
         ProcessListAccessor list(g_process_list);
 
-        for (size_t i = 0; i < list->GetSize(); i++) {
-            auto process_info = list[i];
-            if (process_info->IsApplication()) {
-                *out_process_id = process_info->GetProcessId();
+        for (auto &process : *list) {
+            if (process.IsApplication()) {
+                *out_process_id = process.GetProcessId();
                 return ResultSuccess;
             }
         }
@@ -625,7 +650,7 @@ namespace sts::pm::impl {
             return ResultPmDebugHookInUse;
         }
 
-        *out_hook = g_hook_to_create_process_event->GetHandle();
+        *out_hook = g_hook_to_create_process_event.GetReadableHandle();
         return ResultSuccess;
     }
 
@@ -637,7 +662,7 @@ namespace sts::pm::impl {
             return ResultPmDebugHookInUse;
         }
 
-        *out_hook = g_hook_to_create_application_process_event->GetHandle();
+        *out_hook = g_hook_to_create_application_process_event.GetReadableHandle();
         return ResultSuccess;
     }
 
@@ -657,7 +682,7 @@ namespace sts::pm::impl {
         if (!g_has_boot_finished) {
             boot2::LaunchBootPrograms();
             g_has_boot_finished = true;
-            g_boot_finished_event->Signal();
+            g_boot_finished_event.Signal();
         }
         return ResultSuccess;
     }
@@ -666,10 +691,8 @@ namespace sts::pm::impl {
         /* In 8.0.0, Nintendo added this command, which signals that the boot sysmodule has finished. */
         /* Nintendo only signals it in safe mode FIRM, and this function aborts on normal FIRM. */
         /* We will signal it always, but only allow this function to succeed on safe mode. */
-        if (!spl::IsRecoveryBoot()) {
-            std::abort();
-        }
-        *out = g_boot_finished_event->GetHandle();
+        STS_ASSERT(spl::IsRecoveryBoot());
+        *out = g_boot_finished_event.GetReadableHandle();
         return ResultSuccess;
     }
 

@@ -57,9 +57,7 @@ namespace sts::kvdb {
         this->backing_buffer_free_offset = 0;
         this->count = 0;
         this->entries = static_cast<decltype(this->entries)>(this->Allocate(sizeof(*this->entries) * this->capacity));
-        if (this->entries == nullptr) {
-            std::abort();
-        }
+        STS_ASSERT(this->entries != nullptr);
     }
 
     std::optional<size_t> FileKeyValueStore::Cache::TryGet(void *out_value, size_t max_out_size, const void *key, size_t key_size) {
@@ -106,9 +104,7 @@ namespace sts::kvdb {
         }
 
         /* Ensure key size is small enough. */
-        if (key_size > MaxKeySize) {
-            std::abort();
-        }
+        STS_ASSERT(key_size <= MaxKeySize);
 
         /* If we're at capacity, invalidate the cache. */
         if (this->count == this->capacity) {

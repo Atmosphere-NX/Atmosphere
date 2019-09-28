@@ -133,7 +133,9 @@ int main(int argc, char **argv)
     /* Create services. */
     s_server_manager.AddWaitable(new ServiceServer<sts::fatal::srv::PrivateService>("fatal:p", 4));
     s_server_manager.AddWaitable(new ServiceServer<sts::fatal::srv::UserService>("fatal:u", 4));
-    s_server_manager.AddWaitable(sts::fatal::srv::GetFatalDirtyEvent());
+    /* TODO: s_server_manager.AddWaitable(sts::fatal::srv::GetFatalDirtyEvent()); */
+    auto dirty_event_holder = sts::fatal::srv::GetFatalDirtyWaitableHolder();
+    (void)dirty_event_holder;
 
     /* Loop forever, servicing our services. */
     s_server_manager.Process();

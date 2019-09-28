@@ -24,8 +24,12 @@
 
 namespace sts::pm::impl {
 
+    class ProcessList;
+
     class ProcessInfo {
+        friend class ProcessList;
         NON_COPYABLE(ProcessInfo);
+        NON_MOVEABLE(ProcessInfo);
         private:
             enum Flag : u32 {
                 Flag_SignalOnExit           = (1 << 0),
@@ -39,12 +43,14 @@ namespace sts::pm::impl {
                 Flag_StartedStateChanged    = (1 << 8),
             };
         private:
+            util::IntrusiveListNode list_node;
             const u64 process_id;
             const ldr::PinId pin_id;
             const ncm::TitleLocation loc;
             Handle handle;
             ProcessState state;
             u32 flags;
+            os::WaitableHolder waitable_holder;
         private:
             void SetFlag(Flag flag) {
                 this->flags |= flag;
@@ -61,6 +67,10 @@ namespace sts::pm::impl {
             ProcessInfo(Handle h, u64 pid, ldr::PinId pin, const ncm::TitleLocation &l);
             ~ProcessInfo();
             void Cleanup();
+
+            void LinkToWaitableManager(os::WaitableManager &manager) {
+                manager.LinkWaitableHolder(&this->waitable_holder);
+            }
 
             Handle GetHandle() const {
                 return this->handle;
@@ -148,31 +158,11 @@ namespace sts::pm::impl {
 #undef DEFINE_FLAG_SET
 #undef DEFINE_FLAG_GET
 #undef DEFINE_FLAG_CLEAR
-
     };
 
-    Result OnProcessSignaled(std::shared_ptr<ProcessInfo> process_info);
-
-    class ProcessInfoWaiter final : public IWaitable {
-        private:
-            std::shared_ptr<ProcessInfo> process_info;
-        public:
-            ProcessInfoWaiter(std::shared_ptr<ProcessInfo> p) : process_info(std::move(p)) { /* ... */ }
-
-            /* IWaitable */
-            Handle GetHandle() override {
-                return this->process_info->GetHandle();
-            }
-
-            Result HandleSignaled(u64 timeout) override {
-                return OnProcessSignaled(this->process_info);
-            }
-    };
-
-    class ProcessList final {
+    class ProcessList final : public util::IntrusiveListMemberTraits<&ProcessInfo::list_node>::ListType {
         private:
             os::Mutex lock;
-            std::vector<std::shared_ptr<ProcessInfo>> processes;
         public:
             void Lock() {
                 this->lock.Lock();
@@ -182,54 +172,28 @@ namespace sts::pm::impl {
                 this->lock.Unlock();
             }
 
-            size_t GetSize() const {
-                return this->processes.size();
+            void Remove(ProcessInfo *process_info) {
+                this->erase(this->iterator_to(*process_info));
             }
 
-            std::shared_ptr<ProcessInfo> Pop() {
-                auto front = this->processes[0];
-                this->processes.erase(this->processes.begin());
-                return front;
-            }
-
-            void Add(std::shared_ptr<ProcessInfo> process_info) {
-                this->processes.push_back(process_info);
-            }
-
-            void Remove(u64 process_id) {
-                for (auto it = this->processes.begin(); it != this->processes.end(); it++) {
-                    if ((*it)->GetProcessId() == process_id) {
-                        this->processes.erase(it);
-                        break;
-                    }
-                }
-            }
-
-            std::shared_ptr<ProcessInfo> Find(u64 process_id) {
-                for (auto it = this->processes.begin(); it != this->processes.end(); it++) {
-                    if ((*it)->GetProcessId() == process_id) {
-                        return *it;
+            ProcessInfo *Find(u64 process_id) {
+                for (auto it = this->begin(); it != this->end(); it++) {
+                    if ((*it).GetProcessId() == process_id) {
+                        return &*it;
                     }
                 }
                 return nullptr;
             }
 
-            std::shared_ptr<ProcessInfo> Find(ncm::TitleId title_id) {
-                for (auto it = this->processes.begin(); it != this->processes.end(); it++) {
-                    if ((*it)->GetTitleLocation().title_id == title_id) {
-                        return *it;
+            ProcessInfo *Find(ncm::TitleId title_id) {
+                for (auto it = this->begin(); it != this->end(); it++) {
+                    if ((*it).GetTitleLocation().title_id == title_id) {
+                        return &*it;
                     }
                 }
                 return nullptr;
             }
 
-            std::shared_ptr<ProcessInfo> operator[](int i) {
-                return this->processes[i];
-            }
-
-            const std::shared_ptr<ProcessInfo> operator[](int i) const {
-                return this->processes[i];
-            }
     };
 
     class ProcessListAccessor final {
@@ -258,14 +222,6 @@ namespace sts::pm::impl {
 
             const ProcessList &operator*() const {
                 return this->list;
-            }
-
-            std::shared_ptr<ProcessInfo> operator[](int i) {
-                return this->list[i];
-            }
-
-            const std::shared_ptr<ProcessInfo> operator[](int i) const {
-                return this->list[i];
             }
     };
 

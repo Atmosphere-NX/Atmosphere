@@ -17,6 +17,7 @@
 #pragma once
 #include <switch.h>
 #include <cstdlib>
+#include "../defines.hpp"
 
 namespace sts::ro {
 
@@ -61,9 +62,7 @@ namespace sts::ro {
 
             ModuleType GetType() const {
                 const ModuleType type = static_cast<ModuleType>(this->type);
-                if (type >= ModuleType::Count) {
-                    std::abort();
-                }
+                STS_ASSERT(type < ModuleType::Count);
                 return type;
             }
 

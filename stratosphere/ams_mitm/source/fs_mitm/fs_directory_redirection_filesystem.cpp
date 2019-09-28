@@ -30,20 +30,14 @@ static char *GetNormalizedDirectory(const char *dir_prefix) {
 
     /* Ensure terminating '/' */
     if (normal_path[normal_path_len-1] != '/') {
-        if (normal_path_len + 2 > sizeof(normal_path)) {
-            std::abort();
-        }
-
+        STS_ASSERT(normal_path_len + 2 <= sizeof(normal_path));
         strncat(normal_path, "/", 2);
         normal_path[sizeof(normal_path)-1] = 0;
         normal_path_len++;
     }
 
-    char *output = static_cast<char *>(malloc(normal_path_len + 1));
-    if (output == nullptr) {
-        std::abort();
-        /* TODO: Result error code? */
-    }
+    char *output = static_cast<char *>(std::malloc(normal_path_len + 1));
+    STS_ASSERT(output != nullptr);
 
     std::strncpy(output, normal_path, normal_path_len + 1);
     output[normal_path_len] = 0;

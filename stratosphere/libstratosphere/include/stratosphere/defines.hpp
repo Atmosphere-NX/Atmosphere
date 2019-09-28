@@ -19,6 +19,8 @@
 
 /* Any broadly useful language defines should go here. */
 
+#define STS_ASSERT(expr) do { if (!(expr)) { std::abort(); } } while (0)
+
 #define NON_COPYABLE(cls) \
     cls(const cls&) = delete; \
     cls& operator=(const cls&) = delete
@@ -30,21 +32,12 @@
 #define ALIGNED(algn) __attribute__((aligned(algn)))
 #define WEAK          __attribute__((weak))
 
-namespace sts::util {
 
-    /* std::size() does not support zero-size C arrays. We're fixing that. */
-    template<class C>
-    constexpr auto size(const C& c) -> decltype(c.size()) {
-        return std::size(c);
-    }
+#define CONCATENATE_IMPL(S1, s2) s1##s2
+#define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1, s2)
 
-    template<class C>
-    constexpr std::size_t size(const C& c) {
-        if constexpr (sizeof(C) == 0) {
-            return 0;
-        } else {
-            return std::size(c);
-        }
-    }
-
-}
+#ifdef __COUNTER__
+#define ANONYMOUS_VARIABLE(pref) CONCATENATE(pref, __COUNTER__)
+#else
+#define ANONYMOUS_VARIABLE(pref) CONCATENATE(pref, __LINE__)
+#endif

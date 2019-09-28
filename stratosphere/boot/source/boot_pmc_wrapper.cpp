@@ -39,9 +39,7 @@ namespace sts::boot {
             args.X[2] = mask;
             args.X[3] = value;
             R_ASSERT(svcCallSecureMonitor(&args));
-            if (args.X[0] != 0) {
-                std::abort();
-            }
+            STS_ASSERT(args.X[0] == 0);
 
             return static_cast<u32>(args.X[1]);
         }
@@ -49,18 +47,12 @@ namespace sts::boot {
     }
 
     u32 ReadPmcRegister(u32 phys_addr) {
-        if (!IsValidPmcAddress(phys_addr)) {
-            std::abort();
-        }
-
+        STS_ASSERT(IsValidPmcAddress(phys_addr));
         return SmcAtmosphereReadWriteRegister(phys_addr, 0, 0);
     }
 
     void WritePmcRegister(u32 phys_addr, u32 value, u32 mask) {
-        if (!IsValidPmcAddress(phys_addr)) {
-            std::abort();
-        }
-
+        STS_ASSERT(IsValidPmcAddress(phys_addr));
         SmcAtmosphereReadWriteRegister(phys_addr, value, mask);
     }
 

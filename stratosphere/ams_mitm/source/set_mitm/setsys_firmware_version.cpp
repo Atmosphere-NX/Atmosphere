@@ -40,16 +40,11 @@ void VersionManager::Initialize() {
 
         /* Firmware version file must exist. */
         FILE *f = fopen("sysver:/file", "rb");
-        if (f == NULL) {
-            std::abort();
-        }
+        STS_ASSERT(f != NULL);
+        ON_SCOPE_EXIT { fclose(f); };
 
         /* Must be possible to read firmware version from file. */
-        if (fread(&fw_ver, sizeof(fw_ver), 1, f) != 1) {
-            std::abort();
-        }
-
-        fclose(f);
+        STS_ASSERT(fread(&fw_ver, sizeof(fw_ver), 1, f) == 1);
 
         g_fw_version = fw_ver;
         g_ams_fw_version = fw_ver;

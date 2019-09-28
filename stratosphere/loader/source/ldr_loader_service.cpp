@@ -27,7 +27,7 @@ namespace sts::ldr {
 
     /* Official commands. */
     Result LoaderService::CreateProcess(Out<MovedHandle> proc_h, PinId id, u32 flags, CopiedHandle reslimit) {
-        AutoHandle reslimit_holder(reslimit.GetValue());
+        os::ManagedHandle reslimit_holder(reslimit.GetValue());
         ncm::TitleLocation loc;
         char path[FS_MAX_PATH];
 

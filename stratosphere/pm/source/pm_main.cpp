@@ -77,37 +77,6 @@ namespace {
     constexpr u8  PrivilegedServiceAccessControl[] = {0x80, '*', 0x00, '*'};
     constexpr size_t ProcessCountMax = 0x40;
 
-    /* TODO: Libstratosphere this stuff during fatal/creport rewrite. */
-    enum class DebugEventType : u32 {
-        AttachProcess = 0,
-        AttachThread = 1,
-        ExitProcess = 2,
-        ExitThread = 3,
-        Exception = 4
-    };
-
-    struct AttachProcessInfo {
-        sts::ncm::TitleId title_id;
-        u64 process_id;
-        char name[0xC];
-        u32 flags;
-        u64 user_exception_context_address; /* 5.0.0+ */
-    };
-
-    union DebugInfo {
-        AttachProcessInfo attach_process;
-    };
-
-    struct DebugEventInfo {
-        DebugEventType type;
-        u32 flags;
-        u64 thread_id;
-        union {
-            DebugInfo info;
-            u64 _[0x40/sizeof(u64)];
-        };
-    };
-
     /* This uses debugging SVCs to retrieve a process's title id. */
     sts::ncm::TitleId GetProcessTitleId(u64 process_id) {
         /* Check if we should return our title id. */
@@ -118,24 +87,19 @@ namespace {
         if (current_process_id == process_id) {
             return __stratosphere_title_id;
         }
-        
+
         /* Get a debug handle. */
-        AutoHandle debug_handle;
-        if (R_FAILED(svcDebugActiveProcess(debug_handle.GetPointer(), process_id))) {    
-            /* If we fail to debug a process other than our own, abort. */
-            std::abort();
-        }
+        sts::os::ManagedHandle debug_handle;
+        R_ASSERT(svcDebugActiveProcess(debug_handle.GetPointer(), process_id));
 
         /* Loop until we get the event that tells us about the process. */
-        DebugEventInfo d;
-        while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()))) {
-            if (d.type == DebugEventType::AttachProcess) {
-                return d.info.attach_process.title_id;
+        sts::svc::DebugEventInfo d;
+        while (true) {
+            R_ASSERT(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()));
+            if (d.type == sts::svc::DebugEventType::AttachProcess) {
+                return sts::ncm::TitleId{d.info.attach_process.title_id};
             }
         }
-
-        /* If we somehow didn't get the event, abort. */
-        std::abort();
     }
 
     /* This works around a bug fixed by FS in 4.0.0. */

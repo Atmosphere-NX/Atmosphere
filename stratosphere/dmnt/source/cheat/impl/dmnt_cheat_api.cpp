@@ -34,7 +34,7 @@ namespace sts::dmnt::cheat::impl {
                 os::Mutex cheat_lock;
                 os::Event debug_events_event; /* Autoclear. */
                 os::Thread detect_thread, debug_events_thread;
-                IEvent *cheat_process_event;
+                os::SystemEvent cheat_process_event;
                 Handle cheat_process_debug_handle = INVALID_HANDLE;
                 CheatProcessMetadata cheat_process_metadata = {};
 
@@ -140,7 +140,7 @@ namespace sts::dmnt::cheat::impl {
                         this->frozen_addresses_map.clear();
 
                         /* Signal to our fans. */
-                        this->cheat_process_event->Signal();
+                        this->cheat_process_event.Signal();
                     }
                 }
 
@@ -183,7 +183,7 @@ namespace sts::dmnt::cheat::impl {
             public:
                 CheatProcessManager() {
                     /* Create cheat process detection event. */
-                    this->cheat_process_event = CreateWriteOnlySystemEvent();
+                    R_ASSERT(this->cheat_process_event.InitializeAsInterProcessEvent());
 
                     /* Learn whether we should enable cheats by default. */
                     {
@@ -214,8 +214,8 @@ namespace sts::dmnt::cheat::impl {
                     return this->HasActiveCheatProcess();
                 }
 
-                Handle GetCheatProcessEventHandle() {
-                    return this->cheat_process_event->GetHandle();
+                Handle GetCheatProcessEventHandle() const {
+                    return this->cheat_process_event.GetReadableHandle();
                 }
 
                 Result GetCheatProcessMetadata(CheatProcessMetadata *out) {
@@ -710,7 +710,7 @@ namespace sts::dmnt::cheat::impl {
             this->debug_events_event.Signal();
 
             /* Signal to our fans. */
-            this->cheat_process_event->Signal();
+            this->cheat_process_event.Signal();
 
             return ResultSuccess;
         }

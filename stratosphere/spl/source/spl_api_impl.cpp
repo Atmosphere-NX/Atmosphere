@@ -103,8 +103,8 @@ namespace sts::spl::impl {
 
         /* Global variables. */
         CtrDrbg g_drbg;
-        Event g_se_event;
-        IEvent *g_se_keyslot_available_event;
+        os::InterruptEvent g_se_event;
+        os::SystemEvent g_se_keyslot_available_event;
 
         Handle g_se_das_hnd;
         u32 g_se_mapped_work_buffer_addr;
@@ -128,23 +128,18 @@ namespace sts::spl::impl {
         /* Initialization functionality. */
         void InitializeCtrDrbg() {
             u8 seed[CtrDrbg::SeedSize];
-
-            if (smc::GenerateRandomBytes(seed, sizeof(seed)) != smc::Result::Success) {
-                std::abort();
-            }
+            STS_ASSERT(smc::GenerateRandomBytes(seed, sizeof(seed)) == smc::Result::Success);
 
             g_drbg.Initialize(seed);
         }
 
         void InitializeSeEvents() {
             u64 irq_num;
-            smc::GetConfig(&irq_num, 1, SplConfigItem_SecurityEngineIrqNumber);
-            Handle hnd;
-            R_ASSERT(svcCreateInterruptEvent(&hnd, irq_num, 1));
-            eventLoadRemote(&g_se_event, hnd, true);
+            STS_ASSERT(smc::GetConfig(&irq_num, 1, SplConfigItem_SecurityEngineIrqNumber) == smc::Result::Success);
+            R_ASSERT(g_se_event.Initialize(irq_num));
 
-            g_se_keyslot_available_event = CreateWriteOnlySystemEvent();
-            g_se_keyslot_available_event->Signal();
+            R_ASSERT(g_se_keyslot_available_event.InitializeAsInterProcessEvent());
+            g_se_keyslot_available_event.Signal();
         }
 
         void InitializeDeviceAddressSpace() {
@@ -262,7 +257,7 @@ namespace sts::spl::impl {
 
         /* Internal async implementation functionality. */
         void WaitSeOperationComplete() {
-            eventWait(&g_se_event, U64_MAX);
+            g_se_event.Wait();
         }
 
         smc::Result WaitCheckStatus(smc::AsyncOperationKey op_key) {
@@ -722,7 +717,7 @@ namespace sts::spl::impl {
             }
         }
 
-        g_se_keyslot_available_event->Clear();
+        g_se_keyslot_available_event.Reset();
         return ResultSplOutOfKeyslots;
     }
 
@@ -742,7 +737,7 @@ namespace sts::spl::impl {
             smc::LoadAesKey(keyslot, access_key, key_source);
         }
         g_keyslot_owners[keyslot] = nullptr;
-        g_se_keyslot_available_event->Signal();
+        g_se_keyslot_available_event.Signal();
         return ResultSuccess;
     }
 
@@ -931,7 +926,7 @@ namespace sts::spl::impl {
     }
 
     Handle GetAesKeyslotAvailableEventHandle() {
-        return g_se_keyslot_available_event->GetHandle();
+        return g_se_keyslot_available_event.GetReadableHandle();
     }
 
 }

@@ -202,4 +202,10 @@ namespace sts::svc {
         CreateProcessFlag_OptimizeMemoryAllocation = (1 << 11),
     };
 
+    /* Type for svcCreateInterruptEvent. */
+    enum InterruptType : u32 {
+        InterruptType_Edge  = 0,
+        InterruptType_Level = 1,
+    };
+
 }

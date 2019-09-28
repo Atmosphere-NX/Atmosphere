@@ -49,10 +49,8 @@ namespace sts::util {
         private:
             void LinkPrev(IntrusiveListNode *node) {
                 /* We can't link an already linked node. */
-                if (node->IsLinked()) {
-                    std::abort();
-                }
-                return this->SplicePrev(node, node);
+                STS_ASSERT(!node->IsLinked());
+                this->SplicePrev(node, node);
             }
 
             void SplicePrev(IntrusiveListNode *first, IntrusiveListNode *last) {
@@ -66,9 +64,7 @@ namespace sts::util {
 
             void LinkNext(IntrusiveListNode *node) {
                 /* We can't link an already linked node. */
-                if (node->IsLinked()) {
-                    std::abort();
-                }
+                STS_ASSERT(!node->IsLinked());
                 return this->SpliceNext(node, node);
             }
 
@@ -214,17 +210,13 @@ namespace sts::util {
 
                 iterator iterator_to(reference v) {
                     /* Only allow iterator_to for values in lists. */
-                    if (!v.IsLinked()) {
-                        std::abort();
-                    }
+                    STS_ASSERT(v.IsLinked());
                     return iterator(&v);
                 }
 
                 const_iterator iterator_to(const_reference v) const {
                     /* Only allow iterator_to for values in lists. */
-                    if (!v.IsLinked()) {
-                        std::abort();
-                    }
+                    STS_ASSERT(v.IsLinked());
                     return const_iterator(&v);
                 }
 
@@ -488,23 +480,23 @@ namespace sts::util {
             }
 
             reference back() {
-                if (this->impl.empty()) { std::abort(); }
-                return this->impl.back();
+                STS_ASSERT(!this->impl.empty());
+                return GetParent(this->impl.back());
             }
 
             const_reference back() const {
-                if (this->impl.empty()) { std::abort(); }
-                return this->impl.back();
+                STS_ASSERT(!this->impl.empty());
+                return GetParent(this->impl.back());
             }
 
             reference front() {
-                if (this->impl.empty()) { std::abort(); }
-                return this->impl.front();
+                STS_ASSERT(!this->impl.empty());
+                return GetParent(this->impl.front());
             }
 
             const_reference front() const {
-                if (this->impl.empty()) { std::abort(); }
-                return this->impl.front();
+                STS_ASSERT(!this->impl.empty());
+                return GetParent(this->impl.front());
             }
 
             void push_back(reference ref) {
@@ -516,13 +508,13 @@ namespace sts::util {
             }
 
             void pop_back() {
-                if (this->impl.empty()) { std::abort(); }
-                return this->impl.pop_back();
+                STS_ASSERT(!this->impl.empty());
+                this->impl.pop_back();
             }
 
             void pop_front() {
-                if (this->impl.empty()) { std::abort(); }
-                return this->impl.pop_front();
+                STS_ASSERT(!this->impl.empty());
+                this->impl.pop_front();
             }
 
             iterator insert(const_iterator pos, reference ref) {
