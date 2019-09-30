@@ -185,7 +185,7 @@ namespace sts::cfg {
 
             /* Open the file. */
             FsFile config_file;
-            if (R_FAILED(fsFsOpenFile(&sd_fs, path, FS_OPEN_READ, &config_file))) {
+            if (R_FAILED(fsFsOpenFile(&sd_fs, path, FsOpenMode_Read, &config_file))) {
                 return;
             }
             ON_SCOPE_EXIT { fsFileClose(&config_file); };

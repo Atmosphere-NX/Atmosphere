@@ -38,7 +38,7 @@ namespace sts::cfg {
 
             /* Open the file. */
             FsFile flag_file;
-            if (R_FAILED(fsFsOpenFile(&sd_fs, flag_path, FS_OPEN_READ, &flag_file))) {
+            if (R_FAILED(fsFsOpenFile(&sd_fs, flag_path, FsOpenMode_Read, &flag_file))) {
                 return false;
             }
             fsFileClose(&flag_file);
