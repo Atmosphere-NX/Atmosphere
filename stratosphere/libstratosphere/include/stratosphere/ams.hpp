@@ -15,24 +15,6 @@
  */
 
 #pragma once
-#include <atomic>
 
-class IWaitable;
-
-class WaitableManagerBase {
-    std::atomic<u64> cur_priority = 0;
-    public:
-        WaitableManagerBase() = default;
-        virtual ~WaitableManagerBase() = default;
-
-        u64 GetNextPriority() {
-            return std::atomic_fetch_add(&cur_priority, (u64)1);
-        }
-
-        virtual void AddWaitable(IWaitable *w) = 0;
-        virtual void NotifySignaled(IWaitable *w) = 0;
-
-        virtual void RequestStop() = 0;
-        virtual void Process() = 0;
-};
-
+#include "ams/ams_types.hpp"
+#include "ams/ams_firmware_version_api.hpp"

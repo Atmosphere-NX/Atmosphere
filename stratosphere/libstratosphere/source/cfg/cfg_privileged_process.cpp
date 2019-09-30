@@ -35,11 +35,11 @@ namespace sts::cfg {
         /* SD card helpers. */
         void GetPrivilegedProcessIdRange(u64 *out_min, u64 *out_max) {
             u64 min = 0, max = 0;
-             if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+             if (ams::GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
                 /* On 5.0.0+, we can get precise limits from svcGetSystemInfo. */
                 R_ASSERT(svcGetSystemInfo(&min, SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
                 R_ASSERT(svcGetSystemInfo(&max, SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
-            } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
+            } else if (ams::GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
                 /* On 4.0.0-4.1.0, we can get the precise limits from normal svcGetInfo. */
                 R_ASSERT(svcGetInfo(&min, InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
                 R_ASSERT(svcGetInfo(&max, InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));

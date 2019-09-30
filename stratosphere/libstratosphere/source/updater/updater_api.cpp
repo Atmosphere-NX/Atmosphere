@@ -32,7 +32,7 @@ namespace sts::updater {
         /* Configuration Prototypes. */
         bool HasEks(BootImageUpdateType boot_image_update_type);
         bool HasAutoRcmPreserve(BootImageUpdateType boot_image_update_type);
-        u32 GetNcmTitleType(BootModeType mode);
+        NcmContentMetaType GetNcmContentMetaType(BootModeType mode);
         Result GetBootImagePackageDataId(u64 *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size);
 
         /* Verification Prototypes. */
@@ -86,7 +86,7 @@ namespace sts::updater {
             }
         }
 
-        u32 GetNcmTitleType(BootModeType mode) {
+        NcmContentMetaType GetNcmContentMetaType(BootModeType mode) {
             switch (mode) {
                 case BootModeType::Normal:
                     return NcmContentMetaType_BootImagePackage;
@@ -139,19 +139,19 @@ namespace sts::updater {
         Result GetBootImagePackageDataId(u64 *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size) {
             /* Ensure we can read content metas. */
             constexpr size_t MaxContentMetas = 0x40;
-            STS_ASSERT(work_buffer_size >= sizeof(NcmMetaRecord) * MaxContentMetas);
+            STS_ASSERT(work_buffer_size >= sizeof(NcmContentMetaKey) * MaxContentMetas);
 
             /* Open NAND System meta database, list contents. */
             NcmContentMetaDatabase meta_db;
-            R_TRY(ncmOpenContentMetaDatabase(FsStorageId_NandSystem, &meta_db));
+            R_TRY(ncmOpenContentMetaDatabase(&meta_db, FsStorageId_NandSystem));
             ON_SCOPE_EXIT { serviceClose(&meta_db.s); };
 
-            NcmMetaRecord *records = reinterpret_cast<NcmMetaRecord *>(work_buffer);
+            NcmContentMetaKey *records = reinterpret_cast<NcmContentMetaKey *>(work_buffer);
 
-            const u32 title_type = GetNcmTitleType(mode);
+            const auto title_type = GetNcmContentMetaType(mode);
             u32 written_entries;
             u32 total_entries;
-            R_TRY(ncmContentMetaDatabaseList(&meta_db, title_type, 0, 0, UINT64_MAX, records, MaxContentMetas * sizeof(*records), &written_entries, &total_entries));
+            R_TRY(ncmContentMetaDatabaseList(&meta_db, &total_entries, &written_entries, records, MaxContentMetas * sizeof(*records), title_type, 0, 0, UINT64_MAX, NcmContentInstallType_Full));
             if (total_entries == 0) {
                 return ResultUpdaterBootImagePackageNotFound;
             }
@@ -164,15 +164,15 @@ namespace sts::updater {
                     u8 attr;
                     R_TRY(ncmContentMetaDatabaseGetAttributes(&meta_db, &records[i], &attr));
 
-                    if (attr & NcmContentMetaAttribute_Exfat) {
-                        *out_data_id = records[i].titleId;
+                    if (attr & NcmContentMetaAttribute_IncludesExFatDriver) {
+                        *out_data_id = records[i].title_id;
                         return ResultSuccess;
                     }
                 }
             }
 
             /* If there's only one entry or no exfat entries, return that entry. */
-            *out_data_id = records[0].titleId;
+            *out_data_id = records[0].title_id;
             return ResultSuccess;
         }
 

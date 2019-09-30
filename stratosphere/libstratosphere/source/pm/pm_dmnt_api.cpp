@@ -36,7 +36,10 @@ namespace sts::pm::dmnt {
     }
 
     Result HookToCreateApplicationProcess(Handle *out_handle) {
-        return pmdmntEnableDebugForApplication(out_handle);
+        Event evt;
+        R_TRY(pmdmntEnableDebugForApplication(&evt));
+        *out_handle = evt.revent;
+        return ResultSuccess;
     }
 
     Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::TitleLocation *out_loc, u64 process_id) {

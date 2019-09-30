@@ -15,12 +15,11 @@
  */
 
 #pragma once
+#include "ams_types.hpp"
 
-#include "sm.hpp"
+namespace sts::ams {
 
-#include "ipc.hpp"
+    FirmwareVersion GetRuntimeFirmwareVersion();
+    void SetFirmwareVersionForLibnx();
 
-#include "mitm/imitmserviceobject.hpp"
-#include "mitm/mitm_query_service.hpp"
-#include "mitm/mitm_session.hpp"
-#include "mitm/mitm_server.hpp"
+}
