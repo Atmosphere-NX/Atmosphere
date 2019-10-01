@@ -27,19 +27,21 @@ namespace sts::lr::impl {
         private:
             struct Entry {
                 Value value;
+                ncm::TitleId application_id;
                 Key key;
                 bool is_valid;
             };
         private:
             Entry entries[NumEntries];
+            size_t soft_entry_limit;
         public:
-            RegisteredData() {
+            RegisteredData(size_t soft_entry_limit = NumEntries) : soft_entry_limit(soft_entry_limit) {
                 this->Clear();
             }
 
-            bool Register(const Key &key, const Value &value) {
+            bool Register(const Key &key, const Value &value, const ncm::TitleId application_id) {
                 /* Try to find an existing value. */
-                for (size_t i = 0; i < NumEntries; i++) {
+                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
                         entry.value = value;
@@ -47,11 +49,12 @@ namespace sts::lr::impl {
                     }
                 }
 
-                for (size_t i = 0; i < NumEntries; i++) {
+                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
                     if (!entry.is_valid) {
                         entry.key = key;
                         entry.value = value;
+                        entry.application_id = application_id;
                         entry.is_valid = true;
                         return true;
                     }
@@ -61,7 +64,7 @@ namespace sts::lr::impl {
             }
 
             void Unregister(const Key &key) {
-                for (size_t i = 0; i < NumEntries; i++) {
+                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
                         entry.is_valid = false;
@@ -69,8 +72,17 @@ namespace sts::lr::impl {
                 }
             }
 
+            void UnregisterApplication(ncm::TitleId application_id) {
+                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
+                    Entry& entry = this->entries[i];
+                    if (entry.application_id == application_id) {
+                        entry.is_valid = false;
+                    }
+                }
+            }
+
             bool Find(Value *out, const Key &key) {
-                for (size_t i = 0; i < NumEntries; i++) {
+                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
                         *out = entry.value;
@@ -82,9 +94,33 @@ namespace sts::lr::impl {
             }
 
             void Clear() {
-                for (size_t i = 0; i < NumEntries; i++) {
+                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     this->entries[i].is_valid = false;
                 }
+            }
+
+            void ClearExcluding(const ncm::TitleId* tids, size_t num_tids) {
+                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
+                    Entry& entry = this->entries[i];
+                    bool found = false;
+
+                    for (size_t j = 0; j < num_tids; j++) {
+                        ncm::TitleId tid = tids[j];
+
+                        if (entry.application_id == tid) {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        entry.is_valid = false;
+                    }
+                }
+            }
+
+            size_t GetSoftEntryLimit() const {
+                return this->soft_entry_limit;
             }
     };
 

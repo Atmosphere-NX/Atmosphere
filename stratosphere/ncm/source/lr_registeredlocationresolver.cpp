@@ -28,20 +28,38 @@ namespace sts::lr {
         this->program_redirector.ClearRedirections();
     }
 
-    void RegisteredLocationResolverInterface::RegisterPath(const Path& path, impl::RegisteredLocations<ncm::TitleId, 16>* locations, ncm::TitleId tid) {
-        if (!locations->Register(tid, path)) {
+    void RegisteredLocationResolverInterface::RegisterPath(const Path& path, impl::RegisteredLocations<ncm::TitleId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::TitleId tid, ncm::TitleId application_id) {
+        if (!locations->Register(tid, path, application_id)) {
             locations->Clear();
-            locations->Register(tid, path);
+            locations->Register(tid, path, application_id);
         }
     }
 
-    bool RegisteredLocationResolverInterface::ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::TitleId, 16>* locations, ncm::TitleId tid) {
+    bool RegisteredLocationResolverInterface::ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::TitleId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::TitleId tid) {
         if (!redirector->FindRedirection(out, tid)) {
             if (!locations->Find(out, tid)) {
                 return false;
             }
         }
         return true;
+    }
+
+    Result RegisteredLocationResolverInterface::RefreshImpl(const ncm::TitleId* excluding_tids, size_t num_tids) {
+        if (GetRuntimeFirmwareVersion() < FirmwareVersion_900) {
+            this->ClearRedirections();
+            return ResultSuccess;
+        }
+
+        if (num_tids == 0) {
+            this->ClearRedirections();
+        } else {
+            this->registered_program_locations.ClearExcluding(excluding_tids, num_tids);
+            this->registered_html_docs_locations.ClearExcluding(excluding_tids, num_tids);
+        }
+
+        this->program_redirector.ClearRedirections(excluding_tids, num_tids);
+        this->html_docs_redirector.ClearRedirections(excluding_tids, num_tids);
+        return ResultSuccess;
     }
 
     Result RegisteredLocationResolverInterface::ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) {
@@ -52,8 +70,13 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
-        this->RegisterPath(*path.pointer, &this->registered_program_locations, tid);
+    Result RegisteredLocationResolverInterface::RegisterProgramPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) {
+        this->RegisterPath(*path.pointer, &this->registered_program_locations, tid, ncm::TitleId::Invalid);
+        return ResultSuccess;
+    }
+
+    Result RegisteredLocationResolverInterface::RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId application_id) {
+        this->RegisterPath(*path.pointer, &this->registered_program_locations, tid, application_id);
         return ResultSuccess;
     }
 
@@ -62,8 +85,13 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
+    Result RegisteredLocationResolverInterface::RedirectProgramPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) {
         this->program_redirector.SetRedirection(tid, *path.pointer);
+        return ResultSuccess;
+    }
+
+    Result RegisteredLocationResolverInterface::RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId application_id) {
+        this->program_redirector.SetRedirection(tid, application_id, *path.pointer);
         return ResultSuccess;
     }
 
@@ -75,8 +103,13 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
-        this->RegisterPath(*path.pointer, &this->registered_html_docs_locations, tid);
+    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) {
+        this->RegisterPath(*path.pointer, &this->registered_html_docs_locations, tid, ncm::TitleId::Invalid);
+        return ResultSuccess;
+    }
+
+    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId application_id) {
+        this->RegisterPath(*path.pointer, &this->registered_html_docs_locations, tid, application_id);
         return ResultSuccess;
     }
 
@@ -85,14 +118,22 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
+    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) {
         this->html_docs_redirector.SetRedirection(tid, *path.pointer);
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::Refresh() {
-        this->ClearRedirections();
+    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId application_id) {
+        this->html_docs_redirector.SetRedirection(tid, application_id, *path.pointer);
         return ResultSuccess;
+    }
+
+    Result RegisteredLocationResolverInterface::Refresh() {
+        return this->RefreshImpl(nullptr, 0);
+    }
+
+    Result RegisteredLocationResolverInterface::RefreshExcluding(InBuffer<ncm::TitleId> tids) {
+        return this->RefreshImpl(tids.buffer, tids.num_elements);
     }
 
 }

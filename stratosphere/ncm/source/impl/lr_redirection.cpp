@@ -23,14 +23,19 @@ namespace sts::lr::impl {
         NON_MOVEABLE(LocationRedirection);
         private:
             ncm::TitleId title_id;
+            ncm::TitleId application_id;
             Path path;
             u32 flags;
         public:
-            LocationRedirection(ncm::TitleId title_id, const Path& path, u32 flags) :
-                title_id(title_id), path(path), flags(flags) { /* ... */ }
+            LocationRedirection(ncm::TitleId title_id, ncm::TitleId application_id, const Path& path, u32 flags) :
+                title_id(title_id), application_id(application_id), path(path), flags(flags) { /* ... */ }
 
             ncm::TitleId GetTitleId() const {
                 return this->title_id;
+            }
+
+            ncm::TitleId GetApplicationId() const {
+                return this->application_id;
             }
 
             void GetPath(Path *out) const {
@@ -61,8 +66,12 @@ namespace sts::lr::impl {
     }
 
     void LocationRedirector::SetRedirection(ncm::TitleId title_id, const Path &path, u32 flags) {
+        this->SetRedirection(title_id, path, flags);
+    }
+
+    void LocationRedirector::SetRedirection(ncm::TitleId title_id, ncm::TitleId application_id, const Path &path, u32 flags) {
         this->EraseRedirection(title_id);
-        this->redirection_list.push_back(*(new LocationRedirection(title_id, path, flags)));
+        this->redirection_list.push_back(*(new LocationRedirection(title_id, application_id, path, flags)));
     }
 
     void LocationRedirector::SetRedirectionFlags(ncm::TitleId title_id, u32 flags) {
@@ -93,6 +102,29 @@ namespace sts::lr::impl {
             } else {
                 it++;
             }
+        }
+    }
+
+    void LocationRedirector::ClearRedirections(const ncm::TitleId* excluding_tids, size_t num_tids) {
+        for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
+            bool skip = false;
+            for (size_t i = 0; i < num_tids; i++) {
+                ncm::TitleId tid = excluding_tids[i];
+
+                if (it->GetApplicationId() == tid) {
+                    skip = true;
+                    break;
+                }
+            }
+
+            if (skip) {
+                continue;
+            }
+
+            auto old = it;
+            it = this->redirection_list.erase(it);
+            delete &(*old);
+            it++;
         }
     }
 

@@ -39,8 +39,16 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::TitleId tid) {
-        if (!this->registered_storages.Register(tid, storage_id)) {
+    Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::TitleId tid) {
+        if (!this->registered_storages.Register(tid, storage_id, ncm::TitleId::Invalid)) {
+            return ResultLrTooManyRegisteredPaths;
+        }
+
+        return ResultSuccess;
+    }
+
+    Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::TitleId tid, ncm::TitleId application_tid) {
+        if (!this->registered_storages.Register(tid, storage_id, application_tid)) {
             return ResultLrTooManyRegisteredPaths;
         }
 
@@ -49,6 +57,21 @@ namespace sts::lr {
 
     Result AddOnContentLocationResolverInterface::UnregisterAllAddOnContentPath() {
         this->registered_storages.Clear();
+        return ResultSuccess;
+    }
+
+    Result AddOnContentLocationResolverInterface::RefreshApplicationAddOnContent(InBuffer<ncm::TitleId> tids) {
+        if (tids.num_elements == 0) {
+            this->registered_storages.Clear();
+            return ResultSuccess;
+        }
+
+        this->registered_storages.ClearExcluding(tids.buffer, tids.num_elements);
+        return ResultSuccess;
+    }
+
+    Result AddOnContentLocationResolverInterface::UnregisterApplicationAddOnContent(ncm::TitleId tid) {
+        this->registered_storages.UnregisterApplication(tid);
         return ResultSuccess;
     }
 
