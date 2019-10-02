@@ -15,8 +15,8 @@
  */
 
 #pragma once
+#include <cstring>
 #include <switch.h>
-#include <stratosphere.hpp>
 
 namespace sts::lr {
 

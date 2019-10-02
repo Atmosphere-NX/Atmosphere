@@ -349,7 +349,7 @@ namespace sts::updater {
                     void *work = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctSize);
 
                     size_t size;
-                    R_TRY(fs::ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
+                    R_TRY(ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
                     if (HasEks(boot_image_update_type)) {
                         R_TRY(boot0_accessor.UpdateEks(bct, work));
                     }
@@ -411,7 +411,7 @@ namespace sts::updater {
                     void *work = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctSize);
 
                     size_t size;
-                    R_TRY(fs::ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
+                    R_TRY(ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
                     if (HasEks(boot_image_update_type)) {
                         R_TRY(boot0_accessor.UpdateEks(bct, work));
                     }
@@ -465,7 +465,7 @@ namespace sts::updater {
             void *work = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctSize);
 
             size_t size;
-            R_TRY(fs::ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
+            R_TRY(ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
             if (HasEks(boot_image_update_type)) {
                 R_TRY(accessor.UpdateEks(bct, work));
             }

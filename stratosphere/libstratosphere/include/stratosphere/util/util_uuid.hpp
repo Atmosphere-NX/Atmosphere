@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#include <cstring>
 #include <switch.h>
 
 namespace sts::util {
