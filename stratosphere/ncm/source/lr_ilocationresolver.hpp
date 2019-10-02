@@ -30,12 +30,17 @@ namespace sts::lr {
                 ResolveApplicationControlPath = 2,
                 ResolveApplicationHtmlDocumentPath = 3,
                 ResolveDataPath = 4,
+                RedirectApplicationControlPathDeprecated = 5,
                 RedirectApplicationControlPath = 5,
+                RedirectApplicationHtmlDocumentPathDeprecated = 6,
                 RedirectApplicationHtmlDocumentPath = 6,
                 ResolveApplicationLegalInformationPath = 7,
+                RedirectApplicationLegalInformationPathDeprecated = 8,
                 RedirectApplicationLegalInformationPath = 8,
                 Refresh = 9,
+                RedirectApplicationProgramPathDeprecated = 10,
                 RedirectApplicationProgramPath = 10,
+                ClearApplicationRedirectionDeprecated = 11,
                 ClearApplicationRedirection = 11,
                 EraseProgramRedirection = 12,
                 EraseApplicationControlRedirection = 13,
@@ -43,6 +48,7 @@ namespace sts::lr {
                 EraseApplicationLegalInformationRedirection = 15,
                 ResolveProgramPathForDebug = 16,
                 RedirectProgramPathForDebug = 17,
+                RedirectApplicationProgramPathForDebugDeprecated = 18,
                 RedirectApplicationProgramPathForDebug = 18,
                 EraseProgramRedirectionForDebug = 19,
             };
@@ -64,26 +70,40 @@ namespace sts::lr {
                 this->html_docs_redirector.ClearRedirections(flags);
                 this->legal_info_redirector.ClearRedirections(flags);
             }
+
+            void ClearRedirections(const ncm::TitleId* excluding_tids, size_t num_tids) {
+                this->program_redirector.ClearRedirections(excluding_tids, num_tids);
+                this->debug_program_redirector.ClearRedirections(excluding_tids, num_tids);
+                this->app_control_redirector.ClearRedirections(excluding_tids, num_tids);
+                this->html_docs_redirector.ClearRedirections(excluding_tids, num_tids);
+                this->legal_info_redirector.ClearRedirections(excluding_tids, num_tids);
+            }
         public:
             virtual Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
             virtual Result RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid);
             virtual Result ResolveApplicationControlPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
             virtual Result ResolveApplicationHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
             virtual Result ResolveDataPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
-            virtual Result RedirectApplicationControlPath(InPointer<const Path> path, ncm::TitleId tid);
-            virtual Result RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result RedirectApplicationControlPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result RedirectApplicationControlPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2);
+            virtual Result RedirectApplicationHtmlDocumentPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2);
             virtual Result ResolveApplicationLegalInformationPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
-            virtual Result RedirectApplicationLegalInformationPath(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result RedirectApplicationLegalInformationPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result RedirectApplicationLegalInformationPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2);
             virtual Result Refresh();
-            virtual Result RedirectApplicationProgramPath(InPointer<const Path> path, ncm::TitleId tid);
-            virtual Result ClearApplicationRedirection();
+            virtual Result RedirectApplicationProgramPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result RedirectApplicationProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2);
+            virtual Result ClearApplicationRedirectionDeprecated();
+            virtual Result ClearApplicationRedirection(InBuffer<ncm::TitleId> excluding_tids);
             virtual Result EraseProgramRedirection(ncm::TitleId tid);
             virtual Result EraseApplicationControlRedirection(ncm::TitleId tid);
             virtual Result EraseApplicationHtmlDocumentRedirection(ncm::TitleId tid);
             virtual Result EraseApplicationLegalInformationRedirection(ncm::TitleId tid);
             virtual Result ResolveProgramPathForDebug(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
             virtual Result RedirectProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid);
-            virtual Result RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result RedirectApplicationProgramPathForDebugDeprecated(InPointer<const Path> path, ncm::TitleId tid);
+            virtual Result RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2);
             virtual Result EraseProgramRedirectionForDebug(ncm::TitleId tid);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
@@ -92,21 +112,27 @@ namespace sts::lr {
                 MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveApplicationControlPath),
                 MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveApplicationHtmlDocumentPath),
                 MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveDataPath),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationControlPath),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationHtmlDocumentPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationControlPathDeprecated,          FirmwareVersion_100, FirmwareVersion_810),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationControlPath,                    FirmwareVersion_900),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationHtmlDocumentPathDeprecated,     FirmwareVersion_100, FirmwareVersion_810),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationHtmlDocumentPath,               FirmwareVersion_900),
                 MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveApplicationLegalInformationPath),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationLegalInformationPath),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationLegalInformationPathDeprecated, FirmwareVersion_100, FirmwareVersion_810),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationLegalInformationPath,           FirmwareVersion_900),
                 MAKE_SERVICE_COMMAND_META(ILocationResolver, Refresh),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationProgramPath,              FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, ClearApplicationRedirection,                 FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseProgramRedirection,                     FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseApplicationControlRedirection,          FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseApplicationHtmlDocumentRedirection,     FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseApplicationLegalInformationRedirection, FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveProgramPathForDebug,                  FirmwareVersion_700),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectProgramPathForDebug,                 FirmwareVersion_700),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationProgramPathForDebug,      FirmwareVersion_700),
-                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseProgramRedirectionForDebug,             FirmwareVersion_700),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationProgramPathDeprecated,          FirmwareVersion_500, FirmwareVersion_810),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationProgramPath,                    FirmwareVersion_900),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, ClearApplicationRedirectionDeprecated,             FirmwareVersion_500, FirmwareVersion_810),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, ClearApplicationRedirection,                       FirmwareVersion_900),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseProgramRedirection,                           FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseApplicationControlRedirection,                FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseApplicationHtmlDocumentRedirection,           FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseApplicationLegalInformationRedirection,       FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, ResolveProgramPathForDebug,                        FirmwareVersion_700),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectProgramPathForDebug,                       FirmwareVersion_700),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationProgramPathForDebugDeprecated,  FirmwareVersion_700, FirmwareVersion_810),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, RedirectApplicationProgramPathForDebug,            FirmwareVersion_900),
+                MAKE_SERVICE_COMMAND_META(ILocationResolver, EraseProgramRedirectionForDebug,                   FirmwareVersion_700),
             };
     };
 

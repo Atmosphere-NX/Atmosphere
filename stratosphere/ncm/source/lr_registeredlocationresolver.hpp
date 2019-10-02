@@ -50,7 +50,7 @@ namespace sts::lr {
             impl::RegisteredLocations<ncm::TitleId, MaxRegisteredLocations> registered_html_docs_locations;
         private:
             void ClearRedirections(u32 flags = impl::RedirectionFlags_None);
-            void RegisterPath(const Path& path, impl::RegisteredLocations<ncm::TitleId, MaxRegisteredLocations>* locations, ncm::TitleId tid, ncm::TitleId application_id);
+            void RegisterPath(const Path& path, impl::RegisteredLocations<ncm::TitleId, MaxRegisteredLocations>* locations, ncm::TitleId tid, ncm::TitleId title_id_2);
             bool ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::TitleId, MaxRegisteredLocations>* locations, ncm::TitleId tid);
             Result RefreshImpl(const ncm::TitleId* excluding_tids, size_t num_tids);
         public:
@@ -59,16 +59,16 @@ namespace sts::lr {
 
             Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
             Result RegisterProgramPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
-            Result RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId application_id);
+            Result RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2);
             Result UnregisterProgramPath(ncm::TitleId tid);
             Result RedirectProgramPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
-            Result RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId application_id);
+            Result RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2);
             Result ResolveHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
             Result RegisterHtmlDocumentPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
-            Result RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId application_id);
+            Result RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2);
             Result UnregisterHtmlDocumentPath(ncm::TitleId tid);
             Result RedirectHtmlDocumentPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
-            Result RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId application_id);
+            Result RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2);
             Result Refresh();
             Result RefreshExcluding(InBuffer<ncm::TitleId> tids);
         public:

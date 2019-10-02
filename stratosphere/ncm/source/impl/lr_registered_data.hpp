@@ -27,7 +27,7 @@ namespace sts::lr::impl {
         private:
             struct Entry {
                 Value value;
-                ncm::TitleId application_id;
+                ncm::TitleId title_id_2;
                 Key key;
                 bool is_valid;
             };
@@ -39,7 +39,7 @@ namespace sts::lr::impl {
                 this->Clear();
             }
 
-            bool Register(const Key &key, const Value &value, const ncm::TitleId application_id) {
+            bool Register(const Key &key, const Value &value, const ncm::TitleId title_id_2) {
                 /* Try to find an existing value. */
                 for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
@@ -54,7 +54,7 @@ namespace sts::lr::impl {
                     if (!entry.is_valid) {
                         entry.key = key;
                         entry.value = value;
-                        entry.application_id = application_id;
+                        entry.title_id_2 = title_id_2;
                         entry.is_valid = true;
                         return true;
                     }
@@ -72,10 +72,10 @@ namespace sts::lr::impl {
                 }
             }
 
-            void UnregisterApplication(ncm::TitleId application_id) {
+            void UnregisterTitleId2(ncm::TitleId title_id_2) {
                 for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
-                    if (entry.application_id == application_id) {
+                    if (entry.title_id_2 == title_id_2) {
                         entry.is_valid = false;
                     }
                 }
@@ -107,7 +107,7 @@ namespace sts::lr::impl {
                     for (size_t j = 0; j < num_tids; j++) {
                         ncm::TitleId tid = tids[j];
 
-                        if (entry.application_id == tid) {
+                        if (entry.title_id_2 == tid) {
                             found = true;
                             break;
                         }

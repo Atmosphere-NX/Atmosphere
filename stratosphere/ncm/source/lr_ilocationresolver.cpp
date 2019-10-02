@@ -38,11 +38,19 @@ namespace sts::lr {
         std::abort();
     }
 
-    Result ILocationResolver::RedirectApplicationControlPath(InPointer<const Path> path, ncm::TitleId tid) {
+    Result ILocationResolver::RedirectApplicationControlPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) {
         std::abort();
     }
 
-    Result ILocationResolver::RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid) {
+    Result ILocationResolver::RedirectApplicationControlPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
+        std::abort();
+    }
+
+    Result ILocationResolver::RedirectApplicationHtmlDocumentPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) {
+        std::abort();
+    }
+
+    Result ILocationResolver::RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
         std::abort();
     }
 
@@ -50,7 +58,11 @@ namespace sts::lr {
         std::abort();
     }
 
-    Result ILocationResolver::RedirectApplicationLegalInformationPath(InPointer<const Path> path, ncm::TitleId tid) {
+    Result ILocationResolver::RedirectApplicationLegalInformationPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) {
+        std::abort();
+    }
+
+    Result ILocationResolver::RedirectApplicationLegalInformationPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
         std::abort();
     }
 
@@ -58,11 +70,19 @@ namespace sts::lr {
         std::abort();
     }
 
-    Result ILocationResolver::RedirectApplicationProgramPath(InPointer<const Path> path, ncm::TitleId tid) {
+    Result ILocationResolver::RedirectApplicationProgramPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) {
         std::abort();
     }
 
-    Result ILocationResolver::ClearApplicationRedirection() {
+    Result ILocationResolver::RedirectApplicationProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
+        std::abort();
+    }
+
+    Result ILocationResolver::ClearApplicationRedirectionDeprecated() {
+        std::abort();
+    }
+
+    Result ILocationResolver::ClearApplicationRedirection(InBuffer<ncm::TitleId> excluding_tids) {
         std::abort();
     }
 
@@ -90,7 +110,11 @@ namespace sts::lr {
         std::abort();
     }
 
-    Result ILocationResolver::RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid) {
+    Result ILocationResolver::RedirectApplicationProgramPathForDebugDeprecated(InPointer<const Path> path, ncm::TitleId tid) {
+        std::abort();
+    }
+
+    Result ILocationResolver::RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
         std::abort();
     }
 

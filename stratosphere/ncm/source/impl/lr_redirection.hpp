@@ -37,7 +37,7 @@ namespace sts::lr::impl {
 
             bool FindRedirection(Path *out, ncm::TitleId title_id);
             void SetRedirection(ncm::TitleId title_id, const Path &path, u32 flags = RedirectionFlags_None);
-            void SetRedirection(ncm::TitleId title_id, ncm::TitleId application_id, const Path &path, u32 flags = RedirectionFlags_None);
+            void SetRedirection(ncm::TitleId title_id, ncm::TitleId title_id_2, const Path &path, u32 flags = RedirectionFlags_None);
             void SetRedirectionFlags(ncm::TitleId title_id, u32 flags);
             void EraseRedirection(ncm::TitleId title_id);
             void ClearRedirections(u32 flags = RedirectionFlags_None);
