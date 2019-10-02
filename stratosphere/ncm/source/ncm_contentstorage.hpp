@@ -19,6 +19,7 @@
 #include <stratosphere.hpp>
 
 #include "impl/ncm_placeholder_accessor.hpp"
+#include "impl/ncm_rights_cache.hpp"
 #include "ncm_icontentstorage.hpp"
 #include "ncm_path_utils.hpp"
 
@@ -29,10 +30,11 @@ namespace sts::ncm {
             impl::PlaceHolderAccessor placeholder_accessor;
             ContentId cached_content_id;
             FILE* content_cache_file_handle;
+            impl::RightsIdCache* rights_id_cache;
         public:
             ~ContentStorageInterface();
 
-            Result Initialize(const char* root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush);
+            Result Initialize(const char* root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache* rights_id_cache);
             void Finalize();
         private:
             void ClearContentCache();

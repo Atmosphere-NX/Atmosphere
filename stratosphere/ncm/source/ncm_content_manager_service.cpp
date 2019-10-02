@@ -77,4 +77,8 @@ namespace sts::ncm {
         return impl::InactivateContentMetaDatabase(storage_id);
     }
 
+    Result ContentManagerService::InvalidateRightsIdCache() {
+        return impl::InvalidateRightsIdCache();
+    }
+
 }

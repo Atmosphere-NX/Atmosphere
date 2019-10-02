@@ -43,5 +43,6 @@ namespace sts::ncm::impl {
     Result CleanupContentMetaDatabase(StorageId storage_id);
     Result ActivateContentMetaDatabase(StorageId storage_id);
     Result InactivateContentMetaDatabase(StorageId storage_id);
+    Result InvalidateRightsIdCache();
 
 }

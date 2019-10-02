@@ -25,6 +25,7 @@
 #include "../ncm_make_path.hpp"
 #include "../ncm_readonlycontentstorage.hpp"
 #include "ncm_content_manager.hpp"
+#include "ncm_rights_cache.hpp"
 
 namespace sts::ncm::impl {
 
@@ -115,6 +116,7 @@ namespace sts::ncm::impl {
         ContentMetaDBEntry g_content_meta_entries[MaxContentMetaDBEntries];
         u32 g_num_content_storage_entries;
         u32 g_num_content_meta_entries;
+        RightsIdCache g_rights_id_cache;
 
         ContentStorageEntry* FindContentStorageEntry(StorageId storage_id) {
             for (size_t i = 0; i < MaxContentStorageEntries; i++) {
@@ -449,7 +451,7 @@ namespace sts::ncm::impl {
                     break;
             }
 
-            R_TRY(content_storage->Initialize(entry->root_path, content_path_func, placeholder_path_func, delay_flush));
+            R_TRY(content_storage->Initialize(entry->root_path, content_path_func, placeholder_path_func, delay_flush, &g_rights_id_cache));
             entry->content_storage = std::move(content_storage);
             mount_guard.Cancel();
         }
@@ -706,4 +708,10 @@ namespace sts::ncm::impl {
 
         return ResultSuccess;
     }
+
+    Result InvalidateRightsIdCache() {
+        g_rights_id_cache.Invalidate();
+        return ResultSuccess;
+    }
+
 }

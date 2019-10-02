@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "impl/ncm_rights_cache.hpp"
 #include "ncm_contentstorage.hpp"
 #include "ncm_fs.hpp"
 #include "ncm_make_path.hpp"
@@ -26,7 +25,7 @@ namespace sts::ncm {
         this->Finalize();
     }
 
-    Result ContentStorageInterface::Initialize(const char* root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush) {
+    Result ContentStorageInterface::Initialize(const char* root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache* rights_id_cache) {
         R_TRY(this->EnsureEnabled());
         R_TRY(fs::CheckContentStorageDirectoriesExist(root_path));
         const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
@@ -38,6 +37,7 @@ namespace sts::ncm {
         strncpy(this->root_path, root_path, FS_MAX_PATH-2);
         this->make_content_path_func = *content_path_func;
         this->placeholder_accessor.Initialize(this->root_path, *placeholder_path_func, delay_flush);
+        this->rights_id_cache = rights_id_cache;
         return ResultSuccess;
     }
 
@@ -428,18 +428,16 @@ namespace sts::ncm {
     Result ContentStorageInterface::GetRightsIdFromContentId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
         
-        impl::RightsIdCache* rights_id_cache = impl::GetRightsIdCache();
-
         {
-            std::scoped_lock<HosMutex> lk(rights_id_cache->mutex);
+            std::scoped_lock<HosMutex> lk(this->rights_id_cache->mutex);
 
             /* Attempt to locate the content id in the cache. */
             for (size_t i = 0; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry* entry = &rights_id_cache->entries[i];
+                impl::RightsIdCache::Entry* entry = &this->rights_id_cache->entries[i];
 
                 if (entry->last_accessed != 1 && content_id == entry->uuid) {
-                    entry->last_accessed = rights_id_cache->counter;
-                    rights_id_cache->counter++;
+                    entry->last_accessed = this->rights_id_cache->counter;
+                    this->rights_id_cache->counter++;
                     out_rights_id.SetValue(entry->rights_id);
                     out_key_generation.SetValue(entry->key_generation);
                     return ResultSuccess;
@@ -456,12 +454,12 @@ namespace sts::ncm {
         R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
         {
-            std::scoped_lock<HosMutex> lk(rights_id_cache->mutex);
-            impl::RightsIdCache::Entry* eviction_candidate = &rights_id_cache->entries[0];
+            std::scoped_lock<HosMutex> lk(this->rights_id_cache->mutex);
+            impl::RightsIdCache::Entry* eviction_candidate = &this->rights_id_cache->entries[0];
 
             /* Find a suitable existing entry to store our new one at. */
             for (size_t i = 1; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry* entry = &rights_id_cache->entries[i];
+                impl::RightsIdCache::Entry* entry = &this->rights_id_cache->entries[i];
 
                 /* Change eviction candidates if the uuid already matches ours, or if the uuid doesn't already match and the last_accessed count is lower */
                 if (content_id == entry->uuid || (content_id != eviction_candidate->uuid && entry->last_accessed < eviction_candidate->last_accessed)) {
@@ -473,8 +471,8 @@ namespace sts::ncm {
             eviction_candidate->uuid = content_id.uuid;
             eviction_candidate->rights_id = rights_id;
             eviction_candidate->key_generation = key_generation;
-            eviction_candidate->last_accessed = rights_id_cache->counter;
-            rights_id_cache->counter++;
+            eviction_candidate->last_accessed = this->rights_id_cache->counter;
+            this->rights_id_cache->counter++;
 
             /* Set output. */
             out_rights_id.SetValue(rights_id);
@@ -599,18 +597,16 @@ namespace sts::ncm {
     Result ContentStorageInterface::GetRightsIdFromPlaceHolderIdWithCache(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id) {
         R_TRY(this->EnsureEnabled());
         
-        impl::RightsIdCache* rights_id_cache = impl::GetRightsIdCache();
-
         {
-            std::scoped_lock<HosMutex> lk(rights_id_cache->mutex);
+            std::scoped_lock<HosMutex> lk(this->rights_id_cache->mutex);
 
             /* Attempt to locate the content id in the cache. */
             for (size_t i = 0; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry* entry = &rights_id_cache->entries[i];
+                impl::RightsIdCache::Entry* entry = &this->rights_id_cache->entries[i];
 
                 if (entry->last_accessed != 1 && cache_content_id == entry->uuid) {
-                    entry->last_accessed = rights_id_cache->counter;
-                    rights_id_cache->counter++;
+                    entry->last_accessed = this->rights_id_cache->counter;
+                    this->rights_id_cache->counter++;
                     out_rights_id.SetValue(entry->rights_id);
                     out_key_generation.SetValue(entry->key_generation);
                     return ResultSuccess;
@@ -627,12 +623,12 @@ namespace sts::ncm {
         R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
         {
-            std::scoped_lock<HosMutex> lk(rights_id_cache->mutex);
-            impl::RightsIdCache::Entry* eviction_candidate = &rights_id_cache->entries[0];
+            std::scoped_lock<HosMutex> lk(this->rights_id_cache->mutex);
+            impl::RightsIdCache::Entry* eviction_candidate = &this->rights_id_cache->entries[0];
 
             /* Find a suitable existing entry to store our new one at. */
             for (size_t i = 1; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry* entry = &rights_id_cache->entries[i];
+                impl::RightsIdCache::Entry* entry = &this->rights_id_cache->entries[i];
 
                 /* Change eviction candidates if the uuid already matches ours, or if the uuid doesn't already match and the last_accessed count is lower */
                 if (cache_content_id == entry->uuid || (cache_content_id != eviction_candidate->uuid && entry->last_accessed < eviction_candidate->last_accessed)) {
@@ -644,8 +640,8 @@ namespace sts::ncm {
             eviction_candidate->uuid = cache_content_id.uuid;
             eviction_candidate->rights_id = rights_id;
             eviction_candidate->key_generation = key_generation;
-            eviction_candidate->last_accessed = rights_id_cache->counter;
-            rights_id_cache->counter++;
+            eviction_candidate->last_accessed = this->rights_id_cache->counter;
+            this->rights_id_cache->counter++;
 
             /* Set output. */
             out_rights_id.SetValue(rights_id);

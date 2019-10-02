@@ -39,6 +39,7 @@ namespace sts::ncm {
                 InactivateContentStorage = 10,
                 ActivateContentMetaDatabase = 11,
                 InactivateContentMetaDatabase = 12,
+                InvalidateRightsIdCache = 13,
             };
         public:
             virtual Result CreateContentStorage(StorageId storage_id);
@@ -54,6 +55,7 @@ namespace sts::ncm {
             virtual Result InactivateContentStorage(StorageId storage_id);
             virtual Result ActivateContentMetaDatabase(StorageId storage_id);
             virtual Result InactivateContentMetaDatabase(StorageId storage_id);
+            virtual Result InvalidateRightsIdCache();
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(ContentManagerService, CreateContentStorage),
@@ -69,6 +71,7 @@ namespace sts::ncm {
                 MAKE_SERVICE_COMMAND_META(ContentManagerService, InactivateContentStorage,         FirmwareVersion_200),
                 MAKE_SERVICE_COMMAND_META(ContentManagerService, ActivateContentMetaDatabase,      FirmwareVersion_200),
                 MAKE_SERVICE_COMMAND_META(ContentManagerService, InactivateContentMetaDatabase,    FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(ContentManagerService, InvalidateRightsIdCache,          FirmwareVersion_900),
             };
     };
 

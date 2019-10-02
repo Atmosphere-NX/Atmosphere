@@ -29,14 +29,23 @@ namespace sts::ncm::impl {
                     util::Uuid uuid;
                     FsRightsId rights_id;
                     u64 key_generation;
-                    u64 last_accessed = 1;
+                    u64 last_accessed;
             };
 
             Entry entries[MaxEntries];
-            u64 counter = 2;
+            u64 counter;
             HosMutex mutex;
-    };
 
-    RightsIdCache* GetRightsIdCache();
+            RightsIdCache() {
+                this->Invalidate();
+            }
+
+            void Invalidate() {
+                this->counter = 2;
+                for (size_t i = 0; i < MaxEntries; i++) {
+                    this->entries[i].last_accessed = 1;
+                }
+            }
+    };
 
 }
