@@ -34,7 +34,7 @@ namespace sts::ncm {
         struct ApplicationMetaExtendedHeader {
             TitleId patch_id;
             u32 required_system_version;
-            u32 padding;
+            u32 required_application_version;
         };
 
         struct PatchMetaExtendedHeader {
@@ -544,13 +544,20 @@ namespace sts::ncm {
     Result ContentMetaDatabaseInterface::GetRequiredApplicationVersion(Out<u32> out_version, ContentMetaKey key) {
         R_TRY(this->EnsureEnabled());
 
-        if (key.type != ContentMetaType::AddOnContent) {
-            return ResultNcmInvalidContentMetaKey;
-        }
-
         const void* value = nullptr;
         size_t value_size = 0;
         R_TRY(GetContentMetaValuePointer(&value, &value_size, key, this->kvs));
+
+        /* As of 9.0.0, applications can be dependent on a specific base application version. */
+        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_900 && key.type == ContentMetaType::Application) {
+            const auto ext_header = GetValueExtendedHeader<ApplicationMetaExtendedHeader>(value);
+            out_version.SetValue(ext_header->required_application_version);
+            return ResultSuccess;
+        }
+
+        if (key.type != ContentMetaType::AddOnContent) {
+            return ResultNcmInvalidContentMetaKey;
+        }
         const auto ext_header = GetValueExtendedHeader<AddOnContentMetaExtendedHeader>(value);
         out_version.SetValue(ext_header->required_application_version);
         return ResultSuccess;
