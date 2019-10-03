@@ -71,7 +71,7 @@ namespace sts::lr {
     }
 
     Result AddOnContentLocationResolverInterface::UnregisterApplicationAddOnContent(ncm::TitleId tid) {
-        this->registered_storages.UnregisterTitleId2(tid);
+        this->registered_storages.UnregisterOwnerTitle(tid);
         return ResultSuccess;
     }
 

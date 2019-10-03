@@ -28,10 +28,10 @@ namespace sts::lr {
         this->program_redirector.ClearRedirections();
     }
 
-    void RegisteredLocationResolverInterface::RegisterPath(const Path& path, impl::RegisteredLocations<ncm::TitleId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::TitleId tid, ncm::TitleId title_id_2) {
-        if (!locations->Register(tid, path, title_id_2)) {
+    void RegisteredLocationResolverInterface::RegisterPath(const Path& path, impl::RegisteredLocations<ncm::TitleId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::TitleId tid, ncm::TitleId owner_tid) {
+        if (!locations->Register(tid, path, owner_tid)) {
             locations->Clear();
-            locations->Register(tid, path, title_id_2);
+            locations->Register(tid, path, owner_tid);
         }
     }
 
@@ -75,8 +75,8 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
-        this->RegisterPath(*path.pointer, &this->registered_program_locations, tid, title_id_2);
+    Result RegisteredLocationResolverInterface::RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) {
+        this->RegisterPath(*path.pointer, &this->registered_program_locations, tid, owner_tid);
         return ResultSuccess;
     }
 
@@ -90,8 +90,8 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
-        this->program_redirector.SetRedirection(tid, title_id_2, *path.pointer);
+    Result RegisteredLocationResolverInterface::RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) {
+        this->program_redirector.SetRedirection(tid, owner_tid, *path.pointer);
         return ResultSuccess;
     }
 
@@ -108,8 +108,8 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
-        this->RegisterPath(*path.pointer, &this->registered_html_docs_locations, tid, title_id_2);
+    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) {
+        this->RegisterPath(*path.pointer, &this->registered_html_docs_locations, tid, owner_tid);
         return ResultSuccess;
     }
 
@@ -123,8 +123,8 @@ namespace sts::lr {
         return ResultSuccess;
     }
 
-    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
-        this->html_docs_redirector.SetRedirection(tid, title_id_2, *path.pointer);
+    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) {
+        this->html_docs_redirector.SetRedirection(tid, owner_tid, *path.pointer);
         return ResultSuccess;
     }
 

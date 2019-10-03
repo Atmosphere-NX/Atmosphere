@@ -27,7 +27,7 @@ namespace sts::lr::impl {
         private:
             struct Entry {
                 Value value;
-                ncm::TitleId title_id_2;
+                ncm::TitleId owner_tid;
                 Key key;
                 bool is_valid;
             };
@@ -39,7 +39,7 @@ namespace sts::lr::impl {
                 this->Clear();
             }
 
-            bool Register(const Key &key, const Value &value, const ncm::TitleId title_id_2) {
+            bool Register(const Key &key, const Value &value, const ncm::TitleId owner_tid) {
                 /* Try to find an existing value. */
                 for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
@@ -54,7 +54,7 @@ namespace sts::lr::impl {
                     if (!entry.is_valid) {
                         entry.key = key;
                         entry.value = value;
-                        entry.title_id_2 = title_id_2;
+                        entry.owner_tid = owner_tid;
                         entry.is_valid = true;
                         return true;
                     }
@@ -72,10 +72,10 @@ namespace sts::lr::impl {
                 }
             }
 
-            void UnregisterTitleId2(ncm::TitleId title_id_2) {
+            void UnregisterOwnerTitle(ncm::TitleId owner_tid) {
                 for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
-                    if (entry.title_id_2 == title_id_2) {
+                    if (entry.owner_tid == owner_tid) {
                         entry.is_valid = false;
                     }
                 }
@@ -107,7 +107,7 @@ namespace sts::lr::impl {
                     for (size_t j = 0; j < num_tids; j++) {
                         ncm::TitleId tid = tids[j];
 
-                        if (entry.title_id_2 == tid) {
+                        if (entry.owner_tid == tid) {
                             found = true;
                             break;
                         }

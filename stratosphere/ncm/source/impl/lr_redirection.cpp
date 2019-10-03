@@ -23,19 +23,19 @@ namespace sts::lr::impl {
         NON_MOVEABLE(LocationRedirection);
         private:
             ncm::TitleId title_id;
-            ncm::TitleId title_id_2;
+            ncm::TitleId owner_tid;
             Path path;
             u32 flags;
         public:
-            LocationRedirection(ncm::TitleId title_id, ncm::TitleId title_id_2, const Path& path, u32 flags) :
-                title_id(title_id), title_id_2(title_id_2), path(path), flags(flags) { /* ... */ }
+            LocationRedirection(ncm::TitleId title_id, ncm::TitleId owner_tid, const Path& path, u32 flags) :
+                title_id(title_id), owner_tid(owner_tid), path(path), flags(flags) { /* ... */ }
 
             ncm::TitleId GetTitleId() const {
                 return this->title_id;
             }
 
-            ncm::TitleId GetTitleId2() const {
-                return this->title_id_2;
+            ncm::TitleId GetOwnerTitleId() const {
+                return this->owner_tid;
             }
 
             void GetPath(Path *out) const {
@@ -69,9 +69,9 @@ namespace sts::lr::impl {
         this->SetRedirection(title_id, path, flags);
     }
 
-    void LocationRedirector::SetRedirection(ncm::TitleId title_id, ncm::TitleId title_id_2, const Path &path, u32 flags) {
+    void LocationRedirector::SetRedirection(ncm::TitleId title_id, ncm::TitleId owner_tid, const Path &path, u32 flags) {
         this->EraseRedirection(title_id);
-        this->redirection_list.push_back(*(new LocationRedirection(title_id, title_id_2, path, flags)));
+        this->redirection_list.push_back(*(new LocationRedirection(title_id, owner_tid, path, flags)));
     }
 
     void LocationRedirector::SetRedirectionFlags(ncm::TitleId title_id, u32 flags) {
@@ -111,7 +111,7 @@ namespace sts::lr::impl {
             for (size_t i = 0; i < num_tids; i++) {
                 ncm::TitleId tid = excluding_tids[i];
 
-                if (it->GetTitleId2() == tid) {
+                if (it->GetOwnerTitleId() == tid) {
                     skip = true;
                     break;
                 }

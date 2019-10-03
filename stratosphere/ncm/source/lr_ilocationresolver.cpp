@@ -42,7 +42,7 @@ namespace sts::lr {
         std::abort();
     }
 
-    Result ILocationResolver::RedirectApplicationControlPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
+    Result ILocationResolver::RedirectApplicationControlPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) {
         std::abort();
     }
 
@@ -50,7 +50,7 @@ namespace sts::lr {
         std::abort();
     }
 
-    Result ILocationResolver::RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
+    Result ILocationResolver::RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) {
         std::abort();
     }
 
@@ -62,7 +62,7 @@ namespace sts::lr {
         std::abort();
     }
 
-    Result ILocationResolver::RedirectApplicationLegalInformationPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
+    Result ILocationResolver::RedirectApplicationLegalInformationPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) {
         std::abort();
     }
 
@@ -74,7 +74,7 @@ namespace sts::lr {
         std::abort();
     }
 
-    Result ILocationResolver::RedirectApplicationProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
+    Result ILocationResolver::RedirectApplicationProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) {
         std::abort();
     }
 
@@ -114,7 +114,7 @@ namespace sts::lr {
         std::abort();
     }
 
-    Result ILocationResolver::RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId title_id_2) {
+    Result ILocationResolver::RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) {
         std::abort();
     }
 
