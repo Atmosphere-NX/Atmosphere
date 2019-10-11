@@ -21,21 +21,25 @@
 /* Define firmware version in global namespace, for convenience. */
 namespace sts {
 
-    enum FirmwareVersion : u32 {
-        FirmwareVersion_Min = 0,
-        FirmwareVersion_100 = FirmwareVersion_Min,
-        FirmwareVersion_200 = 1,
-        FirmwareVersion_300 = 2,
-        FirmwareVersion_400 = 3,
-        FirmwareVersion_500 = 4,
-        FirmwareVersion_600 = 5,
-        FirmwareVersion_700 = 6,
-        FirmwareVersion_800 = 7,
-        FirmwareVersion_810 = 8,
-        FirmwareVersion_900 = 9,
-        FirmwareVersion_Current = FirmwareVersion_900,
-        FirmwareVersion_Max = 32,
-    };
+    namespace hos {
+
+        enum Version : u16 {
+            Version_Min = 0,
+            Version_100 = Version_Min,
+            Version_200 = 1,
+            Version_300 = 2,
+            Version_400 = 3,
+            Version_500 = 4,
+            Version_600 = 5,
+            Version_700 = 6,
+            Version_800 = 7,
+            Version_810 = 8,
+            Version_900 = 9,
+            Version_Current = Version_900,
+            Version_Max = 32,
+        };
+
+    }
 
 }
 

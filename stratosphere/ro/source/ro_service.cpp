@@ -40,33 +40,33 @@ namespace sts::ro {
         impl::UnregisterProcess(this->context_id);
     }
 
-    Result Service::LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
-        R_TRY(impl::ValidateProcess(this->context_id, pid_desc.pid));
+    Result Service::LoadNro(sf::Out<u64> load_address, const sf::ClientProcessId &client_pid, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
+        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
         return impl::LoadNro(load_address.GetPointer(), this->context_id, nro_address, nro_size, bss_address, bss_size);
     }
 
-    Result Service::UnloadNro(PidDescriptor pid_desc, u64 nro_address) {
-        R_TRY(impl::ValidateProcess(this->context_id, pid_desc.pid));
+    Result Service::UnloadNro(const sf::ClientProcessId &client_pid, u64 nro_address) {
+        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
         return impl::UnloadNro(this->context_id, nro_address);
     }
 
-    Result Service::LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size) {
-        R_TRY(impl::ValidateProcess(this->context_id, pid_desc.pid));
+    Result Service::LoadNrr(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size) {
+        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
         return impl::LoadNrr(this->context_id, INVALID_HANDLE, nrr_address, nrr_size, ModuleType::ForSelf, true);
     }
 
-    Result Service::UnloadNrr(PidDescriptor pid_desc, u64 nrr_address) {
-        R_TRY(impl::ValidateProcess(this->context_id, pid_desc.pid));
+    Result Service::UnloadNrr(const sf::ClientProcessId &client_pid, u64 nrr_address) {
+        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
         return impl::UnloadNrr(this->context_id, nrr_address);
     }
 
-    Result Service::Initialize(PidDescriptor pid_desc, CopiedHandle process_h) {
-        return impl::RegisterProcess(&this->context_id, process_h.handle, pid_desc.pid);
+    Result Service::Initialize(const sf::ClientProcessId &client_pid, sf::CopyHandle process_h) {
+        return impl::RegisterProcess(&this->context_id, process_h.GetValue(), client_pid.GetValue());
     }
 
-    Result Service::LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size, CopiedHandle process_h) {
-        R_TRY(impl::ValidateProcess(this->context_id, pid_desc.pid));
-        return impl::LoadNrr(this->context_id, process_h.handle, nrr_address, nrr_size, this->type, this->type == ModuleType::ForOthers);
+    Result Service::LoadNrrEx(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h) {
+        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
+        return impl::LoadNrr(this->context_id, process_h.GetValue(), nrr_address, nrr_size, this->type, this->type == ModuleType::ForOthers);
     }
 
 }

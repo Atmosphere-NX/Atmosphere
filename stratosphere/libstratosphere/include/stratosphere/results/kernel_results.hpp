@@ -57,6 +57,7 @@ static constexpr Result ResultKernelOwnedByAnotherProcess        = MAKERESULT(Mo
 static constexpr Result ResultKernelConnectionRefused            = MAKERESULT(Module_Kernel, KernelError_ConnectionRefused);
 static constexpr Result ResultKernelLimitReached                 = MAKERESULT(Module_Kernel, 132 /* KernelError_OutOfResource */);
 
+static constexpr Result ResultKernelReceiveListBroken            = MAKERESULT(Module_Kernel, 258);
 static constexpr Result ResultKernelIpcMapFailed                 = MAKERESULT(Module_Kernel, KernelError_IpcMapFailed);
 static constexpr Result ResultKernelIpcCmdBufTooSmall            = MAKERESULT(Module_Kernel, KernelError_IpcCmdbufTooSmall);
 

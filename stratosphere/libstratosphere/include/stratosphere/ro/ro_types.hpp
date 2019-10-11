@@ -18,6 +18,7 @@
 #include <switch.h>
 #include <cstdlib>
 #include "../defines.hpp"
+#include "../ncm.hpp"
 
 namespace sts::ro {
 
@@ -44,7 +45,7 @@ namespace sts::ro {
             u8  modulus[0x100];
             u8  fixed_key_signature[0x100];
             u8  nrr_signature[0x100];
-            u64 title_id;
+            ncm::TitleId title_id;
             u32 size;
             u8  type; /* 7.0.0+ */
             u8  reserved_33D[3];
@@ -57,7 +58,7 @@ namespace sts::ro {
             }
 
             bool IsTitleIdValid() const {
-                return (this->title_id & this->title_id_mask) == this->title_id_pattern;
+                return (static_cast<u64>(this->title_id) & this->title_id_mask) == this->title_id_pattern;
             }
 
             ModuleType GetType() const {
@@ -66,7 +67,7 @@ namespace sts::ro {
                 return type;
             }
 
-            u64 GetTitleId() const {
+            ncm::TitleId GetTitleId() const {
                 return this->title_id;
             }
 

@@ -14,20 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <climits>
-#include <switch.h>
-#include <stratosphere.hpp>
+#pragma once
+#include "ams_types.hpp"
 
-#include "ro_debug_monitor.hpp"
-#include "impl/ro_service_impl.hpp"
+namespace sts::hos {
 
-namespace sts::ro {
-
-    Result DebugMonitorService::GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id) {
-        if (out_infos.GetSize() > INT_MAX) {
-            return ResultRoInvalidSize;
-        }
-        return impl::GetProcessModuleInfo(out_count.GetPointer(), out_infos.GetPointer(), out_infos.GetSize(), process_id);
-    }
+    sts::hos::Version GetVersion();
+    void SetVersionForLibnx();
 
 }

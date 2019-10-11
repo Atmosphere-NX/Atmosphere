@@ -20,17 +20,17 @@
 
 namespace sts::ro {
 
-    class DebugMonitorService final : public IServiceObject {
+    class DebugMonitorService final : public sf::IServiceObject {
         protected:
             enum class CommandId {
                 GetProcessModuleInfo = 0,
             };
         private:
             /* Actual commands. */
-            Result GetProcessModuleInfo(Out<u32> count, OutBuffer<LoaderModuleInfo> out_infos, u64 pid);
+            Result GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(DebugMonitorService, GetProcessModuleInfo),
+                MAKE_SERVICE_COMMAND_META(GetProcessModuleInfo),
             };
     };
 

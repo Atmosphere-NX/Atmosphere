@@ -20,6 +20,7 @@
 #include <switch.h>
 #include "../defines.hpp"
 #include "../results.hpp"
+#include "../os.hpp"
 
 namespace sts::sm {
 
@@ -60,17 +61,14 @@ namespace sts::sm {
     /* For Debug Monitor extensions. */
     struct ServiceRecord {
         ServiceName service;
-        u64 owner_pid;
+        os::ProcessId owner_pid;
         u64 max_sessions;
-        u64 mitm_pid;
-        u64 mitm_waiting_ack_pid;
+        os::ProcessId mitm_pid;
+        os::ProcessId mitm_waiting_ack_pid;
         bool is_light;
         bool mitm_waiting_ack;
     };
     static_assert(sizeof(ServiceRecord) == 0x30, "ServiceRecord definition!");
-
-    /* For process validation. */
-    static constexpr u64 InvalidProcessId = static_cast<u64>(-1ull);
 
     /* Utility, for scoped access to libnx services. */
     template<Result Initializer(), void Finalizer()>

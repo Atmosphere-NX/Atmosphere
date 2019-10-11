@@ -23,26 +23,26 @@ namespace sts::cfg {
     namespace {
 
         /* Convenience definitions. */
-        constexpr u64 InitialProcessIdMinDeprecated = 0x00;
-        constexpr u64 InitialProcessIdMaxDeprecated = 0x50;
+        constexpr os::ProcessId InitialProcessIdMinDeprecated = {0x00};
+        constexpr os::ProcessId InitialProcessIdMaxDeprecated = {0x50};
 
         /* Privileged process globals. */
         os::Mutex g_lock;
         bool g_got_privileged_process_status = false;
-        u64 g_min_initial_process_id = 0, g_max_initial_process_id = 0;
-        u64 g_cur_process_id = 0;
+        os::ProcessId g_min_initial_process_id = os::InvalidProcessId, g_max_initial_process_id = os::InvalidProcessId;
+        os::ProcessId g_cur_process_id = os::InvalidProcessId;
 
         /* SD card helpers. */
-        void GetPrivilegedProcessIdRange(u64 *out_min, u64 *out_max) {
-            u64 min = 0, max = 0;
-             if (ams::GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+        void GetPrivilegedProcessIdRange(os::ProcessId *out_min, os::ProcessId *out_max) {
+            os::ProcessId min = os::InvalidProcessId, max = os::InvalidProcessId;
+            if (hos::GetVersion() >= hos::Version_500) {
                 /* On 5.0.0+, we can get precise limits from svcGetSystemInfo. */
-                R_ASSERT(svcGetSystemInfo(&min, SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
-                R_ASSERT(svcGetSystemInfo(&max, SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
-            } else if (ams::GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
+                R_ASSERT(svcGetSystemInfo(reinterpret_cast<u64 *>(&min), SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
+                R_ASSERT(svcGetSystemInfo(reinterpret_cast<u64 *>(&max), SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
+            } else if (hos::GetVersion() >= hos::Version_400) {
                 /* On 4.0.0-4.1.0, we can get the precise limits from normal svcGetInfo. */
-                R_ASSERT(svcGetInfo(&min, InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
-                R_ASSERT(svcGetInfo(&max, InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
+                R_ASSERT(svcGetInfo(reinterpret_cast<u64 *>(&min), InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
+                R_ASSERT(svcGetInfo(reinterpret_cast<u64 *>(&max), InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
             } else {
                 /* On < 4.0.0, we just use hardcoded extents. */
                 min = InitialProcessIdMinDeprecated;
@@ -53,15 +53,9 @@ namespace sts::cfg {
             *out_max = max;
         }
 
-        u64 GetCurrentProcessId() {
-            u64 process_id = 0;
-            R_ASSERT(svcGetProcessId(&process_id, CUR_PROCESS_HANDLE));
-            return process_id;
-        }
-
         void GetPrivilegedProcessStatus() {
             GetPrivilegedProcessIdRange(&g_min_initial_process_id, &g_max_initial_process_id);
-            g_cur_process_id = GetCurrentProcessId();
+            g_cur_process_id = os::GetCurrentProcessId();
             g_got_privileged_process_status = true;
         }
 
@@ -80,7 +74,7 @@ namespace sts::cfg {
         return g_min_initial_process_id <= g_cur_process_id && g_cur_process_id <= g_max_initial_process_id;
     }
 
-    void GetInitialProcessRange(u64 *out_min, u64 *out_max) {
+    void GetInitialProcessRange(os::ProcessId *out_min, os::ProcessId *out_max) {
         std::scoped_lock lk(g_lock);
 
         /* If we've not detected, do detection. */

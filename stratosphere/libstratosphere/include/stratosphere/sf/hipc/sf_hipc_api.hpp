@@ -15,11 +15,23 @@
  */
 
 #pragma once
-#include "ams_types.hpp"
+#include "../sf_common.hpp"
+#include "../cmif/sf_cmif_pointer_and_size.hpp"
 
-namespace sts::ams {
+namespace sts::sf::hipc {
 
-    FirmwareVersion GetRuntimeFirmwareVersion();
-    void SetFirmwareVersionForLibnx();
+    constexpr size_t TlsMessageBufferSize = 0x100;
+
+    enum class ReceiveResult {
+        Success,
+        Closed,
+        NeedsRetry,
+    };
+
+    Result Receive(ReceiveResult *out_recv_result, Handle session_handle, const cmif::PointerAndSize &message_buffer);
+    Result Receive(bool *out_closed, Handle session_handle, const cmif::PointerAndSize &message_buffer);
+    Result Reply(Handle session_handle, const cmif::PointerAndSize &message_buffer);
+
+    Result CreateSession(Handle *out_server_handle, Handle *out_client_handle);
 
 }

@@ -184,7 +184,7 @@ namespace sts::map {
         R_TRY(svcGetInfo(&out->heap_size,  InfoType_HeapRegionSize, process_h, 0));
         R_TRY(svcGetInfo(&out->alias_base, InfoType_AliasRegionAddress, process_h, 0));
         R_TRY(svcGetInfo(&out->alias_size, InfoType_AliasRegionSize, process_h, 0));
-        if (ams::GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
+        if (hos::GetVersion() >= hos::Version_200) {
             R_TRY(svcGetInfo(&out->aslr_base, InfoType_AslrRegionAddress, process_h, 0));
             R_TRY(svcGetInfo(&out->aslr_size, InfoType_AslrRegionSize, process_h, 0));
         } else {
@@ -205,7 +205,7 @@ namespace sts::map {
     }
 
     Result LocateMappableSpace(uintptr_t *out_address, size_t size) {
-        if (ams::GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
+        if (hos::GetVersion() >= hos::Version_200) {
             return LocateMappableSpaceModern(out_address, size);
         } else {
             return LocateMappableSpaceDeprecated(out_address, size);
@@ -213,7 +213,7 @@ namespace sts::map {
     }
 
     Result MapCodeMemoryInProcess(MappedCodeMemory &out_mcm, Handle process_handle, uintptr_t base_address, size_t size) {
-        if (ams::GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
+        if (hos::GetVersion() >= hos::Version_200) {
             return MapCodeMemoryInProcessModern(out_mcm, process_handle, base_address, size);
         } else {
             return MapCodeMemoryInProcessDeprecated(out_mcm, process_handle, base_address, size);

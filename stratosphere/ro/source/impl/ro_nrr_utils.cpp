@@ -45,7 +45,7 @@ namespace sts::ro::impl {
             return ResultSuccess;
         }
 
-        Result ValidateNrr(const NrrHeader *header, u64 size, u64 title_id, ModuleType expected_type, bool enforce_type) {
+        Result ValidateNrr(const NrrHeader *header, u64 size, ncm::TitleId title_id, ModuleType expected_type, bool enforce_type) {
             /* Check magic. */
             if (!header->IsMagicValid()) {
                 return ResultRoInvalidNrr;
@@ -68,7 +68,7 @@ namespace sts::ro::impl {
                 }
 
                 /* Check type. */
-                if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700 && enforce_type) {
+                if (hos::GetVersion() >= hos::Version_700 && enforce_type) {
                     if (expected_type != header->GetType()) {
                         return ResultRoInvalidNrrType;
                     }
@@ -81,7 +81,7 @@ namespace sts::ro::impl {
     }
 
     /* Utilities for working with NRRs. */
-    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, u64 title_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type) {
+    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, ncm::TitleId title_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type) {
         map::MappedCodeMemory nrr_mcm(ResultRoInternalError);
 
         /* First, map the NRR. */

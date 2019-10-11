@@ -303,7 +303,7 @@ namespace sts::util {
                     iterator first(_first.GetNonConstIterator());
                     iterator last(_last.GetNonConstIterator());
                     first->Unlink(&*last);
-                    pos->SplicePrev(&*first, &*last);
+                    pos->SplicePrev(&*first, &*first);
                 }
 
         };
