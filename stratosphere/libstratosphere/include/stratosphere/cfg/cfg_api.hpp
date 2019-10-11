@@ -22,7 +22,7 @@ namespace sts::cfg {
 
     /* Privileged Process configuration. */
     bool IsInitialProcess();
-    void GetInitialProcessRange(u64 *out_min, u64 *out_max);
+    void GetInitialProcessRange(os::ProcessId *out_min, os::ProcessId *out_max);
 
     /* SD card configuration. */
     bool IsSdCardInitialized();

@@ -33,7 +33,7 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x30000
+    #define INNER_HEAP_SIZE 0x4000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -57,13 +57,16 @@ void __libnx_initheap(void) {
 	fake_heap_end   = (char*)addr + size;
 }
 
+using namespace sts;
+
 void __appInit(void) {
-    SetFirmwareVersionForLibnx();
+    hos::SetVersionForLibnx();
 
     DoWithSmSession([&]() {
         R_ASSERT(setsysInitialize());
         R_ASSERT(fsInitialize());
-        if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
+        R_ASSERT(splInitialize());
+        if (hos::GetVersion() < hos::Version_300) {
             R_ASSERT(pminfoInitialize());
         }
     });
@@ -76,44 +79,55 @@ void __appInit(void) {
 void __appExit(void) {
     fsdevUnmountAll();
     fsExit();
-    if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
+    if (hos::GetVersion() < hos::Version_300) {
         pminfoExit();
     }
     setsysExit();
 }
 
-using namespace sts;
-
 /* Helpers to create RO objects. */
-static const auto MakeRoServiceForSelf = []() { return std::make_shared<ro::Service>(ro::ModuleType::ForSelf); };
-static const auto MakeRoServiceForOthers = []() { return std::make_shared<ro::Service>(ro::ModuleType::ForOthers); };
+static constexpr auto MakeRoServiceForSelf = []() { return std::make_shared<ro::Service>(ro::ModuleType::ForSelf); };
+static constexpr auto MakeRoServiceForOthers = []() { return std::make_shared<ro::Service>(ro::ModuleType::ForOthers); };
+
+namespace {
+
+    /* ldr:ro, ro:dmnt, ro:1. */
+    /* TODO: Consider max sessions enforcement? */
+    constexpr size_t NumServers  = 3;
+    sf::hipc::ServerManager<NumServers> g_server_manager;
+
+    constexpr sm::ServiceName DebugMonitorServiceName = sm::ServiceName::Encode("ro:dmnt");
+    constexpr size_t          DebugMonitorMaxSessions = 2;
+
+    /* NOTE: Official code passes 32 for ldr:ro max sessions. We will pass 2, because that's the actual limit. */
+    constexpr sm::ServiceName ForSelfServiceName = sm::ServiceName::Encode("ldr:ro");
+    constexpr size_t          ForSelfMaxSessions = 2;
+
+    constexpr sm::ServiceName ForOthersServiceName = sm::ServiceName::Encode("ro:1");
+    constexpr size_t          ForOthersMaxSessions = 2;
+
+}
 
 int main(int argc, char **argv)
 {
     /* Initialize Debug config. */
     {
-        DoWithSmSession([]() {
-            R_ASSERT(splInitialize());
-        });
         ON_SCOPE_EXIT { splExit(); };
 
         ro::SetDevelopmentHardware(spl::IsDevelopmentHardware());
         ro::SetDevelopmentFunctionEnabled(spl::IsDevelopmentFunctionEnabled());
     }
 
-    /* Static server manager. */
-    static auto s_server_manager = WaitableManager(1);
-
     /* Create services. */
-    s_server_manager.AddWaitable(new ServiceServer<ro::DebugMonitorService>("ro:dmnt", 2));
-    /* NOTE: Official code passes 32 for ldr:ro max sessions. We will pass 2, because that's the actual limit. */
-    s_server_manager.AddWaitable(new ServiceServer<ro::Service, +MakeRoServiceForSelf>("ldr:ro", 2));
-    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
-        s_server_manager.AddWaitable(new ServiceServer<ro::Service, +MakeRoServiceForOthers>("ro:1", 2));
+    R_ASSERT((g_server_manager.RegisterServer<ro::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
+
+    R_ASSERT((g_server_manager.RegisterServer<ro::Service, +MakeRoServiceForSelf>(ForSelfServiceName, ForSelfMaxSessions)));
+    if (hos::GetVersion() >= hos::Version_700) {
+        R_ASSERT((g_server_manager.RegisterServer<ro::Service, +MakeRoServiceForOthers>(ForOthersServiceName, ForOthersMaxSessions)));
     }
 
     /* Loop forever, servicing our services. */
-    s_server_manager.Process();
+    g_server_manager.LoopProcess();
 
     /* Cleanup */
     return 0;

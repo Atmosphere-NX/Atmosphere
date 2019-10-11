@@ -17,4 +17,4 @@
 #pragma once
 
 #include "ams/ams_types.hpp"
-#include "ams/ams_firmware_version_api.hpp"
+#include "ams/ams_hos_version_api.hpp"

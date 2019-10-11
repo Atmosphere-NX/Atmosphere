@@ -29,4 +29,49 @@ namespace sts::os {
         ForNotFull,
     };
 
+    struct ProcessId {
+        u64 value;
+
+        inline constexpr explicit operator u64() const {
+            return this->value;
+        }
+
+        /* Invalid Process ID. */
+        static const ProcessId Invalid;
+    };
+
+    inline constexpr const ProcessId ProcessId::Invalid = {static_cast<u64>(-1ull)};
+
+    inline constexpr const ProcessId InvalidProcessId = ProcessId::Invalid;
+
+    NX_INLINE ProcessId GetCurrentProcessId() {
+        u64 current_process_id = 0;
+        R_ASSERT(svcGetProcessId(&current_process_id, CUR_PROCESS_HANDLE));
+        return os::ProcessId{current_process_id};
+    }
+
+    inline constexpr bool operator==(const ProcessId &lhs, const ProcessId &rhs) {
+        return lhs.value == rhs.value;
+    }
+
+    inline constexpr bool operator!=(const ProcessId &lhs, const ProcessId &rhs) {
+        return lhs.value != rhs.value;
+    }
+
+    inline constexpr bool operator<(const ProcessId &lhs, const ProcessId &rhs) {
+        return lhs.value < rhs.value;
+    }
+
+    inline constexpr bool operator<=(const ProcessId &lhs, const ProcessId &rhs) {
+        return lhs.value <= rhs.value;
+    }
+
+    inline constexpr bool operator>(const ProcessId &lhs, const ProcessId &rhs) {
+        return lhs.value > rhs.value;
+    }
+
+    inline constexpr bool operator>=(const ProcessId &lhs, const ProcessId &rhs) {
+        return lhs.value >= rhs.value;
+    }
+
 }

@@ -77,25 +77,25 @@ namespace sts::ro::impl {
             NroInfo nro_infos[MaxNroInfos];
             NrrInfo nrr_infos[MaxNrrInfos];
             Handle process_handle;
-            u64 process_id;
+            os::ProcessId process_id;
             bool in_use;
 
-            u64 GetTitleId(Handle other_process_h) const {
+            ncm::TitleId GetTitleId(Handle other_process_h) const {
                 /* Automatically select a handle, allowing for override. */
                 Handle process_h = this->process_handle;
                 if (other_process_h != INVALID_HANDLE) {
                     process_h = other_process_h;
                 }
 
-                u64 title_id = 0;
-                if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+                ncm::TitleId title_id = ncm::TitleId::Invalid;
+                if (hos::GetVersion() >= hos::Version_300) {
                     /* 3.0.0+: Use svcGetInfo. */
-                    R_ASSERT(svcGetInfo(&title_id, InfoType_TitleId, process_h, 0));
+                    R_ASSERT(svcGetInfo(&title_id.value, InfoType_TitleId, process_h, 0));
                 } else {
                     /* 1.0.0-2.3.0: We're not inside loader, so ask pm. */
-                    u64 process_id = 0;
-                    R_ASSERT(svcGetProcessId(&process_id, process_h));
-                    R_ASSERT(pminfoGetTitleId(&title_id, process_id));
+                    os::ProcessId process_id = os::InvalidProcessId;
+                    R_ASSERT(svcGetProcessId(&process_id.value, process_h));
+                    R_ASSERT(pminfoGetTitleId(&title_id.value, process_id.value));
                 }
                 return title_id;
             }
@@ -254,7 +254,7 @@ namespace sts::ro::impl {
             return &g_process_contexts[context_id];
         }
 
-        ProcessContext *GetContextByProcessId(u64 process_id) {
+        ProcessContext *GetContextByProcessId(os::ProcessId process_id) {
             for (size_t i = 0; i < MaxSessions; i++) {
                 if (g_process_contexts[i].process_id == process_id) {
                     return &g_process_contexts[i];
@@ -263,7 +263,7 @@ namespace sts::ro::impl {
             return nullptr;
         }
 
-        size_t AllocateContext(Handle process_handle, u64 process_id) {
+        size_t AllocateContext(Handle process_handle, os::ProcessId process_id) {
             /* Find a free process context. */
             for (size_t i = 0; i < MaxSessions; i++) {
                 ProcessContext *context = &g_process_contexts[i];
@@ -328,13 +328,13 @@ namespace sts::ro::impl {
     }
 
     /* Context utilities. */
-    Result RegisterProcess(size_t *out_context_id, Handle process_handle, u64 process_id) {
+    Result RegisterProcess(size_t *out_context_id, Handle process_handle, os::ProcessId process_id) {
         /* Validate process handle. */
         {
-            u64 handle_pid = 0;
+            os::ProcessId handle_pid = os::InvalidProcessId;
 
             /* Validate handle is a valid process handle. */
-            if (R_FAILED(svcGetProcessId(&handle_pid, process_handle))) {
+            if (R_FAILED(svcGetProcessId(&handle_pid.value, process_handle))) {
                 return ResultRoInvalidProcess;
             }
 
@@ -353,7 +353,7 @@ namespace sts::ro::impl {
         return ResultSuccess;
     }
 
-    Result ValidateProcess(size_t context_id, u64 process_id) {
+    Result ValidateProcess(size_t context_id, os::ProcessId process_id) {
         const ProcessContext *ctx = GetContextById(context_id);
         if (ctx == nullptr || ctx->process_id != process_id) {
             return ResultRoInvalidProcess;
@@ -372,7 +372,7 @@ namespace sts::ro::impl {
         STS_ASSERT(context != nullptr);
 
         /* Get title id. */
-        const u64 title_id = context->GetTitleId(process_h);
+        const ncm::TitleId title_id = context->GetTitleId(process_h);
 
         /* Validate address/size. */
         if (nrr_address & 0xFFF) {
@@ -461,7 +461,7 @@ namespace sts::ro::impl {
         R_TRY(MapNro(&nro_info->base_address, context->process_handle, nro_address, nro_size, bss_address, bss_size));
 
         /* Validate the NRO (parsing region extents). */
-        u64 rx_size, ro_size, rw_size;
+        u64 rx_size = 0, ro_size = 0, rw_size = 0;
         R_TRY_CLEANUP(context->ValidateNro(&nro_info->module_id, &rx_size, &ro_size, &rw_size, nro_info->base_address, nro_size, bss_size), {
             UnmapNro(context->process_handle, nro_info->base_address, nro_address, bss_address, bss_size, nro_size, 0);
         });
@@ -503,7 +503,7 @@ namespace sts::ro::impl {
     }
 
     /* Debug service implementations. */
-    Result GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count, u64 process_id) {
+    Result GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count, os::ProcessId process_id) {
         size_t count = 0;
         const ProcessContext *context = GetContextByProcessId(process_id);
         if (context != nullptr) {

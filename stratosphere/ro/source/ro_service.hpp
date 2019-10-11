@@ -26,7 +26,7 @@ namespace sts::ro {
     void SetDevelopmentHardware(bool is_development_hardware);
     void SetDevelopmentFunctionEnabled(bool is_development_function_enabled);
 
-    class Service final : public IServiceObject {
+    class Service final : public sf::IServiceObject {
         protected:
             enum class CommandId {
                 LoadNro     = 0,
@@ -41,23 +41,23 @@ namespace sts::ro {
             ModuleType type;
         public:
             explicit Service(ModuleType t);
-            virtual ~Service() override;
+            virtual ~Service();
         private:
             /* Actual commands. */
-            Result LoadNro(Out<u64> load_address, PidDescriptor pid_desc, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
-            Result UnloadNro(PidDescriptor pid_desc, u64 nro_address);
-            Result LoadNrr(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size);
-            Result UnloadNrr(PidDescriptor pid_desc, u64 nrr_address);
-            Result Initialize(PidDescriptor pid_desc, CopiedHandle process_h);
-            Result LoadNrrEx(PidDescriptor pid_desc, u64 nrr_address, u64 nrr_size, CopiedHandle process_h);
+            Result LoadNro(sf::Out<u64> out_load_address, const sf::ClientProcessId &client_pid, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
+            Result UnloadNro(const sf::ClientProcessId &client_pid, u64 nro_address);
+            Result LoadNrr(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size);
+            Result UnloadNrr(const sf::ClientProcessId &client_pid, u64 nrr_address);
+            Result Initialize(const sf::ClientProcessId &client_pid, sf::CopyHandle process_h);
+            Result LoadNrrEx(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(Service, LoadNro),
-                MAKE_SERVICE_COMMAND_META(Service, UnloadNro),
-                MAKE_SERVICE_COMMAND_META(Service, LoadNrr),
-                MAKE_SERVICE_COMMAND_META(Service, UnloadNrr),
-                MAKE_SERVICE_COMMAND_META(Service, Initialize),
-                MAKE_SERVICE_COMMAND_META(Service, LoadNrrEx,   FirmwareVersion_700),
+                MAKE_SERVICE_COMMAND_META(LoadNro),
+                MAKE_SERVICE_COMMAND_META(UnloadNro),
+                MAKE_SERVICE_COMMAND_META(LoadNrr),
+                MAKE_SERVICE_COMMAND_META(UnloadNrr),
+                MAKE_SERVICE_COMMAND_META(Initialize),
+                MAKE_SERVICE_COMMAND_META(LoadNrrEx,   hos::Version_700),
             };
 
     };

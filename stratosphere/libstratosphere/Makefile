@@ -16,7 +16,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 # INCLUDES is a list of directories containing header files
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
-SOURCES		:=	source source/ams source/os source/os/impl source/spl source/spl/smc source/updater source/patcher source/map source/rnd source/util source/sm source/cfg source/pm source/hid source/ldr source/kvdb
+SOURCES		:=	source source/ams source/os source/os/impl source/sf source/sf/cmif source/sf/hipc source/spl source/spl/smc source/updater source/patcher source/map source/rnd source/util source/sm source/cfg source/pm source/hid source/ldr source/kvdb
 DATA		:=	data
 INCLUDES	:=  include
 
@@ -32,7 +32,7 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -flto -std=gnu++17
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)

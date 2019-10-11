@@ -14,20 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <climits>
+#pragma once
 #include <switch.h>
-#include <stratosphere.hpp>
 
-#include "ro_debug_monitor.hpp"
-#include "impl/ro_service_impl.hpp"
+#include "sf/sf_common.hpp"
+#include "sf/sf_service_object.hpp"
+#include "sf/hipc/sf_hipc_server_session_manager.hpp"
 
-namespace sts::ro {
+#include "sf/sf_out.hpp"
+#include "sf/sf_buffers.hpp"
+#include "sf/impl/sf_impl_command_serialization.hpp"
 
-    Result DebugMonitorService::GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id) {
-        if (out_infos.GetSize() > INT_MAX) {
-            return ResultRoInvalidSize;
-        }
-        return impl::GetProcessModuleInfo(out_count.GetPointer(), out_infos.GetPointer(), out_infos.GetSize(), process_id);
-    }
-
-}
+#include "sf/hipc/sf_hipc_server_manager.hpp"

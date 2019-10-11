@@ -19,9 +19,19 @@
 
 static constexpr u32 Module_Hipc = 11;
 
-static constexpr Result ResultHipcOutOfDomains = MAKERESULT(Module_Hipc, 200);
+static constexpr Result ResultHipcSessionAllocationFailure = MAKERESULT(Module_Hipc, 102);
 
-static constexpr Result ResultHipcSessionClosed = MAKERESULT(Module_Hipc, 301);
+static constexpr Result ResultHipcOutOfSessions        = MAKERESULT(Module_Hipc, 131);
+static constexpr Result ResultHipcPointerBufferTooSmall = MAKERESULT(Module_Hipc, 141);
+
+static constexpr Result ResultHipcOutOfDomains         = MAKERESULT(Module_Hipc, 200);
+
+static constexpr Result ResultHipcSessionClosed        = MAKERESULT(Module_Hipc, 301);
+
+static constexpr Result ResultHipcInvalidRequestSize   = MAKERESULT(Module_Hipc, 402);
+static constexpr Result ResultHipcUnknownCommandType   = MAKERESULT(Module_Hipc, 403);
+
+static constexpr Result ResultHipcInvalidRequest       = MAKERESULT(Module_Hipc, 420);
 
 static constexpr Result ResultHipcTargetNotDomain      = MAKERESULT(Module_Hipc, 491);
 static constexpr Result ResultHipcDomainObjectNotFound = MAKERESULT(Module_Hipc, 492);

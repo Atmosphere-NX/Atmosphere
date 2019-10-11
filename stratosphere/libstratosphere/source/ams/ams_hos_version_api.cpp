@@ -16,11 +16,11 @@
 
 #include <stratosphere.hpp>
 
-namespace sts::ams {
+namespace sts::hos {
 
     namespace {
 
-        FirmwareVersion g_firmware_version;
+        hos::Version g_hos_version;
         bool g_has_cached;
         os::Mutex g_mutex;
 
@@ -49,35 +49,35 @@ namespace sts::ams {
 
             switch (static_cast<ams::TargetFirmware>(target_fw)) {
                 case ams::TargetFirmware_100:
-                    g_firmware_version = FirmwareVersion_100;
+                    g_hos_version = hos::Version_100;
                     break;
                 case ams::TargetFirmware_200:
-                    g_firmware_version = FirmwareVersion_200;
+                    g_hos_version = hos::Version_200;
                     break;
                 case ams::TargetFirmware_300:
-                    g_firmware_version = FirmwareVersion_300;
+                    g_hos_version = hos::Version_300;
                     break;
                 case ams::TargetFirmware_400:
-                    g_firmware_version = FirmwareVersion_400;
+                    g_hos_version = hos::Version_400;
                     break;
                 case ams::TargetFirmware_500:
-                    g_firmware_version = FirmwareVersion_500;
+                    g_hos_version = hos::Version_500;
                     break;
                 case ams::TargetFirmware_600:
                 case ams::TargetFirmware_620:
-                    g_firmware_version = FirmwareVersion_600;
+                    g_hos_version = hos::Version_600;
                     break;
                 case ams::TargetFirmware_700:
-                    g_firmware_version = FirmwareVersion_700;
+                    g_hos_version = hos::Version_700;
                     break;
                 case ams::TargetFirmware_800:
-                    g_firmware_version = FirmwareVersion_800;
+                    g_hos_version = hos::Version_800;
                     break;
                 case ams::TargetFirmware_810:
-                    g_firmware_version = FirmwareVersion_810;
+                    g_hos_version = hos::Version_810;
                     break;
                 case ams::TargetFirmware_900:
-                    g_firmware_version = FirmwareVersion_900;
+                    g_hos_version = hos::Version_900;
                     break;
                 STS_UNREACHABLE_DEFAULT_CASE();
             }
@@ -87,60 +87,60 @@ namespace sts::ams {
 
     }
 
-    FirmwareVersion GetRuntimeFirmwareVersion() {
+    ::sts::hos::Version GetVersion() {
         CacheValues();
-        return g_firmware_version;
+        return g_hos_version;
     }
 
-    void SetFirmwareVersionForLibnx() {
+    void SetVersionForLibnx() {
         u32 major = 0, minor = 0, micro = 0;
-        switch (GetRuntimeFirmwareVersion()) {
-            case FirmwareVersion_100:
+        switch (hos::GetVersion()) {
+            case hos::Version_100:
                 major = 1;
                 minor = 0;
                 micro = 0;
                 break;
-            case FirmwareVersion_200:
+            case hos::Version_200:
                 major = 2;
                 minor = 0;
                 micro = 0;
                 break;
-            case FirmwareVersion_300:
+            case hos::Version_300:
                 major = 3;
                 minor = 0;
                 micro = 0;
                 break;
-            case FirmwareVersion_400:
+            case hos::Version_400:
                 major = 4;
                 minor = 0;
                 micro = 0;
                 break;
-            case FirmwareVersion_500:
+            case hos::Version_500:
                 major = 5;
                 minor = 0;
                 micro = 0;
                 break;
-            case FirmwareVersion_600:
+            case hos::Version_600:
                 major = 6;
                 minor = 0;
                 micro = 0;
                 break;
-            case FirmwareVersion_700:
+            case hos::Version_700:
                 major = 7;
                 minor = 0;
                 micro = 0;
                 break;
-            case FirmwareVersion_800:
+            case hos::Version_800:
                 major = 8;
                 minor = 0;
                 micro = 0;
                 break;
-            case FirmwareVersion_810:
+            case hos::Version_810:
                 major = 8;
                 minor = 1;
                 micro = 0;
                 break;
-            case FirmwareVersion_900:
+            case hos::Version_900:
                 major = 9;
                 minor = 0;
                 micro = 0;
