@@ -936,10 +936,15 @@ namespace sts::sf::impl {
                 if constexpr (Info.arg_type == ArgumentType::InData) {
                     /* New in rawdata. */
                     constexpr size_t Offset = CommandMeta::InDataOffsets[Info.in_raw_data_index];
-                    return *reinterpret_cast<const T *>(in_raw_data.GetAddress() + Offset);
+                    if constexpr (!std::is_same<T, bool>::value) {
+                        return *reinterpret_cast<const T *>(in_raw_data.GetAddress() + Offset);
+                    } else {
+                        /* Special case bools. */
+                        return *reinterpret_cast<const u8 *>(in_raw_data.GetAddress() + Offset) & 1;
+                    }
                 } else if constexpr (Info.arg_type == ArgumentType::OutData) {
                     /* New out rawdata. */
-                    constexpr size_t Offset = CommandMeta::InDataOffsets[Info.in_raw_data_index];
+                    constexpr size_t Offset = CommandMeta::InDataOffsets[Info.out_raw_data_index];
                     return T(out_raw_holder.template GetAddress<Offset, T::TypeSize>());
                 } else if constexpr (Info.arg_type == ArgumentType::InHandle) {
                     /* New InHandle. */

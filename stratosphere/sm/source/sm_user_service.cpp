@@ -22,8 +22,8 @@
 
 namespace sts::sm {
 
-    Result UserService::Initialize(PidDescriptor pid) {
-        this->pid = pid.pid;
+    Result UserService::Initialize(const sf::ClientProcessId &client_process_id) {
+        this->process_id = client_process_id.GetValue();
         this->has_initialized = true;
         return ResultSuccess;
     }
@@ -35,37 +35,37 @@ namespace sts::sm {
         return ResultSuccess;
     }
 
-    Result UserService::GetService(Out<MovedHandle> out_h, ServiceName service) {
+    Result UserService::GetService(sf::OutMoveHandle out_h, ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return impl::GetServiceHandle(out_h.GetHandlePointer(), this->pid, service);
+        return impl::GetServiceHandle(out_h.GetHandlePointer(), this->process_id, service);
     }
 
-    Result UserService::RegisterService(Out<MovedHandle> out_h, ServiceName service, u32 max_sessions, bool is_light) {
+    Result UserService::RegisterService(sf::OutMoveHandle out_h, ServiceName service, u32 max_sessions, bool is_light) {
         R_TRY(this->EnsureInitialized());
-        return impl::RegisterService(out_h.GetHandlePointer(), this->pid, service, max_sessions, is_light);
+        return impl::RegisterService(out_h.GetHandlePointer(), this->process_id, service, max_sessions, is_light);
     }
 
     Result UserService::UnregisterService(ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return impl::UnregisterService(this->pid, service);
+        return impl::UnregisterService(this->process_id, service);
     }
 
-    Result UserService::AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandle> qry_h, ServiceName service) {
+    Result UserService::AtmosphereInstallMitm(sf::OutMoveHandle srv_h, sf::OutMoveHandle qry_h, ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return impl::InstallMitm(srv_h.GetHandlePointer(), qry_h.GetHandlePointer(), this->pid, service);
+        return impl::InstallMitm(srv_h.GetHandlePointer(), qry_h.GetHandlePointer(), this->process_id, service);
     }
 
     Result UserService::AtmosphereUninstallMitm(ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return impl::UninstallMitm(this->pid, service);
+        return impl::UninstallMitm(this->process_id, service);
     }
 
-    Result UserService::AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<ncm::TitleId> client_tid, Out<MovedHandle> fwd_h, ServiceName service) {
+    Result UserService::AtmosphereAcknowledgeMitmSession(sf::Out<os::ProcessId> client_pid, sf::Out<ncm::TitleId> client_tid, sf::OutMoveHandle fwd_h, ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return impl::AcknowledgeMitmSession(client_pid.GetPointer(), client_tid.GetPointer(), fwd_h.GetHandlePointer(), this->pid, service);
+        return impl::AcknowledgeMitmSession(client_pid.GetPointer(), client_tid.GetPointer(), fwd_h.GetHandlePointer(), this->process_id, service);
     }
 
-    Result UserService::AtmosphereHasMitm(Out<bool> out, ServiceName service) {
+    Result UserService::AtmosphereHasMitm(sf::Out<bool> out, ServiceName service) {
         R_TRY(this->EnsureInitialized());
         return impl::HasMitm(out.GetPointer(), service);
     }
@@ -77,11 +77,11 @@ namespace sts::sm {
 
     Result UserService::AtmosphereDeclareFutureMitm(ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return impl::DeclareFutureMitm(this->pid, service);
+        return impl::DeclareFutureMitm(this->process_id, service);
     }
 
 
-    Result UserService::AtmosphereHasService(Out<bool> out, ServiceName service) {
+    Result UserService::AtmosphereHasService(sf::Out<bool> out, ServiceName service) {
         R_TRY(this->EnsureInitialized());
         return impl::HasService(out.GetPointer(), service);
     }

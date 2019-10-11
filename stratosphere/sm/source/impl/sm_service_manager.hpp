@@ -22,24 +22,24 @@
 namespace sts::sm::impl {
 
     /* Process management. */
-    Result RegisterProcess(u64 pid, ncm::TitleId tid, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
-    Result UnregisterProcess(u64 pid);
+    Result RegisterProcess(os::ProcessId pid, ncm::TitleId tid, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
+    Result UnregisterProcess(os::ProcessId pid);
 
     /* Service management. */
     Result HasService(bool *out, ServiceName service);
     Result WaitService(ServiceName service);
-    Result GetServiceHandle(Handle *out, u64 pid, ServiceName service);
-    Result RegisterService(Handle *out, u64 pid, ServiceName service, size_t max_sessions, bool is_light);
+    Result GetServiceHandle(Handle *out, os::ProcessId pid, ServiceName service);
+    Result RegisterService(Handle *out, os::ProcessId pid, ServiceName service, size_t max_sessions, bool is_light);
     Result RegisterServiceForSelf(Handle *out, ServiceName service, size_t max_sessions);
-    Result UnregisterService(u64 pid, ServiceName service);
+    Result UnregisterService(os::ProcessId pid, ServiceName service);
 
     /* Mitm extensions. */
     Result HasMitm(bool *out, ServiceName service);
     Result WaitMitm(ServiceName service);
-    Result InstallMitm(Handle *out, Handle *out_query, u64 pid, ServiceName service);
-    Result UninstallMitm(u64 pid, ServiceName service);
-    Result DeclareFutureMitm(u64 pid, ServiceName service);
-    Result AcknowledgeMitmSession(u64 *out_pid, ncm::TitleId *out_tid, Handle *out_hnd, u64 pid, ServiceName service);
+    Result InstallMitm(Handle *out, Handle *out_query, os::ProcessId pid, ServiceName service);
+    Result UninstallMitm(os::ProcessId pid, ServiceName service);
+    Result DeclareFutureMitm(os::ProcessId pid, ServiceName service);
+    Result AcknowledgeMitmSession(os::ProcessId *out_pid, ncm::TitleId *out_tid, Handle *out_hnd, os::ProcessId pid, ServiceName service);
 
     /* Dmnt record extensions. */
     Result GetServiceRecord(ServiceRecord *out, ServiceName service);
