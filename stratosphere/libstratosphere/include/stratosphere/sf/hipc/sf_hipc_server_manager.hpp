@@ -127,6 +127,10 @@ namespace sts::sf::hipc {
 
             os::Mutex waitlist_mutex;
             os::WaitableManager waitlist;
+
+            os::Mutex deferred_session_mutex;
+            using DeferredSessionList = typename util::IntrusiveListMemberTraits<&ServerSession::deferred_list_node>::ListType;
+            DeferredSessionList deferred_session_list;
         private:
             virtual void RegisterSessionToWaitList(ServerSession *session) override final;
             void RegisterToWaitList(os::WaitableHolder *holder);
@@ -137,6 +141,8 @@ namespace sts::sf::hipc {
             Result ProcessForServer(os::WaitableHolder *holder);
             Result ProcessForMitmServer(os::WaitableHolder *holder);
             Result ProcessForSession(os::WaitableHolder *holder);
+
+            void   ProcessDeferredSessions();
 
             template<typename ServiceImpl, auto MakeShared = std::make_shared<ServiceImpl>>
             void RegisterServerImpl(Handle port_handle, sm::ServiceName service_name, bool managed, cmif::ServiceObjectHolder &&static_holder) {

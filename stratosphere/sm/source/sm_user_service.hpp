@@ -23,7 +23,7 @@
 namespace sts::sm {
 
     /* Service definition. */
-    class UserService final : public IServiceObject {
+    class UserService final : public sf::IServiceObject {
         protected:
             /* Command IDs. */
             enum class CommandId {
@@ -44,43 +44,43 @@ namespace sts::sm {
                 AtmosphereWaitService            = 65101,
             };
         private:
-            u64 pid = InvalidProcessId;
+            os::ProcessId process_id = os::InvalidProcessId;
             bool has_initialized = false;
         private:
             Result EnsureInitialized();
         public:
             /* Official commands. */
-            virtual Result Initialize(PidDescriptor pid);
-            virtual Result GetService(Out<MovedHandle> out_h, ServiceName service);
-            virtual Result RegisterService(Out<MovedHandle> out_h, ServiceName service, u32 max_sessions, bool is_light);
+            virtual Result Initialize(const sf::ClientProcessId &client_process_id);
+            virtual Result GetService(sf::OutMoveHandle out_h, ServiceName service);
+            virtual Result RegisterService(sf::OutMoveHandle out_h, ServiceName service, u32 max_sessions, bool is_light);
             virtual Result UnregisterService(ServiceName service);
 
             /* Atmosphere commands. */
-            virtual Result AtmosphereInstallMitm(Out<MovedHandle> srv_h, Out<MovedHandle> qry_h, ServiceName service);
+            virtual Result AtmosphereInstallMitm(sf::OutMoveHandle srv_h, sf::OutMoveHandle qry_h, ServiceName service);
             virtual Result AtmosphereUninstallMitm(ServiceName service);
-            virtual Result AtmosphereAcknowledgeMitmSession(Out<u64> client_pid, Out<ncm::TitleId> client_tid, Out<MovedHandle> fwd_h, ServiceName service);
-            virtual Result AtmosphereHasMitm(Out<bool> out, ServiceName service);
+            virtual Result AtmosphereAcknowledgeMitmSession(sf::Out<os::ProcessId> client_pid, sf::Out<ncm::TitleId> client_tid, sf::OutMoveHandle fwd_h, ServiceName service);
+            virtual Result AtmosphereHasMitm(sf::Out<bool> out, ServiceName service);
             virtual Result AtmosphereWaitMitm(ServiceName service);
             virtual Result AtmosphereDeclareFutureMitm(ServiceName service);
 
-            virtual Result AtmosphereHasService(Out<bool> out, ServiceName service);
+            virtual Result AtmosphereHasService(sf::Out<bool> out, ServiceName service);
             virtual Result AtmosphereWaitService(ServiceName service);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(UserService, Initialize),
-                MAKE_SERVICE_COMMAND_META(UserService, GetService),
-                MAKE_SERVICE_COMMAND_META(UserService, RegisterService),
-                MAKE_SERVICE_COMMAND_META(UserService, UnregisterService),
+                MAKE_SERVICE_COMMAND_META(Initialize),
+                MAKE_SERVICE_COMMAND_META(GetService),
+                MAKE_SERVICE_COMMAND_META(RegisterService),
+                MAKE_SERVICE_COMMAND_META(UnregisterService),
 
-                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereInstallMitm),
-                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereUninstallMitm),
-                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereAcknowledgeMitmSession),
-                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereHasMitm),
-                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereWaitMitm),
-                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereDeclareFutureMitm),
+                MAKE_SERVICE_COMMAND_META(AtmosphereInstallMitm),
+                MAKE_SERVICE_COMMAND_META(AtmosphereUninstallMitm),
+                MAKE_SERVICE_COMMAND_META(AtmosphereAcknowledgeMitmSession),
+                MAKE_SERVICE_COMMAND_META(AtmosphereHasMitm),
+                MAKE_SERVICE_COMMAND_META(AtmosphereWaitMitm),
+                MAKE_SERVICE_COMMAND_META(AtmosphereDeclareFutureMitm),
 
-                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereHasService),
-                MAKE_SERVICE_COMMAND_META(UserService, AtmosphereWaitService),
+                MAKE_SERVICE_COMMAND_META(AtmosphereHasService),
+                MAKE_SERVICE_COMMAND_META(AtmosphereWaitService),
             };
     };
 

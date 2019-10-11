@@ -22,25 +22,25 @@
 
 namespace sts::sm {
 
-    Result ManagerService::RegisterProcess(u64 pid, InBuffer<u8> acid_sac, InBuffer<u8> aci_sac) {
-        return impl::RegisterProcess(pid, ncm::TitleId::Invalid, acid_sac.buffer, acid_sac.num_elements, aci_sac.buffer, aci_sac.num_elements);
+    Result ManagerService::RegisterProcess(os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac) {
+        return impl::RegisterProcess(process_id, ncm::TitleId::Invalid, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
     }
 
-    Result ManagerService::UnregisterProcess(u64 pid) {
-        return impl::UnregisterProcess(pid);
+    Result ManagerService::UnregisterProcess(os::ProcessId process_id) {
+        return impl::UnregisterProcess(process_id);
     }
 
     void ManagerService::AtmosphereEndInitDefers() {
         R_ASSERT(impl::EndInitialDefers());
     }
 
-    void ManagerService::AtmosphereHasMitm(Out<bool> out, ServiceName service) {
+    void ManagerService::AtmosphereHasMitm(sf::Out<bool> out, ServiceName service) {
         R_ASSERT(impl::HasMitm(out.GetPointer(), service));
     }
 
-    Result ManagerService::AtmosphereRegisterProcess(u64 pid, ncm::TitleId tid, InBuffer<u8> acid_sac, InBuffer<u8> aci_sac) {
+    Result ManagerService::AtmosphereRegisterProcess(os::ProcessId process_id, ncm::TitleId title_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac) {
         /* This takes in a title id, unlike RegisterProcess. */
-        return impl::RegisterProcess(pid, tid, acid_sac.buffer, acid_sac.num_elements, aci_sac.buffer, aci_sac.num_elements);
+        return impl::RegisterProcess(process_id, title_id, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
     }
 
 }
