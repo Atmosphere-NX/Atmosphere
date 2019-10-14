@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "sf_hipc_server_session_manager.hpp"
+#include "sf_hipc_server_domain_session_manager.hpp"
 
 namespace sts::sf::hipc {
 
@@ -31,7 +31,7 @@ namespace sts::sf::hipc {
     template<size_t, typename, size_t>
     class ServerManager;
 
-    class ServerManagerBase : public ServerSessionManager {
+    class ServerManagerBase : public ServerDomainSessionManager {
         NON_COPYABLE(ServerManagerBase);
         NON_MOVEABLE(ServerManagerBase);
         private:
@@ -40,6 +40,9 @@ namespace sts::sf::hipc {
                 Session     = 2,
                 MitmServer  = 3,
             };
+        protected:
+            using ServerDomainSessionManager::DomainEntryStorage;
+            using ServerDomainSessionManager::DomainStorage;
         private:
             class ServerBase : public os::WaitableHolder {
                 friend class ServerManagerBase;
@@ -165,9 +168,10 @@ namespace sts::sf::hipc {
             virtual ServerBase *AllocateServer() = 0;
             virtual void DestroyServer(ServerBase *server)  = 0;
         public:
-            ServerManagerBase() : ServerSessionManager(),
-                                  request_stop_event(false), request_stop_event_holder(&request_stop_event),
-                                  notify_event(false), notify_event_holder(&notify_event)
+            ServerManagerBase(DomainEntryStorage *entry_storage, size_t entry_count) :
+                ServerDomainSessionManager(entry_storage, entry_count),
+                request_stop_event(false), request_stop_event_holder(&request_stop_event),
+                notify_event(false), notify_event_holder(&notify_event)
             {
                 /* Link waitables. */
                 this->waitable_manager.LinkWaitableHolder(&this->request_stop_event_holder);
@@ -222,6 +226,18 @@ namespace sts::sf::hipc {
         static_assert(MaxSessions <= ServerSessionCountMax, "MaxSessions can never be larger than ServerSessionCountMax (0x40).");
         static_assert(MaxServers + MaxSessions <= ServerSessionCountMax, "MaxServers + MaxSessions can never be larger than ServerSessionCountMax (0x40).");
         private:
+            static constexpr inline bool DomainCountsValid = [] {
+                if constexpr (ManagerOptions::MaxDomains > 0) {
+                    return ManagerOptions::MaxDomainObjects > 0;
+                } else {
+                    return ManagerOptions::MaxDomainObjects == 0;
+                }
+            }();
+            static_assert(DomainCountsValid, "Invalid Domain Counts");
+        protected:
+            using ServerManagerBase::DomainEntryStorage;
+            using ServerManagerBase::DomainStorage;
+        private:
             /* Resource storage. */
             os::Mutex resource_mutex;
             TYPED_STORAGE(ServerBase) server_storages[MaxServers];
@@ -233,7 +249,10 @@ namespace sts::sf::hipc {
             uintptr_t pointer_buffers_start;
             uintptr_t saved_messages_start;
 
-            /* TODO: Domain resources. */
+            /* Domain resources. */
+            DomainStorage domain_storages[ManagerOptions::MaxDomains];
+            bool domain_allocated[ManagerOptions::MaxDomains];
+            DomainEntryStorage domain_entry_storages[ManagerOptions::MaxDomainObjects];
         private:
             constexpr inline size_t GetServerIndex(const ServerBase *server) const {
                 const size_t i = server - GetPointer(this->server_storages[0]);
@@ -288,6 +307,26 @@ namespace sts::sf::hipc {
                 this->server_allocated[index] = false;
             }
 
+            virtual void *AllocateDomain() override final {
+                std::scoped_lock lk(this->resource_mutex);
+                for (size_t i = 0; i < ManagerOptions::MaxDomains; i++) {
+                    if (!this->domain_allocated[i]) {
+                        this->domain_allocated[i] = true;
+                        return GetPointer(this->domain_storages[i]);
+                    }
+                }
+                return nullptr;
+            }
+
+            virtual void FreeDomain(void *domain) override final {
+                std::scoped_lock lk(this->resource_mutex);
+                DomainStorage *ptr = static_cast<DomainStorage *>(domain);
+                const size_t index = ptr - this->domain_storages;
+                STS_ASSERT(index < ManagerOptions::MaxDomains);
+                STS_ASSERT(this->domain_allocated[index]);
+                this->domain_allocated[index] = false;
+            }
+
             virtual cmif::PointerAndSize GetSessionPointerBuffer(const ServerSession *session) const override final {
                 if constexpr (ManagerOptions::PointerBufferSize > 0) {
                     return this->GetObjectBySessionIndex(session, this->pointer_buffers_start, ManagerOptions::PointerBufferSize);
@@ -300,7 +339,7 @@ namespace sts::sf::hipc {
                 return this->GetObjectBySessionIndex(session, this->saved_messages_start, hipc::TlsMessageBufferSize);
             }
         public:
-            ServerManager() : ServerManagerBase() {
+            ServerManager() : ServerManagerBase(this->domain_entry_storages, ManagerOptions::MaxDomainObjects) {
                 /* Clear storages. */
                 std::memset(this->server_storages, 0, sizeof(this->server_storages));
                 std::memset(this->server_allocated, 0, sizeof(this->server_allocated));
@@ -308,6 +347,13 @@ namespace sts::sf::hipc {
                 std::memset(this->session_allocated, 0, sizeof(this->session_allocated));
                 std::memset(this->pointer_buffer_storage, 0, sizeof(this->pointer_buffer_storage));
                 std::memset(this->saved_message_storage, 0, sizeof(this->saved_message_storage));
+                if constexpr (ManagerOptions::MaxDomains > 0) {
+                    std::memset(this->domain_storages, 0, sizeof(this->domain_storages));
+                    std::memset(this->domain_allocated, 0, sizeof(this->domain_allocated));
+                }
+                if constexpr (ManagerOptions::MaxDomainObjects > 0) {
+                    std::memset(this->domain_entry_storages, 0, sizeof(this->domain_entry_storages));
+                }
 
                 /* Set resource starts. */
                 this->pointer_buffers_start = util::AlignUp(reinterpret_cast<uintptr_t>(this->pointer_buffer_storage), 0x10);

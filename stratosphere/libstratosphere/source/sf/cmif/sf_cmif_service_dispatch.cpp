@@ -40,7 +40,7 @@ namespace sts::sf::cmif {
 
         /* Invoke handler. */
         CmifOutHeader *out_header = nullptr;
-        Result command_result = cmd_handler(&out_header, ctx, cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*out_header), in_raw_data.GetSize() - sizeof(*out_header)));
+        Result command_result = cmd_handler(&out_header, ctx, cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header)));
 
         /* Forward forwardable results, otherwise ensure we can send result to user. */
         R_TRY_CATCH(command_result) {
@@ -84,7 +84,7 @@ namespace sts::sf::cmif {
 
         /* Invoke handler. */
         CmifOutHeader *out_header = nullptr;
-        Result command_result = cmd_handler(&out_header, ctx, cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*out_header), in_raw_data.GetSize() - sizeof(*out_header)));
+        Result command_result = cmd_handler(&out_header, ctx, cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header)));
 
         /* Forward forwardable results, otherwise ensure we can send result to user. */
         R_TRY_CATCH(command_result) {
