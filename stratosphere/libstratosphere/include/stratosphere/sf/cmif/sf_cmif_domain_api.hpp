@@ -26,7 +26,7 @@ namespace sts::sf::cmif {
         constexpr void SetValue(u32 new_value) { this->value = new_value; }
     };
 
-    static_assert(std::is_trivial<DomainObjectId>::value, "DomainObjectId");
+    static_assert(std::is_trivial<DomainObjectId>::value && sizeof(DomainObjectId) == sizeof(u32), "DomainObjectId");
 
     inline constexpr bool operator==(const DomainObjectId &lhs, const DomainObjectId &rhs) {
         return lhs.value == rhs.value;

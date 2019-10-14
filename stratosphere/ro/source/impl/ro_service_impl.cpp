@@ -318,7 +318,8 @@ namespace sts::ro::impl {
     bool ShouldEaseNroRestriction() {
         /* Retrieve whether we should ease restrictions from set:sys. */
         bool should_ease = false;
-        if (R_FAILED(setsysGetSettingsItemValue("ro", "ease_nro_restriction", &should_ease, sizeof(should_ease)))) {
+        u64 size_out;
+        if (R_FAILED(setsysGetSettingsItemValue("ro", "ease_nro_restriction", &should_ease, sizeof(should_ease), &size_out))) {
             return false;
         }
 

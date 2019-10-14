@@ -26,9 +26,16 @@ namespace sts::sf::hipc {
     class ServerSessionManager;
     class ServerManagerBase;
 
+    namespace impl {
+
+        class HipcManager;
+
+    }
+
     class ServerSession : public os::WaitableHolder {
         friend class ServerSessionManager;
         friend class ServerManagerBase;
+        friend class impl::HipcManager;
         NON_COPYABLE(ServerSession);
         NON_MOVEABLE(ServerSession);
         private:
@@ -83,9 +90,10 @@ namespace sts::sf::hipc {
             void DestroySession(ServerSession *session);
 
             Result ProcessRequestImpl(ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message);
+            virtual void RegisterSessionToWaitList(ServerSession *session) = 0;
+        protected:
             Result DispatchRequest(cmif::ServiceObjectHolder &&obj, ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message);
             virtual Result DispatchManagerRequest(ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message);
-            virtual void RegisterSessionToWaitList(ServerSession *session) = 0;
         protected:
             virtual ServerSession *AllocateSession() = 0;
             virtual void FreeSession(ServerSession *session) = 0;
@@ -130,11 +138,6 @@ namespace sts::sf::hipc {
                 };
                 return this->CreateSessionImpl(out, ctor);
             }
-
-            virtual ServerSessionManager *GetSessionManagerByTag(u32 tag) {
-                /* This is unused. */
-                return this;
-            }
         public:
             Result RegisterSession(Handle session_handle, cmif::ServiceObjectHolder &&obj);
             Result AcceptSession(Handle port_handle, cmif::ServiceObjectHolder &&obj);
@@ -152,6 +155,11 @@ namespace sts::sf::hipc {
             }
 
             Result ProcessRequest(ServerSession *session, const cmif::PointerAndSize &message);
+
+            virtual ServerSessionManager *GetSessionManagerByTag(u32 tag) {
+                /* This is unused. */
+                return this;
+            }
     };
 
 }
