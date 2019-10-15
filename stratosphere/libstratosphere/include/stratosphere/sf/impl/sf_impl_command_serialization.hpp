@@ -581,7 +581,7 @@ namespace sts::sf::impl {
             constexpr inline uintptr_t GetAddress() const {
                 static_assert(Offset <= Size, "Offset <= Size");
                 static_assert(TypeSize <= Size, "TypeSize <= Size");
-                static_assert(Offset + TypeSize <= Size, "Offset + TypeSize <= Size");
+                static_assert(Offset + TypeSize <= Size || false, "Offset + TypeSize <= Size");
                 return reinterpret_cast<uintptr_t>(&data[Offset]);
             }
 
@@ -944,7 +944,7 @@ namespace sts::sf::impl {
                     }
                 } else if constexpr (Info.arg_type == ArgumentType::OutData) {
                     /* New out rawdata. */
-                    constexpr size_t Offset = CommandMeta::InDataOffsets[Info.out_raw_data_index];
+                    constexpr size_t Offset = CommandMeta::OutDataOffsets[Info.out_raw_data_index];
                     return T(out_raw_holder.template GetAddress<Offset, T::TypeSize>());
                 } else if constexpr (Info.arg_type == ArgumentType::InHandle) {
                     /* New InHandle. */

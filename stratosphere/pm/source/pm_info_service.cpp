@@ -28,16 +28,16 @@ namespace sts::pm::info {
     }
 
     /* Actual command implementations. */
-    Result InformationService::GetTitleId(Out<ncm::TitleId> out, u64 process_id) {
+    Result InformationService::GetTitleId(sf::Out<ncm::TitleId> out, os::ProcessId process_id) {
         return impl::GetTitleId(out.GetPointer(), process_id);
     }
 
     /* Atmosphere extension commands. */
-    Result InformationService::AtmosphereGetProcessId(Out<u64> out, ncm::TitleId title_id) {
+    Result InformationService::AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::TitleId title_id) {
         return impl::GetProcessId(out.GetPointer(), title_id);
     }
 
-    Result InformationService::AtmosphereHasLaunchedTitle(Out<bool> out, ncm::TitleId title_id) {
+    Result InformationService::AtmosphereHasLaunchedTitle(sf::Out<bool> out, ncm::TitleId title_id) {
         return pm::info::HasLaunchedTitle(out.GetPointer(), title_id);
     }
 

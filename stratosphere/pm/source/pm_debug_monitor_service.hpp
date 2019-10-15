@@ -22,25 +22,21 @@
 
 namespace sts::pm::dmnt {
 
-    class DebugMonitorServiceBase : public IServiceObject {
+    class DebugMonitorServiceBase : public sf::IServiceObject {
         protected:
             /* Actual command implementations. */
-            virtual Result GetModuleIdList(Out<u32> out_count, OutBuffer<u8> out_buf, u64 unused);
-            virtual Result GetExceptionProcessIdList(Out<u32> out_count, OutBuffer<u64> out_process_ids);
-            virtual Result StartProcess(u64 process_id);
-            virtual Result GetProcessId(Out<u64> out, ncm::TitleId title_id);
-            virtual Result HookToCreateProcess(Out<CopiedHandle> out_hook, ncm::TitleId title_id);
-            virtual Result GetApplicationProcessId(Out<u64> out);
-            virtual Result HookToCreateApplicationProcess(Out<CopiedHandle> out_hook);
+            virtual Result GetModuleIdList(sf::Out<u32> out_count, const sf::OutBuffer &out_buf, u64 unused);
+            virtual Result GetExceptionProcessIdList(sf::Out<u32> out_count, const sf::OutArray<os::ProcessId> &out_process_ids);
+            virtual Result StartProcess(os::ProcessId process_id);
+            virtual Result GetProcessId(sf::Out<os::ProcessId> out, ncm::TitleId title_id);
+            virtual Result HookToCreateProcess(sf::OutCopyHandle out_hook, ncm::TitleId title_id);
+            virtual Result GetApplicationProcessId(sf::Out<os::ProcessId> out);
+            virtual Result HookToCreateApplicationProcess(sf::OutCopyHandle out_hook);
             virtual Result ClearHook(u32 which);
 
             /* Atmosphere extension commands. */
-            virtual Result AtmosphereGetProcessInfo(Out<CopiedHandle> out_process_handle, Out<ncm::TitleLocation> out_loc, u64 process_id);
-            virtual Result AtmosphereGetCurrentLimitInfo(Out<u64> out_cur_val, Out<u64> out_lim_val, u32 group, u32 resource);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* No entries, because DebugMonitorServiceBase is abstract. */
-            };
+            virtual Result AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::TitleLocation> out_loc, os::ProcessId process_id);
+            virtual Result AtmosphereGetCurrentLimitInfo(sf::Out<u64> out_cur_val, sf::Out<u64> out_lim_val, u32 group, u32 resource);
     };
 
     /* This represents modern DebugMonitorService (5.0.0+). */
@@ -62,19 +58,19 @@ namespace sts::pm::dmnt {
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 /* 5.0.0-* */
-                MAKE_SERVICE_COMMAND_META(DebugMonitorService, GetExceptionProcessIdList),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorService, StartProcess),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorService, GetProcessId),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorService, HookToCreateProcess),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorService, GetApplicationProcessId),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorService, HookToCreateApplicationProcess),
+                MAKE_SERVICE_COMMAND_META(GetExceptionProcessIdList),
+                MAKE_SERVICE_COMMAND_META(StartProcess),
+                MAKE_SERVICE_COMMAND_META(GetProcessId),
+                MAKE_SERVICE_COMMAND_META(HookToCreateProcess),
+                MAKE_SERVICE_COMMAND_META(GetApplicationProcessId),
+                MAKE_SERVICE_COMMAND_META(HookToCreateApplicationProcess),
 
                 /* 6.0.0-* */
-                MAKE_SERVICE_COMMAND_META(DebugMonitorService, ClearHook, FirmwareVersion_600),
+                MAKE_SERVICE_COMMAND_META(ClearHook, hos::Version_600),
 
                 /* Atmosphere extensions. */
-                MAKE_SERVICE_COMMAND_META(DebugMonitorService, AtmosphereGetProcessInfo),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorService, AtmosphereGetCurrentLimitInfo),
+                MAKE_SERVICE_COMMAND_META(AtmosphereGetProcessInfo),
+                MAKE_SERVICE_COMMAND_META(AtmosphereGetCurrentLimitInfo),
             };
     };
 
@@ -96,17 +92,17 @@ namespace sts::pm::dmnt {
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 /* 1.0.0-4.1.0 */
-                MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, GetModuleIdList),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, GetExceptionProcessIdList),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, StartProcess),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, GetProcessId),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, HookToCreateProcess),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, GetApplicationProcessId),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, HookToCreateApplicationProcess),
+                MAKE_SERVICE_COMMAND_META(GetModuleIdList),
+                MAKE_SERVICE_COMMAND_META(GetExceptionProcessIdList),
+                MAKE_SERVICE_COMMAND_META(StartProcess),
+                MAKE_SERVICE_COMMAND_META(GetProcessId),
+                MAKE_SERVICE_COMMAND_META(HookToCreateProcess),
+                MAKE_SERVICE_COMMAND_META(GetApplicationProcessId),
+                MAKE_SERVICE_COMMAND_META(HookToCreateApplicationProcess),
 
                 /* Atmosphere extensions. */
-                MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, AtmosphereGetProcessInfo),
-                MAKE_SERVICE_COMMAND_META(DebugMonitorServiceDeprecated, AtmosphereGetCurrentLimitInfo),
+                MAKE_SERVICE_COMMAND_META(AtmosphereGetProcessInfo),
+                MAKE_SERVICE_COMMAND_META(AtmosphereGetCurrentLimitInfo),
             };
     };
 

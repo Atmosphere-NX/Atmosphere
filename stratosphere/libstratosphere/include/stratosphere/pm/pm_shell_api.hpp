@@ -22,6 +22,6 @@
 namespace sts::pm::shell {
 
     /* Shell API. */
-    Result LaunchTitle(u64 *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags);
+    Result LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags);
 
 }

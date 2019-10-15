@@ -16,6 +16,7 @@
 
 #pragma once
 #include <switch.h>
+#include "../os/os_common_types.hpp"
 
 namespace sts::pm {
 
@@ -36,7 +37,7 @@ namespace sts::pm {
 
     struct ProcessEventInfo {
         u32 event;
-        u64 process_id;
+        os::ProcessId process_id;
     };
     static_assert(sizeof(ProcessEventInfo) == 0x10 && std::is_pod<ProcessEventInfo>::value, "ProcessEventInfo definition!");
 

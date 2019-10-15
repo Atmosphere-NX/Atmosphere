@@ -31,16 +31,16 @@ namespace sts::pm::info {
     }
 
     /* Information API. */
-    Result GetTitleId(ncm::TitleId *out_title_id, u64 process_id) {
+    Result GetTitleId(ncm::TitleId *out_title_id, os::ProcessId process_id) {
         std::scoped_lock lk(g_info_lock);
 
-        return pminfoGetTitleId(reinterpret_cast<u64 *>(out_title_id), process_id);
+        return pminfoGetTitleId(reinterpret_cast<u64 *>(out_title_id), static_cast<u64>(process_id));
     }
 
-    Result GetProcessId(u64 *out_process_id, ncm::TitleId title_id) {
+    Result GetProcessId(os::ProcessId *out_process_id, ncm::TitleId title_id) {
         std::scoped_lock lk(g_info_lock);
 
-        return pminfoAtmosphereGetProcessId(out_process_id, static_cast<u64>(title_id));
+        return pminfoAtmosphereGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(title_id));
     }
 
     Result WEAK HasLaunchedTitle(bool *out, ncm::TitleId title_id) {

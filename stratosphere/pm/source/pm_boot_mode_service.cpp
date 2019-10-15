@@ -35,7 +35,7 @@ namespace sts::pm::bm {
     }
 
     /* Service command implementations. */
-    void BootModeService::GetBootMode(Out<u32> out) {
+    void BootModeService::GetBootMode(sf::Out<u32> out) {
         out.SetValue(static_cast<u32>(pm::bm::GetBootMode()));
     }
 

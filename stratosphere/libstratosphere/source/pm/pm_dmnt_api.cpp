@@ -23,16 +23,16 @@
 namespace sts::pm::dmnt {
 
     /* Debug Monitor API. */
-    Result StartProcess(u64 process_id) {
-        return pmdmntStartProcess(process_id);
+    Result StartProcess(os::ProcessId process_id) {
+        return pmdmntStartProcess(static_cast<u64>(process_id));
     }
 
-    Result GetProcessId(u64 *out_process_id, const ncm::TitleId title_id) {
-        return pmdmntGetTitlePid(out_process_id, static_cast<u64>(title_id));
+    Result GetProcessId(os::ProcessId *out_process_id, const ncm::TitleId title_id) {
+        return pmdmntGetTitlePid(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(title_id));
     }
 
-    Result GetApplicationProcessId(u64 *out_process_id) {
-        return pmdmntGetApplicationPid(out_process_id);
+    Result GetApplicationProcessId(os::ProcessId *out_process_id) {
+        return pmdmntGetApplicationPid(reinterpret_cast<u64 *>(out_process_id));
     }
 
     Result HookToCreateApplicationProcess(Handle *out_handle) {
@@ -42,10 +42,10 @@ namespace sts::pm::dmnt {
         return ResultSuccess;
     }
 
-    Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::TitleLocation *out_loc, u64 process_id) {
+    Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::TitleLocation *out_loc, os::ProcessId process_id) {
         *out_handle = INVALID_HANDLE;
         *out_loc = {};
-        return pmdmntAtmosphereGetProcessInfo(out_handle, reinterpret_cast<u64 *>(&out_loc->title_id), &out_loc->storage_id, process_id);
+        return pmdmntAtmosphereGetProcessInfo(out_handle, reinterpret_cast<u64 *>(&out_loc->title_id), &out_loc->storage_id, static_cast<u64>(process_id));
     }
 
     Result AtmosphereGetCurrentLimitInfo(u64 *out_current_value, u64 *out_limit_value, ResourceLimitGroup group, LimitableResource resource) {

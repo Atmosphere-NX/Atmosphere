@@ -182,9 +182,9 @@ namespace sts::pm::resource {
             }
         }
 
-        /* Adjust resource limits based on firmware version. */
-        const auto firmware_version = GetRuntimeFirmwareVersion();
-        if (firmware_version >= FirmwareVersion_400) {
+        /* Adjust resource limits based on hos firmware version. */
+        const auto hos_version = hos::GetVersion();
+        if (hos_version >= hos::Version_400) {
             /* 4.0.0 increased the system thread limit. */
             g_resource_limits[ResourceLimitGroup_System][LimitableResource_Threads] += ExtraSystemThreadCount400;
             /* 4.0.0 also took memory away from applet and gave it to system, for the Standard and StandardForSystemDev profiles. */
@@ -193,21 +193,21 @@ namespace sts::pm::resource {
             g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_System] += ExtraSystemMemorySize400;
             g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_Applet] -= ExtraSystemMemorySize400;
         }
-        if (firmware_version >= FirmwareVersion_500) {
+        if (hos_version >= hos::Version_500) {
             /* 5.0.0 took more memory away from applet and gave it to system, for the Standard and StandardForSystemDev profiles. */
             g_memory_resource_limits[spl::MemoryArrangement_Standard][ResourceLimitGroup_System] += ExtraSystemMemorySize500;
             g_memory_resource_limits[spl::MemoryArrangement_Standard][ResourceLimitGroup_Applet] -= ExtraSystemMemorySize500;
             g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_System] += ExtraSystemMemorySize500;
             g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_Applet] -= ExtraSystemMemorySize500;
         }
-        if (firmware_version >= FirmwareVersion_600) {
+        if (hos_version >= hos::Version_600) {
             /* 6.0.0 increased the system event and session limits. */
             g_resource_limits[ResourceLimitGroup_System][LimitableResource_Events]   += ExtraSystemEventCount600;
             g_resource_limits[ResourceLimitGroup_System][LimitableResource_Sessions] += ExtraSystemSessionCount600;
         }
 
         /* 7.0.0+: Calculate the number of extra application threads available. */
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+        if (hos::GetVersion() >= hos::Version_700) {
             /* See how many threads we have available. */
             u64 total_threads_available = 0;
             R_ASSERT(svcGetResourceLimitLimitValue(&total_threads_available, GetResourceLimitHandle(ResourceLimitGroup_System), LimitableResource_Threads));
@@ -225,7 +225,7 @@ namespace sts::pm::resource {
         }
 
         /* Choose and initialize memory arrangement. */
-        if (firmware_version >= FirmwareVersion_600) {
+        if (hos_version >= hos::Version_600) {
             /* 6.0.0 retrieves memory limit information from the kernel, rather than using a hardcoded profile. */
             g_memory_arrangement = spl::MemoryArrangement_Dynamic;
 
@@ -253,7 +253,7 @@ namespace sts::pm::resource {
         /* We take memory away from applet normally, but away from application on < 3.0.0 to avoid a rare hang on boot. */
         for (size_t i = 0; i < spl::MemoryArrangement_Count; i++) {
             g_memory_resource_limits[i][ResourceLimitGroup_System] += ExtraSystemMemorySizeAtmosphere;
-            if (firmware_version >= FirmwareVersion_300) {
+            if (hos_version >= hos::Version_300) {
                 g_memory_resource_limits[i][ResourceLimitGroup_Applet] -= ExtraSystemMemorySizeAtmosphere;
             } else {
                 g_memory_resource_limits[i][ResourceLimitGroup_Application] -= ExtraSystemMemorySizeAtmosphere;
@@ -282,7 +282,7 @@ namespace sts::pm::resource {
         {
             std::scoped_lock lk(g_resource_limit_lock);
 
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+            if (hos::GetVersion() >= hos::Version_500) {
                 /* Starting in 5.0.0, PM does not allow for only one of the sets to fail. */
                 if (boost_size < g_system_memory_boost_size) {
                     R_TRY(svcSetUnsafeLimit(boost_size));
@@ -332,7 +332,7 @@ namespace sts::pm::resource {
     void WaitResourceAvailable(const ldr::ProgramInfo *info) {
         if (GetResourceLimitGroup(info) == ResourceLimitGroup_Application) {
             WaitResourceAvailable(ResourceLimitGroup_Application);
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+            if (hos::GetVersion() >= hos::Version_500) {
                 WaitApplicationMemoryAvailable();
             }
         }

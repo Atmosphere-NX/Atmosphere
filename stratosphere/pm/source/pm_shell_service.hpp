@@ -22,25 +22,21 @@
 
 namespace sts::pm::shell {
 
-    class ShellServiceBase : public IServiceObject {
+    class ShellServiceBase : public sf::IServiceObject {
         protected:
             /* Actual command implementations. */
-            virtual Result LaunchTitle(Out<u64> out_process_id, ncm::TitleLocation loc, u32 flags);
-            virtual Result TerminateProcess(u64 process_id);
+            virtual Result LaunchTitle(sf::Out<os::ProcessId> out_process_id, const ncm::TitleLocation &loc, u32 flags);
+            virtual Result TerminateProcess(os::ProcessId process_id);
             virtual Result TerminateTitle(ncm::TitleId title_id);
-            virtual void   GetProcessEventHandle(Out<CopiedHandle> out);
-            virtual void   GetProcessEventInfo(Out<ProcessEventInfo> out);
-            virtual Result CleanupProcess(u64 process_id);
-            virtual Result ClearExceptionOccurred(u64 process_id);
+            virtual void   GetProcessEventHandle(sf::OutCopyHandle out);
+            virtual void   GetProcessEventInfo(sf::Out<ProcessEventInfo> out);
+            virtual Result CleanupProcess(os::ProcessId process_id);
+            virtual Result ClearExceptionOccurred(os::ProcessId process_id);
             virtual void   NotifyBootFinished();
-            virtual Result GetApplicationProcessIdForShell(Out<u64> out);
+            virtual Result GetApplicationProcessIdForShell(sf::Out<os::ProcessId> out);
             virtual Result BoostSystemMemoryResourceLimit(u64 boost_size);
             virtual Result BoostApplicationThreadResourceLimit();
-            virtual void   GetBootFinishedEventHandle(Out<CopiedHandle> out);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* No entries, because ShellServiceBase is abstract. */
-            };
+            virtual void   GetBootFinishedEventHandle(sf::OutCopyHandle out);
     };
 
     /* This represents modern ShellService (5.0.0+). */
@@ -61,20 +57,20 @@ namespace sts::pm::shell {
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 /* 5.0.0-* */
-                MAKE_SERVICE_COMMAND_META(ShellService, LaunchTitle),
-                MAKE_SERVICE_COMMAND_META(ShellService, TerminateProcess),
-                MAKE_SERVICE_COMMAND_META(ShellService, TerminateTitle),
-                MAKE_SERVICE_COMMAND_META(ShellService, GetProcessEventHandle),
-                MAKE_SERVICE_COMMAND_META(ShellService, GetProcessEventInfo),
-                MAKE_SERVICE_COMMAND_META(ShellService, NotifyBootFinished),
-                MAKE_SERVICE_COMMAND_META(ShellService, GetApplicationProcessIdForShell),
-                MAKE_SERVICE_COMMAND_META(ShellService, BoostSystemMemoryResourceLimit),
+                MAKE_SERVICE_COMMAND_META(LaunchTitle),
+                MAKE_SERVICE_COMMAND_META(TerminateProcess),
+                MAKE_SERVICE_COMMAND_META(TerminateTitle),
+                MAKE_SERVICE_COMMAND_META(GetProcessEventHandle),
+                MAKE_SERVICE_COMMAND_META(GetProcessEventInfo),
+                MAKE_SERVICE_COMMAND_META(NotifyBootFinished),
+                MAKE_SERVICE_COMMAND_META(GetApplicationProcessIdForShell),
+                MAKE_SERVICE_COMMAND_META(BoostSystemMemoryResourceLimit),
 
                 /* 7.0.0-* */
-                MAKE_SERVICE_COMMAND_META(ShellService, BoostApplicationThreadResourceLimit, FirmwareVersion_700),
+                MAKE_SERVICE_COMMAND_META(BoostApplicationThreadResourceLimit, hos::Version_700),
 
                 /* 8.0.0-* */
-                MAKE_SERVICE_COMMAND_META(ShellService, GetBootFinishedEventHandle,     FirmwareVersion_800),
+                MAKE_SERVICE_COMMAND_META(GetBootFinishedEventHandle,          hos::Version_800),
             };
     };
 
@@ -96,18 +92,18 @@ namespace sts::pm::shell {
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 /* 1.0.0-4.1.0 */
-                MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, LaunchTitle),
-                MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, TerminateProcess),
-                MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, TerminateTitle),
-                MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, GetProcessEventHandle),
-                MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, GetProcessEventInfo),
-                MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, CleanupProcess),
-                MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, ClearExceptionOccurred),
-                MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, NotifyBootFinished),
-                MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, GetApplicationProcessIdForShell),
+                MAKE_SERVICE_COMMAND_META(LaunchTitle),
+                MAKE_SERVICE_COMMAND_META(TerminateProcess),
+                MAKE_SERVICE_COMMAND_META(TerminateTitle),
+                MAKE_SERVICE_COMMAND_META(GetProcessEventHandle),
+                MAKE_SERVICE_COMMAND_META(GetProcessEventInfo),
+                MAKE_SERVICE_COMMAND_META(CleanupProcess),
+                MAKE_SERVICE_COMMAND_META(ClearExceptionOccurred),
+                MAKE_SERVICE_COMMAND_META(NotifyBootFinished),
+                MAKE_SERVICE_COMMAND_META(GetApplicationProcessIdForShell),
 
                 /* 4.0.0-4.1.0 */
-                MAKE_SERVICE_COMMAND_META(ShellServiceDeprecated, BoostSystemMemoryResourceLimit),
+                MAKE_SERVICE_COMMAND_META(BoostSystemMemoryResourceLimit, hos::Version_400),
             };
     };
 
