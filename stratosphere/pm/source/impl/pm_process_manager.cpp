@@ -138,12 +138,60 @@ namespace sts::pm::impl {
             }
         }
 
+        template<size_t MaxProcessInfos>
+        class ProcessInfoAllocator {
+            NON_COPYABLE(ProcessInfoAllocator);
+            NON_MOVEABLE(ProcessInfoAllocator);
+            static_assert(MaxProcessInfos >= 0x40, "MaxProcessInfos is too small.");
+            private:
+                TYPED_STORAGE(ProcessInfo) process_info_storages[MaxProcessInfos];
+                bool process_info_allocated[MaxProcessInfos];
+                os::Mutex lock;
+            private:
+                constexpr inline size_t GetProcessInfoIndex(ProcessInfo *process_info) const {
+                    return process_info - GetPointer(this->process_info_storages[0]);
+                }
+            public:
+                constexpr ProcessInfoAllocator() {
+                    std::memset(this->process_info_storages, 0, sizeof(this->process_info_storages));
+                    std::memset(this->process_info_allocated, 0, sizeof(this->process_info_allocated));
+                }
+
+                void *AllocateProcessInfoStorage() {
+                    std::scoped_lock lk(this->lock);
+                    for (size_t i = 0; i < MaxProcessInfos; i++) {
+                        if (!this->process_info_allocated[i]) {
+                            this->process_info_allocated[i] = true;
+                            return GetPointer(this->process_info_storages[i]);
+                        }
+                    }
+                    return nullptr;
+                }
+
+                void FreeProcessInfo(ProcessInfo *process_info) {
+                    std::scoped_lock lk(this->lock);
+
+                    const size_t index = this->GetProcessInfoIndex(process_info);
+                    STS_ASSERT(index < MaxProcessInfos);
+                    STS_ASSERT(this->process_info_allocated[index]);
+
+                    process_info->~ProcessInfo();
+                    std::memset(process_info, 0, sizeof(*process_info));
+                    this->process_info_allocated[index] = false;
+                }
+        };
+
         /* Process Tracking globals. */
         os::Thread g_process_track_thread;
 
         /* Process lists. */
         ProcessList g_process_list;
         ProcessList g_dead_process_list;
+
+        /* Process Info Allocation. */
+        /* Note: The kernel slabheap is size 0x50 -- we allow slightly larger to account for the dead process list. */
+        constexpr size_t MaxProcessCount = 0x60;
+        ProcessInfoAllocator<MaxProcessCount> g_process_info_allocator;
 
         /* Global events. */
         os::SystemEvent g_process_event;
@@ -227,7 +275,7 @@ namespace sts::pm::impl {
             list->Remove(process_info);
 
             /* Delete the process. */
-            delete process_info;
+            g_process_info_allocator.FreeProcessInfo(process_info);
         }
 
         Result LaunchProcess(os::WaitableManager &waitable_manager, const LaunchProcessArgs &args) {
@@ -263,7 +311,9 @@ namespace sts::pm::impl {
             R_ASSERT(svcGetProcessId(&process_id.value, process_handle));
 
             /* Make new process info. */
-            ProcessInfo *process_info = new ProcessInfo(process_handle, process_id, pin_id, location);
+            void *process_info_storage = g_process_info_allocator.AllocateProcessInfoStorage();
+            STS_ASSERT(process_info_storage != nullptr);
+            ProcessInfo *process_info = new (process_info_storage) ProcessInfo(process_handle, process_id, pin_id, location);
 
             /* Link new process info. */
             {
@@ -418,6 +468,7 @@ namespace sts::pm::impl {
         R_TRY(resource::InitializeResourceManager());
 
         /* Start thread. */
+        /* TODO: Allocate thread stack resources statically, will require PR to libnx. */
         R_ASSERT(g_process_track_thread.Initialize(&ProcessTrackingMain, nullptr, 0x4000, 0x15));
         R_ASSERT(g_process_track_thread.Start());
 
