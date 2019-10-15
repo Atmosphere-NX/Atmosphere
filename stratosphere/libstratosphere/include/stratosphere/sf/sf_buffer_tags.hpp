@@ -15,18 +15,16 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
-#include <stratosphere/ldr.hpp>
 
-namespace sts::ldr::ro {
+namespace sts::sf {
 
-    /* RO Manager API. */
-    Result PinTitle(PinId *out, const ncm::TitleLocation &loc);
-    Result UnpinTitle(PinId id);
-    Result GetTitleLocation(ncm::TitleLocation *out, PinId id);
-    Result RegisterProcess(PinId id, os::ProcessId process_id, ncm::TitleId title_id);
-    Result RegisterModule(PinId id, const u8 *build_id, uintptr_t address, size_t size);
-    Result GetProcessModuleInfo(u32 *out_count, ModuleInfo *out, size_t max_out_count, os::ProcessId process_id);
+    /* Helper structs for serialization of buffers. */
+    struct LargeData{};
+
+    struct PrefersMapAliasTransferMode{};
+
+    struct PrefersPointerTransferMode{};
+
+    struct PrefersAutoSelectTransferMode{};
 
 }

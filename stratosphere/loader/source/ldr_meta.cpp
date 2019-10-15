@@ -53,7 +53,7 @@ namespace sts::ldr {
             }
 
             /* Validate flags. */
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+            if (hos::GetVersion() >= hos::Version_700) {
                 /* 7.0.0 added 0x10 as a valid bit to NPDM flags. */
                 if (npdm->flags & ~0x1F) {
                     return ResultLoaderInvalidMeta;
@@ -182,7 +182,7 @@ namespace sts::ldr {
                     Meta *o_meta = &g_original_meta_cache.meta;
 
                     /* Fix pool partition. */
-                    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+                    if (hos::GetVersion() >= hos::Version_500) {
                         meta->acid->flags = (meta->acid->flags & 0xFFFFFFC3) | (o_meta->acid->flags & 0x0000003C);
                     }
 

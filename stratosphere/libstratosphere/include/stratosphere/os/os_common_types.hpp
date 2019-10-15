@@ -15,6 +15,8 @@
  */
 #pragma once
 #include <switch.h>
+#include "../results.hpp"
+#include "../util.hpp"
 
 namespace sts::os {
 

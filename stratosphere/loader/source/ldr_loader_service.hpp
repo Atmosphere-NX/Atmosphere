@@ -21,25 +21,21 @@
 
 namespace sts::ldr {
 
-    class LoaderService : public IServiceObject {
+    class LoaderService : public sf::IServiceObject {
         protected:
             /* Official commands. */
-            virtual Result CreateProcess(Out<MovedHandle> proc_h, PinId id, u32 flags, CopiedHandle reslimit_h);
-            virtual Result GetProgramInfo(OutPointerWithServerSize<ProgramInfo, 0x1> out_program_info, ncm::TitleLocation loc);
-            virtual Result PinTitle(Out<PinId> out_id, ncm::TitleLocation loc);
+            virtual Result CreateProcess(sf::OutMoveHandle proc_h, PinId id, u32 flags, sf::CopyHandle reslimit_h);
+            virtual Result GetProgramInfo(sf::Out<ProgramInfo> out_program_info, const ncm::TitleLocation &loc);
+            virtual Result PinTitle(sf::Out<PinId> out_id, const ncm::TitleLocation &loc);
             virtual Result UnpinTitle(PinId id);
-            virtual Result SetTitleArguments(ncm::TitleId title_id, InPointer<char> args, u32 args_size);
+            virtual Result SetTitleArguments(ncm::TitleId title_id, const sf::InPointerBuffer &args, u32 args_size);
             virtual Result ClearArguments();
-            virtual Result GetProcessModuleInfo(Out<u32> count, OutPointerWithClientSize<ModuleInfo> out, u64 process_id);
+            virtual Result GetProcessModuleInfo(sf::Out<u32> count, const sf::OutPointerArray<ModuleInfo> &out, os::ProcessId process_id);
 
             /* Atmosphere commands. */
-            virtual Result AtmosphereSetExternalContentSource(Out<MovedHandle> out, ncm::TitleId title_id);
+            virtual Result AtmosphereSetExternalContentSource(sf::OutMoveHandle out, ncm::TitleId title_id);
             virtual void   AtmosphereClearExternalContentSource(ncm::TitleId title_id);
-            virtual void   AtmosphereHasLaunchedTitle(Out<bool> out, ncm::TitleId title_id);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* No commands callable, as LoaderService is abstract. */
-            };
+            virtual void   AtmosphereHasLaunchedTitle(sf::Out<bool> out, ncm::TitleId title_id);
     };
 
     namespace pm {
@@ -56,12 +52,12 @@ namespace sts::ldr {
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
-                    MAKE_SERVICE_COMMAND_META(ProcessManagerInterface, CreateProcess),
-                    MAKE_SERVICE_COMMAND_META(ProcessManagerInterface, GetProgramInfo),
-                    MAKE_SERVICE_COMMAND_META(ProcessManagerInterface, PinTitle),
-                    MAKE_SERVICE_COMMAND_META(ProcessManagerInterface, UnpinTitle),
+                    MAKE_SERVICE_COMMAND_META(CreateProcess),
+                    MAKE_SERVICE_COMMAND_META(GetProgramInfo),
+                    MAKE_SERVICE_COMMAND_META(PinTitle),
+                    MAKE_SERVICE_COMMAND_META(UnpinTitle),
 
-                    MAKE_SERVICE_COMMAND_META(ProcessManagerInterface, AtmosphereHasLaunchedTitle),
+                    MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedTitle),
                 };
         };
 
@@ -80,11 +76,11 @@ namespace sts::ldr {
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
-                    MAKE_SERVICE_COMMAND_META(DebugMonitorInterface, SetTitleArguments),
-                    MAKE_SERVICE_COMMAND_META(DebugMonitorInterface, ClearArguments),
-                    MAKE_SERVICE_COMMAND_META(DebugMonitorInterface, GetProcessModuleInfo),
+                    MAKE_SERVICE_COMMAND_META(SetTitleArguments),
+                    MAKE_SERVICE_COMMAND_META(ClearArguments),
+                    MAKE_SERVICE_COMMAND_META(GetProcessModuleInfo),
 
-                    MAKE_SERVICE_COMMAND_META(DebugMonitorInterface, AtmosphereHasLaunchedTitle),
+                    MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedTitle),
                 };
         };
 
@@ -103,11 +99,11 @@ namespace sts::ldr {
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
-                    MAKE_SERVICE_COMMAND_META(ShellInterface, SetTitleArguments),
-                    MAKE_SERVICE_COMMAND_META(ShellInterface, ClearArguments),
+                    MAKE_SERVICE_COMMAND_META(SetTitleArguments),
+                    MAKE_SERVICE_COMMAND_META(ClearArguments),
 
-                    MAKE_SERVICE_COMMAND_META(ShellInterface, AtmosphereSetExternalContentSource),
-                    MAKE_SERVICE_COMMAND_META(ShellInterface, AtmosphereClearExternalContentSource),
+                    MAKE_SERVICE_COMMAND_META(AtmosphereSetExternalContentSource),
+                    MAKE_SERVICE_COMMAND_META(AtmosphereClearExternalContentSource),
                 };
         };
 

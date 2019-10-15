@@ -16,6 +16,7 @@
 
 #pragma once
 #include <switch.h>
+#include "../os/os_common_types.hpp"
 #include "../ncm/ncm_types.hpp"
 
 namespace sts::cfg {

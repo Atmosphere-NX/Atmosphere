@@ -18,6 +18,7 @@
 #include "sf_common.hpp"
 #include "sf_out.hpp"
 #include "cmif/sf_cmif_pointer_and_size.hpp"
+#include "sf_buffer_tags.hpp"
 
 namespace sts::sf {
 
@@ -46,15 +47,6 @@ namespace sts::sf {
         }();
 
     }
-
-    /* Helper structs for serialization of buffers. */
-    struct LargeData{};
-
-    struct PrefersMapAliasTransferMode{};
-
-    struct PrefersPointerTransferMode{};
-
-    struct PrefersAutoSelectTransferMode{};
 
     template<typename T>
     constexpr inline bool IsLargeData = std::is_base_of<sf::LargeData, T>::value;
