@@ -581,7 +581,7 @@ namespace sts::sf::impl {
             constexpr inline uintptr_t GetAddress() const {
                 static_assert(Offset <= Size, "Offset <= Size");
                 static_assert(TypeSize <= Size, "TypeSize <= Size");
-                static_assert(Offset + TypeSize <= Size || false, "Offset + TypeSize <= Size");
+                static_assert(Offset + TypeSize <= Size, "Offset + TypeSize <= Size");
                 return reinterpret_cast<uintptr_t>(&data[Offset]);
             }
 
