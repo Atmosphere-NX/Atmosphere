@@ -196,18 +196,18 @@ namespace sts::ldr {
         constexpr size_t g_MinimumTitleVersionsCount900 = util::size(g_MinimumTitleVersions900);
 
         Result ValidateTitleVersion(ncm::TitleId title_id, u32 version) {
-            if (GetRuntimeFirmwareVersion() < FirmwareVersion_810) {
+            if (hos::GetVersion() < hos::Version_810) {
                 return ResultSuccess;
             } else {
 #ifdef LDR_VALIDATE_PROCESS_VERSION
                 const MinimumTitleVersion *entries = nullptr;
                 size_t num_entries = 0;
-                switch (GetRuntimeFirmwareVersion()) {
-                    case FirmwareVersion_810:
+                switch (hos::GetVersion()) {
+                    case hos::Version_810:
                         entries = g_MinimumTitleVersions810;
                         num_entries = g_MinimumTitleVersionsCount810;
                         break;
-                    case FirmwareVersion_900:
+                    case hos::Version_900:
                         entries = g_MinimumTitleVersions900;
                         num_entries = g_MinimumTitleVersionsCount900;
                         break;
@@ -383,7 +383,7 @@ namespace sts::ldr {
                 flags |= svc::CreateProcessFlag_IsApplication;
 
                 /* 7.0.0+: Set OptimizeMemoryAllocation if relevant. */
-                if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+                if (hos::GetVersion() >= hos::Version_700) {
                     if (meta_flags & Npdm::MetaFlag_OptimizeMemoryAllocation) {
                         flags |= svc::CreateProcessFlag_OptimizeMemoryAllocation;
                     }
@@ -391,7 +391,7 @@ namespace sts::ldr {
             }
 
             /* 5.0.0+ Set Pool Partition. */
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+            if (hos::GetVersion() >= hos::Version_500) {
                 switch (GetPoolPartition(meta)) {
                     case Acid::PoolPartition_Application:
                         if (IsApplet(meta)) {
@@ -412,7 +412,7 @@ namespace sts::ldr {
                     default:
                         return ResultLoaderInvalidMeta;
                 }
-            } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
+            } else if (hos::GetVersion() >= hos::Version_400) {
                 /* On 4.0.0+, the corresponding bit was simply "UseSecureMemory". */
                 if (meta->acid->flags & Acid::AcidFlag_DeprecatedUseSecureMemory) {
                     flags |= svc::CreateProcessFlag_DeprecatedUseSecureMemory;
@@ -437,7 +437,7 @@ namespace sts::ldr {
             R_TRY(GetCreateProcessFlags(&out->flags, meta, flags));
 
             /* 3.0.0+ System Resource Size. */
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+            if (hos::GetVersion() >= hos::Version_300) {
                 /* Validate size is aligned. */
                 if (meta->npdm->system_resource_size & (SystemResourceSizeAlignment - 1)) {
                     return ResultLoaderInvalidSize;
@@ -500,7 +500,7 @@ namespace sts::ldr {
             /* Calculate ASLR. */
             uintptr_t aslr_start = 0;
             uintptr_t aslr_size  = 0;
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
+            if (hos::GetVersion() >= hos::Version_200) {
                 switch (out_cpi->flags & svc::CreateProcessFlag_AddressSpaceMask) {
                     case svc::CreateProcessFlag_AddressSpace32Bit:
                     case svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
@@ -723,10 +723,10 @@ namespace sts::ldr {
             R_TRY(LoadNsosIntoProcessMemory(&info, loc.title_id, nso_headers, has_nso, arg_info));
 
             /* Register NSOs with ro manager. */
-            u64 process_id;
+            os::ProcessId process_id = os::InvalidProcessId;
             {
                 /* Nintendo doesn't validate this result, but we will. */
-                R_ASSERT(svcGetProcessId(&process_id, info.process_handle.Get()));
+                R_ASSERT(svcGetProcessId(&process_id.value, info.process_handle.Get()));
 
                 /* Register new process. */
                 ldr::ro::RegisterProcess(pin_id, process_id, loc.title_id);

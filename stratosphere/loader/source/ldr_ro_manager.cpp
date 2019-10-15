@@ -34,7 +34,7 @@ namespace sts::ldr::ro {
 
         struct ProcessInfo {
             PinId pin_id;
-            u64 process_id;
+            os::ProcessId process_id;
             ncm::TitleId title_id;
             ncm::TitleLocation loc;
             ModuleInfo modules[ModuleCountMax];
@@ -55,7 +55,7 @@ namespace sts::ldr::ro {
             return nullptr;
         }
 
-        ProcessInfo *GetProcessInfo(u64 process_id) {
+        ProcessInfo *GetProcessInfo(os::ProcessId process_id) {
             for (size_t i = 0; i < ProcessCountMax; i++) {
                 ProcessInfo *info = &g_process_infos[i];
                 if (info->in_use && info->process_id == process_id) {
@@ -116,7 +116,7 @@ namespace sts::ldr::ro {
         return ResultSuccess;
     }
 
-    Result RegisterProcess(PinId id, u64 process_id, ncm::TitleId title_id) {
+    Result RegisterProcess(PinId id, os::ProcessId process_id, ncm::TitleId title_id) {
         ProcessInfo *info = GetProcessInfo(id);
         if (info == nullptr) {
             return ResultLoaderNotPinned;
@@ -150,7 +150,7 @@ namespace sts::ldr::ro {
         return ResultSuccess;
     }
 
-    Result GetProcessModuleInfo(u32 *out_count, ldr::ModuleInfo *out, size_t max_out_count, u64 process_id) {
+    Result GetProcessModuleInfo(u32 *out_count, ldr::ModuleInfo *out, size_t max_out_count, os::ProcessId process_id) {
         const ProcessInfo *info = GetProcessInfo(process_id);
         if (info == nullptr) {
             return ResultLoaderNotPinned;

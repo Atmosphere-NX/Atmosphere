@@ -20,11 +20,12 @@
 #include <switch.h>
 #include "../svc/svc_types.hpp"
 #include "../ncm/ncm_types.hpp"
+#include "../sf/sf_buffer_tags.hpp"
 
 namespace sts::ldr {
 
     /* General types. */
-    struct ProgramInfo {
+    struct ProgramInfo : sf::LargeData {
         u8 main_thread_priority;
         u8 default_cpu_id;
         u16 flags;
@@ -36,7 +37,7 @@ namespace sts::ldr {
         u32 aci_fah_size;
         u8 ac_buffer[0x3E0];
     };
-    static_assert(sizeof(ProgramInfo) == 0x400, "ProgramInfo definition!");
+    static_assert(std::is_pod<ProgramInfo>::value && sizeof(ProgramInfo) == 0x400, "ProgramInfo definition!");
 
     enum ProgramInfoFlag {
         ProgramInfoFlag_SystemModule        = (0 << 0),

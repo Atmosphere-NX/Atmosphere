@@ -32,8 +32,8 @@ namespace sts::ldr::ecs {
             private:
                 char device_name[DeviceNameSizeMax];
             public:
-                ExternalContentSource(const char *dn){
-                    std::strncpy(this->device_name, dn, sizeof(this->device_name) - 1);
+                ExternalContentSource(const char *dn) {
+                    std::strncpy(this->device_name, dn, sizeof(this->device_name));
                     this->device_name[sizeof(this->device_name) - 1] = '\0';
                 }
 

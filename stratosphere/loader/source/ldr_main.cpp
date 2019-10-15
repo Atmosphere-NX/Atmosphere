@@ -31,8 +31,9 @@ extern "C" {
     extern u32 __start__;
 
     u32 __nx_applet_type = AppletType_None;
+    u32 __nx_fs_num_sessions = 1;
 
-    #define INNER_HEAP_SIZE 0x30000
+    #define INNER_HEAP_SIZE 0x4000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -66,8 +67,10 @@ void __libnx_initheap(void) {
 	fake_heap_end   = (char*)addr + size;
 }
 
+using namespace sts;
+
 void __appInit(void) {
-    SetFirmwareVersionForLibnx();
+    hos::SetVersionForLibnx();
 
     /* Initialize services we need. */
     DoWithSmSession([&]() {
@@ -87,23 +90,39 @@ void __appExit(void) {
     fsExit();
 }
 
-struct LoaderServerOptions {
-    static constexpr size_t PointerBufferSize = 0x400;
-    static constexpr size_t MaxDomains = 0;
-    static constexpr size_t MaxDomainObjects = 0;
-};
+namespace {
+
+    struct ServerOptions {
+        static constexpr size_t PointerBufferSize = 0x400;
+        static constexpr size_t MaxDomains = 0;
+        static constexpr size_t MaxDomainObjects = 0;
+    };
+
+    constexpr sm::ServiceName ProcessManagerServiceName = sm::ServiceName::Encode("ldr:pm");
+    constexpr size_t          ProcessManagerMaxSessions = 2;
+
+    constexpr sm::ServiceName ShellServiceName = sm::ServiceName::Encode("ldr:shel");
+    constexpr size_t          ShellMaxSessions = 3;
+
+    constexpr sm::ServiceName DebugMonitorServiceName = sm::ServiceName::Encode("ldr:dmnt");
+    constexpr size_t          DebugMonitorMaxSessions = 3;
+
+    /* ldr:pm, ldr:shel, ldr:dmnt. */
+    constexpr size_t NumServers  = 3;
+    constexpr size_t MaxSessions = ProcessManagerMaxSessions + ShellMaxSessions + DebugMonitorMaxSessions + 1;
+    sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions> g_server_manager;
+
+}
 
 int main(int argc, char **argv)
 {
-    static auto s_server_manager = WaitableManager<LoaderServerOptions>(1);
-
     /* Add services to manager. */
-    s_server_manager.AddWaitable(new ServiceServer<sts::ldr::pm::ProcessManagerInterface>("ldr:pm", 1));
-    s_server_manager.AddWaitable(new ServiceServer<sts::ldr::shell::ShellInterface>("ldr:shel", 3));
-    s_server_manager.AddWaitable(new ServiceServer<sts::ldr::dmnt::DebugMonitorInterface>("ldr:dmnt", 2));
+    R_ASSERT((g_server_manager.RegisterServer<ldr::pm::ProcessManagerInterface>(ProcessManagerServiceName, ProcessManagerMaxSessions)));
+    R_ASSERT((g_server_manager.RegisterServer<ldr::shell::ShellInterface>(ShellServiceName, ShellMaxSessions)));
+    R_ASSERT((g_server_manager.RegisterServer<ldr::dmnt::DebugMonitorInterface>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
 
     /* Loop forever, servicing our services. */
-    s_server_manager.Process();
+    g_server_manager.LoopProcess();
 
 	return 0;
 }
