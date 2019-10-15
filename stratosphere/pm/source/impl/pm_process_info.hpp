@@ -44,7 +44,7 @@ namespace sts::pm::impl {
             };
         private:
             util::IntrusiveListNode list_node;
-            const u64 process_id;
+            const os::ProcessId process_id;
             const ldr::PinId pin_id;
             const ncm::TitleLocation loc;
             Handle handle;
@@ -64,7 +64,7 @@ namespace sts::pm::impl {
                 return (this->flags & flag);
             }
         public:
-            ProcessInfo(Handle h, u64 pid, ldr::PinId pin, const ncm::TitleLocation &l);
+            ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::TitleLocation &l);
             ~ProcessInfo();
             void Cleanup();
 
@@ -76,7 +76,7 @@ namespace sts::pm::impl {
                 return this->handle;
             }
 
-            u64 GetProcessId() const {
+            os::ProcessId GetProcessId() const {
                 return this->process_id;
             }
 
@@ -176,7 +176,7 @@ namespace sts::pm::impl {
                 this->erase(this->iterator_to(*process_info));
             }
 
-            ProcessInfo *Find(u64 process_id) {
+            ProcessInfo *Find(os::ProcessId process_id) {
                 for (auto it = this->begin(); it != this->end(); it++) {
                     if ((*it).GetProcessId() == process_id) {
                         return &*it;

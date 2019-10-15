@@ -21,37 +21,37 @@
 namespace sts::pm::dmnt {
 
     /* Actual command implementations. */
-    Result DebugMonitorServiceBase::GetModuleIdList(Out<u32> out_count, OutBuffer<u8> out_buf, u64 unused) {
-        if (out_buf.num_elements > std::numeric_limits<s32>::max()) {
+    Result DebugMonitorServiceBase::GetModuleIdList(sf::Out<u32> out_count, const sf::OutBuffer &out_buf, u64 unused) {
+        if (out_buf.GetSize() > std::numeric_limits<s32>::max()) {
             return ResultPmInvalidSize;
         }
-        return impl::GetModuleIdList(out_count.GetPointer(), out_buf.buffer, out_buf.num_elements,  unused);
+        return impl::GetModuleIdList(out_count.GetPointer(), out_buf.GetPointer(), out_buf.GetSize(), unused);
     }
 
-    Result DebugMonitorServiceBase::GetExceptionProcessIdList(Out<u32> out_count, OutBuffer<u64> out_process_ids) {
-        if (out_process_ids.num_elements > std::numeric_limits<s32>::max()) {
+    Result DebugMonitorServiceBase::GetExceptionProcessIdList(sf::Out<u32> out_count, const sf::OutArray<os::ProcessId> &out_process_ids) {
+        if (out_process_ids.GetSize() > std::numeric_limits<s32>::max()) {
             return ResultPmInvalidSize;
         }
-        return impl::GetExceptionProcessIdList(out_count.GetPointer(), out_process_ids.buffer, out_process_ids.num_elements);
+        return impl::GetExceptionProcessIdList(out_count.GetPointer(), out_process_ids.GetPointer(), out_process_ids.GetSize());
     }
 
-    Result DebugMonitorServiceBase::StartProcess(u64 process_id) {
+    Result DebugMonitorServiceBase::StartProcess(os::ProcessId process_id) {
         return impl::StartProcess(process_id);
     }
 
-    Result DebugMonitorServiceBase::GetProcessId(Out<u64> out, ncm::TitleId title_id) {
+    Result DebugMonitorServiceBase::GetProcessId(sf::Out<os::ProcessId> out, ncm::TitleId title_id) {
         return impl::GetProcessId(out.GetPointer(), title_id);
     }
 
-    Result DebugMonitorServiceBase::HookToCreateProcess(Out<CopiedHandle> out_hook, ncm::TitleId title_id) {
+    Result DebugMonitorServiceBase::HookToCreateProcess(sf::OutCopyHandle out_hook, ncm::TitleId title_id) {
         return impl::HookToCreateProcess(out_hook.GetHandlePointer(), title_id);
     }
 
-    Result DebugMonitorServiceBase::GetApplicationProcessId(Out<u64> out) {
+    Result DebugMonitorServiceBase::GetApplicationProcessId(sf::Out<os::ProcessId> out) {
         return impl::GetApplicationProcessId(out.GetPointer());
     }
 
-    Result DebugMonitorServiceBase::HookToCreateApplicationProcess(Out<CopiedHandle> out_hook) {
+    Result DebugMonitorServiceBase::HookToCreateApplicationProcess(sf::OutCopyHandle out_hook) {
         return impl::HookToCreateApplicationProcess(out_hook.GetHandlePointer());
     }
 
@@ -60,11 +60,11 @@ namespace sts::pm::dmnt {
     }
 
     /* Atmosphere extension commands. */
-    Result DebugMonitorServiceBase::AtmosphereGetProcessInfo(Out<CopiedHandle> out_process_handle, Out<ncm::TitleLocation> out_loc, u64 process_id) {
+    Result DebugMonitorServiceBase::AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::TitleLocation> out_loc, os::ProcessId process_id) {
         return impl::AtmosphereGetProcessInfo(out_process_handle.GetHandlePointer(), out_loc.GetPointer(), process_id);
     }
 
-    Result DebugMonitorServiceBase::AtmosphereGetCurrentLimitInfo(Out<u64> out_cur_val, Out<u64> out_lim_val, u32 group, u32 resource) {
+    Result DebugMonitorServiceBase::AtmosphereGetCurrentLimitInfo(sf::Out<u64> out_cur_val, sf::Out<u64> out_lim_val, u32 group, u32 resource) {
         return impl::AtmosphereGetCurrentLimitInfo(out_cur_val.GetPointer(), out_lim_val.GetPointer(), group, resource);
     }
 

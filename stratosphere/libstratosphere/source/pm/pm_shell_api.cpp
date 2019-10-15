@@ -21,8 +21,8 @@
 namespace sts::pm::shell {
 
     /* Shell API. */
-    Result WEAK LaunchTitle(u64 *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
-        return pmshellLaunchProcess(launch_flags, static_cast<u64>(loc.title_id), loc.storage_id, out_process_id);
+    Result WEAK LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
+        return pmshellLaunchProcess(launch_flags, static_cast<u64>(loc.title_id), loc.storage_id, reinterpret_cast<u64 *>(out_process_id));
     }
 
 }

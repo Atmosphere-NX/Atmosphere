@@ -21,7 +21,7 @@
 
 namespace sts::pm::bm {
 
-    class BootModeService final : public IServiceObject {
+    class BootModeService final : public sf::IServiceObject {
         private:
             enum class CommandId {
                 GetBootMode        = 0,
@@ -29,12 +29,12 @@ namespace sts::pm::bm {
             };
         private:
             /* Actual command implementations. */
-            void GetBootMode(Out<u32> out);
+            void GetBootMode(sf::Out<u32> out);
             void SetMaintenanceBoot();
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(BootModeService, GetBootMode),
-                MAKE_SERVICE_COMMAND_META(BootModeService, SetMaintenanceBoot),
+                MAKE_SERVICE_COMMAND_META(GetBootMode),
+                MAKE_SERVICE_COMMAND_META(SetMaintenanceBoot),
             };
     };
 

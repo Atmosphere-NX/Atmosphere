@@ -20,16 +20,16 @@
 namespace sts::pm::shell {
 
     /* Overrides for libstratosphere pm::shell commands. */
-    Result LaunchTitle(u64 *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
+    Result LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
         return impl::LaunchTitle(out_process_id, loc, launch_flags);
     }
 
     /* Service command implementations. */
-    Result ShellServiceBase::LaunchTitle(Out<u64> out_process_id, ncm::TitleLocation loc, u32 flags) {
+    Result ShellServiceBase::LaunchTitle(sf::Out<os::ProcessId> out_process_id, const ncm::TitleLocation &loc, u32 flags) {
         return pm::shell::LaunchTitle(out_process_id.GetPointer(), loc, flags);
     }
 
-    Result ShellServiceBase::TerminateProcess(u64 process_id) {
+    Result ShellServiceBase::TerminateProcess(os::ProcessId process_id) {
         return impl::TerminateProcess(process_id);
     }
 
@@ -37,19 +37,19 @@ namespace sts::pm::shell {
         return impl::TerminateTitle(title_id);
     }
 
-    void ShellServiceBase::GetProcessEventHandle(Out<CopiedHandle> out) {
+    void ShellServiceBase::GetProcessEventHandle(sf::OutCopyHandle out) {
         R_ASSERT(impl::GetProcessEventHandle(out.GetHandlePointer()));
     }
 
-    void ShellServiceBase::GetProcessEventInfo(Out<ProcessEventInfo> out) {
+    void ShellServiceBase::GetProcessEventInfo(sf::Out<ProcessEventInfo> out) {
         R_ASSERT(impl::GetProcessEventInfo(out.GetPointer()));
     }
 
-    Result ShellServiceBase::CleanupProcess(u64 process_id) {
+    Result ShellServiceBase::CleanupProcess(os::ProcessId process_id) {
         return impl::CleanupProcess(process_id);
     }
 
-    Result ShellServiceBase::ClearExceptionOccurred(u64 process_id) {
+    Result ShellServiceBase::ClearExceptionOccurred(os::ProcessId process_id) {
         return impl::ClearExceptionOccurred(process_id);
     }
 
@@ -57,7 +57,7 @@ namespace sts::pm::shell {
         R_ASSERT(impl::NotifyBootFinished());
     }
 
-    Result ShellServiceBase::GetApplicationProcessIdForShell(Out<u64> out) {
+    Result ShellServiceBase::GetApplicationProcessIdForShell(sf::Out<os::ProcessId> out) {
         return impl::GetApplicationProcessId(out.GetPointer());
     }
 
@@ -69,7 +69,7 @@ namespace sts::pm::shell {
         return impl::BoostApplicationThreadResourceLimit();
     }
 
-    void ShellServiceBase::GetBootFinishedEventHandle(Out<CopiedHandle> out) {
+    void ShellServiceBase::GetBootFinishedEventHandle(sf::OutCopyHandle out) {
         R_ASSERT(impl::GetBootFinishedEventHandle(out.GetHandlePointer()));
     }
 

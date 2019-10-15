@@ -21,7 +21,7 @@
 
 namespace sts::pm::impl {
 
-    ProcessInfo::ProcessInfo(Handle h, u64 pid, ldr::PinId pin, const ncm::TitleLocation &l) : process_id(pid), pin_id(pin), loc(l), handle(h), state(ProcessState_Created), flags(0), waitable_holder(h) {
+    ProcessInfo::ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::TitleLocation &l) : process_id(pid), pin_id(pin), loc(l), handle(h), state(ProcessState_Created), flags(0), waitable_holder(h) {
         this->waitable_holder.SetUserData(reinterpret_cast<uintptr_t>(this));
     }
 
@@ -32,7 +32,7 @@ namespace sts::pm::impl {
     void ProcessInfo::Cleanup() {
         if (this->handle != INVALID_HANDLE) {
             /* Unregister the process. */
-            fsprUnregisterProgram(this->process_id);
+            fsprUnregisterProgram(static_cast<u64>(this->process_id));
             sm::manager::UnregisterProcess(this->process_id);
             ldr::pm::UnpinTitle(this->pin_id);
 

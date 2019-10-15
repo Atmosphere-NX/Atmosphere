@@ -22,7 +22,7 @@
 
 namespace sts::pm::info {
 
-    class InformationService final : public IServiceObject {
+    class InformationService final : public sf::IServiceObject {
         private:
             enum class CommandId {
                 GetTitleId                 = 0,
@@ -32,17 +32,17 @@ namespace sts::pm::info {
             };
         private:
             /* Actual command implementations. */
-            Result GetTitleId(Out<ncm::TitleId> out, u64 process_id);
+            Result GetTitleId(sf::Out<ncm::TitleId> out, os::ProcessId process_id);
 
             /* Atmosphere extension commands. */
-            Result AtmosphereGetProcessId(Out<u64> out, ncm::TitleId title_id);
-            Result AtmosphereHasLaunchedTitle(Out<bool> out, ncm::TitleId title_id);
+            Result AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::TitleId title_id);
+            Result AtmosphereHasLaunchedTitle(sf::Out<bool> out, ncm::TitleId title_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(InformationService, GetTitleId),
+                MAKE_SERVICE_COMMAND_META(GetTitleId),
 
-                MAKE_SERVICE_COMMAND_META(InformationService, AtmosphereGetProcessId),
-                MAKE_SERVICE_COMMAND_META(InformationService, AtmosphereHasLaunchedTitle),
+                MAKE_SERVICE_COMMAND_META(AtmosphereGetProcessId),
+                MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedTitle),
             };
     };
 

@@ -139,8 +139,8 @@ namespace sts::boot2 {
             return c == '\r' || c == '\n';
         }
 
-        void LaunchTitle(u64 *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
-            u64 process_id = 0;
+        void LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
+            os::ProcessId process_id = os::InvalidProcessId;
 
             switch (pm::shell::LaunchTitle(&process_id, loc, launch_flags)) {
                 case ResultKernelResourceExhausted:
@@ -187,7 +187,8 @@ namespace sts::boot2 {
                 R_ASSERT(set_sys_holder.GetResult());
 
                 u8 force_maintenance = 1;
-                setsysGetSettingsItemValue("boot", "force_maintenance", &force_maintenance, sizeof(force_maintenance));
+                u64 size_out;
+                setsysGetSettingsItemValue("boot", "force_maintenance", &force_maintenance, sizeof(force_maintenance), &size_out);
                 if (force_maintenance != 0) {
                     return true;
                 }
@@ -318,7 +319,7 @@ namespace sts::boot2 {
 
         /* Wait for other atmosphere mitm modules to initialize. */
         R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("set:sys")));
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
+        if (hos::GetVersion() >= hos::Version_200) {
             R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
         } else {
             R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
@@ -340,7 +341,7 @@ namespace sts::boot2 {
         if (maintenance) {
             LaunchList(AdditionalMaintenanceLaunchPrograms, NumAdditionalMaintenanceLaunchPrograms);
             /* Starting in 7.0.0, npns is launched during maintenance boot. */
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_700) {
+            if (hos::GetVersion() >= hos::Version_700) {
                 LaunchTitle(nullptr, ncm::TitleLocation::Make(ncm::TitleId::Npns, ncm::StorageId::NandSystem), 0);
             }
         } else {

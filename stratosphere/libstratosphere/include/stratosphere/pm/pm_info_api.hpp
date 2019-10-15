@@ -22,8 +22,8 @@
 namespace sts::pm::info {
 
     /* Information API. */
-    Result GetTitleId(ncm::TitleId *out_title_id, u64 process_id);
-    Result GetProcessId(u64 *out_process_id, ncm::TitleId title_id);
+    Result GetTitleId(ncm::TitleId *out_title_id, os::ProcessId process_id);
+    Result GetProcessId(os::ProcessId *out_process_id, ncm::TitleId title_id);
     Result HasLaunchedTitle(bool *out, ncm::TitleId title_id);
 
     /* Information convenience API. */

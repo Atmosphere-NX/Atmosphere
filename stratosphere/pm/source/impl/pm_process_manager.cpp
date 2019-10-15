@@ -37,7 +37,7 @@ namespace sts::pm::impl {
         };
 
         struct LaunchProcessArgs {
-            u64 *out_process_id;
+            os::ProcessId *out_process_id;
             ncm::TitleLocation location;
             u32 flags;
         };
@@ -62,38 +62,38 @@ namespace sts::pm::impl {
             LaunchFlagsDeprecated_SignalOnStart       = (1 << 5),
         };
 
-#define GET_FLAG_MASK(flag) (firmware_version >= FirmwareVersion_500 ? static_cast<u32>(LaunchFlags_##flag) : static_cast<u32>(LaunchFlagsDeprecated_##flag))
+#define GET_FLAG_MASK(flag) (hos_version >= hos::Version_500 ? static_cast<u32>(LaunchFlags_##flag) : static_cast<u32>(LaunchFlagsDeprecated_##flag))
 
         inline bool ShouldSignalOnExit(u32 launch_flags) {
-            const auto firmware_version = GetRuntimeFirmwareVersion();
+            const auto hos_version = hos::GetVersion();
             return launch_flags & GET_FLAG_MASK(SignalOnExit);
         }
 
         inline bool ShouldSignalOnStart(u32 launch_flags) {
-            const auto firmware_version = GetRuntimeFirmwareVersion();
-            if (firmware_version < FirmwareVersion_200) {
+            const auto hos_version = hos::GetVersion();
+            if (hos_version < hos::Version_200) {
                 return false;
             }
             return launch_flags & GET_FLAG_MASK(SignalOnStart);
         }
 
         inline bool ShouldSignalOnException(u32 launch_flags) {
-            const auto firmware_version = GetRuntimeFirmwareVersion();
+            const auto hos_version = hos::GetVersion();
             return launch_flags & GET_FLAG_MASK(SignalOnException);
         }
 
         inline bool ShouldSignalOnDebugEvent(u32 launch_flags) {
-            const auto firmware_version = GetRuntimeFirmwareVersion();
+            const auto hos_version = hos::GetVersion();
             return launch_flags & GET_FLAG_MASK(SignalOnDebugEvent);
         }
 
         inline bool ShouldStartSuspended(u32 launch_flags) {
-            const auto firmware_version = GetRuntimeFirmwareVersion();
+            const auto hos_version = hos::GetVersion();
             return launch_flags & GET_FLAG_MASK(StartSuspended);
         }
 
         inline bool ShouldDisableAslr(u32 launch_flags) {
-            const auto firmware_version = GetRuntimeFirmwareVersion();
+            const auto hos_version = hos::GetVersion();
             return launch_flags & GET_FLAG_MASK(DisableAslr);
         }
 
@@ -118,7 +118,7 @@ namespace sts::pm::impl {
         };
 
         inline u32 GetProcessEventValue(ProcessEvent event) {
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+            if (hos::GetVersion() >= hos::Version_500) {
                 return static_cast<u32>(event);
             }
             switch (event) {
@@ -194,7 +194,7 @@ namespace sts::pm::impl {
         inline u32 GetLoaderCreateProcessFlags(u32 launch_flags) {
             u32 ldr_flags = 0;
 
-            if (ShouldSignalOnException(launch_flags) || (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 && !ShouldStartSuspended(launch_flags))) {
+            if (ShouldSignalOnException(launch_flags) || (hos::GetVersion() >= hos::Version_200 && !ShouldStartSuspended(launch_flags))) {
                 ldr_flags |= ldr::CreateProcessFlag_EnableDebug;
             }
             if (ShouldDisableAslr(launch_flags)) {
@@ -235,7 +235,7 @@ namespace sts::pm::impl {
             ldr::ProgramInfo program_info;
             R_TRY(ldr::pm::GetProgramInfo(&program_info, args.location));
             const bool is_application = (program_info.flags & ldr::ProgramInfoFlag_ApplicationTypeMask) == ldr::ProgramInfoFlag_Application;
-            const bool allow_debug    = (program_info.flags & ldr::ProgramInfoFlag_AllowDebug) || GetRuntimeFirmwareVersion() < FirmwareVersion_200;
+            const bool allow_debug    = (program_info.flags & ldr::ProgramInfoFlag_AllowDebug) || hos::GetVersion() < hos::Version_200;
 
             /* Ensure we only try to run one application. */
             if (is_application && HasApplicationProcess()) {
@@ -259,8 +259,8 @@ namespace sts::pm::impl {
             });
 
             /* Get the process id. */
-            u64 process_id;
-            R_ASSERT(svcGetProcessId(&process_id, process_handle));
+            os::ProcessId process_id = os::InvalidProcessId;
+            R_ASSERT(svcGetProcessId(&process_id.value, process_handle));
 
             /* Make new process info. */
             ProcessInfo *process_info = new ProcessInfo(process_handle, process_id, pin_id, location);
@@ -285,7 +285,7 @@ namespace sts::pm::impl {
             const u8 *aci_fah  = acid_fac + program_info.acid_fac_size;
 
             /* Register with FS and SM. */
-            R_TRY(fsprRegisterProgram(process_id, static_cast<u64>(location.title_id), static_cast<FsStorageId>(location.storage_id), aci_fah, program_info.aci_fah_size, acid_fac, program_info.acid_fac_size));
+            R_TRY(fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(location.title_id), static_cast<FsStorageId>(location.storage_id), aci_fah, program_info.aci_fah_size, acid_fac, program_info.acid_fac_size));
             R_TRY(sm::manager::RegisterProcess(process_id, location.title_id, acid_sac, program_info.acid_sac_size, aci_sac, program_info.aci_sac_size));
 
             /* Set flags. */
@@ -348,7 +348,7 @@ namespace sts::pm::impl {
                         process_info->ClearSuspended();
                         process_info->SetSuspendedStateChanged();
                         g_process_event.Signal();
-                    } else if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 && process_info->ShouldSignalOnStart()) {
+                    } else if (hos::GetVersion() >= hos::Version_200 && process_info->ShouldSignalOnStart()) {
                         process_info->SetStartedStateChanged();
                         process_info->ClearSignalOnStart();
                         g_process_event.Signal();
@@ -366,14 +366,14 @@ namespace sts::pm::impl {
                     }
                     break;
                 case ProcessState_Exited:
-                    if (GetRuntimeFirmwareVersion() < FirmwareVersion_500 && process_info->ShouldSignalOnExit()) {
+                    if (hos::GetVersion() < hos::Version_500 && process_info->ShouldSignalOnExit()) {
                         g_process_event.Signal();
                     } else {
                         /* Free process resources, unlink from waitable manager. */
                         process_info->Cleanup();
 
                         /* Handle the case where we need to keep the process alive some time longer. */
-                        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500 && process_info->ShouldSignalOnExit()) {
+                        if (hos::GetVersion() >= hos::Version_500 && process_info->ShouldSignalOnExit()) {
                             /* Remove from the living list. */
                             list->Remove(process_info);
 
@@ -425,7 +425,7 @@ namespace sts::pm::impl {
     }
 
     /* Process Management. */
-    Result LaunchTitle(u64 *out_process_id, const ncm::TitleLocation &loc, u32 flags) {
+    Result LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 flags) {
         /* Ensure we only try to launch one title at a time. */
         static os::Mutex s_lock;
         std::scoped_lock lk(s_lock);
@@ -442,7 +442,7 @@ namespace sts::pm::impl {
         return g_process_launch_result;
     }
 
-    Result StartProcess(u64 process_id) {
+    Result StartProcess(os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
@@ -459,7 +459,7 @@ namespace sts::pm::impl {
         return StartProcess(process_info, &program_info);
     }
 
-    Result TerminateProcess(u64 process_id) {
+    Result TerminateProcess(os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
@@ -515,7 +515,7 @@ namespace sts::pm::impl {
                     out->process_id = process.GetProcessId();
                     return ResultSuccess;
                 }
-                if (GetRuntimeFirmwareVersion() < FirmwareVersion_500 && process.ShouldSignalOnExit() && process.HasExited()) {
+                if (hos::GetVersion() < hos::Version_500 && process.ShouldSignalOnExit() && process.HasExited()) {
                     out->event = GetProcessEventValue(ProcessEvent::Exited);
                     out->process_id = process.GetProcessId();
                     return ResultSuccess;
@@ -524,7 +524,7 @@ namespace sts::pm::impl {
         }
 
         /* Check for event from exited process. */
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+        if (hos::GetVersion() >= hos::Version_500) {
             ProcessListAccessor dead_list(g_dead_process_list);
 
             if (!dead_list->empty()) {
@@ -537,12 +537,12 @@ namespace sts::pm::impl {
             }
         }
 
-        out->process_id = 0;
+        out->process_id = os::ProcessId{};
         out->event = GetProcessEventValue(ProcessEvent::None);
         return ResultSuccess;
     }
 
-    Result CleanupProcess(u64 process_id) {
+    Result CleanupProcess(os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
@@ -558,7 +558,7 @@ namespace sts::pm::impl {
         return ResultSuccess;
     }
 
-    Result ClearExceptionOccurred(u64 process_id) {
+    Result ClearExceptionOccurred(os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
@@ -577,7 +577,7 @@ namespace sts::pm::impl {
         return ResultSuccess;
     }
 
-    Result GetExceptionProcessIdList(u32 *out_count, u64 *out_process_ids, size_t max_out_count) {
+    Result GetExceptionProcessIdList(u32 *out_count, os::ProcessId *out_process_ids, size_t max_out_count) {
         ProcessListAccessor list(g_process_list);
 
         size_t count = 0;
@@ -590,7 +590,7 @@ namespace sts::pm::impl {
         return ResultSuccess;
     }
 
-    Result GetProcessId(u64 *out, ncm::TitleId title_id) {
+    Result GetProcessId(os::ProcessId *out, ncm::TitleId title_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(title_id);
@@ -602,7 +602,7 @@ namespace sts::pm::impl {
         return ResultSuccess;
     }
 
-    Result GetTitleId(ncm::TitleId *out, u64 process_id) {
+    Result GetTitleId(ncm::TitleId *out, os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
@@ -614,7 +614,7 @@ namespace sts::pm::impl {
         return ResultSuccess;
     }
 
-    Result GetApplicationProcessId(u64 *out_process_id) {
+    Result GetApplicationProcessId(os::ProcessId *out_process_id) {
         ProcessListAccessor list(g_process_list);
 
         for (auto &process : *list) {
@@ -627,7 +627,7 @@ namespace sts::pm::impl {
         return ResultPmProcessNotFound;
     }
 
-    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::TitleLocation *out_loc, u64 process_id) {
+    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::TitleLocation *out_loc, os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
