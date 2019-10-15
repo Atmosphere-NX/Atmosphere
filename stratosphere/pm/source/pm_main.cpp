@@ -37,7 +37,9 @@ extern "C" {
     u32 __nx_applet_type = AppletType_None;
     u32 __nx_fs_num_sessions = 1;
 
-    #define INNER_HEAP_SIZE 0x40000
+    /* TODO: Statically allocate PM resource thread stack, reduce this. */
+    /* TODO: Determine what the minimum consistent value for this is (dump heap at runtime). */
+    #define INNER_HEAP_SIZE 0xC000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
