@@ -46,8 +46,13 @@ namespace sts::sf::hipc {
                     if (!is_mitm_session) {
                         R_ASSERT(tagged_manager->RegisterSession(server_handle, std::move(clone)));
                     } else {
-                        std::shared_ptr<::Service> forward_service = this->session->forward_service;
-                        R_ASSERT(tagged_manager->RegisterMitmSession(server_handle, std::move(clone), std::move(forward_service)));
+                        /* Clone the forward service. */
+                        std::shared_ptr<::Service> new_forward_service(new ::Service(), [](::Service *srv) {
+                            serviceClose(srv);
+                            delete srv;
+                        });
+                        R_ASSERT(serviceClone(this->session->forward_service.get(), new_forward_service.get()));
+                        R_ASSERT(tagged_manager->RegisterMitmSession(server_handle, std::move(clone), std::move(new_forward_service)));
                     }
 
                     return ResultSuccess;
@@ -57,8 +62,50 @@ namespace sts::sf::hipc {
                     /* ... */
                 }
 
-                /* TODO: ConvertCurrentObjectToDomain */
-                /* TODO: CopyFromCurrentDomain */
+                Result ConvertCurrentObjectToDomain(sf::Out<cmif::DomainObjectId> out) {
+                    /* TODO */
+                    return ResultHipcOutOfDomains;
+                }
+
+                Result CopyFromCurrentDomain(sf::OutMoveHandle out, cmif::DomainObjectId object_id) {
+                    /* Get domain. */
+                    auto domain = this->session->srv_obj_holder.GetServiceObject<cmif::DomainServiceObject>();
+                    R_UNLESS(domain != nullptr, ResultHipcTargetNotDomain);
+
+                    /* Get domain object. */
+                    auto &&object = domain->GetObject(object_id);
+                    if (!object) {
+                        R_UNLESS(this->is_mitm_session, ResultHipcDomainObjectNotFound);
+                        return cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, out.GetHandlePointer());
+                    }
+
+                    if (!this->is_mitm_session || object_id.value != serviceGetObjectId(this->session->forward_service.get())) {
+                        /* Create new session handles. */
+                        Handle server_handle;
+                        R_ASSERT(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
+
+                        /* Register. */
+                        R_ASSERT(this->manager->RegisterSession(server_handle, std::move(object)));
+                    } else {
+                        /* Copy from the target domain. */
+                        Handle new_forward_target;
+                        R_TRY(cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, &new_forward_target));
+
+                        /* Create new session handles. */
+                        Handle server_handle;
+                        R_ASSERT(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
+
+                        /* Register. */
+                        std::shared_ptr<::Service> new_forward_service(new ::Service(), [](::Service *srv) {
+                            serviceClose(srv);
+                            delete srv;
+                        });
+                        serviceCreate(new_forward_service.get(), new_forward_target);
+                        R_ASSERT(this->manager->RegisterMitmSession(server_handle, std::move(object), std::move(new_forward_service)));
+                    }
+
+                    return ResultSuccess;
+                }
 
                 Result CloneCurrentObject(sf::OutMoveHandle out) {
                     return this->CloneCurrentObjectImpl(out.GetHandlePointer(), this->manager);
@@ -74,8 +121,8 @@ namespace sts::sf::hipc {
 
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
-                    /* TODO: MAKE_SERVICE_COMMAND_META(ConvertCurrentObjectToDomain), */
-                    /* TODO: MAKE_SERVICE_COMMAND_META(CopyFromCurrentDomain), */
+                    MAKE_SERVICE_COMMAND_META(ConvertCurrentObjectToDomain),
+                    MAKE_SERVICE_COMMAND_META(CopyFromCurrentDomain),
                     MAKE_SERVICE_COMMAND_META(CloneCurrentObject),
                     MAKE_SERVICE_COMMAND_META(QueryPointerBufferSize),
                     MAKE_SERVICE_COMMAND_META(CloneCurrentObjectEx),
