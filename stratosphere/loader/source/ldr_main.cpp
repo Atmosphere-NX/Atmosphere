@@ -99,7 +99,7 @@ namespace {
     };
 
     constexpr sm::ServiceName ProcessManagerServiceName = sm::ServiceName::Encode("ldr:pm");
-    constexpr size_t          ProcessManagerMaxSessions = 2;
+    constexpr size_t          ProcessManagerMaxSessions = 1;
 
     constexpr sm::ServiceName ShellServiceName = sm::ServiceName::Encode("ldr:shel");
     constexpr size_t          ShellMaxSessions = 3;
