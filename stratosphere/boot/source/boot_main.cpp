@@ -85,7 +85,7 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    SetFirmwareVersionForLibnx();
+    hos::SetVersionForLibnx();
 
     /* Initialize services we need (TODO: NCM) */
     DoWithSmSession([&]() {
