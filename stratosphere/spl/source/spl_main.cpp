@@ -17,7 +17,6 @@
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
-#include <malloc.h>
 
 #include <switch.h>
 #include <stratosphere.hpp>
@@ -73,8 +72,10 @@ void __libnx_initheap(void) {
     fake_heap_end   = (char*)addr + size;
 }
 
+using namespace sts;
+
 void __appInit(void) {
-    SetFirmwareVersionForLibnx();
+    hos::SetVersionForLibnx();
 
     /* SPL doesn't really access any services... */
 }
@@ -83,37 +84,69 @@ void __appExit(void) {
     /* SPL doesn't really access any services... */
 }
 
-struct SplServerOptions {
-    static constexpr size_t PointerBufferSize = 0x800;
-    static constexpr size_t MaxDomains = 0;
-    static constexpr size_t MaxDomainObjects = 0;
-};
+namespace {
+
+    struct SplServerOptions {
+        static constexpr size_t PointerBufferSize = 0x800;
+        static constexpr size_t MaxDomains = 0;
+        static constexpr size_t MaxDomainObjects = 0;
+    };
+
+    constexpr sm::ServiceName RandomServiceName = sm::ServiceName::Encode("csrng");
+    constexpr size_t          RandomMaxSessions = 3;
+
+    constexpr sm::ServiceName DeprecatedServiceName = sm::ServiceName::Encode("spl:");
+    constexpr size_t          DeprecatedMaxSessions = 12;
+
+    constexpr sm::ServiceName GeneralServiceName = sm::ServiceName::Encode("spl:");
+    constexpr size_t          GeneralMaxSessions = 6;
+
+    constexpr sm::ServiceName CryptoServiceName = sm::ServiceName::Encode("spl:mig");
+    constexpr size_t          CryptoMaxSessions = 6;
+
+    constexpr sm::ServiceName SslServiceName = sm::ServiceName::Encode("spl:ssl");
+    constexpr size_t          SslMaxSessions = 2;
+
+    constexpr sm::ServiceName EsServiceName = sm::ServiceName::Encode("spl:es");
+    constexpr size_t          EsMaxSessions = 2;
+
+    constexpr sm::ServiceName FsServiceName = sm::ServiceName::Encode("spl:fs");
+    constexpr size_t          FsMaxSessions = 3;
+
+    constexpr sm::ServiceName ManuServiceName = sm::ServiceName::Encode("spl:manu");
+    constexpr size_t          ManuMaxSessions = 1;
+
+    /* csrng, spl:, spl:mig, spl:ssl, spl:es, spl:fs, spl:manu. */
+    /* TODO: Consider max sessions enforcement? */
+    constexpr size_t NumServers  = 7;
+    constexpr size_t ModernMaxSessions = GeneralMaxSessions + CryptoMaxSessions + SslMaxSessions + EsMaxSessions + FsMaxSessions + ManuMaxSessions;
+    constexpr size_t NumSessions = RandomMaxSessions + std::max(DeprecatedMaxSessions, ModernMaxSessions) + 1;
+    sf::hipc::ServerManager<NumServers, SplServerOptions, NumSessions> g_server_manager;
+
+}
 
 int main(int argc, char **argv)
 {
     /* Initialize global context. */
-    sts::spl::impl::Initialize();
-
-    /* Create server manager. */
-    static auto s_server_manager = WaitableManager<SplServerOptions>(1);
+    spl::impl::Initialize();
 
     /* Create services. */
-    s_server_manager.AddWaitable(new ServiceServer<sts::spl::RandomService>("csrng", 3));
-    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_400) {
-        s_server_manager.AddWaitable(new ServiceServer<sts::spl::GeneralService>("spl:", 9));
-        s_server_manager.AddWaitable(new ServiceServer<sts::spl::CryptoService>("spl:mig", 6));
-        s_server_manager.AddWaitable(new ServiceServer<sts::spl::SslService>("spl:ssl", 2));
-        s_server_manager.AddWaitable(new ServiceServer<sts::spl::EsService>("spl:es", 2));
-        s_server_manager.AddWaitable(new ServiceServer<sts::spl::FsService>("spl:fs", 3));
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
-            s_server_manager.AddWaitable(new ServiceServer<sts::spl::ManuService>("spl:manu", 1));
+    R_ASSERT(g_server_manager.RegisterServer<spl::RandomService>(RandomServiceName, RandomMaxSessions));
+    if (hos::GetVersion() >= hos::Version_400) {
+        R_ASSERT(g_server_manager.RegisterServer<spl::GeneralService>(GeneralServiceName, GeneralMaxSessions));
+        R_ASSERT(g_server_manager.RegisterServer<spl::CryptoService>(CryptoServiceName, CryptoMaxSessions));
+        R_ASSERT(g_server_manager.RegisterServer<spl::SslService>(SslServiceName, SslMaxSessions));
+        R_ASSERT(g_server_manager.RegisterServer<spl::EsService>(EsServiceName, EsMaxSessions));
+        R_ASSERT(g_server_manager.RegisterServer<spl::FsService>(FsServiceName, FsMaxSessions));
+        if (hos::GetVersion() >= hos::Version_500) {
+            R_ASSERT(g_server_manager.RegisterServer<spl::ManuService>(ManuServiceName, ManuMaxSessions));
         }
     } else {
-        s_server_manager.AddWaitable(new ServiceServer<sts::spl::DeprecatedService>("spl:", 12));
+        R_ASSERT(g_server_manager.RegisterServer<spl::DeprecatedService>(DeprecatedServiceName, DeprecatedMaxSessions));
     }
 
     /* Loop forever, servicing our services. */
-    s_server_manager.Process();
+    g_server_manager.LoopProcess();
 
     return 0;
 }

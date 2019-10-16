@@ -30,28 +30,28 @@ namespace sts::spl {
             virtual ~ManuService() { /* ... */ }
         protected:
             /* Actual commands. */
-            virtual Result ReEncryptRsaPrivateKey(OutPointerWithClientSize<u8> out, InPointer<u8> src, AccessKey access_key_dec, KeySource source_dec, AccessKey access_key_enc, KeySource source_enc, u32 option);
+            virtual Result ReEncryptRsaPrivateKey(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &src, AccessKey access_key_dec, KeySource source_dec, AccessKey access_key_enc, KeySource source_enc, u32 option);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(ManuService, GetConfig),
-                MAKE_SERVICE_COMMAND_META(ManuService, ExpMod),
-                MAKE_SERVICE_COMMAND_META(ManuService, SetConfig),
-                MAKE_SERVICE_COMMAND_META(ManuService, GenerateRandomBytes),
-                MAKE_SERVICE_COMMAND_META(ManuService, IsDevelopment),
-                MAKE_SERVICE_COMMAND_META(ManuService, SetBootReason,                  FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(ManuService, GetBootReason,                  FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(ManuService, GenerateAesKek),
-                MAKE_SERVICE_COMMAND_META(ManuService, LoadAesKey),
-                MAKE_SERVICE_COMMAND_META(ManuService, GenerateAesKey),
-                MAKE_SERVICE_COMMAND_META(ManuService, DecryptAesKey),
-                MAKE_SERVICE_COMMAND_META(ManuService, CryptAesCtr),
-                MAKE_SERVICE_COMMAND_META(ManuService, ComputeCmac),
-                MAKE_SERVICE_COMMAND_META(ManuService, AllocateAesKeyslot,             FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ManuService, FreeAesKeyslot,                 FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ManuService, GetAesKeyslotAvailableEvent,    FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ManuService, DecryptRsaPrivateKeyDeprecated, FirmwareVersion_400, FirmwareVersion_400),
-                MAKE_SERVICE_COMMAND_META(ManuService, DecryptRsaPrivateKey,           FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(ManuService, ReEncryptRsaPrivateKey,         FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(GetConfig),
+                MAKE_SERVICE_COMMAND_META(ExpMod),
+                MAKE_SERVICE_COMMAND_META(SetConfig),
+                MAKE_SERVICE_COMMAND_META(GenerateRandomBytes),
+                MAKE_SERVICE_COMMAND_META(IsDevelopment),
+                MAKE_SERVICE_COMMAND_META(SetBootReason,                  hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GetBootReason,                  hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GenerateAesKek),
+                MAKE_SERVICE_COMMAND_META(LoadAesKey),
+                MAKE_SERVICE_COMMAND_META(GenerateAesKey),
+                MAKE_SERVICE_COMMAND_META(DecryptAesKey),
+                MAKE_SERVICE_COMMAND_META(CryptAesCtr),
+                MAKE_SERVICE_COMMAND_META(ComputeCmac),
+                MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,             hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,                 hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent,    hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKeyDeprecated, hos::Version_400, hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKey,           hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(ReEncryptRsaPrivateKey,         hos::Version_500),
             };
     };
 

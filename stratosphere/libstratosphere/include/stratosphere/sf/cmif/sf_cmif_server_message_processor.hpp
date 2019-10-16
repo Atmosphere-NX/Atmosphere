@@ -30,7 +30,7 @@ namespace sts::sf::cmif {
             /* Used to enabled templated message processors. */
             virtual void SetImplementationProcessor(ServerMessageProcessor *impl) { /* ... */ }
 
-            virtual Result PrepareForProcess(const ServiceDispatchContext &ctx, const size_t headers_size) const = 0;
+            virtual Result PrepareForProcess(const ServiceDispatchContext &ctx, size_t &headers_size) const = 0;
             virtual Result GetInObjects(ServiceObjectHolder *in_objects) const = 0;
             virtual HipcRequest PrepareForReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const size_t headers_size, size_t &num_out_object_handles) = 0;
             virtual void PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const size_t headers_size) = 0;

@@ -43,7 +43,7 @@ namespace sts::sf::cmif {
                 }
             }
 
-            virtual Result PrepareForProcess(const ServiceDispatchContext &ctx, const size_t headers_size) const override final;
+            virtual Result PrepareForProcess(const ServiceDispatchContext &ctx, size_t &headers_size) const override final;
             virtual Result GetInObjects(ServiceObjectHolder *in_objects) const override final;
             virtual HipcRequest PrepareForReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const size_t headers_size, size_t &num_out_object_handles) override final;
             virtual void PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const size_t headers_size) override final;

@@ -22,12 +22,12 @@
 
 namespace sts::spl {
 
-    Result RsaService::DecryptRsaPrivateKeyDeprecated(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
-        return impl::DecryptRsaPrivateKey(dst.pointer, dst.num_elements, src.pointer, src.num_elements, access_key, key_source, option);
+    Result RsaService::DecryptRsaPrivateKeyDeprecated(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
+        return impl::DecryptRsaPrivateKey(dst.GetPointer(), dst.GetSize(), src.GetPointer(), src.GetSize(), access_key, key_source, option);
     }
 
-    Result RsaService::DecryptRsaPrivateKey(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source) {
-        return impl::DecryptRsaPrivateKey(dst.pointer, dst.num_elements, src.pointer, src.num_elements, access_key, key_source, static_cast<u32>(smc::DecryptOrImportMode::DecryptRsaPrivateKey));
+    Result RsaService::DecryptRsaPrivateKey(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
+        return impl::DecryptRsaPrivateKey(dst.GetPointer(), dst.GetSize(), src.GetPointer(), src.GetSize(), access_key, key_source, static_cast<u32>(smc::DecryptOrImportMode::DecryptRsaPrivateKey));
     }
 
 }

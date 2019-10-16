@@ -300,7 +300,7 @@ namespace sts::sf::impl {
             static constexpr void StableSort(std::array<size_t, sizeof...(Ts)> &map, const std::array<size_t, sizeof...(Ts)> &values) {
                 /* Use insertion sort, which is stable and optimal for small numbers of parameters. */
                 for (size_t i = 1; i < sizeof...(Ts); i++) {
-                    for (size_t j = i; j > 0 && values[j-1] > values[j]; j--) {
+                    for (size_t j = i; j > 0 && values[map[j-1]] > values[map[j]]; j--) {
                         /* std::swap is not constexpr until c++20 :( */
                         /* TODO: std::swap(map[j], map[j-1]); */
                         const size_t tmp = map[j];
@@ -686,7 +686,7 @@ namespace sts::sf::impl {
     template<typename CommandMeta>
     struct HipcCommandProcessor : public sf::cmif::ServerMessageProcessor {
         public:
-            virtual Result PrepareForProcess(const cmif::ServiceDispatchContext &ctx, const size_t headers_size) const override final {
+            virtual Result PrepareForProcess(const cmif::ServiceDispatchContext &ctx, size_t &headers_size) const override final {
                 const auto &meta = ctx.request.meta;
                 bool is_request_valid = true;
                 is_request_valid &= meta.send_pid         == CommandMeta::HasInProcessIdHolder;
@@ -789,7 +789,7 @@ namespace sts::sf::impl {
             }();
 
             template<size_t BufferIndex, size_t Index = GetIndexFromBufferIndex<BufferIndex>>
-            NX_CONSTEXPR void ProcessBufferImpl(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &buffer, bool &is_buffer_map_alias, bool &map_alias_buffers_valid, size_t &pointer_buffer_head, size_t &pointer_buffer_tail) {
+            NX_CONSTEXPR void ProcessBufferImpl(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &buffer, bool &is_buffer_map_alias, bool &map_alias_buffers_valid, size_t &pointer_buffer_head, size_t &pointer_buffer_tail, size_t in_headers_size) {
                 static_assert(Index != std::numeric_limits<size_t>::max(), "Invalid Index From Buffer Index");
                 constexpr auto Info = CommandMeta::ArgumentSerializationInfos[Index];
                 constexpr auto Attributes = CommandMeta::BufferAttributes[BufferIndex];
@@ -824,7 +824,7 @@ namespace sts::sf::impl {
                             pointer_buffer_head = util::AlignDown(pointer_buffer_head - size, 0x10);
                             buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                         } else {
-                            const u16 *recv_pointer_sizes = reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(ctx.request.data.data_words) + CommandMeta::InDataRawUnfixedOutPointerSizeOffset);
+                            const u16 *recv_pointer_sizes = reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(ctx.request.data.data_words) + in_headers_size + CommandMeta::InDataRawUnfixedOutPointerSizeOffset);
                             const size_t size = size_t(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
                             pointer_buffer_head = util::AlignDown(pointer_buffer_head - size, 0x10);
                             buffer = cmif::PointerAndSize(pointer_buffer_head, size);
@@ -894,11 +894,11 @@ namespace sts::sf::impl {
                 }
             }
         public:
-            NX_CONSTEXPR Result ProcessBuffers(const cmif::ServiceDispatchContext &ctx, BufferArrayType &buffers, std::array<bool, CommandMeta::NumBuffers> &is_buffer_map_alias) {
+            NX_CONSTEXPR Result ProcessBuffers(const cmif::ServiceDispatchContext &ctx, BufferArrayType &buffers, std::array<bool, CommandMeta::NumBuffers> &is_buffer_map_alias, size_t in_headers_size) {
                 bool map_alias_buffers_valid = true;
                 size_t pointer_buffer_tail = ctx.pointer_buffer.GetAddress();
                 size_t pointer_buffer_head = pointer_buffer_tail + ctx.pointer_buffer.GetSize();
-                #define _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(n) do { if constexpr (CommandMeta::NumBuffers > n) { ProcessBufferImpl<n>(ctx, buffers[n], is_buffer_map_alias[n], map_alias_buffers_valid, pointer_buffer_head, pointer_buffer_tail); } } while (0)
+                #define _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(n) do { if constexpr (CommandMeta::NumBuffers > n) { ProcessBufferImpl<n>(ctx, buffers[n], is_buffer_map_alias[n], map_alias_buffers_valid, pointer_buffer_head, pointer_buffer_tail, in_headers_size); } } while (0)
                 _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(0);
                 _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(1);
                 _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(2);
@@ -1010,7 +1010,7 @@ namespace sts::sf::impl {
         return ResultSuccess;
     }
 
-    template<auto ServiceCommandImpl, typename ClassType = typename CommandMetaInfo<ServiceCommandImpl>::ClassType>
+    template<auto ServiceCommandImpl>
     constexpr Result InvokeServiceCommandImpl(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) {
         using CommandMeta = CommandMetaInfo<ServiceCommandImpl>;
         using ImplProcessorType = HipcCommandProcessor<CommandMeta>;
@@ -1018,7 +1018,7 @@ namespace sts::sf::impl {
         using OutHandleHolderType = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles>;
         using OutRawHolderType = OutRawHolder<CommandMeta::OutDataSize, CommandMeta::OutDataAlign>;
         using InOutObjectHolderType = InOutObjectHolder<CommandMeta::NumInObjects, CommandMeta::NumOutObjects>;
-        static_assert(std::is_base_of<typename CommandMeta::ClassType, ClassType>::value, "InvokeServiceCommandImpl: Invalid Override ClassType");
+        using ClassType = typename CommandMeta::ClassType;
         static_assert(std::is_base_of<sf::IServiceObject, ClassType>::value, "InvokeServiceCommandImpl: Service Commands must be ServiceObject member functions");
 
         /* Create a processor for us to work with. */
@@ -1032,7 +1032,8 @@ namespace sts::sf::impl {
         }
 
         /* Validate the metadata has the expected counts. */
-        R_TRY(ctx.processor->PrepareForProcess(ctx, sizeof(CmifInHeader)));
+        size_t in_headers_size = sizeof(CmifInHeader);
+        R_TRY(ctx.processor->PrepareForProcess(ctx, in_headers_size));
 
         /* Storage for output. */
         BufferArrayType buffers;
@@ -1042,7 +1043,7 @@ namespace sts::sf::impl {
         InOutObjectHolderType in_out_objects_holder;
 
         /* Process buffers. */
-        R_TRY(ImplProcessorType::ProcessBuffers(ctx, buffers, is_buffer_map_alias));
+        R_TRY(ImplProcessorType::ProcessBuffers(ctx, buffers, is_buffer_map_alias, in_headers_size));
 
         /* Process input/output objects. */
         R_TRY(in_out_objects_holder.GetInObjects(ctx.processor));
@@ -1095,16 +1096,16 @@ namespace sts::sf::impl {
 
 namespace sts::sf {
 
-    template <auto CommandId, auto CommandImpl, typename OverrideClassType, hos::Version Low = hos::Version_Min, hos::Version High = hos::Version_Max>
+    template <auto CommandId, auto CommandImpl, hos::Version Low = hos::Version_Min, hos::Version High = hos::Version_Max>
     inline static constexpr cmif::ServiceCommandMeta MakeServiceCommandMeta() {
         return {
             .hosver_low = Low,
             .hosver_high = High,
             .cmd_id = static_cast<u32>(CommandId),
-            .handler = ::sts::sf::impl::InvokeServiceCommandImpl<CommandImpl, OverrideClassType>,
+            .handler = ::sts::sf::impl::InvokeServiceCommandImpl<CommandImpl>,
         };
     }
 
 }
 
-#define MAKE_SERVICE_COMMAND_META(Name, ...) ::sts::sf::MakeServiceCommandMeta<ServiceImpl::CommandId::Name, &ServiceImpl::Name, ServiceImpl, ##__VA_ARGS__>()
+#define MAKE_SERVICE_COMMAND_META(Name, ...) ::sts::sf::MakeServiceCommandMeta<ServiceImpl::CommandId::Name, &ServiceImpl::Name, ##__VA_ARGS__>()
