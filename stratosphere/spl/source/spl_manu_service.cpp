@@ -22,8 +22,8 @@
 
 namespace sts::spl {
 
-    Result ManuService::ReEncryptRsaPrivateKey(OutPointerWithClientSize<u8> out, InPointer<u8> src, AccessKey access_key_dec, KeySource source_dec, AccessKey access_key_enc, KeySource source_enc, u32 option) {
-        return impl::ReEncryptRsaPrivateKey(out.pointer, out.num_elements, src.pointer, src.num_elements, access_key_dec, source_dec, access_key_enc, source_enc, option);
+    Result ManuService::ReEncryptRsaPrivateKey(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &src, AccessKey access_key_dec, KeySource source_dec, AccessKey access_key_enc, KeySource source_enc, u32 option) {
+        return impl::ReEncryptRsaPrivateKey(out.GetPointer(), out.GetSize(), src.GetPointer(), src.GetSize(), access_key_dec, source_dec, access_key_enc, source_enc, option);
     }
 
 }

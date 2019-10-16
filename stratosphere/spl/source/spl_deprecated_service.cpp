@@ -22,15 +22,15 @@
 
 namespace sts::spl {
 
-    Result DeprecatedService::GetConfig(Out<u64> out, u32 which) {
+    Result DeprecatedService::GetConfig(sf::Out<u64> out, u32 which) {
         return impl::GetConfig(out.GetPointer(), static_cast<SplConfigItem>(which));
     }
 
-    Result DeprecatedService::ExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> exp, InPointer<u8> mod) {
-        return impl::ExpMod(out.pointer, out.num_elements, base.pointer, base.num_elements, exp.pointer, exp.num_elements, mod.pointer, mod.num_elements);
+    Result DeprecatedService::ExpMod(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &exp, const sf::InPointerBuffer &mod) {
+        return impl::ExpMod(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), exp.GetPointer(), exp.GetSize(), mod.GetPointer(), mod.GetSize());
     }
 
-    Result DeprecatedService::GenerateAesKek(Out<AccessKey> out_access_key, KeySource key_source, u32 generation, u32 option) {
+    Result DeprecatedService::GenerateAesKek(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation, u32 option) {
         return impl::GenerateAesKek(out_access_key.GetPointer(), key_source, generation, option);
     }
 
@@ -38,7 +38,7 @@ namespace sts::spl {
         return impl::LoadAesKey(keyslot, this, access_key, key_source);
     }
 
-    Result DeprecatedService::GenerateAesKey(Out<AesKey> out_key, AccessKey access_key, KeySource key_source) {
+    Result DeprecatedService::GenerateAesKey(sf::Out<AesKey> out_key, AccessKey access_key, KeySource key_source) {
         return impl::GenerateAesKey(out_key.GetPointer(), access_key, key_source);
     }
 
@@ -46,63 +46,71 @@ namespace sts::spl {
         return impl::SetConfig(static_cast<SplConfigItem>(which), value);
     }
 
-    Result DeprecatedService::GenerateRandomBytes(OutPointerWithClientSize<u8> out) {
-        return impl::GenerateRandomBytes(out.pointer, out.num_elements);
+    Result DeprecatedService::GenerateRandomBytes(const sf::OutPointerBuffer &out) {
+        return impl::GenerateRandomBytes(out.GetPointer(), out.GetSize());
     }
 
-    Result DeprecatedService::ImportLotusKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
-        return impl::ImportLotusKey(src.pointer, src.num_elements, access_key, key_source, option);
+    Result DeprecatedService::ImportLotusKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
+        return impl::ImportLotusKey(src.GetPointer(), src.GetSize(), access_key, key_source, option);
     }
 
-    Result DeprecatedService::DecryptLotusMessage(Out<u32> out_size, OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest) {
-        return impl::DecryptLotusMessage(out_size.GetPointer(), out.pointer, out.num_elements, base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements);
+    Result DeprecatedService::DecryptLotusMessage(sf::Out<u32> out_size, const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest) {
+        return impl::DecryptLotusMessage(out_size.GetPointer(), out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize());
     }
 
-    Result DeprecatedService::IsDevelopment(Out<bool> is_dev) {
+    Result DeprecatedService::IsDevelopment(sf::Out<bool> is_dev) {
         return impl::IsDevelopment(is_dev.GetPointer());
     }
 
-    Result DeprecatedService::GenerateSpecificAesKey(Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which) {
+    Result DeprecatedService::GenerateSpecificAesKey(sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which) {
         return impl::GenerateSpecificAesKey(out_key.GetPointer(), key_source, generation, which);
     }
 
-    Result DeprecatedService::DecryptRsaPrivateKey(OutPointerWithClientSize<u8> dst, InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
-        return impl::DecryptRsaPrivateKey(dst.pointer, dst.num_elements, src.pointer, src.num_elements, access_key, key_source, option);
+    Result DeprecatedService::DecryptRsaPrivateKey(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
+        return impl::DecryptRsaPrivateKey(dst.GetPointer(), dst.GetSize(), src.GetPointer(), src.GetSize(), access_key, key_source, option);
     }
 
-    Result DeprecatedService::DecryptAesKey(Out<AesKey> out_key, KeySource key_source, u32 generation, u32 option) {
+    Result DeprecatedService::DecryptAesKey(sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 option) {
         return impl::DecryptAesKey(out_key.GetPointer(), key_source, generation, option);
     }
 
-    Result DeprecatedService::CryptAesCtrDeprecated(OutBuffer<u8> out_buf, u32 keyslot, InBuffer<u8> in_buf, IvCtr iv_ctr) {
-        return impl::CryptAesCtr(out_buf.buffer, out_buf.num_elements, keyslot, this, in_buf.buffer, in_buf.num_elements, iv_ctr);
+    Result DeprecatedService::CryptAesCtrDeprecated(const sf::OutBuffer &out_buf, u32 keyslot, const sf::InBuffer &in_buf, IvCtr iv_ctr) {
+        return impl::CryptAesCtr(out_buf.GetPointer(), out_buf.GetSize(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize(), iv_ctr);
     }
 
-    Result DeprecatedService::CryptAesCtr(OutBuffer<u8, BufferType_Type1> out_buf, u32 keyslot, InBuffer<u8, BufferType_Type1> in_buf, IvCtr iv_ctr) {
-        return impl::CryptAesCtr(out_buf.buffer, out_buf.num_elements, keyslot, this, in_buf.buffer, in_buf.num_elements, iv_ctr);
+    Result DeprecatedService::CryptAesCtr(const sf::OutNonSecureBuffer &out_buf, u32 keyslot, const sf::InNonSecureBuffer &in_buf, IvCtr iv_ctr) {
+        return impl::CryptAesCtr(out_buf.GetPointer(), out_buf.GetSize(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize(), iv_ctr);
     }
 
-    Result DeprecatedService::ComputeCmac(Out<Cmac> out_cmac, u32 keyslot, InPointer<u8> in_buf) {
-        return impl::ComputeCmac(out_cmac.GetPointer(), keyslot, this, in_buf.pointer, in_buf.num_elements);
+    Result DeprecatedService::ComputeCmac(sf::Out<Cmac> out_cmac, u32 keyslot, const sf::InPointerBuffer &in_buf) {
+        return impl::ComputeCmac(out_cmac.GetPointer(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize());
     }
 
-    Result DeprecatedService::ImportEsKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
-        return impl::ImportEsKey(src.pointer, src.num_elements, access_key, key_source, option);
+    Result DeprecatedService::ImportEsKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
+        return impl::ImportEsKey(src.GetPointer(), src.GetSize(), access_key, key_source, option);
     }
 
-    Result DeprecatedService::UnwrapTitleKey(Out<AccessKey> out_access_key, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest, u32 generation) {
-        return impl::UnwrapTitleKey(out_access_key.GetPointer(), base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements, generation);
+    Result DeprecatedService::UnwrapTitleKeyDeprecated(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest) {
+        return impl::UnwrapTitleKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), 0);
+    }
+
+    Result DeprecatedService::UnwrapTitleKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation) {
+        return impl::UnwrapTitleKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation);
     }
 
     Result DeprecatedService::LoadTitleKey(u32 keyslot, AccessKey access_key) {
         return impl::LoadTitleKey(keyslot, this, access_key);
     }
 
-    Result DeprecatedService::UnwrapCommonTitleKey(Out<AccessKey> out_access_key, KeySource key_source, u32 generation) {
+    Result DeprecatedService::UnwrapCommonTitleKeyDeprecated(sf::Out<AccessKey> out_access_key, KeySource key_source) {
+        return impl::UnwrapCommonTitleKey(out_access_key.GetPointer(), key_source, 0);
+    }
+
+    Result DeprecatedService::UnwrapCommonTitleKey(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation) {
         return impl::UnwrapCommonTitleKey(out_access_key.GetPointer(), key_source, generation);
     }
 
-    Result DeprecatedService::AllocateAesKeyslot(Out<u32> out_keyslot) {
+    Result DeprecatedService::AllocateAesKeyslot(sf::Out<u32> out_keyslot) {
         return impl::AllocateAesKeyslot(out_keyslot.GetPointer(), this);
     }
 
@@ -110,7 +118,7 @@ namespace sts::spl {
         return impl::FreeAesKeyslot(keyslot, this);
     }
 
-    void DeprecatedService::GetAesKeyslotAvailableEvent(Out<CopiedHandle> out_hnd) {
+    void DeprecatedService::GetAesKeyslotAvailableEvent(sf::OutCopyHandle out_hnd) {
         out_hnd.SetValue(impl::GetAesKeyslotAvailableEventHandle());
     }
 
@@ -118,7 +126,7 @@ namespace sts::spl {
         return impl::SetBootReason(boot_reason);
     }
 
-    Result DeprecatedService::GetBootReason(Out<BootReasonValue> out) {
+    Result DeprecatedService::GetBootReason(sf::Out<BootReasonValue> out) {
         return impl::GetBootReason(out.GetPointer());
     }
 

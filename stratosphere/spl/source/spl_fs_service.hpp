@@ -29,34 +29,36 @@ namespace sts::spl {
             virtual ~FsService() { /* ... */ }
         protected:
             /* Actual commands. */
-            virtual Result ImportLotusKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option);
-            virtual Result DecryptLotusMessage(Out<u32> out_size, OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest);
-            virtual Result GenerateSpecificAesKey(Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which);
+            virtual Result ImportLotusKeyDeprecated(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option);
+            virtual Result ImportLotusKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source);
+            virtual Result DecryptLotusMessage(sf::Out<u32> out_size, const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest);
+            virtual Result GenerateSpecificAesKey(sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which);
             virtual Result LoadTitleKey(u32 keyslot, AccessKey access_key);
-            virtual Result GetPackage2Hash(OutPointerWithClientSize<u8> dst);
+            virtual Result GetPackage2Hash(const sf::OutPointerBuffer &dst);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(FsService, GetConfig),
-                MAKE_SERVICE_COMMAND_META(FsService, ExpMod),
-                MAKE_SERVICE_COMMAND_META(FsService, SetConfig),
-                MAKE_SERVICE_COMMAND_META(FsService, GenerateRandomBytes),
-                MAKE_SERVICE_COMMAND_META(FsService, IsDevelopment),
-                MAKE_SERVICE_COMMAND_META(FsService, SetBootReason,               FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(FsService, GetBootReason,               FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(FsService, GenerateAesKek),
-                MAKE_SERVICE_COMMAND_META(FsService, LoadAesKey),
-                MAKE_SERVICE_COMMAND_META(FsService, GenerateAesKey),
-                MAKE_SERVICE_COMMAND_META(FsService, DecryptAesKey),
-                MAKE_SERVICE_COMMAND_META(FsService, CryptAesCtr),
-                MAKE_SERVICE_COMMAND_META(FsService, ComputeCmac),
-                MAKE_SERVICE_COMMAND_META(FsService, AllocateAesKeyslot,          FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(FsService, FreeAesKeyslot,              FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(FsService, GetAesKeyslotAvailableEvent, FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(FsService, ImportLotusKey),
-                MAKE_SERVICE_COMMAND_META(FsService, DecryptLotusMessage),
-                MAKE_SERVICE_COMMAND_META(FsService, GenerateSpecificAesKey),
-                MAKE_SERVICE_COMMAND_META(FsService, LoadTitleKey),
-                MAKE_SERVICE_COMMAND_META(FsService, GetPackage2Hash,             FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(GetConfig),
+                MAKE_SERVICE_COMMAND_META(ExpMod),
+                MAKE_SERVICE_COMMAND_META(SetConfig),
+                MAKE_SERVICE_COMMAND_META(GenerateRandomBytes),
+                MAKE_SERVICE_COMMAND_META(IsDevelopment),
+                MAKE_SERVICE_COMMAND_META(SetBootReason,               hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GetBootReason,               hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GenerateAesKek),
+                MAKE_SERVICE_COMMAND_META(LoadAesKey),
+                MAKE_SERVICE_COMMAND_META(GenerateAesKey),
+                MAKE_SERVICE_COMMAND_META(DecryptAesKey),
+                MAKE_SERVICE_COMMAND_META(CryptAesCtr),
+                MAKE_SERVICE_COMMAND_META(ComputeCmac),
+                MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,          hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,              hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent, hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(ImportLotusKeyDeprecated,    hos::Version_400, hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(ImportLotusKey,              hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(DecryptLotusMessage),
+                MAKE_SERVICE_COMMAND_META(GenerateSpecificAesKey),
+                MAKE_SERVICE_COMMAND_META(LoadTitleKey),
+                MAKE_SERVICE_COMMAND_META(GetPackage2Hash,             hos::Version_500),
             };
     };
 

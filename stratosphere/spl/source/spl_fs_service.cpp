@@ -22,15 +22,19 @@
 
 namespace sts::spl {
 
-    Result FsService::ImportLotusKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option) {
-        return impl::ImportLotusKey(src.pointer, src.num_elements, access_key, key_source, option);
+    Result FsService::ImportLotusKeyDeprecated(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
+        return impl::ImportLotusKey(src.GetPointer(), src.GetSize(), access_key, key_source, option);
     }
 
-    Result FsService::DecryptLotusMessage(Out<u32> out_size, OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest) {
-        return impl::DecryptLotusMessage(out_size.GetPointer(), out.pointer, out.num_elements, base.pointer, base.num_elements, mod.pointer, mod.num_elements, label_digest.pointer, label_digest.num_elements);
+    Result FsService::ImportLotusKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
+        return impl::ImportLotusKey(src.GetPointer(), src.GetSize(), access_key, key_source, static_cast<u32>(smc::DecryptOrImportMode::ImportLotusKey));
     }
 
-    Result FsService::GenerateSpecificAesKey(Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which) {
+    Result FsService::DecryptLotusMessage(sf::Out<u32> out_size, const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest) {
+        return impl::DecryptLotusMessage(out_size.GetPointer(), out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize());
+    }
+
+    Result FsService::GenerateSpecificAesKey(sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which) {
         return impl::GenerateSpecificAesKey(out_key.GetPointer(), key_source, generation, which);
     }
 
@@ -38,8 +42,8 @@ namespace sts::spl {
         return impl::LoadTitleKey(keyslot, this, access_key);
     }
 
-    Result FsService::GetPackage2Hash(OutPointerWithClientSize<u8> dst) {
-        return impl::GetPackage2Hash(dst.pointer, dst.num_elements);
+    Result FsService::GetPackage2Hash(const sf::OutPointerBuffer &dst) {
+        return impl::GetPackage2Hash(dst.GetPointer(), dst.GetSize());
     }
 
 }

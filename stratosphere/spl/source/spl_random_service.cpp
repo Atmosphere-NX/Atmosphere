@@ -22,8 +22,8 @@
 
 namespace sts::spl {
 
-    Result RandomService::GenerateRandomBytes(OutBuffer<u8> out) {
-        return impl::GenerateRandomBytes(out.buffer, out.num_elements);
+    Result RandomService::GenerateRandomBytes(const sf::OutBuffer &out) {
+        return impl::GenerateRandomBytes(out.GetPointer(), out.GetSize());
     }
 
 }

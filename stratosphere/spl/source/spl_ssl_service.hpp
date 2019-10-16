@@ -29,30 +29,30 @@ namespace sts::spl {
             virtual ~SslService() { /* ... */ }
         protected:
             /* Actual commands. */
-            virtual Result ImportSslKey(InPointer<u8> src, AccessKey access_key, KeySource key_source);
-            virtual Result SslExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod);
+            virtual Result ImportSslKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source);
+            virtual Result SslExpMod(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(SslService, GetConfig),
-                MAKE_SERVICE_COMMAND_META(SslService, ExpMod),
-                MAKE_SERVICE_COMMAND_META(SslService, SetConfig),
-                MAKE_SERVICE_COMMAND_META(SslService, GenerateRandomBytes),
-                MAKE_SERVICE_COMMAND_META(SslService, IsDevelopment),
-                MAKE_SERVICE_COMMAND_META(SslService, SetBootReason,                  FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(SslService, GetBootReason,                  FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(SslService, GenerateAesKek),
-                MAKE_SERVICE_COMMAND_META(SslService, LoadAesKey),
-                MAKE_SERVICE_COMMAND_META(SslService, GenerateAesKey),
-                MAKE_SERVICE_COMMAND_META(SslService, DecryptAesKey),
-                MAKE_SERVICE_COMMAND_META(SslService, CryptAesCtr),
-                MAKE_SERVICE_COMMAND_META(SslService, ComputeCmac),
-                MAKE_SERVICE_COMMAND_META(SslService, AllocateAesKeyslot,             FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(SslService, FreeAesKeyslot,                 FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(SslService, GetAesKeyslotAvailableEvent,    FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(SslService, DecryptRsaPrivateKeyDeprecated, FirmwareVersion_400, FirmwareVersion_400),
-                MAKE_SERVICE_COMMAND_META(SslService, DecryptRsaPrivateKey,           FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(SslService, ImportSslKey,                   FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(SslService, SslExpMod,                      FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(GetConfig),
+                MAKE_SERVICE_COMMAND_META(ExpMod),
+                MAKE_SERVICE_COMMAND_META(SetConfig),
+                MAKE_SERVICE_COMMAND_META(GenerateRandomBytes),
+                MAKE_SERVICE_COMMAND_META(IsDevelopment),
+                MAKE_SERVICE_COMMAND_META(SetBootReason,                  hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GetBootReason,                  hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GenerateAesKek),
+                MAKE_SERVICE_COMMAND_META(LoadAesKey),
+                MAKE_SERVICE_COMMAND_META(GenerateAesKey),
+                MAKE_SERVICE_COMMAND_META(DecryptAesKey),
+                MAKE_SERVICE_COMMAND_META(CryptAesCtr),
+                MAKE_SERVICE_COMMAND_META(ComputeCmac),
+                MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,             hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,                 hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent,    hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKeyDeprecated, hos::Version_400, hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKey,           hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(ImportSslKey,                   hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(SslExpMod,                      hos::Version_500),
 
             };
     };

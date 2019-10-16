@@ -21,7 +21,7 @@
 
 namespace sts::spl {
 
-    class RandomService final : public IServiceObject {
+    class RandomService final : public sf::IServiceObject {
         protected:
             enum class CommandId {
                 GenerateRandomBytes = 0,
@@ -31,10 +31,10 @@ namespace sts::spl {
             virtual ~RandomService() { /* ... */ }
         private:
             /* Actual commands. */
-            virtual Result GenerateRandomBytes(OutBuffer<u8> out);
+            virtual Result GenerateRandomBytes(const sf::OutBuffer &out);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(RandomService, GenerateRandomBytes),
+                MAKE_SERVICE_COMMAND_META(GenerateRandomBytes),
             };
     };
 

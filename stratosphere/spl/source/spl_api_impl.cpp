@@ -45,7 +45,7 @@ namespace sts::spl::impl {
 
         /* Max Keyslots helper. */
         inline size_t GetMaxKeyslots() {
-            return (GetRuntimeFirmwareVersion() >= FirmwareVersion_600) ? MaxAesKeyslots : MaxAesKeyslotsDeprecated;
+            return (hos::GetVersion() >= hos::Version_600) ? MaxAesKeyslots : MaxAesKeyslotsDeprecated;
         }
 
         /* Type definitions. */
@@ -289,7 +289,7 @@ namespace sts::spl::impl {
             if (keyslot >= GetMaxKeyslots()) {
                 return ResultSplInvalidKeyslot;
             }
-            if (g_keyslot_owners[keyslot] != owner && GetRuntimeFirmwareVersion() > FirmwareVersion_100) {
+            if (g_keyslot_owners[keyslot] != owner && hos::GetVersion() > hos::Version_100) {
                 return ResultSplInvalidKeyslot;
             }
             return ResultSuccess;
@@ -353,7 +353,7 @@ namespace sts::spl::impl {
 
             armDCacheFlush(layout, sizeof(*layout));
             smc::Result smc_res;
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+            if (hos::GetVersion() >= hos::Version_500) {
                 smc_res = smc::DecryptOrImportRsaPrivateKey(layout->data, src_size, access_key, key_source, static_cast<smc::DecryptOrImportMode>(option));
             } else {
                 smc_res = smc::ImportSecureExpModKey(layout->data, src_size, access_key, key_source, option);
@@ -703,7 +703,7 @@ namespace sts::spl::impl {
     }
 
     Result AllocateAesKeyslot(u32 *out_keyslot, const void *owner) {
-        if (GetRuntimeFirmwareVersion() <= FirmwareVersion_100) {
+        if (hos::GetVersion() <= hos::Version_100) {
             /* On 1.0.0, keyslots were kind of a wild west. */
             *out_keyslot = 0;
             return ResultSuccess;
@@ -722,7 +722,7 @@ namespace sts::spl::impl {
     }
 
     Result FreeAesKeyslot(u32 keyslot, const void *owner) {
-        if (GetRuntimeFirmwareVersion() <= FirmwareVersion_100) {
+        if (hos::GetVersion() <= hos::Version_100) {
             /* On 1.0.0, keyslots were kind of a wild west. */
             return ResultSuccess;
         }
@@ -758,9 +758,9 @@ namespace sts::spl::impl {
 
         smc::Result smc_res;
         size_t copy_size = 0;
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+        if (hos::GetVersion() >= hos::Version_500) {
             copy_size = std::min(dst_size, src_size - RsaPrivateKeyMetaSize);
-            smc_res = smc::DecryptOrImportRsaPrivateKey(layout->data, src_size, access_key, key_source, smc::DecryptOrImportMode::DecryptRsaPrivateKey);
+            smc_res = smc::DecryptOrImportRsaPrivateKey(layout->data, src_size, access_key, key_source, static_cast<smc::DecryptOrImportMode>(option));
         } else {
             smc_res = smc::DecryptRsaPrivateKey(&copy_size, layout->data, src_size, access_key, key_source, option);
             copy_size = std::min(dst_size, copy_size);
@@ -785,8 +785,8 @@ namespace sts::spl::impl {
 
     /* ES */
     Result ImportEsKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
-            return ImportSecureExpModKey(src, src_size, access_key, key_source, static_cast<u32>(smc::DecryptOrImportMode::ImportEsKey));
+        if (hos::GetVersion() >= hos::Version_500) {
+            return ImportSecureExpModKey(src, src_size, access_key, key_source, option);
         } else {
             struct ImportEsKeyLayout {
                 u8 data[RsaPrivateKeyMetaSize + 2 * RsaPrivateKeySize + 0x10];
@@ -832,9 +832,6 @@ namespace sts::spl::impl {
 
     /* FS */
     Result ImportLotusKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
-            option = static_cast<u32>(smc::DecryptOrImportMode::ImportLotusKey);
-        }
         return ImportSecureExpModKey(src, src_size, access_key, key_source, option);
     }
 

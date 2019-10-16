@@ -27,7 +27,7 @@ namespace sts::spl {
         impl::FreeAesKeyslots(this);
     }
 
-    Result CryptoService::GenerateAesKek(Out<AccessKey> out_access_key, KeySource key_source, u32 generation, u32 option) {
+    Result CryptoService::GenerateAesKek(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation, u32 option) {
         return impl::GenerateAesKek(out_access_key.GetPointer(), key_source, generation, option);
     }
 
@@ -35,23 +35,23 @@ namespace sts::spl {
         return impl::LoadAesKey(keyslot, this, access_key, key_source);
     }
 
-    Result CryptoService::GenerateAesKey(Out<AesKey> out_key, AccessKey access_key, KeySource key_source) {
+    Result CryptoService::GenerateAesKey(sf::Out<AesKey> out_key, AccessKey access_key, KeySource key_source) {
         return impl::GenerateAesKey(out_key.GetPointer(), access_key, key_source);
     }
 
-    Result CryptoService::DecryptAesKey(Out<AesKey> out_key, KeySource key_source, u32 generation, u32 option) {
+    Result CryptoService::DecryptAesKey(sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 option) {
         return impl::DecryptAesKey(out_key.GetPointer(), key_source, generation, option);
     }
 
-    Result CryptoService::CryptAesCtr(OutBuffer<u8, BufferType_Type1> out_buf, u32 keyslot, InBuffer<u8, BufferType_Type1> in_buf, IvCtr iv_ctr) {
-        return impl::CryptAesCtr(out_buf.buffer, out_buf.num_elements, keyslot, this, in_buf.buffer, in_buf.num_elements, iv_ctr);
+    Result CryptoService::CryptAesCtr(const sf::OutNonSecureBuffer &out_buf, u32 keyslot, const sf::InNonSecureBuffer &in_buf, IvCtr iv_ctr) {
+        return impl::CryptAesCtr(out_buf.GetPointer(), out_buf.GetSize(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize(), iv_ctr);
     }
 
-    Result CryptoService::ComputeCmac(Out<Cmac> out_cmac, u32 keyslot, InPointer<u8> in_buf) {
-        return impl::ComputeCmac(out_cmac.GetPointer(), keyslot, this, in_buf.pointer, in_buf.num_elements);
+    Result CryptoService::ComputeCmac(sf::Out<Cmac> out_cmac, u32 keyslot, const sf::InPointerBuffer &in_buf) {
+        return impl::ComputeCmac(out_cmac.GetPointer(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize());
     }
 
-    Result CryptoService::AllocateAesKeyslot(Out<u32> out_keyslot) {
+    Result CryptoService::AllocateAesKeyslot(sf::Out<u32> out_keyslot) {
         return impl::AllocateAesKeyslot(out_keyslot.GetPointer(), this);
     }
 
@@ -59,7 +59,7 @@ namespace sts::spl {
         return impl::FreeAesKeyslot(keyslot, this);
     }
 
-    void CryptoService::GetAesKeyslotAvailableEvent(Out<CopiedHandle> out_hnd) {
+    void CryptoService::GetAesKeyslotAvailableEvent(sf::OutCopyHandle out_hnd) {
         out_hnd.SetValue(impl::GetAesKeyslotAvailableEventHandle());
     }
 

@@ -29,40 +29,42 @@ namespace sts::spl {
             virtual ~EsService() { /* ... */}
         protected:
             /* Actual commands. */
-            virtual Result ImportEsKey(InPointer<u8> src, AccessKey access_key, KeySource key_source, u32 option);
-            virtual Result UnwrapTitleKey(Out<AccessKey> out_access_key, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest, u32 generation);
-            virtual Result UnwrapCommonTitleKey(Out<AccessKey> out_access_key, KeySource key_source, u32 generation);
-            virtual Result ImportDrmKey(InPointer<u8> src, AccessKey access_key, KeySource key_source);
-            virtual Result DrmExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> mod);
-            virtual Result UnwrapElicenseKey(Out<AccessKey> out_access_key, InPointer<u8> base, InPointer<u8> mod, InPointer<u8> label_digest, u32 generation);
+            virtual Result ImportEsKeyDeprecated(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option);
+            virtual Result ImportEsKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source);
+            virtual Result UnwrapTitleKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation);
+            virtual Result UnwrapCommonTitleKey(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation);
+            virtual Result ImportDrmKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source);
+            virtual Result DrmExpMod(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod);
+            virtual Result UnwrapElicenseKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation);
             virtual Result LoadElicenseKey(u32 keyslot, AccessKey access_key);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(EsService, GetConfig),
-                MAKE_SERVICE_COMMAND_META(EsService, ExpMod),
-                MAKE_SERVICE_COMMAND_META(EsService, SetConfig),
-                MAKE_SERVICE_COMMAND_META(EsService, GenerateRandomBytes),
-                MAKE_SERVICE_COMMAND_META(EsService, IsDevelopment),
-                MAKE_SERVICE_COMMAND_META(EsService, SetBootReason,                  FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(EsService, GetBootReason,                  FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(EsService, GenerateAesKek),
-                MAKE_SERVICE_COMMAND_META(EsService, LoadAesKey),
-                MAKE_SERVICE_COMMAND_META(EsService, GenerateAesKey),
-                MAKE_SERVICE_COMMAND_META(EsService, DecryptAesKey),
-                MAKE_SERVICE_COMMAND_META(EsService, CryptAesCtr),
-                MAKE_SERVICE_COMMAND_META(EsService, ComputeCmac),
-                MAKE_SERVICE_COMMAND_META(EsService, AllocateAesKeyslot,             FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(EsService, FreeAesKeyslot,                 FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(EsService, GetAesKeyslotAvailableEvent,    FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(EsService, DecryptRsaPrivateKeyDeprecated, FirmwareVersion_400, FirmwareVersion_400),
-                MAKE_SERVICE_COMMAND_META(EsService, DecryptRsaPrivateKey,           FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(EsService, ImportEsKey),
-                MAKE_SERVICE_COMMAND_META(EsService, UnwrapTitleKey),
-                MAKE_SERVICE_COMMAND_META(EsService, UnwrapCommonTitleKey,           FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(EsService, ImportDrmKey,                   FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(EsService, DrmExpMod,                      FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(EsService, UnwrapElicenseKey,              FirmwareVersion_600),
-                MAKE_SERVICE_COMMAND_META(EsService, LoadElicenseKey,                FirmwareVersion_600),
+                MAKE_SERVICE_COMMAND_META(GetConfig),
+                MAKE_SERVICE_COMMAND_META(ExpMod),
+                MAKE_SERVICE_COMMAND_META(SetConfig),
+                MAKE_SERVICE_COMMAND_META(GenerateRandomBytes),
+                MAKE_SERVICE_COMMAND_META(IsDevelopment),
+                MAKE_SERVICE_COMMAND_META(SetBootReason,                  hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GetBootReason,                  hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GenerateAesKek),
+                MAKE_SERVICE_COMMAND_META(LoadAesKey),
+                MAKE_SERVICE_COMMAND_META(GenerateAesKey),
+                MAKE_SERVICE_COMMAND_META(DecryptAesKey),
+                MAKE_SERVICE_COMMAND_META(CryptAesCtr),
+                MAKE_SERVICE_COMMAND_META(ComputeCmac),
+                MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,             hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,                 hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent,    hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKeyDeprecated, hos::Version_400, hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKey,           hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(ImportEsKeyDeprecated,          hos::Version_400, hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(ImportEsKey,                    hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(UnwrapTitleKey),
+                MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKey,           hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(ImportDrmKey,                   hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(DrmExpMod,                      hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(UnwrapElicenseKey,              hos::Version_600),
+                MAKE_SERVICE_COMMAND_META(LoadElicenseKey,                hos::Version_600),
             };
     };
 

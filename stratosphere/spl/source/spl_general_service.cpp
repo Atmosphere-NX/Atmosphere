@@ -22,23 +22,23 @@
 
 namespace sts::spl {
 
-    Result GeneralService::GetConfig(Out<u64> out, u32 which) {
+    Result GeneralService::GetConfig(sf::Out<u64> out, u32 which) {
         return impl::GetConfig(out.GetPointer(), static_cast<SplConfigItem>(which));
     }
 
-    Result GeneralService::ExpMod(OutPointerWithClientSize<u8> out, InPointer<u8> base, InPointer<u8> exp, InPointer<u8> mod) {
-        return impl::ExpMod(out.pointer, out.num_elements, base.pointer, base.num_elements, exp.pointer, exp.num_elements, mod.pointer, mod.num_elements);
+    Result GeneralService::ExpMod(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &exp, const sf::InPointerBuffer &mod) {
+        return impl::ExpMod(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), exp.GetPointer(), exp.GetSize(), mod.GetPointer(), mod.GetSize());
     }
 
     Result GeneralService::SetConfig(u32 which, u64 value) {
         return impl::SetConfig(static_cast<SplConfigItem>(which), value);
     }
 
-    Result GeneralService::GenerateRandomBytes(OutPointerWithClientSize<u8> out) {
-        return impl::GenerateRandomBytes(out.pointer, out.num_elements);
+    Result GeneralService::GenerateRandomBytes(const sf::OutPointerBuffer &out) {
+        return impl::GenerateRandomBytes(out.GetPointer(), out.GetSize());
     }
 
-    Result GeneralService::IsDevelopment(Out<bool> is_dev) {
+    Result GeneralService::IsDevelopment(sf::Out<bool> is_dev) {
         return impl::IsDevelopment(is_dev.GetPointer());
     }
 
@@ -46,7 +46,7 @@ namespace sts::spl {
         return impl::SetBootReason(boot_reason);
     }
 
-    Result GeneralService::GetBootReason(Out<BootReasonValue> out) {
+    Result GeneralService::GetBootReason(sf::Out<BootReasonValue> out) {
         return impl::GetBootReason(out.GetPointer());
     }
 
