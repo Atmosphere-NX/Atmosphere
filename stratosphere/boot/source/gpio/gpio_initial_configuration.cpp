@@ -41,14 +41,14 @@ namespace sts::gpio {
         const InitialConfig *configs = nullptr;
         size_t num_configs = 0;
         const auto hw_type = spl::GetHardwareType();
-        const FirmwareVersion fw_ver = GetRuntimeFirmwareVersion();
+        const auto hos_ver = hos::GetVersion();
 
         /* Choose GPIO map. */
-        if (fw_ver >= FirmwareVersion_200) {
+        if (hos_ver >= hos::Version_200) {
             switch (hw_type) {
                 case spl::HardwareType::Icosa:
                     {
-                        if (fw_ver >= FirmwareVersion_400) {
+                        if (hos_ver >= hos::Version_400) {
                             configs = InitialConfigsIcosa4x;
                             num_configs = NumInitialConfigsIcosa4x;
                         } else {
