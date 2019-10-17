@@ -1132,8 +1132,8 @@ namespace sts::dmnt::cheat::impl {
                         case SaveRestoreRegisterOpType_ClearRegs:
                         case SaveRestoreRegisterOpType_Restore:
                         default:
-                            src = this->registers;
-                            dst = this->saved_values;
+                            src = this->saved_values;
+                            dst = this->registers;
                             break;
                     }
                     for (size_t i = 0; i < NumRegisters; i++) {
