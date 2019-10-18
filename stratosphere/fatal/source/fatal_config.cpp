@@ -56,16 +56,17 @@ namespace sts::fatal::srv {
         /* Get information from set. */
         setsysGetSerialNumber(this->serial_number);
         setsysGetFirmwareVersion(&this->firmware_version);
-        setsysGetFlag(SetSysFlag_Quest, &this->quest_flag);
+        setsysGetQuestFlag(&this->quest_flag);
         this->UpdateLanguageCode();
 
         /* Read information from settings. */
-        setsysGetSettingsItemValue("fatal", "transition_to_fatal", &this->transition_to_fatal, sizeof(this->transition_to_fatal));
-        setsysGetSettingsItemValue("fatal", "show_extra_info", &this->show_extra_info, sizeof(this->show_extra_info));
-        setsysGetSettingsItemValue("fatal", "quest_reboot_interval_second", &this->quest_reboot_interval_second, sizeof(this->quest_reboot_interval_second));
+        u64 set_size_out;
+        setsysGetSettingsItemValue("fatal", "transition_to_fatal", &this->transition_to_fatal, sizeof(this->transition_to_fatal), &set_size_out);
+        setsysGetSettingsItemValue("fatal", "show_extra_info", &this->show_extra_info, sizeof(this->show_extra_info), &set_size_out);
+        setsysGetSettingsItemValue("fatal", "quest_reboot_interval_second", &this->quest_reboot_interval_second, sizeof(this->quest_reboot_interval_second), &set_size_out);
 
         /* Atmosphere extension for automatic reboot. */
-        if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "fatal_auto_reboot_interval", &this->fatal_auto_reboot_interval, sizeof(this->fatal_auto_reboot_interval)))) {
+        if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "fatal_auto_reboot_interval", &this->fatal_auto_reboot_interval, sizeof(this->fatal_auto_reboot_interval), &set_size_out))) {
             this->fatal_auto_reboot_enabled = this->fatal_auto_reboot_interval != 0;
         }
 

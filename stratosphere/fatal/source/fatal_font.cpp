@@ -223,7 +223,7 @@ namespace sts::fatal::srv::font {
     }
 
     Result InitializeSharedFont() {
-        size_t total_fonts = 0;
+        s32 total_fonts = 0;
 
         R_TRY(plGetSharedFont(GetFatalConfig().GetLanguageCode(), g_fonts, PlSharedFontType_Total, &total_fonts));
         R_TRY(plGetSharedFontByType(&g_font, PlSharedFontType_Standard));
