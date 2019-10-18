@@ -53,7 +53,7 @@ namespace sts::creport {
         }
     }
 
-    u64 ParseProcessIdArgument(const char *s) {
+    os::ProcessId ParseProcessIdArgument(const char *s) {
         /* Official creport uses this custom parsing logic... */
         u64 out_val = 0;
 
@@ -66,7 +66,7 @@ namespace sts::creport {
             }
         }
 
-        return out_val;
+        return os::ProcessId{out_val};
     }
 
 }

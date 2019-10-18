@@ -74,8 +74,8 @@ namespace sts::creport {
                 return this->exception_info.type == svc::DebugExceptionType::UserBreak;
             }
 
-            bool OpenProcess(u64 process_id) {
-                return R_SUCCEEDED(svcDebugActiveProcess(&this->debug_handle, process_id));
+            bool OpenProcess(os::ProcessId process_id) {
+                return R_SUCCEEDED(svcDebugActiveProcess(&this->debug_handle, static_cast<u64>(process_id)));
             }
 
             void Close() {
@@ -85,7 +85,7 @@ namespace sts::creport {
                 }
             }
 
-            void BuildReport(u64 process_id, bool has_extra_info);
+            void BuildReport(os::ProcessId process_id, bool has_extra_info);
             void GetFatalContext(FatalContext *out) const;
             void SaveReport();
         private:
