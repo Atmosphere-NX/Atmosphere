@@ -85,7 +85,7 @@ namespace sts::creport {
 
     }
 
-    void CrashReport::BuildReport(u64 process_id, bool has_extra_info) {
+    void CrashReport::BuildReport(os::ProcessId process_id, bool has_extra_info) {
         this->has_extra_info = has_extra_info;
 
         if (this->OpenProcess(process_id)) {
@@ -173,7 +173,7 @@ namespace sts::creport {
         this->process_info = d.info.attach_process;
 
         /* On 5.0.0+, we want to parse out a dying message from application crashes. */
-        if (GetRuntimeFirmwareVersion() < FirmwareVersion_500 || !IsApplication()) {
+        if (hos::GetVersion() < hos::Version_500 || !IsApplication()) {
             return;
         }
 
@@ -226,7 +226,7 @@ namespace sts::creport {
             case svc::DebugExceptionType::UserBreak:
                 this->result = ResultCreportUserBreak;
                 /* Try to parse out the user break result. */
-                if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+                if (hos::GetVersion() >= hos::Version_500) {
                     svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
                 }
                 break;
@@ -249,7 +249,7 @@ namespace sts::creport {
 
     void CrashReport::ProcessDyingMessage() {
         /* Dying message is only stored starting in 5.0.0. */
-        if (GetRuntimeFirmwareVersion() < FirmwareVersion_500) {
+        if (hos::GetVersion() < hos::Version_500) {
             return;
         }
 
@@ -317,7 +317,7 @@ namespace sts::creport {
         fprintf(f_report, "    Title ID:                    %016lx\n", this->process_info.title_id);
         fprintf(f_report, "    Process ID:                  %016lx\n", this->process_info.process_id);
         fprintf(f_report, "    Process Flags:               %08x\n", this->process_info.flags);
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500) {
+        if (hos::GetVersion() >= hos::Version_500) {
             fprintf(f_report, "    User Exception Address:      %s\n", this->module_list.GetFormattedAddressString(this->process_info.user_exception_context_address));
         }
 
@@ -352,7 +352,7 @@ namespace sts::creport {
         this->crashed_thread.SaveToFile(f_report);
 
         /* Dying Message. */
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_500 && this->dying_message_size != 0) {
+        if (hos::GetVersion() >= hos::Version_500 && this->dying_message_size != 0) {
             fprintf(f_report, "Dying Message Info:\n");
             fprintf(f_report, "    Address:                     0x%s\n", this->module_list.GetFormattedAddressString(this->dying_message_address));
             fprintf(f_report, "    Size:                        0x%016lx\n", this->dying_message_size);

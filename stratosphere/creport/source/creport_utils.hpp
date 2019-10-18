@@ -22,6 +22,6 @@ namespace sts::creport {
 
     /* Utility functions. */
     void DumpMemoryHexToFile(FILE *f, const char *prefix, const void *data, size_t size);
-    u64  ParseProcessIdArgument(const char *s);
+    os::ProcessId ParseProcessIdArgument(const char *s);
 
 }
