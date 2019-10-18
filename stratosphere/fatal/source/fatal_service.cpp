@@ -51,22 +51,22 @@ namespace sts::fatal::srv {
                     return this->event_manager.GetEvent(out);
                 }
 
-                Result ThrowFatal(u32 error_code, u64 process_id) {
+                Result ThrowFatal(u32 error_code, os::ProcessId process_id) {
                     return this->ThrowFatalWithCpuContext(error_code, process_id, FatalType_ErrorReportAndErrorScreen, {});
                 }
 
-                Result ThrowFatalWithPolicy(u32 error_code, u64 process_id, FatalType policy) {
+                Result ThrowFatalWithPolicy(u32 error_code, os::ProcessId process_id, FatalType policy) {
                     return this->ThrowFatalWithCpuContext(error_code, process_id, policy, {});
                 }
 
-                Result ThrowFatalWithCpuContext(u32 error_code, u64 process_id, FatalType policy, const CpuContext &cpu_ctx);
+                Result ThrowFatalWithCpuContext(u32 error_code, os::ProcessId process_id, FatalType policy, const CpuContext &cpu_ctx);
         };
 
         /* Context global. */
         ServiceContext g_context;
 
         /* Throw implementation. */
-        Result ServiceContext::ThrowFatalWithCpuContext(u32 error_code, u64 process_id, FatalType policy, const CpuContext &cpu_ctx) {
+        Result ServiceContext::ThrowFatalWithCpuContext(u32 error_code, os::ProcessId process_id, FatalType policy, const CpuContext &cpu_ctx) {
             /* We don't support Error Report only fatals. */
             if (policy == FatalType_ErrorReport) {
                 return ResultSuccess;
@@ -92,7 +92,7 @@ namespace sts::fatal::srv {
 
             if (!this->context.is_creport) {
                 /* On firmware version 2.0.0, use debugging SVCs to collect information. */
-                if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200) {
+                if (hos::GetVersion() >= hos::Version_200) {
                     fatal::srv::TryCollectDebugInformation(&this->context, process_id);
                 }
             } else {
@@ -132,28 +132,22 @@ namespace sts::fatal::srv {
     }
 
     Result ThrowFatalForSelf(Result error_code) {
-        u64 process_id = 0;
-        R_ASSERT(svcGetProcessId(&process_id, CUR_PROCESS_HANDLE));
-        return g_context.ThrowFatalWithPolicy(static_cast<u32>(error_code), process_id, FatalType_ErrorScreen);
+        return g_context.ThrowFatalWithPolicy(static_cast<u32>(error_code), os::GetCurrentProcessId(), FatalType_ErrorScreen);
     }
 
-    Result UserService::ThrowFatal(u32 error, PidDescriptor pid_desc) {
-        return g_context.ThrowFatal(error, pid_desc.pid);
+    Result UserService::ThrowFatal(u32 error, const sf::ClientProcessId &client_pid) {
+        return g_context.ThrowFatal(error, client_pid.GetValue());
     }
 
-    Result UserService::ThrowFatalWithPolicy(u32 error, PidDescriptor pid_desc, FatalType policy) {
-        return g_context.ThrowFatalWithPolicy(error, pid_desc.pid, policy);
+    Result UserService::ThrowFatalWithPolicy(u32 error, const sf::ClientProcessId &client_pid, FatalType policy) {
+        return g_context.ThrowFatalWithPolicy(error, client_pid.GetValue(), policy);
     }
 
-    Result UserService::ThrowFatalWithCpuContext(u32 error, PidDescriptor pid_desc, FatalType policy, InBuffer<u8> _ctx) {
-        if (_ctx.num_elements < sizeof(CpuContext)) {
-            return g_context.ThrowFatalWithPolicy(error, pid_desc.pid, policy);
-        } else {
-            return g_context.ThrowFatalWithCpuContext(error, pid_desc.pid, policy, *reinterpret_cast<const CpuContext *>(_ctx.buffer));
-        }
+    Result UserService::ThrowFatalWithCpuContext(u32 error, const sf::ClientProcessId &client_pid, FatalType policy, const CpuContext &cpu_ctx) {
+        return g_context.ThrowFatalWithCpuContext(error, client_pid.GetValue(), policy, cpu_ctx);
     }
 
-    Result PrivateService::GetFatalEvent(Out<CopiedHandle> out_h) {
+    Result PrivateService::GetFatalEvent(sf::OutCopyHandle out_h) {
         return g_context.GetEvent(out_h.GetHandlePointer());
     }
 

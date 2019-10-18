@@ -65,40 +65,54 @@ namespace sts::fatal::srv {
                 return false;
             }
 
-            /* HACK: We want to parse the command the fatal caller sent. */
-            /* The easiest way to do this is to copy their TLS over ours, and parse ours. */
-            std::memcpy(armGetTls(), thread_tls, sizeof(thread_tls));
+            /* We want to parse the command the fatal caller sent. */
             {
-                IpcParsedCommand r;
-                if (R_FAILED(ipcParse(&r))) {
-                    return false;
-                }
+                const auto request = hipcParseRequest(thread_tls);
+
+                const struct {
+                    CmifInHeader header;
+                    u32 error_code;
+                } *in_data = decltype(in_data)(request.data.data_words);
+                static_assert(sizeof(*in_data) == 0x14, "InData!");
 
                 /* Fatal command takes in a PID, only one buffer max. */
-                if (!r.HasPid || r.NumStatics || r.NumStaticsOut || r.NumHandles) {
+                if ((request.meta.type != CmifCommandType_Request && request.meta.type != CmifCommandType_RequestWithContext) ||
+                    !request.meta.send_pid ||
+                    request.meta.num_send_statics ||
+                    request.meta.num_recv_statics ||
+                    request.meta.num_recv_buffers ||
+                    request.meta.num_exch_buffers ||
+                    request.meta.num_copy_handles ||
+                    request.meta.num_move_handles ||
+                    request.meta.num_data_words < ((sizeof(*in_data) + 0x10) / sizeof(u32)))
+                {
                     return false;
                 }
 
-                struct {
-                    u32 magic;
-                    u32 version;
-                    u64 cmd_id;
-                    u32 err_code;
-                } *raw = (decltype(raw))(r.Raw);
-
-                if (raw->magic != SFCI_MAGIC) {
+                if (in_data->header.magic != CMIF_IN_HEADER_MAGIC) {
                     return false;
                 }
 
-                if (raw->cmd_id > 2) {
+                if (in_data->header.version > 1) {
                     return false;
                 }
 
-                if (raw->cmd_id != 2 && r.NumBuffers) {
-                    return false;
+                switch (in_data->header.command_id) {
+                    case 0:
+                    case 1:
+                        if (request.meta.num_send_buffers != 0) {
+                            return false;
+                        }
+                        break;
+                    case 2:
+                        if (request.meta.num_send_buffers != 1) {
+                            return false;
+                        }
+                    default:
+                        return false;
                 }
 
-                if (raw->err_code != error_code) {
+                if (in_data->error_code != error_code) {
                     return false;
                 }
             }
@@ -154,10 +168,10 @@ namespace sts::fatal::srv {
 
     }
 
-    void TryCollectDebugInformation(ThrowContext *ctx, u64 process_id) {
+    void TryCollectDebugInformation(ThrowContext *ctx, os::ProcessId process_id) {
         /* Try to debug the process. This may fail, if we called into ourself. */
         os::ManagedHandle debug_handle;
-        if (R_FAILED(svcDebugActiveProcess(debug_handle.GetPointer(), process_id))) {
+        if (R_FAILED(svcDebugActiveProcess(debug_handle.GetPointer(), static_cast<u64>(process_id)))) {
             return;
         }
 

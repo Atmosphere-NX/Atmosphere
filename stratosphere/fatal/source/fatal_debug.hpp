@@ -20,6 +20,6 @@
 
 namespace sts::fatal::srv {
 
-    void TryCollectDebugInformation(ThrowContext *ctx, u64 process_id);
+    void TryCollectDebugInformation(ThrowContext *ctx, os::ProcessId process_id);
 
 }
