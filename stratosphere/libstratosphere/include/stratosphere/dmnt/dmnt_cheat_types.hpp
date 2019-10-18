@@ -16,7 +16,9 @@
 
 #pragma once
 
+#include "../os/os_common_types.hpp"
 #include "../ncm/ncm_types.hpp"
+#include "../sf/sf_buffer_tags.hpp"
 
 namespace sts::dmnt::cheat {
 
@@ -26,7 +28,7 @@ namespace sts::dmnt::cheat {
             u64 size;
         };
 
-        u64 process_id;
+        os::ProcessId process_id;
         ncm::TitleId title_id;
         MemoryRegionExtents main_nso_extents;
         MemoryRegionExtents heap_extents;
@@ -37,17 +39,20 @@ namespace sts::dmnt::cheat {
 
     static_assert(std::is_pod<CheatProcessMetadata>::value && sizeof(CheatProcessMetadata) == 0x70, "CheatProcessMetadata definition!");
 
-    struct CheatDefinition {
+    struct CheatDefinition : sf::LargeData, sf::PrefersMapAliasTransferMode {
         char readable_name[0x40];
         uint32_t num_opcodes;
         uint32_t opcodes[0x100];
     };
 
-    struct CheatEntry {
+    struct CheatEntry : sf::LargeData, sf::PrefersMapAliasTransferMode {
         bool enabled;
         uint32_t cheat_id;
         CheatDefinition definition;
     };
+
+    static_assert(std::is_pod<CheatDefinition>::value, "CheatDefinition");
+    static_assert(std::is_pod<CheatEntry>::value, "CheatEntry");
 
     struct FrozenAddressValue {
         u64 value;

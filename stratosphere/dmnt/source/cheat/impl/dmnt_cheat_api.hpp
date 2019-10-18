@@ -38,7 +38,7 @@ namespace sts::dmnt::cheat::impl {
     Result GetCheats(CheatEntry *cheats, size_t max_count, u64 *out_count, u64 offset);
     Result GetCheatById(CheatEntry *out_cheat, u32 cheat_id);
     Result ToggleCheat(u32 cheat_id);
-    Result AddCheat(u32 *out_id, const CheatDefinition *def, bool enabled);
+    Result AddCheat(u32 *out_id, const CheatDefinition &def, bool enabled);
     Result RemoveCheat(u32 cheat_id);
 
     Result GetFrozenAddressCount(u64 *out_count);

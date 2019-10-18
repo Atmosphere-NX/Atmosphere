@@ -30,7 +30,9 @@ extern "C" {
     extern u32 __start__;
 
     u32 __nx_applet_type = AppletType_None;
+    u32 __nx_fs_num_sessions = 1;
 
+    /* TODO: Evaluate how much this can be reduced by. */
     #define INNER_HEAP_SIZE 0xC0000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
@@ -55,15 +57,17 @@ void __libnx_initheap(void) {
 	fake_heap_end   = (char*)addr + size;
 }
 
+using namespace sts;
+
 void __appInit(void) {
-    SetFirmwareVersionForLibnx();
+    hos::SetVersionForLibnx();
 
     DoWithSmSession([&]() {
         R_ASSERT(pmdmntInitialize());
         R_ASSERT(pminfoInitialize());
         R_ASSERT(ldrDmntInitialize());
         /* TODO: We provide this on every sysver via ro. Do we need a shim? */
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+        if (hos::GetVersion() >= hos::Version_300) {
             R_ASSERT(roDmntInitialize());
         }
         R_ASSERT(nsdevInitialize());
@@ -94,19 +98,70 @@ void __appExit(void) {
     pmdmntExit();
 }
 
+namespace {
+
+    using ServerOptions = sf::hipc::DefaultServerManagerOptions;
+
+    constexpr sm::ServiceName DebugMonitorServiceName = sm::ServiceName::Encode("dmnt:-");
+    constexpr size_t          DebugMonitorMaxSessions = 4;
+
+    constexpr sm::ServiceName CheatServiceName = sm::ServiceName::Encode("dmnt:cht");
+    constexpr size_t          CheatMaxSessions = 2;
+
+    /* dmnt:-, dmnt:cht. */
+    constexpr size_t NumServers  = 2;
+    constexpr size_t NumSessions = DebugMonitorMaxSessions + CheatMaxSessions;
+
+    sf::hipc::ServerManager<NumServers, ServerOptions, NumSessions> g_server_manager;
+
+    void LoopServerThread(void *arg) {
+        g_server_manager.LoopProcess();
+    }
+
+}
+
 int main(int argc, char **argv)
 {
-    /* Nintendo uses four threads. Add a fifth for our cheat service. */
-    static auto s_server_manager = WaitableManager(5);
-
     /* Create services. */
-
     /* TODO: Implement rest of dmnt:- in ams.tma development branch. */
-    /* server_manager->AddWaitable(new ServiceServer<DebugMonitorService>("dmnt:-", 4)); */
-    s_server_manager.AddWaitable(new ServiceServer<sts::dmnt::cheat::CheatService>("dmnt:cht", 1));
+    /* R_ASSERT((g_server_manager.RegisterServer<dmnt::cheat::CheatService>(DebugMonitorServiceName, DebugMonitorMaxSessions))); */
+    R_ASSERT((g_server_manager.RegisterServer<dmnt::cheat::CheatService>(CheatServiceName, CheatMaxSessions)));
 
     /* Loop forever, servicing our services. */
-    s_server_manager.Process();
+    /* Nintendo loops four threads processing on the manager -- we'll loop an extra fifth for our cheat service. */
+    {
+        constexpr size_t TotalThreads = DebugMonitorMaxSessions + 1;
+        constexpr size_t NumExtraThreads = TotalThreads - 1;
+        static_assert(TotalThreads >= 1, "TotalThreads");
+
+        os::Thread extra_threads[NumExtraThreads];
+
+        /* Initialize threads. */
+        if constexpr (NumExtraThreads > 0) {
+            constexpr size_t ThreadStackSize = 0x4000;
+            const u32 priority = os::GetCurrentThreadPriority();
+            for (size_t i = 0; i < NumExtraThreads; i++) {
+                R_ASSERT(extra_threads[i].Initialize(LoopServerThread, nullptr, ThreadStackSize, priority));
+            }
+        }
+
+        /* Start extra threads. */
+        if constexpr (NumExtraThreads > 0) {
+            for (size_t i = 0; i < NumExtraThreads; i++) {
+                R_ASSERT(extra_threads[i].Start());
+            }
+        }
+
+        /* Loop this thread. */
+        LoopServerThread(nullptr);
+
+        /* Wait for extra threads to finish. */
+        if constexpr (NumExtraThreads > 0) {
+            for (size_t i = 0; i < NumExtraThreads; i++) {
+                R_ASSERT(extra_threads[i].Join());
+            }
+        }
+    }
 
     return 0;
 }

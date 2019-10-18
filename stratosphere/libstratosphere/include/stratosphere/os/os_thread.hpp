@@ -52,4 +52,10 @@ namespace sts::os {
             }
     };
 
+    NX_INLINE u32 GetCurrentThreadPriority() {
+        u32 prio;
+        R_ASSERT(svcGetThreadPriority(&prio, CUR_THREAD_HANDLE));
+        return prio;
+    }
+
 }

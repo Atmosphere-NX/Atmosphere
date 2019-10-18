@@ -45,7 +45,7 @@ namespace sts::dmnt::cheat::impl {
                 bool enable_cheats_by_default = true;
                 bool always_save_cheat_toggles = false;
                 bool should_save_cheat_toggles = false;
-                CheatEntry cheat_entries[MaxCheatCount];
+                CheatEntry cheat_entries[MaxCheatCount] = {};
                 std::map<u64, FrozenAddressValue> frozen_addresses_map;
             private:
                 static void DetectLaunchThread(void *_this);
@@ -146,11 +146,11 @@ namespace sts::dmnt::cheat::impl {
 
                 bool HasActiveCheatProcess() {
                     /* Note: This function *MUST* be called only with the cheat lock held. */
-                    u64 tmp;
+                    os::ProcessId pid;
                     bool has_cheat_process = this->cheat_process_debug_handle != INVALID_HANDLE;
-                    has_cheat_process &= R_SUCCEEDED(svcGetProcessId(&tmp, this->cheat_process_debug_handle));
-                    has_cheat_process &= R_SUCCEEDED(pm::dmnt::GetApplicationProcessId(&tmp));
-                    has_cheat_process &= (tmp == this->cheat_process_metadata.process_id);
+                    has_cheat_process &= R_SUCCEEDED(os::GetProcessId(&pid, this->cheat_process_debug_handle));
+                    has_cheat_process &= R_SUCCEEDED(pm::dmnt::GetApplicationProcessId(&pid));
+                    has_cheat_process &= (pid == this->cheat_process_metadata.process_id);
 
                     if (!has_cheat_process) {
                         this->CloseActiveCheatProcess();
@@ -176,7 +176,7 @@ namespace sts::dmnt::cheat::impl {
                     return h;
                 }
 
-                void StartProcess(u64 process_id) const {
+                void StartProcess(os::ProcessId process_id) const {
                     R_ASSERT(pm::dmnt::StartProcess(process_id));
                 }
 
@@ -404,12 +404,12 @@ namespace sts::dmnt::cheat::impl {
                     return ResultSuccess;
                 }
 
-                Result AddCheat(u32 *out_id, const CheatDefinition *def, bool enabled) {
+                Result AddCheat(u32 *out_id, const CheatDefinition &def, bool enabled) {
                     std::scoped_lock lk(this->cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    if (def->num_opcodes == 0 || def->num_opcodes > util::size(def->opcodes)) {
+                    if (def.num_opcodes == 0 || def.num_opcodes > util::size(def.opcodes)) {
                         return ResultDmntCheatInvalidCheat;
                     }
 
@@ -419,7 +419,7 @@ namespace sts::dmnt::cheat::impl {
                     }
 
                     new_entry->enabled = enabled;
-                    new_entry->definition = *def;
+                    new_entry->definition = def;
 
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
@@ -630,7 +630,7 @@ namespace sts::dmnt::cheat::impl {
                 if (on_process_launch) {
                     this->StartProcess(this->cheat_process_metadata.process_id);
                 }
-                this->cheat_process_metadata.process_id = 0;
+                this->cheat_process_metadata.process_id = os::ProcessId{};
             };
 
             /* Get process handle, use it to learn memory extents. */
@@ -667,7 +667,7 @@ namespace sts::dmnt::cheat::impl {
                 u32 num_modules;
 
                 /* TODO: ldr::dmnt:: */
-                R_ASSERT_IF_NEW_PROCESS(ldrDmntGetModuleInfos(this->cheat_process_metadata.process_id, proc_modules, util::size(proc_modules), &num_modules));
+                R_ASSERT_IF_NEW_PROCESS(ldrDmntGetModuleInfos(static_cast<u64>(this->cheat_process_metadata.process_id), proc_modules, util::size(proc_modules), &num_modules));
 
                 /* All applications must have two modules. */
                 /* Only accept one (which means we're attaching to HBL) */
@@ -696,7 +696,7 @@ namespace sts::dmnt::cheat::impl {
             }
 
             /* Open a debug handle. */
-            R_ASSERT_IF_NEW_PROCESS(svcDebugActiveProcess(&this->cheat_process_debug_handle, this->cheat_process_metadata.process_id));
+            R_ASSERT_IF_NEW_PROCESS(svcDebugActiveProcess(&this->cheat_process_debug_handle, static_cast<u64>(this->cheat_process_metadata.process_id)));
 
             /* Cancel process guard. */
             proc_guard.Cancel();
@@ -1064,7 +1064,7 @@ namespace sts::dmnt::cheat::impl {
         return g_cheat_process_manager.ToggleCheat(cheat_id);
     }
 
-    Result AddCheat(u32 *out_id, const CheatDefinition *def, bool enabled) {
+    Result AddCheat(u32 *out_id, const CheatDefinition &def, bool enabled) {
         return g_cheat_process_manager.AddCheat(out_id, def, enabled);
     }
 

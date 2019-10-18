@@ -34,13 +34,13 @@ namespace sts::dmnt {
         return svcCloseHandle(debug_hnd);
     }
 
-    Result DebugMonitorService::GetProcessId(Out<u64> out_pid, Handle hnd) {
+    Result DebugMonitorService::GetProcessId(sf::Out<os::ProcessId> out_pid, Handle hnd) {
         /* Nintendo discards the output of this command, but we will return it. */
-        return svcGetProcessId(out_pid.GetPointer(), hnd);
+        return svcGetProcessId(reinterpret_cast<u64 *>(out_pid.GetPointer()), hnd);
     }
 
-    Result DebugMonitorService::GetProcessHandle(Out<Handle> out_hnd, u64 pid) {
-        R_TRY_CATCH(svcDebugActiveProcess(out_hnd.GetPointer(), pid)) {
+    Result DebugMonitorService::GetProcessHandle(sf::Out<Handle> out_hnd, os::ProcessId pid) {
+        R_TRY_CATCH(svcDebugActiveProcess(out_hnd.GetPointer(), static_cast<u64>(pid))) {
             R_CATCH(ResultKernelAlreadyExists) {
                 return ResultDebugAlreadyAttached;
             }
