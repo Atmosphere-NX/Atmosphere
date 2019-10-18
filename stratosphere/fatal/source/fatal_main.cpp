@@ -132,7 +132,6 @@ namespace {
     constexpr size_t          PrivateMaxSessions = 4;
 
     /* fatal:u, fatal:p. */
-    /* TODO: Consider max sessions enforcement? */
     constexpr size_t NumServers  = 2;
     constexpr size_t NumSessions = UserMaxSessions + PrivateMaxSessions;
 

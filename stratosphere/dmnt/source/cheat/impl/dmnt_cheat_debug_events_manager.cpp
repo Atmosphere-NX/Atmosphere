@@ -72,7 +72,7 @@ namespace sts::dmnt::cheat::impl {
                 }
 
                 Result ContinueDebugEvent(Handle debug_handle) {
-                    if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+                    if (hos::GetVersion() >= hos::Version_300) {
                         return svcContinueDebugEvent(debug_handle, 5, nullptr, 0);
                     } else {
                         return svcLegacyContinueDebugEvent(debug_handle, 5, 0);
