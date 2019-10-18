@@ -15,6 +15,7 @@
  */
 
 #include <atmosphere/version.h>
+#include <malloc.h>
 
 #include "fatal_task_screen.hpp"
 #include "fatal_config.hpp"
@@ -101,7 +102,7 @@ namespace sts::fatal::srv {
             ON_SCOPE_EXIT { viCloseDisplay(&temp_display); };
 
             /* Turn on the screen. */
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+            if (hos::GetVersion() >= hos::Version_300) {
                 R_TRY(viSetDisplayPowerState(&temp_display, ViPowerState_On));
             } else {
                 /* Prior to 3.0.0, the ViPowerState enum was different (0 = Off, 1 = On). */
@@ -151,7 +152,7 @@ namespace sts::fatal::srv {
             R_TRY(viGetDisplayLogicalResolution(&this->display, &display_width, &display_height));
 
             /* viSetDisplayMagnification was added in 3.0.0. */
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_300) {
+            if (hos::GetVersion() >= hos::Version_300) {
                 R_TRY(viSetDisplayMagnification(&this->display, 0, 0, display_width, display_height));
             }
 
@@ -413,7 +414,6 @@ namespace sts::fatal::srv {
                     }
                 }
             }
-
 
             /* Enqueue the buffer. */
             framebufferEnd(&fb);

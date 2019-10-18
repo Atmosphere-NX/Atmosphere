@@ -38,7 +38,7 @@ namespace sts::fatal::srv {
 
         /* Task implementation. */
         Result AdjustClockTask::AdjustClockForModule(PcvModule module, u32 hz) {
-            if (GetRuntimeFirmwareVersion() >= FirmwareVersion_800) {
+            if (hos::GetVersion() >= hos::Version_800) {
                 /* On 8.0.0+, convert to module id + use clkrst API. */
                 PcvModuleId module_id;
                 R_TRY(pcvGetModuleId(&module_id, module));

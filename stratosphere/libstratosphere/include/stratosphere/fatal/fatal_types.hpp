@@ -19,6 +19,7 @@
 #include "../defines.hpp"
 #include "../results.hpp"
 #include "../ncm/ncm_types.hpp"
+#include "../sf/sf_buffer_tags.hpp"
 
 namespace sts::fatal {
 
@@ -293,7 +294,7 @@ namespace sts::fatal {
 
     }
 
-    struct CpuContext {
+    struct CpuContext : sf::LargeData, sf::PrefersMapAliasTransferMode {
         enum Architecture {
             Architecture_Aarch64 = 0,
             Architecture_Aarch32 = 1,

@@ -23,7 +23,7 @@ namespace sts::fatal::srv {
 
         bool IsInRepair() {
             /* Before firmware 3.0.0, this wasn't implemented. */
-            if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
+            if (hos::GetVersion() < hos::Version_300) {
                 return false;
             }
 
@@ -62,7 +62,7 @@ namespace sts::fatal::srv {
 
         bool NeedsRunTimeReviser() {
             /* Before firmware 5.0.0, this wasn't implemented. */
-            if (GetRuntimeFirmwareVersion() < FirmwareVersion_300) {
+            if (hos::GetVersion() < hos::Version_300) {
                 return false;
             }
 
