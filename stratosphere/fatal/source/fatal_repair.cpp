@@ -28,7 +28,7 @@ namespace sts::fatal::srv {
             }
 
             bool in_repair;
-            return R_SUCCEEDED(setsysGetFlag(SetSysFlag_InRepairProcessEnable, &in_repair)) && in_repair;
+            return R_SUCCEEDED(setsysGetInRepairProcessEnableFlag(&in_repair)) && in_repair;
         }
 
         bool IsInRepairWithoutVolHeld() {
@@ -62,12 +62,12 @@ namespace sts::fatal::srv {
 
         bool NeedsRunTimeReviser() {
             /* Before firmware 5.0.0, this wasn't implemented. */
-            if (hos::GetVersion() < hos::Version_300) {
+            if (hos::GetVersion() < hos::Version_500) {
                 return false;
             }
 
             bool requires_time_reviser;
-            return R_SUCCEEDED(setsysGetFlag(SetSysFlag_RequiresRunRepairTimeReviser, &requires_time_reviser)) && requires_time_reviser;
+            return R_SUCCEEDED(setsysGetRequiresRunRepairTimeReviser(&requires_time_reviser)) && requires_time_reviser;
         }
 
         bool IsTimeReviserCartridgeInserted() {

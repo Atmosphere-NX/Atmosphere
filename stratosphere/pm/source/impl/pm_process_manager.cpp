@@ -162,6 +162,7 @@ namespace sts::pm::impl {
                     for (size_t i = 0; i < MaxProcessInfos; i++) {
                         if (!this->process_info_allocated[i]) {
                             this->process_info_allocated[i] = true;
+                            std::memset(&this->process_info_storages[i], 0, sizeof(this->process_info_storages[i]));
                             return GetPointer(this->process_info_storages[i]);
                         }
                     }
@@ -176,7 +177,6 @@ namespace sts::pm::impl {
                     STS_ASSERT(this->process_info_allocated[index]);
 
                     process_info->~ProcessInfo();
-                    std::memset(process_info, 0, sizeof(*process_info));
                     this->process_info_allocated[index] = false;
                 }
         };

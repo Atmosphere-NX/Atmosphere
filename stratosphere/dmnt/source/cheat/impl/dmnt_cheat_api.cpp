@@ -187,12 +187,14 @@ namespace sts::dmnt::cheat::impl {
 
                     /* Learn whether we should enable cheats by default. */
                     {
-                        u8 en;
-                        if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "dmnt_cheats_enabled_by_default", &en, sizeof(en)))) {
+                        u64 size_out;
+                        u8 en = 0;
+                        if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "dmnt_cheats_enabled_by_default", &en, sizeof(en), &size_out))) {
                             this->enable_cheats_by_default = (en != 0);
                         }
 
-                        if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "dmnt_always_save_cheat_toggles", &en, sizeof(en)))) {
+                        en = 0;
+                        if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "dmnt_always_save_cheat_toggles", &en, sizeof(en), &size_out))) {
                             this->always_save_cheat_toggles = (en != 0);
                         }
                     }
