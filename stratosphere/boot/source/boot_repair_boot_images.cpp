@@ -25,7 +25,7 @@ namespace sts::boot {
     namespace {
 
         /* Globals. */
-        u8 __attribute__((aligned(0x1000))) g_boot_image_work_buffer[0x10000];
+        alignas(0x1000) u8 g_boot_image_work_buffer[0x10000];
 
     }
 
