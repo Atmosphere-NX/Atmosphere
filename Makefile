@@ -50,6 +50,7 @@ dist: all
 	mkdir atmosphere-$(AMSVER)/atmosphere
 	mkdir atmosphere-$(AMSVER)/sept
 	mkdir atmosphere-$(AMSVER)/switch
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000008
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/010000000000000D
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/titles/0100000000000034
@@ -69,6 +70,7 @@ dist: all
 	cp common/defaults/system_settings.ini atmosphere-$(AMSVER)/atmosphere/system_settings.ini
 	cp -r common/defaults/kip_patches atmosphere-$(AMSVER)/atmosphere/kip_patches
 	cp -r common/defaults/hbl_html atmosphere-$(AMSVER)/atmosphere/hbl_html
+	cp stratosphere/boot2/boot2.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000008/exefs.nsp
 	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/atmosphere/titles/010000000000000D/exefs.nsp
 	cp stratosphere/eclct.stub/eclct.stub.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000032/exefs.nsp
 	cp stratosphere/fatal/fatal.nsp atmosphere-$(AMSVER)/atmosphere/titles/0100000000000034/exefs.nsp

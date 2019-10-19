@@ -15,6 +15,7 @@
  */
 
 #include <atomic>
+#include <stratosphere/boot2.hpp>
 #include <stratosphere/spl.hpp>
 #include <stratosphere/ldr/ldr_pm_api.hpp>
 #include <stratosphere/sm/sm_manager_api.hpp>
@@ -23,8 +24,6 @@
 #include "pm_resource_manager.hpp"
 
 #include "pm_process_info.hpp"
-
-#include "../boot2/boot2_api.hpp"
 
 namespace sts::pm::impl {
 
@@ -732,7 +731,7 @@ namespace sts::pm::impl {
     Result NotifyBootFinished() {
         static bool g_has_boot_finished = false;
         if (!g_has_boot_finished) {
-            boot2::LaunchBootPrograms();
+            boot2::LaunchPreSdCardBootProgramsAndBoot2();
             g_has_boot_finished = true;
             g_boot_finished_event.Signal();
         }

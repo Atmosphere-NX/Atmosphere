@@ -38,7 +38,7 @@ namespace sts::cfg {
         FsFileSystem g_sd_card_filesystem = {};
 
         /* SD card helpers. */
-        Result TryInitializeSdCard() {
+        Result CheckSdCardServicesReady() {
             for (size_t i = 0; i < NumRequiredServicesForSdCardAccess; i++) {
                 bool service_present = false;
                 R_TRY(sm::HasService(&service_present, RequiredServicesForSdCardAccess[i]));
@@ -47,15 +47,24 @@ namespace sts::cfg {
                 }
             }
 
+            return ResultSuccess;
+        }
+
+        void WaitSdCardServicesReadyImpl() {
+            for (size_t i = 0; i < NumRequiredServicesForSdCardAccess; i++) {
+                R_ASSERT(sm::WaitService(RequiredServicesForSdCardAccess[i]));
+            }
+        }
+
+        Result TryInitializeSdCard() {
+            R_TRY(CheckSdCardServicesReady());
             R_ASSERT(fsMountSdcard(&g_sd_card_filesystem));
             g_sd_card_initialized = true;
             return ResultSuccess;
         }
 
         void InitializeSdCard() {
-            for (size_t i = 0; i < NumRequiredServicesForSdCardAccess; i++) {
-                R_ASSERT(sm::WaitService(RequiredServicesForSdCardAccess[i]));
-            }
+            WaitSdCardServicesReadyImpl();
             R_ASSERT(fsMountSdcard(&g_sd_card_filesystem));
             g_sd_card_initialized = true;
         }
@@ -63,6 +72,14 @@ namespace sts::cfg {
     }
 
     /* SD card utilities. */
+    bool IsSdCardRequiredServicesReady() {
+        return R_SUCCEEDED(CheckSdCardServicesReady());
+    }
+
+    void WaitSdCardRequiredServicesReady() {
+        WaitSdCardServicesReadyImpl();
+    }
+
     bool IsSdCardInitialized() {
         std::scoped_lock lk(g_sd_card_lock);
 

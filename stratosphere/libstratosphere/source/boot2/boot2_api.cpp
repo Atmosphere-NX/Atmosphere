@@ -19,7 +19,7 @@
 #include <stratosphere/cfg.hpp>
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/pm.hpp>
-#include "boot2_api.hpp"
+#include <stratosphere/boot2.hpp>
 
 namespace sts::boot2 {
 
@@ -183,9 +183,6 @@ namespace sts::boot2 {
         bool IsMaintenanceMode() {
             /* Contact set:sys, retrieve boot!force_maintenance. */
             {
-                auto set_sys_holder = sm::ScopedServiceHolder<setsysInitialize, setsysExit>();
-                R_ASSERT(set_sys_holder.GetResult());
-
                 u8 force_maintenance = 1;
                 u64 size_out;
                 setsysGetSettingsItemValue("boot", "force_maintenance", &force_maintenance, sizeof(force_maintenance), &size_out);
@@ -196,9 +193,6 @@ namespace sts::boot2 {
 
             /* Contact GPIO, read plus/minus buttons. */
             {
-                auto gpio_holder = sm::ScopedServiceHolder<gpioInitialize, gpioExit>();
-                R_ASSERT(gpio_holder.GetResult());
-
                 return GetGpioPadLow(GpioPadName_ButtonVolUp) && GetGpioPadLow(GpioPadName_ButtonVolDown);
             }
         }
@@ -306,16 +300,18 @@ namespace sts::boot2 {
     }
 
     /* Boot2 API. */
-    void LaunchBootPrograms() {
+
+    void LaunchPreSdCardBootProgramsAndBoot2() {
+        /* This code is normally run by PM. */
+
         /* Wait until fs.mitm has installed itself. We want this to happen as early as possible. */
         R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("fsp-srv")));
 
         /* Launch programs required to mount the SD card. */
         LaunchList(PreSdCardLaunchPrograms, NumPreSdCardLaunchPrograms);
 
-        /* At this point, the SD card can be mounted. */
-        cfg::WaitSdCardInitialized();
-        R_ASSERT(fsdevMountSdmc());
+        /* Wait for the SD card required services to be ready. */
+        cfg::WaitSdCardRequiredServicesReady();
 
         /* Wait for other atmosphere mitm modules to initialize. */
         R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("set:sys")));
@@ -324,6 +320,13 @@ namespace sts::boot2 {
         } else {
             R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
         }
+
+        /* Launch Atmosphere boot2, using FsStorageId_None to force SD card boot. */
+        LaunchTitle(nullptr, ncm::TitleLocation::Make(ncm::TitleId::Boot2, ncm::StorageId::None), 0);
+    }
+
+    void LaunchPostSdCardBootPrograms() {
+        /* This code is normally run by boot2. */
 
         /* Find out whether we are maintenance mode. */
         const bool maintenance = IsMaintenanceMode();
@@ -350,9 +353,6 @@ namespace sts::boot2 {
 
         /* Launch user programs off of the SD. */
         LaunchFlaggedProgramsOnSdCard();
-
-        /* We no longer need the SD card. */
-        fsdevUnmountAll();
     }
 
 }
