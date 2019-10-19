@@ -22,7 +22,7 @@ namespace sts::fatal::srv {
     namespace {
 
         /* Task types. */
-        class PowerControlTask : public ITask {
+        class PowerControlTask : public ITaskWithDefaultStack {
             private:
                 bool TryShutdown();
                 void MonitorBatteryState();
@@ -33,7 +33,7 @@ namespace sts::fatal::srv {
                 }
         };
 
-        class PowerButtonObserveTask : public ITask {
+        class PowerButtonObserveTask : public ITaskWithDefaultStack {
             private:
                 void WaitForPowerButton();
             public:
@@ -43,7 +43,7 @@ namespace sts::fatal::srv {
                 }
         };
 
-        class StateTransitionStopTask : public ITask {
+        class StateTransitionStopTask : public ITaskWithDefaultStack {
             public:
                 virtual Result Run() override;
                 virtual const char *GetName() const override {

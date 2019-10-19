@@ -21,7 +21,7 @@ namespace sts::fatal::srv {
     namespace {
 
         /* Task definition. */
-        class StopSoundTask : public ITask {
+        class StopSoundTask : public ITaskWithDefaultStack {
             private:
                 void StopSound();
             public:

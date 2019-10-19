@@ -31,9 +31,10 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
     u32 __nx_fs_num_sessions = 1;
+    u32 __nx_fsdev_direntry_cache_size = 1;
 
     /* TODO: Evaluate how much this can be reduced by. */
-    #define INNER_HEAP_SIZE 0xC0000
+    #define INNER_HEAP_SIZE 0x20000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -118,6 +119,14 @@ namespace {
         g_server_manager.LoopProcess();
     }
 
+    constexpr size_t TotalThreads = DebugMonitorMaxSessions + 1;
+    static_assert(TotalThreads >= 1, "TotalThreads");
+    constexpr size_t NumExtraThreads = TotalThreads - 1;
+    constexpr size_t ThreadStackSize = 0x4000;
+    alignas(0x1000) u8 g_extra_thread_stacks[NumExtraThreads][ThreadStackSize];
+
+    os::Thread g_extra_threads[NumExtraThreads];
+
 }
 
 int main(int argc, char **argv)
@@ -130,25 +139,19 @@ int main(int argc, char **argv)
     /* Loop forever, servicing our services. */
     /* Nintendo loops four threads processing on the manager -- we'll loop an extra fifth for our cheat service. */
     {
-        constexpr size_t TotalThreads = DebugMonitorMaxSessions + 1;
-        constexpr size_t NumExtraThreads = TotalThreads - 1;
-        static_assert(TotalThreads >= 1, "TotalThreads");
-
-        os::Thread extra_threads[NumExtraThreads];
 
         /* Initialize threads. */
         if constexpr (NumExtraThreads > 0) {
-            constexpr size_t ThreadStackSize = 0x4000;
             const u32 priority = os::GetCurrentThreadPriority();
             for (size_t i = 0; i < NumExtraThreads; i++) {
-                R_ASSERT(extra_threads[i].Initialize(LoopServerThread, nullptr, ThreadStackSize, priority));
+                R_ASSERT(g_extra_threads[i].Initialize(LoopServerThread, nullptr, g_extra_thread_stacks[i], ThreadStackSize, priority));
             }
         }
 
         /* Start extra threads. */
         if constexpr (NumExtraThreads > 0) {
             for (size_t i = 0; i < NumExtraThreads; i++) {
-                R_ASSERT(extra_threads[i].Start());
+                R_ASSERT(g_extra_threads[i].Start());
             }
         }
 
@@ -158,7 +161,7 @@ int main(int argc, char **argv)
         /* Wait for extra threads to finish. */
         if constexpr (NumExtraThreads > 0) {
             for (size_t i = 0; i < NumExtraThreads; i++) {
-                R_ASSERT(extra_threads[i].Join());
+                R_ASSERT(g_extra_threads[i].Join());
             }
         }
     }

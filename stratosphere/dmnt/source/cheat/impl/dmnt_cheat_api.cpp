@@ -31,6 +31,11 @@ namespace sts::dmnt::cheat::impl {
         /* Manager class. */
         class CheatProcessManager {
             private:
+                static constexpr size_t ThreadStackSize = 0x4000;
+                static constexpr int DetectThreadPriority = 39;
+                static constexpr int VirtualMachineThreadPriority = 48;
+                static constexpr int DebugEventsThreadPriority = 24;
+            private:
                 os::Mutex cheat_lock;
                 os::Event debug_events_event; /* Autoclear. */
                 os::Thread detect_thread, debug_events_thread;
@@ -47,6 +52,10 @@ namespace sts::dmnt::cheat::impl {
                 bool should_save_cheat_toggles = false;
                 CheatEntry cheat_entries[MaxCheatCount] = {};
                 std::map<u64, FrozenAddressValue> frozen_addresses_map;
+
+                alignas(0x1000) u8 detect_thread_stack[ThreadStackSize] = {};
+                alignas(0x1000) u8 debug_events_thread_stack[ThreadStackSize] = {};
+                alignas(0x1000) u8 vm_thread_stack[ThreadStackSize] = {};
             private:
                 static void DetectLaunchThread(void *_this);
                 static void VirtualMachineThread(void *_this);
@@ -200,9 +209,9 @@ namespace sts::dmnt::cheat::impl {
                     }
 
                     /* Spawn application detection thread, spawn cheat vm thread. */
-                    R_ASSERT(this->detect_thread.Initialize(&CheatProcessManager::DetectLaunchThread, this, 0x4000, 39));
-                    R_ASSERT(this->vm_thread.Initialize(&CheatProcessManager::VirtualMachineThread, this, 0x4000, 48));
-                    R_ASSERT(this->debug_events_thread.Initialize(&CheatProcessManager::DebugEventsThread, this, 0x4000, 24));
+                    R_ASSERT(this->detect_thread.Initialize(&CheatProcessManager::DetectLaunchThread, this, this->detect_thread_stack, ThreadStackSize, DetectThreadPriority));
+                    R_ASSERT(this->vm_thread.Initialize(&CheatProcessManager::VirtualMachineThread, this, this->vm_thread_stack, ThreadStackSize, VirtualMachineThreadPriority));
+                    R_ASSERT(this->debug_events_thread.Initialize(&CheatProcessManager::DebugEventsThread, this, this->debug_events_thread_stack, ThreadStackSize, DebugEventsThreadPriority));
 
                     /* Start threads. */
                     R_ASSERT(this->detect_thread.Start());

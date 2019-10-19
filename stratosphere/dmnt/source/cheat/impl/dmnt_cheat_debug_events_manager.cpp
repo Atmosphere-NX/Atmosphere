@@ -25,10 +25,14 @@ namespace sts::dmnt::cheat::impl {
         class DebugEventsManager {
             public:
                 static constexpr size_t NumCores = 4;
+                static constexpr size_t ThreadStackSize = 0x1000;
+                static constexpr size_t ThreadPriority = 24;
             private:
                 std::array<os::MessageQueue, NumCores> message_queues;
                 std::array<os::Thread, NumCores> threads;
                 os::Event continued_event;
+
+                alignas(0x1000) u8 thread_stacks[NumCores][ThreadStackSize];
             private:
                 static void PerCoreThreadFunction(void *_this) {
                     /* This thread will wait on the appropriate message queue. */
@@ -88,10 +92,10 @@ namespace sts::dmnt::cheat::impl {
                 }
 
             public:
-                DebugEventsManager() : message_queues{os::MessageQueue(1), os::MessageQueue(1), os::MessageQueue(1), os::MessageQueue(1)} {
+                DebugEventsManager() : message_queues{os::MessageQueue(1), os::MessageQueue(1), os::MessageQueue(1), os::MessageQueue(1)}, thread_stacks{} {
                     for (size_t i = 0; i < NumCores; i++) {
                         /* Create thread. */
-                        R_ASSERT(this->threads[i].Initialize(&DebugEventsManager::PerCoreThreadFunction, reinterpret_cast<void *>(this), 0x1000, 24, i));
+                        R_ASSERT(this->threads[i].Initialize(&DebugEventsManager::PerCoreThreadFunction, reinterpret_cast<void *>(this), this->thread_stacks[i], ThreadStackSize, ThreadPriority, i));
 
                         /* Set core mask. */
                         R_ASSERT(svcSetThreadCoreMask(this->threads[i].GetHandle(), i, (1u << i)));

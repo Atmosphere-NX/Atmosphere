@@ -53,7 +53,7 @@ namespace sts::fatal::srv {
         }
 
         /* Task definitions. */
-        class ShowFatalTask : public ITask {
+        class ShowFatalTask : public ITaskWithStack<0x8000> {
             private:
                 ViDisplay display;
                 ViLayer layer;
@@ -69,12 +69,9 @@ namespace sts::fatal::srv {
                 virtual const char *GetName() const override {
                     return "ShowFatal";
                 }
-                virtual size_t GetStackSize() const override {
-                    return 0x8000;
-                }
         };
 
-        class BacklightControlTask : public ITask {
+        class BacklightControlTask : public ITaskWithDefaultStack {
             private:
                 void TurnOnBacklight();
             public:

@@ -182,7 +182,11 @@ namespace sts::pm::impl {
         };
 
         /* Process Tracking globals. */
-        os::Thread g_process_track_thread;
+        void ProcessTrackingMain(void *arg);
+
+        constexpr size_t ProcessTrackThreadStackSize = 0x4000;
+        constexpr int    ProcessTrackThreadPriority  = 0x15;
+        os::StaticThread<ProcessTrackThreadStackSize> g_process_track_thread(&ProcessTrackingMain, nullptr, ProcessTrackThreadPriority);
 
         /* Process lists. */
         ProcessList g_process_list;
@@ -468,8 +472,6 @@ namespace sts::pm::impl {
         R_TRY(resource::InitializeResourceManager());
 
         /* Start thread. */
-        /* TODO: Allocate thread stack resources statically, will require PR to libnx. */
-        R_ASSERT(g_process_track_thread.Initialize(&ProcessTrackingMain, nullptr, 0x4000, 0x15));
         R_ASSERT(g_process_track_thread.Start());
 
         return ResultSuccess;

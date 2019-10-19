@@ -22,7 +22,7 @@ namespace sts::fatal::srv {
     namespace {
 
         /* Task definition. */
-        class AdjustClockTask : public ITask {
+        class AdjustClockTask : public ITaskWithDefaultStack {
             private:
                 Result AdjustClockForModule(PcvModule module, u32 hz);
                 Result AdjustClock();
