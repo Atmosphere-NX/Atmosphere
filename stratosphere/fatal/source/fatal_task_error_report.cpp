@@ -53,7 +53,7 @@ namespace sts::fatal::srv {
         }
 
         /* Task definition. */
-        class ErrorReportTask : public ITask {
+        class ErrorReportTask : public ITaskWithDefaultStack {
             private:
                 void SaveReportToSdCard();
             public:

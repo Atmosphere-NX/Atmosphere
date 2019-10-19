@@ -45,7 +45,7 @@ namespace sts::fatal::srv {
             public:
                 TaskThread() { /* ... */ }
                 void StartTask(ITask *task) {
-                    R_ASSERT(this->thread.Initialize(&RunTaskImpl, task, task->GetStackSize(), TaskThreadPriority));
+                    R_ASSERT(this->thread.Initialize(&RunTaskImpl, task, task->GetStack(), task->GetStackSize(), TaskThreadPriority));
                     R_ASSERT(this->thread.Start());
                 }
         };
