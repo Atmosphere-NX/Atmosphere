@@ -9,18 +9,29 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/libnx/switch_rules
 
+AMSBRANCH := $(shell git symbolic-ref --short HEAD)
+AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
+
+ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
+    AMSREV := $(AMSREV)-dirty
+endif
+
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
+# BUILD is the directory where object files & intermediate files will be placed
 # SOURCES is a list of directories containing source code
 # DATA is a list of directories containing data files
 # INCLUDES is a list of directories containing header files
+# EXEFS_SRC is the optional input directory containing data copied into exefs, if anything this normally should only contain "main.npdm".
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
-SOURCES		:=	source source/ams source/os source/os/impl source/sf source/sf/cmif source/sf/hipc source/spl source/spl/smc source/updater source/patcher source/map source/rnd source/util source/sm source/cfg source/pm source/hid source/ldr source/kvdb source/boot2
+BUILD		:=	build
+SOURCES		:=	source
 DATA		:=	data
-INCLUDES	:=  include
+INCLUDES	:=	include ../../common/include
+EXEFS_SRC	:=	exefs_src
 
-DEFINES	:=	-DRESULT_ABORT_ON_ASSERT
+DEFINES	:=	-DDISABLE_IPC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\" -DINI_MAX_LINE=768
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -37,13 +48,14 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lnx
+LIBS	:= -lstratosphere -lnx
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX)
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/../libstratosphere
+
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -52,8 +64,13 @@ LIBDIRS	:= $(PORTLIBS) $(LIBNX)
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
+export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export TOPDIR	:=	$(CURDIR)
+
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+
+export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
@@ -74,79 +91,76 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
-export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)
-export HFILES	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
+export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
+			$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I. \
-			-iquote $(CURDIR)/include/switch/
+			-I$(CURDIR)/$(BUILD)
 
-.PHONY: clean all
+export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+
+export BUILD_EXEFS_SRC := $(TOPDIR)/$(EXEFS_SRC)
+
+ifeq ($(strip $(CONFIG_JSON)),)
+	jsons := $(wildcard *.json)
+	ifneq (,$(findstring $(TARGET).json,$(jsons)))
+		export APP_JSON := $(TOPDIR)/$(TARGET).json
+	else
+		ifneq (,$(findstring config.json,$(jsons)))
+			export APP_JSON := $(TOPDIR)/config.json
+		endif
+	endif
+else
+	export APP_JSON := $(TOPDIR)/$(CONFIG_JSON)
+endif
+
+.PHONY: $(BUILD) clean all
 
 #---------------------------------------------------------------------------------
-all: lib/$(TARGET).a lib/$(TARGET)d.a
+all: $(BUILD)
 
-lib:
+$(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-
-release:
-	@[ -d $@ ] || mkdir -p $@
-
-debug:
-	@[ -d $@ ] || mkdir -p $@
-
-lib/$(TARGET).a : lib release $(SOURCES) $(INCLUDES)
-	@$(MAKE) BUILD=release OUTPUT=$(CURDIR)/$@ \
-	BUILD_CFLAGS="-DNDEBUG=1 -O2" \
-	DEPSDIR=$(CURDIR)/release \
-	--no-print-directory -C release \
-	-f $(CURDIR)/Makefile
-
-lib/$(TARGET)d.a : lib debug $(SOURCES) $(INCLUDES)
-	@$(MAKE) BUILD=debug OUTPUT=$(CURDIR)/$@ \
-	BUILD_CFLAGS="-DDEBUG=1 -Og" \
-	DEPSDIR=$(CURDIR)/debug \
-	--no-print-directory -C debug \
-	-f $(CURDIR)/Makefile
-
-dist-bin: all
-	@tar --exclude=*~ -cjf $(TARGET).tar.bz2 include lib
-
-dist-src:
-	@tar --exclude=*~ -cjf $(TARGET)-src.tar.bz2 include source Makefile
-
-dist: dist-src dist-bin
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr release debug lib *.bz2
+	@rm -fr $(BUILD) $(TARGET).nsp $(TARGET).npdm $(TARGET).nso $(TARGET).elf
+
 
 #---------------------------------------------------------------------------------
 else
+.PHONY:	all
 
 DEPENDS	:=	$(OFILES:.o=.d)
 
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-$(OUTPUT)	:	$(OFILES)
+all	:	$(OUTPUT).nsp
 
-$(OFILES_SRC)	: $(HFILES)
+ifeq ($(strip $(APP_JSON)),)
+$(OUTPUT).nsp	:	$(OUTPUT).nso
+else
+$(OUTPUT).nsp	:	$(OUTPUT).nso $(OUTPUT).npdm
+endif
+
+$(OUTPUT).nso	:	$(OUTPUT).elf
+
+$(OUTPUT).elf	:	$(OFILES)
 
 #---------------------------------------------------------------------------------
-%_bin.h %.bin.o	:	%.bin
+# you need a rule like this for each extension you use as binary data
+#---------------------------------------------------------------------------------
+%.bin.o	:	%.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-
 
 -include $(DEPENDS)
 
 #---------------------------------------------------------------------------------------
 endif
 #---------------------------------------------------------------------------------------
-

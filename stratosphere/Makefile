@@ -1,4 +1,4 @@
-MODULES := loader pm sm boot ams_mitm spl eclct.stub ro creport fatal dmnt
+MODULES := loader pm sm boot ams_mitm spl eclct.stub ro creport fatal dmnt boot2
 
 SUBFOLDERS := libstratosphere $(MODULES)
 

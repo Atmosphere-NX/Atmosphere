@@ -26,6 +26,8 @@ namespace sts::cfg {
     void GetInitialProcessRange(os::ProcessId *out_min, os::ProcessId *out_max);
 
     /* SD card configuration. */
+    bool IsSdCardRequiredServicesReady();
+    void WaitSdCardRequiredServicesReady();
     bool IsSdCardInitialized();
     void WaitSdCardInitialized();
 

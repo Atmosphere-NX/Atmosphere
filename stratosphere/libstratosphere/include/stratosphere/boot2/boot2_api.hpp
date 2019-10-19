@@ -21,6 +21,11 @@
 namespace sts::boot2 {
 
     /* Boot2 API. */
-    void LaunchBootPrograms();
+
+    /* Normally invoked by PM. */
+    void LaunchPreSdCardBootProgramsAndBoot2();
+
+    /* Normally invoked by boot2. */
+    void LaunchPostSdCardBootPrograms();
 
 }
