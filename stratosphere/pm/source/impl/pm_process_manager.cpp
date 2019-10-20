@@ -310,8 +310,7 @@ namespace sts::pm::impl {
             });
 
             /* Get the process id. */
-            os::ProcessId process_id = os::InvalidProcessId;
-            R_ASSERT(svcGetProcessId(&process_id.value, process_handle));
+            os::ProcessId process_id = os::GetProcessId(process_handle);
 
             /* Make new process info. */
             void *process_info_storage = g_process_info_allocator.AllocateProcessInfoStorage();

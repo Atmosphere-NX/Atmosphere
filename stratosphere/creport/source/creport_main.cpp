@@ -44,15 +44,19 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[0x1000];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
-    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
 }
 
-sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Creport;
+namespace sts::ams {
+
+    ncm::TitleId StratosphereTitleId = ncm::TitleId::Creport;
+
+}
+
+using namespace sts;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    StratosphereCrashHandler(ctx);
+    ams::CrashHandler(ctx);
 }
-
 
 void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;
@@ -66,12 +70,10 @@ void __libnx_initheap(void) {
 	fake_heap_end   = (char*)addr + size;
 }
 
-using namespace sts;
-
 void __appInit(void) {
     hos::SetVersionForLibnx();
 
-    DoWithSmSession([&]() {
+    sm::DoWithSession([&]() {
         R_ASSERT(fsInitialize());
     });
 

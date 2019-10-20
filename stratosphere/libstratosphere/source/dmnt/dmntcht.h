@@ -15,7 +15,9 @@
  */
 
 #pragma once
-#include <switch.h>
+#include <switch/types.h>
+#include <switch/kernel/event.h>
+#include <switch/services/sm.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,7 +87,6 @@ Result dmntchtGetFrozenAddresses(DmntFrozenAddressEntry *buffer, u64 max_count, 
 Result dmntchtGetFrozenAddress(DmntFrozenAddressEntry *out, u64 address);
 Result dmntchtEnableFrozenAddress(u64 address, u64 width, u64 *out_value);
 Result dmntchtDisableFrozenAddress(u64 address);
-
 
 #ifdef __cplusplus
 }

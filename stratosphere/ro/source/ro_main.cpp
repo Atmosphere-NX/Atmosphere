@@ -44,8 +44,13 @@ extern "C" {
     void __appExit(void);
 }
 
-/* Exception handling. */
-sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Ro;
+namespace sts::ams {
+
+    ncm::TitleId StratosphereTitleId = ncm::TitleId::Ro;
+
+}
+
+using namespace sts;
 
 void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;
@@ -59,12 +64,10 @@ void __libnx_initheap(void) {
 	fake_heap_end   = (char*)addr + size;
 }
 
-using namespace sts;
-
 void __appInit(void) {
     hos::SetVersionForLibnx();
 
-    DoWithSmSession([&]() {
+    sm::DoWithSession([&]() {
         R_ASSERT(setsysInitialize());
         R_ASSERT(fsInitialize());
         R_ASSERT(splInitialize());
@@ -75,7 +78,7 @@ void __appInit(void) {
 
     R_ASSERT(fsdevMountSdmc());
 
-    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
+    ams::CheckApiVersion();
 }
 
 void __appExit(void) {

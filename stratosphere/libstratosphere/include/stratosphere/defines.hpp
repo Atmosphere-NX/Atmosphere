@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#include <cstdint>
 #include <iterator>
 
 /* Any broadly useful language defines should go here. */

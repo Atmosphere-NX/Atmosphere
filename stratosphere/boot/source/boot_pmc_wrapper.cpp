@@ -13,7 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include <stratosphere/spl.hpp>
+#include <stratosphere/spl/smc/spl_smc.hpp>
 #include "boot_pmc_wrapper.hpp"
 
 namespace sts::boot {
@@ -31,29 +32,22 @@ namespace sts::boot {
             return (phys_addr & 3) == 0 && PmcPhysStart <= phys_addr && phys_addr <= PmcPhysEnd;
         }
 
-        inline u32 SmcAtmosphereReadWriteRegister(u32 phys_addr, u32 value, u32 mask) {
-            SecmonArgs args;
-
-            args.X[0] = SmcFunctionId_AtmosphereReadWriteRegister;
-            args.X[1] = phys_addr;
-            args.X[2] = mask;
-            args.X[3] = value;
-            R_ASSERT(svcCallSecureMonitor(&args));
-            STS_ASSERT(args.X[0] == 0);
-
-            return static_cast<u32>(args.X[1]);
+        inline u32 ReadWriteRegisterImpl(uintptr_t phys_addr, u32 value, u32 mask) {
+            u32 out_value;
+            R_ASSERT(spl::smc::ConvertResult(spl::smc::AtmosphereReadWriteRegister(phys_addr, mask, value, &out_value)));
+            return out_value;
         }
 
     }
 
     u32 ReadPmcRegister(u32 phys_addr) {
         STS_ASSERT(IsValidPmcAddress(phys_addr));
-        return SmcAtmosphereReadWriteRegister(phys_addr, 0, 0);
+        return ReadWriteRegisterImpl(phys_addr, 0, 0);
     }
 
     void WritePmcRegister(u32 phys_addr, u32 value, u32 mask) {
         STS_ASSERT(IsValidPmcAddress(phys_addr));
-        SmcAtmosphereReadWriteRegister(phys_addr, value, mask);
+        ReadWriteRegisterImpl(phys_addr, value, mask);
     }
 
 }

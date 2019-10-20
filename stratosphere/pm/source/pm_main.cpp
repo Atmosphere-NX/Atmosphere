@@ -48,13 +48,18 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[0x1000];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
-    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
 }
 
-sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Pm;
+namespace sts::ams {
+
+    ncm::TitleId StratosphereTitleId = ncm::TitleId::Pm;
+
+}
+
+using namespace sts;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    StratosphereCrashHandler(ctx);
+    ams::CrashHandler(ctx);
 }
 
 void __libnx_initheap(void) {
@@ -69,8 +74,6 @@ void __libnx_initheap(void) {
     fake_heap_end   = (char*)addr + size;
 }
 
-using namespace sts;
-
 namespace {
 
     constexpr u32 PrivilegedFileAccessHeader[0x1C / sizeof(u32)]  = {0x00000001, 0x00000000, 0x80000000, 0x0000001C, 0x00000000, 0x0000001C, 0x00000000};
@@ -83,10 +86,8 @@ namespace {
         /* Check if we should return our title id. */
         /* Doing this here works around a bug fixed in 6.0.0. */
         /* Not doing so will cause svcDebugActiveProcess to deadlock on lower firmwares if called for it's own process. */
-        os::ProcessId current_process_id = os::InvalidProcessId;
-        R_ASSERT(svcGetProcessId(&current_process_id.value, CUR_PROCESS_HANDLE));
-        if (current_process_id == process_id) {
-            return __stratosphere_title_id;
+        if (process_id == os::GetCurrentProcessId()) {
+            return ams::StratosphereTitleId;
         }
 
         /* Get a debug handle. */
@@ -97,8 +98,8 @@ namespace {
         svc::DebugEventInfo d;
         while (true) {
             R_ASSERT(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()));
-            if (d.type == sts::svc::DebugEventType::AttachProcess) {
-                return sts::ncm::TitleId{d.info.attach_process.title_id};
+            if (d.type == svc::DebugEventType::AttachProcess) {
+                return ncm::TitleId{d.info.attach_process.title_id};
             }
         }
     }
@@ -109,14 +110,14 @@ namespace {
     void RegisterPrivilegedProcess(os::ProcessId process_id) {
         fsprUnregisterProgram(static_cast<u64>(process_id));
         fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(process_id), FsStorageId_NandSystem, PrivilegedFileAccessHeader, sizeof(PrivilegedFileAccessHeader), PrivilegedFileAccessControl, sizeof(PrivilegedFileAccessControl));
-        sts::sm::manager::UnregisterProcess(process_id);
-        sts::sm::manager::RegisterProcess(process_id, GetProcessTitleId(process_id), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
+        sm::manager::UnregisterProcess(process_id);
+        sm::manager::RegisterProcess(process_id, GetProcessTitleId(process_id), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
     }
 
     void RegisterPrivilegedProcesses() {
         /* Get privileged process range. */
         os::ProcessId min_priv_process_id = os::InvalidProcessId, max_priv_process_id = os::InvalidProcessId;
-        sts::cfg::GetInitialProcessRange(&min_priv_process_id, &max_priv_process_id);
+        cfg::GetInitialProcessRange(&min_priv_process_id, &max_priv_process_id);
 
         /* Get list of processes, register all privileged ones. */
         u32 num_pids;
@@ -134,7 +135,7 @@ namespace {
 void __appInit(void) {
     hos::SetVersionForLibnx();
 
-    DoWithSmSession([&]() {
+    sm::DoWithSession([&]() {
         R_ASSERT(fsprInitialize());
         R_ASSERT(smManagerInitialize());
 
@@ -143,14 +144,14 @@ void __appInit(void) {
         RegisterPrivilegedProcesses();
 
         /* Use AMS manager extension to tell SM that FS has been worked around. */
-        R_ASSERT(sts::sm::manager::EndInitialDefers());
+        R_ASSERT(sm::manager::EndInitialDefers());
 
         R_ASSERT(lrInitialize());
         R_ASSERT(ldrPmInitialize());
         R_ASSERT(splInitialize());
     });
 
-    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
+    ams::CheckApiVersion();
 }
 
 void __appExit(void) {
@@ -191,7 +192,7 @@ namespace {
 int main(int argc, char **argv)
 {
     /* Initialize process manager implementation. */
-    R_ASSERT(sts::pm::impl::InitializeProcessManager());
+    R_ASSERT(pm::impl::InitializeProcessManager());
 
     /* Create Services. */
     /* NOTE: Extra sessions have been added to pm:bm and pm:info to facilitate access by the rest of stratosphere. */

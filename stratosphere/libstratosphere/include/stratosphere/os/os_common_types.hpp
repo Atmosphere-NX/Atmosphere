@@ -46,14 +46,18 @@ namespace sts::os {
 
     inline constexpr const ProcessId InvalidProcessId = ProcessId::Invalid;
 
-    NX_INLINE Result GetProcessId(os::ProcessId *out, ::Handle process_handle) {
+    NX_INLINE Result TryGetProcessId(os::ProcessId *out, ::Handle process_handle) {
         return svcGetProcessId(&out->value, process_handle);
     }
 
+    NX_INLINE os::ProcessId GetProcessId(::Handle process_handle) {
+        os::ProcessId process_id;
+        R_ASSERT(TryGetProcessId(&process_id, process_handle));
+        return process_id;
+    }
+
     NX_INLINE ProcessId GetCurrentProcessId() {
-        os::ProcessId current_process_id;
-        R_ASSERT(GetProcessId(&current_process_id, CUR_PROCESS_HANDLE));
-        return current_process_id;
+        return GetProcessId(CUR_PROCESS_HANDLE);
     }
 
     inline constexpr bool operator==(const ProcessId &lhs, const ProcessId &rhs) {

@@ -15,14 +15,20 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <cstdlib>
+#include <switch/types.h>
+#include <switch/kernel/event.h>
+#include <switch/services/sm.h>
 
-/* Get whether emummc is active. */
-bool IsEmummc();
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/* Get Nintendo redirection path. */
-const char *GetEmummcNintendoDirPath();
+Result amsBpcInitialize(void);
+void amsBpcExit(void);
+Service *amsBpcGetServiceSession(void);
 
-/* Get Emummc folderpath, NULL if not file-based. */
-const char *GetEmummcFilePath();
+Result amsBpcRebootToFatalError(void *ctx);
+
+#ifdef __cplusplus
+}
+#endif

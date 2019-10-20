@@ -36,7 +36,7 @@ namespace sts::boot {
 
         /* Helpers. */
         bool IsUsbClockValid() {
-            uintptr_t car_regs = GetIoMapping(0x60006000ul, 0x1000);
+            uintptr_t car_regs = dd::GetIoMapping(0x60006000ul, 0x1000);
 
             const u32 pllu = reg::Read(car_regs + 0xC0);
             const u32 utmip = reg::Read(car_regs + 0x480);

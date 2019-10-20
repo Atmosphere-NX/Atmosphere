@@ -59,18 +59,23 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[0x1000];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
-    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
 }
 
-sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Boot;
+namespace sts::ams {
+
+    ncm::TitleId StratosphereTitleId = ncm::TitleId::Boot;
+
+    void ExceptionHandler(FatalErrorContext *ctx) {
+        /* We're boot sysmodule, so manually reboot to fatal error. */
+        boot::RebootForFatalError(ctx);
+    }
+
+}
+
+using namespace sts;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    StratosphereCrashHandler(ctx);
-}
-
-void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx) {
-    /* We're boot sysmodule, so manually reboot to fatal error. */
-    boot::RebootForFatalError(ctx);
+    ams::CrashHandler(ctx);
 }
 
 void __libnx_initheap(void) {
@@ -89,13 +94,13 @@ void __appInit(void) {
     hos::SetVersionForLibnx();
 
     /* Initialize services we need (TODO: NCM) */
-    DoWithSmSession([&]() {
+    sm::DoWithSession([&]() {
         R_ASSERT(fsInitialize());
         R_ASSERT(splInitialize());
         R_ASSERT(pmshellInitialize());
     });
 
-    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
+    ams::CheckApiVersion();
 }
 
 void __appExit(void) {

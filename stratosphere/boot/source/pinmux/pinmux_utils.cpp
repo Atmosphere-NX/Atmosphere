@@ -44,7 +44,7 @@ namespace sts::pinmux {
 
         uintptr_t GetBaseAddress() {
             if (!g_initialized_pinmux_vaddr) {
-                g_pinmux_vaddr = GetIoMapping(ApbMiscPhysicalBase, 0x4000);
+                g_pinmux_vaddr = dd::GetIoMapping(ApbMiscPhysicalBase, 0x4000);
                 g_initialized_pinmux_vaddr = true;
             }
             return g_pinmux_vaddr;

@@ -45,13 +45,18 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[0x1000];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
-    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
 }
 
-sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Sm;
+namespace sts::ams {
+
+    ncm::TitleId StratosphereTitleId = ncm::TitleId::Sm;
+
+}
+
+using namespace sts;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    StratosphereCrashHandler(ctx);
+    ams::CrashHandler(ctx);
 }
 
 
@@ -68,7 +73,7 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    sts::hos::SetVersionForLibnx();
+    hos::SetVersionForLibnx();
 
     /* We must do no service setup here, because we are sm. */
 }
@@ -76,8 +81,6 @@ void __appInit(void) {
 void __appExit(void) {
     /* Nothing to clean up, because we're sm. */
 }
-
-using namespace sts;
 
 namespace {
 

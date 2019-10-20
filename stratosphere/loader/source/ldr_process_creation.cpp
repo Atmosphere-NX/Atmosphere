@@ -723,10 +723,9 @@ namespace sts::ldr {
             R_TRY(LoadNsosIntoProcessMemory(&info, loc.title_id, nso_headers, has_nso, arg_info));
 
             /* Register NSOs with ro manager. */
-            os::ProcessId process_id = os::InvalidProcessId;
             {
-                /* Nintendo doesn't validate this result, but we will. */
-                R_ASSERT(svcGetProcessId(&process_id.value, info.process_handle.Get()));
+                /* Nintendo doesn't validate this get, but we do. */
+                os::ProcessId process_id = os::GetProcessId(info.process_handle.Get());
 
                 /* Register new process. */
                 ldr::ro::RegisterProcess(pin_id, process_id, loc.title_id);
