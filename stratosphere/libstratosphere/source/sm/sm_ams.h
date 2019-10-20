@@ -5,7 +5,9 @@
  * @copyright libnx Authors
  */
 #pragma once
-#include <switch.h>
+#include <switch/types.h>
+#include <switch/kernel/event.h>
+#include <switch/services/sm.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,6 +20,7 @@ Result smAtmosphereWaitMitm(const char *name);
 
 Result smAtmosphereMitmInitialize(void);
 void smAtmosphereMitmExit(void);
+Service *smAtmosphereMitmGetServiceSession();
 
 Result smAtmosphereMitmInstall(Handle *handle_out, Handle *query_out, const char *name);
 Result smAtmosphereMitmUninstall(const char *name);

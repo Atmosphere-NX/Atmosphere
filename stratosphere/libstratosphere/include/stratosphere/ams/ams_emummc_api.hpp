@@ -14,11 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <switch.h>
-#include <stratosphere.hpp>
+#pragma once
+#include "ams_types.hpp"
 
-static sts::os::RecursiveMutex g_sm_session_lock;
+namespace sts::ams::emummc {
 
-sts::os::RecursiveMutex &GetSmSessionMutex() {
-    return g_sm_session_lock;
+    /* Get whether emummc is active. */
+    bool IsActive();
+
+    /* Get Nintendo redirection path. */
+    const char *GetNintendoDirPath();
+
+    /* Get Emummc folderpath, NULL if not file-based. */
+    const char *GetFilePath();
+
 }

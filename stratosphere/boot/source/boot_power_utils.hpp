@@ -25,6 +25,6 @@ namespace sts::boot {
     void ShutdownSystem();
 
     /* Atmosphere power utilities. */
-    void RebootForFatalError(AtmosphereFatalErrorContext *ctx);
+    void RebootForFatalError(ams::FatalErrorContext *ctx);
 
 }

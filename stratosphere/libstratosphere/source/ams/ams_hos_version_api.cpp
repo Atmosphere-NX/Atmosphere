@@ -35,19 +35,7 @@ namespace sts::hos {
                 return;
             }
 
-            /* TODO: spl::smc:: */
-            u32 target_fw = 0;
-            {
-                SecmonArgs args = {0};
-                args.X[0] = 0xC3000002; /* smcGetConfig */
-                args.X[1] = 65000; /* ConfigItem_ExosphereVersion */
-                R_ASSERT(svcCallSecureMonitor(&args));
-                STS_ASSERT(args.X[0] == 0);
-
-                target_fw = (args.X[1] >> 0x08) & 0xFF;
-            }
-
-            switch (static_cast<ams::TargetFirmware>(target_fw)) {
+            switch (ams::GetApiInfo().GetTargetFirmware()) {
                 case ams::TargetFirmware_100:
                     g_hos_version = hos::Version_100;
                     break;

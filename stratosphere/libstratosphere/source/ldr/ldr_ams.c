@@ -18,44 +18,9 @@
 #include "ldr_ams.h"
 
 static Result _ldrAtmosphereHasLaunchedTitle(Service *srv, bool *out, u64 tid) {
-    IpcCommand c;
-    ipcInitialize(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        u64 title_id;
-    } *raw;
-
-    raw = serviceIpcPrepareHeader(srv, &c, sizeof(*raw));
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 65000;
-    raw->title_id = tid;
-
-    Result rc = serviceIpcDispatch(srv);
-
-    if (R_SUCCEEDED(rc)) {
-        IpcParsedCommand r;
-        struct {
-            u64 magic;
-            u64 result;
-            u8 has_launched_title;
-        } *resp;
-
-        serviceIpcParse(srv, &r, sizeof(*resp));
-        resp = r.Raw;
-
-        rc = resp->result;
-
-        if (R_SUCCEEDED(rc)) {
-            *out = resp->has_launched_title != 0;
-        } else {
-            rc = 0x666;
-        }
-    } else {
-        rc = 0x555;
-    }
-
+    u8 tmp;
+    Result rc = serviceDispatchInOut(srv, 65000, tid, tmp);
+    if (R_SUCCEEDED(rc) && out) *out = tmp & 1;
     return rc;
 }
 

@@ -28,7 +28,7 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x8000
+    #define INNER_HEAP_SIZE 0x2000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -40,15 +40,19 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[0x1000];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
-    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
 }
 
-sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Eclct;
+namespace sts::ams {
+
+    ncm::TitleId StratosphereTitleId = ncm::TitleId::Eclct;
+
+}
+
+using namespace sts;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    StratosphereCrashHandler(ctx);
+    ams::CrashHandler(ctx);
 }
-
 
 void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;

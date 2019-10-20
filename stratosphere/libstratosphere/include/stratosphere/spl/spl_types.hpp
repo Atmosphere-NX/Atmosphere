@@ -46,6 +46,12 @@ namespace sts::spl {
             ImportEsKey                   = 0xC300100C,
             DecryptRsaPrivateKey          = 0xC300100D,
             ImportSecureExpModKey         = 0xC300100E,
+
+            /* Atmosphere functions. */
+            AtmosphereIramCopy            = 0xF0000201,
+            AtmosphereReadWriteRegister   = 0xF0000002,
+            AtmosphereWriteAddress        = 0xF0000003,
+            AtmosphereGetEmummcConfig     = 0xF0000404,
         };
 
         enum class Result {
@@ -177,3 +183,10 @@ namespace sts::spl {
     #pragma pack(pop)
 
 }
+
+/* Extensions to libnx spl config item enum. */
+constexpr inline SplConfigItem SplConfigItem_ExosphereApiVersion     = static_cast<SplConfigItem>(65000);
+constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsReboot    = static_cast<SplConfigItem>(65001);
+constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsShutdown  = static_cast<SplConfigItem>(65002);
+constexpr inline SplConfigItem SplConfigItem_ExosphereGitCommitHash  = static_cast<SplConfigItem>(65003);
+constexpr inline SplConfigItem SplConfigItem_ExosphereHasRcmBugPatch = static_cast<SplConfigItem>(65004);

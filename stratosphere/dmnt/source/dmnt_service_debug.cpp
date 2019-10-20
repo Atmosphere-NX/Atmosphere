@@ -36,7 +36,7 @@ namespace sts::dmnt {
 
     Result DebugMonitorService::GetProcessId(sf::Out<os::ProcessId> out_pid, Handle hnd) {
         /* Nintendo discards the output of this command, but we will return it. */
-        return svcGetProcessId(reinterpret_cast<u64 *>(out_pid.GetPointer()), hnd);
+        return os::TryGetProcessId(out_pid.GetPointer(), hnd);
     }
 
     Result DebugMonitorService::GetProcessHandle(sf::Out<Handle> out_hnd, os::ProcessId pid) {

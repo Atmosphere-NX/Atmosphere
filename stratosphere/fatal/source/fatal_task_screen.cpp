@@ -189,7 +189,7 @@ namespace sts::fatal::srv {
             const FatalConfig &config = GetFatalConfig();
 
             /* Prepare screen for drawing. */
-            DoWithSmSession([&]() {
+            sm::DoWithSession([&]() {
                 R_ASSERT(PrepareScreenForDrawing());
             });
 
@@ -222,7 +222,7 @@ namespace sts::fatal::srv {
             font::AddSpacingLines(0.5f);
             font::PrintFormatLine("Title: %016lX", static_cast<u64>(this->context->title_id));
             font::AddSpacingLines(0.5f);
-            font::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", config.GetFirmwareVersion().display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
+            font::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", config.GetFirmwareVersion().display_version, ATMOSPHERE_RELEASE_VERSION, ams::GetGitRevision());
             font::AddSpacingLines(1.5f);
             if (this->context->error_code != ResultAtmosphereVersionMismatch) {
                 font::Print(config.GetErrorDescription());

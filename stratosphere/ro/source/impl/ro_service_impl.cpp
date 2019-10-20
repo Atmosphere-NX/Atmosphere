@@ -93,8 +93,7 @@ namespace sts::ro::impl {
                     R_ASSERT(svcGetInfo(&title_id.value, InfoType_TitleId, process_h, 0));
                 } else {
                     /* 1.0.0-2.3.0: We're not inside loader, so ask pm. */
-                    os::ProcessId process_id = os::InvalidProcessId;
-                    R_ASSERT(svcGetProcessId(&process_id.value, process_h));
+                    os::ProcessId process_id = os::GetProcessId(process_h);
                     R_ASSERT(pminfoGetTitleId(&title_id.value, process_id.value));
                 }
                 return title_id;
@@ -335,7 +334,7 @@ namespace sts::ro::impl {
             os::ProcessId handle_pid = os::InvalidProcessId;
 
             /* Validate handle is a valid process handle. */
-            if (R_FAILED(svcGetProcessId(&handle_pid.value, process_handle))) {
+            if (R_FAILED(os::TryGetProcessId(&handle_pid, process_handle))) {
                 return ResultRoInvalidProcess;
             }
 

@@ -55,4 +55,15 @@ namespace sts::sm {
         });
     }
 
+    namespace impl {
+
+        void DoWithSessionImpl(void (*Invoker)(void *), void *Function) {
+            impl::DoWithUserSession([&]() {
+                Invoker(Function);
+                return ResultSuccess;
+            });
+        }
+
+    }
+
 }

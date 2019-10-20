@@ -15,13 +15,11 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <cstdlib>
-#include "services/bpc_ams.h"
+#include "ams_types.hpp"
 
-static constexpr size_t AtmosphereFatalErrorNumGprs = 29;
+namespace sts::ams {
 
-static constexpr u32 AtmosphereFatalErrorMagic = 0x31454641; /* "AFE1" */
+    /* Will be called by libstratosphere on crash. */
+    void CrashHandler(ThreadExceptionDump *ctx);
 
-/* Will be called by libstratosphere on crash. */
-void StratosphereCrashHandler(ThreadExceptionDump *ctx);
+}

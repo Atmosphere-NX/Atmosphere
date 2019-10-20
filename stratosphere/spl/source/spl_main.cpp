@@ -19,6 +19,7 @@
 #include <cstring>
 
 #include <switch.h>
+#include <atmosphere.h>
 #include <stratosphere.hpp>
 
 #include "spl_api_impl.hpp"
@@ -38,7 +39,7 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x28000
+    #define INNER_HEAP_SIZE 0x4000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -50,15 +51,19 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[0x1000];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
-    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
 }
 
-sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Spl;
+namespace sts::ams {
+
+    ncm::TitleId StratosphereTitleId = ncm::TitleId::Spl;
+
+}
+
+using namespace sts;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    StratosphereCrashHandler(ctx);
+    ams::CrashHandler(ctx);
 }
-
 
 void __libnx_initheap(void) {
     void*  addr = nx_inner_heap;
@@ -72,12 +77,12 @@ void __libnx_initheap(void) {
     fake_heap_end   = (char*)addr + size;
 }
 
-using namespace sts;
-
 void __appInit(void) {
     hos::SetVersionForLibnx();
 
     /* SPL doesn't really access any services... */
+
+    ams::CheckApiVersion();
 }
 
 void __appExit(void) {

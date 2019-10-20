@@ -15,20 +15,22 @@
  */
 
 #pragma once
+#include <switch.h>
+#include "../defines.hpp"
 
-#include "stratosphere/defines.hpp"
-#include "stratosphere/results.hpp"
+namespace sts::dd {
 
-#include "stratosphere/util.hpp"
-#include "stratosphere/svc.hpp"
-#include "stratosphere/ams.hpp"
-#include "stratosphere/os.hpp"
-#include "stratosphere/dd.hpp"
-#include "stratosphere/cfg.hpp"
-#include "stratosphere/fatal.hpp"
-#include "stratosphere/hid.hpp"
-#include "stratosphere/ncm.hpp"
-#include "stratosphere/pm.hpp"
-#include "stratosphere/rnd.hpp"
-#include "stratosphere/sm.hpp"
-#include "stratosphere/sf.hpp"
+    uintptr_t QueryIoMapping(uintptr_t phys_addr, size_t size);
+
+    u32 ReadRegister(uintptr_t phys_addr);
+    void WriteRegister(uintptr_t phys_addr, u32 value);
+    u32 ReadWriteRegister(uintptr_t phys_addr, u32 value, u32 mask);
+
+    /* Convenience Helper. */
+
+    inline uintptr_t GetIoMapping(uintptr_t phys_addr, size_t size) {
+        const uintptr_t io_mapping = QueryIoMapping(phys_addr, size);
+        STS_ASSERT(io_mapping);
+        return io_mapping;
+    }
+}

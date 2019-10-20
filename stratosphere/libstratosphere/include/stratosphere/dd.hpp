@@ -15,20 +15,6 @@
  */
 
 #pragma once
+#include <switch.h>
 
-#include "stratosphere/defines.hpp"
-#include "stratosphere/results.hpp"
-
-#include "stratosphere/util.hpp"
-#include "stratosphere/svc.hpp"
-#include "stratosphere/ams.hpp"
-#include "stratosphere/os.hpp"
-#include "stratosphere/dd.hpp"
-#include "stratosphere/cfg.hpp"
-#include "stratosphere/fatal.hpp"
-#include "stratosphere/hid.hpp"
-#include "stratosphere/ncm.hpp"
-#include "stratosphere/pm.hpp"
-#include "stratosphere/rnd.hpp"
-#include "stratosphere/sm.hpp"
-#include "stratosphere/sf.hpp"
+#include "dd/dd_io_mappings.hpp"

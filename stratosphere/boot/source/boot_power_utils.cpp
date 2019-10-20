@@ -37,22 +37,22 @@ namespace sts::boot {
         /* Helpers. */
         void ClearIram() {
             /* Make page FFs. */
-            memset(g_work_page, 0xFF, sizeof(g_work_page));
+            std::memset(g_work_page, 0xFF, sizeof(g_work_page));
 
             /* Overwrite all of IRAM with FFs. */
             for (size_t ofs = 0; ofs < IramSize; ofs += sizeof(g_work_page)) {
-                CopyToIram(IramBase + ofs, g_work_page, sizeof(g_work_page));
+                ams::CopyToIram(IramBase + ofs, g_work_page, sizeof(g_work_page));
             }
         }
 
-        void DoRebootToPayload(AtmosphereFatalErrorContext *ctx) {
+        void DoRebootToPayload(ams::FatalErrorContext *ctx) {
             /* Ensure clean IRAM state. */
             ClearIram();
 
             /* Copy in payload. */
             for (size_t ofs = 0; ofs < fusee_primary_bin_size; ofs += 0x1000) {
                 std::memcpy(g_work_page, &fusee_primary_bin[ofs], std::min(static_cast<size_t>(fusee_primary_bin_size - ofs), size_t(0x1000)));
-                CopyToIram(IramPayloadBase + ofs, g_work_page, 0x1000);
+                ams::CopyToIram(IramPayloadBase + ofs, g_work_page, 0x1000);
             }
 
 
@@ -60,10 +60,10 @@ namespace sts::boot {
             if (ctx != nullptr) {
                 std::memset(g_work_page, 0xCC, sizeof(g_work_page));
                 std::memcpy(g_work_page, ctx, sizeof(*ctx));
-                CopyToIram(IramPayloadBase + IramPayloadMaxSize, g_work_page, sizeof(g_work_page));
+                ams::CopyToIram(IramPayloadBase + IramPayloadMaxSize, g_work_page, sizeof(g_work_page));
             }
 
-            RebootToIramPayload();
+            ams::ForceRebootToIramPayload();
         }
 
     }
@@ -72,7 +72,7 @@ namespace sts::boot {
         DoRebootToPayload(nullptr);
     }
 
-    void RebootForFatalError(AtmosphereFatalErrorContext *ctx) {
+    void RebootForFatalError(ams::FatalErrorContext *ctx) {
         DoRebootToPayload(ctx);
     }
 

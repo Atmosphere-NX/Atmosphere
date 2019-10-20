@@ -91,7 +91,7 @@ namespace sts::fatal::srv {
                 if (strlen(this->context->proc_name)) {
                     fprintf(f_report, "Process Name:                    %s\n", this->context->proc_name);
                 }
-                fprintf(f_report, u8"Firmware:                        %s (Atmosphère %u.%u.%u-%s)\n", GetFatalConfig().GetFirmwareVersion().display_version, CURRENT_ATMOSPHERE_VERSION, GetAtmosphereGitRevision());
+                fprintf(f_report, u8"Firmware:                        %s (Atmosphère %u.%u.%u-%s)\n", GetFatalConfig().GetFirmwareVersion().display_version, ATMOSPHERE_RELEASE_VERSION, ams::GetGitRevision());
 
                 if (this->context->cpu_ctx.architecture == CpuContext::Architecture_Aarch32) {
                     fprintf(f_report, "General Purpose Registers:\n");

@@ -16,6 +16,7 @@
 
 #pragma once
 #include <switch.h>
+#include <type_traits>
 
 #include "../spl_types.hpp"
 
@@ -53,5 +54,22 @@ namespace sts::spl::smc {
     Result ImportEsKey(const void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option);
     Result DecryptRsaPrivateKey(size_t *out_size, void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option);
     Result ImportSecureExpModKey(const void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option);
+
+    /* Atmosphere functions. */
+    Result AtmosphereCopyToIram(uintptr_t iram_dst, const void *dram_src, size_t size);
+    Result AtmosphereCopyFromIram(void *dram_dst, uintptr_t iram_src, size_t size);
+    Result AtmosphereReadWriteRegister(uint64_t address, uint32_t mask, uint32_t value, uint32_t *out_value);
+    Result AtmosphereWriteAddress(void *dst, const void *src, size_t size);
+
+    /* Helpers. */
+    inline Result SetConfig(SplConfigItem which, const u64 value) {
+        return SetConfig(which, &value, 1);
+    }
+
+    template<typename T>
+    inline Result AtmosphereWriteAddress(void *dst, const T value) {
+        static_assert(std::is_integral<T>::value && sizeof(T) <= 8 && (sizeof(T) & (sizeof(T) - 1)) == 0, "AtmosphereWriteAddress requires integral type.");
+        return AtmosphereWriteAddress(dst, &value, sizeof(T));
+    }
 
 }

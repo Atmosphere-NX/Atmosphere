@@ -29,4 +29,17 @@ namespace sts::sm {
     Result HasService(bool *out, ServiceName name);
     Result WaitService(ServiceName name);
 
+    /* Scoped session access. */
+    namespace impl {
+
+        void DoWithSessionImpl(void (*Invoker)(void *), void *Function);
+
+    }
+
+    template<typename F>
+    NX_CONSTEXPR void DoWithSession(F f) {
+        auto invoker = +[](void *func) { (*(F *)func)(); };
+        impl::DoWithSessionImpl(invoker, &f);
+    }
+
 }

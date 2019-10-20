@@ -79,12 +79,12 @@ namespace sts::boot {
 
         /* Helper functions. */
         void InitializeRegisterBaseAddresses() {
-            g_disp1_regs    = GetIoMapping(Disp1Base, Disp1Size);
-            g_dsi_regs      = GetIoMapping(DsiBase, DsiSize);
-            g_clk_rst_regs  = GetIoMapping(ClkRstBase, ClkRstSize);
-            g_gpio_regs     = GetIoMapping(GpioBase, GpioSize);
-            g_apb_misc_regs = GetIoMapping(ApbMiscBase, ApbMiscSize);
-            g_mipi_cal_regs = GetIoMapping(MipiCalBase, MipiCalSize);
+            g_disp1_regs    = dd::GetIoMapping(Disp1Base, Disp1Size);
+            g_dsi_regs      = dd::GetIoMapping(DsiBase, DsiSize);
+            g_clk_rst_regs  = dd::GetIoMapping(ClkRstBase, ClkRstSize);
+            g_gpio_regs     = dd::GetIoMapping(GpioBase, GpioSize);
+            g_apb_misc_regs = dd::GetIoMapping(ApbMiscBase, ApbMiscSize);
+            g_mipi_cal_regs = dd::GetIoMapping(MipiCalBase, MipiCalSize);
         }
 
         inline void DoRegisterWrites(uintptr_t base_address, const RegisterWrite *reg_writes, size_t num_writes) {
@@ -418,7 +418,7 @@ namespace sts::boot {
 
         /* Nintendo waits 5 frames before continuing. */
         {
-            const uintptr_t host1x_vaddr = GetIoMapping(0x500030a4, 4);
+            const uintptr_t host1x_vaddr = dd::GetIoMapping(0x500030a4, 4);
             const u32 start_val = reg::Read(host1x_vaddr);
             while (reg::Read(host1x_vaddr) < start_val + 5) {
                 /* spinlock here. */

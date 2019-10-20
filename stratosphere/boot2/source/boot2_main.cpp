@@ -38,15 +38,19 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[0x1000];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
-    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
 }
 
-sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Boot2;
+namespace sts::ams {
+
+    ncm::TitleId StratosphereTitleId = ncm::TitleId::Boot2;
+
+}
+
+using namespace sts;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    StratosphereCrashHandler(ctx);
+    ams::CrashHandler(ctx);
 }
-
 
 void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;
@@ -60,13 +64,11 @@ void __libnx_initheap(void) {
 	fake_heap_end   = (char*)addr + size;
 }
 
-using namespace sts;
-
 void __appInit(void) {
     hos::SetVersionForLibnx();
 
     /* Initialize services we need. */
-    DoWithSmSession([&]() {
+    sm::DoWithSession([&]() {
         R_ASSERT(fsInitialize());
         R_ASSERT(pmbmInitialize());
         R_ASSERT(pminfoInitialize());
@@ -77,7 +79,7 @@ void __appInit(void) {
 
     R_ASSERT(fsdevMountSdmc());
 
-    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
+    ams::CheckApiVersion();
 }
 
 void __appExit(void) {

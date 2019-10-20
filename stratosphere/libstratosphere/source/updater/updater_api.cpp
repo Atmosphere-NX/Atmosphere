@@ -346,7 +346,7 @@ namespace sts::updater {
                     }
 
                     /* Only preserve autorcm if on a unit with unpatched rcm bug. */
-                    if (HasAutoRcmPreserve(boot_image_update_type) && !IsRcmBugPatched()) {
+                    if (HasAutoRcmPreserve(boot_image_update_type) && !ams::IsRcmBugPatched()) {
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalSub));
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalSub));
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalMain));
@@ -407,7 +407,7 @@ namespace sts::updater {
                         R_TRY(boot0_accessor.UpdateEks(bct, work));
                     }
                     /* Only preserve autorcm if on a unit with unpatched rcm bug. */
-                    if (HasAutoRcmPreserve(boot_image_update_type) && !IsRcmBugPatched()) {
+                    if (HasAutoRcmPreserve(boot_image_update_type) && !ams::IsRcmBugPatched()) {
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeSub));
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeSub));
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeMain));
@@ -522,10 +522,8 @@ namespace sts::updater {
         }
 
         /* Get a session to ncm. */
-        DoWithSmSession([&]() {
-            R_ASSERT(ncmInitialize());
-        });
-        ON_SCOPE_EXIT { ncmExit(); };
+        sm::ScopedServiceHolder<ncmInitialize, ncmExit> ncm_holder;
+        R_ASSERT(ncm_holder.GetResult());
 
         /* Verify normal, verify safe as needed. */
         if (verification_state.needs_verify_normal) {
