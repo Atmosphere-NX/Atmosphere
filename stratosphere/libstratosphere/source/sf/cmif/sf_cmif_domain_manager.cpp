@@ -41,9 +41,8 @@ namespace sts::sf::cmif {
         return ResultSuccess;
     }
 
-    Result ServerDomainManager::Domain::AlterReservedIds(const DomainObjectId *old_reserved_ids, const DomainObjectId *new_reserved_ids, size_t count) {
-        this->manager->entry_manager.ReallocateEntries(old_reserved_ids, new_reserved_ids, count);
-        return ResultSuccess;
+    void ServerDomainManager::Domain::ReserveSpecificIds(const DomainObjectId *ids, size_t count) {
+        this->manager->entry_manager.AllocateSpecificEntries(ids, count);
     }
 
     void ServerDomainManager::Domain::UnreserveIds(const DomainObjectId *ids, size_t count) {
@@ -132,27 +131,16 @@ namespace sts::sf::cmif {
         this->free_list.push_front(*entry);
     }
 
-    void ServerDomainManager::EntryManager::ReallocateEntries(const DomainObjectId *old_reserved_ids, const DomainObjectId *new_reserved_ids, size_t count) {
+    void ServerDomainManager::EntryManager::AllocateSpecificEntries(const DomainObjectId *ids, size_t count) {
         std::scoped_lock lk(this->lock);
 
-        /* Free old ids. */
+        /* Allocate new IDs. */
         for (size_t i = 0; i < count; i++) {
-            const auto id = old_reserved_ids[i];
+            const auto id = ids[i];
             Entry *entry = this->GetEntry(id);
             if (id != InvalidDomainObjectId) {
                 STS_ASSERT(entry != nullptr);
                 STS_ASSERT(entry->owner == nullptr);
-                STS_ASSERT(!entry->object);
-                this->free_list.push_front(*entry);
-            }
-        }
-
-        /* Allocate new IDs. */
-        for (size_t i = 0; i < count; i++) {
-            const auto id = old_reserved_ids[i];
-            Entry *entry = this->GetEntry(id);
-            if (id != InvalidDomainObjectId) {
-                STS_ASSERT(entry != nullptr);
                 this->free_list.erase(this->free_list.iterator_to(*entry));
             }
         }

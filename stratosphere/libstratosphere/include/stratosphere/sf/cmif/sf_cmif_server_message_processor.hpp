@@ -25,15 +25,57 @@ namespace sts::sf::cmif {
     class  ServiceObjectHolder;
     struct DomainObjectId;
 
+    /* This is needed for non-templated domain message processing. */
+    struct ServerMessageRuntimeMetadata {
+        u16 in_data_size;
+        u16 out_data_size;
+        u8 in_headers_size;
+        u8 out_headers_size;
+        u8 in_object_count;
+        u8 out_object_count;
+
+        constexpr size_t GetInDataSize() const {
+            return size_t(this->in_data_size);
+        }
+
+        constexpr size_t GetOutDataSize() const {
+            return size_t(this->out_data_size);
+        }
+
+        constexpr size_t GetInHeadersSize() const {
+            return size_t(this->in_headers_size);
+        }
+
+        constexpr size_t GetOutHeadersSize() const {
+            return size_t(this->out_headers_size);
+        }
+
+        constexpr size_t GetInObjectCount() const {
+            return size_t(this->in_object_count);
+        }
+
+        constexpr size_t GetOutObjectCount() const {
+            return size_t(this->out_object_count);
+        }
+
+        constexpr size_t GetUnfixedOutPointerSizeOffset() const {
+            return this->GetInDataSize() + this->GetInHeadersSize() + 0x10 /* padding. */;
+        }
+    };
+
+    static_assert(std::is_pod<ServerMessageRuntimeMetadata>::value, "std::is_pod<ServerMessageRuntimeMetadata>::value");
+    static_assert(sizeof(ServerMessageRuntimeMetadata) == sizeof(u64), "sizeof(ServerMessageRuntimeMetadata)");
+
     class ServerMessageProcessor {
         public:
             /* Used to enabled templated message processors. */
             virtual void SetImplementationProcessor(ServerMessageProcessor *impl) { /* ... */ }
+            virtual const ServerMessageRuntimeMetadata GetRuntimeMetadata() const = 0;
 
-            virtual Result PrepareForProcess(const ServiceDispatchContext &ctx, size_t &headers_size) const = 0;
+            virtual Result PrepareForProcess(const ServiceDispatchContext &ctx, const ServerMessageRuntimeMetadata runtime_metadata) const = 0;
             virtual Result GetInObjects(ServiceObjectHolder *in_objects) const = 0;
-            virtual HipcRequest PrepareForReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const size_t headers_size, size_t &num_out_object_handles) = 0;
-            virtual void PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const size_t headers_size) = 0;
+            virtual HipcRequest PrepareForReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const ServerMessageRuntimeMetadata runtime_metadata) = 0;
+            virtual void PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const ServerMessageRuntimeMetadata runtime_metadata) = 0;
             virtual void SetOutObjects(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response, ServiceObjectHolder *out_objects, DomainObjectId *ids) = 0;
     };
 }

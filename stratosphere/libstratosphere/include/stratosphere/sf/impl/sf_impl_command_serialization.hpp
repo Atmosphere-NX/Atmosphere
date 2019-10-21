@@ -442,8 +442,7 @@ namespace sts::sf::impl {
 
             /* In/Out data marshalling. */
             static constexpr std::array<size_t, NumInDatas+1> InDataOffsets = RawDataOffsetCalculator<InDatas>::Offsets;
-            static constexpr size_t InDataRawUnfixedOutPointerSizeOffset = util::AlignUp(InDataOffsets[NumInDatas] + 0x10, alignof(u16));
-            static constexpr size_t InDataSize = util::AlignUp(util::AlignUp(InDataOffsets[NumInDatas], alignof(u16)) + sizeof(u16) * NumUnfixedSizeOutHipcPointerBuffers, alignof(u32));
+            static constexpr size_t InDataSize  = util::AlignUp(InDataOffsets[NumInDatas], alignof(u16));
 
             static constexpr std::array<size_t, NumOutDatas+1> OutDataOffsets = RawDataOffsetCalculator<OutDatas>::Offsets;
             static constexpr size_t OutDataSize = util::AlignUp(OutDataOffsets[NumOutDatas], alignof(u32));
@@ -463,6 +462,16 @@ namespace sts::sf::impl {
 
             static_assert(NumInMoveHandles + NumInCopyHandles   == NumInHandles,  "NumInMoveHandles + NumInCopyHandles   == NumInHandles");
             static_assert(NumOutMoveHandles + NumOutCopyHandles == NumOutHandles, "NumOutMoveHandles + NumOutCopyHandles == NumOutHandles");
+
+            /* Used by server message processor at runtime. */
+            static constexpr inline const cmif::ServerMessageRuntimeMetadata RuntimeMetadata = cmif::ServerMessageRuntimeMetadata{
+                .in_data_size      = InDataSize,
+                .out_data_size     = OutDataSize,
+                .in_headers_size   = sizeof(CmifInHeader),
+                .out_headers_size  = sizeof(CmifOutHeader),
+                .in_object_count   = NumInObjects,
+                .out_object_count  = NumOutObjects,
+            };
 
         /* Construction of argument serialization structs. */
         private:
@@ -686,7 +695,11 @@ namespace sts::sf::impl {
     template<typename CommandMeta>
     struct HipcCommandProcessor : public sf::cmif::ServerMessageProcessor {
         public:
-            virtual Result PrepareForProcess(const cmif::ServiceDispatchContext &ctx, size_t &headers_size) const override final {
+            virtual const cmif::ServerMessageRuntimeMetadata GetRuntimeMetadata() const override final {
+                return CommandMeta::RuntimeMetadata;
+            }
+
+            virtual Result PrepareForProcess(const cmif::ServiceDispatchContext &ctx, const cmif::ServerMessageRuntimeMetadata runtime_metadata) const override final {
                 const auto &meta = ctx.request.meta;
                 bool is_request_valid = true;
                 is_request_valid &= meta.send_pid         == CommandMeta::HasInProcessIdHolder;
@@ -699,30 +712,33 @@ namespace sts::sf::impl {
                 is_request_valid &= meta.num_move_handles == CommandMeta::NumInMoveHandles;
 
                 const size_t meta_raw_size = meta.num_data_words * sizeof(u32);
-                is_request_valid &= meta_raw_size >= CommandMeta::InDataSize + 0x10 /* padding */ + headers_size /* headers */;
+                const size_t command_raw_size = util::AlignUp(runtime_metadata.GetUnfixedOutPointerSizeOffset() + (CommandMeta::NumUnfixedSizeOutHipcPointerBuffers * sizeof(u16)), alignof(u32));
+                is_request_valid &= meta_raw_size >= command_raw_size;
 
                 R_UNLESS(is_request_valid, ResultHipcInvalidRequest);
                 return ResultSuccess;
             }
 
-            virtual HipcRequest PrepareForReply(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &out_raw_data, const size_t headers_size, size_t &num_out_object_handles) override final {
+            virtual HipcRequest PrepareForReply(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &out_raw_data, const cmif::ServerMessageRuntimeMetadata runtime_metadata) override final {
+                const size_t raw_size = runtime_metadata.GetOutDataSize() + runtime_metadata.GetOutHeadersSize();
                 const auto response = hipcMakeRequestInline(ctx.out_message_buffer.GetPointer(),
                     .type = CmifCommandType_Invalid, /* Really response */
                     .num_send_statics = CommandMeta::NumOutHipcPointerBuffers,
-                    .num_data_words = static_cast<u32>((util::AlignUp(CommandMeta::OutDataSize + headers_size, 0x4) + 0x10 /* padding */) / sizeof(u32)),
+                    .num_data_words = static_cast<u32>((util::AlignUp(raw_size, 0x4) + 0x10 /* padding */) / sizeof(u32)),
                     .num_copy_handles = CommandMeta::NumOutCopyHandles,
-                    .num_move_handles = static_cast<u32>(CommandMeta::NumOutMoveHandles + num_out_object_handles),
+                    .num_move_handles = static_cast<u32>(CommandMeta::NumOutMoveHandles + runtime_metadata.GetOutObjectCount()),
                 );
-                out_raw_data = cmif::PointerAndSize(util::AlignUp(reinterpret_cast<uintptr_t>(response.data_words), 0x10), CommandMeta::OutDataSize + headers_size);
+                out_raw_data = cmif::PointerAndSize(util::AlignUp(reinterpret_cast<uintptr_t>(response.data_words), 0x10), raw_size);
                 return response;
             }
 
-            virtual void PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &out_raw_data, const size_t headers_size) override final {
+            virtual void PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &out_raw_data, const cmif::ServerMessageRuntimeMetadata runtime_metadata) override final {
+                const size_t raw_size = runtime_metadata.GetOutHeadersSize();
                 const auto response = hipcMakeRequestInline(ctx.out_message_buffer.GetPointer(),
                     .type = CmifCommandType_Invalid, /* Really response */
-                    .num_data_words = static_cast<u32>((util::AlignUp(headers_size, 0x4) + 0x10 /* padding */) / sizeof(u32)),
+                    .num_data_words = static_cast<u32>((util::AlignUp(raw_size, 0x4) + 0x10 /* padding */) / sizeof(u32)),
                 );
-                out_raw_data = cmif::PointerAndSize(util::AlignUp(reinterpret_cast<uintptr_t>(response.data_words), 0x10), headers_size);
+                out_raw_data = cmif::PointerAndSize(util::AlignUp(reinterpret_cast<uintptr_t>(response.data_words), 0x10), raw_size);
             }
 
             virtual Result GetInObjects(cmif::ServiceObjectHolder *in_objects) const override final {
@@ -789,7 +805,7 @@ namespace sts::sf::impl {
             }();
 
             template<size_t BufferIndex, size_t Index = GetIndexFromBufferIndex<BufferIndex>>
-            NX_CONSTEXPR void ProcessBufferImpl(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &buffer, bool &is_buffer_map_alias, bool &map_alias_buffers_valid, size_t &pointer_buffer_head, size_t &pointer_buffer_tail, size_t in_headers_size) {
+            NX_CONSTEXPR void ProcessBufferImpl(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &buffer, bool &is_buffer_map_alias, bool &map_alias_buffers_valid, size_t &pointer_buffer_head, size_t &pointer_buffer_tail, const cmif::ServerMessageRuntimeMetadata runtime_metadata) {
                 static_assert(Index != std::numeric_limits<size_t>::max(), "Invalid Index From Buffer Index");
                 constexpr auto Info = CommandMeta::ArgumentSerializationInfos[Index];
                 constexpr auto Attributes = CommandMeta::BufferAttributes[BufferIndex];
@@ -824,7 +840,7 @@ namespace sts::sf::impl {
                             pointer_buffer_head = util::AlignDown(pointer_buffer_head - size, 0x10);
                             buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                         } else {
-                            const u16 *recv_pointer_sizes = reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(ctx.request.data.data_words) + in_headers_size + CommandMeta::InDataRawUnfixedOutPointerSizeOffset);
+                            const u16 *recv_pointer_sizes = reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(ctx.request.data.data_words) + runtime_metadata.GetUnfixedOutPointerSizeOffset());
                             const size_t size = size_t(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
                             pointer_buffer_head = util::AlignDown(pointer_buffer_head - size, 0x10);
                             buffer = cmif::PointerAndSize(pointer_buffer_head, size);
@@ -860,7 +876,7 @@ namespace sts::sf::impl {
                                 pointer_buffer_head = util::AlignDown(pointer_buffer_head - size, 0x10);
                                 buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                             } else {
-                                const u16 *recv_pointer_sizes = reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(ctx.request.data.data_words) + CommandMeta::InDataRawUnfixedOutPointerSizeOffset);
+                                const u16 *recv_pointer_sizes = reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(ctx.request.data.data_words) + runtime_metadata.GetUnfixedOutPointerSizeOffset());
                                 const size_t size = size_t(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
                                 pointer_buffer_head = util::AlignDown(pointer_buffer_head - size, 0x10);
                                 buffer = cmif::PointerAndSize(pointer_buffer_head, size);
@@ -894,11 +910,11 @@ namespace sts::sf::impl {
                 }
             }
         public:
-            NX_CONSTEXPR Result ProcessBuffers(const cmif::ServiceDispatchContext &ctx, BufferArrayType &buffers, std::array<bool, CommandMeta::NumBuffers> &is_buffer_map_alias, size_t in_headers_size) {
+            NX_CONSTEXPR Result ProcessBuffers(const cmif::ServiceDispatchContext &ctx, BufferArrayType &buffers, std::array<bool, CommandMeta::NumBuffers> &is_buffer_map_alias, const cmif::ServerMessageRuntimeMetadata runtime_metadata) {
                 bool map_alias_buffers_valid = true;
                 size_t pointer_buffer_tail = ctx.pointer_buffer.GetAddress();
                 size_t pointer_buffer_head = pointer_buffer_tail + ctx.pointer_buffer.GetSize();
-                #define _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(n) do { if constexpr (CommandMeta::NumBuffers > n) { ProcessBufferImpl<n>(ctx, buffers[n], is_buffer_map_alias[n], map_alias_buffers_valid, pointer_buffer_head, pointer_buffer_tail, in_headers_size); } } while (0)
+                #define _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(n) do { if constexpr (CommandMeta::NumBuffers > n) { ProcessBufferImpl<n>(ctx, buffers[n], is_buffer_map_alias[n], map_alias_buffers_valid, pointer_buffer_head, pointer_buffer_tail, runtime_metadata); } } while (0)
                 _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(0);
                 _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(1);
                 _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(2);
@@ -1032,8 +1048,8 @@ namespace sts::sf::impl {
         }
 
         /* Validate the metadata has the expected counts. */
-        size_t in_headers_size = sizeof(CmifInHeader);
-        R_TRY(ctx.processor->PrepareForProcess(ctx, in_headers_size));
+        const auto runtime_metadata = ctx.processor->GetRuntimeMetadata();
+        R_TRY(ctx.processor->PrepareForProcess(ctx, runtime_metadata));
 
         /* Storage for output. */
         BufferArrayType buffers;
@@ -1043,7 +1059,7 @@ namespace sts::sf::impl {
         InOutObjectHolderType in_out_objects_holder;
 
         /* Process buffers. */
-        R_TRY(ImplProcessorType::ProcessBuffers(ctx, buffers, is_buffer_map_alias, in_headers_size));
+        R_TRY(ImplProcessorType::ProcessBuffers(ctx, buffers, is_buffer_map_alias, runtime_metadata));
 
         /* Process input/output objects. */
         R_TRY(in_out_objects_holder.GetInObjects(ctx.processor));
@@ -1062,7 +1078,7 @@ namespace sts::sf::impl {
             if constexpr (CommandMeta::ReturnsResult) {
                 R_TRY_CLEANUP(std::apply([=](auto&&... args) { return (this_ptr->*ServiceCommandImpl)(args...); }, args_tuple), {
                     cmif::PointerAndSize out_raw_data;
-                    ctx.processor->PrepareForErrorReply(ctx, out_raw_data, sizeof(CmifOutHeader));
+                    ctx.processor->PrepareForErrorReply(ctx, out_raw_data, runtime_metadata);
                     R_TRY(GetCmifOutHeaderPointer(out_header_ptr, out_raw_data));
                 });
             } else {
@@ -1072,8 +1088,7 @@ namespace sts::sf::impl {
 
         /* Encode. */
         cmif::PointerAndSize out_raw_data;
-        size_t num_out_object_handles = CommandMeta::NumOutObjects;
-        const auto response = ctx.processor->PrepareForReply(ctx, out_raw_data, sizeof(CmifOutHeader), num_out_object_handles);
+        const auto response = ctx.processor->PrepareForReply(ctx, out_raw_data, runtime_metadata);
         R_TRY(GetCmifOutHeaderPointer(out_header_ptr, out_raw_data));
 
         /* Copy raw data output struct. */
@@ -1084,7 +1099,7 @@ namespace sts::sf::impl {
         ImplProcessorType::SetOutBuffers(response, buffers, is_buffer_map_alias);
 
         /* Set out handles. */
-        out_handles_holder.CopyTo(response, num_out_object_handles);
+        out_handles_holder.CopyTo(response, runtime_metadata.GetOutObjectCount());
 
         /* Set output objects. */
         in_out_objects_holder.SetOutObjects(ctx, response);

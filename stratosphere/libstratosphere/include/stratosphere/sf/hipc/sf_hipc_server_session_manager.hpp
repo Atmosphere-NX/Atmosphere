@@ -21,6 +21,12 @@
 #include "../cmif/sf_cmif_service_object_holder.hpp"
 #include "sf_hipc_api.hpp"
 
+namespace sts::sf::cmif {
+
+    struct ServiceDispatchContext;
+
+}
+
 namespace sts::sf::hipc {
 
     class ServerSessionManager;
@@ -65,6 +71,8 @@ namespace sts::sf::hipc {
             bool IsMitmSession() const {
                 return this->forward_service != nullptr;
             }
+
+            Result ForwardRequest(const cmif::ServiceDispatchContext &ctx) const;
     };
 
     class ServerSessionManager {

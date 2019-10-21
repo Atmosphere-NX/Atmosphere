@@ -57,7 +57,7 @@ namespace sts::sf::cmif {
     class ServerDomainBase {
         public:
             virtual Result ReserveIds(DomainObjectId *out_ids, size_t count) = 0;
-            virtual Result AlterReservedIds(const DomainObjectId *old_reserved_ids, const DomainObjectId *new_reserved_ids, size_t count) = 0;
+            virtual void   ReserveSpecificIds(const DomainObjectId *ids, size_t count) = 0;
             virtual void   UnreserveIds(const DomainObjectId *ids, size_t count) = 0;
             virtual void   RegisterObject(DomainObjectId id, ServiceObjectHolder &&obj) = 0;
 

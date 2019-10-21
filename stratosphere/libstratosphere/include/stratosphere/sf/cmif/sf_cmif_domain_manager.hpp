@@ -56,7 +56,7 @@ namespace sts::sf::cmif {
                     }
 
                     virtual Result ReserveIds(DomainObjectId *out_ids, size_t count) override final;
-                    virtual Result AlterReservedIds(const DomainObjectId *old_reserved_ids, const DomainObjectId *new_reserved_ids, size_t count) override final;
+                    virtual void   ReserveSpecificIds(const DomainObjectId *ids, size_t count) override final;
                     virtual void   UnreserveIds(const DomainObjectId *ids, size_t count) override final;
                     virtual void   RegisterObject(DomainObjectId id, ServiceObjectHolder &&obj) override final;
 
@@ -81,7 +81,7 @@ namespace sts::sf::cmif {
                     Entry *AllocateEntry();
                     void   FreeEntry(Entry *);
 
-                    void ReallocateEntries(const DomainObjectId *old_reserved_ids, const DomainObjectId *new_reserved_ids, size_t count);
+                    void AllocateSpecificEntries(const DomainObjectId *ids, size_t count);
 
                     inline DomainObjectId GetId(Entry *e) {
                         const size_t index = e - this->entries;
@@ -115,6 +115,11 @@ namespace sts::sf::cmif {
                     return nullptr;
                 }
                 return new (storage) Domain(this);
+            }
+
+            inline void FreeDomainServiceObject(DomainServiceObject *object) {
+                static_cast<Domain *>(object)->~Domain();
+                this->FreeDomain(object);
             }
     };
 

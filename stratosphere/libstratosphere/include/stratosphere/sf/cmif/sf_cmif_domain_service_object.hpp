@@ -24,8 +24,10 @@ namespace sts::sf::cmif {
     class DomainServiceObjectDispatchTable : public impl::ServiceDispatchTableBase {
         private:
             Result ProcessMessageImpl(ServiceDispatchContext &ctx, ServerDomainBase *domain, const cmif::PointerAndSize &in_raw_data) const;
+            Result ProcessMessageForMitmImpl(ServiceDispatchContext &ctx, ServerDomainBase *domain, const cmif::PointerAndSize &in_raw_data) const;
         public:
             Result ProcessMessage(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const;
+            Result ProcessMessageForMitm(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const;
     };
 
 
@@ -33,6 +35,30 @@ namespace sts::sf::cmif {
         private:
             ServerMessageProcessor *impl_processor;
             ServerDomainBase *domain;
+            DomainObjectId *in_object_ids;
+            DomainObjectId *out_object_ids;
+            size_t num_in_objects;
+            ServerMessageRuntimeMetadata impl_metadata;
+        public:
+            DomainServiceObjectProcessor(ServerDomainBase *d, DomainObjectId *in_obj_ids, size_t num_in_objs) : domain(d), in_object_ids(in_obj_ids), num_in_objects(num_in_objs) {
+                STS_ASSERT(this->domain != nullptr);
+                STS_ASSERT(this->in_object_ids != nullptr);
+                this->impl_processor = nullptr;
+                this->out_object_ids = nullptr;
+                this->impl_metadata = {};
+            }
+
+            constexpr size_t GetInObjectCount() const {
+                return this->num_in_objects;
+            }
+
+            constexpr size_t GetOutObjectCount() const {
+                return this->impl_metadata.GetOutObjectCount();
+            }
+
+            constexpr size_t GetImplOutDataTotalSize() const {
+                return this->impl_metadata.GetOutDataSize() + this->impl_metadata.GetOutHeadersSize();
+            }
         public:
             /* Used to enabled templated message processors. */
             virtual void SetImplementationProcessor(ServerMessageProcessor *impl) override final {
@@ -41,16 +67,32 @@ namespace sts::sf::cmif {
                 } else {
                     this->impl_processor->SetImplementationProcessor(impl);
                 }
+
+                this->impl_metadata = this->impl_processor->GetRuntimeMetadata();
             }
 
-            virtual Result PrepareForProcess(const ServiceDispatchContext &ctx, size_t &headers_size) const override final;
+            virtual const ServerMessageRuntimeMetadata GetRuntimeMetadata() const override final {
+                const auto runtime_metadata = this->impl_processor->GetRuntimeMetadata();
+
+                return ServerMessageRuntimeMetadata {
+                    .in_data_size      = static_cast<u16>(runtime_metadata.GetInDataSize()  + runtime_metadata.GetInObjectCount() * sizeof(DomainObjectId)),
+                    .out_data_size     = static_cast<u16>(runtime_metadata.GetOutDataSize() + runtime_metadata.GetOutObjectCount() * sizeof(DomainObjectId)),
+                    .in_headers_size   = static_cast<u8>(runtime_metadata.GetInHeadersSize()  + sizeof(CmifDomainInHeader)),
+                    .out_headers_size  = static_cast<u8>(runtime_metadata.GetOutHeadersSize() + sizeof(CmifDomainOutHeader)),
+                    .in_object_count   = 0,
+                    .out_object_count  = 0,
+                };
+            }
+
+            virtual Result PrepareForProcess(const ServiceDispatchContext &ctx, const ServerMessageRuntimeMetadata runtime_metadata) const override final;
             virtual Result GetInObjects(ServiceObjectHolder *in_objects) const override final;
-            virtual HipcRequest PrepareForReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const size_t headers_size, size_t &num_out_object_handles) override final;
-            virtual void PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const size_t headers_size) override final;
+            virtual HipcRequest PrepareForReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const ServerMessageRuntimeMetadata runtime_metadata) override final;
+            virtual void PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const ServerMessageRuntimeMetadata runtime_metadata) override final;
             virtual void SetOutObjects(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response, ServiceObjectHolder *out_objects, DomainObjectId *ids) override final;
     };
 
     class DomainServiceObject : public IServiceObject, public ServerDomainBase {
+        friend class DomainServiceObjectDispatchTable;
         public:
             static constexpr inline DomainServiceObjectDispatchTable s_CmifServiceDispatchTable{};
         private:
@@ -58,6 +100,8 @@ namespace sts::sf::cmif {
         public:
             /* TODO: Implement to use domain object processor. */
     };
+
+    class MitmDomainServiceObject : public DomainServiceObject{};
 
     template<>
     struct ServiceDispatchTraits<DomainServiceObject> {
@@ -70,5 +114,17 @@ namespace sts::sf::cmif {
 
         static constexpr inline ServiceDispatchMeta Meta{&DomainServiceObject::s_CmifServiceDispatchTable, ProcessHandlerImpl};
     };
+
+    template<>
+    struct ServiceDispatchTraits<MitmDomainServiceObject> {
+        static_assert(std::is_base_of<DomainServiceObject, MitmDomainServiceObject>::value, "MitmDomainServiceObject must derive from DomainServiceObject");
+        using ProcessHandlerType = decltype(ServiceDispatchMeta::ProcessHandler);
+
+        using DispatchTableType = DomainServiceObjectDispatchTable;
+        static constexpr ProcessHandlerType ProcessHandlerImpl = &impl::ServiceDispatchTableBase::ProcessMessageForMitm<DispatchTableType>;
+
+        static constexpr inline ServiceDispatchMeta Meta{&DomainServiceObject::s_CmifServiceDispatchTable, ProcessHandlerImpl};
+    };
+
 
 }

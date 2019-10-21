@@ -63,8 +63,50 @@ namespace sts::sf::hipc {
                 }
 
                 Result ConvertCurrentObjectToDomain(sf::Out<cmif::DomainObjectId> out) {
-                    /* TODO */
-                    return ResultHipcOutOfDomains;
+                    /* Allocate a domain. */
+                    auto domain = this->manager->AllocateDomainServiceObject();
+                    R_UNLESS(domain, ResultHipcOutOfDomains);
+
+                    cmif::DomainObjectId object_id = cmif::InvalidDomainObjectId;
+
+                    cmif::ServiceObjectHolder new_holder;
+
+                    if (this->is_mitm_session) {
+                        /* If we're a mitm session, we need to convert the remote session to domain. */
+                        STS_ASSERT(session->forward_service->own_handle);
+                        R_TRY_CLEANUP(serviceConvertToDomain(session->forward_service.get()), {
+                            this->manager->FreeDomainServiceObject(domain);
+                        });
+
+                        /* The object ID reservation cannot fail here, as that would cause desynchronization from target domain. */
+                        object_id = cmif::DomainObjectId{session->forward_service->object_id};
+                        domain->ReserveSpecificIds(&object_id, 1);
+
+                        /* Create new object. */
+                        cmif::MitmDomainServiceObject *domain_ptr = static_cast<cmif::MitmDomainServiceObject *>(domain);
+                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::MitmDomainServiceObject>(domain_ptr, [&](cmif::MitmDomainServiceObject *obj) {
+                            this->manager->FreeDomainServiceObject(domain);
+                        })));
+                    } else {
+                        /* We're not a mitm session. Reserve a new object in the domain. */
+                        R_TRY(domain->ReserveIds(&object_id, 1));
+
+                        /* Create new object. */
+                        cmif::DomainServiceObject *domain_ptr = static_cast<cmif::DomainServiceObject *>(domain);
+                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::DomainServiceObject>(domain_ptr, [&](cmif::DomainServiceObject *obj) {
+                            this->manager->FreeDomainServiceObject(domain);
+                        })));
+                    }
+
+                    STS_ASSERT(object_id != cmif::InvalidDomainObjectId);
+                    STS_ASSERT(static_cast<bool>(new_holder));
+
+                    /* We succeeded! */
+                    domain->RegisterObject(object_id, std::move(session->srv_obj_holder));
+                    session->srv_obj_holder = std::move(new_holder);
+                    out.SetValue(object_id);
+
+                    return ResultSuccess;
                 }
 
                 Result CopyFromCurrentDomain(sf::OutMoveHandle out, cmif::DomainObjectId object_id) {
