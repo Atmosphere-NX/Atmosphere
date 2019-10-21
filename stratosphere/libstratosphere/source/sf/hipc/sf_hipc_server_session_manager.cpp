@@ -17,6 +17,57 @@
 
 namespace sts::sf::hipc {
 
+    namespace {
+
+        constexpr inline void PreProcessCommandBufferForMitm(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &pointer_buffer, uintptr_t cmd_buffer) {
+            /* TODO: Less gross method of editing command buffer? */
+            if (ctx.request.meta.send_pid) {
+                constexpr u64 MitmProcessIdTag = 0xFFFE000000000000ul;
+                constexpr u64 OldProcessIdMask = 0x0000FFFFFFFFFFFFul;
+                u64 *process_id = reinterpret_cast<u64 *>(cmd_buffer + sizeof(HipcHeader) + sizeof(HipcSpecialHeader));
+                *process_id = (MitmProcessIdTag) | (*process_id & OldProcessIdMask);
+            }
+
+            if (ctx.request.meta.num_recv_statics) {
+                /* TODO: Can we do this without gross bit-hackery? */
+                reinterpret_cast<HipcHeader *>(cmd_buffer)->recv_static_mode = 2;
+                const uintptr_t old_recv_list_entry = reinterpret_cast<uintptr_t>(ctx.request.data.recv_list);
+                const size_t old_recv_list_offset = old_recv_list_entry - util::AlignDown(old_recv_list_entry, TlsMessageBufferSize);
+                *reinterpret_cast<HipcRecvListEntry *>(cmd_buffer + old_recv_list_offset) = hipcMakeRecvStatic(pointer_buffer.GetPointer(), pointer_buffer.GetSize());
+            }
+        }
+
+    }
+
+    Result ServerSession::ForwardRequest(const cmif::ServiceDispatchContext &ctx) const {
+        STS_ASSERT(this->IsMitmSession());
+        /* TODO: Support non-TLS messages? */
+        STS_ASSERT(this->saved_message.GetPointer() != nullptr);
+        STS_ASSERT(this->saved_message.GetSize() == TlsMessageBufferSize);
+
+        /* Copy saved TLS in. */
+        std::memcpy(armGetTls(), this->saved_message.GetPointer(), this->saved_message.GetSize());
+
+        /* Prepare buffer. */
+        PreProcessCommandBufferForMitm(ctx, this->pointer_buffer, reinterpret_cast<uintptr_t>(armGetTls()));
+
+        /* Dispatch forwards. */
+        R_TRY(svcSendSyncRequest(this->forward_service->session));
+
+        /* Parse, to ensure we catch any copy handles and close them. */
+        {
+            const auto response = hipcParseResponse(armGetTls());
+            if (response.num_copy_handles) {
+                ctx.handles_to_close->num_handles = response.num_copy_handles;
+                for (size_t i = 0; i < response.num_copy_handles; i++) {
+                    ctx.handles_to_close->handles[i] = response.copy_handles[i];
+                }
+            }
+        }
+
+        return ResultSuccess;
+    }
+
     void ServerSessionManager::DestroySession(ServerSession *session) {
         /* Destroy object. */
         session->~ServerSession();
@@ -63,6 +114,9 @@ namespace sts::sf::hipc {
         /* Assign session resources. */
         session_memory->pointer_buffer = this->GetSessionPointerBuffer(session_memory);
         session_memory->saved_message  = this->GetSessionSavedMessageBuffer(session_memory);
+        /* Validate session pointer buffer. */
+        STS_ASSERT(session_memory->pointer_buffer.GetSize() >= session_memory->forward_service->pointer_buffer_size);
+        session_memory->pointer_buffer = cmif::PointerAndSize(session_memory->pointer_buffer.GetAddress(), session_memory->forward_service->pointer_buffer_size);
         /* Register to wait list. */
         this->RegisterSessionToWaitList(session_memory);
         return ResultSuccess;
@@ -205,6 +259,7 @@ namespace sts::sf::hipc {
         cmif::ServiceDispatchContext dispatch_ctx = {
             .srv_obj = obj_holder.GetServiceObjectUnsafe(),
             .manager = this,
+            .session = session,
             .processor = nullptr, /* Filled in by template implementations. */
             .handles_to_close = &handles_to_close,
             .pointer_buffer = session->pointer_buffer,

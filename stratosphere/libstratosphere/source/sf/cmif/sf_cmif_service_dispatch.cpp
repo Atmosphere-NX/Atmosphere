@@ -26,6 +26,7 @@ namespace sts::sf::cmif {
         const CmifInHeader *in_header = reinterpret_cast<const CmifInHeader *>(in_raw_data.GetPointer());
         R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), ResultServiceFrameworkInvalidCmifHeaderSize);
         R_UNLESS(in_header->magic == CMIF_IN_HEADER_MAGIC && in_header->version <= max_cmif_version, ResultServiceFrameworkInvalidCmifInHeader);
+        const cmif::PointerAndSize in_message_raw_data = cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header));
         const u32 cmd_id = in_header->command_id;
 
         /* Find a handler. */
@@ -40,7 +41,7 @@ namespace sts::sf::cmif {
 
         /* Invoke handler. */
         CmifOutHeader *out_header = nullptr;
-        Result command_result = cmd_handler(&out_header, ctx, cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header)));
+        Result command_result = cmd_handler(&out_header, ctx, in_message_raw_data);
 
         /* Forward forwardable results, otherwise ensure we can send result to user. */
         R_TRY_CATCH(command_result) {
@@ -65,6 +66,7 @@ namespace sts::sf::cmif {
         const CmifInHeader *in_header = reinterpret_cast<const CmifInHeader *>(in_raw_data.GetPointer());
         R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), ResultServiceFrameworkInvalidCmifHeaderSize);
         R_UNLESS(in_header->magic == CMIF_IN_HEADER_MAGIC && in_header->version <= max_cmif_version, ResultServiceFrameworkInvalidCmifInHeader);
+        const cmif::PointerAndSize in_message_raw_data = cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header));
         const u32 cmd_id = in_header->command_id;
 
         /* Find a handler. */
@@ -78,21 +80,18 @@ namespace sts::sf::cmif {
 
         /* If we didn't find a handler, forward the request. */
         if (cmd_handler == nullptr) {
-            /* TODO: FORWARD REQUEST */
-            STS_ASSERT(false);
+            return ctx.session->ForwardRequest(ctx);
         }
 
         /* Invoke handler. */
         CmifOutHeader *out_header = nullptr;
-        Result command_result = cmd_handler(&out_header, ctx, cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header)));
+        Result command_result = cmd_handler(&out_header, ctx, in_message_raw_data);
 
         /* Forward forwardable results, otherwise ensure we can send result to user. */
         R_TRY_CATCH(command_result) {
             R_CATCH(ResultServiceFrameworkRequestDeferredByUser) { return ResultServiceFrameworkRequestDeferredByUser; }
             R_CATCH(ResultAtmosphereMitmShouldForwardToSession) {
-                /* TODO: Restore TLS. */
-                /* TODO: FORWARD REQUEST */
-                STS_ASSERT(false);
+                return ctx.session->ForwardRequest(ctx);
             }
             R_CATCH_ALL() { STS_ASSERT(out_header != nullptr); }
         } R_END_TRY_CATCH;

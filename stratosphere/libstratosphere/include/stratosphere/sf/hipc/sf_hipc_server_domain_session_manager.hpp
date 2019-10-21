@@ -28,6 +28,14 @@ namespace sts::sf::hipc {
             virtual Result DispatchManagerRequest(ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message) override final;
         public:
             ServerDomainSessionManager(DomainEntryStorage *entry_storage, size_t entry_count) : ServerDomainManager(entry_storage, entry_count) { /* ... */ }
+
+            inline cmif::DomainServiceObject *AllocateDomainServiceObject() {
+                return cmif::ServerDomainManager::AllocateDomainServiceObject();
+            }
+
+            inline void FreeDomainServiceObject(cmif::DomainServiceObject *object) {
+                cmif::ServerDomainManager::FreeDomainServiceObject(object);
+            }
     };
 
 }

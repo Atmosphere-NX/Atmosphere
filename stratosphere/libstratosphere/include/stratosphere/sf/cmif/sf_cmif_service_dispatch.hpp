@@ -22,6 +22,7 @@
 namespace sts::sf::hipc {
 
     class ServerSessionManager;
+    class ServerSession;
 
 }
 
@@ -37,6 +38,7 @@ namespace sts::sf::cmif {
     struct ServiceDispatchContext {
         sf::IServiceObject *srv_obj;
         hipc::ServerSessionManager *manager;
+        hipc::ServerSession *session;
         ServerMessageProcessor *processor;
         HandlesToClose *handles_to_close;
         const PointerAndSize pointer_buffer;
