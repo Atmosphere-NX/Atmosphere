@@ -90,6 +90,7 @@ namespace sts::sf::cmif {
         if (entry == nullptr) {
             return ServiceObjectHolder();
         }
+
         {
             std::scoped_lock lk(this->manager->entry_owner_lock);
             if (entry->owner != this) {
@@ -116,9 +117,11 @@ namespace sts::sf::cmif {
 
     ServerDomainManager::Entry *ServerDomainManager::EntryManager::AllocateEntry() {
         std::scoped_lock lk(this->lock);
+
         if (this->free_list.empty()) {
             return nullptr;
         }
+
         Entry *e = &this->free_list.front();
         this->free_list.pop_front();
         return e;

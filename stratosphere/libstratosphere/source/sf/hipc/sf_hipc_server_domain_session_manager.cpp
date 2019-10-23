@@ -47,10 +47,7 @@ namespace sts::sf::hipc {
                         R_ASSERT(tagged_manager->RegisterSession(server_handle, std::move(clone)));
                     } else {
                         /* Clone the forward service. */
-                        std::shared_ptr<::Service> new_forward_service(new ::Service(), [](::Service *srv) {
-                            serviceClose(srv);
-                            delete srv;
-                        });
+                        std::shared_ptr<::Service> new_forward_service = std::move(ServerSession::CreateForwardService());
                         R_ASSERT(serviceClone(this->session->forward_service.get(), new_forward_service.get()));
                         R_ASSERT(tagged_manager->RegisterMitmSession(server_handle, std::move(clone), std::move(new_forward_service)));
                     }
@@ -138,10 +135,7 @@ namespace sts::sf::hipc {
                         R_ASSERT(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
 
                         /* Register. */
-                        std::shared_ptr<::Service> new_forward_service(new ::Service(), [](::Service *srv) {
-                            serviceClose(srv);
-                            delete srv;
-                        });
+                        std::shared_ptr<::Service> new_forward_service = std::move(ServerSession::CreateForwardService());
                         serviceCreate(new_forward_service.get(), new_forward_target);
                         R_ASSERT(this->manager->RegisterMitmSession(server_handle, std::move(object), std::move(new_forward_service)));
                     }
@@ -178,7 +172,7 @@ namespace sts::sf::hipc {
         /* Note: This is safe, as no additional references to the hipc manager can ever be stored. */
         /* The shared pointer to stack object is definitely gross, though. */
         impl::HipcManager hipc_manager(this, session);
-        return this->DispatchRequest(cmif::ServiceObjectHolder(std::shared_ptr<impl::HipcManager>(&hipc_manager, [](impl::HipcManager *) { /* Empty deleter. */ })), session, in_message, out_message);
+        return this->DispatchRequest(cmif::ServiceObjectHolder(std::move(ServiceObjectTraits<impl::HipcManager>::SharedPointerHelper::GetEmptyDeleteSharedPointer(&hipc_manager))), session, in_message, out_message);
     }
 
 }

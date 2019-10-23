@@ -26,37 +26,37 @@ namespace sts::sm::mitm {
     /* Mitm API. */
     Result InstallMitm(Handle *out_port, Handle *out_query, ServiceName name) {
         return impl::DoWithMitmSession([&]() {
-            return smAtmosphereMitmInstall(out_port, out_query, name.name);
+            return smAtmosphereMitmInstall(out_port, out_query, impl::ConvertName(name));
         });
     }
 
     Result UninstallMitm(ServiceName name) {
         return impl::DoWithMitmSession([&]() {
-            return smAtmosphereMitmUninstall(name.name);
+            return smAtmosphereMitmUninstall(impl::ConvertName(name));
         });
     }
 
     Result DeclareFutureMitm(ServiceName name) {
         return impl::DoWithMitmSession([&]() {
-            return smAtmosphereMitmDeclareFuture(name.name);
+            return smAtmosphereMitmDeclareFuture(impl::ConvertName(name));
         });
     }
 
     Result AcknowledgeSession(Service *out_service, os::ProcessId *out_pid, ncm::TitleId *out_tid, ServiceName name) {
         return impl::DoWithMitmSession([&]() {
-            return smAtmosphereMitmAcknowledgeSession(out_service, &out_pid->value, &out_tid->value, name.name);
+            return smAtmosphereMitmAcknowledgeSession(out_service, &out_pid->value, &out_tid->value, impl::ConvertName(name));
         });
     }
 
     Result HasMitm(bool *out, ServiceName name) {
         return impl::DoWithUserSession([&]() {
-            return smAtmosphereHasMitm(out, name.name);
+            return smAtmosphereHasMitm(out, impl::ConvertName(name));
         });
     }
 
     Result WaitMitm(ServiceName name) {
         return impl::DoWithUserSession([&]() {
-            return smAtmosphereWaitMitm(name.name);
+            return smAtmosphereWaitMitm(impl::ConvertName(name));
         });
     }
 

@@ -32,6 +32,10 @@ namespace sts::sf::cmif {
             /* Default constructor, null all members. */
             ServiceObjectHolder() : srv(nullptr), dispatch_meta(nullptr) { /* ... */ }
 
+            ~ServiceObjectHolder() {
+                this->dispatch_meta = nullptr;
+            }
+
             /* Ensure correct type id at runtime through template constructor. */
             template<typename ServiceImpl>
             constexpr explicit ServiceObjectHolder(std::shared_ptr<ServiceImpl> &&s) {
@@ -40,7 +44,10 @@ namespace sts::sf::cmif {
             }
 
             /* Move constructor, assignment operator. */
-            ServiceObjectHolder(ServiceObjectHolder &&o) : srv(std::move(o.srv)), dispatch_meta(std::move(o.dispatch_meta)) { /* ... */ }
+            ServiceObjectHolder(ServiceObjectHolder &&o) : srv(std::move(o.srv)), dispatch_meta(std::move(o.dispatch_meta)) {
+                o.dispatch_meta = nullptr;
+            }
+
             ServiceObjectHolder &operator=(ServiceObjectHolder &&o) {
                 ServiceObjectHolder tmp(std::move(o));
                 tmp.Swap(*this);
@@ -80,14 +87,19 @@ namespace sts::sf::cmif {
             }
 
             template<typename ServiceImpl>
-            ServiceImpl *GetServiceObject() const {
+            constexpr inline bool IsServiceObjectValid() const {
+                return this->GetServiceId() == GetServiceDispatchMeta<ServiceImpl>()->GetServiceId();
+            }
+
+            template<typename ServiceImpl>
+            inline std::shared_ptr<ServiceImpl> GetServiceObject() const {
                 if (this->GetServiceId() == GetServiceDispatchMeta<ServiceImpl>()->GetServiceId()) {
-                    return static_cast<ServiceImpl *>(this->srv.get());
+                    return std::static_pointer_cast<ServiceImpl>(this->srv);
                 }
                 return nullptr;
             }
 
-            sf::IServiceObject *GetServiceObjectUnsafe() const {
+            inline sf::IServiceObject *GetServiceObjectUnsafe() const {
                 return this->srv.get();
             }
 

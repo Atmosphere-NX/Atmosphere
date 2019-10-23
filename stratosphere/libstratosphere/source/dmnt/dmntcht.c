@@ -37,6 +37,7 @@ Result dmntchtHasCheatProcess(bool *out) {
     u8 tmp;
     Result rc = serviceDispatchOut(&g_dmntchtSrv, 65000, tmp);
     if (R_SUCCEEDED(rc) && out) *out = tmp & 1;
+    return rc;
 }
 
 Result dmntchtGetCheatProcessEvent(Event *event) {
@@ -47,7 +48,7 @@ Result dmntchtGetCheatProcessEvent(Event *event) {
     );
 
     if (R_SUCCEEDED(rc)) {
-        eventLoadRemote(&g_dmntchtSrv, evt_handle, true);
+        eventLoadRemote(event, evt_handle, true);
     }
 
     return rc;
@@ -77,11 +78,11 @@ static Result _dmntchtCmdInU32NoOut(u32 in, u32 cmd_id) {
 }
 
 Result dmntchtGetCheatProcessMappingCount(u64 *out_count) {
-    return _dmntchtGetCount(65100, out_count);
+    return _dmntchtGetCount(out_count, 65100);
 }
 
 Result dmntchtGetCheatProcessMappings(MemoryInfo *buffer, u64 max_count, u64 offset, u64 *out_count) {
-    return _dmntchtGetEntries(65101, buffer, sizeof(*buffer) * max_count, offset, out_count);
+    return _dmntchtGetEntries(buffer, sizeof(*buffer) * max_count, offset, out_count, 65101);
 }
 
 Result dmntchtReadCheatProcessMemory(u64 address, void *buffer, size_t size) {
@@ -111,11 +112,11 @@ Result dmntchtQueryCheatProcessMemory(MemoryInfo *mem_info, u64 address){
 }
 
 Result dmntchtGetCheatCount(u64 *out_count) {
-    return _dmntchtGetCount(65200, out_count);
+    return _dmntchtGetCount(out_count, 65200);
 }
 
 Result dmntchtGetCheats(DmntCheatEntry *buffer, u64 max_count, u64 offset, u64 *out_count) {
-    return _dmntchtGetEntries(65201, buffer, sizeof(*buffer) * max_count, offset, out_count);
+    return _dmntchtGetEntries(buffer, sizeof(*buffer) * max_count, offset, out_count, 65201);
 }
 
 Result dmntchtGetCheatById(DmntCheatEntry *out, u32 cheat_id) {
@@ -142,11 +143,11 @@ Result dmntchtRemoveCheat(u32 cheat_id) {
 }
 
 Result dmntchtGetFrozenAddressCount(u64 *out_count) {
-    return _dmntchtGetCount(65300, out_count);
+    return _dmntchtGetCount(out_count, 65300);
 }
 
 Result dmntchtGetFrozenAddresses(DmntFrozenAddressEntry *buffer, u64 max_count, u64 offset, u64 *out_count) {
-    return _dmntchtGetEntries(65301, buffer, sizeof(*buffer) * max_count, offset, out_count);
+    return _dmntchtGetEntries(buffer, sizeof(*buffer) * max_count, offset, out_count, 65301);
 }
 
 Result dmntchtGetFrozenAddress(DmntFrozenAddressEntry *out, u64 address) {

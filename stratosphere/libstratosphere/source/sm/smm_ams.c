@@ -36,13 +36,13 @@ Result smManagerAtmosphereRegisterProcess(u64 pid, u64 tid, const void *acid_sac
     );
 }
 
-static Result _smManagerAtmosphereCmdHas(bool *out, u64 service_name, u32 cmd_id) {
+static Result _smManagerAtmosphereCmdHas(bool *out, SmServiceName name, u32 cmd_id) {
     u8 tmp;
-    Result rc = serviceDispatchInOut(smManagerGetServiceSession(), cmd_id, service_name, tmp);
+    Result rc = serviceDispatchInOut(smManagerGetServiceSession(), cmd_id, name, tmp);
     if (R_SUCCEEDED(rc) && out) *out = tmp & 1;
     return rc;
 }
 
-Result smManagerAtmosphereHasMitm(bool *out, const char* name) {
-    return _smManagerAtmosphereCmdHas(out, smEncodeName(name), 65001);
+Result smManagerAtmosphereHasMitm(bool *out, SmServiceName name) {
+    return _smManagerAtmosphereCmdHas(out, name, 65001);
 }

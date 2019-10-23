@@ -28,6 +28,7 @@ static constexpr Result ResultServiceFrameworkUnknownCmifCommandId      = MAKERE
 static constexpr Result ResultServiceFrameworkInvalidCmifOutRawSize     = MAKERESULT(Module_ServiceFramework, 232);
 static constexpr Result ResultServiceFrameworkInvalidCmifNumInObjects   = MAKERESULT(Module_ServiceFramework, 235);
 static constexpr Result ResultServiceFrameworkInvalidCmifNumOutObjects  = MAKERESULT(Module_ServiceFramework, 236);
+static constexpr Result ResultServiceFrameworkInvalidCmifInObject       = MAKERESULT(Module_ServiceFramework, 239);
 
 static constexpr Result ResultServiceFrameworkTargetNotFound            = MAKERESULT(Module_ServiceFramework, 261);
 
