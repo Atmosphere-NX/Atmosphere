@@ -31,7 +31,7 @@ namespace sts::cfg {
 
             /* Mount the SD card. */
             FsFileSystem sd_fs = {};
-            if (R_FAILED(fsMountSdcard(&sd_fs))) {
+            if (R_FAILED(fsOpenSdCardFileSystem(&sd_fs))) {
                 return false;
             }
             ON_SCOPE_EXIT { serviceClose(&sd_fs.s); };

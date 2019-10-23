@@ -70,6 +70,9 @@ namespace sts::sf {
 
     }
 
+    template<typename T>
+    class IsOutForceEnabled<std::shared_ptr<T>> : public std::true_type{};
+
     template<typename ServiceImpl>
     class Out<std::shared_ptr<ServiceImpl>> : public impl::OutObjectTag {
         static_assert(std::is_base_of<sf::IServiceObject, ServiceImpl>::value, "Out<std::shared_ptr<ServiceImpl>> requires ServiceObject base.");
@@ -86,7 +89,7 @@ namespace sts::sf {
             Out(cmif::ServiceObjectHolder *s, cmif::DomainObjectId *o) : srv(s), object_id(o) { /* ... */ }
 
             void SetValue(std::shared_ptr<ServiceImpl> &&s, cmif::DomainObjectId new_object_id = cmif::InvalidDomainObjectId) {
-                *this->srv = ServiceObjectHolder(std::move(s));
+                *this->srv = cmif::ServiceObjectHolder(std::move(s));
                 if (new_object_id != cmif::InvalidDomainObjectId) {
                     *this->object_id = new_object_id;
                 }
@@ -655,7 +658,18 @@ namespace sts::sf::impl {
             std::array<cmif::ServiceObjectHolder, NumOutObjects> out_object_holders;
             std::array<cmif::DomainObjectId, NumOutObjects> out_object_ids;
         public:
-            constexpr InOutObjectHolder() : in_object_holders(), out_object_holders() { /* ... */ }
+            constexpr InOutObjectHolder() : in_object_holders(), out_object_holders() {
+                #define _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(n) if constexpr (NumOutObjects > n) { this->out_object_ids[n] = cmif::InvalidDomainObjectId; }
+                _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(0)
+                _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(1)
+                _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(2)
+                _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(3)
+                _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(4)
+                _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(5)
+                _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(6)
+                _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(7)
+                #undef _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID
+            }
 
             Result GetInObjects(const sf::cmif::ServerMessageProcessor *processor) {
                 if constexpr (NumInObjects > 0) {
@@ -664,25 +678,36 @@ namespace sts::sf::impl {
                 return ResultSuccess;
             }
 
-            Result ValidateInObjects() {
-                /* TODO: Actually validate. */
-                if constexpr (NumInObjects > 0) {
-                    /* Need to call holder.template GetServiceObject<>() for each object */
-                }
+            template<typename ServiceImplTuple>
+            constexpr inline Result ValidateInObjects() const {
+                static_assert(std::tuple_size<ServiceImplTuple>::value == NumInObjects);
+                #define _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(n) do { \
+                    if constexpr (NumInObjects > n) { \
+                        using SharedPtrToServiceImplType = typename std::tuple_element<n, ServiceImplTuple>::type; \
+                        using ServiceImplType = typename SharedPtrToServiceImplType::element_type; \
+                        R_UNLESS((this->in_object_holders[n].template IsServiceObjectValid<ServiceImplType>()), ResultServiceFrameworkInvalidCmifInObject); \
+                    } \
+                } while (0)
+                _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(0);
+                _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(1);
+                _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(2);
+                _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(3);
+                _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(4);
+                _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(5);
+                _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(6);
+                _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(7);
                 return ResultSuccess;
             }
 
             template<size_t Index, typename ServiceImpl>
-            std::shared_ptr<ServiceImpl> &&GetInObject() const {
-                auto &&holder = this->in_object_holders[Index];
-                auto obj = holder.template GetServiceObject<ServiceImpl>();
-                STS_ASSERT(obj);
-                return std::move(obj);
+            std::shared_ptr<ServiceImpl> GetInObject() const {
+                /* We know from ValidateInObjects() that this will succeed always. */
+                return this->in_object_holders[Index].template GetServiceObject<ServiceImpl>();
             }
 
             template<size_t Index, typename ServiceImpl>
-            Out<ServiceImpl> GetOutObject() const {
-                return Out<ServiceImpl>(&this->out_object_holders[Index], &this->out_object_ids[Index]);
+            Out<std::shared_ptr<ServiceImpl>> GetOutObject() {
+                return Out<std::shared_ptr<ServiceImpl>>(&this->out_object_holders[Index], &this->out_object_ids[Index]);
             }
 
             constexpr void SetOutObjects(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response) {
@@ -947,7 +972,7 @@ namespace sts::sf::impl {
         /* Argument deserialization. */
         private:
             template<size_t Index, typename T = typename std::tuple_element<Index, ArgsType>::type>
-            NX_CONSTEXPR T DeserializeArgumentImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, const InOutObjectHolderType &in_out_objects_holder) {
+            NX_CONSTEXPR T DeserializeArgumentImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
                 constexpr auto Info = CommandMeta::ArgumentSerializationInfos[Index];
                 if constexpr (Info.arg_type == ArgumentType::InData) {
                     /* New in rawdata. */
@@ -982,10 +1007,10 @@ namespace sts::sf::impl {
                     }
                 } else if constexpr (Info.arg_type == ArgumentType::InObject) {
                     /* New InObject. */
-                    return std::move(in_out_objects_holder.template GetInObject<Info.in_object_index, typename std::remove_extent<T>::type>());
+                    return in_out_objects_holder.template GetInObject<Info.in_object_index, typename T::element_type>();
                 } else if constexpr (Info.arg_type == ArgumentType::OutObject) {
                     /* New OutObject. */
-                    return in_out_objects_holder.template GetOutObject<Info.in_object_index, typename T::ServiceImplType>();
+                    return in_out_objects_holder.template GetOutObject<Info.out_object_index, typename T::ServiceImplType>();
                 } else if constexpr (Info.arg_type == ArgumentType::Buffer) {
                     /* Buffers were already processed earlier. */
                     if constexpr (sf::IsLargeData<T>) {
@@ -1009,11 +1034,11 @@ namespace sts::sf::impl {
             }
 
             template<size_t... Is>
-            NX_CONSTEXPR ArgsType DeserializeArgumentsImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, const InOutObjectHolderType &in_out_objects_holder, std::index_sequence<Is...>) {
+            NX_CONSTEXPR ArgsType DeserializeArgumentsImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder, std::index_sequence<Is...>) {
                 return ArgsType { DeserializeArgumentImpl<Is>(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder)..., };
             }
         public:
-            NX_CONSTEXPR ArgsType DeserializeArguments(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, const InOutObjectHolderType &in_out_objects_holder) {
+            NX_CONSTEXPR ArgsType DeserializeArguments(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
                 return DeserializeArgumentsImpl(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder, std::make_index_sequence<std::tuple_size<ArgsType>::value>{});
             }
     };
@@ -1063,7 +1088,7 @@ namespace sts::sf::impl {
 
         /* Process input/output objects. */
         R_TRY(in_out_objects_holder.GetInObjects(ctx.processor));
-        R_TRY(in_out_objects_holder.ValidateInObjects());
+        R_TRY((in_out_objects_holder.template ValidateInObjects<typename CommandMeta::InObjects>()));
 
         /* Decoding/Invocation. */
         {

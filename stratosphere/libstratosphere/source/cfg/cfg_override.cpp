@@ -178,7 +178,7 @@ namespace sts::cfg {
         void ParseIniFile(util::ini::Handler handler, const char *path, void *user_ctx) {
             /* Mount the SD card. */
             FsFileSystem sd_fs = {};
-            if (R_FAILED(fsMountSdcard(&sd_fs))) {
+            if (R_FAILED(fsOpenSdCardFileSystem(&sd_fs))) {
                 return;
             }
             ON_SCOPE_EXIT { serviceClose(&sd_fs.s); };

@@ -100,10 +100,7 @@ namespace sts::sf::hipc {
                         if constexpr (IsMitmServer) {
                             /* Custom deleter ensures that nothing goes awry. */
                             /* TODO: Should this just be a custom wrapper object? */
-                            std::shared_ptr<::Service> forward_service(new ::Service(), [](::Service *srv) {
-                                serviceClose(srv);
-                                delete srv;
-                            });
+                            std::shared_ptr<::Service> forward_service = std::move(ServerSession::CreateForwardService());
 
                             /* Get mitm forward session. */
                             os::ProcessId client_pid;
@@ -348,11 +345,7 @@ namespace sts::sf::hipc {
                 std::memset(this->pointer_buffer_storage, 0, sizeof(this->pointer_buffer_storage));
                 std::memset(this->saved_message_storage, 0, sizeof(this->saved_message_storage));
                 if constexpr (ManagerOptions::MaxDomains > 0) {
-                    std::memset(this->domain_storages, 0, sizeof(this->domain_storages));
                     std::memset(this->domain_allocated, 0, sizeof(this->domain_allocated));
-                }
-                if constexpr (ManagerOptions::MaxDomainObjects > 0) {
-                    std::memset(this->domain_entry_storages, 0, sizeof(this->domain_entry_storages));
                 }
 
                 /* Set resource starts. */

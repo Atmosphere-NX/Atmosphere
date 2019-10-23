@@ -38,6 +38,18 @@ namespace sts::sf {
         static_assert(std::is_base_of<sts::sf::IServiceObject, T>::value, "ServiceObjectTraits requires ServiceObject");
 
         static constexpr bool IsMitmServiceObject = std::is_base_of<IMitmServiceObject, T>::value;
+
+        struct SharedPointerHelper {
+
+            static constexpr void EmptyDelete(T *) { /* Empty deleter, for fake shared pointer. */ }
+
+            static constexpr std::shared_ptr<T> GetEmptyDeleteSharedPointer(T *srv_obj) {
+                return std::shared_ptr<T>(srv_obj, EmptyDelete);
+            }
+
+        };
     };
+
+
 
 }

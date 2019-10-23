@@ -58,14 +58,14 @@ namespace sts::cfg {
 
         Result TryInitializeSdCard() {
             R_TRY(CheckSdCardServicesReady());
-            R_ASSERT(fsMountSdcard(&g_sd_card_filesystem));
+            R_ASSERT(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
             g_sd_card_initialized = true;
             return ResultSuccess;
         }
 
         void InitializeSdCard() {
             WaitSdCardServicesReadyImpl();
-            R_ASSERT(fsMountSdcard(&g_sd_card_filesystem));
+            R_ASSERT(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
             g_sd_card_initialized = true;
         }
 

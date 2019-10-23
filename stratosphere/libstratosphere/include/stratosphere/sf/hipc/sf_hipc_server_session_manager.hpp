@@ -73,6 +73,15 @@ namespace sts::sf::hipc {
             }
 
             Result ForwardRequest(const cmif::ServiceDispatchContext &ctx) const;
+
+            static inline void ForwardServiceDeleter(Service *srv) {
+                serviceClose(srv);
+                delete srv;
+            }
+
+            static inline std::shared_ptr<::Service> CreateForwardService() {
+                return std::shared_ptr<::Service>(new ::Service(), ForwardServiceDeleter);
+            }
     };
 
     class ServerSessionManager {

@@ -20,6 +20,7 @@
 #include <stratosphere/sm/sm_manager_api.hpp>
 
 #include "smm_ams.h"
+#include "sm_utils.hpp"
 
 namespace sts::sm::manager {
 
@@ -38,7 +39,7 @@ namespace sts::sm::manager {
     }
 
     Result HasMitm(bool *out, ServiceName name) {
-        return smManagerAtmosphereHasMitm(out, name.name);
+        return smManagerAtmosphereHasMitm(out, impl::ConvertName(name));
     }
 
 }

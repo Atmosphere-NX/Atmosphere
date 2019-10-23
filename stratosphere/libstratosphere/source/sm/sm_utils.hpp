@@ -50,4 +50,11 @@ namespace sts::sm::impl {
         }
     }
 
+    NX_CONSTEXPR SmServiceName ConvertName(sm::ServiceName name) {
+        static_assert(sizeof(SmServiceName) == sizeof(sm::ServiceName));
+        SmServiceName ret = {};
+        __builtin_memcpy(&ret, &name, sizeof(sm::ServiceName));
+        return ret;
+    }
+
 }

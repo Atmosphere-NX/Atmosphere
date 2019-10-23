@@ -48,6 +48,7 @@ namespace sts::sf::cmif {
                 } else {
                     ctx.processor->SetImplementationProcessor(&domain_processor);
                 }
+                ctx.srv_obj = target_object.GetServiceObjectUnsafe();
                 return target_object.ProcessMessage(ctx, in_message_raw_data);
             }
             case CmifDomainRequestType_Close:
@@ -86,6 +87,7 @@ namespace sts::sf::cmif {
                 } else {
                     ctx.processor->SetImplementationProcessor(&domain_processor);
                 }
+                ctx.srv_obj = target_object.GetServiceObjectUnsafe();
                 return target_object.ProcessMessage(ctx, in_message_raw_data);
             }
             case CmifDomainRequestType_Close:
@@ -136,7 +138,7 @@ namespace sts::sf::cmif {
 
         /* Set output raw data. */
         out_raw_data = cmif::PointerAndSize(raw_data.GetAddress() + out_header_size, raw_data.GetSize() - out_header_size);
-        this->out_object_ids = reinterpret_cast<DomainObjectId *>(out_raw_data.GetAddress() + out_raw_data.GetSize());
+        this->out_object_ids = reinterpret_cast<DomainObjectId *>(out_raw_data.GetAddress() + impl_out_data_total_size);
 
         return request;
     }

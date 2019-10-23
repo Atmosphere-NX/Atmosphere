@@ -55,7 +55,7 @@ namespace sts::dmnt {
                 return ResultSuccess;
             }
 
-            R_TRY(fsMountSdcard(&g_sd_fs));
+            R_TRY(fsOpenSdCardFileSystem(&g_sd_fs));
             g_sd_initialized = true;
             return ResultSuccess;
         }

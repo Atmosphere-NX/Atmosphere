@@ -17,31 +17,31 @@
 #include "../service_guard.h"
 #include "sm_ams.h"
 
-static Result _smAtmosphereCmdHas(bool *out, u64 service_name, u32 cmd_id) {
+static Result _smAtmosphereCmdHas(bool *out, SmServiceName name, u32 cmd_id) {
     u8 tmp;
-    Result rc = serviceDispatchInOut(smGetServiceSession(), cmd_id, service_name, tmp);
+    Result rc = serviceDispatchInOut(smGetServiceSession(), cmd_id, name, tmp);
     if (R_SUCCEEDED(rc) && out) *out = tmp & 1;
     return rc;
 }
 
-static Result _smAtmosphereCmdInServiceNameNoOut(u64 service_name, Service *srv, u32 cmd_id) {
-    return serviceDispatchIn(srv, cmd_id, service_name);
+static Result _smAtmosphereCmdInServiceNameNoOut(SmServiceName name, Service *srv, u32 cmd_id) {
+    return serviceDispatchIn(srv, cmd_id, name);
 }
 
-Result smAtmosphereHasService(bool *out, const char *name) {
-    return _smAtmosphereCmdHas(out, smEncodeName(name), 65100);
+Result smAtmosphereHasService(bool *out, SmServiceName name) {
+    return _smAtmosphereCmdHas(out, name, 65100);
 }
 
-Result smAtmosphereWaitService(const char *name) {
-    return _smAtmosphereCmdInServiceNameNoOut(smEncodeName(name), smGetServiceSession(), 65101);
+Result smAtmosphereWaitService(SmServiceName name) {
+    return _smAtmosphereCmdInServiceNameNoOut(name, smGetServiceSession(), 65101);
 }
 
-Result smAtmosphereHasMitm(bool *out, const char *name) {
-    return _smAtmosphereCmdHas(out, smEncodeName(name), 65004);
+Result smAtmosphereHasMitm(bool *out, SmServiceName name) {
+    return _smAtmosphereCmdHas(out, name, 65004);
 }
 
-Result smAtmosphereWaitMitm(const char *name) {
-    return _smAtmosphereCmdInServiceNameNoOut(smEncodeName(name), smGetServiceSession(), 65005);
+Result smAtmosphereWaitMitm(SmServiceName name) {
+    return _smAtmosphereCmdInServiceNameNoOut(name, smGetServiceSession(), 65005);
 }
 
 static Service g_smAtmosphereMitmSrv;
@@ -76,10 +76,9 @@ Service* smAtmosphereMitmGetServiceSession(void) {
     return &g_smAtmosphereMitmSrv;
 }
 
-Result smAtmosphereMitmInstall(Handle *handle_out, Handle *query_out, const char *name) {
-    const u64 in = smEncodeName(name);
+Result smAtmosphereMitmInstall(Handle *handle_out, Handle *query_out, SmServiceName name) {
     Handle tmp_handles[2];
-    Result rc = serviceDispatchIn(&g_smAtmosphereMitmSrv, 65000, in,
+    Result rc = serviceDispatchIn(&g_smAtmosphereMitmSrv, 65000, name,
         .out_handle_attrs = { SfOutHandleAttr_HipcMove, SfOutHandleAttr_HipcMove },
         .out_handles = tmp_handles,
     );
@@ -92,22 +91,21 @@ Result smAtmosphereMitmInstall(Handle *handle_out, Handle *query_out, const char
     return rc;
 }
 
-Result smAtmosphereMitmUninstall(const char *name) {
-    return _smAtmosphereCmdInServiceNameNoOut(smEncodeName(name), &g_smAtmosphereMitmSrv, 65001);
+Result smAtmosphereMitmUninstall(SmServiceName name) {
+    return _smAtmosphereCmdInServiceNameNoOut(name, &g_smAtmosphereMitmSrv, 65001);
 }
 
-Result smAtmosphereMitmDeclareFuture(const char *name) {
-    return _smAtmosphereCmdInServiceNameNoOut(smEncodeName(name), &g_smAtmosphereMitmSrv, 65006);
+Result smAtmosphereMitmDeclareFuture(SmServiceName name) {
+    return _smAtmosphereCmdInServiceNameNoOut(name, &g_smAtmosphereMitmSrv, 65006);
 }
 
-Result smAtmosphereMitmAcknowledgeSession(Service *srv_out, u64 *pid_out, u64 *tid_out, const char *name) {
-    const u64 in = smEncodeName(name);
+Result smAtmosphereMitmAcknowledgeSession(Service *srv_out, u64 *pid_out, u64 *tid_out, SmServiceName name) {
     struct {
         u64 pid;
         u64 tid;
     } out;
 
-    Result rc = serviceDispatchInOut(&g_smAtmosphereMitmSrv, 65003, in, out,
+    Result rc = serviceDispatchInOut(&g_smAtmosphereMitmSrv, 65003, name, out,
         .out_num_objects = 1,
         .out_objects = srv_out,
     );
