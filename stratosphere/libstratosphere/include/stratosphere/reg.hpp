@@ -17,7 +17,7 @@
 #pragma once
 #include <switch.h>
 
-namespace sts::reg {
+namespace ams::reg {
 
     inline void Write(volatile u32 *reg, u32 val) {
         *reg = val;

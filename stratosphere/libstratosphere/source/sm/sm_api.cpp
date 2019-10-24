@@ -21,7 +21,7 @@
 #include "sm_ams.h"
 #include "sm_utils.hpp"
 
-namespace sts::sm {
+namespace ams::sm {
 
     /* Ordinary SM API. */
     Result GetService(Service *out, ServiceName name) {

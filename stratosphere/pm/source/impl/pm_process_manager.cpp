@@ -25,7 +25,7 @@
 
 #include "pm_process_info.hpp"
 
-namespace sts::pm::impl {
+namespace ams::pm::impl {
 
     namespace {
 
@@ -133,7 +133,7 @@ namespace sts::pm::impl {
                     return static_cast<u32>(ProcessEventDeprecated::DebugRunning);
                 case ProcessEvent::DebugSuspended:
                     return static_cast<u32>(ProcessEventDeprecated::DebugSuspended);
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -172,8 +172,8 @@ namespace sts::pm::impl {
                     std::scoped_lock lk(this->lock);
 
                     const size_t index = this->GetProcessInfoIndex(process_info);
-                    STS_ASSERT(index < MaxProcessInfos);
-                    STS_ASSERT(this->process_info_allocated[index]);
+                    AMS_ASSERT(index < MaxProcessInfos);
+                    AMS_ASSERT(this->process_info_allocated[index]);
 
                     process_info->~ProcessInfo();
                     this->process_info_allocated[index] = false;
@@ -315,7 +315,7 @@ namespace sts::pm::impl {
 
             /* Make new process info. */
             void *process_info_storage = g_process_info_allocator.AllocateProcessInfoStorage();
-            STS_ASSERT(process_info_storage != nullptr);
+            AMS_ASSERT(process_info_storage != nullptr);
             ProcessInfo *process_info = new (process_info_storage) ProcessInfo(process_handle, process_id, pin_id, location);
 
             /* Link new process info. */
@@ -716,7 +716,7 @@ namespace sts::pm::impl {
         /* In 8.0.0, Nintendo added this command, which signals that the boot sysmodule has finished. */
         /* Nintendo only signals it in safe mode FIRM, and this function aborts on normal FIRM. */
         /* We will signal it always, but only allow this function to succeed on safe mode. */
-        STS_ASSERT(spl::IsRecoveryBoot());
+        AMS_ASSERT(spl::IsRecoveryBoot());
         *out = g_boot_finished_event.GetReadableHandle();
         return ResultSuccess();
     }

@@ -17,7 +17,7 @@
 #include "fatal_repair.hpp"
 #include "fatal_service_for_self.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     namespace {
 

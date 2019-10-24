@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/updater/updater_types.hpp>
 
-namespace sts::updater {
+namespace ams::updater {
 
     /* Path functionality. */
     const char *GetBootImagePackageMountPath();

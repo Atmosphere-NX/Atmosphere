@@ -18,7 +18,7 @@
 
 #include "pinmux_utils.hpp"
 
-namespace sts::pinmux {
+namespace ams::pinmux {
 
     namespace {
 
@@ -33,12 +33,12 @@ namespace sts::pinmux {
 
         /* Helpers. */
         inline const Definition *GetDefinition(u32 pinmux_name) {
-            STS_ASSERT(pinmux_name < PadNameMax);
+            AMS_ASSERT(pinmux_name < PadNameMax);
             return &Map[pinmux_name];
         }
 
         inline const DrivePadDefinition *GetDrivePadDefinition(u32 drivepad_name) {
-            STS_ASSERT(drivepad_name < DrivePadNameMax);
+            AMS_ASSERT(drivepad_name < DrivePadNameMax);
             return &DrivePadMap[drivepad_name];
         }
 
@@ -104,7 +104,7 @@ namespace sts::pinmux {
         u32 pinmux_val = reg::Read(pinmux_reg);
 
         /* This PINMUX register is locked */
-        STS_ASSERT((pinmux_val & 0x80) == 0);
+        AMS_ASSERT((pinmux_val & 0x80) == 0);
 
         u32 pm_val = (pinmux_config_val & 0x07);
 

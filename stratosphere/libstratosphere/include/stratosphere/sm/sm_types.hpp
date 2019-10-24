@@ -22,7 +22,7 @@
 #include "../results.hpp"
 #include "../os.hpp"
 
-namespace sts::sm {
+namespace ams::sm {
 
     struct ServiceName {
         static constexpr size_t MaxLength = 8;

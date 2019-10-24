@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 
-namespace sts::sf::hipc {
+namespace ams::sf::hipc {
 
     namespace impl {
 
@@ -71,7 +71,7 @@ namespace sts::sf::hipc {
 
                     if (this->is_mitm_session) {
                         /* If we're a mitm session, we need to convert the remote session to domain. */
-                        STS_ASSERT(session->forward_service->own_handle);
+                        AMS_ASSERT(session->forward_service->own_handle);
                         R_TRY(serviceConvertToDomain(session->forward_service.get()));
 
                         /* The object ID reservation cannot fail here, as that would cause desynchronization from target domain. */
@@ -94,8 +94,8 @@ namespace sts::sf::hipc {
                         })));
                     }
 
-                    STS_ASSERT(object_id != cmif::InvalidDomainObjectId);
-                    STS_ASSERT(static_cast<bool>(new_holder));
+                    AMS_ASSERT(object_id != cmif::InvalidDomainObjectId);
+                    AMS_ASSERT(static_cast<bool>(new_holder));
 
                     /* We succeeded! */
                     domain_guard.Cancel();

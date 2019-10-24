@@ -18,7 +18,7 @@
 #include "boot_calibration.hpp"
 #include "boot_i2c_utils.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     /* Include configuration into anonymous namespace. */
     namespace {

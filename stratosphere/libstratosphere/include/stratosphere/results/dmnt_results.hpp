@@ -17,7 +17,7 @@
 #pragma once
 #include "results_common.hpp"
 
-namespace sts::dmnt {
+namespace ams::dmnt {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(13);
 

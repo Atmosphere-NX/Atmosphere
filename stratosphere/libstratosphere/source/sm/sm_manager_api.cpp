@@ -22,7 +22,7 @@
 #include "smm_ams.h"
 #include "sm_utils.hpp"
 
-namespace sts::sm::manager {
+namespace ams::sm::manager {
 
     /* Manager API. */
     Result RegisterProcess(os::ProcessId process_id, ncm::TitleId title_id, const void *acid, size_t acid_size, const void *aci, size_t aci_size) {

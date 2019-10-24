@@ -18,7 +18,7 @@
 
 #include "pm_types.hpp"
 
-namespace sts::pm::bm {
+namespace ams::pm::bm {
 
     /* Boot Mode API. */
     BootMode GetBootMode();

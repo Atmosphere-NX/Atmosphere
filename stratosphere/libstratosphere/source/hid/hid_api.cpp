@@ -19,7 +19,7 @@
 #include <stratosphere/pm.hpp>
 #include <stratosphere/hid.hpp>
 
-namespace sts::hid {
+namespace ams::hid {
 
     namespace {
 

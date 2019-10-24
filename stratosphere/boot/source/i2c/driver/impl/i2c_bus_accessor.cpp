@@ -20,7 +20,7 @@
 #include "i2c_pcv.hpp"
 #include "i2c_bus_accessor.hpp"
 
-namespace sts::i2c::driver::impl {
+namespace ams::i2c::driver::impl {
 
     void BusAccessor::Open(Bus bus, SpeedMode speed_mode) {
         std::scoped_lock lk(this->open_mutex);
@@ -29,7 +29,7 @@ namespace sts::i2c::driver::impl {
 
         /* Ensure we're good if this isn't our first session. */
         if (this->open_sessions > 1) {
-            STS_ASSERT(this->speed_mode == speed_mode);
+            AMS_ASSERT(this->speed_mode == speed_mode);
             return;
         }
 
@@ -244,7 +244,7 @@ namespace sts::i2c::driver::impl {
             0x46, 0x74, 0x7C, 0x98, 0x55, 0x5F
         };
         const auto index = ConvertToIndex(bus);
-        STS_ASSERT(index < util::size(s_interrupts));
+        AMS_ASSERT(index < util::size(s_interrupts));
         R_ASSERT(this->interrupt_event.Initialize(s_interrupts[index], false));
     }
 
@@ -282,7 +282,7 @@ namespace sts::i2c::driver::impl {
                 src_div = 0x02;
                 debounce = 0;
                 break;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
         if (speed_mode == SpeedMode::HighSpeed) {

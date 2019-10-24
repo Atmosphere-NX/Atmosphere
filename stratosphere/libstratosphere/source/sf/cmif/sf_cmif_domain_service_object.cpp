@@ -16,7 +16,7 @@
 #include <functional>
 #include <stratosphere.hpp>
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     Result DomainServiceObjectDispatchTable::ProcessMessage(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const  {
         return this->ProcessMessageImpl(ctx, static_cast<DomainServiceObject *>(ctx.srv_obj)->GetServerDomain(), in_raw_data);
@@ -133,7 +133,7 @@ namespace sts::sf::cmif {
         /* Write out header. */
         constexpr size_t out_header_size = sizeof(CmifDomainOutHeader);
         const size_t impl_out_data_total_size = this->GetImplOutDataTotalSize();
-        STS_ASSERT(out_header_size + impl_out_data_total_size + sizeof(DomainObjectId) * this->GetOutObjectCount() <= raw_data.GetSize());
+        AMS_ASSERT(out_header_size + impl_out_data_total_size + sizeof(DomainObjectId) * this->GetOutObjectCount() <= raw_data.GetSize());
         *reinterpret_cast<CmifDomainOutHeader *>(raw_data.GetPointer()) = CmifDomainOutHeader{ .num_out_objects = static_cast<u32>(this->GetOutObjectCount()), };
 
         /* Set output raw data. */
@@ -151,7 +151,7 @@ namespace sts::sf::cmif {
         /* Write out header. */
         constexpr size_t out_header_size = sizeof(CmifDomainOutHeader);
         const size_t impl_out_data_total_size = this->GetImplOutDataTotalSize();
-        STS_ASSERT(out_header_size + impl_out_data_total_size <= raw_data.GetSize());
+        AMS_ASSERT(out_header_size + impl_out_data_total_size <= raw_data.GetSize());
         *reinterpret_cast<CmifDomainOutHeader *>(raw_data.GetPointer()) = CmifDomainOutHeader{ .num_out_objects = 0, };
 
         /* Set output raw data. */

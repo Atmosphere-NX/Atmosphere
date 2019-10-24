@@ -51,19 +51,19 @@ extern "C" {
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
 }
 
-namespace sts::ams {
+namespace ams {
 
-    ncm::TitleId StratosphereTitleId = ncm::TitleId::Fatal;
+    ncm::TitleId CurrentTitleId = ncm::TitleId::Fatal;
+
+    namespace result {
+
+        bool CallFatalOnResultAssertion = false;
+
+    }
 
 }
 
-namespace sts::result {
-
-    bool CallFatalOnResultAssertion = false;
-
-}
-
-using namespace sts;
+using namespace ams;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     ams::CrashHandler(ctx);
@@ -163,8 +163,8 @@ int main(int argc, char **argv)
     R_ASSERT((g_server_manager.RegisterServer<fatal::srv::UserService>(UserServiceName, UserMaxSessions)));
 
     /* Add dirty event holder. */
-    /* TODO: s_server_manager.AddWaitable(sts::fatal::srv::GetFatalDirtyEvent()); */
-    auto *dirty_event_holder = sts::fatal::srv::GetFatalDirtyWaitableHolder();
+    /* TODO: s_server_manager.AddWaitable(ams::fatal::srv::GetFatalDirtyEvent()); */
+    auto *dirty_event_holder = ams::fatal::srv::GetFatalDirtyWaitableHolder();
     g_server_manager.AddUserWaitableHolder(dirty_event_holder);
 
     /* Loop forever, servicing our services. */

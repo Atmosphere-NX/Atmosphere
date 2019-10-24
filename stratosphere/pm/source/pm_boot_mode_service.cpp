@@ -16,7 +16,7 @@
 
 #include "pm_boot_mode_service.hpp"
 
-namespace sts::pm::bm {
+namespace ams::pm::bm {
 
     namespace {
 

@@ -28,7 +28,7 @@
 #include "boot_registers_pinmux.hpp"
 #include "boot_registers_pmc.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     /* Display configuration included into anonymous namespace. */
     namespace {
@@ -110,7 +110,7 @@ namespace sts::boot {
                     case DsiSleepOrRegisterWriteKind_Sleep:
                         svcSleepThread(1'000'000ul * u64(reg_writes[i].offset));
                         break;
-                    STS_UNREACHABLE_DEFAULT_CASE();
+                    AMS_UNREACHABLE_DEFAULT_CASE();
                 }
             }
         }

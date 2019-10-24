@@ -18,7 +18,7 @@
 #include "boot_check_clock.hpp"
 #include "boot_power_utils.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 

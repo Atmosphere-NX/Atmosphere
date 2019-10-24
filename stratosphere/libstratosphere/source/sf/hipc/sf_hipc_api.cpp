@@ -15,14 +15,14 @@
  */
 #include <stratosphere.hpp>
 
-namespace sts::sf::hipc {
+namespace ams::sf::hipc {
 
     namespace {
 
         NX_INLINE Result ReceiveImpl(Handle session_handle, void *message_buf, size_t message_buf_size) {
             s32 unused_index;
             if (message_buf == armGetTls()) {
-                /* Consider: STS_ASSERT(message_buf_size == TlsMessageBufferSize); */
+                /* Consider: AMS_ASSERT(message_buf_size == TlsMessageBufferSize); */
                 return svcReplyAndReceive(&unused_index, &session_handle, 1, INVALID_HANDLE, U64_MAX);
             } else {
                 return svcReplyAndReceiveWithUserBuffer(&unused_index, message_buf, message_buf_size, &session_handle, 1, INVALID_HANDLE, U64_MAX);
@@ -32,7 +32,7 @@ namespace sts::sf::hipc {
         NX_INLINE Result ReplyImpl(Handle session_handle, void *message_buf, size_t message_buf_size) {
             s32 unused_index;
             if (message_buf == armGetTls()) {
-                /* Consider: STS_ASSERT(message_buf_size == TlsMessageBufferSize); */
+                /* Consider: AMS_ASSERT(message_buf_size == TlsMessageBufferSize); */
                 return svcReplyAndReceive(&unused_index, &session_handle, 0, session_handle, 0);
             } else {
                 return svcReplyAndReceiveWithUserBuffer(&unused_index, message_buf, message_buf_size, &session_handle, 0, session_handle, 0);
@@ -73,7 +73,7 @@ namespace sts::sf::hipc {
             R_CONVERT(svc::ResultSessionClosed, ResultSuccess())
         } R_END_TRY_CATCH;
         /* ReplyImpl should *always* return an error. */
-        STS_ASSERT(false);
+        AMS_ASSERT(false);
     }
 
     Result CreateSession(Handle *out_server_handle, Handle *out_client_handle) {

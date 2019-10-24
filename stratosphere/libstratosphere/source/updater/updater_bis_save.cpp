@@ -19,7 +19,7 @@
 
 #include "updater_bis_save.hpp"
 
-namespace sts::updater {
+namespace ams::updater {
 
     size_t BisSave::GetVerificationFlagOffset(BootModeType mode) {
         switch (mode) {
@@ -33,9 +33,9 @@ namespace sts::updater {
     }
 
     Result BisSave::Initialize(void *work_buffer, size_t work_buffer_size) {
-        STS_ASSERT(work_buffer_size >= SaveSize);
-        STS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(work_buffer), 0x1000));
-        STS_ASSERT(util::IsAligned(work_buffer_size, 0x200));
+        AMS_ASSERT(work_buffer_size >= SaveSize);
+        AMS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(work_buffer), 0x1000));
+        AMS_ASSERT(util::IsAligned(work_buffer_size, 0x200));
 
         R_TRY(this->accessor.Initialize());
         this->save_buffer = work_buffer;

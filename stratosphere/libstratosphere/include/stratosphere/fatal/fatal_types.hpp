@@ -21,7 +21,7 @@
 #include "../ncm/ncm_types.hpp"
 #include "../sf/sf_buffer_tags.hpp"
 
-namespace sts::fatal {
+namespace ams::fatal {
 
     namespace aarch64 {
 

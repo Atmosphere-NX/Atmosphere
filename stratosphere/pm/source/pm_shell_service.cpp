@@ -17,7 +17,7 @@
 #include "pm_shell_service.hpp"
 #include "impl/pm_process_manager.hpp"
 
-namespace sts::pm::shell {
+namespace ams::pm::shell {
 
     /* Overrides for libstratosphere pm::shell commands. */
     Result LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {

@@ -20,13 +20,13 @@
 
 #include "lz4.h"
 
-namespace sts::util {
+namespace ams::util {
 
     /* Compression utilities. */
     int CompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size) {
         /* Size checks. */
-        STS_ASSERT(dst_size <= std::numeric_limits<int>::max());
-        STS_ASSERT(src_size <= std::numeric_limits<int>::max());
+        AMS_ASSERT(dst_size <= std::numeric_limits<int>::max());
+        AMS_ASSERT(src_size <= std::numeric_limits<int>::max());
 
         /* This is just a thin wrapper around LZ4. */
         return LZ4_compress_default(reinterpret_cast<const char *>(src), reinterpret_cast<char *>(dst), static_cast<int>(src_size), static_cast<int>(dst_size));
@@ -35,8 +35,8 @@ namespace sts::util {
     /* Decompression utilities. */
     int DecompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size) {
         /* Size checks. */
-        STS_ASSERT(dst_size <= std::numeric_limits<int>::max());
-        STS_ASSERT(src_size <= std::numeric_limits<int>::max());
+        AMS_ASSERT(dst_size <= std::numeric_limits<int>::max());
+        AMS_ASSERT(src_size <= std::numeric_limits<int>::max());
 
         /* This is just a thin wrapper around LZ4. */
         return LZ4_decompress_safe(reinterpret_cast<const char *>(src), reinterpret_cast<char *>(dst), static_cast<int>(src_size), static_cast<int>(dst_size));

@@ -17,7 +17,7 @@
 #pragma once
 #include "ams_types.hpp"
 
-namespace sts::ams {
+namespace ams::exosphere {
 
     ApiInfo GetApiInfo();
 
@@ -30,32 +30,24 @@ namespace sts::ams {
     void CopyToIram(uintptr_t iram_dst, const void *dram_src, size_t size);
     void CopyFromIram(void *dram_dst, uintptr_t iram_src, size_t size);
 
+}
+
+namespace ams {
+
     /* Version checking utility. */
 #ifdef ATMOSPHERE_RELEASE_VERSION_MAJOR
 
 #define ATMOSPHERE_RELEASE_VERSION ATMOSPHERE_RELEASE_VERSION_MAJOR, ATMOSPHERE_RELEASE_VERSION_MINOR, ATMOSPHERE_RELEASE_VERSION_MICRO
 
     inline void CheckApiVersion() {
-        const u32 runtime_version = GetApiInfo().GetVersion();
-        const u32 build_version = GetVersion(ATMOSPHERE_RELEASE_VERSION);
+        const u32 runtime_version = exosphere::GetApiInfo().GetVersion();
+        const u32 build_version   = exosphere::GetVersion(ATMOSPHERE_RELEASE_VERSION);
 
         if (runtime_version < build_version) {
-            R_ASSERT(ams::ResultVersionMismatch());
+            R_ASSERT(exosphere::ResultVersionMismatch());
         }
     }
 
-#endif
-
-#ifdef ATMOSPHERE_GIT_BRANCH
-    NX_CONSTEXPR const char *GetGitBranch() {
-        return ATMOSPHERE_GIT_BRANCH;
-    }
-#endif
-
-#ifdef ATMOSPHERE_GIT_REV
-    NX_CONSTEXPR const char *GetGitRevision() {
-        return ATMOSPHERE_GIT_REV;
-    }
 #endif
 
 }

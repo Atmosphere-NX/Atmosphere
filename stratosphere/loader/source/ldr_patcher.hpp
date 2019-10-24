@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere/ldr.hpp>
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     /* Apply IPS patches. */
     void LocateAndApplyIpsPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size);

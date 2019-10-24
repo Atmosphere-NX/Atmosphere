@@ -119,7 +119,7 @@ Result DirectorySaveDataFileSystem::AllocateWorkBuffer(void **out_buf, size_t *o
 
         /* Divide size by two. */
         try_size >>= 1;
-        STS_ASSERT(try_size > 0x200);
+        AMS_ASSERT(try_size > 0x200);
     }
 
     /* TODO: Return a result here? Nintendo does not, but they have other allocation failed results. */

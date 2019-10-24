@@ -22,7 +22,7 @@
 
 #include "sm_service_manager.hpp"
 
-namespace sts::sm::impl {
+namespace ams::sm::impl {
 
     /* Anonymous namespace for implementation details. */
     namespace {
@@ -167,11 +167,11 @@ namespace sts::sm::impl {
                     cfg::GetInitialProcessRange(&this->min, &this->max);
 
                     /* Ensure range is sane. */
-                    STS_ASSERT(this->min <= this->max);
+                    AMS_ASSERT(this->min <= this->max);
                 }
 
                 bool IsInitialProcess(os::ProcessId pid) const {
-                    STS_ASSERT(pid != os::InvalidProcessId);
+                    AMS_ASSERT(pid != os::InvalidProcessId);
                     return this->min <= pid && pid <= this->max;
                 }
         };
@@ -234,7 +234,7 @@ namespace sts::sm::impl {
         ncm::TitleId GetTitleIdForMitm(os::ProcessId pid) {
             /* Anything that can request a mitm session must have a process info. */
             const auto process_info = GetProcessInfo(pid);
-            STS_ASSERT(process_info != nullptr);
+            AMS_ASSERT(process_info != nullptr);
             return process_info->tid;
         }
 

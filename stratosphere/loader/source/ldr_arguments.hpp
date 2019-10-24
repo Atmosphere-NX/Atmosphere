@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
-namespace sts::ldr::args {
+namespace ams::ldr::args {
 
     constexpr size_t ArgumentSizeMax = 0x8000;
 

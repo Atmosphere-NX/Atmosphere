@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/spl/spl_types.hpp>
 
-namespace sts::spl {
+namespace ams::spl {
 
     class GeneralService : public sf::IServiceObject {
         protected:

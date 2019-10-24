@@ -20,7 +20,7 @@
 
 #include "pm_ams.h"
 
-namespace sts::pm::dmnt {
+namespace ams::pm::dmnt {
 
     /* Debug Monitor API. */
     Result StartProcess(os::ProcessId process_id) {

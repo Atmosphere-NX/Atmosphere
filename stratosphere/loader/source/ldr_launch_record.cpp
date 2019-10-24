@@ -19,7 +19,7 @@
 
 #include "ldr_launch_record.hpp"
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     namespace {
 
@@ -41,7 +41,7 @@ namespace sts::ldr {
 
 /* Loader wants to override this libstratosphere function, which is weakly linked. */
 /* This is necessary to prevent circular dependencies. */
-namespace sts::pm::info {
+namespace ams::pm::info {
 
     Result HasLaunchedTitle(bool *out, ncm::TitleId title_id) {
         *out = ldr::HasLaunchedTitle(title_id);

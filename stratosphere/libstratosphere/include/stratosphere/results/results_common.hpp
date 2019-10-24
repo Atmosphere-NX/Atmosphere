@@ -19,7 +19,7 @@
 #include <climits>
 #include "../defines.hpp"
 
-namespace sts {
+namespace ams {
 
     namespace result::impl {
 
@@ -179,17 +179,17 @@ namespace sts {
 }
 
 /* Macros for defining new results. */
-#define R_DEFINE_NAMESPACE_RESULT_MODULE(value) namespace impl::result { static constexpr inline ::sts::result::impl::ResultTraits::BaseType ResultModuleId = value; }
+#define R_DEFINE_NAMESPACE_RESULT_MODULE(value) namespace impl::result { static constexpr inline ::ams::result::impl::ResultTraits::BaseType ResultModuleId = value; }
 #define R_CURRENT_NAMESPACE_RESULT_MODULE impl::result::ResultModuleId
 #define R_NAMESPACE_MODULE_ID(nmspc) nmspc::R_CURRENT_NAMESPACE_RESULT_MODULE
 
-#define R_MAKE_NAMESPACE_RESULT(nmspc, desc) static_cast<::sts::Result>(::sts::result::impl::ResultTraits::MakeValue(R_NAMESPACE_MODULE_ID(nmspc), desc))
+#define R_MAKE_NAMESPACE_RESULT(nmspc, desc) static_cast<::ams::Result>(::ams::result::impl::ResultTraits::MakeValue(R_NAMESPACE_MODULE_ID(nmspc), desc))
 
 #define R_DEFINE_ERROR_RESULT_IMPL(name, desc_start, desc_end) \
-    class Result##name final : public ::sts::result::impl::ResultErrorBase<R_CURRENT_NAMESPACE_RESULT_MODULE, desc_start>, public ::sts::result::impl::ResultErrorRangeBase<R_CURRENT_NAMESPACE_RESULT_MODULE, desc_start, desc_end> {}
+    class Result##name final : public ::ams::result::impl::ResultErrorBase<R_CURRENT_NAMESPACE_RESULT_MODULE, desc_start>, public ::ams::result::impl::ResultErrorRangeBase<R_CURRENT_NAMESPACE_RESULT_MODULE, desc_start, desc_end> {}
 
 #define R_DEFINE_ABSTRACT_ERROR_RESULT_IMPL(name, desc_start, desc_end) \
-    class Result##name final : public ::sts::result::impl::ResultErrorRangeBase<R_CURRENT_NAMESPACE_RESULT_MODULE, desc_start, desc_end> {}
+    class Result##name final : public ::ams::result::impl::ResultErrorRangeBase<R_CURRENT_NAMESPACE_RESULT_MODULE, desc_start, desc_end> {}
 
 
 #define R_DEFINE_ERROR_RESULT(name, desc) R_DEFINE_ERROR_RESULT_IMPL(name, desc, desc)
@@ -211,8 +211,8 @@ namespace sts {
 
 #undef R_FAILED
 
-#define R_SUCCEEDED(res) (static_cast<::sts::Result>(res).IsSuccess())
-#define R_FAILED(res)    (static_cast<::sts::Result>(res).IsFailure())
+#define R_SUCCEEDED(res) (static_cast<::ams::Result>(res).IsSuccess())
+#define R_FAILED(res)    (static_cast<::ams::Result>(res).IsFailure())
 
 
 /// Evaluates an expression that returns a result, and returns the result if it would fail.
@@ -229,7 +229,7 @@ namespace sts {
     ({ \
         const auto _tmp_r_assert_rc = res_expr; \
         if (R_FAILED(_tmp_r_assert_rc)) {  \
-            ::sts::result::impl::OnResultAssertion(_tmp_r_assert_rc); \
+            ::ams::result::impl::OnResultAssertion(_tmp_r_assert_rc); \
         } \
     })
 
@@ -237,7 +237,7 @@ namespace sts {
 #define R_UNLESS(expr, res) \
     ({ \
         if (!(expr)) { \
-            return static_cast<::sts::Result>(res); \
+            return static_cast<::ams::Result>(res); \
         } \
     })
 
@@ -250,7 +250,7 @@ namespace sts {
         if (R_FAILED(R_CURRENT_RESULT)) { \
             if (false)
 
-namespace sts::result::impl {
+namespace ams::result::impl {
 
     template<typename... Rs>
     NX_CONSTEXPR bool AnyIncludes(Result result) {
@@ -260,18 +260,18 @@ namespace sts::result::impl {
 }
 
 #define R_CATCH(...) \
-            } else if (::sts::result::impl::AnyIncludes<__VA_ARGS__>(R_CURRENT_RESULT)) { \
+            } else if (::ams::result::impl::AnyIncludes<__VA_ARGS__>(R_CURRENT_RESULT)) { \
                 if (true)
 
 #define R_CONVERT(catch_type, convert_type) \
-        R_CATCH(catch_type) { return static_cast<::sts::Result>(convert_type); }
+        R_CATCH(catch_type) { return static_cast<::ams::Result>(convert_type); }
 
 #define R_CATCH_ALL() \
             } else if (R_FAILED(R_CURRENT_RESULT)) { \
                 if (true)
 
 #define R_CONVERT_ALL(convert_type) \
-        R_CATCH_ALL() { return static_cast<::sts::Result>(convert_type); }
+        R_CATCH_ALL() { return static_cast<::ams::Result>(convert_type); }
 
 #define R_END_TRY_CATCH \
             else if (R_FAILED(R_CURRENT_RESULT)) { \

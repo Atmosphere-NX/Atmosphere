@@ -19,7 +19,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::fatal::srv::font {
+namespace ams::fatal::srv::font {
 
     Result InitializeSharedFont();
     void ConfigureFontFramebuffer(u16 *fb, u32 (*unswizzle_func)(u32, u32));

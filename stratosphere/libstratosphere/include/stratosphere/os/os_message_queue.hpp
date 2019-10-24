@@ -20,7 +20,7 @@
 #include "os_mutex.hpp"
 #include "os_condvar.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     namespace impl {
 

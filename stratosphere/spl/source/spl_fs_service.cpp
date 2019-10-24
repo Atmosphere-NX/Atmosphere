@@ -20,7 +20,7 @@
 #include "spl_api_impl.hpp"
 #include "spl_fs_service.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     Result FsService::ImportLotusKeyDeprecated(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
         return impl::ImportLotusKey(src.GetPointer(), src.GetSize(), access_key, key_source, option);

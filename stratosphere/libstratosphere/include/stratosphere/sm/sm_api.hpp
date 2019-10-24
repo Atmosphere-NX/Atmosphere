@@ -18,7 +18,7 @@
 
 #include "sm_types.hpp"
 
-namespace sts::sm {
+namespace ams::sm {
 
     /* Ordinary SM API. */
     Result GetService(Service *out, ServiceName name);

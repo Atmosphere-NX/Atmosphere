@@ -17,7 +17,7 @@
 #include "os_waitable_holder_base.hpp"
 #include "os_inter_process_event.hpp"
 
-namespace sts::os::impl {
+namespace ams::os::impl {
 
     class WaitableHolderOfInterProcessEvent : public WaitableHolderOfKernelObject {
         private:
@@ -31,7 +31,7 @@ namespace sts::os::impl {
             }
 
             virtual Handle GetHandle() const override {
-                STS_ASSERT(this->event->is_initialized);
+                AMS_ASSERT(this->event->is_initialized);
                 return this->event->GetReadableHandle();
             }
     };

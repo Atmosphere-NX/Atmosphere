@@ -21,7 +21,7 @@
 
 #include "util_parent_of_member.hpp"
 
-namespace sts::util {
+namespace ams::util {
 
     /* Forward declare implementation class for Node. */
     namespace impl {
@@ -49,7 +49,7 @@ namespace sts::util {
         private:
             void LinkPrev(IntrusiveListNode *node) {
                 /* We can't link an already linked node. */
-                STS_ASSERT(!node->IsLinked());
+                AMS_ASSERT(!node->IsLinked());
                 this->SplicePrev(node, node);
             }
 
@@ -64,7 +64,7 @@ namespace sts::util {
 
             void LinkNext(IntrusiveListNode *node) {
                 /* We can't link an already linked node. */
-                STS_ASSERT(!node->IsLinked());
+                AMS_ASSERT(!node->IsLinked());
                 return this->SpliceNext(node, node);
             }
 
@@ -210,13 +210,13 @@ namespace sts::util {
 
                 iterator iterator_to(reference v) {
                     /* Only allow iterator_to for values in lists. */
-                    STS_ASSERT(v.IsLinked());
+                    AMS_ASSERT(v.IsLinked());
                     return iterator(&v);
                 }
 
                 const_iterator iterator_to(const_reference v) const {
                     /* Only allow iterator_to for values in lists. */
-                    STS_ASSERT(v.IsLinked());
+                    AMS_ASSERT(v.IsLinked());
                     return const_iterator(&v);
                 }
 
@@ -334,9 +334,9 @@ namespace sts::util {
             template<bool Const>
             class Iterator {
                 public:
-                    friend class sts::util::IntrusiveList<T, Traits>;
+                    friend class ams::util::IntrusiveList<T, Traits>;
 
-                    using ImplIterator = typename std::conditional<Const, sts::util::impl::IntrusiveListImpl::const_iterator, sts::util::impl::IntrusiveListImpl::iterator>::type;
+                    using ImplIterator = typename std::conditional<Const, ams::util::impl::IntrusiveListImpl::const_iterator, ams::util::impl::IntrusiveListImpl::iterator>::type;
 
                     using iterator_category = std::bidirectional_iterator_tag;
                     using value_type        = typename IntrusiveList::value_type;
@@ -480,22 +480,22 @@ namespace sts::util {
             }
 
             reference back() {
-                STS_ASSERT(!this->impl.empty());
+                AMS_ASSERT(!this->impl.empty());
                 return GetParent(this->impl.back());
             }
 
             const_reference back() const {
-                STS_ASSERT(!this->impl.empty());
+                AMS_ASSERT(!this->impl.empty());
                 return GetParent(this->impl.back());
             }
 
             reference front() {
-                STS_ASSERT(!this->impl.empty());
+                AMS_ASSERT(!this->impl.empty());
                 return GetParent(this->impl.front());
             }
 
             const_reference front() const {
-                STS_ASSERT(!this->impl.empty());
+                AMS_ASSERT(!this->impl.empty());
                 return GetParent(this->impl.front());
             }
 
@@ -508,12 +508,12 @@ namespace sts::util {
             }
 
             void pop_back() {
-                STS_ASSERT(!this->impl.empty());
+                AMS_ASSERT(!this->impl.empty());
                 this->impl.pop_back();
             }
 
             void pop_front() {
-                STS_ASSERT(!this->impl.empty());
+                AMS_ASSERT(!this->impl.empty());
                 this->impl.pop_front();
             }
 

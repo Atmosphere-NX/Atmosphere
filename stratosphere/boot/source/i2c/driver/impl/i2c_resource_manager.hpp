@@ -23,7 +23,7 @@
 #include "i2c_bus_accessor.hpp"
 #include "i2c_session.hpp"
 
-namespace sts::i2c::driver::impl {
+namespace ams::i2c::driver::impl {
 
     class ResourceManager {
         public:

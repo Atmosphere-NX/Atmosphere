@@ -18,7 +18,7 @@
 #include <limits>
 #include <switch.h>
 
-namespace sts::rnd {
+namespace ams::rnd {
 
     /* Random utilities. */
     void GenerateRandomBytes(void* out, size_t size);

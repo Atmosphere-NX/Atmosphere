@@ -16,7 +16,7 @@
 #include "os_waitable_manager_impl.hpp"
 #include "os_waitable_object_list.hpp"
 
-namespace sts::os::impl{
+namespace ams::os::impl{
 
     WaitableHolderBase *WaitableManagerImpl::WaitAnyImpl(bool infinite, u64 timeout) {
         /* Set processing thread handle while in scope. */
@@ -64,7 +64,7 @@ namespace sts::os::impl{
                 index = WaitTimedOut;
             } else {
                 index = this->WaitSynchronization(object_handles, count, min_timeout);
-                STS_ASSERT(index != WaitInvalid);
+                AMS_ASSERT(index != WaitInvalid);
             }
 
             switch (index) {
@@ -115,7 +115,7 @@ namespace sts::os::impl{
 
         for (WaitableHolderBase &holder_base : this->waitable_list) {
             if (Handle handle = holder_base.GetHandle(); handle != INVALID_HANDLE) {
-                STS_ASSERT(count < MaximumHandleCount);
+                AMS_ASSERT(count < MaximumHandleCount);
 
                 out_handles[count] = handle;
                 out_objects[count] = &holder_base;

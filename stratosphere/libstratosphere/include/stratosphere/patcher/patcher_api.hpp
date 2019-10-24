@@ -18,7 +18,7 @@
 
 #include "../ro/ro_types.hpp"
 
-namespace sts::patcher {
+namespace ams::patcher {
 
     /* Helper for applying to code binaries. */
     void LocateAndApplyIpsPatchesToModule(const char *patch_dir, size_t protected_size, size_t offset, const ro::ModuleId *module_id, u8 *mapped_module, size_t mapped_size);

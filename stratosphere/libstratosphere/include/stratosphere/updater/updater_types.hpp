@@ -17,7 +17,7 @@
 #pragma once
 #include <switch.h>
 
-namespace sts::updater {
+namespace ams::updater {
 
     /* Types. */
     enum class BootImageUpdateType {

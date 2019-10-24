@@ -18,7 +18,7 @@
 #include "boot_display.hpp"
 #include "boot_splash_screen.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 

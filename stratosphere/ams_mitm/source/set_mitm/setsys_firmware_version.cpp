@@ -19,7 +19,7 @@
 
 #include "setsys_firmware_version.hpp"
 
-static sts::os::Mutex g_version_mutex;
+static ams::os::Mutex g_version_mutex;
 static bool g_got_version = false;
 static SetSysFirmwareVersion g_ams_fw_version = {0};
 static SetSysFirmwareVersion g_fw_version = {0};
@@ -32,7 +32,7 @@ void VersionManager::Initialize() {
     }
 
     /* Mount firmware version data archive. */
-    R_ASSERT(romfsMountFromDataArchive(static_cast<u64>(sts::ncm::TitleId::ArchiveSystemVersion), FsStorageId_NandSystem, "sysver"));
+    R_ASSERT(romfsMountFromDataArchive(static_cast<u64>(ams::ncm::TitleId::ArchiveSystemVersion), FsStorageId_NandSystem, "sysver"));
     {
         ON_SCOPE_EXIT { romfsUnmount("sysver"); };
 
@@ -40,11 +40,11 @@ void VersionManager::Initialize() {
 
         /* Firmware version file must exist. */
         FILE *f = fopen("sysver:/file", "rb");
-        STS_ASSERT(f != NULL);
+        AMS_ASSERT(f != NULL);
         ON_SCOPE_EXIT { fclose(f); };
 
         /* Must be possible to read firmware version from file. */
-        STS_ASSERT(fread(&fw_ver, sizeof(fw_ver), 1, f) == 1);
+        AMS_ASSERT(fread(&fw_ver, sizeof(fw_ver), 1, f) == 1);
 
         g_fw_version = fw_ver;
         g_ams_fw_version = fw_ver;
@@ -65,11 +65,11 @@ void VersionManager::Initialize() {
     g_got_version = true;
 }
 
-Result VersionManager::GetFirmwareVersion(sts::ncm::TitleId title_id, SetSysFirmwareVersion *out) {
+Result VersionManager::GetFirmwareVersion(ams::ncm::TitleId title_id, SetSysFirmwareVersion *out) {
     VersionManager::Initialize();
 
     /* Report atmosphere string to qlaunch, maintenance and nothing else. */
-    if (title_id == sts::ncm::TitleId::AppletQlaunch || title_id == sts::ncm::TitleId::AppletMaintenanceMenu) {
+    if (title_id == ams::ncm::TitleId::AppletQlaunch || title_id == ams::ncm::TitleId::AppletMaintenanceMenu) {
         *out = g_ams_fw_version;
     } else {
         *out = g_fw_version;

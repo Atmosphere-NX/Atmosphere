@@ -22,7 +22,7 @@
 #include "ro_service.hpp"
 #include "impl/ro_service_impl.hpp"
 
-namespace sts::ro {
+namespace ams::ro {
 
     void SetDevelopmentHardware(bool is_development_hardware) {
         impl::SetDevelopmentHardware(is_development_hardware);

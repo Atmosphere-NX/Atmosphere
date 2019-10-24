@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::pinmux {
+namespace ams::pinmux {
 
     void SetInitialConfiguration();
 

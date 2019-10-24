@@ -19,7 +19,7 @@
 
 #include "map_types.hpp"
 
-namespace sts::map {
+namespace ams::map {
 
     /* Public API. */
     Result GetProcessAddressSpaceInfo(AddressSpaceInfo *out, Handle process_h);

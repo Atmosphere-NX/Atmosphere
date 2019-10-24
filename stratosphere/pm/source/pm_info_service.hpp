@@ -20,7 +20,7 @@
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/pm.hpp>
 
-namespace sts::pm::info {
+namespace ams::pm::info {
 
     class InformationService final : public sf::IServiceObject {
         private:

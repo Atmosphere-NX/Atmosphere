@@ -17,7 +17,7 @@
 #pragma once
 #include "results_common.hpp"
 
-namespace sts::kvdb {
+namespace ams::kvdb {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(20);
 

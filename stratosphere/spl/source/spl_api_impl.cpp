@@ -22,7 +22,7 @@
 
 #include "spl_ctr_drbg.hpp"
 
-namespace sts::spl::impl {
+namespace ams::spl::impl {
 
     namespace {
 
@@ -127,14 +127,14 @@ namespace sts::spl::impl {
         /* Initialization functionality. */
         void InitializeCtrDrbg() {
             u8 seed[CtrDrbg::SeedSize];
-            STS_ASSERT(smc::GenerateRandomBytes(seed, sizeof(seed)) == smc::Result::Success);
+            AMS_ASSERT(smc::GenerateRandomBytes(seed, sizeof(seed)) == smc::Result::Success);
 
             g_drbg.Initialize(seed);
         }
 
         void InitializeSeEvents() {
             u64 irq_num;
-            STS_ASSERT(smc::GetConfig(&irq_num, 1, SplConfigItem_SecurityEngineIrqNumber) == smc::Result::Success);
+            AMS_ASSERT(smc::GetConfig(&irq_num, 1, SplConfigItem_SecurityEngineIrqNumber) == smc::Result::Success);
             R_ASSERT(g_se_event.Initialize(irq_num));
 
             R_ASSERT(g_se_keyslot_available_event.InitializeAsInterProcessEvent());

@@ -16,7 +16,7 @@
 
 #include "creport_utils.hpp"
 
-namespace sts::creport {
+namespace ams::creport {
 
     namespace {
 

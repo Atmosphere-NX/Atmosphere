@@ -20,7 +20,7 @@
 #include "pm_info_service.hpp"
 #include "impl/pm_process_manager.hpp"
 
-namespace sts::pm::info {
+namespace ams::pm::info {
 
     /* Overrides for libstratosphere pm::info commands. */
     Result HasLaunchedTitle(bool *out, ncm::TitleId title_id) {

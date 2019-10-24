@@ -19,7 +19,7 @@
 
 #include "i2c_session.hpp"
 
-namespace sts::i2c::driver::impl {
+namespace ams::i2c::driver::impl {
 
     void Session::Open(Bus bus, u32 slave_address, AddressingMode addr_mode, SpeedMode speed_mode, BusAccessor *bus_accessor, u32 max_retries, u64 retry_wait_time) {
         std::scoped_lock lk(this->bus_accessor_mutex);
@@ -74,7 +74,7 @@ namespace sts::i2c::driver::impl {
             case Command::Receive:
                 R_TRY(this->bus_accessor->Receive(reinterpret_cast<u8 *>(dst), num_bytes, option, this->addressing_mode, this->slave_address));
                 break;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
         return ResultSuccess();

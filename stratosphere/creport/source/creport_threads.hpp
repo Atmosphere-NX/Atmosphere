@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <map>
 
-namespace sts::creport {
+namespace ams::creport {
 
     /* Forward declare ModuleList class. */
     class ModuleList;

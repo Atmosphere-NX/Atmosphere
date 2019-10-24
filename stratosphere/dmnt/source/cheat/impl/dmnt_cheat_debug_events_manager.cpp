@@ -18,7 +18,7 @@
 
 /* WORKAROUND: This design prevents a kernel deadlock from occurring on 6.0.0+ */
 
-namespace sts::dmnt::cheat::impl {
+namespace ams::dmnt::cheat::impl {
 
     namespace {
 

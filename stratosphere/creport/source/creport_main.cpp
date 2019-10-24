@@ -46,19 +46,19 @@ extern "C" {
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
 }
 
-namespace sts::ams {
+namespace ams {
 
-    ncm::TitleId StratosphereTitleId = ncm::TitleId::Creport;
+    ncm::TitleId CurrentTitleId = ncm::TitleId::Creport;
+
+    namespace result {
+
+        bool CallFatalOnResultAssertion = true;
+
+    }
 
 }
 
-namespace sts::result {
-
-    bool CallFatalOnResultAssertion = true;
-
-}
-
-using namespace sts;
+using namespace ams;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     ams::CrashHandler(ctx);

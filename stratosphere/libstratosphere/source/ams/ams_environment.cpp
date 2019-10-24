@@ -17,7 +17,7 @@
 #include <stratosphere.hpp>
 #include "ams_bpc.h"
 
-namespace sts::ams {
+namespace ams {
 
     namespace {
 
@@ -34,7 +34,7 @@ namespace sts::ams {
 
     }
 
-    extern ncm::TitleId StratosphereTitleId;
+    extern ncm::TitleId CurrentTitleId;
 
     void WEAK ExceptionHandler(FatalErrorContext *ctx) {
         R_ASSERT(amsBpcInitialize());
@@ -49,7 +49,7 @@ namespace sts::ams {
         {
             ams_ctx.magic = FatalErrorContext::Magic;
             ams_ctx.error_desc = ctx->error_desc;
-            ams_ctx.title_id = static_cast<u64>(StratosphereTitleId);
+            ams_ctx.title_id = static_cast<u64>(CurrentTitleId);
             for (size_t i = 0; i < FatalErrorContext::NumGprs; i++) {
                 ams_ctx.gprs[i] = ctx->cpu_gprs[i].x;
             }
@@ -122,7 +122,7 @@ namespace sts::ams {
         }
 
         /* Just call the user exception handler. */
-        ::sts::ams::ExceptionHandler(&ams_ctx);
+        ::ams::ExceptionHandler(&ams_ctx);
     }
 
     inline NORETURN void AbortImpl() {
@@ -160,7 +160,7 @@ extern "C" {
 
 /* Custom abort handler, so that std::abort will trigger these. */
 void abort() {
-    sts::ams::AbortImpl();
+    ams::AbortImpl();
 }
 
 void *__cxa_allocate_ecxeption(size_t thrown_size) {

@@ -20,7 +20,7 @@
 #include "sm_dmnt_service.hpp"
 #include "impl/sm_service_manager.hpp"
 
-namespace sts::sm {
+namespace ams::sm {
 
     Result DmntService::AtmosphereGetRecord(sf::Out<ServiceRecord> record, ServiceName service) {
         return impl::GetServiceRecord(record.GetPointer(), service);

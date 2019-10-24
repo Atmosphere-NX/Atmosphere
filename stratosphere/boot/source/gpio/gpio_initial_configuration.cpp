@@ -19,7 +19,7 @@
 #include "gpio_initial_configuration.hpp"
 #include "gpio_utils.hpp"
 
-namespace sts::gpio {
+namespace ams::gpio {
 
     namespace {
 
@@ -70,7 +70,7 @@ namespace sts::gpio {
                     num_configs = NumInitialConfigsIowa;
                     break;
                 /* Unknown hardware type, we can't proceed. */
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
         } else {
             /* Until 2.0.0, the GPIO map for Icosa was used for all hardware types. */
@@ -79,7 +79,7 @@ namespace sts::gpio {
         }
 
         /* Ensure we found an appropriate config. */
-        STS_ASSERT(configs != nullptr);
+        AMS_ASSERT(configs != nullptr);
 
         for (size_t i = 0; i < num_configs; i++) {
             /* Configure the GPIO. */

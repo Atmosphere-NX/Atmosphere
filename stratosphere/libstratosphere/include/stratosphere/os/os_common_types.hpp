@@ -18,7 +18,7 @@
 #include "../results.hpp"
 #include "../util.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     enum class TriBool {
         False     = 0,

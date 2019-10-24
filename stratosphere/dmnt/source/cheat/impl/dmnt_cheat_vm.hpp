@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/dmnt.hpp>
 
-namespace sts::dmnt::cheat::impl {
+namespace ams::dmnt::cheat::impl {
 
     enum CheatVmOpcodeType : u32 {
         CheatVmOpcodeType_StoreStatic = 0,

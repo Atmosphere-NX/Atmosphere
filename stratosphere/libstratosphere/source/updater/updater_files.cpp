@@ -19,7 +19,7 @@
 
 #include "updater_files.hpp"
 
-namespace sts::updater {
+namespace ams::updater {
 
     Result ReadFile(size_t *out_size, void *dst, size_t dst_size, const char *path) {
         FILE *fp = fopen(path, "rb");

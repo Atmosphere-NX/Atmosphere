@@ -19,7 +19,7 @@
 #include <utility>
 #include "../defines.hpp"
 
-namespace sts::util {
+namespace ams::util {
 
     namespace impl {
 
@@ -55,5 +55,5 @@ namespace sts::util {
 
 }
 
-#define SCOPE_GUARD ::sts::util::impl::ScopeGuardOnExit() + [&]()
+#define SCOPE_GUARD ::ams::util::impl::ScopeGuardOnExit() + [&]()
 #define ON_SCOPE_EXIT auto ANONYMOUS_VARIABLE(SCOPE_EXIT_STATE_) = SCOPE_GUARD

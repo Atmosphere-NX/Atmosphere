@@ -18,7 +18,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/spl/smc/spl_smc.hpp>
 
-namespace sts::spl::smc {
+namespace ams::spl::smc {
 
     Result SetConfig(SplConfigItem which, const u64 *value, size_t num_qwords) {
         SecmonArgs args;
@@ -352,7 +352,7 @@ namespace sts::spl::smc {
     }
 
     Result AtmosphereWriteAddress(void *dst, const void *src, size_t size) {
-        STS_ASSERT(size <= sizeof(u64));
+        AMS_ASSERT(size <= sizeof(u64));
 
         SecmonArgs args;
         args.X[0] = static_cast<u64>(FunctionId::AtmosphereWriteAddress);

@@ -18,7 +18,7 @@
 #include "../sf_service_object.hpp"
 #include "sf_cmif_pointer_and_size.hpp"
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     /* Forward declare ServiceDispatchContext, ServiceObjectHolder. */
     struct ServiceDispatchContext;

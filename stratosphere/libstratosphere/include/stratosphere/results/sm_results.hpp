@@ -17,7 +17,7 @@
 #pragma once
 #include "results_common.hpp"
 
-namespace sts::sm {
+namespace ams::sm {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(21);
 
@@ -30,5 +30,13 @@ namespace sts::sm {
     R_DEFINE_ERROR_RESULT(NotRegistered,         7);
     R_DEFINE_ERROR_RESULT(NotAllowed,            8);
     R_DEFINE_ERROR_RESULT(TooLargeAccessControl, 9);
+
+    /* Results 1000-2000 used as extension for Atmosphere Mitm. */
+    namespace mitm {
+
+        R_DEFINE_ERROR_RESULT(ShouldForwardToSession, 1000);
+        R_DEFINE_ERROR_RESULT(ProcessNotAssociated,   1100);
+
+    }
 
 }

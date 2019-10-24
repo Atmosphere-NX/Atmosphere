@@ -20,7 +20,7 @@
 #include "spl_api_impl.hpp"
 #include "spl_crypto_service.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     CryptoService::~CryptoService() {
         /* Free any keyslots this service is using. */

@@ -20,7 +20,7 @@
 
 #include "boot_battery_driver.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     /* Driver object. */
     class PmicDriver {

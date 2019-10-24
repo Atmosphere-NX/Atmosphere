@@ -21,9 +21,9 @@
 #include "i2c/driver/impl/i2c_pcv.hpp"
 #include "i2c/driver/impl/i2c_registers.hpp"
 
-using namespace sts::i2c::driver::impl;
+using namespace ams::i2c::driver::impl;
 
-namespace sts::pcv {
+namespace ams::pcv {
 
     void Initialize() {
         /* Don't do anything. */

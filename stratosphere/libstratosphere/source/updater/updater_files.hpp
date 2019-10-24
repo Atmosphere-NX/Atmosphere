@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/updater/updater_types.hpp>
 
-namespace sts::updater {
+namespace ams::updater {
 
     /* File helpers. */
     Result ReadFile(size_t *out_size, void *dst, size_t dst_size, const char *path);

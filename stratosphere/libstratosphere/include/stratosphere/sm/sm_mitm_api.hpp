@@ -19,7 +19,7 @@
 #include "sm_types.hpp"
 #include "../ncm/ncm_types.hpp"
 
-namespace sts::sm::mitm {
+namespace ams::sm::mitm {
 
     /* Mitm API. */
     Result InstallMitm(Handle *out_port, Handle *out_query, ServiceName name);

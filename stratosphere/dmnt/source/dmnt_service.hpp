@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::dmnt {
+namespace ams::dmnt {
 
     /* TODO: Move into libstratosphere, eventually. */
     struct TargetIOFileHandle : sf::LargeData, sf::PrefersMapAliasTransferMode {

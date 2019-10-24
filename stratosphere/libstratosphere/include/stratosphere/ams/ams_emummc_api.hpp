@@ -17,7 +17,7 @@
 #pragma once
 #include "ams_types.hpp"
 
-namespace sts::ams::emummc {
+namespace ams::emummc {
 
     /* Get whether emummc is active. */
     bool IsActive();

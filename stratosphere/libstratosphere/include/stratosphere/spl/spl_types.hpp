@@ -18,7 +18,7 @@
 #include <switch.h>
 #include "../results.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     namespace smc {
 
@@ -64,12 +64,12 @@ namespace sts::spl {
             NotPermitted          = 6,
         };
 
-        constexpr inline ::sts::Result ConvertResult(Result smc_result) {
+        constexpr inline ::ams::Result ConvertResult(Result smc_result) {
             /* smc::Result::Success becomes ResultSuccess() directly. */
             R_UNLESS(smc_result != Result::Success, ResultSuccess());
 
             /* Convert to the list of known SecureMonitorErrors. */
-            const auto converted = R_MAKE_NAMESPACE_RESULT(::sts::spl, static_cast<u32>(smc_result));
+            const auto converted = R_MAKE_NAMESPACE_RESULT(::ams::spl, static_cast<u32>(smc_result));
             if (spl::ResultSecureMonitorError::Includes(converted)) {
                 return converted;
             }

@@ -22,7 +22,7 @@
 
 #include "util_parent_of_member.hpp"
 
-namespace sts::util {
+namespace ams::util {
 
     struct IntrusiveRedBlackTreeNode {
         NON_COPYABLE(IntrusiveRedBlackTreeNode);

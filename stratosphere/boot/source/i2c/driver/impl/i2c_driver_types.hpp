@@ -20,7 +20,7 @@
 
 #include "../../i2c_types.hpp"
 
-namespace sts::i2c::driver::impl {
+namespace ams::i2c::driver::impl {
 
     enum class Command {
         Send    = 0,
@@ -43,7 +43,7 @@ namespace sts::i2c::driver::impl {
     }
 
     constexpr inline Bus ConvertFromIndex(size_t idx) {
-        STS_ASSERT(idx < static_cast<size_t>(Bus::Count));
+        AMS_ASSERT(idx < static_cast<size_t>(Bus::Count));
         return static_cast<Bus>(idx);
     }
 
@@ -61,7 +61,7 @@ namespace sts::i2c::driver::impl {
                 return PcvModule_I2C5;
             case Bus::I2C6:
                 return PcvModule_I2C6;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
@@ -79,7 +79,7 @@ namespace sts::i2c::driver::impl {
                 return Bus::I2C5;
             case PcvModule_I2C6:
                 return Bus::I2C6;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 

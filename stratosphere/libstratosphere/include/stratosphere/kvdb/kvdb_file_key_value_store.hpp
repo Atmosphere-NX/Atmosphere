@@ -21,7 +21,7 @@
 
 #include "kvdb_bounded_string.hpp"
 
-namespace sts::kvdb {
+namespace ams::kvdb {
 
     class FileKeyValueStore {
         NON_COPYABLE(FileKeyValueStore);
@@ -96,7 +96,7 @@ namespace sts::kvdb {
                 static_assert(std::is_pod<Value>::value && !std::is_pointer<Value>::value, "Invalid FileKeyValueStore Value!");
                 size_t size = 0;
                 R_TRY(this->Get(&size, out_value, sizeof(Value), key));
-                STS_ASSERT(size >= sizeof(Value));
+                AMS_ASSERT(size >= sizeof(Value));
                 return ResultSuccess();
             }
 

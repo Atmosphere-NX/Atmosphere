@@ -17,7 +17,7 @@
 #pragma once
 #include "ams_types.hpp"
 
-namespace sts::ams {
+namespace ams {
 
     /* Will be called by libstratosphere on crash. */
     void CrashHandler(ThreadExceptionDump *ctx);

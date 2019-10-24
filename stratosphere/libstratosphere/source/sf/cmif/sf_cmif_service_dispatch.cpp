@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     Result impl::ServiceDispatchTableBase::ProcessMessageImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count) const {
         /* Get versioning info. */
@@ -46,7 +46,7 @@ namespace sts::sf::cmif {
         /* Forward forwardable results, otherwise ensure we can send result to user. */
         R_TRY_CATCH(command_result) {
             R_CATCH(sf::impl::ResultRequestContextChanged) { return R_CURRENT_RESULT; }
-            R_CATCH_ALL() { STS_ASSERT(out_header != nullptr); }
+            R_CATCH_ALL() { AMS_ASSERT(out_header != nullptr); }
         } R_END_TRY_CATCH;
 
         /* Write output header to raw data. */
@@ -89,11 +89,11 @@ namespace sts::sf::cmif {
 
         /* Forward forwardable results, otherwise ensure we can send result to user. */
         R_TRY_CATCH(command_result) {
-            R_CATCH(ams::mitm::ResultShouldForwardToSession) {
+            R_CATCH(sm::mitm::ResultShouldForwardToSession) {
                 return ctx.session->ForwardRequest(ctx);
             }
             R_CATCH(sf::impl::ResultRequestContextChanged) { return R_CURRENT_RESULT; }
-            R_CATCH_ALL() { STS_ASSERT(out_header != nullptr); }
+            R_CATCH_ALL() { AMS_ASSERT(out_header != nullptr); }
         } R_END_TRY_CATCH;
 
         /* Write output header to raw data. */

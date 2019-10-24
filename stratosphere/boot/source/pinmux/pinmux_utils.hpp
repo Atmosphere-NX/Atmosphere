@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::pinmux {
+namespace ams::pinmux {
 
     /* Pinmux Utilities. */
     u32 UpdatePark(u32 pinmux_name);

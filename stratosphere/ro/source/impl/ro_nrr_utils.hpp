@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ro.hpp>
 
-namespace sts::ro::impl {
+namespace ams::ro::impl {
 
     /* Utilities for working with NRRs. */
     Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, ncm::TitleId title_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type);

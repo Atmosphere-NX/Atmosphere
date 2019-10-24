@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 
-namespace sts::sf::hipc {
+namespace ams::sf::hipc {
 
     ServerManagerBase::ServerBase::~ServerBase() { /* Pure virtual destructor, to prevent linker errors. */ }
 
@@ -65,14 +65,14 @@ namespace sts::sf::hipc {
 
     void ServerManagerBase::AddUserWaitableHolder(os::WaitableHolder *waitable) {
         const auto user_data_tag = static_cast<UserDataTag>(waitable->GetUserData());
-        STS_ASSERT(user_data_tag != UserDataTag::Server);
-        STS_ASSERT(user_data_tag != UserDataTag::MitmServer);
-        STS_ASSERT(user_data_tag != UserDataTag::Session);
+        AMS_ASSERT(user_data_tag != UserDataTag::Server);
+        AMS_ASSERT(user_data_tag != UserDataTag::MitmServer);
+        AMS_ASSERT(user_data_tag != UserDataTag::Session);
         this->RegisterToWaitList(waitable);
     }
 
     Result ServerManagerBase::ProcessForServer(os::WaitableHolder *holder) {
-        STS_ASSERT(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::Server);
+        AMS_ASSERT(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::Server);
 
         ServerBase *server = static_cast<ServerBase *>(holder);
         ON_SCOPE_EXIT { this->RegisterToWaitList(server); };
@@ -83,14 +83,14 @@ namespace sts::sf::hipc {
         server->CreateSessionObjectHolder(&obj, &fsrv);
 
         /* Not a mitm server, so we must have no forward service. */
-        STS_ASSERT(fsrv == nullptr);
+        AMS_ASSERT(fsrv == nullptr);
 
         /* Try to accept. */
         return this->AcceptSession(server->port_handle, std::move(obj));
     }
 
     Result ServerManagerBase::ProcessForMitmServer(os::WaitableHolder *holder) {
-        STS_ASSERT(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::MitmServer);
+        AMS_ASSERT(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::MitmServer);
 
         ServerBase *server = static_cast<ServerBase *>(holder);
         ON_SCOPE_EXIT { this->RegisterToWaitList(server); };
@@ -101,20 +101,20 @@ namespace sts::sf::hipc {
         server->CreateSessionObjectHolder(&obj, &fsrv);
 
         /* Mitm server, so we must have forward service. */
-        STS_ASSERT(fsrv != nullptr);
+        AMS_ASSERT(fsrv != nullptr);
 
         /* Try to accept. */
         return this->AcceptMitmSession(server->port_handle, std::move(obj), std::move(fsrv));
     }
 
     Result ServerManagerBase::ProcessForSession(os::WaitableHolder *holder) {
-        STS_ASSERT(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::Session);
+        AMS_ASSERT(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::Session);
 
         ServerSession *session = static_cast<ServerSession *>(holder);
 
         cmif::PointerAndSize tls_message(armGetTls(), hipc::TlsMessageBufferSize);
         const cmif::PointerAndSize &saved_message = session->saved_message;
-        STS_ASSERT(tls_message.GetSize() == saved_message.GetSize());
+        AMS_ASSERT(tls_message.GetSize() == saved_message.GetSize());
         if (!session->has_received) {
             R_TRY(this->ReceiveRequest(session, tls_message));
             session->has_received = true;
@@ -180,7 +180,7 @@ namespace sts::sf::hipc {
                 this->ProcessDeferredSessions();
                 return ResultSuccess();
                 break;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 

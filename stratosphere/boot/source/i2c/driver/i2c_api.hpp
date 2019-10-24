@@ -21,7 +21,7 @@
 #include "../i2c_types.hpp"
 #include "../i2c_command_list.hpp"
 
-namespace sts::i2c::driver {
+namespace ams::i2c::driver {
 
     struct Session {
         size_t bus_idx;

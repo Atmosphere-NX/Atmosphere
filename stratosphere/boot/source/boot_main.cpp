@@ -39,7 +39,7 @@
 
 #include "boot_power_utils.hpp"
 
-using namespace sts;
+using namespace ams;
 
 extern "C" {
     extern u32 __start__;
@@ -61,24 +61,24 @@ extern "C" {
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
 }
 
-namespace sts::ams {
+namespace ams {
 
-    ncm::TitleId StratosphereTitleId = ncm::TitleId::Boot;
+    ncm::TitleId CurrentTitleId = ncm::TitleId::Boot;
 
     void ExceptionHandler(FatalErrorContext *ctx) {
         /* We're boot sysmodule, so manually reboot to fatal error. */
         boot::RebootForFatalError(ctx);
     }
 
+    namespace result {
+
+        bool CallFatalOnResultAssertion = false;
+
+    }
+
 }
 
-namespace sts::result {
-
-    bool CallFatalOnResultAssertion = false;
-
-}
-
-using namespace sts;
+using namespace ams;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     ams::CrashHandler(ctx);

@@ -16,7 +16,7 @@
 
 #pragma once
 
-namespace sts::sf {
+namespace ams::sf {
 
     /* Helper structs for serialization of buffers. */
     struct LargeData{};

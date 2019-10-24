@@ -18,7 +18,7 @@
 #include <switch.h>
 #include "../defines.hpp"
 
-namespace sts::dd {
+namespace ams::dd {
 
     uintptr_t QueryIoMapping(uintptr_t phys_addr, size_t size);
 
@@ -30,7 +30,7 @@ namespace sts::dd {
 
     inline uintptr_t GetIoMapping(uintptr_t phys_addr, size_t size) {
         const uintptr_t io_mapping = QueryIoMapping(phys_addr, size);
-        STS_ASSERT(io_mapping);
+        AMS_ASSERT(io_mapping);
         return io_mapping;
     }
 }

@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
-namespace sts::ldr::ro {
+namespace ams::ldr::ro {
 
     /* RO Manager API. */
     Result PinTitle(PinId *out, const ncm::TitleLocation &loc);

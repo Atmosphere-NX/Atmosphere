@@ -20,7 +20,7 @@
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/pm.hpp>
 
-namespace sts::pm::resource {
+namespace ams::pm::resource {
 
     /* Resource API. */
     Result InitializeResourceManager();

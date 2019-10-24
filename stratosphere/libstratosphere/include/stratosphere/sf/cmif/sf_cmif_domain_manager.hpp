@@ -19,7 +19,7 @@
 #include "sf_cmif_domain_api.hpp"
 #include "sf_cmif_domain_service_object.hpp"
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     class ServerDomainManager {
         NON_COPYABLE(ServerDomainManager);
@@ -85,7 +85,7 @@ namespace sts::sf::cmif {
 
                     inline DomainObjectId GetId(Entry *e) {
                         const size_t index = e - this->entries;
-                        STS_ASSERT(index < this->num_entries);
+                        AMS_ASSERT(index < this->num_entries);
                         return DomainObjectId{ u32(index + 1) };
                     }
 

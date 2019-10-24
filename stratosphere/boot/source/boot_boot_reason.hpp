@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::boot {
+namespace ams::boot {
 
     /* Boot Reason utilities. */
     void DetectBootReason();

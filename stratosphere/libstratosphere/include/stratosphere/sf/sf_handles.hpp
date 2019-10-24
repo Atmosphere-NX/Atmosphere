@@ -19,7 +19,7 @@
 #include "sf_out.hpp"
 #include "cmif/sf_cmif_pointer_and_size.hpp"
 
-namespace sts::sf {
+namespace ams::sf {
 
     namespace impl {
 

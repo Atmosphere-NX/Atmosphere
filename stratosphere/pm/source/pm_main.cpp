@@ -50,19 +50,19 @@ extern "C" {
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
 }
 
-namespace sts::ams {
+namespace ams {
 
-    ncm::TitleId StratosphereTitleId = ncm::TitleId::Pm;
+    ncm::TitleId CurrentTitleId = ncm::TitleId::Pm;
+
+    namespace result {
+
+        bool CallFatalOnResultAssertion = false;
+
+    }
 
 }
 
-namespace sts::result {
-
-    bool CallFatalOnResultAssertion = false;
-
-}
-
-using namespace sts;
+using namespace ams;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     ams::CrashHandler(ctx);
@@ -93,7 +93,7 @@ namespace {
         /* Doing this here works around a bug fixed in 6.0.0. */
         /* Not doing so will cause svcDebugActiveProcess to deadlock on lower firmwares if called for it's own process. */
         if (process_id == os::GetCurrentProcessId()) {
-            return ams::StratosphereTitleId;
+            return ams::CurrentTitleId;
         }
 
         /* Get a debug handle. */

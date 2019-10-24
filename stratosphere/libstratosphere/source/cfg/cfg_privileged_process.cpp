@@ -18,7 +18,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/cfg.hpp>
 
-namespace sts::cfg {
+namespace ams::cfg {
 
     namespace {
 

@@ -18,7 +18,7 @@
 
 #include "spl_types.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     HardwareType GetHardwareType();
     MemoryArrangement GetMemoryArrangement();

@@ -17,7 +17,7 @@
 #pragma once
 #include <switch.h>
 
-namespace sts::util {
+namespace ams::util {
 
     /* std::size() does not support zero-size C arrays. We're fixing that. */
     template<class C>

@@ -21,7 +21,7 @@
 #include "creport_crash_report.hpp"
 #include "creport_utils.hpp"
 
-namespace sts::creport {
+namespace ams::creport {
 
     namespace {
 
@@ -116,8 +116,8 @@ namespace sts::creport {
     }
 
     void CrashReport::GetFatalContext(FatalContext *_out) const {
-        static_assert(sizeof(*_out) == sizeof(sts::fatal::CpuContext));
-        sts::fatal::CpuContext *out = reinterpret_cast<sts::fatal::CpuContext *>(_out);
+        static_assert(sizeof(*_out) == sizeof(ams::fatal::CpuContext));
+        ams::fatal::CpuContext *out = reinterpret_cast<ams::fatal::CpuContext *>(_out);
         std::memset(out, 0, sizeof(*out));
 
         /* TODO: Support generating 32-bit fatal contexts? */

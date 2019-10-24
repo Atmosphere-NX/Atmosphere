@@ -18,7 +18,7 @@
 
 #include "sm_api.hpp"
 
-namespace sts::sm {
+namespace ams::sm {
 
     /* Utility, for scoped access to libnx services. */
     template<auto Initializer(), void Finalizer()>
@@ -62,7 +62,7 @@ namespace sts::sm {
             }
 
             Result Initialize() {
-                STS_ASSERT(!this->has_initialized);
+                AMS_ASSERT(!this->has_initialized);
 
                 sm::DoWithSession([&]() {
                     this->result = Initializer();
@@ -73,7 +73,7 @@ namespace sts::sm {
             }
 
             void Finalize() {
-                STS_ASSERT(this->has_initialized);
+                AMS_ASSERT(this->has_initialized);
                 Finalizer();
                 this->has_initialized = false;
             }

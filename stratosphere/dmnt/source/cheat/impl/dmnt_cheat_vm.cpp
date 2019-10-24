@@ -18,7 +18,7 @@
 #include "dmnt_cheat_vm.hpp"
 #include "dmnt_cheat_api.hpp"
 
-namespace sts::dmnt::cheat::impl {
+namespace ams::dmnt::cheat::impl {
 
     void CheatVirtualMachine::DebugLog(u32 log_id, u64 value) {
         /* Just unconditionally try to create the log folder. */

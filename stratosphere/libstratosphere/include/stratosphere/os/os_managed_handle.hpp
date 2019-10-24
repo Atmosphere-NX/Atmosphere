@@ -19,7 +19,7 @@
 #include "../defines.hpp"
 #include "../results.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     class ManagedHandle {
         NON_COPYABLE(ManagedHandle);

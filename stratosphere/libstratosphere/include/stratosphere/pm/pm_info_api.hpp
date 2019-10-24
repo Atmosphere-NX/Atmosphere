@@ -19,7 +19,7 @@
 #include "pm_types.hpp"
 #include "../ncm/ncm_types.hpp"
 
-namespace sts::pm::info {
+namespace ams::pm::info {
 
     /* Information API. */
     Result GetTitleId(ncm::TitleId *out_title_id, os::ProcessId process_id);

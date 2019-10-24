@@ -19,7 +19,7 @@
 
 #include "pm_resource_manager.hpp"
 
-namespace sts::pm::resource {
+namespace ams::pm::resource {
 
     namespace {
 
@@ -223,7 +223,7 @@ namespace sts::pm::resource {
                                                        g_resource_limits[ResourceLimitGroup_Applet][LimitableResource_Threads];
 
             /* Ensure we don't over-commit threads. */
-            STS_ASSERT(total_threads_allocated <= total_threads_available);
+            AMS_ASSERT(total_threads_allocated <= total_threads_available);
 
             /* Set number of extra threads. */
             g_extra_application_threads_available = total_threads_available - total_threads_allocated;
@@ -247,7 +247,7 @@ namespace sts::pm::resource {
             const u64 reserved_non_system_size = (application_size + applet_size + ReservedMemorySize600);
 
             /* Ensure there's enough memory for the system region. */
-            STS_ASSERT(reserved_non_system_size < total_memory);
+            AMS_ASSERT(reserved_non_system_size < total_memory);
 
             g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_System] = total_memory - reserved_non_system_size;
         } else {
@@ -343,8 +343,8 @@ namespace sts::pm::resource {
 
     Result GetResourceLimitValues(u64 *out_cur, u64 *out_lim, ResourceLimitGroup group, LimitableResource resource) {
         /* Do not allow out of bounds access. */
-        STS_ASSERT(group < ResourceLimitGroup_Count);
-        STS_ASSERT(resource < LimitableResource_Count);
+        AMS_ASSERT(group < ResourceLimitGroup_Count);
+        AMS_ASSERT(resource < LimitableResource_Count);
 
         const Handle reslimit_hnd = GetResourceLimitHandle(group);
         R_TRY(svcGetResourceLimitCurrentValue(out_cur, reslimit_hnd, resource));

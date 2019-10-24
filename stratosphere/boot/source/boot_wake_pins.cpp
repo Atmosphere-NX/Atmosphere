@@ -21,7 +21,7 @@
 
 #include "boot_registers_pmc.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     /* Include configuration into anonymous namespace. */
     namespace {

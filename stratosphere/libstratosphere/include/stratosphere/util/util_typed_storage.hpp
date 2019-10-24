@@ -19,14 +19,14 @@
 #include "../defines.hpp"
 #include <type_traits>
 
-namespace sts::util {
+namespace ams::util {
 
     template<typename T, size_t Size, size_t Align>
     struct TypedStorage {
         typename std::aligned_storage<Size, Align>::type _storage;
     };
 
-    #define TYPED_STORAGE(T) ::sts::util::TypedStorage<T, sizeof(T), alignof(T)>
+    #define TYPED_STORAGE(T) ::ams::util::TypedStorage<T, sizeof(T), alignof(T)>
 
     template<typename T>
     static constexpr inline __attribute__((always_inline)) T *GetPointer(TYPED_STORAGE(T) &ts) {

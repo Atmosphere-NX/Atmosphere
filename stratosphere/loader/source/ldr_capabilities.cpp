@@ -16,7 +16,7 @@
 
 #include "ldr_capabilities.hpp"
 
-namespace sts::ldr::caps {
+namespace ams::ldr::caps {
 
     namespace {
 

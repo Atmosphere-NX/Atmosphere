@@ -17,7 +17,7 @@
 #include "fatal_config.hpp"
 #include "fatal_task_power.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     namespace {
 

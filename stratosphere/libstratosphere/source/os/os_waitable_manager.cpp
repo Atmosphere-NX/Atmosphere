@@ -17,7 +17,7 @@
 #include "impl/os_waitable_holder_impl.hpp"
 #include "impl/os_waitable_manager_impl.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     WaitableManager::WaitableManager() {
         /* Initialize storage. */
@@ -28,7 +28,7 @@ namespace sts::os {
         auto &impl = GetReference(this->impl_storage);
 
         /* Don't allow destruction of a non-empty waitable holder. */
-        STS_ASSERT(impl.IsEmpty());
+        AMS_ASSERT(impl.IsEmpty());
 
         impl.~WaitableManagerImpl();
     }
@@ -39,7 +39,7 @@ namespace sts::os {
         auto &impl = GetReference(this->impl_storage);
 
         /* Don't allow waiting on empty list. */
-        STS_ASSERT(!impl.IsEmpty());
+        AMS_ASSERT(!impl.IsEmpty());
 
         return reinterpret_cast<WaitableHolder *>(impl.WaitAny());
     }
@@ -48,7 +48,7 @@ namespace sts::os {
         auto &impl = GetReference(this->impl_storage);
 
         /* Don't allow waiting on empty list. */
-        STS_ASSERT(!impl.IsEmpty());
+        AMS_ASSERT(!impl.IsEmpty());
 
         return reinterpret_cast<WaitableHolder *>(impl.TryWaitAny());
     }
@@ -57,7 +57,7 @@ namespace sts::os {
         auto &impl = GetReference(this->impl_storage);
 
         /* Don't allow waiting on empty list. */
-        STS_ASSERT(!impl.IsEmpty());
+        AMS_ASSERT(!impl.IsEmpty());
 
         return reinterpret_cast<WaitableHolder *>(impl.TimedWaitAny(timeout));
     }
@@ -68,7 +68,7 @@ namespace sts::os {
         auto holder_base = reinterpret_cast<impl::WaitableHolderBase *>(GetPointer(holder->impl_storage));
 
         /* Don't allow double-linking a holder. */
-        STS_ASSERT(!holder_base->IsLinkedToManager());
+        AMS_ASSERT(!holder_base->IsLinkedToManager());
 
         impl.LinkWaitableHolder(*holder_base);
         holder_base->SetManager(&impl);

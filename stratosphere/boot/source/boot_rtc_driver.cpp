@@ -19,7 +19,7 @@
 
 #include "boot_rtc_driver.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     Result RtcDriver::ReadRtcRegister(u8 *out, u8 address) {
         const u8 update_addr = 0x04;

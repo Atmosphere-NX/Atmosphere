@@ -17,7 +17,7 @@
 #pragma once
 #include <switch.h>
 
-namespace sts::util {
+namespace ams::util {
 
     /* Compression utilities. */
     int CompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size);

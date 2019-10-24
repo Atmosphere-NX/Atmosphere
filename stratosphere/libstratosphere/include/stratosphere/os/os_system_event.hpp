@@ -18,7 +18,7 @@
 #include "os_common_types.hpp"
 #include "os_event.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     class WaitableHolder;
 

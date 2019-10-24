@@ -23,7 +23,7 @@
 #include "boot_pmic_driver.hpp"
 #include "boot_power_utils.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 
@@ -100,7 +100,7 @@ namespace sts::boot {
                     return &BatteryChargeParameters1;
                 case 2:
                     return &BatteryChargeParameters2;
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -280,7 +280,7 @@ namespace sts::boot {
             case CheckBatteryResult::Reboot:
                 RebootSystem();
                 break;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 

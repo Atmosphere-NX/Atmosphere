@@ -17,7 +17,7 @@
 #include "../util.hpp"
 #include "os_common_types.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     class WaitableManager;
 

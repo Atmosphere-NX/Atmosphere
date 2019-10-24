@@ -17,7 +17,7 @@
 #include "boot_change_voltage.hpp"
 #include "boot_pmc_wrapper.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 

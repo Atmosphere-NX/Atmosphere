@@ -19,7 +19,7 @@
 #include "ro_nrr_utils.hpp"
 #include "ro_service_impl.hpp"
 
-namespace sts::ro::impl {
+namespace ams::ro::impl {
 
     namespace {
 

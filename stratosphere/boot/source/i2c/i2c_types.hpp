@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::i2c {
+namespace ams::i2c {
 
     enum class AddressingMode {
         SevenBit = 0,

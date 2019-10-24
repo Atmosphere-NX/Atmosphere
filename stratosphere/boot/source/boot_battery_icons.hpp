@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::boot {
+namespace ams::boot {
 
     /* Battery Display utilities. */
     void ShowLowBatteryIcon();

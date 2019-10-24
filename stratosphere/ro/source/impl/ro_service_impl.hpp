@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ro.hpp>
 
-namespace sts::ro::impl {
+namespace ams::ro::impl {
 
     /* Definitions. */
     constexpr size_t InvalidContextId = static_cast<size_t>(-1);

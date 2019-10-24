@@ -20,7 +20,7 @@
 #include "../defines.hpp"
 #include "../results.hpp"
 
-namespace sts::svc {
+namespace ams::svc {
 
     /* Debug event types. */
     enum class DebugEventType : u32 {

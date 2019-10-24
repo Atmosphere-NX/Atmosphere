@@ -17,7 +17,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/kvdb/kvdb_archive.hpp>
 
-namespace sts::kvdb {
+namespace ams::kvdb {
 
     namespace {
 
@@ -90,7 +90,7 @@ namespace sts::kvdb {
 
     Result ArchiveReader::ReadEntryCount(size_t *out) {
         /* This should only be called at the start of reading stream. */
-        STS_ASSERT(this->offset == 0);
+        AMS_ASSERT(this->offset == 0);
 
         /* Read and validate header. */
         ArchiveHeader header;
@@ -103,7 +103,7 @@ namespace sts::kvdb {
 
     Result ArchiveReader::GetEntrySize(size_t *out_key_size, size_t *out_value_size) {
         /* This should only be called after ReadEntryCount. */
-        STS_ASSERT(this->offset != 0);
+        AMS_ASSERT(this->offset != 0);
 
         /* Peek the next entry header. */
         ArchiveEntryHeader header;
@@ -117,7 +117,7 @@ namespace sts::kvdb {
 
     Result ArchiveReader::ReadEntry(void *out_key, size_t key_size, void *out_value, size_t value_size) {
         /* This should only be called after ReadEntryCount. */
-        STS_ASSERT(this->offset != 0);
+        AMS_ASSERT(this->offset != 0);
 
         /* Read the next entry header. */
         ArchiveEntryHeader header;
@@ -125,8 +125,8 @@ namespace sts::kvdb {
         R_TRY(header.Validate());
 
         /* Key size and Value size must be correct. */
-        STS_ASSERT(key_size == header.key_size);
-        STS_ASSERT(value_size == header.value_size);
+        AMS_ASSERT(key_size == header.key_size);
+        AMS_ASSERT(value_size == header.value_size);
 
         R_ASSERT(this->Read(out_key, key_size));
         R_ASSERT(this->Read(out_value, value_size));
@@ -147,7 +147,7 @@ namespace sts::kvdb {
 
     void ArchiveWriter::WriteHeader(size_t entry_count) {
         /* This should only be called at start of write. */
-        STS_ASSERT(this->offset == 0);
+        AMS_ASSERT(this->offset == 0);
 
         ArchiveHeader header = ArchiveHeader::Make(entry_count);
         R_ASSERT(this->Write(&header, sizeof(header)));
@@ -155,7 +155,7 @@ namespace sts::kvdb {
 
     void ArchiveWriter::WriteEntry(const void *key, size_t key_size, const void *value, size_t value_size) {
         /* This should only be called after writing header. */
-        STS_ASSERT(this->offset != 0);
+        AMS_ASSERT(this->offset != 0);
 
         ArchiveEntryHeader header = ArchiveEntryHeader::Make(key_size, value_size);
         R_ASSERT(this->Write(&header, sizeof(header)));

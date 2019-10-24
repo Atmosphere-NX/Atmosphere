@@ -20,7 +20,7 @@
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/pm.hpp>
 
-namespace sts::pm::dmnt {
+namespace ams::pm::dmnt {
 
     class DebugMonitorServiceBase : public sf::IServiceObject {
         protected:

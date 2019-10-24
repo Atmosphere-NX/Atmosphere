@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/dmnt.hpp>
 
-namespace sts::dmnt::cheat {
+namespace ams::dmnt::cheat {
 
     class CheatService final : public sf::IServiceObject {
         private:

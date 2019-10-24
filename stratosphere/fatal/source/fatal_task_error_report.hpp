@@ -17,7 +17,7 @@
 #pragma once
 #include "fatal_task.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     ITask *GetErrorReportTask(const ThrowContext *ctx);
 

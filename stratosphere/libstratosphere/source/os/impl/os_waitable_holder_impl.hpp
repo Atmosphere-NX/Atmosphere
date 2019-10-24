@@ -21,7 +21,7 @@
 #include "os_waitable_holder_of_thread.hpp"
 #include "os_waitable_holder_of_message_queue.hpp"
 
-namespace sts::os::impl {
+namespace ams::os::impl {
 
     struct WaitableHolderImpl {
         union {
@@ -36,7 +36,7 @@ namespace sts::os::impl {
     };
 
     #define CHECK_HOLDER(T) \
-    static_assert(std::is_base_of<::sts::os::impl::WaitableHolderBase, T>::value && std::is_trivially_destructible<T>::value, #T)
+    static_assert(std::is_base_of<::ams::os::impl::WaitableHolderBase, T>::value && std::is_trivially_destructible<T>::value, #T)
 
     CHECK_HOLDER(WaitableHolderOfHandle);
     CHECK_HOLDER(WaitableHolderOfEvent);

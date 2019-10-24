@@ -17,11 +17,11 @@
 #include "impl/os_waitable_holder_impl.hpp"
 #include "impl/os_waitable_manager_impl.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     WaitableHolder::WaitableHolder(Handle handle) {
         /* Don't allow invalid handles. */
-        STS_ASSERT(handle != INVALID_HANDLE);
+        AMS_ASSERT(handle != INVALID_HANDLE);
 
         /* Initialize appropriate holder. */
         new (GetPointer(this->impl_storage)) impl::WaitableHolderOfHandle(handle);
@@ -48,7 +48,7 @@ namespace sts::os {
                 new (GetPointer(this->impl_storage)) impl::WaitableHolderOfInterProcessEvent(&event->GetInterProcessEvent());
                 break;
             case SystemEventState::Uninitialized:
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
         /* Set user-data. */
@@ -80,7 +80,7 @@ namespace sts::os {
             case MessageQueueWaitKind::ForNotEmpty:
                 new (GetPointer(this->impl_storage)) impl::WaitableHolderOfMessageQueueForNotEmpty(message_queue);
                 break;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
         /* Set user-data. */
@@ -91,7 +91,7 @@ namespace sts::os {
         auto holder_base = reinterpret_cast<impl::WaitableHolderBase *>(GetPointer(this->impl_storage));
 
         /* Don't allow destruction of a linked waitable holder. */
-        STS_ASSERT(!holder_base->IsLinkedToManager());
+        AMS_ASSERT(!holder_base->IsLinkedToManager());
 
         holder_base->~WaitableHolderBase();
     }
@@ -100,7 +100,7 @@ namespace sts::os {
         auto holder_base = reinterpret_cast<impl::WaitableHolderBase *>(GetPointer(this->impl_storage));
 
         /* Don't allow unlinking of an unlinked holder. */
-        STS_ASSERT(holder_base->IsLinkedToManager());
+        AMS_ASSERT(holder_base->IsLinkedToManager());
 
         holder_base->GetManager()->UnlinkWaitableHolder(*holder_base);
         holder_base->SetManager(nullptr);

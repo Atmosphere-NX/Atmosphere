@@ -20,7 +20,7 @@
 #include "i2c_types.hpp"
 #include "i2c_command_list.hpp"
 
-namespace sts::i2c {
+namespace ams::i2c {
 
     namespace {
 

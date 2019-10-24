@@ -20,7 +20,7 @@
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/pm.hpp>
 
-namespace sts::pm::shell {
+namespace ams::pm::shell {
 
     class ShellServiceBase : public sf::IServiceObject {
         protected:

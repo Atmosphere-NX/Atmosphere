@@ -261,7 +261,7 @@ Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, s
     /* Assert normalized. */
     bool normalized = false;
     R_ASSERT(FsPathUtils::IsNormalized(&normalized, out));
-    STS_ASSERT(normalized);
+    AMS_ASSERT(normalized);
 
     return ResultSuccess();
 }

@@ -20,7 +20,7 @@
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/pm.hpp>
 
-namespace sts::pm::impl {
+namespace ams::pm::impl {
 
     /* Initialization. */
     Result InitializeProcessManager();

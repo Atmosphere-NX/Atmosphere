@@ -21,7 +21,7 @@
 #include <stratosphere/pm.hpp>
 #include <stratosphere/boot2.hpp>
 
-namespace sts::boot2 {
+namespace ams::boot2 {
 
     namespace {
 
@@ -145,9 +145,9 @@ namespace sts::boot2 {
             /* Launch, lightly validate result. */
             {
                 const auto launch_result = pm::shell::LaunchTitle(&process_id, loc, launch_flags);
-                STS_ASSERT(!(svc::ResultOutOfResource::Includes(launch_result)));
-                STS_ASSERT(!(svc::ResultOutOfMemory::Includes(launch_result)));
-                STS_ASSERT(!(svc::ResultLimitReached::Includes(launch_result)));
+                AMS_ASSERT(!(svc::ResultOutOfResource::Includes(launch_result)));
+                AMS_ASSERT(!(svc::ResultOutOfMemory::Includes(launch_result)));
+                AMS_ASSERT(!(svc::ResultLimitReached::Includes(launch_result)));
             }
 
             if (out_process_id) {
@@ -271,7 +271,7 @@ namespace sts::boot2 {
                     }
 
                     /* Don't allow invalid lines. */
-                    STS_ASSERT(name_len <= sizeof(sm::ServiceName));
+                    AMS_ASSERT(name_len <= sizeof(sm::ServiceName));
 
                     /* Declare the service. */
                     R_ASSERT(sm::mitm::DeclareFutureMitm(sm::ServiceName::Encode(mitm_list + offset, name_len)));

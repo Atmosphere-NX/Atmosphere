@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/sm.hpp>
 
-namespace sts::sm {
+namespace ams::sm {
 
     /* Service definition. */
     class DmntService final : public sf::IServiceObject {

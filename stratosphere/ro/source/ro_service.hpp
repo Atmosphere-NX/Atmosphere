@@ -20,7 +20,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ro.hpp>
 
-namespace sts::ro {
+namespace ams::ro {
 
     /* Access utilities. */
     void SetDevelopmentHardware(bool is_development_hardware);

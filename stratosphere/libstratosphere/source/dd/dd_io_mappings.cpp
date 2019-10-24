@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 
-namespace sts::dd {
+namespace ams::dd {
 
     uintptr_t QueryIoMapping(uintptr_t phys_addr, size_t size) {
         u64 virtual_addr;

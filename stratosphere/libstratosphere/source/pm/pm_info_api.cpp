@@ -20,7 +20,7 @@
 
 #include "pm_ams.h"
 
-namespace sts::pm::info {
+namespace ams::pm::info {
 
     namespace {
 

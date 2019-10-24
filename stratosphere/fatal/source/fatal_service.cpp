@@ -21,7 +21,7 @@
 #include "fatal_event_manager.hpp"
 #include "fatal_task.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     namespace {
 
@@ -119,7 +119,7 @@ namespace sts::fatal::srv {
                     }
                     break;
                 /* N aborts here. Should we just return an error code? */
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
 
             return ResultSuccess();

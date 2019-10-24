@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace sts::os::impl {
+namespace ams::os::impl {
 
     class WaitableObjectList;
     class WaitableManagerImpl;

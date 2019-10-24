@@ -19,7 +19,7 @@
 #include "os_condvar.hpp"
 #include "os_timeout_helper.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     namespace impl {
 

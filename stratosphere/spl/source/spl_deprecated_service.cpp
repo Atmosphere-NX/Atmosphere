@@ -20,7 +20,7 @@
 #include "spl_api_impl.hpp"
 #include "spl_deprecated_service.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     Result DeprecatedService::GetConfig(sf::Out<u64> out, u32 which) {
         return impl::GetConfig(out.GetPointer(), static_cast<SplConfigItem>(which));

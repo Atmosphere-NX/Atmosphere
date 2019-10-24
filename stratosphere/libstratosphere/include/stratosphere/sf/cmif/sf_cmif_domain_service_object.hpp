@@ -19,7 +19,7 @@
 #include "sf_cmif_domain_api.hpp"
 #include "sf_cmif_server_message_processor.hpp"
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     class DomainServiceObjectDispatchTable : public impl::ServiceDispatchTableBase {
         private:
@@ -41,8 +41,8 @@ namespace sts::sf::cmif {
             ServerMessageRuntimeMetadata impl_metadata;
         public:
             DomainServiceObjectProcessor(ServerDomainBase *d, DomainObjectId *in_obj_ids, size_t num_in_objs) : domain(d), in_object_ids(in_obj_ids), num_in_objects(num_in_objs) {
-                STS_ASSERT(this->domain != nullptr);
-                STS_ASSERT(this->in_object_ids != nullptr);
+                AMS_ASSERT(this->domain != nullptr);
+                AMS_ASSERT(this->in_object_ids != nullptr);
                 this->impl_processor = nullptr;
                 this->out_object_ids = nullptr;
                 this->impl_metadata = {};

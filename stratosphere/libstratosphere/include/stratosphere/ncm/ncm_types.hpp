@@ -18,7 +18,7 @@
 
 #include <type_traits>
 
-namespace sts::ncm {
+namespace ams::ncm {
 
     /* Storage IDs. */
     enum class StorageId : u8 {

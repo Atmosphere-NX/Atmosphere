@@ -17,7 +17,7 @@
 #pragma once
 #include "sf_hipc_server_domain_session_manager.hpp"
 
-namespace sts::sf::hipc {
+namespace ams::sf::hipc {
 
     struct DefaultServerManagerOptions {
         static constexpr size_t PointerBufferSize = 0;
@@ -148,7 +148,7 @@ namespace sts::sf::hipc {
             void RegisterServerImpl(Handle port_handle, sm::ServiceName service_name, bool managed, cmif::ServiceObjectHolder &&static_holder) {
                 /* Allocate server memory. */
                 auto *server = this->AllocateServer();
-                STS_ASSERT(server != nullptr);
+                AMS_ASSERT(server != nullptr);
                 new (server) Server<ServiceImpl, MakeShared>(port_handle, service_name, managed, std::forward<cmif::ServiceObjectHolder>(static_holder));
 
                 if constexpr (!ServiceObjectTraits<ServiceImpl>::IsMitmServiceObject) {
@@ -253,13 +253,13 @@ namespace sts::sf::hipc {
         private:
             constexpr inline size_t GetServerIndex(const ServerBase *server) const {
                 const size_t i = server - GetPointer(this->server_storages[0]);
-                STS_ASSERT(i < MaxServers);
+                AMS_ASSERT(i < MaxServers);
                 return i;
             }
 
             constexpr inline size_t GetSessionIndex(const ServerSession *session) const {
                 const size_t i = session - GetPointer(this->session_storages[0]);
-                STS_ASSERT(i < MaxSessions);
+                AMS_ASSERT(i < MaxSessions);
                 return i;
             }
 
@@ -281,7 +281,7 @@ namespace sts::sf::hipc {
             virtual void FreeSession(ServerSession *session) override final {
                 std::scoped_lock lk(this->resource_mutex);
                 const size_t index = this->GetSessionIndex(session);
-                STS_ASSERT(this->session_allocated[index]);
+                AMS_ASSERT(this->session_allocated[index]);
                 this->session_allocated[index] = false;
             }
 
@@ -299,7 +299,7 @@ namespace sts::sf::hipc {
             virtual void DestroyServer(ServerBase *server) override final {
                 std::scoped_lock lk(this->resource_mutex);
                 const size_t index = this->GetServerIndex(server);
-                STS_ASSERT(this->server_allocated[index]);
+                AMS_ASSERT(this->server_allocated[index]);
                 server->~ServerBase();
                 this->server_allocated[index] = false;
             }
@@ -319,8 +319,8 @@ namespace sts::sf::hipc {
                 std::scoped_lock lk(this->resource_mutex);
                 DomainStorage *ptr = static_cast<DomainStorage *>(domain);
                 const size_t index = ptr - this->domain_storages;
-                STS_ASSERT(index < ManagerOptions::MaxDomains);
-                STS_ASSERT(this->domain_allocated[index]);
+                AMS_ASSERT(index < ManagerOptions::MaxDomains);
+                AMS_ASSERT(this->domain_allocated[index]);
                 this->domain_allocated[index] = false;
             }
 

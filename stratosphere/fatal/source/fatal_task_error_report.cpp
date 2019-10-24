@@ -22,7 +22,7 @@
 #include "fatal_config.hpp"
 #include "fatal_task_error_report.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     namespace {
 

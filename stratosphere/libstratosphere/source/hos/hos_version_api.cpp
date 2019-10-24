@@ -16,7 +16,7 @@
 
 #include <stratosphere.hpp>
 
-namespace sts::hos {
+namespace ams::hos {
 
     namespace {
 
@@ -35,39 +35,39 @@ namespace sts::hos {
                 return;
             }
 
-            switch (ams::GetApiInfo().GetTargetFirmware()) {
-                case ams::TargetFirmware_100:
+            switch (exosphere::GetApiInfo().GetTargetFirmware()) {
+                case exosphere::TargetFirmware_100:
                     g_hos_version = hos::Version_100;
                     break;
-                case ams::TargetFirmware_200:
+                case exosphere::TargetFirmware_200:
                     g_hos_version = hos::Version_200;
                     break;
-                case ams::TargetFirmware_300:
+                case exosphere::TargetFirmware_300:
                     g_hos_version = hos::Version_300;
                     break;
-                case ams::TargetFirmware_400:
+                case exosphere::TargetFirmware_400:
                     g_hos_version = hos::Version_400;
                     break;
-                case ams::TargetFirmware_500:
+                case exosphere::TargetFirmware_500:
                     g_hos_version = hos::Version_500;
                     break;
-                case ams::TargetFirmware_600:
-                case ams::TargetFirmware_620:
+                case exosphere::TargetFirmware_600:
+                case exosphere::TargetFirmware_620:
                     g_hos_version = hos::Version_600;
                     break;
-                case ams::TargetFirmware_700:
+                case exosphere::TargetFirmware_700:
                     g_hos_version = hos::Version_700;
                     break;
-                case ams::TargetFirmware_800:
+                case exosphere::TargetFirmware_800:
                     g_hos_version = hos::Version_800;
                     break;
-                case ams::TargetFirmware_810:
+                case exosphere::TargetFirmware_810:
                     g_hos_version = hos::Version_810;
                     break;
-                case ams::TargetFirmware_900:
+                case exosphere::TargetFirmware_900:
                     g_hos_version = hos::Version_900;
                     break;
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
 
             __atomic_store_n(&g_has_cached, true, __ATOMIC_SEQ_CST);
@@ -75,7 +75,7 @@ namespace sts::hos {
 
     }
 
-    ::sts::hos::Version GetVersion() {
+    ::ams::hos::Version GetVersion() {
         CacheValues();
         return g_hos_version;
     }
@@ -133,7 +133,7 @@ namespace sts::hos {
                 minor = 0;
                 micro = 0;
                 break;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
         hosversionSet(MAKEHOSVERSION(major, minor, micro));
     }

@@ -18,7 +18,7 @@
 #include <switch.h>
 #include "../defines.hpp"
 
-namespace sts::util {
+namespace ams::util {
 
     namespace impl {
 

@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include "fatal_service.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     class ITask {
         protected:

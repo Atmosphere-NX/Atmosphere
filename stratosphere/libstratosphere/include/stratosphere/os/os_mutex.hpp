@@ -19,14 +19,14 @@
 #include <switch.h>
 #include "../util.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     class ConditionVariable;
 
     class Mutex {
         NON_COPYABLE(Mutex);
         NON_MOVEABLE(Mutex);
-        friend class sts::os::ConditionVariable;
+        friend class ams::os::ConditionVariable;
         private:
             ::Mutex m;
         private:

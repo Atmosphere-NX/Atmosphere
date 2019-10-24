@@ -19,14 +19,14 @@
 #include "sf_cmif_pointer_and_size.hpp"
 #include "sf_cmif_server_message_processor.hpp"
 
-namespace sts::sf::hipc {
+namespace ams::sf::hipc {
 
     class ServerSessionManager;
     class ServerSession;
 
 }
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     class ServerMessageProcessor;
 

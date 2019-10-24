@@ -20,7 +20,7 @@
 
 #include "ldr_patcher.hpp"
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     namespace {
 
@@ -37,7 +37,7 @@ namespace sts::ldr {
     void LocateAndApplyIpsPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size) {
         ro::ModuleId module_id;
         std::memcpy(&module_id.build_id, build_id, sizeof(module_id.build_id));
-        sts::patcher::LocateAndApplyIpsPatchesToModule(NsoPatchesDirectory, NsoPatchesProtectedSize, NsoPatchesProtectedOffset, &module_id, reinterpret_cast<u8 *>(mapped_nso), mapped_size);
+        ams::patcher::LocateAndApplyIpsPatchesToModule(NsoPatchesDirectory, NsoPatchesProtectedSize, NsoPatchesProtectedOffset, &module_id, reinterpret_cast<u8 *>(mapped_nso), mapped_size);
     }
 
 }

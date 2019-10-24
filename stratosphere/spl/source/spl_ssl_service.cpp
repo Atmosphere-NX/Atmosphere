@@ -20,7 +20,7 @@
 #include "spl_api_impl.hpp"
 #include "spl_ssl_service.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     Result SslService::ImportSslKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
         return impl::ImportSslKey(src.GetPointer(), src.GetSize(), access_key, key_source);
