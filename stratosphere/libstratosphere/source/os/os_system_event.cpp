@@ -58,17 +58,22 @@ namespace sts::os {
         STS_ASSERT(this->state == SystemEventState::Uninitialized);
         new (GetPointer(this->storage_for_event)) Event(autoclear);
         this->state = SystemEventState::Event;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result SystemEvent::InitializeAsInterProcessEvent(bool autoclear) {
         STS_ASSERT(this->state == SystemEventState::Uninitialized);
         new (GetPointer(this->storage_for_inter_process_event)) impl::InterProcessEvent();
         this->state = SystemEventState::InterProcessEvent;
-        R_TRY_CLEANUP(this->GetInterProcessEvent().Initialize(autoclear), {
-            this->Finalize();
-        });
-        return ResultSuccess;
+
+        /* Ensure we end up in a correct state if initialization fails. */
+        {
+            auto guard = SCOPE_GUARD { this->Finalize(); };
+            R_TRY(this->GetInterProcessEvent().Initialize(autoclear));
+            guard.Cancel();
+        }
+
+        return ResultSuccess();
     }
 
     void SystemEvent::AttachHandles(Handle read_handle, bool manage_read_handle, Handle write_handle, bool manage_write_handle, bool autoclear) {

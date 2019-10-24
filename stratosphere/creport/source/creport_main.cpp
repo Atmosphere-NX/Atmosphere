@@ -52,6 +52,12 @@ namespace sts::ams {
 
 }
 
+namespace sts::result {
+
+    bool CallFatalOnResultAssertion = true;
+
+}
+
 using namespace sts;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
@@ -136,5 +142,5 @@ int main(int argc, char **argv) {
     /* Throw fatal error. */
     FatalContext ctx;
     g_crash_report.GetFatalContext(&ctx);
-    fatalWithContext(g_crash_report.GetResult(), FatalType_ErrorScreen, &ctx);
+    fatalWithContext(g_crash_report.GetResult().GetValue(), FatalType_ErrorScreen, &ctx);
 }

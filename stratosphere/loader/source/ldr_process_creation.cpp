@@ -196,38 +196,32 @@ namespace sts::ldr {
         constexpr size_t g_MinimumTitleVersionsCount900 = util::size(g_MinimumTitleVersions900);
 
         Result ValidateTitleVersion(ncm::TitleId title_id, u32 version) {
-            if (hos::GetVersion() < hos::Version_810) {
-                return ResultSuccess;
-            } else {
+            R_UNLESS(hos::GetVersion() >= hos::Version_810, ResultSuccess());
 #ifdef LDR_VALIDATE_PROCESS_VERSION
-                const MinimumTitleVersion *entries = nullptr;
-                size_t num_entries = 0;
-                switch (hos::GetVersion()) {
-                    case hos::Version_810:
-                        entries = g_MinimumTitleVersions810;
-                        num_entries = g_MinimumTitleVersionsCount810;
-                        break;
-                    case hos::Version_900:
-                        entries = g_MinimumTitleVersions900;
-                        num_entries = g_MinimumTitleVersionsCount900;
-                        break;
-                    default:
-                        entries = nullptr;
-                        num_entries = 0;
-                        break;
-                }
-
-                for (size_t i = 0; i < num_entries; i++) {
-                    if (entries[i].title_id == title_id && entries[i].version > version) {
-                        return ResultLoaderInvalidVersion;
-                    }
-                }
-
-                return ResultSuccess;
-#else
-                return ResultSuccess;
-#endif
+            const MinimumTitleVersion *entries = nullptr;
+            size_t num_entries = 0;
+            switch (hos::GetVersion()) {
+                case hos::Version_810:
+                    entries = g_MinimumTitleVersions810;
+                    num_entries = g_MinimumTitleVersionsCount810;
+                    break;
+                case hos::Version_900:
+                    entries = g_MinimumTitleVersions900;
+                    num_entries = g_MinimumTitleVersionsCount900;
+                    break;
+                default:
+                    entries = nullptr;
+                    num_entries = 0;
+                    break;
             }
+
+            for (size_t i = 0; i < num_entries; i++) {
+                if (entries[i].title_id == title_id) {
+                    R_UNLESS(entries[i].version <= version, ResultInvalidVersion());
+                }
+            }
+#endif
+            return ResultSuccess();
         }
 
         /* Helpers. */
@@ -243,9 +237,7 @@ namespace sts::ldr {
 #define COPY_ACCESS_CONTROL(source, which) \
             ({ \
                 const size_t size = meta->source->which##_size; \
-                if (offset + size > sizeof(out->ac_buffer)) { \
-                    return ResultLoaderInternalError; \
-                } \
+                R_UNLESS(offset + size <= sizeof(out->ac_buffer), ResultInternalError()); \
                 out->source##_##which##_size = size; \
                 std::memcpy(out->ac_buffer + offset, meta->source##_##which, size); \
                 offset += size; \
@@ -260,7 +252,7 @@ namespace sts::ldr {
 
             /* Copy flags. */
             out->flags = caps::GetProgramInfoFlags(meta->acid_kac, meta->acid->kac_size);
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         bool IsApplet(const Meta *meta) {
@@ -289,39 +281,31 @@ namespace sts::ldr {
                 if (R_SUCCEEDED(OpenCodeFile(f, title_id, GetNsoName(i)))) {
                     ON_SCOPE_EXIT { fclose(f); };
                     /* Read NSO header. */
-                    if (fread(nso_headers + i, sizeof(*nso_headers), 1, f) != 1) {
-                        return ResultLoaderInvalidNso;
-                    }
+                    R_UNLESS(fread(nso_headers + i, sizeof(*nso_headers), 1, f) == 1, ResultInvalidNso());
                     has_nso[i] = true;
                 }
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result ValidateNsoHeaders(const NsoHeader *nso_headers, const bool *has_nso) {
             /* We must always have a main. */
-            if (!has_nso[Nso_Main]) {
-                return ResultLoaderInvalidNso;
-            }
+            R_UNLESS(has_nso[Nso_Main], ResultInvalidNso());
 
             /* If we don't have an RTLD, we must only have a main. */
             if (!has_nso[Nso_Rtld]) {
                 for (size_t i = Nso_Main + 1; i < Nso_Count; i++) {
-                    if (has_nso[i]) {
-                        return ResultLoaderInvalidNso;
-                    }
+                    R_UNLESS(!has_nso[i], ResultInvalidNso());
                 }
             }
 
             /* All NSOs must have zero text offset. */
             for (size_t i = 0; i < Nso_Count; i++) {
-                if (nso_headers[i].text_dst_offset != 0) {
-                    return ResultLoaderInvalidNso;
-                }
+                R_UNLESS(nso_headers[i].text_dst_offset == 0, ResultInvalidNso());
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result ValidateMeta(const Meta *meta, const ncm::TitleLocation &loc) {
@@ -329,15 +313,14 @@ namespace sts::ldr {
             R_TRY(ValidateTitleVersion(loc.title_id, meta->npdm->version));
 
             /* Validate title id. */
-            if (meta->aci->title_id < meta->acid->title_id_min || meta->aci->title_id > meta->acid->title_id_max) {
-                return ResultLoaderInvalidProgramId;
-            }
+            R_UNLESS(meta->aci->title_id >= meta->acid->title_id_min, ResultInvalidProgramId());
+            R_UNLESS(meta->aci->title_id <= meta->acid->title_id_max, ResultInvalidProgramId());
 
             /* Validate the kernel capabilities. */
             R_TRY(caps::ValidateCapabilities(meta->acid_kac, meta->acid->kac_size, meta->aci_kac, meta->aci->kac_size));
 
             /* All good. */
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result GetCreateProcessFlags(u32 *out, const Meta *meta, const u32 ldr_flags) {
@@ -365,7 +348,7 @@ namespace sts::ldr {
                     flags |= svc::CreateProcessFlag_AddressSpace64Bit;
                     break;
                 default:
-                    return ResultLoaderInvalidMeta;
+                    return ResultInvalidMeta();
             }
 
             /* Set Enable Debug. */
@@ -410,7 +393,7 @@ namespace sts::ldr {
                         flags |= svc::CreateProcessFlag_PoolPartitionSystemNonSecure;
                         break;
                     default:
-                        return ResultLoaderInvalidMeta;
+                        return ResultInvalidMeta();
                 }
             } else if (hos::GetVersion() >= hos::Version_400) {
                 /* On 4.0.0+, the corresponding bit was simply "UseSecureMemory". */
@@ -420,7 +403,7 @@ namespace sts::ldr {
             }
 
             *out = flags;
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result GetCreateProcessInfo(CreateProcessInfo *out, const Meta *meta, u32 flags, Handle reslimit_h) {
@@ -439,30 +422,23 @@ namespace sts::ldr {
             /* 3.0.0+ System Resource Size. */
             if (hos::GetVersion() >= hos::Version_300) {
                 /* Validate size is aligned. */
-                if (meta->npdm->system_resource_size & (SystemResourceSizeAlignment - 1)) {
-                    return ResultLoaderInvalidSize;
-                }
+                R_UNLESS(util::IsAligned(meta->npdm->system_resource_size, SystemResourceSizeAlignment), ResultInvalidSize());
+
                 /* Validate system resource usage. */
                 if (meta->npdm->system_resource_size) {
                     /* Process must be 64-bit. */
-                    if (!(out->flags & svc::CreateProcessFlag_AddressSpace64Bit)) {
-                        return ResultLoaderInvalidMeta;
-                    }
+                    R_UNLESS((out->flags & svc::CreateProcessFlag_AddressSpace64Bit), ResultInvalidMeta());
 
                     /* Process must be application or applet. */
-                    if (!IsApplication(meta) && !IsApplet(meta)) {
-                        return ResultLoaderInvalidMeta;
-                    }
+                    R_UNLESS(IsApplication(meta) || IsApplet(meta), ResultInvalidMeta());
 
                     /* Size must be less than or equal to max. */
-                    if (meta->npdm->system_resource_size > SystemResourceSizeMax) {
-                        return ResultLoaderInvalidMeta;
-                    }
+                    R_UNLESS(meta->npdm->system_resource_size <= SystemResourceSizeMax, ResultInvalidMeta());
                 }
                 out->system_resource_num_pages = meta->npdm->system_resource_size >> 12;
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result DecideAddressSpaceLayout(ProcessInfo *out, CreateProcessInfo *out_cpi, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
@@ -527,9 +503,7 @@ namespace sts::ldr {
                     aslr_size  = map::AslrSize32Bit;
                 }
             }
-            if (total_size > aslr_size) {
-                return ResultKernelOutOfMemory;
-            }
+            R_UNLESS(total_size <= aslr_size, svc::ResultOutOfMemory());
 
             /* Set Create Process output. */
             uintptr_t aslr_slide = 0;
@@ -552,7 +526,7 @@ namespace sts::ldr {
             out_cpi->code_address = aslr_start;
             out_cpi->code_num_pages = total_size >> 12;
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result CreateProcessImpl(ProcessInfo *out, const Meta *meta, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info, u32 flags, Handle reslimit_h) {
@@ -574,22 +548,18 @@ namespace sts::ldr {
             }
 
             /* Validate size. */
-            if (file_size > segment->size || file_size > std::numeric_limits<s32>::max() || segment->size > std::numeric_limits<s32>::max()) {
-                return ResultLoaderInvalidNso;
-            }
+            R_UNLESS(file_size <= segment->size,                       ResultInvalidNso());
+            R_UNLESS(segment->size <= std::numeric_limits<s32>::max(), ResultInvalidNso());
 
             /* Load data from file. */
             uintptr_t load_address = is_compressed ? map_end - file_size : map_base;
             fseek(f, segment->file_offset, SEEK_SET);
-            if (fread(reinterpret_cast<void *>(load_address), file_size, 1, f) != 1) {
-                return ResultLoaderInvalidNso;
-            }
+            R_UNLESS(fread(reinterpret_cast<void *>(load_address), file_size, 1, f) == 1, ResultInvalidNso());
 
             /* Uncompress if necessary. */
             if (is_compressed) {
-                if (util::DecompressLZ4(reinterpret_cast<void *>(map_base), segment->size, reinterpret_cast<const void *>(load_address), file_size) != static_cast<int>(segment->size)) {
-                    return ResultLoaderInvalidNso;
-                }
+                bool decompressed = (util::DecompressLZ4(reinterpret_cast<void *>(map_base), segment->size, reinterpret_cast<const void *>(load_address), file_size) == static_cast<int>(segment->size));
+                R_UNLESS(decompressed, ResultInvalidNso());
             }
 
             /* Check hash if necessary. */
@@ -597,12 +567,10 @@ namespace sts::ldr {
                 u8 hash[SHA256_HASH_SIZE];
                 sha256CalculateHash(hash, reinterpret_cast<void *>(map_base), segment->size);
 
-                if (std::memcmp(hash, file_hash, sizeof(hash)) != 0) {
-                    return ResultLoaderInvalidNso;
-                }
+                R_UNLESS(std::memcmp(hash, file_hash, sizeof(hash)) == 0, ResultInvalidNso());
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result LoadNsoIntoProcessMemory(Handle process_handle, FILE *f, uintptr_t map_address, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size) {
@@ -646,7 +614,7 @@ namespace sts::ldr {
                 R_TRY(svcSetProcessMemoryPermission(process_handle, nso_address + nso_header->rw_dst_offset,   rw_size,   Perm_Rw));
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result LoadNsosIntoProcessMemory(const ProcessInfo *process_info, const ncm::TitleId title_id, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
@@ -687,7 +655,7 @@ namespace sts::ldr {
                 R_TRY(svcSetProcessMemoryPermission(process_handle, process_info->args_address, process_info->args_size, Perm_Rw));
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
     }
@@ -754,7 +722,7 @@ namespace sts::ldr {
             *out = info.process_handle.Move();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result GetProgramInfo(ProgramInfo *out, const ncm::TitleLocation &loc) {

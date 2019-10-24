@@ -79,7 +79,7 @@ Result SetMitmService::EnsureLocale() {
         }
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result SetMitmService::GetLanguageCode(Out<u64> out_lang_code) {
@@ -90,7 +90,7 @@ Result SetMitmService::GetLanguageCode(Out<u64> out_lang_code) {
     }
 
     out_lang_code.SetValue(this->locale.language_code);
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result SetMitmService::GetRegionCode(Out<u32> out_region_code) {
@@ -101,5 +101,5 @@ Result SetMitmService::GetRegionCode(Out<u32> out_region_code) {
     }
 
     out_region_code.SetValue(this->locale.region_code);
-    return ResultSuccess;
+    return ResultSuccess();
 }

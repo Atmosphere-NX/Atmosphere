@@ -51,13 +51,11 @@ namespace sts::dmnt {
 
         Result EnsureSdInitialized() {
             std::scoped_lock lk(g_sd_lock);
-            if (g_sd_initialized) {
-                return ResultSuccess;
-            }
+            R_UNLESS(!g_sd_initialized, ResultSuccess());
 
             R_TRY(fsOpenSdCardFileSystem(&g_sd_fs));
             g_sd_initialized = true;
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         TargetIOFileHandle GetNewFileHandle(FsFile f) {
@@ -73,10 +71,10 @@ namespace sts::dmnt {
 
             if (g_file_handles.find(handle) != g_file_handles.end()) {
                 *out = g_file_handles[handle];
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
-            return ResultFsInvalidArgument;
+            return fs::ResultInvalidArgument();
         }
 
         Result CloseFileByHandle(TargetIOFileHandle handle) {
@@ -85,10 +83,10 @@ namespace sts::dmnt {
             if (g_file_handles.find(handle) != g_file_handles.end()) {
                 fsFileClose(&g_file_handles[handle]);
                 g_file_handles.erase(handle);
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
-            return ResultFsInvalidArgument;
+            return fs::ResultInvalidArgument();
         }
 
         void FixPath(char *dst, size_t dst_size, const sf::InBuffer &path) {
@@ -139,9 +137,7 @@ namespace sts::dmnt {
         /* Open the file, guard to prevent failure to close. */
         FsFile f;
         R_TRY(fsFsOpenFile(&g_sd_fs, fs_path, open_mode, &f));
-        auto file_guard = SCOPE_GUARD {
-            fsFileClose(&f);
-        };
+        auto file_guard = SCOPE_GUARD { fsFileClose(&f); };
 
         /* Set size if needed. */
         if (create_mode == TIOCreateOption_ResetSize) {
@@ -152,7 +148,7 @@ namespace sts::dmnt {
         file_guard.Cancel();
         out_hnd.SetValue(GetNewFileHandle(f));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result DebugMonitorService::TargetIO_FileClose(TargetIOFileHandle hnd) {
@@ -167,7 +163,7 @@ namespace sts::dmnt {
         R_TRY(fsFileRead(&f, offset, out_data.GetPointer(), out_data.GetSize(), FsReadOption_None, &read));
 
         out_read.SetValue(static_cast<u32>(read));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result DebugMonitorService::TargetIO_FileWrite(TargetIOFileHandle hnd, const sf::InNonSecureBuffer &data, sf::Out<u32> out_written, u64 offset) {
@@ -177,13 +173,13 @@ namespace sts::dmnt {
         R_TRY(fsFileWrite(&f, offset, data.GetPointer(), data.GetSize(), FsWriteOption_None));
 
         out_written.SetValue(data.GetSize());
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result DebugMonitorService::TargetIO_FileSetAttributes(const sf::InBuffer &path, const sf::InBuffer &attributes) {
         /* I don't really know why this command exists, Horizon doesn't allow you to set any attributes. */
         /* N just returns ResultSuccess unconditionally here. */
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result DebugMonitorService::TargetIO_FileGetInformation(const sf::InBuffer &path, const sf::OutArray<u64> &out_info, sf::Out<int> is_directory) {
@@ -214,12 +210,12 @@ namespace sts::dmnt {
             is_directory.SetValue(1);
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result DebugMonitorService::TargetIO_FileSetTime(const sf::InBuffer &path, u64 create, u64 access, u64 modify) {
         /* This is another function that doesn't really need to exist, because Horizon doesn't let you set anything. */
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result DebugMonitorService::TargetIO_FileSetSize(const sf::InBuffer &input, u64 size) {
@@ -229,9 +225,7 @@ namespace sts::dmnt {
         /* We will try to be better than N, here. N only treats input as a path. */
         FsFile f;
         if (input.GetSize() == sizeof(TargetIOFileHandle)) {
-            if (R_SUCCEEDED(GetFileByHandle(&f, *reinterpret_cast<const TargetIOFileHandle *>(input.GetPointer())))) {
-                return fsFileSetSize(&f, size);
-            }
+            R_UNLESS(R_FAILED(GetFileByHandle(&f, *reinterpret_cast<const TargetIOFileHandle *>(input.GetPointer()))), fsFileSetSize(&f, size));
         }
 
         char fs_path[FS_MAX_PATH];

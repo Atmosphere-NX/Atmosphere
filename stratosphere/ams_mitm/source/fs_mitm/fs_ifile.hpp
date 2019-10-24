@@ -31,7 +31,7 @@ class IFile {
             }
             if (size == 0) {
                 *out = 0;
-                return ResultSuccess;
+                return ResultSuccess();
             }
             if (buffer == nullptr) {
                 return ResultFsNullptrArgument;
@@ -56,7 +56,7 @@ class IFile {
 
         Result Write(uint64_t offset, void *buffer, uint64_t size, uint32_t flags) {
             if (size == 0) {
-                return ResultSuccess;
+                return ResultSuccess();
             }
             if (buffer == nullptr) {
                 return ResultFsNullptrArgument;
@@ -66,7 +66,7 @@ class IFile {
 
         Result Write(uint64_t offset, void *buffer, uint64_t size, bool flush = false) {
             if (size == 0) {
-                return ResultSuccess;
+                return ResultSuccess();
             }
             if (buffer == nullptr) {
                 return ResultFsNullptrArgument;
@@ -175,7 +175,7 @@ class ProxyFile : public IFile {
             R_TRY(fsFileRead(this->base_file.get(), offset, buffer, size, FS_READOPTION_NONE, &out_sz));
 
             *out = out_sz;
-            return ResultSuccess;
+            return ResultSuccess();
         }
         virtual Result GetSizeImpl(u64 *out) override {
             return fsFileGetSize(this->base_file.get(), out);

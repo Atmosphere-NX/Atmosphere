@@ -43,11 +43,11 @@ namespace sts::cfg {
                 bool service_present = false;
                 R_TRY(sm::HasService(&service_present, RequiredServicesForSdCardAccess[i]));
                 if (!service_present) {
-                    return ResultFsSdCardNotPresent;
+                    return fs::ResultSdCardNotPresent();
                 }
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         void WaitSdCardServicesReadyImpl() {
@@ -60,7 +60,7 @@ namespace sts::cfg {
             R_TRY(CheckSdCardServicesReady());
             R_ASSERT(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
             g_sd_card_initialized = true;
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         void InitializeSdCard() {

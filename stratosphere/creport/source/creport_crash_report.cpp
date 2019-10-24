@@ -212,29 +212,29 @@ namespace sts::creport {
     void CrashReport::HandleDebugEventInfoException(const svc::DebugEventInfo &d) {
         switch (d.info.exception.type) {
             case svc::DebugExceptionType::UndefinedInstruction:
-                this->result = ResultCreportUndefinedInstruction;
+                this->result = ResultUndefinedInstruction();
                 break;
             case svc::DebugExceptionType::InstructionAbort:
-                this->result = ResultCreportInstructionAbort;
+                this->result = ResultInstructionAbort();
                 break;
             case svc::DebugExceptionType::DataAbort:
-                this->result = ResultCreportDataAbort;
+                this->result = ResultDataAbort();
                 break;
             case svc::DebugExceptionType::AlignmentFault:
-                this->result = ResultCreportAlignmentFault;
+                this->result = ResultAlignmentFault();
                 break;
             case svc::DebugExceptionType::UserBreak:
-                this->result = ResultCreportUserBreak;
+                this->result = ResultUserBreak();
                 /* Try to parse out the user break result. */
                 if (hos::GetVersion() >= hos::Version_500) {
                     svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
                 }
                 break;
             case svc::DebugExceptionType::UndefinedSystemCall:
-                this->result = ResultCreportUndefinedSystemCall;
+                this->result = ResultUndefinedSystemCall();
                 break;
             case svc::DebugExceptionType::SystemMemoryError:
-                this->result = ResultCreportSystemMemoryError;
+                this->result = ResultSystemMemoryError();
                 break;
             case svc::DebugExceptionType::DebuggerAttached:
             case svc::DebugExceptionType::BreakPoint:
@@ -306,7 +306,7 @@ namespace sts::creport {
 
     void CrashReport::SaveToFile(FILE *f_report) {
         fprintf(f_report, "Atmosphère Crash Report (v1.4):\n");
-        fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->result, R_MODULE(this->result), R_DESCRIPTION(this->result));
+        fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->result.GetValue(), this->result.GetModule(), this->result.GetDescription());
 
         /* Process Info. */
         char name_buf[0x10] = {};

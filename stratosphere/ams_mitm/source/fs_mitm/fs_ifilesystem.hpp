@@ -276,7 +276,7 @@ class IFileSystemInterface : public IServiceObject {
             R_TRY(this->base_fs->GetEntryType(&type, path));
 
             out_type.SetValue(type);
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         virtual Result OpenFile(Out<std::shared_ptr<IFileInterface>> out_intf, InPointer<char> in_path, uint32_t mode) final {
@@ -287,7 +287,7 @@ class IFileSystemInterface : public IServiceObject {
             R_TRY(this->base_fs->OpenFile(out_file, path, static_cast<OpenMode>(mode)));
 
             out_intf.SetValue(std::make_shared<IFileInterface>(std::move(out_file)));
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         virtual Result OpenDirectory(Out<std::shared_ptr<IDirectoryInterface>> out_intf, InPointer<char> in_path, uint32_t mode) final {
@@ -298,7 +298,7 @@ class IFileSystemInterface : public IServiceObject {
             R_TRY(this->base_fs->OpenDirectory(out_dir, path, static_cast<DirectoryOpenMode>(mode)));
 
             out_intf.SetValue(std::make_shared<IDirectoryInterface>(std::move(out_dir)));
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         virtual Result Commit() final {
@@ -419,14 +419,14 @@ class ProxyFileSystem : public IFileSystem {
             R_TRY(fsFsGetEntryType(this->base_fs.get(), path.str, &type));
 
             *out = static_cast<DirectoryEntryType>(static_cast<u32>(type));
-            return ResultSuccess;
+            return ResultSuccess();
         }
         virtual Result OpenFileImpl(std::unique_ptr<IFile> &out_file, const FsPath &path, OpenMode mode) {
             FsFile f;
             R_TRY(fsFsOpenFile(this->base_fs.get(), path.str, static_cast<int>(mode), &f));
 
             out_file = std::make_unique<ProxyFile>(f);
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         virtual Result OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, const FsPath &path, DirectoryOpenMode mode) {
@@ -434,7 +434,7 @@ class ProxyFileSystem : public IFileSystem {
             R_TRY(fsFsOpenDirectory(this->base_fs.get(), path.str, static_cast<int>(mode), &d));
 
             out_dir = std::make_unique<ProxyDirectory>(d);
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         virtual Result CommitImpl() {

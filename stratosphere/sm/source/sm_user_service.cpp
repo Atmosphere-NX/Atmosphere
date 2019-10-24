@@ -25,14 +25,14 @@ namespace sts::sm {
     Result UserService::Initialize(const sf::ClientProcessId &client_process_id) {
         this->process_id = client_process_id.GetValue();
         this->has_initialized = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result UserService::EnsureInitialized() {
         if (!this->has_initialized) {
-            return ResultSmInvalidClient;
+            return sm::ResultInvalidClient();
         }
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result UserService::GetService(sf::OutMoveHandle out_h, ServiceName service) {

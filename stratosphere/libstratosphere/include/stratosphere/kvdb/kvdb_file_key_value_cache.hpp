@@ -56,7 +56,7 @@ namespace sts::kvdb {
                         return fsdevGetLastResult();
                     }
 
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
             private:
                 void RemoveIndex(size_t i) {
@@ -105,7 +105,7 @@ namespace sts::kvdb {
                         }
                     }
 
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result Save() {
@@ -129,7 +129,7 @@ namespace sts::kvdb {
                     /* Flush. */
                     fflush(fp);
 
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 size_t GetCount() const {
@@ -235,7 +235,7 @@ namespace sts::kvdb {
                         R_CATCH(ResultFsPathNotFound) {
                             /* If the path doesn't exist, nothing has gone wrong. */
                             *out = false;
-                            return ResultSuccess;
+                            return ResultSuccess();
                         }
                     } R_END_TRY_CATCH;
                 }
@@ -246,7 +246,7 @@ namespace sts::kvdb {
                 }
 
                 *out = true;
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             static Result DirectoryExists(bool *out, const char *path) {
@@ -264,7 +264,7 @@ namespace sts::kvdb {
                     return fsdevGetLastResult();
                 }
 
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             static Result ValidateExistingCache(const char *dir) {
@@ -283,7 +283,7 @@ namespace sts::kvdb {
                     return ResultKvdbInvalidFilesystemState;
                 }
 
-                return ResultSuccess;
+                return ResultSuccess();
             }
         private:
             void RemoveOldestKey() {
@@ -305,7 +305,7 @@ namespace sts::kvdb {
                 /* layout it can't really be fixed without breaking existing devices... */
                 R_TRY(this->kvs.Initialize(dir));
 
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             size_t GetCount() const {
@@ -380,7 +380,7 @@ namespace sts::kvdb {
                 /* Save the list. */
                 R_TRY(this->lru_list.Save());
 
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             template<typename Value>
@@ -394,7 +394,7 @@ namespace sts::kvdb {
                 R_TRY(this->kvs.Remove(key));
                 R_TRY(this->lru_list.Save());
 
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             Result RemoveAll() {
@@ -404,7 +404,7 @@ namespace sts::kvdb {
                 }
                 R_TRY(this->lru_list.Save());
 
-                return ResultSuccess;
+                return ResultSuccess();
             }
     };
 

@@ -34,7 +34,7 @@ namespace sts::boot {
         u8 power_status;
         R_TRY(this->GetPowerStatus(&power_status));
         *out = (power_status & 0x02) != 0;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result PmicDriver::GetPowerIntr(u8 *out) {
@@ -56,7 +56,7 @@ namespace sts::boot {
         u8 power_intr;
         R_TRY(this->GetPowerIntr(&power_intr));
         *out = (power_intr & 0x08) != 0;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result PmicDriver::ShutdownSystem(bool reboot) {

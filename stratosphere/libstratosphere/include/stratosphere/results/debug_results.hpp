@@ -15,10 +15,14 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Debug = 183;
+namespace sts::dbg {
 
-static constexpr Result ResultDebugCannotDebug     = MAKERESULT(Module_Debug, 1);
-static constexpr Result ResultDebugAlreadyAttached = MAKERESULT(Module_Debug, 2);
-static constexpr Result ResultDebugCancelled       = MAKERESULT(Module_Debug, 3);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(183);
+
+    R_DEFINE_ERROR_RESULT(CannotDebug,     1);
+    R_DEFINE_ERROR_RESULT(AlreadyAttached, 2);
+    R_DEFINE_ERROR_RESULT(Cancelled,       3);
+
+}

@@ -44,19 +44,19 @@ namespace sts::pcv {
         reg::ReadWrite(regs.clk_src_reg, 0, 0xE0000000);
         svcSleepThread(2000ul);
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result SetClockEnabled(PcvModule module, bool enabled) {
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result SetVoltageEnabled(u32 domain, bool enabled) {
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result SetVoltageValue(u32 domain, u32 voltage) {
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result SetReset(PcvModule module, bool reset) {
@@ -71,7 +71,7 @@ namespace sts::pcv {
             reg::ClearBits(regs.rst_reg, regs.mask);
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

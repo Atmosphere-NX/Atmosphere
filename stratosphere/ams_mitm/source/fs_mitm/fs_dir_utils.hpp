@@ -71,7 +71,7 @@ class FsDirUtils {
                 work_path.str[parent_len] = 0;
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
     public:
@@ -137,6 +137,6 @@ class FsDirUtils {
                 } R_END_TRY_CATCH;
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 };

@@ -15,15 +15,19 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Kvdb = 20;
+namespace sts::kvdb {
 
-static constexpr Result ResultKvdbKeyCapacityInsufficient = MAKERESULT(Module_Kvdb, 1);
-static constexpr Result ResultKvdbKeyNotFound             = MAKERESULT(Module_Kvdb, 2);
-static constexpr Result ResultKvdbAllocationFailed        = MAKERESULT(Module_Kvdb, 4);
-static constexpr Result ResultKvdbInvalidKeyValue         = MAKERESULT(Module_Kvdb, 5);
-static constexpr Result ResultKvdbBufferInsufficient      = MAKERESULT(Module_Kvdb, 6);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(20);
 
-static constexpr Result ResultKvdbInvalidFilesystemState  = MAKERESULT(Module_Kvdb, 8);
-static constexpr Result ResultKvdbNotCreated              = MAKERESULT(Module_Kvdb, 9);
+    R_DEFINE_ERROR_RESULT(KeyCapacityInsufficient, 1);
+    R_DEFINE_ERROR_RESULT(KeyNotFound,             2);
+    R_DEFINE_ERROR_RESULT(AllocationFailed,        4);
+    R_DEFINE_ERROR_RESULT(InvalidKeyValue,         5);
+    R_DEFINE_ERROR_RESULT(BufferInsufficient,      6);
+
+    R_DEFINE_ERROR_RESULT(InvalidFilesystemState,  8);
+    R_DEFINE_ERROR_RESULT(NotCreated,              9);
+
+}

@@ -60,7 +60,7 @@ namespace sts::sm {
         void DoWithSessionImpl(void (*Invoker)(void *), void *Function) {
             impl::DoWithUserSession([&]() {
                 Invoker(Function);
-                return ResultSuccess;
+                return ResultSuccess();
             });
         }
 

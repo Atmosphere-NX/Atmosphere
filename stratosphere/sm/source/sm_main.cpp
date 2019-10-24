@@ -45,11 +45,18 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[0x1000];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
+
 }
 
 namespace sts::ams {
 
     ncm::TitleId StratosphereTitleId = ncm::TitleId::Sm;
+
+}
+
+namespace sts::result {
+
+    bool CallFatalOnResultAssertion = false;
 
 }
 

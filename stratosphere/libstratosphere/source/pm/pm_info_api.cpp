@@ -48,7 +48,7 @@ namespace sts::pm::info {
 
         if (g_cached_launched_titles.find(static_cast<u64>(title_id)) != g_cached_launched_titles.end()) {
             *out = true;
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         bool has_launched = false;
@@ -58,7 +58,7 @@ namespace sts::pm::info {
         }
 
         *out = has_launched;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     bool HasLaunchedTitle(ncm::TitleId title_id) {

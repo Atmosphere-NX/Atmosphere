@@ -14,14 +14,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-#include "results_common.hpp"
+#include <stratosphere.hpp>
 
-namespace sts::err {
+namespace sts::result {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(162);
+    extern bool CallFatalOnResultAssertion;
 
-    R_DEFINE_ERROR_RESULT(ApplicationAborted,  1);
-    R_DEFINE_ERROR_RESULT(SystemModuleAborted, 2);
+}
+
+namespace sts::result::impl {
+
+    NORETURN WEAK void OnResultAssertion(Result result) {
+        /* Assert that we should call fatal on result assertion. */
+        /* If we shouldn't fatal, this will std::abort(); */
+        /* If we should, we'll continue onwards. */
+        STS_ASSERT((sts::result::CallFatalOnResultAssertion));
+
+        /* TODO: sts::fatal:: */
+        fatalSimple(result.GetValue());
+        while (true) { /* ... */ }
+    }
 
 }

@@ -60,9 +60,7 @@ namespace sts::i2c::driver::impl {
     Result Session::DoTransaction(void *dst, const void *src, size_t num_bytes, I2cTransactionOption option, Command command) {
         std::scoped_lock lk(this->bus_accessor_mutex);
 
-        if (this->bus_accessor->GetBusy()) {
-            return ResultI2cBusBusy;
-        }
+        R_UNLESS(!this->bus_accessor->GetBusy(), i2c::ResultBusBusy());
 
         this->bus_accessor->OnStartTransaction();
         ON_SCOPE_EXIT { this->bus_accessor->OnStopTransaction(); };
@@ -79,23 +77,22 @@ namespace sts::i2c::driver::impl {
             STS_UNREACHABLE_DEFAULT_CASE();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result Session::DoTransactionWithRetry(void *dst, const void *src, size_t num_bytes, I2cTransactionOption option, Command command) {
         size_t i = 0;
         while (true) {
             R_TRY_CATCH(this->DoTransaction(dst, src, num_bytes, option, command)) {
-                R_CATCH(ResultI2cTimedOut) {
-                    i++;
-                    if (i <= this->max_retries) {
+                R_CATCH(i2c::ResultTimedOut) {
+                    if ((++i) <= this->max_retries) {
                         svcSleepThread(this->retry_wait_time);
                         continue;
                     }
-                    return ResultI2cBusBusy;
+                    return i2c::ResultBusBusy();
                 }
             } R_END_TRY_CATCH;
-            return ResultSuccess;
+            return ResultSuccess();
         }
     }
 

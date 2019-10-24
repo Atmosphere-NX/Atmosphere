@@ -34,7 +34,7 @@ Result NsWebMitmService::GetDocumentInterface(Out<std::shared_ptr<NsDocumentServ
         out_intf.ChangeObjectId(doc.s.object_id);
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result NsDocumentService::GetApplicationContentPath(OutBuffer<u8> out_path, u64 app_id, u8 storage_type) {
@@ -45,7 +45,7 @@ Result NsDocumentService::ResolveApplicationContentPath(u64 title_id, u8 storage
     /* Always succeed for web applet asking about HBL. */
     if (Utils::IsWebAppletTid(static_cast<u64>(this->title_id)) && Utils::IsHblTid(title_id)) {
         nswebResolveApplicationContentPath(this->srv.get(), title_id, static_cast<FsStorageId>(storage_type));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     return nswebResolveApplicationContentPath(this->srv.get(), title_id, static_cast<FsStorageId>(storage_type));

@@ -61,19 +61,20 @@ namespace sts::spl {
             InProgress            = 3,
             NoAsyncOperation      = 4,
             InvalidAsyncOperation = 5,
-            Blacklisted           = 6,
-
-            Max                   = 99,
+            NotPermitted          = 6,
         };
 
-        inline ::Result ConvertResult(Result result) {
-            if (result == Result::Success) {
-                return ResultSuccess;
+        constexpr inline ::sts::Result ConvertResult(Result smc_result) {
+            /* smc::Result::Success becomes ResultSuccess() directly. */
+            R_UNLESS(smc_result != Result::Success, ResultSuccess());
+
+            /* Convert to the list of known SecureMonitorErrors. */
+            const auto converted = R_MAKE_NAMESPACE_RESULT(::sts::spl, static_cast<u32>(smc_result));
+            if (spl::ResultSecureMonitorError::Includes(converted)) {
+                return converted;
             }
-            if (result < Result::Max) {
-                return MAKERESULT(Module_Spl, static_cast<u32>(result));
-            }
-            return ResultSplUnknownSmcResult;
+
+            return spl::ResultUnknownSecureMonitorError();
         }
 
         enum class CipherMode {

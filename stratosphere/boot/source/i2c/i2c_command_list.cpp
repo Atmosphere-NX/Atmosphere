@@ -32,10 +32,8 @@ namespace sts::i2c {
     }
 
     Result CommandListFormatter::CanEnqueue(size_t size) const {
-        if (this->cmd_list_size - this->cur_index < size) {
-            return ResultI2cFullCommandList;
-        }
-        return ResultSuccess;
+        R_UNLESS(this->cmd_list_size - this->cur_index >= size, ResultFullCommandList());
+        return ResultSuccess();
     }
 
     Result CommandListFormatter::EnqueueSendCommand(I2cTransactionOption option, const void *src, size_t size) {
@@ -52,7 +50,7 @@ namespace sts::i2c {
         for (size_t i = 0; i < size; i++) {
             this->cmd_list[this->cur_index++] = src_u8[i];
         }
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result CommandListFormatter::EnqueueReceiveCommand(I2cTransactionOption option, size_t size) {
@@ -64,7 +62,7 @@ namespace sts::i2c {
         this->cur_index++;
 
         this->cmd_list[this->cur_index++] = size;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result CommandListFormatter::EnqueueSleepCommand(size_t us) {
@@ -75,7 +73,7 @@ namespace sts::i2c {
         this->cur_index++;
 
         this->cmd_list[this->cur_index++] = us;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

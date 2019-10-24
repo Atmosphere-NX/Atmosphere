@@ -15,9 +15,18 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Os = 3;
+namespace sts::os {
 
-static constexpr Result ResultOsOutOfMemory       = MAKERESULT(Module_Os, 8);
-static constexpr Result ResultOsResourceExhausted = MAKERESULT(Module_Os, 9);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(3);
+
+    R_DEFINE_ERROR_RESULT(Busy,                     4);
+
+    R_DEFINE_ERROR_RESULT(OutOfMemory,              8);
+    R_DEFINE_ERROR_RESULT(OutOfResource,            9);
+
+    R_DEFINE_ERROR_RESULT(OutOfVirtualAddressSpace, 12);
+    R_DEFINE_ERROR_RESULT(ResourceLimit,            13);
+
+}

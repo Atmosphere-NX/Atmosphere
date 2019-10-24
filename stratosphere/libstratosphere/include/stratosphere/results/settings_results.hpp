@@ -15,27 +15,33 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Settings = 105;
+namespace sts::settings {
 
-static constexpr Result ResultSettingsItemNotFound                       = MAKERESULT(Module_Settings, 11);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(105);
 
-static constexpr Result ResultSettingsItemKeyAllocationFailed            = MAKERESULT(Module_Settings, 101);
-static constexpr Result ResultSettingsItemValueAllocationFailed          = MAKERESULT(Module_Settings, 102);
+    R_DEFINE_ERROR_RESULT(ItemNotFound,                       11);
 
-static constexpr Result ResultSettingsItemNameNull                       = MAKERESULT(Module_Settings, 201);
-static constexpr Result ResultSettingsItemKeyNull                        = MAKERESULT(Module_Settings, 202);
-static constexpr Result ResultSettingsItemValueNull                      = MAKERESULT(Module_Settings, 203);
-static constexpr Result ResultSettingsItemKeyBufferNull                  = MAKERESULT(Module_Settings, 204);
-static constexpr Result ResultSettingsItemValueBufferNull                = MAKERESULT(Module_Settings, 205);
+    R_DEFINE_ERROR_RANGE(InternalError, 100, 149);
+        R_DEFINE_ERROR_RESULT(ItemKeyAllocationFailed,   101);
+        R_DEFINE_ERROR_RESULT(ItemValueAllocationFailed, 102);
 
-static constexpr Result ResultSettingsItemNameEmpty                      = MAKERESULT(Module_Settings, 221);
-static constexpr Result ResultSettingsItemKeyEmpty                       = MAKERESULT(Module_Settings, 222);
+    R_DEFINE_ERROR_RANGE(InvalidArgument, 200, 399);
+        R_DEFINE_ERROR_RESULT(SettingsNameNull,                 201);
+        R_DEFINE_ERROR_RESULT(SettingsItemKeyNull,              202);
+        R_DEFINE_ERROR_RESULT(SettingsItemValueNull,            203);
+        R_DEFINE_ERROR_RESULT(SettingsItemKeyBufferNull,        204);
+        R_DEFINE_ERROR_RESULT(SettingsItemValueBufferNull,      205);
 
-static constexpr Result ResultSettingsItemNameTooLong                    = MAKERESULT(Module_Settings, 241);
-static constexpr Result ResultSettingsItemKeyTooLong                     = MAKERESULT(Module_Settings, 242);
+        R_DEFINE_ERROR_RESULT(SettingsNameEmpty,                221);
+        R_DEFINE_ERROR_RESULT(SettingsItemKeyEmpty,             222);
 
-static constexpr Result ResultSettingsItemNameInvalidFormat              = MAKERESULT(Module_Settings, 261);
-static constexpr Result ResultSettingsItemKeyInvalidFormat               = MAKERESULT(Module_Settings, 262);
-static constexpr Result ResultSettingsItemValueInvalidFormat             = MAKERESULT(Module_Settings, 263);
+        R_DEFINE_ERROR_RESULT(SettingsNameTooLong,              241);
+        R_DEFINE_ERROR_RESULT(SettingsItemKeyTooLong,           242);
+
+        R_DEFINE_ERROR_RESULT(SettingsNameInvalidFormat,        261);
+        R_DEFINE_ERROR_RESULT(SettingsItemKeyInvalidFormat,     262);
+        R_DEFINE_ERROR_RESULT(SettingsItemValueInvalidFormat,   263);
+
+}

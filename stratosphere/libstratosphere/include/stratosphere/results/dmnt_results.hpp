@@ -15,24 +15,36 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Dmnt = 13;
+namespace sts::dmnt {
 
-static constexpr Result ResultDmntUnknown           = MAKERESULT(Module_Dmnt, 1);
-static constexpr Result ResultDmntDebuggingDisabled = MAKERESULT(Module_Dmnt, 2);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(13);
 
-static constexpr Result ResultDmntCheatNotAttached               = MAKERESULT(Module_Dmnt, 6500);
-static constexpr Result ResultDmntCheatNullBuffer                = MAKERESULT(Module_Dmnt, 6501);
-static constexpr Result ResultDmntCheatInvalidBuffer             = MAKERESULT(Module_Dmnt, 6502);
-static constexpr Result ResultDmntCheatUnknownChtId              = MAKERESULT(Module_Dmnt, 6503);
-static constexpr Result ResultDmntCheatOutOfCheats               = MAKERESULT(Module_Dmnt, 6504);
-static constexpr Result ResultDmntCheatInvalidCheat              = MAKERESULT(Module_Dmnt, 6505);
-static constexpr Result ResultDmntCheatCannotDisableMasterCheat  = MAKERESULT(Module_Dmnt, 6505);
+    R_DEFINE_ERROR_RESULT(Unknown,           1);
+    R_DEFINE_ERROR_RESULT(DebuggingDisabled, 2);
 
-static constexpr Result ResultDmntCheatInvalidFreezeWidth     = MAKERESULT(Module_Dmnt, 6600);
-static constexpr Result ResultDmntCheatAddressAlreadyFrozen   = MAKERESULT(Module_Dmnt, 6601);
-static constexpr Result ResultDmntCheatAddressNotFrozen       = MAKERESULT(Module_Dmnt, 6602);
-static constexpr Result ResultDmntCheatTooManyFrozenAddresses = MAKERESULT(Module_Dmnt, 6603);
+    /* Atmosphere extension. */
+    namespace cheat {
 
-static constexpr Result ResultDmntCheatVmInvalidCondDepth = MAKERESULT(Module_Dmnt, 6700);
+        R_DEFINE_ABSTRACT_ERROR_RANGE(CheatError, 6500, 6599);
+            R_DEFINE_ERROR_RESULT(CheatNotAttached,     6500);
+            R_DEFINE_ERROR_RESULT(CheatNullBuffer,      6501);
+            R_DEFINE_ERROR_RESULT(CheatInvalidBuffer,   6502);
+            R_DEFINE_ERROR_RESULT(CheatUnknownId,       6503);
+            R_DEFINE_ERROR_RESULT(CheatOutOfResource,   6504);
+            R_DEFINE_ERROR_RESULT(CheatInvalid,         6505);
+            R_DEFINE_ERROR_RESULT(CheatCannotDisable,   6506);
+
+        R_DEFINE_ABSTRACT_ERROR_RANGE(FrozenAddressError, 6600, 6699);
+            R_DEFINE_ERROR_RESULT(FrozenAddressInvalidWidth,  6600);
+            R_DEFINE_ERROR_RESULT(FrozenAddressAlreadyExists, 6601);
+            R_DEFINE_ERROR_RESULT(FrozenAddressNotFound,      6602);
+            R_DEFINE_ERROR_RESULT(FrozenAddressOutOfResource, 6603);
+
+        R_DEFINE_ABSTRACT_ERROR_RANGE(VirtualMachineError, 6700, 6799);
+            R_DEFINE_ERROR_RESULT(VirtualMachineInvalidConditionDepth, 6700);
+
+    }
+
+}

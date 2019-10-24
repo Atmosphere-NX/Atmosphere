@@ -15,16 +15,20 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Lr = 8;
+namespace sts::lr {
 
-static constexpr Result ResultLrProgramNotFound                          = MAKERESULT(Module_Lr, 2);
-static constexpr Result ResultLrDataNotFound                             = MAKERESULT(Module_Lr, 3);
-static constexpr Result ResultLrUnknownStorageId                         = MAKERESULT(Module_Lr, 4);
-static constexpr Result ResultLrHtmlDocumentNotFound                     = MAKERESULT(Module_Lr, 6);
-static constexpr Result ResultLrAddOnContentNotFound                     = MAKERESULT(Module_Lr, 7);
-static constexpr Result ResultLrControlNotFound                          = MAKERESULT(Module_Lr, 8);
-static constexpr Result ResultLrLegalInformationNotFound                 = MAKERESULT(Module_Lr, 9);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(8);
 
-static constexpr Result ResultLrTooManyRegisteredPaths = MAKERESULT(Module_Lr, 90);
+    R_DEFINE_ERROR_RESULT(ProgramNotFound,          2);
+    R_DEFINE_ERROR_RESULT(DataNotFound,             3);
+    R_DEFINE_ERROR_RESULT(UnknownStorageId,         4);
+    R_DEFINE_ERROR_RESULT(HtmlDocumentNotFound,     6);
+    R_DEFINE_ERROR_RESULT(AddOnContentNotFound,     7);
+    R_DEFINE_ERROR_RESULT(ControlNotFound,          8);
+    R_DEFINE_ERROR_RESULT(LegalInformationNotFound, 9);
+
+    R_DEFINE_ERROR_RESULT(TooManyRegisteredPaths,   90);
+
+}

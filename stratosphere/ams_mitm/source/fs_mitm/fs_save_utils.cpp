@@ -53,7 +53,7 @@ Result FsSaveUtils::GetSaveDataSpaceIdString(const char **out_str, u8 space_id) 
         *out_str = str;
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result FsSaveUtils::GetSaveDataTypeString(const char **out_str, u8 save_data_type) {
@@ -95,7 +95,7 @@ Result FsSaveUtils::GetSaveDataTypeString(const char **out_str, u8 save_data_typ
         *out_str = str;
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result FsSaveUtils::GetSaveDataDirectoryPath(FsPath &out_path, u8 space_id, u8 save_data_type, u64 title_id, u128 user_id, u64 save_id) {
@@ -121,5 +121,5 @@ Result FsSaveUtils::GetSaveDataDirectoryPath(FsPath &out_path, u8 space_id, u8 s
         return ResultFsTooLongPath;
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }

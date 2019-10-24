@@ -28,7 +28,7 @@ namespace sts::fatal::srv {
             u64 lr;
         };
 
-        bool IsThreadFatalCaller(u32 error_code, u32 debug_handle, u64 thread_id, u64 thread_tls_addr, ThreadContext *thread_ctx) {
+        bool IsThreadFatalCaller(Result result, u32 debug_handle, u64 thread_id, u64 thread_tls_addr, ThreadContext *thread_ctx) {
             /* Verify that the thread is running or waiting. */
             {
                 u64 _;
@@ -71,7 +71,7 @@ namespace sts::fatal::srv {
 
                 const struct {
                     CmifInHeader header;
-                    u32 error_code;
+                    Result result;
                 } *in_data = decltype(in_data)(request.data.data_words);
                 static_assert(sizeof(*in_data) == 0x14, "InData!");
 
@@ -112,7 +112,7 @@ namespace sts::fatal::srv {
                         return false;
                 }
 
-                if (in_data->error_code != error_code) {
+                if (in_data->result.GetValue() != result.GetValue()) {
                     return false;
                 }
             }
@@ -226,7 +226,7 @@ namespace sts::fatal::srv {
                     continue;
                 }
 
-                if (IsThreadFatalCaller(ctx->error_code, debug_handle.Get(), cur_thread_id, thread_id_to_tls[cur_thread_id], &thread_ctx)) {
+                if (IsThreadFatalCaller(ctx->result, debug_handle.Get(), cur_thread_id, thread_id_to_tls[cur_thread_id], &thread_ctx)) {
                     thread_id = cur_thread_id;
                     found_fatal_caller = true;
                     break;

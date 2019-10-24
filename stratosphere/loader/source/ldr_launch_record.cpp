@@ -45,7 +45,7 @@ namespace sts::pm::info {
 
     Result HasLaunchedTitle(bool *out, ncm::TitleId title_id) {
         *out = ldr::HasLaunchedTitle(title_id);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

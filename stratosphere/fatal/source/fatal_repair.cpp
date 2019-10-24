@@ -106,11 +106,11 @@ namespace sts::fatal::srv {
 
     void CheckRepairStatus() {
         if (IsInRepairWithoutVolHeld()) {
-            ThrowFatalForSelf(ResultFatalInRepairWithoutVolHeld);
+            ThrowFatalForSelf(ResultInRepairWithoutVolHeld());
         }
 
         if (IsInRepairWithoutTimeReviserCartridge()) {
-            ThrowFatalForSelf(ResultFatalInRepairWithoutTimeReviserCartridge);
+            ThrowFatalForSelf(ResultInRepairWithoutTimeReviserCartridge());
         }
     }
 

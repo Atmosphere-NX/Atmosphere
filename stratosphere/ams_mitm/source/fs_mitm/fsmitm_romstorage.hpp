@@ -42,7 +42,7 @@ class RomFileStorage : public IROStorage {
             if (out_sz != size && out_sz) {
                 R_TRY(this->Read((void *)((uintptr_t)buffer + out_sz), size - out_sz, offset + out_sz));
             }
-            return ResultSuccess;
+            return ResultSuccess();
         };
         Result GetSize(u64 *out_size) override {
             return fsFileGetSize(this->base_file, out_size);

@@ -28,7 +28,7 @@ Result FsPathUtils::VerifyPath(const char *path, size_t max_path_len, size_t max
         const char c = *(cur++);
         /* If terminated, we're done. */
         if (c == 0) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         /* TODO: Nintendo converts the path from utf-8 to utf-32, one character at a time. */
@@ -110,7 +110,7 @@ Result FsPathUtils::IsNormalized(bool *out, const char *path) {
                 /* It is unclear why first separator and separator are separate states... */
                 if (c == '/') {
                     *out = false;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 } else if (c == '.') {
                     state = PathState::CurrentDir;
                 } else {
@@ -120,7 +120,7 @@ Result FsPathUtils::IsNormalized(bool *out, const char *path) {
             case PathState::CurrentDir:
                 if (c == '/') {
                     *out = false;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 } else if (c == '.') {
                     state = PathState::ParentDir;
                 } else {
@@ -130,7 +130,7 @@ Result FsPathUtils::IsNormalized(bool *out, const char *path) {
             case PathState::ParentDir:
                 if (c == '/') {
                     *out = false;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 } else {
                     state = PathState::Normal;
                 }
@@ -138,7 +138,7 @@ Result FsPathUtils::IsNormalized(bool *out, const char *path) {
             case PathState::WindowsDriveLetter:
                 if (c == ':') {
                     *out = true;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 } else {
                     return ResultFsInvalidPathFormat;
                 }
@@ -161,7 +161,7 @@ Result FsPathUtils::IsNormalized(bool *out, const char *path) {
             break;
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, size_t *out_len) {
@@ -263,5 +263,5 @@ Result FsPathUtils::Normalize(char *out, size_t max_out_size, const char *src, s
     R_ASSERT(FsPathUtils::IsNormalized(&normalized, out));
     STS_ASSERT(normalized);
 
-    return ResultSuccess;
+    return ResultSuccess();
 }

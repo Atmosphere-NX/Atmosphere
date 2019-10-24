@@ -86,7 +86,7 @@ namespace sts::fatal::srv {
                 ON_SCOPE_EXIT { fclose(f_report); };
 
                 fprintf(f_report, "Atmosphère Fatal Report (v1.0):\n");
-                fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->context->error_code, R_MODULE(this->context->error_code), R_DESCRIPTION(this->context->error_code));
+                fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->context->result.GetValue(), this->context->result.GetModule(), this->context->result.GetDescription());
                 fprintf(f_report, "Title ID:                        %016lx\n", static_cast<u64>(this->context->title_id));
                 if (strlen(this->context->proc_name)) {
                     fprintf(f_report, "Process Name:                    %s\n", this->context->proc_name);
@@ -144,7 +144,7 @@ namespace sts::fatal::srv {
             /* Signal we're done with our job. */
             eventFire(const_cast<Event *>(&this->context->erpt_event));
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
     }

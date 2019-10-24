@@ -15,13 +15,17 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Pm = 15;
+namespace sts::pm {
 
-static constexpr Result ResultPmProcessNotFound    = MAKERESULT(Module_Pm, 1);
-static constexpr Result ResultPmAlreadyStarted     = MAKERESULT(Module_Pm, 2);
-static constexpr Result ResultPmNotExited          = MAKERESULT(Module_Pm, 3);
-static constexpr Result ResultPmDebugHookInUse     = MAKERESULT(Module_Pm, 4);
-static constexpr Result ResultPmApplicationRunning = MAKERESULT(Module_Pm, 5);
-static constexpr Result ResultPmInvalidSize        = MAKERESULT(Module_Pm, 6);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(15);
+
+    R_DEFINE_ERROR_RESULT(ProcessNotFound,    1);
+    R_DEFINE_ERROR_RESULT(AlreadyStarted,     2);
+    R_DEFINE_ERROR_RESULT(NotExited,          3);
+    R_DEFINE_ERROR_RESULT(DebugHookInUse,     4);
+    R_DEFINE_ERROR_RESULT(ApplicationRunning, 5);
+    R_DEFINE_ERROR_RESULT(InvalidSize,        6);
+
+}

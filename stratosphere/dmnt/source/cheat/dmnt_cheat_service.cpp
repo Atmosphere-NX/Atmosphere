@@ -37,11 +37,8 @@ namespace sts::dmnt::cheat {
     }
 
     Result CheatService::ForceOpenCheatProcess() {
-        if (R_FAILED(dmnt::cheat::impl::ForceOpenCheatProcess())) {
-            return ResultDmntCheatNotAttached;
-        }
-
-        return ResultSuccess;
+        R_UNLESS(R_SUCCEEDED(dmnt::cheat::impl::ForceOpenCheatProcess()), ResultCheatNotAttached());
+        return ResultSuccess();
     }
 
     /* ========================================================================================= */
@@ -53,26 +50,17 @@ namespace sts::dmnt::cheat {
     }
 
     Result CheatService::GetCheatProcessMappings(const sf::OutArray<MemoryInfo> &mappings, sf::Out<u64> out_count, u64 offset) {
-        if (mappings.GetPointer() == nullptr) {
-            return ResultDmntCheatNullBuffer;
-        }
-
+        R_UNLESS(mappings.GetPointer() != nullptr, ResultCheatNullBuffer());
         return dmnt::cheat::impl::GetCheatProcessMappings(mappings.GetPointer(), mappings.GetSize(), out_count.GetPointer(), offset);
     }
 
     Result CheatService::ReadCheatProcessMemory(const sf::OutBuffer &buffer, u64 address, u64 out_size) {
-        if (buffer.GetPointer() == nullptr) {
-            return ResultDmntCheatNullBuffer;
-        }
-
+        R_UNLESS(buffer.GetPointer() != nullptr, ResultCheatNullBuffer());
         return dmnt::cheat::impl::ReadCheatProcessMemory(address, buffer.GetPointer(), std::min(out_size, buffer.GetSize()));
     }
 
     Result CheatService::WriteCheatProcessMemory(const sf::InBuffer &buffer, u64 address, u64 in_size) {
-        if (buffer.GetPointer() == nullptr) {
-            return ResultDmntCheatNullBuffer;
-        }
-
+        R_UNLESS(buffer.GetPointer() != nullptr, ResultCheatNullBuffer());
         return dmnt::cheat::impl::WriteCheatProcessMemory(address, buffer.GetPointer(), std::min(in_size, buffer.GetSize()));
     }
 
@@ -89,10 +77,7 @@ namespace sts::dmnt::cheat {
     }
 
     Result CheatService::GetCheats(const sf::OutArray<CheatEntry> &cheats, sf::Out<u64> out_count, u64 offset) {
-        if (cheats.GetPointer() == nullptr) {
-            return ResultDmntCheatNullBuffer;
-        }
-
+        R_UNLESS(cheats.GetPointer() != nullptr, ResultCheatNullBuffer());
         return dmnt::cheat::impl::GetCheats(cheats.GetPointer(), cheats.GetSize(), out_count.GetPointer(), offset);
     }
 
@@ -121,10 +106,7 @@ namespace sts::dmnt::cheat {
     }
 
     Result CheatService::GetFrozenAddresses(const sf::OutArray<FrozenAddressEntry> &addresses, sf::Out<u64> out_count, u64 offset) {
-        if (addresses.GetPointer() == nullptr) {
-            return ResultDmntCheatNullBuffer;
-        }
-
+        R_UNLESS(addresses.GetPointer() != nullptr, ResultCheatNullBuffer());
         return dmnt::cheat::impl::GetFrozenAddresses(addresses.GetPointer(), addresses.GetSize(), out_count.GetPointer(), offset);
     }
 
@@ -133,16 +115,10 @@ namespace sts::dmnt::cheat {
     }
 
     Result CheatService::EnableFrozenAddress(sf::Out<u64> out_value, u64 address, u64 width) {
-        switch (width) {
-            case 1:
-            case 2:
-            case 4:
-            case 8:
-                break;
-            default:
-                return ResultDmntCheatInvalidFreezeWidth;
-        }
-
+        /* Width needs to be a power of two <= 8. */
+        R_UNLESS(width > 0,                  ResultFrozenAddressInvalidWidth());
+        R_UNLESS(width <= sizeof(u64),       ResultFrozenAddressInvalidWidth());
+        R_UNLESS((width & (width - 1)) == 0, ResultFrozenAddressInvalidWidth());
         return dmnt::cheat::impl::EnableFrozenAddress(out_value.GetPointer(), address, width);
     }
 

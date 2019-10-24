@@ -15,45 +15,49 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Loader = 9;
+namespace sts::ldr {
 
-static constexpr Result ResultLoaderTooLongArgument       = MAKERESULT(Module_Loader, 1);
-static constexpr Result ResultLoaderTooManyArguments      = MAKERESULT(Module_Loader, 2);
-static constexpr Result ResultLoaderTooLargeMeta          = MAKERESULT(Module_Loader, 3);
-static constexpr Result ResultLoaderInvalidMeta           = MAKERESULT(Module_Loader, 4);
-static constexpr Result ResultLoaderInvalidNso            = MAKERESULT(Module_Loader, 5);
-static constexpr Result ResultLoaderInvalidPath           = MAKERESULT(Module_Loader, 6);
-static constexpr Result ResultLoaderTooManyProcesses      = MAKERESULT(Module_Loader, 7);
-static constexpr Result ResultLoaderNotPinned             = MAKERESULT(Module_Loader, 8);
-static constexpr Result ResultLoaderInvalidProgramId      = MAKERESULT(Module_Loader, 9);
-static constexpr Result ResultLoaderInvalidVersion        = MAKERESULT(Module_Loader, 10);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(9);
 
-static constexpr Result ResultLoaderInsufficientAddressSpace     = MAKERESULT(Module_Loader, 51);
-static constexpr Result ResultLoaderInvalidNro                   = MAKERESULT(Module_Loader, 52);
-static constexpr Result ResultLoaderInvalidNrr                   = MAKERESULT(Module_Loader, 53);
-static constexpr Result ResultLoaderInvalidSignature             = MAKERESULT(Module_Loader, 54);
-static constexpr Result ResultLoaderInsufficientNroRegistrations = MAKERESULT(Module_Loader, 55);
-static constexpr Result ResultLoaderInsufficientNrrRegistrations = MAKERESULT(Module_Loader, 56);
-static constexpr Result ResultLoaderNroAlreadyLoaded             = MAKERESULT(Module_Loader, 57);
+    R_DEFINE_ERROR_RESULT(TooLongArgument,       1);
+    R_DEFINE_ERROR_RESULT(TooManyArguments,      2);
+    R_DEFINE_ERROR_RESULT(TooLargeMeta,          3);
+    R_DEFINE_ERROR_RESULT(InvalidMeta,           4);
+    R_DEFINE_ERROR_RESULT(InvalidNso,            5);
+    R_DEFINE_ERROR_RESULT(InvalidPath,           6);
+    R_DEFINE_ERROR_RESULT(TooManyProcesses,      7);
+    R_DEFINE_ERROR_RESULT(NotPinned,             8);
+    R_DEFINE_ERROR_RESULT(InvalidProgramId,      9);
+    R_DEFINE_ERROR_RESULT(InvalidVersion,        10);
 
-static constexpr Result ResultLoaderInvalidAddress        = MAKERESULT(Module_Loader, 81);
-static constexpr Result ResultLoaderInvalidSize           = MAKERESULT(Module_Loader, 82);
-static constexpr Result ResultLoaderNotLoaded             = MAKERESULT(Module_Loader, 84);
-static constexpr Result ResultLoaderNotRegistered         = MAKERESULT(Module_Loader, 85);
-static constexpr Result ResultLoaderInvalidSession        = MAKERESULT(Module_Loader, 86);
-static constexpr Result ResultLoaderInvalidProcess        = MAKERESULT(Module_Loader, 87);
+    R_DEFINE_ERROR_RESULT(InsufficientAddressSpace,     51);
+    R_DEFINE_ERROR_RESULT(InvalidNro,                   52);
+    R_DEFINE_ERROR_RESULT(InvalidNrr,                   53);
+    R_DEFINE_ERROR_RESULT(InvalidSignature,             54);
+    R_DEFINE_ERROR_RESULT(InsufficientNroRegistrations, 55);
+    R_DEFINE_ERROR_RESULT(InsufficientNrrRegistrations, 56);
+    R_DEFINE_ERROR_RESULT(NroAlreadyLoaded,             57);
 
-static constexpr Result ResultLoaderUnknownCapability                = MAKERESULT(Module_Loader, 100);
-static constexpr Result ResultLoaderInvalidCapabilityKernelFlags     = MAKERESULT(Module_Loader, 103);
-static constexpr Result ResultLoaderInvalidCapabilitySyscallMask     = MAKERESULT(Module_Loader, 104);
-static constexpr Result ResultLoaderInvalidCapabilityMapRange        = MAKERESULT(Module_Loader, 106);
-static constexpr Result ResultLoaderInvalidCapabilityMapPage         = MAKERESULT(Module_Loader, 107);
-static constexpr Result ResultLoaderInvalidCapabilityInterruptPair   = MAKERESULT(Module_Loader, 111);
-static constexpr Result ResultLoaderInvalidCapabilityApplicationType = MAKERESULT(Module_Loader, 113);
-static constexpr Result ResultLoaderInvalidCapabilityKernelVersion   = MAKERESULT(Module_Loader, 114);
-static constexpr Result ResultLoaderInvalidCapabilityHandleTable     = MAKERESULT(Module_Loader, 115);
-static constexpr Result ResultLoaderInvalidCapabilityDebugFlags      = MAKERESULT(Module_Loader, 116);
+    R_DEFINE_ERROR_RESULT(InvalidAddress,        81);
+    R_DEFINE_ERROR_RESULT(InvalidSize,           82);
+    R_DEFINE_ERROR_RESULT(NotLoaded,             84);
+    R_DEFINE_ERROR_RESULT(NotRegistered,         85);
+    R_DEFINE_ERROR_RESULT(InvalidSession,        86);
+    R_DEFINE_ERROR_RESULT(InvalidProcess,        87);
 
-static constexpr Result ResultLoaderInternalError = MAKERESULT(Module_Loader, 200);
+    R_DEFINE_ERROR_RESULT(UnknownCapability,                100);
+    R_DEFINE_ERROR_RESULT(InvalidCapabilityKernelFlags,     103);
+    R_DEFINE_ERROR_RESULT(InvalidCapabilitySyscallMask,     104);
+    R_DEFINE_ERROR_RESULT(InvalidCapabilityMapRange,        106);
+    R_DEFINE_ERROR_RESULT(InvalidCapabilityMapPage,         107);
+    R_DEFINE_ERROR_RESULT(InvalidCapabilityInterruptPair,   111);
+    R_DEFINE_ERROR_RESULT(InvalidCapabilityApplicationType, 113);
+    R_DEFINE_ERROR_RESULT(InvalidCapabilityKernelVersion,   114);
+    R_DEFINE_ERROR_RESULT(InvalidCapabilityHandleTable,     115);
+    R_DEFINE_ERROR_RESULT(InvalidCapabilityDebugFlags,      116);
+
+    R_DEFINE_ERROR_RESULT(InternalError, 200);
+
+}

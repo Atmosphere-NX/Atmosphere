@@ -25,14 +25,14 @@ Result FileStorage::UpdateSize() {
     if (this->size == InvalidSize) {
         return this->file->GetSize(&this->size);
     }
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result FileStorage::Read(void *buffer, size_t size, u64 offset) {
     u64 read_size;
 
     if (size == 0) {
-        return ResultSuccess;
+        return ResultSuccess();
     }
     if (buffer == nullptr) {
         return ResultFsNullptrArgument;
@@ -47,12 +47,12 @@ Result FileStorage::Read(void *buffer, size_t size, u64 offset) {
     if (read_size != size && read_size) {
         return this->Read(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + read_size), size - read_size, offset + read_size);
     }
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result FileStorage::Write(void *buffer, size_t size, u64 offset) {
     if (size == 0) {
-        return ResultSuccess;
+        return ResultSuccess();
     }
     if (buffer == nullptr) {
         return ResultFsNullptrArgument;
@@ -72,7 +72,7 @@ Result FileStorage::Flush() {
 Result FileStorage::GetSize(u64 *out_size) {
     R_TRY(this->UpdateSize());
     *out_size = this->size;
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result FileStorage::SetSize(u64 size) {
@@ -92,7 +92,7 @@ Result FileStorage::OperateRange(FsOperationId operation_type, u64 offset, u64 s
                     /* N checks for size == sizeof(*out_range_info) here, but that's because their wrapper api is bad. */
                     std::memset(out_range_info, 0, sizeof(*out_range_info));
                 }
-                return ResultSuccess;
+                return ResultSuccess();
             }
             R_TRY(this->UpdateSize());
             /* N checks for positivity + signed overflow on offset/size here, but we're using unsigned types... */

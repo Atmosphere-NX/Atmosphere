@@ -142,16 +142,13 @@ namespace sts::boot2 {
         void LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
             os::ProcessId process_id = os::InvalidProcessId;
 
-            switch (pm::shell::LaunchTitle(&process_id, loc, launch_flags)) {
-                case ResultKernelResourceExhausted:
-                case ResultKernelOutOfMemory:
-                case ResultKernelLimitReached:
-                    STS_ASSERT(false);
-                default:
-                    /* We don't care about other issues. */
-                    break;
+            /* Launch, lightly validate result. */
+            {
+                const auto launch_result = pm::shell::LaunchTitle(&process_id, loc, launch_flags);
+                STS_ASSERT(!(svc::ResultOutOfResource::Includes(launch_result)));
+                STS_ASSERT(!(svc::ResultOutOfMemory::Includes(launch_result)));
+                STS_ASSERT(!(svc::ResultLimitReached::Includes(launch_result)));
             }
-
 
             if (out_process_id) {
                 *out_process_id = process_id;

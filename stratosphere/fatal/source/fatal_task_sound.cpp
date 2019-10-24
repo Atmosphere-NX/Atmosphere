@@ -86,7 +86,7 @@ namespace sts::fatal::srv {
 
         Result StopSoundTask::Run() {
             StopSound();
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
     }

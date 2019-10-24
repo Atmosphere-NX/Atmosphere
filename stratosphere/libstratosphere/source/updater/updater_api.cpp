@@ -55,15 +55,15 @@ namespace sts::updater {
         /* Implementations. */
         Result ValidateWorkBuffer(const void *work_buffer, size_t work_buffer_size) {
             if (work_buffer_size < BctSize + EksSize) {
-                return ResultUpdaterTooSmallWorkBuffer;
+                return ResultTooSmallWorkBuffer();
             }
-            if (reinterpret_cast<uintptr_t>(work_buffer) & 0xFFF) {
-                return ResultUpdaterMisalignedWorkBuffer;
+            if (!util::IsAligned(work_buffer, 0x1000)) {
+                return ResultNotAlignedWorkBuffer();
             }
-            if (reinterpret_cast<uintptr_t>(work_buffer_size) & 0x1FF) {
-                return ResultUpdaterMisalignedWorkBuffer;
+            if (util::IsAligned(work_buffer_size, 0x200)) {
+                return ResultNotAlignedWorkBuffer();
             }
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         bool HasEks(BootImageUpdateType boot_image_update_type) {
@@ -115,7 +115,7 @@ namespace sts::updater {
             /* Read data from save. */
             out->needs_verify_normal = save.GetNeedsVerification(BootModeType::Normal);
             out->needs_verify_safe = save.GetNeedsVerification(BootModeType::Safe);
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result VerifyBootImagesAndRepairIfNeeded(bool *out_repaired, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -125,7 +125,7 @@ namespace sts::updater {
 
             /* Verify the boot images in NAND. */
             R_TRY_CATCH(VerifyBootImages(bip_data_id, mode, work_buffer, work_buffer_size, boot_image_update_type)) {
-                R_CATCH(ResultUpdaterNeedsRepairBootImages) {
+                R_CATCH(ResultNeedsRepairBootImages) {
                     /* Perform repair. */
                     *out_repaired = true;
                     R_TRY(UpdateBootImages(bip_data_id, mode, work_buffer, work_buffer_size, boot_image_update_type));
@@ -153,7 +153,7 @@ namespace sts::updater {
             u32 total_entries;
             R_TRY(ncmContentMetaDatabaseList(&meta_db, &total_entries, &written_entries, records, MaxContentMetas * sizeof(*records), title_type, 0, 0, UINT64_MAX, NcmContentInstallType_Full));
             if (total_entries == 0) {
-                return ResultUpdaterBootImagePackageNotFound;
+                return ResultBootImagePackageNotFound();
             }
 
             STS_ASSERT(total_entries == written_entries);
@@ -166,14 +166,14 @@ namespace sts::updater {
 
                     if (attr & NcmContentMetaAttribute_IncludesExFatDriver) {
                         *out_data_id = records[i].title_id;
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                 }
             }
 
             /* If there's only one entry or no exfat entries, return that entry. */
             *out_data_id = records[0].title_id;
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result VerifyBootImages(u64 data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -191,9 +191,7 @@ namespace sts::updater {
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
             R_TRY_CATCH(romfsMountFromDataArchive(data_id, FsStorageId_NandSystem, GetBootImagePackageMountPath())) {
-                R_CATCH(ResultFsTargetNotFound) {
-                    return ResultUpdaterBootImagePackageNotFound;
-                }
+                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
 
@@ -219,26 +217,26 @@ namespace sts::updater {
                 R_TRY(GetFileHash(&size, file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
                 R_TRY(boot0_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot0Partition::Package1NormalMain));
                 if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultUpdaterNeedsRepairBootImages;
+                    return ResultNeedsRepairBootImages();
                 }
                 R_TRY(boot0_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot0Partition::Package1NormalSub));
                 if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultUpdaterNeedsRepairBootImages;
+                    return ResultNeedsRepairBootImages();
                 }
 
                 /* Compare Package2 Normal/Sub hashes. */
                 R_TRY(GetFileHash(&size, file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::NormalMain));
                 if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultUpdaterNeedsRepairBootImages;
+                    return ResultNeedsRepairBootImages();
                 }
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::NormalSub));
                 if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultUpdaterNeedsRepairBootImages;
+                    return ResultNeedsRepairBootImages();
                 }
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result VerifyBootImagesSafe(u64 data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -246,9 +244,7 @@ namespace sts::updater {
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
             R_TRY_CATCH(romfsMountFromDataArchive(data_id, FsStorageId_NandSystem, GetBootImagePackageMountPath())) {
-                R_CATCH(ResultFsTargetNotFound) {
-                    return ResultUpdaterBootImagePackageNotFound;
-                }
+                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
 
@@ -279,26 +275,26 @@ namespace sts::updater {
                 R_TRY(GetFileHash(&size, file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
                 R_TRY(boot1_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot1Partition::Package1SafeMain));
                 if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultUpdaterNeedsRepairBootImages;
+                    return ResultNeedsRepairBootImages();
                 }
                 R_TRY(boot1_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot1Partition::Package1SafeSub));
                 if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultUpdaterNeedsRepairBootImages;
+                    return ResultNeedsRepairBootImages();
                 }
 
                 /* Compare Package2 Normal/Sub hashes. */
                 R_TRY(GetFileHash(&size, file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::SafeMain));
                 if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultUpdaterNeedsRepairBootImages;
+                    return ResultNeedsRepairBootImages();
                 }
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::SafeSub));
                 if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultUpdaterNeedsRepairBootImages;
+                    return ResultNeedsRepairBootImages();
                 }
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result UpdateBootImages(u64 data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -316,9 +312,7 @@ namespace sts::updater {
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
             R_TRY_CATCH(romfsMountFromDataArchive(data_id, FsStorageId_NandSystem, GetBootImagePackageMountPath())) {
-                R_CATCH(ResultFsTargetNotFound) {
-                    return ResultUpdaterBootImagePackageNotFound;
-                }
+                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
 
@@ -365,7 +359,7 @@ namespace sts::updater {
                 R_TRY(boot0_accessor.Write(GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size, Boot0Partition::Package1NormalMain));
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result UpdateBootImagesSafe(u64 data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -373,9 +367,7 @@ namespace sts::updater {
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
             R_TRY_CATCH(romfsMountFromDataArchive(data_id, FsStorageId_NandSystem, GetBootImagePackageMountPath())) {
-                R_CATCH(ResultFsTargetNotFound) {
-                    return ResultUpdaterBootImagePackageNotFound;
-                }
+                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
 
@@ -426,7 +418,7 @@ namespace sts::updater {
                 R_TRY(boot1_accessor.Write(GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size, Boot1Partition::Package1SafeMain));
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result SetVerificationNeeded(BootModeType mode, bool needed, void *work_buffer, size_t work_buffer_size) {
@@ -445,7 +437,7 @@ namespace sts::updater {
             save.SetNeedsVerification(mode, needed);
             R_TRY(save.Save());
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result ValidateBctFileHash(Boot0Accessor &accessor, Boot0Partition which, const void *stored_hash, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -468,10 +460,10 @@ namespace sts::updater {
             sha256CalculateHash(file_hash, bct, BctSize);
 
             if (std::memcmp(file_hash, stored_hash, SHA256_HASH_SIZE) != 0) {
-                return ResultUpdaterNeedsRepairBootImages;
+                return ResultNeedsRepairBootImages();
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result GetPackage2Hash(void *dst_hash, size_t package2_size, void *work_buffer, size_t work_buffer_size, Package2Type which) {
@@ -518,7 +510,7 @@ namespace sts::updater {
 
         /* If we don't need to verify anything, we're done. */
         if (!verification_state.needs_verify_normal && !verification_state.needs_verify_safe) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         /* Get a session to ncm. */
@@ -528,21 +520,17 @@ namespace sts::updater {
         /* Verify normal, verify safe as needed. */
         if (verification_state.needs_verify_normal) {
             R_TRY_CATCH(VerifyBootImagesAndRepairIfNeeded(out_repaired_normal, BootModeType::Normal, work_buffer, work_buffer_size, boot_image_update_type)) {
-                R_CATCH(ResultUpdaterBootImagePackageNotFound) {
-                    /* Nintendo considers failure to locate bip a success. TODO: don't do that? */
-                }
+                R_CATCH(ResultBootImagePackageNotFound) { /* Nintendo considers failure to locate bip a success. TODO: don't do that? */ }
             } R_END_TRY_CATCH;
         }
 
         if (verification_state.needs_verify_safe) {
             R_TRY_CATCH(VerifyBootImagesAndRepairIfNeeded(out_repaired_safe, BootModeType::Safe, work_buffer, work_buffer_size, boot_image_update_type)) {
-                R_CATCH(ResultUpdaterBootImagePackageNotFound) {
-                    /* Nintendo considers failure to locate bip a success. TODO: don't do that? */
-                }
+                R_CATCH(ResultBootImagePackageNotFound) { /* Nintendo considers failure to locate bip a success. TODO: don't do that? */ }
             } R_END_TRY_CATCH;
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

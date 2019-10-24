@@ -98,13 +98,13 @@ namespace sts::os::impl{
         s32 index = WaitInvalid;
 
         R_TRY_CATCH(svcWaitSynchronization(&index, handles, count, timeout)) {
-            R_CATCH(ResultKernelTimedOut) { return WaitTimedOut; }
-            R_CATCH(ResultKernelCancelled) { return WaitCancelled; }
+            R_CATCH(svc::ResultTimedOut)  { return WaitTimedOut; }
+            R_CATCH(svc::ResultCancelled) { return WaitCancelled; }
             /* All other results are critical errors. */
-            /* 7601: Thread termination requested. */
-            /* E401: Handle is dead. */
-            /* E601: Handle list address invalid. */
-            /* EE01: Too many handles. */
+            /* svc::ResultThreadTerminating */
+            /* svc::ResultInvalidHandle. */
+            /* svc::ResultInvalidPointer */
+            /* svc::ResultOutOfRange */
         } R_END_TRY_CATCH_WITH_ASSERT;
 
         return index;

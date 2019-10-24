@@ -40,7 +40,7 @@ namespace sts::ams {
         const u32 build_version = GetVersion(ATMOSPHERE_RELEASE_VERSION);
 
         if (runtime_version < build_version) {
-            R_ASSERT(ResultAtmosphereVersionMismatch);
+            R_ASSERT(ams::ResultVersionMismatch());
         }
     }
 

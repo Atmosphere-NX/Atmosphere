@@ -49,29 +49,25 @@ namespace sts::ldr::args {
     }
 
     Result Set(ncm::TitleId title_id, const void *args, size_t args_size) {
-        if (args_size >= ArgumentSizeMax) {
-            return ResultLoaderTooLongArgument;
-        }
+        R_UNLESS(args_size < ArgumentSizeMax, ldr::ResultTooLongArgument());
 
         ArgumentInfo *arg_info = FindArgumentInfo(title_id);
         if (arg_info == nullptr) {
             arg_info = FindFreeArgumentInfo();
         }
-        if (arg_info == nullptr) {
-            return ResultLoaderTooManyArguments;
-        }
+        R_UNLESS(arg_info != nullptr, ldr::ResultTooManyArguments());
 
         arg_info->title_id = title_id;
         arg_info->args_size = args_size;
         std::memcpy(arg_info->args, args, args_size);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result Clear() {
         for (size_t i = 0; i < MaxArgumentInfos; i++) {
             g_argument_infos[i].title_id = FreeTitleId;
         }
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

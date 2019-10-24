@@ -15,25 +15,40 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_ServiceFramework = 10;
+namespace sts::sf {
 
-static constexpr Result ResultServiceFrameworkNotSupported              = MAKERESULT(Module_ServiceFramework, 1);
-static constexpr Result ResultServiceFrameworkPreconditionViolation     = MAKERESULT(Module_ServiceFramework, 3);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(10);
 
-static constexpr Result ResultServiceFrameworkInvalidCmifHeaderSize     = MAKERESULT(Module_ServiceFramework, 202);
-static constexpr Result ResultServiceFrameworkInvalidCmifInHeader       = MAKERESULT(Module_ServiceFramework, 211);
-static constexpr Result ResultServiceFrameworkUnknownCmifCommandId      = MAKERESULT(Module_ServiceFramework, 221);
-static constexpr Result ResultServiceFrameworkInvalidCmifOutRawSize     = MAKERESULT(Module_ServiceFramework, 232);
-static constexpr Result ResultServiceFrameworkInvalidCmifNumInObjects   = MAKERESULT(Module_ServiceFramework, 235);
-static constexpr Result ResultServiceFrameworkInvalidCmifNumOutObjects  = MAKERESULT(Module_ServiceFramework, 236);
-static constexpr Result ResultServiceFrameworkInvalidCmifInObject       = MAKERESULT(Module_ServiceFramework, 239);
+    R_DEFINE_ERROR_RESULT(NotSupported,             1);
+    R_DEFINE_ERROR_RESULT(PreconditionViolation,    3);
 
-static constexpr Result ResultServiceFrameworkTargetNotFound            = MAKERESULT(Module_ServiceFramework, 261);
+    namespace cmif {
 
-static constexpr Result ResultServiceFrameworkOutOfDomainEntries        = MAKERESULT(Module_ServiceFramework, 301);
+        R_DEFINE_ERROR_RESULT(InvalidHeaderSize,    202);
+        R_DEFINE_ERROR_RESULT(InvalidInHeader,      211);
+        R_DEFINE_ERROR_RESULT(UnknownCommandId,     221);
+        R_DEFINE_ERROR_RESULT(InvalidOutRawSize,    232);
+        R_DEFINE_ERROR_RESULT(InvalidNumInObjects,  235);
+        R_DEFINE_ERROR_RESULT(InvalidNumOutObjects, 236);
+        R_DEFINE_ERROR_RESULT(InvalidInObject,      239);
 
+        R_DEFINE_ERROR_RESULT(TargetNotFound,       261);
 
-static constexpr Result ResultServiceFrameworkRequestDeferred           = MAKERESULT(Module_ServiceFramework, 811);
-static constexpr Result ResultServiceFrameworkRequestDeferredByUser     = MAKERESULT(Module_ServiceFramework, 812);
+        R_DEFINE_ERROR_RESULT(OutOfDomainEntries,   301);
+
+    }
+
+    namespace impl {
+
+        R_DEFINE_ABSTRACT_ERROR_RANGE(RequestContextChanged, 800, 899);
+            R_DEFINE_ABSTRACT_ERROR_RANGE(RequestInvalidated, 801, 809);
+                R_DEFINE_ERROR_RESULT(RequestInvalidatedByUser, 802);
+
+    }
+
+    R_DEFINE_ABSTRACT_ERROR_RANGE(RequestDeferred, 811, 819);
+        R_DEFINE_ERROR_RESULT(RequestDeferredByUser, 812);
+
+}

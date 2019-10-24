@@ -15,12 +15,16 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_I2c = 101;
+namespace sts::i2c {
 
-static constexpr Result ResultI2cNoAck           = MAKERESULT(Module_I2c, 1);
-static constexpr Result ResultI2cBusBusy         = MAKERESULT(Module_I2c, 2);
-static constexpr Result ResultI2cFullCommandList = MAKERESULT(Module_I2c, 3);
-static constexpr Result ResultI2cTimedOut        = MAKERESULT(Module_I2c, 4);
-static constexpr Result ResultI2cUnknownDevice   = MAKERESULT(Module_I2c, 5);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(101);
+
+    R_DEFINE_ERROR_RESULT(NoAck,           1);
+    R_DEFINE_ERROR_RESULT(BusBusy,         2);
+    R_DEFINE_ERROR_RESULT(FullCommandList, 3);
+    R_DEFINE_ERROR_RESULT(TimedOut,        4);
+    R_DEFINE_ERROR_RESULT(UnknownDevice,   5);
+
+}

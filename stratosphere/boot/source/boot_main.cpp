@@ -72,6 +72,12 @@ namespace sts::ams {
 
 }
 
+namespace sts::result {
+
+    bool CallFatalOnResultAssertion = false;
+
+}
+
 using namespace sts;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {

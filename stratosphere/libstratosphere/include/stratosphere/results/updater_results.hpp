@@ -15,12 +15,16 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Updater = 158;
+namespace sts::updater {
 
-static constexpr Result ResultUpdaterBootImagePackageNotFound = MAKERESULT(Module_Updater, 2);
-static constexpr Result ResultUpdaterInvalidBootImagePackage  = MAKERESULT(Module_Updater, 3);
-static constexpr Result ResultUpdaterTooSmallWorkBuffer       = MAKERESULT(Module_Updater, 4);
-static constexpr Result ResultUpdaterMisalignedWorkBuffer     = MAKERESULT(Module_Updater, 5);
-static constexpr Result ResultUpdaterNeedsRepairBootImages    = MAKERESULT(Module_Updater, 6);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(158);
+
+    R_DEFINE_ERROR_RESULT(BootImagePackageNotFound, 2);
+    R_DEFINE_ERROR_RESULT(InvalidBootImagePackage,  3);
+    R_DEFINE_ERROR_RESULT(TooSmallWorkBuffer,       4);
+    R_DEFINE_ERROR_RESULT(NotAlignedWorkBuffer,     5);
+    R_DEFINE_ERROR_RESULT(NeedsRepairBootImages,    6);
+
+}

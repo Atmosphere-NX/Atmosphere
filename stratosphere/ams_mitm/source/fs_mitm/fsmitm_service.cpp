@@ -92,7 +92,7 @@ Result FsMitmService::OpenHblWebContentFileSystem(Out<std::shared_ptr<IFileSyste
         out_fs.ChangeObjectId(sd_fs.s.object_id);
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result FsMitmService::OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInterface>> out_fs, u64 title_id, u32 filesystem_type) {
@@ -163,7 +163,7 @@ Result FsMitmService::OpenSdCardFileSystem(Out<std::shared_ptr<IFileSystemInterf
         out_fs.ChangeObjectId(sd_fs.s.object_id);
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result FsMitmService::OpenSaveDataFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out_fs, u8 space_id, FsSave save_struct) {
@@ -222,7 +222,7 @@ Result FsMitmService::OpenSaveDataFileSystem(Out<std::shared_ptr<IFileSystemInte
             out_fs.ChangeObjectId(sd_fs.s.object_id);
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 }
 
@@ -272,7 +272,7 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
         out_storage.ChangeObjectId(bis_storage.s.object_id);
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 /* Add redirection for RomFS to the SD card. */
@@ -299,7 +299,7 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
                 out_storage.ChangeObjectId(s.s.object_id);
             }
             out_storage.SetValue(std::move(cached_storage));
-            return ResultSuccess;
+            return ResultSuccess();
         }
     }
 
@@ -326,7 +326,7 @@ Result FsMitmService::OpenDataStorageByCurrentProcess(Out<std::shared_ptr<IStora
         }
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 /* Add redirection for System Data Archives to the SD card. */
@@ -355,7 +355,7 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
                 out_storage.ChangeObjectId(s.s.object_id);
             }
             out_storage.SetValue(std::move(cached_storage));
-            return ResultSuccess;
+            return ResultSuccess();
         }
     }
 
@@ -382,5 +382,5 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
         }
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }

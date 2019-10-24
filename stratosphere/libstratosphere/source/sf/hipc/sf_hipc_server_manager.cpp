@@ -124,7 +124,12 @@ namespace sts::sf::hipc {
             std::memcpy(tls_message.GetPointer(), saved_message.GetPointer(), tls_message.GetSize());
         }
 
-        return this->ProcessRequest(session, tls_message);
+        /* Treat a meta "Context Invalidated" message as a success. */
+        R_TRY_CATCH(this->ProcessRequest(session, tls_message)) {
+            R_CONVERT(sf::impl::ResultRequestInvalidated, ResultSuccess());
+        } R_END_TRY_CATCH;
+
+        return ResultSuccess();
     }
 
     void ServerManagerBase::ProcessDeferredSessions() {
@@ -135,12 +140,16 @@ namespace sts::sf::hipc {
         while (it != this->deferred_session_list.end()) {
             ServerSession *session = static_cast<ServerSession *>(&*it);
             R_TRY_CATCH(this->ProcessForSession(session)) {
-                R_CATCH(ResultServiceFrameworkRequestDeferredByUser) {
+                R_CATCH(sf::ResultRequestDeferred) {
                     /* Session is still deferred, so let's continue. */
                     it++;
                     continue;
                 }
-                /* TODO: N has a result that undefers without success. */
+                R_CATCH(sf::impl::ResultRequestInvalidated) {
+                    /* Session is no longer deferred! */
+                    it = this->deferred_session_list.erase(it);
+                    continue;
+                }
             } R_END_TRY_CATCH_WITH_ASSERT;
 
             /* We succeeded! Remove from deferred list. */
@@ -159,17 +168,17 @@ namespace sts::sf::hipc {
             case UserDataTag::Session:
                 /* Try to process for session. */
                 R_TRY_CATCH(this->ProcessForSession(holder)) {
-                    R_CATCH(ResultServiceFrameworkRequestDeferredByUser) {
+                    R_CATCH(sf::ResultRequestDeferred) {
                         /* The session was deferred, so push it onto the deferred session list. */
                         std::scoped_lock lk(this->deferred_session_mutex);
                         this->deferred_session_list.push_back(*static_cast<ServerSession *>(holder));
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                 } R_END_TRY_CATCH;
 
                 /* We successfully invoked a command...so let's see if anything can be undeferred. */
                 this->ProcessDeferredSessions();
-                return ResultSuccess;
+                return ResultSuccess();
                 break;
             STS_UNREACHABLE_DEFAULT_CASE();
         }

@@ -47,7 +47,7 @@ namespace sts::hid {
                 g_initialized_hid = true;
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
     }
@@ -64,7 +64,7 @@ namespace sts::hid {
             *out |= hidKeysHeld(static_cast<HidControllerID>(controller));
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

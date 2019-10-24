@@ -24,7 +24,7 @@ namespace sts::updater {
     Result ReadFile(size_t *out_size, void *dst, size_t dst_size, const char *path) {
         FILE *fp = fopen(path, "rb");
         if (fp == NULL) {
-            return ResultUpdaterInvalidBootImagePackage;
+            return ResultInvalidBootImagePackage();
         }
         ON_SCOPE_EXIT { fclose(fp); };
 
@@ -34,13 +34,13 @@ namespace sts::updater {
             return fsdevGetLastResult();
         }
         *out_size = read_size;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result GetFileHash(size_t *out_size, void *dst_hash, const char *path, void *work_buffer, size_t work_buffer_size) {
         FILE *fp = fopen(path, "rb");
         if (fp == NULL) {
-            return ResultUpdaterInvalidBootImagePackage;
+            return ResultInvalidBootImagePackage();
         }
         ON_SCOPE_EXIT { fclose(fp); };
 
@@ -66,7 +66,7 @@ namespace sts::updater {
 
         sha256ContextGetHash(&sha_ctx, dst_hash);
         *out_size = total_size;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

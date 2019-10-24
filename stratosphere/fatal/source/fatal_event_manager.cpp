@@ -29,12 +29,10 @@ namespace sts::fatal::srv {
         std::scoped_lock lk{this->lock};
 
         /* Only allow GetEvent to succeed NumFatalEvents times. */
-        if (this->num_events_gotten >= FatalEventManager::NumFatalEvents) {
-            return ResultFatalTooManyEvents;
-        }
+        R_UNLESS(this->num_events_gotten < FatalEventManager::NumFatalEvents, ResultTooManyEvents());
 
         *out = this->events[this->num_events_gotten++].revent;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     void FatalEventManager::SignalEvents() {

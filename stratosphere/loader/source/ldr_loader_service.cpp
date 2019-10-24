@@ -60,7 +60,7 @@ namespace sts::ldr {
             }
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result LoaderService::PinTitle(sf::Out<PinId> out_id, const ncm::TitleLocation &loc) {
@@ -80,10 +80,7 @@ namespace sts::ldr {
     }
 
     Result LoaderService::GetProcessModuleInfo(sf::Out<u32> count, const sf::OutPointerArray<ModuleInfo> &out, os::ProcessId process_id) {
-        if (out.GetSize() > std::numeric_limits<s32>::max()) {
-            return ResultLoaderInvalidSize;
-        }
-
+        R_UNLESS(out.GetSize() <= std::numeric_limits<s32>::max(), ResultInvalidSize());
         return ldr::ro::GetProcessModuleInfo(count.GetPointer(), out.GetPointer(), out.GetSize(), process_id);
     }
 

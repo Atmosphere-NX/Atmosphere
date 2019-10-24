@@ -27,21 +27,21 @@ namespace sts::ro::impl {
     }
 
     Result MapNro(u64 *out_base_address, Handle process_handle, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size) {
-        map::MappedCodeMemory nro_mcm(ResultRoInternalError);
-        map::MappedCodeMemory bss_mcm(ResultRoInternalError);
+        map::MappedCodeMemory nro_mcm(ResultInternalError{});
+        map::MappedCodeMemory bss_mcm(ResultInternalError{});
         u64 base_address;
 
         /* Map the NRO, and map the BSS immediately after it. */
         size_t i;
         for (i = 0; i < MaxMapRetries; i++) {
-            map::MappedCodeMemory tmp_nro_mcm(ResultRoInternalError);
+            map::MappedCodeMemory tmp_nro_mcm(ResultInternalError{});
             R_TRY(map::MapCodeMemoryInProcess(tmp_nro_mcm, process_handle, nro_heap_address, nro_heap_size));
             base_address = tmp_nro_mcm.GetDstAddress();
 
             if (bss_heap_size > 0) {
                 map::MappedCodeMemory tmp_bss_mcm(process_handle, base_address + nro_heap_size, bss_heap_address, bss_heap_size);
                 R_TRY_CATCH(tmp_bss_mcm.GetResult()) {
-                    R_CATCH(ResultKernelInvalidMemoryState) {
+                    R_CATCH(svc::ResultInvalidCurrentMemoryState) {
                         continue;
                     }
                 } R_END_TRY_CATCH;
@@ -59,16 +59,14 @@ namespace sts::ro::impl {
             nro_mcm = std::move(tmp_nro_mcm);
             break;
         }
-        if (i == MaxMapRetries) {
-            return ResultRoInsufficientAddressSpace;
-        }
+        R_UNLESS(i < MaxMapRetries, ResultOutOfAddressSpace());
 
         /* Invalidation here actually prevents them from unmapping at scope exit. */
         nro_mcm.Invalidate();
         bss_mcm.Invalidate();
 
         *out_base_address = base_address;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result SetNroPerms(Handle process_handle, u64 base_address, u64 rx_size, u64 ro_size, u64 rw_size) {
@@ -80,7 +78,7 @@ namespace sts::ro::impl {
         R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + ro_offset, ro_size, Perm_R ));
         R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + rw_offset, rw_size, Perm_Rw));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result UnmapNro(Handle process_handle, u64 base_address, u64 nro_heap_address, u64 bss_heap_address, u64 bss_heap_size, u64 code_size, u64 rw_size) {
@@ -97,7 +95,7 @@ namespace sts::ro::impl {
         /* Finally, unmap .text + .rodata. */
         R_TRY(svcUnmapProcessCodeMemory(process_handle, base_address, nro_heap_address, code_size));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

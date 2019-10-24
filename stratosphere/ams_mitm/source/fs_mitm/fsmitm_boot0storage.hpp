@@ -72,7 +72,7 @@ class SectoredProxyStorage : public ProxyStorage {
                 }
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         virtual Result Write(void *_buffer, size_t size, u64 offset) override {
@@ -112,7 +112,7 @@ class SectoredProxyStorage : public ProxyStorage {
                 }
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 };
 

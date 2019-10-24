@@ -49,7 +49,7 @@ Result SubDirectoryFileSystem::Initialize(const char *bp) {
 
     std::strncpy(this->base_path, normal_path, this->base_path_len);
     this->base_path[this->base_path_len-1] = 0;
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result SubDirectoryFileSystem::GetFullPath(char *out, size_t out_size, const char *relative_path) {

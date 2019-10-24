@@ -15,23 +15,27 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Hipc = 11;
+namespace sts::sf::hipc {
 
-static constexpr Result ResultHipcSessionAllocationFailure = MAKERESULT(Module_Hipc, 102);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(11);
 
-static constexpr Result ResultHipcOutOfSessions        = MAKERESULT(Module_Hipc, 131);
-static constexpr Result ResultHipcPointerBufferTooSmall = MAKERESULT(Module_Hipc, 141);
+    R_DEFINE_ABSTRACT_ERROR_RANGE(OutOfResource, 100, 299);
+        R_DEFINE_ERROR_RESULT(OutOfSessionMemory,    102);
+        R_DEFINE_ERROR_RANGE (OutOfSessions,         131, 139);
+        R_DEFINE_ERROR_RESULT(PointerBufferTooSmall, 141);
 
-static constexpr Result ResultHipcOutOfDomains         = MAKERESULT(Module_Hipc, 200);
+        R_DEFINE_ERROR_RESULT(OutOfDomains,          200);
 
-static constexpr Result ResultHipcSessionClosed        = MAKERESULT(Module_Hipc, 301);
+    R_DEFINE_ERROR_RESULT(SessionClosed,        301);
 
-static constexpr Result ResultHipcInvalidRequestSize   = MAKERESULT(Module_Hipc, 402);
-static constexpr Result ResultHipcUnknownCommandType   = MAKERESULT(Module_Hipc, 403);
+    R_DEFINE_ERROR_RESULT(InvalidRequestSize,   402);
+    R_DEFINE_ERROR_RESULT(UnknownCommandType,   403);
 
-static constexpr Result ResultHipcInvalidRequest       = MAKERESULT(Module_Hipc, 420);
+    R_DEFINE_ERROR_RESULT(InvalidCmifRequest,   420);
 
-static constexpr Result ResultHipcTargetNotDomain      = MAKERESULT(Module_Hipc, 491);
-static constexpr Result ResultHipcDomainObjectNotFound = MAKERESULT(Module_Hipc, 492);
+    R_DEFINE_ERROR_RESULT(TargetNotDomain,      491);
+    R_DEFINE_ERROR_RESULT(DomainObjectNotFound, 492);
+
+}

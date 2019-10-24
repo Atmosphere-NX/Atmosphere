@@ -114,7 +114,7 @@ Result DirectorySaveDataFileSystem::AllocateWorkBuffer(void **out_buf, size_t *o
         if (buf != nullptr) {
             *out_buf = buf;
             *out_size = try_size;
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         /* Divide size by two. */
@@ -162,7 +162,7 @@ Result DirectorySaveDataFileSystem::CopySaveFromProxy() {
         R_TRY(FsDirUtils::CopyDirectoryRecursively(this, this->proxy_save_fs.get(), FsPathUtils::RootPath, FsPathUtils::RootPath, work_buf, work_buf_size));
         return this->Commit();
     }
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 /* ================================================================================================ */
@@ -258,7 +258,7 @@ Result DirectorySaveDataFileSystem::OpenFileImpl(std::unique_ptr<IFile> &out_fil
         this->open_writable_files++;
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result DirectorySaveDataFileSystem::OpenDirectoryImpl(std::unique_ptr<IDirectory> &out_dir, const FsPath &path, DirectoryOpenMode mode) {
@@ -303,7 +303,7 @@ Result DirectorySaveDataFileSystem::CommitImpl() {
     R_TRY(FsDirUtils::RetryUntilTargetNotLocked(std::move(RenameSynchDir)));
 
     /* TODO: Should I call this->fs->Commit()? Nintendo does not. */
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result DirectorySaveDataFileSystem::GetFreeSpaceSizeImpl(uint64_t *out, const FsPath &path) {

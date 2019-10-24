@@ -22,16 +22,12 @@ namespace sts::pm::dmnt {
 
     /* Actual command implementations. */
     Result DebugMonitorServiceBase::GetModuleIdList(sf::Out<u32> out_count, const sf::OutBuffer &out_buf, u64 unused) {
-        if (out_buf.GetSize() > std::numeric_limits<s32>::max()) {
-            return ResultPmInvalidSize;
-        }
+        R_UNLESS(out_buf.GetSize() <= std::numeric_limits<s32>::max(), pm::ResultInvalidSize());
         return impl::GetModuleIdList(out_count.GetPointer(), out_buf.GetPointer(), out_buf.GetSize(), unused);
     }
 
     Result DebugMonitorServiceBase::GetExceptionProcessIdList(sf::Out<u32> out_count, const sf::OutArray<os::ProcessId> &out_process_ids) {
-        if (out_process_ids.GetSize() > std::numeric_limits<s32>::max()) {
-            return ResultPmInvalidSize;
-        }
+        R_UNLESS(out_process_ids.GetSize() <= std::numeric_limits<s32>::max(), pm::ResultInvalidSize());
         return impl::GetExceptionProcessIdList(out_count.GetPointer(), out_process_ids.GetPointer(), out_process_ids.GetSize());
     }
 

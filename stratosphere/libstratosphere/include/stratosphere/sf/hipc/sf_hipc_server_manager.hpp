@@ -200,7 +200,7 @@ namespace sts::sf::hipc {
                     static_holder = cmif::ServiceObjectHolder(std::move(static_object));
                 }
                 this->RegisterServerImpl<ServiceImpl, MakeShared>(port_handle, service_name, true, std::move(static_holder));
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             /* Processing. */

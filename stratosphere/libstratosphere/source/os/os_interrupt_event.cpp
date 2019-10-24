@@ -26,7 +26,7 @@ namespace sts::os {
         R_TRY(svcCreateInterruptEvent(this->handle.GetPointer(), interrupt_id, type));
 
         this->is_initialized = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     void InterruptEvent::Finalize() {
@@ -51,14 +51,14 @@ namespace sts::os {
         while (true) {
             /* Continuously wait, until success. */
             R_TRY_CATCH(svcWaitSynchronizationSingle(this->handle.Get(), U64_MAX)) {
-                R_CATCH(ResultKernelCancelled) { continue; }
+                R_CATCH(svc::ResultCancelled) { continue; }
             } R_END_TRY_CATCH_WITH_ASSERT;
 
             /* Clear, if we must. */
             if (this->auto_clear) {
                 R_TRY_CATCH(svcResetSignal(this->handle.Get())) {
                     /* Some other thread might have caught this before we did. */
-                    R_CATCH(ResultKernelInvalidState) { continue; }
+                    R_CATCH(svc::ResultInvalidState) { continue; }
                 } R_END_TRY_CATCH_WITH_ASSERT;
             }
             return;
@@ -76,8 +76,8 @@ namespace sts::os {
             while (true) {
                 /* Continuously wait, until success or timeout. */
                 R_TRY_CATCH(svcWaitSynchronizationSingle(this->handle.Get(), 0)) {
-                    R_CATCH(ResultKernelTimedOut) { return false; }
-                    R_CATCH(ResultKernelCancelled) { continue; }
+                    R_CATCH(svc::ResultTimedOut) { return false; }
+                    R_CATCH(svc::ResultCancelled) { continue; }
                 } R_END_TRY_CATCH_WITH_ASSERT;
 
                 /* We succeeded, so we're signaled. */
@@ -93,15 +93,15 @@ namespace sts::os {
         while (true) {
             /* Continuously wait, until success or timeout. */
             R_TRY_CATCH(svcWaitSynchronizationSingle(this->handle.Get(), timeout_helper.NsUntilTimeout())) {
-                R_CATCH(ResultKernelTimedOut) { return false; }
-                R_CATCH(ResultKernelCancelled) { continue; }
+                R_CATCH(svc::ResultTimedOut) { return false; }
+                R_CATCH(svc::ResultCancelled) { continue; }
             } R_END_TRY_CATCH_WITH_ASSERT;
 
             /* Clear, if we must. */
             if (this->auto_clear) {
                 R_TRY_CATCH(svcResetSignal(this->handle.Get())) {
                     /* Some other thread might have caught this before we did. */
-                    R_CATCH(ResultKernelInvalidState) { continue; }
+                    R_CATCH(svc::ResultInvalidState) { continue; }
                 } R_END_TRY_CATCH_WITH_ASSERT;
             }
 

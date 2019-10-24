@@ -24,7 +24,7 @@ namespace sts::updater {
     Result BisAccessor::Initialize() {
         R_TRY(fsOpenBisStorage(&this->storage, this->partition_id));
         this->active = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     void BisAccessor::Finalize() {
@@ -50,7 +50,7 @@ namespace sts::updater {
 
         FILE *bip_fp = fopen(bip_path, "rb");
         if (bip_fp == NULL) {
-            return ResultUpdaterInvalidBootImagePackage;
+            return ResultInvalidBootImagePackage();
         }
         ON_SCOPE_EXIT { fclose(bip_fp); };
 
@@ -73,7 +73,7 @@ namespace sts::updater {
                 break;
             }
         }
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result BisAccessor::Clear(u64 offset, u64 size, void *work_buffer, size_t work_buffer_size) {
@@ -88,7 +88,7 @@ namespace sts::updater {
             R_TRY(this->Write(offset + written, work_buffer, cur_write_size));
             written += cur_write_size;
         }
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result BisAccessor::GetHash(void *dst, u64 offset, u64 size, u64 hash_size, void *work_buffer, size_t work_buffer_size) {
@@ -108,7 +108,7 @@ namespace sts::updater {
         }
         sha256ContextGetHash(&sha_ctx, dst);
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     size_t Boot0Accessor::GetBootloaderVersion(void *bct) {
@@ -135,7 +135,7 @@ namespace sts::updater {
 
     Result Boot0Accessor::UpdateEksManually(void *dst_bct, const void *src_eks) {
         this->CopyEks(dst_bct, src_eks, GetEksIndex(GetBootloaderVersion(dst_bct)));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result Boot0Accessor::PreserveAutoRcm(void *dst_bct, void *work_buffer, Boot0Partition which) {
@@ -147,7 +147,7 @@ namespace sts::updater {
         void *dst_pubk = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(dst_bct) + BctPubkOffset);
         void *src_pubk = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctPubkOffset);
         std::memcpy(dst_pubk, src_pubk, BctPubkSize);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

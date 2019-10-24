@@ -125,7 +125,7 @@ namespace sts::ams {
         ::sts::ams::ExceptionHandler(&ams_ctx);
     }
 
-    inline __attribute((noreturn)) void AbortImpl() {
+    inline NORETURN void AbortImpl() {
         /* Just perform a data abort. */
         register u64 addr __asm__("x27") = FatalErrorContext::StdAbortMagicAddress;
         register u64 val __asm__("x28")  = FatalErrorContext::StdAbortMagicValue;
@@ -145,9 +145,24 @@ extern "C" {
     /* Redefine abort to trigger these handlers. */
     void abort();
 
+    /* Redefine C++ exception handlers. Requires wrap linker flag. */
+    void __wrap___cxa_pure_virtual(void) { abort(); }
+    void __wrap___cxa_throw(void) { abort(); }
+    void __wrap___cxa_rethrow(void) { abort(); }
+    void __wrap___cxa_allocate_exception(void) { abort(); }
+    void __wrap___cxa_begin_catch(void) { abort(); }
+    void __wrap___cxa_end_catch(void) { abort(); }
+    void __wrap___cxa_call_unexpected(void) { abort(); }
+    void __wrap___cxa_call_terminate(void) { abort(); }
+    void __wrap___gxx_personality_v0(void) { abort(); }
+
 }
 
 /* Custom abort handler, so that std::abort will trigger these. */
 void abort() {
     sts::ams::AbortImpl();
+}
+
+void *__cxa_allocate_ecxeption(size_t thrown_size) {
+    abort();
 }

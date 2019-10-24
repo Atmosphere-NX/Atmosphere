@@ -28,7 +28,7 @@ namespace sts::sf::cmif {
 
     Result DomainServiceObjectDispatchTable::ProcessMessageImpl(ServiceDispatchContext &ctx, ServerDomainBase *domain, const cmif::PointerAndSize &in_raw_data) const {
         const CmifDomainInHeader *in_header = reinterpret_cast<const CmifDomainInHeader *>(in_raw_data.GetPointer());
-        R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), ResultServiceFrameworkInvalidCmifHeaderSize);
+        R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), sf::cmif::ResultInvalidHeaderSize());
         const cmif::PointerAndSize in_domain_raw_data = cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header));
 
         const DomainObjectId target_object_id = DomainObjectId{in_header->object_id};
@@ -36,11 +36,11 @@ namespace sts::sf::cmif {
             case CmifDomainRequestType_SendMessage:
             {
                 auto target_object = domain->GetObject(target_object_id);
-                R_UNLESS(static_cast<bool>(target_object), ResultServiceFrameworkTargetNotFound);
-                R_UNLESS(in_header->data_size + in_header->num_in_objects * sizeof(DomainObjectId) <= in_domain_raw_data.GetSize(), ResultServiceFrameworkInvalidCmifHeaderSize);
+                R_UNLESS(static_cast<bool>(target_object), sf::cmif::ResultTargetNotFound());
+                R_UNLESS(in_header->data_size + in_header->num_in_objects * sizeof(DomainObjectId) <= in_domain_raw_data.GetSize(), sf::cmif::ResultInvalidHeaderSize());
                 const cmif::PointerAndSize in_message_raw_data = cmif::PointerAndSize(in_domain_raw_data.GetAddress(), in_header->data_size);
                 DomainObjectId in_object_ids[8];
-                R_UNLESS(in_header->num_in_objects <= util::size(in_object_ids), ResultServiceFrameworkInvalidCmifNumInObjects);
+                R_UNLESS(in_header->num_in_objects <= util::size(in_object_ids), sf::cmif::ResultInvalidNumInObjects());
                 std::memcpy(in_object_ids, reinterpret_cast<DomainObjectId *>(in_message_raw_data.GetAddress() + in_message_raw_data.GetSize()), sizeof(DomainObjectId) * in_header->num_in_objects);
                 DomainServiceObjectProcessor domain_processor(domain, in_object_ids, in_header->num_in_objects);
                 if (ctx.processor == nullptr) {
@@ -54,15 +54,15 @@ namespace sts::sf::cmif {
             case CmifDomainRequestType_Close:
                 /* TODO: N doesn't error check here. Should we? */
                 domain->UnregisterObject(target_object_id);
-                return ResultSuccess;
+                return ResultSuccess();
             default:
-                return ResultServiceFrameworkInvalidCmifInHeader;
+                return sf::cmif::ResultInvalidInHeader();
         }
     }
 
     Result DomainServiceObjectDispatchTable::ProcessMessageForMitmImpl(ServiceDispatchContext &ctx, ServerDomainBase *domain, const cmif::PointerAndSize &in_raw_data) const {
         const CmifDomainInHeader *in_header = reinterpret_cast<const CmifDomainInHeader *>(in_raw_data.GetPointer());
-        R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), ResultServiceFrameworkInvalidCmifHeaderSize);
+        R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), sf::cmif::ResultInvalidHeaderSize());
         const cmif::PointerAndSize in_domain_raw_data = cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header));
 
         const DomainObjectId target_object_id = DomainObjectId{in_header->object_id};
@@ -76,10 +76,10 @@ namespace sts::sf::cmif {
                     return ctx.session->ForwardRequest(ctx);
                 }
 
-                R_UNLESS(in_header->data_size + in_header->num_in_objects * sizeof(DomainObjectId) <= in_domain_raw_data.GetSize(), ResultServiceFrameworkInvalidCmifHeaderSize);
+                R_UNLESS(in_header->data_size + in_header->num_in_objects * sizeof(DomainObjectId) <= in_domain_raw_data.GetSize(), sf::cmif::ResultInvalidHeaderSize());
                 const cmif::PointerAndSize in_message_raw_data = cmif::PointerAndSize(in_domain_raw_data.GetAddress(), in_header->data_size);
                 DomainObjectId in_object_ids[8];
-                R_UNLESS(in_header->num_in_objects <= util::size(in_object_ids), ResultServiceFrameworkInvalidCmifNumInObjects);
+                R_UNLESS(in_header->num_in_objects <= util::size(in_object_ids), sf::cmif::ResultInvalidNumInObjects());
                 std::memcpy(in_object_ids, reinterpret_cast<DomainObjectId *>(in_message_raw_data.GetAddress() + in_message_raw_data.GetSize()), sizeof(DomainObjectId) * in_header->num_in_objects);
                 DomainServiceObjectProcessor domain_processor(domain, in_object_ids, in_header->num_in_objects);
                 if (ctx.processor == nullptr) {
@@ -101,16 +101,16 @@ namespace sts::sf::cmif {
 
                 /* If the object is in the domain, close our copy of it. Mitm objects are required to close their associated domain id, so this shouldn't cause desynch. */
                 domain->UnregisterObject(target_object_id);
-                return ResultSuccess;
+                return ResultSuccess();
             }
             default:
-                return ResultServiceFrameworkInvalidCmifInHeader;
+                return sf::cmif::ResultInvalidInHeader();
         }
     }
 
     Result DomainServiceObjectProcessor::PrepareForProcess(const ServiceDispatchContext &ctx, const ServerMessageRuntimeMetadata runtime_metadata) const {
         /* Validate in object count. */
-        R_UNLESS(this->impl_metadata.GetInObjectCount() == this->GetInObjectCount(), ResultServiceFrameworkInvalidCmifNumInObjects);
+        R_UNLESS(this->impl_metadata.GetInObjectCount() == this->GetInObjectCount(), sf::cmif::ResultInvalidNumInObjects());
 
         /* Nintendo reserves domain object IDs here. We do this later, to support mitm semantics. */
 
@@ -122,7 +122,7 @@ namespace sts::sf::cmif {
         for (size_t i = 0; i < this->GetInObjectCount(); i++) {
             in_objects[i] = this->domain->GetObject(this->in_object_ids[i]);
         }
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     HipcRequest DomainServiceObjectProcessor::PrepareForReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const ServerMessageRuntimeMetadata runtime_metadata) {
