@@ -15,16 +15,20 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Sm = 21;
+namespace sts::sm {
 
-static constexpr Result ResultSmInsufficientProcesses = MAKERESULT(Module_Sm, 1);
-static constexpr Result ResultSmInvalidClient         = MAKERESULT(Module_Sm, 2);
-static constexpr Result ResultSmInsufficientSessions  = MAKERESULT(Module_Sm, 3);
-static constexpr Result ResultSmAlreadyRegistered     = MAKERESULT(Module_Sm, 4);
-static constexpr Result ResultSmInsufficientServices  = MAKERESULT(Module_Sm, 5);
-static constexpr Result ResultSmInvalidServiceName    = MAKERESULT(Module_Sm, 6);
-static constexpr Result ResultSmNotRegistered         = MAKERESULT(Module_Sm, 7);
-static constexpr Result ResultSmNotAllowed            = MAKERESULT(Module_Sm, 8);
-static constexpr Result ResultSmTooLargeAccessControl = MAKERESULT(Module_Sm, 9);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(21);
+
+    R_DEFINE_ERROR_RESULT(OutOfProcesses,        1);
+    R_DEFINE_ERROR_RESULT(InvalidClient,         2);
+    R_DEFINE_ERROR_RESULT(OutOfSessions,         3);
+    R_DEFINE_ERROR_RESULT(AlreadyRegistered,     4);
+    R_DEFINE_ERROR_RESULT(OutOfServices,         5);
+    R_DEFINE_ERROR_RESULT(InvalidServiceName,    6);
+    R_DEFINE_ERROR_RESULT(NotRegistered,         7);
+    R_DEFINE_ERROR_RESULT(NotAllowed,            8);
+    R_DEFINE_ERROR_RESULT(TooLargeAccessControl, 9);
+
+}

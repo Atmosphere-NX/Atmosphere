@@ -17,9 +17,10 @@
 #pragma once
 
 /* Utilities. */
-#include "results/utilities.h"
+#include "results/results_common.hpp"
 
 /* Official. */
+#include "results/cal_results.hpp"
 #include "results/creport_results.hpp"
 #include "results/debug_results.hpp"
 #include "results/dmnt_results.hpp"
@@ -28,7 +29,6 @@
 #include "results/fs_results.hpp"
 #include "results/hipc_results.hpp"
 #include "results/i2c_results.hpp"
-#include "results/kernel_results.hpp"
 #include "results/kvdb_results.hpp"
 #include "results/loader_results.hpp"
 #include "results/lr_results.hpp"
@@ -40,10 +40,9 @@
 #include "results/sf_results.hpp"
 #include "results/sm_results.hpp"
 #include "results/spl_results.hpp"
+#include "results/svc_results.hpp"
 #include "results/updater_results.hpp"
 #include "results/vi_results.hpp"
 
 /* Unofficial. */
 #include "results/ams_results.hpp"
-
-static constexpr Result ResultSuccess = 0;

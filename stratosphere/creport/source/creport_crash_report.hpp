@@ -30,7 +30,7 @@ namespace sts::creport {
         private:
             Handle debug_handle = INVALID_HANDLE;
             bool has_extra_info = true;
-            Result result = ResultCreportIncompleteReport;
+            Result result = ResultIncompleteReport();
 
             /* Attach process info. */
             svc::DebugInfoAttachProcess process_info = {};
@@ -55,7 +55,7 @@ namespace sts::creport {
             }
 
             bool IsComplete() const {
-                return this->result != ResultCreportIncompleteReport;
+                return !ResultIncompleteReport::Includes(this->result);
             }
 
             bool IsOpen() const {

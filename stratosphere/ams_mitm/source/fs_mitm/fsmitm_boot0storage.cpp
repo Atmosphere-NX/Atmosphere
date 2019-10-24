@@ -67,7 +67,7 @@ Result Boot0Storage::Write(void *_buffer, size_t size, u64 offset) {
         if (offset < EksEnd) {
             if (offset + size < EksEnd) {
                 /* Ignore writes falling strictly within the region. */
-                return ResultSuccess;
+                return ResultSuccess();
             } else {
                 /* Only write past the end of the keyblob region. */
                 buffer = buffer + (EksEnd - offset);
@@ -80,7 +80,7 @@ Result Boot0Storage::Write(void *_buffer, size_t size, u64 offset) {
     }
 
     if (size == 0) {
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* We care about protecting autorcm from NS. */

@@ -24,9 +24,7 @@
 namespace sts::ro {
 
     Result DebugMonitorService::GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id) {
-        if (out_infos.GetSize() > INT_MAX) {
-            return ResultRoInvalidSize;
-        }
+        R_UNLESS(out_infos.GetSize() <= std::numeric_limits<s32>::max(), ResultInvalidSize());
         return impl::GetProcessModuleInfo(out_count.GetPointer(), out_infos.GetPointer(), out_infos.GetSize(), process_id);
     }
 

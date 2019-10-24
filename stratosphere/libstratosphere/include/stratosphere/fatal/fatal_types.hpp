@@ -320,7 +320,7 @@ namespace sts::fatal {
     namespace srv {
 
         struct ThrowContext {
-            u32 error_code;
+            Result result;
             ncm::TitleId title_id;
             char proc_name[0xD];
             bool is_creport;
@@ -332,7 +332,16 @@ namespace sts::fatal {
             u8 stack_dump[0x100];
 
             void ClearState() {
-                std::memset(this, 0, sizeof(*this));
+                this->result = ResultSuccess();
+                this->title_id = ncm::TitleId::Invalid;
+                std::memset(this->proc_name, 0, sizeof(this->proc_name));
+                this->is_creport = false;
+                std::memset(&this->cpu_ctx, 0, sizeof(this->cpu_ctx));
+                this->generate_error_report = false;
+                std::memset(&this->erpt_event, 0, sizeof(this->erpt_event));
+                std::memset(&this->battery_event, 0, sizeof(this->battery_event));
+                this->stack_dump_size = 0;
+                std::memset(this->stack_dump, 0, sizeof(this->stack_dump));
             }
         };
 

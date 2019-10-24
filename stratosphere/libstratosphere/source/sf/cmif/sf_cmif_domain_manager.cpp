@@ -34,11 +34,11 @@ namespace sts::sf::cmif {
     Result ServerDomainManager::Domain::ReserveIds(DomainObjectId *out_ids, size_t count) {
         for (size_t i = 0; i < count; i++) {
             Entry *entry = this->manager->entry_manager.AllocateEntry();
-            R_UNLESS(entry != nullptr, ResultServiceFrameworkOutOfDomainEntries);
+            R_UNLESS(entry != nullptr, sf::cmif::ResultOutOfDomainEntries());
             STS_ASSERT(entry->owner == nullptr);
             out_ids[i] = this->manager->entry_manager.GetId(entry);
         }
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     void ServerDomainManager::Domain::ReserveSpecificIds(const DomainObjectId *ids, size_t count) {

@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stratosphere.hpp>
 #include <stratosphere/spl.hpp>
 
 #include "pm_resource_manager.hpp"
@@ -107,11 +108,15 @@ namespace sts::pm::resource {
         Result SetMemoryResourceLimitLimitValue(ResourceLimitGroup group, u64 new_memory_limit) {
             const u64 old_memory_limit = g_resource_limits[group][LimitableResource_Memory];
             g_resource_limits[group][LimitableResource_Memory] = new_memory_limit;
-            R_TRY_CLEANUP(svcSetResourceLimitLimitValue(GetResourceLimitHandle(group), LimitableResource_Memory, g_resource_limits[group][LimitableResource_Memory]), {
+
+            {
                 /* If we fail, restore the old memory limit. */
-                g_resource_limits[group][LimitableResource_Memory] = old_memory_limit;
-            });
-            return ResultSuccess;
+                auto limit_guard = SCOPE_GUARD { g_resource_limits[group][LimitableResource_Memory] = old_memory_limit; };
+                R_TRY(svcSetResourceLimitLimitValue(GetResourceLimitHandle(group), LimitableResource_Memory, g_resource_limits[group][LimitableResource_Memory]));
+                limit_guard.Cancel();
+            }
+
+            return ResultSuccess();
         }
 
         Result SetResourceLimitLimitValues(ResourceLimitGroup group, u64 new_memory_limit) {
@@ -126,7 +131,7 @@ namespace sts::pm::resource {
                 }
                 R_TRY(svcSetResourceLimitLimitValue(GetResourceLimitHandle(group), resource, g_resource_limits[group][resource]));
             }
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         inline ResourceLimitGroup GetResourceLimitGroup(const ldr::ProgramInfo *info) {
@@ -269,14 +274,12 @@ namespace sts::pm::resource {
             }
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result BoostSystemMemoryResourceLimit(u64 boost_size) {
         /* Don't allow all application memory to be taken away. */
-        if (boost_size > g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application]) {
-            return ResultPmInvalidSize;
-        }
+        R_UNLESS(boost_size <= g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application], pm::ResultInvalidSize());
 
         const u64 new_app_size = g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_Application] - boost_size;
         {
@@ -305,7 +308,7 @@ namespace sts::pm::resource {
             g_system_memory_boost_size = boost_size;
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result BoostApplicationThreadResourceLimit() {
@@ -318,7 +321,7 @@ namespace sts::pm::resource {
         g_resource_limits[ResourceLimitGroup_Application][LimitableResource_Threads] = new_thread_count;
         g_extra_application_threads_available = 0;
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Handle GetResourceLimitHandle(ResourceLimitGroup group) {
@@ -347,7 +350,7 @@ namespace sts::pm::resource {
         R_TRY(svcGetResourceLimitCurrentValue(out_cur, reslimit_hnd, resource));
         R_TRY(svcGetResourceLimitLimitValue(out_lim, reslimit_hnd, resource));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

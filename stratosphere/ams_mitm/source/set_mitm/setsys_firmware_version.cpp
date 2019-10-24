@@ -75,5 +75,5 @@ Result VersionManager::GetFirmwareVersion(sts::ncm::TitleId title_id, SetSysFirm
         *out = g_fw_version;
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }

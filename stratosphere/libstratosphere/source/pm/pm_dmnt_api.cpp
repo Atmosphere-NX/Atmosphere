@@ -39,7 +39,7 @@ namespace sts::pm::dmnt {
         Event evt;
         R_TRY(pmdmntEnableDebugForApplication(&evt));
         *out_handle = evt.revent;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::TitleLocation *out_loc, os::ProcessId process_id) {

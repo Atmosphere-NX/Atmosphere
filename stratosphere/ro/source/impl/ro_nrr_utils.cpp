@@ -28,33 +28,23 @@ namespace sts::ro::impl {
             /* TODO: Implement RSA-2048 PSS..... */
 
             /* TODO: Check PSS fixed-key signature. */
-            if (false) {
-                return ResultRoNotAuthorized;
-            }
+            R_UNLESS(true, ResultNotAuthorized());
 
             /* Check TitleID pattern is valid. */
-            if (!header->IsTitleIdValid()) {
-                return ResultRoNotAuthorized;
-            }
+            R_UNLESS(header->IsTitleIdValid(), ResultNotAuthorized());
 
             /* TODO: Check PSS signature over hashes. */
-            if (false) {
-                return ResultRoNotAuthorized;
-            }
+            R_UNLESS(true, ResultNotAuthorized());
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result ValidateNrr(const NrrHeader *header, u64 size, ncm::TitleId title_id, ModuleType expected_type, bool enforce_type) {
             /* Check magic. */
-            if (!header->IsMagicValid()) {
-                return ResultRoInvalidNrr;
-            }
+            R_UNLESS(header->IsMagicValid(), ResultInvalidNrr());
 
             /* Check size. */
-            if (header->GetSize() != size) {
-                return ResultRoInvalidSize;
-            }
+            R_UNLESS(header->GetSize() == size, ResultInvalidSize());
 
             /* Only perform checks if we must. */
             const bool ease_nro_restriction = ShouldEaseNroRestriction();
@@ -63,41 +53,33 @@ namespace sts::ro::impl {
                 R_TRY(ValidateNrrSignature(header));
 
                 /* Check title id. */
-                if (title_id != header->GetTitleId()) {
-                    return ResultRoInvalidNrr;
-                }
+                R_UNLESS(header->GetTitleId() == title_id, ResultInvalidNrr());
 
                 /* Check type. */
                 if (hos::GetVersion() >= hos::Version_700 && enforce_type) {
-                    if (expected_type != header->GetType()) {
-                        return ResultRoInvalidNrrType;
-                    }
+                    R_UNLESS(header->GetType() == expected_type, ResultInvalidNrrType());
                 }
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
     }
 
     /* Utilities for working with NRRs. */
     Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, ncm::TitleId title_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type) {
-        map::MappedCodeMemory nrr_mcm(ResultRoInternalError);
+        map::MappedCodeMemory nrr_mcm(ResultInternalError{});
 
         /* First, map the NRR. */
         R_TRY(map::MapCodeMemoryInProcess(nrr_mcm, process_handle, nrr_heap_address, nrr_heap_size));
 
         const u64 code_address = nrr_mcm.GetDstAddress();
         uintptr_t map_address;
-        if (R_FAILED(map::LocateMappableSpace(&map_address, nrr_heap_size))) {
-            return ResultRoInsufficientAddressSpace;
-        }
+        R_UNLESS(R_SUCCEEDED(map::LocateMappableSpace(&map_address, nrr_heap_size)), ResultOutOfAddressSpace());
 
         /* Nintendo...does not check the return value of this map. We will check, instead of aborting if it fails. */
         map::AutoCloseMap nrr_map(map_address, process_handle, code_address, nrr_heap_size);
-        if (!nrr_map.IsSuccess()) {
-            return nrr_map.GetResult();
-        }
+        R_TRY(nrr_map.GetResult());
 
         NrrHeader *nrr_header = reinterpret_cast<NrrHeader *>(map_address);
         R_TRY(ValidateNrr(nrr_header, nrr_heap_size, title_id, expected_type, enforce_type));
@@ -108,13 +90,13 @@ namespace sts::ro::impl {
 
         *out_header = nrr_header;
         *out_mapped_code_address = code_address;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result UnmapNrr(Handle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address) {
         R_TRY(svcUnmapProcessMemory(reinterpret_cast<void *>(const_cast<NrrHeader *>(header)), process_handle, mapped_code_address, nrr_heap_size));
         R_TRY(svcUnmapProcessCodeMemory(process_handle, mapped_code_address, nrr_heap_address, nrr_heap_size));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

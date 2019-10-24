@@ -339,9 +339,7 @@ namespace sts::ldr::caps {
 
 #define VALIDATE_CASE(id) \
                 case CapabilityId::id: \
-                    if (!Capability##id::Decode(cur_cap).IsValid(acid_caps, num_acid_caps)) { \
-                        return ResultLoaderInvalidCapability##id; \
-                    } \
+                    R_UNLESS(Capability##id::Decode(cur_cap).IsValid(acid_caps, num_acid_caps), ldr::ResultInvalidCapability##id()); \
                     break
             switch (id) {
                 VALIDATE_CASE(KernelFlags);
@@ -356,21 +354,18 @@ namespace sts::ldr::caps {
                     {
                         /* Map Range needs extra logic because there it involves two sequential caps. */
                         i++;
-                        if (i >= num_aci_caps || !CapabilityMapRange::Decode(cur_cap).IsValid(aci_caps[i], acid_caps, num_acid_caps)) {
-                            return ResultLoaderInvalidCapabilityMapRange;
-                        }
+                        R_UNLESS(i < num_aci_caps, ldr::ResultInvalidCapabilityMapRange());
+                        R_UNLESS(CapabilityMapRange::Decode(cur_cap).IsValid(aci_caps[i], acid_caps, num_acid_caps), ldr::ResultInvalidCapabilityMapRange());
                     }
                     break;
                 default:
-                    if (id != CapabilityId::Empty) {
-                        return ResultLoaderUnknownCapability;
-                    }
+                    R_UNLESS(id == CapabilityId::Empty, ldr::ResultUnknownCapability());
                     break;
             }
 #undef VALIDATE_CASE
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     u16 GetProgramInfoFlags(const void *kac, size_t kac_size) {

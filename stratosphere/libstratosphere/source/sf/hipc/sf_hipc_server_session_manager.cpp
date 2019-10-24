@@ -65,7 +65,7 @@ namespace sts::sf::hipc {
             }
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     void ServerSessionManager::DestroySession(ServerSession *session) {
@@ -89,7 +89,7 @@ namespace sts::sf::hipc {
         session_memory->saved_message  = this->GetSessionSavedMessageBuffer(session_memory);
         /* Register to wait list. */
         this->RegisterSessionToWaitList(session_memory);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ServerSessionManager::AcceptSessionImpl(ServerSession *session_memory, Handle port_handle, cmif::ServiceObjectHolder &&obj) {
@@ -105,7 +105,7 @@ namespace sts::sf::hipc {
         /* Register session. */
         R_TRY(this->RegisterSessionImpl(session_memory, session_handle, std::forward<cmif::ServiceObjectHolder>(obj)));
         succeeded = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ServerSessionManager::RegisterMitmSessionImpl(ServerSession *session_memory, Handle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
@@ -119,7 +119,7 @@ namespace sts::sf::hipc {
         session_memory->pointer_buffer = cmif::PointerAndSize(session_memory->pointer_buffer.GetAddress(), session_memory->forward_service->pointer_buffer_size);
         /* Register to wait list. */
         this->RegisterSessionToWaitList(session_memory);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ServerSessionManager::AcceptMitmSessionImpl(ServerSession *session_memory, Handle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
@@ -135,7 +135,7 @@ namespace sts::sf::hipc {
         /* Register session. */
         R_TRY(this->RegisterMitmSessionImpl(session_memory, mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv)));
         succeeded = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ServerSessionManager::RegisterSession(Handle session_handle, cmif::ServiceObjectHolder &&obj) {
@@ -182,10 +182,10 @@ namespace sts::sf::hipc {
             switch (recv_result) {
                 case hipc::ReceiveResult::Success:
                     session->is_closed = false;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 case hipc::ReceiveResult::Closed:
                     session->is_closed = true;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 case hipc::ReceiveResult::NeedsRetry:
                     continue;
                 STS_UNREACHABLE_DEFAULT_CASE();
@@ -206,29 +206,31 @@ namespace sts::sf::hipc {
     Result ServerSessionManager::ProcessRequest(ServerSession *session, const cmif::PointerAndSize &message) {
         if (session->is_closed) {
             this->CloseSessionImpl(session);
-            return ResultSuccess;
+            return ResultSuccess();
         }
         switch (GetCmifCommandType(message)) {
             case CmifCommandType_Close:
             {
                 this->CloseSessionImpl(session);
-                return ResultSuccess;
+                return ResultSuccess();
             }
             default:
             {
                 R_TRY_CATCH(this->ProcessRequestImpl(session, message, message)) {
-                    R_CATCH(ResultServiceFrameworkRequestDeferredByUser) { /* TODO: Properly include entire range Nintendo does */
-                        return ResultServiceFrameworkRequestDeferredByUser;
+                    R_CATCH(sf::impl::ResultRequestContextChanged) {
+                        /* A meta message changing the request context has been sent. */
+                        return R_CURRENT_RESULT;
                     }
                     R_CATCH_ALL() {
                         /* All other results indicate something went very wrong. */
                         this->CloseSessionImpl(session);
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                 } R_END_TRY_CATCH;
+
                 /* We succeeded, so we can process future messages on this session. */
                 this->RegisterSessionToWaitList(session);
-                return ResultSuccess;
+                return ResultSuccess();
             }
         }
     }
@@ -244,13 +246,13 @@ namespace sts::sf::hipc {
             case CmifCommandType_ControlWithContext:
                 return this->DispatchManagerRequest(session, in_message, out_message);
             default:
-                return ResultHipcUnknownCommandType;
+                return sf::hipc::ResultUnknownCommandType();
         }
     }
 
     Result ServerSessionManager::DispatchManagerRequest(ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message) {
         /* This will get overridden by ... WithDomain class. */
-        return ResultServiceFrameworkNotSupported;
+        return sf::ResultNotSupported();
     }
 
     Result ServerSessionManager::DispatchRequest(cmif::ServiceObjectHolder &&obj_holder, ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message) {
@@ -273,10 +275,10 @@ namespace sts::sf::hipc {
         const uintptr_t in_raw_addr = reinterpret_cast<uintptr_t>(dispatch_ctx.request.data.data_words);
         const size_t in_raw_size = dispatch_ctx.request.meta.num_data_words * sizeof(u32);
         /* Note: Nintendo does not validate this size before subtracting 0x10 from it. This is not exploitable. */
-        R_UNLESS(in_raw_size >= 0x10, ResultHipcInvalidRequestSize);
-        R_UNLESS(in_raw_addr + in_raw_size <= in_message_buffer_end, ResultHipcInvalidRequestSize);
+        R_UNLESS(in_raw_size >= 0x10, sf::hipc::ResultInvalidRequestSize());
+        R_UNLESS(in_raw_addr + in_raw_size <= in_message_buffer_end, sf::hipc::ResultInvalidRequestSize());
         const uintptr_t recv_list_end = reinterpret_cast<uintptr_t>(dispatch_ctx.request.data.recv_list + dispatch_ctx.request.meta.num_recv_statics);
-        R_UNLESS(recv_list_end <= in_message_buffer_end, ResultHipcInvalidRequestSize);
+        R_UNLESS(recv_list_end <= in_message_buffer_end, sf::hipc::ResultInvalidRequestSize());
 
         /* CMIF has 0x10 of padding in raw data, and requires 0x10 alignment. */
         const cmif::PointerAndSize in_raw_data(util::AlignUp(in_raw_addr, 0x10), in_raw_size - 0x10);
@@ -294,7 +296,7 @@ namespace sts::sf::hipc {
             R_TRY(hipc::Reply(session->session_handle, out_message));
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 

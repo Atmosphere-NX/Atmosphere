@@ -81,9 +81,7 @@ namespace sts::ldr::ro {
     Result PinTitle(PinId *out, const ncm::TitleLocation &loc) {
         *out = InvalidPinId;
         ProcessInfo *info = GetFreeProcessInfo();
-        if (info == nullptr) {
-            return ResultLoaderTooManyProcesses;
-        }
+        R_UNLESS(info != nullptr, ldr::ResultTooManyProcesses());
 
         static u64 s_cur_pin_id = 1;
 
@@ -92,46 +90,38 @@ namespace sts::ldr::ro {
         info->loc = loc;
         info->in_use = true;
         *out = info->pin_id;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result UnpinTitle(PinId id) {
         ProcessInfo *info = GetProcessInfo(id);
-        if (info == nullptr) {
-            return ResultLoaderNotPinned;
-        }
+        R_UNLESS(info != nullptr, ldr::ResultNotPinned());
 
         info->in_use = false;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 
     Result GetTitleLocation(ncm::TitleLocation *out, PinId id) {
         ProcessInfo *info = GetProcessInfo(id);
-        if (info == nullptr) {
-            return ResultLoaderNotPinned;
-        }
+        R_UNLESS(info != nullptr, ldr::ResultNotPinned());
 
         *out = info->loc;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result RegisterProcess(PinId id, os::ProcessId process_id, ncm::TitleId title_id) {
         ProcessInfo *info = GetProcessInfo(id);
-        if (info == nullptr) {
-            return ResultLoaderNotPinned;
-        }
+        R_UNLESS(info != nullptr, ldr::ResultNotPinned());
 
         info->title_id = title_id;
         info->process_id = process_id;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result RegisterModule(PinId id, const u8 *build_id, uintptr_t address, size_t size) {
         ProcessInfo *info = GetProcessInfo(id);
-        if (info == nullptr) {
-            return ResultLoaderNotPinned;
-        }
+        R_UNLESS(info != nullptr, ldr::ResultNotPinned());
 
         /* Nintendo doesn't actually care about successful allocation. */
         for (size_t i = 0; i < ModuleCountMax; i++) {
@@ -147,14 +137,12 @@ namespace sts::ldr::ro {
             break;
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result GetProcessModuleInfo(u32 *out_count, ldr::ModuleInfo *out, size_t max_out_count, os::ProcessId process_id) {
         const ProcessInfo *info = GetProcessInfo(process_id);
-        if (info == nullptr) {
-            return ResultLoaderNotPinned;
-        }
+        R_UNLESS(info != nullptr, ldr::ResultNotPinned());
 
         size_t count = 0;
         for (size_t i = 0; i < ModuleCountMax && count < max_out_count; i++) {
@@ -167,7 +155,7 @@ namespace sts::ldr::ro {
         }
 
         *out_count = static_cast<u32>(count);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

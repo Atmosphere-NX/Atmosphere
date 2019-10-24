@@ -48,7 +48,7 @@ LayeredRomFS::LayeredRomFS(std::shared_ptr<IROStorage> s_r, std::shared_ptr<IROS
 Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
     /* Size zero reads should always succeed. */
     if (size == 0) {
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Validate size. */
@@ -136,16 +136,16 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
         }
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 Result LayeredRomFS::GetSize(u64 *out_size)  {
     *out_size = (*this->p_source_infos)[this->p_source_infos->size() - 1].virtual_offset + (*this->p_source_infos)[this->p_source_infos->size() - 1].size;
-    return ResultSuccess;
+    return ResultSuccess();
 }
 Result LayeredRomFS::OperateRange(FsOperationId operation_type, u64 offset, u64 size, FsRangeInfo *out_range_info) {
     /* TODO: How should I implement this for a virtual romfs? */
     if (operation_type == FsOperationId_QueryRange) {
         *out_range_info = {0};
     }
-    return ResultSuccess;
+    return ResultSuccess();
 }

@@ -36,7 +36,7 @@ namespace sts::sf::hipc {
                 Result CloneCurrentObjectImpl(Handle *out_client_handle, ServerSessionManager *tagged_manager) {
                     /* Clone the object. */
                     cmif::ServiceObjectHolder &&clone = this->session->srv_obj_holder.Clone();
-                    R_UNLESS(clone, ResultHipcDomainObjectNotFound);
+                    R_UNLESS(clone, sf::hipc::ResultDomainObjectNotFound());
 
                     /* Create new session handles. */
                     Handle server_handle;
@@ -52,7 +52,7 @@ namespace sts::sf::hipc {
                         R_ASSERT(tagged_manager->RegisterMitmSession(server_handle, std::move(clone), std::move(new_forward_service)));
                     }
 
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
             public:
                 explicit HipcManager(ServerDomainSessionManager *m, ServerSession *s) : manager(m), session(s), is_mitm_session(s->forward_service != nullptr) {
@@ -62,7 +62,8 @@ namespace sts::sf::hipc {
                 Result ConvertCurrentObjectToDomain(sf::Out<cmif::DomainObjectId> out) {
                     /* Allocate a domain. */
                     auto domain = this->manager->AllocateDomainServiceObject();
-                    R_UNLESS(domain, ResultHipcOutOfDomains);
+                    R_UNLESS(domain, sf::hipc::ResultOutOfDomains());
+                    auto domain_guard = SCOPE_GUARD { this->manager->FreeDomainServiceObject(domain); };
 
                     cmif::DomainObjectId object_id = cmif::InvalidDomainObjectId;
 
@@ -71,9 +72,7 @@ namespace sts::sf::hipc {
                     if (this->is_mitm_session) {
                         /* If we're a mitm session, we need to convert the remote session to domain. */
                         STS_ASSERT(session->forward_service->own_handle);
-                        R_TRY_CLEANUP(serviceConvertToDomain(session->forward_service.get()), {
-                            this->manager->FreeDomainServiceObject(domain);
-                        });
+                        R_TRY(serviceConvertToDomain(session->forward_service.get()));
 
                         /* The object ID reservation cannot fail here, as that would cause desynchronization from target domain. */
                         object_id = cmif::DomainObjectId{session->forward_service->object_id};
@@ -99,22 +98,23 @@ namespace sts::sf::hipc {
                     STS_ASSERT(static_cast<bool>(new_holder));
 
                     /* We succeeded! */
+                    domain_guard.Cancel();
                     domain->RegisterObject(object_id, std::move(session->srv_obj_holder));
                     session->srv_obj_holder = std::move(new_holder);
                     out.SetValue(object_id);
 
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result CopyFromCurrentDomain(sf::OutMoveHandle out, cmif::DomainObjectId object_id) {
                     /* Get domain. */
                     auto domain = this->session->srv_obj_holder.GetServiceObject<cmif::DomainServiceObject>();
-                    R_UNLESS(domain != nullptr, ResultHipcTargetNotDomain);
+                    R_UNLESS(domain != nullptr, sf::hipc::ResultTargetNotDomain());
 
                     /* Get domain object. */
                     auto &&object = domain->GetObject(object_id);
                     if (!object) {
-                        R_UNLESS(this->is_mitm_session, ResultHipcDomainObjectNotFound);
+                        R_UNLESS(this->is_mitm_session, sf::hipc::ResultDomainObjectNotFound());
                         return cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, out.GetHandlePointer());
                     }
 
@@ -140,7 +140,7 @@ namespace sts::sf::hipc {
                         R_ASSERT(this->manager->RegisterMitmSession(server_handle, std::move(object), std::move(new_forward_service)));
                     }
 
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result CloneCurrentObject(sf::OutMoveHandle out) {

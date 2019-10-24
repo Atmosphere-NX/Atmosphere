@@ -15,37 +15,41 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Ncm = 5;
+namespace sts::ncm {
 
-static constexpr Result ResultNcmPlaceHolderAlreadyExists                = MAKERESULT(Module_Ncm, 2);
-static constexpr Result ResultNcmPlaceHolderNotFound                     = MAKERESULT(Module_Ncm, 3);
-static constexpr Result ResultNcmContentAlreadyExists                    = MAKERESULT(Module_Ncm, 4);
-static constexpr Result ResultNcmContentNotFound                         = MAKERESULT(Module_Ncm, 5);
-static constexpr Result ResultNcmContentMetaNotFound                     = MAKERESULT(Module_Ncm, 7);
-static constexpr Result ResultNcmAllocationFailed                        = MAKERESULT(Module_Ncm, 8);
-static constexpr Result ResultNcmUnknownStorage                          = MAKERESULT(Module_Ncm, 12);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(5);
 
-static constexpr Result ResultNcmInvalidContentStorage                   = MAKERESULT(Module_Ncm, 100);
-static constexpr Result ResultNcmInvalidContentMetaDatabase              = MAKERESULT(Module_Ncm, 110);
+    R_DEFINE_ERROR_RESULT(PlaceHolderAlreadyExists,                 2);
+    R_DEFINE_ERROR_RESULT(PlaceHolderNotFound,                      3);
+    R_DEFINE_ERROR_RESULT(ContentAlreadyExists,                     4);
+    R_DEFINE_ERROR_RESULT(ContentNotFound,                          5);
+    R_DEFINE_ERROR_RESULT(ContentMetaNotFound,                      7);
+    R_DEFINE_ERROR_RESULT(AllocationFailed,                         8);
+    R_DEFINE_ERROR_RESULT(UnknownStorage,                           12);
 
-static constexpr Result ResultNcmBufferInsufficient                      = MAKERESULT(Module_Ncm, 180);
-static constexpr Result ResultNcmInvalidContentMetaKey                   = MAKERESULT(Module_Ncm, 240);
+    R_DEFINE_ERROR_RESULT(InvalidContentStorage,                    100);
+    R_DEFINE_ERROR_RESULT(InvalidContentMetaDatabase,               110);
 
-static constexpr Result ResultNcmContentStorageNotActive                 = MAKERESULT(Module_Ncm, 250);
-static constexpr Result ResultNcmGameCardContentStorageNotActive         = MAKERESULT(Module_Ncm, 251);
-static constexpr Result ResultNcmNandSystemContentStorageNotActive       = MAKERESULT(Module_Ncm, 252);
-static constexpr Result ResultNcmNandUserContentStorageNotActive         = MAKERESULT(Module_Ncm, 253);
-static constexpr Result ResultNcmSdCardContentStorageNotActive           = MAKERESULT(Module_Ncm, 254);
-static constexpr Result ResultNcmUnknownContentStorageNotActive          = MAKERESULT(Module_Ncm, 258);
+    R_DEFINE_ERROR_RESULT(BufferInsufficient,                       180);
+    R_DEFINE_ERROR_RESULT(InvalidContentMetaKey,                    240);
 
-static constexpr Result ResultNcmContentMetaDatabaseNotActive            = MAKERESULT(Module_Ncm, 260);
-static constexpr Result ResultNcmGameCardContentMetaDatabaseNotActive    = MAKERESULT(Module_Ncm, 261);
-static constexpr Result ResultNcmNandSystemContentMetaDatabaseNotActive  = MAKERESULT(Module_Ncm, 262);
-static constexpr Result ResultNcmNandUserContentMetaDatabaseNotActive    = MAKERESULT(Module_Ncm, 263);
-static constexpr Result ResultNcmSdCardContentMetaDatabaseNotActive      = MAKERESULT(Module_Ncm, 264);
-static constexpr Result ResultNcmUnknownContentMetaDatabaseNotActive     = MAKERESULT(Module_Ncm, 268);
+    R_DEFINE_ERROR_RANGE(ContentStorageNotActive, 250, 258);
+        R_DEFINE_ERROR_RESULT(GameCardContentStorageNotActive,          251);
+        R_DEFINE_ERROR_RESULT(NandSystemContentStorageNotActive,        252);
+        R_DEFINE_ERROR_RESULT(NandUserContentStorageNotActive,          253);
+        R_DEFINE_ERROR_RESULT(SdCardContentStorageNotActive,            254);
+        R_DEFINE_ERROR_RESULT(UnknownContentStorageNotActive,           258);
 
-static constexpr Result ResultNcmInvalidArgument        = MAKERESULT(Module_Ncm, 8181);
-static constexpr Result ResultNcmInvalidOffset          = MAKERESULT(Module_Ncm, 8182);
+    R_DEFINE_ERROR_RANGE(ContentMetaDatabaseNotActive, 260, 268);
+        R_DEFINE_ERROR_RESULT(GameCardContentMetaDatabaseNotActive,     261);
+        R_DEFINE_ERROR_RESULT(NandSystemContentMetaDatabaseNotActive,   262);
+        R_DEFINE_ERROR_RESULT(NandUserContentMetaDatabaseNotActive,     263);
+        R_DEFINE_ERROR_RESULT(SdCardContentMetaDatabaseNotActive,       264);
+        R_DEFINE_ERROR_RESULT(UnknownContentMetaDatabaseNotActive,      268);
+
+    R_DEFINE_ERROR_RANGE(InvalidArgument, 8181, 8191);
+        R_DEFINE_ERROR_RESULT(InvalidOffset, 8182);
+
+}

@@ -49,6 +49,12 @@ namespace sts::ams {
 
 }
 
+namespace sts::result {
+
+    bool CallFatalOnResultAssertion = true;
+
+}
+
 using namespace sts;
 
 void __libnx_initheap(void) {

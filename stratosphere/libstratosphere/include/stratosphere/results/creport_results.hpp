@@ -15,19 +15,23 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Creport = 168;
+namespace sts::creport {
 
-static constexpr Result ResultCreportUndefinedInstruction = MAKERESULT(Module_Creport, 0);
-static constexpr Result ResultCreportInstructionAbort     = MAKERESULT(Module_Creport, 1);
-static constexpr Result ResultCreportDataAbort            = MAKERESULT(Module_Creport, 2);
-static constexpr Result ResultCreportAlignmentFault       = MAKERESULT(Module_Creport, 3);
-static constexpr Result ResultCreportDebuggerAttached     = MAKERESULT(Module_Creport, 4);
-static constexpr Result ResultCreportBreakPoint           = MAKERESULT(Module_Creport, 5);
-static constexpr Result ResultCreportUserBreak            = MAKERESULT(Module_Creport, 6);
-static constexpr Result ResultCreportDebuggerBreak        = MAKERESULT(Module_Creport, 7);
-static constexpr Result ResultCreportUndefinedSystemCall  = MAKERESULT(Module_Creport, 8);
-static constexpr Result ResultCreportSystemMemoryError    = MAKERESULT(Module_Creport, 9);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(168);
 
-static constexpr Result ResultCreportIncompleteReport     = MAKERESULT(Module_Creport, 99);
+    R_DEFINE_ERROR_RESULT(UndefinedInstruction, 0);
+    R_DEFINE_ERROR_RESULT(InstructionAbort,     1);
+    R_DEFINE_ERROR_RESULT(DataAbort,            2);
+    R_DEFINE_ERROR_RESULT(AlignmentFault,       3);
+    R_DEFINE_ERROR_RESULT(DebuggerAttached,     4);
+    R_DEFINE_ERROR_RESULT(BreakPoint,           5);
+    R_DEFINE_ERROR_RESULT(UserBreak,            6);
+    R_DEFINE_ERROR_RESULT(DebuggerBreak,        7);
+    R_DEFINE_ERROR_RESULT(UndefinedSystemCall,  8);
+    R_DEFINE_ERROR_RESULT(SystemMemoryError,    9);
+
+    R_DEFINE_ERROR_RESULT(IncompleteReport,     99);
+
+}

@@ -40,7 +40,7 @@ namespace sts::i2c::driver {
             R_TRY(Send(session, *cur_cmd, num_bytes, option));
             (*cur_cmd) += num_bytes;
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result ReceiveHandler(const u8 **cur_cmd, u8 **cur_dst, Session& session) {
@@ -55,7 +55,7 @@ namespace sts::i2c::driver {
             R_TRY(Receive(session, *cur_dst, num_bytes, option));
             (*cur_dst) += num_bytes;
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result SubCommandHandler(const u8 **cur_cmd, u8 **cur_dst, Session& session) {
@@ -72,7 +72,7 @@ namespace sts::i2c::driver {
                     break;
                 STS_UNREACHABLE_DEFAULT_CASE();
             }
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         /* Command handler list. */
@@ -155,7 +155,7 @@ namespace sts::i2c::driver {
             R_TRY(g_cmd_handlers[static_cast<size_t>(cmd)](&cur_cmd, &cur_dst, session));
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Power management. */

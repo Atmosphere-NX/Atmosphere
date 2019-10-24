@@ -15,10 +15,14 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Vi = 114;
+namespace sts::vi {
 
-static constexpr Result ResultViOperationFailed     = MAKERESULT(Module_Vi, 1);
-static constexpr Result ResultViNotSupported        = MAKERESULT(Module_Vi, 6);
-static constexpr Result ResultViNotFound            = MAKERESULT(Module_Vi, 7);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(114);
+
+    R_DEFINE_ERROR_RESULT(OperationFailed,     1);
+    R_DEFINE_ERROR_RESULT(NotSupported,        6);
+    R_DEFINE_ERROR_RESULT(NotFound,            7);
+
+}

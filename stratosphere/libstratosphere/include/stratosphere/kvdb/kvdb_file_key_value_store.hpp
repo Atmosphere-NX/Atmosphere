@@ -97,7 +97,7 @@ namespace sts::kvdb {
                 size_t size = 0;
                 R_TRY(this->Get(&size, out_value, sizeof(Value), key));
                 STS_ASSERT(size >= sizeof(Value));
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             template<typename Key>

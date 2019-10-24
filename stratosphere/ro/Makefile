@@ -45,8 +45,18 @@ CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
+CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
+			-Wl,--wrap,__cxa_throw \
+			-Wl,--wrap,__cxa_rethrow \
+			-Wl,--wrap,__cxa_allocate_exception \
+			-Wl,--wrap,__cxa_begin_catch \
+			-Wl,--wrap,__cxa_end_catch \
+			-Wl,--wrap,__cxa_call_unexpected \
+			-Wl,--wrap,__cxa_call_terminate \
+			-Wl,--wrap,__gxx_personality_v0
+
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) $(CXXWRAPS) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:= -lstratosphere -lnx
 

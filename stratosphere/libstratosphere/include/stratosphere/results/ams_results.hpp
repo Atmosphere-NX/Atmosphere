@@ -15,17 +15,24 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-/* Please note: These results are all custom, and not official. */
+namespace sts::ams {
 
-static constexpr u32 Module_Atmosphere = 444;
+    /* Please note: These results are all custom, and not official. */
+    R_DEFINE_NAMESPACE_RESULT_MODULE(444);
 
-/* Result 1-1000 reserved for Atmosphere. */
-static constexpr Result ResultAtmosphereExosphereNotPresent = MAKERESULT(Module_Atmosphere, 1);
-static constexpr Result ResultAtmosphereVersionMismatch     = MAKERESULT(Module_Atmosphere, 2);
 
-/* Results 1000-2000 reserved for Atmosphere Mitm. */
-static constexpr Result ResultAtmosphereMitmShouldForwardToSession =  MAKERESULT(Module_Atmosphere, 1000);
-static constexpr Result ResultAtmosphereMitmProcessNotAssociated =  MAKERESULT(Module_Atmosphere, 1100);
+    /* Result 1-1000 reserved for Atmosphere. */
+    R_DEFINE_ERROR_RESULT(ExosphereNotPresent, 1);
+    R_DEFINE_ERROR_RESULT(VersionMismatch,     2);
 
+    /* Results 1000-2000 reserved for Atmosphere Mitm. */
+    namespace mitm {
+
+        R_DEFINE_ERROR_RESULT(ShouldForwardToSession, 1000);
+        R_DEFINE_ERROR_RESULT(ProcessNotAssociated, 1100);
+
+    }
+
+}

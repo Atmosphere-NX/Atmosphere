@@ -128,7 +128,7 @@ namespace sts::kvdb {
                             return ResultKvdbAllocationFailed;
                         }
                         this->capacity = capacity;
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
 
                     Result Set(const Key &key, const void *value, size_t value_size) {
@@ -156,7 +156,7 @@ namespace sts::kvdb {
 
                         /* Save the new Entry in the map. */
                         *it = Entry(key, new_value, value_size);
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
 
                     Result AddUnsafe(const Key &key, void *value, size_t value_size) {
@@ -165,7 +165,7 @@ namespace sts::kvdb {
                         }
 
                         this->entries[this->count++] = Entry(key, value, value_size);
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
 
                     Result Remove(const Key &key) {
@@ -178,7 +178,7 @@ namespace sts::kvdb {
                             std::free(it->GetValuePointer());
                             std::memmove(it, it + 1, sizeof(*it) * (this->end() - (it + 1)));
                             this->count--;
-                            return ResultSuccess;
+                            return ResultSuccess();
                         }
 
                         /* If it's not, we didn't remove it. */
@@ -292,7 +292,7 @@ namespace sts::kvdb {
 
                 /* Initialize our index. */
                 R_TRY(this->index.Initialize(capacity));
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             Result Initialize(size_t capacity) {
@@ -303,7 +303,7 @@ namespace sts::kvdb {
 
                 /* Initialize our index. */
                 R_TRY(this->index.Initialize(capacity));
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             size_t GetCount() const {
@@ -323,7 +323,7 @@ namespace sts::kvdb {
                 AutoBuffer buffer;
                 R_TRY_CATCH(this->ReadArchiveFile(&buffer)) {
                     R_CATCH(ResultFsPathNotFound) {
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                 } R_END_TRY_CATCH;
 
@@ -356,7 +356,7 @@ namespace sts::kvdb {
                     }
                 }
 
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             Result Save() {
@@ -406,7 +406,7 @@ namespace sts::kvdb {
                 size_t size = std::min(max_out_size, it->GetValueSize());
                 std::memcpy(out_value, it->GetValuePointer(), size);
                 *out_size = size;
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             template<typename Value = void>
@@ -418,7 +418,7 @@ namespace sts::kvdb {
                 }
 
                 *out_value = it->template GetValuePointer<Value>();
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             template<typename Value = void>
@@ -430,7 +430,7 @@ namespace sts::kvdb {
                 }
 
                 *out_value = it->template GetValuePointer<Value>();
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             template<typename Value>
@@ -442,7 +442,7 @@ namespace sts::kvdb {
                 }
 
                 *out_value = it->template GetValue<Value>();
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             Result GetValueSize(size_t *out_size, const Key &key) const {
@@ -453,7 +453,7 @@ namespace sts::kvdb {
                 }
 
                 *out_size = it->GetValueSize();
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             Result Remove(const Key &key) {
@@ -528,7 +528,7 @@ namespace sts::kvdb {
                     return fsdevGetLastResult();
                 }
 
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             size_t GetArchiveSize() const {
@@ -560,7 +560,7 @@ namespace sts::kvdb {
                     return fsdevGetLastResult();
                 }
 
-                return ResultSuccess;
+                return ResultSuccess();
             }
     };
 

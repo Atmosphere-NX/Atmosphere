@@ -23,7 +23,7 @@ namespace sts::ams {
     ApiInfo GetApiInfo() {
         u64 exosphere_cfg;
         if (spl::smc::GetConfig(&exosphere_cfg, 1, SplConfigItem_ExosphereApiVersion) != spl::smc::Result::Success) {
-            R_ASSERT(ResultAtmosphereExosphereNotPresent);
+            R_ASSERT(ResultExosphereNotPresent());
         }
 
         return ApiInfo{
@@ -61,7 +61,7 @@ namespace sts::ams {
             u64 tmp;
             R_TRY(spl::smc::ConvertResult(spl::smc::GetConfig(&tmp, 1, SplConfigItem_ExosphereHasRcmBugPatch)));
             *out = (tmp != 0);
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
     }

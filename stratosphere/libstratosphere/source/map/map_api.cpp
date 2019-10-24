@@ -41,12 +41,12 @@ namespace sts::map {
 
                 if (mem_info.type == MemType_Unmapped && mem_info.addr - cur_base + mem_info.size >= size) {
                     *out_address = cur_base;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 const uintptr_t mem_end = mem_info.addr + mem_info.size;
                 if (mem_info.type == MemType_Reserved || mem_end < cur_base || (mem_end >> 31)) {
-                    return ResultKernelOutOfMemory;
+                    return svc::ResultOutOfMemory();
                 }
 
                 cur_base = mem_end;
@@ -64,39 +64,39 @@ namespace sts::map {
             cur_end = cur_base + size;
 
             if (cur_end <= cur_base) {
-                return ResultKernelOutOfMemory;
+                return svc::ResultOutOfMemory();
             }
 
             while (true) {
                 if (address_space.heap_size && (address_space.heap_base <= cur_end - 1 && cur_base <= address_space.heap_end - 1)) {
                     /* If we overlap the heap region, go to the end of the heap region. */
                     if (cur_base == address_space.heap_end) {
-                        return ResultKernelOutOfMemory;
+                        return svc::ResultOutOfMemory();
                     }
                     cur_base = address_space.heap_end;
                 } else if (address_space.alias_size && (address_space.alias_base <= cur_end - 1 && cur_base <= address_space.alias_end - 1)) {
                     /* If we overlap the alias region, go to the end of the alias region. */
                     if (cur_base == address_space.alias_end) {
-                        return ResultKernelOutOfMemory;
+                        return svc::ResultOutOfMemory();
                     }
                     cur_base = address_space.alias_end;
                 } else {
                     R_ASSERT(svcQueryMemory(&mem_info, &page_info, cur_base));
                     if (mem_info.type == 0 && mem_info.addr - cur_base + mem_info.size >= size) {
                         *out_address = cur_base;
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                     if (mem_info.addr + mem_info.size <= cur_base) {
-                        return ResultKernelOutOfMemory;
+                        return svc::ResultOutOfMemory();
                     }
                     cur_base = mem_info.addr + mem_info.size;
                     if (cur_base >= address_space.aslr_end) {
-                        return ResultKernelOutOfMemory;
+                        return svc::ResultOutOfMemory();
                     }
                 }
                 cur_end = cur_base + size;
                 if (cur_base + size <= cur_base) {
-                    return ResultKernelOutOfMemory;
+                    return svc::ResultOutOfMemory();
                 }
             }
         }
@@ -106,7 +106,7 @@ namespace sts::map {
             R_TRY(GetProcessAddressSpaceInfo(&address_space, process_handle));
 
             if (size > address_space.aslr_size) {
-                return ResultRoInsufficientAddressSpace;
+                return ro::ResultInsufficientAddressSpace();
             }
 
             uintptr_t try_address;
@@ -115,7 +115,7 @@ namespace sts::map {
 
                 MappedCodeMemory tmp_mcm(process_handle, try_address, base_address, size);
                 R_TRY_CATCH(tmp_mcm.GetResult()) {
-                    R_CATCH(ResultKernelInvalidMemoryState) {
+                    R_CATCH(svc::ResultInvalidCurrentMemoryState) {
                         continue;
                     }
                 } R_END_TRY_CATCH;
@@ -126,10 +126,10 @@ namespace sts::map {
 
                 /* We're done searching. */
                 out_mcm = std::move(tmp_mcm);
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
-            return ResultRoInsufficientAddressSpace;
+            return ro::ResultInsufficientAddressSpace();;
         }
 
         Result MapCodeMemoryInProcessModern(MappedCodeMemory &out_mcm, Handle process_handle, uintptr_t base_address, size_t size) {
@@ -137,7 +137,7 @@ namespace sts::map {
             R_TRY(GetProcessAddressSpaceInfo(&address_space, process_handle));
 
             if (size > address_space.aslr_size) {
-                return ResultRoInsufficientAddressSpace;
+                return ro::ResultInsufficientAddressSpace();;
             }
 
             uintptr_t try_address;
@@ -155,7 +155,7 @@ namespace sts::map {
 
                 MappedCodeMemory tmp_mcm(process_handle, try_address, base_address, size);
                 R_TRY_CATCH(tmp_mcm.GetResult()) {
-                    R_CATCH(ResultKernelInvalidMemoryState) {
+                    R_CATCH(svc::ResultInvalidCurrentMemoryState) {
                         continue;
                     }
                 } R_END_TRY_CATCH;
@@ -166,10 +166,10 @@ namespace sts::map {
 
                 /* We're done searching. */
                 out_mcm = std::move(tmp_mcm);
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
-            return ResultRoInsufficientAddressSpace;
+            return ro::ResultInsufficientAddressSpace();;
         }
 
     }
@@ -201,7 +201,7 @@ namespace sts::map {
         out->heap_end = out->heap_base + out->heap_size;
         out->alias_end = out->alias_base + out->alias_size;
         out->aslr_end = out->aslr_base + out->aslr_size;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result LocateMappableSpace(uintptr_t *out_address, size_t size) {

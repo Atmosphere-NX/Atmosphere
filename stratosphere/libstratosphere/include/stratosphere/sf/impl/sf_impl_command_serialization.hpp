@@ -52,14 +52,14 @@ namespace sts::sf {
 
         constexpr inline Result MarshalProcessId(ClientProcessId &client, const os::ProcessId &client_process_id) {
             client.SetValue(client_process_id);
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         constexpr inline Result MarshalProcessId(ClientAppletResourceUserId &client, const os::ProcessId &client_process_id) {
             if (client.GetValue() != client_process_id && client.GetValue() != os::ProcessId{}) {
-                return ResultServiceFrameworkPreconditionViolation;
+                return sf::ResultPreconditionViolation();
             }
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
     }
@@ -166,6 +166,8 @@ namespace sts::sf::impl {
         } else if constexpr (std::is_base_of<sf::impl::OutBaseTag, T>::value) {
             return ArgumentType::OutData;
         } else if constexpr (std::is_trivial<T>::value && !std::is_pointer<T>::value) {
+            return ArgumentType::InData;
+        } else if constexpr (std::is_same<T, ::sts::Result>::value) {
             return ArgumentType::InData;
         } else {
             static_assert(!std::is_same<T, T>::value, "Invalid ArgumentType<T>");
@@ -675,7 +677,7 @@ namespace sts::sf::impl {
                 if constexpr (NumInObjects > 0) {
                     R_TRY(processor->GetInObjects(this->in_object_holders.data()));
                 }
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             template<typename ServiceImplTuple>
@@ -685,7 +687,7 @@ namespace sts::sf::impl {
                     if constexpr (NumInObjects > n) { \
                         using SharedPtrToServiceImplType = typename std::tuple_element<n, ServiceImplTuple>::type; \
                         using ServiceImplType = typename SharedPtrToServiceImplType::element_type; \
-                        R_UNLESS((this->in_object_holders[n].template IsServiceObjectValid<ServiceImplType>()), ResultServiceFrameworkInvalidCmifInObject); \
+                        R_UNLESS((this->in_object_holders[n].template IsServiceObjectValid<ServiceImplType>()), sf::cmif::ResultInvalidInObject()); \
                     } \
                 } while (0)
                 _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(0);
@@ -696,7 +698,8 @@ namespace sts::sf::impl {
                 _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(5);
                 _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(6);
                 _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(7);
-                return ResultSuccess;
+                #undef _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT
+                return ResultSuccess();
             }
 
             template<size_t Index, typename ServiceImpl>
@@ -740,8 +743,8 @@ namespace sts::sf::impl {
                 const size_t command_raw_size = util::AlignUp(runtime_metadata.GetUnfixedOutPointerSizeOffset() + (CommandMeta::NumUnfixedSizeOutHipcPointerBuffers * sizeof(u16)), alignof(u32));
                 is_request_valid &= meta_raw_size >= command_raw_size;
 
-                R_UNLESS(is_request_valid, ResultHipcInvalidRequest);
-                return ResultSuccess;
+                R_UNLESS(is_request_valid, sf::hipc::ResultInvalidCmifRequest());
+                return ResultSuccess();
             }
 
             virtual HipcRequest PrepareForReply(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &out_raw_data, const cmif::ServerMessageRuntimeMetadata runtime_metadata) override final {
@@ -768,7 +771,7 @@ namespace sts::sf::impl {
 
             virtual Result GetInObjects(cmif::ServiceObjectHolder *in_objects) const override final {
                 /* By default, InObjects aren't supported. */
-                return ResultServiceFrameworkNotSupported;
+                return sf::ResultNotSupported();
             }
 
             virtual void SetOutObjects(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response, cmif::ServiceObjectHolder *out_objects, cmif::DomainObjectId *ids) override final {
@@ -949,11 +952,11 @@ namespace sts::sf::impl {
                 _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(6);
                 _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL(7);
                 #undef _SF_IMPL_PROCESSOR_PROCESS_BUFFER_IMPL
-                R_UNLESS(map_alias_buffers_valid, ResultHipcInvalidRequest);
+                R_UNLESS(map_alias_buffers_valid, sf::hipc::ResultInvalidCmifRequest());
                 if constexpr (CommandMeta::NumOutHipcPointerBuffers > 0) {
-                    R_UNLESS(pointer_buffer_tail <= pointer_buffer_head, ResultHipcPointerBufferTooSmall);
+                    R_UNLESS(pointer_buffer_tail <= pointer_buffer_head, sf::hipc::ResultPointerBufferTooSmall());
                 }
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             NX_CONSTEXPR void SetOutBuffers(const HipcRequest &response, const BufferArrayType &buffers, const std::array<bool, CommandMeta::NumBuffers> &is_buffer_map_alias) {
@@ -1045,10 +1048,10 @@ namespace sts::sf::impl {
 
     constexpr Result GetCmifOutHeaderPointer(CmifOutHeader **out_header_ptr, cmif::PointerAndSize &out_raw_data) {
         CmifOutHeader *header = reinterpret_cast<CmifOutHeader *>(out_raw_data.GetPointer());
-        R_UNLESS(out_raw_data.GetSize() >= sizeof(*header), ResultServiceFrameworkInvalidCmifHeaderSize);
+        R_UNLESS(out_raw_data.GetSize() >= sizeof(*header), sf::cmif::ResultInvalidHeaderSize());
         out_raw_data = cmif::PointerAndSize(out_raw_data.GetAddress() + sizeof(*header), out_raw_data.GetSize() - sizeof(*header));
         *out_header_ptr = header;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     template<auto ServiceCommandImpl>
@@ -1101,11 +1104,13 @@ namespace sts::sf::impl {
             }
 
             if constexpr (CommandMeta::ReturnsResult) {
-                R_TRY_CLEANUP(std::apply([=](auto&&... args) { return (this_ptr->*ServiceCommandImpl)(args...); }, args_tuple), {
+                const auto command_result = std::apply([=](auto&&... args) { return (this_ptr->*ServiceCommandImpl)(args...); }, args_tuple);
+                if (R_FAILED(command_result)) {
                     cmif::PointerAndSize out_raw_data;
                     ctx.processor->PrepareForErrorReply(ctx, out_raw_data, runtime_metadata);
                     R_TRY(GetCmifOutHeaderPointer(out_header_ptr, out_raw_data));
-                });
+                    return command_result;
+                }
             } else {
                 std::apply([=](auto&&... args) { (this_ptr->*ServiceCommandImpl)(args...); }, args_tuple);
             }
@@ -1117,7 +1122,7 @@ namespace sts::sf::impl {
         R_TRY(GetCmifOutHeaderPointer(out_header_ptr, out_raw_data));
 
         /* Copy raw data output struct. */
-        R_UNLESS(out_raw_data.GetSize() >= OutRawHolderType::Size, ResultServiceFrameworkInvalidCmifOutRawSize);
+        R_UNLESS(out_raw_data.GetSize() >= OutRawHolderType::Size, sf::cmif::ResultInvalidOutRawSize());
         out_raw_holder.CopyTo(out_raw_data.GetPointer());
 
         /* Set output recvlist buffers. */
@@ -1129,7 +1134,7 @@ namespace sts::sf::impl {
         /* Set output objects. */
         in_out_objects_holder.SetOutObjects(ctx, response);
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

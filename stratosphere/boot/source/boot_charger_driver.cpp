@@ -35,7 +35,7 @@ namespace sts::boot {
 
         const u8 new_val = (cur_val & ~mask) | val;
         R_TRY(this->Write(addr, new_val));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ChargerDriver::Initialize() {
@@ -59,7 +59,7 @@ namespace sts::boot {
         R_TRY(this->SetBoostModeCurrentLimit(bq24193::BoostModeCurrentLimit_500mA));
         R_TRY(this->SetHiZEnabled(false));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ChargerDriver::SetChargeEnabled(bool enabled) {
@@ -123,14 +123,14 @@ namespace sts::boot {
         u8 limit;
         R_TRY(this->Read(bq24193::InputSourceControl, &limit));
         *out = static_cast<bq24193::InputCurrentLimit>(limit);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ChargerDriver::GetChargeVoltageLimit(u32 *out) {
         u8 reg;
         R_TRY(this->Read(bq24193::ChargeVoltageControl, &reg));
         *out = bq24193::DecodeChargeVoltageLimit(reg);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

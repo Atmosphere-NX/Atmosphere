@@ -32,7 +32,7 @@ Result SetSysMitmService::GetFirmwareVersion(OutPointerWithServerSize<SetSysFirm
     /* GetFirmwareVersion sanitizes these fields. */
     out.pointer->revision_major = 0;
     out.pointer->revision_minor = 0;
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result SetSysMitmService::GetFirmwareVersion2(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) {
@@ -64,7 +64,7 @@ Result SetSysMitmService::GetSettingsItemValueSize(Out<u64> out_size, InPointer<
         R_TRY(setsysGetSettingsItemValueSize(name, key, out_size.GetPointer()));
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result SetSysMitmService::GetSettingsItemValue(Out<u64> out_size, OutBuffer<u8> out_value, InPointer<char> in_name, InPointer<char> in_key) {
@@ -96,5 +96,5 @@ Result SetSysMitmService::GetSettingsItemValue(Out<u64> out_size, OutBuffer<u8> 
         R_TRY(setsysGetSettingsItemValueFwd(this->forward_service.get(), name, key, out_value.buffer, out_value.num_elements, out_size.GetPointer()));
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }

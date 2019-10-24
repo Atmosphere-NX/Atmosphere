@@ -84,7 +84,7 @@ namespace sts::ldr {
             FsFileSystem fs;
             R_TRY(fsOpenFileSystemWithId(&fs, 0, FsFileSystemType_ApplicationPackage, path));
             STS_ASSERT(fsdevMountDevice(device_name, fs) >= 0);
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         FILE *OpenFile(const char *device_name, const char *relative_path) {
@@ -180,7 +180,7 @@ namespace sts::ldr {
 
         /* Note that we mounted code. */
         this->is_code_mounted = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ScopedCodeMount::MountSdCardCodeFileSystem(const ncm::TitleLocation &loc) {
@@ -193,7 +193,7 @@ namespace sts::ldr {
 
         /* Note that we mounted code. */
         this->is_code_mounted = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ScopedCodeMount::MountHblFileSystem() {
@@ -206,7 +206,7 @@ namespace sts::ldr {
 
         /* Note that we mounted HBL. */
         this->is_hbl_mounted = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 
@@ -236,7 +236,7 @@ namespace sts::ldr {
             R_TRY(this->MountCodeFileSystem(loc));
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result OpenCodeFile(FILE *&out, ncm::TitleId title_id, const char *relative_path) {
@@ -262,23 +262,19 @@ namespace sts::ldr {
         }
 
         /* If nothing worked, we failed to find the path. */
-        if (f == nullptr) {
-            return ResultFsPathNotFound;
-        }
+        R_UNLESS(f != nullptr, fs::ResultPathNotFound());
 
         out = f;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result OpenCodeFileFromBaseExefs(FILE *&out, ncm::TitleId title_id, const char *relative_path) {
         /* Open the file. */
         FILE *f = OpenBaseExefsFile(title_id, relative_path);
-        if (f == nullptr) {
-            return ResultFsPathNotFound;
-        }
+        R_UNLESS(f != nullptr, fs::ResultPathNotFound());
 
         out = f;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Redirection API. */
@@ -291,7 +287,7 @@ namespace sts::ldr {
         ON_SCOPE_EXIT { serviceClose(&reg.s); };
 
         R_TRY_CATCH(lrRegLrResolveProgramPath(&reg, static_cast<u64>(loc.title_id), path)) {
-            R_CATCH(ResultLrProgramNotFound) {
+            R_CATCH(lr::ResultProgramNotFound) {
                 /* Program wasn't found via registered resolver, fall back to the normal resolver. */
                 LrLocationResolver lr;
                 R_TRY(lrOpenLocationResolver(static_cast<FsStorageId>(loc.storage_id), &lr));
@@ -304,7 +300,7 @@ namespace sts::ldr {
         std::strncpy(out_path, path, FS_MAX_PATH);
         out_path[FS_MAX_PATH - 1] = '\0';
         FixFileSystemPath(out_path);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result RedirectContentPath(const char *path, const ncm::TitleLocation &loc) {
@@ -324,15 +320,13 @@ namespace sts::ldr {
         ON_SCOPE_EXIT { serviceClose(&lr.s); };
 
         /* If there's already a Html Document path, we don't need to set one. */
-        if (R_SUCCEEDED(lrLrResolveApplicationHtmlDocumentPath(&lr, static_cast<u64>(loc.title_id), path))) {
-            return ResultSuccess;
-        }
+        R_UNLESS(R_FAILED(lrLrResolveApplicationHtmlDocumentPath(&lr, static_cast<u64>(loc.title_id), path)), ResultSuccess());
 
         /* We just need to set this to any valid NCA path. Let's use the executable path. */
         R_TRY(lrLrResolveProgramPath(&lr, static_cast<u64>(loc.title_id), path));
         R_TRY(lrLrRedirectApplicationHtmlDocumentPath(&lr, static_cast<u64>(loc.title_id), static_cast<u64>(loc.title_id), path));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

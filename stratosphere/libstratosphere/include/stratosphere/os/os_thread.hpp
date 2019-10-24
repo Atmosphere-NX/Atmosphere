@@ -50,7 +50,7 @@ namespace sts::os {
             Result Join() {
                 R_TRY(threadWaitForExit(&this->thr));
                 R_TRY(threadClose(&this->thr));
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             Result CancelSynchronization() {
@@ -92,7 +92,7 @@ namespace sts::os {
             Result Join() {
                 R_TRY(threadWaitForExit(&this->thr));
                 R_TRY(threadClose(&this->thr));
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             Result CancelSynchronization() {

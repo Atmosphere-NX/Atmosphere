@@ -451,7 +451,7 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
     /* Try to write the data. */
     R_TRY(fsFileWrite(&f, 0, data, size, FS_WRITEOPTION_FLUSH));
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 bool Utils::IsHblTid(u64 _tid) {
@@ -539,7 +539,7 @@ Result Utils::GetKeysHeld(u64 *keys) {
         *keys |= hidKeysHeld((HidControllerID) controller);
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 static bool HasOverrideKey(OverrideKey *cfg) {
@@ -793,7 +793,7 @@ Result Utils::GetSettingsItemBooleanValue(const char *name, const char *key, boo
     if (out) {
         *out = val != 0;
     }
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 void Utils::RebootToFatalError(AtmosphereFatalErrorContext *ctx) {

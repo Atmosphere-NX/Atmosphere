@@ -205,7 +205,7 @@ namespace sts::pm::impl {
         /* Process Launch synchronization globals. */
         os::Event g_process_launch_start_event;
         os::Event g_process_launch_finish_event;
-        Result g_process_launch_result = ResultSuccess;
+        Result g_process_launch_result = ResultSuccess();
         LaunchProcessArgs g_process_launch_args = {};
 
         /* Hook globals. */
@@ -214,7 +214,7 @@ namespace sts::pm::impl {
 
         /* Forward declarations. */
         Result LaunchProcess(os::WaitableManager &waitable_manager, const LaunchProcessArgs &args);
-        Result OnProcessSignaled(ProcessListAccessor &list, ProcessInfo *process_info);
+        void   OnProcessSignaled(ProcessListAccessor &list, ProcessInfo *process_info);
 
         /* Helpers. */
         void ProcessTrackingMain(void *arg) {
@@ -270,7 +270,7 @@ namespace sts::pm::impl {
         Result StartProcess(ProcessInfo *process_info, const ldr::ProgramInfo *program_info) {
             R_TRY(svcStartProcess(process_info->GetHandle(), program_info->main_thread_priority, program_info->default_cpu_id, program_info->main_thread_stack_size));
             process_info->SetState(ProcessState_Running);
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         void CleanupProcessInfo(ProcessListAccessor &list, ProcessInfo *process_info) {
@@ -289,9 +289,7 @@ namespace sts::pm::impl {
             const bool allow_debug    = (program_info.flags & ldr::ProgramInfoFlag_AllowDebug) || hos::GetVersion() < hos::Version_200;
 
             /* Ensure we only try to run one application. */
-            if (is_application && HasApplicationProcess()) {
-                return ResultPmApplicationRunning;
-            }
+            R_UNLESS(!is_application || !HasApplicationProcess(), pm::ResultApplicationRunning());
 
             /* Fix the title location to use the right title id. */
             const ncm::TitleLocation location = ncm::TitleLocation::Make(program_info.title_id, static_cast<ncm::StorageId>(args.location.storage_id));
@@ -300,14 +298,17 @@ namespace sts::pm::impl {
             ldr::PinId pin_id;
             R_TRY(ldr::pm::PinTitle(&pin_id, location));
 
+
             /* Ensure resources are available. */
             resource::WaitResourceAvailable(&program_info);
 
             /* Actually create the process. */
             Handle process_handle;
-            R_TRY_CLEANUP(ldr::pm::CreateProcess(&process_handle, pin_id, GetLoaderCreateProcessFlags(args.flags), resource::GetResourceLimitHandle(&program_info)), {
-                ldr::pm::UnpinTitle(pin_id);
-            });
+            {
+                auto pin_guard = SCOPE_GUARD { ldr::pm::UnpinTitle(pin_id); };
+                R_TRY(ldr::pm::CreateProcess(&process_handle, pin_id, GetLoaderCreateProcessFlags(args.flags), resource::GetResourceLimitHandle(&program_info)));
+                pin_guard.Cancel();
+            }
 
             /* Get the process id. */
             os::ProcessId process_id = os::GetProcessId(process_handle);
@@ -369,11 +370,11 @@ namespace sts::pm::impl {
             cleanup_guard.Cancel();
 
             *args.out_process_id = process_id;
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
-        Result OnProcessSignaled(ProcessListAccessor &list, ProcessInfo *process_info) {
-            /* Resest the process's signal. */
+        void OnProcessSignaled(ProcessListAccessor &list, ProcessInfo *process_info) {
+            /* Reset the process's signal. */
             svcResetSignal(process_info->GetHandle());
 
             /* Update the process's state. */
@@ -442,8 +443,6 @@ namespace sts::pm::impl {
                             CleanupProcessInfo(list, process_info);
                         }
                     }
-                    /* Return ConnectionClosed to cause libstratosphere to stop waiting on the process. */
-                    return ResultKernelConnectionClosed;
                 case ProcessState_DebugSuspended:
                     if (process_info->ShouldSignalOnDebugEvent()) {
                         process_info->SetSuspended();
@@ -452,8 +451,6 @@ namespace sts::pm::impl {
                     }
                     break;
             }
-
-            return ResultSuccess;
         }
 
     }
@@ -472,7 +469,7 @@ namespace sts::pm::impl {
         /* Start thread. */
         R_ASSERT(g_process_track_thread.Start());
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Process Management. */
@@ -497,13 +494,8 @@ namespace sts::pm::impl {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
-        if (process_info == nullptr) {
-            return ResultPmProcessNotFound;
-        }
-
-        if (process_info->HasStarted()) {
-            return ResultPmAlreadyStarted;
-        }
+        R_UNLESS(process_info != nullptr,     pm::ResultProcessNotFound());
+        R_UNLESS(!process_info->HasStarted(), pm::ResultAlreadyStarted());
 
         ldr::ProgramInfo program_info;
         R_TRY(ldr::pm::GetProgramInfo(&program_info, process_info->GetTitleLocation()));
@@ -514,9 +506,7 @@ namespace sts::pm::impl {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
-        if (process_info == nullptr) {
-            return ResultPmProcessNotFound;
-        }
+        R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         return svcTerminateProcess(process_info->GetHandle());
     }
@@ -525,16 +515,14 @@ namespace sts::pm::impl {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(title_id);
-        if (process_info == nullptr) {
-            return ResultPmProcessNotFound;
-        }
+        R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         return svcTerminateProcess(process_info->GetHandle());
     }
 
     Result GetProcessEventHandle(Handle *out) {
         *out = g_process_event.GetReadableHandle();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result GetProcessEventInfo(ProcessEventInfo *out) {
@@ -548,7 +536,7 @@ namespace sts::pm::impl {
                     process.ClearStartedStateChanged();
                     out->event = GetProcessEventValue(ProcessEvent::Started);
                     out->process_id = process.GetProcessId();
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
                 if (process.HasSuspendedStateChanged()) {
                     process.ClearSuspendedStateChanged();
@@ -558,18 +546,18 @@ namespace sts::pm::impl {
                         out->event = GetProcessEventValue(ProcessEvent::DebugRunning);
                     }
                     out->process_id = process.GetProcessId();
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
                 if (process.HasExceptionOccurred()) {
                     process.ClearExceptionOccurred();
                     out->event = GetProcessEventValue(ProcessEvent::Exception);
                     out->process_id = process.GetProcessId();
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
                 if (hos::GetVersion() < hos::Version_500 && process.ShouldSignalOnExit() && process.HasExited()) {
                     out->event = GetProcessEventValue(ProcessEvent::Exited);
                     out->process_id = process.GetProcessId();
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
             }
         }
@@ -584,48 +572,41 @@ namespace sts::pm::impl {
                 out->process_id = process_info.GetProcessId();
 
                 CleanupProcessInfo(dead_list, &process_info);
-                return ResultSuccess;
+                return ResultSuccess();
             }
         }
 
         out->process_id = os::ProcessId{};
         out->event = GetProcessEventValue(ProcessEvent::None);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result CleanupProcess(os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
-        if (process_info == nullptr) {
-            return ResultPmProcessNotFound;
-        }
-
-        if (!process_info->HasExited()) {
-            return ResultPmNotExited;
-        }
+        R_UNLESS(process_info != nullptr,   pm::ResultProcessNotFound());
+        R_UNLESS(process_info->HasExited(), pm::ResultNotExited());
 
         CleanupProcessInfo(list, process_info);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ClearExceptionOccurred(os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
-        if (process_info == nullptr) {
-            return ResultPmProcessNotFound;
-        }
+        R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         process_info->ClearExceptionOccurred();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Information Getters. */
     Result GetModuleIdList(u32 *out_count, u8 *out_buf, size_t max_out_count, u64 unused) {
         /* This function was always stubbed... */
         *out_count = 0;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result GetExceptionProcessIdList(u32 *out_count, os::ProcessId *out_process_ids, size_t max_out_count) {
@@ -638,31 +619,27 @@ namespace sts::pm::impl {
             }
         }
         *out_count = static_cast<u32>(count);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result GetProcessId(os::ProcessId *out, ncm::TitleId title_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(title_id);
-        if (process_info == nullptr) {
-            return ResultPmProcessNotFound;
-        }
+        R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         *out = process_info->GetProcessId();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result GetTitleId(ncm::TitleId *out, os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
-        if (process_info == nullptr) {
-            return ResultPmProcessNotFound;
-        }
+        R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         *out = process_info->GetTitleLocation().title_id;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result GetApplicationProcessId(os::ProcessId *out_process_id) {
@@ -671,49 +648,47 @@ namespace sts::pm::impl {
         for (auto &process : *list) {
             if (process.IsApplication()) {
                 *out_process_id = process.GetProcessId();
-                return ResultSuccess;
+                return ResultSuccess();
             }
         }
 
-        return ResultPmProcessNotFound;
+        return pm::ResultProcessNotFound();
     }
 
     Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::TitleLocation *out_loc, os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
-        if (process_info == nullptr) {
-            return ResultPmProcessNotFound;
-        }
+        R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         *out_process_handle = process_info->GetHandle();
         *out_loc = process_info->GetTitleLocation();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Hook API. */
     Result HookToCreateProcess(Handle *out_hook, ncm::TitleId title_id) {
         *out_hook = INVALID_HANDLE;
 
-        ncm::TitleId old_value = ncm::TitleId::Invalid;
-        if (!g_title_id_hook.compare_exchange_strong(old_value, title_id)) {
-            return ResultPmDebugHookInUse;
+        {
+            ncm::TitleId old_value = ncm::TitleId::Invalid;
+            R_UNLESS(g_title_id_hook.compare_exchange_strong(old_value, title_id), pm::ResultDebugHookInUse());
         }
 
         *out_hook = g_hook_to_create_process_event.GetReadableHandle();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result HookToCreateApplicationProcess(Handle *out_hook) {
         *out_hook = INVALID_HANDLE;
 
-        bool old_value = false;
-        if (!g_application_hook.compare_exchange_strong(old_value, true)) {
-            return ResultPmDebugHookInUse;
+        {
+            bool old_value = false;
+            R_UNLESS(g_application_hook.compare_exchange_strong(old_value, true), pm::ResultDebugHookInUse());
         }
 
         *out_hook = g_hook_to_create_application_process_event.GetReadableHandle();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ClearHook(u32 which) {
@@ -723,7 +698,7 @@ namespace sts::pm::impl {
         if (which & HookType_Application) {
             g_application_hook = false;
         }
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Boot API. */
@@ -734,7 +709,7 @@ namespace sts::pm::impl {
             g_has_boot_finished = true;
             g_boot_finished_event.Signal();
         }
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result GetBootFinishedEventHandle(Handle *out) {
@@ -743,7 +718,7 @@ namespace sts::pm::impl {
         /* We will signal it always, but only allow this function to succeed on safe mode. */
         STS_ASSERT(spl::IsRecoveryBoot());
         *out = g_boot_finished_event.GetReadableHandle();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Resource Limit API. */

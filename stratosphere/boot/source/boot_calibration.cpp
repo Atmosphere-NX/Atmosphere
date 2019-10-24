@@ -29,8 +29,6 @@ namespace sts::boot {
         constexpr u32 DefaultBatteryVendor = static_cast<u32>('A');
         constexpr u32 DefaultBatteryVersion = 0;
 
-        constexpr Result ResultCalInvalidCrc = 0xCAC6; /* TODO: Verify this really is cal, move to libstrat results. */
-
         /* Helpers. */
         constexpr u16 GetCrc16(const void *data, size_t size) {
             constexpr u16 s_crc_table[0x10] = {
@@ -51,10 +49,9 @@ namespace sts::boot {
 
         Result ValidateCalibrationCrc16(const void *data, size_t size) {
             const u8 *data_u8 = reinterpret_cast<const u8 *>(data);
-            if (GetCrc16(data, size - sizeof(u16)) != *(reinterpret_cast<const u16 *>(&data_u8[size - sizeof(u16)]))) {
-                return ResultCalInvalidCrc;
-            }
-            return ResultSuccess;
+            const bool crc_valid = GetCrc16(data, size - sizeof(u16)) == *(reinterpret_cast<const u16 *>(&data_u8[size - sizeof(u16)]));
+            R_UNLESS(crc_valid, cal::ResultCalibrationDataCrcError());
+            return ResultSuccess();
         }
 
         Result GetBatteryVendorImpl(u32 *vendor) {
@@ -68,7 +65,7 @@ namespace sts::boot {
             R_TRY(ValidateCalibrationCrc16(battery_lot, sizeof(battery_lot)));
 
             *vendor = battery_lot[7];
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result GetBatteryVersionImpl(u32 *version) {
@@ -82,7 +79,7 @@ namespace sts::boot {
             R_TRY(ValidateCalibrationCrc16(battery_version, sizeof(battery_version)));
 
             *version = battery_version[0];
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
     }

@@ -33,6 +33,7 @@
     cls& operator=(cls&&) = delete
 
 #define ALIGNED(algn) __attribute__((aligned(algn)))
+#define NORETURN      __attribute__((noreturn))
 #define WEAK          __attribute__((weak))
 
 

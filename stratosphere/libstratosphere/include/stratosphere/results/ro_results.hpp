@@ -15,26 +15,31 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Ro = 22;
+namespace sts::ro {
 
-static constexpr Result ResultRoInsufficientAddressSpace = MAKERESULT(Module_Ro, 2);
-static constexpr Result ResultRoAlreadyLoaded            = MAKERESULT(Module_Ro, 3);
-static constexpr Result ResultRoInvalidNro               = MAKERESULT(Module_Ro, 4);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(22);
 
-static constexpr Result ResultRoInvalidNrr               = MAKERESULT(Module_Ro, 6);
-static constexpr Result ResultRoTooManyNro               = MAKERESULT(Module_Ro, 7);
-static constexpr Result ResultRoTooManyNrr               = MAKERESULT(Module_Ro, 8);
-static constexpr Result ResultRoNotAuthorized            = MAKERESULT(Module_Ro, 9);
-static constexpr Result ResultRoInvalidNrrType           = MAKERESULT(Module_Ro, 10);
+    R_DEFINE_ERROR_RANGE(RoError, 1, 1023);
+        R_DEFINE_ERROR_RESULT(OutOfAddressSpace,        2);
+        R_DEFINE_ERROR_RESULT(AlreadyLoaded,            3);
+        R_DEFINE_ERROR_RESULT(InvalidNro,               4);
 
-static constexpr Result ResultRoInternalError            = MAKERESULT(Module_Ro, 1023);
+        R_DEFINE_ERROR_RESULT(InvalidNrr,               6);
+        R_DEFINE_ERROR_RESULT(TooManyNro,               7);
+        R_DEFINE_ERROR_RESULT(TooManyNrr,               8);
+        R_DEFINE_ERROR_RESULT(NotAuthorized,            9);
+        R_DEFINE_ERROR_RESULT(InvalidNrrType,           10);
 
-static constexpr Result ResultRoInvalidAddress           = MAKERESULT(Module_Ro, 1025);
-static constexpr Result ResultRoInvalidSize              = MAKERESULT(Module_Ro, 1026);
+        R_DEFINE_ERROR_RESULT(InternalError,            1023);
 
-static constexpr Result ResultRoNotLoaded                = MAKERESULT(Module_Ro, 1028);
-static constexpr Result ResultRoNotRegistered            = MAKERESULT(Module_Ro, 1029);
-static constexpr Result ResultRoInvalidSession           = MAKERESULT(Module_Ro, 1030);
-static constexpr Result ResultRoInvalidProcess           = MAKERESULT(Module_Ro, 1031);
+    R_DEFINE_ERROR_RESULT(InvalidAddress,           1025);
+    R_DEFINE_ERROR_RESULT(InvalidSize,              1026);
+
+    R_DEFINE_ERROR_RESULT(NotLoaded,                1028);
+    R_DEFINE_ERROR_RESULT(NotRegistered,            1029);
+    R_DEFINE_ERROR_RESULT(InvalidSession,           1030);
+    R_DEFINE_ERROR_RESULT(InvalidProcess,           1031);
+
+}

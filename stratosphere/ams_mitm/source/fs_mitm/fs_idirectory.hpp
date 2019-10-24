@@ -28,7 +28,7 @@ class IDirectory {
             }
             if (max_entries == 0) {
                 *out_count = 0;
-                return ResultSuccess;
+                return ResultSuccess();
             }
             if (out_entries == nullptr) {
                 return ResultFsNullptrArgument;
@@ -107,7 +107,7 @@ class ProxyDirectory : public IDirectory {
             R_TRY(fsDirRead(this->base_dir.get(), 0, &count, max_entries, out_entries));
 
             *out_count = count;
-            return ResultSuccess;
+            return ResultSuccess();
         }
         virtual Result GetEntryCountImpl(uint64_t *count) {
             return fsDirGetEntryCount(this->base_dir.get(), count);

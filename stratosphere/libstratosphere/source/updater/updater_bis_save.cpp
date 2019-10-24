@@ -39,7 +39,7 @@ namespace sts::updater {
 
         R_TRY(this->accessor.Initialize());
         this->save_buffer = work_buffer;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     void BisSave::Finalize() {

@@ -251,10 +251,10 @@ namespace sts::sm::impl {
             for (size_t i = 0; i < FutureMitmCountMax; i++) {
                 if (g_future_mitm_list[i] == InvalidServiceName) {
                     g_future_mitm_list[i] = service;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
             }
-            return ResultSmInsufficientServices;
+            return sm::ResultOutOfServices();
         }
 
         bool HasFutureMitmDeclaration(ServiceName service) {
@@ -288,23 +288,23 @@ namespace sts::sm::impl {
             /* Iterate over all entries in the access control, checking to see if we have a match. */
             while (access_control.IsValid()) {
                 if (access_control.IsHost() == is_host) {
+                    bool is_valid = true;
+
                     if (access_control.IsWildcard() == is_wildcard) {
                         /* Check for exact match. */
-                        if (access_control.GetServiceName() == service) {
-                            return ResultSuccess;
-                        }
+                        is_valid &= access_control.GetServiceName() == service;
                     } else if (access_control.IsWildcard()) {
                         /* Also allow fuzzy match for wildcard. */
                         ServiceName ac_service = access_control.GetServiceName();
-                        if (std::memcmp(&ac_service, &service, access_control.GetServiceNameSize() - 1) == 0) {
-                            return ResultSuccess;
-                        }
+                        is_valid &= std::memcmp(&ac_service, &service, access_control.GetServiceNameSize() - 1) == 0;
                     }
+
+                    R_UNLESS(!is_valid, ResultSuccess());
                 }
                 access_control = access_control.GetNextEntry();
             }
 
-            return ResultSmNotAllowed;
+            return sm::ResultNotAllowed();
         }
 
         Result ValidateAccessControl(AccessControlEntry restriction, AccessControlEntry access) {
@@ -314,14 +314,12 @@ namespace sts::sm::impl {
                 access = access.GetNextEntry();
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result ValidateServiceName(ServiceName service) {
             /* Service names must be non-empty. */
-            if (service.name[0] == 0) {
-                return ResultSmInvalidServiceName;
-            }
+            R_UNLESS(service.name[0] != 0, sm::ResultInvalidServiceName());
 
             /* Get name length. */
             size_t name_len;
@@ -333,12 +331,10 @@ namespace sts::sm::impl {
 
             /* Names must be all-zero after they end. */
             while (name_len < sizeof(service)) {
-                if (service.name[name_len++] != 0) {
-                    return ResultSmInvalidServiceName;
-                }
+                R_UNLESS(service.name[name_len++] == 0, sm::ResultInvalidServiceName());
             }
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         bool ShouldDeferForInit(ServiceName service) {
@@ -365,9 +361,7 @@ namespace sts::sm::impl {
             }
 
             /* If we shouldn't mitm, give normal session. */
-            if (!should_mitm) {
-                return svcConnectToPort(out, service_info->port_h.Get());
-            }
+            R_UNLESS(should_mitm, svcConnectToPort(out, service_info->port_h.Get()));
 
             /* Create both handles. */
             {
@@ -381,7 +375,7 @@ namespace sts::sm::impl {
             service_info->mitm_waiting_ack_pid = process_id;
             service_info->mitm_waiting_ack = true;
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result GetServiceHandleImpl(Handle *out, ServiceInfo *service_info, os::ProcessId pid) {
@@ -395,7 +389,7 @@ namespace sts::sm::impl {
                 if (!IsMitmDisallowed(title_id)) {
                     /* We're mitm'd. Assert, because mitm service host dead is an error state. */
                     R_ASSERT(GetMitmServiceHandleImpl(out, service_info, pid, title_id));
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
             }
 
@@ -408,9 +402,7 @@ namespace sts::sm::impl {
             R_TRY(ValidateServiceName(service));
 
             /* Don't try to register something already registered. */
-            if (HasServiceInfo(service)) {
-                return ResultSmAlreadyRegistered;
-            }
+            R_UNLESS(!HasServiceInfo(service), sm::ResultAlreadyRegistered());
 
             /* Adjust session limit, if compile flags tell us to. */
 #ifdef SM_MINIMUM_SESSION_LIMIT
@@ -421,9 +413,7 @@ namespace sts::sm::impl {
 
             /* Get free service. */
             ServiceInfo *free_service = GetFreeServiceInfo();
-            if (free_service == nullptr) {
-                return ResultSmInsufficientServices;
-            }
+            R_UNLESS(free_service != nullptr, sm::ResultOutOfServices());
 
             /* Create the new service. */
             *out = INVALID_HANDLE;
@@ -435,27 +425,21 @@ namespace sts::sm::impl {
             free_service->max_sessions = max_sessions;
             free_service->is_light = is_light;
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
     }
 
     /* Process management. */
     Result RegisterProcess(os::ProcessId pid, ncm::TitleId tid, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size) {
         /* Check that access control will fit in the ServiceInfo. */
-        if (aci_sac_size > AccessControlSizeMax) {
-            return ResultSmTooLargeAccessControl;
-        }
+        R_UNLESS(aci_sac_size <= AccessControlSizeMax, sm::ResultTooLargeAccessControl());
 
         /* Get free process. */
         ProcessInfo *proc = GetFreeProcessInfo();
-        if (proc == nullptr) {
-            return ResultSmInsufficientProcesses;
-        }
+        R_UNLESS(proc != nullptr, sm::ResultOutOfProcesses());
 
         /* Validate restrictions. */
-        if (!aci_sac_size) {
-            return ResultSmNotAllowed;
-        }
+        R_UNLESS(aci_sac_size != 0, sm::ResultNotAllowed());
         R_TRY(ValidateAccessControl(AccessControlEntry(acid_sac, acid_sac_size), AccessControlEntry(aci_sac, aci_sac_size)));
 
         /* Save info. */
@@ -463,18 +447,16 @@ namespace sts::sm::impl {
         proc->tid = tid;
         proc->access_control_size = aci_sac_size;
         std::memcpy(proc->access_control, aci_sac, proc->access_control_size);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result UnregisterProcess(os::ProcessId pid) {
         /* Find the process. */
         ProcessInfo *proc = GetProcessInfo(pid);
-        if (proc == nullptr) {
-            return ResultSmInvalidClient;
-        }
+        R_UNLESS(proc != nullptr, sm::ResultInvalidClient());
 
         proc->Free();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Service management. */
@@ -483,7 +465,7 @@ namespace sts::sm::impl {
         R_TRY(ValidateServiceName(service));
 
         *out = HasServiceInfo(service);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result WaitService(ServiceName service) {
@@ -491,10 +473,8 @@ namespace sts::sm::impl {
         R_TRY(impl::HasService(&has_service, service));
 
         /* Wait until we have the service. */
-        if (!has_service) {
-            return ResultServiceFrameworkRequestDeferredByUser;
-        }
-        return ResultSuccess;
+        R_UNLESS(has_service, sf::ResultRequestDeferredByUser());
+        return ResultSuccess();
     }
 
     Result GetServiceHandle(Handle *out, os::ProcessId pid, ServiceName service) {
@@ -506,35 +486,29 @@ namespace sts::sm::impl {
         /* This would return true, and homebrew would *wait forever* trying to get a handle to a service */
         /* that will never register. Thus, in the interest of not breaking every single piece of homebrew */
         /* we will provide a little first class help. */
-        if (hos::GetVersion() >= hos::Version_800 && service == ServiceName::Encode("apm:p")) {
-            return ResultSmNotAllowed;
-        }
+        constexpr ServiceName ApmP = ServiceName::Encode("apm:p");
+        R_UNLESS((hos::GetVersion() < hos::Version_800) || (service != ApmP), sm::ResultNotAllowed());
 
         /* Check that the process is registered and allowed to get the service. */
         if (!IsInitialProcess(pid)) {
             ProcessInfo *proc = GetProcessInfo(pid);
-            if (proc == nullptr) {
-                return ResultSmInvalidClient;
-            }
-
+            R_UNLESS(proc != nullptr, sm::ResultInvalidClient());
             R_TRY(ValidateAccessControl(AccessControlEntry(proc->access_control, proc->access_control_size), service, false, false));
         }
 
         /* Get service info. Check to see if we need to defer this until later. */
         ServiceInfo *service_info = GetServiceInfo(service);
-        if (service_info == nullptr || ShouldDeferForInit(service) || HasFutureMitmDeclaration(service) || service_info->mitm_waiting_ack) {
-            return ResultServiceFrameworkRequestDeferredByUser;
-        }
+        R_UNLESS(service_info != nullptr,            sf::ResultRequestDeferredByUser());
+        R_UNLESS(!ShouldDeferForInit(service),       sf::ResultRequestDeferredByUser());
+        R_UNLESS(!HasFutureMitmDeclaration(service), sf::ResultRequestDeferredByUser());
+        R_UNLESS(!service_info->mitm_waiting_ack,    sf::ResultRequestDeferredByUser());
 
         /* Get a handle from the service info. */
         R_TRY_CATCH(GetServiceHandleImpl(out, service_info, pid)) {
-            /* Convert Kernel result to SM result. */
-            R_CATCH(ResultKernelOutOfSessions) {
-                return ResultSmInsufficientSessions;
-            }
+            R_CONVERT(svc::ResultOutOfSessions, sm::ResultOutOfSessions())
         } R_END_TRY_CATCH;
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result RegisterService(Handle *out, os::ProcessId pid, ServiceName service, size_t max_sessions, bool is_light) {
@@ -544,17 +518,12 @@ namespace sts::sm::impl {
         /* Check that the process is registered and allowed to register the service. */
         if (!IsInitialProcess(pid)) {
             ProcessInfo *proc = GetProcessInfo(pid);
-            if (proc == nullptr) {
-                return ResultSmInvalidClient;
-            }
+            R_UNLESS(proc != nullptr, sm::ResultInvalidClient());
 
             R_TRY(ValidateAccessControl(AccessControlEntry(proc->access_control, proc->access_control_size), service, true, false));
         }
 
-        if (HasServiceInfo(service)) {
-            return ResultSmAlreadyRegistered;
-        }
-
+        R_UNLESS(!HasServiceInfo(service), sm::ResultAlreadyRegistered());
         return RegisterServiceImpl(out, pid, service, max_sessions, is_light);
     }
 
@@ -568,25 +537,19 @@ namespace sts::sm::impl {
 
         /* Check that the process is registered. */
         if (!IsInitialProcess(pid)) {
-            if (!HasProcessInfo(pid)) {
-                return ResultSmInvalidClient;
-            }
+            R_UNLESS(HasProcessInfo(pid), sm::ResultInvalidClient());
         }
 
         /* Ensure that the service is actually registered. */
         ServiceInfo *service_info = GetServiceInfo(service);
-        if (service_info == nullptr) {
-            return ResultSmNotRegistered;
-        }
+        R_UNLESS(service_info != nullptr, sm::ResultNotRegistered());
 
         /* Check if we have permission to do this. */
-        if (service_info->owner_pid != pid) {
-            return ResultSmNotAllowed;
-        }
+        R_UNLESS(service_info->owner_pid == pid, sm::ResultNotAllowed());
 
         /* Unregister the service. */
         service_info->Free();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Mitm extensions. */
@@ -596,7 +559,7 @@ namespace sts::sm::impl {
 
         const ServiceInfo *service_info = GetServiceInfo(service);
         *out = service_info != nullptr && IsValidProcessId(service_info->mitm_pid);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result WaitMitm(ServiceName service) {
@@ -604,10 +567,8 @@ namespace sts::sm::impl {
         R_TRY(impl::HasMitm(&has_mitm, service));
 
         /* Wait until we have the mitm. */
-        if (!has_mitm) {
-            return ResultServiceFrameworkRequestDeferredByUser;
-        }
-        return ResultSuccess;
+        R_UNLESS(has_mitm, sf::ResultRequestDeferredByUser());
+        return ResultSuccess();
     }
 
     Result InstallMitm(Handle *out, Handle *out_query, os::ProcessId pid, ServiceName service) {
@@ -617,24 +578,18 @@ namespace sts::sm::impl {
         /* Check that the process is registered and allowed to register the service. */
         if (!IsInitialProcess(pid)) {
             ProcessInfo *proc = GetProcessInfo(pid);
-            if (proc == nullptr) {
-                return ResultSmInvalidClient;
-            }
-
+            R_UNLESS(proc != nullptr, sm::ResultInvalidClient());
             R_TRY(ValidateAccessControl(AccessControlEntry(proc->access_control, proc->access_control_size), service, true, false));
         }
 
         /* Validate that the service exists. */
         ServiceInfo *service_info = GetServiceInfo(service);
-        if (service_info == nullptr) {
-            /* If it doesn't exist, defer until it does. */
-            return ResultServiceFrameworkRequestDeferredByUser;
-        }
+
+        /* If it doesn't exist, defer until it does. */
+        R_UNLESS(service_info != nullptr, sf::ResultRequestDeferredByUser());
 
         /* Validate that the service isn't already being mitm'd. */
-        if (IsValidProcessId(service_info->mitm_pid)) {
-            return ResultSmAlreadyRegistered;
-        }
+        R_UNLESS(!IsValidProcessId(service_info->mitm_pid), sm::ResultAlreadyRegistered());
 
         /* Always clear output. */
         *out = INVALID_HANDLE;
@@ -658,7 +613,7 @@ namespace sts::sm::impl {
         /* Clear the future declaration, if one exists. */
         ClearFutureMitmDeclaration(service);
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result UninstallMitm(os::ProcessId pid, ServiceName service) {
@@ -668,25 +623,19 @@ namespace sts::sm::impl {
         /* Check that the process is registered. */
         if (!IsInitialProcess(pid)) {
             ProcessInfo *proc = GetProcessInfo(pid);
-            if (proc == nullptr) {
-                return ResultSmInvalidClient;
-            }
+            R_UNLESS(proc != nullptr, sm::ResultInvalidClient());
         }
 
         /* Validate that the service exists. */
         ServiceInfo *service_info = GetServiceInfo(service);
-        if (service_info == nullptr) {
-            return ResultSmNotRegistered;
-        }
+        R_UNLESS(service_info != nullptr, sm::ResultNotRegistered());
 
         /* Validate that the client pid is the mitm process. */
-        if (service_info->mitm_pid != pid) {
-            return ResultSmNotAllowed;
-        }
+        R_UNLESS(service_info->mitm_pid == pid, sm::ResultNotAllowed());
 
         /* Free Mitm session info. */
         service_info->FreeMitm();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result DeclareFutureMitm(os::ProcessId pid, ServiceName service) {
@@ -696,21 +645,17 @@ namespace sts::sm::impl {
         /* Check that the process is registered and allowed to register the service. */
         if (!IsInitialProcess(pid)) {
             ProcessInfo *proc = GetProcessInfo(pid);
-            if (proc == nullptr) {
-                return ResultSmInvalidClient;
-            }
-
+            R_UNLESS(proc != nullptr, sm::ResultInvalidClient());
             R_TRY(ValidateAccessControl(AccessControlEntry(proc->access_control, proc->access_control_size), service, true, false));
         }
 
         /* Check that mitm hasn't already been registered or declared. */
-        if (HasMitm(service) || HasFutureMitmDeclaration(service)) {
-            return ResultSmAlreadyRegistered;
-        }
+        R_UNLESS(!HasMitm(service),                  sm::ResultAlreadyRegistered());
+        R_UNLESS(!HasFutureMitmDeclaration(service), sm::ResultAlreadyRegistered());
 
         /* Try to forward declare it. */
         R_TRY(AddFutureMitmDeclaration(service));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result AcknowledgeMitmSession(os::ProcessId *out_pid, ncm::TitleId *out_tid, Handle *out_hnd, os::ProcessId pid, ServiceName service) {
@@ -720,25 +665,20 @@ namespace sts::sm::impl {
         /* Check that the process is registered. */
         if (!IsInitialProcess(pid)) {
             ProcessInfo *proc = GetProcessInfo(pid);
-            if (proc == nullptr) {
-                return ResultSmInvalidClient;
-            }
+            R_UNLESS(proc != nullptr, sm::ResultInvalidClient());
         }
 
         /* Validate that the service exists. */
         ServiceInfo *service_info = GetServiceInfo(service);
-        if (service_info == nullptr) {
-            return ResultSmNotRegistered;
-        }
+        R_UNLESS(service_info != nullptr, sm::ResultNotRegistered());
 
         /* Validate that the client pid is the mitm process, and that an acknowledgement is waiting. */
-        if (service_info->mitm_pid != pid || !service_info->mitm_waiting_ack) {
-            return ResultSmNotAllowed;
-        }
+        R_UNLESS(service_info->mitm_pid == pid,  sm::ResultNotAllowed());
+        R_UNLESS(service_info->mitm_waiting_ack, sm::ResultNotAllowed());
 
         /* Acknowledge. */
         service_info->AcknowledgeMitmSession(out_pid, out_tid, out_hnd);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Dmnt record extensions. */
@@ -748,12 +688,10 @@ namespace sts::sm::impl {
 
         /* Validate that the service exists. */
         const ServiceInfo *service_info = GetServiceInfo(service);
-        if (service_info == nullptr) {
-            return ResultSmNotRegistered;
-        }
+        R_UNLESS(service_info != nullptr, sm::ResultNotRegistered());
 
         GetServiceInfoRecord(out, service_info);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ListServiceRecords(ServiceRecord *out, u64 *out_count, u64 offset, u64 max_count) {
@@ -772,13 +710,13 @@ namespace sts::sm::impl {
         }
 
         *out_count = 0;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     /* Deferral extension (works around FS bug). */
     Result EndInitialDefers() {
         g_ended_initial_defers = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

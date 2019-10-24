@@ -90,7 +90,7 @@ namespace sts::sf::hipc {
             Result CreateSessionImpl(ServerSession **out, const Constructor &ctor) {
                 /* Allocate session. */
                 ServerSession *session_memory = this->AllocateSession();
-                R_UNLESS(session_memory != nullptr, ResultHipcSessionAllocationFailure);
+                R_UNLESS(session_memory != nullptr, sf::hipc::ResultOutOfSessionMemory());
                 /* Register session. */
                 bool succeeded = false;
                 ON_SCOPE_EXIT {
@@ -102,7 +102,7 @@ namespace sts::sf::hipc {
                 /* Save new session to output. */
                 succeeded = true;
                 *out = session_memory;
-                return ResultSuccess;
+                return ResultSuccess();
             }
             void DestroySession(ServerSession *session);
 

@@ -169,10 +169,8 @@ namespace sts::dmnt::cheat::impl {
                 }
 
                 Result EnsureCheatProcess() {
-                    if (!this->HasActiveCheatProcess()) {
-                        return ResultDmntCheatNotAttached;
-                    }
-                    return ResultSuccess;
+                    R_UNLESS(this->HasActiveCheatProcess(), ResultCheatNotAttached());
+                    return ResultSuccess();
                 }
 
                 Handle GetCheatProcessHandle() const {
@@ -235,7 +233,7 @@ namespace sts::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     std::memcpy(out, &this->cheat_process_metadata, sizeof(*out));
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result ForceOpenCheatProcess() {
@@ -263,7 +261,7 @@ namespace sts::dmnt::cheat::impl {
                         }
                     }
 
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result GetCheatProcessMappingCount(u64 *out_count) {
@@ -288,7 +286,7 @@ namespace sts::dmnt::cheat::impl {
                     } while (address != 0);
 
                     *out_count = count;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result GetCheatProcessMappings(MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset) {
@@ -316,7 +314,7 @@ namespace sts::dmnt::cheat::impl {
                     } while (address != 0 && written_count < max_count);
 
                     *out_count = written_count;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size) {
@@ -357,7 +355,7 @@ namespace sts::dmnt::cheat::impl {
                     }
 
                     *out_count = count;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result GetCheats(CheatEntry *out_cheats, size_t max_count, u64 *out_count, u64 offset) {
@@ -376,7 +374,7 @@ namespace sts::dmnt::cheat::impl {
                     }
 
                     *out_count = count;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result GetCheatById(CheatEntry *out_cheat, u32 cheat_id) {
@@ -385,12 +383,11 @@ namespace sts::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     const CheatEntry *entry = this->GetCheatEntryById(cheat_id);
-                    if (entry == nullptr || entry->definition.num_opcodes == 0) {
-                        return ResultDmntCheatUnknownChtId;
-                    }
+                    R_UNLESS(entry != nullptr,                   ResultCheatUnknownId());
+                    R_UNLESS(entry->definition.num_opcodes != 0, ResultCheatUnknownId());
 
                     *out_cheat = *entry;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result ToggleCheat(u32 cheat_id) {
@@ -399,20 +396,17 @@ namespace sts::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     CheatEntry *entry = this->GetCheatEntryById(cheat_id);
-                    if (entry == nullptr || entry->definition.num_opcodes == 0) {
-                        return ResultDmntCheatUnknownChtId;
-                    }
+                    R_UNLESS(entry != nullptr,                   ResultCheatUnknownId());
+                    R_UNLESS(entry->definition.num_opcodes != 0, ResultCheatUnknownId());
 
-                    if (cheat_id == 0) {
-                        return ResultDmntCheatCannotDisableMasterCheat;
-                    }
+                    R_UNLESS(cheat_id != 0, ResultCheatCannotDisable());
 
                     entry->enabled = !entry->enabled;
 
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
 
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result AddCheat(u32 *out_id, const CheatDefinition &def, bool enabled) {
@@ -420,14 +414,11 @@ namespace sts::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    if (def.num_opcodes == 0 || def.num_opcodes > util::size(def.opcodes)) {
-                        return ResultDmntCheatInvalidCheat;
-                    }
+                    R_UNLESS(def.num_opcodes != 0,                       ResultCheatInvalid());
+                    R_UNLESS(def.num_opcodes <= util::size(def.opcodes), ResultCheatInvalid());
 
                     CheatEntry *new_entry = this->GetFreeCheatEntry();
-                    if (new_entry == nullptr) {
-                        return ResultDmntCheatOutOfCheats;
-                    }
+                    R_UNLESS(new_entry != nullptr, ResultCheatOutOfResource());
 
                     new_entry->enabled = enabled;
                     new_entry->definition = def;
@@ -435,24 +426,21 @@ namespace sts::dmnt::cheat::impl {
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
 
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result RemoveCheat(u32 cheat_id) {
                     std::scoped_lock lk(this->cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
-
-                    if (cheat_id >= MaxCheatCount) {
-                        return ResultDmntCheatUnknownChtId;
-                    }
+                    R_UNLESS(cheat_id < MaxCheatCount, ResultCheatUnknownId());
 
                     this->ResetCheatEntry(cheat_id);
 
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
 
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result GetFrozenAddressCount(u64 *out_count) {
@@ -461,7 +449,7 @@ namespace sts::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     *out_count = this->frozen_addresses_map.size();
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result GetFrozenAddresses(FrozenAddressEntry *frz_addrs, size_t max_count, u64 *out_count, u64 offset) {
@@ -484,7 +472,7 @@ namespace sts::dmnt::cheat::impl {
                     }
 
                     *out_count = written_count;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result GetFrozenAddress(FrozenAddressEntry *frz_addr, u64 address) {
@@ -493,13 +481,11 @@ namespace sts::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     const auto it = this->frozen_addresses_map.find(address);
-                    if (it == this->frozen_addresses_map.end()) {
-                        return ResultDmntCheatAddressNotFrozen;
-                    }
+                    R_UNLESS(it != this->frozen_addresses_map.end(), ResultFrozenAddressNotFound());
 
                     frz_addr->address = it->first;
                     frz_addr->value   = it->second;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result EnableFrozenAddress(u64 *out_value, u64 address, u64 width) {
@@ -507,14 +493,10 @@ namespace sts::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    if (this->frozen_addresses_map.size() >= MaxFrozenAddressCount) {
-                        return ResultDmntCheatTooManyFrozenAddresses;
-                    }
+                    R_UNLESS(this->frozen_addresses_map.size() < MaxFrozenAddressCount, ResultFrozenAddressOutOfResource());
 
                     const auto it = this->frozen_addresses_map.find(address);
-                    if (it != this->frozen_addresses_map.end()) {
-                        return ResultDmntCheatAddressAlreadyFrozen;
-                    }
+                    R_UNLESS(it == this->frozen_addresses_map.end(), ResultFrozenAddressAlreadyExists());
 
                     FrozenAddressValue value = {};
                     value.width = width;
@@ -522,7 +504,7 @@ namespace sts::dmnt::cheat::impl {
 
                     this->frozen_addresses_map[address] = value;
                     *out_value = value.value;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
                 Result DisableFrozenAddress(u64 address) {
@@ -531,12 +513,10 @@ namespace sts::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     const auto it = this->frozen_addresses_map.find(address);
-                    if (it == this->frozen_addresses_map.end()) {
-                        return ResultDmntCheatAddressNotFrozen;
-                    }
+                    R_UNLESS(it != this->frozen_addresses_map.end(), ResultFrozenAddressNotFound());
 
                     this->frozen_addresses_map.erase(it);
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
 
         };
@@ -626,9 +606,7 @@ namespace sts::dmnt::cheat::impl {
             {
                 if (this->HasActiveCheatProcess()) {
                     /* When forcing attach, we're done. */
-                    if (!on_process_launch) {
-                        return ResultSuccess;
-                    }
+                    R_UNLESS(on_process_launch, ResultSuccess());
                 }
 
                 /* Detach from the current process, if it's open. */
@@ -667,9 +645,7 @@ namespace sts::dmnt::cheat::impl {
 
             /* If new process launch, we may not want to actually attach. */
             if (on_process_launch) {
-                if (!cfg::IsCheatEnableKeyHeld(this->cheat_process_metadata.title_id)) {
-                    return ResultDmntCheatNotAttached;
-                }
+                R_UNLESS(cfg::IsCheatEnableKeyHeld(this->cheat_process_metadata.title_id), ResultCheatNotAttached());
             }
 
             /* Get module information from loader. */
@@ -689,7 +665,7 @@ namespace sts::dmnt::cheat::impl {
                 } else if (num_modules == 1 && !on_process_launch) {
                     proc_module = &proc_modules[0];
                 } else {
-                    return ResultDmntCheatNotAttached;
+                    return ResultCheatNotAttached();
                 }
 
                 this->cheat_process_metadata.main_nso_extents.base = proc_module->base_address;
@@ -701,9 +677,7 @@ namespace sts::dmnt::cheat::impl {
             if (!this->LoadCheats(this->cheat_process_metadata.title_id, this->cheat_process_metadata.main_nso_build_id) ||
                 !this->LoadCheatToggles(this->cheat_process_metadata.title_id)) {
                 /* If new process launch, require success. */
-                if (on_process_launch) {
-                    return ResultDmntCheatNotAttached;
-                }
+                R_UNLESS(!on_process_launch, ResultCheatNotAttached());
             }
 
             /* Open a debug handle. */
@@ -723,7 +697,7 @@ namespace sts::dmnt::cheat::impl {
             /* Signal to our fans. */
             this->cheat_process_event.Signal();
 
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         #undef R_ASSERT_IF_NEW_PROCESS

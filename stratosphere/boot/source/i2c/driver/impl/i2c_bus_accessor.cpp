@@ -118,7 +118,7 @@ namespace sts::i2c::driver::impl {
 
     Result BusAccessor::StartTransaction(Command command, AddressingMode addressing_mode, u32 slave_address) {
         /* Nothing actually happens here... */
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result BusAccessor::Send(const u8 *data, size_t num_bytes, I2cTransactionOption option, AddressingMode addressing_mode, u32 slave_address) {
@@ -158,9 +158,9 @@ namespace sts::i2c::driver::impl {
 
             this->interrupt_event.Reset();
             if (!this->interrupt_event.TimedWait(InterruptTimeout)) {
-                this->HandleTransactionResult(ResultI2cBusBusy);
+                this->HandleTransactionResult(i2c::ResultBusBusy());
                 this->interrupt_event.Reset();
-                return ResultI2cTimedOut;
+                return i2c::ResultTimedOut();
             }
 
             R_TRY(this->GetAndHandleTransactionResult());
@@ -181,13 +181,13 @@ namespace sts::i2c::driver::impl {
 
             this->interrupt_event.Reset();
             if (!this->interrupt_event.TimedWait(InterruptTimeout)) {
-                this->HandleTransactionResult(ResultI2cBusBusy);
+                this->HandleTransactionResult(i2c::ResultBusBusy());
                 this->interrupt_event.Reset();
-                return ResultI2cTimedOut;
+                return i2c::ResultTimedOut();
             }
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result BusAccessor::Receive(u8 *out_data, size_t num_bytes, I2cTransactionOption option, AddressingMode addressing_mode, u32 slave_address) {
@@ -206,10 +206,10 @@ namespace sts::i2c::driver::impl {
         while (remaining > 0) {
             this->interrupt_event.Reset();
             if (!this->interrupt_event.TimedWait(InterruptTimeout)) {
-                this->HandleTransactionResult(ResultI2cBusBusy);
+                this->HandleTransactionResult(i2c::ResultBusBusy());
                 this->ClearInterruptMask();
                 this->interrupt_event.Reset();
-                return ResultI2cTimedOut;
+                return i2c::ResultTimedOut();
             }
 
             R_TRY(this->GetAndHandleTransactionResult());
@@ -230,7 +230,7 @@ namespace sts::i2c::driver::impl {
         }
 
         /* N doesn't do ClearInterruptMask. */
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     void BusAccessor::SetBus(Bus bus) {
@@ -383,13 +383,11 @@ namespace sts::i2c::driver::impl {
 
         /* Wait for flush to finish, check every ms for 5 ms. */
         for (size_t i = 0; i < 5; i++) {
-            if (!(reg::Read(&this->i2c_registers->I2C_FIFO_CONTROL_0) & 3)) {
-                return ResultSuccess;
-            }
+            R_UNLESS((reg::Read(&this->i2c_registers->I2C_FIFO_CONTROL_0) & 3), ResultSuccess());
             svcSleepThread(1'000'000ul);
         }
 
-        return ResultI2cBusBusy;
+        return i2c::ResultBusBusy();
     }
 
     Result BusAccessor::GetTransactionResult() const {
@@ -397,22 +395,23 @@ namespace sts::i2c::driver::impl {
         const u32 interrupt_status = reg::Read(&this->i2c_registers->I2C_INTERRUPT_STATUS_REGISTER_0);
 
         /* Check for no ack. */
-        if ((packet_status & 0xC) || (interrupt_status & 0x8)) {
-            return ResultI2cNoAck;
-        }
+        R_UNLESS(!(packet_status & 0xC),    i2c::ResultNoAck());
+        R_UNLESS(!(interrupt_status & 0x8), i2c::ResultNoAck());
 
         /* Check for arb lost. */
-        if ((packet_status & 0x2) || (interrupt_status & 0x4)) {
-            this->ClearBus();
-            return ResultI2cBusBusy;
+        {
+            auto bus_guard = SCOPE_GUARD { this->ClearBus(); };
+            R_UNLESS(!(packet_status & 0x2),    i2c::ResultBusBusy());
+            R_UNLESS(!(interrupt_status & 0x4), i2c::ResultBusBusy());
+            bus_guard.Cancel();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     void BusAccessor::HandleTransactionResult(Result result) {
         R_TRY_CATCH(result) {
-            R_CATCH_MANY(ResultI2cNoAck, ResultI2cBusBusy) {
+            R_CATCH(i2c::ResultNoAck, i2c::ResultBusBusy) {
                 this->ResetController();
                 this->SetClock(this->speed_mode);
                 this->SetPacketMode();
@@ -422,12 +421,12 @@ namespace sts::i2c::driver::impl {
     }
 
     Result BusAccessor::GetAndHandleTransactionResult() {
-        R_TRY_CLEANUP(this->GetTransactionResult(), {
-            this->HandleTransactionResult(R_CLEANUP_RESULT);
-            this->ClearInterruptMask();
-            this->interrupt_event.Reset();
-        });
-        return ResultSuccess;
+        const auto transaction_result = this->GetTransactionResult();
+        R_UNLESS(R_FAILED(transaction_result), ResultSuccess());
+        this->HandleTransactionResult(transaction_result);
+        this->ClearInterruptMask();
+        this->interrupt_event.Reset();
+        return transaction_result;
     }
 
     void BusAccessor::WriteTransferHeader(TransferMode transfer_mode, I2cTransactionOption option, AddressingMode addressing_mode, u32 slave_address, size_t num_bytes) {

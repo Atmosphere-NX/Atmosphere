@@ -105,10 +105,10 @@ namespace sts::ro::impl {
                         if (out != nullptr) {
                             *out = &this->nrr_infos[i];
                         }
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                 }
-                return ResultRoNotRegistered;
+                return ResultNotRegistered();
             }
 
             Result GetFreeNrrInfo(NrrInfo **out) {
@@ -117,10 +117,10 @@ namespace sts::ro::impl {
                         if (out != nullptr) {
                             *out = &this->nrr_infos[i];
                         }
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                 }
-                return ResultRoTooManyNrr;
+                return ResultTooManyNrr();
             }
 
             Result GetNroInfoByAddress(NroInfo **out, u64 nro_address) {
@@ -129,10 +129,10 @@ namespace sts::ro::impl {
                         if (out != nullptr) {
                             *out = &this->nro_infos[i];
                         }
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                 }
-                return ResultRoNotLoaded;
+                return ResultNotLoaded();
             }
 
             Result GetNroInfoByModuleId(NroInfo **out, const ModuleId *module_id) {
@@ -141,10 +141,10 @@ namespace sts::ro::impl {
                         if (out != nullptr) {
                             *out = &this->nro_infos[i];
                         }
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                 }
-                return ResultRoNotLoaded;
+                return ResultNotLoaded();
             }
 
             Result GetFreeNroInfo(NroInfo **out) {
@@ -153,10 +153,10 @@ namespace sts::ro::impl {
                         if (out != nullptr) {
                             *out = &this->nro_infos[i];
                         }
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                 }
-                return ResultRoTooManyNro;
+                return ResultTooManyNro();
             }
 
             Result ValidateHasNroHash(const NroHeader *nro_header) const {
@@ -168,34 +168,27 @@ namespace sts::ro::impl {
                     if (this->nrr_infos[i].in_use) {
                         const NrrHeader *nrr_header = this->nrr_infos[i].header;
                         const Sha256Hash *nro_hashes = reinterpret_cast<const Sha256Hash *>(nrr_header->GetHashes());
-                        if (std::binary_search(nro_hashes, nro_hashes + nrr_header->GetNumHashes(), hash)) {
-                            return ResultSuccess;
-                        }
+                        R_UNLESS(!std::binary_search(nro_hashes, nro_hashes + nrr_header->GetNumHashes(), hash), ResultSuccess());
                     }
                 }
 
-                return ResultRoNotAuthorized;
+                return ResultNotAuthorized();
             }
 
             Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
                 /* Find space to map the NRO. */
                 uintptr_t map_address;
-                if (R_FAILED(map::LocateMappableSpace(&map_address, expected_nro_size))) {
-                    return ResultRoInsufficientAddressSpace;
-                }
+                R_UNLESS(R_SUCCEEDED(map::LocateMappableSpace(&map_address, expected_nro_size)), ResultOutOfAddressSpace());
 
                 /* Actually map the NRO. */
                 map::AutoCloseMap nro_map(map_address, this->process_handle, base_address, expected_nro_size);
-                if (!nro_map.IsSuccess()) {
-                    return nro_map.GetResult();
-                }
+                R_TRY(nro_map.GetResult());
 
                 /* Validate header. */
                 const NroHeader *header = reinterpret_cast<const NroHeader *>(map_address);
-                if (!header->IsMagicValid()) {
-                    return ResultRoInvalidNro;
-                }
+                R_UNLESS(header->IsMagicValid(), ResultInvalidNro());
 
+                /* Read sizes from header. */
                 const u64 nro_size = header->GetSize();
                 const u64 text_ofs = header->GetTextOffset();
                 const u64 text_size = header->GetTextSize();
@@ -204,27 +197,33 @@ namespace sts::ro::impl {
                 const u64 rw_ofs = header->GetRwOffset();
                 const u64 rw_size = header->GetRwSize();
                 const u64 bss_size = header->GetBssSize();
-                if (nro_size != expected_nro_size || bss_size != expected_bss_size) {
-                    return ResultRoInvalidNro;
-                }
-                if ((text_size & 0xFFF) || (ro_size & 0xFFF) || (rw_size & 0xFFF) || (bss_size & 0xFFF)) {
-                    return ResultRoInvalidNro;
-                }
-                if (text_ofs > ro_ofs || ro_ofs > rw_ofs) {
-                    return ResultRoInvalidNro;
-                }
-                if (text_ofs != 0 || text_ofs + text_size != ro_ofs || ro_ofs + ro_size != rw_ofs || rw_ofs + rw_size != nro_size) {
-                    return ResultRoInvalidNro;
-                }
+
+                /* Validate sizes meet expected. */
+                R_UNLESS(nro_size == expected_nro_size,      ResultInvalidNro());
+                R_UNLESS(bss_size == expected_bss_size,      ResultInvalidNro());
+
+                /* Validate all sizes are aligned. */
+                R_UNLESS(util::IsAligned(text_size, 0x1000), ResultInvalidNro());
+                R_UNLESS(util::IsAligned(ro_size,   0x1000), ResultInvalidNro());
+                R_UNLESS(util::IsAligned(rw_size,   0x1000), ResultInvalidNro());
+                R_UNLESS(util::IsAligned(bss_size,  0x1000), ResultInvalidNro());
+
+                /* Validate sections are in order. */
+                R_UNLESS(text_ofs <= ro_ofs,                 ResultInvalidNro());
+                R_UNLESS(ro_ofs   <= rw_ofs,                 ResultInvalidNro());
+
+                /* Validate sections are sequential and contiguous. */
+                R_UNLESS(text_ofs == 0,                      ResultInvalidNro());
+                R_UNLESS(text_ofs + text_size == ro_ofs,     ResultInvalidNro());
+                R_UNLESS(ro_ofs + ro_size     == rw_ofs,     ResultInvalidNro());
+                R_UNLESS(rw_ofs + rw_size     == nro_size,   ResultInvalidNro());
 
                 /* Verify NRO hash. */
                 R_TRY(this->ValidateHasNroHash(header));
 
                 /* Check if NRO has already been loaded. */
                 const ModuleId *module_id = header->GetModuleId();
-                if (R_SUCCEEDED(this->GetNroInfoByModuleId(nullptr, module_id))) {
-                    return ResultRoAlreadyLoaded;
-                }
+                R_UNLESS(R_FAILED(this->GetNroInfoByModuleId(nullptr, module_id)), ResultAlreadyLoaded());
 
                 /* Apply patches to NRO. */
                 LocateAndApplyIpsPatchesToModule(module_id, reinterpret_cast<u8 *>(map_address), nro_size);
@@ -234,7 +233,7 @@ namespace sts::ro::impl {
                 *out_rx_size = text_size;
                 *out_ro_size = ro_size;
                 *out_rw_size = rw_size;
-                return ResultSuccess;
+                return ResultSuccess();
             }
         };
 
@@ -295,6 +294,14 @@ namespace sts::ro::impl {
             }
         }
 
+        constexpr inline Result ValidateAddressAndSize(u64 address, u64 size) {
+            R_UNLESS(util::IsAligned(address, 0x1000), ResultInvalidAddress());
+            R_UNLESS(size != 0,                        ResultInvalidSize());
+            R_UNLESS(util::IsAligned(size, 0x1000),    ResultInvalidSize());
+            R_UNLESS(address < address + size,         ResultInvalidSize());
+            return ResultSuccess();
+        }
+
     }
 
     /* Access utilities. */
@@ -334,31 +341,24 @@ namespace sts::ro::impl {
             os::ProcessId handle_pid = os::InvalidProcessId;
 
             /* Validate handle is a valid process handle. */
-            if (R_FAILED(os::TryGetProcessId(&handle_pid, process_handle))) {
-                return ResultRoInvalidProcess;
-            }
+            R_UNLESS(R_SUCCEEDED(os::TryGetProcessId(&handle_pid, process_handle)), ResultInvalidProcess());
 
             /* Validate process id. */
-            if (handle_pid != process_id) {
-                return ResultRoInvalidProcess;
-            }
+            R_UNLESS(handle_pid == process_id, ResultInvalidProcess());
         }
 
         /* Check if a process context already exists. */
-        if (GetContextByProcessId(process_id) != nullptr) {
-            return ResultRoInvalidSession;
-        }
+        R_UNLESS(GetContextByProcessId(process_id) == nullptr, ResultInvalidSession());
 
         *out_context_id = AllocateContext(process_handle, process_id);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ValidateProcess(size_t context_id, os::ProcessId process_id) {
         const ProcessContext *ctx = GetContextById(context_id);
-        if (ctx == nullptr || ctx->process_id != process_id) {
-            return ResultRoInvalidProcess;
-        }
-        return ResultSuccess;
+        R_UNLESS(ctx != nullptr,                ResultInvalidProcess());
+        R_UNLESS(ctx->process_id == process_id, ResultInvalidProcess());
+        return ResultSuccess();
     }
 
     void UnregisterProcess(size_t context_id) {
@@ -375,12 +375,7 @@ namespace sts::ro::impl {
         const ncm::TitleId title_id = context->GetTitleId(process_h);
 
         /* Validate address/size. */
-        if (nrr_address & 0xFFF) {
-            return ResultRoInvalidAddress;
-        }
-        if (nrr_size == 0 || (nrr_size & 0xFFF) || !(nrr_address < nrr_address + nrr_size)) {
-            return ResultRoInvalidSize;
-        }
+        R_TRY(ValidateAddressAndSize(nrr_address, nrr_size));
 
         /* Check we have space for a new NRR. */
         NrrInfo *nrr_info = nullptr;
@@ -398,7 +393,7 @@ namespace sts::ro::impl {
         nrr_info->nrr_heap_size = nrr_size;
         nrr_info->mapped_code_address = mapped_code_address;
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result UnloadNrr(size_t context_id, u64 nrr_address) {
@@ -407,9 +402,7 @@ namespace sts::ro::impl {
         STS_ASSERT(context != nullptr);
 
         /* Validate address. */
-        if (nrr_address & 0xFFF) {
-            return ResultRoInvalidAddress;
-        }
+        R_UNLESS(util::IsAligned(nrr_address, 0x1000), ResultInvalidAddress());
 
         /* Check the NRR is loaded. */
         NrrInfo *nrr_info = nullptr;
@@ -431,23 +424,12 @@ namespace sts::ro::impl {
         STS_ASSERT(context != nullptr);
 
         /* Validate address/size. */
-        if (nro_address & 0xFFF) {
-            return ResultRoInvalidAddress;
-        }
-        if (nro_size == 0 || (nro_size & 0xFFF) || !(nro_address < nro_address + nro_size)) {
-            return ResultRoInvalidSize;
-        }
-        if (bss_address & 0xFFF) {
-            return ResultRoInvalidAddress;
-        }
-        if ((bss_size & 0xFFF) || (bss_size > 0 && !(bss_address < bss_address + bss_size))) {
-            return ResultRoInvalidSize;
-        }
+        R_TRY(ValidateAddressAndSize(nro_address, nro_size));
+        R_TRY(ValidateAddressAndSize(bss_address, bss_size));
 
         const u64 total_size = nro_size + bss_size;
-        if (total_size < nro_size || total_size < bss_size) {
-            return ResultRoInvalidSize;
-        }
+        R_UNLESS(total_size >= nro_size, ResultInvalidSize());
+        R_UNLESS(total_size >= bss_size, ResultInvalidSize());
 
         /* Check we have space for a new NRO. */
         NroInfo *nro_info = nullptr;
@@ -462,20 +444,24 @@ namespace sts::ro::impl {
 
         /* Validate the NRO (parsing region extents). */
         u64 rx_size = 0, ro_size = 0, rw_size = 0;
-        R_TRY_CLEANUP(context->ValidateNro(&nro_info->module_id, &rx_size, &ro_size, &rw_size, nro_info->base_address, nro_size, bss_size), {
-            UnmapNro(context->process_handle, nro_info->base_address, nro_address, bss_address, bss_size, nro_size, 0);
-        });
+        {
+            auto unmap_guard = SCOPE_GUARD { UnmapNro(context->process_handle, nro_info->base_address, nro_address, bss_address, bss_size, nro_size, 0); };
+            R_TRY(context->ValidateNro(&nro_info->module_id, &rx_size, &ro_size, &rw_size, nro_info->base_address, nro_size, bss_size));
+            unmap_guard.Cancel();
+        }
 
         /* Set NRO perms. */
-        R_TRY_CLEANUP(SetNroPerms(context->process_handle, nro_info->base_address, rx_size, ro_size, rw_size + bss_size), {
-            UnmapNro(context->process_handle, nro_info->base_address, nro_address, bss_address, bss_size, rx_size + ro_size, rw_size);
-        });
+        {
+            auto unmap_guard = SCOPE_GUARD { UnmapNro(context->process_handle, nro_info->base_address, nro_address, bss_address, bss_size, rx_size + ro_size, rw_size); };
+            R_TRY(SetNroPerms(context->process_handle, nro_info->base_address, rx_size, ro_size, rw_size + bss_size));
+            unmap_guard.Cancel();
+        }
 
         nro_info->code_size = rx_size + ro_size;
         nro_info->rw_size = rw_size;
         nro_info->in_use = true;
         *out_address = nro_info->base_address;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result UnloadNro(size_t context_id, u64 nro_address) {
@@ -484,9 +470,7 @@ namespace sts::ro::impl {
         STS_ASSERT(context != nullptr);
 
         /* Validate address. */
-        if (nro_address & 0xFFF) {
-            return ResultRoInvalidAddress;
-        }
+        R_UNLESS(util::IsAligned(nro_address, 0x1000), ResultInvalidAddress());
 
         /* Check the NRO is loaded. */
         NroInfo *nro_info = nullptr;
@@ -522,7 +506,7 @@ namespace sts::ro::impl {
         }
 
         *out_count = static_cast<u32>(count);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

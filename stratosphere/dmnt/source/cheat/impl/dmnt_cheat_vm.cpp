@@ -631,7 +631,7 @@ namespace sts::dmnt::cheat::impl {
             /* However, I don't actually believe it is possible for this to happen. */
             /* I guess we'll throw a fatal error here, so as to encourage me to fix the VM */
             /* in the event that someone triggers it? I don't know how you'd do that. */
-            fatalSimple(ResultDmntCheatVmInvalidCondDepth);
+            R_ASSERT(ResultVirtualMachineInvalidConditionDepth());
         }
     }
 

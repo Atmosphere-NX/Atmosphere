@@ -24,8 +24,8 @@ namespace sts::sf::cmif {
 
         /* Parse the CMIF in header. */
         const CmifInHeader *in_header = reinterpret_cast<const CmifInHeader *>(in_raw_data.GetPointer());
-        R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), ResultServiceFrameworkInvalidCmifHeaderSize);
-        R_UNLESS(in_header->magic == CMIF_IN_HEADER_MAGIC && in_header->version <= max_cmif_version, ResultServiceFrameworkInvalidCmifInHeader);
+        R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), sf::cmif::ResultInvalidHeaderSize());
+        R_UNLESS(in_header->magic == CMIF_IN_HEADER_MAGIC && in_header->version <= max_cmif_version, sf::cmif::ResultInvalidInHeader());
         const cmif::PointerAndSize in_message_raw_data = cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header));
         const u32 cmd_id = in_header->command_id;
 
@@ -37,7 +37,7 @@ namespace sts::sf::cmif {
                 break;
             }
         }
-        R_UNLESS(cmd_handler != nullptr, ResultServiceFrameworkUnknownCmifCommandId);
+        R_UNLESS(cmd_handler != nullptr, sf::cmif::ResultUnknownCommandId());
 
         /* Invoke handler. */
         CmifOutHeader *out_header = nullptr;
@@ -45,16 +45,16 @@ namespace sts::sf::cmif {
 
         /* Forward forwardable results, otherwise ensure we can send result to user. */
         R_TRY_CATCH(command_result) {
-            R_CATCH(ResultServiceFrameworkRequestDeferredByUser) { return ResultServiceFrameworkRequestDeferredByUser; }
+            R_CATCH(sf::impl::ResultRequestContextChanged) { return R_CURRENT_RESULT; }
             R_CATCH_ALL() { STS_ASSERT(out_header != nullptr); }
         } R_END_TRY_CATCH;
 
         /* Write output header to raw data. */
         if (out_header != nullptr) {
-            *out_header = CmifOutHeader{CMIF_OUT_HEADER_MAGIC, 0, command_result, 0};
+            *out_header = CmifOutHeader{CMIF_OUT_HEADER_MAGIC, 0, command_result.GetValue(), 0};
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result impl::ServiceDispatchTableBase::ProcessMessageForMitmImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count) const {
@@ -64,8 +64,8 @@ namespace sts::sf::cmif {
 
         /* Parse the CMIF in header. */
         const CmifInHeader *in_header = reinterpret_cast<const CmifInHeader *>(in_raw_data.GetPointer());
-        R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), ResultServiceFrameworkInvalidCmifHeaderSize);
-        R_UNLESS(in_header->magic == CMIF_IN_HEADER_MAGIC && in_header->version <= max_cmif_version, ResultServiceFrameworkInvalidCmifInHeader);
+        R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), sf::cmif::ResultInvalidHeaderSize());
+        R_UNLESS(in_header->magic == CMIF_IN_HEADER_MAGIC && in_header->version <= max_cmif_version, sf::cmif::ResultInvalidInHeader());
         const cmif::PointerAndSize in_message_raw_data = cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header));
         const u32 cmd_id = in_header->command_id;
 
@@ -89,19 +89,19 @@ namespace sts::sf::cmif {
 
         /* Forward forwardable results, otherwise ensure we can send result to user. */
         R_TRY_CATCH(command_result) {
-            R_CATCH(ResultServiceFrameworkRequestDeferredByUser) { return ResultServiceFrameworkRequestDeferredByUser; }
-            R_CATCH(ResultAtmosphereMitmShouldForwardToSession) {
+            R_CATCH(ams::mitm::ResultShouldForwardToSession) {
                 return ctx.session->ForwardRequest(ctx);
             }
+            R_CATCH(sf::impl::ResultRequestContextChanged) { return R_CURRENT_RESULT; }
             R_CATCH_ALL() { STS_ASSERT(out_header != nullptr); }
         } R_END_TRY_CATCH;
 
         /* Write output header to raw data. */
         if (out_header != nullptr) {
-            *out_header = CmifOutHeader{CMIF_OUT_HEADER_MAGIC, 0, command_result, 0};
+            *out_header = CmifOutHeader{CMIF_OUT_HEADER_MAGIC, 0, command_result.GetValue(), 0};
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

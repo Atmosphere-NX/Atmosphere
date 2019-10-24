@@ -15,25 +15,28 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Spl = 26;
+namespace sts::spl {
 
-/* Results 1-99 are converted smc results. */
-static constexpr Result ResultSplSmcNotImplemented        = MAKERESULT(Module_Spl, 1);
-static constexpr Result ResultSplSmcInvalidArgument       = MAKERESULT(Module_Spl, 2);
-static constexpr Result ResultSplSmcInProgress            = MAKERESULT(Module_Spl, 3);
-static constexpr Result ResultSplSmcNoAsyncOperation      = MAKERESULT(Module_Spl, 4);
-static constexpr Result ResultSplSmcInvalidAsyncOperation = MAKERESULT(Module_Spl, 5);
-static constexpr Result ResultSplSmcBlacklisted           = MAKERESULT(Module_Spl, 6);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(26);
 
-/* Results 100+ are spl results. */
-static constexpr Result ResultSplInvalidSize              = MAKERESULT(Module_Spl, 100);
-static constexpr Result ResultSplUnknownSmcResult         = MAKERESULT(Module_Spl, 101);
-static constexpr Result ResultSplDecryptionFailed         = MAKERESULT(Module_Spl, 102);
+    R_DEFINE_ERROR_RANGE(SecureMonitorError, 0, 99);
+        R_DEFINE_ERROR_RESULT(SecureMonitorNotImplemented,        1);
+        R_DEFINE_ERROR_RESULT(SecureMonitorInvalidArgument,       2);
+        R_DEFINE_ERROR_RESULT(SecureMonitorBusy,                  3);
+        R_DEFINE_ERROR_RESULT(SecureMonitorNoAsyncOperation,      4);
+        R_DEFINE_ERROR_RESULT(SecureMonitorInvalidAsyncOperation, 5);
+        R_DEFINE_ERROR_RESULT(SecureMonitorNotPermitted,          6);
 
-static constexpr Result ResultSplOutOfKeyslots            = MAKERESULT(Module_Spl, 104);
-static constexpr Result ResultSplInvalidKeyslot           = MAKERESULT(Module_Spl, 105);
-static constexpr Result ResultSplBootReasonAlreadySet     = MAKERESULT(Module_Spl, 106);
-static constexpr Result ResultSplBootReasonNotSet         = MAKERESULT(Module_Spl, 107);
-static constexpr Result ResultSplInvalidArgument          = MAKERESULT(Module_Spl, 108);
+    R_DEFINE_ERROR_RESULT(InvalidSize,                  100);
+    R_DEFINE_ERROR_RESULT(UnknownSecureMonitorError,    101);
+    R_DEFINE_ERROR_RESULT(DecryptionFailed,             102);
+
+    R_DEFINE_ERROR_RESULT(OutOfKeyslots,                104);
+    R_DEFINE_ERROR_RESULT(InvalidKeyslot,               105);
+    R_DEFINE_ERROR_RESULT(BootReasonAlreadySet,         106);
+    R_DEFINE_ERROR_RESULT(BootReasonNotSet,             107);
+    R_DEFINE_ERROR_RESULT(InvalidArgument,              108);
+
+}

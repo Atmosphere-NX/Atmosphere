@@ -15,13 +15,17 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "results_common.hpp"
 
-static constexpr u32 Module_Fatal = 163;
+namespace sts::fatal {
 
-static constexpr Result ResultFatalAllocationFailed                    = MAKERESULT(Module_Fatal, 1);
-static constexpr Result ResultFatalNullGraphicsBuffer                  = MAKERESULT(Module_Fatal, 2);
-static constexpr Result ResultFatalAlreadyThrown                       = MAKERESULT(Module_Fatal, 3);
-static constexpr Result ResultFatalTooManyEvents                       = MAKERESULT(Module_Fatal, 4);
-static constexpr Result ResultFatalInRepairWithoutVolHeld              = MAKERESULT(Module_Fatal, 5);
-static constexpr Result ResultFatalInRepairWithoutTimeReviserCartridge = MAKERESULT(Module_Fatal, 6);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(163);
+
+    R_DEFINE_ERROR_RESULT(AllocationFailed,                    1);
+    R_DEFINE_ERROR_RESULT(NullGraphicsBuffer,                  2);
+    R_DEFINE_ERROR_RESULT(AlreadyThrown,                       3);
+    R_DEFINE_ERROR_RESULT(TooManyEvents,                       4);
+    R_DEFINE_ERROR_RESULT(InRepairWithoutVolHeld,              5);
+    R_DEFINE_ERROR_RESULT(InRepairWithoutTimeReviserCartridge, 6);
+
+}

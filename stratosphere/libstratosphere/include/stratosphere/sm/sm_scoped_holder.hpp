@@ -21,14 +21,14 @@
 namespace sts::sm {
 
     /* Utility, for scoped access to libnx services. */
-    template<Result Initializer(), void Finalizer()>
+    template<auto Initializer(), void Finalizer()>
     class ScopedServiceHolder {
         NON_COPYABLE(ScopedServiceHolder);
         private:
             Result result;
             bool has_initialized;
         public:
-            ScopedServiceHolder(bool initialize = true) : result(ResultSuccess), has_initialized(false) {
+            ScopedServiceHolder(bool initialize = true) : result(ResultSuccess()), has_initialized(false) {
                 if (initialize) {
                     this->Initialize();
                 }
@@ -43,7 +43,7 @@ namespace sts::sm {
             ScopedServiceHolder(ScopedServiceHolder&& rhs) {
                 this->result = rhs.result;
                 this->has_initialized = rhs.has_initialized;
-                rhs.result = ResultSuccess;
+                rhs.result = ResultSuccess();
                 rhs.has_initialized = false;
             }
 

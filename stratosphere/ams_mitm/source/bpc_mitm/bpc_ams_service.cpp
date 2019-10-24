@@ -28,5 +28,5 @@ Result BpcAtmosphereService::RebootToFatalError(InBuffer<AtmosphereFatalErrorCon
     /* Reboot to fusee with the input context. */
     BpcRebootManager::RebootForFatalError(ctx.buffer);
 
-    return ResultSuccess;
+    return ResultSuccess();
 }

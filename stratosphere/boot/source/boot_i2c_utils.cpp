@@ -27,14 +27,16 @@ namespace sts::boot {
 
             u64 cur_time = 0;
             while (true) {
-                R_TRY_CLEANUP(f(), {
-                    cur_time += retry_interval;
-                    if (cur_time < timeout) {
-                        svcSleepThread(retry_interval);
-                        continue;
-                    }
-                });
-                return ResultSuccess;
+                const auto retry_result = f();
+                R_UNLESS(R_FAILED(retry_result), ResultSuccess());
+
+                cur_time += retry_interval;
+                if (cur_time < timeout) {
+                    svcSleepThread(retry_interval);
+                    continue;
+                }
+
+                return retry_result;
             }
         }
 

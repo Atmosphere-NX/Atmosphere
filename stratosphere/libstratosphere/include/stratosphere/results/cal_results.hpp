@@ -17,11 +17,10 @@
 #pragma once
 #include "results_common.hpp"
 
-namespace sts::err {
+namespace sts::cal {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(162);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(198);
 
-    R_DEFINE_ERROR_RESULT(ApplicationAborted,  1);
-    R_DEFINE_ERROR_RESULT(SystemModuleAborted, 2);
+    R_DEFINE_ERROR_RESULT(CalibrationDataCrcError, 101);
 
 }

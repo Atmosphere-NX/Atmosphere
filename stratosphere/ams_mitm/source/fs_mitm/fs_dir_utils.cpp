@@ -48,7 +48,7 @@ Result FsDirUtils::CopyFile(IFileSystem *dst_fs, IFileSystem *src_fs, const FsPa
         offset += read_size;
     }
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result FsDirUtils::CopyDirectoryRecursively(IFileSystem *dst_fs, IFileSystem *src_fs, const FsPath &dst_path, const FsPath &src_path, void *work_buf, size_t work_buf_size) {
@@ -75,7 +75,7 @@ Result FsDirUtils::CopyDirectoryRecursively(IFileSystem *dst_fs, IFileSystem *sr
             }
             p[1] = 0;
 
-            return ResultSuccess;
+            return ResultSuccess();
         },
         [&](const FsPath &path, const FsDirectoryEntry *dir_ent) -> Result { /* On File */
             /* Just copy the file to the new fs. */
@@ -113,5 +113,5 @@ Result FsDirUtils::EnsureDirectoryExists(IFileSystem *fs, const FsPath &path) {
         }
     } R_END_TRY_CATCH;
 
-    return ResultSuccess;
+    return ResultSuccess();
 }

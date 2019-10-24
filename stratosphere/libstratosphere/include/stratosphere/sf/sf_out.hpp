@@ -29,6 +29,9 @@ namespace sts::sf {
     template<typename>
     struct IsOutForceEnabled : public std::false_type{};
 
+    template<>
+    struct IsOutForceEnabled<::sts::Result> : public std::true_type{};
+
     template<typename T>
     using IsOutEnabled = typename std::enable_if<std::is_trivial<T>::value || IsOutForceEnabled<T>::value>::type;
 

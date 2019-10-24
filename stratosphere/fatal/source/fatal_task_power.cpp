@@ -178,18 +178,18 @@ namespace sts::fatal::srv {
 
         Result PowerControlTask::Run() {
             this->MonitorBatteryState();
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result PowerButtonObserveTask::Run() {
             this->WaitForPowerButton();
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         Result StateTransitionStopTask::Run() {
             /* Nintendo ignores the output of this call... */
             spsmPutErrorState();
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
     }

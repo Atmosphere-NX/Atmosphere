@@ -54,7 +54,7 @@ Result DirectoryRedirectionFileSystem::Initialize(const char *before, const char
     this->before_dir_len = strlen(this->before_dir);
     this->after_dir_len = strlen(this->after_dir);
 
-    return ResultSuccess;
+    return ResultSuccess();
 }
 
 Result DirectoryRedirectionFileSystem::GetFullPath(char *out, size_t out_size, const char *relative_path) {
@@ -79,7 +79,7 @@ Result DirectoryRedirectionFileSystem::GetFullPath(char *out, size_t out_size, c
         }
         std::strncpy(out, this->after_dir, out_size);
         out[out_size - 1] = 0;
-        return ResultSuccess;
+        return ResultSuccess();
     } else {
         return FsPathUtils::Normalize(out, out_size, relative_path, nullptr);
     }

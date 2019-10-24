@@ -41,12 +41,10 @@ namespace sts::dmnt {
 
     Result DebugMonitorService::GetProcessHandle(sf::Out<Handle> out_hnd, os::ProcessId pid) {
         R_TRY_CATCH(svcDebugActiveProcess(out_hnd.GetPointer(), static_cast<u64>(pid))) {
-            R_CATCH(ResultKernelAlreadyExists) {
-                return ResultDebugAlreadyAttached;
-            }
+            R_CONVERT(svc::ResultBusy, dbg::ResultAlreadyAttached());
         } R_END_TRY_CATCH;
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result DebugMonitorService::WaitSynchronization(Handle hnd, u64 ns) {

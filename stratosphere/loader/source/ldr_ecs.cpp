@@ -60,10 +60,8 @@ namespace sts::ldr::ecs {
     }
 
     Result Set(Handle *out, ncm::TitleId title_id) {
-        if (g_map.size() >= MaxExternalContentSourceCount) {
-            /* TODO: Is this an appropriate error? */
-            return ResultLoaderTooManyArguments;
-        }
+        /* TODO: Is this an appropriate error? */
+        R_UNLESS(g_map.size() < MaxExternalContentSourceCount, ldr::ResultTooManyArguments());
 
         /* Clear any sources. */
         R_ASSERT(Clear(title_id));
@@ -80,23 +78,22 @@ namespace sts::ldr::ecs {
         Service srv;
         serviceCreate(&srv, client.Move());
         FsFileSystem fs = { srv };
+        auto fs_guard = SCOPE_GUARD { fsFsClose(&fs); };
 
         /* Try to mount. */
-        if (fsdevMountDevice(device_name, fs) == -1) {
-            serviceClose(&srv);
-            return ResultFsMountNameAlreadyExists;
-        }
+        R_UNLESS(fsdevMountDevice(device_name, fs) >= 0, fs::ResultMountNameAlreadyExists());
+        fs_guard.Cancel();
 
         /* Add to map. */
         g_map.emplace(static_cast<u64>(title_id), device_name);
         *out = server.Move();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result Clear(ncm::TitleId title_id) {
         /* Delete if present. */
         g_map.erase(static_cast<u64>(title_id));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }
