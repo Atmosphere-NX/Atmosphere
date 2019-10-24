@@ -15,24 +15,6 @@
  */
 
 #pragma once
-#include "results_common.hpp"
 
-namespace sts::ams {
-
-    /* Please note: These results are all custom, and not official. */
-    R_DEFINE_NAMESPACE_RESULT_MODULE(444);
-
-
-    /* Result 1-1000 reserved for Atmosphere. */
-    R_DEFINE_ERROR_RESULT(ExosphereNotPresent, 1);
-    R_DEFINE_ERROR_RESULT(VersionMismatch,     2);
-
-    /* Results 1000-2000 reserved for Atmosphere Mitm. */
-    namespace mitm {
-
-        R_DEFINE_ERROR_RESULT(ShouldForwardToSession, 1000);
-        R_DEFINE_ERROR_RESULT(ProcessNotAssociated, 1100);
-
-    }
-
-}
+#include "hos/hos_types.hpp"
+#include "hos/hos_version_api.hpp"

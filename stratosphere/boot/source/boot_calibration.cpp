@@ -16,7 +16,7 @@
 
 #include "boot_calibration.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 
@@ -36,7 +36,7 @@ namespace sts::boot {
                 0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400
             };
 
-            STS_ASSERT(data != nullptr);
+            AMS_ASSERT(data != nullptr);
 
             u16 crc16 = 0x55AA;
             const u8 *data_u8 = reinterpret_cast<const u8 *>(data);

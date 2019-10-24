@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     /* Utility reference to make code mounting automatic. */
     class ScopedCodeMount {

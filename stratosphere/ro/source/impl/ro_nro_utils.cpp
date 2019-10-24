@@ -18,7 +18,7 @@
 
 #include "ro_nro_utils.hpp"
 
-namespace sts::ro::impl {
+namespace ams::ro::impl {
 
     namespace {
 

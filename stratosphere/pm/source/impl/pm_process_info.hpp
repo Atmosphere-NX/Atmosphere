@@ -22,7 +22,7 @@
 
 #include "pm_process_manager.hpp"
 
-namespace sts::pm::impl {
+namespace ams::pm::impl {
 
     class ProcessList;
 

@@ -15,14 +15,14 @@
  */
 #include <stratosphere.hpp>
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     ServerDomainManager::Domain::~Domain() {
         while (!this->entries.empty()) {
             Entry *entry = &this->entries.front();
             {
                 std::scoped_lock lk(this->manager->entry_owner_lock);
-                STS_ASSERT(entry->owner == this);
+                AMS_ASSERT(entry->owner == this);
                 entry->owner = nullptr;
             }
             entry->object.Reset();
@@ -35,7 +35,7 @@ namespace sts::sf::cmif {
         for (size_t i = 0; i < count; i++) {
             Entry *entry = this->manager->entry_manager.AllocateEntry();
             R_UNLESS(entry != nullptr, sf::cmif::ResultOutOfDomainEntries());
-            STS_ASSERT(entry->owner == nullptr);
+            AMS_ASSERT(entry->owner == nullptr);
             out_ids[i] = this->manager->entry_manager.GetId(entry);
         }
         return ResultSuccess();
@@ -48,18 +48,18 @@ namespace sts::sf::cmif {
     void ServerDomainManager::Domain::UnreserveIds(const DomainObjectId *ids, size_t count) {
         for (size_t i = 0; i < count; i++) {
             Entry *entry = this->manager->entry_manager.GetEntry(ids[i]);
-            STS_ASSERT(entry != nullptr);
-            STS_ASSERT(entry->owner == nullptr);
+            AMS_ASSERT(entry != nullptr);
+            AMS_ASSERT(entry->owner == nullptr);
             this->manager->entry_manager.FreeEntry(entry);
         }
     }
 
     void ServerDomainManager::Domain::RegisterObject(DomainObjectId id, ServiceObjectHolder &&obj) {
         Entry *entry = this->manager->entry_manager.GetEntry(id);
-        STS_ASSERT(entry != nullptr);
+        AMS_ASSERT(entry != nullptr);
         {
             std::scoped_lock lk(this->manager->entry_owner_lock);
-            STS_ASSERT(entry->owner == nullptr);
+            AMS_ASSERT(entry->owner == nullptr);
             entry->owner = this;
             this->entries.push_back(*entry);
         }
@@ -129,8 +129,8 @@ namespace sts::sf::cmif {
 
     void ServerDomainManager::EntryManager::FreeEntry(Entry *entry) {
         std::scoped_lock lk(this->lock);
-        STS_ASSERT(entry->owner == nullptr);
-        STS_ASSERT(!entry->object);
+        AMS_ASSERT(entry->owner == nullptr);
+        AMS_ASSERT(!entry->object);
         this->free_list.push_front(*entry);
     }
 
@@ -142,8 +142,8 @@ namespace sts::sf::cmif {
             const auto id = ids[i];
             Entry *entry = this->GetEntry(id);
             if (id != InvalidDomainObjectId) {
-                STS_ASSERT(entry != nullptr);
-                STS_ASSERT(entry->owner == nullptr);
+                AMS_ASSERT(entry != nullptr);
+                AMS_ASSERT(entry->owner == nullptr);
                 this->free_list.erase(this->free_list.iterator_to(*entry));
             }
         }

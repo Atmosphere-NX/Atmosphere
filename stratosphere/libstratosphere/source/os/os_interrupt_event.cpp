@@ -16,10 +16,10 @@
 #include <stratosphere.hpp>
 #include "impl/os_waitable_object_list.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     Result InterruptEvent::Initialize(u32 interrupt_id, bool autoclear) {
-        STS_ASSERT(!this->is_initialized);
+        AMS_ASSERT(!this->is_initialized);
         this->auto_clear = autoclear;
 
         const auto type = this->auto_clear ? svc::InterruptType_Edge : svc::InterruptType_Level;
@@ -30,7 +30,7 @@ namespace sts::os {
     }
 
     void InterruptEvent::Finalize() {
-        STS_ASSERT(this->is_initialized);
+        AMS_ASSERT(this->is_initialized);
         R_ASSERT(svcCloseHandle(this->handle.Move()));
         this->auto_clear = true;
         this->is_initialized = false;
@@ -46,7 +46,7 @@ namespace sts::os {
     }
 
     void InterruptEvent::Wait() {
-        STS_ASSERT(this->is_initialized);
+        AMS_ASSERT(this->is_initialized);
 
         while (true) {
             /* Continuously wait, until success. */
@@ -66,7 +66,7 @@ namespace sts::os {
     }
 
     bool InterruptEvent::TryWait() {
-        STS_ASSERT(this->is_initialized);
+        AMS_ASSERT(this->is_initialized);
 
         if (this->auto_clear) {
             /* Auto-clear. Just try to reset. */
@@ -87,7 +87,7 @@ namespace sts::os {
     }
 
     bool InterruptEvent::TimedWait(u64 ns) {
-        STS_ASSERT(this->is_initialized);
+        AMS_ASSERT(this->is_initialized);
 
         TimeoutHelper timeout_helper(ns);
         while (true) {

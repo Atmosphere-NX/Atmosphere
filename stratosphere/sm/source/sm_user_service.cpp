@@ -20,7 +20,7 @@
 #include "sm_user_service.hpp"
 #include "impl/sm_service_manager.hpp"
 
-namespace sts::sm {
+namespace ams::sm {
 
     Result UserService::Initialize(const sf::ClientProcessId &client_process_id) {
         this->process_id = client_process_id.GetValue();

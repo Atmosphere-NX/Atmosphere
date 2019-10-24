@@ -17,7 +17,7 @@
 #pragma once
 #include "../sf_common.hpp"
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     class PointerAndSize {
         private:

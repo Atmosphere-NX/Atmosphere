@@ -16,7 +16,7 @@
 #pragma once
 #include "os_waitable_holder_base.hpp"
 
-namespace sts::os::impl {
+namespace ams::os::impl {
 
     /* Nintendo implements this as a user wait object, operating on Thread state. */
     /* Libnx doesn't have an equivalent, so we'll use the thread's handle for kernel semantics. */

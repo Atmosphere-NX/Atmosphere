@@ -17,7 +17,7 @@
 #include <stratosphere/spl/smc/spl_smc.hpp>
 #include "boot_pmc_wrapper.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 
@@ -41,12 +41,12 @@ namespace sts::boot {
     }
 
     u32 ReadPmcRegister(u32 phys_addr) {
-        STS_ASSERT(IsValidPmcAddress(phys_addr));
+        AMS_ASSERT(IsValidPmcAddress(phys_addr));
         return ReadWriteRegisterImpl(phys_addr, 0, 0);
     }
 
     void WritePmcRegister(u32 phys_addr, u32 value, u32 mask) {
-        STS_ASSERT(IsValidPmcAddress(phys_addr));
+        AMS_ASSERT(IsValidPmcAddress(phys_addr));
         ReadWriteRegisterImpl(phys_addr, value, mask);
     }
 

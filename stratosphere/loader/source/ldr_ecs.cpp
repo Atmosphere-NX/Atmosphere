@@ -17,7 +17,7 @@
 #include <unordered_map>
 #include "ldr_ecs.hpp"
 
-namespace sts::ldr::ecs {
+namespace ams::ldr::ecs {
 
     namespace {
 

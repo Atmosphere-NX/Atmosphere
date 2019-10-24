@@ -19,7 +19,7 @@
 #include "../defines.hpp"
 #include <type_traits>
 
-namespace sts::util {
+namespace ams::util {
 
     /* Utilities for alignment to power of two. */
 

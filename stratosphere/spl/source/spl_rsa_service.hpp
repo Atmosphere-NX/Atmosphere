@@ -21,7 +21,7 @@
 
 #include "spl_crypto_service.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     class RsaService : public CryptoService {
         public:

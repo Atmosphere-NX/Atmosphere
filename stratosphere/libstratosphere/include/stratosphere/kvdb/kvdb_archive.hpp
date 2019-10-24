@@ -21,7 +21,7 @@
 
 #include "kvdb_auto_buffer.hpp"
 
-namespace sts::kvdb {
+namespace ams::kvdb {
 
     /* Functionality for parsing/generating a key value archive. */
     class ArchiveReader {

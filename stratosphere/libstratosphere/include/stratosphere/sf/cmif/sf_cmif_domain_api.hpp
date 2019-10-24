@@ -18,7 +18,7 @@
 #include "../sf_common.hpp"
 #include "sf_cmif_service_object_holder.hpp"
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     struct DomainObjectId {
         u32 value;

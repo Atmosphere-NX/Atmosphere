@@ -18,7 +18,7 @@
 #include "../sf_common.hpp"
 #include "../cmif/sf_cmif_pointer_and_size.hpp"
 
-namespace sts::sf::hipc {
+namespace ams::sf::hipc {
 
     constexpr size_t TlsMessageBufferSize = 0x100;
 

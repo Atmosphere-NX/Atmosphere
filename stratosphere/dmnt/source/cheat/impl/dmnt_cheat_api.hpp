@@ -18,7 +18,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/dmnt.hpp>
 
-namespace sts::dmnt::cheat::impl {
+namespace ams::dmnt::cheat::impl {
 
     bool GetHasActiveCheatProcess();
     Handle GetCheatProcessEventHandle();

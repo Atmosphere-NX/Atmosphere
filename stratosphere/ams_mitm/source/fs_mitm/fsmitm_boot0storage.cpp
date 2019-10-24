@@ -20,7 +20,7 @@
 
 #include "fsmitm_boot0storage.hpp"
 
-static sts::os::Mutex g_boot0_mutex;
+static ams::os::Mutex g_boot0_mutex;
 static u8 g_boot0_bct_buffer[Boot0Storage::BctEndOffset];
 
 bool Boot0Storage::CanModifyBctPubks() {
@@ -28,11 +28,11 @@ bool Boot0Storage::CanModifyBctPubks() {
         /* RCM bug patched. */
         /* Only allow NS to update the BCT pubks. */
         /* AutoRCM on a patched unit will cause a brick, so homebrew should NOT be allowed to write. */
-        return this->title_id == sts::ncm::TitleId::Ns;
+        return this->title_id == ams::ncm::TitleId::Ns;
     } else {
         /* RCM bug unpatched. */
         /* Allow homebrew but not NS to update the BCT pubks. */
-        return this->title_id != sts::ncm::TitleId::Ns;
+        return this->title_id != ams::ncm::TitleId::Ns;
     }
 }
 

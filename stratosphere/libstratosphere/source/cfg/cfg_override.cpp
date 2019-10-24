@@ -22,7 +22,7 @@
 #include <stratosphere/pm.hpp>
 #include <stratosphere/util.hpp>
 
-namespace sts::cfg {
+namespace ams::cfg {
 
     namespace {
 

@@ -18,7 +18,7 @@
 #include <cstdio>
 #include <switch.h>
 
-namespace sts::util::ini {
+namespace ams::util::ini {
 
     /* Ini handler type. */
     using Handler = int (*)(void *user_ctx, const char *section, const char *name, const char *value);

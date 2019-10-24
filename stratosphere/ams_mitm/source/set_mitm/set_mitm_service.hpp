@@ -27,17 +27,17 @@ class SetMitmService : public IMitmServiceObject {
             GetRegionCode   = 4,
         };
     private:
-        sts::os::Mutex lock;
+        ams::os::Mutex lock;
         OverrideLocale locale;
         bool got_locale;
     public:
-        SetMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
+        SetMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             this->got_locale = false;
         }
 
-        static bool ShouldMitm(u64 pid, sts::ncm::TitleId tid) {
+        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
             /* Mitm all applications. */
-            return tid == sts::ncm::TitleId::Ns || sts::ncm::IsApplicationTitleId(tid);
+            return tid == ams::ncm::TitleId::Ns || ams::ncm::IsApplicationTitleId(tid);
         }
 
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);

@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/spl/spl_types.hpp>
 
-namespace sts::spl::impl {
+namespace ams::spl::impl {
 
     /* Initialization. */
     void Initialize();

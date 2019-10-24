@@ -18,7 +18,7 @@
 #include "boot_pmc_wrapper.hpp"
 #include "boot_registers_pmc.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 

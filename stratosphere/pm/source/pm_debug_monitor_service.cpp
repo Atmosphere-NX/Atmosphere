@@ -18,7 +18,7 @@
 #include "pm_debug_monitor_service.hpp"
 #include "impl/pm_process_manager.hpp"
 
-namespace sts::pm::dmnt {
+namespace ams::pm::dmnt {
 
     /* Actual command implementations. */
     Result DebugMonitorServiceBase::GetModuleIdList(sf::Out<u32> out_count, const sf::OutBuffer &out_buf, u64 unused) {

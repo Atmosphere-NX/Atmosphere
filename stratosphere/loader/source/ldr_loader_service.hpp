@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     class LoaderService : public sf::IServiceObject {
         protected:

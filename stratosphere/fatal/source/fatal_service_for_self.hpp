@@ -17,7 +17,7 @@
 #pragma once
 #include <switch.h>
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     Result ThrowFatalForSelf(Result error_code);
 

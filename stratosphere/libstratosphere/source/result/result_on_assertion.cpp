@@ -16,21 +16,21 @@
 
 #include <stratosphere.hpp>
 
-namespace sts::result {
+namespace ams::result {
 
     extern bool CallFatalOnResultAssertion;
 
 }
 
-namespace sts::result::impl {
+namespace ams::result::impl {
 
     NORETURN WEAK void OnResultAssertion(Result result) {
         /* Assert that we should call fatal on result assertion. */
         /* If we shouldn't fatal, this will std::abort(); */
         /* If we should, we'll continue onwards. */
-        STS_ASSERT((sts::result::CallFatalOnResultAssertion));
+        AMS_ASSERT((ams::result::CallFatalOnResultAssertion));
 
-        /* TODO: sts::fatal:: */
+        /* TODO: ams::fatal:: */
         fatalSimple(result.GetValue());
         while (true) { /* ... */ }
     }

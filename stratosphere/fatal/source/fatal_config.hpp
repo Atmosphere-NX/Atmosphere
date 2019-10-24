@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     class FatalConfig {
         private:

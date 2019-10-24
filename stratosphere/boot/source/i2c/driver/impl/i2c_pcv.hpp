@@ -20,7 +20,7 @@
 
 /* This forward declares the functionality from pcv that i2c::driver uses. */
 /* This allows for overriding at compile-time (e.g., for boot sysmodule). */
-namespace sts::pcv {
+namespace ams::pcv {
 
     void Initialize();
     void Finalize();

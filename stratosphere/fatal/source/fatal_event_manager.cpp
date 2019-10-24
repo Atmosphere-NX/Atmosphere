@@ -16,7 +16,7 @@
 
 #include "fatal_event_manager.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     FatalEventManager::FatalEventManager() {
         /* Just create all the events. */

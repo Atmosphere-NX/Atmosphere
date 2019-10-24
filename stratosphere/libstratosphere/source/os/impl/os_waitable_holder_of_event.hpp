@@ -17,7 +17,7 @@
 #include "os_waitable_holder_base.hpp"
 #include "os_waitable_object_list.hpp"
 
-namespace sts::os::impl {
+namespace ams::os::impl {
 
     class WaitableHolderOfEvent : public WaitableHolderOfUserObject {
         private:

@@ -19,7 +19,7 @@
 
 #include "pm_process_info.hpp"
 
-namespace sts::pm::impl {
+namespace ams::pm::impl {
 
     ProcessInfo::ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::TitleLocation &l) : process_id(pid), pin_id(pin), loc(l), handle(h), state(ProcessState_Created), flags(0), waitable_holder(h) {
         this->waitable_holder.SetUserData(reinterpret_cast<uintptr_t>(this));

@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     /* Launch Record API. */
     bool HasLaunchedTitle(ncm::TitleId title_id);

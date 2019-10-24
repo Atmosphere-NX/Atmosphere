@@ -19,7 +19,7 @@
 #include "pinmux_initial_configuration.hpp"
 #include "pinmux_utils.hpp"
 
-namespace sts::pinmux {
+namespace ams::pinmux {
 
     namespace {
 
@@ -61,11 +61,11 @@ namespace sts::pinmux {
                     num_configs = NumInitialConfigsIowa;
                     break;
                 /* Unknown hardware type, we can't proceed. */
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
 
             /* Ensure we found an appropriate config. */
-            STS_ASSERT(configs != nullptr);
+            AMS_ASSERT(configs != nullptr);
 
             for (size_t i = 0; i < num_configs; i++) {
                 UpdatePad(configs[i].name, configs[i].val, configs[i].mask);

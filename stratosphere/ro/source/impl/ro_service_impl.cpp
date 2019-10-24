@@ -25,7 +25,7 @@
 #include "ro_patcher.hpp"
 #include "ro_service_impl.hpp"
 
-namespace sts::ro::impl {
+namespace ams::ro::impl {
 
     namespace {
 
@@ -248,7 +248,7 @@ namespace sts::ro::impl {
                 return nullptr;
             }
 
-            STS_ASSERT(context_id < MaxSessions);
+            AMS_ASSERT(context_id < MaxSessions);
             return &g_process_contexts[context_id];
         }
 
@@ -275,7 +275,7 @@ namespace sts::ro::impl {
                 }
             }
             /* Failure to find a free context is actually an abort condition. */
-            STS_ASSERT(false);
+            AMS_ASSERT(false);
         }
 
         void FreeContext(size_t context_id) {
@@ -369,7 +369,7 @@ namespace sts::ro::impl {
     Result LoadNrr(size_t context_id, Handle process_h, u64 nrr_address, u64 nrr_size, ModuleType expected_type, bool enforce_type) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        STS_ASSERT(context != nullptr);
+        AMS_ASSERT(context != nullptr);
 
         /* Get title id. */
         const ncm::TitleId title_id = context->GetTitleId(process_h);
@@ -399,7 +399,7 @@ namespace sts::ro::impl {
     Result UnloadNrr(size_t context_id, u64 nrr_address) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        STS_ASSERT(context != nullptr);
+        AMS_ASSERT(context != nullptr);
 
         /* Validate address. */
         R_UNLESS(util::IsAligned(nrr_address, 0x1000), ResultInvalidAddress());
@@ -421,7 +421,7 @@ namespace sts::ro::impl {
     Result LoadNro(u64 *out_address, size_t context_id, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        STS_ASSERT(context != nullptr);
+        AMS_ASSERT(context != nullptr);
 
         /* Validate address/size. */
         R_TRY(ValidateAddressAndSize(nro_address, nro_size));
@@ -467,7 +467,7 @@ namespace sts::ro::impl {
     Result UnloadNro(size_t context_id, u64 nro_address) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        STS_ASSERT(context != nullptr);
+        AMS_ASSERT(context != nullptr);
 
         /* Validate address. */
         R_UNLESS(util::IsAligned(nro_address, 0x1000), ResultInvalidAddress());

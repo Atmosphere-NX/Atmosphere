@@ -46,7 +46,7 @@ extern "C" {
     void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
 }
 
-sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::AtmosphereMitm;
+ams::ncm::TitleId __stratosphere_title_id = ams::ncm::TitleId::AtmosphereMitm;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     StratosphereCrashHandler(ctx);
@@ -93,7 +93,7 @@ void __appExit(void) {
 int main(int argc, char **argv)
 {
     consoleDebugInit(debugDevice_SVC);
-    sts::os::Thread initializer_thread;
+    ams::os::Thread initializer_thread;
 
     LaunchAllMitmModules();
 

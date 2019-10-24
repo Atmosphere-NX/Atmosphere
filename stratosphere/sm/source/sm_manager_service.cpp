@@ -20,7 +20,7 @@
 #include "sm_manager_service.hpp"
 #include "impl/sm_service_manager.hpp"
 
-namespace sts::sm {
+namespace ams::sm {
 
     Result ManagerService::RegisterProcess(os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac) {
         return impl::RegisterProcess(process_id, ncm::TitleId::Invalid, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());

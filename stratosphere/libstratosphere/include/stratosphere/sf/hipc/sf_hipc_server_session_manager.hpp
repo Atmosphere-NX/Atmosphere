@@ -21,13 +21,13 @@
 #include "../cmif/sf_cmif_service_object_holder.hpp"
 #include "sf_hipc_api.hpp"
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     struct ServiceDispatchContext;
 
 }
 
-namespace sts::sf::hipc {
+namespace ams::sf::hipc {
 
     class ServerSessionManager;
     class ServerManagerBase;
@@ -58,14 +58,14 @@ namespace sts::sf::hipc {
                 this->is_closed = false;
                 this->has_received = false;
                 this->forward_service = nullptr;
-                STS_ASSERT(!this->IsMitmSession());
+                AMS_ASSERT(!this->IsMitmSession());
             }
 
             ServerSession(Handle h, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) : WaitableHolder(h), srv_obj_holder(std::move(obj)), session_handle(h) {
                 this->is_closed = false;
                 this->has_received = false;
                 this->forward_service = std::move(fsrv);
-                STS_ASSERT(this->IsMitmSession());
+                AMS_ASSERT(this->IsMitmSession());
             }
 
             bool IsMitmSession() const {

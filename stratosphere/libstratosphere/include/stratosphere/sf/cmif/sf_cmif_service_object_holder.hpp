@@ -18,7 +18,7 @@
 #include "../sf_service_object.hpp"
 #include "sf_cmif_service_dispatch.hpp"
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     class ServiceObjectHolder {
         private:

@@ -43,19 +43,19 @@ extern "C" {
     void __appExit(void);
 }
 
-namespace sts::ams {
+namespace ams {
 
-    ncm::TitleId StratosphereTitleId = ncm::TitleId::Dmnt;
+    ncm::TitleId CurrentTitleId = ncm::TitleId::Dmnt;
+
+    namespace result {
+
+        bool CallFatalOnResultAssertion = true;
+
+    }
 
 }
 
-namespace sts::result {
-
-    bool CallFatalOnResultAssertion = true;
-
-}
-
-using namespace sts;
+using namespace ams;
 
 void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;

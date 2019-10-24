@@ -26,7 +26,7 @@
 #define RGB565_GET_G8(c) ((((c >> 5) & 0x3F) << 2) | ((c >> 9) & 3))
 #define RGB565_GET_B8(c) ((((c >> 0) & 0x1F) << 3) | ((c >> 2) & 7))
 
-namespace sts::fatal::srv::font {
+namespace ams::fatal::srv::font {
 
     namespace {
 

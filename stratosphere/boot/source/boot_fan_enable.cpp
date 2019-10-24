@@ -20,7 +20,7 @@
 
 #include "gpio/gpio_utils.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 

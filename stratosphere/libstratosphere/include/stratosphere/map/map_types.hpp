@@ -18,7 +18,7 @@
 #include <switch.h>
 #include "../results.hpp"
 
-namespace sts::map {
+namespace ams::map {
 
     /* Types. */
     struct AddressSpaceInfo {

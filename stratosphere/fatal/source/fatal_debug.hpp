@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     void TryCollectDebugInformation(ThrowContext *ctx, os::ProcessId process_id);
 

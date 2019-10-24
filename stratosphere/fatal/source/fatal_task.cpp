@@ -24,7 +24,7 @@
 #include "fatal_task_clock.hpp"
 #include "fatal_task_power.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     namespace {
 
@@ -60,7 +60,7 @@ namespace sts::fatal::srv {
             public:
                 TaskManager() { /* ... */ }
                 void StartTask(ITask *task) {
-                    STS_ASSERT(this->task_count < MaxTasks);
+                    AMS_ASSERT(this->task_count < MaxTasks);
                     this->task_threads[this->task_count++].StartTask(task);
                 }
         };

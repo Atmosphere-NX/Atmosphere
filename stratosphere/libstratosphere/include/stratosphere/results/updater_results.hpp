@@ -17,7 +17,7 @@
 #pragma once
 #include "results_common.hpp"
 
-namespace sts::updater {
+namespace ams::updater {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(158);
 

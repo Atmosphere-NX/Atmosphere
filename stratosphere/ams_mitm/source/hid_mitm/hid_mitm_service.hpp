@@ -28,13 +28,13 @@ class HidMitmService : public IMitmServiceObject {
     private:
         bool should_set_system_ext = false;
     public:
-        HidMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
+        HidMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             /* ... */
         }
 
         ~HidMitmService();
 
-        static bool ShouldMitm(u64 pid, sts::ncm::TitleId tid) {
+        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
             /* TODO: Consider removing in Atmosphere 0.10.0/1.0.0. */
             /* We will mitm:
              * - hbl, to help homebrew not need to be recompiled.

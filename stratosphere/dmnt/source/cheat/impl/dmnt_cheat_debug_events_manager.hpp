@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::dmnt::cheat::impl {
+namespace ams::dmnt::cheat::impl {
 
     void ContinueCheatProcess(Handle cheat_dbg_hnd);
 

@@ -19,7 +19,7 @@
 #include "../os/os_common_types.hpp"
 #include "../ncm/ncm_types.hpp"
 
-namespace sts::cfg {
+namespace ams::cfg {
 
     /* Privileged Process configuration. */
     bool IsInitialProcess();

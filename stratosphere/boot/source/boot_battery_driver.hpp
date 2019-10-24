@@ -20,7 +20,7 @@
 
 #include "i2c/driver/i2c_api.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     class BatteryDriver {
         private:

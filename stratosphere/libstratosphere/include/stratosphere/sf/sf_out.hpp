@@ -18,7 +18,7 @@
 #include "sf_common.hpp"
 #include "cmif/sf_cmif_pointer_and_size.hpp"
 
-namespace sts::sf {
+namespace ams::sf {
 
     namespace impl {
 
@@ -30,7 +30,7 @@ namespace sts::sf {
     struct IsOutForceEnabled : public std::false_type{};
 
     template<>
-    struct IsOutForceEnabled<::sts::Result> : public std::true_type{};
+    struct IsOutForceEnabled<::ams::Result> : public std::true_type{};
 
     template<typename T>
     using IsOutEnabled = typename std::enable_if<std::is_trivial<T>::value || IsOutForceEnabled<T>::value>::type;
@@ -44,7 +44,7 @@ namespace sts::sf {
         public:
             constexpr Out(uintptr_t p) : ptr(reinterpret_cast<T *>(p)) { /* ... */ }
             constexpr Out(T *p) : ptr(p) { /* ... */ }
-            constexpr Out(const cmif::PointerAndSize &pas) : ptr(reinterpret_cast<T *>(pas.GetAddress())) { /* TODO: Is STS_ASSERT(pas.GetSize() >= sizeof(T)); necessary? */ }
+            constexpr Out(const cmif::PointerAndSize &pas) : ptr(reinterpret_cast<T *>(pas.GetAddress())) { /* TODO: Is AMS_ASSERT(pas.GetSize() >= sizeof(T)); necessary? */ }
 
             void SetValue(const T& value) const {
                 *this->ptr = value;

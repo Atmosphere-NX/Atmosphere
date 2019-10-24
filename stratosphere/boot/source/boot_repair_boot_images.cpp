@@ -20,7 +20,7 @@
 #include "boot_power_utils.hpp"
 #include "boot_repair_boot_images.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 

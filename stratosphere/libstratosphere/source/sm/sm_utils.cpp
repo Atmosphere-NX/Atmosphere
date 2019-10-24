@@ -16,7 +16,7 @@
 
 #include "sm_utils.hpp"
 
-namespace sts::sm::impl {
+namespace ams::sm::impl {
 
     namespace {
 

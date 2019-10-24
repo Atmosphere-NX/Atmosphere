@@ -17,7 +17,7 @@
 #include <stratosphere/ro.hpp>
 #include "ldr_ro_manager.hpp"
 
-namespace sts::ldr::ro {
+namespace ams::ldr::ro {
 
     namespace {
 

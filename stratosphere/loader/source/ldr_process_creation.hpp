@@ -21,7 +21,7 @@
 
 #include "ldr_arguments.hpp"
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     /* Process Creation API. */
     Result CreateProcess(Handle *out, PinId pin_id, const ncm::TitleLocation &loc, const char *path, u32 flags, Handle reslimit_h);

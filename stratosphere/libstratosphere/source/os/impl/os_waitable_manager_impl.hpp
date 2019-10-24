@@ -16,7 +16,7 @@
 #pragma once
 #include "os_waitable_holder_base.hpp"
 
-namespace sts::os::impl {
+namespace ams::os::impl {
 
     class WaitableManagerImpl {
         public:

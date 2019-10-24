@@ -28,11 +28,11 @@ class NsAmMitmService : public IMitmServiceObject {
             GetRunningApplicationProgramId = 92,
         };
     public:
-        NsAmMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
+        NsAmMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             /* ... */
         }
 
-        static bool ShouldMitm(u64 pid, sts::ncm::TitleId tid) {
+        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
             /* We will mitm:
              * - web applets, to facilitate hbl web browser launching.
              */

@@ -16,7 +16,7 @@
 
 #include "ldr_arguments.hpp"
 
-namespace sts::ldr::args {
+namespace ams::ldr::args {
 
     namespace {
 

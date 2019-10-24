@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace sts::boot::bq24193 {
+namespace ams::boot::bq24193 {
 
     constexpr u8 InputSourceControl                     = 0x00;
     constexpr u8 PowerOnConfiguration                   = 0x01;
@@ -38,8 +38,8 @@ namespace sts::boot::bq24193 {
     constexpr u32 ChargeVoltageLimitMax = 4208;
 
     inline u8 EncodeChargeVoltageLimit(u32 voltage) {
-        STS_ASSERT(voltage >= ChargeVoltageLimitMin);
-        STS_ASSERT(voltage <= ChargeVoltageLimitMax);
+        AMS_ASSERT(voltage >= ChargeVoltageLimitMin);
+        AMS_ASSERT(voltage <= ChargeVoltageLimitMax);
 
         voltage -= ChargeVoltageLimitMin;
         voltage >>= 4;
@@ -54,8 +54,8 @@ namespace sts::boot::bq24193 {
     constexpr u32 FastChargeCurrentLimitMax = 4544;
 
     inline u8 EncodeFastChargeCurrentLimit(u32 current) {
-        STS_ASSERT(current >= FastChargeCurrentLimitMin);
-        STS_ASSERT(current <= FastChargeCurrentLimitMax);
+        AMS_ASSERT(current >= FastChargeCurrentLimitMin);
+        AMS_ASSERT(current <= FastChargeCurrentLimitMax);
 
         current -= FastChargeCurrentLimitMin;
         current >>= 6;
@@ -81,8 +81,8 @@ namespace sts::boot::bq24193 {
     constexpr u32 PreChargeCurrentLimitMax = 2048;
 
     inline u8 EncodePreChargeCurrentLimit(u32 current) {
-        STS_ASSERT(current >= PreChargeCurrentLimitMin);
-        STS_ASSERT(current <= PreChargeCurrentLimitMax);
+        AMS_ASSERT(current >= PreChargeCurrentLimitMin);
+        AMS_ASSERT(current <= PreChargeCurrentLimitMax);
 
         current -= PreChargeCurrentLimitMin;
         current >>= 7;
@@ -97,8 +97,8 @@ namespace sts::boot::bq24193 {
     constexpr u32 TerminationCurrentLimitMax = 2048;
 
     inline u8 EncodeTerminationCurrentLimit(u32 current) {
-        STS_ASSERT(current >= TerminationCurrentLimitMin);
-        STS_ASSERT(current <= TerminationCurrentLimitMax);
+        AMS_ASSERT(current >= TerminationCurrentLimitMin);
+        AMS_ASSERT(current <= TerminationCurrentLimitMax);
 
         current -= TerminationCurrentLimitMin;
         current >>= 7;
@@ -113,8 +113,8 @@ namespace sts::boot::bq24193 {
     constexpr u32 MinimumSystemVoltageLimitMax = 3700;
 
     inline u8 EncodeMinimumSystemVoltageLimit(u32 voltage) {
-        STS_ASSERT(voltage >= MinimumSystemVoltageLimitMin);
-        STS_ASSERT(voltage <= MinimumSystemVoltageLimitMax);
+        AMS_ASSERT(voltage >= MinimumSystemVoltageLimitMin);
+        AMS_ASSERT(voltage <= MinimumSystemVoltageLimitMax);
 
         voltage -= MinimumSystemVoltageLimitMin;
         voltage /= 100;

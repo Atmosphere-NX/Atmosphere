@@ -15,37 +15,12 @@
  */
 
 #pragma once
-#include <switch.h>
 #include "../defines.hpp"
 #include "../results.hpp"
 #include "../sf/sf_buffer_tags.hpp"
+#include "../hos.hpp"
 
-/* Define firmware version in global namespace, for convenience. */
-namespace sts {
-
-    namespace hos {
-
-        enum Version : u16 {
-            Version_Min = 0,
-            Version_100 = Version_Min,
-            Version_200 = 1,
-            Version_300 = 2,
-            Version_400 = 3,
-            Version_500 = 4,
-            Version_600 = 5,
-            Version_700 = 6,
-            Version_800 = 7,
-            Version_810 = 8,
-            Version_900 = 9,
-            Version_Current = Version_900,
-            Version_Max = 32,
-        };
-
-    }
-
-}
-
-namespace sts::ams {
+namespace ams::exosphere {
 
     enum TargetFirmware : u32 {
         TargetFirmware_100 = 1,
@@ -73,7 +48,7 @@ namespace sts::ams {
         u32 master_key_revision;
 
         constexpr u32 GetVersion() const {
-            return ::sts::ams::GetVersion(this->major_version, this->minor_version, this->micro_version);
+            return ::ams::exosphere::GetVersion(this->major_version, this->minor_version, this->micro_version);
         }
 
         constexpr TargetFirmware GetTargetFirmware() const {
@@ -84,6 +59,10 @@ namespace sts::ams {
             return this->master_key_revision;
         }
     };
+
+}
+
+namespace ams {
 
     struct FatalErrorContext : sf::LargeData, sf::PrefersMapAliasTransferMode {
         static constexpr size_t MaxStackTrace = 0x20;
@@ -123,5 +102,17 @@ namespace sts::ams {
 
     static_assert(sizeof(FatalErrorContext) == 0x350, "sizeof(FatalErrorContext)");
     static_assert(std::is_pod<FatalErrorContext>::value, "FatalErrorContext");
+
+#ifdef ATMOSPHERE_GIT_BRANCH
+    NX_CONSTEXPR const char *GetGitBranch() {
+        return ATMOSPHERE_GIT_BRANCH;
+    }
+#endif
+
+#ifdef ATMOSPHERE_GIT_REV
+    NX_CONSTEXPR const char *GetGitRevision() {
+        return ATMOSPHERE_GIT_REV;
+    }
+#endif
 
 }

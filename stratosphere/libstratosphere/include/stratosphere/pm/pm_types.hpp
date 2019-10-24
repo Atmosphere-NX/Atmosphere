@@ -18,7 +18,7 @@
 #include <switch.h>
 #include "../os/os_common_types.hpp"
 
-namespace sts::pm {
+namespace ams::pm {
 
     enum class BootMode {
         Normal      = 0,

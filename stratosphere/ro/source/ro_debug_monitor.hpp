@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::ro {
+namespace ams::ro {
 
     class DebugMonitorService final : public sf::IServiceObject {
         protected:

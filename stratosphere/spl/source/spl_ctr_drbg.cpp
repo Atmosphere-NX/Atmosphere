@@ -20,7 +20,7 @@
 
 #include "spl_ctr_drbg.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     void CtrDrbg::Update(const void *data) {
         aes128ContextCreate(&this->aes_ctx, this->key, true);

@@ -17,7 +17,7 @@
 #include "creport_threads.hpp"
 #include "creport_modules.hpp"
 
-namespace sts::creport {
+namespace ams::creport {
 
     namespace {
 

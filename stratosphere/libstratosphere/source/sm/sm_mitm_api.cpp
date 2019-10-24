@@ -21,7 +21,7 @@
 #include "sm_ams.h"
 #include "sm_utils.hpp"
 
-namespace sts::sm::mitm {
+namespace ams::sm::mitm {
 
     /* Mitm API. */
     Result InstallMitm(Handle *out_port, Handle *out_query, ServiceName name) {

@@ -20,7 +20,7 @@
 
 #include "ini.h"
 
-namespace sts::util::ini {
+namespace ams::util::ini {
 
     /* Ensure that types are the same for Handler vs ini_handler. */
     static_assert(std::is_same<Handler, ::ini_handler>::value, "Bad ini::Handler definition!");
@@ -50,7 +50,7 @@ namespace sts::util::ini {
             size_t try_read = std::min(size_t(num - 1), ctx->num_left);
             size_t actually_read;
             R_ASSERT(fsFileRead(ctx->f, ctx->offset, str, try_read, FsReadOption_None, &actually_read));
-            STS_ASSERT(actually_read == try_read);
+            AMS_ASSERT(actually_read == try_read);
 
             /* Only "read" up to the first \n. */
             size_t offset = actually_read;

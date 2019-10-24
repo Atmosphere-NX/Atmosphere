@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include "creport_threads.hpp"
 
-namespace sts::creport {
+namespace ams::creport {
 
     class ModuleList {
         private:

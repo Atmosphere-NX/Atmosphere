@@ -21,7 +21,7 @@
 #include "fatal_config.hpp"
 #include "fatal_font.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     /* Include Atmosphere logo into its own anonymous namespace. */
 
@@ -218,7 +218,7 @@ namespace sts::fatal::srv {
             font::AddSpacingLines(0.5f);
             font::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", config.GetFirmwareVersion().display_version, ATMOSPHERE_RELEASE_VERSION, ams::GetGitRevision());
             font::AddSpacingLines(1.5f);
-            if (!ams::ResultVersionMismatch::Includes(this->context->result)) {
+            if (!exosphere::ResultVersionMismatch::Includes(this->context->result)) {
                 font::Print(config.GetErrorDescription());
             } else {
                 /* Print a special message for atmosphere version mismatch. */

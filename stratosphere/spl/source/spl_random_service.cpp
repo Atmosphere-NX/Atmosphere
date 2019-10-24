@@ -20,7 +20,7 @@
 #include "spl_api_impl.hpp"
 #include "spl_random_service.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     Result RandomService::GenerateRandomBytes(const sf::OutBuffer &out) {
         return impl::GenerateRandomBytes(out.GetPointer(), out.GetSize());

@@ -17,7 +17,7 @@
 #include "boot_battery_icons.hpp"
 #include "boot_display.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 

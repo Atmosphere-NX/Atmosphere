@@ -21,7 +21,7 @@
 
 #include "updater_bis_management.hpp"
 
-namespace sts::updater {
+namespace ams::updater {
 
     class BisSave {
         public:

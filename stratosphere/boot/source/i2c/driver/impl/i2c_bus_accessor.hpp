@@ -21,7 +21,7 @@
 #include "i2c_driver_types.hpp"
 #include "i2c_registers.hpp"
 
-namespace sts::i2c::driver::impl {
+namespace ams::i2c::driver::impl {
 
     class BusAccessor {
         private:

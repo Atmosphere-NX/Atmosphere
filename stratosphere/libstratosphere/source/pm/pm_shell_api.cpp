@@ -18,7 +18,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/pm.hpp>
 
-namespace sts::pm::shell {
+namespace ams::pm::shell {
 
     /* Shell API. */
     Result WEAK LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {

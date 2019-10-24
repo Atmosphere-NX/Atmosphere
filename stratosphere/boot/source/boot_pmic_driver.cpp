@@ -20,7 +20,7 @@
 #include "boot_i2c_utils.hpp"
 #include "boot_pmic_driver.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     void PmicDriver::ShutdownSystem() {
         R_ASSERT(this->ShutdownSystem(false));
@@ -89,7 +89,7 @@ namespace sts::boot {
 
         /* Allow up to 5 seconds for shutdown/reboot to take place. */
         svcSleepThread(5'000'000'000ul);
-        STS_ASSERT(false);
+        AMS_ASSERT(false);
     }
 
     void PmicDriver::FinalizeBattery(BatteryDriver *battery_driver) {

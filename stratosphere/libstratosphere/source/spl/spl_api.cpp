@@ -17,7 +17,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/spl.hpp>
 
-namespace sts::spl {
+namespace ams::spl {
 
     HardwareType GetHardwareType() {
         u64 out_val = 0;
@@ -70,7 +70,7 @@ namespace sts::spl {
             case HardwareType::Hoag:
             case HardwareType::Iowa:
                 return true;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 

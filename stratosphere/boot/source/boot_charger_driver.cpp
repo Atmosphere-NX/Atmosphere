@@ -19,7 +19,7 @@
 
 #include "boot_charger_driver.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     Result ChargerDriver::Read(u8 addr, u8 *out) {
         return ReadI2cRegister(this->i2c_session, reinterpret_cast<u8 *>(out), sizeof(*out), &addr, sizeof(addr));

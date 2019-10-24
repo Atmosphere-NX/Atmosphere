@@ -20,7 +20,7 @@
 #include "spl_api_impl.hpp"
 #include "spl_rsa_service.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     Result RsaService::DecryptRsaPrivateKeyDeprecated(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
         return impl::DecryptRsaPrivateKey(dst.GetPointer(), dst.GetSize(), src.GetPointer(), src.GetSize(), access_key, key_source, option);

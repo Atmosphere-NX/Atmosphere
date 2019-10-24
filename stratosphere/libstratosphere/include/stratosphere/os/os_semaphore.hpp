@@ -17,7 +17,7 @@
 #pragma once
 #include <switch.h>
 
-namespace sts::os {
+namespace ams::os {
 
     class Semaphore {
         NON_COPYABLE(Semaphore);

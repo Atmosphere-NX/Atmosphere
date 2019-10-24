@@ -20,7 +20,7 @@
 #include "../defines.hpp"
 #include "../ncm.hpp"
 
-namespace sts::ro {
+namespace ams::ro {
 
     enum class ModuleType : u8 {
         ForSelf   = 0,
@@ -63,7 +63,7 @@ namespace sts::ro {
 
             ModuleType GetType() const {
                 const ModuleType type = static_cast<ModuleType>(this->type);
-                STS_ASSERT(type < ModuleType::Count);
+                AMS_ASSERT(type < ModuleType::Count);
                 return type;
             }
 

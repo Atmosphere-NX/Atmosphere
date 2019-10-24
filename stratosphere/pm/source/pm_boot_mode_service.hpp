@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/pm.hpp>
 
-namespace sts::pm::bm {
+namespace ams::pm::bm {
 
     class BootModeService final : public sf::IServiceObject {
         private:

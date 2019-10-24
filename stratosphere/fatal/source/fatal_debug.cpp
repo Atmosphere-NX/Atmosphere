@@ -17,7 +17,7 @@
 #include "fatal_debug.hpp"
 #include "fatal_config.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     namespace {
 

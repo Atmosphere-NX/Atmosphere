@@ -35,7 +35,7 @@ struct SettingsItemValue {
 std::map<std::string, SettingsItemValue> g_settings_items;
 
 static bool g_threw_fatal = false;
-static sts::os::Thread g_fatal_thread;
+static ams::os::Thread g_fatal_thread;
 
 static void FatalThreadFunc(void *arg) {
     svcSleepThread(5000000000ULL);

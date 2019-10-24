@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 
-namespace sts::sf::hipc {
+namespace ams::sf::hipc {
 
     namespace {
 
@@ -40,10 +40,10 @@ namespace sts::sf::hipc {
     }
 
     Result ServerSession::ForwardRequest(const cmif::ServiceDispatchContext &ctx) const {
-        STS_ASSERT(this->IsMitmSession());
+        AMS_ASSERT(this->IsMitmSession());
         /* TODO: Support non-TLS messages? */
-        STS_ASSERT(this->saved_message.GetPointer() != nullptr);
-        STS_ASSERT(this->saved_message.GetSize() == TlsMessageBufferSize);
+        AMS_ASSERT(this->saved_message.GetPointer() != nullptr);
+        AMS_ASSERT(this->saved_message.GetSize() == TlsMessageBufferSize);
 
         /* Copy saved TLS in. */
         std::memcpy(armGetTls(), this->saved_message.GetPointer(), this->saved_message.GetSize());
@@ -115,7 +115,7 @@ namespace sts::sf::hipc {
         session_memory->pointer_buffer = this->GetSessionPointerBuffer(session_memory);
         session_memory->saved_message  = this->GetSessionSavedMessageBuffer(session_memory);
         /* Validate session pointer buffer. */
-        STS_ASSERT(session_memory->pointer_buffer.GetSize() >= session_memory->forward_service->pointer_buffer_size);
+        AMS_ASSERT(session_memory->pointer_buffer.GetSize() >= session_memory->forward_service->pointer_buffer_size);
         session_memory->pointer_buffer = cmif::PointerAndSize(session_memory->pointer_buffer.GetAddress(), session_memory->forward_service->pointer_buffer_size);
         /* Register to wait list. */
         this->RegisterSessionToWaitList(session_memory);
@@ -188,7 +188,7 @@ namespace sts::sf::hipc {
                     return ResultSuccess();
                 case hipc::ReceiveResult::NeedsRetry:
                     continue;
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
     }

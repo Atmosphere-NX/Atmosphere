@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/rnd.hpp>
 
-namespace sts::rnd {
+namespace ams::rnd {
 
     namespace {
 

@@ -22,7 +22,7 @@
 #include "../ncm/ncm_types.hpp"
 #include "../sf/sf_buffer_tags.hpp"
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     /* General types. */
     struct ProgramInfo : sf::LargeData {

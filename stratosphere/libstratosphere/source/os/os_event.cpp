@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "impl/os_waitable_object_list.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     Event::Event(bool a, bool s) : auto_clear(a), signaled(s) {
         new (GetPointer(this->waitable_object_list_storage)) impl::WaitableObjectList();

@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ro.hpp>
 
-namespace sts::ro::impl {
+namespace ams::ro::impl {
 
     /* Utilities for working with NROs. */
     Result MapNro(u64 *out_base_address, Handle process_handle, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size);

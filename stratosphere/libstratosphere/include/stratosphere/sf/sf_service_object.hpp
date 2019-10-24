@@ -18,7 +18,7 @@
 #include "sf_common.hpp"
 #include "sf_out.hpp"
 
-namespace sts::sf {
+namespace ams::sf {
 
     class IServiceObject{};
 
@@ -35,7 +35,7 @@ namespace sts::sf {
 
     template<typename T>
     struct ServiceObjectTraits {
-        static_assert(std::is_base_of<sts::sf::IServiceObject, T>::value, "ServiceObjectTraits requires ServiceObject");
+        static_assert(std::is_base_of<ams::sf::IServiceObject, T>::value, "ServiceObjectTraits requires ServiceObject");
 
         static constexpr bool IsMitmServiceObject = std::is_base_of<IMitmServiceObject, T>::value;
 

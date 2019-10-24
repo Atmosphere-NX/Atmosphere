@@ -20,15 +20,15 @@
 namespace std {
 
     template<>
-    struct hash<sts::dmnt::TargetIOFileHandle> {
-        u64 operator()(sts::dmnt::TargetIOFileHandle const &handle) const noexcept {
+    struct hash<ams::dmnt::TargetIOFileHandle> {
+        u64 operator()(ams::dmnt::TargetIOFileHandle const &handle) const noexcept {
             return handle.GetValue();
         }
     };
 
 }
 
-namespace sts::dmnt {
+namespace ams::dmnt {
 
     namespace {
 

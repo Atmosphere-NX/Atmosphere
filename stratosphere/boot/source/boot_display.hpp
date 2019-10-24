@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::boot {
+namespace ams::boot {
 
     /* Splash Screen/Display utilities. */
     void InitializeDisplay();

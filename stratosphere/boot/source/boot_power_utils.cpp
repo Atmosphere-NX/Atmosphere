@@ -21,7 +21,7 @@
 #include "boot_power_utils.hpp"
 #include "fusee-primary_bin.h"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 
@@ -41,7 +41,7 @@ namespace sts::boot {
 
             /* Overwrite all of IRAM with FFs. */
             for (size_t ofs = 0; ofs < IramSize; ofs += sizeof(g_work_page)) {
-                ams::CopyToIram(IramBase + ofs, g_work_page, sizeof(g_work_page));
+                exosphere::CopyToIram(IramBase + ofs, g_work_page, sizeof(g_work_page));
             }
         }
 
@@ -52,7 +52,7 @@ namespace sts::boot {
             /* Copy in payload. */
             for (size_t ofs = 0; ofs < fusee_primary_bin_size; ofs += 0x1000) {
                 std::memcpy(g_work_page, &fusee_primary_bin[ofs], std::min(static_cast<size_t>(fusee_primary_bin_size - ofs), size_t(0x1000)));
-                ams::CopyToIram(IramPayloadBase + ofs, g_work_page, 0x1000);
+                exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, 0x1000);
             }
 
 
@@ -60,10 +60,10 @@ namespace sts::boot {
             if (ctx != nullptr) {
                 std::memset(g_work_page, 0xCC, sizeof(g_work_page));
                 std::memcpy(g_work_page, ctx, sizeof(*ctx));
-                ams::CopyToIram(IramPayloadBase + IramPayloadMaxSize, g_work_page, sizeof(g_work_page));
+                exosphere::CopyToIram(IramPayloadBase + IramPayloadMaxSize, g_work_page, sizeof(g_work_page));
             }
 
-            ams::ForceRebootToIramPayload();
+            exosphere::ForceRebootToIramPayload();
         }
 
     }

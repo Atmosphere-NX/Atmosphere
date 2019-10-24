@@ -18,7 +18,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/map.hpp>
 
-namespace sts::map {
+namespace ams::map {
 
     namespace {
 
@@ -106,7 +106,7 @@ namespace sts::map {
             R_TRY(GetProcessAddressSpaceInfo(&address_space, process_handle));
 
             if (size > address_space.aslr_size) {
-                return ro::ResultInsufficientAddressSpace();
+                return ro::ResultOutOfAddressSpace();
             }
 
             uintptr_t try_address;
@@ -129,7 +129,7 @@ namespace sts::map {
                 return ResultSuccess();
             }
 
-            return ro::ResultInsufficientAddressSpace();;
+            return ro::ResultOutOfAddressSpace();
         }
 
         Result MapCodeMemoryInProcessModern(MappedCodeMemory &out_mcm, Handle process_handle, uintptr_t base_address, size_t size) {
@@ -137,7 +137,7 @@ namespace sts::map {
             R_TRY(GetProcessAddressSpaceInfo(&address_space, process_handle));
 
             if (size > address_space.aslr_size) {
-                return ro::ResultInsufficientAddressSpace();;
+                return ro::ResultOutOfAddressSpace();
             }
 
             uintptr_t try_address;
@@ -169,7 +169,7 @@ namespace sts::map {
                 return ResultSuccess();
             }
 
-            return ro::ResultInsufficientAddressSpace();;
+            return ro::ResultOutOfAddressSpace();
         }
 
     }

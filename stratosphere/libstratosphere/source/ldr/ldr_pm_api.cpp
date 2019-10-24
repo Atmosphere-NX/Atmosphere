@@ -21,7 +21,7 @@
 
 #include "ldr_ams.h"
 
-namespace sts::ldr::pm {
+namespace ams::ldr::pm {
 
     /* Information API. */
     Result CreateProcess(Handle *out, PinId pin_id, u32 flags, Handle reslimit) {

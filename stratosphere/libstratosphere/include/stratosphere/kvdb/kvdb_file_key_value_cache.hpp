@@ -19,7 +19,7 @@
 #include "kvdb_bounded_string.hpp"
 #include "kvdb_file_key_value_store.hpp"
 
-namespace sts::kvdb {
+namespace ams::kvdb {
 
     namespace impl {
 
@@ -60,7 +60,7 @@ namespace sts::kvdb {
                 }
             private:
                 void RemoveIndex(size_t i) {
-                    STS_ASSERT(i < this->GetCount());
+                    AMS_ASSERT(i < this->GetCount());
                     std::memmove(this->keys + i, this->keys + i + 1, sizeof(*this->keys) * (this->GetCount() - (i + 1)));
                     this->DecrementCount();
                 }
@@ -77,7 +77,7 @@ namespace sts::kvdb {
 
                 Result Initialize(const char *path, void *buf, size_t size) {
                     /* Only initialize once, and ensure we have sufficient memory. */
-                    STS_ASSERT(this->keys == nullptr);
+                    AMS_ASSERT(this->keys == nullptr);
                     SSS_ASSERT(size >= BufferSize);
 
                     /* Setup member variables. */
@@ -145,23 +145,23 @@ namespace sts::kvdb {
                 }
 
                 Key Get(size_t i) const {
-                    STS_ASSERT(i < this->GetCount());
+                    AMS_ASSERT(i < this->GetCount());
                     return this->keys[i];
                 }
 
                 Key Peek() const {
-                    STS_ASSERT(!this->IsEmpty());
+                    AMS_ASSERT(!this->IsEmpty());
                     return this->Get(0);
                 }
 
                 void Push(const Key &key) {
-                    STS_ASSERT(!this->IsFull());
+                    AMS_ASSERT(!this->IsFull());
                     this->keys[this->GetCount()] = key;
                     this->IncrementCount();
                 }
 
                 Key Pop() {
-                    STS_ASSERT(!this->IsEmpty());
+                    AMS_ASSERT(!this->IsEmpty());
                     this->RemoveIndex(0);
                 }
 

@@ -22,7 +22,7 @@
 
 #include "sm_ams.h"
 
-namespace sts::sm::impl {
+namespace ams::sm::impl {
 
     /* Utilities. */
     os::RecursiveMutex &GetUserSessionMutex();

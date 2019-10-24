@@ -18,7 +18,7 @@
 #include "sf_hipc_server_session_manager.hpp"
 #include "../cmif/sf_cmif_domain_manager.hpp"
 
-namespace sts::sf::hipc {
+namespace ams::sf::hipc {
 
     class ServerDomainSessionManager : public ServerSessionManager, private cmif::ServerDomainManager {
         protected:

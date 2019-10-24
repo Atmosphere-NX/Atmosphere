@@ -18,7 +18,7 @@
 
 #include "gpio_utils.hpp"
 
-namespace sts::gpio {
+namespace ams::gpio {
 
     namespace {
 
@@ -33,7 +33,7 @@ namespace sts::gpio {
 
         /* Helpers. */
         inline u32 GetPadDescriptor(u32 gpio_pad_name) {
-            STS_ASSERT(gpio_pad_name < PadNameMax);
+            AMS_ASSERT(gpio_pad_name < PadNameMax);
             return Map[gpio_pad_name];
         }
 

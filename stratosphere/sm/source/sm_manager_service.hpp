@@ -20,7 +20,7 @@
 #include <stratosphere/sm.hpp>
 #include <stratosphere/ncm.hpp>
 
-namespace sts::sm {
+namespace ams::sm {
 
     /* Service definition. */
     class ManagerService final : public sf::IServiceObject {

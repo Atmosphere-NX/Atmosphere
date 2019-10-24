@@ -20,7 +20,7 @@
 
 #include "boot_i2c_utils.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     class RtcDriver {
         private:

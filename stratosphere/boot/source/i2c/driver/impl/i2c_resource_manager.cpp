@@ -20,7 +20,7 @@
 #include "i2c_pcv.hpp"
 #include "i2c_resource_manager.hpp"
 
-namespace sts::i2c::driver::impl {
+namespace ams::i2c::driver::impl {
 
     void ResourceManager::Initialize() {
         std::scoped_lock lk(this->initialize_mutex);
@@ -29,7 +29,7 @@ namespace sts::i2c::driver::impl {
 
     void ResourceManager::Finalize() {
         std::scoped_lock lk(this->initialize_mutex);
-        STS_ASSERT(this->ref_cnt > 0);
+        AMS_ASSERT(this->ref_cnt > 0);
         this->ref_cnt--;
         if (this->ref_cnt > 0) {
             return;
@@ -59,11 +59,11 @@ namespace sts::i2c::driver::impl {
         /* Get, open session. */
         {
             std::scoped_lock lk(this->session_open_mutex);
-            STS_ASSERT(out_session != nullptr);
-            STS_ASSERT(bus < Bus::Count);
+            AMS_ASSERT(out_session != nullptr);
+            AMS_ASSERT(bus < Bus::Count);
 
             session_id = GetFreeSessionId();
-            STS_ASSERT(session_id != InvalidSessionId);
+            AMS_ASSERT(session_id != InvalidSessionId);
 
 
             if ((bus == Bus::I2C2 || bus == Bus::I2C3) && (this->bus_accessors[ConvertToIndex(Bus::I2C2)].GetOpenSessions() == 0 && this->bus_accessors[ConvertToIndex(Bus::I2C3)].GetOpenSessions() == 0)) {
@@ -90,7 +90,7 @@ namespace sts::i2c::driver::impl {
         /* Get, open session. */
         {
             std::scoped_lock lk(this->session_open_mutex);
-            STS_ASSERT(this->sessions[session.session_id].IsOpen());
+            AMS_ASSERT(this->sessions[session.session_id].IsOpen());
 
             this->sessions[session.session_id].Close();
 
@@ -109,7 +109,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void ResourceManager::SuspendBuses() {
-        STS_ASSERT(this->ref_cnt > 0);
+        AMS_ASSERT(this->ref_cnt > 0);
 
         if (!this->suspended) {
             {
@@ -128,7 +128,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void ResourceManager::ResumeBuses() {
-        STS_ASSERT(this->ref_cnt > 0);
+        AMS_ASSERT(this->ref_cnt > 0);
 
         if (this->suspended) {
             if (this->bus_accessors[ConvertToIndex(Bus::I2C2)].GetOpenSessions() > 0 || this->bus_accessors[ConvertToIndex(Bus::I2C3)].GetOpenSessions() > 0) {
@@ -151,7 +151,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void ResourceManager::SuspendPowerBus() {
-        STS_ASSERT(this->ref_cnt > 0);
+        AMS_ASSERT(this->ref_cnt > 0);
         std::scoped_lock lk(this->session_open_mutex);
 
         if (!this->power_bus_suspended) {
@@ -163,7 +163,7 @@ namespace sts::i2c::driver::impl {
     }
 
     void ResourceManager::ResumePowerBus() {
-        STS_ASSERT(this->ref_cnt > 0);
+        AMS_ASSERT(this->ref_cnt > 0);
         std::scoped_lock lk(this->session_open_mutex);
 
         if (this->power_bus_suspended) {

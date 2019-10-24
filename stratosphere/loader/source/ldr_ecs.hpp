@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/ldr.hpp>
 
-namespace sts::ldr::ecs {
+namespace ams::ldr::ecs {
 
     /* External Content Source API. */
     const char *Get(ncm::TitleId title_id);

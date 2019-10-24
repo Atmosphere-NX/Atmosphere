@@ -20,7 +20,7 @@
 #include "i2c_api.hpp"
 #include "impl/i2c_resource_manager.hpp"
 
-namespace sts::i2c::driver {
+namespace ams::i2c::driver {
 
     namespace {
 
@@ -70,7 +70,7 @@ namespace sts::i2c::driver {
                         svcSleepThread(us * 1'000ul);
                     }
                     break;
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
             return ResultSuccess();
         }
@@ -87,7 +87,7 @@ namespace sts::i2c::driver {
         }
 
         inline void CheckInitialized() {
-            STS_ASSERT(GetResourceManager().IsInitialized());
+            AMS_ASSERT(GetResourceManager().IsInitialized());
         }
 
     }
@@ -104,7 +104,7 @@ namespace sts::i2c::driver {
     /* Session management. */
     void OpenSession(Session *out_session, I2cDevice device) {
         CheckInitialized();
-        STS_ASSERT(impl::IsDeviceSupported(device));
+        AMS_ASSERT(impl::IsDeviceSupported(device));
 
         const auto bus = impl::GetDeviceBus(device);
         const auto slave_address = impl::GetDeviceSlaveAddress(device);
@@ -123,8 +123,8 @@ namespace sts::i2c::driver {
     /* Communication. */
     Result Send(Session &session, const void *src, size_t size, I2cTransactionOption option) {
         CheckInitialized();
-        STS_ASSERT(src != nullptr);
-        STS_ASSERT(size > 0);
+        AMS_ASSERT(src != nullptr);
+        AMS_ASSERT(size > 0);
 
         std::scoped_lock<os::Mutex &> lk(GetResourceManager().GetTransactionMutex(impl::ConvertFromIndex(session.bus_idx)));
         return GetResourceManager().GetSession(session.session_id).DoTransactionWithRetry(nullptr, src, size, option, impl::Command::Send);
@@ -132,8 +132,8 @@ namespace sts::i2c::driver {
 
     Result Receive(Session &session, void *dst, size_t size, I2cTransactionOption option) {
         CheckInitialized();
-        STS_ASSERT(dst != nullptr);
-        STS_ASSERT(size > 0);
+        AMS_ASSERT(dst != nullptr);
+        AMS_ASSERT(size > 0);
 
         std::scoped_lock<os::Mutex &> lk(GetResourceManager().GetTransactionMutex(impl::ConvertFromIndex(session.bus_idx)));
         return GetResourceManager().GetSession(session.session_id).DoTransactionWithRetry(dst, nullptr, size, option, impl::Command::Receive);
@@ -141,8 +141,8 @@ namespace sts::i2c::driver {
 
     Result ExecuteCommandList(Session &session, void *dst, size_t size, const void *cmd_list, size_t cmd_list_size) {
         CheckInitialized();
-        STS_ASSERT(dst != nullptr && size > 0);
-        STS_ASSERT(cmd_list != nullptr && cmd_list_size > 0);
+        AMS_ASSERT(dst != nullptr && size > 0);
+        AMS_ASSERT(cmd_list != nullptr && cmd_list_size > 0);
 
         u8 *cur_dst = static_cast<u8 *>(dst);
         const u8 *cur_cmd = static_cast<const u8 *>(cmd_list);
@@ -150,7 +150,7 @@ namespace sts::i2c::driver {
 
         while (cur_cmd < cmd_list_end) {
             Command cmd = static_cast<Command>((*cur_cmd) & 3);
-            STS_ASSERT(cmd < Command::Count);
+            AMS_ASSERT(cmd < Command::Count);
 
             R_TRY(g_cmd_handlers[static_cast<size_t>(cmd)](&cur_cmd, &cur_dst, session));
         }

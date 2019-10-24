@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::boot2 {
+namespace ams::boot2 {
 
     /* Boot2 API. */
 

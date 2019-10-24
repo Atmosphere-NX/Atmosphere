@@ -36,10 +36,10 @@
 
 #include "../debug.hpp"
 
-static sts::os::Mutex g_StorageCacheLock;
+static ams::os::Mutex g_StorageCacheLock;
 static std::unordered_map<u64, std::weak_ptr<IStorageInterface>> g_StorageCache;
 
-static bool StorageCacheGetEntry(sts::ncm::TitleId title_id, std::shared_ptr<IStorageInterface> *out) {
+static bool StorageCacheGetEntry(ams::ncm::TitleId title_id, std::shared_ptr<IStorageInterface> *out) {
     std::scoped_lock lock(g_StorageCacheLock);
     if (g_StorageCache.find(static_cast<u64>(title_id)) == g_StorageCache.end()) {
         return false;
@@ -53,7 +53,7 @@ static bool StorageCacheGetEntry(sts::ncm::TitleId title_id, std::shared_ptr<ISt
     return false;
 }
 
-static void StorageCacheSetEntry(sts::ncm::TitleId title_id, std::shared_ptr<IStorageInterface> *ptr) {
+static void StorageCacheSetEntry(ams::ncm::TitleId title_id, std::shared_ptr<IStorageInterface> *ptr) {
     std::scoped_lock lock(g_StorageCacheLock);
 
     /* Ensure we always use the cached copy if present. */
@@ -145,7 +145,7 @@ Result FsMitmService::OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterf
 
 Result FsMitmService::OpenSdCardFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out_fs) {
     /* We only care about redirecting this for NS/Emummc. */
-    if (this->title_id != sts::ncm::TitleId::Ns) {
+    if (this->title_id != ams::ncm::TitleId::Ns) {
         return ResultAtmosphereMitmShouldForwardToSession;
     }
     if (!IsEmummc()) {
@@ -234,7 +234,7 @@ Result FsMitmService::OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out
     FsStorage bis_storage;
     R_TRY(fsOpenBisStorageFwd(this->forward_service.get(), &bis_storage, bis_partition_id));
 
-    const bool is_sysmodule = sts::ncm::IsSystemTitleId(this->title_id);
+    const bool is_sysmodule = ams::ncm::IsSystemTitleId(this->title_id);
     const bool has_bis_write_flag = Utils::HasFlag(static_cast<u64>(this->title_id), "bis_write");
     const bool has_cal0_read_flag = Utils::HasFlag(static_cast<u64>(this->title_id), "cal_read");
 
@@ -345,7 +345,7 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
     /* Try to get from the cache. */
     {
         std::shared_ptr<IStorageInterface> cached_storage = nullptr;
-        bool has_cache = StorageCacheGetEntry(sts::ncm::TitleId{data_id}, &cached_storage);
+        bool has_cache = StorageCacheGetEntry(ams::ncm::TitleId{data_id}, &cached_storage);
 
         if (has_cache) {
             if (out_storage.IsDomain()) {
@@ -374,7 +374,7 @@ Result FsMitmService::OpenDataStorageByDataId(Out<std::shared_ptr<IStorageInterf
             storage_to_cache = std::make_shared<IStorageInterface>(new LayeredRomFS(std::make_shared<ReadOnlyStorageAdapter>(new ProxyStorage(data_storage)), nullptr, data_id));
         }
 
-        StorageCacheSetEntry(sts::ncm::TitleId{data_id}, &storage_to_cache);
+        StorageCacheSetEntry(ams::ncm::TitleId{data_id}, &storage_to_cache);
 
         out_storage.SetValue(std::move(storage_to_cache));
         if (out_storage.IsDomain()) {

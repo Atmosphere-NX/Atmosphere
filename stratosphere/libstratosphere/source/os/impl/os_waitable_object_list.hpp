@@ -17,7 +17,7 @@
 #include "os_waitable_holder_base.hpp"
 #include "os_waitable_manager_impl.hpp"
 
-namespace sts::os::impl {
+namespace ams::os::impl {
 
     class WaitableObjectList {
         public:

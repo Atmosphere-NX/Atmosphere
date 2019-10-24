@@ -17,7 +17,7 @@
 #pragma once
 #include "results_common.hpp"
 
-namespace sts::i2c {
+namespace ams::i2c {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(101);
 

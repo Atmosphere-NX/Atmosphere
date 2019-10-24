@@ -32,7 +32,7 @@ Result FsDirUtils::CopyFile(IFileSystem *dst_fs, IFileSystem *src_fs, const FsPa
     {
         FsPath dst_path;
         /* TODO: Error code? N aborts here. */
-        STS_ASSERT(static_cast<size_t>(snprintf(dst_path.str, sizeof(dst_path.str), "%s%s", dst_parent_path.str, dir_ent->name)) < sizeof(dst_path));
+        AMS_ASSERT(static_cast<size_t>(snprintf(dst_path.str, sizeof(dst_path.str), "%s%s", dst_parent_path.str, dir_ent->name)) < sizeof(dst_path));
 
         R_TRY(dst_fs->CreateFile(dst_path, file_size));
         R_TRY(dst_fs->OpenFile(dst_file, dst_path, OpenMode_Write));

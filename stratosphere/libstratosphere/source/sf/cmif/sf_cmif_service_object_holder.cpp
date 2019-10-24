@@ -16,7 +16,7 @@
 #include <functional>
 #include <stratosphere.hpp>
 
-namespace sts::sf::cmif {
+namespace ams::sf::cmif {
 
     Result ServiceObjectHolder::ProcessMessage(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const {
         const auto ProcessHandler = this->dispatch_meta->ProcessHandler;

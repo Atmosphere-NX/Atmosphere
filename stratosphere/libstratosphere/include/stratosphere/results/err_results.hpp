@@ -17,7 +17,7 @@
 #pragma once
 #include "results_common.hpp"
 
-namespace sts::err {
+namespace ams::err {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(162);
 

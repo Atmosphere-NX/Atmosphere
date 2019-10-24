@@ -16,7 +16,7 @@
 
 #pragma once
 
-namespace sts::hid {
+namespace ams::hid {
 
     /* Key API. */
     Result GetKeysHeld(u64 *out);

@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "impl/os_waitable_holder_impl.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     SystemEvent::SystemEvent(bool inter_process, bool autoclear) : state(SystemEventState::Uninitialized) {
         if (inter_process) {
@@ -35,34 +35,34 @@ namespace sts::os {
     }
 
     Event &SystemEvent::GetEvent() {
-        STS_ASSERT(this->state == SystemEventState::Event);
+        AMS_ASSERT(this->state == SystemEventState::Event);
         return GetReference(this->storage_for_event);
     }
 
     const Event &SystemEvent::GetEvent() const {
-        STS_ASSERT(this->state == SystemEventState::Event);
+        AMS_ASSERT(this->state == SystemEventState::Event);
         return GetReference(this->storage_for_event);
     }
 
     impl::InterProcessEvent &SystemEvent::GetInterProcessEvent() {
-        STS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
         return GetReference(this->storage_for_inter_process_event);
     }
 
     const impl::InterProcessEvent &SystemEvent::GetInterProcessEvent() const {
-        STS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
         return GetReference(this->storage_for_inter_process_event);
     }
 
     Result SystemEvent::InitializeAsEvent(bool autoclear) {
-        STS_ASSERT(this->state == SystemEventState::Uninitialized);
+        AMS_ASSERT(this->state == SystemEventState::Uninitialized);
         new (GetPointer(this->storage_for_event)) Event(autoclear);
         this->state = SystemEventState::Event;
         return ResultSuccess();
     }
 
     Result SystemEvent::InitializeAsInterProcessEvent(bool autoclear) {
-        STS_ASSERT(this->state == SystemEventState::Uninitialized);
+        AMS_ASSERT(this->state == SystemEventState::Uninitialized);
         new (GetPointer(this->storage_for_inter_process_event)) impl::InterProcessEvent();
         this->state = SystemEventState::InterProcessEvent;
 
@@ -77,7 +77,7 @@ namespace sts::os {
     }
 
     void SystemEvent::AttachHandles(Handle read_handle, bool manage_read_handle, Handle write_handle, bool manage_write_handle, bool autoclear) {
-        STS_ASSERT(this->state == SystemEventState::Uninitialized);
+        AMS_ASSERT(this->state == SystemEventState::Uninitialized);
         new (GetPointer(this->storage_for_inter_process_event)) impl::InterProcessEvent();
         this->state = SystemEventState::InterProcessEvent;
         this->GetInterProcessEvent().Initialize(read_handle, manage_read_handle, write_handle, manage_write_handle, autoclear);
@@ -92,22 +92,22 @@ namespace sts::os {
     }
 
     Handle SystemEvent::DetachReadableHandle() {
-        STS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
         return this->GetInterProcessEvent().DetachReadableHandle();
     }
 
     Handle SystemEvent::DetachWritableHandle() {
-        STS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
         return this->GetInterProcessEvent().DetachWritableHandle();
     }
 
     Handle SystemEvent::GetReadableHandle() const {
-        STS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
         return this->GetInterProcessEvent().GetReadableHandle();
     }
 
     Handle SystemEvent::GetWritableHandle() const {
-        STS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
         return this->GetInterProcessEvent().GetWritableHandle();
     }
 
@@ -121,7 +121,7 @@ namespace sts::os {
             case SystemEventState::InterProcessEvent:
                 this->GetInterProcessEvent().~InterProcessEvent();
                 break;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
         this->state = SystemEventState::Uninitialized;
     }
@@ -135,7 +135,7 @@ namespace sts::os {
                 this->GetInterProcessEvent().Signal();
                 break;
             case SystemEventState::Uninitialized:
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
@@ -148,7 +148,7 @@ namespace sts::os {
                 this->GetInterProcessEvent().Reset();
                 break;
             case SystemEventState::Uninitialized:
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
     void SystemEvent::Wait() {
@@ -160,7 +160,7 @@ namespace sts::os {
                 this->GetInterProcessEvent().Wait();
                 break;
             case SystemEventState::Uninitialized:
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
@@ -171,7 +171,7 @@ namespace sts::os {
             case SystemEventState::InterProcessEvent:
                 return this->GetInterProcessEvent().TryWait();
             case SystemEventState::Uninitialized:
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
@@ -182,7 +182,7 @@ namespace sts::os {
             case SystemEventState::InterProcessEvent:
                 return this->GetInterProcessEvent().TimedWait(ns);
             case SystemEventState::Uninitialized:
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 }

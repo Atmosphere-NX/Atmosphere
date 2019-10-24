@@ -20,7 +20,7 @@
 
 #include "../spl_types.hpp"
 
-namespace sts::spl::smc {
+namespace ams::spl::smc {
 
     /* Helpers for converting arguments. */
     inline u32 GetCryptAesMode(CipherMode mode, u32 keyslot) {

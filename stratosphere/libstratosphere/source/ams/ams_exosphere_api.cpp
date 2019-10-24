@@ -18,12 +18,12 @@
 #include <stratosphere/spl.hpp>
 #include <stratosphere/spl/smc/spl_smc.hpp>
 
-namespace sts::ams {
+namespace ams::exosphere {
 
     ApiInfo GetApiInfo() {
         u64 exosphere_cfg;
         if (spl::smc::GetConfig(&exosphere_cfg, 1, SplConfigItem_ExosphereApiVersion) != spl::smc::Result::Success) {
-            R_ASSERT(ResultExosphereNotPresent());
+            R_ASSERT(ResultNotPresent());
         }
 
         return ApiInfo{

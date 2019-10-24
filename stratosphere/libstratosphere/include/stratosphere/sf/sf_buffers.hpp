@@ -20,7 +20,7 @@
 #include "cmif/sf_cmif_pointer_and_size.hpp"
 #include "sf_buffer_tags.hpp"
 
-namespace sts::sf {
+namespace ams::sf {
 
     enum class BufferTransferMode {
         MapAlias,

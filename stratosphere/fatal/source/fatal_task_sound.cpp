@@ -16,7 +16,7 @@
 
 #include "fatal_task_sound.hpp"
 
-namespace sts::fatal::srv {
+namespace ams::fatal::srv {
 
     namespace {
 

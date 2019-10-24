@@ -19,7 +19,7 @@
 #include <stratosphere/sm.hpp>
 #include <stratosphere/ncm.hpp>
 
-namespace sts::sm::impl {
+namespace ams::sm::impl {
 
     /* Process management. */
     Result RegisterProcess(os::ProcessId pid, ncm::TitleId tid, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);

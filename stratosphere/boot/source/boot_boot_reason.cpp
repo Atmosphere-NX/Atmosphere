@@ -20,7 +20,7 @@
 #include "boot_pmic_driver.hpp"
 #include "boot_rtc_driver.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     namespace {
 
@@ -104,7 +104,7 @@ namespace sts::boot {
     }
 
     u32 GetBootReason() {
-        STS_ASSERT(g_detected_boot_reason);
+        AMS_ASSERT(g_detected_boot_reason);
         return g_boot_reason;
     }
 

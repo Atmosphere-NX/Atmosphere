@@ -44,15 +44,15 @@ class FsMitmService : public IMitmServiceObject {
         bool has_initialized = false;
         bool should_override_contents;
     public:
-        FsMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
+        FsMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             if (Utils::HasSdDisableMitMFlag(static_cast<u64>(this->title_id))) {
                 this->should_override_contents = false;
             } else {
-                this->should_override_contents = (this->title_id >= sts::ncm::TitleId::ApplicationStart || Utils::HasSdMitMFlag(static_cast<u64>(this->title_id))) && Utils::HasOverrideButton(static_cast<u64>(this->title_id));
+                this->should_override_contents = (this->title_id >= ams::ncm::TitleId::ApplicationStart || Utils::HasSdMitMFlag(static_cast<u64>(this->title_id))) && Utils::HasOverrideButton(static_cast<u64>(this->title_id));
             }
         }
 
-        static bool ShouldMitm(u64 pid, sts::ncm::TitleId tid) {
+        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
             /* Don't Mitm KIPs */
             if (pid < 0x50) {
                 return false;
@@ -62,11 +62,11 @@ class FsMitmService : public IMitmServiceObject {
 
             /* TODO: intercepting everything seems to cause issues with sleep mode, for some reason. */
             /* Figure out why, and address it. */
-            if (tid == sts::ncm::TitleId::AppletQlaunch || tid == sts::ncm::TitleId::AppletMaintenanceMenu) {
+            if (tid == ams::ncm::TitleId::AppletQlaunch || tid == ams::ncm::TitleId::AppletMaintenanceMenu) {
                 has_launched_qlaunch = true;
             }
 
-            return has_launched_qlaunch || tid == sts::ncm::TitleId::Ns || tid >= sts::ncm::TitleId::ApplicationStart || Utils::HasSdMitMFlag(static_cast<u64>(tid));
+            return has_launched_qlaunch || tid == ams::ncm::TitleId::Ns || tid >= ams::ncm::TitleId::ApplicationStart || Utils::HasSdMitMFlag(static_cast<u64>(tid));
         }
 
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);

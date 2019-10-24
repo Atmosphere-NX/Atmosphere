@@ -17,7 +17,7 @@
 #pragma once
 #include "results_common.hpp"
 
-namespace sts::sf::hipc {
+namespace ams::sf::hipc {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(11);
 

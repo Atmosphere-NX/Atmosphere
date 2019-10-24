@@ -20,7 +20,7 @@
 #include "dmnt_cheat_debug_events_manager.hpp"
 #include <stratosphere/map.hpp>
 
-namespace sts::dmnt::cheat::impl {
+namespace ams::dmnt::cheat::impl {
 
     namespace {
 

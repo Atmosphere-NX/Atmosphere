@@ -16,7 +16,7 @@
 
 #include "dmnt_service.hpp"
 
-namespace sts::dmnt {
+namespace ams::dmnt {
 
     Result DebugMonitorService::BreakDebugProcess(Handle debug_hnd) {
         /* Nintendo discards the output of this command, but we will return it. */

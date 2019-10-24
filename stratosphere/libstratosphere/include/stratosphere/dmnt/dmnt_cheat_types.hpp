@@ -20,7 +20,7 @@
 #include "../ncm/ncm_types.hpp"
 #include "../sf/sf_buffer_tags.hpp"
 
-namespace sts::dmnt::cheat {
+namespace ams::dmnt::cheat {
 
     struct CheatProcessMetadata {
         struct MemoryRegionExtents {

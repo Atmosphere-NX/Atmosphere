@@ -27,7 +27,7 @@
 #include "ns_mitm/nsmitm_main.hpp"
 #include "hid_mitm/hidmitm_main.hpp"
 
-static sts::os::Thread g_module_threads[MitmModuleId_Count];
+static ams::os::Thread g_module_threads[MitmModuleId_Count];
 
 static const struct {
     ThreadFunc main;

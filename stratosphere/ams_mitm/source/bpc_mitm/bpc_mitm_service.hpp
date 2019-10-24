@@ -27,17 +27,17 @@ class BpcMitmService : public IMitmServiceObject {
             RebootSystem   = 1,
         };
     public:
-        BpcMitmService(std::shared_ptr<Service> s, u64 pid, sts::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
+        BpcMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
             /* ... */
         }
 
-        static bool ShouldMitm(u64 pid, sts::ncm::TitleId tid) {
+        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
             /* We will mitm:
              * - am, to intercept the Reboot/Power buttons in the overlay menu.
              * - fatal, to simplify payload reboot logic significantly
              * - applications, to allow homebrew to take advantage of the feature.
              */
-            return tid == sts::ncm::TitleId::Am || tid == sts::ncm::TitleId::Fatal || sts::ncm::IsApplicationTitleId(tid) || Utils::IsHblTid(static_cast<u64>(tid));
+            return tid == ams::ncm::TitleId::Am || tid == ams::ncm::TitleId::Fatal || ams::ncm::IsApplicationTitleId(tid) || Utils::IsHblTid(static_cast<u64>(tid));
         }
 
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);

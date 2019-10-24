@@ -31,7 +31,7 @@
 static FsFileSystem g_sd_filesystem = {0};
 
 /* Non-autoclear events for SD/HID init. */
-static sts::os::Event g_sd_event(false), g_hid_event(false);
+static ams::os::Event g_sd_event(false), g_hid_event(false);
 
 static std::vector<u64> g_mitm_flagged_tids;
 static std::vector<u64> g_disable_mitm_flagged_tids;
@@ -55,7 +55,7 @@ static HblOverrideConfig g_hbl_override_config = {
         .key_combination = KEY_R,
         .override_by_default = false
     },
-    .title_id = static_cast<u64>(sts::ncm::TitleId::AppletPhotoViewer),
+    .title_id = static_cast<u64>(ams::ncm::TitleId::AppletPhotoViewer),
     .override_any_app = true
 };
 
@@ -88,7 +88,7 @@ void Utils::InitializeThreadFunc(void *args) {
     DoWithSmSession([&]() {
         Handle tmp_hnd = 0;
         static const char * const required_active_services[] = {"pcv", "gpio", "pinmux", "psc:m"};
-        for (unsigned int i = 0; i < sts::util::size(required_active_services); i++) {
+        for (unsigned int i = 0; i < ams::util::size(required_active_services); i++) {
             R_ASSERT(smGetServiceOriginal(&tmp_hnd, smEncodeName(required_active_services[i])));
             svcCloseHandle(tmp_hnd);
         }
@@ -186,7 +186,7 @@ void Utils::InitializeThreadFunc(void *args) {
                         0x34, 0xC1, 0xA0, 0xC4, 0x82, 0x58, 0xF8, 0xB4, 0xFA, 0x9E, 0x5E, 0x6A, 0xDA, 0xFC, 0x7E, 0x4F,
                     };
 
-                    const u32 option = (partition == 3 && sts::spl::IsRecoveryBoot()) ? 0x4 : 0x1;
+                    const u32 option = (partition == 3 && ams::spl::IsRecoveryBoot()) ? 0x4 : 0x1;
 
                     u8 access_key[0x10];
                     R_ASSERT(splCryptoGenerateAesKek(BisKekSource, key_generation, option, access_key));
@@ -455,13 +455,13 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
 }
 
 bool Utils::IsHblTid(u64 _tid) {
-    const sts::ncm::TitleId tid{_tid};
-    return (g_hbl_override_config.override_any_app && sts::ncm::IsApplicationTitleId(tid)) || (_tid == g_hbl_override_config.title_id);
+    const ams::ncm::TitleId tid{_tid};
+    return (g_hbl_override_config.override_any_app && ams::ncm::IsApplicationTitleId(tid)) || (_tid == g_hbl_override_config.title_id);
 }
 
 bool Utils::IsWebAppletTid(u64 _tid) {
-    const sts::ncm::TitleId tid{_tid};
-    return tid == sts::ncm::TitleId::AppletWeb || tid == sts::ncm::TitleId::AppletOfflineWeb || tid == sts::ncm::TitleId::AppletLoginShare || tid == sts::ncm::TitleId::AppletWifiWebAuth;
+    const ams::ncm::TitleId tid{_tid};
+    return tid == ams::ncm::TitleId::AppletWeb || tid == ams::ncm::TitleId::AppletOfflineWeb || tid == ams::ncm::TitleId::AppletLoginShare || tid == ams::ncm::TitleId::AppletWifiWebAuth;
 }
 
 bool Utils::HasTitleFlag(u64 tid, const char *flag) {
@@ -550,7 +550,7 @@ static bool HasOverrideKey(OverrideKey *cfg) {
 
 
 bool Utils::HasOverrideButton(u64 tid) {
-    if ((!sts::ncm::IsApplicationTitleId(sts::ncm::TitleId{tid})) || (!IsSdInitialized())) {
+    if ((!ams::ncm::IsApplicationTitleId(ams::ncm::TitleId{tid})) || (!IsSdInitialized())) {
         /* Disable button override disable for non-applications. */
         return true;
     }

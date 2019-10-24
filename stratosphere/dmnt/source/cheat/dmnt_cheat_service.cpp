@@ -18,7 +18,7 @@
 #include "dmnt_cheat_service.hpp"
 #include "impl/dmnt_cheat_api.hpp"
 
-namespace sts::dmnt::cheat {
+namespace ams::dmnt::cheat {
 
     /* ========================================================================================= */
     /* ====================================  Meta Commands  ==================================== */

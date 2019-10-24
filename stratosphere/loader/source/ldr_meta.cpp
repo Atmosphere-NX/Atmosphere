@@ -19,7 +19,7 @@
 #include "ldr_content_management.hpp"
 #include "ldr_meta.hpp"
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     namespace {
 

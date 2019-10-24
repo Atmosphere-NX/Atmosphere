@@ -20,7 +20,7 @@
 
 #include "i2c_types.hpp"
 
-namespace sts::i2c {
+namespace ams::i2c {
 
     enum class Command {
         Send = 0,
@@ -43,7 +43,7 @@ namespace sts::i2c {
             size_t cur_index = 0;
         public:
             CommandListFormatter(void *cmd_list, size_t cmd_list_size) : cmd_list(static_cast<u8 *>(cmd_list)), cmd_list_size(cmd_list_size) {
-                STS_ASSERT(cmd_list_size <= MaxCommandListSize);
+                AMS_ASSERT(cmd_list_size <= MaxCommandListSize);
             }
             ~CommandListFormatter() {
                 this->cmd_list = nullptr;

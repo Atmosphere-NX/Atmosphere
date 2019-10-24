@@ -23,7 +23,7 @@
 #include "ldr_loader_service.hpp"
 #include "ldr_ro_manager.hpp"
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     /* Official commands. */
     Result LoaderService::CreateProcess(sf::OutMoveHandle proc_h, PinId id, u32 flags, sf::CopyHandle reslimit_h) {

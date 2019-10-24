@@ -21,7 +21,7 @@
 
 #include "spl_rsa_service.hpp"
 
-namespace sts::spl {
+namespace ams::spl {
 
     class ManuService : public RsaService {
         public:

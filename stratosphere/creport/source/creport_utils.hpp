@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::creport {
+namespace ams::creport {
 
     /* Utility functions. */
     void DumpMemoryHexToFile(FILE *f, const char *prefix, const void *data, size_t size);

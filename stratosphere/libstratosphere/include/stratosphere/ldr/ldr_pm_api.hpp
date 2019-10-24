@@ -18,7 +18,7 @@
 
 #include "ldr_types.hpp"
 
-namespace sts::ldr::pm {
+namespace ams::ldr::pm {
 
     /* Process Manager API. */
     Result CreateProcess(Handle *out, PinId pin_id, u32 flags, Handle reslimit);

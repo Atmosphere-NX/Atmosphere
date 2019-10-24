@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/spl/spl_types.hpp>
 
-namespace sts::spl {
+namespace ams::spl {
 
     /* Nintendo implements CTR_DRBG for their csrng. We will do the same. */
     class CtrDrbg {

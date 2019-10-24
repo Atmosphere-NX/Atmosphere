@@ -20,7 +20,7 @@
 
 #include "i2c/driver/i2c_api.hpp"
 
-namespace sts::boot {
+namespace ams::boot {
 
     /* I2C Utilities. */
     Result ReadI2cRegister(i2c::driver::Session &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size);

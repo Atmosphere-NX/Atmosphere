@@ -28,7 +28,7 @@
 #include "../hipc/sf_hipc_server_session_manager.hpp"
 
 /* Serialization classes. */
-namespace sts::sf {
+namespace ams::sf {
 
     namespace impl {
 
@@ -99,7 +99,7 @@ namespace sts::sf {
 }
 
 
-namespace sts::sf::impl {
+namespace ams::sf::impl {
 
     /* Machinery for filtering type lists. */
     template<class, class>
@@ -167,7 +167,7 @@ namespace sts::sf::impl {
             return ArgumentType::OutData;
         } else if constexpr (std::is_trivial<T>::value && !std::is_pointer<T>::value) {
             return ArgumentType::InData;
-        } else if constexpr (std::is_same<T, ::sts::Result>::value) {
+        } else if constexpr (std::is_same<T, ::ams::Result>::value) {
             return ArgumentType::InData;
         } else {
             static_assert(!std::is_same<T, T>::value, "Invalid ArgumentType<T>");
@@ -1020,7 +1020,7 @@ namespace sts::sf::impl {
                         /* Fake buffer. This is either InData or OutData, but serializing over buffers. */
                         constexpr auto Attributes = CommandMeta::BufferAttributes[Info.buffer_index];
                         if constexpr (Attributes & SfBufferAttr_In) {
-                            /* TODO: STS_ASSERT()? N does not bother. */
+                            /* TODO: AMS_ASSERT()? N does not bother. */
                             return *reinterpret_cast<const T *>(buffers[Info.buffer_index].GetAddress());
                         } else if constexpr (Attributes & SfBufferAttr_Out) {
                             return T(buffers[Info.buffer_index]);
@@ -1139,7 +1139,7 @@ namespace sts::sf::impl {
 
 }
 
-namespace sts::sf {
+namespace ams::sf {
 
     template <auto CommandId, auto CommandImpl, hos::Version Low = hos::Version_Min, hos::Version High = hos::Version_Max>
     inline static constexpr cmif::ServiceCommandMeta MakeServiceCommandMeta() {
@@ -1147,10 +1147,10 @@ namespace sts::sf {
             .hosver_low = Low,
             .hosver_high = High,
             .cmd_id = static_cast<u32>(CommandId),
-            .handler = ::sts::sf::impl::InvokeServiceCommandImpl<CommandImpl>,
+            .handler = ::ams::sf::impl::InvokeServiceCommandImpl<CommandImpl>,
         };
     }
 
 }
 
-#define MAKE_SERVICE_COMMAND_META(Name, ...) ::sts::sf::MakeServiceCommandMeta<ServiceImpl::CommandId::Name, &ServiceImpl::Name, ##__VA_ARGS__>()
+#define MAKE_SERVICE_COMMAND_META(Name, ...) ::ams::sf::MakeServiceCommandMeta<ServiceImpl::CommandId::Name, &ServiceImpl::Name, ##__VA_ARGS__>()

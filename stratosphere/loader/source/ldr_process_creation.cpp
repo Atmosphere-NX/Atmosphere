@@ -28,7 +28,7 @@
 #include "ldr_process_creation.hpp"
 #include "ldr_ro_manager.hpp"
 
-namespace sts::ldr {
+namespace ams::ldr {
 
     namespace {
 
@@ -56,7 +56,7 @@ namespace sts::ldr {
         };
 
         constexpr const char *GetNsoName(size_t idx) {
-            STS_ASSERT(idx < Nso_Count);
+            AMS_ASSERT(idx < Nso_Count);
 
             constexpr const char *NsoNames[Nso_Count] = {
                 "rtld",
@@ -491,7 +491,7 @@ namespace sts::ldr {
                         aslr_start = map::AslrBase64Bit;
                         aslr_size  = map::AslrSize64Bit;
                         break;
-                    STS_UNREACHABLE_DEFAULT_CASE();
+                    AMS_UNREACHABLE_DEFAULT_CASE();
                 }
             } else {
                 /* On 1.0.0, only 2 address space types existed. */
@@ -509,7 +509,7 @@ namespace sts::ldr {
             uintptr_t aslr_slide = 0;
             uintptr_t unused_size = (aslr_size - total_size);
             if (out_cpi->flags & svc::CreateProcessFlag_EnableAslr) {
-                aslr_slide = sts::rnd::GenerateRandomU64(unused_size / BaseAddressAlignment) * BaseAddressAlignment;
+                aslr_slide = ams::rnd::GenerateRandomU64(unused_size / BaseAddressAlignment) * BaseAddressAlignment;
             }
 
             /* Set out. */

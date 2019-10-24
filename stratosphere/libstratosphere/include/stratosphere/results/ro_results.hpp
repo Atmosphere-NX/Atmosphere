@@ -17,7 +17,7 @@
 #pragma once
 #include "results_common.hpp"
 
-namespace sts::ro {
+namespace ams::ro {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(22);
 

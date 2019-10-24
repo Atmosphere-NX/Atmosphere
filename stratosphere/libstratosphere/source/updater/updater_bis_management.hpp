@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <stratosphere/updater/updater_types.hpp>
 
-namespace sts::updater {
+namespace ams::updater {
 
     class BisAccessor {
         public:
@@ -138,13 +138,13 @@ namespace sts::updater {
                     }
                 }
 
-                STS_ASSERT(entry != nullptr);
+                AMS_ASSERT(entry != nullptr);
                 return entry;
             }
         public:
             Result Read(size_t *out_size, void *dst, size_t size, EnumType which) {
                 const auto entry = FindEntry(which);
-                STS_ASSERT(size >= entry->size);
+                AMS_ASSERT(size >= entry->size);
 
                 R_TRY(BisAccessor::Read(dst, entry->size, entry->offset));
 
@@ -154,8 +154,8 @@ namespace sts::updater {
 
             Result Write(const void *src, size_t size, EnumType which) {
                 const auto entry = FindEntry(which);
-                STS_ASSERT(size <= entry->size);
-                STS_ASSERT((size % BisAccessor::SectorAlignment) == 0);
+                AMS_ASSERT(size <= entry->size);
+                AMS_ASSERT((size % BisAccessor::SectorAlignment) == 0);
                 return BisAccessor::Write(entry->offset, src, size);
             }
 
@@ -198,7 +198,7 @@ namespace sts::updater {
                 return FsBisStorageId_BootConfigAndPackage2RepairMain;
             case Package2Type::RepairSub:
                 return FsBisStorageId_BootConfigAndPackage2RepairSub;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 

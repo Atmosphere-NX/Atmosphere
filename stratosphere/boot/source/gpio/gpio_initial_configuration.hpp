@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::gpio {
+namespace ams::gpio {
 
     void SetInitialConfiguration();
 

@@ -21,7 +21,7 @@
 
 #include "i2c_driver_types.hpp"
 
-namespace sts::i2c::driver::impl {
+namespace ams::i2c::driver::impl {
 
     struct Registers {
         volatile u32 I2C_I2C_CNFG_0;

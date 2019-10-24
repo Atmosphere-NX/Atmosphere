@@ -21,7 +21,7 @@
 #include "ro_debug_monitor.hpp"
 #include "impl/ro_service_impl.hpp"
 
-namespace sts::ro {
+namespace ams::ro {
 
     Result DebugMonitorService::GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id) {
         R_UNLESS(out_infos.GetSize() <= std::numeric_limits<s32>::max(), ResultInvalidSize());

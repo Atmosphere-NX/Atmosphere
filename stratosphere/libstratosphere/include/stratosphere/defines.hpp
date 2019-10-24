@@ -20,9 +20,9 @@
 
 /* Any broadly useful language defines should go here. */
 
-#define STS_ASSERT(expr) do { if (!(expr)) { std::abort(); } } while (0)
+#define AMS_ASSERT(expr) do { if (!(expr)) { std::abort(); } } while (0)
 
-#define STS_UNREACHABLE_DEFAULT_CASE() default: std::abort()
+#define AMS_UNREACHABLE_DEFAULT_CASE() default: std::abort()
 
 #define NON_COPYABLE(cls) \
     cls(const cls&) = delete; \

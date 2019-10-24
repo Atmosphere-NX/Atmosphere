@@ -17,7 +17,7 @@
 #pragma once
 #include "os_mutex.hpp"
 
-namespace sts::os {
+namespace ams::os {
 
     class ConditionVariable {
         NON_COPYABLE(ConditionVariable);

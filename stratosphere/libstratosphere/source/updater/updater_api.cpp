@@ -22,7 +22,7 @@
 #include "updater_files.hpp"
 #include "updater_paths.hpp"
 
-namespace sts::updater {
+namespace ams::updater {
 
     namespace {
 
@@ -72,7 +72,7 @@ namespace sts::updater {
                     return true;
                 case BootImageUpdateType::Mariko:
                     return false;
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -82,7 +82,7 @@ namespace sts::updater {
                     return true;
                 case BootImageUpdateType::Mariko:
                     return false;
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -92,7 +92,7 @@ namespace sts::updater {
                     return NcmContentMetaType_BootImagePackage;
                 case BootModeType::Safe:
                     return NcmContentMetaType_BootImagePackageSafe;
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -139,7 +139,7 @@ namespace sts::updater {
         Result GetBootImagePackageDataId(u64 *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size) {
             /* Ensure we can read content metas. */
             constexpr size_t MaxContentMetas = 0x40;
-            STS_ASSERT(work_buffer_size >= sizeof(NcmContentMetaKey) * MaxContentMetas);
+            AMS_ASSERT(work_buffer_size >= sizeof(NcmContentMetaKey) * MaxContentMetas);
 
             /* Open NAND System meta database, list contents. */
             NcmContentMetaDatabase meta_db;
@@ -156,7 +156,7 @@ namespace sts::updater {
                 return ResultBootImagePackageNotFound();
             }
 
-            STS_ASSERT(total_entries == written_entries);
+            AMS_ASSERT(total_entries == written_entries);
 
             /* Output is sorted, return the lowest valid exfat entry. */
             if (total_entries > 1) {
@@ -182,7 +182,7 @@ namespace sts::updater {
                     return VerifyBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type);
                 case BootModeType::Safe:
                     return VerifyBootImagesSafe(data_id, work_buffer, work_buffer_size, boot_image_update_type);
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -303,7 +303,7 @@ namespace sts::updater {
                     return UpdateBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type);
                 case BootModeType::Safe:
                     return UpdateBootImagesSafe(data_id, work_buffer, work_buffer_size, boot_image_update_type);
-                STS_UNREACHABLE_DEFAULT_CASE();
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
@@ -340,7 +340,7 @@ namespace sts::updater {
                     }
 
                     /* Only preserve autorcm if on a unit with unpatched rcm bug. */
-                    if (HasAutoRcmPreserve(boot_image_update_type) && !ams::IsRcmBugPatched()) {
+                    if (HasAutoRcmPreserve(boot_image_update_type) && !exosphere::IsRcmBugPatched()) {
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalSub));
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalSub));
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalMain));
@@ -399,7 +399,7 @@ namespace sts::updater {
                         R_TRY(boot0_accessor.UpdateEks(bct, work));
                     }
                     /* Only preserve autorcm if on a unit with unpatched rcm bug. */
-                    if (HasAutoRcmPreserve(boot_image_update_type) && !ams::IsRcmBugPatched()) {
+                    if (HasAutoRcmPreserve(boot_image_update_type) && !exosphere::IsRcmBugPatched()) {
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeSub));
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeSub));
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeMain));
@@ -492,7 +492,7 @@ namespace sts::updater {
             case spl::HardwareType::Hoag:
             case spl::HardwareType::Iowa:
                 return BootImageUpdateType::Mariko;
-            STS_UNREACHABLE_DEFAULT_CASE();
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
