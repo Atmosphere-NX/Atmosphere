@@ -15,8 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
-
 #include "map_types.hpp"
 
 namespace ams::map {

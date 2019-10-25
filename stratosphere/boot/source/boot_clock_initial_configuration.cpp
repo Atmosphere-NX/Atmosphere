@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include "boot_clock_initial_configuration.hpp"
 #include "boot_pmc_wrapper.hpp"
 #include "boot_registers_pmc.hpp"

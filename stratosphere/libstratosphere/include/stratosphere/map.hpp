@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "map/map_types.hpp"
 #include "map/map_api.hpp"

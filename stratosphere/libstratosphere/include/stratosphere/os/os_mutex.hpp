@@ -15,9 +15,7 @@
  */
 
 #pragma once
-#include <mutex>
-#include <switch.h>
-#include "../util.hpp"
+#include "os_common_types.hpp"
 
 namespace ams::os {
 

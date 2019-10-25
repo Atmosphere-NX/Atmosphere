@@ -15,7 +15,6 @@
  */
 
 #pragma once
-
 #include "spl_types.hpp"
 
 namespace ams::spl {

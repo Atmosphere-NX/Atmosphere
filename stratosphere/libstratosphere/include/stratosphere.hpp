@@ -16,19 +16,34 @@
 
 #pragma once
 
-#include "stratosphere/defines.hpp"
-#include "stratosphere/results.hpp"
+/* Pulls in util, svc. */
+#include "atmosphere/common.hpp"
 
-#include "stratosphere/util.hpp"
-#include "stratosphere/svc.hpp"
+/* Critical modules with no dependencies. */
 #include "stratosphere/ams.hpp"
 #include "stratosphere/os.hpp"
 #include "stratosphere/dd.hpp"
+
+/* Lots of things depend on NCM, for Title IDs. */
+#include "stratosphere/ncm.hpp"
+
+/* At this point, just include the rest alphabetically. */
+/* TODO: Figure out optimal order. */
+#include "stratosphere/boot2.hpp"
 #include "stratosphere/cfg.hpp"
+#include "stratosphere/dmnt.hpp"
 #include "stratosphere/fatal.hpp"
 #include "stratosphere/hid.hpp"
-#include "stratosphere/ncm.hpp"
+#include "stratosphere/hos.hpp"
+#include "stratosphere/kvdb.hpp"
+#include "stratosphere/ldr.hpp"
+#include "stratosphere/map.hpp"
+#include "stratosphere/patcher.hpp"
 #include "stratosphere/pm.hpp"
+#include "stratosphere/reg.hpp"
 #include "stratosphere/rnd.hpp"
-#include "stratosphere/sm.hpp"
+#include "stratosphere/ro.hpp"
 #include "stratosphere/sf.hpp"
+#include "stratosphere/sm.hpp"
+#include "stratosphere/spl.hpp"
+#include "stratosphere/updater.hpp"

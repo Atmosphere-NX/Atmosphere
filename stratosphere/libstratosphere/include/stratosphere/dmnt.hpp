@@ -15,6 +15,5 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "dmnt/dmnt_cheat_types.hpp"

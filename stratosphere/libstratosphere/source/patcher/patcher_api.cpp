@@ -13,17 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <cstdlib>
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
 #include <dirent.h>
-#include <ctype.h>
-
-#include <switch.h>
 #include <stratosphere.hpp>
-#include <stratosphere/patcher.hpp>
 
 /* IPS Patching adapted from Luma3DS (https://github.com/AuroraWright/Luma3DS/blob/master/sysmodules/loader/source/patcher.c) */
 

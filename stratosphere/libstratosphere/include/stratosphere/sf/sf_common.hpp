@@ -15,11 +15,6 @@
  */
 
 #pragma once
-#include <type_traits>
-#include <memory>
-#include "../defines.hpp"
-#include "../results.hpp"
-#include "../util.hpp"
-#include "../svc.hpp"
+#include <atmosphere/common.hpp>
 #include "../ams.hpp"
 #include "../os.hpp"

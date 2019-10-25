@@ -13,17 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <cstdlib>
-#include <cstdint>
-#include <cstring>
-
-#include <switch.h>
-#include <atmosphere.h>
-#include <stratosphere.hpp>
-#include <stratosphere/cfg.hpp>
-#include <stratosphere/sm/sm_manager_api.hpp>
-
 #include "pm_boot_mode_service.hpp"
 #include "pm_debug_monitor_service.hpp"
 #include "pm_info_service.hpp"

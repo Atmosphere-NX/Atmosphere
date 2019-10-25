@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include "boot_battery_driver.hpp"
 #include "boot_calibration.hpp"
 #include "boot_i2c_utils.hpp"

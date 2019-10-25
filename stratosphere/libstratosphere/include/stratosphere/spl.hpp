@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "spl/spl_types.hpp"
 #include "spl/spl_api.hpp"

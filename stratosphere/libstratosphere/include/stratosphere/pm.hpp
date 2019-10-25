@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "pm/pm_types.hpp"
 #include "pm/pm_boot_mode_api.hpp"

@@ -15,8 +15,7 @@
  */
 
 #pragma once
-#include <switch.h>
-#include "../results.hpp"
+#include <atmosphere/common.hpp>
 
 namespace ams::spl {
 

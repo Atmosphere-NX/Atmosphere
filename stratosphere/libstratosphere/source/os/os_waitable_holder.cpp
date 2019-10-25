@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
 #include "impl/os_waitable_holder_impl.hpp"
 #include "impl/os_waitable_manager_impl.hpp"
 

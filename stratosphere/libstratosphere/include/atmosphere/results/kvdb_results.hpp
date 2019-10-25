@@ -15,8 +15,19 @@
  */
 
 #pragma once
+#include "results_common.hpp"
 
-#include "ipc/ipc_service_object.hpp"
-#include "ipc/ipc_serialization.hpp"
+namespace ams::kvdb {
 
-#include "ipc/ipc_service_session.hpp"
+    R_DEFINE_NAMESPACE_RESULT_MODULE(20);
+
+    R_DEFINE_ERROR_RESULT(OutOfKeyResource,        1);
+    R_DEFINE_ERROR_RESULT(KeyNotFound,             2);
+    R_DEFINE_ERROR_RESULT(AllocationFailed,        4);
+    R_DEFINE_ERROR_RESULT(InvalidKeyValue,         5);
+    R_DEFINE_ERROR_RESULT(BufferInsufficient,      6);
+
+    R_DEFINE_ERROR_RESULT(InvalidFilesystemState,  8);
+    R_DEFINE_ERROR_RESULT(NotCreated,              9);
+
+}

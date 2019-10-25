@@ -15,14 +15,8 @@
  */
 
 #pragma once
-#include <switch.h>
-
-namespace ams::util {
-
-    /* Compression utilities. */
-    int CompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size);
-
-    /* Decompression utilities. */
-    int DecompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size);
-
-}
+#include "common_includes.hpp"
+#include "defines.hpp"
+#include "util.hpp"
+#include "results.hpp"
+#include "svc.hpp"

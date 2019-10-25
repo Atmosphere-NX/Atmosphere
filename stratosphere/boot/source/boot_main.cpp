@@ -13,17 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <cstdlib>
-#include <cstdint>
-#include <cstring>
-#include <malloc.h>
-
-#include <switch.h>
-#include <atmosphere.h>
-#include <stratosphere.hpp>
-#include <stratosphere/spl.hpp>
-
 #include "boot_boot_reason.hpp"
 #include "boot_change_voltage.hpp"
 #include "boot_check_battery.hpp"

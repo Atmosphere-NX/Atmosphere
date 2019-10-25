@@ -13,9 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <stratosphere/spl.hpp>
-
 #include "boot_boot_reason.hpp"
 #include "boot_pmic_driver.hpp"
 #include "boot_rtc_driver.hpp"

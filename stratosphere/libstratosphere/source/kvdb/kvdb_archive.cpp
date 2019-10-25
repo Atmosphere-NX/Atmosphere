@@ -15,7 +15,6 @@
  */
 
 #include <stratosphere.hpp>
-#include <stratosphere/kvdb/kvdb_archive.hpp>
 
 namespace ams::kvdb {
 
@@ -32,9 +31,7 @@ namespace ams::kvdb {
             u32 entry_count;
 
             Result Validate() const {
-                if (std::memcmp(this->magic, ArchiveHeaderMagic, sizeof(ArchiveHeaderMagic)) != 0) {
-                    return ResultInvalidKeyValue();
-                }
+                R_UNLESS(std::memcmp(this->magic, ArchiveHeaderMagic, sizeof(ArchiveHeaderMagic)) == 0, ResultInvalidKeyValue());
                 return ResultSuccess();
             }
 
@@ -53,9 +50,7 @@ namespace ams::kvdb {
             u32 value_size;
 
             Result Validate() const {
-                if (std::memcmp(this->magic, ArchiveEntryMagic, sizeof(ArchiveEntryMagic)) != 0) {
-                    return ResultInvalidKeyValue();
-                }
+                R_UNLESS(std::memcmp(this->magic, ArchiveEntryMagic, sizeof(ArchiveEntryMagic)) == 0, ResultInvalidKeyValue());
                 return ResultSuccess();
             }
 
@@ -74,9 +69,8 @@ namespace ams::kvdb {
     /* Reader functionality. */
     Result ArchiveReader::Peek(void *dst, size_t size) {
         /* Bounds check. */
-        if (this->offset + size > this->buffer.GetSize() || this->offset + size <= this->offset) {
-            return ResultInvalidKeyValue();
-        }
+        R_UNLESS(this->offset + size <= this->buffer.GetSize(), ResultInvalidKeyValue());
+        R_UNLESS(this->offset + size <= this->offset,           ResultInvalidKeyValue());
 
         std::memcpy(dst, this->buffer.Get() + this->offset, size);
         return ResultSuccess();
@@ -136,9 +130,8 @@ namespace ams::kvdb {
     /* Writer functionality. */
     Result ArchiveWriter::Write(const void *src, size_t size) {
         /* Bounds check. */
-        if (this->offset + size > this->buffer.GetSize() || this->offset + size <= this->offset) {
-            return ResultInvalidKeyValue();
-        }
+        R_UNLESS(this->offset + size <= this->buffer.GetSize(), ResultInvalidKeyValue());
+        R_UNLESS(this->offset + size <= this->offset,           ResultInvalidKeyValue());
 
         std::memcpy(this->buffer.Get() + this->offset, src, size);
         this->offset += size;

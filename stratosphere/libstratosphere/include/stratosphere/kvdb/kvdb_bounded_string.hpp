@@ -15,11 +15,7 @@
  */
 
 #pragma once
-#include <cstring>
-#include <cstdarg>
-#include <switch.h>
-#include "../defines.hpp"
-#include "../results.hpp"
+#include <atmosphere/common.hpp>
 
 namespace ams::kvdb {
 

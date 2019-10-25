@@ -15,8 +15,7 @@
  */
 
 #pragma once
-#include "../defines.hpp"
-#include "../results.hpp"
+#include <atmosphere/common.hpp>
 #include "../sf/sf_buffer_tags.hpp"
 #include "../hos.hpp"
 
@@ -35,6 +34,26 @@ namespace ams::exosphere {
         TargetFirmware_810 = 10,
         TargetFirmware_900 = 11,
     };
+
+#ifdef ATMOSPHERE_H
+/* #ifdef __has_include(<atmosphere.h>) */
+
+#define AMS_VALIDATE_TARGET_FIRMWARE_ENUM(n) static_assert(TargetFirmware_##n == ATMOSPHERE_TARGET_FIRMWARE_##n)
+
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(100);
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(200);
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(300);
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(400);
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(500);
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(620);
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(700);
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(800);
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(810);
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(900);
+
+#undef AMS_VALIDATE_TARGET_FIRMWARE_ENUM
+
+#endif
 
     constexpr inline u32 GetVersion(u32 major, u32 minor, u32 micro) {
         return (major << 16) | (minor << 8) | (micro);

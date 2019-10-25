@@ -15,6 +15,8 @@
  */
 
 #pragma once
+#include "defines.hpp"
+#include "util.hpp"
 
 /* Utilities. */
 #include "results/results_common.hpp"

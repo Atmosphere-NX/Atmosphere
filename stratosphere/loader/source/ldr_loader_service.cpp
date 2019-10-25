@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <limits>
 #include "ldr_arguments.hpp"
 #include "ldr_content_management.hpp"
 #include "ldr_ecs.hpp"

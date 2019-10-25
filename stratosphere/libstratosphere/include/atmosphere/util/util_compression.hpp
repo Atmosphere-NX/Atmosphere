@@ -15,19 +15,14 @@
  */
 
 #pragma once
-#include "results_common.hpp"
+#include "../defines.hpp"
 
-namespace ams::kvdb {
+namespace ams::util {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(20);
+    /* Compression utilities. */
+    int CompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size);
 
-    R_DEFINE_ERROR_RESULT(KeyCapacityInsufficient, 1);
-    R_DEFINE_ERROR_RESULT(KeyNotFound,             2);
-    R_DEFINE_ERROR_RESULT(AllocationFailed,        4);
-    R_DEFINE_ERROR_RESULT(InvalidKeyValue,         5);
-    R_DEFINE_ERROR_RESULT(BufferInsufficient,      6);
-
-    R_DEFINE_ERROR_RESULT(InvalidFilesystemState,  8);
-    R_DEFINE_ERROR_RESULT(NotCreated,              9);
+    /* Decompression utilities. */
+    int DecompressLZ4(void *dst, size_t dst_size, const void *src, size_t src_size);
 
 }

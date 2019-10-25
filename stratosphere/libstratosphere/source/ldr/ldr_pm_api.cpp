@@ -13,12 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <set>
-#include <switch.h>
 #include <stratosphere.hpp>
-#include <stratosphere/ldr.hpp>
-#include <stratosphere/ldr/ldr_pm_api.hpp>
-
 #include "ldr_ams.h"
 
 namespace ams::ldr::pm {

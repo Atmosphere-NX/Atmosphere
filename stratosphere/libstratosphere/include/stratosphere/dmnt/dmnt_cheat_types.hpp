@@ -15,7 +15,6 @@
  */
 
 #pragma once
-
 #include "../os/os_common_types.hpp"
 #include "../ncm/ncm_types.hpp"
 #include "../sf/sf_buffer_tags.hpp"

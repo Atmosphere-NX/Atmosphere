@@ -15,10 +15,7 @@
  */
 
 #pragma once
-#include <switch.h>
-
 #include <stratosphere.hpp>
-#include <stratosphere/ro.hpp>
 
 namespace ams::ro {
 

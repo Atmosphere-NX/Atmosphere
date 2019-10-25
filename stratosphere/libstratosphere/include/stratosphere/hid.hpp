@@ -15,6 +15,5 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "hid/hid_api.hpp"

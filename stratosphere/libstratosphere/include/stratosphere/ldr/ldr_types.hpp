@@ -15,10 +15,7 @@
  */
 
 #pragma once
-
-#include <type_traits>
-#include <switch.h>
-#include "../svc/svc_types.hpp"
+#include <atmosphere/common.hpp>
 #include "../ncm/ncm_types.hpp"
 #include "../sf/sf_buffer_tags.hpp"
 

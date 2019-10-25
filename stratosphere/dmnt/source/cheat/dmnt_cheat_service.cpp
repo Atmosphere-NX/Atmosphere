@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <switch.h>
 #include "dmnt_cheat_service.hpp"
 #include "impl/dmnt_cheat_api.hpp"
 

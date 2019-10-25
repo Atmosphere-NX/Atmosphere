@@ -15,10 +15,8 @@
  */
 
 #pragma once
-#include <switch.h>
-
-#include "../spl/spl_types.hpp"
 #include "updater_types.hpp"
+#include "../spl/spl_types.hpp"
 
 namespace ams::updater {
 

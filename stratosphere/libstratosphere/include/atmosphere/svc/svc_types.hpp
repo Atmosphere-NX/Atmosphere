@@ -15,9 +15,6 @@
  */
 
 #pragma once
-#include <cstring>
-#include <switch.h>
-#include "../defines.hpp"
 #include "../results.hpp"
 
 namespace ams::svc {

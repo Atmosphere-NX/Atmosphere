@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include "dmnt_cheat_debug_events_manager.hpp"
 
 /* WORKAROUND: This design prevents a kernel deadlock from occurring on 6.0.0+ */

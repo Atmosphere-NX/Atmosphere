@@ -13,11 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <switch.h>
-#include <stratosphere.hpp>
-#include <stratosphere/spl/spl_types.hpp>
-
 #include "spl_ctr_drbg.hpp"
 
 namespace ams::spl {

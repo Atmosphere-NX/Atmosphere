@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include <switch.h>
+#include "defines.hpp"
 
 #include "util/util_alignment.hpp"
 #include "util/util_size.hpp"

@@ -13,19 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <cstdlib>
-#include <cstdint>
-#include <cstring>
-#include <malloc.h>
-
-#include <switch.h>
-#include <stratosphere.hpp>
-
 #include "sm_user_service.hpp"
 #include "sm_manager_service.hpp"
 #include "sm_dmnt_service.hpp"
-
 #include "impl/sm_service_manager.hpp"
 
 extern "C" {

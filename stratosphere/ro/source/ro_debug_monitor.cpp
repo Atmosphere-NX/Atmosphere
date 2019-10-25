@@ -13,11 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <climits>
-#include <switch.h>
-#include <stratosphere.hpp>
-
 #include "ro_debug_monitor.hpp"
 #include "impl/ro_service_impl.hpp"
 

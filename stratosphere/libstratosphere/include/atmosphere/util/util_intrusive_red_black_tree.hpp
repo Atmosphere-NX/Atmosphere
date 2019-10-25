@@ -16,10 +16,6 @@
 
 #pragma once
 #include <freebsd/sys/tree.h>
-#include <iterator>
-#include <switch.h>
-#include "../defines.hpp"
-
 #include "util_parent_of_member.hpp"
 
 namespace ams::util {

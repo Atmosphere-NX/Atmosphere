@@ -15,9 +15,7 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere/sm.hpp>
-#include <stratosphere/ncm.hpp>
+#include <stratosphere.hpp>
 
 namespace ams::sm::impl {
 

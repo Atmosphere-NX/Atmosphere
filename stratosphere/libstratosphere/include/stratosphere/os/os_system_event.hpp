@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include "os_common_types.hpp"
 #include "os_event.hpp"
 
 namespace ams::os {
