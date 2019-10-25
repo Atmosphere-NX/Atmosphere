@@ -20,7 +20,7 @@ SOURCES		:=	source source/ams source/hos source/result source/os source/os/impl 
 DATA		:=	data
 INCLUDES	:=  include
 
-DEFINES	:=	-DRESULT_ABORT_ON_ASSERT
+DEFINES	:=
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -32,7 +32,7 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17 -flto
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
