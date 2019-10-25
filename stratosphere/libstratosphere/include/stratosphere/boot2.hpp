@@ -15,6 +15,5 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "boot2/boot2_api.hpp"

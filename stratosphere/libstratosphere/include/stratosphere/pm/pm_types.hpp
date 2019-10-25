@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
 #include "../os/os_common_types.hpp"
 
 namespace ams::pm {

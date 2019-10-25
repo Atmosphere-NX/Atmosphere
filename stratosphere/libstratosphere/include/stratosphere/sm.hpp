@@ -15,9 +15,10 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "sm/sm_types.hpp"
 #include "sm/sm_api.hpp"
 #include "sm/sm_mitm_api.hpp"
 #include "sm/sm_scoped_holder.hpp"
+
+#include "sm/sm_manager_api.hpp"

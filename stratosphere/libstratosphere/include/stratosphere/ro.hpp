@@ -15,6 +15,5 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "ro/ro_types.hpp"

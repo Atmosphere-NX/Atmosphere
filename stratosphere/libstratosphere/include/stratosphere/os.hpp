@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "os/os_common_types.hpp"
 #include "os/os_managed_handle.hpp"

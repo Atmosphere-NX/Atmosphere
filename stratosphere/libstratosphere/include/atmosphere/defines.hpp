@@ -15,8 +15,7 @@
  */
 
 #pragma once
-#include <cstdint>
-#include <iterator>
+#include "common_includes.hpp"
 
 /* Any broadly useful language defines should go here. */
 

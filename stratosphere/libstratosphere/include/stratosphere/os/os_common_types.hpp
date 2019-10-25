@@ -14,9 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <switch.h>
-#include "../results.hpp"
-#include "../util.hpp"
+#include <atmosphere/common.hpp>
 
 namespace ams::os {
 

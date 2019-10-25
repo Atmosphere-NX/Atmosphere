@@ -15,9 +15,7 @@
  */
 
 #pragma once
-#include <switch.h>
 #include "../defines.hpp"
-#include <type_traits>
 
 namespace ams::util {
 

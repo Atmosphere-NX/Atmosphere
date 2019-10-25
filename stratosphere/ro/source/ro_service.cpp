@@ -13,12 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <switch.h>
-#include <cstdio>
-#include <algorithm>
-#include <stratosphere.hpp>
-
 #include "ro_service.hpp"
 #include "impl/ro_service_impl.hpp"
 

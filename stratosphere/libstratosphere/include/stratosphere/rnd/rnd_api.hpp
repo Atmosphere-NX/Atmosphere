@@ -15,8 +15,7 @@
  */
 
 #pragma once
-#include <limits>
-#include <switch.h>
+#include <atmosphere/common.hpp>
 
 namespace ams::rnd {
 

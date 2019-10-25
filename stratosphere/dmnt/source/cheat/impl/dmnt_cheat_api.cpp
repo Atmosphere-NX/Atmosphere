@@ -13,12 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <map>
 #include "dmnt_cheat_api.hpp"
 #include "dmnt_cheat_vm.hpp"
 #include "dmnt_cheat_debug_events_manager.hpp"
-#include <stratosphere/map.hpp>
 
 namespace ams::dmnt::cheat::impl {
 

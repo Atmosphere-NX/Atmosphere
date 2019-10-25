@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "updater/updater_types.hpp"
 #include "updater/updater_api.hpp"

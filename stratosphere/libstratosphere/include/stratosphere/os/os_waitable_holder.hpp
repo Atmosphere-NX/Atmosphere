@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "../util.hpp"
 #include "os_common_types.hpp"
 
 namespace ams::os {

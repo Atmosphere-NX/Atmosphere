@@ -15,6 +15,5 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "cfg/cfg_api.hpp"

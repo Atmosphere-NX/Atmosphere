@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere/spl.hpp>
-#include <stratosphere/spl/smc/spl_smc.hpp>
 #include "boot_pmc_wrapper.hpp"
 
 namespace ams::boot {

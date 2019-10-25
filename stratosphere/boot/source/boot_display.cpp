@@ -13,11 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-
-#include <stratosphere/reg.hpp>
-#include <stratosphere/spl.hpp>
-
 #include "boot_display.hpp"
 #include "boot_i2c_utils.hpp"
 #include "boot_pmc_wrapper.hpp"

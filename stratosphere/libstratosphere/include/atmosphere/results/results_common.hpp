@@ -15,8 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <climits>
 #include "../defines.hpp"
 
 namespace ams {

@@ -15,9 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <type_traits>
-
 #include "../spl_types.hpp"
 
 namespace ams::spl::smc {

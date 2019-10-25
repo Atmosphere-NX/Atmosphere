@@ -15,12 +15,7 @@
  */
 
 #pragma once
-#include <algorithm>
-#include <cstring>
-#include <switch.h>
-#include "../defines.hpp"
-#include "../results.hpp"
-#include "../os.hpp"
+#include <atmosphere/common.hpp>
 
 namespace ams::sm {
 

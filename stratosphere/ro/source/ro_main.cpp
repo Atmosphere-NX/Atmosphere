@@ -13,18 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <cstdlib>
-#include <cstdint>
-#include <cstring>
-#include <malloc.h>
-
-#include <switch.h>
-#include <atmosphere.h>
-#include <stratosphere.hpp>
-#include <stratosphere/ro.hpp>
-#include <stratosphere/spl.hpp>
-
 #include "ro_debug_monitor.hpp"
 #include "ro_service.hpp"
 

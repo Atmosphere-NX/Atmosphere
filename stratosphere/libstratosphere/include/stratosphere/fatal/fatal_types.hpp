@@ -15,9 +15,7 @@
  */
 
 #pragma once
-#include <switch.h>
-#include "../defines.hpp"
-#include "../results.hpp"
+#include <atmosphere/common.hpp>
 #include "../ncm/ncm_types.hpp"
 #include "../sf/sf_buffer_tags.hpp"
 

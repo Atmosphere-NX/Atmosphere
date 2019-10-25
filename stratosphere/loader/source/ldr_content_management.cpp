@@ -14,8 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <dirent.h>
-#include <stratosphere/cfg.hpp>
-
 #include "ldr_content_management.hpp"
 #include "ldr_ecs.hpp"
 

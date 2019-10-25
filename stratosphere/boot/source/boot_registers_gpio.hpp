@@ -13,9 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
+#include <stratosphere.hpp>
 
 static constexpr size_t GPIO_PORT3_CNF_0 = 0x200;
 static constexpr size_t GPIO_PORT3_OE_0  = 0x210;

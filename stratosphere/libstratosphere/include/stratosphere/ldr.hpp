@@ -15,6 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "ldr/ldr_types.hpp"
+#include "ldr/ldr_pm_api.hpp"

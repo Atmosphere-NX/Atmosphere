@@ -15,8 +15,7 @@
  */
 
 #pragma once
-#include <switch.h>
-#include "../defines.hpp"
+#include <atmosphere/common.hpp>
 
 namespace ams::dd {
 

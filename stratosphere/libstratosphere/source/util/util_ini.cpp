@@ -14,10 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <switch.h>
 #include <stratosphere.hpp>
-#include <stratosphere/util.hpp>
-
 #include "ini.h"
 
 namespace ams::util::ini {

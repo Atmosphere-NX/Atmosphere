@@ -13,12 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <limits>
-#include <stratosphere/map.hpp>
-#include <stratosphere/rnd.hpp>
-#include <stratosphere/util.hpp>
-
 #include "ldr_capabilities.hpp"
 #include "ldr_content_management.hpp"
 #include "ldr_ecs.hpp"

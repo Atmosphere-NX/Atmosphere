@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include <switch.h>
+#include <atmosphere/common.hpp>
 
 namespace ams::reg {
 

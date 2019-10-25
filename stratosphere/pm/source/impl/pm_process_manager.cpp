@@ -13,13 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <atomic>
-#include <stratosphere/boot2.hpp>
-#include <stratosphere/spl.hpp>
-#include <stratosphere/ldr/ldr_pm_api.hpp>
-#include <stratosphere/sm/sm_manager_api.hpp>
-
 #include "pm_process_manager.hpp"
 #include "pm_resource_manager.hpp"
 

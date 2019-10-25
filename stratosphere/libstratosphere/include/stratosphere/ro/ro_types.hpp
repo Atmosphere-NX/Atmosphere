@@ -15,10 +15,8 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <cstdlib>
-#include "../defines.hpp"
-#include "../ncm.hpp"
+#include <atmosphere/common.hpp>
+#include "../ncm/ncm_types.hpp"
 
 namespace ams::ro {
 

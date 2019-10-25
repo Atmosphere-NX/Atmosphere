@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include "pm_shell_service.hpp"
 #include "impl/pm_process_manager.hpp"
 

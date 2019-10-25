@@ -14,10 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <switch.h>
 #include <stratosphere.hpp>
-#include <stratosphere/cfg.hpp>
-#include <stratosphere/sm.hpp>
 
 namespace ams::cfg {
 

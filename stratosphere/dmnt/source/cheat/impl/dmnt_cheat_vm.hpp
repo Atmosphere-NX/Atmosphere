@@ -13,11 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <stdarg.h>
 #include <stratosphere.hpp>
-#include <stratosphere/dmnt.hpp>
 
 namespace ams::dmnt::cheat::impl {
 

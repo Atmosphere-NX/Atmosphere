@@ -15,8 +15,7 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
+#include <atmosphere/common.hpp>
 
 namespace ams::boot2 {
 

@@ -13,9 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
+#include <stratosphere.hpp>
 
 static constexpr size_t APB_MISC_GP_SDMMC1_CLK_LPBK_CONTROL = 0x8D4;
 static constexpr size_t APB_MISC_GP_SDMMC3_CLK_LPBK_CONTROL = 0x8D8;

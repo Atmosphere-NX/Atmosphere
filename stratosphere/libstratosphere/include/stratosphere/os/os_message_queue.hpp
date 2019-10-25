@@ -15,8 +15,6 @@
  */
 
 #pragma once
-#include <memory>
-#include "os_common_types.hpp"
 #include "os_mutex.hpp"
 #include "os_condvar.hpp"
 

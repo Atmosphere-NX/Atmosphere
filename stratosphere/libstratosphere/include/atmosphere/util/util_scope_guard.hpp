@@ -16,7 +16,6 @@
 
  /* Scope guard logic lovingly taken from Andrei Alexandrescu's "Systemic Error Handling in C++" */
 #pragma once
-#include <utility>
 #include "../defines.hpp"
 
 namespace ams::util {

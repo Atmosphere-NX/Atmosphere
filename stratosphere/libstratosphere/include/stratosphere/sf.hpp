@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include <switch.h>
 
 #include "sf/sf_common.hpp"
 #include "sf/sf_service_object.hpp"

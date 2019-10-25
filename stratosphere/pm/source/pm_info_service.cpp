@@ -13,10 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <stratosphere/ldr/ldr_pm_api.hpp>
-#include <stratosphere/pm.hpp>
-
 #include "pm_info_service.hpp"
 #include "impl/pm_process_manager.hpp"
 

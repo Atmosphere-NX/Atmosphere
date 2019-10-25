@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <unordered_map>
 #include "ldr_ecs.hpp"
 
 namespace ams::ldr::ecs {
