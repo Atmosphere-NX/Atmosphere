@@ -30,7 +30,7 @@ namespace ams::result::impl {
         AMS_ASSERT((ams::result::CallFatalOnResultAssertion));
 
         /* TODO: ams::fatal:: */
-        fatalSimple(result.GetValue());
+        fatalThrow(result.GetValue());
         while (true) { /* ... */ }
     }
 

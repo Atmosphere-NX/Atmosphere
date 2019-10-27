@@ -81,7 +81,7 @@ namespace ams::creport {
             }
 
             void BuildReport(os::ProcessId process_id, bool has_extra_info);
-            void GetFatalContext(FatalContext *out) const;
+            void GetFatalContext(::FatalCpuContext *out) const;
             void SaveReport();
         private:
             void ProcessExceptions();

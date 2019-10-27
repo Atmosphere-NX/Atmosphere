@@ -137,7 +137,7 @@ namespace ams::fatal::srv {
             R_TRY(viOpenDefaultDisplay(&this->display));
 
             /* Reset the display magnification to its default value. */
-            u32 display_width, display_height;
+            s32 display_width, display_height;
             R_TRY(viGetDisplayLogicalResolution(&this->display, &display_width, &display_height));
 
             /* viSetDisplayMagnification was added in 3.0.0. */
@@ -153,10 +153,10 @@ namespace ams::fatal::srv {
                 /* Display a layer of 1280 x 720 at 1.5x magnification */
                 /* NOTE: N uses 2 (770x400) RGBA4444 buffers (tiled buffer + linear). */
                 /* We use a single 1280x720 tiled RGB565 buffer. */
-                constexpr u32 raw_width = FatalScreenWidth;
-                constexpr u32 raw_height = FatalScreenHeight;
-                constexpr u32 layer_width = ((raw_width) * 3) / 2;
-                constexpr u32 layer_height = ((raw_height) * 3) / 2;
+                constexpr s32 raw_width = FatalScreenWidth;
+                constexpr s32 raw_height = FatalScreenHeight;
+                constexpr s32 layer_width = ((raw_width) * 3) / 2;
+                constexpr s32 layer_height = ((raw_height) * 3) / 2;
 
                 const float layer_x = static_cast<float>((display_width - layer_width) / 2);
                 const float layer_y = static_cast<float>((display_height - layer_height) / 2);

@@ -112,7 +112,7 @@ namespace ams::creport {
         }
     }
 
-    void CrashReport::GetFatalContext(FatalContext *_out) const {
+    void CrashReport::GetFatalContext(::FatalCpuContext *_out) const {
         static_assert(sizeof(*_out) == sizeof(ams::fatal::CpuContext));
         ams::fatal::CpuContext *out = reinterpret_cast<ams::fatal::CpuContext *>(_out);
         std::memset(out, 0, sizeof(*out));

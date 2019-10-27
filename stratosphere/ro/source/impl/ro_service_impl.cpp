@@ -86,8 +86,7 @@ namespace ams::ro::impl {
                     R_ASSERT(svcGetInfo(&title_id.value, InfoType_TitleId, process_h, 0));
                 } else {
                     /* 1.0.0-2.3.0: We're not inside loader, so ask pm. */
-                    os::ProcessId process_id = os::GetProcessId(process_h);
-                    R_ASSERT(pminfoGetTitleId(&title_id.value, process_id.value));
+                    R_ASSERT(pm::info::GetTitleId(&title_id, os::GetProcessId(process_h)));
                 }
                 return title_id;
             }

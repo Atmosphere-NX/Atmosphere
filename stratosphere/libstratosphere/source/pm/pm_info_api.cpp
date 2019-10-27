@@ -30,7 +30,7 @@ namespace ams::pm::info {
     Result GetTitleId(ncm::TitleId *out_title_id, os::ProcessId process_id) {
         std::scoped_lock lk(g_info_lock);
 
-        return pminfoGetTitleId(reinterpret_cast<u64 *>(out_title_id), static_cast<u64>(process_id));
+        return pminfoGetProgramId(reinterpret_cast<u64 *>(out_title_id), static_cast<u64>(process_id));
     }
 
     Result GetProcessId(os::ProcessId *out_process_id, ncm::TitleId title_id) {
