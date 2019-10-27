@@ -69,7 +69,7 @@ namespace ams::sf::cmif {
     class ServerMessageProcessor {
         public:
             /* Used to enabled templated message processors. */
-            virtual void SetImplementationProcessor(ServerMessageProcessor *impl) { /* ... */ }
+            virtual void SetImplementationProcessor(ServerMessageProcessor *impl) = 0;
             virtual const ServerMessageRuntimeMetadata GetRuntimeMetadata() const = 0;
 
             virtual Result PrepareForProcess(const ServiceDispatchContext &ctx, const ServerMessageRuntimeMetadata runtime_metadata) const = 0;
