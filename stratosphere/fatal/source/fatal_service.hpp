@@ -28,8 +28,8 @@ namespace ams::fatal::srv {
         private:
             /* Actual commands. */
             Result ThrowFatal(Result error, const sf::ClientProcessId &client_pid);
-            Result ThrowFatalWithPolicy(Result error, const sf::ClientProcessId &client_pid, FatalType policy);
-            Result ThrowFatalWithCpuContext(Result error, const sf::ClientProcessId &client_pid, FatalType policy, const CpuContext &cpu_ctx);
+            Result ThrowFatalWithPolicy(Result error, const sf::ClientProcessId &client_pid, FatalPolicy policy);
+            Result ThrowFatalWithCpuContext(Result error, const sf::ClientProcessId &client_pid, FatalPolicy policy, const CpuContext &cpu_ctx);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(ThrowFatal),

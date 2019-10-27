@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
     }
 
     /* Throw fatal error. */
-    FatalContext ctx;
+    ::FatalCpuContext ctx;
     g_crash_report.GetFatalContext(&ctx);
-    fatalWithContext(g_crash_report.GetResult().GetValue(), FatalType_ErrorScreen, &ctx);
+    fatalThrowWithContext(g_crash_report.GetResult().GetValue(), FatalPolicy_ErrorScreen, &ctx);
 }

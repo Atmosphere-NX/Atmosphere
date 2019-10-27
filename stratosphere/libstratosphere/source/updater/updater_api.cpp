@@ -149,10 +149,10 @@ namespace ams::updater {
             NcmContentMetaKey *records = reinterpret_cast<NcmContentMetaKey *>(work_buffer);
 
             const auto title_type = GetNcmContentMetaType(mode);
-            u32 written_entries;
-            u32 total_entries;
+            s32 written_entries;
+            s32 total_entries;
             R_TRY(ncmContentMetaDatabaseList(&meta_db, &total_entries, &written_entries, records, MaxContentMetas * sizeof(*records), title_type, 0, 0, UINT64_MAX, NcmContentInstallType_Full));
-            if (total_entries == 0) {
+            if (total_entries <= 0) {
                 return ResultBootImagePackageNotFound();
             }
 
@@ -160,7 +160,7 @@ namespace ams::updater {
 
             /* Output is sorted, return the lowest valid exfat entry. */
             if (total_entries > 1) {
-                for (size_t i = 0; i < total_entries; i++) {
+                for (size_t i = 0; i < size_t(total_entries); i++) {
                     u8 attr;
                     R_TRY(ncmContentMetaDatabaseGetAttributes(&meta_db, &records[i], &attr));
 

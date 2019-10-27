@@ -49,23 +49,23 @@ namespace ams::fatal::srv {
                 }
 
                 Result ThrowFatal(Result result, os::ProcessId process_id) {
-                    return this->ThrowFatalWithCpuContext(result, process_id, FatalType_ErrorReportAndErrorScreen, {});
+                    return this->ThrowFatalWithCpuContext(result, process_id, FatalPolicy_ErrorReportAndErrorScreen, {});
                 }
 
-                Result ThrowFatalWithPolicy(Result result, os::ProcessId process_id, FatalType policy) {
+                Result ThrowFatalWithPolicy(Result result, os::ProcessId process_id, FatalPolicy policy) {
                     return this->ThrowFatalWithCpuContext(result, process_id, policy, {});
                 }
 
-                Result ThrowFatalWithCpuContext(Result result, os::ProcessId process_id, FatalType policy, const CpuContext &cpu_ctx);
+                Result ThrowFatalWithCpuContext(Result result, os::ProcessId process_id, FatalPolicy policy, const CpuContext &cpu_ctx);
         };
 
         /* Context global. */
         ServiceContext g_context;
 
         /* Throw implementation. */
-        Result ServiceContext::ThrowFatalWithCpuContext(Result result, os::ProcessId process_id, FatalType policy, const CpuContext &cpu_ctx) {
+        Result ServiceContext::ThrowFatalWithCpuContext(Result result, os::ProcessId process_id, FatalPolicy policy, const CpuContext &cpu_ctx) {
             /* We don't support Error Report only fatals. */
-            R_UNLESS(policy != FatalType_ErrorReport, ResultSuccess());
+            R_UNLESS(policy != FatalPolicy_ErrorReport, ResultSuccess());
 
             /* Note that we've thrown fatal. */
             R_TRY(this->TrySetHasThrown());
@@ -100,7 +100,7 @@ namespace ams::fatal::srv {
             }
 
             /* Decide whether to generate a report. */
-            this->context.generate_error_report = (policy == FatalType_ErrorReportAndErrorScreen);
+            this->context.generate_error_report = (policy == FatalPolicy_ErrorReportAndErrorScreen);
 
             /* Adjust error code (2000-0000 -> 2162-0002). */
             if (R_SUCCEEDED(this->context.result)) {
@@ -108,8 +108,8 @@ namespace ams::fatal::srv {
             }
 
             switch (policy) {
-                case FatalType_ErrorReportAndErrorScreen:
-                case FatalType_ErrorScreen:
+                case FatalPolicy_ErrorReportAndErrorScreen:
+                case FatalPolicy_ErrorScreen:
                     /* Signal that we're throwing. */
                     this->event_manager.SignalEvents();
 
@@ -127,18 +127,18 @@ namespace ams::fatal::srv {
     }
 
     Result ThrowFatalForSelf(Result result) {
-        return g_context.ThrowFatalWithPolicy(result, os::GetCurrentProcessId(), FatalType_ErrorScreen);
+        return g_context.ThrowFatalWithPolicy(result, os::GetCurrentProcessId(), FatalPolicy_ErrorScreen);
     }
 
     Result UserService::ThrowFatal(Result result, const sf::ClientProcessId &client_pid) {
         return g_context.ThrowFatal(result, client_pid.GetValue());
     }
 
-    Result UserService::ThrowFatalWithPolicy(Result result, const sf::ClientProcessId &client_pid, FatalType policy) {
+    Result UserService::ThrowFatalWithPolicy(Result result, const sf::ClientProcessId &client_pid, FatalPolicy policy) {
         return g_context.ThrowFatalWithPolicy(result, client_pid.GetValue(), policy);
     }
 
-    Result UserService::ThrowFatalWithCpuContext(Result result, const sf::ClientProcessId &client_pid, FatalType policy, const CpuContext &cpu_ctx) {
+    Result UserService::ThrowFatalWithCpuContext(Result result, const sf::ClientProcessId &client_pid, FatalPolicy policy, const CpuContext &cpu_ctx) {
         return g_context.ThrowFatalWithCpuContext(result, client_pid.GetValue(), policy, cpu_ctx);
     }
 

@@ -19,7 +19,9 @@ namespace ams::pm::shell {
 
     /* Shell API. */
     Result WEAK LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
-        return pmshellLaunchProcess(launch_flags, static_cast<u64>(loc.title_id), loc.storage_id, reinterpret_cast<u64 *>(out_process_id));
+        static_assert(sizeof(ncm::TitleLocation) == sizeof(NcmProgramLocation));
+        static_assert(alignof(ncm::TitleLocation) == alignof(NcmProgramLocation));
+        return pmshellLaunchProgram(launch_flags, reinterpret_cast<const NcmProgramLocation *>(&loc), reinterpret_cast<u64 *>(out_process_id));
     }
 
 }

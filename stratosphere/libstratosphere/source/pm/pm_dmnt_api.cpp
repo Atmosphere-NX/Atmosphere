@@ -25,16 +25,16 @@ namespace ams::pm::dmnt {
     }
 
     Result GetProcessId(os::ProcessId *out_process_id, const ncm::TitleId title_id) {
-        return pmdmntGetTitlePid(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(title_id));
+        return pmdmntGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(title_id));
     }
 
     Result GetApplicationProcessId(os::ProcessId *out_process_id) {
-        return pmdmntGetApplicationPid(reinterpret_cast<u64 *>(out_process_id));
+        return pmdmntGetApplicationProcessId(reinterpret_cast<u64 *>(out_process_id));
     }
 
     Result HookToCreateApplicationProcess(Handle *out_handle) {
         Event evt;
-        R_TRY(pmdmntEnableDebugForApplication(&evt));
+        R_TRY(pmdmntHookToCreateApplicationProcess(&evt));
         *out_handle = evt.revent;
         return ResultSuccess();
     }
