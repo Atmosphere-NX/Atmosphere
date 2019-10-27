@@ -720,8 +720,27 @@ namespace ams::sf::impl {
             }
     };
 
+    class HipcCommandProcessorCommon : public sf::cmif::ServerMessageProcessor {
+        public:
+            virtual void SetImplementationProcessor(sf::cmif::ServerMessageProcessor *) override final { /* ... */ }
+
+            virtual void PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &out_raw_data, const cmif::ServerMessageRuntimeMetadata runtime_metadata) override final {
+                const size_t raw_size = runtime_metadata.GetOutHeadersSize();
+                const auto response = hipcMakeRequestInline(ctx.out_message_buffer.GetPointer(),
+                    .type = CmifCommandType_Invalid, /* Really response */
+                    .num_data_words = static_cast<u32>((util::AlignUp(raw_size, 0x4) + 0x10 /* padding */) / sizeof(u32)),
+                );
+                out_raw_data = cmif::PointerAndSize(util::AlignUp(reinterpret_cast<uintptr_t>(response.data_words), 0x10), raw_size);
+            }
+
+            virtual Result GetInObjects(cmif::ServiceObjectHolder *in_objects) const override final {
+                /* By default, InObjects aren't supported. */
+                return sf::ResultNotSupported();
+            }
+    };
+
     template<typename CommandMeta>
-    struct HipcCommandProcessor : public sf::cmif::ServerMessageProcessor {
+    struct HipcCommandProcessor : public HipcCommandProcessorCommon {
         public:
             virtual const cmif::ServerMessageRuntimeMetadata GetRuntimeMetadata() const override final {
                 return CommandMeta::RuntimeMetadata;
@@ -758,20 +777,6 @@ namespace ams::sf::impl {
                 );
                 out_raw_data = cmif::PointerAndSize(util::AlignUp(reinterpret_cast<uintptr_t>(response.data_words), 0x10), raw_size);
                 return response;
-            }
-
-            virtual void PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, cmif::PointerAndSize &out_raw_data, const cmif::ServerMessageRuntimeMetadata runtime_metadata) override final {
-                const size_t raw_size = runtime_metadata.GetOutHeadersSize();
-                const auto response = hipcMakeRequestInline(ctx.out_message_buffer.GetPointer(),
-                    .type = CmifCommandType_Invalid, /* Really response */
-                    .num_data_words = static_cast<u32>((util::AlignUp(raw_size, 0x4) + 0x10 /* padding */) / sizeof(u32)),
-                );
-                out_raw_data = cmif::PointerAndSize(util::AlignUp(reinterpret_cast<uintptr_t>(response.data_words), 0x10), raw_size);
-            }
-
-            virtual Result GetInObjects(cmif::ServiceObjectHolder *in_objects) const override final {
-                /* By default, InObjects aren't supported. */
-                return sf::ResultNotSupported();
             }
 
             virtual void SetOutObjects(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response, cmif::ServiceObjectHolder *out_objects, cmif::DomainObjectId *ids) override final {
