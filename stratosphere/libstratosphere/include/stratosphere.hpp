@@ -24,7 +24,7 @@
 #include "stratosphere/os.hpp"
 #include "stratosphere/dd.hpp"
 
-/* Lots of things depend on NCM, for Title IDs. */
+/* Lots of things depend on NCM, for Program IDs. */
 #include "stratosphere/ncm.hpp"
 
 /* At this point, just include the rest alphabetically. */

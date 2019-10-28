@@ -20,16 +20,15 @@ namespace ams::ldr::args {
     namespace {
 
         /* Convenience definitions. */
-        constexpr ncm::TitleId FreeTitleId = {};
         constexpr size_t MaxArgumentInfos = 10;
 
         /* Global storage. */
         ArgumentInfo g_argument_infos[MaxArgumentInfos];
 
         /* Helpers. */
-        ArgumentInfo *FindArgumentInfo(ncm::TitleId title_id) {
+        ArgumentInfo *FindArgumentInfo(ncm::ProgramId program_id) {
             for (size_t i = 0; i < MaxArgumentInfos; i++) {
-                if (g_argument_infos[i].title_id == title_id) {
+                if (g_argument_infos[i].program_id == program_id) {
                     return &g_argument_infos[i];
                 }
             }
@@ -37,34 +36,34 @@ namespace ams::ldr::args {
         }
 
         ArgumentInfo *FindFreeArgumentInfo() {
-            return FindArgumentInfo(FreeTitleId);
+            return FindArgumentInfo(ncm::InvalidProgramId);
         }
 
     }
 
     /* API. */
-    const ArgumentInfo *Get(ncm::TitleId title_id) {
-        return FindArgumentInfo(title_id);
+    const ArgumentInfo *Get(ncm::ProgramId program_id) {
+        return FindArgumentInfo(program_id);
     }
 
-    Result Set(ncm::TitleId title_id, const void *args, size_t args_size) {
+    Result Set(ncm::ProgramId program_id, const void *args, size_t args_size) {
         R_UNLESS(args_size < ArgumentSizeMax, ldr::ResultTooLongArgument());
 
-        ArgumentInfo *arg_info = FindArgumentInfo(title_id);
+        ArgumentInfo *arg_info = FindArgumentInfo(program_id);
         if (arg_info == nullptr) {
             arg_info = FindFreeArgumentInfo();
         }
         R_UNLESS(arg_info != nullptr, ldr::ResultTooManyArguments());
 
-        arg_info->title_id = title_id;
+        arg_info->program_id = program_id;
         arg_info->args_size = args_size;
         std::memcpy(arg_info->args, args, args_size);
         return ResultSuccess();
     }
 
-    Result Clear() {
+    Result Flush() {
         for (size_t i = 0; i < MaxArgumentInfos; i++) {
-            g_argument_infos[i].title_id = FreeTitleId;
+            g_argument_infos[i].program_id = ncm::InvalidProgramId;
         }
         return ResultSuccess();
     }

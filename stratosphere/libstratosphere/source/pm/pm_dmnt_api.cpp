@@ -24,8 +24,8 @@ namespace ams::pm::dmnt {
         return pmdmntStartProcess(static_cast<u64>(process_id));
     }
 
-    Result GetProcessId(os::ProcessId *out_process_id, const ncm::TitleId title_id) {
-        return pmdmntGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(title_id));
+    Result GetProcessId(os::ProcessId *out_process_id, const ncm::ProgramId program_id) {
+        return pmdmntGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(program_id));
     }
 
     Result GetApplicationProcessId(os::ProcessId *out_process_id) {
@@ -39,10 +39,10 @@ namespace ams::pm::dmnt {
         return ResultSuccess();
     }
 
-    Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::TitleLocation *out_loc, os::ProcessId process_id) {
+    Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::ProgramLocation *out_loc, os::ProcessId process_id) {
         *out_handle = INVALID_HANDLE;
         *out_loc = {};
-        return pmdmntAtmosphereGetProcessInfo(out_handle, reinterpret_cast<u64 *>(&out_loc->title_id), &out_loc->storage_id, static_cast<u64>(process_id));
+        return pmdmntAtmosphereGetProcessInfo(out_handle, reinterpret_cast<NcmProgramLocation *>(out_loc), static_cast<u64>(process_id));
     }
 
     Result AtmosphereGetCurrentLimitInfo(u64 *out_current_value, u64 *out_limit_value, ResourceLimitGroup group, LimitableResource resource) {

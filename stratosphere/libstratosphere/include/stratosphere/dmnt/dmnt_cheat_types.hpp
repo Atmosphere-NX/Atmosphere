@@ -28,7 +28,7 @@ namespace ams::dmnt::cheat {
         };
 
         os::ProcessId process_id;
-        ncm::TitleId title_id;
+        ncm::ProgramId program_id;
         MemoryRegionExtents main_nso_extents;
         MemoryRegionExtents heap_extents;
         MemoryRegionExtents alias_extents;

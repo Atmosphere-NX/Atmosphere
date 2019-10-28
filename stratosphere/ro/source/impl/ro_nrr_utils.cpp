@@ -27,8 +27,8 @@ namespace ams::ro::impl {
             /* TODO: Check PSS fixed-key signature. */
             R_UNLESS(true, ResultNotAuthorized());
 
-            /* Check TitleID pattern is valid. */
-            R_UNLESS(header->IsTitleIdValid(), ResultNotAuthorized());
+            /* Check ProgramId pattern is valid. */
+            R_UNLESS(header->IsProgramIdValid(), ResultNotAuthorized());
 
             /* TODO: Check PSS signature over hashes. */
             R_UNLESS(true, ResultNotAuthorized());
@@ -36,7 +36,7 @@ namespace ams::ro::impl {
             return ResultSuccess();
         }
 
-        Result ValidateNrr(const NrrHeader *header, u64 size, ncm::TitleId title_id, ModuleType expected_type, bool enforce_type) {
+        Result ValidateNrr(const NrrHeader *header, u64 size, ncm::ProgramId program_id, ModuleType expected_type, bool enforce_type) {
             /* Check magic. */
             R_UNLESS(header->IsMagicValid(), ResultInvalidNrr());
 
@@ -49,8 +49,8 @@ namespace ams::ro::impl {
                 /* Check signature. */
                 R_TRY(ValidateNrrSignature(header));
 
-                /* Check title id. */
-                R_UNLESS(header->GetTitleId() == title_id, ResultInvalidNrr());
+                /* Check program id. */
+                R_UNLESS(header->GetProgramId() == program_id, ResultInvalidNrr());
 
                 /* Check type. */
                 if (hos::GetVersion() >= hos::Version_700 && enforce_type) {
@@ -64,7 +64,7 @@ namespace ams::ro::impl {
     }
 
     /* Utilities for working with NRRs. */
-    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, ncm::TitleId title_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type) {
+    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, ncm::ProgramId program_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type) {
         map::MappedCodeMemory nrr_mcm(ResultInternalError{});
 
         /* First, map the NRR. */
@@ -79,7 +79,7 @@ namespace ams::ro::impl {
         R_TRY(nrr_map.GetResult());
 
         NrrHeader *nrr_header = reinterpret_cast<NrrHeader *>(map_address);
-        R_TRY(ValidateNrr(nrr_header, nrr_heap_size, title_id, expected_type, enforce_type));
+        R_TRY(ValidateNrr(nrr_header, nrr_heap_size, program_id, expected_type, enforce_type));
 
         /* Invalidation here actually prevents them from unmapping at scope exit. */
         nrr_map.Invalidate();

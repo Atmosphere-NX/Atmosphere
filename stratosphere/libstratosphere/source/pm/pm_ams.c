@@ -17,32 +17,26 @@
 #include <switch.h>
 #include "pm_ams.h"
 
-Result pminfoAtmosphereGetProcessId(u64 *out_pid, u64 tid) {
-    return serviceDispatchInOut(pminfoGetServiceSession(), 65000, tid, *out_pid);
+Result pminfoAtmosphereGetProcessId(u64 *out_pid, u64 program_id) {
+    return serviceDispatchInOut(pminfoGetServiceSession(), 65000, program_id, *out_pid);
 }
 
-Result pminfoAtmosphereHasLaunchedTitle(bool *out, u64 tid) {
+Result pminfoAtmosphereHasLaunchedProgram(bool *out, u64 program_id) {
     u8 tmp;
-    Result rc = serviceDispatchInOut(pminfoGetServiceSession(), 65001, tid, tmp);
+    Result rc = serviceDispatchInOut(pminfoGetServiceSession(), 65001, program_id, tmp);
     if (R_SUCCEEDED(rc) && out) *out = tmp & 1;
     return rc;
 }
 
-Result pmdmntAtmosphereGetProcessInfo(Handle* handle_out, u64 *tid_out, u8 *sid_out, u64 pid) {
-    struct {
-        u64 title_id;
-        u8 storage_id;
-    } out;
+Result pmdmntAtmosphereGetProcessInfo(Handle* handle_out, NcmProgramLocation *loc_out, u64 pid) {
     Handle tmp_handle;
 
-    Result rc = serviceDispatchInOut(pmdmntGetServiceSession(), 65000, pid, out,
+    Result rc = serviceDispatchInOut(pmdmntGetServiceSession(), 65000, pid, *loc_out,
         .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
         .out_handles = &tmp_handle,
     );
 
     if (R_SUCCEEDED(rc)) {
-        if (tid_out) *tid_out = out.title_id;
-        if (sid_out) *sid_out = out.storage_id;
         if (handle_out) {
             *handle_out = tmp_handle;
         } else {

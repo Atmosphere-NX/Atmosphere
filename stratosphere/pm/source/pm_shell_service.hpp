@@ -21,9 +21,9 @@ namespace ams::pm::shell {
     class ShellServiceBase : public sf::IServiceObject {
         protected:
             /* Actual command implementations. */
-            virtual Result LaunchTitle(sf::Out<os::ProcessId> out_process_id, const ncm::TitleLocation &loc, u32 flags);
+            virtual Result LaunchProgram(sf::Out<os::ProcessId> out_process_id, const ncm::ProgramLocation &loc, u32 flags);
             virtual Result TerminateProcess(os::ProcessId process_id);
-            virtual Result TerminateTitle(ncm::TitleId title_id);
+            virtual Result TerminateProgram(ncm::ProgramId program_id);
             virtual void   GetProcessEventHandle(sf::OutCopyHandle out);
             virtual void   GetProcessEventInfo(sf::Out<ProcessEventInfo> out);
             virtual Result CleanupProcess(os::ProcessId process_id);
@@ -39,9 +39,9 @@ namespace ams::pm::shell {
     class ShellService final : public ShellServiceBase {
         private:
             enum class CommandId {
-                LaunchTitle                         = 0,
+                LaunchProgram                         = 0,
                 TerminateProcess                    = 1,
-                TerminateTitle                      = 2,
+                TerminateProgram                      = 2,
                 GetProcessEventHandle               = 3,
                 GetProcessEventInfo                 = 4,
                 NotifyBootFinished                  = 5,
@@ -53,9 +53,9 @@ namespace ams::pm::shell {
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 /* 5.0.0-* */
-                MAKE_SERVICE_COMMAND_META(LaunchTitle),
+                MAKE_SERVICE_COMMAND_META(LaunchProgram),
                 MAKE_SERVICE_COMMAND_META(TerminateProcess),
-                MAKE_SERVICE_COMMAND_META(TerminateTitle),
+                MAKE_SERVICE_COMMAND_META(TerminateProgram),
                 MAKE_SERVICE_COMMAND_META(GetProcessEventHandle),
                 MAKE_SERVICE_COMMAND_META(GetProcessEventInfo),
                 MAKE_SERVICE_COMMAND_META(NotifyBootFinished),
@@ -74,9 +74,9 @@ namespace ams::pm::shell {
     class ShellServiceDeprecated final : public ShellServiceBase {
         private:
             enum class CommandId {
-                LaunchTitle                     = 0,
+                LaunchProgram                     = 0,
                 TerminateProcess                = 1,
-                TerminateTitle                  = 2,
+                TerminateProgram                  = 2,
                 GetProcessEventHandle           = 3,
                 GetProcessEventInfo             = 4,
                 CleanupProcess                  = 5,
@@ -88,9 +88,9 @@ namespace ams::pm::shell {
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 /* 1.0.0-4.1.0 */
-                MAKE_SERVICE_COMMAND_META(LaunchTitle),
+                MAKE_SERVICE_COMMAND_META(LaunchProgram),
                 MAKE_SERVICE_COMMAND_META(TerminateProcess),
-                MAKE_SERVICE_COMMAND_META(TerminateTitle),
+                MAKE_SERVICE_COMMAND_META(TerminateProgram),
                 MAKE_SERVICE_COMMAND_META(GetProcessEventHandle),
                 MAKE_SERVICE_COMMAND_META(GetProcessEventInfo),
                 MAKE_SERVICE_COMMAND_META(CleanupProcess),

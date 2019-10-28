@@ -73,7 +73,7 @@ namespace ams::ldr {
         struct CreateProcessInfo {
             char name[12];
             u32  version;
-            ncm::TitleId title_id;
+            ncm::ProgramId program_id;
             u64  code_address;
             u32  code_num_pages;
             u32  flags;
@@ -95,8 +95,8 @@ namespace ams::ldr {
         NsoHeader g_nso_headers[Nso_Count];
 
         /* Anti-downgrade. */
-        struct MinimumTitleVersion {
-            ncm::TitleId title_id;
+        struct MinimumProgramVersion {
+            ncm::ProgramId program_id;
             u32 version;
         };
 
@@ -104,104 +104,104 @@ namespace ams::ldr {
             return (major << 26) | (minor << 20) | (micro << 16);
         }
 
-        constexpr MinimumTitleVersion g_MinimumTitleVersions810[] = {
-            {ncm::TitleId::Settings,    1},
-            {ncm::TitleId::Bus,         1},
-            {ncm::TitleId::Audio,       1},
-            {ncm::TitleId::NvServices,  1},
-            {ncm::TitleId::Ns,          1},
-            {ncm::TitleId::Ssl,         1},
-            {ncm::TitleId::Es,          1},
-            {ncm::TitleId::Creport,     1},
-            {ncm::TitleId::Ro,          1},
+        constexpr MinimumProgramVersion g_MinimumProgramVersions810[] = {
+            {ncm::ProgramId::Settings,    1},
+            {ncm::ProgramId::Bus,         1},
+            {ncm::ProgramId::Audio,       1},
+            {ncm::ProgramId::NvServices,  1},
+            {ncm::ProgramId::Ns,          1},
+            {ncm::ProgramId::Ssl,         1},
+            {ncm::ProgramId::Es,          1},
+            {ncm::ProgramId::Creport,     1},
+            {ncm::ProgramId::Ro,          1},
         };
-        constexpr size_t g_MinimumTitleVersionsCount810 = util::size(g_MinimumTitleVersions810);
+        constexpr size_t g_MinimumProgramVersionsCount810 = util::size(g_MinimumProgramVersions810);
 
-        constexpr MinimumTitleVersion g_MinimumTitleVersions900[] = {
+        constexpr MinimumProgramVersion g_MinimumProgramVersions900[] = {
             /* All non-Development System Modules. */
-            {ncm::TitleId::Usb,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Tma,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Boot2,       MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Settings,    MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Bus,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Bluetooth,   MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Bcat,        MakeSystemVersion(9, 0, 0)},
-         /* {ncm::TitleId::Dmnt,        MakeSystemVersion(9, 0, 0)}, */
-            {ncm::TitleId::Friends,     MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Nifm,        MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Ptm,         MakeSystemVersion(9, 0, 0)},
-         /* {ncm::TitleId::Shell,       MakeSystemVersion(9, 0, 0)}, */
-            {ncm::TitleId::BsdSockets,  MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Hid,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Audio,       MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::LogManager,  MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Wlan,        MakeSystemVersion(9, 0, 0)},
-         /* {ncm::TitleId::Cs,          MakeSystemVersion(9, 0, 0)}, */
-            {ncm::TitleId::Ldn,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::NvServices,  MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Pcv,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Ppc,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::NvnFlinger,  MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Pcie,        MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Account,     MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Ns,          MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Nfc,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Psc,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::CapSrv,      MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Am,          MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Ssl,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Nim,         MakeSystemVersion(9, 0, 0)},
-         /* {ncm::TitleId::Cec,         MakeSystemVersion(9, 0, 0)}, */
-         /* {ncm::TitleId::Tspm,        MakeSystemVersion(9, 0, 0)}, */
-         /* {ncm::TitleId::Spl,         MakeSystemVersion(9, 0, 0)}, */
-            {ncm::TitleId::Lbl,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Btm,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Erpt,        MakeSystemVersion(9, 0, 0)},
-         /* {ncm::TitleId::Time,        MakeSystemVersion(9, 0, 0)}, */
-            {ncm::TitleId::Vi,          MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Pctl,        MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Npns,        MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Eupld,       MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Glue,        MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Eclct,       MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Es,          MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Fatal,       MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Grc,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Creport,     MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Ro,          MakeSystemVersion(9, 0, 0)},
-         /* {ncm::TitleId::Profiler,    MakeSystemVersion(9, 0, 0)}, */
-            {ncm::TitleId::Sdb,         MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Migration,   MakeSystemVersion(9, 0, 0)},
-         /* {ncm::TitleId::Jit,         MakeSystemVersion(9, 0, 0)}, */
-            {ncm::TitleId::JpegDec,     MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::SafeMode,    MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::Olsc,        MakeSystemVersion(9, 0, 0)},
-         /* {ncm::TitleId::Dt,          MakeSystemVersion(9, 0, 0)}, */
-         /* {ncm::TitleId::Nd,          MakeSystemVersion(9, 0, 0)}, */
-            {ncm::TitleId::Ngct,        MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Usb,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Tma,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Boot2,       MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Settings,    MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Bus,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Bluetooth,   MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Bcat,        MakeSystemVersion(9, 0, 0)},
+         /* {ncm::ProgramId::Dmnt,        MakeSystemVersion(9, 0, 0)}, */
+            {ncm::ProgramId::Friends,     MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Nifm,        MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Ptm,         MakeSystemVersion(9, 0, 0)},
+         /* {ncm::ProgramId::Shell,       MakeSystemVersion(9, 0, 0)}, */
+            {ncm::ProgramId::BsdSockets,  MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Hid,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Audio,       MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::LogManager,  MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Wlan,        MakeSystemVersion(9, 0, 0)},
+         /* {ncm::ProgramId::Cs,          MakeSystemVersion(9, 0, 0)}, */
+            {ncm::ProgramId::Ldn,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::NvServices,  MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Pcv,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Ppc,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::NvnFlinger,  MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Pcie,        MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Account,     MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Ns,          MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Nfc,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Psc,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::CapSrv,      MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Am,          MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Ssl,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Nim,         MakeSystemVersion(9, 0, 0)},
+         /* {ncm::ProgramId::Cec,         MakeSystemVersion(9, 0, 0)}, */
+         /* {ncm::ProgramId::Tspm,        MakeSystemVersion(9, 0, 0)}, */
+         /* {ncm::ProgramId::Spl,         MakeSystemVersion(9, 0, 0)}, */
+            {ncm::ProgramId::Lbl,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Btm,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Erpt,        MakeSystemVersion(9, 0, 0)},
+         /* {ncm::ProgramId::Time,        MakeSystemVersion(9, 0, 0)}, */
+            {ncm::ProgramId::Vi,          MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Pctl,        MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Npns,        MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Eupld,       MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Glue,        MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Eclct,       MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Es,          MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Fatal,       MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Grc,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Creport,     MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Ro,          MakeSystemVersion(9, 0, 0)},
+         /* {ncm::ProgramId::Profiler,    MakeSystemVersion(9, 0, 0)}, */
+            {ncm::ProgramId::Sdb,         MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Migration,   MakeSystemVersion(9, 0, 0)},
+         /* {ncm::ProgramId::Jit,         MakeSystemVersion(9, 0, 0)}, */
+            {ncm::ProgramId::JpegDec,     MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::SafeMode,    MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::Olsc,        MakeSystemVersion(9, 0, 0)},
+         /* {ncm::ProgramId::Dt,          MakeSystemVersion(9, 0, 0)}, */
+         /* {ncm::ProgramId::Nd,          MakeSystemVersion(9, 0, 0)}, */
+            {ncm::ProgramId::Ngct,        MakeSystemVersion(9, 0, 0)},
 
             /* All Web Applets. */
-            {ncm::TitleId::AppletWeb,           MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::AppletShop,          MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::AppletOfflineWeb,    MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::AppletLoginShare,    MakeSystemVersion(9, 0, 0)},
-            {ncm::TitleId::AppletWifiWebAuth,   MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::AppletWeb,           MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::AppletShop,          MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::AppletOfflineWeb,    MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::AppletLoginShare,    MakeSystemVersion(9, 0, 0)},
+            {ncm::ProgramId::AppletWifiWebAuth,   MakeSystemVersion(9, 0, 0)},
         };
-        constexpr size_t g_MinimumTitleVersionsCount900 = util::size(g_MinimumTitleVersions900);
+        constexpr size_t g_MinimumProgramVersionsCount900 = util::size(g_MinimumProgramVersions900);
 
-        Result ValidateTitleVersion(ncm::TitleId title_id, u32 version) {
+        Result ValidateProgramVersion(ncm::ProgramId program_id, u32 version) {
             R_UNLESS(hos::GetVersion() >= hos::Version_810, ResultSuccess());
 #ifdef LDR_VALIDATE_PROCESS_VERSION
-            const MinimumTitleVersion *entries = nullptr;
+            const MinimumProgramVersion *entries = nullptr;
             size_t num_entries = 0;
             switch (hos::GetVersion()) {
                 case hos::Version_810:
-                    entries = g_MinimumTitleVersions810;
-                    num_entries = g_MinimumTitleVersionsCount810;
+                    entries = g_MinimumProgramVersions810;
+                    num_entries = g_MinimumProgramVersionsCount810;
                     break;
                 case hos::Version_900:
-                    entries = g_MinimumTitleVersions900;
-                    num_entries = g_MinimumTitleVersionsCount900;
+                    entries = g_MinimumProgramVersions900;
+                    num_entries = g_MinimumProgramVersionsCount900;
                     break;
                 default:
                     entries = nullptr;
@@ -210,7 +210,7 @@ namespace ams::ldr {
             }
 
             for (size_t i = 0; i < num_entries; i++) {
-                if (entries[i].title_id == title_id) {
+                if (entries[i].program_id == program_id) {
                     R_UNLESS(entries[i].version <= version, ResultInvalidVersion());
                 }
             }
@@ -224,7 +224,7 @@ namespace ams::ldr {
             out->main_thread_priority = meta->npdm->main_thread_priority;
             out->default_cpu_id = meta->npdm->default_cpu_id;
             out->main_thread_stack_size = meta->npdm->main_thread_stack_size;
-            out->title_id = meta->aci->title_id;
+            out->program_id = meta->aci->program_id;
 
             /* Copy access controls. */
             size_t offset = 0;
@@ -265,14 +265,14 @@ namespace ams::ldr {
             return static_cast<Acid::PoolPartition>((meta->acid->flags & Acid::AcidFlag_PoolPartitionMask) >> Acid::AcidFlag_PoolPartitionShift);
         }
 
-        Result LoadNsoHeaders(ncm::TitleId title_id, NsoHeader *nso_headers, bool *has_nso) {
+        Result LoadNsoHeaders(ncm::ProgramId program_id, NsoHeader *nso_headers, bool *has_nso) {
             /* Clear NSOs. */
             std::memset(nso_headers, 0, sizeof(*nso_headers) * Nso_Count);
             std::memset(has_nso, 0, sizeof(*has_nso) * Nso_Count);
 
             for (size_t i = 0; i < Nso_Count; i++) {
                 FILE *f = nullptr;
-                if (R_SUCCEEDED(OpenCodeFile(f, title_id, GetNsoName(i)))) {
+                if (R_SUCCEEDED(OpenCodeFile(f, program_id, GetNsoName(i)))) {
                     ON_SCOPE_EXIT { fclose(f); };
                     /* Read NSO header. */
                     R_UNLESS(fread(nso_headers + i, sizeof(*nso_headers), 1, f) == 1, ResultInvalidNso());
@@ -302,13 +302,13 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result ValidateMeta(const Meta *meta, const ncm::TitleLocation &loc) {
+        Result ValidateMeta(const Meta *meta, const ncm::ProgramLocation &loc) {
             /* Validate version. */
-            R_TRY(ValidateTitleVersion(loc.title_id, meta->npdm->version));
+            R_TRY(ValidateProgramVersion(loc.program_id, meta->npdm->version));
 
-            /* Validate title id. */
-            R_UNLESS(meta->aci->title_id >= meta->acid->title_id_min, ResultInvalidProgramId());
-            R_UNLESS(meta->aci->title_id <= meta->acid->title_id_max, ResultInvalidProgramId());
+            /* Validate program id. */
+            R_UNLESS(meta->aci->program_id >= meta->acid->program_id_min, ResultInvalidProgramId());
+            R_UNLESS(meta->aci->program_id <= meta->acid->program_id_max, ResultInvalidProgramId());
 
             /* Validate the kernel capabilities. */
             R_TRY(caps::ValidateCapabilities(meta->acid_kac, meta->acid->kac_size, meta->aci_kac, meta->aci->kac_size));
@@ -404,10 +404,10 @@ namespace ams::ldr {
             /* Clear output. */
             std::memset(out, 0, sizeof(*out));
 
-            /* Set name, version, title id, resource limit handle. */
-            std::memcpy(out->name, meta->npdm->title_name, sizeof(out->name) - 1);
+            /* Set name, version, program id, resource limit handle. */
+            std::memcpy(out->name, meta->npdm->program_name, sizeof(out->name) - 1);
             out->version = meta->npdm->version;
-            out->title_id = meta->aci->title_id;
+            out->program_id = meta->aci->program_id;
             out->reslimit = reslimit_h;
 
             /* Set flags. */
@@ -611,14 +611,14 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result LoadNsosIntoProcessMemory(const ProcessInfo *process_info, const ncm::TitleId title_id, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
+        Result LoadNsosIntoProcessMemory(const ProcessInfo *process_info, const ncm::ProgramId program_id, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
             const Handle process_handle = process_info->process_handle.Get();
 
             /* Load each NSO. */
             for (size_t i = 0; i < Nso_Count; i++) {
                 if (has_nso[i]) {
                     FILE *f = nullptr;
-                    R_TRY(OpenCodeFile(f, title_id, GetNsoName(i)));
+                    R_TRY(OpenCodeFile(f, program_id, GetNsoName(i)));
                     ON_SCOPE_EXIT { fclose(f); };
 
                     uintptr_t map_address = 0;
@@ -655,11 +655,11 @@ namespace ams::ldr {
     }
 
     /* Process Creation API. */
-    Result CreateProcess(Handle *out, PinId pin_id, const ncm::TitleLocation &loc, const char *path, u32 flags, Handle reslimit_h) {
+    Result CreateProcess(Handle *out, PinId pin_id, const ncm::ProgramLocation &loc, const char *path, u32 flags, Handle reslimit_h) {
         /* Use global storage for NSOs. */
         NsoHeader *nso_headers = g_nso_headers;
         bool *has_nso = g_has_nso;
-        const auto arg_info = args::Get(loc.title_id);
+        const auto arg_info = args::Get(loc.program_id);
 
         {
             /* Mount code. */
@@ -668,13 +668,13 @@ namespace ams::ldr {
 
             /* Load meta, possibly from cache. */
             Meta meta;
-            R_TRY(LoadMetaFromCache(&meta, loc.title_id));
+            R_TRY(LoadMetaFromCache(&meta, loc.program_id));
 
             /* Validate meta. */
             R_TRY(ValidateMeta(&meta, loc));
 
             /* Load, validate NSOs. */
-            R_TRY(LoadNsoHeaders(loc.title_id, nso_headers, has_nso));
+            R_TRY(LoadNsoHeaders(loc.program_id, nso_headers, has_nso));
             R_TRY(ValidateNsoHeaders(nso_headers, has_nso));
 
             /* Actually create process. */
@@ -682,7 +682,7 @@ namespace ams::ldr {
             R_TRY(CreateProcessImpl(&info, &meta, nso_headers, has_nso, arg_info, flags, reslimit_h));
 
             /* Load NSOs into process memory. */
-            R_TRY(LoadNsosIntoProcessMemory(&info, loc.title_id, nso_headers, has_nso, arg_info));
+            R_TRY(LoadNsosIntoProcessMemory(&info, loc.program_id, nso_headers, has_nso, arg_info));
 
             /* Register NSOs with ro manager. */
             {
@@ -690,7 +690,7 @@ namespace ams::ldr {
                 os::ProcessId process_id = os::GetProcessId(info.process_handle.Get());
 
                 /* Register new process. */
-                ldr::ro::RegisterProcess(pin_id, process_id, loc.title_id);
+                ldr::ro::RegisterProcess(pin_id, process_id, loc.program_id);
 
                 /* Register all NSOs. */
                 for (size_t i = 0; i < Nso_Count; i++) {
@@ -706,11 +706,11 @@ namespace ams::ldr {
                 RedirectHtmlDocumentPathForHbl(loc);
             }
 
-            /* Clear the ECS entry for the title. */
-            R_ASSERT(ecs::Clear(loc.title_id));
+            /* Clear the ECS entry for the program. */
+            R_ASSERT(ecs::Clear(loc.program_id));
 
-            /* Note that we've created the title. */
-            SetLaunchedTitle(loc.title_id);
+            /* Note that we've created the program. */
+            SetLaunchedProgram(loc.program_id);
 
             /* Move the process handle to output. */
             *out = info.process_handle.Move();
@@ -719,14 +719,14 @@ namespace ams::ldr {
         return ResultSuccess();
     }
 
-    Result GetProgramInfo(ProgramInfo *out, const ncm::TitleLocation &loc) {
+    Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc) {
         Meta meta;
 
         /* Load Meta. */
         {
             ScopedCodeMount mount(loc);
             R_TRY(mount.GetResult());
-            R_TRY(LoadMeta(&meta, loc.title_id));
+            R_TRY(LoadMeta(&meta, loc.program_id));
         }
 
         return GetProgramInfoFromMeta(out, &meta);

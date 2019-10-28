@@ -19,22 +19,22 @@
 namespace ams::pm::info {
 
     /* Overrides for libstratosphere pm::info commands. */
-    Result HasLaunchedTitle(bool *out, ncm::TitleId title_id) {
-        return ldr::pm::HasLaunchedTitle(out, title_id);
+    Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
+        return ldr::pm::HasLaunchedProgram(out, program_id);
     }
 
     /* Actual command implementations. */
-    Result InformationService::GetTitleId(sf::Out<ncm::TitleId> out, os::ProcessId process_id) {
-        return impl::GetTitleId(out.GetPointer(), process_id);
+    Result InformationService::GetProgramId(sf::Out<ncm::ProgramId> out, os::ProcessId process_id) {
+        return impl::GetProgramId(out.GetPointer(), process_id);
     }
 
     /* Atmosphere extension commands. */
-    Result InformationService::AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::TitleId title_id) {
-        return impl::GetProcessId(out.GetPointer(), title_id);
+    Result InformationService::AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id) {
+        return impl::GetProcessId(out.GetPointer(), program_id);
     }
 
-    Result InformationService::AtmosphereHasLaunchedTitle(sf::Out<bool> out, ncm::TitleId title_id) {
-        return pm::info::HasLaunchedTitle(out.GetPointer(), title_id);
+    Result InformationService::AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id) {
+        return pm::info::HasLaunchedProgram(out.GetPointer(), program_id);
     }
 
 }

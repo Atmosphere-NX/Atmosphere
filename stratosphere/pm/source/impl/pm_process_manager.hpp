@@ -22,10 +22,10 @@ namespace ams::pm::impl {
     Result InitializeProcessManager();
 
     /* Process Management. */
-    Result LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 flags);
+    Result LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 flags);
     Result StartProcess(os::ProcessId process_id);
     Result TerminateProcess(os::ProcessId process_id);
-    Result TerminateTitle(ncm::TitleId title_id);
+    Result TerminateProgram(ncm::ProgramId program_id);
     Result GetProcessEventHandle(Handle *out);
     Result GetProcessEventInfo(ProcessEventInfo *out);
     Result CleanupProcess(os::ProcessId process_id);
@@ -34,13 +34,13 @@ namespace ams::pm::impl {
     /* Information Getters. */
     Result GetModuleIdList(u32 *out_count, u8 *out_buf, size_t max_out_count, u64 unused);
     Result GetExceptionProcessIdList(u32 *out_count, os::ProcessId *out_process_ids, size_t max_out_count);
-    Result GetProcessId(os::ProcessId *out, ncm::TitleId title_id);
-    Result GetTitleId(ncm::TitleId *out, os::ProcessId process_id);
+    Result GetProcessId(os::ProcessId *out, ncm::ProgramId program_id);
+    Result GetProgramId(ncm::ProgramId *out, os::ProcessId process_id);
     Result GetApplicationProcessId(os::ProcessId *out_process_id);
-    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::TitleLocation *out_loc, os::ProcessId process_id);
+    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::ProgramLocation *out_loc, os::ProcessId process_id);
 
     /* Hook API. */
-    Result HookToCreateProcess(Handle *out_hook, ncm::TitleId title_id);
+    Result HookToCreateProcess(Handle *out_hook, ncm::ProgramId program_id);
     Result HookToCreateApplicationProcess(Handle *out_hook);
     Result ClearHook(u32 which);
 

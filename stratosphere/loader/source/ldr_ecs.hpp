@@ -19,8 +19,8 @@
 namespace ams::ldr::ecs {
 
     /* External Content Source API. */
-    const char *Get(ncm::TitleId title_id);
-    Result Set(Handle *out, ncm::TitleId title_id);
-    Result Clear(ncm::TitleId title_id);
+    const char *Get(ncm::ProgramId program_id);
+    Result Set(Handle *out, ncm::ProgramId program_id);
+    Result Clear(ncm::ProgramId program_id);
 
 }

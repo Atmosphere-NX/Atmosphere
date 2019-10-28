@@ -23,7 +23,7 @@ extern "C" {
     u32 __nx_fs_num_sessions = 1;
     u32 __nx_fsdev_direntry_cache_size = 1;
 
-    #define INNER_HEAP_SIZE 0x4000
+    #define INNER_HEAP_SIZE 0x8000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -39,7 +39,7 @@ extern "C" {
 
 namespace ams {
 
-    ncm::TitleId CurrentTitleId = ncm::TitleId::Loader;
+    ncm::ProgramId CurrentProgramId = ncm::ProgramId::Loader;
 
     namespace result {
 

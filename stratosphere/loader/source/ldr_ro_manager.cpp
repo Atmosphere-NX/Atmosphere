@@ -33,8 +33,8 @@ namespace ams::ldr::ro {
         struct ProcessInfo {
             PinId pin_id;
             os::ProcessId process_id;
-            ncm::TitleId title_id;
-            ncm::TitleLocation loc;
+            ncm::ProgramId program_id;
+            ncm::ProgramLocation loc;
             ModuleInfo modules[ModuleCountMax];
             bool in_use;
         };
@@ -76,7 +76,7 @@ namespace ams::ldr::ro {
     }
 
     /* RO Manager API. */
-    Result PinTitle(PinId *out, const ncm::TitleLocation &loc) {
+    Result PinProgram(PinId *out, const ncm::ProgramLocation &loc) {
         *out = InvalidPinId;
         ProcessInfo *info = GetFreeProcessInfo();
         R_UNLESS(info != nullptr, ldr::ResultTooManyProcesses());
@@ -91,7 +91,7 @@ namespace ams::ldr::ro {
         return ResultSuccess();
     }
 
-    Result UnpinTitle(PinId id) {
+    Result UnpinProgram(PinId id) {
         ProcessInfo *info = GetProcessInfo(id);
         R_UNLESS(info != nullptr, ldr::ResultNotPinned());
 
@@ -100,7 +100,7 @@ namespace ams::ldr::ro {
     }
 
 
-    Result GetTitleLocation(ncm::TitleLocation *out, PinId id) {
+    Result GetProgramLocation(ncm::ProgramLocation *out, PinId id) {
         ProcessInfo *info = GetProcessInfo(id);
         R_UNLESS(info != nullptr, ldr::ResultNotPinned());
 
@@ -108,11 +108,11 @@ namespace ams::ldr::ro {
         return ResultSuccess();
     }
 
-    Result RegisterProcess(PinId id, os::ProcessId process_id, ncm::TitleId title_id) {
+    Result RegisterProcess(PinId id, os::ProcessId process_id, ncm::ProgramId program_id) {
         ProcessInfo *info = GetProcessInfo(id);
         R_UNLESS(info != nullptr, ldr::ResultNotPinned());
 
-        info->title_id = title_id;
+        info->program_id = program_id;
         info->process_id = process_id;
         return ResultSuccess();
     }

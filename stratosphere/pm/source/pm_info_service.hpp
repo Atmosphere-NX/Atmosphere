@@ -21,24 +21,24 @@ namespace ams::pm::info {
     class InformationService final : public sf::IServiceObject {
         private:
             enum class CommandId {
-                GetTitleId                 = 0,
+                GetProgramId                 = 0,
 
                 AtmosphereGetProcessId     = 65000,
-                AtmosphereHasLaunchedTitle = 65001,
+                AtmosphereHasLaunchedProgram = 65001,
             };
         private:
             /* Actual command implementations. */
-            Result GetTitleId(sf::Out<ncm::TitleId> out, os::ProcessId process_id);
+            Result GetProgramId(sf::Out<ncm::ProgramId> out, os::ProcessId process_id);
 
             /* Atmosphere extension commands. */
-            Result AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::TitleId title_id);
-            Result AtmosphereHasLaunchedTitle(sf::Out<bool> out, ncm::TitleId title_id);
+            Result AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id);
+            Result AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GetTitleId),
+                MAKE_SERVICE_COMMAND_META(GetProgramId),
 
                 MAKE_SERVICE_COMMAND_META(AtmosphereGetProcessId),
-                MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedTitle),
+                MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedProgram),
             };
     };
 

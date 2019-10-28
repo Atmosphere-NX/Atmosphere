@@ -210,7 +210,7 @@ namespace ams::fatal::srv {
             font::SetFontSize(16.0f);
             font::PrintFormat(config.GetErrorMessage(), this->context->result.GetModule(), this->context->result.GetDescription(), this->context->result.GetValue());
             font::AddSpacingLines(0.5f);
-            font::PrintFormatLine("Title: %016lX", static_cast<u64>(this->context->title_id));
+            font::PrintFormatLine(  "Program:  %016lX", static_cast<u64>(this->context->program_id));
             font::AddSpacingLines(0.5f);
             font::PrintFormatLine(u8"Firmware: %s (Atmosphère %u.%u.%u-%s)", config.GetFirmwareVersion().display_version, ATMOSPHERE_RELEASE_VERSION, ams::GetGitRevision());
             font::AddSpacingLines(1.5f);

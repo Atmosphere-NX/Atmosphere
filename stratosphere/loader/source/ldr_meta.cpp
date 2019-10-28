@@ -32,7 +32,7 @@ namespace ams::ldr {
         };
 
         /* Global storage. */
-        ncm::TitleId g_cached_title_id;
+        ncm::ProgramId g_cached_program_id;
         MetaCache g_meta_cache;
         MetaCache g_original_meta_cache;
 
@@ -144,25 +144,25 @@ namespace ams::ldr {
     }
 
     /* API. */
-    Result LoadMeta(Meta *out_meta, ncm::TitleId title_id) {
+    Result LoadMeta(Meta *out_meta, ncm::ProgramId program_id) {
         FILE *f = nullptr;
 
         /* Try to load meta from file. */
-        R_TRY(OpenCodeFile(f, title_id, MetaFilePath));
+        R_TRY(OpenCodeFile(f, program_id, MetaFilePath));
         {
             ON_SCOPE_EXIT { fclose(f); };
             R_TRY(LoadMetaFromFile(f, &g_meta_cache));
         }
 
-        /* Patch meta. Start by setting all title ids to the current title id. */
+        /* Patch meta. Start by setting all program ids to the current program id. */
         Meta *meta = &g_meta_cache.meta;
-        meta->acid->title_id_min = title_id;
-        meta->acid->title_id_max = title_id;
-        meta->aci->title_id = title_id;
+        meta->acid->program_id_min = program_id;
+        meta->acid->program_id_max = program_id;
+        meta->aci->program_id = program_id;
 
         /* For HBL, we need to copy some information from the base meta. */
-        if (cfg::IsHblOverrideKeyHeld(title_id)) {
-            if (R_SUCCEEDED(OpenCodeFileFromBaseExefs(f, title_id, MetaFilePath))) {
+        if (cfg::IsHblOverrideKeyHeld(program_id)) {
+            if (R_SUCCEEDED(OpenCodeFileFromBaseExefs(f, program_id, MetaFilePath))) {
                 ON_SCOPE_EXIT { fclose(f); };
                 if (R_SUCCEEDED(LoadMetaFromFile(f, &g_original_meta_cache))) {
                     Meta *o_meta = &g_original_meta_cache.meta;
@@ -181,23 +181,23 @@ namespace ams::ldr {
         }
 
         /* Set output. */
-        g_cached_title_id = title_id;
+        g_cached_program_id = program_id;
         *out_meta = *meta;
 
         return ResultSuccess();
     }
 
-    Result LoadMetaFromCache(Meta *out_meta, ncm::TitleId title_id) {
-        if (g_cached_title_id != title_id) {
-            return LoadMeta(out_meta, title_id);
+    Result LoadMetaFromCache(Meta *out_meta, ncm::ProgramId program_id) {
+        if (g_cached_program_id != program_id) {
+            return LoadMeta(out_meta, program_id);
         }
         *out_meta = g_meta_cache.meta;
         return ResultSuccess();
     }
 
     void InvalidateMetaCache() {
-        /* Set the cached title id back to zero. */
-        g_cached_title_id = {};
+        /* Set the cached program id back to zero. */
+        g_cached_program_id = {};
     }
 
 }

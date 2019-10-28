@@ -81,9 +81,9 @@ namespace ams::fatal::srv {
                 this->context.cpu_ctx.aarch32_ctx.stack_trace_size = std::max(size_t(this->context.cpu_ctx.aarch32_ctx.stack_trace_size), aarch32::CpuContext::MaxStackTraceDepth);
             }
 
-            /* Get title id. */
-            pm::info::GetTitleId(&this->context.title_id, process_id);
-            this->context.is_creport = (this->context.title_id == ncm::TitleId::Creport);
+            /* Get program id. */
+            pm::info::GetProgramId(&this->context.program_id, process_id);
+            this->context.is_creport = (this->context.program_id == ncm::ProgramId::Creport);
 
             if (!this->context.is_creport) {
                 /* On firmware version 2.0.0, use debugging SVCs to collect information. */
@@ -91,11 +91,11 @@ namespace ams::fatal::srv {
                     fatal::srv::TryCollectDebugInformation(&this->context, process_id);
                 }
             } else {
-                /* We received info from creport. Parse title id from afsr0. */
+                /* We received info from creport. Parse program id from afsr0. */
                 if (cpu_ctx.architecture == CpuContext::Architecture_Aarch64) {
-                    this->context.title_id = cpu_ctx.aarch64_ctx.GetTitleIdForAtmosphere();
+                    this->context.program_id = cpu_ctx.aarch64_ctx.GetProgramIdForAtmosphere();
                 } else {
-                    this->context.title_id = cpu_ctx.aarch32_ctx.GetTitleIdForAtmosphere();
+                    this->context.program_id = cpu_ctx.aarch32_ctx.GetProgramIdForAtmosphere();
                 }
             }
 

@@ -33,12 +33,12 @@ namespace ams::pm::dmnt {
         return impl::StartProcess(process_id);
     }
 
-    Result DebugMonitorServiceBase::GetProcessId(sf::Out<os::ProcessId> out, ncm::TitleId title_id) {
-        return impl::GetProcessId(out.GetPointer(), title_id);
+    Result DebugMonitorServiceBase::GetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id) {
+        return impl::GetProcessId(out.GetPointer(), program_id);
     }
 
-    Result DebugMonitorServiceBase::HookToCreateProcess(sf::OutCopyHandle out_hook, ncm::TitleId title_id) {
-        return impl::HookToCreateProcess(out_hook.GetHandlePointer(), title_id);
+    Result DebugMonitorServiceBase::HookToCreateProcess(sf::OutCopyHandle out_hook, ncm::ProgramId program_id) {
+        return impl::HookToCreateProcess(out_hook.GetHandlePointer(), program_id);
     }
 
     Result DebugMonitorServiceBase::GetApplicationProcessId(sf::Out<os::ProcessId> out) {
@@ -54,7 +54,7 @@ namespace ams::pm::dmnt {
     }
 
     /* Atmosphere extension commands. */
-    Result DebugMonitorServiceBase::AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::TitleLocation> out_loc, os::ProcessId process_id) {
+    Result DebugMonitorServiceBase::AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::ProgramLocation> out_loc, os::ProcessId process_id) {
         return impl::AtmosphereGetProcessInfo(out_process_handle.GetHandlePointer(), out_loc.GetPointer(), process_id);
     }
 

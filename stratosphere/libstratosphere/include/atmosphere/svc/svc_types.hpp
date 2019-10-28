@@ -29,7 +29,7 @@ namespace ams::svc {
     };
 
     struct DebugInfoAttachProcess {
-        u64 title_id;
+        u64 program_id;
         u64 process_id;
         char name[0xC];
         u32 flags;

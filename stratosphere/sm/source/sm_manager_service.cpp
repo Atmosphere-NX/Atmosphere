@@ -19,7 +19,7 @@
 namespace ams::sm {
 
     Result ManagerService::RegisterProcess(os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac) {
-        return impl::RegisterProcess(process_id, ncm::TitleId::Invalid, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
+        return impl::RegisterProcess(process_id, ncm::ProgramId::Invalid, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
     }
 
     Result ManagerService::UnregisterProcess(os::ProcessId process_id) {
@@ -34,9 +34,9 @@ namespace ams::sm {
         R_ASSERT(impl::HasMitm(out.GetPointer(), service));
     }
 
-    Result ManagerService::AtmosphereRegisterProcess(os::ProcessId process_id, ncm::TitleId title_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac) {
-        /* This takes in a title id, unlike RegisterProcess. */
-        return impl::RegisterProcess(process_id, title_id, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
+    Result ManagerService::AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac) {
+        /* This takes in a program id, unlike RegisterProcess. */
+        return impl::RegisterProcess(process_id, program_id, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
     }
 
 }

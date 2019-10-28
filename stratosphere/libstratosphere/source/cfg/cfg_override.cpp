@@ -28,11 +28,11 @@ namespace ams::cfg {
 
         struct HblOverrideConfig {
             OverrideKey override_key;
-            ncm::TitleId title_id;
+            ncm::ProgramId program_id;
             bool override_any_app;
         };
 
-        struct TitleSpecificOverrideConfig {
+        struct ContentSpecificOverrideConfig {
             OverrideKey override_key;
             OverrideKey cheat_enable_key;
         };
@@ -53,7 +53,7 @@ namespace ams::cfg {
                 .key_combination = KEY_R,
                 .override_by_default = false,
             },
-            .title_id = ncm::TitleId::AppletPhotoViewer,
+            .program_id = ncm::ProgramId::AppletPhotoViewer,
             .override_any_app = true,
         };
 
@@ -114,10 +114,11 @@ namespace ams::cfg {
         int LoaderIniHandler(void *user, const char *section, const char *name, const char *value) {
             /* Taken and modified, with love, from Rajkosto's implementation. */
             if (strcasecmp(section, "hbl_config") == 0) {
-                if (strcasecmp(name, "title_id") == 0) {
-                    u64 override_tid = strtoul(value, NULL, 16);
-                    if (override_tid != 0) {
-                        g_hbl_override_config.title_id = {override_tid};
+                /* TODO: Consider deprecating "title_id" string in the future." */
+                if (strcasecmp(name, "program_id") == 0 || strcasecmp(name, "title_id") == 0) {
+                    u64 override_program_id = strtoul(value, NULL, 16);
+                    if (override_program_id != 0) {
+                        g_hbl_override_config.program_id = {override_program_id};
                     }
                 } else if (strcasecmp(name, "path") == 0) {
                     while (*value == '/' || *value == '\\') {
@@ -148,8 +149,8 @@ namespace ams::cfg {
             return 1;
         }
 
-        int TitleSpecificIniHandler(void *user, const char *section, const char *name, const char *value) {
-            TitleSpecificOverrideConfig *config = reinterpret_cast<TitleSpecificOverrideConfig *>(user);
+        int ContentSpecificIniHandler(void *user, const char *section, const char *name, const char *value) {
+            ContentSpecificOverrideConfig *config = reinterpret_cast<ContentSpecificOverrideConfig *>(user);
 
             if (strcasecmp(section, "override_config") == 0) {
                 if (strcasecmp(name, "override_key") == 0) {
@@ -163,7 +164,7 @@ namespace ams::cfg {
             return 1;
         }
 
-        bool IsOverrideKeyHeld(OverrideKey *cfg) {
+        bool IsOverrideKeyHeld(const OverrideKey *cfg) {
             u64 kHeld = 0;
             bool keys_triggered = (R_SUCCEEDED(hid::GetKeysHeld(&kHeld)) && ((kHeld & cfg->key_combination) != 0));
             return IsSdCardInitialized() && (cfg->override_by_default ^ keys_triggered);
@@ -192,28 +193,28 @@ namespace ams::cfg {
             ParseIniFile(LoaderIniHandler, "/atmosphere/loader.ini", nullptr);
         }
 
-        TitleSpecificOverrideConfig GetTitleOverrideConfig(ncm::TitleId title_id) {
+        ContentSpecificOverrideConfig GetContentOverrideConfig(ncm::ProgramId program_id) {
             char path[FS_MAX_PATH];
-            std::snprintf(path, sizeof(path) - 1, "/atmosphere/titles/%016lx/config.ini", static_cast<u64>(title_id));
+            std::snprintf(path, sizeof(path) - 1, "/atmosphere/contents/%016lx/config.ini", static_cast<u64>(program_id));
 
-            TitleSpecificOverrideConfig config = {
+            ContentSpecificOverrideConfig config = {
                 .override_key = g_default_override_key,
                 .cheat_enable_key = g_default_cheat_enable_key,
             };
-            ParseIniFile(TitleSpecificIniHandler, path, &config);
+            ParseIniFile(ContentSpecificIniHandler, path, &config);
             return config;
         }
 
     }
 
-    bool IsHblOverrideKeyHeld(ncm::TitleId title_id) {
+    bool IsHblOverrideKeyHeld(ncm::ProgramId program_id) {
         /* If the SD card isn't initialized, we can't override. */
         if (!IsSdCardInitialized()) {
             return false;
         }
 
         /* For system modules and anything launched before the home menu, always override. */
-        if (title_id < ncm::TitleId::AppletStart || !pm::info::HasLaunchedTitle(ncm::TitleId::AppletQlaunch)) {
+        if (program_id < ncm::ProgramId::AppletStart || !pm::info::HasLaunchedProgram(ncm::ProgramId::AppletQlaunch)) {
             return true;
         }
 
@@ -221,40 +222,40 @@ namespace ams::cfg {
         RefreshLoaderConfiguration();
 
         /* Check HBL config. */
-        return IsHblTitleId(title_id) && IsOverrideKeyHeld(&g_hbl_override_config.override_key);
+        return IsHblProgramId(program_id) && IsOverrideKeyHeld(&g_hbl_override_config.override_key);
     }
 
-    bool IsTitleOverrideKeyHeld(ncm::TitleId title_id) {
+    bool IsProgramOverrideKeyHeld(ncm::ProgramId program_id) {
         /* If the SD card isn't initialized, we can't override. */
         if (!IsSdCardInitialized()) {
             return false;
         }
 
         /* For system modules and anything launched before the home menu, always override. */
-        if (title_id < ncm::TitleId::AppletStart || !pm::info::HasLaunchedTitle(ncm::TitleId::AppletQlaunch)) {
+        if (program_id < ncm::ProgramId::AppletStart || !pm::info::HasLaunchedProgram(ncm::ProgramId::AppletQlaunch)) {
             return true;
         }
 
         /* Unconditionally refresh loader.ini contents. */
         RefreshLoaderConfiguration();
 
-        TitleSpecificOverrideConfig title_cfg = GetTitleOverrideConfig(title_id);
-        return IsOverrideKeyHeld(&title_cfg.override_key);
+        const auto content_cfg = GetContentOverrideConfig(program_id);
+        return IsOverrideKeyHeld(&content_cfg.override_key);
     }
 
-    void GetOverrideKeyHeldStatus(bool *out_hbl, bool *out_title, ncm::TitleId title_id) {
+    void GetOverrideKeyHeldStatus(bool *out_hbl, bool *out_program, ncm::ProgramId program_id) {
 
         /* If the SD card isn't initialized, we can't override. */
         if (!IsSdCardInitialized()) {
             *out_hbl = false;
-            *out_title = false;
+            *out_program = false;
             return;
         }
 
         /* For system modules and anything launched before the home menu, always override. */
-        if (title_id < ncm::TitleId::AppletStart || !pm::info::HasLaunchedTitle(ncm::TitleId::AppletQlaunch)) {
+        if (program_id < ncm::ProgramId::AppletStart || !pm::info::HasLaunchedProgram(ncm::ProgramId::AppletQlaunch)) {
             *out_hbl = false;
-            *out_title = true;
+            *out_program = true;
             return;
         }
 
@@ -262,31 +263,31 @@ namespace ams::cfg {
         RefreshLoaderConfiguration();
 
         /* Set HBL output. */
-        *out_hbl = IsHblTitleId(title_id) && IsOverrideKeyHeld(&g_hbl_override_config.override_key);
+        *out_hbl = IsHblProgramId(program_id) && IsOverrideKeyHeld(&g_hbl_override_config.override_key);
 
-        /* Set title specific output. */
-        TitleSpecificOverrideConfig title_cfg = GetTitleOverrideConfig(title_id);
-        *out_title = IsOverrideKeyHeld(&title_cfg.override_key);
+        /* Set content specific output. */
+        const auto content_cfg = GetContentOverrideConfig(program_id);
+        *out_program = IsOverrideKeyHeld(&content_cfg.override_key);
     }
 
-    bool IsCheatEnableKeyHeld(ncm::TitleId title_id) {
+    bool IsCheatEnableKeyHeld(ncm::ProgramId program_id) {
         /* If the SD card isn't initialized, don't apply cheats. */
         if (!IsSdCardInitialized()) {
             return false;
         }
 
         /* Don't apply cheats to HBL. */
-        if (IsHblOverrideKeyHeld(title_id)) {
+        if (IsHblOverrideKeyHeld(program_id)) {
             return false;
         }
 
-        TitleSpecificOverrideConfig title_cfg = GetTitleOverrideConfig(title_id);
-        return IsOverrideKeyHeld(&title_cfg.cheat_enable_key);
+        const auto content_cfg = GetContentOverrideConfig(program_id);
+        return IsOverrideKeyHeld(&content_cfg.cheat_enable_key);
     }
 
     /* HBL Configuration utilities. */
-    bool IsHblTitleId(ncm::TitleId title_id) {
-        return (g_hbl_override_config.override_any_app && ncm::IsApplicationTitleId(title_id)) || (title_id == g_hbl_override_config.title_id);
+    bool IsHblProgramId(ncm::ProgramId program_id) {
+        return (g_hbl_override_config.override_any_app && ncm::IsApplicationProgramId(program_id)) || (program_id == g_hbl_override_config.program_id);
     }
 
     const char *GetHblPath() {

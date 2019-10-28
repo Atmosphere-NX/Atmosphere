@@ -41,7 +41,7 @@ extern "C" {
 
 namespace ams {
 
-    ncm::TitleId CurrentTitleId = ncm::TitleId::Pm;
+    ncm::ProgramId CurrentProgramId = ncm::ProgramId::Pm;
 
     namespace result {
 
@@ -76,13 +76,13 @@ namespace {
     constexpr u8  PrivilegedServiceAccessControl[] = {0x80, '*', 0x00, '*'};
     constexpr size_t ProcessCountMax = 0x40;
 
-    /* This uses debugging SVCs to retrieve a process's title id. */
-    ncm::TitleId GetProcessTitleId(os::ProcessId process_id) {
-        /* Check if we should return our title id. */
+    /* This uses debugging SVCs to retrieve a process's program id. */
+    ncm::ProgramId GetProcessProgramId(os::ProcessId process_id) {
+        /* Check if we should return our program id. */
         /* Doing this here works around a bug fixed in 6.0.0. */
         /* Not doing so will cause svcDebugActiveProcess to deadlock on lower firmwares if called for it's own process. */
         if (process_id == os::GetCurrentProcessId()) {
-            return ams::CurrentTitleId;
+            return ams::CurrentProgramId;
         }
 
         /* Get a debug handle. */
@@ -94,19 +94,19 @@ namespace {
         while (true) {
             R_ASSERT(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()));
             if (d.type == svc::DebugEventType::AttachProcess) {
-                return ncm::TitleId{d.info.attach_process.title_id};
+                return ncm::ProgramId{d.info.attach_process.program_id};
             }
         }
     }
 
     /* This works around a bug fixed by FS in 4.0.0. */
     /* Not doing so will cause KIPs with higher process IDs than 7 to be unable to use filesystem services. */
-    /* It also registers privileged processes with SM, so that their title IDs can be known. */
+    /* It also registers privileged processes with SM, so that their program ids can be known. */
     void RegisterPrivilegedProcess(os::ProcessId process_id) {
         fsprUnregisterProgram(static_cast<u64>(process_id));
         fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(process_id), FsStorageId_NandSystem, PrivilegedFileAccessHeader, sizeof(PrivilegedFileAccessHeader), PrivilegedFileAccessControl, sizeof(PrivilegedFileAccessControl));
         sm::manager::UnregisterProcess(process_id);
-        sm::manager::RegisterProcess(process_id, GetProcessTitleId(process_id), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
+        sm::manager::RegisterProcess(process_id, GetProcessProgramId(process_id), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
     }
 
     void RegisterPrivilegedProcesses() {

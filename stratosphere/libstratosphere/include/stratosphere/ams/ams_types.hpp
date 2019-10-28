@@ -95,7 +95,7 @@ namespace ams {
 
         u32 magic;
         u32 error_desc;
-        u64 title_id;
+        u64 program_id;
         union {
             u64 gprs[32];
             struct {

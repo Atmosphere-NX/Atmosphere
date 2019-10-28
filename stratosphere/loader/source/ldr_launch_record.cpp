@@ -20,17 +20,17 @@ namespace ams::ldr {
     namespace {
 
         /* Global cache. */
-        std::set<u64> g_launched_titles;
+        std::set<u64> g_launched_programs;
 
     }
 
     /* Launch Record API. */
-    bool HasLaunchedTitle(ncm::TitleId title_id) {
-        return g_launched_titles.find(static_cast<u64>(title_id)) != g_launched_titles.end();
+    bool HasLaunchedProgram(ncm::ProgramId program_id) {
+        return g_launched_programs.find(static_cast<u64>(program_id)) != g_launched_programs.end();
     }
 
-    void SetLaunchedTitle(ncm::TitleId title_id) {
-        g_launched_titles.insert(static_cast<u64>(title_id));
+    void SetLaunchedProgram(ncm::ProgramId program_id) {
+        g_launched_programs.insert(static_cast<u64>(program_id));
     }
 
 }
@@ -39,8 +39,8 @@ namespace ams::ldr {
 /* This is necessary to prevent circular dependencies. */
 namespace ams::pm::info {
 
-    Result HasLaunchedTitle(bool *out, ncm::TitleId title_id) {
-        *out = ldr::HasLaunchedTitle(title_id);
+    Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
+        *out = ldr::HasLaunchedProgram(program_id);
         return ResultSuccess();
     }
 

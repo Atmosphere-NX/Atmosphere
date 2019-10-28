@@ -40,7 +40,7 @@ namespace ams::pm::impl {
             util::IntrusiveListNode list_node;
             const os::ProcessId process_id;
             const ldr::PinId pin_id;
-            const ncm::TitleLocation loc;
+            const ncm::ProgramLocation loc;
             Handle handle;
             ProcessState state;
             u32 flags;
@@ -58,7 +58,7 @@ namespace ams::pm::impl {
                 return (this->flags & flag);
             }
         public:
-            ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::TitleLocation &l);
+            ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l);
             ~ProcessInfo();
             void Cleanup();
 
@@ -78,7 +78,7 @@ namespace ams::pm::impl {
                 return this->pin_id;
             }
 
-            const ncm::TitleLocation &GetTitleLocation() {
+            const ncm::ProgramLocation &GetProgramLocation() {
                 return this->loc;
             }
 
@@ -179,9 +179,9 @@ namespace ams::pm::impl {
                 return nullptr;
             }
 
-            ProcessInfo *Find(ncm::TitleId title_id) {
+            ProcessInfo *Find(ncm::ProgramId program_id) {
                 for (auto it = this->begin(); it != this->end(); it++) {
-                    if ((*it).GetTitleLocation().title_id == title_id) {
+                    if ((*it).GetProgramLocation().program_id == program_id) {
                         return &*it;
                     }
                 }

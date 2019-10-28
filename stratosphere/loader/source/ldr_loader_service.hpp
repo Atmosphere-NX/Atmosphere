@@ -22,17 +22,17 @@ namespace ams::ldr {
         protected:
             /* Official commands. */
             virtual Result CreateProcess(sf::OutMoveHandle proc_h, PinId id, u32 flags, sf::CopyHandle reslimit_h);
-            virtual Result GetProgramInfo(sf::Out<ProgramInfo> out_program_info, const ncm::TitleLocation &loc);
-            virtual Result PinTitle(sf::Out<PinId> out_id, const ncm::TitleLocation &loc);
-            virtual Result UnpinTitle(PinId id);
-            virtual Result SetTitleArguments(ncm::TitleId title_id, const sf::InPointerBuffer &args, u32 args_size);
-            virtual Result ClearArguments();
+            virtual Result GetProgramInfo(sf::Out<ProgramInfo> out_program_info, const ncm::ProgramLocation &loc);
+            virtual Result PinProgram(sf::Out<PinId> out_id, const ncm::ProgramLocation &loc);
+            virtual Result UnpinProgram(PinId id);
+            virtual Result SetProgramArguments(ncm::ProgramId program_id, const sf::InPointerBuffer &args, u32 args_size);
+            virtual Result FlushArguments();
             virtual Result GetProcessModuleInfo(sf::Out<u32> count, const sf::OutPointerArray<ModuleInfo> &out, os::ProcessId process_id);
 
             /* Atmosphere commands. */
-            virtual Result AtmosphereSetExternalContentSource(sf::OutMoveHandle out, ncm::TitleId title_id);
-            virtual void   AtmosphereClearExternalContentSource(ncm::TitleId title_id);
-            virtual void   AtmosphereHasLaunchedTitle(sf::Out<bool> out, ncm::TitleId title_id);
+            virtual Result AtmosphereSetExternalContentSource(sf::OutMoveHandle out, ncm::ProgramId program_id);
+            virtual void   AtmosphereClearExternalContentSource(ncm::ProgramId program_id);
+            virtual void   AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id);
     };
 
     namespace pm {
@@ -42,19 +42,19 @@ namespace ams::ldr {
                 enum class CommandId {
                     CreateProcess   = 0,
                     GetProgramInfo  = 1,
-                    PinTitle        = 2,
-                    UnpinTitle      = 3,
+                    PinProgram        = 2,
+                    UnpinProgram      = 3,
 
-                    AtmosphereHasLaunchedTitle = 65000,
+                    AtmosphereHasLaunchedProgram = 65000,
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
                     MAKE_SERVICE_COMMAND_META(CreateProcess),
                     MAKE_SERVICE_COMMAND_META(GetProgramInfo),
-                    MAKE_SERVICE_COMMAND_META(PinTitle),
-                    MAKE_SERVICE_COMMAND_META(UnpinTitle),
+                    MAKE_SERVICE_COMMAND_META(PinProgram),
+                    MAKE_SERVICE_COMMAND_META(UnpinProgram),
 
-                    MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedTitle),
+                    MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedProgram),
                 };
         };
 
@@ -65,19 +65,19 @@ namespace ams::ldr {
         class DebugMonitorInterface final : public LoaderService {
             protected:
                 enum class CommandId {
-                    SetTitleArguments    = 0,
-                    ClearArguments       = 1,
+                    SetProgramArguments  = 0,
+                    FlushArguments       = 1,
                     GetProcessModuleInfo = 2,
 
-                    AtmosphereHasLaunchedTitle = 65000,
+                    AtmosphereHasLaunchedProgram = 65000,
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
-                    MAKE_SERVICE_COMMAND_META(SetTitleArguments),
-                    MAKE_SERVICE_COMMAND_META(ClearArguments),
+                    MAKE_SERVICE_COMMAND_META(SetProgramArguments),
+                    MAKE_SERVICE_COMMAND_META(FlushArguments),
                     MAKE_SERVICE_COMMAND_META(GetProcessModuleInfo),
 
-                    MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedTitle),
+                    MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedProgram),
                 };
         };
 
@@ -88,16 +88,16 @@ namespace ams::ldr {
         class ShellInterface final : public LoaderService {
             protected:
                 enum class CommandId {
-                    SetTitleArguments    = 0,
-                    ClearArguments       = 1,
+                    SetProgramArguments  = 0,
+                    FlushArguments       = 1,
 
                     AtmosphereSetExternalContentSource   = 65000,
                     AtmosphereClearExternalContentSource = 65001,
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
-                    MAKE_SERVICE_COMMAND_META(SetTitleArguments),
-                    MAKE_SERVICE_COMMAND_META(ClearArguments),
+                    MAKE_SERVICE_COMMAND_META(SetProgramArguments),
+                    MAKE_SERVICE_COMMAND_META(FlushArguments),
 
                     MAKE_SERVICE_COMMAND_META(AtmosphereSetExternalContentSource),
                     MAKE_SERVICE_COMMAND_META(AtmosphereClearExternalContentSource),

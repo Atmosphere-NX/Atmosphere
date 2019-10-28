@@ -26,7 +26,7 @@ namespace ams::ldr {
             bool is_code_mounted;
             bool is_hbl_mounted;
         public:
-            ScopedCodeMount(const ncm::TitleLocation &loc);
+            ScopedCodeMount(const ncm::ProgramLocation &loc);
             ~ScopedCodeMount();
 
             Result GetResult() const {
@@ -42,20 +42,20 @@ namespace ams::ldr {
             }
 
         private:
-            Result Initialize(const ncm::TitleLocation &loc);
+            Result Initialize(const ncm::ProgramLocation &loc);
 
-            Result MountCodeFileSystem(const ncm::TitleLocation &loc);
-            Result MountSdCardCodeFileSystem(const ncm::TitleLocation &loc);
+            Result MountCodeFileSystem(const ncm::ProgramLocation &loc);
+            Result MountSdCardCodeFileSystem(const ncm::ProgramLocation &loc);
             Result MountHblFileSystem();
     };
 
     /* Content Management API. */
-    Result OpenCodeFile(FILE *&out, ncm::TitleId title_id, const char *relative_path);
-    Result OpenCodeFileFromBaseExefs(FILE *&out, ncm::TitleId title_id, const char *relative_path);
+    Result OpenCodeFile(FILE *&out, ncm::ProgramId program_id, const char *relative_path);
+    Result OpenCodeFileFromBaseExefs(FILE *&out, ncm::ProgramId program_id, const char *relative_path);
 
     /* Redirection API. */
-    Result ResolveContentPath(char *out_path, const ncm::TitleLocation &loc);
-    Result RedirectContentPath(const char *path, const ncm::TitleLocation &loc);
-    Result RedirectHtmlDocumentPathForHbl(const ncm::TitleLocation &loc);
+    Result ResolveContentPath(char *out_path, const ncm::ProgramLocation &loc);
+    Result RedirectContentPath(const char *path, const ncm::ProgramLocation &loc);
+    Result RedirectHtmlDocumentPathForHbl(const ncm::ProgramLocation &loc);
 
 }

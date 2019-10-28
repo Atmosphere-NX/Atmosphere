@@ -34,7 +34,7 @@ namespace ams {
 
     }
 
-    extern ncm::TitleId CurrentTitleId;
+    extern ncm::ProgramId CurrentProgramId;
 
     void WEAK ExceptionHandler(FatalErrorContext *ctx) {
         R_ASSERT(amsBpcInitialize());
@@ -49,7 +49,7 @@ namespace ams {
         {
             ams_ctx.magic = FatalErrorContext::Magic;
             ams_ctx.error_desc = ctx->error_desc;
-            ams_ctx.title_id = static_cast<u64>(CurrentTitleId);
+            ams_ctx.program_id = static_cast<u64>(CurrentProgramId);
             for (size_t i = 0; i < FatalErrorContext::NumGprs; i++) {
                 ams_ctx.gprs[i] = ctx->cpu_gprs[i].x;
             }

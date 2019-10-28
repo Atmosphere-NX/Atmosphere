@@ -148,10 +148,10 @@ namespace ams::updater {
 
             NcmContentMetaKey *records = reinterpret_cast<NcmContentMetaKey *>(work_buffer);
 
-            const auto title_type = GetNcmContentMetaType(mode);
+            const auto content_meta_type = GetNcmContentMetaType(mode);
             s32 written_entries;
             s32 total_entries;
-            R_TRY(ncmContentMetaDatabaseList(&meta_db, &total_entries, &written_entries, records, MaxContentMetas * sizeof(*records), title_type, 0, 0, UINT64_MAX, NcmContentInstallType_Full));
+            R_TRY(ncmContentMetaDatabaseList(&meta_db, &total_entries, &written_entries, records, MaxContentMetas * sizeof(*records), content_meta_type, 0, 0, UINT64_MAX, NcmContentInstallType_Full));
             if (total_entries <= 0) {
                 return ResultBootImagePackageNotFound();
             }
@@ -165,14 +165,14 @@ namespace ams::updater {
                     R_TRY(ncmContentMetaDatabaseGetAttributes(&meta_db, &records[i], &attr));
 
                     if (attr & NcmContentMetaAttribute_IncludesExFatDriver) {
-                        *out_data_id = records[i].title_id;
+                        *out_data_id = records[i].id;
                         return ResultSuccess();
                     }
                 }
             }
 
             /* If there's only one entry or no exfat entries, return that entry. */
-            *out_data_id = records[0].title_id;
+            *out_data_id = records[0].id;
             return ResultSuccess();
         }
 

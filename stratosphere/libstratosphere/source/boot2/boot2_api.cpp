@@ -22,101 +22,101 @@ namespace ams::boot2 {
 
         /* Launch lists. */
 
-        /* psc, bus, pcv is the minimal set of required titles to get SD card. */
+        /* psc, bus, pcv is the minimal set of required programs to get SD card. */
         /* bus depends on pcie, and pcv depends on settings. */
-        constexpr ncm::TitleId PreSdCardLaunchPrograms[] = {
-            ncm::TitleId::Psc,         /* psc */
-            ncm::TitleId::Pcie,        /* pcie */
-            ncm::TitleId::Bus,         /* bus */
-            ncm::TitleId::Settings,    /* settings */
-            ncm::TitleId::Pcv,         /* pcv */
-            ncm::TitleId::Usb,         /* usb */
+        constexpr ncm::ProgramId PreSdCardLaunchPrograms[] = {
+            ncm::ProgramId::Psc,         /* psc */
+            ncm::ProgramId::Pcie,        /* pcie */
+            ncm::ProgramId::Bus,         /* bus */
+            ncm::ProgramId::Settings,    /* settings */
+            ncm::ProgramId::Pcv,         /* pcv */
+            ncm::ProgramId::Usb,         /* usb */
         };
         constexpr size_t NumPreSdCardLaunchPrograms = util::size(PreSdCardLaunchPrograms);
 
-        constexpr ncm::TitleId AdditionalLaunchPrograms[] = {
-            ncm::TitleId::Tma,         /* tma */
-            ncm::TitleId::Am,          /* am */
-            ncm::TitleId::NvServices,  /* nvservices */
-            ncm::TitleId::NvnFlinger,  /* nvnflinger */
-            ncm::TitleId::Vi,          /* vi */
-            ncm::TitleId::Ns,          /* ns */
-            ncm::TitleId::LogManager,  /* lm */
-            ncm::TitleId::Ppc,         /* ppc */
-            ncm::TitleId::Ptm,         /* ptm */
-            ncm::TitleId::Hid,         /* hid */
-            ncm::TitleId::Audio,       /* audio */
-            ncm::TitleId::Lbl,         /* lbl */
-            ncm::TitleId::Wlan,        /* wlan */
-            ncm::TitleId::Bluetooth,   /* bluetooth */
-            ncm::TitleId::BsdSockets,  /* bsdsockets */
-            ncm::TitleId::Nifm,        /* nifm */
-            ncm::TitleId::Ldn,         /* ldn */
-            ncm::TitleId::Account,     /* account */
-            ncm::TitleId::Friends,     /* friends */
-            ncm::TitleId::Nfc,         /* nfc */
-            ncm::TitleId::JpegDec,     /* jpegdec */
-            ncm::TitleId::CapSrv,      /* capsrv */
-            ncm::TitleId::Ssl,         /* ssl */
-            ncm::TitleId::Nim,         /* nim */
-            ncm::TitleId::Bcat,        /* bcat */
-            ncm::TitleId::Erpt,        /* erpt */
-            ncm::TitleId::Es,          /* es */
-            ncm::TitleId::Pctl,        /* pctl */
-            ncm::TitleId::Btm,         /* btm */
-            ncm::TitleId::Eupld,       /* eupld */
-            ncm::TitleId::Glue,        /* glue */
-         /* ncm::TitleId::Eclct, */    /* eclct */      /* Skip launching error collection in Atmosphere to lessen telemetry. */
-            ncm::TitleId::Npns,        /* npns */
-            ncm::TitleId::Fatal,       /* fatal */
-            ncm::TitleId::Ro,          /* ro */
-            ncm::TitleId::Profiler,    /* profiler */
-            ncm::TitleId::Sdb,         /* sdb */
-            ncm::TitleId::Migration,   /* migration */
-            ncm::TitleId::Grc,         /* grc */
-            ncm::TitleId::Olsc,        /* olsc */
-            ncm::TitleId::Ngct,        /* ngct */
+        constexpr ncm::ProgramId AdditionalLaunchPrograms[] = {
+            ncm::ProgramId::Tma,         /* tma */
+            ncm::ProgramId::Am,          /* am */
+            ncm::ProgramId::NvServices,  /* nvservices */
+            ncm::ProgramId::NvnFlinger,  /* nvnflinger */
+            ncm::ProgramId::Vi,          /* vi */
+            ncm::ProgramId::Ns,          /* ns */
+            ncm::ProgramId::LogManager,  /* lm */
+            ncm::ProgramId::Ppc,         /* ppc */
+            ncm::ProgramId::Ptm,         /* ptm */
+            ncm::ProgramId::Hid,         /* hid */
+            ncm::ProgramId::Audio,       /* audio */
+            ncm::ProgramId::Lbl,         /* lbl */
+            ncm::ProgramId::Wlan,        /* wlan */
+            ncm::ProgramId::Bluetooth,   /* bluetooth */
+            ncm::ProgramId::BsdSockets,  /* bsdsockets */
+            ncm::ProgramId::Nifm,        /* nifm */
+            ncm::ProgramId::Ldn,         /* ldn */
+            ncm::ProgramId::Account,     /* account */
+            ncm::ProgramId::Friends,     /* friends */
+            ncm::ProgramId::Nfc,         /* nfc */
+            ncm::ProgramId::JpegDec,     /* jpegdec */
+            ncm::ProgramId::CapSrv,      /* capsrv */
+            ncm::ProgramId::Ssl,         /* ssl */
+            ncm::ProgramId::Nim,         /* nim */
+            ncm::ProgramId::Bcat,        /* bcat */
+            ncm::ProgramId::Erpt,        /* erpt */
+            ncm::ProgramId::Es,          /* es */
+            ncm::ProgramId::Pctl,        /* pctl */
+            ncm::ProgramId::Btm,         /* btm */
+            ncm::ProgramId::Eupld,       /* eupld */
+            ncm::ProgramId::Glue,        /* glue */
+         /* ncm::ProgramId::Eclct, */    /* eclct */      /* Skip launching error collection in Atmosphere to lessen telemetry. */
+            ncm::ProgramId::Npns,        /* npns */
+            ncm::ProgramId::Fatal,       /* fatal */
+            ncm::ProgramId::Ro,          /* ro */
+            ncm::ProgramId::Profiler,    /* profiler */
+            ncm::ProgramId::Sdb,         /* sdb */
+            ncm::ProgramId::Migration,   /* migration */
+            ncm::ProgramId::Grc,         /* grc */
+            ncm::ProgramId::Olsc,        /* olsc */
+            ncm::ProgramId::Ngct,        /* ngct */
         };
         constexpr size_t NumAdditionalLaunchPrograms = util::size(AdditionalLaunchPrograms);
 
-        constexpr ncm::TitleId AdditionalMaintenanceLaunchPrograms[] = {
-            ncm::TitleId::Tma,         /* tma */
-            ncm::TitleId::Am,          /* am */
-            ncm::TitleId::NvServices,  /* nvservices */
-            ncm::TitleId::NvnFlinger,  /* nvnflinger */
-            ncm::TitleId::Vi,          /* vi */
-            ncm::TitleId::Ns,          /* ns */
-            ncm::TitleId::LogManager,  /* lm */
-            ncm::TitleId::Ppc,         /* ppc */
-            ncm::TitleId::Ptm,         /* ptm */
-            ncm::TitleId::Hid,         /* hid */
-            ncm::TitleId::Audio,       /* audio */
-            ncm::TitleId::Lbl,         /* lbl */
-            ncm::TitleId::Wlan,        /* wlan */
-            ncm::TitleId::Bluetooth,   /* bluetooth */
-            ncm::TitleId::BsdSockets,  /* bsdsockets */
-            ncm::TitleId::Nifm,        /* nifm */
-            ncm::TitleId::Ldn,         /* ldn */
-            ncm::TitleId::Account,     /* account */
-            ncm::TitleId::Nfc,         /* nfc */
-            ncm::TitleId::JpegDec,     /* jpegdec */
-            ncm::TitleId::CapSrv,      /* capsrv */
-            ncm::TitleId::Ssl,         /* ssl */
-            ncm::TitleId::Nim,         /* nim */
-            ncm::TitleId::Erpt,        /* erpt */
-            ncm::TitleId::Es,          /* es */
-            ncm::TitleId::Pctl,        /* pctl */
-            ncm::TitleId::Btm,         /* btm */
-            ncm::TitleId::Glue,        /* glue */
-         /* ncm::TitleId::Eclct, */    /* eclct */      /* Skip launching error collection in Atmosphere to lessen telemetry. */
-            ncm::TitleId::Fatal,       /* fatal */
-            ncm::TitleId::Ro,          /* ro */
-            ncm::TitleId::Profiler,    /* profiler */
-            ncm::TitleId::Sdb,         /* sdb */
-            ncm::TitleId::Migration,   /* migration */
-            ncm::TitleId::Grc,         /* grc */
-            ncm::TitleId::Olsc,        /* olsc */
-            ncm::TitleId::Ngct,        /* ngct */
+        constexpr ncm::ProgramId AdditionalMaintenanceLaunchPrograms[] = {
+            ncm::ProgramId::Tma,         /* tma */
+            ncm::ProgramId::Am,          /* am */
+            ncm::ProgramId::NvServices,  /* nvservices */
+            ncm::ProgramId::NvnFlinger,  /* nvnflinger */
+            ncm::ProgramId::Vi,          /* vi */
+            ncm::ProgramId::Ns,          /* ns */
+            ncm::ProgramId::LogManager,  /* lm */
+            ncm::ProgramId::Ppc,         /* ppc */
+            ncm::ProgramId::Ptm,         /* ptm */
+            ncm::ProgramId::Hid,         /* hid */
+            ncm::ProgramId::Audio,       /* audio */
+            ncm::ProgramId::Lbl,         /* lbl */
+            ncm::ProgramId::Wlan,        /* wlan */
+            ncm::ProgramId::Bluetooth,   /* bluetooth */
+            ncm::ProgramId::BsdSockets,  /* bsdsockets */
+            ncm::ProgramId::Nifm,        /* nifm */
+            ncm::ProgramId::Ldn,         /* ldn */
+            ncm::ProgramId::Account,     /* account */
+            ncm::ProgramId::Nfc,         /* nfc */
+            ncm::ProgramId::JpegDec,     /* jpegdec */
+            ncm::ProgramId::CapSrv,      /* capsrv */
+            ncm::ProgramId::Ssl,         /* ssl */
+            ncm::ProgramId::Nim,         /* nim */
+            ncm::ProgramId::Erpt,        /* erpt */
+            ncm::ProgramId::Es,          /* es */
+            ncm::ProgramId::Pctl,        /* pctl */
+            ncm::ProgramId::Btm,         /* btm */
+            ncm::ProgramId::Glue,        /* glue */
+         /* ncm::ProgramId::Eclct, */    /* eclct */      /* Skip launching error collection in Atmosphere to lessen telemetry. */
+            ncm::ProgramId::Fatal,       /* fatal */
+            ncm::ProgramId::Ro,          /* ro */
+            ncm::ProgramId::Profiler,    /* profiler */
+            ncm::ProgramId::Sdb,         /* sdb */
+            ncm::ProgramId::Migration,   /* migration */
+            ncm::ProgramId::Grc,         /* grc */
+            ncm::ProgramId::Olsc,        /* olsc */
+            ncm::ProgramId::Ngct,        /* ngct */
         };
         constexpr size_t NumAdditionalMaintenanceLaunchPrograms = util::size(AdditionalMaintenanceLaunchPrograms);
 
@@ -134,12 +134,12 @@ namespace ams::boot2 {
             return c == '\r' || c == '\n';
         }
 
-        void LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
+        void LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 launch_flags) {
             os::ProcessId process_id = os::InvalidProcessId;
 
             /* Launch, lightly validate result. */
             {
-                const auto launch_result = pm::shell::LaunchTitle(&process_id, loc, launch_flags);
+                const auto launch_result = pm::shell::LaunchProgram(&process_id, loc, launch_flags);
                 AMS_ASSERT(!(svc::ResultOutOfResource::Includes(launch_result)));
                 AMS_ASSERT(!(svc::ResultOutOfMemory::Includes(launch_result)));
                 AMS_ASSERT(!(svc::ResultLimitReached::Includes(launch_result)));
@@ -150,9 +150,9 @@ namespace ams::boot2 {
             }
         }
 
-        void LaunchList(const ncm::TitleId *launch_list, size_t num_entries) {
+        void LaunchList(const ncm::ProgramId *launch_list, size_t num_entries) {
             for (size_t i = 0; i < num_entries; i++) {
-                LaunchTitle(nullptr, ncm::TitleLocation::Make(launch_list[i], ncm::StorageId::NandSystem), 0);
+                LaunchProgram(nullptr, ncm::ProgramLocation::Make(launch_list[i], ncm::StorageId::NandSystem), 0);
             }
         }
 
@@ -190,35 +190,35 @@ namespace ams::boot2 {
         }
 
         template<typename F>
-        void IterateOverFlaggedTitlesOnSdCard(F f) {
-            /* Validate that the titles directory exists. */
-            DIR *titles_dir = opendir("sdmc:/atmosphere/titles");
-            if (titles_dir == nullptr) {
+        void IterateOverFlaggedProgramsOnSdCard(F f) {
+            /* Validate that the contents directory exists. */
+            DIR *contents_dir = opendir("sdmc:/atmosphere/contents");
+            if (contents_dir == nullptr) {
                 return;
             }
-            ON_SCOPE_EXIT { closedir(titles_dir); };
+            ON_SCOPE_EXIT { closedir(contents_dir); };
 
-            /* Iterate over entries in the titles directory */
+            /* Iterate over entries in the contents directory */
             struct dirent *ent;
-            while ((ent = readdir(titles_dir)) != nullptr) {
-                /* Check that the subdirectory can be converted to a title id. */
-                if (std::strlen(ent->d_name) == 2 * sizeof(ncm::TitleId) && IsHexadecimal(ent->d_name)) {
-                    /* Check if we've already launched the title. */
-                    ncm::TitleId title_id{std::strtoul(ent->d_name, nullptr, 16)};
+            while ((ent = readdir(contents_dir)) != nullptr) {
+                /* Check that the subdirectory can be converted to a program id. */
+                if (std::strlen(ent->d_name) == 2 * sizeof(ncm::ProgramId) && IsHexadecimal(ent->d_name)) {
+                    /* Check if we've already launched the program. */
+                    ncm::ProgramId program_id{std::strtoul(ent->d_name, nullptr, 16)};
 
-                    /* Check if the title is flagged. */
-                    if (!cfg::HasTitleSpecificFlag(title_id, "boot2")) {
+                    /* Check if the program is flagged. */
+                    if (!cfg::HasContentSpecificFlag(program_id, "boot2")) {
                         continue;
                     }
 
                     /* Call the iteration callback. */
-                    f(title_id);
+                    f(program_id);
                 }
             }
         }
 
         void DetectAndDeclareFutureMitms() {
-            IterateOverFlaggedTitlesOnSdCard([](ncm::TitleId title_id) {
+            IterateOverFlaggedProgramsOnSdCard([](ncm::ProgramId program_id) {
                 /* When we find a flagged program, check if it has a mitm list. */
                 char mitm_list[0x400];
                 size_t mitm_list_size = 0;
@@ -226,7 +226,7 @@ namespace ams::boot2 {
                 /* Read the mitm list off the SD card. */
                 {
                     char path[FS_MAX_PATH];
-                    std::snprintf(mitm_list, sizeof(mitm_list), "sdmc:/atmosphere/titles/%016lx/mitm.lst", static_cast<u64>(title_id));
+                    std::snprintf(mitm_list, sizeof(mitm_list), "sdmc:/atmosphere/contents/%016lx/mitm.lst", static_cast<u64>(program_id));
                     FILE *f = fopen(path, "rb");
                     if (f == nullptr) {
                         return;
@@ -278,14 +278,14 @@ namespace ams::boot2 {
         }
 
         void LaunchFlaggedProgramsOnSdCard() {
-            IterateOverFlaggedTitlesOnSdCard([](ncm::TitleId title_id) {
-                /* Check if we've already launched the title. */
-                if (pm::info::HasLaunchedTitle(title_id)) {
+            IterateOverFlaggedProgramsOnSdCard([](ncm::ProgramId program_id) {
+                /* Check if we've already launched the program. */
+                if (pm::info::HasLaunchedProgram(program_id)) {
                     return;
                 }
 
-                /* Launch the title. */
-                LaunchTitle(nullptr, ncm::TitleLocation::Make(title_id, ncm::StorageId::None), 0);
+                /* Launch the program. */
+                LaunchProgram(nullptr, ncm::ProgramLocation::Make(program_id, ncm::StorageId::None), 0);
             });
         }
 
@@ -314,7 +314,7 @@ namespace ams::boot2 {
         }
 
         /* Launch Atmosphere boot2, using FsStorageId_None to force SD card boot. */
-        LaunchTitle(nullptr, ncm::TitleLocation::Make(ncm::TitleId::Boot2, ncm::StorageId::None), 0);
+        LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::ProgramId::Boot2, ncm::StorageId::None), 0);
     }
 
     void LaunchPostSdCardBootPrograms() {
@@ -327,7 +327,7 @@ namespace ams::boot2 {
         }
 
         /* Launch Atmosphere dmnt, using FsStorageId_None to force SD card boot. */
-        LaunchTitle(nullptr, ncm::TitleLocation::Make(ncm::TitleId::Dmnt, ncm::StorageId::None), 0);
+        LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::ProgramId::Dmnt, ncm::StorageId::None), 0);
 
         /* Check for and forward declare non-atmosphere mitm modules. */
         DetectAndDeclareFutureMitms();
@@ -337,7 +337,7 @@ namespace ams::boot2 {
             LaunchList(AdditionalMaintenanceLaunchPrograms, NumAdditionalMaintenanceLaunchPrograms);
             /* Starting in 7.0.0, npns is launched during maintenance boot. */
             if (hos::GetVersion() >= hos::Version_700) {
-                LaunchTitle(nullptr, ncm::TitleLocation::Make(ncm::TitleId::Npns, ncm::StorageId::NandSystem), 0);
+                LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::ProgramId::Npns, ncm::StorageId::NandSystem), 0);
             }
         } else {
             LaunchList(AdditionalLaunchPrograms, NumAdditionalLaunchPrograms);

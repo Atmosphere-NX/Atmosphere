@@ -24,13 +24,13 @@ namespace ams::pm::impl {
 
         /* Types. */
         enum HookType {
-            HookType_TitleId     = (1 << 0),
+            HookType_ProgramId     = (1 << 0),
             HookType_Application = (1 << 1),
         };
 
         struct LaunchProcessArgs {
             os::ProcessId *out_process_id;
-            ncm::TitleLocation location;
+            ncm::ProgramLocation location;
             u32 flags;
         };
 
@@ -202,7 +202,7 @@ namespace ams::pm::impl {
         LaunchProcessArgs g_process_launch_args = {};
 
         /* Hook globals. */
-        std::atomic<ncm::TitleId> g_title_id_hook;
+        std::atomic<ncm::ProgramId> g_program_id_hook;
         std::atomic<bool> g_application_hook;
 
         /* Forward declarations. */
@@ -284,12 +284,12 @@ namespace ams::pm::impl {
             /* Ensure we only try to run one application. */
             R_UNLESS(!is_application || !HasApplicationProcess(), pm::ResultApplicationRunning());
 
-            /* Fix the title location to use the right title id. */
-            const ncm::TitleLocation location = ncm::TitleLocation::Make(program_info.title_id, static_cast<ncm::StorageId>(args.location.storage_id));
+            /* Fix the program location to use the right program id. */
+            const ncm::ProgramLocation location = ncm::ProgramLocation::Make(program_info.program_id, static_cast<ncm::StorageId>(args.location.storage_id));
 
             /* Pin the program with loader. */
             ldr::PinId pin_id;
-            R_TRY(ldr::pm::PinTitle(&pin_id, location));
+            R_TRY(ldr::pm::PinProgram(&pin_id, location));
 
 
             /* Ensure resources are available. */
@@ -298,7 +298,7 @@ namespace ams::pm::impl {
             /* Actually create the process. */
             Handle process_handle;
             {
-                auto pin_guard = SCOPE_GUARD { ldr::pm::UnpinTitle(pin_id); };
+                auto pin_guard = SCOPE_GUARD { ldr::pm::UnpinProgram(pin_id); };
                 R_TRY(ldr::pm::CreateProcess(&process_handle, pin_id, GetLoaderCreateProcessFlags(args.flags), resource::GetResourceLimitHandle(&program_info)));
                 pin_guard.Cancel();
             }
@@ -331,8 +331,8 @@ namespace ams::pm::impl {
             const u8 *aci_fah  = acid_fac + program_info.acid_fac_size;
 
             /* Register with FS and SM. */
-            R_TRY(fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(location.title_id), static_cast<FsStorageId>(location.storage_id), aci_fah, program_info.aci_fah_size, acid_fac, program_info.acid_fac_size));
-            R_TRY(sm::manager::RegisterProcess(process_id, location.title_id, acid_sac, program_info.acid_sac_size, aci_sac, program_info.aci_sac_size));
+            R_TRY(fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(location.program_id), static_cast<FsStorageId>(location.storage_id), aci_fah, program_info.aci_fah_size, acid_fac, program_info.acid_fac_size));
+            R_TRY(sm::manager::RegisterProcess(process_id, location.program_id, acid_sac, program_info.acid_sac_size, aci_sac, program_info.aci_sac_size));
 
             /* Set flags. */
             if (is_application) {
@@ -349,9 +349,9 @@ namespace ams::pm::impl {
             }
 
             /* Process hooks/signaling. */
-            if (location.title_id == g_title_id_hook) {
+            if (location.program_id == g_program_id_hook) {
                 g_hook_to_create_process_event.Signal();
-                g_title_id_hook = ncm::TitleId::Invalid;
+                g_program_id_hook = ncm::ProgramId::Invalid;
             } else if (is_application && g_application_hook) {
                 g_hook_to_create_application_process_event.Signal();
                 g_application_hook = false;
@@ -466,8 +466,8 @@ namespace ams::pm::impl {
     }
 
     /* Process Management. */
-    Result LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 flags) {
-        /* Ensure we only try to launch one title at a time. */
+    Result LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 flags) {
+        /* Ensure we only try to launch one program at a time. */
         static os::Mutex s_lock;
         std::scoped_lock lk(s_lock);
 
@@ -491,7 +491,7 @@ namespace ams::pm::impl {
         R_UNLESS(!process_info->HasStarted(), pm::ResultAlreadyStarted());
 
         ldr::ProgramInfo program_info;
-        R_TRY(ldr::pm::GetProgramInfo(&program_info, process_info->GetTitleLocation()));
+        R_TRY(ldr::pm::GetProgramInfo(&program_info, process_info->GetProgramLocation()));
         return StartProcess(process_info, &program_info);
     }
 
@@ -504,10 +504,10 @@ namespace ams::pm::impl {
         return svcTerminateProcess(process_info->GetHandle());
     }
 
-    Result TerminateTitle(ncm::TitleId title_id) {
+    Result TerminateProgram(ncm::ProgramId program_id) {
         ProcessListAccessor list(g_process_list);
 
-        auto process_info = list->Find(title_id);
+        auto process_info = list->Find(program_id);
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         return svcTerminateProcess(process_info->GetHandle());
@@ -615,23 +615,23 @@ namespace ams::pm::impl {
         return ResultSuccess();
     }
 
-    Result GetProcessId(os::ProcessId *out, ncm::TitleId title_id) {
+    Result GetProcessId(os::ProcessId *out, ncm::ProgramId program_id) {
         ProcessListAccessor list(g_process_list);
 
-        auto process_info = list->Find(title_id);
+        auto process_info = list->Find(program_id);
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         *out = process_info->GetProcessId();
         return ResultSuccess();
     }
 
-    Result GetTitleId(ncm::TitleId *out, os::ProcessId process_id) {
+    Result GetProgramId(ncm::ProgramId *out, os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
-        *out = process_info->GetTitleLocation().title_id;
+        *out = process_info->GetProgramLocation().program_id;
         return ResultSuccess();
     }
 
@@ -648,24 +648,24 @@ namespace ams::pm::impl {
         return pm::ResultProcessNotFound();
     }
 
-    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::TitleLocation *out_loc, os::ProcessId process_id) {
+    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::ProgramLocation *out_loc, os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         *out_process_handle = process_info->GetHandle();
-        *out_loc = process_info->GetTitleLocation();
+        *out_loc = process_info->GetProgramLocation();
         return ResultSuccess();
     }
 
     /* Hook API. */
-    Result HookToCreateProcess(Handle *out_hook, ncm::TitleId title_id) {
+    Result HookToCreateProcess(Handle *out_hook, ncm::ProgramId program_id) {
         *out_hook = INVALID_HANDLE;
 
         {
-            ncm::TitleId old_value = ncm::TitleId::Invalid;
-            R_UNLESS(g_title_id_hook.compare_exchange_strong(old_value, title_id), pm::ResultDebugHookInUse());
+            ncm::ProgramId old_value = ncm::ProgramId::Invalid;
+            R_UNLESS(g_program_id_hook.compare_exchange_strong(old_value, program_id), pm::ResultDebugHookInUse());
         }
 
         *out_hook = g_hook_to_create_process_event.GetReadableHandle();
@@ -685,8 +685,8 @@ namespace ams::pm::impl {
     }
 
     Result ClearHook(u32 which) {
-        if (which & HookType_TitleId) {
-            g_title_id_hook = ncm::TitleId::Invalid;
+        if (which & HookType_ProgramId) {
+            g_program_id_hook = ncm::ProgramId::Invalid;
         }
         if (which & HookType_Application) {
             g_application_hook = false;
