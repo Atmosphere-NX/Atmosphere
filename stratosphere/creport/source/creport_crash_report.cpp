@@ -138,8 +138,8 @@ namespace ams::creport {
             out->aarch64_ctx.SetBaseAddress(this->module_list.GetModuleStartAddress(0));
         }
 
-        /* For ams fatal, which doesn't use afsr0, pass title_id instead. */
-        out->aarch64_ctx.SetTitleIdForAtmosphere(ncm::TitleId{this->process_info.title_id});
+        /* For ams fatal, which doesn't use afsr0, pass program_id instead. */
+        out->aarch64_ctx.SetProgramIdForAtmosphere(ncm::ProgramId{this->process_info.program_id});
     }
 
     void CrashReport::ProcessExceptions() {
@@ -282,7 +282,7 @@ namespace ams::creport {
             char file_path[FS_MAX_PATH];
 
             /* Save crash report. */
-            std::snprintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/%011lu_%016lx.log", timestamp, this->process_info.title_id);
+            std::snprintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/%011lu_%016lx.log", timestamp, this->process_info.program_id);
             FILE *fp = fopen(file_path, "w");
             if (fp != nullptr) {
                 this->SaveToFile(fp);
@@ -291,7 +291,7 @@ namespace ams::creport {
             }
 
             /* Dump threads. */
-            std::snprintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/dumps/%011lu_%016lx_thread_info.bin", timestamp, this->process_info.title_id);
+            std::snprintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/dumps/%011lu_%016lx_thread_info.bin", timestamp, this->process_info.program_id);
             fp = fopen(file_path, "wb");
             if (fp != nullptr) {
                 this->thread_list.DumpBinary(fp, this->crashed_thread.GetThreadId());
@@ -311,7 +311,7 @@ namespace ams::creport {
         std::memcpy(name_buf, this->process_info.name, sizeof(this->process_info.name));
         fprintf(f_report, "Process Info:\n");
         fprintf(f_report, "    Process Name:                %s\n", name_buf);
-        fprintf(f_report, "    Title ID:                    %016lx\n", this->process_info.title_id);
+        fprintf(f_report, "    Program ID:                  %016lx\n", this->process_info.program_id);
         fprintf(f_report, "    Process ID:                  %016lx\n", this->process_info.process_id);
         fprintf(f_report, "    Process Flags:               %08x\n", this->process_info.flags);
         if (hos::GetVersion() >= hos::Version_500) {

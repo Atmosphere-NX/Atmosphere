@@ -26,11 +26,11 @@ namespace ams::ldr {
     /* Official commands. */
     Result LoaderService::CreateProcess(sf::OutMoveHandle proc_h, PinId id, u32 flags, sf::CopyHandle reslimit_h) {
         os::ManagedHandle reslimit_holder(reslimit_h.GetValue());
-        ncm::TitleLocation loc;
+        ncm::ProgramLocation loc;
         char path[FS_MAX_PATH];
 
         /* Get location. */
-        R_TRY(ldr::ro::GetTitleLocation(&loc, id));
+        R_TRY(ldr::ro::GetProgramLocation(&loc, id));
 
         if (loc.storage_id != static_cast<u8>(ncm::StorageId::None)) {
             R_TRY(ResolveContentPath(path, loc));
@@ -39,42 +39,42 @@ namespace ams::ldr {
         return ldr::CreateProcess(proc_h.GetHandlePointer(), id, loc, path, flags, reslimit_holder.Get());
     }
 
-    Result LoaderService::GetProgramInfo(sf::Out<ProgramInfo> out, const ncm::TitleLocation &loc) {
+    Result LoaderService::GetProgramInfo(sf::Out<ProgramInfo> out, const ncm::ProgramLocation &loc) {
         /* Zero output. */
         std::memset(out.GetPointer(), 0, sizeof(*out.GetPointer()));
 
         R_TRY(ldr::GetProgramInfo(out.GetPointer(), loc));
 
-        if (loc.storage_id != static_cast<u8>(ncm::StorageId::None) && loc.title_id != out->title_id) {
+        if (loc.storage_id != static_cast<u8>(ncm::StorageId::None) && loc.program_id != out->program_id) {
             char path[FS_MAX_PATH];
-            const ncm::TitleLocation new_loc = ncm::TitleLocation::Make(out->title_id, static_cast<ncm::StorageId>(loc.storage_id));
+            const ncm::ProgramLocation new_loc = ncm::ProgramLocation::Make(out->program_id, static_cast<ncm::StorageId>(loc.storage_id));
 
             R_TRY(ResolveContentPath(path, loc));
             R_TRY(RedirectContentPath(path, new_loc));
 
-            const auto arg_info = args::Get(loc.title_id);
+            const auto arg_info = args::Get(loc.program_id);
             if (arg_info != nullptr) {
-                R_TRY(args::Set(new_loc.title_id, arg_info->args, arg_info->args_size));
+                R_TRY(args::Set(new_loc.program_id, arg_info->args, arg_info->args_size));
             }
         }
 
         return ResultSuccess();
     }
 
-    Result LoaderService::PinTitle(sf::Out<PinId> out_id, const ncm::TitleLocation &loc) {
-        return ldr::ro::PinTitle(out_id.GetPointer(), loc);
+    Result LoaderService::PinProgram(sf::Out<PinId> out_id, const ncm::ProgramLocation &loc) {
+        return ldr::ro::PinProgram(out_id.GetPointer(), loc);
     }
 
-    Result LoaderService::UnpinTitle(PinId id) {
-        return ldr::ro::UnpinTitle(id);
+    Result LoaderService::UnpinProgram(PinId id) {
+        return ldr::ro::UnpinProgram(id);
     }
 
-    Result LoaderService::SetTitleArguments(ncm::TitleId title_id, const sf::InPointerBuffer &args, u32 args_size) {
-        return args::Set(title_id, args.GetPointer(), std::min(args.GetSize(), size_t(args_size)));
+    Result LoaderService::SetProgramArguments(ncm::ProgramId program_id, const sf::InPointerBuffer &args, u32 args_size) {
+        return args::Set(program_id, args.GetPointer(), std::min(args.GetSize(), size_t(args_size)));
     }
 
-    Result LoaderService::ClearArguments() {
-        return args::Clear();
+    Result LoaderService::FlushArguments() {
+        return args::Flush();
     }
 
     Result LoaderService::GetProcessModuleInfo(sf::Out<u32> count, const sf::OutPointerArray<ModuleInfo> &out, os::ProcessId process_id) {
@@ -83,16 +83,16 @@ namespace ams::ldr {
     }
 
     /* Atmosphere commands. */
-    Result LoaderService::AtmosphereSetExternalContentSource(sf::OutMoveHandle out, ncm::TitleId title_id) {
-        return ecs::Set(out.GetHandlePointer(), title_id);
+    Result LoaderService::AtmosphereSetExternalContentSource(sf::OutMoveHandle out, ncm::ProgramId program_id) {
+        return ecs::Set(out.GetHandlePointer(), program_id);
     }
 
-    void LoaderService::AtmosphereClearExternalContentSource(ncm::TitleId title_id) {
-        R_ASSERT(ecs::Clear(title_id));
+    void LoaderService::AtmosphereClearExternalContentSource(ncm::ProgramId program_id) {
+        R_ASSERT(ecs::Clear(program_id));
     }
 
-    void LoaderService::AtmosphereHasLaunchedTitle(sf::Out<bool> out, ncm::TitleId title_id) {
-        out.SetValue(ldr::HasLaunchedTitle(title_id));
+    void LoaderService::AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id) {
+        out.SetValue(ldr::HasLaunchedProgram(program_id));
     }
 
 }

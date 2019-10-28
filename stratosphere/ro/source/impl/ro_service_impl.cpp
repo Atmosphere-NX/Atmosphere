@@ -73,22 +73,22 @@ namespace ams::ro::impl {
             os::ProcessId process_id;
             bool in_use;
 
-            ncm::TitleId GetTitleId(Handle other_process_h) const {
+            ncm::ProgramId GetProgramId(Handle other_process_h) const {
                 /* Automatically select a handle, allowing for override. */
                 Handle process_h = this->process_handle;
                 if (other_process_h != INVALID_HANDLE) {
                     process_h = other_process_h;
                 }
 
-                ncm::TitleId title_id = ncm::TitleId::Invalid;
+                ncm::ProgramId program_id = ncm::ProgramId::Invalid;
                 if (hos::GetVersion() >= hos::Version_300) {
                     /* 3.0.0+: Use svcGetInfo. */
-                    R_ASSERT(svcGetInfo(&title_id.value, InfoType_TitleId, process_h, 0));
+                    R_ASSERT(svcGetInfo(&program_id.value, InfoType_ProgramId, process_h, 0));
                 } else {
                     /* 1.0.0-2.3.0: We're not inside loader, so ask pm. */
-                    R_ASSERT(pm::info::GetTitleId(&title_id, os::GetProcessId(process_h)));
+                    R_ASSERT(pm::info::GetProgramId(&program_id, os::GetProcessId(process_h)));
                 }
-                return title_id;
+                return program_id;
             }
 
             Result GetNrrInfoByAddress(NrrInfo **out, u64 nrr_heap_address) {
@@ -363,8 +363,8 @@ namespace ams::ro::impl {
         ProcessContext *context = GetContextById(context_id);
         AMS_ASSERT(context != nullptr);
 
-        /* Get title id. */
-        const ncm::TitleId title_id = context->GetTitleId(process_h);
+        /* Get program id. */
+        const ncm::ProgramId program_id = context->GetProgramId(process_h);
 
         /* Validate address/size. */
         R_TRY(ValidateAddressAndSize(nrr_address, nrr_size));
@@ -376,7 +376,7 @@ namespace ams::ro::impl {
         /* Map. */
         NrrHeader *header = nullptr;
         u64 mapped_code_address = 0;
-        R_TRY(MapAndValidateNrr(&header, &mapped_code_address, context->process_handle, title_id, nrr_address, nrr_size, expected_type, enforce_type));
+        R_TRY(MapAndValidateNrr(&header, &mapped_code_address, context->process_handle, program_id, nrr_address, nrr_size, expected_type, enforce_type));
 
         /* Set NRR info. */
         nrr_info->in_use = true;

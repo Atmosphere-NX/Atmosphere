@@ -22,6 +22,6 @@
 namespace ams::pm::shell {
 
     /* Shell API. */
-    Result LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags);
+    Result LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 launch_flags);
 
 }

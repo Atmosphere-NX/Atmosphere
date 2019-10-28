@@ -21,14 +21,14 @@ namespace ams::ldr::args {
     constexpr size_t ArgumentSizeMax = 0x8000;
 
     struct ArgumentInfo {
-        ncm::TitleId title_id;
+        ncm::ProgramId program_id;
         size_t args_size;
         u8 args[ArgumentSizeMax];
     };
 
     /* API. */
-    const ArgumentInfo *Get(ncm::TitleId title_id);
-    Result Set(ncm::TitleId title_id, const void *args, size_t args_size);
-    Result Clear();
+    const ArgumentInfo *Get(ncm::ProgramId program_id);
+    Result Set(ncm::ProgramId program_id, const void *args, size_t args_size);
+    Result Flush();
 
 }

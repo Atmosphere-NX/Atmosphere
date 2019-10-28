@@ -11,8 +11,8 @@
 extern "C" {
 #endif
 
-Result ldrPmAtmosphereHasLaunchedTitle(bool *out, u64 tid);
-Result ldrDmntAtmosphereHasLaunchedTitle(bool *out, u64 tid);
+Result ldrPmAtmosphereHasLaunchedProgram(bool *out, u64 program_id);
+Result ldrDmntAtmosphereHasLaunchedProgram(bool *out, u64 program_id);
 
 #ifdef __cplusplus
 }

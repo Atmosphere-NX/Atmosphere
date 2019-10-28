@@ -17,17 +17,17 @@
 #include <switch.h>
 #include "ldr_ams.h"
 
-static Result _ldrAtmosphereHasLaunchedTitle(Service *srv, bool *out, u64 tid) {
+static Result _ldrAtmosphereHasLaunchedProgram(Service *srv, bool *out, u64 program_id) {
     u8 tmp;
-    Result rc = serviceDispatchInOut(srv, 65000, tid, tmp);
+    Result rc = serviceDispatchInOut(srv, 65000, program_id, tmp);
     if (R_SUCCEEDED(rc) && out) *out = tmp & 1;
     return rc;
 }
 
-Result ldrDmntAtmosphereHasLaunchedTitle(bool *out, u64 tid) {
-    return _ldrAtmosphereHasLaunchedTitle(ldrDmntGetServiceSession(), out, tid);
+Result ldrDmntAtmosphereHasLaunchedProgram(bool *out, u64 program_id) {
+    return _ldrAtmosphereHasLaunchedProgram(ldrDmntGetServiceSession(), out, program_id);
 }
 
-Result ldrPmAtmosphereHasLaunchedTitle(bool *out, u64 tid) {
-    return _ldrAtmosphereHasLaunchedTitle(ldrPmGetServiceSession(), out, tid);
+Result ldrPmAtmosphereHasLaunchedProgram(bool *out, u64 program_id) {
+    return _ldrAtmosphereHasLaunchedProgram(ldrPmGetServiceSession(), out, program_id);
 }

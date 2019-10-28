@@ -26,11 +26,11 @@ namespace ams::sf {
         protected:
             std::shared_ptr<::Service> forward_service;
             os::ProcessId process_id;
-            ncm::TitleId  title_id;
+            ncm::ProgramId  program_id;
         public:
-            IMitmServiceObject(std::shared_ptr<::Service> &&s, os::ProcessId p, ncm::TitleId t) : forward_service(std::move(s)), process_id(p), title_id(t) { /* ... */ }
+            IMitmServiceObject(std::shared_ptr<::Service> &&s, os::ProcessId p, ncm::ProgramId r) : forward_service(std::move(s)), process_id(p), program_id(r) { /* ... */ }
 
-            static bool ShouldMitm(os::ProcessId process_id, ncm::TitleId title_id);
+            static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id);
     };
 
     template<typename T>

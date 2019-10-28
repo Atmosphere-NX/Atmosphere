@@ -76,14 +76,14 @@ namespace ams::fatal::srv {
             }
 
             /* Open report file. */
-            snprintf(file_path, sizeof(file_path) - 1, "sdmc:/atmosphere/fatal_reports/%011lu_%016lx.log", timestamp, static_cast<u64>(this->context->title_id));
+            snprintf(file_path, sizeof(file_path) - 1, "sdmc:/atmosphere/fatal_reports/%011lu_%016lx.log", timestamp, static_cast<u64>(this->context->program_id));
             FILE *f_report = fopen(file_path, "w");
             if (f_report != NULL) {
                 ON_SCOPE_EXIT { fclose(f_report); };
 
                 fprintf(f_report, "Atmosphère Fatal Report (v1.0):\n");
                 fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->context->result.GetValue(), this->context->result.GetModule(), this->context->result.GetDescription());
-                fprintf(f_report, "Title ID:                        %016lx\n", static_cast<u64>(this->context->title_id));
+                fprintf(f_report, "Program ID:                      %016lx\n", static_cast<u64>(this->context->program_id));
                 if (strlen(this->context->proc_name)) {
                     fprintf(f_report, "Process Name:                    %s\n", this->context->proc_name);
                 }
@@ -117,7 +117,7 @@ namespace ams::fatal::srv {
             }
 
             if (this->context->stack_dump_size) {
-                snprintf(file_path, sizeof(file_path) - 1, "sdmc:/atmosphere/fatal_reports/dumps/%011lu_%016lx.bin", timestamp, static_cast<u64>(this->context->title_id));
+                snprintf(file_path, sizeof(file_path) - 1, "sdmc:/atmosphere/fatal_reports/dumps/%011lu_%016lx.bin", timestamp, static_cast<u64>(this->context->program_id));
                 FILE *f_stackdump = fopen(file_path, "wb");
                 if (f_stackdump == NULL) { return; }
                 ON_SCOPE_EXIT { fclose(f_stackdump); };

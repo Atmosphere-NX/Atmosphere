@@ -49,24 +49,24 @@ namespace ams::ldr::ecs {
     }
 
     /* API. */
-    const char *Get(ncm::TitleId title_id) {
-        auto it = g_map.find(static_cast<u64>(title_id));
+    const char *Get(ncm::ProgramId program_id) {
+        auto it = g_map.find(static_cast<u64>(program_id));
         if (it == g_map.end()) {
             return nullptr;
         }
         return it->second.GetDeviceName();
     }
 
-    Result Set(Handle *out, ncm::TitleId title_id) {
+    Result Set(Handle *out, ncm::ProgramId program_id) {
         /* TODO: Is this an appropriate error? */
         R_UNLESS(g_map.size() < MaxExternalContentSourceCount, ldr::ResultTooManyArguments());
 
         /* Clear any sources. */
-        R_ASSERT(Clear(title_id));
+        R_ASSERT(Clear(program_id));
 
         /* Generate mountpoint. */
         char device_name[DeviceNameSizeMax];
-        std::snprintf(device_name, DeviceNameSizeMax, "ecs-%016lx", static_cast<u64>(title_id));
+        std::snprintf(device_name, DeviceNameSizeMax, "ecs-%016lx", static_cast<u64>(program_id));
 
         /* Create session. */
         os::ManagedHandle server, client;
@@ -83,14 +83,14 @@ namespace ams::ldr::ecs {
         fs_guard.Cancel();
 
         /* Add to map. */
-        g_map.emplace(static_cast<u64>(title_id), device_name);
+        g_map.emplace(static_cast<u64>(program_id), device_name);
         *out = server.Move();
         return ResultSuccess();
     }
 
-    Result Clear(ncm::TitleId title_id) {
+    Result Clear(ncm::ProgramId program_id) {
         /* Delete if present. */
-        g_map.erase(static_cast<u64>(title_id));
+        g_map.erase(static_cast<u64>(program_id));
         return ResultSuccess();
     }
 

@@ -104,9 +104,9 @@ namespace ams::sf::hipc {
                             std::shared_ptr<::Service> forward_service = std::move(ServerSession::CreateForwardService());
 
                             /* Get mitm forward session. */
-                            os::ProcessId client_pid;
-                            ncm::TitleId  client_tid;
-                            R_ASSERT(sm::mitm::AcknowledgeSession(forward_service.get(), &client_pid, &client_tid, this->service_name));
+                            os::ProcessId client_process_id;
+                            ncm::ProgramId  client_program_id;
+                            R_ASSERT(sm::mitm::AcknowledgeSession(forward_service.get(), &client_process_id, &client_program_id, this->service_name));
 
                             *out_obj = std::move(cmif::ServiceObjectHolder(std::move(MakeShared(forward_service))));
                             *out_fsrv = std::move(forward_service);

@@ -46,7 +46,7 @@ extern "C" {
 
 namespace ams {
 
-    ncm::TitleId CurrentTitleId = ncm::TitleId::Spl;
+    ncm::ProgramId CurrentProgramId = ncm::ProgramId::Spl;
 
     namespace result {
 

@@ -20,24 +20,24 @@ namespace ams::ldr::pm {
 
     /* Information API. */
     Result CreateProcess(Handle *out, PinId pin_id, u32 flags, Handle reslimit) {
-        return ldrPmCreateProcess(flags, pin_id.value, reslimit, out);
+        return ldrPmCreateProcess(pin_id.value, flags, reslimit, out);
     }
 
-    Result GetProgramInfo(ProgramInfo *out, const ncm::TitleLocation &loc) {
-        return ldrPmGetProgramInfo(static_cast<u64>(loc.title_id), static_cast<FsStorageId>(loc.storage_id), reinterpret_cast<LoaderProgramInfo *>(out));
+    Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc) {
+        return ldrPmGetProgramInfo(reinterpret_cast<const NcmProgramLocation *>(&loc), reinterpret_cast<LoaderProgramInfo *>(out));
     }
 
-    Result PinTitle(PinId *out, const ncm::TitleLocation &loc) {
+    Result PinProgram(PinId *out, const ncm::ProgramLocation &loc) {
         static_assert(sizeof(*out) == sizeof(u64), "PinId definition!");
-        return ldrPmRegisterTitle(static_cast<u64>(loc.title_id), static_cast<FsStorageId>(loc.storage_id), reinterpret_cast<u64 *>(out));
+        return ldrPmPinProgram(reinterpret_cast<const NcmProgramLocation *>(&loc), reinterpret_cast<u64 *>(out));
     }
 
-    Result UnpinTitle(PinId pin_id) {
-        return ldrPmUnregisterTitle(pin_id.value);
+    Result UnpinProgram(PinId pin_id) {
+        return ldrPmUnpinProgram(pin_id.value);
     }
 
-    Result HasLaunchedTitle(bool *out, ncm::TitleId title_id) {
-        return ldrPmAtmosphereHasLaunchedTitle(out, static_cast<u64>(title_id));
+    Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
+        return ldrPmAtmosphereHasLaunchedProgram(out, static_cast<u64>(program_id));
     }
 
 }

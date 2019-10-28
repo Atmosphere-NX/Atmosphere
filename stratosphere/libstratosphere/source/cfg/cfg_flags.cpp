@@ -47,20 +47,20 @@ namespace ams::cfg {
     }
 
     /* Flag utilities. */
-    bool HasFlag(ncm::TitleId title_id, const char *flag) {
-        return HasTitleSpecificFlag(title_id, flag) || (IsHblTitleId(title_id) && HasHblFlag(flag));
+    bool HasFlag(ncm::ProgramId program_id, const char *flag) {
+        return HasContentSpecificFlag(program_id, flag) || (IsHblProgramId(program_id) && HasHblFlag(flag));
     }
 
-    bool HasTitleSpecificFlag(ncm::TitleId title_id, const char *flag) {
-        char title_flag[FS_MAX_PATH];
-        std::snprintf(title_flag, sizeof(title_flag) - 1, "/atmosphere/titles/%016lx/flags/%s.flag", static_cast<u64>(title_id), flag);
-        return HasFlagFile(title_flag);
+    bool HasContentSpecificFlag(ncm::ProgramId program_id, const char *flag) {
+        char content_flag[FS_MAX_PATH];
+        std::snprintf(content_flag, sizeof(content_flag) - 1, "/atmosphere/contents/%016lx/flags/%s.flag", static_cast<u64>(program_id), flag);
+        return HasFlagFile(content_flag);
     }
 
     bool HasGlobalFlag(const char *flag) {
-        char title_flag[FS_MAX_PATH];
-        std::snprintf(title_flag, sizeof(title_flag) - 1, "/atmosphere/flags/%s.flag", flag);
-        return HasFlagFile(title_flag);
+        char global_flag[FS_MAX_PATH];
+        std::snprintf(global_flag, sizeof(global_flag) - 1, "/atmosphere/flags/%s.flag", flag);
+        return HasFlagFile(global_flag);
     }
 
     bool HasHblFlag(const char *flag) {

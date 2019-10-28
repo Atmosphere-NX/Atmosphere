@@ -19,7 +19,7 @@
 namespace ams::ldr {
 
     /* Process Creation API. */
-    Result CreateProcess(Handle *out, PinId pin_id, const ncm::TitleLocation &loc, const char *path, u32 flags, Handle reslimit_h);
-    Result GetProgramInfo(ProgramInfo *out, const ncm::TitleLocation &loc);
+    Result CreateProcess(Handle *out, PinId pin_id, const ncm::ProgramLocation &loc, const char *path, u32 flags, Handle reslimit_h);
+    Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc);
 
 }

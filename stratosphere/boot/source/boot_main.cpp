@@ -52,7 +52,7 @@ extern "C" {
 
 namespace ams {
 
-    ncm::TitleId CurrentTitleId = ncm::TitleId::Boot;
+    ncm::ProgramId CurrentProgramId = ncm::ProgramId::Boot;
 
     void ExceptionHandler(FatalErrorContext *ctx) {
         /* We're boot sysmodule, so manually reboot to fatal error. */

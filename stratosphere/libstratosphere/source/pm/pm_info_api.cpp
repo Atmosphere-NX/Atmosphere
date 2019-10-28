@@ -22,44 +22,45 @@ namespace ams::pm::info {
 
         /* Global lock. */
         os::Mutex g_info_lock;
-        std::set<u64> g_cached_launched_titles;
+        /* TODO: Less memory-intensive storage? */
+        std::set<u64> g_cached_launched_programs;
 
     }
 
     /* Information API. */
-    Result GetTitleId(ncm::TitleId *out_title_id, os::ProcessId process_id) {
+    Result GetProgramId(ncm::ProgramId *out_program_id, os::ProcessId process_id) {
         std::scoped_lock lk(g_info_lock);
 
-        return pminfoGetProgramId(reinterpret_cast<u64 *>(out_title_id), static_cast<u64>(process_id));
+        return pminfoGetProgramId(reinterpret_cast<u64 *>(out_program_id), static_cast<u64>(process_id));
     }
 
-    Result GetProcessId(os::ProcessId *out_process_id, ncm::TitleId title_id) {
+    Result GetProcessId(os::ProcessId *out_process_id, ncm::ProgramId program_id) {
         std::scoped_lock lk(g_info_lock);
 
-        return pminfoAtmosphereGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(title_id));
+        return pminfoAtmosphereGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(program_id));
     }
 
-    Result WEAK HasLaunchedTitle(bool *out, ncm::TitleId title_id) {
+    Result WEAK HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
         std::scoped_lock lk(g_info_lock);
 
-        if (g_cached_launched_titles.find(static_cast<u64>(title_id)) != g_cached_launched_titles.end()) {
+        if (g_cached_launched_programs.find(static_cast<u64>(program_id)) != g_cached_launched_programs.end()) {
             *out = true;
             return ResultSuccess();
         }
 
         bool has_launched = false;
-        R_TRY(pminfoAtmosphereHasLaunchedTitle(&has_launched, static_cast<u64>(title_id)));
+        R_TRY(pminfoAtmosphereHasLaunchedProgram(&has_launched, static_cast<u64>(program_id)));
         if (has_launched) {
-            g_cached_launched_titles.insert(static_cast<u64>(title_id));
+            g_cached_launched_programs.insert(static_cast<u64>(program_id));
         }
 
         *out = has_launched;
         return ResultSuccess();
     }
 
-    bool HasLaunchedTitle(ncm::TitleId title_id) {
+    bool HasLaunchedProgram(ncm::ProgramId program_id) {
         bool has_launched = false;
-        R_ASSERT(HasLaunchedTitle(&has_launched, title_id));
+        R_ASSERT(HasLaunchedProgram(&has_launched, program_id));
         return has_launched;
     }
 

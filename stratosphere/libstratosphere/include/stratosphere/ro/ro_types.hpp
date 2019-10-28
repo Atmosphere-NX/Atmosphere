@@ -37,13 +37,13 @@ namespace ams::ro {
         private:
             u32 magic;
             u8  reserved_04[0xC];
-            u64 title_id_mask;
-            u64 title_id_pattern;
+            u64 program_id_mask;
+            u64 program_id_pattern;
             u8  reserved_20[0x10];
             u8  modulus[0x100];
             u8  fixed_key_signature[0x100];
             u8  nrr_signature[0x100];
-            ncm::TitleId title_id;
+            ncm::ProgramId program_id;
             u32 size;
             u8  type; /* 7.0.0+ */
             u8  reserved_33D[3];
@@ -55,8 +55,8 @@ namespace ams::ro {
                 return this->magic == Magic;
             }
 
-            bool IsTitleIdValid() const {
-                return (static_cast<u64>(this->title_id) & this->title_id_mask) == this->title_id_pattern;
+            bool IsProgramIdValid() const {
+                return (static_cast<u64>(this->program_id) & this->program_id_mask) == this->program_id_pattern;
             }
 
             ModuleType GetType() const {
@@ -65,8 +65,8 @@ namespace ams::ro {
                 return type;
             }
 
-            ncm::TitleId GetTitleId() const {
-                return this->title_id;
+            ncm::ProgramId GetProgramId() const {
+                return this->program_id;
             }
 
             u32 GetSize() const {

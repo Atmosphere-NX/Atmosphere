@@ -147,14 +147,14 @@ namespace ams::fatal {
                 std::memset(this, 0, sizeof(*this));
             }
 
-            void SetTitleIdForAtmosphere(ncm::TitleId title_id) {
-                /* Right now, we mux title ID in through afsr when creport. */
+            void SetProgramIdForAtmosphere(ncm::ProgramId program_id) {
+                /* Right now, we mux program ID in through afsr when creport. */
                 /* TODO: Better way to do this? */
-                this->afsr0 = static_cast<RegisterType>(title_id);
+                this->afsr0 = static_cast<RegisterType>(program_id);
             }
 
-            ncm::TitleId GetTitleIdForAtmosphere() const {
-                return ncm::TitleId{this->afsr0};
+            ncm::ProgramId GetProgramIdForAtmosphere() const {
+                return ncm::ProgramId{this->afsr0};
             }
 
             void SetRegisterValue(RegisterName name, RegisterType value) {
@@ -265,15 +265,15 @@ namespace ams::fatal {
                 std::memset(this, 0, sizeof(*this));
             }
 
-            void SetTitleIdForAtmosphere(ncm::TitleId title_id) {
-                /* Right now, we mux title ID in through afsr when creport. */
+            void SetProgramIdForAtmosphere(ncm::ProgramId program_id) {
+                /* Right now, we mux program ID in through afsr when creport. */
                 /* TODO: Better way to do this? */
-                this->afsr0 = static_cast<RegisterType>(static_cast<u64>(title_id) >> 0);
-                this->afsr1 = static_cast<RegisterType>(static_cast<u64>(title_id) >> 32);
+                this->afsr0 = static_cast<RegisterType>(static_cast<u64>(program_id) >> 0);
+                this->afsr1 = static_cast<RegisterType>(static_cast<u64>(program_id) >> 32);
             }
 
-            ncm::TitleId GetTitleIdForAtmosphere() const {
-                return ncm::TitleId{(static_cast<u64>(this->afsr1) << 32ul) | (static_cast<u64>(this->afsr0) << 0ul)};
+            ncm::ProgramId GetProgramIdForAtmosphere() const {
+                return ncm::ProgramId{(static_cast<u64>(this->afsr1) << 32ul) | (static_cast<u64>(this->afsr0) << 0ul)};
             }
 
             void SetRegisterValue(RegisterName name, RegisterType value) {
@@ -319,7 +319,7 @@ namespace ams::fatal {
 
         struct ThrowContext {
             Result result;
-            ncm::TitleId title_id;
+            ncm::ProgramId program_id;
             char proc_name[0xD];
             bool is_creport;
             CpuContext cpu_ctx;
@@ -331,7 +331,7 @@ namespace ams::fatal {
 
             void ClearState() {
                 this->result = ResultSuccess();
-                this->title_id = ncm::TitleId::Invalid;
+                this->program_id = ncm::ProgramId::Invalid;
                 std::memset(this->proc_name, 0, sizeof(this->proc_name));
                 this->is_creport = false;
                 std::memset(&this->cpu_ctx, 0, sizeof(this->cpu_ctx));

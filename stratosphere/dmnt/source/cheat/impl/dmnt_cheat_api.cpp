@@ -61,10 +61,10 @@ namespace ams::dmnt::cheat::impl {
                 Result AttachToApplicationProcess(bool on_process_launch);
 
                 bool ParseCheats(const char *s, size_t len);
-                bool LoadCheats(const ncm::TitleId title_id, const u8 *build_id);
+                bool LoadCheats(const ncm::ProgramId program_id, const u8 *build_id);
                 bool ParseCheatToggles(const char *s, size_t len);
-                bool LoadCheatToggles(const ncm::TitleId title_id);
-                void SaveCheatToggles(const ncm::TitleId title_id);
+                bool LoadCheatToggles(const ncm::ProgramId program_id);
+                void SaveCheatToggles(const ncm::ProgramId program_id);
 
                 bool GetNeedsReloadVm() const {
                     return this->needs_reload_vm;
@@ -131,7 +131,7 @@ namespace ams::dmnt::cheat::impl {
 
                         /* Save cheat toggles. */
                         if (this->always_save_cheat_toggles || this->should_save_cheat_toggles) {
-                            this->SaveCheatToggles(this->cheat_process_metadata.title_id);
+                            this->SaveCheatToggles(this->cheat_process_metadata.program_id);
                             this->should_save_cheat_toggles = false;
                         }
 
@@ -622,11 +622,11 @@ namespace ams::dmnt::cheat::impl {
             /* Get process handle, use it to learn memory extents. */
             {
                 Handle proc_h = INVALID_HANDLE;
-                ncm::TitleLocation loc = {};
+                ncm::ProgramLocation loc = {};
                 ON_SCOPE_EXIT { if (proc_h != INVALID_HANDLE) { R_ASSERT(svcCloseHandle(proc_h)); } };
 
                 R_ASSERT_IF_NEW_PROCESS(pm::dmnt::AtmosphereGetProcessInfo(&proc_h, &loc, this->cheat_process_metadata.process_id));
-                this->cheat_process_metadata.title_id = loc.title_id;
+                this->cheat_process_metadata.program_id = loc.program_id;
 
                 {
                     map::AddressSpaceInfo as_info;
@@ -642,16 +642,16 @@ namespace ams::dmnt::cheat::impl {
 
             /* If new process launch, we may not want to actually attach. */
             if (on_process_launch) {
-                R_UNLESS(cfg::IsCheatEnableKeyHeld(this->cheat_process_metadata.title_id), ResultCheatNotAttached());
+                R_UNLESS(cfg::IsCheatEnableKeyHeld(this->cheat_process_metadata.program_id), ResultCheatNotAttached());
             }
 
             /* Get module information from loader. */
             {
                 LoaderModuleInfo proc_modules[2];
-                u32 num_modules;
+                s32 num_modules;
 
                 /* TODO: ldr::dmnt:: */
-                R_ASSERT_IF_NEW_PROCESS(ldrDmntGetModuleInfos(static_cast<u64>(this->cheat_process_metadata.process_id), proc_modules, util::size(proc_modules), &num_modules));
+                R_ASSERT_IF_NEW_PROCESS(ldrDmntGetProcessModuleInfo(static_cast<u64>(this->cheat_process_metadata.process_id), proc_modules, util::size(proc_modules), &num_modules));
 
                 /* All applications must have two modules. */
                 /* Only accept one (which means we're attaching to HBL) */
@@ -671,8 +671,8 @@ namespace ams::dmnt::cheat::impl {
             }
 
             /* Read cheats off the SD. */
-            if (!this->LoadCheats(this->cheat_process_metadata.title_id, this->cheat_process_metadata.main_nso_build_id) ||
-                !this->LoadCheatToggles(this->cheat_process_metadata.title_id)) {
+            if (!this->LoadCheats(this->cheat_process_metadata.program_id, this->cheat_process_metadata.main_nso_build_id) ||
+                !this->LoadCheatToggles(this->cheat_process_metadata.program_id)) {
                 /* If new process launch, require success. */
                 R_UNLESS(!on_process_launch, ResultCheatNotAttached());
             }
@@ -872,15 +872,15 @@ namespace ams::dmnt::cheat::impl {
             return true;
         }
 
-        bool CheatProcessManager::LoadCheats(const ncm::TitleId title_id, const u8 *build_id) {
+        bool CheatProcessManager::LoadCheats(const ncm::ProgramId program_id, const u8 *build_id) {
             /* Reset existing entries. */
             this->ResetAllCheatEntries();
 
-            /* Open the file for title/build_id. */
+            /* Open the file for program/build_id. */
             FILE *f_cht = nullptr;
             {
                 char path[FS_MAX_PATH+1] = {0};
-                std::snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/cheats/%02x%02x%02x%02x%02x%02x%02x%02x.txt", static_cast<u64>(title_id),
+                std::snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/contents/%016lx/cheats/%02x%02x%02x%02x%02x%02x%02x%02x.txt", static_cast<u64>(program_id),
                         build_id[0], build_id[1], build_id[2], build_id[3], build_id[4], build_id[5], build_id[6], build_id[7]);
 
                 f_cht = fopen(path, "rb");
@@ -914,12 +914,12 @@ namespace ams::dmnt::cheat::impl {
             return this->ParseCheats(cht_txt, std::strlen(cht_txt));
         }
 
-        bool CheatProcessManager::LoadCheatToggles(const ncm::TitleId title_id) {
-            /* Open the file for title_id. */
+        bool CheatProcessManager::LoadCheatToggles(const ncm::ProgramId program_id) {
+            /* Open the file for program_id. */
             FILE *f_tg = nullptr;
             {
                 char path[FS_MAX_PATH+1] = {0};
-                std::snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/cheats/toggles.txt", static_cast<u64>(title_id));
+                std::snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", static_cast<u64>(program_id));
                 f_tg = fopen(path, "rb");
             }
 
@@ -955,12 +955,12 @@ namespace ams::dmnt::cheat::impl {
             return this->should_save_cheat_toggles;
         }
 
-        void CheatProcessManager::SaveCheatToggles(const ncm::TitleId title_id) {
-            /* Open the file for title_id. */
+        void CheatProcessManager::SaveCheatToggles(const ncm::ProgramId program_id) {
+            /* Open the file for program_id. */
             FILE *f_tg = nullptr;
             {
                 char path[FS_MAX_PATH+1] = {0};
-                std::snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/titles/%016lx/cheats/toggles.txt", static_cast<u64>(title_id));
+                std::snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", static_cast<u64>(program_id));
                 if ((f_tg = fopen(path, "wb")) == nullptr) {
                     return;
                 }

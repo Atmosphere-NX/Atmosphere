@@ -19,10 +19,10 @@
 namespace ams::ldr::ro {
 
     /* RO Manager API. */
-    Result PinTitle(PinId *out, const ncm::TitleLocation &loc);
-    Result UnpinTitle(PinId id);
-    Result GetTitleLocation(ncm::TitleLocation *out, PinId id);
-    Result RegisterProcess(PinId id, os::ProcessId process_id, ncm::TitleId title_id);
+    Result PinProgram(PinId *out, const ncm::ProgramLocation &loc);
+    Result UnpinProgram(PinId id);
+    Result GetProgramLocation(ncm::ProgramLocation *out, PinId id);
+    Result RegisterProcess(PinId id, os::ProcessId process_id, ncm::ProgramId program_id);
     Result RegisterModule(PinId id, const u8 *build_id, uintptr_t address, size_t size);
     Result GetProcessModuleInfo(u32 *out_count, ModuleInfo *out, size_t max_out_count, os::ProcessId process_id);
 

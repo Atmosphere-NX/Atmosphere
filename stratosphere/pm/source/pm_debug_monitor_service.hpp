@@ -24,14 +24,14 @@ namespace ams::pm::dmnt {
             virtual Result GetModuleIdList(sf::Out<u32> out_count, const sf::OutBuffer &out_buf, u64 unused);
             virtual Result GetExceptionProcessIdList(sf::Out<u32> out_count, const sf::OutArray<os::ProcessId> &out_process_ids);
             virtual Result StartProcess(os::ProcessId process_id);
-            virtual Result GetProcessId(sf::Out<os::ProcessId> out, ncm::TitleId title_id);
-            virtual Result HookToCreateProcess(sf::OutCopyHandle out_hook, ncm::TitleId title_id);
+            virtual Result GetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id);
+            virtual Result HookToCreateProcess(sf::OutCopyHandle out_hook, ncm::ProgramId program_id);
             virtual Result GetApplicationProcessId(sf::Out<os::ProcessId> out);
             virtual Result HookToCreateApplicationProcess(sf::OutCopyHandle out_hook);
             virtual Result ClearHook(u32 which);
 
             /* Atmosphere extension commands. */
-            virtual Result AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::TitleLocation> out_loc, os::ProcessId process_id);
+            virtual Result AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::ProgramLocation> out_loc, os::ProcessId process_id);
             virtual Result AtmosphereGetCurrentLimitInfo(sf::Out<u64> out_cur_val, sf::Out<u64> out_lim_val, u32 group, u32 resource);
     };
 

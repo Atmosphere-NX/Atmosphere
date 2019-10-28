@@ -36,9 +36,9 @@ namespace ams::sm::mitm {
         });
     }
 
-    Result AcknowledgeSession(Service *out_service, os::ProcessId *out_pid, ncm::TitleId *out_tid, ServiceName name) {
+    Result AcknowledgeSession(Service *out_service, os::ProcessId *out_process_id, ncm::ProgramId *out_program_id, ServiceName name) {
         return impl::DoWithMitmSession([&]() {
-            return smAtmosphereMitmAcknowledgeSession(out_service, &out_pid->value, &out_tid->value, impl::ConvertName(name));
+            return smAtmosphereMitmAcknowledgeSession(out_service, &out_process_id->value, &out_program_id->value, impl::ConvertName(name));
         });
     }
 

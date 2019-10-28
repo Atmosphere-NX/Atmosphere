@@ -31,18 +31,18 @@ namespace ams::cfg {
     void WaitSdCardInitialized();
 
     /* Override key utilities. */
-    bool IsTitleOverrideKeyHeld(ncm::TitleId title_id);
-    bool IsHblOverrideKeyHeld(ncm::TitleId title_id);
-    void GetOverrideKeyHeldStatus(bool *out_hbl, bool *out_title, ncm::TitleId title_id);
-    bool IsCheatEnableKeyHeld(ncm::TitleId title_id);
+    bool IsProgramOverrideKeyHeld(ncm::ProgramId program_id);
+    bool IsHblOverrideKeyHeld(ncm::ProgramId program_id);
+    void GetOverrideKeyHeldStatus(bool *out_hbl, bool *out_program, ncm::ProgramId program_id);
+    bool IsCheatEnableKeyHeld(ncm::ProgramId program_id);
 
     /* Flag utilities. */
-    bool HasFlag(ncm::TitleId title_id, const char *flag);
-    bool HasTitleSpecificFlag(ncm::TitleId title_id, const char *flag);
+    bool HasFlag(ncm::ProgramId program_id, const char *flag);
+    bool HasContentSpecificFlag(ncm::ProgramId program_id, const char *flag);
     bool HasGlobalFlag(const char *flag);
 
     /* HBL Configuration utilities. */
-    bool IsHblTitleId(ncm::TitleId title_id);
+    bool IsHblProgramId(ncm::ProgramId program_id);
     bool HasHblFlag(const char *flag);
     const char *GetHblPath();
 

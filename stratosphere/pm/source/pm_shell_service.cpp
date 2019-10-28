@@ -19,21 +19,21 @@
 namespace ams::pm::shell {
 
     /* Overrides for libstratosphere pm::shell commands. */
-    Result LaunchTitle(os::ProcessId *out_process_id, const ncm::TitleLocation &loc, u32 launch_flags) {
-        return impl::LaunchTitle(out_process_id, loc, launch_flags);
+    Result LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 launch_flags) {
+        return impl::LaunchProgram(out_process_id, loc, launch_flags);
     }
 
     /* Service command implementations. */
-    Result ShellServiceBase::LaunchTitle(sf::Out<os::ProcessId> out_process_id, const ncm::TitleLocation &loc, u32 flags) {
-        return pm::shell::LaunchTitle(out_process_id.GetPointer(), loc, flags);
+    Result ShellServiceBase::LaunchProgram(sf::Out<os::ProcessId> out_process_id, const ncm::ProgramLocation &loc, u32 flags) {
+        return pm::shell::LaunchProgram(out_process_id.GetPointer(), loc, flags);
     }
 
     Result ShellServiceBase::TerminateProcess(os::ProcessId process_id) {
         return impl::TerminateProcess(process_id);
     }
 
-    Result ShellServiceBase::TerminateTitle(ncm::TitleId title_id) {
-        return impl::TerminateTitle(title_id);
+    Result ShellServiceBase::TerminateProgram(ncm::ProgramId program_id) {
+        return impl::TerminateProgram(program_id);
     }
 
     void ShellServiceBase::GetProcessEventHandle(sf::OutCopyHandle out) {
