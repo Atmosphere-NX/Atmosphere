@@ -14,10 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "sf_hipc_mitm_query_api.hpp"
 
 namespace ams::sf::hipc {
 
     ServerManagerBase::ServerBase::~ServerBase() { /* Pure virtual destructor, to prevent linker errors. */ }
+
+    Result ServerManagerBase::InstallMitmServerImpl(Handle *out_port_handle, sm::ServiceName service_name, ServerManagerBase::MitmQueryFunction query_func) {
+        /* Install the Mitm. */
+        Handle query_handle;
+        R_TRY(sm::mitm::InstallMitm(out_port_handle, &query_handle, service_name));
+
+        /* Register the query handle. */
+        impl::RegisterMitmQueryHandle(query_handle, query_func);
+        return ResultSuccess();
+    }
 
     void ServerManagerBase::RegisterSessionToWaitList(ServerSession *session) {
         session->has_received = false;
