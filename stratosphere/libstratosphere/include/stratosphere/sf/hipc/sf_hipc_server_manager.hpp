@@ -18,6 +18,12 @@
 #include "sf_hipc_server_domain_session_manager.hpp"
 #include "../../sm.hpp"
 
+namespace ams::ncm {
+
+    struct ProgramId;
+
+}
+
 namespace ams::sf::hipc {
 
     struct DefaultServerManagerOptions {
@@ -35,6 +41,8 @@ namespace ams::sf::hipc {
     class ServerManagerBase : public ServerDomainSessionManager {
         NON_COPYABLE(ServerManagerBase);
         NON_MOVEABLE(ServerManagerBase);
+        public:
+            using MitmQueryFunction = bool (*)(os::ProcessId, ncm::ProgramId);
         private:
             enum class UserDataTag : uintptr_t {
                 Server      = 1,
@@ -162,6 +170,8 @@ namespace ams::sf::hipc {
 
                 this->waitable_manager.LinkWaitableHolder(server);
             }
+
+            Result InstallMitmServerImpl(Handle *out_port_handle, sm::ServiceName service_name, MitmQueryFunction query_func);
         protected:
             virtual ServerBase *AllocateServer() = 0;
             virtual void DestroyServer(ServerBase *server)  = 0;
@@ -201,6 +211,18 @@ namespace ams::sf::hipc {
                     static_holder = cmif::ServiceObjectHolder(std::move(static_object));
                 }
                 this->RegisterServerImpl<ServiceImpl, MakeShared>(port_handle, service_name, true, std::move(static_holder));
+                return ResultSuccess();
+            }
+
+            template<typename ServiceImpl, auto MakeShared = std::make_shared<ServiceImpl>>
+            Result RegisterMitmServer(sm::ServiceName service_name, size_t max_sessions) {
+                static_assert(ServiceObjectTraits<ServiceImpl>::IsMitmServiceObject, "RegisterMitmServer requires mitm object. Use RegisterServer instead.");
+
+                /* Install mitm service. */
+                Handle port_handle;
+                R_TRY(this->InstallMitmServerImpl(&port_handle, service_name, max_sessions, &ServiceImpl::ShouldMitm));
+
+                this->RegisterServerImpl<ServiceImpl, MakeShared>(port_handle, service_name, true, cmif::ServiceObjectHolder());
                 return ResultSuccess();
             }
 
@@ -339,15 +361,15 @@ namespace ams::sf::hipc {
         public:
             ServerManager() : ServerManagerBase(this->domain_entry_storages, ManagerOptions::MaxDomainObjects) {
                 /* Clear storages. */
-                std::memset(this->server_storages, 0, sizeof(this->server_storages));
-                std::memset(this->server_allocated, 0, sizeof(this->server_allocated));
-                std::memset(this->session_storages, 0, sizeof(this->session_storages));
-                std::memset(this->session_allocated, 0, sizeof(this->session_allocated));
-                std::memset(this->pointer_buffer_storage, 0, sizeof(this->pointer_buffer_storage));
-                std::memset(this->saved_message_storage, 0, sizeof(this->saved_message_storage));
-                if constexpr (ManagerOptions::MaxDomains > 0) {
-                    std::memset(this->domain_allocated, 0, sizeof(this->domain_allocated));
-                }
+                #define SF_SM_MEMCLEAR(obj) if constexpr (sizeof(obj) > 0) { std::memset(obj, 0, sizeof(obj)); }
+                SF_SM_MEMCLEAR(this->server_storages);
+                SF_SM_MEMCLEAR(this->server_allocated);
+                SF_SM_MEMCLEAR(this->session_storages);
+                SF_SM_MEMCLEAR(this->session_allocated);
+                SF_SM_MEMCLEAR(this->pointer_buffer_storage);
+                SF_SM_MEMCLEAR(this->saved_message_storage);
+                SF_SM_MEMCLEAR(this->domain_allocated);
+                #undef SF_SM_MEMCLEAR
 
                 /* Set resource starts. */
                 this->pointer_buffers_start = util::AlignUp(reinterpret_cast<uintptr_t>(this->pointer_buffer_storage), 0x10);

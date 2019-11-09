@@ -141,7 +141,7 @@ namespace ams::sf::hipc {
     Result ServerSessionManager::RegisterSession(Handle session_handle, cmif::ServiceObjectHolder &&obj) {
         /* We don't actually care about what happens to the session. It'll get linked. */
         ServerSession *session_ptr = nullptr;
-        return this->RegisterSession(&session_ptr, session_handle,std::forward<cmif::ServiceObjectHolder>(obj));
+        return this->RegisterSession(&session_ptr, session_handle, std::forward<cmif::ServiceObjectHolder>(obj));
     }
 
     Result ServerSessionManager::AcceptSession(Handle port_handle, cmif::ServiceObjectHolder &&obj) {
