@@ -41,7 +41,7 @@ namespace sts::pm::resource {
         constexpr size_t ExtraSystemSessionCount600  = 100;
         constexpr size_t ReservedMemorySize600       = 5 * Megabyte;
 
-        /* Atmosphere always allocates 24 extra megabytes for system usage. */
+        /* The amount of extra memory Atmosphere needs can be specified by the main settings file, but this is the default */
         constexpr size_t ExtraSystemMemorySizeAtmosphere = 24 * Megabyte;
 
         /* Globals. */
@@ -267,9 +267,28 @@ namespace sts::pm::resource {
         /* Actually set resource limits. */
         {
             std::scoped_lock lk(g_resource_limit_lock);
-
-            for (size_t group = 0; group < ResourceLimitGroup_Count; group++) {
-                R_ASSERT(SetResourceLimitLimitValues(static_cast<ResourceLimitGroup>(group), g_memory_resource_limits[g_memory_arrangement][group]));
+            spl::MemoryArrangement_Standard
+                
+            u8 SetMemoryManually;
+            R_ASSERT(setsysGetSettingsItemValueSize("atmosphere", "manual_memory_control", &SetMemoryManually));
+            if (!SetMemoryManually) {
+                /* Memory corresponds to the chosen `g_memory_arrangement`. */
+                /* Default. */
+                for (size_t group = 0; group < ResourceLimitGroup_Count; group++) {
+                    R_ASSERT(SetResourceLimitLimitValues(static_cast<ResourceLimitGroup>(group), g_memory_resource_limits[g_memory_arrangement][group]));
+                }
+            } else {
+                /* Memory info was chosen by the user. */
+                u64 systemSize;
+                u64 applicationSize;
+                u64 appletSize;
+                R_ASSERT(setsysGetSettingsItemValueSize("atmosphere", "system_memory", &systemSize));
+                R_ASSERT(setsysGetSettingsItemValueSize("atmosphere", "application_memory", &applicationSize));
+                R_ASSERT(setsysGetSettingsItemValueSize("atmosphere", "applet_memory", &appletSize));
+                /* Set all memory values. */
+                R_ASSERT(SetResourceLimitLimitValues(static_cast<ResourceLimitGroup>(ResourceLimitGroup_System), systemSize * Megabyte);
+                R_ASSERT(SetResourceLimitLimitValues(static_cast<ResourceLimitGroup>(ResourceLimitGroup_Application), applicationSize * Megabyte);
+                R_ASSERT(SetResourceLimitLimitValues(static_cast<ResourceLimitGroup>(ResourceLimitGroup_Applet), appletSize * Megabyte);
             }
         }
 
