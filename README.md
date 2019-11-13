@@ -1,8 +1,3 @@
-# WHY DOES THIS FORK EXIST
-All this fork does is allows the size of the System memory pool to be changed
-
-## *START OF ORIGINAL README*
-
 ![Banner](img/banner.png?raw=true)
 =====
 
