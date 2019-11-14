@@ -270,7 +270,7 @@ namespace sts::pm::resource {
             spl::MemoryArrangement_Standard
                 
             bool SetMemoryManually;
-            R_ASSERT(setsysGetSettingsItemValueSize("atmosphere", "manual_memory_control", &SetMemoryManually, sizeof(SetMemoryManually)));
+            R_ASSERT(setsysGetSettingsItemValue("atmosphere", "manual_memory_control", &SetMemoryManually, sizeof(SetMemoryManually)));
             if (!SetMemoryManually) {
                 /* Memory corresponds to the chosen `g_memory_arrangement`. */
                 /* Default. */
@@ -282,9 +282,9 @@ namespace sts::pm::resource {
                 u64 systemSize;
                 u64 applicationSize;
                 u64 appletSize;
-                R_ASSERT(setsysGetSettingsItemValueSize("atmosphere", "system_memory", &systemSize, sizeof(systemSize)));
-                R_ASSERT(setsysGetSettingsItemValueSize("atmosphere", "application_memory", &applicationSize, sizeof(applicationSize)));
-                R_ASSERT(setsysGetSettingsItemValueSize("atmosphere", "applet_memory", &appletSize, sizeof(appletSize)));
+                R_ASSERT(setsysGetSettingsItemValue("atmosphere", "system_memory", &systemSize, sizeof(systemSize)));
+                R_ASSERT(setsysGetSettingsItemValue("atmosphere", "application_memory", &applicationSize, sizeof(applicationSize)));
+                R_ASSERT(setsysGetSettingsItemValue("atmosphere", "applet_memory", &appletSize, sizeof(appletSize)));
                 /* Set all memory values. */
                 R_ASSERT(SetResourceLimitLimitValues(static_cast<ResourceLimitGroup>(ResourceLimitGroup_System), systemSize * Megabyte);
                 R_ASSERT(SetResourceLimitLimitValues(static_cast<ResourceLimitGroup>(ResourceLimitGroup_Application), applicationSize * Megabyte);
