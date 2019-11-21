@@ -28,6 +28,7 @@ namespace ams::cfg {
 
         struct HblOverrideConfig {
             OverrideKey override_key;
+            OverrideKey override_any_app_key;
             ncm::ProgramId program_id;
             bool override_any_app;
         };
@@ -50,6 +51,10 @@ namespace ams::cfg {
 
         HblOverrideConfig g_hbl_override_config = {
             .override_key = {
+                .key_combination = KEY_R,
+                .override_by_default = true,
+            },
+            .override_any_app_key = {
                 .key_combination = KEY_R,
                 .override_by_default = false,
             },
@@ -136,6 +141,8 @@ namespace ams::cfg {
                     } else {
                         /* I guess we default to not changing the value? */
                     }
+                } else if (strcasecmp(name, "override_any_app_key") == 0) {
+                    g_hbl_override_config.override_any_app_key = ParseOverrideKey(value);
                 }
             } else if (strcasecmp(section, "default_config") == 0) {
                 if (strcasecmp(name, "override_key") == 0) {
@@ -167,6 +174,14 @@ namespace ams::cfg {
         constexpr inline bool IsOverrideMatch(const OverrideStatus &status, const OverrideKey &cfg) {
             bool keys_triggered = ((status.keys_held & cfg.key_combination) != 0);
             return (cfg.override_by_default ^ keys_triggered);
+        }
+
+        inline bool IsApplicationHblProgramId(ncm::ProgramId program_id) {
+            return g_hbl_override_config.override_any_app && ncm::IsApplicationProgramId(program_id);
+        }
+
+        inline bool IsSpecificHblProgramId(ncm::ProgramId program_id) {
+            return program_id == g_hbl_override_config.program_id;
         }
 
         void ParseIniFile(util::ini::Handler handler, const char *path, void *user_ctx) {
@@ -229,7 +244,9 @@ namespace ams::cfg {
         }
 
         /* Detect Hbl. */
-        if (IsHblProgramId(program_id) && IsOverrideMatch(status, g_hbl_override_config.override_key)) {
+        if ((IsApplicationHblProgramId(program_id) && IsOverrideMatch(status, g_hbl_override_config.override_any_app_key)) ||
+            (IsSpecificHblProgramId(program_id)    && IsOverrideMatch(status, g_hbl_override_config.override_key)))
+        {
             status.SetHbl();
         }
 
@@ -249,7 +266,7 @@ namespace ams::cfg {
 
     /* HBL Configuration utilities. */
     bool IsHblProgramId(ncm::ProgramId program_id) {
-        return (g_hbl_override_config.override_any_app && ncm::IsApplicationProgramId(program_id)) || (program_id == g_hbl_override_config.program_id);
+        return IsApplicationHblProgramId(program_id) || IsSpecificHblProgramId(program_id);
     }
 
     const char *GetHblPath() {
