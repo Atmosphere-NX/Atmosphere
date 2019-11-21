@@ -13,17 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "hid_shim.h"
+#include <stratosphere/sf/sf_mitm_dispatch.h>
 
-#pragma once
-
-#include "sf/sf_common.hpp"
-#include "sf/sf_service_object.hpp"
-#include "sf/hipc/sf_hipc_server_session_manager.hpp"
-
-#include "sf/sf_out.hpp"
-#include "sf/sf_buffers.hpp"
-#include "sf/impl/sf_impl_command_serialization.hpp"
-
-#include "sf/hipc/sf_hipc_server_manager.hpp"
-
-#include "sf/sf_mitm_dispatch.h"
+/* Command forwarders. */
+Result hidSetSupportedNpadStyleSetFwd(Service* s, u64 process_id, u64 aruid, HidControllerType type) {
+    const struct {
+        u32 type;
+        u32 pad;
+        u64 aruid;
+    } in = { type, 0, aruid };
+    return serviceMitmDispatchIn(s, 100, in, .in_send_pid = true, .override_pid = process_id);
+}

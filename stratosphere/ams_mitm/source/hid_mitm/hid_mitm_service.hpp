@@ -22,20 +22,24 @@ namespace ams::mitm::hid {
     class HidMitmService  : public sf::IMitmServiceObject {
         private:
             enum class CommandId {
-                /* TODO */
+                SetSupportedNpadStyleSet = 100,
             };
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
-                /* TODO */
-                return false;
+                /* TODO: Remove in Atmosphere 0.10.1. */
+                /* We will mitm:
+                 * - hbl, to help homebrew not need to be recompiled.
+                 */
+                return client_info.override_status.IsHbl();
             }
         public:
             SF_MITM_SERVICE_OBJECT_CTOR(HidMitmService) { /* ... */ }
         protected:
-            /* TODO */
+            /* Overridden commands. */
+            Result SetSupportedNpadStyleSet(const sf::ClientAppletResourceUserId &client_aruid, u32 style_set);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                /* TODO */
+                MAKE_SERVICE_COMMAND_META(SetSupportedNpadStyleSet),
             };
     };
 

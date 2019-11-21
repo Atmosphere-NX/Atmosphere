@@ -114,9 +114,18 @@ Result smAtmosphereMitmAcknowledgeSession(Service *srv_out, void *_out, SmServic
         u64 keys_held;
         u64 flags;
     } *out = _out;
+    _Static_assert(sizeof(*out) == 0x20, "sizeof(*out) == 0x20");
 
-    return serviceDispatchInOut(&g_smAtmosphereMitmSrv, 65003, name, *out,
-        .out_num_objects = 1,
-        .out_objects = srv_out,
+    Handle tmp_handle;
+
+    Result rc = serviceDispatchInOut(&g_smAtmosphereMitmSrv, 65003, name, *out,
+        .out_handle_attrs = { SfOutHandleAttr_HipcMove },
+        .out_handles = &tmp_handle,
     );
+
+    if (R_SUCCEEDED(rc)) {
+        serviceCreate(srv_out, tmp_handle);
+    }
+
+    return rc;
 }
