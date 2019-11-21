@@ -23,10 +23,13 @@ namespace ams::ldr {
         NON_COPYABLE(ScopedCodeMount);
         private:
             Result result;
+            cfg::OverrideStatus override_status;
+            bool has_status;
             bool is_code_mounted;
             bool is_hbl_mounted;
         public:
             ScopedCodeMount(const ncm::ProgramLocation &loc);
+            ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status);
             ~ScopedCodeMount();
 
             Result GetResult() const {
@@ -41,8 +44,15 @@ namespace ams::ldr {
                 return this->is_hbl_mounted;
             }
 
+            const cfg::OverrideStatus &GetOverrideStatus() const {
+                AMS_ASSERT(this->has_status);
+                return this->override_status;
+            }
+
         private:
             Result Initialize(const ncm::ProgramLocation &loc);
+
+            void InitializeOverrideStatus(const ncm::ProgramLocation &loc);
 
             Result MountCodeFileSystem(const ncm::ProgramLocation &loc);
             Result MountSdCardCodeFileSystem(const ncm::ProgramLocation &loc);
@@ -50,8 +60,8 @@ namespace ams::ldr {
     };
 
     /* Content Management API. */
-    Result OpenCodeFile(FILE *&out, ncm::ProgramId program_id, const char *relative_path);
-    Result OpenCodeFileFromBaseExefs(FILE *&out, ncm::ProgramId program_id, const char *relative_path);
+    Result OpenCodeFile(FILE *&out, ncm::ProgramId program_id, const cfg::OverrideStatus &status, const char *relative_path);
+    Result OpenCodeFileFromBaseExefs(FILE *&out, ncm::ProgramId program_id, const cfg::OverrideStatus &status, const char *relative_path);
 
     /* Redirection API. */
     Result ResolveContentPath(char *out_path, const ncm::ProgramLocation &loc);

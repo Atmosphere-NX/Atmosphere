@@ -29,6 +29,7 @@ namespace ams::sm::impl {
         struct ProcessInfo {
             os::ProcessId process_id;
             ncm::ProgramId program_id;
+            cfg::OverrideStatus override_status;
             size_t access_control_size;
             u8 access_control[AccessControlSizeMax];
 
@@ -39,13 +40,14 @@ namespace ams::sm::impl {
             void Free() {
                 this->process_id = os::InvalidProcessId;
                 this->program_id = ncm::InvalidProgramId;
+                this->override_status = {};
                 this->access_control_size = 0;
                 std::memset(this->access_control, 0, sizeof(this->access_control));
             }
         };
 
         /* Forward declaration, for use in ServiceInfo. */
-        ncm::ProgramId GetProgramIdForMitm(os::ProcessId process_id);
+        void GetMitmProcessInfo(MitmProcessInfo *out, os::ProcessId process_id);
 
         struct ServiceInfo {
             ServiceName name;
@@ -96,10 +98,9 @@ namespace ams::sm::impl {
                 this->mitm_process_id = os::InvalidProcessId;
             }
 
-            void AcknowledgeMitmSession(os::ProcessId *out_process_id, ncm::ProgramId *out_program_id, Handle *out_hnd) {
+            void AcknowledgeMitmSession(MitmProcessInfo *out_info, Handle *out_hnd) {
                 /* Copy to output. */
-                *out_process_id = this->mitm_waiting_ack_process_id;
-                *out_program_id = GetProgramIdForMitm(this->mitm_waiting_ack_process_id);
+                GetMitmProcessInfo(out_info, this->mitm_waiting_ack_process_id);
                 *out_hnd = this->mitm_fwd_sess_h.Move();
                 this->mitm_waiting_ack = false;
                 this->mitm_waiting_ack_process_id = os::InvalidProcessId;
@@ -224,11 +225,15 @@ namespace ams::sm::impl {
             return service_info != nullptr && IsValidProcessId(service_info->mitm_process_id);
         }
 
-        ncm::ProgramId GetProgramIdForMitm(os::ProcessId process_id) {
+        void GetMitmProcessInfo(MitmProcessInfo *out_info, os::ProcessId process_id) {
             /* Anything that can request a mitm session must have a process info. */
             const auto process_info = GetProcessInfo(process_id);
             AMS_ASSERT(process_info != nullptr);
-            return process_info->program_id;
+
+            /* Write to output. */
+            out_info->process_id = process_id;
+            out_info->program_id = process_info->program_id;
+            out_info->override_status = process_info->override_status;
         }
 
         bool IsMitmDisallowed(ncm::ProgramId program_id) {
@@ -341,16 +346,12 @@ namespace ams::sm::impl {
             return service == ServiceName::Encode("fsp-srv");
         }
 
-        Result GetMitmServiceHandleImpl(Handle *out, ServiceInfo *service_info, os::ProcessId process_id, ncm::ProgramId program_id) {
+        Result GetMitmServiceHandleImpl(Handle *out, ServiceInfo *service_info, const MitmProcessInfo &client_info) {
             /* Send command to query if we should mitm. */
             bool should_mitm;
             {
                 Service srv { .session = service_info->mitm_query_h.Get() };
-                const struct {
-                    os::ProcessId process_id;
-                    ncm::ProgramId program_id;
-                } in = { process_id, program_id };
-                R_TRY(serviceDispatchInOut(&srv, 65000, in, should_mitm));
+                R_TRY(serviceDispatchInOut(&srv, 65000, client_info, should_mitm));
             }
 
             /* If we shouldn't mitm, give normal session. */
@@ -365,7 +366,7 @@ namespace ams::sm::impl {
                 *out = hnd.Move();
             }
 
-            service_info->mitm_waiting_ack_process_id = process_id;
+            service_info->mitm_waiting_ack_process_id = client_info.process_id;
             service_info->mitm_waiting_ack = true;
 
             return ResultSuccess();
@@ -377,11 +378,12 @@ namespace ams::sm::impl {
 
             /* Check if we should return a mitm handle. */
             if (IsValidProcessId(service_info->mitm_process_id) && service_info->mitm_process_id != process_id) {
-                /* Get program id, ensure that we're allowed to mitm the given program. */
-                const ncm::ProgramId program_id = GetProgramIdForMitm(process_id);
-                if (!IsMitmDisallowed(program_id)) {
+                /* Get mitm process info, ensure that we're allowed to mitm the given program. */
+                MitmProcessInfo client_info;
+                GetMitmProcessInfo(&client_info, process_id);
+                if (!IsMitmDisallowed(client_info.program_id)) {
                     /* We're mitm'd. Assert, because mitm service host dead is an error state. */
-                    R_ASSERT(GetMitmServiceHandleImpl(out, service_info, process_id, program_id));
+                    R_ASSERT(GetMitmServiceHandleImpl(out, service_info, client_info));
                     return ResultSuccess();
                 }
             }
@@ -423,7 +425,7 @@ namespace ams::sm::impl {
     }
 
     /* Process management. */
-    Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size) {
+    Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size) {
         /* Check that access control will fit in the ServiceInfo. */
         R_UNLESS(aci_sac_size <= AccessControlSizeMax, sm::ResultTooLargeAccessControl());
 
@@ -438,6 +440,7 @@ namespace ams::sm::impl {
         /* Save info. */
         proc->process_id = process_id;
         proc->program_id = program_id;
+        proc->override_status = override_status;
         proc->access_control_size = aci_sac_size;
         std::memcpy(proc->access_control, aci_sac, proc->access_control_size);
         return ResultSuccess();
@@ -651,7 +654,7 @@ namespace ams::sm::impl {
         return ResultSuccess();
     }
 
-    Result AcknowledgeMitmSession(os::ProcessId *out_process_id, ncm::ProgramId *out_program_id, Handle *out_hnd, os::ProcessId process_id, ServiceName service) {
+    Result AcknowledgeMitmSession(MitmProcessInfo *out_info, Handle *out_hnd, os::ProcessId process_id, ServiceName service) {
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
@@ -670,7 +673,7 @@ namespace ams::sm::impl {
         R_UNLESS(service_info->mitm_waiting_ack,               sm::ResultNotAllowed());
 
         /* Acknowledge. */
-        service_info->AcknowledgeMitmSession(out_process_id, out_program_id, out_hnd);
+        service_info->AcknowledgeMitmSession(out_info, out_hnd);
         return ResultSuccess();
     }
 

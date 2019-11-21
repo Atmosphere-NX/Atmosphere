@@ -54,8 +54,8 @@ namespace ams::pm::dmnt {
     }
 
     /* Atmosphere extension commands. */
-    Result DebugMonitorServiceBase::AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::ProgramLocation> out_loc, os::ProcessId process_id) {
-        return impl::AtmosphereGetProcessInfo(out_process_handle.GetHandlePointer(), out_loc.GetPointer(), process_id);
+    Result DebugMonitorServiceBase::AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id) {
+        return impl::AtmosphereGetProcessInfo(out_process_handle.GetHandlePointer(), out_loc.GetPointer(), out_status.GetPointer(), process_id);
     }
 
     Result DebugMonitorServiceBase::AtmosphereGetCurrentLimitInfo(sf::Out<u64> out_cur_val, sf::Out<u64> out_lim_val, u32 group, u32 resource) {

@@ -30,8 +30,8 @@ namespace ams::sf::hipc::impl {
             public:
                 MitmQueryService(ServerManagerBase::MitmQueryFunction qf) : query_function(qf) { /* ... */ }
 
-                void ShouldMitm(sf::Out<bool> out, os::ProcessId process_id, ncm::ProgramId program_id) {
-                    out.SetValue(this->query_function(process_id, program_id));
+                void ShouldMitm(sf::Out<bool> out, const sm::MitmProcessInfo &client_info) {
+                    out.SetValue(this->query_function(client_info));
                 }
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {

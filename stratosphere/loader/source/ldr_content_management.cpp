@@ -31,10 +31,6 @@ namespace ams::ldr {
         /* Globals. */
         bool g_has_mounted_sd_card = false;
 
-        ncm::ProgramId g_should_override_program_id;
-        bool g_should_override_hbl = false;
-        bool g_should_override_sd  = false;
-
         /* Helpers. */
         inline void FixFileSystemPath(char *path) {
             /* Paths will fail when passed to FS if they use the wrong kinds of slashes. */
@@ -51,27 +47,6 @@ namespace ams::ldr {
                 relative_path++;
             }
             return relative_path;
-        }
-
-        void UpdateShouldOverrideCache(ncm::ProgramId program_id) {
-            if (g_should_override_program_id != program_id) {
-                cfg::GetOverrideKeyHeldStatus(&g_should_override_hbl, &g_should_override_sd, program_id);
-            }
-            g_should_override_program_id = program_id;
-        }
-
-        void InvalidateShouldOverrideCache() {
-            g_should_override_program_id = {};
-        }
-
-        bool ShouldOverrideWithHbl(ncm::ProgramId program_id) {
-            UpdateShouldOverrideCache(program_id);
-            return g_should_override_hbl;
-        }
-
-        bool ShouldOverrideWithSd(ncm::ProgramId program_id) {
-            UpdateShouldOverrideCache(program_id);
-            return g_should_override_sd;
         }
 
         Result MountSdCardFileSystem() {
@@ -109,14 +84,14 @@ namespace ams::ldr {
             return OpenFile(SdCardFileSystemDeviceName, path);
         }
 
-        bool IsFileStubbed(ncm::ProgramId program_id, const char *relative_path) {
+        bool IsFileStubbed(ncm::ProgramId program_id, const cfg::OverrideStatus &status, const char *relative_path) {
             /* Allow nullptr relative path -- those are simply not openable. */
             if (relative_path == nullptr) {
                 return true;
             }
 
             /* Only allow stubbing in the case where we're considering SD card content. */
-            if (!ShouldOverrideWithSd(program_id)) {
+            if (!status.IsProgramSpecific()) {
                 return false;
             }
 
@@ -131,14 +106,14 @@ namespace ams::ldr {
             return true;
         }
 
-        FILE *OpenBaseExefsFile(ncm::ProgramId program_id, const char *relative_path) {
+        FILE *OpenBaseExefsFile(ncm::ProgramId program_id, const cfg::OverrideStatus &status, const char *relative_path) {
             /* Allow nullptr relative path -- those are simply not openable. */
             if (relative_path == nullptr) {
                 return nullptr;
             }
 
             /* Check if stubbed. */
-            if (IsFileStubbed(program_id, relative_path)) {
+            if (IsFileStubbed(program_id, status, relative_path)) {
                 return nullptr;
             }
 
@@ -148,7 +123,11 @@ namespace ams::ldr {
     }
 
     /* ScopedCodeMount functionality. */
-    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc) : is_code_mounted(false), is_hbl_mounted(false) {
+    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc) : has_status(false), is_code_mounted(false), is_hbl_mounted(false) {
+        this->result = this->Initialize(loc);
+    }
+
+    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &o) : override_status(o), has_status(true), is_code_mounted(false), is_hbl_mounted(false) {
         this->result = this->Initialize(loc);
     }
 
@@ -160,9 +139,6 @@ namespace ams::ldr {
         if (this->is_hbl_mounted) {
             fsdevUnmountDevice(HblFileSystemDeviceName);
         }
-
-        /* Unmounting code means we should invalidate our configuration cache. */
-        InvalidateShouldOverrideCache();
     }
 
     Result ScopedCodeMount::MountCodeFileSystem(const ncm::ProgramLocation &loc) {
@@ -219,12 +195,17 @@ namespace ams::ldr {
             }
         }
 
+        /* Capture override status, if necessary. */
+        if (!this->has_status) {
+            this->InitializeOverrideStatus(loc);
+        }
+
         /* Check if we should override contents. */
-        if (ShouldOverrideWithHbl(loc.program_id)) {
+        if (this->override_status.IsHbl()) {
             /* Try to mount HBL. */
             this->MountHblFileSystem();
         }
-        if (ShouldOverrideWithSd(loc.program_id)) {
+        if (this->override_status.IsProgramSpecific()) {
             /* Try to mount Code NSP on SD. */
             this->MountSdCardCodeFileSystem(loc);
         }
@@ -237,25 +218,31 @@ namespace ams::ldr {
         return ResultSuccess();
     }
 
-    Result OpenCodeFile(FILE *&out, ncm::ProgramId program_id, const char *relative_path) {
+    void ScopedCodeMount::InitializeOverrideStatus(const ncm::ProgramLocation &loc) {
+        AMS_ASSERT(!this->has_status);
+        this->override_status = cfg::CaptureOverrideStatus(loc.program_id);
+        this->has_status = true;
+    }
+
+    Result OpenCodeFile(FILE *&out, ncm::ProgramId program_id, const cfg::OverrideStatus &status, const char *relative_path) {
         FILE *f = nullptr;
         const char *ecs_device_name = ecs::Get(program_id);
 
         if (ecs_device_name != nullptr) {
             /* First priority: Open from external content. */
             f = OpenFile(ecs_device_name, relative_path);
-        } else if (ShouldOverrideWithHbl(program_id)) {
+        } else if (status.IsHbl()) {
             /* Next, try to open from HBL. */
             f = OpenFile(HblFileSystemDeviceName, relative_path);
         } else {
             /* If not ECS or HBL, try a loose file on the SD. */
-            if (ShouldOverrideWithSd(program_id)) {
+            if (status.IsProgramSpecific()) {
                 f = OpenLooseSdFile(program_id, relative_path);
             }
 
             /* If we fail, try the original exefs. */
             if (f == nullptr) {
-                f = OpenBaseExefsFile(program_id, relative_path);
+                f = OpenBaseExefsFile(program_id, status, relative_path);
             }
         }
 
@@ -266,9 +253,9 @@ namespace ams::ldr {
         return ResultSuccess();
     }
 
-    Result OpenCodeFileFromBaseExefs(FILE *&out, ncm::ProgramId program_id, const char *relative_path) {
+    Result OpenCodeFileFromBaseExefs(FILE *&out, ncm::ProgramId program_id, const cfg::OverrideStatus &status, const char *relative_path) {
         /* Open the file. */
-        FILE *f = OpenBaseExefsFile(program_id, relative_path);
+        FILE *f = OpenBaseExefsFile(program_id, status, relative_path);
         R_UNLESS(f != nullptr, fs::ResultPathNotFound());
 
         out = f;

@@ -26,6 +26,8 @@ namespace ams::pm::info {
     Result GetProcessId(os::ProcessId *out_process_id, ncm::ProgramId program_id);
     Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id);
 
+    Result GetProcessInfo(ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id);
+
     /* Information convenience API. */
     bool HasLaunchedProgram(ncm::ProgramId program_id);
 

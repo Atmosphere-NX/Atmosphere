@@ -107,21 +107,16 @@ Result smAtmosphereMitmDeclareFuture(SmServiceName name) {
     return _smAtmosphereCmdInServiceNameNoOut(name, smGetServiceSession(), 65006);
 }
 
-Result smAtmosphereMitmAcknowledgeSession(Service *srv_out, u64 *pid_out, u64 *tid_out, SmServiceName name) {
+Result smAtmosphereMitmAcknowledgeSession(Service *srv_out, void *_out, SmServiceName name) {
     struct {
-        u64 pid;
-        u64 tid;
-    } out;
+        u64 process_id;
+        u64 program_id;
+        u64 keys_held;
+        u64 flags;
+    } *out = _out;
 
-    Result rc = serviceDispatchInOut(&g_smAtmosphereMitmSrv, 65003, name, out,
+    return serviceDispatchInOut(&g_smAtmosphereMitmSrv, 65003, name, *out,
         .out_num_objects = 1,
         .out_objects = srv_out,
     );
-
-    if (R_SUCCEEDED(rc)) {
-        if (pid_out) *pid_out = out.pid;
-        if (tid_out) *tid_out = out.tid;
-    }
-
-    return rc;
 }

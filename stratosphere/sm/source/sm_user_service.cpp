@@ -56,9 +56,9 @@ namespace ams::sm {
         return impl::UninstallMitm(this->process_id, service);
     }
 
-    Result UserService::AtmosphereAcknowledgeMitmSession(sf::Out<os::ProcessId> client_process_id, sf::Out<ncm::ProgramId> client_program_id, sf::OutMoveHandle fwd_h, ServiceName service) {
+    Result UserService::AtmosphereAcknowledgeMitmSession(sf::Out<MitmProcessInfo> client_info, sf::OutMoveHandle fwd_h, ServiceName service) {
         R_TRY(this->EnsureInitialized());
-        return impl::AcknowledgeMitmSession(client_process_id.GetPointer(), client_program_id.GetPointer(), fwd_h.GetHandlePointer(), this->process_id, service);
+        return impl::AcknowledgeMitmSession(client_info.GetPointer(), fwd_h.GetHandlePointer(), this->process_id, service);
     }
 
     Result UserService::AtmosphereHasMitm(sf::Out<bool> out, ServiceName service) {

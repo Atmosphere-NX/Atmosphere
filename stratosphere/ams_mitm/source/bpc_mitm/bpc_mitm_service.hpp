@@ -25,16 +25,15 @@ namespace ams::mitm::bpc {
                 RebootSystem   = 1,
             };
         public:
-            static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id) {
+            static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
                 /* We will mitm:
                  * - am, to intercept the Reboot/Power buttons in the overlay menu.
                  * - fatal, to simplify payload reboot logic significantly
-                 * - applications and hbl, to allow homebrew to take advantage of the feature.
+                 * - hbl, to allow homebrew to take advantage of the feature.
                  */
-                return program_id == ncm::ProgramId::Am ||
-                       program_id == ncm::ProgramId::Fatal ||
-                       ncm::IsApplicationProgramId(program_id);
-                       /* TODO: Hbl */
+                return client_info.program_id == ncm::ProgramId::Am ||
+                       client_info.program_id == ncm::ProgramId::Fatal ||
+                       client_info.override_status.IsHbl();
             }
         public:
             SF_MITM_SERVICE_OBJECT_CTOR(BpcMitmService) { /* ... */ }

@@ -40,6 +40,15 @@ namespace ams::pm::info {
         return pminfoAtmosphereGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(program_id));
     }
 
+    Result GetProcessInfo(ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
+        std::scoped_lock lk(g_info_lock);
+
+        *out_loc = {};
+        *out_status = {};
+        static_assert(sizeof(*out_status) == sizeof(CfgOverrideStatus));
+        return pminfoAtmosphereGetProcessInfo(reinterpret_cast<NcmProgramLocation *>(out_loc), reinterpret_cast<CfgOverrideStatus *>(out_status), static_cast<u64>(process_id));
+    }
+
     Result WEAK HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
         std::scoped_lock lk(g_info_lock);
 

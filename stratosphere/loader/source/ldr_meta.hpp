@@ -33,8 +33,8 @@ namespace ams::ldr {
     };
 
     /* Meta API. */
-    Result LoadMeta(Meta *out_meta, ncm::ProgramId program_id);
-    Result LoadMetaFromCache(Meta *out_meta, ncm::ProgramId program_id);
+    Result LoadMeta(Meta *out_meta, ncm::ProgramId program_id, const cfg::OverrideStatus &status);
+    Result LoadMetaFromCache(Meta *out_meta, ncm::ProgramId program_id, const cfg::OverrideStatus &status);
     void   InvalidateMetaCache();
 
 }

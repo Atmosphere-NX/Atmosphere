@@ -25,7 +25,7 @@ namespace ams::mitm::fs {
                 /* TODO */
             };
         public:
-            static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id) {
+            static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
                 /* TODO */
                 return false;
             }

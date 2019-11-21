@@ -37,4 +37,9 @@ namespace ams::pm::info {
         return pm::info::HasLaunchedProgram(out.GetPointer(), program_id);
     }
 
+    Result InformationService::AtmosphereGetProcessInfo(sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id) {
+        Handle dummy_handle;
+        return impl::AtmosphereGetProcessInfo(&dummy_handle, out_loc.GetPointer(), out_status.GetPointer(), process_id);
+    }
+
 }

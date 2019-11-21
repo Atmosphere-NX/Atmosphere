@@ -41,6 +41,7 @@ namespace ams::pm::impl {
             const os::ProcessId process_id;
             const ldr::PinId pin_id;
             const ncm::ProgramLocation loc;
+            const cfg::OverrideStatus status;
             Handle handle;
             ProcessState state;
             u32 flags;
@@ -58,7 +59,7 @@ namespace ams::pm::impl {
                 return (this->flags & flag);
             }
         public:
-            ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l);
+            ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s);
             ~ProcessInfo();
             void Cleanup();
 
@@ -78,8 +79,12 @@ namespace ams::pm::impl {
                 return this->pin_id;
             }
 
-            const ncm::ProgramLocation &GetProgramLocation() {
+            const ncm::ProgramLocation &GetProgramLocation() const {
                 return this->loc;
+            }
+
+            const cfg::OverrideStatus &GetOverrideStatus() const {
+                return this->status;
             }
 
             ProcessState GetState() const {

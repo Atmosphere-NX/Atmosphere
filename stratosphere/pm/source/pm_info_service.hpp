@@ -25,6 +25,7 @@ namespace ams::pm::info {
 
                 AtmosphereGetProcessId     = 65000,
                 AtmosphereHasLaunchedProgram = 65001,
+                AtmosphereGetProcessInfo = 65002,
             };
         private:
             /* Actual command implementations. */
@@ -33,12 +34,14 @@ namespace ams::pm::info {
             /* Atmosphere extension commands. */
             Result AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id);
             Result AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id);
+            Result AtmosphereGetProcessInfo(sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(GetProgramId),
 
                 MAKE_SERVICE_COMMAND_META(AtmosphereGetProcessId),
                 MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedProgram),
+                MAKE_SERVICE_COMMAND_META(AtmosphereGetProcessInfo),
             };
     };
 

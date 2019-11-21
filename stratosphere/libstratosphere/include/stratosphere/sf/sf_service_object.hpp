@@ -25,16 +25,15 @@ namespace ams::sf {
     class IMitmServiceObject : public IServiceObject {
         protected:
             std::shared_ptr<::Service> forward_service;
-            os::ProcessId process_id;
-            ncm::ProgramId  program_id;
+            sm::MitmProcessInfo client_info;
         public:
-            IMitmServiceObject(std::shared_ptr<::Service> &&s, os::ProcessId p, ncm::ProgramId r) : forward_service(std::move(s)), process_id(p), program_id(r) { /* ... */ }
+            IMitmServiceObject(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : forward_service(std::move(s)), client_info(c) { /* ... */ }
 
             static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id);
     };
 
     /* Utility. */
-    #define SF_MITM_SERVICE_OBJECT_CTOR(cls) cls(std::shared_ptr<::Service> &&s, os::ProcessId p, ncm::ProgramId r) : ::ams::sf::IMitmServiceObject(std::forward<std::shared_ptr<::Service>>(s), p, r)
+    #define SF_MITM_SERVICE_OBJECT_CTOR(cls) cls(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : ::ams::sf::IMitmServiceObject(std::forward<std::shared_ptr<::Service>>(s), c)
 
     template<typename T>
     struct ServiceObjectTraits {

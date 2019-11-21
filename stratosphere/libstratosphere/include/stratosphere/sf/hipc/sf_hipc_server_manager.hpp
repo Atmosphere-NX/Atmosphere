@@ -36,7 +36,7 @@ namespace ams::sf::hipc {
         NON_COPYABLE(ServerManagerBase);
         NON_MOVEABLE(ServerManagerBase);
         public:
-            using MitmQueryFunction = bool (*)(os::ProcessId, ncm::ProgramId);
+            using MitmQueryFunction = bool (*)(const sm::MitmProcessInfo &);
         private:
             enum class UserDataTag : uintptr_t {
                 Server      = 1,
@@ -106,11 +106,10 @@ namespace ams::sf::hipc {
                             std::shared_ptr<::Service> forward_service = std::move(ServerSession::CreateForwardService());
 
                             /* Get mitm forward session. */
-                            os::ProcessId client_process_id;
-                            ncm::ProgramId  client_program_id;
-                            R_ASSERT(sm::mitm::AcknowledgeSession(forward_service.get(), &client_process_id, &client_program_id, this->service_name));
+                            sm::MitmProcessInfo client_info;
+                            R_ASSERT(sm::mitm::AcknowledgeSession(forward_service.get(), &client_info, this->service_name));
 
-                            *out_obj = std::move(cmif::ServiceObjectHolder(std::move(MakeShared(std::shared_ptr<::Service>(forward_service), client_process_id, client_program_id))));
+                            *out_obj = std::move(cmif::ServiceObjectHolder(std::move(MakeShared(std::shared_ptr<::Service>(forward_service), client_info))));
                             *out_fsrv = std::move(forward_service);
                         } else {
                             *out_obj = std::move(cmif::ServiceObjectHolder(std::move(MakeShared())));
@@ -166,8 +165,8 @@ namespace ams::sf::hipc {
             }
 
             template<typename ServiceImpl>
-            static constexpr inline std::shared_ptr<ServiceImpl> MakeSharedMitm(std::shared_ptr<::Service> &&s, os::ProcessId p, ncm::ProgramId r) {
-                return std::make_shared<ServiceImpl>(std::forward<std::shared_ptr<::Service>>(s), p, r);
+            static constexpr inline std::shared_ptr<ServiceImpl> MakeSharedMitm(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &client_info) {
+                return std::make_shared<ServiceImpl>(std::forward<std::shared_ptr<::Service>>(s), client_info);
             }
 
             Result InstallMitmServerImpl(Handle *out_port_handle, sm::ServiceName service_name, MitmQueryFunction query_func);

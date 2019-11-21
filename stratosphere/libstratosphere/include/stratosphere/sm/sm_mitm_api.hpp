@@ -17,7 +17,6 @@
 #pragma once
 
 #include "sm_types.hpp"
-#include "../ncm/ncm_types.hpp"
 
 namespace ams::sm::mitm {
 
@@ -25,7 +24,7 @@ namespace ams::sm::mitm {
     Result InstallMitm(Handle *out_port, Handle *out_query, ServiceName name);
     Result UninstallMitm(ServiceName name);
     Result DeclareFutureMitm(ServiceName name);
-    Result AcknowledgeSession(Service *out_service, os::ProcessId *out_process_id, ncm::ProgramId *out_program_id, ServiceName name);
+    Result AcknowledgeSession(Service *out_service, MitmProcessInfo *out_info, ServiceName name);
     Result HasMitm(bool *out, ServiceName name);
     Result WaitMitm(ServiceName name);
 

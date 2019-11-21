@@ -33,6 +33,8 @@ namespace ams::ldr {
             virtual Result AtmosphereSetExternalContentSource(sf::OutMoveHandle out, ncm::ProgramId program_id);
             virtual void   AtmosphereClearExternalContentSource(ncm::ProgramId program_id);
             virtual void   AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id);
+            virtual Result AtmosphereGetProgramInfo(sf::Out<ProgramInfo> out_program_info, sf::Out<cfg::OverrideStatus> out_status, const ncm::ProgramLocation &loc);
+            virtual Result AtmospherePinProgram(sf::Out<PinId> out_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status);
     };
 
     namespace pm {
@@ -42,10 +44,12 @@ namespace ams::ldr {
                 enum class CommandId {
                     CreateProcess   = 0,
                     GetProgramInfo  = 1,
-                    PinProgram        = 2,
-                    UnpinProgram      = 3,
+                    PinProgram      = 2,
+                    UnpinProgram    = 3,
 
                     AtmosphereHasLaunchedProgram = 65000,
+                    AtmosphereGetProgramInfo     = 65001,
+                    AtmospherePinProgram         = 65002,
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
@@ -55,6 +59,8 @@ namespace ams::ldr {
                     MAKE_SERVICE_COMMAND_META(UnpinProgram),
 
                     MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedProgram),
+                    MAKE_SERVICE_COMMAND_META(AtmosphereGetProgramInfo),
+                    MAKE_SERVICE_COMMAND_META(AtmospherePinProgram),
                 };
         };
 

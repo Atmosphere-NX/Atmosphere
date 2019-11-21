@@ -33,6 +33,7 @@ namespace ams::ldr {
 
         /* Global storage. */
         ncm::ProgramId g_cached_program_id;
+        cfg::OverrideStatus g_cached_override_status;
         MetaCache g_meta_cache;
         MetaCache g_original_meta_cache;
 
@@ -144,11 +145,11 @@ namespace ams::ldr {
     }
 
     /* API. */
-    Result LoadMeta(Meta *out_meta, ncm::ProgramId program_id) {
+    Result LoadMeta(Meta *out_meta, ncm::ProgramId program_id, const cfg::OverrideStatus &status) {
         FILE *f = nullptr;
 
         /* Try to load meta from file. */
-        R_TRY(OpenCodeFile(f, program_id, MetaFilePath));
+        R_TRY(OpenCodeFile(f, program_id, status, MetaFilePath));
         {
             ON_SCOPE_EXIT { fclose(f); };
             R_TRY(LoadMetaFromFile(f, &g_meta_cache));
@@ -161,8 +162,8 @@ namespace ams::ldr {
         meta->aci->program_id = program_id;
 
         /* For HBL, we need to copy some information from the base meta. */
-        if (cfg::IsHblOverrideKeyHeld(program_id)) {
-            if (R_SUCCEEDED(OpenCodeFileFromBaseExefs(f, program_id, MetaFilePath))) {
+        if (status.IsHbl()) {
+            if (R_SUCCEEDED(OpenCodeFileFromBaseExefs(f, program_id, status, MetaFilePath))) {
                 ON_SCOPE_EXIT { fclose(f); };
                 if (R_SUCCEEDED(LoadMetaFromFile(f, &g_original_meta_cache))) {
                     Meta *o_meta = &g_original_meta_cache.meta;
@@ -182,14 +183,15 @@ namespace ams::ldr {
 
         /* Set output. */
         g_cached_program_id = program_id;
+        g_cached_override_status = status;
         *out_meta = *meta;
 
         return ResultSuccess();
     }
 
-    Result LoadMetaFromCache(Meta *out_meta, ncm::ProgramId program_id) {
-        if (g_cached_program_id != program_id) {
-            return LoadMeta(out_meta, program_id);
+    Result LoadMetaFromCache(Meta *out_meta, ncm::ProgramId program_id, const cfg::OverrideStatus &status) {
+        if (g_cached_program_id != program_id || g_cached_override_status != status) {
+            return LoadMeta(out_meta, program_id, status);
         }
         *out_meta = g_meta_cache.meta;
         return ResultSuccess();

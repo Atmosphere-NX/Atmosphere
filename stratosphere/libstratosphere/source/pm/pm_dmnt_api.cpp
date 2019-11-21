@@ -39,10 +39,12 @@ namespace ams::pm::dmnt {
         return ResultSuccess();
     }
 
-    Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::ProgramLocation *out_loc, os::ProcessId process_id) {
+    Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
         *out_handle = INVALID_HANDLE;
         *out_loc = {};
-        return pmdmntAtmosphereGetProcessInfo(out_handle, reinterpret_cast<NcmProgramLocation *>(out_loc), static_cast<u64>(process_id));
+        *out_status = {};
+        static_assert(sizeof(*out_status) == sizeof(CfgOverrideStatus));
+        return pmdmntAtmosphereGetProcessInfo(out_handle, reinterpret_cast<NcmProgramLocation *>(out_loc), reinterpret_cast<CfgOverrideStatus *>(out_status), static_cast<u64>(process_id));
     }
 
     Result AtmosphereGetCurrentLimitInfo(u64 *out_current_value, u64 *out_limit_value, ResourceLimitGroup group, LimitableResource resource) {
