@@ -21,7 +21,8 @@ namespace ams::sm::impl {
 
         /* Globals. */
         os::RecursiveMutex g_user_session_mutex;
-        os::RecursiveMutex g_mitm_session_mutex;
+        os::RecursiveMutex g_mitm_ack_session_mutex;
+        os::RecursiveMutex g_per_thread_session_mutex;
 
     }
 
@@ -30,8 +31,12 @@ namespace ams::sm::impl {
         return g_user_session_mutex;
     }
 
-    os::RecursiveMutex &GetMitmSessionMutex() {
-        return g_mitm_session_mutex;
+    os::RecursiveMutex &GetMitmAcknowledgementSessionMutex() {
+        return g_mitm_ack_session_mutex;
+    }
+
+    os::RecursiveMutex &GetPerThreadSessionMutex() {
+        return g_per_thread_session_mutex;
     }
 
 }

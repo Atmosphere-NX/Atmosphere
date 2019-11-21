@@ -20,36 +20,35 @@
 
 #include "../utils.hpp"
 
-class NsAmMitmService : public IMitmServiceObject {
+class BpcMitmService : public IMitmServiceObject {
     private:
         enum class CommandId {
-            GetApplicationContentPath      = 21,
-            ResolveApplicationContentPath  = 23,
-            GetRunningApplicationProgramId = 92,
+            ShutdownSystem = 0,
+            RebootSystem   = 1,
         };
     public:
-        NsAmMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
+        BpcMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::ProgramId tid) : IMitmServiceObject(s, pid, tid) {
             /* ... */
         }
 
-        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
+        static bool ShouldMitm(u64 pid, ams::ncm::ProgramId tid) {
             /* We will mitm:
-             * - web applets, to facilitate hbl web browser launching.
+             * - am, to intercept the Reboot/Power buttons in the overlay menu.
+             * - fatal, to simplify payload reboot logic significantly
+             * - applications, to allow homebrew to take advantage of the feature.
              */
-            return Utils::IsWebAppletTid(static_cast<u64>(tid));
+            return tid == ams::ncm::ProgramId::Am || tid == ams::ncm::ProgramId::Fatal || ams::ncm::IsApplicationProgramId(tid) || Utils::IsHblTid(static_cast<u64>(tid));
         }
 
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
 
     protected:
         /* Overridden commands. */
-        Result GetApplicationContentPath(OutBuffer<u8> out_path, u64 app_id, u8 storage_type);
-        Result ResolveApplicationContentPath(u64 title_id, u8 storage_type);
-        Result GetRunningApplicationProgramId(Out<u64> out_tid, u64 app_id);
+        Result ShutdownSystem();
+        Result RebootSystem();
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
-            MAKE_SERVICE_COMMAND_META(NsAmMitmService, GetApplicationContentPath),
-            MAKE_SERVICE_COMMAND_META(NsAmMitmService, ResolveApplicationContentPath),
-            MAKE_SERVICE_COMMAND_META(NsAmMitmService, GetRunningApplicationProgramId, FirmwareVersion_600),
+            MAKE_SERVICE_COMMAND_META(BpcMitmService, ShutdownSystem),
+            MAKE_SERVICE_COMMAND_META(BpcMitmService, RebootSystem),
         };
 };

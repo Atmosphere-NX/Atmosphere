@@ -44,15 +44,15 @@ class FsMitmService : public IMitmServiceObject {
         bool has_initialized = false;
         bool should_override_contents;
     public:
-        FsMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
-            if (Utils::HasSdDisableMitMFlag(static_cast<u64>(this->title_id))) {
+        FsMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::ProgramId tid) : IMitmServiceObject(s, pid, tid) {
+            if (Utils::HasSdDisableMitMFlag(static_cast<u64>(this->program_id))) {
                 this->should_override_contents = false;
             } else {
-                this->should_override_contents = (this->title_id >= ams::ncm::TitleId::ApplicationStart || Utils::HasSdMitMFlag(static_cast<u64>(this->title_id))) && Utils::HasOverrideButton(static_cast<u64>(this->title_id));
+                this->should_override_contents = (this->program_id >= ams::ncm::ProgramId::ApplicationStart || Utils::HasSdMitMFlag(static_cast<u64>(this->program_id))) && Utils::HasOverrideButton(static_cast<u64>(this->program_id));
             }
         }
 
-        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
+        static bool ShouldMitm(u64 pid, ams::ncm::ProgramId tid) {
             /* Don't Mitm KIPs */
             if (pid < 0x50) {
                 return false;
@@ -62,11 +62,11 @@ class FsMitmService : public IMitmServiceObject {
 
             /* TODO: intercepting everything seems to cause issues with sleep mode, for some reason. */
             /* Figure out why, and address it. */
-            if (tid == ams::ncm::TitleId::AppletQlaunch || tid == ams::ncm::TitleId::AppletMaintenanceMenu) {
+            if (tid == ams::ncm::ProgramId::AppletQlaunch || tid == ams::ncm::ProgramId::AppletMaintenanceMenu) {
                 has_launched_qlaunch = true;
             }
 
-            return has_launched_qlaunch || tid == ams::ncm::TitleId::Ns || tid >= ams::ncm::TitleId::ApplicationStart || Utils::HasSdMitMFlag(static_cast<u64>(tid));
+            return has_launched_qlaunch || tid == ams::ncm::ProgramId::Ns || tid >= ams::ncm::ProgramId::ApplicationStart || Utils::HasSdMitMFlag(static_cast<u64>(tid));
         }
 
         static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
@@ -74,8 +74,8 @@ class FsMitmService : public IMitmServiceObject {
         Result OpenHblWebContentFileSystem(Out<std::shared_ptr<IFileSystemInterface>> &out);
     protected:
         /* Overridden commands. */
-        Result OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInterface>> out, u64 title_id, u32 filesystem_type);
-        Result OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterface>> out, InPointer<char> path, u64 title_id, u32 filesystem_type);
+        Result OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInterface>> out, u64 program_id, u32 filesystem_type);
+        Result OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterface>> out, InPointer<char> path, u64 program_id, u32 filesystem_type);
         Result OpenSdCardFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out);
         Result OpenSaveDataFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out, u8 space_id, FsSave save_struct);
         Result OpenBisStorage(Out<std::shared_ptr<IStorageInterface>> out, u32 bis_partition_id);

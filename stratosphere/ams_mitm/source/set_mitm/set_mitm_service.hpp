@@ -13,47 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
 #include <stratosphere.hpp>
 
-#include "../utils.hpp"
+namespace ams::mitm::set {
 
-class SetMitmService : public IMitmServiceObject {
-    private:
-        enum class CommandId {
-            GetLanguageCode = 0,
-            GetRegionCode   = 4,
-        };
-    private:
-        ams::os::Mutex lock;
-        OverrideLocale locale;
-        bool got_locale;
-    public:
-        SetMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
-            this->got_locale = false;
-        }
+    class SetMitmService  : public sf::IMitmServiceObject {
+        private:
+            enum class CommandId {
+                /* TODO */
+            };
+        public:
+            static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id) {
+                /* TODO */
+                return false;
+            }
+        public:
+            SF_MITM_SERVICE_OBJECT_CTOR(SetMitmService) { /* ... */ }
+        protected:
+            /* TODO */
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                /* TODO */
+            };
+    };
 
-        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
-            /* Mitm all applications. */
-            return tid == ams::ncm::TitleId::Ns || ams::ncm::IsApplicationTitleId(tid);
-        }
-
-        static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
-
-    protected:
-        static bool IsValidLanguageCode(u64 lang_code);
-        static bool IsValidRegionCode(u32 region_code);
-
-        Result EnsureLocale();
-    protected:
-        /* Overridden commands. */
-        Result GetLanguageCode(Out<u64> out_lang_code);
-        Result GetRegionCode(Out<u32> out_region_code);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MAKE_SERVICE_COMMAND_META(SetMitmService, GetLanguageCode),
-            MAKE_SERVICE_COMMAND_META(SetMitmService, GetRegionCode),
-        };
-};
+}

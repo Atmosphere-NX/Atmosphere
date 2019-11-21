@@ -13,17 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
+#include <stratosphere.hpp>
+#include "../amsmitm_module.hpp"
 
-#include "fs_path_utils.hpp"
-#include "fs_ifilesystem.hpp"
+namespace ams::mitm::hid {
 
-class FsSaveUtils {
-    private:
-        static Result GetSaveDataSpaceIdString(const char **out_str, u8 space_id);
-        static Result GetSaveDataTypeString(const char **out_str, u8 save_data_type);
-    public:
-        static Result GetSaveDataDirectoryPath(FsPath &out_path, u8 space_id, u8 save_data_type, u64 title_id, u128 user_id, u64 save_id);
-};
+    DEFINE_MITM_MODULE_CLASS(0x8000, 47);
+
+}

@@ -30,18 +30,18 @@ class NsDocumentService : public IServiceObject {
             GetRunningApplicationProgramId = 92,
         };
     private:
-        u64 title_id;
+        u64 program_id;
         std::unique_ptr<NsDocumentInterface> srv;
     public:
-        NsDocumentService(u64 t, NsDocumentInterface *s) : title_id(t), srv(s) {
+        NsDocumentService(u64 t, NsDocumentInterface *s) : program_id(t), srv(s) {
             /* ... */
         }
 
-        NsDocumentService(u64 t, std::unique_ptr<NsDocumentInterface> s) : title_id(t), srv(std::move(s)) {
+        NsDocumentService(u64 t, std::unique_ptr<NsDocumentInterface> s) : program_id(t), srv(std::move(s)) {
             /* ... */
         }
 
-        NsDocumentService(u64 t, NsDocumentInterface s) : title_id(t) {
+        NsDocumentService(u64 t, NsDocumentInterface s) : program_id(t) {
             srv = std::make_unique<NsDocumentInterface>(s);
         }
 
@@ -51,7 +51,7 @@ class NsDocumentService : public IServiceObject {
     private:
         /* Actual command API. */
         Result GetApplicationContentPath(OutBuffer<u8> out_path, u64 app_id, u8 storage_type);
-        Result ResolveApplicationContentPath(u64 title_id, u8 storage_type);
+        Result ResolveApplicationContentPath(u64 program_id, u8 storage_type);
         Result GetRunningApplicationProgramId(Out<u64> out_tid, u64 app_id);
     public:
         DEFINE_SERVICE_DISPATCH_TABLE {
@@ -67,11 +67,11 @@ class NsWebMitmService : public IMitmServiceObject {
             GetDocumentInterface = 7999,
         };
     public:
-        NsWebMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
+        NsWebMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::ProgramId tid) : IMitmServiceObject(s, pid, tid) {
             /* ... */
         }
 
-        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
+        static bool ShouldMitm(u64 pid, ams::ncm::ProgramId tid) {
             /* We will mitm:
              * - web applets, to facilitate hbl web browser launching.
              */

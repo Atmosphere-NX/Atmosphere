@@ -22,7 +22,10 @@ Result smAtmosphereMitmInitialize(void);
 void smAtmosphereMitmExit(void);
 Service *smAtmosphereMitmGetServiceSession();
 
-Result smAtmosphereMitmInstall(Handle *handle_out, Handle *query_out, SmServiceName name);
+Result smAtmosphereOpenSession(Service *out);
+void smAtmosphereCloseSession(Service *srv);
+
+Result smAtmosphereMitmInstall(Service *fwd_srv, Handle *handle_out, Handle *query_out, SmServiceName name);
 Result smAtmosphereMitmUninstall(SmServiceName name);
 Result smAtmosphereMitmDeclareFuture(SmServiceName name);
 Result smAtmosphereMitmAcknowledgeSession(Service *srv_out, u64 *pid_out, u64 *tid_out, SmServiceName name);

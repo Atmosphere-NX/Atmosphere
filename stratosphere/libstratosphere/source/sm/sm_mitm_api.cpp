@@ -19,25 +19,25 @@ namespace ams::sm::mitm {
 
     /* Mitm API. */
     Result InstallMitm(Handle *out_port, Handle *out_query, ServiceName name) {
-        return impl::DoWithMitmSession([&]() {
-            return smAtmosphereMitmInstall(out_port, out_query, impl::ConvertName(name));
+        return impl::DoWithPerThreadSession([&](Service *fwd) {
+            return smAtmosphereMitmInstall(fwd, out_port, out_query, impl::ConvertName(name));
         });
     }
 
     Result UninstallMitm(ServiceName name) {
-        return impl::DoWithMitmSession([&]() {
+        return impl::DoWithUserSession([&]() {
             return smAtmosphereMitmUninstall(impl::ConvertName(name));
         });
     }
 
     Result DeclareFutureMitm(ServiceName name) {
-        return impl::DoWithMitmSession([&]() {
+        return impl::DoWithUserSession([&]() {
             return smAtmosphereMitmDeclareFuture(impl::ConvertName(name));
         });
     }
 
     Result AcknowledgeSession(Service *out_service, os::ProcessId *out_process_id, ncm::ProgramId *out_program_id, ServiceName name) {
-        return impl::DoWithMitmSession([&]() {
+        return impl::DoWithMitmAcknowledgementSession([&]() {
             return smAtmosphereMitmAcknowledgeSession(out_service, &out_process_id->value, &out_program_id->value, impl::ConvertName(name));
         });
     }

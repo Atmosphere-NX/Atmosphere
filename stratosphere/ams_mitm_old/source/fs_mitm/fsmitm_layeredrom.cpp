@@ -23,9 +23,9 @@
 
 IStorage::~IStorage() = default;
 
-LayeredRomFS::LayeredRomFS(std::shared_ptr<IROStorage> s_r, std::shared_ptr<IROStorage> f_r, u64 tid) : storage_romfs(s_r), file_romfs(f_r), title_id(tid) {
+LayeredRomFS::LayeredRomFS(std::shared_ptr<IROStorage> s_r, std::shared_ptr<IROStorage> f_r, u64 tid) : storage_romfs(s_r), file_romfs(f_r), program_id(tid) {
     /* Start building the new virtual romfs. */
-    RomFSBuildContext build_ctx(this->title_id);
+    RomFSBuildContext build_ctx(this->program_id);
     this->p_source_infos = std::shared_ptr<std::vector<RomFSSourceInfo>>(new std::vector<RomFSSourceInfo>(), [](std::vector<RomFSSourceInfo> *to_delete) {
         for (unsigned int i = 0; i < to_delete->size(); i++) {
             (*to_delete)[i].Cleanup();
@@ -90,7 +90,7 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                 case RomFSDataSource::MetaData:
                     {
                         FsFile file;
-                        R_ASSERT(Utils::OpenSdFileForAtmosphere(this->title_id, ROMFS_METADATA_FILE_PATH, FS_OPEN_READ, &file));
+                        R_ASSERT(Utils::OpenSdFileForAtmosphere(this->program_id, ROMFS_METADATA_FILE_PATH, FS_OPEN_READ, &file));
                         size_t out_read;
                         R_ASSERT(fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, FS_READOPTION_NONE, &out_read));
                         AMS_ASSERT(out_read == cur_read_size);
@@ -100,7 +100,7 @@ Result LayeredRomFS::Read(void *buffer, size_t size, u64 offset)  {
                 case RomFSDataSource::LooseFile:
                     {
                         FsFile file;
-                        R_ASSERT(Utils::OpenRomFSSdFile(this->title_id, cur_source->loose_source_info.path, FS_OPEN_READ, &file));
+                        R_ASSERT(Utils::OpenRomFSSdFile(this->program_id, cur_source->loose_source_info.path, FS_OPEN_READ, &file));
                         size_t out_read;
                         R_ASSERT(fsFileRead(&file, (offset - cur_source->virtual_offset), (void *)((uintptr_t)buffer + read_so_far), cur_read_size, FS_READOPTION_NONE, &out_read));
                         AMS_ASSERT(out_read == cur_read_size);

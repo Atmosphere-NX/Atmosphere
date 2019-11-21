@@ -147,24 +147,32 @@ namespace ams::sf::hipc {
         /* Iterate over the list of deferred sessions, and see if we can't do anything. */
         std::scoped_lock lk(this->deferred_session_mutex);
 
-        auto it = this->deferred_session_list.begin();
-        while (it != this->deferred_session_list.end()) {
-            ServerSession *session = static_cast<ServerSession *>(&*it);
-            R_TRY_CATCH(this->ProcessForSession(session)) {
-                R_CATCH(sf::ResultRequestDeferred) {
-                    /* Session is still deferred, so let's continue. */
-                    it++;
-                    continue;
-                }
-                R_CATCH(sf::impl::ResultRequestInvalidated) {
-                    /* Session is no longer deferred! */
-                    it = this->deferred_session_list.erase(it);
-                    continue;
-                }
-            } R_END_TRY_CATCH_WITH_ASSERT;
+        /* Undeferring a request may undefer another request. We'll continue looping until everything is stable. */
+        bool needs_undefer_all = true;
+        while (needs_undefer_all) {
+            needs_undefer_all = false;
 
-            /* We succeeded! Remove from deferred list. */
-            it = this->deferred_session_list.erase(it);
+            auto it = this->deferred_session_list.begin();
+            while (it != this->deferred_session_list.end()) {
+                ServerSession *session = static_cast<ServerSession *>(&*it);
+                R_TRY_CATCH(this->ProcessForSession(session)) {
+                    R_CATCH(sf::ResultRequestDeferred) {
+                        /* Session is still deferred, so let's continue. */
+                        it++;
+                        continue;
+                    }
+                    R_CATCH(sf::impl::ResultRequestInvalidated) {
+                        /* Session is no longer deferred! */
+                        it = this->deferred_session_list.erase(it);
+                        needs_undefer_all = true;
+                        continue;
+                    }
+                } R_END_TRY_CATCH_WITH_ASSERT;
+
+                /* We succeeded! Remove from deferred list. */
+                it = this->deferred_session_list.erase(it);
+                needs_undefer_all = true;
+            }
         }
     }
 

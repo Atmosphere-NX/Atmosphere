@@ -13,44 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
 #include <stratosphere.hpp>
 
-#include "setsys_shim.h"
+namespace ams::mitm::set {
 
-class SetSysMitmService : public IMitmServiceObject {
-    private:
-        enum class CommandId {
-            GetFirmwareVersion       = 3,
-            GetFirmwareVersion2      = 4,
-            GetSettingsItemValueSize = 37,
-            GetSettingsItemValue     = 38,
-        };
-    public:
-        SetSysMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
-            /* ... */
-        }
+    class SetSysMitmService  : public sf::IMitmServiceObject {
+        private:
+            enum class CommandId {
+                /* TODO */
+            };
+        public:
+            static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id) {
+                /* TODO */
+                return false;
+            }
+        public:
+            SF_MITM_SERVICE_OBJECT_CTOR(SetSysMitmService) { /* ... */ }
+        protected:
+            /* TODO */
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                /* TODO */
+            };
+    };
 
-        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
-            /* Mitm everything. */
-            return true;
-        }
-
-        static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
-
-    protected:
-        /* Overridden commands. */
-        Result GetFirmwareVersion(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out);
-        Result GetFirmwareVersion2(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out);
-        Result GetSettingsItemValueSize(Out<u64> out_size, InPointer<char> name, InPointer<char> key);
-        Result GetSettingsItemValue(Out<u64> out_size, OutBuffer<u8> out_value, InPointer<char> name, InPointer<char> key);
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetFirmwareVersion),
-            MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetFirmwareVersion2),
-            MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetSettingsItemValueSize),
-            MAKE_SERVICE_COMMAND_META(SetSysMitmService, GetSettingsItemValue),
-        };
-};
+}

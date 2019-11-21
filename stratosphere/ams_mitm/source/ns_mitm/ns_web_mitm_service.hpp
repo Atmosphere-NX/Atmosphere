@@ -13,13 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::mitm::hid {
+namespace ams::mitm::ns {
 
-    class HidMitmService  : public sf::IMitmServiceObject {
+    class NsWebMitmService  : public sf::IMitmServiceObject {
         private:
             enum class CommandId {
                 /* TODO */
@@ -30,7 +29,7 @@ namespace ams::mitm::hid {
                 return false;
             }
         public:
-            SF_MITM_SERVICE_OBJECT_CTOR(HidMitmService) { /* ... */ }
+            SF_MITM_SERVICE_OBJECT_CTOR(NsWebMitmService) { /* ... */ }
         protected:
             /* TODO */
         public:

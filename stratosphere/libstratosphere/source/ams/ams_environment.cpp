@@ -162,7 +162,3 @@ extern "C" {
 void abort() {
     ams::AbortImpl();
 }
-
-void *__cxa_allocate_ecxeption(size_t thrown_size) {
-    abort();
-}
