@@ -13,17 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "hid_mitm_service.hpp"
+#include "hid_shim.h"
 
-#pragma once
+namespace ams::mitm::hid {
 
-#include "sf/sf_common.hpp"
-#include "sf/sf_service_object.hpp"
-#include "sf/hipc/sf_hipc_server_session_manager.hpp"
+    Result HidMitmService::SetSupportedNpadStyleSet(const sf::ClientAppletResourceUserId &client_aruid, u32 style_set) {
+        /* This code applies only to hbl, guaranteed by the check in ShouldMitm. */
+        style_set |= TYPE_SYSTEM | TYPE_SYSTEM_EXT;
+        return hidSetSupportedNpadStyleSetFwd(this->forward_service.get(), static_cast<u64>(this->client_info.process_id), static_cast<u64>(client_aruid.GetValue()), static_cast<HidControllerType>(style_set));
+    }
 
-#include "sf/sf_out.hpp"
-#include "sf/sf_buffers.hpp"
-#include "sf/impl/sf_impl_command_serialization.hpp"
-
-#include "sf/hipc/sf_hipc_server_manager.hpp"
-
-#include "sf/sf_mitm_dispatch.h"
+}
