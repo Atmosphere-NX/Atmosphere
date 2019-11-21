@@ -104,7 +104,7 @@ namespace {
     /* It also registers privileged processes with SM, so that their program ids can be known. */
     void RegisterPrivilegedProcess(os::ProcessId process_id) {
         fsprUnregisterProgram(static_cast<u64>(process_id));
-        fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(process_id), FsStorageId_NandSystem, PrivilegedFileAccessHeader, sizeof(PrivilegedFileAccessHeader), PrivilegedFileAccessControl, sizeof(PrivilegedFileAccessControl));
+        fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(process_id), NcmStorageId_BuiltInSystem, PrivilegedFileAccessHeader, sizeof(PrivilegedFileAccessHeader), PrivilegedFileAccessControl, sizeof(PrivilegedFileAccessControl));
         sm::manager::UnregisterProcess(process_id);
         sm::manager::RegisterProcess(process_id, GetProcessProgramId(process_id), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
     }

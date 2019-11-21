@@ -55,7 +55,7 @@ namespace ams::boot {
 
         Result GetBatteryVendorImpl(u32 *vendor) {
             FsStorage s;
-            R_TRY(fsOpenBisStorage(&s, FsBisStorageId_CalibrationBinary));
+            R_TRY(fsOpenBisStorage(&s, FsBisPartitionId_CalibrationBinary));
             ON_SCOPE_EXIT { fsStorageClose(&s); };
 
             u8 battery_lot[BatteryLotSize];
@@ -69,7 +69,7 @@ namespace ams::boot {
 
         Result GetBatteryVersionImpl(u32 *version) {
             FsStorage s;
-            R_TRY(fsOpenBisStorage(&s, FsBisStorageId_CalibrationBinary));
+            R_TRY(fsOpenBisStorage(&s, FsBisPartitionId_CalibrationBinary));
             ON_SCOPE_EXIT { fsStorageClose(&s); };
 
             u8 battery_version[BatteryVersionSize];

@@ -94,7 +94,7 @@ namespace ams::fatal::srv {
             }
 
             /* Check that the gamecard is a repair tool. */
-            return (gc_attr & FsGameCardAttribute_Repair) == FsGameCardAttribute_Repair;
+            return (gc_attr & FsGameCardAttribute_RepairToolFlag);
         }
 
         bool IsInRepairWithoutTimeReviserCartridge() {
