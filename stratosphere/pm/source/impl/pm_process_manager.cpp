@@ -277,7 +277,8 @@ namespace ams::pm::impl {
         Result LaunchProcess(os::WaitableManager &waitable_manager, const LaunchProcessArgs &args) {
             /* Get Program Info. */
             ldr::ProgramInfo program_info;
-            R_TRY(ldr::pm::GetProgramInfo(&program_info, args.location));
+            cfg::OverrideStatus override_status;
+            R_TRY(ldr::pm::AtmosphereGetProgramInfo(&program_info, &override_status, args.location));
             const bool is_application = (program_info.flags & ldr::ProgramInfoFlag_ApplicationTypeMask) == ldr::ProgramInfoFlag_Application;
             const bool allow_debug    = (program_info.flags & ldr::ProgramInfoFlag_AllowDebug) || hos::GetVersion() < hos::Version_200;
 
@@ -289,8 +290,7 @@ namespace ams::pm::impl {
 
             /* Pin the program with loader. */
             ldr::PinId pin_id;
-            R_TRY(ldr::pm::PinProgram(&pin_id, location));
-
+            R_TRY(ldr::pm::AtmospherePinProgram(&pin_id, location, override_status));
 
             /* Ensure resources are available. */
             resource::WaitResourceAvailable(&program_info);
@@ -309,7 +309,7 @@ namespace ams::pm::impl {
             /* Make new process info. */
             void *process_info_storage = g_process_info_allocator.AllocateProcessInfoStorage();
             AMS_ASSERT(process_info_storage != nullptr);
-            ProcessInfo *process_info = new (process_info_storage) ProcessInfo(process_handle, process_id, pin_id, location);
+            ProcessInfo *process_info = new (process_info_storage) ProcessInfo(process_handle, process_id, pin_id, location, override_status);
 
             /* Link new process info. */
             {
@@ -332,7 +332,7 @@ namespace ams::pm::impl {
 
             /* Register with FS and SM. */
             R_TRY(fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(location.program_id), static_cast<NcmStorageId>(location.storage_id), aci_fah, program_info.aci_fah_size, acid_fac, program_info.acid_fac_size));
-            R_TRY(sm::manager::RegisterProcess(process_id, location.program_id, acid_sac, program_info.acid_sac_size, aci_sac, program_info.aci_sac_size));
+            R_TRY(sm::manager::RegisterProcess(process_id, location.program_id, override_status, acid_sac, program_info.acid_sac_size, aci_sac, program_info.aci_sac_size));
 
             /* Set flags. */
             if (is_application) {
@@ -648,7 +648,7 @@ namespace ams::pm::impl {
         return pm::ResultProcessNotFound();
     }
 
-    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::ProgramLocation *out_loc, os::ProcessId process_id) {
+    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
@@ -656,6 +656,7 @@ namespace ams::pm::impl {
 
         *out_process_handle = process_info->GetHandle();
         *out_loc = process_info->GetProgramLocation();
+        *out_status = process_info->GetOverrideStatus();
         return ResultSuccess();
     }
 

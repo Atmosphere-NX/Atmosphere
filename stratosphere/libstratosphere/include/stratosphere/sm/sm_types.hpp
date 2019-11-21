@@ -16,6 +16,8 @@
 
 #pragma once
 #include <atmosphere/common.hpp>
+#include "../ncm/ncm_types.hpp"
+#include "../cfg/cfg_types.hpp"
 
 namespace ams::sm {
 
@@ -64,5 +66,13 @@ namespace ams::sm {
         bool mitm_waiting_ack;
     };
     static_assert(sizeof(ServiceRecord) == 0x30, "ServiceRecord definition!");
+
+    /* For Mitm extensions. */
+    struct MitmProcessInfo {
+        os::ProcessId process_id;
+        ncm::ProgramId program_id;
+        cfg::OverrideStatus override_status;
+    };
+    static_assert(std::is_trivial<MitmProcessInfo>::value && sizeof(MitmProcessInfo) == 0x20, "MitmProcessInfo definition!");
 
 }

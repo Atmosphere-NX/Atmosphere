@@ -37,7 +37,7 @@ namespace ams::pm::impl {
     Result GetProcessId(os::ProcessId *out, ncm::ProgramId program_id);
     Result GetProgramId(ncm::ProgramId *out, os::ProcessId process_id);
     Result GetApplicationProcessId(os::ProcessId *out_process_id);
-    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::ProgramLocation *out_loc, os::ProcessId process_id);
+    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id);
 
     /* Hook API. */
     Result HookToCreateProcess(Handle *out_hook, ncm::ProgramId program_id);

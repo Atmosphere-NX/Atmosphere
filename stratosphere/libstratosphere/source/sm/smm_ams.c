@@ -19,11 +19,12 @@ Result smManagerAtmosphereEndInitialDefers(void) {
     return serviceDispatch(smManagerGetServiceSession(), 65000);
 }
 
-Result smManagerAtmosphereRegisterProcess(u64 pid, u64 tid, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size) {
+Result smManagerAtmosphereRegisterProcess(u64 pid, u64 tid, const CfgOverrideStatus *status, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size) {
     const struct {
         u64 pid;
         u64 tid;
-    } in = { pid, tid };
+        CfgOverrideStatus status;
+    } in = { pid, tid, *status };
     return serviceDispatchIn(smManagerGetServiceSession(), 65002, in,
         .buffer_attrs = {
             SfBufferAttr_In | SfBufferAttr_HipcMapAlias,

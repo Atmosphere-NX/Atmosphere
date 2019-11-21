@@ -265,14 +265,14 @@ namespace ams::ldr {
             return static_cast<Acid::PoolPartition>((meta->acid->flags & Acid::AcidFlag_PoolPartitionMask) >> Acid::AcidFlag_PoolPartitionShift);
         }
 
-        Result LoadNsoHeaders(ncm::ProgramId program_id, NsoHeader *nso_headers, bool *has_nso) {
+        Result LoadNsoHeaders(ncm::ProgramId program_id, const cfg::OverrideStatus &override_status, NsoHeader *nso_headers, bool *has_nso) {
             /* Clear NSOs. */
             std::memset(nso_headers, 0, sizeof(*nso_headers) * Nso_Count);
             std::memset(has_nso, 0, sizeof(*has_nso) * Nso_Count);
 
             for (size_t i = 0; i < Nso_Count; i++) {
                 FILE *f = nullptr;
-                if (R_SUCCEEDED(OpenCodeFile(f, program_id, GetNsoName(i)))) {
+                if (R_SUCCEEDED(OpenCodeFile(f, program_id, override_status, GetNsoName(i)))) {
                     ON_SCOPE_EXIT { fclose(f); };
                     /* Read NSO header. */
                     R_UNLESS(fread(nso_headers + i, sizeof(*nso_headers), 1, f) == 1, ResultInvalidNso());
@@ -611,14 +611,14 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result LoadNsosIntoProcessMemory(const ProcessInfo *process_info, const ncm::ProgramId program_id, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
+        Result LoadNsosIntoProcessMemory(const ProcessInfo *process_info, const ncm::ProgramId program_id, const cfg::OverrideStatus &override_status, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
             const Handle process_handle = process_info->process_handle.Get();
 
             /* Load each NSO. */
             for (size_t i = 0; i < Nso_Count; i++) {
                 if (has_nso[i]) {
                     FILE *f = nullptr;
-                    R_TRY(OpenCodeFile(f, program_id, GetNsoName(i)));
+                    R_TRY(OpenCodeFile(f, program_id, override_status, GetNsoName(i)));
                     ON_SCOPE_EXIT { fclose(f); };
 
                     uintptr_t map_address = 0;
@@ -655,7 +655,7 @@ namespace ams::ldr {
     }
 
     /* Process Creation API. */
-    Result CreateProcess(Handle *out, PinId pin_id, const ncm::ProgramLocation &loc, const char *path, u32 flags, Handle reslimit_h) {
+    Result CreateProcess(Handle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, u32 flags, Handle reslimit_h) {
         /* Use global storage for NSOs. */
         NsoHeader *nso_headers = g_nso_headers;
         bool *has_nso = g_has_nso;
@@ -663,18 +663,18 @@ namespace ams::ldr {
 
         {
             /* Mount code. */
-            ScopedCodeMount mount(loc);
+            ScopedCodeMount mount(loc, override_status);
             R_TRY(mount.GetResult());
 
             /* Load meta, possibly from cache. */
             Meta meta;
-            R_TRY(LoadMetaFromCache(&meta, loc.program_id));
+            R_TRY(LoadMetaFromCache(&meta, loc.program_id, override_status));
 
             /* Validate meta. */
             R_TRY(ValidateMeta(&meta, loc));
 
             /* Load, validate NSOs. */
-            R_TRY(LoadNsoHeaders(loc.program_id, nso_headers, has_nso));
+            R_TRY(LoadNsoHeaders(loc.program_id, override_status, nso_headers, has_nso));
             R_TRY(ValidateNsoHeaders(nso_headers, has_nso));
 
             /* Actually create process. */
@@ -682,7 +682,7 @@ namespace ams::ldr {
             R_TRY(CreateProcessImpl(&info, &meta, nso_headers, has_nso, arg_info, flags, reslimit_h));
 
             /* Load NSOs into process memory. */
-            R_TRY(LoadNsosIntoProcessMemory(&info, loc.program_id, nso_headers, has_nso, arg_info));
+            R_TRY(LoadNsosIntoProcessMemory(&info, loc.program_id, override_status, nso_headers, has_nso, arg_info));
 
             /* Register NSOs with ro manager. */
             {
@@ -719,14 +719,17 @@ namespace ams::ldr {
         return ResultSuccess();
     }
 
-    Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc) {
+    Result GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc) {
         Meta meta;
 
         /* Load Meta. */
         {
             ScopedCodeMount mount(loc);
             R_TRY(mount.GetResult());
-            R_TRY(LoadMeta(&meta, loc.program_id));
+            R_TRY(LoadMeta(&meta, loc.program_id, mount.GetOverrideStatus()));
+            if (out_status != nullptr) {
+                *out_status = mount.GetOverrideStatus();
+            }
         }
 
         return GetProgramInfoFromMeta(out, &meta);

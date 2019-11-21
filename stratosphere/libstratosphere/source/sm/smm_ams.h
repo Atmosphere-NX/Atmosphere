@@ -11,8 +11,13 @@
 extern "C" {
 #endif
 
+typedef struct {
+    u64 keys_held;
+    u64 flags;
+} CfgOverrideStatus;
+
 Result smManagerAtmosphereEndInitialDefers(void);
-Result smManagerAtmosphereRegisterProcess(u64 pid, u64 tid, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
+Result smManagerAtmosphereRegisterProcess(u64 pid, u64 tid, const CfgOverrideStatus *status, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
 Result smManagerAtmosphereHasMitm(bool *out, SmServiceName name);
 
 #ifdef __cplusplus

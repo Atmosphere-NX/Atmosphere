@@ -164,10 +164,9 @@ namespace ams::cfg {
             return 1;
         }
 
-        bool IsOverrideKeyHeld(const OverrideKey *cfg) {
-            u64 kHeld = 0;
-            bool keys_triggered = (R_SUCCEEDED(hid::GetKeysHeld(&kHeld)) && ((kHeld & cfg->key_combination) != 0));
-            return IsSdCardInitialized() && (cfg->override_by_default ^ keys_triggered);
+        constexpr inline bool IsOverrideMatch(const OverrideStatus &status, const OverrideKey &cfg) {
+            bool keys_triggered = ((status.keys_held & cfg.key_combination) != 0);
+            return (cfg.override_by_default ^ keys_triggered);
         }
 
         void ParseIniFile(util::ini::Handler handler, const char *path, void *user_ctx) {
@@ -207,82 +206,45 @@ namespace ams::cfg {
 
     }
 
-    bool IsHblOverrideKeyHeld(ncm::ProgramId program_id) {
+    OverrideStatus CaptureOverrideStatus(ncm::ProgramId program_id) {
+        OverrideStatus status = {};
+
         /* If the SD card isn't initialized, we can't override. */
         if (!IsSdCardInitialized()) {
-            return false;
+            return status;
         }
 
         /* For system modules and anything launched before the home menu, always override. */
         if (program_id < ncm::ProgramId::AppletStart || !pm::info::HasLaunchedProgram(ncm::ProgramId::AppletQlaunch)) {
-            return true;
+            status.SetProgramSpecific();
+            return status;
         }
 
         /* Unconditionally refresh loader.ini contents. */
         RefreshLoaderConfiguration();
 
-        /* Check HBL config. */
-        return IsHblProgramId(program_id) && IsOverrideKeyHeld(&g_hbl_override_config.override_key);
-    }
-
-    bool IsProgramOverrideKeyHeld(ncm::ProgramId program_id) {
-        /* If the SD card isn't initialized, we can't override. */
-        if (!IsSdCardInitialized()) {
-            return false;
+        /* If we can't read the key state, don't override anything. */
+        if (R_FAILED(hid::GetKeysHeld(&status.keys_held))) {
+            return status;
         }
 
-        /* For system modules and anything launched before the home menu, always override. */
-        if (program_id < ncm::ProgramId::AppletStart || !pm::info::HasLaunchedProgram(ncm::ProgramId::AppletQlaunch)) {
-            return true;
+        /* Detect Hbl. */
+        if (IsHblProgramId(program_id) && IsOverrideMatch(status, g_hbl_override_config.override_key)) {
+            status.SetHbl();
         }
 
-        /* Unconditionally refresh loader.ini contents. */
-        RefreshLoaderConfiguration();
-
+        /* Detect content specific keys. */
         const auto content_cfg = GetContentOverrideConfig(program_id);
-        return IsOverrideKeyHeld(&content_cfg.override_key);
-    }
-
-    void GetOverrideKeyHeldStatus(bool *out_hbl, bool *out_program, ncm::ProgramId program_id) {
-
-        /* If the SD card isn't initialized, we can't override. */
-        if (!IsSdCardInitialized()) {
-            *out_hbl = false;
-            *out_program = false;
-            return;
+        if (IsOverrideMatch(status, content_cfg.override_key)) {
+            status.SetProgramSpecific();
         }
 
-        /* For system modules and anything launched before the home menu, always override. */
-        if (program_id < ncm::ProgramId::AppletStart || !pm::info::HasLaunchedProgram(ncm::ProgramId::AppletQlaunch)) {
-            *out_hbl = false;
-            *out_program = true;
-            return;
+        /* Only allow cheat enable if not HBL. */
+        if (!status.IsHbl() && IsOverrideMatch(status, content_cfg.cheat_enable_key)) {
+            status.SetCheatEnabled();
         }
 
-        /* Unconditionally refresh loader.ini contents. */
-        RefreshLoaderConfiguration();
-
-        /* Set HBL output. */
-        *out_hbl = IsHblProgramId(program_id) && IsOverrideKeyHeld(&g_hbl_override_config.override_key);
-
-        /* Set content specific output. */
-        const auto content_cfg = GetContentOverrideConfig(program_id);
-        *out_program = IsOverrideKeyHeld(&content_cfg.override_key);
-    }
-
-    bool IsCheatEnableKeyHeld(ncm::ProgramId program_id) {
-        /* If the SD card isn't initialized, don't apply cheats. */
-        if (!IsSdCardInitialized()) {
-            return false;
-        }
-
-        /* Don't apply cheats to HBL. */
-        if (IsHblOverrideKeyHeld(program_id)) {
-            return false;
-        }
-
-        const auto content_cfg = GetContentOverrideConfig(program_id);
-        return IsOverrideKeyHeld(&content_cfg.cheat_enable_key);
+        return status;
     }
 
     /* HBL Configuration utilities. */

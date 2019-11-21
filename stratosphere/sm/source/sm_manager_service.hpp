@@ -36,7 +36,7 @@ namespace ams::sm {
             virtual Result UnregisterProcess(os::ProcessId process_id);
             virtual void AtmosphereEndInitDefers();
             virtual void AtmosphereHasMitm(sf::Out<bool> out, ServiceName service);
-            virtual Result AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac);
+            virtual Result AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(RegisterProcess),

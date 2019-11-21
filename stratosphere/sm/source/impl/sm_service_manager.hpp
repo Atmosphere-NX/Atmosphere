@@ -20,7 +20,7 @@
 namespace ams::sm::impl {
 
     /* Process management. */
-    Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
+    Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
     Result UnregisterProcess(os::ProcessId process_id);
 
     /* Service management. */
@@ -37,7 +37,7 @@ namespace ams::sm::impl {
     Result InstallMitm(Handle *out, Handle *out_query, os::ProcessId process_id, ServiceName service);
     Result UninstallMitm(os::ProcessId process_id, ServiceName service);
     Result DeclareFutureMitm(os::ProcessId process_id, ServiceName service);
-    Result AcknowledgeMitmSession(os::ProcessId *out_process_id, ncm::ProgramId *out_program_id, Handle *out_hnd, os::ProcessId process_id, ServiceName service);
+    Result AcknowledgeMitmSession(MitmProcessInfo *out_info, Handle *out_hnd, os::ProcessId process_id, ServiceName service);
 
     /* Dmnt record extensions. */
     Result GetServiceRecord(ServiceRecord *out, ServiceName service);

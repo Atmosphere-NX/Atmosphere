@@ -34,6 +34,7 @@ namespace ams::ldr::ro {
             PinId pin_id;
             os::ProcessId process_id;
             ncm::ProgramId program_id;
+            cfg::OverrideStatus override_status;
             ncm::ProgramLocation loc;
             ModuleInfo modules[ModuleCountMax];
             bool in_use;
@@ -76,7 +77,7 @@ namespace ams::ldr::ro {
     }
 
     /* RO Manager API. */
-    Result PinProgram(PinId *out, const ncm::ProgramLocation &loc) {
+    Result PinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
         *out = InvalidPinId;
         ProcessInfo *info = GetFreeProcessInfo();
         R_UNLESS(info != nullptr, ldr::ResultTooManyProcesses());
@@ -86,6 +87,7 @@ namespace ams::ldr::ro {
         std::memset(info, 0, sizeof(*info));
         info->pin_id = { s_cur_pin_id++ };
         info->loc = loc;
+        info->override_status = status;
         info->in_use = true;
         *out = info->pin_id;
         return ResultSuccess();
@@ -100,11 +102,12 @@ namespace ams::ldr::ro {
     }
 
 
-    Result GetProgramLocation(ncm::ProgramLocation *out, PinId id) {
+    Result GetProgramLocationAndStatus(ncm::ProgramLocation *out, cfg::OverrideStatus *out_status, PinId id) {
         ProcessInfo *info = GetProcessInfo(id);
         R_UNLESS(info != nullptr, ldr::ResultNotPinned());
 
         *out = info->loc;
+        *out_status = info->override_status;
         return ResultSuccess();
     }
 

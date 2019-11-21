@@ -55,7 +55,7 @@ namespace ams::sm {
             /* Atmosphere commands. */
             virtual Result AtmosphereInstallMitm(sf::OutMoveHandle srv_h, sf::OutMoveHandle qry_h, ServiceName service);
             virtual Result AtmosphereUninstallMitm(ServiceName service);
-            virtual Result AtmosphereAcknowledgeMitmSession(sf::Out<os::ProcessId> client_process_id, sf::Out<ncm::ProgramId> client_program_id, sf::OutMoveHandle fwd_h, ServiceName service);
+            virtual Result AtmosphereAcknowledgeMitmSession(sf::Out<MitmProcessInfo> client_info, sf::OutMoveHandle fwd_h, ServiceName service);
             virtual Result AtmosphereHasMitm(sf::Out<bool> out, ServiceName service);
             virtual Result AtmosphereWaitMitm(ServiceName service);
             virtual Result AtmosphereDeclareFutureMitm(ServiceName service);

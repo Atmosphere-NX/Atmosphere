@@ -106,7 +106,7 @@ namespace {
         fsprUnregisterProgram(static_cast<u64>(process_id));
         fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(process_id), NcmStorageId_BuiltInSystem, PrivilegedFileAccessHeader, sizeof(PrivilegedFileAccessHeader), PrivilegedFileAccessControl, sizeof(PrivilegedFileAccessControl));
         sm::manager::UnregisterProcess(process_id);
-        sm::manager::RegisterProcess(process_id, GetProcessProgramId(process_id), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
+        sm::manager::RegisterProcess(process_id, GetProcessProgramId(process_id), cfg::OverrideStatus{}, PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
     }
 
     void RegisterPrivilegedProcesses() {

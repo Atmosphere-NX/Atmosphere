@@ -623,9 +623,10 @@ namespace ams::dmnt::cheat::impl {
             {
                 Handle proc_h = INVALID_HANDLE;
                 ncm::ProgramLocation loc = {};
+                cfg::OverrideStatus status = {};
                 ON_SCOPE_EXIT { if (proc_h != INVALID_HANDLE) { R_ASSERT(svcCloseHandle(proc_h)); } };
 
-                R_ASSERT_IF_NEW_PROCESS(pm::dmnt::AtmosphereGetProcessInfo(&proc_h, &loc, this->cheat_process_metadata.process_id));
+                R_ASSERT_IF_NEW_PROCESS(pm::dmnt::AtmosphereGetProcessInfo(&proc_h, &loc, &status, this->cheat_process_metadata.process_id));
                 this->cheat_process_metadata.program_id = loc.program_id;
 
                 {
@@ -638,11 +639,11 @@ namespace ams::dmnt::cheat::impl {
                     this->cheat_process_metadata.aslr_extents.base  = as_info.aslr_base;
                     this->cheat_process_metadata.aslr_extents.size  = as_info.aslr_size;
                 }
-            }
 
-            /* If new process launch, we may not want to actually attach. */
-            if (on_process_launch) {
-                R_UNLESS(cfg::IsCheatEnableKeyHeld(this->cheat_process_metadata.program_id), ResultCheatNotAttached());
+                /* If new process launch, we may not want to actually attach. */
+                if (on_process_launch) {
+                    R_UNLESS(status.IsCheatEnabled(), ResultCheatNotAttached());
+                }
             }
 
             /* Get module information from loader. */

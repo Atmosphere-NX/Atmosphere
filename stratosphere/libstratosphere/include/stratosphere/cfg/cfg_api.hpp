@@ -13,10 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include "../os/os_common_types.hpp"
-#include "../ncm/ncm_types.hpp"
+#include "cfg_types.hpp"
 
 namespace ams::cfg {
 
@@ -31,10 +29,7 @@ namespace ams::cfg {
     void WaitSdCardInitialized();
 
     /* Override key utilities. */
-    bool IsProgramOverrideKeyHeld(ncm::ProgramId program_id);
-    bool IsHblOverrideKeyHeld(ncm::ProgramId program_id);
-    void GetOverrideKeyHeldStatus(bool *out_hbl, bool *out_program, ncm::ProgramId program_id);
-    bool IsCheatEnableKeyHeld(ncm::ProgramId program_id);
+    OverrideStatus CaptureOverrideStatus(ncm::ProgramId program_id);
 
     /* Flag utilities. */
     bool HasFlag(ncm::ProgramId program_id, const char *flag);

@@ -28,10 +28,31 @@ Result pminfoAtmosphereHasLaunchedProgram(bool *out, u64 program_id) {
     return rc;
 }
 
-Result pmdmntAtmosphereGetProcessInfo(Handle* handle_out, NcmProgramLocation *loc_out, u64 pid) {
+Result pminfoAtmosphereGetProcessInfo(NcmProgramLocation *loc_out, CfgOverrideStatus *status_out, u64 pid) {
+    struct {
+        NcmProgramLocation loc;
+        CfgOverrideStatus status;
+    } out;
+
+    Result rc = serviceDispatchInOut(pmdmntGetServiceSession(), 65002, pid, out);
+
+    if (R_SUCCEEDED(rc)) {
+        if (loc_out) *loc_out = out.loc;
+        if (status_out) *status_out = out.status;
+    }
+
+    return rc;
+}
+
+Result pmdmntAtmosphereGetProcessInfo(Handle* handle_out, NcmProgramLocation *loc_out, CfgOverrideStatus *status_out, u64 pid) {
     Handle tmp_handle;
 
-    Result rc = serviceDispatchInOut(pmdmntGetServiceSession(), 65000, pid, *loc_out,
+    struct {
+        NcmProgramLocation loc;
+        CfgOverrideStatus status;
+    } out;
+
+    Result rc = serviceDispatchInOut(pmdmntGetServiceSession(), 65000, pid, out,
         .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
         .out_handles = &tmp_handle,
     );
@@ -42,6 +63,9 @@ Result pmdmntAtmosphereGetProcessInfo(Handle* handle_out, NcmProgramLocation *lo
         } else {
             svcCloseHandle(tmp_handle);
         }
+
+        if (loc_out) *loc_out = out.loc;
+        if (status_out) *status_out = out.status;
     }
 
     return rc;
