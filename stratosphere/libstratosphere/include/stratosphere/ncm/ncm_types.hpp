@@ -15,19 +15,21 @@
  */
 
 #pragma once
-
-#include <type_traits>
+#include <atmosphere/common.hpp>
 
 namespace ams::ncm {
 
     /* Storage IDs. */
     enum class StorageId : u8 {
-        None        = 0,
-        Host        = 1,
-        GameCard    = 2,
-        NandSystem  = 3,
-        NandUser    = 4,
-        SdCard      = 5,
+        #define DEFINE_ENUM_MEMBER(nm) nm = NcmStorageId_##nm
+        DEFINE_ENUM_MEMBER(None),
+        DEFINE_ENUM_MEMBER(Host),
+        DEFINE_ENUM_MEMBER(GameCard),
+        DEFINE_ENUM_MEMBER(BuiltInSystem),
+        DEFINE_ENUM_MEMBER(BuiltInUser),
+        DEFINE_ENUM_MEMBER(SdCard),
+        DEFINE_ENUM_MEMBER(Any),
+        #undef DEFINE_ENUM_MEMBER
     };
 
     /* Program IDs (Formerly: Title IDs). */

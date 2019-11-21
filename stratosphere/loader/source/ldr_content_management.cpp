@@ -288,7 +288,7 @@ namespace ams::ldr {
             R_CATCH(lr::ResultProgramNotFound) {
                 /* Program wasn't found via registered resolver, fall back to the normal resolver. */
                 LrLocationResolver lr;
-                R_TRY(lrOpenLocationResolver(static_cast<FsStorageId>(loc.storage_id), &lr));
+                R_TRY(lrOpenLocationResolver(static_cast<NcmStorageId>(loc.storage_id), &lr));
                 ON_SCOPE_EXIT { serviceClose(&lr.s); };
 
                 R_TRY(lrLrResolveProgramPath(&lr, static_cast<u64>(loc.program_id), path));
@@ -303,7 +303,7 @@ namespace ams::ldr {
 
     Result RedirectContentPath(const char *path, const ncm::ProgramLocation &loc) {
         LrLocationResolver lr;
-        R_TRY(lrOpenLocationResolver(static_cast<FsStorageId>(loc.storage_id), &lr));
+        R_TRY(lrOpenLocationResolver(static_cast<NcmStorageId>(loc.storage_id), &lr));
         ON_SCOPE_EXIT { serviceClose(&lr.s); };
 
         return lrLrRedirectProgramPath(&lr, static_cast<u64>(loc.program_id), path);
@@ -314,7 +314,7 @@ namespace ams::ldr {
 
         /* Open a location resolver. */
         LrLocationResolver lr;
-        R_TRY(lrOpenLocationResolver(static_cast<FsStorageId>(loc.storage_id), &lr));
+        R_TRY(lrOpenLocationResolver(static_cast<NcmStorageId>(loc.storage_id), &lr));
         ON_SCOPE_EXIT { serviceClose(&lr.s); };
 
         /* If there's already a Html Document path, we don't need to set one. */

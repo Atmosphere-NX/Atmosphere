@@ -143,7 +143,7 @@ namespace ams::updater {
 
             /* Open NAND System meta database, list contents. */
             NcmContentMetaDatabase meta_db;
-            R_TRY(ncmOpenContentMetaDatabase(&meta_db, FsStorageId_NandSystem));
+            R_TRY(ncmOpenContentMetaDatabase(&meta_db, NcmStorageId_BuiltInSystem));
             ON_SCOPE_EXIT { serviceClose(&meta_db.s); };
 
             NcmContentMetaKey *records = reinterpret_cast<NcmContentMetaKey *>(work_buffer);
@@ -190,7 +190,7 @@ namespace ams::updater {
             /* Ensure work buffer is big enough for us to do what we want to do. */
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
-            R_TRY_CATCH(romfsMountFromDataArchive(data_id, FsStorageId_NandSystem, GetBootImagePackageMountPath())) {
+            R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
@@ -243,7 +243,7 @@ namespace ams::updater {
             /* Ensure work buffer is big enough for us to do what we want to do. */
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
-            R_TRY_CATCH(romfsMountFromDataArchive(data_id, FsStorageId_NandSystem, GetBootImagePackageMountPath())) {
+            R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
@@ -311,7 +311,7 @@ namespace ams::updater {
             /* Ensure work buffer is big enough for us to do what we want to do. */
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
-            R_TRY_CATCH(romfsMountFromDataArchive(data_id, FsStorageId_NandSystem, GetBootImagePackageMountPath())) {
+            R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
@@ -366,7 +366,7 @@ namespace ams::updater {
             /* Ensure work buffer is big enough for us to do what we want to do. */
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
-            R_TRY_CATCH(romfsMountFromDataArchive(data_id, FsStorageId_NandSystem, GetBootImagePackageMountPath())) {
+            R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };

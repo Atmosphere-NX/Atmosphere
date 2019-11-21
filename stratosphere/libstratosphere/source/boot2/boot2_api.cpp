@@ -152,7 +152,7 @@ namespace ams::boot2 {
 
         void LaunchList(const ncm::ProgramId *launch_list, size_t num_entries) {
             for (size_t i = 0; i < num_entries; i++) {
-                LaunchProgram(nullptr, ncm::ProgramLocation::Make(launch_list[i], ncm::StorageId::NandSystem), 0);
+                LaunchProgram(nullptr, ncm::ProgramLocation::Make(launch_list[i], ncm::StorageId::BuiltInSystem), 0);
             }
         }
 
@@ -313,7 +313,7 @@ namespace ams::boot2 {
             R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
         }
 
-        /* Launch Atmosphere boot2, using FsStorageId_None to force SD card boot. */
+        /* Launch Atmosphere boot2, using NcmStorageId_None to force SD card boot. */
         LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::ProgramId::Boot2, ncm::StorageId::None), 0);
     }
 
@@ -326,7 +326,7 @@ namespace ams::boot2 {
             pm::bm::SetMaintenanceBoot();
         }
 
-        /* Launch Atmosphere dmnt, using FsStorageId_None to force SD card boot. */
+        /* Launch Atmosphere dmnt, using NcmStorageId_None to force SD card boot. */
         LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::ProgramId::Dmnt, ncm::StorageId::None), 0);
 
         /* Check for and forward declare non-atmosphere mitm modules. */
@@ -337,7 +337,7 @@ namespace ams::boot2 {
             LaunchList(AdditionalMaintenanceLaunchPrograms, NumAdditionalMaintenanceLaunchPrograms);
             /* Starting in 7.0.0, npns is launched during maintenance boot. */
             if (hos::GetVersion() >= hos::Version_700) {
-                LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::ProgramId::Npns, ncm::StorageId::NandSystem), 0);
+                LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::ProgramId::Npns, ncm::StorageId::BuiltInSystem), 0);
             }
         } else {
             LaunchList(AdditionalLaunchPrograms, NumAdditionalLaunchPrograms);
