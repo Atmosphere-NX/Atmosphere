@@ -18,12 +18,6 @@
 #include "sf_hipc_server_domain_session_manager.hpp"
 #include "../../sm.hpp"
 
-namespace ams::ncm {
-
-    struct ProgramId;
-
-}
-
 namespace ams::sf::hipc {
 
     struct DefaultServerManagerOptions {
@@ -116,7 +110,7 @@ namespace ams::sf::hipc {
                             ncm::ProgramId  client_program_id;
                             R_ASSERT(sm::mitm::AcknowledgeSession(forward_service.get(), &client_process_id, &client_program_id, this->service_name));
 
-                            *out_obj = std::move(cmif::ServiceObjectHolder(std::move(MakeShared(forward_service))));
+                            *out_obj = std::move(cmif::ServiceObjectHolder(std::move(MakeShared(std::shared_ptr<::Service>(forward_service), client_process_id, client_program_id))));
                             *out_fsrv = std::move(forward_service);
                         } else {
                             *out_obj = std::move(cmif::ServiceObjectHolder(std::move(MakeShared())));
@@ -171,6 +165,11 @@ namespace ams::sf::hipc {
                 this->waitable_manager.LinkWaitableHolder(server);
             }
 
+            template<typename ServiceImpl>
+            static constexpr inline std::shared_ptr<ServiceImpl> MakeSharedMitm(std::shared_ptr<::Service> &&s, os::ProcessId p, ncm::ProgramId r) {
+                return std::make_shared<ServiceImpl>(std::forward<std::shared_ptr<::Service>>(s), p, r);
+            }
+
             Result InstallMitmServerImpl(Handle *out_port_handle, sm::ServiceName service_name, MitmQueryFunction query_func);
         protected:
             virtual ServerBase *AllocateServer() = 0;
@@ -214,13 +213,13 @@ namespace ams::sf::hipc {
                 return ResultSuccess();
             }
 
-            template<typename ServiceImpl, auto MakeShared = std::make_shared<ServiceImpl>>
-            Result RegisterMitmServer(sm::ServiceName service_name, size_t max_sessions) {
+            template<typename ServiceImpl, auto MakeShared = MakeSharedMitm<ServiceImpl>>
+            Result RegisterMitmServer(sm::ServiceName service_name) {
                 static_assert(ServiceObjectTraits<ServiceImpl>::IsMitmServiceObject, "RegisterMitmServer requires mitm object. Use RegisterServer instead.");
 
                 /* Install mitm service. */
                 Handle port_handle;
-                R_TRY(this->InstallMitmServerImpl(&port_handle, service_name, max_sessions, &ServiceImpl::ShouldMitm));
+                R_TRY(this->InstallMitmServerImpl(&port_handle, service_name, &ServiceImpl::ShouldMitm));
 
                 this->RegisterServerImpl<ServiceImpl, MakeShared>(port_handle, service_name, true, cmif::ServiceObjectHolder());
                 return ResultSuccess();

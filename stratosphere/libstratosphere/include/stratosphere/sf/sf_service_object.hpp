@@ -33,6 +33,9 @@ namespace ams::sf {
             static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id);
     };
 
+    /* Utility. */
+    #define SF_MITM_SERVICE_OBJECT_CTOR(cls) cls(std::shared_ptr<::Service> &&s, os::ProcessId p, ncm::ProgramId r) : ::ams::sf::IMitmServiceObject(std::forward<std::shared_ptr<::Service>>(s), p, r)
+
     template<typename T>
     struct ServiceObjectTraits {
         static_assert(std::is_base_of<ams::sf::IServiceObject, T>::value, "ServiceObjectTraits requires ServiceObject");

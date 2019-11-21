@@ -41,6 +41,7 @@ namespace ams::sf::hipc::impl {
 
         /* Globals. */
         os::Mutex g_query_server_lock;
+        bool g_constructed_server = false;
         bool g_registered_any = false;
 
         void QueryServerProcessThreadMain(void *query_server) {
@@ -51,18 +52,24 @@ namespace ams::sf::hipc::impl {
         constexpr int    QueryServerProcessThreadPriority  = 27;
         os::StaticThread<QueryServerProcessThreadStackSize> g_query_server_process_thread;
 
+        constexpr size_t MaxServers = 0;
+        TYPED_STORAGE(sf::hipc::ServerManager<MaxServers>) g_query_server_storage;
+
     }
 
     void RegisterMitmQueryHandle(Handle query_handle, ServerManagerBase::MitmQueryFunction query_func) {
         std::scoped_lock lk(g_query_server_lock);
 
-        constexpr size_t MaxServers = 0;
-        sf::hipc::ServerManager<MaxServers> s_query_server;
 
-        R_ASSERT(s_query_server.RegisterSession(query_handle, cmif::ServiceObjectHolder(std::make_shared<MitmQueryService>(query_func))));
+        if (!g_constructed_server) {
+            new (GetPointer(g_query_server_storage)) sf::hipc::ServerManager<MaxServers>();
+            g_constructed_server = true;
+        }
+
+        R_ASSERT(GetPointer(g_query_server_storage)->RegisterSession(query_handle, cmif::ServiceObjectHolder(std::make_shared<MitmQueryService>(query_func))));
 
         if (!g_registered_any) {
-            R_ASSERT(g_query_server_process_thread.Initialize(&QueryServerProcessThreadMain, &s_query_server, QueryServerProcessThreadPriority));
+            R_ASSERT(g_query_server_process_thread.Initialize(&QueryServerProcessThreadMain, GetPointer(g_query_server_storage), QueryServerProcessThreadPriority));
             R_ASSERT(g_query_server_process_thread.Start());
             g_registered_any = true;
         }
