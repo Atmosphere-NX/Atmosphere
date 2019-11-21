@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "amsmitm_initialization.hpp"
 #include "amsmitm_module_management.hpp"
 
 extern "C" {
@@ -95,6 +96,9 @@ void __appExit(void) {
 }
 
 int main(int argc, char **argv) {
+    /* Start initialization (sd card init, automatic backups, etc) */
+    mitm::StartInitialize();
+
     /* Launch all mitm modules in sequence. */
     mitm::LaunchAllModules();
 
