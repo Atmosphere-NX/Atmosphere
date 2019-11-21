@@ -21,20 +21,31 @@ namespace ams::mitm::bpc {
     class BpcMitmService  : public sf::IMitmServiceObject {
         private:
             enum class CommandId {
-                /* TODO */
+                ShutdownSystem = 0,
+                RebootSystem   = 1,
             };
         public:
             static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id) {
-                /* TODO */
-                return false;
+                /* We will mitm:
+                 * - am, to intercept the Reboot/Power buttons in the overlay menu.
+                 * - fatal, to simplify payload reboot logic significantly
+                 * - applications and hbl, to allow homebrew to take advantage of the feature.
+                 */
+                return program_id == ncm::ProgramId::Am ||
+                       program_id == ncm::ProgramId::Fatal ||
+                       ncm::IsApplicationProgramId(program_id);
+                       /* TODO: Hbl */
             }
         public:
             SF_MITM_SERVICE_OBJECT_CTOR(BpcMitmService) { /* ... */ }
         protected:
-            /* TODO */
+            /* Overridden commands. */
+            Result ShutdownSystem();
+            Result RebootSystem();
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                /* TODO */
+                MAKE_SERVICE_COMMAND_META(ShutdownSystem),
+                MAKE_SERVICE_COMMAND_META(RebootSystem),
             };
     };
 
