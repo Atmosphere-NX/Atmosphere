@@ -116,7 +116,7 @@ namespace ams::sf::cmif {
 
     #define DEFINE_SERVICE_DISPATCH_TABLE \
     template<typename ServiceImpl> \
-    static constexpr inline sf::cmif::ServiceDispatchTable s_CmifServiceDispatchTable
+    static constexpr inline ::ams::sf::cmif::ServiceDispatchTable s_CmifServiceDispatchTable
 
     struct ServiceDispatchMeta {
         const impl::ServiceDispatchTableBase *DispatchTable;
