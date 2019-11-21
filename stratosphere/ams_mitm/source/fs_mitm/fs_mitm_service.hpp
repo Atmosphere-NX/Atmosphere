@@ -17,9 +17,9 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::mitm::hid {
+namespace ams::mitm::fs {
 
-    class HidMitmService  : public sf::IMitmServiceObject {
+    class FsMitmService  : public sf::IMitmServiceObject {
         private:
             enum class CommandId {
                 /* TODO */
@@ -30,7 +30,7 @@ namespace ams::mitm::hid {
                 return false;
             }
         public:
-            SF_MITM_SERVICE_OBJECT_CTOR(HidMitmService) { /* ... */ }
+            SF_MITM_SERVICE_OBJECT_CTOR(FsMitmService) { /* ... */ }
         protected:
             /* TODO */
         public:

@@ -13,30 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 #include <stratosphere.hpp>
+#include "../amsmitm_module.hpp"
 
-namespace ams::mitm::hid {
+namespace ams::mitm::ns {
 
-    class HidMitmService  : public sf::IMitmServiceObject {
-        private:
-            enum class CommandId {
-                /* TODO */
-            };
-        public:
-            static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id) {
-                /* TODO */
-                return false;
-            }
-        public:
-            SF_MITM_SERVICE_OBJECT_CTOR(HidMitmService) { /* ... */ }
-        protected:
-            /* TODO */
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* TODO */
-            };
-    };
+    DEFINE_MITM_MODULE_CLASS(0x4000, 48);
 
 }

@@ -15,28 +15,15 @@
  */
 
 #pragma once
-#include <stratosphere.hpp>
+#include <switch.h>
 
-namespace ams::mitm::hid {
+#include "fs_path_utils.hpp"
+#include "fs_ifilesystem.hpp"
 
-    class HidMitmService  : public sf::IMitmServiceObject {
-        private:
-            enum class CommandId {
-                /* TODO */
-            };
-        public:
-            static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id) {
-                /* TODO */
-                return false;
-            }
-        public:
-            SF_MITM_SERVICE_OBJECT_CTOR(HidMitmService) { /* ... */ }
-        protected:
-            /* TODO */
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* TODO */
-            };
-    };
-
-}
+class FsSaveUtils {
+    private:
+        static Result GetSaveDataSpaceIdString(const char **out_str, u8 space_id);
+        static Result GetSaveDataTypeString(const char **out_str, u8 save_data_type);
+    public:
+        static Result GetSaveDataDirectoryPath(FsPath &out_path, u8 space_id, u8 save_data_type, u64 program_id, u128 user_id, u64 save_id);
+};

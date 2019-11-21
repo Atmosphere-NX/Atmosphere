@@ -15,28 +15,11 @@
  */
 
 #pragma once
+#include <switch.h>
 #include <stratosphere.hpp>
 
-namespace ams::mitm::hid {
-
-    class HidMitmService  : public sf::IMitmServiceObject {
-        private:
-            enum class CommandId {
-                /* TODO */
-            };
-        public:
-            static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id) {
-                /* TODO */
-                return false;
-            }
-        public:
-            SF_MITM_SERVICE_OBJECT_CTOR(HidMitmService) { /* ... */ }
-        protected:
-            /* TODO */
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* TODO */
-            };
-    };
-
-}
+class VersionManager {
+    public:
+        static void Initialize();
+        static Result GetFirmwareVersion(ams::ncm::ProgramId program_id, SetSysFirmwareVersion *out);
+};

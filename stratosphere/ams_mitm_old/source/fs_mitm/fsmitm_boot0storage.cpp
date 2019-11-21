@@ -28,11 +28,11 @@ bool Boot0Storage::CanModifyBctPubks() {
         /* RCM bug patched. */
         /* Only allow NS to update the BCT pubks. */
         /* AutoRCM on a patched unit will cause a brick, so homebrew should NOT be allowed to write. */
-        return this->title_id == ams::ncm::TitleId::Ns;
+        return this->program_id == ams::ncm::ProgramId::Ns;
     } else {
         /* RCM bug unpatched. */
         /* Allow homebrew but not NS to update the BCT pubks. */
-        return this->title_id != ams::ncm::TitleId::Ns;
+        return this->program_id != ams::ncm::ProgramId::Ns;
     }
 }
 

@@ -49,6 +49,18 @@ static Service g_smAtmosphereMitmSrv;
 NX_GENERATE_SERVICE_GUARD(smAtmosphereMitm);
 
 Result _smAtmosphereMitmInitialize(void) {
+    return smAtmosphereOpenSession(&g_smAtmosphereMitmSrv);
+}
+
+void _smAtmosphereMitmCleanup(void) {
+    smAtmosphereCloseSession(&g_smAtmosphereMitmSrv);
+}
+
+Service* smAtmosphereMitmGetServiceSession(void) {
+    return &g_smAtmosphereMitmSrv;
+}
+
+Result smAtmosphereOpenSession(Service *out) {
     Handle sm_handle;
     Result rc = svcConnectToNamedPort(&sm_handle, "sm:");
     while (R_VALUE(rc) == KERNELRESULT(NotFound)) {
@@ -57,28 +69,24 @@ Result _smAtmosphereMitmInitialize(void) {
     }
 
     if (R_SUCCEEDED(rc)) {
-        serviceCreate(&g_smAtmosphereMitmSrv, sm_handle);
+        serviceCreate(out, sm_handle);
     }
 
     if (R_SUCCEEDED(rc)) {
         const u64 pid_placeholder = 0;
-        rc = serviceDispatchIn(&g_smAtmosphereMitmSrv, 0, pid_placeholder, .in_send_pid = true);
+        rc = serviceDispatchIn(out, 0, pid_placeholder, .in_send_pid = true);
     }
 
     return rc;
 }
 
-void _smAtmosphereMitmCleanup(void) {
-    serviceClose(&g_smAtmosphereMitmSrv);
+void smAtmosphereCloseSession(Service *srv) {
+    serviceClose(srv);
 }
 
-Service* smAtmosphereMitmGetServiceSession(void) {
-    return &g_smAtmosphereMitmSrv;
-}
-
-Result smAtmosphereMitmInstall(Handle *handle_out, Handle *query_out, SmServiceName name) {
+Result smAtmosphereMitmInstall(Service *fwd_srv, Handle *handle_out, Handle *query_out, SmServiceName name) {
     Handle tmp_handles[2];
-    Result rc = serviceDispatchIn(&g_smAtmosphereMitmSrv, 65000, name,
+    Result rc = serviceDispatchIn(fwd_srv, 65000, name,
         .out_handle_attrs = { SfOutHandleAttr_HipcMove, SfOutHandleAttr_HipcMove },
         .out_handles = tmp_handles,
     );
@@ -92,11 +100,11 @@ Result smAtmosphereMitmInstall(Handle *handle_out, Handle *query_out, SmServiceN
 }
 
 Result smAtmosphereMitmUninstall(SmServiceName name) {
-    return _smAtmosphereCmdInServiceNameNoOut(name, &g_smAtmosphereMitmSrv, 65001);
+    return _smAtmosphereCmdInServiceNameNoOut(name, smGetServiceSession(), 65001);
 }
 
 Result smAtmosphereMitmDeclareFuture(SmServiceName name) {
-    return _smAtmosphereCmdInServiceNameNoOut(name, &g_smAtmosphereMitmSrv, 65006);
+    return _smAtmosphereCmdInServiceNameNoOut(name, smGetServiceSession(), 65006);
 }
 
 Result smAtmosphereMitmAcknowledgeSession(Service *srv_out, u64 *pid_out, u64 *tid_out, SmServiceName name) {

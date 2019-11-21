@@ -46,7 +46,7 @@ static OverrideKey g_default_override_key = {
 
 struct HblOverrideConfig {
     OverrideKey override_key;
-    u64 title_id;
+    u64 program_id;
     bool override_any_app;
 };
 
@@ -55,7 +55,7 @@ static HblOverrideConfig g_hbl_override_config = {
         .key_combination = KEY_R,
         .override_by_default = false
     },
-    .title_id = static_cast<u64>(ams::ncm::TitleId::AppletPhotoViewer),
+    .program_id = static_cast<u64>(ams::ncm::ProgramId::AppletPhotoViewer),
     .override_any_app = true
 };
 
@@ -220,13 +220,13 @@ void Utils::InitializeThreadFunc(void *args) {
         u64 read_entries;
         while (R_SUCCEEDED((fsDirRead(&titles_dir, 0, &read_entries, 1, &dir_entry))) && read_entries == 1) {
             if (strlen(dir_entry.name) == 0x10 && IsHexadecimal(dir_entry.name)) {
-                u64 title_id = strtoul(dir_entry.name, NULL, 16);
+                u64 program_id = strtoul(dir_entry.name, NULL, 16);
                 char title_path[FS_MAX_PATH] = {0};
                 strcpy(title_path, "/atmosphere/titles/");
                 strcat(title_path, dir_entry.name);
                 strcat(title_path, "/flags/fsmitm.flag");
                 if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
-                    g_mitm_flagged_tids.push_back(title_id);
+                    g_mitm_flagged_tids.push_back(program_id);
                     fsFileClose(&f);
                 } else {
                     /* TODO: Deprecate. */
@@ -235,7 +235,7 @@ void Utils::InitializeThreadFunc(void *args) {
                     strcat(title_path, dir_entry.name);
                     strcat(title_path, "/fsmitm.flag");
                     if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
-                        g_mitm_flagged_tids.push_back(title_id);
+                        g_mitm_flagged_tids.push_back(program_id);
                         fsFileClose(&f);
                     }
                 }
@@ -245,7 +245,7 @@ void Utils::InitializeThreadFunc(void *args) {
                 strcat(title_path, dir_entry.name);
                 strcat(title_path, "/flags/fsmitm_disable.flag");
                 if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
-                    g_disable_mitm_flagged_tids.push_back(title_id);
+                    g_disable_mitm_flagged_tids.push_back(program_id);
                     fsFileClose(&f);
                 } else {
                     /* TODO: Deprecate. */
@@ -254,7 +254,7 @@ void Utils::InitializeThreadFunc(void *args) {
                     strcat(title_path, dir_entry.name);
                     strcat(title_path, "/fsmitm_disable.flag");
                     if (R_SUCCEEDED(fsFsOpenFile(&g_sd_filesystem, title_path, FS_OPEN_READ, &f))) {
-                        g_disable_mitm_flagged_tids.push_back(title_id);
+                        g_disable_mitm_flagged_tids.push_back(program_id);
                         fsFileClose(&f);
                     }
                 }
@@ -330,26 +330,26 @@ Result Utils::OpenSdFile(const char *fn, int flags, FsFile *out) {
     return fsFsOpenFile(&g_sd_filesystem, fn, flags, out);
 }
 
-Result Utils::OpenSdFileForAtmosphere(u64 title_id, const char *fn, int flags, FsFile *out) {
+Result Utils::OpenSdFileForAtmosphere(u64 program_id, const char *fn, int flags, FsFile *out) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
 
     char path[FS_MAX_PATH];
     if (*fn == '/') {
-        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", title_id, fn);
+        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", program_id, fn);
     } else {
-        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/%s", title_id, fn);
+        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/%s", program_id, fn);
     }
     return fsFsOpenFile(&g_sd_filesystem, path, flags, out);
 }
 
-Result Utils::OpenRomFSSdFile(u64 title_id, const char *fn, int flags, FsFile *out) {
+Result Utils::OpenRomFSSdFile(u64 program_id, const char *fn, int flags, FsFile *out) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
 
-    return OpenRomFSFile(&g_sd_filesystem, title_id, fn, flags, out);
+    return OpenRomFSFile(&g_sd_filesystem, program_id, fn, flags, out);
 }
 
 Result Utils::OpenSdDir(const char *path, FsDir *out) {
@@ -360,60 +360,60 @@ Result Utils::OpenSdDir(const char *path, FsDir *out) {
     return fsFsOpenDirectory(&g_sd_filesystem, path, FS_DIROPEN_DIRECTORY | FS_DIROPEN_FILE, out);
 }
 
-Result Utils::OpenSdDirForAtmosphere(u64 title_id, const char *path, FsDir *out) {
+Result Utils::OpenSdDirForAtmosphere(u64 program_id, const char *path, FsDir *out) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
 
     char safe_path[FS_MAX_PATH];
     if (*path == '/') {
-        snprintf(safe_path, sizeof(safe_path), "/atmosphere/titles/%016lx%s", title_id, path);
+        snprintf(safe_path, sizeof(safe_path), "/atmosphere/titles/%016lx%s", program_id, path);
     } else {
-        snprintf(safe_path, sizeof(safe_path), "/atmosphere/titles/%016lx/%s", title_id, path);
+        snprintf(safe_path, sizeof(safe_path), "/atmosphere/titles/%016lx/%s", program_id, path);
     }
     return fsFsOpenDirectory(&g_sd_filesystem, safe_path, FS_DIROPEN_DIRECTORY | FS_DIROPEN_FILE, out);
 }
 
-Result Utils::OpenRomFSSdDir(u64 title_id, const char *path, FsDir *out) {
+Result Utils::OpenRomFSSdDir(u64 program_id, const char *path, FsDir *out) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
 
-    return OpenRomFSDir(&g_sd_filesystem, title_id, path, out);
+    return OpenRomFSDir(&g_sd_filesystem, program_id, path, out);
 }
 
 
-Result Utils::OpenRomFSFile(FsFileSystem *fs, u64 title_id, const char *fn, int flags, FsFile *out) {
+Result Utils::OpenRomFSFile(FsFileSystem *fs, u64 program_id, const char *fn, int flags, FsFile *out) {
     char path[FS_MAX_PATH];
     if (*fn == '/') {
-        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/romfs%s", title_id, fn);
+        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/romfs%s", program_id, fn);
     } else {
-        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/romfs/%s", title_id, fn);
+        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/romfs/%s", program_id, fn);
     }
     return fsFsOpenFile(fs, path, flags, out);
 }
 
-Result Utils::OpenRomFSDir(FsFileSystem *fs, u64 title_id, const char *path, FsDir *out) {
+Result Utils::OpenRomFSDir(FsFileSystem *fs, u64 program_id, const char *path, FsDir *out) {
     char safe_path[FS_MAX_PATH];
     if (*path == '/') {
-        snprintf(safe_path, sizeof(safe_path), "/atmosphere/titles/%016lx/romfs%s", title_id, path);
+        snprintf(safe_path, sizeof(safe_path), "/atmosphere/titles/%016lx/romfs%s", program_id, path);
     } else {
-        snprintf(safe_path, sizeof(safe_path), "/atmosphere/titles/%016lx/romfs/%s", title_id, path);
+        snprintf(safe_path, sizeof(safe_path), "/atmosphere/titles/%016lx/romfs/%s", program_id, path);
     }
     return fsFsOpenDirectory(fs, safe_path, FS_DIROPEN_DIRECTORY | FS_DIROPEN_FILE, out);
 }
 
-bool Utils::HasSdRomfsContent(u64 title_id) {
+bool Utils::HasSdRomfsContent(u64 program_id) {
     /* Check for romfs.bin. */
     FsFile data_file;
-    if (R_SUCCEEDED(Utils::OpenSdFileForAtmosphere(title_id, "romfs.bin", FS_OPEN_READ, &data_file))) {
+    if (R_SUCCEEDED(Utils::OpenSdFileForAtmosphere(program_id, "romfs.bin", FS_OPEN_READ, &data_file))) {
         fsFileClose(&data_file);
         return true;
     }
 
     /* Check for romfs folder with non-zero content. */
     FsDir dir;
-    if (R_FAILED(Utils::OpenRomFSSdDir(title_id, "", &dir))) {
+    if (R_FAILED(Utils::OpenRomFSSdDir(program_id, "", &dir))) {
         return false;
     }
     ON_SCOPE_EXIT {
@@ -425,16 +425,16 @@ bool Utils::HasSdRomfsContent(u64 title_id) {
     return R_SUCCEEDED(fsDirRead(&dir, 0, &read_entries, 1, &dir_entry)) && read_entries == 1;
 }
 
-Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, size_t size) {
+Result Utils::SaveSdFileForAtmosphere(u64 program_id, const char *fn, void *data, size_t size) {
     if (!IsSdInitialized()) {
         return ResultFsSdCardNotPresent;
     }
 
     char path[FS_MAX_PATH];
     if (*fn == '/') {
-        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", title_id, fn);
+        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx%s", program_id, fn);
     } else {
-        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/%s", title_id, fn);
+        snprintf(path, sizeof(path), "/atmosphere/titles/%016lx/%s", program_id, fn);
     }
 
     /* Unconditionally create. */
@@ -455,13 +455,13 @@ Result Utils::SaveSdFileForAtmosphere(u64 title_id, const char *fn, void *data, 
 }
 
 bool Utils::IsHblTid(u64 _tid) {
-    const ams::ncm::TitleId tid{_tid};
-    return (g_hbl_override_config.override_any_app && ams::ncm::IsApplicationTitleId(tid)) || (_tid == g_hbl_override_config.title_id);
+    const ams::ncm::ProgramId tid{_tid};
+    return (g_hbl_override_config.override_any_app && ams::ncm::IsApplicationProgramId(tid)) || (_tid == g_hbl_override_config.program_id);
 }
 
 bool Utils::IsWebAppletTid(u64 _tid) {
-    const ams::ncm::TitleId tid{_tid};
-    return tid == ams::ncm::TitleId::AppletWeb || tid == ams::ncm::TitleId::AppletOfflineWeb || tid == ams::ncm::TitleId::AppletLoginShare || tid == ams::ncm::TitleId::AppletWifiWebAuth;
+    const ams::ncm::ProgramId tid{_tid};
+    return tid == ams::ncm::ProgramId::AppletWeb || tid == ams::ncm::ProgramId::AppletOfflineWeb || tid == ams::ncm::ProgramId::AppletLoginShare || tid == ams::ncm::ProgramId::AppletWifiWebAuth;
 }
 
 bool Utils::HasTitleFlag(u64 tid, const char *flag) {
@@ -550,7 +550,7 @@ static bool HasOverrideKey(OverrideKey *cfg) {
 
 
 bool Utils::HasOverrideButton(u64 tid) {
-    if ((!ams::ncm::IsApplicationTitleId(ams::ncm::TitleId{tid})) || (!IsSdInitialized())) {
+    if ((!ams::ncm::IsApplicationProgramId(ams::ncm::ProgramId{tid})) || (!IsSdInitialized())) {
         /* Disable button override disable for non-applications. */
         return true;
     }
@@ -624,15 +624,15 @@ static OverrideKey ParseOverrideKey(const char *value) {
 static int FsMitmIniHandler(void *user, const char *section, const char *name, const char *value) {
     /* Taken and modified, with love, from Rajkosto's implementation. */
     if (strcasecmp(section, "hbl_config") == 0) {
-        if (strcasecmp(name, "title_id") == 0) {
+        if (strcasecmp(name, "program_id") == 0) {
             if (strcasecmp(value, "app") == 0) {
                 /* DEPRECATED */
                 g_hbl_override_config.override_any_app = true;
-                g_hbl_override_config.title_id = 0;
+                g_hbl_override_config.program_id = 0;
             } else {
                 u64 override_tid = strtoul(value, NULL, 16);
                 if (override_tid != 0) {
-                    g_hbl_override_config.title_id = override_tid;
+                    g_hbl_override_config.program_id = override_tid;
                 }
             }
         } else if (strcasecmp(name, "override_key") == 0) {
@@ -656,7 +656,7 @@ static int FsMitmIniHandler(void *user, const char *section, const char *name, c
     return 1;
 }
 
-static int FsMitmTitleSpecificIniHandler(void *user, const char *section, const char *name, const char *value) {
+static int FsMitmContentSpecificIniHandler(void *user, const char *section, const char *name, const char *value) {
     /* We'll output an override key when relevant. */
     OverrideKey *user_cfg = reinterpret_cast<OverrideKey *>(user);
 
@@ -690,14 +690,14 @@ OverrideKey Utils::GetTitleOverrideKey(u64 tid) {
             fsFileRead(&cfg_file, 0, config_buf, config_file_size, FS_READOPTION_NONE, &config_file_size);
 
             /* Parse title ini. */
-            ini_parse_string(config_buf, FsMitmTitleSpecificIniHandler, &cfg);
+            ini_parse_string(config_buf, FsMitmContentSpecificIniHandler, &cfg);
         }
     }
 
     return cfg;
 }
 
-static int FsMitmTitleSpecificLocaleIniHandler(void *user, const char *section, const char *name, const char *value) {
+static int FsMitmContentSpecificLocaleIniHandler(void *user, const char *section, const char *name, const char *value) {
     /* We'll output an override locale when relevant. */
     OverrideLocale *user_locale = reinterpret_cast<OverrideLocale *>(user);
 
@@ -748,7 +748,7 @@ OverrideLocale Utils::GetTitleOverrideLocale(u64 tid) {
             fsFileRead(&cfg_file, 0, config_buf, config_file_size, FS_READOPTION_NONE, &config_file_size);
 
             /* Parse title ini. */
-            ini_parse_string(config_buf, FsMitmTitleSpecificLocaleIniHandler, &locale);
+            ini_parse_string(config_buf, FsMitmContentSpecificLocaleIniHandler, &locale);
         }
     }
 

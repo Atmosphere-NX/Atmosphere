@@ -98,7 +98,7 @@ Result FsSaveUtils::GetSaveDataTypeString(const char **out_str, u8 save_data_typ
     return ResultSuccess();
 }
 
-Result FsSaveUtils::GetSaveDataDirectoryPath(FsPath &out_path, u8 space_id, u8 save_data_type, u64 title_id, u128 user_id, u64 save_id) {
+Result FsSaveUtils::GetSaveDataDirectoryPath(FsPath &out_path, u8 space_id, u8 save_data_type, u64 program_id, u128 user_id, u64 save_id) {
     const char *space_id_str, *save_type_str;
 
     /* Get space_id, save_data_type strings. */
@@ -114,7 +114,7 @@ Result FsSaveUtils::GetSaveDataDirectoryPath(FsPath &out_path, u8 space_id, u8 s
                                                     space_id_str, save_type_str, save_id));
     } else {
         out_path_len = static_cast<size_t>(snprintf(out_path.str, sizeof(out_path.str), "/atmosphere/saves/sysnand/%s/%s/%016lx/%016lx%016lx",
-                                                    space_id_str, save_type_str, title_id, static_cast<u64>(user_id >> 64ul), static_cast<u64>(user_id)));
+                                                    space_id_str, save_type_str, program_id, static_cast<u64>(user_id >> 64ul), static_cast<u64>(user_id)));
     }
     if (out_path_len >= sizeof(out_path)) {
         /* TODO: Should we abort here? */

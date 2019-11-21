@@ -28,7 +28,7 @@ void RomFSBuildContext::VisitDirectory(FsFileSystem *filesys, RomFSBuildDirector
     std::vector<RomFSBuildDirectoryContext *> child_dirs;
 
     /* Open the current parent directory. */
-    R_ASSERT(Utils::OpenRomFSDir(filesys, this->title_id, parent->path, &dir));
+    R_ASSERT(Utils::OpenRomFSDir(filesys, this->program_id, parent->path, &dir));
     {
         ON_SCOPE_EXIT { fsDirClose(&dir); };
 
@@ -95,7 +95,7 @@ void RomFSBuildContext::MergeSdFiles() {
     if (!Utils::IsSdInitialized()) {
         return;
     }
-    if (R_FAILED((Utils::OpenSdDirForAtmosphere(this->title_id, "/romfs", &dir)))) {
+    if (R_FAILED((Utils::OpenSdDirForAtmosphere(this->program_id, "/romfs", &dir)))) {
         return;
     }
     fsDirClose(&dir);
@@ -398,7 +398,7 @@ void RomFSBuildContext::Build(std::vector<RomFSSourceInfo> *out_infos) {
     header->file_table_ofs = header->file_hash_table_ofs + header->file_hash_table_size;
 
     /* Try to save metadata to the SD card, to save on memory space. */
-    if (R_SUCCEEDED(Utils::SaveSdFileForAtmosphere(this->title_id, ROMFS_METADATA_FILE_PATH, metadata, metadata_size))) {
+    if (R_SUCCEEDED(Utils::SaveSdFileForAtmosphere(this->program_id, ROMFS_METADATA_FILE_PATH, metadata, metadata_size))) {
         out_infos->emplace_back(header->dir_hash_table_ofs, metadata_size, RomFSDataSource::MetaData);
         std::free(metadata);
     } else {

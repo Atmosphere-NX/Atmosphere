@@ -29,7 +29,7 @@ Result NsWebMitmService::GetDocumentInterface(Out<std::shared_ptr<NsDocumentServ
     R_TRY(nsGetDocumentInterfaceFwd(this->forward_service.get(), &doc));
 
     /* Set output interface. */
-    out_intf.SetValue(std::move(std::make_shared<NsDocumentService>(static_cast<u64>(this->title_id), doc)));
+    out_intf.SetValue(std::move(std::make_shared<NsDocumentService>(static_cast<u64>(this->program_id), doc)));
     if (out_intf.IsDomain()) {
         out_intf.ChangeObjectId(doc.s.object_id);
     }
@@ -41,14 +41,14 @@ Result NsDocumentService::GetApplicationContentPath(OutBuffer<u8> out_path, u64 
     return nswebGetApplicationContentPath(this->srv.get(), out_path.buffer, out_path.num_elements, app_id, static_cast<FsStorageId>(storage_type));
 }
 
-Result NsDocumentService::ResolveApplicationContentPath(u64 title_id, u8 storage_type) {
+Result NsDocumentService::ResolveApplicationContentPath(u64 program_id, u8 storage_type) {
     /* Always succeed for web applet asking about HBL. */
-    if (Utils::IsWebAppletTid(static_cast<u64>(this->title_id)) && Utils::IsHblTid(title_id)) {
-        nswebResolveApplicationContentPath(this->srv.get(), title_id, static_cast<FsStorageId>(storage_type));
+    if (Utils::IsWebAppletTid(static_cast<u64>(this->program_id)) && Utils::IsHblTid(program_id)) {
+        nswebResolveApplicationContentPath(this->srv.get(), program_id, static_cast<FsStorageId>(storage_type));
         return ResultSuccess();
     }
 
-    return nswebResolveApplicationContentPath(this->srv.get(), title_id, static_cast<FsStorageId>(storage_type));
+    return nswebResolveApplicationContentPath(this->srv.get(), program_id, static_cast<FsStorageId>(storage_type));
 }
 
 Result NsDocumentService::GetRunningApplicationProgramId(Out<u64> out_tid, u64 app_id) {

@@ -13,42 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
 #include <stratosphere.hpp>
 
-#include "../utils.hpp"
+namespace ams::mitm::bpc {
 
-class BpcMitmService : public IMitmServiceObject {
-    private:
-        enum class CommandId {
-            ShutdownSystem = 0,
-            RebootSystem   = 1,
-        };
-    public:
-        BpcMitmService(std::shared_ptr<Service> s, u64 pid, ams::ncm::TitleId tid) : IMitmServiceObject(s, pid, tid) {
-            /* ... */
-        }
+    class BpcMitmService  : public sf::IMitmServiceObject {
+        private:
+            enum class CommandId {
+                /* TODO */
+            };
+        public:
+            static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id) {
+                /* TODO */
+                return false;
+            }
+        public:
+            SF_MITM_SERVICE_OBJECT_CTOR(BpcMitmService) { /* ... */ }
+        protected:
+            /* TODO */
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                /* TODO */
+            };
+    };
 
-        static bool ShouldMitm(u64 pid, ams::ncm::TitleId tid) {
-            /* We will mitm:
-             * - am, to intercept the Reboot/Power buttons in the overlay menu.
-             * - fatal, to simplify payload reboot logic significantly
-             * - applications, to allow homebrew to take advantage of the feature.
-             */
-            return tid == ams::ncm::TitleId::Am || tid == ams::ncm::TitleId::Fatal || ams::ncm::IsApplicationTitleId(tid) || Utils::IsHblTid(static_cast<u64>(tid));
-        }
-
-        static void PostProcess(IMitmServiceObject *obj, IpcResponseContext *ctx);
-
-    protected:
-        /* Overridden commands. */
-        Result ShutdownSystem();
-        Result RebootSystem();
-    public:
-        DEFINE_SERVICE_DISPATCH_TABLE {
-            MAKE_SERVICE_COMMAND_META(BpcMitmService, ShutdownSystem),
-            MAKE_SERVICE_COMMAND_META(BpcMitmService, RebootSystem),
-        };
-};
+}

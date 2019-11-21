@@ -28,14 +28,14 @@ Result NsAmMitmService::GetApplicationContentPath(OutBuffer<u8> out_path, u64 ap
     return nsamGetApplicationContentPathFwd(this->forward_service.get(), out_path.buffer, out_path.num_elements, app_id, static_cast<FsStorageId>(storage_type));
 }
 
-Result NsAmMitmService::ResolveApplicationContentPath(u64 title_id, u8 storage_type) {
+Result NsAmMitmService::ResolveApplicationContentPath(u64 program_id, u8 storage_type) {
     /* Always succeed for web applet asking about HBL. */
-    if (Utils::IsWebAppletTid(static_cast<u64>(this->title_id)) && Utils::IsHblTid(title_id)) {
-        nsamResolveApplicationContentPathFwd(this->forward_service.get(), title_id, static_cast<FsStorageId>(storage_type));
+    if (Utils::IsWebAppletTid(static_cast<u64>(this->program_id)) && Utils::IsHblTid(program_id)) {
+        nsamResolveApplicationContentPathFwd(this->forward_service.get(), program_id, static_cast<FsStorageId>(storage_type));
         return ResultSuccess();
     }
 
-    return nsamResolveApplicationContentPathFwd(this->forward_service.get(), title_id, static_cast<FsStorageId>(storage_type));
+    return nsamResolveApplicationContentPathFwd(this->forward_service.get(), program_id, static_cast<FsStorageId>(storage_type));
 }
 
 Result NsAmMitmService::GetRunningApplicationProgramId(Out<u64> out_tid, u64 app_id) {

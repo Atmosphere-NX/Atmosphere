@@ -218,7 +218,7 @@ struct RomFSBuildFileContext {
 
 class RomFSBuildContext {
     private:
-        u64 title_id;
+        u64 program_id;
         RomFSBuildDirectoryContext *root;
         std::map<char *, RomFSBuildDirectoryContext *, build_ctx_cmp> directories;
         std::map<char *, RomFSBuildFileContext *, build_ctx_cmp> files;
@@ -239,7 +239,7 @@ class RomFSBuildContext {
         bool AddDirectory(RomFSBuildDirectoryContext *parent_dir_ctx, RomFSBuildDirectoryContext *dir_ctx, RomFSBuildDirectoryContext **out_dir_ctx);
         bool AddFile(RomFSBuildDirectoryContext *parent_dir_ctx, RomFSBuildFileContext *file_ctx);
     public:
-        RomFSBuildContext(u64 tid) : title_id(tid) {
+        RomFSBuildContext(u64 tid) : program_id(tid) {
             this->root = new RomFSBuildDirectoryContext({0});
             this->root->path = new char[1];
             this->root->path[0] = '\x00';

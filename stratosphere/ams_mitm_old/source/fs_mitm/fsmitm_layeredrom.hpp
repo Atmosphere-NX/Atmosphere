@@ -30,7 +30,7 @@ class LayeredRomFS : public IROStorage {
         std::shared_ptr<IROStorage> storage_romfs;
         std::shared_ptr<IROStorage> file_romfs;
         /* Information about the merged RomFS. */
-        u64 title_id;
+        u64 program_id;
         std::shared_ptr<std::vector<RomFSSourceInfo>> p_source_infos;
 
     public:

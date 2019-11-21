@@ -27,7 +27,7 @@ void SetSysMitmService::PostProcess(IMitmServiceObject *obj, IpcResponseContext 
 
 Result SetSysMitmService::GetFirmwareVersion(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) {
     /* Get firmware version from manager. */
-    R_TRY(VersionManager::GetFirmwareVersion(this->title_id, out.pointer));
+    R_TRY(VersionManager::GetFirmwareVersion(this->program_id, out.pointer));
 
     /* GetFirmwareVersion sanitizes these fields. */
     out.pointer->revision_major = 0;
@@ -36,7 +36,7 @@ Result SetSysMitmService::GetFirmwareVersion(OutPointerWithServerSize<SetSysFirm
 }
 
 Result SetSysMitmService::GetFirmwareVersion2(OutPointerWithServerSize<SetSysFirmwareVersion, 0x1> out) {
-    return VersionManager::GetFirmwareVersion(this->title_id, out.pointer);
+    return VersionManager::GetFirmwareVersion(this->program_id, out.pointer);
 }
 
 Result SetSysMitmService::GetSettingsItemValueSize(Out<u64> out_size, InPointer<char> in_name, InPointer<char> in_key) {

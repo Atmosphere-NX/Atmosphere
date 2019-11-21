@@ -22,7 +22,8 @@ namespace ams::sm::impl {
 
     /* Utilities. */
     os::RecursiveMutex &GetUserSessionMutex();
-    os::RecursiveMutex &GetMitmSessionMutex();
+    os::RecursiveMutex &GetMitmAcknowledgementSessionMutex();
+    os::RecursiveMutex &GetPerThreadSessionMutex();
 
     template<typename F>
     Result DoWithUserSession(F f) {
@@ -36,13 +37,26 @@ namespace ams::sm::impl {
     }
 
     template<typename F>
-    Result DoWithMitmSession(F f) {
-        std::scoped_lock<os::RecursiveMutex &> lk(GetMitmSessionMutex());
+    Result DoWithMitmAcknowledgementSession(F f) {
+        std::scoped_lock<os::RecursiveMutex &> lk(GetMitmAcknowledgementSessionMutex());
         {
             R_ASSERT(smAtmosphereMitmInitialize());
             ON_SCOPE_EXIT { smAtmosphereMitmExit(); };
 
             return f();
+        }
+    }
+
+    template<typename F>
+    Result DoWithPerThreadSession(F f) {
+        Service srv;
+        {
+            std::scoped_lock<os::RecursiveMutex &> lk(GetPerThreadSessionMutex());
+            R_ASSERT(smAtmosphereOpenSession(&srv));
+        }
+        {
+            ON_SCOPE_EXIT { smAtmosphereCloseSession(&srv); };
+            return f(&srv);
         }
     }
 
