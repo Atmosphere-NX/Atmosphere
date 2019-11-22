@@ -36,6 +36,7 @@ namespace ams::cfg {
         struct ContentSpecificOverrideConfig {
             OverrideKey override_key;
             OverrideKey cheat_enable_key;
+            OverrideLocale locale;
         };
 
         /* Override globals. */
@@ -164,10 +165,29 @@ namespace ams::cfg {
                     config->override_key = ParseOverrideKey(value);
                 } else if (strcasecmp(name, "cheat_enable_key") == 0) {
                     config->cheat_enable_key = ParseOverrideKey(value);
+                } else if (strcasecmp(name, "override_language") == 0) {
+                    config->locale.language_code = settings::LanguageCode::Encode(value);
+                } else if (strcasecmp(name, "override_region") == 0) {
+                    if (strcasecmp(value, "jpn") == 0) {
+                        config->locale.region_code = settings::RegionCode_Japan;
+                    } else if (strcasecmp(value, "usa") == 0) {
+                        config->locale.region_code = settings::RegionCode_America;
+                    } else if (strcasecmp(value, "eur") == 0) {
+                        config->locale.region_code = settings::RegionCode_Europe;
+                    } else if (strcasecmp(value, "aus") == 0) {
+                        config->locale.region_code = settings::RegionCode_Australia;
+                    } else if (strcasecmp(value, "chn") == 0) {
+                        config->locale.region_code = settings::RegionCode_China;
+                    } else if (strcasecmp(value, "kor") == 0) {
+                        config->locale.region_code = settings::RegionCode_Korea;
+                    } else if (strcasecmp(value, "twn") == 0) {
+                        config->locale.region_code = settings::RegionCode_Taiwan;
+                    }
                 }
             } else {
                 return 0;
             }
+
             return 1;
         }
 
@@ -215,6 +235,8 @@ namespace ams::cfg {
                 .override_key = g_default_override_key,
                 .cheat_enable_key = g_default_cheat_enable_key,
             };
+            std::memset(&config.locale, 0xCC, sizeof(config.locale));
+
             ParseIniFile(ContentSpecificIniHandler, path, &config);
             return config;
         }
@@ -262,6 +284,10 @@ namespace ams::cfg {
         }
 
         return status;
+    }
+
+    OverrideLocale GetOverrideLocale(ncm::ProgramId program_id) {
+        return GetContentOverrideConfig(program_id).locale;
     }
 
     /* HBL Configuration utilities. */

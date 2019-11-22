@@ -60,7 +60,7 @@ namespace ams::mitm {
 
         constexpr ModuleDefinition g_module_definitions[ModuleId_Count] = {
             GetModuleDefinition<fs::MitmModule>(),
-            GetModuleDefinition<set::MitmModule>(),
+            GetModuleDefinition<settings::MitmModule>(),
             GetModuleDefinition<bpc::MitmModule>(),
             GetModuleDefinition<ns::MitmModule>(),
             GetModuleDefinition<hid::MitmModule>(),

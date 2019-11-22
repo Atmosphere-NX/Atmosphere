@@ -43,6 +43,7 @@
 #include "stratosphere/reg.hpp"
 #include "stratosphere/rnd.hpp"
 #include "stratosphere/ro.hpp"
+#include "stratosphere/settings.hpp"
 #include "stratosphere/sf.hpp"
 #include "stratosphere/sm.hpp"
 #include "stratosphere/spl.hpp"

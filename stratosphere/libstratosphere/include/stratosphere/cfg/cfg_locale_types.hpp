@@ -14,28 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include "cfg_types.hpp"
+#include "../settings/settings_types.hpp"
 
-namespace ams::mitm::settings {
+namespace ams::cfg {
 
-    class SetSysMitmService  : public sf::IMitmServiceObject {
-        private:
-            enum class CommandId {
-                /* TODO */
-            };
-        public:
-            static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
-                /* TODO */
-                return false;
-            }
-        public:
-            SF_MITM_SERVICE_OBJECT_CTOR(SetSysMitmService) { /* ... */ }
-        protected:
-            /* TODO */
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* TODO */
-            };
+    struct OverrideLocale {
+        settings::LanguageCode language_code;
+        settings::RegionCode region_code;
     };
 
 }

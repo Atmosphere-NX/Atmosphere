@@ -16,25 +16,39 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::mitm::set {
+namespace ams::mitm::settings {
 
     class SetMitmService  : public sf::IMitmServiceObject {
         private:
             enum class CommandId {
-                /* TODO */
+                GetLanguageCode = 0,
+                GetRegionCode   = 4,
             };
+        private:
+            os::Mutex lock;
+            cfg::OverrideLocale locale;
+            bool got_locale;
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
-                /* TODO */
-                return false;
+                /* We will mitm:
+                 * - ns and games, to allow for overriding game locales.
+                 */
+                const bool is_game = (ncm::IsApplicationProgramId(client_info.program_id) && !client_info.override_status.IsHbl());
+                return client_info.program_id == ncm::ProgramId::Ns || is_game;
             }
         public:
-            SF_MITM_SERVICE_OBJECT_CTOR(SetMitmService) { /* ... */ }
+            SF_MITM_SERVICE_OBJECT_CTOR(SetMitmService) {
+                this->got_locale = false;
+            }
+        private:
+            Result EnsureLocale();
         protected:
-            /* TODO */
+            Result GetLanguageCode(sf::Out<ams::settings::LanguageCode> out);
+            Result GetRegionCode(sf::Out<ams::settings::RegionCode> out);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                /* TODO */
+                MAKE_SERVICE_COMMAND_META(GetLanguageCode),
+                MAKE_SERVICE_COMMAND_META(GetRegionCode),
             };
     };
 
