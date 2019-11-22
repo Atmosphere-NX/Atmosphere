@@ -57,6 +57,7 @@ namespace ams::spl::smc {
     Result AtmosphereCopyFromIram(void *dram_dst, uintptr_t iram_src, size_t size);
     Result AtmosphereReadWriteRegister(uint64_t address, uint32_t mask, uint32_t value, uint32_t *out_value);
     Result AtmosphereWriteAddress(void *dst, const void *src, size_t size);
+    Result AtmosphereGetEmummcConfig(void *out_config, void *out_paths, u32 storage_id);
 
     /* Helpers. */
     inline Result SetConfig(SplConfigItem which, const u64 value) {

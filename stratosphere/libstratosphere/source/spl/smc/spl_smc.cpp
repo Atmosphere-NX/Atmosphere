@@ -361,4 +361,18 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
+    Result AtmosphereGetEmummcConfig(void *out_config, void *out_paths, u32 storage_id) {
+        const u64 paths = reinterpret_cast<u64>(out_paths);
+        AMS_ASSERT(util::IsAligned(paths, 0x1000));
+
+        SecmonArgs args = {};
+        args.X[0] = static_cast<u64>(FunctionId::AtmosphereGetEmummcConfig);
+        args.X[1] = storage_id;
+        args.X[2] = paths;
+        svcCallSecureMonitor(&args);
+
+        std::memcpy(out_config, &args.X[1], sizeof(args) - sizeof(args.X[0]));
+        return static_cast<Result>(args.X[0]);
+    }
+
 }
