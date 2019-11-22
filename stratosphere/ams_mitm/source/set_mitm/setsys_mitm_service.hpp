@@ -21,20 +21,25 @@ namespace ams::mitm::settings {
     class SetSysMitmService  : public sf::IMitmServiceObject {
         private:
             enum class CommandId {
-                /* TODO */
+                GetFirmwareVersion       = 3,
+                GetFirmwareVersion2      = 4,
             };
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
-                /* TODO */
-                return false;
+                /* We will mitm:
+                 * - everything, because we want to intercept all settings requests.
+                 */
+                return true;
             }
         public:
             SF_MITM_SERVICE_OBJECT_CTOR(SetSysMitmService) { /* ... */ }
         protected:
-            /* TODO */
+            Result GetFirmwareVersion(sf::Out<ams::settings::FirmwareVersion> out);
+            Result GetFirmwareVersion2(sf::Out<ams::settings::FirmwareVersion> out);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                /* TODO */
+                MAKE_SERVICE_COMMAND_META(GetFirmwareVersion),
+                MAKE_SERVICE_COMMAND_META(GetFirmwareVersion2),
             };
     };
 

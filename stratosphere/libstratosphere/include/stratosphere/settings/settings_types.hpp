@@ -172,4 +172,52 @@ namespace ams::settings {
         return 0 <= rc && rc < RegionCode_Count;
     }
 
+    /* This needs to be defined separately from libnx's so that it can inherit from sf::LargeData. */
+
+    struct FirmwareVersion : public sf::LargeData {
+        u8 major;
+        u8 minor;
+        u8 micro;
+        u8 padding1;
+        u8 revision_major;
+        u8 revision_minor;
+        u8 padding2;
+        u8 padding3;
+        char platform[0x20];
+        char version_hash[0x40];
+        char display_version[0x18];
+        char display_title[0x80];
+
+        constexpr inline u32 GetVersion() const {
+            return (static_cast<u32>(major) << 16) | (static_cast<u32>(minor) << 8) | (static_cast<u32>(micro) << 0);
+        }
+    };
+
+    static_assert(std::is_pod<FirmwareVersion>::value);
+    static_assert(sizeof(FirmwareVersion) == sizeof(::SetSysFirmwareVersion));
+
+    constexpr inline bool operator==(const FirmwareVersion &lhs, const FirmwareVersion &rhs) {
+        return lhs.GetVersion() == rhs.GetVersion();
+    }
+
+    constexpr inline bool operator!=(const FirmwareVersion &lhs, const FirmwareVersion &rhs) {
+        return !(lhs == rhs);
+    }
+
+    constexpr inline bool operator<(const FirmwareVersion &lhs, const FirmwareVersion &rhs) {
+        return lhs.GetVersion() < rhs.GetVersion();
+    }
+
+    constexpr inline bool operator>=(const FirmwareVersion &lhs, const FirmwareVersion &rhs) {
+        return !(lhs < rhs);
+    }
+
+    constexpr inline bool operator<=(const FirmwareVersion &lhs, const FirmwareVersion &rhs) {
+        return lhs.GetVersion() <= rhs.GetVersion();
+    }
+
+    constexpr inline bool operator>(const FirmwareVersion &lhs, const FirmwareVersion &rhs) {
+        return !(lhs <= rhs);
+    }
+
 }

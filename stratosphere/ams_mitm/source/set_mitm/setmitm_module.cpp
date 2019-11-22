@@ -37,6 +37,9 @@ namespace ams::mitm::settings {
     }
 
     void MitmModule::ThreadFunction(void *arg) {
+        /* Wait until initialization is complete. */
+        mitm::WaitInitialized();
+
         /* Create mitm servers. */
         R_ASSERT(g_server_manager.RegisterMitmServer<SetMitmService>(SetMitmServiceName));
         R_ASSERT(g_server_manager.RegisterMitmServer<SetSysMitmService>(SetSysMitmServiceName));
