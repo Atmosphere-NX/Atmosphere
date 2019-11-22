@@ -17,7 +17,7 @@
 #include "set_mitm_service.hpp"
 #include "setsys_mitm_service.hpp"
 
-namespace ams::mitm::set {
+namespace ams::mitm::settings {
 
     namespace {
 

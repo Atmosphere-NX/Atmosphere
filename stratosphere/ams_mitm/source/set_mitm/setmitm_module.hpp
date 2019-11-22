@@ -17,7 +17,7 @@
 #include <stratosphere.hpp>
 #include "../amsmitm_module.hpp"
 
-namespace ams::mitm::set {
+namespace ams::mitm::settings {
 
     DEFINE_MITM_MODULE_CLASS(0x8000, 43);
 

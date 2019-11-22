@@ -15,6 +15,7 @@
  */
 #pragma once
 #include "cfg_types.hpp"
+#include "cfg_locale_types.hpp"
 
 namespace ams::cfg {
 
@@ -30,6 +31,9 @@ namespace ams::cfg {
 
     /* Override key utilities. */
     OverrideStatus CaptureOverrideStatus(ncm::ProgramId program_id);
+
+    /* Locale utilities. */
+    OverrideLocale GetOverrideLocale(ncm::ProgramId program_id);
 
     /* Flag utilities. */
     bool HasFlag(ncm::ProgramId program_id, const char *flag);

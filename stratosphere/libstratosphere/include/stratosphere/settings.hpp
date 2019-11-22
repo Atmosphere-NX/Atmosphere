@@ -13,29 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <stratosphere.hpp>
 
-namespace ams::mitm::settings {
-
-    class SetSysMitmService  : public sf::IMitmServiceObject {
-        private:
-            enum class CommandId {
-                /* TODO */
-            };
-        public:
-            static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
-                /* TODO */
-                return false;
-            }
-        public:
-            SF_MITM_SERVICE_OBJECT_CTOR(SetSysMitmService) { /* ... */ }
-        protected:
-            /* TODO */
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* TODO */
-            };
-    };
-
-}
+#include "settings/settings_types.hpp"
