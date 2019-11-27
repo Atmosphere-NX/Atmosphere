@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "../amsmitm_initialization.hpp"
 #include "nsmitm_module.hpp"
 #include "ns_am_mitm_service.hpp"
 #include "ns_web_mitm_service.hpp"
@@ -22,7 +23,7 @@ namespace ams::mitm::ns {
     namespace {
 
         constexpr sm::ServiceName NsAmMitmServiceName = sm::ServiceName::Encode("ns:am");
-        constexpr sm::ServiceName NsWebMitmServiceName = sm::ServiceName::Encode("ns:am");
+        constexpr sm::ServiceName NsWebMitmServiceName = sm::ServiceName::Encode("ns:web");
 
         constexpr size_t MaxServers = 1;
         constexpr size_t MaxSessions = 5;
@@ -32,6 +33,9 @@ namespace ams::mitm::ns {
     }
 
     void MitmModule::ThreadFunction(void *arg) {
+        /* Wait until initialization is complete. */
+        mitm::WaitInitialized();
+
         /* Create mitm servers. */
         if (hos::GetVersion() < hos::Version_300) {
             R_ASSERT(g_server_manager.RegisterMitmServer<NsAmMitmService>(NsAmMitmServiceName));

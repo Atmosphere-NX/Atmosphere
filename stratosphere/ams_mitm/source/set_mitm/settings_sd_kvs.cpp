@@ -291,33 +291,90 @@ namespace ams::settings::fwdbg {
         Result LoadSdCardKeyValueStore() {
             /* Open file. */
             FsFile config_file;
-            R_TRY(ams::mitm::fs::OpenAtmosphereSdFile(&config_file, "/system_settings.ini", FsOpenMode_Read));
+            if (R_FAILED(ams::mitm::fs::OpenAtmosphereSdFile(&config_file, "/system_settings.ini", FsOpenMode_Read))) {
+                /* It's okay if the file isn't readable/present, because we already loaded defaults. */
+                return ResultSuccess();
+            }
             ON_SCOPE_EXIT { fsFileClose(&config_file); };
 
             Result parse_result = ResultSuccess();
             util::ini::ParseFile(&config_file, &parse_result, SystemSettingsIniHandler);
             R_TRY(parse_result);
 
-            for (size_t i = 0; i < util::size(g_entries); i++) {
-                if (!g_entries[i].HasValue()) {
-                    g_num_entries = i;
-                    break;
-                }
-            }
-
-            if (g_num_entries) {
-                std::sort(g_entries, g_entries + g_num_entries);
-            }
-
             return ResultSuccess();
+        }
+
+        void LoadDefaultCustomSettings() {
+            /* Disable uploading error reports to Nintendo. */
+            R_ASSERT(ParseSettingsItemValue("eupld", "upload_enabled", "u8!0x0"));
+
+            /* Control whether RO should ease its validation of NROs. */
+            /* (note: this is normally not necessary, and ips patches can be used.) */
+            R_ASSERT(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x0"));
+
+            /* Atmosphere custom settings. */
+
+            /* Reboot from fatal automatically after some number of milliseconds. */
+            /* If field is not present or 0, fatal will wait indefinitely for user input. */
+            R_ASSERT(ParseSettingsItemValue("atmosphere", "fatal_auto_reboot_interval", "u64!0x0"));
+
+            /* Make the power menu's "reboot" button reboot to payload. */
+            /* Set to "normal" for normal reboot, "rcm" for rcm reboot. */
+            R_ASSERT(ParseSettingsItemValue("atmosphere", "power_menu_reboot_function", "str!payload"));
+
+            /* Controls whether dmnt cheats should be toggled on or off by */
+            /* default. 1 = toggled on by default, 0 = toggled off by default. */
+            R_ASSERT(ParseSettingsItemValue("atmosphere", "dmnt_cheats_enabled_by_default", "u8!0x1"));
+
+            /* Controls whether dmnt should always save cheat toggle state */
+            /* for restoration on new game launch. 1 = always save toggles, */
+            /* 0 = only save toggles if toggle file exists. */
+            R_ASSERT(ParseSettingsItemValue("atmosphere", "dmnt_always_save_cheat_toggles", "u8!0x0"));
+
+            /* Controls whether fs.mitm should redirect save files */
+            /* to directories on the sd card. */
+            /* 0 = Do not redirect, 1 = Redirect. */
+            /* NOTE: EXPERIMENTAL */
+            /* If you do not know what you are doing, do not touch this yet. */
+            R_ASSERT(ParseSettingsItemValue("atmosphere", "fsmitm_redirect_saves_to_sd", "u8!0x0"));
+
+            /* Hbloader custom settings. */
+
+            /* Controls the size of the homebrew heap when running as applet. */
+            /* If set to zero, all available applet memory is used as heap. */
+            /* The default is zero. */
+            R_ASSERT(ParseSettingsItemValue("hbloader", "applet_heap_size", "u64!0x0"));
+
+            /* Controls the amount of memory to reserve when running as applet */
+            /* for usage by other applets. This setting has no effect if */
+            /* applet_heap_size is non-zero. The default is 0x8000000. */
+            R_ASSERT(ParseSettingsItemValue("hbloader", "applet_heap_reservation_size", "u64!0x8000000"));
         }
 
     }
 
     void InitializeSdCardKeyValueStore() {
+        /* Load in hardcoded defaults. */
+        /* These will be overwritten if present on the SD card. */
+        LoadDefaultCustomSettings();
+
+        /* Parse custom settings off the SD card. */
         const Result parse_result = LoadSdCardKeyValueStore();
         if (R_FAILED(parse_result)) {
             ams::mitm::ThrowResultForDebug(parse_result);
+        }
+
+        /* Determine how many custom settings are present. */
+        for (size_t i = 0; i < util::size(g_entries); i++) {
+            if (!g_entries[i].HasValue()) {
+                g_num_entries = i;
+                break;
+            }
+        }
+
+        /* Ensure that the custom settings entries are sorted. */
+        if (g_num_entries) {
+            std::sort(g_entries, g_entries + g_num_entries);
         }
     }
 
