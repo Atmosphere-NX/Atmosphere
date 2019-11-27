@@ -117,7 +117,7 @@ namespace ams::cfg {
             return cfg;
         }
 
-        int LoaderIniHandler(void *user, const char *section, const char *name, const char *value) {
+        int OverrideConfigIniHandler(void *user, const char *section, const char *name, const char *value) {
             /* Taken and modified, with love, from Rajkosto's implementation. */
             if (strcasecmp(section, "hbl_config") == 0) {
                 /* TODO: Consider deprecating "title_id" string in the future." */
@@ -132,6 +132,12 @@ namespace ams::cfg {
                     }
                     std::snprintf(g_hbl_sd_path, sizeof(g_hbl_sd_path) - 1, "/%s", value);
                     g_hbl_sd_path[sizeof(g_hbl_sd_path) - 1] = '\0';
+
+                    for (size_t i = 0; i < sizeof(g_hbl_sd_path); i++) {
+                        if (g_hbl_sd_path[i] == '\\') {
+                            g_hbl_sd_path[i] = '/';
+                        }
+                    }
                 } else if (strcasecmp(name, "override_key") == 0) {
                     g_hbl_override_config.override_key = ParseOverrideKey(value);
                 } else if (strcasecmp(name, "override_any_app") == 0) {
@@ -223,8 +229,8 @@ namespace ams::cfg {
             util::ini::ParseFile(&config_file, user_ctx, handler);
         }
 
-        void RefreshLoaderConfiguration() {
-            ParseIniFile(LoaderIniHandler, "/atmosphere/loader.ini", nullptr);
+        void RefreshOverrideConfiguration() {
+            ParseIniFile(OverrideConfigIniHandler, "/atmosphere/override_config.ini", nullptr);
         }
 
         ContentSpecificOverrideConfig GetContentOverrideConfig(ncm::ProgramId program_id) {
@@ -257,8 +263,8 @@ namespace ams::cfg {
             return status;
         }
 
-        /* Unconditionally refresh loader.ini contents. */
-        RefreshLoaderConfiguration();
+        /* Unconditionally refresh override_config.ini contents. */
+        RefreshOverrideConfiguration();
 
         /* If we can't read the key state, don't override anything. */
         if (R_FAILED(hid::GetKeysHeld(&status.keys_held))) {
