@@ -13,9 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include <stratosphere.hpp>
 
-#include "settings/settings_types.hpp"
-#include "settings/settings_fwdbg_types.hpp"
-#include "settings/settings_fwdbg_api.hpp"
+namespace ams::settings::fwdbg {
+
+    void InitializeSdCardKeyValueStore();
+
+    Result GetSdCardKeyValueStoreSettingsItemValueSize(size_t *out_size, const char *name, const char *key);
+    Result GetSdCardKeyValueStoreSettingsItemValue(size_t *out_size, void *dst, size_t dst_size, const char *name, const char *key);
+
+}

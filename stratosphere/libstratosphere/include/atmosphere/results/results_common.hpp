@@ -271,6 +271,9 @@ namespace ams::result::impl {
 #define R_CONVERT_ALL(convert_type) \
         R_CATCH_ALL() { return static_cast<::ams::Result>(convert_type); }
 
+#define R_CATCH_RETHROW(catch_type) \
+        R_CONVERT(catch_type, R_CURRENT_RESULT)
+
 #define R_END_TRY_CATCH \
             else if (R_FAILED(R_CURRENT_RESULT)) { \
                 return R_CURRENT_RESULT; \

@@ -59,13 +59,12 @@ namespace ams::fatal::srv {
         this->UpdateLanguageCode();
 
         /* Read information from settings. */
-        u64 set_size_out;
-        setsysGetSettingsItemValue("fatal", "transition_to_fatal", &this->transition_to_fatal, sizeof(this->transition_to_fatal), &set_size_out);
-        setsysGetSettingsItemValue("fatal", "show_extra_info", &this->show_extra_info, sizeof(this->show_extra_info), &set_size_out);
-        setsysGetSettingsItemValue("fatal", "quest_reboot_interval_second", &this->quest_reboot_interval_second, sizeof(this->quest_reboot_interval_second), &set_size_out);
+        settings::fwdbg::GetSettingsItemValue(&this->transition_to_fatal, sizeof(this->transition_to_fatal), "fatal", "transition_to_fatal");
+        settings::fwdbg::GetSettingsItemValue(&this->show_extra_info, sizeof(this->show_extra_info), "fatal", "show_extra_info");
+        settings::fwdbg::GetSettingsItemValue(&this->quest_reboot_interval_second, sizeof(this->quest_reboot_interval_second), "fatal", "quest_reboot_interval_second");
 
         /* Atmosphere extension for automatic reboot. */
-        if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "fatal_auto_reboot_interval", &this->fatal_auto_reboot_interval, sizeof(this->fatal_auto_reboot_interval), &set_size_out))) {
+        if (settings::fwdbg::GetSettingsItemValue(&this->fatal_auto_reboot_interval, sizeof(this->fatal_auto_reboot_interval), "atmosphere", "fatal_auto_reboot_interval") == sizeof(this->fatal_auto_reboot_interval)) {
             this->fatal_auto_reboot_enabled = this->fatal_auto_reboot_interval != 0;
         }
 

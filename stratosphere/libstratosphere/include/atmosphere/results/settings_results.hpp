@@ -21,11 +21,11 @@ namespace ams::settings {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(105);
 
-    R_DEFINE_ERROR_RESULT(ItemNotFound,                       11);
+    R_DEFINE_ERROR_RESULT(SettingsItemNotFound,                 11);
 
     R_DEFINE_ERROR_RANGE(InternalError, 100, 149);
-        R_DEFINE_ERROR_RESULT(ItemKeyAllocationFailed,   101);
-        R_DEFINE_ERROR_RESULT(ItemValueAllocationFailed, 102);
+        R_DEFINE_ERROR_RESULT(SettingsItemKeyAllocationFailed,   101);
+        R_DEFINE_ERROR_RESULT(SettingsItemValueAllocationFailed, 102);
 
     R_DEFINE_ERROR_RANGE(InvalidArgument, 200, 399);
         R_DEFINE_ERROR_RESULT(SettingsNameNull,                 201);

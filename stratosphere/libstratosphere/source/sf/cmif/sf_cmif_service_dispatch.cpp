@@ -45,7 +45,7 @@ namespace ams::sf::cmif {
 
         /* Forward forwardable results, otherwise ensure we can send result to user. */
         R_TRY_CATCH(command_result) {
-            R_CATCH(sf::impl::ResultRequestContextChanged) { return R_CURRENT_RESULT; }
+            R_CATCH_RETHROW(sf::impl::ResultRequestContextChanged)
             R_CATCH_ALL() { AMS_ASSERT(out_header != nullptr); }
         } R_END_TRY_CATCH;
 
@@ -92,7 +92,7 @@ namespace ams::sf::cmif {
             R_CATCH(sm::mitm::ResultShouldForwardToSession) {
                 return ctx.session->ForwardRequest(ctx);
             }
-            R_CATCH(sf::impl::ResultRequestContextChanged) { return R_CURRENT_RESULT; }
+            R_CATCH_RETHROW(sf::impl::ResultRequestContextChanged)
             R_CATCH_ALL() { AMS_ASSERT(out_header != nullptr); }
         } R_END_TRY_CATCH;
 

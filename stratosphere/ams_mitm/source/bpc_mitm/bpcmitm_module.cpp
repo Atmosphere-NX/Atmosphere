@@ -41,10 +41,6 @@ namespace ams::mitm::bpc {
         /* Wait until initialization is complete. */
         mitm::WaitInitialized();
 
-        /* Initialize the reboot manager (load a payload off the SD). */
-        /* Discard result, since it doesn't need to succeed. */
-        LoadRebootPayload();
-
         /* Create bpc:ams. */
         {
             Handle bpcams_h;

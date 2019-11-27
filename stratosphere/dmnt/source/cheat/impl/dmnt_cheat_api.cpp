@@ -191,14 +191,13 @@ namespace ams::dmnt::cheat::impl {
 
                     /* Learn whether we should enable cheats by default. */
                     {
-                        u64 size_out;
                         u8 en = 0;
-                        if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "dmnt_cheats_enabled_by_default", &en, sizeof(en), &size_out))) {
+                        if (settings::fwdbg::GetSettingsItemValue(&en, sizeof(en), "atmosphere", "dmnt_cheats_enabled_by_default") == sizeof(en)) {
                             this->enable_cheats_by_default = (en != 0);
                         }
 
                         en = 0;
-                        if (R_SUCCEEDED(setsysGetSettingsItemValue("atmosphere", "dmnt_always_save_cheat_toggles", &en, sizeof(en), &size_out))) {
+                        if (settings::fwdbg::GetSettingsItemValue( &en, sizeof(en), "atmosphere", "dmnt_always_save_cheat_toggles") == sizeof(en)) {
                             this->always_save_cheat_toggles = (en != 0);
                         }
                     }

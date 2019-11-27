@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 #include "amsmitm_initialization.hpp"
 #include "amsmitm_fs_utils.hpp"
+#include "bpc_mitm/bpc_ams_power_utils.hpp"
 
 namespace ams::mitm {
 
@@ -35,10 +36,14 @@ namespace ams::mitm {
             /* Wait for the SD card to be ready. */
             cfg::WaitSdCardInitialized();
 
-            /* TODO: Other initialization tasks. */
-
             /* Open global SD card file system, so that other threads can begin using the SD. */
             mitm::fs::OpenGlobalSdCardFileSystem();
+
+            /* Initialize the reboot manager (load a payload off the SD). */
+            /* Discard result, since it doesn't need to succeed. */
+            mitm::bpc::LoadRebootPayload();
+
+            /* TODO: Other initialization tasks. */
 
             /* Signal to waiters that we are ready. */
             g_init_event.Signal();

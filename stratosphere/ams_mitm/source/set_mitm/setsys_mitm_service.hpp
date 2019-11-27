@@ -23,6 +23,9 @@ namespace ams::mitm::settings {
             enum class CommandId {
                 GetFirmwareVersion       = 3,
                 GetFirmwareVersion2      = 4,
+
+                GetSettingsItemValueSize = 37,
+                GetSettingsItemValue     = 38,
             };
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
@@ -36,10 +39,14 @@ namespace ams::mitm::settings {
         protected:
             Result GetFirmwareVersion(sf::Out<ams::settings::FirmwareVersion> out);
             Result GetFirmwareVersion2(sf::Out<ams::settings::FirmwareVersion> out);
+            Result GetSettingsItemValueSize(sf::Out<u64> out_size, const ams::settings::fwdbg::SettingsName &name, const ams::settings::fwdbg::SettingsItemKey &key);
+            Result GetSettingsItemValue(sf::Out<u64> out_size, const sf::OutBuffer &out, const ams::settings::fwdbg::SettingsName &name, const ams::settings::fwdbg::SettingsItemKey &key);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(GetFirmwareVersion),
                 MAKE_SERVICE_COMMAND_META(GetFirmwareVersion2),
+                MAKE_SERVICE_COMMAND_META(GetSettingsItemValueSize),
+                MAKE_SERVICE_COMMAND_META(GetSettingsItemValue),
             };
     };
 

@@ -176,8 +176,7 @@ namespace ams::boot2 {
             /* Contact set:sys, retrieve boot!force_maintenance. */
             {
                 u8 force_maintenance = 1;
-                u64 size_out;
-                setsysGetSettingsItemValue("boot", "force_maintenance", &force_maintenance, sizeof(force_maintenance), &size_out);
+                settings::fwdbg::GetSettingsItemValue(&force_maintenance, sizeof(force_maintenance), "boot", "force_maintenance");
                 if (force_maintenance != 0) {
                     return true;
                 }
