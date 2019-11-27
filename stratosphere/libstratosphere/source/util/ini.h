@@ -102,7 +102,7 @@ int ini_parse_string(const char* string, ini_handler handler, void* user);
 /* Maximum line length for any line in INI file (stack or heap). Note that
    this must be 3 more than the longest line (due to '\r', '\n', and '\0'). */
 #ifndef INI_MAX_LINE
-#define INI_MAX_LINE 200
+#define INI_MAX_LINE 0x480
 #endif
 
 /* Nonzero to allow heap line buffer to grow via realloc(), zero for a

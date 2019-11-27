@@ -315,15 +315,14 @@ namespace ams::ro::impl {
 
     bool ShouldEaseNroRestriction() {
         /* Retrieve whether we should ease restrictions from set:sys. */
-        bool should_ease = false;
-        u64 size_out;
-        if (R_FAILED(setsysGetSettingsItemValue("ro", "ease_nro_restriction", &should_ease, sizeof(should_ease), &size_out))) {
+        u8 should_ease = 0;
+        if (settings::fwdbg::GetSettingsItemValue(&should_ease, sizeof(should_ease), "ro", "ease_nro_restriction") != sizeof(should_ease)) {
             return false;
         }
 
         /* Nintendo only allows easing restriction on dev, we will allow on production, as well. */
         /* should_ease &= IsDevelopmentFunctionEnabled(); */
-        return should_ease;
+        return should_ease != 0;
     }
 
     /* Context utilities. */

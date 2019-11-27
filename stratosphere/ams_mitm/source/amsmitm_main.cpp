@@ -15,6 +15,7 @@
  */
 #include "amsmitm_initialization.hpp"
 #include "amsmitm_module_management.hpp"
+#include "bpc_mitm/bpc_ams_power_utils.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -50,8 +51,7 @@ namespace ams {
     /* Override. */
     void ExceptionHandler(FatalErrorContext *ctx) {
         /* We're bpc-mitm (or ams_mitm, anyway), so manually reboot to fatal error. */
-        /* Utils::RebootToFatalError(ctx); */
-        while (1) { /* ... */ }
+        mitm::bpc::RebootForFatalError(ctx);
     }
 
 }

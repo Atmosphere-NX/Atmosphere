@@ -26,7 +26,7 @@ namespace ams::mitm::fs {
 
         /* Helpers. */
         Result EnsureSdInitialized() {
-            R_UNLESS(mitm::IsInitialized(), ams::fs::ResultSdCardNotPresent());
+            R_UNLESS(serviceIsActive(&g_sd_filesystem.s), ams::fs::ResultSdCardNotPresent());
             return ResultSuccess();
         }
 

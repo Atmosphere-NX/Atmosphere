@@ -13,9 +13,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 
-#pragma once
+namespace ams::settings::fwdbg {
 
-#include "settings/settings_types.hpp"
-#include "settings/settings_fwdbg_types.hpp"
-#include "settings/settings_fwdbg_api.hpp"
+    /* TODO: Implement when libnx wrapper is added. */
+    bool IsDebugModeEnabled();
+
+    size_t WEAK GetSettingsItemValueSize(const char *name, const char *key) {
+        u64 size = 0;
+        R_ASSERT(setsysGetSettingsItemValueSize(name, key, &size));
+        return size;
+    }
+
+    size_t WEAK GetSettingsItemValue(void *dst, size_t dst_size, const char *name, const char *key) {
+        u64 size = 0;
+        R_ASSERT(setsysGetSettingsItemValue(name, key, dst, dst_size, &size));
+        return size;
+    }
+
+}
