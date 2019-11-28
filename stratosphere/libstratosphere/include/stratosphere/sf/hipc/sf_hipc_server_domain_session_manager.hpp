@@ -32,10 +32,6 @@ namespace ams::sf::hipc {
             inline cmif::DomainServiceObject *AllocateDomainServiceObject() {
                 return cmif::ServerDomainManager::AllocateDomainServiceObject();
             }
-
-            inline void FreeDomainServiceObject(cmif::DomainServiceObject *object) {
-                cmif::ServerDomainManager::FreeDomainServiceObject(object);
-            }
     };
 
 }

@@ -103,6 +103,8 @@ namespace ams::sf::cmif {
 
     class MitmDomainServiceObject : public DomainServiceObject{};
 
+    static_assert(sizeof(DomainServiceObject) == sizeof(MitmDomainServiceObject));
+
     template<>
     struct ServiceDispatchTraits<DomainServiceObject> {
         static_assert(std::is_base_of<sf::IServiceObject, DomainServiceObject>::value, "DomainServiceObject must derive from sf::IServiceObject");
