@@ -80,18 +80,14 @@ namespace ams::sf::hipc {
 
                         /* Create new object. */
                         cmif::MitmDomainServiceObject *domain_ptr = static_cast<cmif::MitmDomainServiceObject *>(domain);
-                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::MitmDomainServiceObject>(domain_ptr, [](cmif::MitmDomainServiceObject *obj) {
-                            cmif::ServerDomainManager::DestroyDomainServiceObject(static_cast<cmif::DomainServiceObject *>(obj));
-                        })));
+                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::MitmDomainServiceObject>(domain_ptr, cmif::ServerDomainManager::DestroyDomainServiceObject)));
                     } else {
                         /* We're not a mitm session. Reserve a new object in the domain. */
                         R_TRY(domain->ReserveIds(&object_id, 1));
 
                         /* Create new object. */
                         cmif::DomainServiceObject *domain_ptr = static_cast<cmif::DomainServiceObject *>(domain);
-                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::DomainServiceObject>(domain_ptr, [](cmif::DomainServiceObject *obj) {
-                            cmif::ServerDomainManager::DestroyDomainServiceObject(static_cast<cmif::DomainServiceObject *>(obj));
-                        })));
+                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::DomainServiceObject>(domain_ptr, cmif::ServerDomainManager::DestroyDomainServiceObject)));
                     }
 
                     AMS_ASSERT(object_id != cmif::InvalidDomainObjectId);
