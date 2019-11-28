@@ -63,7 +63,7 @@ namespace ams::sf::hipc {
                     /* Allocate a domain. */
                     auto domain = this->manager->AllocateDomainServiceObject();
                     R_UNLESS(domain, sf::hipc::ResultOutOfDomains());
-                    auto domain_guard = SCOPE_GUARD { this->manager->FreeDomainServiceObject(domain); };
+                    auto domain_guard = SCOPE_GUARD { cmif::ServerDomainManager::DestroyDomainServiceObject(static_cast<cmif::DomainServiceObject *>(domain)); };
 
                     cmif::DomainObjectId object_id = cmif::InvalidDomainObjectId;
 
@@ -80,8 +80,8 @@ namespace ams::sf::hipc {
 
                         /* Create new object. */
                         cmif::MitmDomainServiceObject *domain_ptr = static_cast<cmif::MitmDomainServiceObject *>(domain);
-                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::MitmDomainServiceObject>(domain_ptr, [&](cmif::MitmDomainServiceObject *obj) {
-                            this->manager->FreeDomainServiceObject(domain);
+                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::MitmDomainServiceObject>(domain_ptr, [](cmif::MitmDomainServiceObject *obj) {
+                            cmif::ServerDomainManager::DestroyDomainServiceObject(static_cast<cmif::DomainServiceObject *>(obj));
                         })));
                     } else {
                         /* We're not a mitm session. Reserve a new object in the domain. */
@@ -89,8 +89,8 @@ namespace ams::sf::hipc {
 
                         /* Create new object. */
                         cmif::DomainServiceObject *domain_ptr = static_cast<cmif::DomainServiceObject *>(domain);
-                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::DomainServiceObject>(domain_ptr, [&](cmif::DomainServiceObject *obj) {
-                            this->manager->FreeDomainServiceObject(domain);
+                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::DomainServiceObject>(domain_ptr, [](cmif::DomainServiceObject *obj) {
+                            cmif::ServerDomainManager::DestroyDomainServiceObject(static_cast<cmif::DomainServiceObject *>(obj));
                         })));
                     }
 

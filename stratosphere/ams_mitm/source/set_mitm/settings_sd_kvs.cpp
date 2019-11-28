@@ -322,6 +322,14 @@ namespace ams::settings::fwdbg {
             /* Set to "normal" for normal reboot, "rcm" for rcm reboot. */
             R_ASSERT(ParseSettingsItemValue("atmosphere", "power_menu_reboot_function", "str!payload"));
 
+            /* Enable writing to BIS partitions for HBL. */
+            /* This is probably undesirable for normal usage. */
+            R_ASSERT(ParseSettingsItemValue("atmosphere", "enable_hbl_bis_write", "u8!0x0"));
+
+            /* Enable HBL to read the CAL0 partition. */
+            /* This is probably undesirable for normal usage. */
+            R_ASSERT(ParseSettingsItemValue("atmosphere", "enable_hbl_cal_read", "u8!0x0"));
+
             /* Controls whether dmnt cheats should be toggled on or off by */
             /* default. 1 = toggled on by default, 0 = toggled off by default. */
             R_ASSERT(ParseSettingsItemValue("atmosphere", "dmnt_cheats_enabled_by_default", "u8!0x1"));

@@ -31,6 +31,12 @@ namespace ams::sf::cmif {
         }
     }
 
+    void ServerDomainManager::Domain::DestroySelf() {
+        ServerDomainManager *manager = this->manager;
+        this->~Domain();
+        manager->FreeDomain(this);
+    }
+
     Result ServerDomainManager::Domain::ReserveIds(DomainObjectId *out_ids, size_t count) {
         for (size_t i = 0; i < count; i++) {
             Entry *entry = this->manager->entry_manager.AllocateEntry();

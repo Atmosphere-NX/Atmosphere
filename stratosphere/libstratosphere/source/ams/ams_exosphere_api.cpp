@@ -58,7 +58,7 @@ namespace ams::exosphere {
     namespace {
 
         inline Result GetRcmBugPatched(bool *out) {
-            u64 tmp;
+            u64 tmp = 0;
             R_TRY(spl::smc::ConvertResult(spl::smc::GetConfig(&tmp, 1, SplConfigItem_ExosphereHasRcmBugPatch)));
             *out = (tmp != 0);
             return ResultSuccess();

@@ -51,6 +51,8 @@ namespace ams::sf::cmif {
                     explicit Domain(ServerDomainManager *m) : manager(m) { /* ... */ }
                     ~Domain();
 
+                    void DestroySelf();
+
                     virtual ServerDomainBase *GetServerDomain() override final {
                         return static_cast<ServerDomainBase *>(this);
                     }
@@ -116,10 +118,9 @@ namespace ams::sf::cmif {
                 }
                 return new (storage) Domain(this);
             }
-
-            inline void FreeDomainServiceObject(DomainServiceObject *object) {
-                static_cast<Domain *>(object)->~Domain();
-                this->FreeDomain(object);
+        public:
+            static void DestroyDomainServiceObject(DomainServiceObject *obj) {
+                static_cast<Domain *>(obj)->DestroySelf();
             }
     };
 

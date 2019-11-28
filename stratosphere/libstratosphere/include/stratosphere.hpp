@@ -48,3 +48,6 @@
 #include "stratosphere/sm.hpp"
 #include "stratosphere/spl.hpp"
 #include "stratosphere/updater.hpp"
+
+/* Include FS last. */
+#include "stratosphere/fs.hpp"
