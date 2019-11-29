@@ -38,7 +38,7 @@ namespace ams::fs {
             }
 
             virtual Result GetSizeImpl(s64 *out) override final {
-                return fsFileGetSize(this->base_file.get(), reinterpret_cast<u64 *>(out));
+                return fsFileGetSize(this->base_file.get(), out);
             }
 
             virtual Result FlushImpl() override final {
@@ -72,11 +72,11 @@ namespace ams::fs {
             virtual ~RemoteDirectory() { fsDirClose(this->base_dir.get()); }
         public:
             virtual Result ReadImpl(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries) override final {
-                return fsDirRead(this->base_dir.get(), 0, reinterpret_cast<u64 *>(out_count), max_entries, out_entries);
+                return fsDirRead(this->base_dir.get(), out_count, max_entries, out_entries);
             }
 
             virtual Result GetEntryCountImpl(s64 *out) override final {
-                return fsDirGetEntryCount(this->base_dir.get(), reinterpret_cast<u64 *>(out));
+                return fsDirGetEntryCount(this->base_dir.get(), out);
             }
     };
 
@@ -147,11 +147,11 @@ namespace ams::fs {
 
 
             virtual Result GetFreeSpaceSizeImpl(s64 *out, const char *path) {
-                return fsFsGetFreeSpace(this->base_fs.get(), path, reinterpret_cast<u64 *>(out));
+                return fsFsGetFreeSpace(this->base_fs.get(), path, out);
             }
 
             virtual Result GetTotalSpaceSizeImpl(s64 *out, const char *path) {
-                return fsFsGetTotalSpace(this->base_fs.get(), path, reinterpret_cast<u64 *>(out));
+                return fsFsGetTotalSpace(this->base_fs.get(), path, out);
             }
 
             virtual Result CleanDirectoryRecursivelyImpl(const char *path) {
@@ -163,8 +163,8 @@ namespace ams::fs {
                 return fsFsGetFileTimeStampRaw(this->base_fs.get(), path, reinterpret_cast<::FsTimeStampRaw *>(out));
             }
 
-            virtual Result QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, fsa::QueryType query, const char *path) {
-                return fsFsQueryEntry(this->base_fs.get(), dst, dst_size, src, src_size, path, static_cast<FsFileSystemQueryType>(query));
+            virtual Result QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, fsa::QueryId query, const char *path) {
+                return fsFsQueryEntry(this->base_fs.get(), dst, dst_size, src, src_size, path, static_cast<FsFileSystemQueryId>(query));
             }
     };
 

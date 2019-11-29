@@ -30,7 +30,7 @@ namespace ams::util::ini {
             size_t num_left;
 
             explicit FsFileContext(FsFile *f) : f(f), offset(0) {
-                u64 size;
+                s64 size;
                 R_ASSERT(fsFileGetSize(this->f, &size));
                 this->num_left = size_t(size);
             }
