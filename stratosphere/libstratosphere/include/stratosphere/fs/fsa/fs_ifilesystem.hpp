@@ -23,8 +23,8 @@ namespace ams::fs::fsa {
     class IFile;
     class IDirectory;
 
-    enum class QueryType {
-        SetArchiveBit = FsFileSystemQueryType_SetArchiveBit
+    enum class QueryId {
+        SetConcatenationFileAttribute = FsFileSystemQueryId_SetConcatenationFileAttribute
     };
 
     class IFileSystem {
@@ -122,7 +122,7 @@ namespace ams::fs::fsa {
                 return this->GetFileTimeStampRawImpl(out, path);
             }
 
-            Result QueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, QueryType query, const char *path) {
+            Result QueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, QueryId query, const char *path) {
                 R_UNLESS(path != nullptr, fs::ResultInvalidPath());
                 return this->QueryEntryImpl(dst, dst_size, src, src_size, query, path);
             }
@@ -170,7 +170,7 @@ namespace ams::fs::fsa {
                 return fs::ResultNotImplemented();
             }
 
-            virtual Result QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, QueryType query, const char *path) {
+            virtual Result QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, QueryId query, const char *path) {
                 return fs::ResultNotImplemented();
             }
 

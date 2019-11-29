@@ -123,12 +123,12 @@ namespace ams::dmnt {
 
             Result TargetIO_FileOpen(sf::Out<TargetIOFileHandle> out_hnd, const sf::InBuffer &path, int open_mode, u32 create_mode);
             Result TargetIO_FileClose(TargetIOFileHandle hnd);
-            Result TargetIO_FileRead(TargetIOFileHandle hnd, const sf::OutNonSecureBuffer &out_data, sf::Out<u32> out_read, u64 offset);
-            Result TargetIO_FileWrite(TargetIOFileHandle hnd, const sf::InNonSecureBuffer &data, sf::Out<u32> out_written, u64 offset);
+            Result TargetIO_FileRead(TargetIOFileHandle hnd, const sf::OutNonSecureBuffer &out_data, sf::Out<u32> out_read, s64 offset);
+            Result TargetIO_FileWrite(TargetIOFileHandle hnd, const sf::InNonSecureBuffer &data, sf::Out<u32> out_written, s64 offset);
             Result TargetIO_FileSetAttributes(const sf::InBuffer &path, const sf::InBuffer &attributes);
             Result TargetIO_FileGetInformation(const sf::InBuffer &path, const sf::OutArray<u64> &out_info, sf::Out<int> is_directory);
             Result TargetIO_FileSetTime(const sf::InBuffer &path, u64 create, u64 access, u64 modify);
-            Result TargetIO_FileSetSize(const sf::InBuffer &input, u64 size);
+            Result TargetIO_FileSetSize(const sf::InBuffer &input, s64 size);
             Result TargetIO_FileDelete(const sf::InBuffer &path);
             Result TargetIO_FileMove(const sf::InBuffer &src_path, const sf::InBuffer &dst_path);
         public:

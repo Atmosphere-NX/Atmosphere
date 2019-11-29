@@ -44,7 +44,7 @@ namespace ams::fs {
             };
 
             virtual Result GetSize(s64 *out_size) override {
-                return fsStorageGetSize(this->base_storage.get(), reinterpret_cast<u64 *>(out_size));
+                return fsStorageGetSize(this->base_storage.get(), out_size);
             };
 
             virtual Result SetSize(s64 size) override {

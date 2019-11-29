@@ -153,7 +153,7 @@ namespace ams::dmnt {
         return CloseFileByHandle(hnd);
     }
 
-    Result DebugMonitorService::TargetIO_FileRead(TargetIOFileHandle hnd, const sf::OutNonSecureBuffer &out_data, sf::Out<u32> out_read, u64 offset) {
+    Result DebugMonitorService::TargetIO_FileRead(TargetIOFileHandle hnd, const sf::OutNonSecureBuffer &out_data, sf::Out<u32> out_read, s64 offset) {
         FsFile f;
         size_t read = 0;
 
@@ -164,7 +164,7 @@ namespace ams::dmnt {
         return ResultSuccess();
     }
 
-    Result DebugMonitorService::TargetIO_FileWrite(TargetIOFileHandle hnd, const sf::InNonSecureBuffer &data, sf::Out<u32> out_written, u64 offset) {
+    Result DebugMonitorService::TargetIO_FileWrite(TargetIOFileHandle hnd, const sf::InNonSecureBuffer &data, sf::Out<u32> out_written, s64 offset) {
         FsFile f;
 
         R_TRY(GetFileByHandle(&f, hnd));
@@ -197,7 +197,7 @@ namespace ams::dmnt {
 
             /* N doesn't check this return code. */
             if (out_info.GetSize() > 0) {
-                fsFileGetSize(&f, &out_info[0]);
+                fsFileGetSize(&f, reinterpret_cast<s64 *>(&out_info[0]));
             }
 
             /* TODO: N does not call fsFsGetFileTimestampRaw here, but we possibly could. */
@@ -216,7 +216,7 @@ namespace ams::dmnt {
         return ResultSuccess();
     }
 
-    Result DebugMonitorService::TargetIO_FileSetSize(const sf::InBuffer &input, u64 size) {
+    Result DebugMonitorService::TargetIO_FileSetSize(const sf::InBuffer &input, s64 size) {
         /* Why does this function take in a path and not a file handle? */
         R_TRY(EnsureSdInitialized());
 
