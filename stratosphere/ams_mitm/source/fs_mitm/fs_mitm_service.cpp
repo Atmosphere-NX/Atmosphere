@@ -13,15 +13,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "../amsmitm_fs_utils.hpp"
 #include "fs_shim.h"
 #include "fs_mitm_service.hpp"
 #include "fsmitm_boot0storage.hpp"
+#include "fsmitm_layered_romfs_storage.hpp"
 
 namespace ams::mitm::fs {
 
     using namespace ams::fs;
 
     namespace {
+
+        os::Mutex g_storage_cache_lock;
+        std::unordered_map<u64, std::weak_ptr<IStorageInterface>> g_storage_cache;
+
+        std::shared_ptr<IStorageInterface> GetStorageCacheEntry(ncm::ProgramId program_id) {
+            std::scoped_lock lk(g_storage_cache_lock);
+
+            auto it = g_storage_cache.find(static_cast<u64>(program_id));
+            if (it == g_storage_cache.end()) {
+                return nullptr;
+            }
+
+            return it->second.lock();
+        }
+
+        void SetStorageCacheEntry(ncm::ProgramId program_id, std::shared_ptr<IStorageInterface> *new_intf) {
+            std::scoped_lock lk(g_storage_cache_lock);
+
+            auto it = g_storage_cache.find(static_cast<u64>(program_id));
+            if (it != g_storage_cache.end()) {
+                auto cur_intf = it->second.lock();
+                if (cur_intf != nullptr) {
+                    *new_intf = cur_intf;
+                    return;
+                }
+            }
+
+            g_storage_cache[static_cast<u64>(program_id)] = *new_intf;
+        }
 
         bool GetSettingsItemBooleanValue(const char *name, const char *key) {
             u8 tmp = 0;
@@ -72,6 +103,90 @@ namespace ams::mitm::fs {
                 /* We can only read, so create a readable storage. */
                 out.SetValue(std::make_shared<IStorageInterface>(new ReadOnlyStorageAdapter(new RemoteStorage(bis_storage))), target_object_id);
             }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result FsMitmService::OpenDataStorageByCurrentProcess(sf::Out<std::shared_ptr<IStorageInterface>> out) {
+        /* Only mitm if we should override contents for the current process. */
+        R_UNLESS(this->client_info.override_status.IsProgramSpecific(),     sm::mitm::ResultShouldForwardToSession());
+
+        /* Only mitm if there is actually an override romfs. */
+        R_UNLESS(mitm::fs::HasSdRomfsContent(this->client_info.program_id), sm::mitm::ResultShouldForwardToSession());
+
+        /* Try to open the process romfs. */
+        FsStorage data_storage;
+        R_TRY(fsOpenDataStorageByCurrentProcessFwd(this->forward_service.get(), &data_storage));
+        const sf::cmif::DomainObjectId target_object_id{data_storage.s.object_id};
+
+        /* Try to get a storage from the cache. */
+        {
+            std::shared_ptr<IStorageInterface> cached_storage = GetStorageCacheEntry(this->client_info.program_id);
+            if (cached_storage != nullptr) {
+                out.SetValue(std::move(cached_storage), target_object_id);
+                return ResultSuccess();
+            }
+        }
+
+        /* Make a new layered romfs, and cache to storage. */
+        {
+            std::shared_ptr<IStorageInterface> new_storage_intf = nullptr;
+
+            /* Create the layered storage. */
+            FsFile data_file;
+            if (R_SUCCEEDED(OpenAtmosphereSdFile(&data_file, this->client_info.program_id, "romfs.bin", OpenMode_Read))) {
+                auto *layered_storage = new LayeredRomfsStorage(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), this->client_info.program_id);
+                new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
+            } else {
+                auto *layered_storage = new LayeredRomfsStorage(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, this->client_info.program_id);
+                new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
+            }
+
+            SetStorageCacheEntry(this->client_info.program_id, &new_storage_intf);
+            out.SetValue(std::move(new_storage_intf), target_object_id);
+        }
+
+        return ResultSuccess();
+    }
+
+    Result FsMitmService::OpenDataStorageByDataId(sf::Out<std::shared_ptr<IStorageInterface>> out, ncm::ProgramId /* TODO: ncm::DataId */ data_id, u8 storage_id) {
+        /* Only mitm if we should override contents for the current process. */
+        R_UNLESS(this->client_info.override_status.IsProgramSpecific(), sm::mitm::ResultShouldForwardToSession());
+
+        /* Only mitm if there is actually an override romfs. */
+        R_UNLESS(mitm::fs::HasSdRomfsContent(data_id),                  sm::mitm::ResultShouldForwardToSession());
+
+        /* Try to open the process romfs. */
+        FsStorage data_storage;
+        R_TRY(fsOpenDataStorageByDataIdFwd(this->forward_service.get(), &data_storage, static_cast<u64>(data_id), static_cast<NcmStorageId>(storage_id)));
+        const sf::cmif::DomainObjectId target_object_id{data_storage.s.object_id};
+
+        /* Try to get a storage from the cache. */
+        {
+            std::shared_ptr<IStorageInterface> cached_storage = GetStorageCacheEntry(data_id);
+            if (cached_storage != nullptr) {
+                out.SetValue(std::move(cached_storage), target_object_id);
+                return ResultSuccess();
+            }
+        }
+
+        /* Make a new layered romfs, and cache to storage. */
+        {
+            std::shared_ptr<IStorageInterface> new_storage_intf = nullptr;
+
+            /* Create the layered storage. */
+            FsFile data_file;
+            if (R_SUCCEEDED(OpenAtmosphereSdFile(&data_file, data_id, "romfs.bin", OpenMode_Read))) {
+                auto *layered_storage = new LayeredRomfsStorage(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), data_id);
+                new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
+            } else {
+                auto *layered_storage = new LayeredRomfsStorage(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, data_id);
+                new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
+            }
+
+            SetStorageCacheEntry(data_id, &new_storage_intf);
+            out.SetValue(std::move(new_storage_intf), target_object_id);
         }
 
         return ResultSuccess();

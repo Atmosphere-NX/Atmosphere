@@ -25,5 +25,17 @@ namespace ams::mitm::fs {
     Result OpenSdFile(FsFile *out, const char *path, u32 mode);
     Result OpenAtmosphereSdFile(FsFile *out, const char *path, u32 mode);
     Result OpenAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode);
+    Result OpenAtmosphereSdRomfsFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode);
+    Result OpenAtmosphereRomfsFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode, FsFileSystem *fs);
+
+    Result OpenSdDirectory(FsDir *out, const char *path, u32 mode);
+    Result OpenAtmosphereSdDirectory(FsDir *out, const char *path, u32 mode);
+    Result OpenAtmosphereSdDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode);
+    Result OpenAtmosphereSdRomfsDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode);
+    Result OpenAtmosphereRomfsDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode, FsFileSystem *fs);
+
+    bool HasSdRomfsContent(ncm::ProgramId program_id);
+
+    Result SaveAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, void *data, size_t size);
 
 }
