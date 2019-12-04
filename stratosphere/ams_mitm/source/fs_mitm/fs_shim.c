@@ -23,3 +23,22 @@ Result fsOpenBisStorageFwd(Service* s, FsStorage* out, FsBisPartitionId partitio
         .out_objects = &out->s,
     );
 }
+
+Result fsOpenDataStorageByCurrentProcessFwd(Service* s, FsStorage* out) {
+    return serviceDispatch(s, 200,
+        .out_num_objects = 1,
+        .out_objects = &out->s,
+    );
+}
+
+Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorage* out, u64 data_id, NcmStorageId storage_id) {
+    const struct {
+        u8 storage_id;
+        u64 data_id;
+    } in = { storage_id, data_id };
+
+    return serviceDispatchIn(s, 202, in,
+        .out_num_objects = 1,
+        .out_objects = &out->s,
+    );
+}

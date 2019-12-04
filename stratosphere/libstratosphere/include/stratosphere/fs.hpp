@@ -22,4 +22,5 @@
 #include "fs/fs_remote_filesystem.hpp"
 #include "fs/fs_istorage.hpp"
 #include "fs/fs_remote_storage.hpp"
+#include "fs/fs_file_storage.hpp"
 #include "fs/fs_query_range.hpp"

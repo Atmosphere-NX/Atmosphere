@@ -13,6 +13,9 @@ extern "C" {
 
 /* Missing fsp-srv commands. */
 Result fsOpenBisStorageFwd(Service* s, FsStorage* out, FsBisPartitionId partition_id);
+Result fsOpenDataStorageByCurrentProcessFwd(Service* s, FsStorage* out);
+Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorage* out, u64 data_id, NcmStorageId storage_id);
+
 
 #ifdef __cplusplus
 }

@@ -103,7 +103,7 @@ namespace ams::mitm::bpc {
 
         /* Open payload file. */
         FsFile payload_file;
-        R_TRY(fs::OpenAtmosphereSdFile(&payload_file, "/reboot_payload.bin", FsOpenMode_Read));
+        R_TRY(fs::OpenAtmosphereSdFile(&payload_file, "/reboot_payload.bin", ams::fs::OpenMode_Read));
         ON_SCOPE_EXIT { fsFileClose(&payload_file); };
 
         /* Read payload file. Discard result. */
