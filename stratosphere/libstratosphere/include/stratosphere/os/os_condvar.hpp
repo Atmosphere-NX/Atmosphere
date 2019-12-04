@@ -19,6 +19,11 @@
 
 namespace ams::os {
 
+    enum class ConditionVariableStatus {
+        TimedOut = 0,
+        Success  = 1,
+    };
+
     class ConditionVariable {
         NON_COPYABLE(ConditionVariable);
         NON_MOVEABLE(ConditionVariable);
@@ -29,40 +34,36 @@ namespace ams::os {
                 condvarInit(&cv);
             }
 
-            Result TimedWait(::Mutex *m, u64 timeout) {
-                return condvarWaitTimeout(&cv, m, timeout);
+            ConditionVariableStatus TimedWait(::Mutex *m, u64 timeout) {
+                if (timeout > 0) {
+                    /* Abort on any error other than timed out/success. */
+                    R_TRY_CATCH(condvarWaitTimeout(&this->cv, m, timeout)) {
+                        R_CATCH(svc::ResultTimedOut) { return ConditionVariableStatus::TimedOut; }
+                    } R_END_TRY_CATCH_WITH_ASSERT;
+
+                    return ConditionVariableStatus::Success;
+                }
+                return ConditionVariableStatus::TimedOut;
             }
 
-            Result Wait(::Mutex *m) {
-                return condvarWait(&cv, m);
+            void Wait(::Mutex *m) {
+                R_ASSERT(condvarWait(&this->cv, m));
             }
 
-            Result TimedWait(os::Mutex *m, u64 timeout) {
-                return TimedWait(m->GetMutex(), timeout);
+            ConditionVariableStatus TimedWait(os::Mutex *m, u64 timeout) {
+                return this->TimedWait(m->GetMutex(), timeout);
             }
 
-            Result Wait(os::Mutex *m) {
-                return Wait(m->GetMutex());
+            void Wait(os::Mutex *m) {
+                return this->Wait(m->GetMutex());
             }
 
-            Result Wake(int num) {
-                return condvarWake(&cv, num);
+            void Signal() {
+                condvarWakeOne(&this->cv);
             }
 
-            Result WakeOne() {
-                return condvarWakeOne(&cv);
-            }
-
-            Result WakeAll() {
-                return condvarWakeAll(&cv);
-            }
-
-            Result Signal() {
-                return this->WakeOne();
-            }
-
-            Result Broadcast() {
-                return this->WakeAll();
+            void Broadcast() {
+                condvarWakeAll(&this->cv);
             }
     };
 

@@ -132,7 +132,7 @@ namespace ams::boot {
                 R_ASSERT(svcAttachDeviceAddressSpace(DeviceName_DC, g_dc_das_hnd));
 
                 /* Map the framebuffer for the DC as read-only. */
-                R_ASSERT(svcMapDeviceAddressSpaceAligned(g_dc_das_hnd, CUR_PROCESS_HANDLE, frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr, 1));
+                R_ASSERT(svcMapDeviceAddressSpaceAligned(g_dc_das_hnd, dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr, 1));
             }
         }
 
@@ -142,7 +142,7 @@ namespace ams::boot {
                 constexpr u64 DeviceName_DC = 2;
 
                 /* Unmap the framebuffer from the DC. */
-                R_ASSERT(svcUnmapDeviceAddressSpace(g_dc_das_hnd, CUR_PROCESS_HANDLE, frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr));
+                R_ASSERT(svcUnmapDeviceAddressSpace(g_dc_das_hnd, dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr));
                 /* Detach address space from the DC. */
                 R_ASSERT(svcDetachDeviceAddressSpace(DeviceName_DC, g_dc_das_hnd));
                 /* Close the address space. */

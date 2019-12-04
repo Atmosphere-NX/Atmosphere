@@ -31,7 +31,7 @@ namespace ams::map {
             uintptr_t cur_base = 0;
 
             AddressSpaceInfo address_space;
-            R_TRY(GetProcessAddressSpaceInfo(&address_space, CUR_PROCESS_HANDLE));
+            R_TRY(GetProcessAddressSpaceInfo(&address_space, dd::GetCurrentProcessHandle()));
             cur_base = address_space.aslr_base;
 
             do {
@@ -57,7 +57,7 @@ namespace ams::map {
             uintptr_t cur_base = 0, cur_end = 0;
 
             AddressSpaceInfo address_space;
-            R_TRY(GetProcessAddressSpaceInfo(&address_space, CUR_PROCESS_HANDLE));
+            R_TRY(GetProcessAddressSpaceInfo(&address_space, dd::GetCurrentProcessHandle()));
             cur_base = address_space.aslr_base;
             cur_end = cur_base + size;
 

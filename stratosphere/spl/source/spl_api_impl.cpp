@@ -88,10 +88,10 @@ namespace ams::spl::impl {
                 u32 perm;
             public:
                 DeviceAddressSpaceMapHelper(Handle h, u64 dst, u64 src, size_t sz, u32 p) : das_hnd(h), dst_addr(dst), src_addr(src), size(sz), perm(p) {
-                    R_ASSERT(svcMapDeviceAddressSpaceAligned(this->das_hnd, CUR_PROCESS_HANDLE, this->src_addr, this->size, this->dst_addr, this->perm));
+                    R_ASSERT(svcMapDeviceAddressSpaceAligned(this->das_hnd, dd::GetCurrentProcessHandle(), this->src_addr, this->size, this->dst_addr, this->perm));
                 }
                 ~DeviceAddressSpaceMapHelper() {
-                    R_ASSERT(svcUnmapDeviceAddressSpace(this->das_hnd, CUR_PROCESS_HANDLE, this->src_addr, this->size, this->dst_addr));
+                    R_ASSERT(svcUnmapDeviceAddressSpace(this->das_hnd, dd::GetCurrentProcessHandle(), this->src_addr, this->size, this->dst_addr));
                 }
         };
 
@@ -149,7 +149,7 @@ namespace ams::spl::impl {
             g_se_mapped_work_buffer_addr = WorkBufferMapBase + (work_buffer_addr % DeviceAddressSpaceAlign);
 
             /* Map the work buffer for the SE. */
-            R_ASSERT(svcMapDeviceAddressSpaceAligned(g_se_das_hnd, CUR_PROCESS_HANDLE, work_buffer_addr, sizeof(g_work_buffer), g_se_mapped_work_buffer_addr, 3));
+            R_ASSERT(svcMapDeviceAddressSpaceAligned(g_se_das_hnd, dd::GetCurrentProcessHandle(), work_buffer_addr, sizeof(g_work_buffer), g_se_mapped_work_buffer_addr, 3));
         }
 
         /* RSA OAEP implementation helpers. */

@@ -54,10 +54,6 @@ namespace ams::os {
         return process_id;
     }
 
-    NX_INLINE ProcessId GetCurrentProcessId() {
-        return GetProcessId(CUR_PROCESS_HANDLE);
-    }
-
     inline constexpr bool operator==(const ProcessId &lhs, const ProcessId &rhs) {
         return lhs.value == rhs.value;
     }

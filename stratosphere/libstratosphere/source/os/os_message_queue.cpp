@@ -17,12 +17,14 @@
 
 namespace ams::os {
 
-    MessageQueue::MessageQueue(std::unique_ptr<uintptr_t[]> buf, size_t c): buffer(std::move(buf)), capacity(c) {
-        new (GetPointer(this->waitable_object_list_storage)) impl::WaitableObjectList();
+    MessageQueue::MessageQueue(std::unique_ptr<uintptr_t[]> buf, size_t c): buffer(std::move(buf)), capacity(c), count(0), offset(0) {
+        new (GetPointer(this->waitlist_not_empty)) impl::WaitableObjectList();
+        new (GetPointer(this->waitlist_not_full))  impl::WaitableObjectList();
     }
 
     MessageQueue::~MessageQueue() {
-        GetReference(this->waitable_object_list_storage).~WaitableObjectList();
+        GetReference(this->waitlist_not_empty).~WaitableObjectList();
+        GetReference(this->waitlist_not_full).~WaitableObjectList();
     }
 
     void MessageQueue::SendInternal(uintptr_t data) {
@@ -53,7 +55,7 @@ namespace ams::os {
         return data;
     }
 
-    uintptr_t MessageQueue::PeekInternal() {
+    inline uintptr_t MessageQueue::PeekInternal() {
         /* Ensure we don't corrupt the queue, but this should never happen. */
         AMS_ASSERT(this->count > 0);
 
@@ -70,7 +72,8 @@ namespace ams::os {
 
         /* Send, signal. */
         this->SendInternal(data);
-        this->cv_not_empty.WakeAll();
+        this->cv_not_empty.Broadcast();
+        GetReference(this->waitlist_not_empty).SignalAllThreads();
     }
 
     bool MessageQueue::TrySend(uintptr_t data) {
@@ -81,7 +84,8 @@ namespace ams::os {
 
         /* Send, signal. */
         this->SendInternal(data);
-        this->cv_not_empty.WakeAll();
+        this->cv_not_empty.Broadcast();
+        GetReference(this->waitlist_not_empty).SignalAllThreads();
         return true;
     }
 
@@ -94,12 +98,13 @@ namespace ams::os {
                 return false;
             }
 
-            this->cv_not_full.TimedWait(&this->queue_lock, timeout);
+            this->cv_not_full.TimedWait(&this->queue_lock, timeout_helper.NsUntilTimeout());
         }
 
         /* Send, signal. */
         this->SendInternal(data);
-        this->cv_not_empty.WakeAll();
+        this->cv_not_empty.Broadcast();
+        GetReference(this->waitlist_not_empty).SignalAllThreads();
         return true;
     }
 
@@ -113,7 +118,8 @@ namespace ams::os {
 
         /* Send, signal. */
         this->SendNextInternal(data);
-        this->cv_not_empty.WakeAll();
+        this->cv_not_empty.Broadcast();
+        GetReference(this->waitlist_not_empty).SignalAllThreads();
     }
 
     bool MessageQueue::TrySendNext(uintptr_t data) {
@@ -124,7 +130,8 @@ namespace ams::os {
 
         /* Send, signal. */
         this->SendNextInternal(data);
-        this->cv_not_empty.WakeAll();
+        this->cv_not_empty.Broadcast();
+        GetReference(this->waitlist_not_empty).SignalAllThreads();
         return true;
     }
 
@@ -137,12 +144,13 @@ namespace ams::os {
                 return false;
             }
 
-            this->cv_not_full.TimedWait(&this->queue_lock, timeout);
+            this->cv_not_full.TimedWait(&this->queue_lock, timeout_helper.NsUntilTimeout());
         }
 
         /* Send, signal. */
         this->SendNextInternal(data);
-        this->cv_not_empty.WakeAll();
+        this->cv_not_empty.Broadcast();
+        GetReference(this->waitlist_not_empty).SignalAllThreads();
         return true;
     }
 
@@ -156,8 +164,10 @@ namespace ams::os {
 
         /* Receive, signal. */
         *out = this->ReceiveInternal();
-        this->cv_not_full.WakeAll();
+        this->cv_not_full.Broadcast();
+        GetReference(this->waitlist_not_full).SignalAllThreads();
     }
+
     bool MessageQueue::TryReceive(uintptr_t *out) {
         /* Acquire mutex, wait receivable. */
         std::scoped_lock lock(this->queue_lock);
@@ -168,7 +178,8 @@ namespace ams::os {
 
         /* Receive, signal. */
         *out = this->ReceiveInternal();
-        this->cv_not_full.WakeAll();
+        this->cv_not_full.Broadcast();
+        GetReference(this->waitlist_not_full).SignalAllThreads();
         return true;
     }
 
@@ -181,12 +192,13 @@ namespace ams::os {
                 return false;
             }
 
-            this->cv_not_empty.TimedWait(&this->queue_lock, timeout);
+            this->cv_not_empty.TimedWait(&this->queue_lock, timeout_helper.NsUntilTimeout());
         }
 
         /* Receive, signal. */
         *out = this->ReceiveInternal();
-        this->cv_not_full.WakeAll();
+        this->cv_not_full.Broadcast();
+        GetReference(this->waitlist_not_full).SignalAllThreads();
         return true;
     }
 
@@ -224,7 +236,7 @@ namespace ams::os {
                 return false;
             }
 
-            this->cv_not_empty.TimedWait(&this->queue_lock, timeout);
+            this->cv_not_empty.TimedWait(&this->queue_lock, timeout_helper.NsUntilTimeout());
         }
 
         /* Peek. */

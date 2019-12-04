@@ -13,24 +13,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 
-#pragma once
-#include <atmosphere/common.hpp>
+namespace ams {
 
-namespace ams::dd {
+    namespace {
 
-    uintptr_t QueryIoMapping(uintptr_t phys_addr, size_t size);
+        constexpr inline ::Handle GetCurrentProcessHandleImpl() {
+            return CUR_PROCESS_HANDLE;
+        }
 
-    u32 ReadRegister(uintptr_t phys_addr);
-    void WriteRegister(uintptr_t phys_addr, u32 value);
-    u32 ReadWriteRegister(uintptr_t phys_addr, u32 value, u32 mask);
+    }
 
-    /* Convenience Helper. */
+    namespace os {
 
-    inline uintptr_t GetIoMapping(uintptr_t phys_addr, size_t size) {
-        const uintptr_t io_mapping = QueryIoMapping(phys_addr, size);
-        AMS_ASSERT(io_mapping);
-        return io_mapping;
+        ::Handle __attribute__((const)) GetCurrentProcessHandle() {
+            return GetCurrentProcessHandleImpl();
+        }
+
+    }
+
+    namespace dd {
+
+        ::Handle __attribute__((const)) GetCurrentProcessHandle() {
+            return GetCurrentProcessHandleImpl();
+        }
+
     }
 
 }
