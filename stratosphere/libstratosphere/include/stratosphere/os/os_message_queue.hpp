@@ -35,21 +35,22 @@ namespace ams::os {
         NON_COPYABLE(MessageQueue);
         NON_MOVEABLE(MessageQueue);
         private:
-            util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitable_object_list_storage;
+            util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist_not_empty;
+            util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist_not_full;
             Mutex queue_lock;
             ConditionVariable cv_not_full;
             ConditionVariable cv_not_empty;
             std::unique_ptr<uintptr_t[]> buffer;
             size_t capacity;
 
-            size_t count = 0;
-            size_t offset = 0;
+            size_t count;
+            size_t offset;
         private:
-            bool IsFull() const {
+            constexpr inline bool IsFull() const {
                 return this->count >= this->capacity;
             }
 
-            bool IsEmpty() const {
+            constexpr inline bool IsEmpty() const {
                 return this->count == 0;
             }
 

@@ -18,8 +18,10 @@
 
 #include "os/os_common_types.hpp"
 #include "os/os_managed_handle.hpp"
+#include "os/os_process_handle.hpp"
 #include "os/os_mutex.hpp"
 #include "os/os_condvar.hpp"
+#include "os/os_rw_lock.hpp"
 #include "os/os_semaphore.hpp"
 #include "os/os_timeout_helper.hpp"
 #include "os/os_event.hpp"

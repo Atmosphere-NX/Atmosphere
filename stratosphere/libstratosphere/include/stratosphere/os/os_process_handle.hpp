@@ -15,22 +15,14 @@
  */
 
 #pragma once
-#include <atmosphere/common.hpp>
+#include "os_managed_handle.hpp"
 
-namespace ams::dd {
+namespace ams::os {
 
-    uintptr_t QueryIoMapping(uintptr_t phys_addr, size_t size);
+    ::Handle GetCurrentProcessHandle();
 
-    u32 ReadRegister(uintptr_t phys_addr);
-    void WriteRegister(uintptr_t phys_addr, u32 value);
-    u32 ReadWriteRegister(uintptr_t phys_addr, u32 value, u32 mask);
-
-    /* Convenience Helper. */
-
-    inline uintptr_t GetIoMapping(uintptr_t phys_addr, size_t size) {
-        const uintptr_t io_mapping = QueryIoMapping(phys_addr, size);
-        AMS_ASSERT(io_mapping);
-        return io_mapping;
+    NX_INLINE ProcessId GetCurrentProcessId() {
+        return GetProcessId(GetCurrentProcessHandle());
     }
 
 }

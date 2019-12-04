@@ -31,7 +31,7 @@ namespace ams::os::impl {
                 }
             }
 
-            void WakeupAllThreads() {
+            void BroadcastAllThreads() {
                 for (WaitableHolderBase &holder_base : this->object_list) {
                     holder_base.GetManager()->SignalAndWakeupThread(nullptr);
                 }

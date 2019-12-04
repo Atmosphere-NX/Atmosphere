@@ -90,7 +90,7 @@ namespace ams::os {
             if (this->counter != cur_counter) {
                 break;
             }
-            if (R_FAILED(this->cv.TimedWait(&this->lock, timeout_helper.NsUntilTimeout()))) {
+            if (this->cv.TimedWait(&this->lock, timeout_helper.NsUntilTimeout()) == ConditionVariableStatus::TimedOut) {
                 return false;
             }
         }

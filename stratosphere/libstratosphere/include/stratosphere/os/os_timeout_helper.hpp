@@ -41,7 +41,7 @@ namespace ams::os {
                 return (tick * 625) / 12;
             }
 
-            bool TimedOut() const {
+            inline bool TimedOut() const {
                 if (this->end_tick == 0) {
                     return true;
                 }
@@ -49,7 +49,7 @@ namespace ams::os {
                 return armGetSystemTick() >= this->end_tick;
             }
 
-            u64 NsUntilTimeout() const {
+            inline u64 NsUntilTimeout() const {
                 u64 diff = TickToNs(this->end_tick - armGetSystemTick());
 
                 if (this->TimedOut()) {

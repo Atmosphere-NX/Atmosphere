@@ -17,3 +17,4 @@
 #pragma once
 
 #include "dd/dd_io_mappings.hpp"
+#include "dd/dd_process_handle.hpp"

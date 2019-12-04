@@ -25,13 +25,25 @@ namespace ams::os::impl {
         private:
             MessageQueue *message_queue;
         private:
-            TriBool IsSignaledImpl() const {
+            constexpr inline TriBool IsSignaledImpl() const {
                 if constexpr (WaitKind == MessageQueueWaitKind::ForNotEmpty) {
                     /* ForNotEmpty. */
                     return this->message_queue->IsEmpty() ? TriBool::False : TriBool::True;
-                } else /* if constexpr (WaitKind == MessageQueueWaitKind::ForNotFull) */ {
+                } else if constexpr (WaitKind == MessageQueueWaitKind::ForNotFull) {
                     /* ForNotFull */
                     return this->message_queue->IsFull() ? TriBool::False : TriBool::True;
+                } else {
+                    static_assert(WaitKind != WaitKind);
+                }
+            }
+
+            constexpr inline WaitableObjectList &GetObjectList() const {
+                if constexpr (WaitKind == MessageQueueWaitKind::ForNotEmpty) {
+                    return GetReference(this->message_queue->waitlist_not_empty);
+                } else if constexpr (WaitKind == MessageQueueWaitKind::ForNotFull) {
+                    return GetReference(this->message_queue->waitlist_not_full);
+                } else {
+                    static_assert(WaitKind != WaitKind);
                 }
             }
         public:
@@ -46,14 +58,14 @@ namespace ams::os::impl {
             virtual TriBool LinkToObjectList() override {
                 std::scoped_lock lk(this->message_queue->queue_lock);
 
-                GetReference(this->message_queue->waitable_object_list_storage).LinkWaitableHolder(*this);
+                this->GetObjectList().LinkWaitableHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
                 std::scoped_lock lk(this->message_queue->queue_lock);
 
-                GetReference(this->message_queue->waitable_object_list_storage).UnlinkWaitableHolder(*this);
+                this->GetObjectList().UnlinkWaitableHolder(*this);
             }
     };
 
