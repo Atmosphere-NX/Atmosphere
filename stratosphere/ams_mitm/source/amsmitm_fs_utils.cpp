@@ -40,6 +40,14 @@ namespace ams::mitm::fs {
             }
         }
 
+        void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, const char *subdir, const char *src_path) {
+            if (src_path[0] == '/') {
+                std::snprintf(dst_path, dst_path_size, "/atmosphere/%s%s", subdir, src_path);
+            } else {
+                std::snprintf(dst_path, dst_path_size, "/atmosphere/%s/%s", subdir, src_path);
+            }
+        }
+
         void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *src_path) {
             if (src_path[0] == '/') {
                 std::snprintf(dst_path, dst_path_size, "/atmosphere/contents/%016lx%s", static_cast<u64>(program_id), src_path);
@@ -146,6 +154,15 @@ namespace ams::mitm::fs {
         return fsFsOpenDirectory(fs, fixed_path, mode, out);
     }
 
+    /* TODO: Remove this in Atmosphere 0.10.1. */
+    Result RenameProgramDirectoryForCompatibility(const char *dir_name) {
+        R_TRY(EnsureSdInitialized());
+        char titles_fixed_path[ams::fs::EntryNameLengthMax + 1];
+        char contents_fixed_path[ams::fs::EntryNameLengthMax + 1];
+        FormatAtmosphereSdPath(titles_fixed_path, sizeof(titles_fixed_path), "titles", dir_name);
+        FormatAtmosphereSdPath(contents_fixed_path, sizeof(contents_fixed_path), "contents", dir_name);
+        return fsFsRenameDirectory(&g_sd_filesystem, titles_fixed_path, contents_fixed_path);
+    }
 
     bool HasSdRomfsContent(ncm::ProgramId program_id) {
         /* Check if romfs.bin is present. */

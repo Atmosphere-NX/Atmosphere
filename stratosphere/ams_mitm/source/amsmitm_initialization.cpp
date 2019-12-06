@@ -65,6 +65,17 @@ namespace ams::mitm {
         /* Emummc file protection. */
         FsFile g_emummc_file;
 
+        constexpr inline bool IsHexadecimal(const char *str) {
+            while (*str) {
+                if (std::isxdigit(static_cast<unsigned char>(*str))) {
+                    str++;
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         void GetBackupFileName(char *dst, size_t dst_size, const char *serial_number, const char *fn) {
             if (strlen(serial_number) > 0) {
                 std::snprintf(dst, dst_size, "automatic_backups/%s_%s", serial_number, fn);
@@ -167,6 +178,23 @@ namespace ams::mitm {
             }
         }
 
+        void RenameTitlesDirectoryProgramFoldersForCompatibility() {
+            FsDir titles_dir;
+            if (R_FAILED(mitm::fs::OpenAtmosphereSdDirectory(&titles_dir, "/titles", ams::fs::OpenDirectoryMode_Directory))) {
+                return;
+            }
+            ON_SCOPE_EXIT { fsDirClose(&titles_dir); };
+
+            ams::fs::DirectoryEntry dir_entry;
+            s64 read_entries;
+            while (R_SUCCEEDED(fsDirRead(&titles_dir, &read_entries, 1, &dir_entry)) && read_entries == 1) {
+                if (strlen(dir_entry.name) == 2 * sizeof(ncm::ProgramId) && IsHexadecimal(dir_entry.name)) {
+                    /* We found a program directory, try to rename it. Failure is allowed. */
+                    mitm::fs::RenameProgramDirectoryForCompatibility(dir_entry.name);
+                }
+            }
+        }
+
         /* Initialization implementation */
         void InitializeThreadFunc(void *arg) {
             /* Wait for the SD card to be ready. */
@@ -181,6 +209,10 @@ namespace ams::mitm {
 
             /* Backup Calibration Binary and BIS keys. */
             CreateAutomaticBackups();
+
+            /* Rename program folders in the titles directory. */
+            /* TODO: Remove this in Atmosphere 0.10.1. */
+            RenameTitlesDirectoryProgramFoldersForCompatibility();
 
             /* If we're emummc, persist a write-handle to prevent other processes from touching the image. */
             if (emummc::IsActive()) {

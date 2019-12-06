@@ -51,7 +51,7 @@ static char g_bct0_buffer[BCTO_MAX_SIZE];
 "[stratosphere]\n"
 
 static const char *load_config(void) {
-    if (!read_from_file(g_bct0_buffer, BCTO_MAX_SIZE, "atmosphere/BCT.ini")) {
+    if (!read_from_file(g_bct0_buffer, BCTO_MAX_SIZE, "atmosphere/config/BCT.ini")) {
         print(SCREEN_LOG_LEVEL_DEBUG, "Failed to read BCT0 from SD!\n");
         print(SCREEN_LOG_LEVEL_DEBUG, "Using default BCT0!\n");
         memcpy(g_bct0_buffer, DEFAULT_BCT0, sizeof(DEFAULT_BCT0));
