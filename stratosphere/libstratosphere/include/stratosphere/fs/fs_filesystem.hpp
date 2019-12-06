@@ -43,6 +43,7 @@ namespace ams::fs {
     };
 
     enum CreateOption {
+        CreateOption_None    = 0,
         CreateOption_BigFile = ::FsCreateOption_BigFile,
     };
 

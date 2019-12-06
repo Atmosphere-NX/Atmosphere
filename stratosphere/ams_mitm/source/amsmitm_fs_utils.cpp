@@ -66,33 +66,55 @@ namespace ams::mitm::fs {
         R_ASSERT(fsOpenSdCardFileSystem(&g_sd_filesystem));
     }
 
+    Result CreateSdFile(const char *path, s64 size, s32 option) {
+        R_TRY(EnsureSdInitialized());
+        return fsFsCreateFile(&g_sd_filesystem, path, size, option);
+    }
+
+    Result CreateAtmosphereSdFile(const char *path, s64 size, s32 option) {
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
+        FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), path);
+        return CreateSdFile(fixed_path, size, option);
+    }
+
     Result OpenSdFile(FsFile *out, const char *path, u32 mode) {
         R_TRY(EnsureSdInitialized());
         return fsFsOpenFile(&g_sd_filesystem, path, mode, out);
     }
 
     Result OpenAtmosphereSdFile(FsFile *out, const char *path, u32 mode) {
-        char fixed_path[FS_MAX_PATH];
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), path);
         return OpenSdFile(out, fixed_path, mode);
     }
 
     Result OpenAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode) {
-        char fixed_path[FS_MAX_PATH];
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), program_id, path);
         return OpenSdFile(out, fixed_path, mode);
     }
 
     Result OpenAtmosphereSdRomfsFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode) {
-        char fixed_path[FS_MAX_PATH];
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereRomfsPath(fixed_path, sizeof(fixed_path), program_id, path);
         return OpenSdFile(out, fixed_path, mode);
     }
 
     Result OpenAtmosphereRomfsFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode, FsFileSystem *fs) {
-        char fixed_path[FS_MAX_PATH];
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereRomfsPath(fixed_path, sizeof(fixed_path), program_id, path);
         return fsFsOpenFile(fs, fixed_path, mode, out);
+    }
+
+    Result CreateSdDirectory(const char *path) {
+        R_TRY(EnsureSdInitialized());
+        return fsFsCreateDirectory(&g_sd_filesystem, path);
+    }
+
+    Result CreateAtmosphereSdDirectory(const char *path) {
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
+        FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), path);
+        return CreateSdDirectory(fixed_path);
     }
 
     Result OpenSdDirectory(FsDir *out, const char *path, u32 mode) {
@@ -101,25 +123,25 @@ namespace ams::mitm::fs {
     }
 
     Result OpenAtmosphereSdDirectory(FsDir *out, const char *path, u32 mode) {
-        char fixed_path[FS_MAX_PATH];
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), path);
         return OpenSdDirectory(out, fixed_path, mode);
     }
 
     Result OpenAtmosphereSdDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode) {
-        char fixed_path[FS_MAX_PATH];
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), program_id, path);
         return OpenSdDirectory(out, fixed_path, mode);
     }
 
     Result OpenAtmosphereSdRomfsDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode) {
-        char fixed_path[FS_MAX_PATH];
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereRomfsPath(fixed_path, sizeof(fixed_path), program_id, path);
         return OpenSdDirectory(out, fixed_path, mode);
     }
 
     Result OpenAtmosphereRomfsDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode, FsFileSystem *fs) {
-        char fixed_path[FS_MAX_PATH];
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereRomfsPath(fixed_path, sizeof(fixed_path), program_id, path);
         return fsFsOpenDirectory(fs, fixed_path, mode, out);
     }
@@ -150,7 +172,7 @@ namespace ams::mitm::fs {
     Result SaveAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, void *data, size_t size) {
         R_TRY(EnsureSdInitialized());
 
-        char fixed_path[FS_MAX_PATH];
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), program_id, path);
 
         /* Unconditionally create. */
