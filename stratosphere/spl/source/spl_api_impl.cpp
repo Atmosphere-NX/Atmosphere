@@ -102,7 +102,7 @@ namespace ams::spl::impl {
 
         Handle g_se_das_hnd;
         u32 g_se_mapped_work_buffer_addr;
-        u8 __attribute__((aligned(0x1000))) g_work_buffer[2 * WorkBufferSizeMax];
+        alignas(os::MemoryPageSize) u8 g_work_buffer[2 * WorkBufferSizeMax];
 
         os::Mutex g_async_op_lock;
 
@@ -597,10 +597,10 @@ namespace ams::spl::impl {
         /* We can only map 0x400000 aligned buffers for the SE. With that in mind, we have some math to do. */
         const uintptr_t src_addr = reinterpret_cast<uintptr_t>(src);
         const uintptr_t dst_addr = reinterpret_cast<uintptr_t>(dst);
-        const uintptr_t src_addr_page_aligned = util::AlignDown(src_addr, 0x1000);
-        const uintptr_t dst_addr_page_aligned = util::AlignDown(dst_addr, 0x1000);
-        const size_t src_size_page_aligned = util::AlignUp(src_addr + src_size, 0x1000) - src_addr_page_aligned;
-        const size_t dst_size_page_aligned = util::AlignUp(dst_addr + dst_size, 0x1000) - dst_addr_page_aligned;
+        const uintptr_t src_addr_page_aligned = util::AlignDown(src_addr, os::MemoryPageSize);
+        const uintptr_t dst_addr_page_aligned = util::AlignDown(dst_addr, os::MemoryPageSize);
+        const size_t src_size_page_aligned = util::AlignUp(src_addr + src_size, os::MemoryPageSize) - src_addr_page_aligned;
+        const size_t dst_size_page_aligned = util::AlignUp(dst_addr + dst_size, os::MemoryPageSize) - dst_addr_page_aligned;
         const u32 src_se_map_addr = CryptAesInMapBase + (src_addr_page_aligned % DeviceAddressSpaceAlign);
         const u32 dst_se_map_addr = CryptAesOutMapBase + (dst_addr_page_aligned % DeviceAddressSpaceAlign);
         const u32 src_se_addr = CryptAesInMapBase + (src_addr % DeviceAddressSpaceAlign);

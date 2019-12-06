@@ -25,6 +25,7 @@ namespace ams::os {
     class InterruptEvent;
     class Thread;
     class MessageQueue;
+    class Semaphore;
 
     namespace impl {
 
@@ -47,6 +48,7 @@ namespace ams::os {
             WaitableHolder(SystemEvent *event);
             WaitableHolder(InterruptEvent *event);
             WaitableHolder(Thread *thread);
+            WaitableHolder(Semaphore *semaphore);
             WaitableHolder(MessageQueue *message_queue, MessageQueueWaitKind wait_kind);
 
             ~WaitableHolder();

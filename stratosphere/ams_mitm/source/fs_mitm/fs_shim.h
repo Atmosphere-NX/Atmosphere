@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 /* Missing fsp-srv commands. */
+Result fsOpenSdCardFileSystemFwd(Service* s, FsFileSystem* out);
 Result fsOpenBisStorageFwd(Service* s, FsStorage* out, FsBisPartitionId partition_id);
 Result fsOpenDataStorageByCurrentProcessFwd(Service* s, FsStorage* out);
 Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorage* out, u64 data_id, NcmStorageId storage_id);

@@ -18,6 +18,8 @@
 
 namespace ams::fs {
 
+    constexpr inline size_t EntryNameLengthMax = 0x300;
+
     using DirectoryEntry = ::FsDirectoryEntry;
 
 }

@@ -54,15 +54,9 @@ namespace ams::updater {
 
         /* Implementations. */
         Result ValidateWorkBuffer(const void *work_buffer, size_t work_buffer_size) {
-            if (work_buffer_size < BctSize + EksSize) {
-                return ResultTooSmallWorkBuffer();
-            }
-            if (!util::IsAligned(work_buffer, 0x1000)) {
-                return ResultNotAlignedWorkBuffer();
-            }
-            if (util::IsAligned(work_buffer_size, 0x200)) {
-                return ResultNotAlignedWorkBuffer();
-            }
+            R_UNLESS(work_buffer_size >= BctSize + EksSize,            ResultTooSmallWorkBuffer());
+            R_UNLESS(util::IsAligned(work_buffer, os::MemoryPageSize), ResultNotAlignedWorkBuffer());
+            R_UNLESS(util::IsAligned(work_buffer_size, 0x200),         ResultNotAlignedWorkBuffer());
             return ResultSuccess();
         }
 

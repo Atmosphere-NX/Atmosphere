@@ -25,7 +25,7 @@ namespace ams::mitm {
         public: \
             static constexpr size_t ThreadPriority = prio; \
             static constexpr size_t StackSize = ss; \
-            alignas(0x1000) static inline u8 Stack[StackSize]; \
+            alignas(os::MemoryPageSize) static inline u8 Stack[StackSize]; \
         public: \
             static void ThreadFunction(void *); \
     }

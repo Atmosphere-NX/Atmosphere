@@ -21,7 +21,7 @@ namespace ams::creport {
 
     class CrashReport {
         private:
-            static constexpr size_t DyingMessageSizeMax = 0x1000;
+            static constexpr size_t DyingMessageSizeMax = os::MemoryPageSize;
         private:
             Handle debug_handle = INVALID_HANDLE;
             bool has_extra_info = true;

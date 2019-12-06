@@ -34,8 +34,8 @@ namespace ams::mitm::bpc {
         };
 
         /* Globals. */
-        alignas(0x1000) u8 g_work_page[0x1000];
-        alignas(0x1000) u8 g_reboot_payload[IramPayloadMaxSize];
+        alignas(os::MemoryPageSize) u8 g_work_page[os::MemoryPageSize];
+        alignas(os::MemoryPageSize) u8 g_reboot_payload[IramPayloadMaxSize];
         RebootType g_reboot_type = RebootType::ToRcm;
 
         /* Helpers. */
@@ -54,9 +54,9 @@ namespace ams::mitm::bpc {
             ClearIram();
 
             /* Copy in payload. */
-            for (size_t ofs = 0; ofs < sizeof(g_reboot_payload); ofs += 0x1000) {
-                std::memcpy(g_work_page, &g_reboot_payload[ofs], std::min(sizeof(g_reboot_payload) - ofs, size_t(0x1000)));
-                exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, 0x1000);
+            for (size_t ofs = 0; ofs < sizeof(g_reboot_payload); ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, &g_reboot_payload[ofs], std::min(sizeof(g_reboot_payload) - ofs, sizeof(g_work_page)));
+                exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 
             /* Copy in fatal error context, if relevant. */

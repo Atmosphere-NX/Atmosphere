@@ -191,24 +191,24 @@ namespace ams::ro::impl {
                 const u64 bss_size = header->GetBssSize();
 
                 /* Validate sizes meet expected. */
-                R_UNLESS(nro_size == expected_nro_size,      ResultInvalidNro());
-                R_UNLESS(bss_size == expected_bss_size,      ResultInvalidNro());
+                R_UNLESS(nro_size == expected_nro_size, ResultInvalidNro());
+                R_UNLESS(bss_size == expected_bss_size, ResultInvalidNro());
 
                 /* Validate all sizes are aligned. */
-                R_UNLESS(util::IsAligned(text_size, 0x1000), ResultInvalidNro());
-                R_UNLESS(util::IsAligned(ro_size,   0x1000), ResultInvalidNro());
-                R_UNLESS(util::IsAligned(rw_size,   0x1000), ResultInvalidNro());
-                R_UNLESS(util::IsAligned(bss_size,  0x1000), ResultInvalidNro());
+                R_UNLESS(util::IsAligned(text_size, os::MemoryPageSize), ResultInvalidNro());
+                R_UNLESS(util::IsAligned(ro_size,   os::MemoryPageSize), ResultInvalidNro());
+                R_UNLESS(util::IsAligned(rw_size,   os::MemoryPageSize), ResultInvalidNro());
+                R_UNLESS(util::IsAligned(bss_size,  os::MemoryPageSize), ResultInvalidNro());
 
                 /* Validate sections are in order. */
-                R_UNLESS(text_ofs <= ro_ofs,                 ResultInvalidNro());
-                R_UNLESS(ro_ofs   <= rw_ofs,                 ResultInvalidNro());
+                R_UNLESS(text_ofs <= ro_ofs, ResultInvalidNro());
+                R_UNLESS(ro_ofs   <= rw_ofs, ResultInvalidNro());
 
                 /* Validate sections are sequential and contiguous. */
-                R_UNLESS(text_ofs == 0,                      ResultInvalidNro());
-                R_UNLESS(text_ofs + text_size == ro_ofs,     ResultInvalidNro());
-                R_UNLESS(ro_ofs + ro_size     == rw_ofs,     ResultInvalidNro());
-                R_UNLESS(rw_ofs + rw_size     == nro_size,   ResultInvalidNro());
+                R_UNLESS(text_ofs == 0,                    ResultInvalidNro());
+                R_UNLESS(text_ofs + text_size == ro_ofs,   ResultInvalidNro());
+                R_UNLESS(ro_ofs + ro_size     == rw_ofs,   ResultInvalidNro());
+                R_UNLESS(rw_ofs + rw_size     == nro_size, ResultInvalidNro());
 
                 /* Verify NRO hash. */
                 R_TRY(this->ValidateHasNroHash(header));
@@ -287,10 +287,10 @@ namespace ams::ro::impl {
         }
 
         constexpr inline Result ValidateAddressAndSize(u64 address, u64 size) {
-            R_UNLESS(util::IsAligned(address, 0x1000), ResultInvalidAddress());
-            R_UNLESS(size != 0,                        ResultInvalidSize());
-            R_UNLESS(util::IsAligned(size, 0x1000),    ResultInvalidSize());
-            R_UNLESS(address < address + size,         ResultInvalidSize());
+            R_UNLESS(util::IsAligned(address, os::MemoryPageSize), ResultInvalidAddress());
+            R_UNLESS(size != 0,                                    ResultInvalidSize());
+            R_UNLESS(util::IsAligned(size, os::MemoryPageSize),    ResultInvalidSize());
+            R_UNLESS(address < address + size,                     ResultInvalidSize());
             return ResultSuccess();
         }
 
@@ -393,7 +393,7 @@ namespace ams::ro::impl {
         AMS_ASSERT(context != nullptr);
 
         /* Validate address. */
-        R_UNLESS(util::IsAligned(nrr_address, 0x1000), ResultInvalidAddress());
+        R_UNLESS(util::IsAligned(nrr_address, os::MemoryPageSize), ResultInvalidAddress());
 
         /* Check the NRR is loaded. */
         NrrInfo *nrr_info = nullptr;
@@ -461,7 +461,7 @@ namespace ams::ro::impl {
         AMS_ASSERT(context != nullptr);
 
         /* Validate address. */
-        R_UNLESS(util::IsAligned(nro_address, 0x1000), ResultInvalidAddress());
+        R_UNLESS(util::IsAligned(nro_address, os::MemoryPageSize), ResultInvalidAddress());
 
         /* Check the NRO is loaded. */
         NroInfo *nro_info = nullptr;

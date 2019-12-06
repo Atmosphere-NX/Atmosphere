@@ -78,6 +78,9 @@ namespace ams::fs::fsa {
             Result OperateRange(OperationId op_id, s64 offset, s64 size) {
                 return this->OperateRangeImpl(nullptr, 0, op_id, offset, size, nullptr, 0);
             }
+        public:
+            /* TODO: This is a hack to allow the mitm API to work. Find a better way? */
+            virtual sf::cmif::DomainObjectId GetDomainObjectId() const = 0;
         protected:
             /* ...? */
         private:

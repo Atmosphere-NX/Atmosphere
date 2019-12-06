@@ -57,6 +57,10 @@ namespace ams::fs {
                 /* TODO: How should this be handled? */
                 return fs::ResultNotImplemented();
             }
+        public:
+            virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
+                return sf::cmif::DomainObjectId{serviceGetObjectId(&this->base_file->s)};
+            }
     };
 
     class RemoteDirectory : public fsa::IDirectory {
@@ -77,6 +81,10 @@ namespace ams::fs {
 
             virtual Result GetEntryCountImpl(s64 *out) override final {
                 return fsDirGetEntryCount(this->base_dir.get(), out);
+            }
+        public:
+            virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
+                return sf::cmif::DomainObjectId{serviceGetObjectId(&this->base_dir->s)};
             }
     };
 

@@ -19,7 +19,7 @@ namespace ams::dd {
 
     uintptr_t QueryIoMapping(uintptr_t phys_addr, size_t size) {
         u64 virtual_addr;
-        const u64 aligned_addr = util::AlignDown(phys_addr, 0x1000);
+        const u64 aligned_addr = util::AlignDown(phys_addr, os::MemoryPageSize);
         const size_t offset = phys_addr - aligned_addr;
         const u64 aligned_size = size + offset;
         R_TRY_CATCH(svcQueryIoMapping(&virtual_addr, aligned_addr, aligned_size)) {

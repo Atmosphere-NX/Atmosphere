@@ -16,6 +16,7 @@
 
 #pragma once
 #include "os_common_types.hpp"
+#include "os_memory_common.hpp"
 
 namespace ams::os {
 
@@ -62,9 +63,9 @@ namespace ams::os {
     class StaticThread {
         NON_COPYABLE(StaticThread);
         NON_MOVEABLE(StaticThread);
-        static_assert(util::IsAligned(StackSize, 0x1000), "StaticThread must have aligned resource size");
+        static_assert(util::IsAligned(StackSize, os::MemoryPageSize), "StaticThread must have aligned resource size");
         private:
-            alignas(0x1000) u8 stack_mem[StackSize];
+            alignas(os::MemoryPageSize) u8 stack_mem[StackSize];
             ::Thread thr;
         public:
             constexpr StaticThread() : stack_mem{}, thr{} { /* ... */ }

@@ -51,3 +51,5 @@
 
 /* Include FS last. */
 #include "stratosphere/fs.hpp"
+#include "stratosphere/fssrv.hpp"
+#include "stratosphere/fssystem.hpp"

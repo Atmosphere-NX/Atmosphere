@@ -21,7 +21,7 @@ namespace ams::boot {
     namespace {
 
         /* Globals. */
-        alignas(0x1000) u8 g_boot_image_work_buffer[0x10000];
+        alignas(os::MemoryPageSize) u8 g_boot_image_work_buffer[0x10000];
 
     }
 

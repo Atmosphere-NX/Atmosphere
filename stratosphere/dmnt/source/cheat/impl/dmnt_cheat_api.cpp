@@ -50,9 +50,9 @@ namespace ams::dmnt::cheat::impl {
                 CheatEntry cheat_entries[MaxCheatCount] = {};
                 std::map<u64, FrozenAddressValue> frozen_addresses_map;
 
-                alignas(0x1000) u8 detect_thread_stack[ThreadStackSize] = {};
-                alignas(0x1000) u8 debug_events_thread_stack[ThreadStackSize] = {};
-                alignas(0x1000) u8 vm_thread_stack[ThreadStackSize] = {};
+                alignas(os::MemoryPageSize) u8 detect_thread_stack[ThreadStackSize] = {};
+                alignas(os::MemoryPageSize) u8 debug_events_thread_stack[ThreadStackSize] = {};
+                alignas(os::MemoryPageSize) u8 vm_thread_stack[ThreadStackSize] = {};
             private:
                 static void DetectLaunchThread(void *_this);
                 static void VirtualMachineThread(void *_this);
