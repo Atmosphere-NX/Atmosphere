@@ -30,7 +30,7 @@ namespace ams::updater {
 
     Result BisSave::Initialize(void *work_buffer, size_t work_buffer_size) {
         AMS_ASSERT(work_buffer_size >= SaveSize);
-        AMS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(work_buffer), 0x1000));
+        AMS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(work_buffer), os::MemoryPageSize));
         AMS_ASSERT(util::IsAligned(work_buffer_size, 0x200));
 
         R_TRY(this->accessor.Initialize());

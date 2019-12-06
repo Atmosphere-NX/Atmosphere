@@ -15,34 +15,41 @@
  */
 
 #pragma once
-#include "os_common_types.hpp"
+#include "os_mutex.hpp"
+#include "os_condvar.hpp"
 
 namespace ams::os {
 
+    namespace impl {
+
+        class WaitableObjectList;
+        class WaitableHolderOfSemaphore;
+
+    }
+
     class Semaphore {
+        friend class impl::WaitableHolderOfSemaphore;
         NON_COPYABLE(Semaphore);
         NON_MOVEABLE(Semaphore);
         private:
-            ::Semaphore s;
+            util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist;
+            os::Mutex mutex;
+            os::ConditionVariable condvar;
+            int count;
+            int max_count;
         public:
-            Semaphore() {
-                semaphoreInit(&s, 0);
-            }
+            explicit Semaphore(int c, int mc);
+            ~Semaphore();
 
-            Semaphore(u64 c) {
-                semaphoreInit(&s, c);
-            }
+            void Acquire();
+            bool TryAcquire();
+            bool TimedAcquire(u64 timeout);
 
-            void Signal() {
-                semaphoreSignal(&s);
-            }
+            void Release();
+            void Release(int count);
 
-            void Wait() {
-                semaphoreWait(&s);
-            }
-
-            bool TryWait() {
-                return semaphoreTryWait(&s);
+            constexpr inline int GetCurrentCount() const {
+                return this->count;
             }
     };
 

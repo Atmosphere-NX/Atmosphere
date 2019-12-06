@@ -27,7 +27,7 @@ namespace ams::boot {
         constexpr size_t IramPayloadMaxSize = 0x2E000;
 
         /* Globals. */
-        u8 __attribute__ ((aligned (0x1000))) g_work_page[0x1000];
+        alignas(os::MemoryPageSize) u8 g_work_page[os::MemoryPageSize];
 
         /* Helpers. */
         void ClearIram() {
@@ -45,9 +45,9 @@ namespace ams::boot {
             ClearIram();
 
             /* Copy in payload. */
-            for (size_t ofs = 0; ofs < fusee_primary_bin_size; ofs += 0x1000) {
-                std::memcpy(g_work_page, &fusee_primary_bin[ofs], std::min(static_cast<size_t>(fusee_primary_bin_size - ofs), size_t(0x1000)));
-                exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, 0x1000);
+            for (size_t ofs = 0; ofs < fusee_primary_bin_size; ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, &fusee_primary_bin[ofs], std::min(static_cast<size_t>(fusee_primary_bin_size - ofs), sizeof(g_work_page)));
+                exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 
 

@@ -24,14 +24,14 @@ namespace ams::dmnt::cheat::impl {
         class DebugEventsManager {
             public:
                 static constexpr size_t NumCores = 4;
-                static constexpr size_t ThreadStackSize = 0x1000;
+                static constexpr size_t ThreadStackSize = os::MemoryPageSize;
                 static constexpr size_t ThreadPriority = 24;
             private:
                 std::array<os::MessageQueue, NumCores> message_queues;
                 std::array<os::Thread, NumCores> threads;
                 os::Event continued_event;
 
-                alignas(0x1000) u8 thread_stacks[NumCores][ThreadStackSize];
+                alignas(os::MemoryPageSize) u8 thread_stacks[NumCores][ThreadStackSize];
             private:
                 static void PerCoreThreadFunction(void *_this) {
                     /* This thread will wait on the appropriate message queue. */

@@ -229,7 +229,7 @@ namespace ams::creport {
         }
 
         /* We want to read the last two pages of .rodata. */
-        static u8 s_last_rodata_pages[2 * 0x1000];
+        static u8 s_last_rodata_pages[2 * os::MemoryPageSize];
         const size_t read_size = mi.size >= sizeof(s_last_rodata_pages) ? sizeof(s_last_rodata_pages) : (sizeof(s_last_rodata_pages) / 2);
         if (R_FAILED(svcReadDebugProcessMemory(s_last_rodata_pages, this->debug_handle, mi.addr + mi.size - read_size, read_size))) {
             return;

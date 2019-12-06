@@ -42,18 +42,19 @@ namespace ams::boot {
         constexpr size_t FrameBufferHeight = 1280;
         constexpr size_t FrameBufferSize = FrameBufferHeight * FrameBufferWidth * sizeof(u32);
 
-        constexpr uintptr_t Disp1Base = 0x54200000ul;
-        constexpr uintptr_t DsiBase = 0x54300000ul;
-        constexpr uintptr_t ClkRstBase = 0x60006000ul;
-        constexpr uintptr_t GpioBase = 0x6000D000ul;
+        constexpr uintptr_t Disp1Base   = 0x54200000ul;
+        constexpr uintptr_t DsiBase     = 0x54300000ul;
+        constexpr uintptr_t ClkRstBase  = 0x60006000ul;
+        constexpr uintptr_t GpioBase    = 0x6000D000ul;
         constexpr uintptr_t ApbMiscBase = 0x70000000ul;
         constexpr uintptr_t MipiCalBase = 0x700E3000ul;
-        constexpr size_t Disp1Size = 0x3000;
-        constexpr size_t DsiSize = 0x1000;
-        constexpr size_t ClkRstSize = 0x1000;
-        constexpr size_t GpioSize = 0x1000;
-        constexpr size_t ApbMiscSize = 0x1000;
-        constexpr size_t MipiCalSize = 0x1000;
+
+        constexpr size_t Disp1Size   = 3 * os::MemoryPageSize;
+        constexpr size_t DsiSize     =     os::MemoryPageSize;
+        constexpr size_t ClkRstSize  =     os::MemoryPageSize;
+        constexpr size_t GpioSize    =     os::MemoryPageSize;
+        constexpr size_t ApbMiscSize =     os::MemoryPageSize;
+        constexpr size_t MipiCalSize =     os::MemoryPageSize;
 
         /* Types. */
 

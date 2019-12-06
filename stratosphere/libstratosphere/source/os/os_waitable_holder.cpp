@@ -70,6 +70,14 @@ namespace ams::os {
         this->user_data = 0;
     }
 
+    WaitableHolder::WaitableHolder(Semaphore *semaphore) {
+        /* Initialize appropriate holder. */
+        new (GetPointer(this->impl_storage)) impl::WaitableHolderOfSemaphore(semaphore);
+
+        /* Set user-data. */
+        this->user_data = 0;
+    }
+
     WaitableHolder::WaitableHolder(MessageQueue *message_queue, MessageQueueWaitKind wait_kind) {
         /* Initialize appropriate holder. */
         switch (wait_kind) {

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "os/os_common_types.hpp"
+#include "os/os_memory_common.hpp"
 #include "os/os_managed_handle.hpp"
 #include "os/os_process_handle.hpp"
 #include "os/os_mutex.hpp"

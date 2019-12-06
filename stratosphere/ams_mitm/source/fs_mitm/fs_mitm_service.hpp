@@ -16,9 +16,12 @@
 
 #pragma once
 #include <stratosphere.hpp>
-#include "fsmitm_istorage_interface.hpp"
+#include <stratosphere/fssrv/fssrv_interface_adapters.hpp>
 
 namespace ams::mitm::fs {
+
+    using IStorageInterface    = ams::fssrv::impl::StorageInterfaceAdapter;
+    using IFileSystemInterface = ams::fssrv::impl::FileSystemInterfaceAdapter;
 
     /* TODO: Consider re-enabling the mitm flag logic. */
 
@@ -59,7 +62,7 @@ namespace ams::mitm::fs {
             /* Overridden commands. */
             /* Result OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInterface>> out, u64 program_id, u32 filesystem_type); */
             /* Result OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterface>> out, InPointer<char> path, u64 program_id, u32 filesystem_type); */
-            /* Result OpenSdCardFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out); */
+            Result OpenSdCardFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out);
             /* Result OpenSaveDataFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out, u8 space_id, FsSave save_struct); */
             Result OpenBisStorage(sf::Out<std::shared_ptr<IStorageInterface>> out, u32 bis_partition_id);
             Result OpenDataStorageByCurrentProcess(sf::Out<std::shared_ptr<IStorageInterface>> out);
@@ -68,7 +71,7 @@ namespace ams::mitm::fs {
             DEFINE_SERVICE_DISPATCH_TABLE {
                 /* MAKE_SERVICE_COMMAND_META(OpenFileSystemWithPatch, hos::Version_200), */
                 /* MAKE_SERVICE_COMMAND_META(OpenFileSystemWithId,    hos::Version_200), */
-                /* MAKE_SERVICE_COMMAND_META(OpenSdCardFileSystem), */
+                MAKE_SERVICE_COMMAND_META(OpenSdCardFileSystem),
                 /* MAKE_SERVICE_COMMAND_META(OpenSaveDataFileSystem), */
                 MAKE_SERVICE_COMMAND_META(OpenBisStorage),
                 MAKE_SERVICE_COMMAND_META(OpenDataStorageByCurrentProcess),

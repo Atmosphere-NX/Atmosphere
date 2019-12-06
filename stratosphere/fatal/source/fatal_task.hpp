@@ -36,9 +36,9 @@ namespace ams::fatal::srv {
     class ITaskWithStack : public ITask {
         public:
             static constexpr size_t StackSize = _StackSize;
-            static_assert(util::IsAligned(StackSize, 0x1000), "StackSize alignment");
+            static_assert(util::IsAligned(StackSize, os::MemoryPageSize), "StackSize alignment");
         protected:
-            alignas(0x1000) u8 stack_mem[StackSize] = {};
+            alignas(os::MemoryPageSize) u8 stack_mem[StackSize] = {};
         public:
             virtual u8 *GetStack() override final {
                 return this->stack_mem;

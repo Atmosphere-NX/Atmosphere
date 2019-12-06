@@ -34,7 +34,7 @@ namespace ams::boot {
 
         /* Helpers. */
         bool IsUsbClockValid() {
-            uintptr_t car_regs = dd::GetIoMapping(0x60006000ul, 0x1000);
+            uintptr_t car_regs = dd::GetIoMapping(0x60006000ul, os::MemoryPageSize);
 
             const u32 pllu = reg::Read(car_regs + 0xC0);
             const u32 utmip = reg::Read(car_regs + 0x480);

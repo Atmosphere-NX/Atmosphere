@@ -27,8 +27,6 @@ namespace ams::ldr {
     namespace {
 
         /* Convenience defines. */
-        constexpr size_t BaseAddressAlignment = 0x200000;
-        constexpr size_t SystemResourceSizeAlignment = 0x200000;
         constexpr size_t SystemResourceSizeMax = 0x1FE00000;
 
         /* Types. */
@@ -416,7 +414,7 @@ namespace ams::ldr {
             /* 3.0.0+ System Resource Size. */
             if (hos::GetVersion() >= hos::Version_300) {
                 /* Validate size is aligned. */
-                R_UNLESS(util::IsAligned(meta->npdm->system_resource_size, SystemResourceSizeAlignment), ResultInvalidSize());
+                R_UNLESS(util::IsAligned(meta->npdm->system_resource_size, os::MemoryBlockUnitSize), ResultInvalidSize());
 
                 /* Validate system resource usage. */
                 if (meta->npdm->system_resource_size) {
@@ -503,7 +501,7 @@ namespace ams::ldr {
             uintptr_t aslr_slide = 0;
             uintptr_t unused_size = (aslr_size - total_size);
             if (out_cpi->flags & svc::CreateProcessFlag_EnableAslr) {
-                aslr_slide = ams::rnd::GenerateRandomU64(unused_size / BaseAddressAlignment) * BaseAddressAlignment;
+                aslr_slide = ams::rnd::GenerateRandomU64(unused_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
             }
 
             /* Set out. */

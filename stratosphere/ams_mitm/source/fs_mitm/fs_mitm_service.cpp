@@ -62,13 +62,29 @@ namespace ams::mitm::fs {
 
     }
 
+    Result FsMitmService::OpenSdCardFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out) {
+        /* We only care about redirecting this for NS/emummc. */
+        R_UNLESS(this->client_info.program_id == ncm::ProgramId::Ns, sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(emummc::IsActive(),                                 sm::mitm::ResultShouldForwardToSession());
+
+        /* Create a new SD card filesystem. */
+        FsFileSystem sd_fs;
+        R_TRY(fsOpenSdCardFileSystemFwd(this->forward_service.get(), &sd_fs));
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&sd_fs.s)};
+
+        /* Return output filesystem. */
+        std::shared_ptr<fs::fsa::IFileSystem> redir_fs = std::make_shared<fssystem::DirectoryRedirectionFileSystem>(std::make_shared<RemoteFileSystem>(sd_fs), "/Nintendo", emummc::GetNintendoDirPath());
+        out.SetValue(std::make_shared<IFileSystemInterface>(std::move(redir_fs), false), target_object_id);
+        return ResultSuccess();
+    }
+
     Result FsMitmService::OpenBisStorage(sf::Out<std::shared_ptr<IStorageInterface>> out, u32 _bis_partition_id) {
         const ::FsBisPartitionId bis_partition_id = static_cast<::FsBisPartitionId>(_bis_partition_id);
 
         /* Try to open a storage for the partition. */
         FsStorage bis_storage;
         R_TRY(fsOpenBisStorageFwd(this->forward_service.get(), &bis_storage, bis_partition_id));
-        const sf::cmif::DomainObjectId target_object_id{bis_storage.s.object_id};
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&bis_storage.s)};
 
         const bool is_sysmodule = ncm::IsSystemProgramId(this->client_info.program_id);
         const bool is_hbl = this->client_info.override_status.IsHbl();
@@ -118,7 +134,7 @@ namespace ams::mitm::fs {
         /* Try to open the process romfs. */
         FsStorage data_storage;
         R_TRY(fsOpenDataStorageByCurrentProcessFwd(this->forward_service.get(), &data_storage));
-        const sf::cmif::DomainObjectId target_object_id{data_storage.s.object_id};
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&data_storage.s)};
 
         /* Try to get a storage from the cache. */
         {
@@ -160,7 +176,7 @@ namespace ams::mitm::fs {
         /* Try to open the process romfs. */
         FsStorage data_storage;
         R_TRY(fsOpenDataStorageByDataIdFwd(this->forward_service.get(), &data_storage, static_cast<u64>(data_id), static_cast<NcmStorageId>(storage_id)));
-        const sf::cmif::DomainObjectId target_object_id{data_storage.s.object_id};
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&data_storage.s)};
 
         /* Try to get a storage from the cache. */
         {

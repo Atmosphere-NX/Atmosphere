@@ -122,7 +122,7 @@ namespace {
     static_assert(TotalThreads >= 1, "TotalThreads");
     constexpr size_t NumExtraThreads = TotalThreads - 1;
     constexpr size_t ThreadStackSize = 0x4000;
-    alignas(0x1000) u8 g_extra_thread_stacks[NumExtraThreads][ThreadStackSize];
+    alignas(os::MemoryPageSize) u8 g_extra_thread_stacks[NumExtraThreads][ThreadStackSize];
 
     os::Thread g_extra_threads[NumExtraThreads];
 

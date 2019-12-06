@@ -151,9 +151,9 @@ namespace ams::fs::fsa {
             virtual Result DeleteDirectoryRecursivelyImpl(const char *path) = 0;
             virtual Result RenameFileImpl(const char *old_path, const char *new_path) = 0;
             virtual Result RenameDirectoryImpl(const char *old_path, const char *new_path) = 0;
-            virtual Result GetEntryTypeImpl(DirectoryEntryType *out, const char *path) = 0;
-            virtual Result OpenFileImpl(std::unique_ptr<IFile> *out_file, const char *path, OpenMode mode) = 0;
-            virtual Result OpenDirectoryImpl(std::unique_ptr<IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) = 0;
+            virtual Result GetEntryTypeImpl(fs::DirectoryEntryType *out, const char *path) = 0;
+            virtual Result OpenFileImpl(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) = 0;
+            virtual Result OpenDirectoryImpl(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const char *path, fs::OpenDirectoryMode mode) = 0;
             virtual Result CommitImpl() = 0;
 
             virtual Result GetFreeSpaceSizeImpl(s64 *out, const char *path) {
@@ -166,11 +166,11 @@ namespace ams::fs::fsa {
 
             virtual Result CleanDirectoryRecursivelyImpl(const char *path) = 0;
 
-            virtual Result GetFileTimeStampRawImpl(FileTimeStampRaw *out, const char *path) {
+            virtual Result GetFileTimeStampRawImpl(fs::FileTimeStampRaw *out, const char *path) {
                 return fs::ResultNotImplemented();
             }
 
-            virtual Result QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, QueryId query, const char *path) {
+            virtual Result QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, fs::fsa::QueryId query, const char *path) {
                 return fs::ResultNotImplemented();
             }
 

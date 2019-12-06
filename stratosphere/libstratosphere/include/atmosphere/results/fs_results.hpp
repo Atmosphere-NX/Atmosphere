@@ -50,6 +50,8 @@ namespace ams::fs {
     R_DEFINE_ERROR_RANGE(AllocationFailure, 3200, 3499);
         R_DEFINE_ERROR_RESULT(AllocationFailureInDirectorySaveDataFileSystem, 3321);
         R_DEFINE_ERROR_RESULT(AllocationFailureInSubDirectoryFileSystem,      3355);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPathNormalizer,              3367);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemInterfaceAdapter,  3407);
 
     R_DEFINE_ERROR_RANGE(MmcAccessFailed, 3500, 3999);
 
@@ -78,6 +80,12 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(InvalidPathFormat,     6005);
                 R_DEFINE_ERROR_RESULT(DirectoryUnobtainable, 6006);
                 R_DEFINE_ERROR_RESULT(NotNormalized,         6007);
+
+            R_DEFINE_ERROR_RANGE(InvalidPathForOperation, 6030, 6059);
+                R_DEFINE_ERROR_RESULT(DirectoryNotDeletable,   6031);
+                R_DEFINE_ERROR_RESULT(DirectoryNotRenamable,   6032);
+                R_DEFINE_ERROR_RESULT(IncompatiblePath,        6033);
+                R_DEFINE_ERROR_RESULT(RenameToOtherFileSystem, 6034);
 
             R_DEFINE_ERROR_RESULT(InvalidOffset,    6061);
             R_DEFINE_ERROR_RESULT(InvalidSize,      6062);

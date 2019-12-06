@@ -39,6 +39,9 @@ namespace ams::fs::fsa {
                 R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
                 return this->GetEntryCountImpl(out);
             }
+        public:
+            /* TODO: This is a hack to allow the mitm API to work. Find a better way? */
+            virtual sf::cmif::DomainObjectId GetDomainObjectId() const = 0;
         protected:
             /* ...? */
         private:

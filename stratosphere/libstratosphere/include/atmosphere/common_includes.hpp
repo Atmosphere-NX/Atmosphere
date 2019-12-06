@@ -35,6 +35,7 @@
 #include <optional>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <algorithm>
 #include <functional>
 #include <tuple>

@@ -16,6 +16,17 @@
 #include "fs_shim.h"
 
 /* Missing fsp-srv commands. */
+static Result _fsOpenSession(Service *s, Service* out, u32 cmd_id) {
+    return serviceDispatch(s, cmd_id,
+        .out_num_objects = 1,
+        .out_objects = out,
+    );
+}
+
+Result fsOpenSdCardFileSystemFwd(Service* s, FsFileSystem* out) {
+    return _fsOpenSession(s, &out->s, 18);
+}
+
 Result fsOpenBisStorageFwd(Service* s, FsStorage* out, FsBisPartitionId partition_id) {
     const u32 tmp = partition_id;
     return serviceDispatchIn(s, 12, tmp,
@@ -25,10 +36,7 @@ Result fsOpenBisStorageFwd(Service* s, FsStorage* out, FsBisPartitionId partitio
 }
 
 Result fsOpenDataStorageByCurrentProcessFwd(Service* s, FsStorage* out) {
-    return serviceDispatch(s, 200,
-        .out_num_objects = 1,
-        .out_objects = &out->s,
-    );
+    return _fsOpenSession(s, &out->s, 200);
 }
 
 Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorage* out, u64 data_id, NcmStorageId storage_id) {
