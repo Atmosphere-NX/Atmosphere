@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,7 +46,7 @@ static void setup_env(void) {
     if (console_init() < 0) {
         generic_panic();
     }
-    
+
     /* Set up exception handlers. */
     setup_exception_handlers();
 
@@ -80,7 +80,7 @@ int main(int argc, void **argv) {
     if (argc != STAGE2_ARGC) {
         generic_panic();
     }
-    
+
     g_stage2_args = &g_stage2_args_store;
     memcpy(g_stage2_args, (stage2_args_t *)argv[STAGE2_ARGV_ARGUMENT_STRUCT], sizeof(*g_stage2_args));
 
@@ -88,20 +88,20 @@ int main(int argc, void **argv) {
     if (g_stage2_args->version != 0) {
         generic_panic();
     }
-    
+
     /* Override the global logging level. */
     log_set_log_level(g_stage2_args->log_level);
-    
+
     /* Initialize the boot environment. */
     setup_env();
-    
+
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, u8"Welcome to Atmosphère Fusée Stage 2!\n");
     print(SCREEN_LOG_LEVEL_DEBUG, "Stage 2 executing from: %s\n", (const char *)argv[STAGE2_ARGV_PROGRAM_PATH]);
-    
+
     /* Load BCT0 from SD if needed. */
     if (strcmp(g_stage2_args->bct0, "") == 0) {
         uint32_t bct_tmp_buf[sizeof(g_stage2_args->bct0) / sizeof(uint32_t)] = {0};
-        if (!read_from_file(bct_tmp_buf, sizeof(bct_tmp_buf) - 1, "atmosphere/BCT.ini")) {
+        if (!read_from_file(bct_tmp_buf, sizeof(bct_tmp_buf) - 1, "atmosphere/config/BCT.ini")) {
             fatal_error("Failed to read BCT0 from SD!\n");
         }
         memcpy(g_stage2_args->bct0, bct_tmp_buf, sizeof(bct_tmp_buf));
@@ -110,17 +110,17 @@ int main(int argc, void **argv) {
     /* This will load all remaining binaries off of the SD. */
     load_payload(g_stage2_args->bct0);
     print(SCREEN_LOG_LEVEL_INFO, "Loaded payloads!\n");
-    
+
     g_do_nxboot = (loader_ctx->chainload_entrypoint == 0);
     if (g_do_nxboot) {
         print(SCREEN_LOG_LEVEL_INFO, "Now performing nxboot.\n");
 
         /* Start boot. */
         uint32_t boot_memaddr = nxboot_main();
-        
+
         /* Terminate the boot environment. */
         cleanup_env();
-        
+
         /* Finish boot. */
         nxboot_finish(boot_memaddr);
     } else {
@@ -129,7 +129,7 @@ int main(int argc, void **argv) {
         print(SCREEN_LOG_LEVEL_INFO, "Now chainloading.\n");
         g_chainloader_argc = 1;
         strcpy(g_chainloader_arg_data, path);
-        
+
         /* Terminate the boot environment. */
         cleanup_env();
     }

@@ -58,6 +58,7 @@ dist: all
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/fatal_errors
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config_templates
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/config
 	cp fusee/fusee-primary/fusee-primary.bin atmosphere-$(AMSVER)/atmosphere/reboot_payload.bin
 	cp fusee/fusee-mtc/fusee-mtc.bin atmosphere-$(AMSVER)/atmosphere/fusee-mtc.bin
 	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
@@ -66,7 +67,7 @@ dist: all
 	cp sept/sept-secondary/sept-secondary.bin atmosphere-$(AMSVER)/sept/sept-secondary.bin
 	cp sept/sept-secondary/sept-secondary_00.enc atmosphere-$(AMSVER)/sept/sept-secondary_00.enc
 	cp sept/sept-secondary/sept-secondary_01.enc atmosphere-$(AMSVER)/sept/sept-secondary_01.enc
-	cp common/defaults/BCT.ini atmosphere-$(AMSVER)/atmosphere/BCT.ini
+	cp common/defaults/BCT.ini atmosphere-$(AMSVER)/atmosphere/config/BCT.ini
 	cp common/defaults/override_config.ini atmosphere-$(AMSVER)/atmosphere/config_templates/override_config.ini
 	cp common/defaults/system_settings.ini atmosphere-$(AMSVER)/atmosphere/config_templates/system_settings.ini
 	cp -r common/defaults/kip_patches atmosphere-$(AMSVER)/atmosphere/kip_patches

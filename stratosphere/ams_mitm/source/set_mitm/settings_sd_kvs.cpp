@@ -291,7 +291,7 @@ namespace ams::settings::fwdbg {
         Result LoadSdCardKeyValueStore() {
             /* Open file. */
             FsFile config_file;
-            if (R_FAILED(ams::mitm::fs::OpenAtmosphereSdFile(&config_file, "/system_settings.ini", fs::OpenMode_Read))) {
+            if (R_FAILED(ams::mitm::fs::OpenAtmosphereSdFile(&config_file, "/config/system_settings.ini", fs::OpenMode_Read))) {
                 /* It's okay if the file isn't readable/present, because we already loaded defaults. */
                 return ResultSuccess();
             }

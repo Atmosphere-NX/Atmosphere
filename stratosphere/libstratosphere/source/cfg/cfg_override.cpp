@@ -230,7 +230,7 @@ namespace ams::cfg {
         }
 
         void RefreshOverrideConfiguration() {
-            ParseIniFile(OverrideConfigIniHandler, "/atmosphere/override_config.ini", nullptr);
+            ParseIniFile(OverrideConfigIniHandler, "/atmosphere/config/override_config.ini", nullptr);
         }
 
         ContentSpecificOverrideConfig GetContentOverrideConfig(ncm::ProgramId program_id) {
