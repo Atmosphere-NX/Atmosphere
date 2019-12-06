@@ -101,7 +101,7 @@ namespace ams::fssrv::impl {
             };
     };
 
-    class FileSystemInterfaceAdapter final : std::enable_shared_from_this<FileSystemInterfaceAdapter>, public ams::sf::IServiceObject {
+    class FileSystemInterfaceAdapter final : public std::enable_shared_from_this<FileSystemInterfaceAdapter>, public ams::sf::IServiceObject {
         NON_COPYABLE(FileSystemInterfaceAdapter);
         public:
             enum class CommandId {
