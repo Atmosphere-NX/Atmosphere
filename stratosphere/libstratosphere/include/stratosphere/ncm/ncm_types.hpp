@@ -421,6 +421,14 @@ namespace ams::ncm {
         return ProgramId::ApplicationStart <= program_id && program_id <= ProgramId::ApplicationEnd;
     }
 
+    inline constexpr bool IsWebAppletProgramId(const ProgramId &program_id) {
+        return program_id == ProgramId::AppletWeb ||
+               program_id == ProgramId::AppletShop ||
+               program_id == ProgramId::AppletOfflineWeb ||
+               program_id == ProgramId::AppletLoginShare ||
+               program_id == ProgramId::AppletWifiWebAuth;
+    }
+
     static_assert(sizeof(ProgramId) == sizeof(u64) && std::is_pod<ProgramId>::value, "ProgramId definition!");
 
     /* Program Location. */

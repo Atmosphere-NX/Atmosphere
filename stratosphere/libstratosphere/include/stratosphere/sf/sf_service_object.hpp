@@ -20,7 +20,10 @@
 
 namespace ams::sf {
 
-    class IServiceObject{};
+    class IServiceObject {
+        public:
+            virtual ~IServiceObject() { /* ... */ }
+    };
 
     class IMitmServiceObject : public IServiceObject {
         protected:
@@ -28,6 +31,8 @@ namespace ams::sf {
             sm::MitmProcessInfo client_info;
         public:
             IMitmServiceObject(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : forward_service(std::move(s)), client_info(c) { /* ... */ }
+
+            virtual ~IMitmServiceObject() { /* ... */ }
 
             static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id);
     };
