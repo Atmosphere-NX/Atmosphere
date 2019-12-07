@@ -39,7 +39,7 @@ namespace ams::mitm::fs {
         constexpr size_t ThreadStackSize = mitm::ModuleTraits<fs::MitmModule>::StackSize;
         alignas(os::MemoryPageSize) u8 g_extra_thread_stacks[NumExtraThreads][ThreadStackSize];
 
-        os::Thread g_extra_threads[NumExtraThreads];;
+        os::Thread g_extra_threads[NumExtraThreads];
 
         void LoopServerThread(void *arg) {
             /* Loop forever, servicing our services. */
