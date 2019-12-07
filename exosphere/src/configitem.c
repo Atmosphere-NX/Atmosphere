@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdint.h>
 #include <atmosphere/version.h>
 
@@ -38,6 +38,7 @@
 static bool g_hiz_mode_enabled = false;
 static bool g_debugmode_override_user = false, g_debugmode_override_priv = false;
 static bool g_enable_usermode_exception_handlers = true;
+static bool g_enable_usermode_pmu_access = false;
 
 uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
     switch (item) {
@@ -63,14 +64,14 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
                         /* Set SVC handler to jump to reboot stub in IRAM. */
                         MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x520ull) = 0x4003F000;
                         MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x53Cull) = 0x6000F208;
-                        
+
                         /* Copy reboot stub payload. */
                         ams_map_irampage(0x4003F000);
                         for (unsigned int i = 0; i < rebootstub_bin_size; i += 4) {
                             MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_AMS_IRAM_PAGE) + i) = read32le(rebootstub_bin, i);
                         }
                         ams_unmap_irampage();
-                        
+
                         /* Ensure stub is flushed. */
                         flush_dcache_all();
                         break;
@@ -95,7 +96,7 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
                 /* Set SVC handler to jump to reboot stub in IRAM. */
                 MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x520ull) = 0x4003F000;
                 MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x53Cull) = 0x6000F208;
-                
+
                 /* Copy reboot stub payload. */
                 ams_map_irampage(0x4003F000);
                 for (unsigned int i = 0; i < rebootstub_bin_size; i += 4) {
@@ -104,7 +105,7 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
                 /* Tell rebootstub to shut down. */
                 MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_AMS_IRAM_PAGE) + 0x10) = 0x0;
                 ams_unmap_irampage();
-                
+
                 MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10;
                 while (1) { }
             }
@@ -112,7 +113,7 @@ uint32_t configitem_set(bool privileged, ConfigItem item, uint64_t value) {
         default:
             return 2;
     }
-    
+
     return 0;
 }
 
@@ -166,6 +167,10 @@ void configitem_set_debugmode_override(bool user, bool priv) {
 
 void configitem_disable_usermode_exception_handlers(void) {
     g_enable_usermode_exception_handlers = false;
+}
+
+void configitem_enable_usermode_pmu_access(void) {
+    g_enable_usermode_pmu_access = true;
 }
 
 uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) {
@@ -222,6 +227,10 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
                 if (g_enable_usermode_exception_handlers) {
                     config |= KERNELCONFIGFLAG_ENABLE_USER_EXCEPTION_HANDLERS;
                 }
+                /* Allow for enabling usermode pmu access. */
+                if (g_enable_usermode_pmu_access) {
+                    config |= KERNELCONFIGFLAG_ENABLE_USER_PMU_ACCESS;
+                }
                 *p_outvalue = config;
             }
             break;
@@ -262,7 +271,7 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             break;
         case CONFIGITEM_EXOSPHERE_VERSION:
             /* UNOFFICIAL: Gets information about the current exosphere version. */
-            *p_outvalue = ((uint64_t)(ATMOSPHERE_RELEASE_VERSION_MAJOR & 0xFF) << 32ull) | 
+            *p_outvalue = ((uint64_t)(ATMOSPHERE_RELEASE_VERSION_MAJOR & 0xFF) << 32ull) |
                           ((uint64_t)(ATMOSPHERE_RELEASE_VERSION_MINOR & 0xFF) << 24ull) |
                           ((uint64_t)(ATMOSPHERE_RELEASE_VERSION_MICRO & 0xFF) << 16ull) |
                           ((uint64_t)(exosphere_get_target_firmware() & 0xFF) << 8ull) |

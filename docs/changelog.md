@@ -47,6 +47,8 @@
   + An extension was added to pm:info to allow querying a process's override status.
 + Thanks to process override capture improvements, hbl html behavior has been greatly improved.
   + Web applets launched by hbl will now always see the /atmosphere/hbl_html filesystem
++ Support was added to exosphere for enabling usermode access to the PMU registers.
+  + This can be controlled via exosphere!enable_user_pmu_access in BCT.ini.
 + An enormous number of minor bugs were fixed.
   + dmnt's cheat VM had a fix for an inversion in opcode behavior.
   + An issue was fixed in fs.mitm's management of domain object IDs that could lead to system corruption in rare cases.

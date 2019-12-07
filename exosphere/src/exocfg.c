@@ -84,6 +84,14 @@ unsigned int exosphere_should_disable_usermode_exception_handlers(void) {
     return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS);
 }
 
+unsigned int exosphere_should_enable_usermode_pmu_access(void) {
+    if (!g_has_loaded_config) {
+        generic_panic();
+    }
+
+    return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS);
+}
+
 const exo_emummc_config_t *exosphere_get_emummc_config(void) {
     if (!g_has_loaded_config) {
         generic_panic();

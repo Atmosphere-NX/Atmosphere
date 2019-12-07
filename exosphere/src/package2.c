@@ -512,6 +512,9 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
     if (exosphere_should_disable_usermode_exception_handlers() != 0) {
         configitem_disable_usermode_exception_handlers();
     }
+    if (exosphere_should_enable_usermode_pmu_access()) {
+        configitem_enable_usermode_pmu_access();
+    }
 
     /* Setup the Security Engine. */
     setup_se();

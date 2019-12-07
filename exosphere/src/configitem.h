@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_CFG_ITEM_H
 #define EXOSPHERE_CFG_ITEM_H
 
@@ -38,7 +38,7 @@ typedef enum {
     CONFIGITEM_NEWHARDWARETYPE_5X = 15,
     CONFIGITEM_NEWKEYGENERATION_5X = 16,
     CONFIGITEM_PACKAGE2HASH_5X = 17,
-    
+
     /* These are unofficial, for usage by Exosphere. */
     CONFIGITEM_EXOSPHERE_VERSION = 65000,
     CONFIGITEM_NEEDS_REBOOT = 65001,
@@ -61,6 +61,7 @@ bool configitem_is_debugmode_priv(void);
 
 void configitem_set_debugmode_override(bool user, bool priv);
 void configitem_disable_usermode_exception_handlers(void);
+void configitem_enable_usermode_pmu_access(void);
 void configitem_set_hiz_mode_enabled(bool enabled);
 
 uint64_t configitem_get_hardware_type(void);

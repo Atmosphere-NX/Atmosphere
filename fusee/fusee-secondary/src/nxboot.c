@@ -158,6 +158,13 @@ static int exosphere_ini_handler(void *user, const char *section, const char *na
             } else {
                 exo_cfg->flags &= ~(EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS);
             }
+        } else if (strcmp(name, EXOSPHERE_ENABLE_USERMODE_PMU_ACCESS_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (tmp) {
+                exo_cfg->flags |= EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS;
+            } else {
+                exo_cfg->flags &= ~(EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS);
+            }
         } else {
             return 0;
         }
