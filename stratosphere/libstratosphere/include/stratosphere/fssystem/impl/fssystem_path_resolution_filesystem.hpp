@@ -92,7 +92,7 @@ namespace ams::fssystem::impl {
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(new_full_path, sizeof(new_full_path), new_path));
 
                 std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
-                return this->base_fs->RenameFile(old_path, new_path);
+                return this->base_fs->RenameFile(old_full_path, new_full_path);
             }
 
             virtual Result RenameDirectoryImpl(const char *old_path, const char *new_path) override {
@@ -102,7 +102,7 @@ namespace ams::fssystem::impl {
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(new_full_path, sizeof(new_full_path), new_path));
 
                 std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
-                return this->base_fs->RenameDirectory(old_path, new_path);
+                return this->base_fs->RenameDirectory(old_full_path, new_full_path);
             }
 
             virtual Result GetEntryTypeImpl(fs::DirectoryEntryType *out, const char *path) override {
