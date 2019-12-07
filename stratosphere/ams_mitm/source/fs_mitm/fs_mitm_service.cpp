@@ -26,6 +26,8 @@ namespace ams::mitm::fs {
 
     namespace {
 
+        constexpr const char AtmosphereHblWebContentDir[] = "/atmosphere/hbl_html/";
+
         os::Mutex g_storage_cache_lock;
         std::unordered_map<u64, std::weak_ptr<IStorageInterface>> g_storage_cache;
 
@@ -61,6 +63,39 @@ namespace ams::mitm::fs {
             return (tmp != 0);
         }
 
+        Result OpenHblWebContentFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type) {
+            /* Verify eligibility. */
+            bool is_hbl;
+            R_UNLESS(ncm::IsWebAppletProgramId(client_program_id),               sm::mitm::ResultShouldForwardToSession());
+            R_UNLESS(filesystem_type == FsFileSystemType_ContentManual,          sm::mitm::ResultShouldForwardToSession());
+            R_UNLESS(R_SUCCEEDED(pm::info::IsHblProgramId(&is_hbl, program_id)), sm::mitm::ResultShouldForwardToSession());
+            R_UNLESS(is_hbl,                                                     sm::mitm::ResultShouldForwardToSession());
+
+            /* Hbl html directory must exist. */
+            {
+                FsDir d;
+                R_UNLESS(R_SUCCEEDED(mitm::fs::OpenSdDirectory(&d, AtmosphereHblWebContentDir, fs::OpenDirectoryMode_Directory)), sm::mitm::ResultShouldForwardToSession());
+                fsDirClose(&d);
+            }
+
+            /* Open the SD card using fs.mitm's session. */
+            FsFileSystem sd_fs;
+            R_TRY(fsOpenSdCardFileSystem(&sd_fs));
+            const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&sd_fs.s)};
+            std::unique_ptr<fs::fsa::IFileSystem> sd_ifs = std::make_unique<fs::RemoteFileSystem>(sd_fs);
+
+            out.SetValue(std::make_shared<IFileSystemInterface>(std::make_shared<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), AtmosphereHblWebContentDir), false), target_object_id);
+            return ResultSuccess();
+        }
+
+    }
+
+    Result FsMitmService::OpenFileSystemWithPatch(sf::Out<std::shared_ptr<IFileSystemInterface>> out, ncm::ProgramId program_id, u32 _filesystem_type) {
+        return OpenHblWebContentFileSystem(out, this->client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type));
+    }
+
+    Result FsMitmService::OpenFileSystemWithId(sf::Out<std::shared_ptr<IFileSystemInterface>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type) {
+        return OpenHblWebContentFileSystem(out, this->client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type));
     }
 
     Result FsMitmService::OpenSdCardFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out) {

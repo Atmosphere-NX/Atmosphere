@@ -28,7 +28,7 @@ namespace ams::fssystem {
             size_t base_path_len;
         public:
             SubDirectoryFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc = false);
-            SubDirectoryFileSystem(std::unique_ptr<fs::fsa::IFileSystem> &&fs, const char *bp, bool unc = false);
+            SubDirectoryFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc = false);
 
             virtual ~SubDirectoryFileSystem();
         protected:

@@ -25,8 +25,8 @@ namespace ams::fssystem {
         R_ASSERT(this->Initialize(before, after));
     }
 
-    DirectoryRedirectionFileSystem::DirectoryRedirectionFileSystem(std::unique_ptr<fs::fsa::IFileSystem> &&fs, const char *before, const char *after, bool unc)
-        : PathResolutionFileSystem(std::forward<std::unique_ptr<fs::fsa::IFileSystem>>(fs), unc)
+    DirectoryRedirectionFileSystem::DirectoryRedirectionFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after, bool unc)
+        : PathResolutionFileSystem(std::move(fs), unc)
     {
         this->before_dir = nullptr;
         this->after_dir = nullptr;
