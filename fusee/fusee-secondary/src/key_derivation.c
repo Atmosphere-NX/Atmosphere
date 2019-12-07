@@ -155,8 +155,12 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
                 break;
             case ATMOSPHERE_TARGET_FIRMWARE_810:
                 desired_keyblob = MASTERKEY_REVISION_810;
+                /* Fallthrough */
             case ATMOSPHERE_TARGET_FIRMWARE_900:
-                desired_keyblob = MASTERKEY_REVISION_900_CURRENT;
+                desired_keyblob = MASTERKEY_REVISION_900;
+                /* Fallthrough */
+            case ATMOSPHERE_TARGET_FIRMWARE_910:
+                desired_keyblob = MASTERKEY_REVISION_910_CURRENT;
                 break;
             default:
                 fatal_error("Unknown target firmware: %02x!", target_firmware);

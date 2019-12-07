@@ -19,8 +19,8 @@
 
 /* This is glue code to enable master key support across versions. */
 
-/* TODO: Update to 0xB on release of new master key. */
-#define MASTERKEY_REVISION_MAX 0xA
+/* TODO: Update to 0xC on release of new master key. */
+#define MASTERKEY_REVISION_MAX 0xB
 
 #define MASTERKEY_REVISION_100_230     0x00
 #define MASTERKEY_REVISION_300         0x01
@@ -31,7 +31,8 @@
 #define MASTERKEY_REVISION_620         0x06
 #define MASTERKEY_REVISION_700_800     0x07
 #define MASTERKEY_REVISION_810         0x08
-#define MASTERKEY_REVISION_900_CURRENT 0x09
+#define MASTERKEY_REVISION_900         0x09
+#define MASTERKEY_REVISION_910_CURRENT 0x0A
 
 #define MASTERKEY_NUM_NEW_DEVICE_KEYS (MASTERKEY_REVISION_MAX - MASTERKEY_REVISION_400_410)
 

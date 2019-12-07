@@ -187,6 +187,7 @@ void set_version_specific_smcs(void) {
         case ATMOSPHERE_TARGET_FIRMWARE_800:
         case ATMOSPHERE_TARGET_FIRMWARE_810:
         case ATMOSPHERE_TARGET_FIRMWARE_900:
+        case ATMOSPHERE_TARGET_FIRMWARE_910:
             /* No more LoadSecureExpModKey. */
             g_smc_user_table[0xE].handler = NULL;
             g_smc_user_table[0xC].id = 0xC300D60C;

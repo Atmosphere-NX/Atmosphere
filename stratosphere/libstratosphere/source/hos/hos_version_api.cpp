@@ -66,6 +66,8 @@ namespace ams::hos {
                     break;
                 case exosphere::TargetFirmware_900:
                     g_hos_version = hos::Version_900;
+                case exosphere::TargetFirmware_910:
+                    g_hos_version = hos::Version_910;
                     break;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
@@ -131,6 +133,10 @@ namespace ams::hos {
             case hos::Version_900:
                 major = 9;
                 minor = 0;
+                micro = 0;
+            case hos::Version_910:
+                major = 9;
+                minor = 1;
                 micro = 0;
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();

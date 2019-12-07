@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdbool.h>
 #include <string.h>
 #include "utils.h"
@@ -29,7 +29,7 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
     if (APBDEV_PMC_SCRATCH200_0 == 0) {
         APBDEV_PMC_SCRATCH200_0 = code;
     }
-    
+
     /* // Uncomment for Debugging.
     uint64_t temp_reg;
     MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM)) = APBDEV_PMC_SCRATCH200_0;
@@ -38,8 +38,8 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
     SAVE_SYSREG64(FAR_EL3, 0x20);
     MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x450ull) = 0x2;
     MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC) + 0x400ull) = 0x10; */
-    
-    
+
+
     /* TODO: Custom Panic Driver, which displays to screen without rebooting. */
     /* For now, just use NX BOOTLOADER's panic. */
     fuse_disable_programming();
@@ -50,7 +50,7 @@ __attribute__ ((noreturn)) void panic(uint32_t code) {
 
 __attribute__ ((noreturn)) void generic_panic(void) {
     /* //Uncomment for Debugging.
-    uint64_t temp_reg;    
+    uint64_t temp_reg;
     do { __asm__ __volatile__ ("mov %0, LR" : "=r"(temp_reg) :: "memory"); } while (false);
     MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM) + 0x28) = (uint32_t)((temp_reg >> 0) & 0xFFFFFFFFULL);
     MAKE_REG32(MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_DEBUG_IRAM) + 0x28 + 4) = (uint32_t)((temp_reg >> 32) & 0xFFFFFFFFULL);

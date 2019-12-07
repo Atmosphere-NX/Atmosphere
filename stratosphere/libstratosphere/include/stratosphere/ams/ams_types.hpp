@@ -33,6 +33,7 @@ namespace ams::exosphere {
         TargetFirmware_800 = 9,
         TargetFirmware_810 = 10,
         TargetFirmware_900 = 11,
+        TargetFirmware_910 = 12,
     };
 
 #ifdef ATMOSPHERE_H
@@ -50,6 +51,7 @@ namespace ams::exosphere {
         AMS_VALIDATE_TARGET_FIRMWARE_ENUM(800);
         AMS_VALIDATE_TARGET_FIRMWARE_ENUM(810);
         AMS_VALIDATE_TARGET_FIRMWARE_ENUM(900);
+        AMS_VALIDATE_TARGET_FIRMWARE_ENUM(910);
 
 #undef AMS_VALIDATE_TARGET_FIRMWARE_ENUM
 

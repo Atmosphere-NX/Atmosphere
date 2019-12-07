@@ -79,6 +79,9 @@ typedef enum {
     FS_VER_9_0_0,
     FS_VER_9_0_0_EXFAT,
 
+    FS_VER_9_1_0,
+    FS_VER_9_1_0_EXFAT,
+
     FS_VER_MAX,
 } emummc_fs_ver_t;
 

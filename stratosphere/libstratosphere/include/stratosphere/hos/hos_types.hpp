@@ -31,7 +31,8 @@ namespace ams::hos {
         Version_800 = 7,
         Version_810 = 8,
         Version_900 = 9,
-        Version_Current = Version_900,
+        Version_910 = 10,
+        Version_Current = Version_910,
         Version_Max = 32,
     };
 
