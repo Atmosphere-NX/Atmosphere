@@ -1,4 +1,66 @@
 # Changelog
+## 0.10.0
++ Support was added for 9.1.0
+  + **Please note**: The temporary hid-mitm added in Atmosphere 0.9.0 will be removed in Atmosphere 0.10.1.
+    + Please ensure your homebrew is updated.
++ The Stratosphere rewrite was completed.
+  + libstratosphere was rewritten as part of Stratosphere's refactor.
+    + Code responsible for providing and managing IPC services was greatly improved.
+      + The new code is significantly more accurate (it is bug-for-bug compatible with Nintendo's code), and significantly faster.
+  + ams.mitm was rewritten as part of Stratosphere's refactor.
+    + Saves redirected to the SD card are now separated for sysmmc vs emummc.
+    + **Please note**: If you find any bugs, please report them so they can be fixed.
++ Thanks to the rewrite, Atmosphere now uses significantly less memory.
+  + Roughly 10 additional megabytes are now available for custom system modules to use.
+  + This means you can potentially run more custom system modules simultaneously.
+    + If system modules are incompatible, please ask their authors to reduce their memory footprints.
++ Atmosphere's configuration layout has had major changes.
+  + Configuration now lives inside /atmosphere/config/.
+  + Atmosphere code now knows what default values should be, and includes them in code.
+    + It is no longer an error if configuration inis are not present.
+  + Correspondingly, Atmosphere no longer distributes default configuration inis.
+    + Templates are provided in /atmosphere/config_templates.
+  + loader.ini was renamed to override_config.ini.
+  + This fixes the longstanding problem that atmosphere updates overwrote user configuration when extracted.
++ Atmosphere's process override layout was changed.
+  + Atmosphere now uses the /atmosphere/contents directory, instead of /atmosphere/titles.
+    + This goes along with a refactoring to remove all reference to "title id" from code, as Nintendo does not use the term.
+  + To make this transition easier, a temporary functionality has been added that migrates folders to the new directory.
+    + When booting into 0.10.0, Atmosphere will rename /atmosphere/titles/<program id> to /atmosphere/contents/<program id>.
+      + This functionality may or may not be removed in some future update.
+    + This should solve any transition difficulties for the typical user.
+    + Please make sure that any future mods you install extract to the correct directory.
++ Support for configuring override keys for hbl was improved.
+  + The key used to override applications versus a specific program can now be different.
+    + The key to override a specific program can be managed via override_key.
+    + The key to override any app can be managed via override_any_app_key.
+  + Default override behavior was changed.
+    + By default, atmosphere will now override the album applet with hbl unless R is held.
+    + By default, atmosphere will now override any application with hbl only if R is held.
++ The default amount of applet memory reserved has been slightly increased.
+  + This allows the profile selector applet to work by default in applet mode.
++ The way process override status is captured was changed.
+  + Process override keys are now captured exactly once, when the process is created.
+    + This fixes the longstanding issue where letting go of the override button partway into the process launch could cause problems.
+  + The Mitm API was changed to pass around override status.
+    + Mitm services now know what keys were held when the client was created, as well as whether the client is HBL/should override contents.
+  + An extension was added to pm:info to allow querying a process's override status.
++ Thanks to process override capture improvements, hbl html behavior has been greatly improved.
+  + Web applets launched by hbl will now always see the /atmosphere/hbl_html filesystem
++ An enormous number of minor bugs were fixed.
+  + dmnt's cheat VM had a fix for an inversion in opcode behavior.
+  + An issue was fixed in fs.mitm's management of domain object IDs that could lead to system corruption in rare cases.
+  + The Mitm API no longer silently fails when attempting to handle commands passing C descriptors.
+    + On previous atmosphere versions, certain commands to FS would silently fail due to this...
+      + No users reported any visible errors, but it was definitely a problem behind the scenes.
+    + These commands are now handled correctly.
+  + Atmosphere can now display a fatal error screen significantly earlier in the boot process, if things go wrong early on.
+  + The temporary hid mitm will no longer sometimes cause games to fail to detect input.
+  + Mitm Domain object ID management no longer desynchronizes from the host process.
+  + An issue was fixed that could cause service acquisition to hang forever if certain sm commands were called in a precise order.
+  + An off-by-one was fixed that could cause memory corruption in server memory management.
+  + ... and too many more bugs fixed to reasonably list them all :)
++ General system stability improvements to enhance the user's experience.
 ## 0.9.4
 + Support was added for 9.0.0.
   + **Please note**: 9.0.0 made a number of changes that may cause some issues with homebrew. Details:
