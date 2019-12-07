@@ -31,4 +31,7 @@ namespace ams::pm::info {
     /* Information convenience API. */
     bool HasLaunchedProgram(ncm::ProgramId program_id);
 
+    Result IsHblProcessId(bool *out, os::ProcessId process_id);
+    Result IsHblProgramId(bool *out, ncm::ProgramId program_id);
+
 }

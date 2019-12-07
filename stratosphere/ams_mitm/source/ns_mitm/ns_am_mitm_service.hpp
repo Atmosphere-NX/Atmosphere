@@ -18,23 +18,32 @@
 
 namespace ams::mitm::ns {
 
-    class NsAmMitmService  : public sf::IMitmServiceObject {
+    class NsAmMitmService : public sf::IMitmServiceObject {
         private:
             enum class CommandId {
-                /* TODO */
+                GetApplicationContentPath      = 21,
+                ResolveApplicationContentPath  = 23,
+                GetRunningApplicationProgramId = 92,
             };
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
-                /* TODO */
-                return false;
+                /* We will mitm:
+                 * - web applets, to facilitate hbl web browser launching.
+                 */
+                return ncm::IsWebAppletProgramId(client_info.program_id);
             }
         public:
             SF_MITM_SERVICE_OBJECT_CTOR(NsAmMitmService) { /* ... */ }
         protected:
-            /* TODO */
+            /* Actual command API. */
+            Result GetApplicationContentPath(const sf::OutBuffer &out_path, ncm::ProgramId application_id, u8 content_type);
+            Result ResolveApplicationContentPath(ncm::ProgramId application_id, u8 content_type);
+            Result GetRunningApplicationProgramId(sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                /* TODO */
+                MAKE_SERVICE_COMMAND_META(GetApplicationContentPath),
+                MAKE_SERVICE_COMMAND_META(ResolveApplicationContentPath),
+                MAKE_SERVICE_COMMAND_META(GetRunningApplicationProgramId, hos::Version_600),
             };
     };
 

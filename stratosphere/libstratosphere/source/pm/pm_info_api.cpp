@@ -73,4 +73,21 @@ namespace ams::pm::info {
         return has_launched;
     }
 
+
+    Result IsHblProcessId(bool *out, os::ProcessId process_id) {
+        ncm::ProgramLocation loc;
+        cfg::OverrideStatus override_status;
+        R_TRY(GetProcessInfo(&loc, &override_status, process_id));
+
+        *out = override_status.IsHbl();
+        return ResultSuccess();
+    }
+
+    Result IsHblProgramId(bool *out, ncm::ProgramId program_id) {
+        os::ProcessId process_id;
+        R_TRY(GetProcessId(&process_id, program_id));
+
+        return IsHblProcessId(out, process_id);
+    }
+
 }
