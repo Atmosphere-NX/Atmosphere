@@ -99,12 +99,12 @@ namespace ams::mitm::fs {
         /* Verify we can open the save. */
         FsFileSystem save_fs;
         R_UNLESS(R_SUCCEEDED(fsOpenSaveDataFileSystemFwd(this->forward_service.get(), &save_fs, space_id, &attribute)), sm::mitm::ResultShouldForwardToSession());
-        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&save_fs.s)};
         std::unique_ptr<fs::fsa::IFileSystem> save_ifs = std::make_unique<fs::RemoteFileSystem>(save_fs);
 
         /* Mount the SD card using fs.mitm's session. */
         FsFileSystem sd_fs;
         R_TRY(fsOpenSdCardFileSystem(&sd_fs));
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&sd_fs.s)};
         std::shared_ptr<fs::fsa::IFileSystem> sd_ifs = std::make_shared<fs::RemoteFileSystem>(sd_fs);
 
         /* Verify that we can open the save directory, and that it exists. */
