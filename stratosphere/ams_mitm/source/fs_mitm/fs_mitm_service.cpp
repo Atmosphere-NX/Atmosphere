@@ -18,6 +18,7 @@
 #include "fs_mitm_service.hpp"
 #include "fsmitm_boot0storage.hpp"
 #include "fsmitm_layered_romfs_storage.hpp"
+#include "fsmitm_save_utils.hpp"
 
 namespace ams::mitm::fs {
 
@@ -75,6 +76,70 @@ namespace ams::mitm::fs {
         /* Return output filesystem. */
         std::shared_ptr<fs::fsa::IFileSystem> redir_fs = std::make_shared<fssystem::DirectoryRedirectionFileSystem>(std::make_shared<RemoteFileSystem>(sd_fs), "/Nintendo", emummc::GetNintendoDirPath());
         out.SetValue(std::make_shared<IFileSystemInterface>(std::move(redir_fs), false), target_object_id);
+        return ResultSuccess();
+    }
+
+    Result FsMitmService::OpenSaveDataFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out, u8 _space_id, const FsSaveDataAttribute &attribute) {
+        /* We only want to intercept saves for games, right now. */
+        const bool is_game_or_hbl = this->client_info.override_status.IsHbl() || ncm::IsApplicationProgramId(this->client_info.program_id);
+        R_UNLESS(is_game_or_hbl, sm::mitm::ResultShouldForwardToSession());
+
+        /* Only redirect if the appropriate system setting is set. */
+        R_UNLESS(GetSettingsItemBooleanValue("atmosphere", "fsmitm_redirect_saves_to_sd"), sm::mitm::ResultShouldForwardToSession());
+
+        /* Only redirect if the specific title being accessed has a redirect save flag. */
+        R_UNLESS(cfg::HasContentSpecificFlag(this->client_info.program_id, "redirect_save"), sm::mitm::ResultShouldForwardToSession());
+
+        /* Only redirect account savedata. */
+        R_UNLESS(attribute.save_data_type == FsSaveDataType_Account, sm::mitm::ResultShouldForwardToSession());
+
+        /* Get enum type for space id. */
+        auto space_id = static_cast<FsSaveDataSpaceId>(_space_id);
+
+        /* Verify we can open the save. */
+        FsFileSystem save_fs;
+        R_UNLESS(R_SUCCEEDED(fsOpenSaveDataFileSystemFwd(this->forward_service.get(), &save_fs, space_id, &attribute)), sm::mitm::ResultShouldForwardToSession());
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&save_fs.s)};
+        std::unique_ptr<fs::fsa::IFileSystem> save_ifs = std::make_unique<fs::RemoteFileSystem>(save_fs);
+
+        /* Mount the SD card using fs.mitm's session. */
+        FsFileSystem sd_fs;
+        R_TRY(fsOpenSdCardFileSystem(&sd_fs));
+        std::shared_ptr<fs::fsa::IFileSystem> sd_ifs = std::make_shared<fs::RemoteFileSystem>(sd_fs);
+
+        /* Verify that we can open the save directory, and that it exists. */
+        const ncm::ProgramId application_id = attribute.application_id == 0 ? this->client_info.program_id : ncm::ProgramId{attribute.application_id};
+        char save_dir_path[fs::EntryNameLengthMax + 1];
+        R_TRY(mitm::fs::SaveUtil::GetDirectorySaveDataPath(save_dir_path, sizeof(save_dir_path), application_id, space_id, attribute));
+
+        /* Check if this is the first time we're making the save. */
+        bool is_new_save = false;
+        {
+            fs::DirectoryEntryType ent;
+            R_TRY_CATCH(sd_ifs->GetEntryType(&ent, save_dir_path)) {
+                R_CATCH(fs::ResultPathNotFound) { is_new_save = true; }
+                R_CATCH_ALL() { /* ... */ }
+            } R_END_TRY_CATCH;
+        }
+
+        /* Ensure the directory exists. */
+        R_TRY(fssystem::EnsureDirectoryExistsRecursively(sd_ifs.get(), save_dir_path));
+
+        /* Create directory savedata filesystem. */
+        std::unique_ptr<fs::fsa::IFileSystem> subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(sd_ifs, save_dir_path);
+        std::shared_ptr<fssystem::DirectorySaveDataFileSystem> dirsave_ifs = std::make_shared<fssystem::DirectorySaveDataFileSystem>(std::move(subdir_fs));
+
+        /* Ensure correct directory savedata filesystem state. */
+        R_TRY(dirsave_ifs->Initialize());
+
+        /* If it's the first time we're making the save, copy existing savedata over. */
+        if (is_new_save) {
+            /* TODO: Check error? */
+            dirsave_ifs->CopySaveFromFileSystem(save_ifs.get());
+        }
+
+        /* Set output. */
+        out.SetValue(std::make_shared<IFileSystemInterface>(std::move(dirsave_ifs), false), target_object_id);
         return ResultSuccess();
     }
 

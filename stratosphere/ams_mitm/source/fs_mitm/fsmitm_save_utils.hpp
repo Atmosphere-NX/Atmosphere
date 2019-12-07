@@ -13,10 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include "fssystem/fssystem_utility.hpp"
-#include "fssystem/fssystem_path_tool.hpp"
-#include "fssystem/fssystem_subdirectory_filesystem.hpp"
-#include "fssystem/fssystem_directory_redirection_filesystem.hpp"
-#include "fssystem/fssystem_directory_savedata_filesystem.hpp"
+#include <stratosphere.hpp>
+
+namespace ams::mitm::fs {
+
+    class SaveUtil {
+        public:
+            static Result GetDirectorySaveDataPath(char *dst, size_t dst_size, ncm::ProgramId program_id, u8 space_id, const FsSaveDataAttribute &attribute);
+    };
+
+}

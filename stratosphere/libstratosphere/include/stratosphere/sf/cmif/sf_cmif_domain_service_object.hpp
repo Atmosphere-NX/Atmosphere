@@ -56,6 +56,10 @@ namespace ams::sf::cmif {
                 return this->impl_metadata.GetOutObjectCount();
             }
 
+            constexpr size_t GetImplOutHeadersSize() const {
+                return this->impl_metadata.GetOutHeadersSize();
+            }
+
             constexpr size_t GetImplOutDataTotalSize() const {
                 return this->impl_metadata.GetOutDataSize() + this->impl_metadata.GetOutHeadersSize();
             }

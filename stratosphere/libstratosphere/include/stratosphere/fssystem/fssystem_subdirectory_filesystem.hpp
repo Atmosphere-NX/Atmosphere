@@ -14,26 +14,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fssystem_path_resolution_filesystem.hpp"
+#include "impl/fssystem_path_resolution_filesystem.hpp"
 
 namespace ams::fssystem {
 
-    class SubDirectoryFileSystem : public IPathResolutionFileSystem<SubDirectoryFileSystem> {
+    class SubDirectoryFileSystem : public impl::IPathResolutionFileSystem<SubDirectoryFileSystem> {
         NON_COPYABLE(SubDirectoryFileSystem);
         private:
-            using PathResolutionFileSystem = IPathResolutionFileSystem<SubDirectoryFileSystem>;
+            using PathResolutionFileSystem = impl::IPathResolutionFileSystem<SubDirectoryFileSystem>;
+            friend class impl::IPathResolutionFileSystem<SubDirectoryFileSystem>;
         private:
             char *base_path;
             size_t base_path_len;
-            bool unc_preserved;
         public:
-            SubDirectoryFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *bp);
-            SubDirectoryFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc);
+            SubDirectoryFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc = false);
+            SubDirectoryFileSystem(std::unique_ptr<fs::fsa::IFileSystem> &&fs, const char *bp, bool unc = false);
 
             virtual ~SubDirectoryFileSystem();
+        protected:
+            inline std::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() const {
+                /* No accessor lock is needed. */
+                return std::nullopt;
+            }
         private:
             Result Initialize(const char *bp);
-        public:
             Result ResolveFullPath(char *out, size_t out_size, const char *relative_path);
     };
 

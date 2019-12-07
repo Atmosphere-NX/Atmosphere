@@ -24,7 +24,7 @@ namespace ams::fs::fsa {
         public:
             virtual ~IFile() { /* ... */ }
 
-            Result Read(size_t *out, s64 offset, void *buffer, size_t size, const ReadOption &option) {
+            Result Read(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) {
                 R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
                 if (size == 0) {
                     *out = 0;
@@ -51,7 +51,7 @@ namespace ams::fs::fsa {
                 return this->FlushImpl();
             }
 
-            Result Write(s64 offset, const void *buffer, size_t size, const WriteOption &option) {
+            Result Write(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) {
                 if (size == 0) {
                     if (option.HasFlushFlag()) {
                         R_TRY(this->Flush());
@@ -71,11 +71,11 @@ namespace ams::fs::fsa {
                 return this->SetSizeImpl(size);
             }
 
-            Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
+            Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
                 return this->OperateRangeImpl(dst, dst_size, op_id, offset, size, src, src_size);
             }
 
-            Result OperateRange(OperationId op_id, s64 offset, s64 size) {
+            Result OperateRange(fs::OperationId op_id, s64 offset, s64 size) {
                 return this->OperateRangeImpl(nullptr, 0, op_id, offset, size, nullptr, 0);
             }
         public:
@@ -84,12 +84,12 @@ namespace ams::fs::fsa {
         protected:
             /* ...? */
         private:
-            virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const ReadOption &option) = 0;
+            virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) = 0;
             virtual Result GetSizeImpl(s64 *out) = 0;
             virtual Result FlushImpl() = 0;
-            virtual Result WriteImpl(s64 offset, const void *buffer, size_t size, const WriteOption &option) = 0;
+            virtual Result WriteImpl(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) = 0;
             virtual Result SetSizeImpl(s64 size) = 0;
-            virtual Result OperateRangeImpl(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) = 0;
+            virtual Result OperateRangeImpl(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) = 0;
     };
 
 }

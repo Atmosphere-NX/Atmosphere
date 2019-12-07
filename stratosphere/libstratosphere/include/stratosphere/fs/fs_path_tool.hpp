@@ -30,7 +30,7 @@ namespace ams::fs {
 
     class PathTool {
         public:
-            static constexpr fssrv::sf::Path RootPath = fssrv::sf::FspPath::Encode("/");
+            static constexpr const char RootPath[] = "/";
         public:
             static constexpr inline bool IsSeparator(char c) {
                 return c == StringTraits::DirectorySeparator;

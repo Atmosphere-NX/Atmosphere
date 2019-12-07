@@ -17,6 +17,8 @@ Result fsOpenBisStorageFwd(Service* s, FsStorage* out, FsBisPartitionId partitio
 Result fsOpenDataStorageByCurrentProcessFwd(Service* s, FsStorage* out);
 Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorage* out, u64 data_id, NcmStorageId storage_id);
 
+Result fsOpenSaveDataFileSystemFwd(Service* s, FsFileSystem* out, FsSaveDataSpaceId save_data_space_id, const FsSaveDataAttribute *attr);
+
 
 #ifdef __cplusplus
 }

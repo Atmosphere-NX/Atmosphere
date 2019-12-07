@@ -63,7 +63,7 @@ namespace ams::mitm::fs {
             /* Result OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInterface>> out, u64 program_id, u32 filesystem_type); */
             /* Result OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterface>> out, InPointer<char> path, u64 program_id, u32 filesystem_type); */
             Result OpenSdCardFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out);
-            /* Result OpenSaveDataFileSystem(Out<std::shared_ptr<IFileSystemInterface>> out, u8 space_id, FsSave save_struct); */
+            Result OpenSaveDataFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out, u8 space_id, const FsSaveDataAttribute &attribute);
             Result OpenBisStorage(sf::Out<std::shared_ptr<IStorageInterface>> out, u32 bis_partition_id);
             Result OpenDataStorageByCurrentProcess(sf::Out<std::shared_ptr<IStorageInterface>> out);
             Result OpenDataStorageByDataId(sf::Out<std::shared_ptr<IStorageInterface>> out, ncm::ProgramId /* TODO: ncm::DataId */ data_id, u8 storage_id);
@@ -72,7 +72,7 @@ namespace ams::mitm::fs {
                 /* MAKE_SERVICE_COMMAND_META(OpenFileSystemWithPatch, hos::Version_200), */
                 /* MAKE_SERVICE_COMMAND_META(OpenFileSystemWithId,    hos::Version_200), */
                 MAKE_SERVICE_COMMAND_META(OpenSdCardFileSystem),
-                /* MAKE_SERVICE_COMMAND_META(OpenSaveDataFileSystem), */
+                MAKE_SERVICE_COMMAND_META(OpenSaveDataFileSystem),
                 MAKE_SERVICE_COMMAND_META(OpenBisStorage),
                 MAKE_SERVICE_COMMAND_META(OpenDataStorageByCurrentProcess),
                 MAKE_SERVICE_COMMAND_META(OpenDataStorageByDataId),
