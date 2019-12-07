@@ -74,13 +74,13 @@ namespace ams::fssystem {
     }
 
     DirectorySaveDataFileSystem::DirectorySaveDataFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs)
-        : PathResolutionFileSystem(fs)
+        : PathResolutionFileSystem(fs), open_writable_files(0)
     {
         /* ... */
     }
 
     DirectorySaveDataFileSystem::DirectorySaveDataFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs)
-        : PathResolutionFileSystem(std::forward<std::unique_ptr<fs::fsa::IFileSystem>>(fs))
+        : PathResolutionFileSystem(std::forward<std::unique_ptr<fs::fsa::IFileSystem>>(fs)), open_writable_files(0)
     {
         /* ... */
     }
