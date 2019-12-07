@@ -355,8 +355,8 @@ namespace ams::settings::fwdbg {
 
             /* Controls the amount of memory to reserve when running as applet */
             /* for usage by other applets. This setting has no effect if */
-            /* applet_heap_size is non-zero. The default is 0x8000000. */
-            R_ASSERT(ParseSettingsItemValue("hbloader", "applet_heap_reservation_size", "u64!0x8000000"));
+            /* applet_heap_size is non-zero. The default is 0x8600000. */
+            R_ASSERT(ParseSettingsItemValue("hbloader", "applet_heap_reservation_size", "u64!0x8600000"));
         }
 
     }
