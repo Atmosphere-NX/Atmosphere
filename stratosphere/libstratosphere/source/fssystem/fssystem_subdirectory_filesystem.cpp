@@ -17,12 +17,16 @@
 
 namespace ams::fssystem {
 
-    SubDirectoryFileSystem::SubDirectoryFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *bp) : PathResolutionFileSystem(fs) {
+    SubDirectoryFileSystem::SubDirectoryFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc)
+        : PathResolutionFileSystem(fs, unc)
+    {
         this->base_path = nullptr;
         R_ASSERT(this->Initialize(bp));
     }
 
-    SubDirectoryFileSystem::SubDirectoryFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc) : PathResolutionFileSystem(fs, unc) {
+    SubDirectoryFileSystem::SubDirectoryFileSystem(std::unique_ptr<fs::fsa::IFileSystem> &&fs, const char *bp, bool unc)
+        : PathResolutionFileSystem(std::forward<std::unique_ptr<fs::fsa::IFileSystem>>(fs), unc)
+    {
         this->base_path = nullptr;
         R_ASSERT(this->Initialize(bp));
     }

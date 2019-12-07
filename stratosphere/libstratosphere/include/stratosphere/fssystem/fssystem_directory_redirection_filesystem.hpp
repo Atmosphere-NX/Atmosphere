@@ -14,29 +14,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fssystem_path_resolution_filesystem.hpp"
+#include "impl/fssystem_path_resolution_filesystem.hpp"
 
 namespace ams::fssystem {
 
-    class DirectoryRedirectionFileSystem : public IPathResolutionFileSystem<DirectoryRedirectionFileSystem> {
+    class DirectoryRedirectionFileSystem : public impl::IPathResolutionFileSystem<DirectoryRedirectionFileSystem> {
         NON_COPYABLE(DirectoryRedirectionFileSystem);
         private:
-            using PathResolutionFileSystem = IPathResolutionFileSystem<DirectoryRedirectionFileSystem>;
+            using PathResolutionFileSystem = impl::IPathResolutionFileSystem<DirectoryRedirectionFileSystem>;
+            friend class impl::IPathResolutionFileSystem<DirectoryRedirectionFileSystem>;
         private:
             char *before_dir;
             size_t before_dir_len;
             char *after_dir;
             size_t after_dir_len;
-            bool unc_preserved;
         public:
-            DirectoryRedirectionFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after);
-            DirectoryRedirectionFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after, bool unc);
+            DirectoryRedirectionFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after, bool unc = false);
+            DirectoryRedirectionFileSystem(std::unique_ptr<fs::fsa::IFileSystem> &&fs, const char *before, const char *after, bool unc = false);
 
             virtual ~DirectoryRedirectionFileSystem();
+        protected:
+            inline std::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() const {
+                /* No accessor lock is needed. */
+                return std::nullopt;
+            }
         private:
             Result GetNormalizedDirectoryPath(char **out, size_t *out_size, const char *dir);
             Result Initialize(const char *before, const char *after);
-        public:
             Result ResolveFullPath(char *out, size_t out_size, const char *relative_path);
     };
 

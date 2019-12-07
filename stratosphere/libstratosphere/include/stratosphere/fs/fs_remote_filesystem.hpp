@@ -33,7 +33,7 @@ namespace ams::fs {
 
             virtual ~RemoteFile() { fsFileClose(this->base_file.get()); }
         public:
-            virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const ReadOption &option) override final {
+            virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override final {
                 return fsFileRead(this->base_file.get(), offset, buffer, size, option.value, out);
             }
 
@@ -45,7 +45,7 @@ namespace ams::fs {
                 return fsFileFlush(this->base_file.get());
             }
 
-            virtual Result WriteImpl(s64 offset, const void *buffer, size_t size, const WriteOption &option) override final {
+            virtual Result WriteImpl(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override final {
                 return fsFileWrite(this->base_file.get(), offset, buffer, size, option.value);
             }
 
@@ -53,7 +53,7 @@ namespace ams::fs {
                 return fsFileSetSize(this->base_file.get(), size);
             }
 
-            virtual Result OperateRangeImpl(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
+            virtual Result OperateRangeImpl(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
                 /* TODO: How should this be handled? */
                 return fs::ResultNotImplemented();
             }

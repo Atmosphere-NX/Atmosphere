@@ -50,3 +50,16 @@ Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorage* out, u64 data_id, Ncm
         .out_objects = &out->s,
     );
 }
+
+Result fsOpenSaveDataFileSystemFwd(Service* s, FsFileSystem* out, FsSaveDataSpaceId save_data_space_id, const FsSaveDataAttribute *attr) {
+    const struct {
+        u8 save_data_space_id;
+        u8 pad[7];
+        FsSaveDataAttribute attr;
+    } in = { (u8)save_data_space_id, {0}, *attr };
+
+    return serviceDispatchIn(s, 51, in,
+        .out_num_objects = 1,
+        .out_objects = &out->s,
+    );
+}

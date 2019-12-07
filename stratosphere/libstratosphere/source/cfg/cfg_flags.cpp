@@ -47,8 +47,8 @@ namespace ams::cfg {
     }
 
     /* Flag utilities. */
-    bool HasFlag(ncm::ProgramId program_id, const char *flag) {
-        return HasContentSpecificFlag(program_id, flag) || (IsHblProgramId(program_id) && HasHblFlag(flag));
+    bool HasFlag(const sm::MitmProcessInfo &process_info, const char *flag) {
+        return HasContentSpecificFlag(process_info.program_id, flag) || (process_info.override_status.IsHbl() && HasHblFlag(flag));
     }
 
     bool HasContentSpecificFlag(ncm::ProgramId program_id, const char *flag) {
