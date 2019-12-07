@@ -32,14 +32,55 @@ namespace ams::mitm::fs {
         constexpr size_t MaxSessions = 61;
         sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> g_server_manager;
 
+
+        constexpr size_t TotalThreads = 5;
+        static_assert(TotalThreads >= 1, "TotalThreads");
+        constexpr size_t NumExtraThreads = TotalThreads - 1;
+        constexpr size_t ThreadStackSize = mitm::ModuleTraits<fs::MitmModule>::StackSize;
+        alignas(os::MemoryPageSize) u8 g_extra_thread_stacks[NumExtraThreads][ThreadStackSize];
+
+        os::Thread g_extra_threads[NumExtraThreads];;
+
+        void LoopServerThread(void *arg) {
+            /* Loop forever, servicing our services. */
+            g_server_manager.LoopProcess();
+        }
+
+        void ProcessForServerOnAllThreads() {
+            /* Initialize threads. */
+            if constexpr (NumExtraThreads > 0) {
+                const u32 priority = os::GetCurrentThreadPriority();
+                for (size_t i = 0; i < NumExtraThreads; i++) {
+                    R_ASSERT(g_extra_threads[i].Initialize(LoopServerThread, nullptr, g_extra_thread_stacks[i], ThreadStackSize, priority));
+                }
+            }
+
+            /* Start extra threads. */
+            if constexpr (NumExtraThreads > 0) {
+                for (size_t i = 0; i < NumExtraThreads; i++) {
+                    R_ASSERT(g_extra_threads[i].Start());
+                }
+            }
+
+            /* Loop this thread. */
+            LoopServerThread(nullptr);
+
+            /* Wait for extra threads to finish. */
+            if constexpr (NumExtraThreads > 0) {
+                for (size_t i = 0; i < NumExtraThreads; i++) {
+                    R_ASSERT(g_extra_threads[i].Join());
+                }
+            }
+        }
+
     }
 
     void MitmModule::ThreadFunction(void *arg) {
         /* Create fs mitm. */
         R_ASSERT(g_server_manager.RegisterMitmServer<FsMitmService>(MitmServiceName));
 
-        /* Loop forever, servicing our services. */
-        g_server_manager.LoopProcess();
+        /* Process for the server. */
+        ProcessForServerOnAllThreads();
     }
 
 }
