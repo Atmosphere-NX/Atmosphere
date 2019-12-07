@@ -60,8 +60,8 @@ namespace ams::mitm::fs {
             SF_MITM_SERVICE_OBJECT_CTOR(FsMitmService) { /* ... */ }
         protected:
             /* Overridden commands. */
-            /* Result OpenFileSystemWithPatch(Out<std::shared_ptr<IFileSystemInterface>> out, u64 program_id, u32 filesystem_type); */
-            /* Result OpenFileSystemWithId(Out<std::shared_ptr<IFileSystemInterface>> out, InPointer<char> path, u64 program_id, u32 filesystem_type); */
+            Result OpenFileSystemWithPatch(sf::Out<std::shared_ptr<IFileSystemInterface>> out, ncm::ProgramId program_id, u32 _filesystem_type);
+            Result OpenFileSystemWithId(sf::Out<std::shared_ptr<IFileSystemInterface>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type);
             Result OpenSdCardFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out);
             Result OpenSaveDataFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out, u8 space_id, const FsSaveDataAttribute &attribute);
             Result OpenBisStorage(sf::Out<std::shared_ptr<IStorageInterface>> out, u32 bis_partition_id);
@@ -69,8 +69,8 @@ namespace ams::mitm::fs {
             Result OpenDataStorageByDataId(sf::Out<std::shared_ptr<IStorageInterface>> out, ncm::ProgramId /* TODO: ncm::DataId */ data_id, u8 storage_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                /* MAKE_SERVICE_COMMAND_META(OpenFileSystemWithPatch, hos::Version_200), */
-                /* MAKE_SERVICE_COMMAND_META(OpenFileSystemWithId,    hos::Version_200), */
+                MAKE_SERVICE_COMMAND_META(OpenFileSystemWithPatch, hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(OpenFileSystemWithId,    hos::Version_200),
                 MAKE_SERVICE_COMMAND_META(OpenSdCardFileSystem),
                 MAKE_SERVICE_COMMAND_META(OpenSaveDataFileSystem),
                 MAKE_SERVICE_COMMAND_META(OpenBisStorage),

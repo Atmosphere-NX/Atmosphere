@@ -35,7 +35,7 @@ namespace ams::fssystem::impl {
                 /* ... */
             }
 
-            IPathResolutionFileSystem(std::unique_ptr<fs::fsa::IFileSystem> &&fs, bool unc = false) : unique_fs(std::move(fs)), unc_preserved(unc), base_fs(unique_fs.get())  {
+            IPathResolutionFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs, bool unc = false) : unique_fs(std::move(fs)), unc_preserved(unc), base_fs(unique_fs.get())  {
                 /* ... */
             }
 

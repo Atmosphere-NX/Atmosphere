@@ -34,7 +34,7 @@ Result pminfoAtmosphereGetProcessInfo(NcmProgramLocation *loc_out, CfgOverrideSt
         CfgOverrideStatus status;
     } out;
 
-    Result rc = serviceDispatchInOut(pmdmntGetServiceSession(), 65002, pid, out);
+    Result rc = serviceDispatchInOut(pminfoGetServiceSession(), 65002, pid, out);
 
     if (R_SUCCEEDED(rc)) {
         if (loc_out) *loc_out = out.loc;

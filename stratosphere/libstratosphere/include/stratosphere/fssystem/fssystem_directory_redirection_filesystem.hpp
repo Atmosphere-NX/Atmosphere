@@ -30,7 +30,7 @@ namespace ams::fssystem {
             size_t after_dir_len;
         public:
             DirectoryRedirectionFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after, bool unc = false);
-            DirectoryRedirectionFileSystem(std::unique_ptr<fs::fsa::IFileSystem> &&fs, const char *before, const char *after, bool unc = false);
+            DirectoryRedirectionFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after, bool unc = false);
 
             virtual ~DirectoryRedirectionFileSystem();
         protected:
