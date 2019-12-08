@@ -286,11 +286,18 @@ namespace ams::ro::impl {
             }
         }
 
-        constexpr inline Result ValidateAddressAndSize(u64 address, u64 size) {
+        constexpr inline Result ValidateAddressAndNonZeroSize(u64 address, u64 size) {
             R_UNLESS(util::IsAligned(address, os::MemoryPageSize), ResultInvalidAddress());
             R_UNLESS(size != 0,                                    ResultInvalidSize());
             R_UNLESS(util::IsAligned(size, os::MemoryPageSize),    ResultInvalidSize());
             R_UNLESS(address < address + size,                     ResultInvalidSize());
+            return ResultSuccess();
+        }
+
+        constexpr inline Result ValidateAddressAndSize(u64 address, u64 size) {
+            R_UNLESS(util::IsAligned(address, os::MemoryPageSize), ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size, os::MemoryPageSize),    ResultInvalidSize());
+            R_UNLESS(size == 0 || address < address + size,        ResultInvalidSize());
             return ResultSuccess();
         }
 
@@ -366,7 +373,7 @@ namespace ams::ro::impl {
         const ncm::ProgramId program_id = context->GetProgramId(process_h);
 
         /* Validate address/size. */
-        R_TRY(ValidateAddressAndSize(nrr_address, nrr_size));
+        R_TRY(ValidateAddressAndNonZeroSize(nrr_address, nrr_size));
 
         /* Check we have space for a new NRR. */
         NrrInfo *nrr_info = nullptr;
@@ -415,7 +422,7 @@ namespace ams::ro::impl {
         AMS_ASSERT(context != nullptr);
 
         /* Validate address/size. */
-        R_TRY(ValidateAddressAndSize(nro_address, nro_size));
+        R_TRY(ValidateAddressAndNonZeroSize(nro_address, nro_size));
         R_TRY(ValidateAddressAndSize(bss_address, bss_size));
 
         const u64 total_size = nro_size + bss_size;
