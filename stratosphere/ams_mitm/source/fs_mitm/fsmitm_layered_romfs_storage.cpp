@@ -71,7 +71,7 @@ namespace ams::mitm::fs {
             const auto &cur_source = *it;
             AMS_ASSERT(offset >= cur_source.virtual_offset);
 
-            if (offset <= cur_source.virtual_offset + cur_source.size) {
+            if (offset < cur_source.virtual_offset + cur_source.size) {
                 const s64 offset_within_source = offset - cur_source.virtual_offset;
                 const size_t cur_read_size = std::min(size - read_so_far, size_t(cur_source.size - offset_within_source));
                 switch (cur_source.source_type) {
