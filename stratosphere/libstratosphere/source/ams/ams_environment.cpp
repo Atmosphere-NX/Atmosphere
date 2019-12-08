@@ -136,6 +136,7 @@ namespace ams {
                 : [val]"r"(val), [addr]"r"(addr)
             );
         }
+        __builtin_unreachable();
     }
 
 }
@@ -146,19 +147,30 @@ extern "C" {
     void abort();
 
     /* Redefine C++ exception handlers. Requires wrap linker flag. */
-    void __wrap___cxa_pure_virtual(void) { abort(); }
-    void __wrap___cxa_throw(void) { abort(); }
-    void __wrap___cxa_rethrow(void) { abort(); }
-    void __wrap___cxa_allocate_exception(void) { abort(); }
-    void __wrap___cxa_begin_catch(void) { abort(); }
-    void __wrap___cxa_end_catch(void) { abort(); }
-    void __wrap___cxa_call_unexpected(void) { abort(); }
-    void __wrap___cxa_call_terminate(void) { abort(); }
-    void __wrap___gxx_personality_v0(void) { abort(); }
+    #define WRAP_ABORT_FUNC(func) void NORETURN __wrap_##func(void) { abort(); __builtin_unreachable(); }
+    WRAP_ABORT_FUNC(__cxa_pure_virtual)
+    WRAP_ABORT_FUNC(__cxa_throw)
+    WRAP_ABORT_FUNC(__cxa_rethrow)
+    WRAP_ABORT_FUNC(__cxa_allocate_exception)
+    WRAP_ABORT_FUNC(__cxa_free_exception)
+    WRAP_ABORT_FUNC(__cxa_begin_catch)
+    WRAP_ABORT_FUNC(__cxa_end_catch)
+    WRAP_ABORT_FUNC(__cxa_call_unexpected)
+    WRAP_ABORT_FUNC(__cxa_call_terminate)
+    WRAP_ABORT_FUNC(__gxx_personality_v0)
+    WRAP_ABORT_FUNC(_ZSt19__throw_logic_errorPKc)
+    WRAP_ABORT_FUNC(_ZSt20__throw_length_errorPKc)
+    WRAP_ABORT_FUNC(_ZNSt11logic_errorC2EPKc)
+
+    /* TODO: We may wish to consider intentionally not defining an _Unwind_Resume wrapper. */
+    /* This would mean that a failure to wrap all exception functions is a linker error. */
+    WRAP_ABORT_FUNC(_Unwind_Resume)
+    #undef WRAP_ABORT_FUNC
 
 }
 
 /* Custom abort handler, so that std::abort will trigger these. */
 void abort() {
     ams::AbortImpl();
+    __builtin_unreachable();
 }
