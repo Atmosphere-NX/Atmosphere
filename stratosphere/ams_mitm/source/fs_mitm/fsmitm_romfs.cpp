@@ -371,8 +371,10 @@ namespace ams::mitm::fs {
                 /* Set name. */
                 cur_entry->name_size = name_size;
                 if (name_size) {
-                    std::memset(cur_entry->name + util::AlignDown(name_size, 4), 0, 4);
                     std::memcpy(cur_entry->name, cur_file->path.get() + cur_file->cur_path_ofs, name_size);
+                    for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
+                        cur_entry->name[i] = 0;
+                    }
                 }
 
                 /* Emplace a source. */
@@ -418,8 +420,10 @@ namespace ams::mitm::fs {
                 /* Set name. */
                 cur_entry->name_size = name_size;
                 if (name_size) {
-                    std::memset(cur_entry->name + util::AlignDown(name_size, 4), 0, 4);
                     std::memcpy(cur_entry->name, cur_dir->path.get() + cur_dir->cur_path_ofs, name_size);
+                    for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
+                        cur_entry->name[i] = 0;
+                    }
                 }
             }
 
