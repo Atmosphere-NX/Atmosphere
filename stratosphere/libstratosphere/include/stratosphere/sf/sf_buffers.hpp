@@ -96,8 +96,9 @@ namespace ams::sf {
                     return this->pas.GetAddress();
                 }
 
-                constexpr size_t GetSizeImpl() const {
-                    return this->pas.GetSize();
+                template<typename Entry>
+                constexpr inline size_t GetSizeImpl() const {
+                    return this->pas.GetSize() / sizeof(Entry);
                 }
             public:
                 constexpr BufferBase() : pas() { /* ... */ }
@@ -153,7 +154,7 @@ namespace ams::sf {
                 }
 
                 constexpr size_t GetSize() const {
-                    return this->GetSizeImpl();
+                    return this->GetSizeImpl<u8>();
                 }
         };
 
@@ -177,7 +178,7 @@ namespace ams::sf {
                 }
 
                 constexpr size_t GetSize() const {
-                    return this->GetSizeImpl();
+                    return this->GetSizeImpl<u8>();
                 }
         };
 
@@ -200,7 +201,7 @@ namespace ams::sf {
                 }
 
                 constexpr size_t GetSize() const {
-                    return this->GetSizeImpl();
+                    return this->GetSizeImpl<T>();
                 }
 
                 constexpr const T &operator[](size_t i) const {
@@ -227,7 +228,7 @@ namespace ams::sf {
                 }
 
                 constexpr size_t GetSize() const {
-                    return this->GetSizeImpl();
+                    return this->GetSizeImpl<T>();
                 }
 
                 constexpr T &operator[](size_t i) const {
