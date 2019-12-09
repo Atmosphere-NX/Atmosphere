@@ -13,14 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_WARMBOOT_BIN_UTILS_H
 #define EXOSPHERE_WARMBOOT_BIN_UTILS_H
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <atmosphere.h>
+#include <vapours/ams_version.h>
 
 #define BIT(n)      (1u   << (n))
 #define BITL(n)     (1ull << (n))

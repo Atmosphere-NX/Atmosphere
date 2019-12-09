@@ -15,7 +15,7 @@
  */
 
 #include <stdint.h>
-#include <atmosphere/version.h>
+#include <vapours/ams_version.h>
 
 #include "bootconfig.h"
 #include "configitem.h"

@@ -20,7 +20,7 @@ TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src
 DATA		:=	data
-INCLUDES	:=	include ../../common/include
+INCLUDES	:=	include ../../libraries/libvapours/include
 
 #---------------------------------------------------------------------------------
 # options for code generation

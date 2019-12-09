@@ -18,7 +18,7 @@
 #define EXOSPHERE_EMUMMC_CONFIG_H
 
 #include <stdint.h>
-#include <atmosphere.h>
+#include <vapours/ams_version.h>
 
 /* "EFS0" */
 #define MAGIC_EMUMMC_CONFIG (0x30534645)

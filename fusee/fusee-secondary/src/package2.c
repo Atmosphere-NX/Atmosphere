@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <atmosphere.h>
+#include <vapours/ams_version.h>
 #include "utils.h"
 #include "masterkey.h"
 #include "stratosphere.h"
