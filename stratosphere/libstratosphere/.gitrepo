@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/Atmosphere-NX/libstratosphere
 	branch = master
-	commit = 93d4f69168cf0f67258a780a5a92409495d5e24f
-	parent = b0cae74bb91e4636f1aa392555bae706c79b0377
+	commit = 303fc400dda9e592acbcb405153dd0dbde36281d
+	parent = 9d7b52e2d4c0112f0f6d708faa66ea53f53961e4
 	method = merge
 	cmdver = 0.4.0
