@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::ncm::path {
+namespace ams::ncm::path {
 
     void MakeContentPathFlat(char* out_path, ContentId content_id, const char* root);
     void MakeContentPathHashByteLayered(char* out_path, ContentId content_id, const char* root);

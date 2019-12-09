@@ -19,18 +19,18 @@
 #include "lr_manager.hpp"
 #include "ncm_bounded_map.hpp"
 
-namespace sts::lr::impl {
+namespace ams::lr::impl {
 
     namespace {
 
         ncm::impl::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolver>, 5> g_location_resolvers;
         std::shared_ptr<RegisteredLocationResolverInterface> g_registered_location_resolver = nullptr;
         std::shared_ptr<AddOnContentLocationResolverInterface> g_add_on_content_location_resolver = nullptr;
-        HosMutex g_mutex;
+        os::Mutex g_mutex;
 
     }
 
-    Result OpenLocationResolver(Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) {
+    Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
         auto resolver = g_location_resolvers.Find(storage_id);
 
@@ -45,19 +45,21 @@ namespace sts::lr::impl {
             resolver = g_location_resolvers.Find(storage_id);
         }
 
-        out.SetValue(*resolver);
-        return ResultSuccess;
+        std::shared_ptr<ILocationResolver> new_intf = *resolver;
+        out.SetValue(std::move(new_intf));
+        return ResultSuccess();
     }
 
-    Result OpenRegisteredLocationResolver(Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) {
+    Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) {
         std::scoped_lock lk(g_mutex);
 
         if (!g_registered_location_resolver) {
             g_registered_location_resolver = std::make_shared<RegisteredLocationResolverInterface>();
         }
 
-        out.SetValue(g_registered_location_resolver);
-        return ResultSuccess;
+        std::shared_ptr<RegisteredLocationResolverInterface> new_intf = g_registered_location_resolver;
+        out.SetValue(std::move(new_intf));
+        return ResultSuccess();
     }
     
     Result RefreshLocationResolver(ncm::StorageId storage_id) {
@@ -65,25 +67,26 @@ namespace sts::lr::impl {
         auto resolver = g_location_resolvers.Find(storage_id);
 
         if (!resolver) {
-            return ResultLrUnknownStorageId;
+            return ResultUnknownStorageId();
         }
 
         if (storage_id != ncm::StorageId::Host) {
             (*resolver)->Refresh();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
-    Result OpenAddOnContentLocationResolver(Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) {
+    Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) {
         std::scoped_lock lk(g_mutex);
 
         if (!g_add_on_content_location_resolver) {
             g_add_on_content_location_resolver = std::make_shared<AddOnContentLocationResolverInterface>();
         }
         
-        out.SetValue(g_add_on_content_location_resolver);
-        return ResultSuccess;
+        std::shared_ptr<AddOnContentLocationResolverInterface> new_intf = g_add_on_content_location_resolver;
+        out.SetValue(std::move(new_intf));
+        return ResultSuccess();
     }
 
 }

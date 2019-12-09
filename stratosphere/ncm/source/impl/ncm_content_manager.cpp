@@ -27,7 +27,7 @@
 #include "ncm_content_manager.hpp"
 #include "ncm_rights_cache.hpp"
 
-namespace sts::ncm::impl {
+namespace ams::ncm::impl {
 
     namespace {
 
@@ -42,7 +42,7 @@ namespace sts::ncm::impl {
             std::shared_ptr<IContentStorage> content_storage;
 
             inline ContentStorageEntry() : storage_id(StorageId::None),
-                content_storage_id(FS_CONTENTSTORAGEID_NandSystem), content_storage(nullptr) {
+                content_storage_id(FsContentStorageId_System), content_storage(nullptr) {
                 mount_point[0] = '\0';
                 root_path[0] = '\0';
             }
@@ -95,7 +95,7 @@ namespace sts::ncm::impl {
                 strcpy(this->mount_point, mount_name.name);
                 this->mount_point[0] = '#';
                 snprintf(this->meta_path, 0x80, "%s:/meta", this->mount_point);
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             Result InitializeGameCard(size_t max_content_metas) {
@@ -103,14 +103,14 @@ namespace sts::ncm::impl {
                 this->max_content_metas = max_content_metas;
                 this->content_meta_database = nullptr;
                 this->kvs.reset();
-                return ResultSuccess;
+                return ResultSuccess();
             }
         };
 
         constexpr size_t MaxContentStorageEntries = 8;
         constexpr size_t MaxContentMetaDBEntries = 8;
 
-        HosMutex g_mutex;
+        os::Mutex g_mutex;
         bool g_initialized = false;
         ContentStorageEntry g_content_storage_entries[MaxContentStorageEntries];
         ContentMetaDBEntry g_content_meta_entries[MaxContentMetaDBEntries];
@@ -145,11 +145,11 @@ namespace sts::ncm::impl {
     }
 
     Result InitializeContentManager() {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         /* Already initialized. */
         if (g_initialized) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         size_t cur_storage_index = g_num_content_storage_entries;
@@ -168,46 +168,46 @@ namespace sts::ncm::impl {
         auto storage_entry = &g_content_storage_entries[cur_storage_index];
 
         /* First, setup the NandSystem storage entry. */
-        storage_entry->Initialize(StorageId::NandSystem, FS_CONTENTSTORAGEID_NandSystem);
+        storage_entry->Initialize(StorageId::BuiltInSystem, FsContentStorageId_System);
 
-        if (R_FAILED(VerifyContentStorage(StorageId::NandSystem))) {
-            R_TRY(CreateContentStorage(StorageId::NandSystem));
+        if (R_FAILED(VerifyContentStorage(StorageId::BuiltInSystem))) {
+            R_TRY(CreateContentStorage(StorageId::BuiltInSystem));
         }
 
-        R_TRY(ActivateContentStorage(StorageId::NandSystem));
+        R_TRY(ActivateContentStorage(StorageId::BuiltInSystem));
 
         /* Next, the NandSystem content meta entry. */
         SaveDataMeta nand_system_save_meta;
         nand_system_save_meta.id = 0x8000000000000120;
         nand_system_save_meta.size = 0x6c000;
         nand_system_save_meta.journal_size = 0x6c000;
-        nand_system_save_meta.flags = FsSaveDataFlags_SurviveFactoryReset| FsSaveDataFlags_SurviveFactoryResetForRefurbishment;
-        nand_system_save_meta.space_id = FsSaveDataSpaceId_NandSystem;
+        nand_system_save_meta.flags = FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment;
+        nand_system_save_meta.space_id = FsSaveDataSpaceId_System;
 
         size_t cur_meta_index = g_num_content_meta_entries;
         g_num_content_meta_entries++;
         auto content_meta_entry = &g_content_meta_entries[cur_meta_index];
 
-        R_TRY(content_meta_entry->Initialize(StorageId::NandSystem, nand_system_save_meta, 0x800));
+        R_TRY(content_meta_entry->Initialize(StorageId::BuiltInSystem, nand_system_save_meta, 0x800));
 
-        if (R_FAILED(VerifyContentMetaDatabase(StorageId::NandSystem))) {
-            R_TRY(CreateContentMetaDatabase(StorageId::NandSystem));
+        if (R_FAILED(VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
+            R_TRY(CreateContentMetaDatabase(StorageId::BuiltInSystem));
 
             /* TODO: N supports a number of unused modes here, we don't bother implementing them currently. */
         }
 
         u32 current_flags = 0;
-        if (GetRuntimeFirmwareVersion() >= FirmwareVersion_200 && R_SUCCEEDED(fs::GetSaveDataFlags(&current_flags, 0x8000000000000120)) && current_flags != (FsSaveDataFlags_SurviveFactoryReset | FsSaveDataFlags_SurviveFactoryResetForRefurbishment)) {
-            fs::SetSaveDataFlags(0x8000000000000120, FsSaveDataSpaceId_NandSystem, FsSaveDataFlags_SurviveFactoryReset | FsSaveDataFlags_SurviveFactoryResetForRefurbishment);
+        if (hos::GetVersion() >= hos::Version_200 && R_SUCCEEDED(fs::GetSaveDataFlags(&current_flags, 0x8000000000000120)) && current_flags != (FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment)) {
+            fs::SetSaveDataFlags(0x8000000000000120, FsSaveDataSpaceId_System, FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment);
         }
         
-        R_TRY(ActivateContentMetaDatabase(StorageId::NandSystem));
+        R_TRY(ActivateContentMetaDatabase(StorageId::BuiltInSystem));
 
         /* Now for NandUser's content storage entry. */
         cur_storage_index = g_num_content_storage_entries;
         g_num_content_storage_entries++;
         storage_entry = &g_content_storage_entries[cur_storage_index];
-        storage_entry->Initialize(StorageId::NandUser, FS_CONTENTSTORAGEID_NandUser);
+        storage_entry->Initialize(StorageId::BuiltInUser, FsContentStorageId_User);
 
         /* And NandUser's content meta entry. */
         SaveDataMeta nand_user_save_meta;
@@ -215,13 +215,13 @@ namespace sts::ncm::impl {
         nand_user_save_meta.size = 0x29e000;
         nand_user_save_meta.journal_size = 0x29e000;
         nand_user_save_meta.flags = 0;
-        nand_user_save_meta.space_id = FsSaveDataSpaceId_NandSystem;
+        nand_user_save_meta.space_id = FsSaveDataSpaceId_System;
 
         cur_meta_index = g_num_content_meta_entries;
         g_num_content_meta_entries++;
         content_meta_entry = &g_content_meta_entries[cur_meta_index];
 
-        R_TRY(content_meta_entry->Initialize(StorageId::NandUser, nand_user_save_meta, 0x2000));
+        R_TRY(content_meta_entry->Initialize(StorageId::BuiltInUser, nand_user_save_meta, 0x2000));
 
         /* 
            Beyond this point N no longer appears to bother
@@ -229,7 +229,7 @@ namespace sts::ncm::impl {
         */
 
         /* Next SdCard's content storage entry. */
-        g_content_storage_entries[2].Initialize(StorageId::SdCard, FS_CONTENTSTORAGEID_SdCard);
+        g_content_storage_entries[2].Initialize(StorageId::SdCard, FsContentStorageId_SdCard);
 
         /* And SdCard's content meta entry. */
         SaveDataMeta sd_card_save_meta;
@@ -237,26 +237,26 @@ namespace sts::ncm::impl {
         sd_card_save_meta.size = 0xa08000;
         sd_card_save_meta.journal_size = 0xa08000;
         sd_card_save_meta.flags = 0;
-        sd_card_save_meta.space_id = FsSaveDataSpaceId_SdCard;
+        sd_card_save_meta.space_id = FsSaveDataSpaceId_SdSystem;
 
         content_meta_entry = &g_content_meta_entries[2];
         R_TRY(content_meta_entry->Initialize(StorageId::SdCard, sd_card_save_meta, 0x2000));
 
         /* GameCard's content storage entry. */
         /* N doesn't set a content storage id for game cards, so we'll just use 0 (NandSystem). */
-        g_content_storage_entries[3].Initialize(StorageId::GameCard, FS_CONTENTSTORAGEID_NandSystem);
+        g_content_storage_entries[3].Initialize(StorageId::GameCard, FsContentStorageId_System);
 
         /* Lasty, GameCard's content meta entry. */
         content_meta_entry = &g_content_meta_entries[3];
         R_TRY(content_meta_entry->InitializeGameCard(0x800));
 
         g_initialized = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     void FinalizeContentManager() {
         {
-            std::scoped_lock<HosMutex> lk(g_mutex);
+            std::scoped_lock<os::Mutex> lk(g_mutex);
 
             for (size_t i = 0; i < MaxContentStorageEntries; i++) {
                 ContentStorageEntry* entry = &g_content_storage_entries[i];
@@ -281,16 +281,16 @@ namespace sts::ncm::impl {
     }
 
     Result CreateContentStorage(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
 
         R_TRY(fs::MountContentStorage(entry->mount_point, entry->content_storage_id));
@@ -302,20 +302,20 @@ namespace sts::ncm::impl {
         R_TRY(fs::EnsureDirectoryRecursively(entry->root_path));
         R_TRY(fs::EnsureContentAndPlaceHolderRoot(entry->root_path));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result VerifyContentStorage(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
 
         MountName mount_name = fs::CreateUniqueMountName();
@@ -330,99 +330,99 @@ namespace sts::ncm::impl {
 
         R_TRY(fs::CheckContentStorageDirectoriesExist(mount_root));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result OpenContentStorage(std::shared_ptr<IContentStorage>* out, StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         auto content_storage = entry->content_storage;
 
         if (!content_storage) {
             /* 1.0.0 activates content storages as soon as they are opened. */
-            if (GetRuntimeFirmwareVersion() == FirmwareVersion_100) {
+            if (hos::GetVersion() == hos::Version_100) {
                 R_TRY(ActivateContentStorage(storage_id));
                 content_storage = entry->content_storage;
             } else {
                 switch (storage_id) {
                     case StorageId::GameCard:
-                        return ResultNcmGameCardContentStorageNotActive;
+                        return ResultGameCardContentStorageNotActive();
 
-                    case StorageId::NandSystem:
-                        return ResultNcmNandSystemContentStorageNotActive;
+                    case StorageId::BuiltInSystem:
+                        return ResultNandSystemContentStorageNotActive();
 
-                    case StorageId::NandUser:
-                        return ResultNcmNandUserContentStorageNotActive;
+                    case StorageId::BuiltInUser:
+                        return ResultNandUserContentStorageNotActive();
 
                     case StorageId::SdCard:
-                        return ResultNcmSdCardContentStorageNotActive;
+                        return ResultSdCardContentStorageNotActive();
 
                     default:
-                        return ResultNcmUnknownContentStorageNotActive;
+                        return ResultUnknownContentStorageNotActive();
                 }
             }
         } 
 
         *out = std::move(content_storage);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result CloseContentStorageForcibly(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
 
         if (!entry->content_storage) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         /* N doesn't bother checking the result of this */
         entry->content_storage->DisableForcibly();
         fs::Unmount(entry->mount_point);
         entry->content_storage = nullptr;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ActivateContentStorage(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
 
         /* Already activated. */
         if (entry->content_storage != nullptr) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         if (storage_id == StorageId::GameCard) {
             FsGameCardHandle gc_hnd;
             R_TRY(fs::GetGameCardHandle(&gc_hnd));
-            R_TRY(fs::MountGameCardPartition(entry->mount_point, gc_hnd, FsGameCardPartiton_Secure));
+            R_TRY(fs::MountGameCardPartition(entry->mount_point, gc_hnd, FsGameCardPartition_Secure));
             auto mount_guard = SCOPE_GUARD { fs::Unmount(entry->mount_point); };
             auto content_storage = std::make_shared<ReadOnlyContentStorageInterface>();
             
@@ -438,7 +438,7 @@ namespace sts::ncm::impl {
             auto content_storage = std::make_shared<ContentStorageInterface>();
 
             switch (storage_id) {
-                case StorageId::NandSystem:
+                case StorageId::BuiltInSystem:
                     content_path_func = path::MakeContentPathFlat;
                     placeholder_path_func = path::MakePlaceHolderPathFlat;
                     break;
@@ -456,51 +456,51 @@ namespace sts::ncm::impl {
             mount_guard.Cancel();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result InactivateContentStorage(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
 
         /* Already inactivated. */
         if (entry->content_storage == nullptr) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         entry->content_storage->DisableForcibly();
         entry->content_storage = nullptr;
         fs::Unmount(entry->mount_point);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result CreateContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None || storage_id == StorageId::GameCard || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
 
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
 
         /* N doesn't bother checking the result of this. */
         fsDisableAutoSaveDataCreation();
 
         R_TRY_CATCH(fs::MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id)) {
-            R_CATCH(ResultFsTargetNotFound) {
+            R_CATCH(ams::fs::ResultTargetNotFound) {
                 R_TRY(fsCreate_SystemSaveData(entry->save_meta.space_id, entry->save_meta.id, entry->save_meta.size, entry->save_meta.journal_size, entry->save_meta.flags));
                 R_TRY(fs::MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id));
             }
@@ -513,24 +513,24 @@ namespace sts::ncm::impl {
         R_TRY(fs::EnsureDirectoryRecursively(entry->meta_path));
         R_TRY(fsdevCommitDevice(entry->mount_point));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result VerifyContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::GameCard) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
 
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
 
         bool mounted_save_data = false;
@@ -549,73 +549,73 @@ namespace sts::ncm::impl {
         bool has_meta_path = false;
         R_TRY(fs::HasDirectory(&has_meta_path, entry->meta_path));
         if (!has_meta_path) {
-            return ResultNcmInvalidContentMetaDatabase;
+            return ResultInvalidContentMetaDatabase();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result OpenContentMetaDatabase(std::shared_ptr<IContentMetaDatabase>* out, StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         std::shared_ptr<IContentMetaDatabase> content_meta_db = entry->content_meta_database;
 
         if (!content_meta_db) {
             /* 1.0.0 activates content meta dbs as soon as they are opened. */
-            if (GetRuntimeFirmwareVersion() == FirmwareVersion_100) {
+            if (hos::GetVersion() == hos::Version_100) {
                 R_TRY(ActivateContentMetaDatabase(storage_id));
                 content_meta_db = entry->content_meta_database;
             } else {
                 switch (storage_id) {
                     case StorageId::GameCard:
-                        return ResultNcmGameCardContentMetaDatabaseNotActive;
+                        return ResultGameCardContentMetaDatabaseNotActive();
 
-                    case StorageId::NandSystem:
-                        return ResultNcmNandSystemContentMetaDatabaseNotActive;
+                    case StorageId::BuiltInSystem:
+                        return ResultNandSystemContentMetaDatabaseNotActive();
 
-                    case StorageId::NandUser:
-                        return ResultNcmNandUserContentMetaDatabaseNotActive;
+                    case StorageId::BuiltInUser:
+                        return ResultNandUserContentMetaDatabaseNotActive();
 
                     case StorageId::SdCard:
-                        return ResultNcmSdCardContentMetaDatabaseNotActive;
+                        return ResultSdCardContentMetaDatabaseNotActive();
 
                     default:
-                        return ResultNcmUnknownContentMetaDatabaseNotActive;
+                        return ResultUnknownContentMetaDatabaseNotActive();
                 }
             }
         } 
 
         *out = std::move(content_meta_db);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result CloseContentMetaDatabaseForcibly(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         std::shared_ptr<IContentMetaDatabase> content_meta_db = entry->content_meta_database;
 
         if (!content_meta_db) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         /* N doesn't bother checking the result of this */
@@ -627,38 +627,38 @@ namespace sts::ncm::impl {
 
         entry->content_meta_database = nullptr;
         entry->kvs.reset();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result CleanupContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
 
         if (!entry) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
 
         R_TRY(fsDeleteSaveDataFileSystemBySaveDataSpaceId(entry->save_meta.space_id, entry->save_meta.id));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ActivateContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
 
         /* Already activated. */
         if (entry->content_meta_database != nullptr) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         /* Make a brand new kvs. N doesn't quite do this, but we will for cleanliness. */
@@ -680,21 +680,21 @@ namespace sts::ncm::impl {
             entry->content_meta_database = std::move(content_meta_database);
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result InactivateContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock<HosMutex> lk(g_mutex);
+        std::scoped_lock<os::Mutex> lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
-            return ResultNcmUnknownStorage;
+            return ResultUnknownStorage();
         }
         
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
 
         /* Already inactivated. */
         if (entry->content_meta_database == nullptr) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
 
         entry->content_meta_database->DisableForcibly();
@@ -706,12 +706,12 @@ namespace sts::ncm::impl {
             fs::Unmount(entry->mount_point);
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result InvalidateRightsIdCache() {
         g_rights_id_cache.Invalidate();
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

@@ -22,9 +22,9 @@
 #include "lr_ilocationresolver.hpp"
 #include "lr_registeredlocationresolver.hpp"
 
-namespace sts::lr {
+namespace ams::lr {
 
-    class LocationResolverManagerService final : public IServiceObject {
+    class LocationResolverManagerService final : public sf::IServiceObject {
         protected:
             enum class CommandId {
                 OpenLocationResolver = 0,
@@ -34,16 +34,16 @@ namespace sts::lr {
             };
         public:
             /* Actual commands. */
-            virtual Result OpenLocationResolver(Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id);
-            virtual Result OpenRegisteredLocationResolver(Out<std::shared_ptr<RegisteredLocationResolverInterface>> out);
+            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id);
+            virtual Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out);
             virtual Result RefreshLocationResolver(ncm::StorageId storage_id);
-            virtual Result OpenAddOnContentLocationResolver(Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out);
+            virtual Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(LocationResolverManagerService, OpenLocationResolver),
-                MAKE_SERVICE_COMMAND_META(LocationResolverManagerService, OpenRegisteredLocationResolver),
-                MAKE_SERVICE_COMMAND_META(LocationResolverManagerService, RefreshLocationResolver),
-                MAKE_SERVICE_COMMAND_META(LocationResolverManagerService, OpenAddOnContentLocationResolver, FirmwareVersion_200),
+                MAKE_SERVICE_COMMAND_META(OpenLocationResolver),
+                MAKE_SERVICE_COMMAND_META(OpenRegisteredLocationResolver),
+                MAKE_SERVICE_COMMAND_META(RefreshLocationResolver),
+                MAKE_SERVICE_COMMAND_META(OpenAddOnContentLocationResolver, hos::Version_200),
             };
     };
 

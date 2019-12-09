@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <sys/dirent.h>
 
-namespace sts::ncm::fs {
+namespace ams::ncm::fs {
 
     Result OpenFile(FILE** out, const char* path, u32 mode);
     Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option);
@@ -43,7 +43,7 @@ namespace sts::ncm::fs {
 
     Result MountSystemSaveData(const char* mount_point, FsSaveDataSpaceId space_id, u64 save_id);
     Result MountContentStorage(const char* mount_point, FsContentStorageId id);
-    Result MountGameCardPartition(const char* mount_point, const FsGameCardHandle handle, FsGameCardPartiton partition);
+    Result MountGameCardPartition(const char* mount_point, const FsGameCardHandle handle, FsGameCardPartition partition);
     Result Unmount(const char* mount_point);
     Result ConvertToFsCommonPath(char* out_common_path, size_t len, const char* path);
 
@@ -55,7 +55,7 @@ namespace sts::ncm::fs {
         DIR *dir;
         struct dirent* dir_entry = nullptr;
         if (max_level < 1) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
         
         bool retry_dir_read = true;
@@ -84,7 +84,7 @@ namespace sts::ncm::fs {
                 /* If the provided function wishes to terminate immediately, we should respect it. */
                 if (!should_continue) {
                     *out_should_continue = false;
-                    return ResultSuccess;
+                    return ResultSuccess();
                 }
                 if (should_retry_dir_read) {
                     retry_dir_read = true;
@@ -96,13 +96,13 @@ namespace sts::ncm::fs {
 
                     if (!should_continue) {
                         *out_should_continue = false;
-                        return ResultSuccess;
+                        return ResultSuccess();
                     }
                 }
             }
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     };
 
     template<typename F>

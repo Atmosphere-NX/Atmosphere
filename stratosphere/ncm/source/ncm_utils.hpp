@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 #include <sys/dirent.h>
 
-namespace sts::ncm {
+namespace ams::ncm {
 
     void GetStringFromContentId(char* out, ContentId content_id);
     void GetStringFromPlaceHolderId(char* out, PlaceHolderId placeholder_id);

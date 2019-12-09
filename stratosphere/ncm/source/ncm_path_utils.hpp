@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::ncm::path {
+namespace ams::ncm::path {
 
     inline void GetContentRootPath(char* out_content_root, const char* root_path) {
         /* TODO: Replace with BoundedString? */

@@ -36,58 +36,27 @@ extern "C" {
     void __appExit(void);
 
     /* Exception handling. */
-    alignas(16) u8 __nx_exception_stack[0x1000];
+    alignas(16) u8 __nx_exception_stack[ams::os::MemoryPageSize];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
-    void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx);
 }
 
-sts::ncm::TitleId __stratosphere_title_id = sts::ncm::TitleId::Ncm;
+namespace ams {
 
-namespace {
+    ncm::ProgramId CurrentProgramId = ncm::ProgramId::Ncm;
 
-    /* Convenience definitions. */
-    constexpr uintptr_t IramBase = 0x40000000ull;
-    constexpr uintptr_t IramPayloadBase = 0x40010000ull;
-    constexpr size_t IramSize = 0x40000;
-    constexpr size_t IramPayloadMaxSize = 0x2E000;
+    namespace result {
 
-    /* Globals. */
-    u8 __attribute__ ((aligned (0x1000))) g_work_page[0x1000];
+        bool CallFatalOnResultAssertion = false;
 
-    /* Helpers. */
-    void ClearIram() {
-        /* Make page FFs. */
-        memset(g_work_page, 0xFF, sizeof(g_work_page));
-
-        /* Overwrite all of IRAM with FFs. */
-        for (size_t ofs = 0; ofs < IramSize; ofs += sizeof(g_work_page)) {
-            CopyToIram(IramBase + ofs, g_work_page, sizeof(g_work_page));
-        }
-    }
-
-    void DoReboot(AtmosphereFatalErrorContext *ctx) {
-        /* Ensure clean IRAM state. */
-        ClearIram();
-
-        /* Copy in fatal error context, if relevant. */
-        if (ctx != nullptr) {
-            std::memset(g_work_page, 0xCC, sizeof(g_work_page));
-            std::memcpy(g_work_page, ctx, sizeof(*ctx));
-            CopyToIram(IramPayloadBase + IramPayloadMaxSize, g_work_page, sizeof(g_work_page));
-        }
-
-        RebootToRcm();
     }
 
 }
+
+using namespace ams;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    StratosphereCrashHandler(ctx);
-}
-
-void __libstratosphere_exception_handler(AtmosphereFatalErrorContext *ctx) {
-    DoReboot(ctx);
+    ams::CrashHandler(ctx);
 }
 
 void __libnx_initheap(void) {
@@ -103,13 +72,13 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    SetFirmwareVersionForLibnx();
+    hos::SetVersionForLibnx();
 
-    DoWithSmSession([&]() {
+    sm::DoWithSession([&]() {
         R_ASSERT(fsInitialize());
     });
 
-    CheckAtmosphereVersion(CURRENT_ATMOSPHERE_VERSION);
+    ams::CheckApiVersion();
 }
 
 void __appExit(void) {
@@ -118,39 +87,49 @@ void __appExit(void) {
     fsExit();
 }
 
-struct ServerOptions {
-    static constexpr size_t PointerBufferSize = 0x400;
-    static constexpr size_t MaxDomains = 0;
-    static constexpr size_t MaxDomainObjects = 0;
-};
+namespace {
+
+    struct NcmServerOptions {
+        static constexpr size_t PointerBufferSize = 0x400;
+        static constexpr size_t MaxDomains = 0;
+        static constexpr size_t MaxDomainObjects = 0;
+    };
+
+    constexpr sm::ServiceName NcmServiceName = sm::ServiceName::Encode("ncm");
+    constexpr size_t          NcmMaxSessions = 16;
+    constexpr size_t          NcmNumServers = 1;
+
+    constexpr sm::ServiceName LrServiceName = sm::ServiceName::Encode("lr");
+    constexpr size_t          LrMaxSessions = 16;
+    constexpr size_t          LrNumServers = 1;
+
+    sf::hipc::ServerManager<NcmNumServers, NcmServerOptions, NcmMaxSessions> g_ncm_server_manager;
+    sf::hipc::ServerManager<LrNumServers, NcmServerOptions, LrMaxSessions> g_lr_server_manager;
+}
 
 void ContentManagerServerMain(void* arg) {
-    static auto s_server_manager = WaitableManager<ServerOptions>(1);
-    
     /* Create services. */
-    s_server_manager.AddWaitable(new ServiceServer<sts::ncm::ContentManagerService>("ncm", 0x10));
+    R_ASSERT(g_ncm_server_manager.RegisterServer<ncm::ContentManagerService>(NcmServiceName, NcmMaxSessions));
 
     /* Loop forever, servicing our services. */
-    s_server_manager.Process();
+    g_ncm_server_manager.LoopProcess();
 }
 
 void LocationResolverServerMain(void* arg) {
-    static auto s_server_manager = WaitableManager<ServerOptions>(1);
-    
     /* Create services. */
-    s_server_manager.AddWaitable(new ServiceServer<sts::lr::LocationResolverManagerService>("lr", 0x10));
+    R_ASSERT(g_lr_server_manager.RegisterServer<lr::LocationResolverManagerService>(LrServiceName, LrMaxSessions));
 
     /* Loop forever, servicing our services. */
-    s_server_manager.Process();
+    g_lr_server_manager.LoopProcess();
 }
 
 int main(int argc, char **argv)
 {
     /* Initialize content manager implementation. */
-    R_ASSERT(sts::ncm::impl::InitializeContentManager());
+    R_ASSERT(ams::ncm::impl::InitializeContentManager());
 
-    static HosThread s_content_manager_thread;
-    static HosThread s_location_resolver_thread;
+    static os::Thread s_content_manager_thread;
+    static os::Thread s_location_resolver_thread;
 
     R_ASSERT(s_content_manager_thread.Initialize(&ContentManagerServerMain, nullptr, 0x4000, 0x15));
     R_ASSERT(s_content_manager_thread.Start());
@@ -161,7 +140,7 @@ int main(int argc, char **argv)
     s_content_manager_thread.Join();
     s_location_resolver_thread.Join();
 
-    sts::ncm::impl::FinalizeContentManager();
+    ams::ncm::impl::FinalizeContentManager();
     
     return 0;
 }

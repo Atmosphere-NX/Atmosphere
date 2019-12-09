@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::lr::impl {
+namespace ams::lr::impl {
 
     enum RedirectionFlags {
         RedirectionFlags_None        = (0 << 0),
@@ -31,17 +31,17 @@ namespace sts::lr::impl {
         NON_COPYABLE(LocationRedirector);
         NON_MOVEABLE(LocationRedirector);
         private:
-            sts::util::IntrusiveListBaseTraits<LocationRedirection>::ListType redirection_list;
+            ams::util::IntrusiveListBaseTraits<LocationRedirection>::ListType redirection_list;
         public:
             LocationRedirector() { /* ... */ }
 
-            bool FindRedirection(Path *out, ncm::TitleId title_id);
-            void SetRedirection(ncm::TitleId title_id, const Path &path, u32 flags = RedirectionFlags_None);
-            void SetRedirection(ncm::TitleId title_id, ncm::TitleId owner_tid, const Path &path, u32 flags = RedirectionFlags_None);
-            void SetRedirectionFlags(ncm::TitleId title_id, u32 flags);
-            void EraseRedirection(ncm::TitleId title_id);
+            bool FindRedirection(Path *out, ncm::ProgramId title_id);
+            void SetRedirection(ncm::ProgramId title_id, const Path &path, u32 flags = RedirectionFlags_None);
+            void SetRedirection(ncm::ProgramId title_id, ncm::ProgramId owner_tid, const Path &path, u32 flags = RedirectionFlags_None);
+            void SetRedirectionFlags(ncm::ProgramId title_id, u32 flags);
+            void EraseRedirection(ncm::ProgramId title_id);
             void ClearRedirections(u32 flags = RedirectionFlags_None);
-            void ClearRedirections(const ncm::TitleId* excluding_tids, size_t num_tids);
+            void ClearRedirections(const ncm::ProgramId* excluding_tids, size_t num_tids);
     };
 
 }

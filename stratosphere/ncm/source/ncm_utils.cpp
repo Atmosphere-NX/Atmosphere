@@ -16,7 +16,7 @@
 
 #include "ncm_utils.hpp"
 
-namespace sts::ncm {
+namespace ams::ncm {
 
     void GetStringFromContentId(char* out, ContentId content_id) {
         for (size_t i = 0; i < sizeof(ContentId); i++) {
@@ -32,7 +32,7 @@ namespace sts::ncm {
 
     Result GetPlaceHolderIdFromDirEntry(PlaceHolderId* out, struct dirent* dir_entry) {
         if (strnlen(dir_entry->d_name, 0x30) != 0x24 || strncmp(dir_entry->d_name + 0x20, ".nca", 4) != 0) {
-            return ResultNcmInvalidPlaceHolderDirectoryEntry;
+            return ResultInvalidPlaceHolderDirectoryEntry();
         }
 
         PlaceHolderId placeholder_id = {0};
@@ -51,7 +51,7 @@ namespace sts::ncm {
         }
 
         *out = placeholder_id;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     std::optional<ContentId> GetContentIdFromString(const char* str, size_t len) {

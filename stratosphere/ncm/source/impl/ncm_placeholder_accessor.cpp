@@ -20,20 +20,20 @@
 #include "../ncm_make_path.hpp"
 #include "../ncm_path_utils.hpp"
 
-namespace sts::ncm::impl {
+namespace ams::ncm::impl {
 
     Result PlaceHolderAccessor::Open(FILE** out_handle, PlaceHolderId placeholder_id) {
         if (this->LoadFromCache(out_handle, placeholder_id)) {
-            return ResultSuccess;
+            return ResultSuccess();
         }
         char placeholder_path[FS_MAX_PATH] = {0};
         this->MakePath(placeholder_path, placeholder_id);
 
         FILE* f = nullptr;
-        R_TRY(fs::OpenFile(&f, placeholder_path, FS_OPEN_WRITE));
+        R_TRY(fs::OpenFile(&f, placeholder_path, FsOpenMode_Write));
 
         *out_handle = f;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     bool PlaceHolderAccessor::LoadFromCache(FILE** out_handle, PlaceHolderId placeholder_id) {
@@ -126,13 +126,13 @@ namespace sts::ncm::impl {
         this->EnsureRecursively(placeholder_id);
         this->GetPath(placeholder_path, placeholder_id);
 
-        R_TRY_CATCH(fsdevCreateFile(placeholder_path, size, FS_CREATE_BIG_FILE)) {
-            R_CATCH(ResultFsPathAlreadyExists) {
-                return ResultNcmPlaceHolderAlreadyExists;
+        R_TRY_CATCH(fsdevCreateFile(placeholder_path, size, FsCreateOption_BigFile)) {
+            R_CATCH(ams::fs::ResultPathAlreadyExists) {
+                return ResultPlaceHolderAlreadyExists();
             }
         } R_END_TRY_CATCH;
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result PlaceHolderAccessor::Delete(PlaceHolderId placeholder_id) {
@@ -142,21 +142,21 @@ namespace sts::ncm::impl {
 
         if (std::remove(placeholder_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ResultFsPathNotFound) {
-                    return ResultNcmPlaceHolderNotFound;
+                R_CATCH(ams::fs::ResultPathNotFound) {
+                    return ResultPlaceHolderNotFound();
                 }
             } R_END_TRY_CATCH;
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result PlaceHolderAccessor::Write(PlaceHolderId placeholder_id, size_t offset, const void* buffer, size_t size) {
         FILE* f = nullptr;
 
         R_TRY_CATCH(this->Open(&f, placeholder_id)) {
-            R_CATCH(ResultFsPathNotFound) {
-                return ResultNcmPlaceHolderNotFound;
+            R_CATCH(ams::fs::ResultPathNotFound) {
+                return ResultPlaceHolderNotFound();
             }
         } R_END_TRY_CATCH;
 
@@ -165,7 +165,7 @@ namespace sts::ncm::impl {
         };
 
         R_TRY(fs::WriteFile(f, offset, buffer, size, !this->delay_flush));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result PlaceHolderAccessor::SetSize(PlaceHolderId placeholder_id, size_t size) {
@@ -173,13 +173,13 @@ namespace sts::ncm::impl {
         this->MakePath(placeholder_path, placeholder_id);
         if (truncate(placeholder_path, size) == -1) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ResultFsPathNotFound) {
-                    return ResultNcmPlaceHolderNotFound;
+                R_CATCH(ams::fs::ResultPathNotFound) {
+                    return ResultPlaceHolderNotFound();
                 }
             } R_END_TRY_CATCH;
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result PlaceHolderAccessor::GetSize(bool* found_in_cache, size_t* out_size, PlaceHolderId placeholder_id) {
@@ -191,14 +191,14 @@ namespace sts::ncm::impl {
             
             if (placeholder_id == InvalidPlaceHolderId) {
                 *found_in_cache = false;
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             CacheEntry* cache_entry = this->FindInCache(placeholder_id);
 
             if (cache_entry == nullptr) {
                 *found_in_cache = false;
-                return ResultSuccess;
+                return ResultSuccess();
             }
 
             cache_entry->id = InvalidPlaceHolderId;
@@ -217,14 +217,14 @@ namespace sts::ncm::impl {
 
         *found_in_cache = true;
         *out_size = size;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result PlaceHolderAccessor::EnsureRecursively(PlaceHolderId placeholder_id) {
         char placeholder_path[FS_MAX_PATH] = {0};
         this->MakePath(placeholder_path, placeholder_id);
         R_TRY(fs::EnsureParentDirectoryRecursively(placeholder_path));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     void PlaceHolderAccessor::InvalidateAll() {

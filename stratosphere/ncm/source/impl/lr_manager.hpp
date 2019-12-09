@@ -22,12 +22,12 @@
 #include "../lr_ilocationresolver.hpp"
 #include "../lr_registeredlocationresolver.hpp"
 
-namespace sts::lr::impl {
+namespace ams::lr::impl {
 
     /* Location Resolver API. */
-    Result OpenLocationResolver(Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id);
-    Result OpenRegisteredLocationResolver(Out<std::shared_ptr<RegisteredLocationResolverInterface>> out);
+    Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id);
+    Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out);
     Result RefreshLocationResolver(ncm::StorageId storage_id);
-    Result OpenAddOnContentLocationResolver(Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out);
+    Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out);
 
 }

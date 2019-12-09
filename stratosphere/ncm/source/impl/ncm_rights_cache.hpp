@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::ncm::impl {
+namespace ams::ncm::impl {
 
     class RightsIdCache {
         public:
@@ -34,7 +34,7 @@ namespace sts::ncm::impl {
 
             Entry entries[MaxEntries];
             u64 counter;
-            HosMutex mutex;
+            os::Mutex mutex;
 
             RightsIdCache() {
                 this->Invalidate();

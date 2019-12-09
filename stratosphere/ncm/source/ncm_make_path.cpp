@@ -17,7 +17,7 @@
 #include "ncm_make_path.hpp"
 #include "ncm_path_utils.hpp"
 
-namespace sts::ncm::path {
+namespace ams::ncm::path {
 
     namespace {
 

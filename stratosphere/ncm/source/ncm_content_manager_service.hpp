@@ -21,9 +21,9 @@
 #include "ncm_icontentmetadatabase.hpp"
 #include "ncm_icontentstorage.hpp"
 
-namespace sts::ncm {
+namespace ams::ncm {
 
-    class ContentManagerService final : public IServiceObject {
+    class ContentManagerService final : public sf::IServiceObject {
         protected:
             enum class CommandId {
                 CreateContentStorage = 0,
@@ -46,8 +46,8 @@ namespace sts::ncm {
             virtual Result CreateContentMetaDatabase(StorageId storage_id);
             virtual Result VerifyContentStorage(StorageId storage_id);
             virtual Result VerifyContentMetaDatabase(StorageId storage_id);
-            virtual Result OpenContentStorage(Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id);
-            virtual Result OpenContentMetaDatabase(Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id);
+            virtual Result OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id);
+            virtual Result OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id);
             virtual Result CloseContentStorageForcibly(StorageId storage_id);
             virtual Result CloseContentMetaDatabaseForcibly(StorageId storage_id);
             virtual Result CleanupContentMetaDatabase(StorageId storage_id);
@@ -58,20 +58,20 @@ namespace sts::ncm {
             virtual Result InvalidateRightsIdCache();
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, CreateContentStorage),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, CreateContentMetaDatabase),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, VerifyContentStorage),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, VerifyContentMetaDatabase),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, OpenContentStorage),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, OpenContentMetaDatabase),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, CloseContentStorageForcibly,      FirmwareVersion_100, FirmwareVersion_100),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, CloseContentMetaDatabaseForcibly, FirmwareVersion_100, FirmwareVersion_100),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, CleanupContentMetaDatabase),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, ActivateContentStorage,           FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, InactivateContentStorage,         FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, ActivateContentMetaDatabase,      FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, InactivateContentMetaDatabase,    FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentManagerService, InvalidateRightsIdCache,          FirmwareVersion_900),
+                MAKE_SERVICE_COMMAND_META(CreateContentStorage),
+                MAKE_SERVICE_COMMAND_META(CreateContentMetaDatabase),
+                MAKE_SERVICE_COMMAND_META(VerifyContentStorage),
+                MAKE_SERVICE_COMMAND_META(VerifyContentMetaDatabase),
+                MAKE_SERVICE_COMMAND_META(OpenContentStorage),
+                MAKE_SERVICE_COMMAND_META(OpenContentMetaDatabase),
+                MAKE_SERVICE_COMMAND_META(CloseContentStorageForcibly,      hos::Version_100, hos::Version_100),
+                MAKE_SERVICE_COMMAND_META(CloseContentMetaDatabaseForcibly, hos::Version_100, hos::Version_100),
+                MAKE_SERVICE_COMMAND_META(CleanupContentMetaDatabase),
+                MAKE_SERVICE_COMMAND_META(ActivateContentStorage,           hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(InactivateContentStorage,         hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(ActivateContentMetaDatabase,      hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(InactivateContentMetaDatabase,    hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(InvalidateRightsIdCache,          hos::Version_900),
             };
     };
 

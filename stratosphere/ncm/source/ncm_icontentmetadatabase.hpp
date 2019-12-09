@@ -19,9 +19,9 @@
 #include <stratosphere.hpp>
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 
-namespace sts::ncm {
+namespace ams::ncm {
 
-    class IContentMetaDatabase : public IServiceObject {
+    class IContentMetaDatabase : public sf::IServiceObject {
         protected:
             enum class CommandId {
                 Set = 0,
@@ -47,72 +47,77 @@ namespace sts::ncm {
                 GetContentIdByTypeAndIdOffset = 20,
             };
         protected:
-            sts::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs;
+            ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs;
             char mount_name[16];
             bool disabled;
         protected:
-            Result EnsureEnabled();
+            Result EnsureEnabled() {
+                if (this->disabled) {
+                    return ResultInvalidContentMetaDatabase();
+                }
+                return ResultSuccess();
+            }
         public:
-            IContentMetaDatabase(sts::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs) : 
+            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs) : 
                 kvs(kvs), disabled(false)
             {
             }
 
-            IContentMetaDatabase(sts::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs, const char* mount_name) : 
+            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs, const char* mount_name) : 
                 IContentMetaDatabase(kvs)
             {
                 strcpy(this->mount_name, mount_name);
             }
         public:
             /* Actual commands. */
-            virtual Result Set(ContentMetaKey key, InBuffer<u8> value);
-            virtual Result Get(Out<u64> out_size, ContentMetaKey key, OutBuffer<u8> out_value);
+            virtual Result Set(ContentMetaKey key, sf::InBuffer value);
+            virtual Result Get(sf::Out<u64> out_size, ContentMetaKey key, sf::OutBuffer out_value);
             virtual Result Remove(ContentMetaKey key);
-            virtual Result GetContentIdByType(Out<ContentId> out_content_id, ContentMetaKey key, ContentType type);
-            virtual Result ListContentInfo(Out<u32> out_entries_written, OutBuffer<ContentInfo> out_info, ContentMetaKey key, u32 start_index);
-            virtual Result List(Out<u32> out_entries_total, Out<u32> out_entries_written, OutBuffer<ContentMetaKey> out_info, ContentMetaType meta_type, TitleId application_title_id, TitleId title_id_min, TitleId title_id_max, ContentInstallType install_type);
-            virtual Result GetLatestContentMetaKey(Out<ContentMetaKey> out_key, TitleId tid);
-            virtual Result ListApplication(Out<u32> out_entries_total, Out<u32> out_entries_written, OutBuffer<ApplicationContentMetaKey> out_keys, ContentMetaType meta_type);
-            virtual Result Has(Out<bool> out, ContentMetaKey key);
-            virtual Result HasAll(Out<bool> out, InBuffer<ContentMetaKey> keys);
-            virtual Result GetSize(Out<u64> out_size, ContentMetaKey key);
-            virtual Result GetRequiredSystemVersion(Out<u32> out_version, ContentMetaKey key);
-            virtual Result GetPatchId(Out<TitleId> out_patch_id, ContentMetaKey key);
+            virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type);
+            virtual Result ListContentInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, ContentMetaKey key, u32 start_index);
+            virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_title_id, ProgramId title_id_min, ProgramId title_id_max, ContentInstallType install_type);
+            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId tid);
+            virtual Result ListApplication(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType meta_type);
+            virtual Result Has(sf::Out<bool> out, ContentMetaKey key);
+            virtual Result HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys);
+            virtual Result GetSize(sf::Out<u64> out_size, ContentMetaKey key);
+            virtual Result GetRequiredSystemVersion(sf::Out<u32> out_version, ContentMetaKey key);
+            virtual Result GetPatchId(sf::Out<ProgramId> out_patch_id, ContentMetaKey key);
             virtual Result DisableForcibly();
-            virtual Result LookupOrphanContent(OutBuffer<bool> out_orphaned, InBuffer<ContentId> content_ids);
+            virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids);
             virtual Result Commit();
-            virtual Result HasContent(Out<bool> out, ContentMetaKey key, ContentId content_id);
-            virtual Result ListContentMetaInfo(Out<u32> out_entries_written, OutBuffer<ContentMetaInfo> out_meta_info, ContentMetaKey key, u32 start_index);
-            virtual Result GetAttributes(Out<ContentMetaAttribute> out_attributes, ContentMetaKey key);
-            virtual Result GetRequiredApplicationVersion(Out<u32> out_version, ContentMetaKey key);
-            virtual Result GetContentIdByTypeAndIdOffset(Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset);
+            virtual Result HasContent(sf::Out<bool> out, ContentMetaKey key, ContentId content_id);
+            virtual Result ListContentMetaInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, ContentMetaKey key, u32 start_index);
+            virtual Result GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, ContentMetaKey key);
+            virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, ContentMetaKey key);
+            virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset);
 
             /* APIs. */
-            virtual Result GetLatestProgram(ContentId* out_content_id, TitleId title_id);
-            virtual Result GetLatestData(ContentId* out_content_id, TitleId title_id);
+            virtual Result GetLatestProgram(ContentId* out_content_id, ProgramId title_id);
+            virtual Result GetLatestData(ContentId* out_content_id, ProgramId title_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, Set),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, Get),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, Remove),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetContentIdByType),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, ListContentInfo),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, List),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetLatestContentMetaKey),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, ListApplication),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, Has),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, HasAll),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetSize),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetRequiredSystemVersion),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetPatchId),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, DisableForcibly),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, LookupOrphanContent),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, Commit),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, HasContent),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, ListContentMetaInfo),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetAttributes),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetRequiredApplicationVersion, FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(IContentMetaDatabase, GetContentIdByTypeAndIdOffset, FirmwareVersion_500),
+                MAKE_SERVICE_COMMAND_META(Set),
+                MAKE_SERVICE_COMMAND_META(Get),
+                MAKE_SERVICE_COMMAND_META(Remove),
+                MAKE_SERVICE_COMMAND_META(GetContentIdByType),
+                MAKE_SERVICE_COMMAND_META(ListContentInfo),
+                MAKE_SERVICE_COMMAND_META(List),
+                MAKE_SERVICE_COMMAND_META(GetLatestContentMetaKey),
+                MAKE_SERVICE_COMMAND_META(ListApplication),
+                MAKE_SERVICE_COMMAND_META(Has),
+                MAKE_SERVICE_COMMAND_META(HasAll),
+                MAKE_SERVICE_COMMAND_META(GetSize),
+                MAKE_SERVICE_COMMAND_META(GetRequiredSystemVersion),
+                MAKE_SERVICE_COMMAND_META(GetPatchId),
+                MAKE_SERVICE_COMMAND_META(DisableForcibly),
+                MAKE_SERVICE_COMMAND_META(LookupOrphanContent),
+                MAKE_SERVICE_COMMAND_META(Commit),
+                MAKE_SERVICE_COMMAND_META(HasContent),
+                MAKE_SERVICE_COMMAND_META(ListContentMetaInfo),
+                MAKE_SERVICE_COMMAND_META(GetAttributes),
+                MAKE_SERVICE_COMMAND_META(GetRequiredApplicationVersion, hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetContentIdByTypeAndIdOffset, hos::Version_500),
             };
     };
 

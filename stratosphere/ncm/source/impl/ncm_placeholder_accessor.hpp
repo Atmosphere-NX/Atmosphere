@@ -20,7 +20,7 @@
 
 #include "../ncm_path_utils.hpp"
 
-namespace sts::ncm::impl {
+namespace ams::ncm::impl {
 
     class PlaceHolderAccessor {
         private:
@@ -36,7 +36,7 @@ namespace sts::ncm::impl {
             std::array<CacheEntry, MaxCaches> caches;
             char* root_path;
             u64 cur_counter;
-            HosMutex cache_mutex;
+            os::Mutex cache_mutex;
             MakePlaceHolderPathFunc make_placeholder_path_func;
             bool delay_flush;
         private:

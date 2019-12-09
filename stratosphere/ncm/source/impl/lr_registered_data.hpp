@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::lr::impl {
+namespace ams::lr::impl {
 
     template<typename Key, typename Value, size_t NumEntries>
     class RegisteredData {
@@ -27,7 +27,7 @@ namespace sts::lr::impl {
         private:
             struct Entry {
                 Value value;
-                ncm::TitleId owner_tid;
+                ncm::ProgramId owner_tid;
                 Key key;
                 bool is_valid;
             };
@@ -39,7 +39,7 @@ namespace sts::lr::impl {
                 this->Clear();
             }
 
-            bool Register(const Key &key, const Value &value, const ncm::TitleId owner_tid) {
+            bool Register(const Key &key, const Value &value, const ncm::ProgramId owner_tid) {
                 /* Try to find an existing value. */
                 for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
@@ -72,7 +72,7 @@ namespace sts::lr::impl {
                 }
             }
 
-            void UnregisterOwnerTitle(ncm::TitleId owner_tid) {
+            void UnregisterOwnerTitle(ncm::ProgramId owner_tid) {
                 for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
                     if (entry.owner_tid == owner_tid) {
@@ -99,13 +99,13 @@ namespace sts::lr::impl {
                 }
             }
 
-            void ClearExcluding(const ncm::TitleId* tids, size_t num_tids) {
+            void ClearExcluding(const ncm::ProgramId* tids, size_t num_tids) {
                 for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
                     bool found = false;
 
                     for (size_t j = 0; j < num_tids; j++) {
-                        ncm::TitleId tid = tids[j];
+                        ncm::ProgramId tid = tids[j];
 
                         if (entry.owner_tid == tid) {
                             found = true;

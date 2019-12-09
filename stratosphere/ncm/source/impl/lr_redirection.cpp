@@ -16,25 +16,25 @@
 
 #include "lr_redirection.hpp"
 
-namespace sts::lr::impl {
+namespace ams::lr::impl {
 
     class LocationRedirection  : public util::IntrusiveListBaseNode<LocationRedirection> {
         NON_COPYABLE(LocationRedirection);
         NON_MOVEABLE(LocationRedirection);
         private:
-            ncm::TitleId title_id;
-            ncm::TitleId owner_tid;
+            ncm::ProgramId title_id;
+            ncm::ProgramId owner_tid;
             Path path;
             u32 flags;
         public:
-            LocationRedirection(ncm::TitleId title_id, ncm::TitleId owner_tid, const Path& path, u32 flags) :
+            LocationRedirection(ncm::ProgramId title_id, ncm::ProgramId owner_tid, const Path& path, u32 flags) :
                 title_id(title_id), owner_tid(owner_tid), path(path), flags(flags) { /* ... */ }
 
-            ncm::TitleId GetTitleId() const {
+            ncm::ProgramId GetTitleId() const {
                 return this->title_id;
             }
 
-            ncm::TitleId GetOwnerTitleId() const {
+            ncm::ProgramId GetOwnerTitleId() const {
                 return this->owner_tid;
             }
 
@@ -51,7 +51,7 @@ namespace sts::lr::impl {
             }
     };
 
-    bool LocationRedirector::FindRedirection(Path *out, ncm::TitleId title_id) {
+    bool LocationRedirector::FindRedirection(Path *out, ncm::ProgramId title_id) {
         if (this->redirection_list.empty()) {
             return false;
         }
@@ -65,16 +65,16 @@ namespace sts::lr::impl {
         return false;
     }
 
-    void LocationRedirector::SetRedirection(ncm::TitleId title_id, const Path &path, u32 flags) {
+    void LocationRedirector::SetRedirection(ncm::ProgramId title_id, const Path &path, u32 flags) {
         this->SetRedirection(title_id, path, flags);
     }
 
-    void LocationRedirector::SetRedirection(ncm::TitleId title_id, ncm::TitleId owner_tid, const Path &path, u32 flags) {
+    void LocationRedirector::SetRedirection(ncm::ProgramId title_id, ncm::ProgramId owner_tid, const Path &path, u32 flags) {
         this->EraseRedirection(title_id);
         this->redirection_list.push_back(*(new LocationRedirection(title_id, owner_tid, path, flags)));
     }
 
-    void LocationRedirector::SetRedirectionFlags(ncm::TitleId title_id, u32 flags) {
+    void LocationRedirector::SetRedirectionFlags(ncm::ProgramId title_id, u32 flags) {
         for (auto &redirection : this->redirection_list) {
             if (redirection.GetTitleId() == title_id) {
                 redirection.SetFlags(flags);
@@ -83,7 +83,7 @@ namespace sts::lr::impl {
         }
     }
 
-    void LocationRedirector::EraseRedirection(ncm::TitleId title_id) {
+    void LocationRedirector::EraseRedirection(ncm::ProgramId title_id) {
         for (auto &redirection : this->redirection_list) {
             if (redirection.GetTitleId() == title_id) {
                 this->redirection_list.erase(this->redirection_list.iterator_to(redirection));
@@ -105,11 +105,11 @@ namespace sts::lr::impl {
         }
     }
 
-    void LocationRedirector::ClearRedirections(const ncm::TitleId* excluding_tids, size_t num_tids) {
+    void LocationRedirector::ClearRedirections(const ncm::ProgramId* excluding_tids, size_t num_tids) {
         for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
             bool skip = false;
             for (size_t i = 0; i < num_tids; i++) {
-                ncm::TitleId tid = excluding_tids[i];
+                ncm::ProgramId tid = excluding_tids[i];
 
                 if (it->GetOwnerTitleId() == tid) {
                     skip = true;

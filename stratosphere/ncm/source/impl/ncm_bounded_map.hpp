@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::ncm::impl {
+namespace ams::ncm::impl {
     
     template<class Key, class Value, size_t N>
     class BoundedMap {

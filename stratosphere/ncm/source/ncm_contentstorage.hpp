@@ -23,7 +23,7 @@
 #include "ncm_icontentstorage.hpp"
 #include "ncm_path_utils.hpp"
 
-namespace sts::ncm {
+namespace ams::ncm {
 
     class ContentStorageInterface : public IContentStorage {
         protected:
@@ -52,66 +52,34 @@ namespace sts::ncm {
                 this->make_content_path_func(out_content_path, content_id, content_root_path);
             }
         public:
-            virtual Result GeneratePlaceHolderId(Out<PlaceHolderId> out) override;
+            virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) override;
             virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) override;
             virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id) override;
-            virtual Result HasPlaceHolder(Out<bool> out, PlaceHolderId placeholder_id) override;
-            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, InBuffer<u8> data) override;
+            virtual Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) override;
+            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) override;
             virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id) override;
             virtual Result Delete(ContentId content_id) override;
-            virtual Result Has(Out<bool> out, ContentId content_id) override;
-            virtual Result GetPath(OutPointerWithServerSize<lr::Path, 0x1> out, ContentId content_id) override;
-            virtual Result GetPlaceHolderPath(OutPointerWithServerSize<lr::Path, 0x1> out, PlaceHolderId placeholder_id) override;
+            virtual Result Has(sf::Out<bool> out, ContentId content_id) override;
+            virtual Result GetPath(sf::Out<lr::Path> out, ContentId content_id) override;
+            virtual Result GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id) override;
             virtual Result CleanupAllPlaceHolder() override;
-            virtual Result ListPlaceHolder(Out<u32> out_count, OutBuffer<PlaceHolderId> out_buf) override;
-            virtual Result GetContentCount(Out<u32> out_count) override;
-            virtual Result ListContentId(Out<u32> out_count, OutBuffer<ContentId> out_buf, u32 start_offset) override;
-            virtual Result GetSizeFromContentId(Out<u64> out_size, ContentId content_id) override;
+            virtual Result ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) override;
+            virtual Result GetContentCount(sf::Out<u32> out_count) override;
+            virtual Result ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) override;
+            virtual Result GetSizeFromContentId(sf::Out<u64> out_size, ContentId content_id) override;
             virtual Result DisableForcibly() override;
             virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) override;
             virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) override;
-            virtual Result ReadContentIdFile(OutBuffer<u8> buf, ContentId content_id, u64 offset) override;
-            virtual Result GetRightsIdFromPlaceHolderId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id) override;
-            virtual Result GetRightsIdFromContentId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, ContentId content_id) override;
-            virtual Result WriteContentForDebug(ContentId content_id, u64 offset, InBuffer<u8> data) override;
-            virtual Result GetFreeSpaceSize(Out<u64> out_size) override;
-            virtual Result GetTotalSpaceSize(Out<u64> out_size) override;
+            virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) override;
+            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id) override;
+            virtual Result GetRightsIdFromContentId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, ContentId content_id) override;
+            virtual Result WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) override;
+            virtual Result GetFreeSpaceSize(sf::Out<u64> out_size) override;
+            virtual Result GetTotalSpaceSize(sf::Out<u64> out_size) override;
             virtual Result FlushPlaceHolder() override;
-            virtual Result GetSizeFromPlaceHolderId(Out<u64> out, PlaceHolderId placeholder_id) override;
+            virtual Result GetSizeFromPlaceHolderId(sf::Out<u64> out, PlaceHolderId placeholder_id) override;
             virtual Result RepairInvalidFileAttribute() override;
-            virtual Result GetRightsIdFromPlaceHolderIdWithCache(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id) override;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GeneratePlaceHolderId),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, CreatePlaceHolder),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, DeletePlaceHolder),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, HasPlaceHolder),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, WritePlaceHolder),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, Register),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, Delete),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, Has),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GetPath),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GetPlaceHolderPath),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, CleanupAllPlaceHolder),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, ListPlaceHolder),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GeneratePlaceHolderId),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GetContentCount),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, ListContentId),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GetSizeFromContentId),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, DisableForcibly),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, RevertToPlaceHolder,                   FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, SetPlaceHolderSize,                    FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, ReadContentIdFile,                     FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GetRightsIdFromPlaceHolderId,          FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GetRightsIdFromContentId,              FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, WriteContentForDebug,                  FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GetFreeSpaceSize,                      FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GetTotalSpaceSize,                     FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, FlushPlaceHolder,                      FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GetSizeFromPlaceHolderId,              FirmwareVersion_400),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, RepairInvalidFileAttribute,            FirmwareVersion_400),
-                MAKE_SERVICE_COMMAND_META(ContentStorageInterface, GetRightsIdFromPlaceHolderIdWithCache, FirmwareVersion_800),
-            };
+            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id) override;
     };
 
 }

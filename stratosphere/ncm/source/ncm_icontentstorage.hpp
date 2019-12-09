@@ -18,9 +18,9 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace sts::ncm {
+namespace ams::ncm {
     
-    class IContentStorage : public IServiceObject {
+    class IContentStorage : public sf::IServiceObject {
         protected:
             enum class CommandId {
                 GeneratePlaceHolderId = 0,
@@ -57,67 +57,72 @@ namespace sts::ncm {
             MakeContentPathFunc make_content_path_func;
             bool disabled;
         protected:
-            Result EnsureEnabled();
+            Result EnsureEnabled() {
+                if (this->disabled) {
+                    return ResultInvalidContentStorage();
+                }
+                return ResultSuccess();
+            }
         public:
-            virtual Result GeneratePlaceHolderId(Out<PlaceHolderId> out);
+            virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out);
             virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size);
             virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id);
-            virtual Result HasPlaceHolder(Out<bool> out, PlaceHolderId placeholder_id);
-            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, InBuffer<u8> data);
+            virtual Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id);
+            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data);
             virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id);
             virtual Result Delete(ContentId content_id);
-            virtual Result Has(Out<bool> out, ContentId content_id);
-            virtual Result GetPath(OutPointerWithServerSize<lr::Path, 0x1> out, ContentId content_id);
-            virtual Result GetPlaceHolderPath(OutPointerWithServerSize<lr::Path, 0x1> out, PlaceHolderId placeholder_id);
+            virtual Result Has(sf::Out<bool> out, ContentId content_id);
+            virtual Result GetPath(sf::Out<lr::Path> out, ContentId content_id);
+            virtual Result GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id);
             virtual Result CleanupAllPlaceHolder();
-            virtual Result ListPlaceHolder(Out<u32> out_count, OutBuffer<PlaceHolderId> out_buf);
-            virtual Result GetContentCount(Out<u32> out_count);
-            virtual Result ListContentId(Out<u32> out_count, OutBuffer<ContentId> out_buf, u32 start_offset);
-            virtual Result GetSizeFromContentId(Out<u64> out_size, ContentId content_id);
+            virtual Result ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf);
+            virtual Result GetContentCount(sf::Out<u32> out_count);
+            virtual Result ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset);
+            virtual Result GetSizeFromContentId(sf::Out<u64> out_size, ContentId content_id);
             virtual Result DisableForcibly();
             virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id);
             virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size);
-            virtual Result ReadContentIdFile(OutBuffer<u8> buf, ContentId content_id, u64 offset);
-            virtual Result GetRightsIdFromPlaceHolderId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id);
-            virtual Result GetRightsIdFromContentId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, ContentId content_id);
-            virtual Result WriteContentForDebug(ContentId content_id, u64 offset, InBuffer<u8> data);
-            virtual Result GetFreeSpaceSize(Out<u64> out_size);
-            virtual Result GetTotalSpaceSize(Out<u64> out_size);
+            virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset);
+            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id);
+            virtual Result GetRightsIdFromContentId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, ContentId content_id);
+            virtual Result WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data);
+            virtual Result GetFreeSpaceSize(sf::Out<u64> out_size);
+            virtual Result GetTotalSpaceSize(sf::Out<u64> out_size);
             virtual Result FlushPlaceHolder();
-            virtual Result GetSizeFromPlaceHolderId(Out<u64> out, PlaceHolderId placeholder_id);
+            virtual Result GetSizeFromPlaceHolderId(sf::Out<u64> out, PlaceHolderId placeholder_id);
             virtual Result RepairInvalidFileAttribute();
-            virtual Result GetRightsIdFromPlaceHolderIdWithCache(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id);
+            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GeneratePlaceHolderId),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, CreatePlaceHolder),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, DeletePlaceHolder),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, HasPlaceHolder),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, WritePlaceHolder),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, Register),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, Delete),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, Has),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GetPath),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GetPlaceHolderPath),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, CleanupAllPlaceHolder),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, ListPlaceHolder),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GeneratePlaceHolderId),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GetContentCount),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, ListContentId),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GetSizeFromContentId),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, DisableForcibly),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, RevertToPlaceHolder,                   FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, SetPlaceHolderSize,                    FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, ReadContentIdFile,                     FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GetRightsIdFromPlaceHolderId,          FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GetRightsIdFromContentId,              FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, WriteContentForDebug,                  FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GetFreeSpaceSize,                      FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GetTotalSpaceSize,                     FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, FlushPlaceHolder,                      FirmwareVersion_300),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GetSizeFromPlaceHolderId,              FirmwareVersion_400),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, RepairInvalidFileAttribute,            FirmwareVersion_400),
-                MAKE_SERVICE_COMMAND_META(IContentStorage, GetRightsIdFromPlaceHolderIdWithCache, FirmwareVersion_800),
+                MAKE_SERVICE_COMMAND_META(GeneratePlaceHolderId),
+                MAKE_SERVICE_COMMAND_META(CreatePlaceHolder),
+                MAKE_SERVICE_COMMAND_META(DeletePlaceHolder),
+                MAKE_SERVICE_COMMAND_META(HasPlaceHolder),
+                MAKE_SERVICE_COMMAND_META(WritePlaceHolder),
+                MAKE_SERVICE_COMMAND_META(Register),
+                MAKE_SERVICE_COMMAND_META(Delete),
+                MAKE_SERVICE_COMMAND_META(Has),
+                MAKE_SERVICE_COMMAND_META(GetPath),
+                MAKE_SERVICE_COMMAND_META(GetPlaceHolderPath),
+                MAKE_SERVICE_COMMAND_META(CleanupAllPlaceHolder),
+                MAKE_SERVICE_COMMAND_META(ListPlaceHolder),
+                MAKE_SERVICE_COMMAND_META(GeneratePlaceHolderId),
+                MAKE_SERVICE_COMMAND_META(GetContentCount),
+                MAKE_SERVICE_COMMAND_META(ListContentId),
+                MAKE_SERVICE_COMMAND_META(GetSizeFromContentId),
+                MAKE_SERVICE_COMMAND_META(DisableForcibly),
+                MAKE_SERVICE_COMMAND_META(RevertToPlaceHolder,                   hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(SetPlaceHolderSize,                    hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(ReadContentIdFile,                     hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetRightsIdFromPlaceHolderId,          hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetRightsIdFromContentId,              hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(WriteContentForDebug,                  hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetFreeSpaceSize,                      hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetTotalSpaceSize,                     hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(FlushPlaceHolder,                      hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GetSizeFromPlaceHolderId,              hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(RepairInvalidFileAttribute,            hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(GetRightsIdFromPlaceHolderIdWithCache, hos::Version_800),
             };
     };
 

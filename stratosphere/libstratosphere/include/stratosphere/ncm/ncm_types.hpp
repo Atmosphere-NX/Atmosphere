@@ -19,8 +19,6 @@
 
 namespace ams::ncm {
 
-    using Path = lr::Path;
-
     enum class ContentMetaType : u8 {
         Unknown                = 0x0,
         SystemProgram          = 0x1,
@@ -545,7 +543,7 @@ namespace ams::ncm {
     static_assert(sizeof(ProgramLocation) == sizeof(::NcmProgramLocation) && alignof(ProgramLocation) == alignof(::NcmProgramLocation), "ProgramLocation Libnx Compatibility");
 
     struct ContentMetaKey {
-        TitleId id;
+        ProgramId id;
         u32 version;
         ContentMetaType type;
         ContentInstallType install_type;
@@ -584,11 +582,11 @@ namespace ams::ncm {
             return !(*this == other);
         }
 
-        static constexpr ContentMetaKey Make(TitleId title_id, u32 version, ContentMetaType type) {
+        static constexpr ContentMetaKey Make(ProgramId title_id, u32 version, ContentMetaType type) {
             return { .id = title_id, .version = version, .type = type };
         }
 
-        static constexpr ContentMetaKey Make(TitleId title_id, u32 version, ContentMetaType type, ContentInstallType install_type) {
+        static constexpr ContentMetaKey Make(ProgramId title_id, u32 version, ContentMetaType type, ContentInstallType install_type) {
             return { .id = title_id, .version = version, .type = type, .install_type = install_type };
         }
     };
@@ -600,7 +598,7 @@ namespace ams::ncm {
 
     struct ApplicationContentMetaKey {
         ContentMetaKey key;
-        TitleId application_title_id;
+        ProgramId application_title_id;
     };
 
     static_assert(sizeof(ApplicationContentMetaKey) == 0x18, "ApplicationContentMetaKey definition!");

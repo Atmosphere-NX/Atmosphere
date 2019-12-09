@@ -15,35 +15,44 @@
  */
 
 #pragma once
-#include <cstring>
-#include <switch.h>
+#include <atmosphere/common.hpp>
+#include "../fs/fs_directory.hpp"
+#include "../sf/sf_buffer_tags.hpp"
 
-namespace sts::lr {
+namespace ams::lr {
 
-    constexpr size_t MaxPathLen = 0x300;
+    struct alignas(4) Path : ams::sf::LargeData {
+        char str[fs::EntryNameLengthMax];
 
-    struct Path {
-        char path[MaxPathLen];
-
-        Path() {
-            path[0] = '\0';
+        static constexpr Path Encode(const char *p) {
+            Path path = {};
+            for (size_t i = 0; i < sizeof(path) - 1; i++) {
+                path.str[i] = p[i];
+                if (p[i] == '\x00') {
+                    break;
+                }
+            }
+            return path;
         }
 
-        Path(const char* path) {
-            strncpy(this->path, path, MaxPathLen-1);
-            this->EnsureNullTerminated();
+        constexpr inline size_t GetLength() const {
+            size_t len = 0;
+            for (size_t i = 0; i < sizeof(this->str) - 1 && this->str[i] != '\x00'; i++) {
+                len++;
+            }
+            return len;
         }
 
-        Path& operator=(const Path& other) {
-            /* N appears to always memcpy paths, so we will too. */
-            std::memcpy(this->path, other.path, MaxPathLen);
-            this->EnsureNullTerminated();
-            return *this;
-        }
-
-        void EnsureNullTerminated() {
-            path[MaxPathLen-1] = '\0';
+        constexpr inline bool IsValid() const {
+            for (size_t i = 0; i < sizeof(this->str); i++) {
+                if (this->str[i] == '\x00') {
+                    return true;
+                }
+            } 
+            return false;
         }
     };
+
+    static_assert(std::is_pod<Path>::value && sizeof(Path) == fs::EntryNameLengthMax);
 
 }

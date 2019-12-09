@@ -21,7 +21,7 @@
 #include "ncm_fs.hpp"
 #include "ncm_path_utils.hpp"
 
-namespace sts::ncm::fs {
+namespace ams::ncm::fs {
 
     Result OpenFile(FILE** out, const char* path, u32 mode) {
         bool has = false;
@@ -29,14 +29,14 @@ namespace sts::ncm::fs {
         /* Manually check if the file already exists, so it doesn't get created automatically. */
         R_TRY(HasFile(&has, path));
         if (!has) {
-            return ResultFsPathNotFound;
+            return ams::fs::ResultPathNotFound();
         }
 
         const char* fopen_mode = "";
 
-        if (mode & FS_OPEN_WRITE) {
+        if (mode & FsOpenMode_Write) {
             fopen_mode = "r+b";
-        } else if (mode & FS_OPEN_READ) {
+        } else if (mode & FsOpenMode_Read) {
             fopen_mode = "rb";
         } 
         FILE* f = fopen(path, fopen_mode);
@@ -46,7 +46,7 @@ namespace sts::ncm::fs {
         }
 
         *out = f;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option) {
@@ -56,7 +56,7 @@ namespace sts::ncm::fs {
         size_t existing_size = ftell(f);
 
         if (offset + size > existing_size) {
-            return ResultFsFileExtensionWithoutOpenModeAllowAppend;
+            return ams::fs::ResultFileExtensionWithoutOpenModeAllowAppend();
         }
 
         if (fseek(f, offset, SEEK_SET) != 0) {
@@ -67,11 +67,11 @@ namespace sts::ncm::fs {
             return fsdevGetLastResult();
         }
 
-        if (option & FS_WRITEOPTION_FLUSH) {
+        if (option & FsWriteOption_Flush) {
             fflush(f);
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ReadFile(FILE* f, size_t offset, void* buffer, size_t size) {
@@ -83,7 +83,7 @@ namespace sts::ncm::fs {
             return fsdevGetLastResult();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result HasFile(bool* out, const char* path) {
@@ -93,13 +93,13 @@ namespace sts::ncm::fs {
             *out = true;
         } else {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ResultFsPathNotFound) {
+                R_CATCH(ams::fs::ResultPathNotFound) {
                     *out = false;
                 }
             } R_END_TRY_CATCH;
         }
     
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result HasDirectory(bool* out, const char* path) {
@@ -109,13 +109,13 @@ namespace sts::ncm::fs {
             *out = true;
         } else {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ResultFsPathNotFound) {
+                R_CATCH(ams::fs::ResultPathNotFound) {
                     *out = false;
                 }
             } R_END_TRY_CATCH;
         }
     
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result CheckContentStorageDirectoriesExist(const char* root_path) {
@@ -125,7 +125,7 @@ namespace sts::ncm::fs {
         bool has_root = false;
         R_TRY(HasDirectory(&has_root, root_path));
         if (!has_root) {
-            return ResultNcmStorageRootNotFound;
+            return ResultStorageRootNotFound();
         }
         
         path::GetContentRootPath(content_root, root_path);
@@ -133,7 +133,7 @@ namespace sts::ncm::fs {
         bool has_content_root = false;
         R_TRY(HasDirectory(&has_content_root, content_root));
         if (!has_content_root) {
-            return ResultNcmStoragePathNotFound;
+            return ResultStoragePathNotFound();
         }
 
         path::GetPlaceHolderRootPath(placeholder_root, root_path);
@@ -141,10 +141,10 @@ namespace sts::ncm::fs {
         bool has_placeholder_root = false;
         R_TRY(HasDirectory(&has_placeholder_root, placeholder_root));
         if (!has_placeholder_root) {
-            return ResultNcmStoragePathNotFound;
+            return ResultStoragePathNotFound();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result EnsureContentAndPlaceHolderRoot(const char* root_path) {
@@ -156,24 +156,24 @@ namespace sts::ncm::fs {
         path::GetPlaceHolderRootPath(placeholder_root, root_path);
         R_TRY(EnsureDirectoryRecursively(placeholder_root));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result EnsureDirectoryRecursively(const char* dir_path) {
         R_TRY(EnsureRecursively(dir_path));
         if (mkdir(dir_path, S_IRWXU) == -1) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ResultFsPathAlreadyExists) {
+                R_CATCH(ams::fs::ResultPathAlreadyExists) {
                     /* If the path already exists, that's okay. Anything else is an error. */
                 }
             } R_END_TRY_CATCH;
         }
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result EnsureRecursively(const char* path) {
         if (!path) {
-            return ResultFsNullptrArgument;
+            return ams::fs::ResultNullptrArgument();
         }
 
         size_t path_len = strlen(path);
@@ -189,7 +189,7 @@ namespace sts::ncm::fs {
                         working_path_buf[i + 1] = 0;
                         if (mkdir(working_path_buf + 1, S_IRWXU) == -1) {
                             R_TRY_CATCH(fsdevGetLastResult()) {
-                                R_CATCH(ResultFsPathAlreadyExists) {
+                                R_CATCH(ams::fs::ResultPathAlreadyExists) {
                                     /* If the path already exists, that's okay. Anything else is an error. */
                                 }
                             } R_END_TRY_CATCH;
@@ -201,10 +201,10 @@ namespace sts::ncm::fs {
                 }
             }
         } else {
-            return ResultNcmAllocationFailed;
+            return ResultAllocationFailed();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result EnsureParentDirectoryRecursively(const char* path) {
@@ -219,14 +219,14 @@ namespace sts::ncm::fs {
         ON_SCOPE_EXIT { fsDeviceOperatorClose(&devop); };
 
         R_TRY(fsDeviceOperatorGetGameCardHandle(&devop, out_handle));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     static u32 g_mount_index = 0;
-    static HosMutex g_mount_index_lock;
+    static os::Mutex g_mount_index_lock;
 
     MountName CreateUniqueMountName() {
-        std::scoped_lock<HosMutex> lk(g_mount_index_lock);
+        std::scoped_lock<os::Mutex> lk(g_mount_index_lock);
         MountName mount_name;
         g_mount_index++;
         snprintf(mount_name.name, sizeof(MountName), "@ncm%08x", g_mount_index);
@@ -238,31 +238,31 @@ namespace sts::ncm::fs {
 
         /* We should be given a qualified path. */
         if (!unqual_path || unqual_path > path + 0xf) {
-            return ResultFsInvalidMountName;
+            return ams::fs::ResultInvalidMountName();
         }
 
         strncpy(mount_name->name, path, unqual_path - path);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result MountSystemSaveData(const char* mount_point, FsSaveDataSpaceId space_id, u64 save_id) {
         if (!mount_point) {
-            return ResultFsNullptrArgument;
+            return ams::fs::ResultNullptrArgument();
         }
         
-        FsSave save = {
-            .saveID = save_id,
-            .saveDataType = FsSaveDataType_SystemSaveData,
+        FsSaveDataAttribute save = {
+            .system_save_data_id = save_id,
+            .save_data_type = FsSaveDataType_System,
         };
 
         FsFileSystem fs;
-        R_TRY(fsMountSystemSaveData(&fs, space_id, &save));
+        R_TRY(fsOpenSaveDataFileSystemBySystemSaveDataId(&fs, space_id, &save));
 
         if (fsdevMountDevice(mount_point, fs) == -1) {
             std::abort();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     constexpr const char* SystemContentMountName = "@SystemContent";
@@ -277,7 +277,7 @@ namespace sts::ncm::fs {
 
     Result MountContentStorage(const char* mount_point, FsContentStorageId id) {
         if (!mount_point) {
-            return ResultFsNullptrArgument;
+            return ams::fs::ResultNullptrArgument();
         }
 
         FsFileSystem fs;
@@ -288,25 +288,25 @@ namespace sts::ncm::fs {
         }
 
         switch (id) {
-            case FS_CONTENTSTORAGEID_NandSystem:
+            case FsContentStorageId_System:
                 g_mount_content_storage[mount_point] = SystemContentMountName;
                 break;
             
-            case FS_CONTENTSTORAGEID_NandUser:
+            case FsContentStorageId_User:
                 g_mount_content_storage[mount_point] = UserContentMountName;
                 break;
 
-            case FS_CONTENTSTORAGEID_SdCard:
+            case FsContentStorageId_SdCard:
                 g_mount_content_storage[mount_point] = SdCardContentMountName;
                 break;
 
             default:
                 std::abort();
         };
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
-    Result MountGameCardPartition(const char* mount_point, const FsGameCardHandle handle, FsGameCardPartiton partition) {
+    Result MountGameCardPartition(const char* mount_point, const FsGameCardHandle handle, FsGameCardPartition partition) {
         if (partition > 2) {
             std::abort();
         }
@@ -321,12 +321,12 @@ namespace sts::ncm::fs {
         MountName mount = {0};
         snprintf(mount.name, sizeof(MountName), "%s%s%08x", GameCardMountNameBase, GameCardPartitionLetters[partition], handle.value);
         g_mount_content_storage[mount_point] = mount.name;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result Unmount(const char* mount_point) {
         if (!mount_point) {
-            return ResultFsNullptrArgument;
+            return ams::fs::ResultNullptrArgument();
         }
 
         /* Erase any content storage mappings which may potentially exist. */
@@ -336,19 +336,19 @@ namespace sts::ncm::fs {
             std::abort();
         }
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ConvertToFsCommonPath(char* out_common_path, size_t out_len, const char* path) {
         if (!out_common_path || !path) {
-            return ResultFsNullptrArgument;
+            return ams::fs::ResultNullptrArgument();
         }
 
         MountName mount_name = {0};
         R_TRY(GetMountNameFromPath(&mount_name, path));
     
         if (!fsdevGetDeviceFileSystem(mount_name.name) || g_mount_content_storage.find(mount_name.name) == g_mount_content_storage.end()) {
-            return ResultFsMountNameNotFound;
+            return ams::fs::ResultNotMounted();
         }
 
         char translated_path[FS_MAX_PATH] = {0};
@@ -359,7 +359,7 @@ namespace sts::ncm::fs {
         }
 
         snprintf(out_common_path, out_len, "%s:%s", common_mount_name.c_str(), translated_path);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result GetSaveDataFlags(u32* out_flags, u64 save_id) {
@@ -367,7 +367,7 @@ namespace sts::ncm::fs {
         
         R_TRY(fsReadSaveDataFileSystemExtraData(&extra_data, sizeof(FsSaveDataExtraData), save_id));
         *out_flags = extra_data.flags;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result SetSaveDataFlags(u64 save_id, FsSaveDataSpaceId space_id, u32 flags) {
@@ -376,7 +376,7 @@ namespace sts::ncm::fs {
         R_TRY(fsReadSaveDataFileSystemExtraData(&extra_data, sizeof(FsSaveDataExtraData), save_id));
         extra_data.flags = flags;
         R_TRY(fsWriteSaveDataFileSystemExtraData(&extra_data, sizeof(FsSaveDataExtraData), space_id, save_id));
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
 }

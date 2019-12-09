@@ -17,7 +17,7 @@
 #include "ncm_path_utils.hpp"
 #include "ncm_utils.hpp"
 
-namespace sts::ncm::path {
+namespace ams::ncm::path {
 
     void GetContentMetaPath(char* out, ContentId content_id, MakeContentPathFunc path_func, const char* root_path) {
         char tmp_path[FS_MAX_PATH-1] = {0};

@@ -18,13 +18,13 @@
 #include "impl/lr_manager.hpp"
 #include "lr_manager_service.hpp"
 
-namespace sts::lr {
+namespace ams::lr {
 
-    Result LocationResolverManagerService::OpenLocationResolver(Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) {
+    Result LocationResolverManagerService::OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) {
         return impl::OpenLocationResolver(out, storage_id);
     }
 
-    Result LocationResolverManagerService::OpenRegisteredLocationResolver(Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) {
+    Result LocationResolverManagerService::OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) {
         return impl::OpenRegisteredLocationResolver(out);
     }
 
@@ -32,7 +32,7 @@ namespace sts::lr {
         return impl::RefreshLocationResolver(storage_id);
     }
 
-    Result LocationResolverManagerService::OpenAddOnContentLocationResolver(Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) {
+    Result LocationResolverManagerService::OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) {
         return impl::OpenAddOnContentLocationResolver(out);
     }
 

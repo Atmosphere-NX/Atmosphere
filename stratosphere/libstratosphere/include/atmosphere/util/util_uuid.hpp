@@ -18,7 +18,7 @@
 #include <cstring>
 #include <switch.h>
 
-namespace sts::util {
+namespace ams::util {
 
     struct Uuid {
         u8 uuid[0x10];

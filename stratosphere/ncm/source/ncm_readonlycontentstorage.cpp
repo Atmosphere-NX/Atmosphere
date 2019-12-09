@@ -18,7 +18,7 @@
 #include "ncm_path_utils.hpp"
 #include "ncm_readonlycontentstorage.hpp"
 
-namespace sts::ncm {
+namespace ams::ncm {
 
     Result ReadOnlyContentStorageInterface::Initialize(const char* root_path, MakeContentPathFunc content_path_func) {
         R_TRY(this->EnsureEnabled());
@@ -31,38 +31,38 @@ namespace sts::ncm {
 
         strncpy(this->root_path, root_path, FS_MAX_PATH-2);
         this->make_content_path_func = *content_path_func;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
-    Result ReadOnlyContentStorageInterface::GeneratePlaceHolderId(Out<PlaceHolderId> out) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
+        return ResultInvalidContentStorageOperation();
     }
 
     Result ReadOnlyContentStorageInterface::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) {
-        return ResultNcmInvalidContentStorageOperation;
+        return ResultInvalidContentStorageOperation();
     }
 
     Result ReadOnlyContentStorageInterface::DeletePlaceHolder(PlaceHolderId placeholder_id) {
-        return ResultNcmInvalidContentStorageOperation;
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::HasPlaceHolder(Out<bool> out, PlaceHolderId placeholder_id) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) {
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, InBuffer<u8> data) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) {
+        return ResultInvalidContentStorageOperation();
     }
 
     Result ReadOnlyContentStorageInterface::Register(PlaceHolderId placeholder_id, ContentId content_id) {
-        return ResultNcmInvalidContentStorageOperation;
+        return ResultInvalidContentStorageOperation();
     }
 
     Result ReadOnlyContentStorageInterface::Delete(ContentId content_id) {
-        return ResultNcmInvalidContentStorageOperation;
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::Has(Out<bool> out, ContentId content_id) {
+    Result ReadOnlyContentStorageInterface::Has(sf::Out<bool> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
@@ -77,10 +77,10 @@ namespace sts::ncm {
         }
 
         out.SetValue(has);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
-    Result ReadOnlyContentStorageInterface::GetPath(OutPointerWithServerSize<lr::Path, 0x1> out, ContentId content_id) {
+    Result ReadOnlyContentStorageInterface::GetPath(sf::Out<lr::Path> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
@@ -95,32 +95,32 @@ namespace sts::ncm {
         }
         
         R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
-        *out.pointer = common_path;
+        out.SetValue(lr::Path::Encode(common_path));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
-    Result ReadOnlyContentStorageInterface::GetPlaceHolderPath(OutPointerWithServerSize<lr::Path, 0x1> out, PlaceHolderId placeholder_id) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id) {
+        return ResultInvalidContentStorageOperation();
     }
 
     Result ReadOnlyContentStorageInterface::CleanupAllPlaceHolder() {
-        return ResultNcmInvalidContentStorageOperation;
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::ListPlaceHolder(Out<u32> out_count, OutBuffer<PlaceHolderId> out_buf) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::GetContentCount(Out<u32> out_count) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::GetContentCount(sf::Out<u32> out_count) {
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::ListContentId(Out<u32> out_count, OutBuffer<ContentId> out_buf, u32 start_offset) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) {
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::GetSizeFromContentId(Out<u64> out_size, ContentId content_id) {
+    Result ReadOnlyContentStorageInterface::GetSizeFromContentId(sf::Out<u64> out_size, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
@@ -139,26 +139,26 @@ namespace sts::ncm {
         }
 
         out_size.SetValue(st.st_size);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ReadOnlyContentStorageInterface::DisableForcibly() {
         this->disabled = true;
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ReadOnlyContentStorageInterface::RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
-        return ResultNcmInvalidContentStorageOperation;
+        return ResultInvalidContentStorageOperation();
     }
 
     Result ReadOnlyContentStorageInterface::SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) {
-        return ResultNcmInvalidContentStorageOperation;
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::ReadContentIdFile(OutBuffer<u8> buf, ContentId content_id, u64 offset) {
+    Result ReadOnlyContentStorageInterface::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
         /* Offset is too large */
         if (offset >> 0x3f != 0) {
-            return ResultNcmInvalidOffset;
+            return ResultInvalidOffset();
         }
 
         R_TRY(this->EnsureEnabled());
@@ -174,22 +174,22 @@ namespace sts::ncm {
         }
    
         FILE* f = nullptr;
-        R_TRY(fs::OpenFile(&f, content_path, FS_OPEN_READ));
+        R_TRY(fs::OpenFile(&f, content_path, FsOpenMode_Read));
         
         ON_SCOPE_EXIT {
             fclose(f);
         };
    
-        R_TRY(fs::ReadFile(f, offset, buf.buffer, buf.num_elements));
+        R_TRY(fs::ReadFile(f, offset, buf.GetPointer(), buf.GetSize()));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
-    Result ReadOnlyContentStorageInterface::GetRightsIdFromPlaceHolderId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::GetRightsIdFromPlaceHolderId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id) {
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::GetRightsIdFromContentId(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, ContentId content_id) {
+    Result ReadOnlyContentStorageInterface::GetRightsIdFromContentId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         FsRightsId rights_id = {0};
@@ -212,37 +212,37 @@ namespace sts::ncm {
         out_rights_id.SetValue(rights_id);
         out_key_generation.SetValue(static_cast<u64>(key_generation));
 
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
-    Result ReadOnlyContentStorageInterface::WriteContentForDebug(ContentId content_id, u64 offset, InBuffer<u8> data) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) {
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::GetFreeSpaceSize(Out<u64> out_size) {
+    Result ReadOnlyContentStorageInterface::GetFreeSpaceSize(sf::Out<u64> out_size) {
         out_size.SetValue(0);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
-    Result ReadOnlyContentStorageInterface::GetTotalSpaceSize(Out<u64> out_size) {
+    Result ReadOnlyContentStorageInterface::GetTotalSpaceSize(sf::Out<u64> out_size) {
         out_size.SetValue(0);
-        return ResultSuccess;
+        return ResultSuccess();
     }
 
     Result ReadOnlyContentStorageInterface::FlushPlaceHolder() {
-        return ResultNcmInvalidContentStorageOperation;
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::GetSizeFromPlaceHolderId(Out<u64> out, PlaceHolderId placeholder_id) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::GetSizeFromPlaceHolderId(sf::Out<u64> out, PlaceHolderId placeholder_id) {
+        return ResultInvalidContentStorageOperation();
     }
 
     Result ReadOnlyContentStorageInterface::RepairInvalidFileAttribute() {
-        return ResultNcmInvalidContentStorageOperation;
+        return ResultInvalidContentStorageOperation();
     }
 
-    Result ReadOnlyContentStorageInterface::GetRightsIdFromPlaceHolderIdWithCache(Out<FsRightsId> out_rights_id, Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id) {
-        return ResultNcmInvalidContentStorageOperation;
+    Result ReadOnlyContentStorageInterface::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id) {
+        return ResultInvalidContentStorageOperation();
     }
 
 }

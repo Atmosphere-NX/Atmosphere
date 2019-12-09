@@ -21,7 +21,7 @@
 #include "../ncm_icontentmetadatabase.hpp"
 #include "../ncm_icontentstorage.hpp"
 
-namespace sts::ncm::impl {
+namespace ams::ncm::impl {
 
     /* Initialization/Finalization. */
     Result InitializeContentManager();

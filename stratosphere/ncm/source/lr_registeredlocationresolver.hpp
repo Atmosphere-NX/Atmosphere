@@ -21,9 +21,9 @@
 #include "impl/lr_redirection.hpp"
 #include "impl/lr_registered_data.hpp"
 
-namespace sts::lr {
+namespace ams::lr {
 
-    class RegisteredLocationResolverInterface final : public IServiceObject {
+    class RegisteredLocationResolverInterface final : public sf::IServiceObject {
         private:
             static constexpr size_t MaxRegisteredLocations = 0x20;
         protected:
@@ -45,48 +45,48 @@ namespace sts::lr {
             };
         private:
             impl::LocationRedirector program_redirector;
-            impl::RegisteredLocations<ncm::TitleId, MaxRegisteredLocations> registered_program_locations;
+            impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_program_locations;
             impl::LocationRedirector html_docs_redirector;
-            impl::RegisteredLocations<ncm::TitleId, MaxRegisteredLocations> registered_html_docs_locations;
+            impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_html_docs_locations;
         private:
             void ClearRedirections(u32 flags = impl::RedirectionFlags_None);
-            void RegisterPath(const Path& path, impl::RegisteredLocations<ncm::TitleId, MaxRegisteredLocations>* locations, ncm::TitleId tid, ncm::TitleId owner_tid);
-            bool ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::TitleId, MaxRegisteredLocations>* locations, ncm::TitleId tid);
-            Result RefreshImpl(const ncm::TitleId* excluding_tids, size_t num_tids);
+            void RegisterPath(const Path& path, impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations>* locations, ncm::ProgramId tid, ncm::ProgramId owner_tid);
+            bool ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations>* locations, ncm::ProgramId tid);
+            Result RefreshImpl(const ncm::ProgramId* excluding_tids, size_t num_tids);
         public:
-            RegisteredLocationResolverInterface() : registered_program_locations(GetRuntimeFirmwareVersion() < FirmwareVersion_900 ? 0x10 : MaxRegisteredLocations), registered_html_docs_locations(GetRuntimeFirmwareVersion() < FirmwareVersion_900 ? 0x10 : MaxRegisteredLocations) { /* ... */ }
+            RegisteredLocationResolverInterface() : registered_program_locations(hos::GetVersion() < hos::Version_900 ? 0x10 : MaxRegisteredLocations), registered_html_docs_locations(hos::GetVersion() < hos::Version_900 ? 0x10 : MaxRegisteredLocations) { /* ... */ }
             ~RegisteredLocationResolverInterface();
 
-            Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
-            Result RegisterProgramPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
-            Result RegisterProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid);
-            Result UnregisterProgramPath(ncm::TitleId tid);
-            Result RedirectProgramPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
-            Result RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid);
-            Result ResolveHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
-            Result RegisterHtmlDocumentPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
-            Result RegisterHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid);
-            Result UnregisterHtmlDocumentPath(ncm::TitleId tid);
-            Result RedirectHtmlDocumentPathDeprecated(InPointer<const Path> path, ncm::TitleId tid);
-            Result RedirectHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid);
+            Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId tid);
+            Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId tid);
+            Result RegisterProgramPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid);
+            Result UnregisterProgramPath(ncm::ProgramId tid);
+            Result RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId tid);
+            Result RedirectProgramPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid);
+            Result ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId tid);
+            Result RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId tid);
+            Result RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid);
+            Result UnregisterHtmlDocumentPath(ncm::ProgramId tid);
+            Result RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId tid);
+            Result RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid);
             Result Refresh();
-            Result RefreshExcluding(InBuffer<ncm::TitleId> tids);
+            Result RefreshExcluding(const sf::InArray<ncm::ProgramId> &tids);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, ResolveProgramPath),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, RegisterProgramPathDeprecated,      FirmwareVersion_100, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, RegisterProgramPath,                FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, UnregisterProgramPath),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, RedirectProgramPathDeprecated,      FirmwareVersion_100, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, RedirectProgramPath,                FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, ResolveHtmlDocumentPath,            FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, RegisterHtmlDocumentPathDeprecated, FirmwareVersion_200, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, RegisterHtmlDocumentPath,           FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, UnregisterHtmlDocumentPath,         FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, RedirectHtmlDocumentPathDeprecated, FirmwareVersion_200, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, RedirectHtmlDocumentPathDeprecated, FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, Refresh,                            FirmwareVersion_700),
-                MAKE_SERVICE_COMMAND_META(RegisteredLocationResolverInterface, RefreshExcluding,                   FirmwareVersion_900),
+                MAKE_SERVICE_COMMAND_META(ResolveProgramPath),
+                MAKE_SERVICE_COMMAND_META(RegisterProgramPathDeprecated,      hos::Version_100, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(RegisterProgramPath,                hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(UnregisterProgramPath),
+                MAKE_SERVICE_COMMAND_META(RedirectProgramPathDeprecated,      hos::Version_100, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(RedirectProgramPath,                hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(ResolveHtmlDocumentPath,            hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(RegisterHtmlDocumentPathDeprecated, hos::Version_200, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(RegisterHtmlDocumentPath,           hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(UnregisterHtmlDocumentPath,         hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(RedirectHtmlDocumentPathDeprecated, hos::Version_200, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(RedirectHtmlDocumentPathDeprecated, hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(Refresh,                            hos::Version_700),
+                MAKE_SERVICE_COMMAND_META(RefreshExcluding,                   hos::Version_900),
             };
     };
 

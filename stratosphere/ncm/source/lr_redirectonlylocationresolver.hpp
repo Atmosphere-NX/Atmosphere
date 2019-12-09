@@ -20,66 +20,66 @@
 
 #include "lr_contentlocationresolver.hpp"
 
-namespace sts::lr {
+namespace ams::lr {
 
     class RedirectOnlyLocationResolverInterface : public ILocationResolver {
         public:
             ~RedirectOnlyLocationResolverInterface();
         public:
-            virtual Result ResolveProgramPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
-            virtual Result RedirectProgramPath(InPointer<const Path> path, ncm::TitleId tid) override;
-            virtual Result ResolveApplicationControlPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
-            virtual Result ResolveApplicationHtmlDocumentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
-            virtual Result ResolveDataPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
-            virtual Result RedirectApplicationControlPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) override;
-            virtual Result RedirectApplicationControlPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) override;
-            virtual Result RedirectApplicationHtmlDocumentPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) override;
-            virtual Result RedirectApplicationHtmlDocumentPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) override;
-            virtual Result ResolveApplicationLegalInformationPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
-            virtual Result RedirectApplicationLegalInformationPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) override;
-            virtual Result RedirectApplicationLegalInformationPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) override;
+            virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId tid) override;
+            virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId tid) override;
+            virtual Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId tid) override;
+            virtual Result ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId tid) override;
+            virtual Result ResolveDataPath(sf::Out<Path> out, ncm::ProgramId tid) override;
+            virtual Result RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId tid) override;
+            virtual Result RedirectApplicationControlPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid) override;
+            virtual Result RedirectApplicationHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId tid) override;
+            virtual Result RedirectApplicationHtmlDocumentPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid) override;
+            virtual Result ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId tid) override;
+            virtual Result RedirectApplicationLegalInformationPathDeprecated(const Path &path, ncm::ProgramId tid) override;
+            virtual Result RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid) override;
             virtual Result Refresh() override;
-            virtual Result RedirectApplicationProgramPathDeprecated(InPointer<const Path> path, ncm::TitleId tid) override;
-            virtual Result RedirectApplicationProgramPath(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) override;
+            virtual Result RedirectApplicationProgramPathDeprecated(const Path &path, ncm::ProgramId tid) override;
+            virtual Result RedirectApplicationProgramPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid) override;
             virtual Result ClearApplicationRedirectionDeprecated() override;
-            virtual Result ClearApplicationRedirection(InBuffer<ncm::TitleId> excluding_tids) override;
-            virtual Result EraseProgramRedirection(ncm::TitleId tid) override;
-            virtual Result EraseApplicationControlRedirection(ncm::TitleId tid) override;
-            virtual Result EraseApplicationHtmlDocumentRedirection(ncm::TitleId tid) override;
-            virtual Result EraseApplicationLegalInformationRedirection(ncm::TitleId tid) override;
-            virtual Result ResolveProgramPathForDebug(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid) override;
-            virtual Result RedirectProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid) override;
-            virtual Result RedirectApplicationProgramPathForDebugDeprecated(InPointer<const Path> path, ncm::TitleId tid) override;
-            virtual Result RedirectApplicationProgramPathForDebug(InPointer<const Path> path, ncm::TitleId tid, ncm::TitleId owner_tid) override;
-            virtual Result EraseProgramRedirectionForDebug(ncm::TitleId tid) override;
+            virtual Result ClearApplicationRedirection(const sf::InArray<ncm::ProgramId> &excluding_tids) override;
+            virtual Result EraseProgramRedirection(ncm::ProgramId tid) override;
+            virtual Result EraseApplicationControlRedirection(ncm::ProgramId tid) override;
+            virtual Result EraseApplicationHtmlDocumentRedirection(ncm::ProgramId tid) override;
+            virtual Result EraseApplicationLegalInformationRedirection(ncm::ProgramId tid) override;
+            virtual Result ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId tid) override;
+            virtual Result RedirectProgramPathForDebug(const Path &path, ncm::ProgramId tid) override;
+            virtual Result RedirectApplicationProgramPathForDebugDeprecated(const Path &path, ncm::ProgramId tid) override;
+            virtual Result RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid) override;
+            virtual Result EraseProgramRedirectionForDebug(ncm::ProgramId tid) override;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, ResolveProgramPath),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectProgramPath),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, ResolveApplicationControlPath),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, ResolveApplicationHtmlDocumentPath),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, ResolveDataPath),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectApplicationControlPathDeprecated,          FirmwareVersion_100, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectApplicationControlPath,                    FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectApplicationHtmlDocumentPathDeprecated,     FirmwareVersion_100, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectApplicationHtmlDocumentPath,               FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, ResolveApplicationLegalInformationPath),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectApplicationLegalInformationPathDeprecated, FirmwareVersion_100, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectApplicationLegalInformationPath,           FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, Refresh),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectApplicationProgramPathDeprecated,          FirmwareVersion_500, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectApplicationProgramPath,                    FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, ClearApplicationRedirectionDeprecated,             FirmwareVersion_500, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, ClearApplicationRedirection,                       FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, EraseProgramRedirection,                           FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, EraseApplicationControlRedirection,                FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, EraseApplicationHtmlDocumentRedirection,           FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, EraseApplicationLegalInformationRedirection,       FirmwareVersion_500),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, ResolveProgramPathForDebug,                        FirmwareVersion_700),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectProgramPathForDebug,                       FirmwareVersion_700),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectApplicationProgramPathForDebugDeprecated,  FirmwareVersion_700, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, RedirectApplicationProgramPathForDebug,            FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(RedirectOnlyLocationResolverInterface, EraseProgramRedirectionForDebug,                   FirmwareVersion_700),
+                MAKE_SERVICE_COMMAND_META(ResolveProgramPath),
+                MAKE_SERVICE_COMMAND_META(RedirectProgramPath),
+                MAKE_SERVICE_COMMAND_META(ResolveApplicationControlPath),
+                MAKE_SERVICE_COMMAND_META(ResolveApplicationHtmlDocumentPath),
+                MAKE_SERVICE_COMMAND_META(ResolveDataPath),
+                MAKE_SERVICE_COMMAND_META(RedirectApplicationControlPathDeprecated,          hos::Version_100, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(RedirectApplicationControlPath,                    hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(RedirectApplicationHtmlDocumentPathDeprecated,     hos::Version_100, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(RedirectApplicationHtmlDocumentPath,               hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(ResolveApplicationLegalInformationPath),
+                MAKE_SERVICE_COMMAND_META(RedirectApplicationLegalInformationPathDeprecated, hos::Version_100, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(RedirectApplicationLegalInformationPath,           hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(Refresh),
+                MAKE_SERVICE_COMMAND_META(RedirectApplicationProgramPathDeprecated,          hos::Version_500, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(RedirectApplicationProgramPath,                    hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(ClearApplicationRedirectionDeprecated,             hos::Version_500, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(ClearApplicationRedirection,                       hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(EraseProgramRedirection,                           hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(EraseApplicationControlRedirection,                hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(EraseApplicationHtmlDocumentRedirection,           hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(EraseApplicationLegalInformationRedirection,       hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(ResolveProgramPathForDebug,                        hos::Version_700),
+                MAKE_SERVICE_COMMAND_META(RedirectProgramPathForDebug,                       hos::Version_700),
+                MAKE_SERVICE_COMMAND_META(RedirectApplicationProgramPathForDebugDeprecated,  hos::Version_700, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(RedirectApplicationProgramPathForDebug,            hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(EraseProgramRedirectionForDebug,                   hos::Version_700),
             };
     };
 

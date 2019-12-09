@@ -20,9 +20,9 @@
 
 #include "impl/lr_registered_data.hpp"
 
-namespace sts::lr {
+namespace ams::lr {
 
-    class AddOnContentLocationResolverInterface : public IServiceObject {
+    class AddOnContentLocationResolverInterface : public sf::IServiceObject {
         protected:
             enum class CommandId {
                 ResolveAddOnContentPath = 0,
@@ -33,24 +33,24 @@ namespace sts::lr {
                 UnregisterApplicationAddOnContent = 4,
             };
         private:
-            impl::RegisteredStorages<ncm::TitleId, 0x800> registered_storages;
+            impl::RegisteredStorages<ncm::ProgramId, 0x800> registered_storages;
         public:
-            AddOnContentLocationResolverInterface() : registered_storages(GetRuntimeFirmwareVersion() < FirmwareVersion_900 ? 0x800 : 0x2) { /* ... */ }
+            AddOnContentLocationResolverInterface() : registered_storages(hos::GetVersion() < hos::Version_900 ? 0x800 : 0x2) { /* ... */ }
 
-            virtual Result ResolveAddOnContentPath(OutPointerWithServerSize<Path, 0x1> out, ncm::TitleId tid);
-            virtual Result RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::TitleId tid);
-            virtual Result RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::TitleId tid, ncm::TitleId application_tid);
+            virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId tid);
+            virtual Result RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId tid);
+            virtual Result RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId tid, ncm::ProgramId application_tid);
             virtual Result UnregisterAllAddOnContentPath();
-            virtual Result RefreshApplicationAddOnContent(InBuffer<ncm::TitleId> tids);
-            virtual Result UnregisterApplicationAddOnContent(ncm::TitleId tid);
+            virtual Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ProgramId> &tids);
+            virtual Result UnregisterApplicationAddOnContent(ncm::ProgramId tid);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(AddOnContentLocationResolverInterface, ResolveAddOnContentPath,               FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(AddOnContentLocationResolverInterface, RegisterAddOnContentStorageDeprecated, FirmwareVersion_200, FirmwareVersion_810),
-                MAKE_SERVICE_COMMAND_META(AddOnContentLocationResolverInterface, RegisterAddOnContentStorage,           FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(AddOnContentLocationResolverInterface, UnregisterAllAddOnContentPath,         FirmwareVersion_200),
-                MAKE_SERVICE_COMMAND_META(AddOnContentLocationResolverInterface, RefreshApplicationAddOnContent,        FirmwareVersion_900),
-                MAKE_SERVICE_COMMAND_META(AddOnContentLocationResolverInterface, UnregisterApplicationAddOnContent,     FirmwareVersion_900),
+                MAKE_SERVICE_COMMAND_META(ResolveAddOnContentPath,               hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(RegisterAddOnContentStorageDeprecated, hos::Version_200, hos::Version_810),
+                MAKE_SERVICE_COMMAND_META(RegisterAddOnContentStorage,           hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(UnregisterAllAddOnContentPath,         hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(RefreshApplicationAddOnContent,        hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(UnregisterApplicationAddOnContent,     hos::Version_900),
             };
     };
 
