@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <atmosphere/version.h>
+#include <vapours/ams_version.h>
 
 .macro CLEAR_GPR_REG_ITER
     mov r\@, #0

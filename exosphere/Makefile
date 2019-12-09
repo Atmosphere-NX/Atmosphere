@@ -28,7 +28,7 @@ TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src src/dbg
 DATA		:=	data
-INCLUDES	:=	include ../common/include
+INCLUDES	:=	include ../libraries/libvapours/include
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -48,7 +48,7 @@ CFLAGS	:= \
 	-Wall \
 	$(ARCH) $(DEFINES)
 
-CFLAGS	+=	$(INCLUDE) 
+CFLAGS	+=	$(INCLUDE)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 

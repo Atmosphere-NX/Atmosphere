@@ -18,7 +18,7 @@
 #define EXOSPHERE_EXOSPHERE_CONFIG_H
 
 #include <stdint.h>
-#include <atmosphere.h>
+#include <vapours/ams_version.h>
 #include "utils.h"
 
 #include "memory_map.h"
@@ -68,7 +68,7 @@ static inline unsigned int exosphere_get_target_firmware_for_init(void) {
     if (magic == MAGIC_EXOSPHERE_CONFIG) {
         return MAILBOX_EXOSPHERE_CONFIG_PHYS.target_firmware;
     } else {
-        return ATMOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG;
+        return ATMOSPHERE_TARGET_FIRMWARE_CURRENT;
     }
 }
 

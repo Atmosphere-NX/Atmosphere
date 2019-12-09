@@ -22,7 +22,7 @@
 #include "mmu.h"
 #include "memory_map.h"
 
-static exosphere_config_t g_exosphere_cfg = {MAGIC_EXOSPHERE_CONFIG, ATMOSPHERE_TARGET_FIRMWARE_DEFAULT_FOR_DEBUG, EXOSPHERE_FLAGS_DEFAULT};
+static exosphere_config_t g_exosphere_cfg = {MAGIC_EXOSPHERE_CONFIG, ATMOSPHERE_TARGET_FIRMWARE_CURRENT, EXOSPHERE_FLAGS_DEFAULT};
 static bool g_has_loaded_config = false;
 
 #define EXOSPHERE_CHECK_FLAG(flag) ((g_exosphere_cfg.flags & flag) != 0)

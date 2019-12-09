@@ -13,12 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_EMUMMC_CONFIG_H
 #define EXOSPHERE_EMUMMC_CONFIG_H
 
 #include <stdint.h>
-#include <atmosphere.h>
+#include <vapours/ams_version.h>
 #include "utils.h"
 
 /* "EFS0" */

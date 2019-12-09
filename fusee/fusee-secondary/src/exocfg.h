@@ -18,7 +18,7 @@
 #define FUSEE_EXOSPHERE_CONFIG_H
 
 #include <stdint.h>
-#include <atmosphere.h>
+#include <vapours/ams_version.h>
 #include "emummc_cfg.h"
 
 /* This serves to set configuration for *exosphere itself*, separate from the SecMon Exosphere mimics. */
