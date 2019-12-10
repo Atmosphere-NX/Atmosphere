@@ -70,31 +70,31 @@ namespace ams::ncm {
             }
         public:
             /* Actual commands. */
-            virtual Result Set(ContentMetaKey key, sf::InBuffer value);
-            virtual Result Get(sf::Out<u64> out_size, ContentMetaKey key, sf::OutBuffer out_value);
-            virtual Result Remove(ContentMetaKey key);
-            virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type);
-            virtual Result ListContentInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, ContentMetaKey key, u32 start_index);
-            virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_title_id, ProgramId title_id_min, ProgramId title_id_max, ContentInstallType install_type);
-            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId tid);
-            virtual Result ListApplication(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType meta_type);
-            virtual Result Has(sf::Out<bool> out, ContentMetaKey key);
-            virtual Result HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys);
-            virtual Result GetSize(sf::Out<u64> out_size, ContentMetaKey key);
-            virtual Result GetRequiredSystemVersion(sf::Out<u32> out_version, ContentMetaKey key);
-            virtual Result GetPatchId(sf::Out<ProgramId> out_patch_id, ContentMetaKey key);
-            virtual Result DisableForcibly();
-            virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids);
-            virtual Result Commit();
-            virtual Result HasContent(sf::Out<bool> out, ContentMetaKey key, ContentId content_id);
-            virtual Result ListContentMetaInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, ContentMetaKey key, u32 start_index);
-            virtual Result GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, ContentMetaKey key);
-            virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, ContentMetaKey key);
-            virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset);
+            virtual Result Set(ContentMetaKey key, sf::InBuffer value) = 0;
+            virtual Result Get(sf::Out<u64> out_size, ContentMetaKey key, sf::OutBuffer out_value) = 0;
+            virtual Result Remove(ContentMetaKey key) = 0;
+            virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type) = 0;
+            virtual Result ListContentInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, ContentMetaKey key, u32 start_index) = 0;
+            virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_title_id, ProgramId title_id_min, ProgramId title_id_max, ContentInstallType install_type) = 0;
+            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId tid) = 0;
+            virtual Result ListApplication(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType meta_type) = 0;
+            virtual Result Has(sf::Out<bool> out, ContentMetaKey key) = 0;
+            virtual Result HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys) = 0;
+            virtual Result GetSize(sf::Out<u64> out_size, ContentMetaKey key) = 0;
+            virtual Result GetRequiredSystemVersion(sf::Out<u32> out_version, ContentMetaKey key) = 0;
+            virtual Result GetPatchId(sf::Out<ProgramId> out_patch_id, ContentMetaKey key) = 0;
+            virtual Result DisableForcibly() = 0;
+            virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) = 0;
+            virtual Result Commit() = 0;
+            virtual Result HasContent(sf::Out<bool> out, ContentMetaKey key, ContentId content_id) = 0;
+            virtual Result ListContentMetaInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, ContentMetaKey key, u32 start_index) = 0;
+            virtual Result GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, ContentMetaKey key) = 0;
+            virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, ContentMetaKey key) = 0;
+            virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset) = 0;
 
             /* APIs. */
-            virtual Result GetLatestProgram(ContentId* out_content_id, ProgramId title_id);
-            virtual Result GetLatestData(ContentId* out_content_id, ProgramId title_id);
+            virtual Result GetLatestProgram(ContentId* out_content_id, ProgramId title_id) = 0;
+            virtual Result GetLatestData(ContentId* out_content_id, ProgramId title_id) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(Set),

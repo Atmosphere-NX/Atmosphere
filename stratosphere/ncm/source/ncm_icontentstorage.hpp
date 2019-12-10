@@ -64,34 +64,34 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
         public:
-            virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out);
-            virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size);
-            virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id);
-            virtual Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id);
-            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data);
-            virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id);
-            virtual Result Delete(ContentId content_id);
-            virtual Result Has(sf::Out<bool> out, ContentId content_id);
-            virtual Result GetPath(sf::Out<lr::Path> out, ContentId content_id);
-            virtual Result GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id);
-            virtual Result CleanupAllPlaceHolder();
-            virtual Result ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf);
-            virtual Result GetContentCount(sf::Out<u32> out_count);
-            virtual Result ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset);
-            virtual Result GetSizeFromContentId(sf::Out<u64> out_size, ContentId content_id);
-            virtual Result DisableForcibly();
-            virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id);
-            virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size);
-            virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset);
-            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id);
-            virtual Result GetRightsIdFromContentId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, ContentId content_id);
-            virtual Result WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data);
-            virtual Result GetFreeSpaceSize(sf::Out<u64> out_size);
-            virtual Result GetTotalSpaceSize(sf::Out<u64> out_size);
-            virtual Result FlushPlaceHolder();
-            virtual Result GetSizeFromPlaceHolderId(sf::Out<u64> out, PlaceHolderId placeholder_id);
-            virtual Result RepairInvalidFileAttribute();
-            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id);
+            virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) = 0;
+            virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) = 0;
+            virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id) = 0;
+            virtual Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) = 0;
+            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) = 0;
+            virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id) = 0;
+            virtual Result Delete(ContentId content_id) = 0;
+            virtual Result Has(sf::Out<bool> out, ContentId content_id) = 0;
+            virtual Result GetPath(sf::Out<lr::Path> out, ContentId content_id) = 0;
+            virtual Result GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id) = 0;
+            virtual Result CleanupAllPlaceHolder() = 0;
+            virtual Result ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) = 0;
+            virtual Result GetContentCount(sf::Out<u32> out_count) = 0;
+            virtual Result ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) = 0;
+            virtual Result GetSizeFromContentId(sf::Out<u64> out_size, ContentId content_id) = 0;
+            virtual Result DisableForcibly() = 0;
+            virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) = 0;
+            virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) = 0;
+            virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) = 0;
+            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id) = 0;
+            virtual Result GetRightsIdFromContentId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, ContentId content_id) = 0;
+            virtual Result WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) = 0;
+            virtual Result GetFreeSpaceSize(sf::Out<u64> out_size) = 0;
+            virtual Result GetTotalSpaceSize(sf::Out<u64> out_size) = 0;
+            virtual Result FlushPlaceHolder() = 0;
+            virtual Result GetSizeFromPlaceHolderId(sf::Out<u64> out, PlaceHolderId placeholder_id) = 0;
+            virtual Result RepairInvalidFileAttribute() = 0;
+            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(GeneratePlaceHolderId),
