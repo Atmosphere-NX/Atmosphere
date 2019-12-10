@@ -15,5 +15,14 @@
  */
 
 #pragma once
+#include "os_common_types.hpp"
 
-#include "rnd/rnd_api.hpp"
+namespace ams::os {
+
+    void GenerateRandomBytes(void *dst, size_t size);
+
+    /* Convenience API. */
+    u32 GenerateRandomU32(u32 max = std::numeric_limits<u32>::max());
+    u64 GenerateRandomU64(u64 max = std::numeric_limits<u64>::max());
+
+}

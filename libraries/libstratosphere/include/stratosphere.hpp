@@ -44,7 +44,6 @@
 #include "stratosphere/patcher.hpp"
 #include "stratosphere/pm.hpp"
 #include "stratosphere/reg.hpp"
-#include "stratosphere/rnd.hpp"
 #include "stratosphere/ro.hpp"
 #include "stratosphere/settings.hpp"
 #include "stratosphere/sf.hpp"

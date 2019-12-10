@@ -13,15 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::rnd {
+namespace ams::os::impl {
 
-    /* Random utilities. */
-    void GenerateRandomBytes(void* out, size_t size);
-    u32  GenerateRandomU32(u32 max = std::numeric_limits<u32>::max());
-    u64  GenerateRandomU64(u64 max = std::numeric_limits<u64>::max());
+    void InitializeRandomImpl(util::TinyMT *mt);
 
 }

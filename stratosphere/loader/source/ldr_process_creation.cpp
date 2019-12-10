@@ -499,9 +499,10 @@ namespace ams::ldr {
 
             /* Set Create Process output. */
             uintptr_t aslr_slide = 0;
-            uintptr_t unused_size = (aslr_size - total_size);
+            uintptr_t free_size = (aslr_size - total_size);
             if (out_cpi->flags & svc::CreateProcessFlag_EnableAslr) {
-                aslr_slide = ams::rnd::GenerateRandomU64(unused_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
+                /* Nintendo uses MT19937 (not os::GenerateRandomBytes), but we'll just use TinyMT for now. */
+                aslr_slide = os::GenerateRandomU64(free_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
             }
 
             /* Set out. */

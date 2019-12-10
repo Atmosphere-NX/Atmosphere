@@ -43,9 +43,9 @@ namespace ams::map {
                 }
 
                 const uintptr_t mem_end = mem_info.addr + mem_info.size;
-                if (mem_info.type == MemType_Reserved || mem_end < cur_base || (mem_end >> 31)) {
-                    return svc::ResultOutOfMemory();
-                }
+                R_UNLESS(mem_info.type != MemType_Reserved,                                  svc::ResultOutOfMemory());
+                R_UNLESS(cur_base <= mem_end,                                                svc::ResultOutOfMemory());
+                R_UNLESS(mem_end <= static_cast<uintptr_t>(std::numeric_limits<s32>::max()), svc::ResultOutOfMemory());
 
                 cur_base = mem_end;
             } while (true);
@@ -61,22 +61,16 @@ namespace ams::map {
             cur_base = address_space.aslr_base;
             cur_end = cur_base + size;
 
-            if (cur_end <= cur_base) {
-                return svc::ResultOutOfMemory();
-            }
+            R_UNLESS(cur_base < cur_end, svc::ResultOutOfMemory());
 
             while (true) {
                 if (address_space.heap_size && (address_space.heap_base <= cur_end - 1 && cur_base <= address_space.heap_end - 1)) {
                     /* If we overlap the heap region, go to the end of the heap region. */
-                    if (cur_base == address_space.heap_end) {
-                        return svc::ResultOutOfMemory();
-                    }
+                    R_UNLESS(cur_base != address_space.heap_end, svc::ResultOutOfMemory());
                     cur_base = address_space.heap_end;
                 } else if (address_space.alias_size && (address_space.alias_base <= cur_end - 1 && cur_base <= address_space.alias_end - 1)) {
                     /* If we overlap the alias region, go to the end of the alias region. */
-                    if (cur_base == address_space.alias_end) {
-                        return svc::ResultOutOfMemory();
-                    }
+                    R_UNLESS(cur_base != address_space.alias_end, svc::ResultOutOfMemory());
                     cur_base = address_space.alias_end;
                 } else {
                     R_ASSERT(svcQueryMemory(&mem_info, &page_info, cur_base));
@@ -84,18 +78,13 @@ namespace ams::map {
                         *out_address = cur_base;
                         return ResultSuccess();
                     }
-                    if (mem_info.addr + mem_info.size <= cur_base) {
-                        return svc::ResultOutOfMemory();
-                    }
+                    R_UNLESS(cur_base < mem_info.addr + mem_info.size, svc::ResultOutOfMemory());
+
                     cur_base = mem_info.addr + mem_info.size;
-                    if (cur_base >= address_space.aslr_end) {
-                        return svc::ResultOutOfMemory();
-                    }
+                    R_UNLESS(cur_base < address_space.aslr_end,        svc::ResultOutOfMemory());
                 }
                 cur_end = cur_base + size;
-                if (cur_base + size <= cur_base) {
-                    return svc::ResultOutOfMemory();
-                }
+                R_UNLESS(cur_base < cur_base + size, svc::ResultOutOfMemory());
             }
         }
 
@@ -103,19 +92,15 @@ namespace ams::map {
             AddressSpaceInfo address_space;
             R_TRY(GetProcessAddressSpaceInfo(&address_space, process_handle));
 
-            if (size > address_space.aslr_size) {
-                return ro::ResultOutOfAddressSpace();
-            }
+            R_UNLESS(size <= address_space.aslr_size, ro::ResultOutOfAddressSpace());
 
             uintptr_t try_address;
             for (unsigned int i = 0; i < LocateRetryCount; i++) {
-                try_address = address_space.aslr_base + (rnd::GenerateRandomU64(static_cast<u64>(address_space.aslr_size - size) >> 12) << 12);
+                try_address = address_space.aslr_base + (os::GenerateRandomU64(static_cast<u64>(address_space.aslr_size - size) / os::MemoryPageSize) * os::MemoryPageSize);
 
                 MappedCodeMemory tmp_mcm(process_handle, try_address, base_address, size);
                 R_TRY_CATCH(tmp_mcm.GetResult()) {
-                    R_CATCH(svc::ResultInvalidCurrentMemoryState) {
-                        continue;
-                    }
+                    R_CATCH(svc::ResultInvalidCurrentMemoryState) { continue; }
                 } R_END_TRY_CATCH;
 
                 if (!CanAddGuardRegionsInProcess(process_handle, try_address, size)) {
@@ -134,14 +119,12 @@ namespace ams::map {
             AddressSpaceInfo address_space;
             R_TRY(GetProcessAddressSpaceInfo(&address_space, process_handle));
 
-            if (size > address_space.aslr_size) {
-                return ro::ResultOutOfAddressSpace();
-            }
+            R_UNLESS(size <= address_space.aslr_size, ro::ResultOutOfAddressSpace());
 
             uintptr_t try_address;
             for (unsigned int i = 0; i < LocateRetryCount; i++) {
                 while (true) {
-                    try_address = address_space.aslr_base + (rnd::GenerateRandomU64(static_cast<u64>(address_space.aslr_size - size) >> 12) << 12);
+                    try_address = address_space.aslr_base + (os::GenerateRandomU64(static_cast<u64>(address_space.aslr_size - size) / os::MemoryPageSize) * os::MemoryPageSize);
                     if (address_space.heap_size && (address_space.heap_base <= try_address + size - 1 && try_address <= address_space.heap_end - 1)) {
                         continue;
                     }
@@ -153,9 +136,7 @@ namespace ams::map {
 
                 MappedCodeMemory tmp_mcm(process_handle, try_address, base_address, size);
                 R_TRY_CATCH(tmp_mcm.GetResult()) {
-                    R_CATCH(svc::ResultInvalidCurrentMemoryState) {
-                        continue;
-                    }
+                    R_CATCH(svc::ResultInvalidCurrentMemoryState) { continue; }
                 } R_END_TRY_CATCH;
 
                 if (!CanAddGuardRegionsInProcess(process_handle, try_address, size)) {
