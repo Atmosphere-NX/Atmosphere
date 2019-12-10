@@ -377,14 +377,15 @@ namespace ams::sf::impl {
             static R GetReturnTypeImpl(R(C::*)(A...));
 
             template<typename R, typename C, typename... A>
-            static C GetClassTypeImpl(R(C::*)(A...));
+            static C *GetClassTypePointerImpl(R(C::*)(A...));
 
             template<typename R, typename C, typename... A>
             static std::tuple<typename std::decay<A>::type...> GetArgsImpl(R(C::*)(A...));
         public:
-            using ReturnType = decltype(GetReturnTypeImpl(MemberFunction));
-            using ClassType  = decltype(GetClassTypeImpl(MemberFunction));
-            using ArgsType   = decltype(GetArgsImpl(MemberFunction));
+            using ReturnType        = decltype(GetReturnTypeImpl(MemberFunction));
+            using ClassTypePointer  = decltype(GetClassTypePointerImpl(MemberFunction));
+            using ArgsType          = decltype(GetArgsImpl(MemberFunction));
+            using ClassType         = typename std::remove_pointer<ClassTypePointer>::type;
 
             static constexpr bool ReturnsResult = std::is_same<ReturnType, Result>::value;
             static constexpr bool ReturnsVoid   = std::is_same<ReturnType, void>::value;
@@ -1067,8 +1068,7 @@ namespace ams::sf::impl {
         using OutHandleHolderType = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles>;
         using OutRawHolderType = OutRawHolder<CommandMeta::OutDataSize, CommandMeta::OutDataAlign>;
         using InOutObjectHolderType = InOutObjectHolder<CommandMeta::NumInObjects, CommandMeta::NumOutObjects>;
-        using ClassType = typename CommandMeta::ClassType;
-        static_assert(std::is_base_of<sf::IServiceObject, ClassType>::value, "InvokeServiceCommandImpl: Service Commands must be ServiceObject member functions");
+        static_assert(std::is_base_of<sf::IServiceObject, typename CommandMeta::ClassType>::value, "InvokeServiceCommandImpl: Service Commands must be ServiceObject member functions");
 
         /* Create a processor for us to work with. */
         ImplProcessorType impl_processor;
@@ -1100,7 +1100,7 @@ namespace ams::sf::impl {
 
         /* Decoding/Invocation. */
         {
-            ClassType *this_ptr = static_cast<ClassType *>(ctx.srv_obj);
+            typename CommandMeta::ClassTypePointer this_ptr = static_cast<typename CommandMeta::ClassTypePointer>(ctx.srv_obj);
             typename CommandMeta::ArgsType args_tuple = ImplProcessorType::DeserializeArguments(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder);
 
             /* Handle in process ID holder if relevant. */
