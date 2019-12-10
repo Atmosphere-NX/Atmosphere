@@ -70,7 +70,7 @@ namespace ams::kvdb {
     Result ArchiveReader::Peek(void *dst, size_t size) {
         /* Bounds check. */
         R_UNLESS(this->offset + size <= this->buffer.GetSize(), ResultInvalidKeyValue());
-        R_UNLESS(this->offset + size <= this->offset,           ResultInvalidKeyValue());
+        R_UNLESS(this->offset < this->offset + size,            ResultInvalidKeyValue());
 
         std::memcpy(dst, this->buffer.Get() + this->offset, size);
         return ResultSuccess();
@@ -131,7 +131,7 @@ namespace ams::kvdb {
     Result ArchiveWriter::Write(const void *src, size_t size) {
         /* Bounds check. */
         R_UNLESS(this->offset + size <= this->buffer.GetSize(), ResultInvalidKeyValue());
-        R_UNLESS(this->offset + size <= this->offset,           ResultInvalidKeyValue());
+        R_UNLESS(this->offset < this->offset + size,            ResultInvalidKeyValue());
 
         std::memcpy(this->buffer.Get() + this->offset, src, size);
         this->offset += size;
