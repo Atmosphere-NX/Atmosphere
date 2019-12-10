@@ -68,9 +68,9 @@ namespace ams::util {
                 /* Splice a range into the list. */
                 auto last_prev = last->prev;
                 first->prev = this;
-                this->next = first;
                 last_prev->next = next;
                 this->next->prev = last_prev;
+                this->next = first;
             }
 
             void Unlink() {
@@ -500,7 +500,7 @@ namespace ams::util {
             }
 
             void push_front(reference ref) {
-                this->impl.push_back(GetNode(ref));
+                this->impl.push_front(GetNode(ref));
             }
 
             void pop_back() {
