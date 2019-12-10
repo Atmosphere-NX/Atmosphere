@@ -38,8 +38,9 @@ namespace ams::pm::resource {
         constexpr size_t ExtraSystemSessionCount600  = 100;
         constexpr size_t ReservedMemorySize600       = 5 * Megabyte;
 
-        /* Atmosphere always allocates 24 extra megabytes for system usage. */
-        constexpr size_t ExtraSystemMemorySizeAtmosphere = 24 * Megabyte;
+        /* Atmosphere always allocates extra memory for system usage. */
+        constexpr size_t ExtraSystemMemorySizeAtmosphere    = 24 * Megabyte;
+        constexpr size_t ExtraSystemMemorySizeAtmosphere500 = 33 * Megabyte; /* Applet pool is 0x20100000 */
 
         /* Globals. */
         os::Mutex g_resource_limit_lock;
@@ -252,12 +253,14 @@ namespace ams::pm::resource {
 
         /* Adjust memory limits for atmosphere. */
         /* We take memory away from applet normally, but away from application on < 3.0.0 to avoid a rare hang on boot. */
-        for (size_t i = 0; i < spl::MemoryArrangement_Count; i++) {
-            g_memory_resource_limits[i][ResourceLimitGroup_System] += ExtraSystemMemorySizeAtmosphere;
-            if (hos_version >= hos::Version_300) {
-                g_memory_resource_limits[i][ResourceLimitGroup_Applet] -= ExtraSystemMemorySizeAtmosphere;
-            } else {
-                g_memory_resource_limits[i][ResourceLimitGroup_Application] -= ExtraSystemMemorySizeAtmosphere;
+        /* NOTE: On Version 5.0.0+, we cannot set the pools so simply. We must instead modify the kernel, which we do */
+        /* via patches in fusee-secondary. */
+        if (hos_version < hos::Version_600) {
+            const size_t extra_memory_size = hos_version == hos::Version_500 ? ExtraSystemMemorySizeAtmosphere500 : ExtraSystemMemorySizeAtmosphere;
+            const auto src_group = hos_version >= hos::Version_300 ? ResourceLimitGroup_Applet : ResourceLimitGroup_Application;
+            for (size_t i = 0; i < spl::MemoryArrangement_Count; i++) {
+                g_memory_resource_limits[i][ResourceLimitGroup_System] += extra_memory_size;
+                g_memory_resource_limits[i][src_group] -= extra_memory_size;
             }
         }
 

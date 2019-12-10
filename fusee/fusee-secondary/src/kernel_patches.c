@@ -488,6 +488,13 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(700, svc_control_codememory)[]
 static const instruction_t MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory)[] = {MAKE_NOP};
 static const instruction_t MAKE_KERNEL_PATCH_NAME(900, svc_control_codememory)[] = {MAKE_NOP};
 
+
+static const instruction_t MAKE_KERNEL_PATCH_NAME(500, system_memory_increase)[] = {0x52A3C008}; /* MOV W8,   #0x1E000000 */
+static const instruction_t MAKE_KERNEL_PATCH_NAME(600, system_memory_increase)[] = {0x52A3B008}; /* MOV W8,   #0x1D800000 */
+static const instruction_t MAKE_KERNEL_PATCH_NAME(700, system_memory_increase)[] = {0x52A3B008}; /* MOV W8,   #0x1D800000 */
+static const instruction_t MAKE_KERNEL_PATCH_NAME(800, system_memory_increase)[] = {0x52A3B013}; /* MOV W19,  #0x1D800000 */
+static const instruction_t MAKE_KERNEL_PATCH_NAME(900, system_memory_increase)[] = {0x52A3B013}; /* MOV W19,  #0x1D800000 */
+
 /* Hook Definitions. */
 static const kernel_patch_t g_kernel_patches_100[] = {
     {   /* Send Message Process ID Patch. */
@@ -600,6 +607,11 @@ static const kernel_patch_t g_kernel_patches_500[] = {
         .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(500, svc_control_codememory))/sizeof(instruction_t),
         .payload = MAKE_KERNEL_PATCH_NAME(500, svc_control_codememory),
         .patch_offset = 0x38C2C,
+    },
+    {   /* System Memory Increase Patch. */
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(500, system_memory_increase))/sizeof(instruction_t),
+        .payload = MAKE_KERNEL_PATCH_NAME(500, system_memory_increase),
+        .patch_offset = 0x54E30,
     }
 };
 static const kernel_patch_t g_kernel_patches_600[] = {
@@ -623,6 +635,11 @@ static const kernel_patch_t g_kernel_patches_600[] = {
         .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(600, svc_control_codememory))/sizeof(instruction_t),
         .payload = MAKE_KERNEL_PATCH_NAME(600, svc_control_codememory),
         .patch_offset = 0x3A8CC,
+    },
+    {   /* System Memory Increase Patch. */
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(600, system_memory_increase))/sizeof(instruction_t),
+        .payload = MAKE_KERNEL_PATCH_NAME(600, system_memory_increase),
+        .patch_offset = 0x57330,
     }
 };
 static const kernel_patch_t g_kernel_patches_700[] = {
@@ -646,6 +663,11 @@ static const kernel_patch_t g_kernel_patches_700[] = {
         .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(700, svc_control_codememory))/sizeof(instruction_t),
         .payload = MAKE_KERNEL_PATCH_NAME(700, svc_control_codememory),
         .patch_offset = 0x3C6E0,
+    },
+    {   /* System Memory Increase Patch. */
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(700, system_memory_increase))/sizeof(instruction_t),
+        .payload = MAKE_KERNEL_PATCH_NAME(700, system_memory_increase),
+        .patch_offset = 0x57F98,
     }
 };
 
@@ -670,6 +692,11 @@ static const kernel_patch_t g_kernel_patches_800[] = {
         .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory))/sizeof(instruction_t),
         .payload = MAKE_KERNEL_PATCH_NAME(800, svc_control_codememory),
         .patch_offset = 0x3FAD0,
+    },
+    {   /* System Memory Increase Patch. */
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(800, system_memory_increase))/sizeof(instruction_t),
+        .payload = MAKE_KERNEL_PATCH_NAME(800, system_memory_increase),
+        .patch_offset = 0x5F9A4,
     }
 };
 
@@ -694,6 +721,11 @@ static const kernel_patch_t g_kernel_patches_900[] = {
         .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(900, svc_control_codememory))/sizeof(instruction_t),
         .payload = MAKE_KERNEL_PATCH_NAME(900, svc_control_codememory),
         .patch_offset = 0x43DFC,
+    },
+    {   /* System Memory Increase Patch. */
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(900, system_memory_increase))/sizeof(instruction_t),
+        .payload = MAKE_KERNEL_PATCH_NAME(900, system_memory_increase),
+        .patch_offset = 0x6493C,
     }
 };
 
