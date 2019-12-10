@@ -15,21 +15,29 @@
  */
 
 #pragma once
-#include "results_common.hpp"
+#include <cstring>
+#include <switch.h>
 
-namespace ams::lr {
+namespace ams::util {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(8);
+    struct Uuid {
+        u8 uuid[0x10];
 
-    R_DEFINE_ERROR_RESULT(ProgramNotFound,          2);
-    R_DEFINE_ERROR_RESULT(DataNotFound,             3);
-    R_DEFINE_ERROR_RESULT(UnknownStorageId,         4);
-    R_DEFINE_ERROR_RESULT(HtmlDocumentNotFound,     6);
-    R_DEFINE_ERROR_RESULT(AddOnContentNotFound,     7);
-    R_DEFINE_ERROR_RESULT(ControlNotFound,          8);
-    R_DEFINE_ERROR_RESULT(LegalInformationNotFound, 9);
-    R_DEFINE_ERROR_RESULT(DebugProgramNotFound,    10);
+        bool operator==(const Uuid& other) const {
+            return memcmp(this->uuid, other.uuid, sizeof(Uuid)) == 0;
+        }
 
-    R_DEFINE_ERROR_RESULT(TooManyRegisteredPaths,   90);
+        bool operator!=(const Uuid& other) const {
+            return !(*this == other);
+        }
+
+        u8& operator[](size_t i) { 
+            return uuid[i]; 
+        }
+    };
+
+    static_assert(sizeof(Uuid) == 0x10, "Uuid definition!");
+    
+    static constexpr Uuid InvalidUuid = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
 
 }

@@ -15,21 +15,6 @@
  */
 
 #pragma once
-#include "results_common.hpp"
+#include <switch.h>
 
-namespace ams::lr {
-
-    R_DEFINE_NAMESPACE_RESULT_MODULE(8);
-
-    R_DEFINE_ERROR_RESULT(ProgramNotFound,          2);
-    R_DEFINE_ERROR_RESULT(DataNotFound,             3);
-    R_DEFINE_ERROR_RESULT(UnknownStorageId,         4);
-    R_DEFINE_ERROR_RESULT(HtmlDocumentNotFound,     6);
-    R_DEFINE_ERROR_RESULT(AddOnContentNotFound,     7);
-    R_DEFINE_ERROR_RESULT(ControlNotFound,          8);
-    R_DEFINE_ERROR_RESULT(LegalInformationNotFound, 9);
-    R_DEFINE_ERROR_RESULT(DebugProgramNotFound,    10);
-
-    R_DEFINE_ERROR_RESULT(TooManyRegisteredPaths,   90);
-
-}
+#include "lr/lr_types.hpp"

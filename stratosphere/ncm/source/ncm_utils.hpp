@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2019 Adubbz
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,12 +15,16 @@
  */
 
 #pragma once
-#include "defines.hpp"
+#include <switch.h>
+#include <stratosphere.hpp>
+#include <sys/dirent.h>
 
-#include "util/util_alignment.hpp"
-#include "util/util_size.hpp"
-#include "util/util_scope_guard.hpp"
-#include "util/util_typed_storage.hpp"
-#include "util/util_intrusive_list.hpp"
-#include "util/util_intrusive_red_black_tree.hpp"
-#include "util/util_uuid.hpp"
+namespace ams::ncm {
+
+    void GetStringFromContentId(char* out, ContentId content_id);
+    void GetStringFromPlaceHolderId(char* out, PlaceHolderId placeholder_id);
+
+    Result GetPlaceHolderIdFromDirEntry(PlaceHolderId* out, struct dirent* dir_entry);
+    std::optional<ContentId> GetContentIdFromString(const char* str, size_t len);
+    
+};
