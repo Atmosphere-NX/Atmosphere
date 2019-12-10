@@ -27,7 +27,7 @@ namespace ams::lr::impl {
         private:
             struct Entry {
                 Value value;
-                ncm::ProgramId owner_tid;
+                ncm::ProgramId owner_id;
                 Key key;
                 bool is_valid;
             };
@@ -39,7 +39,7 @@ namespace ams::lr::impl {
                 this->Clear();
             }
 
-            bool Register(const Key &key, const Value &value, const ncm::ProgramId owner_tid) {
+            bool Register(const Key &key, const Value &value, const ncm::ProgramId owner_id) {
                 /* Try to find an existing value. */
                 for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
@@ -54,7 +54,7 @@ namespace ams::lr::impl {
                     if (!entry.is_valid) {
                         entry.key = key;
                         entry.value = value;
-                        entry.owner_tid = owner_tid;
+                        entry.owner_id = owner_id;
                         entry.is_valid = true;
                         return true;
                     }
@@ -72,10 +72,10 @@ namespace ams::lr::impl {
                 }
             }
 
-            void UnregisterOwnerTitle(ncm::ProgramId owner_tid) {
+            void UnregisterOwnerProgram(ncm::ProgramId owner_id) {
                 for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
-                    if (entry.owner_tid == owner_tid) {
+                    if (entry.owner_id == owner_id) {
                         entry.is_valid = false;
                     }
                 }
@@ -99,15 +99,15 @@ namespace ams::lr::impl {
                 }
             }
 
-            void ClearExcluding(const ncm::ProgramId* tids, size_t num_tids) {
+            void ClearExcluding(const ncm::ProgramId* ids, size_t num_ids) {
                 for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
                     Entry& entry = this->entries[i];
                     bool found = false;
 
-                    for (size_t j = 0; j < num_tids; j++) {
-                        ncm::ProgramId tid = tids[j];
+                    for (size_t j = 0; j < num_ids; j++) {
+                        ncm::ProgramId id = ids[j];
 
-                        if (entry.owner_tid == tid) {
+                        if (entry.owner_id == id) {
                             found = true;
                             break;
                         }

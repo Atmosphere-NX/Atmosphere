@@ -22,20 +22,20 @@ namespace ams::lr::impl {
         NON_COPYABLE(LocationRedirection);
         NON_MOVEABLE(LocationRedirection);
         private:
-            ncm::ProgramId title_id;
-            ncm::ProgramId owner_tid;
+            ncm::ProgramId program_id;
+            ncm::ProgramId owner_id;
             Path path;
             u32 flags;
         public:
-            LocationRedirection(ncm::ProgramId title_id, ncm::ProgramId owner_tid, const Path& path, u32 flags) :
-                title_id(title_id), owner_tid(owner_tid), path(path), flags(flags) { /* ... */ }
+            LocationRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path& path, u32 flags) :
+                program_id(program_id), owner_id(owner_id), path(path), flags(flags) { /* ... */ }
 
-            ncm::ProgramId GetTitleId() const {
-                return this->title_id;
+            ncm::ProgramId GetProgramId() const {
+                return this->program_id;
             }
 
-            ncm::ProgramId GetOwnerTitleId() const {
-                return this->owner_tid;
+            ncm::ProgramId GetOwnerProgramId() const {
+                return this->owner_id;
             }
 
             void GetPath(Path *out) const {
@@ -51,13 +51,13 @@ namespace ams::lr::impl {
             }
     };
 
-    bool LocationRedirector::FindRedirection(Path *out, ncm::ProgramId title_id) {
+    bool LocationRedirector::FindRedirection(Path *out, ncm::ProgramId program_id) {
         if (this->redirection_list.empty()) {
             return false;
         }
 
         for (const auto &redirection : this->redirection_list) {
-            if (redirection.GetTitleId() == title_id) {
+            if (redirection.GetProgramId() == program_id) {
                 redirection.GetPath(out);
                 return true;
             }
@@ -65,27 +65,27 @@ namespace ams::lr::impl {
         return false;
     }
 
-    void LocationRedirector::SetRedirection(ncm::ProgramId title_id, const Path &path, u32 flags) {
-        this->SetRedirection(title_id, path, flags);
+    void LocationRedirector::SetRedirection(ncm::ProgramId program_id, const Path &path, u32 flags) {
+        this->SetRedirection(program_id, path, flags);
     }
 
-    void LocationRedirector::SetRedirection(ncm::ProgramId title_id, ncm::ProgramId owner_tid, const Path &path, u32 flags) {
-        this->EraseRedirection(title_id);
-        this->redirection_list.push_back(*(new LocationRedirection(title_id, owner_tid, path, flags)));
+    void LocationRedirector::SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags) {
+        this->EraseRedirection(program_id);
+        this->redirection_list.push_back(*(new LocationRedirection(program_id, owner_id, path, flags)));
     }
 
-    void LocationRedirector::SetRedirectionFlags(ncm::ProgramId title_id, u32 flags) {
+    void LocationRedirector::SetRedirectionFlags(ncm::ProgramId program_id, u32 flags) {
         for (auto &redirection : this->redirection_list) {
-            if (redirection.GetTitleId() == title_id) {
+            if (redirection.GetProgramId() == program_id) {
                 redirection.SetFlags(flags);
                 break;
             }
         }
     }
 
-    void LocationRedirector::EraseRedirection(ncm::ProgramId title_id) {
+    void LocationRedirector::EraseRedirection(ncm::ProgramId program_id) {
         for (auto &redirection : this->redirection_list) {
-            if (redirection.GetTitleId() == title_id) {
+            if (redirection.GetProgramId() == program_id) {
                 this->redirection_list.erase(this->redirection_list.iterator_to(redirection));
                 delete &redirection;
                 break;
@@ -105,13 +105,13 @@ namespace ams::lr::impl {
         }
     }
 
-    void LocationRedirector::ClearRedirections(const ncm::ProgramId* excluding_tids, size_t num_tids) {
+    void LocationRedirector::ClearRedirections(const ncm::ProgramId* excluding_ids, size_t num_ids) {
         for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
             bool skip = false;
-            for (size_t i = 0; i < num_tids; i++) {
-                ncm::ProgramId tid = excluding_tids[i];
+            for (size_t i = 0; i < num_ids; i++) {
+                ncm::ProgramId id = excluding_ids[i];
 
-                if (it->GetOwnerTitleId() == tid) {
+                if (it->GetOwnerProgramId() == id) {
                     skip = true;
                     break;
                 }

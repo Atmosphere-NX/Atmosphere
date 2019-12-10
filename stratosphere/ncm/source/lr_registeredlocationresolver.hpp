@@ -50,27 +50,27 @@ namespace ams::lr {
             impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_html_docs_locations;
         private:
             void ClearRedirections(u32 flags = impl::RedirectionFlags_None);
-            void RegisterPath(const Path& path, impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations>* locations, ncm::ProgramId tid, ncm::ProgramId owner_tid);
-            bool ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations>* locations, ncm::ProgramId tid);
-            Result RefreshImpl(const ncm::ProgramId* excluding_tids, size_t num_tids);
+            void RegisterPath(const Path& path, impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations>* locations, ncm::ProgramId id, ncm::ProgramId owner_id);
+            bool ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations>* locations, ncm::ProgramId id);
+            Result RefreshImpl(const ncm::ProgramId* excluding_ids, size_t num_ids);
         public:
             RegisteredLocationResolverInterface() : registered_program_locations(hos::GetVersion() < hos::Version_900 ? 0x10 : MaxRegisteredLocations), registered_html_docs_locations(hos::GetVersion() < hos::Version_900 ? 0x10 : MaxRegisteredLocations) { /* ... */ }
             ~RegisteredLocationResolverInterface();
 
-            Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId tid);
-            Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId tid);
-            Result RegisterProgramPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid);
-            Result UnregisterProgramPath(ncm::ProgramId tid);
-            Result RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId tid);
-            Result RedirectProgramPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid);
-            Result ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId tid);
-            Result RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId tid);
-            Result RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid);
-            Result UnregisterHtmlDocumentPath(ncm::ProgramId tid);
-            Result RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId tid);
-            Result RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid);
+            Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id);
+            Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id);
+            Result RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id);
+            Result UnregisterProgramPath(ncm::ProgramId id);
+            Result RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId id);
+            Result RedirectProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id);
+            Result ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id);
+            Result RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id);
+            Result RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id);
+            Result UnregisterHtmlDocumentPath(ncm::ProgramId id);
+            Result RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id);
+            Result RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id);
             Result Refresh();
-            Result RefreshExcluding(const sf::InArray<ncm::ProgramId> &tids);
+            Result RefreshExcluding(const sf::InArray<ncm::ProgramId> &ids);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(ResolveProgramPath),

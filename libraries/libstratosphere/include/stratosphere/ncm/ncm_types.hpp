@@ -582,12 +582,12 @@ namespace ams::ncm {
             return !(*this == other);
         }
 
-        static constexpr ContentMetaKey Make(ProgramId title_id, u32 version, ContentMetaType type) {
-            return { .id = title_id, .version = version, .type = type };
+        static constexpr ContentMetaKey Make(ProgramId program_id, u32 version, ContentMetaType type) {
+            return { .id = program_id, .version = version, .type = type };
         }
 
-        static constexpr ContentMetaKey Make(ProgramId title_id, u32 version, ContentMetaType type, ContentInstallType install_type) {
-            return { .id = title_id, .version = version, .type = type, .install_type = install_type };
+        static constexpr ContentMetaKey Make(ProgramId program_id, u32 version, ContentMetaType type, ContentInstallType install_type) {
+            return { .id = program_id, .version = version, .type = type, .install_type = install_type };
         }
     };
 
@@ -598,7 +598,7 @@ namespace ams::ncm {
 
     struct ApplicationContentMetaKey {
         ContentMetaKey key;
-        ProgramId application_title_id;
+        ProgramId application_program_id;
     };
 
     static_assert(sizeof(ApplicationContentMetaKey) == 0x18, "ApplicationContentMetaKey definition!");

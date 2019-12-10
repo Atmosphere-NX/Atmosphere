@@ -37,12 +37,12 @@ namespace ams::lr {
         public:
             AddOnContentLocationResolverInterface() : registered_storages(hos::GetVersion() < hos::Version_900 ? 0x800 : 0x2) { /* ... */ }
 
-            virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId tid);
-            virtual Result RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId tid);
-            virtual Result RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId tid, ncm::ProgramId application_tid);
+            virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id);
+            virtual Result RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId id);
+            virtual Result RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id);
             virtual Result UnregisterAllAddOnContentPath();
-            virtual Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ProgramId> &tids);
-            virtual Result UnregisterApplicationAddOnContent(ncm::ProgramId tid);
+            virtual Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ProgramId> &ids);
+            virtual Result UnregisterApplicationAddOnContent(ncm::ProgramId id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(ResolveAddOnContentPath,               hos::Version_200),

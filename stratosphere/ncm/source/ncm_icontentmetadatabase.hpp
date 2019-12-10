@@ -75,8 +75,8 @@ namespace ams::ncm {
             virtual Result Remove(ContentMetaKey key) = 0;
             virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type) = 0;
             virtual Result ListContentInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, ContentMetaKey key, u32 start_index) = 0;
-            virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_title_id, ProgramId title_id_min, ProgramId title_id_max, ContentInstallType install_type) = 0;
-            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId tid) = 0;
+            virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_program_id, ProgramId program_id_min, ProgramId program_id_max, ContentInstallType install_type) = 0;
+            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) = 0;
             virtual Result ListApplication(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType meta_type) = 0;
             virtual Result Has(sf::Out<bool> out, ContentMetaKey key) = 0;
             virtual Result HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys) = 0;
@@ -93,8 +93,8 @@ namespace ams::ncm {
             virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset) = 0;
 
             /* APIs. */
-            virtual Result GetLatestProgram(ContentId* out_content_id, ProgramId title_id) = 0;
-            virtual Result GetLatestData(ContentId* out_content_id, ProgramId title_id) = 0;
+            virtual Result GetLatestProgram(ContentId* out_content_id, ProgramId program_id) = 0;
+            virtual Result GetLatestData(ContentId* out_content_id, ProgramId program_id) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(Set),

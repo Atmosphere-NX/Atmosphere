@@ -143,11 +143,11 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseInterface::GetLatestContentMetaKeyImpl(ContentMetaKey* out_key, ProgramId tid) {
+    Result ContentMetaDatabaseInterface::GetLatestContentMetaKeyImpl(ContentMetaKey* out_key, ProgramId id) {
         R_TRY(this->EnsureEnabled());
         
         ContentMetaKey key = {0};
-        key.id = tid;
+        key.id = id;
 
         bool found_key = false;
         for (auto entry = this->kvs->lower_bound(key); entry != this->kvs->end(); entry++) {
@@ -215,7 +215,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseInterface::List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> & out_info, ContentMetaType type, ProgramId application_title_id, ProgramId title_id_min, ProgramId title_id_max, ContentInstallType install_type) {
+    Result ContentMetaDatabaseInterface::List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType type, ProgramId application_program_id, ProgramId program_id_min, ProgramId program_id_max, ContentInstallType install_type) {
         R_TRY(this->EnsureEnabled());
         
         size_t entries_total = 0;
@@ -232,29 +232,29 @@ namespace ams::ncm {
             ContentMetaKey key = entry->GetKey();
 
             /* Check if this entry matches the given filters. */
-            if (!((static_cast<u8>(type) == 0 || key.type == type) && (title_id_min <= key.id && key.id <= title_id_max) && (key.install_type == ContentInstallType::Unknown || key.install_type == install_type))) {
+            if (!((static_cast<u8>(type) == 0 || key.type == type) && (program_id_min <= key.id && key.id <= program_id_max) && (key.install_type == ContentInstallType::Unknown || key.install_type == install_type))) {
                 continue;
             }
 
-            if (static_cast<u64>(application_title_id) != 0) {
+            if (static_cast<u64>(application_program_id) != 0) {
                 const void* value = nullptr;
                 size_t value_size = 0;
                 R_TRY(GetContentMetaValuePointer(&value, &value_size, key, this->kvs));
 
                 /* Each of these types are owned by an application. We need to check if their owner application matches the filter. */
                 if (key.type == ContentMetaType::Application || key.type == ContentMetaType::Patch || key.type == ContentMetaType::AddOnContent || key.type == ContentMetaType::Delta) {
-                    ProgramId entry_application_tid = key.id;
+                    ProgramId entry_application_id = key.id;
                     
                     switch (key.type) {
                         case ContentMetaType::Application:
                             break;
                         default:
-                            /* The first u64 of all non-application extended headers is the application title id. */
-                            entry_application_tid = *GetValueExtendedHeader<ProgramId>(value);
+                            /* The first u64 of all non-application extended headers is the application program id. */
+                            entry_application_id = *GetValueExtendedHeader<ProgramId>(value);
                     }
 
-                    /* Application tid doesn't match filter, skip this entry. */
-                    if (entry_application_tid != application_title_id) {
+                    /* Application id doesn't match filter, skip this entry. */
+                    if (entry_application_id != application_program_id) {
                         continue;
                     }
                 }
@@ -274,10 +274,10 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseInterface::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId title_id) {   
+    Result ContentMetaDatabaseInterface::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId program_id) {   
         R_TRY(this->EnsureEnabled());
         ContentMetaKey key;        
-        R_TRY(this->GetLatestContentMetaKeyImpl(&key, title_id));
+        R_TRY(this->GetLatestContentMetaKeyImpl(&key, program_id));
         out_key.SetValue(key);
         return ResultSuccess();
     }
@@ -308,20 +308,20 @@ namespace ams::ncm {
             R_TRY(GetContentMetaValuePointer(&value, &value_size, key, this->kvs));
 
             if (key.type == ContentMetaType::Application || key.type == ContentMetaType::Patch || key.type == ContentMetaType::AddOnContent || key.type == ContentMetaType::Delta) {
-                ProgramId application_tid = key.id;
+                ProgramId application_id = key.id;
                 
                 switch (key.type) {
                     case ContentMetaType::Application:
                         break;
                     default:
-                        /* The first u64 of all non-application extended headers is the application title id. */
-                        application_tid = *GetValueExtendedHeader<ProgramId>(value);
+                        /* The first u64 of all non-application extended headers is the application program id. */
+                        application_id = *GetValueExtendedHeader<ProgramId>(value);
                 }
 
                 /* Write the entry to the output buffer. */
                 if (entries_written < out_keys.GetSize()) {
                     ApplicationContentMetaKey* out_app_key = &out_keys[entries_written];
-                    out_app_key->application_title_id = application_tid;
+                    out_app_key->application_program_id = application_id;
                     out_app_key->key = key;
                     entries_written++;
                 }
@@ -353,7 +353,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseInterface::HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> & keys) {
+    Result ContentMetaDatabaseInterface::HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys) {
         R_TRY(this->EnsureEnabled());
 
         bool has = true;
@@ -420,7 +420,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseInterface::LookupOrphanContent(const sf::OutArray<bool> & out_orphaned, const sf::InArray<ContentId> &content_ids) {
+    Result ContentMetaDatabaseInterface::LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) {
         R_TRY(this->EnsureEnabled());
         
         if (out_orphaned.GetSize() < content_ids.GetSize()) {
@@ -570,30 +570,30 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseInterface::GetLatestProgram(ContentId* out_content_id, ProgramId title_id) {
+    Result ContentMetaDatabaseInterface::GetLatestProgram(ContentId* out_content_id, ProgramId program_id) {
         ContentMetaKey key;
         
-        R_TRY(this->GetLatestContentMetaKey(&key, title_id));
+        R_TRY(this->GetLatestContentMetaKey(&key, program_id));
         R_TRY(this->GetContentIdByType(out_content_id, key, ContentType::Program));
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseInterface::GetLatestData(ContentId* out_content_id, ProgramId title_id) {
+    Result ContentMetaDatabaseInterface::GetLatestData(ContentId* out_content_id, ProgramId program_id) {
         ContentMetaKey key;
         
-        R_TRY(this->GetLatestContentMetaKey(&key, title_id));
+        R_TRY(this->GetLatestContentMetaKey(&key, program_id));
         R_TRY(this->GetContentIdByType(out_content_id, key, ContentType::Data));
         return ResultSuccess();
     }
 
-    Result OnMemoryContentMetaDatabaseInterface::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId title_id) {
+    Result OnMemoryContentMetaDatabaseInterface::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId program_id) {
         R_TRY(this->EnsureEnabled());
 
-        const ContentMetaKey key = ContentMetaKey::Make(title_id, 0, ContentMetaType::Unknown);
+        const ContentMetaKey key = ContentMetaKey::Make(program_id, 0, ContentMetaType::Unknown);
         
         std::optional<ContentMetaKey> found_key;
         for (auto entry = this->kvs->lower_bound(key); entry != this->kvs->end(); entry++) {
-            if (entry->GetKey().id != title_id) {
+            if (entry->GetKey().id != program_id) {
                 break;
             }
 
@@ -608,7 +608,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result OnMemoryContentMetaDatabaseInterface::LookupOrphanContent(const sf::OutArray<bool> & out_orphaned, const sf::InArray<ContentId> &content_ids) {
+    Result OnMemoryContentMetaDatabaseInterface::LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) {
         return ResultInvalidContentMetaDatabase();
     }
 

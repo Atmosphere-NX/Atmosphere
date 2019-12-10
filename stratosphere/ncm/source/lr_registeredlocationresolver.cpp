@@ -28,103 +28,103 @@ namespace ams::lr {
         this->program_redirector.ClearRedirections();
     }
 
-    void RegisteredLocationResolverInterface::RegisterPath(const Path& path, impl::RegisteredLocations<ncm::ProgramId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::ProgramId tid, ncm::ProgramId owner_tid) {
-        if (!locations->Register(tid, path, owner_tid)) {
+    void RegisteredLocationResolverInterface::RegisterPath(const Path& path, impl::RegisteredLocations<ncm::ProgramId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::ProgramId id, ncm::ProgramId owner_id) {
+        if (!locations->Register(id, path, owner_id)) {
             locations->Clear();
-            locations->Register(tid, path, owner_tid);
+            locations->Register(id, path, owner_id);
         }
     }
 
-    bool RegisteredLocationResolverInterface::ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::ProgramId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::ProgramId tid) {
-        if (!redirector->FindRedirection(out, tid)) {
-            if (!locations->Find(out, tid)) {
+    bool RegisteredLocationResolverInterface::ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::ProgramId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::ProgramId id) {
+        if (!redirector->FindRedirection(out, id)) {
+            if (!locations->Find(out, id)) {
                 return false;
             }
         }
         return true;
     }
 
-    Result RegisteredLocationResolverInterface::RefreshImpl(const ncm::ProgramId* excluding_tids, size_t num_tids) {
+    Result RegisteredLocationResolverInterface::RefreshImpl(const ncm::ProgramId* excluding_ids, size_t num_ids) {
         if (hos::GetVersion() < hos::Version_900) {
             this->ClearRedirections();
             return ResultSuccess();
         }
 
-        if (num_tids == 0) {
+        if (num_ids == 0) {
             this->ClearRedirections();
         } else {
-            this->registered_program_locations.ClearExcluding(excluding_tids, num_tids);
-            this->registered_html_docs_locations.ClearExcluding(excluding_tids, num_tids);
+            this->registered_program_locations.ClearExcluding(excluding_ids, num_ids);
+            this->registered_html_docs_locations.ClearExcluding(excluding_ids, num_ids);
         }
 
-        this->program_redirector.ClearRedirections(excluding_tids, num_tids);
-        this->html_docs_redirector.ClearRedirections(excluding_tids, num_tids);
+        this->program_redirector.ClearRedirections(excluding_ids, num_ids);
+        this->html_docs_redirector.ClearRedirections(excluding_ids, num_ids);
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId tid) {
-        if (!this->ResolvePath(out.GetPointer(), &this->program_redirector, &this->registered_program_locations, tid)) {
+    Result RegisteredLocationResolverInterface::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
+        if (!this->ResolvePath(out.GetPointer(), &this->program_redirector, &this->registered_program_locations, id)) {
             return ResultProgramNotFound();
         }
 
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId tid) {
-        this->RegisterPath(path, &this->registered_program_locations, tid, ncm::ProgramId::Invalid);
+    Result RegisteredLocationResolverInterface::RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
+        this->RegisterPath(path, &this->registered_program_locations, id, ncm::ProgramId::Invalid);
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::RegisterProgramPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid) {
-        this->RegisterPath(path, &this->registered_program_locations, tid, owner_tid);
+    Result RegisteredLocationResolverInterface::RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
+        this->RegisterPath(path, &this->registered_program_locations, id, owner_id);
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::UnregisterProgramPath(ncm::ProgramId tid) {
-        this->registered_program_locations.Unregister(tid);
+    Result RegisteredLocationResolverInterface::UnregisterProgramPath(ncm::ProgramId id) {
+        this->registered_program_locations.Unregister(id);
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId tid) {
-        this->program_redirector.SetRedirection(tid, path);
+    Result RegisteredLocationResolverInterface::RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
+        this->program_redirector.SetRedirection(id, path);
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::RedirectProgramPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid) {
-        this->program_redirector.SetRedirection(tid, owner_tid, path);
+    Result RegisteredLocationResolverInterface::RedirectProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
+        this->program_redirector.SetRedirection(id, owner_id, path);
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId tid) {
-        if (!this->ResolvePath(out.GetPointer(), &this->html_docs_redirector, &this->registered_html_docs_locations, tid)) {
+    Result RegisteredLocationResolverInterface::ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
+        if (!this->ResolvePath(out.GetPointer(), &this->html_docs_redirector, &this->registered_html_docs_locations, id)) {
             return ResultHtmlDocumentNotFound();
         }
         
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId tid) {
-        this->RegisterPath(path, &this->registered_html_docs_locations, tid, ncm::ProgramId::Invalid);
+    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
+        this->RegisterPath(path, &this->registered_html_docs_locations, id, ncm::ProgramId::Invalid);
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid) {
-        this->RegisterPath(path, &this->registered_html_docs_locations, tid, owner_tid);
+    Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
+        this->RegisterPath(path, &this->registered_html_docs_locations, id, owner_id);
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::UnregisterHtmlDocumentPath(ncm::ProgramId tid) {
-        this->registered_html_docs_locations.Unregister(tid);
+    Result RegisteredLocationResolverInterface::UnregisterHtmlDocumentPath(ncm::ProgramId id) {
+        this->registered_html_docs_locations.Unregister(id);
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId tid) {
-        this->html_docs_redirector.SetRedirection(tid, path);
+    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
+        this->html_docs_redirector.SetRedirection(id, path);
         return ResultSuccess();
     }
 
-    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId tid, ncm::ProgramId owner_tid) {
-        this->html_docs_redirector.SetRedirection(tid, owner_tid, path);
+    Result RegisteredLocationResolverInterface::RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
+        this->html_docs_redirector.SetRedirection(id, owner_id, path);
         return ResultSuccess();
     }
 
@@ -132,8 +132,8 @@ namespace ams::lr {
         return this->RefreshImpl(nullptr, 0);
     }
 
-    Result RegisteredLocationResolverInterface::RefreshExcluding(const sf::InArray<ncm::ProgramId> &tids) {
-        return this->RefreshImpl(tids.GetPointer(), tids.GetSize());
+    Result RegisteredLocationResolverInterface::RefreshExcluding(const sf::InArray<ncm::ProgramId> &ids) {
+        return this->RefreshImpl(ids.GetPointer(), ids.GetSize());
     }
 
 }

@@ -35,13 +35,13 @@ namespace ams::lr::impl {
         public:
             LocationRedirector() { /* ... */ }
 
-            bool FindRedirection(Path *out, ncm::ProgramId title_id);
-            void SetRedirection(ncm::ProgramId title_id, const Path &path, u32 flags = RedirectionFlags_None);
-            void SetRedirection(ncm::ProgramId title_id, ncm::ProgramId owner_tid, const Path &path, u32 flags = RedirectionFlags_None);
-            void SetRedirectionFlags(ncm::ProgramId title_id, u32 flags);
-            void EraseRedirection(ncm::ProgramId title_id);
+            bool FindRedirection(Path *out, ncm::ProgramId program_id);
+            void SetRedirection(ncm::ProgramId program_id, const Path &path, u32 flags = RedirectionFlags_None);
+            void SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags = RedirectionFlags_None);
+            void SetRedirectionFlags(ncm::ProgramId program_id, u32 flags);
+            void EraseRedirection(ncm::ProgramId program_id);
             void ClearRedirections(u32 flags = RedirectionFlags_None);
-            void ClearRedirections(const ncm::ProgramId* excluding_tids, size_t num_tids);
+            void ClearRedirections(const ncm::ProgramId* excluding_ids, size_t num_ids);
     };
 
 }

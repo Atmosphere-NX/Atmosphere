@@ -30,15 +30,15 @@ namespace ams::ncm {
             }
         private:
             Result GetContentIdByTypeImpl(ContentId* out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset);
-            Result GetLatestContentMetaKeyImpl(ContentMetaKey* out_key, ProgramId tid);
+            Result GetLatestContentMetaKeyImpl(ContentMetaKey* out_key, ProgramId id);
         public:
             virtual Result Set(ContentMetaKey key, sf::InBuffer value) override;
             virtual Result Get(sf::Out<u64> out_size, ContentMetaKey key, sf::OutBuffer out_value) override;
             virtual Result Remove(ContentMetaKey key) override;
             virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type) override;
             virtual Result ListContentInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, ContentMetaKey key, u32 start_index) override;
-            virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType type, ProgramId application_title_id, ProgramId title_id_min, ProgramId title_id_max, ContentInstallType install_type) override;
-            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId tid) override;
+            virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType type, ProgramId application_program_id, ProgramId program_id_min, ProgramId program_id_max, ContentInstallType install_type) override;
+            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) override;
             virtual Result ListApplication(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType type) override;
             virtual Result Has(sf::Out<bool> out, ContentMetaKey key) override;
             virtual Result HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys) override;
@@ -55,8 +55,8 @@ namespace ams::ncm {
             virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset) override;
         
             /* APIs. */
-            virtual Result GetLatestProgram(ContentId* out_content_id, ProgramId title_id) override;
-            virtual Result GetLatestData(ContentId* out_content_id, ProgramId title_id) override;
+            virtual Result GetLatestProgram(ContentId* out_content_id, ProgramId program_id) override;
+            virtual Result GetLatestData(ContentId* out_content_id, ProgramId program_id) override;
     };
 
     class OnMemoryContentMetaDatabaseInterface : public ContentMetaDatabaseInterface {
@@ -64,8 +64,8 @@ namespace ams::ncm {
             OnMemoryContentMetaDatabaseInterface(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs) : ContentMetaDatabaseInterface(kvs) {
             }
         public:
-            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId tid) override;
-            virtual Result LookupOrphanContent(const sf::OutArray<bool> & out_orphaned, const sf::InArray<ContentId> &content_ids) override;
+            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) override;
+            virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) override;
             virtual Result Commit() override;
     };
 
