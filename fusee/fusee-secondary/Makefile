@@ -128,7 +128,7 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 .PHONY: $(BUILD) clean all
-.PHONY: check_fusee_primary check_exosphere check_sept check_emummc check_thermosphere check_stratosphere
+.PHONY: check_fusee_primary check_exosphere check_sept check_emummc check_thermosphere check_stratosphere check_libraries
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
@@ -148,11 +148,14 @@ check_emummc:
 check_thermosphere:
 	@$(MAKE) -C $(AMS)/thermosphere all
 
-check_stratosphere:
+check_stratosphere: check_libraries
 	@$(MAKE) -C $(AMS)/stratosphere all
 
+check_libraries:
+	@$(MAKE) -C $(AMS)/libraries all
 
-$(BUILD): check_fusee_primary check_exosphere check_sept check_emummc check_thermosphere check_stratosphere
+
+$(BUILD): check_fusee_primary check_exosphere check_sept check_emummc check_thermosphere check_libraries check_stratosphere
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
@@ -162,6 +165,7 @@ clean:
 	@$(MAKE) -C $(AMS)/fusee/fusee-primary clean
 	@$(MAKE) -C $(AMS)/exosphere clean
 	@$(MAKE) -C $(AMS)/thermosphere clean
+	@$(MAKE) -C $(AMS)/libraries clean
 	@$(MAKE) -C $(AMS)/stratosphere clean
 	@$(MAKE) -C $(AMS)/sept clean
 	@$(MAKE) -C $(AMS)/emummc clean
