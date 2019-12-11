@@ -57,12 +57,12 @@ namespace ams::lmem::impl {
         return end - start;
     }
 
-
     void InitializeHeapHead(HeapHead *out, u32 magic, void *start, void *end, u32 option);
     void FinalizeHeap(HeapHead *heap);
     bool ContainsAddress(HeapHandle handle, const void *address);
     size_t GetHeapTotalSize(HeapHandle handle);
 
+    /* Debug Fill */
     u32 GetDebugFillValue(FillType type);
     u32 SetDebugFillValue(FillType type, u32 value);
 

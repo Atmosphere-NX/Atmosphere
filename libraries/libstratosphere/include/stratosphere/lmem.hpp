@@ -17,3 +17,4 @@
 
 #include "lmem/lmem_common.hpp"
 #include "lmem/lmem_exp_heap.hpp"
+#include "lmem/lmem_unit_heap.hpp"
