@@ -26,7 +26,7 @@ namespace ams::mitm::hid {
             };
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
-                /* TODO: Remove in Atmosphere 0.10.1. */
+                /* TODO: Remove in Atmosphere 0.10.2. */
                 /* We will mitm:
                  * - hbl, to help homebrew not need to be recompiled.
                  */

@@ -211,7 +211,7 @@ namespace ams::mitm {
             CreateAutomaticBackups();
 
             /* Rename program folders in the titles directory. */
-            /* TODO: Remove this in Atmosphere 0.10.1. */
+            /* TODO: Remove this in Atmosphere 0.10.2. */
             RenameTitlesDirectoryProgramFoldersForCompatibility();
 
             /* If we're emummc, persist a write-handle to prevent other processes from touching the image. */

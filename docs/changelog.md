@@ -1,4 +1,32 @@
 # Changelog
+## 0.10.1
++ A bug was fixed that caused memory reallocation to the system pool to work improperly on firmware 5.0.0 and above.
+  + Atmosphere was always trying to deallocate memory away from the applet pool and towards the system pool.
+    + The intent of this is to facilitate running more custom sysmodules/atmosphere binaries.
+  + However, while memory was always successfully taken away from the applet pool, on 5.0.0+ granting it to the system pool did not work for technical reasons.
+    + If you are interested in the technical details, talk to SciresM.
+  + This has now been fixed by adding new kernel patches, and memory is correctly granted to the system pool as intended.
++ Atmosphere's library system has been overhauled:
+  + libstratosphere's repository has been rebranded, more generally, to "Atmosphere-libs".
+    + In addition to libstratosphere, a new general library for not-stratosphere-specific code has been added.
+      + This is currently named `libvapours`.
+    + In the future, kernel functionality will be available as `libmesosphere`.
+  + The build system for stratosphere system modules has been similarly overhauled.
++ A number of other bugs were fixed, including:
+  + A bug was fixed that could cause memory corruption when redirecting certain Romfs content.
+  + A bug was fixed that could cause an infinite loop when redirecting certain Romfs content.
+  + A bug was fixed that could cause certain NROs to fail to load.
+    + This caused the latest version of Super Smash Bros to display "An error has occurred" on launch.
+  + A bug was fixed that caused input/output array sizes for certain circumstances to be calculated incorrectly.
+    + This caused cheats to fail to function properly.
+  + C++ exception code is now more thoroughly removed from stratosphere executables.
+    + This saves a minor amount of memory.
+  + A number of minor logic inversions were fixed in libstratosphere.
+    + These did not affect any code currently used by released Atmosphere binaries.
++ *Please note**: Because this update is releasing so soon after 0.10.0, the removal of the temporary hid-mitm has been postponed to 0.10.2.
+    + Please ensure your homebrew is updated.
++ Random number generation now uses TinyMT instead of XorShift.
++ General system stability improvements to enhance the user's experience.
 ## 0.10.0
 + Support was added for 9.1.0
   + **Please note**: The temporary hid-mitm added in Atmosphere 0.9.0 will be removed in Atmosphere 0.10.1.
@@ -26,7 +54,7 @@
   + Atmosphere now uses the /atmosphere/contents directory, instead of /atmosphere/titles.
     + This goes along with a refactoring to remove all reference to "title id" from code, as Nintendo does not use the term.
   + To make this transition easier, a temporary functionality has been added that migrates folders to the new directory.
-    + When booting into 0.10.0, Atmosphere will rename /atmosphere/titles/<program id> to /atmosphere/contents/<program id>.
+    + When booting into 0.10.0, Atmosphere will rename /atmosphere/titles/`<program id>` to /atmosphere/contents/`<program id>`.
       + This functionality may or may not be removed in some future update.
     + This should solve any transition difficulties for the typical user.
     + Please make sure that any future mods you install extract to the correct directory.

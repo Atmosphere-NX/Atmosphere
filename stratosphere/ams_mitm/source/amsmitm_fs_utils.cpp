@@ -154,7 +154,7 @@ namespace ams::mitm::fs {
         return fsFsOpenDirectory(fs, fixed_path, mode, out);
     }
 
-    /* TODO: Remove this in Atmosphere 0.10.1. */
+    /* TODO: Remove this in Atmosphere 0.10.2. */
     Result RenameProgramDirectoryForCompatibility(const char *dir_name) {
         R_TRY(EnsureSdInitialized());
         char titles_fixed_path[ams::fs::EntryNameLengthMax + 1];
