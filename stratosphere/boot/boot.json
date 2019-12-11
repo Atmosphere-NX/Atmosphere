@@ -5,6 +5,7 @@
     "main_thread_priority": 27,
     "default_cpu_id": 3,
     "process_category": 1,
+    "use_secure_memory": false,
     "kernel_capabilities": [
         {
             "type": "handle_table_size",
