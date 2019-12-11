@@ -172,14 +172,14 @@ namespace {
     constexpr size_t          BootModeMaxSessions = 8; /* Official maximum is 4. */
 
     constexpr sm::ServiceName InformationServiceName = sm::ServiceName::Encode("pm:info");
-    constexpr size_t          InformationMaxSessions = 64 - (ShellMaxSessions + DebugMonitorMaxSessions + BootModeMaxSessions);
+    constexpr size_t          InformationMaxSessions = 48 - (ShellMaxSessions + DebugMonitorMaxSessions + BootModeMaxSessions);
 
     static_assert(InformationMaxSessions >= 16, "InformationMaxSessions");
 
     /* pm:shell, pm:dmnt, pm:bm, pm:info. */
     constexpr size_t NumServers  = 4;
     constexpr size_t MaxSessions = ShellMaxSessions + DebugMonitorMaxSessions + BootModeMaxSessions + InformationMaxSessions;
-    static_assert(MaxSessions == 64, "MaxSessions");
+    static_assert(MaxSessions == 48, "MaxSessions");
     sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions> g_server_manager;
 
 }
