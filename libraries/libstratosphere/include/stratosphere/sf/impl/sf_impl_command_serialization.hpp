@@ -417,22 +417,9 @@ namespace ams::sf::impl {
             template<typename T>
             static constexpr bool IsInProcessIdHolder = GetArgumentType<T> == ArgumentType::InData && std::is_base_of<sf::impl::ProcessIdHolder, T>::value;
 
-            template<size_t ...Is>
-            static constexpr size_t GetInProcessIdHolderIndex(std::index_sequence<Is...>) {
-                static_assert(sizeof...(Is) == std::tuple_size<ArgsType>::value, "Invalid InProcessIdHolderIndexGetter invocation");
-                constexpr std::array<bool, std::tuple_size<ArgsType>::value> is_in_process_id_holder = { IsInProcessIdHolder<typename std::tuple_element<Is, ArgsType>::type>... };
-                for (size_t i = 0; i < std::tuple_size<ArgsType>::value; i++) {
-                    if (is_in_process_id_holder[i]) {
-                        return i;
-                    }
-                }
-                return std::numeric_limits<size_t>::max();
-            }
+            template<size_t I>
+            static constexpr bool IsInProcessIdHolderIndex = I < std::tuple_size<ArgsType>::value && IsInProcessIdHolder<typename std::tuple_element<I, ArgsType>::type>;
 
-            static constexpr size_t InProcessIdHolderIndex = GetInProcessIdHolderIndex(std::make_index_sequence<std::tuple_size<ArgsType>::value>());
-
-            static_assert(NumInProcessIdHolders <= 1, "Methods must take in 0 or 1 ProcessIdHolders");
-            static_assert(!HasInProcessIdHolder || InProcessIdHolderIndex != std::numeric_limits<size_t>::max(), "Unable to identify InProcessIdHolder Index");
             static_assert(NumBuffers <= 8, "Methods must take in <= 8 Buffers");
             static_assert(NumInHandles <= 8, "Methods must take in <= 8 Handles");
             static_assert(NumOutHandles + NumOutObjects <= 8, "Methods must output <= 8 Handles");
@@ -1105,7 +1092,26 @@ namespace ams::sf::impl {
 
             /* Handle in process ID holder if relevant. */
             if constexpr (CommandMeta::HasInProcessIdHolder) {
-                R_TRY(MarshalProcessId(std::get<CommandMeta::InProcessIdHolderIndex>(args_tuple), os::ProcessId{ctx.request.pid}));
+                /* TODO: More precise value than 32? */
+                static_assert(std::tuple_size<typename CommandMeta::ArgsType>::value <= 32, "Commands must have <= 32 arguments");
+                os::ProcessId process_id{ctx.request.pid};
+                #define _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(n) do {                                         \
+                    using ArgsType = typename CommandMeta::ArgsType;                                          \
+                    if constexpr (n < std::tuple_size<ArgsType>::value) {                                     \
+                        if constexpr (CommandMeta::template IsInProcessIdHolderIndex<n>) {                    \
+                            R_TRY(MarshalProcessId(std::get<n>(args_tuple), process_id));                     \
+                        }                                                                                     \
+                    }                                                                                         \
+                } while (0)
+                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x00); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x01); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x02); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x03);
+                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x04); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x05); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x06); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x07);
+                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x08); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x09); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0a); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0b);
+                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0c); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0d); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0e); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0f);
+                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x10); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x11); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x12); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x13);
+                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x14); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x15); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x16); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x17);
+                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x18); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x19); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1a); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1b);
+                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1c); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1d); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1e); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1f);
+                #undef _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID
             }
 
             if constexpr (CommandMeta::ReturnsResult) {
