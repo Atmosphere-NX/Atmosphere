@@ -26,10 +26,26 @@ namespace ams::cfg {
             bool override_by_default;
         };
 
-        struct HblOverrideConfig {
-            OverrideKey override_key;
-            OverrideKey override_any_app_key;
+        struct ProgramOverrideKey {
+            OverrideKey    override_key;
             ncm::ProgramId program_id;
+        };
+
+        constexpr ProgramOverrideKey InvalidProgramOverrideKey = {};
+
+        constexpr ProgramOverrideKey DefaultAppletPhotoViewerOverrideKey = {
+            .override_key = {
+                .key_combination     = KEY_R,
+                .override_by_default = true,
+            },
+            .program_id = ncm::ProgramId::AppletPhotoViewer,
+        };
+
+        constexpr size_t MaxProgramOverrideKeys = 8;
+
+        struct HblOverrideConfig {
+            ProgramOverrideKey program_configs[MaxProgramOverrideKeys];
+            OverrideKey override_any_app_key;
             bool override_any_app;
         };
 
@@ -51,15 +67,20 @@ namespace ams::cfg {
         };
 
         HblOverrideConfig g_hbl_override_config = {
-            .override_key = {
-                .key_combination = KEY_R,
-                .override_by_default = true,
+            .program_configs = {
+                DefaultAppletPhotoViewerOverrideKey,
+                InvalidProgramOverrideKey,
+                InvalidProgramOverrideKey,
+                InvalidProgramOverrideKey,
+                InvalidProgramOverrideKey,
+                InvalidProgramOverrideKey,
+                InvalidProgramOverrideKey,
+                InvalidProgramOverrideKey,
             },
             .override_any_app_key = {
                 .key_combination = KEY_R,
                 .override_by_default = false,
             },
-            .program_id = ncm::ProgramId::AppletPhotoViewer,
             .override_any_app = true,
         };
 
@@ -117,15 +138,60 @@ namespace ams::cfg {
             return cfg;
         }
 
+        inline void SetHblSpecificProgramId(size_t i, const char *value) {
+            g_hbl_override_config.program_configs[i].program_id = {strtoul(value, nullptr, 16)};
+        }
+
+        inline void SetHblSpecificOverrideKey(size_t i, const char *value) {
+            g_hbl_override_config.program_configs[i].override_key = ParseOverrideKey(value);
+        }
+
         int OverrideConfigIniHandler(void *user, const char *section, const char *name, const char *value) {
             /* Taken and modified, with love, from Rajkosto's implementation. */
             if (strcasecmp(section, "hbl_config") == 0) {
                 /* TODO: Consider deprecating "title_id" string in the future." */
-                if (strcasecmp(name, "program_id") == 0 || strcasecmp(name, "title_id") == 0) {
-                    u64 override_program_id = strtoul(value, NULL, 16);
-                    if (override_program_id != 0) {
-                        g_hbl_override_config.program_id = {override_program_id};
+                if (strcasecmp(name, "program_id") == 0 || strcasecmp(name, "program_id_0") == 0) {
+                    SetHblSpecificProgramId(0, value);
+                } else if (strcasecmp(name, "program_id_1") == 0) {
+                    SetHblSpecificProgramId(1, value);
+                } else if (strcasecmp(name, "program_id_2") == 0) {
+                    SetHblSpecificProgramId(2, value);
+                } else if (strcasecmp(name, "program_id_3") == 0) {
+                    SetHblSpecificProgramId(3, value);
+                } else if (strcasecmp(name, "program_id_4") == 0) {
+                    SetHblSpecificProgramId(4, value);
+                } else if (strcasecmp(name, "program_id_5") == 0) {
+                    SetHblSpecificProgramId(5, value);
+                } else if (strcasecmp(name, "program_id_6") == 0) {
+                    SetHblSpecificProgramId(6, value);
+                } else if (strcasecmp(name, "program_id_7") == 0) {
+                    SetHblSpecificProgramId(7, value);
+                } else if (strcasecmp(name, "override_key") == 0 || strcasecmp(name, "override_key_0") == 0) {
+                    SetHblSpecificOverrideKey(0, value);
+                } else if (strcasecmp(name, "override_key_1") == 0) {
+                    SetHblSpecificOverrideKey(1, value);
+                } else if (strcasecmp(name, "override_key_2") == 0) {
+                    SetHblSpecificOverrideKey(2, value);
+                } else if (strcasecmp(name, "override_key_3") == 0) {
+                    SetHblSpecificOverrideKey(3, value);
+                } else if (strcasecmp(name, "override_key_4") == 0) {
+                    SetHblSpecificOverrideKey(4, value);
+                } else if (strcasecmp(name, "override_key_5") == 0) {
+                    SetHblSpecificOverrideKey(5, value);
+                } else if (strcasecmp(name, "override_key_6") == 0) {
+                    SetHblSpecificOverrideKey(6, value);
+                } else if (strcasecmp(name, "override_key_7") == 0) {
+                    SetHblSpecificOverrideKey(7, value);
+                } else if (strcasecmp(name, "override_any_app") == 0) {
+                   if (strcasecmp(value, "true") == 0 || strcasecmp(value, "1") == 0) {
+                        g_hbl_override_config.override_any_app = true;
+                    } else if (strcasecmp(value, "false") == 0 || strcasecmp(value, "0") == 0) {
+                        g_hbl_override_config.override_any_app = false;
+                    } else {
+                        /* I guess we default to not changing the value? */
                     }
+                } else if (strcasecmp(name, "override_any_app_key") == 0) {
+                    g_hbl_override_config.override_any_app_key = ParseOverrideKey(value);
                 } else if (strcasecmp(name, "path") == 0) {
                     while (*value == '/' || *value == '\\') {
                         value++;
@@ -138,18 +204,6 @@ namespace ams::cfg {
                             g_hbl_sd_path[i] = '/';
                         }
                     }
-                } else if (strcasecmp(name, "override_key") == 0) {
-                    g_hbl_override_config.override_key = ParseOverrideKey(value);
-                } else if (strcasecmp(name, "override_any_app") == 0) {
-                    if (strcasecmp(value, "true") == 0 || strcasecmp(value, "1") == 0) {
-                        g_hbl_override_config.override_any_app = true;
-                    } else if (strcasecmp(value, "false") == 0 || strcasecmp(value, "0") == 0) {
-                        g_hbl_override_config.override_any_app = false;
-                    } else {
-                        /* I guess we default to not changing the value? */
-                    }
-                } else if (strcasecmp(name, "override_any_app_key") == 0) {
-                    g_hbl_override_config.override_any_app_key = ParseOverrideKey(value);
                 }
             } else if (strcasecmp(section, "default_config") == 0) {
                 if (strcasecmp(name, "override_key") == 0) {
@@ -202,12 +256,21 @@ namespace ams::cfg {
             return (cfg.override_by_default ^ keys_triggered);
         }
 
-        inline bool IsApplicationHblProgramId(ncm::ProgramId program_id) {
-            return g_hbl_override_config.override_any_app && ncm::IsApplicationProgramId(program_id);
+        inline bool IsAnySpecificHblProgramId(ncm::ProgramId program_id) {
+            for (size_t i = 0; i < MaxProgramOverrideKeys; i++) {
+                if (program_id == g_hbl_override_config.program_configs[i].program_id) {
+                    return true;
+                }
+            }
+            return false;
         }
 
-        inline bool IsSpecificHblProgramId(ncm::ProgramId program_id) {
-            return program_id == g_hbl_override_config.program_id;
+        inline bool IsSpecificHblProgramId(size_t i, ncm::ProgramId program_id) {
+            return program_id == g_hbl_override_config.program_configs[i].program_id;
+        }
+
+        inline bool IsAnyApplicationHblProgramId(ncm::ProgramId program_id) {
+            return g_hbl_override_config.override_any_app && ncm::IsApplicationProgramId(program_id) && !IsAnySpecificHblProgramId(program_id);
         }
 
         void ParseIniFile(util::ini::Handler handler, const char *path, void *user_ctx) {
@@ -272,10 +335,13 @@ namespace ams::cfg {
         }
 
         /* Detect Hbl. */
-        if ((IsApplicationHblProgramId(program_id) && IsOverrideMatch(status, g_hbl_override_config.override_any_app_key)) ||
-            (IsSpecificHblProgramId(program_id)    && IsOverrideMatch(status, g_hbl_override_config.override_key)))
-        {
+        if (IsAnyApplicationHblProgramId(program_id)  && IsOverrideMatch(status, g_hbl_override_config.override_any_app_key)) {
             status.SetHbl();
+        }
+        for (size_t i = 0; i < MaxProgramOverrideKeys; i++) {
+            if (IsSpecificHblProgramId(i, program_id) && IsOverrideMatch(status, g_hbl_override_config.program_configs[i].override_key)) {
+                status.SetHbl();
+            }
         }
 
         /* Detect content specific keys. */
@@ -297,10 +363,6 @@ namespace ams::cfg {
     }
 
     /* HBL Configuration utilities. */
-    bool IsHblProgramId(ncm::ProgramId program_id) {
-        return IsApplicationHblProgramId(program_id) || IsSpecificHblProgramId(program_id);
-    }
-
     const char *GetHblPath() {
         return g_hbl_sd_path;
     }

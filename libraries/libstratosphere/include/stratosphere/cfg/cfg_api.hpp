@@ -42,7 +42,6 @@ namespace ams::cfg {
     bool HasGlobalFlag(const char *flag);
 
     /* HBL Configuration utilities. */
-    bool IsHblProgramId(ncm::ProgramId program_id);
     bool HasHblFlag(const char *flag);
     const char *GetHblPath();
 
