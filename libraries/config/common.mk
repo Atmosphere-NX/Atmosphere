@@ -50,12 +50,17 @@ endif
 ATMOSPHERE_DEFINES += -DATMOSPHERE_GIT_BRANCH=\"$(ATMOSPHERE_GIT_BRANCH)\" -DATMOSPHERE_GIT_REVISION=\"$(ATMOSPHERE_GIT_REVISION)\"
 
 #---------------------------------------------------------------------------------
+# Ensure top directory is set.
+#---------------------------------------------------------------------------------
+export TOPDIR ?= $(CURDIR)
+
+#---------------------------------------------------------------------------------
 # TARGET is the name of the output
 # SOURCES is a list of directories containing source code
 # DATA is a list of directories containing data files
 # INCLUDES is a list of directories containing header files
 #---------------------------------------------------------------------------------
-export TARGET       :=	$(notdir $(CURDIR))
+export TARGET       ?=	$(notdir $(CURDIR))
 export BUILD        :=  build
 export DATA         :=	data
 export INCLUDES     :=  include

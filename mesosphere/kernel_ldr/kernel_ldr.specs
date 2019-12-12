@@ -1,0 +1,7 @@
+%rename link old_link
+
+*link:
+%(old_link) -T %:getenv(TOPDIR /kernel_ldr.ld) -pie --gc-sections -z text -z nodynamic-undefined-weak -nostdlib -nostartfiles
+
+*startfile:
+crti%O%s crtbegin%O%s
