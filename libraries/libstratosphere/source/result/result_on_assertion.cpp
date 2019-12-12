@@ -23,7 +23,7 @@ namespace ams::result {
 
 namespace ams::result::impl {
 
-    NORETURN WEAK void OnResultAssertion(Result result) {
+    NORETURN WEAK_SYMBOL void OnResultAssertion(Result result) {
         /* Assert that we should call fatal on result assertion. */
         /* If we shouldn't fatal, this will std::abort(); */
         /* If we should, we'll continue onwards. */

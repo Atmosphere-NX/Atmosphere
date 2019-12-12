@@ -54,8 +54,17 @@
 
 #ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
 
+#ifdef ATMOSPHERE_IS_STRATOSPHERE
+
 /* Libnx. */
 #include <switch.h>
+
+#else
+
+/* Non-EL0 code can't include libnx. */
+#include "types.hpp"
+
+#endif
 
 #else
 

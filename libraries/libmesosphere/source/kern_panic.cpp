@@ -13,15 +13,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
+#include <mesosphere.hpp>
 
-namespace ams::pm::shell {
+namespace ams::result::impl {
 
-    /* Shell API. */
-    Result WEAK_SYMBOL LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 launch_flags) {
-        static_assert(sizeof(ncm::ProgramLocation) == sizeof(NcmProgramLocation));
-        static_assert(alignof(ncm::ProgramLocation) == alignof(NcmProgramLocation));
-        return pmshellLaunchProgram(launch_flags, reinterpret_cast<const NcmProgramLocation *>(&loc), reinterpret_cast<u64 *>(out_process_id));
+    NORETURN void OnResultAssertion(Result result) {
+        MESOSPHERE_PANIC("OnResultAssertion(2%03d-%04d)", result.GetModule(), result.GetDescription());
+    }
+
+}
+
+namespace ams::kern {
+
+    namespace {
+
+        NORETURN void StopSystem() {
+            KSystemControl::StopSystem();
+        }
+
+    }
+
+    NORETURN WEAK_SYMBOL void Panic(const char *file, int line, const char *format, ...) {
+        /* TODO: Implement printing, log this information. */
+        StopSystem();
+    }
+
+    NORETURN WEAK_SYMBOL void Panic() {
+        StopSystem();
     }
 
 }

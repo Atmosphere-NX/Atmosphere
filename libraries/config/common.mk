@@ -63,12 +63,12 @@ export SOURCES      ?=	$(shell find source -type d \
                           -not \( -path source/arch -prune \)  \
                           -not \( -path source/board -prune \) \)
 
-ifneq ($(strip $(wildcard source/$(ATMOSPHERE_ARCH_DIR)./.*)),)
+ifneq ($(strip $(wildcard source/$(ATMOSPHERE_ARCH_DIR)/.*)),)
 SOURCES += $(shell find source/$(ATMOSPHERE_ARCH_DIR)  -type d)
 endif
-ifneq ($(strip $(wildcard source/$(ATMOSPHERE_BOARD_DIR)./.*)),)
+ifneq ($(strip $(wildcard source/$(ATMOSPHERE_BOARD_DIR)/.*)),)
 SOURCES += $(shell find source/$(ATMOSPHERE_BOARD_DIR) -type d)
 endif
-ifneq ($(strip $(wildcard source/$(ATMOSPHERE_OS_DIR)./.*)),)
+ifneq ($(strip $(wildcard source/$(ATMOSPHERE_OS_DIR)/.*)),)
 SOURCES += $(shell find source/$(ATMOSPHERE_OS_DIR) -type d)
 endif

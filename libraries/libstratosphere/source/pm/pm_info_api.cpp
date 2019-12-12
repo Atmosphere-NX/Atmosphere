@@ -49,7 +49,7 @@ namespace ams::pm::info {
         return pminfoAtmosphereGetProcessInfo(reinterpret_cast<NcmProgramLocation *>(out_loc), reinterpret_cast<CfgOverrideStatus *>(out_status), static_cast<u64>(process_id));
     }
 
-    Result WEAK HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
+    Result WEAK_SYMBOL HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
         std::scoped_lock lk(g_info_lock);
 
         if (g_cached_launched_programs.find(static_cast<u64>(program_id)) != g_cached_launched_programs.end()) {
