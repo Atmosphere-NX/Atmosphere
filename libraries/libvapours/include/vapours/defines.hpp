@@ -33,8 +33,10 @@
 
 #define ALIGNED(algn) __attribute__((aligned(algn)))
 #define NORETURN      __attribute__((noreturn))
-#define WEAK          __attribute__((weak))
+#define WEAK_SYMBOL   __attribute__((weak))
+#define ALWAYS_INLINE inline __attribute__((always_inline))
 
+#define CONST_FOLD(x) (__builtin_constant_p(x) ? (x) : (x))
 
 #define CONCATENATE_IMPL(S1, s2) s1##s2
 #define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1, s2)
@@ -44,3 +46,16 @@
 #else
 #define ANONYMOUS_VARIABLE(pref) CONCATENATE(pref, __LINE__)
 #endif
+
+#define AMS_PREDICT(expr, value, _probability) __builtin_expect_with_probability(expr, value, ({ \
+                                                    constexpr double probability = _probability; \
+                                                    static_assert(0.0 <= probability);           \
+                                                    static_assert(probability <= 1.0);           \
+                                                    probability;                                 \
+                                               }))
+
+#define AMS_PREDICT_TRUE(expr, probability)  AMS_PREDICT(!!expr, 1, probability)
+#define AMS_PREDICT_FALSE(expr, probability) AMS_PREDICT(!!expr, 0, probability)
+
+#define AMS_LIKELY(expr)   AMS_PREDICT_TRUE(expr, 1.0)
+#define AMS_UNLIKELY(expr) AMS_PREDICT_FALSE(expr, 1.0)

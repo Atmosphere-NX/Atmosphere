@@ -19,13 +19,13 @@ namespace ams::pm::bm {
 
     /* Boot Mode API. */
     /* Both functions should be weakly linked, so that they can be overridden by ams::boot2 as needed. */
-    BootMode WEAK GetBootMode() {
+    BootMode WEAK_SYMBOL GetBootMode() {
         PmBootMode boot_mode = PmBootMode_Normal;
         R_ASSERT(pmbmGetBootMode(&boot_mode));
         return static_cast<BootMode>(boot_mode);
     }
 
-    void WEAK SetMaintenanceBoot() {
+    void WEAK_SYMBOL SetMaintenanceBoot() {
         R_ASSERT(pmbmSetMaintenanceBoot());
     }
 
