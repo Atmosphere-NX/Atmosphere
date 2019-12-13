@@ -18,5 +18,5 @@
 #ifdef ATMOSPHERE_ARCH_ARM64
     #include "../arch/arm64/init/kern_k_init_page_table.hpp"
 #else
-    #error "Unknown architecutre for KInitialPageTable"
+    #error "Unknown architecture for KInitialPageTable"
 #endif

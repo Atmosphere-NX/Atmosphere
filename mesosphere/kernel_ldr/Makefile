@@ -11,6 +11,7 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export TOPDIR	:=	$(CURDIR)
 export DEPSDIR  :=  $(CURDIR)/$(BUILD)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
@@ -59,20 +60,22 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: clean all
+.PHONY: $(BUILD) clean all
 
 #---------------------------------------------------------------------------------
-all: $(BUILD)
+all: $(BUILD) check_libmeso
 
-$(BUILD):
+$(BUILD): check_libmeso
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+
+check_libmeso:
+	@$(MAKE) --no-print-directory -C ../../libraries/libmesosphere
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf
-
 
 #---------------------------------------------------------------------------------
 else
@@ -89,7 +92,7 @@ $(OUTPUT).bin	:	$(OUTPUT).elf
 	$(OBJCOPY) -S -O binary $< $@
 	@echo built ... $(notdir $@)
 
-$(OUTPUT).elf	:	$(OFILES)
+$(OUTPUT).elf	:	$(OFILES) ../../../libraries/libmesosphere/lib/libmesosphere.a
 
 %.elf:
 	@echo linking $(notdir $@)
