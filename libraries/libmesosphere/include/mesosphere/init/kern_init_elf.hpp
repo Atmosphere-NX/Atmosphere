@@ -14,22 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-
-/* All kernel code should have access to libvapours. */
 #include <vapours.hpp>
 
-/* First, pull in core macros (panic, etc). */
-#include "mesosphere/kern_panic.hpp"
+#ifdef ATMOSPHERE_ARCH_ARM64
 
-/* Primitive types. */
-#include "mesosphere/kern_k_typed_address.hpp"
-#include "mesosphere/kern_initial_process.hpp"
+    #include "../arch/arm64/init/kern_init_elf64.hpp"
 
-/* Initialization headers. */
-#include "mesosphere/init/kern_init_elf.hpp"
-#include "mesosphere/init/kern_init_layout.hpp"
-#include "mesosphere/init/kern_init_page_table_select.hpp"
+#else
 
-/* Core functionality. */
-#include "mesosphere/kern_select_interrupts.hpp"
-#include "mesosphere/kern_select_k_system_control.hpp"
+    #error "Unknown Architecture"
+
+#endif
+
+namespace ams::kern::init::Elf {
+
+    /* TODO: Anything we want inside this namespace? */
+
+}

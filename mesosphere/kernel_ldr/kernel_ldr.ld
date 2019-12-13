@@ -49,6 +49,15 @@ SECTIONS
 		. = ALIGN(8);
 	} :krnlldr
 
+	/* .vectors. */
+	. = ALIGN(2K);
+	__vectors_start__ = . ;
+    .vectors :
+	{
+		KEEP( *(.vectors) )
+		. = ALIGN(8);
+	} :krnlldr
+
 	/* =========== RODATA section =========== */
 	. = ALIGN(8);
 	__rodata_start = . ;
@@ -64,6 +73,7 @@ SECTIONS
 	.gcc_except_table : ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) } :krnlldr
 	.gnu_extab        : ONLY_IF_RO { *(.gnu_extab*) } : rodata
 
+	__dynamic__start__ = . ;
 	.dynamic           : { *(.dynamic) } :krnlldr :dyn
 	.dynsym            : { *(.dynsym) } :krnlldr
 	.dynstr            : { *(.dynstr) } :krnlldr

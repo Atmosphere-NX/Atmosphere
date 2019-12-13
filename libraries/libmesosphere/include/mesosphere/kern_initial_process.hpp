@@ -14,22 +14,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-
-/* All kernel code should have access to libvapours. */
 #include <vapours.hpp>
+#include "kern_panic.hpp"
 
-/* First, pull in core macros (panic, etc). */
-#include "mesosphere/kern_panic.hpp"
+namespace ams::kern {
 
-/* Primitive types. */
-#include "mesosphere/kern_k_typed_address.hpp"
-#include "mesosphere/kern_initial_process.hpp"
+    constexpr u32 InitialProcessBinaryMagic      = util::FourCC<'I','N','I','1'>::Code;
+    constexpr size_t InitialProcessBinarySizeMax = 0xC00000;
 
-/* Initialization headers. */
-#include "mesosphere/init/kern_init_elf.hpp"
-#include "mesosphere/init/kern_init_layout.hpp"
-#include "mesosphere/init/kern_init_page_table_select.hpp"
+    struct InitialProcessBinaryHeader {
+        u32 magic;
+        u32 size;
+        u32 num_processes;
+        u32 reserved;
+    };
 
-/* Core functionality. */
-#include "mesosphere/kern_select_interrupts.hpp"
-#include "mesosphere/kern_select_k_system_control.hpp"
+}
