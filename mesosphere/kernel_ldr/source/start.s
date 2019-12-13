@@ -89,7 +89,7 @@ __external_references:
     .quad __bss_start__ - _start
     .quad __bss_end__   - _start
     .quad __stack_end - _start
-    .quad __dynamic__start__ - _start
+    .quad _DYNAMIC - _start
     .quad __init_array_start - _start
     .quad __init_array_end   - _start
     .quad __vectors_start__  - _start

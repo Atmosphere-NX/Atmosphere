@@ -52,7 +52,7 @@ ATMOSPHERE_DEFINES += -DATMOSPHERE_GIT_BRANCH=\"$(ATMOSPHERE_GIT_BRANCH)\" -DATM
 #---------------------------------------------------------------------------------
 # Ensure top directory is set.
 #---------------------------------------------------------------------------------
-export TOPDIR ?= $(CURDIR)
+TOPDIR ?= $(CURDIR)
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -60,13 +60,13 @@ export TOPDIR ?= $(CURDIR)
 # DATA is a list of directories containing data files
 # INCLUDES is a list of directories containing header files
 #---------------------------------------------------------------------------------
-export TARGET       ?=	$(notdir $(CURDIR))
-export BUILD        :=  build
-export DATA         :=	data
-export INCLUDES     :=  include
-export SOURCES      ?=	$(shell find source -type d \
-                          -not \( -path source/arch -prune \)  \
-                          -not \( -path source/board -prune \) \)
+TARGET       := $(notdir $(CURDIR))
+BUILD        := build
+DATA         := data
+INCLUDES     := include
+SOURCES      ?= $(shell find source -type d \
+                  -not \( -path source/arch -prune \)  \
+                  -not \( -path source/board -prune \) \)
 
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_ARCH_DIR)/.*)),)
 SOURCES += $(shell find source/$(ATMOSPHERE_ARCH_DIR)  -type d)

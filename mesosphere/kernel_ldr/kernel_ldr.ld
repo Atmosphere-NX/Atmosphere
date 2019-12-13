@@ -73,7 +73,6 @@ SECTIONS
 	.gcc_except_table : ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) } :krnlldr
 	.gnu_extab        : ONLY_IF_RO { *(.gnu_extab*) } : rodata
 
-	__dynamic__start__ = . ;
 	.dynamic           : { *(.dynamic) } :krnlldr :dyn
 	.dynsym            : { *(.dynsym) } :krnlldr
 	.dynstr            : { *(.dynstr) } :krnlldr
