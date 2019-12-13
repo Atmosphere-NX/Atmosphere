@@ -32,7 +32,7 @@ namespace ams::kern {
 #ifdef MESOSPHERE_ENABLE_ASSERTIONS
 #define MESOSPHERE_ASSERT_IMPL(expr, ...)  \
     ({                                     \
-        if (AMS_UNLIKELY(!expr)) {         \
+        if (AMS_UNLIKELY(!(expr))) {         \
             MESOSPHERE_PANIC(__VA_ARGS__); \
         }                                  \
     })
@@ -47,7 +47,7 @@ namespace ams::kern {
 
 #define MESOSPHERE_ABORT_UNLESS(expr)               \
     ({                                              \
-        if (AMS_UNLIKELY(!expr)) {                  \
+        if (AMS_UNLIKELY(!(expr))) {                  \
             MESOSPHERE_PANIC("Abort(): %s", #expr); \
         }                                           \
     })

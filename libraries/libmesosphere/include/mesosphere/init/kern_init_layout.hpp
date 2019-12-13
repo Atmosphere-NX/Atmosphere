@@ -14,22 +14,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-
-/* All kernel code should have access to libvapours. */
 #include <vapours.hpp>
 
-/* First, pull in core macros (panic, etc). */
-#include "mesosphere/kern_panic.hpp"
+namespace ams::kern::init {
 
-/* Primitive types. */
-#include "mesosphere/kern_k_typed_address.hpp"
-#include "mesosphere/kern_initial_process.hpp"
+    struct KernelLayout {
+        u32 rx_offset;
+        u32 rx_end_offset;
+        u32 ro_offset;
+        u32 ro_end_offset;
+        u32 rw_offset;
+        u32 rw_end_offset;
+        u32 bss_offset;
+        u32 bss_end_offset;
+        u32 ini_end_offset;
+        u32 dynamic_end_offset;
+        u32 init_array_offset;
+        u32 init_array_end_offset;
+    };
+    static_assert(std::is_pod<KernelLayout>::value);
+    static_assert(sizeof(KernelLayout) == 0x30);
 
-/* Initialization headers. */
-#include "mesosphere/init/kern_init_elf.hpp"
-#include "mesosphere/init/kern_init_layout.hpp"
-#include "mesosphere/init/kern_init_page_table_select.hpp"
-
-/* Core functionality. */
-#include "mesosphere/kern_select_interrupts.hpp"
-#include "mesosphere/kern_select_k_system_control.hpp"
+}

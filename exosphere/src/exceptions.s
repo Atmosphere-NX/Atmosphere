@@ -4,7 +4,7 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
- 
+
 
 /*
  * Declare the exception vector table, enforcing it is aligned on a
@@ -92,7 +92,7 @@ vector_entry fiq_spx
 vector_entry serror_spx
     b unknown_exception
     check_vector_size serror_spx
-    
+
 /* Lower EL, A64 */
 vector_entry synch_a64
     stp x29, x30, [sp, #-0x10]!

@@ -13,20 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
+#include <mesosphere.hpp>
 
 namespace ams::kern {
 
-    class KSystemControl {
-        public:
+    inline KScopedInterruptDisable::KScopedInterruptDisable() {
+        /* Intentionally do nothing, KernelLdr doesn't have interrupts set up. */
+    }
 
-            /* Initialization. */
-            static KPhysicalAddress GetKernelPhysicalBaseAddress(uintptr_t base_address);
-            static bool ShouldIncreaseResourceRegionSize();
+    inline KScopedInterruptDisable::~KScopedInterruptDisable() {
+        /* Intentionally do nothing, KernelLdr doesn't have interrupts set up. */
+    }
 
-            /* Panic. */
-            static NORETURN void StopSystem();
-    };
+    inline KScopedInterruptEnable::KScopedInterruptEnable() {
+        /* Intentionally do nothing, KernelLdr doesn't have interrupts set up. */
+    }
+
+    inline KScopedInterruptEnable::~KScopedInterruptEnable() {
+        /* Intentionally do nothing, KernelLdr doesn't have interrupts set up. */
+    }
 
 }
