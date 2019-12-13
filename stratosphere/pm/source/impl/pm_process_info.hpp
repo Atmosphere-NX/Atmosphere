@@ -46,6 +46,7 @@ namespace ams::pm::impl {
             ProcessState state;
             u32 flags;
             os::WaitableHolder waitable_holder;
+            bool waitable_holder_is_linked = false;
         private:
             void SetFlag(Flag flag) {
                 this->flags |= flag;
@@ -64,7 +65,16 @@ namespace ams::pm::impl {
             void Cleanup();
 
             void LinkToWaitableManager(os::WaitableManager &manager) {
+                AMS_ASSERT(!waitable_holder_is_linked);
                 manager.LinkWaitableHolder(&this->waitable_holder);
+                waitable_holder_is_linked = true;
+            }
+
+            void UnlinkFromWaitableManagerIfLinked() {
+                if (waitable_holder_is_linked) {
+                    this->waitable_holder.UnlinkFromWaitableManager();
+                    waitable_holder_is_linked = false;
+                }
             }
 
             Handle GetHandle() const {

@@ -37,7 +37,7 @@ namespace ams::pm::impl {
             this->handle = INVALID_HANDLE;
 
             /* Unlink the process from its waitable manager. */
-            this->waitable_holder.UnlinkFromWaitableManager();
+            UnlinkFromWaitableManagerIfLinked();
         }
     }
 

@@ -414,6 +414,8 @@ namespace ams::pm::impl {
                 case ProcessState_Exited:
                     if (hos::GetVersion() < hos::Version_500 && process_info->ShouldSignalOnExit()) {
                         g_process_event.Signal();
+
+                        process_info->UnlinkFromWaitableManagerIfLinked();
                     } else {
                         /* Free process resources, unlink from waitable manager. */
                         process_info->Cleanup();
@@ -436,6 +438,7 @@ namespace ams::pm::impl {
                             CleanupProcessInfo(list, process_info);
                         }
                     }
+                    break;
                 case ProcessState_DebugSuspended:
                     if (process_info->ShouldSignalOnDebugEvent()) {
                         process_info->SetSuspended();
