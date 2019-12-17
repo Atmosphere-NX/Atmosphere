@@ -80,6 +80,18 @@ namespace ams::kern::smc {
         }
     }
 
+    void GenerateRandomBytes(void *dst, size_t size) {
+        /* Call SmcGenerateRandomBytes() */
+        /* TODO: Lock this to ensure only one core calls at once. */
+        SecureMonitorArguments args = { FunctionId_GetConfig, size };
+        MESOSPHERE_ABORT_UNLESS(size <= sizeof(args) - sizeof(args.x[0]));
+        CallPrivilegedSecureMonitorFunction(args);
+        MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
+
+        /* Copy output. */
+        std::memcpy(dst, &args.x[1], size);
+    }
+
     void NORETURN Panic(u32 color) {
         SecureMonitorArguments args = { FunctionId_Panic, color };
         CallPrivilegedSecureMonitorFunction(args);

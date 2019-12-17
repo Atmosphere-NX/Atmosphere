@@ -65,6 +65,7 @@ namespace ams::kern::smc {
 
     /* TODO: Rest of Secure Monitor API. */
     void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
+    void GenerateRandomBytes(void *dst, size_t size);
     void NORETURN Panic(u32 color);
     bool ReadWriteRegister(u32 *out, u64 address, u32 mask, u32 value);
 

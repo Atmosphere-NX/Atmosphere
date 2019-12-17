@@ -25,6 +25,9 @@
 #include "mesosphere/kern_k_typed_address.hpp"
 #include "mesosphere/kern_initial_process.hpp"
 
+/* Core pre-initialization includes. */
+#include "mesosphere/kern_select_cpu.hpp"
+
 /* Initialization headers. */
 #include "mesosphere/init/kern_init_elf.hpp"
 #include "mesosphere/init/kern_init_layout.hpp"

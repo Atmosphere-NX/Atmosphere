@@ -14,23 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
 
-namespace ams::kern {
+#ifdef ATMOSPHERE_ARCH_ARM64
+    #include "arch/arm64/kern_cpu.hpp"
 
-    class KSystemControl {
-        public:
+    namespace ams::kern::cpu {
 
-            /* Initialization. */
-            static KPhysicalAddress GetKernelPhysicalBaseAddress(uintptr_t base_address);
-            static bool ShouldIncreaseResourceRegionSize();
+        using namespace ams::kern::arm64::cpu;
 
-            /* Randomness. */
-            static void GenerateRandomBytes(void *dst, size_t size);
-            static u64  GenerateRandomRange(u64 min, u64 max);
+    }
 
-            /* Panic. */
-            static NORETURN void StopSystem();
-    };
-
-}
+#else
+    #error "Unknown architecture for CPU"
+#endif

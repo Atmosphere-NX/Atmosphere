@@ -39,6 +39,12 @@ namespace ams::kern {
             return value;
         }
 
+        inline u64 GenerateRandomU64() {
+            u64 value;
+            smc::GenerateRandomBytes(&value, sizeof(value));
+            return value;
+        }
+
         inline smc::MemoryMode GetMemoryMode() {
             return static_cast<smc::MemoryMode>((GetKernelConfiguration() >> 10) & 0x3);
         }
@@ -71,6 +77,24 @@ namespace ams::kern {
 
     bool KSystemControl::ShouldIncreaseResourceRegionSize() {
         return (GetKernelConfiguration() >> 3) & 1;
+    }
+
+    /* Randomness. */
+    void KSystemControl::GenerateRandomBytes(void *dst, size_t size) {
+        MESOSPHERE_ABORT_UNLESS(size <= 0x38);
+        smc::GenerateRandomBytes(dst, size);
+    }
+
+    u64 KSystemControl::GenerateRandomRange(u64 min, u64 max) {
+        /* This is a biased random, but this is okay for now. */
+        /* TODO: unbiased random? */
+        const u64 range_size    = ((max + 1) - min);
+        const u64 effective_max = (std::numeric_limits<u64>::max() / range_size) * range_size;
+        while (true) {
+            if (const u64 rnd = GenerateRandomU64(); rnd < effective_max) {
+                return rnd % effective_max;
+            }
+        }
     }
 
     void KSystemControl::StopSystem() {
