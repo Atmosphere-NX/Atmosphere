@@ -17,17 +17,25 @@
 #include <vapours.hpp>
 
 #ifdef ATMOSPHERE_ARCH_ARM64
-
-    #include "../arch/arm64/init/kern_init_elf64.hpp"
-
+    #include "kern_init_elf64.hpp"
 #else
-
     #error "Unknown Architecture"
-
 #endif
 
 namespace ams::kern::init::Elf {
 
-    /* TODO: Anything we want inside this namespace? */
+    #ifdef ATMOSPHERE_ARCH_ARM64
+        using namespace ams::kern::init::Elf::Elf64;
+
+        enum RelocationType {
+            R_ARCHITECTURE_RELATIVE = 0x403, /* Real name R_AARCH64_RELATIVE */
+        };
+    #else
+        #error "Unknown Architecture"
+    #endif
+
+    /* API to apply relocations or call init array. */
+    void ApplyRelocations(uintptr_t base_address, const Dyn *dynamic);
+    void CallInitArrayFuncs(uintptr_t init_array_start, uintptr_t init_array_end);
 
 }

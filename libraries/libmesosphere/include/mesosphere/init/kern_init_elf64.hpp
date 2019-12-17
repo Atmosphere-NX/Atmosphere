@@ -125,12 +125,4 @@ namespace ams::kern::init::Elf::Elf64 {
         DT_RELCOUNT  = 0x6ffffffa
     };
 
-    enum RelocationType {
-        R_AARCH64_RELATIVE = 0x403,
-    };
-
-    /* API to apply relocations or call init array. */
-    void ApplyRelocations(uintptr_t base_address, const Dyn *dynamic);
-    void CallInitArrayFuncs(uintptr_t init_array_start, uintptr_t init_array_end);
-
 }
