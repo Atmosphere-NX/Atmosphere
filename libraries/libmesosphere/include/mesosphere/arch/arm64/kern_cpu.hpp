@@ -21,19 +21,19 @@ namespace ams::kern::arm64::cpu {
 
     /* Helpers for managing memory state. */
     ALWAYS_INLINE void DataSynchronizationBarrier() {
-        __asm__ __volatile__("dsb sy");
+        __asm__ __volatile__("dsb sy" ::: "memory");
     }
 
     ALWAYS_INLINE void DataSynchronizationBarrierInnerShareable() {
-        __asm__ __volatile__("dsb ish");
+        __asm__ __volatile__("dsb ish" ::: "memory");
     }
 
     ALWAYS_INLINE void DataMemoryBarrier() {
-        __asm__ __volatile__("dmb sy");
+        __asm__ __volatile__("dmb sy" ::: "memory");
     }
 
     ALWAYS_INLINE void InstructionMemoryBarrier() {
-        __asm__ __volatile__("isb");
+        __asm__ __volatile__("isb" ::: "memory");
     }
 
     ALWAYS_INLINE void EnsureInstructionConsistency() {
