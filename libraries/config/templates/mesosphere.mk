@@ -7,7 +7,7 @@ include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../common.mk
 # options for code generation
 #---------------------------------------------------------------------------------
 export DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_MESOSPHERE
-export SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -Werror
+export SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -ffixed-x18 -Werror
 export CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 export CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS)
 export ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)

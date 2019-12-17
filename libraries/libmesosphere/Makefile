@@ -7,7 +7,7 @@ include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../config/common.mk
 # options for code generation
 #---------------------------------------------------------------------------------
 DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_MESOSPHERE
-SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -Werror
+SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -ffixed-x18 -Werror
 CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -flto
 ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)
