@@ -14,23 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <mesosphere.hpp>
 
-namespace ams::kern {
+namespace ams::kern::init::loader {
 
-    class KSystemControl {
-        public:
-
-            /* Initialization. */
-            static KPhysicalAddress GetKernelPhysicalBaseAddress(uintptr_t base_address);
-            static bool ShouldIncreaseResourceRegionSize();
-
-            /* Randomness. */
-            static void GenerateRandomBytes(void *dst, size_t size);
-            static u64  GenerateRandomRange(u64 min, u64 max);
-
-            /* Panic. */
-            static NORETURN void StopSystem();
+    struct SavedRegisterState {
+        u64 x[(30 - 19) + 1];
+        u64 sp;
+        u64 xzr;
     };
+    static_assert(sizeof(SavedRegisterState) == 0x70);
+
+    int SaveRegistersToTpidrEl1(void *tpidr_el1);
+    void VerifyAndClearTpidrEl1(void *tpidr_el1);
 
 }

@@ -9,6 +9,10 @@ ifeq ($(strip $(ATMOSPHERE_BOARD)),)
 export ATMOSPHERE_BOARD := nx-hac-001
 endif
 
+ifeq ($(strip $(ATMOSPHERE_CPU)),)
+export ATMOSPHERE_CPU   := arm-cortex-a57
+endif
+
 export ATMOSPHERE_DEFINES  := -DATMOSPHERE
 export ATMOSPHERE_SETTINGS := -fPIE -g
 export ATMOSPHERE_CFLAGS   := -Wall -ffunction-sections -fdata-sections -fno-strict-aliasing -fwrapv \
@@ -27,14 +31,21 @@ export ATMOSPHERE_BOARD_NAME := nintendo_switch
 export ATMOSPHERE_OS_NAME    := horizon
 endif
 
+ifeq ($(ATMOSPHERE_CPU),arm-cortex-a57)
+export ATMOSPHERE_CPU_DIR    := arch/arm64/cpu/cortex_a57
+export ATMOSPHERE_CPU_NAME   := arm_cortex_a57
+endif
+
 
 export ATMOSPHERE_ARCH_MAKE_DIR  := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_ARCH_DIR)
 export ATMOSPHERE_BOARD_MAKE_DIR := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_BOARD_DIR)
 export ATMOSPHERE_OS_MAKE_DIR    := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_OS_DIR)
+export ATMOSPHERE_CPU_MAKE_DIR   := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_CPU_DIR)
 
 include $(ATMOSPHERE_ARCH_MAKE_DIR)/arch.mk
 include $(ATMOSPHERE_BOARD_MAKE_DIR)/board.mk
 include $(ATMOSPHERE_OS_MAKE_DIR)/os.mk
+include $(ATMOSPHERE_CPU_MAKE_DIR)/cpu.mk
 
 #---------------------------------------------------------------------------------
 # get atmosphere git revision information

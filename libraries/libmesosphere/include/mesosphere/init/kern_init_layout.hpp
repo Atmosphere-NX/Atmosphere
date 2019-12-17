@@ -28,7 +28,7 @@ namespace ams::kern::init {
         u32 bss_offset;
         u32 bss_end_offset;
         u32 ini_end_offset;
-        u32 dynamic_end_offset;
+        u32 dynamic_offset;
         u32 init_array_offset;
         u32 init_array_end_offset;
     };

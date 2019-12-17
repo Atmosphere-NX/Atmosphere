@@ -80,7 +80,7 @@ _start:
 
     /* Return to the newly-relocated kernel. */
     ldr x1, [sp, #0x18] /* Return address to Kernel */
-    ldr x2, [sp, #0x00] /* Relocated kernel base address. */
+    ldr x2, [sp, #0x00] /* Relocated kernel base address diff. */
     add x1, x2, x1
     br  x1
 
