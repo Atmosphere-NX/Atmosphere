@@ -78,6 +78,9 @@ _start:
     /* Call ams::kern::init::loader::Finalize() */
     bl _ZN3ams4kern4init6loader8FinalizeEv
 
+    /* X0 is now the next address for the page allocator. */
+    /* We will return this to the kernel. */
+
     /* Return to the newly-relocated kernel. */
     ldr x1, [sp, #0x18] /* Return address to Kernel */
     ldr x2, [sp, #0x00] /* Relocated kernel base address diff. */

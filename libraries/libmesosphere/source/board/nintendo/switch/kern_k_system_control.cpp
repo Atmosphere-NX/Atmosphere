@@ -86,13 +86,11 @@ namespace ams::kern {
     }
 
     u64 KSystemControl::GenerateRandomRange(u64 min, u64 max) {
-        /* This is a biased random, but this is okay for now. */
-        /* TODO: unbiased random? */
         const u64 range_size    = ((max + 1) - min);
         const u64 effective_max = (std::numeric_limits<u64>::max() / range_size) * range_size;
         while (true) {
             if (const u64 rnd = GenerateRandomU64(); rnd < effective_max) {
-                return rnd % effective_max;
+                return min + (rnd % range_size);
             }
         }
     }

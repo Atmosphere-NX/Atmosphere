@@ -44,8 +44,10 @@ namespace ams::kern::init::loader {
                     this->next_address = address;
                 }
 
-                ALWAYS_INLINE void Finalize() {
+                ALWAYS_INLINE uintptr_t Finalize() {
+                    const uintptr_t final_address = this->next_address;
                     this->next_address = Null<uintptr_t>;
+                    return final_address;
                 }
             public:
                 virtual KPhysicalAddress Allocate() override {
@@ -255,10 +257,10 @@ namespace ams::kern::init::loader {
         /* We don't have ams::os, this may go in hw:: or something. */
         const uintptr_t rx_offset      = layout->rx_offset;
         const uintptr_t rx_end_offset  = layout->rx_end_offset;
-        const uintptr_t ro_offset      = layout->rx_offset;
+        const uintptr_t ro_offset      = layout->ro_offset;
         const uintptr_t ro_end_offset  = layout->ro_end_offset;
-        const uintptr_t rw_offset      = layout->rx_offset;
-        const uintptr_t rw_end_offset  = layout->rw_end_offset;
+        const uintptr_t rw_offset      = layout->rw_offset;
+        /* UNUSED: const uintptr_t rw_end_offset  = layout->rw_end_offset; */
         const uintptr_t bss_end_offset = layout->bss_end_offset;
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(rx_offset,      0x1000));
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(rx_end_offset,  0x1000));
@@ -315,7 +317,7 @@ namespace ams::kern::init::loader {
         ttbr1_table.Map(virtual_base_address + rw_offset, bss_end_offset - rw_offset, base_address + rw_offset, KernelRwDataAttribute, g_initial_page_allocator);
 
         /* Clear kernel .bss. */
-        std::memset(GetVoidPointer(virtual_base_address + bss_offset), 0, bss_end_offset - rw_end_offset);
+        std::memset(GetVoidPointer(virtual_base_address + bss_offset), 0, bss_end_offset - bss_offset);
 
         /* Apply relocations to the kernel. */
         const Elf::Elf64::Dyn *kernel_dynamic = reinterpret_cast<const Elf::Elf64::Dyn *>(GetInteger(virtual_base_address) + dynamic_offset);
@@ -331,8 +333,8 @@ namespace ams::kern::init::loader {
         return GetInteger(virtual_base_address) - base_address;
     }
 
-    void Finalize() {
-        g_initial_page_allocator.Finalize();
+    uintptr_t Finalize() {
+        return g_initial_page_allocator.Finalize();
     }
 
 }
