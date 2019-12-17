@@ -239,6 +239,15 @@ namespace ams::mitm::fs {
             R_ASSERT(fsOpenSdCardFileSystem(&sd_filesystem));
             ON_SCOPE_EXIT { fsFsClose(&sd_filesystem); };
 
+            /* If there is no romfs folder on the SD, don't bother continuing. */
+            {
+                FsDir dir;
+                if (R_FAILED(mitm::fs::OpenAtmosphereRomfsDirectory(&dir, this->program_id, this->root->path.get(), OpenDirectoryMode_Directory, &sd_filesystem))) {
+                    return;
+                }
+                fsDirClose(&dir);
+            }
+
             this->cur_source_type = DataSourceType::LooseSdFile;
             this->VisitDirectory(&sd_filesystem, this->root);
         }
