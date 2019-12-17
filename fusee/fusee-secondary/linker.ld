@@ -250,4 +250,6 @@ SECTIONS
     PROVIDE(__thermosphere_bin_size__ = thermosphere_bin_end - thermosphere_bin);
     PROVIDE(__emummc_kip_start__ = emummc_kip - __start__);
     PROVIDE(__emummc_kip_size__ = emummc_kip_end - emummc_kip);
+    PROVIDE(__kernel_ldr_bin_start__ = kernel_ldr_bin - __start__);
+    PROVIDE(__kernel_ldr_bin_size__ = kernel_ldr_bin_end - kernel_ldr_bin);
 }

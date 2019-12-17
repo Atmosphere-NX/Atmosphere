@@ -21,6 +21,12 @@
 #include "kernel_patches.h"
 #include "ips.h"
 
+#define u8 uint8_t
+#define u32 uint32_t
+#include "kernel_ldr_bin.h"
+#undef u8
+#undef u32
+
 #define MAKE_BRANCH(a, o) 0x14000000 | ((((o) - (a)) >> 2) & 0x3FFFFFF)
 #define MAKE_NOP 0xD503201F
 
@@ -839,12 +845,12 @@ const kernel_info_t *get_kernel_info(void *kernel, size_t size) {
     return NULL;
 }
 
-void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel, void **out_ini1) {
-    const kernel_info_t *kernel_info = get_kernel_info(_kernel, size);
+void package2_patch_kernel(void *_kernel, size_t *kernel_size, bool is_sd_kernel, void **out_ini1) {
+    const kernel_info_t *kernel_info = get_kernel_info(_kernel, *kernel_size);
     *out_ini1 = NULL;
 
     /* Apply IPS patches. */
-    apply_kernel_ips_patches(_kernel, size);
+    apply_kernel_ips_patches(_kernel, *kernel_size);
 
     if (kernel_info == NULL && !is_sd_kernel) {
         /* Should this be fatal? */
@@ -856,8 +862,16 @@ void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel, void *
     }
 
     if (kernel_info->embedded_ini_offset != 0) {
+        /* Copy in our kernel loader. */
+        const uint32_t kernel_ldr_offset = *((volatile uint64_t *)((uintptr_t)_kernel + kernel_info->embedded_ini_ptr + 8));
+        memcpy((void *)((uintptr_t)_kernel + kernel_ldr_offset), kernel_ldr_bin, kernel_ldr_bin_size);
+
+        /* Update size. */
+        *kernel_size = kernel_ldr_offset + kernel_ldr_bin_size;
+
+        /* Set output INI ptr. */
         *out_ini1 = (void *)((uintptr_t)_kernel + kernel_info->embedded_ini_offset);
-        *((volatile uint64_t *)((uintptr_t)_kernel + kernel_info->embedded_ini_ptr)) = (uint64_t)size;
+        *((volatile uint64_t *)((uintptr_t)_kernel + kernel_info->embedded_ini_ptr)) = (uint64_t)*kernel_size;
     }
 
     /* Apply hooks and patches. */
@@ -882,7 +896,7 @@ void package2_patch_kernel(void *_kernel, size_t size, bool is_sd_kernel, void *
             fatal_error("kernel_patcher: insufficient space to apply patches!\n");
         }
 
-        uint8_t *pattern_loc = search_pattern(kernel, size, kernel_info->patches[i].pattern, kernel_info->patches[i].pattern_size);
+        uint8_t *pattern_loc = search_pattern(kernel, *kernel_size, kernel_info->patches[i].pattern, kernel_info->patches[i].pattern_size);
         if (pattern_loc == NULL) {
             /* TODO: Should we print an error/abort here? */
             continue;

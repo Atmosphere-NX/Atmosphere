@@ -7,7 +7,7 @@ ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
     AMSREV := $(AMSREV)-dirty
 endif
 
-COMPONENTS := fusee stratosphere exosphere thermosphere troposphere libraries
+COMPONENTS := fusee stratosphere mesosphere exosphere thermosphere troposphere libraries
 
 all: $(COMPONENTS)
 
@@ -20,13 +20,16 @@ exosphere: thermosphere
 stratosphere: exosphere libraries
 	$(MAKE) -C stratosphere all
 
+mesosphere: exosphere libraries
+	$(MAKE) -C mesosphere all
+
 troposphere: stratosphere
 	$(MAKE) -C troposphere all
 
 sept: exosphere
 	$(MAKE) -C sept all
 
-fusee: exosphere stratosphere sept
+fusee: exosphere mesosphere stratosphere sept
 	$(MAKE) -C $@ all
 
 libraries:

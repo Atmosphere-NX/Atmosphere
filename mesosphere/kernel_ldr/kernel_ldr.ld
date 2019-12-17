@@ -151,7 +151,7 @@ SECTIONS
 		*(.dynbss)
 		*(.bss .bss.* .gnu.linkonce.b.*)
 		*(COMMON)
-		. = ALIGN(8);
+		. = ALIGN(16);
 
 		/* Reserve space for the stack */
 		__stack_start = .;
