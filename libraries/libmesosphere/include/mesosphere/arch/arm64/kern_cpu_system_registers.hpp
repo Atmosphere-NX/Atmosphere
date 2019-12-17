@@ -55,7 +55,7 @@ namespace ams::kern::arm64::cpu {
             ALWAYS_INLINE GenericRegisterAccessor(u64 v) : value(v) { /* ... */ }
         protected:
             constexpr ALWAYS_INLINE u64 GetBits(size_t offset, size_t count) const {
-                return (this->value >> offset) & ((1 << count) - 1);
+                return (this->value >> offset) & ((1ul << count) - 1);
             }
     };
 

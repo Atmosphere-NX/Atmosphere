@@ -77,11 +77,11 @@ namespace ams::kern::init {
             }
         protected:
             constexpr ALWAYS_INLINE u64 GetBits(size_t offset, size_t count) const {
-                return (this->attributes >> offset) & ((1 << count) - 1);
+                return (this->attributes >> offset) & ((1ul << count) - 1);
             }
 
             constexpr ALWAYS_INLINE u64 SelectBits(size_t offset, size_t count) const {
-                return this->attributes & (((1 << count) - 1) << offset);
+                return this->attributes & (((1ul << count) - 1) << offset);
             }
         public:
             constexpr ALWAYS_INLINE bool IsUserExecuteNever()        const { return this->GetBits(54, 1) != 0; }
@@ -128,9 +128,9 @@ namespace ams::kern::init {
                 return this->SelectBits(12, 36);
             }
 
-            constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs) const {
+            constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, bool contig) const {
                 /* Check whether this has the same permission/etc as the desired attributes. */
-                return (this->GetBlock() | rhs.GetRawAttributes()) == this->GetRawAttributes();
+                return L1PageTableEntry(this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
             }
     };
 
@@ -156,16 +156,16 @@ namespace ams::kern::init {
                 return this->SelectBits(12, 36);
             }
 
-            constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs) const {
+            constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, bool contig) const {
                 /* Check whether this has the same permission/etc as the desired attributes. */
-                return (this->GetBlock() | rhs.GetRawAttributes()) == this->GetRawAttributes();
+                return L2PageTableEntry(this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
             }
     };
 
     class L3PageTableEntry : public PageTableEntry {
         public:
             constexpr ALWAYS_INLINE L3PageTableEntry(KPhysicalAddress phys_addr, const PageTableEntry &attr, bool contig)
-                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | 0x1)
+                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | 0x3)
             {
                 /* ... */
             }
@@ -176,9 +176,9 @@ namespace ams::kern::init {
                 return this->SelectBits(12, 36);
             }
 
-            constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs) const {
+            constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, bool contig) const {
                 /* Check whether this has the same permission/etc as the desired attributes. */
-                return (this->GetBlock() | rhs.GetRawAttributes()) == this->GetRawAttributes();
+                return L3PageTableEntry(this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
             }
     };
 
@@ -247,7 +247,7 @@ namespace ams::kern::init {
                     if (!l1_entry->IsTable()) {
                         KPhysicalAddress new_table = allocator.Allocate();
                         ClearNewPageTable(new_table);
-                        *l1_entry = L1PageTableEntry(phys_addr, attr.IsPrivilegedExecuteNever());
+                        *l1_entry = L1PageTableEntry(new_table, attr.IsPrivilegedExecuteNever());
                         cpu::DataSynchronizationBarrierInnerShareable();
                     }
 
@@ -281,7 +281,7 @@ namespace ams::kern::init {
                     if (!l2_entry->IsTable()) {
                         KPhysicalAddress new_table = allocator.Allocate();
                         ClearNewPageTable(new_table);
-                        *l2_entry = L2PageTableEntry(phys_addr, attr.IsPrivilegedExecuteNever());
+                        *l2_entry = L2PageTableEntry(new_table, attr.IsPrivilegedExecuteNever());
                         cpu::DataSynchronizationBarrierInnerShareable();
                     }
 
@@ -373,7 +373,7 @@ namespace ams::kern::init {
                         const KPhysicalAddress block = l1_entry->GetBlock();
                         MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
                         MESOSPHERE_ABORT_UNLESS(util::IsAligned(size, L1BlockSize));
-                        MESOSPHERE_ABORT_UNLESS(l1_entry->IsCompatibleWithAttribute(attr_before));
+                        MESOSPHERE_ABORT_UNLESS(l1_entry->IsCompatibleWithAttribute(attr_before, false));
 
                         /* Invalidate the existing L1 block. */
                         *static_cast<PageTableEntry *>(l1_entry) = InvalidPageTableEntry;
@@ -404,7 +404,7 @@ namespace ams::kern::init {
                             /* Invalidate the existing contiguous L2 block. */
                             for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
                                 /* Ensure that the entry is valid. */
-                                MESOSPHERE_ABORT_UNLESS(l2_entry[i].IsCompatibleWithAttribute(attr_before));
+                                MESOSPHERE_ABORT_UNLESS(l2_entry[i].IsCompatibleWithAttribute(attr_before, true));
                                 static_cast<PageTableEntry *>(l2_entry)[i] = InvalidPageTableEntry;
                             }
                             cpu::DataSynchronizationBarrierInnerShareable();
@@ -422,7 +422,7 @@ namespace ams::kern::init {
                             MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L2BlockSize));
                             MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L2BlockSize));
                             MESOSPHERE_ABORT_UNLESS(util::IsAligned(size,                  L2BlockSize));
-                            MESOSPHERE_ABORT_UNLESS(l2_entry->IsCompatibleWithAttribute(attr_before));
+                            MESOSPHERE_ABORT_UNLESS(l2_entry->IsCompatibleWithAttribute(attr_before, false));
 
                             /* Invalidate the existing L2 block. */
                             *static_cast<PageTableEntry *>(l2_entry) = InvalidPageTableEntry;
@@ -456,7 +456,7 @@ namespace ams::kern::init {
                         /* Invalidate the existing contiguous L3 block. */
                         for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
                             /* Ensure that the entry is valid. */
-                            MESOSPHERE_ABORT_UNLESS(l3_entry[i].IsCompatibleWithAttribute(attr_before));
+                            MESOSPHERE_ABORT_UNLESS(l3_entry[i].IsCompatibleWithAttribute(attr_before, true));
                             static_cast<PageTableEntry *>(l3_entry)[i] = InvalidPageTableEntry;
                         }
                         cpu::DataSynchronizationBarrierInnerShareable();
@@ -474,7 +474,7 @@ namespace ams::kern::init {
                         MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L3BlockSize));
                         MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L3BlockSize));
                         MESOSPHERE_ABORT_UNLESS(util::IsAligned(size,                  L3BlockSize));
-                        MESOSPHERE_ABORT_UNLESS(l3_entry->IsCompatibleWithAttribute(attr_before));
+                        MESOSPHERE_ABORT_UNLESS(l3_entry->IsCompatibleWithAttribute(attr_before, false));
 
                         /* Invalidate the existing L3 block. */
                         *static_cast<PageTableEntry *>(l3_entry) = InvalidPageTableEntry;
