@@ -89,7 +89,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 all	:	$(OUTPUT).bin
 
 $(OUTPUT).bin	:	$(OUTPUT).elf
-	$(OBJCOPY) -S -O binary $< $@
+	$(OBJCOPY) -S -O binary --set-section-flags .bss=alloc,load,contents $< $@
 	@echo built ... $(notdir $@)
 
 $(OUTPUT).elf	:	$(OFILES) ../../../libraries/libmesosphere/lib/libmesosphere.a
