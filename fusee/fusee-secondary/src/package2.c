@@ -100,7 +100,7 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
         package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);
     } else {
         /* On 8.0.0, place INI1 right after kernelldr for our sanity. */
-        package2->metadata.section_offsets[PACKAGE2_SECTION_INI1] = package2->metadata.section_offsets[PACKAGE2_SECTION_KERNEL] + package2->metadata.section_sizes[PACKAGE2_SECTION_KERNEL];
+        package2->metadata.section_offsets[PACKAGE2_SECTION_INI1] = package2->metadata.section_offsets[PACKAGE2_SECTION_KERNEL] + kernel_size;
     }
 
     /* Perform any patches to the INI1, rebuilding it (This is where our built-in sysmodules will be added.) */
