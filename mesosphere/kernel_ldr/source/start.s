@@ -48,17 +48,17 @@ _start:
     ldr x1, [x1, #0x18] /* .dynamic. */
     add x1, x0, x1
 
-    /* branch to ams::kern::init::Elf::Elf64::ApplyRelocations(uintptr_t, const ams::kern::init::Elf::Elf64::Dyn *); */
-    bl _ZN3ams4kern4init3Elf5Elf6416ApplyRelocationsEmPKNS3_3DynE
+    /* branch to ams::kern::init::Elf::ApplyRelocations(uintptr_t, const ams::kern::init::Elf::Elf64::Dyn *); */
+    bl _ZN3ams4kern4init3Elf16ApplyRelocationsEmPKNS2_5Elf643DynE
 
-    /* branch to ams::kern::init::Elf::Elf64::CallInitArrayFuncs(uintptr_t, uintptr_t) */
+    /* branch to ams::kern::init::Elf::CallInitArrayFuncs(uintptr_t, uintptr_t) */
     adr x2, _start
     adr x1, __external_references
     ldr x0, [x1, #0x20] /* init_array_start */
     ldr x1, [x1, #0x28] /* init_array_end */
     add x0, x0, x2
     add x1, x1, x2
-    bl _ZN3ams4kern4init3Elf5Elf6418CallInitArrayFuncsEmm
+    bl _ZN3ams4kern4init3Elf18CallInitArrayFuncsEmm
 
     /* Setup system registers, for detection of errors during init later. */
     msr tpidr_el1, xzr /* Clear TPIDR_EL1 */

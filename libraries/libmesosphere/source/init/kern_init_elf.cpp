@@ -15,7 +15,7 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern::init::Elf::Elf64 {
+namespace ams::kern::init::Elf {
 
     /* API to apply relocations or call init array. */
     void ApplyRelocations(uintptr_t base_address, const Dyn *dynamic) {
@@ -52,25 +52,25 @@ namespace ams::kern::init::Elf::Elf64 {
 
         /* Apply all Rel relocations */
         for (size_t i = 0; i < rel_count; i++) {
-            const auto &rel = *reinterpret_cast<const Elf64::Rel *>(dyn_rel + rel_ent * i);
+            const auto &rel = *reinterpret_cast<const Elf::Rel *>(dyn_rel + rel_ent * i);
 
-            /* Only allow R_AARCH64_RELATIVE relocations. */
-            while (rel.GetType() != R_AARCH64_RELATIVE) { /* ... */ }
+            /* Only allow architecture-specific relocations. */
+            while (rel.GetType() != R_ARCHITECTURE_RELATIVE) { /* ... */ }
 
             /* Apply the relocation. */
-            Elf64::Addr *target_address = reinterpret_cast<Elf64::Addr *>(base_address + rel.GetOffset());
+            Elf::Addr *target_address = reinterpret_cast<Elf::Addr *>(base_address + rel.GetOffset());
             *target_address += base_address;
         }
 
         /* Apply all Rela relocations. */
         for (size_t i = 0; i < rela_count; i++) {
-            const auto &rela = *reinterpret_cast<const Elf64::Rela *>(dyn_rela + rela_ent * i);
+            const auto &rela = *reinterpret_cast<const Elf::Rela *>(dyn_rela + rela_ent * i);
 
-            /* Only allow R_AARCH64_RELATIVE relocations. */
-            while (rela.GetType() != R_AARCH64_RELATIVE) { /* ... */ }
+            /* Only allow architecture-specific relocations. */
+            while (rela.GetType() != R_ARCHITECTURE_RELATIVE) { /* ... */ }
 
             /* Apply the relocation. */
-            Elf64::Addr *target_address = reinterpret_cast<Elf64::Addr *>(base_address + rela.GetOffset());
+            Elf::Addr *target_address = reinterpret_cast<Elf::Addr *>(base_address + rela.GetOffset());
             *target_address = base_address + rela.GetAddend();
         }
     }

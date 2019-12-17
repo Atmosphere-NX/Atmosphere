@@ -320,14 +320,14 @@ namespace ams::kern::init::loader {
         std::memset(GetVoidPointer(virtual_base_address + bss_offset), 0, bss_end_offset - bss_offset);
 
         /* Apply relocations to the kernel. */
-        const Elf::Elf64::Dyn *kernel_dynamic = reinterpret_cast<const Elf::Elf64::Dyn *>(GetInteger(virtual_base_address) + dynamic_offset);
-        Elf::Elf64::ApplyRelocations(GetInteger(virtual_base_address), kernel_dynamic);
+        const Elf::Dyn *kernel_dynamic = reinterpret_cast<const Elf::Dyn *>(GetInteger(virtual_base_address) + dynamic_offset);
+        Elf::ApplyRelocations(GetInteger(virtual_base_address), kernel_dynamic);
 
         /* Reprotect .rodata as R-- */
         ttbr1_table.Reprotect(virtual_base_address + ro_offset, ro_end_offset - ro_offset, KernelRwDataAttribute, KernelRoDataAttribute);
 
         /* Call the kernel's init array functions. */
-        Elf::Elf64::CallInitArrayFuncs(GetInteger(virtual_base_address) + init_array_offset, GetInteger(virtual_base_address) + init_array_end_offset);
+        Elf::CallInitArrayFuncs(GetInteger(virtual_base_address) + init_array_offset, GetInteger(virtual_base_address) + init_array_end_offset);
 
         /* Return the difference between the random virtual base and the physical base. */
         return GetInteger(virtual_base_address) - base_address;
