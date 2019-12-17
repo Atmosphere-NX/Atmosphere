@@ -87,7 +87,7 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     }
 
     /* Perform any patches we want to the NX kernel. */
-    package2_patch_kernel(kernel, kernel_size, is_sd_kernel, (void *)&orig_ini1);
+    package2_patch_kernel(kernel, &kernel_size, is_sd_kernel, (void *)&orig_ini1);
 
     /* Ensure we know where embedded INI is if present, and we don't if not. */
     if ((target_firmware < ATMOSPHERE_TARGET_FIRMWARE_800 && orig_ini1 != NULL) ||

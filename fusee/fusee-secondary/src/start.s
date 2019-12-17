@@ -94,6 +94,8 @@ _metadata:
 #define CONTENT_TYPE_KIP 6
 #define CONTENT_TYPE_BMP 7
 #define CONTENT_TYPE_EMC 8
+#define CONTENT_TYPE_KLD 9
+#define CONTENT_TYPE_KRN 10
 
 _content_headers:
 /* ams_mitm content header */
@@ -206,6 +208,14 @@ _content_headers:
 .word CONTENT_TYPE_EMC
 .word 0xCCCCCCCC
 .asciz "emummc"
+.align 5
+
+/* kernel_ldr content header */
+.word __kernel_ldr_bin_start__
+.word __kernel_ldr_bin_size__
+.word CONTENT_TYPE_KLD
+.word 0xCCCCCCCC
+.asciz "kernel_ldr"
 .align 5
 
 /* splash_screen content header */
