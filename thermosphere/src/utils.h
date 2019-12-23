@@ -18,6 +18,7 @@
 
 #include "types.h"
 #include "preprocessor.h"
+#include "debug_log.h"
 
 #define BIT(n)      (1u   << (n))
 #define BITL(n)     (1ull << (n))
@@ -35,7 +36,7 @@
 
 #define TEMPORARY       __attribute__((section(".tempbss")))
 
-#define FOREACH_BIT(tmpmsk, var, word) for (u64 tmpmsk = (word), var = __builtin_ctzll(word); tmpmsk != 0; var = __builtin_ctzll(tmpmsk), tmpmsk &= ~BITL(var))
+#define FOREACH_BIT(tmpmsk, var, word) for (u64 tmpmsk = (word), var = __builtin_ctzll(word); tmpmsk != 0; tmpmsk &= ~BITL(var), var = __builtin_ctzll(tmpmsk))
 
 static inline void __dsb_sy(void)
 {
