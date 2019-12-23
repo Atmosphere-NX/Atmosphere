@@ -44,7 +44,8 @@ void dumpUnhandledDataAbort(DataAbortIss dabtIss, u64 far, const char *msg)
 void handleLowerElDataAbortException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 {
     DataAbortIss dabtIss;
-    memcpy(&dabtIss, &esr, 4);
+    u32 iss = esr.iss;
+    memcpy(&dabtIss, &iss, 4);
 
     u64 far = GET_SYSREG(far_el2);
     u64 farpg = far & ~0xFFFull;
@@ -60,4 +61,7 @@ void handleLowerElDataAbortException(ExceptionStackFrame *frame, ExceptionSyndro
     } else {
         dumpUnhandledDataAbort(dabtIss, far, "(fallback)");
     }
+
+    // Skip instruction anyway?
+    skipFaultingInstruction(frame, esr.il == 0 ? 2 : 4);
 }

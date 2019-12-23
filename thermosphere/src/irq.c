@@ -36,6 +36,7 @@ static void initGic(void)
 
         // unimplemented priority bits (lowest significant) are RAZ/WI
         g_irqManager.gic.gicd->ipriorityr[0] = 0xFF;
+        g_irqManager.priorityShift = 8 - __builtin_popcount(g_irqManager.gic.gicd->ipriorityr[0]);
         g_irqManager.numPriorityLevels = (u8)BIT(__builtin_popcount(g_irqManager.gic.gicd->ipriorityr[0]));
 
         g_irqManager.numCpuInterfaces = (u8)(1 + ((g_irqManager.gic.gicd->typer >> 5) & 7));
@@ -112,7 +113,7 @@ static void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
     }
 
     gicd->icpendr[id / 32] |= BIT(id % 32);
-    gicd->ipriorityr[id] = prio;
+    gicd->ipriorityr[id] = (prio << g_irqManager.priorityShift) & 0xFF;
     gicd->isenabler[id / 32] |= BIT(id % 32);
 }
 
@@ -125,10 +126,10 @@ void initIrq(void)
 
     // Configure the interrupts we use here
     for (u32 i = 0; i < ThermosphereSgi_Max; i++) {
-        configureInterrupt(i, 0, false);
+        configureInterrupt(i, IRQ_PRIORITY_HOST, false);
     }
 
-    configureInterrupt(GIC_IRQID_MAINTENANCE, 0, true);
+    configureInterrupt(GIC_IRQID_MAINTENANCE, IRQ_PRIORITY_HOST, true);
 
     recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
 }
@@ -149,7 +150,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     u32 irqId = iar & 0x3FF;
     u32 srcCore = (iar >> 12) & 7;
 
-    DEBUG("Received irq %x\n", irqId);
+    DEBUG("EL2: Received irq %x\n", irqId);
 
     if (irqId == GIC_IRQID_SPURIOUS) {
         // Spurious interrupt received

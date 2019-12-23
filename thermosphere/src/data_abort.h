@@ -31,7 +31,7 @@ typedef struct DataAbortIss {
 
     u32 ar          : 1; // Acquire/release. Bit 14
     u32 sf          : 1; // 64-bit register used
-    u32 srt         : 1; // Syndrome register transfer (register used)
+    u32 srt         : 5; // Syndrome register transfer (register used)
     u32 sse         : 1; // Syndrome sign extend
     u32 sas         : 2; // Syndrome access size. Bit 23
 

@@ -27,6 +27,7 @@
 typedef struct IrqManager {
     RecursiveSpinlock lock;
     ArmGicV2 gic;
+    u8 priorityShift;
     u8 numPriorityLevels;
     u8 numCpuInterfaces;
     u8 numSharedInterrupts;

@@ -297,6 +297,11 @@ static void vgicSetInterruptPriorityByte(u16 id, u8 priority)
     priority >>= 3;
     priority &= 0x1F;
 
+    if (id >= 16) {
+        // Ensure we have the correct priority on the physical distributor...
+        g_irqManager.gic.gicd->ipriorityr[id] = IRQ_PRIORITY_GUEST << g_irqManager.priorityShift;
+    }
+
     VirqState *state = vgicGetVirqState(currentCoreCtx->coreId, id);
     if (priority == state->priority) {
         // Nothing to do...
@@ -415,6 +420,8 @@ static void vgicSendSgi(u16 id, u32 filter, u32 coreList)
             return;
     }
 
+    coreList &= getActiveCoreMask();
+
     FOREACH_BIT(tmp, dstCore, coreList) {
         vgicSetSgiPendingState(id, dstCore, currentCoreCtx->coreId);
     }
@@ -429,8 +436,10 @@ static inline u32 vgicGetPeripheralId2Register(void)
 static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t offset)
 {
     size_t sz = BITL(dabtIss.sas);
-    u32 val = (u32)frame->x[dabtIss.srt];
+    u32 val = (u32)(frame->x[dabtIss.srt] & MASKL(8 * sz));
     uintptr_t addr = (uintptr_t)g_irqManager.gic.gicd + offset;
+
+    //DEBUG("gicd write off 0x%03llx sz %lx val %x\n", offset, sz, val);
 
     switch (offset) {
         case GICDOFF(typer):
@@ -526,6 +535,8 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
     uintptr_t addr = (uintptr_t)g_irqManager.gic.gicd + offset;
 
     u32 val = 0;
+
+    //DEBUG("gicd read off 0x%03llx sz %lx\n", offset, sz);
 
     switch (offset) {
         case GICDOFF(icfgr) ... GICDOFF(icfgr) + 31/4:

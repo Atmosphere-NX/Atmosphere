@@ -70,7 +70,7 @@ static inline void recursiveSpinlockLock(RecursiveSpinlock *lock)
     if (lock->tag != currentCoreCtx->coreId + 1) {
         spinlockLock(&lock->lock);
         lock->tag = currentCoreCtx->coreId + 1;
-        lock->count = 0;
+        lock->count = 1;
     } else {
         ++lock->count;
     }
