@@ -102,6 +102,19 @@ static inline void spsrSetT32ItFlags(u64 *spsr, u32 itFlags)
     *spsr |= ((itFlags >> 2) & 0x3F) << 10;
 }
 
+static inline u64 readFrameRegisterZ(ExceptionStackFrame *frame, u32 id)
+{
+    return id == 31 ? 0 /* xzr */ : frame->x[id];
+}
+
+static inline void writeFrameRegisterZ(ExceptionStackFrame *frame, u32 id, u64 val)
+{
+    if (id != 31) {
+        // If not xzr
+        frame->x[id] = val;
+    }
+}
+
 bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode);
 void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size);
 void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl);
