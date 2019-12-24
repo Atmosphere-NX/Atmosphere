@@ -309,6 +309,7 @@ static void vgicSetInterruptPriorityByte(u16 id, u8 priority)
         // Nothing to do...
         return;
     }
+
     state->priority = priority;
     u32 targets = g_irqManager.gic.gicd->itargetsr[id];
     if (targets != 0 && vgicIsVirqPending(state)) {
@@ -373,7 +374,7 @@ static inline u32 vgicGetInterruptConfigByte(u16 id, u32 config)
 static void vgicSetSgiPendingState(u16 id, u32 coreId, u32 srcCoreId)
 {
     u8 old = g_virqSgiPendingSources[coreId][id];
-    g_virqSgiPendingSources[coreId][id] = old | srcCoreId;
+    g_virqSgiPendingSources[coreId][id] = old | BIT(srcCoreId);
     if (old == 0) {
         // SGI is now pending & possibly needs to be serviced
         VirqState *state = vgicGetVirqState(coreId, id);
@@ -389,7 +390,7 @@ static void vgicClearSgiPendingState(u16 id, u32 srcCoreId)
     // Only for the current core, therefore no need to signal physical SGI, etc., etc.
     u32 coreId = currentCoreCtx->coreId;
     u8 old = g_virqSgiPendingSources[coreId][id];
-    u8 new_ =  old & ~(u8)srcCoreId;
+    u8 new_ =  old & ~BIT((u8)srcCoreId);
     g_virqSgiPendingSources[coreId][id] = new_;
     if (old != 0 && new_ == 0) {
         VirqState *state = vgicGetVirqState(coreId, id);
@@ -438,10 +439,10 @@ static inline u32 vgicGetPeripheralId2Register(void)
 static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t offset)
 {
     size_t sz = BITL(dabtIss.sas);
-    u32 val = (u32)(frame->x[dabtIss.srt] & MASKL(8 * sz));
+    u32 val = (u32)(readFrameRegisterZ(frame, dabtIss.srt) & MASKL(8 * sz));
     uintptr_t addr = (uintptr_t)g_irqManager.gic.gicd + offset;
 
-    //DEBUG("gicd write off 0x%03llx sz %lx val %x\n", offset, sz, val);
+    //DEBUG("gicd write off 0x%03llx sz %lx val %x w%d\n", offset, sz, val, (int)dabtIss.srt);
 
     switch (offset) {
         case GICDOFF(typer):
@@ -612,7 +613,7 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
             break;
     }
 
-    frame->x[dabtIss.srt] = val;
+    writeFrameRegisterZ(frame, dabtIss.srt, val);
 }
 
 static void vgicCleanupPendingList(void)
@@ -826,7 +827,9 @@ void vgicUpdateState(void)
     }
 
     // Raise vIRQ when applicable. We only need to check for the highest priority
-    if (vgicIsInterruptRaisable(newHiPrio)) {
+    // TRM: "The GIC always masks an interrupt that has the largest supported priority field value.
+    // This provides an additional means of preventing an interrupt being signaled to any processor"
+    if (newHiPrio < 0x1F && vgicIsInterruptRaisable(newHiPrio)) {
         u32 hcr = GET_SYSREG(hcr_el2);
         SET_SYSREG(hcr_el2, hcr | HCR_VI);
     }
@@ -891,7 +894,7 @@ void handleVgicdMmio(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t of
         handleVgicMmioRead(frame, dabtIss, offset);
     }
 
-    // TODO gic main loop
+    vgicUpdateState();
     recursiveSpinlockUnlock(&g_irqManager.lock);
 }
 
@@ -911,6 +914,7 @@ void vgicInit(void)
 
         for (u32 i = 0; i < 512 - 32 + 32 * 4; i++) {
             g_virqStates[i].listNext = g_virqStates[i].listPrev = MAX_NUM_INTERRUPTS;
+            g_virqStates[i].priority = 0x1F;
         }
     }
 

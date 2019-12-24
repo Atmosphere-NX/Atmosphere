@@ -56,7 +56,7 @@ void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg)
     }
 
     doSystemRegisterRwImpl(&val, iss | 1);
-    frame->x[reg] = val;
+    writeFrameRegisterZ(frame, reg, val);
 
     skipFaultingInstruction(frame, 4);
 }
@@ -66,7 +66,7 @@ void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg)
     u64 val = 0;
     iss &= ~((0x1F << 5) | 1);
 
-    val = frame->x[reg];
+    val = readFrameRegisterZ(frame, reg);
 
     bool reevalSoftwareBreakpoints = false;
 
@@ -126,7 +126,7 @@ void handleSysregAccessA32Stub(ExceptionStackFrame *frame, ExceptionSyndromeRegi
     // A32 stub: Skip instruction, read 0 if necessary (there are debug regs at EL0)
 
     if (esr.iss & 1 && evaluateMcrMrcCondition(frame->spsr_el2, (esr.iss >> 20) & 0xF, (esr.iss & BIT(24)) != 0)) {
-        frame->x[(esr.iss >> 5) & 0x1F] = 0;
+        writeFrameRegisterZ(frame, (esr.iss >> 5) & 0x1F, 0);
     }
     skipFaultingInstruction(frame, esr.il == 0 ? 2 : 4);
 }
