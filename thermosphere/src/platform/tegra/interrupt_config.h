@@ -21,7 +21,14 @@
 // For both guest and host
 #define MAX_NUM_REGISTERED_INTERRUPTS 512
 
-#define GIC_IRQID_MAINTENANCE  25
+#define GIC_IRQID_MAINTENANCE       25
+#define GIC_IRQID_HYP_TIMER         26
+#define GIC_IRQID_VIRT_TIMER        27
+#define GIC_IRQID_LEGACY_NFIQ       28
+#define GIC_IRQID_SEC_PHYS_TIMER    29
+#define GIC_IRQID_NS_PHYS_TIMER     30
+#define GIC_IRQID_LEGACY_NIRQ       31
+
 
 static inline void initGicV2Pointers(ArmGicV2 *gic)
 {
