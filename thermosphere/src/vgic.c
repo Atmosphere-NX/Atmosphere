@@ -191,11 +191,6 @@ static inline bool vgicIsVirqEdgeTriggered(u16 id)
     }
 }
 
-static inline bool vgicIsVirqEnabled(u16 id)
-{
-    return (g_irqManager.gic.gicd->isenabler[id / 32] & BIT(id % 32)) != 0;
-}
-
 static inline bool vgicIsVirqPending(VirqState *state)
 {
     // In case we emulate ispendr in the future...
@@ -254,7 +249,7 @@ static inline u32 vgicGetDistributorImplementerIdentificationRegister(void)
 
 static void vgicSetInterruptEnabledState(u16 id)
 {
-    if (id < 16 || !vgicIsVirqEnabled(id)) {
+    if (id < 16 || !irqIsGuest(id) || irqIsEnabled(id)) {
         // Nothing to do...
         // Also, ignore for SGIs
         return;
@@ -271,7 +266,7 @@ static void vgicSetInterruptEnabledState(u16 id)
 
 static void vgicClearInterruptEnabledState(u16 id)
 {
-    if (id < 16 || !vgicIsVirqEnabled(id)) {
+    if (id < 16 || !irqIsGuest(id) || !irqIsEnabled(id)) {
         // Nothing to do...
         // Also, ignore for SGIs
         return;
@@ -290,11 +285,15 @@ static void vgicClearInterruptEnabledState(u16 id)
 static inline bool vgicGetInterruptEnabledState(u16 id)
 {
     // SGIs are always enabled
-    return id < 16 || vgicIsVirqEnabled(id);
+    return id < 16 || (irqIsGuest(id) && irqIsEnabled(id));
 }
 
 static void vgicSetInterruptPriorityByte(u16 id, u8 priority)
 {
+    if (!irqIsGuest(id)) {
+        return;
+    }
+
     // 32 priority levels max, bits [7:3]
     priority >>= 3;
     priority &= 0x1F;
@@ -319,13 +318,13 @@ static void vgicSetInterruptPriorityByte(u16 id, u8 priority)
 
 static inline u8 vgicGetInterruptPriorityByte(u16 id)
 {
-    return vgicGetVirqState(currentCoreCtx->coreId, id)->priority << 3;
+    return irqIsGuest(id) ? vgicGetVirqState(currentCoreCtx->coreId, id)->priority << 3 : 0;
 }
 
 static void vgicSetInterruptTargets(u16 id, u8 coreList)
 {
-    // Ignored for SGIs and PPIs
-    if (id < 32) {
+    // Ignored for SGIs and PPIs, and non-guest interrupts
+    if (id < 32 || !irqIsGuest(id)) {
         return;
     }
 
@@ -350,13 +349,13 @@ static void vgicSetInterruptTargets(u16 id, u8 coreList)
 static inline u8 vgicGetInterruptTargets(u16 id)
 {
     // For SGIs & PPIs, itargetsr is banked and contains the CPU ID
-    return g_irqManager.gic.gicd->itargetsr[id];
+    return (id < 32 || irqIsGuest(id)) ? g_irqManager.gic.gicd->itargetsr[id] : 0;
 }
 
 static inline void vgicSetInterruptConfigByte(u16 id, u32 config)
 {
     // Ignored for SGIs, implementation defined for PPIs
-    if (id < 32) {
+    if (id < 32 || !irqIsGuest(id)) {
         return;
     }
 
@@ -368,7 +367,7 @@ static inline void vgicSetInterruptConfigByte(u16 id, u32 config)
 
 static inline u32 vgicGetInterruptConfigByte(u16 id, u32 config)
 {
-    return vgicIsVirqEdgeTriggered(id) ? 2 : 0;
+    return (irqIsGuest(id) && vgicIsVirqEdgeTriggered(id)) ? 2 : 0;
 }
 
 static void vgicSetSgiPendingState(u16 id, u32 coreId, u32 srcCoreId)
@@ -826,26 +825,23 @@ void vgicUpdateState(void)
     for (size_t i = 0; i < numChosen; i++) {
         vgicPushListRegisters(chosen, numChosen);
     }
-/*
+
+    // Apparently, the following is not needed because the GIC generates it for us
+    // Keep this comment, it's not intuitive
+    /*
     // Raise vIRQ when applicable. We only need to check for the highest priority
-    // TRM: "The GIC always masks an interrupt that has the largest supported priority field value.
-    // This provides an additional means of preventing an interrupt being signaled to any processor"
-    if (false && newHiPrio < 0x1F && vgicIsInterruptRaisable(newHiPrio)) {
-        DEBUG("enablegrp0 %d\n", (int)gich->vmcr.enableGrp0);
-        DEBUG("enablegrp1 %d\n", (int)gich->vmcr.enableGrp1);
+    /*if (newHiPrio < 0x1F && vgicIsInterruptRaisable(newHiPrio)) {
         gich->hcr.npie = true;
         u32 hcr = GET_SYSREG(hcr_el2);
         SET_SYSREG(hcr_el2, hcr | HCR_VI);
     } else {
-        //DEBUG("unraising\n");
         gich->hcr.npie = false;
         u32 hcr = GET_SYSREG(hcr_el2);
         SET_SYSREG(hcr_el2, hcr & ~HCR_VI);
-    }
-*/
+    }*/
 
     // Enable underflow interrupt when appropriate to do so
-    if (vgicGetNumberOfFreeListRegisters() != g_irqManager.numListRegisters) {
+    if (g_irqManager.numListRegisters - vgicGetNumberOfFreeListRegisters() > 1) {
         gich->hcr.uie = true;
     } else {
         gich->hcr.uie = false;
@@ -857,7 +853,6 @@ void vgicMaintenanceInterruptHandler(void)
     volatile ArmGicV2VirtualInterfaceController *gich = g_irqManager.gic.gich;
 
     ArmGicV2MaintenanceIntStatRegister misr = g_irqManager.gic.gich->misr;
-    DEBUG("maintenance\n");
     // Force GICV_CTRL to behave like ns-GICC_CTLR, with group 1 being replaced by group 0
     // Ensure we aren't spammed by maintenance interrupts, either.
     if (misr.vgrp0e || misr.vgrp0d || misr.vgrp1e || misr.vgrp1d) {
@@ -865,20 +860,31 @@ void vgicMaintenanceInterruptHandler(void)
     }
 
     if (misr.vgrp0e) {
+        DEBUG("maintenance grp0 enabled\n");
         gich->hcr.vgrp0eie = false;
         gich->hcr.vgrp0die = true;
     } else if (misr.vgrp0d) {
+        DEBUG("maintenance grp0 disabled\n");
         gich->hcr.vgrp0eie = true;
         gich->hcr.vgrp0die = false;
     }
-
     if (misr.vgrp1e) {
-        // Nothing to do since we unset the bit asap
+        // Nothing to do since we cleared the bits above...
     }
 
     if (misr.lrenp) {
-        DEBUG("VGIC: List Register Entry Not Present maintenance interrupt!");
+        DEBUG("VGIC: List Register Entry Not Present maintenance interrupt!\n");
         panic();
+    }
+
+    if (misr.eoi) {
+        DEBUG("SGI EOI maintenance interrupt\n");
+    }
+    if (misr.np) {
+        DEBUG("No Pending maintenance interrupt\n");
+    }
+    if (misr.u) {
+        DEBUG("Underflow maintenance interrupt\n");
     }
 
     // The rest should be handled by the main loop...

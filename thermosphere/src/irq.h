@@ -20,6 +20,7 @@
 #include "spinlock.h"
 #include "exceptions.h"
 #include "utils.h"
+#include "platform/interrupt_config.h"
 
 #define IRQ_PRIORITY_HOST       0
 #define IRQ_PRIORITY_GUEST      1
@@ -46,7 +47,6 @@ extern IrqManager g_irqManager;
 
 void initIrq(void);
 void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32);
-bool isGuestIrq(u16 id);
 
 static inline void generateSgiForAllOthers(ThermosphereSgi id)
 {
@@ -66,4 +66,14 @@ static inline void generateSgiForList(ThermosphereSgi id, u32 list)
 static inline void generateSgiForAll(ThermosphereSgi id)
 {
     generateSgiForList(id, MASK(g_irqManager.numCpuInterfaces));
+}
+
+static inline bool irqIsEnabled(u16 id)
+{
+    return (g_irqManager.gic.gicd->isenabler[id / 32] & BIT(id % 32)) != 0;
+}
+
+static inline bool irqIsGuest(u16 id)
+{
+    return id != GIC_IRQID_MAINTENANCE && id != GIC_IRQID_HYP_TIMER;
 }
