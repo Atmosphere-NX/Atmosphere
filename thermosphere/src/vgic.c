@@ -265,6 +265,8 @@ static void vgicSetInterruptEnabledState(u16 id)
     if (vgicIsVirqPending(state)) {
         vgicNotifyOtherCoreList(g_irqManager.gic.gicd->itargetsr[id]);
     }
+
+    g_irqManager.gic.gicd->isenabler[id / 32] |= BIT(id % 32);
 }
 
 static void vgicClearInterruptEnabledState(u16 id)
@@ -282,7 +284,7 @@ static void vgicClearInterruptEnabledState(u16 id)
         vgicNotifyOtherCoreList(BIT(vgicGetVirqStateCoreId(state)));
     }
 
-    g_irqManager.gic.gicd->isenabler[id / 32] &= ~BIT(id % 32);
+    g_irqManager.gic.gicd->icenabler[id / 32] |= ~BIT(id % 32);
 }
 
 static inline bool vgicGetInterruptEnabledState(u16 id)
@@ -671,7 +673,7 @@ static bool vgicTestInterruptEligibility(VirqState *state)
         return false;
     }
 
-    return vgicIsVirqEnabled(id) && (g_irqManager.gic.gicd->itargetsr[id] & BIT(currentCoreCtx->coreId)) != 0;
+    return vgicGetInterruptEnabledState(id) && (id < 32 || (g_irqManager.gic.gicd->itargetsr[id] & BIT(currentCoreCtx->coreId)) != 0);
 }
 
 // Returns highest priority
