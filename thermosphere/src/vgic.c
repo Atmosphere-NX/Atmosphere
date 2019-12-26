@@ -735,7 +735,7 @@ static inline volatile ArmGicV2ListRegister *vgicGetFreeListRegister(void)
 
 static void vgicPushListRegisters(VirqState *chosen[], size_t num)
 {
-    for (size_t i = 0; i < num; num++) {
+    for (size_t i = 0; i < num; i++) {
         VirqState *state = chosen[i];
         u16 irqId = vgicGetVirqStateInterruptId(state);
 
@@ -820,19 +820,29 @@ void vgicUpdateState(void)
 
     // Choose interrupts...
     newHiPrio = vgicChoosePendingInterrupts(&numChosen, chosen, numFreeLr);
+    (void)newHiPrio;
 
     // ...and push them
     for (size_t i = 0; i < numChosen; i++) {
         vgicPushListRegisters(chosen, numChosen);
     }
-
+/*
     // Raise vIRQ when applicable. We only need to check for the highest priority
     // TRM: "The GIC always masks an interrupt that has the largest supported priority field value.
     // This provides an additional means of preventing an interrupt being signaled to any processor"
-    if (newHiPrio < 0x1F && vgicIsInterruptRaisable(newHiPrio)) {
+    if (false && newHiPrio < 0x1F && vgicIsInterruptRaisable(newHiPrio)) {
+        DEBUG("enablegrp0 %d\n", (int)gich->vmcr.enableGrp0);
+        DEBUG("enablegrp1 %d\n", (int)gich->vmcr.enableGrp1);
+        gich->hcr.npie = true;
         u32 hcr = GET_SYSREG(hcr_el2);
         SET_SYSREG(hcr_el2, hcr | HCR_VI);
+    } else {
+        //DEBUG("unraising\n");
+        gich->hcr.npie = false;
+        u32 hcr = GET_SYSREG(hcr_el2);
+        SET_SYSREG(hcr_el2, hcr & ~HCR_VI);
     }
+*/
 
     // Enable underflow interrupt when appropriate to do so
     if (vgicGetNumberOfFreeListRegisters() != g_irqManager.numListRegisters) {
@@ -844,11 +854,26 @@ void vgicUpdateState(void)
 
 void vgicMaintenanceInterruptHandler(void)
 {
-    ArmGicV2MaintenanceIntStatRegister misr = g_irqManager.gic.gich->misr;
+    volatile ArmGicV2VirtualInterfaceController *gich = g_irqManager.gic.gich;
 
+    ArmGicV2MaintenanceIntStatRegister misr = g_irqManager.gic.gich->misr;
+    DEBUG("maintenance\n");
     // Force GICV_CTRL to behave like ns-GICC_CTLR, with group 1 being replaced by group 0
+    // Ensure we aren't spammed by maintenance interrupts, either.
     if (misr.vgrp0e || misr.vgrp0d || misr.vgrp1e || misr.vgrp1d) {
         g_irqManager.gic.gicv->ctlr &= BIT(9) | BIT(0);
+    }
+
+    if (misr.vgrp0e) {
+        gich->hcr.vgrp0eie = false;
+        gich->hcr.vgrp0die = true;
+    } else if (misr.vgrp0d) {
+        gich->hcr.vgrp0eie = true;
+        gich->hcr.vgrp0die = false;
+    }
+
+    if (misr.vgrp1e) {
+        // Nothing to do since we unset the bit asap
     }
 
     if (misr.lrenp) {
@@ -858,6 +883,7 @@ void vgicMaintenanceInterruptHandler(void)
 
     // The rest should be handled by the main loop...
 }
+
 void handleVgicdMmio(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t offset)
 {
     size_t sz = BITL(dabtIss.sas);
@@ -918,5 +944,13 @@ void vgicInit(void)
         }
     }
 
-    g_irqManager.gic.gich->hcr.en = true;
+    // Deassert vIRQ line, just in case
+    // Enable a few maintenance interrupts
+    ArmGicV2HypervisorControlRegister hcr = {
+        .vgrp1eie = true,
+        .vgrp0eie = true,
+        .lrenpie = true,
+        .en = true,
+    };
+    g_irqManager.gic.gich->hcr = hcr;
 }
