@@ -99,7 +99,7 @@ typedef struct ArmGicV2MaintenanceIntStatRegister {
 } ArmGicV2MaintenanceIntStatRegister;
 
 typedef struct ArmGicV2ListRegister {
-    u32 virtualId       : 9;
+    u32 virtualId       : 10;
     u32 physicalId      : 10; // note: different encoding if hw = 0 (can't represent it in struct)
     u32 sbz2            : 3;
     u32 priority        : 5;
