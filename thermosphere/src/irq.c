@@ -15,7 +15,6 @@
  */
 
 #include "irq.h"
-#include "platform/interrupt_config.h"
 #include "core_ctx.h"
 #include "debug_log.h"
 #include "vgic.h"
@@ -134,11 +133,6 @@ void initIrq(void)
     recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
 }
 
-bool isGuestIrq(u16 id)
-{
-    return true;
-}
-
 void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 {
     (void)isLowerEl;
@@ -177,6 +171,8 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 
     // Priority drop
     gicc->eoir = iar;
+
+    isGuestInterrupt = isGuestInterrupt && irqIsGuest(irqId);
 
     recursiveSpinlockLock(&g_irqManager.lock);
 
