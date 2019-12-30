@@ -28,6 +28,7 @@ namespace ams::mitm::fs {
 
         constexpr const char AtmosphereHblWebContentDir[] = "/atmosphere/hbl_html/";
 
+        os::Mutex g_data_storage_lock;
         os::Mutex g_storage_cache_lock;
         std::unordered_map<u64, std::weak_ptr<IStorageInterface>> g_storage_cache;
 
@@ -236,6 +237,9 @@ namespace ams::mitm::fs {
         R_TRY(fsOpenDataStorageByCurrentProcessFwd(this->forward_service.get(), &data_storage));
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&data_storage.s)};
 
+        /* Get a scoped lock. */
+        std::scoped_lock lk(g_data_storage_lock);
+
         /* Try to get a storage from the cache. */
         {
             std::shared_ptr<IStorageInterface> cached_storage = GetStorageCacheEntry(this->client_info.program_id);
@@ -252,10 +256,12 @@ namespace ams::mitm::fs {
             /* Create the layered storage. */
             FsFile data_file;
             if (R_SUCCEEDED(OpenAtmosphereSdFile(&data_file, this->client_info.program_id, "romfs.bin", OpenMode_Read))) {
-                auto *layered_storage = new LayeredRomfsStorage(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), this->client_info.program_id);
+                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), this->client_info.program_id);
+                layered_storage->BeginInitialize();
                 new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
             } else {
-                auto *layered_storage = new LayeredRomfsStorage(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, this->client_info.program_id);
+                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, this->client_info.program_id);
+                layered_storage->BeginInitialize();
                 new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
             }
 
@@ -278,6 +284,9 @@ namespace ams::mitm::fs {
         R_TRY(fsOpenDataStorageByDataIdFwd(this->forward_service.get(), &data_storage, static_cast<u64>(data_id), static_cast<NcmStorageId>(storage_id)));
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&data_storage.s)};
 
+        /* Get a scoped lock. */
+        std::scoped_lock lk(g_data_storage_lock);
+
         /* Try to get a storage from the cache. */
         {
             std::shared_ptr<IStorageInterface> cached_storage = GetStorageCacheEntry(data_id);
@@ -294,10 +303,12 @@ namespace ams::mitm::fs {
             /* Create the layered storage. */
             FsFile data_file;
             if (R_SUCCEEDED(OpenAtmosphereSdFile(&data_file, data_id, "romfs.bin", OpenMode_Read))) {
-                auto *layered_storage = new LayeredRomfsStorage(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), data_id);
+                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), data_id);
+                layered_storage->BeginInitialize();
                 new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
             } else {
-                auto *layered_storage = new LayeredRomfsStorage(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, data_id);
+                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, data_id);
+                layered_storage->BeginInitialize();
                 new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
             }
 

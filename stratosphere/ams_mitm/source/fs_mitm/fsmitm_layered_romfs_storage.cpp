@@ -20,9 +20,62 @@
 
 namespace ams::mitm::fs {
 
+    namespace {
+
+        os::Mutex g_mq_lock;
+        bool g_started_req_thread;
+        os::MessageQueue g_req_mq(1);
+        os::MessageQueue g_ack_mq(1);
+
+        void RomfsInitializerThreadFunction(void *arg) {
+            while (true) {
+                uintptr_t storage_uptr = 0;
+                g_req_mq.Receive(&storage_uptr);
+                std::shared_ptr<LayeredRomfsStorage> layered_storage = reinterpret_cast<LayeredRomfsStorage *>(storage_uptr)->GetShared();
+                g_ack_mq.Send(storage_uptr);
+                layered_storage->InitializeImpl();
+            }
+        }
+
+        constexpr size_t RomfsInitializerThreadStackSize = 0x8000;
+        constexpr int    RomfsInitializerThreadPriority  = 44;
+        os::StaticThread<RomfsInitializerThreadStackSize> g_romfs_initializer_thread(&RomfsInitializerThreadFunction, nullptr, RomfsInitializerThreadPriority);
+
+        void RequestInitializeStorage(uintptr_t storage_uptr) {
+            std::scoped_lock lk(g_mq_lock);
+
+            if (!g_started_req_thread) {
+                R_ASSERT(g_romfs_initializer_thread.Start());
+                g_started_req_thread = true;
+            }
+
+            g_req_mq.Send(storage_uptr);
+            uintptr_t ack = 0;
+            g_ack_mq.Receive(&ack);
+            AMS_ASSERT(ack == storage_uptr);
+        }
+
+    }
+
     using namespace ams::fs;
 
-    LayeredRomfsStorage::LayeredRomfsStorage(std::unique_ptr<IStorage> s_r, std::unique_ptr<IStorage> f_r, ncm::ProgramId pr_id) : storage_romfs(std::move(s_r)), file_romfs(std::move(f_r)), program_id(std::move(pr_id)) {
+    LayeredRomfsStorage::LayeredRomfsStorage(std::unique_ptr<IStorage> s_r, std::unique_ptr<IStorage> f_r, ncm::ProgramId pr_id) : storage_romfs(std::move(s_r)), file_romfs(std::move(f_r)), initialize_event(false, false), program_id(std::move(pr_id)), is_initialized(false), started_initialize(false) {
+        /* ... */
+    }
+
+    LayeredRomfsStorage::~LayeredRomfsStorage() {
+        for (size_t i = 0; i < this->source_infos.size(); i++) {
+            this->source_infos[i].Cleanup();
+        }
+    }
+
+    void LayeredRomfsStorage::BeginInitialize() {
+        AMS_ASSERT(!this->started_initialize);
+        RequestInitializeStorage(reinterpret_cast<uintptr_t>(this));
+        this->started_initialize = true;
+    }
+
+    void LayeredRomfsStorage::InitializeImpl() {
         /* Build new virtual romfs. */
         romfs::Builder builder(this->program_id);
 
@@ -37,12 +90,9 @@ namespace ams::mitm::fs {
         }
 
         builder.Build(&this->source_infos);
-    }
 
-    LayeredRomfsStorage::~LayeredRomfsStorage() {
-        for (size_t i = 0; i < this->source_infos.size(); i++) {
-            this->source_infos[i].Cleanup();
-        }
+        this->is_initialized = true;
+        this->initialize_event.Signal();
     }
 
     Result LayeredRomfsStorage::Read(s64 offset, void *buffer, size_t size) {
@@ -50,6 +100,10 @@ namespace ams::mitm::fs {
         R_UNLESS(size >= 0, fs::ResultInvalidSize());
         R_UNLESS(size > 0,  ResultSuccess());
 
+        /* Ensure we're initialized. */
+        if (!this->is_initialized) {
+            this->initialize_event.Wait();
+        }
 
         /* Validate offset/size. */
         const s64 virt_size = this->GetSize();
@@ -123,6 +177,11 @@ namespace ams::mitm::fs {
     }
 
     Result LayeredRomfsStorage::GetSize(s64 *out_size) {
+        /* Ensure we're initialized. */
+        if (!this->is_initialized) {
+            this->initialize_event.Wait();
+        }
+
         *out_size = this->GetSize();
         return ResultSuccess();
     }
