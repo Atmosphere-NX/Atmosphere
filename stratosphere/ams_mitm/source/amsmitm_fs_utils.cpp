@@ -213,4 +213,29 @@ namespace ams::mitm::fs {
         return ResultSuccess();
     }
 
+    Result CreateAndOpenAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, size_t size) {
+        R_TRY(EnsureSdInitialized());
+
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
+        FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), program_id, path);
+
+        /* Unconditionally create. */
+        /* Don't check error, as a failure here should be okay. */
+        FsFile f;
+        fsFsCreateFile(&g_sd_filesystem, fixed_path, size, 0);
+
+        /* Try to open. */
+        R_TRY(fsFsOpenFile(&g_sd_filesystem, fixed_path, OpenMode_ReadWrite, &f));
+        auto file_guard = SCOPE_GUARD { fsFileClose(&f); };
+
+        /* Try to set the size. */
+        R_TRY(fsFileSetSize(&f, static_cast<s64>(size)));
+
+        /* Set output. */
+        file_guard.Cancel();
+        *out = f;
+        return ResultSuccess();
+
+    }
+
 }

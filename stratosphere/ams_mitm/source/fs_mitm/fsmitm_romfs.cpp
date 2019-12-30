@@ -271,9 +271,10 @@ namespace ams::mitm::fs {
             AMS_ASSERT(header.header_size == sizeof(Header));
 
             /* Read tables. */
-            auto tables = std::unique_ptr<u8[]>(new u8[header.dir_table_size + header.file_table_size]);
-            void *dir_table = tables.get();
-            void *file_table = tables.get() + header.dir_table_size;
+            void *tables = std::malloc(header.dir_table_size + header.file_table_size);
+            ON_SCOPE_EXIT { std::free(tables); };
+            void *dir_table  = tables;
+            void *file_table = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(tables) + header.dir_table_size);
             R_ASSERT(storage->Read(header.dir_table_ofs, dir_table, size_t(header.dir_table_size)));
             R_ASSERT(storage->Read(header.file_table_ofs, file_table, size_t(header.file_table_size)));
 
@@ -300,17 +301,13 @@ namespace ams::mitm::fs {
             Header *header = reinterpret_cast<Header *>(std::malloc(sizeof(Header)));
             std::memset(header, 0x00, sizeof(*header));
 
+            /* Open metadata file. */
             const size_t metadata_size = this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size;
-            std::unique_ptr<u8[]> metadata(new u8[metadata_size]);
-            u32 *dir_hash_table = reinterpret_cast<u32 *>(metadata.get());
-            DirectoryEntry *dir_table = reinterpret_cast<DirectoryEntry *>(reinterpret_cast<uintptr_t>(dir_hash_table) + this->dir_hash_table_size);
-            u32 *file_hash_table = reinterpret_cast<u32 *>(reinterpret_cast<uintptr_t>(dir_table) + this->dir_table_size);
-            FileEntry *file_table = reinterpret_cast<FileEntry *>(reinterpret_cast<uintptr_t>(file_hash_table) + this->file_hash_table_size);
+            FsFile metadata_file;
+            R_ASSERT(mitm::fs::CreateAndOpenAtmosphereSdFile(&metadata_file, this->program_id, "romfs_metadata.bin", metadata_size));
 
-            /* Clear hash tables. */
+            /* Ensure later hash tables will have correct defaults. */
             static_assert(EmptyEntry == 0xFFFFFFFF);
-            std::memset(dir_hash_table, 0xFF, this->dir_hash_table_size);
-            std::memset(file_hash_table, 0xFF, this->file_hash_table_size);
 
             /* Emplace metadata source info. */
             out_infos->emplace_back(0, sizeof(*header), DataSourceType::Memory, header);
@@ -374,81 +371,109 @@ namespace ams::mitm::fs {
             }
 
             /* Populate file tables. */
-            for (const auto &it : this->files) {
-                BuildFileContext *cur_file = it.get();
-                FileEntry *cur_entry = GetFileEntry(file_table, cur_file->entry_offset);
+            {
+                void *ft_buf = std::malloc(this->file_table_size);
+                void *fht_buf = std::malloc(this->file_hash_table_size);
+                ON_SCOPE_EXIT { std::free(fht_buf); std::free(ft_buf); };
 
-                /* Set entry fields. */
-                cur_entry->parent = cur_file->parent->entry_offset;
-                cur_entry->sibling = (cur_file->sibling == nullptr) ? EmptyEntry : cur_file->sibling->entry_offset;
-                cur_entry->offset = cur_file->offset;
-                cur_entry->size = cur_file->size;
+                u32 *file_hash_table = reinterpret_cast<u32 *>(fht_buf);
+                FileEntry *file_table = reinterpret_cast<FileEntry *>(ft_buf);
+                std::memset(file_hash_table, 0xFF, this->file_hash_table_size);
 
-                /* Insert into hash table. */
-                const u32 name_size = cur_file->path_len;
-                const size_t hash_ind = CalculatePathHash(cur_entry->parent, cur_file->path.get(), 0, name_size) % num_file_hash_table_entries;
-                cur_entry->hash = file_hash_table[hash_ind];
-                file_hash_table[hash_ind] = cur_file->entry_offset;
+                for (const auto &it : this->files) {
+                    BuildFileContext *cur_file = it.get();
+                    FileEntry *cur_entry = GetFileEntry(file_table, cur_file->entry_offset);
 
-                /* Set name. */
-                cur_entry->name_size = name_size;
-                if (name_size) {
-                    std::memcpy(cur_entry->name, cur_file->path.get(), name_size);
-                    for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
-                        cur_entry->name[i] = 0;
+                    /* Set entry fields. */
+                    cur_entry->parent = cur_file->parent->entry_offset;
+                    cur_entry->sibling = (cur_file->sibling == nullptr) ? EmptyEntry : cur_file->sibling->entry_offset;
+                    cur_entry->offset = cur_file->offset;
+                    cur_entry->size = cur_file->size;
+
+                    /* Insert into hash table. */
+                    const u32 name_size = cur_file->path_len;
+                    const size_t hash_ind = CalculatePathHash(cur_entry->parent, cur_file->path.get(), 0, name_size) % num_file_hash_table_entries;
+                    cur_entry->hash = file_hash_table[hash_ind];
+                    file_hash_table[hash_ind] = cur_file->entry_offset;
+
+                    /* Set name. */
+                    cur_entry->name_size = name_size;
+                    if (name_size) {
+                        std::memcpy(cur_entry->name, cur_file->path.get(), name_size);
+                        for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
+                            cur_entry->name[i] = 0;
+                        }
+                    }
+
+                    /* Emplace a source. */
+                    switch (cur_file->source_type) {
+                        case DataSourceType::Storage:
+                        case DataSourceType::File:
+                            {
+                                /* Try to compact if possible. */
+                                auto &back = out_infos->back();
+                                if (back.source_type == cur_file->source_type) {
+                                    back.size = cur_file->offset + FilePartitionOffset + cur_file->size - back.virtual_offset;
+                                } else {
+                                    out_infos->emplace_back(cur_file->offset + FilePartitionOffset, cur_file->size, cur_file->source_type, cur_file->orig_offset + FilePartitionOffset);
+                                }
+                            }
+                            break;
+                        case DataSourceType::LooseSdFile:
+                            {
+                                char *new_path = new char[cur_file->GetPathLength() + 1];
+                                cur_file->GetPath(new_path);
+                                out_infos->emplace_back(cur_file->offset + FilePartitionOffset, cur_file->size, cur_file->source_type, new_path);
+                            }
+                            break;
+                        AMS_UNREACHABLE_DEFAULT_CASE();
                     }
                 }
 
-                /* Emplace a source. */
-                switch (cur_file->source_type) {
-                    case DataSourceType::Storage:
-                    case DataSourceType::File:
-                        {
-                            /* Try to compact if possible. */
-                            auto &back = out_infos->back();
-                            if (back.source_type == cur_file->source_type) {
-                                back.size = cur_file->offset + FilePartitionOffset + cur_file->size - back.virtual_offset;
-                            } else {
-                                out_infos->emplace_back(cur_file->offset + FilePartitionOffset, cur_file->size, cur_file->source_type, cur_file->orig_offset + FilePartitionOffset);
-                            }
-                        }
-                        break;
-                    case DataSourceType::LooseSdFile:
-                        {
-                            char *new_path = new char[cur_file->GetPathLength() + 1];
-                            cur_file->GetPath(new_path);
-                            out_infos->emplace_back(cur_file->offset + FilePartitionOffset, cur_file->size, cur_file->source_type, new_path);
-                        }
-                        break;
-                    AMS_UNREACHABLE_DEFAULT_CASE();
-                }
+                /* Write to file. */
+                R_ASSERT(fsFileWrite(&metadata_file, this->dir_hash_table_size + this->dir_table_size, file_hash_table, this->file_hash_table_size, FsWriteOption_None));
+                R_ASSERT(fsFileWrite(&metadata_file, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size, file_table, this->file_table_size, FsWriteOption_None));
             }
 
             /* Populate directory tables. */
-            for (const auto &it : this->directories) {
-                BuildDirectoryContext *cur_dir = it.get();
-                DirectoryEntry *cur_entry = GetDirectoryEntry(dir_table, cur_dir->entry_offset);
+            {
+                void *dt_buf = std::malloc(this->dir_table_size);
+                void *dht_buf = std::malloc(this->dir_hash_table_size);
+                ON_SCOPE_EXIT { std::free(dht_buf); std::free(dt_buf); };
 
-                /* Set entry fields. */
-                cur_entry->parent = cur_dir == this->root ? 0 : cur_dir->parent->entry_offset;
-                cur_entry->sibling = (cur_dir->sibling == nullptr) ? EmptyEntry : cur_dir->sibling->entry_offset;
-                cur_entry->child   = (cur_dir->child   == nullptr) ? EmptyEntry : cur_dir->child->entry_offset;
-                cur_entry->file    = (cur_dir->file    == nullptr) ? EmptyEntry : cur_dir->file->entry_offset;
+                u32 *dir_hash_table = reinterpret_cast<u32 *>(dht_buf);
+                DirectoryEntry *dir_table = reinterpret_cast<DirectoryEntry *>(dt_buf);
+                std::memset(dir_hash_table, 0xFF, this->dir_hash_table_size);
 
-                /* Insert into hash table. */
-                const u32 name_size = cur_dir->path_len;
-                const size_t hash_ind = CalculatePathHash(cur_entry->parent, cur_dir->path.get(), 0, name_size) % num_dir_hash_table_entries;
-                cur_entry->hash = dir_hash_table[hash_ind];
-                dir_hash_table[hash_ind] = cur_dir->entry_offset;
+                for (const auto &it : this->directories) {
+                    BuildDirectoryContext *cur_dir = it.get();
+                    DirectoryEntry *cur_entry = GetDirectoryEntry(dir_table, cur_dir->entry_offset);
 
-                /* Set name. */
-                cur_entry->name_size = name_size;
-                if (name_size) {
-                    std::memcpy(cur_entry->name, cur_dir->path.get(), name_size);
-                    for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
-                        cur_entry->name[i] = 0;
+                    /* Set entry fields. */
+                    cur_entry->parent = cur_dir == this->root ? 0 : cur_dir->parent->entry_offset;
+                    cur_entry->sibling = (cur_dir->sibling == nullptr) ? EmptyEntry : cur_dir->sibling->entry_offset;
+                    cur_entry->child   = (cur_dir->child   == nullptr) ? EmptyEntry : cur_dir->child->entry_offset;
+                    cur_entry->file    = (cur_dir->file    == nullptr) ? EmptyEntry : cur_dir->file->entry_offset;
+
+                    /* Insert into hash table. */
+                    const u32 name_size = cur_dir->path_len;
+                    const size_t hash_ind = CalculatePathHash(cur_entry->parent, cur_dir->path.get(), 0, name_size) % num_dir_hash_table_entries;
+                    cur_entry->hash = dir_hash_table[hash_ind];
+                    dir_hash_table[hash_ind] = cur_dir->entry_offset;
+
+                    /* Set name. */
+                    cur_entry->name_size = name_size;
+                    if (name_size) {
+                        std::memcpy(cur_entry->name, cur_dir->path.get(), name_size);
+                        for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
+                            cur_entry->name[i] = 0;
+                        }
                     }
                 }
+
+                /* Write to file. */
+                R_ASSERT(fsFileWrite(&metadata_file, 0, dir_hash_table, this->dir_hash_table_size, FsWriteOption_None));
+                R_ASSERT(fsFileWrite(&metadata_file, this->dir_hash_table_size, dir_table, this->dir_table_size, FsWriteOption_None));
             }
 
             /* Delete maps. */
@@ -470,8 +495,7 @@ namespace ams::mitm::fs {
 
             /* Save metadata to the SD card, to save on memory space. */
             {
-                FsFile metadata_file;
-                R_ASSERT(mitm::fs::SaveAtmosphereSdFile(&metadata_file, this->program_id, "romfs_metadata.bin", metadata.get(), metadata_size));
+                R_ASSERT(fsFileFlush(&metadata_file));
                 out_infos->emplace_back(header->dir_hash_table_ofs, metadata_size, DataSourceType::Metadata, new RemoteFile(metadata_file));
             }
         }
