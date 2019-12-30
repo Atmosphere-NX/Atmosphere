@@ -118,24 +118,41 @@ namespace ams::mitm::fs::romfs {
         BuildDirectoryContext *child;
         BuildDirectoryContext *sibling;
         BuildFileContext *file;
-        u32 cur_path_ofs;
         u32 path_len;
         u32 entry_offset;
 
         struct RootTag{};
 
-        BuildDirectoryContext(RootTag) : parent(nullptr), child(nullptr), sibling(nullptr), file(nullptr), cur_path_ofs(0), path_len(0), entry_offset(0) {
+        BuildDirectoryContext(RootTag) : parent(nullptr), child(nullptr), sibling(nullptr), file(nullptr), path_len(0), entry_offset(0) {
             this->path = std::make_unique<char[]>(1);
         }
 
-        BuildDirectoryContext(const char *parent_path, size_t parent_path_len, const char *entry_name, size_t entry_name_len) : parent(nullptr), child(nullptr), sibling(nullptr), file(nullptr), entry_offset(0) {
-            this->cur_path_ofs = parent_path_len + 1;
-            this->path_len = this->cur_path_ofs + entry_name_len;
+        BuildDirectoryContext(const char *entry_name, size_t entry_name_len) : parent(nullptr), child(nullptr), sibling(nullptr), file(nullptr), entry_offset(0) {
+            this->path_len = entry_name_len;
             this->path = std::unique_ptr<char[]>(new char[this->path_len + 1]);
-            std::memcpy(this->path.get(), parent_path, parent_path_len);
-            this->path[parent_path_len] = '/';
-            std::memcpy(this->path.get() + parent_path_len + 1, entry_name, entry_name_len);
-            this->path[this->path_len] = 0;
+            std::memcpy(this->path.get(), entry_name, entry_name_len);
+            this->path[this->path_len] = '\x00';
+        }
+
+        size_t GetPathLength() const {
+            if (this->parent == nullptr) {
+                return 0;
+            }
+
+            return this->parent->GetPathLength() + 1 + this->path_len;
+        }
+
+        size_t GetPath(char *dst) const {
+            if (this->parent == nullptr) {
+                dst[0] = '\x00';
+                return 0;
+            }
+
+            const size_t parent_len = this->parent->GetPath(dst);
+            dst[parent_len] = '/';
+            std::memcpy(dst + parent_len + 1, this->path.get(), this->path_len);
+            dst[parent_len + 1 + this->path_len] = '\x00';
+            return parent_len + 1 + this->path_len;
         }
     };
 
@@ -149,19 +166,36 @@ namespace ams::mitm::fs::romfs {
         s64 offset;
         s64 size;
         s64 orig_offset;
-        u32 cur_path_ofs;
         u32 path_len;
         u32 entry_offset;
         DataSourceType source_type;
 
-        BuildFileContext(const char *parent_path, size_t parent_path_len, const char *entry_name, size_t entry_name_len, s64 sz, s64 o_o, DataSourceType type) : parent(nullptr), sibling(nullptr), offset(0), size(sz), orig_offset(o_o), entry_offset(0), source_type(type) {
-            this->cur_path_ofs = parent_path_len + 1;
-            this->path_len = this->cur_path_ofs + entry_name_len;
+        BuildFileContext(const char *entry_name, size_t entry_name_len, s64 sz, s64 o_o, DataSourceType type) : parent(nullptr), sibling(nullptr), offset(0), size(sz), orig_offset(o_o), entry_offset(0), source_type(type) {
+            this->path_len = entry_name_len;
             this->path = std::unique_ptr<char[]>(new char[this->path_len + 1]);
-            std::memcpy(this->path.get(), parent_path, parent_path_len);
-            this->path[parent_path_len] = '/';
-            std::memcpy(this->path.get() + parent_path_len + 1, entry_name, entry_name_len);
+            std::memcpy(this->path.get(), entry_name, entry_name_len);
             this->path[this->path_len] = 0;
+        }
+
+        size_t GetPathLength() const {
+            if (this->parent == nullptr) {
+                return 0;
+            }
+
+            return this->parent->GetPathLength() + 1 + this->path_len;
+        }
+
+        size_t GetPath(char *dst) const {
+            if (this->parent == nullptr) {
+                dst[0] = '\x00';
+                return 0;
+            }
+
+            const size_t parent_len = this->parent->GetPath(dst);
+            dst[parent_len] = '/';
+            std::memcpy(dst + parent_len + 1, this->path.get(), this->path_len);
+            dst[parent_len + 1 + this->path_len] = '\x00';
+            return parent_len + 1 + this->path_len;
         }
     };
 
@@ -169,7 +203,8 @@ namespace ams::mitm::fs::romfs {
         NON_COPYABLE(Builder);
         NON_MOVEABLE(Builder);
         private:
-            struct PathCompare {
+            template<typename T>
+            struct Comparator {
                 static constexpr inline int Compare(const char *a, const char *b) {
                     unsigned char c1{}, c2{};
                     while ((c1 = *a++) == (c2 = *b++)) {
@@ -180,18 +215,22 @@ namespace ams::mitm::fs::romfs {
                     return (c1 - c2);
                 }
 
-                constexpr bool operator()(const char *a, const char *b) const {
-                    return PathCompare::Compare(a, b) < 0;
+                constexpr bool operator()(const std::unique_ptr<T> &lhs, const std::unique_ptr<T> &rhs) const {
+                    char lhs_path[ams::fs::EntryNameLengthMax + 1];
+                    char rhs_path[ams::fs::EntryNameLengthMax + 1];
+                    lhs->GetPath(lhs_path);
+                    rhs->GetPath(rhs_path);
+                    return Comparator::Compare(lhs_path, rhs_path) < 0;
                 }
             };
 
             template<typename T>
-            using PathMap = std::map<const char *, std::unique_ptr<T>, PathCompare>;
+            using ContextSet = std::set<std::unique_ptr<T>, Comparator<T>>;
         private:
             ncm::ProgramId program_id;
             BuildDirectoryContext *root;
-            PathMap<BuildDirectoryContext> directories;
-            PathMap<BuildFileContext> files;
+            ContextSet<BuildDirectoryContext> directories;
+            ContextSet<BuildFileContext> files;
             size_t num_dirs;
             size_t num_files;
             size_t dir_table_size;
