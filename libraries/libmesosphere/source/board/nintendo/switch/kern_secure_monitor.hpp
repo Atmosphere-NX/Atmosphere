@@ -36,13 +36,13 @@ namespace ams::kern::smc {
         IsRecoveryBoot              = 7,
         DeviceId                    = 8,
         BootReason                  = 9,
-        MemoryArrange               = 10,
+        MemoryMode                  = 10,
         IsDebugMode                 = 11,
         KernelConfiguration         = 12,
         IsChargerHiZModeEnabled     = 13,
-        IsKiosk                     = 14,
-        NewHardwareType             = 15,
-        NewKeyGeneration            = 16,
+        IsQuest                     = 14,
+        RegulatorType               = 15,
+        DeviceUniqueKeyGeneration   = 16,
         Package2Hash                = 17,
 
         /* Extension config items for exosphere. */
@@ -64,9 +64,14 @@ namespace ams::kern::smc {
     };
 
     /* TODO: Rest of Secure Monitor API. */
-    void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
-    void GenerateRandomBytes(void *dst, size_t size);
     void NORETURN Panic(u32 color);
-    bool ReadWriteRegister(u32 *out, u64 address, u32 mask, u32 value);
+
+    namespace init {
+
+        void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
+        void GenerateRandomBytes(void *dst, size_t size);
+        bool ReadWriteRegister(u32 *out, u64 address, u32 mask, u32 value);
+
+    }
 
 }

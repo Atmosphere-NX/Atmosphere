@@ -20,15 +20,17 @@ namespace ams::kern {
 
     class KSystemControl {
         public:
+            class Init {
+                public:
+                    /* Initialization. */
+                    static KPhysicalAddress GetKernelPhysicalBaseAddress(uintptr_t base_address);
+                    static bool ShouldIncreaseThreadResourceLimit();
 
-            /* Initialization. */
-            static KPhysicalAddress GetKernelPhysicalBaseAddress(uintptr_t base_address);
-            static bool ShouldIncreaseResourceRegionSize();
-
-            /* Randomness. */
-            static void GenerateRandomBytes(void *dst, size_t size);
-            static u64  GenerateRandomRange(u64 min, u64 max);
-
+                    /* Randomness. */
+                    static void GenerateRandomBytes(void *dst, size_t size);
+                    static u64  GenerateRandomRange(u64 min, u64 max);
+            };
+        public:
             /* Panic. */
             static NORETURN void StopSystem();
     };
