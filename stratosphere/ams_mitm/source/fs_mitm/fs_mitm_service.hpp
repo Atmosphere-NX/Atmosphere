@@ -43,6 +43,25 @@ namespace ams::mitm::fs {
                 OpenDataStorageByDataId         = 202,
             };
         public:
+            NX_CONSTEXPR bool ShouldMitmProgramId(const ncm::ProgramId program_id) {
+                /* We want to mitm everything that isn't a system-module. */
+                if (!ncm::IsSystemProgramId(program_id)) {
+                    return true;
+                }
+
+                /* We want to mitm ns, to intercept SD card requests. */
+                if (program_id == ncm::ProgramId::Ns) {
+                    return true;
+                }
+
+                /* We want to mitm sdb, to support sd-romfs redirection of common system archives (like system font, etc). */
+                if (program_id == ncm::ProgramId::Sdb) {
+                    return true;
+                }
+
+                return false;
+            }
+
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
                 static std::atomic_bool has_launched_qlaunch = false;
 
@@ -54,7 +73,7 @@ namespace ams::mitm::fs {
                     has_launched_qlaunch = true;
                 }
 
-                return has_launched_qlaunch || client_info.program_id == ncm::ProgramId::Ns || !ncm::IsSystemProgramId(client_info.program_id);
+                return has_launched_qlaunch || ShouldMitmProgramId(client_info.program_id);
             }
         public:
             SF_MITM_SERVICE_OBJECT_CTOR(FsMitmService) { /* ... */ }
