@@ -187,11 +187,10 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             *p_outvalue = INTERRUPT_ID_USER_SECURITY_ENGINE;
             break;
         case CONFIGITEM_VERSION:
-            /* Always returns maxver - 1 on hardware. */
-            *p_outvalue = PACKAGE2_MAXVER_400_410 - 1;
+            *p_outvalue = fuse_get_expected_fuse_version(exosphere_get_target_firmware());
             break;
         case CONFIGITEM_HARDWARETYPE:
-            *p_outvalue = fuse_get_hardware_type(mkey_get_revision());
+            *p_outvalue = fuse_get_hardware_type(exosphere_get_target_firmware());
             break;
         case CONFIGITEM_ISRETAIL:
             *p_outvalue = fuse_get_retail_type();

@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <string.h>
 
 #include "di.h"
@@ -51,13 +51,13 @@ void display_init()
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
-    
+
     /* Power on. */
     uint8_t val = 0xD0;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_LDO0_CFG, &val, 1);
     val = 0x09;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_GPIO7, &val, 1);
-    
+
     /* Enable MIPI CAL, DSI, DISP1, HOST1X, UART_FST_MIPI_CAL, DSIA LP clocks. */
     car->rst_dev_h_clr = 0x1010000;
     car->clk_enb_h_set = 0x1010000;
@@ -78,31 +78,31 @@ void display_init()
     pinmux->lcd_bl_pwm &= ~PINMUX_TRISTATE;
     pinmux->lcd_bl_en &= ~PINMUX_TRISTATE;
     pinmux->lcd_rst &= ~PINMUX_TRISTATE;
-    
+
     /* Configure Backlight +-5V GPIOs. */
     gpio_configure_mode(GPIO_LCD_BL_P5V, GPIO_MODE_GPIO);
     gpio_configure_mode(GPIO_LCD_BL_N5V, GPIO_MODE_GPIO);
     gpio_configure_direction(GPIO_LCD_BL_P5V, GPIO_DIRECTION_OUTPUT);
     gpio_configure_direction(GPIO_LCD_BL_N5V, GPIO_DIRECTION_OUTPUT);
-        
+
     /* Enable Backlight +5V. */
-    gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_HIGH); 
+    gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_HIGH);
 
     udelay(10000);
 
     /* Enable Backlight -5V. */
-    gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_HIGH); 
+    gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_HIGH);
 
     udelay(10000);
 
     /* Configure Backlight PWM, EN and RST GPIOs. */
     gpio_configure_mode(GPIO_LCD_BL_PWM, GPIO_MODE_GPIO);
     gpio_configure_mode(GPIO_LCD_BL_EN, GPIO_MODE_GPIO);
-    gpio_configure_mode(GPIO_LCD_BL_RST, GPIO_MODE_GPIO);    
+    gpio_configure_mode(GPIO_LCD_BL_RST, GPIO_MODE_GPIO);
     gpio_configure_direction(GPIO_LCD_BL_PWM, GPIO_DIRECTION_OUTPUT);
     gpio_configure_direction(GPIO_LCD_BL_EN, GPIO_DIRECTION_OUTPUT);
     gpio_configure_direction(GPIO_LCD_BL_RST, GPIO_DIRECTION_OUTPUT);
-    
+
     /* Enable Backlight EN. */
     gpio_write(GPIO_LCD_BL_EN, GPIO_LEVEL_HIGH);
 
@@ -114,7 +114,7 @@ void display_init()
     exec_cfg((uint32_t *)DSI_BASE, _display_config_3, 60);
 
     udelay(10000);
-    
+
     /* Enable Backlight RST. */
     gpio_write(GPIO_LCD_BL_RST, GPIO_LEVEL_HIGH);
 
@@ -135,7 +135,7 @@ void display_init()
     udelay(5000);
 
     _display_ver = MAKE_DSI_REG(DSI_RD_DATA);
-    
+
     if (_display_ver == 0x10)
         exec_cfg((uint32_t *)DSI_BASE, _display_config_4, 43);
 
@@ -151,7 +151,7 @@ void display_init()
 
     exec_cfg((uint32_t *)DSI_BASE, _display_config_5, 21);
     exec_cfg((uint32_t *)CAR_BASE, _display_config_6, 3);
-    
+
     MAKE_DI_REG(DC_DISP_DISP_CLOCK_CONTROL) = 4;
     exec_cfg((uint32_t *)DSI_BASE, _display_config_7, 10);
 
@@ -176,10 +176,10 @@ void display_end()
 {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
-    
+
     /* Disable Backlight. */
     display_backlight(false);
-    
+
     MAKE_DSI_REG(DSI_VIDEO_MODE_CONTROL) = 1;
     MAKE_DSI_REG(DSI_WR_DATA) = 0x2805;
 
@@ -198,19 +198,19 @@ void display_end()
     MAKE_DSI_REG(DSI_TRIGGER) = DSI_TRIGGER_HOST;
 
     udelay(50000);
-    
+
     /* Disable Backlight RST. */
-    gpio_write(GPIO_LCD_BL_RST, GPIO_LEVEL_LOW); 
+    gpio_write(GPIO_LCD_BL_RST, GPIO_LEVEL_LOW);
 
     udelay(10000);
-    
+
     /* Disable Backlight -5V. */
-    gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_LOW); 
+    gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_LOW);
 
     udelay(10000);
 
     /* Disable Backlight +5V. */
-    gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_LOW); 
+    gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_LOW);
 
     udelay(10000);
 
@@ -222,10 +222,10 @@ void display_end()
 
     MAKE_DSI_REG(DSI_PAD_CONTROL_0) = (DSI_PAD_CONTROL_VS1_PULLDN_CLK | DSI_PAD_CONTROL_VS1_PULLDN(0xF) | DSI_PAD_CONTROL_VS1_PDIO_CLK | DSI_PAD_CONTROL_VS1_PDIO(0xF));
     MAKE_DSI_REG(DSI_POWER_CONTROL) = 0;
-    
+
     /* Backlight PWM. */
     gpio_configure_mode(GPIO_LCD_BL_PWM, GPIO_MODE_SFIO);
-    
+
     pinmux->lcd_bl_pwm = ((pinmux->lcd_bl_pwm & ~PINMUX_TRISTATE) | PINMUX_TRISTATE);
     pinmux->lcd_bl_pwm = (((pinmux->lcd_bl_pwm >> 2) << 2) | 1);
 }
@@ -257,7 +257,7 @@ uint32_t *display_init_framebuffer(void *address)
 
     uint32_t *lfb_addr = (uint32_t *)address;
     conf[19].val = (uint32_t)address;
-    
+
     /* This configures the framebuffer @ address with a resolution of 1280x720 (line stride 768). */
     exec_cfg((uint32_t *)DI_BASE, conf, 32);
 

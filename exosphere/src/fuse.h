@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_FUSE_H
 #define EXOSPHERE_FUSE_H
 
@@ -218,7 +218,7 @@ uint32_t fuse_get_reserved_odm(uint32_t idx);
 uint32_t fuse_get_bootrom_patch_version(void);
 uint64_t fuse_get_device_id(void);
 uint32_t fuse_get_dram_id(void);
-uint32_t fuse_get_hardware_type(uint32_t mkey_rev);
+uint32_t fuse_get_hardware_type(uint32_t target_firmware);
 uint32_t fuse_get_retail_type(void);
 void fuse_get_hardware_info(void *dst);
 uint32_t fuse_get_5x_key_generation(void);
@@ -227,5 +227,8 @@ bool fuse_has_rcm_bug_patch(void);
 uint32_t fuse_hw_read(uint32_t addr);
 void fuse_hw_write(uint32_t value, uint32_t addr);
 void fuse_hw_sense(void);
+
+
+uint32_t fuse_get_expected_fuse_version(uint32_t target_firmware);
 
 #endif

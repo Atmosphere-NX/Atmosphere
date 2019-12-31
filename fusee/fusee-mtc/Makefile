@@ -29,7 +29,7 @@ TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src src/lib src/display
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include ../../libraries/libvapours/include
 
 #---------------------------------------------------------------------------------
 # options for code generation

@@ -13,8 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <string.h>
+#include <vapours/ams_version.h>
 
 #include "car.h"
 #include "fuse.h"
@@ -36,7 +37,7 @@ void fuse_init(void) {
     clkrst_enable_fuse_regs(true);
     fuse_disable_private_key();
     fuse_disable_programming();
-    
+
     /* TODO: Should we allow this to be done later? */
     if (!g_has_checked_for_rcm_bug_patch) {
         (void)(fuse_has_rcm_bug_patch());
@@ -127,7 +128,7 @@ void fuse_hw_sense(void) {
     ctrl_val &= ~0x3;
     ctrl_val |= 0x3;    /* Set SENSE_CTRL command */
     FUSE_REGS->FUSE_FUSECTRL = ctrl_val;
-    
+
     /* Wait for idle state. */
     fuse_wait_idle();
 }
@@ -173,37 +174,38 @@ uint64_t fuse_get_device_id(void) {
     uint64_t wafer_id = FUSE_CHIP_REGS->FUSE_OPT_WAFER_ID & 0x3F;
     uint32_t lot_code = FUSE_CHIP_REGS->FUSE_OPT_LOT_CODE_0;
     uint64_t fab_code = FUSE_CHIP_REGS->FUSE_OPT_FAB_CODE & 0x3F;
-    
+
     uint64_t derived_lot_code = 0;
     for (unsigned int i = 0; i < 5; i++) {
         derived_lot_code = (derived_lot_code * 0x24) + ((lot_code >> (24 - 6*i)) & 0x3F);
     }
     derived_lot_code &= 0x03FFFFFF;
-    
+
     device_id |= y_coord << 0;
     device_id |= x_coord << 9;
     device_id |= wafer_id << 18;
     device_id |= derived_lot_code << 24;
     device_id |= fab_code << 50;
-    
+
     return device_id;
 }
 
 /* Derive the Hardware Type using values in the shadow cache. */
-uint32_t fuse_get_hardware_type(uint32_t mkey_rev) {
+uint32_t fuse_get_hardware_type(uint32_t target_firmware) {
     uint32_t fuse_reserved_odm4 = fuse_get_reserved_odm(4);
     uint32_t hardware_type = (((fuse_reserved_odm4 >> 7) & 2) | ((fuse_reserved_odm4 >> 2) & 1));
-    
+
     /* Firmware from versions 1.0.0 to 3.0.2. */
-    if (mkey_rev < 0x03) {
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
+        volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
         if (hardware_type >= 1) {
             return (hardware_type > 2) ? 3 : hardware_type - 1;
-        } else if ((FUSE_CHIP_REGS->FUSE_SPARE_BIT[9] & 1) == 0) {
+        } else if ((fuse_chip->FUSE_SPARE_BIT[9] & 1) == 0) {
             return 0;
         } else {
             return 3;
         }
-    } else if ((mkey_rev >= 0x03) && (mkey_rev < 0x07)) {      /* Firmware versions from 4.0.0 to 6.2.0. */
+    } else if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_700) {      /* Firmware versions from 4.0.0 to 6.2.0. */
         static const uint32_t types[] = {0,1,4,3};
         hardware_type |= ((fuse_reserved_odm4 >> 14) & 0x3C);
         hardware_type--;
@@ -256,6 +258,31 @@ uint32_t fuse_get_5x_key_generation(void) {
     } else {
         return 0;
     }
+}
+
+/* Returns the fuse version expected for the firmware. */
+uint32_t fuse_get_expected_fuse_version(uint32_t target_firmware) {
+    static const uint8_t expected_versions[ATMOSPHERE_TARGET_FIRMWARE_COUNT+1] = {
+        [ATMOSPHERE_TARGET_FIRMWARE_100] = 1,
+        [ATMOSPHERE_TARGET_FIRMWARE_200] = 2,
+        [ATMOSPHERE_TARGET_FIRMWARE_300] = 3,
+     /* [ATMOSPHERE_TARGET_FIRMWARE_302] = 4, */
+        [ATMOSPHERE_TARGET_FIRMWARE_400] = 5,
+        [ATMOSPHERE_TARGET_FIRMWARE_500] = 6,
+        [ATMOSPHERE_TARGET_FIRMWARE_600] = 7,
+        [ATMOSPHERE_TARGET_FIRMWARE_620] = 8,
+        [ATMOSPHERE_TARGET_FIRMWARE_700] = 9,
+        [ATMOSPHERE_TARGET_FIRMWARE_800] = 9,
+        [ATMOSPHERE_TARGET_FIRMWARE_810] = 10,
+        [ATMOSPHERE_TARGET_FIRMWARE_900] = 11,
+        [ATMOSPHERE_TARGET_FIRMWARE_910] = 12,
+    };
+
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_COUNT) {
+        generic_panic();
+    }
+
+    return expected_versions[target_firmware];
 }
 
 /* Check for RCM bug patches. */

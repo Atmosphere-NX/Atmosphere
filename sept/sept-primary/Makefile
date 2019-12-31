@@ -29,7 +29,7 @@ TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src src/sdmmc src/lib src/lib/fatfs src/display
 DATA		:=	data
-INCLUDES	:=	include  ../../common/include
+INCLUDES	:=	include  ../../libraries/libvapours/include
 
 #---------------------------------------------------------------------------------
 # options for code generation
