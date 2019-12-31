@@ -278,7 +278,7 @@ uint32_t fuse_get_expected_fuse_version(uint32_t target_firmware) {
         [ATMOSPHERE_TARGET_FIRMWARE_910] = 12,
     };
 
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_COUNT) {
+    if (target_firmware > ATMOSPHERE_TARGET_FIRMWARE_COUNT) {
         generic_panic();
     }
 
