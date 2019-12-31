@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdint.h>
 
 #include "utils.h"
@@ -30,7 +30,7 @@ static inline uint32_t get_special_clk_reg(CarDevice dev) {
         case CARDEVICE_BPMP: return 0;
         default: generic_panic();
     }
-} 
+}
 
 static inline uint32_t get_special_clk_val(CarDevice dev) {
     switch (dev) {
@@ -45,7 +45,7 @@ static inline uint32_t get_special_clk_val(CarDevice dev) {
 }
 
 static uint32_t g_clk_reg_offsets[NUM_CAR_BANKS] = {0x010, 0x014, 0x018, 0x360, 0x364, 0x280, 0x298};
-static uint32_t g_rst_reg_offsets[NUM_CAR_BANKS] = {0x004, 0x008, 0x00C, 0x358, 0x35C, 0x28C, 0x2A4}; 
+static uint32_t g_rst_reg_offsets[NUM_CAR_BANKS] = {0x004, 0x008, 0x00C, 0x358, 0x35C, 0x28C, 0x2A4};
 
 void clk_enable(CarDevice dev) {
     uint32_t special_reg;
@@ -83,5 +83,5 @@ void clkrst_reboot(CarDevice dev) {
 }
 
 void clkrst_enable_fuse_regs(bool enable) {
-    MAKE_CAR_REG(CLK_RST_CONTROLLER_MISC_CLK_ENB_0) = ((MAKE_CAR_REG(CLK_RST_CONTROLLER_MISC_CLK_ENB_0) & 0xEFFFFFFF) | ((enable & 1) << 28));
+    CLK_RST_CONTROLLER_MISC_CLK_ENB_0 = ((CLK_RST_CONTROLLER_MISC_CLK_ENB_0 & 0xEFFFFFFF) | ((enable & 1) << 28));
 }
