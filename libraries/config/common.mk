@@ -1,6 +1,7 @@
 #---------------------------------------------------------------------------------
 .SUFFIXES:
 #---------------------------------------------------------------------------------
+DIR_WILDCARD=$(foreach d,$(wildcard $(1:=/*)),$(if $(wildcard $d/.),$(call DIR_WILDCARD,$d) $d,))
 
 export ATMOSPHERE_CONFIG_MAKE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 export ATMOSPHERE_LIBRARIES_DIR   := $(ATMOSPHERE_CONFIG_MAKE_DIR)/..
@@ -75,16 +76,14 @@ TARGET       := $(notdir $(CURDIR))
 BUILD        := build
 DATA         := data
 INCLUDES     := include
-SOURCES      ?= $(shell find source -type d \
-                  -not \( -path source/arch -prune \)  \
-                  -not \( -path source/board -prune \) \)
+SOURCES      ?= $(foreach sd,$(filter-out source/arch source/board,$(wildcard source/.*)),$(call DIR_WILDCARD,$sd))
 
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_ARCH_DIR)/.*)),)
-SOURCES += $(shell find source/$(ATMOSPHERE_ARCH_DIR)  -type d)
+SOURCES += $(call DIR_WILDCARD,source/$(ATMOSPHERE_ARCH_DIR))
 endif
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_BOARD_DIR)/.*)),)
-SOURCES += $(shell find source/$(ATMOSPHERE_BOARD_DIR) -type d)
+SOURCES += $(call DIR_WILDCARD,source/$(ATMOSPHERE_BOARD_DIR))
 endif
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_OS_DIR)/.*)),)
-SOURCES += $(shell find source/$(ATMOSPHERE_OS_DIR) -type d)
+SOURCES += $(call DIR_WILDCARD,source/$(ATMOSPHERE_OS_DIR))
 endif
