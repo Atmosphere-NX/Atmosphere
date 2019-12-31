@@ -209,6 +209,7 @@ namespace ams::fatal::srv {
         /* Welcome to hell. Here, we try to identify which thread called into fatal. */
         bool found_fatal_caller = false;
         u64 thread_id = 0;
+        u64 thread_tls = 0;
         ThreadContext thread_ctx;
         {
             /* We start by trying to get a list of threads. */
@@ -227,6 +228,7 @@ namespace ams::fatal::srv {
 
                 if (IsThreadFatalCaller(ctx->result, debug_handle.Get(), cur_thread_id, thread_id_to_tls[cur_thread_id], &thread_ctx)) {
                     thread_id = cur_thread_id;
+                    thread_tls = thread_id_to_tls[thread_id];
                     found_fatal_caller = true;
                     break;
                 }
@@ -266,11 +268,21 @@ namespace ams::fatal::srv {
         }
 
         /* Try to read up to 0x100 of stack. */
+        ctx->stack_dump_base = 0;
         for (size_t sz = 0x100; sz > 0; sz -= 0x10) {
             if (R_SUCCEEDED(svcReadDebugProcessMemory(ctx->stack_dump, debug_handle.Get(), thread_ctx.sp, sz))) {
+                ctx->stack_dump_base = thread_ctx.sp;
                 ctx->stack_dump_size = sz;
                 break;
             }
+        }
+
+        /* Try to read the first 0x100 of TLS. */
+        if (R_SUCCEEDED(svcReadDebugProcessMemory(ctx->tls_dump, debug_handle.Get(), thread_tls, sizeof(ctx->tls_dump)))) {
+            ctx->tls_address = thread_tls;
+        } else {
+            ctx->tls_address = 0;
+            std::memset(ctx->tls_dump, 0xCC, sizeof(ctx->tls_dump));
         }
 
         /* Parse the base address. */

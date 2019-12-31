@@ -327,7 +327,10 @@ namespace ams::fatal {
             Event erpt_event;
             Event battery_event;
             size_t stack_dump_size;
+            u64 stack_dump_base;
             u8 stack_dump[0x100];
+            u64 tls_address;
+            u8 tls_dump[0x100];
 
             void ClearState() {
                 this->result = ResultSuccess();
@@ -339,7 +342,10 @@ namespace ams::fatal {
                 std::memset(&this->erpt_event, 0, sizeof(this->erpt_event));
                 std::memset(&this->battery_event, 0, sizeof(this->battery_event));
                 this->stack_dump_size = 0;
+                this->stack_dump_base = 0;
                 std::memset(this->stack_dump, 0, sizeof(this->stack_dump));
+                this->tls_address = 0;
+                std::memset(this->tls_dump, 0, sizeof(this->tls_dump));
             }
         };
 
