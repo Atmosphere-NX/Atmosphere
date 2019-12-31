@@ -25,33 +25,32 @@ namespace ams::kern {
         constexpr size_t SixGigabytes   = 0x180000000ul;
         constexpr size_t EightGigabytes = 0x200000000ul;
 
-        size_t GetRealMemorySize() {
+        ALWAYS_INLINE size_t GetRealMemorySizeForInit() {
             /* TODO: Move this into a header for the MC in general. */
             constexpr u32 MemoryControllerConfigurationRegister = 0x70019050;
             u32 config_value;
-            MESOSPHERE_ABORT_UNLESS(smc::ReadWriteRegister(&config_value, MemoryControllerConfigurationRegister, 0, 0));
+            MESOSPHERE_ABORT_UNLESS(smc::init::ReadWriteRegister(&config_value, MemoryControllerConfigurationRegister, 0, 0));
             return static_cast<size_t>(config_value & 0x3FFF) << 20;
         }
 
-        inline u64 GetKernelConfiguration() {
+        ALWAYS_INLINE u64 GetKernelConfigurationForInit() {
             u64 value = 0;
-            smc::GetConfig(&value, 1, smc::ConfigItem::KernelConfiguration);
+            smc::init::GetConfig(&value, 1, smc::ConfigItem::KernelConfiguration);
             return value;
         }
 
-        inline u64 GenerateRandomU64() {
+        ALWAYS_INLINE u64 GenerateRandomU64ForInit() {
             u64 value;
-            smc::GenerateRandomBytes(&value, sizeof(value));
+            smc::init::GenerateRandomBytes(&value, sizeof(value));
             return value;
         }
 
-        inline smc::MemoryMode GetMemoryMode() {
-            return static_cast<smc::MemoryMode>((GetKernelConfiguration() >> 10) & 0x3);
+        ALWAYS_INLINE smc::MemoryMode GetMemoryModeForInit() {
+            return static_cast<smc::MemoryMode>((GetKernelConfigurationForInit() >> 10) & 0x3);
         }
 
-        size_t GetIntendedMemorySize() {
-            const smc::MemoryMode memory_mode = GetMemoryMode();
-            switch (memory_mode) {
+        ALWAYS_INLINE size_t GetIntendedMemorySizeForInit() {
+            switch (GetMemoryModeForInit()) {
                 case smc::MemoryMode_4GB:
                 default: /* All invalid modes should go to 4GB. */
                     return FourGigabytes;
@@ -65,9 +64,9 @@ namespace ams::kern {
     }
 
     /* Initialization. */
-    KPhysicalAddress KSystemControl::GetKernelPhysicalBaseAddress(uintptr_t base_address) {
-        const size_t real_dram_size     = GetRealMemorySize();
-        const size_t intended_dram_size = GetIntendedMemorySize();
+    KPhysicalAddress KSystemControl::Init::GetKernelPhysicalBaseAddress(uintptr_t base_address) {
+        const size_t real_dram_size     = GetRealMemorySizeForInit();
+        const size_t intended_dram_size = GetIntendedMemorySizeForInit();
         if (intended_dram_size * 2 < real_dram_size) {
             return base_address;
         } else {
@@ -75,21 +74,21 @@ namespace ams::kern {
         }
     }
 
-    bool KSystemControl::ShouldIncreaseResourceRegionSize() {
-        return (GetKernelConfiguration() >> 3) & 1;
+    bool KSystemControl::Init::ShouldIncreaseThreadResourceLimit() {
+        return (GetKernelConfigurationForInit() >> 3) & 1;
     }
 
-    /* Randomness. */
-    void KSystemControl::GenerateRandomBytes(void *dst, size_t size) {
+    /* Randomness for Initialization. */
+    void KSystemControl::Init::GenerateRandomBytes(void *dst, size_t size) {
         MESOSPHERE_ABORT_UNLESS(size <= 0x38);
-        smc::GenerateRandomBytes(dst, size);
+        smc::init::GenerateRandomBytes(dst, size);
     }
 
-    u64 KSystemControl::GenerateRandomRange(u64 min, u64 max) {
+    u64 KSystemControl::Init::GenerateRandomRange(u64 min, u64 max) {
         const u64 range_size    = ((max + 1) - min);
         const u64 effective_max = (std::numeric_limits<u64>::max() / range_size) * range_size;
         while (true) {
-            if (const u64 rnd = GenerateRandomU64(); rnd < effective_max) {
+            if (const u64 rnd = GenerateRandomU64ForInit(); rnd < effective_max) {
                 return min + (rnd % range_size);
             }
         }

@@ -66,7 +66,7 @@ namespace ams::kern::init::loader {
 
         void RelocateKernelPhysically(uintptr_t &base_address, KernelLayout *&layout) {
             /* TODO: Proper secure monitor call. */
-            KPhysicalAddress correct_base = KSystemControl::GetKernelPhysicalBaseAddress(base_address);
+            KPhysicalAddress correct_base = KSystemControl::Init::GetKernelPhysicalBaseAddress(base_address);
             if (correct_base != base_address) {
                 const uintptr_t diff = GetInteger(correct_base) - base_address;
                 const size_t size = layout->rw_end_offset;
@@ -218,7 +218,7 @@ namespace ams::kern::init::loader {
 
             /* Repeatedly generate a random virtual address until we get one that's unmapped in the destination page table. */
             while (true) {
-                const KVirtualAddress random_kaslr_slide  = KSystemControl::GenerateRandomRange(KernelBaseRangeMin, KernelBaseRangeEnd);
+                const KVirtualAddress random_kaslr_slide  = KSystemControl::Init::GenerateRandomRange(KernelBaseRangeMin, KernelBaseRangeEnd);
                 const KVirtualAddress kernel_region_start = util::AlignDown(GetInteger(random_kaslr_slide), KernelBaseAlignment);
                 const KVirtualAddress kernel_region_end   = util::AlignUp(GetInteger(kernel_region_start) + kernel_offset + kernel_size, KernelBaseAlignment);
                 const size_t          kernel_region_size  = GetInteger(kernel_region_end) - GetInteger(kernel_region_start);
@@ -275,7 +275,7 @@ namespace ams::kern::init::loader {
         const uintptr_t init_array_end_offset = layout->init_array_end_offset;
 
         /* Decide if Kernel should have enlarged resource region. */
-        const bool use_extra_resources = KSystemControl::ShouldIncreaseResourceRegionSize();
+        const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
         const size_t resource_region_size = KernelResourceRegionSize + (use_extra_resources ? ExtraKernelResourceSize : 0);
 
         /* Setup the INI1 header in memory for the kernel. */
