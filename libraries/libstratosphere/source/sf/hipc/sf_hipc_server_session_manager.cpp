@@ -277,7 +277,8 @@ namespace ams::sf::hipc {
         /* Note: Nintendo does not validate this size before subtracting 0x10 from it. This is not exploitable. */
         R_UNLESS(in_raw_size >= 0x10, sf::hipc::ResultInvalidRequestSize());
         R_UNLESS(in_raw_addr + in_raw_size <= in_message_buffer_end, sf::hipc::ResultInvalidRequestSize());
-        const uintptr_t recv_list_end = reinterpret_cast<uintptr_t>(dispatch_ctx.request.data.recv_list + dispatch_ctx.request.meta.num_recv_statics);
+        const size_t recv_list_size = dispatch_ctx.request.meta.num_recv_statics == HIPC_AUTO_RECV_STATIC ? 1 : dispatch_ctx.request.meta.num_recv_statics;
+        const uintptr_t recv_list_end = reinterpret_cast<uintptr_t>(dispatch_ctx.request.data.recv_list + recv_list_size);
         R_UNLESS(recv_list_end <= in_message_buffer_end, sf::hipc::ResultInvalidRequestSize());
 
         /* CMIF has 0x10 of padding in raw data, and requires 0x10 alignment. */
