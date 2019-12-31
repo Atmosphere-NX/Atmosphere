@@ -19,7 +19,7 @@ export DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_STRATOSPHERE
 export SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2
 export CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 export CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS)
-export ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)
+export ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES)
 
 export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
 			-Wl,--wrap,__cxa_throw \

@@ -76,7 +76,7 @@ TARGET       := $(notdir $(CURDIR))
 BUILD        := build
 DATA         := data
 INCLUDES     := include
-SOURCES      ?= $(foreach sd,$(filter-out source/arch source/board,$(wildcard source/.*)),$(call DIR_WILDCARD,$sd))
+SOURCES      ?= $(foreach d,$(filter-out source/arch source/board,$(wildcard source)),$(call DIR_WILDCARD,$d) $d)
 
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_ARCH_DIR)/.*)),)
 SOURCES += $(call DIR_WILDCARD,source/$(ATMOSPHERE_ARCH_DIR))
