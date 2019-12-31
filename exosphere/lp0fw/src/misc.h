@@ -26,17 +26,14 @@
 #define MAKE_MISC_REG(n) MAKE_REG32(MISC_BASE + n)
 
 #define APB_MISC_PP_CONFIG_CTL_0 MAKE_MISC_REG(0x024)
-
 #define APB_MISC_GP_ASDBGREG_0 MAKE_MISC_REG(0x810)
 
 #define PINMUX_AUX_PWR_I2C_SCL_0 MAKE_MISC_REG(0x30DC)
 #define PINMUX_AUX_PWR_I2C_SDA_0 MAKE_MISC_REG(0x30E0)
 #define PINMUX_AUX_DVFS_PWM_0    MAKE_MISC_REG(0x3184)
-
 #define PINMUX_AUX_GPIO_PA6_0 MAKE_MISC_REG(0x3244)
 
 void misc_configure_device_dbg_settings(void);
-
 void misc_restore_ram_svop(void);
 
 #endif

@@ -46,7 +46,7 @@ void secmon_restore_to_tzram(const uint32_t target_firmware) {
     }
 
     /* Make security engine require secure busmaster. */
-    se_get_regs()->_0x4 = 0;
+    se_get_regs()->SE_TZRAM_SECURITY = 0;
 
     /* TODO: se_verify_keys_unreadable(); */
 

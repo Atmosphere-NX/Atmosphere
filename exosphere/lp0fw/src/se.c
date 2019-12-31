@@ -36,20 +36,20 @@ static void __attribute__((__noinline__)) ll_init(volatile se_ll_t *ll, void *bu
 }
 
 void se_check_error_status_reg(void) {
-    if (se_get_regs()->ERR_STATUS_REG) {
+    if (se_get_regs()->SE_ERR_STATUS) {
         reboot();
     }
 }
 
 void se_check_for_error(void) {
     volatile tegra_se_t *se = se_get_regs();
-    if (se->INT_STATUS_REG & 0x10000 || se->FLAGS_REG & 3 || se->ERR_STATUS_REG) {
+    if (se->SE_INT_STATUS & 0x10000 || se->SE_STATUS & 3 || se->SE_ERR_STATUS) {
         reboot();
     }
 }
 
 void se_verify_flags_cleared(void) {
-    if (se_get_regs()->FLAGS_REG & 3) {
+    if (se_get_regs()->SE_STATUS & 3) {
         reboot();
     }
 }
@@ -63,8 +63,8 @@ void clear_aes_keyslot(unsigned int keyslot) {
 
     /* Zero out the whole keyslot and IV. */
     for (unsigned int i = 0; i < 0x10; i++) {
-        se->AES_KEYTABLE_ADDR = (keyslot << 4) | i;
-        se->AES_KEYTABLE_DATA = 0;
+        se->SE_CRYPTO_KEYTABLE_ADDR = (keyslot << 4) | i;
+        se->SE_CRYPTO_KEYTABLE_DATA = 0;
     }
 }
 
@@ -78,13 +78,13 @@ void clear_rsa_keyslot(unsigned int keyslot) {
     /* Zero out the whole keyslot. */
     for (unsigned int i = 0; i < 0x40; i++) {
         /* Select Keyslot Modulus[i] */
-        se->RSA_KEYTABLE_ADDR = (keyslot << 7) | i | 0x40;
-        se->RSA_KEYTABLE_DATA = 0;
+        se->SE_RSA_KEYTABLE_ADDR = (keyslot << 7) | i | 0x40;
+        se->SE_RSA_KEYTABLE_DATA = 0;
     }
     for (unsigned int i = 0; i < 0x40; i++) {
         /* Select Keyslot Expontent[i] */
-        se->RSA_KEYTABLE_ADDR = (keyslot << 7) | i;
-        se->RSA_KEYTABLE_DATA = 0;
+        se->SE_RSA_KEYTABLE_ADDR = (keyslot << 7) | i;
+        se->SE_RSA_KEYTABLE_DATA = 0;
     }
 }
 
@@ -96,8 +96,8 @@ void clear_aes_keyslot_iv(unsigned int keyslot) {
     }
 
     for (size_t i = 0; i < (0x10 >> 2); i++) {
-        se->AES_KEYTABLE_ADDR = (keyslot << 4) | 8 | i;
-        se->AES_KEYTABLE_DATA = 0;
+        se->SE_CRYPTO_KEYTABLE_ADDR = (keyslot << 4) | 8 | i;
+        se->SE_CRYPTO_KEYTABLE_DATA = 0;
     }
 }
 
@@ -111,15 +111,15 @@ void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const v
     ll_init(&out_ll, dst, dst_size);
 
     /* Set the LLs. */
-    se->IN_LL_ADDR_REG = (uint32_t)(&in_ll);
-    se->OUT_LL_ADDR_REG = (uint32_t) (&out_ll);
+    se->SE_IN_LL_ADDR = (uint32_t)(&in_ll);
+    se->SE_OUT_LL_ADDR = (uint32_t) (&out_ll);
 
     /* Set registers for operation. */
-    se->ERR_STATUS_REG = se->ERR_STATUS_REG;
-    se->INT_STATUS_REG = se->INT_STATUS_REG;
-    se->OPERATION_REG = op;
+    se->SE_ERR_STATUS = se->SE_ERR_STATUS;
+    se->SE_INT_STATUS = se->SE_INT_STATUS;
+    se->SE_OPERATION = op;
 
-    while (!(se->INT_STATUS_REG & 0x10)) { /* Wait a while */ }
+    while (!(se->SE_INT_STATUS & 0x10)) { /* Wait a while */ }
     se_check_for_error();
 }
 
@@ -137,7 +137,7 @@ void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src,
     }
 
     /* Trigger AES operation. */
-    se_get_regs()->BLOCK_COUNT_REG = 0;
+    se_get_regs()->SE_CRYPTO_LAST_BLOCK = 0;
     trigger_se_blocking_op(OP_START, block, sizeof(block), block, sizeof(block));
 
     /* Copy output data into dst. */
@@ -154,8 +154,8 @@ void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, 
     }
 
     /* Set configuration high (256-bit vs 128-bit) based on parameter. */
-    se->CONFIG_REG = (ALG_AES_ENC | DST_MEMORY) | (config_high << 16);
-    se->CRYPTO_REG = keyslot << 24 | 0x100;
+    se->SE_CONFIG = (ALG_AES_ENC | DST_MEMORY) | (config_high << 16);
+    se->SE_CRYPTO_CONFIG = keyslot << 24 | 0x100;
     se_perform_aes_block_operation(dst, 0x10, src, 0x10);
 }
 
@@ -166,8 +166,8 @@ void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, 
         reboot();
     }
 
-    se->CONFIG_REG = (ALG_AES_DEC | DST_MEMORY);
-    se->CRYPTO_REG = keyslot << 24;
+    se->SE_CONFIG = (ALG_AES_DEC | DST_MEMORY);
+    se->SE_CRYPTO_CONFIG = keyslot << 24;
     se_perform_aes_block_operation(dst, 0x10, src, 0x10);
 }
 
@@ -198,16 +198,16 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
         shift_left_xor_rb(derived_key);
     }
 
-    se->CONFIG_REG = (ALG_AES_ENC | DST_HASHREG) | (config_high << 16);
-    se->CRYPTO_REG = (keyslot << 24) | (0x145);
+    se->SE_CONFIG = (ALG_AES_ENC | DST_HASHREG) | (config_high << 16);
+    se->SE_CRYPTO_CONFIG = (keyslot << 24) | (0x145);
     clear_aes_keyslot_iv(keyslot);
 
     unsigned int num_blocks = (data_size + 0xF) >> 4;
     /* Handle aligned blocks. */
     if (num_blocks > 1) {
-        se->BLOCK_COUNT_REG = num_blocks - 2;
+        se->SE_CRYPTO_LAST_BLOCK = num_blocks - 2;
         trigger_se_blocking_op(OP_START, NULL, 0, data, data_size);
-        se->CRYPTO_REG |= 0x80;
+        se->SE_CRYPTO_CONFIG |= 0x80;
     }
 
     /* Create final block. */
@@ -224,12 +224,12 @@ void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, con
     }
 
     /* Perform last operation. */
-    se->BLOCK_COUNT_REG = 0;
+    se->SE_CRYPTO_LAST_BLOCK = 0;
     trigger_se_blocking_op(OP_START, NULL, 0, last_block, sizeof(last_block));
 
     /* Copy output CMAC. */
     for (unsigned int i = 0; i < (cmac_size >> 2); i++) {
-        ((uint32_t *)cmac)[i] = ((volatile uint32_t *)se->HASH_RESULT_REG)[i];
+        ((uint32_t *)cmac)[i] = ((volatile uint32_t *)se->SE_HASH_RESULT)[i];
     }
 }
 
@@ -244,9 +244,9 @@ void se_aes_256_cbc_decrypt(unsigned int keyslot, void *dst, size_t dst_size, co
         reboot();
     }
 
-    se->CONFIG_REG = (ALG_AES_DEC | DST_MEMORY) | (0x202 << 16);
-    se->CRYPTO_REG = (keyslot << 24) | 0x66;
+    se->SE_CONFIG = (ALG_AES_DEC | DST_MEMORY) | (0x202 << 16);
+    se->SE_CRYPTO_CONFIG = (keyslot << 24) | 0x66;
     clear_aes_keyslot_iv(keyslot);
-    se->BLOCK_COUNT_REG = (src_size >> 4) - 1;
+    se->SE_CRYPTO_LAST_BLOCK = (src_size >> 4) - 1;
     trigger_se_blocking_op(OP_START, dst, dst_size, src, src_size);
 }

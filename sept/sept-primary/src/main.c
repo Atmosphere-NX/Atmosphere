@@ -94,10 +94,10 @@ static void mbist_workaround(void)
 static int tsec_dma_wait_idle()
 {
     volatile tegra_tsec_t *tsec = tsec_get_regs();    
-    uint32_t timeout = (get_time_us() + 10000000);
+    uint32_t timeout = (get_time_ms() + 10000);
 
-    while (!(tsec->FALCON_DMATRFCMD & 2))
-        if (get_time_us() > timeout)
+    while (!(tsec->TSEC_FALCON_DMATRFCMD & 2))
+        if (get_time_ms() > timeout)
             return 0;
 
     return 1;
@@ -113,11 +113,27 @@ static int tsec_dma_phys_to_flcn(bool is_imem, uint32_t flcn_offset, uint32_t ph
     else
         cmd = 0x10;
 
-    tsec->FALCON_DMATRFMOFFS = flcn_offset;
-    tsec->FALCON_DMATRFFBOFFS = phys_offset;
-    tsec->FALCON_DMATRFCMD = cmd;
+    tsec->TSEC_FALCON_DMATRFMOFFS = flcn_offset;
+    tsec->TSEC_FALCON_DMATRFFBOFFS = phys_offset;
+    tsec->TSEC_FALCON_DMATRFCMD = cmd;
 
     return tsec_dma_wait_idle();
+}
+
+static int tsec_kfuse_wait_ready()
+{  
+    uint32_t timeout = (get_time_ms() + 10000);
+    
+    /* Wait for STATE_DONE. */
+    while (!(KFUSE_STATE & 0x10000))
+        if (get_time_ms() > timeout)
+            return 0;
+    
+    /* Check for STATE_CRCPASS. */
+    if (!(KFUSE_STATE & 0x20000))
+        return 0;
+
+    return 1;
 }
 
 int load_tsec_fw(void) {
@@ -134,12 +150,27 @@ int load_tsec_fw(void) {
     clkrst_reboot(CARDEVICE_SOR1);
     clkrst_reboot(CARDEVICE_KFUSE);
     
+    /* Make sure KFUSE is ready. */
+    if (!tsec_kfuse_wait_ready())
+    {
+        /* Disable clocks. */
+        clkrst_disable(CARDEVICE_KFUSE);
+        clkrst_disable(CARDEVICE_SOR1);
+        clkrst_disable(CARDEVICE_SOR0);
+        clkrst_disable(CARDEVICE_SOR_SAFE);
+        clkrst_disable(CARDEVICE_TSEC);
+        clkrst_disable(CARDEVICE_HOST1X);
+    
+        return -1;
+    }
+    
     /* Configure Falcon. */
-    tsec->FALCON_DMACTL = 0;
-    tsec->FALCON_IRQMSET = 0xFFF2;
-    tsec->FALCON_IRQDEST = 0xFFF0;
-    tsec->FALCON_ITFEN = 3;
-        
+    tsec->TSEC_FALCON_DMACTL = 0;
+    tsec->TSEC_FALCON_IRQMSET = 0xFFF2;
+    tsec->TSEC_FALCON_IRQDEST = 0xFFF0;
+    tsec->TSEC_FALCON_ITFEN = 3;
+    
+    /* Make sure the DMA block is idle. */
     if (!tsec_dma_wait_idle())
     {
         /* Disable clocks. */
@@ -150,11 +181,11 @@ int load_tsec_fw(void) {
         clkrst_disable(CARDEVICE_TSEC);
         clkrst_disable(CARDEVICE_HOST1X);
             
-        return -1;
+        return -2;
     }
 	    
     /* Load firmware. */
-    tsec->FALCON_DMATRFBASE = (uint32_t)tsec_fw >> 8;
+    tsec->TSEC_FALCON_DMATRFBASE = (uint32_t)tsec_fw >> 8;
     for (uint32_t addr = 0; addr < tsec_fw_length; addr += 0x100)
     {
         if (!tsec_dma_phys_to_flcn(true, addr, addr))
@@ -167,25 +198,23 @@ int load_tsec_fw(void) {
             clkrst_disable(CARDEVICE_TSEC);
             clkrst_disable(CARDEVICE_HOST1X);
         
-            return -2;
+            return -3;
         }
     }
     
-    /* Unknown host1x write. */
+    /* Write magic value to HOST1X scratch register. */
     MAKE_HOST1X_REG(0x3300) = 0x34C2E1DA;
     
-    
     /* Execute firmware. */
-    tsec->FALCON_SCRATCH1 = 0;
-    tsec->FALCON_SCRATCH0 = 1;
-    tsec->FALCON_BOOTVEC = 0;
-    tsec->FALCON_CPUCTL = 2;
+    tsec->TSEC_FALCON_MAILBOX1 = 0;
+    tsec->TSEC_FALCON_MAILBOX0 = 1;
+    tsec->TSEC_FALCON_BOOTVEC = 0;
+    tsec->TSEC_FALCON_CPUCTL = 2;
         
     while (true) {
         /* Yield to Nintendo's TSEC firmware. */
     }
 }
-
 
 int main(void) {    
     /* Setup vectors */

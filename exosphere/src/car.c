@@ -67,7 +67,6 @@ void rst_disable(CarDevice dev) {
     MAKE_CAR_REG(g_rst_reg_offsets[dev >> 5]) &= ~(BIT(dev & 0x1F));
 }
 
-
 void clkrst_enable(CarDevice dev) {
     clk_enable(dev);
     rst_disable(dev);
@@ -81,4 +80,8 @@ void clkrst_disable(CarDevice dev) {
 void clkrst_reboot(CarDevice dev) {
     clkrst_disable(dev);
     clkrst_enable(dev);
+}
+
+void clkrst_enable_fuse_regs(bool enable) {
+    MAKE_CAR_REG(CLK_RST_CONTROLLER_MISC_CLK_ENB_0) = ((MAKE_CAR_REG(CLK_RST_CONTROLLER_MISC_CLK_ENB_0) & 0xEFFFFFFF) | ((enable & 1) << 28));
 }

@@ -103,7 +103,8 @@ void rst_disable(CarDevice dev);
 
 void clkrst_enable(CarDevice dev);
 void clkrst_disable(CarDevice dev);
-
 void clkrst_reboot(CarDevice dev);
+
+void clkrst_enable_fuse_regs(bool enable);
 
 #endif

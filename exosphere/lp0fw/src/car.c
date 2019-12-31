@@ -132,3 +132,7 @@ void clkrst_reboot(CarDevice dev) {
     clkrst_disable(dev);
     clkrst_enable(dev);
 }
+
+void clkrst_enable_fuse_regs(bool enable) {
+    MAKE_CAR_REG(CLK_RST_CONTROLLER_MISC_CLK_ENB_0) = ((MAKE_CAR_REG(CLK_RST_CONTROLLER_MISC_CLK_ENB_0) & 0xEFFFFFFF) | ((enable & 1) << 28));
+}

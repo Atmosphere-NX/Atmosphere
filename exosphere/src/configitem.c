@@ -191,7 +191,7 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             *p_outvalue = PACKAGE2_MAXVER_400_410 - 1;
             break;
         case CONFIGITEM_HARDWARETYPE:
-            *p_outvalue = fuse_get_hardware_type();
+            *p_outvalue = fuse_get_hardware_type(mkey_get_revision());
             break;
         case CONFIGITEM_ISRETAIL:
             *p_outvalue = fuse_get_retail_type();

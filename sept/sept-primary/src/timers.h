@@ -47,6 +47,14 @@ typedef struct {
 
 void wait(uint32_t microseconds);
 
+static inline uint32_t get_time_s(void) {
+    return RTC_SECONDS;
+}
+
+static inline uint32_t get_time_ms(void) {
+    return (RTC_MILLI_SECONDS | (RTC_SHADOW_SECONDS << 10));
+}
+
 static inline uint32_t get_time_us(void) {
     return TIMERUS_CNTR_1US_0;
 }
@@ -71,6 +79,21 @@ static inline uint32_t get_time_since(uint32_t base) {
 static inline void udelay(uint32_t usecs) {
     uint32_t start = get_time_us();
     while (get_time_us() - start < usecs);
+}
+
+/**
+ * Delays until a number of usecs have passed since an absolute start time.
+ */
+static inline void udelay_absolute(uint32_t start, uint32_t usecs) {
+    while (get_time_us() - start < usecs);
+}
+
+/**
+ * Delays for a given number of milliseconds.
+ */
+static inline void mdelay(uint32_t msecs) {
+    uint32_t start = get_time_ms();
+    while (get_time_ms() - start < msecs);
 }
 
 __attribute__ ((noreturn)) void watchdog_reboot(void);

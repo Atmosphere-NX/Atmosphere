@@ -106,15 +106,15 @@ static void setup_se(void) {
 
     /* Perform some sanity initialization. */
     volatile tegra_se_t *se = se_get_regs();
-    se->_0x0 &= 0xFFFEFFFF; /* Clear bit 16. */
-    (void)(se->FLAGS_REG);
+    se->SE_SE_SECURITY &= 0xFFFEFFFF; /* Clear bit 16. */
+    (void)(se->SE_STATUS);
     __dsb_sy();
 
     /* NOTE: On 8.1.0+, Nintendo does not make keyslots 0-5 unreadable. */
-    se->_0x4 = 0;
-    se->AES_KEY_READ_DISABLE_REG = 0;
-    se->RSA_KEY_READ_DISABLE_REG = 0;
-    se->_0x0 &= 0xFFFFFFFB;
+    se->SE_TZRAM_SECURITY = 0;
+    se->SE_CRYPTO_SECURITY_PERKEY = 0;
+    se->SE_RSA_SECURITY_PERKEY = 0;
+    se->SE_SE_SECURITY &= 0xFFFFFFFB;
 
     /* Currently unknown what each flag does. */
     for (unsigned int i = 0; i < KEYSLOT_AES_MAX; i++) {

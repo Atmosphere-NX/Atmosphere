@@ -56,10 +56,10 @@ void nxboot_finish(uint32_t boot_memaddr) {
         set_rsa_keyslot_flags(i, 1);
     
     /* Lock the Security Engine. */
-    se->_0x4 = 0;
-    se->AES_KEY_READ_DISABLE_REG = 0;
-    se->RSA_KEY_READ_DISABLE_REG = 0;
-    se->_0x0 &= 0xFFFFFFFB;
+    se->SE_TZRAM_SECURITY = 0;
+    se->SE_CRYPTO_SECURITY_PERKEY = 0;
+    se->SE_RSA_SECURITY_PERKEY = 0;
+    se->SE_SE_SECURITY &= 0xFFFFFFFB;
     
     /* Boot up Exosphère. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE(target_firmware) = 0;

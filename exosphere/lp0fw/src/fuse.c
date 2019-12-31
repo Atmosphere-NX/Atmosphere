@@ -29,7 +29,7 @@ bool fuse_check_downgrade_status(void) {
 }
 
 void fuse_disable_programming(void) {
-    FUSE_REGS->FUSE_DIS_PGM = 1;
+    FUSE_REGS->FUSE_DISABLEREGPROGRAM = 1;
 }
 
 static fuse_bypass_data_t g_fuse_bypass_entries[NUM_FUSE_BYPASS_ENTRIES] = {
@@ -37,13 +37,14 @@ static fuse_bypass_data_t g_fuse_bypass_entries[NUM_FUSE_BYPASS_ENTRIES] = {
 };
 
 void fuse_configure_fuse_bypass(void) {
-    /* Enable fuses in CAR? This seems to affect fuse data visibility. */
-    CLK_RST_CONTROLLER_MISC_CLK_ENB_0 |= 0x10000000;
+    /* Make all fuse registers visible. */
+    clkrst_enable_fuse_regs(true);
     
-    /* Configure bypass/override, only if programming is allowed.  */
-    if (!(FUSE_REGS->FUSE_DIS_PGM & 1)) {
-        /* Enable write access. */
-        FUSE_REGS->FUSE_WRITE_ACCESS = (FUSE_REGS->FUSE_WRITE_ACCESS & ~0x1) | 0x10000;
+    /* Configure bypass/override, only if programming is allowed. */
+    if (!(FUSE_REGS->FUSE_DISABLEREGPROGRAM & 1)) {
+        /* Enable write access and flush status. */
+        FUSE_REGS->FUSE_WRITE_ACCESS_SW = (FUSE_REGS->FUSE_WRITE_ACCESS_SW & ~0x1) | 0x10000;
+        
         /* Enable fuse bypass config. */
         FUSE_REGS->FUSE_FUSEBYPASS = 1;
         
@@ -53,7 +54,7 @@ void fuse_configure_fuse_bypass(void) {
         }
         
         /* Disable fuse write access. */
-        FUSE_REGS->FUSE_WRITE_ACCESS |= 1;
+        FUSE_REGS->FUSE_WRITE_ACCESS_SW |= 1;
         
         /* Enable fuse bypass config. */
         /* I think this is a bug, and Nintendo meant to write 0 here? */
@@ -63,7 +64,7 @@ void fuse_configure_fuse_bypass(void) {
         /* I have no idea why this happens. What? */
         /* This is probably also either a bug or does nothing. */
         /* Is this bit even clearable? */
-        FUSE_REGS->FUSE_DIS_PGM &= 0xFFFFFFFE;
+        FUSE_REGS->FUSE_DISABLEREGPROGRAM &= 0xFFFFFFFE;
         
         /* Restore saved private key disable bit. */
         FUSE_REGS->FUSE_PRIVATEKEYDISABLE |= (APBDEV_PMC_SECURE_SCRATCH21_0 & 0x10);
@@ -71,5 +72,4 @@ void fuse_configure_fuse_bypass(void) {
         /* Lock private key disable secure scratch. */
         APBDEV_PMC_SEC_DISABLE2_0 |= 0x4000000;
     }
-    
 }

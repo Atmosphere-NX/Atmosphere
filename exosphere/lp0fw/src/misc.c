@@ -23,26 +23,26 @@
 #include "pmc.h"
 
 void misc_configure_device_dbg_settings(void) {
-    /* Enable RTCK daisychaining by setting TBE bit. */
+    /* Set APB_MISC_PP_CONFIG_CTL_TBE (enables RTCK daisy-chaining). */
     APB_MISC_PP_CONFIG_CTL_0 = 0x80;
     
-    /* Literally none of this is documented in the TRM, lol. */
+    /* Configure JTAG and debug bits. */
     if (FUSE_CHIP_REGS->FUSE_SECURITY_MODE == 1) {
-        uint32_t secure_boot_val = 0b0100; /* Sets NIDEN for aarch64. */
-        uint32_t misc_val = 0x40;
+        uint32_t secure_boot_val = 0b0100;      /* Set NIDEN for aarch64. */
+        uint32_t pp_config_ctl_val = 0x40;      /* Set APB_MISC_PP_CONFIG_CTL_JTAG. */
         if (APBDEV_PMC_STICKY_BITS_0 & 0x40) {
-            misc_val = 0x0;
+            pp_config_ctl_val = 0x0;
         } else {
-            secure_boot_val = 0b1101; /* Sets SPNIDEN, NIDEN, DBGEN for aarch64. */
+            secure_boot_val = 0b1101;           /* Set SPNIDEN, NIDEN, DBGEN for aarch64. */
         }
-        SB_PFCFG_0 = (SB_PFCFG_0 & ~0b1111) | secure_boot_val; /* Configures debug bits. */
-        APB_MISC_PP_CONFIG_CTL_0 |= misc_val; /* Undocumented, seems to control invasive debugging/JTAG. */
+        SB_PFCFG_0 = (SB_PFCFG_0 & ~0b1111) | secure_boot_val;      /* Configure debug bits. */
+        APB_MISC_PP_CONFIG_CTL_0 |= pp_config_ctl_val;              /* Configure JTAG. */
     }
     
-    /* Set sticky bits based SECURITY_MODE. */
+    /* Set HDA_LPBK_DIS if FUSE_SECURITY_MODE is set (disables HDA codec loopback). */
     APBDEV_PMC_STICKY_BITS_0 |= FUSE_CHIP_REGS->FUSE_SECURITY_MODE;
     
-    /* Set E_INPUT in PINMUX_AUX_GPIO_PA6_0 */
+    /* Set E_INPUT in PINMUX_AUX_GPIO_PA6_0 (needed by the XUSB and SATA controllers). */
     PINMUX_AUX_GPIO_PA6_0 |= 0x40;
 }
 

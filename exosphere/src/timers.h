@@ -26,12 +26,24 @@ static inline uintptr_t get_timers_base(void) {
     return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_TMRs_WDTs);
 }
 
+static inline uintptr_t get_rtc_base(void) {
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_RTC_PMC);
+}
+
 #define TIMERS_BASE (get_timers_base())
 #define MAKE_TIMERS_REG(n) MAKE_REG32(TIMERS_BASE + n)
 
 #define TIMERUS_CNTR_1US_0 MAKE_TIMERS_REG(0x10)
+#define TIMERUS_USEC_CFG_0 MAKE_TIMERS_REG(0x14)
 #define SHARED_INTR_STATUS_0 MAKE_TIMERS_REG(0x1A0)
 #define SHARED_TIMER_SECURE_CFG_0 MAKE_TIMERS_REG(0x1A4)
+
+#define RTC_BASE (get_rtc_base())
+#define MAKE_RTC_REG(n) MAKE_REG32(RTC_BASE + n)
+
+#define RTC_SECONDS MAKE_RTC_REG(0x08)
+#define RTC_SHADOW_SECONDS MAKE_RTC_REG(0x0C)
+#define RTC_MILLI_SECONDS MAKE_RTC_REG(0x10)
 
 typedef struct {
     uint32_t CONFIG;
@@ -46,10 +58,54 @@ typedef struct {
 
 void wait(uint32_t microseconds);
 
-static inline uint32_t get_time(void) {
+static inline uint32_t get_time_s(void) {
+    return RTC_SECONDS;
+}
+
+static inline uint32_t get_time_ms(void) {
+    return (RTC_MILLI_SECONDS | (RTC_SHADOW_SECONDS << 10));
+}
+
+static inline uint32_t get_time_us(void) {
     return TIMERUS_CNTR_1US_0;
 }
 
-__attribute__ ((noreturn)) void watchdog_reboot(void);
+/**
+ * Returns the time in microseconds.
+ */
+static inline uint32_t get_time(void) {
+    return get_time_us();
+}
 
+/**
+ * Returns the number of microseconds that have passed since a given get_time().
+ */
+static inline uint32_t get_time_since(uint32_t base) {
+    return get_time_us() - base;
+}
+
+/**
+ * Delays for a given number of microseconds.
+ */
+static inline void udelay(uint32_t usecs) {
+    uint32_t start = get_time_us();
+    while (get_time_us() - start < usecs);
+}
+
+/**
+ * Delays until a number of usecs have passed since an absolute start time.
+ */
+static inline void udelay_absolute(uint32_t start, uint32_t usecs) {
+    while (get_time_us() - start < usecs);
+}
+
+/**
+ * Delays for a given number of milliseconds.
+ */
+static inline void mdelay(uint32_t msecs) {
+    uint32_t start = get_time_ms();
+    while (get_time_ms() - start < msecs);
+}
+
+__attribute__ ((noreturn)) void watchdog_reboot(void);
 #endif
