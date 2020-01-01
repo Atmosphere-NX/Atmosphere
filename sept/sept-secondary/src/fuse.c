@@ -33,7 +33,7 @@ void fuse_wait_idle(void);
 void fuse_init(void) {
     /* Make all fuse registers visible, disable the private key and disable programming. */
     clkrst_enable_fuse_regs(true);
-    fuse_disable_private_key();
+    /* fuse_disable_private_key(); */
     fuse_disable_programming();
 }
 
