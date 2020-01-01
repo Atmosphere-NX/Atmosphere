@@ -26,9 +26,11 @@ static int tsec_dma_wait_idle()
     uint32_t timeout = (get_time_ms() + 10000);
 
     while (!(tsec->TSEC_FALCON_DMATRFCMD & 2))
+    {
         if (get_time_ms() > timeout)
             return 0;
-
+    }
+    
     return 1;
 }
 
@@ -55,8 +57,10 @@ static int tsec_kfuse_wait_ready()
     
     /* Wait for STATE_DONE. */
     while (!(KFUSE_STATE & 0x10000))
+    {
         if (get_time_ms() > timeout)
             return 0;
+    }
     
     /* Check for STATE_CRCPASS. */
     if (!(KFUSE_STATE & 0x20000))

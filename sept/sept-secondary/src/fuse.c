@@ -52,18 +52,18 @@ void fuse_disable_programming(void) {
 /* Enable power to the fuse hardware array. */
 void fuse_enable_power(void) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
-    pmc->fuse_control &= ~(0x200);      // Clear PMC_FUSE_CTRL_PS18_LATCH_CLEAR.
+    pmc->fuse_control &= ~(0x200);      /* Clear PMC_FUSE_CTRL_PS18_LATCH_CLEAR. */
     mdelay(1);
-    pmc->fuse_control |= 0x100;         // Set PMC_FUSE_CTRL_PS18_LATCH_SET.
+    pmc->fuse_control |= 0x100;         /* Set PMC_FUSE_CTRL_PS18_LATCH_SET. */
     mdelay(1);
 }
 
 /* Disable power to the fuse hardware array. */
 void fuse_disable_power(void) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
-    pmc->fuse_control &= ~(0x100);      // Clear PMC_FUSE_CTRL_PS18_LATCH_SET.
+    pmc->fuse_control &= ~(0x100);      /* Clear PMC_FUSE_CTRL_PS18_LATCH_SET. */
     mdelay(1);
-    pmc->fuse_control |= 0x200;         // Set PMC_FUSE_CTRL_PS18_LATCH_CLEAR.
+    pmc->fuse_control |= 0x200;         /* Set PMC_FUSE_CTRL_PS18_LATCH_CLEAR. */
     mdelay(1);
 }
 
