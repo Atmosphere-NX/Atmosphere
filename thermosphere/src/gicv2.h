@@ -74,27 +74,27 @@ typedef struct ArmGicV2Controller {
 } ArmGicV2Controller;
 
 typedef struct ArmGicV2HypervisorControlRegister {
-    bool en         : 1;
-    bool uie        : 1;
-    bool lrenpie    : 1;
-    bool npie       : 1;
-    bool vgrp0eie   : 1;
-    bool vgrp0die   : 1;
-    bool vgrp1eie   : 1;
-    bool vgrp1die   : 1;
-    u32 _8          : 19;
-    u32 eoiCount    : 5;
+    u32 en         : 1;
+    u32 uie        : 1;
+    u32 lrenpie    : 1;
+    u32 npie       : 1;
+    u32 vgrp0eie   : 1;
+    u32 vgrp0die   : 1;
+    u32 vgrp1eie   : 1;
+    u32 vgrp1die   : 1;
+    u32 _8         : 19;
+    u32 eoiCount   : 5;
 } ArmGicV2HypervisorControlRegister;
 
 typedef struct ArmGicV2MaintenanceIntStatRegister {
-    bool eoi    : 1;
-    bool u      : 1;
-    bool lrenp  : 1;
-    bool np     : 1;
-    bool vgrp0e : 1;
-    bool vgrp0d : 1;
-    bool vgrp1e : 1;
-    bool vgrp1d : 1;
+    u32 eoi     : 1;
+    u32 u       : 1;
+    u32 lrenp   : 1;
+    u32 np      : 1;
+    u32 vgrp0e  : 1;
+    u32 vgrp0d  : 1;
+    u32 vgrp1e  : 1;
+    u32 vgrp1d  : 1;
     u32 _8      : 24;
 } ArmGicV2MaintenanceIntStatRegister;
 
@@ -103,20 +103,20 @@ typedef struct ArmGicV2ListRegister {
     u32 physicalId      : 10; // note: different encoding if hw = 0 (can't represent it in struct)
     u32 sbz2            : 3;
     u32 priority        : 5;
-    bool pending        : 1;
-    bool active         : 1;
-    bool grp1           : 1;
-    bool hw             : 1;
+    u32 pending         : 1;
+    u32 active          : 1;
+    u32 grp1            : 1;
+    u32 hw              : 1;
 } ArmGicV2ListRegister;
 
 typedef struct ArmGicV2VmControlRegister {
-    bool enableGrp0     : 1;
-    bool enableGrp1     : 1;
-    bool ackCtl         : 1;
-    bool fiqEn          : 1;
-    bool cbpr           : 1;
+    u32 enableGrp0      : 1;
+    u32 enableGrp1      : 1;
+    u32 ackCtl          : 1;
+    u32 fiqEn           : 1;
+    u32 cbpr            : 1;
     u32 _5              : 4;
-    bool eoiMode        : 1;
+    u32 eoiMode         : 1;
     u32 _10             : 8;
     u32 abpr            : 3;
     u32 bpr             : 3;
