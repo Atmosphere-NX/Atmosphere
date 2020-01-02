@@ -21,7 +21,7 @@ namespace ams::emummc {
     namespace {
 
         /* Convenience Definitions. */
-        constexpr u32 StorageMagic = 0x30534645; /* EFS0 */
+        constexpr u32 StorageMagic = util::FourCC<'E','F','S','0'>::Code;
         constexpr size_t MaxDirLen = 0x7F;
 
         /* Types. */

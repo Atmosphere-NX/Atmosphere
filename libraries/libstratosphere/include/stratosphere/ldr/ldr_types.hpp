@@ -77,7 +77,7 @@ namespace ams::ldr {
 
     /* NSO types. */
     struct NsoHeader {
-        static constexpr u32 Magic = 0x304F534E;
+        static constexpr u32 Magic = util::FourCC<'N','S','O','0'>::Code;
         enum Segment : size_t {
             Segment_Text = 0,
             Segment_Ro   = 1,
@@ -145,7 +145,7 @@ namespace ams::ldr {
 
     /* NPDM types. */
     struct Aci {
-        static constexpr u32 Magic = 0x30494341;
+        static constexpr u32 Magic = util::FourCC<'A','C','I','0'>::Code;
 
         u32 magic;
         u8  reserved_04[0xC];
@@ -162,7 +162,7 @@ namespace ams::ldr {
     static_assert(sizeof(Aci) == 0x40 && std::is_pod<Aci>::value, "Aci definition!");
 
     struct Acid {
-        static constexpr u32 Magic = 0x44494341;
+        static constexpr u32 Magic = util::FourCC<'A','C','I','D'>::Code;
 
         enum AcidFlag {
             AcidFlag_Production             = (1 << 0),
@@ -201,7 +201,7 @@ namespace ams::ldr {
     static_assert(sizeof(Acid) == 0x240 && std::is_pod<Acid>::value, "Acid definition!");
 
     struct Npdm {
-        static constexpr u32 Magic = 0x4154454D;
+        static constexpr u32 Magic = util::FourCC<'M','E','T','A'>::Code;
 
         enum MetaFlag {
             MetaFlag_Is64Bit = (1 << 0),

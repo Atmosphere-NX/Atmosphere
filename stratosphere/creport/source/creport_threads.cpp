@@ -21,8 +21,8 @@ namespace ams::creport {
     namespace {
 
         /* Convenience definitions. */
-        constexpr u32 LibnxThreadVarMagic   = 0x21545624; /* !TV$ */
-        constexpr u32 DumpedThreadInfoMagic = 0x32495444; /* DTI2 */
+        constexpr u32 LibnxThreadVarMagic   = util::FourCC<'!','T','V','$'>::Code;
+        constexpr u32 DumpedThreadInfoMagic = util::FourCC<'D','T','I','2'>::Code;
 
         /* Types. */
         template<typename T>

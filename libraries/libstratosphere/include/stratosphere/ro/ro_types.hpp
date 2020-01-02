@@ -33,7 +33,7 @@ namespace ams::ro {
 
     class NrrHeader {
         public:
-            static constexpr u32 Magic = 0x3052524E;
+            static constexpr u32 Magic = util::FourCC<'N','R','R','0'>::Code;
         private:
             u32 magic;
             u8  reserved_04[0xC];
@@ -85,7 +85,7 @@ namespace ams::ro {
 
     class NroHeader {
         public:
-            static constexpr u32 Magic = 0x304F524E;
+            static constexpr u32 Magic = util::FourCC<'N','R','O','0'>::Code;
         private:
             u32 entrypoint_insn;
             u32 mod_offset;
