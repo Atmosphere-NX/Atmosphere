@@ -14,6 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "exceptions.h"
+
 #include "hvc.h"
 #include "traps.h"
 #include "sysreg_traps.h"

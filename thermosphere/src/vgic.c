@@ -44,9 +44,10 @@ typedef struct VirqStateList {
 // Note: we reset the GIC from wakeup-from-sleep, and expect the guest OS to save/restore state if needed
 static VirqState TEMPORARY g_virqStates[MAX_NUM_INTERRUPTS] = { 0 };
 static VirqStateList TEMPORARY g_virqPendingQueue = { NULL };
-static u8 TEMPORARY g_virqSgiPendingSources[4][32] = { { 0 } };
+static u8 TEMPORARY g_vgicIncomingSgiPendingSources[4][32] = { { 0 } };
+static u64 TEMPORARY g_vgicUsedLrMap[4] = { 0 };
 
-static bool TEMPORARY g_virqIsDistributorEnabled = false;
+static bool TEMPORARY g_vgicIsDistributorEnabled = false;
 
 static inline VirqState *vgicGetVirqState(u32 coreId, u16 id)
 {
@@ -174,7 +175,9 @@ static void vgicDequeueVirqState(VirqStateList *list, VirqState *elem)
 static inline void vgicNotifyOtherCoreList(u32 coreList)
 {
     coreList &= ~BIT(currentCoreCtx->coreId);
-    generateSgiForList(ThermosphereSgi_VgicUpdate, coreList);
+    if (coreList != 0) {
+        generateSgiForList(ThermosphereSgi_VgicUpdate, coreList);
+    }
 }
 
 static inline bool vgicIsVirqEdgeTriggered(u16 id)
@@ -199,7 +202,7 @@ static inline bool vgicIsVirqPending(VirqState *state)
     return state->pendingLatch || (!vgicIsVirqEdgeTriggered(vgicGetVirqStateInterruptId(state)) && state->pending);
 }
 
-static inline void vgicSetVirqPendingField(VirqState *state, bool val)
+static inline void vgicSetVirqPendingState(VirqState *state, bool val)
 {
     if (!vgicIsVirqEdgeTriggered(vgicGetVirqStateInterruptId(state))) {
         state->pending = val;
@@ -217,18 +220,18 @@ static void vgicSetDistributorControlRegister(u32 value)
     // *with* security extensions (and thus all interrupts fw as group 1 there) still works (bit are in the same positions).
 
     // We don't implement Group 1 interrupts, either (so that's similar to GICv1).
-    bool old = g_virqIsDistributorEnabled;
-    g_virqIsDistributorEnabled = (value & 1) != 0;
+    bool old = g_vgicIsDistributorEnabled;
+    g_vgicIsDistributorEnabled = (value & 1) != 0;
 
     // Enable bit is actually just a global enable bit for all irq forwarding, other functions of the GICD aren't affected by it
-    if (old != g_virqIsDistributorEnabled) {
+    if (old != g_vgicIsDistributorEnabled) {
         generateSgiForAllOthers(ThermosphereSgi_VgicUpdate);
     }
 }
 
 static inline u32 vgicGetDistributorControlRegister(void)
 {
-    return g_virqIsDistributorEnabled ? 1 : 0;
+    return g_vgicIsDistributorEnabled ? 1 : 0;
 }
 
 static inline u32 vgicGetDistributorTypeRegister(void)
@@ -372,35 +375,19 @@ static inline u32 vgicGetInterruptConfigByte(u16 id, u32 config)
 
 static void vgicSetSgiPendingState(u16 id, u32 coreId, u32 srcCoreId)
 {
-    u8 old = g_virqSgiPendingSources[coreId][id];
-    g_virqSgiPendingSources[coreId][id] = old | BIT(srcCoreId);
-    if (old == 0) {
-        // SGI is now pending & possibly needs to be serviced
-        VirqState *state = vgicGetVirqState(coreId, id);
+    DEBUG("EL2 [core %u]: sending vSGI %hu to core %u\n", srcCoreId, id, coreId);
+    VirqState *state = vgicGetVirqState(coreId, id);
+    g_vgicIncomingSgiPendingSources[coreId][id] |= BIT(srcCoreId);
+    if (!state->handled && !vgicIsVirqPending(state)) {
+        // The SGI was inactive on the target core...
         state->pendingLatch = true;
         state->coreId = srcCoreId;
+        g_vgicIncomingSgiPendingSources[coreId][id] &= ~BIT(srcCoreId);
         vgicEnqueueVirqState(&g_virqPendingQueue, state);
         vgicNotifyOtherCoreList(BIT(coreId));
-    }
-}
-
-static void vgicClearSgiPendingState(u16 id, u32 srcCoreId)
-{
-    // Only for the current core, therefore no need to signal physical SGI, etc., etc.
-    u32 coreId = currentCoreCtx->coreId;
-    u8 old = g_virqSgiPendingSources[coreId][id];
-    u8 new_ =  old & ~BIT((u8)srcCoreId);
-    g_virqSgiPendingSources[coreId][id] = new_;
-    if (old != 0 && new_ == 0) {
-        VirqState *state = vgicGetVirqState(coreId, id);
-        state->pendingLatch = false;
+    } else if (!state->handled) {
         vgicNotifyOtherCoreList(BIT(coreId));
     }
-}
-
-static inline u32 vgicGetSgiPendingState(u16 id)
-{
-    return g_virqSgiPendingSources[currentCoreCtx->coreId][id];
 }
 
 static void vgicSendSgi(u16 id, u32 filter, u32 coreList)
@@ -460,6 +447,8 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
         case GICDOFF(icpendr) ... GICDOFF(icpendr) + 511/32:
         case GICDOFF(isactiver) ... GICDOFF(isactiver) + 511/32:
         case GICDOFF(icactiver) ... GICDOFF(icactiver) + 511/32:
+        case GICDOFF(cpendsgir) ... GICDOFF(cpendsgir) + 15:
+        case GICDOFF(spendsgir) ... GICDOFF(spendsgir) + 15:
             // Write ignored, not implemented (at least not yet, TODO)
             break;
 
@@ -504,27 +493,6 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
             vgicSendSgi((u16)(val & 0xF), (val >> 24) & 3, (val >> 16) & 0xFF);
             break;
 
-        case GICDOFF(cpendsgir) ... GICDOFF(cpendsgir) + 15: {
-            u16 base = (u16)(offset - GICDOFF(cpendsgir));
-            for (u16 i = 0; i < sz; i++) {
-                FOREACH_BIT(tmp, pos, val & 0xFF) {
-                    vgicClearSgiPendingState(base + i, pos);
-                }
-                val >>= 8;
-            }
-            break;
-        }
-        case GICDOFF(spendsgir) ... GICDOFF(spendsgir) + 15: {
-            u16 base = (u16)(offset - GICDOFF(spendsgir));
-            for (u16 i = 0; i < sz; i++) {
-                FOREACH_BIT(tmp, pos, val & 0xFF) {
-                    vgicSetSgiPendingState(base + i, currentCoreCtx->coreId, pos);
-                }
-                val >>= 8;
-            }
-            break;
-        }
-
         default:
             dumpUnhandledDataAbort(dabtIss, addr, "GICD reserved/implementation-defined register");
             break;
@@ -551,6 +519,8 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
         case GICDOFF(icpendr) ... GICDOFF(icpendr) + 511/32:
         case GICDOFF(isactiver) ... GICDOFF(isactiver) + 511/32:
         case GICDOFF(icactiver) ... GICDOFF(icactiver) + 511/32:
+        case GICDOFF(cpendsgir) ... GICDOFF(cpendsgir) + 15:
+        case GICDOFF(spendsgir) ... GICDOFF(spendsgir) + 15:
             // RAZ, not implemented (at least not yet, TODO)
             break;
 
@@ -594,15 +564,6 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
             dumpUnhandledDataAbort(dabtIss, addr, "GICD read to write-only register GCID_SGIR");
             break;
 
-        case GICDOFF(cpendsgir) ... GICDOFF(cpendsgir) + 15:
-        case GICDOFF(spendsgir) ... GICDOFF(spendsgir) + 15: {
-            u16 base = (u16)(offset & 0xF);
-            for (u16 i = 0; i < sz; i++) {
-                val |= (u32)vgicGetSgiPendingState(base + i) << (8 * i);
-            }
-            break;
-        }
-
         case GICDOFF(icpidr2):
             val = vgicGetPeripheralId2Register();
             break;
@@ -629,7 +590,7 @@ static void vgicCleanupPendingList(void)
         id = vgicGetVirqStateInterruptId(node);
         coreId = vgicGetVirqStateCoreId(node);
         if (id < 16) {
-            pending = g_virqSgiPendingSources[coreId][id] != 0;
+            pending = true;
         } else if (!vgicIsVirqEdgeTriggered(id)) {
             // For hardware interrupts, we have kept the interrupt active on the physical GICD
             // For level-sensitive interrupts, we need to check if they're also still physically pending (resampling).
@@ -655,7 +616,7 @@ static void vgicCleanupPendingList(void)
         }
 
         if (!pending) {
-            vgicSetVirqPendingField(node, false);
+            vgicSetVirqPendingState(node, false);
             vgicDequeueVirqState(&g_virqPendingQueue, node);
         }
     }
@@ -676,39 +637,18 @@ static bool vgicTestInterruptEligibility(VirqState *state)
     return vgicGetInterruptEnabledState(id) && (id < 32 || (g_irqManager.gic.gicd->itargetsr[id] & BIT(currentCoreCtx->coreId)) != 0);
 }
 
-// Returns highest priority
-static u32 vgicChoosePendingInterrupts(size_t *outNumChosen, VirqState *chosen[], size_t maxNum)
+static void vgicChoosePendingInterrupts(size_t *outNumChosen, VirqState *chosen[], size_t maxNum)
 {
-    u32 highestPrio = 0x1F;
     *outNumChosen = 0;
 
     for (VirqState *node = g_virqPendingQueue.first, *next; node != vgicGetQueueEnd() && *outNumChosen < maxNum; node = next) {
         next = vgicGetNextQueuedVirqState(node);
         if (vgicTestInterruptEligibility(node)) {
-            u16 irqId = vgicGetVirqStateInterruptId(node);
-            highestPrio = highestPrio < node->priority ? highestPrio : node->priority;
             node->handled = true;
-            if (irqId < 16) {
-                node->coreId = __builtin_ctz(g_virqSgiPendingSources[vgicGetVirqStateCoreId(node)][irqId]);
-            }
             vgicDequeueVirqState(&g_virqPendingQueue, node);
             chosen[(*outNumChosen)++] = node;
         }
     }
-
-    return highestPrio;
-}
-
-static inline bool vgicIsInterruptRaisable(u32 prio)
-{
-    ArmGicV2VmControlRegister vmcr = g_irqManager.gic.gich->vmcr;
-    if (prio >= vmcr.pmr) {
-        return false;
-    }
-
-    u32 grpMask = ~MASK(vmcr.bpr + 1) & 0xFF;
-    u32 rpr = g_irqManager.gic.gicv->rpr;
-    return rpr >= GICV_IDLE_PRIORITY || ((prio << 3) & grpMask) < (g_irqManager.gic.gicv->rpr & grpMask);
 }
 
 static inline u64 vgicGetElrsrRegister(void)
@@ -726,10 +666,15 @@ static inline size_t vgicGetNumberOfFreeListRegisters(void)
     return __builtin_popcountll(vgicGetElrsrRegister());
 }
 
-static inline volatile ArmGicV2ListRegister *vgicGetFreeListRegister(void)
+static inline volatile ArmGicV2ListRegister *vgicAllocateListRegister(void)
 {
     u32 ff = __builtin_ffsll(vgicGetElrsrRegister());
-    return ff == 0 ? NULL : &g_irqManager.gic.gich->lr[ff - 1];
+    if (ff == 0) {
+        return NULL;
+    } else {
+        g_vgicUsedLrMap[currentCoreCtx->coreId] |= BITL(ff - 1);
+        return &g_irqManager.gic.gich->lr[ff - 1];
+    }
 }
 
 static void vgicPushListRegisters(VirqState *chosen[], size_t num)
@@ -751,14 +696,10 @@ static void vgicPushListRegisters(VirqState *chosen[], size_t num)
 
         if (irqId < 16) {
             // SGI
-            // Unset one pennding source temporarily
             u32 sourceCoreId = vgicGetSgiCurrentSourceCoreId(state);
-            if (g_virqSgiPendingSources[state->coreId][irqId] & ~BIT(sourceCoreId)) {
-                // Multiple sources
-                lr.physicalId = BIT(9) /* EOI notification bit */ | sourceCoreId;
-            } else {
-                lr.physicalId = sourceCoreId;
-            }
+            lr.physicalId = BIT(9) /* EOI notification bit */ | sourceCoreId;
+            // ^ IDK how kvm gets away with not setting the EOI notif bits in some cases,
+            // what they do seems to be prone to drop interrupts, etc.
 
             lr.hw = false; // software
         } else {
@@ -767,59 +708,99 @@ static void vgicPushListRegisters(VirqState *chosen[], size_t num)
             lr.physicalId = irqId;
         }
 
-        *vgicGetFreeListRegister() = lr;
+        volatile ArmGicV2ListRegister *freeLr = vgicAllocateListRegister();
+
+        if (freeLr == NULL) {
+            DEBUG("EL2: vgicPushListRegisters: no free LR!\n");
+        }
+        *freeLr = lr;
     }
 }
 
 static bool vgicUpdateListRegister(volatile ArmGicV2ListRegister *lr)
 {
-    u16 irqId = lr->virtualId;
+    ArmGicV2ListRegister lrCopy = *lr;
     ArmGicV2ListRegister zero = {0};
+
+    u16 irqId = lrCopy.virtualId;
+
+    // Note: this give priority to multi-SGIs than can be immediately handled
 
     // Update the state
     VirqState *state = vgicGetVirqState(currentCoreCtx->coreId, irqId);
-    state->active = lr->active;
+    u32 srcCoreId = state->coreId;
+    u32 coreId = currentCoreCtx->coreId;
 
-    if (lr->active) {
-        // We don't touch active interrupts
-        return false;
-    } else if (lr->pending) {
+    state->active = lrCopy.active;
+
+    if (lrCopy.active) {
+        // We don't dequeue active interrupts
+        if (irqId < 16) {
+            // We can allow SGIs to be marked active-pending if it's been made pending from the same source again
+            if (g_vgicIncomingSgiPendingSources[coreId][irqId] & BIT(srcCoreId)) {
+                lrCopy.pending = true;
+                g_vgicIncomingSgiPendingSources[coreId][irqId] &= ~BIT(srcCoreId);
+            }
+        }
+
+        vgicSetVirqPendingState(state, lrCopy.pending);
+        *lr = lrCopy;
+        return true;
+    } else if (lrCopy.pending) {
         // New interrupts might have come, pending status might have been changed, etc.
         // We need to put the interrupt back in the pending list (which we clean up afterwards)
         vgicEnqueueVirqState(&g_virqPendingQueue, state);
         state->handled = false;
         *lr = zero;
-        return true;
-    } else {
-        // Inactive interrupt, cleanup
-        vgicSetVirqPendingField(state, 0);
-        state->handled = false;
-        *lr = zero;
         return false;
+    } else {
+        if (irqId < 16) {
+            // Special case for multi-SGIs if they can be immediately handled
+            if (g_vgicIncomingSgiPendingSources[coreId][irqId] != 0) {
+                srcCoreId = __builtin_ctz(g_vgicIncomingSgiPendingSources[coreId][irqId]);
+                state->coreId = srcCoreId;
+                g_vgicIncomingSgiPendingSources[coreId][irqId] &= ~BIT(srcCoreId);
+                lrCopy.physicalId = BIT(9) /* EOI notification bit */ | srcCoreId;
+
+                lrCopy.pending = true;
+                *lr = lrCopy;
+            }
+        }
+
+        if (!lrCopy.pending) {
+            // Inactive interrupt, cleanup
+            vgicSetVirqPendingState(state, false);
+            state->handled = false;
+            *lr = zero;
+            return false;
+        } else {
+            return true;
+        }
     }
 }
 
 void vgicUpdateState(void)
 {
     volatile ArmGicV2VirtualInterfaceController *gich = g_irqManager.gic.gich;
-    u64 usedMap = ~vgicGetElrsrRegister() & MASKL(g_irqManager.numListRegisters);
+    u32 coreId = currentCoreCtx->coreId;
 
-    // First, put back inactive interrupts into the queue
+    // First, put back inactive interrupts into the queue, handle some SGI stuff
+    u64 usedMap = g_vgicUsedLrMap[coreId];
     FOREACH_BIT (tmp, pos, usedMap) {
-        vgicUpdateListRegister(&gich->lr[pos]);
+        if (!vgicUpdateListRegister(&gich->lr[pos])) {
+            g_vgicUsedLrMap[coreId] &= ~BITL(pos);
+        }
     }
 
     // Then, clean the list up
     vgicCleanupPendingList();
 
     size_t numChosen;
-    u32 newHiPrio;
     size_t numFreeLr = vgicGetNumberOfFreeListRegisters();
     VirqState *chosen[numFreeLr]; // yes this is a VLA, potentially dangerous. Usually max 4 (64 at most)
 
     // Choose interrupts...
-    newHiPrio = vgicChoosePendingInterrupts(&numChosen, chosen, numFreeLr);
-    (void)newHiPrio;
+    vgicChoosePendingInterrupts(&numChosen, chosen, numFreeLr);
 
     // ...and push them
     for (size_t i = 0; i < numChosen; i++) {
@@ -827,18 +808,6 @@ void vgicUpdateState(void)
     }
 
     // Apparently, the following is not needed because the GIC generates it for us
-    // Keep this comment, it's not intuitive
-    /*
-    // Raise vIRQ when applicable. We only need to check for the highest priority
-    /*if (newHiPrio < 0x1F && vgicIsInterruptRaisable(newHiPrio)) {
-        gich->hcr.npie = true;
-        u32 hcr = GET_SYSREG(hcr_el2);
-        SET_SYSREG(hcr_el2, hcr | HCR_VI);
-    } else {
-        gich->hcr.npie = false;
-        u32 hcr = GET_SYSREG(hcr_el2);
-        SET_SYSREG(hcr_el2, hcr & ~HCR_VI);
-    }*/
 
     // Enable underflow interrupt when appropriate to do so
     if (g_irqManager.numListRegisters - vgicGetNumberOfFreeListRegisters() > 1) {
@@ -853,6 +822,7 @@ void vgicMaintenanceInterruptHandler(void)
     volatile ArmGicV2VirtualInterfaceController *gich = g_irqManager.gic.gich;
 
     ArmGicV2MaintenanceIntStatRegister misr = g_irqManager.gic.gich->misr;
+
     // Force GICV_CTRL to behave like ns-GICC_CTLR, with group 1 being replaced by group 0
     // Ensure we aren't spammed by maintenance interrupts, either.
     if (misr.vgrp0e || misr.vgrp0d || misr.vgrp1e || misr.vgrp1d) {
@@ -860,31 +830,34 @@ void vgicMaintenanceInterruptHandler(void)
     }
 
     if (misr.vgrp0e) {
-        DEBUG("maintenance grp0 enabled\n");
+        DEBUG("EL2 [core %d]: Group 0 enabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
         gich->hcr.vgrp0eie = false;
         gich->hcr.vgrp0die = true;
     } else if (misr.vgrp0d) {
-        DEBUG("maintenance grp0 disabled\n");
+        DEBUG("EL2 [core %d]: Group 0 disabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
         gich->hcr.vgrp0eie = true;
         gich->hcr.vgrp0die = false;
     }
+
+    // Already handled the following 2 above:
     if (misr.vgrp1e) {
-        // Nothing to do since we cleared the bits above...
+        DEBUG("EL2 [core %d]: Group 1 enabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
+    }
+    if (misr.vgrp1d) {
+        DEBUG("EL2 [core %d]: Group 1 disabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
     }
 
     if (misr.lrenp) {
-        DEBUG("VGIC: List Register Entry Not Present maintenance interrupt!\n");
+        DEBUG("EL2 [core %d]: List Register Entry Not Present maintenance interrupt!\n", currentCoreCtx->coreId);
         panic();
     }
 
     if (misr.eoi) {
-        DEBUG("SGI EOI maintenance interrupt\n");
+        //DEBUG("EL2 [core %d]: SGI EOI maintenance interrupt\n", currentCoreCtx->coreId);
     }
-    if (misr.np) {
-        DEBUG("No Pending maintenance interrupt\n");
-    }
+
     if (misr.u) {
-        DEBUG("Underflow maintenance interrupt\n");
+       // DEBUG("EL2 [core %d]: Underflow maintenance interrupt\n", currentCoreCtx->coreId);
     }
 
     // The rest should be handled by the main loop...
@@ -935,7 +908,7 @@ void handleVgicdMmio(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t of
 void vgicEnqueuePhysicalIrq(u16 irqId)
 {
     VirqState *state = vgicGetVirqState(currentCoreCtx->coreId, irqId);
-    vgicSetVirqPendingField(state, true);
+    vgicSetVirqPendingState(state, true);
     vgicEnqueueVirqState(&g_virqPendingQueue, state);
 }
 
