@@ -33,10 +33,10 @@ namespace ams::kern {
             return static_cast<size_t>(config_value & 0x3FFF) << 20;
         }
 
-        ALWAYS_INLINE u64 GetKernelConfigurationForInit() {
+        ALWAYS_INLINE util::BitPack32 GetKernelConfigurationForInit() {
             u64 value = 0;
             smc::init::GetConfig(&value, 1, smc::ConfigItem::KernelConfiguration);
-            return value;
+            return util::BitPack32{static_cast<u32>(value)};
         }
 
         ALWAYS_INLINE u64 GenerateRandomU64ForInit() {
@@ -45,18 +45,14 @@ namespace ams::kern {
             return value;
         }
 
-        ALWAYS_INLINE smc::MemoryMode GetMemoryModeForInit() {
-            return static_cast<smc::MemoryMode>((GetKernelConfigurationForInit() >> 10) & 0x3);
-        }
-
         ALWAYS_INLINE size_t GetIntendedMemorySizeForInit() {
-            switch (GetMemoryModeForInit()) {
-                case smc::MemoryMode_4GB:
+            switch (GetKernelConfigurationForInit().Get<smc::KernelConfiguration::MemorySize>()) {
+                case smc::MemorySize_4GB:
                 default: /* All invalid modes should go to 4GB. */
                     return FourGigabytes;
-                case smc::MemoryMode_6GB:
+                case smc::MemorySize_6GB:
                     return SixGigabytes;
-                case smc::MemoryMode_8GB:
+                case smc::MemorySize_8GB:
                     return EightGigabytes;
             }
         }
@@ -75,7 +71,7 @@ namespace ams::kern {
     }
 
     bool KSystemControl::Init::ShouldIncreaseThreadResourceLimit() {
-        return (GetKernelConfigurationForInit() >> 3) & 1;
+        return GetKernelConfigurationForInit().Get<smc::KernelConfiguration::IncreaseThreadResourceLimit>();
     }
 
     /* Randomness for Initialization. */

@@ -50,7 +50,7 @@ namespace ams::util {
                     using BitPackType = BitPack<IntegralStorageType>;
 
                     static_assert(Mask<Index, Count> != 0);
-                    static_assert(std::is_integral<T>::value);
+                    static_assert(std::is_integral<T>::value || std::is_enum<T>::value);
                     static_assert(!std::is_same<T, bool>::value || Count == 1);
                 };
             private:

@@ -19,10 +19,10 @@
 namespace ams::kern::smc {
 
     /* Types. */
-    enum MemoryMode {
-        MemoryMode_4GB = 0,
-        MemoryMode_6GB = 1,
-        MemoryMode_8GB = 2,
+    enum MemorySize {
+        MemorySize_4GB = 0,
+        MemorySize_6GB = 1,
+        MemorySize_8GB = 2,
     };
 
     enum class ConfigItem : u32 {
@@ -61,6 +61,17 @@ namespace ams::kern::smc {
         NoAsyncOperation      = 4,
         InvalidAsyncOperation = 5,
         NotPermitted          = 6,
+    };
+
+    struct KernelConfiguration {
+        using DebugFillMemory             = util::BitPack32::Field<0,                                 1, bool>;
+        using EnableUserExceptionHandlers = util::BitPack32::Field<DebugFillMemory::Next,             1, bool>;
+        using EnableUserPmuAccess         = util::BitPack32::Field<EnableUserExceptionHandlers::Next, 1, bool>;
+        using IncreaseThreadResourceLimit = util::BitPack32::Field<EnableUserPmuAccess::Next,         1, bool>;
+        using Reserved4                   = util::BitPack32::Field<IncreaseThreadResourceLimit::Next, 4, u32>;
+        using UseSecureMonitorPanicCall   = util::BitPack32::Field<Reserved4::Next,                   1, bool>;
+        using Reserved9                   = util::BitPack32::Field<UseSecureMonitorPanicCall::Next,   7, u32>;
+        using MemorySize                  = util::BitPack32::Field<Reserved9::Next,                   2, smc::MemorySize>;
     };
 
     /* TODO: Rest of Secure Monitor API. */
