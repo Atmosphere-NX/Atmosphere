@@ -21,7 +21,9 @@
 
 #include "debug_log.h"
 
-#define MAX_NUM_INTERRUPTS  (512 - 32 + 32 * 4)
+#define MAX_NUM_INTERRUPTS      (512 - 32 + 32 * 4)
+#define VIRQLIST_END_ID         MAX_NUM_INTERRUPTS
+#define VIRQLIST_INVALID_ID     (VIRQLIST_END_ID + 1)
 
 #define GICDOFF(field)      (offsetof(ArmGicV2Distributor, field))
 
@@ -70,7 +72,12 @@ static inline VirqState *vgicGetPrevQueuedVirqState(VirqState *cur)
 
 static inline VirqState *vgicGetQueueEnd(void)
 {
-    return &g_virqStates[MAX_NUM_INTERRUPTS];
+    return &g_virqStates[VIRQLIST_END_ID];
+}
+
+static inline bool vgicIsStateQueued(VirqState *state)
+{
+    return state->listPrev != VIRQLIST_INVALID_ID && state->listNext != VIRQLIST_INVALID_ID;
 }
 
 static inline u32 vgicGetVirqStateIndex(VirqState *cur)
@@ -81,12 +88,10 @@ static inline u32 vgicGetVirqStateIndex(VirqState *cur)
 static inline u16 vgicGetVirqStateInterruptId(VirqState *cur)
 {
     u32 idx = vgicGetVirqStateIndex(cur);
-    /*if (idx == MAX_NUM_INTERRUPTS) {
-        return GIC_IRQID_SPURIOUS;
-    } else*/ if (idx >= 512 - 32) {
+    if (idx >= 512 - 32) {
         return (idx - 512 + 32) % 32;
     } else {
-        return idx;
+        return 32 + idx;
     }
 }
 
@@ -105,16 +110,45 @@ static inline u32 vgicGetSgiCurrentSourceCoreId(VirqState *cur)
     return cur->coreId;
 }
 
+// export symbol to avoid build warnings
+void vgicDebugPrintList(VirqStateList *list)
+{
+    (void)list;
+    DEBUG("[");
+    for (VirqState *pos = list->first; pos != vgicGetQueueEnd(); pos = vgicGetNextQueuedVirqState(pos)) {
+        DEBUG("%u,", vgicGetVirqStateIndex(pos));
+    }
+    DEBUG("]\n");
+}
+
+// export symbol to avoid build warnings
+void vgicDebugPrintLrList(void)
+{
+    DEBUG("core %u lr [", currentCoreCtx->coreId);
+    for (u32 i = 0; i < g_irqManager.numListRegisters; i++) {
+        if (g_vgicUsedLrMap[currentCoreCtx->coreId] & BITL(i)) {
+            DEBUG("%u,", vgicGetVirqStateIndex(vgicGetVirqState(currentCoreCtx->coreId, g_irqManager.gic.gich->lr[i].virtualId)));
+        } else {
+            DEBUG("-,");
+        }
+    }
+    DEBUG("]\n");
+}
 
 // Note: ordered by priority
 static void vgicEnqueueVirqState(VirqStateList *list, VirqState *elem)
 {
     VirqState *pos;
 
+    if (elem->listNext != VIRQLIST_INVALID_ID || elem->listPrev != VIRQLIST_INVALID_ID) {
+        PANIC("vgicEnqueueVirqState: unsanitized argument\n");
+    }
+
     ++list->size;
     // Empty list
     if (list->first == vgicGetQueueEnd()) {
         list->first = list->last = elem;
+        elem->listPrev = elem->listNext = VIRQLIST_END_ID;
         return;
     }
 
@@ -149,7 +183,6 @@ static void vgicEnqueueVirqState(VirqStateList *list, VirqState *elem)
             VirqState *prev = vgicGetPrevQueuedVirqState(pos);
             prev->listNext = idx;
         }
-
     }
 }
 
@@ -157,6 +190,10 @@ static void vgicDequeueVirqState(VirqStateList *list, VirqState *elem)
 {
     VirqState *prev = vgicGetPrevQueuedVirqState(elem);
     VirqState *next = vgicGetNextQueuedVirqState(elem);
+
+    if (!vgicIsStateQueued(elem)) {
+        PANIC("vgicDequeueVirqState: invalid id %x\n", vgicGetVirqStateIndex(elem));
+    }
 
     --list->size;
     if (prev != vgicGetQueueEnd()) {
@@ -170,6 +207,8 @@ static void vgicDequeueVirqState(VirqStateList *list, VirqState *elem)
     } else {
         list->last = prev;
     }
+
+    elem->listPrev = elem->listNext = VIRQLIST_INVALID_ID;
 }
 
 static inline void vgicNotifyOtherCoreList(u32 coreList)
@@ -375,17 +414,15 @@ static inline u32 vgicGetInterruptConfigByte(u16 id, u32 config)
 
 static void vgicSetSgiPendingState(u16 id, u32 coreId, u32 srcCoreId)
 {
-    DEBUG("EL2 [core %u]: sending vSGI %hu to core %u\n", srcCoreId, id, coreId);
+    //DEBUG("EL2 [core %u]: sending vSGI %hu to core %u\n", srcCoreId, id, coreId);
     VirqState *state = vgicGetVirqState(coreId, id);
     g_vgicIncomingSgiPendingSources[coreId][id] |= BIT(srcCoreId);
-    if (!state->handled && !vgicIsVirqPending(state)) {
+    if (!state->handled && !vgicIsStateQueued(state)) {
         // The SGI was inactive on the target core...
         state->pendingLatch = true;
         state->coreId = srcCoreId;
         g_vgicIncomingSgiPendingSources[coreId][id] &= ~BIT(srcCoreId);
         vgicEnqueueVirqState(&g_virqPendingQueue, state);
-        vgicNotifyOtherCoreList(BIT(coreId));
-    } else if (!state->handled) {
         vgicNotifyOtherCoreList(BIT(coreId));
     }
 }
@@ -731,6 +768,10 @@ static bool vgicUpdateListRegister(volatile ArmGicV2ListRegister *lr)
     u32 srcCoreId = state->coreId;
     u32 coreId = currentCoreCtx->coreId;
 
+    if (!state->handled) {
+        PANIC("vgicUpdateListRegister: improper previous state for now pending irq idx %u, active=%d\n", vgicGetVirqStateIndex(state), (int)state->active);
+    }
+
     state->active = lrCopy.active;
 
     if (lrCopy.active) {
@@ -803,9 +844,7 @@ void vgicUpdateState(void)
     vgicChoosePendingInterrupts(&numChosen, chosen, numFreeLr);
 
     // ...and push them
-    for (size_t i = 0; i < numChosen; i++) {
-        vgicPushListRegisters(chosen, numChosen);
-    }
+    vgicPushListRegisters(chosen, numChosen);
 
     // Apparently, the following is not needed because the GIC generates it for us
 
@@ -848,8 +887,7 @@ void vgicMaintenanceInterruptHandler(void)
     }
 
     if (misr.lrenp) {
-        DEBUG("EL2 [core %d]: List Register Entry Not Present maintenance interrupt!\n", currentCoreCtx->coreId);
-        panic();
+        PANIC("EL2 [core %d]: List Register Entry Not Present maintenance interrupt!\n", currentCoreCtx->coreId);
     }
 
     if (misr.eoi) {
@@ -857,7 +895,7 @@ void vgicMaintenanceInterruptHandler(void)
     }
 
     if (misr.u) {
-       // DEBUG("EL2 [core %d]: Underflow maintenance interrupt\n", currentCoreCtx->coreId);
+        //DEBUG("EL2 [core %d]: Underflow maintenance interrupt\n", currentCoreCtx->coreId);
     }
 
     // The rest should be handled by the main loop...
@@ -918,7 +956,7 @@ void vgicInit(void)
         g_virqPendingQueue.first = g_virqPendingQueue.last = vgicGetQueueEnd();
 
         for (u32 i = 0; i < 512 - 32 + 32 * 4; i++) {
-            g_virqStates[i].listNext = g_virqStates[i].listPrev = MAX_NUM_INTERRUPTS;
+            g_virqStates[i].listNext = g_virqStates[i].listPrev = VIRQLIST_INVALID_ID;
             g_virqStates[i].priority = 0x1F;
         }
     }
