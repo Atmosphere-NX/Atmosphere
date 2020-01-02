@@ -21,7 +21,7 @@
 #include "utils.h"
 
 #ifndef DLOG_USE_SEMIHOSTING_WRITE0
-#define DLOG_USE_SEMIHOSTING_WRITE0 0
+#define DLOG_USE_SEMIHOSTING_WRITE0 1
 #endif
 
 // NOTE: UNSAFE!

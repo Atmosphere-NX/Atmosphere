@@ -16,11 +16,6 @@
 
 extern const u8 __start__[];
 
-static void testf1(void *p)
-{
-    DEBUG("Hello from sgi 0, p=%016llx\n", p);
-}
-
 static void loadKernelViaSemihosting(void)
 {
     size_t len = 1<<20; // max len
@@ -62,7 +57,6 @@ void main(ExceptionStackFrame *frame)
         if (currentCoreCtx->kernelEntrypoint == 0) {
             if (semihosting_connection_supported()) {
                 loadKernelViaSemihosting();
-                //panic();
             } else {
                 DEBUG("Kernel not loaded!\n");
                 panic();
@@ -71,7 +65,6 @@ void main(ExceptionStackFrame *frame)
     }
     else {
         DEBUG("EL2: core %u reached main!\n", currentCoreCtx->coreId);
-        //DEBUG("Test 0x%08llx %016llx\n", get_physical_address_el1_stage12(0x08010000ull), GET_SYSREG(par_el1));
     }
 
     // Set up exception frame: init regs to 0, set spsr, elr, etc.
@@ -81,14 +74,4 @@ void main(ExceptionStackFrame *frame)
     frame->x[0]     = currentCoreCtx->kernelArgument;
 
     setCurrentCoreActive();
-
-    // Test
-    singleStepSetNextState(frame, SingleStepState_ActivePending);
-
-    // Test
-    executeFunctionOnAllCores(testf1, (void *)0x1234567, true);
-
-    /*// Test
-    unmaskIrq();
-    generateSgiForAll(0);*/
 }

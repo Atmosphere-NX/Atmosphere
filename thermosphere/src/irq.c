@@ -142,9 +142,9 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     // Acknowledge the interrupt. Interrupt goes from pending to active.
     u32 iar = gicc->iar;
     u32 irqId = iar & 0x3FF;
-    u32 srcCore = (iar >> 12) & 7;
+    u32 srcCore = (iar >> 10) & 7;
 
-    DEBUG("EL2: Received irq %x\n", irqId);
+    //DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
 
     if (irqId == GIC_IRQID_SPURIOUS) {
         // Spurious interrupt received
