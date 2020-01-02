@@ -33,7 +33,11 @@ namespace ams::util {
                     static_assert(0 < Count && Count <= BITSIZEOF(IntegralStorageType));
                     static_assert(Index + Count <= BITSIZEOF(IntegralStorageType));
 
-                    return ((IntegralStorageType(1) << Count) - 1) << Index;
+                    if constexpr (Count == BITSIZEOF(IntegralStorageType)) {
+                        return ~IntegralStorageType(0);
+                    } else {
+                        return ((IntegralStorageType(1) << Count) - 1) << Index;
+                    }
                 }();
             public:
                 template<size_t _Index, size_t _Count, typename T>
@@ -52,6 +56,8 @@ namespace ams::util {
             private:
                 IntegralStorageType value;
             public:
+                constexpr ALWAYS_INLINE BitPack(IntegralStorageType v) : value(v) { /* ... */ }
+
                 constexpr ALWAYS_INLINE void Clear() {
                     constexpr IntegralStorageType Zero = IntegralStorageType(0);
                     this->value = Zero;
@@ -79,9 +85,9 @@ namespace ams::util {
     using BitPack32 = impl::BitPack<u32>;
     using BitPack64 = impl::BitPack<u64>;
 
-    static_assert(std::is_pod<BitPack8 >::value);
-    static_assert(std::is_pod<BitPack16>::value);
-    static_assert(std::is_pod<BitPack32>::value);
-    static_assert(std::is_pod<BitPack64>::value);
+    static_assert(std::is_trivially_destructible<BitPack8 >::value);
+    static_assert(std::is_trivially_destructible<BitPack16>::value);
+    static_assert(std::is_trivially_destructible<BitPack32>::value);
+    static_assert(std::is_trivially_destructible<BitPack64>::value);
 
 }
