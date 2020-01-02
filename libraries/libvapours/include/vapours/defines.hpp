@@ -42,6 +42,8 @@
 #define CONCATENATE_IMPL(S1, s2) s1##s2
 #define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1, s2)
 
+#define BITSIZEOF(x) (sizeof(x) * CHAR_BIT)
+
 #ifdef __COUNTER__
 #define ANONYMOUS_VARIABLE(pref) CONCATENATE(pref, __COUNTER__)
 #else
@@ -55,8 +57,8 @@
                                                     probability;                                 \
                                                }))
 
-#define AMS_PREDICT_TRUE(expr, probability)  AMS_PREDICT(!!expr, 1, probability)
-#define AMS_PREDICT_FALSE(expr, probability) AMS_PREDICT(!!expr, 0, probability)
+#define AMS_PREDICT_TRUE(expr, probability)  AMS_PREDICT(!!(expr), 1, probability)
+#define AMS_PREDICT_FALSE(expr, probability) AMS_PREDICT(!!(expr), 0, probability)
 
 #define AMS_LIKELY(expr)   AMS_PREDICT_TRUE(expr, 1.0)
 #define AMS_UNLIKELY(expr) AMS_PREDICT_FALSE(expr, 1.0)
