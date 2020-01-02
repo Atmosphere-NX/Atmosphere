@@ -38,6 +38,8 @@
 
 #define FOREACH_BIT(tmpmsk, var, word) for (u64 tmpmsk = (word), var = __builtin_ctzll(word); tmpmsk != 0; tmpmsk &= ~BITL(var), var = __builtin_ctzll(tmpmsk))
 
+#define PANIC(...)      do { DEBUG(__VA_ARGS__); panic(); } while (false)
+
 static inline void __dsb_sy(void)
 {
     __asm__ __volatile__ ("dsb sy" ::: "memory");
@@ -68,6 +70,8 @@ bool readEl1Memory(void *dst, uintptr_t addr, size_t size);
 bool writeEl1Memory(uintptr_t addr, const void *src, size_t size);
 
 static inline void panic(void) {
+#ifndef PLATFORM_QEMU
     __builtin_trap();
+#endif
     for (;;);
 }

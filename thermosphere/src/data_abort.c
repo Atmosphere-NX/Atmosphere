@@ -15,6 +15,7 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 #include "data_abort.h"
 #include "sysreg.h"
 #include "debug_log.h"
@@ -25,20 +26,20 @@
 
 void dumpUnhandledDataAbort(DataAbortIss dabtIss, u64 far, const char *msg)
 {
-    DEBUG("Unhandled");
-    DEBUG(" %s ", msg);
-    DEBUG("%s at ", dabtIss.wnr ? "write" : "read");
+    char s1[64], s2[32], s3[64] = "";
+    (void)s1; (void)s2; (void)s3;
+    sprintf(s1, "Unhandled %s %s", msg , dabtIss.wnr ? "write" : "read");
     if (dabtIss.fnv) {
-        DEBUG("<unk>");
+        sprintf(s2, "<unk>");
     } else {
-        DEBUG("%016llx", far);
+        sprintf(s2, "%016lx", far);
     }
 
     if (dabtIss.isv) {
-        DEBUG(" size %u Rt=%u", BIT(dabtIss.sas), dabtIss.srt);
+        sprintf(s3, ", size %u Rt=%u", BIT(dabtIss.sas), dabtIss.srt);
     }
 
-    DEBUG("\n");
+    DEBUG("%s at %s%s\n", s1, s2, s3);
 }
 
 void handleLowerElDataAbortException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
