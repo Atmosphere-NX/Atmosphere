@@ -25,6 +25,7 @@ namespace ams::mitm::bpc {
 
     /* Atmosphere power utilities. */
     Result LoadRebootPayload();
+    Result DetectPreferredRebootFunctionality();
     void RebootForFatalError(const ams::FatalErrorContext *ctx);
 
 }
