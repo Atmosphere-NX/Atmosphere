@@ -66,6 +66,7 @@ CFLAGS	:= \
 	-fdata-sections \
 	-fomit-frame-pointer \
 	-fno-asynchronous-unwind-tables \
+	-fstrict-volatile-bitfields \
 	-fno-unwind-tables \
 	-std=gnu11 \
 	-Werror \
