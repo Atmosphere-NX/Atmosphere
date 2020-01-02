@@ -118,18 +118,26 @@ finished:
     ret
 
 .section    .text.flush_dcache_all, "ax", %progbits
-.type       flush_dcache_all, %function
 .global     flush_dcache_all
+.type       flush_dcache_all, %function
+.func       flush_dcache_all
+.cfi_startproc
 flush_dcache_all:
     mov x0, #0
     b   __asm_dcache_all
+.endfunc
+.cfi_endproc
 
 .section    .text.invalidate_dcache_all, "ax", %progbits
-.type       invalidate_dcache_all, %function
 .global     invalidate_dcache_all
+.type       invalidate_dcache_all, %function
+.func       invalidate_dcache_all
+.cfi_startproc
 invalidate_dcache_all:
     mov x0, #1
     b   __asm_dcache_all
+.endfunc
+.cfi_endproc
 
 /*
  * void __asm_flush_dcache_range(start, end) (renamed -> flush_dcache_range)
@@ -140,8 +148,10 @@ invalidate_dcache_all:
  * x1: end address
  */
 .section    .text.flush_dcache_range, "ax", %progbits
-.type       flush_dcache_range, %function
 .global     flush_dcache_range
+.type       flush_dcache_range, %function
+.func       flush_dcache_range
+.cfi_startproc
 flush_dcache_range:
     mrs x3, ctr_el0
     lsr x3, x3, #16
@@ -158,6 +168,8 @@ flush_dcache_range:
     b.lo    1b
     dsb sy
     ret
+.endfunc
+.cfi_endproc
 
 /*
  * void __asm_invalidate_dcache_range(start, end) (-> invalidate_dcache_range)
@@ -168,8 +180,10 @@ flush_dcache_range:
  * x1: end address
  */
 .section    .text.invalidate_dcache_range, "ax", %progbits
-.type       invalidate_dcache_range, %function
 .global     invalidate_dcache_range
+.type       invalidate_dcache_range, %function
+.func       invalidate_dcache_range
+.cfi_startproc
 invalidate_dcache_range:
     mrs  x3, ctr_el0
     ubfm x3, x3, #16, #19
@@ -185,6 +199,8 @@ invalidate_dcache_range:
     b.lo    1b
     dsb sy
     ret
+.endfunc
+.cfi_endproc
 
 /*
  * void __asm_invalidate_icache_all(void) (-> invalidate_icache_inner_shareable)
@@ -192,8 +208,10 @@ invalidate_dcache_range:
  * invalidate all icache entries.
  */
 .section    .text.invalidate_icache_all_inner_shareable, "ax", %progbits
-.type       invalidate_icache_all_inner_shareable, %function
 .global     invalidate_icache_all_inner_shareable
+.type       invalidate_icache_all_inner_shareable, %function
+.func       invalidate_icache_all_inner_shareable
+.cfi_startproc
 invalidate_icache_all_inner_shareable:
     dsb ish
     isb
@@ -201,10 +219,14 @@ invalidate_icache_all_inner_shareable:
     dsb ish
     isb
     ret
+.endfunc
+.cfi_endproc
 
 .section    .text.invalidate_icache_all, "ax", %progbits
-.type       invalidate_icache_all, %function
 .global     invalidate_icache_all
+.type       invalidate_icache_all, %function
+.func     invalidate_icache_all
+.cfi_startproc
 invalidate_icache_all:
     dsb sy
     isb
@@ -212,10 +234,14 @@ invalidate_icache_all:
     dsb sy
     isb
     ret
+.endfunc
+.cfi_endproc
 
 .section    .text.set_memory_registers_enable_mmu, "ax", %progbits
-.type       set_memory_registers_enable_mmu, %function
 .global     set_memory_registers_enable_mmu
+.type       set_memory_registers_enable_mmu, %function
+.func       set_memory_registers_enable_mmu
+.cfi_startproc
 set_memory_registers_enable_mmu:
     msr     ttbr0_el2, x0
     msr     tcr_el2, x1
@@ -238,10 +264,14 @@ set_memory_registers_enable_mmu:
     isb
 
     ret
+.endfunc
+.cfi_endproc
 
 .section    .text.set_memory_registers_enable_stage2, "ax", %progbits
-.type       set_memory_registers_enable_stage2, %function
 .global     set_memory_registers_enable_stage2
+.type       set_memory_registers_enable_stage2, %function
+.func       set_memory_registers_enable_stage2
+.cfi_startproc
 set_memory_registers_enable_stage2:
     msr     vttbr_el2, x0
     msr     vtcr_el2, x1
@@ -262,3 +292,5 @@ set_memory_registers_enable_stage2:
     isb
 
     ret
+.endfunc
+.cfi_endproc

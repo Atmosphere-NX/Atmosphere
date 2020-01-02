@@ -17,8 +17,10 @@
 
 // Precondition: x1 <= 16
 .section    .text.loadBreakpointRegs, "ax", %progbits
-.type       loadBreakpointRegs, %function
 .global     loadBreakpointRegs
+.type       loadBreakpointRegs, %function
+.func       loadBreakpointRegs
+.cfi_startproc
 loadBreakpointRegs:
     // x1 = number
     adr     x16, 1f
@@ -38,11 +40,15 @@ loadBreakpointRegs:
     dsb     sy
     isb
     ret
+.endfunc
+.cfi_endproc
 
 // Precondition: x1 <= 16
 .section    .text.loadWatchpointRegs, "ax", %progbits
-.type       loadWatchpointRegs, %function
 .global     loadWatchpointRegs
+.type       loadWatchpointRegs, %function
+.func       loadWatchpointRegs
+.cfi_startproc
 loadWatchpointRegs:
     // x1 = number
     adr     x16, 1f
@@ -62,3 +68,5 @@ loadWatchpointRegs:
     dsb     sy
     isb
     ret
+.endfunc
+.cfi_endproc

@@ -75,7 +75,7 @@ _startCommon:
     isb
 
     mov     x0, sp
-    bl      main
+    bl      thermosphereMain
 
     dsb     sy
     isb

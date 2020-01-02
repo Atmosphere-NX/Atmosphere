@@ -25,13 +25,11 @@ static void loadKernelViaSemihosting(void)
     DEBUG("Loading kernel via semihosted file I/O... ");
     handle = semihosting_file_open("test_kernel.bin", FOPEN_MODE_RB);
     if (handle < 0) {
-        DEBUG("failed to open file (%ld)!\n", handle);
-        panic();
+        PANIC("failed to open file (%ld)!\n", handle);
     }
 
     if ((ret = semihosting_file_read(handle, &len, buf)) < 0) {
-        DEBUG("failed to read file (%ld)!\n", ret);
-        panic();
+        PANIC("failed to read file (%ld)!\n", ret);
     }
 
     DEBUG("OK!\n");
@@ -39,7 +37,7 @@ static void loadKernelViaSemihosting(void)
     currentCoreCtx->kernelEntrypoint = buf;
 }
 
-void main(ExceptionStackFrame *frame)
+void thermosphereMain(ExceptionStackFrame *frame)
 {
     enableTraps();
     enableBreakpointsAndWatchpoints();
@@ -58,8 +56,7 @@ void main(ExceptionStackFrame *frame)
             if (semihosting_connection_supported()) {
                 loadKernelViaSemihosting();
             } else {
-                DEBUG("Kernel not loaded!\n");
-                panic();
+                PANIC("Kernel not loaded!\n");
             }
         }
     }

@@ -23,8 +23,10 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-.global spinlockLock
+.global  spinlockLock
 .type   spinlockLock, %function
+.func   spinlockLock
+.cfi_startproc
 spinlockLock:
     mov     w2, #1
     sevl
@@ -36,10 +38,16 @@ spinlockLock:
             stxr        w1, w2, [x0]
             cbnz        w1, l2
     ret
+.endfunc
+.cfi_endproc
 
 .global spinlockUnlock
 .type   spinlockUnlock, %function
+.func   spinlockUnlock
+.cfi_startproc
 spinlockUnlock:
     stlr    wzr, [x0]
     sev
     ret
+.endfunc
+.cfi_endproc
