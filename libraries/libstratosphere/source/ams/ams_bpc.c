@@ -40,7 +40,7 @@ Result amsBpcRebootToFatalError(void *ctx) {
     /* Note: this takes in an sts::ams::FatalErrorContext. */
     /* static_assert(sizeof() == 0x350) is done at type definition. */
     return serviceDispatch(&g_amsBpcSrv, 65000,
-        .buffer_attrs = { SfBufferAttr_Out | SfBufferAttr_HipcMapAlias | SfBufferAttr_FixedSize },
+        .buffer_attrs = { SfBufferAttr_In | SfBufferAttr_HipcMapAlias | SfBufferAttr_FixedSize },
         .buffers = { { ctx, 0x350 } },
     );
 }
