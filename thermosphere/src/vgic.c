@@ -226,8 +226,6 @@ static inline bool vgicIsVirqEdgeTriggered(u16 id)
 
     if (id < 16) {
         return true;
-    } else if (id < 32) {
-        return false;
     } else {
         return (g_irqManager.gic.gicd->icfgr[id / 16] & (2 << (id % 16))) != 0;
     }
