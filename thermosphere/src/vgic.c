@@ -651,7 +651,7 @@ static void vgicCleanupPendingList(void)
 
             // Note: we can't touch PPIs for other cores... but each core will call this function anyway.
             if (id >= 32 || coreId == currentCoreCtx->coreId) {
-                u8 mask = g_irqManager.gic.gicd->ispendr[id / 32] & BIT(id % 32);
+                u32 mask = g_irqManager.gic.gicd->ispendr[id / 32] & BIT(id % 32);
                 if (mask == 0) {
                     g_irqManager.gic.gicd->icactiver[id / 32] = mask;
                     pending = false;
