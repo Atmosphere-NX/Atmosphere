@@ -1,4 +1,38 @@
 # Changelog
+## 0.10.2
++ hbl configuration was made more flexible.
+  + Up to eight specific program ids can now be specified to have their own override keys.
+  + This allows designating both the album applet and a specific game as hbl by default as desired.
+  + Configuration targeting a specific program is now mutually exclusive with override-any-app for that program.
+    + This fixes unintuitive behavior when override key differed for an application specific program.
++ Loader's external content fileystem support was fixed (thanks @misson20000!).
++ KernelLdr was reimplemented.
+  + This is the first step towards developing mesosphere, Atmosphere's planned reimplementation of the Switch's Kernel.
+  + The typical user won't notice anything different, as there are no extensions, but a lot of groundwork was laid for future development.
++ Improvements were made to the way Atmosphere's buildsystem detects source code files.
+  + This significantly reduces compilation time (saving >30 seconds) on the machine that builds official releases.
++ Certain device code was cleaned up and made more correct in fusee/sept/exosphere (thanks @hexkyz!).
++ A number of changes were made to the way fs.mitm builds images when providing a layeredfs romfs.
+  + Some games (Resident Evil 6, Football Manager 2020 Touch, possibly others) have enormous numbers of files.
+  + Attempting to create a layeredfs mod for these games actually caused fs.mitm to run out of memory, causing a fatal error.
+  + The code that creates these images was changed to be significantly more memory efficient.
+  + However, these changes also cause a significant slowdown in the romfs building code (~2-5x).
+  + This introduced a noticeable stutter when launching a game, because the UI thread would block on the romfs creation.
+  + To solve this, fs.mitm now lazily initializes the image in a background thread.
+  + This fixes stutter issues, however some games may be slightly slower (~1-2s in the worst cases) to transition from the "loading" GIF to gameplay now.
+    + Please note: the slowdown is not noticeable in the common case where games don't have tons of files (typical is ~0.1-0.2 seconds).
+    + Once the image has been built, there is no further speed penalty at runtime -- only when the game is launched.
++ A number of other bugs were fixed, including:
+  + Several minor logic inversions that could have caused fatal errors when modding games.
+  + Atmosphere's new-ipc code did not handle "automatic" recvlist buffers correctly, so some non-libnx homebrew could crash.
+  + fs.mitm now correctly mitms sdb, which makes redirection of certain system data archives work again.
+    + In 0.10.0/0.10.1, changing the system font/language did not work correctly due to this.
+  +  A bug was fixed in process cleanup that caused the system to hang on < 5.0.0.
++ The temporary hid-mitm added in Atmosphere 0.9.0 was disabled by default.
+  + Please ensure your homebrew is updated.
+  + For now, users may re-enable this mitm by use of a custom setting (`atmosphere!enable_deprecated_hid_mitm`) to ease the transition process some.
+  + Please note: support for this setting may be removed to save memory in a future atmosphere release.
++ General system stability improvements to enhance the user's experience.
 ## 0.10.1
 + A bug was fixed that caused memory reallocation to the system pool to work improperly on firmware 5.0.0 and above.
   + Atmosphere was always trying to deallocate memory away from the applet pool and towards the system pool.
