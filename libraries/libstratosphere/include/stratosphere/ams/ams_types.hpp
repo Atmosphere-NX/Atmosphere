@@ -38,27 +38,41 @@ namespace ams::exosphere {
     };
     #undef AMS_DEFINE_TARGET_FIRMWARE_ENUM
 
-    constexpr inline u32 GetVersion(u32 major, u32 minor, u32 micro) {
+    constexpr ALWAYS_INLINE u32 GetVersion(u32 major, u32 minor, u32 micro) {
         return (major << 16) | (minor << 8) | (micro);
     }
 
     struct ApiInfo {
-        u32 major_version;
-        u32 minor_version;
-        u32 micro_version;
-        TargetFirmware target_firmware;
-        u32 master_key_revision;
+        using MasterKeyRevision     = util::BitPack64::Field<0,                           8, u32>;
+        using TargetFirmwareVersion = util::BitPack64::Field<MasterKeyRevision::Next,     8, TargetFirmware>;
+        using MicroVersion          = util::BitPack64::Field<TargetFirmwareVersion::Next, 8, u32>;
+        using MinorVersion          = util::BitPack64::Field<MicroVersion::Next,          8, u32>;
+        using MajorVersion          = util::BitPack64::Field<MinorVersion::Next,          8, u32>;
 
-        constexpr u32 GetVersion() const {
-            return ::ams::exosphere::GetVersion(this->major_version, this->minor_version, this->micro_version);
+        util::BitPack64 value;
+
+        constexpr ALWAYS_INLINE u32 GetVersion() const {
+            return ::ams::exosphere::GetVersion(this->GetMajorVersion(), this->GetMinorVersion(), this->GetMicroVersion());
         }
 
-        constexpr TargetFirmware GetTargetFirmware() const {
-            return this->target_firmware;
+        constexpr ALWAYS_INLINE u32 GetMajorVersion() const {
+            return this->value.Get<MajorVersion>();
         }
 
-        constexpr u32 GetMasterKeyRevision() const {
-            return this->master_key_revision;
+        constexpr ALWAYS_INLINE u32 GetMinorVersion() const {
+            return this->value.Get<MinorVersion>();
+        }
+
+        constexpr ALWAYS_INLINE u32 GetMicroVersion() const {
+            return this->value.Get<MicroVersion>();
+        }
+
+        constexpr ALWAYS_INLINE TargetFirmware GetTargetFirmware() const {
+            return this->value.Get<TargetFirmwareVersion>();
+        }
+
+        constexpr ALWAYS_INLINE u32 GetMasterKeyRevision() const {
+            return this->value.Get<MasterKeyRevision>();
         }
     };
 

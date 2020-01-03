@@ -26,13 +26,7 @@ namespace ams::exosphere {
             R_ASSERT(ResultNotPresent());
         }
 
-        return ApiInfo{
-            .major_version = static_cast<u32>((exosphere_cfg >> 0x20) & 0xFF),
-            .minor_version = static_cast<u32>((exosphere_cfg >> 0x18) & 0xFF),
-            .micro_version = static_cast<u32>((exosphere_cfg >> 0x10) & 0xFF),
-            .target_firmware = static_cast<TargetFirmware>((exosphere_cfg >> 0x08) & 0xFF),
-            .master_key_revision = static_cast<u32>((exosphere_cfg >> 0x00) & 0xFF),
-        };
+        return ApiInfo{ util::BitPack64(exosphere_cfg) };
     }
 
     void ForceRebootToRcm() {
