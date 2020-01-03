@@ -20,11 +20,6 @@ namespace ams::kern {
 
     namespace {
 
-        /* Convenience definitions. */
-        constexpr size_t FourGigabytes  = 0x100000000ul;
-        constexpr size_t SixGigabytes   = 0x180000000ul;
-        constexpr size_t EightGigabytes = 0x200000000ul;
-
         ALWAYS_INLINE size_t GetRealMemorySizeForInit() {
             /* TODO: Move this into a header for the MC in general. */
             constexpr u32 MemoryControllerConfigurationRegister = 0x70019050;
@@ -49,11 +44,11 @@ namespace ams::kern {
             switch (GetKernelConfigurationForInit().Get<smc::KernelConfiguration::MemorySize>()) {
                 case smc::MemorySize_4GB:
                 default: /* All invalid modes should go to 4GB. */
-                    return FourGigabytes;
+                    return 4_GB;
                 case smc::MemorySize_6GB:
-                    return SixGigabytes;
+                    return 6_GB;
                 case smc::MemorySize_8GB:
-                    return EightGigabytes;
+                    return 8_GB;
             }
         }
 

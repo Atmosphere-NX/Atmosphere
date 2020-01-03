@@ -28,19 +28,17 @@ namespace ams::pm::resource {
         };
         constexpr size_t LimitableResource_Count = util::size(LimitableResources);
 
-        constexpr size_t Megabyte = 0x100000;
-
         /* Definitions for limit differences over time. */
         constexpr size_t ExtraSystemThreadCount400   = 100;
-        constexpr size_t ExtraSystemMemorySize400    = 10 * Megabyte;
-        constexpr size_t ExtraSystemMemorySize500    = 12 * Megabyte;
+        constexpr size_t ExtraSystemMemorySize400    = 10_MB;
+        constexpr size_t ExtraSystemMemorySize500    = 12_MB;
         constexpr size_t ExtraSystemEventCount600    = 100;
         constexpr size_t ExtraSystemSessionCount600  = 100;
-        constexpr size_t ReservedMemorySize600       = 5 * Megabyte;
+        constexpr size_t ReservedMemorySize600       = 5_MB;
 
         /* Atmosphere always allocates extra memory for system usage. */
-        constexpr size_t ExtraSystemMemorySizeAtmosphere    = 24 * Megabyte;
-        constexpr size_t ExtraSystemMemorySizeAtmosphere500 = 33 * Megabyte; /* Applet pool is 0x20100000 */
+        constexpr size_t ExtraSystemMemorySizeAtmosphere    = 24_MB;
+        constexpr size_t ExtraSystemMemorySizeAtmosphere500 = 33_MB; /* Applet pool is 0x20100000 */
 
         /* Globals. */
         os::Mutex g_resource_limit_lock;
@@ -75,29 +73,29 @@ namespace ams::pm::resource {
 
         u64 g_memory_resource_limits[spl::MemoryArrangement_Count][ResourceLimitGroup_Count] = {
             [spl::MemoryArrangement_Standard] = {
-                [ResourceLimitGroup_System]      = 269  * Megabyte,
-                [ResourceLimitGroup_Application] = 3285 * Megabyte,
-                [ResourceLimitGroup_Applet]      = 535  * Megabyte,
+                [ResourceLimitGroup_System]      =  269_MB,
+                [ResourceLimitGroup_Application] = 3285_MB,
+                [ResourceLimitGroup_Applet]      =  535_MB,
             },
             [spl::MemoryArrangement_StandardForAppletDev] = {
-                [ResourceLimitGroup_System]      = 481  * Megabyte,
-                [ResourceLimitGroup_Application] = 2048 * Megabyte,
-                [ResourceLimitGroup_Applet]      = 1560 * Megabyte,
+                [ResourceLimitGroup_System]      =  481_MB,
+                [ResourceLimitGroup_Application] = 2048_MB,
+                [ResourceLimitGroup_Applet]      = 1560_MB,
             },
             [spl::MemoryArrangement_StandardForSystemDev] = {
-                [ResourceLimitGroup_System]      = 328  * Megabyte,
-                [ResourceLimitGroup_Application] = 3285 * Megabyte,
-                [ResourceLimitGroup_Applet]      = 476  * Megabyte,
+                [ResourceLimitGroup_System]      =  328_MB,
+                [ResourceLimitGroup_Application] = 3285_MB,
+                [ResourceLimitGroup_Applet]      =  476_MB,
             },
             [spl::MemoryArrangement_Expanded] = {
-                [ResourceLimitGroup_System]      = 653  * Megabyte,
-                [ResourceLimitGroup_Application] = 4916 * Megabyte,
-                [ResourceLimitGroup_Applet]      = 568  * Megabyte,
+                [ResourceLimitGroup_System]      =  653_MB,
+                [ResourceLimitGroup_Application] = 4916_MB,
+                [ResourceLimitGroup_Applet]      =  568_MB,
             },
             [spl::MemoryArrangement_ExpandedForAppletDev] = {
-                [ResourceLimitGroup_System]      = 653  * Megabyte,
-                [ResourceLimitGroup_Application] = 3285 * Megabyte,
-                [ResourceLimitGroup_Applet]      = 2199 * Megabyte,
+                [ResourceLimitGroup_System]      =  653_MB,
+                [ResourceLimitGroup_Application] = 3285_MB,
+                [ResourceLimitGroup_Applet]      = 2199_MB,
             },
         };
 
