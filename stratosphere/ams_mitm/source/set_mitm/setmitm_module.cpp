@@ -14,11 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../amsmitm_initialization.hpp"
-#include "../bpc_mitm/bpc_ams_power_utils.hpp"
 #include "setmitm_module.hpp"
 #include "set_mitm_service.hpp"
 #include "setsys_mitm_service.hpp"
-#include "settings_sd_kvs.hpp"
 
 namespace ams::mitm::settings {
 
@@ -42,12 +40,6 @@ namespace ams::mitm::settings {
     void MitmModule::ThreadFunction(void *arg) {
         /* Wait until initialization is complete. */
         mitm::WaitInitialized();
-
-        /* Load settings off the SD card. */
-        ams::settings::fwdbg::InitializeSdCardKeyValueStore();
-
-        /* Ensure that we reboot using the user's preferred method. */
-        R_ASSERT(ams::mitm::bpc::DetectPreferredRebootFunctionality());
 
         /* Create mitm servers. */
         R_ASSERT(g_server_manager.RegisterMitmServer<SetMitmService>(SetMitmServiceName));

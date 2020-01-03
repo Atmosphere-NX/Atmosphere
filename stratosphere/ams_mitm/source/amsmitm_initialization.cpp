@@ -17,6 +17,7 @@
 #include "amsmitm_initialization.hpp"
 #include "amsmitm_fs_utils.hpp"
 #include "bpc_mitm/bpc_ams_power_utils.hpp"
+#include "set_mitm/settings_sd_kvs.hpp"
 
 namespace ams::mitm {
 
@@ -227,6 +228,12 @@ namespace ams::mitm {
             sm::DoWithSession([]() {
                 R_ASSERT(setsysInitialize());
             });
+
+            /* Load settings off the SD card. */
+            settings::fwdbg::InitializeSdCardKeyValueStore();
+
+            /* Ensure that we reboot using the user's preferred method. */
+            R_ASSERT(mitm::bpc::DetectPreferredRebootFunctionality());
 
             /* Signal to waiters that we are ready. */
             g_init_event.Signal();

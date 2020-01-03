@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "../amsmitm_initialization.hpp"
 #include "hidmitm_module.hpp"
 #include "hid_mitm_service.hpp"
 
@@ -31,11 +32,28 @@ namespace ams::mitm::hid {
         constexpr size_t MaxServers = 1;
         sf::hipc::ServerManager<MaxServers, ServerOptions> g_server_manager;
 
+        bool ShouldMitmHidForCompability() {
+            u8 en = 0;
+            if (settings::fwdbg::GetSettingsItemValue(&en, sizeof(en), "atmosphere", "enable_deprecated_hid_mitm") == sizeof(en)) {
+                return (en != 0);
+            }
+            return false;
+        }
+
     }
 
     void MitmModule::ThreadFunction(void *arg) {
         /* This is only necessary on 9.x+ */
         if (hos::GetVersion() < hos::Version_900) {
+            return;
+        }
+
+        /* Wait until initialization is complete. */
+        mitm::WaitInitialized();
+
+        /* hid mitm was a temporary solution for compatibility. */
+        /* Unless we are configured to continue doing so, don't instantiate the mitm. */
+        if (!ShouldMitmHidForCompability()) {
             return;
         }
 
