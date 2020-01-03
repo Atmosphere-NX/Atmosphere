@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "../defines.hpp"
+#include "defines.hpp"
 
 namespace ams { inline namespace literals {
 
