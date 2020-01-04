@@ -301,7 +301,7 @@ static void vgicSetInterruptEnabledState(u16 id)
         vgicNotifyOtherCoreList(g_irqManager.gic.gicd->itargetsr[id]);
     }
 
-    g_irqManager.gic.gicd->isenabler[id / 32] |= BIT(id % 32);
+    g_irqManager.gic.gicd->isenabler[id / 32] = BIT(id % 32);
 }
 
 static void vgicClearInterruptEnabledState(u16 id)
@@ -319,7 +319,7 @@ static void vgicClearInterruptEnabledState(u16 id)
         vgicNotifyOtherCoreList(BIT(vgicGetVirqStateCoreId(state)));
     }
 
-    g_irqManager.gic.gicd->icenabler[id / 32] |= ~BIT(id % 32);
+    g_irqManager.gic.gicd->icenabler[id / 32] = BIT(id % 32);
 }
 
 static inline bool vgicGetInterruptEnabledState(u16 id)
@@ -405,7 +405,7 @@ static inline void vgicSetInterruptConfigBits(u16 id, u32 config)
     g_irqManager.gic.gicd->icfgr[id / 16] = cfg;
 }
 
-static inline u32 vgicGetInterruptConfigBits(u16 id, u32 config)
+static inline u32 vgicGetInterruptConfigBits(u16 id)
 {
     return (irqIsGuest(id) && vgicIsVirqEdgeTriggered(id)) ? 2 : 0;
 }
@@ -492,14 +492,14 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
             break;
 
         case GICDOFF(isenabler) ... GICDOFF(isenabler) + 1023/8: {
-            u32 base = 32 * (offset - GICDOFF(isenabler));
+            u32 base = 8 * (offset - GICDOFF(isenabler));
             FOREACH_BIT(tmp, pos, val) {
                 vgicSetInterruptEnabledState((u16)(base + pos));
             }
             break;
         }
         case GICDOFF(icenabler) ... GICDOFF(icenabler) + 1023/8: {
-            u32 base = 32 * (offset - GICDOFF(icenabler));
+            u32 base = 8 * (offset - GICDOFF(icenabler));
             FOREACH_BIT(tmp, pos, val) {
                 vgicClearInterruptEnabledState((u16)(base + pos));
             }
@@ -525,7 +525,7 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
         }
 
         case GICDOFF(icfgr) + 32/4 ... GICDOFF(icfgr) + 1023/4: {
-            u16 base = (u16)((offset & 0xFF) / 2);
+            u16 base = (u16)((offset & 0xFF) / 4);
             for (u16 i = 0; i < 16; i++) {
                 vgicSetInterruptConfigBits(base + i, val & 3);
                 val >>= 2;
@@ -580,7 +580,7 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
 
         case GICDOFF(isenabler) ... GICDOFF(isenabler) + 1023/8:
         case GICDOFF(icenabler) ... GICDOFF(icenabler) + 1023/8: {
-            u16 base = (u16)(32 * (offset & 0x7F));
+            u16 base = (u16)(8 * (offset & 0x7F));
             for (u16 i = 0; i < 32; i++) {
                 val |= vgicGetInterruptEnabledState(base + i) ? BIT(i) : 0;
             }
@@ -604,9 +604,9 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
         }
 
         case GICDOFF(icfgr) + 32/4 ... GICDOFF(icfgr) + 1023/4: {
-            u16 base = (u16)((offset & 0xFF) / 2);
+            u16 base = (u16)((offset & 0xFF) / 4);
             for (u16 i = 0; i < 16; i++) {
-                val |= vgicGetInterruptConfigBits(base + i, val & 3) << (2 * i);
+                val |= vgicGetInterruptConfigBits(base + i) << (2 * i);
             }
             break;
         }
@@ -653,7 +653,7 @@ static void vgicCleanupPendingList(void)
             if (id >= 32 || coreId == currentCoreCtx->coreId) {
                 u32 mask = g_irqManager.gic.gicd->ispendr[id / 32] & BIT(id % 32);
                 if (mask == 0) {
-                    g_irqManager.gic.gicd->icactiver[id / 32] = mask;
+                    g_irqManager.gic.gicd->icactiver[id / 32] = BIT(id % 32);
                     pending = false;
                 } else {
                     pending = true;

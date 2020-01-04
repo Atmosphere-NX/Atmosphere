@@ -146,7 +146,7 @@ export QEMU := qemu-system-aarch64
 #export QEMU := ~/qemu/aarch64-softmmu/qemu-system-aarch64
 
 QEMUFLAGS :=	-nographic -machine virt,secure=on,virtualization=on,gic-version=2 -cpu cortex-a57 -smp 4 -m 1024\
-			-bios bl1.bin -d unimp -semihosting-config enable,target=native -serial mon:stdio
+			-bios bl1.bin -d unimp,guest_errors -semihosting-config enable,target=native -serial mon:stdio
 
 # NOTE: copy bl1.bin, bl2.bin, bl31.bin from your own build of Arm Trusted Firmware!
 
