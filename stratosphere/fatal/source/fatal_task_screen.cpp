@@ -263,8 +263,9 @@ namespace ams::fatal::srv {
                     font::SetPosition(x + 47, font::GetY());
                     if (this->context->cpu_ctx.aarch32_ctx.HasRegisterValue(static_cast<aarch32::RegisterName>(i))) {
                         font::PrintMonospaceU32(this->context->cpu_ctx.aarch32_ctx.r[i]);
-                    } else {
                         font::PrintMonospaceBlank(8);
+                    } else {
+                        font::PrintMonospaceBlank(16);
                     }
                     font::Print("  ");
                     x = font::GetX();
@@ -272,8 +273,9 @@ namespace ams::fatal::srv {
                     font::SetPosition(x + 47, font::GetY());
                     if (this->context->cpu_ctx.aarch32_ctx.HasRegisterValue(static_cast<aarch32::RegisterName>(i + (aarch32::RegisterName_GeneralPurposeCount / 2)))) {
                         font::PrintMonospaceU32(this->context->cpu_ctx.aarch32_ctx.r[i + (aarch32::RegisterName_GeneralPurposeCount / 2)]);
-                    } else {
                         font::PrintMonospaceBlank(8);
+                    } else {
+                        font::PrintMonospaceBlank(16);
                     }
 
                     if (i == (aarch32::RegisterName_GeneralPurposeCount / 2) - 1) {
@@ -354,6 +356,7 @@ namespace ams::fatal::srv {
                             font::PrintFormat("BT[%02d]: ", i);
                             font::SetPosition(x + 72, font::GetY());
                             font::PrintMonospaceU32(bt_cur);
+                            font::PrintMonospaceBlank(8);
                             font::Print("  ");
                         }
 
@@ -362,6 +365,7 @@ namespace ams::fatal::srv {
                             font::PrintFormat("BT[%02d]: ", i + aarch32::CpuContext::MaxStackTraceDepth / 2);
                             font::SetPosition(x + 72, font::GetY());
                             font::PrintMonospaceU32(bt_next);
+                            font::PrintMonospaceBlank(8);
                         }
 
                         font::PrintLine("");
