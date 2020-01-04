@@ -100,20 +100,17 @@ static void initGic(void)
 static void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
 {
     volatile ArmGicV2Distributor *gicd = g_irqManager.gic.gicd;
-    gicd->icenabler[id / 32] |= BIT(id % 32);
+    gicd->icenabler[id / 32] = BIT(id % 32);
 
     if (id >= 32) {
         gicd->icfgr[id / 16] &= ~3 << (2 * (id % 16));
         gicd->icfgr[id / 16] |= (!isLevelSensitive ? 2 : 0) << (2 * (id % 16));
+        gicd->itargetsr[id]  |= BIT(currentCoreCtx->gicInterfaceId);
     }
 
-    if (id >= 16) {
-        gicd->itargetsr[id] |= currentCoreCtx->gicInterfaceId;
-    }
-
-    gicd->icpendr[id / 32] |= BIT(id % 32);
-    gicd->ipriorityr[id] = (prio << g_irqManager.priorityShift) & 0xFF;
-    gicd->isenabler[id / 32] |= BIT(id % 32);
+    gicd->icpendr[id / 32]      = BIT(id % 32);
+    gicd->ipriorityr[id]        = (prio << g_irqManager.priorityShift) & 0xFF;
+    gicd->isenabler[id / 32]    = BIT(id % 32);
 }
 
 void initIrq(void)
