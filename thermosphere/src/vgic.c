@@ -135,7 +135,7 @@ void vgicDebugPrintLrList(void)
     DEBUG("core %u lr [", currentCoreCtx->coreId);
     for (u32 i = 0; i < g_irqManager.numListRegisters; i++) {
         if (g_vgicUsedLrMap[currentCoreCtx->coreId] & BITL(i)) {
-            DEBUG("%u,", vgicGetVirqStateIndex(vgicGetVirqState(currentCoreCtx->coreId, g_irqManager.gic.gich->lr[i].virtualId)));
+            DEBUG("%u,", g_irqManager.gic.gich->lr[i].virtualId);
         } else {
             DEBUG("-,");
         }
@@ -157,6 +157,7 @@ static void vgicEnqueueVirqState(VirqStateList *list, VirqState *elem)
     if (list->first == vgicGetQueueEnd()) {
         list->first = list->last = elem;
         elem->listPrev = elem->listNext = VIRQLIST_END_ID;
+        //vgicDebugPrintList(list);
         return;
     }
 
@@ -178,7 +179,9 @@ static void vgicEnqueueVirqState(VirqStateList *list, VirqState *elem)
         // Otherwise, insert before
         u32 idx = vgicGetVirqStateIndex(elem);
         u32 posidx = vgicGetVirqStateIndex(pos);
+
         u32 previdx = pos->listPrev;
+        VirqState *prev = vgicGetPrevQueuedVirqState(pos);
 
         elem->listNext = posidx;
         elem->listPrev = previdx;
@@ -188,10 +191,10 @@ static void vgicEnqueueVirqState(VirqStateList *list, VirqState *elem)
         if (pos == list->first) {
             list->first = elem;
         } else {
-            VirqState *prev = vgicGetPrevQueuedVirqState(pos);
             prev->listNext = idx;
         }
     }
+    //vgicDebugPrintList(list);
 }
 
 static void vgicDequeueVirqState(VirqStateList *list, VirqState *elem)
@@ -217,6 +220,7 @@ static void vgicDequeueVirqState(VirqStateList *list, VirqState *elem)
     }
 
     elem->listPrev = elem->listNext = VIRQLIST_INVALID_ID;
+    //vgicDebugPrintList(list);
 }
 
 static inline void vgicNotifyOtherCoreList(u32 coreList)
@@ -235,7 +239,7 @@ static inline bool vgicIsVirqEdgeTriggered(u16 id)
     if (id < 16) {
         return true;
     } else {
-        return (g_irqManager.gic.gicd->icfgr[id / 16] & (2 << (id % 16))) != 0;
+        return (g_irqManager.gic.gicd->icfgr[id / 16] & (2 << IRQ_CFGR_SHIFT(id))) != 0;
     }
 }
 
@@ -409,8 +413,8 @@ static inline void vgicSetInterruptConfigBits(u16 id, u32 config)
 
     // Expose bit(2n) as nonprogrammable to the guest no matter what the physical distributor actually behaves
     u32 cfg = g_irqManager.gic.gicd->icfgr[id / 16];
-    cfg &= ~(2 << (id % 16));
-    cfg |= (config & 2) << (id % 16);
+    cfg &= ~(2 << IRQ_CFGR_SHIFT(id));
+    cfg |= (config & 2) << IRQ_CFGR_SHIFT(id);
     g_irqManager.gic.gicd->icfgr[id / 16] = cfg;
 }
 
