@@ -181,6 +181,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
         // Deactivate the interrupt
         gicc->dir = iar;
     } else {
+        if (irqId == 30) g_irqManager.gic.gicd->ispendr[0x80/32] = 0xFFFFFFFF;
         vgicEnqueuePhysicalIrq(irqId);
     }
 

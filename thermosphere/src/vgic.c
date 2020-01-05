@@ -38,7 +38,10 @@ typedef struct VirqState {
     bool active         : 1;
     bool handled        : 1;
     bool pendingLatch   : 1;
+    bool levelSensitive : 1;
     u32 coreId          : 3; // up to 8 cores, but not implemented yet
+    u32 targetList      : 8;
+    bool enabled        : 1;
     u64                 : 0;
 } VirqState;
 
@@ -281,29 +284,17 @@ static inline void vgicNotifyOtherCoreList(u32 coreList)
     }
 }
 
-static inline bool vgicIsVirqEdgeTriggered(u16 id)
-{
-    // Note: banked per CPU for SGIs and PPIs
-    // SGIs are *always* edge-triggered, and we decide to keep all PPIs level-sensitive at all times.
-
-    if (id < 16) {
-        return true;
-    } else {
-        return (g_irqManager.gic.gicd->icfgr[id / 16] & (2 << IRQ_CFGR_SHIFT(id))) != 0;
-    }
-}
-
 static inline bool vgicIsVirqPending(VirqState *state)
 {
     // In case we emulate ispendr in the future...
     // Note: this function is not 100% reliable. The interrupt might be active-not-pending or inactive
     // but it shouldn't matter since where we use it, it would only cause one extraneous SGI.
-    return state->pendingLatch || (!vgicIsVirqEdgeTriggered(vgicGetVirqStateInterruptId(state)) && state->pending);
+    return state->pendingLatch || (state->levelSensitive && state->pending);
 }
 
 static inline void vgicSetVirqPendingState(VirqState *state, bool val)
 {
-    if (!vgicIsVirqEdgeTriggered(vgicGetVirqStateInterruptId(state))) {
+    if (state->levelSensitive) {
         state->pending = val;
     } else {
         state->pendingLatch = val;
@@ -351,24 +342,28 @@ static inline u32 vgicGetDistributorImplementerIdentificationRegister(void)
 
 static void vgicSetInterruptEnabledState(u16 id)
 {
-    if (id < 16 || !irqIsGuest(id) || irqIsEnabled(id)) {
+    VirqState *state = vgicGetVirqState(currentCoreCtx->coreId, id);
+
+    if (id < 16 || !irqIsGuest(id) || state->enabled) {
         // Nothing to do...
         // Also, ignore for SGIs
         return;
     }
 
     // Similar effects to setting the target list to non-0 when it was 0...
-    VirqState *state = vgicGetVirqState(currentCoreCtx->coreId, id);
     if (vgicIsVirqPending(state)) {
-        vgicNotifyOtherCoreList(g_irqManager.gic.gicd->itargetsr[id]);
+        vgicNotifyOtherCoreList(state->targetList);
     }
 
+    state->enabled = true;
     g_irqManager.gic.gicd->isenabler[id / 32] = BIT(id % 32);
 }
 
 static void vgicClearInterruptEnabledState(u16 id)
 {
-    if (id < 16 || !irqIsGuest(id) || !irqIsEnabled(id)) {
+    VirqState *state = vgicGetVirqState(currentCoreCtx->coreId, id);
+
+    if (id < 16 || !irqIsGuest(id) || !state->enabled) {
         // Nothing to do...
         // Also, ignore for SGIs
         return;
@@ -376,18 +371,18 @@ static void vgicClearInterruptEnabledState(u16 id)
 
     // Similar effects to setting the target list to 0, we may need to notify the core
     // handling the interrupt if it's pending
-    VirqState *state = vgicGetVirqState(currentCoreCtx->coreId, id);
     if (state->handled) {
         vgicNotifyOtherCoreList(BIT(vgicGetVirqStateCoreId(state)));
     }
 
+    state->enabled = false;
     g_irqManager.gic.gicd->icenabler[id / 32] = BIT(id % 32);
 }
 
 static inline bool vgicGetInterruptEnabledState(u16 id)
 {
     // SGIs are always enabled
-    return id < 16 || (irqIsGuest(id) && irqIsEnabled(id));
+    return id < 16 || (irqIsGuest(id) && vgicGetVirqState(currentCoreCtx->coreId, id)->enabled);
 }
 
 static void vgicSetInterruptPriorityByte(u16 id, u8 priority)
@@ -412,7 +407,7 @@ static void vgicSetInterruptPriorityByte(u16 id, u8 priority)
     }
 
     state->priority = priority;
-    u32 targets = g_irqManager.gic.gicd->itargetsr[id];
+    u32 targets = state->targetList;
     if (targets != 0 && vgicIsVirqPending(state)) {
         vgicNotifyOtherCoreList(targets);
     }
@@ -439,19 +434,21 @@ static void vgicSetInterruptTargets(u16 id, u8 coreList)
     // Note that we take into account that the interrupt may be disabled.
     VirqState *state = vgicGetVirqState(currentCoreCtx->coreId, id);
     if (vgicIsVirqPending(state)) {
-        u8 oldList = g_irqManager.gic.gicd->itargetsr[id];
+        u8 oldList = state->targetList;
         u8 diffList = (oldList ^ coreList) & getActiveCoreMask();
         if (diffList != 0) {
             vgicNotifyOtherCoreList(diffList);
         }
     }
-    g_irqManager.gic.gicd->itargetsr[id] = coreList;
+
+    state->targetList = coreList;
+    g_irqManager.gic.gicd->itargetsr[id] = state->targetList;
 }
 
 static inline u8 vgicGetInterruptTargets(u16 id)
 {
     // For SGIs & PPIs, itargetsr is banked and contains the CPU ID
-    return (id < 32 || irqIsGuest(id)) ? g_irqManager.gic.gicd->itargetsr[id] : 0;
+    return (id < 32 || irqIsGuest(id)) ? vgicGetVirqState(currentCoreCtx->coreId, id)->targetList : 0;
 }
 
 static inline void vgicSetInterruptConfigBits(u16 id, u32 config)
@@ -461,17 +458,25 @@ static inline void vgicSetInterruptConfigBits(u16 id, u32 config)
         return;
     }
 
+    VirqState *state = vgicGetVirqState(currentCoreCtx->coreId, id);
+
     // Expose bit(2n) as nonprogrammable to the guest no matter what the physical distributor actually behaves
-    u32 cfg = g_irqManager.gic.gicd->icfgr[id / 16];
-    cfg &= ~(2 << IRQ_CFGR_SHIFT(id));
-    cfg |= (config & 2) << IRQ_CFGR_SHIFT(id);
-    g_irqManager.gic.gicd->icfgr[id / 16] = cfg;
+    bool newLvl = ((config & 2) << IRQ_CFGR_SHIFT(id)) == 0;
+
+    if (state->levelSensitive != newLvl) {
+        u32 cfg = g_irqManager.gic.gicd->icfgr[id / 16];
+        cfg &= ~(3 << IRQ_CFGR_SHIFT(id));
+        cfg |= (!newLvl ? 3 : 1) << IRQ_CFGR_SHIFT(id);
+        g_irqManager.gic.gicd->icfgr[id / 16] = cfg;
+
+        state->levelSensitive = newLvl;
+    }
 }
 
 static inline u32 vgicGetInterruptConfigBits(u16 id)
 {
     u32 oneNModel = id < 32 || !irqIsGuest(id) ? 0 : 1;
-    return (irqIsGuest(id) && vgicIsVirqEdgeTriggered(id)) ? 2 | oneNModel : oneNModel;
+    return (irqIsGuest(id) && !vgicGetVirqState(currentCoreCtx->coreId, id)->levelSensitive) ? 2 | oneNModel : oneNModel;
 }
 
 static void vgicSetSgiPendingState(u16 id, u32 coreId, u32 srcCoreId)
@@ -707,7 +712,7 @@ static void vgicCleanupPendingList(void)
         coreId = vgicGetVirqStateCoreId(node);
         if (id < 16) {
             pending = true;
-        } else if (!vgicIsVirqEdgeTriggered(id)) {
+        } else if (node->levelSensitive) {
             // For hardware interrupts, we have kept the interrupt active on the physical GICD
             // For level-sensitive interrupts, we need to check if they're also still physically pending (resampling).
             // If not, there's nothing to service anymore, and therefore we have to deactivate them, so that
@@ -750,7 +755,7 @@ static bool vgicTestInterruptEligibility(VirqState *state)
         return false;
     }
 
-    return vgicGetInterruptEnabledState(id) && (id < 32 || (g_irqManager.gic.gicd->itargetsr[id] & BIT(currentCoreCtx->coreId)) != 0);
+    return vgicGetInterruptEnabledState(id) && (id < 32 || (state->targetList & BIT(currentCoreCtx->coreId)) != 0);
 }
 
 static void vgicChoosePendingInterrupts(size_t *outNumChosen, VirqState *chosen[], size_t maxNum)
@@ -1034,12 +1039,30 @@ void vgicEnqueuePhysicalIrq(u16 irqId)
 void vgicInit(void)
 {
     if (currentCoreCtx->isBootCore) {
+        // All fields are reset to 0 on reset and deep sleep exit
+
         g_virqPendingQueue.first = g_virqPendingQueue.last = vgicGetQueueEnd();
 
         for (u32 i = 0; i < MAX_NUM_INTERRUPTS; i++) {
             g_virqStates[i].listNext = g_virqStates[i].listPrev = VIRQLIST_INVALID_ID;
             g_virqStates[i].priority = 0x1F;
         }
+
+        for (u32 i = 0; i < 4; i++) {
+            // SGIs, PPIs
+            for (u16 j = 0; j < 32; j++) {
+                VirqState *state = vgicGetVirqState(i, j);
+                state->targetList = BIT(i);
+                if (j < 16) {
+                    state->enabled = true;
+                } else {
+                    state->levelSensitive = (g_irqManager.gic.gicd->icfgr[j / 16] & (2 << IRQ_CFGR_SHIFT(j % 16))) == 0;
+                }
+            }
+        }
+
+        // All guest interrupts are initially configured as disabled
+        // All guest SPIs are initially configured as edge-triggered with no targets
     }
 
     // Deassert vIRQ line, just in case
