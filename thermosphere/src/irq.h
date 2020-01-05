@@ -25,6 +25,8 @@
 #define IRQ_PRIORITY_HOST       0
 #define IRQ_PRIORITY_GUEST      1
 
+#define IRQ_CFGR_SHIFT(id)      (2*((id) % 16))
+
 typedef struct IrqManager {
     RecursiveSpinlock lock;
     ArmGicV2 gic;

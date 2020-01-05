@@ -104,8 +104,8 @@ static void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
 
     if (id >= 32) {
         u32 cfgr = gicd->icfgr[id / 16];
-        cfgr &= ~(3 << (2 * (id % 16)));
-        cfgr |= (!isLevelSensitive ? 3 : 1) << (2 * (id % 16));
+        cfgr &= ~(3 << IRQ_CFGR_SHIFT(id));
+        cfgr |= (!isLevelSensitive ? 3 : 1) << IRQ_CFGR_SHIFT(id);
         gicd->icfgr[id / 16] = cfgr;
         gicd->itargetsr[id]  |= currentCoreCtx->gicInterfaceMask;
     }
