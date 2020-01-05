@@ -18,9 +18,11 @@
 
 #include "types.h"
 
-#define GIC_IRQID_MAX                   1020
-#define GIC_IRQID_SPURIOUS_GRPNEEDACK   (GIC_IRQID_MAX + 2)
-#define GIC_IRQID_SPURIOUS              (GIC_IRQID_MAX + 3)
+#define GIC_IRQID_MAX                   1019
+#define GIC_IRQID_RESERVED_START        1020
+
+#define GIC_IRQID_SPURIOUS_GRPNEEDACK   (GIC_IRQID_RESERVED_START + 2)
+#define GIC_IRQID_SPURIOUS              (GIC_IRQID_RESERVED_START + 3)
 #define GICV_PRIO_LEVELS                32
 #define GICV_IDLE_PRIORITY              0xF8 // sometimes 0xFF
 
