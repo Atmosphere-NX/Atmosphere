@@ -70,12 +70,12 @@ static inline void generateSgiForAll(ThermosphereSgi id)
     generateSgiForList(id, MASK(g_irqManager.numCpuInterfaces));
 }
 
-static inline bool irqIsEnabled(u16 id)
-{
-    return (g_irqManager.gic.gicd->isenabler[id / 32] & BIT(id % 32)) != 0;
-}
-
 static inline bool irqIsGuest(u16 id)
 {
+    if (id >= 32 + g_irqManager.numSharedInterrupts) {
+        DEBUG("vgic: %u not supported by physical distributor\n", (u32)id);
+        return false;
+    }
+
     return id != GIC_IRQID_MAINTENANCE && id != GIC_IRQID_HYP_TIMER;
 }
