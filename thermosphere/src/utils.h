@@ -36,9 +36,23 @@
 
 #define TEMPORARY       __attribute__((section(".tempbss")))
 
+#define PANIC(...)      do { DEBUG(__VA_ARGS__); panic(); } while (false)
+
 #define FOREACH_BIT(tmpmsk, var, word) for (u64 tmpmsk = (word), var = __builtin_ctzll(word); tmpmsk != 0; tmpmsk &= ~BITL(var), var = __builtin_ctzll(tmpmsk))
 
-#define PANIC(...)      do { DEBUG(__VA_ARGS__); panic(); } while (false)
+#define _DECLARE_ASM_ARITHMETIC_UNARY_HELPER(sz, regalloc, op)\
+static inline u##sz __##op##sz(u##sz n)\
+{\
+    u##sz res;\
+    __asm__ __volatile__ (#op " %" #regalloc "[res], %" #regalloc "[n]" : [res] "=r" (res) : [n] "r" (n));\
+    return res;\
+}
+
+#define _DECLARE_ASM_ARITHMETIC_UNARY_HELPER64(op)  _DECLARE_ASM_ARITHMETIC_UNARY_HELPER(64, x, op)
+#define _DECLARE_ASM_ARITHMETIC_UNARY_HELPER32(op)  _DECLARE_ASM_ARITHMETIC_UNARY_HELPER(32, w, op)
+
+_DECLARE_ASM_ARITHMETIC_UNARY_HELPER64(rbit)
+_DECLARE_ASM_ARITHMETIC_UNARY_HELPER32(rbit)
 
 static inline void __dsb_sy(void)
 {

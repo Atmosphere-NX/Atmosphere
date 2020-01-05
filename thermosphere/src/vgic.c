@@ -143,29 +143,14 @@ void vgicDebugPrintLrList(void)
     DEBUG("]\n");
 }
 
-// Note: ordered by priority
-static void vgicEnqueueVirqState(VirqStateList *list, VirqState *elem)
+static inline void vgicInsertVirqStateBefore(VirqStateList *list, VirqState *pos, VirqState *elem)
 {
-    VirqState *pos;
-
-    if (vgicIsStateQueued(elem)) {
-        PANIC("vgicEnqueueVirqState: unsanitized argument idx=%u previd=%u nextid=%u\n", (u32)vgicGetVirqStateIndex(elem), elem->listPrev, elem->listNext);
-    }
-
     ++list->size;
     // Empty list
     if (list->first == vgicGetQueueEnd()) {
         list->first = list->last = elem;
         elem->listPrev = elem->listNext = VIRQLIST_END_ID;
-        //vgicDebugPrintList(list);
         return;
-    }
-
-    for (pos = list->first; pos != vgicGetQueueEnd(); pos = vgicGetNextQueuedVirqState(pos)) {
-        // Lowest priority number is higher
-        if (elem->priority <= pos->priority) {
-            break;
-        }
     }
 
     if (pos == vgicGetQueueEnd()) {
@@ -194,7 +179,73 @@ static void vgicEnqueueVirqState(VirqStateList *list, VirqState *elem)
             prev->listNext = idx;
         }
     }
-    //vgicDebugPrintList(list);
+}
+
+// Currently unused
+static inline void vgicInsertVirqStateAfter(VirqStateList *list, VirqState *pos, VirqState *elem)
+{
+    ++list->size;
+    // Empty list
+    if (list->first == vgicGetQueueEnd()) {
+        list->first = list->last = elem;
+        elem->listPrev = elem->listNext = VIRQLIST_END_ID;
+        return;
+    }
+
+    if (pos == vgicGetQueueEnd()) {
+        // Insert before first
+        pos = list->first;
+
+        elem->listPrev = pos->listPrev;
+        elem->listNext = vgicGetVirqStateIndex(pos);
+        pos->listPrev = vgicGetVirqStateIndex(elem);
+        list->first = elem;
+    } else {
+        // Otherwise, insert after
+        u32 idx = vgicGetVirqStateIndex(elem);
+        u32 posidx = vgicGetVirqStateIndex(pos);
+
+        u32 nextidx = pos->listPrev;
+        VirqState *next = vgicGetNextQueuedVirqState(pos);
+
+        elem->listPrev = posidx;
+        elem->listNext = nextidx;
+
+        pos->listNext = idx;
+
+        if (pos == list->last) {
+            list->last = elem;
+        } else {
+            next->listPrev = idx;
+        }
+    }
+}
+
+static inline int vgicCompareVirqState(const VirqState *a, const VirqState *b)
+{
+    // Lower priority number is higher; we sort by descending priority, ie. ascending priority number
+    // Put the interrupts that were previously in the LR before the one which don't
+    int n1 = (int)(a->priority - b->priority);
+    return n1 == 0 ? (int)b->handled - (int)a->handled : n1;
+}
+
+// Note: ordered by priority
+static void vgicEnqueueVirqState(VirqStateList *list, VirqState *elem)
+{
+    VirqState *pos;
+
+    if (vgicIsStateQueued(elem)) {
+        PANIC("vgicEnqueueVirqState: unsanitized argument idx=%u previd=%u nextid=%u\n", (u32)vgicGetVirqStateIndex(elem), elem->listPrev, elem->listNext);
+    }
+
+    for (pos = list->first; pos != vgicGetQueueEnd(); pos = vgicGetNextQueuedVirqState(pos)) {
+        // Sort predicate should be stable
+        if (vgicCompareVirqState(elem, pos) < 0) {
+            break;
+        }
+    }
+
+    vgicInsertVirqStateBefore(list, pos, elem);
 }
 
 static void vgicDequeueVirqState(VirqStateList *list, VirqState *elem)
@@ -220,7 +271,6 @@ static void vgicDequeueVirqState(VirqStateList *list, VirqState *elem)
     }
 
     elem->listPrev = elem->listNext = VIRQLIST_INVALID_ID;
-    //vgicDebugPrintList(list);
 }
 
 static inline void vgicNotifyOtherCoreList(u32 coreList)
@@ -855,12 +905,14 @@ void vgicUpdateState(void)
     u32 coreId = currentCoreCtx->coreId;
 
     // First, put back inactive interrupts into the queue, handle some SGI stuff
-    u64 usedMap = g_vgicUsedLrMap[coreId];
+    // Need to handle the LRs in reverse order to keep list stability
+    u64 usedMap = __rbit64(g_vgicUsedLrMap[coreId]);
     FOREACH_BIT (tmp, pos, usedMap) {
-        if (!vgicUpdateListRegister(&gich->lr[pos])) {
-            g_vgicUsedLrMap[coreId] &= ~BITL(pos);
+        if (!vgicUpdateListRegister(&gich->lr[63 - pos])) {
+            usedMap &= ~BITL(pos);
         }
     }
+    g_vgicUsedLrMap[coreId] = __rbit64(usedMap);
 
     // Then, clean the list up
     vgicCleanupPendingList();
