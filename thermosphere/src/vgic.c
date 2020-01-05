@@ -21,21 +21,25 @@
 
 #include "debug_log.h"
 
-#define MAX_NUM_INTERRUPTS      (512 - 32 + 32 * 4)
+// Referring to array bounds:
+#define SPI_END_INDEX           (GIC_IRQID_MAX + 1 - 32)
+#define MAX_NUM_INTERRUPTS      (SPI_END_INDEX + 32 * 4)
+
 #define VIRQLIST_END_ID         MAX_NUM_INTERRUPTS
 #define VIRQLIST_INVALID_ID     (VIRQLIST_END_ID + 1)
 
-#define GICDOFF(field)      (offsetof(ArmGicV2Distributor, field))
+#define GICDOFF(field)          (offsetof(ArmGicV2Distributor, field))
 
 typedef struct VirqState {
-    u32 listPrev        : 10;
-    u32 listNext        : 10;
-    u8  priority        : 5;
+    u32 listPrev        : 11;
+    u32 listNext        : 11;
+    u32 priority        : 5;
     bool pending        : 1;
     bool active         : 1;
     bool handled        : 1;
     bool pendingLatch   : 1;
     u32 coreId          : 3; // up to 8 cores, but not implemented yet
+    u64                 : 0;
 } VirqState;
 
 typedef struct VirqStateList {
@@ -54,9 +58,12 @@ static bool TEMPORARY g_vgicIsDistributorEnabled = false;
 static inline VirqState *vgicGetVirqState(u32 coreId, u16 id)
 {
     if (id >= 32) {
-        return &g_virqStates[id];
+        return &g_virqStates[id - 32];
+    } else if (id <= GIC_IRQID_MAX) {
+        return &g_virqStates[SPI_END_INDEX + 32 * coreId + id];
     } else {
-        return &g_virqStates[512 - 32 + 32 * coreId + id];
+        // Shouldn't happen -- 1020 is a multiple of 4 and the switch case should catch it
+        return NULL;
     }
 }
 
@@ -72,6 +79,7 @@ static inline VirqState *vgicGetPrevQueuedVirqState(VirqState *cur)
 
 static inline VirqState *vgicGetQueueEnd(void)
 {
+    // Note: not a valid pointer -- one past the end
     return &g_virqStates[VIRQLIST_END_ID];
 }
 
@@ -88,8 +96,8 @@ static inline u32 vgicGetVirqStateIndex(VirqState *cur)
 static inline u16 vgicGetVirqStateInterruptId(VirqState *cur)
 {
     u32 idx = vgicGetVirqStateIndex(cur);
-    if (idx >= 512 - 32) {
-        return (idx - 512 + 32) % 32;
+    if (idx >= SPI_END_INDEX) {
+        return (idx - SPI_END_INDEX) % 32;
     } else {
         return 32 + idx;
     }
@@ -99,7 +107,7 @@ static inline u32 vgicGetVirqStateCoreId(VirqState *cur)
 {
     u32 idx = vgicGetVirqStateIndex(cur);
     if (vgicGetVirqStateInterruptId(cur) < 32) {
-        return (idx - 512 + 32) / 32;
+        return (idx - SPI_END_INDEX) / 32;
     } else {
         return cur->coreId;
     }
@@ -140,8 +148,8 @@ static void vgicEnqueueVirqState(VirqStateList *list, VirqState *elem)
 {
     VirqState *pos;
 
-    if (elem->listNext != VIRQLIST_INVALID_ID || elem->listPrev != VIRQLIST_INVALID_ID) {
-        PANIC("vgicEnqueueVirqState: unsanitized argument\n");
+    if (vgicIsStateQueued(elem)) {
+        PANIC("vgicEnqueueVirqState: unsanitized argument idx=%u previd=%u nextid=%u\n", (u32)vgicGetVirqStateIndex(elem), elem->listPrev, elem->listNext);
     }
 
     ++list->size;
@@ -399,15 +407,17 @@ static inline void vgicSetInterruptConfigBits(u16 id, u32 config)
         return;
     }
 
+    // Expose bit(2n) as nonprogrammable to the guest no matter what the physical distributor actually behaves
     u32 cfg = g_irqManager.gic.gicd->icfgr[id / 16];
-    cfg &= ~(3 << (id % 16));
+    cfg &= ~(2 << (id % 16));
     cfg |= (config & 2) << (id % 16);
     g_irqManager.gic.gicd->icfgr[id / 16] = cfg;
 }
 
 static inline u32 vgicGetInterruptConfigBits(u16 id)
 {
-    return (irqIsGuest(id) && vgicIsVirqEdgeTriggered(id)) ? 2 : 0;
+    u32 oneNModel = id < 32 || !irqIsGuest(id) ? 0 : 1;
+    return (irqIsGuest(id) && vgicIsVirqEdgeTriggered(id)) ? 2 | oneNModel : oneNModel;
 }
 
 static void vgicSetSgiPendingState(u16 id, u32 coreId, u32 srcCoreId)
@@ -475,13 +485,13 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
         case GICDOFF(icfgr) ... GICDOFF(icfgr) + 31/4:
             // Write ignored because of an implementation-defined choice
             break;
-        case GICDOFF(igroupr) ... GICDOFF(igroupr) + 1023/8:
+        case GICDOFF(igroupr) ... GICDOFF(igroupr) + GIC_IRQID_MAX/8:
             // Write ignored because we don't implement Group 1 here
             break;
-        case GICDOFF(ispendr) ... GICDOFF(ispendr) + 1023/8:
-        case GICDOFF(icpendr) ... GICDOFF(icpendr) + 1023/8:
-        case GICDOFF(isactiver) ... GICDOFF(isactiver) + 1023/8:
-        case GICDOFF(icactiver) ... GICDOFF(icactiver) + 1023/8:
+        case GICDOFF(ispendr) ... GICDOFF(ispendr) + GIC_IRQID_MAX/8:
+        case GICDOFF(icpendr) ... GICDOFF(icpendr) + GIC_IRQID_MAX/8:
+        case GICDOFF(isactiver) ... GICDOFF(isactiver) + GIC_IRQID_MAX/8:
+        case GICDOFF(icactiver) ... GICDOFF(icactiver) + GIC_IRQID_MAX/8:
         case GICDOFF(cpendsgir) ... GICDOFF(cpendsgir) + 15:
         case GICDOFF(spendsgir) ... GICDOFF(spendsgir) + 15:
             // Write ignored, not implemented (at least not yet, TODO)
@@ -491,14 +501,14 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
             vgicSetDistributorControlRegister(val);
             break;
 
-        case GICDOFF(isenabler) ... GICDOFF(isenabler) + 1023/8: {
+        case GICDOFF(isenabler) ... GICDOFF(isenabler) + GIC_IRQID_MAX/8: {
             u32 base = 8 * (offset - GICDOFF(isenabler));
             FOREACH_BIT(tmp, pos, val) {
                 vgicSetInterruptEnabledState((u16)(base + pos));
             }
             break;
         }
-        case GICDOFF(icenabler) ... GICDOFF(icenabler) + 1023/8: {
+        case GICDOFF(icenabler) ... GICDOFF(icenabler) + GIC_IRQID_MAX/8: {
             u32 base = 8 * (offset - GICDOFF(icenabler));
             FOREACH_BIT(tmp, pos, val) {
                 vgicClearInterruptEnabledState((u16)(base + pos));
@@ -506,7 +516,7 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
             break;
         }
 
-        case GICDOFF(ipriorityr) ... GICDOFF(ipriorityr) + 1023: {
+        case GICDOFF(ipriorityr) ... GICDOFF(ipriorityr) + GIC_IRQID_MAX: {
             u16 base = (u16)(offset - GICDOFF(ipriorityr));
             for (u16 i = 0; i < sz; i++) {
                 vgicSetInterruptPriorityByte(base + i, (u8)val);
@@ -515,7 +525,7 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
             break;
         }
 
-        case GICDOFF(itargetsr) + 32 ... GICDOFF(itargetsr) + 1023: {
+        case GICDOFF(itargetsr) + 32 ... GICDOFF(itargetsr) + GIC_IRQID_MAX: {
             u16 base = (u16)(offset - GICDOFF(itargetsr));
             for (u16 i = 0; i < sz; i++) {
                 vgicSetInterruptTargets(base + i, (u8)val);
@@ -524,8 +534,8 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
             break;
         }
 
-        case GICDOFF(icfgr) + 32/4 ... GICDOFF(icfgr) + 1023/4: {
-            u16 base = (u16)((offset & 0xFF) / 4);
+        case GICDOFF(icfgr) + 32/4 ... GICDOFF(icfgr) + GIC_IRQID_MAX/4: {
+            u16 base = (u16)(4 * (offset & 0xFF));
             for (u16 i = 0; i < 16; i++) {
                 vgicSetInterruptConfigBits(base + i, val & 3);
                 val >>= 2;
@@ -556,13 +566,13 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
         case GICDOFF(icfgr) ... GICDOFF(icfgr) + 31/4:
             // RAZ because of an implementation-defined choice
             break;
-        case GICDOFF(igroupr) ... GICDOFF(igroupr) + 1023/8:
+        case GICDOFF(igroupr) ... GICDOFF(igroupr) + GIC_IRQID_MAX/8:
             // RAZ because we don't implement Group 1 here
             break;
-        case GICDOFF(ispendr) ... GICDOFF(ispendr) + 1023/8:
-        case GICDOFF(icpendr) ... GICDOFF(icpendr) + 1023/8:
-        case GICDOFF(isactiver) ... GICDOFF(isactiver) + 1023/8:
-        case GICDOFF(icactiver) ... GICDOFF(icactiver) + 1023/8:
+        case GICDOFF(ispendr) ... GICDOFF(ispendr) + GIC_IRQID_MAX/8:
+        case GICDOFF(icpendr) ... GICDOFF(icpendr) + GIC_IRQID_MAX/8:
+        case GICDOFF(isactiver) ... GICDOFF(isactiver) + GIC_IRQID_MAX/8:
+        case GICDOFF(icactiver) ... GICDOFF(icactiver) + GIC_IRQID_MAX/8:
         case GICDOFF(cpendsgir) ... GICDOFF(cpendsgir) + 15:
         case GICDOFF(spendsgir) ... GICDOFF(spendsgir) + 15:
             // RAZ, not implemented (at least not yet, TODO)
@@ -578,8 +588,8 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
             val = vgicGetDistributorImplementerIdentificationRegister();
             break;
 
-        case GICDOFF(isenabler) ... GICDOFF(isenabler) + 1023/8:
-        case GICDOFF(icenabler) ... GICDOFF(icenabler) + 1023/8: {
+        case GICDOFF(isenabler) ... GICDOFF(isenabler) + GIC_IRQID_MAX/8:
+        case GICDOFF(icenabler) ... GICDOFF(icenabler) + GIC_IRQID_MAX/8: {
             u16 base = (u16)(8 * (offset & 0x7F));
             for (u16 i = 0; i < 32; i++) {
                 val |= vgicGetInterruptEnabledState(base + i) ? BIT(i) : 0;
@@ -587,7 +597,7 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
             break;
         }
 
-        case GICDOFF(ipriorityr) ... GICDOFF(ipriorityr) + 1023: {
+        case GICDOFF(ipriorityr) ... GICDOFF(ipriorityr) + GIC_IRQID_MAX: {
             u16 base = (u16)(offset - GICDOFF(ipriorityr));
             for (u16 i = 0; i < sz; i++) {
                 val |= vgicGetInterruptPriorityByte(base + i) << (8 * i);
@@ -595,7 +605,7 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
             break;
         }
 
-        case GICDOFF(itargetsr) ... GICDOFF(itargetsr) + 1023: {
+        case GICDOFF(itargetsr) ... GICDOFF(itargetsr) + GIC_IRQID_MAX: {
             u16 base = (u16)(offset - GICDOFF(itargetsr));
             for (u16 i = 0; i < sz; i++) {
                 val |= (u32)vgicGetInterruptTargets(base + i) << (8 * i);
@@ -603,8 +613,8 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
             break;
         }
 
-        case GICDOFF(icfgr) + 32/4 ... GICDOFF(icfgr) + 1023/4: {
-            u16 base = (u16)((offset & 0xFF) / 4);
+        case GICDOFF(icfgr) + 32/4 ... GICDOFF(icfgr) + GIC_IRQID_MAX/4: {
+            u16 base = (u16)(4 * (offset & 0xFF));
             for (u16 i = 0; i < 16; i++) {
                 val |= vgicGetInterruptConfigBits(base + i) << (2 * i);
             }
@@ -924,8 +934,8 @@ void handleVgicdMmio(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t of
 
     // ipriorityr, itargetsr, *pendsgir are byte-accessible
     if (
-        !(offset >= GICDOFF(ipriorityr) && offset < GICDOFF(ipriorityr) + 512) &&
-        !(offset >= GICDOFF(itargetsr)  && offset < GICDOFF(itargetsr) + 512) &&
+        !(offset >= GICDOFF(ipriorityr) && offset < GICDOFF(ipriorityr) + GIC_IRQID_MAX) &&
+        !(offset >= GICDOFF(itargetsr)  && offset < GICDOFF(itargetsr) + GIC_IRQID_MAX) &&
         !(offset >= GICDOFF(cpendsgir)  && offset < GICDOFF(cpendsgir) + 16) &&
         !(offset >= GICDOFF(spendsgir)  && offset < GICDOFF(spendsgir) + 16)
     ) {
@@ -970,7 +980,7 @@ void vgicInit(void)
     if (currentCoreCtx->isBootCore) {
         g_virqPendingQueue.first = g_virqPendingQueue.last = vgicGetQueueEnd();
 
-        for (u32 i = 0; i < 512 - 32 + 32 * 4; i++) {
+        for (u32 i = 0; i < MAX_NUM_INTERRUPTS; i++) {
             g_virqStates[i].listNext = g_virqStates[i].listPrev = VIRQLIST_INVALID_ID;
             g_virqStates[i].priority = 0x1F;
         }

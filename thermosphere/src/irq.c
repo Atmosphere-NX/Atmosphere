@@ -74,7 +74,7 @@ static void initGic(void)
 
     // Reset icfgr, itargetsr for shared peripheral interrupts
     for (u32 i = 32 / 16; i < numInterrupts / 16; i++) {
-        gicd->icfgr[i] = 0;
+        gicd->icfgr[i] = 0x55555555;
     }
 
     for (u32 i = 32; i < numInterrupts; i++) {
@@ -94,7 +94,7 @@ static void initGic(void)
     // Disable interrupt filtering
     gicc->pmr = 0xFF;
 
-    currentCoreCtx->gicInterfaceId = gicd->itargetsr[0];
+    currentCoreCtx->gicInterfaceMask = gicd->itargetsr[0];
 }
 
 static void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
@@ -103,11 +103,12 @@ static void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
     gicd->icenabler[id / 32] = BIT(id % 32);
 
     if (id >= 32) {
-        gicd->icfgr[id / 16] &= ~3 << (2 * (id % 16));
-        gicd->icfgr[id / 16] |= (!isLevelSensitive ? 2 : 0) << (2 * (id % 16));
-        gicd->itargetsr[id]  |= BIT(currentCoreCtx->gicInterfaceId);
+        u32 cfgr = gicd->icfgr[id / 16];
+        cfgr &= ~(3 << (2 * (id % 16)));
+        cfgr |= (!isLevelSensitive ? 3 : 1) << (2 * (id % 16));
+        gicd->icfgr[id / 16] = cfgr;
+        gicd->itargetsr[id]  |= currentCoreCtx->gicInterfaceMask;
     }
-
     gicd->icpendr[id / 32]      = BIT(id % 32);
     gicd->ipriorityr[id]        = (prio << g_irqManager.priorityShift) & 0xFF;
     gicd->isenabler[id / 32]    = BIT(id % 32);
