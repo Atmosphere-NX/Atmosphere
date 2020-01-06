@@ -68,31 +68,13 @@ void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg)
 
     val = readFrameRegisterZ(frame, reg);
 
-    bool reevalSoftwareBreakpoints = false;
-
     // Hooks go here:
     switch (iss) {
-        case ENCODE_SYSREG_ISS(TTBR0_EL1):
-        case ENCODE_SYSREG_ISS(TTBR1_EL1):
-        case ENCODE_SYSREG_ISS(TCR_EL1):
-        case ENCODE_SYSREG_ISS(SCTLR_EL1):
-            reevalSoftwareBreakpoints = true;
-            break;
         default:
             break;
     }
 
-    if (reevalSoftwareBreakpoints) {
-        revertAllSoftwareBreakpoints();
-    }
-
     doSystemRegisterRwImpl(&val, iss);
-
-    if (reevalSoftwareBreakpoints) {
-        __dsb_sy();
-        __isb();
-        applyAllSoftwareBreakpoints();
-    }
 
     skipFaultingInstruction(frame, 4);
 }
