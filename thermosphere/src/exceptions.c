@@ -96,14 +96,17 @@ void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeReg
 
     switch (esr.ec) {
         case Exception_CP15RTTrap:
-        case Exception_CP15RRTTrap: 
+            handleMcrMrcCP15Trap(frame, esr);
+            break;
+        case Exception_CP15RRTTrap:
+            handleMcrrMrrcCP15Trap(frame, esr);
+            break;
         case Exception_CP14RTTrap:
         case Exception_CP14DTTrap:
-        case Exception_CP14RRTTrap: {
+        case Exception_CP14RRTTrap:
             // A32 stub: Skip instruction, read 0 if necessary (there are debug regs at EL0)
-            handleSysregAccessA32Stub(frame, esr);
+            handleA32CP14Trap(frame, esr);
             break;
-        }
         case Exception_HypervisorCallA64:
             handleHypercall(frame, esr);
             break;

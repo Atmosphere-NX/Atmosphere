@@ -20,76 +20,109 @@
 #include "debug_log.h"
 #include "software_breakpoints.h"
 
-static void doSystemRegisterRwImpl(u64 *val, u32 iss)
+static inline u64 doSystemRegisterRead(u32 normalizedIss)
 {
-    u32 op0  = (iss >> 20) & 3;
-    u32 op2  = (iss >> 17) & 7;
-    u32 op1  = (iss >> 14) & 7;
-    u32 CRn  = (iss >> 10) & 15;
-    //u32 Rt   = (iss >>  5) & 31;
-    u32 CRm  = (iss >>  1) & 15;
-    u32 dir  = iss & 1;
-
-    u32 codebuf[] = {
-        0,              // TBD
-        0xD65F03C0,     // ret
-    };
-
-    codebuf[0] = dir ? MAKE_MRS_FROM_FIELDS(op0, op1, CRn, CRm, op2, 0) : MAKE_MSR_FROM_FIELDS(op0, op1, CRn, CRm, op2, 0);
-
-    flush_dcache_range(codebuf, (u8 *)codebuf + sizeof(codebuf));
-    invalidate_icache_all();
-
-    *val = ((u64 (*)(u64))codebuf)(*val);
-}
-
-void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg)
-{
-    u64 val = 0;
-
-    iss &= ~((0x1F << 5) | 1);
-
-    // Hooks go here:
-    switch (iss) {
-        default:
+    u64 val;
+    switch (normalizedIss) {
+        case ENCODE_SYSREG_ISS(CNTPCT_EL0): {
+            // FIXME
+            val = GET_SYSREG(cntpct_el0);
             break;
+        }
+        case ENCODE_SYSREG_ISS(CNTP_TVAL_EL0): {
+            // FIXME too
+            val = GET_SYSREG(cntp_tval_el0);
+            break;
+        }
+        case ENCODE_SYSREG_ISS(CNTP_CTL_EL0): {
+            // Passthrough
+            val = GET_SYSREG(cntp_ctl_el0);
+            break;
+        }
+        case ENCODE_SYSREG_ISS(CNTP_CVAL_EL0): {
+            // Passthrough
+            val = GET_SYSREG(cntp_cval_el0);
+            break;
+        }
+
+        default: {
+            // We shouldn't have trapped on other registers other than debug regs
+            // and we want the latter as RA0/WI
+            val = 0;
+            break;
+        }
     }
 
-    doSystemRegisterRwImpl(&val, iss | 1);
-    writeFrameRegisterZ(frame, reg, val);
+    return val;
+}
 
+static inline void doSystemRegisterWrite(u32 normalizedIss, u64 val)
+{
+    switch (normalizedIss) {
+        case ENCODE_SYSREG_ISS(CNTP_TVAL_EL0): {
+            // FIXME
+            SET_SYSREG(cntp_tval_el0, val);
+            break;
+        }
+        case ENCODE_SYSREG_ISS(CNTP_CTL_EL0): {
+            // Passthrough
+            SET_SYSREG(cntp_ctl_el0, val);
+            break;
+        }
+        case ENCODE_SYSREG_ISS(CNTP_CVAL_EL0): {
+            // Passthrough
+            SET_SYSREG(cntp_cval_el0, val);
+            break;
+        }
+
+        default: {
+            // We shouldn't have trapped on other registers other than debug regs
+            // and we want the latter as RA0/WI
+            break;
+        }
+    }
+}
+
+static inline void doMrs(ExceptionStackFrame *frame, u32 normalizedIss, u32 reg)
+{
+    writeFrameRegisterZ(frame, reg, doSystemRegisterRead(normalizedIss));
     skipFaultingInstruction(frame, 4);
 }
 
-void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg)
+static inline void doMsr(ExceptionStackFrame *frame, u32 normalizedIss, u32 reg)
 {
-    u64 val = 0;
-    iss &= ~((0x1F << 5) | 1);
-
-    val = readFrameRegisterZ(frame, reg);
-
-    // Hooks go here:
-    switch (iss) {
-        default:
-            break;
-    }
-
-    doSystemRegisterRwImpl(&val, iss);
-
+    u64 val = readFrameRegisterZ(frame, reg);
+    doSystemRegisterWrite(normalizedIss, val);
     skipFaultingInstruction(frame, 4);
 }
 
-void handleMsrMrsTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+static inline void doMrc(ExceptionStackFrame *frame, u32 normalizedIss, u32 instructionLength, u32 reg)
 {
-    u32 iss = esr.iss;
-    u32 reg = (iss >> 5) & 31;
-    bool isRead = (iss & 1) != 0;
+    writeFrameRegisterZ(frame, reg, doSystemRegisterRead(normalizedIss) & 0xFFFFFFFF);
+    skipFaultingInstruction(frame, instructionLength);
+}
 
-    if (isRead) {
-        doSystemRegisterRead(frame, iss, reg);
-    } else {
-        doSystemRegisterWrite(frame, iss, reg);
-    }
+static inline void doMcr(ExceptionStackFrame *frame, u32 normalizedIss, u32 instructionLength, u32 reg)
+{
+    u64 val = readFrameRegisterZ(frame, reg) & 0xFFFFFFFF;
+    doSystemRegisterWrite(normalizedIss, val);
+    skipFaultingInstruction(frame, instructionLength);
+}
+
+static inline void doMrrc(ExceptionStackFrame *frame, u32 normalizedIss, u32 instructionLength, u32 reg, u32 reg2)
+{
+    u64 val = doSystemRegisterRead(normalizedIss);
+    writeFrameRegister(frame, reg, val & 0xFFFFFFFF);
+    writeFrameRegister(frame, reg2, val >> 32);
+    skipFaultingInstruction(frame, instructionLength);
+}
+
+static inline void doMcrr(ExceptionStackFrame *frame, u32 normalizedIss, u32 instructionLength, u32 reg, u32 reg2)
+{
+    u64 valLo = readFrameRegister(frame, reg)  & 0xFFFFFFFF;
+    u64 valHi = readFrameRegister(frame, reg2) << 32;
+    doSystemRegisterWrite(normalizedIss, valHi | valLo);
+    skipFaultingInstruction(frame, instructionLength);
 }
 
 static bool evaluateMcrMrcCondition(u64 spsr, u32 condition, bool condValid)
@@ -103,9 +136,87 @@ static bool evaluateMcrMrcCondition(u64 spsr, u32 condition, bool condValid)
     }
 }
 
-void handleSysregAccessA32Stub(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+void handleMsrMrsTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 {
-    // A32 stub: Skip instruction, read 0 if necessary (there are debug regs at EL0)
+    u32 iss = esr.iss;
+    u32 reg = (iss >> 5) & 31;
+    bool isRead = (iss & 1) != 0;
+
+    iss &= ~((0x1F << 5) | 1);
+
+    if (isRead) {
+        doMrs(frame, iss, reg);
+    } else {
+        doMsr(frame, iss, reg);
+    }
+}
+
+void handleMcrMrcCP15Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+{
+    u32 iss = esr.iss;
+
+    if (!evaluateMcrMrcCondition(frame->spsr_el2, (iss >> 20) & 0xF, (iss & BIT(24)) != 0)) {
+        // If instruction not valid/condition code says no
+        skipFaultingInstruction(frame, esr.il == 0 ? 2 : 4);
+        return;
+    }
+
+    u32 opc2 = (iss >> 17) & 7;
+    u32 opc1 = (iss >> 14) & 7;
+    u32 CRn  = (iss >> 10) & 15;
+    u32 Rt   = (iss >>  5) & 31;
+    u32 CRm  = (iss >>  1) & 15;
+    bool isRead = (iss & 1) != 0;
+    u32 instructionLength = esr.il == 0 ? 2 : 4;
+
+    if (LIKELY(opc1 == 0 && CRn == 14 && CRm == 2 && opc2 <= 1)) {
+        iss = opc2 == 0 ? ENCODE_SYSREG_ISS(CNTP_TVAL_EL0) : ENCODE_SYSREG_ISS(CNTP_CTL_EL0);
+    } else {
+        PANIC("handleMcrMrcTrap: unexpected cp15 register, instruction: %s p15, #%u, r%u, c%u, c%u, #%u\n", isRead ? "mrc" : "mcr", opc1, Rt, CRn, CRm, opc2);
+    }
+
+    if (isRead) {
+        doMrc(frame, iss, instructionLength, Rt);
+    } else {
+        doMcr(frame, iss, instructionLength, Rt);
+    }
+}
+
+void handleMcrrMrrcCP15Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+{
+    u32 iss = esr.iss;
+
+    if (!evaluateMcrMrcCondition(frame->spsr_el2, (iss >> 20) & 0xF, (iss & BIT(24)) != 0)) {
+        // If instruction not valid/condition code says no
+        skipFaultingInstruction(frame, esr.il == 0 ? 2 : 4);
+        return;
+    }
+
+    u32 opc1 = (iss >> 16) & 15;
+    u32 Rt2  = (iss >> 10) & 31;
+    u32 Rt   = (iss >>  5) & 31;
+    u32 CRm  = (iss >>  1) & 15;
+
+    bool isRead = (iss & 1) != 0;
+    u32 instructionLength = esr.il == 0 ? 2 : 4;
+
+    if (LIKELY(CRm == 14 && (opc1 == 0 || opc1 == 2))) {
+        iss = opc1 == 0 ? ENCODE_SYSREG_ISS(CNTPCT_EL0) : ENCODE_SYSREG_ISS(CNTP_CVAL_EL0);
+    } else {
+        PANIC("handleMcrrMrrcTrap: unexpected cp15 register, instruction: %s p15, #%u, r%u, r%u, c%u\n", isRead ? "mrrc" : "mcrr", opc1, Rt, Rt, CRm);
+    }
+
+    if (isRead) {
+        doMrrc(frame, iss, instructionLength, Rt, Rt2);
+    } else {
+        doMcrr(frame, iss, instructionLength, Rt, Rt2);
+    }
+}
+
+void handleA32CP14Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+{
+    // LDC/STC: Skip instruction, read 0 if necessary, since only one debug reg can be accessed with it
+    // Other CP14 accesses: do the same thing
 
     if (esr.iss & 1 && evaluateMcrMrcCondition(frame->spsr_el2, (esr.iss >> 20) & 0xF, (esr.iss & BIT(24)) != 0)) {
         writeFrameRegisterZ(frame, (esr.iss >> 5) & 0x1F, 0);

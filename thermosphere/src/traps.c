@@ -17,7 +17,7 @@
 #include "traps.h"
 #include "sysreg.h"
 
-static void enableDebugTraps(void)
+static inline void enableDebugTraps(void)
 {
     u64 mdcr = GET_SYSREG(mdcr_el2);
 
@@ -28,6 +28,13 @@ static void enableDebugTraps(void)
     mdcr |= MDCR_EL2_TDRA | MDCR_EL2_TDOSA | MDCR_EL2_TDA;
 
     SET_SYSREG(mdcr_el2, mdcr);
+}
+
+static inline void enableTimerTraps(void)
+{
+    // Disable event streams, trap everything
+    u64 cnthctl = 0;
+    SET_SYSREG(cnthctl_el2, cnthctl);
 }
 
 void enableTraps(void)
@@ -46,4 +53,5 @@ void enableTraps(void)
     SET_SYSREG(hcr_el2, hcr);
 
     enableDebugTraps();
+    enableTimerTraps();
 }

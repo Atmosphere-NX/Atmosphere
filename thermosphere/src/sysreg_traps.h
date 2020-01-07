@@ -18,9 +18,9 @@
 
 #include "traps.h"
 
-void doSystemRegisterRead(ExceptionStackFrame *frame, u32 iss, u32 reg);
-void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 iss, u32 reg);
-
 void handleMsrMrsTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+void handleMcrMrcCP15Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+void handleMcrrMrrcCP15Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+void handleA32CP14Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
 
-void handleSysregAccessA32Stub(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+void handleA32CP14Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
