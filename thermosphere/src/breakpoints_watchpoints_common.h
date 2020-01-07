@@ -85,5 +85,5 @@ typedef struct DebugRegisterPair {
 
 static inline void enableBreakpointsAndWatchpoints(void)
 {
-    SET_SYSREG(mdscr_el1, GET_SYSREG(mdscr_el1) | MDSCR_EL1_MDE);
+    SET_SYSREG(mdscr_el1, GET_SYSREG(mdscr_el1) | MDSCR_MDE);
 }

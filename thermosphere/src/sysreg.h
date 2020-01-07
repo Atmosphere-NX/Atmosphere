@@ -237,6 +237,7 @@
 #define TUP_CNTV_CVAL_EL0       (3, 3, 14, 3, 2)
 
 #define TUP_CNTVOFF_EL2         (3, 4, 14, 0, 3)
+#define TUP_CNTHCTL_EL2         (3, 4, 14, 1, 0)
 #define TUP_CNTHP_CVAL_EL2      (3, 4, 14, 2, 2)
 
 #define __field_PMEV_op2(n)     ((n) & 0x7)
@@ -403,8 +404,16 @@
 #define MDCR_EL2_TPMCR      BITL(5)
 #define MDCR_EL2_HPMN_MASK  0x1Full
 
-#define MDSCR_EL1_MDE       BITL(15)
-#define MDSCR_EL1_SS        BITL(0)
+#define MDSCR_MDE           BITL(15)
+#define MDSCR_SS            BITL(0)
+
+// Common CNTHCTL_EL2 flags
+#define CNTHCTL_EVNTI_MASK  0xFll
+#define CNTHCTL_EVNTI_SHIFT 4
+#define CNTHCTL_EVNTDIR     BITL(3)
+#define CNTHCTL_EVNTEN      BITL(2)
+#define CNTHCTL_EL1PCEN     BITL(1)
+#define CNTHCTL_EL1PCTEN    BITL(0)
 
 #define ENCODE_SYSREG_FIELDS_MOV(op0, op1, crn, crm, op2) (((op0) << 19) | ((op1) << 16) | ((crn) << 12) | ((crm) << 8) | ((op2) << 5))
 #define ENCODE_SYSREG_MOV(name) EVAL(ENCODE_SYSREG_FIELDS_MOV CAT(TUP_, name))

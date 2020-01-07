@@ -31,6 +31,8 @@
 
 #define ALIGN(m)        __attribute__((aligned(m)))
 #define PACKED          __attribute__((packed))
+#define LIKELY(expr)    __builtin_expect((expr), 1)
+#define UNLIKELY(expr)  __builtin_expect((expr), 0)
 
 #define ALINLINE        __attribute__((always_inline))
 

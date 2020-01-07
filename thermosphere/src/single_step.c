@@ -22,7 +22,7 @@
 SingleStepState singleStepGetNextState(ExceptionStackFrame *frame)
 {
     u64 mdscr = GET_SYSREG(mdscr_el1);
-    bool mdscrSS = (mdscr & MDSCR_EL1_SS) != 0;
+    bool mdscrSS = (mdscr & MDSCR_SS) != 0;
     bool pstateSS = (frame->spsr_el2 & PSTATE_SS) != 0;
 
     if (!mdscrSS) {
@@ -39,16 +39,16 @@ void singleStepSetNextState(ExceptionStackFrame *frame, SingleStepState state)
     switch (state) {
         case SingleStepState_Inactive:
             // Unset mdscr_el1.ss
-            mdscr &= ~MDSCR_EL1_SS;
+            mdscr &= ~MDSCR_SS;
             break;
         case SingleStepState_ActivePending:
             // Set mdscr_el1.ss and pstate.ss
-            mdscr |= MDSCR_EL1_SS;
+            mdscr |= MDSCR_SS;
             frame->spsr_el2 |= PSTATE_SS;
             break;
         case SingleStepState_ActiveNotPending:
             // Set mdscr_el1.ss and unset pstate.ss
-            mdscr |= MDSCR_EL1_SS;
+            mdscr |= MDSCR_SS;
             frame->spsr_el2 |= PSTATE_SS;
             break;
         default:

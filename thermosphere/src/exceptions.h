@@ -102,9 +102,19 @@ static inline void spsrSetT32ItFlags(u64 *spsr, u32 itFlags)
     *spsr |= ((itFlags >> 2) & 0x3F) << 10;
 }
 
+static inline u64 readFrameRegister(ExceptionStackFrame *frame, u32 id)
+{
+    return frame->x[id];
+}
+
 static inline u64 readFrameRegisterZ(ExceptionStackFrame *frame, u32 id)
 {
     return id == 31 ? 0 /* xzr */ : frame->x[id];
+}
+
+static inline void writeFrameRegister(ExceptionStackFrame *frame, u32 id, u64 val)
+{
+    frame->x[id] = val;
 }
 
 static inline void writeFrameRegisterZ(ExceptionStackFrame *frame, u32 id, u64 val)
