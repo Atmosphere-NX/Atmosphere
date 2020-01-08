@@ -81,6 +81,6 @@ _startCommon:
     isb
 
     // Jump to kernel
-    b       _restore_all_regs
+    b       _restoreAllRegisters
 
 .pool

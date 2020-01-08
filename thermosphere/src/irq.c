@@ -131,6 +131,22 @@ void initIrq(void)
     recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
 }
 
+static inline bool checkRescheduleEmulatedPtimer(ExceptionStackFrame *frame)
+{
+    // Evaluate if the timer really has expired in the PoV of the guest kernel. If not, reschedule (add missed time delta) it & exit early
+    u64 cval = GET_SYSREG(cntp_cval_el0);
+    if (cval > frame->cntvct_el0) {
+        // It has not: reschedule the timer
+        u64 offsetNow = GET_SYSREG(cntvoff_el2);
+        SET_SYSREG(cntp_cval_el0, cval + (offsetNow - currentCoreCtx->emulPtimerOffsetThen));
+        currentCoreCtx->emulPtimerOffsetThen = offsetNow;
+
+        return false;
+    }
+
+    return true;
+}
+
 void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 {
     (void)isLowerEl;
@@ -146,6 +162,11 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 
     if (irqId == GIC_IRQID_SPURIOUS) {
         // Spurious interrupt received
+        return;
+    } else if (irqId == GIC_IRQID_NS_PHYS_TIMER && !checkRescheduleEmulatedPtimer(frame)) {
+        // Deactivate the ptimer interrupt, return early
+        gicc->eoir = iar;
+        gicc->dir  = iar;
         return;
     }
 

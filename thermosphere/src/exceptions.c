@@ -66,6 +66,7 @@ void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
         DEBUG("sp_el0\t\t%016llx\n", frame->sp_el0);
     }
     DEBUG("sp_el1\t\t%016llx\n", frame->sp_el1);
+    DEBUG("cntvct_el0\t\t%016llx\n", frame->cntvct_el0);
 #else
     (void)frame;
     (void)sameEl;
@@ -93,7 +94,6 @@ void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size)
 
 void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 {
-
     switch (esr.ec) {
         case Exception_CP15RTTrap:
             handleMcrMrcCP15Trap(frame, esr);

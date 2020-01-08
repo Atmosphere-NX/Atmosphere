@@ -26,6 +26,7 @@ typedef struct ExceptionStackFrame {
     };
     u64 elr_el2;
     u64 spsr_el2;
+    u64 cntvct_el0;
 } ExceptionStackFrame;
 
 // Adapted from https://developer.arm.com/docs/ddi0596/a/a64-shared-pseudocode-functions/shared-exceptions-pseudocode

@@ -50,19 +50,12 @@
     .endif
 .endm
 
-.macro save_all_regs
+.macro  SAVE_ALL_REGISTERS
     stp     x30, xzr, [sp, #-0x130]
-    bl      _save_all_regs
+    bl      _saveAllRegisters
 .endm
 
-.macro save_all_regs_reload_x18
-    save_all_regs
-
-    // Reload our x18 value (currentCoreCtx)
-    ldp     x18, xzr, [sp, #0x120]
-.endm
-
-.macro pivot_stack_for_crash
+.macro PIVOT_STACK_FOR_CRASH
     // Note: x18 assumed uncorrupted
     // Note: replace sp_el0 with crashing sp
     str     x16, [x18, #0x18]       // currentCoreCtx->scratch = x16
@@ -73,30 +66,58 @@
     ldr     x16, [x18, #0x18]
 .endm
 
+.equ    EXCEPTION_TYPE_HOST,            0
+.equ    EXCEPTION_TYPE_GUEST,           1
+.equ    EXCEPTION_TYPE_HOST_CRASH,      2
+
+.macro  EXCEPTION_HANDLER_START name, type
+vector_entry \name
+    .if \type == EXCEPTION_TYPE_HOST_CRASH
+        PIVOT_STACK_FOR_CRASH
+    .endif
+
+    SAVE_ALL_REGISTERS
+
+    .if \type == EXCEPTION_TYPE_GUEST
+        ldp     x18, xzr, [sp, #0x120]
+    .endif
+.endm
+
+.macro EXCEPTION_HANDLER_END name, type
+    .if \type != EXCEPTION_TYPE_HOST_CRASH
+        b       _restoreAllRegisters
+    .else
+        b       .
+    .endif
+check_vector_size \name
+.endm
+
+.macro  UNKNOWN_EXCEPTION name
+vector_entry \name
+    bl      _unknownException
+check_vector_size \name
+.endm
+
 /* Actual Vectors for Thermosphere. */
-.global thermosphere_vectors
-vector_base thermosphere_vectors
+.global     g_thermosphereVectors
+vector_base g_thermosphereVectors
 
 /* Current EL, SP0 */
 /* Those are unused by us, except on same-EL double-faults. */
-.global unknown_exception
-unknown_exception:
-vector_entry synch_sp0
+UNKNOWN_EXCEPTION       _synchSp0
+
+_unknownException:
     pivot_stack_for_crash
     mov     x0, x30
-    adr     x1, thermosphere_vectors + 4
+    adr     x1, g_thermosphereVectors + 4
     sub     x0, x0, x1
     bl      handleUnknownException
     b       .
-    check_vector_size synch_sp0
 
-vector_entry irq_sp0
-    bl      unknown_exception
-    .endfunc
-    .cfi_endproc
-    /* To save space, insert in an unused vector segment. */
-    _save_all_regs:
+UNKNOWN_EXCEPTION       _irqSp0
 
+/* To save space, insert in an unused vector segment. */
+_saveAllRegisters:
     sub     sp, sp, #0x120
     stp     x0, x1, [sp, #0x00]
     stp     x2, x3, [sp, #0x10]
@@ -115,36 +136,43 @@ vector_entry irq_sp0
     stp     x28, x29, [sp, #0xE0]
 
     mov     x29, x30
-    ldp     x30, xzr, [sp, #-0x10] // See save_all_regs macro
+    ldp     x30, xzr, [sp, #-0x10] // See SAVE_ALL_REGISTERS macro
 
     mrs     x20, sp_el1
     mrs     x21, sp_el0
     mrs     x22, elr_el2
     mrs     x23, spsr_el2
+    mrs     x24, cntvct_el0
 
     stp     x30, x20, [sp, #0xF0]
     stp     x21, x22, [sp, #0x100]
-    stp     x23, xzr, [sp, #0x110]
+    stp     x23, x24, [sp, #0x110]
 
     mov     x30, x29
 
     ret
 
-vector_entry fiq_sp0
-    bl      unknown_exception
-    .endfunc
-    .cfi_endproc
-    /* To save space, insert in an unused vector segment. */
-    .global _restore_all_regs
-    _restore_all_regs:
+UNKNOWN_EXCEPTION       _fiqSp0
+
+/* To save space, insert in an unused vector segment. */
+
+// Accessed by start.s
+.global     _restoreAllRegisters
+.type       _restoreAllRegisters, %function
+_restoreAllRegisters:
     ldp     x30, x20, [sp, #0xF0]
     ldp     x21, x22, [sp, #0x100]
-    ldp     x23, xzr, [sp, #0x110]
+    ldp     x23, x24, [sp, #0x110]
 
     msr     sp_el1, x20
     msr     sp_el0, x21
     msr     elr_el2, x22
     msr     spsr_el2, x23
+
+    // Update timer offset: offset = ptimer - vtimer; here the time elapsed is vct(now) - vct(before)
+    mrs     x23, cntvct_el0
+    sub     x24, x23, x24
+    msr     cntvoff_el2, x24
 
     ldp     x0, x1, [sp, #0x00]
     ldp     x2, x3, [sp, #0x10]
@@ -165,20 +193,20 @@ vector_entry fiq_sp0
     add     sp, sp, #0x120
     eret
 
-vector_entry serror_sp0
-    bl      unknown_exception
-    .endfunc
-    .cfi_endproc
-    /* To save space, insert in an unused vector segment. */
+UNKNOWN_EXCEPTION       _serrorSp0
 
+/* To save space, insert in an unused vector segment. */
 .global semihosting_call
 .type   semihosting_call, %function
+.func   semihosting_call
+.cfi_startproc
 semihosting_call:
     hlt     #0xF000
     ret
+.cfi_endproc
+.endfunc
 
 .global doSmcIndirectCallImpl
-//.type   doSmcIndirectCallImpl, %function
 doSmcIndirectCallImpl:
     stp     x19, x20, [sp, #-0x10]!
     mov     x19, x0
@@ -208,89 +236,55 @@ doSmcIndirectCallImplSize:
     .word _doSmcIndirectCallImplEnd - doSmcIndirectCallImpl
 
 /* Current EL, SPx */
-vector_entry synch_spx
-    /* Only crashes go through there! */
-    pivot_stack_for_crash
 
-    save_all_regs
-
+EXCEPTION_HANDLER_START     _synchSpx, EXCEPTION_TYPE_HOST_CRASH
     mov     x0, sp
     mrs     x1, esr_el2
     bl      handleSameElSyncException
-    b       .
-    check_vector_size synch_spx
+EXCEPTION_HANDLER_END       _synchSpx, EXCEPTION_TYPE_HOST_CRASH
 
-vector_entry irq_spx
-    save_all_regs
-
+EXCEPTION_HANDLER_START     _irqSpx, EXCEPTION_TYPE_HOST
     mov     x0, sp
     mov     w1, wzr
     mov     w2, wzr
     bl      handleIrqException
+EXCEPTION_HANDLER_END       _irqSpx, EXCEPTION_TYPE_HOST
 
-    b       _restore_all_regs
-
-    check_vector_size irq_spx
-
-vector_entry fiq_spx
-    bl      unknown_exception
-    check_vector_size fiq_spx
-
-vector_entry serror_spx
-    bl      unknown_exception
-    check_vector_size serror_spx
+UNKNOWN_EXCEPTION           _fiqSpx
+UNKNOWN_EXCEPTION           _serrorSpx
 
 /* Lower EL, A64 */
-vector_entry synch_a64
-    save_all_regs_reload_x18
 
+EXCEPTION_HANDLER_START     _synchA64, EXCEPTION_TYPE_GUEST
     mov     x0, sp
     mrs     x1, esr_el2
     bl      handleLowerElSyncException
+EXCEPTION_HANDLER_END       _synchA64, EXCEPTION_TYPE_GUEST
 
-    b       _restore_all_regs
-    check_vector_size synch_a64
-
-vector_entry irq_a64
-    save_all_regs_reload_x18
-
+EXCEPTION_HANDLER_START     _irqA64, EXCEPTION_TYPE_GUEST
     mov     x0, sp
     mov     w1, #1
-    mov     w2, wzr
+    mov     w2, #0
     bl      handleIrqException
+EXCEPTION_HANDLER_END        _irqA64, EXCEPTION_TYPE_GUEST
 
-    b       _restore_all_regs
-    check_vector_size irq_a64
-
-vector_entry fiq_a64
-    bl      unknown_exception
-    check_vector_size fiq_a64
-
-vector_entry serror_a64
-    bl      unknown_exception
-    check_vector_size serror_a64
-
+UNKNOWN_EXCEPTION           _fiqA64
+UNKNOWN_EXCEPTION           _serrorA64
 
 /* Lower EL, A32 */
-vector_entry synch_a32
-    bl      unknown_exception
-    check_vector_size synch_a32
 
-vector_entry irq_a32
-    save_all_regs_reload_x18
+EXCEPTION_HANDLER_START     _synchA32, EXCEPTION_TYPE_GUEST
+    mov     x0, sp
+    mrs     x1, esr_el2
+    bl      handleLowerElSyncException
+EXCEPTION_HANDLER_END       _synchA32, EXCEPTION_TYPE_GUEST
 
+EXCEPTION_HANDLER_START     _irqA32, EXCEPTION_TYPE_GUEST
     mov     x0, sp
     mov     w1, #1
     mov     w2, #1
     bl      handleIrqException
+EXCEPTION_HANDLER_END        _irqA32, EXCEPTION_TYPE_GUEST
 
-    b       _restore_all_regs
-    check_vector_size irq_a32
-
-vector_entry fiq_a32
-    b       fiq_a64
-    check_vector_size fiq_a32
-
-vector_entry serror_a32
-    bl      unknown_exception
-    check_vector_size serror_a32
+UNKNOWN_EXCEPTION           _fiqA32
+UNKNOWN_EXCEPTION           _serrorA32
