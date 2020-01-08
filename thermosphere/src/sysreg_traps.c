@@ -20,18 +20,18 @@
 #include "debug_log.h"
 #include "software_breakpoints.h"
 
-static inline u64 doSystemRegisterRead(u32 normalizedIss)
+static inline u64 doSystemRegisterRead(const ExceptionStackFrame *frame, u32 normalizedIss)
 {
+    // See https://developer.arm.com/architectures/learn-the-architecture/generic-timer/single-page
+
     u64 val;
     switch (normalizedIss) {
         case ENCODE_SYSREG_ISS(CNTPCT_EL0): {
-            // FIXME
-            val = GET_SYSREG(cntpct_el0);
+            val = frame->cntvct_el0;
             break;
         }
         case ENCODE_SYSREG_ISS(CNTP_TVAL_EL0): {
-            // FIXME too
-            val = GET_SYSREG(cntp_tval_el0);
+            val = (GET_SYSREG(cntp_cval_el0) - frame->cntvct_el0) & 0xFFFFFFFF;
             break;
         }
         case ENCODE_SYSREG_ISS(CNTP_CTL_EL0): {
@@ -56,12 +56,20 @@ static inline u64 doSystemRegisterRead(u32 normalizedIss)
     return val;
 }
 
-static inline void doSystemRegisterWrite(u32 normalizedIss, u64 val)
+static inline void writeEmulatedPhysicalCompareValue(u64 val)
 {
+    currentCoreCtx->emulPtimerOffsetThen = GET_SYSREG(cntvoff_el2);
+    SET_SYSREG(cntp_cval_el0, val);
+}
+
+static inline void doSystemRegisterWrite(const ExceptionStackFrame *frame, u32 normalizedIss, u64 val)
+{
+    // See https://developer.arm.com/architectures/learn-the-architecture/generic-timer/single-page
+
     switch (normalizedIss) {
         case ENCODE_SYSREG_ISS(CNTP_TVAL_EL0): {
-            // FIXME
-            SET_SYSREG(cntp_tval_el0, val);
+            // Sign-extend
+            writeEmulatedPhysicalCompareValue(frame->cntvct_el0 + (u64)(s32)val);
             break;
         }
         case ENCODE_SYSREG_ISS(CNTP_CTL_EL0): {
@@ -70,8 +78,7 @@ static inline void doSystemRegisterWrite(u32 normalizedIss, u64 val)
             break;
         }
         case ENCODE_SYSREG_ISS(CNTP_CVAL_EL0): {
-            // Passthrough
-            SET_SYSREG(cntp_cval_el0, val);
+            writeEmulatedPhysicalCompareValue(val);
             break;
         }
 
@@ -85,33 +92,33 @@ static inline void doSystemRegisterWrite(u32 normalizedIss, u64 val)
 
 static inline void doMrs(ExceptionStackFrame *frame, u32 normalizedIss, u32 reg)
 {
-    writeFrameRegisterZ(frame, reg, doSystemRegisterRead(normalizedIss));
+    writeFrameRegisterZ(frame, reg, doSystemRegisterRead(frame, normalizedIss));
     skipFaultingInstruction(frame, 4);
 }
 
 static inline void doMsr(ExceptionStackFrame *frame, u32 normalizedIss, u32 reg)
 {
     u64 val = readFrameRegisterZ(frame, reg);
-    doSystemRegisterWrite(normalizedIss, val);
+    doSystemRegisterWrite(frame, normalizedIss, val);
     skipFaultingInstruction(frame, 4);
 }
 
 static inline void doMrc(ExceptionStackFrame *frame, u32 normalizedIss, u32 instructionLength, u32 reg)
 {
-    writeFrameRegisterZ(frame, reg, doSystemRegisterRead(normalizedIss) & 0xFFFFFFFF);
+    writeFrameRegisterZ(frame, reg, doSystemRegisterRead(frame, normalizedIss) & 0xFFFFFFFF);
     skipFaultingInstruction(frame, instructionLength);
 }
 
 static inline void doMcr(ExceptionStackFrame *frame, u32 normalizedIss, u32 instructionLength, u32 reg)
 {
     u64 val = readFrameRegisterZ(frame, reg) & 0xFFFFFFFF;
-    doSystemRegisterWrite(normalizedIss, val);
+    doSystemRegisterWrite(frame, normalizedIss, val);
     skipFaultingInstruction(frame, instructionLength);
 }
 
 static inline void doMrrc(ExceptionStackFrame *frame, u32 normalizedIss, u32 instructionLength, u32 reg, u32 reg2)
 {
-    u64 val = doSystemRegisterRead(normalizedIss);
+    u64 val = doSystemRegisterRead(frame, normalizedIss);
     writeFrameRegister(frame, reg, val & 0xFFFFFFFF);
     writeFrameRegister(frame, reg2, val >> 32);
     skipFaultingInstruction(frame, instructionLength);
@@ -121,7 +128,7 @@ static inline void doMcrr(ExceptionStackFrame *frame, u32 normalizedIss, u32 ins
 {
     u64 valLo = readFrameRegister(frame, reg)  & 0xFFFFFFFF;
     u64 valHi = readFrameRegister(frame, reg2) << 32;
-    doSystemRegisterWrite(normalizedIss, valHi | valLo);
+    doSystemRegisterWrite(frame, normalizedIss, valHi | valLo);
     skipFaultingInstruction(frame, instructionLength);
 }
 

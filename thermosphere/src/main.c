@@ -64,11 +64,12 @@ void thermosphereMain(ExceptionStackFrame *frame)
         DEBUG("EL2: core %u reached main!\n", currentCoreCtx->coreId);
     }
 
+    setCurrentCoreActive();
+
     // Set up exception frame: init regs to 0, set spsr, elr, etc.
     memset(frame, 0, sizeof(ExceptionStackFrame));
-    frame->spsr_el2 = (0xF << 6) | (1 << 2) | 1; // EL1h+DAIF
-    frame->elr_el2  = currentCoreCtx->kernelEntrypoint;
-    frame->x[0]     = currentCoreCtx->kernelArgument;
-
-    setCurrentCoreActive();
+    frame->spsr_el2     = (0xF << 6) | (1 << 2) | 1; // EL1h+DAIF
+    frame->elr_el2      = currentCoreCtx->kernelEntrypoint;
+    frame->x[0]         = currentCoreCtx->kernelArgument;
+    frame->cntvct_el0   = GET_SYSREG(cntvct_el0);
 }

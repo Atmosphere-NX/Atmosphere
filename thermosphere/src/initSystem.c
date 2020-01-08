@@ -35,6 +35,8 @@ static void initSysregs(void)
 
     SET_SYSREG(mdcr_el2,    0x00000000);
     SET_SYSREG(mdscr_el1,   0x00000000);
+
+    SET_SYSREG(cntvoff_el2, 0x00000000);
 }
 
 void initSystem(u32 coreId, bool isBootCore, u64 argument)
