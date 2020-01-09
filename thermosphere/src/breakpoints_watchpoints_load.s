@@ -23,6 +23,8 @@
 .cfi_startproc
 loadBreakpointRegs:
     // x1 = number
+    dmb     sy
+
     adr     x16, 1f
     add     x0, x0, #(16 * 8)
     mov     x4, #(16 * 12)
@@ -51,6 +53,8 @@ loadBreakpointRegs:
 .cfi_startproc
 loadWatchpointRegs:
     // x1 = number
+    dmb     sy
+
     adr     x16, 1f
     add     x0, x0, #(16 * 8)
     mov     x4, #(16 * 12)

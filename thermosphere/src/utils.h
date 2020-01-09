@@ -56,6 +56,11 @@ static inline u##sz __##op##sz(u##sz n)\
 _DECLARE_ASM_ARITHMETIC_UNARY_HELPER64(rbit)
 _DECLARE_ASM_ARITHMETIC_UNARY_HELPER32(rbit)
 
+static inline void __dmb_sy(void)
+{
+    __asm__ __volatile__ ("dmb sy" ::: "memory");
+}
+
 static inline void __dsb_sy(void)
 {
     __asm__ __volatile__ ("dsb sy" ::: "memory");

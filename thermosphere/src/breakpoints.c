@@ -49,6 +49,7 @@ static void commitAndBroadcastBreakpointHandler(void *p)
 
 static inline void commitAndBroadcastBreakpoints(void)
 {
+    __dmb_sy();
     executeFunctionOnAllCores(commitAndBroadcastBreakpointHandler, NULL, true);
 }
 
