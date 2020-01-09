@@ -18,6 +18,7 @@
 #include "core_ctx.h"
 #include "debug_log.h"
 #include "vgic.h"
+#include "timer.h"
 
 IrqManager g_irqManager = {0};
 
@@ -182,6 +183,9 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
             break;
         case GIC_IRQID_MAINTENANCE:
             isMaintenanceInterrupt = true;
+            break;
+        case TIMER_IRQID(CURRENT_TIMER):
+            timerInterruptHandler();
             break;
         default:
             isGuestInterrupt = irqId >= 16;

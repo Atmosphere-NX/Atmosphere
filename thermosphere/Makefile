@@ -144,8 +144,8 @@ ifeq ($(PLATFORM), qemu)
 
 export QEMU := qemu-system-aarch64
 
-QEMUFLAGS :=	-nographic -machine virt,virtualization=on,gic-version=2 -cpu cortex-a57 -smp 4 -m 1024\
-			-kernel thermosphere.elf -d unimp,guest_errors -semihosting-config enable,target=native -serial mon:stdio
+QEMUFLAGS :=	-nographic -machine virt,virtualization=on,accel=tcg,gic-version=2 -cpu cortex-a57 -smp 4 -m 1024\
+				-kernel thermosphere.elf -d unimp,guest_errors -semihosting-config enable,target=native -serial mon:stdio
 
 qemu: all
 	@$(QEMU) $(QEMUFLAGS)

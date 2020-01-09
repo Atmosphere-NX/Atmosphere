@@ -77,5 +77,15 @@ static inline bool irqIsGuest(u16 id)
         return false;
     }
 
-    return id != GIC_IRQID_MAINTENANCE && id != GIC_IRQID_HYP_TIMER;
+    bool ret = id != GIC_IRQID_MAINTENANCE && id != GIC_IRQID_NS_PHYS_HYP_TIMER;
+#if GIC_IRQID_NS_VIRT_HYP_TIMER != GIC_IRQID_SPURIOUS
+    ret = ret && id != GIC_IRQID_NS_VIRT_HYP_TIMER;
+#endif
+#if GIC_IRQID_SEC_PHYS_HYP_TIMER != GIC_IRQID_SPURIOUS
+    ret = ret && id != GIC_IRQID_SEC_PHYS_HYP_TIMER;
+#endif
+#if GIC_IRQID_SEC_VIRT_HYP_TIMER != GIC_IRQID_SPURIOUS
+    ret = ret && id != GIC_IRQID_SEC_VIRT_HYP_TIMER;
+#endif
+    return ret;
 }

@@ -11,7 +11,7 @@
 #include "single_step.h"
 #include "breakpoints.h"
 #include "watchpoints.h"
-
+#include "timer.h"
 #include "irq.h"
 
 extern const u8 __start__[];
@@ -41,6 +41,7 @@ void thermosphereMain(ExceptionStackFrame *frame)
 {
     enableTraps();
     enableBreakpointsAndWatchpoints();
+    timerInit();
     initIrq();
 
     if (currentCoreCtx->isBootCore) {
