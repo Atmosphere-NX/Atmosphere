@@ -56,6 +56,7 @@ void singleStepSetNextState(ExceptionStackFrame *frame, SingleStepState state)
     }
 
     SET_SYSREG(mdscr_el1, mdscr);
+    __isb(); // TRM-mandated
 }
 
 void handleSingleStep(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)

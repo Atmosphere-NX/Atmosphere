@@ -56,6 +56,7 @@ static void commitAndBroadcastWatchpointHandler(void *p)
 
 static inline void commitAndBroadcastWatchpoints(void)
 {
+    __dmb_sy();
     executeFunctionOnAllCores(commitAndBroadcastWatchpointHandler, NULL, true);
 }
 
