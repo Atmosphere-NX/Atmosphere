@@ -143,19 +143,14 @@ all: $(BUILD)
 ifeq ($(PLATFORM), qemu)
 
 export QEMU := qemu-system-aarch64
-#export QEMU := ~/qemu/aarch64-softmmu/qemu-system-aarch64
 
-QEMUFLAGS :=	-nographic -machine virt,secure=on,virtualization=on,gic-version=2 -cpu cortex-a57 -smp 4 -m 1024\
-			-bios bl1.bin -d unimp,guest_errors -semihosting-config enable,target=native -serial mon:stdio
-
-# NOTE: copy bl1.bin, bl2.bin, bl31.bin from your own build of Arm Trusted Firmware!
+QEMUFLAGS :=	-nographic -machine virt,virtualization=on,gic-version=2 -cpu cortex-a57 -smp 4 -m 1024\
+			-kernel thermosphere.elf -d unimp,guest_errors -semihosting-config enable,target=native -serial mon:stdio
 
 qemu: all
-	@cp thermosphere.bin bl33.bin
 	@$(QEMU) $(QEMUFLAGS)
 
 qemudbg: all
-	@cp thermosphere.bin bl33.bin
 	@$(QEMU) $(QEMUFLAGS) -s -S
 
 endif
@@ -167,7 +162,7 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).bin bl33.bin $(TARGET).elf
+	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
 
 
 #---------------------------------------------------------------------------------
