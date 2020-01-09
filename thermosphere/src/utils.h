@@ -46,7 +46,7 @@
 static inline u##sz __##op##sz(u##sz n)\
 {\
     u##sz res;\
-    __asm__ __volatile__ (#op " %" #regalloc "[res], %" #regalloc "[n]" : [res] "=r" (res) : [n] "r" (n));\
+    __asm__ __volatile__ (STRINGIZE(op) " %" STRINGIZE(regalloc) "[res], %" STRINGIZE(regalloc) "[n]" : [res] "=r" (res) : [n] "r" (n));\
     return res;\
 }
 
