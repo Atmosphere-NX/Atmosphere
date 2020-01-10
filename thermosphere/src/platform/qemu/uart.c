@@ -15,9 +15,9 @@
  */
 
 #include "uart.h"
-#include "../../utils.h"
+#include "../../irq.h"
 
-// Adapted from ARM TF asm code
+// Adapted from TF asm code
 // AMBA PL101 driver
 
 /*
@@ -28,52 +28,116 @@
 
 //115200
 
-void uartInit(u32 baudRate)
+static inline volatile PL011UartRegisters *uartGetRegisters(UartDevice dev)
 {
-    // First, disable UART
-    g_uartRegs->CR &= ~PL011_UARTCR_UARTEN;
-
-    // Set baudrate, Divisor =  (Uart clock * 4) / baudrate; stored in IBRD|FBRD
-    u32 divisor = (4 * UART0_CLK_IN_HZ) / baudRate;
-    g_uartRegs->IBRD = divisor >> 6;
-    g_uartRegs->FBRD = divisor & 0x3F;
-    g_uartRegs->LCR_H = PL011_LINE_CONTROL;
-
-    // Clear any pending errors
-    g_uartRegs->ECR = 0;
-
-    // Enable tx, rx, and uart overall
-    g_uartRegs->CR = PL011_UARTCR_RXE | PL011_UARTCR_TXE | PL011_UARTCR_UARTEN;
-}
-
-void uartWriteData(const void *buffer, size_t size)
-{
-    const u8 *buf8 = (const u8 *)buffer;
-    for (size_t i = 0; i < size; i++) {
-        while (g_uartRegs->FR & PL011_UARTFR_TXFF); // while TX FIFO full
-        g_uartRegs->DR = buf8[i]; 
+    switch (dev) {
+        case UART_A:
+            return (volatile PL011UartRegisters *)0x09000000;
+        default:
+            return NULL;
     }
 }
 
-void uartReadData(void *buffer, size_t size)
+void uartInit(UartDevice dev, u32 baudRate, u32 flags)
 {
+    /* The TRM (DDI0183) reads:
+        Program the control registers as follows:
+        1. Disable the UART.
+        2. Wait for the end of transmission or reception of the current character.
+        3. Flush the transmit FIFO by disabling bit 4 (FEN) in the line control register
+        (UARTCLR_H).
+        4. Reprogram the control register.
+        5. Enable the UART.
+    */
+    (void)flags;
+    volatile PL011UartRegisters *uart = uartGetRegisters(dev);
+
+    // First, disable the UART. Flush the receive FIFO, wait for tx to complete, and disable both FIFOs.
+    uart->cr &= ~PL011_UARTCR_UARTEN;
+    while (!(uart->fr & PL011_UARTFR_RXFE)) {
+        uart->dr;
+    }
+    while (uart->fr & PL011_UARTFR_BUSY);
+    // This flushes the transmit FIFO:
+    uart->lcr_h &= ~PL011_UARTLCR_H_FEN;
+
+    // Set baudrate, Divisor =  (Uart clock * 4) / baudrate; stored in IBRD|FBRD
+    u32 divisor = (4 * UART_CLK_IN_HZ) / baudRate;
+    uart->ibrd = divisor >> 6;
+    uart->fbrd = divisor & 0x3F;
+
+    // Select FIFO fill levels for interrupts
+    uart->ifls = PL011_IFLS_RX4_8 | PL011_IFLS_TX4_8;
+
+    // FIFO Enabled / No Parity / 8 Data bit / One Stop Bit
+    uart->lcr_h = PL011_UARTLCR_H_FEN | PL011_UARTLCR_H_WLEN_8;
+
+    // Select the interrupts we want to have
+    // RX timeout and TX/RX fill interrupts
+    uart->imsc = PL011_RTI | PL011_RXI | PL011_RXI;
+
+    // Clear any pending errors
+    uart->ecr = 0;
+
+    // Clear all interrupts
+    uart->icr = PL011_ALL_INTERRUPTS;
+
+    // Register the interrupt ID
+    //configureInterrupt(uartGetIrqId(dev), IRQ_PRIORITY_HOST, true);
+
+    // Enable tx, rx, and uart overall
+    uart->cr = PL011_UARTCR_RXE | PL011_UARTCR_TXE | PL011_UARTCR_UARTEN;
+    uart->imsc = PL011_RTI | PL011_RXI | PL011_RXI;
+
+}
+
+void uartWriteData(UartDevice dev, const void *buffer, size_t size)
+{
+    volatile PL011UartRegisters *uart = uartGetRegisters(dev);
+
+    const u8 *buf8 = (const u8 *)buffer;
+    for (size_t i = 0; i < size; i++) {
+        while (uart->fr & PL011_UARTFR_TXFF); // while TX FIFO full
+        uart->dr = buf8[i]; 
+    }
+}
+
+void uartReadData(UartDevice dev, void *buffer, size_t size)
+{
+    volatile PL011UartRegisters *uart = uartGetRegisters(dev);
+
     u8 *buf8 = (u8 *)buffer;
     size_t i;
 
     for (i = 0; i < size; i++) {
-        while (g_uartRegs->FR & PL011_UARTFR_RXFE);
-        buf8[i] = g_uartRegs->DR;
+        while (uart->fr & PL011_UARTFR_RXFE);
+        buf8[i] = uart->dr;
     }
 }
 
-size_t uartReadDataMax(void *buffer, size_t maxSize)
+size_t uartReadDataMax(UartDevice dev, void *buffer, size_t maxSize)
 {
+    volatile PL011UartRegisters *uart = uartGetRegisters(dev);
+
     u8 *buf8 = (u8 *)buffer;
     size_t i;
 
-    for (i = 0; i < maxSize && !(g_uartRegs->FR & PL011_UARTFR_RXFE); i++) {
-        buf8[i] = g_uartRegs->DR;
+    for (i = 0; i < maxSize && !(uart->fr & PL011_UARTFR_RXFE); i++) {
+        buf8[i] = uart->dr;
     }
 
     return 1 + i;
+}
+
+void uartSetInterruptStatus(UartDevice dev, bool read, bool enable)
+{
+    volatile PL011UartRegisters *uart = uartGetRegisters(dev);
+
+    u32 mask = read ? PL011_RTI | PL011_RXI : PL011_RTI; 
+    if (enable) {
+        uart->imsc |= mask;
+    } else {
+        uart->icr = mask;
+        uart->imsc &= ~mask;
+    }
 }

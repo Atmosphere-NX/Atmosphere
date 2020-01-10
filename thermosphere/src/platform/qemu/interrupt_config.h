@@ -35,6 +35,8 @@
 #define GIC_IRQID_SEC_PHYS_HYP_TIMER    GIC_IRQID_SPURIOUS // SBSA: 20. Unimplemented
 #define GIC_IRQID_SEC_VIRT_HYP_TIMER    GIC_IRQID_SPURIOUS // SBSA: 19. Unimplemented
 
+#define GIC_IRQID_UART                  33
+
 static inline void initGicV2Pointers(ArmGicV2 *gic)
 {
     gic->gicd = (volatile ArmGicV2Distributor *)0x08000000ull;

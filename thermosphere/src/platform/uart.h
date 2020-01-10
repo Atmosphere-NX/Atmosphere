@@ -16,8 +16,10 @@
 
 #pragma once
 
-#ifdef PLATFORM_TEGRA
-#include "tegra/uart.h"
+#if PLATFORM_TEGRA
+// TODO
+
+/*#include "tegra/uart.h"
 
 #define DEFAULT_UART            UART_C
 #define DEFAULT_UARTINV_STATUS  true
@@ -42,8 +44,11 @@ static inline size_t uartReadDataMax(void *buffer, size_t maxSize)
 {
     return uart_recv_max(DEFAULT_UART, buffer, maxSize);
 }
+*/
 
 #elif defined(PLATFORM_QEMU)
+
+#define DEFAULT_UART            UART_A
 
 #include "qemu/uart.h"
 

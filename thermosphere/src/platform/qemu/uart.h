@@ -16,120 +16,130 @@
 
 #pragma once
 
-#include "../../types.h"
+#include "../../utils.h"
+#include "interrupt_config.h"
 
 // AMBA PL011 driver
-
+// Originally from
 /*
  * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#if 0
-/* PL011 Registers */
-#define UARTDR                    0x000
-#define UARTRSR                   0x004
-#define UARTECR                   0x004
-#define UARTFR                    0x018
-#define UARTIMSC                  0x038
-#define UARTRIS                   0x03C
-#define UARTICR                   0x044
+typedef enum UartDevice {
+    UART_A = 0,
 
-/* PL011 registers (out of the SBSA specification) */
-#if !PL011_GENERIC_UART
-#define UARTILPR                  0x020
-#define UARTIBRD                  0x024
-#define UARTFBRD                  0x028
-#define UARTLCR_H                 0x02C
-#define UARTCR                    0x030
-#define UARTIFLS                  0x034
-#define UARTMIS                   0x040
-#define UARTDMACR                 0x048
-#endif /* !PL011_GENERIC_UART */
+    UART_MAX,
+} UartDevice;
 
-#endif 
 typedef struct PL011UartRegisters {
-    u32 DR;
+    u32 dr;
     union {
-        u32 SR;
-        u32 ECR;
+        u32 sr;
+        u32 ecr;
     };
     u32 _0x08, _0x0C, _0x10, _0x14;
-    u32 FR;
+    u32 fr;
     u32 _0x1C;
-    u32 ILPR;
-    u32 IBRD;
-    u32 FBRD;
-    u32 LCR_H;
-    u32 CR;
-    u32 IFLS;
-    u32 IMSC;
-    u32 TRIS;
-    u32 TMIS;
-    u32 TICR;
-    u32 TDMACR;
+    u32 ilpr;
+    u32 ibrd;
+    u32 fbrd;
+    u32 lcr_h;
+    u32 cr;
+    u32 ifls;
+    u32 imsc;
+    u32 ris;
+    u32 mis;
+    u32 icr;
+    u32 dmacr;
 } PL011UartRegisters;
 
-/* Data status bits */
-#define UART_DATA_ERROR_MASK      0x0F00
+// Data status bits
+#define UART_DATA_ERROR_MASK        0x0F00
 
-/* Status reg bits */
-#define UART_STATUS_ERROR_MASK    0x0F
+// Status reg bits
+#define UART_STATUS_ERROR_MASK      0x0F
 
-/* Flag reg bits */
-#define PL011_UARTFR_RI           (1 << 8)	/* Ring indicator */
-#define PL011_UARTFR_TXFE         (1 << 7)	/* Transmit FIFO empty */
-#define PL011_UARTFR_RXFF         (1 << 6)	/* Receive  FIFO full */
-#define PL011_UARTFR_TXFF         (1 << 5)	/* Transmit FIFO full */
-#define PL011_UARTFR_RXFE         (1 << 4)	/* Receive  FIFO empty */
-#define PL011_UARTFR_BUSY         (1 << 3)	/* UART busy */
-#define PL011_UARTFR_DCD          (1 << 2)	/* Data carrier detect */
-#define PL011_UARTFR_DSR          (1 << 1)	/* Data set ready */
-#define PL011_UARTFR_CTS          (1 << 0)	/* Clear to send */
+// Errors
+#define PL011_OE                    BIT(3)  // Overrun error
+#define PL011_BE                    BIT(2)  // Break error
+#define PL011_PE                    BIT(1)  // Parity error
+#define PL011_FE                    BIT(0)  // Framing error
 
-#define PL011_UARTFR_TXFF_BIT   5   /* Transmit FIFO full bit in UARTFR register */
-#define PL011_UARTFR_RXFE_BIT   4   /* Receive FIFO empty bit in UARTFR register */
-#define PL011_UARTFR_BUSY_BIT   3   /* UART busy bit in UARTFR register */
+// Interrupts
+#define PL011_OEI                   BIT(10) // Overrun error interrupt
+#define PL011_BEI                   BIT(9)  // Break error interrupt
+#define PL011_PEI                   BIT(8)  // Parity error interrupt
+#define PL011_FEI                   BIT(7)  // Framing error interrupt
+#define PL011_RTI                   BIT(6)  // Receive timeout interrupt
+#define PL011_TXI                   BIT(5)  // Transmit interrupt
+#define PL011_RXI                   BIT(4)  // Receive interrupt
+#define PL011_DSRMI                 BIT(3)  // DSR modem interrupt
+#define PL011_DCDMI                 BIT(2)  // DCD modem interrupt
+#define PL011_CTSMI                 BIT(1)  // CTS modem interrupt
+#define PL011_RIMI                  BIT(0)  // RI modem interrupt
+#define PL011_ALL_INTERRUPTS        MASK(11)
 
-/* Control reg bits */
-#if !PL011_GENERIC_UART
-#define PL011_UARTCR_CTSEN        (1 << 15)	/* CTS hardware flow control enable */
-#define PL011_UARTCR_RTSEN        (1 << 14)	/* RTS hardware flow control enable */
-#define PL011_UARTCR_RTS          (1 << 11)	/* Request to send */
-#define PL011_UARTCR_DTR          (1 << 10)	/* Data transmit ready. */
-#define PL011_UARTCR_RXE          (1 << 9)	/* Receive enable */
-#define PL011_UARTCR_TXE          (1 << 8)	/* Transmit enable */
-#define PL011_UARTCR_LBE          (1 << 7)	/* Loopback enable */
-#define PL011_UARTCR_UARTEN       (1 << 0)	/* UART Enable */
+// Flag reg bits
+#define PL011_UARTFR_RI             BIT(8)  // Ring indicator
+#define PL011_UARTFR_TXFE           BIT(7)  // Transmit FIFO empty
+#define PL011_UARTFR_RXFF           BIT(6)  // Receive  FIFO full
+#define PL011_UARTFR_TXFF           BIT(5)  // Transmit FIFO full
+#define PL011_UARTFR_RXFE           BIT(4)  // Receive  FIFO empty
+#define PL011_UARTFR_BUSY           BIT(3)  // UART busy
+#define PL011_UARTFR_DCD            BIT(2)  // Data carrier detect
+#define PL011_UARTFR_DSR            BIT(1)  // Data set ready
+#define PL011_UARTFR_CTS            BIT(0)  // Clear to send
 
-#if !defined(PL011_LINE_CONTROL)
-/* FIFO Enabled / No Parity / 8 Data bit / One Stop Bit */
-#define PL011_LINE_CONTROL  (PL011_UARTLCR_H_FEN | PL011_UARTLCR_H_WLEN_8)
-#endif
+// Control reg bits
+#define PL011_UARTCR_CTSEN          BIT(15) // CTS hardware flow control enable
+#define PL011_UARTCR_RTSEN          BIT(14) // RTS hardware flow control enable
+#define PL011_UARTCR_RTS            BIT(11) // Request to send
+#define PL011_UARTCR_DTR            BIT(10) // Data transmit ready.
+#define PL011_UARTCR_RXE            BIT(9)  // Receive enable
+#define PL011_UARTCR_TXE            BIT(8)  // Transmit enable
+#define PL011_UARTCR_LBE            BIT(7)  // Loopback enable
+#define PL011_UARTCR_UARTEN         BIT(0)  // UART Enable
 
-/* Line Control Register Bits */
-#define PL011_UARTLCR_H_SPS       (1 << 7)	/* Stick parity select */
-#define PL011_UARTLCR_H_WLEN_8    (3 << 5)
-#define PL011_UARTLCR_H_WLEN_7    (2 << 5)
-#define PL011_UARTLCR_H_WLEN_6    (1 << 5)
-#define PL011_UARTLCR_H_WLEN_5    (0 << 5)
-#define PL011_UARTLCR_H_FEN       (1 << 4)	/* FIFOs Enable */
-#define PL011_UARTLCR_H_STP2      (1 << 3)	/* Two stop bits select */
-#define PL011_UARTLCR_H_EPS       (1 << 2)	/* Even parity select */
-#define PL011_UARTLCR_H_PEN       (1 << 1)	/* Parity Enable */
-#define PL011_UARTLCR_H_BRK       (1 << 0)	/* Send break */
+// Line Control Register Bits
+#define PL011_UARTLCR_H_SPS         BIT(7)  // Stick parity select
+#define PL011_UARTLCR_H_WLEN_8      (3 << 5)
+#define PL011_UARTLCR_H_WLEN_7      (2 << 5)
+#define PL011_UARTLCR_H_WLEN_6      BIT(5)
+#define PL011_UARTLCR_H_WLEN_5      (0 << 5)
+#define PL011_UARTLCR_H_FEN         BIT(4)  // FIFOs Enable
+#define PL011_UARTLCR_H_STP2        BIT(3)  // Two stop bits select
+#define PL011_UARTLCR_H_EPS         BIT(2)  // Even parity select
+#define PL011_UARTLCR_H_PEN         BIT(1)  // Parity Enable
+#define PL011_UARTLCR_H_BRK         BIT(0)  // Send break
 
-#endif /* !PL011_GENERIC_UART */
+// FIFO level select register
+#define PL011_IFLS_RX1_8            (0 << 3)
+#define PL011_IFLS_RX2_8            (1 << 3)
+#define PL011_IFLS_RX4_8            (2 << 3)
+#define PL011_IFLS_RX6_8            (3 << 3)
+#define PL011_IFLS_RX7_8            (4 << 3)
+#define PL011_IFLS_TX1_8            (0 << 0)
+#define PL011_IFLS_TX2_8            (1 << 0)
+#define PL011_IFLS_TX4_8            (2 << 0)
+#define PL011_IFLS_TX6_8            (3 << 0)
+#define PL011_IFLS_TX7_8            (4 << 0)
 
-#define UART0_BASE              0x09000000
-#define UART1_BASE              0x09040000
-#define UART0_CLK_IN_HZ         1
-#define UART1_CLK_IN_HZ         1
+#define UART_CLK_IN_HZ              1
 
-static volatile PL011UartRegisters *const g_uartRegs = (volatile PL011UartRegisters *)UART0_BASE;
+void uartInit(UartDevice dev, u32 baudRate, u32 flags);
+void uartWriteData(UartDevice dev, const void *buffer, size_t size);
+void uartReadData(UartDevice dev, void *buffer, size_t size);
+size_t uartReadDataMax(UartDevice dev, void *buffer, size_t maxSize);
+void uartSetInterruptStatus(UartDevice dev, bool read, bool enable);
 
-void uartInit(u32 baudRate);
-void uartWriteData(const void *buffer, size_t size);
-void uartReadData(void *buffer, size_t size);
-size_t uartReadDataMax(void *buffer, size_t maxSize);
+static inline u16 uartGetIrqId(UartDevice dev)
+{
+    switch (dev) {
+        case UART_A:
+            return GIC_IRQID_UART;
+        default:
+            return GIC_IRQID_SPURIOUS;
+    }
+}
