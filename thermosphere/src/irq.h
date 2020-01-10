@@ -21,6 +21,7 @@
 #include "exceptions.h"
 #include "utils.h"
 #include "platform/interrupt_config.h"
+#include "platform/uart.h"
 
 #define IRQ_PRIORITY_HOST       0
 #define IRQ_PRIORITY_GUEST      1
@@ -49,6 +50,7 @@ extern IrqManager g_irqManager;
 
 void initIrq(void);
 void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32);
+void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive);
 
 static inline void generateSgiForAllOthers(ThermosphereSgi id)
 {
@@ -78,6 +80,7 @@ static inline bool irqIsGuest(u16 id)
     }
 
     bool ret = id != GIC_IRQID_MAINTENANCE && id != GIC_IRQID_NS_PHYS_HYP_TIMER;
+    ret = ret && id != uartGetIrqId(DEFAULT_UART); // FIXME
 #if GIC_IRQID_NS_VIRT_HYP_TIMER != GIC_IRQID_SPURIOUS
     ret = ret && id != GIC_IRQID_NS_VIRT_HYP_TIMER;
 #endif

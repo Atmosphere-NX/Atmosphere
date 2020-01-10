@@ -25,13 +25,13 @@
 
 // All generic timers possibly defined in the Arm architecture:
 // (suffix, time source suffix, level, irqid)
-#define NS_PHYS_TIMER           (p,   p,   0,  GIC_IRQID_NS_PHYS_TIMER)
-#define NS_VIRT_TIMER           (v,   v,   0,  GIC_IRQID_NS_VIRT_TIMER)
-#define NS_PHYS_HYP_TIMER       (hp,  p,   2,  GIC_IRQID_NS_PHYS_HYP_TIMER)
-#define NS_VIRT_HYP_TIMER       (hv,  v,   2,  GIC_IRQID_NS_VIRT_HYP_TIMER)
-#define SEC_PHYS_TIMER          (ps,  p,   1,  GIC_IRQID_SEC_PHYS_TIMER)
-#define SEC_PHYS_HYP_TIMER      (hps, p,   2,  GIC_IRQID_SEC_PHYS_HYP_TIMER)
-#define SEC_VIRT_HYP_TIMER      (hvs, v,   2,  GIC_IRQID_SEC_VIRT_HYP_TIMER)
+#define NS_PHYS_TIMER           (p,   p,   0,   GIC_IRQID_NS_PHYS_TIMER)
+#define NS_VIRT_TIMER           (v,   v,   0,   GIC_IRQID_NS_VIRT_TIMER)
+#define NS_PHYS_HYP_TIMER       (hp,  p,   2,   GIC_IRQID_NS_PHYS_HYP_TIMER)
+#define NS_VIRT_HYP_TIMER       (hv,  v,   2,   GIC_IRQID_NS_VIRT_HYP_TIMER)
+#define SEC_PHYS_TIMER          (ps,  p,   1,   GIC_IRQID_SEC_PHYS_TIMER)
+#define SEC_PHYS_HYP_TIMER      (hps, p,   2,   GIC_IRQID_SEC_PHYS_HYP_TIMER)
+#define SEC_VIRT_HYP_TIMER      (hvs, v,   2,   GIC_IRQID_SEC_VIRT_HYP_TIMER)
 
 #define TIMER_IRQID_FIELDS(ign, ign2, ign3, id)           id
 #define TIMER_COUNTER_REG_FIELDS(ign, ts, ign2, ign3)     cnt##ts##ct_el0

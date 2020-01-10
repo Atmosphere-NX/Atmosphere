@@ -37,7 +37,7 @@ int debugLog(const char *fmt, ...)
     if (DLOG_USE_SEMIHOSTING_WRITE0 && semihosting_connection_supported()) {
         semihosting_write_string(buf);
     } else {
-        uartWriteData(buf, (size_t)res);
+        uartWriteData(DEFAULT_UART, buf, (size_t)res);
     }
 
     return res;

@@ -98,7 +98,7 @@ static void initGic(void)
     currentCoreCtx->gicInterfaceMask = gicd->itargetsr[0];
 }
 
-static void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
+void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
 {
     volatile ArmGicV2Distributor *gicd = g_irqManager.gic.gicd;
     gicd->icenabler[id / 32] = BIT(id % 32);
@@ -129,6 +129,9 @@ void initIrq(void)
 
     configureInterrupt(GIC_IRQID_MAINTENANCE, IRQ_PRIORITY_HOST, true);
 
+    for(u32 i=32; i < 256+32; i++) {
+        configureInterrupt(i, IRQ_PRIORITY_HOST, true);
+    }
     recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
 }
 
@@ -159,7 +162,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     u32 irqId = iar & 0x3FF;
     u32 srcCore = (iar >> 10) & 7;
 
-    //DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
+    DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
 
     if (irqId == GIC_IRQID_SPURIOUS) {
         // Spurious interrupt received
