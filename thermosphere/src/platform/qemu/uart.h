@@ -55,7 +55,7 @@ typedef struct PL011UartRegisters {
         u32 SR;
         u32 ECR;
     };
-    u32 _0x08, _0x0C, _0x10;
+    u32 _0x08, _0x0C, _0x10, _0x14;
     u32 FR;
     u32 _0x1C;
     u32 ILPR;
