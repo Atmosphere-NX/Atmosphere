@@ -129,9 +129,6 @@ void initIrq(void)
 
     configureInterrupt(GIC_IRQID_MAINTENANCE, IRQ_PRIORITY_HOST, true);
 
-    for(u32 i=32; i < 256+32; i++) {
-        configureInterrupt(i, IRQ_PRIORITY_HOST, true);
-    }
     recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
 }
 

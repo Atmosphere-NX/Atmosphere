@@ -45,8 +45,9 @@ void thermosphereMain(ExceptionStackFrame *frame)
     initIrq();
 
     if (currentCoreCtx->isBootCore) {
-        uartInit(DEFAULT_UART, 115200, 0);
-        uartSetInterruptStatus(DEFAULT_UART, false, false);
+        uartInit(DEFAULT_UART, BAUD_115200, 0);
+        uartSetInterruptStatus(DEFAULT_UART, DIRECTION_READ, true);
+
         DEBUG("EL2: core %u reached main first!\n", currentCoreCtx->coreId);
     }
 

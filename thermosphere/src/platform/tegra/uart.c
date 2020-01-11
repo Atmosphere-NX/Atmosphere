@@ -20,18 +20,27 @@
 #include "pinmux.h"
 #include "gpio.h"
 #include "car.h"
+#include "../../irq.h"
 
-static inline void uart_wait_cycles(uint32_t baud, uint32_t num)
+#define UART_BASE 0x70006000
+
+static inline volatile tegra_uart_t *uartGetRegisters(UartDevice dev) 
+{
+    static const size_t offsets[] = { 0, 0x40, 0x200, 0x300, 0x400 };
+    return (volatile tegra_uart_t *)(UART_BASE + offsets[dev]);
+}
+
+static inline void uartWaitCycles(u32 baud, u32 num)
 {
     udelay((num * 1000000 + 16 * baud - 1) / (16 * baud));
 }
 
-static inline void uart_wait_syms(uint32_t baud, uint32_t num)
+static inline void uartWaitSyms(u32 baud, u32 num)
 {
     udelay((num * 1000000 + baud - 1) / baud);
 }
 
-void uart_config(UartDevice dev) {
+static void uartSetPinmuxConfig(UartDevice dev) {
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
 
     switch (dev) {
@@ -60,15 +69,15 @@ void uart_config(UartDevice dev) {
             pinmux->uart4_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
             break;
         case UART_E:
-            /* Unused. */
+            // Unused.
             break;
         default: break;
     }
 }
 
-void uart_reset(UartDevice dev)
+static void uartReset(UartDevice dev)
 {
-    CarDevice uartCarDevs[] = { CARDEVICE_UARTA, CARDEVICE_UARTB, CARDEVICE_UARTC, CARDEVICE_UARTD };
+    static const CarDevice uartCarDevs[] = { CARDEVICE_UARTA, CARDEVICE_UARTB, CARDEVICE_UARTC, CARDEVICE_UARTD };
     if (dev == UART_B) {
         gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_SFIO);
     } else {
@@ -81,88 +90,143 @@ void uart_reset(UartDevice dev)
         gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_GPIO);
     }
 
-    uart_config(dev);
+    uartSetPinmuxConfig(dev);
     clkrst_reboot(uartCarDevs[dev]);
 }
 
-void uart_init(UartDevice dev, uint32_t baud, bool inverted) {
-    volatile tegra_uart_t *uart = uart_get_regs(dev);
 
-    /* Wait for idle state. */
-    uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE);
+// This function blocks until the UART device is in the desired state.
+void uartWaitIdle(UartDevice dev, UartVendorStatus status)
+{
+    volatile tegra_uart_t *uart = uartGetRegisters(dev);
 
-    /* Calculate baud rate, round to nearest. */
-    uint32_t rate = (8 * baud + 408000000) / (16 * baud);
-
-    /* Setup UART in FIFO mode. */
-    uart->UART_IER_DLAB = 0;
-    uart->UART_MCR = 0;
-    uart->UART_LCR = (UART_LCR_DLAB | UART_LCR_WD_LENGTH_8);        /* Enable DLAB and set word length 8. */
-    uart->UART_THR_DLAB = (uint8_t)rate;                            /* Divisor latch LSB. */
-    uart->UART_IER_DLAB = (uint8_t)(rate >> 8);                     /* Divisor latch MSB. */
-    uart->UART_LCR &= ~(UART_LCR_DLAB);                             /* Disable DLAB. */
-    uart->UART_SPR;                                                 /* Dummy read. */
-    uart_wait_syms(baud, 3);                                        /* Wait for 3 symbols at the new baudrate. */
-
-    /* Enable FIFO with default settings. */
-    uart->UART_IIR_FCR = UART_FCR_FCR_EN_FIFO;
-    uart->UART_IRDA_CSR = inverted ? 2 : 0;                         /* Invert TX if needed */
-    uart->UART_SPR;                                                 /* Dummy read as mandated by TRM. */
-    uart_wait_cycles(baud, 3);                                      /* Wait for 3 baud cycles, as mandated by TRM (erratum). */
-
-    /* Flush FIFO. */
-    uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE);                 /* Make sure there's no data being written in TX FIFO (TRM). */
-    uart->UART_IIR_FCR |= UART_FCR_RX_CLR | UART_FCR_TX_CLR;        /* Clear TX and RX FIFOs. */
-    uart_wait_cycles(baud, 32);                                     /* Wait for 32 baud cycles (TRM, erratum). */
-    /* Wait for idle state (TRM). */
-    uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE | UART_VENDOR_STATE_RX_IDLE);
-}
-
-/* This function blocks until the UART device is in the desired state. */
-void uart_wait_idle(UartDevice dev, UartVendorStatus status) {
-    volatile tegra_uart_t *uart = uart_get_regs(dev);
-    
     if (status & UART_VENDOR_STATE_TX_IDLE) {
-        while (!(uart->UART_LSR & UART_LSR_TMTY)) {
-            /* Wait */
-        }
+        while (!(uart->lsr & UART_LSR_TMTY));
     }
+
     if (status & UART_VENDOR_STATE_RX_IDLE) {
-        while (uart->UART_LSR & UART_LSR_RDR) {
-            /* Wait */
-        }
+        while (uart->lsr & UART_LSR_RDR);
     }
 }
 
-void uart_send(UartDevice dev, const void *buf, size_t len) {
-    volatile tegra_uart_t *uart = uart_get_regs(dev);
+void uartInit(UartDevice dev, u32 baud, u32 flags)
+{
+    volatile tegra_uart_t *uart = uartGetRegisters(dev);
+    bool inverted = (flags & BIT(0)) != 0;
 
-    for (size_t i = 0; i < len; i++) {
-        while (!(uart->UART_LSR & UART_LSR_THRE)) {
-            /* Wait until it's possible to send data. */
-        }
-        uart->UART_THR_DLAB = *((const uint8_t *)buf + i);
+    // Set pinmux, gpio, clock
+    uartReset(dev);
+
+    // Wait for idle state.
+    uartWaitIdle(dev, UART_VENDOR_STATE_TX_IDLE);
+
+    // Calculate baud rate, round to nearest.
+    u32 rate = (8 * baud + 408000000) / (16 * baud);
+
+    uart->lcr &= ~UART_LCR_DLAB;                                // Disable DLAB.
+    uart->ier = 0;                                              // Disable all interrupts.
+    uart->mcr = 0;
+
+    // Setup UART in FIFO mode
+    uart->lcr = UART_LCR_DLAB | UART_LCR_WD_LENGTH_8;           // Enable DLAB and set word length 8.
+    uart->dll = (u8)rate;                                       // Divisor latch LSB.
+    uart->dlh = (u8)(rate >> 8);                                // Divisor latch MSB.
+    uart->lcr &= ~UART_LCR_DLAB;                                // Disable DLAB.
+    uart->spr;                                                  // Dummy read.
+    uartWaitSyms(baud, 3);                                      // Wait for 3 symbols at the new baudrate.
+
+    // Enable FIFO with default settings.
+    uart->fcr = UART_FCR_FCR_EN_FIFO;
+    uart->irda_csr = inverted ? UART_IRDA_CSR_INVERT_TXD : 0;   // Invert TX if needed
+    uart->spr;                                                  // Dummy read as mandated by TRM.
+    uartWaitCycles(baud, 3);                                    // Wait for 3 baud cycles, as mandated by TRM (erratum).
+
+    // Flush FIFO.
+    uartWaitIdle(dev, UART_VENDOR_STATE_TX_IDLE);               // Make sure there's no data being written in TX FIFO (TRM).
+    uart->fcr |= UART_FCR_RX_CLR | UART_FCR_TX_CLR;             // Clear TX and RX FIFOs.
+    uartWaitCycles(baud, 32);                                   // Wait for 32 baud cycles (TRM, erratum).
+
+    // Wait for idle state (TRM).
+    uartWaitIdle(dev, UART_VENDOR_STATE_TX_IDLE | UART_VENDOR_STATE_RX_IDLE);
+
+    // Set scratch register to 0. We'll use it to backup write-only IER later
+    uart->spr = 0;
+
+    // Register the interrupt ID
+    configureInterrupt(uartGetIrqId(dev), IRQ_PRIORITY_HOST, true);
+}
+
+void uartWriteData(UartDevice dev, const void *buffer, size_t size)
+{
+    volatile tegra_uart_t *uart = uartGetRegisters(dev);
+    const u8 *buf8 = (const u8 *)buffer;
+
+    for (size_t i = 0; i < size; i++) {
+        while (!(uart->lsr & UART_LSR_THRE)); // Wait until it's possible to send data.
+        uart->thr = buf8[i];
     }
 }
 
-void uart_recv(UartDevice dev, void *buf, size_t len) {
-    volatile tegra_uart_t *uart = uart_get_regs(dev);
+void uartReadData(UartDevice dev, void *buffer, size_t size)
+{
+    volatile tegra_uart_t *uart = uartGetRegisters(dev);
+    u8 *buf8 = (u8 *)buffer;
 
-    for (size_t i = 0; i < len; i++) {
-        while (!(uart->UART_LSR & UART_LSR_RDR)) {
-            /* Wait until it's possible to receive data. */
-        }
-        *((uint8_t *)buf + i) = uart->UART_THR_DLAB;
+    for (size_t i = 0; i < size; i++) {
+        while (!(uart->lsr & UART_LSR_RDR)) // Wait until it's possible to receive data.
+        buf8[i] = uart->rbr;
     }
 }
 
-size_t uart_recv_max(UartDevice dev, void *buf, size_t max_len) {
-    volatile tegra_uart_t *uart = uart_get_regs(dev);
-    size_t i;
+size_t uartReadDataMax(UartDevice dev, void *buffer, size_t maxSize)
+{
+    volatile tegra_uart_t *uart = uartGetRegisters(dev);
+    u8 *buf8 = (u8 *)buffer;
+    size_t count = 0;
 
-    for (i = 0; i < max_len && (uart->UART_LSR & UART_LSR_RDR); i++) {
-        *((uint8_t *)buf + i) = uart->UART_THR_DLAB;
+    for (size_t i = 0; i < maxSize && (uart->lsr & UART_LSR_RDR); i++) {
+        buf8[i] = uart->rbr;
+        ++count;
     }
 
-    return 1 + i;
+    return count;
+}
+
+ReadWriteDirection uartGetInterruptDirection(UartDevice dev)
+{
+    volatile tegra_uart_t *uart = uartGetRegisters(dev);
+    u32 ret = 0;
+
+    u32 iir = uart->iir & 0xF;
+
+    if (iir == 8 || iir == 12) {
+        // Data ready or data timeout
+        ret |= DIRECTION_READ;
+    } else if (iir == 2) {
+        // TX FIFO empty
+        ret |= DIRECTION_WRITE;
+    }
+
+    return (ReadWriteDirection)ret;
+}
+
+void uartSetInterruptStatus(UartDevice dev, ReadWriteDirection direction, bool enable)
+{
+    volatile tegra_uart_t *uart = uartGetRegisters(dev);
+
+    u32 mask = 0;
+    if (direction & DIRECTION_READ) {
+        mask |= UART_IER_IE_RX_TIMEOUT | UART_IER_IE_RHR;
+    }
+    if (direction & DIRECTION_WRITE) {
+        mask |= UART_IER_IE_THR;
+    }
+
+    if (enable) {
+        uart->spr |= mask;
+        uart->ier = uart->spr;
+    } else {
+        uart->spr &= ~mask;
+        uart->ier = uart->spr;
+    }
 }

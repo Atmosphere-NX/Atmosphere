@@ -18,18 +18,17 @@
 #pragma once
 
 #include "../../utils.h"
-
-#define UART_BASE 0x70006000
-
-#define BAUD_115200 115200
+#include "interrupt_config.h"
 
 /* UART devices */
-typedef enum {
+typedef enum UartDevice {
     UART_A = 0,
     UART_B = 1,
     UART_C = 2,
     UART_D = 3,
     UART_E = 4,
+
+    UART_MAX = UART_E, // Treat UART_E as if it didn't exist
 } UartDevice;
 
 /* 36.3.12 UART_VENDOR_STATUS_0_0 */
@@ -123,6 +122,17 @@ typedef enum {
     UART_FCR_RX_TRIG_FIFO_COUNT_GREATER_16 = 3 << 6,
 } UartFifoControl;
 
+/* 36.3.2 UART_IER_DLAB_0_0 */
+typedef enum {
+    UART_IER_IE_RHR         = 1 << 0, /* Interrupt enable for Received Data Interrupt */
+    UART_IER_IE_THR         = 1 << 1, /* Interrupt enable for Transmitter Holding Register Empty interrupt */
+    UART_IER_IE_RXS         = 1 << 2, /* Interrupt enable for Receiver Line Status Interrupt */
+    UART_IER_IE_MSI         = 1 << 3, /* Interrupt enable for Modem Status Interrupt */
+    UART_IER_IE_RX_TIMEOUT  = 1 << 4, /* Interrupt enable for RX FIFO timeout */
+    UART_IER_IE_EORD        = 1 << 5, /* Interrupt enable for Interrupt Enable for End of Received Data */
+
+} UartInterruptEnable;
+
 /* 36.3.3 UART_IIR_FCR_0 */
 typedef enum {
     UART_IIR_IS_STA  = 1 << 0, /* Interrupt Pending if ZERO */
@@ -139,32 +149,57 @@ typedef enum {
     UART_IIR_MODE_16550 = 1 << 6,
 } UartInterruptIdentification;
 
+/* 36.3.9 UART_IRDA_CSR_0 */
+typedef enum {
+    UART_IRDA_CSR_INVERT_RXD                = 1 << 0,
+    UART_IRDA_CSR_INVERT_TXD                = 1 << 1,
+    UART_IRDA_CSR_INVERT_CTS                = 1 << 2,
+    UART_IRDA_CSR_INVERT_RTS                = 1 << 3,
+
+    UART_IRDA_CSR_PWT_A_BAUD_PULSE_3_14     = 0 << 6,
+    UART_IRDA_CSR_PWT_A_BAUD_PULSE_4_14     = 1 << 6,
+    UART_IRDA_CSR_SIR_A                     = 1 << 7,
+} UartIrDAPulseCodingCSR;
+
 typedef struct {
-    uint32_t UART_THR_DLAB;
-    uint32_t UART_IER_DLAB;
-    uint32_t UART_IIR_FCR;
-    uint32_t UART_LCR;
-    uint32_t UART_MCR;
-    uint32_t UART_LSR;
-    uint32_t UART_MSR;
-    uint32_t UART_SPR;
-    uint32_t UART_IRDA_CSR;
-    uint32_t UART_RX_FIFO_CFG;
-    uint32_t UART_MIE;
-    uint32_t UART_VENDOR_STATUS;
-    uint8_t _0x30[0x0C];
-    uint32_t UART_ASR;
+    union {
+        // UART_THR_DLAB_0
+        u32 thr;
+        u32 rbr;
+        u32 dll;
+    };
+    union {
+        // UART_IER_DLAB_0
+        u32 ier;
+        u32 dlh;
+    };
+    union {
+        // UART_IIR_FCR_0
+        u32 iir;
+        u32 fcr;
+    };
+    u32 lcr;
+    u32 mcr;
+    u32 lsr;
+    u32 msr;
+    u32 spr;
+    u32 irda_csr;
+    u32 rx_fifo_cfg;
+    u32 mie;
+    u32 vendor_status;
+    u8 _0x30[0x0C];
+    u32 asr;
 } tegra_uart_t;
 
-void uart_config(UartDevice dev);
-void uart_reset(UartDevice dev);
-void uart_init(UartDevice dev, uint32_t baud, bool inverted);
-void uart_wait_idle(UartDevice dev, UartVendorStatus status);
-void uart_send(UartDevice dev, const void *buf, size_t len);
-void uart_recv(UartDevice dev, void *buf, size_t len);
-size_t uart_recv_max(UartDevice dev, void *buf, size_t max_len);
+void uartInit(UartDevice dev, u32 baud, u32 flags);
+void uartWriteData(UartDevice dev, const void *buffer, size_t size);
+void uartReadData(UartDevice dev, void *buffer, size_t size);
+size_t uartReadDataMax(UartDevice dev, void *buffer, size_t maxSize);
+ReadWriteDirection uartGetInterruptDirection(UartDevice dev);
+void uartSetInterruptStatus(UartDevice dev, ReadWriteDirection direction, bool enable);
 
-static inline volatile tegra_uart_t *uart_get_regs(UartDevice dev) {
-    static const size_t offsets[] = {0, 0x40, 0x200, 0x300, 0x400};
-    return (volatile tegra_uart_t *)(UART_BASE + offsets[dev]);
+static inline u16 uartGetIrqId(UartDevice dev)
+{
+    static const u16 irqIds[] = { GIC_IRQID_UARTA, GIC_IRQID_UARTB, GIC_IRQID_UARTC, GIC_IRQID_UARTD };
+    return dev < UART_MAX ? irqIds[dev] : GIC_IRQID_SPURIOUS;
 }
