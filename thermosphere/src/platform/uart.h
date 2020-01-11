@@ -16,39 +16,19 @@
 
 #pragma once
 
-#if PLATFORM_TEGRA
-// TODO
+#define BAUD_115200 115200
 
-/*#include "tegra/uart.h"
+#if PLATFORM_TEGRA
+
+#include "tegra/uart.h"
 
 #define DEFAULT_UART            UART_C
-#define DEFAULT_UARTINV_STATUS  true
-
-static inline void uartInit(u32 baudRate)
-{
-    uart_reset(DEFAULT_UART);
-    uart_init(DEFAULT_UART, baudRate, DEFAULT_UARTINV_STATUS);
-}
-
-static inline void uartWriteData(const void *buffer, size_t size)
-{
-    uart_send(DEFAULT_UART, buffer, size);
-}
-
-static inline void uartReadData(void *buffer, size_t size)
-{
-    uart_recv(DEFAULT_UART, buffer, size);
-}
-
-static inline size_t uartReadDataMax(void *buffer, size_t maxSize)
-{
-    return uart_recv_max(DEFAULT_UART, buffer, maxSize);
-}
-*/
+#define DEFAULT_UART_FLAGS      1
 
 #elif defined(PLATFORM_QEMU)
 
 #define DEFAULT_UART            UART_A
+#define DEFAULT_UART_FLAGS      0
 
 #include "qemu/uart.h"
 

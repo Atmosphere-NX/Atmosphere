@@ -132,7 +132,8 @@ void uartInit(UartDevice dev, u32 baudRate, u32 flags);
 void uartWriteData(UartDevice dev, const void *buffer, size_t size);
 void uartReadData(UartDevice dev, void *buffer, size_t size);
 size_t uartReadDataMax(UartDevice dev, void *buffer, size_t maxSize);
-void uartSetInterruptStatus(UartDevice dev, bool read, bool enable);
+ReadWriteDirection uartGetInterruptDirection(UartDevice dev);
+void uartSetInterruptStatus(UartDevice dev, ReadWriteDirection direction, bool enable);
 
 static inline u16 uartGetIrqId(UartDevice dev)
 {

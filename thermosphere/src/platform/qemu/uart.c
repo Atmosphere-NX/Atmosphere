@@ -83,12 +83,11 @@ void uartInit(UartDevice dev, u32 baudRate, u32 flags)
     uart->icr = PL011_ALL_INTERRUPTS;
 
     // Register the interrupt ID
-    //configureInterrupt(uartGetIrqId(dev), IRQ_PRIORITY_HOST, true);
+    configureInterrupt(uartGetIrqId(dev), IRQ_PRIORITY_HOST, true);
 
     // Enable tx, rx, and uart overall
     uart->cr = PL011_UARTCR_RXE | PL011_UARTCR_TXE | PL011_UARTCR_UARTEN;
-    uart->imsc = PL011_RTI | PL011_RXI | PL011_RXI;
-
+    //uart->imsc = PL011_RTI | PL011_RXI | PL011_RXI;
 }
 
 void uartWriteData(UartDevice dev, const void *buffer, size_t size)
@@ -120,20 +119,44 @@ size_t uartReadDataMax(UartDevice dev, void *buffer, size_t maxSize)
     volatile PL011UartRegisters *uart = uartGetRegisters(dev);
 
     u8 *buf8 = (u8 *)buffer;
-    size_t i;
+    size_t count = 0;
 
-    for (i = 0; i < maxSize && !(uart->fr & PL011_UARTFR_RXFE); i++) {
+    for (size_t i = 0; i < maxSize && !(uart->fr & PL011_UARTFR_RXFE); i++) {
         buf8[i] = uart->dr;
+        ++count;
     }
 
-    return 1 + i;
+    return count;
 }
 
-void uartSetInterruptStatus(UartDevice dev, bool read, bool enable)
+ReadWriteDirection uartGetInterruptDirection(UartDevice dev)
+{
+    volatile PL011UartRegisters *uart = uartGetRegisters(dev);
+    u32 ret = 0;
+
+    u32 istatus = uart->mis;
+    if (istatus & (PL011_RTI | PL011_RXI)) {
+        ret |= DIRECTION_READ;
+    }
+    if (istatus & PL011_TXI) {
+        ret |= DIRECTION_WRITE;
+    }
+
+    return (ReadWriteDirection)ret;
+}
+
+void uartSetInterruptStatus(UartDevice dev, ReadWriteDirection direction, bool enable)
 {
     volatile PL011UartRegisters *uart = uartGetRegisters(dev);
 
-    u32 mask = read ? PL011_RTI | PL011_RXI : PL011_RTI; 
+    u32 mask = 0;
+    if (direction & DIRECTION_READ) {
+        mask |= PL011_RTI | PL011_RXI;
+    }
+    if (direction & DIRECTION_WRITE) {
+        mask |= PL011_TXI;
+    }
+
     if (enable) {
         uart->imsc |= mask;
     } else {

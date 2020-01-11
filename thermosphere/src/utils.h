@@ -56,6 +56,12 @@ static inline u##sz __##op##sz(u##sz n)\
 _DECLARE_ASM_ARITHMETIC_UNARY_HELPER64(rbit)
 _DECLARE_ASM_ARITHMETIC_UNARY_HELPER32(rbit)
 
+typedef enum ReadWriteDirection {
+    DIRECTION_READ      = BIT(0),
+    DIRECTION_WRITE     = BIT(1),
+    DIRECTION_READWRITE = DIRECTION_READ | DIRECTION_WRITE,
+} ReadWriteDirection;
+
 static inline void __dmb_sy(void)
 {
     __asm__ __volatile__ ("dmb sy" ::: "memory");
