@@ -13,6 +13,7 @@
 #include "watchpoints.h"
 #include "timer.h"
 #include "irq.h"
+#include "transport_interface.h"
 
 extern const u8 __start__[];
 
@@ -39,18 +40,18 @@ static void loadKernelViaSemihosting(void)
 
 void thermosphereMain(ExceptionStackFrame *frame)
 {
-    enableTraps();
-    enableBreakpointsAndWatchpoints();
-    timerInit();
     initIrq();
 
     if (currentCoreCtx->isBootCore) {
-        uartInit(DEFAULT_UART, BAUD_115200, 0);
-        uartSetInterruptStatus(DEFAULT_UART, DIRECTION_READ, true);
+        transportInterfaceInitLayer();
+        debugLogInit();
 
         DEBUG("EL2: core %u reached main first!\n", currentCoreCtx->coreId);
     }
 
+    enableTraps();
+    enableBreakpointsAndWatchpoints();
+    timerInit();
     initBreakpoints();
     initWatchpoints();
 
