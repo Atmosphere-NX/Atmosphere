@@ -27,11 +27,13 @@ static inline u64 doSystemRegisterRead(const ExceptionStackFrame *frame, u32 nor
     u64 val;
     switch (normalizedIss) {
         case ENCODE_SYSREG_ISS(CNTPCT_EL0): {
-            val = frame->cntvct_el0;
+            u64 vct  = frame->cntpct_el0 - currentCoreCtx->totalTimeInHypervisor;
+            val = vct;
             break;
         }
         case ENCODE_SYSREG_ISS(CNTP_TVAL_EL0): {
-            val = (GET_SYSREG(cntp_cval_el0) - frame->cntvct_el0) & 0xFFFFFFFF;
+            u64 vct  = frame->cntpct_el0 - currentCoreCtx->totalTimeInHypervisor;
+            val = (GET_SYSREG(cntp_cval_el0) - vct) & 0xFFFFFFFF;
             break;
         }
         case ENCODE_SYSREG_ISS(CNTP_CTL_EL0): {
@@ -58,7 +60,7 @@ static inline u64 doSystemRegisterRead(const ExceptionStackFrame *frame, u32 nor
 
 static inline void writeEmulatedPhysicalCompareValue(u64 val)
 {
-    currentCoreCtx->emulPtimerOffsetThen = GET_SYSREG(cntvoff_el2);
+    currentCoreCtx->emulPtimerOffsetThen = currentCoreCtx->totalTimeInHypervisor;
     SET_SYSREG(cntp_cval_el0, val);
 }
 
@@ -69,7 +71,8 @@ static inline void doSystemRegisterWrite(const ExceptionStackFrame *frame, u32 n
     switch (normalizedIss) {
         case ENCODE_SYSREG_ISS(CNTP_TVAL_EL0): {
             // Sign-extend
-            writeEmulatedPhysicalCompareValue(frame->cntvct_el0 + (u64)(s32)val);
+            u64 vct  = frame->cntpct_el0 - currentCoreCtx->totalTimeInHypervisor;
+            writeEmulatedPhysicalCompareValue(vct + (u64)(s32)val);
             break;
         }
         case ENCODE_SYSREG_ISS(CNTP_CTL_EL0): {

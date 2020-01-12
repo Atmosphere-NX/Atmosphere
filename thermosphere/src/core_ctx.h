@@ -37,11 +37,12 @@ typedef struct CoreCtx {
     bool executedFunctionSync;          // @0x3C
 
     // Timer stuff
-    u64 emulPtimerOffsetThen;           // @0x40. When setting cntp_cval_el0 and on interrupt
+    u64 totalTimeInHypervisor;          // @0x40. cntvoff_el2 is updated to that value.
+    u64 emulPtimerOffsetThen;           // @0x48. When setting cntp_cval_el0 and on interrupt
 } CoreCtx;
 
 static_assert(offsetof(CoreCtx, executedFunctionSync) == 0x3C, "Wrong definition for CoreCtx");
-static_assert(offsetof(CoreCtx, emulPtimerOffsetThen) == 0x40, "Wrong definition for CoreCtx");
+static_assert(offsetof(CoreCtx, emulPtimerOffsetThen) == 0x48, "Wrong definition for CoreCtx");
 
 extern CoreCtx g_coreCtxs[4];
 register CoreCtx *currentCoreCtx asm("x18");

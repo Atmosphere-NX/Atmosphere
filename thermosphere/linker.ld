@@ -23,6 +23,8 @@ SECTIONS
         . = ALIGN(0x800);
         __vectors_start__ = ABSOLUTE(.);
         KEEP(*(.vectors*));
+        __vectors_end__   = ABSOLUTE(.);
+        ASSERT(__vectors_end__ - __vectors_start__ <= 0x800, "Exception vectors section should be max 0x800 in size!");
         . = ALIGN(8);
     } >main :main
 

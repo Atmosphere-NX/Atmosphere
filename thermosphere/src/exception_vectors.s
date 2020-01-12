@@ -6,6 +6,8 @@
  */
  
 
+#define STACK_FRAME_SIZE    0x140
+
 /*
  * Declare the exception vector table, enforcing it is aligned on a
  * 2KB boundary, as required by the ARMv8 architecture.
@@ -50,9 +52,14 @@
     .endif
 .endm
 
-.macro  SAVE_ALL_REGISTERS
-    stp     x30, xzr, [sp, #-0x130]
-    bl      _saveAllRegisters
+.macro  SAVE_MOST_REGISTERS
+    sub     sp, sp, #STACK_FRAME_SIZE
+
+    stp     x28, x29, [sp, #-0x20]
+    stp     x30, xzr, [sp, #-0x10]
+    mrs     x28, far_el2
+    mrs     x29, cntpct_el0
+    bl      _saveMostRegisters
 .endm
 
 .macro PIVOT_STACK_FOR_CRASH
@@ -76,15 +83,23 @@ vector_entry \name
         PIVOT_STACK_FOR_CRASH
     .endif
 
-    SAVE_ALL_REGISTERS
+    SAVE_MOST_REGISTERS
 
     .if \type == EXCEPTION_TYPE_GUEST
-        ldp     x18, xzr, [sp, #0x120]
+        ldp     x18, xzr, [sp, #STACK_FRAME_SIZE]
+        mov     w1, #1
+    .else
+        mov     w1, #0
     .endif
+
+    mov         x0, sp
+    bl          exceptionEntryPostprocess
 .endm
 
 .macro EXCEPTION_HANDLER_END name, type
     .if \type != EXCEPTION_TYPE_HOST_CRASH
+        mov     x0, sp
+        bl      exceptionReturnPreprocess
         b       _restoreAllRegisters
     .else
         b       .
@@ -117,8 +132,7 @@ _unknownException:
 UNKNOWN_EXCEPTION       _irqSp0
 
 /* To save space, insert in an unused vector segment. */
-_saveAllRegisters:
-    sub     sp, sp, #0x120
+_saveMostRegisters:
     stp     x0, x1, [sp, #0x00]
     stp     x2, x3, [sp, #0x10]
     stp     x4, x5, [sp, #0x20]
@@ -133,22 +147,23 @@ _saveAllRegisters:
     stp     x22, x23, [sp, #0xB0]
     stp     x24, x25, [sp, #0xC0]
     stp     x26, x27, [sp, #0xD0]
-    stp     x28, x29, [sp, #0xE0]
-
-    mov     x29, x30
-    ldp     x30, xzr, [sp, #-0x10] // See SAVE_ALL_REGISTERS macro
 
     mrs     x20, sp_el1
     mrs     x21, sp_el0
     mrs     x22, elr_el2
     mrs     x23, spsr_el2
-    mrs     x24, cntvct_el0
+    mov     x24, x28                // far_el2
+    mov     x25, x29                // cntpct_el0
 
-    stp     x30, x20, [sp, #0xF0]
+    // See SAVE_MOST_REGISTERS macro
+    ldp     x28, x29, [sp, #-0x20]
+    ldp     x19, xzr, [sp, #-0x10]
+
+    stp     x28, x29, [sp, #0xE0]
+    stp     x19, x20, [sp, #0xF0]
     stp     x21, x22, [sp, #0x100]
     stp     x23, x24, [sp, #0x110]
-
-    mov     x30, x29
+    stp     x25, xzr, [sp, #0x120]
 
     ret
 
@@ -162,17 +177,12 @@ UNKNOWN_EXCEPTION       _fiqSp0
 _restoreAllRegisters:
     ldp     x30, x20, [sp, #0xF0]
     ldp     x21, x22, [sp, #0x100]
-    ldp     x23, x24, [sp, #0x110]
+    ldp     x23, xzr, [sp, #0x110]
 
     msr     sp_el1, x20
     msr     sp_el0, x21
     msr     elr_el2, x22
     msr     spsr_el2, x23
-
-    // Update timer offset: offset = ptimer - vtimer; here the time elapsed is vct(now) - vct(before)
-    mrs     x23, cntvct_el0
-    sub     x24, x23, x24
-    msr     cntvoff_el2, x24
 
     ldp     x0, x1, [sp, #0x00]
     ldp     x2, x3, [sp, #0x10]
@@ -190,7 +200,7 @@ _restoreAllRegisters:
     ldp     x26, x27, [sp, #0xD0]
     ldp     x28, x29, [sp, #0xE0]
 
-    add     sp, sp, #0x120
+    add     sp, sp, #STACK_FRAME_SIZE
     eret
 
 UNKNOWN_EXCEPTION       _serrorSp0

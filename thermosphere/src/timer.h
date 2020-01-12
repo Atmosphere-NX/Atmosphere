@@ -45,6 +45,10 @@
 #define TIMER_CVAL_REG(name)                        EVAL(TIMER_CVAL_REG_FIELDS name)
 #define TIMER_TVAL_REG(name)                        EVAL(TIMER_TVAL_REG_FIELDS name)
 
+#define TIMER_CTL_ISTATUS                           BITL(2)
+#define TIMER_CTL_IMASK                             BITL(1)
+#define TIMER_CTL_ENABLE                            BITL(0)
+
 #define CURRENT_TIMER                               NS_PHYS_HYP_TIMER
 
 extern u64 g_timerFreq;
@@ -67,17 +71,18 @@ static inline u64 timerGetSystemTimeMs(void)
     return timerGetSystemTick() * SECTOMSECS / g_timerFreq;
 }
 
-static inline void timerSetInterruptStatus(bool enabled, bool masked)
+static inline void timerConfigure(bool enabled, bool interruptMasked)
 {
-    u32 ebit = enabled ? BIT(0) : 0;
-    u32 mbit = masked  ? BIT(1) : 0;
+    u64 ebit = enabled          ? TIMER_CTL_ENABLE : 0;
+    u64 mbit = interruptMasked  ? TIMER_CTL_IMASK : 0;
     SET_SYSREG(TIMER_CTL_REG(CURRENT_TIMER), mbit | ebit);
 }
 
 static inline void timerSetTimeoutTicks(u64 ticks)
 {
+    timerConfigure(true, true);
     SET_SYSREG(TIMER_CVAL_REG(CURRENT_TIMER), timerGetSystemTick() + ticks);
-    timerSetInterruptStatus(true, false);
+    timerConfigure(true, false);
 }
 
 static inline void timerSetTimeoutNs(u64 ns)
