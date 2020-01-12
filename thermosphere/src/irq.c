@@ -103,7 +103,8 @@ static inline bool checkRescheduleEmulatedPtimer(ExceptionStackFrame *frame)
 {
     // Evaluate if the timer really has expired in the PoV of the guest kernel. If not, reschedule (add missed time delta) it & exit early
     u64 cval = GET_SYSREG(cntp_cval_el0);
-    if (cval > frame->cntvct_el0) {
+    u64 vct  = frame->cntpct_el0 - currentCoreCtx->totalTimeInHypervisor;
+    if (cval > vct) {
         // It has not: reschedule the timer
         u64 offsetNow = GET_SYSREG(cntvoff_el2);
         SET_SYSREG(cntp_cval_el0, cval + (offsetNow - currentCoreCtx->emulPtimerOffsetThen));
@@ -113,6 +114,26 @@ static inline bool checkRescheduleEmulatedPtimer(ExceptionStackFrame *frame)
     }
 
     return true;
+}
+
+
+static inline bool checkGuestTimerInterrupts(ExceptionStackFrame *frame, bool isLowerEl, u16 irqId)
+{
+    if (irqId != TIMER_IRQID(NS_VIRT_TIMER) && irqId != TIMER_IRQID(NS_PHYS_TIMER)) {
+        return true;
+    }
+
+    // A thing that might have happened is losing the race vs disabling the guest interrupts
+    // Another thing is that the virtual timer might have fired before us updating voff when executing a top half?
+    if (!isLowerEl) {
+        return false;
+    } else if (irqId == TIMER_IRQID(NS_VIRT_TIMER)) {
+        u64 cval = GET_SYSREG(cntp_cval_el0);
+        u64 vct  = frame->cntpct_el0 - currentCoreCtx->totalTimeInHypervisor;
+        return cval <= vct;
+    } else {
+        return checkRescheduleEmulatedPtimer(frame);
+    }
 }
 
 static void doConfigureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
@@ -186,7 +207,6 @@ bool irqIsGuest(u16 id)
 
 void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 {
-    (void)isLowerEl;
     (void)isA32;
     volatile ArmGicV2Controller *gicc = g_irqManager.gic.gicc;
 
@@ -195,13 +215,13 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     u32 irqId = iar & 0x3FF;
     u32 srcCore = (iar >> 10) & 7;
 
-    //DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
+    DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
 
     if (irqId == GIC_IRQID_SPURIOUS) {
         // Spurious interrupt received
         return;
-    } else if (irqId == GIC_IRQID_NS_PHYS_TIMER && !checkRescheduleEmulatedPtimer(frame)) {
-        // Deactivate the ptimer interrupt, return early
+    } else if (!checkGuestTimerInterrupts(frame, isLowerEl, irqId)) {
+        // Deactivate the interrupt, return early
         gicc->eoir = iar;
         gicc->dir  = iar;
         return;
@@ -254,6 +274,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 
     // Bottom half part
     if (transportIface != NULL) {
+        exceptionEnterInterruptibleHypervisorCode(frame);
         unmaskIrq();
         transportInterfaceIrqHandlerBottomHalf(transportIface);
     }

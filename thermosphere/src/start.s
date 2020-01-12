@@ -39,6 +39,8 @@ _startCommon:
     msr     daifset, 0b1111
     msr     spsel, #1
 
+    mrs     x20, cntpct_el0
+
     // Set sctlr_el2 ASAP to disable mmu/caching if not already done.
     mov     x1, #0x0838
     movk    x1, #0x30C5,lsl #16
@@ -69,12 +71,13 @@ _startCommon:
 
     // Save x18, reserve space for exception frame
     stp     x18, xzr, [sp, #-0x10]!
-    sub     sp, sp, #0x120
+    sub     sp, sp, #0x140
 
     dsb     sy
     isb
 
     mov     x0, sp
+    mov     x1, x20
     bl      thermosphereMain
 
     dsb     sy

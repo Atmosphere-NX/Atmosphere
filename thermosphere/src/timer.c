@@ -21,7 +21,7 @@ u64 g_timerFreq = 0;
 
 void timerInit(void)
 {
-    timerSetInterruptStatus(false, false);
+    timerConfigure(false, false);
     if (currentCoreCtx->isBootCore) {
         g_timerFreq = GET_SYSREG(cntfrq_el0);
     }
@@ -29,8 +29,8 @@ void timerInit(void)
 
 void timerInterruptHandler(void)
 {
-    // Disable timer interrupts until reprogrammed
-    timerSetInterruptStatus(false, false);
+    // Disable timer programming until reprogrammed
+    timerConfigure(false, false);
 
     // For fun
     DEBUG("EL2 [core %d]: Timer interrupt at %lums\n", (int)currentCoreCtx->coreId, timerGetSystemTimeMs());

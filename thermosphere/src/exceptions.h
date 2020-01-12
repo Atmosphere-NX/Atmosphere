@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#include <assert.h>
 #include "utils.h"
 
 typedef struct ExceptionStackFrame {
@@ -26,8 +27,14 @@ typedef struct ExceptionStackFrame {
     };
     u64 elr_el2;
     u64 spsr_el2;
-    u64 cntvct_el0;
+    u64 far_el2;
+    u64 cntpct_el0;
+    u64 cntp_ctl_el0;
+    u64 cntv_ctl_el0;
+    u64 reserved;
 } ExceptionStackFrame;
+
+static_assert(sizeof(ExceptionStackFrame) == 0x140, "Wrong size for ExceptionStackFrame");
 
 // Adapted from https://developer.arm.com/docs/ddi0596/a/a64-shared-pseudocode-functions/shared-exceptions-pseudocode
 typedef enum ExceptionClass {
@@ -129,6 +136,8 @@ static inline void writeFrameRegisterZ(ExceptionStackFrame *frame, u32 id, u64 v
 bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode);
 void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size);
 void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl);
+
+void exceptionEnterInterruptibleHypervisorCode(ExceptionStackFrame *frame);
 
 void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
 void handleSameElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);

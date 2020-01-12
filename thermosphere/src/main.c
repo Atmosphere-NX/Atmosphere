@@ -38,13 +38,50 @@ static void loadKernelViaSemihosting(void)
     currentCoreCtx->kernelEntrypoint = buf;
 }
 
-void thermosphereMain(ExceptionStackFrame *frame)
+
+
+#include "platform/uart.h"
+typedef struct TestCtx {
+    char buf[512+1];
+} TestCtx;
+
+static TestCtx g_testCtx;
+
+size_t testReceiveCallback(TransportInterface *iface, void *p)
+{
+    TestCtx *ctx = (TestCtx *)p;
+    return transportInterfaceReadDataUntil(iface, ctx->buf, 512, '\r');
+}
+
+void testProcessDataCallback(TransportInterface *iface, void *p, size_t sz)
+{
+    (void)iface;
+    (void)sz;
+    TestCtx *ctx = (TestCtx *)p;
+    DEBUG("EL2 [core %u]: you typed: %s\n", currentCoreCtx->coreId, ctx->buf);
+}
+
+void test(void)
+{
+    TransportInterface *iface = transportInterfaceCreate(
+        TRANSPORT_INTERFACE_TYPE_UART,
+        DEFAULT_UART,
+        DEFAULT_UART_FLAGS,
+        testReceiveCallback,
+        testProcessDataCallback,
+        &g_testCtx
+    );
+    transportInterfaceSetInterruptAffinity(iface, BIT(0));
+}
+
+void thermosphereMain(ExceptionStackFrame *frame, u64 pct)
 {
     initIrq();
 
     if (currentCoreCtx->isBootCore) {
         transportInterfaceInitLayer();
         debugLogInit();
+        test();
 
         DEBUG("EL2: core %u reached main first!\n", currentCoreCtx->coreId);
     }
@@ -75,5 +112,5 @@ void thermosphereMain(ExceptionStackFrame *frame)
     frame->spsr_el2     = (0xF << 6) | (1 << 2) | 1; // EL1h+DAIF
     frame->elr_el2      = currentCoreCtx->kernelEntrypoint;
     frame->x[0]         = currentCoreCtx->kernelArgument;
-    frame->cntvct_el0   = GET_SYSREG(cntvct_el0);
+    frame->cntpct_el0   = pct;
 }

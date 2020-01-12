@@ -24,7 +24,7 @@
 #include "single_step.h"
 #include "data_abort.h"
 
-#include "debug_log.h"
+#include "timer.h"
 
 bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode)
 {
@@ -60,13 +60,16 @@ void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
     DEBUG("x30\t\t%016llx\n\n", frame->x[30]);
     DEBUG("elr_el2\t\t%016llx\n", frame->elr_el2);
     DEBUG("spsr_el2\t%016llx\n", frame->spsr_el2);
+    DEBUG("far_el2\t%016llx\n", frame->far_el2);
     if (sameEl) {
         DEBUG("sp_el2\t\t%016llx\n", frame->sp_el2);
     } else {
         DEBUG("sp_el0\t\t%016llx\n", frame->sp_el0);
     }
     DEBUG("sp_el1\t\t%016llx\n", frame->sp_el1);
-    DEBUG("cntvct_el0\t\t%016llx\n", frame->cntvct_el0);
+    DEBUG("cntpct_el0\t%016llx\n", frame->cntpct_el0);
+    DEBUG("cntp_ctl_el0\t%016llx\n", frame->cntp_ctl_el0);
+    DEBUG("cntv_ctl_el0\t%016llx\n", frame->cntv_ctl_el0);
 #else
     (void)frame;
     (void)sameEl;
@@ -90,6 +93,34 @@ void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size)
 {
     advanceItState(frame);
     frame->elr_el2 += size;
+}
+
+void exceptionEnterInterruptibleHypervisorCode(ExceptionStackFrame *frame)
+{
+    (void)frame;
+    // We don't want the guest to spam us with its timer interrupts. Disable the timers.
+    SET_SYSREG(cntp_ctl_el0, 0);
+    SET_SYSREG(cntv_ctl_el0, 0);
+}
+
+// Called on exception entry (avoids overflowing a vector section)
+void exceptionEntryPostprocess(ExceptionStackFrame *frame, bool isLowerEl)
+{
+    frame->cntp_ctl_el0 = GET_SYSREG(cntp_ctl_el0);
+    frame->cntv_ctl_el0 = GET_SYSREG(cntv_ctl_el0);
+}
+
+// Called on exception return (avoids overflowing a vector section)
+void exceptionReturnPreprocess(ExceptionStackFrame *frame)
+{
+    // Update virtual counter
+    currentCoreCtx->totalTimeInHypervisor += timerGetSystemTick() - frame->cntpct_el0;
+    SET_SYSREG(cntvoff_el2, currentCoreCtx->totalTimeInHypervisor);
+    //DEBUG("pct %lu - vct %lu = voff %lu\n", timerGetSystemTick() - GET_SYSREG(cntvct_el0), GET_SYSREG(cntvoff_el2));
+
+    // Restore interrupt mask
+    SET_SYSREG(cntp_ctl_el0, frame->cntp_ctl_el0);
+    SET_SYSREG(cntv_ctl_el0, frame->cntv_ctl_el0);
 }
 
 void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
