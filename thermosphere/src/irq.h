@@ -21,7 +21,6 @@
 #include "exceptions.h"
 #include "utils.h"
 #include "platform/interrupt_config.h"
-#include "platform/uart.h"
 
 #define IRQ_PRIORITY_HOST       0
 #define IRQ_PRIORITY_GUEST      1
@@ -49,8 +48,10 @@ typedef enum ThermosphereSgi {
 extern IrqManager g_irqManager;
 
 void initIrq(void);
-void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32);
 void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive);
+bool irqIsGuest(u16 id);
+void irqSetAffinity(u16 id, u8 affinityMask);
+void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32);
 
 static inline void generateSgiForAllOthers(ThermosphereSgi id)
 {
@@ -70,25 +71,4 @@ static inline void generateSgiForList(ThermosphereSgi id, u32 list)
 static inline void generateSgiForAll(ThermosphereSgi id)
 {
     generateSgiForList(id, MASK(g_irqManager.numCpuInterfaces));
-}
-
-static inline bool irqIsGuest(u16 id)
-{
-    if (id >= 32 + g_irqManager.numSharedInterrupts) {
-        DEBUG("vgic: %u not supported by physical distributor\n", (u32)id);
-        return false;
-    }
-
-    bool ret = id != GIC_IRQID_MAINTENANCE && id != GIC_IRQID_NS_PHYS_HYP_TIMER;
-    ret = ret && id != uartGetIrqId(DEFAULT_UART); // FIXME
-#if GIC_IRQID_NS_VIRT_HYP_TIMER != GIC_IRQID_SPURIOUS
-    ret = ret && id != GIC_IRQID_NS_VIRT_HYP_TIMER;
-#endif
-#if GIC_IRQID_SEC_PHYS_HYP_TIMER != GIC_IRQID_SPURIOUS
-    ret = ret && id != GIC_IRQID_SEC_PHYS_HYP_TIMER;
-#endif
-#if GIC_IRQID_SEC_VIRT_HYP_TIMER != GIC_IRQID_SPURIOUS
-    ret = ret && id != GIC_IRQID_SEC_VIRT_HYP_TIMER;
-#endif
-    return ret;
 }

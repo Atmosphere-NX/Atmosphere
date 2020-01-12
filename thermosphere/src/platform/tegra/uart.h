@@ -195,6 +195,8 @@ void uartInit(UartDevice dev, u32 baud, u32 flags);
 void uartWriteData(UartDevice dev, const void *buffer, size_t size);
 void uartReadData(UartDevice dev, void *buffer, size_t size);
 size_t uartReadDataMax(UartDevice dev, void *buffer, size_t maxSize);
+size_t uartReadDataUntil(UartDevice dev, char *buffer, size_t maxSize, char delimiter);
+
 ReadWriteDirection uartGetInterruptDirection(UartDevice dev);
 void uartSetInterruptStatus(UartDevice dev, ReadWriteDirection direction, bool enable);
 

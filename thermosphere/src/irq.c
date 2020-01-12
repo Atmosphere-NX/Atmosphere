@@ -19,6 +19,7 @@
 #include "debug_log.h"
 #include "vgic.h"
 #include "timer.h"
+#include "transport_interface.h"
 
 IrqManager g_irqManager = {0};
 
@@ -98,40 +99,6 @@ static void initGic(void)
     currentCoreCtx->gicInterfaceMask = gicd->itargetsr[0];
 }
 
-void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
-{
-    volatile ArmGicV2Distributor *gicd = g_irqManager.gic.gicd;
-    gicd->icenabler[id / 32] = BIT(id % 32);
-
-    if (id >= 32) {
-        u32 cfgr = gicd->icfgr[id / 16];
-        cfgr &= ~(3 << IRQ_CFGR_SHIFT(id));
-        cfgr |= (!isLevelSensitive ? 3 : 1) << IRQ_CFGR_SHIFT(id);
-        gicd->icfgr[id / 16] = cfgr;
-        gicd->itargetsr[id]  |= currentCoreCtx->gicInterfaceMask;
-    }
-    gicd->icpendr[id / 32]      = BIT(id % 32);
-    gicd->ipriorityr[id]        = (prio << g_irqManager.priorityShift) & 0xFF;
-    gicd->isenabler[id / 32]    = BIT(id % 32);
-}
-
-void initIrq(void)
-{
-    u64 flags = recursiveSpinlockLockMaskIrq(&g_irqManager.lock);
-
-    initGic();
-    vgicInit();
-
-    // Configure the interrupts we use here
-    for (u32 i = 0; i < ThermosphereSgi_Max; i++) {
-        configureInterrupt(i, IRQ_PRIORITY_HOST, false);
-    }
-
-    configureInterrupt(GIC_IRQID_MAINTENANCE, IRQ_PRIORITY_HOST, true);
-
-    recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
-}
-
 static inline bool checkRescheduleEmulatedPtimer(ExceptionStackFrame *frame)
 {
     // Evaluate if the timer really has expired in the PoV of the guest kernel. If not, reschedule (add missed time delta) it & exit early
@@ -148,6 +115,75 @@ static inline bool checkRescheduleEmulatedPtimer(ExceptionStackFrame *frame)
     return true;
 }
 
+static void doConfigureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
+{
+    volatile ArmGicV2Distributor *gicd = g_irqManager.gic.gicd;
+    gicd->icenabler[id / 32] = BIT(id % 32);
+
+    if (id >= 32) {
+        u32 cfgr = gicd->icfgr[id / 16];
+        cfgr &= ~(3 << IRQ_CFGR_SHIFT(id));
+        cfgr |= (!isLevelSensitive ? 3 : 1) << IRQ_CFGR_SHIFT(id);
+        gicd->icfgr[id / 16] = cfgr;
+        gicd->itargetsr[id]  = 0xFF; // all cpu interfaces
+    }
+    gicd->icpendr[id / 32]      = BIT(id % 32);
+    gicd->ipriorityr[id]        = (prio << g_irqManager.priorityShift) & 0xFF;
+    gicd->isenabler[id / 32]    = BIT(id % 32);
+}
+
+void initIrq(void)
+{
+    u64 flags = recursiveSpinlockLockMaskIrq(&g_irqManager.lock);
+
+    initGic();
+    vgicInit();
+
+    // Configure the interrupts we use here
+    for (u32 i = 0; i < ThermosphereSgi_Max; i++) {
+        doConfigureInterrupt(i, IRQ_PRIORITY_HOST, false);
+    }
+
+    doConfigureInterrupt(GIC_IRQID_MAINTENANCE, IRQ_PRIORITY_HOST, true);
+
+    recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
+}
+
+void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive)
+{
+    u64 flags = recursiveSpinlockLockMaskIrq(&g_irqManager.lock);
+    doConfigureInterrupt(id, prio, isLevelSensitive);
+    recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
+}
+
+void irqSetAffinity(u16 id, u8 affinity)
+{
+    u64 flags = recursiveSpinlockLockMaskIrq(&g_irqManager.lock);
+    g_irqManager.gic.gicd->itargetsr[id] = affinity;
+    recursiveSpinlockUnlockRestoreIrq(&g_irqManager.lock, flags);
+}
+
+bool irqIsGuest(u16 id)
+{
+    if (id >= 32 + g_irqManager.numSharedInterrupts) {
+        DEBUG("vgic: %u not supported by physical distributor\n", (u32)id);
+        return false;
+    }
+
+    bool ret = true;
+    ret = ret && id != GIC_IRQID_MAINTENANCE;
+    ret = ret && id != GIC_IRQID_NS_PHYS_HYP_TIMER;
+
+    // If the following interrupts don't exist, that's fine, they're defined as GIC_IRQID_SPURIOUS in that case
+    // (for which the function isn't called, anyway)
+    ret = ret && id != GIC_IRQID_NS_VIRT_HYP_TIMER;
+    ret = ret && id != GIC_IRQID_SEC_PHYS_HYP_TIMER;
+    ret = ret && id != GIC_IRQID_SEC_VIRT_HYP_TIMER;
+
+    ret = ret && transportInterfaceFindByIrqId(id) == NULL;
+    return ret;
+}
+
 void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 {
     (void)isLowerEl;
@@ -159,7 +195,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     u32 irqId = iar & 0x3FF;
     u32 srcCore = (iar >> 10) & 7;
 
-    DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
+    //DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
 
     if (irqId == GIC_IRQID_SPURIOUS) {
         // Spurious interrupt received
@@ -192,10 +228,12 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
             break;
     }
 
+    TransportInterface *transportIface = irqId >= 32 ? transportInterfaceIrqHandlerTopHalf(irqId) : NULL;
+
     // Priority drop
     gicc->eoir = iar;
 
-    isGuestInterrupt = isGuestInterrupt && irqIsGuest(irqId);
+    isGuestInterrupt = isGuestInterrupt && transportIface == NULL && irqIsGuest(irqId);
 
     recursiveSpinlockLock(&g_irqManager.lock);
 
@@ -213,4 +251,10 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     vgicUpdateState();
 
     recursiveSpinlockUnlock(&g_irqManager.lock);
+
+    // Bottom half part
+    if (transportIface != NULL) {
+        unmaskIrq();
+        transportInterfaceIrqHandlerBottomHalf(transportIface);
+    }
 }

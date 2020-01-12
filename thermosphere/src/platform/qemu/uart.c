@@ -87,7 +87,6 @@ void uartInit(UartDevice dev, u32 baudRate, u32 flags)
 
     // Enable tx, rx, and uart overall
     uart->cr = PL011_UARTCR_RXE | PL011_UARTCR_TXE | PL011_UARTCR_UARTEN;
-    //uart->imsc = PL011_RTI | PL011_RXI | PL011_RXI;
 }
 
 void uartWriteData(UartDevice dev, const void *buffer, size_t size)
@@ -124,6 +123,24 @@ size_t uartReadDataMax(UartDevice dev, void *buffer, size_t maxSize)
     for (size_t i = 0; i < maxSize && !(uart->fr & PL011_UARTFR_RXFE); i++) {
         buf8[i] = uart->dr;
         ++count;
+    }
+
+    return count;
+}
+
+size_t uartReadDataUntil(UartDevice dev, char *buffer, size_t maxSize, char delimiter)
+{
+    volatile PL011UartRegisters *uart = uartGetRegisters(dev);
+
+    size_t count = 0;
+
+    for (size_t i = 0; i < maxSize; i++) {
+        while (uart->fr & PL011_UARTFR_RXFE);
+        buffer[i] = uart->dr;
+        ++count;
+        if (buffer[i] == delimiter) {
+            break;
+        }
     }
 
     return count;

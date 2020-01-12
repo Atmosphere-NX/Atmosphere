@@ -19,10 +19,21 @@
 #include "platform/uart.h"
 #include "semihosting.h"
 #include "utils.h"
+#include "transport_interface.h"
+#include "platform/uart.h"
 
 #ifndef DLOG_USE_SEMIHOSTING_WRITE0
 #define DLOG_USE_SEMIHOSTING_WRITE0 1
 #endif
+
+static TransportInterface *g_debugLogTransportInterface;
+
+void debugLogInit(void)
+{
+    if (!DLOG_USE_SEMIHOSTING_WRITE0) {
+        transportInterfaceCreate(TRANSPORT_INTERFACE_TYPE_UART, DEFAULT_UART, DEFAULT_UART_FLAGS, NULL, NULL, NULL);
+    }
+}
 
 // NOTE: UNSAFE!
 int debugLog(const char *fmt, ...)
@@ -37,7 +48,7 @@ int debugLog(const char *fmt, ...)
     if (DLOG_USE_SEMIHOSTING_WRITE0 && semihosting_connection_supported()) {
         semihosting_write_string(buf);
     } else {
-        uartWriteData(DEFAULT_UART, buf, (size_t)res);
+        transportInterfaceWriteData(g_debugLogTransportInterface, buf, res);
     }
 
     return res;

@@ -192,6 +192,24 @@ size_t uartReadDataMax(UartDevice dev, void *buffer, size_t maxSize)
     return count;
 }
 
+size_t uartReadDataUntil(UartDevice dev, char *buffer, size_t maxSize, char delimiter)
+{
+    volatile tegra_uart_t *uart = uartGetRegisters(dev);
+    size_t count = 0;
+
+    for (size_t i = 0; i < maxSize && (uart->lsr & UART_LSR_RDR); i++) {
+        while (!(uart->lsr & UART_LSR_RDR)) // Wait until it's possible to receive data.
+
+        buffer[i] = uart->rbr;
+        ++count;
+        if (buffer[i] == delimiter) {
+            break;
+        }
+    }
+
+    return count;
+}
+
 ReadWriteDirection uartGetInterruptDirection(UartDevice dev)
 {
     volatile tegra_uart_t *uart = uartGetRegisters(dev);

@@ -23,4 +23,5 @@
 #define DEBUG(...)
 #endif
 
+void debugLogInit(void);
 int debugLog(const char *fmt, ...);
