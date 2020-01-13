@@ -17,6 +17,7 @@
 #pragma once
 #include <assert.h>
 #include "utils.h"
+#include "core_ctx.h"
 
 typedef struct ExceptionStackFrame {
     u64 x[31]; // x0 .. x30
