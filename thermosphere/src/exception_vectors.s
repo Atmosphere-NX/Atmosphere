@@ -65,12 +65,12 @@
 .macro PIVOT_STACK_FOR_CRASH
     // Note: x18 assumed uncorrupted
     // Note: replace sp_el0 with crashing sp
-    str     x16, [x18, #0x18]       // currentCoreCtx->scratch = x16
+    str     x16, [x18, #8]      // currentCoreCtx->scratch = x16
     mov     x16, sp
     msr     sp_el0, x16
-    ldr     x16, [x18, #0x10]       // currentCoreCtx->crashStack
+    ldr     x16, [x18, #0x10]   // currentCoreCtx->crashStack
     mov     sp, x16
-    ldr     x16, [x18, #0x18]
+    ldr     x16, [x18, #8]
 .endm
 
 .equ    EXCEPTION_TYPE_HOST,            0
@@ -85,14 +85,16 @@ vector_entry \name
 
     SAVE_MOST_REGISTERS
 
+    mov         x0, sp
+
     .if \type == EXCEPTION_TYPE_GUEST
         ldp     x18, xzr, [sp, #STACK_FRAME_SIZE]
+        str     x0, [x18]   // currentCoreCtx->userFrame
         mov     w1, #1
     .else
         mov     w1, #0
     .endif
 
-    mov         x0, sp
     bl          exceptionEntryPostprocess
 .endm
 
