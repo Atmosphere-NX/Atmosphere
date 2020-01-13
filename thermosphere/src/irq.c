@@ -19,6 +19,7 @@
 #include "debug_log.h"
 #include "vgic.h"
 #include "timer.h"
+#include "guest_timers.h"
 #include "transport_interface.h"
 
 IrqManager g_irqManager = {0};
@@ -101,15 +102,15 @@ static void initGic(void)
 
 static inline bool checkRescheduleEmulatedPtimer(ExceptionStackFrame *frame)
 {
-    // Evaluate if the timer really has expired in the PoV of the guest kernel. If not, reschedule (add missed time delta) it & exit early
-    u64 cval = GET_SYSREG(cntp_cval_el0);
-    u64 vct  = frame->cntpct_el0 - currentCoreCtx->totalTimeInHypervisor;
+    // Evaluate if the timer has really expired in the PoV of the guest kernel.
+    // If not, reschedule (add missed time delta) it & exit early
+    u64 cval = currentCoreCtx->emulPtimerCval;
+    u64 vct  = computeCntvct(frame);
+
     if (cval > vct) {
         // It has not: reschedule the timer
-        u64 offsetNow = GET_SYSREG(cntvoff_el2);
-        SET_SYSREG(cntp_cval_el0, cval + (offsetNow - currentCoreCtx->emulPtimerOffsetThen));
-        currentCoreCtx->emulPtimerOffsetThen = offsetNow;
-
+        // Note: this isn't 100% precise esp. on QEMU so it may take a few tries...
+        writeEmulatedPhysicalCompareValue(frame, cval);
         return false;
     }
 
@@ -117,22 +118,17 @@ static inline bool checkRescheduleEmulatedPtimer(ExceptionStackFrame *frame)
 }
 
 
-static inline bool checkGuestTimerInterrupts(ExceptionStackFrame *frame, bool isLowerEl, u16 irqId)
+static inline bool checkGuestTimerInterrupts(ExceptionStackFrame *frame, u16 irqId)
 {
-    if (irqId != TIMER_IRQID(NS_VIRT_TIMER) && irqId != TIMER_IRQID(NS_PHYS_TIMER)) {
-        return true;
-    }
-
     // A thing that might have happened is losing the race vs disabling the guest interrupts
     // Another thing is that the virtual timer might have fired before us updating voff when executing a top half?
-    if (!isLowerEl) {
-        return false;
-    } else if (irqId == TIMER_IRQID(NS_VIRT_TIMER)) {
+    if (irqId == TIMER_IRQID(NS_VIRT_TIMER)) {
         u64 cval = GET_SYSREG(cntp_cval_el0);
-        u64 vct  = frame->cntpct_el0 - currentCoreCtx->totalTimeInHypervisor;
-        return cval <= vct;
-    } else {
+        return cval <= computeCntvct(frame);
+    } else if (irqId == TIMER_IRQID(NS_PHYS_TIMER)) {
         return checkRescheduleEmulatedPtimer(frame);
+    } else {
+        return true;
     }
 }
 
@@ -207,6 +203,7 @@ bool irqIsGuest(u16 id)
 
 void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 {
+    (void)isLowerEl;
     (void)isA32;
     volatile ArmGicV2Controller *gicc = g_irqManager.gic.gicc;
 
@@ -220,7 +217,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     if (irqId == GIC_IRQID_SPURIOUS) {
         // Spurious interrupt received
         return;
-    } else if (!checkGuestTimerInterrupts(frame, isLowerEl, irqId)) {
+    } else if (!checkGuestTimerInterrupts(frame, irqId)) {
         // Deactivate the interrupt, return early
         gicc->eoir = iar;
         gicc->dir  = iar;
