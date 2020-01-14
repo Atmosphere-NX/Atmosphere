@@ -14,6 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "asm_macros.s"
+
 .section    .crt0, "ax", %progbits
 .align      3
 .global     _start
@@ -71,7 +73,7 @@ _startCommon:
 
     // Save x18, reserve space for exception frame
     stp     x18, xzr, [sp, #-0x10]!
-    sub     sp, sp, #0x140
+    sub     sp, sp, #EXCEP_STACK_FRAME_SIZE
 
     dsb     sy
     isb

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Atmosphère-NX
+ * Copyright (c) 2018-2019 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,32 +14,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "asm_macros.s"
+#define EXCEP_STACK_FRAME_SIZE      0x140
 
-// From Arm TF
+#define CORECTX_USER_FRAME_OFFSET   0x000
+#define CORECTX_SCRATCH_OFFSET      0x008
+#define CORECTX_CRASH_STACK_OFFSET  0x010
 
+.macro FUNCTION name
+    .section        .text.\name, "ax", %progbits
+    .global         \name
+    .type           \name, %function
+    .func           \name
+    .cfi_sections   .debug_frame
+    .cfi_startproc
+    \name:
+.endm
 
-/*
- * Copyright (c) 2013-2019, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
-FUNCTION spinlockLock
-    mov     w2, #1
-    sevl
-    l1:
-        wfe
-        l2:
-            ldaxr       w1, [x0]
-            cbnz        w1, l1
-            stxr        w1, w2, [x0]
-            cbnz        w1, l2
-    ret
-END_FUNCTION
-
-FUNCTION spinlockUnlock
-    stlr    wzr, [x0]
-    sev
-    ret
-END_FUNCTION
+.macro END_FUNCTION
+    .cfi_endproc
+    .endfunc
+.endm
