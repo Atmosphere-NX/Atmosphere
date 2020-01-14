@@ -41,6 +41,7 @@ static void loadKernelViaSemihosting(void)
 
 
 #include "platform/uart.h"
+#include "debug_pause.h"
 typedef struct TestCtx {
     char buf[512+1];
 } TestCtx;
@@ -50,6 +51,7 @@ static TestCtx g_testCtx;
 size_t testReceiveCallback(TransportInterface *iface, void *p)
 {
     TestCtx *ctx = (TestCtx *)p;
+    debugPauseCores(BIT(0));
     return transportInterfaceReadDataUntil(iface, ctx->buf, 512, '\r');
 }
 
@@ -57,6 +59,7 @@ void testProcessDataCallback(TransportInterface *iface, void *p, size_t sz)
 {
     (void)iface;
     (void)sz;
+    debugUnpauseCores(BIT(0));
     TestCtx *ctx = (TestCtx *)p;
     DEBUG("EL2 [core %u]: you typed: %s\n", currentCoreCtx->coreId, ctx->buf);
 }
@@ -71,7 +74,7 @@ void test(void)
         testProcessDataCallback,
         &g_testCtx
     );
-    transportInterfaceSetInterruptAffinity(iface, BIT(0));
+    transportInterfaceSetInterruptAffinity(iface, BIT(1));
 }
 
 void thermosphereMain(ExceptionStackFrame *frame, u64 pct)
