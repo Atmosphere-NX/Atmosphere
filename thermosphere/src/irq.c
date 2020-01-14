@@ -21,6 +21,7 @@
 #include "timer.h"
 #include "guest_timers.h"
 #include "transport_interface.h"
+#include "debug_pause.h"
 
 IrqManager g_irqManager = {0};
 
@@ -212,7 +213,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     u32 irqId = iar & 0x3FF;
     u32 srcCore = (iar >> 10) & 7;
 
-    //DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
+    DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
 
     if (irqId == GIC_IRQID_SPURIOUS) {
         // Spurious interrupt received
@@ -226,6 +227,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 
     bool isGuestInterrupt = false;
     bool isMaintenanceInterrupt = false;
+    bool hasBottomHalf = false;
 
     switch (irqId) {
         case ThermosphereSgi_ExecuteFunction:
@@ -233,6 +235,10 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
             break;
         case ThermosphereSgi_VgicUpdate:
             // Nothing in particular to do here
+            break;
+        case ThermosphereSgi_DebugPause:
+            debugPauseSgiTopHalf();
+            hasBottomHalf = true;
             break;
         case GIC_IRQID_MAINTENANCE:
             isMaintenanceInterrupt = true;
@@ -246,6 +252,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     }
 
     TransportInterface *transportIface = irqId >= 32 ? transportInterfaceIrqHandlerTopHalf(irqId) : NULL;
+    hasBottomHalf = hasBottomHalf || transportIface != NULL;
 
     // Priority drop
     gicc->eoir = iar;
@@ -270,9 +277,15 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     recursiveSpinlockUnlock(&g_irqManager.lock);
 
     // Bottom half part
-    if (transportIface != NULL) {
+    if (hasBottomHalf) {
         exceptionEnterInterruptibleHypervisorCode(frame);
         unmaskIrq();
-        transportInterfaceIrqHandlerBottomHalf(transportIface);
+
+        if (irqId == ThermosphereSgi_DebugPause) {
+            debugPauseSgiBottomHalf();
+        } else if (transportIface != NULL) {
+            transportInterfaceIrqHandlerBottomHalf(transportIface);
+        }
     }
+
 }

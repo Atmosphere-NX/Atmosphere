@@ -16,9 +16,9 @@
 
 #pragma once
 
+#include "core_ctx.h"
 #include "utils.h"
 #include "sysreg.h"
-#include "core_ctx.h"
 
 typedef struct Spinlock {
     u32 lock;
