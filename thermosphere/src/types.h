@@ -23,3 +23,8 @@ typedef volatile s8 vs8;   ///<  8-bit volatile signed integer.
 typedef volatile s16 vs16; ///< 16-bit volatile signed integer.
 typedef volatile s32 vs32; ///< 32-bit volatile signed integer.
 typedef volatile s64 vs64; ///< 64-bit volatile signed integer.
+
+typedef __uint128_t u128; ///< 128-bit unsigned integer.
+typedef __int128_t  s128; ///< 128-bit  signed integer.
+typedef volatile u128 vu128; ///< 128-bit volatile unsigned integer.
+typedef volatile s128 vs128; ///< 128-bit volatile signed integer.
