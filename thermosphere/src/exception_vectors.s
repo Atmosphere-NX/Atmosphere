@@ -1,12 +1,27 @@
+/*
+ * Copyright (c) 2018-2019 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "asm_macros.s"
+
 /* Some macros taken from https://github.com/ARM-software/arm-trusted-firmware/blob/master/include/common/aarch64/asm_macros.S */
 /*
  * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
- 
-
-#define STACK_FRAME_SIZE    0x140
 
 /*
  * Declare the exception vector table, enforcing it is aligned on a
@@ -53,7 +68,7 @@
 .endm
 
 .macro  SAVE_MOST_REGISTERS
-    sub     sp, sp, #STACK_FRAME_SIZE
+    sub     sp, sp, #EXCEP_STACK_FRAME_SIZE
 
     stp     x28, x29, [sp, #-0x20]
     stp     x30, xzr, [sp, #-0x10]
@@ -65,12 +80,12 @@
 .macro PIVOT_STACK_FOR_CRASH
     // Note: x18 assumed uncorrupted
     // Note: replace sp_el0 with crashing sp
-    str     x16, [x18, #8]      // currentCoreCtx->scratch = x16
+    str     x16, [x18, #CORECTX_SCRATCH_OFFSET]
     mov     x16, sp
     msr     sp_el0, x16
-    ldr     x16, [x18, #0x10]   // currentCoreCtx->crashStack
+    ldr     x16, [x18, #CORECTX_CRASH_STACK_OFFSET]
     mov     sp, x16
-    ldr     x16, [x18, #8]
+    ldr     x16, [x18, #CORECTX_SCRATCH_OFFSET]
 .endm
 
 .equ    EXCEPTION_TYPE_HOST,            0
@@ -88,8 +103,8 @@ vector_entry \name
     mov         x0, sp
 
     .if \type == EXCEPTION_TYPE_GUEST
-        ldp     x18, xzr, [sp, #STACK_FRAME_SIZE]
-        str     x0, [x18]   // currentCoreCtx->userFrame
+        ldp     x18, xzr, [sp, #EXCEP_STACK_FRAME_SIZE]
+        str     x0, [x18, #CORECTX_USER_FRAME_OFFSET]
         mov     w1, #1
     .else
         mov     w1, #0
@@ -202,7 +217,7 @@ _restoreAllRegisters:
     ldp     x26, x27, [sp, #0xD0]
     ldp     x28, x29, [sp, #0xE0]
 
-    add     sp, sp, #STACK_FRAME_SIZE
+    add     sp, sp, #EXCEP_STACK_FRAME_SIZE
     eret
 
 UNKNOWN_EXCEPTION       _serrorSp0

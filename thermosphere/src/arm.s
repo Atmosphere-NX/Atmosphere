@@ -13,7 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+#include "asm_macros.s"
+
 /* The following functions are taken/adapted from https://github.com/u-boot/u-boot/blob/master/arch/arm/cpu/armv8/cache.S */
 
 /*
@@ -117,27 +119,15 @@ skip:
 finished:
     ret
 
-.section    .text.flush_dcache_all, "ax", %progbits
-.global     flush_dcache_all
-.type       flush_dcache_all, %function
-.func       flush_dcache_all
-.cfi_startproc
-flush_dcache_all:
+FUNCTION flush_dcache_all
     mov x0, #0
     b   __asm_dcache_all
-.endfunc
-.cfi_endproc
+END_FUNCTION
 
-.section    .text.invalidate_dcache_all, "ax", %progbits
-.global     invalidate_dcache_all
-.type       invalidate_dcache_all, %function
-.func       invalidate_dcache_all
-.cfi_startproc
-invalidate_dcache_all:
+FUNCTION invalidate_dcache_all
     mov x0, #1
     b   __asm_dcache_all
-.endfunc
-.cfi_endproc
+END_FUNCTION
 
 /*
  * void __asm_flush_dcache_range(start, end) (renamed -> flush_dcache_range)
@@ -147,12 +137,8 @@ invalidate_dcache_all:
  * x0: start address
  * x1: end address
  */
-.section    .text.flush_dcache_range, "ax", %progbits
-.global     flush_dcache_range
-.type       flush_dcache_range, %function
-.func       flush_dcache_range
-.cfi_startproc
-flush_dcache_range:
+
+FUNCTION flush_dcache_range
     mrs x3, ctr_el0
     lsr x3, x3, #16
     and x3, x3, #0xf
@@ -168,8 +154,7 @@ flush_dcache_range:
     b.lo    1b
     dsb sy
     ret
-.endfunc
-.cfi_endproc
+END_FUNCTION
 
 /*
  * void __asm_invalidate_dcache_range(start, end) (-> invalidate_dcache_range)
@@ -179,12 +164,7 @@ flush_dcache_range:
  * x0: start address
  * x1: end address
  */
-.section    .text.invalidate_dcache_range, "ax", %progbits
-.global     invalidate_dcache_range
-.type       invalidate_dcache_range, %function
-.func       invalidate_dcache_range
-.cfi_startproc
-invalidate_dcache_range:
+FUNCTION invalidate_dcache_range
     mrs  x3, ctr_el0
     ubfm x3, x3, #16, #19
     mov x2, #4
@@ -199,50 +179,32 @@ invalidate_dcache_range:
     b.lo    1b
     dsb sy
     ret
-.endfunc
-.cfi_endproc
+END_FUNCTION
 
 /*
  * void __asm_invalidate_icache_all(void) (-> invalidate_icache_inner_shareable)
  *
  * invalidate all icache entries.
  */
-.section    .text.invalidate_icache_all_inner_shareable, "ax", %progbits
-.global     invalidate_icache_all_inner_shareable
-.type       invalidate_icache_all_inner_shareable, %function
-.func       invalidate_icache_all_inner_shareable
-.cfi_startproc
-invalidate_icache_all_inner_shareable:
+FUNCTION invalidate_icache_all_inner_shareable
     dsb ish
     isb
     ic  ialluis
     dsb ish
     isb
     ret
-.endfunc
-.cfi_endproc
+END_FUNCTION
 
-.section    .text.invalidate_icache_all, "ax", %progbits
-.global     invalidate_icache_all
-.type       invalidate_icache_all, %function
-.func     invalidate_icache_all
-.cfi_startproc
-invalidate_icache_all:
+FUNCTION invalidate_icache_all
     dsb sy
     isb
     ic  iallu
     dsb sy
     isb
     ret
-.endfunc
-.cfi_endproc
+END_FUNCTION
 
-.section    .text.set_memory_registers_enable_mmu, "ax", %progbits
-.global     set_memory_registers_enable_mmu
-.type       set_memory_registers_enable_mmu, %function
-.func       set_memory_registers_enable_mmu
-.cfi_startproc
-set_memory_registers_enable_mmu:
+FUNCTION set_memory_registers_enable_mmu
     msr     ttbr0_el2, x0
     msr     tcr_el2, x1
     msr     mair_el2, x2
@@ -264,15 +226,9 @@ set_memory_registers_enable_mmu:
     isb
 
     ret
-.endfunc
-.cfi_endproc
+END_FUNCTION
 
-.section    .text.set_memory_registers_enable_stage2, "ax", %progbits
-.global     set_memory_registers_enable_stage2
-.type       set_memory_registers_enable_stage2, %function
-.func       set_memory_registers_enable_stage2
-.cfi_startproc
-set_memory_registers_enable_stage2:
+FUNCTION set_memory_registers_enable_stage2
     msr     vttbr_el2, x0
     msr     vtcr_el2, x1
 
@@ -292,5 +248,4 @@ set_memory_registers_enable_stage2:
     isb
 
     ret
-.endfunc
-.cfi_endproc
+END_FUNCTION

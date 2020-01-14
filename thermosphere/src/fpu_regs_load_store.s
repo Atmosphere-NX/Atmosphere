@@ -14,6 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "asm_macros.s"
+
 .macro      LDSTORE_QREGS, op
     \op     q0, q1, [x0], 0x20
     \op     q2, q3, [x0], 0x20
@@ -33,12 +35,7 @@
     \op     q30, q31, [x0], 0x20
 .endm
 
-.section    .text.fpuLoadRegistersFromStorage, "ax", %progbits
-.global     fpuLoadRegistersFromStorage
-.type       fpuLoadRegistersFromStorage, %function
-.func       fpuLoadRegistersFromStorage
-.cfi_startproc
-fpuLoadRegistersFromStorage:
+FUNCTION fpuLoadRegistersFromStorage
     dmb     sy
     LDSTORE_QREGS ldp
     ldp     x1, x2, [x0]
@@ -47,14 +44,9 @@ fpuLoadRegistersFromStorage:
     dsb     sy
     isb     sy
     ret
-.cfi_endproc
-.endfunc
+END_FUNCTION
 
-.section    .text.fpuStoreRegistersToStorage, "ax", %progbits
-.global     fpuStoreRegistersToStorage
-.type       fpuStoreRegistersToStorage, %function
-.func       fpuStoreRegistersToStorage
-.cfi_startproc
+FUNCTION fpuStoreRegistersToStorage
     dsb     sy
     isb     sy
     LDSTORE_QREGS stp
@@ -63,5 +55,4 @@ fpuLoadRegistersFromStorage:
     stp     x1, x2, [x0]
     dmb     sy
     ret
-.cfi_endproc
-.endfunc
+END_FUNCTION

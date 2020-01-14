@@ -14,14 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "asm_macros.s"
 
 // Precondition: x1 <= 16
-.section    .text.loadBreakpointRegs, "ax", %progbits
-.global     loadBreakpointRegs
-.type       loadBreakpointRegs, %function
-.func       loadBreakpointRegs
-.cfi_startproc
-loadBreakpointRegs:
+FUNCTION loadBreakpointRegs
     // x1 = number
     dmb     sy
 
@@ -42,16 +38,10 @@ loadBreakpointRegs:
     dsb     sy
     isb
     ret
-.endfunc
-.cfi_endproc
+END_FUNCTION
 
 // Precondition: x1 <= 16
-.section    .text.loadWatchpointRegs, "ax", %progbits
-.global     loadWatchpointRegs
-.type       loadWatchpointRegs, %function
-.func       loadWatchpointRegs
-.cfi_startproc
-loadWatchpointRegs:
+FUNCTION loadWatchpointRegs
     // x1 = number
     dmb     sy
 
@@ -72,5 +62,4 @@ loadWatchpointRegs:
     dsb     sy
     isb
     ret
-.endfunc
-.cfi_endproc
+END_FUNCTION
