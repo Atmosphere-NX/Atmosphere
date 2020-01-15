@@ -42,15 +42,15 @@ static void initSysregs(void)
     SET_SYSREG(cntkctl_el1,     0x00000003);    // Don't trap anything for now; event streams disabled
     SET_SYSREG(cntp_ctl_el0,    0x00000000);
     SET_SYSREG(cntv_ctl_el0,    0x00000000);
+
+    __dsb();
+    __isb();
 }
 
 void initSystem(u32 coreId, bool isBootCore, u64 argument)
 {
     coreCtxInit(coreId, isBootCore, argument);
     initSysregs();
-
-    __dsb_sy();
-    __isb();
 
     if (isBootCore) {
         if (!currentCoreCtx->warmboot) {

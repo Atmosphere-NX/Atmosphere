@@ -16,9 +16,7 @@
 
 #include "../utils.h"
 #include "../sysreg.h"
-#include "../arm.h"
 #include "../mmu.h"
-#include "../debug_log.h"
 #include "memory_map_mmu_cfg.h"
 
 void configureMemoryMapEnableMmu(void)
@@ -45,10 +43,24 @@ void configureMemoryMapEnableMmu(void)
     */
     u64 mair = 0x4FFull;
 
-    flush_dcache_all();
-    invalidate_icache_all();
+    // MMU regs config
+    SET_SYSREG(ttbr0_el2, ttbr0);
+    SET_SYSREG(tcr_el2, tcr);
+    SET_SYSREG(mair_el2, mair);
+    __dsb();
+    __isb();
 
-    set_memory_registers_enable_mmu(ttbr0, tcr, mair);
+    // TLB invalidation
+    __tlb_invalidate_el2();
+    __dsb();
+    __isb();
+
+    // Enable MMU & enable caching
+    u64 sctlr = GET_SYSREG(sctlr_el2);
+    sctlr |= SCTLR_ELx_I | SCTLR_ELx_C | SCTLR_ELx_M;
+    SET_SYSREG(sctlr_el2, sctlr);
+    __dsb();
+    __isb();
 }
 
 void configureMemoryMapEnableStage2(void)
@@ -67,8 +79,22 @@ void configureMemoryMapEnableStage2(void)
         - T0SZ = from configureMemoryMap
     */
     u64 vtcr = VTCR_EL2_RSVD | TCR_PS(ps) | TCR_TG0_4K | TCR_SHARED_INNER | TCR_ORGN_WBWA | TCR_IRGN_WBWA | VTCR_SL0(1) | TCR_T0SZ(addrSpaceSize);
-    flush_dcache_all();
-    invalidate_icache_all();
 
-    set_memory_registers_enable_stage2(vttbr, vtcr);
+    // Stage2 regs config
+    SET_SYSREG(vttbr_el2, vttbr);
+    SET_SYSREG(vtcr_el2, vtcr);
+    __dsb();
+    __isb();
+
+    // TLB invalidation
+    __tlb_invalidate_el1_stage12();
+    __dsb();
+    __isb();
+
+    // Enable stage 2
+    u64 hcr = GET_SYSREG(hcr_el2);
+    hcr |= HCR_VM;
+    SET_SYSREG(hcr_el2, hcr);
+    __dsb();
+    __isb();
 }

@@ -16,8 +16,8 @@
  
 #include <string.h>
 #include "utils.h"
-#include "arm.h"
 #include "spinlock.h"
+#include "caches.h"
 
 __attribute__((noinline)) bool overlaps(u64 as, u64 ae, u64 bs, u64 be)
 {
@@ -31,6 +31,7 @@ __attribute__((noinline)) bool overlaps(u64 as, u64 ae, u64 bs, u64 be)
 // TODO: put that elsewhere
 bool readEl1Memory(void *dst, uintptr_t addr, size_t size)
 {
+    // Note: what if we read uncached regions/not shared?
     bool valid;
 
     u64 flags = maskIrq();
@@ -41,7 +42,6 @@ bool readEl1Memory(void *dst, uintptr_t addr, size_t size)
         return false;
     }
 
-    flush_dcache_range((const void *)pa, (const void *)(pa + size));
     memcpy(dst, (const void *)pa, size);
 
     return true;
@@ -59,12 +59,10 @@ bool writeEl1Memory(uintptr_t addr, const void *src, size_t size)
         return false;
     }
 
-    flush_dcache_range((const void *)pa, (const void *)(pa + size));
     memcpy((void *)pa, src, size);
-    flush_dcache_range((const void *)pa, (const void *)(pa + size));
-    invalidate_icache_all();
+    cacheHandleSelfModifyingCodePoU((const void *)pa, size);
 
-    __tlb_invalidate_el1_stage12();
+    __tlb_invalidate_el1_stage12(); //FIXME FIXME FIXME
     __dsb_sy();
     __isb();
 

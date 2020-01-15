@@ -50,8 +50,11 @@ _startCommon:
     dsb     sy
     isb
 
-    mov     x2, x0
+    bl      cacheClearLocalDataCacheOnBoot
+    cbz     x19, 1f
+    bl      cacheClearSharedDataCachesOnBoot
 
+1:
     // Get core ID
     // Ensure Aff0 is 4-1 at most (4 cores), and that Aff1, 2 and 3 are 0 (1 cluster only)
     mrs     x0, mpidr_el1

@@ -62,6 +62,24 @@ typedef enum ReadWriteDirection {
     DIRECTION_READWRITE = DIRECTION_READ | DIRECTION_WRITE,
 } ReadWriteDirection;
 
+/*
+    Domains:
+        - Inner shareable: typically cores within a cluster (maybe more) with L1+L2 caches
+        - Outer shareable: all the cores in all clusters that can be coherent
+        - System: everything else
+    Since we only support 1 single cluster, we basically only need to consider the inner
+    shareable domain, except before doing DMA...
+*/
+static inline void __dmb(void)
+{
+    __asm__ __volatile__ ("dmb ish" ::: "memory");
+}
+
+static inline void __dsb(void)
+{
+    __asm__ __volatile__ ("dsb ish" ::: "memory");
+}
+
 static inline void __dmb_sy(void)
 {
     __asm__ __volatile__ ("dmb sy" ::: "memory");
@@ -75,6 +93,11 @@ static inline void __dsb_sy(void)
 static inline void __isb(void)
 {
     __asm__ __volatile__ ("isb" ::: "memory");
+}
+
+static inline void __tlb_invalidate_el2(void)
+{
+    __asm__ __volatile__ ("tlbi alle2" ::: "memory");
 }
 
 static inline void __tlb_invalidate_el1_stage12(void)
