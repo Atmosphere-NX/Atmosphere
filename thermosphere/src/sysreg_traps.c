@@ -16,7 +16,7 @@
 
 #include "sysreg_traps.h"
 #include "guest_timers.h"
-#include "software_breakpoints.h"
+#include "caches.h"
 
 static inline u64 doSystemRegisterRead(const ExceptionStackFrame *frame, u32 normalizedIss)
 {
@@ -43,7 +43,7 @@ static inline u64 doSystemRegisterRead(const ExceptionStackFrame *frame, u32 nor
             val = currentCoreCtx->emulPtimerCval;
             break;
         }
-
+        // NOTE: We should trap ID_AA64* register to lie to the guest about e.g. MemTag but it would take too much space
         default: {
             // We shouldn't have trapped on other registers other than debug regs
             // and we want the latter as RA0/WI
@@ -72,6 +72,15 @@ static inline void doSystemRegisterWrite(ExceptionStackFrame *frame, u32 normali
         }
         case ENCODE_SYSREG_ISS(CNTP_CVAL_EL0): {
             writeEmulatedPhysicalCompareValue(frame, val);
+            break;
+        }
+        case ENCODE_SYSREG_ISS(DC_CSW):
+        case ENCODE_SYSREG_ISS(DC_CISW): {
+            cacheHandleTrappedSetWayOperation(false);
+            break;
+        }
+        case ENCODE_SYSREG_ISS(DC_ISW): {
+            cacheHandleTrappedSetWayOperation(true);
             break;
         }
 

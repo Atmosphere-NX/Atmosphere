@@ -44,6 +44,9 @@ void enableTraps(void)
     // Trap SMC instructions
     hcr |= HCR_TSC;
 
+    // Trap set/way isns
+    hcr |= HCR_TSW;
+
     // Reroute physical IRQs to EL2
     hcr |= HCR_IMO;
 

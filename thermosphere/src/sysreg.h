@@ -24,6 +24,10 @@
 #define BITL(n)               (1ull << (n))
 #endif
 
+#define TUP_DC_ISW              (1, 0, 7, 6, 2)
+#define TUP_DC_CSW              (1, 0, 7, 10, 2)
+#define TUP_DC_CISW             (1, 0, 7, 14, 2)
+
 #define TUP_OSDTRRX_EL1         (2, 0, 0, 0, 2)
 #define TUP_MDCCINT_EL1         (2, 0, 0, 2, 0)
 #define TUP_MDSCR_EL1           (2, 0, 0, 2, 2)

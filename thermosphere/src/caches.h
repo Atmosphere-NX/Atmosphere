@@ -56,3 +56,5 @@ void cacheHandleSelfModifyingCodePoU(const void *addr, size_t size);
 
 void cacheClearSharedDataCachesOnBoot(void);
 void cacheClearLocalDataCacheOnBoot(void);
+
+void cacheHandleTrappedSetWayOperation(bool invalidateOnly);
