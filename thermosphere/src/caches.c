@@ -16,6 +16,7 @@
 
 #include "caches.h"
 #include "preprocessor.h"
+#include "core_ctx.h"
 
 #define DEFINE_CACHE_RANGE_FUNC(isn, name, cache, post)\
 void name(const void *addr, size_t size)\
@@ -47,12 +48,33 @@ static inline ALINLINE void cacheInvalidateDataCacheLevel(u32 level)
     u32 setShift = (ccsidr & 7) + 4;
     u32 lbits = (level & 7) << 1;
 
-    for (u32 way = 0; way <= numWays; way++) {
-        for (u32 set = 0; set <= numSets; set++) {
+    for (u32 way = 0; way < numWays; way++) {
+        for (u32 set = 0; set < numSets; set++) {
             u64 val = ((u64)way << wayShift) | ((u64)set << setShift) | lbits;
             __asm__ __volatile__ ("dc isw, %0" :: "r"(val) : "memory");
         }
     }
+}
+
+static inline ALINLINE void cacheCleanInvalidateDataCacheLevel(u32 level)
+{
+    cacheSelectByLevel(false, level);
+    u32 ccsidr = (u32)GET_SYSREG(ccsidr_el1);
+    u32 numWays = 1 + ((ccsidr >> 3) & 0x3FF);
+    u32 numSets = 1 + ((ccsidr >> 13) & 0x7FFF);
+    u32 wayShift = __builtin_clz(numWays);
+    u32 setShift = (ccsidr & 7) + 4;
+    u32 lbits = (level & 7) << 1;
+
+    for (u32 way = 0; way < numWays; way++) {
+        for (u32 set = 0; set < numSets; set++) {
+            u64 val = ((u64)way << wayShift) | ((u64)set << setShift) | lbits;
+            __asm__ __volatile__ ("dc cisw, %0" :: "r"(val) : "memory");
+        }
+    }
+
+    __dsb_sy();
+    __isb();
 }
 
 static inline ALINLINE void cacheInvalidateDataCacheLevels(u32 from, u32 to)
@@ -96,4 +118,49 @@ void cacheClearLocalDataCacheOnBoot(void)
     u32 clidr = (u32)GET_SYSREG(clidr_el1);
     u32 louis = (clidr >> 21) & 7;
     cacheInvalidateDataCacheLevels(0, louis);
+}
+
+
+/* Ok so:
+    - cache set/way ops can't really be virtualized
+    - since we have only one guest OS & don't care about security (for space limitations),
+    we do the following:
+        - ignore all cache s/w ops applying before the Level Of Unification Inner Shareable (L1, typically).
+        These clearly break coherency and should only be done once, on power on/off/suspend/resume only. And we already
+        do it ourselves...
+        - allow ops after the LoUIS, but do it ourselves and ignore the next (numSets*numWay - 1) requests. This is because
+        we have to handle Nintendo's dodgy code
+        - ignore "invalidate only" ops by the guest. Should only be done on power on/resume and we already did it ourselves...
+        - transform "clean only" into "clean and invalidate"
+*/
+void cacheHandleTrappedSetWayOperation(bool invalidateOnly)
+{
+    DEBUG("hello");
+    if (invalidateOnly) {
+        return;
+    }
+
+    u32 clidr = (u32)GET_SYSREG(clidr_el1);
+    u32 louis = (clidr >> 21) & 7;
+
+    u32 csselr = (u32)GET_SYSREG(csselr_el1);
+    u32 level = (csselr >> 1) & 7;
+    if (csselr & BIT(0)) {
+        // Icache, ignore
+        return;
+    } else if (level < louis) {
+        return;
+    }
+
+
+    u32 ccsidr = (u32)GET_SYSREG(ccsidr_el1);
+    u32 numWays = 1 + ((ccsidr >> 3) & 0x3FF);
+    u32 numSets = 1 + ((ccsidr >> 13) & 0x7FFF);
+    if (currentCoreCtx->setWayCounter++ == 0) {
+        cacheCleanInvalidateDataCacheLevel(level);
+    }
+
+    if (currentCoreCtx->setWayCounter >= numSets * numWays) {
+        currentCoreCtx->setWayCounter = 0;
+    }
 }

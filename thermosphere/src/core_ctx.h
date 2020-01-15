@@ -41,6 +41,9 @@ typedef struct CoreCtx {
     void *executedFunctionArgs;                 // @0x48
     Barrier executedFunctionBarrier;            // @0x50
     bool executedFunctionSync;                  // @0x54
+
+    // Cache stuff
+    u32 setWayCounter;                          // @0x58
 } CoreCtx;
 
 static_assert(offsetof(CoreCtx, warmboot) == 0x2E, "Wrong definition for CoreCtx");
