@@ -17,7 +17,6 @@
 #include <string.h>
 #include "software_breakpoints.h"
 #include "utils.h"
-#include "arm.h"
 
 SoftwareBreakpointManager g_softwareBreakpointManager = {0};
 
@@ -74,14 +73,14 @@ static inline bool doApplySoftwareBreakpoint(size_t id)
 static void applySoftwareBreakpointHandler(void *p)
 {
     u64 flags = maskIrq();
-    __dmb_sy();
+    __dmb();
     doApplySoftwareBreakpoint(*(size_t *)p);
     restoreInterruptFlags(flags);
 }
 
 static void applySoftwareBreakpoint(size_t id)
 {
-    __dmb_sy();
+    __dmb();
     executeFunctionOnAllCores(applySoftwareBreakpointHandler, &id, true);
 }
 
@@ -103,14 +102,14 @@ static inline bool doRevertSoftwareBreakpoint(size_t id)
 static void revertSoftwareBreakpointHandler(void *p)
 {
     u64 flags = maskIrq();
-    __dmb_sy();
+    __dmb();
     doRevertSoftwareBreakpoint(*(size_t *)p);
     restoreInterruptFlags(flags);
 }
 
 static void revertSoftwareBreakpoint(size_t id)
 {
-    __dmb_sy();
+    __dmb();
     executeFunctionOnAllCores(revertSoftwareBreakpointHandler, &id, true);
 }
 

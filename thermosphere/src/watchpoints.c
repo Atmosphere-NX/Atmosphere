@@ -19,7 +19,6 @@
 #include "breakpoints_watchpoints_load.h"
 #include "utils.h"
 #include "sysreg.h"
-#include "arm.h"
 #include "debug_log.h"
 
 WatchpointManager g_watchpointManager = {0};
@@ -56,7 +55,7 @@ static void commitAndBroadcastWatchpointHandler(void *p)
 
 static inline void commitAndBroadcastWatchpoints(void)
 {
-    __dmb_sy();
+    __dmb();
     executeFunctionOnAllCores(commitAndBroadcastWatchpointHandler, NULL, true);
 }
 
