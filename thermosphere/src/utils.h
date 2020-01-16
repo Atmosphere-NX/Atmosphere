@@ -62,6 +62,21 @@ typedef enum ReadWriteDirection {
     DIRECTION_READWRITE = DIRECTION_READ | DIRECTION_WRITE,
 } ReadWriteDirection;
 
+static inline void __wfe(void)
+{
+    __asm__ __volatile__ ("wfe" ::: "memory");
+}
+
+static inline void __sev(void)
+{
+    __asm__ __volatile__ ("sev" ::: "memory");
+}
+
+static inline void __sevl(void)
+{
+    __asm__ __volatile__ ("sevl" ::: "memory");
+}
+
 /*
     Domains:
         - Inner shareable: typically cores within a cluster (maybe more) with L1+L2 caches

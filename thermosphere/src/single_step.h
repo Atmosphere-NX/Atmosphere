@@ -21,8 +21,8 @@
 
 typedef enum SingleStepState {
     SingleStepState_Inactive            = 0, // Single step disabled OR in the debugger
-    SingleStepState_ActivePending       = 1, // Instruction not yet executed
-    SingleStepState_ActiveNotPending    = 2, // Instruction executed, single-step exception is going to be generated soon
+    SingleStepState_ActiveNotPending    = 1, // Instruction not yet executed
+    SingleStepState_ActivePending       = 2, // Instruction executed or return-from-trap, single-step exception is going to be generated soon
 } SingleStepState;
 
 /// Get the single-step state machine state (state after eret)

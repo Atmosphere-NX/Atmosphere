@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdatomic.h>
 #include "barrier.h"
 #include "core_ctx.h"
 #include "utils.h"

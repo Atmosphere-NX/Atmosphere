@@ -237,8 +237,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
             // Nothing in particular to do here
             break;
         case ThermosphereSgi_DebugPause:
-            debugPauseSgiTopHalf();
-            hasBottomHalf = true;
+            debugPauseSgiHandler();
             break;
         case GIC_IRQID_MAINTENANCE:
             isMaintenanceInterrupt = true;
@@ -280,10 +279,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     if (hasBottomHalf) {
         exceptionEnterInterruptibleHypervisorCode(frame);
         unmaskIrq();
-
-        if (irqId == ThermosphereSgi_DebugPause) {
-            debugPauseSgiBottomHalf();
-        } else if (transportIface != NULL) {
+        if (transportIface != NULL) {
             transportInterfaceIrqHandlerBottomHalf(transportIface);
         }
     }
