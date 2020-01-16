@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#include <stdatomic.h>
 #include <assert.h>
 #include "utils.h"
 #include "barrier.h"
@@ -22,7 +23,7 @@
 
 struct ExceptionStackFrame;
 typedef struct CoreCtx {
-    struct ExceptionStackFrame *userFrame;      // @0x00
+    struct ExceptionStackFrame *guestFrame;     // @0x00
     u64 scratch;                                // @0x08
     u8 *crashStack;                             // @0x10
     u64 kernelArgument;                         // @0x18
@@ -42,6 +43,9 @@ typedef struct CoreCtx {
     Barrier executedFunctionBarrier;            // @0x50
     bool executedFunctionSync;                  // @0x54
 
+    // Debug features
+    bool wasPaused;                             // @0x55
+
     // Cache stuff
     u32 setWayCounter;                          // @0x58
 } CoreCtx;
@@ -49,6 +53,7 @@ typedef struct CoreCtx {
 static_assert(offsetof(CoreCtx, warmboot) == 0x2E, "Wrong definition for CoreCtx");
 static_assert(offsetof(CoreCtx, emulPtimerCval) == 0x38, "Wrong definition for CoreCtx");
 static_assert(offsetof(CoreCtx, executedFunctionSync) == 0x54, "Wrong definition for CoreCtx");
+static_assert(offsetof(CoreCtx, setWayCounter) == 0x58, "Wrong definition for CoreCtx");
 
 extern CoreCtx g_coreCtxs[4];
 register CoreCtx *currentCoreCtx asm("x18");

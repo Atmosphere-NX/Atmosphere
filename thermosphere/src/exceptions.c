@@ -23,7 +23,8 @@
 #include "core_ctx.h"
 #include "single_step.h"
 #include "data_abort.h"
-
+#include "spinlock.h"
+#include "debug_pause.h"
 #include "timer.h"
 
 bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode)
@@ -113,10 +114,15 @@ void exceptionEntryPostprocess(ExceptionStackFrame *frame, bool isLowerEl)
 // Called on exception return (avoids overflowing a vector section)
 void exceptionReturnPreprocess(ExceptionStackFrame *frame)
 {
+    if (currentCoreCtx->wasPaused && frame == currentCoreCtx->guestFrame) {
+        // Were we paused & are we about to return to the guest?
+        exceptionEnterInterruptibleHypervisorCode(frame);
+        debugPauseWaitAndUpdateSingleStep();
+    }
+
     // Update virtual counter
     currentCoreCtx->totalTimeInHypervisor += timerGetSystemTick() - frame->cntpct_el0;
     SET_SYSREG(cntvoff_el2, currentCoreCtx->totalTimeInHypervisor);
-    //DEBUG("pct %lu - vct %lu = voff %lu\n", timerGetSystemTick() - GET_SYSREG(cntvct_el0), GET_SYSREG(cntvoff_el2));
 
     // Restore interrupt mask
     SET_SYSREG(cntp_ctl_el0, frame->cntp_ctl_el0);

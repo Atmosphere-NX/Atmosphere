@@ -18,14 +18,13 @@
 
 #include "utils.h"
 
-void debugPauseSgiTopHalf(void);
-void debugPauseSgiBottomHalf(void);
+void debugPauseSgiHandler(void);
+
+// Hypervisor interrupts will be serviced during the pause-wait
+void debugPauseWaitAndUpdateSingleStep(void);
 
 // Note: these functions are not reentrant! (need a global debug lock...)
-// These functions also run with interrupts unmasked (but we know we're in our code -- should be safe if we take care)
-// while the core is paused.
 // "Pause" makes sure all cores reaches the pause function before proceeding.
 // "Unpause" doesn't synchronize, it just makes sure the core resumes & that "pause" can be called again.
-
 void debugPauseCores(u32 coreList);
-void debugUnpauseCores(u32 coreList);
+void debugUnpauseCores(u32 coreList, u32 singleStepList);

@@ -28,7 +28,7 @@ SingleStepState singleStepGetNextState(ExceptionStackFrame *frame)
     if (!mdscrSS) {
         return SingleStepState_Inactive;
     } else {
-        return pstateSS ? SingleStepState_ActivePending : SingleStepState_ActiveNotPending;
+        return pstateSS ? SingleStepState_ActiveNotPending : SingleStepState_ActivePending;
     }
 }
 
@@ -41,15 +41,16 @@ void singleStepSetNextState(ExceptionStackFrame *frame, SingleStepState state)
             // Unset mdscr_el1.ss
             mdscr &= ~MDSCR_SS;
             break;
-        case SingleStepState_ActivePending:
+        case SingleStepState_ActiveNotPending:
             // Set mdscr_el1.ss and pstate.ss
             mdscr |= MDSCR_SS;
             frame->spsr_el2 |= PSTATE_SS;
             break;
-        case SingleStepState_ActiveNotPending:
+        case SingleStepState_ActivePending:
+            // We never use this because pstate.ss is 0 by default...
             // Set mdscr_el1.ss and unset pstate.ss
             mdscr |= MDSCR_SS;
-            frame->spsr_el2 |= PSTATE_SS;
+            frame->spsr_el2 &= ~PSTATE_SS;
             break;
         default:
             break;
@@ -65,7 +66,4 @@ void handleSingleStep(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
     singleStepSetNextState(NULL, SingleStepState_Inactive);
 
     DEBUG("Single-step exeception ELR = 0x%016llx, ISV = %u, EX = %u\n", frame->elr_el2, (esr.iss >> 24) & 1, (esr.iss >> 6) & 1);
-
-    // Hehe boi
-    //singleStepSetNextState(frame, SingleStepState_ActivePending);
 }

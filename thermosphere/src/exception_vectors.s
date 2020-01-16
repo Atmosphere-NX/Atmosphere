@@ -104,7 +104,7 @@ vector_entry \name
 
     .if \type == EXCEPTION_TYPE_GUEST
         ldp     x18, xzr, [sp, #EXCEP_STACK_FRAME_SIZE]
-        str     x0, [x18, #CORECTX_USER_FRAME_OFFSET]
+        str     x0, [x18, #CORECTX_GUEST_FRAME_OFFSET]
         mov     w1, #1
     .else
         mov     w1, #0
