@@ -59,6 +59,8 @@ void debugPauseWaitAndUpdateSingleStep(void)
 
 void debugPauseCores(u32 coreList)
 {
+    maskIrq();
+
     // Since we're using a debugger lock, a simple stlr should be fine...
     atomic_store(&g_debugPausePausedCoreList, coreList);
 
@@ -73,6 +75,8 @@ void debugPauseCores(u32 coreList)
     if (coreList & BIT(currentCoreCtx->coreId)) {
         currentCoreCtx->wasPaused = true;
     }
+
+    unmaskIrq();
 }
 
 void debugUnpauseCores(u32 coreList, u32 singleStepList)
