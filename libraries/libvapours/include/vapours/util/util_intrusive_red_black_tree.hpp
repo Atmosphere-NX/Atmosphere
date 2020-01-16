@@ -250,11 +250,11 @@ namespace ams::util {
             friend class IntrusiveRedBlackTree;
 
             static constexpr IntrusiveRedBlackTreeNode *GetNode(Derived *parent) {
-                return &(parent->*Member);
+                return std::addressof(parent->*Member);
             }
 
             static constexpr IntrusiveRedBlackTreeNode const *GetNode(Derived const *parent) {
-                return &(parent->*Member);
+                return std::addressof(parent->*Member);
             }
 
             static constexpr Derived *GetParent(IntrusiveRedBlackTreeNode *node) {
@@ -264,6 +264,9 @@ namespace ams::util {
             static constexpr Derived const *GetParent(IntrusiveRedBlackTreeNode const *node) {
                 return util::GetParentPointer<Member, Derived>(node);
             }
+        private:
+            static constexpr TYPED_STORAGE(Derived) DerivedStorage = {};
+            static_assert(std::addressof(GetParent(GetNode(GetPointer(DerivedStorage)))) == GetPointer(DerivedStorage));
     };
 
     template<class Derived>

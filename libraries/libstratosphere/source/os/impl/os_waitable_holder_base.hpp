@@ -22,11 +22,11 @@ namespace ams::os::impl {
     class WaitableManagerImpl;
 
     class WaitableHolderBase {
+        private:
+            WaitableManagerImpl *manager = nullptr;
         public:
             util::IntrusiveListNode manager_node;
             util::IntrusiveListNode object_list_node;
-        private:
-            WaitableManagerImpl *manager = nullptr;
         public:
             /* Gets whether the held waitable is currently signaled. */
             virtual TriBool IsSignaled() const = 0;

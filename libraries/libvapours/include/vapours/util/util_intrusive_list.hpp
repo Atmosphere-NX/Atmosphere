@@ -561,6 +561,9 @@ namespace ams::util {
             static constexpr Derived const &GetParent(IntrusiveListNode const &node) {
                 return util::GetParentReference<Member, Derived>(&node);
             }
+        private:
+            static constexpr TYPED_STORAGE(Derived) DerivedStorage = {};
+            static_assert(std::addressof(GetParent(GetNode(GetReference(DerivedStorage)))) == GetPointer(DerivedStorage));
     };
 
     template<class Derived>
