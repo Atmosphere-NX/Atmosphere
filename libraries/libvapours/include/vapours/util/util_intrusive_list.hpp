@@ -34,12 +34,9 @@ namespace ams::util {
             IntrusiveListNode *prev;
             IntrusiveListNode *next;
         public:
-            IntrusiveListNode() {
-                this->prev = this;
-                this->next = this;
-            }
+            constexpr IntrusiveListNode() : prev(this), next(this) { /* ... */ }
 
-            bool IsLinked() const {
+            constexpr bool IsLinked() const {
                 return this->next != this;
             }
         private:
@@ -102,6 +99,7 @@ namespace ams::util {
                 return this->next;
             }
     };
+    static_assert(std::is_literal_type<IntrusiveListNode>::value);
 
     namespace impl {
 

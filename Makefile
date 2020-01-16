@@ -1,4 +1,4 @@
-TOPTARGETS := all clean dist
+TOPTARGETS := all clean dist-no-debug dist
 AMSBRANCH := $(shell git symbolic-ref --short HEAD)
 AMSHASH := $(shell git rev-parse --short HEAD)
 AMSREV := $(AMSBRANCH)-$(AMSHASH)
@@ -39,7 +39,7 @@ clean:
 	$(MAKE) -C fusee clean
 	rm -rf out
 
-dist: all
+dist-no-debug: all
 	$(eval MAJORVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MAJOR\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
 		| tr -s [:blank:] \
 		| cut -d' ' -f3))
@@ -91,6 +91,21 @@ dist: all
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)
+	mkdir out
+	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER).zip
+	cp fusee/fusee-primary/fusee-primary.bin out/fusee-primary.bin
+
+dist: dist-no-debug
+	$(eval MAJORVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MAJOR\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
+		| tr -s [:blank:] \
+		| cut -d' ' -f3))
+	$(eval MINORVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MINOR\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
+		| tr -s [:blank:] \
+		| cut -d' ' -f3))
+	$(eval MICROVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MICRO\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
+		| tr -s [:blank:] \
+		| cut -d' ' -f3))
+	$(eval AMSVER = $(MAJORVER).$(MINORVER).$(MICROVER)-$(AMSREV))
 	rm -rf atmosphere-$(AMSVER)-debug
 	mkdir atmosphere-$(AMSVER)-debug
 	cp fusee/fusee-primary/fusee-primary.elf atmosphere-$(AMSVER)-debug/fusee-primary.elf
@@ -118,10 +133,7 @@ dist: all
 	cp stratosphere/spl/spl.elf atmosphere-$(AMSVER)-debug/spl.elf
 	cd atmosphere-$(AMSVER)-debug; zip -r ../atmosphere-$(AMSVER)-debug.zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)-debug
-	mkdir out
-	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER).zip
-	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER)-debug.zip
-	cp fusee/fusee-primary/fusee-primary.bin out/fusee-primary.bin
+	mv atmosphere-$(AMSVER)-debug.zip out/atmosphere-$(AMSVER)-debug.zip
 
 
 .PHONY: $(TOPTARGETS) $(COMPONENTS)

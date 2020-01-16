@@ -16,6 +16,7 @@
 
 #pragma once
 #include "../defines.hpp"
+#include "util_typed_storage.hpp"
 
 namespace ams::util {
 
@@ -54,7 +55,7 @@ namespace ams::util {
             union Union {
                 char c;
                 UnionHolder first_union;
-                ParentType parent;
+                TYPED_STORAGE(ParentType) parent;
 
                 /* This coerces the active member to be c. */
                 constexpr Union() : c() { /* ... */ }
@@ -75,7 +76,7 @@ namespace ams::util {
             template<typename CurUnion>
             static constexpr std::ptrdiff_t OffsetOfImpl(MemberType ParentType::*member, CurUnion &cur_union) {
                 constexpr size_t Offset = CurUnion::GetOffset();
-                const auto target = std::addressof(U.parent.*member);
+                const auto target = std::addressof(GetPointer(U.parent)->*member);
                 const auto start  = std::addressof(cur_union.data.members[0]);
                 const auto next   = GetNextAddress(start, target);
 
@@ -116,6 +117,7 @@ namespace ams::util {
             using DeducedParentType = GetParentType<MemberPtr>;
             using MemberType        = GetMemberType<MemberPtr>;
             static_assert(std::is_base_of<DeducedParentType, RealParentType>::value || std::is_same<RealParentType, DeducedParentType>::value);
+            static_assert(std::is_literal_type<MemberType>::value);
 
             return OffsetOfCalculator<RealParentType, MemberType>::OffsetOf(MemberPtr);
         }();
@@ -125,17 +127,13 @@ namespace ams::util {
     template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
     constexpr ALWAYS_INLINE RealParentType &GetParentReference(impl::GetMemberType<MemberPtr> *member) {
         constexpr std::ptrdiff_t Offset = impl::OffsetOf<MemberPtr, RealParentType>;
-        uint8_t *addr = static_cast<uint8_t *>(static_cast<void *>(member));
-        addr -= Offset;
-        return *static_cast<RealParentType *>(static_cast<void *>(addr));
+        return *static_cast<RealParentType *>(static_cast<void *>(static_cast<uint8_t *>(static_cast<void *>(member)) - Offset));
     }
 
     template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
     constexpr ALWAYS_INLINE RealParentType const &GetParentReference(impl::GetMemberType<MemberPtr> const *member) {
         constexpr std::ptrdiff_t Offset = impl::OffsetOf<MemberPtr, RealParentType>;
-        const uint8_t *addr = static_cast<const uint8_t *>(static_cast<const void *>(member));
-        addr -= Offset;
-        return *static_cast<const RealParentType *>(static_cast<const void *>(addr));
+        return *static_cast<const RealParentType *>(static_cast<const void *>(static_cast<const uint8_t *>(static_cast<const void *>(member)) - Offset));
     }
 
     template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
@@ -147,6 +145,35 @@ namespace ams::util {
     constexpr ALWAYS_INLINE RealParentType const *GetParentPointer(impl::GetMemberType<MemberPtr> const *member) {
         return std::addressof(GetParentReference<MemberPtr, RealParentType>(member));
     }
+
+    template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
+    constexpr ALWAYS_INLINE RealParentType &GetParentReference(impl::GetMemberType<MemberPtr> &member) {
+        return GetParentReference<MemberPtr, RealParentType>(std::addressof(member));
+    }
+
+    template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
+    constexpr ALWAYS_INLINE RealParentType const &GetParentReference(impl::GetMemberType<MemberPtr> const &member) {
+        return GetParentReference<MemberPtr, RealParentType>(std::addressof(member));
+    }
+
+    template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
+    constexpr ALWAYS_INLINE RealParentType *GetParentPointer(impl::GetMemberType<MemberPtr> &member) {
+        return std::addressof(GetParentReference<MemberPtr, RealParentType>(member));
+    }
+
+    template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
+    constexpr ALWAYS_INLINE RealParentType const *GetParentPointer(impl::GetMemberType<MemberPtr> const &member) {
+        return std::addressof(GetParentReference<MemberPtr, RealParentType>(member));
+    }
+
+
+/* Defines, for use by other code. */
+
+#define OFFSETOF(parent, member) (::ams::util::OffsetOf<&parent::member, parent>)
+
+#define GET_PARENT_PTR(parent, member, _arg) (::ams::util::GetParentPointer<&parent::member, parent>(_arg))
+
+#define GET_PARENT_REF(parent, member, _arg) (::ams::util::GetParentReference<&parent::member, parent>(_arg))
 
     namespace test {
 
@@ -174,9 +201,12 @@ namespace ams::util {
 
         constexpr Struct3 TestStruct3 = {};
 
-        static_assert(std::addressof(TestStruct3) == GetParentPointer<&Struct3::a, Struct3>(std::addressof(TestStruct3.a)));
-        static_assert(std::addressof(TestStruct3) == GetParentPointer<&Struct3::b, Struct3>(std::addressof(TestStruct3.b)));
-        static_assert(std::addressof(TestStruct3) == GetParentPointer<&Struct3::c, Struct3>(std::addressof(TestStruct3.c)));
+        static_assert(std::addressof(TestStruct3) == GET_PARENT_PTR(Struct3, a, TestStruct3.a));
+        static_assert(std::addressof(TestStruct3) == GET_PARENT_PTR(Struct3, a, std::addressof(TestStruct3.a)));
+        static_assert(std::addressof(TestStruct3) == GET_PARENT_PTR(Struct3, b, TestStruct3.b));
+        static_assert(std::addressof(TestStruct3) == GET_PARENT_PTR(Struct3, b, std::addressof(TestStruct3.b)));
+        static_assert(std::addressof(TestStruct3) == GET_PARENT_PTR(Struct3, c, TestStruct3.c));
+        static_assert(std::addressof(TestStruct3) == GET_PARENT_PTR(Struct3, c, std::addressof(TestStruct3.c)));
 
         struct CharArray {
             char c0;
@@ -200,51 +230,23 @@ namespace ams::util {
 
         constexpr CharArray TestCharArray = {};
 
-        static_assert(std::addressof(TestCharArray) == GetParentPointer<&CharArray::c0>(std::addressof(TestCharArray.c0)));
-        static_assert(std::addressof(TestCharArray) == GetParentPointer<&CharArray::c1>(std::addressof(TestCharArray.c1)));
-        static_assert(std::addressof(TestCharArray) == GetParentPointer<&CharArray::c2>(std::addressof(TestCharArray.c2)));
-        static_assert(std::addressof(TestCharArray) == GetParentPointer<&CharArray::c3>(std::addressof(TestCharArray.c3)));
-        static_assert(std::addressof(TestCharArray) == GetParentPointer<&CharArray::c4>(std::addressof(TestCharArray.c4)));
-        static_assert(std::addressof(TestCharArray) == GetParentPointer<&CharArray::c5>(std::addressof(TestCharArray.c5)));
-        static_assert(std::addressof(TestCharArray) == GetParentPointer<&CharArray::c6>(std::addressof(TestCharArray.c6)));
-        static_assert(std::addressof(TestCharArray) == GetParentPointer<&CharArray::c7>(std::addressof(TestCharArray.c7)));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c0, TestCharArray.c0));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c0, std::addressof(TestCharArray.c0)));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c1, TestCharArray.c1));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c1, std::addressof(TestCharArray.c1)));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c2, TestCharArray.c2));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c2, std::addressof(TestCharArray.c2)));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c3, TestCharArray.c3));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c3, std::addressof(TestCharArray.c3)));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c4, TestCharArray.c4));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c4, std::addressof(TestCharArray.c4)));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c5, TestCharArray.c5));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c5, std::addressof(TestCharArray.c5)));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c6, TestCharArray.c6));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c6, std::addressof(TestCharArray.c6)));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c7, TestCharArray.c7));
+        static_assert(std::addressof(TestCharArray) == GET_PARENT_PTR(CharArray, c7, std::addressof(TestCharArray.c7)));
 
     }
 
 }
-
-/* Defines, for use by other code. */
-
-#define OFFSETOF(parent, member) (::ams::util::OffsetOf<&parent::member, parent>)
-
-#define AMS_GET_PARENT_TYPE_IMPL(parent, argt) typename std::conditional<std::is_pointer<argt>::value,                                                          \
-                                                                    typename std::conditional<std::is_const<typename std::remove_pointer<argt>::type>::value,   \
-                                                                                              const parent,                                                     \
-                                                                                              parent                                                            \
-                                                                                             >::type,                                                           \
-                                                                    typename std::conditional<std::is_const<typename std::remove_reference<argt>::type>::value, \
-                                                                                              const parent,                                                     \
-                                                                                              parent                                                            \
-                                                                                             >::type                                                            \
-                                                                    >::type
-
-#define GET_PARENT_PTR(parent, member, _arg) ([]<typename GetParentPtrArgType>(GetParentPtrArgType &arg) ALWAYS_INLINE_LAMBDA -> AMS_GET_PARENT_TYPE_IMPL(parent, GetParentPtrArgType) * {     \
-    using ParentPtrType = typename std::conditional<std::is_const<GetParentPtrArgType>::value, const parent, parent>::type *;                                                                  \
-    if constexpr (std::is_pointer<GetParentPtrArgType>::value) {                                                                                                                               \
-        static_assert(std::is_same<typename std::remove_cv<decltype(parent::member)>::type, typename std::remove_cv<typename std::remove_pointer<GetParentPtrArgType>::type>::type>::value);   \
-        return ::ams::util::GetParentPointer<&parent::member, parent>(arg);                                                                                                                    \
-    } else {                                                                                                                                                                                   \
-        static_assert(std::is_same<typename std::remove_cv<decltype(parent::member)>::type, typename std::remove_cv<typename std::remove_reference<GetParentPtrArgType>::type>::type>::value); \
-        return ::ams::util::GetParentPointer<&parent::member, parent>(std::addressof(arg));                                                                                                    \
-    }                                                                                                                                                                                          \
-}(_arg))
-
-#define GET_PARENT_REF(parent, member, _arg) ([]<typename GetParentPtrArgType>(GetParentPtrArgType &arg) ALWAYS_INLINE_LAMBDA -> AMS_GET_PARENT_TYPE_IMPL(parent, GetParentPtrArgType) & {     \
-    if constexpr (std::is_pointer<GetParentPtrArgType>::value) {                                                                                                                               \
-        static_assert(std::is_same<typename std::remove_cv<decltype(parent::member)>::type, typename std::remove_cv<typename std::remove_pointer<GetParentPtrArgType>::type>::type>::value);   \
-        return ::ams::util::GetParentReference<&parent::member, parent>(arg);                                                                                                                  \
-    } else {                                                                                                                                                                                   \
-        static_assert(std::is_same<typename std::remove_cv<decltype(parent::member)>::type, typename std::remove_cv<typename std::remove_reference<GetParentPtrArgType>::type>::type>::value); \
-        return ::ams::util::GetParentReference<&parent::member, parent>(std::addressof(arg));                                                                                                  \
-    }                                                                                                                                                                                          \
-}(_arg))

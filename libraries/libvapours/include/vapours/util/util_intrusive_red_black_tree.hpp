@@ -28,8 +28,9 @@ namespace ams::util {
             template<class, class, class>
             friend class IntrusiveRedBlackTree;
         public:
-            IntrusiveRedBlackTreeNode() { /* ... */}
+            constexpr IntrusiveRedBlackTreeNode() : entry() { /* ... */}
     };
+    static_assert(std::is_literal_type<IntrusiveRedBlackTreeNode>::value);
 
     template<class T, class Traits, class Comparator>
     class IntrusiveRedBlackTree {

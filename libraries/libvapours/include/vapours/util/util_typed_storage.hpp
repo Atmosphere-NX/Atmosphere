@@ -24,25 +24,25 @@ namespace ams::util {
         typename std::aligned_storage<Size, Align>::type _storage;
     };
 
-    #define TYPED_STORAGE(T) ::ams::util::TypedStorage<T, sizeof(T), alignof(T)>
+    #define TYPED_STORAGE(...) ::ams::util::TypedStorage<__VA_ARGS__, sizeof(__VA_ARGS__), alignof(__VA_ARGS__)>
 
     template<typename T>
-    static constexpr inline __attribute__((always_inline)) T *GetPointer(TYPED_STORAGE(T) &ts) {
-        return reinterpret_cast<T *>(&ts._storage);
+    static constexpr ALWAYS_INLINE T *GetPointer(TYPED_STORAGE(T) &ts) {
+        return static_cast<T *>(static_cast<void *>(std::addressof(ts._storage)));
     }
 
     template<typename T>
-    static constexpr inline __attribute__((always_inline)) const T *GetPointer(const TYPED_STORAGE(T) &ts) {
-        return reinterpret_cast<const T *>(&ts._storage);
+    static constexpr ALWAYS_INLINE const T *GetPointer(const TYPED_STORAGE(T) &ts) {
+        return static_cast<const T *>(static_cast<const void *>(std::addressof(ts._storage)));
     }
 
     template<typename T>
-    static constexpr inline __attribute__((always_inline)) T &GetReference(TYPED_STORAGE(T) &ts) {
+    static constexpr ALWAYS_INLINE T &GetReference(TYPED_STORAGE(T) &ts) {
         return *GetPointer(ts);
     }
 
     template<typename T>
-    static constexpr inline __attribute__((always_inline)) const T &GetReference(const TYPED_STORAGE(T) &ts) {
+    static constexpr ALWAYS_INLINE const T &GetReference(const TYPED_STORAGE(T) &ts) {
         return *GetPointer(ts);
     }
 
