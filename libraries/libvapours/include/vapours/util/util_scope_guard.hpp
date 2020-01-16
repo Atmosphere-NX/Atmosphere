@@ -29,24 +29,24 @@ namespace ams::util {
                 F f;
                 bool active;
             public:
-                constexpr ScopeGuard(F f) : f(std::move(f)), active(true) { }
-                ~ScopeGuard() { if (active) { f(); } }
-                void Cancel() { active = false; }
+                constexpr ALWAYS_INLINE ScopeGuard(F f) : f(std::move(f)), active(true) { }
+                ALWAYS_INLINE ~ScopeGuard() { if (active) { f(); } }
+                ALWAYS_INLINE void Cancel() { active = false; }
 
-                ScopeGuard(ScopeGuard&& rhs) : f(std::move(rhs.f)), active(rhs.active) {
+                ALWAYS_INLINE ScopeGuard(ScopeGuard&& rhs) : f(std::move(rhs.f)), active(rhs.active) {
                     rhs.Cancel();
                 }
         };
 
         template<class F>
-        constexpr ScopeGuard<F> MakeScopeGuard(F f) {
+        constexpr ALWAYS_INLINE ScopeGuard<F> MakeScopeGuard(F f) {
             return ScopeGuard<F>(std::move(f));
         }
 
         enum class ScopeGuardOnExit {};
 
         template <typename F>
-        constexpr ScopeGuard<F> operator+(ScopeGuardOnExit, F&& f) {
+        constexpr ALWAYS_INLINE ScopeGuard<F> operator+(ScopeGuardOnExit, F&& f) {
             return ScopeGuard<F>(std::forward<F>(f));
         }
 

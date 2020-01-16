@@ -557,11 +557,11 @@ namespace ams::util {
             }
 
             static constexpr Derived &GetParent(IntrusiveListNode &node) {
-                return static_cast<Derived &>(util::GetParentReference<Member>(&node));
+                return util::GetParentReference<Member, Derived>(&node);
             }
 
             static constexpr Derived const &GetParent(IntrusiveListNode const &node) {
-                return static_cast<const Derived &>(util::GetParentReference<Member>(&node));
+                return util::GetParentReference<Member, Derived>(&node);
             }
     };
 

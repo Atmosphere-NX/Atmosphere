@@ -34,6 +34,7 @@
 #define ALIGNED(algn) __attribute__((aligned(algn)))
 #define NORETURN      __attribute__((noreturn))
 #define WEAK_SYMBOL   __attribute__((weak))
+#define ALWAYS_INLINE_LAMBDA __attribute__((always_inline))
 #define ALWAYS_INLINE inline __attribute__((always_inline))
 #define NOINLINE      __attribute__((noinline))
 

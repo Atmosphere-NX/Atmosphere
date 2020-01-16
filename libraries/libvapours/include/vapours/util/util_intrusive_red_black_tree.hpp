@@ -257,11 +257,11 @@ namespace ams::util {
             }
 
             static constexpr Derived *GetParent(IntrusiveRedBlackTreeNode *node) {
-                return static_cast<Derived *>(util::GetParentPointer<Member>(node));
+                return util::GetParentPointer<Member, Derived>(node);
             }
 
             static constexpr Derived const *GetParent(IntrusiveRedBlackTreeNode const *node) {
-                return static_cast<const Derived *>(util::GetParentPointer<Member>(node));
+                return util::GetParentPointer<Member, Derived>(node);
             }
     };
 
