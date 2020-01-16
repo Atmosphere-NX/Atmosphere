@@ -91,8 +91,36 @@ dist: all
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)
+	rm -rf atmosphere-$(AMSVER)-debug
+	mkdir atmosphere-$(AMSVER)-debug
+	cp fusee/fusee-primary/fusee-primary.elf atmosphere-$(AMSVER)-debug/fusee-primary.elf
+	cp fusee/fusee-mtc/fusee-mtc.elf atmosphere-$(AMSVER)-debug/fusee-mtc.elf
+	cp fusee/fusee-secondary/fusee-secondary.elf atmosphere-$(AMSVER)-debug/fusee-secondary.elf
+	cp sept/sept-primary/sept-primary.elf atmosphere-$(AMSVER)-debug/sept-primary.elf
+	cp sept/sept-secondary/sept-secondary.elf atmosphere-$(AMSVER)-debug/sept-secondary.elf
+	cp sept/sept-secondary/key_derivation/key_derivation.elf atmosphere-$(AMSVER)-debug/sept-secondary-key-derivation.elf
+	cp exosphere/exosphere.elf atmosphere-$(AMSVER)-debug/exosphere.elf
+	cp exosphere/lp0fw/lp0fw.elf atmosphere-$(AMSVER)-debug/lp0fw.elf
+	cp exosphere/sc7fw/sc7fw.elf atmosphere-$(AMSVER)-debug/sc7fw.elf
+	cp exosphere/rebootstub/rebootstub.elf atmosphere-$(AMSVER)-debug/rebootstub.elf
+	cp mesosphere/kernel_ldr/kernel_ldr.elf atmosphere-$(AMSVER)-debug/kernel_ldr.elf
+	cp stratosphere/ams_mitm/ams_mitm.elf atmosphere-$(AMSVER)-debug/ams_mitm.elf
+	cp stratosphere/boot/boot.elf atmosphere-$(AMSVER)-debug/boot.elf
+	cp stratosphere/boot2/boot2.elf atmosphere-$(AMSVER)-debug/boot2.elf
+	cp stratosphere/creport/creport.elf atmosphere-$(AMSVER)-debug/creport.elf
+	cp stratosphere/dmnt/dmnt.elf atmosphere-$(AMSVER)-debug/dmnt.elf
+	cp stratosphere/eclct.stub/eclct.stub.elf atmosphere-$(AMSVER)-debug/eclct.stub.elf
+	cp stratosphere/fatal/fatal.elf atmosphere-$(AMSVER)-debug/fatal.elf
+	cp stratosphere/loader/loader.elf atmosphere-$(AMSVER)-debug/loader.elf
+	cp stratosphere/pm/pm.elf atmosphere-$(AMSVER)-debug/pm.elf
+	cp stratosphere/ro/ro.elf atmosphere-$(AMSVER)-debug/ro.elf
+	cp stratosphere/sm/sm.elf atmosphere-$(AMSVER)-debug/sm.elf
+	cp stratosphere/spl/spl.elf atmosphere-$(AMSVER)-debug/spl.elf
+	cd atmosphere-$(AMSVER)-debug; zip -r ../atmosphere-$(AMSVER)-debug.zip ./*; cd ../;
+	rm -r atmosphere-$(AMSVER)-debug
 	mkdir out
 	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER).zip
+	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER)-debug.zip
 	cp fusee/fusee-primary/fusee-primary.bin out/fusee-primary.bin
 
 
