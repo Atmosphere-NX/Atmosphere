@@ -17,8 +17,7 @@
 #pragma once
 #include "../../utils.h"
 
-#define CAR_BASE 0x60006000
-#define MAKE_CAR_REG(n) MAKE_REG32(CAR_BASE + n)
+#define MEMORY_MAP_PA_CAR           0x60006000ul
 
 #define CLK_L_SDMMC1    (1 << 14)
 #define CLK_L_SDMMC2    (1 << 9)
@@ -485,9 +484,7 @@ typedef struct {
     uint32_t sdmmc4_div_clk_shaper_ctrl;            /* _SDMMC4_DIV_CLK_SHAPER_CTRL_0, 0x744 */    
 } tegra_car_t;
 
-static inline volatile tegra_car_t *car_get_regs(void) {
-    return (volatile tegra_car_t *)CAR_BASE;
-}
+void car_set_regs(uintptr_t regs);
 
 void clk_enable(CarDevice dev);
 void clk_disable(CarDevice dev);

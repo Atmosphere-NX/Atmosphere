@@ -18,8 +18,10 @@
 
 #include "../../gicv2.h"
 
-// For both guest and host
-#define MAX_NUM_REGISTERED_INTERRUPTS 512
+#define MEMORY_MAP_PA_GICD              0x50041000ull
+#define MEMORY_MAP_PA_GICC              0x50042000ull
+#define MEMORY_MAP_PA_GICH              0x50044000ull
+#define MEMORY_MAP_PA_GICV              0x50046000ull
 
 #define GIC_IRQID_MAINTENANCE           25
 #define GIC_IRQID_NS_PHYS_HYP_TIMER     26
@@ -37,11 +39,3 @@
 #define GIC_IRQID_UARTB                 (32 + 37)
 #define GIC_IRQID_UARTC                 (32 + 46)
 #define GIC_IRQID_UARTD                 (32 + 90)
-
-static inline void initGicV2Pointers(ArmGicV2 *gic)
-{
-    gic->gicd = (volatile ArmGicV2Distributor *)0x50041000ull;
-    gic->gicc = (volatile ArmGicV2Controller *)0x50042000ull;
-    gic->gich = (volatile ArmGicV2VirtualInterfaceController *)0x50044000ull;
-    gic->gicv = (volatile ArmGicV2Controller *)0x50046000ull;
-}

@@ -18,8 +18,7 @@
 
 #include <stdint.h>
 
-#define PINMUX_BASE 0x70003000
-#define MAKE_PINMUX_REG(n) MAKE_REG32(PINMUX_BASE + n)
+#define MEMORY_MAP_PA_PINMUX        0x70003000ul
 
 #define PINMUX_TRISTATE             (1 << 4)
 #define PINMUX_PARKED               (1 << 5)
@@ -30,7 +29,7 @@
 #define PINMUX_SELECT_FUNCTION0     0
 #define PINMUX_SELECT_FUNCTION1     1
 #define PINMUX_SELECT_FUNCTION2     2
-#define PINMUX_SELECT_FUNCTION3     3    
+#define PINMUX_SELECT_FUNCTION3     3
 #define PINMUX_DRIVE_1X             (0 << 13)
 #define PINMUX_DRIVE_2X             (1 << 13)
 #define PINMUX_DRIVE_3X             (2 << 13)
@@ -204,7 +203,14 @@ typedef struct {
     uint32_t pz5;
 } tegra_pinmux_t;
 
+extern uintptr_t g_pinmuxRegs;
+
+static inline void pinmux_set_regs(uintptr_t regs)
+{
+    g_pinmuxRegs = regs;
+}
+
 static inline volatile tegra_pinmux_t *pinmux_get_regs(void)
 {
-    return (volatile tegra_pinmux_t *)PINMUX_BASE;
+    return (volatile tegra_pinmux_t *)g_pinmuxRegs;
 }

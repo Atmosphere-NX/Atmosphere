@@ -19,6 +19,8 @@
 #include "../../utils.h"
 #include "interrupt_config.h"
 
+#define MEMORY_MAP_PA_UART      0x09000000ull
+
 // AMBA PL011 driver
 // Originally from
 /*
@@ -56,10 +58,10 @@ typedef struct PL011UartRegisters {
 } PL011UartRegisters;
 
 // Data status bits
-#define UART_DATA_ERROR_MASK        0x0F00
+#define PL011_DATA_ERROR_MASK       0x0F00
 
 // Status reg bits
-#define UART_STATUS_ERROR_MASK      0x0F
+#define PL011_STATUS_ERROR_MASK     0x0F
 
 // Errors
 #define PL011_OE                    BIT(3)  // Overrun error
@@ -128,6 +130,7 @@ typedef struct PL011UartRegisters {
 
 #define UART_CLK_IN_HZ              1
 
+void uartSetRegisterBase(uintptr_t regBase);
 void uartInit(UartDevice dev, u32 baudRate, u32 flags);
 void uartWriteData(UartDevice dev, const void *buffer, size_t size);
 void uartReadData(UartDevice dev, void *buffer, size_t size);

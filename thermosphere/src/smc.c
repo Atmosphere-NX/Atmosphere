@@ -2,13 +2,11 @@
 #include "smc.h"
 #include "core_ctx.h"
 #include "caches.h"
+#include "memory_map.h"
 
 // Currently in exception_vectors.s:
 extern const u32 doSmcIndirectCallImpl[];
 extern const u32 doSmcIndirectCallImplSmcInstructionOffset, doSmcIndirectCallImplSize;
-
-// start.s
-void start2(u64 contextId);
 
 void doSmcIndirectCall(ExceptionStackFrame *frame, u32 smcId)
 {
@@ -29,7 +27,7 @@ static void doCpuOnHook(ExceptionStackFrame *frame, u32 smcId)
     // frame->x[3] is contextId
     if (cpuId < 4) {
         g_coreCtxs[cpuId].kernelEntrypoint = ep;
-        frame->x[2] = (uintptr_t)start2;
+        frame->x[2] = g_loadImageLayout.startPa + 4;
     }
 }
 

@@ -62,6 +62,11 @@ typedef enum ReadWriteDirection {
     DIRECTION_READWRITE = DIRECTION_READ | DIRECTION_WRITE,
 } ReadWriteDirection;
 
+static inline void __wfi(void)
+{
+    __asm__ __volatile__ ("wfi" ::: "memory");
+}
+
 static inline void __wfe(void)
 {
     __asm__ __volatile__ ("wfe" ::: "memory");
@@ -112,23 +117,39 @@ static inline void __isb(void)
 
 static inline void __tlb_invalidate_el2(void)
 {
+    __asm__ __volatile__ ("tlbi alle2is" ::: "memory");
+}
+
+static inline void __tlb_invalidate_el2_local(void)
+{
     __asm__ __volatile__ ("tlbi alle2" ::: "memory");
 }
 
-static inline void __tlb_invalidate_el1_stage12(void)
+static inline void __tlb_invalidate_el1_stage12_local(void)
 {
     __asm__ __volatile__ ("tlbi alle1" ::: "memory");
 }
 
 bool overlaps(u64 as, u64 ae, u64 bs, u64 be);
 
-static inline uintptr_t get_physical_address_el1_stage12(bool *valid, const uintptr_t el1_vaddr) {
+// Assumes addr is valid, must be called with interrupts masked
+static inline uintptr_t va2pa(const void *el2_vaddr) {
+    // NOTE: interrupt must be disabled when calling this func
+    // For debug purposes only
+    uintptr_t PAR;
+    uintptr_t va = (uintptr_t)el2_vaddr;
+    __asm__ __volatile__ ("at s1e2r, %0" :: "r"(va));
+    __asm__ __volatile__ ("mrs %0, par_el1" : "=r"(PAR));
+    return (PAR & MASK2L(47, 12)) | (va & MASKL(12));
+}
+
+static inline uintptr_t get_physical_address_el1_stage12(bool *valid, uintptr_t el1_vaddr) {
     // NOTE: interrupt must be disabled when calling this func
     uintptr_t PAR;
     __asm__ __volatile__ ("at s12e1r, %0" :: "r"(el1_vaddr)); // note: we don't care whether it's writable in EL1&0 translation regime
     __asm__ __volatile__ ("mrs %0, par_el1" : "=r"(PAR));
     *valid = (PAR & 1) == 0ull;
-    return (PAR & 1) ? 0ull : (PAR & MASK2L(40, 12)) | ((uintptr_t)el1_vaddr & MASKL(12));
+    return (PAR & 1) ? 0ull : (PAR & MASK2L(47, 12)) | ((uintptr_t)el1_vaddr & MASKL(12));
 }
 
 bool readEl1Memory(void *dst, uintptr_t addr, size_t size);

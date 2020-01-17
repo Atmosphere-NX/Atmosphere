@@ -19,6 +19,13 @@
 #include "gpio.h"
 #include "../../utils.h"
 
+static uintptr_t g_gpioRegs;
+
+static inline volatile tegra_gpio_t *gpio_get_regs(void)
+{
+    return (volatile tegra_gpio_t *)g_gpioRegs;
+}
+
 static volatile tegra_gpio_bank_t *gpio_get_bank(uint32_t pin) {
     volatile tegra_gpio_t *gpio = gpio_get_regs();
     uint32_t bank_number = (pin >> GPIO_BANK_SHIFT);
@@ -65,6 +72,11 @@ static bool gpio_simple_register_get(uint32_t pin, uint32_t offset) {
 
     /* Convert the given value to a boolean. */
     return !!(cluster[port] & mask);
+}
+
+void gpio_set_regs(uintptr_t regs)
+{
+    g_gpioRegs = regs;
 }
 
 void gpio_configure_mode(uint32_t pin, uint32_t mode) {

@@ -6,14 +6,22 @@ PHDRS
     main PT_LOAD;
 }
 
+MEMORY
+{
+    mainVa  : ORIGIN = 0x7FFFE10000, LENGTH = 2M - 64K
+}
+
 SECTIONS
 {
-    PROVIDE(__start__ = ORIGIN(main));
-    . = __start__;
+    __start_pa__        = ABSOLUTE(ORIGIN(main));
+    __temp_pa__         = ABSOLUTE(ORIGIN(temp));
+    __max_image_size__  = ABSOLUTE(LENGTH(main));
+    __max_temp_size__   = ABSOLUTE(LENGTH(temp) - 0x1000);
 
     .text :
     {
         . = ALIGN(8);
+        __start__ = ABSOLUTE(.);
         KEEP(*(.crt0*));
         *(.text.unlikely .text.*_unlikely .text.unlikely.*)
         *(.text.exit .text.exit.*)
@@ -26,37 +34,37 @@ SECTIONS
         __vectors_end__   = ABSOLUTE(.);
         ASSERT(__vectors_end__ - __vectors_start__ <= 0x800, "Exception vectors section should be max 0x800 in size!");
         . = ALIGN(8);
-    } >main :main
+    } >mainVa AT>main :main
 
     .init :
     {
         KEEP( *(.init) )
         . = ALIGN(8);
-    } >main :main
+    } >mainVa AT>main :main
 
     .plt :
     {
         *(.plt)
         *(.iplt)
         . = ALIGN(8);
-    } >main :main
+    } >mainVa AT>main :main
 
 
     .fini :
     {
         KEEP( *(.fini) )
         . = ALIGN(8);
-    } >main :main
+    } >mainVa AT>main :main
 
     .rodata :
     {
         *(.rodata .rodata.* .gnu.linkonce.r.*)
         SORT(CONSTRUCTORS)
         . = ALIGN(8);
-    } >main :main
+    } >mainVa AT>main :main
 
-    .got            : { __got_start__ = ABSOLUTE(.); *(.got) *(.igot) } >main :main
-    .got.plt        : { *(.got.plt)  *(.igot.plt)  __got_end__ = ABSOLUTE(.);} >main :main
+    .got            : { __got_start__ = ABSOLUTE(.); *(.got) *(.igot) } >mainVa AT>main :main
+    .got.plt        : { *(.got.plt)  *(.igot.plt)  __got_end__ = ABSOLUTE(.);} >mainVa AT>main :main
 
     .preinit_array :
     {
@@ -64,8 +72,9 @@ SECTIONS
         PROVIDE (__preinit_array_start = ABSOLUTE(.));
         KEEP (*(.preinit_array))
         PROVIDE (__preinit_array_end = ABSOLUTE(.));
+        ASSERT(__preinit_array_end == __preinit_array_start, ".preinit_array not empty!");
         . = ALIGN(8);
-    } >main :main
+    } >mainVa AT>main :main
 
     .init_array :
     {
@@ -73,7 +82,8 @@ SECTIONS
         KEEP (*(SORT(.init_array.*)))
         KEEP (*(.init_array))
         PROVIDE (__init_array_end = ABSOLUTE(.));
-    } >main :main
+        ASSERT(__init_array_end == __init_array_start, ".init_array not empty!");
+    } >mainVa AT>main :main
 
     .fini_array :
     {
@@ -83,7 +93,8 @@ SECTIONS
         KEEP (*(SORT(.fini_array.*)))
         PROVIDE (__fini_array_end = ABSOLUTE(.));
         . = ALIGN(8);
-    } >main :main
+        ASSERT(__fini_array_end == __fini_array_start, ".fini_array not empty!");
+    } >mainVa AT>main :main
 
     .ctors :
     {
@@ -93,7 +104,7 @@ SECTIONS
         KEEP (*(SORT(.ctors.*)))
         KEEP (*(.ctors))
         . = ALIGN(8);
-    } >main :main
+    } >mainVa AT>main :main
 
     .dtors ALIGN(8) :
     {
@@ -103,56 +114,54 @@ SECTIONS
         KEEP (*(SORT(.dtors.*)))
         KEEP (*(.dtors))
         . = ALIGN(8);
-    } >main :main
+    } >mainVa AT>main :main
 
     .data ALIGN(8) :
     {
         *(.data .data.* .gnu.linkonce.d.*)
         CONSTRUCTORS
         . = ALIGN(8);
-    } >main :main
+    } >mainVa AT>main :main
 
 
-    .eh_frame_hdr     : { *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) } >main :main
-    .eh_frame         : { KEEP (*(.eh_frame)) *(.eh_frame.*) } >main :main
-    .gcc_except_table : { *(.gcc_except_table .gcc_except_table.*) } >main :main
-    .gnu_extab        : { *(.gnu_extab*) } >main :main
-    .exception_ranges : { *(.exception_ranges .exception_ranges*) } >main :main
+    .eh_frame_hdr     : { *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) } >mainVa AT>main :main
+    .eh_frame         : { KEEP (*(.eh_frame)) *(.eh_frame.*) } >mainVa AT>main :main
+    .gcc_except_table : { *(.gcc_except_table .gcc_except_table.*) } >mainVa AT>main :main
+    .gnu_extab        : { *(.gnu_extab*) } >mainVa AT>main :main
+    .exception_ranges : { *(.exception_ranges .exception_ranges*) } >mainVa AT>main :main
 
-    .dynamic           : { *(.dynamic) } >main :main
-    .interp            : { *(.interp) } >main :main
-    .note.gnu.build-id : { *(.note.gnu.build-id) } >main :main
-    .hash              : { *(.hash) } >main :main
-    .gnu.hash          : { *(.gnu.hash) } >main :main
-    .gnu.version       : { *(.gnu.version) } >main :main
-    .gnu.version_d     : { *(.gnu.version_d) } >main :main
-    .gnu.version_r     : { *(.gnu.version_r) } >main :main
-    .dynsym            : { *(.dynsym) } >main :main
-    .dynstr            : { *(.dynstr) } >main :main
-    .rela.dyn          : { *(.rela.*); __main_end__ = ABSOLUTE(.);} >main :main
+    .dynamic           : { *(.dynamic) } >mainVa AT>main :main
+    .interp            : { *(.interp) } >mainVa AT>main :main
+    .note.gnu.build-id : { *(.note.gnu.build-id) } >mainVa AT>main :main
+    .hash              : { *(.hash) } >mainVa AT>main :main
+    .gnu.hash          : { *(.gnu.hash) } >mainVa AT>main :main
+    .gnu.version       : { *(.gnu.version) } >mainVa AT>main :main
+    .gnu.version_d     : { *(.gnu.version_d) } >mainVa AT>main :main
+    .gnu.version_r     : { *(.gnu.version_r) } >mainVa AT>main :main
+    .dynsym            : { *(.dynsym) } >mainVa AT>main :main
+    .dynstr            : { *(.dynstr) } >mainVa AT>main :main
+    .rela.dyn          : { *(.rela.*); __main_end__ = ABSOLUTE(.);} >mainVa AT>main :main
 
     .bss (NOLOAD) :
     {
-        . = ALIGN(8);
+        . = ALIGN(0x1000);
         __bss_start__  = ABSOLUTE(.);
         *(.dynbss)
         *(.bss .bss.* .gnu.linkonce.b.*)
         *(COMMON)
         . = ALIGN(8);
-        __end__ = ABSOLUTE(.);
-    } >main :NONE
-
-    .temp (NOLOAD) :
-    {
-        . = ALIGN(0x1000);
-        __stacks_top__       = ABSOLUTE(. + 0x2000);
-        __crash_stacks_top__ = ABSOLUTE(. + 0x3000);
-        . += 0x3000;
-        __temp_bss_start__ = ABSOLUTE(.);
+        __real_bss_end__ = ABSOLUTE(.);
+        __image_size__ = ABSOLUTE(__real_bss_end__ - __start__);
+        ASSERT(__image_size__ <= __max_image_size__, "Image too big!");
+        /*
+            The logic here: tempbss *additional pages* are at a very different PA, but
+            we can allow .tempbss to use unused "non-temporary" BSS space. Their VAs are
+            contiguous.
+        */
         *(.tempbss .tempbss.*)
-        __temp_bss_end__ = ABSOLUTE(.);
-        . = ALIGN(0x1000);
-    } >temp :NONE
+        __bss_end__ = ABSOLUTE(.);
+        __temp_size__ = ABSOLUTE(__bss_end__ - __real_bss_end__);
+    } >mainVa :NONE
 
 
 

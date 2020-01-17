@@ -138,7 +138,7 @@ bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode);
 void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size);
 void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl);
 
-void exceptionEnterInterruptibleHypervisorCode(ExceptionStackFrame *frame);
+void exceptionEnterInterruptibleHypervisorCode(void);
 
 void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
 void handleSameElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);

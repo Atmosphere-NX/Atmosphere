@@ -28,7 +28,7 @@ void dumpUnhandledDataAbort(DataAbortIss dabtIss, u64 far, const char *msg)
 {
     char s1[64], s2[32], s3[64] = "";
     (void)s1; (void)s2; (void)s3;
-    sprintf(s1, "Unhandled %s %s", msg , dabtIss.wnr ? "write" : "read");
+    sprintf(s1, "Unhandled%s %s", msg , dabtIss.wnr ? "write" : "read");
     if (dabtIss.fnv) {
         sprintf(s2, "<unk>");
     } else {
@@ -55,14 +55,14 @@ void handleLowerElDataAbortException(ExceptionStackFrame *frame, ExceptionSyndro
         dumpUnhandledDataAbort(dabtIss, far, "");
     }
 
-    if (farpg == (uintptr_t)g_irqManager.gic.gicd) {
+    if (farpg == MEMORY_MAP_PA_GICD) {
         handleVgicdMmio(frame, dabtIss, far & 0xFFF);
-    } else if (farpg == (uintptr_t)g_irqManager.gic.gich) {
-        dumpUnhandledDataAbort(dabtIss, far, "GICH");
+    } else if (farpg == MEMORY_MAP_PA_GICH) {
+        dumpUnhandledDataAbort(dabtIss, far, " GICH");
     } else {
-        dumpUnhandledDataAbort(dabtIss, far, "(fallback)");
+        dumpUnhandledDataAbort(dabtIss, far, "");
     }
 
-    // Skip instruction anyway?
+    // Skip instruction anyway
     skipFaultingInstruction(frame, esr.il == 0 ? 2 : 4);
 }

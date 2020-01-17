@@ -17,16 +17,15 @@
 #pragma once
 #include <stdint.h>
 
-#define GPIO_BASE  0x6000D000
-#define MAKE_GPIO_REG(n) MAKE_REG32(GPIO_BASE + n)
+#define MEMORY_MAP_PA_GPIO      0x6000D000ul
 
 #define TEGRA_GPIO_PORTS        4
 #define TEGRA_GPIO_BANKS        8
-#define GPIO_BANK_SHIFT         5  
+#define GPIO_BANK_SHIFT         5
 #define GPIO_PORT_SHIFT         3
 #define GPIO_PORT_MASK          0x03
 #define GPIO_PIN_MASK           0x07
-    
+
 typedef enum {
     TEGRA_GPIO_PORT_A = 0,
     TEGRA_GPIO_PORT_B = 1,
@@ -85,11 +84,6 @@ typedef struct {
     tegra_gpio_bank_t bank[TEGRA_GPIO_BANKS];
 } tegra_gpio_t;
 
-static inline volatile tegra_gpio_t *gpio_get_regs(void)
-{
-    return (volatile tegra_gpio_t *)GPIO_BASE;
-}
-
 #define TEGRA_GPIO(port, offset) \
     ((TEGRA_GPIO_PORT_##port * 8) + offset)
 
@@ -117,6 +111,7 @@ static inline volatile tegra_gpio_t *gpio_get_regs(void)
 #define GPIO_LCD_BL_EN                  TEGRA_GPIO(V, 1)
 #define GPIO_LCD_BL_RST                 TEGRA_GPIO(V, 2)
 
+void gpio_set_regs(uintptr_t regs);
 void gpio_configure_mode(uint32_t pin, uint32_t mode);
 void gpio_configure_direction(uint32_t pin, uint32_t dir);
 void gpio_write(uint32_t pin, uint32_t value);

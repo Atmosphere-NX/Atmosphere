@@ -15,13 +15,25 @@
 #include "irq.h"
 #include "transport_interface.h"
 
-extern const u8 __start__[];
+#include "memory_map.h"
+#include "mmu.h"
 
 static void loadKernelViaSemihosting(void)
 {
+    // Note: !! hardcoded addresses !!
     size_t len = 1<<20; // max len
-    uintptr_t buf = (uintptr_t)__start__ + (1<<20);
+    uintptr_t buf = 0x60000000 + (1<<20);
+
     long handle = -1, ret;
+
+    u64 *mmuTable = (u64 *)MEMORY_MAP_VA_TTBL;
+    mmu_map_block_range(
+        1, mmuTable, 0x40000000, 0x40000000, 0x40000000,
+        MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | MMU_PTE_BLOCK_MEMTYPE(MEMORY_MAP_MEMTYPE_NORMAL_UNCACHEABLE)
+    );
+
+    __tlb_invalidate_el2();
+    __dsb();
 
     DEBUG("Loading kernel via semihosted file I/O... ");
     handle = semihosting_file_open("test_kernel.bin", FOPEN_MODE_RB);
@@ -35,6 +47,11 @@ static void loadKernelViaSemihosting(void)
 
     DEBUG("OK!\n");
     semihosting_file_close(handle);
+
+    mmu_unmap_range(1, mmuTable, 0x40000000, 0x40000000);
+    __tlb_invalidate_el2();
+    __dsb();
+
     currentCoreCtx->kernelEntrypoint = buf;
 }
 

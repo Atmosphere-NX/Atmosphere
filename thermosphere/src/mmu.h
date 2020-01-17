@@ -140,10 +140,6 @@
 #define VTCR_EL2_RSVD       BIT(31)
 #define TCR_EL3_RSVD        (BIT(31) | BIT(23))
 
-// We define those:
-#define ATTRIB_MEMTYPE_NORMAL MMU_PTE_BLOCK_MEMTYPE(MMU_MT_NORMAL)
-#define ATTRIB_MEMTYPE_DEVICE MMU_PTE_BLOCK_MEMTYPE(MMU_MT_DEVICE_NGNRE)
-
 static inline void mmu_init_table(uintptr_t *tbl, size_t num_entries) {
     for(size_t i = 0; i < num_entries; i++) {
         tbl[i] = MMU_PTE_TYPE_FAULT;

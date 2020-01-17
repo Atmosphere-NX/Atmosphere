@@ -20,6 +20,8 @@
 #include "../../utils.h"
 #include "interrupt_config.h"
 
+#define MEMORY_MAP_PA_UART      0x70006000ul
+
 /* UART devices */
 typedef enum UartDevice {
     UART_A = 0,
@@ -191,6 +193,7 @@ typedef struct {
     u32 asr;
 } tegra_uart_t;
 
+void uartSetRegisterBase(uintptr_t regBase);
 void uartInit(UartDevice dev, u32 baud, u32 flags);
 void uartWriteData(UartDevice dev, const void *buffer, size_t size);
 void uartReadData(UartDevice dev, void *buffer, size_t size);

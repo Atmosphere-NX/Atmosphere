@@ -15,12 +15,10 @@
  */
 
 #include "core_ctx.h"
-#include "utils.h"
+#include "memory_map.h"
 
 // start.s
 extern uintptr_t g_initialKernelEntrypoint;
-
-extern u8 __stacks_top__[], __crash_stacks_top__[];
 
 static atomic_uint g_activeCoreMask = 0;
 
@@ -34,11 +32,11 @@ CoreCtx g_coreCtxs[4] = {
 
 void coreCtxInit(u32 coreId, bool isBootCore, u64 argument)
 {
-    size_t crashStackSize = (__crash_stacks_top__ - __stacks_top__) / 4;
+    size_t crashStackSize = 0x1000 / 4;
     currentCoreCtx = &g_coreCtxs[coreId];
     currentCoreCtx->isBootCore = isBootCore;
     currentCoreCtx->kernelArgument = argument;
-    currentCoreCtx->crashStack = __crash_stacks_top__ - crashStackSize * coreId;
+    currentCoreCtx->crashStack = (u8 *)(MEMORY_MAP_VA_CRASH_STACKS_TOP - crashStackSize * coreId);
     if (isBootCore && currentCoreCtx->kernelEntrypoint == 0) {
         currentCoreCtx->kernelEntrypoint = g_initialKernelEntrypoint;
     }

@@ -69,7 +69,6 @@ CFLAGS	:= \
 	-fstrict-volatile-bitfields \
 	-fno-unwind-tables \
 	-std=gnu11 \
-	-Werror \
 	-Wall \
 	-Wno-main \
 	$(ARCH) $(DEFINES)
@@ -143,10 +142,11 @@ all: $(BUILD)
 ifeq ($(PLATFORM), qemu)
 
 export QEMU := qemu-system-aarch64
+#export QEMU := ~/qemu/aarch64-softmmu/qemu-system-aarch64
 
 QEMUFLAGS :=	-nographic -machine virt,virtualization=on,accel=tcg,gic-version=2 -cpu cortex-a57 -smp 4 -m 1024\
 				-kernel thermosphere.elf -d unimp,guest_errors -semihosting-config enable,target=native\
-				-chardev stdio,id=uart -serial chardev:uart -monitor none
+				-chardev stdio,id=uart -serial chardev:uart -monitor tcp:localhost:3333,server,nowait
 
 qemu: all
 	@$(QEMU) $(QEMUFLAGS)
