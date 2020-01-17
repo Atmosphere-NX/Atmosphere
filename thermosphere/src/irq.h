@@ -21,6 +21,7 @@
 #include "exceptions.h"
 #include "utils.h"
 #include "platform/interrupt_config.h"
+#include "memory_map.h"
 
 #define IRQ_PRIORITY_HOST       0
 #define IRQ_PRIORITY_GUEST      1
@@ -29,13 +30,11 @@
 
 typedef struct IrqManager {
     RecursiveSpinlock lock;
-    ArmGicV2 gic;
     u16 numSharedInterrupts;
     u8 priorityShift;
     u8 numPriorityLevels;
     u8 numCpuInterfaces;
     u8 numListRegisters;
-    // Note: we don't store interrupt handlers since we will handle some SGI + uart interrupt(s)...
 } IrqManager;
 
 typedef enum ThermosphereSgi {
@@ -45,6 +44,10 @@ typedef enum ThermosphereSgi {
 
     ThermosphereSgi_Max,
 } ThermosphereSgi;
+
+static volatile ArmGicV2Distributor *const gicd = (volatile ArmGicV2Distributor *)MEMORY_MAP_VA_GICD;
+static volatile ArmGicV2Controller *const gicc = (volatile ArmGicV2Controller *)MEMORY_MAP_VA_GICC;
+static volatile ArmGicV2VirtualInterfaceController *const gich = (volatile ArmGicV2VirtualInterfaceController *)MEMORY_MAP_VA_GICH;
 
 extern IrqManager g_irqManager;
 
@@ -56,17 +59,17 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32);
 
 static inline void generateSgiForAllOthers(ThermosphereSgi id)
 {
-    g_irqManager.gic.gicd->sgir = (1 << 24) | ((u32)id & 0xF);
+    gicd->sgir = (1 << 24) | ((u32)id & 0xF);
 }
 
 static inline void generateSgiForSelf(ThermosphereSgi id)
 {
-    g_irqManager.gic.gicd->sgir = (2 << 24) | ((u32)id & 0xF);
+    gicd->sgir = (2 << 24) | ((u32)id & 0xF);
 }
 
 static inline void generateSgiForList(ThermosphereSgi id, u32 list)
 {
-    g_irqManager.gic.gicd->sgir = (0 << 24) | (list << 16) | ((u32)id & 0xF);
+    gicd->sgir = (0 << 24) | (list << 16) | ((u32)id & 0xF);
 }
 
 static inline void generateSgiForAll(ThermosphereSgi id)

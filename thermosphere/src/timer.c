@@ -16,6 +16,7 @@
 
 #include "timer.h"
 #include "irq.h"
+#include "exceptions.h"
 
 u64 g_timerFreq = 0;
 
@@ -29,10 +30,17 @@ void timerInit(void)
 
 void timerInterruptHandler(void)
 {
-    // Disable timer programming until reprogrammed
+    // Mask the timer interrupt until reprogrammed
     timerConfigure(false, false);
+}
 
-    // For fun
-    DEBUG("EL2 [core %d]: Timer interrupt at %lums\n", (int)currentCoreCtx->coreId, timerGetSystemTimeMs());
-    timerSetTimeoutMs(1000);
+void timerWaitUsecs(u64 us)
+{
+    exceptionEnterInterruptibleHypervisorCode();
+    u64 mask = unmaskIrq();
+    timerSetTimeoutUs(us);
+    do {
+        __wfi();
+    } while (!timerGetInterruptStatus());
+    restoreInterruptFlags(mask);
 }

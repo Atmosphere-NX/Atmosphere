@@ -16,28 +16,28 @@
  */
  
 #include "uart.h"
-#include "timers.h"
 #include "pinmux.h"
 #include "gpio.h"
 #include "car.h"
 #include "../../irq.h"
+#include "../../timer.h"
 
-#define UART_BASE 0x70006000
+static uintptr_t g_uartRegBase;
 
 static inline volatile tegra_uart_t *uartGetRegisters(UartDevice dev) 
 {
     static const size_t offsets[] = { 0, 0x40, 0x200, 0x300, 0x400 };
-    return (volatile tegra_uart_t *)(UART_BASE + offsets[dev]);
+    return (volatile tegra_uart_t *)(g_uartRegBase + offsets[dev]);
 }
 
 static inline void uartWaitCycles(u32 baud, u32 num)
 {
-    udelay((num * 1000000 + 16 * baud - 1) / (16 * baud));
+    timerWaitUsecs((num * 1000000 + 16 * baud - 1) / (16 * baud));
 }
 
 static inline void uartWaitSyms(u32 baud, u32 num)
 {
-    udelay((num * 1000000 + baud - 1) / baud);
+    timerWaitUsecs((num * 1000000 + baud - 1) / baud);
 }
 
 static void uartSetPinmuxConfig(UartDevice dev) {
@@ -96,7 +96,7 @@ static void uartReset(UartDevice dev)
 
 
 // This function blocks until the UART device is in the desired state.
-void uartWaitIdle(UartDevice dev, UartVendorStatus status)
+static void uartWaitIdle(UartDevice dev, UartVendorStatus status)
 {
     volatile tegra_uart_t *uart = uartGetRegisters(dev);
 
@@ -107,6 +107,11 @@ void uartWaitIdle(UartDevice dev, UartVendorStatus status)
     if (status & UART_VENDOR_STATE_RX_IDLE) {
         while (uart->lsr & UART_LSR_RDR);
     }
+}
+
+void uartSetRegisterBase(uintptr_t regBase)
+{
+    g_uartRegBase = regBase;
 }
 
 void uartInit(UartDevice dev, u32 baud, u32 flags)

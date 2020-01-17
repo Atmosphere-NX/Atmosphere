@@ -62,7 +62,7 @@ bool writeEl1Memory(uintptr_t addr, const void *src, size_t size)
     memcpy((void *)pa, src, size);
     cacheHandleSelfModifyingCodePoU((const void *)pa, size);
 
-    __tlb_invalidate_el1_stage12(); //FIXME FIXME FIXME
+    __tlb_invalidate_el1_stage12_local(); //FIXME FIXME FIXME
     __dsb_sy();
     __isb();
 

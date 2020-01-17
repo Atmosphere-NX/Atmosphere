@@ -143,11 +143,3 @@ typedef struct ArmGicV2VirtualInterfaceController {
     u8 _0xf4[0x100 - 0xF4];
     ArmGicV2ListRegister lr[64];
 } ArmGicV2VirtualInterfaceController;
-
-
-typedef struct ArmGicV2 {
-    volatile ArmGicV2Distributor *gicd;
-    volatile ArmGicV2Controller *gicc;
-    volatile ArmGicV2VirtualInterfaceController *gich;
-    volatile ArmGicV2Controller *gicv;
-} ArmGicV2;

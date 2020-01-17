@@ -88,9 +88,9 @@
     ldr     x16, [x18, #CORECTX_SCRATCH_OFFSET]
 .endm
 
-.equ    EXCEPTION_TYPE_HOST,            0
-.equ    EXCEPTION_TYPE_GUEST,           1
-.equ    EXCEPTION_TYPE_HOST_CRASH,      2
+#define     EXCEPTION_TYPE_HOST            0
+#define     EXCEPTION_TYPE_GUEST           1
+#define     EXCEPTION_TYPE_HOST_CRASH      2
 
 .macro  EXCEPTION_HANDLER_START name, type
 vector_entry \name
@@ -135,8 +135,15 @@ check_vector_size \name
 vector_base g_thermosphereVectors
 
 /* Current EL, SP0 */
-/* Those are unused by us, except on same-EL double-faults. */
-UNKNOWN_EXCEPTION       _synchSp0
+vector_entry        _synchSp0
+    // Used when we enable the MMU
+    msr     elr_el2, x18
+    // Note: non-broadcasting TLB maintenance op
+    tlbi    alle2
+    dsb     ish
+    isb
+    eret
+check_vector_size   _synchSp0
 
 _unknownException:
     pivot_stack_for_crash

@@ -21,6 +21,7 @@
 #include "platform/interrupt_config.h"
 
 #define SECTONSECS      1000000000ull
+#define SECTOUSECS      1000000ull
 #define SECTOMSECS      1000ull
 
 // All generic timers possibly defined in the Arm architecture:
@@ -61,6 +62,11 @@ static inline u64 timerGetSystemTick(void)
     return GET_SYSREG(TIMER_COUNTER_REG(CURRENT_TIMER));
 }
 
+static inline bool timerGetInterruptStatus(void)
+{
+    return (GET_SYSREG(TIMER_CTL_REG(CURRENT_TIMER)) & TIMER_CTL_ISTATUS) != 0;
+}
+
 static inline u64 timerGetSystemTimeNs(void)
 {
     return timerGetSystemTick() * SECTONSECS / g_timerFreq;
@@ -80,7 +86,6 @@ static inline void timerConfigure(bool enabled, bool interruptMasked)
 
 static inline void timerSetTimeoutTicks(u64 ticks)
 {
-    timerConfigure(true, true);
     SET_SYSREG(TIMER_CVAL_REG(CURRENT_TIMER), timerGetSystemTick() + ticks);
     timerConfigure(true, false);
 }
@@ -94,3 +99,10 @@ static inline void timerSetTimeoutMs(u64 ms)
 {
     timerSetTimeoutTicks(ms * g_timerFreq / SECTOMSECS);
 }
+
+static inline void timerSetTimeoutUs(u64 us)
+{
+    timerSetTimeoutTicks(us * g_timerFreq / SECTOUSECS);
+}
+
+void timerWaitUsecs(u64 us);

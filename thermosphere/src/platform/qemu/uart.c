@@ -28,14 +28,21 @@
 
 //115200
 
+static uintptr_t g_uartRegBase;
+
 static inline volatile PL011UartRegisters *uartGetRegisters(UartDevice dev)
 {
     switch (dev) {
         case UART_A:
-            return (volatile PL011UartRegisters *)0x09000000;
+            return (volatile PL011UartRegisters *)g_uartRegBase;
         default:
             return NULL;
     }
+}
+
+void uartSetRegisterBase(uintptr_t regBase)
+{
+    g_uartRegBase = regBase;
 }
 
 void uartInit(UartDevice dev, u32 baudRate, u32 flags)

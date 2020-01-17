@@ -16,18 +16,16 @@
 
 #include <string.h>
 #include "core_ctx.h"
-#include "platform/memory_map_mmu_cfg.h"
+#include "platform/stage2.h"
+#include "platform/devices.h"
 #include "sysreg.h"
 #include "utils.h"
 
-extern u8 __bss_start__[], __end__[], __temp_bss_start__[], __temp_bss_end__[];
-extern const u32 __vectors_start__[];
+// BSS includes real bss and tmp bss
+extern u8 __bss_start__[], __real_bss_end__[], __bss_end__[];
 
 static void initSysregs(void)
 {
-    // Set VBAR
-    SET_SYSREG(vbar_el2,        (uintptr_t)__vectors_start__);
-
     // Set system to sane defaults, aarch64 for el1, mmu&caches initially disabled for EL1, etc.
     SET_SYSREG(hcr_el2,         0x80000000);
     SET_SYSREG(dacr32_el2,      0xFFFFFFFF);    // unused
@@ -54,12 +52,14 @@ void initSystem(u32 coreId, bool isBootCore, u64 argument)
 
     if (isBootCore) {
         if (!currentCoreCtx->warmboot) {
-            memset(__bss_start__, 0, __end__ - __bss_start__);
+            memset(__bss_start__, 0, __real_bss_end__ - __bss_start__);
         }
 
-        memset(__temp_bss_start__, 0, __temp_bss_end__ - __temp_bss_start__);
+        memset(__real_bss_end__, 0, __bss_end__ - __real_bss_end__);
     }
 
-    configureMemoryMapEnableMmu();
-    configureMemoryMapEnableStage2();
+    stage2ConfigureAndEnable();
+    if (isBootCore) {
+        devicesMapAllExtra();
+    }
 }

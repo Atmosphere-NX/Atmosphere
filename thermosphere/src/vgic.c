@@ -138,7 +138,7 @@ void vgicDebugPrintLrList(void)
     DEBUG("core %u lr [", currentCoreCtx->coreId);
     for (u32 i = 0; i < g_irqManager.numListRegisters; i++) {
         if (g_vgicUsedLrMap[currentCoreCtx->coreId] & BITL(i)) {
-            DEBUG("%u,", g_irqManager.gic.gich->lr[i].virtualId);
+            DEBUG("%u,", gich->lr[i].virtualId);
         } else {
             DEBUG("-,");
         }
@@ -328,7 +328,7 @@ static inline u32 vgicGetDistributorTypeRegister(void)
 {
     // See above comment.
     // Therefore, LSPI = 0, SecurityExtn = 0, rest = from physical distributor
-    return g_irqManager.gic.gicd->typer & 0x7F;
+    return gicd->typer & 0x7F;
 }
 
 static inline u32 vgicGetDistributorImplementerIdentificationRegister(void)
@@ -356,7 +356,7 @@ static void vgicSetInterruptEnabledState(u16 id)
     }
 
     state->enabled = true;
-    g_irqManager.gic.gicd->isenabler[id / 32] = BIT(id % 32);
+    gicd->isenabler[id / 32] = BIT(id % 32);
 }
 
 static void vgicClearInterruptEnabledState(u16 id)
@@ -376,7 +376,7 @@ static void vgicClearInterruptEnabledState(u16 id)
     }
 
     state->enabled = false;
-    g_irqManager.gic.gicd->icenabler[id / 32] = BIT(id % 32);
+    gicd->icenabler[id / 32] = BIT(id % 32);
 }
 
 static inline bool vgicGetInterruptEnabledState(u16 id)
@@ -397,7 +397,7 @@ static void vgicSetInterruptPriorityByte(u16 id, u8 priority)
 
     if (id >= 16) {
         // Ensure we have the correct priority on the physical distributor...
-        g_irqManager.gic.gicd->ipriorityr[id] = IRQ_PRIORITY_GUEST << g_irqManager.priorityShift;
+        gicd->ipriorityr[id] = IRQ_PRIORITY_GUEST << g_irqManager.priorityShift;
     }
 
     VirqState *state = vgicGetVirqState(currentCoreCtx->coreId, id);
@@ -442,7 +442,7 @@ static void vgicSetInterruptTargets(u16 id, u8 coreList)
     }
 
     state->targetList = coreList;
-    g_irqManager.gic.gicd->itargetsr[id] = state->targetList;
+    gicd->itargetsr[id] = state->targetList;
 }
 
 static inline u8 vgicGetInterruptTargets(u16 id)
@@ -464,10 +464,10 @@ static inline void vgicSetInterruptConfigBits(u16 id, u32 config)
     bool newLvl = ((config & 2) << IRQ_CFGR_SHIFT(id)) == 0;
 
     if (state->levelSensitive != newLvl) {
-        u32 cfg = g_irqManager.gic.gicd->icfgr[id / 16];
+        u32 cfg = gicd->icfgr[id / 16];
         cfg &= ~(3 << IRQ_CFGR_SHIFT(id));
         cfg |= (!newLvl ? 3 : 1) << IRQ_CFGR_SHIFT(id);
-        g_irqManager.gic.gicd->icfgr[id / 16] = cfg;
+        gicd->icfgr[id / 16] = cfg;
 
         state->levelSensitive = newLvl;
     }
@@ -530,7 +530,7 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
 {
     size_t sz = BITL(dabtIss.sas);
     u32 val = (u32)(readFrameRegisterZ(frame, dabtIss.srt) & MASKL(8 * sz));
-    uintptr_t addr = (uintptr_t)g_irqManager.gic.gicd + offset;
+    uintptr_t addr = (uintptr_t)gicd + offset;
 
     //DEBUG("gicd write off 0x%03llx sz %lx val %x w%d\n", offset, sz, val, (int)dabtIss.srt);
 
@@ -615,7 +615,7 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
 static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t offset)
 {
     size_t sz = BITL(dabtIss.sas);
-    uintptr_t addr = (uintptr_t)g_irqManager.gic.gicd + offset;
+    uintptr_t addr = (uintptr_t)gicd + offset;
 
     u32 val = 0;
 
@@ -720,9 +720,9 @@ static void vgicCleanupPendingList(void)
 
             // Note: we can't touch PPIs for other cores... but each core will call this function anyway.
             if (id >= 32 || coreId == currentCoreCtx->coreId) {
-                u32 mask = g_irqManager.gic.gicd->ispendr[id / 32] & BIT(id % 32);
+                u32 mask = gicd->ispendr[id / 32] & BIT(id % 32);
                 if (mask == 0) {
-                    g_irqManager.gic.gicd->icactiver[id / 32] = BIT(id % 32);
+                    gicd->icactiver[id / 32] = BIT(id % 32);
                     pending = false;
                 } else {
                     pending = true;
@@ -774,7 +774,7 @@ static void vgicChoosePendingInterrupts(size_t *outNumChosen, VirqState *chosen[
 
 static inline u64 vgicGetElrsrRegister(void)
 {
-    return (u64)g_irqManager.gic.gich->elsr0 | (((u64)g_irqManager.gic.gich->elsr1) << 32);
+    return (u64)gich->elsr0 | (((u64)gich->elsr1) << 32);
 }
 
 static inline bool vgicIsListRegisterAvailable(u32 id)
@@ -794,7 +794,7 @@ static inline volatile ArmGicV2ListRegister *vgicAllocateListRegister(void)
         return NULL;
     } else {
         g_vgicUsedLrMap[currentCoreCtx->coreId] |= BITL(ff - 1);
-        return &g_irqManager.gic.gich->lr[ff - 1];
+        return &gich->lr[ff - 1];
     }
 }
 
@@ -906,7 +906,6 @@ static bool vgicUpdateListRegister(volatile ArmGicV2ListRegister *lr)
 
 void vgicUpdateState(void)
 {
-    volatile ArmGicV2VirtualInterfaceController *gich = g_irqManager.gic.gich;
     u32 coreId = currentCoreCtx->coreId;
 
     // First, put back inactive interrupts into the queue, handle some SGI stuff
@@ -944,14 +943,17 @@ void vgicUpdateState(void)
 
 void vgicMaintenanceInterruptHandler(void)
 {
-    volatile ArmGicV2VirtualInterfaceController *gich = g_irqManager.gic.gich;
-
-    ArmGicV2MaintenanceIntStatRegister misr = g_irqManager.gic.gich->misr;
+    ArmGicV2MaintenanceIntStatRegister misr = gich->misr;
 
     // Force GICV_CTRL to behave like ns-GICC_CTLR, with group 1 being replaced by group 0
     // Ensure we aren't spammed by maintenance interrupts, either.
     if (misr.vgrp0e || misr.vgrp0d || misr.vgrp1e || misr.vgrp1d) {
-        g_irqManager.gic.gicv->ctlr &= BIT(9) | BIT(0);
+        ArmGicV2VmControlRegister vmcr = gich->vmcr;
+        vmcr.cbpr = 0;
+        vmcr.fiqEn = 0;
+        vmcr.ackCtl = 0;
+        vmcr.enableGrp1 = 0;
+        gich->vmcr = vmcr;
     }
 
     if (misr.vgrp0e) {
@@ -990,7 +992,7 @@ void vgicMaintenanceInterruptHandler(void)
 void handleVgicdMmio(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t offset)
 {
     size_t sz = BITL(dabtIss.sas);
-    uintptr_t addr = (uintptr_t)g_irqManager.gic.gicd + offset;
+    uintptr_t addr = (uintptr_t)gicd + offset;
     bool oops = true;
 
     // ipriorityr, itargetsr, *pendsgir are byte-accessible
@@ -1056,7 +1058,7 @@ void vgicInit(void)
                 if (j < 16) {
                     state->enabled = true;
                 } else {
-                    state->levelSensitive = (g_irqManager.gic.gicd->icfgr[j / 16] & (2 << IRQ_CFGR_SHIFT(j % 16))) == 0;
+                    state->levelSensitive = (gicd->icfgr[j / 16] & (2 << IRQ_CFGR_SHIFT(j % 16))) == 0;
                 }
             }
         }
@@ -1073,5 +1075,5 @@ void vgicInit(void)
         .lrenpie = true,
         .en = true,
     };
-    g_irqManager.gic.gich->hcr = hcr;
+    gich->hcr = hcr;
 }
