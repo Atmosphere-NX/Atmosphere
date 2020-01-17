@@ -54,5 +54,5 @@ namespace ams::util {
 
 }
 
-#define SCOPE_GUARD ::ams::util::impl::ScopeGuardOnExit() + [&]()
+#define SCOPE_GUARD ::ams::util::impl::ScopeGuardOnExit() + [&]() ALWAYS_INLINE_LAMBDA
 #define ON_SCOPE_EXIT auto ANONYMOUS_VARIABLE(SCOPE_EXIT_STATE_) = SCOPE_GUARD
