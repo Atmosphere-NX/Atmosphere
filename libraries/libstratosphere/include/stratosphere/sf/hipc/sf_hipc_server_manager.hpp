@@ -102,7 +102,6 @@ namespace ams::sf::hipc {
                         /* Otherwise, we're either a mitm session or a non-mitm session. */
                         if constexpr (IsMitmServer) {
                             /* Custom deleter ensures that nothing goes awry. */
-                            /* TODO: Should this just be a custom wrapper object? */
                             std::shared_ptr<::Service> forward_service = std::move(ServerSession::CreateForwardService());
 
                             /* Get mitm forward session. */

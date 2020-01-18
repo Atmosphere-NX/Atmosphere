@@ -45,7 +45,7 @@ typedef volatile s32 vs32;   ///<  32-bit volatile signed integer.
 typedef volatile s64 vs64;   ///<  64-bit volatile signed integer.
 typedef volatile s128 vs128; ///< 128-bit volatile signed integer.
 
-typedef u32 Result;                 ///< Function error code result type.
+typedef u32 Result;          ///< Function error code result type.
 
 /// Creates a bitmask from a bit number.
 #ifndef BIT

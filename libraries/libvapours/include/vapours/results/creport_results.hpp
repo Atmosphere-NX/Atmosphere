@@ -30,7 +30,7 @@ namespace ams::creport {
     R_DEFINE_ERROR_RESULT(UserBreak,            6);
     R_DEFINE_ERROR_RESULT(DebuggerBreak,        7);
     R_DEFINE_ERROR_RESULT(UndefinedSystemCall,  8);
-    R_DEFINE_ERROR_RESULT(SystemMemoryError,    9);
+    R_DEFINE_ERROR_RESULT(MemorySystemError,    9);
 
     R_DEFINE_ERROR_RESULT(IncompleteReport,     99);
 

@@ -66,7 +66,7 @@ namespace ams::creport {
             }
 
             bool IsUserBreak() const {
-                return this->exception_info.type == svc::DebugExceptionType::UserBreak;
+                return this->exception_info.type == svc::DebugException_UserBreak;
             }
 
             bool OpenProcess(os::ProcessId process_id) {

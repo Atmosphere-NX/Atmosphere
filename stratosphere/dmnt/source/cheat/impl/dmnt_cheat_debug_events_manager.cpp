@@ -54,7 +54,7 @@ namespace ams::dmnt::cheat::impl {
                     size_t target_core = NumCores - 1;
 
                     /* Retrieve correct core for new thread event. */
-                    if (dbg_event.type == svc::DebugEventType::AttachThread) {
+                    if (dbg_event.type == svc::DebugEvent_AttachThread) {
                         u64 out64 = 0;
                         u32 out32 = 0;
                         R_ASSERT(svcGetDebugThreadParam(&out64, &out32, debug_handle, dbg_event.info.attach_thread.thread_id, DebugThreadParam_CurrentCore));
@@ -109,7 +109,7 @@ namespace ams::dmnt::cheat::impl {
                     svc::DebugEventInfo d;
                     size_t target_core = NumCores - 1;
                     while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), cheat_dbg_hnd))) {
-                        if (d.type == svc::DebugEventType::AttachThread) {
+                        if (d.type == svc::DebugEvent_AttachThread) {
                             target_core = GetTargetCore(d, cheat_dbg_hnd);
                         }
                     }

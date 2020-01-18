@@ -68,18 +68,6 @@ namespace ams::ldr {
             return NsoNames[idx];
         }
 
-        struct CreateProcessInfo {
-            char name[12];
-            u32  version;
-            ncm::ProgramId program_id;
-            u64  code_address;
-            u32  code_num_pages;
-            u32  flags;
-            Handle reslimit;
-            u32  system_resource_num_pages;
-        };
-        static_assert(sizeof(CreateProcessInfo) == 0x30, "CreateProcessInfo definition!");
-
         struct ProcessInfo {
             os::ManagedHandle process_handle;
             uintptr_t args_address;
@@ -310,14 +298,14 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result GetCreateProcessInfo(CreateProcessInfo *out, const Meta *meta, u32 flags, Handle reslimit_h) {
+        Result GetCreateProcessParameter(svc::CreateProcessParameter *out, const Meta *meta, u32 flags, Handle reslimit_h) {
             /* Clear output. */
             std::memset(out, 0, sizeof(*out));
 
             /* Set name, version, program id, resource limit handle. */
             std::memcpy(out->name, meta->npdm->program_name, sizeof(out->name) - 1);
             out->version = meta->npdm->version;
-            out->program_id = meta->aci->program_id;
+            out->program_id = static_cast<u64>(meta->aci->program_id);
             out->reslimit = reslimit_h;
 
             /* Set flags. */
@@ -345,7 +333,7 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result DecideAddressSpaceLayout(ProcessInfo *out, CreateProcessInfo *out_cpi, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
+        Result DecideAddressSpaceLayout(ProcessInfo *out, svc::CreateProcessParameter *out_param, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
             /* Clear output. */
             out->args_address = 0;
             out->args_size = 0;
@@ -381,7 +369,7 @@ namespace ams::ldr {
             uintptr_t aslr_start = 0;
             uintptr_t aslr_size  = 0;
             if (hos::GetVersion() >= hos::Version_200) {
-                switch (out_cpi->flags & svc::CreateProcessFlag_AddressSpaceMask) {
+                switch (out_param->flags & svc::CreateProcessFlag_AddressSpaceMask) {
                     case svc::CreateProcessFlag_AddressSpace32Bit:
                     case svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
                         aslr_start = map::AslrBase32Bit;
@@ -399,7 +387,7 @@ namespace ams::ldr {
                 }
             } else {
                 /* On 1.0.0, only 2 address space types existed. */
-                if (out_cpi->flags & svc::CreateProcessFlag_AddressSpace64BitDeprecated) {
+                if (out_param->flags & svc::CreateProcessFlag_AddressSpace64BitDeprecated) {
                     aslr_start = map::AslrBase64BitDeprecated;
                     aslr_size  = map::AslrSize64BitDeprecated;
                 } else {
@@ -412,7 +400,7 @@ namespace ams::ldr {
             /* Set Create Process output. */
             uintptr_t aslr_slide = 0;
             uintptr_t free_size = (aslr_size - total_size);
-            if (out_cpi->flags & svc::CreateProcessFlag_EnableAslr) {
+            if (out_param->flags & svc::CreateProcessFlag_EnableAslr) {
                 /* Nintendo uses MT19937 (not os::GenerateRandomBytes), but we'll just use TinyMT for now. */
                 aslr_slide = os::GenerateRandomU64(free_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
             }
@@ -428,22 +416,22 @@ namespace ams::ldr {
                 out->args_address += aslr_start;
             }
 
-            out_cpi->code_address = aslr_start;
-            out_cpi->code_num_pages = total_size >> 12;
+            out_param->code_address = aslr_start;
+            out_param->code_num_pages = total_size >> 12;
 
             return ResultSuccess();
         }
 
         Result CreateProcessImpl(ProcessInfo *out, const Meta *meta, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info, u32 flags, Handle reslimit_h) {
-            /* Get CreateProcessInfo. */
-            CreateProcessInfo cpi;
-            R_TRY(GetCreateProcessInfo(&cpi, meta, flags, reslimit_h));
+            /* Get CreateProcessParameter. */
+            svc::CreateProcessParameter param;
+            R_TRY(GetCreateProcessParameter(&param, meta, flags, reslimit_h));
 
             /* Decide on an NSO layout. */
-            R_TRY(DecideAddressSpaceLayout(out, &cpi, nso_headers, has_nso, arg_info));
+            R_TRY(DecideAddressSpaceLayout(out, &param, nso_headers, has_nso, arg_info));
 
             /* Actually create process. const_cast necessary because libnx doesn't declare svcCreateProcess with const u32*. */
-            return svcCreateProcess(out->process_handle.GetPointer(), &cpi, reinterpret_cast<const u32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(u32));
+            return svcCreateProcess(out->process_handle.GetPointer(), &param, reinterpret_cast<const u32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(u32));
         }
 
         Result LoadNsoSegment(FILE *f, const NsoHeader::SegmentInfo *segment, size_t file_size, const u8 *file_hash, bool is_compressed, bool check_hash, uintptr_t map_base, uintptr_t map_end) {

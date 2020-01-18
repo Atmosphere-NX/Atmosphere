@@ -137,13 +137,12 @@ namespace ams::spl::impl {
         }
 
         void InitializeDeviceAddressSpace() {
-            constexpr u64 DeviceName_SE = 29;
 
             /* Create Address Space. */
             R_ASSERT(svcCreateDeviceAddressSpace(&g_se_das_hnd, 0, (1ul << 32)));
 
             /* Attach it to the SE. */
-            R_ASSERT(svcAttachDeviceAddressSpace(DeviceName_SE, g_se_das_hnd));
+            R_ASSERT(svcAttachDeviceAddressSpace(svc::DeviceName_Se, g_se_das_hnd));
 
             const u64 work_buffer_addr = reinterpret_cast<u64>(g_work_buffer);
             g_se_mapped_work_buffer_addr = WorkBufferMapBase + (work_buffer_addr % DeviceAddressSpaceAlign);

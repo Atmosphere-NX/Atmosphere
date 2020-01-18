@@ -37,7 +37,7 @@ namespace ams::fatal::srv {
                 }
 
                 const svc::ThreadState thread_state = static_cast<svc::ThreadState>(_thread_state);
-                if (thread_state != svc::ThreadState::Waiting && thread_state != svc::ThreadState::Running) {
+                if (thread_state != svc::ThreadState_Waiting && thread_state != svc::ThreadState_Running) {
                     return false;
                 }
             }
@@ -181,17 +181,17 @@ namespace ams::fatal::srv {
             svc::DebugEventInfo d;
             while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()))) {
                 switch (d.type) {
-                    case svc::DebugEventType::AttachProcess:
+                    case svc::DebugEvent_AttachProcess:
                         ctx->cpu_ctx.architecture = (d.info.attach_process.flags & 1) ? CpuContext::Architecture_Aarch64 : CpuContext::Architecture_Aarch32;
                         std::memcpy(ctx->proc_name, d.info.attach_process.name, sizeof(d.info.attach_process.name));
                         got_attach_process = true;
                         break;
-                    case svc::DebugEventType::AttachThread:
+                    case svc::DebugEvent_AttachThread:
                         thread_id_to_tls[d.info.attach_thread.thread_id] = d.info.attach_thread.tls_address;
                         break;
-                    case svc::DebugEventType::Exception:
-                    case svc::DebugEventType::ExitProcess:
-                    case svc::DebugEventType::ExitThread:
+                    case svc::DebugEvent_Exception:
+                    case svc::DebugEvent_ExitProcess:
+                    case svc::DebugEvent_ExitThread:
                         break;
                 }
             }

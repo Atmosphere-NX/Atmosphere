@@ -101,8 +101,6 @@ namespace ams::sf::cmif {
             static constexpr inline DomainServiceObjectDispatchTable s_CmifServiceDispatchTable{};
         private:
             virtual ServerDomainBase *GetServerDomain() = 0;
-        public:
-            /* TODO: Implement to use domain object processor. */
     };
 
     class MitmDomainServiceObject : public DomainServiceObject{};

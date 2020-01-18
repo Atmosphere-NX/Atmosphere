@@ -24,6 +24,8 @@ namespace ams::creport {
 
         /* Convenience definitions. */
         constexpr size_t DyingMessageAddressOffset = 0x1C0;
+        static_assert(DyingMessageAddressOffset == OFFSETOF(ams::svc::aarch64::ProcessLocalRegion, dying_message_region_address));
+        static_assert(DyingMessageAddressOffset == OFFSETOF(ams::svc::aarch32::ProcessLocalRegion, dying_message_region_address));
 
         /* Helper functions. */
         bool TryGetCurrentTimestamp(u64 *out) {
@@ -53,27 +55,27 @@ namespace ams::creport {
             mkdir("sdmc:/atmosphere/fatal_reports/dumps", S_IRWXU);
         }
 
-        constexpr const char *GetDebugExceptionTypeString(const svc::DebugExceptionType type) {
+        constexpr const char *GetDebugExceptionString(const svc::DebugException type) {
             switch (type) {
-                case svc::DebugExceptionType::UndefinedInstruction:
+                case svc::DebugException_UndefinedInstruction:
                     return "Undefined Instruction";
-                case svc::DebugExceptionType::InstructionAbort:
+                case svc::DebugException_InstructionAbort:
                     return "Instruction Abort";
-                case svc::DebugExceptionType::DataAbort:
+                case svc::DebugException_DataAbort:
                     return "Data Abort";
-                case svc::DebugExceptionType::AlignmentFault:
+                case svc::DebugException_AlignmentFault:
                     return "Alignment Fault";
-                case svc::DebugExceptionType::DebuggerAttached:
+                case svc::DebugException_DebuggerAttached:
                     return "Debugger Attached";
-                case svc::DebugExceptionType::BreakPoint:
+                case svc::DebugException_BreakPoint:
                     return "Break Point";
-                case svc::DebugExceptionType::UserBreak:
+                case svc::DebugException_UserBreak:
                     return "User Break";
-                case svc::DebugExceptionType::DebuggerBreak:
+                case svc::DebugException_DebuggerBreak:
                     return "Debugger Break";
-                case svc::DebugExceptionType::UndefinedSystemCall:
+                case svc::DebugException_UndefinedSystemCall:
                     return "Undefined System Call";
-                case svc::DebugExceptionType::SystemMemoryError:
+                case svc::DebugException_MemorySystemError:
                     return "System Memory Error";
                 default:
                     return "Unknown";
@@ -147,17 +149,17 @@ namespace ams::creport {
         svc::DebugEventInfo d;
         while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), this->debug_handle))) {
             switch (d.type) {
-                case svc::DebugEventType::AttachProcess:
+                case svc::DebugEvent_AttachProcess:
                     this->HandleDebugEventInfoAttachProcess(d);
                     break;
-                case svc::DebugEventType::AttachThread:
+                case svc::DebugEvent_AttachThread:
                     this->HandleDebugEventInfoAttachThread(d);
                     break;
-                case svc::DebugEventType::Exception:
+                case svc::DebugEvent_Exception:
                     this->HandleDebugEventInfoException(d);
                     break;
-                case svc::DebugEventType::ExitProcess:
-                case svc::DebugEventType::ExitThread:
+                case svc::DebugEvent_ExitProcess:
+                case svc::DebugEvent_ExitThread:
                     break;
             }
         }
@@ -208,34 +210,34 @@ namespace ams::creport {
 
     void CrashReport::HandleDebugEventInfoException(const svc::DebugEventInfo &d) {
         switch (d.info.exception.type) {
-            case svc::DebugExceptionType::UndefinedInstruction:
+            case svc::DebugException_UndefinedInstruction:
                 this->result = ResultUndefinedInstruction();
                 break;
-            case svc::DebugExceptionType::InstructionAbort:
+            case svc::DebugException_InstructionAbort:
                 this->result = ResultInstructionAbort();
                 break;
-            case svc::DebugExceptionType::DataAbort:
+            case svc::DebugException_DataAbort:
                 this->result = ResultDataAbort();
                 break;
-            case svc::DebugExceptionType::AlignmentFault:
+            case svc::DebugException_AlignmentFault:
                 this->result = ResultAlignmentFault();
                 break;
-            case svc::DebugExceptionType::UserBreak:
+            case svc::DebugException_UserBreak:
                 this->result = ResultUserBreak();
                 /* Try to parse out the user break result. */
                 if (hos::GetVersion() >= hos::Version_500) {
                     svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
                 }
                 break;
-            case svc::DebugExceptionType::UndefinedSystemCall:
+            case svc::DebugException_UndefinedSystemCall:
                 this->result = ResultUndefinedSystemCall();
                 break;
-            case svc::DebugExceptionType::SystemMemoryError:
-                this->result = ResultSystemMemoryError();
+            case svc::DebugException_MemorySystemError:
+                this->result = ResultMemorySystemError();
                 break;
-            case svc::DebugExceptionType::DebuggerAttached:
-            case svc::DebugExceptionType::BreakPoint:
-            case svc::DebugExceptionType::DebuggerBreak:
+            case svc::DebugException_DebuggerAttached:
+            case svc::DebugException_BreakPoint:
+            case svc::DebugException_DebuggerBreak:
                 return;
         }
 
@@ -320,22 +322,22 @@ namespace ams::creport {
 
         /* Exception Info. */
         fprintf(f_report, "Exception Info:\n");
-        fprintf(f_report, "    Type:                        %s\n", GetDebugExceptionTypeString(this->exception_info.type));
+        fprintf(f_report, "    Type:                        %s\n", GetDebugExceptionString(this->exception_info.type));
         fprintf(f_report, "    Address:                     %s\n", this->module_list.GetFormattedAddressString(this->exception_info.address));
         switch (this->exception_info.type) {
-            case svc::DebugExceptionType::UndefinedInstruction:
+            case svc::DebugException_UndefinedInstruction:
                 fprintf(f_report, "    Opcode:                      %08x\n", this->exception_info.specific.undefined_instruction.insn);
                 break;
-            case svc::DebugExceptionType::DataAbort:
-            case svc::DebugExceptionType::AlignmentFault:
+            case svc::DebugException_DataAbort:
+            case svc::DebugException_AlignmentFault:
                 if (this->exception_info.specific.raw != this->exception_info.address) {
                     fprintf(f_report, "    Fault Address:               %s\n", this->module_list.GetFormattedAddressString(this->exception_info.specific.raw));
                 }
                 break;
-            case svc::DebugExceptionType::UndefinedSystemCall:
+            case svc::DebugException_UndefinedSystemCall:
                 fprintf(f_report, "    Svc Id:                      0x%02x\n", this->exception_info.specific.undefined_system_call.id);
                 break;
-            case svc::DebugExceptionType::UserBreak:
+            case svc::DebugException_UserBreak:
                 fprintf(f_report, "    Break Reason:                0x%x\n", this->exception_info.specific.user_break.break_reason);
                 fprintf(f_report, "    Break Address:               %s\n", this->module_list.GetFormattedAddressString(this->exception_info.specific.user_break.address));
                 fprintf(f_report, "    Break Size:                  0x%lx\n", this->exception_info.specific.user_break.size);

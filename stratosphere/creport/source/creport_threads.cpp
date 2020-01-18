@@ -125,7 +125,7 @@ namespace ams::creport {
             }
 
             const svc::ThreadState thread_state = static_cast<svc::ThreadState>(_thread_state);
-            if (thread_state != svc::ThreadState::Waiting && thread_state != svc::ThreadState::Running) {
+            if (thread_state != svc::ThreadState_Waiting && thread_state != svc::ThreadState_Running) {
                 return false;
             }
         }
