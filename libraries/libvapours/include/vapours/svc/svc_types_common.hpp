@@ -73,7 +73,7 @@ namespace ams::svc {
 
         MemoryPermission_Read        = (1 << 0),
         MemoryPermission_Write       = (1 << 1),
-        MemoryPermission_Execute     = (1 << 1),
+        MemoryPermission_Execute     = (1 << 2),
 
         MemoryPermission_ReadWrite   = MemoryPermission_Read | MemoryPermission_Write,
         MemoryPermission_ReadExecute = MemoryPermission_Read | MemoryPermission_Execute,
