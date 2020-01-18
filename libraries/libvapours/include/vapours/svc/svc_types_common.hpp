@@ -17,6 +17,12 @@
 #pragma once
 #include "svc_common.hpp"
 
+namespace ams::kern::svc::impl {
+
+    struct KUserPointerTag{};
+
+}
+
 namespace ams::svc {
 
     /* Utility classes required to encode information into the type system for SVC veneers. */
@@ -39,6 +45,24 @@ namespace ams::svc {
     };
     static_assert(sizeof(Address) == sizeof(uintptr_t));
     static_assert(std::is_trivially_destructible<Address>::value);
+
+    namespace impl {
+
+        struct UserPointerTag{};
+
+    }
+
+    template<typename T>
+    struct UserPointer : impl::UserPointerTag {
+        public:
+            static_assert(std::is_pointer<T>::value);
+            static constexpr bool IsInput = std::is_const<typename std::remove_pointer<T>::type>::value;
+        private:
+            T pointer;
+    };
+
+    template<typename T>
+    static constexpr inline bool IsUserPointer = std::is_base_of<impl::UserPointerTag, T>::value;
 
     using PhysicalAddress = u64;
 

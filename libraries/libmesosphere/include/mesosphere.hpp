@@ -36,3 +36,6 @@
 /* Core functionality. */
 #include "mesosphere/kern_select_interrupts.hpp"
 #include "mesosphere/kern_select_k_system_control.hpp"
+
+/* Supervisor Calls. */
+#include "mesosphere/kern_svc.hpp"
