@@ -28,7 +28,7 @@ Additionally, when a process is loaded, loader will search for a `main.npdm` fil
 Atmosphère extends this functionality by also searching for these files on the SD card. When searching for a file, loader will first check if it exists on the SD card. If it does, that file will be used instead. Otherwise, it will use the copy located in the exefs, if that is present. The following directory will be searched.
 
 ```
-sdmc:/atmosphere/titles/<title id>/exefs/
+sdmc:/atmosphere/contents/<title id>/exefs/
 ```
 
 This allows the replacement of applets, sysmodules, or even games with homebrew versions.

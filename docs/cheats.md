@@ -10,7 +10,7 @@ By default, Atmosphère will do the following when deciding whether to attach to
   + The ini key to configure this is `cheat_enable_key`.
 + Check whether the process is a real application, and stop if not.
   + This guards against applying cheat codes to the homebrew loader.
-+ Attempt to load cheats from `atmosphere/titles/<title_id>/cheats/<build_id>.txt`, where `build_id` is the hexadecimal representation of the first 8 bytes of the application's main executable's build id.
++ Attempt to load cheats from `atmosphere/contents/<title_id>/cheats/<build_id>.txt`, where `build_id` is the hexadecimal representation of the first 8 bytes of the application's main executable's build id.
   + If no cheats are found, then the cheat manager will stop.
 + Open a kernel debug session for the new application process.
 + Signal to a system event that a new cheat process has been attached to.
