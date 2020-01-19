@@ -206,7 +206,10 @@ int vsprintf(char *buf, const char *fmt, va_list args)
                 fmt++;
                 integerType = 1;
             }
-
+            else
+            {
+                integerType = sizeof(unsigned long) == 8 ? 1 : 0;
+            }
         }
         else if(*fmt == 'h')
         {
