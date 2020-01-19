@@ -334,7 +334,7 @@ static inline u32 vgicGetDistributorTypeRegister(void)
 static inline u32 vgicGetDistributorImplementerIdentificationRegister(void)
 {
     u32 iidr =  ((u32)'A' << 24); // Product Id: Atmosphère (?)
-    iidr |= 1 << 16;    // Major revision 1
+    iidr |= 2 << 16;    // Major revision 2 (GICv2)
     iidr |= 0 << 12;    // Minor revision 0
     iidr |= 0x43B;      // Implementer: Arm (value copied from physical GICD)
     return iidr;
