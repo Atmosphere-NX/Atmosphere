@@ -73,7 +73,7 @@ static bool check_mkey_revision(unsigned int revision, bool is_retail) {
         }
     }
 
-    se_aes_ecb_decrypt_block(check_keyslot, final_vector, 0x10, mkey_vectors[0], 0x10);
+    se_aes_ecb_decrypt_block(check_keyslot, final_vector, 0x10, is_retail ? mkey_vectors[0] : mkey_vectors_dev[0], 0x10);
     for (unsigned int i = 0; i < 0x10; i++) {
         if (final_vector[i] != 0) {
             return false;
