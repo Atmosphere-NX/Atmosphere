@@ -221,6 +221,16 @@ sept_secondary_01.enc.o	sept_secondary_01_enc.h:	sept-secondary_01.enc
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(_bin2o)
+	
+sept_secondary_dev00.enc.o	sept_secondary_dev00_enc.h:	sept-secondary_dev00.enc
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(_bin2o)
+	
+sept_secondary_dev01.enc.o	sept_secondary_dev01_enc.h:	sept-secondary_dev01.enc
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(_bin2o)
 
 %.bin.o	%_bin.h:	%.bin
 #---------------------------------------------------------------------------------

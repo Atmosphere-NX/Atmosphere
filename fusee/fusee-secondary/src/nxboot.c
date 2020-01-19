@@ -56,6 +56,8 @@
 #include "exosphere_bin.h"
 #include "sept_secondary_00_enc.h"
 #include "sept_secondary_01_enc.h"
+#include "sept_secondary_dev00_enc.h"
+#include "sept_secondary_dev01_enc.h"
 #include "lp0fw_bin.h"
 #include "emummc_kip.h"
 #undef u8
@@ -630,12 +632,22 @@ uint32_t nxboot_main(void) {
             fatal_error("[NXBOOT] Failed to read the TSEC firmware from Package1loader!\n");
         }
         if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_810) {
-            sept_secondary_enc = sept_secondary_01_enc;
-            sept_secondary_enc_size = sept_secondary_01_enc_size;
+            if (!fuse_get_retail_type()) {
+                sept_secondary_enc = sept_secondary_dev01_enc;
+                sept_secondary_enc_size = sept_secondary_dev01_enc_size;
+            } else {
+                sept_secondary_enc = sept_secondary_01_enc;
+                sept_secondary_enc_size = sept_secondary_01_enc_size;
+            }
             tsec_fw_size = 0x3300;
         } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_700) {
-            sept_secondary_enc = sept_secondary_00_enc;
-            sept_secondary_enc_size = sept_secondary_00_enc_size;
+            if (!fuse_get_retail_type()) {
+                sept_secondary_enc = sept_secondary_dev00_enc;
+                sept_secondary_enc_size = sept_secondary_dev00_enc_size;
+            } else {
+                sept_secondary_enc = sept_secondary_00_enc;
+                sept_secondary_enc_size = sept_secondary_00_enc_size;
+            }
             tsec_fw_size = 0x3000;
         } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_620) {
             tsec_fw_size = 0x2900;
