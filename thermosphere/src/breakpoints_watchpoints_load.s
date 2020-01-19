@@ -19,7 +19,7 @@
 // Precondition: x1 <= 16
 FUNCTION loadBreakpointRegs
     // x1 = number
-    dmb     sy
+    dmb     ish
 
     adr     x16, 1f
     add     x0, x0, #(16 * 8)
@@ -35,7 +35,7 @@ FUNCTION loadBreakpointRegs
     msr     dbgbcr\count\()_el1, x2
     msr     dbgbvr\count\()_el1, x3
     .endr
-    dsb     sy
+    dsb     ish
     isb
     ret
 END_FUNCTION
@@ -43,7 +43,7 @@ END_FUNCTION
 // Precondition: x1 <= 16
 FUNCTION loadWatchpointRegs
     // x1 = number
-    dmb     sy
+    dmb     ish
 
     adr     x16, 1f
     add     x0, x0, #(16 * 8)
@@ -59,7 +59,7 @@ FUNCTION loadWatchpointRegs
     msr     dbgwcr\count\()_el1, x2
     msr     dbgwvr\count\()_el1, x3
     .endr
-    dsb     sy
+    dsb     ish
     isb
     ret
 END_FUNCTION
