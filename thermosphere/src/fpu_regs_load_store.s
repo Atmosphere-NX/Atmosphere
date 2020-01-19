@@ -36,23 +36,23 @@
 .endm
 
 FUNCTION fpuLoadRegistersFromStorage
-    dmb     sy
+    dmb     ish
     LDSTORE_QREGS ldp
     ldp     x1, x2, [x0]
     msr     fpsr, x1
     msr     fpcr, x2
-    dsb     sy
-    isb     sy
+    dsb     ish
+    isb     ish
     ret
 END_FUNCTION
 
 FUNCTION fpuStoreRegistersToStorage
-    dsb     sy
-    isb     sy
+    dsb     ish
+    isb     ish
     LDSTORE_QREGS stp
     mrs     x1, fpsr
     mrs     x2, fpcr
     stp     x1, x2, [x0]
-    dmb     sy
+    dmb     ish
     ret
 END_FUNCTION
