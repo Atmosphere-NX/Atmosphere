@@ -281,8 +281,10 @@ uint32_t fuse_get_expected_fuse_version(uint32_t target_firmware) {
     if (target_firmware > ATMOSPHERE_TARGET_FIRMWARE_COUNT) {
         generic_panic();
     }
-
-    return expected_versions[target_firmware];
+    if (fuse_get_retail_type() != 0)
+        return expected_versions[target_firmware];
+    else
+        return (target_firmware > 2) ? 1 : 0;
 }
 
 /* Check for RCM bug patches. */
