@@ -100,7 +100,7 @@ KIPFILES 	:=	loader.kip pm.kip sm.kip ams_mitm.kip spl.kip boot.kip
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary.bin \
 				exosphere.bin lp0fw.bin rebootstub.bin thermosphere.bin splash_screen.bmp \
 				sept-primary.bin sept-secondary_00.enc sept-secondary_01.enc emummc.kip \
-				kernel_ldr.bin $(KIPFILES)
+				sept-secondary_dev00.enc sept-secondary_dev01.enc kernel_ldr.bin $(KIPFILES)
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C

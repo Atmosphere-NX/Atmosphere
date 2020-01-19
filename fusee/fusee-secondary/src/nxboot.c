@@ -607,11 +607,21 @@ uint32_t nxboot_main(void) {
         }
 
         if (tsec_fw_size == 0x3000) {
-            sept_secondary_enc = sept_secondary_00_enc;
-            sept_secondary_enc_size = sept_secondary_00_enc_size;
+            if (!fuse_get_retail_type()) {
+                sept_secondary_enc = sept_secondary_dev00_enc;
+                sept_secondary_enc_size = sept_secondary_dev00_enc_size;
+            } else {
+                sept_secondary_enc = sept_secondary_00_enc;
+                sept_secondary_enc_size = sept_secondary_00_enc_size;
+            }
         } else if (tsec_fw_size == 0x3300) {
-            sept_secondary_enc = sept_secondary_01_enc;
-            sept_secondary_enc_size = sept_secondary_01_enc_size;
+            if (!fuse_get_retail_type()) {
+                sept_secondary_enc = sept_secondary_dev01_enc;
+                sept_secondary_enc_size = sept_secondary_dev01_enc_size;
+            } else {
+                sept_secondary_enc = sept_secondary_01_enc;
+                sept_secondary_enc_size = sept_secondary_01_enc_size;
+            }
         } else {
             fatal_error("[NXBOOT] Unable to identify sept revision to run.");
         }
