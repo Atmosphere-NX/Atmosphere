@@ -71,11 +71,12 @@ def main(argc, argv):
         code = f.read()
     if len(code) & 0xF:
         code = code + bytearray(0x10 - (len(code) & 0xF))
-    # TODO: Support dev unit crypto
     fn, fext = os.path.splitext(argv[2])
     for key in range(KEYS.NUM_KEYS):
         with open(fn + ('_%02X' % key) + fext, 'wb') as f:
             f.write(sign_encrypt_code(code, KEYS.HOVI_SIG_KEY_PRD[key], KEYS.HOVI_ENC_KEY_PRD[key], KEYS.IV[key], b'THANKS_NVIDIA_<3', key))
+        with open(fn + ('_dev_%02X' % key) + fext, 'wb') as f:
+            f.write(sign_encrypt_code(code, KEYS.HOVI_SIG_KEY_DEV[key], KEYS.HOVI_ENC_KEY_DEV[key], KEYS.IV_DEV[key], b'THANKS_NVIDIA_<3', key))
     return 0
 
 
