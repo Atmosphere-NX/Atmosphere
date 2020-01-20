@@ -41,7 +41,7 @@ static void initSysregs(void)
     SET_SYSREG(cntp_ctl_el0,    0x00000000);
     SET_SYSREG(cntv_ctl_el0,    0x00000000);
 
-    __dsb();
+    __dsb_local();
     __isb();
 }
 

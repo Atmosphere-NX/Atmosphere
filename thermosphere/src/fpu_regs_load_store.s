@@ -42,13 +42,13 @@ FUNCTION fpuLoadRegistersFromStorage
     msr     fpsr, x1
     msr     fpcr, x2
     dsb     ish
-    isb     ish
+    isb
     ret
 END_FUNCTION
 
 FUNCTION fpuStoreRegistersToStorage
     dsb     ish
-    isb     ish
+    isb
     LDSTORE_QREGS stp
     mrs     x1, fpsr
     mrs     x2, fpcr

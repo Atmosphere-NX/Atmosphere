@@ -25,7 +25,7 @@ void executeFunctionOnCores(ExecutedFunction fun, void *args, bool sync, u32 cor
     currentCoreCtx->executedFunction = fun;
     currentCoreCtx->executedFunctionArgs = args;
     currentCoreCtx->executedFunctionSync = sync;
-
+    __compiler_barrier();
     generateSgiForList(ThermosphereSgi_ExecuteFunction, coreList);
 }
 

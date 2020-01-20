@@ -22,6 +22,7 @@
 #define MEMORY_MAP_MEMTYPE_NORMAL                       1ul
 #define MEMORY_MAP_MEMTYPE_DEVICE_NGNRE                 2ul
 #define MEMORY_MAP_MEMTYPE_NORMAL_UNCACHEABLE           3ul
+#define MEMORY_MAP_MEMTYPE_NORMAL_GUEST_SLOT            4ul
 
 #define MEMORY_MAP_VA_SPACE_SIZE                        39ul
 

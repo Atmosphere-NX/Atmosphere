@@ -412,12 +412,27 @@
 #define MDSCR_SS            BITL(0)
 
 // Common CNTHCTL_EL2 flags
-#define CNTHCTL_EVNTI_MASK  0xFll
+#define CNTHCTL_EVNTI_MASK  0xFul
 #define CNTHCTL_EVNTI_SHIFT 4
 #define CNTHCTL_EVNTDIR     BITL(3)
 #define CNTHCTL_EVNTEN      BITL(2)
 #define CNTHCTL_EL1PCEN     BITL(1)
 #define CNTHCTL_EL1PCTEN    BITL(0)
+
+// PAR_EL1
+#define PAR_F               BITL(0)
+// Successful translation:
+#define PAR_ATTR_SHIFT      56
+#define PAR_ATTR_MASK       0xFFul
+#define PAR_PA_MASK         MASK2L(51, 12)      // bits 51-48 RES0 if not implemented
+#define PAR_NS              BITL(9)
+#define PAR_SH_SHIFT        7
+#define PAR_SH_MASK         3ul
+// Faulting translation:
+#define PAR_S               BITL(9)
+#define PAR_PTW             BITL(8)
+#define PAR_FST_SHIFT       1
+#define PAR_FST_MASK        0x3Ful
 
 #define ENCODE_SYSREG_FIELDS_MOV(op0, op1, crn, crm, op2) (((op0) << 19) | ((op1) << 16) | ((crn) << 12) | ((crm) << 8) | ((op2) << 5))
 #define ENCODE_SYSREG_MOV(name) EVAL(ENCODE_SYSREG_FIELDS_MOV CAT(TUP_, name))

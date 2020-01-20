@@ -26,6 +26,6 @@ void devicesMapAllExtra(void)
 
     // Don't broadcast, since it's only ran once per boot by only one core, before the others are started...
     __tlb_invalidate_el2_local();
-    __dsb();
+    __dsb_local();
     __isb();
 }

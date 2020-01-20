@@ -16,6 +16,8 @@ void doSmcIndirectCall(ExceptionStackFrame *frame, u32 smcId)
 
     cacheHandleSelfModifyingCodePoU(codebuf, doSmcIndirectCallImplSize/4);
 
+    __dsb_sy();
+    __isb();
     ((void (*)(ExceptionStackFrame *))codebuf)(frame);
 }
 

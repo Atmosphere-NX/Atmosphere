@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include "types.h"
-#include "data_abort.h"
+#include "utils.h"
 
-bool vgicValidateGicdRegisterAccess(size_t offset, size_t sz);
-void vgicWriteGicdRegister(u32 val, size_t offset, size_t sz);
-u32 vgicReadGicdRegister(size_t offset, size_t sz);
+size_t guestReadWriteMemory(uintptr_t addr, size_t size, void *readBuf, const void *writeBuf);
 
-void handleVgicdMmio(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t offset);
+static inline size_t guestReadMemory(uintptr_t addr, size_t size, void *buf)
+{
+    return guestReadWriteMemory(addr, size, buf, NULL);
+}
 
-void vgicInit(void);
-void vgicUpdateState(void);
-void vgicMaintenanceInterruptHandler(void);
-void vgicEnqueuePhysicalIrq(u16 irqId);
+static inline size_t guestWriteMemory(uintptr_t addr, size_t size, void *buf)
+{
+    return guestReadWriteMemory(addr, size, NULL, buf);
+}
