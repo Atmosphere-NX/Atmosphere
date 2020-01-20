@@ -39,18 +39,18 @@ void stage2ConfigureAndEnable(void)
     // Stage2 regs config
     SET_SYSREG(vttbr_el2, vttbr);
     SET_SYSREG(vtcr_el2, vtcr);
-    __dsb();
+    __dsb_local();
     __isb();
 
     // Enable stage 2
     u64 hcr = GET_SYSREG(hcr_el2);
     hcr |= HCR_VM;
     SET_SYSREG(hcr_el2, hcr);
-    __dsb();
+    __dsb_local();
     __isb();
 
     // TLB invalidation
     __tlb_invalidate_el1_stage12_local();
-    __dsb();
+    __dsb_local();
     __isb();
 }

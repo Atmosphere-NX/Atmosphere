@@ -140,7 +140,7 @@ vector_entry        _synchSp0
     msr     elr_el2, x18
     // Note: non-broadcasting TLB maintenance op
     tlbi    alle2
-    dsb     ish
+    dsb     nsh
     isb
     eret
 check_vector_size   _synchSp0
@@ -271,11 +271,30 @@ doSmcIndirectCallImplSize:
 
 /* Current EL, SPx */
 
-EXCEPTION_HANDLER_START     _synchSpx, EXCEPTION_TYPE_HOST_CRASH
+vector_entry                _synchSpx
+    // Ignore crash if x18 is 0, when we're copying memory from the guest (w/ irq masked)
+    cbz     x18, _synchSpxIgnoreCrash
+
+    PIVOT_STACK_FOR_CRASH
+    SAVE_MOST_REGISTERS
+
+    mov     x0, sp
+    mov     w1, #0
+
+    bl      exceptionEntryPostprocess
+
     mov     x0, sp
     mrs     x1, esr_el2
     bl      handleSameElSyncException
-EXCEPTION_HANDLER_END       _synchSpx, EXCEPTION_TYPE_HOST_CRASH
+
+    b       .
+
+_synchSpxIgnoreCrash:
+    mrs     x18, elr_el2
+    add     x18, x18, #4
+    msr     elr_el2, x18
+    eret
+check_vector_size           _synchSpx
 
 EXCEPTION_HANDLER_START     _irqSpx, EXCEPTION_TYPE_HOST
     mov     x0, sp

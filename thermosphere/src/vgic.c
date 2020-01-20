@@ -526,12 +526,23 @@ static inline u32 vgicGetPeripheralId2Register(void)
     return 2 << 4;
 }
 
-static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t offset)
+bool vgicValidateGicdRegisterAccess(size_t offset, size_t sz)
 {
-    size_t sz = BITL(dabtIss.sas);
-    u32 val = (u32)(readFrameRegisterZ(frame, dabtIss.srt) & MASKL(8 * sz));
-    uintptr_t addr = (uintptr_t)gicd + offset;
+    // ipriorityr, itargetsr, *pendsgir are byte-accessible
+    if (
+        !(offset >= GICDOFF(ipriorityr) && offset < GICDOFF(ipriorityr) + GIC_IRQID_MAX) &&
+        !(offset >= GICDOFF(itargetsr)  && offset < GICDOFF(itargetsr) + GIC_IRQID_MAX) &&
+        !(offset >= GICDOFF(cpendsgir)  && offset < GICDOFF(cpendsgir) + 16) &&
+        !(offset >= GICDOFF(spendsgir)  && offset < GICDOFF(spendsgir) + 16)
+    ) {
+        return (offset & 3) == 0 && sz == 4;
+    } else {
+        return sz == 1 || (sz == 4 && ((offset & 3) != 0));
+    }
+}
 
+void vgicWriteGicdRegister(u32 val, size_t offset, size_t sz)
+{
     //DEBUG("gicd write off 0x%03llx sz %lx val %x w%d\n", offset, sz, val, (int)dabtIss.srt);
 
     switch (offset) {
@@ -607,19 +618,15 @@ static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss
             break;
 
         default:
-            dumpUnhandledDataAbort(dabtIss, addr, "GICD reserved/implementation-defined register");
+            DEBUG("Write to GICD reserved/implementation-defined register offset=0x%03lx value=0x%08lx", offset, val);
             break;
     }
 }
 
-static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t offset)
+u32 vgicReadGicdRegister(size_t offset, size_t sz)
 {
-    size_t sz = BITL(dabtIss.sas);
-    uintptr_t addr = (uintptr_t)gicd + offset;
-
-    u32 val = 0;
-
     //DEBUG("gicd read off 0x%03llx sz %lx\n", offset, sz);
+    u32 val = 0;
 
     switch (offset) {
         case GICDOFF(icfgr) ... GICDOFF(icfgr) + 31/4:
@@ -682,7 +689,7 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
 
         case GICDOFF(sgir):
             // Write-only register
-            dumpUnhandledDataAbort(dabtIss, addr, "GICD read to write-only register GCID_SGIR");
+            DEBUG("Read from write-only register GCID_SGIR\n");
             break;
 
         case GICDOFF(icpidr2):
@@ -690,10 +697,24 @@ static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss,
             break;
 
         default:
-            dumpUnhandledDataAbort(dabtIss, addr, "GICD reserved/implementation-defined register");
+            DEBUG("Read from GICD reserved/implementation-defined register offset=0x%03lx\n", offset);
             break;
     }
 
+    return val;
+}
+
+static void handleVgicMmioWrite(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t offset)
+{
+    size_t sz = BITL(dabtIss.sas);
+    u32 val = (u32)(readFrameRegisterZ(frame, dabtIss.srt) & MASKL(8 * sz));
+    vgicWriteGicdRegister(val, offset, sz);
+}
+
+static void handleVgicMmioRead(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t offset)
+{
+    size_t sz = BITL(dabtIss.sas);
+    u32 val = vgicReadGicdRegister(offset, sz);
     writeFrameRegisterZ(frame, dabtIss.srt, val);
 }
 
@@ -993,28 +1014,10 @@ void handleVgicdMmio(ExceptionStackFrame *frame, DataAbortIss dabtIss, size_t of
 {
     size_t sz = BITL(dabtIss.sas);
     uintptr_t addr = (uintptr_t)gicd + offset;
-    bool oops = true;
+    bool oops = !vgicValidateGicdRegisterAccess(offset, sz);
 
-    // ipriorityr, itargetsr, *pendsgir are byte-accessible
-    if (
-        !(offset >= GICDOFF(ipriorityr) && offset < GICDOFF(ipriorityr) + GIC_IRQID_MAX) &&
-        !(offset >= GICDOFF(itargetsr)  && offset < GICDOFF(itargetsr) + GIC_IRQID_MAX) &&
-        !(offset >= GICDOFF(cpendsgir)  && offset < GICDOFF(cpendsgir) + 16) &&
-        !(offset >= GICDOFF(spendsgir)  && offset < GICDOFF(spendsgir) + 16)
-    ) {
-        if ((offset & 3) != 0 || sz != 4) {
-            dumpUnhandledDataAbort(dabtIss, addr, "GICD non-word aligned MMIO");
-        } else {
-            oops = false;
-        }
-    } else {
-        if (sz != 1 && sz != 4) {
-            dumpUnhandledDataAbort(dabtIss, addr, "GICD 16 or 64-bit access");
-        } else if (sz == 4 && (offset & 3) != 0) {
-            dumpUnhandledDataAbort(dabtIss, addr, "GICD misaligned MMIO");
-        } else {
-            oops = false;
-        }
+    if (oops) {
+        dumpUnhandledDataAbort(dabtIss, addr, "invalid GICD register access");
     }
 
     recursiveSpinlockLock(&g_irqManager.lock);

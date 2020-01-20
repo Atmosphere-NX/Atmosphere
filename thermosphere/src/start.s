@@ -52,6 +52,10 @@ _startCommon:
 
     // "Boot core only" stuff:
     bl      cacheClearSharedDataCachesOnBoot
+    ic      iallu
+    dsb     nsh
+    isb
+
     // Temporarily use temp end region as stack, then create the translation table
     // The stack top is also equal to the mmu table address...
     adr     x0, g_loadImageLayout
@@ -88,9 +92,6 @@ _postMmuEnableReturnAddr:
     // Save x18, reserve space for exception frame
     stp     x18, xzr, [sp, #-0x10]!
     sub     sp, sp, #EXCEP_STACK_FRAME_SIZE
-
-    dsb     sy
-    isb
 
     mov     x0, sp
     mov     x1, x20

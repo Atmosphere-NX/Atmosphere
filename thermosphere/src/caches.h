@@ -19,6 +19,12 @@
 #include "utils.h"
 #include "sysreg.h"
 
+static inline u32 cacheGetInstructionCachePolicy(void)
+{
+    u32 ctr = (u32)GET_SYSREG(ctr_el0);
+    return (ctr >> 14) & 3;
+}
+
 static inline u32 cacheGetSmallestInstructionCacheLineSize(void)
 {
     u32 ctr = (u32)GET_SYSREG(ctr_el0);

@@ -14,6 +14,7 @@
 #include "timer.h"
 #include "irq.h"
 #include "transport_interface.h"
+#include "guest_memory.h"
 
 #include "memory_map.h"
 #include "mmu.h"
@@ -32,8 +33,8 @@ static void loadKernelViaSemihosting(void)
         MMU_PTE_BLOCK_XN | MMU_PTE_BLOCK_INNER_SHAREBLE | MMU_PTE_BLOCK_MEMTYPE(MEMORY_MAP_MEMTYPE_NORMAL_UNCACHEABLE)
     );
 
-    __tlb_invalidate_el2();
-    __dsb();
+    __tlb_invalidate_el2_local();
+    __dsb_local();
 
     DEBUG("Loading kernel via semihosted file I/O... ");
     handle = semihosting_file_open("test_kernel.bin", FOPEN_MODE_RB);
@@ -49,8 +50,8 @@ static void loadKernelViaSemihosting(void)
     semihosting_file_close(handle);
 
     mmu_unmap_range(1, mmuTable, 0x40000000, 0x40000000);
-    __tlb_invalidate_el2();
-    __dsb();
+    __tlb_invalidate_el2_local();
+    __dsb_local();
 
     currentCoreCtx->kernelEntrypoint = buf;
 }

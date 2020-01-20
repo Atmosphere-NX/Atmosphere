@@ -62,10 +62,10 @@ static inline bool doApplySoftwareBreakpoint(size_t id)
 
     u32 brkInst = 0xF2000000 | bp->uid;
 
-    if (readEl1Memory(&bp->savedInstruction, bp->address, 4) && writeEl1Memory(bp->address, &brkInst, 4)) {
+    /*if (readEl1Memory(&bp->savedInstruction, bp->address, 4) && writeEl1Memory(bp->address, &brkInst, 4)) {
         bp->applied = true;
         return true;
-    }
+    }*/
 
     return false;
 }
@@ -91,10 +91,10 @@ static inline bool doRevertSoftwareBreakpoint(size_t id)
         return true;
     }
 
-    if (writeEl1Memory(bp->address, &bp->savedInstruction, 4)) {
+    /*if (writeEl1Memory(bp->address, &bp->savedInstruction, 4)) {
         bp->applied = false;
         return true;
-    }
+    }*/
 
     return false;
 }

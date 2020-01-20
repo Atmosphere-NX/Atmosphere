@@ -72,6 +72,7 @@
  */
 #define MMU_PTE_BLOCK_MEMTYPE(x)        ((uint64_t)((x) << 2))
 #define MMU_PTE_BLOCK_NS                BITL(5)
+#define MMU_PTE_BLOCK_SH(x)             ((x) << 8)
 #define MMU_PTE_BLOCK_NON_SHAREABLE     (0ull << 8)
 #define MMU_PTE_BLOCK_OUTER_SHAREABLE   (2ull << 8)
 #define MMU_PTE_BLOCK_INNER_SHAREBLE    (3ull << 8)

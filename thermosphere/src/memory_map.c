@@ -143,20 +143,20 @@ void memoryMapEnableMmu(const LoadImageLayout *layout)
     SET_SYSREG(ttbr0_el2, mmuTable);
     SET_SYSREG(tcr_el2, tcr);
     SET_SYSREG(mair_el2, mair);
-    __dsb();
+    __dsb_local();
     __isb();
 
     // TLB invalidation
     // Whether this does anything before MMU is enabled is impldef, apparently
     __tlb_invalidate_el2_local();
-    __dsb();
+    __dsb_local();
     __isb();
 
     // Enable MMU & enable caching. We will crash.
     u64 sctlr = GET_SYSREG(sctlr_el2);
     sctlr |= SCTLR_ELx_I | SCTLR_ELx_C | SCTLR_ELx_M;
     SET_SYSREG(sctlr_el2, sctlr);
-    __dsb();
+    __dsb_local();
     __isb();
 }
 
