@@ -18,7 +18,8 @@
 #include "watchpoints.h"
 #include "breakpoints_watchpoints_load.h"
 #include "utils.h"
-#include "sysreg.h"
+#include "core_ctx.h"
+#include "execute_function.h"
 #include "debug_log.h"
 
 WatchpointManager g_watchpointManager = {0};

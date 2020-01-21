@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "core_ctx.h"
 #include "utils.h"
 #include "sysreg.h"
 
@@ -51,6 +50,8 @@ static inline void restoreInterruptFlags(u64 flags)
 
 void spinlockLock(Spinlock *lock);
 void spinlockUnlock(Spinlock *lock);
+void recursiveSpinlockLock(RecursiveSpinlock *lock);
+void recursiveSpinlockUnlock(RecursiveSpinlock *lock);
 
 static inline u64 spinlockLockMaskIrq(Spinlock *lock)
 {
@@ -63,25 +64,6 @@ static inline void spinlockUnlockRestoreIrq(Spinlock *lock, u64 flags)
 {
     spinlockUnlock(lock);
     restoreInterruptFlags(flags);
-}
-
-static inline void recursiveSpinlockLock(RecursiveSpinlock *lock)
-{
-    if (lock->tag != currentCoreCtx->coreId + 1) {
-        spinlockLock(&lock->lock);
-        lock->tag = currentCoreCtx->coreId + 1;
-        lock->count = 1;
-    } else {
-        ++lock->count;
-    }
-}
-
-static inline void recursiveSpinlockUnlock(RecursiveSpinlock *lock)
-{
-    if (--lock->count == 0) {
-        lock->tag = 0;
-        spinlockUnlock(&lock->lock);
-    }
 }
 
 static inline u64 recursiveSpinlockLockMaskIrq(RecursiveSpinlock *lock)
