@@ -22,4 +22,5 @@
 // Not sure if we need this function because we can only map one guest page at a time...
 u8 *memsearch(u8 *startPos, const void *pattern, u32 size, u32 patternSize);
 unsigned int xstrtoui(const char *nptr, char **endptr, int base, bool allowPrefix, bool *ok);
+unsigned long int xstrtoul(const char *nptr, char **endptr, int base, bool allowPrefix, bool *ok);
 unsigned long long int xstrtoull(const char *nptr, char **endptr, int base, bool allowPrefix, bool *ok);
