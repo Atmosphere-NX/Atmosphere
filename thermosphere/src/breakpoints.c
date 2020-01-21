@@ -18,7 +18,7 @@
 #include "breakpoints.h"
 #include "breakpoints_watchpoints_load.h"
 #include "utils.h"
-#include "sysreg.h"
+#include "core_ctx.h"
 
 BreakpointManager g_breakpointManager = {0};
 
