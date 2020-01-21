@@ -41,19 +41,20 @@ typedef struct CoreCtx {
     ExecutedFunction executedFunction;          // @0x40
     void *executedFunctionArgs;                 // @0x48
     Barrier executedFunctionBarrier;            // @0x50
-    bool executedFunctionSync;                  // @0x54
+    u32 executedFunctionSrcCore;                // @0x54
+    bool executedFunctionSync;                  // @0x58. Receiver fills it
 
     // Debug features
-    bool wasPaused;                             // @0x55
+    bool wasPaused;                             // @0x59
 
     // Cache stuff
-    u32 setWayCounter;                          // @0x58
+    u32 setWayCounter;                          // @0x5C
 } CoreCtx;
 
 static_assert(offsetof(CoreCtx, warmboot) == 0x2E, "Wrong definition for CoreCtx");
 static_assert(offsetof(CoreCtx, emulPtimerCval) == 0x38, "Wrong definition for CoreCtx");
-static_assert(offsetof(CoreCtx, executedFunctionSync) == 0x54, "Wrong definition for CoreCtx");
-static_assert(offsetof(CoreCtx, setWayCounter) == 0x58, "Wrong definition for CoreCtx");
+static_assert(offsetof(CoreCtx, executedFunctionSync) == 0x58, "Wrong definition for CoreCtx");
+static_assert(offsetof(CoreCtx, setWayCounter) == 0x5C, "Wrong definition for CoreCtx");
 
 extern CoreCtx g_coreCtxs[4];
 register CoreCtx *currentCoreCtx asm("x18");

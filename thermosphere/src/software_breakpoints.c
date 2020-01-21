@@ -17,6 +17,8 @@
 #include <string.h>
 #include "software_breakpoints.h"
 #include "utils.h"
+#include "guest_memory.h"
+#include "core_ctx.h"
 
 SoftwareBreakpointManager g_softwareBreakpointManager = {0};
 
@@ -56,61 +58,74 @@ static size_t findClosestSoftwareBreakpointSlot(u64 address)
 static inline bool doApplySoftwareBreakpoint(size_t id)
 {
     SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
-    if (bp->applied) {
-        return true;
-    }
-
     u32 brkInst = 0xF2000000 | bp->uid;
 
-    /*if (readEl1Memory(&bp->savedInstruction, bp->address, 4) && writeEl1Memory(bp->address, &brkInst, 4)) {
-        bp->applied = true;
-        return true;
-    }*/
-
-    return false;
+    size_t sz = guestReadWriteMemory(bp->address, 4, &bp->savedInstruction, &brkInst);
+    bp->applied = sz == 4;
+    atomic_store(&bp->triedToApplyOrRevert, true);
+    return sz == 4;
 }
 
 static void applySoftwareBreakpointHandler(void *p)
 {
-    u64 flags = maskIrq();
-    __dmb();
-    doApplySoftwareBreakpoint(*(size_t *)p);
-    restoreInterruptFlags(flags);
+    size_t id = *(size_t *)p;
+    if (currentCoreCtx->coreId == currentCoreCtx->executedFunctionSrcCore) {
+        doApplySoftwareBreakpoint(id);
+        __sev();
+    } else {
+        SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
+        while (!atomic_load(&bp->triedToApplyOrRevert)) {
+            __wfe();
+        }
+    }
 }
 
-static void applySoftwareBreakpoint(size_t id)
+static bool applySoftwareBreakpoint(size_t id)
 {
-    __dmb();
+    if (g_softwareBreakpointManager.breakpoints[id].applied) {
+        return true;
+    }
+
+    atomic_store(&g_softwareBreakpointManager.breakpoints[id].triedToApplyOrRevert, false);
     executeFunctionOnAllCores(applySoftwareBreakpointHandler, &id, true);
+    atomic_signal_fence(memory_order_seq_cst);
+    return g_softwareBreakpointManager.breakpoints[id].applied;
 }
 
 static inline bool doRevertSoftwareBreakpoint(size_t id)
 {
     SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
-    if (!bp->applied) {
-        return true;
-    }
 
-    /*if (writeEl1Memory(bp->address, &bp->savedInstruction, 4)) {
-        bp->applied = false;
-        return true;
-    }*/
-
-    return false;
+    size_t sz = guestWriteMemory(bp->address, 4, &bp->savedInstruction);
+    bp->applied = sz != 4;
+    atomic_store(&bp->triedToApplyOrRevert, true);
+    return sz == 4;
 }
 
 static void revertSoftwareBreakpointHandler(void *p)
 {
-    u64 flags = maskIrq();
-    __dmb();
-    doRevertSoftwareBreakpoint(*(size_t *)p);
-    restoreInterruptFlags(flags);
+    size_t id = *(size_t *)p;
+    if (currentCoreCtx->coreId == currentCoreCtx->executedFunctionSrcCore) {
+        doRevertSoftwareBreakpoint(id);
+        __sev();
+    } else {
+        SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
+        while (!atomic_load(&bp->triedToApplyOrRevert)) {
+            __wfe();
+        }
+    }
 }
 
-static void revertSoftwareBreakpoint(size_t id)
+static bool revertSoftwareBreakpoint(size_t id)
 {
-    __dmb();
+    if (!g_softwareBreakpointManager.breakpoints[id].applied) {
+        return true;
+    }
+
+    atomic_store(&g_softwareBreakpointManager.breakpoints[id].triedToApplyOrRevert, false);
     executeFunctionOnAllCores(revertSoftwareBreakpointHandler, &id, true);
+    atomic_signal_fence(memory_order_seq_cst);
+    return !g_softwareBreakpointManager.breakpoints[id].applied;
 }
 
 bool applyAllSoftwareBreakpoints(void)
@@ -167,11 +182,10 @@ int addSoftwareBreakpoint(u64 addr, bool persistent)
     bp->applied = false;
     bp->uid = 0x2000 + g_softwareBreakpointManager.bpUniqueCounter++;
 
-    applySoftwareBreakpoint(id);
-    // Note: no way to handle breakpoint failing to apply on 1+ core but not all, we need to assume operation succeeds
+    int rc = applySoftwareBreakpoint(id) ? 0 : -EFAULT;
     recursiveSpinlockUnlock(&g_softwareBreakpointManager.lock);
 
-    return 0;
+    return rc;
 }
 
 int removeSoftwareBreakpoint(u64 addr, bool keepPersistent)
@@ -183,6 +197,7 @@ int removeSoftwareBreakpoint(u64 addr, bool keepPersistent)
     recursiveSpinlockLock(&g_softwareBreakpointManager.lock);
 
     size_t id = findClosestSoftwareBreakpointSlot(addr);
+    bool ok = true;
 
     if(id == g_softwareBreakpointManager.numBreakpoints || g_softwareBreakpointManager.breakpoints[id].address != addr) {
         recursiveSpinlockUnlock(&g_softwareBreakpointManager.lock);
@@ -191,8 +206,7 @@ int removeSoftwareBreakpoint(u64 addr, bool keepPersistent)
 
     SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
     if (!keepPersistent || !bp->persistent) {
-        revertSoftwareBreakpoint(id);
-        // Note: no way to handle breakpoint failing to revert on 1+ core but not all, we need to assume operation succeeds
+        ok = revertSoftwareBreakpoint(id);
     }
 
     for(size_t i = id; i < g_softwareBreakpointManager.numBreakpoints - 1; i++) {
@@ -203,19 +217,18 @@ int removeSoftwareBreakpoint(u64 addr, bool keepPersistent)
 
     recursiveSpinlockUnlock(&g_softwareBreakpointManager.lock);
 
-    return 0;
+    return ok ? 0 : -EFAULT;
 }
 
 int removeAllSoftwareBreakpoints(bool keepPersistent)
 {
-    int ret = 0;
+    bool ok = true;
     recursiveSpinlockLock(&g_softwareBreakpointManager.lock);
 
     for (size_t id = 0; id < g_softwareBreakpointManager.numBreakpoints; id++) {
         SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
         if (!keepPersistent || !bp->persistent) {
-            revertSoftwareBreakpoint(id);
-            // Note: no way to handle breakpoint failing to revert on 1+ core but not all, we need to assume operation succeeds
+            ok = ok && revertSoftwareBreakpoint(id);
         }
     }
 
@@ -225,5 +238,5 @@ int removeAllSoftwareBreakpoints(bool keepPersistent)
 
     recursiveSpinlockUnlock(&g_softwareBreakpointManager.lock);
 
-    return ret;
+    return ok ? 0 : -EFAULT;
 }
