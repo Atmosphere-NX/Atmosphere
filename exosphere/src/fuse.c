@@ -284,7 +284,7 @@ uint32_t fuse_get_expected_fuse_version(uint32_t target_firmware) {
     if (fuse_get_retail_type() != 0)
         return expected_versions[target_firmware];
     else
-        return (target_firmware > 2) ? 1 : 0;
+        return (target_firmware > ATMOSPHERE_TARGET_FIRMWARE_200) ? 1 : 0;
 }
 
 /* Check for RCM bug patches. */
