@@ -86,6 +86,7 @@ static bool applySoftwareBreakpoint(size_t id)
         return true;
     }
 
+    // This is okay for non-stop mode if sync isn't perfect here
     atomic_store(&g_softwareBreakpointManager.breakpoints[id].triedToApplyOrRevert, false);
     executeFunctionOnAllCores(applySoftwareBreakpointHandler, &id, true);
     atomic_signal_fence(memory_order_seq_cst);
