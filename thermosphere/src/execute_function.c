@@ -42,6 +42,7 @@ void executeFunctionOnAllCoresButSelf(ExecutedFunction fun, void *args, bool syn
 void executeFunctionInterruptHandler(u32 srcCore)
 {
     CoreCtx *ctx = &g_coreCtxs[srcCore];
+    currentCoreCtx->executedFunctionSrcCore = srcCore;
     ctx->executedFunction(ctx->executedFunctionArgs);
     if (ctx->executedFunctionSync) {
         barrierWait(&ctx->executedFunctionBarrier);

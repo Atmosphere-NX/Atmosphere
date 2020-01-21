@@ -19,16 +19,18 @@
 #define _REENT_ONLY
 #include <errno.h>
 
+#include <stdatomic.h>
 #include "spinlock.h"
 
 #define MAX_SW_BREAKPOINTS  32
 
 typedef struct SoftwareBreakpoint {
-    u64 address; // VA
+    uintptr_t address; // VA
     u32 savedInstruction;
     u32 uid;
     bool persistent;
     bool applied;
+    atomic_bool triedToApplyOrRevert;
 } SoftwareBreakpoint;
 
 typedef struct SoftwareBreakpointManager {
