@@ -11,22 +11,22 @@
 #include "fmt.h"
 #include "minisoc.h"
 
-u8 GDB_ComputeChecksum(const char *packetData, u32 len)
+u8 GDB_ComputeChecksum(const char *packetData, size_t len)
 {
-    u8 cksum = 0;
-    for(u32 i = 0; i < len; i++)
-        cksum += (u8)packetData[i];
+    unsigned long cksum = 0;
+    for(size_t i = 0; i < len; i++) {
+        cksum += packetData[i];
+    }
 
-    return cksum;
+    return (u8)cksum;
 }
 
-void GDB_EncodeHex(char *dst, const void *src, u32 len)
+void GDB_EncodeHex(char *dst, const void *src, size_t len)
 {
     static const char *alphabet = "0123456789abcdef";
-    const u8 *src8 = (u8 *)src;
+    const u8 *src8 = (const u8 *)src;
 
-    for(u32 i = 0; i < len; i++)
-    {
+    for (size_t i = 0; i < len; i++) {
         dst[2 * i] = alphabet[(src8[i] & 0xf0) >> 4];
         dst[2 * i + 1] = alphabet[src8[i] & 0x0f];
     }
@@ -35,92 +35,89 @@ void GDB_EncodeHex(char *dst, const void *src, u32 len)
 static inline u32 GDB_DecodeHexDigit(char src, bool *ok)
 {
     *ok = true;
-    if(src >= '0' && src <= '9') return src - '0';
-    else if(src >= 'a' && src <= 'f') return 0xA + (src - 'a');
-    else if(src >= 'A' && src <= 'F') return 0xA + (src - 'A');
-    else
-    {
-        *ok = false;
-        return 0;
+    switch (src) {
+        case '0' ... '9': return  0 + (src - '0');
+        case 'a' ... 'f': return 10 + (src - 'a');
+        case 'A' ... 'F': return 10 + (src - 'A');
+        default:
+            *ok = false;
+            return 0;
     }
 }
 
-u32 GDB_DecodeHex(void *dst, const char *src, u32 len)
-{
-    u32 i = 0;
+u32 GDB_DecodeHex(void *dst, const char *src, size_t len) {
+    size_t i = 0;
     bool ok = true;
     u8 *dst8 = (u8 *)dst;
-    for(i = 0; i < len && ok && src[2 * i] != 0 && src[2 * i + 1] != 0; i++)
+    for (i = 0; i < len && ok && src[2 * i] != 0 && src[2 * i + 1] != 0; i++) {
         dst8[i] = (GDB_DecodeHexDigit(src[2 * i], &ok) << 4) | GDB_DecodeHexDigit(src[2 * i + 1], &ok);
+    }
 
     return (!ok) ? i - 1 : i;
 }
 
-u32 GDB_EscapeBinaryData(u32 *encodedCount, void *dst, const void *src, u32 len, u32 maxLen)
+u32 GDB_EscapeBinaryData(u32 *encodedCount, void *dst, const void *src, size_t len, size_t maxLen)
 {
     u8 *dst8 = (u8 *)dst;
     const u8 *src8 = (const u8 *)src;
 
     maxLen = maxLen >= len ? len : maxLen;
 
-    while((uintptr_t)dst8 < (uintptr_t)dst + maxLen)
-    {
-        if(*src8 == '$' || *src8 == '#' || *src8 == '}' || *src8 == '*')
-        {
-            if ((uintptr_t)dst8 + 1 >= (uintptr_t)dst + maxLen)
+    while ((uintptr_t)dst8 < (uintptr_t)dst + maxLen) {
+        if (*src8 == '$' || *src8 == '#' || *src8 == '}' || *src8 == '*') {
+            if ((uintptr_t)dst8 + 1 >= (uintptr_t)dst + maxLen) {
                 break;
+            }
             *dst8++ = '}';
             *dst8++ = *src8++ ^ 0x20;
         }
-        else
+        else {
             *dst8++ = *src8++;
+        }
     }
 
     *encodedCount = dst8 - (u8 *)dst;
     return src8 - (u8 *)src;
 }
 
-u32 GDB_UnescapeBinaryData(void *dst, const void *src, u32 len)
+u32 GDB_UnescapeBinaryData(void *dst, const void *src, size_t len)
 {
     u8 *dst8 = (u8 *)dst;
     const u8 *src8 = (const u8 *)src;
 
-    while((uintptr_t)src8 < (uintptr_t)src + len)
-    {
-        if(*src8 == '}')
-        {
+    while ((uintptr_t)src8 < (uintptr_t)src + len) {
+        if (*src8 == '}') {
             src8++;
             *dst8++ = *src8++ ^ 0x20;
-        }
-        else
+        } else {
             *dst8++ = *src8++;
+        }
     }
 
     return dst8 - (u8 *)dst;
 }
 
-const char *GDB_ParseIntegerList(u32 *dst, const char *src, u32 nb, char sep, char lastSep, u32 base, bool allowPrefix)
+const char *GDB_ParseIntegerList(unsigned long *dst, const char *src, size_t nb, char sep, char lastSep, u32 base, bool allowPrefix)
 {
     const char *pos = src;
     const char *endpos;
     bool ok;
 
-    for(u32 i = 0; i < nb; i++)
-    {
-        u32 n = xstrtoul(pos, (char **)&endpos, (int) base, allowPrefix, &ok);
-        if(!ok || endpos == pos)
+    for (size_t i = 0; i < nb; i++) {
+        unsigned long n = xstrtoul(pos, (char **)&endpos, (int) base, allowPrefix, &ok);
+        if(!ok || endpos == pos) {
             return NULL;
-
-        if(i != nb - 1)
-        {
-            if(*endpos != sep)
-                return NULL;
-            pos = endpos + 1;
         }
-        else
-        {
-            if(*endpos != lastSep && *endpos != 0)
+
+        if (i != nb - 1) {
+            if (*endpos != sep) {
                 return NULL;
+            }
+            pos = endpos + 1;
+        } else {
+            if (*endpos != lastSep && *endpos != 0) {
+                return NULL;
+            }
             pos = endpos;
         }
 
@@ -130,45 +127,9 @@ const char *GDB_ParseIntegerList(u32 *dst, const char *src, u32 nb, char sep, ch
     return pos;
 }
 
-const char *GDB_ParseIntegerList64(u64 *dst, const char *src, u32 nb, char sep, char lastSep, u32 base, bool allowPrefix)
-{
-    const char *pos = src;
-    const char *endpos;
-    bool ok;
-
-    for(u32 i = 0; i < nb; i++)
-    {
-        u64 n = xstrtoull(pos, (char **)&endpos, (int) base, allowPrefix, &ok);
-        if(!ok || endpos == pos)
-            return NULL;
-
-        if(i != nb - 1)
-        {
-            if(*endpos != sep)
-                return NULL;
-            pos = endpos + 1;
-        }
-        else
-        {
-            if(*endpos != lastSep && *endpos != 0)
-                return NULL;
-            pos = endpos;
-        }
-
-        dst[i] = n;
-    }
-
-    return pos;
-}
-
-const char *GDB_ParseHexIntegerList(u32 *dst, const char *src, u32 nb, char lastSep)
+const char *GDB_ParseHexIntegerList(unsigned long *dst, const char *src, size_t nb, char lastSep)
 {
     return GDB_ParseIntegerList(dst, src, nb, ',', lastSep, 16, false);
-}
-
-const char *GDB_ParseHexIntegerList64(u64 *dst, const char *src, u32 nb, char lastSep)
-{
-    return GDB_ParseIntegerList64(dst, src, nb, ',', lastSep, 16, false);
 }
 
 int GDB_ReceivePacket(GDBContext *ctx)
@@ -262,7 +223,7 @@ packet_error:
         return -1;
 }
 
-static int GDB_DoSendPacket(GDBContext *ctx, u32 len)
+static int GDB_DoSendPacket(GDBContext *ctx, size_t len)
 {
     int r = soc_send(ctx->super.sockfd, ctx->buffer, len, 0);
 
@@ -271,7 +232,7 @@ static int GDB_DoSendPacket(GDBContext *ctx, u32 len)
     return r;
 }
 
-int GDB_SendPacket(GDBContext *ctx, const char *packetData, u32 len)
+int GDB_SendPacket(GDBContext *ctx, const char *packetData, size_t len)
 {
     ctx->buffer[0] = '$';
 
