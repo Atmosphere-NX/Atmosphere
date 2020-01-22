@@ -20,6 +20,7 @@
 #include "preprocessor.h"
 #include "debug_log.h"
 
+#define MAX_CORE    4
 #define BIT(n)      (1u   << (n))
 #define BITL(n)     (1ull << (n))
 #define MASK(n)     (BIT(n) - 1)

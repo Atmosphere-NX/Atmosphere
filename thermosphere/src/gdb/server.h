@@ -7,37 +7,28 @@
 
 #pragma once
 
-#include "gdb.h"
+#include "../gdb.h"
+#include "../transport_interface.h"
 
-#ifndef GDB_PORT_BASE
-#define GDB_PORT_BASE 4000
-#endif
-
-typedef struct GDBServer
-{
-    sock_server super;
-    s32 referenceCount;
-    Handle statusUpdated;
-    Handle statusUpdateReceived;
-    GDBContext ctxs[MAX_DEBUG];
+typedef struct GDBServer {
+    TransportInterface *transportIfaces[MAX_CTX];
+    GDBContext ctxs[MAX_CTX];
 } GDBServer;
 
-Result GDB_InitializeServer(GDBServer *server);
+void GDB_InitializeServer(GDBServer *server);
 void GDB_FinalizeServer(GDBServer *server);
-
-void GDB_IncrementServerReferenceCount(GDBServer *server);
-void GDB_DecrementServerReferenceCount(GDBServer *server);
 
 void GDB_RunServer(GDBServer *server);
 
 void GDB_LockAllContexts(GDBServer *server);
 void GDB_UnlockAllContexts(GDBServer *server);
 
-GDBContext *GDB_SelectAvailableContext(GDBServer *server, u16 minPort, u16 maxPort);
-GDBContext *GDB_FindAllocatedContextByPid(GDBServer *server, u32 pid);
+// Currently, transport ifaces are tied to client
+
+GDBContext *GDB_SelectAvailableContext(GDBServer *server);
 
 int GDB_AcceptClient(GDBContext *ctx);
 int GDB_CloseClient(GDBContext *ctx);
-GDBContext *GDB_GetClient(GDBServer *server, u16 port);
+GDBContext *GDB_GetClient(GDBServer *server, TransportInterface *iface);
 void GDB_ReleaseClient(GDBServer *server, GDBContext *ctx);
 int GDB_DoPacket(GDBContext *ctx);

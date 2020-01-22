@@ -23,7 +23,7 @@
 static void GDB_DetachImmediatelyExtended(GDBContext *ctx)
 {
     // detach immediately
-    RecursiveLock_Lock(&ctx->lock);
+    recursiveSpinlockLock(&ctx->lock);
     ctx->state = GDB_STATE_DETACHING;
 
     svcClearEvent(ctx->processAttachedEvent);
@@ -31,14 +31,14 @@ static void GDB_DetachImmediatelyExtended(GDBContext *ctx)
 
     svcClearEvent(ctx->parent->statusUpdateReceived);
     svcSignalEvent(ctx->parent->statusUpdated);
-    RecursiveLock_Unlock(&ctx->lock);
+    recursiveSpinlockUnlock(&ctx->lock);
 
     svcWaitSynchronization(ctx->parent->statusUpdateReceived, -1LL);
 
-    RecursiveLock_Lock(&ctx->lock);
+    recursiveSpinlockLock(&ctx->lock);
     GDB_DetachFromProcess(ctx);
-    ctx->flags &= GDB_FLAG_PROC_RESTART_MASK;
-    RecursiveLock_Unlock(&ctx->lock);
+    ctx->flags &= GDB_FLAG_RESTART_MASK;
+    recursiveSpinlockUnlock(&ctx->lock);
 }
 
 GDB_DECLARE_VERBOSE_HANDLER(Run)
@@ -90,18 +90,18 @@ GDB_DECLARE_VERBOSE_HANDLER(Run)
     progInfo.mediaType = (FS_MediaType)mediaType;
     progInfo.programId = titleId;
 
-    RecursiveLock_Lock(&ctx->lock);
+    recursiveSpinlockLock(&ctx->lock);
     Result r = GDB_CreateProcess(ctx, &progInfo, launchFlags);
 
     if (R_FAILED(r))
     {
         if(ctx->debug != 0)
             GDB_DetachImmediatelyExtended(ctx);
-        RecursiveLock_Unlock(&ctx->lock);
+        recursiveSpinlockUnlock(&ctx->lock);
         return GDB_ReplyErrno(ctx, EPERM);
     }
 
-    RecursiveLock_Unlock(&ctx->lock);
+    recursiveSpinlockUnlock(&ctx->lock);
     return R_SUCCEEDED(r) ? GDB_SendStopReply(ctx, &ctx->latestDebugEvent) : GDB_ReplyErrno(ctx, EPERM);
 }
 
@@ -115,15 +115,15 @@ GDB_DECLARE_HANDLER(Restart)
     FS_ProgramInfo progInfo = ctx->launchedProgramInfo;
     u32 launchFlags = ctx->launchedProgramLaunchFlags;
 
-    ctx->flags |= GDB_FLAG_TERMINATE_PROCESS;
+    ctx->flags |= GDB_FLAG_TERMINATE;
     if (ctx->flags & GDB_FLAG_EXTENDED_REMOTE)
         GDB_DetachImmediatelyExtended(ctx);
     
-    RecursiveLock_Lock(&ctx->lock);
+    recursiveSpinlockLock(&ctx->lock);
     Result r = GDB_CreateProcess(ctx, &progInfo, launchFlags);
     if (R_FAILED(r) && ctx->debug != 0)
         GDB_DetachImmediatelyExtended(ctx);
-    RecursiveLock_Unlock(&ctx->lock);
+    recursiveSpinlockUnlock(&ctx->lock);
     return 0;
 }
 
@@ -137,12 +137,12 @@ GDB_DECLARE_VERBOSE_HANDLER(Attach)
     if(GDB_ParseHexIntegerList(&pid, ctx->commandData, 1, 0) == NULL)
         return GDB_ReplyErrno(ctx, EILSEQ);
 
-    RecursiveLock_Lock(&ctx->lock);
+    recursiveSpinlockLock(&ctx->lock);
     ctx->pid = pid;
     Result r = GDB_AttachToProcess(ctx);
     if(R_FAILED(r))
         GDB_DetachImmediatelyExtended(ctx);
-    RecursiveLock_Unlock(&ctx->lock);
+    recursiveSpinlockUnlock(&ctx->lock);
     return R_SUCCEEDED(r) ? GDB_SendStopReply(ctx, &ctx->latestDebugEvent) : GDB_ReplyErrno(ctx, EPERM);
 }
 
@@ -163,7 +163,7 @@ GDB_DECLARE_HANDLER(Detach)
 GDB_DECLARE_HANDLER(Kill)
 {
     ctx->state = GDB_STATE_DETACHING;
-    ctx->flags |= GDB_FLAG_TERMINATE_PROCESS;
+    ctx->flags |= GDB_FLAG_TERMINATE;
     if (ctx->flags & GDB_FLAG_EXTENDED_REMOTE)
         GDB_DetachImmediatelyExtended(ctx);
 
@@ -172,11 +172,11 @@ GDB_DECLARE_HANDLER(Kill)
 
 GDB_DECLARE_HANDLER(Break)
 {
-    if(!(ctx->flags & GDB_FLAG_PROCESS_CONTINUING))
+    if(!(ctx->flags & GDB_FLAG_CONTINUING)) // Is this ever reached?
         return GDB_SendPacket(ctx, "S02", 3);
     else
     {
-        ctx->flags &= ~GDB_FLAG_PROCESS_CONTINUING;
+        ctx->flags &= ~GDB_FLAG_CONTINUING;
         return 0;
     }
 }
@@ -185,7 +185,7 @@ void GDB_ContinueExecution(GDBContext *ctx)
 {
     ctx->selectedThreadId = ctx->selectedThreadIdForContinuing = 0;
     svcContinueDebugEvent(ctx->debug, ctx->continueFlags);
-    ctx->flags |= GDB_FLAG_PROCESS_CONTINUING;
+    ctx->flags |= GDB_FLAG_CONTINUING;
 }
 
 GDB_DECLARE_HANDLER(Continue)
@@ -654,7 +654,7 @@ int GDB_HandleDebugEvents(GDBContext *ctx)
 
         ctx->latestDebugEvent = info;
         ret = GDB_SendStopReply(ctx, &info);
-        ctx->flags &= ~GDB_FLAG_PROCESS_CONTINUING;
+        ctx->flags &= ~GDB_FLAG_CONTINUING;
         return ret;
     }
 }

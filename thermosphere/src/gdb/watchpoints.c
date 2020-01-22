@@ -44,7 +44,7 @@ void GDB_ResetWatchpoints(void)
         RecursiveLock_Init(&watchpointManagerLock);
         lockInitialized = true;
     }
-    RecursiveLock_Lock(&watchpointManagerLock);
+    recursiveSpinlockLock(&watchpointManagerLock);
 
     svcKernelSetState(0x10003); // enable monitor mode debugging
     svcKernelSetState(0x10004, 0); // disable watchpoint 0
@@ -52,12 +52,12 @@ void GDB_ResetWatchpoints(void)
 
     memset(&manager, 0, sizeof(WatchpointManager));
 
-    RecursiveLock_Unlock(&watchpointManagerLock);
+    recursiveSpinlockUnlock(&watchpointManagerLock);
 }
 
 int GDB_AddWatchpoint(GDBContext *ctx, u32 address, u32 size, WatchpointKind kind)
 {
-    RecursiveLock_Lock(&watchpointManagerLock);
+    recursiveSpinlockLock(&watchpointManagerLock);
 
     u32 offset = address - (address & ~3);
 
@@ -95,26 +95,26 @@ int GDB_AddWatchpoint(GDBContext *ctx, u32 address, u32 size, WatchpointKind kin
         watchpoint->kind = kind;
         watchpoint->debug = ctx->debug;
         ctx->watchpoints[ctx->nbWatchpoints++] = address;
-        RecursiveLock_Unlock(&watchpointManagerLock);
+        recursiveSpinlockUnlock(&watchpointManagerLock);
         return 0;
     }
     else
     {
-        RecursiveLock_Unlock(&watchpointManagerLock);
+        recursiveSpinlockUnlock(&watchpointManagerLock);
         return -EINVAL;
     }
 }
 
 int GDB_RemoveWatchpoint(GDBContext *ctx, u32 address, WatchpointKind kind)
 {
-    RecursiveLock_Lock(&watchpointManagerLock);
+    recursiveSpinlockLock(&watchpointManagerLock);
 
     u32 id;
     for(id = 0; id < 2 && manager.watchpoints[id].address != address && manager.watchpoints[id].debug != ctx->debug; id++);
 
     if(id == 2 || (kind != WATCHPOINT_DISABLED && manager.watchpoints[id].kind != kind))
     {
-        RecursiveLock_Unlock(&watchpointManagerLock);
+        recursiveSpinlockUnlock(&watchpointManagerLock);
         return -EINVAL;
     }
     else
@@ -136,7 +136,7 @@ int GDB_RemoveWatchpoint(GDBContext *ctx, u32 address, WatchpointKind kind)
             ctx->nbWatchpoints--;
         }
 
-        RecursiveLock_Unlock(&watchpointManagerLock);
+        recursiveSpinlockUnlock(&watchpointManagerLock);
 
         return 0;
     }
