@@ -335,7 +335,7 @@ int GDB_SendStreamData(GDBContext *ctx, const char *streamData, u32 offset, u32 
 
 int GDB_SendDebugString(GDBContext *ctx, const char *fmt, ...) // unsecure
 {
-    /*if(ctx->state == GDB_STATE_DETACHING || !(ctx->flags & GDB_FLAG_PROCESS_CONTINUING))
+    /*if(ctx->state == GDB_STATE_DETACHING || !(ctx->flags & GDB_FLAG_CONTINUING))
         return 0;*/
 
     char formatted[(GDB_BUF_LEN - 1) / 2 + 1];
