@@ -55,7 +55,6 @@ void initIrq(void);
 void configureInterrupt(u16 id, u8 prio, bool isLevelSensitive);
 bool irqIsGuest(u16 id);
 void irqSetAffinity(u16 id, u8 affinityMask);
-void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32);
 
 static inline void generateSgiForAllOthers(ThermosphereSgi id)
 {

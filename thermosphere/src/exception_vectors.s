@@ -176,8 +176,9 @@ _saveMostRegisters:
     mrs     x21, sp_el0
     mrs     x22, elr_el2
     mrs     x23, spsr_el2
-    mov     x24, x28                // far_el2
-    mov     x25, x29                // cntpct_el0
+    mrs     x24, esr_el2
+    mov     x25, x28                // far_el2
+    mov     x26, x29                // cntpct_el0
 
     // See SAVE_MOST_REGISTERS macro
     ldp     x28, x29, [sp, #-0x20]
@@ -187,7 +188,7 @@ _saveMostRegisters:
     stp     x19, x20, [sp, #0xF0]
     stp     x21, x22, [sp, #0x100]
     stp     x23, x24, [sp, #0x110]
-    stp     x25, xzr, [sp, #0x120]
+    stp     x25, x26, [sp, #0x120]
 
     ret
 
@@ -310,7 +311,6 @@ UNKNOWN_EXCEPTION           _serrorSpx
 
 EXCEPTION_HANDLER_START     _synchA64, EXCEPTION_TYPE_GUEST
     mov     x0, sp
-    mrs     x1, esr_el2
     bl      handleLowerElSyncException
 EXCEPTION_HANDLER_END       _synchA64, EXCEPTION_TYPE_GUEST
 
@@ -328,7 +328,6 @@ UNKNOWN_EXCEPTION           _serrorA64
 
 EXCEPTION_HANDLER_START     _synchA32, EXCEPTION_TYPE_GUEST
     mov     x0, sp
-    mrs     x1, esr_el2
     bl      handleLowerElSyncException
 EXCEPTION_HANDLER_END       _synchA32, EXCEPTION_TYPE_GUEST
 
