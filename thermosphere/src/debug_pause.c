@@ -22,8 +22,6 @@
 #include "spinlock.h"
 #include "single_step.h"
 
-// Reminder: use these functions behind a lock
-
 static Barrier g_debugPauseBarrier;
 static atomic_uint g_debugPausePausedCoreList;
 static atomic_uint g_debugPauseSingleStepCoreList;
@@ -48,7 +46,7 @@ void debugPauseWaitAndUpdateSingleStep(void)
     currentCoreCtx->wasPaused = false;
 
     // Single-step: if inactive and requested, start single step; cancel if active and not requested
-    u32 ssReqd = (atomic_load(&g_debugPauseSingleStepCoreList) & ~BIT(currentCoreCtx->coreId)) != 0;
+    u32 ssReqd = (atomic_load(&g_debugPauseSingleStepCoreList) & BIT(currentCoreCtx->coreId)) != 0;
     SingleStepState singleStepState = singleStepGetNextState(currentCoreCtx->guestFrame);
     if (ssReqd && singleStepState == SingleStepState_Inactive) {
         singleStepSetNextState(currentCoreCtx->guestFrame, SingleStepState_ActiveNotPending);
@@ -61,18 +59,23 @@ void debugPauseCores(u32 coreList)
 {
     maskIrq();
 
-    // Since we're using a debugger lock, a simple stlr should be fine...
-    atomic_store(&g_debugPausePausedCoreList, coreList);
+    u32 desiredList = coreList;
+    u32 remainingList = coreList;
+    u32 readList = atomic_load(&g_debugPausePausedCoreList);
+    do {
+        desiredList |= readList;
+        remainingList &= ~readList;
+    } while (atomic_compare_exchange_weak(&g_debugPausePausedCoreList, &readList, desiredList));
 
-    if (coreList != BIT(currentCoreCtx->coreId)) {
+    if (remainingList != BIT(currentCoreCtx->coreId)) {
         // We need to notify other cores...
-        u32 otherCores = coreList & ~BIT(currentCoreCtx->coreId);
+        u32 otherCores = remainingList & ~BIT(currentCoreCtx->coreId);
         barrierInit(&g_debugPauseBarrier, otherCores | BIT(currentCoreCtx->coreId));
         generateSgiForList(ThermosphereSgi_DebugPause, otherCores);
         barrierWait(&g_debugPauseBarrier);
     }
 
-    if (coreList & BIT(currentCoreCtx->coreId)) {
+    if (remainingList & BIT(currentCoreCtx->coreId)) {
         currentCoreCtx->wasPaused = true;
     }
 
@@ -85,7 +88,7 @@ void debugUnpauseCores(u32 coreList, u32 singleStepList)
 
     // Since we're using a debugger lock, a simple stlr should be fine...
     atomic_store(&g_debugPauseSingleStepCoreList, singleStepList);
-    atomic_store(&g_debugPausePausedCoreList, 0);
+    atomic_fetch_and(&g_debugPausePausedCoreList, ~coreList);
 
     __sev();
 }
