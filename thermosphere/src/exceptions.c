@@ -69,8 +69,10 @@ void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
     }
     DEBUG("sp_el1\t\t%016llx\n", frame->sp_el1);
     DEBUG("cntpct_el0\t%016llx\n", frame->cntpct_el0);
-    DEBUG("cntp_ctl_el0\t%016llx\n", frame->cntp_ctl_el0);
-    DEBUG("cntv_ctl_el0\t%016llx\n", frame->cntv_ctl_el0);
+    if (frame == currentCoreCtx->guestFrame) {
+        DEBUG("cntp_ctl_el0\t%016llx\n", frame->cntp_ctl_el0);
+        DEBUG("cntv_ctl_el0\t%016llx\n", frame->cntv_ctl_el0);
+    }
 #else
     (void)frame;
     (void)sameEl;
@@ -132,8 +134,9 @@ void exceptionReturnPreprocess(ExceptionStackFrame *frame)
     }
 }
 
-void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+void handleLowerElSyncException(ExceptionStackFrame *frame)
 {
+    ExceptionSyndromeRegister esr = frame->esr_el2;
     switch (esr.ec) {
         case Exception_CP15RTTrap:
             handleMcrMrcCP15Trap(frame, esr);
@@ -171,8 +174,9 @@ void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeReg
     }
 }
 
-void handleSameElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
+void handleSameElSyncException(ExceptionStackFrame *frame)
 {
+    ExceptionSyndromeRegister esr = frame->esr_el2;
     DEBUG("Same EL sync exception on core %x, EC = 0x%02llx IL=%llu ISS=0x%06llx\n", currentCoreCtx->coreId, (u64)esr.ec, esr.il, esr.iss);
     dumpStackFrame(frame, true);
 }

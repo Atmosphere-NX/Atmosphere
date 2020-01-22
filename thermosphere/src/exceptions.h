@@ -19,24 +19,6 @@
 #include "utils.h"
 #include "core_ctx.h"
 
-typedef struct ExceptionStackFrame {
-    u64 x[31]; // x0 .. x30
-    u64 sp_el1;
-    union {
-        u64 sp_el2;
-        u64 sp_el0;
-    };
-    u64 elr_el2;
-    u64 spsr_el2;
-    u64 far_el2;
-    u64 cntpct_el0;
-    u64 cntp_ctl_el0;
-    u64 cntv_ctl_el0;
-    u64 reserved;
-} ExceptionStackFrame;
-
-static_assert(sizeof(ExceptionStackFrame) == 0x140, "Wrong size for ExceptionStackFrame");
-
 // Adapted from https://developer.arm.com/docs/ddi0596/a/a64-shared-pseudocode-functions/shared-exceptions-pseudocode
 typedef enum ExceptionClass {
     Exception_Uncategorized = 0x0,
@@ -87,6 +69,25 @@ typedef struct ExceptionSyndromeRegister {
     ExceptionClass ec   :  6;   // Exception Class
     u32 res0            : 32;
 } ExceptionSyndromeRegister;
+
+typedef struct ExceptionStackFrame {
+    u64 x[31]; // x0 .. x30
+    u64 sp_el1;
+    union {
+        u64 sp_el2;
+        u64 sp_el0;
+    };
+    u64 elr_el2;
+    u64 spsr_el2;
+    ExceptionSyndromeRegister esr_el2;
+    u64 far_el2;
+    u64 cntpct_el0;
+    u64 cntp_ctl_el0;
+    u64 cntv_ctl_el0;
+} ExceptionStackFrame;
+
+static_assert(offsetof(ExceptionStackFrame, far_el2) == 0x120, "Wrong definition for ExceptionStackFrame");
+static_assert(sizeof(ExceptionStackFrame) == 0x140, "Wrong size for ExceptionStackFrame");
 
 static inline bool spsrIsA32(u64 spsr)
 {
@@ -139,7 +140,3 @@ void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size);
 void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl);
 
 void exceptionEnterInterruptibleHypervisorCode(void);
-
-void handleLowerElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
-void handleSameElSyncException(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
-void handleUnknownException(u32 offset);

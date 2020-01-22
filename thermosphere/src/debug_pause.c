@@ -26,9 +26,14 @@ static Barrier g_debugPauseBarrier;
 static atomic_uint g_debugPausePausedCoreList;
 static atomic_uint g_debugPauseSingleStepCoreList;
 
-void debugPauseSgiHandler(void)
+static inline void debugSetThisCorePaused(void)
 {
     currentCoreCtx->wasPaused = true;
+}
+
+void debugPauseSgiHandler(void)
+{
+    debugSetThisCorePaused();
     barrierWait(&g_debugPauseBarrier);
 }
 
@@ -76,7 +81,7 @@ void debugPauseCores(u32 coreList)
     }
 
     if (remainingList & BIT(currentCoreCtx->coreId)) {
-        currentCoreCtx->wasPaused = true;
+        debugSetThisCorePaused();
     }
 
     unmaskIrq();
