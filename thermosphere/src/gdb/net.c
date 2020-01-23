@@ -234,31 +234,37 @@ static int GDB_DoSendPacket(GDBContext *ctx, size_t len)
 
 int GDB_SendPacket(GDBContext *ctx, const char *packetData, size_t len)
 {
+    memmove(ctx->buffer + 1, packetData, len);
     ctx->buffer[0] = '$';
-
-    memcpy(ctx->buffer + 1, packetData, len);
 
     char *checksumLoc = ctx->buffer + len + 1;
     *checksumLoc++ = '#';
 
-    hexItoa(GDB_ComputeChecksum(packetData, len), checksumLoc, 2, false);
+    hexItoa(GDB_ComputeChecksum(ctx->buffer + 1, len), checksumLoc, 2, false);
     return GDB_DoSendPacket(ctx, 4 + len);
 }
 
 int GDB_SendFormattedPacket(GDBContext *ctx, const char *packetDataFmt, ...)
 {
-    // It goes without saying you shouldn't use that with user-controlled data...
-    char buf[GDB_BUF_LEN + 1];
     va_list args;
+
     va_start(args, packetDataFmt);
-    int n = vsprintf(buf, packetDataFmt, args);
+    int n = vsprintf(ctx->buffer + 1, packetDataFmt, args);
     va_end(args);
 
-    if(n < 0) return -1;
-    else return GDB_SendPacket(ctx, buf, (u32)n);
+    if (n < 0) {
+        return -1;
+    }
+
+    ctx->buffer[0] = '$';
+    char *checksumLoc = ctx->buffer + n + 1;
+    *checksumLoc++ = '#';
+
+    hexItoa(GDB_ComputeChecksum(ctx->buffer + 1, n), checksumLoc, 2, false);
+    return GDB_DoSendPacket(ctx, 4 + n);
 }
 
-int GDB_SendHexPacket(GDBContext *ctx, const void *packetData, u32 len)
+int GDB_SendHexPacket(GDBContext *ctx, const void *packetData, size_t len)
 {
     if(4 + 2 * len > GDB_BUF_LEN)
         return -1;
@@ -273,50 +279,26 @@ int GDB_SendHexPacket(GDBContext *ctx, const void *packetData, u32 len)
     return GDB_DoSendPacket(ctx, 4 + 2 * len);
 }
 
-int GDB_SendStreamData(GDBContext *ctx, const char *streamData, u32 offset, u32 length, u32 totalSize, bool forceEmptyLast)
+int GDB_SendStreamData(GDBContext *ctx, const char *streamData, size_t offset, size_t length, size_t totalSize, bool forceEmptyLast)
 {
-    char buf[GDB_BUF_LEN];
-    if(length > GDB_BUF_LEN - 1)
+    // GDB_BUF_LEN does not include the usual %#<1-byte checksum>
+    if(length > GDB_BUF_LEN - 1) {
         length = GDB_BUF_LEN - 1;
+    }
 
-    if((forceEmptyLast && offset >= totalSize) || (!forceEmptyLast && offset + length >= totalSize))
-    {
+    char letter;
+
+    if ((forceEmptyLast && offset >= totalSize) || (!forceEmptyLast && offset + length >= totalSize)) {
         length = offset >= totalSize ? 0 : totalSize - offset;
-        buf[0] = 'l';
-        memcpy(buf + 1, streamData + offset, length);
-        return GDB_SendPacket(ctx, buf, 1 + length);
+        letter = 'l';
+    } else {
+        letter = 'm';
     }
-    else
-    {
-        buf[0] = 'm';
-        memcpy(buf + 1, streamData + offset, length);
-        return GDB_SendPacket(ctx, buf, 1 + length);
-    }
-}
 
-int GDB_SendDebugString(GDBContext *ctx, const char *fmt, ...) // unsecure
-{
-    /*if(ctx->state == GDB_STATE_DETACHING || !(ctx->flags & GDB_FLAG_CONTINUING))
-        return 0;*/
-
-    char formatted[(GDB_BUF_LEN - 1) / 2 + 1];
-    ctx->buffer[0] = '$';
-    ctx->buffer[1] = 'O';
-
-    va_list args;
-    va_start(args, fmt);
-    int n = vsprintf(formatted, fmt, args);
-    va_end(args);
-
-    if(n <= 0) return n;
-    GDB_EncodeHex(ctx->buffer + 2, formatted, 2 * n);
-
-    char *checksumLoc = ctx->buffer + 2 * n + 2;
-    *checksumLoc++ = '#';
-
-    hexItoa(GDB_ComputeChecksum(ctx->buffer + 1, 2 * n + 1), checksumLoc, 2, false);
-
-    return GDB_DoSendPacket(ctx, 5 + 2 * n);
+    // Note: ctx->buffer[0] = '$'
+    memmove(ctx->buffer + 2, streamData + offset, length);
+    ctx->buffer[1] = letter; 
+    return GDB_SendPacket(ctx, ctx->buffer + 1, 1 + length);
 }
 
 int GDB_ReplyEmpty(GDBContext *ctx)
