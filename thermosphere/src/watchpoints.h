@@ -35,7 +35,7 @@ typedef struct WatchpointManager {
 extern WatchpointManager g_watchpointManager;
 
 void initWatchpoints(void);
-DebugRegisterPair *findSplitWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction, bool strict);
+DebugControlRegister retrieveSplitWatchpointConfig(u64 addr, size_t size, WatchpointLoadStoreControl direction, bool strict);
 int addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction);
 int removeWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction);
 int removeAllWatchpoints(void);

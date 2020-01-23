@@ -228,9 +228,16 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info)
 
                 case Exception_WatchpointLowerEl: {
                     static const char *kinds[] = { "", "r", "", "a" };
-                    n = GDB_ParseExceptionFrame(buffer, ctx, SIGTRAP);
-                    u32 kind = 3; // TODO: retrieve the actual wp direction (if it's a bidirectional wp or not)
-                    sprintf(buffer + n, "%swatch:%016lx;", kinds[kind], info->frame->far_el2);
+                    // Note: exception info doesn't provide us with the access size. Use 1.
+                    bool wnr = (info->frame->esr_el2.iss & BIT(6)) != 0;
+                    WatchpointLoadStoreControl dr = wnr ? WatchpointLoadStoreControl_Store : WatchpointLoadStoreControl_Load;
+                    DebugControlRegister cr = retrieveSplitWatchpointConfig(info->frame->far_el2, 1, dr, false);
+                    if (!cr.enabled) {
+                        DEBUG("GDB: oops, unhandled watchpoint for core id %u, far=%016lx\n", info->coreId, info->frame->far_el2);
+                    } else {
+                        n = GDB_ParseExceptionFrame(buffer, ctx, SIGTRAP);
+                        sprintf(buffer + n, "%swatch:%016lx;", kinds[cr.lsc], info->frame->far_el2);
+                    }
                 }
 
                 // Note: we don't really support 32-bit sw breakpoints, we'll still report them
