@@ -18,6 +18,21 @@
 #include "pattern_utils.h"
 
 
+u32 hexItoa(u64 number, char *out, u32 digits, bool uppercase) 
+{
+    static const char hexDigits[] = "0123456789ABCDEF";
+    static const char hexDigitsLowercase[] = "0123456789abcdef";
+    u32 i = 0;
+
+    while (number > 0) {
+        out[digits - 1 - i++] = uppercase ? hexDigits[number & 0xF] : hexDigitsLowercase[number & 0xF];
+        number >>= 4;
+    }
+
+    while (i < digits) out[digits - 1 - i++] = '0';
+    return digits;
+}
+
 //Boyer-Moore Horspool algorithm, adapted from http://www-igm.univ-mlv.fr/~lecroq/string/node18.html#SECTION00180
 //u32 size to limit stack usage
 u8 *memsearch(u8 *startPos, const void *pattern, u32 size, u32 patternSize)

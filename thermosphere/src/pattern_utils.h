@@ -18,6 +18,8 @@
 
 #include "utils.h"
 
+u32 hexItoa(u64 number, char *out, u32 digits, bool uppercase);
+
 // u32 size to limit stack usage
 // Not sure if we need this function because we can only map one guest page at a time...
 u8 *memsearch(u8 *startPos, const void *pattern, u32 size, u32 patternSize);
