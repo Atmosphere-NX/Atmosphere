@@ -45,6 +45,6 @@ extern SoftwareBreakpointManager g_softwareBreakpointManager;
 bool revertAllSoftwareBreakpoints(void);
 bool applyAllSoftwareBreakpoints(void);
 
-int addSoftwareBreakpoint(u64 addr, bool persistent);
-int removeSoftwareBreakpoint(u64 addr, bool keepPersistent);
+int addSoftwareBreakpoint(uintptr_t addr, bool persistent);
+int removeSoftwareBreakpoint(uintptr_t addr, bool keepPersistent);
 int removeAllSoftwareBreakpoints(bool keepPersistent);

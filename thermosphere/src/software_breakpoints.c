@@ -31,7 +31,7 @@ SoftwareBreakpointManager g_softwareBreakpointManager = {0};
     We also define sw breakpoints on invalid addresses (for one or more cores) UNPREDICTABLE.
 */
 
-static size_t findClosestSoftwareBreakpointSlot(u64 address)
+static size_t findClosestSoftwareBreakpointSlot(uintptr_t address)
 {
     if(g_softwareBreakpointManager.numBreakpoints == 0 || address <= g_softwareBreakpointManager.breakpoints[0].address) {
         return 0;
@@ -154,7 +154,7 @@ bool revertAllSoftwareBreakpoints(void)
     return ret;
 }
 
-int addSoftwareBreakpoint(u64 addr, bool persistent)
+int addSoftwareBreakpoint(uintptr_t addr, bool persistent)
 {
     if ((addr & 3) != 0) {
         return -EINVAL;
@@ -189,7 +189,7 @@ int addSoftwareBreakpoint(u64 addr, bool persistent)
     return rc;
 }
 
-int removeSoftwareBreakpoint(u64 addr, bool keepPersistent)
+int removeSoftwareBreakpoint(uintptr_t addr, bool keepPersistent)
 {
     if ((addr & 3) != 0) {
         return -EINVAL;
