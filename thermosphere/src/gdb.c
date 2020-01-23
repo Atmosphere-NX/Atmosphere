@@ -5,7 +5,7 @@
 *   SPDX-License-Identifier: (MIT OR GPL-2.0-or-later)
 */
 
-#if 1
+#if 0
 #include "gdb.h"
 #include "gdb/net.h"
 #include "gdb/server.h"

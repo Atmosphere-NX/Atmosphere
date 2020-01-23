@@ -53,7 +53,8 @@ enum {
     GDB_FLAG_CONTINUING         = BIT(4),
     GDB_FLAG_TERMINATE          = BIT(5),
     GDB_FLAG_ATTACHED_AT_START  = BIT(6),
-    GDB_FLAG_CREATED            = BIT(7),
+    GDB_FLAG_NONSTOP            = BIT(7),
+    //GDB_FLAG_CREATED            = BIT(7),
 };
 
 typedef enum GDBState
@@ -105,6 +106,11 @@ void GDB_FinalizeContext(GDBContext *ctx);
 
 void GDB_Attach(GDBContext *ctx);
 void GDB_Detach(GDBContext *ctx);
+
+static inline bool GDB_IsAttached(GDBContext *ctx)
+{
+    return ctx->state == GDB_STATE_ATTACHED;
+}
 
 GDB_DECLARE_HANDLER(Unsupported);
 GDB_DECLARE_HANDLER(EnableExtendedMode);

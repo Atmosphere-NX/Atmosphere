@@ -206,7 +206,6 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     u32 irqId = iar & 0x3FF;
     u32 srcCore = (iar >> 10) & 7;
 
-    frame->esr_el2.ec = Exception_Uncategorized;
     DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
 
     if (irqId == GIC_IRQID_SPURIOUS) {

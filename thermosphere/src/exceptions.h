@@ -135,6 +135,23 @@ static inline void writeFrameRegisterZ(ExceptionStackFrame *frame, u32 id, u64 v
     }
 }
 
+static inline uintptr_t exceptionGetSp(const ExceptionStackFrame *frame)
+{
+    // Note: the return value is more or less meaningless if we took an exception from A32...
+    // We try our best to reflect which privilege level the exception was took from, nonetheless
+
+    bool spEl0;
+    u64 m = frame->spsr_el2 & 0xF;
+    if (spsrIsA32(frame->spsr_el2)) {
+        spEl0 = m == 0;
+    } else {
+        u64 el = m >> 2;
+        spEl0 = el == 2 || el == 0 || (m & 1) == 0; // note: frame->sp_el2 is aliased to frame->sp_el0
+    }
+
+    return spEl0 ? frame->sp_el0 : frame->sp_el1;
+}
+
 bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode);
 void skipFaultingInstruction(ExceptionStackFrame *frame, u32 size);
 void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl);
