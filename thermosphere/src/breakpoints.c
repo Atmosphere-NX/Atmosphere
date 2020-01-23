@@ -69,7 +69,7 @@ static void freeBreakpoint(u32 pos)
     g_breakpointManager.allocationBitmap |= BIT(pos);
 }
 
-static DebugRegisterPair *findBreakpoint(u64 addr)
+static DebugRegisterPair *findBreakpoint(uintptr_t addr)
 {
     u16 bitmap = ~g_breakpointManager.allocationBitmap & 0xFFFF;
     while (bitmap != 0) {
@@ -90,7 +90,7 @@ static DebugRegisterPair *findBreakpoint(u64 addr)
 // Note: A32/T32/T16 support intentionnally left out
 // Note: addresses are supposed to be well-formed regarding the sign extension bits
 
-int addBreakpoint(u64 addr)
+int addBreakpoint(uintptr_t addr)
 {
     recursiveSpinlockLock(&g_breakpointManager.lock);
 
@@ -127,7 +127,7 @@ int addBreakpoint(u64 addr)
     return 0;
 }
 
-int removeBreakpoint(u64 addr)
+int removeBreakpoint(uintptr_t addr)
 {
     recursiveSpinlockLock(&g_breakpointManager.lock);
 

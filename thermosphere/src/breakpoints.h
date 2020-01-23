@@ -33,6 +33,6 @@ typedef struct BreakpointManager {
 extern BreakpointManager g_breakpointManager;
 
 void initBreakpoints(void);
-int addBreakpoint(u64 addr);
-int removeBreakpoint(u64 addr);
+int addBreakpoint(uintptr_t addr);
+int removeBreakpoint(uintptr_t addr);
 int removeAllBreakpoints(void);

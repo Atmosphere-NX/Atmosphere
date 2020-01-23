@@ -16,7 +16,7 @@
 #include "gdb/hio.h"
 #include "gdb/watchpoints.h"
 #include "gdb/breakpoints.h"
-#include "gdb/stop_point.h"
+#include "gdb/stop_points.h"
 
 void GDB_InitializeServer(GDBServer *server)
 {

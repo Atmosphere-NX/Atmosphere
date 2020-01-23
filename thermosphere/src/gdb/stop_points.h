@@ -7,6 +7,6 @@
 
 #pragma once
 
-#include "gdb.h"
+#include "../gdb.h"
 
 GDB_DECLARE_HANDLER(ToggleStopPoint);

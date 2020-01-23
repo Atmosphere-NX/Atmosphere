@@ -60,7 +60,7 @@ static inline void commitAndBroadcastWatchpoints(void)
     executeFunctionOnAllCores(commitAndBroadcastWatchpointHandler, NULL, true);
 }
 
-static DebugRegisterPair *findCombinedWatchpoint(u64 addr)
+static DebugRegisterPair *findCombinedWatchpoint(uintptr_t addr)
 {
     addr &= ~7ull;
     u16 bitmap = ~g_watchpointManager.allocationBitmap & 0xFFFF;
@@ -91,7 +91,7 @@ static DebugRegisterPair *allocateCombinedWatchpoint(u16 *bitmap)
 }
 
 // Precondition: not a MASK-based watchpoint
-static bool checkNormalWatchpointRange(u64 addr, size_t size)
+static bool checkNormalWatchpointRange(uintptr_t addr, size_t size)
 {
     u16 bitmap = g_watchpointManager.allocationBitmap;
     if (findCombinedWatchpoint(addr) == NULL) {
@@ -101,7 +101,7 @@ static bool checkNormalWatchpointRange(u64 addr, size_t size)
     }
 
     // if it overlaps...
-    u64 addr2 = (addr + size) & ~7ull;
+    uintptr_t addr2 = (addr + size) & ~7ull;
 
     if (addr2 != (addr & ~7ull)) {
         if (findCombinedWatchpoint(addr2) == NULL) {
@@ -112,7 +112,7 @@ static bool checkNormalWatchpointRange(u64 addr, size_t size)
     return true;
 }
 
-static inline bool isRangeMaskWatchpoint(u64 addr, size_t size)
+static inline bool isRangeMaskWatchpoint(uintptr_t addr, size_t size)
 {
     // size needs to be a power of 2, at least 8 (we'll only allow 16+ though), addr needs to be aligned.
     bool ret = (size & (size - 1)) == 0 && size >= 16 && (addr & (size - 1)) == 0;
@@ -152,7 +152,7 @@ static bool combineWatchpoint(const DebugRegisterPair *wp)
     return true;
 }
 
-static DebugRegisterPair *doFindSplitWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction, bool strict)
+static DebugRegisterPair *doFindSplitWatchpoint(uintptr_t addr, size_t size, WatchpointLoadStoreControl direction, bool strict)
 {
     // Note: we will use RES0 bit0_1 of wr in case of overlapping
     for (u32 i = 0; i < g_watchpointManager.numSplitWatchpoints; i++) {
@@ -189,7 +189,7 @@ static DebugRegisterPair *doFindSplitWatchpoint(u64 addr, size_t size, Watchpoin
     return NULL;
 }
 
-DebugControlRegister retrieveSplitWatchpointConfig(u64 addr, size_t size, WatchpointLoadStoreControl direction, bool strict)
+DebugControlRegister retrieveSplitWatchpointConfig(uintptr_t addr, size_t size, WatchpointLoadStoreControl direction, bool strict)
 {
     recursiveSpinlockLock(&g_watchpointManager.lock);
     DebugRegisterPair *wp = doFindSplitWatchpoint(addr, size, direction, strict);
@@ -201,7 +201,7 @@ DebugControlRegister retrieveSplitWatchpointConfig(u64 addr, size_t size, Watchp
     return ret;
 }
 
-int addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
+int addWatchpoint(uintptr_t addr, size_t size, WatchpointLoadStoreControl direction)
 {
     if (size == 0) {
         return -EINVAL;
@@ -242,7 +242,7 @@ int addWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
             return -EINVAL;
         }
 
-        u64 addr2 = (addr + size) & ~7ull;
+        uintptr_t addr2 = (addr + size) & ~7ull;
         size_t off1 = addr & 7ull;
         size_t size1 = (addr != addr2) ? 8 - off1 : size;
         size_t size2 = size - size1;
@@ -290,7 +290,7 @@ static void combineAllCurrentWatchpoints(void)
     }
 }
 
-int removeWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction)
+int removeWatchpoint(uintptr_t addr, size_t size, WatchpointLoadStoreControl direction)
 {
     if (size == 0) {
         return -EINVAL;
