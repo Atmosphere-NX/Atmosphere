@@ -189,10 +189,14 @@ static DebugRegisterPair *doFindSplitWatchpoint(u64 addr, size_t size, Watchpoin
     return NULL;
 }
 
-DebugRegisterPair *findSplitWatchpoint(u64 addr, size_t size, WatchpointLoadStoreControl direction, bool strict)
+DebugControlRegister retrieveSplitWatchpointConfig(u64 addr, size_t size, WatchpointLoadStoreControl direction, bool strict)
 {
     recursiveSpinlockLock(&g_watchpointManager.lock);
-    DebugRegisterPair *ret = doFindSplitWatchpoint(addr, size, direction, strict);
+    DebugRegisterPair *wp = doFindSplitWatchpoint(addr, size, direction, strict);
+    DebugControlRegister ret = { 0 };
+    if (wp != NULL) {
+        ret = wp->cr;
+    }
     recursiveSpinlockUnlock(&g_watchpointManager.lock);
     return ret;
 }
