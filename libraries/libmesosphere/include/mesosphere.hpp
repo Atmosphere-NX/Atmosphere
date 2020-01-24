@@ -32,6 +32,7 @@
 #include "mesosphere/init/kern_init_elf.hpp"
 #include "mesosphere/init/kern_init_layout.hpp"
 #include "mesosphere/init/kern_init_page_table_select.hpp"
+#include "mesosphere/init/kern_init_arguments_select.hpp"
 
 /* Core functionality. */
 #include "mesosphere/kern_select_interrupts.hpp"

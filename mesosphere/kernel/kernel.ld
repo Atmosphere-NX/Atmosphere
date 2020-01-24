@@ -18,7 +18,7 @@ SECTIONS
 
 	.crt0 :
 	{
-		KEEP (*(.crt0))
+		KEEP (*(.crt0 .crt0.*))
 		. = ALIGN(8);
 	} :code
 

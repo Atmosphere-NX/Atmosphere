@@ -94,9 +94,116 @@ core0_el1:
     add x3, x0, x3
     blr x3
 
-    /* TODO: Finish post-kernelldr init code. */
-1:
-    b 1b
+    /* At this point kernelldr has been invoked, and we are relocated at a random virtual address. */
+    /* Next thing to do is to set up our memory management and slabheaps -- all the other core initialization. */
+    /* Call ams::kern::init::InitializeCore(uintptr_t, uintptr_t) */
+    mov x1, x0  /* Kernelldr returns a KInitialPageAllocator state for the kernel to re-use. */
+    mov x0, xzr /* Official kernel always passes zero, when this is non-zero the address is mapped. */
+    bl _ZN3ams4kern4init14InitializeCoreEmm
+
+    /* Get the init arguments for core 0. */
+    mov x0, xzr
+    bl _ZN3ams4kern4init23GetInitArgumentsAddressEi
+
+    bl _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE
+
+/* ams::kern::init::StartOtherCore(const ams::kern::init::KInitArguments *) */
+.section    .crt0.text._ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE, "ax", %progbits
+.global     _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE
+.type       _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE, %function
+_ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE:
+    /* Preserve the KInitArguments pointer in a register. */
+    mov x20, x0
+
+    /* Check our current EL. We want to be executing out of EL1. */
+    /* If we're in EL2, we'll need to deprivilege ourselves. */
+    mrs x1, currentel
+    cmp x1, #0x4
+    b.eq othercore_el1
+    cmp x1, #0x8
+    b.eq othercore_el2
+othercore_el3:
+    b othercore_el3
+othercore_el2:
+    bl _ZN3ams4kern4init16JumpFromEL2ToEL1Ev
+othercore_el1:
+    bl _ZN3ams4kern4init19DisableMmuAndCachesEv
+
+    /* Setup system registers using values from our KInitArguments. */
+    ldr x1, [x20, #0x00]
+    msr ttbr0_el1, x1
+    ldr x1, [x20, #0x08]
+    msr ttbr1_el1, x1
+    ldr x1, [x20, #0x10]
+    msr tcr_el1, x1
+    ldr x1, [x20, #0x18]
+    msr mair_el1, x1
+
+    /* Perform cpu-specific setup. */
+    mrs x1, midr_el1
+    ubfx x2, x1, #0x18, #0x8 /* Extract implementer bits. */
+    cmp x2, #0x41            /* Implementer::ArmLimited */
+    b.ne othercore_cpu_specific_setup_end
+    ubfx x2, x1, #0x4, #0xC  /* Extract primary part number. */
+    cmp x2, #0xD07           /* PrimaryPartNumber::CortexA57 */
+    b.eq othercore_cpu_specific_setup_cortex_a57
+    cmp x2, #0xD03           /* PrimaryPartNumber::CortexA53 */
+    b.eq othercore_cpu_specific_setup_cortex_a53
+    b othercore_cpu_specific_setup_end
+othercore_cpu_specific_setup_cortex_a57:
+othercore_cpu_specific_setup_cortex_a53:
+    ldr x1, [x20, #0x20]
+    msr cpuactlr_el1, x1
+    ldr x1, [x20, #0x28]
+    msr cpuectlr_el1, x1
+
+othercore_cpu_specific_setup_end:
+    /* Ensure instruction consistency. */
+    dsb sy
+    isb
+
+    /* Set sctlr_el1 and ensure instruction consistency. */
+    ldr x1, [x20, #0x30]
+    msr sctlr_el1, x1
+
+    dsb sy
+    isb
+
+    /* Jump to the virtual address equivalent to ams::kern::init::InvokeEntrypoint */
+    ldr x1, [x20, #0x50]
+    adr x2, _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE
+    sub x1, x1, x2
+    adr x2, _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE
+    add x1, x1, x2
+    mov x0, x20
+    br x1
+
+/* ams::kern::init::InvokeEntrypoint(const ams::kern::init::KInitArguments *) */
+.section    .crt0.text._ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE, "ax", %progbits
+.global     _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE
+.type       _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE, %function
+_ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE:
+    /* Preserve the KInitArguments pointer in a register. */
+    mov x20, x0
+
+    /* Clear CPACR_EL1. This will prevent classes of traps (SVE, etc). */
+    msr cpacr_el1, xzr
+    isb
+
+    /* Setup the stack pointer. */
+    ldr x1, [x20, #0x38]
+    mov sp, x1
+
+    /* Ensure that system debug registers are setup. */
+    bl _ZN3ams4kern4init24InitializeDebugRegistersEv
+
+    /* Ensure that the exception vectors are setup. */
+    bl _ZN3ams4kern4init26InitializeExceptionVectorsEv
+
+    /* Jump to the entrypoint. */
+    ldr x1, [x20, #0x40]
+    ldr x0, [x20, #0x48]
+    br x1
 
 
 /* ams::kern::init::JumpFromEL2ToEL1() */

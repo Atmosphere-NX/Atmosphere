@@ -19,6 +19,19 @@
 
 namespace ams::kern::arm64::cpu {
 
+#if defined(ATMOSPHERE_CPU_ARM_CORTEX_A57) || defined(ATMOSPHERE_CPU_ARM_CORTEX_A53)
+    constexpr inline size_t InstructionCacheLineSize = 0x40;
+    constexpr inline size_t DataCacheLineSize        = 0x40;
+#else
+    #error "Unknown CPU for cache line sizes"
+#endif
+
+#if defined(ATMOSPHERE_BOARD_NINTENDO_SWITCH)
+    static constexpr size_t NumCores = 4;
+#else
+    #error "Unknown Board for cpu::NumCores"
+#endif
+
     /* Helpers for managing memory state. */
     ALWAYS_INLINE void DataSynchronizationBarrier() {
         __asm__ __volatile__("dsb sy" ::: "memory");

@@ -495,4 +495,31 @@ namespace ams::kern::init {
 
     };
 
+    class KInitialPageAllocator : public KInitialPageTable::IPageAllocator {
+        private:
+            uintptr_t next_address;
+        public:
+            constexpr ALWAYS_INLINE KInitialPageAllocator() : next_address(Null<uintptr_t>) { /* ... */ }
+
+            ALWAYS_INLINE void Initialize(uintptr_t address) {
+                this->next_address = address;
+            }
+
+            ALWAYS_INLINE uintptr_t GetFinalState() {
+                const uintptr_t final_address = this->next_address;
+                this->next_address = Null<uintptr_t>;
+                return final_address;
+            }
+        public:
+            virtual KPhysicalAddress Allocate() override {
+                MESOSPHERE_ABORT_UNLESS(this->next_address != Null<uintptr_t>);
+                const uintptr_t allocated = this->next_address;
+                this->next_address += PageSize;
+                std::memset(reinterpret_cast<void *>(allocated), 0, PageSize);
+                return allocated;
+            }
+
+            /* No need to override free. The default does nothing, and so would we. */
+    };
+
 }

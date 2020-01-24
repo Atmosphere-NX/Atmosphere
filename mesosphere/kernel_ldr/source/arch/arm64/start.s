@@ -75,10 +75,10 @@ _start:
     bl _ZN3ams4kern4init6loader4MainEmPNS1_12KernelLayoutEm
     str x0, [sp, #0x00]
 
-    /* Call ams::kern::init::loader::Finalize() */
-    bl _ZN3ams4kern4init6loader8FinalizeEv
+    /* Call ams::kern::init::loader::GetFinalPageAllocatorState() */
+    bl _ZN3ams4kern4init6loader26GetFinalPageAllocatorStateEv
 
-    /* X0 is now the next address for the page allocator. */
+    /* X0 is now the saved state for the page allocator. */
     /* We will return this to the kernel. */
 
     /* Return to the newly-relocated kernel. */
