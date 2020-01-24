@@ -2,7 +2,7 @@
  * arch/arm/mach-tegra/tegra21_emc.h
  *
  * Copyright (c) 2014-2015, NVIDIA CORPORATION.  All rights reserved.
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

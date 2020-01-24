@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  * Copyright (c) 2019 m4xw <m4x@m4xw.net>
  *
  * This program is free software; you can redistribute it and/or modify it
