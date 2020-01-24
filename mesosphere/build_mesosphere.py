@@ -15,10 +15,10 @@ def main(argc, argv):
         kernel_ldr = f.read()
     with open('kernel/kernel.bin', 'rb') as f:
         kernel = f.read()
-    kernel_metadata_offset = up('<I', kernel[4:8])[0]
+    kernel_metadata_offset = 4
     assert (kernel_metadata_offset <= len(kernel) - 0x40)
     assert (kernel[kernel_metadata_offset:kernel_metadata_offset + 4] == b'MSS0')
-    kernel_end = up('<I', kernel[kernel_metadata_offset + 0x30:kernel_metadata_offset + 0x34])[0]
+    kernel_end = up('<I', kernel[kernel_metadata_offset + 0x34:kernel_metadata_offset + 0x38])[0]
     assert (kernel_end >= len(kernel))
 
     embedded_ini = b''
@@ -29,9 +29,9 @@ def main(argc, argv):
     kernel_ldr_end    = kernel_ldr_offset + len(kernel_ldr)
 
     with open('mesosphere.bin', 'wb') as f:
-        f.write(kernel[:kernel_metadata_offset + 8])
-        f.write(pk('<II', embedded_ini_offset, kernel_ldr_offset))
-        f.write(kernel[kernel_metadata_offset + 0x10:])
+        f.write(kernel[:kernel_metadata_offset + 4])
+        f.write(pk('<QQ', embedded_ini_offset, kernel_ldr_offset))
+        f.write(kernel[kernel_metadata_offset + 0x14:])
         f.seek(embedded_ini_offset)
         f.write(embedded_ini)
         f.seek(embedded_ini_end)
