@@ -107,20 +107,8 @@ _ZN3ams4kern4init16JumpFromEL2ToEL1Ev:
     /* We're going to want to ERET to our caller. */
     msr elr_el2, x30
 
-    /* Ensure that the cache is coherent. */
-    bl _ZN3ams4kern5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
-    dsb sy
-
-    bl _ZN3ams4kern5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv
-    dsb sy
-
-    bl _ZN3ams4kern5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
-    dsb sy
-
-    /* Invalidate the entire TLB, and ensure instruction consistency. */
-    tlbi vmalle1is
-    dsb sy
-    isb
+    /* Flush the entire data cache and invalidate the entire TLB. */
+    bl _ZN3ams4kern5arm643cpu32FlushEntireDataCacheWithoutStackEv
 
     /* Setup system registers for deprivileging. */
     /* ACTLR_EL2: */
@@ -166,20 +154,8 @@ _ZN3ams4kern4init19DisableMmuAndCachesEv:
     /* The stack isn't set up, so we'll need to trash a register. */
     mov x22, x30
 
-    /* Ensure that the cache is coherent. */
-    bl _ZN3ams4kern5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
-    dsb sy
-
-    bl _ZN3ams4kern5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv
-    dsb sy
-
-    bl _ZN3ams4kern5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
-    dsb sy
-
-    /* Invalidate the entire TLB, and ensure instruction consistency. */
-    tlbi vmalle1is
-    dsb sy
-    isb
+    /* Flush the entire data cache and invalidate the entire TLB. */
+    bl _ZN3ams4kern5arm643cpu32FlushEntireDataCacheWithoutStackEv
 
     /* Invalidate the instruction cache, and ensure instruction consistency. */
     ic ialluis
@@ -199,13 +175,39 @@ _ZN3ams4kern4init19DisableMmuAndCachesEv:
     mov x30, x22
     ret
 
+/* ams::kern::arm64::cpu::FlushEntireDataCacheWithoutStack() */
+.section    .crt0.text._ZN3ams4kern5arm643cpu32FlushEntireDataCacheWithoutStackEv, "ax", %progbits
+.global     _ZN3ams4kern5arm643cpu32FlushEntireDataCacheWithoutStackEv
+.type       _ZN3ams4kern5arm643cpu32FlushEntireDataCacheWithoutStackEv, %function
+_ZN3ams4kern5arm643cpu32FlushEntireDataCacheWithoutStackEv:
+    /* The stack isn't set up, so we'll need to trash a register. */
+    mov x23, x30
+
+    /* Ensure that the cache is coherent. */
+    bl _ZN3ams4kern5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
+    dsb sy
+
+    bl _ZN3ams4kern5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv
+    dsb sy
+
+    bl _ZN3ams4kern5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
+    dsb sy
+
+    /* Invalidate the entire TLB, and ensure instruction consistency. */
+    tlbi vmalle1is
+    dsb sy
+    isb
+
+    mov x30, x23
+    ret
+
 /* ams::kern::arm64::cpu::FlushEntireDataCacheLocalWithoutStack() */
 .section    .crt0.text._ZN3ams4kern5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv, "ax", %progbits
 .global     _ZN3ams4kern5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
 .type       _ZN3ams4kern5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv, %function
 _ZN3ams4kern5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv:
     /* The stack isn't set up, so we'll need to trash a register. */
-    mov x23, x30
+    mov x24, x30
 
     /* CacheLineIdAccessor clidr_el1; */
     mrs x10, clidr_el1
@@ -231,7 +233,7 @@ begin_flush_cache_local_loop:
     b begin_flush_cache_local_loop
 
 done_flush_cache_local_loop:
-    mov x30, x23
+    mov x30, x24
     ret
 
 /* ams::kern::arm64::cpu::FlushEntireDataCacheSharedWithoutStack() */
@@ -240,7 +242,7 @@ done_flush_cache_local_loop:
 .type       _ZN3ams4kern5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv, %function
 _ZN3ams4kern5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv:
     /* The stack isn't set up, so we'll need to trash a register. */
-    mov x23, x30
+    mov x24, x30
 
     /* CacheLineIdAccessor clidr_el1; */
     mrs x10, clidr_el1
@@ -267,7 +269,7 @@ begin_flush_cache_shared_loop:
     b begin_flush_cache_shared_loop
 
 done_flush_cache_shared_loop:
-    mov x30, x23
+    mov x30, x24
     ret
 
 /* ams::kern::arm64::cpu::FlushEntireDataCacheImplWithoutStack() */
