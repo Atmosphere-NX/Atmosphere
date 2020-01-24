@@ -16,6 +16,8 @@
 #include <mesosphere.hpp>
 #include <vapours/svc/svc_codegen.hpp>
 
+/* TODO: Enable compilation of this file when the kernel supports supervisor calls. */
+#if 0
 namespace ams::kern::svc {
 
     namespace {
@@ -41,7 +43,6 @@ namespace ams::kern::svc {
 
     }
 
-    /* TODO: 32-bit ABI */
     const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64From32 = [] {
         std::array<SvcTableEntry, NumSupervisorCalls> table = {};
 
@@ -65,3 +66,4 @@ namespace ams::kern::svc {
     }();
 
 }
+#endif

@@ -269,7 +269,7 @@ namespace ams::kern::init::loader {
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(rw_offset,      0x1000));
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(bss_end_offset, 0x1000));
         const uintptr_t bss_offset            = layout->bss_offset;
-        const uintptr_t ini_end_offset        = layout->ini_end_offset;
+        const uintptr_t ini_load_offset        = layout->ini_load_offset;
         const uintptr_t dynamic_offset        = layout->dynamic_offset;
         const uintptr_t init_array_offset     = layout->init_array_offset;
         const uintptr_t init_array_end_offset = layout->init_array_end_offset;
@@ -277,9 +277,11 @@ namespace ams::kern::init::loader {
         /* Decide if Kernel should have enlarged resource region. */
         const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
         const size_t resource_region_size = KernelResourceRegionSize + (use_extra_resources ? ExtraKernelResourceSize : 0);
+        static_assert(KernelResourceRegionSize > InitialProcessBinarySizeMax);
+        static_assert(KernelResourceRegionSize + ExtraKernelResourceSize > InitialProcessBinarySizeMax);
 
         /* Setup the INI1 header in memory for the kernel. */
-        const uintptr_t ini_end_address  = base_address + ini_end_offset + resource_region_size;
+        const uintptr_t ini_end_address  = base_address + ini_load_offset + resource_region_size;
         const uintptr_t ini_load_address = ini_end_address - InitialProcessBinarySizeMax;
         if (ini_base_address != ini_load_address) {
             /* The INI is not at the correct address, so we need to relocate it. */

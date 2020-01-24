@@ -9,7 +9,8 @@ clean: $(CLEAN_TARGETS)
 	@rm -f mesosphere.bin
 
 mesosphere.bin: $(TARGETS)
-	@echo "todo: py script"
+	@python build_mesosphere.py
+	@echo "Built mesosphere.bin..."
 
 $(TARGETS):
 	$(MAKE) -C $@
