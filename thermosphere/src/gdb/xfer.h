@@ -10,17 +10,8 @@
 #include "gdb.h"
 
 #define GDB_XFER_HANDLER(name)                  GDB_HANDLER(Xfer##name)
-#define GDB_DECLARE_XFER_HANDLER(name)          int GDB_XFER_HANDLER(name)(GDBContext *ctx, bool write, const char *annex, u32 offset, u32 length)
-
-#define GDB_XFER_OSDATA_HANDLER(name)           GDB_XFER_HANDLER(OsData##name)
-#define GDB_DECLARE_XFER_OSDATA_HANDLER(name)   int GDB_XFER_OSDATA_HANDLER(name)(GDBContext *ctx, bool write, u32 offset, u32 length)
+#define GDB_DECLARE_XFER_HANDLER(name)          int GDB_XFER_HANDLER(name)(GDBContext *ctx, bool write, const char *annex, size_t offset, size_t length)
 
 GDB_DECLARE_XFER_HANDLER(Features);
-
-GDB_DECLARE_XFER_OSDATA_HANDLER(CfwVersion);
-GDB_DECLARE_XFER_OSDATA_HANDLER(Memory);
-GDB_DECLARE_XFER_OSDATA_HANDLER(Processes);
-
-GDB_DECLARE_XFER_HANDLER(OsData);
 
 GDB_DECLARE_QUERY_HANDLER(Xfer);

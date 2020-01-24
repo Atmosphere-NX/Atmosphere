@@ -5,45 +5,39 @@
 *   SPDX-License-Identifier: (MIT OR GPL-2.0-or-later)
 */
 
-#include "gdb/verbose.h"
-#include "gdb/net.h"
-#include "gdb/debug.h"
-#include "gdb/tio.h"
+#include <string.h>
 
-static const struct
-{
+#include "verbose.h"
+#include "net.h"
+#include "debug.h"
+
+static const struct {
     const char *name;
     GDBCommandHandler handler;
-} gdbVerboseCommandHandlers[] =
-{
-    { "Attach", GDB_VERBOSE_HANDLER(Attach) },
+} gdbVerboseCommandHandlers[] = {
     { "Cont?", GDB_VERBOSE_HANDLER(ContinueSupported) },
     { "Cont",  GDB_VERBOSE_HANDLER(Continue) },
-    { "File", GDB_VERBOSE_HANDLER(File) },
     { "MustReplyEmpty", GDB_HANDLER(Unsupported) },
-    { "Run", GDB_VERBOSE_HANDLER(Run) },
 };
 
 GDB_DECLARE_HANDLER(VerboseCommand)
 {
     char *nameBegin = ctx->commandData; // w/o leading 'v'
-    if(*nameBegin == 0)
+    if (*nameBegin == 0) {
         return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
     char *nameEnd;
     char *vData = NULL;
 
-    for(nameEnd = nameBegin; *nameEnd != 0 && *nameEnd != ';' && *nameEnd != ':'; nameEnd++);
-    if(*nameEnd != 0)
-    {
+    for (nameEnd = nameBegin; *nameEnd != 0 && *nameEnd != ';' && *nameEnd != ':'; nameEnd++);
+    if (*nameEnd != 0) {
         *nameEnd = 0;
         vData = nameEnd + 1;
     }
 
-    for(u32 i = 0; i < sizeof(gdbVerboseCommandHandlers) / sizeof(gdbVerboseCommandHandlers[0]); i++)
-    {
-        if(strcmp(gdbVerboseCommandHandlers[i].name, nameBegin) == 0)
-        {
+    for (size_t i = 0; i < sizeof(gdbVerboseCommandHandlers) / sizeof(gdbVerboseCommandHandlers[0]); i++) {
+        if (strcmp(gdbVerboseCommandHandlers[i].name, nameBegin) == 0) {
             ctx->commandData = vData;
             return gdbVerboseCommandHandlers[i].handler(ctx);
         }
@@ -54,5 +48,6 @@ GDB_DECLARE_HANDLER(VerboseCommand)
 
 GDB_DECLARE_VERBOSE_HANDLER(ContinueSupported)
 {
-    return GDB_SendPacket(ctx, "vCont;c;C", 9);
+    const char *supported = "vCont;c;C;s;S;t;r";
+    return GDB_SendPacket(ctx, supported, strlen(supported));
 }

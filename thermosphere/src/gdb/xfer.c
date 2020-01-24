@@ -5,249 +5,151 @@
 *   SPDX-License-Identifier: (MIT OR GPL-2.0-or-later)
 */
 
-#include <3ds/os.h>
+#include <string.h>
+#include <stdio.h>
 
-#include "gdb/xfer.h"
-#include "gdb/net.h"
-#include "fmt.h"
+#include "../utils.h"
 
-#include "osdata_cfw_version_template_xml.h"
-#include "osdata_memory_template_xml.h"
-#include "osdata_xml.h"
-#include "target_xml.h"
+#include "xfer.h"
+#include "net.h"
 
-struct
-{
+
+struct {
     const char *name;
-    int (*handler)(GDBContext *ctx, bool write, const char *annex, u32 offset, u32 length);
-} xferCommandHandlers[] =
-{
+    int (*handler)(GDBContext *ctx, bool write, const char *annex, size_t offset, size_t length);
+} xferCommandHandlers[] = {
     { "features", GDB_XFER_HANDLER(Features) },
-    { "osdata",   GDB_XFER_HANDLER(OsData) },
 };
+
+static void GDB_GenerateTargetXml(char *buf)
+{
+    int pos;
+    const char *hdr = "<?xml version=\"1.0\"?><!DOCTYPE feature SYSTEM \"gdb-target.dtd\">";
+    const char *cpuDescBegin = "<feature name=\"org.gnu.gdb.aarch64.core\">";
+    const char *cpuDescEnd =
+    "<reg name=\"sp\" bitsize=\"64\" type=\"data_ptr\"/><reg name=\"pc\""
+    "bitsize=\"64\" type=\"code_ptr\"/><reg name=\"cpsr\" bitsize=\"32\"/></feature>";
+
+    const char *fpuDescBegin =
+    "<feature name=\"org.gnu.gdb.aarch64.fpu\"><vector id=\"v2d\" type=\"ieee_double\" count=\"2\"/>"
+    "<vector id=\"v2u\" type=\"uint64\" count=\"2\"/><vector id=\"v2i\" type=\"int64\" count=\"2\"/>"
+    "<vector id=\"v4f\" type=\"ieee_single\" count=\"4\"/><vector id=\"v4u\" type=\"uint32\" count=\"4\"/>"
+    "<vector id=\"v4i\" type=\"int32\" count=\"4\"/><vector id=\"v8u\" type=\"uint16\" count=\"8\"/>"
+    "<vector id=\"v8i\" type=\"int16\" count=\"8\"/><vector id=\"v16u\" type=\"uint8\" count=\"16\"/>"
+    "<vector id=\"v16i\" type=\"int8\" count=\"16\"/><vector id=\"v1u\" type=\"uint128\" count=\"1\"/>"
+    "<vector id=\"v1i\" type=\"int128\" count=\"1\"/><union id=\"vnd\"><field name=\"f\" type=\"v2d\"/>"
+    "<field name=\"u\" type=\"v2u\"/><field name=\"s\" type=\"v2i\"/></union><union id=\"vns\">"
+    "<field name=\"f\" type=\"v4f\"/><field name=\"u\" type=\"v4u\"/><field name=\"s\" type=\"v4i\"/></union>"
+    "<union id=\"vnh\"><field name=\"u\" type=\"v8u\"/><field name=\"s\" type=\"v8i\"/></union><union id=\"vnb\">"
+    "<field name=\"u\" type=\"v16u\"/><field name=\"s\" type=\"v16i\"/></union><union id=\"vnq\">"
+    "<field name=\"u\" type=\"v1u\"/><field name=\"s\" type=\"v1i\"/></union><union id=\"aarch64v\">"
+    "<field name=\"d\" type=\"vnd\"/><field name=\"s\" type=\"vns\"/><field name=\"h\" type=\"vnh\"/>"
+    "<field name=\"b\" type=\"vnb\"/><field name=\"q\" type=\"vnq\"/></union>";
+
+    const char *fpuDescEnd = "<reg name=\"fpsr\" bitsize=\"32\"/>\r\n  <reg name=\"fpcr\" bitsize=\"32\"/>\r\n</feature>";
+    const char *footer = "</target>";
+
+    strcpy(buf, hdr);
+
+    // CPU registers
+    strcat(buf, cpuDescBegin);
+    pos = (int)strlen(buf);
+    for (u32 i = 0; i < 31; i++) {
+        pos += sprintf(buf + pos, "<reg name=\"x%u\" bitsize=\"64\"/>", i);
+    }
+    strcat(buf, cpuDescEnd);
+
+    strcat(buf, fpuDescBegin);
+    pos = (int)strlen(buf);
+    for (u32 i = i; i < 32; i++) {
+        pos += sprintf(buf + pos, "<reg name=\"v%u\" bitsize=\"128\" type=\"aarch64v\"/>", i);
+    }
+    strcat(buf, fpuDescEnd);
+
+    strcat(buf, footer);
+}
 
 GDB_DECLARE_XFER_HANDLER(Features)
 {
-    if(strcmp(annex, "target.xml") != 0 || write)
+    if(strcmp(annex, "target.xml") != 0 || write) {
         return GDB_ReplyEmpty(ctx);
-    else
-        return GDB_SendStreamData(ctx, (const char *)target_xml, offset, length, target_xml_size, false);
-}
-
-struct
-{
-    const char *name;
-    int (*handler)(GDBContext *ctx, bool write, u32 offset, u32 length);
-} xferOsDataCommandHandlers[] =
-{
-    { "cfwversion", GDB_XFER_OSDATA_HANDLER(CfwVersion) },
-    { "memory",     GDB_XFER_OSDATA_HANDLER(Memory) },
-    { "processes",  GDB_XFER_OSDATA_HANDLER(Processes) },
-};
-
-GDB_DECLARE_XFER_OSDATA_HANDLER(CfwVersion)
-{
-    if(write)
-        return GDB_HandleUnsupported(ctx);
-    else
-    {
-        char buf[512]; // Make sure this doesn't overflow
-        char versionString[16];
-        s64 out;
-        u32 version, commitHash;
-        bool isRelease;
-        u32 sz;
-
-        svcGetSystemInfo(&out, 0x10000, 0);
-        version = (u32)out;
-
-        svcGetSystemInfo(&out, 0x10000, 1);
-        commitHash = (u32)out;
-
-        svcGetSystemInfo(&out, 0x10000, 0x200);
-        isRelease = (bool)out;
-
-        if(GET_VERSION_REVISION(version) == 0)
-            sprintf(versionString, "v%lu.%lu", GET_VERSION_MAJOR(version), GET_VERSION_MINOR(version));
-        else
-            sprintf(versionString, "v%lu.%lu.%lu", GET_VERSION_MAJOR(version), GET_VERSION_MINOR(version), GET_VERSION_REVISION(version));
-
-        sz = (u32)sprintf(buf, (const char *)osdata_cfw_version_template_xml, versionString, commitHash, isRelease ? "Yes" : "No");
-
-        return GDB_SendStreamData(ctx, buf, offset, length, sz, false);
-    }
-}
-
-GDB_DECLARE_XFER_OSDATA_HANDLER(Memory)
-{
-    if(write)
-        return GDB_HandleUnsupported(ctx);
-    else
-    {
-        if(ctx->memoryOsInfoXmlData[0] == 0)
-        {
-            s64 out;
-            u32 applicationUsed, systemUsed, baseUsed;
-            u32 applicationTotal = *(vu32 *)0x1FF80040, systemTotal = *(vu32 *)0x1FF80044, baseTotal = *(vu32 *)0x1FF80048;
-
-            svcGetSystemInfo(&out, 0, 1);
-            applicationUsed = (u32)out;
-
-            svcGetSystemInfo(&out, 0, 2);
-            systemUsed = (u32)out;
-
-            svcGetSystemInfo(&out, 0, 3);
-            baseUsed = (u32)out;
-
-            sprintf(ctx->memoryOsInfoXmlData, (const char *)osdata_memory_template_xml,
-                applicationUsed, applicationTotal - applicationUsed, applicationTotal, (u32)((5ULL + ((1000ULL * applicationUsed) / applicationTotal)) / 10ULL),
-                systemUsed, systemTotal - systemUsed, systemTotal, (u32)((5ULL + ((1000ULL * systemUsed) / systemTotal)) / 10ULL),
-                baseUsed, baseTotal - baseUsed, baseTotal, (u32)((5ULL + ((1000ULL * baseUsed) / baseTotal)) / 10ULL)
-            );
-        }
-
-        u32 size = strlen(ctx->memoryOsInfoXmlData);
-        int n = GDB_SendStreamData(ctx, ctx->memoryOsInfoXmlData, offset, length, size, false);
-
-        if(offset + length >= size)
-            ctx->memoryOsInfoXmlData[0] = 0; // we're done, invalidate
-
-        return n;
-    }
-}
-
-GDB_DECLARE_XFER_OSDATA_HANDLER(Processes)
-{
-    if(write)
-        return GDB_HandleUnsupported(ctx);
-    else
-    {
-        if(ctx->processesOsInfoXmlData[0] == 0)
-        {
-            static const char header[] =
-            /*"<?xml version=\"1.0\"?>"
-            "<!DOCTYPE target SYSTEM \"osdata.dtd\">" IDA rejects the xml header*/
-            "<osdata type=\"processes\">";
-
-            static const char item[] =
-            "<item>"
-            "<column name=\"pid\">%lu</column>"
-            "<column name=\"command\">%s</column>"
-            "</item>";
-
-            static const char footer[] = "</osdata>";
-
-            int n;
-            u32 pos = 0;
-
-            u32 pidList[0x40];
-            s32 processAmount;
-
-            strcpy(ctx->processesOsInfoXmlData, header);
-            pos = sizeof(header) - 1;
-            svcGetProcessList(&processAmount, pidList, 0x40);
-
-            for(s32 i = 0; i < processAmount; i++)
-            {
-                u32 pid = pidList[i];
-                char name[9] = { 0 };
-                s64 out;
-                Handle processHandle;
-                Result res = svcOpenProcess(&processHandle, pidList[i]);
-                if(R_FAILED(res))
-                    continue;
-
-                svcGetProcessInfo(&out, processHandle, 0x10000);
-                memcpy(name, &out, 8);
-                svcCloseHandle(processHandle);
-
-                n = sprintf(ctx->processesOsInfoXmlData + pos, item, pid, name);
-                pos += (u32)n;
-            }
-
-            strcpy(ctx->processesOsInfoXmlData + pos, footer);
-            pos = sizeof(footer) - 1;
-        }
-
-        u32 size = strlen(ctx->processesOsInfoXmlData);
-        int n = GDB_SendStreamData(ctx, ctx->processesOsInfoXmlData, offset, length, size, false);
-
-        if(offset + length >= size)
-            ctx->processesOsInfoXmlData[0] = 0; // we're done, invalidate
-
-        return n;
-    }
-}
-
-GDB_DECLARE_XFER_HANDLER(OsData)
-{
-    if(strcmp(annex, "") == 0 && !write)
-        return GDB_SendStreamData(ctx, (const char *)osdata_xml, offset, length, osdata_xml_size, false);
-    else
-    {
-        for(u32 i = 0; i < sizeof(xferOsDataCommandHandlers) / sizeof(xferOsDataCommandHandlers[0]); i++)
-        {
-            if(strcmp(annex, xferOsDataCommandHandlers[i].name) == 0)
-                return xferOsDataCommandHandlers[i].handler(ctx, write, offset, length);
-        }
     }
 
-    return GDB_HandleUnsupported(ctx);
+    // Generate the target xml on-demand
+    // This is a bit whack, we rightfully assume that GDB won't sent any other command during the stream transfer
+    if (ctx->targetXmlLen == 0) {
+        GDB_GenerateTargetXml(ctx->workBuffer);
+        ctx->targetXmlLen = strlen(ctx->workBuffer);
+    }
+
+    int n = GDB_SendStreamData(ctx, ctx->workBuffer, offset, length, ctx->targetXmlLen, false);
+
+    // Transfer ended
+    if(offset + length >= ctx->targetXmlLen) {
+        ctx->targetXmlLen = 0;
+    }
+
+    return n;
 }
 
 GDB_DECLARE_QUERY_HANDLER(Xfer)
 {
     const char *objectStart = ctx->commandData;
     char *objectEnd = (char*)strchr(objectStart, ':');
-    if(objectEnd == NULL) return -1;
+    if (objectEnd == NULL) {
+        return -1;
+    }
     *objectEnd = 0;
 
     char *opStart = objectEnd + 1;
     char *opEnd = (char*)strchr(opStart, ':');
-    if(opEnd == NULL) return -1;
+    if(opEnd == NULL) {
+        return -1;
+    }
     *opEnd = 0;
 
     char *annexStart = opEnd + 1;
     char *annexEnd = (char*)strchr(annexStart, ':');
-    if(annexEnd == NULL) return -1;
+    if(annexEnd == NULL) {
+        return -1;
+    }
     *annexEnd = 0;
 
     const char *offStart = annexEnd + 1;
-    u32 offset, length;
+    size_t offset, length;
 
     bool write;
     const char *pos;
-    if(strcmp(opStart, "read") == 0)
-    {
-        u32 lst[2];
-        if(GDB_ParseHexIntegerList(lst, offStart, 2, 0) == NULL)
+    if (strcmp(opStart, "read") == 0) {
+        unsigned int lst[2];
+        if(GDB_ParseHexIntegerList(lst, offStart, 2, 0) == NULL) {
             return GDB_ReplyErrno(ctx, EILSEQ);
+        }
 
         offset = lst[0];
         length = lst[1];
         write = false;
-    }
-    else if(strcmp(opStart, "write") == 0)
-    {
+    } else if (strcmp(opStart, "write") == 0) {
         pos = GDB_ParseHexIntegerList(&offset, offStart, 1, ':');
-        if(pos == NULL || *pos++ != ':')
+        if (pos == NULL || *pos++ != ':') {
             return GDB_ReplyErrno(ctx, EILSEQ);
+        }
 
-        u32 len = strlen(pos);
-        if(len == 0 || (len % 2) != 0)
+        size_t len = strlen(pos);
+        if (len == 0 || (len % 2) != 0) {
             return GDB_ReplyErrno(ctx, EILSEQ);
+        }
         length = len / 2;
         write = true;
-    }
-    else
+    } else {
         return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
-    for(u32 i = 0; i < sizeof(xferCommandHandlers) / sizeof(xferCommandHandlers[0]); i++)
-    {
-        if(strcmp(objectStart, xferCommandHandlers[i].name) == 0)
-        {
-            if(write)
+    for (size_t i = 0; i < sizeof(xferCommandHandlers) / sizeof(xferCommandHandlers[0]); i++) {
+        if (strcmp(objectStart, xferCommandHandlers[i].name) == 0) {
+            if(write) {
                 ctx->commandData = (char *)pos;
+            }
 
             return xferCommandHandlers[i].handler(ctx, write, annexStart, offset, length);
         }
