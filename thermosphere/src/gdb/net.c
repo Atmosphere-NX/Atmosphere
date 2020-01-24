@@ -8,8 +8,10 @@
 #include "gdb/net.h"
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "fmt.h"
 #include "minisoc.h"
+#include "../pattern_utils.h"
 
 u8 GDB_ComputeChecksum(const char *packetData, size_t len)
 {
@@ -45,7 +47,7 @@ static inline u32 GDB_DecodeHexDigit(char src, bool *ok)
     }
 }
 
-u32 GDB_DecodeHex(void *dst, const char *src, size_t len) {
+size_t GDB_DecodeHex(void *dst, const char *src, size_t len) {
     size_t i = 0;
     bool ok = true;
     u8 *dst8 = (u8 *)dst;
@@ -56,7 +58,7 @@ u32 GDB_DecodeHex(void *dst, const char *src, size_t len) {
     return (!ok) ? i - 1 : i;
 }
 
-u32 GDB_EscapeBinaryData(u32 *encodedCount, void *dst, const void *src, size_t len, size_t maxLen)
+size_t GDB_EscapeBinaryData(size_t *encodedCount, void *dst, const void *src, size_t len, size_t maxLen)
 {
     u8 *dst8 = (u8 *)dst;
     const u8 *src8 = (const u8 *)src;
@@ -80,7 +82,7 @@ u32 GDB_EscapeBinaryData(u32 *encodedCount, void *dst, const void *src, size_t l
     return src8 - (u8 *)src;
 }
 
-u32 GDB_UnescapeBinaryData(void *dst, const void *src, size_t len)
+size_t GDB_UnescapeBinaryData(void *dst, const void *src, size_t len)
 {
     u8 *dst8 = (u8 *)dst;
     const u8 *src8 = (const u8 *)src;

@@ -15,7 +15,8 @@
 // 512+24 is the ideal size as IDA will try to read exactly 0x100 bytes at a time. Add 4 to this, for $#<checksum>, see below.
 // IDA seems to want additional bytes as well.
 // 1024 is fine enough to put all regs in the 'T' stop reply packets
-#define GDB_BUF_LEN 2048
+#define GDB_BUF_LEN 0x800
+#define GDB_WORK_BUF_LEN 0x2000
 
 #define GDB_HANDLER(name)           GDB_Handle##name
 #define GDB_QUERY_HANDLER(name)     GDB_HANDLER(Query##name)
@@ -97,6 +98,7 @@ typedef struct GDBContext
     char *commandData, *commandEnd;
     int latestSentPacketSize;
     char buffer[GDB_BUF_LEN + 4];
+    char *workBuffer;
 } GDBContext;
 
 typedef int (*GDBCommandHandler)(GDBContext *ctx);

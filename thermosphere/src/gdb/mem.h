@@ -9,14 +9,9 @@
 
 #include "gdb.h"
 
-Result GDB_ReadTargetMemoryInPage(void *out, GDBContext *ctx, u32 addr, u32 len);
-Result GDB_WriteTargetMemoryInPage(GDBContext *ctx, const void *in, u32 addr, u32 len);
-u32 GDB_ReadTargetMemory(void *out, GDBContext *ctx, u32 addr, u32 len);
-u32 GDB_WriteTargetMemory(GDBContext *ctx, const void *in, u32 addr, u32 len);
-
-int GDB_SendMemory(GDBContext *ctx, const char *prefix, u32 prefixLen, u32 addr, u32 len);
-int GDB_WriteMemory(GDBContext *ctx, const void *buf, u32 addr, u32 len);
-u32 GDB_SearchMemory(bool *found, GDBContext *ctx, u32 addr, u32 len, const void *pattern, u32 patternLen);
+int GDB_SendMemory(GDBContext *ctx, const char *prefix, size_t prefixLen, uintptr_t addr, size_t len);
+int GDB_WriteMemory(GDBContext *ctx, const void *buf, uintptr_t addr, size_t len);
+u32 GDB_SearchMemory(bool *found, GDBContext *ctx, size_t addr, size_t len, const void *pattern, size_t patternLen);
 
 GDB_DECLARE_HANDLER(ReadMemory);
 GDB_DECLARE_HANDLER(WriteMemory);

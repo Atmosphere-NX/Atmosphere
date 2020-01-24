@@ -5,228 +5,70 @@
 *   SPDX-License-Identifier: (MIT OR GPL-2.0-or-later)
 */
 
-#include "gdb/mem.h"
-#include "gdb/net.h"
-#include "utils.h"
+#include <string.h>
+#include "mem.h"
+#include "net.h"
+#include "../guest_memory.h"
+#include "../pattern_utils.h"
 
-static void *k_memcpy_no_interrupt(void *dst, const void *src, u32 len)
+int GDB_SendMemory(GDBContext *ctx, const char *prefix, size_t prefixLen, size_t addr, size_t len)
 {
-    __asm__ volatile("cpsid aif");
-    return memcpy(dst, src, len);
-}
+    char *buf = ctx->buffer + 1;
+    char *membuf = ctx->workBuffer;
 
-Result GDB_ReadTargetMemoryInPage(void *out, GDBContext *ctx, u32 addr, u32 len)
-{
-    s64 TTBCR;
-    svcGetSystemInfo(&TTBCR, 0x10002, 0);
-
-    if(addr < (1u << (32 - (u32)TTBCR))) // Note: UB with user-mapped MMIO (uses memcpy).
-        return svcReadProcessMemory(out, ctx->debug, addr, len);
-    else if(!ctx->enableExternalMemoryAccess)
-        return -1;
-    else if(addr >= 0x80000000 && addr < 0xB0000000)
-    {
-        if(addr >= 0x90000000 && addr < 0x98000000) // IO
-        {
-            for(u32 off = 0; off < len; )
-            {
-                if((addr + off) & 1)
-                {
-                    *((u8 *)out + off) = *(vu8 *)(addr + off);
-                    off += 1;
-                }
-                else if((addr + off) & 3)
-                {
-                    *((u16 *)out + off) = *(vu16 *)(addr + off);
-                    off += 2;
-                }
-                else
-                {
-                    *((u32 *)out + off) = *(vu32 *)(addr + off);
-                    off += 4;
-                }
-            }
-        }
-        else memcpy(out, (const void *)addr, len);
-        return 0;
+    if(prefix != NULL) {
+        memmove(buf, prefix, prefixLen);
     }
-    else
-    {
-        u32 PA = svcConvertVAToPA((const void *)addr, false);
-
-        if(PA == 0)
-            return -1;
-        else
-        {
-            svcCustomBackdoor(k_memcpy_no_interrupt, out, (const void *)addr, len);
-            return 0;
-        }
-    }
-}
-
-Result GDB_WriteTargetMemoryInPage(GDBContext *ctx, const void *in, u32 addr, u32 len)
-{
-    s64 TTBCR;
-    svcGetSystemInfo(&TTBCR, 0x10002, 0);
-
-    if(addr < (1u << (32 - (u32)TTBCR)))
-        return svcWriteProcessMemory(ctx->debug, in, addr, len); // not sure if it checks if it's IO or not. It probably does
-    else if(!ctx->enableExternalMemoryAccess)
-        return -1;
-    else if(addr >= 0x80000000 && addr < 0xB0000000)
-    {
-        if(addr >= 0x90000000 && addr < 0x98000000) // IO
-        {
-            for(u32 off = 0; off < len; )
-            {
-                if((addr + off) & 1)
-                {
-                    *(vu8 *)(addr + off) = *((u8 *)in + off);
-                    off += 1;
-                }
-                else if((addr + off) & 3)
-                {
-                    *(vu16 *)(addr + off) = *((u16 *)in + off);
-                    off += 2;
-                }
-                else
-                {
-                    *(vu32 *)(addr + off) = *((u32 *)in + off);
-                    off += 4;
-                }
-            }
-        }
-        else memcpy((void *)addr, in, len);
-        return 0;
-    }
-    else
-    {
-        u32 PA = svcConvertVAToPA((const void *)addr, true);
-
-        if(PA != 0)
-        {
-            svcCustomBackdoor(k_memcpy_no_interrupt, (void *)addr, in, len);
-            return 0;
-        }
-        else
-        {
-            // Unreliable, use at your own risk
-
-            svcFlushEntireDataCache();
-            svcInvalidateEntireInstructionCache();
-            Result ret = GDB_WriteTargetMemoryInPage(ctx, PA_FROM_VA_PTR(in), addr, len);
-            svcFlushEntireDataCache();
-            svcInvalidateEntireInstructionCache();
-            return ret;
-        }
-    }
-}
-
-u32 GDB_ReadTargetMemory(void *out, GDBContext *ctx, u32 addr, u32 len)
-{
-    Result r = 0;
-    u32 remaining = len, total = 0;
-    u8 *out8 = (u8 *)out;
-    do
-    {
-        u32 nb = (remaining > 0x1000 - (addr & 0xFFF)) ? 0x1000 - (addr & 0xFFF) : remaining;
-        r = GDB_ReadTargetMemoryInPage(out8 + total, ctx, addr, nb);
-        if(R_SUCCEEDED(r))
-        {
-            addr += nb;
-            total += nb;
-            remaining -= nb;
-        }
-    }
-    while(remaining > 0 && R_SUCCEEDED(r));
-
-    return total;
-}
-
-u32 GDB_WriteTargetMemory(GDBContext *ctx, const void *in, u32 addr, u32 len)
-{
-    Result r = 0;
-    u32 remaining = len, total = 0;
-    do
-    {
-        u32 nb = (remaining > 0x1000 - (addr & 0xFFF)) ? 0x1000 - (addr & 0xFFF) : remaining;
-        r = GDB_WriteTargetMemoryInPage(ctx, (u8 *)in + total, addr, nb);
-        if(R_SUCCEEDED(r))
-        {
-            addr += nb;
-            total += nb;
-            remaining -= nb;
-        }
-    }
-    while(remaining > 0 && R_SUCCEEDED(r));
-
-    return total;
-}
-
-int GDB_SendMemory(GDBContext *ctx, const char *prefix, u32 prefixLen, u32 addr, u32 len)
-{
-    char buf[GDB_BUF_LEN];
-    u8 membuf[GDB_BUF_LEN / 2];
-
-    if(prefix != NULL)
-        memcpy(buf, prefix, prefixLen);
-    else
+    else {
         prefixLen = 0;
+    }
 
-    if(prefixLen + 2 * len > GDB_BUF_LEN) // gdb shouldn't send requests which responses don't fit in a packet
+    if(prefixLen + 2 * len > GDB_BUF_LEN) {
+        // gdb shouldn't send requests which responses don't fit in a packet
         return prefix == NULL ? GDB_ReplyErrno(ctx, ENOMEM) : -1;
+    }
 
-    u32 total = GDB_ReadTargetMemory(membuf, ctx, addr, len);
-    if(total == 0)
+    size_t total = guestReadMemory(addr, len, membuf);
+
+    if (total == 0) {
         return prefix == NULL ? GDB_ReplyErrno(ctx, EFAULT) : -EFAULT;
-    else
-    {
+    } else {
         GDB_EncodeHex(buf + prefixLen, membuf, total);
         return GDB_SendPacket(ctx, buf, prefixLen + 2 * total);
     }
 }
 
-int GDB_WriteMemory(GDBContext *ctx, const void *buf, u32 addr, u32 len)
+int GDB_WriteMemory(GDBContext *ctx, const void *buf, uintptr_t addr, size_t len)
 {
-    u32 total = GDB_WriteTargetMemory(ctx, buf, addr, len);
-    if(total != len)
-        return GDB_ReplyErrno(ctx, EFAULT);
-    else
-        return GDB_ReplyOk(ctx);
+    size_t total = guestWriteMemory(addr, len, buf);
+    return total == len ? GDB_ReplyOk(ctx) : GDB_ReplyErrno(ctx, EFAULT);
 }
 
-u32 GDB_SearchMemory(bool *found, GDBContext *ctx, u32 addr, u32 len, const void *pattern, u32 patternLen)
+u32 GDB_SearchMemory(bool *found, GDBContext *ctx, uintptr_t addr, size_t len, const void *pattern, size_t patternLen)
 {
-    u8 buf[0x1000 + 0x1000 * ((GDB_BUF_LEN + 0xFFF) / 0x1000)];
-    u32 maxNbPages = 1 + ((GDB_BUF_LEN + 0xFFF) / 0x1000);
-    u32 curAddr = addr;
+    // Note: need to ensure GDB_WORK_BUF_LEN is at least 0x1000 bytes in size
 
-    s64 TTBCR;
-    svcGetSystemInfo(&TTBCR, 0x10002, 0);
-    while(curAddr < addr + len)
-    {
-        u32 nbPages;
-        u32 addrBase = curAddr & ~0xFFF, addrDispl = curAddr & 0xFFF;
+    char *buf = ctx->workBuffer;
+    size_t maxNbPages = GDB_WORK_BUF_LEN / 0x1000;
+    uintptr_t curAddr = addr;
 
-        for(nbPages = 0; nbPages < maxNbPages; nbPages++)
-        {
-            if(addr >= (1u << (32 - (u32)TTBCR)))
-            {
-                u32 PA = svcConvertVAToPA((const void *)addr, false);
-                if(PA == 0 || (PA >= 0x10000000 && PA <= 0x18000000))
-                    break;
-            }
+    while (curAddr < addr + len) {
+        size_t nbPages;
+        uintptr_t addrBase = curAddr & ~0xFFF;
+        size_t addrDispl = curAddr & 0xFFF;
 
-            if(R_FAILED(GDB_ReadTargetMemoryInPage(buf + 0x1000 * nbPages, ctx, addrBase + nbPages * 0x1000, 0x1000)))
+        for (nbPages = 0; nbPages < maxNbPages; nbPages++) {
+            if (guestReadMemory(addrBase + nbPages * 0x1000, 0x1000, buf + nbPages * 0x1000) != 0x1000) {
                 break;
+            }
         }
 
         u8 *pos = NULL;
-        if(addrDispl + patternLen <= 0x1000 * nbPages)
+        if(addrDispl + patternLen <= 0x1000 * nbPages) {
             pos = memsearch(buf + addrDispl, pattern, 0x1000 * nbPages - addrDispl, patternLen);
+        }
 
-        if(pos != NULL)
-        {
+        if(pos != NULL) {
             *found = true;
             return addrBase + (pos - buf);
         }
@@ -240,92 +82,101 @@ u32 GDB_SearchMemory(bool *found, GDBContext *ctx, u32 addr, u32 len, const void
 
 GDB_DECLARE_HANDLER(ReadMemory)
 {
-    u32 lst[2];
-    if(GDB_ParseHexIntegerList(lst, ctx->commandData, 2, 0) == NULL)
+    unsigned long lst[2];
+    if (GDB_ParseHexIntegerList(lst, ctx->commandData, 2, 0) == NULL) {
         return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
-    u32 addr = lst[0];
-    u32 len = lst[1];
+    uintptr_t addr = lst[0];
+    size_t len = lst[1];
 
     return GDB_SendMemory(ctx, NULL, 0, addr, len);
 }
 
 GDB_DECLARE_HANDLER(WriteMemory)
 {
-    u32 lst[2];
+    unsigned long lst[2];
     const char *dataStart = GDB_ParseHexIntegerList(lst, ctx->commandData, 2, ':');
-    if(dataStart == NULL || *dataStart != ':')
+    if (dataStart == NULL || *dataStart != ':') {
         return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
     dataStart++;
-    u32 addr = lst[0];
-    u32 len = lst[1];
+    uintptr_t addr = lst[0];
+    size_t len = lst[1];
 
-    if(dataStart + 2 * len >= ctx->buffer + 4 + GDB_BUF_LEN)
+    if(dataStart + 2 * len >= ctx->buffer + 4 + GDB_BUF_LEN) {
+        // Data len field doesn't match what we got...
         return GDB_ReplyErrno(ctx, ENOMEM);
+    }
 
-    u8 data[GDB_BUF_LEN / 2];
-    u32 n = GDB_DecodeHex(data, dataStart, len);
+    size_t n = GDB_DecodeHex(ctx->workBuffer, dataStart, len);
 
-    if(n != len)
+    if(n != len) {
+        // Decoding error...
         return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
-    return GDB_WriteMemory(ctx, data, addr, len);
+    return GDB_WriteMemory(ctx, ctx->workBuffer, addr, len);
 }
 
 GDB_DECLARE_HANDLER(WriteMemoryRaw)
 {
-    u32 lst[2];
+    unsigned long lst[2];
     const char *dataStart = GDB_ParseHexIntegerList(lst, ctx->commandData, 2, ':');
-    if(dataStart == NULL || *dataStart != ':')
+    if (dataStart == NULL || *dataStart != ':') {
         return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
     dataStart++;
-    u32 addr = lst[0];
-    u32 len = lst[1];
+    uintptr_t addr = lst[0];
+    size_t len = lst[1];
 
-    if(dataStart + len >= ctx->buffer + 4 + GDB_BUF_LEN)
+    if(dataStart + 2 * len >= ctx->buffer + 4 + GDB_BUF_LEN) {
+        // Data len field doesn't match what we got...
         return GDB_ReplyErrno(ctx, ENOMEM);
+    }
 
-    u8 data[GDB_BUF_LEN];
-    u32 n = GDB_UnescapeBinaryData(data, dataStart, len);
+    // Note: could be done in place in ctx->buffer...
+    size_t n = GDB_UnescapeBinaryData(ctx->workBuffer, dataStart, len);
 
-    if(n != len)
+    if(n != len) {
+        // Decoding error...
         return GDB_ReplyErrno(ctx, n);
+    }
 
-    return GDB_WriteMemory(ctx, data, addr, len);
+    return GDB_WriteMemory(ctx, ctx->workBuffer, addr, len);
 }
 
 GDB_DECLARE_QUERY_HANDLER(SearchMemory)
 {
-    u32 lst[2];
-    u32 addr, len;
-    u8 pattern[GDB_BUF_LEN];
+    unsigned long lst[2];
     const char *patternStart;
-    u32 patternLen;
+    size_t patternLen;
     bool found;
     u32 foundAddr;
 
-    if(strncmp(ctx->commandData, "memory:", 7) != 0)
+    if (strncmp(ctx->commandData, "memory:", 7) != 0) {
         return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
     ctx->commandData += 7;
     patternStart = GDB_ParseIntegerList(lst, ctx->commandData, 2, ';', ';', 16, false);
-    if(patternStart == NULL || *patternStart != ';')
+    if (patternStart == NULL || *patternStart != ';') {
         return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
-    addr = lst[0];
-    len = lst[1];
+    uintptr_t addr = lst[0];
+    size_t len = lst[1];
 
     patternStart++;
     patternLen = ctx->commandEnd - patternStart;
 
+    // Unescape pattern in place
+    char *pattern = patternStart;
     patternLen = GDB_UnescapeBinaryData(pattern, patternStart, patternLen);
 
     foundAddr = GDB_SearchMemory(&found, ctx, addr, len, patternStart, patternLen);
 
-    if(found)
-        return GDB_SendFormattedPacket(ctx, "1,%x", foundAddr);
-    else
-        return GDB_SendPacket(ctx, "0", 1);
+    return found ? GDB_SendFormattedPacket(ctx, "1,%x", foundAddr) : GDB_SendPacket(ctx, "0", 1);
 }
