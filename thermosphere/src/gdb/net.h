@@ -13,9 +13,9 @@
 
 u8 GDB_ComputeChecksum(const char *packetData, size_t len);
 void GDB_EncodeHex(char *dst, const void *src, size_t len);
-u32 GDB_DecodeHex(void *dst, const char *src, size_t len);
-u32 GDB_EscapeBinaryData(u32 *encodedCount, void *dst, const void *src, size_t len, size_t maxLen);
-u32 GDB_UnescapeBinaryData(void *dst, const void *src, size_t len);
+size_t GDB_DecodeHex(void *dst, const char *src, size_t len);
+size_t GDB_EscapeBinaryData(size_t *encodedCount, void *dst, const void *src, size_t len, size_t maxLen);
+size_t GDB_UnescapeBinaryData(void *dst, const void *src, size_t len);
 
 const char *GDB_ParseIntegerList(unsigned long *dst, const char *src, size_t nb, char sep, char lastSep, u32 base, bool allowPrefix);
 const char *GDB_ParseHexIntegerList(unsigned long *dst, const char *src, size_t nb, char lastSep);

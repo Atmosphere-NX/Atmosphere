@@ -262,7 +262,7 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info)
             size_t sent = 0;
             size_t total = 0;
             while (remaining > 0) {
-                u32 pending = (GDB_BUF_LEN - 1) / 2;
+                size_t pending = (GDB_BUF_LEN - 1) / 2;
                 pending = pending < remaining ? pending : remaining;
 
                 int res = GDB_SendMemory(ctx, "O", 1, addr + sent, pending);
