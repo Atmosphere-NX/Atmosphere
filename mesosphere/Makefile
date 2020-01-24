@@ -1,12 +1,20 @@
-MODULES := kernel_ldr
+TARGETS := kernel kernel_ldr
+CLEAN_TARGETS := $(foreach target,$(TARGETS),$(target)-clean)
 
 SUBFOLDERS := $(MODULES)
 
-TOPTARGETS := all clean
+all: mesosphere.bin
 
-$(TOPTARGETS): $(SUBFOLDERS)
+clean: $(CLEAN_TARGETS)
+	@rm -f mesosphere.bin
 
-$(SUBFOLDERS):
-	$(MAKE) -C $@ $(MAKECMDGOALS)
+mesosphere.bin: $(TARGETS)
+	@echo "todo: py script"
 
-.PHONY: $(TOPTARGETS) $(SUBFOLDERS)
+$(TARGETS):
+	$(MAKE) -C $@
+
+$(CLEAN_TARGETS):
+	$(MAKE) -C $(@:-clean=) clean
+
+.PHONY: all clean $(TARGETS) $(CLEAN_TARGETS)
