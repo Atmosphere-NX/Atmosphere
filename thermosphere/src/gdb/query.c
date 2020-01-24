@@ -5,28 +5,24 @@
 *   SPDX-License-Identifier: (MIT OR GPL-2.0-or-later)
 */
 
-#include "gdb/query.h"
-#include "gdb/xfer.h"
-#include "gdb/thread.h"
-#include "gdb/mem.h"
-#include "gdb/net.h"
-#include "gdb/remote_command.h"
+#include "../utils.h"
 
-typedef enum GDBQueryDirection
-{
+#include "query.h"
+#include "xfer.h"
+#include "thread.h"
+#include "mem.h"
+#include "net.h"
+#include "remote_command.h"
+
+typedef enum GDBQueryDirection {
     GDB_QUERY_DIRECTION_READ,
     GDB_QUERY_DIRECTION_WRITE
 } GDBQueryDirection;
 
-// https://gcc.gnu.org/onlinedocs/gcc-5.3.0/cpp/Stringification.html
-#define xstr(s) str(s)
-#define str(s) #s
-
 #define GDB_QUERY_HANDLER_LIST_ITEM_3(name, name2, direction)   { name, GDB_QUERY_HANDLER(name2), GDB_QUERY_DIRECTION_##direction }
-#define GDB_QUERY_HANDLER_LIST_ITEM(name, direction)            GDB_QUERY_HANDLER_LIST_ITEM_3(xstr(name), name, direction)
+#define GDB_QUERY_HANDLER_LIST_ITEM(name, direction)            GDB_QUERY_HANDLER_LIST_ITEM_3(STRINGIZE(name), name, direction)
 
-static const struct
-{
+static const struct {
     const char *name;
     GDBCommandHandler handler;
     GDBQueryDirection direction;
@@ -43,7 +39,6 @@ static const struct
     GDB_QUERY_HANDLER_LIST_ITEM(GetTLSAddr, READ),
     GDB_QUERY_HANDLER_LIST_ITEM_3("C", CurrentThreadId, READ),
     GDB_QUERY_HANDLER_LIST_ITEM_3("Search", SearchMemory, READ),
-    GDB_QUERY_HANDLER_LIST_ITEM(CatchSyscalls, WRITE),
     GDB_QUERY_HANDLER_LIST_ITEM(Rcmd, READ),
 };
 
@@ -89,11 +84,12 @@ int GDB_HandleWriteQuery(GDBContext *ctx)
 
 GDB_DECLARE_QUERY_HANDLER(Supported)
 {
+    // TODO!
     return GDB_SendFormattedPacket(ctx,
         "PacketSize=%x;"
         "qXfer:features:read+;qXfer:osdata:read+;"
-        "QStartNoAckMode+;QThreadEvents+;QCatchSyscalls+;"
-        "vContSupported+;swbreak+",
+        "QStartNoAckMode+;QThreadEvents+"
+        "vContSupported+;swbreak+;hwbreak+",
 
         GDB_BUF_LEN // should have been sizeof(ctx->buffer) but GDB memory functions are bugged
     );
@@ -107,40 +103,5 @@ GDB_DECLARE_QUERY_HANDLER(StartNoAckMode)
 
 GDB_DECLARE_QUERY_HANDLER(Attached)
 {
-    return GDB_SendPacket(ctx, (ctx->flags & GDB_FLAG_CREATED) ? "0" :  "1", 1);
-}
-
-GDB_DECLARE_QUERY_HANDLER(CatchSyscalls)
-{
-    if(ctx->commandData[0] == '0')
-    {
-        memset(ctx->svcMask, 0, 32);
-        return R_SUCCEEDED(svcKernelSetState(0x10002, ctx->pid, false)) ? GDB_ReplyOk(ctx) : GDB_ReplyErrno(ctx, EPERM);
-    }
-    else if(ctx->commandData[0] == '1')
-    {
-        if(ctx->commandData[1] == ';')
-        {
-            u32 id;
-            const char *pos = ctx->commandData + 1;
-            memset(ctx->svcMask, 0, 32);
-
-            do
-            {
-                pos = GDB_ParseHexIntegerList(&id, pos + 1, 1, ';');
-                if(pos == NULL)
-                    return GDB_ReplyErrno(ctx, EILSEQ);
-
-                if(id < 0xFE)
-                    ctx->svcMask[id / 32] |= 1 << (31 - (id % 32));
-            }
-            while(*pos != 0);
-        }
-        else
-            memset(ctx->svcMask, 0xFF, 32);
-
-        return R_SUCCEEDED(svcKernelSetState(0x10002, ctx->pid, true, ctx->svcMask)) ? GDB_ReplyOk(ctx) : GDB_ReplyErrno(ctx, EPERM);
-    }
-    else
-        return GDB_ReplyErrno(ctx, EILSEQ);
+    return GDB_SendPacket(ctx, "1", 1);
 }

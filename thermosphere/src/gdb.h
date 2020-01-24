@@ -99,6 +99,8 @@ typedef struct GDBContext
     int latestSentPacketSize;
     char buffer[GDB_BUF_LEN + 4];
     char *workBuffer;
+
+    size_t targetXmlLen;
 } GDBContext;
 
 typedef int (*GDBCommandHandler)(GDBContext *ctx);
