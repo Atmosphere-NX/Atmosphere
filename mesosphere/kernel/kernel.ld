@@ -80,7 +80,6 @@ SECTIONS
 	.dynsym            : { *(.dynsym) } :rodata
 	.dynstr            : { *(.dynstr) } :rodata
 	.rela.dyn          : { *(.rela.*) } :rodata
-	.interp            : { *(.interp) } :rodata
 	.hash              : { *(.hash) } :rodata
 	.gnu.hash          : { *(.gnu.hash) } :rodata
 	.gnu.version       : { *(.gnu.version) } :rodata
@@ -169,7 +168,7 @@ SECTIONS
 	   ================== */
 
 	/* Discard sections that difficult post-processing */
-	/DISCARD/ : { *(.group .comment .note) }
+	/DISCARD/ : { *(.group .comment .note .interp) }
 
 	/* Stabs debugging sections. */
 	.stab          0 : { *(.stab) }
