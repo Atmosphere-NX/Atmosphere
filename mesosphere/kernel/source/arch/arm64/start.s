@@ -220,7 +220,7 @@ begin_flush_cache_local_loop:
     cmn w9, #1
     b.eq done_flush_cache_local_loop
 
-    /* FlushEntireDataCacheImplWithoutStack(level); */
+    /*     FlushEntireDataCacheImplWithoutStack(level); */
     mov w0, w9
     bl _ZN3ams4kern5arm643cpu36FlushEntireDataCacheImplWithoutStackEv
 
@@ -256,7 +256,7 @@ begin_flush_cache_shared_loop:
     cmp w10, w9
     b.gt done_flush_cache_shared_loop
 
-    /* FlushEntireDataCacheImplWithoutStack(level); */
+    /*     FlushEntireDataCacheImplWithoutStack(level); */
     mov w0, w9
     bl _ZN3ams4kern5arm643cpu36FlushEntireDataCacheImplWithoutStackEv
 

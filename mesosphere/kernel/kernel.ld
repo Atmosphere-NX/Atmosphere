@@ -157,9 +157,10 @@ SECTIONS
 		*(COMMON)
 		. = ALIGN(8);
 	} : data
-	__bss_end__ = .;
 
 	. = ALIGN(0x1000);
+
+	__bss_end__ = .;
 
 	__end__ = ABSOLUTE(.);
 
