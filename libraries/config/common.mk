@@ -82,8 +82,8 @@ ifneq ($(strip $(wildcard source/$(ATMOSPHERE_ARCH_DIR)/.*)),)
 SOURCES += source/$(ATMOSPHERE_ARCH_DIR) $(call DIR_WILDCARD,source/$(ATMOSPHERE_ARCH_DIR))
 endif
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_BOARD_DIR)/.*)),)
-SOURCES += source/$(ATMOSPHERE_BOARD_DIR $(call DIR_WILDCARD,source/$(ATMOSPHERE_BOARD_DIR))
+SOURCES += source/$(ATMOSPHERE_BOARD_DIR) $(call DIR_WILDCARD,source/$(ATMOSPHERE_BOARD_DIR))
 endif
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_OS_DIR)/.*)),)
-SOURCES += source/$(ATMOSPHERE_OS_DIR $(call DIR_WILDCARD,source/$(ATMOSPHERE_OS_DIR))
+SOURCES += source/$(ATMOSPHERE_OS_DIR) $(call DIR_WILDCARD,source/$(ATMOSPHERE_OS_DIR))
 endif
