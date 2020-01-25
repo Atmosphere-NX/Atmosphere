@@ -236,7 +236,10 @@ static int GDB_DoSendPacket(GDBContext *ctx, size_t len)
 
 int GDB_SendPacket(GDBContext *ctx, const char *packetData, size_t len)
 {
-    memmove(ctx->buffer + 1, packetData, len);
+    if (packetData != ctx->buffer + 1) {
+        memmove(ctx->buffer + 1, packetData, len);
+    }
+
     ctx->buffer[0] = '$';
 
     char *checksumLoc = ctx->buffer + len + 1;
@@ -298,7 +301,9 @@ int GDB_SendStreamData(GDBContext *ctx, const char *streamData, size_t offset, s
     }
 
     // Note: ctx->buffer[0] = '$'
-    memmove(ctx->buffer + 2, streamData + offset, length);
+    if (streamData + offset != ctx->buffer + 2) {
+        memmove(ctx->buffer + 2, streamData + offset, length);
+    }
     ctx->buffer[1] = letter; 
     return GDB_SendPacket(ctx, ctx->buffer + 1, 1 + length);
 }

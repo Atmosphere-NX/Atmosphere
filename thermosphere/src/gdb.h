@@ -86,7 +86,8 @@ typedef struct GDBContext
     bool noAckSent;
 
     u32 currentThreadId;
-
+    u32 selectedThreadId;
+    u32 selectedThreadIdForContinuing;
     bool catchThreadEvents;
     bool processEnded, processExited;
 
