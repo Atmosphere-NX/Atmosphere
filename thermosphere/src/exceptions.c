@@ -27,6 +27,8 @@
 #include "debug_pause.h"
 #include "timer.h"
 
+#include "fpu.h"
+
 bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode)
 {
     if (conditionCode == 14) {
@@ -121,6 +123,7 @@ void exceptionReturnPreprocess(ExceptionStackFrame *frame)
         // Were we paused & are we about to return to the guest?
         exceptionEnterInterruptibleHypervisorCode();
         debugPauseWaitAndUpdateSingleStep();
+        fpuCleanInvalidateRegisterCache();
     }
 
     // Update virtual counter

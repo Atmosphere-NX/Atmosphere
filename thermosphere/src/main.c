@@ -15,6 +15,7 @@
 #include "irq.h"
 #include "transport_interface.h"
 #include "guest_memory.h"
+#include "fpu.h"
 
 #include "memory_map.h"
 #include "mmu.h"
@@ -128,4 +129,8 @@ void thermosphereMain(ExceptionStackFrame *frame, u64 pct)
     frame->elr_el2      = currentCoreCtx->kernelEntrypoint;
     frame->x[0]         = currentCoreCtx->kernelArgument;
     frame->cntpct_el0   = pct;
+
+    // Initialize FPU registers -- no need to memset, the regcaches are in .tempbss
+    fpuCommitRegisters();
+    fpuCleanInvalidateRegisterCache();
 }

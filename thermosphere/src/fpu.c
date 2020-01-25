@@ -15,33 +15,45 @@
  */
 
 #include "fpu.h"
-#include "execute_function.h"
 #include "core_ctx.h"
 
-FpuRegisterStorage TEMPORARY g_fpuRegisterStorage[4] = { 0 };
+static FpuRegisterCache TEMPORARY g_fpuRegisterCache[4] = { 0 };
 
 // fpu_regs_load_store.s
-void fpuLoadRegistersFromStorage(const FpuRegisterStorage *storage);
-void fpuStoreRegistersToStorage(FpuRegisterStorage *storage);
+void fpuLoadRegistersFromCache(const FpuRegisterCache *cache);
+void fpuStoreRegistersToCache(FpuRegisterCache *cache);
 
-static void fpuDumpRegistersImpl(void *p)
+FpuRegisterCache *fpuGetRegisterCache(void)
 {
-    (void)p;
-    fpuStoreRegistersToStorage(&g_fpuRegisterStorage[currentCoreCtx->coreId]);
+    return &g_fpuRegisterCache[currentCoreCtx->coreId];
 }
 
-static void fpuRestoreRegistersImpl(void *p)
+FpuRegisterCache *fpuReadRegisters(void)
 {
-    (void)p;
-    fpuLoadRegistersFromStorage(&g_fpuRegisterStorage[currentCoreCtx->coreId]);
+    FpuRegisterCache *cache = &g_fpuRegisterCache[currentCoreCtx->coreId];
+    if (!cache->valid) {
+        fpuStoreRegistersToCache(cache);
+        cache->valid = true;
+    }
+    return cache;
 }
 
-void fpuDumpRegisters(u32 coreList)
+void fpuCommitRegisters(void)
 {
-    executeFunctionOnCores(fpuDumpRegistersImpl, NULL, true, coreList);
+    FpuRegisterCache *cache = &g_fpuRegisterCache[currentCoreCtx->coreId];
+    cache->dirty = true;
+
+    // Because the caller rewrote the entire cache in the event it didn't read it before:
+    cache->valid = true;
 }
 
-void fpuRestoreRegisters(u32 coreList)
+void fpuCleanInvalidateRegisterCache(void)
 {
-    executeFunctionOnCores(fpuRestoreRegistersImpl, NULL, true, coreList);
+    FpuRegisterCache *cache = &g_fpuRegisterCache[currentCoreCtx->coreId];
+    if (cache->dirty) {
+        fpuLoadRegistersFromCache(cache);
+        cache->dirty = false;
+    }
+
+    cache->valid = false;
 }
