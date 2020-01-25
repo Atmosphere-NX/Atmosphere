@@ -38,13 +38,10 @@ static void loadKernelViaSemihosting(void)
 
     DEBUG("Loading kernel via semihosted file I/O... ");
     handle = semihosting_file_open("test_kernel.bin", FOPEN_MODE_RB);
-    if (handle < 0) {
-        PANIC("failed to open file (%ld)!\n", handle);
-    }
+    ENSURE2(handle >= 0, "failed to open file (%ld)!\n", handle);
 
-    if ((ret = semihosting_file_read(handle, &len, buf)) < 0) {
-        PANIC("failed to read file (%ld)!\n", ret);
-    }
+    ret = semihosting_file_read(handle, &len, buf);
+    ENSURE2(ret >= 0, "failed to read file (%ld)!\n", ret);
 
     DEBUG("OK!\n");
     semihosting_file_close(handle);
@@ -115,11 +112,8 @@ void thermosphereMain(ExceptionStackFrame *frame, u64 pct)
 
     if (currentCoreCtx->isBootCore) {
         if (currentCoreCtx->kernelEntrypoint == 0) {
-            if (semihosting_connection_supported()) {
-                loadKernelViaSemihosting();
-            } else {
-                PANIC("Kernel not loaded!\n");
-            }
+            ENSURE2(semihosting_connection_supported(), "Kernel not loaded!\n");
+            loadKernelViaSemihosting();
         }
     }
     else {

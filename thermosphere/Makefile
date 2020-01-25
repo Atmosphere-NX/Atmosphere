@@ -56,11 +56,13 @@ INCLUDES	:=	include ../common/include
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only -ffixed-x18 #<- important
+# Note: -ffixed-x18 and -mgeneral-regs-only are very important and must be enabled
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only -ffixed-x18
 DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"\
 			-DATMOSPHERE_RELEASE_VERSION_HASH="0x$(AMSHASH)" $(PLATFORM_DEFINES)
 CFLAGS	:= \
 	-g \
+	-fmacro-prefix-map=$(TOPDIR)/src/= \
 	-Os \
 	-ffunction-sections \
 	-fdata-sections \

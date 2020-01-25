@@ -237,9 +237,7 @@ static void vgicEnqueueVirqState(VirqStateList *list, VirqState *elem)
 {
     VirqState *pos;
 
-    if (vgicIsStateQueued(elem)) {
-        PANIC("vgicEnqueueVirqState: unsanitized argument idx=%u previd=%u nextid=%u\n", (u32)vgicGetVirqStateIndex(elem), elem->listPrev, elem->listNext);
-    }
+    ENSURE(!vgicIsStateQueued(elem));
 
     for (pos = list->first; pos != vgicGetQueueEnd(); pos = vgicGetNextQueuedVirqState(pos)) {
         // Sort predicate should be stable
@@ -256,9 +254,7 @@ static void vgicDequeueVirqState(VirqStateList *list, VirqState *elem)
     VirqState *prev = vgicGetPrevQueuedVirqState(elem);
     VirqState *next = vgicGetNextQueuedVirqState(elem);
 
-    if (!vgicIsStateQueued(elem)) {
-        PANIC("vgicDequeueVirqState: invalid id %x\n", vgicGetVirqStateIndex(elem));
-    }
+    ENSURE(vgicIsStateQueued(elem));
 
     --list->size;
     if (prev != vgicGetQueueEnd()) {
@@ -873,9 +869,7 @@ static bool vgicUpdateListRegister(volatile ArmGicV2ListRegister *lr)
     u32 srcCoreId = state->coreId;
     u32 coreId = currentCoreCtx->coreId;
 
-    if (!state->handled) {
-        PANIC("vgicUpdateListRegister: improper previous state for now pending irq idx %u, active=%d\n", vgicGetVirqStateIndex(state), (int)state->active);
-    }
+    ENSURE(state->handled);
 
     state->active = lrCopy.active;
 
@@ -995,10 +989,6 @@ void vgicMaintenanceInterruptHandler(void)
         DEBUG("EL2 [core %d]: Group 1 disabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
     }
 
-    if (misr.lrenp) {
-        PANIC("EL2 [core %d]: List Register Entry Not Present maintenance interrupt!\n", currentCoreCtx->coreId);
-    }
-
     if (misr.eoi) {
         //DEBUG("EL2 [core %d]: SGI EOI maintenance interrupt\n", currentCoreCtx->coreId);
     }
@@ -1006,6 +996,8 @@ void vgicMaintenanceInterruptHandler(void)
     if (misr.u) {
         //DEBUG("EL2 [core %d]: Underflow maintenance interrupt\n", currentCoreCtx->coreId);
     }
+
+    ENSURE2(!misr.lrenp, "List Register Entry Not Present maintenance interrupt!\n");
 
     // The rest should be handled by the main loop...
 }
