@@ -5,149 +5,212 @@
 *   SPDX-License-Identifier: (MIT OR GPL-2.0-or-later)
 */
 
-#include "gdb/regs.h"
-#include "gdb/net.h"
+#include <string.h>
+#include <assert.h>
+
+#include "../exceptions.h"
+#include "../fpu.h"
+
+#include "regs.h"
+#include "net.h"
+
+// GDB treats cpsr, fpsr, fpcr as 32-bit integers...
 
 GDB_DECLARE_HANDLER(ReadRegisters)
 {
-    if(ctx->selectedThreadId == 0)
-        ctx->selectedThreadId = ctx->currentThreadId;
+    ENSURE(ctx->selectedThreadId == currentCoreCtx->coreId);
 
-    ThreadContext regs;
-    Result r = svcGetDebugThreadContext(&regs, ctx->debug, ctx->selectedThreadId, THREADCONTEXT_CONTROL_ALL);
+    const ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
+    const FpuRegisterCache *fpuRegCache = fpuReadRegisters();
 
-    if(R_FAILED(r))
-        return GDB_ReplyErrno(ctx, EPERM);
+    char *buf = ctx->buffer + 1;
+    size_t n = 0;
 
-    return GDB_SendHexPacket(ctx, &regs, sizeof(ThreadContext));
+    struct PACKED ALIGN(4) {
+        u64 sp;
+        u64 pc;
+        u32 cpsr;
+    } cpuSprs = {
+        .sp = *exceptionGetSpPtr(frame),
+        .pc = frame->elr_el2,
+        .cpsr = (u32)frame->spsr_el2,
+    };
+    static_assert(sizeof(cpuSprs) == 12, "sizeof(cpuSprs) != 12");
+
+    u32 fpuSprs[2] = {
+        (u32)fpuRegCache->fpsr,
+        (u32)fpuRegCache->fpcr,
+    };
+
+
+    n += GDB_EncodeHex(buf + n, frame->x, sizeof(frame->x));
+    n += GDB_EncodeHex(buf + n, &cpuSprs, sizeof(cpuSprs));
+    n += GDB_EncodeHex(buf + n, fpuRegCache->q, sizeof(fpuRegCache->q));
+    n += GDB_EncodeHex(buf + n, fpuSprs, sizeof(fpuSprs));
+
+    return GDB_SendPacket(ctx, buf, n);
 }
 
 GDB_DECLARE_HANDLER(WriteRegisters)
 {
-    if(ctx->selectedThreadId == 0)
-        ctx->selectedThreadId = ctx->currentThreadId;
+    ENSURE(ctx->selectedThreadId == currentCoreCtx->coreId);
 
-    ThreadContext regs;
+    ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
+    FpuRegisterCache *fpuRegCache = fpuGetRegisterCache();
 
-    if(GDB_DecodeHex(&regs, ctx->commandData, sizeof(ThreadContext)) != sizeof(ThreadContext))
-        return GDB_ReplyErrno(ctx, EPERM);
+    char *buf = ctx->commandData;
+    char *tmp = ctx->workBuffer;
 
-    Result r = svcSetDebugThreadContext(ctx->debug, ctx->selectedThreadId, &regs, THREADCONTEXT_CONTROL_ALL);
-    if(R_FAILED(r))
-        return GDB_ReplyErrno(ctx, EPERM);
-    else
-        return GDB_ReplyOk(ctx);
+    size_t n = 0;
+    size_t m = 0;
+
+    struct PACKED ALIGN(4) {
+        u64 sp;
+        u64 pc;
+        u32 cpsr;
+    } cpuSprs;
+    static_assert(sizeof(cpuSprs) == 12, "sizeof(cpuSprs) != 12");
+
+    u32 fpuSprs[2];
+
+    struct {
+        void *dst;
+        size_t sz;
+    } info[4] = {
+        { frame->x,         sizeof(frame->x)        },
+        { &cpuSprs,         sizeof(cpuSprs)         },
+        { fpuRegCache->q,   sizeof(fpuRegCache->q)  },
+        { fpuSprs,          sizeof(fpuSprs)         },
+    };
+
+    // Parse & return on error
+    for (u32 i = 0; i < 4; i++) {
+        if (GDB_DecodeHex(tmp + m, buf + n, info[i].sz) != info[i].sz) {
+            return GDB_ReplyErrno(ctx, EPERM);
+        }
+        n += 2 * info[i].sz;
+        m += info[i].sz;
+    }
+
+    // Copy. Note: we don't check if cpsr (spsr_el2) was modified to return to EL2...
+    m = 0;
+    for (u32 i = 0; i < 4; i++) {
+        memcpy(info[i].dst, tmp + m, info[i].sz);
+        m += info[i].sz;
+    }
+    *exceptionGetSpPtr(frame) = cpuSprs.sp;
+    frame->elr_el2 = cpuSprs.pc;
+    frame->spsr_el2 = cpuSprs.cpsr;
+    fpuRegCache->fpsr = fpuSprs[0];
+    fpuRegCache->fpcr = fpuSprs[1];
+    fpuCommitRegisters();
+
+    return GDB_ReplyOk(ctx);
 }
 
-static u32 GDB_ConvertRegisterNumber(ThreadContextControlFlags *flags, u32 gdbNum)
+static void GDB_GetRegisterPointerAndSize(size_t *outSz, void **outPtr, unsigned long id, ExceptionStackFrame *frame, FpuRegisterCache *fpuRegCache)
 {
-    if(gdbNum <= 15)
-    {
-        *flags = (gdbNum >= 13) ? THREADCONTEXT_CONTROL_CPU_SPRS : THREADCONTEXT_CONTROL_CPU_GPRS;
-        return gdbNum;
-    }
-    else if(gdbNum == 25)
-    {
-        *flags = THREADCONTEXT_CONTROL_CPU_SPRS;
-        return 16;
-    }
-    else if(gdbNum >= 26 && gdbNum <= 41)
-    {
-        *flags = THREADCONTEXT_CONTROL_FPU_GPRS;
-        return gdbNum - 26;
-    }
-    else if(gdbNum == 42 || gdbNum == 43)
-    {
-        *flags = THREADCONTEXT_CONTROL_FPU_SPRS;
-        return gdbNum - 42;
-    }
-    else
-    {
-        *flags = (ThreadContextControlFlags)0;
-        return 0;
+    switch (id) {
+        case 0 ... 30:
+            *outPtr = &frame->x[id];
+            *outSz = 8;
+            break;
+        case 31:
+            *outPtr = exceptionGetSpPtr(frame);
+            *outSz = 8;
+            break;
+        case 32:
+            *outPtr = &frame->spsr_el2;
+            *outSz = 4;
+            break;
+        case 33 ... 64:
+            *outPtr = &fpuRegCache->q[id - 33];
+            *outSz = 16;
+        case 65:
+            *outPtr = &fpuRegCache->fpsr;
+            *outSz = 4;
+        case 66:
+            *outPtr = &fpuRegCache->fpcr;
+            *outSz = 4;
+        default:
+            __builtin_unreachable();
+            return;
     }
 }
 
 GDB_DECLARE_HANDLER(ReadRegister)
 {
-    if(ctx->selectedThreadId == 0)
-        ctx->selectedThreadId = ctx->currentThreadId;
+    ENSURE(ctx->selectedThreadId == currentCoreCtx->coreId);
 
-    ThreadContext regs;
-    ThreadContextControlFlags flags;
-    u32 gdbRegNum;
+    const ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
+    const FpuRegisterCache *fpuRegCache = NULL;
 
-    if(GDB_ParseHexIntegerList(&gdbRegNum, ctx->commandData, 1, 0) == NULL)
+    char *buf = ctx->buffer + 1;
+    unsigned long gdbRegNum;
+
+    if (GDB_ParseHexIntegerList(&gdbRegNum, ctx->commandData, 1, 0) == NULL) {
         return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
-    u32 n = GDB_ConvertRegisterNumber(&flags, gdbRegNum);
-    if(!flags)
+    // Check the register number
+    if (gdbRegNum >= 31 + 3 + 32 + 2) {
         return GDB_ReplyErrno(ctx, EINVAL);
+    }
 
-    Result r = svcGetDebugThreadContext(&regs, ctx->debug, ctx->selectedThreadId, flags);
+    if (gdbRegNum > 31 + 3) {
+        // FPU register -- must read the FPU registers first
+        fpuRegCache = fpuReadRegisters();
+    }
 
-    if(R_FAILED(r))
-        return GDB_ReplyErrno(ctx, EPERM);
+    size_t sz;
+    void *regPtr;
+    GDB_GetRegisterPointerAndSize(&sz, &regPtr, gdbRegNum, frame, fpuRegCache);
 
-    if(flags & THREADCONTEXT_CONTROL_CPU_GPRS)
-        return GDB_SendHexPacket(ctx, &regs.cpu_registers.r[n], 4);
-    else if(flags & THREADCONTEXT_CONTROL_CPU_SPRS)
-        return GDB_SendHexPacket(ctx, &regs.cpu_registers.sp + (n - 13), 4); // hacky
-    else if(flags & THREADCONTEXT_CONTROL_FPU_GPRS)
-        return GDB_SendHexPacket(ctx, &regs.fpu_registers.d[n], 8);
-    else
-        return GDB_SendHexPacket(ctx, &regs.fpu_registers.fpscr + n, 4); // hacky
+    return GDB_SendHexPacket(ctx, regPtr, sz);
 }
 
 GDB_DECLARE_HANDLER(WriteRegister)
 {
-    if(ctx->selectedThreadId == 0)
-        ctx->selectedThreadId = ctx->currentThreadId;
+    ENSURE(ctx->selectedThreadId == currentCoreCtx->coreId);
 
-    ThreadContext regs;
-    ThreadContextControlFlags flags;
-    u32 gdbRegNum;
+    ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
+    FpuRegisterCache *fpuRegCache = fpuGetRegisterCache();
+
+    char *tmp = ctx->workBuffer;
+    unsigned long gdbRegNum;
 
     const char *valueStart = GDB_ParseHexIntegerList(&gdbRegNum, ctx->commandData, 1, '=');
-    if(valueStart == NULL || *valueStart != '=')
+    if(valueStart == NULL || *valueStart != '=') {
         return GDB_ReplyErrno(ctx, EILSEQ);
-
+    }
     valueStart++;
 
-    u32 n = GDB_ConvertRegisterNumber(&flags, gdbRegNum);
-    u32 value;
-    u64 value64;
-
-    if(flags & THREADCONTEXT_CONTROL_FPU_GPRS)
-    {
-        if(GDB_DecodeHex(&value64, valueStart, 8) != 8 || valueStart[16] != 0)
-            return GDB_ReplyErrno(ctx, EINVAL);
-    }
-    else if(flags)
-    {
-       if(GDB_DecodeHex(&value, valueStart, 4) != 4 || valueStart[8] != 0)
-            return GDB_ReplyErrno(ctx, EINVAL);
-    }
-    else
+    // Check the register number
+    if (gdbRegNum >= 31 + 3 + 32 + 2) {
         return GDB_ReplyErrno(ctx, EINVAL);
+    }
 
-    Result r = svcGetDebugThreadContext(&regs, ctx->debug, ctx->selectedThreadId, flags);
+    size_t sz;
+    void *regPtr;
+    GDB_GetRegisterPointerAndSize(&sz, &regPtr, gdbRegNum, frame, fpuRegCache);
 
-    if(R_FAILED(r))
-        return GDB_ReplyErrno(ctx, EPERM);
+    // Check if we got 2 hex digits per byte
+    if (strlen(valueStart) != 2 * sz) {
+        return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
-    if(flags & THREADCONTEXT_CONTROL_CPU_GPRS)
-        regs.cpu_registers.r[n] = value;
-    else if(flags & THREADCONTEXT_CONTROL_CPU_SPRS)
-        *(&regs.cpu_registers.sp + (n - 13)) = value; // hacky
-    else if(flags & THREADCONTEXT_CONTROL_FPU_GPRS)
-        memcpy(&regs.fpu_registers.d[n], &value64, 8);
-    else
-        *(&regs.fpu_registers.fpscr + n) = value; // hacky
+    // Decode, check for errors
+    if (GDB_DecodeHex(tmp, valueStart, sz) != sz) {
+        return GDB_ReplyErrno(ctx, EILSEQ);
+    }
 
-    r = svcSetDebugThreadContext(ctx->debug, ctx->selectedThreadId, &regs, flags);
-    if(R_FAILED(r))
-        return GDB_ReplyErrno(ctx, EPERM);
+    memcpy(regPtr, tmp, sz);
+
+    if (gdbRegNum > 31 + 3) {
+        // FPU register -- must commit the FPU registers
+        fpuCommitRegisters();
+    }
+
     else
         return GDB_ReplyOk(ctx);
 }

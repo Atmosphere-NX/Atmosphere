@@ -12,7 +12,7 @@
 #include <errno.h>
 
 u8 GDB_ComputeChecksum(const char *packetData, size_t len);
-void GDB_EncodeHex(char *dst, const void *src, size_t len);
+size_t GDB_EncodeHex(char *dst, const void *src, size_t len);
 size_t GDB_DecodeHex(void *dst, const char *src, size_t len);
 size_t GDB_EscapeBinaryData(size_t *encodedCount, void *dst, const void *src, size_t len, size_t maxLen);
 size_t GDB_UnescapeBinaryData(void *dst, const void *src, size_t len);
