@@ -18,13 +18,17 @@
 
 #include "utils.h"
 
-typedef struct FpuRegisterStorage {
+typedef struct FpuRegisterCache {
     u128    q[32];
     u64     fpsr;
     u64     fpcr;
-} FpuRegisterStorage;
+    bool    valid;
+    bool    dirty;
+} FpuRegisterCache;
 
-extern FpuRegisterStorage g_fpuRegisterStorage[4];
+// Only for the current core:
 
-void fpuDumpRegisters(u32 coreList);
-void fpuRestoreRegisters(u32 coreList);
+FpuRegisterCache *fpuGetRegisterCache(void);
+FpuRegisterCache *fpuReadRegisters(void);
+void fpuCommitRegisters(void);
+void fpuCleanInvalidateRegisterCache(void);

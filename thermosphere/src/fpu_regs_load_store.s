@@ -35,7 +35,7 @@
     \op     q30, q31, [x0], 0x20
 .endm
 
-FUNCTION fpuLoadRegistersFromStorage
+FUNCTION fpuLoadRegistersFromCache
     dmb     ish
     LDSTORE_QREGS ldp
     ldp     x1, x2, [x0]
@@ -46,7 +46,7 @@ FUNCTION fpuLoadRegistersFromStorage
     ret
 END_FUNCTION
 
-FUNCTION fpuStoreRegistersToStorage
+FUNCTION fpuStoreRegistersToCache
     dsb     ish
     isb
     LDSTORE_QREGS stp
