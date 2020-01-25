@@ -28,6 +28,7 @@
 FUNCTION spinlockLock
     mov     w2, #1
     sevl
+    prfm    pstl1keep, [x0]
     l1:
         wfe
         l2:
@@ -40,6 +41,5 @@ END_FUNCTION
 
 FUNCTION spinlockUnlock
     stlr    wzr, [x0]
-    sev
     ret
 END_FUNCTION
