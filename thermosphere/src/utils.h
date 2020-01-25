@@ -30,16 +30,26 @@
 
 #define MAKE_REG32(a)   (*(volatile u32 *)(uintptr_t)(a))
 
-#define ALIGN(m)        __attribute__((aligned(m)))
-#define PACKED          __attribute__((packed))
-#define LIKELY(expr)    __builtin_expect((expr), 1)
-#define UNLIKELY(expr)  __builtin_expect((expr), 0)
+#define ALIGN(m)                __attribute__((aligned(m)))
+#define PACKED                  __attribute__((packed))
+#define LIKELY(expr)            __builtin_expect((expr), 1)
+#define UNLIKELY(expr)          __builtin_expect((expr), 0)
 
-#define ALINLINE        __attribute__((always_inline))
+#define ALINLINE                __attribute__((always_inline))
 
-#define TEMPORARY       __attribute__((section(".tempbss")))
+#define TEMPORARY               __attribute__((section(".tempbss")))
 
-#define PANIC(...)      do { DEBUG(__VA_ARGS__); panic(); } while (false)
+#define PANIC(...)              do { DEBUG(__VA_ARGS__); panic(); } while (false)
+
+// Note: ##__VA_ARGS__ removing the comma if __VA_ARGS__ is empty is a GCC extension; __FUNCTION__ too
+#define ENSURE2(expr, msg, ...)\
+do {\
+    if (UNLIKELY(!(expr))) {\
+        PANIC("EL2 [core %u]: " __FILE__ ":" STRINGIZE(__LINE__) ": " msg, currentCoreCtx->coreId, ##__VA_ARGS__);\
+    }\
+} while (false)
+
+#define ENSURE(expr)            ENSURE2(expr, #expr"\n")
 
 #define FOREACH_BIT(tmpmsk, var, word) for (u64 tmpmsk = (word), var = __builtin_ctzll(word); tmpmsk != 0; tmpmsk &= ~BITL(var), var = __builtin_ctzll(tmpmsk))
 

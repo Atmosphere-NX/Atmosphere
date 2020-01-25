@@ -178,11 +178,13 @@ void handleMcrMrcCP15Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister 
     bool isRead = (iss & 1) != 0;
     u32 instructionLength = esr.il == 0 ? 2 : 4;
 
-    if (LIKELY(opc1 == 0 && CRn == 14 && CRm == 2 && opc2 <= 1)) {
-        iss = opc2 == 0 ? ENCODE_SYSREG_ISS(CNTP_TVAL_EL0) : ENCODE_SYSREG_ISS(CNTP_CTL_EL0);
-    } else {
-        PANIC("handleMcrMrcTrap: unexpected cp15 register, instruction: %s p15, #%u, r%u, c%u, c%u, #%u\n", isRead ? "mrc" : "mcr", opc1, Rt, CRn, CRm, opc2);
-    }
+    ENSURE2(
+        opc1 == 0 && CRn == 14 && CRm == 2 && opc2 <= 1,
+        "unexpected cp15 register, instruction: %s p15, #%u, r%u, c%u, c%u, #%u\n",
+        isRead ? "mrc" : "mcr", opc1, Rt, CRn, CRm, opc2
+    );
+
+    iss = opc2 == 0 ? ENCODE_SYSREG_ISS(CNTP_TVAL_EL0) : ENCODE_SYSREG_ISS(CNTP_CTL_EL0);
 
     if (isRead) {
         doMrc(frame, iss, instructionLength, Rt);
@@ -209,11 +211,13 @@ void handleMcrrMrrcCP15Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegiste
     bool isRead = (iss & 1) != 0;
     u32 instructionLength = esr.il == 0 ? 2 : 4;
 
-    if (LIKELY(CRm == 14 && (opc1 == 0 || opc1 == 2))) {
-        iss = opc1 == 0 ? ENCODE_SYSREG_ISS(CNTPCT_EL0) : ENCODE_SYSREG_ISS(CNTP_CVAL_EL0);
-    } else {
-        PANIC("handleMcrrMrrcTrap: unexpected cp15 register, instruction: %s p15, #%u, r%u, r%u, c%u\n", isRead ? "mrrc" : "mcrr", opc1, Rt, Rt, CRm);
-    }
+    ENSURE2(
+        CRm == 14 && (opc1 == 0 || opc1 == 2),
+        "handleMcrrMrrcTrap: unexpected cp15 register, instruction: %s p15, #%u, r%u, r%u, c%u\n",
+        isRead ? "mrrc" : "mcrr", opc1, Rt, Rt, CRm
+    );
+
+    iss = opc1 == 0 ? ENCODE_SYSREG_ISS(CNTPCT_EL0) : ENCODE_SYSREG_ISS(CNTP_CVAL_EL0);
 
     if (isRead) {
         doMrrc(frame, iss, instructionLength, Rt, Rt2);

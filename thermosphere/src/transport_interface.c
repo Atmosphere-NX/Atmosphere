@@ -122,17 +122,13 @@ TransportInterface *transportInterfaceCreate(
 )
 {
     u64 irqFlags = recursiveSpinlockLockMaskIrq(&g_transportInterfaceLayerLock);
-    if (transportInterfaceListIsEmpty(&g_transportInterfaceFreeList)) {
-        PANIC("transportInterfaceCreateAndInit: resource exhaustion\n");
-    }
+    ENSURE(!transportInterfaceListIsEmpty(&g_transportInterfaceFreeList));
 
     TransportInterface *iface;
 
     FOREACH_LINK (link, &g_transportInterfaceList) {
         iface = transportInterfaceGetLinkParent(link);
-        if (iface->type == type && iface->id == id) {
-            PANIC("transportInterfaceCreateAndInit: device already registered\n");
-        }
+        ENSURE(iface->type != type || iface->id != id);
     }
 
     iface = transportInterfaceGetLinkParent(transportInterfaceListGetFirstLink(&g_transportInterfaceFreeList));
@@ -228,9 +224,7 @@ void transportInterfaceSetInterruptAffinity(TransportInterface *iface, u8 affini
 TransportInterface *transportInterfaceIrqHandlerTopHalf(u16 irqId)
 {
     TransportInterface *iface = transportInterfaceFindByIrqId(irqId);
-    if (iface == NULL) {
-        PANIC("transportInterfaceLayerIrqHandlerTop: irq id %x not found!\n", irqId);
-    }
+    ENSURE(iface != NULL);
 
     transportInterfaceAcquire(iface);
 
