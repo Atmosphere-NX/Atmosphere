@@ -23,7 +23,7 @@ u8 GDB_ComputeChecksum(const char *packetData, size_t len)
     return (u8)cksum;
 }
 
-void GDB_EncodeHex(char *dst, const void *src, size_t len)
+size_t GDB_EncodeHex(char *dst, const void *src, size_t len)
 {
     static const char *alphabet = "0123456789abcdef";
     const u8 *src8 = (const u8 *)src;
@@ -32,6 +32,8 @@ void GDB_EncodeHex(char *dst, const void *src, size_t len)
         dst[2 * i] = alphabet[(src8[i] & 0xf0) >> 4];
         dst[2 * i + 1] = alphabet[src8[i] & 0x0f];
     }
+
+    return 2 * len;
 }
 
 static inline u32 GDB_DecodeHexDigit(char src, bool *ok)
