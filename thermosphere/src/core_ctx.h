@@ -22,39 +22,44 @@
 #include "execute_function.h"
 
 struct ExceptionStackFrame;
-typedef struct CoreCtx {
-    struct ExceptionStackFrame *guestFrame;     // @0x00
-    u64 scratch;                                // @0x08
-    u8 *crashStack;                             // @0x10
-    u64 kernelArgument;                         // @0x18
-    uintptr_t kernelEntrypoint;                 // @0x20
-    u32 coreId;                                 // @0x28
-    u8 gicInterfaceMask;                        // @0x2C. Equal to BIT(coreId) anyway
-    bool isBootCore;                            // @0x2D
-    bool warmboot;                              // @0x2E
+typedef struct ALIGN(64) CoreCtx {
+    // Most likely only just read (assume cache line size of at most 64 bytes):
 
-    // Timer stuff
-    u64 totalTimeInHypervisor;                  // @0x30. cntvoff_el2 is updated to that value.
-    u64 emulPtimerCval;                         // @0x38. When setting cntp_cval_el0 and on interrupt
-
-    // "Execute function"
-    ExecutedFunction executedFunction;          // @0x40
-    void *executedFunctionArgs;                 // @0x48
-    Barrier executedFunctionBarrier;            // @0x50
-    u32 executedFunctionSrcCore;                // @0x54
-    bool executedFunctionSync;                  // @0x58. Receiver fills it
+    u8 *crashStack;                                         // @0x00
+    u64 kernelArgument;                                     // @0x08
+    uintptr_t kernelEntrypoint;                             // @0x10
+    u32 coreId;                                             // @0x18
+    u8 gicInterfaceMask;                                    // @0x1C. Equal to BIT(coreId) anyway
+    bool isBootCore;                                        // @0x1D
+    bool warmboot;                                          // @0x1E
 
     // Debug features
-    bool wasPaused;                             // @0x59
+    bool wasPaused;                                         // @0x1F
+
+    // Most likely written to:
+
+    ALIGN(64) struct ExceptionStackFrame *guestFrame;       // @0x40
+    u64 scratch;                                            // @0x48
+
+    // Timer stuff
+    u64 totalTimeInHypervisor;                              // @0x50. cntvoff_el2 is updated to that value.
+    u64 emulPtimerCval;                                     // @0x58. When setting cntp_cval_el0 and on interrupt
+
+    // "Execute function"
+    ExecutedFunction executedFunction;                      // @0x60
+    void *executedFunctionArgs;                             // @0x68
+    Barrier executedFunctionBarrier;                        // @0x70
+    u32 executedFunctionSrcCore;                            // @0x74
+    bool executedFunctionSync;                              // @0x78. Receiver fills it
 
     // Cache stuff
-    u32 setWayCounter;                          // @0x5C
+    u32 setWayCounter;                                      // @0x7C
 } CoreCtx;
 
-static_assert(offsetof(CoreCtx, warmboot) == 0x2E, "Wrong definition for CoreCtx");
-static_assert(offsetof(CoreCtx, emulPtimerCval) == 0x38, "Wrong definition for CoreCtx");
-static_assert(offsetof(CoreCtx, executedFunctionSync) == 0x58, "Wrong definition for CoreCtx");
-static_assert(offsetof(CoreCtx, setWayCounter) == 0x5C, "Wrong definition for CoreCtx");
+static_assert(offsetof(CoreCtx, warmboot) == 0x1E, "Wrong definition for CoreCtx");
+static_assert(offsetof(CoreCtx, emulPtimerCval) == 0x58, "Wrong definition for CoreCtx");
+static_assert(offsetof(CoreCtx, executedFunctionSync) == 0x78, "Wrong definition for CoreCtx");
+static_assert(offsetof(CoreCtx, setWayCounter) == 0x7C, "Wrong definition for CoreCtx");
 
 extern CoreCtx g_coreCtxs[4];
 register CoreCtx *currentCoreCtx asm("x18");

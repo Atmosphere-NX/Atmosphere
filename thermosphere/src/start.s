@@ -97,6 +97,9 @@ _postMmuEnableReturnAddr:
     mov     x1, x20
     bl      thermosphereMain
 
+    prfm    pldl1keep, [x18]
+    prfm    pstl1keep, [x18, #0x40]
+
     dsb     sy
     isb
 

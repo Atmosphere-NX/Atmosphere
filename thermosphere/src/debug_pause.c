@@ -23,8 +23,8 @@
 #include "single_step.h"
 
 static Barrier g_debugPauseBarrier;
-static atomic_uint g_debugPausePausedCoreList;
-static atomic_uint g_debugPauseSingleStepCoreList;
+static ALIGN(64) atomic_uint g_debugPausePausedCoreList;
+static atomic_uint g_debugPauseSingleStepCoreList; // TODO: put this variable on the same cache line as the above
 
 static inline void debugSetThisCorePaused(void)
 {
@@ -40,6 +40,7 @@ void debugPauseSgiHandler(void)
 void debugPauseWaitAndUpdateSingleStep(void)
 {
     u32 coreId = currentCoreCtx->coreId;
+    __builtin_prefetch(&g_debugPausePausedCoreList, 0, 3);
     if (atomic_load(&g_debugPausePausedCoreList) & BIT(coreId)) {
         unmaskIrq();
         do {
@@ -63,6 +64,8 @@ void debugPauseWaitAndUpdateSingleStep(void)
 void debugPauseCores(u32 coreList)
 {
     maskIrq();
+
+    __builtin_prefetch(&g_debugPausePausedCoreList, 1, 3);
 
     u32 desiredList = coreList;
     u32 remainingList = coreList;
@@ -90,6 +93,8 @@ void debugPauseCores(u32 coreList)
 void debugUnpauseCores(u32 coreList, u32 singleStepList)
 {
     singleStepList &= coreList;
+
+    __builtin_prefetch(&g_debugPausePausedCoreList, 1, 0);
 
     // Since we're using a debugger lock, a simple stlr should be fine...
     atomic_store(&g_debugPauseSingleStepCoreList, singleStepList);

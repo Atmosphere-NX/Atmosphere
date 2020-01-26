@@ -36,5 +36,9 @@ void barrierInitAll(Barrier *barrier)
 
 void barrierWait(Barrier *barrier)
 {
-    while (atomic_fetch_and(&barrier->val, ~(BIT(currentCoreCtx->coreId))) != 0);
+    atomic_fetch_and(&barrier->val, ~(BIT(currentCoreCtx->coreId)));
+    __sev();
+    do {
+        __wfe();
+    } while (atomic_load(&barrier->val) != 0);
 }
