@@ -19,7 +19,7 @@
 
 void recursiveSpinlockLock(RecursiveSpinlock *lock)
 {
-    if (lock->tag != currentCoreCtx->coreId + 1) {
+    if (LIKELY(lock->tag != currentCoreCtx->coreId + 1)) {
         spinlockLock(&lock->lock);
         lock->tag = currentCoreCtx->coreId + 1;
         lock->count = 1;
@@ -28,9 +28,25 @@ void recursiveSpinlockLock(RecursiveSpinlock *lock)
     }
 }
 
+bool recursiveSpinlockTryLock(RecursiveSpinlock *lock)
+{
+    if (LIKELY(lock->tag != currentCoreCtx->coreId + 1)) {
+        if (!spinlockTryLock(&lock->lock)) {
+            return false;
+        } else {
+            lock->tag = currentCoreCtx->coreId + 1;
+            lock->count = 1;
+            return true;
+        }
+    } else {
+        ++lock->count;
+        return true;
+    }
+}
+
 void recursiveSpinlockUnlock(RecursiveSpinlock *lock)
 {
-    if (--lock->count == 0) {
+    if (LIKELY(--lock->count == 0)) {
         lock->tag = 0;
         spinlockUnlock(&lock->lock);
     }

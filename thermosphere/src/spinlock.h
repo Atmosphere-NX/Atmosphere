@@ -48,9 +48,13 @@ static inline void restoreInterruptFlags(u64 flags)
     SET_SYSREG(daif, flags);
 }
 
+// spinlock_impl.s
 void spinlockLock(Spinlock *lock);
+bool spinlockTryLock(Spinlock *lock);
 void spinlockUnlock(Spinlock *lock);
+
 void recursiveSpinlockLock(RecursiveSpinlock *lock);
+bool recursiveSpinlockTryLock(RecursiveSpinlock *lock);
 void recursiveSpinlockUnlock(RecursiveSpinlock *lock);
 
 static inline u64 spinlockLockMaskIrq(Spinlock *lock)
