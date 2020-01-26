@@ -160,7 +160,7 @@ TransportInterface *transportInterfaceCreate(
 void transportInterfaceAcquire(TransportInterface *iface)
 {
     // Get the lock, prevent the interrupt from being pending if there's incoming data
-    recursiveSpinlockLock(&iface->lock);
+    u64 flags = recursiveSpinlockLockMaskIrq(&iface->lock);
 
     switch (iface->type) {
         case TRANSPORT_INTERFACE_TYPE_UART: {
@@ -171,10 +171,14 @@ void transportInterfaceAcquire(TransportInterface *iface)
         default:
             break;
     }
+
+    restoreInterruptFlags(flags);
 }
 
 void transportInterfaceRelease(TransportInterface *iface)
 {
+    u64 flags = maskIrq();
+
     // See transportInterfaceAcquire
     switch (iface->type) {
         case TRANSPORT_INTERFACE_TYPE_UART: {
@@ -186,7 +190,7 @@ void transportInterfaceRelease(TransportInterface *iface)
             break;
     }
 
-    recursiveSpinlockUnlock(&iface->lock);
+    recursiveSpinlockUnlockRestoreIrq(&iface->lock, flags);
 }
 
 TransportInterface *transportInterfaceFindByIrqId(u16 irqId)

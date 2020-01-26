@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../gdb.h"
+#include "context.h"
 
 GDB_DECLARE_HANDLER(ReadRegisters);
 GDB_DECLARE_HANDLER(WriteRegisters);

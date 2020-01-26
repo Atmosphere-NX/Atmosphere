@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "gdb.h"
+#include "context.h"
 
 int GDB_SendMemory(GDBContext *ctx, const char *prefix, size_t prefixLen, uintptr_t addr, size_t len);
 int GDB_WriteMemory(GDBContext *ctx, const void *buf, uintptr_t addr, size_t len);

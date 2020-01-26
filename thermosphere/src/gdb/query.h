@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "gdb.h"
+#include "context.h"
 
 int GDB_HandleReadQuery(GDBContext *ctx);
 int GDB_HandleWriteQuery(GDBContext *ctx);

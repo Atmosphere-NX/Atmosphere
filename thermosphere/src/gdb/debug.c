@@ -14,7 +14,7 @@
 #include "debug.h"
 #include "net.h"
 
-#include "server.h"
+#include "context.h"
 #include "verbose.h"
 #include "thread.h"
 #include "mem.h"
