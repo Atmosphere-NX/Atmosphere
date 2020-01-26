@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "gdb.h"
+#include "context.h"
 
 u32 GDB_GetCurrentThreadFromList(GDBContext *ctx, u32 *threadIds, u32 nbThreads);
 u32 GDB_GetCurrentThread(GDBContext *ctx);

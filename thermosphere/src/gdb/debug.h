@@ -7,31 +7,9 @@
 
 #pragma once
 
-#include "../gdb.h"
+#include "context.h"
 #include "../core_ctx.h"
-
-typedef enum DebugEventType {
-    DBGEVENT_DEBUGGER_BREAK = 0,
-    DBGEVENT_EXCEPTION,
-    DBGEVENT_CORE_ON,
-    DBGEVENT_CORE_OFF,
-    DBGEVENT_EXIT,
-    DBGEVENT_OUTPUT_STRING,
-} DebugEventType;
-
-typedef struct OutputStringDebugEventInfo {
-    uintptr_t address;
-    size_t size;
-} OutputStringDebugEventInfo;
-
-typedef struct DebugEventInfo {
-    DebugEventType type;
-    u32 coreId;
-    ExceptionStackFrame *frame;
-    union {
-        OutputStringDebugEventInfo outputString;
-    };
-} DebugEventInfo;
+#include "../debug_manager.h"
 
 GDB_DECLARE_HANDLER(Detach);
 GDB_DECLARE_HANDLER(Kill);

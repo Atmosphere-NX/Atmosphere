@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "gdb.h"
+#include "context.h"
 
 #define GDB_REMOTE_COMMAND_HANDLER(name)         GDB_HANDLER(RemoteCommand##name)
 #define GDB_DECLARE_REMOTE_COMMAND_HANDLER(name) GDB_DECLARE_HANDLER(RemoteCommand##name)

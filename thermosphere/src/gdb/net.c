@@ -5,12 +5,11 @@
 *   SPDX-License-Identifier: (MIT OR GPL-2.0-or-later)
 */
 
-#include "gdb/net.h"
+#include "net.h"
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "fmt.h"
-#include "minisoc.h"
 #include "../pattern_utils.h"
 
 u8 GDB_ComputeChecksum(const char *packetData, size_t len)
@@ -136,104 +135,114 @@ const char *GDB_ParseHexIntegerList(unsigned long *dst, const char *src, size_t 
     return GDB_ParseIntegerList(dst, src, nb, ',', lastSep, 16, false);
 }
 
+static int GDB_SendNackIfPossible(GDBContext *ctx) {
+    if (ctx->flags & GDB_FLAG_NOACK) {
+        return -1;
+    } else {
+        char hdr = '-';
+        transportInterfaceWriteData(ctx->transportInterface, &hdr, 1);
+        return 1;
+    }
+}
+
 int GDB_ReceivePacket(GDBContext *ctx)
 {
-    char backupbuf[GDB_BUF_LEN + 4];
-    memcpy(backupbuf, ctx->buffer, ctx->latestSentPacketSize);
-    memset(ctx->buffer, 0, sizeof(ctx->buffer));
+    char hdr;
+    bool ctrlC = false;
+    TransportInterface *iface = ctx->transportInterface;
 
-    int r = soc_recv(ctx->super.sockfd, ctx->buffer, sizeof(ctx->buffer), MSG_PEEK);
-    if(r < 1)
+    // Read the first character...
+    transportInterfaceReadData(iface, &hdr, 1);
+
+    // Check if the ack/nack packets are not allowed
+    if ((hdr == '+' || hdr == '-') && (ctx->flags & GDB_FLAG_NOACK) != 0) {
+        DEBUG("Received a packed with an invalid header from GDB, hdr=%c\n", hdr);
         return -1;
-    if(ctx->buffer[0] == '+') // GDB sometimes acknowleges TCP acknowledgment packets (yes...). IDA does it properly
-    {
-        if(ctx->flags & GDB_FLAG_NOACK)
-            return -1;
+    } 
 
-        // Consume it
-        r = soc_recv(ctx->super.sockfd, ctx->buffer, 1, 0);
-        if(r != 1)
-            return -1;
-
-        ctx->buffer[0] = 0;
-
-        r = soc_recv(ctx->super.sockfd, ctx->buffer, sizeof(ctx->buffer), MSG_PEEK);
-
-        if(r == -1)
-            goto packet_error;
+    switch (hdr) {
+        case '+':
+            // Ack, don't do anything else (if allowed)
+            return 0;
+        case '-':
+            // Nack, return the previous packet
+            transportInterfaceWriteData(iface, ctx->buffer, ctx->lastSentPacketSize);
+            return ctx->lastSentPacketSize;
+        case '$':
+            // Normal packet, handled below
+            break;
+        case '\x03':
+            // Normal packet (Control-C), handled below
+            ctrlC = true;
+            break;
+        default:
+            // Oops, send a nack
+            DEBUG("Received a packed with an invalid header from GDB, hdr=%c\n", hdr);
+            return GDB_SendNackIfPossible(ctx);
     }
-    else if(ctx->buffer[0] == '-')
-    {
-        soc_send(ctx->super.sockfd, backupbuf, ctx->latestSentPacketSize, 0);
-        return 0;
-    }
-    int maxlen = r > (int)sizeof(ctx->buffer) ? (int)sizeof(ctx->buffer) : r;
 
-    if(ctx->buffer[0] == '$') // normal packet
-    {
-        char *pos;
-        for(pos = ctx->buffer; pos < ctx->buffer + maxlen && *pos != '#'; pos++);
+    // We didn't get a nack past this point, read the remaining data if any
 
-        if(pos == ctx->buffer + maxlen) // malformed packet
-            return -1;
-
-        else
-        {
-            u8 checksum;
-            r = soc_recv(ctx->super.sockfd, ctx->buffer, 3 + pos - ctx->buffer, 0);
-            if(r != 3 + pos - ctx->buffer || GDB_DecodeHex(&checksum, pos + 1, 1) != 1)
-                goto packet_error;
-            else if(GDB_ComputeChecksum(ctx->buffer + 1, pos - ctx->buffer - 1) != checksum)
-                goto packet_error;
-
-            ctx->commandEnd = pos;
-            *pos = 0; // replace trailing '#' by a NUL character
+    ctx->buffer[0] = hdr;
+    if (ctrlC) {
+        // Will never normally happen, but ok
+        if (ctx->state < GDB_STATE_ATTACHED) {
+            DEBUG("Received connection from GDB, now attaching...\n");
+            GDB_AttachToContext(ctx);
+            ctx->state = GDB_STATE_ATTACHED;
         }
-    }
-    else if(ctx->buffer[0] == '\x03')
-    {
-        r = soc_recv(ctx->super.sockfd, ctx->buffer, 1, 0);
-        if(r != 1)
-            goto packet_error;
-
-        ctx->commandEnd = ctx->buffer;
+        return 1;
     }
 
-    if(!(ctx->flags & GDB_FLAG_NOACK))
-    {
-        int r2 = soc_send(ctx->super.sockfd, "+", 1, 0);
-        if(r2 != 1)
-            return -1;
+    size_t delimPos = transportInterfaceReadDataUntil(iface, ctx->buffer + 1, 4 + GDB_BUF_LEN - 1, '#');
+    if (ctx->buffer[delimPos] != '#') {
+        // The packet is malformed, send a nack
+        return GDB_SendNackIfPossible(ctx);
     }
 
-    if(ctx->noAckSent)
-    {
+    // Read the checksum
+    size_t checksumPos = delimPos + 1;
+    u8 checksum;
+    transportInterfaceReadData(iface, ctx->buffer + checksumPos, 2);
+
+    if (GDB_DecodeHex(&checksum, ctx->buffer + checksumPos, 1) != 1) {
+        // Malformed checksum
+        return GDB_SendNackIfPossible(ctx);
+    } else if (GDB_ComputeChecksum(ctx->buffer + 1, delimPos - 1) != checksum) {
+        // Invalid checksum
+        return GDB_SendNackIfPossible(ctx);
+    }
+
+    // Ok, send ack (if possible)
+    if (!(ctx->flags & GDB_FLAG_NOACK)) {
+        hdr = '+';
+        transportInterfaceWriteData(iface, &hdr, 1);
+    }
+
+    // State transitions...
+    if (ctx->state < GDB_STATE_ATTACHED) {
+        DEBUG("Received connection from GDB, now attaching...\n");
+        GDB_AttachToContext(ctx);
+        ctx->state = GDB_STATE_ATTACHED;
+    }
+
+    if (ctx->noAckSent) {
         ctx->flags |= GDB_FLAG_NOACK;
         ctx->noAckSent = false;
     }
 
-    return r;
+    // Set helper attributes, change '#' to NUL
+    ctx->commandEnd = delimPos;
+    ctx->buffer[delimPos] = '\0';
 
-packet_error:
-    if(!(ctx->flags & GDB_FLAG_NOACK))
-    {
-        r = soc_send(ctx->super.sockfd, "-", 1, 0);
-        if(r != 1)
-            return -1;
-        else
-            return 0;
-    }
-    else
-        return -1;
+    return (int)(delimPos + 2);
 }
 
 static int GDB_DoSendPacket(GDBContext *ctx, size_t len)
 {
-    int r = soc_send(ctx->super.sockfd, ctx->buffer, len, 0);
-
-    if(r > 0)
-        ctx->latestSentPacketSize = r;
-    return r;
+    transportInterfaceWriteData(ctx->transportInterface, ctx->buffer, len);
+    ctx->lastSentPacketSize = len;
+    return (int)len;
 }
 
 int GDB_SendPacket(GDBContext *ctx, const char *packetData, size_t len)
@@ -323,6 +332,6 @@ int GDB_ReplyOk(GDBContext *ctx)
 int GDB_ReplyErrno(GDBContext *ctx, int no)
 {
     char buf[] = "E01";
-    hexItoa((u8)no, buf + 1, 2, false);
+    hexItoa(no & 0xFF, buf + 1, 2, false);
     return GDB_SendPacket(ctx, buf, 3);
 }

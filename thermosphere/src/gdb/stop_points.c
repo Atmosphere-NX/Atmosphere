@@ -7,7 +7,7 @@
 
 #include <string.h>
 
-#include "../gdb.h"
+#include "context.h"
 #include "net.h"
 
 #include "../breakpoints.h"

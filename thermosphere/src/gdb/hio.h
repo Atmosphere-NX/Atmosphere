@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "gdb.h"
+#include "context.h"
 
 bool GDB_FetchPackedHioRequest(GDBContext *ctx, u32 addr);
 bool GDB_IsHioInProgress(GDBContext *ctx);
