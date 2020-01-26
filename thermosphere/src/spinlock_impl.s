@@ -29,17 +29,31 @@ FUNCTION spinlockLock
     mov     w2, #1
     sevl
     prfm    pstl1keep, [x0]
-    l1:
+    1:
         wfe
-        l2:
-            ldaxr       w1, [x0]
-            cbnz        w1, l1
-            stxr        w1, w2, [x0]
-            cbnz        w1, l2
+        2:
+            ldaxr   w1, [x0]
+            cbnz    w1, 1b
+            stxr    w1, w2, [x0]
+            cbnz    w1, 2b
+    ret
+END_FUNCTION
+
+FUNCTION spinlockTryLock
+    mov     x1, x0
+    mov     w2, #1
+    prfm    pstl1strm, [x1]
+    1:
+        ldaxr   w0, [x1]
+        cbnz    w0, 2f
+        stxr    w0, w2, [x1]
+        cbnz    w0, 1b
+    2:
+    eor     w0, w0, #1
     ret
 END_FUNCTION
 
 FUNCTION spinlockUnlock
-    stlr    wzr, [x0]
+    stlr        wzr, [x0]
     ret
 END_FUNCTION
