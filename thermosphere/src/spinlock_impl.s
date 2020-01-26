@@ -42,7 +42,7 @@ END_FUNCTION
 FUNCTION spinlockTryLock
     mov     x1, x0
     mov     w2, #1
-    prfm    pstl1strm, [x1]
+    prfm    pstl1keep, [x1]
     1:
         ldaxr   w0, [x1]
         cbnz    w0, 2f
