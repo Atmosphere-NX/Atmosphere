@@ -21,4 +21,4 @@ GDB_DECLARE_HANDLER(GetStopReason);
 void GDB_ContinueExecution(GDBContext *ctx);
 int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info);
 int GDB_HandleDebugEvents(GDBContext *ctx);
-void GDB_BreakProcessAndSinkDebugEvents(GDBContext *ctx, DebugFlags flags);
+//void GDB_BreakProcessAndSinkDebugEvents(GDBContext *ctx, DebugFlags flags);
