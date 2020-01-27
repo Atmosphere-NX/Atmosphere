@@ -24,7 +24,7 @@
 #include "single_step.h"
 #include "data_abort.h"
 #include "spinlock.h"
-#include "debug_pause.h"
+#include "debug_manager.h"
 #include "timer.h"
 
 #include "fpu.h"
@@ -122,7 +122,7 @@ void exceptionReturnPreprocess(ExceptionStackFrame *frame)
     if (currentCoreCtx->wasPaused && frame == currentCoreCtx->guestFrame) {
         // Were we paused & are we about to return to the guest?
         exceptionEnterInterruptibleHypervisorCode();
-        debugPauseWaitAndUpdateSingleStep();
+        debugManagerHandlePause();
         fpuCleanInvalidateRegisterCache();
     }
 

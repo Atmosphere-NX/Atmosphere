@@ -25,7 +25,7 @@
 #pragma once
 
 #include "defines.h"
-#include "transport_interface.h"
+#include "../transport_interface.h"
 
 typedef struct PackedGdbHioRequest
 {

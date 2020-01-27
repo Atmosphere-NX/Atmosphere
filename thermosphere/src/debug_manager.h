@@ -16,15 +16,38 @@
 
 #pragma once
 
-#include "utils.h"
+#include "exceptions.h"
 
-void debugPauseSgiHandler(void);
+typedef enum DebugEventType {
+    DBGEVENT_DEBUGGER_BREAK = 0,
+    DBGEVENT_EXCEPTION,
+    DBGEVENT_CORE_ON,
+    DBGEVENT_CORE_OFF,
+    DBGEVENT_EXIT,
+    DBGEVENT_OUTPUT_STRING,
+} DebugEventType;
+
+typedef struct OutputStringDebugEventInfo {
+    uintptr_t address;
+    size_t size;
+} OutputStringDebugEventInfo;
+
+typedef struct DebugEventInfo {
+    DebugEventType type;
+    u32 coreId;
+    ExceptionStackFrame *frame;
+    union {
+        OutputStringDebugEventInfo outputString;
+    };
+} DebugEventInfo;
+
+void debugManagerPauseSgiHandler(void);
 
 // Hypervisor interrupts will be serviced during the pause-wait
-void debugPauseWaitAndUpdateSingleStep(void);
+void debugManagerHandlePause(void);
 
 // Note: these functions are not reentrant EXCEPT debugPauseCores(1 << currentCoreId)
 // "Pause" makes sure all cores reaches the pause function before proceeding.
 // "Unpause" doesn't synchronize, it just makes sure the core resumes & that "pause" can be called again.
-void debugPauseCores(u32 coreList);
-void debugUnpauseCores(u32 coreList, u32 singleStepList);
+void debugManagerPauseCores(u32 coreList);
+void debugManagerUnpauseCores(u32 coreList, u32 singleStepList);

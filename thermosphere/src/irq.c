@@ -21,7 +21,7 @@
 #include "timer.h"
 #include "guest_timers.h"
 #include "transport_interface.h"
-#include "debug_pause.h"
+#include "debug_manager.h"
 
 IrqManager g_irqManager = {0};
 
@@ -230,7 +230,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
             // Nothing in particular to do here
             break;
         case ThermosphereSgi_DebugPause:
-            debugPauseSgiHandler();
+            debugManagerPauseSgiHandler();
             break;
         case GIC_IRQID_MAINTENANCE:
             isMaintenanceInterrupt = true;
