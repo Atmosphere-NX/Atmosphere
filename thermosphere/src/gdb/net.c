@@ -295,6 +295,21 @@ int GDB_SendHexPacket(GDBContext *ctx, const void *packetData, size_t len)
     return GDB_DoSendPacket(ctx, 4 + 2 * len);
 }
 
+int GDB_SendNotificationPacket(GDBContext *ctx, const char *packetData, size_t len)
+{
+    if (packetData != ctx->buffer + 1) {
+        memmove(ctx->buffer + 1, packetData, len);
+    }
+
+    ctx->buffer[0] = '%';
+
+    char *checksumLoc = ctx->buffer + len + 1;
+    *checksumLoc++ = '#';
+
+    hexItoa(GDB_ComputeChecksum(ctx->buffer + 1, len), checksumLoc, 2, false);
+    return GDB_DoSendPacket(ctx, 4 + len);
+}
+
 int GDB_SendStreamData(GDBContext *ctx, const char *streamData, size_t offset, size_t length, size_t totalSize, bool forceEmptyLast)
 {
     // GDB_BUF_LEN does not include the usual %#<1-byte checksum>

@@ -17,6 +17,9 @@
 #pragma once
 
 #include "exceptions.h"
+#include "gdb/context.h"
+
+extern GDBContext g_gdbContext;
 
 typedef enum DebugEventType {
     DBGEVENT_DEBUGGER_BREAK = 0,
@@ -34,6 +37,7 @@ typedef struct OutputStringDebugEventInfo {
 
 typedef struct DebugEventInfo {
     DebugEventType type;
+    bool handled;
     u32 coreId;
     ExceptionStackFrame *frame;
     union {
@@ -51,3 +55,12 @@ void debugManagerHandlePause(void);
 // "Unpause" doesn't synchronize, it just makes sure the core resumes & that "pause" can be called again.
 void debugManagerPauseCores(u32 coreList);
 void debugManagerUnpauseCores(u32 coreList, u32 singleStepList);
+
+u32 debugManagerGetPausedCoreList(void);
+
+const DebugEventInfo *debugManagerMarkAndGetCoreDebugEvent(u32 coreId);
+
+static inline bool debugManagerIsCorePaused(u32 coreId)
+{
+    return (debugManagerGetPausedCoreList() & BIT(coreId)) != 0;
+}

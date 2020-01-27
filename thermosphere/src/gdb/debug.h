@@ -11,6 +11,12 @@
 #include "../core_ctx.h"
 #include "../debug_manager.h"
 
+void GDB_ContinueExecution(GDBContext *ctx);
+int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotification);
+int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info);
+
+GDB_DECLARE_VERBOSE_HANDLER(Stopped);
+
 GDB_DECLARE_HANDLER(Detach);
 GDB_DECLARE_HANDLER(Kill);
 GDB_DECLARE_HANDLER(Break);
@@ -18,7 +24,4 @@ GDB_DECLARE_HANDLER(Continue);
 GDB_DECLARE_VERBOSE_HANDLER(Continue);
 GDB_DECLARE_HANDLER(GetStopReason);
 
-void GDB_ContinueExecution(GDBContext *ctx);
-int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info);
-int GDB_HandleDebugEvents(GDBContext *ctx);
 //void GDB_BreakProcessAndSinkDebugEvents(GDBContext *ctx, DebugFlags flags);
