@@ -25,6 +25,8 @@
 
 #include "gdb/debug.h"
 
+GDBContext g_gdbContext = { 0 };
+
 typedef struct DebugManager {
     DebugEventInfo              debugEventInfos[MAX_CORE];
 
@@ -32,8 +34,6 @@ typedef struct DebugManager {
     atomic_uint                 singleStepCoreList;
     atomic_uint                 eventsSentList;
     Barrier                     pauseBarrier;
-
-    atomic_bool                 nonStop;
 } DebugManager;
 
 static DebugManager g_debugManager = { 0 };
@@ -114,6 +114,17 @@ void debugManagerUnpauseCores(u32 coreList, u32 singleStepList)
     __sev();
 }
 
+u32 debugManagerGetPausedCoreList(void)
+{
+    return atomic_load(&g_debugManager.pausedCoreList);
+}
+
+const DebugEventInfo *debugManagerMarkAndGetCoreDebugEvent(u32 coreId)
+{
+    g_debugManager.debugEventInfos[coreId].handled = true;
+    return &g_debugManager.debugEventInfos[coreId];
+}
+
 void debugManagerReportEvent(DebugEventType type, ...)
 {
     u64 flags = maskIrq();
@@ -141,6 +152,11 @@ void debugManagerReportEvent(DebugEventType type, ...)
 
     // Now, pause ourselves and try to signal we have a debug event
     debugManagerDoPauseCores(BIT(coreId));
-    // TODO gdb enter leave functions
+
+    exceptionEnterInterruptibleHypervisorCode();
+    unmaskIrq();
+
+    GDB_TrySignalDebugEvent(&g_gdbContext, info);
+
     restoreInterruptFlags(flags);
 }

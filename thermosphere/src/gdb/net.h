@@ -24,6 +24,7 @@ int GDB_ReceivePacket(GDBContext *ctx);
 int GDB_SendPacket(GDBContext *ctx, const char *packetData, size_t len);
 int GDB_SendFormattedPacket(GDBContext *ctx, const char *packetDataFmt, ...);
 int GDB_SendHexPacket(GDBContext *ctx, const void *packetData, size_t len);
+int GDB_SendNotificationPacket(GDBContext *ctx, const char *packetData, size_t len);
 int GDB_SendStreamData(GDBContext *ctx, const char *streamData, size_t offset, size_t length, size_t totalSize, bool forceEmptyLast);
 int GDB_ReplyEmpty(GDBContext *ctx);
 int GDB_ReplyOk(GDBContext *ctx);

@@ -50,7 +50,7 @@ GDB_DECLARE_HANDLER(IsThreadAlive)
         return GDB_ReplyErrno(ctx, EILSEQ);
     }
 
-    u32 coreMask = getActiveCoreMask();
+    u32 coreMask = ctx->attachedCoreList;
     return (coreMask & BIT(threadId)) != 0 ? GDB_ReplyOk(ctx) : GDB_ReplyErrno(ctx, ESRCH);
 }
 
@@ -71,7 +71,7 @@ GDB_DECLARE_QUERY_HANDLER(fThreadInfo)
     int n = 1;
     buf[0] = 'm';
 
-    u32 coreMask = getActiveCoreMask();
+    u32 coreMask = ctx->attachedCoreList;
 
     FOREACH_BIT (tmp, coreId, coreMask) {
         n += sprintf(buf + n, "%x,", 1 + coreId);
@@ -86,6 +86,7 @@ GDB_DECLARE_QUERY_HANDLER(fThreadInfo)
 GDB_DECLARE_QUERY_HANDLER(sThreadInfo)
 {
     // We have made our GDB packet big enough to list all the thread ids (coreIds + 1 for each coreId) in fThreadInfo
+    // Note: we assume GDB doesn't accept notifications during the sequence transfer...
     return GDB_SendPacket(ctx, "m", 1);
 }
 

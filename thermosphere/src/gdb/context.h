@@ -61,6 +61,8 @@ typedef enum GDBState
     GDB_STATE_DETACHING,
 } GDBState;
 
+struct DebugEventInfo;
+
 typedef struct GDBContext {
     // No need for a lock, it's in the transport interface layer...
 
@@ -69,13 +71,20 @@ typedef struct GDBContext {
     GDBState state;
     bool noAckSent;
 
+    u32 attachedCoreList;
+
     u32 currentThreadId;
     u32 selectedThreadId;
     u32 selectedThreadIdForContinuing;
+
+    u32 sentDebugEventCoreList;
+
+    bool sendOwnDebugEventAllowed;
+
     bool catchThreadEvents;
     bool processEnded, processExited;
 
-    //DebugEventInfo latestDebugEvent; FIXME
+    const struct DebugEventInfo *lastDebugEvent;
 
     uintptr_t currentHioRequestTargetAddr;
     PackedGdbHioRequest currentHioRequest;
