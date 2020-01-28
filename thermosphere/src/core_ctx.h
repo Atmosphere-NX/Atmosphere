@@ -35,6 +35,8 @@ typedef struct ALIGN(64) CoreCtx {
 
     // Debug features
     bool wasPaused;                                         // @0x1F
+    uintptr_t steppingRangeStartAddr;                       // @0x20
+    uintptr_t steppingRangeEndAddr;                         // @0x28
 
     // Most likely written to:
 

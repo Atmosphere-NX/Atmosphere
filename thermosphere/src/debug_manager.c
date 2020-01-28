@@ -29,6 +29,8 @@ GDBContext g_gdbContext = { 0 };
 
 typedef struct DebugManager {
     DebugEventInfo              debugEventInfos[MAX_CORE];
+    uintptr_t                   steppingRangeStartAddrs[MAX_CORE];
+    uintptr_t                   steppingRangeEndAddrs[MAX_CORE];
 
     ALIGN(64) atomic_uint       pausedCoreList;
     atomic_uint                 singleStepCoreList;
@@ -94,8 +96,12 @@ bool debugManagerHandlePause(void)
     // Single-step: if inactive and requested, start single step; cancel if active and not requested
     u32 ssReqd = (atomic_load(&g_debugManager.singleStepCoreList) & BIT(currentCoreCtx->coreId)) != 0;
     SingleStepState singleStepState = singleStepGetNextState(currentCoreCtx->guestFrame);
-    if (ssReqd && singleStepState == SingleStepState_Inactive) {
-        singleStepSetNextState(currentCoreCtx->guestFrame, SingleStepState_ActiveNotPending);
+    if (ssReqd) {
+        currentCoreCtx->steppingRangeStartAddr = g_debugManager.steppingRangeStartAddrs[coreId];
+        currentCoreCtx->steppingRangeEndAddr = g_debugManager.steppingRangeEndAddrs[coreId];
+        if(singleStepState == SingleStepState_Inactive) {
+            singleStepSetNextState(currentCoreCtx->guestFrame, SingleStepState_ActiveNotPending);
+        }
     } else if (!ssReqd && singleStepState != SingleStepState_Inactive) {
         singleStepSetNextState(currentCoreCtx->guestFrame, SingleStepState_Inactive);
     }
@@ -126,6 +132,12 @@ void debugManagerUnpauseCores(u32 coreList, u32 singleStepList)
     atomic_fetch_and(&g_debugManager.pausedCoreList, ~coreList);
 
     __sev();
+}
+
+void debugManagerSetSteppingRange(u32 coreId, uintptr_t startAddr, uintptr_t endAddr)
+{
+    g_debugManager.steppingRangeStartAddrs[coreId] = startAddr;
+    g_debugManager.steppingRangeEndAddrs[coreId] = endAddr;
 }
 
 u32 debugManagerGetPausedCoreList(void)

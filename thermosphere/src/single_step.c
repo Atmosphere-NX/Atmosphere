@@ -62,8 +62,17 @@ void singleStepSetNextState(ExceptionStackFrame *frame, SingleStepState state)
 
 void handleSingleStep(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
 {
-    // Disable single-step ASAP
-    singleStepSetNextState(NULL, SingleStepState_Inactive);
+    uintptr_t addr = frame->elr_el2;
+
+    // Stepping range support;
+    if (addr >= currentCoreCtx->steppingRangeStartAddr && addr < currentCoreCtx->steppingRangeEndAddr) {
+        // Reactivate single-step
+        singleStepSetNextState(frame, SingleStepState_ActiveNotPending);
+    } else {
+        // Disable single-step
+        singleStepSetNextState(frame, SingleStepState_Inactive);
+        // TODO report exception to gdb
+    }
 
     DEBUG("Single-step exeception ELR = 0x%016llx, ISV = %u, EX = %u\n", frame->elr_el2, (esr.iss >> 24) & 1, (esr.iss >> 6) & 1);
 }
