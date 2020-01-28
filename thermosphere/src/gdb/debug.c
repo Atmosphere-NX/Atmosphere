@@ -206,6 +206,15 @@ int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info)
     // Acquire the gdb lock/disable rx irq. We most likely block here.
     GDB_AcquireContext(ctx);
 
+    // Is the context not attached?
+    if (!GDB_IsAttached(ctx)) {
+        // Not attached, mark the event as handled, unpause
+        debugManagerMarkAndGetCoreDebugEvent(info->coreId);
+        debugManagerUnpauseCores(BIT(info->coreId), 0);
+        GDB_ReleaseContext(ctx);
+        return -1;
+    }
+
     // Are we still paused & has the packet not been handled & are we allowed to send on our own?
 
     if (ctx->sendOwnDebugEventAllowed && !info->handled && debugManagerIsCorePaused(info->coreId)) {
