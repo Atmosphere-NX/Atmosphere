@@ -57,6 +57,8 @@ bool debugManagerHandlePause(void);
 void debugManagerPauseCores(u32 coreList);
 void debugManagerUnpauseCores(u32 coreList, u32 singleStepList);
 
+void debugManagerSetSteppingRange(u32 coreId, uintptr_t startAddr, uintptr_t endAddr);
+
 u32 debugManagerGetPausedCoreList(void);
 
 const DebugEventInfo *debugManagerMarkAndGetCoreDebugEvent(u32 coreId);
