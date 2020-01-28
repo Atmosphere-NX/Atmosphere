@@ -122,7 +122,7 @@ void exceptionReturnPreprocess(ExceptionStackFrame *frame)
     if (currentCoreCtx->wasPaused && frame == currentCoreCtx->guestFrame) {
         // Were we paused & are we about to return to the guest?
         exceptionEnterInterruptibleHypervisorCode();
-        debugManagerHandlePause();
+        while (!debugManagerHandlePause());
         fpuCleanInvalidateRegisterCache();
     }
 

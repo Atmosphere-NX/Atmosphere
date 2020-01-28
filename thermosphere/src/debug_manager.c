@@ -69,7 +69,7 @@ void debugManagerPauseSgiHandler(void)
     barrierWait(&g_debugManager.pauseBarrier);
 }
 
-void debugManagerHandlePause(void)
+bool debugManagerHandlePause(void)
 {
     u32 coreId = currentCoreCtx->coreId;
     __builtin_prefetch(&g_debugManager.pausedCoreList, 0, 3);
@@ -80,6 +80,13 @@ void debugManagerHandlePause(void)
             __wfe();
         } while (atomic_load(&g_debugManager.pausedCoreList) & BIT(coreId));
         maskIrq();
+
+        if (!g_debugManager.debugEventInfos[coreId].handled) {
+            // Do we still have an unhandled debug event?
+            // TODO build
+            //GDB_TrySignalDebugEvent(&g_gdbContext, &g_debugManager.debugEventInfos[coreId]);
+            return false;
+        }
     }
 
     currentCoreCtx->wasPaused = false;
@@ -92,6 +99,8 @@ void debugManagerHandlePause(void)
     } else if (!ssReqd && singleStepState != SingleStepState_Inactive) {
         singleStepSetNextState(currentCoreCtx->guestFrame, SingleStepState_Inactive);
     }
+
+    return true;
 }
 
 void debugManagerPauseCores(u32 coreList)
@@ -105,7 +114,12 @@ void debugManagerUnpauseCores(u32 coreList, u32 singleStepList)
 {
     singleStepList &= coreList;
 
-    __builtin_prefetch(&g_debugManager.pausedCoreList, 1, 0);
+    FOREACH_BIT (tmp, coreId, coreList) {
+        if (&g_debugManager.debugEventInfos[coreId].handled) {
+            // Discard already handled debug events
+            g_debugManager.debugEventInfos[coreId].type = DBGEVENT_NONE;
+        }
+    }
 
     // Since we're using a debugger lock, a simple stlr should be fine...
     atomic_store(&g_debugManager.singleStepCoreList, singleStepList);
@@ -156,7 +170,7 @@ void debugManagerReportEvent(DebugEventType type, ...)
     exceptionEnterInterruptibleHypervisorCode();
     unmaskIrq();
 
-    GDB_TrySignalDebugEvent(&g_gdbContext, info);
+    // TODO GDB_TrySignalDebugEvent(&g_gdbContext, info);
 
     restoreInterruptFlags(flags);
 }

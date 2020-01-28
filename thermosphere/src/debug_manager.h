@@ -22,7 +22,8 @@
 extern GDBContext g_gdbContext;
 
 typedef enum DebugEventType {
-    DBGEVENT_DEBUGGER_BREAK = 0,
+    DBGEVENT_NONE = 0,
+    DBGEVENT_DEBUGGER_BREAK,
     DBGEVENT_EXCEPTION,
     DBGEVENT_CORE_ON,
     DBGEVENT_CORE_OFF,
@@ -48,7 +49,7 @@ typedef struct DebugEventInfo {
 void debugManagerPauseSgiHandler(void);
 
 // Hypervisor interrupts will be serviced during the pause-wait
-void debugManagerHandlePause(void);
+bool debugManagerHandlePause(void);
 
 // Note: these functions are not reentrant EXCEPT debugPauseCores(1 << currentCoreId)
 // "Pause" makes sure all cores reaches the pause function before proceeding.
