@@ -13,27 +13,33 @@
 
 GDB_DECLARE_HANDLER(SetThreadId)
 {
+    // Id = 0 means any thread
     if (ctx->commandData[0] == 'g') {
-        if(strncmp(ctx->commandData + 1, "-1", 2) == 0) {
+        if(strcmp(ctx->commandData + 1, "-1") == 0) {
             return GDB_ReplyErrno(ctx, EINVAL);
         }
 
         unsigned long id;
         if (GDB_ParseHexIntegerList(&id, ctx->commandData + 1, 1, 0) == NULL) {
             return GDB_ReplyErrno(ctx, EILSEQ);
+        }  else if (id >= MAX_CORE + 1) {
+                return GDB_ReplyErrno(ctx, EINVAL);
         }
 
-        ctx->selectedThreadId = id;
+        ctx->selectedThreadId = id == 0 ? (int)currentCoreCtx->coreId + 1 : (int)id;
         // TODO: change irq affinity (and remove selectedThreadId?)
         return GDB_ReplyOk(ctx);
     } else if (ctx->commandData[0] == 'c') {
-        if(strncmp(ctx->commandData + 1, "-1", 2) == 0) {
-            ctx->selectedThreadIdForContinuing = 0;
+        if(strcmp(ctx->commandData + 1, "-1") == 0) {
+            ctx->selectedThreadIdForContinuing = -1;
         } else {
             unsigned long id;
-            if(GDB_ParseHexIntegerList(&id, ctx->commandData + 1, 1, 0) == NULL)
+            if (GDB_ParseHexIntegerList(&id, ctx->commandData + 1, 1, 0) == NULL) {
                 return GDB_ReplyErrno(ctx, EILSEQ);
-            ctx->selectedThreadIdForContinuing = id;
+            } else if (id >= MAX_CORE + 1) {
+                return GDB_ReplyErrno(ctx, EINVAL);
+            }
+            ctx->selectedThreadIdForContinuing = id == 0 ? (int)currentCoreCtx->coreId + 1 : (int)id;
         }
 
         return GDB_ReplyOk(ctx);

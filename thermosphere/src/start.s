@@ -95,6 +95,7 @@ _postMmuEnableReturnAddr:
 
     mov     x0, sp
     mov     x1, x20
+    str     x0, [x18, #CORECTX_GUEST_FRAME_OFFSET]
     bl      thermosphereMain
 
     prfm    pldl1keep, [x18]

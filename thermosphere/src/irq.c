@@ -220,7 +220,6 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 
     bool isGuestInterrupt = false;
     bool isMaintenanceInterrupt = false;
-    bool hasBottomHalf = false;
 
     switch (irqId) {
         case ThermosphereSgi_ExecuteFunction:
@@ -231,6 +230,9 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
             break;
         case ThermosphereSgi_DebugPause:
             debugManagerPauseSgiHandler();
+            break;
+        case ThermosphereSgi_ReportDebuggerBreak:
+            // See bottom half
             break;
         case GIC_IRQID_MAINTENANCE:
             isMaintenanceInterrupt = true;
@@ -244,7 +246,6 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     }
 
     TransportInterface *transportIface = irqId >= 32 ? transportInterfaceIrqHandlerTopHalf(irqId) : NULL;
-    hasBottomHalf = hasBottomHalf || transportIface != NULL;
 
     // Priority drop
     gicc->eoir = iar;
@@ -269,12 +270,12 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
     recursiveSpinlockUnlock(&g_irqManager.lock);
 
     // Bottom half part
-    if (hasBottomHalf) {
+    if (transportIface != NULL) {
         exceptionEnterInterruptibleHypervisorCode();
         unmaskIrq();
-        if (transportIface != NULL) {
-            transportInterfaceIrqHandlerBottomHalf(transportIface);
-        }
+        transportInterfaceIrqHandlerBottomHalf(transportIface);
+    } else if (irqId == ThermosphereSgi_ReportDebuggerBreak) {
+        debugManagerReportEvent(DBGEVENT_DEBUGGER_BREAK);
     }
 
 }

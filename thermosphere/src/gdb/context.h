@@ -74,8 +74,8 @@ typedef struct GDBContext {
     u32 attachedCoreList;
 
     u32 currentThreadId;
-    u32 selectedThreadId;
-    u32 selectedThreadIdForContinuing;
+    int selectedThreadId;
+    int selectedThreadIdForContinuing;
 
     u32 sentDebugEventCoreList;
 

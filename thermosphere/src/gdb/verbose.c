@@ -13,11 +13,12 @@
 
 static const struct {
     const char *name;
+    char trailingCharacter;
     GDBCommandHandler handler;
 } gdbVerboseCommandHandlers[] = {
-    { "Cont?", GDB_VERBOSE_HANDLER(ContinueSupported) },
-    { "Cont",  GDB_VERBOSE_HANDLER(Continue) },
-    { "MustReplyEmpty", GDB_HANDLER(Unsupported) },
+    { "Cont?",          '\0',   GDB_VERBOSE_HANDLER(ContinueSupported) },
+    { "Cont",           ';',    GDB_VERBOSE_HANDLER(Continue) },
+    { "MustReplyEmpty", '\0',   GDB_HANDLER(Unsupported) },
 };
 
 GDB_DECLARE_HANDLER(VerboseCommand)
@@ -31,6 +32,7 @@ GDB_DECLARE_HANDLER(VerboseCommand)
     char *vData = NULL;
 
     for (nameEnd = nameBegin; *nameEnd != 0 && *nameEnd != ';' && *nameEnd != ':'; nameEnd++);
+    char oldNameEnd = *nameEnd;
     if (*nameEnd != 0) {
         *nameEnd = 0;
         vData = nameEnd + 1;
@@ -39,7 +41,11 @@ GDB_DECLARE_HANDLER(VerboseCommand)
     for (size_t i = 0; i < sizeof(gdbVerboseCommandHandlers) / sizeof(gdbVerboseCommandHandlers[0]); i++) {
         if (strcmp(gdbVerboseCommandHandlers[i].name, nameBegin) == 0) {
             ctx->commandData = vData;
-            return gdbVerboseCommandHandlers[i].handler(ctx);
+            if (oldNameEnd == gdbVerboseCommandHandlers[i].trailingCharacter) {
+                return gdbVerboseCommandHandlers[i].handler(ctx);
+            } else {
+                return GDB_ReplyErrno(ctx, EILSEQ);
+            }
         }
     }
 
