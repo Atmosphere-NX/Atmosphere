@@ -40,9 +40,10 @@ _start:
 
     /* Stack is now set up. */
     /* Apply relocations and call init array for KernelLdr. */
-    sub sp, sp, #0x20
+    sub sp, sp, #0x30
     stp x0, x1, [sp, #0x00]
     stp x2, x30, [sp, #0x10]
+    stp xzr, xzr, [sp, #0x20]
     adr x0, _start
     adr x1, __external_references
     ldr x1, [x1, #0x18] /* .dynamic. */
@@ -75,6 +76,11 @@ _start:
     bl _ZN3ams4kern4init6loader4MainEmPNS1_12KernelLayoutEm
     str x0, [sp, #0x00]
 
+    /* Get ams::kern::init::loader::AllocateKernelInitStack(). */
+    bl _ZN3ams4kern4init6loader23AllocateKernelInitStackEv
+    str x0, [sp, #0x20]
+
+
     /* Call ams::kern::init::loader::GetFinalPageAllocatorState() */
     bl _ZN3ams4kern4init6loader26GetFinalPageAllocatorStateEv
 
@@ -85,6 +91,8 @@ _start:
     ldr x1, [sp, #0x18] /* Return address to Kernel */
     ldr x2, [sp, #0x00] /* Relocated kernel base address diff. */
     add x1, x2, x1
+    ldr x2, [sp, #0x20]
+    mov sp, x2
     br  x1
 
 

@@ -23,8 +23,10 @@ namespace ams::kern {
             class Init {
                 public:
                     /* Initialization. */
+                    static size_t GetIntendedMemorySize();
                     static KPhysicalAddress GetKernelPhysicalBaseAddress(uintptr_t base_address);
                     static bool ShouldIncreaseThreadResourceLimit();
+                    static void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
 
                     /* Randomness. */
                     static void GenerateRandomBytes(void *dst, size_t size);

@@ -44,10 +44,18 @@ namespace ams::kern {
 #define MESOSPHERE_R_ASSERT(expr) MESOSPHERE_ASSERT_IMPL(R_SUCCEEDED(expr), "Result assertion failed: %s", #expr)
 
 #define MESOSPHERE_ABORT() MESOSPHERE_PANIC("Abort()");
+#define MESOSPHERE_INIT_ABORT() do { /* ... */ } while (true)
 
 #define MESOSPHERE_ABORT_UNLESS(expr)               \
     ({                                              \
-        if (AMS_UNLIKELY(!(expr))) {                  \
+        if (AMS_UNLIKELY(!(expr))) {                \
             MESOSPHERE_PANIC("Abort(): %s", #expr); \
+        }                                           \
+    })
+
+#define MESOSPHERE_INIT_ABORT_UNLESS(expr)          \
+    ({                                              \
+        if (AMS_UNLIKELY(!(expr))) {                \
+            MESOSPHERE_INIT_ABORT();                \
         }                                           \
     })

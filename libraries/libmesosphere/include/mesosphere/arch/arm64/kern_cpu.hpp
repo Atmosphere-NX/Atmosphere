@@ -59,6 +59,9 @@ namespace ams::kern::arm64::cpu {
         EnsureInstructionConsistency();
     }
 
+    /* Synchronization helpers. */
+    NOINLINE void SynchronizeAllCores();
+
     /* Cache management helpers. */
     void FlushEntireDataCacheShared();
     void FlushEntireDataCacheLocal();

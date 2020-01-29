@@ -97,8 +97,8 @@ namespace ams::kern::init::loader {
             /* TODO: Define these bits properly elsewhere, document exactly what each bit set is doing .*/
             constexpr u64 MairValue = 0x0000000044FF0400ul;
             constexpr u64 TcrValue  = 0x00000011B5193519ul;
-            cpu::SetMairEl1(MairValue);
-            cpu::SetTcrEl1(TcrValue);
+            cpu::MemoryAccessIndirectionRegisterAccessor(MairValue).Store();
+            cpu::TranslationControlRegisterAccessor(TcrValue).Store();
 
             /* Perform cpu-specific setup. */
             {
@@ -306,6 +306,10 @@ namespace ams::kern::init::loader {
 
         /* Return the difference between the random virtual base and the physical base. */
         return GetInteger(virtual_base_address) - base_address;
+    }
+
+    KPhysicalAddress AllocateKernelInitStack() {
+        return g_initial_page_allocator.Allocate() + PageSize;
     }
 
     uintptr_t GetFinalPageAllocatorState() {

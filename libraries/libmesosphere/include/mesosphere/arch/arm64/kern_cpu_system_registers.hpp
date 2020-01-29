@@ -37,8 +37,8 @@ namespace ams::kern::arm64::cpu {
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Ttbr0El1, ttbr0_el1)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Ttbr1El1, ttbr1_el1)
 
-    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(MairEl1, mair_el1)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(TcrEl1, tcr_el1)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(MairEl1, mair_el1)
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(SctlrEl1, sctlr_el1)
 
@@ -48,19 +48,88 @@ namespace ams::kern::arm64::cpu {
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CsselrEl1, csselr_el1)
 
     /* Base class for register accessors. */
-    class GenericRegisterAccessor {
+    class GenericRegisterAccessorBase {
+        NON_COPYABLE(GenericRegisterAccessorBase);
+        NON_MOVEABLE(GenericRegisterAccessorBase);
         private:
             u64 value;
         public:
-            ALWAYS_INLINE GenericRegisterAccessor(u64 v) : value(v) { /* ... */ }
+            constexpr ALWAYS_INLINE GenericRegisterAccessorBase(u64 v) : value(v) { /* ... */ }
         protected:
+            constexpr ALWAYS_INLINE u64 GetValue() const {
+                return this->value;
+            }
+
             constexpr ALWAYS_INLINE u64 GetBits(size_t offset, size_t count) const {
                 return (this->value >> offset) & ((1ul << count) - 1);
             }
     };
 
-    /* Special code for main id register. */
-    class MainIdRegisterAccessor : public GenericRegisterAccessor {
+    template<typename Derived>
+    class GenericRegisterAccessor : public GenericRegisterAccessorBase {
+        public:
+            constexpr ALWAYS_INLINE GenericRegisterAccessor(u64 v) : GenericRegisterAccessorBase(v) { /* ... */ }
+        protected:
+            ALWAYS_INLINE void Store() const {
+                static_cast<const Derived *>(this)->Store();
+            }
+    };
+
+    #define MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(name) class name##RegisterAccessor : public GenericRegisterAccessor<name##RegisterAccessor>
+
+    #define MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(accessor, reg_name)                                                  \
+        ALWAYS_INLINE accessor##RegisterAccessor() : GenericRegisterAccessor(MESOSPHERE_CPU_GET_SYSREG(reg_name)) { /* ... */ } \
+        constexpr ALWAYS_INLINE accessor##RegisterAccessor(u64 v) : GenericRegisterAccessor(v) { /* ... */ }                    \
+                                                                                                                                \
+        ALWAYS_INLINE void Store() { const u64 v = this->GetValue(); MESOSPHERE_CPU_SET_SYSREG(reg_name, v); }
+
+    /* Accessors. */
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(MemoryAccessIndirection) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(MemoryAccessIndirection, mair_el1)
+    };
+
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(TranslationControl) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(TranslationControl, tcr_el1)
+
+            constexpr ALWAYS_INLINE size_t GetT1Size() const {
+                const size_t shift_value = this->GetBits(16, 6);
+                return size_t(1) << (size_t(64) - shift_value);
+            }
+    };
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(MultiprocessorAffinity) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(MultiprocessorAffinity, mpidr_el1)
+
+            constexpr ALWAYS_INLINE u64 GetAff0() const {
+                return this->GetBits(0, 8);
+            }
+
+            constexpr ALWAYS_INLINE u64 GetAff1() const {
+                return this->GetBits(8, 8);
+            }
+
+            constexpr ALWAYS_INLINE u64 GetAff2() const {
+                return this->GetBits(16, 8);
+            }
+
+            constexpr ALWAYS_INLINE u64 GetAff3() const {
+                return this->GetBits(32, 8);
+            }
+
+            constexpr ALWAYS_INLINE u64 GetCpuOnArgument() const {
+                constexpr u64 Mask = 0x000000FF00FFFF00ul;
+                return this->GetValue() & Mask;
+            }
+    };
+
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(ThreadId) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(ThreadId, tpidr_el1)
+    };
+
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(MainId) {
         public:
             enum class Implementer {
                 ArmLimited = 0x41,
@@ -70,7 +139,7 @@ namespace ams::kern::arm64::cpu {
                 CortexA57  = 0xD07,
             };
         public:
-            ALWAYS_INLINE MainIdRegisterAccessor() : GenericRegisterAccessor(MESOSPHERE_CPU_GET_SYSREG(midr_el1)) { /* ... */ }
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(MainId, midr_el1)
         public:
             constexpr ALWAYS_INLINE Implementer GetImplementer() const {
                 return static_cast<Implementer>(this->GetBits(24, 8));
@@ -94,9 +163,9 @@ namespace ams::kern::arm64::cpu {
     };
 
     /* Accessors for cache registers. */
-    class CacheLineIdAccessor : public GenericRegisterAccessor {
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(CacheLineId) {
         public:
-            ALWAYS_INLINE CacheLineIdAccessor() : GenericRegisterAccessor(MESOSPHERE_CPU_GET_SYSREG(clidr_el1)) { /* ... */ }
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(CacheLineId, clidr_el1)
         public:
             constexpr ALWAYS_INLINE int GetLevelsOfCoherency() const {
                 return static_cast<int>(this->GetBits(24, 3));
@@ -109,9 +178,9 @@ namespace ams::kern::arm64::cpu {
             /* TODO: Other bitfield accessors? */
     };
 
-    class CacheSizeIdAccessor : public GenericRegisterAccessor {
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(CacheSizeId) {
         public:
-            ALWAYS_INLINE CacheSizeIdAccessor() : GenericRegisterAccessor(MESOSPHERE_CPU_GET_SYSREG(ccsidr_el1)) { /* ... */ }
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(CacheSizeId, ccsidr_el1)
         public:
             constexpr ALWAYS_INLINE int GetNumberOfSets() const {
                 return static_cast<int>(this->GetBits(13, 15));
@@ -128,6 +197,8 @@ namespace ams::kern::arm64::cpu {
             /* TODO: Other bitfield accessors? */
     };
 
+    #undef  MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS
+    #undef  MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS
     #undef  MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS
     #undef  MESOSPHERE_CPU_GET_SYSREG
     #undef  MESOSPHERE_CPU_SET_SYSREG

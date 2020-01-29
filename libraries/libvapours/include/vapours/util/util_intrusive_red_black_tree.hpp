@@ -133,7 +133,7 @@ namespace ams::util {
             }
 
             /* Define accessors using RB_* functions. */
-            void InitializeImpl() {
+            constexpr ALWAYS_INLINE void InitializeImpl() {
                 RB_INIT(&this->root);
             }
 
@@ -166,7 +166,7 @@ namespace ams::util {
             }
 
         public:
-            IntrusiveRedBlackTree() {
+            constexpr ALWAYS_INLINE IntrusiveRedBlackTree() : root() {
                 this->InitializeImpl();
             }
 
@@ -187,6 +187,14 @@ namespace ams::util {
                 return const_iterator(Traits::GetParent(static_cast<IntrusiveRedBlackTreeNode *>(nullptr)));
             }
 
+            const_iterator cbegin() const {
+                return this->begin();
+            }
+
+            const_iterator cend() const {
+                return this->end();
+            }
+
             iterator iterator_to(reference ref) {
                 return iterator(&ref);
             }
@@ -201,19 +209,19 @@ namespace ams::util {
             }
 
             reference back() {
-                return Traits::GetParent(this->GetMaxImpl());
+                return *Traits::GetParent(this->GetMaxImpl());
             }
 
             const_reference back() const {
-                return Traits::GetParent(this->GetMaxImpl());
+                return *Traits::GetParent(this->GetMaxImpl());
             }
 
             reference front() {
-                return Traits::GetParent(this->GetMinImpl());
+                return *Traits::GetParent(this->GetMinImpl());
             }
 
             const_reference front() const {
-                return Traits::GetParent(this->GetMinImpl());
+                return *Traits::GetParent(this->GetMinImpl());
             }
 
             iterator insert(reference ref) {
@@ -244,7 +252,7 @@ namespace ams::util {
     class IntrusiveRedBlackTreeMemberTraits<Member, Derived> {
         public:
             template<class Comparator>
-            using ListType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeMemberTraits, Comparator>;
+            using TreeType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeMemberTraits, Comparator>;
         private:
             template<class, class, class>
             friend class IntrusiveRedBlackTree;
@@ -276,7 +284,7 @@ namespace ams::util {
     class IntrusiveRedBlackTreeBaseTraits {
         public:
             template<class Comparator>
-            using ListType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeBaseTraits, Comparator>;
+            using TreeType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeBaseTraits, Comparator>;
         private:
             template<class, class, class>
             friend class IntrusiveRedBlackTree;

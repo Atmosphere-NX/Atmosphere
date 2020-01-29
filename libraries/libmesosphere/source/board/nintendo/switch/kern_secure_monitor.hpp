@@ -79,6 +79,7 @@ namespace ams::kern::smc {
 
     namespace init {
 
+        void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
         void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
         void GenerateRandomBytes(void *dst, size_t size);
         bool ReadWriteRegister(u32 *out, u64 address, u32 mask, u32 value);

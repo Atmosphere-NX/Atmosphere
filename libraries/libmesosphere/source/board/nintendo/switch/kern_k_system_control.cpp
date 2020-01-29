@@ -24,7 +24,7 @@ namespace ams::kern {
             /* TODO: Move this into a header for the MC in general. */
             constexpr u32 MemoryControllerConfigurationRegister = 0x70019050;
             u32 config_value;
-            MESOSPHERE_ABORT_UNLESS(smc::init::ReadWriteRegister(&config_value, MemoryControllerConfigurationRegister, 0, 0));
+            MESOSPHERE_INIT_ABORT_UNLESS(smc::init::ReadWriteRegister(&config_value, MemoryControllerConfigurationRegister, 0, 0));
             return static_cast<size_t>(config_value & 0x3FFF) << 20;
         }
 
@@ -40,24 +40,24 @@ namespace ams::kern {
             return value;
         }
 
-        ALWAYS_INLINE size_t GetIntendedMemorySizeForInit() {
-            switch (GetKernelConfigurationForInit().Get<smc::KernelConfiguration::MemorySize>()) {
-                case smc::MemorySize_4GB:
-                default: /* All invalid modes should go to 4GB. */
-                    return 4_GB;
-                case smc::MemorySize_6GB:
-                    return 6_GB;
-                case smc::MemorySize_8GB:
-                    return 8_GB;
-            }
-        }
-
     }
 
     /* Initialization. */
+    size_t KSystemControl::Init::GetIntendedMemorySize() {
+        switch (GetKernelConfigurationForInit().Get<smc::KernelConfiguration::MemorySize>()) {
+            case smc::MemorySize_4GB:
+            default: /* All invalid modes should go to 4GB. */
+                return 4_GB;
+            case smc::MemorySize_6GB:
+                return 6_GB;
+            case smc::MemorySize_8GB:
+                return 8_GB;
+        }
+    }
+
     KPhysicalAddress KSystemControl::Init::GetKernelPhysicalBaseAddress(uintptr_t base_address) {
         const size_t real_dram_size     = GetRealMemorySizeForInit();
-        const size_t intended_dram_size = GetIntendedMemorySizeForInit();
+        const size_t intended_dram_size = KSystemControl::Init::GetIntendedMemorySize();
         if (intended_dram_size * 2 < real_dram_size) {
             return base_address;
         } else {
@@ -69,9 +69,13 @@ namespace ams::kern {
         return GetKernelConfigurationForInit().Get<smc::KernelConfiguration::IncreaseThreadResourceLimit>();
     }
 
+    void KSystemControl::Init::CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
+        smc::init::CpuOn(core_id, entrypoint, arg);
+    }
+
     /* Randomness for Initialization. */
     void KSystemControl::Init::GenerateRandomBytes(void *dst, size_t size) {
-        MESOSPHERE_ABORT_UNLESS(size <= 0x38);
+        MESOSPHERE_INIT_ABORT_UNLESS(size <= 0x38);
         smc::init::GenerateRandomBytes(dst, size);
     }
 

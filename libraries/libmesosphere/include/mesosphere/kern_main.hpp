@@ -14,18 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <mesosphere/kern_k_typed_address.hpp>
+#include <vapours.hpp>
 
-#ifdef ATMOSPHERE_ARCH_ARM64
-    #include "../arch/arm64/init/kern_k_init_arguments.hpp"
-#else
-    #error "Unknown architecture for KInitArguments"
-#endif
+namespace ams::kern {
 
-namespace ams::kern::init {
-
-    KPhysicalAddress GetInitArgumentsAddress(s32 core_id);
-    void SetInitArguments(s32 core_id, KPhysicalAddress address, uintptr_t arg);
-    void StoreInitArguments();
+    NORETURN void HorizonKernelMain(s32 core_id);
 
 }

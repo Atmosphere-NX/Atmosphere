@@ -19,6 +19,8 @@ namespace ams::kern::arm64::cpu {
 
     namespace {
 
+        std::atomic<s32> g_all_core_sync_count;
+
         void FlushEntireDataCacheImpl(int level) {
             /* Used in multiple locations. */
             const u64 level_sel_value = static_cast<u64>(level << 1);
@@ -28,7 +30,7 @@ namespace ams::kern::arm64::cpu {
             cpu::InstructionMemoryBarrier();
 
             /* Get cache size id info. */
-            CacheSizeIdAccessor ccsidr_el1;
+            CacheSizeIdRegisterAccessor ccsidr_el1;
             const int num_sets  = ccsidr_el1.GetNumberOfSets();
             const int num_ways  = ccsidr_el1.GetAssociativity();
             const int line_size = ccsidr_el1.GetLineSize();
@@ -49,7 +51,7 @@ namespace ams::kern::arm64::cpu {
     }
 
     void FlushEntireDataCacheShared() {
-        CacheLineIdAccessor clidr_el1;
+        CacheLineIdRegisterAccessor clidr_el1;
         const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency();
         const int levels_of_unification = clidr_el1.GetLevelsOfUnification();
 
@@ -59,11 +61,28 @@ namespace ams::kern::arm64::cpu {
     }
 
     void FlushEntireDataCacheLocal() {
-        CacheLineIdAccessor clidr_el1;
+        CacheLineIdRegisterAccessor clidr_el1;
         const int levels_of_unification = clidr_el1.GetLevelsOfUnification();
 
         for (int level = levels_of_unification - 1; level >= 0; level--) {
             FlushEntireDataCacheImpl(level);
         }
     }
+
+    NOINLINE void SynchronizeAllCores() {
+        /* Wait until the count can be read. */
+        while (!(g_all_core_sync_count < static_cast<s32>(cpu::NumCores))) { /* ... */ }
+
+        const s32 per_core_idx = g_all_core_sync_count.fetch_add(1);
+
+        /* Loop until it's our turn. This will act on each core in order. */
+        while (g_all_core_sync_count != per_core_idx + static_cast<s32>(cpu::NumCores)) { /* ... */ }
+
+        if (g_all_core_sync_count != 2 * static_cast<s32>(cpu::NumCores) - 1) {
+            g_all_core_sync_count++;
+        } else {
+            g_all_core_sync_count = 0;
+        }
+    }
+
 }

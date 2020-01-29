@@ -31,13 +31,13 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <atomic>
 #include <random>
 
 /* Stratosphere wants stdlib headers, others do not.. */
 #ifdef ATMOSPHERE_IS_STRATOSPHERE
 
 /* C++ headers. */
-#include <atomic>
 #include <utility>
 #include <optional>
 #include <memory>

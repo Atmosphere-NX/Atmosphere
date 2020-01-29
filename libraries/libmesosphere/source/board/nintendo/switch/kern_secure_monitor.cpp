@@ -103,6 +103,11 @@ namespace ams::kern::smc {
     /* SMC functionality needed for init. */
     namespace init {
 
+        void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
+            SecureMonitorArguments args = { FunctionId_CpuOn, core_id, entrypoint, arg };
+            CallPrivilegedSecureMonitorFunctionForInit(args);
+        }
+
         void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item) {
             SecureMonitorArguments args = { FunctionId_GetConfig, static_cast<u32>(config_item) };
             CallPrivilegedSecureMonitorFunctionForInit(args);

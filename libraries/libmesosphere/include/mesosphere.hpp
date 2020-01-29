@@ -27,16 +27,20 @@
 
 /* Core pre-initialization includes. */
 #include "mesosphere/kern_select_cpu.hpp"
+#include "mesosphere/kern_select_k_system_control.hpp"
 
 /* Initialization headers. */
 #include "mesosphere/init/kern_init_elf.hpp"
 #include "mesosphere/init/kern_init_layout.hpp"
 #include "mesosphere/init/kern_init_page_table_select.hpp"
 #include "mesosphere/init/kern_init_arguments_select.hpp"
+#include "mesosphere/kern_k_memory_layout.hpp"
 
 /* Core functionality. */
 #include "mesosphere/kern_select_interrupts.hpp"
-#include "mesosphere/kern_select_k_system_control.hpp"
 
 /* Supervisor Calls. */
 #include "mesosphere/kern_svc.hpp"
+
+/* Main functionality. */
+#include "mesosphere/kern_main.hpp"
