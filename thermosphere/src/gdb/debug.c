@@ -365,7 +365,7 @@ GDB_DECLARE_VERBOSE_HANDLER(Continue)
         char *threadIdPart;
         int threadId;
         u32 curMask = 0;
-        char *cmdEnd;
+        const char *cmdEnd;
 
         // It it always fine if we set the single-stepping range to 0,0 by default
         // Because the fields we set are the shadow fields copied to the real fields after debug unpause
@@ -380,13 +380,16 @@ GDB_DECLARE_VERBOSE_HANDLER(Continue)
 
         // Locate thread-id part, parse thread id
         threadIdPart = strchr(cmd, ':');
+        if (threadIdPart != NULL) {
+            *threadIdPart++ = 0;
+        }
         if (threadIdPart == NULL || strcmp(threadIdPart, "-1") == 0) {
             // Default action...
             threadId = -1;
             curMask = ctx->attachedCoreList;
         } else {
             unsigned long id;
-            if(GDB_ParseHexIntegerList(&id, ctx->commandData + 1, 1, 0) == NULL) {
+            if(GDB_ParseHexIntegerList(&id, threadIdPart, 1, 0) == NULL) {
                 return GDB_ReplyErrno(ctx, EILSEQ);
             } else if (id >= MAX_CORE + 1) {
                 return GDB_ReplyErrno(ctx, EINVAL);
@@ -404,7 +407,7 @@ GDB_DECLARE_VERBOSE_HANDLER(Continue)
             case 'C': {
                 // Check the presence of the two-digit signature, even if we ignore it.
                 u8 sg;
-                if (GDB_DecodeHex(&sg, ctx->commandData, 1) != 1) {
+                if (GDB_DecodeHex(&sg, cmd + 1, 1) != 1) {
                     return GDB_ReplyErrno(ctx, EILSEQ);
                 }
                 stepCoreList |= cmd[0] == 'S' ? curMask : 0;
@@ -428,7 +431,7 @@ GDB_DECLARE_VERBOSE_HANDLER(Continue)
             case 'r': {
                 // Range step
                 unsigned long tmp[2];
-                cmdEnd = GDB_ParseHexIntegerList(tmp, cmd, 2, 0);
+                cmdEnd = GDB_ParseHexIntegerList(tmp, cmd + 1, 2, 0);
                 if (cmdEnd == NULL) {
                     return GDB_ReplyErrno(ctx, EILSEQ);
                 }
