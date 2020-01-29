@@ -1,5 +1,5 @@
-TARGETS := kernel kernel_ldr
-CLEAN_TARGETS := $(foreach target,$(TARGETS),$(target)-clean)
+TARGETS := kernel.bin kernel_ldr.bin
+CLEAN_TARGETS := $(foreach target,$(TARGETS),$(target:.bin=)-clean)
 
 SUBFOLDERS := $(MODULES)
 
@@ -12,10 +12,15 @@ mesosphere.bin: $(TARGETS)
 	@python build_mesosphere.py
 	@echo "Built mesosphere.bin..."
 
-$(TARGETS):
-	$(MAKE) -C $@
+$(TARGETS): check_libmeso
+	$(MAKE) -C $(@:.bin=)
+	@cp $(@:.bin=)/$(@) $(@)
+
+check_libmeso:
+	@$(MAKE) --no-print-directory -C ../libraries/libmesosphere
 
 $(CLEAN_TARGETS):
 	$(MAKE) -C $(@:-clean=) clean
+	@rm -f $(@:-clean=).bin
 
-.PHONY: all clean $(TARGETS) $(CLEAN_TARGETS)
+.PHONY: all clean $(CLEAN_TARGETS)

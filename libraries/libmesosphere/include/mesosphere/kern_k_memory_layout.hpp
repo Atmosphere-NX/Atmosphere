@@ -239,6 +239,15 @@ namespace ams::kern {
                 MESOSPHERE_INIT_ABORT();
             }
 
+            iterator FindFirstBlockByType(u32 type_id) {
+                for (auto it = this->begin(); it != this->end(); it++) {
+                    if (it->GetType() == type_id) {
+                        return it;
+                    }
+                }
+                MESOSPHERE_INIT_ABORT();
+            }
+
             iterator FindFirstDerivedBlock(u32 type_id) {
                 for (auto it = this->begin(); it != this->end(); it++) {
                     if (it->IsDerivedFrom(type_id)) {

@@ -71,4 +71,16 @@ namespace ams::kern::arm64::cpu {
         EnsureInstructionConsistency();
     }
 
+    ALWAYS_INLINE uintptr_t GetCoreLocalRegionAddress() {
+        register uintptr_t x18 asm("x18");
+        __asm__ __volatile__("" : [x18]"=r"(x18));
+        return x18;
+    }
+
+    ALWAYS_INLINE void SetCoreLocalRegionAddress(uintptr_t value) {
+        register uintptr_t x18 asm("x18") = value;
+        __asm__ __volatile__("":: [x18]"r"(x18));
+        SetTpidrEl1(value);
+    }
+
 }
