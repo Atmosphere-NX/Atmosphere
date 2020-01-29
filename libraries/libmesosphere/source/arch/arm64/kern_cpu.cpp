@@ -17,9 +17,14 @@
 
 namespace ams::kern::arm64::cpu {
 
+    /* Declare prototype to be implemented in asm. */
+    void SynchronizeAllCoresImpl(s32 *sync_var, s32 num_cores);
+
+
     namespace {
 
-        std::atomic<s32> g_all_core_sync_count;
+        /* Expose this as a global, for asm to use. */
+        s32 g_all_core_sync_count;
 
         void FlushEntireDataCacheImpl(int level) {
             /* Used in multiple locations. */
@@ -48,6 +53,14 @@ namespace ams::kern::arm64::cpu {
             }
         }
 
+        ALWAYS_INLINE void SetEventLocally() {
+            __asm__ __volatile__("sevl" ::: "memory");
+        }
+
+        ALWAYS_INLINE void WaitForEvent() {
+            __asm__ __volatile__("wfe" ::: "memory");
+        }
+
     }
 
     void FlushEntireDataCacheShared() {
@@ -70,19 +83,7 @@ namespace ams::kern::arm64::cpu {
     }
 
     NOINLINE void SynchronizeAllCores() {
-        /* Wait until the count can be read. */
-        while (!(g_all_core_sync_count < static_cast<s32>(cpu::NumCores))) { /* ... */ }
-
-        const s32 per_core_idx = g_all_core_sync_count.fetch_add(1);
-
-        /* Loop until it's our turn. This will act on each core in order. */
-        while (g_all_core_sync_count != per_core_idx + static_cast<s32>(cpu::NumCores)) { /* ... */ }
-
-        if (g_all_core_sync_count != 2 * static_cast<s32>(cpu::NumCores) - 1) {
-            g_all_core_sync_count++;
-        } else {
-            g_all_core_sync_count = 0;
-        }
+        SynchronizeAllCoresImpl(&g_all_core_sync_count, static_cast<s32>(cpu::NumCores));
     }
 
 }
