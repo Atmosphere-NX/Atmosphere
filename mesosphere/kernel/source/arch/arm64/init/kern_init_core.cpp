@@ -18,6 +18,12 @@
 extern "C" void _start();
 extern "C" void __end__();
 
+namespace ams::kern {
+
+    void ExceptionVectors();
+
+}
+
 namespace ams::kern::init {
 
     /* Prototypes for functions declared in ASM that we need to reference. */
@@ -310,11 +316,71 @@ namespace ams::kern::init {
     }
 
     void InitializeDebugRegisters() {
-        /* TODO */
+        /* Determine how many watchpoints and breakpoints we have */
+        cpu::DebugFeatureRegisterAccessor aa64dfr0;
+        const auto num_watchpoints = aa64dfr0.GetNumWatchpoints();
+        const auto num_breakpoints = aa64dfr0.GetNumBreakpoints();
+        cpu::EnsureInstructionConsistency();
+
+        /* Clear the debug monitor register and the os lock access register. */
+        cpu::MonitorDebugSystemControlRegisterAccessor(0).Store();
+        cpu::EnsureInstructionConsistency();
+        cpu::OsLockAccessRegisterAccessor(0).Store();
+        cpu::EnsureInstructionConsistency();
+
+        /* Clear all debug watchpoints/breakpoints. */
+        #define FOR_I_IN_15_TO_1(HANDLER, ...)                                                                              \
+            HANDLER(15, ## __VA_ARGS__) HANDLER(14, ## __VA_ARGS__) HANDLER(13, ## __VA_ARGS__) HANDLER(12, ## __VA_ARGS__) \
+            HANDLER(11, ## __VA_ARGS__) HANDLER(10, ## __VA_ARGS__) HANDLER(9,  ## __VA_ARGS__) HANDLER(8,  ## __VA_ARGS__) \
+            HANDLER(7,  ## __VA_ARGS__) HANDLER(6,  ## __VA_ARGS__) HANDLER(5,  ## __VA_ARGS__) HANDLER(4,  ## __VA_ARGS__) \
+            HANDLER(3,  ## __VA_ARGS__) HANDLER(2,  ## __VA_ARGS__) HANDLER(1,  ## __VA_ARGS__)
+
+        #define MESOSPHERE_INITIALIZE_WATCHPOINT_CASE(ID, ...) \
+            case ID:                                           \
+                cpu::SetDbgWcr##ID##El1(__VA_ARGS__);          \
+                cpu::SetDbgWvr##ID##El1(__VA_ARGS__);          \
+
+        #define MESOSPHERE_INITIALIZE_BREAKPOINT_CASE(ID, ...) \
+            case ID:                                           \
+                cpu::SetDbgBcr##ID##El1(__VA_ARGS__);          \
+                cpu::SetDbgBvr##ID##El1(__VA_ARGS__);          \
+            [[fallthrough]];
+
+
+        switch (num_watchpoints) {
+            FOR_I_IN_15_TO_1(MESOSPHERE_INITIALIZE_WATCHPOINT_CASE, 0)
+            default:
+                break;
+        }
+        cpu::SetDbgWcr0El1(0);
+        cpu::SetDbgWvr0El1(0);
+
+        switch (num_breakpoints) {
+            FOR_I_IN_15_TO_1(MESOSPHERE_INITIALIZE_BREAKPOINT_CASE, 0)
+            default:
+                break;
+        }
+        cpu::SetDbgBcr0El1(0);
+        cpu::SetDbgBvr0El1(0);
+
+        #undef MESOSPHERE_INITIALIZE_WATCHPOINT_CASE
+        #undef MESOSPHERE_INITIALIZE_BREAKPOINT_CASE
+        #undef FOR_I_IN_15_TO_1
+
+        cpu::EnsureInstructionConsistency();
+
+        /* Initialize the context id register to all 1s. */
+        cpu::ContextIdRegisterAccessor(0).SetProcId(std::numeric_limits<u32>::max()).Store();
+        cpu::EnsureInstructionConsistency();
+
+        /* Configure the debug monitor register. */
+        cpu::MonitorDebugSystemControlRegisterAccessor(0).SetMde(true).SetTdcc(true).Store();
+        cpu::EnsureInstructionConsistency();
     }
 
     void InitializeExceptionVectors() {
-        /* TODO */
+        cpu::SetVbarEl1(reinterpret_cast<uintptr_t>(::ams::kern::ExceptionVectors));
+        cpu::EnsureInstructionConsistency();
     }
 
 }
