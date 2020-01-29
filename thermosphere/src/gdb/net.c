@@ -50,13 +50,17 @@ static inline u32 GDB_DecodeHexDigit(char src, bool *ok)
 
 size_t GDB_DecodeHex(void *dst, const char *src, size_t len) {
     size_t i = 0;
-    bool ok = true;
     u8 *dst8 = (u8 *)dst;
-    for (i = 0; i < len && ok && src[2 * i] != 0 && src[2 * i + 1] != 0; i++) {
-        dst8[i] = (GDB_DecodeHexDigit(src[2 * i], &ok) << 4) | GDB_DecodeHexDigit(src[2 * i + 1], &ok);
+    for (i = 0; i < len && src[2 * i] != 0 && src[2 * i + 1] != 0; i++) {
+        bool ok1, ok2;
+        dst8[i]  = GDB_DecodeHexDigit(src[2 * i], &ok1) << 4;
+        dst8[i] |= GDB_DecodeHexDigit(src[2 * i + 1], &ok2);
+        if (!ok1 || !ok2) {
+            return i;
+        }
     }
 
-    return (!ok) ? i - 1 : i;
+    return i;
 }
 
 size_t GDB_EscapeBinaryData(size_t *encodedCount, void *dst, const void *src, size_t len, size_t maxLen)
