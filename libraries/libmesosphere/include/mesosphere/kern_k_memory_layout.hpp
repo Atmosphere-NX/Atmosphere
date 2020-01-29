@@ -123,12 +123,12 @@ namespace ams::kern {
             u32 type_id;
         public:
             static constexpr ALWAYS_INLINE int Compare(const KMemoryBlock &lhs, const KMemoryBlock &rhs) {
-                if (lhs.address < rhs.address) {
+                if (lhs.GetAddress() < rhs.GetAddress()) {
                     return -1;
-                } else if (lhs.address == rhs.address) {
-                    return 0;
-                } else {
+                } else if (lhs.GetLastAddress() > rhs.GetLastAddress()) {
                     return 1;
+                } else {
+                    return 0;
                 }
             }
         public:
@@ -222,12 +222,11 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE KMemoryBlockTree() : tree() { /* ... */ }
         public:
             iterator FindContainingBlock(uintptr_t address) {
-                for (auto it = this->begin(); it != this->end(); it++) {
-                    if (it->Contains(address)) {
-                        return it;
-                    }
-                }
-                MESOSPHERE_INIT_ABORT();
+                auto it = this->find(KMemoryBlock(address, 1, 0, 0));
+                MESOSPHERE_INIT_ABORT_UNLESS(it != this->end());
+                MESOSPHERE_INIT_ABORT_UNLESS(it->Contains(address));
+
+                return it;
             }
 
             iterator FindFirstBlockByTypeAttr(u32 type_id, u32 attr = 0) {
