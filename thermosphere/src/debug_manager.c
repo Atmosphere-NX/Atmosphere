@@ -151,6 +151,11 @@ const DebugEventInfo *debugManagerMarkAndGetCoreDebugEvent(u32 coreId)
     return &g_debugManager.debugEventInfos[coreId];
 }
 
+const DebugEventInfo *debugManagerGetCoreDebugEvent(u32 coreId)
+{
+    return &g_debugManager.debugEventInfos[coreId];
+}
+
 void debugManagerReportEvent(DebugEventType type, ...)
 {
     u64 flags = maskIrq();
@@ -185,4 +190,15 @@ void debugManagerReportEvent(DebugEventType type, ...)
     // TODO GDB_TrySignalDebugEvent(&g_gdbContext, info);
 
     restoreInterruptFlags(flags);
+}
+
+void debugManagerBreakCores(u32 coreList)
+{
+    u32 coreId = currentCoreCtx->coreId;
+    if (coreList & ~BIT(coreId)) {
+        generateSgiForList(ThermosphereSgi_ReportDebuggerBreak, coreList & ~BIT(coreId));
+    }
+    if (coreList & BIT(coreId)) {
+        debugManagerReportEvent(DBGEVENT_DEBUGGER_BREAK);
+    }
 }

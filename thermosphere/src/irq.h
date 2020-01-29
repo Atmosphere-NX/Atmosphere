@@ -41,6 +41,7 @@ typedef enum ThermosphereSgi {
     ThermosphereSgi_ExecuteFunction = 0,
     ThermosphereSgi_VgicUpdate = 1,
     ThermosphereSgi_DebugPause = 2,
+    ThermosphereSgi_ReportDebuggerBreak = 3,
 
     ThermosphereSgi_Max,
 } ThermosphereSgi;

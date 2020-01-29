@@ -235,6 +235,15 @@ int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info)
     return ret;
 }
 
+void GDB_BreakAllCores(GDBContext *ctx)
+{
+    if (ctx->flags & GDB_FLAG_NONSTOP) {
+        debugManagerBreakCores(ctx->attachedCoreList);
+    } else {
+        debugManagerBreakCores(BIT(currentCoreCtx->coreId));
+    }
+}
+
 GDB_DECLARE_VERBOSE_HANDLER(Stopped)
 {
     u32 coreList = debugManagerGetPausedCoreList() & ctx->attachedCoreList;
@@ -282,102 +291,175 @@ GDB_DECLARE_HANDLER(Kill)
     return 0;
 }
 
-GDB_DECLARE_HANDLER(Break)
+GDB_DECLARE_VERBOSE_HANDLER(CtrlC)
 {
-    // TODO
-    if(!(ctx->flags & GDB_FLAG_CONTINUING)) // Is this ever reached?
-        return GDB_SendPacket(ctx, "S02", 3);
-    else
-    {
-        ctx->flags &= ~GDB_FLAG_CONTINUING;
-        return 0;
-    }
+    int ret = GDB_ReplyOk(ctx);
+    GDB_BreakAllCores(ctx);
 }
 
-void GDB_ContinueExecution(GDBContext *ctx)
+GDB_DECLARE_HANDLER(ContinueOrStepDeprecated)
 {
-    ctx->selectedThreadId = ctx->selectedThreadIdForContinuing = 0;
-    svcContinueDebugEvent(ctx->debug, ctx->continueFlags);
-    ctx->flags |= GDB_FLAG_CONTINUING;
-}
-
-GDB_DECLARE_HANDLER(Continue)
-{
-    // TODO
     char *addrStart = NULL;
-    u32 addr = 0;
+    uintptr_t addr = 0;
 
-    if(ctx->selectedThreadIdForContinuing != 0 && ctx->selectedThreadIdForContinuing != ctx->currentThreadId)
-        return 0;
+    char cmd = ctx->commandData[-1];
 
-    if(ctx->commandData[-1] == 'C')
-    {
-        if(ctx->commandData[0] == 0 || ctx->commandData[1] == 0 || (ctx->commandData[2] != 0 && ctx->commandData[2] == ';'))
+    // This deprecated command should not be permitted in non-stop mode
+    if (ctx->flags & GDB_FLAG_NONSTOP) {
+        return GDB_ReplyErrno(ctx, EPERM);
+    }
+
+    if(cmd == 'C' || cmd == 'S') {
+        // Check the presence of the two-digit signature, even if we ignore it.
+        u8 sg;
+        if (GDB_DecodeHex(&sg, ctx->commandData, 1) != 1) {
             return GDB_ReplyErrno(ctx, EILSEQ);
+        }
 
-        // Signal ignored...
+        // Check: [;addr] or [nothing]
+        if (ctx->commandData[2] != 0 && ctx->commandData[2] != ';') {
+            return GDB_ReplyErrno(ctx, EILSEQ);
+        }
 
-        if(ctx->commandData[2] == ';')
+        if(ctx->commandData[2] == ';') {
             addrStart = ctx->commandData + 3;
+        }
     }
-    else
-    {
-        if(ctx->commandData[0] != 0)
+    else {
+        // 'c', 's'
+        if (ctx->commandData[0] != 0) {
             addrStart = ctx->commandData;
-    }
-
-    if(addrStart != NULL && ctx->currentThreadId != 0)
-    {
-        ThreadContext regs;
-        if(GDB_ParseHexIntegerList(&addr, ctx->commandData + 3, 1, 0) == NULL)
-            return GDB_ReplyErrno(ctx, EILSEQ);
-
-        Result r = svcGetDebugThreadContext(&regs, ctx->debug, ctx->currentThreadId, THREADCONTEXT_CONTROL_CPU_SPRS);
-        if(R_SUCCEEDED(r))
-        {
-            regs.cpu_registers.pc = addr;
-            r = svcSetDebugThreadContext(ctx->debug, ctx->currentThreadId, &regs, THREADCONTEXT_CONTROL_CPU_SPRS);
         }
     }
 
-    GDB_ContinueExecution(ctx);
+    // Only support the simplest form, with no address
+    // Only degenerate clients will use ;addr, anyway (and the packets are deprecated in favor
+    // of vCont anyway)
+
+    if (addrStart != NULL) {
+        return GDB_ReplyErrno(ctx, ENOSYS);
+    }
+
+    u32 coreList = ctx->selectedThreadIdForContinuing == -1 ? ctx->attachedCoreList : BIT(ctx->selectedThreadIdForContinuing);
+    u32 ssMask = (cmd == 's' || cmd == 'S') ? coreList : 0;
+
+    FOREACH_BIT (tmp, coreId, ssMask) {
+        debugManagerSetSteppingRange(coreId, 0, 0);
+    }
+
+    debugManagerUnpauseCores(coreList, ssMask);
     return 0;
 }
 
 GDB_DECLARE_VERBOSE_HANDLER(Continue)
 {
-    // TODO
-    char *pos = ctx->commandData;
-    bool currentThreadFound = false;
-    while(pos != NULL && *pos != 0 && !currentThreadFound)
-    {
-        if(*pos != 'c' && *pos != 'C')
-            return GDB_ReplyErrno(ctx, EPERM);
+    u32 parsedCoreList = 0;
+    u32 continueCoreList = 0;
+    u32 stepCoreList = 0;
+    u32 stopCoreList = 0;
 
-        pos += *pos == 'C' ? 3 : 1;
+    char *cmd = ctx->commandData;
 
-        if(*pos++ != ':') // default action found
-        {
-            currentThreadFound = true;
-            break;
+    while (cmd != NULL) {
+        char *nextCmd;
+        char *threadIdPart;
+        int threadId;
+        u32 curMask = 0;
+        char *cmdEnd;
+
+        // It it always fine if we set the single-stepping range to 0,0 by default
+        // Because the fields we set are the shadow fields copied to the real fields after debug unpause
+        uintptr_t ssStartAddr = 0;
+        uintptr_t ssEndAddr = 0;
+
+        // Locate next command, replace delimiter by NUL
+        nextCmd = strchr(cmd, ';');
+        if (nextCmd != NULL && *nextCmd == ';') {
+            *nextCmd++ = 0;
         }
 
-        char *nextpos = (char *)strchr(pos, ';');
-        if(strncmp(pos, "-1", 2) == 0)
-            currentThreadFound = true;
-        else
-        {
-            u32 threadId;
-            if(GDB_ParseHexIntegerList(&threadId, pos, 1, ';') == NULL)
+        // Locate thread-id part, parse thread id
+        threadIdPart = strchr(cmd, ':');
+        if (threadIdPart == NULL || strcmp(threadIdPart, "-1") == 0) {
+            // Default action...
+            threadId = -1;
+            curMask = ctx->attachedCoreList;
+        } else {
+            unsigned long id;
+            if(GDB_ParseHexIntegerList(&id, ctx->commandData + 1, 1, 0) == NULL) {
                 return GDB_ReplyErrno(ctx, EILSEQ);
-            currentThreadFound = currentThreadFound || threadId == ctx->currentThreadId;
+            } else if (id >= MAX_CORE + 1) {
+                return GDB_ReplyErrno(ctx, EINVAL);
+            }
+
+            threadId = id == 0 ? (int)currentCoreCtx->coreId : (int)id;
+            curMask = BIT(threadId - 1) & ctx->attachedCoreList;
         }
 
-        pos = nextpos;
+        // Parse the command itself
+        // Note that we may already have handled that thread in a previous command
+        curMask &= ~parsedCoreList;
+        switch (cmd[0]) {
+            case 'S':
+            case 'C': {
+                // Check the presence of the two-digit signature, even if we ignore it.
+                u8 sg;
+                if (GDB_DecodeHex(&sg, ctx->commandData, 1) != 1) {
+                    return GDB_ReplyErrno(ctx, EILSEQ);
+                }
+                stepCoreList |= cmd[0] == 'S' ? curMask : 0;
+                continueCoreList |= curMask;
+                cmdEnd = cmd + 3;
+                break;
+            }
+            case 's':
+                stepCoreList |= curMask;
+                continueCoreList |= curMask;
+                cmdEnd = cmd + 1;
+                break;
+            case 'c':
+                continueCoreList |= curMask;
+                cmdEnd = cmd + 1;
+                break;
+            case 't':
+                stopCoreList |= curMask;
+                cmdEnd = cmd + 1;
+                break;
+            case 'r': {
+                // Range step
+                unsigned long tmp[2];
+                cmdEnd = GDB_ParseHexIntegerList(tmp, cmd, 2, 0);
+                if (cmdEnd == NULL) {
+                    return GDB_ReplyErrno(ctx, EILSEQ);
+                }
+
+                ssStartAddr = tmp[0];
+                ssEndAddr = tmp[1];
+                stepCoreList |= curMask;
+                continueCoreList |= curMask;
+                break;
+            }
+
+            default:
+                return GDB_ReplyErrno(ctx, EILSEQ);
+        }
+
+        if (*cmdEnd != 0) {
+            // We've got garbage data...
+            return GDB_ReplyErrno(ctx, EILSEQ);
+        }
+
+        FOREACH_BIT (tmp, t, curMask) {
+            // Set/unset stepping range for all threads affected by this command
+            debugManagerSetSteppingRange(t - 1, ssStartAddr, ssEndAddr);
+        }
+
+        parsedCoreList |= curMask;
+        cmd = nextCmd;
     }
 
-    if(ctx->currentThreadId == 0 || currentThreadFound)
-        GDB_ContinueExecution(ctx);
+    debugManagerBreakCores(stopCoreList);
+    debugManagerUnpauseCores(continueCoreList, stepCoreList);
 
     return 0;
 }
