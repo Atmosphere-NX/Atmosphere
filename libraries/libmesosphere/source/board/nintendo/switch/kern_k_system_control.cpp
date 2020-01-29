@@ -34,6 +34,30 @@ namespace ams::kern {
             return util::BitPack32{static_cast<u32>(value)};
         }
 
+        ALWAYS_INLINE u32 GetMemoryModeForInit() {
+            u64 value = 0;
+            smc::init::GetConfig(&value, 1, smc::ConfigItem::MemoryMode);
+            return static_cast<u32>(value);
+        }
+
+        ALWAYS_INLINE smc::MemoryArrangement GetMemoryArrangeForInit() {
+            switch(GetMemoryModeForInit() & 0x3F) {
+                case 0x01:
+                default:
+                    return smc::MemoryArrangement_4GB;
+                case 0x02:
+                    return smc::MemoryArrangement_4GBForAppletDev;
+                case 0x03:
+                    return smc::MemoryArrangement_4GBForSystemDev;
+                case 0x11:
+                    return smc::MemoryArrangement_6GB;
+                case 0x12:
+                    return smc::MemoryArrangement_6GBForAppletDev;
+                case 0x21:
+                    return smc::MemoryArrangement_8GB;
+            }
+        }
+
         ALWAYS_INLINE u64 GenerateRandomU64ForInit() {
             u64 value;
             smc::init::GenerateRandomBytes(&value, sizeof(value));
@@ -67,6 +91,47 @@ namespace ams::kern {
 
     bool KSystemControl::Init::ShouldIncreaseThreadResourceLimit() {
         return GetKernelConfigurationForInit().Get<smc::KernelConfiguration::IncreaseThreadResourceLimit>();
+    }
+
+    size_t KSystemControl::Init::GetApplicationPoolSize() {
+        switch (GetMemoryArrangeForInit()) {
+            case smc::MemoryArrangement_4GB:
+            default:
+                return 3285_MB;
+            case smc::MemoryArrangement_4GBForAppletDev:
+                return 2048_MB;
+            case smc::MemoryArrangement_4GBForSystemDev:
+                return 3285_MB;
+            case smc::MemoryArrangement_6GB:
+                return 4916_MB;
+            case smc::MemoryArrangement_6GBForAppletDev:
+                return 3285_MB;
+            case smc::MemoryArrangement_8GB:
+                return 4916_MB;
+        }
+    }
+
+    size_t KSystemControl::Init::GetAppletPoolSize() {
+        switch (GetMemoryArrangeForInit()) {
+            case smc::MemoryArrangement_4GB:
+            default:
+                return 507_MB;
+            case smc::MemoryArrangement_4GBForAppletDev:
+                return 1554_MB;
+            case smc::MemoryArrangement_4GBForSystemDev:
+                return 448_MB;
+            case smc::MemoryArrangement_6GB:
+                return 562_MB;
+            case smc::MemoryArrangement_6GBForAppletDev:
+                return 2193_MB;
+            case smc::MemoryArrangement_8GB:
+                return 2193_MB;
+        }
+    }
+
+    size_t KSystemControl::Init::GetMinimumNonSecureSystemPoolSize() {
+        /* TODO: Where does this constant actually come from? */
+        return 0x29C8000;
     }
 
     void KSystemControl::Init::CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {

@@ -50,6 +50,12 @@ namespace ams::kern {
         KMemoryRegionType_VirtualKernelTraceBuffer  = 0x4A,
         KMemoryRegionType_VirtualKernelInitPt       = 0x19A,
 
+        KMemoryRegionType_VirtualDramMetadataPool        = 0x29A,
+        KMemoryRegionType_VirtualDramApplicationPool     = 0x271A,
+        KMemoryRegionType_VirtualDramAppletPool          = 0x1B1A,
+        KMemoryRegionType_VirtualDramSystemNonSecurePool = 0x331A,
+        KMemoryRegionType_VirtualDramSystemPool          = 0x2B1A,
+
         KMemoryRegionType_Uart                      = 0x1D,
         KMemoryRegionType_InterruptDistributor      = 0x4D,
         KMemoryRegionType_InterruptController       = 0x2D,
@@ -76,8 +82,13 @@ namespace ams::kern {
 
         KMemoryRegionType_DramLinearMapped  = KMemoryRegionType_Dram  | KMemoryRegionAttr_LinearMapped,
 
-        KMemoryRegionType_DramReservedEarly = 0x16  | KMemoryRegionAttr_NoUserMap,
-        KMemoryRegionType_DramPoolPartition = 0x26  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
+        KMemoryRegionType_DramReservedEarly       = 0x16  | KMemoryRegionAttr_NoUserMap,
+        KMemoryRegionType_DramPoolPartition       = 0x26  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
+        KMemoryRegionType_DramMetadataPool        = 0x166  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_CarveoutProtected,
+        KMemoryRegionType_DramApplicationPool     = 0x7A6  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
+        KMemoryRegionType_DramAppletPool          = 0xBA6  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
+        KMemoryRegionType_DramSystemNonSecurePool = 0xDA6  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
+        KMemoryRegionType_DramSystemPool          = 0x13A6 | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_CarveoutProtected,
 
         KMemoryRegionType_DramKernel        = 0xE   | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected,
         KMemoryRegionType_DramKernelCode    = 0xCE  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected,
@@ -227,6 +238,16 @@ namespace ams::kern {
                 }
                 MESOSPHERE_INIT_ABORT();
             }
+
+            iterator FindFirstDerivedBlock(u32 type_id) {
+                for (auto it = this->begin(); it != this->end(); it++) {
+                    if (it->IsDerivedFrom(type_id)) {
+                        return it;
+                    }
+                }
+                MESOSPHERE_INIT_ABORT();
+            }
+
 
             DerivedRegionExtents GetDerivedRegionExtents(u32 type_id) {
                 DerivedRegionExtents extents = { .first_block = nullptr, .last_block = nullptr };

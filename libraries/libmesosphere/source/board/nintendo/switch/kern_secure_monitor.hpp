@@ -25,6 +25,15 @@ namespace ams::kern::smc {
         MemorySize_8GB = 2,
     };
 
+    enum MemoryArrangement {
+        MemoryArrangement_4GB             = 0,
+        MemoryArrangement_4GBForAppletDev = 1,
+        MemoryArrangement_4GBForSystemDev = 2,
+        MemoryArrangement_6GB             = 3,
+        MemoryArrangement_6GBForAppletDev = 4,
+        MemoryArrangement_8GB             = 5,
+    };
+
     enum class ConfigItem : u32 {
         /* Standard config items. */
         DisableProgramVerification  = 1,

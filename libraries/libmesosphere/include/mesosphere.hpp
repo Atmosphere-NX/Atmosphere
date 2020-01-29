@@ -38,6 +38,8 @@
 
 /* Core functionality. */
 #include "mesosphere/kern_select_interrupts.hpp"
+#include "mesosphere/kern_k_page_heap.hpp"
+#include "mesosphere/kern_k_memory_manager.hpp"
 
 /* Supervisor Calls. */
 #include "mesosphere/kern_svc.hpp"

@@ -27,6 +27,9 @@ namespace ams::kern {
                     static KPhysicalAddress GetKernelPhysicalBaseAddress(uintptr_t base_address);
                     static bool ShouldIncreaseThreadResourceLimit();
                     static void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
+                    static size_t GetApplicationPoolSize();
+                    static size_t GetAppletPoolSize();
+                    static size_t GetMinimumNonSecureSystemPoolSize();
 
                     /* Randomness. */
                     static void GenerateRandomBytes(void *dst, size_t size);

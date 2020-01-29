@@ -245,6 +245,7 @@ namespace ams::kern::init {
             ttbr1_table.Map(block_virt_addr, block.GetSize(), block.GetAddress(), KernelRwDataAttribute, g_initial_page_allocator);
 
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryBlockTree().Insert(block_virt_addr, block.GetSize(), GetTypeForVirtualLinearMapping(block.GetType())));
+            block.SetPairAddress(block_virt_addr);
             KMemoryLayout::GetVirtualMemoryBlockTree().FindContainingBlock(block_virt_addr)->SetPairAddress(block.GetAddress());
         }
 
