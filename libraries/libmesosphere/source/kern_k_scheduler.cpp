@@ -17,20 +17,15 @@
 
 namespace ams::kern {
 
-    inline KScopedInterruptDisable::KScopedInterruptDisable() {
-        /* Intentionally do nothing, KernelLdr doesn't have interrupts set up. */
-    }
-
-    inline KScopedInterruptDisable::~KScopedInterruptDisable() {
-        /* Intentionally do nothing, KernelLdr doesn't have interrupts set up. */
-    }
-
-    inline KScopedInterruptEnable::KScopedInterruptEnable() {
-        /* Intentionally do nothing, KernelLdr doesn't have interrupts set up. */
-    }
-
-    inline KScopedInterruptEnable::~KScopedInterruptEnable() {
-        /* Intentionally do nothing, KernelLdr doesn't have interrupts set up. */
+    KScheduler::KScheduler()
+        : is_active(false), core_id(0), prev_thread(nullptr), last_context_switch_time(0), idle_thread(nullptr)
+    {
+        this->state.needs_scheduling = true;
+        this->state.interrupt_task_thread_runnable = false;
+        this->state.should_count_idle = false;
+        this->state.idle_count = 0;
+        this->state.idle_thread_stack = nullptr;
+        this->state.highest_priority_thread = nullptr;
     }
 
 }

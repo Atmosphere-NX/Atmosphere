@@ -13,24 +13,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <mesosphere.hpp>
+#pragma once
 
 namespace ams::kern {
 
-    WEAK_SYMBOL KScopedInterruptDisable::KScopedInterruptDisable() {
-        /* TODO: Disable interrupts. */
-    }
+    class KInterruptTask;
 
-    WEAK_SYMBOL KScopedInterruptDisable::~KScopedInterruptDisable() {
-        /* TODO: un-disable interrupts. */
-    }
+    class KInterruptHandler {
+        public:
+            virtual KInterruptTask *OnInterrupt(s32 interrupt_id) = 0;
+    };
 
-    WEAK_SYMBOL KScopedInterruptEnable::KScopedInterruptEnable() {
-        /* TODO: Enable interrupts. */
-    }
+    class KInterruptTask : public KInterruptHandler {
+        private:
+            KInterruptTask *next_task;
+        public:
+            constexpr ALWAYS_INLINE KInterruptTask() : next_task(nullptr) { /* ... */ }
 
-    WEAK_SYMBOL KScopedInterruptEnable::~KScopedInterruptEnable() {
-        /* TODO: un-enable interrupts. */
-    }
+            ALWAYS_INLINE KInterruptTask *GetNextTask() const {
+                return this->next_task;
+            }
+
+            ALWAYS_INLINE void SetNextTask(KInterruptTask *t) {
+                this->next_task = t;
+            }
+
+            virtual void DoTask() = 0;
+    };
 
 }

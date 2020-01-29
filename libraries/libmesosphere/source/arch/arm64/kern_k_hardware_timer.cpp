@@ -15,18 +15,10 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern {
+namespace ams::kern::arm64 {
 
-    NORETURN void HorizonKernelMain(s32 core_id) {
-        /* Setup the Core Local Region, and note that we're initializing. */
-        Kernel::Initialize(core_id);
-        Kernel::SetState(Kernel::State::Initializing);
-
-        /* Ensure that all cores get to this point before proceeding. */
-        cpu::SynchronizeAllCores();
-
-        /* TODO: Implement more of Main() */
-        while (true) { /* ... */ }
+    void KHardwareTimer::DoTask() {
+        /* TODO: Actually implement this. */
     }
 
 }

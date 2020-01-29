@@ -14,29 +14,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include "kern_panic.hpp"
+#include <mesosphere/kern_k_typed_address.hpp>
+#include <mesosphere/kern_k_memory_layout.hpp>
+#include <mesosphere/kern_k_memory_manager.hpp>
+#include <mesosphere/kern_k_core_local_region.hpp>
 
 namespace ams::kern {
 
-    /* TODO: Actually select between architecture-specific interrupt code. */
-
-
-    /* Enable or disable interrupts for the lifetime of an object. */
-    class KScopedInterruptDisable {
-        NON_COPYABLE(KScopedInterruptDisable);
-        NON_MOVEABLE(KScopedInterruptDisable);
+    class Kernel {
         public:
-            KScopedInterruptDisable();
-            ~KScopedInterruptDisable();
-    };
-
-    class KScopedInterruptEnable {
-        NON_COPYABLE(KScopedInterruptEnable);
-        NON_MOVEABLE(KScopedInterruptEnable);
+            enum class State : u8 {
+                Invalid = 0,
+                Initializing = 1,
+                Initialized  = 2,
+            };
+        private:
+            static inline State s_state = State::Invalid;
         public:
-            KScopedInterruptEnable();
-            ~KScopedInterruptEnable();
+            static void Initialize(s32 core_id);
+
+            static ALWAYS_INLINE State GetState() { return s_state; }
+            static ALWAYS_INLINE void SetState(State state) { s_state = state; }
     };
 
 }

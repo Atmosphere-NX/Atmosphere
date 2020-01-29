@@ -13,20 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <mesosphere.hpp>
+#pragma once
+#include <vapours.hpp>
+#include "kern_panic.hpp"
 
-namespace ams::kern {
+#if defined(ATMOSPHERE_ARCH_ARM64)
 
-    NORETURN void HorizonKernelMain(s32 core_id) {
-        /* Setup the Core Local Region, and note that we're initializing. */
-        Kernel::Initialize(core_id);
-        Kernel::SetState(Kernel::State::Initializing);
-
-        /* Ensure that all cores get to this point before proceeding. */
-        cpu::SynchronizeAllCores();
-
-        /* TODO: Implement more of Main() */
-        while (true) { /* ... */ }
+    #include <mesosphere/arch/arm64/kern_k_hardware_timer.hpp>
+    namespace ams::kern {
+        using ams::kern::arm64::KHardwareTimer;
     }
 
-}
+#else
+
+    #error "Unknown architecture for KHardwareTimer"
+
+#endif

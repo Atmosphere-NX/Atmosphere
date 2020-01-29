@@ -37,9 +37,13 @@
 #include "mesosphere/kern_k_memory_layout.hpp"
 
 /* Core functionality. */
-#include "mesosphere/kern_select_interrupts.hpp"
+#include "mesosphere/kern_select_interrupt_manager.hpp"
+#include "mesosphere/kern_k_spin_lock.hpp"
 #include "mesosphere/kern_k_page_heap.hpp"
 #include "mesosphere/kern_k_memory_manager.hpp"
+#include "mesosphere/kern_k_interrupt_task_manager.hpp"
+#include "mesosphere/kern_k_core_local_region.hpp"
+#include "mesosphere/kern_kernel.hpp"
 
 /* Supervisor Calls. */
 #include "mesosphere/kern_svc.hpp"

@@ -17,16 +17,24 @@
 
 namespace ams::kern {
 
-    NORETURN void HorizonKernelMain(s32 core_id) {
-        /* Setup the Core Local Region, and note that we're initializing. */
-        Kernel::Initialize(core_id);
-        Kernel::SetState(Kernel::State::Initializing);
+    void KInterruptTaskManager::TaskQueue::Enqueue(KInterruptTask *task) {
+        /* Insert the task into the queue. */
+        if (this->tail != nullptr) {
+            this->tail->SetNextTask(task);
+        } else {
+            this->head = task;
+        }
 
-        /* Ensure that all cores get to this point before proceeding. */
-        cpu::SynchronizeAllCores();
+        this->tail = task;
+    }
 
-        /* TODO: Implement more of Main() */
-        while (true) { /* ... */ }
+    void KInterruptTaskManager::TaskQueue::Dequeue() {
+        if (this->head == this->tail) {
+            this->head = nullptr;
+            this->tail = nullptr;
+        } else {
+            this->head = this->head->GetNextTask();
+        }
     }
 
 }

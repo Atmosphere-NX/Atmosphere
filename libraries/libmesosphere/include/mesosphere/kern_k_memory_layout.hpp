@@ -402,6 +402,18 @@ namespace ams::kern {
                 return GetVirtualMemoryBlockTree().FindFirstBlockByTypeAttr(KMemoryRegionType_KernelMiscMainStack, static_cast<u32>(core_id))->GetEndAddress();
             }
 
+            static NOINLINE KVirtualAddress GetIdleStackTopAddress(s32 core_id) {
+                return GetVirtualMemoryBlockTree().FindFirstBlockByTypeAttr(KMemoryRegionType_KernelMiscIdleStack, static_cast<u32>(core_id))->GetEndAddress();
+            }
+
+            static NOINLINE KVirtualAddress GetExceptionStackBottomAddress(s32 core_id) {
+                return GetVirtualMemoryBlockTree().FindFirstBlockByTypeAttr(KMemoryRegionType_KernelMiscExceptionStack, static_cast<u32>(core_id))->GetAddress();
+            }
+
+            static NOINLINE KVirtualAddress GetCoreLocalRegionAddress() {
+                return GetVirtualMemoryBlockTree().FindFirstBlockByTypeAttr(KMemoryRegionType_CoreLocal)->GetAddress();
+            }
+
             static void InitializeLinearMemoryBlockTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);
     };
 
