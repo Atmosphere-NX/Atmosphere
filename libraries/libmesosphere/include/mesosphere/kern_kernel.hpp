@@ -31,7 +31,8 @@ namespace ams::kern {
         private:
             static inline State s_state = State::Invalid;
         public:
-            static void Initialize(s32 core_id);
+            static NOINLINE void Initialize(s32 core_id);
+            static NOINLINE void InitializeCoreThreads(s32 core_id);
 
             static ALWAYS_INLINE State GetState() { return s_state; }
             static ALWAYS_INLINE void SetState(State state) { s_state = state; }

@@ -25,6 +25,15 @@ namespace ams::kern {
         /* Ensure that all cores get to this point before proceeding. */
         cpu::SynchronizeAllCores();
 
+        /* Initialize the main and idle thread for each core. */
+        /* Synchronize after each init to ensure the cores go in order. */
+        for (size_t i = 0; i < cpu::NumCores; i++) {
+            if (static_cast<s32>(i) == core_id) {
+                Kernel::InitializeCoreThreads(core_id);
+            }
+            cpu::SynchronizeAllCores();
+        }
+
         /* TODO: Implement more of Main() */
         while (true) { /* ... */ }
     }

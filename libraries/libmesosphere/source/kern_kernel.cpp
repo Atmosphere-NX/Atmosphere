@@ -17,7 +17,7 @@
 
 namespace ams::kern {
 
-    NOINLINE void Kernel::Initialize(s32 core_id) {
+    void Kernel::Initialize(s32 core_id) {
         /* Construct the core local region object in place. */
         KCoreLocalContext *clc = GetPointer<KCoreLocalContext>(KMemoryLayout::GetCoreLocalRegionAddress());
         new (clc) KCoreLocalContext;
@@ -44,6 +44,11 @@ namespace ams::kern {
         for (size_t i = 0; i < util::size(clc->perf_counters); i++) {
             clc->perf_counters[i] = 0;
         }
+    }
+
+    void Kernel::InitializeCoreThreads(s32 core_id) {
+        /* TODO: This function wants to setup the main thread and the idle thread. */
+        /* It also wants to initialize the scheduler/interrupt manager/hardware timer. */
     }
 
 }

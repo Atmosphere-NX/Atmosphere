@@ -274,7 +274,7 @@ namespace ams::util {
             }
         private:
             static constexpr TYPED_STORAGE(Derived) DerivedStorage = {};
-            static_assert(std::addressof(GetParent(GetNode(GetPointer(DerivedStorage)))) == GetPointer(DerivedStorage));
+            static_assert(GetParent(GetNode(GetPointer(DerivedStorage))) == GetPointer(DerivedStorage));
     };
 
     template<class Derived>

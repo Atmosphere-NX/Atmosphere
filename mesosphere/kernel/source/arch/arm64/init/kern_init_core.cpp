@@ -303,7 +303,7 @@ namespace ams::kern::init {
         init_args->cpuactlr         = cpu::GetCpuActlrEl1();
         init_args->cpuectlr         = cpu::GetCpuEctlrEl1();
         init_args->sctlr            = cpu::GetSctlrEl1();
-        init_args->sp               = GetInteger(KMemoryLayout::GetMainStackTopAddress(core_id));
+        init_args->sp               = GetInteger(KMemoryLayout::GetMainStackTopAddress(core_id)) - sizeof(KThread::StackParameters);
         init_args->entrypoint       = reinterpret_cast<uintptr_t>(::ams::kern::HorizonKernelMain);
         init_args->argument         = static_cast<u64>(core_id);
         init_args->setup_function   = reinterpret_cast<uintptr_t>(::ams::kern::init::StartOtherCore);
