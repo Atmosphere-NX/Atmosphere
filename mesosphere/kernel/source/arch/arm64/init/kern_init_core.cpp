@@ -96,7 +96,7 @@ namespace ams::kern::init {
         KInitialPageTable ttbr1_table(util::AlignDown(cpu::GetTtbr1El1(), PageSize), KInitialPageTable::NoClear{});
 
         /* Initialize the slab allocator counts. */
-        /* TODO */
+        InitializeSlabResourceCounts();
 
         /* Insert the root block for the virtual memory tree, from which all other blocks will derive. */
         KMemoryLayout::GetVirtualMemoryBlockTree().insert(*KMemoryLayout::GetMemoryBlockAllocator().Create(KernelVirtualAddressSpaceBase, KernelVirtualAddressSpaceSize, 0, 0));
@@ -142,7 +142,7 @@ namespace ams::kern::init {
         const size_t resource_region_size = KernelResourceRegionSize + (use_extra_resources ? ExtraKernelResourceSize : 0);
 
         /* Determine the size of the slab region. */
-        const size_t slab_region_size = 0x647000; /* TODO: Calculate this on the fly. */
+        const size_t slab_region_size = CalculateTotalSlabHeapSize();
         MESOSPHERE_INIT_ABORT_UNLESS(slab_region_size <= resource_region_size);
 
         /* Setup the slab region. */

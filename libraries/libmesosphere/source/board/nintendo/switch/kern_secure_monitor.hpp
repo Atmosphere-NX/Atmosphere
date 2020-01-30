@@ -84,6 +84,7 @@ namespace ams::kern::smc {
     };
 
     /* TODO: Rest of Secure Monitor API. */
+    void GenerateRandomBytes(void *dst, size_t size);
     void NORETURN Panic(u32 color);
 
     namespace init {

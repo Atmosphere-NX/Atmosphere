@@ -30,21 +30,21 @@ namespace ams::kern::arm64 {
 
                 __asm__ __volatile__(
                     "    prfm   pstl1keep, %[packed_tickets]\n"
-                    "loop1:\n"
+                    "1:\n"
                     "    ldaxr  %w[tmp0], %[packed_tickets]\n"
                     "    add    %w[tmp0], %w[tmp0], #0x10000\n"
                     "    stxr   %w[tmp1], %w[tmp0], %[packed_tickets]\n"
-                    "    cbnz   %w[tmp1], loop1\n"
+                    "    cbnz   %w[tmp1], 1b\n"
                     "    \n"
                     "    and    %w[tmp1], %w[tmp0], #0xFFFF\n"
                     "    cmp    %w[tmp1], %w[tmp0], lsr #16\n"
                     "    b.eq   done"
                     "    sevl\n"
-                    "loop2:\n"
+                    "2:\n"
                     "    wfe\n"
                     "    ldaxrh %w[tmp1], %[packed_tickets]\n"
                     "    cmp    %w[tmp1], %w[tmp0], lsr #16\n"
-                    "    b.ne   loop2\n"
+                    "    b.ne   2b\n"
                     "done:\n"
                     : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [packed_tickets]"+Q"(this->packed_tickets)
                     :
@@ -76,18 +76,18 @@ namespace ams::kern::arm64 {
 
                 __asm__ __volatile__(
                     "    prfm   pstl1keep, %[next_ticket]\n"
-                    "loop1:\n"
+                    "1:\n"
                     "    ldaxrh %w[tmp0], %[next_ticket]\n"
                     "    add    %w[tmp1], %w[tmp0], #0x1\n"
                     "    stxrh  %w[got_lock], %w[tmp1], %[next_ticket]\n"
-                    "    cbnz   %w[got_lock], loop1\n"
+                    "    cbnz   %w[got_lock], 1b\n"
                     "    \n"
                     "    sevl\n"
-                    "loop2:\n"
+                    "2:\n"
                     "    wfe\n"
                     "    ldaxrh %w[tmp1], %[current_ticket]\n"
                     "    cmp    %w[tmp1], %w[tmp0]\n"
-                    "    b.ne   loop2\n"
+                    "    b.ne   2b\n"
                     : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [got_lock]"=&r"(got_lock), [next_ticket]"+Q"(this->next_ticket)
                     : [current_ticket]"Q"(this->current_ticket)
                     : "cc", "memory"

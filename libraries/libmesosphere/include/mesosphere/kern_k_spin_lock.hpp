@@ -45,6 +45,8 @@ namespace ams::kern {
             ALWAYS_INLINE ~KScopedSpinLock() {
                 this->lock_ptr->Unlock();
             }
+
+            explicit ALWAYS_INLINE KScopedSpinLock(KSpinLock &l) : KScopedSpinLock(std::addressof(l)) { /* ... */ }
     };
 
     class KScopedAlignedSpinLock {
@@ -57,6 +59,7 @@ namespace ams::kern {
             ALWAYS_INLINE ~KScopedAlignedSpinLock() {
                 this->lock_ptr->Unlock();
             }
+            explicit ALWAYS_INLINE KScopedAlignedSpinLock(KAlignedSpinLock &l) : KScopedAlignedSpinLock(std::addressof(l)) { /* ... */ }
     };
 
     class KScopedNotAlignedSpinLock {
@@ -69,6 +72,8 @@ namespace ams::kern {
             ALWAYS_INLINE ~KScopedNotAlignedSpinLock() {
                 this->lock_ptr->Unlock();
             }
+
+            explicit ALWAYS_INLINE KScopedNotAlignedSpinLock(KNotAlignedSpinLock &l) : KScopedNotAlignedSpinLock(std::addressof(l)) { /* ... */ }
     };
 
 }

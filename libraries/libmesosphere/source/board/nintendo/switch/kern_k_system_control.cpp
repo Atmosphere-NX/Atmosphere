@@ -20,6 +20,12 @@ namespace ams::kern {
 
     namespace {
 
+        /* Global variables for randomness. */
+        /* Incredibly, N really does use std:: randomness... */
+        bool         g_initialized_random_generator;
+        std::mt19937 g_random_generator;
+        KSpinLock    g_random_lock;
+
         ALWAYS_INLINE size_t GetRealMemorySizeForInit() {
             /* TODO: Move this into a header for the MC in general. */
             constexpr u32 MemoryControllerConfigurationRegister = 0x70019050;
@@ -152,6 +158,26 @@ namespace ams::kern {
                 return min + (rnd % range_size);
             }
         }
+    }
+
+    /* Randomness. */
+    void KSystemControl::GenerateRandomBytes(void *dst, size_t size) {
+        MESOSPHERE_INIT_ABORT_UNLESS(size <= 0x38);
+        smc::GenerateRandomBytes(dst, size);
+    }
+
+    u64 KSystemControl::GenerateRandomRange(u64 min, u64 max) {
+        KScopedInterruptDisable intr_disable;
+        KScopedSpinLock lk(g_random_lock);
+
+        if (AMS_UNLIKELY(!g_initialized_random_generator)) {
+            u64 seed;
+            GenerateRandomBytes(&seed, sizeof(seed));
+            g_random_generator.seed(seed);
+            g_initialized_random_generator = true;
+        }
+
+        return (std::uniform_int_distribution<u64>(min, max))(g_random_generator);
     }
 
     void KSystemControl::StopSystem() {

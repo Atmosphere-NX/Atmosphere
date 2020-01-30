@@ -55,7 +55,9 @@ namespace ams::kern::smc {
                                     :
                                     : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
                                     );
-                /* TODO: Restore X18 */
+
+                /* Restore the CoreLocalRegion into X18. */
+                cpu::SetCoreLocalRegionAddress(cpu::GetTpidrEl1());
             }
 
             /* Store arguments to output. */
@@ -98,6 +100,9 @@ namespace ams::kern::smc {
             args.x[7] = x7;
         }
 
+        /* Global lock for generate random bytes. */
+        KSpinLock g_generate_random_lock;
+
     }
 
     /* SMC functionality needed for init. */
@@ -119,9 +124,9 @@ namespace ams::kern::smc {
 
         void GenerateRandomBytes(void *dst, size_t size) {
             /* Call SmcGenerateRandomBytes() */
-            /* TODO: Lock this to ensure only one core calls at once. */
             SecureMonitorArguments args = { FunctionId_GenerateRandomBytes, size };
             MESOSPHERE_ABORT_UNLESS(size <= sizeof(args) - sizeof(args.x[0]));
+
             CallPrivilegedSecureMonitorFunctionForInit(args);
             MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
 
@@ -136,6 +141,24 @@ namespace ams::kern::smc {
             return static_cast<SmcResult>(args.x[0]) == SmcResult::Success;
         }
 
+    }
+
+
+    void GenerateRandomBytes(void *dst, size_t size) {
+        /* Setup for call. */
+        SecureMonitorArguments args = { FunctionId_GenerateRandomBytes, size };
+        MESOSPHERE_ABORT_UNLESS(size <= sizeof(args) - sizeof(args.x[0]));
+
+        /* Make call. */
+        {
+            KScopedInterruptDisable intr_disable;
+            KScopedSpinLock lk(g_generate_random_lock);
+            CallPrivilegedSecureMonitorFunction(args);
+        }
+        MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
+
+        /* Copy output. */
+        std::memcpy(dst, &args.x[1], size);
     }
 
     void NORETURN Panic(u32 color) {

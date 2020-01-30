@@ -32,6 +32,7 @@
 /* Initialization headers. */
 #include "mesosphere/init/kern_init_elf.hpp"
 #include "mesosphere/init/kern_init_layout.hpp"
+#include "mesosphere/init/kern_init_slab_setup.hpp"
 #include "mesosphere/init/kern_init_page_table_select.hpp"
 #include "mesosphere/init/kern_init_arguments_select.hpp"
 #include "mesosphere/kern_k_memory_layout.hpp"

@@ -34,6 +34,13 @@ namespace ams::kern {
             cpu::SynchronizeAllCores();
         }
 
+        if (core_id == 0) {
+            /* Note: this is not actually done here, it's done later in main after more stuff is setup. */
+            /* However, for testing (and to manifest this code in the produced binary, this is here for now. */
+            /* TODO: Do this better. */
+            init::InitializeSlabHeaps();
+        }
+
         /* TODO: Implement more of Main() */
         while (true) { /* ... */ }
     }
