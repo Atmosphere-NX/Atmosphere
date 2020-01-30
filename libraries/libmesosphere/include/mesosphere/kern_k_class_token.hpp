@@ -14,8 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <mesosphere/kern_panic.hpp>
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
 
 namespace ams::kern {

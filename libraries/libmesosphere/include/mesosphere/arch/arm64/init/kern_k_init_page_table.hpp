@@ -15,7 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <mesosphere/kern_panic.hpp>
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
 #include <mesosphere/kern_select_cpu.hpp>
 

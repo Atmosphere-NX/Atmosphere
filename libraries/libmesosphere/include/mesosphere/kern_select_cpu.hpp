@@ -16,7 +16,7 @@
 #pragma once
 
 #ifdef ATMOSPHERE_ARCH_ARM64
-    #include "arch/arm64/kern_cpu.hpp"
+    #include <mesosphere/arch/arm64/kern_cpu.hpp>
 
     namespace ams::kern::cpu {
 

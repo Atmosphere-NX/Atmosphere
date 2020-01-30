@@ -36,4 +36,26 @@ namespace ams::kern {
         /* TODO: This is a placeholder definition. */
     };
 
+    class KScopedDisableDispatch {
+        public:
+            explicit ALWAYS_INLINE KScopedDisableDispatch() {
+                /* TODO */
+            }
+
+            ALWAYS_INLINE ~KScopedDisableDispatch() {
+                /* TODO */
+            }
+    };
+
+    class KScopedEnableDispatch {
+        public:
+            explicit ALWAYS_INLINE KScopedEnableDispatch() {
+                /* TODO */
+            }
+
+            ALWAYS_INLINE ~KScopedEnableDispatch() {
+                /* TODO */
+            }
+    };
+
 }

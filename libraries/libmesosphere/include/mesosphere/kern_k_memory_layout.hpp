@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/init/kern_init_page_table_select.hpp>
 
 namespace ams::kern {

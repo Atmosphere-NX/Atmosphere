@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <mesosphere/svc/kern_svc_results.hpp>
 
 namespace ams::kern::svc {
 

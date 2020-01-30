@@ -14,8 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <mesosphere/kern_panic.hpp>
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
 #include <mesosphere/kern_k_class_token.hpp>
 
@@ -74,14 +73,14 @@ namespace ams::kern {
         public:
             static KAutoObject *Create(KAutoObject *ptr);
         public:
-            constexpr ALWAYS_INLINE explicit KAutoObject() : ref_count(0) { /* ... */ }
-            virtual ~KAutoObject() { /* ... */ }
+            constexpr ALWAYS_INLINE explicit KAutoObject() : ref_count(0) { MESOSPHERE_ASSERT_THIS(); }
+            virtual ~KAutoObject() { MESOSPHERE_ASSERT_THIS(); }
 
             /* Destroy is responsible for destroying the auto object's resources when ref_count hits zero. */
-            virtual void Destroy() { /* ... */ }
+            virtual void Destroy() { MESOSPHERE_ASSERT_THIS(); }
 
             /* Finalize is responsible for cleaning up resource, but does not destroy the object. */
-            virtual void Finalize() { /* ... */ }
+            virtual void Finalize() { MESOSPHERE_ASSERT_THIS(); }
 
             virtual KProcess *GetOwner() const { return nullptr; }
 
@@ -122,6 +121,8 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE bool Open() {
+                MESOSPHERE_ASSERT_THIS();
+
                 /* Atomically increment the reference count, only if it's positive. */
                 u32 cur_ref_count = this->ref_count.load(std::memory_order_acquire);
                 do {
@@ -135,6 +136,8 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE void Close() {
+                MESOSPHERE_ASSERT_THIS();
+
                 /* Atomically decrement the reference count, not allowing it to become negative. */
                 u32 cur_ref_count = this->ref_count.load(std::memory_order_acquire);
                 do {
@@ -189,7 +192,11 @@ namespace ams::kern {
             }
         public:
             constexpr ALWAYS_INLINE KScopedAutoObject() : obj(nullptr) { /* ... */ }
-            constexpr ALWAYS_INLINE KScopedAutoObject(T *o) : obj(o) { /* ... */ }
+            constexpr ALWAYS_INLINE KScopedAutoObject(T *o) : obj(o) {
+                if (this->obj != nullptr) {
+                    this->obj->Open();
+                }
+            }
             ALWAYS_INLINE ~KScopedAutoObject() {
                 if (this->obj != nullptr) {
                     this->obj->Close();

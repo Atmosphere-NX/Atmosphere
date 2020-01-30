@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <mesosphere/kern_common.hpp>
 
 namespace ams::kern {
 
@@ -37,11 +37,17 @@ namespace ams::kern {
         }                                  \
     })
 #else
-#define MESOSPHERE_ASSERT_IMPL(expr, ...) do { } while (0)
+#define MESOSPHERE_ASSERT_IMPL(expr, ...) do { static_cast<void>(expr); } while (0)
 #endif
 
 #define MESOSPHERE_ASSERT(expr)   MESOSPHERE_ASSERT_IMPL(expr, "Assertion failed: %s", #expr)
 #define MESOSPHERE_R_ASSERT(expr) MESOSPHERE_ASSERT_IMPL(R_SUCCEEDED(expr), "Result assertion failed: %s", #expr)
+
+#ifdef MESOSPHERE_ENABLE_THIS_ASSERT
+#define MESOSPHERE_ASSERT_THIS()  MESOSPHERE_ASSERT(this != nullptr)
+#else
+#define MESOSPHERE_ASSERT_THIS()
+#endif
 
 #define MESOSPHERE_ABORT() MESOSPHERE_PANIC("Abort()");
 #define MESOSPHERE_INIT_ABORT() do { /* ... */ } while (true)

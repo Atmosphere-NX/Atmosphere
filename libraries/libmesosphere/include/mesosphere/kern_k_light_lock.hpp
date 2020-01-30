@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_current_context.hpp>
 
@@ -27,6 +27,8 @@ namespace ams::kern {
             constexpr KLightLock() : tag(0) { /* ... */ }
 
             void Lock() {
+                MESOSPHERE_ASSERT_THIS();
+
                 const uintptr_t cur_thread = reinterpret_cast<uintptr_t>(GetCurrentThreadPointer());
 
                 while (true) {
@@ -45,6 +47,8 @@ namespace ams::kern {
             }
 
             void Unlock() {
+                MESOSPHERE_ASSERT_THIS();
+
                 const uintptr_t cur_thread = reinterpret_cast<uintptr_t>(GetCurrentThreadPointer());
                 uintptr_t expected = cur_thread;
                 if (!this->tag.compare_exchange_weak(expected, 0, std::memory_order_release)) {

@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_current_context.hpp>
 #include <mesosphere/kern_k_scheduler.hpp>

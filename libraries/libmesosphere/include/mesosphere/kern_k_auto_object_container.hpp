@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_auto_object.hpp>
 #include <mesosphere/kern_k_light_lock.hpp>
 
@@ -51,10 +51,10 @@ namespace ams::kern {
             KLightLock lock;
             ListType object_list;
         public:
-            constexpr KAutoObjectWithListContainer() : lock(), object_list() { /* ... */ }
+            constexpr KAutoObjectWithListContainer() : lock(), object_list() { MESOSPHERE_ASSERT_THIS(); }
 
-            void Initialize() { /* Nothing to do. */ }
-            void Finalize() { /* Nothing to do. */ }
+            void Initialize() { MESOSPHERE_ASSERT_THIS(); }
+            void Finalize() { MESOSPHERE_ASSERT_THIS(); }
 
             Result Register(KAutoObjectWithList *obj);
             Result Unregister(KAutoObjectWithList *obj);

@@ -19,6 +19,8 @@ namespace ams::kern {
 
 
     Result KAutoObjectWithListContainer::Register(KAutoObjectWithList *obj) {
+        MESOSPHERE_ASSERT_THIS();
+
         KScopedLightLock lk(this->lock);
 
         this->object_list.insert(*obj);
@@ -27,6 +29,8 @@ namespace ams::kern {
     }
 
     Result KAutoObjectWithListContainer::Unregister(KAutoObjectWithList *obj) {
+        MESOSPHERE_ASSERT_THIS();
+
         KScopedLightLock lk(this->lock);
 
         this->object_list.erase(this->object_list.iterator_to(*obj));
@@ -35,6 +39,8 @@ namespace ams::kern {
     }
 
     size_t KAutoObjectWithListContainer::GetOwnedCount(KProcess *owner) {
+        MESOSPHERE_ASSERT_THIS();
+
         KScopedLightLock lk(this->lock);
 
         size_t count = 0;

@@ -16,7 +16,7 @@
 #pragma once
 
 #ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
-    #include "board/nintendo/switch/kern_k_system_control.hpp"
+    #include <mesosphere/board/nintendo/switch/kern_k_system_control.hpp>
 #else
     #error "Unknown board for KSystemControl"
 #endif

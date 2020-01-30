@@ -15,7 +15,8 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include "kern_svc_k_user_pointer.hpp"
+#include <mesosphere/svc/kern_svc_k_user_pointer.hpp>
+#include <mesosphere/svc/kern_svc_results.hpp>
 
 namespace ams::kern::svc {
 

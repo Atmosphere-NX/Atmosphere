@@ -15,7 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include "kern_cpu_system_registers.hpp"
+#include <mesosphere/arch/arm64/kern_cpu_system_registers.hpp>
 
 namespace ams::kern::arm64::cpu {
 

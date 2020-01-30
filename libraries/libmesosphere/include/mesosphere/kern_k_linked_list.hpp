@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
 #include <mesosphere/kern_slab_helpers.hpp>
 
@@ -24,9 +24,10 @@ namespace ams::kern {
         private:
             void *item;
         public:
-            constexpr KLinkedListNode() : util::IntrusiveListBaseNode<KLinkedListNode>(), item(nullptr) { /* ... */ }
+            constexpr KLinkedListNode() : util::IntrusiveListBaseNode<KLinkedListNode>(), item(nullptr) { MESOSPHERE_ASSERT_THIS(); }
 
             constexpr void Initialize(void *it) {
+                MESOSPHERE_ASSERT_THIS();
                 this->item = it;
             }
 

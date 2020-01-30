@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "../results.hpp"
+#include <vapours/results.hpp>
 
 namespace ams::svc {
 
@@ -27,6 +27,31 @@ namespace ams::svc {
 #else
     #error "Unknown target for svc::Handle"
 #endif
+
+    enum class PseudoHandle : Handle {
+        CurrentThread  = 0xFFFF8000,
+        CurrentProcess = 0xFFFF8001,
+    };
+
+    constexpr ALWAYS_INLINE bool operator==(const Handle &lhs, const PseudoHandle &rhs) {
+        return static_cast<Handle>(lhs) == static_cast<Handle>(rhs);
+    }
+
+    constexpr ALWAYS_INLINE bool operator==(const PseudoHandle &lhs, const Handle &rhs) {
+        return static_cast<Handle>(lhs) == static_cast<Handle>(rhs);
+    }
+
+    constexpr ALWAYS_INLINE bool operator!=(const Handle &lhs, const PseudoHandle &rhs) {
+        return !(lhs == rhs);
+    }
+
+    constexpr ALWAYS_INLINE bool operator!=(const PseudoHandle &lhs, const Handle &rhs) {
+        return !(lhs == rhs);
+    }
+
+    constexpr ALWAYS_INLINE bool IsPseudoHandle(const Handle &handle) {
+        return handle == PseudoHandle::CurrentProcess || handle == PseudoHandle::CurrentThread;
+    }
 
 #ifdef        ATMOSPHERE_ARCH_ARM64
 

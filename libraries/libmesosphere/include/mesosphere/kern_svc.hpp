@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "svc/kern_svc_k_user_pointer.hpp"
-#include "svc/kern_svc_prototypes.hpp"
-#include "svc/kern_svc_tables.hpp"
+#include <mesosphere/svc/kern_svc_results.hpp>
+#include <mesosphere/svc/kern_svc_k_user_pointer.hpp>
+#include <mesosphere/svc/kern_svc_prototypes.hpp>
+#include <mesosphere/svc/kern_svc_tables.hpp>

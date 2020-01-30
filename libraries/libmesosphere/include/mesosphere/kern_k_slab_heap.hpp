@@ -14,8 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <mesosphere/kern_panic.hpp>
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
 
 namespace ams::kern {
@@ -33,7 +32,7 @@ namespace ams::kern {
                 std::atomic<Node *> head;
                 size_t              obj_size;
             public:
-                constexpr KSlabHeapImpl() : head(nullptr), obj_size(0) { /* ... */ }
+                constexpr KSlabHeapImpl() : head(nullptr), obj_size(0) { MESOSPHERE_ASSERT_THIS(); }
 
                 void Initialize(size_t size) {
                     MESOSPHERE_INIT_ABORT_UNLESS(this->head == nullptr);
@@ -49,6 +48,8 @@ namespace ams::kern {
                 }
 
                 void *Allocate() {
+                    MESOSPHERE_ASSERT_THIS();
+
                     Node *ret = this->head.load();
 
                     do {
@@ -61,6 +62,8 @@ namespace ams::kern {
                 }
 
                 void Free(void *obj) {
+                    MESOSPHERE_ASSERT_THIS();
+
                     Node *node = reinterpret_cast<Node *>(obj);
 
                     Node *cur_head = this->head.load();
@@ -90,13 +93,15 @@ namespace ams::kern {
                 return std::addressof(this->impl);
             }
         public:
-            constexpr KSlabHeapBase() : impl(), peak(0), start(0), end(0) { /* ... */ }
+            constexpr KSlabHeapBase() : impl(), peak(0), start(0), end(0) { MESOSPHERE_ASSERT_THIS(); }
 
             ALWAYS_INLINE bool Contains(uintptr_t address) const {
                 return this->start <= address && address < this->end;
             }
 
             void InitializeImpl(size_t obj_size, void *memory, size_t memory_size) {
+                MESOSPHERE_ASSERT_THIS();
+
                 /* Ensure we don't initialize a slab using null memory. */
                 MESOSPHERE_ABORT_UNLESS(memory != nullptr);
 
@@ -127,6 +132,8 @@ namespace ams::kern {
             }
 
             void *AllocateImpl() {
+                MESOSPHERE_ASSERT_THIS();
+
                 void *obj = this->GetImpl()->Allocate();
 
                 /* TODO: under some debug define, track the peak for statistics, as N does? */
@@ -135,6 +142,8 @@ namespace ams::kern {
             }
 
             void FreeImpl(void *obj) {
+                MESOSPHERE_ASSERT_THIS();
+
                 /* Don't allow freeing an object that wasn't allocated from this heap. */
                 MESOSPHERE_ABORT_UNLESS(this->Contains(reinterpret_cast<uintptr_t>(obj)));
 

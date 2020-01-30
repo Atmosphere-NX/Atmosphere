@@ -30,10 +30,10 @@ namespace ams::kern {
         private:
             ThreadList thread_list;
         protected:
-            constexpr ALWAYS_INLINE explicit KSynchronizationObject() : KAutoObjectWithList(), thread_list() { /* ... */ }
-            virtual ~KSynchronizationObject() { /* ... */ }
+            constexpr ALWAYS_INLINE explicit KSynchronizationObject() : KAutoObjectWithList(), thread_list() { MESOSPHERE_ASSERT_THIS(); }
+            virtual ~KSynchronizationObject() { MESOSPHERE_ASSERT_THIS(); }
 
-            virtual void OnFinalizeSynchronizationObject() { /* ... */ }
+            virtual void OnFinalizeSynchronizationObject() { MESOSPHERE_ASSERT_THIS(); }
 
             void NotifyAvailable();
             void NotifyAbort(Result abort_reason);

@@ -17,7 +17,7 @@
 #include <mesosphere/kern_k_typed_address.hpp>
 
 #ifdef ATMOSPHERE_ARCH_ARM64
-    #include "../arch/arm64/init/kern_k_init_arguments.hpp"
+    #include <mesosphere/arch/arm64/init/kern_k_init_arguments.hpp>
 #else
     #error "Unknown architecture for KInitArguments"
 #endif

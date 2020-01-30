@@ -16,7 +16,7 @@
 #pragma once
 
 #ifdef ATMOSPHERE_ARCH_ARM64
-    #include "../arch/arm64/init/kern_k_init_page_table.hpp"
+    #include <mesosphere/arch/arm64/init/kern_k_init_page_table.hpp>
 #else
     #error "Unknown architecture for KInitialPageTable"
 #endif
