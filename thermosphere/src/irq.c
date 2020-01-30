@@ -220,6 +220,7 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
 
     bool isGuestInterrupt = false;
     bool isMaintenanceInterrupt = false;
+    bool isPaused = false;
 
     switch (irqId) {
         case ThermosphereSgi_ExecuteFunction:
@@ -232,7 +233,11 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
             debugManagerPauseSgiHandler();
             break;
         case ThermosphereSgi_ReportDebuggerBreak:
-            // See bottom half
+        case ThermosphereSgi_DebuggerContinue:
+            // See bottom halves
+            // Because exceptions (other debug events) are handling w/ interrupts off, if
+            // we get there, there's no race condition possible with debugManagerReportEvent
+            isPaused = debugManagerIsCorePaused(currentCoreCtx->coreId);
             break;
         case GIC_IRQID_MAINTENANCE:
             isMaintenanceInterrupt = true;
@@ -274,8 +279,10 @@ void handleIrqException(ExceptionStackFrame *frame, bool isLowerEl, bool isA32)
         exceptionEnterInterruptibleHypervisorCode();
         unmaskIrq();
         transportInterfaceIrqHandlerBottomHalf(transportIface);
-    } else if (irqId == ThermosphereSgi_ReportDebuggerBreak) {
+    } else if (irqId == ThermosphereSgi_ReportDebuggerBreak && !isPaused) {
         debugManagerReportEvent(DBGEVENT_DEBUGGER_BREAK);
+    } else if (irqId == ThermosphereSgi_DebuggerContinue && isPaused) {
+        debugManagerUnpauseCores(BIT(currentCoreCtx->coreId));
     }
 
 }

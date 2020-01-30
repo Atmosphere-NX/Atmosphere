@@ -50,7 +50,7 @@ static void debugManagerDoPauseCores(u32 coreList)
     do {
         desiredList |= readList;
         remainingList &= ~readList;
-    } while (atomic_compare_exchange_weak(&g_debugManager.pausedCoreList, &readList, desiredList));
+    } while (!atomic_compare_exchange_weak(&g_debugManager.pausedCoreList, &readList, desiredList));
 
     if (remainingList != BIT(currentCoreCtx->coreId)) {
         // We need to notify other cores...
@@ -116,10 +116,13 @@ void debugManagerPauseCores(u32 coreList)
     restoreInterruptFlags(flags);
 }
 
-void debugManagerUnpauseCores(u32 coreList, u32 singleStepList)
+void debugManagerSetSingleStepCoreList(u32 coreList)
 {
-    singleStepList &= coreList;
+    atomic_store(&g_debugManager.singleStepCoreList, coreList);
+}
 
+void debugManagerUnpauseCores(u32 coreList)
+{
     FOREACH_BIT (tmp, coreId, coreList) {
         if (&g_debugManager.debugEventInfos[coreId].handled) {
             // Discard already handled debug events
@@ -127,8 +130,6 @@ void debugManagerUnpauseCores(u32 coreList, u32 singleStepList)
         }
     }
 
-    // Since we're using a debugger lock, a simple stlr should be fine...
-    atomic_store(&g_debugManager.singleStepCoreList, singleStepList);
     atomic_fetch_and(&g_debugManager.pausedCoreList, ~coreList);
 
     __sev();
@@ -198,7 +199,18 @@ void debugManagerBreakCores(u32 coreList)
     if (coreList & ~BIT(coreId)) {
         generateSgiForList(ThermosphereSgi_ReportDebuggerBreak, coreList & ~BIT(coreId));
     }
-    if (coreList & BIT(coreId)) {
+    if (coreList & BIT(coreId) && !debugManagerIsCorePaused(coreId)) {
         debugManagerReportEvent(DBGEVENT_DEBUGGER_BREAK);
+    }
+}
+
+void debugManagerContinueCores(u32 coreList)
+{
+    u32 coreId = currentCoreCtx->coreId;
+    if (coreList & ~BIT(coreId)) {
+        generateSgiForList(ThermosphereSgi_DebuggerContinue, coreList & ~BIT(coreId));
+    }
+    if (coreList & BIT(coreId) && debugManagerIsCorePaused(coreId)) {
+        debugManagerUnpauseCores(BIT(coreId));
     }
 }

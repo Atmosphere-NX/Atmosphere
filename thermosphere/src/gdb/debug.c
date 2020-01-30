@@ -347,7 +347,8 @@ GDB_DECLARE_HANDLER(ContinueOrStepDeprecated)
         debugManagerSetSteppingRange(coreId, 0, 0);
     }
 
-    debugManagerUnpauseCores(coreList, ssMask);
+    debugManagerSetSingleStepCoreList(ssMask);
+    debugManagerUnpauseCores(coreList);
     return 0;
 }
 
@@ -461,8 +462,9 @@ GDB_DECLARE_VERBOSE_HANDLER(Continue)
         cmd = nextCmd;
     }
 
+    debugManagerSetSingleStepCoreList(stepCoreList);
     debugManagerBreakCores(stopCoreList);
-    debugManagerUnpauseCores(continueCoreList, stepCoreList);
+    debugManagerContinueCores(continueCoreList);
 
     return 0;
 }
