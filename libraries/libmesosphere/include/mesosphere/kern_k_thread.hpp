@@ -15,11 +15,12 @@
  */
 #pragma once
 #include <mesosphere/kern_slab_helpers.hpp>
+#include <mesosphere/kern_k_synchronization_object.hpp>
 
 namespace ams::kern {
 
-
-    class KThread : KAutoObjectWithSlabHeapAndContainer<KThread, /* TODO: KSynchronizationObject */ KAutoObjectWithList> {
+    class KThread final : public KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject> {
+        MESOSPHERE_AUTOOBJECT_TRAITS(KThread, KSynchronizationObject);
         public:
             struct StackParameters {
                 alignas(0x10) u8 svc_permission[0x10];
@@ -32,7 +33,7 @@ namespace ams::kern {
                 void *context; /* TODO: KThreadContext * */
             };
             static_assert(alignof(StackParameters) == 0x10);
-        /* TODO: This should be a KAutoObject, and this is a placeholder definition. */
+        /* TODO: This is a placeholder definition. */
     };
 
 }

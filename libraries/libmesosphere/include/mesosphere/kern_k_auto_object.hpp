@@ -23,24 +23,27 @@ namespace ams::kern {
 
     class KProcess;
 
-    #define MESOSPHERE_AUTOOBJECT_TRAITS(CLASS)                                                                 \
+    #define MESOSPHERE_AUTOOBJECT_TRAITS(CLASS, BASE_CLASS)                                                     \
+        NON_COPYABLE(CLASS);                                                                                    \
+        NON_MOVEABLE(CLASS);                                                                                    \
         private:                                                                                                \
             friend class KClassTokenGenerator;                                                                  \
-            static constexpr inline auto ObjectType = KClassTokenGenerator::ObjectType::CLASS;                  \
+            static constexpr inline auto ObjectType = ::ams::kern::KClassTokenGenerator::ObjectType::CLASS;     \
             static constexpr inline const char * const TypeName = #CLASS;                                       \
-            static constexpr inline ClassTokenType ClassToken   = ClassToken<CLASS>;                            \
+            static constexpr inline ClassTokenType ClassToken() { return ::ams::kern::ClassToken<CLASS>; }      \
         public:                                                                                                 \
-            static constexpr ALWAYS_INLINE TypeObj GetStaticTypeObj() { return TypeObj(TypeName, ClassToken); } \
+            using BaseClass = BASE_CLASS;                                                                       \
+            static constexpr ALWAYS_INLINE TypeObj GetStaticTypeObj() {                                         \
+                constexpr ClassTokenType Token = ClassToken();                                                  \
+                return TypeObj(TypeName, Token);                                                                \
+            }                                                                                                   \
             static constexpr ALWAYS_INLINE const char *GetStaticTypeName() { return TypeName; }                 \
-            virtual TypeObj GetTypeObj() const                        { return TypeObj(TypeName, ClassToken); } \
-            virtual const char *GetTypeName()                              { return TypeName; }                 \
+            virtual TypeObj GetTypeObj() const { return GetStaticTypeObj(); }                                   \
+            virtual const char *GetTypeName() { return GetStaticTypeName(); }                                   \
         private:
 
 
-
     class KAutoObject {
-        NON_COPYABLE(KAutoObject);
-        NON_MOVEABLE(KAutoObject);
         protected:
             class TypeObj {
                 private:
@@ -64,6 +67,8 @@ namespace ams::kern {
                         return (this->GetClassToken() | rhs.GetClassToken()) == this->GetClassToken();
                     }
             };
+        private:
+            MESOSPHERE_AUTOOBJECT_TRAITS(KAutoObject, KAutoObject);
         private:
             std::atomic<u32> ref_count;
         public:
@@ -141,9 +146,6 @@ namespace ams::kern {
                     this->Destroy();
                 }
             }
-
-        /* Ensure that we have functional type object getters. */
-        MESOSPHERE_AUTOOBJECT_TRAITS(KAutoObject);
     };
 
     class KAutoObjectWithListContainer;

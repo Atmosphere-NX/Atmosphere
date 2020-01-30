@@ -183,7 +183,7 @@ namespace ams::util {
                         }
                 };
             public:
-                IntrusiveListImpl() : root_node() { /* ... */ }
+                constexpr IntrusiveListImpl() : root_node() { /* ... */ }
 
                 /* Iterator accessors. */
                 iterator begin() {
