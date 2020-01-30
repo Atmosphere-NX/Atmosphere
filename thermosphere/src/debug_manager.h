@@ -55,7 +55,8 @@ bool debugManagerHandlePause(void);
 // "Pause" makes sure all cores reaches the pause function before proceeding.
 // "Unpause" doesn't synchronize, it just makes sure the core resumes & that "pause" can be called again.
 void debugManagerPauseCores(u32 coreList);
-void debugManagerUnpauseCores(u32 coreList, u32 singleStepList);
+void debugManagerUnpauseCores(u32 coreList);
+void debugManagerSetSingleStepCoreList(u32 coreList);
 
 void debugManagerSetSteppingRange(u32 coreId, uintptr_t startAddr, uintptr_t endAddr);
 
@@ -67,6 +68,7 @@ const DebugEventInfo *debugManagerGetCoreDebugEvent(u32 coreId);
 void debugManagerReportEvent(DebugEventType type, ...);
 
 void debugManagerBreakCores(u32 coreList);
+void debugManagerContinueCores(u32 coreList);
 
 static inline bool debugManagerIsCorePaused(u32 coreId)
 {

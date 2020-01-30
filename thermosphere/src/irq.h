@@ -39,9 +39,10 @@ typedef struct IrqManager {
 
 typedef enum ThermosphereSgi {
     ThermosphereSgi_ExecuteFunction = 0,
-    ThermosphereSgi_VgicUpdate = 1,
-    ThermosphereSgi_DebugPause = 2,
-    ThermosphereSgi_ReportDebuggerBreak = 3,
+    ThermosphereSgi_VgicUpdate,
+    ThermosphereSgi_DebugPause,
+    ThermosphereSgi_ReportDebuggerBreak,
+    ThermosphereSgi_DebuggerContinue,
 
     ThermosphereSgi_Max,
 } ThermosphereSgi;
