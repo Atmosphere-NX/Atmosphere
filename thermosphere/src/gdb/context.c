@@ -130,9 +130,14 @@ static void GDB_Disconnect(GDBContext *ctx)
     ctx->currentThreadId = 0;
     ctx->selectedThreadId = 0;
     ctx->selectedThreadIdForContinuing = 0;
+    ctx->sentDebugEventCoreList = 0;
+    ctx->acknowledgedDebugEventCoreList = 0;
 
+    ctx->attachedCoreList = 0;
+    ctx->sendOwnDebugEventDisallowed = false;
     ctx->catchThreadEvents = false;
     ctx->lastSentPacketSize = 0;
+    ctx->lastDebugEvent = NULL;
 
     ctx->processEnded = false;
     ctx->processExited = false;

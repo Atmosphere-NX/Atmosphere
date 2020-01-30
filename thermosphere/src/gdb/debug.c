@@ -177,6 +177,9 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
     } else if (asNotification) {
         return GDB_SendNotificationPacket(ctx, buf, strlen(buf));
     } else {
+        if (!(ctx->flags & GDB_FLAG_NONSTOP)) {
+            ctx->acknowledgedDebugEventCoreList |= BIT(info->coreId);
+        }
         return GDB_SendPacket(ctx, buf, strlen(buf));
     }
 }
@@ -210,14 +213,14 @@ int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info)
     if (!GDB_IsAttached(ctx)) {
         // Not attached, mark the event as handled, unpause
         debugManagerMarkAndGetCoreDebugEvent(info->coreId);
-        debugManagerUnpauseCores(BIT(info->coreId), 0);
+        debugManagerUnpauseCores(BIT(info->coreId));
         GDB_ReleaseContext(ctx);
         return -1;
     }
 
     // Are we still paused & has the packet not been handled & are we allowed to send on our own?
 
-    if (ctx->sendOwnDebugEventAllowed && !info->handled && debugManagerIsCorePaused(info->coreId)) {
+    if (!ctx->sendOwnDebugEventDisallowed && !info->handled && debugManagerIsCorePaused(info->coreId)) {
         bool nonStop = (ctx->flags & GDB_FLAG_NONSTOP) != 0;
         info->handled = true;
 
@@ -226,7 +229,7 @@ int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info)
             debugManagerPauseCores(ctx->attachedCoreList & ~BIT(info->coreId));
         }
 
-        ctx->sendOwnDebugEventAllowed = false;
+        ctx->sendOwnDebugEventDisallowed = true;
         ret = GDB_SendStopReply(ctx, info, nonStop);
     }
 
@@ -249,16 +252,21 @@ GDB_DECLARE_VERBOSE_HANDLER(Stopped)
     u32 coreList = debugManagerGetPausedCoreList() & ctx->attachedCoreList;
     u32 remaining = coreList & ~ctx->sentDebugEventCoreList;
 
+    // Ack
+    if (ctx->lastDebugEvent != NULL) {
+        ctx->acknowledgedDebugEventCoreList |= BIT(ctx->lastDebugEvent->coreId);
+    }
+
     if (remaining != 0) {
         // Send one more debug event (marking it as handled)
         u32 coreId = __builtin_ctz(remaining);
         DebugEventInfo *info = debugManagerMarkAndGetCoreDebugEvent(coreId);
 
-        ctx->sendOwnDebugEventAllowed = false;
+        ctx->sendOwnDebugEventDisallowed = true;
         return GDB_SendStopReply(ctx, info, false);
     } else {
         // vStopped sequenced finished
-        ctx->sendOwnDebugEventAllowed = true;
+        ctx->sendOwnDebugEventDisallowed = false;
         return GDB_ReplyOk(ctx);
     }
 }
@@ -272,7 +280,9 @@ GDB_DECLARE_HANDLER(GetStopReason)
     } else {
         // Non-stop, start new vStopped sequence
         ctx->sentDebugEventCoreList = 0;
-        ctx->sendOwnDebugEventAllowed = false;
+        ctx->acknowledgedDebugEventCoreList = 0;
+        ctx->lastDebugEvent = NULL;
+        ctx->sendOwnDebugEventDisallowed = true;
         return GDB_HandleVerboseStopped(ctx);
     }
 }
@@ -347,8 +357,9 @@ GDB_DECLARE_HANDLER(ContinueOrStepDeprecated)
         debugManagerSetSteppingRange(coreId, 0, 0);
     }
 
-    debugManagerSetSingleStepCoreList(ssMask);
-    debugManagerUnpauseCores(coreList);
+    u32 mask = ctx->acknowledgedDebugEventCoreList;
+    debugManagerSetSingleStepCoreList(ssMask & mask);
+    debugManagerUnpauseCores(coreList & mask);
     return 0;
 }
 
@@ -462,9 +473,13 @@ GDB_DECLARE_VERBOSE_HANDLER(Continue)
         cmd = nextCmd;
     }
 
-    debugManagerSetSingleStepCoreList(stepCoreList);
-    debugManagerBreakCores(stopCoreList);
-    debugManagerContinueCores(continueCoreList);
+    // "Note: In non-stop mode, a thread is considered running until GDB acknowledges 
+    // an asynchronous stop notification for it with the ‘vStopped’ packet (see Remote Non-Stop)."
+    u32 mask = ctx->acknowledgedDebugEventCoreList;
+
+    debugManagerSetSingleStepCoreList(stepCoreList & mask);
+    debugManagerBreakCores(stopCoreList & ~mask);
+    debugManagerContinueCores(continueCoreList & mask);
 
     return 0;
 }
