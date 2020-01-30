@@ -78,8 +78,9 @@ typedef struct GDBContext {
     int selectedThreadIdForContinuing;
 
     u32 sentDebugEventCoreList;
+    u32 acknowledgedDebugEventCoreList;
 
-    bool sendOwnDebugEventAllowed;
+    bool sendOwnDebugEventDisallowed;
 
     bool catchThreadEvents;
     bool processEnded, processExited;
