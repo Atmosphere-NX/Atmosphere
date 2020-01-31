@@ -24,7 +24,7 @@
 
 /// Structure to synchronize and keep track of breakpoints
 typedef struct BreakpointManager {
-    DebugRegisterPair breakpoints[16];
+    DebugRegisterPair breakpoints[MAX_BCR];
     RecursiveSpinlock lock;
     u32 maxBreakpoints;
     u16 allocationBitmap;

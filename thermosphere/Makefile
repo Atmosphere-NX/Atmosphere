@@ -22,21 +22,21 @@ ifeq ($(PLATFORM), qemu)
 export PLATFORM	:= qemu
 
 PLATFORM_SOURCES	:= src/platform/qemu
-PLATFORM_DEFINES	:= -DPLATFORM_QEMU
+PLATFORM_DEFINES	:= -DPLATFORM_QEMU -DMAX_CORE=4 -DMAX_BCR=6 -DMAX_WCR=4
 
 else ifeq ($(PLATFORM), tegra-t210-arm-tf)
 
 export PLATFORM := tegra-t210-arm-tf
 
 PLATFORM_SOURCES	:= src/platform/tegra
-PLATFORM_DEFINES	:= -DPLATFORM_TEGRA -DPLATFORM_TEGRA_T210_ARM_TF
+PLATFORM_DEFINES	:= -DPLATFORM_TEGRA -DPLATFORM_TEGRA_T210_ARM_TF -DMAX_CORE=4 -DMAX_BCR=6 -DMAX_WCR=4
 
 else
 
 export PLATFORM	:= tegra-t210-nintendo
 
 PLATFORM_SOURCES	:= src/platform/tegra
-PLATFORM_DEFINES	:= -DPLATFORM_TEGRA -D DPLATFORM_TEGRA_T210_NINTENDO
+PLATFORM_DEFINES	:= -DPLATFORM_TEGRA -D DPLATFORM_TEGRA_T210_NINTENDO -DMAX_CORE=4 -DMAX_BCR=6 -DMAX_WCR=4
 
 endif
 
@@ -57,7 +57,7 @@ INCLUDES	:=	include ../common/include
 # options for code generation
 #---------------------------------------------------------------------------------
 # Note: -ffixed-x18 and -mgeneral-regs-only are very important and must be enabled
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only -ffixed-x18
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only -ffixed-x18 -Wno-psabi
 DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"\
 			-DATMOSPHERE_RELEASE_VERSION_HASH="0x$(AMSHASH)" $(PLATFORM_DEFINES)
 CFLAGS	:= \
@@ -79,7 +79,7 @@ CFLAGS	+=	$(INCLUDE)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
-ASFLAGS	:=	-g $(ARCH)
+ASFLAGS	:=	-g $(ARCH) $(DEFINES)
 LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -nostartfiles -nostdlib -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=	-lgcc

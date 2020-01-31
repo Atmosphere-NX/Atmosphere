@@ -123,13 +123,6 @@ SECTIONS
         . = ALIGN(8);
     } >mainVa AT>main :main
 
-
-    .eh_frame_hdr     : { *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) } >mainVa AT>main :main
-    .eh_frame         : { KEEP (*(.eh_frame)) *(.eh_frame.*) } >mainVa AT>main :main
-    .gcc_except_table : { *(.gcc_except_table .gcc_except_table.*) } >mainVa AT>main :main
-    .gnu_extab        : { *(.gnu_extab*) } >mainVa AT>main :main
-    .exception_ranges : { *(.exception_ranges .exception_ranges*) } >mainVa AT>main :main
-
     .dynamic           : { *(.dynamic) } >mainVa AT>main :main
     .interp            : { *(.interp) } >mainVa AT>main :main
     .note.gnu.build-id : { *(.note.gnu.build-id) } >mainVa AT>main :main
@@ -144,28 +137,35 @@ SECTIONS
 
     .bss (NOLOAD) :
     {
-        . = ALIGN(0x1000);
         __bss_start__  = ABSOLUTE(.);
         *(.dynbss)
         *(.bss .bss.* .gnu.linkonce.b.*)
         *(COMMON)
-        . = ALIGN(8);
+    } >mainVa :NONE
+
+    .tempbss (NOLOAD) :
+    {
+        . = ALIGN(0x1000);
         __real_bss_end__ = ABSOLUTE(.);
         __image_size__ = ABSOLUTE(__real_bss_end__ - __start__);
         /*ASSERT(__image_size__ <= __max_image_size__, "Image too big!");*/
-        /*
-            The logic here: tempbss *additional pages* are at a very different PA, but
-            we can allow .tempbss to use unused "non-temporary" BSS space. Their VAs are
-            contiguous.
-        */
         *(.tempbss .tempbss.*)
+        . = ALIGN(0x1000);
         __bss_end__ = ABSOLUTE(.);
         __temp_size__ = ABSOLUTE(__bss_end__ - __real_bss_end__);
+        ASSERT(__temp_size__ <= __max_temp_size__, "tempbss too big!");
     } >mainVa :NONE
 
 
 
     . = ALIGN(8);
+
+    /* Shit we keep in the elf but otherwise discard */
+    .eh_frame_hdr     (NOLOAD) : { *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) } >mainVa :NONE
+    .eh_frame         (NOLOAD) : { KEEP (*(.eh_frame)) *(.eh_frame.*) } >mainVa :NONE
+    .gcc_except_table (NOLOAD) : { *(.gcc_except_table .gcc_except_table.*) } >mainVa :NONE
+    .gnu_extab        (NOLOAD) : { *(.gnu_extab*) } >mainVa :NONE
+    .exception_ranges (NOLOAD) : { *(.exception_ranges .exception_ranges*) } >mainVa :NONE
 
     /* ==================
        ==== Metadata ====

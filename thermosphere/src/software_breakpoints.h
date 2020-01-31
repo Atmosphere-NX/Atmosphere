@@ -22,7 +22,7 @@
 #include <stdatomic.h>
 #include "spinlock.h"
 
-#define MAX_SW_BREAKPOINTS  32
+#define MAX_SW_BREAKPOINTS  16
 
 typedef struct SoftwareBreakpoint {
     uintptr_t address; // VA

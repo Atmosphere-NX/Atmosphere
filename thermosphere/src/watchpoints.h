@@ -29,7 +29,7 @@ typedef struct WatchpointManager {
     u32 maxWatchpoints;
     u32 maxSplitWatchpoints;
     u16 allocationBitmap;
-    DebugRegisterPair splitWatchpoints[16 * 8];
+    DebugRegisterPair splitWatchpoints[MAX_WCR * 8];
 } WatchpointManager;
 
 extern WatchpointManager g_watchpointManager;
