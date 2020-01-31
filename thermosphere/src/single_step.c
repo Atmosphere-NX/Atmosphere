@@ -17,7 +17,7 @@
 #include "single_step.h"
 #include "core_ctx.h"
 #include "sysreg.h"
-#include "debug_log.h"
+#include "debug_manager.h"
 
 SingleStepState singleStepGetNextState(ExceptionStackFrame *frame)
 {
@@ -71,7 +71,7 @@ void handleSingleStep(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
     } else {
         // Disable single-step
         singleStepSetNextState(frame, SingleStepState_Inactive);
-        // TODO report exception to gdb
+        debugManagerReportEvent(DBGEVENT_EXCEPTION);
     }
 
     DEBUG("Single-step exeception ELR = 0x%016llx, ISV = %u, EX = %u\n", frame->elr_el2, (esr.iss >> 24) & 1, (esr.iss >> 6) & 1);

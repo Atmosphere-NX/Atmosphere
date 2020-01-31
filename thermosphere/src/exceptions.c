@@ -169,7 +169,12 @@ void handleLowerElSyncException(ExceptionStackFrame *frame)
         case Exception_SoftwareStepLowerEl:
             handleSingleStep(frame, esr);
             break;
-
+        case Exception_BreakpointLowerEl:
+        case Exception_WatchpointLowerEl:
+        case Exception_SoftwareBreakpointA64:
+        case Exception_SoftwareBreakpointA32:
+            debugManagerReportEvent(DBGEVENT_EXCEPTION);
+            break;
         default:
             DEBUG("Lower EL sync exception, EC = 0x%02llx IL=%llu ISS=0x%06llx\n", (u64)esr.ec, esr.il, esr.iss);
             dumpStackFrame(frame, false);
