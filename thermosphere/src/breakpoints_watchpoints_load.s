@@ -40,7 +40,7 @@ FUNCTION loadBreakpointRegs
     br      x16
 
     1:
-    LOAD_DBG_REG_PAIRS b, MAX_BCR
+    LOAD_DBG_REG_PAIRS b, %(MAX_BCR - 1)
 
     dsb     ish
     isb
@@ -61,7 +61,7 @@ FUNCTION loadWatchpointRegs
     br      x16
 
     1:
-    LOAD_DBG_REG_PAIRS w, MAX_WCR
+    LOAD_DBG_REG_PAIRS w, %(MAX_WCR - 1)
 
     dsb     ish
     isb
