@@ -48,7 +48,7 @@ u32 GDB_SearchMemory(bool *found, GDBContext *ctx, uintptr_t addr, size_t len, c
 {
     // Note: need to ensure GDB_WORK_BUF_LEN is at least 0x1000 bytes in size
 
-    char *buf = ctx->workBuffer;
+    u8 *buf = (u8 *)ctx->workBuffer;
     size_t maxNbPages = GDB_WORK_BUF_LEN / 0x1000;
     uintptr_t curAddr = addr;
 
