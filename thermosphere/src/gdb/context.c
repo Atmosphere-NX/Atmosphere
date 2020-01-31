@@ -108,13 +108,6 @@ static int GDB_ProcessPacket(GDBContext *ctx, size_t len)
         return -1;
     }
 
-    if ((oldFlags & GDB_FLAG_CONTINUING) && !(ctx->flags & GDB_FLAG_CONTINUING)) {
-        // TODO
-    }
-    else if (!(oldFlags & GDB_FLAG_CONTINUING) && (ctx->flags & GDB_FLAG_CONTINUING)) {
-        // TODO
-    }
-
     return ret;
 }
 
@@ -145,7 +138,6 @@ static void GDB_Disconnect(GDBContext *ctx)
     ctx->processExited = false;
 
     ctx->noAckSent = false;
-    // TODO memset(&ctx->latestDebugEvent, 0, sizeof(DebugEventInfo));
 
     ctx->currentHioRequestTargetAddr = 0;
     memset(&ctx->currentHioRequest, 0, sizeof(PackedGdbHioRequest));
