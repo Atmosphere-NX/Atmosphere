@@ -148,7 +148,8 @@ export QEMU := qemu-system-aarch64
 
 QEMUFLAGS :=	-nographic -machine virt,virtualization=on,accel=tcg,gic-version=2 -cpu cortex-a57 -smp 4 -m 1024\
 				-kernel thermosphere.elf -d unimp,guest_errors -semihosting-config enable,target=native\
-				-chardev stdio,id=uart -serial chardev:uart -monitor tcp:localhost:3333,server,nowait
+				-chardev socket,id=uart,port=4567,host=0.0.0.0,server,nowait -chardev stdio,id=test -serial chardev:uart\
+				-monitor tcp:localhost:3333,server,nowait
 
 qemu: all
 	@$(QEMU) $(QEMUFLAGS)
