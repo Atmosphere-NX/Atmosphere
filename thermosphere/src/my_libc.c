@@ -730,6 +730,11 @@ QUICKREF
 /*SUPPRESS 560*/
 /*SUPPRESS 530*/
 
+/* Nonzero if X is aligned on a "long" boundary.  */
+#define ALIGNED(X) \
+  (((long)X & (sizeof (long) - 1)) == 0)
+
+
 char *
 strcat (char *s1, const char *s2)
 {
