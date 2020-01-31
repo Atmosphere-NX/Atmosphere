@@ -101,7 +101,7 @@ void thermosphereMain(ExceptionStackFrame *frame, u64 pct)
         transportInterfaceInitLayer();
         debugLogInit();
         test();
-
+        debugManagerInit(TRANSPORT_INTERFACE_TYPE_UART, DEFAULT_UART, DEFAULT_UART_FLAGS);
         DEBUG("EL2: core %u reached main first!\n", currentCoreCtx->coreId);
     }
 

@@ -43,6 +43,7 @@
 #include "../watchpoints.h"
 
 static TEMPORARY char g_gdbWorkBuffer[GDB_WORK_BUF_LEN];
+static TEMPORARY char g_gdbBuffer[GDB_BUF_LEN + 4];
 
 static const struct{
     char command;
@@ -174,6 +175,7 @@ void GDB_InitializeContext(GDBContext *ctx, TransportInterfaceType ifaceType, u3
 {
     memset(ctx, 0, sizeof(GDBContext));
     ctx->workBuffer = g_gdbWorkBuffer;
+    ctx->buffer = g_gdbBuffer;
     ctx->transportInterface = transportInterfaceCreate(
         ifaceType,
         ifaceId,

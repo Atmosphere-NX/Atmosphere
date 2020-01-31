@@ -152,7 +152,7 @@ SECTIONS
         . = ALIGN(8);
         __real_bss_end__ = ABSOLUTE(.);
         __image_size__ = ABSOLUTE(__real_bss_end__ - __start__);
-        ASSERT(__image_size__ <= __max_image_size__, "Image too big!");
+        /*ASSERT(__image_size__ <= __max_image_size__, "Image too big!");*/
         /*
             The logic here: tempbss *additional pages* are at a very different PA, but
             we can allow .tempbss to use unused "non-temporary" BSS space. Their VAs are

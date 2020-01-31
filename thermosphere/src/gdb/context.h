@@ -93,7 +93,7 @@ typedef struct GDBContext {
 
     char *commandData, *commandEnd;
     size_t lastSentPacketSize;
-    char buffer[GDB_BUF_LEN + 4];
+    char *buffer;
     char *workBuffer;
 } GDBContext;
 
