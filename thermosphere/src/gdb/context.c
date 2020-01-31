@@ -50,8 +50,8 @@ static const struct{
 } gdbCommandHandlers[] = {
     { '?', GDB_HANDLER(GetStopReason) },
     { '!', GDB_HANDLER(EnableExtendedMode) },
-    { 'c', GDB_HANDLER(Continue) },
-    { 'C', GDB_HANDLER(Continue) },
+    { 'c', GDB_HANDLER(ContinueOrStepDeprecated) },
+    { 'C', GDB_HANDLER(ContinueOrStepDeprecated) },
     { 'D', GDB_HANDLER(Detach) },
     { 'F', GDB_HANDLER(HioReply) },
     { 'g', GDB_HANDLER(ReadRegisters) },
@@ -184,14 +184,27 @@ void GDB_InitializeContext(GDBContext *ctx, TransportInterfaceType ifaceType, u3
 
 void GDB_AttachToContext(GDBContext *ctx)
 {
-    if (!(ctx->flags & GDB_FLAG_ATTACHED_AT_START)) {
-        // TODO: debug pause
-    }
-
     // TODO: move the debug traps enable here?
-    // TODO: process the event
+
+    ctx->attachedCoreList = getActiveCoreMask();
+
+    // We're in full-stop mode at this point
+    // Break cores, but don't send the debug event (it will be fetched with '?')
+    // Initialize lastDebugEvent
+
+    debugManagerSetReportingEnabled(true);
+    ctx->sendOwnDebugEventDisallowed = true;
+
+    GDB_BreakAllCores(ctx);
+
+    DebugEventInfo *info = debugManagerGetCoreDebugEvent(currentCoreCtx->coreId);
+    info->preprocessed = true;
+    info->handled = true;
+    ctx->lastDebugEvent = info;
 
     ctx->state = GDB_STATE_ATTACHED;
+
+    ctx->sendOwnDebugEventDisallowed = false;
 }
 
 void GDB_DetachFromContext(GDBContext *ctx)
@@ -212,6 +225,9 @@ void GDB_DetachFromContext(GDBContext *ctx)
 
     ctx->currentHioRequestTargetAddr = 0;
     memset(&ctx->currentHioRequest, 0, sizeof(PackedGdbHioRequest));
+
+    debugManagerSetReportingFalse(true);
+    debugManagerContinueCores(getActiveCoreMask());
 }
 
 void GDB_AcquireContext(GDBContext *ctx)

@@ -31,13 +31,13 @@ static bool GDB_PreprocessDebugEvent(GDBContext *ctx, DebugEventInfo *info)
     switch (info->type) {
         case DBGEVENT_CORE_ON: {
             shouldSignal = ctx->catchThreadEvents;
-            if (!info->handled) {
+            if (!info->preprocessed) {
                 ctx->attachedCoreList |= BIT(info->coreId);
             }
             break;
         }
         case DBGEVENT_CORE_OFF: {
-            if (!info->handled) {
+            if (!info->preprocessed) {
                 u32 newLst = ctx->attachedCoreList & ~BIT(info->coreId);
                 if (ctx->selectedThreadId == info->coreId && newLst != 0) {
                     ctx->selectedThreadId = __builtin_ctz(newLst);
@@ -46,7 +46,7 @@ static bool GDB_PreprocessDebugEvent(GDBContext *ctx, DebugEventInfo *info)
                 ctx->attachedCoreList = newLst;
                 shouldSignal = ctx->catchThreadEvents || newLst == 0;
             } else {
-                shouldSignal = ctx->catchThreadEvents;
+                shouldSignal = ctx->catchThreadEvents || ctx->attachedCoreList == 0;
             }
             break;
         }
@@ -56,7 +56,7 @@ static bool GDB_PreprocessDebugEvent(GDBContext *ctx, DebugEventInfo *info)
             break;
     }
 
-    info->handled = true;
+    info->preprocessed = true;
     restoreInterruptFlags(irqFlags);
     return shouldSignal; 
 }
@@ -287,7 +287,14 @@ void GDB_BreakAllCores(GDBContext *ctx)
     if (ctx->flags & GDB_FLAG_NONSTOP) {
         debugManagerBreakCores(ctx->attachedCoreList);
     } else {
-        debugManagerBreakCores(BIT(currentCoreCtx->coreId));
+        // Break all cores too, but mark everything but the first has handled
+        debugManagerBreakCores(ctx->attachedCoreList);
+        u32 rem = ctx->attachedCoreList & ~BIT(currentCoreCtx->coreId);
+        FOREACH_BIT (tmp, coreId, rem) {
+            DebugEventInfo *info = debugManagerGetCoreDebugEvent(coreId);
+            info->handled = true;
+            info->preprocessed = true;
+        }
     }
 }
 
