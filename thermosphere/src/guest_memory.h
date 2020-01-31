@@ -25,7 +25,7 @@ static inline size_t guestReadMemory(uintptr_t addr, size_t size, void *buf)
     return guestReadWriteMemory(addr, size, buf, NULL);
 }
 
-static inline size_t guestWriteMemory(uintptr_t addr, size_t size, void *buf)
+static inline size_t guestWriteMemory(uintptr_t addr, size_t size, const void *buf)
 {
     return guestReadWriteMemory(addr, size, NULL, buf);
 }

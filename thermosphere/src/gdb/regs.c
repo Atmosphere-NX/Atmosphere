@@ -20,13 +20,13 @@ GDB_DECLARE_HANDLER(ReadRegisters)
 {
     ENSURE(ctx->selectedThreadId == currentCoreCtx->coreId);
 
-    const ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
-    const FpuRegisterCache *fpuRegCache = fpuReadRegisters();
+    ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
+    FpuRegisterCache *fpuRegCache = fpuReadRegisters();
 
     char *buf = ctx->buffer + 1;
     size_t n = 0;
 
-    struct PACKED ALIGN(4) {
+    struct {
         u64 sp;
         u64 pc;
         u32 cpsr;
@@ -35,7 +35,6 @@ GDB_DECLARE_HANDLER(ReadRegisters)
         .pc = frame->elr_el2,
         .cpsr = (u32)frame->spsr_el2,
     };
-    static_assert(sizeof(cpuSprs) == 12, "sizeof(cpuSprs) != 12");
 
     u32 fpuSprs[2] = {
         (u32)fpuRegCache->fpsr,
@@ -44,7 +43,7 @@ GDB_DECLARE_HANDLER(ReadRegisters)
 
 
     n += GDB_EncodeHex(buf + n, frame->x, sizeof(frame->x));
-    n += GDB_EncodeHex(buf + n, &cpuSprs, sizeof(cpuSprs));
+    n += GDB_EncodeHex(buf + n, &cpuSprs, 8+8+4);
     n += GDB_EncodeHex(buf + n, fpuRegCache->q, sizeof(fpuRegCache->q));
     n += GDB_EncodeHex(buf + n, fpuSprs, sizeof(fpuSprs));
 
@@ -64,12 +63,11 @@ GDB_DECLARE_HANDLER(WriteRegisters)
     size_t n = 0;
     size_t m = 0;
 
-    struct PACKED ALIGN(4) {
+    struct {
         u64 sp;
         u64 pc;
         u32 cpsr;
     } cpuSprs;
-    static_assert(sizeof(cpuSprs) == 12, "sizeof(cpuSprs) != 12");
 
     u32 fpuSprs[2];
 
@@ -78,7 +76,7 @@ GDB_DECLARE_HANDLER(WriteRegisters)
         size_t sz;
     } info[4] = {
         { frame->x,         sizeof(frame->x)        },
-        { &cpuSprs,         sizeof(cpuSprs)         },
+        { &cpuSprs,         8+8+4                   },
         { fpuRegCache->q,   sizeof(fpuRegCache->q)  },
         { fpuSprs,          sizeof(fpuSprs)         },
     };
@@ -142,10 +140,9 @@ GDB_DECLARE_HANDLER(ReadRegister)
 {
     ENSURE(ctx->selectedThreadId == currentCoreCtx->coreId);
 
-    const ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
-    const FpuRegisterCache *fpuRegCache = NULL;
+    ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
+    FpuRegisterCache *fpuRegCache = NULL;
 
-    char *buf = ctx->buffer + 1;
     unsigned long gdbRegNum;
 
     if (GDB_ParseHexIntegerList(&gdbRegNum, ctx->commandData, 1, 0) == NULL) {
@@ -211,6 +208,5 @@ GDB_DECLARE_HANDLER(WriteRegister)
         fpuCommitRegisters();
     }
 
-    else
-        return GDB_ReplyOk(ctx);
+    return GDB_ReplyOk(ctx);
 }

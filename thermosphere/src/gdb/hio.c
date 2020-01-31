@@ -7,11 +7,10 @@
 
 #include <string.h>
 
-#include "gdb/hio.h"
-#include "gdb/net.h"
-#include "gdb/mem.h"
-#include "gdb/debug.h"
-#include "fmt.h"
+#include "hio.h"
+#include "net.h"
+#include "mem.h"
+#include "debug.h"
 
 bool GDB_FetchPackedHioRequest(GDBContext *ctx, u32 addr)
 {

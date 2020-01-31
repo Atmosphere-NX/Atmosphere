@@ -49,7 +49,7 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src src/platform $(PLATFORM_SOURCES)
+SOURCES		:=	src src/platform src/gdb $(PLATFORM_SOURCES)
 DATA		:=	data
 INCLUDES	:=	include ../common/include
 
