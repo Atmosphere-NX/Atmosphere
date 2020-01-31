@@ -19,8 +19,7 @@
 extern "C" {
 #endif
 
-void __dso_handle() { /* ... */ }
-void __cxa_atexit() { /* ... */ }
+/* cxx implementation details to be stubbed here, as needed. */
 
 #ifdef __cplusplus
 } /* extern "C" */

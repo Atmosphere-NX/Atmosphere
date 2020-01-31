@@ -7,9 +7,9 @@ include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../common.mk
 # options for code generation
 #---------------------------------------------------------------------------------
 export DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_MESOSPHERE
-export SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -ffixed-x18 -Werror
+export SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -ffixed-x18 -Werror -fno-non-call-exceptions
 export CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
-export CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS)
+export CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit
 export ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES)
 
 export LDFLAGS	=	-specs=$(TOPDIR)/$(notdir $(TOPDIR)).specs -nostdlib -nostartfiles -g $(SETTINGS) -Wl,-Map,$(notdir $*.map) -Wl,-z,relro,-z,now
