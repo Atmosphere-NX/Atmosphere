@@ -3,6 +3,7 @@
 #include "core_ctx.h"
 #include "caches.h"
 #include "memory_map.h"
+#include "debug_manager.h"
 
 // Currently in exception_vectors.s:
 extern const u32 doSmcIndirectCallImpl[];
@@ -16,7 +17,7 @@ void doSmcIndirectCall(ExceptionStackFrame *frame, u32 smcId)
 
     cacheHandleSelfModifyingCodePoU(codebuf, doSmcIndirectCallImplSize/4);
 
-    __dsb_sy();
+    __dsb();
     __isb();
     ((void (*)(ExceptionStackFrame *))codebuf)(frame);
 }
@@ -51,6 +52,7 @@ void handleSmcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
         case 0x84000002:
             // CPU_OFF
             // TODO
+            debugManagerReportEvent(DBGEVENT_CORE_OFF);
             break;
         case 0xC4000003:
             doCpuOnHook(frame, smcId);

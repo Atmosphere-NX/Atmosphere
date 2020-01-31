@@ -9,9 +9,6 @@
 
 #include "context.h"
 
-u32 GDB_GetCurrentThreadFromList(GDBContext *ctx, u32 *threadIds, u32 nbThreads);
-u32 GDB_GetCurrentThread(GDBContext *ctx);
-
 GDB_DECLARE_HANDLER(SetThreadId);
 GDB_DECLARE_HANDLER(IsThreadAlive);
 

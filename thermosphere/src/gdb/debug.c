@@ -23,6 +23,49 @@
 #include <stdlib.h>
 #include <signal.h>
 
+static bool GDB_PreprocessDebugEvent(GDBContext *ctx, DebugEventInfo *info)
+{
+    u64 irqFlags = maskIrq();
+    bool shouldSignal;
+
+    switch (info->type) {
+        case DBGEVENT_CORE_ON: {
+            shouldSignal = ctx->catchThreadEvents;
+            if (!info->handled) {
+                ctx->attachedCoreList |= BIT(info->coreId);
+            }
+            break;
+        }
+        case DBGEVENT_CORE_OFF: {
+            if (!info->handled) {
+                u32 newLst = ctx->attachedCoreList & ~BIT(info->coreId);
+                if (ctx->selectedThreadId == info->coreId && newLst != 0) {
+                    ctx->selectedThreadId = __builtin_ctz(newLst);
+                    GDB_MigrateRxIrq(ctx, BIT(ctx->selectedThreadId));
+                }
+                ctx->attachedCoreList = newLst;
+                shouldSignal = ctx->catchThreadEvents || newLst == 0;
+            } else {
+                shouldSignal = ctx->catchThreadEvents;
+            }
+            break;
+        }
+
+        default:
+            shouldSignal = true;
+            break;
+    }
+
+    info->handled = true;
+    restoreInterruptFlags(irqFlags);
+    return shouldSignal; 
+}
+
+static inline void GDB_MarkDebugEventAcked(GDBContext *ctx, const DebugEventInfo *info)
+{
+    ctx->acknowledgedDebugEventCoreList |= BIT(info->coreId);
+}
+
 static int GDB_ParseExceptionFrame(char *out, const DebugEventInfo *info, int sig)
 {
     u32 coreId = info->coreId;
@@ -46,7 +89,7 @@ static int GDB_ParseExceptionFrame(char *out, const DebugEventInfo *info, int si
     return n;
 }
 
-int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotification)
+int GDB_SendStopReply(GDBContext *ctx, DebugEventInfo *info, bool asNotification)
 {
     char *buf = ctx->buffer + 1;
     int n;
@@ -80,7 +123,12 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
         }
 
         case DBGEVENT_CORE_OFF: {
-            if(ctx->catchThreadEvents) {
+            if (ctx->attachedCoreList == 0) {
+                // All cores have exited, must report an exit
+                ctx->processExited = true;
+                ctx->processEnded = true;
+                strcat(buf, "W00");
+            } else if(ctx->catchThreadEvents) {
                 sprintf(buf, "w0;%x", info->coreId + 1);
             } else {
                 invalid = true;
@@ -178,7 +226,7 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
         return GDB_SendNotificationPacket(ctx, buf, strlen(buf));
     } else {
         if (!(ctx->flags & GDB_FLAG_NONSTOP)) {
-            ctx->acknowledgedDebugEventCoreList |= BIT(info->coreId);
+            GDB_MarkDebugEventAcked(ctx, info);
         }
         return GDB_SendPacket(ctx, buf, strlen(buf));
     }
@@ -209,18 +257,12 @@ int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info)
     // Acquire the gdb lock/disable rx irq. We most likely block here.
     GDB_AcquireContext(ctx);
 
-    // Is the context not attached?
-    if (!GDB_IsAttached(ctx)) {
-        // Not attached, mark the event as handled, unpause
-        debugManagerMarkAndGetCoreDebugEvent(info->coreId);
-        debugManagerUnpauseCores(BIT(info->coreId));
-        GDB_ReleaseContext(ctx);
-        return -1;
-    }
+    // Need to put it here otherwise core on/off would never be seen
+    bool shouldSignal = GDB_PreprocessDebugEvent(ctx, info);
 
     // Are we still paused & has the packet not been handled & are we allowed to send on our own?
 
-    if (!ctx->sendOwnDebugEventDisallowed && !info->handled && debugManagerIsCorePaused(info->coreId)) {
+    if (shouldSignal && !ctx->sendOwnDebugEventDisallowed && !info->handled && debugManagerIsCorePaused(info->coreId)) {
         bool nonStop = (ctx->flags & GDB_FLAG_NONSTOP) != 0;
         info->handled = true;
 
@@ -231,6 +273,10 @@ int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info)
 
         ctx->sendOwnDebugEventDisallowed = true;
         ret = GDB_SendStopReply(ctx, info, nonStop);
+    }
+
+    if (!shouldSignal) {
+        debugManagerContinueCores(BIT(currentCoreCtx->coreId));
     }
 
     GDB_ReleaseContext(ctx);
@@ -254,20 +300,26 @@ GDB_DECLARE_VERBOSE_HANDLER(Stopped)
 
     // Ack
     if (ctx->lastDebugEvent != NULL) {
-        ctx->acknowledgedDebugEventCoreList |= BIT(ctx->lastDebugEvent->coreId);
+        GDB_MarkDebugEventAcked(ctx, ctx->lastDebugEvent);
     }
 
-    if (remaining != 0) {
-        // Send one more debug event (marking it as handled)
-        u32 coreId = __builtin_ctz(remaining);
-        DebugEventInfo *info = debugManagerMarkAndGetCoreDebugEvent(coreId);
+    for (;;) {
+        if (remaining != 0) {
+            // Send one more debug event (marking it as handled)
+            u32 coreId = __builtin_ctz(remaining);
+            DebugEventInfo *info = debugManagerGetCoreDebugEvent(coreId);
 
-        ctx->sendOwnDebugEventDisallowed = true;
-        return GDB_SendStopReply(ctx, info, false);
-    } else {
-        // vStopped sequenced finished
-        ctx->sendOwnDebugEventDisallowed = false;
-        return GDB_ReplyOk(ctx);
+            if (GDB_PreprocessDebugEvent(ctx, info)) {
+                ctx->sendOwnDebugEventDisallowed = true;
+                return GDB_SendStopReply(ctx, info, false);
+            } else {
+                remaining &= ~BIT(coreId);
+            }
+        } else {
+            // vStopped sequenced finished
+            ctx->sendOwnDebugEventDisallowed = false;
+            return GDB_ReplyOk(ctx);
+        }
     }
 }
 

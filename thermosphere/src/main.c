@@ -133,4 +133,8 @@ void thermosphereMain(ExceptionStackFrame *frame, u64 pct)
     // Initialize FPU registers -- no need to memset, the regcaches are in .tempbss
     fpuCommitRegisters();
     fpuCleanInvalidateRegisterCache();
+
+    if (!currentCoreCtx->isBootCore) {
+        debugManagerReportEvent(DBGEVENT_CORE_ON);
+    }
 }
