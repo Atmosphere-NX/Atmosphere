@@ -21,6 +21,7 @@
 #include "util/util_size.hpp"
 #include "util/util_fourcc.hpp"
 #include "util/util_bitpack.hpp"
+#include "util/util_bitset.hpp"
 #include "util/util_scope_guard.hpp"
 #include "util/util_typed_storage.hpp"
 #include "util/util_intrusive_list.hpp"
