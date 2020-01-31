@@ -18,12 +18,45 @@
 #include <mesosphere/kern_k_synchronization_object.hpp>
 #include <mesosphere/kern_k_affinity_mask.hpp>
 #include <mesosphere/kern_k_thread_context.hpp>
+#include <mesosphere/kern_k_current_context.hpp>
 
 namespace ams::kern {
 
     class KThread final : public KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KThread, KSynchronizationObject);
         public:
+            enum ThreadType : u32 {
+                ThreadType_Main         = 0,
+                ThreadType_Kernel       = 1,
+                ThreadType_HighPriority = 2,
+                ThreadType_User         = 3,
+            };
+
+            enum SuspendType : u32 {
+                SuspendType_Process = 0,
+                SuspendType_Thread  = 1,
+                SuspendType_Debug   = 2,
+            };
+
+            enum ThreadState : u16 {
+                ThreadState_Initialized = 0,
+                ThreadState_Waiting     = 1,
+                ThreadState_Runnable    = 2,
+                ThreadState_Terminated  = 3,
+
+                ThreadState_SuspendShift = 4,
+                ThreadState_Mask         = (1 << ThreadState_SuspendShift) - 1,
+
+                ThreadState_ProcessSuspended = (1 << (SuspendType_Process + ThreadState_SuspendShift)),
+                ThreadState_ThreadSuspended  = (1 << (SuspendType_Thread  + ThreadState_SuspendShift)),
+                ThreadState_DebugSuspended   = (1 << (SuspendType_Debug   + ThreadState_SuspendShift)),
+            };
+
+            enum DpcFlag : u32 {
+                DpcFlag_Terminating = 0,
+                DpcFlag_Terminated  = 1,
+            };
+
             struct StackParameters {
                 alignas(0x10) u8 svc_permission[0x10];
                 std::atomic<u8> dpc_flags;
@@ -49,37 +82,136 @@ namespace ams::kern {
                     constexpr ALWAYS_INLINE void SetNext(KThread *t) { this->next = t; }
             };
         private:
-            /* TODO: Other members. These are placeholder to get KScheduler to compile. */
-            KAffinityMask affinity_mask;
-        public:
-            constexpr KThread() : KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>(), affinity_mask() { /* ... */ }
+            static constexpr size_t PriorityInheritanceCountMax = 10;
+            union SyncObjectBuffer {
+                KSynchronizationObject *sync_objects[ams::svc::MaxWaitSynchronizationHandleCount];
+                ams::svc::Handle        handles[ams::svc::MaxWaitSynchronizationHandleCount * (sizeof(KSynchronizationObject *) / sizeof(ams::svc::Handle))];
 
-            constexpr ALWAYS_INLINE const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
+                constexpr SyncObjectBuffer() : sync_objects() { /* ... */ }
+            };
+            static_assert(sizeof(SyncObjectBuffer::sync_objects) == sizeof(SyncObjectBuffer::handles));
+        private:
+            alignas(16) KThreadContext      thread_context;
+            KAffinityMask                   affinity_mask;
+            u64                             thread_id;
+            std::atomic<u64>                cpu_time;
+            KSynchronizationObject         *synced_object;
+            KLightLock                     *waiting_lock;
+            uintptr_t                       condvar_key;
+            uintptr_t                       entrypoint;
+            KProcessAddress                 arbiter_key;
+            KProcess                       *parent;
+            void                           *kernel_stack_top;
+            u32                            *light_ipc_data;
+            KProcessAddress                 tls_address;
+            void                           *tls_heap_address;
+            KLightLock                      activity_pause_lock;
+            SyncObjectBuffer                sync_object_buffer;
+            s64                             schedule_count;
+            s64                             last_scheduled_tick;
+            QueueEntry                      per_core_priority_queue_entry[cpu::NumCores];
+            QueueEntry                      sleeping_queue_entry;
+            void /* TODO KThreadQueue */   *sleeping_queue;
+            util::IntrusiveListNode         waiter_list_node;
+            util::IntrusiveRedBlackTreeNode condvar_arbiter_tree_node;
+            util::IntrusiveListNode         process_list_node;
+
+            using WaiterListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&KThread::waiter_list_node>;
+            using WaiterList       = WaiterListTraits::ListType;
+
+            WaiterList                      waiter_list;
+            WaiterList                      paused_waiter_list;
+            KThread                        *lock_owner;
+            void /* TODO KCondVar*/        *cond_var_tree;
+            uintptr_t                       debug_params[3];
+            u32                             arbiter_value;
+            u32                             suspend_request_flags;
+            u32                             suspend_allowed_flags;
+            Result                          wait_result;
+            Result                          debug_exception_result;
+            s32                             priority;
+            s32                             core_id;
+            s32                             base_priority;
+            s32                             ideal_core_id;
+            s32                             num_kernel_waiters;
+            KAffinityMask                   original_affinity_mask;
+            s32                             original_ideal_core_id;
+            s32                             num_core_migration_disables;
+            ThreadState                     thread_state;
+            std::atomic<bool>               termination_requested;
+            bool                            ipc_cancelled;
+            bool                            wait_cancelled;
+            bool                            cancelable;
+            bool                            registered;
+            bool                            signaled;
+            bool                            initialized;
+            bool                            debug_attached;
+            s8                              priority_inheritance_count;
+            bool                            resource_limit_release_hint;
         public:
             static void PostDestroy(uintptr_t arg);
+        public:
+            explicit KThread() /* TODO: : ? */ { MESOSPHERE_ASSERT_THIS(); }
+            /* TODO: Is a constexpr KThread() possible? */
+        private:
+            StackParameters &GetStackParameters() {
+                return *(reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1);
+            }
+
+            const StackParameters &GetStackParameters() const {
+                return *(reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1);
+            }
+        public:
+            ALWAYS_INLINE s32 GetDisableDispatchCount() const {
+                MESOSPHERE_ASSERT_THIS();
+                return GetStackParameters().disable_count;
+            }
+
+            ALWAYS_INLINE void DisableDispatch() {
+                MESOSPHERE_ASSERT_THIS();
+                MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >= 0);
+                GetStackParameters().disable_count++;
+            }
+
+            ALWAYS_INLINE void EnableDispatch() {
+                MESOSPHERE_ASSERT_THIS();
+                MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >  0);
+                GetStackParameters().disable_count--;
+            }
+
+        public:
+            constexpr ALWAYS_INLINE const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
+
+
 
         /* TODO: This is a placeholder definition. */
+        public:
+            static constexpr bool IsWaiterListValid() {
+                return WaiterListTraits::IsValid();
+            }
     };
+    static_assert(alignof(KThread) == 0x10);
+    static_assert(KThread::IsWaiterListValid());
 
     class KScopedDisableDispatch {
         public:
             explicit ALWAYS_INLINE KScopedDisableDispatch() {
-                /* TODO */
+                GetCurrentThread().DisableDispatch();
             }
 
             ALWAYS_INLINE ~KScopedDisableDispatch() {
-                /* TODO */
+                GetCurrentThread().EnableDispatch();
             }
     };
 
     class KScopedEnableDispatch {
         public:
             explicit ALWAYS_INLINE KScopedEnableDispatch() {
-                /* TODO */
+                GetCurrentThread().EnableDispatch();
             }
 
             ALWAYS_INLINE ~KScopedEnableDispatch() {
-                /* TODO */
+                GetCurrentThread().DisableDispatch();
             }
     };
 

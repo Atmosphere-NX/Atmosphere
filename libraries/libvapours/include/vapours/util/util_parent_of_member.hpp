@@ -26,13 +26,15 @@ namespace ams::util {
         struct OffsetOfUnionHolder {
             template<typename ParentType, typename MemberType, size_t Offset>
             union UnionImpl {
-                using PaddingMember = std::array<char, alignof(ParentType)>;
+                using PaddingMember = char;
                 static constexpr size_t GetOffset() { return Offset; }
 
+                #pragma pack(push, 1)
                 struct {
                     PaddingMember padding[Offset];
                     MemberType members[(sizeof(ParentType) / sizeof(MemberType)) + 1];
                 } data;
+                #pragma pack(pop)
                 UnionImpl<ParentType, MemberType, Offset + 1> next_union;
             };
 
@@ -47,12 +49,12 @@ namespace ams::util {
             };
 
             template<typename ParentType, typename MemberType>
-            union UnionImpl<ParentType, MemberType, MaxDepth> { /* Empty */ };
+            union UnionImpl<ParentType, MemberType, MaxDepth> { /* Empty ... */ };
         };
 
         template<typename ParentType, typename MemberType>
         struct OffsetOfCalculator {
-            using UnionHolder = typename OffsetOfUnionHolder<sizeof(MemberType) / alignof(MemberType) + 1>::template UnionImpl<ParentType, MemberType, 0>;
+            using UnionHolder = typename OffsetOfUnionHolder<sizeof(MemberType)>::template UnionImpl<ParentType, MemberType, 0>;
             union Union {
                 char c;
                 UnionHolder first_union;
@@ -81,15 +83,19 @@ namespace ams::util {
                 const auto start  = std::addressof(cur_union.data.members[0]);
                 const auto next   = GetNextAddress(start, target);
 
+                if constexpr (Offset > 0x10) {
+                    __builtin_unreachable();
+                }
+
                 if (next != target) {
-                    if constexpr (Offset < sizeof(MemberType) / alignof(MemberType)) {
+                    if constexpr (Offset < sizeof(MemberType) - 1) {
                         return OffsetOfImpl(member, cur_union.next_union);
                     } else {
-                        std::abort();
+                        __builtin_unreachable();
                     }
                 }
 
-                return (next - start) * sizeof(MemberType) + Offset * alignof(MemberType);
+                return (next - start) * sizeof(MemberType) + Offset;
             }
 
 
