@@ -110,12 +110,14 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
 
     switch(info->type) {
         case DBGEVENT_DEBUGGER_BREAK: {
-            strcat(buf, "S02");
+            n += GDB_ParseExceptionFrame(buf + n, info, 0);
+            break;
         }
     
         case DBGEVENT_CORE_ON: {
             if (ctx->catchThreadEvents) {
-                strcat(buf, "T05create:;");
+                n += GDB_ParseExceptionFrame(buf + n, info, SIGTRAP);
+                strcat(buf, "create:;");
             } else {
                 invalid = true;
             }
@@ -152,6 +154,7 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
                 case Exception_BreakpointLowerEl: {
                     n += GDB_ParseExceptionFrame(buf + n, info, SIGTRAP);
                     strcat(buf, "hwbreak:;");
+                    break;
                 }
 
                 case Exception_WatchpointLowerEl: {
@@ -166,6 +169,12 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
                         n += GDB_ParseExceptionFrame(buf + n, info, SIGTRAP);
                         sprintf(buf + n, "%swatch:%016lx;", kinds[cr.lsc], info->frame->far_el2);
                     }
+                    break;
+                }
+
+                case Exception_SoftwareStepLowerEl: {
+                    n += GDB_ParseExceptionFrame(buf + n, info, SIGTRAP);
+                    break;
                 }
 
                 // Note: we don't really support 32-bit sw breakpoints, we'll still report them
@@ -174,6 +183,7 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
                 case Exception_SoftwareBreakpointA32: {
                     n += GDB_ParseExceptionFrame(buf + n, info, SIGTRAP);
                     strcat(buf, "swbreak:;");
+                    break;
                 }
                 
                 default: {
@@ -207,6 +217,7 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
                 return (int)total;
             } else {
                 invalid = true;
+                break;
             }
         }
 
