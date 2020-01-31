@@ -16,6 +16,7 @@
 #pragma once
 #include <mesosphere/kern_slab_helpers.hpp>
 #include <mesosphere/kern_k_synchronization_object.hpp>
+#include <mesosphere/kern_k_affinity_mask.hpp>
 
 namespace ams::kern {
 
