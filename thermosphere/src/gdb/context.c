@@ -88,8 +88,6 @@ static int GDB_ProcessPacket(GDBContext *ctx, size_t len)
 {
     int ret;
 
-    u32 oldFlags = ctx->flags;
-
     ENSURE(ctx->state != GDB_STATE_DISCONNECTED);
 
     // Handle the packet...
