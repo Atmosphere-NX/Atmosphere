@@ -121,7 +121,7 @@ GDB_DECLARE_QUERY_HANDLER(Xfer)
     bool write;
     const char *pos;
     if (strcmp(opStart, "read") == 0) {
-        unsigned int lst[2];
+        unsigned long lst[2];
         if(GDB_ParseHexIntegerList(lst, offStart, 2, 0) == NULL) {
             return GDB_ReplyErrno(ctx, EILSEQ);
         }

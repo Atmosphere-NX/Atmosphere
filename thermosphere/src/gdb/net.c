@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "../pattern_utils.h"
 
 u8 GDB_ComputeChecksum(const char *packetData, size_t len)
@@ -236,7 +237,7 @@ int GDB_ReceivePacket(GDBContext *ctx)
     }
 
     // Set helper attributes, change '#' to NUL
-    ctx->commandEnd = delimPos;
+    ctx->commandEnd = ctx->buffer + delimPos;
     ctx->buffer[delimPos] = '\0';
 
     return (int)(delimPos + 2);

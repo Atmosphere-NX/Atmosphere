@@ -11,7 +11,7 @@
 #include "net.h"
 #include "mem.h"
 #include "debug.h"
-
+/*
 bool GDB_FetchPackedHioRequest(GDBContext *ctx, u32 addr)
 {
     u32 total = GDB_ReadTargetMemory(&ctx->currentHioRequest, ctx, addr, sizeof(PackedGdbHioRequest));
@@ -65,11 +65,12 @@ int GDB_SendCurrentHioRequest(GDBContext *ctx)
     }
 
     return GDB_SendPacket(ctx, buf, strlen(buf));
-}
+}*/
 
 GDB_DECLARE_HANDLER(HioReply)
 {
-    if (!GDB_IsHioInProgress(ctx))
+    return 0;
+/*    if (!GDB_IsHioInProgress(ctx))
         return GDB_ReplyErrno(ctx, EPERM);
     
     // Reply in the form of Fretcode,errno,Ctrl-C flag;call-specific attachment
@@ -128,5 +129,5 @@ GDB_DECLARE_HANDLER(HioReply)
     ctx->currentHioRequestTargetAddr = 0;
 
     GDB_ContinueExecution(ctx);
-    return total == sizeof(PackedGdbHioRequest) ? 0 : GDB_ReplyErrno(ctx, EFAULT);
+    return total == sizeof(PackedGdbHioRequest) ? 0 : GDB_ReplyErrno(ctx, EFAULT);*/
 }

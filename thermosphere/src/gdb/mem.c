@@ -173,7 +173,7 @@ GDB_DECLARE_QUERY_HANDLER(SearchMemory)
     patternLen = ctx->commandEnd - patternStart;
 
     // Unescape pattern in place
-    char *pattern = patternStart;
+    char *pattern = (char *)patternStart;
     patternLen = GDB_UnescapeBinaryData(pattern, patternStart, patternLen);
 
     foundAddr = GDB_SearchMemory(&found, ctx, addr, len, patternStart, patternLen);

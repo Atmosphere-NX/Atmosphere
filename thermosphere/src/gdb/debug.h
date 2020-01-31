@@ -11,7 +11,7 @@
 #include "../core_ctx.h"
 #include "../debug_manager.h"
 
-int GDB_SendStopReply(GDBContext *ctx, DebugEventInfo *info, bool asNotification);
+int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotification);
 int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info);
 
 void GDB_BreakAllCores(GDBContext *ctx);
