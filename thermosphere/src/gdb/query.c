@@ -5,6 +5,8 @@
 *   SPDX-License-Identifier: (MIT OR GPL-2.0-or-later)
 */
 
+#include <string.h>
+
 #include "../utils.h"
 
 #include "query.h"
@@ -36,7 +38,6 @@ static const struct {
     GDB_QUERY_HANDLER_LIST_ITEM(sThreadInfo, READ),
     GDB_QUERY_HANDLER_LIST_ITEM(ThreadEvents, WRITE),
     GDB_QUERY_HANDLER_LIST_ITEM(ThreadExtraInfo, READ),
-    GDB_QUERY_HANDLER_LIST_ITEM(GetTLSAddr, READ),
     GDB_QUERY_HANDLER_LIST_ITEM_3("C", CurrentThreadId, READ),
     GDB_QUERY_HANDLER_LIST_ITEM_3("Search", SearchMemory, READ),
     GDB_QUERY_HANDLER_LIST_ITEM(Rcmd, READ),

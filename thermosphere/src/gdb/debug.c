@@ -71,7 +71,7 @@ static int GDB_ParseExceptionFrame(char *out, const DebugEventInfo *info, int si
     u32 coreId = info->coreId;
     ExceptionStackFrame *frame = info->frame;
 
-    int n = sprintf(out, "T%02xthread:%lx;core:%lx;", sig, 1 + coreId, coreId);
+    int n = sprintf(out, "T%02xthread:%x;core:%x;", sig, 1 + coreId, coreId);
 
     // Dump the GPRs & sp & pc & cpsr (cpsr is 32-bit in the xml desc)
     // For performance reasons, we don't include the FPU registers here
@@ -83,13 +83,14 @@ static int GDB_ParseExceptionFrame(char *out, const DebugEventInfo *info, int si
         out + n,
         "1f:%016lx;20:%016lx;21:%08x",
         __builtin_bswap64(*exceptionGetSpPtr(frame)),
-        __builitin_bswap32((u32)frame->spsr_el2)
+        __builtin_bswap64(frame->elr_el2),
+        __builtin_bswap32((u32)frame->spsr_el2)
     );
 
     return n;
 }
 
-int GDB_SendStopReply(GDBContext *ctx, DebugEventInfo *info, bool asNotification)
+int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotification)
 {
     char *buf = ctx->buffer + 1;
     int n;
@@ -149,7 +150,7 @@ int GDB_SendStopReply(GDBContext *ctx, DebugEventInfo *info, bool asNotification
             // the only notable exceptions we get are stop point/single step events from the debugee (basically classes 0x3x)
             switch(ec) {
                 case Exception_BreakpointLowerEl: {
-                    n += GDB_ParseExceptionFrame(buf + n, ctx, SIGTRAP);
+                    n += GDB_ParseExceptionFrame(buf + n, info, SIGTRAP);
                     strcat(buf, "hwbreak:;");
                 }
 
@@ -162,7 +163,7 @@ int GDB_SendStopReply(GDBContext *ctx, DebugEventInfo *info, bool asNotification
                     if (!cr.enabled) {
                         DEBUG("GDB: oops, unhandled watchpoint for core id %u, far=%016lx\n", info->coreId, info->frame->far_el2);
                     } else {
-                        n += GDB_ParseExceptionFrame(buf + n, ctx, SIGTRAP);
+                        n += GDB_ParseExceptionFrame(buf + n, info, SIGTRAP);
                         sprintf(buf + n, "%swatch:%016lx;", kinds[cr.lsc], info->frame->far_el2);
                     }
                 }
@@ -171,7 +172,7 @@ int GDB_SendStopReply(GDBContext *ctx, DebugEventInfo *info, bool asNotification
                 // if the guest has inserted some of them manually...
                 case Exception_SoftwareBreakpointA64:
                 case Exception_SoftwareBreakpointA32: {
-                    n += GDB_ParseExceptionFrame(buf + n, ctx, SIGTRAP);
+                    n += GDB_ParseExceptionFrame(buf + n, info, SIGTRAP);
                     strcat(buf, "swbreak:;");
                 }
                 
@@ -333,7 +334,7 @@ GDB_DECLARE_HANDLER(GetStopReason)
     bool nonStop = (ctx->flags & GDB_FLAG_NONSTOP) != 0;
     if (!nonStop) {
         // Full-stop:
-        return GDB_SendStopReply(ctx, &ctx->lastDebugEvent, true);
+        return GDB_SendStopReply(ctx, ctx->lastDebugEvent, true);
     } else {
         // Non-stop, start new vStopped sequence
         ctx->sentDebugEventCoreList = 0;
@@ -362,12 +363,12 @@ GDB_DECLARE_VERBOSE_HANDLER(CtrlC)
 {
     int ret = GDB_ReplyOk(ctx);
     GDB_BreakAllCores(ctx);
+    return ret;
 }
 
 GDB_DECLARE_HANDLER(ContinueOrStepDeprecated)
 {
     char *addrStart = NULL;
-    uintptr_t addr = 0;
 
     char cmd = ctx->commandData[-1];
 

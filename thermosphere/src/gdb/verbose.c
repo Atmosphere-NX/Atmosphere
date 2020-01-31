@@ -18,7 +18,9 @@ static const struct {
 } gdbVerboseCommandHandlers[] = {
     { "Cont?",          '\0',   GDB_VERBOSE_HANDLER(ContinueSupported) },
     { "Cont",           ';',    GDB_VERBOSE_HANDLER(Continue) },
+    { "CtrlC",           '\0',  GDB_VERBOSE_HANDLER(CtrlC) },
     { "MustReplyEmpty", '\0',   GDB_HANDLER(Unsupported) },
+    { "Stopped",        '\0',   GDB_VERBOSE_HANDLER(Stopped) },
 };
 
 GDB_DECLARE_HANDLER(VerboseCommand)

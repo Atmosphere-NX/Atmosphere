@@ -6,6 +6,7 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "thread.h"
 #include "net.h"
@@ -75,7 +76,7 @@ GDB_DECLARE_QUERY_HANDLER(fThreadInfo)
     u32 coreMask = ctx->attachedCoreList;
 
     FOREACH_BIT (tmp, coreId, coreMask) {
-        n += sprintf(buf + n, "%x,", 1 + coreId);
+        n += sprintf(buf + n, "%lx,", 1 + coreId);
     }
 
     // Remove trailing comma

@@ -42,14 +42,14 @@
 #include "../software_breakpoints.h"
 #include "../watchpoints.h"
 
-static TEMPORARY u8 g_gdbWorkBuffer[GDB_WORK_BUF_LEN];
+static TEMPORARY char g_gdbWorkBuffer[GDB_WORK_BUF_LEN];
 
 static const struct{
     char command;
     GDBCommandHandler handler;
 } gdbCommandHandlers[] = {
     { '?', GDB_HANDLER(GetStopReason) },
-    { '!', GDB_HANDLER(EnableExtendedMode) },
+    { '!', GDB_HANDLER(EnableExtendedMode) }, // note: stubbed
     { 'c', GDB_HANDLER(ContinueOrStepDeprecated) },
     { 'C', GDB_HANDLER(ContinueOrStepDeprecated) },
     { 'D', GDB_HANDLER(Detach) },
@@ -64,6 +64,8 @@ static const struct{
     { 'P', GDB_HANDLER(WriteRegister) },
     { 'q', GDB_HANDLER(ReadQuery) },
     { 'Q', GDB_HANDLER(WriteQuery) },
+    { 's', GDB_HANDLER(ContinueOrStepDeprecated) },
+    { 'S', GDB_HANDLER(ContinueOrStepDeprecated) },
     { 'T', GDB_HANDLER(IsThreadAlive) },
     { 'v', GDB_HANDLER(VerboseCommand) },
     { 'X', GDB_HANDLER(WriteMemoryRaw) },
@@ -91,7 +93,7 @@ static int GDB_ProcessPacket(GDBContext *ctx, size_t len)
 
     // Handle the packet...
     if (ctx->buffer[0] == '\x03') {
-        GDB_HandleBreak(ctx);
+        GDB_BreakAllCores(ctx);
         ret = 0;
     } else {
         GDBCommandHandler handler = GDB_GetCommandHandler(ctx->buffer[1]);
@@ -226,7 +228,7 @@ void GDB_DetachFromContext(GDBContext *ctx)
     ctx->currentHioRequestTargetAddr = 0;
     memset(&ctx->currentHioRequest, 0, sizeof(PackedGdbHioRequest));
 
-    debugManagerSetReportingFalse(true);
+    debugManagerSetReportingEnabled(false);
     debugManagerContinueCores(getActiveCoreMask());
 }
 
