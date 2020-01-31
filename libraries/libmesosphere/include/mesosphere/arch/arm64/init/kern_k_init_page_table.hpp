@@ -21,11 +21,10 @@
 
 namespace ams::kern::init {
 
-    constexpr size_t PageSize              = 0x1000;
-    constexpr size_t L1BlockSize           = 0x40000000;
-    constexpr size_t L2BlockSize           = 0x200000;
+    constexpr size_t L1BlockSize           = 1_GB;
+    constexpr size_t L2BlockSize           = 2_MB;
     constexpr size_t L2ContiguousBlockSize = 0x10 * L2BlockSize;
-    constexpr size_t L3BlockSize           = 0x1000;
+    constexpr size_t L3BlockSize           = PageSize;
     constexpr size_t L3ContiguousBlockSize = 0x10 * L3BlockSize;
 
     class PageTableEntry {

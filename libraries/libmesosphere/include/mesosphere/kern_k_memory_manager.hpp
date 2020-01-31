@@ -19,8 +19,6 @@
 namespace ams::kern {
 
     class KMemoryManager {
-        public:
-            static constexpr size_t PageSize = 0x1000; /* TODO: Elsewhere? */
         private:
             class Impl {
                 public:

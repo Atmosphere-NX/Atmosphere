@@ -17,3 +17,9 @@
 #include <vapours.hpp>
 #include <mesosphere/kern_panic.hpp>
 #include <mesosphere/svc/kern_svc_results.hpp>
+
+namespace ams::kern {
+
+    constexpr size_t PageSize = 4_KB;
+
+}

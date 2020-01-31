@@ -275,6 +275,8 @@ namespace ams::svc {
         ThreadActivity_Paused   = 1,
     };
 
+    constexpr size_t ThreadLocalRegionSize = 0x200;
+
     /* Process types. */
     enum ProcessInfoType : u32 {
         ProcessInfoType_ProcessState = 0,

@@ -13,16 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <mesosphere.hpp>
+#pragma once
+#include <mesosphere/kern_select_cpu.hpp>
+#include <mesosphere/kern_slab_helpers.hpp>
+#include <mesosphere/kern_k_synchronization_object.hpp>
+#include <mesosphere/kern_k_handle_table.hpp>
+#include <mesosphere/kern_k_thread.hpp>
+#include <mesosphere/kern_k_thread_local_page.hpp>
 
 namespace ams::kern {
 
-    size_t KPageHeap::CalculateMetadataOverheadSize(size_t region_size, const size_t *block_shifts, size_t num_block_shifts) {
-        size_t overhead_size = 0;
-        for (size_t i = 0; i < num_block_shifts; i++) {
-            overhead_size += KPageHeap::Block::CalculateMetadataOverheadSize(region_size, block_shifts[i], (i != num_block_shifts - 1) ? block_shifts[i + 1] : 0);
-        }
-        return util::AlignUp(overhead_size, PageSize);
-    }
+    class KProcess final : public KAutoObjectWithSlabHeapAndContainer<KProcess, KSynchronizationObject> {
+        MESOSPHERE_AUTOOBJECT_TRAITS(KProcess, KSynchronizationObject);
+        /* TODO: This is a placeholder definition. */
+    };
 
 }

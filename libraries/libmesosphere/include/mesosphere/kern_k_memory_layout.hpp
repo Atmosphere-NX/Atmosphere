@@ -397,6 +397,14 @@ namespace ams::kern {
             static ALWAYS_INLINE KMemoryBlockTree      &GetVirtualLinearMemoryBlockTree()  { return s_virtual_linear_tree; }
             static ALWAYS_INLINE KMemoryBlockTree      &GetPhysicalLinearMemoryBlockTree() { return s_physical_linear_tree; }
 
+            static ALWAYS_INLINE KVirtualAddress GetLinearVirtualAddress(KPhysicalAddress address) {
+                return GetInteger(address) + s_linear_phys_to_virt_diff;
+            }
+
+            static ALWAYS_INLINE KPhysicalAddress GetLinearPhysicalAddress(KVirtualAddress address) {
+                return GetInteger(address) + s_linear_virt_to_phys_diff;
+            }
+
             static NOINLINE KVirtualAddress GetMainStackTopAddress(s32 core_id) {
                 return GetVirtualMemoryBlockTree().FindFirstBlockByTypeAttr(KMemoryRegionType_KernelMiscMainStack, static_cast<u32>(core_id))->GetEndAddress();
             }

@@ -44,18 +44,18 @@ namespace ams::kern {
         std::atomic<u64> num_specific_svc[0x80];
         u32 perf_counters[6];
     };
-    static_assert(sizeof(KCoreLocalContext) < KMemoryManager::PageSize);
+    static_assert(sizeof(KCoreLocalContext) < PageSize);
 
     struct KCoreLocalPage {
         KCoreLocalContext context;
-        u8 padding[KMemoryManager::PageSize - sizeof(KCoreLocalContext)];
+        u8 padding[PageSize - sizeof(KCoreLocalContext)];
     };
-    static_assert(sizeof(KCoreLocalPage) == KMemoryManager::PageSize);
+    static_assert(sizeof(KCoreLocalPage) == PageSize);
 
     struct KCoreLocalRegion {
         KCoreLocalPage current;
         KCoreLocalPage absolute[cpu::NumCores];
     };
-    static_assert(sizeof(KCoreLocalRegion) == KMemoryManager::PageSize * (1 + cpu::NumCores));
+    static_assert(sizeof(KCoreLocalRegion) == PageSize * (1 + cpu::NumCores));
 
 }

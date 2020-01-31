@@ -50,6 +50,10 @@ namespace ams::kern {
                 return this->address - rhs;
             }
 
+            constexpr ALWAYS_INLINE ptrdiff_t operator-(KTypedAddress rhs) const {
+                return this->address - rhs.address;
+            }
+
             template<typename I>
             constexpr ALWAYS_INLINE KTypedAddress operator+=(I rhs) {
                 static_assert(std::is_integral<I>::value);

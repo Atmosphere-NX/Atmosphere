@@ -52,6 +52,7 @@
 /* Auto Objects. */
 #include <mesosphere/kern_k_auto_object.hpp>
 #include <mesosphere/kern_k_handle_table.hpp>
+#include <mesosphere/kern_k_process.hpp>
 
 /* Supervisor Calls. */
 #include <mesosphere/kern_svc.hpp>
