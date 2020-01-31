@@ -16,25 +16,32 @@
 
 #include "asm_macros.s"
 
+.altmacro
+
+.macro LOAD_DBG_REG_PAIRS what, id
+    msr     dbg\what\()cr\id\()_el1, x2
+    msr     dbg\what\()vr\id\()_el1, x3
+    .if     \id != 0
+        LOAD_DBG_REG_PAIRS      \what, %(\id - 1)
+    .endif
+.endm
+
 // Precondition: x1 <= 16
 FUNCTION loadBreakpointRegs
     // x1 = number
     dmb     ish
 
     adr     x16, 1f
-    add     x0, x0, #(16 * 8)
-    mov     x4, #(16 * 12)
+    add     x0, x0, #(MAX_BCR * 8)
+    mov     x4, #(MAX_BCR * 12)
     sub     x4, x4, x1,lsl #3
     sub     x4, x4, x1,lsl #2
     add     x16, x16, x4
     br      x16
 
     1:
-    .irp    count, 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
-    ldp     x2, x3, [x0, #-0x10]!
-    msr     dbgbcr\count\()_el1, x2
-    msr     dbgbvr\count\()_el1, x3
-    .endr
+    LOAD_DBG_REG_PAIRS b, MAX_BCR
+
     dsb     ish
     isb
     ret
@@ -46,19 +53,16 @@ FUNCTION loadWatchpointRegs
     dmb     ish
 
     adr     x16, 1f
-    add     x0, x0, #(16 * 8)
-    mov     x4, #(16 * 12)
+    add     x0, x0, #(MAX_WCR * 8)
+    mov     x4, #(MAX_WCR * 12)
     sub     x4, x4, x1,lsl #3
     sub     x4, x4, x1,lsl #2
     add     x16, x16, x4
     br      x16
 
     1:
-    .irp    count, 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
-    ldp     x2, x3, [x0, #-0x10]!
-    msr     dbgwcr\count\()_el1, x2
-    msr     dbgwvr\count\()_el1, x3
-    .endr
+    LOAD_DBG_REG_PAIRS w, MAX_WCR
+
     dsb     ish
     isb
     ret

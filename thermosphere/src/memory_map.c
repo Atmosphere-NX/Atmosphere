@@ -45,14 +45,14 @@ void memoryMapSetupMmu(const LoadImageLayout *layout, u64 *mmuTable)
         Layout in physmem:
         Location1
             Image (code and data incl. BSS)
-            Part of "temp" (tempbss, stacks) if there's enough space left
         Location2
-            Remaining of "temp" (note: we don't and can't check if there's enough mem left!)
+            tempbss
             MMU table (taken from temp physmem)
 
         Layout in vmem:
         Location1
             Image
+            padding
             tempbss
         Location2
             Crash stacks
@@ -62,32 +62,18 @@ void memoryMapSetupMmu(const LoadImageLayout *layout, u64 *mmuTable)
     */
 
     // Map our code & data (.text/other code, .rodata, .data, .bss) at the bottom of our L3 range, all RWX
-    // Note that BSS is page-aligned
+    // Note that the end of "image" is page-aligned
     // See LD script for more details
     uintptr_t curVa = MEMORY_MAP_VA_IMAGE;
     uintptr_t curPa = layout->startPa;
 
-    size_t tempInImageRegionMaxSize = layout->maxImageSize - layout->imageSize;
-    size_t tempInImageRegionSize;
-    size_t tempExtraSize;
-    if (layout->tempSize <= tempInImageRegionMaxSize) {
-        tempInImageRegionSize = layout->tempSize;
-        tempExtraSize = 0;
-    } else {
-        // We need extra data
-        tempInImageRegionSize = tempInImageRegionMaxSize;
-        tempExtraSize = layout->tempSize - tempInImageRegionSize;
-    }
-    size_t imageRegionMapSize = (layout->imageSize + tempInImageRegionSize + 0xFFF) & ~0xFFFul;
-    size_t tempExtraMapSize = (tempExtraSize + 0xFFF) & ~0xFFFul;
-
     // Do not map the MMU table in that mapping:
-    mmu_map_page_range(mmuTable, curVa, curPa, imageRegionMapSize, normalAttribs);
+    mmu_map_page_range(mmuTable, curVa, curPa, layout->imageSize, normalAttribs);
 
-    curVa += imageRegionMapSize;
+    curVa += layout->imageSize;
     curPa = layout->tempPa;
-    mmu_map_page_range(mmuTable, curVa, curPa, tempExtraMapSize, normalAttribs);
-    curPa += tempExtraMapSize;
+    mmu_map_page_range(mmuTable, curVa, curPa, layout->tempSize , normalAttribs);
+    curPa += layout->tempSize;
 
     // Map the remaining temporary data as stacks, aligned 0x1000
 

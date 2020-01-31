@@ -59,7 +59,7 @@ _startCommon:
     // Temporarily use temp end region as stack, then create the translation table
     // The stack top is also equal to the mmu table address...
     adr     x0, g_loadImageLayout
-    ldp     x2, x3, [x0, #0x18]
+    ldp     x2, x3, [x0, #0x10]
     add     x1, x2, x3
     mov     sp, x1
     bl      memoryMapSetupMmu
@@ -111,23 +111,9 @@ _postMmuEnableReturnAddr:
 
 .pool
 
-/*
-    typedef struct LoadImageLayout {
-        uintptr_t startPa;
-        size_t imageSize; // "image" includes "real" BSS but not tempbss
-        size_t maxImageSize;
-
-        uintptr_t tempPa;
-        size_t maxTempSize;
-        size_t tempSize;
-
-        uintptr_t vbar;
-    } LoadImageLayout;
-*/
 .global     g_loadImageLayout
 g_loadImageLayout:
     .quad       __start_pa__
-    .quad       __max_image_size__
     .quad       __image_size__
     .quad       __temp_pa__
     .quad       __max_temp_size__

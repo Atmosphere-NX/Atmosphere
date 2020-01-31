@@ -50,9 +50,9 @@ static const struct{
     GDBCommandHandler handler;
 } gdbCommandHandlers[] = {
     { '?', GDB_HANDLER(GetStopReason) },
-    { '!', GDB_HANDLER(EnableExtendedMode) }, // note: stubbed
-    { 'c', GDB_HANDLER(ContinueOrStepDeprecated) },
-    { 'C', GDB_HANDLER(ContinueOrStepDeprecated) },
+    //{ '!', GDB_HANDLER(EnableExtendedMode) }, // note: stubbed
+    //{ 'c', GDB_HANDLER(ContinueOrStepDeprecated) },
+    //{ 'C', GDB_HANDLER(ContinueOrStepDeprecated) },
     { 'D', GDB_HANDLER(Detach) },
     { 'F', GDB_HANDLER(HioReply) },
     { 'g', GDB_HANDLER(ReadRegisters) },
@@ -65,8 +65,8 @@ static const struct{
     { 'P', GDB_HANDLER(WriteRegister) },
     { 'q', GDB_HANDLER(ReadQuery) },
     { 'Q', GDB_HANDLER(WriteQuery) },
-    { 's', GDB_HANDLER(ContinueOrStepDeprecated) },
-    { 'S', GDB_HANDLER(ContinueOrStepDeprecated) },
+    //{ 's', GDB_HANDLER(ContinueOrStepDeprecated) },
+    //{ 'S', GDB_HANDLER(ContinueOrStepDeprecated) },
     { 'T', GDB_HANDLER(IsThreadAlive) },
     { 'v', GDB_HANDLER(VerboseCommand) },
     { 'X', GDB_HANDLER(WriteMemoryRaw) },

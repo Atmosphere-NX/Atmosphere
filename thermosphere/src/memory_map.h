@@ -49,7 +49,6 @@
 
 typedef struct LoadImageLayout {
     uintptr_t startPa;
-    size_t maxImageSize;
     size_t imageSize; // "image" includes "real" BSS but not tempbss
 
     uintptr_t tempPa;
