@@ -88,7 +88,7 @@ GDB_DECLARE_QUERY_HANDLER(Supported)
     // TODO!
     return GDB_SendFormattedPacket(ctx,
         "PacketSize=%x;"
-        "qXfer:features:read+;qXfer:osdata:read+;"
+        "qXfer:features:read+;"
         "QStartNoAckMode+;QThreadEvents+"
         "vContSupported+;swbreak+;hwbreak+",
 

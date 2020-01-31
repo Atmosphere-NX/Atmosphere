@@ -79,6 +79,7 @@ void debugManagerInit(TransportInterfaceType gdbIfaceType, u32 gdbIfaceId, u32 g
 {
     memset(&g_debugManager, 0, sizeof(DebugManager));
     GDB_InitializeContext(&g_gdbContext, gdbIfaceType, gdbIfaceId, gdbIfaceFlags);
+    GDB_MigrateRxIrq(&g_gdbContext, BIT(currentCoreCtx->coreId));
 }
 
 bool debugManagerHandlePause(void)
@@ -95,8 +96,7 @@ bool debugManagerHandlePause(void)
 
         if (!g_debugManager.debugEventInfos[coreId].handled) {
             // Do we still have an unhandled debug event?
-            // TODO build
-            //GDB_TrySignalDebugEvent(&g_gdbContext, &g_debugManager.debugEventInfos[coreId]);
+            GDB_TrySignalDebugEvent(&g_gdbContext, &g_debugManager.debugEventInfos[coreId]);
             return false;
         }
     }
@@ -203,7 +203,7 @@ void debugManagerReportEvent(DebugEventType type, ...)
     exceptionEnterInterruptibleHypervisorCode();
     unmaskIrq();
 
-    // TODO GDB_TrySignalDebugEvent(&g_gdbContext, info);
+    GDB_TrySignalDebugEvent(&g_gdbContext, info);
 
     restoreInterruptFlags(flags);
 }

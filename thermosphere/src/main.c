@@ -100,7 +100,7 @@ void thermosphereMain(ExceptionStackFrame *frame, u64 pct)
     if (currentCoreCtx->isBootCore) {
         transportInterfaceInitLayer();
         debugLogInit();
-        test();
+        //test();
         debugManagerInit(TRANSPORT_INTERFACE_TYPE_UART, DEFAULT_UART, DEFAULT_UART_FLAGS);
         DEBUG("EL2: core %u reached main first!\n", currentCoreCtx->coreId);
     }
@@ -136,5 +136,7 @@ void thermosphereMain(ExceptionStackFrame *frame, u64 pct)
 
     if (!currentCoreCtx->isBootCore) {
         debugManagerReportEvent(DBGEVENT_CORE_ON);
+    } else {
+        debugManagerPauseCores(BIT(currentCoreCtx->coreId));
     }
 }
