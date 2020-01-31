@@ -36,6 +36,7 @@ typedef struct DebugManager {
     atomic_uint                 singleStepCoreList;
     atomic_uint                 eventsSentList;
     Barrier                     pauseBarrier;
+    atomic_bool                 reportingEnabled;
 } DebugManager;
 
 static DebugManager g_debugManager = { 0 };
@@ -109,6 +110,11 @@ bool debugManagerHandlePause(void)
     return true;
 }
 
+void debugManagerSetReportingEnabled(bool enabled)
+{
+    atomic_store(&g_debugManager.reportingEnabled, enabled);
+}
+
 void debugManagerPauseCores(u32 coreList)
 {
     u64 flags = maskIrq();
@@ -146,13 +152,7 @@ u32 debugManagerGetPausedCoreList(void)
     return atomic_load(&g_debugManager.pausedCoreList);
 }
 
-const DebugEventInfo *debugManagerMarkAndGetCoreDebugEvent(u32 coreId)
-{
-    g_debugManager.debugEventInfos[coreId].handled = true;
-    return &g_debugManager.debugEventInfos[coreId];
-}
-
-const DebugEventInfo *debugManagerGetCoreDebugEvent(u32 coreId)
+DebugEventInfo *debugManagerGetCoreDebugEvent(u32 coreId)
 {
     return &g_debugManager.debugEventInfos[coreId];
 }
@@ -160,6 +160,11 @@ const DebugEventInfo *debugManagerGetCoreDebugEvent(u32 coreId)
 void debugManagerReportEvent(DebugEventType type, ...)
 {
     u64 flags = maskIrq();
+    if (!atomic_load(&g_debugManager.reportingEnabled)) {
+        restoreInterruptFlags(flags);
+        return;
+    }
+
     u32 coreId = currentCoreCtx->coreId;
 
     DebugEventInfo *info = &g_debugManager.debugEventInfos[coreId];

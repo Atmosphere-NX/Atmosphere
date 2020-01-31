@@ -48,6 +48,8 @@ typedef struct DebugEventInfo {
 
 void debugManagerPauseSgiHandler(void);
 
+void debugManagerSetReportingEnabled(bool enabled);
+
 // Hypervisor interrupts will be serviced during the pause-wait
 bool debugManagerHandlePause(void);
 
@@ -62,8 +64,7 @@ void debugManagerSetSteppingRange(u32 coreId, uintptr_t startAddr, uintptr_t end
 
 u32 debugManagerGetPausedCoreList(void);
 
-const DebugEventInfo *debugManagerMarkAndGetCoreDebugEvent(u32 coreId);
-const DebugEventInfo *debugManagerGetCoreDebugEvent(u32 coreId);
+DebugEventInfo *debugManagerGetCoreDebugEvent(u32 coreId);
 
 void debugManagerReportEvent(DebugEventType type, ...);
 

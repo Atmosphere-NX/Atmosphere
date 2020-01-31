@@ -12,7 +12,7 @@
 #include "../debug_manager.h"
 
 void GDB_ContinueExecution(GDBContext *ctx);
-int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotification);
+int GDB_SendStopReply(GDBContext *ctx, DebugEventInfo *info, bool asNotification);
 int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info);
 
 GDB_DECLARE_VERBOSE_HANDLER(Stopped);
