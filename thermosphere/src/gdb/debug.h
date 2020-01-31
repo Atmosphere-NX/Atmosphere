@@ -11,9 +11,10 @@
 #include "../core_ctx.h"
 #include "../debug_manager.h"
 
-void GDB_ContinueExecution(GDBContext *ctx);
 int GDB_SendStopReply(GDBContext *ctx, DebugEventInfo *info, bool asNotification);
 int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info);
+
+void GDB_BreakAllCores(GDBContext *ctx);
 
 GDB_DECLARE_VERBOSE_HANDLER(Stopped);
 

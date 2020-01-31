@@ -38,6 +38,7 @@ typedef struct OutputStringDebugEventInfo {
 
 typedef struct DebugEventInfo {
     DebugEventType type;
+    bool preprocessed;
     bool handled;
     u32 coreId;
     ExceptionStackFrame *frame;

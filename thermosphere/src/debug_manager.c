@@ -16,6 +16,7 @@
 
 #include <stdatomic.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "debug_manager.h"
 #include "core_ctx.h"
@@ -64,6 +65,8 @@ static void debugManagerDoPauseCores(u32 coreList)
     if (remainingList & BIT(currentCoreCtx->coreId)) {
         currentCoreCtx->wasPaused = true;
     }
+
+    __sev();
 }
 
 void debugManagerPauseSgiHandler(void)
@@ -168,6 +171,7 @@ void debugManagerReportEvent(DebugEventType type, ...)
     u32 coreId = currentCoreCtx->coreId;
 
     DebugEventInfo *info = &g_debugManager.debugEventInfos[coreId];
+    memset(info, 0 , sizeof(DebugEventInfo));
 
     info->type = type;
     info->coreId = coreId;
@@ -207,6 +211,12 @@ void debugManagerBreakCores(u32 coreList)
     if (coreList & BIT(coreId) && !debugManagerIsCorePaused(coreId)) {
         debugManagerReportEvent(DBGEVENT_DEBUGGER_BREAK);
     }
+
+    // Wait for all cores
+    __sevl();
+    do {
+        __wfe();
+    } while ((atomic_load(&g_debugManager.pausedCoreList) & coreList) != coreList);
 }
 
 void debugManagerContinueCores(u32 coreList)
@@ -218,4 +228,10 @@ void debugManagerContinueCores(u32 coreList)
     if (coreList & BIT(coreId) && debugManagerIsCorePaused(coreId)) {
         debugManagerUnpauseCores(BIT(coreId));
     }
+
+    // Wait for all cores
+    __sevl();
+    do {
+        __wfe();
+    } while ((atomic_load(&g_debugManager.pausedCoreList) & coreList) != 0);
 }
