@@ -92,14 +92,6 @@ SECTIONS
 		PROVIDE (__init_array_end = .);
 	} :rodata
 
-	.fini_array ALIGN(8) :
-	{
-		PROVIDE (__fini_array_start = .);
-		KEEP (*(.fini_array))
-		KEEP (*(SORT(.fini_array.*)))
-		PROVIDE (__fini_array_end = .);
-	} :rodata
-
 	__got_start__ = .;
 
 	.got            : { *(.got) *(.igot) } :rodata
@@ -174,7 +166,7 @@ SECTIONS
 	   ================== */
 
 	/* Discard sections that difficult post-processing */
-	/DISCARD/ : { *(.group .comment .note .interp) }
+	/DISCARD/ : { *(.group .comment .note .interp .fini_array .fini_array.*) }
 
 	/* Stabs debugging sections. */
 	.stab          0 : { *(.stab) }
