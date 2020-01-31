@@ -27,7 +27,7 @@ GDB_DECLARE_HANDLER(SetThreadId)
         }
 
         ctx->selectedThreadId = id == 0 ? (int)currentCoreCtx->coreId + 1 : (int)id;
-        // TODO: change irq affinity (and remove selectedThreadId?)
+        GDB_MigrateRxIrq(ctx, (u32)(ctx->selectedThreadId - 1));
         return GDB_ReplyOk(ctx);
     } else if (ctx->commandData[0] == 'c') {
         if(strcmp(ctx->commandData + 1, "-1") == 0) {
@@ -62,12 +62,7 @@ GDB_DECLARE_HANDLER(IsThreadAlive)
 
 GDB_DECLARE_QUERY_HANDLER(CurrentThreadId)
 {
-    if (ctx->currentThreadId == 0) {
-        // FIXME: probably remove this variable
-        ctx->currentThreadId = 1 + currentCoreCtx->coreId;
-    }
-
-    return GDB_SendFormattedPacket(ctx, "QC%x", ctx->currentThreadId);
+    return GDB_SendFormattedPacket(ctx, "QC%x", 1 + currentCoreCtx->coreId);
 }
 
 GDB_DECLARE_QUERY_HANDLER(fThreadInfo)
