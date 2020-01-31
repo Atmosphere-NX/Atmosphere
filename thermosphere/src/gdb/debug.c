@@ -114,7 +114,6 @@ int GDB_SendStopReply(GDBContext *ctx, DebugEventInfo *info, bool asNotification
     
         case DBGEVENT_CORE_ON: {
             if (ctx->catchThreadEvents) {
-                ctx->currentThreadId = info->coreId + 1; // FIXME?
                 strcat(buf, "T05create:;");
             } else {
                 invalid = true;
@@ -145,7 +144,6 @@ int GDB_SendStopReply(GDBContext *ctx, DebugEventInfo *info, bool asNotification
 
         case DBGEVENT_EXCEPTION: {
             ExceptionClass ec = info->frame->esr_el2.ec;
-            ctx->currentThreadId = info->coreId + 1; // FIXME?
 
             // Aside from stage 2 translation faults and other pre-handled exceptions, 
             // the only notable exceptions we get are stop point/single step events from the debugee (basically classes 0x3x)

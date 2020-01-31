@@ -127,7 +127,6 @@ static void GDB_Disconnect(GDBContext *ctx)
     ctx->flags = 0;
     ctx->state = GDB_STATE_DISCONNECTED;
 
-    ctx->currentThreadId = 0;
     ctx->selectedThreadId = 0;
     ctx->selectedThreadIdForContinuing = 0;
     ctx->sentDebugEventCoreList = 0;
