@@ -18,6 +18,7 @@
 
 #include "exceptions.h"
 #include "gdb/context.h"
+#include "transport_interface.h"
 
 extern GDBContext g_gdbContext;
 
@@ -48,6 +49,8 @@ typedef struct DebugEventInfo {
 } DebugEventInfo;
 
 void debugManagerPauseSgiHandler(void);
+
+void debugManagerInit(TransportInterfaceType gdbIfaceType, u32 gdbIfaceId, u32 gdbIfaceFlags);
 
 void debugManagerSetReportingEnabled(bool enabled);
 

@@ -75,6 +75,12 @@ void debugManagerPauseSgiHandler(void)
     barrierWait(&g_debugManager.pauseBarrier);
 }
 
+void debugManagerInit(TransportInterfaceType gdbIfaceType, u32 gdbIfaceId, u32 gdbIfaceFlags)
+{
+    memset(&g_debugManager, 0, sizeof(DebugManager));
+    GDB_InitializeContext(&g_gdbContext, gdbIfaceType, gdbIfaceId, gdbIfaceFlags);
+}
+
 bool debugManagerHandlePause(void)
 {
     u32 coreId = currentCoreCtx->coreId;
