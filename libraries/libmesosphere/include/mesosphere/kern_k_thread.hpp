@@ -19,12 +19,19 @@
 #include <mesosphere/kern_k_affinity_mask.hpp>
 #include <mesosphere/kern_k_thread_context.hpp>
 #include <mesosphere/kern_k_current_context.hpp>
+#include <mesosphere/kern_k_timer_task.hpp>
+#include <mesosphere/kern_k_worker_task.hpp>
 
 namespace ams::kern {
 
-    class KThread final : public KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject> {
+    using KThreadFunction = void (*)(uintptr_t);
+
+    class KThread final : public KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>, public KTimerTask, public KWorkerTask {
         MESOSPHERE_AUTOOBJECT_TRAITS(KThread, KSynchronizationObject);
         public:
+            static constexpr s32 MainThreadPriority = 1;
+            static constexpr s32 IdleThreadPriority = 64;
+
             enum ThreadType : u32 {
                 ThreadType_Main         = 0,
                 ThreadType_Kernel       = 1,
@@ -36,6 +43,10 @@ namespace ams::kern {
                 SuspendType_Process = 0,
                 SuspendType_Thread  = 1,
                 SuspendType_Debug   = 2,
+                SuspendType_Unk3    = 3,
+                SuspendType_Unk4    = 4,
+
+                SuspendType_Count,
             };
 
             enum ThreadState : u16 {
@@ -50,6 +61,10 @@ namespace ams::kern {
                 ThreadState_ProcessSuspended = (1 << (SuspendType_Process + ThreadState_SuspendShift)),
                 ThreadState_ThreadSuspended  = (1 << (SuspendType_Thread  + ThreadState_SuspendShift)),
                 ThreadState_DebugSuspended   = (1 << (SuspendType_Debug   + ThreadState_SuspendShift)),
+                ThreadState_Unk3Suspended    = (1 << (SuspendType_Unk3    + ThreadState_SuspendShift)),
+                ThreadState_Unk4Suspended    = (1 << (SuspendType_Unk4    + ThreadState_SuspendShift)),
+
+                ThreadState_SuspendFlagMask  = ((1 << SuspendType_Count) - 1) << ThreadState_SuspendShift,
             };
 
             enum DpcFlag : u32 {
@@ -76,6 +91,11 @@ namespace ams::kern {
                 public:
                     constexpr ALWAYS_INLINE QueueEntry() : prev(nullptr), next(nullptr) { /* ... */ }
 
+                    constexpr ALWAYS_INLINE void Initialize() {
+                        this->prev = nullptr;
+                        this->next = nullptr;
+                    }
+
                     constexpr ALWAYS_INLINE KThread *GetPrev() const { return this->prev; }
                     constexpr ALWAYS_INLINE KThread *GetNext() const { return this->next; }
                     constexpr ALWAYS_INLINE void SetPrev(KThread *t) { this->prev = t; }
@@ -90,6 +110,8 @@ namespace ams::kern {
                 constexpr SyncObjectBuffer() : sync_objects() { /* ... */ }
             };
             static_assert(sizeof(SyncObjectBuffer::sync_objects) == sizeof(SyncObjectBuffer::handles));
+        private:
+            static inline std::atomic<u64> s_next_thread_id = 0;
         private:
             alignas(16) KThreadContext      thread_context;
             KAffinityMask                   affinity_mask;
@@ -141,7 +163,7 @@ namespace ams::kern {
             std::atomic<bool>               termination_requested;
             bool                            ipc_cancelled;
             bool                            wait_cancelled;
-            bool                            cancelable;
+            bool                            cancellable;
             bool                            registered;
             bool                            signaled;
             bool                            initialized;
@@ -149,17 +171,19 @@ namespace ams::kern {
             s8                              priority_inheritance_count;
             bool                            resource_limit_release_hint;
         public:
-            static void PostDestroy(uintptr_t arg);
-        public:
             explicit KThread() /* TODO: : ? */ { MESOSPHERE_ASSERT_THIS(); }
+            virtual ~KThread() { /* ... */ }
             /* TODO: Is a constexpr KThread() possible? */
+
+            Result Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type);
+
         private:
             StackParameters &GetStackParameters() {
                 return *(reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1);
             }
 
             const StackParameters &GetStackParameters() const {
-                return *(reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1);
+                return *(reinterpret_cast<const StackParameters *>(this->kernel_stack_top) - 1);
             }
         public:
             ALWAYS_INLINE s32 GetDisableDispatchCount() const {
@@ -178,13 +202,33 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >  0);
                 GetStackParameters().disable_count--;
             }
-
         public:
             constexpr ALWAYS_INLINE const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
 
+            ALWAYS_INLINE void *GetStackTop() const { return reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1; }
+            ALWAYS_INLINE void *GetKernelStackTop() const { return this->kernel_stack_top; }
 
+            /* TODO: This is kind of a placeholder definition. */
 
-        /* TODO: This is a placeholder definition. */
+            ALWAYS_INLINE bool IsInExceptionHandler() const {
+                return GetStackParameters().is_in_exception_handler;
+            }
+
+            ALWAYS_INLINE void SetInExceptionHandler() {
+                GetStackParameters().is_in_exception_handler = true;
+            }
+
+        public:
+            /* Overridden parent functions. */
+            virtual bool IsInitialized() const override { return this->initialized; }
+            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->parent) | (this->resource_limit_release_hint ? 1 : 0); }
+
+            static void PostDestroy(uintptr_t arg);
+
+            virtual void Finalize() override;
+            virtual bool IsSignaled() const override;
+            virtual void OnTimer() override;
+            virtual void DoWorkerTask() override;
         public:
             static constexpr bool IsWaiterListValid() {
                 return WaiterListTraits::IsValid();

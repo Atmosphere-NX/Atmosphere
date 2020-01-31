@@ -24,6 +24,8 @@ namespace ams::kern::svc {
 
     /*  33 */ using ::ams::svc::ResultNotImplemented;
 
+    /*  57 */ using ::ams::svc::ResultNoSynchronizationObject;
+
     /*  59 */ using ::ams::svc::ResultThreadTerminating;
 
     /*  70 */ using ::ams::svc::ResultNoEvent;

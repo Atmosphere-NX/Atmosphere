@@ -26,6 +26,11 @@ namespace ams::kern {
     class KProcess final : public KAutoObjectWithSlabHeapAndContainer<KProcess, KSynchronizationObject> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KProcess, KSynchronizationObject);
         /* TODO: This is a placeholder definition. */
+        public:
+            constexpr ALWAYS_INLINE u64 GetCoreMask() const { /* TODO */ return 0; }
+            constexpr ALWAYS_INLINE u64 GetPriorityMask() const { /* TODO */ return 0; }
+
+            constexpr ALWAYS_INLINE bool Is64Bit() const { /* TODO */ return true; }
     };
 
 }

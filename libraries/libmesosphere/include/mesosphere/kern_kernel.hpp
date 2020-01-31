@@ -14,10 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
+#include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_memory_layout.hpp>
 #include <mesosphere/kern_k_memory_manager.hpp>
 #include <mesosphere/kern_k_core_local_region.hpp>
+#include <mesosphere/kern_k_thread.hpp>
 
 namespace ams::kern {
 
@@ -30,12 +33,22 @@ namespace ams::kern {
             };
         private:
             static inline State s_state = State::Invalid;
+            static inline KThread s_main_threads[cpu::NumCores];
+            static inline KThread s_idle_threads[cpu::NumCores];
         public:
-            static NOINLINE void Initialize(s32 core_id);
-            static NOINLINE void InitializeCoreThreads(s32 core_id);
+            static NOINLINE void InitializeCoreLocalRegion(s32 core_id);
+            static NOINLINE void InitializeMainAndIdleThreads(s32 core_id);
 
             static ALWAYS_INLINE State GetState() { return s_state; }
             static ALWAYS_INLINE void SetState(State state) { s_state = state; }
+
+            static ALWAYS_INLINE KThread &GetMainThread(s32 core_id) {
+                return s_main_threads[core_id];
+            }
+
+            static ALWAYS_INLINE KThread &GetIdleThread(s32 core_id) {
+                return s_idle_threads[core_id];
+            }
     };
 
 }

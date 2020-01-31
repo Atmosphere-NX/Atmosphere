@@ -19,7 +19,7 @@ namespace ams::kern {
 
     NORETURN void HorizonKernelMain(s32 core_id) {
         /* Setup the Core Local Region, and note that we're initializing. */
-        Kernel::Initialize(core_id);
+        Kernel::InitializeCoreLocalRegion(core_id);
         Kernel::SetState(Kernel::State::Initializing);
 
         /* Ensure that all cores get to this point before proceeding. */
@@ -29,7 +29,7 @@ namespace ams::kern {
         /* Synchronize after each init to ensure the cores go in order. */
         for (size_t i = 0; i < cpu::NumCores; i++) {
             if (static_cast<s32>(i) == core_id) {
-                Kernel::InitializeCoreThreads(core_id);
+                Kernel::InitializeMainAndIdleThreads(core_id);
             }
             cpu::SynchronizeAllCores();
         }
