@@ -83,10 +83,6 @@ namespace ams::util {
                 const auto start  = std::addressof(cur_union.data.members[0]);
                 const auto next   = GetNextAddress(start, target);
 
-                if constexpr (Offset > 0x10) {
-                    __builtin_unreachable();
-                }
-
                 if (next != target) {
                     if constexpr (Offset < sizeof(MemberType) - 1) {
                         return OffsetOfImpl(member, cur_union.next_union);
