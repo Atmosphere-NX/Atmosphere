@@ -277,6 +277,9 @@ namespace ams::svc {
 
     constexpr size_t ThreadLocalRegionSize = 0x200;
 
+    constexpr s32 LowestThreadPriority  = 63;
+    constexpr s32 HighestThreadPriority = 0;
+
     /* Process types. */
     enum ProcessInfoType : u32 {
         ProcessInfoType_ProcessState = 0,

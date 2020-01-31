@@ -34,6 +34,29 @@ namespace ams::kern {
                 void *context; /* TODO: KThreadContext * */
             };
             static_assert(alignof(StackParameters) == 0x10);
+
+            struct QueueEntry {
+                private:
+                    KThread *prev;
+                    KThread *next;
+                public:
+                    constexpr ALWAYS_INLINE QueueEntry() : prev(nullptr), next(nullptr) { /* ... */ }
+
+                    constexpr ALWAYS_INLINE KThread *GetPrev() const { return this->prev; }
+                    constexpr ALWAYS_INLINE KThread *GetNext() const { return this->next; }
+                    constexpr ALWAYS_INLINE void SetPrev(KThread *t) { this->prev = t; }
+                    constexpr ALWAYS_INLINE void SetNext(KThread *t) { this->next = t; }
+            };
+        private:
+            /* TODO: Other members. These are placeholder to get KScheduler to compile. */
+            KAffinityMask affinity_mask;
+        public:
+            constexpr KThread() : KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>(), affinity_mask() { /* ... */ }
+
+            constexpr ALWAYS_INLINE const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
+        public:
+            static void PostDestroy(uintptr_t arg);
+
         /* TODO: This is a placeholder definition. */
     };
 

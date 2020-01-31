@@ -14,9 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_thread.hpp>
+#include <mesosphere/kern_k_priority_queue.hpp>
 
 namespace ams::kern {
+
+    using KSchedulerPriorityQueue = KPriorityQueue<KThread, cpu::NumCores, ams::svc::LowestThreadPriority, ams::svc::HighestThreadPriority>;
+    static_assert(std::is_same<KSchedulerPriorityQueue::AffinityMaskType, KAffinityMask>::value);
+    static_assert(KSchedulerPriorityQueue::NumCores    == cpu::NumCores);
+    static_assert(KSchedulerPriorityQueue::NumPriority == BITSIZEOF(u64));
 
     class KScheduler {
         NON_COPYABLE(KScheduler);
