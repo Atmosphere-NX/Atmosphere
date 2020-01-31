@@ -17,6 +17,7 @@
 #include <mesosphere/kern_slab_helpers.hpp>
 #include <mesosphere/kern_k_synchronization_object.hpp>
 #include <mesosphere/kern_k_affinity_mask.hpp>
+#include <mesosphere/kern_k_thread_context.hpp>
 
 namespace ams::kern {
 
@@ -31,7 +32,7 @@ namespace ams::kern {
                 bool is_in_exception_handler;
                 bool has_exception_svc_perms;
                 s32 disable_count;
-                void *context; /* TODO: KThreadContext * */
+                KThreadContext *context;
             };
             static_assert(alignof(StackParameters) == 0x10);
 

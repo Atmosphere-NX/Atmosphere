@@ -25,6 +25,7 @@
 /* Primitive types. */
 #include <mesosphere/kern_k_typed_address.hpp>
 #include <mesosphere/kern_initial_process.hpp>
+#include <mesosphere/kern_k_exception_context.hpp>
 
 /* Core pre-initialization includes. */
 #include <mesosphere/kern_select_cpu.hpp>
