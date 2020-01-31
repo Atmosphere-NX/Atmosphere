@@ -105,6 +105,8 @@ _postMmuEnableReturnAddr:
     isb
 
     // Jump to kernel
+    mov     x0, sp
+    bl      exceptionReturnPreprocess
     b       _restoreAllRegisters
 
 .pool
