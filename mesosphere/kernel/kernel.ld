@@ -71,6 +71,42 @@ SECTIONS
 		. = ALIGN(8);
 	} :rodata
 
+    .data.rel.ro :
+    {
+        *(.data.rel.ro .data.rel.ro.*)
+        . = ALIGN(8);
+    } :rodata
+
+	.preinit_array ALIGN(8) :
+	{
+		PROVIDE (__preinit_array_start = .);
+		KEEP (*(.preinit_array))
+		PROVIDE (__preinit_array_end = .);
+	} :rodata
+
+	.init_array ALIGN(8) :
+	{
+		PROVIDE (__init_array_start = .);
+		KEEP (*(SORT(.init_array.*)))
+		KEEP (*(.init_array))
+		PROVIDE (__init_array_end = .);
+	} :rodata
+
+	.fini_array ALIGN(8) :
+	{
+		PROVIDE (__fini_array_start = .);
+		KEEP (*(.fini_array))
+		KEEP (*(SORT(.fini_array.*)))
+		PROVIDE (__fini_array_end = .);
+	} :rodata
+
+	__got_start__ = .;
+
+	.got            : { *(.got) *(.igot) } :rodata
+	.got.plt        : { *(.got.plt)  *(.igot.plt) } :rodata
+
+	__got_end__ = .;
+
 	.eh_frame_hdr     : { __eh_frame_hdr_start = .; *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) __eh_frame_hdr_end = .; } :rodata
 	.eh_frame         : ONLY_IF_RO { KEEP (*(.eh_frame)) *(.eh_frame.*) } :rodata
 	.gcc_except_table : ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) } :rodata
@@ -96,29 +132,6 @@ SECTIONS
 	.gnu_extab : ONLY_IF_RW { *(.gnu_extab*) } : data
 	.exception_ranges : ONLY_IF_RW { *(.exception_ranges .exception_ranges*) } :data
 
-	.preinit_array ALIGN(8) :
-	{
-		PROVIDE (__preinit_array_start = .);
-		KEEP (*(.preinit_array))
-		PROVIDE (__preinit_array_end = .);
-	} :data
-
-	.init_array ALIGN(8) :
-	{
-		PROVIDE (__init_array_start = .);
-		KEEP (*(SORT(.init_array.*)))
-		KEEP (*(.init_array))
-		PROVIDE (__init_array_end = .);
-	} :data
-
-	.fini_array ALIGN(8) :
-	{
-		PROVIDE (__fini_array_start = .);
-		KEEP (*(.fini_array))
-		KEEP (*(SORT(.fini_array.*)))
-		PROVIDE (__fini_array_end = .);
-	} :data
-
 	.ctors ALIGN(8) :
 	{
 		KEEP (*crtbegin.o(.ctors)) /* MUST be first -- GCC requires it */
@@ -134,13 +147,6 @@ SECTIONS
 		KEEP (*(SORT(.dtors.*)))
 		KEEP (*(.dtors))
 	} :data
-
-	__got_start__ = .;
-
-	.got            : { *(.got) *(.igot) } :data
-	.got.plt        : { *(.got.plt)  *(.igot.plt) } :data
-
-	__got_end__ = .;
 
 	.data ALIGN(8) :
 	{
