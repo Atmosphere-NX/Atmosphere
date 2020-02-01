@@ -62,7 +62,7 @@ static void GDB_GenerateTargetXml(char *buf)
 
     strcat(buf, fpuDescBegin);
     pos = (int)strlen(buf);
-    for (u32 i = i; i < 32; i++) {
+    for (u32 i = 0; i < 32; i++) {
         pos += sprintf(buf + pos, "<reg name=\"v%u\" bitsize=\"128\" type=\"aarch64v\"/>", i);
     }
     strcat(buf, fpuDescEnd);
