@@ -234,9 +234,9 @@ void GDB_ReleaseContext(GDBContext *ctx)
     transportInterfaceRelease(ctx->transportInterface);
 }
 
-void GDB_MigrateRxIrq(GDBContext *ctx, u32 newAffinity)
+void GDB_MigrateRxIrq(GDBContext *ctx, u32 coreId)
 {
-    transportInterfaceSetInterruptAffinity(ctx->transportInterface, newAffinity);
+    transportInterfaceSetInterruptAffinity(ctx->transportInterface, BIT(coreId));
 }
 
 GDB_DECLARE_HANDLER(Unsupported)

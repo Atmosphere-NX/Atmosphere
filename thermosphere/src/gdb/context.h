@@ -106,7 +106,7 @@ void GDB_DetachFromContext(GDBContext *ctx);
 
 void GDB_AcquireContext(GDBContext *ctx);
 void GDB_ReleaseContext(GDBContext *ctx);
-void GDB_MigrateRxIrq(GDBContext *ctx, u32 newAffinity);
+void GDB_MigrateRxIrq(GDBContext *ctx, u32 coreId);
 
 GDB_DECLARE_HANDLER(Unsupported);
 GDB_DECLARE_HANDLER(EnableExtendedMode);
