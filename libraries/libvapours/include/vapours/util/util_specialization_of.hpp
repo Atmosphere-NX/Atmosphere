@@ -15,15 +15,14 @@
  */
 
 #pragma once
-#include "defines.hpp"
+#include "../defines.hpp"
 
-#include "util/util_alignment.hpp"
-#include "util/util_size.hpp"
-#include "util/util_fourcc.hpp"
-#include "util/util_bitpack.hpp"
-#include "util/util_bitset.hpp"
-#include "util/util_scope_guard.hpp"
-#include "util/util_specialization_of.hpp"
-#include "util/util_typed_storage.hpp"
-#include "util/util_intrusive_list.hpp"
-#include "util/util_intrusive_red_black_tree.hpp"
+namespace ams::util {
+
+    template<class T, template <class...> class Template>
+    struct is_specialization_of : std::false_type{};
+
+    template<template <class...> class Template, class... Args>
+    struct is_specialization_of<Template<Args...>, Template> : std::true_type{};
+
+}
