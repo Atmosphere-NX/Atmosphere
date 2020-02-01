@@ -243,6 +243,7 @@ void transportInterfaceIrqHandlerBottomHalf(TransportInterface *iface)
         iface->processDataCallback(iface, iface->ctx, sz);
     }
 
+    maskIrq(); // Avoid stack overflow, as the line will be asserted once more
     transportInterfaceRelease(iface);
 }
 
