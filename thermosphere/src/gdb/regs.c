@@ -18,7 +18,7 @@
 
 GDB_DECLARE_HANDLER(ReadRegisters)
 {
-    ENSURE(ctx->selectedThreadId == currentCoreCtx->coreId);
+    ENSURE(ctx->selectedThreadId == 1 + currentCoreCtx->coreId);
 
     ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
     FpuRegisterCache *fpuRegCache = fpuReadRegisters();
@@ -52,7 +52,7 @@ GDB_DECLARE_HANDLER(ReadRegisters)
 
 GDB_DECLARE_HANDLER(WriteRegisters)
 {
-    ENSURE(ctx->selectedThreadId == currentCoreCtx->coreId);
+    ENSURE(ctx->selectedThreadId == 1 + currentCoreCtx->coreId);
 
     ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
     FpuRegisterCache *fpuRegCache = fpuGetRegisterCache();
@@ -138,7 +138,7 @@ static void GDB_GetRegisterPointerAndSize(size_t *outSz, void **outPtr, unsigned
 
 GDB_DECLARE_HANDLER(ReadRegister)
 {
-    ENSURE(ctx->selectedThreadId == currentCoreCtx->coreId);
+    ENSURE(ctx->selectedThreadId == 1 + currentCoreCtx->coreId);
 
     ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
     FpuRegisterCache *fpuRegCache = NULL;
@@ -168,7 +168,7 @@ GDB_DECLARE_HANDLER(ReadRegister)
 
 GDB_DECLARE_HANDLER(WriteRegister)
 {
-    ENSURE(ctx->selectedThreadId == currentCoreCtx->coreId);
+    ENSURE(ctx->selectedThreadId == 1 + currentCoreCtx->coreId);
 
     ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
     FpuRegisterCache *fpuRegCache = fpuGetRegisterCache();
