@@ -345,7 +345,7 @@ GDB_DECLARE_HANDLER(GetStopReason)
     bool nonStop = (ctx->flags & GDB_FLAG_NONSTOP) != 0;
     if (!nonStop) {
         // Full-stop:
-        return GDB_SendStopReply(ctx, ctx->lastDebugEvent, true);
+        return GDB_SendStopReply(ctx, ctx->lastDebugEvent, false);
     } else {
         // Non-stop, start new vStopped sequence
         ctx->sentDebugEventCoreList = 0;
