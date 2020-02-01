@@ -137,6 +137,6 @@ void thermosphereMain(ExceptionStackFrame *frame, u64 pct)
     if (!currentCoreCtx->isBootCore) {
         debugManagerReportEvent(DBGEVENT_CORE_ON);
     } else {
-        debugManagerPauseCores(BIT(currentCoreCtx->coreId));
+        debugManagerReportEvent(DBGEVENT_DEBUGGER_BREAK);
     }
 }

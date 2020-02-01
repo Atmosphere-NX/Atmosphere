@@ -169,7 +169,8 @@ DebugEventInfo *debugManagerGetCoreDebugEvent(u32 coreId)
 void debugManagerReportEvent(DebugEventType type, ...)
 {
     u64 flags = maskIrq();
-    if (!atomic_load(&g_debugManager.reportingEnabled)) {
+    bool reportingEnabled = atomic_load(&g_debugManager.reportingEnabled);
+    if (!reportingEnabled && type != DBGEVENT_DEBUGGER_BREAK) {
         restoreInterruptFlags(flags);
         return;
     }
@@ -200,10 +201,12 @@ void debugManagerReportEvent(DebugEventType type, ...)
     // Now, pause ourselves and try to signal we have a debug event
     debugManagerDoPauseCores(BIT(coreId));
 
-    exceptionEnterInterruptibleHypervisorCode();
-    unmaskIrq();
+    if (reportingEnabled) {
+        exceptionEnterInterruptibleHypervisorCode();
+        unmaskIrq();
 
-    GDB_TrySignalDebugEvent(&g_gdbContext, info);
+        GDB_TrySignalDebugEvent(&g_gdbContext, info);
+    }
 
     restoreInterruptFlags(flags);
 }
@@ -214,7 +217,7 @@ void debugManagerBreakCores(u32 coreList)
     if (coreList & ~BIT(coreId)) {
         generateSgiForList(ThermosphereSgi_ReportDebuggerBreak, coreList & ~BIT(coreId));
     }
-    if (coreList & BIT(coreId) && !debugManagerIsCorePaused(coreId)) {
+    if ((coreList & BIT(coreId)) && !debugManagerIsCorePaused(coreId)) {
         debugManagerReportEvent(DBGEVENT_DEBUGGER_BREAK);
     }
 
