@@ -446,9 +446,9 @@
 #define ENCODE_SYSREG_ISS(name) EVAL(ENCODE_SYSREG_FIELDS_ISS CAT(TUP_, name))
 
 #define GET_SYSREG(r) ({\
-    u64 __val;                                                      \
-    asm volatile("mrs %0, " STRINGIZE(r) : "=r" (__val));     \
-    __val;                                                          \
+    u64 __val;                                                                      \
+    __asm__ __volatile__("mrs %0, " STRINGIZE(r) : "=r" (__val) :: "memory");       \
+    __val;                                                                          \
 })
 
 #define SET_SYSREG(reg, val)        do { u64 temp_reg = (val); __asm__ __volatile__ ("msr " STRINGIZE(reg) ", %0" :: "r"(temp_reg) : "memory"); } while(false)
