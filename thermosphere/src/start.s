@@ -47,6 +47,9 @@ _startCommon:
     dsb     sy
     isb
 
+    // Save x0
+    mov     x21, x0
+
     bl      cacheClearLocalDataCacheOnBoot
     cbz     x19, 1f
 
@@ -87,6 +90,7 @@ _postMmuEnableReturnAddr:
     // Don't call init array to save space?
     mov     w0, w8
     mov     w1, w19
+    mov     x2, x21
     bl      initSystem
 
     // Save x18, reserve space for exception frame
