@@ -127,21 +127,24 @@ void exceptionEntryPostprocess(ExceptionStackFrame *frame, bool isLowerEl)
 // Called on exception return (avoids overflowing a vector section)
 void exceptionReturnPreprocess(ExceptionStackFrame *frame)
 {
-    if (currentCoreCtx->wasPaused && frame == currentCoreCtx->guestFrame) {
-        // Were we paused & are we about to return to the guest?
-        exceptionEnterInterruptibleHypervisorCode();
-        while (!debugManagerHandlePause());
-        fpuCleanInvalidateRegisterCache();
-    }
-
-    // Update virtual counter
-    currentCoreCtx->totalTimeInHypervisor += timerGetSystemTick() - frame->cntpct_el0;
-    SET_SYSREG(cntvoff_el2, currentCoreCtx->totalTimeInHypervisor);
-
     if (frame == currentCoreCtx->guestFrame) {
-        // Restore interrupt mask
-        SET_SYSREG(cntp_ctl_el0, frame->cntp_ctl_el0);
-        SET_SYSREG(cntv_ctl_el0, frame->cntv_ctl_el0);
+        if (currentCoreCtx->wasPaused) { 
+            // Were we paused & are we about to return to the guest?
+            exceptionEnterInterruptibleHypervisorCode();
+            while (!debugManagerHandlePause());
+            fpuCleanInvalidateRegisterCache();
+        }
+
+        // Update virtual counter
+        u64 ticksNow = timerGetSystemTick();
+        currentCoreCtx->totalTimeInHypervisor += ticksNow - frame->cntpct_el0;
+        SET_SYSREG(cntvoff_el2, currentCoreCtx->totalTimeInHypervisor);
+
+        if (frame == currentCoreCtx->guestFrame) {
+            // Restore interrupt mask
+            SET_SYSREG(cntp_ctl_el0, frame->cntp_ctl_el0);
+            SET_SYSREG(cntv_ctl_el0, frame->cntv_ctl_el0);
+        }
     }
 }
 
