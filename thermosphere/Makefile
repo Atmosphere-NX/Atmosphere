@@ -72,6 +72,7 @@ CFLAGS	:= \
 	-fno-unwind-tables \
 	-std=gnu11 \
 	-Wall \
+	-Werror \
 	-Wno-main \
 	$(ARCH) $(DEFINES)
 

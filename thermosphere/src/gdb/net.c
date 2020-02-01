@@ -236,6 +236,8 @@ int GDB_ReceivePacket(GDBContext *ctx)
         ctx->state = GDB_STATE_ATTACHED;
     }
 
+    // Debug
+    ctx->buffer[checksumPos + 2] = '\0';
     DEBUGRAW("->");
     DEBUGRAW(ctx->buffer);
     DEBUGRAW("\n");
