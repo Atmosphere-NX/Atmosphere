@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "debug_log.h"
 #include "platform/uart.h"
 #include "semihosting.h"
@@ -35,6 +36,16 @@ void debugLogInit(void)
     }
 }
 
+void debugLogRaw(const char *str)
+{
+    // Use semihosting if available (we assume qemu was launched with -semihosting), otherwise UART
+    if (DLOG_USE_SEMIHOSTING_WRITE0 && semihosting_connection_supported()) {
+        semihosting_write_string(str);
+    } else {
+        transportInterfaceWriteData(g_debugLogTransportInterface, str, strlen(str));
+    }
+}
+
 // NOTE: UNSAFE!
 int debugLog(const char *fmt, ...)
 {
@@ -44,12 +55,7 @@ int debugLog(const char *fmt, ...)
     int res = vsprintf(buf, fmt, args);
     va_end(args);
 
-    // Use semihosting if available (we assume qemu was launched with -semihosting), otherwise UART
-    if (DLOG_USE_SEMIHOSTING_WRITE0 && semihosting_connection_supported()) {
-        semihosting_write_string(buf);
-    } else {
-        transportInterfaceWriteData(g_debugLogTransportInterface, buf, res);
-    }
+    debugLogRaw(buf);
 
     return res;
 }

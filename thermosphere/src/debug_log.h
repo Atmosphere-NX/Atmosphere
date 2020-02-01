@@ -18,10 +18,13 @@
 #include <stdarg.h>
 
 #ifndef NDEBUG
-#define DEBUG(...)  debugLog(__VA_ARGS__)
+#define DEBUG(...)      debugLog(__VA_ARGS__)
+#define DEBUGRAW(str)   debugLogRaw(str)
 #else
 #define DEBUG(...)
+#define DEBUGRAW(str)
 #endif
 
 void debugLogInit(void);
+void debugLogRaw(const char *str);
 int debugLog(const char *fmt, ...);
