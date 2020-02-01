@@ -23,7 +23,7 @@ namespace ams::kern {
 
         template<typename T>
         concept KLockable = !std::is_reference<T>::value && requires (T &t) {
-            { t.Lock()  } -> std::same_as<void>;
+            { t.Lock()   } -> std::same_as<void>;
             { t.Unlock() } -> std::same_as<void>;
         };
 
@@ -37,7 +37,7 @@ namespace ams::kern {
             T *lock_ptr;
         public:
             explicit ALWAYS_INLINE KScopedLock(T *l) : lock_ptr(l) { this->lock_ptr->Lock(); }
-            explicit ALWAYS_INLINE KScopedLock(T &l) : KScopedLock(std::addressof(l)) { /* ... */}
+            explicit ALWAYS_INLINE KScopedLock(T &l) : KScopedLock(std::addressof(l)) { /* ... */ }
             ALWAYS_INLINE ~KScopedLock() { this->lock_ptr->Unlock(); }
     };
 
