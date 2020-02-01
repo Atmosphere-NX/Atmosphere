@@ -43,7 +43,7 @@
 #include "../watchpoints.h"
 
 static TEMPORARY char g_gdbWorkBuffer[GDB_WORK_BUF_LEN];
-static TEMPORARY char g_gdbBuffer[GDB_BUF_LEN + 4];
+static TEMPORARY char g_gdbBuffer[GDB_BUF_LEN + 4 + 1];
 
 static const struct{
     char command;

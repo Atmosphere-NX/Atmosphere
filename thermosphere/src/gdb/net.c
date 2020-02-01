@@ -236,11 +236,14 @@ int GDB_ReceivePacket(GDBContext *ctx)
         ctx->state = GDB_STATE_ATTACHED;
     }
 
+    DEBUGRAW("->");
+    DEBUGRAW(ctx->buffer);
+    DEBUGRAW("\n");
+
     // Set helper attributes, change '#' to NUL
     ctx->commandData = ctx->buffer + 2;
     ctx->commandEnd = ctx->buffer + delimPos;
     ctx->buffer[delimPos] = '\0';
-    DEBUG("Packet: %s\n", ctx->buffer + 1);
 
     return (int)(delimPos + 2);
 }
@@ -249,6 +252,13 @@ static int GDB_DoSendPacket(GDBContext *ctx, size_t len)
 {
     transportInterfaceWriteData(ctx->transportInterface, ctx->buffer, len);
     ctx->lastSentPacketSize = len;
+
+    // Debugging:
+    ctx->buffer[len] = 0;
+    DEBUGRAW("<-");
+    DEBUGRAW(ctx->buffer);
+    DEBUGRAW("\n");
+
     return (int)len;
 }
 

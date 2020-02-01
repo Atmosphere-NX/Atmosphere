@@ -74,7 +74,15 @@ void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
     if (frame == currentCoreCtx->guestFrame) {
         DEBUG("cntp_ctl_el0\t%016llx\n", frame->cntp_ctl_el0);
         DEBUG("cntv_ctl_el0\t%016llx\n", frame->cntv_ctl_el0);
-    }
+    }/* else {
+        // Try to dump the stack (comment if this crashes)
+        u64 *sp = (u64 *)(frame->sp_el2 - 8);
+        u64 *spEnd = (u64 *)((frame->sp_el2 & ~0xFFF) + 0x1000);
+        DEBUG("Stack trace:\n");
+        while (sp < spEnd) {
+            DEBUG("\t%016lx\n", *--sp);
+        }
+    }*/
 #else
     (void)frame;
     (void)sameEl;
