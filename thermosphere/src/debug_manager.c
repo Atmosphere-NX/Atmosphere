@@ -79,7 +79,7 @@ void debugManagerInit(TransportInterfaceType gdbIfaceType, u32 gdbIfaceId, u32 g
 {
     memset(&g_debugManager, 0, sizeof(DebugManager));
     GDB_InitializeContext(&g_gdbContext, gdbIfaceType, gdbIfaceId, gdbIfaceFlags);
-    GDB_MigrateRxIrq(&g_gdbContext, BIT(currentCoreCtx->coreId));
+    GDB_MigrateRxIrq(&g_gdbContext, currentCoreCtx->coreId);
 }
 
 bool debugManagerHandlePause(void)

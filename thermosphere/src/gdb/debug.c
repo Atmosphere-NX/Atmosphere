@@ -41,7 +41,7 @@ static bool GDB_PreprocessDebugEvent(GDBContext *ctx, DebugEventInfo *info)
                 u32 newLst = ctx->attachedCoreList & ~BIT(info->coreId);
                 if (ctx->selectedThreadId == info->coreId && newLst != 0) {
                     ctx->selectedThreadId = __builtin_ctz(newLst);
-                    GDB_MigrateRxIrq(ctx, BIT(ctx->selectedThreadId));
+                    GDB_MigrateRxIrq(ctx, ctx->selectedThreadId);
                 }
                 ctx->attachedCoreList = newLst;
                 shouldSignal = ctx->catchThreadEvents || newLst == 0;

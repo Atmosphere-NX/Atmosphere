@@ -166,9 +166,14 @@ int GDB_ReceivePacket(GDBContext *ctx)
     } 
 
     switch (hdr) {
-        case '+':
-            // Ack, don't do anything else (if allowed)
+        case '+': {
+            // Ack, don't do anything else except maybe NoAckMode state transition
+            if (ctx->noAckSent) {
+                ctx->flags |= GDB_FLAG_NOACK;
+                ctx->noAckSent = false;
+            }
             return 0;
+        }
         case '-':
             // Nack, return the previous packet
             transportInterfaceWriteData(iface, ctx->buffer, ctx->lastSentPacketSize);
@@ -231,14 +236,11 @@ int GDB_ReceivePacket(GDBContext *ctx)
         ctx->state = GDB_STATE_ATTACHED;
     }
 
-    if (ctx->noAckSent) {
-        ctx->flags |= GDB_FLAG_NOACK;
-        ctx->noAckSent = false;
-    }
-
     // Set helper attributes, change '#' to NUL
+    ctx->commandData = ctx->buffer + 2;
     ctx->commandEnd = ctx->buffer + delimPos;
     ctx->buffer[delimPos] = '\0';
+    DEBUG("Packet: %s\n", ctx->buffer + 1);
 
     return (int)(delimPos + 2);
 }
