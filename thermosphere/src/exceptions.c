@@ -26,6 +26,7 @@
 #include "spinlock.h"
 #include "debug_manager.h"
 #include "timer.h"
+#include "memory_map.h"
 
 #include "fpu.h"
 
@@ -56,6 +57,8 @@ bool spsrEvaluateConditionCode(u64 spsr, u32 conditionCode)
 void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
 {
 #ifndef NDEBUG
+    uintptr_t stackTop = memoryMapGetStackTop(currentCoreCtx->coreId);
+
     for (u32 i = 0; i < 30; i += 2) {
         DEBUG("x%u\t\t%016llx\t\tx%u\t\t%016llx\n", i, frame->x[i], i + 1, frame->x[i + 1]);
     }
@@ -74,15 +77,18 @@ void dumpStackFrame(const ExceptionStackFrame *frame, bool sameEl)
     if (frame == currentCoreCtx->guestFrame) {
         DEBUG("cntp_ctl_el0\t%016llx\n", frame->cntp_ctl_el0);
         DEBUG("cntv_ctl_el0\t%016llx\n", frame->cntv_ctl_el0);
-    }/* else {
+    } else if ((frame->sp_el2 & ~0xFFFul) + 0x1000 == stackTop) {
         // Try to dump the stack (comment if this crashes)
-        u64 *sp = (u64 *)(frame->sp_el2 - 8);
-        u64 *spEnd = (u64 *)((frame->sp_el2 & ~0xFFF) + 0x1000);
+        u64 *sp = (u64 *)frame->sp_el2;
+        u64 *spEnd = sp + 0x20;
+        u64 *spMax = (u64 *)((frame->sp_el2 + 0xFFF) & ~0xFFFul);
         DEBUG("Stack trace:\n");
-        while (sp < spEnd) {
-            DEBUG("\t%016lx\n", *--sp);
+        while (sp < spEnd && sp < spMax) {
+            DEBUG("\t%016lx\n", *sp++);
         }
-    }*/
+    } else {
+        DEBUG("Stack overflow/double fault detected!\n");
+    }
 #else
     (void)frame;
     (void)sameEl;
