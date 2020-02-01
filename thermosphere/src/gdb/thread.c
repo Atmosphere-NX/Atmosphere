@@ -70,8 +70,7 @@ GDB_DECLARE_QUERY_HANDLER(fThreadInfo)
 {
     // We have made our GDB packet big enough to list all the thread ids (coreIds + 1 for each coreId)
     char *buf = ctx->buffer + 1;
-    int n = 1;
-    buf[0] = 'm';
+    size_t n = 0;
 
     u32 coreMask = ctx->attachedCoreList;
 
@@ -89,7 +88,7 @@ GDB_DECLARE_QUERY_HANDLER(sThreadInfo)
 {
     // We have made our GDB packet big enough to list all the thread ids (coreIds + 1 for each coreId) in fThreadInfo
     // Note: we assume GDB doesn't accept notifications during the sequence transfer...
-    return GDB_SendPacket(ctx, "m", 1);
+    return GDB_SendPacket(ctx, "l", 1);
 }
 
 GDB_DECLARE_QUERY_HANDLER(ThreadEvents)
