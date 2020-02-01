@@ -24,11 +24,12 @@ struct {
 static void GDB_GenerateTargetXml(char *buf)
 {
     int pos;
-    const char *hdr = "<?xml version=\"1.0\"?><!DOCTYPE feature SYSTEM \"gdb-target.dtd\">";
+    const char *hdr = "<?xml version=\"1.0\"?><!DOCTYPE feature SYSTEM \"gdb-target.dtd\"><target>";
     const char *cpuDescBegin = "<feature name=\"org.gnu.gdb.aarch64.core\">";
     const char *cpuDescEnd =
-    "<reg name=\"sp\" bitsize=\"64\" type=\"data_ptr\"/><reg name=\"pc\""
-    "bitsize=\"64\" type=\"code_ptr\"/><reg name=\"cpsr\" bitsize=\"32\"/></feature>";
+    "<reg name=\"sp\" bitsize=\"64\" type=\"data_ptr\"/>"
+    "<reg name=\"pc\" bitsize=\"64\" type=\"code_ptr\"/>"
+    "<reg name=\"cpsr\" bitsize=\"32\"/></feature>";
 
     const char *fpuDescBegin =
     "<feature name=\"org.gnu.gdb.aarch64.fpu\"><vector id=\"v2d\" type=\"ieee_double\" count=\"2\"/>"
@@ -46,7 +47,7 @@ static void GDB_GenerateTargetXml(char *buf)
     "<field name=\"d\" type=\"vnd\"/><field name=\"s\" type=\"vns\"/><field name=\"h\" type=\"vnh\"/>"
     "<field name=\"b\" type=\"vnb\"/><field name=\"q\" type=\"vnq\"/></union>";
 
-    const char *fpuDescEnd = "<reg name=\"fpsr\" bitsize=\"32\"/>\r\n  <reg name=\"fpcr\" bitsize=\"32\"/>\r\n</feature>";
+    const char *fpuDescEnd = "<reg name=\"fpsr\" bitsize=\"32\"/>\r\n<reg name=\"fpcr\" bitsize=\"32\"/>\r\n</feature>";
     const char *footer = "</target>";
 
     strcpy(buf, hdr);
@@ -67,6 +68,8 @@ static void GDB_GenerateTargetXml(char *buf)
     strcat(buf, fpuDescEnd);
 
     strcat(buf, footer);
+
+    DEBUG("target.xml length is 0x%x\n", strlen(buf));
 }
 
 GDB_DECLARE_XFER_HANDLER(Features)
