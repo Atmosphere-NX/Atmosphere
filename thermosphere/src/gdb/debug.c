@@ -81,7 +81,7 @@ static int GDB_ParseExceptionFrame(char *out, const DebugEventInfo *info, int si
 
     n += sprintf(
         out + n,
-        "1f:%016lx;20:%016lx;21:%08x",
+        "1f:%016lx;20:%016lx;21:%08x;",
         __builtin_bswap64(*exceptionGetSpPtr(frame)),
         __builtin_bswap64(frame->elr_el2),
         __builtin_bswap32((u32)frame->spsr_el2)
