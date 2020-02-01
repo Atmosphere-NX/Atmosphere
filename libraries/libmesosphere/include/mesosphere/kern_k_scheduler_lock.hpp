@@ -17,6 +17,7 @@
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_spin_lock.hpp>
 #include <mesosphere/kern_k_current_context.hpp>
+#include <mesosphere/kern_k_scoped_lock.hpp>
 
 namespace ams::kern {
 

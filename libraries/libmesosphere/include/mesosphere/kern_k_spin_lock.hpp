@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_k_scoped_lock.hpp>
 
 #if defined(ATMOSPHERE_ARCH_ARM64)
 
@@ -34,45 +35,8 @@
 
 namespace ams::kern {
 
-    class KScopedSpinLock {
-        private:
-            KSpinLock *lock_ptr;
-        public:
-            explicit ALWAYS_INLINE KScopedSpinLock(KSpinLock *l) : lock_ptr(l) {
-                this->lock_ptr->Lock();
-            }
-            ALWAYS_INLINE ~KScopedSpinLock() {
-                this->lock_ptr->Unlock();
-            }
-
-            explicit ALWAYS_INLINE KScopedSpinLock(KSpinLock &l) : KScopedSpinLock(std::addressof(l)) { /* ... */ }
-    };
-
-    class KScopedAlignedSpinLock {
-        private:
-            KAlignedSpinLock *lock_ptr;
-        public:
-            explicit ALWAYS_INLINE KScopedAlignedSpinLock(KAlignedSpinLock *l) : lock_ptr(l) {
-                this->lock_ptr->Lock();
-            }
-            ALWAYS_INLINE ~KScopedAlignedSpinLock() {
-                this->lock_ptr->Unlock();
-            }
-            explicit ALWAYS_INLINE KScopedAlignedSpinLock(KAlignedSpinLock &l) : KScopedAlignedSpinLock(std::addressof(l)) { /* ... */ }
-    };
-
-    class KScopedNotAlignedSpinLock {
-        private:
-            KNotAlignedSpinLock *lock_ptr;
-        public:
-            explicit ALWAYS_INLINE KScopedNotAlignedSpinLock(KNotAlignedSpinLock *l) : lock_ptr(l) {
-                this->lock_ptr->Lock();
-            }
-            ALWAYS_INLINE ~KScopedNotAlignedSpinLock() {
-                this->lock_ptr->Unlock();
-            }
-
-            explicit ALWAYS_INLINE KScopedNotAlignedSpinLock(KNotAlignedSpinLock &l) : KScopedNotAlignedSpinLock(std::addressof(l)) { /* ... */ }
-    };
+    using KScopedSpinLock           = KScopedLock<KSpinLock>;
+    using KScopedAlignedSpinLock    = KScopedLock<KAlignedSpinLock>;
+    using KScopedNotAlignedSpinLock = KScopedLock<KNotAlignedSpinLock>;
 
 }

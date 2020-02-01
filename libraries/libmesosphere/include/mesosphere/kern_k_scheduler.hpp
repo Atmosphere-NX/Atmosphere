@@ -63,10 +63,8 @@ namespace ams::kern {
             static void EnableSchedulingAndSchedule(u64 cores_needing_scheduling);
     };
 
-    class KScopedSchedulerLock {
-        public:
-            ALWAYS_INLINE  KScopedSchedulerLock() { KScheduler::s_scheduler_lock.Lock();   }
-            ALWAYS_INLINE ~KScopedSchedulerLock() { KScheduler::s_scheduler_lock.Unlock(); }
+    class KScopedSchedulerLock : KScopedLock<KScheduler::LockType> {
+        explicit ALWAYS_INLINE KScopedSchedulerLock() : KScopedLock(KScheduler::s_scheduler_lock) { /* ... */ }
     };
 
 }

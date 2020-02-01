@@ -17,6 +17,7 @@
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_current_context.hpp>
+#include <mesosphere/kern_k_scoped_lock.hpp>
 
 namespace ams::kern {
 
@@ -60,18 +61,6 @@ namespace ams::kern {
             void UnlockSlowPath(uintptr_t cur_thread);
     };
 
-    class KScopedLightLock {
-        private:
-            KLightLock *lock;
-        public:
-            explicit ALWAYS_INLINE KScopedLightLock(KLightLock *l) : lock(l) {
-                this->lock->Lock();
-            }
-            ALWAYS_INLINE ~KScopedLightLock() {
-                this->lock->Unlock();
-            }
-
-            explicit ALWAYS_INLINE KScopedLightLock(KLightLock &l) : KScopedLightLock(std::addressof(l)) { /* ... */ }
-    };
+    using KScopedLightLock = KScopedLock<KLightLock>;
 
 }
