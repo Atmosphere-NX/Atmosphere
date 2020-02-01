@@ -60,5 +60,7 @@ typedef struct LoadImageLayout {
 
 extern LoadImageLayout g_loadImageLayout;
 
+uintptr_t memoryMapGetStackTop(u32 coreId);
+
 // Non-reentrant
 uintptr_t memoryMapPlatformMmio(uintptr_t pa, size_t size);
