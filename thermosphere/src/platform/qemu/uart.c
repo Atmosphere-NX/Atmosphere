@@ -184,7 +184,7 @@ void uartSetInterruptStatus(UartDevice dev, ReadWriteDirection direction, bool e
     if (enable) {
         uart->imsc |= mask;
     } else {
-        uart->icr = mask;
+        //uart->icr = mask;
         uart->imsc &= ~mask;
     }
 }
