@@ -115,3 +115,8 @@ static inline bool GDB_IsAttached(GDBContext *ctx)
 {
     return ctx->state == GDB_STATE_ATTACHED;
 }
+
+static inline bool GDB_IsNonStop(GDBContext *ctx)
+{
+    return (ctx->flags & GDB_FLAG_NONSTOP) != 0;
+}

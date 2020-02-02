@@ -196,7 +196,7 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
         }
 
         case DBGEVENT_OUTPUT_STRING: {
-            if (!(ctx->flags & GDB_FLAG_NONSTOP)) {
+            if (!GDB_IsNonStop(ctx)) {
                 uintptr_t addr = info->outputString.address;
                 size_t remaining = info->outputString.size;
                 size_t sent = 0;
@@ -235,9 +235,6 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
     } else if (asNotification) {
         return GDB_SendNotificationPacket(ctx, buf, strlen(buf));
     } else {
-        if (!(ctx->flags & GDB_FLAG_NONSTOP)) {
-            GDB_MarkDebugEventAcked(ctx, info);
-        }
         return GDB_SendPacket(ctx, buf, strlen(buf));
     }
 }
@@ -273,7 +270,7 @@ int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info)
     // Are we still paused & has the packet not been handled & are we allowed to send on our own?
 
     if (shouldSignal && !ctx->sendOwnDebugEventDisallowed && !info->handled && debugManagerIsCorePaused(info->coreId)) {
-        bool nonStop = (ctx->flags & GDB_FLAG_NONSTOP) != 0;
+        bool nonStop = GDB_IsNonStop(ctx);
         info->handled = true;
 
         // Full-stop mode: stop other cores
@@ -296,14 +293,14 @@ int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info)
 
 void GDB_BreakAllCores(GDBContext *ctx)
 {
-    if (ctx->flags & GDB_FLAG_NONSTOP) {
+    if (GDB_IsNonStop(ctx)) {
         debugManagerBreakCores(ctx->attachedCoreList);
     } else {
         // Break all cores too, but mark everything but the first has handled
         debugManagerBreakCores(ctx->attachedCoreList);
         u32 rem = ctx->attachedCoreList & ~BIT(currentCoreCtx->coreId);
         FOREACH_BIT (tmp, coreId, rem) {
-            DebugEventInfo *info = debugManagerGetCoreDebugEvent(coreId);
+            DebugEventInfo *info = debugManagerGetDebugEvent(coreId);
             info->handled = true;
             info->preprocessed = true;
         }
@@ -324,7 +321,7 @@ GDB_DECLARE_VERBOSE_HANDLER(Stopped)
         if (remaining != 0) {
             // Send one more debug event (marking it as handled)
             u32 coreId = __builtin_ctz(remaining);
-            DebugEventInfo *info = debugManagerGetCoreDebugEvent(coreId);
+            DebugEventInfo *info = debugManagerGetDebugEvent(coreId);
 
             if (GDB_PreprocessDebugEvent(ctx, info)) {
                 ctx->sendOwnDebugEventDisallowed = true;
@@ -342,8 +339,7 @@ GDB_DECLARE_VERBOSE_HANDLER(Stopped)
 
 GDB_DECLARE_HANDLER(GetStopReason)
 {
-    bool nonStop = (ctx->flags & GDB_FLAG_NONSTOP) != 0;
-    if (!nonStop) {
+    if (!GDB_IsNonStop(ctx)) {
         // Full-stop:
         return GDB_SendStopReply(ctx, ctx->lastDebugEvent, false);
     } else {
@@ -384,9 +380,9 @@ GDB_DECLARE_HANDLER(ContinueOrStepDeprecated)
     char cmd = ctx->commandData[-1];
 
     // This deprecated command should not be permitted in non-stop mode
-    if (ctx->flags & GDB_FLAG_NONSTOP) {
+    /*if (GDB_IsNonStop(ctx)) {
         return GDB_ReplyErrno(ctx, EPERM);
-    }
+    }*/
 
     if(cmd == 'C' || cmd == 'S') {
         // Check the presence of the two-digit signature, even if we ignore it.
@@ -544,7 +540,7 @@ GDB_DECLARE_VERBOSE_HANDLER(Continue)
 
     // "Note: In non-stop mode, a thread is considered running until GDB acknowledges 
     // an asynchronous stop notification for it with the ‘vStopped’ packet (see Remote Non-Stop)."
-    u32 mask = ctx->acknowledgedDebugEventCoreList;
+    u32 mask = GDB_IsNonStop(ctx) ? ctx->acknowledgedDebugEventCoreList : ctx->attachedCoreList;
 
     debugManagerSetSingleStepCoreList(stepCoreList & mask);
     debugManagerBreakCores(stopCoreList & ~mask);
