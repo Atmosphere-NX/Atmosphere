@@ -57,6 +57,9 @@ void debugManagerSetReportingEnabled(bool enabled);
 // Hypervisor interrupts will be serviced during the pause-wait
 bool debugManagerHandlePause(void);
 
+DebugEventInfo *debugManagerGetDebugEvent(u32 coreId);
+bool debugManagerHasDebugEvent(u32 coreId);
+
 // Note: these functions are not reentrant EXCEPT debugPauseCores(1 << currentCoreId)
 // "Pause" makes sure all cores reaches the pause function before proceeding.
 // "Unpause" doesn't synchronize, it just makes sure the core resumes & that "pause" can be called again.
@@ -68,7 +71,6 @@ void debugManagerSetSteppingRange(u32 coreId, uintptr_t startAddr, uintptr_t end
 
 u32 debugManagerGetPausedCoreList(void);
 
-DebugEventInfo *debugManagerGetCoreDebugEvent(u32 coreId);
 
 void debugManagerReportEvent(DebugEventType type, ...);
 

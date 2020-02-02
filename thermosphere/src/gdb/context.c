@@ -191,7 +191,7 @@ void GDB_AttachToContext(GDBContext *ctx)
 
     GDB_BreakAllCores(ctx);
 
-    DebugEventInfo *info = debugManagerGetCoreDebugEvent(currentCoreCtx->coreId);
+    DebugEventInfo *info = debugManagerGetDebugEvent(currentCoreCtx->coreId);
     info->preprocessed = true;
     info->handled = true;
     ctx->lastDebugEvent = info;

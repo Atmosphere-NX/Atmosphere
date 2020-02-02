@@ -124,6 +124,12 @@ void debugManagerSetReportingEnabled(bool enabled)
     atomic_store(&g_debugManager.reportingEnabled, enabled);
 }
 
+bool debugManagerHasDebugEvent(u32 coreId)
+{
+    bool isPaused = debugManagerIsCorePaused(coreId);
+    return isPaused && g_debugManager.debugEventInfos[coreId].type != DBGEVENT_NONE;
+}
+
 void debugManagerPauseCores(u32 coreList)
 {
     u64 flags = maskIrq();
@@ -161,7 +167,7 @@ u32 debugManagerGetPausedCoreList(void)
     return atomic_load(&g_debugManager.pausedCoreList);
 }
 
-DebugEventInfo *debugManagerGetCoreDebugEvent(u32 coreId)
+DebugEventInfo *debugManagerGetDebugEvent(u32 coreId)
 {
     return &g_debugManager.debugEventInfos[coreId];
 }
@@ -217,7 +223,7 @@ void debugManagerBreakCores(u32 coreList)
     if (coreList & ~BIT(coreId)) {
         generateSgiForList(ThermosphereSgi_ReportDebuggerBreak, coreList & ~BIT(coreId));
     }
-    if ((coreList & BIT(coreId)) && !debugManagerIsCorePaused(coreId)) {
+    if ((coreList & BIT(coreId)) && !debugManagerHasDebugEvent(coreId)) {
         debugManagerReportEvent(DBGEVENT_DEBUGGER_BREAK);
     }
 
