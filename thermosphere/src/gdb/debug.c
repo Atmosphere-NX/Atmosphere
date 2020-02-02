@@ -535,7 +535,7 @@ GDB_DECLARE_VERBOSE_HANDLER(Continue)
 
         FOREACH_BIT (tmp, t, curMask) {
             // Set/unset stepping range for all threads affected by this command
-            debugManagerSetSteppingRange(t - 1, ssStartAddr, ssEndAddr);
+            debugManagerSetSteppingRange(t, ssStartAddr, ssEndAddr);
         }
 
         parsedCoreList |= curMask;
