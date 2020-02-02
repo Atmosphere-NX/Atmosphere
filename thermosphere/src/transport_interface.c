@@ -159,8 +159,11 @@ TransportInterface *transportInterfaceCreate(
 
 void transportInterfaceAcquire(TransportInterface *iface)
 {
+    // Allow interrupts to be taken here if the caller allows it
+    recursiveSpinlockLock(&iface->lock);
+
     // Get the lock, prevent the interrupt from being pending if there's incoming data
-    u64 flags = recursiveSpinlockLockMaskIrq(&iface->lock);
+    u64 flags = maskIrq();
 
     switch (iface->type) {
         case TRANSPORT_INTERFACE_TYPE_UART: {
