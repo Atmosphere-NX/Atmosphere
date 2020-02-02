@@ -27,7 +27,7 @@
 typedef struct SoftwareBreakpoint {
     uintptr_t address; // VA
     u32 savedInstruction;
-    u32 uid;
+    u16 uid;
     bool persistent;
     bool applied;
     atomic_bool triedToApplyOrRevert;
