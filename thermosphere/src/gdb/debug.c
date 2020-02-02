@@ -540,7 +540,13 @@ GDB_DECLARE_VERBOSE_HANDLER(Continue)
 
     // "Note: In non-stop mode, a thread is considered running until GDB acknowledges 
     // an asynchronous stop notification for it with the ‘vStopped’ packet (see Remote Non-Stop)."
-    u32 mask = GDB_IsNonStop(ctx) ? ctx->acknowledgedDebugEventCoreList : ctx->attachedCoreList;
+    u32 mask;
+    if (GDB_IsNonStop(ctx)) {
+        mask = ctx->acknowledgedDebugEventCoreList;
+    } else {
+        mask = ctx->attachedCoreList;
+        ctx->sendOwnDebugEventDisallowed = (continueCoreList & mask) == 0;
+    }
 
     debugManagerSetSingleStepCoreList(stepCoreList & mask);
     debugManagerBreakCores(stopCoreList & ~mask);
