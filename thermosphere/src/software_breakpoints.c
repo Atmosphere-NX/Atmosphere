@@ -58,7 +58,7 @@ static size_t findClosestSoftwareBreakpointSlot(uintptr_t address)
 static inline bool doApplySoftwareBreakpoint(size_t id)
 {
     SoftwareBreakpoint *bp = &g_softwareBreakpointManager.breakpoints[id];
-    u32 brkInst = 0xF2000000 | bp->uid;
+    u32 brkInst = 0xD4200000 | (bp->uid << 5);
 
     size_t sz = guestReadWriteMemory(bp->address, 4, &bp->savedInstruction, &brkInst);
     bp->applied = sz == 4;
@@ -181,7 +181,7 @@ int addSoftwareBreakpoint(uintptr_t addr, bool persistent)
     bp->address = addr;
     bp->persistent = persistent;
     bp->applied = false;
-    bp->uid = 0x2000 + g_softwareBreakpointManager.bpUniqueCounter++;
+    bp->uid = (u16)(0x2000 + g_softwareBreakpointManager.bpUniqueCounter++);
 
     int rc = applySoftwareBreakpoint(id) ? 0 : -EFAULT;
     recursiveSpinlockUnlock(&g_softwareBreakpointManager.lock);
