@@ -54,7 +54,7 @@ static void debugManagerDoPauseCores(u32 coreList)
         remainingList &= ~readList;
     } while (!atomic_compare_exchange_weak(&g_debugManager.pausedCoreList, &readList, desiredList));
 
-    if (remainingList != BIT(currentCoreCtx->coreId)) {
+    if (remainingList & ~BIT(currentCoreCtx->coreId)) {
         // We need to notify other cores...
         u32 otherCores = remainingList & ~BIT(currentCoreCtx->coreId);
         barrierInit(&g_debugManager.pauseBarrier, otherCores | BIT(currentCoreCtx->coreId));
