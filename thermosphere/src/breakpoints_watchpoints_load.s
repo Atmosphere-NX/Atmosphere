@@ -19,6 +19,7 @@
 .altmacro
 
 .macro LOAD_DBG_REG_PAIRS what, id
+    ldp     x2, x3, [x0, #-0x10]!
     msr     dbg\what\()cr\id\()_el1, x2
     msr     dbg\what\()vr\id\()_el1, x3
     .if     \id != 0
