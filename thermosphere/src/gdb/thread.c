@@ -53,12 +53,12 @@ GDB_DECLARE_HANDLER(IsThreadAlive)
 {
     unsigned long threadId;
 
-    if (GDB_ParseHexIntegerList(&threadId, ctx->commandData, 1, 0) == NULL) {
+    if (GDB_ParseHexIntegerList(&threadId, ctx->commandData, 1, 0) == NULL || threadId < 1) {
         return GDB_ReplyErrno(ctx, EILSEQ);
     }
 
     u32 coreMask = ctx->attachedCoreList;
-    return (coreMask & BIT(threadId)) != 0 ? GDB_ReplyOk(ctx) : GDB_ReplyErrno(ctx, ESRCH);
+    return (coreMask & BIT(threadId - 1)) != 0 ? GDB_ReplyOk(ctx) : GDB_ReplyErrno(ctx, ESRCH);
 }
 
 GDB_DECLARE_QUERY_HANDLER(CurrentThreadId)
