@@ -30,7 +30,8 @@ void initBreakpoints(void)
     if (currentCoreCtx->isBootCore && !currentCoreCtx->warmboot) {
         size_t num = ((GET_SYSREG(id_aa64dfr0_el1) >> 12) & 0xF) + 1;
         g_breakpointManager.maxBreakpoints = (u32)num;
-        g_breakpointManager.allocationBitmap = BIT(num) - 1;
+        g_breakpointManager.freeBitmap = BIT(num) - 1;
+        g_breakpointManager.usedBitmap = 0;
     }
 
     loadBreakpointRegs(g_breakpointManager.breakpoints, g_breakpointManager.maxBreakpoints);
@@ -54,11 +55,12 @@ static inline void commitAndBroadcastBreakpoints(void)
 
 static DebugRegisterPair *allocateBreakpoint(void)
 {
-    u32 pos = __builtin_ffs(g_breakpointManager.allocationBitmap);
+    u32 pos = __builtin_ffs(g_breakpointManager.freeBitmap);
     if (pos == 0) {
         return NULL;
     } else {
-        g_breakpointManager.allocationBitmap &= ~BIT(pos - 1);
+        g_breakpointManager.freeBitmap &= ~BIT(pos - 1);
+        g_breakpointManager.usedBitmap |= BIT(pos - 1);
         return &g_breakpointManager.breakpoints[pos - 1];
     }
 }
@@ -66,21 +68,15 @@ static DebugRegisterPair *allocateBreakpoint(void)
 static void freeBreakpoint(u32 pos)
 {
     memset(&g_breakpointManager.breakpoints[pos], 0, sizeof(DebugRegisterPair));
-    g_breakpointManager.allocationBitmap |= BIT(pos);
+    g_breakpointManager.freeBitmap |= BIT(pos);
+    g_breakpointManager.usedBitmap &= ~BIT(pos);
 }
 
 static DebugRegisterPair *findBreakpoint(uintptr_t addr)
 {
-    u16 bitmap = ~g_breakpointManager.allocationBitmap & 0xFFFF;
-    while (bitmap != 0) {
-        u32 pos = __builtin_ffs(bitmap);
-        if (pos == 0) {
-            return NULL;
-        } else {
-            bitmap &= ~BIT(pos - 1);
-            if (g_breakpointManager.breakpoints[pos - 1].vr == addr) {
-                return &g_breakpointManager.breakpoints[pos - 1];
-            }
+    FOREACH_BIT (tmp, i, g_breakpointManager.usedBitmap) {
+        if (g_breakpointManager.breakpoints[i - 1].vr == addr) {
+            return &g_breakpointManager.breakpoints[i - 1];
         }
     }
 
@@ -98,6 +94,11 @@ int addBreakpoint(uintptr_t addr)
     if (addr & 3) {
         recursiveSpinlockUnlock(&g_breakpointManager.lock);
         return -EINVAL;
+    }
+
+    // Oops
+    if (g_breakpointManager.freeBitmap == 0) {
+        return -EBUSY;
     }
 
     // Breakpoint already added
@@ -149,7 +150,8 @@ int removeBreakpoint(uintptr_t addr)
 int removeAllBreakpoints(void)
 {
     recursiveSpinlockLock(&g_breakpointManager.lock);
-    g_breakpointManager.allocationBitmap = BIT(g_breakpointManager.maxBreakpoints) - 1;
+    g_breakpointManager.freeBitmap |= g_breakpointManager.usedBitmap;
+    g_breakpointManager.usedBitmap = 0;
     memset(g_breakpointManager.breakpoints, 0, sizeof(g_breakpointManager.breakpoints));
 
     commitAndBroadcastBreakpoints();
