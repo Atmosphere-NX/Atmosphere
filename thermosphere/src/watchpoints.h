@@ -24,18 +24,14 @@
 
 /// Structure to synchronize and keep track of watchpoints
 typedef struct WatchpointManager {
+    DebugRegisterPair watchpoints[MAX_WCR];
     RecursiveSpinlock lock;
-    u32 numSplitWatchpoints;
     u32 maxWatchpoints;
-    u32 maxSplitWatchpoints;
     u16 allocationBitmap;
-    DebugRegisterPair splitWatchpoints[MAX_WCR * 8];
 } WatchpointManager;
 
-extern WatchpointManager g_watchpointManager;
-
 void initWatchpoints(void);
-DebugControlRegister retrieveSplitWatchpointConfig(uintptr_t addr, size_t size, WatchpointLoadStoreControl direction, bool strict);
+DebugControlRegister retrieveWatchpointConfig(uintptr_t addr, WatchpointLoadStoreControl direction);
 int addWatchpoint(uintptr_t addr, size_t size, WatchpointLoadStoreControl direction);
 int removeWatchpoint(uintptr_t addr, size_t size, WatchpointLoadStoreControl direction);
 int removeAllWatchpoints(void);
