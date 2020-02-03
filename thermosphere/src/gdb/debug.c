@@ -162,7 +162,7 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
                     // Note: exception info doesn't provide us with the access size. Use 1.
                     bool wnr = (info->frame->esr_el2.iss & BIT(6)) != 0;
                     WatchpointLoadStoreControl dr = wnr ? WatchpointLoadStoreControl_Store : WatchpointLoadStoreControl_Load;
-                    DebugControlRegister cr = retrieveSplitWatchpointConfig(info->frame->far_el2, 1, dr, false);
+                    DebugControlRegister cr = retrieveWatchpointConfig(info->frame->far_el2, dr);
                     if (!cr.enabled) {
                         DEBUG("GDB: oops, unhandled watchpoint for core id %u, far=%016lx\n", info->coreId, info->frame->far_el2);
                     } else {
