@@ -31,7 +31,7 @@
 // 1024 is fine enough to put all regs in the 'T' stop reply packets
 // Add 4 to this for the actual allocated size, for $#<checksum>, see below.
 #define GDB_BUF_LEN 0x800
-#define GDB_WORK_BUF_LEN 0x2000
+#define GDB_WORK_BUF_LEN 0x1000
 
 #define GDB_HANDLER(name)           GDB_Handle##name
 #define GDB_QUERY_HANDLER(name)     GDB_HANDLER(Query##name)
