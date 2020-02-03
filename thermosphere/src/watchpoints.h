@@ -27,7 +27,8 @@ typedef struct WatchpointManager {
     DebugRegisterPair watchpoints[MAX_WCR];
     RecursiveSpinlock lock;
     u32 maxWatchpoints;
-    u16 allocationBitmap;
+    u16 freeBitmap;
+    u16 usedBitmap;
 } WatchpointManager;
 
 void initWatchpoints(void);

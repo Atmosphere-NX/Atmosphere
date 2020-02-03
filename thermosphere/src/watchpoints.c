@@ -32,7 +32,8 @@ void initWatchpoints(void)
     if (currentCoreCtx->isBootCore && !currentCoreCtx->warmboot) {
         size_t num = ((GET_SYSREG(id_aa64dfr0_el1) >> 20) & 0xF) + 1;
         g_watchpointManager.maxWatchpoints = (u32)num;
-        g_watchpointManager.allocationBitmap = BIT(num) - 1;
+        g_watchpointManager.freeBitmap = BIT(num) - 1;
+        g_watchpointManager.usedBitmap = 0;
     }
 
     loadWatchpointRegs(g_watchpointManager.watchpoints, g_watchpointManager.maxWatchpoints);
@@ -56,11 +57,12 @@ static inline void commitAndBroadcastWatchpoints(void)
 
 static DebugRegisterPair *allocateWatchpoint(void)
 {
-    u32 pos = __builtin_ffs(g_watchpointManager.allocationBitmap);
+    u32 pos = __builtin_ffs(g_watchpointManager.freeBitmap);
     if (pos == 0) {
         return NULL;
     } else {
-        g_watchpointManager.allocationBitmap &= ~BIT(pos - 1);
+        g_watchpointManager.freeBitmap &= ~BIT(pos - 1);
+        g_watchpointManager.usedBitmap |= BIT(pos - 1);
         return &g_watchpointManager.watchpoints[pos - 1];
     }
 }
@@ -68,7 +70,8 @@ static DebugRegisterPair *allocateWatchpoint(void)
 static void freeWatchpoint(u32 pos)
 {
     memset(&g_watchpointManager.watchpoints[pos], 0, sizeof(DebugRegisterPair));
-    g_watchpointManager.allocationBitmap |= BIT(pos);
+    g_watchpointManager.freeBitmap |= BIT(pos);
+    g_watchpointManager.usedBitmap &= ~BIT(pos);
 }
 
 static inline bool isRangeMaskWatchpoint(uintptr_t addr, size_t size)
@@ -81,8 +84,7 @@ static inline bool isRangeMaskWatchpoint(uintptr_t addr, size_t size)
 // Size = 0 means nonstrict
 static DebugRegisterPair *findWatchpoint(uintptr_t addr, size_t size, WatchpointLoadStoreControl direction)
 {
-    u64 bitmap = ~g_watchpointManager.allocationBitmap & 0xFFFF;
-    FOREACH_BIT (tmp, i, bitmap) {
+    FOREACH_BIT (tmp, i, g_watchpointManager.usedBitmap) {
         DebugRegisterPair *wp = &g_watchpointManager.watchpoints[i];
 
         size_t off;
@@ -146,7 +148,7 @@ int addWatchpoint(uintptr_t addr, size_t size, WatchpointLoadStoreControl direct
 
     recursiveSpinlockLock(&g_watchpointManager.lock);
 
-    if (g_watchpointManager.allocationBitmap == 0) {
+    if (g_watchpointManager.freeBitmap == 0) {
         recursiveSpinlockUnlock(&g_watchpointManager.lock);
         return -EBUSY;
     }
@@ -166,9 +168,8 @@ int addWatchpoint(uintptr_t addr, size_t size, WatchpointLoadStoreControl direct
         wp->cr.mask = (u32)__builtin_ffsl(size) - 1;
     } else {
         size_t off = addr & 7ull;
-        size_t sz = 8 - off;
         wp->vr = addr & ~7ul;
-        wp->cr.bas = MASK2(off + sz, off);
+        wp->cr.bas = MASK2(off + size, off);
     }
 
     wp->cr.linked = false;
@@ -213,7 +214,8 @@ int removeAllWatchpoints(void)
 
     recursiveSpinlockLock(&g_watchpointManager.lock);
 
-    g_watchpointManager.allocationBitmap = BIT(g_watchpointManager.maxWatchpoints) - 1;
+    g_watchpointManager.freeBitmap |= g_watchpointManager.usedBitmap;
+    g_watchpointManager.usedBitmap = 0;
     memset(g_watchpointManager.watchpoints, 0, sizeof(g_watchpointManager.watchpoints));
 
     commitAndBroadcastWatchpoints();

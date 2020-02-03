@@ -27,7 +27,8 @@ typedef struct BreakpointManager {
     DebugRegisterPair breakpoints[MAX_BCR];
     RecursiveSpinlock lock;
     u32 maxBreakpoints;
-    u16 allocationBitmap;
+    u16 freeBitmap;
+    u16 usedBitmap;
 } BreakpointManager;
 
 extern BreakpointManager g_breakpointManager;
