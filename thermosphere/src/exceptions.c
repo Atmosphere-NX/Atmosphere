@@ -202,6 +202,7 @@ void handleLowerElSyncException(ExceptionStackFrame *frame)
 void handleSameElSyncException(ExceptionStackFrame *frame)
 {
     ExceptionSyndromeRegister esr = frame->esr_el2;
+    (void)esr;
     DEBUG("Same EL sync exception on core %x, EC = 0x%02llx IL=%llu ISS=0x%06llx\n", currentCoreCtx->coreId, (u64)esr.ec, esr.il, esr.iss);
     dumpStackFrame(frame, true);
 }

@@ -77,6 +77,7 @@ void testProcessDataCallback(TransportInterface *iface, void *p, size_t sz)
     (void)sz;
     debugManagerUnpauseCores(BIT(0));
     TestCtx *ctx = (TestCtx *)p;
+    (void)ctx;
     DEBUG("EL2 [core %u]: you typed: %s\n", currentCoreCtx->coreId, ctx->buf);
 }
 
