@@ -17,7 +17,7 @@
 #include "fpu.h"
 #include "core_ctx.h"
 
-static FpuRegisterCache TEMPORARY g_fpuRegisterCache[4] = { 0 };
+static FpuRegisterCache TEMPORARY g_fpuRegisterCache = { 0 };
 
 // fpu_regs_load_store.s
 void fpuLoadRegistersFromCache(const FpuRegisterCache *cache);
@@ -25,12 +25,13 @@ void fpuStoreRegistersToCache(FpuRegisterCache *cache);
 
 FpuRegisterCache *fpuGetRegisterCache(void)
 {
-    return &g_fpuRegisterCache[currentCoreCtx->coreId];
+    g_fpuRegisterCache.coreId = currentCoreCtx->coreId;
+    return &g_fpuRegisterCache;
 }
 
 FpuRegisterCache *fpuReadRegisters(void)
 {
-    FpuRegisterCache *cache = &g_fpuRegisterCache[currentCoreCtx->coreId];
+    FpuRegisterCache *cache = &g_fpuRegisterCache;
     if (!cache->valid) {
         fpuStoreRegistersToCache(cache);
         cache->valid = true;
@@ -40,7 +41,7 @@ FpuRegisterCache *fpuReadRegisters(void)
 
 void fpuCommitRegisters(void)
 {
-    FpuRegisterCache *cache = &g_fpuRegisterCache[currentCoreCtx->coreId];
+    FpuRegisterCache *cache = &g_fpuRegisterCache;
     cache->dirty = true;
 
     // Because the caller rewrote the entire cache in the event it didn't read it before:
@@ -49,8 +50,8 @@ void fpuCommitRegisters(void)
 
 void fpuCleanInvalidateRegisterCache(void)
 {
-    FpuRegisterCache *cache = &g_fpuRegisterCache[currentCoreCtx->coreId];
-    if (cache->dirty) {
+    FpuRegisterCache *cache = &g_fpuRegisterCache;
+    if (cache->dirty && cache->coreId == currentCoreCtx->coreId) {
         fpuLoadRegistersFromCache(cache);
         cache->dirty = false;
     }

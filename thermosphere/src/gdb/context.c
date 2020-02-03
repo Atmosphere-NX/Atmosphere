@@ -41,6 +41,7 @@
 #include "../breakpoints.h"
 #include "../software_breakpoints.h"
 #include "../watchpoints.h"
+#include "../fpu.h"
 
 static TEMPORARY char g_gdbWorkBuffer[GDB_WORK_BUF_LEN];
 static TEMPORARY char g_gdbBuffer[GDB_BUF_LEN + 4 + 1];
@@ -236,6 +237,7 @@ void GDB_ReleaseContext(GDBContext *ctx)
 
 void GDB_MigrateRxIrq(GDBContext *ctx, u32 coreId)
 {
+    fpuCleanInvalidateRegisterCache();
     transportInterfaceSetInterruptAffinity(ctx->transportInterface, BIT(coreId));
 }
 

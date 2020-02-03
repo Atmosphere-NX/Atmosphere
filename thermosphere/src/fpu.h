@@ -17,13 +17,14 @@
 #pragma once
 
 #include "utils.h"
-
+#include "spinlock.h"
 typedef struct FpuRegisterCache {
-    u128    q[32];
-    u64     fpsr;
-    u64     fpcr;
-    bool    valid;
-    bool    dirty;
+    u128                q[32];
+    u64                 fpsr;
+    u64                 fpcr;
+    u32                 coreId;
+    bool                valid;
+    bool                dirty;
 } FpuRegisterCache;
 
 // Only for the current core:
