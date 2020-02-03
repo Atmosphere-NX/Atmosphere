@@ -28,7 +28,6 @@
 static TEMPORARY ALIGN(0x1000) u64 g_vttbl[BIT(ADDRSPACESZ2 - 30)] = {0};
 static TEMPORARY ALIGN(0x1000) u64 g_vttbl_l2_mmio_0_0[512] = {0};
 static TEMPORARY ALIGN(0x1000) u64 g_vttbl_l3_0[512] = {0};
-static TEMPORARY uintptr_t g_vttblPaddr;
 
 static inline void identityMapL1(u64 *tbl, uintptr_t addr, size_t size, u64 attribs)
 {
@@ -51,8 +50,9 @@ uintptr_t stage2Configure(u32 *addrSpaceSize)
     static const u64 devattrs = 0 | MMU_S2AP_RW | MMU_MEMATTR_DEVICE_NGNRE;
     static const u64 unchanged = MMU_S2AP_RW | MMU_MEMATTR_NORMAL_CACHEABLE_OR_UNCHANGED;
 
+    uintptr_t g_vttblPaddr = va2pa(g_vttbl);
+
     if (currentCoreCtx->isBootCore) {
-        g_vttblPaddr = va2pa(g_vttbl);
         uintptr_t *l2pa = (uintptr_t *)va2pa(g_vttbl_l2_mmio_0_0);
         uintptr_t *l3pa = (uintptr_t *)va2pa(g_vttbl_l3_0);
 
