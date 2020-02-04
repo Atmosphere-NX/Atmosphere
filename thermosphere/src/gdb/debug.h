@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "context.h"
+#include "gdb_context.hpp"
 #include "../core_ctx.h"
 #include "../debug_manager.h"
 
@@ -15,14 +15,3 @@ int GDB_SendStopReply(GDBContext *ctx, const DebugEventInfo *info, bool asNotifi
 int GDB_TrySignalDebugEvent(GDBContext *ctx, DebugEventInfo *info);
 
 void GDB_BreakAllCores(GDBContext *ctx);
-
-GDB_DECLARE_VERBOSE_HANDLER(Stopped);
-
-GDB_DECLARE_HANDLER(Detach);
-GDB_DECLARE_HANDLER(Kill);
-GDB_DECLARE_VERBOSE_HANDLER(CtrlC);
-GDB_DECLARE_HANDLER(ContinueOrStepDeprecated);
-GDB_DECLARE_VERBOSE_HANDLER(Continue);
-GDB_DECLARE_HANDLER(GetStopReason);
-
-//void GDB_BreakProcessAndSinkDebugEvents(GDBContext *ctx, DebugFlags flags);

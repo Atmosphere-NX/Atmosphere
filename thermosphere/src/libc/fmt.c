@@ -46,9 +46,14 @@ This code is based on a file that contains the following:
 
 //TuxSH's changes: add support for 64-bit numbers, remove floating-point code
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <string.h>
 #include <stdarg.h>
-#include "types.h"
+#include <stddef.h>
+#include <stdbool.h>
 
 #define ZEROPAD   (1<<0) //Pad with zero
 #define SIGN      (1<<1) //Unsigned/signed long
@@ -60,16 +65,16 @@ This code is based on a file that contains the following:
 
 #define IS_DIGIT(c) ((c) >= '0' && (c) <= '9')
 
-static s32 skipAtoi(const char **s)
+static int skipAtoi(const char **s)
 {
-    s32 i = 0;
+    int i = 0;
 
     while(IS_DIGIT(**s)) i = i * 10 + *((*s)++) - '0';
 
     return i;
 }
 
-static char *processNumber(char *str, s64 num, bool isHex, s32 size, s32 precision, u32 type)
+static char *processNumber(char *str, long long num, bool isHex, int size, int precision, unsigned int type)
 {
     char sign = 0;
 
@@ -96,7 +101,7 @@ static char *processNumber(char *str, s64 num, bool isHex, s32 size, s32 precisi
     static const char *lowerDigits = "0123456789abcdef",
                       *upperDigits = "0123456789ABCDEF";
 
-    s32 i = 0;
+    int i = 0;
     char tmp[20];
     const char *dig = (type & UPPERCASE) ? upperDigits : lowerDigits;
 
@@ -109,9 +114,9 @@ static char *processNumber(char *str, s64 num, bool isHex, s32 size, s32 precisi
     {
         while(num != 0)
         {
-            u64 base = isHex ? 16ULL : 10ULL;
-            tmp[i++] = dig[(u64)num % base];
-            num = (s64)((u64)num / base);
+            unsigned long long int base = isHex ? 16ULL : 10ULL;
+            tmp[i++] = dig[(unsigned long long int)num % base];
+            num = (long long)((unsigned long long int)num / base);
         }
     }
 
@@ -149,7 +154,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
         }
 
         //Process flags
-        u32 flags = 0; //Flags to number()
+        unsigned int flags = 0; //Flags to number()
         bool loop = true;
 
         while(loop)
@@ -166,13 +171,13 @@ int vsprintf(char *buf, const char *fmt, va_list args)
         }
 
         //Get field width
-        s32 fieldWidth = -1; //Width of output field
+        int fieldWidth = -1; //Width of output field
         if(IS_DIGIT(*fmt)) fieldWidth = skipAtoi(&fmt);
         else if(*fmt == '*')
         {
             fmt++;
 
-            fieldWidth = va_arg(args, s32);
+            fieldWidth = va_arg(args, int);
 
             if(fieldWidth < 0)
             {
@@ -182,7 +187,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
         }
 
         //Get the precision
-        s32 precision = -1; //Min. # of digits for integers; max number of chars for from string
+        int precision = -1; //Min. # of digits for integers; max number of chars for from string
         if(*fmt == '.')
         {
             fmt++;
@@ -191,14 +196,14 @@ int vsprintf(char *buf, const char *fmt, va_list args)
             else if(*fmt == '*')
             {
                 fmt++;
-                precision = va_arg(args, s32);
+                precision = va_arg(args, int);
             }
 
             if(precision < 0) precision = 0;
         }
 
         //Get the conversion qualifier
-        u32 integerType = 0;
+        unsigned int integerType = 0;
         if(*fmt == 'l')
         {
             if(*++fmt == 'l')
@@ -227,7 +232,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
         {
             case 'c':
                 if(!(flags & LEFT)) while(--fieldWidth > 0) *str++ = ' ';
-                *str++ = (u8)va_arg(args, s32);
+                *str++ = (unsigned char)va_arg(args, int);
                 while(--fieldWidth > 0) *str++ = ' ';
                 continue;
 
@@ -235,10 +240,10 @@ int vsprintf(char *buf, const char *fmt, va_list args)
             {
                 char *s = va_arg(args, char *);
                 if(!s) s = "<NULL>";
-                u32 len = (precision != -1) ? strnlen(s, precision) : strlen(s);
-                if(!(flags & LEFT)) while((s32)len < fieldWidth--) *str++ = ' ';
-                for(u32 i = 0; i < len; i++) *str++ = *s++;
-                while((s32)len < fieldWidth--) *str++ = ' ';
+                unsigned int len = (precision != -1) ? strnlen(s, precision) : strlen(s);
+                if(!(flags & LEFT)) while((int)len < fieldWidth--) *str++ = ' ';
+                for(unsigned int i = 0; i < len; i++) *str++ = *s++;
+                while((int)len < fieldWidth--) *str++ = ' ';
                 continue;
             }
 
@@ -248,7 +253,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
                     fieldWidth = 8;
                     flags |= ZEROPAD;
                 }
-                str = processNumber(str, va_arg(args, u32), true, fieldWidth, precision, flags);
+                str = processNumber(str, va_arg(args, unsigned int), true, fieldWidth, precision, flags);
                 continue;
 
             //Integer number formats - set up the flags and "break"
@@ -274,23 +279,23 @@ int vsprintf(char *buf, const char *fmt, va_list args)
                 continue;
         }
 
-        s64 num;
+        long long num;
 
         if(flags & SIGN)
         {
-            if(integerType == 1) num = va_arg(args, s64);
-            else num = va_arg(args, s32);
+            if(integerType == 1) num = va_arg(args, signed long long int);
+            else num = va_arg(args, signed int);
 
-            if(integerType == 2) num = (s16)num;
-            else if(integerType == 3) num = (s8)num;
+            if(integerType == 2) num = (signed short)num;
+            else if(integerType == 3) num = (signed char)num;
         }
         else
         {
-            if(integerType == 1) num = va_arg(args, u64);
-            else num = va_arg(args, u32);
+            if(integerType == 1) num = va_arg(args, unsigned long long int);
+            else num = va_arg(args, unsigned int);
 
-            if(integerType == 2) num = (u16)num;
-            else if(integerType == 3) num = (u8)num;
+            if(integerType == 2) num = (unsigned short)num;
+            else if(integerType == 3) num = (unsigned char)num;
         }
 
         str = processNumber(str, num, isHex, fieldWidth, precision, flags);
@@ -308,3 +313,8 @@ int sprintf(char *buf, const char *fmt, ...)
     va_end(args);
     return res;
 }
+
+
+#ifdef __cplusplus
+}
+#endif

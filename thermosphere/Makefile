@@ -9,6 +9,8 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/devkitA64/base_rules
 
+export AMSLIBSDIR := $(TOPDIR)/../libraries
+
 AMSBRANCH := $(shell git symbolic-ref --short HEAD)
 AMSHASH = $(shell git rev-parse --short=16 HEAD)
 AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
@@ -49,17 +51,16 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src src/platform src/gdb $(PLATFORM_SOURCES)
+SOURCES		:=	src src/libc src/platform src/gdb $(PLATFORM_SOURCES)
 DATA		:=	data
-INCLUDES	:=	include ../common/include
+INCLUDES	:=
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 # Note: -ffixed-x18 and -mgeneral-regs-only are very important and must be enabled
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only -ffixed-x18 -Wno-psabi
-DEFINES	:=	-D__CCPLEX__ -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"\
-			-DATMOSPHERE_RELEASE_VERSION_HASH="0x$(AMSHASH)" $(PLATFORM_DEFINES)
+DEFINES	:=	$(PLATFORM_DEFINES)
 CFLAGS	:= \
 	-g \
 	-fmacro-prefix-map=$(TOPDIR)/src/= \
@@ -68,20 +69,36 @@ CFLAGS	:= \
 	-fdata-sections \
 	-fomit-frame-pointer \
 	-fno-asynchronous-unwind-tables \
-	-fstrict-volatile-bitfields \
 	-fno-unwind-tables \
-	-std=gnu11 \
+	-fno-stack-protector \
+	-fstrict-volatile-bitfields \
 	-Wall \
 	-Werror \
 	-Wno-main \
 	$(ARCH) $(DEFINES)
 
-CFLAGS	+=	$(INCLUDE) 
+export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
+	-Wl,--wrap,__cxa_throw \
+	-Wl,--wrap,__cxa_rethrow \
+	-Wl,--wrap,__cxa_allocate_exception \
+	-Wl,--wrap,__cxa_free_exception \
+	-Wl,--wrap,__cxa_begin_catch \
+	-Wl,--wrap,__cxa_end_catch \
+	-Wl,--wrap,__cxa_call_unexpected \
+	-Wl,--wrap,__cxa_call_terminate \
+	-Wl,--wrap,__gxx_personality_v0 \
+	-Wl,--wrap,_Unwind_Resume \
+	-Wl,--wrap,_Unwind_Resume \
+	-Wl,--wrap,_ZSt19__throw_logic_errorPKc \
+	-Wl,--wrap,_ZSt20__throw_length_errorPKc \
+	-Wl,--wrap,_ZNSt11logic_errorC2EPKc
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+CFLAGS	+=	$(INCLUDE) 
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++2a
+CFLAGS	+=  -std=gnu11
 
 ASFLAGS	:=	-g $(ARCH) $(DEFINES)
-LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -nostartfiles -nostdlib -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -nostartfiles -nostdlib -g $(ARCH) $(CXXWRAPS) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=	-lgcc
 
@@ -89,7 +106,7 @@ LIBS	:=	-lgcc
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=
+LIBDIRS	:= $(AMSLIBSDIR)/libvapours
 
 
 #---------------------------------------------------------------------------------

@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../utils.h"
+#include "../defines.hpp"
 
 // 512+24 is the ideal size as IDA will try to read exactly 0x100 bytes at a time.
 // IDA seems to want additional bytes as well.
@@ -33,10 +33,14 @@
 #define GDB_BUF_LEN 0x800
 #define GDB_WORK_BUF_LEN 0x1000
 
-#define GDB_HANDLER(name)           GDB_Handle##name
-#define GDB_QUERY_HANDLER(name)     GDB_HANDLER(Query##name)
-#define GDB_VERBOSE_HANDLER(name)   GDB_HANDLER(Verbose##name)
+#define HANDLER(name)                   Handle##name
+#define QUERY_HANDLER(name)             HANDLER(Query##name)
+#define VERBOSE_HANDLER(name)           HANDLER(Verbose##name)
 
-#define GDB_DECLARE_HANDLER(name)           int GDB_HANDLER(name)(GDBContext *ctx)
-#define GDB_DECLARE_QUERY_HANDLER(name)     GDB_DECLARE_HANDLER(Query##name)
-#define GDB_DECLARE_VERBOSE_HANDLER(name)   GDB_DECLARE_HANDLER(Verbose##name)
+#define DECLARE_HANDLER(name)           int HANDLER(name)()
+#define DECLARE_QUERY_HANDLER(name)     DECLARE_HANDLER(Query##name)
+#define DECLARE_VERBOSE_HANDLER(name)   DECLARE_HANDLER(Verbose##name)
+
+#define DEFINE_HANDLER(name)            int Context::HANDLER(name)()
+#define DEFINE_QUERY_HANDLER(name)      DEFINE_HANDLER(Query##name)
+#define DECLARE_VERBOSE_HANDLER(name)   DEFINE_HANDLER(Verbose##name)
