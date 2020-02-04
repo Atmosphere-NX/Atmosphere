@@ -70,7 +70,7 @@ namespace ams::util {
     };
 
     template<typename T = u64, typename ...Args>
-    T CombineBits(Args... args) {
+    constexpr ALWAYS_INLINE T CombineBits(Args... args) {
         return (... | (T(1u) << args));
     }
 
