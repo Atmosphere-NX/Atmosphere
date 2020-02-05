@@ -202,6 +202,18 @@ namespace ams::kern {
         /* TODO */
     }
 
+    void KThread::SetState(ThreadState state) {
+        MESOSPHERE_ASSERT_THIS();
+
+        KScopedSchedulerLock sl;
+
+        const ThreadState old_state = this->thread_state;
+        this->thread_state = static_cast<ThreadState>((old_state & ~ThreadState_Mask) | (state & ThreadState_Mask));
+        if (this->thread_state != old_state) {
+            KScheduler::OnThreadStateChanged(this, old_state);
+        }
+    }
+
     KThreadContext *KThread::GetContextForSchedulerLoop() {
         return std::addressof(this->thread_context);
     }

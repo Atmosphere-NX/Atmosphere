@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_select_interrupt_name.hpp>
 
 #if defined(ATMOSPHERE_ARCH_ARM64)
 

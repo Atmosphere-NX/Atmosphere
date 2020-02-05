@@ -27,8 +27,6 @@ namespace ams::kern::arm64 {
 
     class KHardwareTimer : public KHardwareTimerBase {
         public:
-            static constexpr s32 InterruptId = 30; /* Nintendo uses the non-secure timer interrupt. */
-        public:
             constexpr KHardwareTimer() : KHardwareTimerBase() { /* ... */ }
         public:
             /* Public API. */

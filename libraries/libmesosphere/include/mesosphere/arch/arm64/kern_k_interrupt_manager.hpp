@@ -31,12 +31,20 @@ namespace ams::kern::arm64 {
                 bool manually_cleared;
                 bool needs_clear;
                 u8 priority;
+
+                constexpr KCoreLocalInterruptEntry()
+                    : handler(nullptr), manually_cleared(false), needs_clear(false), priority(KInterruptController::PriorityLevel_Low)
+                {
+                    /* ... */
+                }
             };
 
             struct KGlobalInterruptEntry {
                 KInterruptHandler *handler;
                 bool manually_cleared;
                 bool needs_clear;
+
+                constexpr KGlobalInterruptEntry() : handler(nullptr), manually_cleared(false), needs_clear(false) { /* ... */ }
             };
         private:
             static inline KSpinLock s_lock;
@@ -48,23 +56,53 @@ namespace ams::kern::arm64 {
             KInterruptController interrupt_controller;
             KInterruptController::LocalState local_state;
             bool local_state_saved;
+        private:
+            static ALWAYS_INLINE KSpinLock &GetLock() { return s_lock; }
+            static ALWAYS_INLINE KGlobalInterruptEntry &GetGlobalInterruptEntry(s32 irq) { return s_global_interrupts[KInterruptController::GetGlobalInterruptIndex(irq)]; }
+            ALWAYS_INLINE KCoreLocalInterruptEntry &GetLocalInterruptEntry(s32 irq) { return this->core_local_interrupts[KInterruptController::GetLocalInterruptIndex(irq)]; }
         public:
-            KInterruptManager() : local_state_saved(false) { /* Leave things mostly uninitalized. We'll call ::Initialize() later. */ }
-            /* TODO: Actually implement KInterruptManager functionality. */
+            constexpr KInterruptManager() : core_local_interrupts(), interrupt_controller(), local_state(), local_state_saved(false) { /* ... */ }
             NOINLINE void Initialize(s32 core_id);
             NOINLINE void Finalize(s32 core_id);
+
+            NOINLINE Result BindHandler(KInterruptHandler *handler, s32 irq, s32 core_id, s32 priority, bool manual_clear, bool level);
+            NOINLINE Result UnbindHandler(s32 irq, s32 core);
+
+            NOINLINE Result ClearInterrupt(s32 irq);
+            NOINLINE Result ClearInterrupt(s32 irq, s32 core_id);
+
+            ALWAYS_INLINE void SendInterProcessorInterrupt(s32 irq, u64 core_mask) {
+                this->interrupt_controller.SendInterProcessorInterrupt(irq, core_mask);
+            }
+
+            ALWAYS_INLINE void SendInterProcessorInterrupt(s32 irq) {
+                this->interrupt_controller.SendInterProcessorInterrupt(irq);
+            }
+
+            /* Implement more KInterruptManager functionality. */
+        private:
+            Result BindGlobal(KInterruptHandler *handler, s32 irq, s32 core_id, s32 priority, bool manual_clear, bool level);
+            Result BindLocal(KInterruptHandler *handler, s32 irq, s32 priority, bool manual_clear);
+            Result UnbindGlobal(s32 irq);
+            Result UnbindLocal(s32 irq);
+            Result ClearGlobal(s32 irq);
+            Result ClearLocal(s32 irq);
         public:
             static ALWAYS_INLINE u32 DisableInterrupts() {
                 u64 intr_state;
-                __asm__ __volatile__("mrs %[intr_state], daif" : [intr_state]"=r"(intr_state));
-                __asm__ __volatile__("msr daif, %[intr_state]" :: [intr_state]"r"(intr_state | 0x80));
+                __asm__ __volatile__("mrs %[intr_state], daif\n"
+                                     "msr daifset, #2"
+                                     : [intr_state]"=r"(intr_state)
+                                     :: "memory");
                 return intr_state;
             }
 
             static ALWAYS_INLINE u32 EnableInterrupts() {
                 u64 intr_state;
-                __asm__ __volatile__("mrs %[intr_state], daif" : [intr_state]"=r"(intr_state));
-                __asm__ __volatile__("msr daif, %[intr_state]" :: [intr_state]"r"(intr_state & ~0x80ul));
+                __asm__ __volatile__("mrs %[intr_state], daif\n"
+                                     "msr daifclr, #2"
+                                     : [intr_state]"=r"(intr_state)
+                                     :: "memory");
                 return intr_state;
             }
 

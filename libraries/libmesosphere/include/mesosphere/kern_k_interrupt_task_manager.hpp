@@ -40,6 +40,10 @@ namespace ams::kern {
             TaskQueue task_queue;
             KThread *thread;
         public:
+            constexpr KInterruptTaskManager() : task_queue(), thread(nullptr) { /* ... */ }
+
+            constexpr ALWAYS_INLINE KThread *GetThread() const { return this->thread; }
+
             /* TODO: Actually implement KInterruptTaskManager. This is a placeholder. */
     };
 

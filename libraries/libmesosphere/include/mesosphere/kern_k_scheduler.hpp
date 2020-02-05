@@ -127,12 +127,7 @@ namespace ams::kern {
                 this->ScheduleImpl();
             }
 
-            ALWAYS_INLINE void RescheduleOtherCores(u64 cores_needing_scheduling) {
-                if (const u64 core_mask = cores_needing_scheduling & ~(1ul << this->core_id); core_mask != 0) {
-                    cpu::DataSynchronizationBarrier();
-                    /* TODO: Send scheduler interrupt. */
-                }
-            }
+            void RescheduleOtherCores(u64 cores_needing_scheduling);
 
             ALWAYS_INLINE void RescheduleCurrentCore() {
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() == 1);

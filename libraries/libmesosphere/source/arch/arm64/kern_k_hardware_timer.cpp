@@ -32,8 +32,16 @@ namespace ams::kern::arm64 {
                 }
         };
 
+    }
+
+    namespace {
+
         /* One global hardware timer interrupt task per core. */
-        KHardwareTimerInterruptTask g_hardware_timer_interrupt_tasks[cpu::NumCores];
+        impl::KHardwareTimerInterruptTask g_hardware_timer_interrupt_tasks[cpu::NumCores];
+
+        ALWAYS_INLINE auto *GetHardwareTimerInterruptTask(s32 core_id) {
+            return std::addressof(g_hardware_timer_interrupt_tasks[core_id]);
+        }
 
     }
 
@@ -41,7 +49,8 @@ namespace ams::kern::arm64 {
         /* Setup the global timer for the core. */
         InitializeGlobalTimer();
 
-        /* TODO: Bind the interrupt task for this core to the interrupt manager. */
+        /* Bind the interrupt task for this core. */
+        Kernel::GetInterruptManager().BindHandler(GetHardwareTimerInterruptTask(core_id), KInterruptName_HardwareTimerEl1, core_id, KInterruptController::PriorityLevel_Timer, true, true);
     }
 
     void KHardwareTimer::Finalize() {
@@ -63,7 +72,9 @@ namespace ams::kern::arm64 {
                 EnableInterrupt();
             }
         }
-        /* TODO: Clear the timer interrupt. */
+
+        /* Clear the timer interrupt. */
+        Kernel::GetInterruptManager().ClearInterrupt(KInterruptName_HardwareTimerEl1, GetCurrentCoreId());
     }
 
 }

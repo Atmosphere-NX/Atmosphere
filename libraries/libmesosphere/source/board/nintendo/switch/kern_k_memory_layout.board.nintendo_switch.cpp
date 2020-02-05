@@ -35,8 +35,8 @@ namespace ams::kern {
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x7000E000, 0x400,     KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x7000E400, 0xC00,     KMemoryRegionType_PowerManagementController | KMemoryRegionAttr_NoUserMap));
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x50040000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x50041000, 0x1000,    KMemoryRegionType_InterruptDistributor      | KMemoryRegionAttr_ShouldKernelMap | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x50042000, 0x1000,    KMemoryRegionType_InterruptController       | KMemoryRegionAttr_ShouldKernelMap | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x50041000, 0x1000,    KMemoryRegionType_InterruptDistributor      | KMemoryRegionAttr_ShouldKernelMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x50042000, 0x1000,    KMemoryRegionType_InterruptCpuInterface     | KMemoryRegionAttr_ShouldKernelMap));
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x50043000, 0x1D000,   KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x6000F000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x6001DC00, 0x400,     KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));

@@ -14,18 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <mesosphere/kern_common.hpp>
-#include <mesosphere/kern_select_interrupt_name.hpp>
 
-#if defined(ATMOSPHERE_ARCH_ARM64)
+namespace ams::kern::arm64 {
 
-    #include <mesosphere/arch/arm64/kern_k_interrupt_controller.hpp>
-    namespace ams::kern {
-        using ams::kern::arm64::KInterruptController;
-    }
+    namespace interrupt_name {
+        enum KInterruptName : s32 {
+            KInterruptName_Scheduler              = 6,
+            KInterruptName_HardwareTimerEl1       = 30,
 
-#else
+    #if defined(ATMOSPHERE_BOARD_NINTENDO_SWITCH)
+            KInterruptName_MemoryController       = 109,
+    #endif
+        };
+    };
 
-    #error "Unknown architecture for KInterruptController"
-
-#endif
+}

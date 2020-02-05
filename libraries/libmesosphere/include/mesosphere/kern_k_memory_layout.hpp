@@ -57,8 +57,8 @@ namespace ams::kern {
         KMemoryRegionType_VirtualDramSystemPool          = 0x2B1A,
 
         KMemoryRegionType_Uart                      = 0x1D,
-        KMemoryRegionType_InterruptDistributor      = 0x4D,
-        KMemoryRegionType_InterruptController       = 0x2D,
+        KMemoryRegionType_InterruptDistributor      = 0x4D | KMemoryRegionAttr_NoUserMap,
+        KMemoryRegionType_InterruptCpuInterface     = 0x2D | KMemoryRegionAttr_NoUserMap,
 
         KMemoryRegionType_MemoryController          = 0x55,
         KMemoryRegionType_MemoryController0         = 0x95,
@@ -423,6 +423,14 @@ namespace ams::kern {
 
             static NOINLINE KVirtualAddress GetCoreLocalRegionAddress() {
                 return GetVirtualMemoryBlockTree().FindFirstBlockByType(KMemoryRegionType_CoreLocal)->GetAddress();
+            }
+
+            static NOINLINE KVirtualAddress GetInterruptDistributorAddress() {
+                return GetPhysicalMemoryBlockTree().FindFirstDerivedBlock(KMemoryRegionType_InterruptDistributor)->GetPairAddress();
+            }
+
+            static NOINLINE KVirtualAddress GetInterruptCpuInterfaceAddress() {
+                return GetPhysicalMemoryBlockTree().FindFirstDerivedBlock(KMemoryRegionType_InterruptCpuInterface)->GetPairAddress();
             }
 
             static void InitializeLinearMemoryBlockTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);

@@ -43,9 +43,15 @@ namespace ams::kern::arm64 {
         u32 icpendr[32];
         u32 isactiver[32];
         u32 icactiver[32];
-        u8 ipriorityr[1020];
+        union {
+            u8  bytes[1020];
+            u32 words[255];
+        } ipriorityr;
         u32 _0x7fc;
-        u8 itargetsr[1020];
+        union {
+            u8  bytes[1020];
+            u32 words[255];
+        } itargetsr;
         u32 _0xbfc;
         u32 icfgr[64];
         u32 igrpmodr[32];
@@ -56,11 +62,20 @@ namespace ams::kern::arm64 {
         u32 cpendsgir[4];
         u32 spendsgir[4];
         u32 reserved_0xf30[52];
+
+        static constexpr size_t SgirCpuTargetListShift = 16;
+
+        enum SgirTargetListFilter : u32 {
+            SgirTargetListFilter_CpuTargetList = (0 << 24),
+            SgirTargetListFilter_Others        = (1 << 24),
+            SgirTargetListFilter_Self          = (2 << 24),
+            SgirTargetListFilter_Reserved      = (3 << 24),
+        };
     };
     static_assert(std::is_pod<GicDistributor>::value);
     static_assert(sizeof(GicDistributor) == 0x1000);
 
-    struct GicController {
+    struct GicCpuInterface {
         u32 ctlr;
         u32 pmr;
         u32 bpr;
@@ -83,16 +98,18 @@ namespace ams::kern::arm64 {
         u32 dir;
         u32 _0x1004[1023];
     };
-    static_assert(std::is_pod<GicController>::value);
-    static_assert(sizeof(GicController) == 0x2000);
+    static_assert(std::is_pod<GicCpuInterface>::value);
+    static_assert(sizeof(GicCpuInterface) == 0x2000);
 
     struct KInterruptController {
         NON_COPYABLE(KInterruptController);
         NON_MOVEABLE(KInterruptController);
         public:
-            static constexpr size_t NumLocalInterrupts = 32;
-            static constexpr size_t NumGlobalInterrupts = 988;
-            static constexpr size_t NumInterrupts = NumLocalInterrupts + NumGlobalInterrupts;
+            static constexpr s32 NumSoftwareInterrupts = 16;
+            static constexpr s32 NumLocalInterrupts = NumSoftwareInterrupts + 16;
+            static constexpr s32 NumGlobalInterrupts = 988;
+            static constexpr s32 NumInterrupts = NumLocalInterrupts + NumGlobalInterrupts;
+            static constexpr s32 NumPriorityLevels = 4;
         public:
             struct LocalState {
                 u32 local_isenabler[NumLocalInterrupts / 32];
@@ -107,16 +124,135 @@ namespace ams::kern::arm64 {
                 u32 global_targetsr[NumGlobalInterrupts / 4];
                 u32 global_icfgr[NumGlobalInterrupts / 16];
             };
+
+            enum PriorityLevel : u8 {
+                PriorityLevel_High  = 0,
+                PriorityLevel_Low   = NumPriorityLevels - 1,
+
+                PriorityLevel_Timer     = 1,
+                PriorityLevel_Scheduler = 2,
+            };
         private:
-            static inline volatile GicDistributor *s_gicd;
-            static inline volatile GicController  *s_gicc;
             static inline u32 s_mask[cpu::NumCores];
         private:
-            volatile GicDistributor *gicd;
-            volatile GicController  *gicc;
+            volatile GicDistributor  *gicd;
+            volatile GicCpuInterface *gicc;
         public:
-            KInterruptController() { /* Don't initialize anything -- this will be taken care of by ::Initialize() */ }
+            constexpr KInterruptController() : gicd(nullptr), gicc(nullptr) { /* ... */ }
 
-            /* TODO: Actually implement KInterruptController functionality. */
+            void Initialize(s32 core_id);
+            void Finalize(s32 core_id);
+        public:
+            void Enable(s32 irq) const {
+                this->gicd->isenabler[irq / BITSIZEOF(u32)] = (1u << (irq % BITSIZEOF(u32)));
+            }
+
+            void Disable(s32 irq) const {
+                this->gicd->icenabler[irq / BITSIZEOF(u32)] = (1u << (irq % BITSIZEOF(u32)));
+            }
+
+            void Clear(s32 irq) const {
+                this->gicd->icpendr[irq / BITSIZEOF(u32)] = (1u << (irq % BITSIZEOF(u32)));
+            }
+
+            void SetTarget(s32 irq, s32 core_id) const {
+                this->gicd->itargetsr.bytes[irq] |= GetGicMask(core_id);
+            }
+
+            void ClearTarget(s32 irq, s32 core_id) const {
+                this->gicd->itargetsr.bytes[irq] &= ~GetGicMask(core_id);
+            }
+
+            void SetPriorityLevel(s32 irq, s32 level) const {
+                MESOSPHERE_ASSERT(PriorityLevel_High <= level && level <= PriorityLevel_Low);
+                this->gicd->ipriorityr.bytes[irq] = ToGicPriorityValue(level);
+            }
+
+            s32 GetPriorityLevel(s32 irq) const {
+                return FromGicPriorityValue(this->gicd->ipriorityr.bytes[irq]);
+            }
+
+            void SetPriorityLevel(s32 level) const {
+                MESOSPHERE_ASSERT(PriorityLevel_High <= level && level <= PriorityLevel_Low);
+                this->gicc->pmr = ToGicPriorityValue(level);
+            }
+
+            void SetEdge(s32 irq) const {
+                u32 cfg = this->gicd->icfgr[irq / (BITSIZEOF(u32) / 2)];
+                cfg &= ~(0x3 << (2 * (irq % (BITSIZEOF(u32) / 2))));
+                cfg |=  (0x2 << (2 * (irq % (BITSIZEOF(u32) / 2))));
+                this->gicd->icfgr[irq / (BITSIZEOF(u32) / 2)] = cfg;
+            }
+
+            void SetLevel(s32 irq) const {
+                u32 cfg = this->gicd->icfgr[irq / (BITSIZEOF(u32) / 2)];
+                cfg &= ~(0x3 << (2 * (irq % (BITSIZEOF(u32) / 2))));
+                cfg |=  (0x0 << (2 * (irq % (BITSIZEOF(u32) / 2))));
+                this->gicd->icfgr[irq / (BITSIZEOF(u32) / 2)] = cfg;
+            }
+
+            void SendInterProcessorInterrupt(s32 irq, u64 core_mask) {
+                MESOSPHERE_ASSERT(IsSoftware(irq));
+                this->gicd->sgir = GetCpuTargetListMask(irq, core_mask);
+            }
+
+            void SendInterProcessorInterrupt(s32 irq) {
+                MESOSPHERE_ASSERT(IsSoftware(irq));
+                this->gicd->sgir = GicDistributor::SgirTargetListFilter_Others | irq;
+            }
+
+            /* TODO: Implement more KInterruptController functionality. */
+        public:
+            static constexpr ALWAYS_INLINE bool IsSoftware(s32 id) {
+                MESOSPHERE_ASSERT(0 <= id && id < NumInterrupts);
+                return id < NumSoftwareInterrupts;
+            }
+
+            static constexpr ALWAYS_INLINE bool IsLocal(s32 id) {
+                MESOSPHERE_ASSERT(0 <= id && id < NumInterrupts);
+                return id < NumLocalInterrupts;
+            }
+
+            static constexpr ALWAYS_INLINE bool IsGlobal(s32 id) {
+                MESOSPHERE_ASSERT(0 <= id && id < NumInterrupts);
+                return NumLocalInterrupts <= id;
+            }
+
+            static constexpr size_t GetGlobalInterruptIndex(s32 id) {
+                MESOSPHERE_ASSERT(IsGlobal(id));
+                return id - NumLocalInterrupts;
+            }
+
+            static constexpr size_t GetLocalInterruptIndex(s32 id) {
+                MESOSPHERE_ASSERT(IsLocal(id));
+                return id;
+            }
+        private:
+            static constexpr size_t PriorityShift = BITSIZEOF(u8) - __builtin_ctz(NumPriorityLevels);
+            static_assert(PriorityShift < BITSIZEOF(u8));
+
+            static constexpr ALWAYS_INLINE u8 ToGicPriorityValue(s32 level) {
+                return (level << PriorityShift) | ((1 << PriorityShift) - 1);
+            }
+
+            static constexpr ALWAYS_INLINE s32 FromGicPriorityValue(u8 priority) {
+                return (priority >> PriorityShift) & (NumPriorityLevels - 1);
+            }
+
+            static constexpr ALWAYS_INLINE s32 GetCpuTargetListMask(s32 irq, u64 core_mask) {
+                MESOSPHERE_ASSERT(IsSoftware(irq));
+                MESOSPHERE_ASSERT(core_mask < (1ul << cpu::NumCores));
+                return GicDistributor::SgirTargetListFilter_CpuTargetList | irq | (static_cast<u16>(core_mask) << GicDistributor::SgirCpuTargetListShift);
+            }
+
+            static ALWAYS_INLINE s32 GetGicMask(s32 core_id) {
+                return s_mask[core_id];
+            }
+
+            ALWAYS_INLINE void SetGicMask(s32 core_id) const {
+                s_mask[core_id] = this->gicd->itargetsr.bytes[0];
+            }
+
+            NOINLINE void SetupInterruptLines(s32 core_id) const;
     };
 }

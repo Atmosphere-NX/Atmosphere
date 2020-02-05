@@ -41,4 +41,8 @@ namespace ams::kern {
             virtual void DoTask() = 0;
     };
 
+    static ALWAYS_INLINE KInterruptTask *GetDummyInterruptTask() {
+        return reinterpret_cast<KInterruptTask *>(1);
+    }
+
 }

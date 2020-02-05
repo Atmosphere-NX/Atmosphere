@@ -15,17 +15,16 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
-#include <mesosphere/kern_select_interrupt_name.hpp>
 
 #if defined(ATMOSPHERE_ARCH_ARM64)
 
-    #include <mesosphere/arch/arm64/kern_k_interrupt_controller.hpp>
+    #include <mesosphere/arch/arm64/kern_k_interrupt_name.hpp>
     namespace ams::kern {
-        using ams::kern::arm64::KInterruptController;
+        using namespace ams::kern::arm64::interrupt_name;
     }
 
 #else
 
-    #error "Unknown architecture for KInterruptController"
+    #error "Unknown architecture for KInterruptName"
 
 #endif

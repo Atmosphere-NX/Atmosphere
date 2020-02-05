@@ -19,10 +19,29 @@ namespace ams::kern {
 
     namespace {
 
+        class KSchedulerInterruptTask : public KInterruptTask {
+            public:
+                constexpr KSchedulerInterruptTask() : KInterruptTask() { /* ... */ }
+
+                virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    return GetDummyInterruptTask();
+                }
+
+                virtual void DoTask() override {
+                    MESOSPHERE_PANIC("KSchedulerInterruptTask::DoTask was called!");
+                }
+        };
+
         ALWAYS_INLINE void IncrementScheduledCount(KThread *thread) {
             if (KProcess *parent = thread->GetOwnerProcess(); parent != nullptr) {
                 /* TODO: parent->IncrementScheduledCount(); */
             }
+        }
+
+        KSchedulerInterruptTask g_scheduler_interrupt_task;
+
+        ALWAYS_INLINE auto *GetSchedulerInterruptTask() {
+            return std::addressof(g_scheduler_interrupt_task);
         }
 
     }
@@ -40,7 +59,8 @@ namespace ams::kern {
             SetSchedulerUpdateNeeded();
         }
 
-        /* TODO: Bind interrupt handler. */
+        /* Bind interrupt handler. */
+        Kernel::GetInterruptManager().BindHandler(GetSchedulerInterruptTask(), KInterruptName_Scheduler, this->core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
     }
 
     void KScheduler::Activate() {
@@ -49,6 +69,13 @@ namespace ams::kern {
         this->state.should_count_idle = false /* TODO: Retrieve from KSystemControl. */;
         this->is_active = true;
         RescheduleCurrentCore();
+    }
+
+    void KScheduler::RescheduleOtherCores(u64 cores_needing_scheduling) {
+        if (const u64 core_mask = cores_needing_scheduling & ~(1ul << this->core_id); core_mask != 0) {
+            cpu::DataSynchronizationBarrier();
+            Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_Scheduler, core_mask);
+        }
     }
 
     u64 KScheduler::UpdateHighestPriorityThread(KThread *highest_thread) {
@@ -171,7 +198,7 @@ namespace ams::kern {
     void KScheduler::SetInterruptTaskThreadRunnable() {
         MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() == 1);
 
-        KThread *task_thread = nullptr /* TODO: GetInterruptTaskManager().GetThread() */;
+        KThread *task_thread = Kernel::GetInterruptTaskManager().GetThread();
         {
             KScopedSchedulerLock sl;
             if (AMS_LIKELY(task_thread->GetThreadState() == KThread::ThreadState_Waiting)) {
