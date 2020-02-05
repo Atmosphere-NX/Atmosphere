@@ -16,10 +16,11 @@
 
 #pragma once
 
-#include "hyp_gdb_packet_data.hpp"
+#include "hvisor_gdb_packet_data.hpp"
 #include <cctype>
 
-namespace ams::hyp::gdb {
+namespace ams::hvisor::gdb {
+
     u8 ComputeChecksum(std::string_view packetData)
     {
         return std::accumulate(packetData.cbegin(), packetData.cend(), u8{0u});
@@ -98,4 +99,5 @@ namespace ams::hyp::gdb {
 
         return dst8 - reinterpret_cast<u8 *>(dst);
     }
+
 }

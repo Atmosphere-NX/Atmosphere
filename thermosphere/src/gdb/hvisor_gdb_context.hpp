@@ -27,6 +27,8 @@
 #include "../defines.hpp"
 #include "../transport_interface.h"
 
+#include <string_view>
+
 #define _REENT_ONLY
 #include <cerrno>
 
@@ -35,7 +37,7 @@
 #define DECLARE_VERBOSE_HANDLER(name)   DECLARE_HANDLER(Verbose##name)
 #define DECLARE_XFER_HANDLER(name)      DECLARE_HANDLER(Xfer##name)
 
-namespace ams::hyp::gdb {
+namespace ams::hvisor::gdb {
 
     struct PackedGdbHioRequest {
         // TODO revamp
@@ -79,8 +81,8 @@ namespace ams::hyp::gdb {
 
             u32 m_attachedCoreList = 0;
 
-            int m_selectedThreadId = 0;
-            int m_selectedThreadIdForContinuing = 0;
+            int m_selectedCoreId = 0;
+            int m_selectedCoreIdForContinuing = 0;
 
             u32 m_sentDebugEventCoreList = 0;
             u32 m_acknowledgedDebugEventCoreList = 0;
@@ -97,8 +99,8 @@ namespace ams::hyp::gdb {
 
             size_t m_targetXmlLen = 0;
 
-            char *m_commandData = nullptr;
-            char *m_commandEnd = nullptr;
+            char m_commandLetter = '\0';
+            std::string_view m_commandData{};
             size_t m_lastSentPacketSize = 0ul;
             char *m_buffer = nullptr;
             char *m_workBuffer = nullptr;
@@ -109,11 +111,12 @@ namespace ams::hyp::gdb {
             // Comms
             int ReceivePacket();
             int DoSendPacket();
-            int SendPacket(const char *packetData, size_t len);
+            int SendPacket(std::string_view packetData);
             int SendFormattedPacket(const char *packetDataFmt, ...);
             int SendHexPacket(const void *packetData, size_t len);
-            int SendNotificationPacket(const char *packetData, size_t len);
-            int SendStreamData(const char *streamData, size_t offset, size_t length, size_t totalSize, bool forceEmptyLast);
+            int SendNotificationPacket(std::string_view packetData);
+            int SendStreamData(std::string_view streamData, size_t offset, size_t length, bool forceEmptyLast);
+            int ReplyOk();
             int ReplyEmpty();
             int ReplyErrno(int no);
 

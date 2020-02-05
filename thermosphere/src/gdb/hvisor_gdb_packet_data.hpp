@@ -19,7 +19,7 @@
 #include "../defines.hpp"
 #include <string_view>
 
-namespace ams::hyp::gdb {
+namespace ams::hvisor::gdb {
 
     constexpr unsigned long DecodeHexDigit(char src)
     {
@@ -36,7 +36,9 @@ namespace ams::hyp::gdb {
     {
         unsigned long res = 0;
         long mult = 1;
-        auto errval = std::tuple{false, 0ul, str.end()};
+        auto errval = std::tuple{0ul, 0ul};
+
+        size_t total = 0;
 
         if ((base == 0 && !allowPrefix) || base > 16 || str.empty()) {
             return errval;
@@ -48,12 +50,14 @@ namespace ams::hyp::gdb {
                 return errval;
             }
             str.remove_prefix(1);
+            ++total;
         } else if (str[0] == '-') {
             if (!allowPrefix) {
                 return errval;
             }
             str.remove_prefix(1);
             mult = -1;
+            ++total;
         }
 
         if (str.empty()) {
@@ -68,11 +72,9 @@ namespace ams::hyp::gdb {
             } else {
                 str.remove_prefix(2);
                 base = 16;
+                total += 2;
             }
-        } else if (base == 0 || str[0] == '0') {
-            if (!allowPrefix) {
-                return errval;
-            }
+        } else if (base == 0 && str[0] == '0') {
             base = 8;
         } else if (base == 0) {
             base = 10;
@@ -92,13 +94,61 @@ namespace ams::hyp::gdb {
 
             res *= base;
             res += v;
+            ++total;
         }
 
-        return std::tuple{true, res * mult, it};
+        return std::tuple{total, res * mult};
     }
 
-    std::string_view::iterator ParseIntegerList(unsigned long *dst, std::string_view str, size_t nb, char sep, char lastSep, u32 base, bool allowPrefix);
-    std::string_view::iterator ParseHexIntegerList(unsigned long *dst, std::string_view str, size_t nb, char lastSep);
+    template<size_t N>
+    constexpr auto ParseIntegerList(std::string_view str, u32 base, bool allowPrefix, char sep, char lastSep = '\0')
+    {
+        // First element is parsed size
+        std::array<unsigned long, 1+N> res{ 0 };
+
+        size_t total = 0;
+        for (size_t i = 0; i < N && !str.empty(); i++) {
+            auto [nread, val] = ParseInteger(str, base, allowPrefix);
+
+            // Parse failure
+            if (nread == 0) {
+                return res;
+            }
+
+            str.remove_prefix(nread);
+
+            // Check separators
+            if (i != N - 1) {
+                if (str.empty() || str[0] != sep)) {
+                    return res;
+                }
+                str.remove_prefix(1);
+                ++total;
+            } else if (i == N - 1) {
+                if (lastSep == '\0') && !str.empty()) {
+                    return res;
+                } else if (lastSep != '\0') {
+                    if (str.empty() || str[0] != lastSep)) {
+                        return res;
+                    }
+                    str.remove_prefix(1);
+                    ++total;
+                }
+            }
+
+            total += nread;
+            res[1 + i] = val;
+        }
+
+        res[0] = total;
+        return res;
+    }
+
+    template<size_t N>
+    constexpr auto ParseHexIntegerList(std::string_view str, char lastSep = '\0')
+    {
+        return ParseIntegerList<N>(str, 16, false, ',', lastSep);
+    }
 
     u8 ComputeChecksum(std::string_view packetData);
     size_t EncodeHex(char *dst, const void *src, size_t len);
