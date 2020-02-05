@@ -17,7 +17,6 @@
 #pragma once
 
 #include "hvisor_gdb_packet_data.hpp"
-#include <cctype>
 
 namespace ams::hvisor::gdb {
 
@@ -44,14 +43,13 @@ namespace ams::hvisor::gdb {
         size_t i = 0;
         u8 *dst8 = reinterpret_cast<u8 *>(dst);
         for (i = 0; i < data.size() / 2; i++) {
-            auto v1 = DecodeHexDigit(data[2 * i]);
-            auto v2 = DecodeHexDigit(data[2 * i + 1]);
-
-            if (v1 >= 16 || v2 >= 16) {
+            auto bOpt = DecodeHexByte(data);
+            if (!bOpt) {
                 return i;
             }
 
-            dst8[i] = (v1 << 4) | v2;
+            dst8[i] = *bOpt;
+            data.remove_prefix(2);
         }
 
         return i;

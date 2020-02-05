@@ -150,9 +150,26 @@ namespace ams::hvisor::gdb {
         return ParseIntegerList<N>(str, 16, false, ',', lastSep);
     }
 
+    constexpr std::optional<u8> DecodeHexByte(std::string_view data)
+    {
+        if (data.size() < 2) {
+            return {};
+        }
+
+        auto v1 = DecodeHexDigit(data[0]);
+        auto v2 = DecodeHexDigit(data[1]);
+
+        if (v1 >= 16 || v2 >= 16) {
+            return {};
+        }
+
+        return (v1 << 4) | v2;
+    }
+
     u8 ComputeChecksum(std::string_view packetData);
     size_t EncodeHex(char *dst, const void *src, size_t len);
     size_t DecodeHex(void *dst, std::string_view data);
+
     size_t EscapeBinaryData(size_t *encodedCount, void *dst, const void *src, size_t len, size_t maxLen);
     size_t UnescapeBinaryData(void *dst, const void *src, size_t len);
 

@@ -110,11 +110,10 @@ namespace ams::hvisor::gdb {
 
             // Comms
             int ReceivePacket();
-            int DoSendPacket();
-            int SendPacket(std::string_view packetData);
+            int DoSendPacket(size_t len);
+            int SendPacket(std::string_view packetData, char hdr = '$');
             int SendFormattedPacket(const char *packetDataFmt, ...);
             int SendHexPacket(const void *packetData, size_t len);
-            int SendNotificationPacket(std::string_view packetData);
             int SendStreamData(std::string_view streamData, size_t offset, size_t length, bool forceEmptyLast);
             int ReplyOk();
             int ReplyEmpty();

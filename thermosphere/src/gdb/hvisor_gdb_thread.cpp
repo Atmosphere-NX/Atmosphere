@@ -1,19 +1,26 @@
 /*
-*   This file is part of Luma3DS.
-*   Copyright (C) 2016-2019 Aurora Wright, TuxSH
-*
-*   SPDX-License-Identifier: (MIT OR GPL-2.0-or-later)
-*/
+ * Copyright (c) 2019-2020 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <cstdio>
 
+#include "hvisor_gdb_thread.hpp"
 #include "hvisor_gdb_defines_internal.hpp"
 #include "hvisor_gdb_packet_data.hpp"
 
 #include "../core_ctx.h"
-
-namespace {
-}
 
 namespace ams::hvisor::gdb {
 
