@@ -19,15 +19,68 @@
 
 namespace ams::kern::arm64 {
 
+    namespace impl {
+
+        class KHardwareTimerInterruptTask;
+
+    }
+
     class KHardwareTimer : public KHardwareTimerBase {
         public:
             static constexpr s32 InterruptId = 30; /* Nintendo uses the non-secure timer interrupt. */
         public:
             constexpr KHardwareTimer() : KHardwareTimerBase() { /* ... */ }
+        public:
+            /* Public API. */
+            NOINLINE void Initialize(s32 core_id);
+            NOINLINE void Finalize();
 
-            virtual void DoTask() override;
+            static s64 GetTick() {
+                return GetCount();
+            }
+        private:
+            friend class impl::KHardwareTimerInterruptTask;
+            NOINLINE void DoInterruptTask();
+        private:
+            /* Hardware register accessors. */
+            static ALWAYS_INLINE void InitializeGlobalTimer() {
+                /* Set kernel control. */
+                cpu::CounterTimerKernelControlRegisterAccessor(0).SetEl0PctEn(true).Store();
 
-            /* TODO: Actually implement more of KHardwareTimer, */
+                /* Disable the physical timer. */
+                cpu::CounterTimerPhysicalTimerControlRegisterAccessor(0).SetEnable(false).SetIMask(false).Store();
+
+                /* Set the compare value to the maximum. */
+                cpu::CounterTimerPhysicalTimerCompareValueRegisterAccessor(0).SetCompareValue(std::numeric_limits<u64>::max()).Store();
+
+                /* Enable the physical timer, with interrupt masked. */
+                cpu::CounterTimerPhysicalTimerControlRegisterAccessor(0).SetEnable(true).SetIMask(true).Store();
+            }
+
+            static ALWAYS_INLINE void EnableInterrupt() {
+                cpu::CounterTimerPhysicalTimerControlRegisterAccessor(0).SetEnable(true).SetIMask(false).Store();
+            }
+
+            static ALWAYS_INLINE void DisableInterrupt() {
+                cpu::CounterTimerPhysicalTimerControlRegisterAccessor(0).SetEnable(true).SetIMask(true).Store();
+            }
+
+            static ALWAYS_INLINE void StopTimer() {
+                /* Set the compare value to the maximum. */
+                cpu::CounterTimerPhysicalTimerCompareValueRegisterAccessor(0).SetCompareValue(std::numeric_limits<u64>::max()).Store();
+
+                /* Disable the physical timer. */
+                cpu::CounterTimerPhysicalTimerControlRegisterAccessor(0).SetEnable(false).SetIMask(false).Store();
+            }
+
+            static ALWAYS_INLINE s64 GetCount() {
+                return cpu::CounterTimerPhysicalCountValueRegisterAccessor().GetCount();
+            }
+
+            static ALWAYS_INLINE void SetCompareValue(s64 value) {
+                cpu::CounterTimerPhysicalTimerCompareValueRegisterAccessor(0).SetCompareValue(static_cast<u64>(value)).Store();
+            }
+
     };
 
 }

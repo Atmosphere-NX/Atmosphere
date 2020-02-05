@@ -61,7 +61,10 @@ namespace ams::kern {
         SetCurrentThread(main_thread);
         SetCurrentProcess(nullptr);
 
-        /* TODO: We also want to initialize the scheduler/interrupt manager/hardware timer. */
+        /* TODO: Initialize the interrupt manager. */
+        GetInterruptManager().Initialize(core_id);
+        GetHardwareTimer().Initialize(core_id);
+        GetScheduler().Initialize(idle_thread);
     }
 
 }

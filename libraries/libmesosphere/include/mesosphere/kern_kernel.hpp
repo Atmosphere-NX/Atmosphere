@@ -21,6 +21,7 @@
 #include <mesosphere/kern_k_memory_manager.hpp>
 #include <mesosphere/kern_k_core_local_region.hpp>
 #include <mesosphere/kern_k_thread.hpp>
+#include <mesosphere/kern_select_hardware_timer.hpp>
 
 namespace ams::kern {
 
@@ -35,6 +36,13 @@ namespace ams::kern {
             static inline State s_state = State::Invalid;
             static inline KThread s_main_threads[cpu::NumCores];
             static inline KThread s_idle_threads[cpu::NumCores];
+        private:
+            static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
+                return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->current.context;
+            }
+            static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext(s32 core_id) {
+                return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->absolute[core_id].context;
+            }
         public:
             static NOINLINE void InitializeCoreLocalRegion(s32 core_id);
             static NOINLINE void InitializeMainAndIdleThreads(s32 core_id);
@@ -48,6 +56,26 @@ namespace ams::kern {
 
             static ALWAYS_INLINE KThread &GetIdleThread(s32 core_id) {
                 return s_idle_threads[core_id];
+            }
+
+            static ALWAYS_INLINE KScheduler &GetScheduler() {
+                return GetCoreLocalContext().scheduler;
+            }
+
+            static ALWAYS_INLINE KScheduler &GetScheduler(s32 core_id) {
+                return GetCoreLocalContext(core_id).scheduler;
+            }
+
+            static ALWAYS_INLINE KInterruptTaskManager &GetInterruptTaskManager() {
+                return GetCoreLocalContext().interrupt_task_manager;
+            }
+
+            static ALWAYS_INLINE KInterruptManager &GetInterruptManager() {
+                return GetCoreLocalContext().interrupt_manager;
+            }
+
+            static ALWAYS_INLINE KHardwareTimer &GetHardwareTimer() {
+                return GetCoreLocalContext().hardware_timer;
             }
     };
 

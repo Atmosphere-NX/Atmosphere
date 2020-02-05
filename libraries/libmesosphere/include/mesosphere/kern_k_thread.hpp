@@ -68,8 +68,8 @@ namespace ams::kern {
             };
 
             enum DpcFlag : u32 {
-                DpcFlag_Terminating = 0,
-                DpcFlag_Terminated  = 1,
+                DpcFlag_Terminating = (1 << 0),
+                DpcFlag_Terminated  = (1 << 1),
             };
 
             struct StackParameters {
@@ -116,7 +116,7 @@ namespace ams::kern {
             alignas(16) KThreadContext      thread_context;
             KAffinityMask                   affinity_mask;
             u64                             thread_id;
-            std::atomic<u64>                cpu_time;
+            std::atomic<s64>                cpu_time;
             KSynchronizationObject         *synced_object;
             KLightLock                     *waiting_lock;
             uintptr_t                       condvar_key;
@@ -204,6 +204,32 @@ namespace ams::kern {
             }
         public:
             constexpr ALWAYS_INLINE const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
+            constexpr ALWAYS_INLINE ThreadState GetThreadState() const { return static_cast<ThreadState>(this->thread_state & ThreadState_Mask); }
+            constexpr ALWAYS_INLINE ThreadState GetRawThreadState() const { return this->thread_state; }
+            NOINLINE void SetState(ThreadState state);
+
+            NOINLINE KThreadContext *GetContextForSchedulerLoop();
+
+            constexpr ALWAYS_INLINE s32 GetActiveCore() const { return this->core_id; }
+            constexpr ALWAYS_INLINE void SetActiveCore(s32 core) { this->core_id = core; }
+            constexpr ALWAYS_INLINE s32 GetPriority() const { return this->priority; }
+
+            constexpr ALWAYS_INLINE QueueEntry &GetPriorityQueueEntry(s32 core) { return this->per_core_priority_queue_entry[core]; }
+            constexpr ALWAYS_INLINE const QueueEntry &GetPriorityQueueEntry(s32 core) const { return this->per_core_priority_queue_entry[core]; }
+
+            constexpr ALWAYS_INLINE s32 GetNumKernelWaiters() const { return this->num_kernel_waiters; }
+
+            constexpr ALWAYS_INLINE s64 GetLastScheduledTick() const { return this->last_scheduled_tick; }
+            constexpr ALWAYS_INLINE void SetLastScheduledTick(s64 tick) { this->last_scheduled_tick = tick; }
+
+            constexpr ALWAYS_INLINE KProcess *GetOwnerProcess() const { return this->parent; }
+
+            constexpr ALWAYS_INLINE KProcessAddress GetThreadLocalRegionAddress() const { return this->tls_address; }
+            constexpr ALWAYS_INLINE void           *GetThreadLocalRegionHeapAddress() const { return this->tls_heap_address; }
+
+            ALWAYS_INLINE void AddCpuTime(s64 amount) {
+                this->cpu_time += amount;
+            }
 
             ALWAYS_INLINE void *GetStackTop() const { return reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1; }
             ALWAYS_INLINE void *GetKernelStackTop() const { return this->kernel_stack_top; }
@@ -216,6 +242,10 @@ namespace ams::kern {
 
             ALWAYS_INLINE void SetInExceptionHandler() {
                 GetStackParameters().is_in_exception_handler = true;
+            }
+
+            ALWAYS_INLINE bool IsTerminationRequested() const {
+                return this->termination_requested || this->GetRawThreadState() == ThreadState_Terminated;
             }
 
         public:

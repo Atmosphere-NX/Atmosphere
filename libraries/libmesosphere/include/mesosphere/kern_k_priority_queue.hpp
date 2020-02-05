@@ -87,7 +87,7 @@ namespace ams::kern {
 
                         /* Get the entry associated with the end of the queue. */
                         Member *tail       = this->root[core].GetPrev();
-                        Entry  &tail_entry = (tail != nullptr) ? tail.GetPriorityQueueEntry(core) : this->root[core];
+                        Entry  &tail_entry = (tail != nullptr) ? tail->GetPriorityQueueEntry(core) : this->root[core];
 
                         /* Link the entries. */
                         member_entry.SetPrev(tail);
@@ -104,12 +104,12 @@ namespace ams::kern {
 
                         /* Get the entry associated with the front of the queue. */
                         Member *head       = this->root[core].GetNext();
-                        Entry  &head_entry = (head != nullptr) ? head.GetPriorityQueueEntry(core) : this->root[core];
+                        Entry  &head_entry = (head != nullptr) ? head->GetPriorityQueueEntry(core) : this->root[core];
 
                         /* Link the entries. */
                         member_entry.SetPrev(nullptr);
                         member_entry.SetNext(head);
-                        head.SetPrev(member);
+                        head_entry.SetPrev(member);
                         this->root[core].SetNext(member);
 
                         return (head == nullptr);
@@ -122,14 +122,14 @@ namespace ams::kern {
                         /* Get the entries associated with next and prev. */
                         Member *prev = member_entry.GetPrev();
                         Member *next = member_entry.GetNext();
-                        Entry  &prev_entry = (prev != nullptr) ? prev.GetPriorityQueueEntry(core) : this->root[core];
-                        Entry  &next_entry = (next != nullptr) ? next.GetPriorityQueueEntry(core) : this->root[core];
+                        Entry  &prev_entry = (prev != nullptr) ? prev->GetPriorityQueueEntry(core) : this->root[core];
+                        Entry  &next_entry = (next != nullptr) ? next->GetPriorityQueueEntry(core) : this->root[core];
 
                         /* Unlink. */
                         prev_entry.SetNext(next);
                         next_entry.SetPrev(prev);
 
-                        return (this->root[core].next == nullptr);
+                        return (this->GetFront(core) == nullptr);
                     }
 
                     constexpr ALWAYS_INLINE Member *GetFront(s32 core) const {
@@ -172,7 +172,7 @@ namespace ams::kern {
 
                         if (AMS_LIKELY(priority <= LowestPriority)) {
                             if (this->queues[priority].Remove(core, member)) {
-                                this->available_priorities.ClearBit(priority);
+                                this->available_priorities[core].ClearBit(priority);
                             }
                         }
                     }
@@ -245,7 +245,7 @@ namespace ams::kern {
 
             constexpr ALWAYS_INLINE s32 GetNextCore(u64 &affinity) {
                 const s32 core = __builtin_ctzll(static_cast<unsigned long long>(affinity));
-                ClearAffinityBit(core);
+                ClearAffinityBit(affinity, core);
                 return core;
             }
 
@@ -331,11 +331,11 @@ namespace ams::kern {
 
             /* Mutators. */
             constexpr ALWAYS_INLINE void PushBack(Member *member) {
-                this->PushBack(member, member->GetPriority());
+                this->PushBack(member->GetPriority(), member);
             }
 
             constexpr ALWAYS_INLINE void Remove(Member *member) {
-                this->Remove(member, member->GetPriority());
+                this->Remove(member->GetPriority(), member);
             }
 
             constexpr ALWAYS_INLINE void MoveToScheduledFront(Member *member) {
@@ -381,7 +381,7 @@ namespace ams::kern {
 
                 /* And add the member to all queues it should be in now. */
                 for (s32 core = 0; core < static_cast<s32>(NumCores); core++) {
-                    if (prev_affinity.GetAffinity(core)) {
+                    if (new_affinity.GetAffinity(core)) {
                         if (core == new_core) {
                             this->scheduled_queue.PushBack(priority, core, member);
                         } else {

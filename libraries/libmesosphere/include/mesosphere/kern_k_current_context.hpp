@@ -24,8 +24,8 @@ namespace ams::kern {
     class KInterruptTaskManager;
 
     struct KCurrentContext {
-        KThread *current_thread;
-        KProcess *current_process;
+        std::atomic<KThread *> current_thread;
+        std::atomic<KProcess *> current_process;
         KScheduler *scheduler;
         KInterruptTaskManager *interrupt_task_manager;
         s32 core_id;
@@ -43,7 +43,7 @@ namespace ams::kern {
     }
 
     ALWAYS_INLINE KThread *GetCurrentThreadPointer() {
-        return impl::GetCurrentContext().current_thread;
+        return impl::GetCurrentContext().current_thread.load(std::memory_order_relaxed);
     }
 
     ALWAYS_INLINE KThread &GetCurrentThread() {
@@ -51,7 +51,7 @@ namespace ams::kern {
     }
 
     ALWAYS_INLINE KProcess *GetCurrentProcessPointer() {
-        return impl::GetCurrentContext().current_process;
+        return impl::GetCurrentContext().current_process.load(std::memory_order_relaxed);
     }
 
     ALWAYS_INLINE KProcess &GetCurrentProcess() {

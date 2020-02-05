@@ -31,6 +31,8 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE u64 GetPriorityMask() const { /* TODO */ return 0; }
 
             constexpr ALWAYS_INLINE bool Is64Bit() const { /* TODO */ return true; }
+
+            ALWAYS_INLINE KThread *GetSuggestedTopThread(s32 core_id) { /* TODO */ return nullptr; }
     };
 
 }

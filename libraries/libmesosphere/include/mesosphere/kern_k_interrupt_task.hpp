@@ -30,11 +30,11 @@ namespace ams::kern {
         public:
             constexpr ALWAYS_INLINE KInterruptTask() : next_task(nullptr) { /* ... */ }
 
-            ALWAYS_INLINE KInterruptTask *GetNextTask() const {
+            constexpr ALWAYS_INLINE KInterruptTask *GetNextTask() const {
                 return this->next_task;
             }
 
-            ALWAYS_INLINE void SetNextTask(KInterruptTask *t) {
+            constexpr ALWAYS_INLINE void SetNextTask(KInterruptTask *t) {
                 this->next_task = t;
             }
 

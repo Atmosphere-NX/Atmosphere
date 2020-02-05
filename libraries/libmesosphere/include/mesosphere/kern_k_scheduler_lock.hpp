@@ -28,10 +28,9 @@ namespace ams::kern {
 
         template<typename T>
         concept KSchedulerLockable = !std::is_reference<T>::value && requires {
-            { T::DisableScheduling()                                } -> std::same_as<void>;
-            { T::EnableScheduling()                                 } -> std::same_as<void>;
-            { T::UpdateHighestPriorityThreads()                     } -> std::convertible_to<u64>;
-            { T::EnableSchedulingAndSchedule(std::declval<u64>())   } -> std::same_as<void>;
+            { T::DisableScheduling()                    } -> std::same_as<void>;
+            { T::EnableScheduling(std::declval<u64>())  } -> std::same_as<void>;
+            { T::UpdateHighestPriorityThreads()         } -> std::convertible_to<u64>;
         };
 
     */
@@ -88,23 +87,7 @@ namespace ams::kern {
                     this->spin_lock.Unlock();
 
                     /* Enable scheduling, and perform a rescheduling operation. */
-                    SchedulerType::EnableSchedulingAndSchedule(cores_needing_scheduling);
-                }
-            }
-
-            ALWAYS_INLINE void UnlockWithoutRescheduling() {
-                MESOSPHERE_ASSERT_THIS();
-                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-                MESOSPHERE_ASSERT(this->lock_count > 0);
-
-                /* Release an instance of the lock. */
-                if ((--this->lock_count) == 0) {
-                   /* Note that we no longer hold the lock, and unlock the spinlock. */
-                    this->owner_thread = nullptr;
-                    this->spin_lock.Unlock();
-
-                    /* Enable scheduling, and perform a rescheduling operation. */
-                    SchedulerType::EnableScheduling();
+                    SchedulerType::EnableScheduling(cores_needing_scheduling);
                 }
             }
     };

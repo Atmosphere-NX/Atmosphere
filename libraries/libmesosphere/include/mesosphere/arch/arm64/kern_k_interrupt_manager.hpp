@@ -51,6 +51,8 @@ namespace ams::kern::arm64 {
         public:
             KInterruptManager() : local_state_saved(false) { /* Leave things mostly uninitalized. We'll call ::Initialize() later. */ }
             /* TODO: Actually implement KInterruptManager functionality. */
+            NOINLINE void Initialize(s32 core_id);
+            NOINLINE void Finalize(s32 core_id);
         public:
             static ALWAYS_INLINE u32 DisableInterrupts() {
                 u64 intr_state;
@@ -62,14 +64,14 @@ namespace ams::kern::arm64 {
             static ALWAYS_INLINE u32 EnableInterrupts() {
                 u64 intr_state;
                 __asm__ __volatile__("mrs %[intr_state], daif" : [intr_state]"=r"(intr_state));
-                __asm__ __volatile__("msr daif, %[intr_state]" :: [intr_state]"r"(intr_state & 0x7F));
+                __asm__ __volatile__("msr daif, %[intr_state]" :: [intr_state]"r"(intr_state & ~0x80ul));
                 return intr_state;
             }
 
             static ALWAYS_INLINE void RestoreInterrupts(u32 intr_state) {
                 u64 cur_state;
                 __asm__ __volatile__("mrs %[cur_state], daif" : [cur_state]"=r"(cur_state));
-                __asm__ __volatile__("msr daif, %[intr_state]" :: [intr_state]"r"((cur_state & 0x7F) | (intr_state & 0x80)));
+                __asm__ __volatile__("msr daif, %[intr_state]" :: [intr_state]"r"((cur_state & ~0x80ul) | (intr_state & 0x80)));
             }
 
             static ALWAYS_INLINE bool AreInterruptsEnabled() {

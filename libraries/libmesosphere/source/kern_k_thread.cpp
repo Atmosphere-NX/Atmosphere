@@ -202,4 +202,8 @@ namespace ams::kern {
         /* TODO */
     }
 
+    KThreadContext *KThread::GetContextForSchedulerLoop() {
+        return std::addressof(this->thread_context);
+    }
+
 }

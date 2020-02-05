@@ -17,8 +17,53 @@
 
 namespace ams::kern::arm64 {
 
-    void KHardwareTimer::DoTask() {
-        /* TODO: Actually implement this. */
+    namespace impl {
+
+        class KHardwareTimerInterruptTask : public KInterruptTask {
+            public:
+                constexpr KHardwareTimerInterruptTask() : KInterruptTask() { /* ... */ }
+
+                virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    return this;
+                }
+
+                virtual void DoTask() override {
+                    Kernel::GetHardwareTimer().DoInterruptTask();
+                }
+        };
+
+        /* One global hardware timer interrupt task per core. */
+        KHardwareTimerInterruptTask g_hardware_timer_interrupt_tasks[cpu::NumCores];
+
+    }
+
+    void KHardwareTimer::Initialize(s32 core_id) {
+        /* Setup the global timer for the core. */
+        InitializeGlobalTimer();
+
+        /* TODO: Bind the interrupt task for this core to the interrupt manager. */
+    }
+
+    void KHardwareTimer::Finalize() {
+        /* Stop the hardware timer. */
+        StopTimer();
+    }
+
+    void KHardwareTimer::DoInterruptTask() {
+        /* Handle the interrupt. */
+        {
+            KScopedSchedulerLock slk;
+            KScopedSpinLock lk(this->GetLock());
+
+            /* Disable the timer interrupt while we handle this. */
+            DisableInterrupt();
+            if (const s64 next_time = this->DoInterruptTaskImpl(GetTick()); next_time > 0) {
+                /* We have a next time, so we should set the time to interrupt and turn the interrupt on. */
+                SetCompareValue(next_time);
+                EnableInterrupt();
+            }
+        }
+        /* TODO: Clear the timer interrupt. */
     }
 
 }

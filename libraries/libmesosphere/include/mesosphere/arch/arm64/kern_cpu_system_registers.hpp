@@ -52,6 +52,8 @@ namespace ams::kern::arm64::cpu {
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(OslarEl1, oslar_el1)
 
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(TpidrRoEl0, tpidrro_el0)
+
     #define FOR_I_IN_0_TO_15(HANDLER, ...)                                                                              \
         HANDLER(0,  ## __VA_ARGS__) HANDLER(1,  ## __VA_ARGS__) HANDLER(2,  ## __VA_ARGS__) HANDLER(3,  ## __VA_ARGS__) \
         HANDLER(4,  ## __VA_ARGS__) HANDLER(5,  ## __VA_ARGS__) HANDLER(6,  ## __VA_ARGS__) HANDLER(7,  ## __VA_ARGS__) \
@@ -247,6 +249,55 @@ namespace ams::kern::arm64::cpu {
 
             constexpr ALWAYS_INLINE u64 GetRevision() const {
                 return this->GetBits(0, 4);
+            }
+    };
+
+    /* Accessors for timer registers. */
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(CounterTimerKernelControl) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(CounterTimerKernelControl, cntkctl_el1)
+
+            constexpr ALWAYS_INLINE decltype(auto) SetEl0PctEn(bool en) {
+                this->SetBit(0, en);
+                return *this;
+            }
+    };
+
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(CounterTimerPhysicalTimerControl) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(CounterTimerPhysicalTimerControl, cntp_ctl_el0)
+
+            constexpr ALWAYS_INLINE decltype(auto) SetEnable(bool en) {
+                this->SetBit(0, en);
+                return *this;
+            }
+
+            constexpr ALWAYS_INLINE decltype(auto) SetIMask(bool en) {
+                this->SetBit(1, en);
+                return *this;
+            }
+    };
+
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(CounterTimerPhysicalTimerCompareValue) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(CounterTimerPhysicalTimerCompareValue, cntp_cval_el0)
+
+            constexpr ALWAYS_INLINE u64 GetCompareValue() {
+                return this->GetValue();
+            }
+
+            constexpr ALWAYS_INLINE decltype(auto) SetCompareValue(u64 value) {
+                this->SetBits(0, BITSIZEOF(value), value);
+                return *this;
+            }
+    };
+
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(CounterTimerPhysicalCountValue) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(CounterTimerPhysicalCountValue, cntpct_el0)
+
+            constexpr ALWAYS_INLINE u64 GetCount() {
+                return this->GetValue();
             }
     };
 

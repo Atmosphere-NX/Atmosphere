@@ -83,4 +83,8 @@ namespace ams::kern::arm64::cpu {
         SetTpidrEl1(value);
     }
 
+    ALWAYS_INLINE void SwitchThreadLocalRegion(uintptr_t tlr) {
+        cpu::SetTpidrRoEl0(tlr);
+    }
+
 }
