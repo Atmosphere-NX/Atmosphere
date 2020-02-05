@@ -8,8 +8,6 @@
 #pragma once
 
 #include "context.h"
-#define _REENT_ONLY
-#include <errno.h>
 
 u8 GDB_ComputeChecksum(const char *packetData, size_t len);
 size_t GDB_EncodeHex(char *dst, const void *src, size_t len);

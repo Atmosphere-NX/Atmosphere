@@ -12,5 +12,3 @@
 bool GDB_FetchPackedHioRequest(GDBContext *ctx, u32 addr);
 bool GDB_IsHioInProgress(GDBContext *ctx);
 int GDB_SendCurrentHioRequest(GDBContext *ctx);
-
-GDB_DECLARE_HANDLER(HioReply);

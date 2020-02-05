@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Atmosphère-NX
+ * Copyright (c) 2019-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,8 +24,16 @@
 
 #pragma once
 
-#include "gdb_defines_internal.hpp"
+#include "../defines.hpp"
 #include "../transport_interface.h"
+
+#define _REENT_ONLY
+#include <cerrno>
+
+#define DECLARE_HANDLER(name)           int Handle##name()
+#define DECLARE_QUERY_HANDLER(name)     DECLARE_HANDLER(Query##name)
+#define DECLARE_VERBOSE_HANDLER(name)   DECLARE_HANDLER(Verbose##name)
+#define DECLARE_XFER_HANDLER(name)      DECLARE_HANDLER(Xfer##name)
 
 namespace ams::hyp::gdb {
 
@@ -46,14 +54,6 @@ namespace ams::hyp::gdb {
         int gdbErrno;
         bool ctrlC;
     };
-
-    typedef enum GDBState
-    {
-        STATE_DISCONNECTED,
-        STATE_CONNECTED,
-        STATE_ATTACHED,
-        STATE_DETACHING,
-    } GDBState;
 
     struct DebugEventInfo;
 
@@ -106,7 +106,49 @@ namespace ams::hyp::gdb {
         private:
             void MigrateRxIrq(u32 coreId) const;
 
+            // Comms
+            int ReceivePacket();
+            int DoSendPacket();
+            int SendPacket(const char *packetData, size_t len);
+            int SendFormattedPacket(const char *packetDataFmt, ...);
+            int SendHexPacket(const void *packetData, size_t len);
+            int SendNotificationPacket(const char *packetData, size_t len);
+            int SendStreamData(const char *streamData, size_t offset, size_t length, size_t totalSize, bool forceEmptyLast);
+            int ReplyEmpty();
+            int ReplyErrno(int no);
+
+            char *GetInPlaceOutputBuffer() const {
+                return m_buffer + 1;
+            }
+        private:
+            // Meta
             DECLARE_HANDLER(Unsupported);
+            DECLARE_HANDLER(ReadQuery);
+            DECLARE_HANDLER(WriteQuery);
+            DECLARE_QUERY_HANDLER(Xfer);
+            DECLARE_HANDLER(VerboseCommand);
+
+            // General queries
+            DECLARE_QUERY_HANDLER(Supported);
+            DECLARE_QUERY_HANDLER(StartNoAckMode);
+            DECLARE_QUERY_HANDLER(Attached);
+
+            // XML Transfer
+            DECLARE_XFER_HANDLER(Features);
+
+            // Resuming features enumeration
+            DECLARE_VERBOSE_HANDLER(ContinueSupported);
+
+            // "Threads"
+            // Capitalization in "GetTLSAddr" is intended.
+            DECLARE_HANDLER(SetThreadId);
+            DECLARE_HANDLER(IsThreadAlive);
+            DECLARE_QUERY_HANDLER(CurrentThreadId);
+            DECLARE_QUERY_HANDLER(fThreadInfo);
+            DECLARE_QUERY_HANDLER(sThreadInfo);
+            DECLARE_QUERY_HANDLER(ThreadEvents);
+            DECLARE_QUERY_HANDLER(ThreadExtraInfo);
+            DECLARE_QUERY_HANDLER(GetTLSAddr);
 
             // Debug
             DECLARE_VERBOSE_HANDLER(Stopped);
@@ -117,6 +159,27 @@ namespace ams::hyp::gdb {
             DECLARE_VERBOSE_HANDLER(Continue);
             DECLARE_HANDLER(GetStopReason);
 
+            // Stop points
+            DECLARE_HANDLER(ToggleStopPoint);
+
+            // Memory
+            DECLARE_HANDLER(ReadMemory);
+            DECLARE_HANDLER(WriteMemory);
+            DECLARE_HANDLER(WriteMemoryRaw);
+            DECLARE_QUERY_HANDLER(SearchMemory);
+
+            // Registers
+            DECLARE_HANDLER(ReadRegisters);
+            DECLARE_HANDLER(WriteRegisters);
+            DECLARE_HANDLER(ReadRegister);
+            DECLARE_HANDLER(WriteRegister);
+
+            // Hio
+            DECLARE_HANDLER(HioReply);
+
+            // Custom commands
+            DECLARE_QUERY_HANDLER(Rcmd);
+
         public:
             void Initialize(TransportInterfaceType ifaceType, u32 ifaceId, u32 ifaceFlags);
             void Attach();
@@ -125,9 +188,13 @@ namespace ams::hyp::gdb {
             void Acquire();
             void Release();
 
-            constexpr bool IsAttached() const
-            {
+            constexpr bool IsAttached() const {
                 return m_state == State::Attached;
             }
-    }
+    };
 }
+
+#undef DECLARE_HANDLER
+#undef DECLARE_QUERY_HANDLER
+#undef DECLARE_VERBOSE_HANDLER
+#undef DECLARE_XFER_HANDLER

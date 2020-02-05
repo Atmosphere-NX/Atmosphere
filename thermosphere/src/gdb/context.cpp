@@ -27,16 +27,7 @@
 //#include "context.h"
 
 #include "net.h"
-
 #include "debug.h"
-#include "query.h"
-#include "verbose.h"
-#include "thread.h"
-#include "debug.h"
-#include "regs.h"
-#include "mem.h"
-#include "hio.h"
-#include "stop_points.h"
 
 #include "../breakpoints.h"
 #include "../software_breakpoints.h"
