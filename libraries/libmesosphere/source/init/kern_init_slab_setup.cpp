@@ -98,7 +98,7 @@ namespace ams::kern::init {
             KVirtualAddress start = util::AlignUp(GetInteger(address), alignof(T));
 
             if (size > 0) {
-                MESOSPHERE_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryBlockTree().FindContainingBlock(GetInteger(start) + size - 1)->IsDerivedFrom(KMemoryRegionType_KernelSlab));
+                MESOSPHERE_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().FindContainingRegion(GetInteger(start) + size - 1)->IsDerivedFrom(KMemoryRegionType_KernelSlab));
                 T::InitializeSlabHeap(GetVoidPointer(start), size);
             }
 

@@ -112,17 +112,17 @@ namespace ams::kern {
         }
     }
 
-    class KMemoryBlock : public util::IntrusiveRedBlackTreeBaseNode<KMemoryBlock> {
-        NON_COPYABLE(KMemoryBlock);
-        NON_MOVEABLE(KMemoryBlock);
+    class KMemoryRegion : public util::IntrusiveRedBlackTreeBaseNode<KMemoryRegion> {
+        NON_COPYABLE(KMemoryRegion);
+        NON_MOVEABLE(KMemoryRegion);
         private:
             uintptr_t address;
             uintptr_t pair_address;
-            size_t block_size;
+            size_t region_size;
             u32 attributes;
             u32 type_id;
         public:
-            static constexpr ALWAYS_INLINE int Compare(const KMemoryBlock &lhs, const KMemoryBlock &rhs) {
+            static constexpr ALWAYS_INLINE int Compare(const KMemoryRegion &lhs, const KMemoryRegion &rhs) {
                 if (lhs.GetAddress() < rhs.GetAddress()) {
                     return -1;
                 } else if (lhs.GetLastAddress() > rhs.GetLastAddress()) {
@@ -132,13 +132,13 @@ namespace ams::kern {
                 }
             }
         public:
-            constexpr ALWAYS_INLINE KMemoryBlock() : address(0), pair_address(0), block_size(0), attributes(0), type_id(0) { /* ... */ }
-            constexpr ALWAYS_INLINE KMemoryBlock(uintptr_t a, size_t bl, uintptr_t p, u32 r, u32 t) :
-                address(a), pair_address(p), block_size(bl), attributes(r), type_id(t)
+            constexpr ALWAYS_INLINE KMemoryRegion() : address(0), pair_address(0), region_size(0), attributes(0), type_id(0) { /* ... */ }
+            constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t rs, uintptr_t p, u32 r, u32 t) :
+                address(a), pair_address(p), region_size(rs), attributes(r), type_id(t)
             {
                 /* ... */
             }
-            constexpr ALWAYS_INLINE KMemoryBlock(uintptr_t a, size_t bl, u32 r, u32 t) : KMemoryBlock(a, bl, std::numeric_limits<uintptr_t>::max(), r, t) { /* ... */ }
+            constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t rs, u32 r, u32 t) : KMemoryRegion(a, rs, std::numeric_limits<uintptr_t>::max(), r, t) { /* ... */ }
 
             constexpr ALWAYS_INLINE uintptr_t GetAddress() const {
                 return this->address;
@@ -149,7 +149,7 @@ namespace ams::kern {
             }
 
             constexpr ALWAYS_INLINE size_t GetSize() const {
-                return this->block_size;
+                return this->region_size;
             }
 
             constexpr ALWAYS_INLINE uintptr_t GetEndAddress() const {
@@ -197,16 +197,16 @@ namespace ams::kern {
                 this->type_id |= attr;
             }
     };
-    static_assert(std::is_trivially_destructible<KMemoryBlock>::value);
+    static_assert(std::is_trivially_destructible<KMemoryRegion>::value);
 
-    class KMemoryBlockTree {
+    class KMemoryRegionTree {
         public:
             struct DerivedRegionExtents {
-                const KMemoryBlock *first_block;
-                const KMemoryBlock *last_block;
+                const KMemoryRegion *first_region;
+                const KMemoryRegion *last_region;
             };
         private:
-            using TreeType = util::IntrusiveRedBlackTreeBaseTraits<KMemoryBlock>::TreeType<KMemoryBlock>;
+            using TreeType = util::IntrusiveRedBlackTreeBaseTraits<KMemoryRegion>::TreeType<KMemoryRegion>;
             using value_type        = TreeType::value_type;
             using size_type         = TreeType::size_type;
             using difference_type   = TreeType::difference_type;
@@ -219,17 +219,17 @@ namespace ams::kern {
         private:
             TreeType tree;
         public:
-            constexpr ALWAYS_INLINE KMemoryBlockTree() : tree() { /* ... */ }
+            constexpr ALWAYS_INLINE KMemoryRegionTree() : tree() { /* ... */ }
         public:
-            iterator FindContainingBlock(uintptr_t address) {
-                auto it = this->find(KMemoryBlock(address, 1, 0, 0));
+            iterator FindContainingRegion(uintptr_t address) {
+                auto it = this->find(KMemoryRegion(address, 1, 0, 0));
                 MESOSPHERE_INIT_ABORT_UNLESS(it != this->end());
                 MESOSPHERE_INIT_ABORT_UNLESS(it->Contains(address));
 
                 return it;
             }
 
-            iterator FindFirstBlockByTypeAttr(u32 type_id, u32 attr = 0) {
+            iterator FindFirstRegionByTypeAttr(u32 type_id, u32 attr = 0) {
                 for (auto it = this->begin(); it != this->end(); it++) {
                     if (it->GetType() == type_id && it->GetAttributes() == attr) {
                         return it;
@@ -238,7 +238,7 @@ namespace ams::kern {
                 MESOSPHERE_INIT_ABORT();
             }
 
-            iterator FindFirstBlockByType(u32 type_id) {
+            iterator FindFirstRegionByType(u32 type_id) {
                 for (auto it = this->begin(); it != this->end(); it++) {
                     if (it->GetType() == type_id) {
                         return it;
@@ -247,7 +247,7 @@ namespace ams::kern {
                 MESOSPHERE_INIT_ABORT();
             }
 
-            iterator FindFirstDerivedBlock(u32 type_id) {
+            iterator FindFirstDerivedRegion(u32 type_id) {
                 for (auto it = this->begin(); it != this->end(); it++) {
                     if (it->IsDerivedFrom(type_id)) {
                         return it;
@@ -258,19 +258,19 @@ namespace ams::kern {
 
 
             DerivedRegionExtents GetDerivedRegionExtents(u32 type_id) {
-                DerivedRegionExtents extents = { .first_block = nullptr, .last_block = nullptr };
+                DerivedRegionExtents extents = { .first_region = nullptr, .last_region = nullptr };
 
                 for (auto it = this->cbegin(); it != this->cend(); it++) {
                     if (it->IsDerivedFrom(type_id)) {
-                        if (extents.first_block == nullptr) {
-                            extents.first_block = std::addressof(*it);
+                        if (extents.first_region == nullptr) {
+                            extents.first_region = std::addressof(*it);
                         }
-                        extents.last_block = std::addressof(*it);
+                        extents.last_region = std::addressof(*it);
                     }
                 }
 
-                MESOSPHERE_INIT_ABORT_UNLESS(extents.first_block != nullptr);
-                MESOSPHERE_INIT_ABORT_UNLESS(extents.last_block  != nullptr);
+                MESOSPHERE_INIT_ABORT_UNLESS(extents.first_region != nullptr);
+                MESOSPHERE_INIT_ABORT_UNLESS(extents.last_region  != nullptr);
 
                 return extents;
             }
@@ -354,30 +354,30 @@ namespace ams::kern {
             }
     };
 
-    class KMemoryBlockAllocator {
-        NON_COPYABLE(KMemoryBlockAllocator);
-        NON_MOVEABLE(KMemoryBlockAllocator);
+    class KMemoryRegionAllocator {
+        NON_COPYABLE(KMemoryRegionAllocator);
+        NON_MOVEABLE(KMemoryRegionAllocator);
         public:
-            static constexpr size_t MaxMemoryBlocks = 1000;
+            static constexpr size_t MaxMemoryRegions = 1000;
             friend class KMemoryLayout;
         private:
-            KMemoryBlock block_heap[MaxMemoryBlocks];
-            size_t num_blocks;
+            KMemoryRegion region_heap[MaxMemoryRegions];
+            size_t num_regions;
         private:
-            constexpr ALWAYS_INLINE KMemoryBlockAllocator() : block_heap(), num_blocks() { /* ... */ }
+            constexpr ALWAYS_INLINE KMemoryRegionAllocator() : region_heap(), num_regions() { /* ... */ }
         public:
-            ALWAYS_INLINE KMemoryBlock *Allocate() {
+            ALWAYS_INLINE KMemoryRegion *Allocate() {
                 /* Ensure we stay within the bounds of our heap. */
-                MESOSPHERE_INIT_ABORT_UNLESS(this->num_blocks < MaxMemoryBlocks);
+                MESOSPHERE_INIT_ABORT_UNLESS(this->num_regions < MaxMemoryRegions);
 
-                return &this->block_heap[this->num_blocks++];
+                return &this->region_heap[this->num_regions++];
             }
 
             template<typename... Args>
-            ALWAYS_INLINE KMemoryBlock *Create(Args&&... args) {
-                KMemoryBlock *block = this->Allocate();
-                new (block) KMemoryBlock(std::forward<Args>(args)...);
-                return block;
+            ALWAYS_INLINE KMemoryRegion *Create(Args&&... args) {
+                KMemoryRegion *region = this->Allocate();
+                new (region) KMemoryRegion(std::forward<Args>(args)...);
+                return region;
             }
     };
 
@@ -385,17 +385,17 @@ namespace ams::kern {
         private:
             static /* constinit */ inline uintptr_t s_linear_phys_to_virt_diff;
             static /* constinit */ inline uintptr_t s_linear_virt_to_phys_diff;
-            static /* constinit */ inline KMemoryBlockAllocator s_block_allocator;
-            static /* constinit */ inline KMemoryBlockTree s_virtual_tree;
-            static /* constinit */ inline KMemoryBlockTree s_physical_tree;
-            static /* constinit */ inline KMemoryBlockTree s_virtual_linear_tree;
-            static /* constinit */ inline KMemoryBlockTree s_physical_linear_tree;
+            static /* constinit */ inline KMemoryRegionAllocator s_region_allocator;
+            static /* constinit */ inline KMemoryRegionTree s_virtual_tree;
+            static /* constinit */ inline KMemoryRegionTree s_physical_tree;
+            static /* constinit */ inline KMemoryRegionTree s_virtual_linear_tree;
+            static /* constinit */ inline KMemoryRegionTree s_physical_linear_tree;
         public:
-            static ALWAYS_INLINE KMemoryBlockAllocator &GetMemoryBlockAllocator()        { return s_block_allocator; }
-            static ALWAYS_INLINE KMemoryBlockTree      &GetVirtualMemoryBlockTree()      { return s_virtual_tree; }
-            static ALWAYS_INLINE KMemoryBlockTree      &GetPhysicalMemoryBlockTree()     { return s_physical_tree; }
-            static ALWAYS_INLINE KMemoryBlockTree      &GetVirtualLinearMemoryBlockTree()  { return s_virtual_linear_tree; }
-            static ALWAYS_INLINE KMemoryBlockTree      &GetPhysicalLinearMemoryBlockTree() { return s_physical_linear_tree; }
+            static ALWAYS_INLINE KMemoryRegionAllocator &GetMemoryRegionAllocator()        { return s_region_allocator; }
+            static ALWAYS_INLINE KMemoryRegionTree      &GetVirtualMemoryRegionTree()      { return s_virtual_tree; }
+            static ALWAYS_INLINE KMemoryRegionTree      &GetPhysicalMemoryRegionTree()     { return s_physical_tree; }
+            static ALWAYS_INLINE KMemoryRegionTree      &GetVirtualLinearMemoryRegionTree()  { return s_virtual_linear_tree; }
+            static ALWAYS_INLINE KMemoryRegionTree      &GetPhysicalLinearMemoryRegionTree() { return s_physical_linear_tree; }
 
             static ALWAYS_INLINE KVirtualAddress GetLinearVirtualAddress(KPhysicalAddress address) {
                 return GetInteger(address) + s_linear_phys_to_virt_diff;
@@ -406,46 +406,46 @@ namespace ams::kern {
             }
 
             static NOINLINE KVirtualAddress GetMainStackTopAddress(s32 core_id) {
-                return GetVirtualMemoryBlockTree().FindFirstBlockByTypeAttr(KMemoryRegionType_KernelMiscMainStack, static_cast<u32>(core_id))->GetEndAddress();
+                return GetVirtualMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_KernelMiscMainStack, static_cast<u32>(core_id))->GetEndAddress();
             }
 
             static NOINLINE KVirtualAddress GetIdleStackTopAddress(s32 core_id) {
-                return GetVirtualMemoryBlockTree().FindFirstBlockByTypeAttr(KMemoryRegionType_KernelMiscIdleStack, static_cast<u32>(core_id))->GetEndAddress();
+                return GetVirtualMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_KernelMiscIdleStack, static_cast<u32>(core_id))->GetEndAddress();
             }
 
             static NOINLINE KVirtualAddress GetExceptionStackBottomAddress(s32 core_id) {
-                return GetVirtualMemoryBlockTree().FindFirstBlockByTypeAttr(KMemoryRegionType_KernelMiscExceptionStack, static_cast<u32>(core_id))->GetAddress();
+                return GetVirtualMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_KernelMiscExceptionStack, static_cast<u32>(core_id))->GetAddress();
             }
 
             static NOINLINE KVirtualAddress GetSlabRegionAddress() {
-                return GetVirtualMemoryBlockTree().FindFirstBlockByType(KMemoryRegionType_KernelSlab)->GetAddress();
+                return GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_KernelSlab)->GetAddress();
             }
 
             static NOINLINE KVirtualAddress GetCoreLocalRegionAddress() {
-                return GetVirtualMemoryBlockTree().FindFirstBlockByType(KMemoryRegionType_CoreLocal)->GetAddress();
+                return GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_CoreLocal)->GetAddress();
             }
 
             static NOINLINE KVirtualAddress GetInterruptDistributorAddress() {
-                return GetPhysicalMemoryBlockTree().FindFirstDerivedBlock(KMemoryRegionType_InterruptDistributor)->GetPairAddress();
+                return GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_InterruptDistributor)->GetPairAddress();
             }
 
             static NOINLINE KVirtualAddress GetInterruptCpuInterfaceAddress() {
-                return GetPhysicalMemoryBlockTree().FindFirstDerivedBlock(KMemoryRegionType_InterruptCpuInterface)->GetPairAddress();
+                return GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_InterruptCpuInterface)->GetPairAddress();
             }
 
-            static void InitializeLinearMemoryBlockTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);
+            static void InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);
     };
 
 
     namespace init {
 
         /* These should be generic, regardless of board. */
-        void SetupCoreLocalRegionMemoryBlocks(KInitialPageTable &page_table, KInitialPageAllocator &page_allocator);
-        void SetupPoolPartitionMemoryBlocks();
+        void SetupCoreLocalRegionMemoryRegions(KInitialPageTable &page_table, KInitialPageAllocator &page_allocator);
+        void SetupPoolPartitionMemoryRegions();
 
         /* These may be implemented in a board-specific manner. */
-        void SetupDevicePhysicalMemoryBlocks();
-        void SetupDramPhysicalMemoryBlocks();
+        void SetupDevicePhysicalMemoryRegions();
+        void SetupDramPhysicalMemoryRegions();
 
     }
 

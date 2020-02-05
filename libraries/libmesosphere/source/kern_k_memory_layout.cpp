@@ -17,19 +17,19 @@
 
 namespace ams::kern {
 
-    bool KMemoryBlockTree::Insert(uintptr_t address, size_t size, u32 type_id, u32 new_attr, u32 old_attr) {
-        /* Locate the memory block that contains the address. */
-        auto it = this->FindContainingBlock(address);
+    bool KMemoryRegionTree::Insert(uintptr_t address, size_t size, u32 type_id, u32 new_attr, u32 old_attr) {
+        /* Locate the memory region that contains the address. */
+        auto it = this->FindContainingRegion(address);
 
         /* We require that the old attr is correct. */
         if (it->GetAttributes() != old_attr) {
             return false;
         }
 
-        /* We further require that the block can be split from the old block. */
-        const uintptr_t inserted_block_end = address + size;
-        const uintptr_t inserted_block_last = inserted_block_end - 1;
-        if (it->GetLastAddress() < inserted_block_last) {
+        /* We further require that the region can be split from the old region. */
+        const uintptr_t inserted_region_end = address + size;
+        const uintptr_t inserted_region_last = inserted_region_end - 1;
+        if (it->GetLastAddress() < inserted_region_last) {
             return false;
         }
 
@@ -38,8 +38,8 @@ namespace ams::kern {
             return false;
         }
 
-        /* Cache information from the block before we remove it. */
-        KMemoryBlock *cur_block = std::addressof(*it);
+        /* Cache information from the region before we remove it. */
+        KMemoryRegion *cur_region = std::addressof(*it);
         const uintptr_t old_address = it->GetAddress();
         const size_t    old_size    = it->GetSize();
         const uintptr_t old_end     = old_address + old_size;
@@ -47,39 +47,39 @@ namespace ams::kern {
         const uintptr_t old_pair    = it->GetPairAddress();
         const u32       old_type    = it->GetType();
 
-        /* Erase the existing block from the tree. */
+        /* Erase the existing region from the tree. */
         this->erase(it);
 
-        /* If we need to insert a block before the region, do so. */
+        /* If we need to insert a region before the region, do so. */
         if (old_address != address) {
-            new (cur_block) KMemoryBlock(old_address, address - old_address, old_pair, old_attr, old_type);
-            this->insert(*cur_block);
-            cur_block = KMemoryLayout::GetMemoryBlockAllocator().Allocate();
+            new (cur_region) KMemoryRegion(old_address, address - old_address, old_pair, old_attr, old_type);
+            this->insert(*cur_region);
+            cur_region = KMemoryLayout::GetMemoryRegionAllocator().Allocate();
         }
 
-        /* Insert a new block. */
+        /* Insert a new region. */
         const uintptr_t new_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (address - old_address) : old_pair;
-        new (cur_block) KMemoryBlock(address, size, new_pair, new_attr, type_id);
-        this->insert(*cur_block);
+        new (cur_region) KMemoryRegion(address, size, new_pair, new_attr, type_id);
+        this->insert(*cur_region);
 
-        /* If we need to insert a block after the region, do so. */
-        if (old_last != inserted_block_last) {
-            const uintptr_t after_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (inserted_block_end - old_address) : old_pair;
-            this->insert(*KMemoryLayout::GetMemoryBlockAllocator().Create(inserted_block_end, old_end - inserted_block_end, after_pair, old_attr, old_type));
+        /* If we need to insert a region after the region, do so. */
+        if (old_last != inserted_region_last) {
+            const uintptr_t after_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (inserted_region_end - old_address) : old_pair;
+            this->insert(*KMemoryLayout::GetMemoryRegionAllocator().Create(inserted_region_end, old_end - inserted_region_end, after_pair, old_attr, old_type));
         }
 
         return true;
     }
 
-    KVirtualAddress KMemoryBlockTree::GetRandomAlignedRegion(size_t size, size_t alignment, u32 type_id) {
+    KVirtualAddress KMemoryRegionTree::GetRandomAlignedRegion(size_t size, size_t alignment, u32 type_id) {
         /* We want to find the total extents of the type id. */
         const auto extents = this->GetDerivedRegionExtents(type_id);
 
         /* Ensure that our alignment is correct. */
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(extents.first_block->GetAddress(), alignment));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(extents.first_region->GetAddress(), alignment));
 
-        const uintptr_t first_address = extents.first_block->GetAddress();
-        const uintptr_t last_address  = extents.last_block->GetLastAddress();
+        const uintptr_t first_address = extents.first_region->GetAddress();
+        const uintptr_t last_address  = extents.last_region->GetLastAddress();
 
         while (true) {
             const uintptr_t candidate = util::AlignDown(KSystemControl::Init::GenerateRandomRange(first_address, last_address), alignment);
@@ -96,38 +96,38 @@ namespace ams::kern {
                 continue;
             }
 
-            /* Locate the candidate block, and ensure it fits. */
-            const KMemoryBlock *candidate_block = std::addressof(*this->FindContainingBlock(candidate));
-            if (candidate_last > candidate_block->GetLastAddress()) {
+            /* Locate the candidate region, and ensure it fits. */
+            const KMemoryRegion *candidate_region = std::addressof(*this->FindContainingRegion(candidate));
+            if (candidate_last > candidate_region->GetLastAddress()) {
                 continue;
             }
 
-            /* Ensure that the block has the correct type id. */
-            if (candidate_block->GetType() != type_id)
+            /* Ensure that the region has the correct type id. */
+            if (candidate_region->GetType() != type_id)
                 continue;
 
             return candidate;
         }
     }
 
-    void KMemoryLayout::InitializeLinearMemoryBlockTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start) {
+    void KMemoryLayout::InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start) {
         /* Set static differences. */
         s_linear_phys_to_virt_diff = GetInteger(linear_virtual_start) - GetInteger(aligned_linear_phys_start);
         s_linear_virt_to_phys_diff = GetInteger(aligned_linear_phys_start) - GetInteger(linear_virtual_start);
 
         /* Initialize linear trees. */
-        for (auto &block : GetPhysicalMemoryBlockTree()) {
-            if (!block.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
+        for (auto &region : GetPhysicalMemoryRegionTree()) {
+            if (!region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
                 continue;
             }
-            GetPhysicalLinearMemoryBlockTree().insert(*GetMemoryBlockAllocator().Create(block.GetAddress(), block.GetSize(), block.GetAttributes(), block.GetType()));
+            GetPhysicalLinearMemoryRegionTree().insert(*GetMemoryRegionAllocator().Create(region.GetAddress(), region.GetSize(), region.GetAttributes(), region.GetType()));
         }
 
-        for (auto &block : GetVirtualMemoryBlockTree()) {
-            if (!block.IsDerivedFrom(KMemoryRegionType_Dram)) {
+        for (auto &region : GetVirtualMemoryRegionTree()) {
+            if (!region.IsDerivedFrom(KMemoryRegionType_Dram)) {
                 continue;
             }
-            GetVirtualLinearMemoryBlockTree().insert(*GetMemoryBlockAllocator().Create(block.GetAddress(), block.GetSize(), block.GetAttributes(), block.GetType()));
+            GetVirtualLinearMemoryRegionTree().insert(*GetMemoryRegionAllocator().Create(region.GetAddress(), region.GetSize(), region.GetAttributes(), region.GetType()));
         }
     }
 
@@ -149,17 +149,17 @@ namespace ams::kern {
 
             KVirtualAddress GetCoreLocalRegionVirtualAddress() {
                 while (true) {
-                    const uintptr_t candidate_start = GetInteger(KMemoryLayout::GetVirtualMemoryBlockTree().GetRandomAlignedRegion(CoreLocalRegionSizeWithGuards, CoreLocalRegionAlign, KMemoryRegionType_None));
+                    const uintptr_t candidate_start = GetInteger(KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(CoreLocalRegionSizeWithGuards, CoreLocalRegionAlign, KMemoryRegionType_None));
                     const uintptr_t candidate_end   = candidate_start + CoreLocalRegionSizeWithGuards;
                     const uintptr_t candidate_last  = candidate_end - 1;
 
-                    const KMemoryBlock *containing_block = std::addressof(*KMemoryLayout::GetVirtualMemoryBlockTree().FindContainingBlock(candidate_start));
+                    const KMemoryRegion *containing_region = std::addressof(*KMemoryLayout::GetVirtualMemoryRegionTree().FindContainingRegion(candidate_start));
 
-                    if (candidate_last > containing_block->GetLastAddress()) {
+                    if (candidate_last > containing_region->GetLastAddress()) {
                         continue;
                     }
 
-                    if (containing_block->GetType() != KMemoryRegionType_None) {
+                    if (containing_region->GetType() != KMemoryRegionType_None) {
                         continue;
                     }
 
@@ -167,11 +167,11 @@ namespace ams::kern {
                         continue;
                     }
 
-                    if (containing_block->GetAddress() > util::AlignDown(candidate_start, CoreLocalRegionBoundsAlign)) {
+                    if (containing_region->GetAddress() > util::AlignDown(candidate_start, CoreLocalRegionBoundsAlign)) {
                         continue;
                     }
 
-                    if (util::AlignUp(candidate_last, CoreLocalRegionBoundsAlign) - 1 > containing_block->GetLastAddress()) {
+                    if (util::AlignUp(candidate_last, CoreLocalRegionBoundsAlign) - 1 > containing_region->GetLastAddress()) {
                         continue;
                     }
 
@@ -180,17 +180,17 @@ namespace ams::kern {
 
             }
 
-            void InsertPoolPartitionBlockIntoBothTrees(size_t start, size_t size, KMemoryRegionType phys_type, KMemoryRegionType virt_type, u32 &cur_attr) {
+            void InsertPoolPartitionRegionIntoBothTrees(size_t start, size_t size, KMemoryRegionType phys_type, KMemoryRegionType virt_type, u32 &cur_attr) {
                 const u32 attr = cur_attr++;
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(start, size, phys_type, attr));
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryBlockTree().Insert(KMemoryLayout::GetPhysicalMemoryBlockTree().FindFirstBlockByTypeAttr(phys_type, attr)->GetPairAddress(), size, virt_type, attr));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(start, size, phys_type, attr));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstRegionByTypeAttr(phys_type, attr)->GetPairAddress(), size, virt_type, attr));
             }
 
         }
 
-        void SetupCoreLocalRegionMemoryBlocks(KInitialPageTable &page_table, KInitialPageAllocator &page_allocator) {
+        void SetupCoreLocalRegionMemoryRegions(KInitialPageTable &page_table, KInitialPageAllocator &page_allocator) {
             const KVirtualAddress core_local_virt_start = GetCoreLocalRegionVirtualAddress();
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryBlockTree().Insert(GetInteger(core_local_virt_start), CoreLocalRegionSize, KMemoryRegionType_CoreLocal));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(core_local_virt_start), CoreLocalRegionSize, KMemoryRegionType_CoreLocal));
 
             /* Allocate a page for each core. */
             KPhysicalAddress core_local_region_start_phys[cpu::NumCores] = {};
@@ -222,9 +222,9 @@ namespace ams::kern {
             StoreInitArguments();
         }
 
-        void SetupPoolPartitionMemoryBlocks() {
+        void SetupPoolPartitionMemoryRegions() {
             /* Start by identifying the extents of the DRAM memory region. */
-            const auto dram_extents = KMemoryLayout::GetPhysicalMemoryBlockTree().GetDerivedRegionExtents(KMemoryRegionType_Dram);
+            const auto dram_extents = KMemoryLayout::GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Dram);
 
             /* Get Application and Applet pool sizes. */
             const size_t application_pool_size       = KSystemControl::Init::GetApplicationPoolSize();
@@ -232,40 +232,40 @@ namespace ams::kern {
             const size_t unsafe_system_pool_min_size = KSystemControl::Init::GetMinimumNonSecureSystemPoolSize();
 
             /* Find the start of the kernel DRAM region. */
-            const uintptr_t kernel_dram_start = KMemoryLayout::GetPhysicalMemoryBlockTree().FindFirstDerivedBlock(KMemoryRegionType_DramKernel)->GetAddress();
+            const uintptr_t kernel_dram_start = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_DramKernel)->GetAddress();
             MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(kernel_dram_start, CarveoutAlignment));
 
             /* Find the start of the pool partitions region. */
-            const uintptr_t pool_partitions_start = KMemoryLayout::GetPhysicalMemoryBlockTree().FindFirstBlockByTypeAttr(KMemoryRegionType_DramPoolPartition)->GetAddress();
+            const uintptr_t pool_partitions_start = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_DramPoolPartition)->GetAddress();
 
             /* Decide on starting addresses for our pools. */
-            const uintptr_t application_pool_start   = dram_extents.last_block->GetEndAddress() - application_pool_size;
+            const uintptr_t application_pool_start   = dram_extents.last_region->GetEndAddress() - application_pool_size;
             const uintptr_t applet_pool_start        = application_pool_start - applet_pool_size;
             const uintptr_t unsafe_system_pool_start = std::min(kernel_dram_start + CarveoutSizeMax, util::AlignDown(applet_pool_start - unsafe_system_pool_min_size, CarveoutAlignment));
             const size_t    unsafe_system_pool_size  = applet_pool_start - unsafe_system_pool_start;
 
             /* We want to arrange application pool depending on where the middle of dram is. */
-            const uintptr_t dram_midpoint = (dram_extents.first_block->GetAddress() + dram_extents.last_block->GetEndAddress()) / 2;
+            const uintptr_t dram_midpoint = (dram_extents.first_region->GetAddress() + dram_extents.last_region->GetEndAddress()) / 2;
             u32 cur_pool_attr = 0;
             size_t total_overhead_size = 0;
-            if (dram_extents.last_block->GetEndAddress() <= dram_midpoint || dram_midpoint <= application_pool_start) {
-                InsertPoolPartitionBlockIntoBothTrees(application_pool_start, application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
+            if (dram_extents.last_region->GetEndAddress() <= dram_midpoint || dram_midpoint <= application_pool_start) {
+                InsertPoolPartitionRegionIntoBothTrees(application_pool_start, application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
                 total_overhead_size += KMemoryManager::CalculateMetadataOverheadSize(application_pool_size);
             } else {
                 const size_t first_application_pool_size  = dram_midpoint - application_pool_start;
                 const size_t second_application_pool_size = application_pool_start + application_pool_size - dram_midpoint;
-                InsertPoolPartitionBlockIntoBothTrees(application_pool_start, first_application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
-                InsertPoolPartitionBlockIntoBothTrees(dram_midpoint, second_application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
+                InsertPoolPartitionRegionIntoBothTrees(application_pool_start, first_application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
+                InsertPoolPartitionRegionIntoBothTrees(dram_midpoint, second_application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
                 total_overhead_size += KMemoryManager::CalculateMetadataOverheadSize(first_application_pool_size);
                 total_overhead_size += KMemoryManager::CalculateMetadataOverheadSize(second_application_pool_size);
             }
 
             /* Insert the applet pool. */
-            InsertPoolPartitionBlockIntoBothTrees(applet_pool_start, applet_pool_size, KMemoryRegionType_DramAppletPool, KMemoryRegionType_VirtualDramAppletPool, cur_pool_attr);
+            InsertPoolPartitionRegionIntoBothTrees(applet_pool_start, applet_pool_size, KMemoryRegionType_DramAppletPool, KMemoryRegionType_VirtualDramAppletPool, cur_pool_attr);
             total_overhead_size += KMemoryManager::CalculateMetadataOverheadSize(applet_pool_size);
 
             /* Insert the nonsecure system pool. */
-            InsertPoolPartitionBlockIntoBothTrees(unsafe_system_pool_start, unsafe_system_pool_size, KMemoryRegionType_DramSystemNonSecurePool, KMemoryRegionType_VirtualDramSystemNonSecurePool, cur_pool_attr);
+            InsertPoolPartitionRegionIntoBothTrees(unsafe_system_pool_start, unsafe_system_pool_size, KMemoryRegionType_DramSystemNonSecurePool, KMemoryRegionType_VirtualDramSystemNonSecurePool, cur_pool_attr);
             total_overhead_size += KMemoryManager::CalculateMetadataOverheadSize(unsafe_system_pool_size);
 
             /* Insert the metadata pool. */
@@ -273,11 +273,11 @@ namespace ams::kern {
             const uintptr_t metadata_pool_start = unsafe_system_pool_start - total_overhead_size;
             const size_t    metadata_pool_size  = total_overhead_size;
             u32 metadata_pool_attr = 0;
-            InsertPoolPartitionBlockIntoBothTrees(metadata_pool_start, metadata_pool_size, KMemoryRegionType_DramMetadataPool, KMemoryRegionType_VirtualDramMetadataPool, metadata_pool_attr);
+            InsertPoolPartitionRegionIntoBothTrees(metadata_pool_start, metadata_pool_size, KMemoryRegionType_DramMetadataPool, KMemoryRegionType_VirtualDramMetadataPool, metadata_pool_attr);
 
             /* Insert the system pool. */
             const uintptr_t system_pool_size = metadata_pool_start - pool_partitions_start;
-            InsertPoolPartitionBlockIntoBothTrees(pool_partitions_start, system_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
+            InsertPoolPartitionRegionIntoBothTrees(pool_partitions_start, system_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
 
         }
 

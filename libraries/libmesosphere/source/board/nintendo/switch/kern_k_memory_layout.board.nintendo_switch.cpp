@@ -26,29 +26,29 @@ namespace ams::kern {
 
     namespace init {
 
-        void SetupDevicePhysicalMemoryBlocks() {
+        void SetupDevicePhysicalMemoryRegions() {
             /* TODO: Give these constexpr defines somewhere? */
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x70006000, 0x40,      KMemoryRegionType_Uart                      | KMemoryRegionAttr_ShouldKernelMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x70019000, 0x1000,    KMemoryRegionType_MemoryController          | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x7001C000, 0x1000,    KMemoryRegionType_MemoryController0         | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x7001D000, 0x1000,    KMemoryRegionType_MemoryController1         | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x7000E000, 0x400,     KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x7000E400, 0xC00,     KMemoryRegionType_PowerManagementController | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x50040000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x50041000, 0x1000,    KMemoryRegionType_InterruptDistributor      | KMemoryRegionAttr_ShouldKernelMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x50042000, 0x1000,    KMemoryRegionType_InterruptCpuInterface     | KMemoryRegionAttr_ShouldKernelMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x50043000, 0x1D000,   KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x6000F000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(0x6001DC00, 0x400,     KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006000, 0x40,      KMemoryRegionType_Uart                      | KMemoryRegionAttr_ShouldKernelMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70019000, 0x1000,    KMemoryRegionType_MemoryController          | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001C000, 0x1000,    KMemoryRegionType_MemoryController0         | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001D000, 0x1000,    KMemoryRegionType_MemoryController1         | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7000E000, 0x400,     KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7000E400, 0xC00,     KMemoryRegionType_PowerManagementController | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50040000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50041000, 0x1000,    KMemoryRegionType_InterruptDistributor      | KMemoryRegionAttr_ShouldKernelMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50042000, 0x1000,    KMemoryRegionType_InterruptCpuInterface     | KMemoryRegionAttr_ShouldKernelMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50043000, 0x1D000,   KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6000F000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6001DC00, 0x400,     KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
         }
 
-        void SetupDramPhysicalMemoryBlocks() {
+        void SetupDramPhysicalMemoryRegions() {
             const size_t intended_memory_size                   = KSystemControl::Init::GetIntendedMemorySize();
             const KPhysicalAddress physical_memory_base_address = KSystemControl::Init::GetKernelPhysicalBaseAddress(DramPhysicalAddress);
 
             /* Insert blocks into the tree. */
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(GetInteger(physical_memory_base_address), intended_memory_size,  KMemoryRegionType_Dram));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryBlockTree().Insert(GetInteger(physical_memory_base_address), ReservedEarlyDramSize, KMemoryRegionType_DramReservedEarly));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), intended_memory_size,  KMemoryRegionType_Dram));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), ReservedEarlyDramSize, KMemoryRegionType_DramReservedEarly));
         }
 
     }
