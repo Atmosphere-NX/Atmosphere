@@ -199,7 +199,7 @@ namespace ams::kern {
             g_call_smc_on_panic = kernel_config.Get<smc::KernelConfiguration::UseSecureMonitorPanicCall>();
         }
 
-        /* Set Program Verification. */
+        /* Set Kernel Debugging. */
         {
             /* NOTE: This is used to restrict access to SvcKernelDebug/SvcChangeKernelTraceState. */
             /* Mesosphere may wish to not require this, as we'd ideally keep ProgramVerification enabled for userland. */
@@ -212,7 +212,25 @@ namespace ams::kern {
             smc::ConfigureCarveout(0, carveout.GetAddress(), carveout.GetSize());
         }
 
-        /* TODO: KResourceLimit initialization. */
+        /* System ResourceLimit initialization. */
+        {
+            /* Construct the resource limit object. */
+            KResourceLimit &sys_res_limit = Kernel::GetSystemResourceLimit();
+            KAutoObject::Create(std::addressof(sys_res_limit));
+            sys_res_limit.Initialize();
+
+            /* Set the initial limits. */
+            const auto [total_memory_size, kernel_memory_size] = KMemoryLayout::GetTotalAndKernelMemorySizes();
+            const auto &slab_counts = init::GetSlabResourceCounts();
+            MESOSPHERE_R_ABORT_UNLESS(sys_res_limit.SetLimitValue(ams::svc::LimitableResource_PhysicalMemoryMax,      total_memory_size));
+            MESOSPHERE_R_ABORT_UNLESS(sys_res_limit.SetLimitValue(ams::svc::LimitableResource_ThreadCountMax,         slab_counts.num_KThread));
+            MESOSPHERE_R_ABORT_UNLESS(sys_res_limit.SetLimitValue(ams::svc::LimitableResource_EventCountMax,          slab_counts.num_KEvent));
+            MESOSPHERE_R_ABORT_UNLESS(sys_res_limit.SetLimitValue(ams::svc::LimitableResource_TransferMemoryCountMax, slab_counts.num_KTransferMemory));
+            MESOSPHERE_R_ABORT_UNLESS(sys_res_limit.SetLimitValue(ams::svc::LimitableResource_SessionCountMax,        slab_counts.num_KSession));
+
+            /* Reserve system memory. */
+            MESOSPHERE_ABORT_UNLESS(sys_res_limit.Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, kernel_memory_size));
+        }
     }
 
     /* Randomness. */

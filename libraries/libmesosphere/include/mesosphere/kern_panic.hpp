@@ -69,8 +69,8 @@ namespace ams::kern {
 
 #define MESOSPHERE_R_ABORT_UNLESS(expr)                                                                                                          \
     ({                                                                                                                                           \
-        const ::ams::Result _tmp_meso_r_abort_res = static_cast<::ams::Result>(expr);                                                            \
-        if (AMS_UNLIKELY((R_FAILED(_tmp_meso_r_abort_res))) {                                                                                    \
+        const ::ams::Result _tmp_meso_r_abort_res = static_cast<::ams::Result>((expr));                                                          \
+        if (AMS_UNLIKELY((R_FAILED(_tmp_meso_r_abort_res)))) {                                                                                   \
             MESOSPHERE_PANIC("Result Abort(): %s 2%03d-%04d", #expr, _tmp_meso_r_abort_res.GetModule(), _tmp_meso_r_abort_res.GetDescription()); \
         }                                                                                                                                        \
     })

@@ -20,10 +20,15 @@
 #include <mesosphere/kern_k_memory_layout.hpp>
 #include <mesosphere/kern_k_memory_manager.hpp>
 #include <mesosphere/kern_k_core_local_region.hpp>
-#include <mesosphere/kern_k_thread.hpp>
-#include <mesosphere/kern_select_hardware_timer.hpp>
 
 namespace ams::kern {
+
+    class KThread;
+    class KHardwareTimer;
+    class KResourceLimit;
+    class KInterruptManager;
+    class KInterruptTaskManager;
+    class KScheduler;
 
     class Kernel {
         public:
@@ -33,9 +38,10 @@ namespace ams::kern {
                 Initialized  = 2,
             };
         private:
-            static inline State s_state = State::Invalid;
-            static inline KThread s_main_threads[cpu::NumCores];
-            static inline KThread s_idle_threads[cpu::NumCores];
+            static State s_state;
+            static KThread s_main_threads[cpu::NumCores];
+            static KThread s_idle_threads[cpu::NumCores];
+            static KResourceLimit s_system_resource_limit;
         private:
             static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
                 return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->current.context;
@@ -76,6 +82,10 @@ namespace ams::kern {
 
             static ALWAYS_INLINE KHardwareTimer &GetHardwareTimer() {
                 return GetCoreLocalContext().hardware_timer;
+            }
+
+            static ALWAYS_INLINE KResourceLimit &GetSystemResourceLimit() {
+                return s_system_resource_limit;
             }
     };
 

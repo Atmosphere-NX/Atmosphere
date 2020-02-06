@@ -27,6 +27,7 @@ namespace ams::kern {
     static_assert(KSchedulerPriorityQueue::NumPriority == BITSIZEOF(u64));
 
     class KScopedSchedulerLock;
+    class KScopedSchedulerLockAndSleep;
 
     class KScheduler {
         NON_COPYABLE(KScheduler);
@@ -48,6 +49,7 @@ namespace ams::kern {
             };
         private:
             friend class KScopedSchedulerLock;
+            friend class KScopedSchedulerLockAndSleep;
             static inline bool s_scheduler_update_needed;
             static inline LockType s_scheduler_lock;
             static inline KSchedulerPriorityQueue s_priority_queue;

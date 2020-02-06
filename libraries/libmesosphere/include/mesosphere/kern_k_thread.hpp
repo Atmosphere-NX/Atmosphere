@@ -24,6 +24,8 @@
 
 namespace ams::kern {
 
+    class KThreadQueue;
+
     using KThreadFunction = void (*)(uintptr_t);
 
     class KThread final : public KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>, public KTimerTask, public KWorkerTask {
@@ -133,7 +135,7 @@ namespace ams::kern {
             s64                             last_scheduled_tick;
             QueueEntry                      per_core_priority_queue_entry[cpu::NumCores];
             QueueEntry                      sleeping_queue_entry;
-            void /* TODO KThreadQueue */   *sleeping_queue;
+            KThreadQueue                   *sleeping_queue;
             util::IntrusiveListNode         waiter_list_node;
             util::IntrusiveRedBlackTreeNode condvar_arbiter_tree_node;
             util::IntrusiveListNode         process_list_node;
@@ -204,8 +206,8 @@ namespace ams::kern {
             }
         public:
             constexpr ALWAYS_INLINE const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
-            constexpr ALWAYS_INLINE ThreadState GetThreadState() const { return static_cast<ThreadState>(this->thread_state & ThreadState_Mask); }
-            constexpr ALWAYS_INLINE ThreadState GetRawThreadState() const { return this->thread_state; }
+            constexpr ALWAYS_INLINE ThreadState GetState() const { return static_cast<ThreadState>(this->thread_state & ThreadState_Mask); }
+            constexpr ALWAYS_INLINE ThreadState GetRawState() const { return this->thread_state; }
             NOINLINE void SetState(ThreadState state);
 
             NOINLINE KThreadContext *GetContextForSchedulerLoop();
@@ -216,6 +218,10 @@ namespace ams::kern {
 
             constexpr ALWAYS_INLINE QueueEntry &GetPriorityQueueEntry(s32 core) { return this->per_core_priority_queue_entry[core]; }
             constexpr ALWAYS_INLINE const QueueEntry &GetPriorityQueueEntry(s32 core) const { return this->per_core_priority_queue_entry[core]; }
+
+            constexpr ALWAYS_INLINE QueueEntry &GetSleepingQueueEntry() { return this->sleeping_queue_entry; }
+            constexpr ALWAYS_INLINE const QueueEntry &GetSleepingQueueEntry() const { return this->sleeping_queue_entry; }
+            constexpr ALWAYS_INLINE void SetSleepingQueue(KThreadQueue *q) { this->sleeping_queue = q; }
 
             constexpr ALWAYS_INLINE s32 GetNumKernelWaiters() const { return this->num_kernel_waiters; }
 
@@ -245,7 +251,7 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE bool IsTerminationRequested() const {
-                return this->termination_requested || this->GetRawThreadState() == ThreadState_Terminated;
+                return this->termination_requested || this->GetRawState() == ThreadState_Terminated;
             }
 
         public:

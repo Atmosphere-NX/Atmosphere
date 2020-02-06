@@ -17,6 +17,12 @@
 
 namespace ams::kern {
 
+    /* Declare kernel data members in kernel TU. */
+    Kernel::State    Kernel::s_state = Kernel::State::Invalid;
+    KThread          Kernel::s_main_threads[cpu::NumCores];
+    KThread          Kernel::s_idle_threads[cpu::NumCores];
+    KResourceLimit   Kernel::s_system_resource_limit;
+
     void Kernel::InitializeCoreLocalRegion(s32 core_id) {
         /* Construct the core local region object in place. */
         KCoreLocalContext *clc = GetPointer<KCoreLocalContext>(KMemoryLayout::GetCoreLocalRegionAddress());

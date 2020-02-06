@@ -17,6 +17,8 @@
 #include "kern_debug_log_impl.hpp"
 
 namespace ams::kern {
+    #pragma GCC push_options
+    #pragma GCC optimize ("-Os")
 
     namespace {
 
@@ -328,7 +330,7 @@ namespace ams::kern {
                                     n = static_cast<signed long long>(va_arg(vl, signed long long));
                                 } else if (HasFlag(FormatSpecifierFlag_Long)) {
                                     n = static_cast<signed long>(va_arg(vl, signed long));
-                                } if (HasFlag(FormatSpecifierFlag_Char)) {
+                                } else if (HasFlag(FormatSpecifierFlag_Char)) {
                                     n = static_cast<signed char>(va_arg(vl, signed int));
                                 } else if (HasFlag(FormatSpecifierFlag_Short)) {
                                     n = static_cast<signed short>(va_arg(vl, signed int));
@@ -415,6 +417,9 @@ namespace ams::kern {
         }
 
     }
+
+
+    #pragma GCC pop_options
 
     void KDebugLog::Initialize() {
         if (KTargetSystem::IsDebugLoggingEnabled()) {

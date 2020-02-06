@@ -82,13 +82,18 @@ namespace ams::kern {
 
         KMemoryRegionType_DramLinearMapped  = KMemoryRegionType_Dram  | KMemoryRegionAttr_LinearMapped,
 
-        KMemoryRegionType_DramReservedEarly       = 0x16  | KMemoryRegionAttr_NoUserMap,
-        KMemoryRegionType_DramPoolPartition       = 0x26  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
+        KMemoryRegionType_DramReservedEarly       = 0x16   | KMemoryRegionAttr_NoUserMap,
+        KMemoryRegionType_DramPoolPartition       = 0x26   | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
         KMemoryRegionType_DramMetadataPool        = 0x166  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_CarveoutProtected,
+
+        KMemoryRegionType_DramNonKernel           = 0x1A6  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
+
         KMemoryRegionType_DramApplicationPool     = 0x7A6  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
         KMemoryRegionType_DramAppletPool          = 0xBA6  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
         KMemoryRegionType_DramSystemNonSecurePool = 0xDA6  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
         KMemoryRegionType_DramSystemPool          = 0x13A6 | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_CarveoutProtected,
+
+
 
         KMemoryRegionType_DramKernel        = 0xE   | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected,
         KMemoryRegionType_DramKernelCode    = 0xCE  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected,
@@ -273,7 +278,6 @@ namespace ams::kern {
                 }
                 MESOSPHERE_INIT_ABORT();
             }
-
 
             DerivedRegionExtents GetDerivedRegionExtents(u32 type_id) {
                 DerivedRegionExtents extents;
@@ -460,6 +464,19 @@ namespace ams::kern {
 
             static NOINLINE auto GetCarveoutRegionExtents() {
                 return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_CarveoutProtected);
+            }
+
+            static NOINLINE std::tuple<size_t, size_t> GetTotalAndKernelMemorySizes() {
+                size_t total_size = 0, kernel_size = 0;
+                for (auto it = GetPhysicalMemoryRegionTree().cbegin(); it != GetPhysicalMemoryRegionTree().cend(); it++) {
+                    if (it->IsDerivedFrom(KMemoryRegionType_Dram)) {
+                        total_size += it->GetSize();
+                        if (!it->IsDerivedFrom(KMemoryRegionType_DramNonKernel)) {
+                            kernel_size += it->GetSize();
+                        }
+                    }
+                }
+                return std::make_tuple(total_size, kernel_size);
             }
 
             static void InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);

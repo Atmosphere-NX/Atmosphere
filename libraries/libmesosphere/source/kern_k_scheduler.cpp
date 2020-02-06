@@ -119,7 +119,7 @@ namespace ams::kern {
                     if (KProcess *parent = top_thread->GetOwnerProcess(); parent != nullptr) {
                         if (KThread *suggested = parent->GetSuggestedTopThread(core_id); suggested != nullptr && suggested != top_thread) {
                             /* We prefer our parent's suggestion whenever possible. However, we also don't want to schedule un-runnable threads. */
-                            if (suggested->GetRawThreadState() == KThread::ThreadState_Runnable) {
+                            if (suggested->GetRawState() == KThread::ThreadState_Runnable) {
                                 top_thread = suggested;
                             } else {
                                 top_thread = nullptr;
@@ -201,7 +201,7 @@ namespace ams::kern {
         KThread *task_thread = Kernel::GetInterruptTaskManager().GetThread();
         {
             KScopedSchedulerLock sl;
-            if (AMS_LIKELY(task_thread->GetThreadState() == KThread::ThreadState_Waiting)) {
+            if (AMS_LIKELY(task_thread->GetState() == KThread::ThreadState_Waiting)) {
                 task_thread->SetState(KThread::ThreadState_Runnable);
             }
         }
@@ -259,7 +259,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
 
         /* Check if the state has changed, because if it hasn't there's nothing to do. */
-        const KThread::ThreadState cur_state = thread->GetRawThreadState();
+        const KThread::ThreadState cur_state = thread->GetRawState();
         if (cur_state == old_state) {
             return;
         }
@@ -282,7 +282,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
 
         /* If the thread is runnable, we want to change its priority in the queue. */
-        if (thread->GetRawThreadState() == KThread::ThreadState_Runnable) {
+        if (thread->GetRawState() == KThread::ThreadState_Runnable) {
             GetPriorityQueue().ChangePriority(old_priority, thread == GetCurrentThreadPointer(), thread);
             IncrementScheduledCount(thread);
             SetSchedulerUpdateNeeded();
@@ -293,7 +293,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
 
         /* If the thread is runnable, we want to change its affinity in the queue. */
-        if (thread->GetRawThreadState() == KThread::ThreadState_Runnable) {
+        if (thread->GetRawState() == KThread::ThreadState_Runnable) {
             GetPriorityQueue().ChangeAffinityMask(old_core, old_affinity, thread);
             IncrementScheduledCount(thread);
             SetSchedulerUpdateNeeded();

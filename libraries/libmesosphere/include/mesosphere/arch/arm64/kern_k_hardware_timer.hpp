@@ -36,6 +36,16 @@ namespace ams::kern::arm64 {
             static s64 GetTick() {
                 return GetCount();
             }
+
+            void RegisterAbsoluteTask(KTimerTask *task, s64 task_time) {
+                KScopedDisableDispatch dd;
+                KScopedSpinLock lk(this->GetLock());
+
+                if (this->RegisterAbsoluteTaskImpl(task, task_time)) {
+                    SetCompareValue(task_time);
+                    EnableInterrupt();
+                }
+            }
         private:
             friend class impl::KHardwareTimerInterruptTask;
             NOINLINE void DoInterruptTask();

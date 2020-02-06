@@ -45,6 +45,7 @@ namespace ams::kern {
         }
 
         /* TODO: Implement more of Main() */
+        cpu::SynchronizeAllCores();
         while (true) { /* ... */ }
     }
 
