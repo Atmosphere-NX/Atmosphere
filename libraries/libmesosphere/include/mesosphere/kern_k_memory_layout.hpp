@@ -459,7 +459,7 @@ namespace ams::kern {
             }
 
             static NOINLINE auto GetCarveoutRegionExtents() {
-                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_CarveoutProtected);
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_CarveoutProtected);
             }
 
             static void InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);
