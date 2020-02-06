@@ -119,8 +119,19 @@ namespace ams::hvisor::gdb {
             int ReplyEmpty();
             int ReplyErrno(int no);
 
-            char *GetInPlaceOutputBuffer() const {
+            // Memory
+            int SendMemory(uintptr_t addr, size_t len, std::string_view prefix = {});
+            int WriteMemoryImpl(size_t (*decoder)(void *, const void *, size_t));
+
+            // Helpers
+            char *GetInPlaceOutputBuffer() const
+            {
                 return m_buffer + 1;
+            }
+
+            char *GetWorkBuffer() const
+            {
+                return m_workBuffer;
             }
         private:
             // Meta
@@ -190,7 +201,8 @@ namespace ams::hvisor::gdb {
             void Acquire();
             void Release();
 
-            constexpr bool IsAttached() const {
+            constexpr bool IsAttached() const
+            {
                 return m_state == State::Attached;
             }
     };

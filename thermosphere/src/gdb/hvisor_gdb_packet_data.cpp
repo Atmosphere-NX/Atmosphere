@@ -55,6 +55,11 @@ namespace ams::hvisor::gdb {
         return i;
     }
 
+    size_t DecodeHex(void *dst, const void *src, size_t len)
+    {
+        return DecodeHex(dst, std::string_view{reinterpret_cast<const char *>(src), len});
+    }
+
     size_t EscapeBinaryData(size_t *encodedCount, void *dst, const void *src, size_t len, size_t maxLen)
     {
         u8 *dst8 = reinterpret_cast<u8 *>(dst);

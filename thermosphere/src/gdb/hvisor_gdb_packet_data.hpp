@@ -169,6 +169,7 @@ namespace ams::hvisor::gdb {
     u8 ComputeChecksum(std::string_view packetData);
     size_t EncodeHex(char *dst, const void *src, size_t len);
     size_t DecodeHex(void *dst, std::string_view data);
+    size_t DecodeHex(void *dst, const void *src, size_t len);
 
     size_t EscapeBinaryData(size_t *encodedCount, void *dst, const void *src, size_t len, size_t maxLen);
     size_t UnescapeBinaryData(void *dst, const void *src, size_t len);
