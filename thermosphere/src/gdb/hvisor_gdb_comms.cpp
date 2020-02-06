@@ -87,11 +87,12 @@ namespace ams::hvisor::gdb {
         }
 
         size_t delimPos = transportInterfaceReadDataUntil(iface, m_buffer + 1, 4 + GDB_BUF_LEN - 1, '#');
-        if (m_buffer[delimPos] != '#') {
-            // The packet is malformed, send a nack
+        if (m_buffer[delimPos] != '#' || delimPos == 1) {
+            // The packet is malformed, send a nack. Refuse empty packets
             return WriteNack(iface);
         }
 
+        m_commandLetter = m_buffer[1];
         m_commandData = std::string_view{m_buffer + 1, delimPos};
 
         // Read the checksum
@@ -106,6 +107,9 @@ namespace ams::hvisor::gdb {
         } else if (!m_noAck) {
             WriteAck(iface);
         }
+
+        // Remove command letter
+        m_commandData.remove_prefix(1);
 
         // State transitions...
         if (m_state < State::Attached) {
