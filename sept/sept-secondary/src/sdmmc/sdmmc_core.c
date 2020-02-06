@@ -615,7 +615,7 @@ static void sdmmc_autocal_run(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
     while ((sdmmc->regs->auto_cal_status & SDMMC_AUTOCAL_ACTIVE)) {
         /* Ensure we haven't timed out. */
         if (get_time_since(timebase) > SDMMC_AUTOCAL_TIMEOUT) {
-            sdmmc_error(sdmmc, "Auto-calibration timed out!");
+            sdmmc_warn(sdmmc, "Auto-calibration timed out!");
             
             /* Force a register read to refresh the clock control value. */
             sdmmc_get_sd_clock_control(sdmmc);
@@ -1642,11 +1642,9 @@ int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, u
         is_dma = true;
         dma_blkcnt = sdmmc_dma_init(sdmmc, req);
         
+        /* Warn in case initialization failed. This could indicate hardware failure. */
         if (!dma_blkcnt)
-        {
-            sdmmc_error(sdmmc, "Failed to initialize the DMA transfer!");
-            return 0;
-        }
+            sdmmc_warn(sdmmc, "Failed to initialize the DMA transfer!");
         
         /* If this is a SDMA write operation, copy the data into our bounce buffer. */
         if (!sdmmc->use_adma && !req->is_read)
@@ -1672,11 +1670,9 @@ int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, u
         /* Process the DMA request. */
         if (req)
         {
+            /* Warn in case updating failed. This could indicate hardware failure. */
             if (!sdmmc_dma_update(sdmmc))
-            {
-                sdmmc_error(sdmmc, "Failed to process the DMA transfer!");
-                return 0;
-            }
+                sdmmc_warn(sdmmc, "Failed to process the DMA transfer!");
             
             /* If this is a SDMA read operation, copy the data from our bounce buffer. */
             if (!sdmmc->use_adma && req->is_read)
