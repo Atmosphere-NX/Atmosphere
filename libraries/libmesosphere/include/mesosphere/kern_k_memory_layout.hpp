@@ -204,6 +204,24 @@ namespace ams::kern {
             struct DerivedRegionExtents {
                 const KMemoryRegion *first_region;
                 const KMemoryRegion *last_region;
+
+                constexpr DerivedRegionExtents() : first_region(nullptr), last_region(nullptr) { /* ... */ }
+
+                constexpr ALWAYS_INLINE uintptr_t GetAddress() const {
+                    return this->first_region->GetAddress();
+                }
+
+                constexpr ALWAYS_INLINE uintptr_t GetEndAddress() const {
+                    return this->last_region->GetEndAddress();
+                }
+
+                constexpr ALWAYS_INLINE size_t GetSize() const {
+                    return this->GetEndAddress() - this->GetAddress();
+                }
+
+                constexpr ALWAYS_INLINE uintptr_t GetLastAddress() const {
+                    return this->GetEndAddress() - 1;
+                }
             };
         private:
             using TreeType = util::IntrusiveRedBlackTreeBaseTraits<KMemoryRegion>::TreeType<KMemoryRegion>;
@@ -258,7 +276,10 @@ namespace ams::kern {
 
 
             DerivedRegionExtents GetDerivedRegionExtents(u32 type_id) {
-                DerivedRegionExtents extents = { .first_region = nullptr, .last_region = nullptr };
+                DerivedRegionExtents extents;
+
+                MESOSPHERE_INIT_ABORT_UNLESS(extents.first_region == nullptr);
+                MESOSPHERE_INIT_ABORT_UNLESS(extents.last_region  == nullptr);
 
                 for (auto it = this->cbegin(); it != this->cend(); it++) {
                     if (it->IsDerivedFrom(type_id)) {
@@ -431,6 +452,14 @@ namespace ams::kern {
 
             static NOINLINE KVirtualAddress GetInterruptCpuInterfaceAddress() {
                 return GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_InterruptCpuInterface)->GetPairAddress();
+            }
+
+            static NOINLINE KVirtualAddress GetUartAddress() {
+                return GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_Uart)->GetPairAddress();
+            }
+
+            static NOINLINE auto GetCarveoutRegionExtents() {
+                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_CarveoutProtected);
             }
 
             static void InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);

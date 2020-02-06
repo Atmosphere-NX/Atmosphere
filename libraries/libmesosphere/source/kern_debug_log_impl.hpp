@@ -14,9 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere.hpp>
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
-    #include <mesosphere/board/nintendo/switch/kern_k_system_control.hpp>
-#else
-    #error "Unknown board for KSystemControl"
-#endif
+namespace ams::kern {
+
+    class KDebugLogImpl {
+        public:
+            static NOINLINE bool Initialize();
+            static NOINLINE void PutChar(char c);
+            static NOINLINE void Flush();
+    };
+
+}

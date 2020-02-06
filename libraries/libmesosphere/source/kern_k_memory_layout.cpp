@@ -76,10 +76,10 @@ namespace ams::kern {
         const auto extents = this->GetDerivedRegionExtents(type_id);
 
         /* Ensure that our alignment is correct. */
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(extents.first_region->GetAddress(), alignment));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(extents.GetAddress(), alignment));
 
-        const uintptr_t first_address = extents.first_region->GetAddress();
-        const uintptr_t last_address  = extents.last_region->GetLastAddress();
+        const uintptr_t first_address = extents.GetAddress();
+        const uintptr_t last_address  = extents.GetLastAddress();
 
         while (true) {
             const uintptr_t candidate = util::AlignDown(KSystemControl::Init::GenerateRandomRange(first_address, last_address), alignment);
@@ -209,9 +209,9 @@ namespace ams::kern {
             /* Use the l1 page table for each core to map the core local region for each core. */
             for (size_t i = 0; i < cpu::NumCores; i++) {
                 KInitialPageTable temp_pt(core_l1_ttbr1_phys[i], KInitialPageTable::NoClear{});
-                temp_pt.Map(core_local_virt_start, PageSize, core_l1_ttbr1_phys[i], KernelRwDataAttribute, page_allocator);
+                temp_pt.Map(core_local_virt_start, PageSize, core_local_region_start_phys[i], KernelRwDataAttribute, page_allocator);
                 for (size_t j = 0; j < cpu::NumCores; j++) {
-                    temp_pt.Map(core_local_virt_start + (j + 1) * PageSize, PageSize, core_l1_ttbr1_phys[j], KernelRwDataAttribute, page_allocator);
+                    temp_pt.Map(core_local_virt_start + (j + 1) * PageSize, PageSize, core_local_region_start_phys[j], KernelRwDataAttribute, page_allocator);
                 }
 
                 /* Setup the InitArguments. */
@@ -239,16 +239,16 @@ namespace ams::kern {
             const uintptr_t pool_partitions_start = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_DramPoolPartition)->GetAddress();
 
             /* Decide on starting addresses for our pools. */
-            const uintptr_t application_pool_start   = dram_extents.last_region->GetEndAddress() - application_pool_size;
+            const uintptr_t application_pool_start   = dram_extents.GetEndAddress() - application_pool_size;
             const uintptr_t applet_pool_start        = application_pool_start - applet_pool_size;
             const uintptr_t unsafe_system_pool_start = std::min(kernel_dram_start + CarveoutSizeMax, util::AlignDown(applet_pool_start - unsafe_system_pool_min_size, CarveoutAlignment));
             const size_t    unsafe_system_pool_size  = applet_pool_start - unsafe_system_pool_start;
 
             /* We want to arrange application pool depending on where the middle of dram is. */
-            const uintptr_t dram_midpoint = (dram_extents.first_region->GetAddress() + dram_extents.last_region->GetEndAddress()) / 2;
+            const uintptr_t dram_midpoint = (dram_extents.GetAddress() + dram_extents.GetEndAddress()) / 2;
             u32 cur_pool_attr = 0;
             size_t total_overhead_size = 0;
-            if (dram_extents.last_region->GetEndAddress() <= dram_midpoint || dram_midpoint <= application_pool_start) {
+            if (dram_extents.GetEndAddress() <= dram_midpoint || dram_midpoint <= application_pool_start) {
                 InsertPoolPartitionRegionIntoBothTrees(application_pool_start, application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
                 total_overhead_size += KMemoryManager::CalculateMetadataOverheadSize(application_pool_size);
             } else {

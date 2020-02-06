@@ -143,6 +143,20 @@ namespace ams::kern::smc {
 
     }
 
+    void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item) {
+        SecureMonitorArguments args = { FunctionId_GetConfig, static_cast<u32>(config_item) };
+        CallPrivilegedSecureMonitorFunction(args);
+        MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
+        for (size_t i = 0; i < num_qwords && i < 7; i++) {
+            out[i] = args.x[1 + i];
+        }
+    }
+
+    void ConfigureCarveout(size_t which, uintptr_t address, size_t size) {
+        SecureMonitorArguments args = { FunctionId_ConfigureCarveout, static_cast<u64>(which), static_cast<u64>(address), static_cast<u64>(size) };
+        CallPrivilegedSecureMonitorFunction(args);
+        MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
+    }
 
     void GenerateRandomBytes(void *dst, size_t size) {
         /* Setup for call. */

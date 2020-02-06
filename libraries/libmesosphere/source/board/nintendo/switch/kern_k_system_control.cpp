@@ -20,6 +20,9 @@ namespace ams::kern {
 
     namespace {
 
+        /* Global variables for panic. */
+        bool g_call_smc_on_panic;
+
         /* Global variables for randomness. */
         /* Incredibly, N really does use std:: randomness... */
         bool         g_initialized_random_generator;
@@ -68,6 +71,20 @@ namespace ams::kern {
             u64 value;
             smc::init::GenerateRandomBytes(&value, sizeof(value));
             return value;
+        }
+
+        ALWAYS_INLINE u64 GetConfigU64(smc::ConfigItem which) {
+            u64 value;
+            smc::GetConfig(&value, 1, which);
+            return value;
+        }
+
+        ALWAYS_INLINE u32 GetConfigU32(smc::ConfigItem which) {
+            return static_cast<u32>(GetConfigU64(which));
+        }
+
+        ALWAYS_INLINE bool GetConfigBool(smc::ConfigItem which) {
+            return GetConfigU64(which) != 0;
         }
 
     }
@@ -160,6 +177,44 @@ namespace ams::kern {
         }
     }
 
+    /* System Initialization. */
+    void KSystemControl::Initialize() {
+        /* Set IsDebugMode. */
+        {
+            KTargetSystem::SetIsDebugMode(GetConfigBool(smc::ConfigItem::IsDebugMode));
+
+            /* If debug mode, we want to initialize uart logging. */
+            KTargetSystem::EnableDebugLogging(KTargetSystem::IsDebugMode());
+            KDebugLog::Initialize();
+        }
+
+        /* Set Kernel Configuration. */
+        {
+            const auto kernel_config = util::BitPack32{GetConfigU32(smc::ConfigItem::KernelConfiguration)};
+
+            KTargetSystem::EnableDebugMemoryFill(kernel_config.Get<smc::KernelConfiguration::DebugFillMemory>());
+            KTargetSystem::EnableUserExceptionHandlers(kernel_config.Get<smc::KernelConfiguration::EnableUserExceptionHandlers>());
+            KTargetSystem::EnableUserPmuAccess(kernel_config.Get<smc::KernelConfiguration::EnableUserPmuAccess>());
+
+            g_call_smc_on_panic = kernel_config.Get<smc::KernelConfiguration::UseSecureMonitorPanicCall>();
+        }
+
+        /* Set Program Verification. */
+        {
+            /* NOTE: This is used to restrict access to SvcKernelDebug/SvcChangeKernelTraceState. */
+            /* Mesosphere may wish to not require this, as we'd ideally keep ProgramVerification enabled for userland. */
+            KTargetSystem::EnableKernelDebugging(GetConfigBool(smc::ConfigItem::DisableProgramVerification));
+        }
+
+        /* Configure the Kernel Carveout region. */
+        {
+            const auto carveout = KMemoryLayout::GetCarveoutRegionExtents();
+            smc::ConfigureCarveout(0, carveout.GetAddress(), carveout.GetSize());
+        }
+
+        /* TODO: KResourceLimit initialization. */
+    }
+
     /* Randomness. */
     void KSystemControl::GenerateRandomBytes(void *dst, size_t size) {
         MESOSPHERE_INIT_ABORT_UNLESS(size <= 0x38);
@@ -181,8 +236,10 @@ namespace ams::kern {
     }
 
     void KSystemControl::StopSystem() {
-        /* Display a panic screen via exosphere. */
-        smc::Panic(0xF00);
+        if (g_call_smc_on_panic) {
+            /* Display a panic screen via secure monitor. */
+            smc::Panic(0xF00);
+        }
         while (true) { /* ... */ }
     }
 

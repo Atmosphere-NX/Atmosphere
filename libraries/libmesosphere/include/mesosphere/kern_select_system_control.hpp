@@ -14,21 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <mesosphere/kern_panic.hpp>
-#include <mesosphere/svc/kern_svc_results.hpp>
+#include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_k_target_system.hpp>
 
-namespace ams::kern {
-
-    constexpr size_t PageSize = 4_KB;
-
-}
-
-#ifdef  MESOSPHERE_BUILD_FOR_AUDITING
-#define MESOSPHERE_BUILD_FOR_DEBUGGING
-#endif
-
-#ifdef  MESOSPHERE_BUILD_FOR_DEBUGGING
-#define MESOSPHERE_ENABLE_ASSERTIONS
-#define MESOSPHERE_ENABLE_DEBUG_PRINT
+#ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
+    #include <mesosphere/board/nintendo/switch/kern_k_system_control.hpp>
+#else
+    #error "Unknown board for KSystemControl"
 #endif

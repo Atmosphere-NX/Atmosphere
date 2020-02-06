@@ -85,6 +85,8 @@ namespace ams::kern::smc {
 
     /* TODO: Rest of Secure Monitor API. */
     void GenerateRandomBytes(void *dst, size_t size);
+    void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
+    void ConfigureCarveout(size_t which, uintptr_t address, size_t size);
     void NORETURN Panic(u32 color);
 
     namespace init {

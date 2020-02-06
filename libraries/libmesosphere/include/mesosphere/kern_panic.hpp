@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_debug_log.hpp>
 
 namespace ams::kern {
 
@@ -32,7 +33,7 @@ namespace ams::kern {
 #ifdef MESOSPHERE_ENABLE_ASSERTIONS
 #define MESOSPHERE_ASSERT_IMPL(expr, ...)  \
     ({                                     \
-        if (AMS_UNLIKELY(!(expr))) {         \
+        if (AMS_UNLIKELY(!(expr))) {       \
             MESOSPHERE_PANIC(__VA_ARGS__); \
         }                                  \
     })

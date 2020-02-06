@@ -36,6 +36,9 @@ namespace ams::kern {
                     static u64  GenerateRandomRange(u64 min, u64 max);
             };
         public:
+            /* Initialization. */
+            static NOINLINE void Initialize();
+
             /* Randomness. */
             static void GenerateRandomBytes(void *dst, size_t size);
             static u64  GenerateRandomRange(u64 min, u64 max);

@@ -22,13 +22,27 @@ namespace ams::kern {
         constexpr uintptr_t DramPhysicalAddress = 0x80000000;
         constexpr size_t ReservedEarlyDramSize  = 0x60000;
 
+        ALWAYS_INLINE bool SetupUartPhysicalMemoryRegion() {
+            #if   defined(MESOSPHERE_DEBUG_LOG_USE_UART_A)
+                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006000, 0x40, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+            #elif defined(MESOSPHERE_DEBUG_LOG_USE_UART_B)
+                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006040, 0x40, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+            #elif defined(MESOSPHERE_DEBUG_LOG_USE_UART_C)
+                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006200, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+            #elif defined(MESOSPHERE_DEBUG_LOG_USE_UART_D)
+                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006300, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+            #else
+                #error "Unknown Debug UART device!"
+            #endif
+        }
+
     }
 
     namespace init {
 
         void SetupDevicePhysicalMemoryRegions() {
             /* TODO: Give these constexpr defines somewhere? */
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006000, 0x40,      KMemoryRegionType_Uart                      | KMemoryRegionAttr_ShouldKernelMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(SetupUartPhysicalMemoryRegion());
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70019000, 0x1000,    KMemoryRegionType_MemoryController          | KMemoryRegionAttr_NoUserMap));
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001C000, 0x1000,    KMemoryRegionType_MemoryController0         | KMemoryRegionAttr_NoUserMap));
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001D000, 0x1000,    KMemoryRegionType_MemoryController1         | KMemoryRegionAttr_NoUserMap));
