@@ -55,8 +55,8 @@ namespace ams::kern {
         const size_t needed_size = this->blocks[index].GetSize();
 
         for (s32 i = index; i < static_cast<s32>(this->num_blocks); i++) {
-            if (const KVirtualAddress addr = this->blocks[index].PopBlock(); addr != Null<KVirtualAddress>) {
-                if (const size_t allocated_size = this->blocks[index].GetSize(); allocated_size > needed_size) {
+            if (const KVirtualAddress addr = this->blocks[i].PopBlock(); addr != Null<KVirtualAddress>) {
+                if (const size_t allocated_size = this->blocks[i].GetSize(); allocated_size > needed_size) {
                     this->Free(addr + needed_size, (allocated_size - needed_size) / PageSize);
                 }
                 return addr;

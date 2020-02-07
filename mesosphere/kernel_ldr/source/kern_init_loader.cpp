@@ -242,7 +242,7 @@ namespace ams::kern::init::loader {
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(rw_offset,      0x1000));
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(bss_end_offset, 0x1000));
         const uintptr_t bss_offset            = layout->bss_offset;
-        const uintptr_t ini_load_offset        = layout->ini_load_offset;
+        const uintptr_t ini_load_offset       = layout->ini_load_offset;
         const uintptr_t dynamic_offset        = layout->dynamic_offset;
         const uintptr_t init_array_offset     = layout->init_array_offset;
         const uintptr_t init_array_end_offset = layout->init_array_end_offset;

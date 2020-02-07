@@ -28,4 +28,9 @@ namespace ams::kern {
         u32 reserved;
     };
 
+    NOINLINE void CopyInitialProcessBinaryToKernelMemory();
+
+    u64 GetInitialProcessIdMin();
+    u64 GetInitialProcessIdMax();
+
 }

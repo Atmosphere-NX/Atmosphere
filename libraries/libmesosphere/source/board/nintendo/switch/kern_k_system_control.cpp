@@ -233,6 +233,10 @@ namespace ams::kern {
         }
     }
 
+    u32 KSystemControl::GetInitialProcessBinaryPool() {
+        return KMemoryManager::Pool_Application;
+    }
+
     /* Randomness. */
     void KSystemControl::GenerateRandomBytes(void *dst, size_t size) {
         MESOSPHERE_INIT_ABORT_UNLESS(size <= 0x38);

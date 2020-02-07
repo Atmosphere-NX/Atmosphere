@@ -30,6 +30,9 @@ namespace ams::kern {
     class KInterruptTaskManager;
     class KScheduler;
     class KMemoryManager;
+    class KPageTableManager;
+    class KMemoryBlockSlabManager;
+    class KBlockInfoManager;
 
     class Kernel {
         public:
@@ -38,12 +41,20 @@ namespace ams::kern {
                 Initializing = 1,
                 Initialized  = 2,
             };
+
+            static constexpr size_t ApplicationMemoryBlockSlabHeapSize = 20000;
+            static constexpr size_t SystemMemoryBlockSlabHeapSize      = 10000;
+            static constexpr size_t BlockInfoSlabHeapSize              = 4000;
         private:
             static State s_state;
             static KThread s_main_threads[cpu::NumCores];
             static KThread s_idle_threads[cpu::NumCores];
             static KResourceLimit s_system_resource_limit;
             static KMemoryManager s_memory_manager;
+            static KPageTableManager s_page_table_manager;
+            static KMemoryBlockSlabManager s_app_memory_block_manager;
+            static KMemoryBlockSlabManager s_sys_memory_block_manager;
+            static KBlockInfoManager s_block_info_manager;
         private:
             static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
                 return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->current.context;
@@ -54,6 +65,7 @@ namespace ams::kern {
         public:
             static NOINLINE void InitializeCoreLocalRegion(s32 core_id);
             static NOINLINE void InitializeMainAndIdleThreads(s32 core_id);
+            static NOINLINE void InitializeResourceManagers(KVirtualAddress address, size_t size);
 
             static ALWAYS_INLINE State GetState() { return s_state; }
             static ALWAYS_INLINE void SetState(State state) { s_state = state; }
@@ -86,12 +98,24 @@ namespace ams::kern {
                 return GetCoreLocalContext().hardware_timer;
             }
 
+            static ALWAYS_INLINE KResourceLimit &GetSystemResourceLimit() {
+                return s_system_resource_limit;
+            }
+
             static ALWAYS_INLINE KMemoryManager &GetMemoryManager() {
                 return s_memory_manager;
             }
 
-            static ALWAYS_INLINE KResourceLimit &GetSystemResourceLimit() {
-                return s_system_resource_limit;
+            static ALWAYS_INLINE KMemoryBlockSlabManager &GetApplicationMemoryBlockManager() {
+                return s_app_memory_block_manager;
+            }
+
+            static ALWAYS_INLINE KMemoryBlockSlabManager &GetSystemMemoryBlockManager() {
+                return s_sys_memory_block_manager;
+            }
+
+            static ALWAYS_INLINE KBlockInfoManager &GetBlockInfoManager() {
+                return s_block_info_manager;
             }
     };
 

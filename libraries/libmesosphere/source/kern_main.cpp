@@ -45,10 +45,17 @@ namespace ams::kern {
                 init::InitializeKPageBufferSlabHeap();
             }
 
-            /* Note: this is not actually done here, it's done later in main after more stuff is setup. */
-            /* However, for testing (and to manifest this code in the produced binary, this is here for now. */
-            /* TODO: Do this better. */
+            /* Copy the Initial Process Binary to safe memory. */
+            CopyInitialProcessBinaryToKernelMemory();
+
+            /* Initialize the KObject Slab Heaps. */
             init::InitializeSlabHeaps();
+
+            /* Initialize the Dynamic Slab Heaps. */
+            {
+                const auto &pt_heap_region = KMemoryLayout::GetPageTableHeapRegion();
+                Kernel::InitializeResourceManagers(pt_heap_region.GetAddress(), pt_heap_region.GetSize());
+            }
         }
 
         /* TODO: Implement more of Main() */

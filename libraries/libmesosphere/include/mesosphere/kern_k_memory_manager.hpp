@@ -64,6 +64,7 @@ namespace ams::kern {
 
                     void TrackAllocationForOptimizedProcess(KVirtualAddress block, size_t num_pages);
 
+                    constexpr size_t GetSize() const { return this->heap.GetSize(); }
                     constexpr KVirtualAddress GetEndAddress() const { return this->heap.GetEndAddress(); }
 
                     constexpr void SetNext(Impl *n) { this->next = n; }
@@ -77,8 +78,45 @@ namespace ams::kern {
                         size_t index = this->heap.GetPageOffset(address);
                         const size_t end = index + num_pages;
                         while (index < end) {
-                            const RefCount ref_count = (++this->page_reference_counts[index++]);
+                            const RefCount ref_count = (++this->page_reference_counts[index]);
                             MESOSPHERE_ABORT_UNLESS(ref_count > 0);
+
+                            index++;
+                        }
+                    }
+
+                    void Close(KLightLock *pool_locks, KVirtualAddress address, size_t num_pages) {
+                        KScopedLightLock lk(pool_locks[this->pool]);
+
+                        size_t index = this->heap.GetPageOffset(address);
+                        const size_t end = index + num_pages;
+
+                        size_t free_start = 0;
+                        size_t free_count = 0;
+                        while (index < end) {
+                            MESOSPHERE_ABORT_UNLESS(this->page_reference_counts[index] > 0);
+                            const RefCount ref_count = (--this->page_reference_counts[index]);
+
+                            /* Keep track of how many zero refcounts we see in a row, to minimize calls to free. */
+                            if (ref_count == 0) {
+                                if (free_count > 0) {
+                                    free_count++;
+                                } else {
+                                    free_start = index;
+                                    free_count = 1;
+                                }
+                            } else {
+                                if (free_count > 0) {
+                                    this->Free(this->heap.GetAddress() + free_start * PageSize, free_count);
+                                    free_count = 0;
+                                }
+                            }
+
+                            index++;
+                        }
+
+                        if (free_count > 0) {
+                            this->Free(this->heap.GetAddress() + free_start * PageSize, free_count);
                         }
                     }
                 public:
@@ -113,6 +151,17 @@ namespace ams::kern {
                     auto &manager = this->GetManager(address);
                     const size_t cur_pages = std::min(num_pages, (manager.GetEndAddress() - address) / PageSize);
                     manager.Open(this->pool_locks, address, cur_pages);
+                    num_pages -= cur_pages;
+                    address += cur_pages * PageSize;
+                }
+            }
+
+            void Close(KVirtualAddress address, size_t num_pages) {
+                /* Repeatedly close references until we've done so for all pages. */
+                while (num_pages) {
+                    auto &manager = this->GetManager(address);
+                    const size_t cur_pages = std::min(num_pages, (manager.GetEndAddress() - address) / PageSize);
+                    manager.Close(this->pool_locks, address, cur_pages);
                     num_pages -= cur_pages;
                     address += cur_pages * PageSize;
                 }

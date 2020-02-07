@@ -47,10 +47,10 @@ namespace ams::kern::arm64 {
                 constexpr KGlobalInterruptEntry() : handler(nullptr), manually_cleared(false), needs_clear(false) { /* ... */ }
             };
         private:
-            static inline KSpinLock s_lock;
-            static inline KGlobalInterruptEntry s_global_interrupts[KInterruptController::NumGlobalInterrupts];
-            static inline KInterruptController::GlobalState s_global_state;
-            static inline bool s_global_state_saved;
+            static KSpinLock s_lock;
+            static std::array<KGlobalInterruptEntry, KInterruptController::NumGlobalInterrupts> s_global_interrupts;
+            static KInterruptController::GlobalState s_global_state;
+            static bool s_global_state_saved;
         private:
             KCoreLocalInterruptEntry core_local_interrupts[KInterruptController::NumLocalInterrupts];
             KInterruptController interrupt_controller;

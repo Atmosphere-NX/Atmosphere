@@ -17,6 +17,12 @@
 
 namespace ams::kern::arm64 {
 
+    /* Instantiate static members in specific translation unit. */
+    KSpinLock KInterruptManager::s_lock;
+    std::array<KInterruptManager::KGlobalInterruptEntry, KInterruptController::NumGlobalInterrupts> KInterruptManager::s_global_interrupts;
+    KInterruptController::GlobalState KInterruptManager::s_global_state;
+    bool KInterruptManager::s_global_state_saved;
+
     void KInterruptManager::Initialize(s32 core_id) {
         this->interrupt_controller.Initialize(core_id);
     }

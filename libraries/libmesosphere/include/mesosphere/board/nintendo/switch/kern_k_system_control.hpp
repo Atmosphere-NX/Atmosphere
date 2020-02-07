@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <mesosphere/kern_common.hpp>
 
 namespace ams::kern {
 
@@ -38,6 +38,7 @@ namespace ams::kern {
         public:
             /* Initialization. */
             static NOINLINE void Initialize();
+            static NOINLINE u32 GetInitialProcessBinaryPool();
 
             /* Randomness. */
             static void GenerateRandomBytes(void *dst, size_t size);

@@ -18,11 +18,15 @@
 namespace ams::kern {
 
     /* Declare kernel data members in kernel TU. */
-    Kernel::State    Kernel::s_state = Kernel::State::Invalid;
-    KThread          Kernel::s_main_threads[cpu::NumCores];
-    KThread          Kernel::s_idle_threads[cpu::NumCores];
-    KResourceLimit   Kernel::s_system_resource_limit;
-    KMemoryManager   Kernel::s_memory_manager;
+    Kernel::State           Kernel::s_state = Kernel::State::Invalid;
+    KThread                 Kernel::s_main_threads[cpu::NumCores];
+    KThread                 Kernel::s_idle_threads[cpu::NumCores];
+    KResourceLimit          Kernel::s_system_resource_limit;
+    KMemoryManager          Kernel::s_memory_manager;
+    KPageTableManager       Kernel::s_page_table_manager;
+    KMemoryBlockSlabManager Kernel::s_app_memory_block_manager;
+    KMemoryBlockSlabManager Kernel::s_sys_memory_block_manager;
+    KBlockInfoManager       Kernel::s_block_info_manager;
 
     void Kernel::InitializeCoreLocalRegion(s32 core_id) {
         /* Construct the core local region object in place. */
@@ -68,10 +72,32 @@ namespace ams::kern {
         SetCurrentThread(main_thread);
         SetCurrentProcess(nullptr);
 
-        /* TODO: Initialize the interrupt manager. */
+        /* Initialize the interrupt manager, hardware timer, and scheduler */
         GetInterruptManager().Initialize(core_id);
         GetHardwareTimer().Initialize(core_id);
         GetScheduler().Initialize(idle_thread);
+    }
+
+    void Kernel::InitializeResourceManagers(KVirtualAddress address, size_t size) {
+        /* Ensure that the buffer is suitable for our use. */
+        const size_t app_size   = ApplicationMemoryBlockSlabHeapSize * sizeof(KMemoryBlock);
+        const size_t sys_size   = SystemMemoryBlockSlabHeapSize      * sizeof(KMemoryBlock);
+        const size_t info_size  = BlockInfoSlabHeapSize              * sizeof(KBlockInfo);
+        const size_t fixed_size = util::AlignUp(app_size + sys_size + info_size, PageSize);
+        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(address), PageSize));
+        MESOSPHERE_ABORT_UNLESS(util::IsAligned(size, PageSize));
+        MESOSPHERE_ABORT_UNLESS(fixed_size < size);
+
+        size_t pt_size = size - fixed_size;
+        const size_t rc_size = util::AlignUp(KPageTableManager::CalculateReferenceCountSize(pt_size), PageSize);
+        MESOSPHERE_ABORT_UNLESS(rc_size < pt_size);
+        pt_size -= rc_size;
+
+        /* Initialize the slabheaps. */
+        s_app_memory_block_manager.Initialize(address + pt_size, app_size);
+        s_sys_memory_block_manager.Initialize(address + pt_size + app_size, sys_size);
+        s_block_info_manager.Initialize(address + pt_size + app_size + sys_size, info_size);
+        s_page_table_manager.Initialize(address, pt_size, GetPointer<KPageTableManager::RefCount>(address + pt_size + fixed_size));
     }
 
 }
