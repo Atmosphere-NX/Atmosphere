@@ -43,6 +43,7 @@
 #define GDB_DEFINE_QUERY_HANDLER(name)              GDB_DEFINE_HANDLER(Query##name)
 #define GDB_DEFINE_VERBOSE_HANDLER(name)            GDB_DEFINE_HANDLER(Verbose##name)
 #define GDB_DEFINE_REMOTE_COMMAND_HANDLER(name)     GDB_DEFINE_HANDLER(RemoteCommand##name)
-#define GDB_DECLARE_XFER_HANDLER(name)              GDB_DEFINE_HANDLER(Xfer##name)
+#define GDB_DEFINE_XFER_HANDLER(name)\
+    int Context::GDB_XFER_HANDLER(name)(bool write, std::string_view annex, size_t offset, size_t length)
 
-#define GDB_TEST_NO_CMD_DATA()                      do { if (!m_commandData.empty()) return ReplyErrno(EILSEQ); } while (false)
+#define GDB_CHECK_NO_CMD_DATA()                      do { if (!m_commandData.empty()) return ReplyErrno(EILSEQ); } while (false)

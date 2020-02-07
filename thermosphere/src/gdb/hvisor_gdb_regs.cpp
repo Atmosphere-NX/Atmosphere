@@ -75,7 +75,7 @@ namespace ams::hvisor::gdb {
     GDB_DEFINE_HANDLER(ReadRegisters)
     {
         ENSURE(m_selectedCoreId == currentCoreCtx->coreId);
-        GDB_TEST_NO_CMD_DATA();
+        GDB_CHECK_NO_CMD_DATA();
 
         ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
         FpuRegisterCache *fpuRegCache = fpuReadRegisters();

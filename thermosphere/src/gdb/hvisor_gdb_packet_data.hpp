@@ -119,16 +119,16 @@ namespace ams::hvisor::gdb {
 
             // Check separators
             if (i != N - 1) {
-                if (str.empty() || str[0] != sep)) {
+                if (str.empty() || str[0] != sep) {
                     return res;
                 }
                 str.remove_prefix(1);
                 ++total;
             } else if (i == N - 1) {
-                if (lastSep == '\0') && !str.empty()) {
+                if ((lastSep == '\0') && !str.empty()) {
                     return res;
                 } else if (lastSep != '\0') {
-                    if (str.empty() || str[0] != lastSep)) {
+                    if (str.empty() || str[0] != lastSep) {
                         return res;
                     }
                     str.remove_prefix(1);
@@ -148,6 +148,28 @@ namespace ams::hvisor::gdb {
     constexpr auto ParseHexIntegerList(std::string_view str, char lastSep = '\0')
     {
         return ParseIntegerList<N>(str, 16, false, ',', lastSep);
+    }
+
+    template<size_t N>
+    constexpr auto SplitString(std::string_view data, char delim)
+    {
+        static_assert(N != 0);
+
+        std::array<std::string_view, N> res = {};
+        size_t delimPos = 0;
+
+        for (size_t i = 0; i < N - 1; i++) {
+            delimPos = data.find(delim);
+            if (delimPos == std::string_view::npos) {
+                return res;
+            }
+
+            res[i] = std::string_view{data.data(), delimPos};
+            data.remove_prefix(delimPos + 1);
+        }
+        res[N - 1] = data;
+
+        return res;
     }
 
     constexpr std::optional<u8> DecodeHexByte(std::string_view data)

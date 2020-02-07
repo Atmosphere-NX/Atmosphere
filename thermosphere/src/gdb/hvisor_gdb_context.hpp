@@ -36,7 +36,7 @@
 #define DECLARE_QUERY_HANDLER(name)     DECLARE_HANDLER(Query##name)
 #define DECLARE_VERBOSE_HANDLER(name)   DECLARE_HANDLER(Verbose##name)
 #define DECLARE_REMOTE_HANDLER(name)    DECLARE_HANDLER(Remote##name)
-#define DECLARE_XFER_HANDLER(name)      DECLARE_HANDLER(Xfer##name)
+#define DECLARE_XFER_HANDLER(name)      int HandleXfer##name(bool write, std::string_view annex, size_t offset, size_t length)
 
 struct DebugEventInfo;
 
@@ -95,7 +95,7 @@ namespace ams::hvisor::gdb {
             uintptr_t m_currentHioRequestTargetAddr = 0ul;
             PackedGdbHioRequest m_currentHioRequest{};
 
-            size_t m_targetXmlLen = 0;
+            std::string_view m_targetXml{};
 
             char m_commandLetter = '\0';
             std::string_view m_commandData{};
@@ -146,8 +146,7 @@ namespace ams::hvisor::gdb {
         private:
             // Meta
             DECLARE_HANDLER(Unsupported);
-            DECLARE_HANDLER(ReadQuery);
-            DECLARE_HANDLER(WriteQuery);
+            DECLARE_HANDLER(Query);
             DECLARE_QUERY_HANDLER(Xfer);
             DECLARE_HANDLER(VerboseCommand);
 
