@@ -29,6 +29,7 @@ namespace ams::kern {
     class KInterruptManager;
     class KInterruptTaskManager;
     class KScheduler;
+    class KMemoryManager;
 
     class Kernel {
         public:
@@ -42,6 +43,7 @@ namespace ams::kern {
             static KThread s_main_threads[cpu::NumCores];
             static KThread s_idle_threads[cpu::NumCores];
             static KResourceLimit s_system_resource_limit;
+            static KMemoryManager s_memory_manager;
         private:
             static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
                 return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->current.context;
@@ -82,6 +84,10 @@ namespace ams::kern {
 
             static ALWAYS_INLINE KHardwareTimer &GetHardwareTimer() {
                 return GetCoreLocalContext().hardware_timer;
+            }
+
+            static ALWAYS_INLINE KMemoryManager &GetMemoryManager() {
+                return s_memory_manager;
             }
 
             static ALWAYS_INLINE KResourceLimit &GetSystemResourceLimit() {

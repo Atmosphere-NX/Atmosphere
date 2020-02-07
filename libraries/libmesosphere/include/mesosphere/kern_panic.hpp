@@ -43,6 +43,7 @@ namespace ams::kern {
 
 #define MESOSPHERE_ASSERT(expr)   MESOSPHERE_ASSERT_IMPL(expr, "Assertion failed: %s", #expr)
 #define MESOSPHERE_R_ASSERT(expr) MESOSPHERE_ASSERT_IMPL(R_SUCCEEDED(expr), "Result assertion failed: %s", #expr)
+#define MESOSPHERE_UNREACHABLE_DEFAULT_CASE() default: MESOSPHERE_PANIC("Unreachable default case entered")
 
 #ifdef MESOSPHERE_ENABLE_THIS_ASSERT
 #define MESOSPHERE_ASSERT_THIS()  MESOSPHERE_ASSERT(this != nullptr)

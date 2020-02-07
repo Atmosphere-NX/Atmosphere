@@ -38,6 +38,12 @@ namespace ams::kern {
             /* Initialize KSystemControl. */
             KSystemControl::Initialize();
 
+            /* Initialize the memory manager. */
+            {
+                const auto &metadata_region = KMemoryLayout::GetMetadataPoolRegion();
+                Kernel::GetMemoryManager().Initialize(metadata_region.GetAddress(), metadata_region.GetSize());
+            }
+
             /* Note: this is not actually done here, it's done later in main after more stuff is setup. */
             /* However, for testing (and to manifest this code in the produced binary, this is here for now. */
             /* TODO: Do this better. */

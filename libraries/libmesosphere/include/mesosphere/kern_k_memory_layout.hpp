@@ -51,10 +51,11 @@ namespace ams::kern {
         KMemoryRegionType_VirtualKernelInitPt       = 0x19A,
 
         KMemoryRegionType_VirtualDramMetadataPool        = 0x29A,
+        KMemoryRegionType_VirtualDramManagedPool         = 0x31A,
         KMemoryRegionType_VirtualDramApplicationPool     = 0x271A,
         KMemoryRegionType_VirtualDramAppletPool          = 0x1B1A,
-        KMemoryRegionType_VirtualDramSystemNonSecurePool = 0x331A,
         KMemoryRegionType_VirtualDramSystemPool          = 0x2B1A,
+        KMemoryRegionType_VirtualDramSystemNonSecurePool = 0x331A,
 
         KMemoryRegionType_Uart                      = 0x1D,
         KMemoryRegionType_InterruptDistributor      = 0x4D | KMemoryRegionAttr_NoUserMap,
@@ -460,6 +461,10 @@ namespace ams::kern {
 
             static NOINLINE KVirtualAddress GetUartAddress() {
                 return GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_Uart)->GetPairAddress();
+            }
+
+            static NOINLINE KMemoryRegion &GetMetadataPoolRegion() {
+                return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_VirtualDramMetadataPool);
             }
 
             static NOINLINE auto GetCarveoutRegionExtents() {
