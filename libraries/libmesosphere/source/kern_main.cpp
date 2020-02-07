@@ -38,10 +38,11 @@ namespace ams::kern {
             /* Initialize KSystemControl. */
             KSystemControl::Initialize();
 
-            /* Initialize the memory manager. */
+            /* Initialize the memory manager and the KPageBuffer slabheap. */
             {
                 const auto &metadata_region = KMemoryLayout::GetMetadataPoolRegion();
                 Kernel::GetMemoryManager().Initialize(metadata_region.GetAddress(), metadata_region.GetSize());
+                init::InitializeKPageBufferSlabHeap();
             }
 
             /* Note: this is not actually done here, it's done later in main after more stuff is setup. */

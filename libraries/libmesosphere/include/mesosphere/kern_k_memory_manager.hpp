@@ -59,8 +59,28 @@ namespace ams::kern {
 
                     size_t Initialize(const KMemoryRegion *region, Pool pool, KVirtualAddress metadata_region, KVirtualAddress metadata_region_end);
 
-                    constexpr ALWAYS_INLINE void SetNext(Impl *n) { this->next = n; }
-                    constexpr ALWAYS_INLINE void SetPrev(Impl *n) { this->prev = n; }
+                    KVirtualAddress AllocateBlock(s32 index) { return this->heap.AllocateBlock(index); }
+                    void Free(KVirtualAddress addr, size_t num_pages) { this->heap.Free(addr, num_pages); }
+
+                    void TrackAllocationForOptimizedProcess(KVirtualAddress block, size_t num_pages);
+
+                    constexpr KVirtualAddress GetEndAddress() const { return this->heap.GetEndAddress(); }
+
+                    constexpr void SetNext(Impl *n) { this->next = n; }
+                    constexpr void SetPrev(Impl *n) { this->prev = n; }
+                    constexpr Impl *GetNext() const { return this->next; }
+                    constexpr Impl *GetPrev() const { return this->prev; }
+
+                    void Open(KLightLock *pool_locks, KVirtualAddress address, size_t num_pages) {
+                        KScopedLightLock lk(pool_locks[this->pool]);
+
+                        size_t index = this->heap.GetPageOffset(address);
+                        const size_t end = index + num_pages;
+                        while (index < end) {
+                            const RefCount ref_count = (++this->page_reference_counts[index++]);
+                            MESOSPHERE_ABORT_UNLESS(ref_count > 0);
+                        }
+                    }
                 public:
                     static size_t CalculateMetadataOverheadSize(size_t region_size);
             };
@@ -72,6 +92,10 @@ namespace ams::kern {
             size_t num_managers;
             u64 optimized_process_ids[Pool_Count];
             bool has_optimized_process[Pool_Count];
+        private:
+            Impl &GetManager(KVirtualAddress address) {
+                return this->managers[KMemoryLayout::GetVirtualLinearRegion(address).GetAttributes()];
+            }
         public:
             constexpr KMemoryManager()
                 : pool_locks(), pool_managers_head(), pool_managers_tail(), managers(), num_managers(), optimized_process_ids(), has_optimized_process()
@@ -80,6 +104,19 @@ namespace ams::kern {
             }
 
             void Initialize(KVirtualAddress metadata_region, size_t metadata_region_size);
+
+            KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
+
+            void Open(KVirtualAddress address, size_t num_pages) {
+                /* Repeatedly open references until we've done so for all pages. */
+                while (num_pages) {
+                    auto &manager = this->GetManager(address);
+                    const size_t cur_pages = std::min(num_pages, (manager.GetEndAddress() - address) / PageSize);
+                    manager.Open(this->pool_locks, address, cur_pages);
+                    num_pages -= cur_pages;
+                    address += cur_pages * PageSize;
+                }
+            }
         public:
             static size_t CalculateMetadataOverheadSize(size_t region_size) {
                 return Impl::CalculateMetadataOverheadSize(region_size);

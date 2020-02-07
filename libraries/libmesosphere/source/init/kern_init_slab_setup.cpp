@@ -135,6 +135,26 @@ namespace ams::kern::init {
         return size;
     }
 
+    void InitializeKPageBufferSlabHeap() {
+        const auto &counts = GetSlabResourceCounts();
+        const size_t num_pages = counts.num_KProcess + counts.num_KThread + (counts.num_KProcess + counts.num_KThread) / 8;
+        const size_t slab_size = num_pages * PageSize;
+
+        /* Reserve memory from the system resource limit. */
+        MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, slab_size));
+
+        /* Allocate memory for the slab. */
+        constexpr auto AllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
+        const KVirtualAddress slab_address = Kernel::GetMemoryManager().AllocateContinuous(num_pages, 1, AllocateOption);
+        MESOSPHERE_ABORT_UNLESS(slab_address != Null<KVirtualAddress>);
+
+        /* Open references to the slab. */
+        Kernel::GetMemoryManager().Open(slab_address, num_pages);
+
+        /* Initialize the slabheap. */
+        KPageBuffer::InitializeSlabHeap(GetVoidPointer(slab_address), slab_size);
+    }
+
     void InitializeSlabHeaps() {
         /* Get the start of the slab region, since that's where we'll be working. */
         KVirtualAddress address = KMemoryLayout::GetSlabRegionAddress();

@@ -467,6 +467,10 @@ namespace ams::kern {
                 return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_VirtualDramMetadataPool);
             }
 
+            static NOINLINE KMemoryRegion &GetVirtualLinearRegion(KVirtualAddress address) {
+                return *GetVirtualLinearMemoryRegionTree().FindContainingRegion(GetInteger(address));
+            }
+
             static NOINLINE auto GetCarveoutRegionExtents() {
                 return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_CarveoutProtected);
             }

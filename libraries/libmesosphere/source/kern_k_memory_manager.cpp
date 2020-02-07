@@ -87,6 +87,57 @@ namespace ams::kern {
         }
     }
 
+    KVirtualAddress KMemoryManager::AllocateContinuous(size_t num_pages, size_t align_pages, u32 option) {
+        /* Early return if we're allocating no pages. */
+        if (num_pages == 0) {
+            return Null<KVirtualAddress>;
+        }
+
+        /* Lock the pool that we're allocating from. */
+        const auto [pool, dir] = DecodeOption(option);
+        KScopedLightLock lk(this->pool_locks[pool]);
+
+        /* Choose a heap based on our page size request. */
+        const s32 heap_index = KPageHeap::GetAlignedBlockIndex(num_pages, align_pages);
+
+        /* Loop, trying to iterate from each block. */
+        Impl *chosen_manager = nullptr;
+        KVirtualAddress allocated_block = Null<KVirtualAddress>;
+        if (dir == Direction_FromBack) {
+            for (chosen_manager = this->pool_managers_tail[pool]; chosen_manager != nullptr; chosen_manager = chosen_manager->GetPrev()) {
+                allocated_block = chosen_manager->AllocateBlock(heap_index);
+                if (allocated_block != Null<KVirtualAddress>) {
+                    break;
+                }
+            }
+        } else {
+            for (chosen_manager = this->pool_managers_head[pool]; chosen_manager != nullptr; chosen_manager = chosen_manager->GetNext()) {
+                allocated_block = chosen_manager->AllocateBlock(heap_index);
+                if (allocated_block != Null<KVirtualAddress>) {
+                    break;
+                }
+            }
+        }
+
+        /* If we failed to allocate, quit now. */
+        if (allocated_block == Null<KVirtualAddress>) {
+            return Null<KVirtualAddress>;
+        }
+
+        /* If we allocated more than we need, free some. */
+        const size_t allocated_pages = KPageHeap::GetBlockNumPages(heap_index);
+        if (allocated_pages > num_pages) {
+            chosen_manager->Free(allocated_block + num_pages * PageSize, allocated_pages - num_pages);
+        }
+
+        /* Maintain the optimized memory bitmap, if we should. */
+        if (this->has_optimized_process[pool]) {
+            chosen_manager->TrackAllocationForOptimizedProcess(allocated_block, num_pages);
+        }
+
+        return allocated_block;
+    }
+
     size_t KMemoryManager::Impl::Initialize(const KMemoryRegion *region, Pool p, KVirtualAddress metadata, KVirtualAddress metadata_end) {
         /* Calculate metadata sizes. */
         const size_t ref_count_size      = (region->GetSize() / PageSize) * sizeof(u16);
@@ -107,7 +158,23 @@ namespace ams::kern {
         /* Initialize the manager's KPageHeap. */
         this->heap.Initialize(region->GetAddress(), region->GetSize(), metadata + manager_size, page_heap_size);
 
+        /* Free the memory to the heap. */
+        this->heap.Free(region->GetAddress(), region->GetSize() / PageSize);
+
+        /* Update the heap's used size. */
+        this->heap.UpdateUsedSize();
+
         return total_metadata_size;
+    }
+
+    void KMemoryManager::Impl::TrackAllocationForOptimizedProcess(KVirtualAddress block, size_t num_pages) {
+        size_t offset = this->heap.GetPageOffset(block);
+        const size_t last = offset + num_pages - 1;
+        u64 *optimize_map = GetPointer<u64>(this->metadata_region);
+        while (offset <= last) {
+            optimize_map[offset / BITSIZEOF(u64)] &= ~(u64(1) << (offset % BITSIZEOF(u64)));
+            offset++;
+        }
     }
 
     size_t KMemoryManager::Impl::CalculateMetadataOverheadSize(size_t region_size) {
