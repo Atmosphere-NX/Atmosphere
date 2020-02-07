@@ -26,7 +26,7 @@ namespace ams::kern {
         NON_COPYABLE(CLASS);                                                                                    \
         NON_MOVEABLE(CLASS);                                                                                    \
         private:                                                                                                \
-            friend class KClassTokenGenerator;                                                                  \
+            friend class ::ams::kern::KClassTokenGenerator;                                                     \
             static constexpr inline auto ObjectType = ::ams::kern::KClassTokenGenerator::ObjectType::CLASS;     \
             static constexpr inline const char * const TypeName = #CLASS;                                       \
             static constexpr inline ClassTokenType ClassToken() { return ::ams::kern::ClassToken<CLASS>; }      \

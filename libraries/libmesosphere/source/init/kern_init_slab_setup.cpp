@@ -165,7 +165,7 @@ namespace ams::kern::init {
 
         /* N shuffles the slab type array with the following simple algorithm. */
         for (size_t i = 0; i < util::size(slab_types); i++) {
-            const size_t rnd = KSystemControl::GenerateRandomRange(0, util::size(slab_types));
+            const size_t rnd = KSystemControl::GenerateRandomRange(0, util::size(slab_types) - 1);
             std::swap(slab_types[i], slab_types[rnd]);
         }
 
@@ -195,12 +195,9 @@ namespace ams::kern::init {
 
             /* Initialize the slabheap. */
             switch (slab_types[i]) {
-                /* NOTE: This can't be used right now because we don't have all these types implemented. */
-                /* Once we do, uncomment the following. */
-                /* TODO: FOREACH_SLAB_TYPE(INITIALIZE_SLAB_HEAP) */
-                case KSlabType_KThread:
-                    address = InitializeSlabHeap<KThread>(address, SLAB_COUNT(KThread));
-                    break;
+                /* For each of the slab types, we want to initialize that heap. */
+                FOREACH_SLAB_TYPE(INITIALIZE_SLAB_HEAP)
+                /* If we somehow get an invalid type, abort. */
                 MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
         }

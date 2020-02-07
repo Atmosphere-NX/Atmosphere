@@ -17,6 +17,7 @@
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_light_lock.hpp>
 #include <mesosphere/kern_k_memory_layout.hpp>
+#include <mesosphere/kern_k_page_heap.hpp>
 
 namespace ams::kern {
 

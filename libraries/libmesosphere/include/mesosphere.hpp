@@ -42,7 +42,6 @@
 /* Core functionality. */
 #include <mesosphere/kern_select_interrupt_manager.hpp>
 #include <mesosphere/kern_k_spin_lock.hpp>
-#include <mesosphere/kern_k_page_heap.hpp>
 #include <mesosphere/kern_k_memory_manager.hpp>
 #include <mesosphere/kern_k_interrupt_task_manager.hpp>
 #include <mesosphere/kern_k_core_local_region.hpp>
@@ -51,11 +50,31 @@
 #include <mesosphere/kern_kernel.hpp>
 #include <mesosphere/kern_k_page_table_manager.hpp>
 
+/* Miscellaneous objects. */
+#include <mesosphere/kern_k_shared_memory_info.hpp>
+#include <mesosphere/kern_k_event_info.hpp>
+
 /* Auto Objects. */
 #include <mesosphere/kern_k_auto_object.hpp>
+#include <mesosphere/kern_k_synchronization_object.hpp>
+#include <mesosphere/kern_k_readable_event.hpp>
 #include <mesosphere/kern_k_handle_table.hpp>
+#include <mesosphere/kern_k_event.hpp>
+#include <mesosphere/kern_k_interrupt_event.hpp>
+#include <mesosphere/kern_k_light_session.hpp>
+#include <mesosphere/kern_k_session.hpp>
+#include <mesosphere/kern_k_session_request.hpp>
+#include <mesosphere/kern_k_port.hpp>
+#include <mesosphere/kern_k_shared_memory.hpp>
+#include <mesosphere/kern_k_transfer_memory.hpp>
+#include <mesosphere/kern_k_code_memory.hpp>
+#include <mesosphere/kern_k_device_address_space.hpp>
+#include <mesosphere/kern_select_debug.hpp>
 #include <mesosphere/kern_k_process.hpp>
 #include <mesosphere/kern_k_resource_limit.hpp>
+
+/* More Miscellaneous objects. */
+#include <mesosphere/kern_k_object_name.hpp>
 
 /* Supervisor Calls. */
 #include <mesosphere/kern_svc.hpp>
