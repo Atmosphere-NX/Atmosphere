@@ -35,6 +35,7 @@
 #define DECLARE_HANDLER(name)           int Handle##name()
 #define DECLARE_QUERY_HANDLER(name)     DECLARE_HANDLER(Query##name)
 #define DECLARE_VERBOSE_HANDLER(name)   DECLARE_HANDLER(Verbose##name)
+#define DECLARE_REMOTE_HANDLER(name)    DECLARE_HANDLER(Remote##name)
 #define DECLARE_XFER_HANDLER(name)      DECLARE_HANDLER(Xfer##name)
 
 namespace ams::hvisor::gdb {
@@ -211,4 +212,5 @@ namespace ams::hvisor::gdb {
 #undef DECLARE_HANDLER
 #undef DECLARE_QUERY_HANDLER
 #undef DECLARE_VERBOSE_HANDLER
+#undef DECLARE_REMOTE_HANDLER
 #undef DECLARE_XFER_HANDLER

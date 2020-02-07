@@ -36,9 +36,11 @@
 #define GDB_HANDLER(name)                   Handle##name
 #define GDB_QUERY_HANDLER(name)             GDB_HANDLER(Query##name)
 #define GDB_VERBOSE_HANDLER(name)           GDB_HANDLER(Verbose##name)
+#define GDB_REMOTE_COMMAND_HANDLER(name)    GDB_HANDLER(RemoteCommand##name)
 #define GDB_XFER_HANDLER(name)              GDB_HANDLER(Xfer##name)
 
-#define GDB_DEFINE_HANDLER(name)            int Context::GDB_HANDLER(name)()
-#define GDB_DEFINE_QUERY_HANDLER(name)      GDB_DEFINE_HANDLER(Query##name)
-#define GDB_DECLARE_VERBOSE_HANDLER(name)   GDB_DEFINE_HANDLER(Verbose##name)
-#define GDB_DECLARE_XFER_HANDLER(name)      GDB_DEFINE_HANDLER(Xfer##name)
+#define GDB_DEFINE_HANDLER(name)                    int Context::GDB_HANDLER(name)()
+#define GDB_DEFINE_QUERY_HANDLER(name)              GDB_DEFINE_HANDLER(Query##name)
+#define GDB_DEFINE_VERBOSE_HANDLER(name)            GDB_DEFINE_HANDLER(Verbose##name)
+#define GDB_DEFINE_REMOTE_COMMAND_HANDLER(name)     GDB_DEFINE_HANDLER(RemoteCommand##name)
+#define GDB_DECLARE_XFER_HANDLER(name)              GDB_DEFINE_HANDLER(Xfer##name)
