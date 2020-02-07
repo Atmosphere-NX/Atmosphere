@@ -19,7 +19,7 @@
 
 namespace ams::kern {
 
-    NORETURN void Panic(const char *file, int line, const char *format, ...);
+    NORETURN void Panic(const char *file, int line, const char *format, ...) __attribute__((format(printf, 3, 4)));
     NORETURN void Panic();
 
 }
@@ -31,11 +31,12 @@ namespace ams::kern {
 #endif
 
 #ifdef MESOSPHERE_ENABLE_ASSERTIONS
-#define MESOSPHERE_ASSERT_IMPL(expr, ...)  \
-    ({                                     \
-        if (AMS_UNLIKELY(!(expr))) {       \
-            MESOSPHERE_PANIC(__VA_ARGS__); \
-        }                                  \
+#define MESOSPHERE_ASSERT_IMPL(expr, ...)           \
+    ({                                              \
+        const bool __tmp_meso_assert_val = (expr);  \
+        if (AMS_UNLIKELY(!__tmp_meso_assert_val)) { \
+            MESOSPHERE_PANIC(__VA_ARGS__);          \
+        }                                           \
     })
 #else
 #define MESOSPHERE_ASSERT_IMPL(expr, ...) do { static_cast<void>(expr); } while (0)
@@ -56,14 +57,16 @@ namespace ams::kern {
 
 #define MESOSPHERE_ABORT_UNLESS(expr)               \
     ({                                              \
-        if (AMS_UNLIKELY(!(expr))) {                \
+        const bool _tmp_meso_assert_val = (expr);   \
+        if (AMS_UNLIKELY(!_tmp_meso_assert_val)) {  \
             MESOSPHERE_PANIC("Abort(): %s", #expr); \
         }                                           \
     })
 
 #define MESOSPHERE_INIT_ABORT_UNLESS(expr)          \
     ({                                              \
-        if (AMS_UNLIKELY(!(expr))) {                \
+        const bool __tmp_meso_assert_val = (expr);  \
+        if (AMS_UNLIKELY(!__tmp_meso_assert_val)) { \
             MESOSPHERE_INIT_ABORT();                \
         }                                           \
     })

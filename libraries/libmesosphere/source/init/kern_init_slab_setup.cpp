@@ -201,8 +201,7 @@ namespace ams::kern::init {
                 case KSlabType_KThread:
                     address = InitializeSlabHeap<KThread>(address, SLAB_COUNT(KThread));
                     break;
-                default:
-                    MESOSPHERE_ABORT();
+                MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
         }
     }

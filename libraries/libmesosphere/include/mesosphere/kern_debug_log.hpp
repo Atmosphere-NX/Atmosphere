@@ -24,7 +24,7 @@ namespace ams::kern {
         public:
             static NOINLINE void Initialize();
 
-            static NOINLINE void Printf(const char *format, ...);
+            static NOINLINE void Printf(const char *format, ...) __attribute__((format(printf, 1, 2)));
             static NOINLINE void VPrintf(const char *format, ::std::va_list vl);
     };
 

@@ -50,8 +50,8 @@ namespace ams::kern {
                 [[fallthrough]];
             case ThreadType_User:
                 {
-                    MESOSPHERE_ASSERT((owner == nullptr) || (owner->GetCoreMask()     | (1ul << core)) == owner->GetCoreMask());
-                    MESOSPHERE_ASSERT((owner == nullptr) || (owner->GetPriorityMask() | (1ul << prio)) == owner->GetPriorityMask());
+                    MESOSPHERE_ASSERT(((owner == nullptr) || (owner->GetCoreMask()     | (1ul << core)) == owner->GetCoreMask()));
+                    MESOSPHERE_ASSERT(((owner == nullptr) || (owner->GetPriorityMask() | (1ul << prio)) == owner->GetPriorityMask()));
                 }
                 break;
             default:

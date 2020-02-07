@@ -59,6 +59,51 @@ namespace ams::kern::arm64::cpu {
         EnsureInstructionConsistency();
     }
 
+    /* Helper for address access. */
+    ALWAYS_INLINE bool GetPhysicalAddressWritable(KPhysicalAddress *out, KVirtualAddress addr, bool privileged = false) {
+        const uintptr_t va = GetInteger(addr);
+
+        if (privileged) {
+            __asm__ __volatile__("at s1e1w, %[va]" :: [va]"r"(va) : "memory");
+        } else {
+            __asm__ __volatile__("at s1e0w, %[va]" :: [va]"r"(va) : "memory");
+        }
+        InstructionMemoryBarrier();
+
+        u64 par = GetParEl1();
+
+        if (par & 0x1) {
+            return false;
+        }
+
+        if (out) {
+            *out = KPhysicalAddress((par & 0xFFFFFFFFF000ull) | (va & 0xFFFull));
+        }
+        return true;
+    }
+
+    ALWAYS_INLINE bool GetPhysicalAddressReadable(KPhysicalAddress *out, KVirtualAddress addr, bool privileged = false) {
+        const uintptr_t va = GetInteger(addr);
+
+        if (privileged) {
+            __asm__ __volatile__("at s1e1r, %[va]" :: [va]"r"(va) : "memory");
+        } else {
+            __asm__ __volatile__("at s1e0r, %[va]" :: [va]"r"(va) : "memory");
+        }
+        InstructionMemoryBarrier();
+
+        u64 par = GetParEl1();
+
+        if (par & 0x1) {
+            return false;
+        }
+
+        if (out) {
+            *out = KPhysicalAddress((par & 0xFFFFFFFFF000ull) | (va & 0xFFFull));
+        }
+        return true;
+    }
+
     /* Synchronization helpers. */
     NOINLINE void SynchronizeAllCores();
 
