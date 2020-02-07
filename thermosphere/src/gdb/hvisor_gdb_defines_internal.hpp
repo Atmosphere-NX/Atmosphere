@@ -30,17 +30,19 @@
 // IDA seems to want additional bytes as well.
 // 1024 is fine enough to put all regs in the 'T' stop reply packets
 // Add 4 to this for the actual allocated size, for $#<checksum>, see below.
-#define GDB_BUF_LEN 0x800
-#define GDB_WORK_BUF_LEN 0x1000
+#define GDB_BUF_LEN                                 0x800
+#define GDB_WORK_BUF_LEN                            0x1000
 
-#define GDB_HANDLER(name)                   Handle##name
-#define GDB_QUERY_HANDLER(name)             GDB_HANDLER(Query##name)
-#define GDB_VERBOSE_HANDLER(name)           GDB_HANDLER(Verbose##name)
-#define GDB_REMOTE_COMMAND_HANDLER(name)    GDB_HANDLER(RemoteCommand##name)
-#define GDB_XFER_HANDLER(name)              GDB_HANDLER(Xfer##name)
+#define GDB_HANDLER(name)                           Handle##name
+#define GDB_QUERY_HANDLER(name)                     GDB_HANDLER(Query##name)
+#define GDB_VERBOSE_HANDLER(name)                   GDB_HANDLER(Verbose##name)
+#define GDB_REMOTE_COMMAND_HANDLER(name)            GDB_HANDLER(RemoteCommand##name)
+#define GDB_XFER_HANDLER(name)                      GDB_HANDLER(Xfer##name)
 
 #define GDB_DEFINE_HANDLER(name)                    int Context::GDB_HANDLER(name)()
 #define GDB_DEFINE_QUERY_HANDLER(name)              GDB_DEFINE_HANDLER(Query##name)
 #define GDB_DEFINE_VERBOSE_HANDLER(name)            GDB_DEFINE_HANDLER(Verbose##name)
 #define GDB_DEFINE_REMOTE_COMMAND_HANDLER(name)     GDB_DEFINE_HANDLER(RemoteCommand##name)
 #define GDB_DECLARE_XFER_HANDLER(name)              GDB_DEFINE_HANDLER(Xfer##name)
+
+#define GDB_TEST_NO_CMD_DATA()                      do { if (!m_commandData.empty()) return ReplyErrno(EILSEQ); } while (false)

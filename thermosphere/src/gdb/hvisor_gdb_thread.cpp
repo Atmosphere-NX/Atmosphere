@@ -96,11 +96,14 @@ namespace ams::hvisor::gdb {
 
     GDB_DEFINE_QUERY_HANDLER(CurrentThreadId)
     {
+        GDB_TEST_NO_CMD_DATA();
         return SendFormattedPacket("QC%x", 1 + currentCoreCtx->coreId);
     }
 
     GDB_DEFINE_QUERY_HANDLER(fThreadInfo)
     {
+        GDB_TEST_NO_CMD_DATA();
+
         // We have made our GDB packet big enough to list all the thread ids (coreIds + 1 for each coreId)
         char *buf = GetInPlaceOutputBuffer();
         size_t n = 0;
@@ -117,6 +120,8 @@ namespace ams::hvisor::gdb {
 
     GDB_DEFINE_QUERY_HANDLER(sThreadInfo)
     {
+        GDB_TEST_NO_CMD_DATA();
+
         // We have made our GDB packet big enough to list all the thread ids (coreIds + 1 for each coreId) in fThreadInfo
         // Note: we assume GDB doesn't accept notifications during the sequence transfer...
         return SendPacket("l");
