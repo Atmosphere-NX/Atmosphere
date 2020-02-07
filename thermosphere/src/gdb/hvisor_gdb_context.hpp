@@ -38,6 +38,8 @@
 #define DECLARE_REMOTE_HANDLER(name)    DECLARE_HANDLER(Remote##name)
 #define DECLARE_XFER_HANDLER(name)      DECLARE_HANDLER(Xfer##name)
 
+struct DebugEventInfo;
+
 namespace ams::hvisor::gdb {
 
     struct PackedGdbHioRequest {
@@ -58,12 +60,7 @@ namespace ams::hvisor::gdb {
         bool ctrlC;
     };
 
-    struct DebugEventInfo;
-
     class Context final {
-        NON_COPYABLE(Context);
-        NON_MOVEABLE(Context);
-
         private:
             enum class State {
                 Disconnected = 0,
@@ -107,7 +104,19 @@ namespace ams::hvisor::gdb {
             char *m_workBuffer = nullptr;
 
         private:
+            Context(const Context &) = default;
+            Context &operator=(const Context &) = default;
+
+            Context(Context &&) = default;
+            Context &operator=(Context &&) = default;
+
+        private:
             void MigrateRxIrq(u32 coreId) const;
+            int ProcessPacket();
+            void Disconnect();
+
+            // Debug
+            void BreakAllCores();
 
             // Comms
             int ReceivePacket();
@@ -125,12 +134,12 @@ namespace ams::hvisor::gdb {
             int WriteMemoryImpl(size_t (*decoder)(void *, const void *, size_t));
 
             // Helpers
-            char *GetInPlaceOutputBuffer() const
+            constexpr char *GetInPlaceOutputBuffer() const
             {
                 return m_buffer + 1;
             }
 
-            char *GetWorkBuffer() const
+            constexpr char *GetWorkBuffer() const
             {
                 return m_workBuffer;
             }
@@ -195,12 +204,18 @@ namespace ams::hvisor::gdb {
             DECLARE_QUERY_HANDLER(Rcmd);
 
         public:
+            Context() = default;
+
             void Initialize(TransportInterfaceType ifaceType, u32 ifaceId, u32 ifaceFlags);
             void Attach();
             void Detach();
 
+            void lock();
+            void unlock();
+            /* TODO: parent
             void Acquire();
             void Release();
+            */
 
             constexpr bool IsAttached() const
             {

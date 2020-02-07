@@ -17,10 +17,10 @@
 #pragma once
 
 #include "exceptions.h"
-#include "gdb/context.h"
+//#include "gdb/hvisor_context.h"
 #include "transport_interface.h"
 
-extern GDBContext g_gdbContext;
+//extern GDBContext g_gdbContext;
 
 typedef enum DebugEventType {
     DBGEVENT_NONE = 0,
