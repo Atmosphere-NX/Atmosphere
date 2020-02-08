@@ -17,6 +17,21 @@
 
 namespace ams::kern {
 
+    namespace {
+
+        template<typename F>
+        ALWAYS_INLINE void DoOnEachCoreInOrder(s32 core_id, F f) {
+            cpu::SynchronizeAllCores();
+            for (size_t i = 0; i < cpu::NumCores; i++) {
+                if (static_cast<s32>(i) == core_id) {
+                    f();
+                }
+                cpu::SynchronizeAllCores();
+            }
+        }
+
+    }
+
     NORETURN void HorizonKernelMain(s32 core_id) {
         /* Setup the Core Local Region, and note that we're initializing. */
         Kernel::InitializeCoreLocalRegion(core_id);
@@ -26,13 +41,9 @@ namespace ams::kern {
         cpu::SynchronizeAllCores();
 
         /* Initialize the main and idle thread for each core. */
-        /* Synchronize after each init to ensure the cores go in order. */
-        for (size_t i = 0; i < cpu::NumCores; i++) {
-            if (static_cast<s32>(i) == core_id) {
-                Kernel::InitializeMainAndIdleThreads(core_id);
-            }
-            cpu::SynchronizeAllCores();
-        }
+        DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
+            Kernel::InitializeMainAndIdleThreads(core_id);
+        });
 
         if (core_id == 0) {
             /* Initialize KSystemControl. */
@@ -58,8 +69,68 @@ namespace ams::kern {
             }
         }
 
-        /* TODO: Implement more of Main() */
+        /* Initialize the supervisor page table for each core. */
+        DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
+            /* TODO: KPageTable::Initialize(); */
+            /* TODO: Kernel::GetSupervisorPageTable().Initialize(); */
+        });
+
+        /* Set ttbr0 for each core. */
+        DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
+            /* TODO: SetTtbr0(); */
+        });
+
+        /* NOTE: Kernel calls on each core a nullsub here on retail kernel. */
+
+        /* Register the main/idle threads and initialize the interrupt task manager. */
+        DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
+            KThread::Register(std::addressof(Kernel::GetMainThread(core_id)));
+            KThread::Register(std::addressof(Kernel::GetIdleThread(core_id)));
+            /* TODO: Kernel::GetInterruptTaskManager().Initialize(); */
+        });
+
+        /* Activate the scheduler and enable interrupts. */
+        DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
+            Kernel::GetScheduler().Activate();
+            KInterruptManager::EnableInterrupts();
+        });
+
+        /* Initialize cpu interrupt threads. */
+        /* TODO cpu::InitializeInterruptThreads(core_id); */
+
+        /* Initialize the DPC manager. */
+        KDpcManager::Initialize();
         cpu::SynchronizeAllCores();
+
+        /* Perform more core-0 specific initialization. */
+        if (core_id == 0) {
+            /* TODO: Initialize KWorkerThreadManager */
+
+            /* TODO: KSystemControl::InitializeSleepManagerAndAppletSecureMemory(); */
+
+            /* TODO: KDeviceAddressSpace::Initialize(); */
+
+            /* TODO: CreateAndRunInitialProcesses(); */
+
+            /* We're done initializing! */
+            Kernel::SetState(Kernel::State::Initialized);
+
+            /* TODO: KThread::ResumeThreadsSuspendedForInit(); */
+        }
+        cpu::SynchronizeAllCores();
+
+        /* Set the current thread priority to idle. */
+        GetCurrentThread().SetPriorityToIdle();
+
+        /* Exit the main thread. */
+        {
+            auto &main_thread = Kernel::GetMainThread(core_id);
+            main_thread.Open();
+            main_thread.Exit();
+        }
+
+        /* Main() is done, and we should never get to this point. */
+        MESOSPHERE_PANIC("Main Thread continued after exit.");
         while (true) { /* ... */ }
     }
 

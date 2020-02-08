@@ -46,7 +46,7 @@ namespace ams::kern {
                 SuspendType_Thread  = 1,
                 SuspendType_Debug   = 2,
                 SuspendType_Unk3    = 3,
-                SuspendType_Unk4    = 4,
+                SuspendType_Init    = 4,
 
                 SuspendType_Count,
             };
@@ -64,7 +64,7 @@ namespace ams::kern {
                 ThreadState_ThreadSuspended  = (1 << (SuspendType_Thread  + ThreadState_SuspendShift)),
                 ThreadState_DebugSuspended   = (1 << (SuspendType_Debug   + ThreadState_SuspendShift)),
                 ThreadState_Unk3Suspended    = (1 << (SuspendType_Unk3    + ThreadState_SuspendShift)),
-                ThreadState_Unk4Suspended    = (1 << (SuspendType_Unk4    + ThreadState_SuspendShift)),
+                ThreadState_InitSuspended    = (1 << (SuspendType_Init    + ThreadState_SuspendShift)),
 
                 ThreadState_SuspendFlagMask  = ((1 << SuspendType_Count) - 1) << ThreadState_SuspendShift,
             };
@@ -91,17 +91,17 @@ namespace ams::kern {
                     KThread *prev;
                     KThread *next;
                 public:
-                    constexpr ALWAYS_INLINE QueueEntry() : prev(nullptr), next(nullptr) { /* ... */ }
+                    constexpr QueueEntry() : prev(nullptr), next(nullptr) { /* ... */ }
 
-                    constexpr ALWAYS_INLINE void Initialize() {
+                    constexpr void Initialize() {
                         this->prev = nullptr;
                         this->next = nullptr;
                     }
 
-                    constexpr ALWAYS_INLINE KThread *GetPrev() const { return this->prev; }
-                    constexpr ALWAYS_INLINE KThread *GetNext() const { return this->next; }
-                    constexpr ALWAYS_INLINE void SetPrev(KThread *t) { this->prev = t; }
-                    constexpr ALWAYS_INLINE void SetNext(KThread *t) { this->next = t; }
+                    constexpr KThread *GetPrev() const { return this->prev; }
+                    constexpr KThread *GetNext() const { return this->next; }
+                    constexpr void SetPrev(KThread *t) { this->prev = t; }
+                    constexpr void SetNext(KThread *t) { this->next = t; }
             };
         private:
             static constexpr size_t PriorityInheritanceCountMax = 10;
@@ -180,6 +180,18 @@ namespace ams::kern {
             Result Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type);
 
         private:
+            static Result InitializeThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type);
+        public:
+            static Result InitializeKernelThread(KThread *thread, KThreadFunction func, uintptr_t arg, s32 prio, s32 core) {
+                return InitializeThread(thread, func, arg, Null<KProcessAddress>, prio, core, nullptr, ThreadType_Kernel);
+            }
+
+            static Result InitializeHighPriorityThread(KThread *thread, KThreadFunction func, uintptr_t arg) {
+                return InitializeThread(thread, func, arg, Null<KProcessAddress>, 0, GetCurrentCoreId(), nullptr, ThreadType_HighPriority);
+            }
+
+            /* TODO: static Result InitializeUserThread */
+        private:
             StackParameters &GetStackParameters() {
                 return *(reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1);
             }
@@ -204,38 +216,51 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >  0);
                 GetStackParameters().disable_count--;
             }
+        private:
+            void Suspend();
         public:
-            constexpr ALWAYS_INLINE const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
-            constexpr ALWAYS_INLINE ThreadState GetState() const { return static_cast<ThreadState>(this->thread_state & ThreadState_Mask); }
-            constexpr ALWAYS_INLINE ThreadState GetRawState() const { return this->thread_state; }
+            constexpr const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
+            constexpr ThreadState GetState() const { return static_cast<ThreadState>(this->thread_state & ThreadState_Mask); }
+            constexpr ThreadState GetRawState() const { return this->thread_state; }
             NOINLINE void SetState(ThreadState state);
 
             NOINLINE KThreadContext *GetContextForSchedulerLoop();
 
-            constexpr ALWAYS_INLINE s32 GetActiveCore() const { return this->core_id; }
-            constexpr ALWAYS_INLINE void SetActiveCore(s32 core) { this->core_id = core; }
-            constexpr ALWAYS_INLINE s32 GetPriority() const { return this->priority; }
+            constexpr s32 GetActiveCore() const { return this->core_id; }
+            constexpr void SetActiveCore(s32 core) { this->core_id = core; }
+            constexpr s32 GetPriority() const { return this->priority; }
 
-            constexpr ALWAYS_INLINE QueueEntry &GetPriorityQueueEntry(s32 core) { return this->per_core_priority_queue_entry[core]; }
-            constexpr ALWAYS_INLINE const QueueEntry &GetPriorityQueueEntry(s32 core) const { return this->per_core_priority_queue_entry[core]; }
+            constexpr QueueEntry &GetPriorityQueueEntry(s32 core) { return this->per_core_priority_queue_entry[core]; }
+            constexpr const QueueEntry &GetPriorityQueueEntry(s32 core) const { return this->per_core_priority_queue_entry[core]; }
 
-            constexpr ALWAYS_INLINE QueueEntry &GetSleepingQueueEntry() { return this->sleeping_queue_entry; }
-            constexpr ALWAYS_INLINE const QueueEntry &GetSleepingQueueEntry() const { return this->sleeping_queue_entry; }
-            constexpr ALWAYS_INLINE void SetSleepingQueue(KThreadQueue *q) { this->sleeping_queue = q; }
+            constexpr QueueEntry &GetSleepingQueueEntry() { return this->sleeping_queue_entry; }
+            constexpr const QueueEntry &GetSleepingQueueEntry() const { return this->sleeping_queue_entry; }
+            constexpr void SetSleepingQueue(KThreadQueue *q) { this->sleeping_queue = q; }
 
-            constexpr ALWAYS_INLINE s32 GetNumKernelWaiters() const { return this->num_kernel_waiters; }
+            constexpr s32 GetNumKernelWaiters() const { return this->num_kernel_waiters; }
 
-            constexpr ALWAYS_INLINE s64 GetLastScheduledTick() const { return this->last_scheduled_tick; }
-            constexpr ALWAYS_INLINE void SetLastScheduledTick(s64 tick) { this->last_scheduled_tick = tick; }
+            constexpr s64 GetLastScheduledTick() const { return this->last_scheduled_tick; }
+            constexpr void SetLastScheduledTick(s64 tick) { this->last_scheduled_tick = tick; }
 
-            constexpr ALWAYS_INLINE KProcess *GetOwnerProcess() const { return this->parent; }
+            constexpr KProcess *GetOwnerProcess() const { return this->parent; }
+            constexpr bool IsUserThread() const { return this->parent != nullptr; }
 
-            constexpr ALWAYS_INLINE KProcessAddress GetThreadLocalRegionAddress() const { return this->tls_address; }
-            constexpr ALWAYS_INLINE void           *GetThreadLocalRegionHeapAddress() const { return this->tls_heap_address; }
+            constexpr KProcessAddress GetThreadLocalRegionAddress() const { return this->tls_address; }
+            constexpr void           *GetThreadLocalRegionHeapAddress() const { return this->tls_heap_address; }
 
-            ALWAYS_INLINE void AddCpuTime(s64 amount) {
+            void AddCpuTime(s64 amount) {
                 this->cpu_time += amount;
             }
+
+            constexpr u32 GetSuspendFlags() const { return this->suspend_allowed_flags & this->suspend_request_flags; }
+            constexpr bool IsSuspended() const { return this->GetSuspendFlags() != 0; }
+            void RequestSuspend(SuspendType type);
+            void TrySuspend();
+
+            Result SetPriorityToIdle();
+
+            Result Run();
+            void Exit();
 
             ALWAYS_INLINE void *GetStackTop() const { return reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1; }
             ALWAYS_INLINE void *GetKernelStackTop() const { return this->kernel_stack_top; }

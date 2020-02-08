@@ -142,7 +142,7 @@ namespace ams::kern {
                 /* ... */
             }
 
-            void Initialize(KVirtualAddress metadata_region, size_t metadata_region_size);
+            NOINLINE void Initialize(KVirtualAddress metadata_region, size_t metadata_region_size);
 
             KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
 

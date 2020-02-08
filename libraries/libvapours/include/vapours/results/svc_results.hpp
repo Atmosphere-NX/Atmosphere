@@ -29,7 +29,7 @@ namespace ams::svc {
 
     R_DEFINE_ERROR_RESULT(NoSynchronizationObject,      57);
 
-    R_DEFINE_ERROR_RESULT(ThreadTerminating,            59);
+    R_DEFINE_ERROR_RESULT(TerminationRequested,         59);
 
     R_DEFINE_ERROR_RESULT(NoEvent,                      70);
 

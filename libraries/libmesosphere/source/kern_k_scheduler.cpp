@@ -300,5 +300,89 @@ namespace ams::kern {
         }
     }
 
+    void KScheduler::RotateScheduledQueue(s32 core_id, s32 priority) {
+        MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
+
+        /* Get a reference to the priority queue. */
+        auto &priority_queue = GetPriorityQueue();
+
+        /* Rotate the front of the queue to the end. */
+        KThread *top_thread = priority_queue.GetScheduledFront(core_id, priority);
+        KThread *next_thread = nullptr;
+        if (top_thread != nullptr) {
+            next_thread = priority_queue.MoveToScheduledBack(top_thread);
+            if (next_thread != top_thread) {
+                IncrementScheduledCount(top_thread);
+                IncrementScheduledCount(next_thread);
+            }
+        }
+
+        /* While we have a suggested thread, try to migrate it! */
+        {
+            KThread *suggested = priority_queue.GetSuggestedFront(core_id, priority);
+            while (suggested != nullptr) {
+                /* Check if the suggested thread is the top thread on its core. */
+                const s32 suggested_core = suggested->GetActiveCore();
+                if (KThread *top_on_suggested_core = (suggested_core >= 0) ? priority_queue.GetScheduledFront(suggested_core) : nullptr; top_on_suggested_core != suggested) {
+                    /* If the next thread is a new thread that has been waiting longer than our suggestion, we prefer it to our suggestion. */
+                    if (top_thread != next_thread && next_thread != nullptr && next_thread->GetLastScheduledTick() < suggested->GetLastScheduledTick()) {
+                        suggested = nullptr;
+                        break;
+                    }
+
+                    /* If we're allowed to do a migration, do one. */
+                    /* NOTE: Unlike migrations in UpdateHighestPriorityThread, this moves the suggestion to the front of the queue. */
+                    if (top_on_suggested_core == nullptr || top_on_suggested_core->GetPriority() >= HighestCoreMigrationAllowedPriority) {
+                        suggested->SetActiveCore(core_id);
+                        priority_queue.ChangeCore(suggested_core, suggested, true);
+                        IncrementScheduledCount(suggested);
+                        break;
+                    }
+                }
+
+                /* Get the next suggestion. */
+                suggested = priority_queue.GetSamePriorityNext(core_id, suggested);
+            }
+        }
+
+        /* Now that we might have migrated a thread with the same priority, check if we can do better. */
+        {
+            KThread *best_thread = priority_queue.GetScheduledFront(core_id);
+            if (best_thread == GetCurrentThreadPointer()) {
+                best_thread = priority_queue.GetScheduledNext(core_id, best_thread);
+            }
+
+            /* If the best thread we can choose has a priority the same or worse than ours, try to migrate a higher priority thread. */
+            if (best_thread != nullptr && best_thread->GetPriority() >= priority) {
+                KThread *suggested = priority_queue.GetSuggestedFront(core_id);
+                while (suggested != nullptr) {
+                    /* If the suggestion's priority is the same as ours, don't bother. */
+                    if (suggested->GetPriority() >= best_thread->GetPriority()) {
+                        break;
+                    }
+
+                    /* Check if the suggested thread is the top thread on its core. */
+                    const s32 suggested_core = suggested->GetActiveCore();
+                    if (KThread *top_on_suggested_core = (suggested_core >= 0) ? priority_queue.GetScheduledFront(suggested_core) : nullptr; top_on_suggested_core != suggested) {
+                        /* If we're allowed to do a migration, do one. */
+                        /* NOTE: Unlike migrations in UpdateHighestPriorityThread, this moves the suggestion to the front of the queue. */
+                        if (top_on_suggested_core == nullptr || top_on_suggested_core->GetPriority() >= HighestCoreMigrationAllowedPriority) {
+                            suggested->SetActiveCore(core_id);
+                            priority_queue.ChangeCore(suggested_core, suggested, true);
+                            IncrementScheduledCount(suggested);
+                            break;
+                        }
+                    }
+
+                    /* Get the next suggestion. */
+                    suggested = priority_queue.GetScheduledNext(core_id, suggested);
+                }
+            }
+        }
+
+        /* After a rotation, we need a scheduler update. */
+        SetSchedulerUpdateNeeded();
+    }
+
 
 }

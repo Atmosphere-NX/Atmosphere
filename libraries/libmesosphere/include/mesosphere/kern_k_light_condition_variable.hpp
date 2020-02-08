@@ -49,7 +49,7 @@ namespace ams::kern {
                 }
             }
         public:
-            void Wait(KLightLock *lock, s64 timeout) {
+            void Wait(KLightLock *lock, s64 timeout = -1ll) {
                 this->WaitImpl(lock, timeout);
                 lock->Lock();
             }

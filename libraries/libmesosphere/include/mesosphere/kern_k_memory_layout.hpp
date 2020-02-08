@@ -471,6 +471,10 @@ namespace ams::kern {
                 return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_VirtualKernelPtHeap);
             }
 
+            static NOINLINE KMemoryRegion &GetKernelStackRegion() {
+                return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_KernelStack);
+            }
+
             static NOINLINE KMemoryRegion &GetVirtualLinearRegion(KVirtualAddress address) {
                 return *GetVirtualLinearMemoryRegionTree().FindContainingRegion(GetInteger(address));
             }

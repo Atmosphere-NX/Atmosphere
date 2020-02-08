@@ -17,6 +17,24 @@
 
 namespace ams::kern {
 
+    namespace {
+
+        void CleanupKernelStack(uintptr_t stack_top) {
+            const uintptr_t stack_bottom = stack_top - PageSize;
+
+            KPhysicalAddress stack_paddr = Null<KPhysicalAddress>;
+            /* TODO: MESOSPHERE_ABORT_UNLESS(Kernel::GetSupervisorPageTable().GetPhysicalAddress(&stack_paddr, stack_bottom)); */
+            (void)stack_bottom;
+
+            /* TODO: MESOSPHERE_R_ABORT_UNLESS(Kernel::GetSupervisorPageTable().Unmap(...) */
+            (void)stack_paddr;
+
+            /* Free the stack page. */
+            KPageBuffer::Free(KPageBuffer::FromPhysicalAddress(stack_paddr));
+        }
+
+    }
+
     Result KThread::Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type) {
         /* Assert parameters are valid. */
         MESOSPHERE_ASSERT_THIS();
@@ -174,6 +192,32 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KThread::InitializeThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type) {
+        /* Get stack region for the thread. */
+        const auto &stack_region = KMemoryLayout::GetKernelStackRegion();
+
+        /* Allocate a page to use as the thread. */
+        KPageBuffer *page = KPageBuffer::Allocate();
+        R_UNLESS(page != nullptr, svc::ResultOutOfResource());
+
+
+        /* Map the stack page. */
+        KProcessAddress stack_top = Null<KProcessAddress>;
+        {
+            auto page_guard = SCOPE_GUARD { KPageBuffer::Free(page); };
+            /* TODO: R_TRY(Kernel::GetSupervisorPageTable().Map); ... */
+            (void)(stack_region);
+            page_guard.Cancel();
+        }
+
+        /* Initialize the thread. */
+        auto map_guard = SCOPE_GUARD { CleanupKernelStack(GetInteger(stack_top)); };
+        R_TRY(thread->Initialize(func, arg, GetVoidPointer(stack_top), user_stack_top, prio, core, owner, type));
+        map_guard.Cancel();
+
+        return ResultSuccess();
+    }
+
     void KThread::PostDestroy(uintptr_t arg) {
         KProcess *owner = reinterpret_cast<KProcess *>(arg & ~1ul);
         const bool resource_limit_release_hint = (arg & 1);
@@ -200,6 +244,100 @@ namespace ams::kern {
 
     void KThread::DoWorkerTask() {
         /* TODO */
+    }
+
+    Result KThread::SetPriorityToIdle() {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Change both our priorities to the idle thread priority. */
+        const s32 old_priority = this->priority;
+        this->priority      = IdleThreadPriority;
+        this->base_priority = IdleThreadPriority;
+        KScheduler::OnThreadPriorityChanged(this, old_priority);
+
+        return ResultSuccess();
+    }
+
+    void KThread::RequestSuspend(SuspendType type) {
+        MESOSPHERE_ASSERT_THIS();
+
+        KScopedSchedulerLock lk;
+
+        /* Note the request in our flags. */
+        this->suspend_request_flags |= (1 << (ThreadState_SuspendShift + type));
+
+        /* Try to perform the suspend. */
+        this->TrySuspend();
+    }
+
+    void KThread::TrySuspend() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+        MESOSPHERE_ASSERT(this->IsSuspended());
+
+        /* Ensure that we have no waiters. */
+        if (this->GetNumKernelWaiters() > 0) {
+            return;
+        }
+        MESOSPHERE_ABORT_UNLESS(this->GetNumKernelWaiters() == 0);
+
+        /* Perform the suspend. */
+        this->Suspend();
+    }
+
+    void KThread::Suspend() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+        MESOSPHERE_ASSERT(this->IsSuspended());
+
+        /* Set our suspend flags in state. */
+        const auto old_state = this->thread_state;
+        this->thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+
+        /* Note the state change in scheduler. */
+        KScheduler::OnThreadStateChanged(this, old_state);
+    }
+
+    Result KThread::Run() {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* If the kernel hasn't finished initializing, then we should suspend. */
+        if (Kernel::GetState() != Kernel::State::Initialized) {
+            this->RequestSuspend(SuspendType_Init);
+        }
+        while (true) {
+            KScopedSchedulerLock lk;
+
+            /* If either this thread or the current thread are requesting termination, note it. */
+            R_UNLESS(!this->IsTerminationRequested(),              svc::ResultTerminationRequested());
+            R_UNLESS(!GetCurrentThread().IsTerminationRequested(), svc::ResultTerminationRequested());
+
+            /* Ensure our thread state is correct. */
+            R_UNLESS(this->GetState() == ThreadState_Initialized,  svc::ResultInvalidState());
+
+            /* If the current thread has been asked to suspend, suspend it and retry. */
+            if (GetCurrentThread().IsSuspended()) {
+                GetCurrentThread().Suspend();
+                continue;
+            }
+
+            /* If we're not a kernel thread and we've been asked to suspend, suspend ourselves. */
+            if (this->IsUserThread() && this->IsSuspended()) {
+                this->Suspend();
+            }
+
+            /* Set our state and finish. */
+            this->SetState(KThread::ThreadState_Runnable);
+            return ResultSuccess();
+        }
+    }
+
+    void KThread::Exit() {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* TODO */
+
+        MESOSPHERE_PANIC("KThread::Exit() would return");
     }
 
     void KThread::SetState(ThreadState state) {

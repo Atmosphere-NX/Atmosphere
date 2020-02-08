@@ -342,8 +342,8 @@ namespace ams::kern {
                 this->scheduled_queue.MoveToFront(member->GetPriority(), member->GetActiveCore(), member);
             }
 
-            constexpr ALWAYS_INLINE void MoveToScheduledBack(Member *member) {
-                this->scheduled_queue.MoveToBack(member->GetPriority(), member->GetActiveCore(), member);
+            constexpr ALWAYS_INLINE KThread *MoveToScheduledBack(Member *member) {
+                return this->scheduled_queue.MoveToBack(member->GetPriority(), member->GetActiveCore(), member);
             }
 
             /* First class fancy operations. */

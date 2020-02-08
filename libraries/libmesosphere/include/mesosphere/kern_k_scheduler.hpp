@@ -117,6 +117,7 @@ namespace ams::kern {
             static NOINLINE void OnThreadAffinityMaskChanged(KThread *thread, const KAffinityMask &old_affinity, s32 old_core);
 
             /* TODO: Yield operations */
+            static NOINLINE void RotateScheduledQueue(s32 priority, s32 core_id);
         private:
             /* Instanced private API. */
             void ScheduleImpl();
