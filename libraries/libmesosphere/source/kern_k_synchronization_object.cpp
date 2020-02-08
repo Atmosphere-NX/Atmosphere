@@ -20,15 +20,13 @@ namespace ams::kern {
     void NotifyAvailable() {
         MESOSPHERE_ASSERT_THIS();
 
-        /* TODO: Implement this. */
-        MESOSPHERE_ABORT();
+        MESOSPHERE_TODO_IMPLEMENT();
     }
 
     void NotifyAbort(Result abort_reason) {
         MESOSPHERE_ASSERT_THIS();
 
-        /* TODO: Implement this. */
-        MESOSPHERE_ABORT();
+        MESOSPHERE_TODO_IMPLEMENT();
     }
 
     void KSynchronizationObject::Finalize() {
@@ -41,7 +39,7 @@ namespace ams::kern {
     void KSynchronizationObject::DebugWaiters() {
         MESOSPHERE_ASSERT_THIS();
 
-        /* TODO: Do useful debug operation here. */
+        MESOSPHERE_TODO("Do useful debug operation here.");
     }
 
     KSynchronizationObject::iterator KSynchronizationObject::AddWaiterThread(KThread *thread) {

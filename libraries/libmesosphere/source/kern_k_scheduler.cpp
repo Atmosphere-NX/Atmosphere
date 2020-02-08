@@ -34,7 +34,7 @@ namespace ams::kern {
 
         ALWAYS_INLINE void IncrementScheduledCount(KThread *thread) {
             if (KProcess *parent = thread->GetOwnerProcess(); parent != nullptr) {
-                /* TODO: parent->IncrementScheduledCount(); */
+                MESOSPHERE_TODO("parent->IncrementScheduledCount();");
             }
         }
 
@@ -66,7 +66,7 @@ namespace ams::kern {
     void KScheduler::Activate() {
         MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() == 1);
 
-        this->state.should_count_idle = false /* TODO: Retrieve from KSystemControl. */;
+        this->state.should_count_idle = KTargetSystem::IsDebugMode();
         this->is_active = true;
         RescheduleCurrentCore();
     }
@@ -230,7 +230,7 @@ namespace ams::kern {
         const s64 tick_diff = cur_tick - prev_tick;
         cur_thread->AddCpuTime(tick_diff);
         if (cur_process != nullptr) {
-            /* TODO: cur_process->AddCpuTime(tick_diff); */
+            MESOSPHERE_TODO("cur_process->AddCpuTime(tick_diff);");
         }
         this->last_context_switch_time = cur_tick;
 
@@ -248,7 +248,7 @@ namespace ams::kern {
 
         /* Switch the current process, if we're switching processes. */
         if (KProcess *next_process = next_thread->GetOwnerProcess(); next_process != cur_process) {
-            /* TODO: KProcess::Switch */
+            MESOSPHERE_TODO("KProcess::Switch");
         }
 
         /* Set the new Thread Local region. */

@@ -23,10 +23,10 @@ namespace ams::kern {
             const uintptr_t stack_bottom = stack_top - PageSize;
 
             KPhysicalAddress stack_paddr = Null<KPhysicalAddress>;
-            /* TODO: MESOSPHERE_ABORT_UNLESS(Kernel::GetSupervisorPageTable().GetPhysicalAddress(&stack_paddr, stack_bottom)); */
+            MESOSPHERE_TODO("MESOSPHERE_ABORT_UNLESS(Kernel::GetSupervisorPageTable().GetPhysicalAddress(&stack_paddr, stack_bottom));");
             (void)stack_bottom;
 
-            /* TODO: MESOSPHERE_R_ABORT_UNLESS(Kernel::GetSupervisorPageTable().Unmap(...) */
+            MESOSPHERE_TODO("MESOSPHERE_R_ABORT_UNLESS(Kernel::GetSupervisorPageTable().Unmap(...);");
             (void)stack_paddr;
 
             /* Free the stack page. */
@@ -149,8 +149,8 @@ namespace ams::kern {
 
         /* Setup the TLS, if needed. */
         if (type == ThreadType_User) {
-            /* TODO: R_TRY(owner->CreateThreadLocalRegion(&this->tls_address)); */
-            /* TODO: this->tls_heap_address = owner->GetThreadLocalRegionAddress(this->tls_address); */
+            MESOSPHERE_TODO("R_TRY(owner->CreateThreadLocalRegion(&this->tls_address));");
+            MESOSPHERE_TODO("this->tls_heap_address = owner->GetThreadLocalRegionAddress(this->tls_address);");
             std::memset(this->tls_heap_address, 0, ams::svc::ThreadLocalRegionSize);
         }
 
@@ -158,7 +158,7 @@ namespace ams::kern {
         if (owner != nullptr) {
             this->parent = owner;
             this->parent->Open();
-            /* TODO: this->parent->IncrementThreadCount(); */
+            MESOSPHERE_TODO("this->parent->IncrementThreadCount();");
         }
 
         /* Initialize thread context. */
@@ -171,7 +171,7 @@ namespace ams::kern {
         /* Setup the stack parameters. */
         StackParameters &sp = this->GetStackParameters();
         if (this->parent != nullptr) {
-            /* TODO: this->parent->CopySvcPermissionTo(pos.svc_permission); */
+            MESOSPHERE_TODO("this->parent->CopySvcPermissionTo(sp.svc_permission);");
         }
         sp.context = std::addressof(this->thread_context);
         sp.disable_count = 1;
@@ -185,8 +185,8 @@ namespace ams::kern {
 
         /* Register ourselves with our parent process. */
         if (this->parent != nullptr) {
-            /* TODO: this->parent->RegisterThread(this); */
-            /* TODO: if (this->parent->IsSuspended()) { this->RequestSuspend(SuspendType_Process); } */
+            MESOSPHERE_TODO("this->parent->RegisterThread(this);");
+            MESOSPHERE_TODO("if (this->parent->IsSuspended()) { this->RequestSuspend(SuspendType_Process);");
         }
 
         return ResultSuccess();
@@ -205,7 +205,7 @@ namespace ams::kern {
         KProcessAddress stack_top = Null<KProcessAddress>;
         {
             auto page_guard = SCOPE_GUARD { KPageBuffer::Free(page); };
-            /* TODO: R_TRY(Kernel::GetSupervisorPageTable().Map); ... */
+            MESOSPHERE_TODO("R_TRY(Kernel::GetSupervisorPageTable().Map); ...");
             (void)(stack_region);
             page_guard.Cancel();
         }
@@ -222,16 +222,16 @@ namespace ams::kern {
         KProcess *owner = reinterpret_cast<KProcess *>(arg & ~1ul);
         const bool resource_limit_release_hint = (arg & 1);
         if (owner != nullptr) {
-            /* TODO: Release from owner resource limit. */
+            MESOSPHERE_TODO("Release from owner resource limit.");
             (void)(resource_limit_release_hint);
             owner->Close();
         } else {
-            /* TODO: Release from system resource limit. */
+            MESOSPHERE_TODO("Release from system resource limit.");
         }
     }
 
     void KThread::Finalize() {
-        /* TODO */
+        MESOSPHERE_TODO_IMPLEMENT();
     }
 
     bool KThread::IsSignaled() const {
@@ -239,11 +239,11 @@ namespace ams::kern {
     }
 
     void KThread::OnTimer() {
-        /* TODO */
+        MESOSPHERE_TODO_IMPLEMENT();
     }
 
     void KThread::DoWorkerTask() {
-        /* TODO */
+        MESOSPHERE_TODO_IMPLEMENT();
     }
 
     Result KThread::SetPriorityToIdle() {
@@ -335,7 +335,7 @@ namespace ams::kern {
     void KThread::Exit() {
         MESOSPHERE_ASSERT_THIS();
 
-        /* TODO */
+        MESOSPHERE_TODO_IMPLEMENT();
 
         MESOSPHERE_PANIC("KThread::Exit() would return");
     }

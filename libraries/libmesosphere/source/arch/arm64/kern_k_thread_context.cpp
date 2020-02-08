@@ -22,7 +22,7 @@ namespace ams::kern::arm64 {
     void SupervisorModeThreadStarter();
 
     void OnThreadStart() {
-        /* TODO: Implement this. */
+        MESOSPHERE_TODO_IMPLEMENT();
     }
 
     namespace {

@@ -18,11 +18,11 @@
 namespace ams::kern {
 
     void KLightLock::LockSlowPath(uintptr_t owner, uintptr_t cur_thread) {
-        /* TODO: Implement (requires KThread, KScheduler) */
+        MESOSPHERE_TODO_IMPLEMENT();
     }
 
     void KLightLock::UnlockSlowPath(uintptr_t cur_thread) {
-        /* TODO: Implement (requires KThread, KScheduler) */
+        MESOSPHERE_TODO_IMPLEMENT();
     }
 
 }

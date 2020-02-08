@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere/kern_common.hpp>
 
 #ifdef ATMOSPHERE_ARCH_ARM64
     #include <mesosphere/arch/arm64/kern_cpu.hpp>

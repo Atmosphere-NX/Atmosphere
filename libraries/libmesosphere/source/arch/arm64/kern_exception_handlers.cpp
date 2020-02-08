@@ -55,25 +55,26 @@ namespace ams::kern::arm64 {
                     break;
                 default:
                     {
-                        /* TODO: Get memory state. */
+                        MESOSPHERE_TODO("Get memory state.");
                         /* If state is KMemoryState_Code and the user can't read it, set should_process_user_exception = true; */
                     }
                     break;
             }
 
             if (should_process_user_exception) {
-                /* TODO: Process the user exception. */
+                MESOSPHERE_TODO("Process the user exception.");
             }
 
             {
-                /* TODO: Process for KDebug. */
+                MESOSPHERE_TODO("Process for KDebug.");
 
-                MESOSPHERE_RELEASE_LOG("Exception occurred. %016lx\n", 0ul /* TODO: cur_process->GetProgramId() */);
+                MESOSPHERE_TODO("cur_process->GetProgramId()");
+                MESOSPHERE_RELEASE_LOG("Exception occurred. %016lx\n", 0ul);
 
-                /* TODO: if (!svc::ResultNotHandled::Includes(res)) { debug process } */
+                MESOSPHERE_TODO("if (!svc::ResultNotHandled::Includes(res)) { debug process }.");
             }
 
-            /* TODO: cur_process->Exit(); */
+            MESOSPHERE_TODO("cur_process->Exit();");
             (void)cur_process;
         }
 

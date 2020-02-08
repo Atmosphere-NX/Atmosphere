@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_slab_helpers.hpp>
 #include <mesosphere/kern_k_synchronization_object.hpp>
@@ -27,12 +28,12 @@ namespace ams::kern {
         MESOSPHERE_AUTOOBJECT_TRAITS(KProcess, KSynchronizationObject);
         /* TODO: This is a placeholder definition. */
         public:
-            constexpr ALWAYS_INLINE u64 GetCoreMask() const { /* TODO */ return 0; }
-            constexpr ALWAYS_INLINE u64 GetPriorityMask() const { /* TODO */ return 0; }
+            u64 GetCoreMask() const { MESOSPHERE_TODO_IMPLEMENT(); }
+            u64 GetPriorityMask() const { MESOSPHERE_TODO_IMPLEMENT();}
 
-            constexpr ALWAYS_INLINE bool Is64Bit() const { /* TODO */ return true; }
+            bool Is64Bit() const { MESOSPHERE_TODO_IMPLEMENT(); }
 
-            ALWAYS_INLINE KThread *GetPreemptionStatePinnedThread(s32 core_id) { /* TODO */ return nullptr; }
+            KThread *GetPreemptionStatePinnedThread(s32 core_id) { MESOSPHERE_TODO_IMPLEMENT(); }
 
             void SetPreemptionState();
     };

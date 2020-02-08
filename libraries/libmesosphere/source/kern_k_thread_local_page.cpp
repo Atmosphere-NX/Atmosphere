@@ -29,7 +29,7 @@ namespace ams::kern {
         auto page_buf_guard = SCOPE_GUARD { KPageBuffer::Free(page_buf); };
 
         /* Map the address in. */
-        /* TODO: R_TRY(this->owner->GetPageTable().Map(...)); */
+        MESOSPHERE_TODO("R_TRY(this->owner->GetPageTable().Map(...));");
 
         /* We succeeded. */
         page_buf_guard.Cancel();
@@ -41,10 +41,10 @@ namespace ams::kern {
 
         /* Get the physical address of the page. */
         KPhysicalAddress phys_addr = Null<KPhysicalAddress>;
-        /* TODO: MESOSPHERE_ABORT_UNLESS(this->owner->GetPageTable().GetPhysicalAddress(&phys_addr, this->GetAddress())); */
+        MESOSPHERE_TODO("MESOSPHERE_ABORT_UNLESS(this->owner->GetPageTable().GetPhysicalAddress(&phys_addr, this->GetAddress()));");
 
         /* Unmap the page. */
-        /* TODO: R_TRY(this->owner->GetPageTable().Unmap(...); */
+        MESOSPHERE_TODO("R_TRY(this->owner->GetPageTable().Unmap(...);");
 
         /* Free the page. */
         KPageBuffer::Free(KPageBuffer::FromPhysicalAddress(phys_addr));

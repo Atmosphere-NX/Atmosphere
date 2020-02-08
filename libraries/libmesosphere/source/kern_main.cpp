@@ -71,13 +71,13 @@ namespace ams::kern {
 
         /* Initialize the supervisor page table for each core. */
         DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
-            /* TODO: KPageTable::Initialize(); */
-            /* TODO: Kernel::GetSupervisorPageTable().Initialize(); */
+            MESOSPHERE_TODO("KPageTable::Initialize();");
+            MESOSPHERE_TODO("Kernel::GetSupervisorPageTable().Initialize();");
         });
 
         /* Set ttbr0 for each core. */
         DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
-            /* TODO: SetTtbr0(); */
+            MESOSPHERE_TODO("SetTtbr0();");
         });
 
         /* NOTE: Kernel calls on each core a nullsub here on retail kernel. */
@@ -86,7 +86,7 @@ namespace ams::kern {
         DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
             KThread::Register(std::addressof(Kernel::GetMainThread(core_id)));
             KThread::Register(std::addressof(Kernel::GetIdleThread(core_id)));
-            /* TODO: Kernel::GetInterruptTaskManager().Initialize(); */
+            MESOSPHERE_TODO("Kernel::GetInterruptTaskManager().Initialize();");
         });
 
         /* Activate the scheduler and enable interrupts. */
@@ -104,18 +104,18 @@ namespace ams::kern {
 
         /* Perform more core-0 specific initialization. */
         if (core_id == 0) {
-            /* TODO: Initialize KWorkerThreadManager */
+            MESOSPHERE_TODO("Initialize KWorkerThreadManager");
 
-            /* TODO: KSystemControl::InitializeSleepManagerAndAppletSecureMemory(); */
+            MESOSPHERE_TODO("KSystemControl::InitializeSleepManagerAndAppletSecureMemory();");
 
-            /* TODO: KDeviceAddressSpace::Initialize(); */
+            MESOSPHERE_TODO("KDeviceAddressSpace::Initialize();");
 
-            /* TODO: CreateAndRunInitialProcesses(); */
+            MESOSPHERE_TODO("CreateAndRunInitialProcesses();");
 
             /* We're done initializing! */
             Kernel::SetState(Kernel::State::Initialized);
 
-            /* TODO: KThread::ResumeThreadsSuspendedForInit(); */
+            MESOSPHERE_TODO("KThread::ResumeThreadsSuspendedForInit();");
         }
         cpu::SynchronizeAllCores();
 

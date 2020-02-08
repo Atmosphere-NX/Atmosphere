@@ -18,7 +18,7 @@
 namespace ams::kern {
 
     void KProcess::SetPreemptionState() {
-        /* TODO */
+        MESOSPHERE_TODO_IMPLEMENT();
     }
 
 }

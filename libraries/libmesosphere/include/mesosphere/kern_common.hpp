@@ -15,8 +15,6 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <mesosphere/kern_panic.hpp>
-#include <mesosphere/svc/kern_svc_results.hpp>
 
 namespace ams::kern {
 
@@ -36,3 +34,5 @@ namespace ams::kern {
 #define MESOSPHERE_ENABLE_ASSERTIONS
 #define MESOSPHERE_ENABLE_DEBUG_PRINT
 #endif
+
+#include <mesosphere/svc/kern_svc_results.hpp>
