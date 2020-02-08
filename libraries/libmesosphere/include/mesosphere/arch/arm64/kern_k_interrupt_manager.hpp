@@ -60,6 +60,8 @@ namespace ams::kern::arm64 {
             static ALWAYS_INLINE KSpinLock &GetLock() { return s_lock; }
             static ALWAYS_INLINE KGlobalInterruptEntry &GetGlobalInterruptEntry(s32 irq) { return s_global_interrupts[KInterruptController::GetGlobalInterruptIndex(irq)]; }
             ALWAYS_INLINE KCoreLocalInterruptEntry &GetLocalInterruptEntry(s32 irq) { return this->core_local_interrupts[KInterruptController::GetLocalInterruptIndex(irq)]; }
+
+            bool OnHandleInterrupt();
         public:
             constexpr KInterruptManager() : core_local_interrupts(), interrupt_controller(), local_state(), local_state_saved(false) { /* ... */ }
             NOINLINE void Initialize(s32 core_id);
@@ -78,6 +80,8 @@ namespace ams::kern::arm64 {
             ALWAYS_INLINE void SendInterProcessorInterrupt(s32 irq) {
                 this->interrupt_controller.SendInterProcessorInterrupt(irq);
             }
+
+            static void HandleInterrupt(bool user_mode);
 
             /* Implement more KInterruptManager functionality. */
         private:

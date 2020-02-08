@@ -439,8 +439,8 @@ namespace ams::kern {
                 return GetVirtualMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_KernelMiscIdleStack, static_cast<u32>(core_id))->GetEndAddress();
             }
 
-            static NOINLINE KVirtualAddress GetExceptionStackBottomAddress(s32 core_id) {
-                return GetVirtualMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_KernelMiscExceptionStack, static_cast<u32>(core_id))->GetAddress();
+            static NOINLINE KVirtualAddress GetExceptionStackTopAddress(s32 core_id) {
+                return GetVirtualMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_KernelMiscExceptionStack, static_cast<u32>(core_id))->GetEndAddress();
             }
 
             static NOINLINE KVirtualAddress GetSlabRegionAddress() {

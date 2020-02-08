@@ -114,11 +114,11 @@ namespace ams::kern {
         for (size_t core_id = 0; core_id < cpu::NumCores; core_id++) {
             KThread *top_thread = priority_queue.GetScheduledFront(core_id);
             if (top_thread != nullptr) {
-                /* If the thread has no waiters, we might prefer a suggestion from the owner process to it. */
+                /* If the thread has no waiters, we need to check if the process has a thread pinned by PreemptionState. */
                 if (top_thread->GetNumKernelWaiters() == 0) {
                     if (KProcess *parent = top_thread->GetOwnerProcess(); parent != nullptr) {
-                        if (KThread *suggested = parent->GetSuggestedTopThread(core_id); suggested != nullptr && suggested != top_thread) {
-                            /* We prefer our parent's suggestion whenever possible. However, we also don't want to schedule un-runnable threads. */
+                        if (KThread *suggested = parent->GetPreemptionStatePinnedThread(core_id); suggested != nullptr && suggested != top_thread) {
+                            /* We prefer our parent's pinned thread possible. However, we also don't want to schedule un-runnable threads. */
                             if (suggested->GetRawState() == KThread::ThreadState_Runnable) {
                                 top_thread = suggested;
                             } else {

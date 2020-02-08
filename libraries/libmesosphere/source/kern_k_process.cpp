@@ -13,18 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
-#include <mesosphere/svc/kern_svc_prototypes.hpp>
+#include <mesosphere.hpp>
 
-namespace ams::kern::svc {
+namespace ams::kern {
 
-    static constexpr size_t NumSupervisorCalls = 0x80;
-    using SvcTableEntry = void (*)();
-
-    /* TODO: 32-bit ABI */
-
-    extern const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64From32;
-    extern const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64;
+    void KProcess::SetPreemptionState() {
+        /* TODO */
+    }
 
 }

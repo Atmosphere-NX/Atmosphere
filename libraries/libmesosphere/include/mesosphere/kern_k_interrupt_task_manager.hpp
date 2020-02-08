@@ -29,9 +29,9 @@ namespace ams::kern {
                 public:
                     constexpr TaskQueue() : head(nullptr), tail(nullptr) { /* ... */ }
 
-                    ALWAYS_INLINE KInterruptTask *GetHead() { return this->head; }
-                    ALWAYS_INLINE bool IsEmpty() const { return this->head == nullptr; }
-                    ALWAYS_INLINE void Clear() { this->head = nullptr; this->tail = nullptr; }
+                    constexpr KInterruptTask *GetHead() { return this->head; }
+                    constexpr bool IsEmpty() const { return this->head == nullptr; }
+                    constexpr void Clear() { this->head = nullptr; this->tail = nullptr; }
 
                     void Enqueue(KInterruptTask *task);
                     void Dequeue();

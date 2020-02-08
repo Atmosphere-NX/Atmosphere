@@ -143,6 +143,14 @@ namespace ams::kern::arm64 {
             void Initialize(s32 core_id);
             void Finalize(s32 core_id);
         public:
+            u32 GetIrq() const {
+                return this->gicc->iar;
+            }
+
+            static constexpr s32 ConvertRawIrq(u32 irq) {
+                return (irq == 0x3FF) ? -1 : (irq & 0x3FF);
+            }
+
             void Enable(s32 irq) const {
                 this->gicd->isenabler[irq / BITSIZEOF(u32)] = (1u << (irq % BITSIZEOF(u32)));
             }

@@ -13,24 +13,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <mesosphere.hpp>
+#include <mesosphere/kern_debug_log.hpp>
+#include <mesosphere/svc/kern_svc_tables.hpp>
 #include <vapours/svc/svc_codegen.hpp>
 
-/* TODO: Enable compilation of this file when the kernel supports supervisor calls. */
-#if 0
 namespace ams::kern::svc {
 
     namespace {
 
-        #define DECLARE_SVC_STRUCT(ID, RETURN_TYPE, NAME, ...)                                                                        \
-            class NAME {                                                                                                              \
-                private:                                                                                                              \
-                    using Impl = ::ams::svc::codegen::KernelSvcWrapper<::ams::kern::svc::NAME##64, ::ams::kern::svc::NAME##64From32>; \
-                public:                                                                                                               \
-                    static NOINLINE void Call64() { return Impl::Call64(); }                                                          \
-                    static NOINLINE void Call64From32() { return Impl::Call64From32(); }                                              \
-            };
-
+        /* TODO: Enable compilation of this file when the kernel supports supervisor calls. */
+        #if 0
+            #define DECLARE_SVC_STRUCT(ID, RETURN_TYPE, NAME, ...)                                                                        \
+                class NAME {                                                                                                              \
+                    private:                                                                                                              \
+                        using Impl = ::ams::svc::codegen::KernelSvcWrapper<::ams::kern::svc::NAME##64, ::ams::kern::svc::NAME##64From32>; \
+                    public:                                                                                                               \
+                        static NOINLINE void Call64() { return Impl::Call64(); }                                                          \
+                        static NOINLINE void Call64From32() { return Impl::Call64From32(); }                                              \
+                };
+        #else
+            #define DECLARE_SVC_STRUCT(ID, RETURN_TYPE, NAME, ...)                                                                        \
+                class NAME {                                                                                                              \
+                    public:                                                                                                               \
+                        static NOINLINE void Call64()       { MESOSPHERE_LOG("Stubbed Svc"#NAME"64 was called\n"); }                      \
+                        static NOINLINE void Call64From32() { MESOSPHERE_LOG("Stubbed Svc"#NAME"64From32 was called\n"); }                \
+                };
+        #endif
 
 
         /* Set omit-frame-pointer to prevent GCC from emitting MOV X29, SP instructions. */
@@ -66,4 +74,3 @@ namespace ams::kern::svc {
     }();
 
 }
-#endif

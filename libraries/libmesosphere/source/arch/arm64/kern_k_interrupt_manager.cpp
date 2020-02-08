@@ -31,6 +31,101 @@ namespace ams::kern::arm64 {
         this->interrupt_controller.Finalize(core_id);
     }
 
+    bool KInterruptManager::OnHandleInterrupt() {
+        /* Get the interrupt id. */
+        const u32 raw_irq = this->interrupt_controller.GetIrq();
+        const s32 irq = KInterruptController::ConvertRawIrq(raw_irq);
+
+        /* If the IRQ is spurious, we don't need to reschedule. */
+        if (irq < 0) {
+            return false;
+        }
+
+        KInterruptTask *task = nullptr;
+        if (KInterruptController::IsLocal(irq)) {
+            /* Get local interrupt entry. */
+            auto &entry = GetLocalInterruptEntry(irq);
+            if (entry.handler != nullptr) {
+                /* Set manual clear needed if relevant. */
+                if (entry.manually_cleared) {
+                    this->interrupt_controller.Disable(irq);
+                    entry.needs_clear = true;
+                }
+
+                /* Set the handler. */
+                task = entry.handler->OnInterrupt(irq);
+            } else {
+                MESOSPHERE_LOG("Core%d: Unhandled local interrupt %d\n", GetCurrentCoreId(), irq);
+            }
+        } else if (KInterruptController::IsGlobal(irq)) {
+            KScopedSpinLock lk(GetLock());
+
+            /* Get global interrupt entry. */
+            auto &entry = GetGlobalInterruptEntry(irq);
+            if (entry.handler != nullptr) {
+                /* Set manual clear needed if relevant. */
+                if (entry.manually_cleared) {
+                    this->interrupt_controller.Disable(irq);
+                    entry.needs_clear = true;
+                }
+
+                /* Set the handler. */
+                task = entry.handler->OnInterrupt(irq);
+            } else {
+                MESOSPHERE_LOG("Core%d: Unhandled global interrupt %d\n", GetCurrentCoreId(), irq);
+            }
+        } else {
+            MESOSPHERE_LOG("Invalid interrupt %d\n", irq);
+        }
+
+        /* If we found no task, then we don't need to reschedule. */
+        if (task == nullptr) {
+            return false;
+        }
+
+        /* If the task isn't the dummy task, we should add it to the queue. */
+        if (task != GetDummyInterruptTask()) {
+            /* TODO: Kernel::GetInterruptTaskManager().Enqueue(task); */
+        }
+
+        return true;
+    }
+
+    void KInterruptManager::HandleInterrupt(bool user_mode) {
+        /* On interrupt, call OnHandleInterrupt() to determine if we need rescheduling and handle. */
+        const bool needs_scheduling = Kernel::GetInterruptManager().OnHandleInterrupt();
+
+        /* If we need scheduling, */
+        if (needs_scheduling) {
+            /* Handle any changes needed to the user preemption state. */
+            if (user_mode && GetCurrentThread().GetUserPreemptionState() != 0 && GetCurrentProcess().GetPreemptionStatePinnedThread(GetCurrentCoreId()) == nullptr) {
+                KScopedSchedulerLock sl;
+
+                /* Note the preemption state in process. */
+                GetCurrentProcess().SetPreemptionState();
+
+                /* Set the kernel preemption state flag. */
+                GetCurrentThread().SetKernelPreemptionState(1);;
+
+                /* Request interrupt scheduling. */
+                Kernel::GetScheduler().RequestScheduleOnInterrupt();
+            } else {
+                /* Request interrupt scheduling. */
+                Kernel::GetScheduler().RequestScheduleOnInterrupt();
+            }
+        }
+
+        /* If user mode, check if the thread needs termination. */
+        /* If it does, we can take advantage of this to terminate it. */
+        if (user_mode) {
+            KThread *cur_thread = GetCurrentThreadPointer();
+            if (cur_thread->IsTerminationRequested()) {
+                KScopedInterruptEnable ei;
+                cur_thread->Exit();
+            }
+        }
+    }
+
     Result KInterruptManager::BindHandler(KInterruptHandler *handler, s32 irq, s32 core_id, s32 priority, bool manual_clear, bool level) {
         R_UNLESS(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq), svc::ResultOutOfRange());
 

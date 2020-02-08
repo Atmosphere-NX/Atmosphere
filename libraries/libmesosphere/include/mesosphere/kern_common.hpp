@@ -24,6 +24,10 @@ namespace ams::kern {
 
 }
 
+#if 1
+#define MESOSPHERE_BUILD_FOR_AUDITING
+#endif
+
 #ifdef  MESOSPHERE_BUILD_FOR_AUDITING
 #define MESOSPHERE_BUILD_FOR_DEBUGGING
 #endif

@@ -42,7 +42,7 @@ namespace ams::kern {
         clc->current.scheduler = std::addressof(clc->scheduler);
         clc->current.interrupt_task_manager = std::addressof(clc->interrupt_task_manager);
         clc->current.core_id = core_id;
-        clc->current.exception_stack_bottom = GetVoidPointer(KMemoryLayout::GetExceptionStackBottomAddress(core_id));
+        clc->current.exception_stack_top = GetVoidPointer(KMemoryLayout::GetExceptionStackTopAddress(core_id) - sizeof(KThread::StackParameters));
 
         /* Clear debugging counters. */
         clc->num_sw_interrupts = 0;

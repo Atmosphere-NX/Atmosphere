@@ -15,14 +15,12 @@
  */
 #pragma once
 
-#define MESOSPHERE_BUILD_FOR_AUDITING
-
 /* All kernel code should have access to libvapours. */
 #include <vapours.hpp>
 
 /* First, pull in core macros (panic, etc). */
-#include <mesosphere/kern_panic.hpp>
 #include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_panic.hpp>
 
 /* Primitive types. */
 #include <mesosphere/kern_k_typed_address.hpp>

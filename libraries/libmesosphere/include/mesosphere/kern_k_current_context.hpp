@@ -29,7 +29,7 @@ namespace ams::kern {
         KScheduler *scheduler;
         KInterruptTaskManager *interrupt_task_manager;
         s32 core_id;
-        void *exception_stack_bottom;
+        void *exception_stack_top;
     };
     static_assert(std::is_pod<KCurrentContext>::value);
     static_assert(sizeof(KCurrentContext) <= cpu::DataCacheLineSize);

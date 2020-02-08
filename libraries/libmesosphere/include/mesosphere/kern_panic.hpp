@@ -25,9 +25,9 @@ namespace ams::kern {
 }
 
 #ifdef MESOSPHERE_ENABLE_DEBUG_PRINT
-#define MESOSPHERE_PANIC(...) ams::kern::Panic(__FILE__, __LINE__, __VA_ARGS__)
+#define MESOSPHERE_PANIC(...) ::ams::kern::Panic(__FILE__, __LINE__, __VA_ARGS__)
 #else
-#define MESOSPHERE_PANIC(...) ams::kern::Panic()
+#define MESOSPHERE_PANIC(...) ::ams::kern::Panic()
 #endif
 
 #ifdef MESOSPHERE_ENABLE_ASSERTIONS

@@ -202,23 +202,57 @@ namespace ams::kern {
         public:
             ALWAYS_INLINE s32 GetDisableDispatchCount() const {
                 MESOSPHERE_ASSERT_THIS();
-                return GetStackParameters().disable_count;
+                return this->GetStackParameters().disable_count;
             }
 
             ALWAYS_INLINE void DisableDispatch() {
                 MESOSPHERE_ASSERT_THIS();
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >= 0);
-                GetStackParameters().disable_count++;
+                this->GetStackParameters().disable_count++;
             }
 
             ALWAYS_INLINE void EnableDispatch() {
                 MESOSPHERE_ASSERT_THIS();
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >  0);
-                GetStackParameters().disable_count--;
+                this->GetStackParameters().disable_count--;
+            }
+
+            ALWAYS_INLINE void SetInExceptionHandler() {
+                MESOSPHERE_ASSERT_THIS();
+                this->GetStackParameters().is_in_exception_handler = true;
+            }
+
+            ALWAYS_INLINE void ClearInExceptionHandler() {
+                MESOSPHERE_ASSERT_THIS();
+                this->GetStackParameters().is_in_exception_handler = false;
+            }
+
+            ALWAYS_INLINE bool IsInExceptionHandler() const {
+                MESOSPHERE_ASSERT_THIS();
+                return this->GetStackParameters().is_in_exception_handler;
+            }
+
+            ALWAYS_INLINE void RegisterDpc(DpcFlag flag) {
+                this->GetStackParameters().dpc_flags |= flag;
+            }
+
+            ALWAYS_INLINE void ClearDpc(DpcFlag flag) {
+                this->GetStackParameters().dpc_flags &= ~flag;
+            }
+
+            ALWAYS_INLINE u8 GetDpc() const {
+                return this->GetStackParameters().dpc_flags;
+            }
+
+            ALWAYS_INLINE bool HasDpc() const {
+                MESOSPHERE_ASSERT_THIS();
+                return this->GetDpc() != 0;;
             }
         private:
             void Suspend();
         public:
+            constexpr KThreadContext *GetContext() { return std::addressof(this->thread_context); }
+            constexpr const KThreadContext *GetContext() const { return std::addressof(this->thread_context); }
             constexpr const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
             constexpr ThreadState GetState() const { return static_cast<ThreadState>(this->thread_state & ThreadState_Mask); }
             constexpr ThreadState GetRawState() const { return this->thread_state; }
@@ -248,6 +282,9 @@ namespace ams::kern {
             constexpr KProcessAddress GetThreadLocalRegionAddress() const { return this->tls_address; }
             constexpr void           *GetThreadLocalRegionHeapAddress() const { return this->tls_heap_address; }
 
+            constexpr u16 GetUserPreemptionState() const { return *GetPointer<u16>(this->tls_address + 0x100); }
+            constexpr void SetKernelPreemptionState(u16 state) const { *GetPointer<u16>(this->tls_address + 0x100 + sizeof(u16)) = state; }
+
             void AddCpuTime(s64 amount) {
                 this->cpu_time += amount;
             }
@@ -266,14 +303,6 @@ namespace ams::kern {
             ALWAYS_INLINE void *GetKernelStackTop() const { return this->kernel_stack_top; }
 
             /* TODO: This is kind of a placeholder definition. */
-
-            ALWAYS_INLINE bool IsInExceptionHandler() const {
-                return GetStackParameters().is_in_exception_handler;
-            }
-
-            ALWAYS_INLINE void SetInExceptionHandler() {
-                GetStackParameters().is_in_exception_handler = true;
-            }
 
             ALWAYS_INLINE bool IsTerminationRequested() const {
                 return this->termination_requested || this->GetRawState() == ThreadState_Terminated;

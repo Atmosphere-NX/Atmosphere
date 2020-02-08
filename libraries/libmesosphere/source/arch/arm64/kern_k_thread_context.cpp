@@ -27,6 +27,15 @@ namespace ams::kern::arm64 {
 
     namespace {
 
+        ALWAYS_INLINE bool IsFpuEnabled() {
+            return cpu::ArchitecturalFeatureAccessControlRegisterAccessor().IsFpEnabled();
+        }
+
+        ALWAYS_INLINE void EnableFpu() {
+            cpu::ArchitecturalFeatureAccessControlRegisterAccessor().SetFpEnabled(true).Store();
+            cpu::InstructionMemoryBarrier();
+        }
+
         uintptr_t SetupStackForUserModeThreadStarter(KVirtualAddress pc, KVirtualAddress k_sp, KVirtualAddress u_sp, uintptr_t arg, bool is_64_bit) {
             /* NOTE: Stack layout on entry looks like following:                         */
             /* SP                                                                        */
@@ -126,6 +135,23 @@ namespace ams::kern::arm64 {
     Result KThreadContext::Finalize() {
         /* This doesn't actually do anything. */
         return ResultSuccess();
+    }
+
+    void KThreadContext::FpuContextSwitchHandler(KThread *thread) {
+        MESOSPHERE_ASSERT(!KInterruptManager::AreInterruptsEnabled());
+        MESOSPHERE_ASSERT(!IsFpuEnabled());
+
+        /* Enable the FPU. */
+        EnableFpu();
+
+        /* Restore the FPU registers. */
+        KProcess *process = thread->GetOwnerProcess();
+        MESOSPHERE_ASSERT(process != nullptr);
+        if (process->Is64Bit()) {
+            RestoreFpuRegisters64(*thread->GetContext());
+        } else {
+            RestoreFpuRegisters32(*thread->GetContext());
+        }
     }
 
 }

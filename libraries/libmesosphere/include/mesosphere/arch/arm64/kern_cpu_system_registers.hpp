@@ -43,6 +43,7 @@ namespace ams::kern::arm64::cpu {
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(VbarEl1, vbar_el1)
 
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(FarEl1, far_el1)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(ParEl1, par_el1)
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(SctlrEl1, sctlr_el1)
@@ -55,6 +56,10 @@ namespace ams::kern::arm64::cpu {
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(OslarEl1, oslar_el1)
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(TpidrRoEl0, tpidrro_el0)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(EsrEl1, esr_el1)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Afsr0El1, afsr0_el1)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Afsr1El1, afsr1_el1)
 
     #define FOR_I_IN_0_TO_15(HANDLER, ...)                                                                              \
         HANDLER(0,  ## __VA_ARGS__) HANDLER(1,  ## __VA_ARGS__) HANDLER(2,  ## __VA_ARGS__) HANDLER(3,  ## __VA_ARGS__) \
@@ -136,6 +141,24 @@ namespace ams::kern::arm64::cpu {
             constexpr ALWAYS_INLINE size_t GetT1Size() const {
                 const size_t shift_value = this->GetBits(16, 6);
                 return size_t(1) << (size_t(64) - shift_value);
+            }
+    };
+
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(ArchitecturalFeatureAccessControl) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(ArchitecturalFeatureAccessControl, cpacr_el1)
+
+            constexpr ALWAYS_INLINE decltype(auto) SetFpEnabled(bool en) {
+                if (en) {
+                    this->SetBits(20, 2, 0x3);
+                } else {
+                    this->SetBits(20, 2, 0x0);
+                }
+                return *this;
+            }
+
+            constexpr ALWAYS_INLINE bool IsFpEnabled() {
+                return this->GetBits(20, 2) != 0;
             }
     };
 

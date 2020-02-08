@@ -70,72 +70,95 @@
 vector_base _ZN3ams4kern16ExceptionVectorsEv
 
 /* Current EL, SP0 */
-.global unknown_exception
-unknown_exception:
 vector_entry synch_sp0
     /* Just infinite loop. */
-    b unknown_exception
+    clrex
+    nop
+    b synch_sp0
     check_vector_size synch_sp0
 
 vector_entry irq_sp0
-    b unknown_exception
+    clrex
+    nop
+    b irq_sp0
     check_vector_size irq_sp0
 
 vector_entry fiq_sp0
-    b unknown_exception
+    clrex
+    nop
+    b fiq_sp0
     check_vector_size fiq_sp0
 
 vector_entry serror_sp0
-    b unknown_exception
+    clrex
+    nop
+    b serror_sp0
     check_vector_size serror_sp0
 
 /* Current EL, SPx */
 vector_entry synch_spx
-    b unknown_exception
+    clrex
+    b _ZN3ams4kern5arm6430EL1SynchronousExceptionHandlerEv
     check_vector_size synch_spx
 
 vector_entry irq_spx
-    b unknown_exception
+    b _ZN3ams4kern5arm6422EL1IrqExceptionHandlerEv
     check_vector_size irq_spx
 
 vector_entry fiq_spx
-    b unknown_exception
+    clrex
+    nop
+    b fiq_spx
     check_vector_size fiq_spx
 
 vector_entry serror_spx
-    b unknown_exception
+    clrex
+    nop
+    b _ZN3ams4kern5arm6421EL1SystemErrorHandlerEv
     check_vector_size serror_spx
 
 /* Lower EL, A64 */
 vector_entry synch_a64
-    b unknown_exception
+    clrex
+    b _ZN3ams4kern5arm6430EL0SynchronousExceptionHandlerEv
     check_vector_size synch_a64
 
 vector_entry irq_a64
-    b unknown_exception
+    clrex
+    b _ZN3ams4kern5arm6422EL0IrqExceptionHandlerEv
     check_vector_size irq_a64
 
 vector_entry fiq_a64
-    b unknown_exception
+    clrex
+    nop
+    b fiq_a64
     check_vector_size fiq_a64
 
 vector_entry serror_a64
-    b unknown_exception
+    clrex
+    nop
+    b _ZN3ams4kern5arm6421EL0SystemErrorHandlerEv
     check_vector_size serror_a64
 
 /* Lower EL, A32 */
 vector_entry synch_a32
-    b unknown_exception
+    clrex
+    b _ZN3ams4kern5arm6430EL0SynchronousExceptionHandlerEv
     check_vector_size synch_a32
 
 vector_entry irq_a32
-    b unknown_exception
+    clrex
+    b _ZN3ams4kern5arm6422EL0IrqExceptionHandlerEv
     check_vector_size irq_a32
 
 vector_entry fiq_a32
-    b unknown_exception
+    clrex
+    nop
+    b fiq_a32
     check_vector_size fiq_a32
 
 vector_entry serror_a32
-    b unknown_exception
+    clrex
+    nop
+    b _ZN3ams4kern5arm6421EL0SystemErrorHandlerEv
     check_vector_size serror_a32

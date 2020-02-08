@@ -74,6 +74,14 @@ namespace ams::kern {
 
             NOINLINE void Initialize(KThread *idle_thread);
             NOINLINE void Activate();
+
+            ALWAYS_INLINE void RequestScheduleOnInterrupt() {
+                SetSchedulerUpdateNeeded();
+
+                if (CanSchedule()) {
+                    this->ScheduleOnInterrupt();
+                }
+            }
         private:
             /* Static private API. */
             static ALWAYS_INLINE bool IsSchedulerUpdateNeeded() { return s_scheduler_update_needed; }
@@ -128,6 +136,11 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT(this->core_id == GetCurrentCoreId());
 
                 this->ScheduleImpl();
+            }
+
+            ALWAYS_INLINE void ScheduleOnInterrupt() {
+                KScopedDisableDispatch dd;
+                this->Schedule();
             }
 
             void RescheduleOtherCores(u64 cores_needing_scheduling);

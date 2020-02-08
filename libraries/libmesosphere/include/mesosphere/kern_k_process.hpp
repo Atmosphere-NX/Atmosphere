@@ -32,7 +32,9 @@ namespace ams::kern {
 
             constexpr ALWAYS_INLINE bool Is64Bit() const { /* TODO */ return true; }
 
-            ALWAYS_INLINE KThread *GetSuggestedTopThread(s32 core_id) { /* TODO */ return nullptr; }
+            ALWAYS_INLINE KThread *GetPreemptionStatePinnedThread(s32 core_id) { /* TODO */ return nullptr; }
+
+            void SetPreemptionState();
     };
 
 }
