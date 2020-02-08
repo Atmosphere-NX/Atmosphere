@@ -13,7 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifdef MESOSPHERE_USE_STUBBED_SVC_TABLES
 #include <mesosphere/kern_debug_log.hpp>
+#endif
+
 #include <mesosphere/svc/kern_svc_tables.hpp>
 #include <vapours/svc/svc_codegen.hpp>
 
@@ -21,8 +24,7 @@ namespace ams::kern::svc {
 
     namespace {
 
-        /* TODO: Enable compilation of this file when the kernel supports supervisor calls. */
-        #if 0
+        #ifndef MESOSPHERE_USE_STUBBED_SVC_TABLES
             #define DECLARE_SVC_STRUCT(ID, RETURN_TYPE, NAME, ...)                                                                        \
                 class NAME {                                                                                                              \
                     private:                                                                                                              \
@@ -35,8 +37,8 @@ namespace ams::kern::svc {
             #define DECLARE_SVC_STRUCT(ID, RETURN_TYPE, NAME, ...)                                                                        \
                 class NAME {                                                                                                              \
                     public:                                                                                                               \
-                        static NOINLINE void Call64()       { MESOSPHERE_LOG("Stubbed Svc"#NAME"64 was called\n"); }                      \
-                        static NOINLINE void Call64From32() { MESOSPHERE_LOG("Stubbed Svc"#NAME"64From32 was called\n"); }                \
+                        static NOINLINE void Call64()       { MESOSPHERE_PANIC("Stubbed Svc"#NAME"64 was called"); }                      \
+                        static NOINLINE void Call64From32() { MESOSPHERE_PANIC("Stubbed Svc"#NAME"64From32 was called"); }                \
                 };
         #endif
 
