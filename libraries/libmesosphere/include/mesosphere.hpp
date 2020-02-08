@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#define MESOSPHERE_BUILD_FOR_AUDITING
+
 /* All kernel code should have access to libvapours. */
 #include <vapours.hpp>
 

@@ -375,7 +375,7 @@ namespace ams::kern {
                     }
 
                     /* Get the next suggestion. */
-                    suggested = priority_queue.GetScheduledNext(core_id, suggested);
+                    suggested = priority_queue.GetSuggestedNext(core_id, suggested);
                 }
             }
         }
