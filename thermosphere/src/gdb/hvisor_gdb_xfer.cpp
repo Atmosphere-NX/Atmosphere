@@ -134,7 +134,7 @@ namespace ams::hvisor::gdb {
 
         // Run command
         if (cmd == "features") {
-            return HandleXferFeatures(isWrite, annex, off, len);
+            return GDB_XFER_HANDLER(Features)(isWrite, annex, off, len);
         } else {
             return HandleUnsupported();
         }
