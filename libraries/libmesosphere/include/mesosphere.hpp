@@ -50,6 +50,7 @@
 #include <mesosphere/kern_k_dpc_manager.hpp>
 #include <mesosphere/kern_kernel.hpp>
 #include <mesosphere/kern_k_page_table_manager.hpp>
+#include <mesosphere/kern_select_page_table.hpp>
 
 /* Miscellaneous objects. */
 #include <mesosphere/kern_k_shared_memory_info.hpp>

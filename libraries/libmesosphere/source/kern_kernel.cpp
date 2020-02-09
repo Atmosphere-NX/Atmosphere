@@ -27,6 +27,7 @@ namespace ams::kern {
     KMemoryBlockSlabManager Kernel::s_app_memory_block_manager;
     KMemoryBlockSlabManager Kernel::s_sys_memory_block_manager;
     KBlockInfoManager       Kernel::s_block_info_manager;
+    KSupervisorPageTable    Kernel::s_supervisor_page_table;
 
     namespace {
 

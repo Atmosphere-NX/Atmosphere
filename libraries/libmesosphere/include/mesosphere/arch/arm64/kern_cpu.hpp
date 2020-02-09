@@ -108,8 +108,15 @@ namespace ams::kern::arm64::cpu {
     NOINLINE void SynchronizeAllCores();
 
     /* Cache management helpers. */
+    void ClearPageToZeroImpl(void *);
     void FlushEntireDataCacheShared();
     void FlushEntireDataCacheLocal();
+
+    ALWAYS_INLINE void ClearPageToZero(void *page) {
+        MESOSPHERE_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(page), PageSize));
+        MESOSPHERE_ASSERT(page != nullptr);
+        ClearPageToZeroImpl(page);
+    }
 
     ALWAYS_INLINE void InvalidateEntireTlb() {
         __asm__ __volatile__("tlbi vmalle1is" ::: "memory");

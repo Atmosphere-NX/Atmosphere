@@ -34,6 +34,21 @@ namespace ams::kern {
     class KMemoryBlockSlabManager;
     class KBlockInfoManager;
 
+
+
+#if defined(ATMOSPHERE_ARCH_ARM64)
+
+    namespace arm64 {
+        class KSupervisorPageTable;
+    }
+    using ams::kern::arm64::KSupervisorPageTable;
+
+#else
+
+    #error "Unknown architecture for KSupervisorPageTable forward declare"
+
+#endif
+
     class Kernel {
         public:
             enum class State : u8 {
@@ -55,6 +70,7 @@ namespace ams::kern {
             static KMemoryBlockSlabManager s_app_memory_block_manager;
             static KMemoryBlockSlabManager s_sys_memory_block_manager;
             static KBlockInfoManager s_block_info_manager;
+            static KSupervisorPageTable s_supervisor_page_table;
         private:
             static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
                 return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->current.context;
@@ -117,6 +133,14 @@ namespace ams::kern {
 
             static ALWAYS_INLINE KBlockInfoManager &GetBlockInfoManager() {
                 return s_block_info_manager;
+            }
+
+            static ALWAYS_INLINE KPageTableManager &GetPageTableManager() {
+                return s_page_table_manager;
+            }
+
+            static ALWAYS_INLINE KSupervisorPageTable &GetKernelPageTable() {
+                return s_supervisor_page_table;
             }
     };
 

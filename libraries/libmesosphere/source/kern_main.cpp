@@ -74,8 +74,8 @@ namespace ams::kern {
 
         /* Initialize the supervisor page table for each core. */
         DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
-            MESOSPHERE_TODO("KPageTable::Initialize();");
-            MESOSPHERE_TODO("Kernel::GetSupervisorPageTable().Initialize();");
+            KPageTable::Initialize(core_id);
+            Kernel::GetKernelPageTable().Initialize(core_id);
         });
 
         /* Set ttbr0 for each core. */
