@@ -66,6 +66,7 @@ namespace ams::kern {
             static NOINLINE void InitializeCoreLocalRegion(s32 core_id);
             static NOINLINE void InitializeMainAndIdleThreads(s32 core_id);
             static NOINLINE void InitializeResourceManagers(KVirtualAddress address, size_t size);
+            static NOINLINE void PrintLayout();
 
             static ALWAYS_INLINE State GetState() { return s_state; }
             static ALWAYS_INLINE void SetState(State state) { s_state = state; }

@@ -59,6 +59,9 @@ namespace ams::kern {
             /* Copy the Initial Process Binary to safe memory. */
             CopyInitialProcessBinaryToKernelMemory();
 
+            /* Print out information about the kernel. */
+            Kernel::PrintLayout();
+
             /* Initialize the KObject Slab Heaps. */
             init::InitializeSlabHeaps();
 

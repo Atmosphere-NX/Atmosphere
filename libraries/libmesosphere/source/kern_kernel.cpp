@@ -28,6 +28,26 @@ namespace ams::kern {
     KMemoryBlockSlabManager Kernel::s_sys_memory_block_manager;
     KBlockInfoManager       Kernel::s_block_info_manager;
 
+    namespace {
+
+        template<typename T>
+        ALWAYS_INLINE void PrintMemoryRegion(const char *prefix, const T &extents) {
+            static_assert(std::is_same<decltype(extents.GetAddress()),     uintptr_t>::value);
+            static_assert(std::is_same<decltype(extents.GetLastAddress()), uintptr_t>::value);
+            if constexpr (std::is_same<uintptr_t, unsigned int>::value) {
+                MESOSPHERE_LOG("%-24s0x%08x - 0x%08x\n", prefix, extents.GetAddress(), extents.GetLastAddress());
+            } else if constexpr (std::is_same<uintptr_t, unsigned long>::value) {
+                MESOSPHERE_LOG("%-24s0x%016lx - 0x%016lx\n", prefix, extents.GetAddress(), extents.GetLastAddress());
+            } else if constexpr (std::is_same<uintptr_t, unsigned long long>::value) {
+                MESOSPHERE_LOG("%-24s0x%016llx - 0x%016llx\n", prefix, extents.GetAddress(), extents.GetLastAddress());
+            } else {
+                static_assert(!std::is_same<T, T>::value, "Unknown uintptr_t width!");
+            }
+
+        }
+
+    }
+
     void Kernel::InitializeCoreLocalRegion(s32 core_id) {
         /* Construct the core local region object in place. */
         KCoreLocalContext *clc = GetPointer<KCoreLocalContext>(KMemoryLayout::GetCoreLocalRegionAddress());
@@ -98,6 +118,48 @@ namespace ams::kern {
         s_sys_memory_block_manager.Initialize(address + pt_size + app_size, sys_size);
         s_block_info_manager.Initialize(address + pt_size + app_size + sys_size, info_size);
         s_page_table_manager.Initialize(address, pt_size, GetPointer<KPageTableManager::RefCount>(address + pt_size + fixed_size));
+    }
+
+    void Kernel::PrintLayout() {
+        /* Print out the kernel version. */
+        /* TODO: target firmware, if we support that? */
+        MESOSPHERE_LOG("Horizon Kernel (Mesosphere)\n");
+        MESOSPHERE_LOG("Atmosphere version:     %d.%d.%d\n", ATMOSPHERE_RELEASE_VERSION);
+        MESOSPHERE_LOG("Supported OS version:   %d.%d.%d\n", ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR, ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR, ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO);
+        MESOSPHERE_LOG("\n");
+
+        /* Print relative memory usage. */
+        const auto [total, kernel] = KMemoryLayout::GetTotalAndKernelMemorySizes();
+        MESOSPHERE_LOG("Kernel Memory Usage:    %zu/%zu MB\n", util::AlignUp(kernel, 1_MB) / 1_MB, util::AlignUp(total, 1_MB) / 1_MB);
+        MESOSPHERE_LOG("\n");
+
+        /* Print out important memory layout regions. */
+        MESOSPHERE_LOG("Virtual Memory Layout\n");
+        PrintMemoryRegion("    KernelRegion",       KMemoryLayout::GetKernelRegionExtents());
+        PrintMemoryRegion("        Code",           KMemoryLayout::GetKernelCodeRegionExtents());
+        PrintMemoryRegion("        Stack",          KMemoryLayout::GetKernelStackRegionExtents());
+        PrintMemoryRegion("        Misc",           KMemoryLayout::GetKernelMiscRegionExtents());
+        PrintMemoryRegion("        Slab",           KMemoryLayout::GetKernelSlabRegionExtents());
+        PrintMemoryRegion("    CoreLocalRegion",    KMemoryLayout::GetCoreLocalRegion());
+        PrintMemoryRegion("    LinearRegion",       KMemoryLayout::GetLinearRegionExtents());
+        MESOSPHERE_LOG("\n");
+
+        MESOSPHERE_LOG("Physical Memory Layout\n");
+        PrintMemoryRegion("    LinearRegion",       KMemoryLayout::GetLinearRegionPhysicalExtents());
+        PrintMemoryRegion("    CarveoutRegion",     KMemoryLayout::GetCarveoutRegionExtents());
+        MESOSPHERE_LOG("\n");
+        PrintMemoryRegion("    KernelRegion",       KMemoryLayout::GetKernelRegionPhysicalExtents());
+        PrintMemoryRegion("        Code",           KMemoryLayout::GetKernelCodeRegionPhysicalExtents());
+        PrintMemoryRegion("        Slab",           KMemoryLayout::GetKernelSlabRegionPhysicalExtents());
+        PrintMemoryRegion("        PageTableHeap",  KMemoryLayout::GetKernelPageTableHeapRegionPhysicalExtents());
+        PrintMemoryRegion("        InitPageTable",  KMemoryLayout::GetKernelInitPageTableRegionPhysicalExtents());
+        PrintMemoryRegion("    MemoryPoolRegion",   KMemoryLayout::GetKernelPoolPartitionRegionPhysicalExtents());
+        PrintMemoryRegion("        System",         KMemoryLayout::GetKernelSystemPoolRegionPhysicalExtents());
+        PrintMemoryRegion("        Internal",       KMemoryLayout::GetKernelMetadataPoolRegionPhysicalExtents());
+        PrintMemoryRegion("        SystemUnsafe",   KMemoryLayout::GetKernelSystemNonSecurePoolRegionPhysicalExtents());
+        PrintMemoryRegion("        Applet",         KMemoryLayout::GetKernelAppletPoolRegionPhysicalExtents());
+        PrintMemoryRegion("        Application",    KMemoryLayout::GetKernelApplicationPoolRegionPhysicalExtents());
+        MESOSPHERE_LOG("\n");
     }
 
 }

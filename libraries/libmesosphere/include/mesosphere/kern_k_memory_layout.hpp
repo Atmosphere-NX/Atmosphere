@@ -68,12 +68,12 @@ namespace ams::kern {
 
         KMemoryRegionType_KernelAutoMap = KMemoryRegionType_Kernel | KMemoryRegionAttr_ShouldKernelMap,
 
-        KMemoryRegionType_KernelTemp  = 0x31,
+        KMemoryRegionType_KernelTemp   = 0x31,
 
-        KMemoryRegionType_KernelCode  = 0x19,
-        KMemoryRegionType_KernelStack = 0x29,
-        KMemoryRegionType_KernelMisc  = 0x49,
-        KMemoryRegionType_KernelSlab  = 0x89,
+        KMemoryRegionType_KernelCode   = 0x19,
+        KMemoryRegionType_KernelStack  = 0x29,
+        KMemoryRegionType_KernelMisc   = 0x49,
+        KMemoryRegionType_KernelSlab   = 0x89,
 
         KMemoryRegionType_KernelMiscMainStack      = 0xB49,
         KMemoryRegionType_KernelMiscMappedDevice   = 0xD49,
@@ -416,6 +416,10 @@ namespace ams::kern {
             static /* constinit */ inline KMemoryRegionTree s_physical_tree;
             static /* constinit */ inline KMemoryRegionTree s_virtual_linear_tree;
             static /* constinit */ inline KMemoryRegionTree s_physical_linear_tree;
+        private:
+            static ALWAYS_INLINE auto GetVirtualLinearExtents(const KMemoryRegionTree::DerivedRegionExtents physical) {
+                return KMemoryRegion(GetInteger(GetLinearVirtualAddress(physical.GetAddress())), physical.GetSize(), 0, KMemoryRegionType_None);
+            }
         public:
             static ALWAYS_INLINE KMemoryRegionAllocator &GetMemoryRegionAllocator()        { return s_region_allocator; }
             static ALWAYS_INLINE KMemoryRegionTree      &GetVirtualMemoryRegionTree()      { return s_virtual_tree; }
@@ -479,10 +483,6 @@ namespace ams::kern {
                 return *GetVirtualLinearMemoryRegionTree().FindContainingRegion(GetInteger(address));
             }
 
-            static NOINLINE auto GetCarveoutRegionExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_CarveoutProtected);
-            }
-
             static NOINLINE std::tuple<size_t, size_t> GetTotalAndKernelMemorySizes() {
                 size_t total_size = 0, kernel_size = 0;
                 for (auto it = GetPhysicalMemoryRegionTree().cbegin(); it != GetPhysicalMemoryRegionTree().cend(); it++) {
@@ -497,6 +497,86 @@ namespace ams::kern {
             }
 
             static void InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);
+
+            static NOINLINE auto GetKernelRegionExtents() {
+                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Kernel);
+            }
+
+            static NOINLINE auto GetKernelCodeRegionExtents() {
+                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelCode);
+            }
+
+            static NOINLINE auto GetKernelStackRegionExtents() {
+                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelStack);
+            }
+
+            static NOINLINE auto GetKernelMiscRegionExtents() {
+                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelMisc);
+            }
+
+            static NOINLINE auto GetKernelSlabRegionExtents() {
+                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelSlab);
+            }
+
+            static NOINLINE const KMemoryRegion &GetCoreLocalRegion() {
+                return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_CoreLocal);
+            }
+
+            static NOINLINE auto GetLinearRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_LinearMapped);
+            }
+
+            static NOINLINE auto GetLinearRegionExtents() {
+                return GetVirtualLinearExtents(GetLinearRegionPhysicalExtents());
+            }
+
+            static NOINLINE auto GetCarveoutRegionExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_CarveoutProtected);
+            }
+
+            static NOINLINE auto GetKernelRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernel);
+            }
+
+            static NOINLINE auto GetKernelCodeRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelCode);
+            }
+
+            static NOINLINE auto GetKernelSlabRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelSlab);
+            }
+
+            static NOINLINE auto GetKernelPageTableHeapRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelPtHeap);
+            }
+
+            static NOINLINE auto GetKernelInitPageTableRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelInitPt);
+            }
+
+            static NOINLINE auto GetKernelPoolPartitionRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramPoolPartition);
+            }
+
+            static NOINLINE auto GetKernelMetadataPoolRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramMetadataPool);
+            }
+
+            static NOINLINE auto GetKernelSystemPoolRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramSystemPool);
+            }
+
+            static NOINLINE auto GetKernelSystemNonSecurePoolRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramSystemNonSecurePool);
+            }
+
+            static NOINLINE auto GetKernelAppletPoolRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramAppletPool);
+            }
+
+            static NOINLINE auto GetKernelApplicationPoolRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramApplicationPool);
+            }
     };
 
 
