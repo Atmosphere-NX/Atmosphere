@@ -24,4 +24,5 @@
 #include <tuple>
 #include <array>
 
+#include "preprocessor.h"
 #include "debug_log.h"
