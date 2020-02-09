@@ -43,7 +43,6 @@ namespace ams::kern {
             } else {
                 static_assert(!std::is_same<T, T>::value, "Unknown uintptr_t width!");
             }
-
         }
 
     }
@@ -124,7 +123,8 @@ namespace ams::kern {
         /* Print out the kernel version. */
         /* TODO: target firmware, if we support that? */
         MESOSPHERE_LOG("Horizon Kernel (Mesosphere)\n");
-        MESOSPHERE_LOG("Atmosphere version:     %d.%d.%d\n", ATMOSPHERE_RELEASE_VERSION);
+        MESOSPHERE_LOG("Built:                  %s %s\n", __DATE__, __TIME__);
+        MESOSPHERE_LOG("Atmosphere version:     %d.%d.%d-%s\n", ATMOSPHERE_RELEASE_VERSION, ATMOSPHERE_GIT_REVISION);
         MESOSPHERE_LOG("Supported OS version:   %d.%d.%d\n", ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR, ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR, ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO);
         MESOSPHERE_LOG("\n");
 
