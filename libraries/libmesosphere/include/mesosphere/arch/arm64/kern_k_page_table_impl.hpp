@@ -34,7 +34,7 @@ namespace ams::kern::arm64 {
         public:
             constexpr KPageTableImpl() : table(), is_kernel(), num_entries() { /* ... */ }
 
-            void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
+            NOINLINE void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
 
             u64 *Finalize();
     };

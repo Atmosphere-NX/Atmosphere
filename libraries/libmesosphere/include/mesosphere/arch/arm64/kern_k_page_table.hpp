@@ -34,7 +34,7 @@ namespace ams::kern::arm64 {
 
             static NOINLINE void Initialize(s32 core_id);
 
-            Result InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
+            NOINLINE Result InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
             Result Finalize();
     };
 

@@ -277,6 +277,16 @@ namespace ams::kern::arm64::cpu {
             }
     };
 
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(SystemControl) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(SystemControl, sctlr_el1)
+
+            constexpr ALWAYS_INLINE decltype(auto) SetWxn(bool en) {
+                this->SetBit(19, en);
+                return *this;
+            }
+    };
+
     /* Accessors for timer registers. */
     MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(CounterTimerKernelControl) {
         public:

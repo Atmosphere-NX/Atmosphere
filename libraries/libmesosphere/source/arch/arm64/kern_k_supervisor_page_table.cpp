@@ -22,12 +22,11 @@ namespace ams::kern::arm64 {
         this->ttbr0[core_id] = cpu::GetTtbr0El1();
 
         /* Set sctlr_el1 */
-        MESOSPHERE_TODO("Set bit in SCTLR_EL1");
+        cpu::SystemControlRegisterAccessor().SetWxn(true).Store();
         cpu::EnsureInstructionConsistency();
 
         /* Invalidate the entire TLB. */
         cpu::InvalidateEntireTlb();
-        cpu::EnsureInstructionConsistency();
 
         /* If core 0, initialize our base page table. */
         if (core_id == 0) {
