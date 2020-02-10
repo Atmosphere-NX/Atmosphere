@@ -78,9 +78,9 @@ namespace ams::kern {
             Kernel::GetKernelPageTable().Initialize(core_id);
         });
 
-        /* Set ttbr0 for each core. */
+        /* Activate the supervisor page table for each core. */
         DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
-            MESOSPHERE_TODO("SetTtbr0();");
+            Kernel::GetKernelPageTable().Activate();
         });
 
         /* NOTE: Kernel calls on each core a nullsub here on retail kernel. */
@@ -89,7 +89,7 @@ namespace ams::kern {
         DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
             KThread::Register(std::addressof(Kernel::GetMainThread(core_id)));
             KThread::Register(std::addressof(Kernel::GetIdleThread(core_id)));
-            MESOSPHERE_TODO("Kernel::GetInterruptTaskManager().Initialize();");
+            Kernel::GetInterruptTaskManager().Initialize();
         });
 
         /* Activate the scheduler and enable interrupts. */
@@ -99,7 +99,7 @@ namespace ams::kern {
         });
 
         /* Initialize cpu interrupt threads. */
-        /* TODO cpu::InitializeInterruptThreads(core_id); */
+        MESOSPHERE_TODO("cpu::InitializeInterruptThreads(core_id);");
 
         /* Initialize the DPC manager. */
         KDpcManager::Initialize();

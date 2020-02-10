@@ -85,7 +85,7 @@ namespace ams::kern::arm64 {
 
         /* If the task isn't the dummy task, we should add it to the queue. */
         if (task != GetDummyInterruptTask()) {
-            MESOSPHERE_TODO("Kernel::GetInterruptTaskManager().Enqueue(task);");
+            Kernel::GetInterruptTaskManager().EnqueueTask(task);
         }
 
         return true;

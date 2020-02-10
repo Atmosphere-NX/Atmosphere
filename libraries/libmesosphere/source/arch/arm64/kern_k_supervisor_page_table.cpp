@@ -39,6 +39,14 @@ namespace ams::kern::arm64 {
         }
     }
 
+    void KSupervisorPageTable::Activate() {
+        /* Initialize, using process id = 0xFFFFFFFF */
+        this->page_table.Initialize(0xFFFFFFFF);
+
+        /* Invalidate entire TLB. */
+        cpu::InvalidateEntireTlb();
+    }
+
     void KSupervisorPageTable::Finalize(s32 core_id) {
         MESOSPHERE_TODO_IMPLEMENT();
     }

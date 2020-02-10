@@ -34,6 +34,11 @@ namespace ams::kern::arm64 {
 
             static NOINLINE void Initialize(s32 core_id);
 
+            ALWAYS_INLINE void Activate(u32 proc_id) {
+                cpu::DataSynchronizationBarrier();
+                cpu::SwitchProcess(this->ttbr, proc_id);
+            }
+
             NOINLINE Result InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
             Result Finalize();
     };

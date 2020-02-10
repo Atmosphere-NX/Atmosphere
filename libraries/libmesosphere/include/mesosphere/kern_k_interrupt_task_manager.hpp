@@ -39,10 +39,16 @@ namespace ams::kern {
         private:
             TaskQueue task_queue;
             KThread *thread;
+        private:
+            static void ThreadFunction(uintptr_t arg);
+            void ThreadFunctionImpl();
         public:
             constexpr KInterruptTaskManager() : task_queue(), thread(nullptr) { /* ... */ }
 
-            constexpr ALWAYS_INLINE KThread *GetThread() const { return this->thread; }
+            constexpr KThread *GetThread() const { return this->thread; }
+
+            NOINLINE void Initialize();
+            void EnqueueTask(KInterruptTask *task);
 
             /* TODO: Actually implement KInterruptTaskManager. This is a placeholder. */
     };

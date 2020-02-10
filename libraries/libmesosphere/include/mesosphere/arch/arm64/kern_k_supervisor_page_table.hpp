@@ -28,6 +28,7 @@ namespace ams::kern::arm64 {
             constexpr KSupervisorPageTable() : page_table(), ttbr0() { /* ... */ }
 
             NOINLINE void Initialize(s32 core_id);
+            NOINLINE void Activate();
             void Finalize(s32 core_id);
     };
 

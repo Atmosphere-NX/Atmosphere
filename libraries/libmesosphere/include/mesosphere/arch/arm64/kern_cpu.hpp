@@ -59,6 +59,12 @@ namespace ams::kern::arm64::cpu {
         EnsureInstructionConsistency();
     }
 
+    ALWAYS_INLINE void SwitchProcess(u64 ttbr, u32 proc_id) {
+        SetTtbr0El1(ttbr);
+        ContextIdRegisterAccessor(0).SetProcId(proc_id).Store();
+        InstructionMemoryBarrier();
+    }
+
     /* Helper for address access. */
     ALWAYS_INLINE bool GetPhysicalAddressWritable(KPhysicalAddress *out, KVirtualAddress addr, bool privileged = false) {
         const uintptr_t va = GetInteger(addr);
