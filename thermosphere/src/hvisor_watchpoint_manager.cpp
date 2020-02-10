@@ -22,6 +22,7 @@
 #include <cerrno>
 
 namespace {
+
     constexpr bool IsRangeMaskWatchpoint(uintptr_t addr, size_t size)
     {
         // size needs to be a power of 2, at least 8 (we'll only allow 16+ though), addr needs to be aligned.
@@ -39,6 +40,7 @@ namespace {
             return ((addr + size) & ~7ul) == (addr & ~7ul);
         }
     }
+
 }
 
 namespace ams::hvisor {

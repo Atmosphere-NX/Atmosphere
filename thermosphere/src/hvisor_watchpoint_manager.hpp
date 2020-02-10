@@ -26,6 +26,8 @@ namespace ams::hvisor {
 
         private:
             static WatchpointManager instance;
+        public:
+            static WatchpointManager &GetInstance() { return instance; }
 
         public:
             virtual void ReloadOnAllCores() const;
@@ -34,8 +36,6 @@ namespace ams::hvisor {
             cpu::DebugRegisterPair RetrieveWatchpointConfig(uintptr_t addr, cpu::DebugRegisterPair::LoadStoreControl direction) const;
             int Add(uintptr_t addr, size_t size, cpu::DebugRegisterPair::LoadStoreControl direction);
             int Remove(uintptr_t addr, size_t size, cpu::DebugRegisterPair::LoadStoreControl direction);
-
-            WatchpointManager &GetInstance() { return instance; }
 
         public:
             constexpr WatchpointManager() : HwStopPointManager(MAX_WCR) {}

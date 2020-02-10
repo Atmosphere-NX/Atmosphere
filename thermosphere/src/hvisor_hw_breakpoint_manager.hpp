@@ -26,6 +26,8 @@ namespace ams::hvisor {
 
         private:
             static HwBreakpointManager instance;
+        public:
+            static HwBreakpointManager &GetInstance() { return instance; }
 
         public:
             virtual void ReloadOnAllCores() const;
@@ -34,8 +36,6 @@ namespace ams::hvisor {
             cpu::DebugRegisterPair RetrieveWatchpointConfig(uintptr_t addr, cpu::DebugRegisterPair::LoadStoreControl direction) const;
             int Add(uintptr_t addr);
             int Remove(uintptr_t addr);
-
-            HwBreakpointManager &GetInstance() { return instance; }
 
         public:
             constexpr HwBreakpointManager() : HwStopPointManager(MAX_BCR) {}

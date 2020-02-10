@@ -105,5 +105,6 @@ namespace ams::hvisor::cpu {
         }
     };
 
-    static_assert(std::is_pod_v<DebugRegisterPair>);
+    static_assert(std::is_standard_layout_v<DebugRegisterPair>);
+    static_assert(std::is_trivial_v<DebugRegisterPair>);
 }

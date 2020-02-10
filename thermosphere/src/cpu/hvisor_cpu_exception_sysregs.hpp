@@ -110,10 +110,9 @@ namespace ams::hvisor::cpu {
     };
 
 
-    static_assert(std::is_pod_v<ExceptionSyndromeRegister>);
-    static_assert(std::is_pod_v<DataAbortIss>);
-
-
-
+    static_assert(std::is_standard_layout_v<ExceptionSyndromeRegister>);
+    static_assert(std::is_standard_layout_v<DataAbortIss>);
+    static_assert(std::is_trivial_v<ExceptionSyndromeRegister>);
+    static_assert(std::is_trivial_v<DataAbortIss>);
 
 }
