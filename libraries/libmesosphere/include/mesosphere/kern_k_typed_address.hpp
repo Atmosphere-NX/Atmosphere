@@ -85,6 +85,11 @@ namespace ams::kern {
                 return this->address >> shift;
             }
 
+            template<typename U>
+            constexpr ALWAYS_INLINE size_t operator/(U size) const { return this->address / size; }
+
+            /* constexpr ALWAYS_INLINE uintptr_t operator%(U align) const { return this->address % align; } */
+
             /* Comparison operators. */
             constexpr ALWAYS_INLINE bool operator==(KTypedAddress rhs) const {
                 return this->address == rhs.address;

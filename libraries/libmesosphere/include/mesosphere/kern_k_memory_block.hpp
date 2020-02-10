@@ -159,11 +159,61 @@ namespace ams::kern {
 
     enum KMemoryAttribute : u8 {
         KMemoryAttribute_None           = 0x00,
+        KMemoryAttribute_Mask           = 0x7F,
+        KMemoryAttribute_DontCareMask   = 0x80,
 
         KMemoryAttribute_Locked         = ams::svc::MemoryAttribute_Locked,
         KMemoryAttribute_IpcLocked      = ams::svc::MemoryAttribute_IpcLocked,
         KMemoryAttribute_DeviceShared   = ams::svc::MemoryAttribute_DeviceShared,
         KMemoryAttribute_Uncached       = ams::svc::MemoryAttribute_Uncached,
+    };
+
+    static_assert((KMemoryAttribute_Mask & KMemoryAttribute_DontCareMask) == 0);
+    static_assert(static_cast<typename std::underlying_type<KMemoryAttribute>::type>(~(KMemoryAttribute_Mask | KMemoryAttribute_DontCareMask)) == 0);
+
+    struct KMemoryInfo {
+        uintptr_t address;
+        size_t size;
+        KMemoryState state;
+        KMemoryPermission perm;
+        KMemoryAttribute  attribute;
+        KMemoryPermission original_perm;
+        u16 ipc_lock_count;
+        u16 device_use_count;
+
+        constexpr ams::svc::MemoryInfo GetSvcMemoryInfo() const {
+            ams::svc::MemoryInfo svc_info = {};
+
+            svc_info.addr             = this->address;
+            svc_info.size             = this->size;
+            svc_info.state            = static_cast<ams::svc::MemoryState>(this->state & KMemoryState_Mask);
+            svc_info.attr             = static_cast<ams::svc::MemoryAttribute>(this->attribute & KMemoryAttribute_Mask);
+            svc_info.perm             = static_cast<ams::svc::MemoryPermission>(this->perm & KMemoryPermission_UserMask);
+            svc_info.ipc_refcount     = this->ipc_lock_count;
+            svc_info.device_refcount  = this->device_use_count;
+
+            return svc_info;
+        }
+
+        constexpr uintptr_t GetAddress() const {
+            return this->address;
+        }
+
+        constexpr size_t GetSize() const {
+            return this->size;
+        }
+
+        constexpr size_t GetNumPages() const {
+            return this->GetSize() / PageSize;
+        }
+
+        constexpr uintptr_t GetEndAddress() const {
+            return this->GetAddress() + this->GetSize();
+        }
+
+        constexpr uintptr_t GetLastAddress() const {
+            return this->GetEndAddress() - 1;
+        }
     };
 
     class KMemoryBlock : public util::IntrusiveRedBlackTreeBaseNode<KMemoryBlock> {
@@ -206,9 +256,30 @@ namespace ams::kern {
             constexpr KProcessAddress GetLastAddress() const {
                 return this->GetEndAddress() - 1;
             }
+
+            constexpr KMemoryInfo GetMemoryInfo() const {
+                KMemoryInfo info = {};
+
+                info.address          = GetInteger(this->GetAddress());
+                info.size             = this->GetSize();
+                info.state            = this->memory_state;
+                info.perm             = this->perm;
+                info.attribute        = this->attribute;
+                info.original_perm    = this->original_perm;
+                info.ipc_lock_count   = this->ipc_lock_count;
+                info.device_use_count = this->device_use_count;
+
+                return info;
+            }
         public:
             constexpr KMemoryBlock()
                 : address(), num_pages(), memory_state(KMemoryState_None), ipc_lock_count(), device_use_count(), perm(), original_perm(), attribute()
+            {
+                /* ... */
+            }
+
+            constexpr KMemoryBlock(KProcessAddress addr, size_t np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr)
+                : address(addr), num_pages(np), memory_state(ms), ipc_lock_count(0), device_use_count(0), perm(p), original_perm(KMemoryPermission_None), attribute(attr)
             {
                 /* ... */
             }
@@ -224,6 +295,67 @@ namespace ams::kern {
                 this->original_perm     = KMemoryPermission_None;
                 this->attribute         = attr;
             }
+
+            constexpr bool HasProperties(KMemoryState s, KMemoryPermission p, KMemoryAttribute a) const {
+                MESOSPHERE_ASSERT_THIS();
+                constexpr auto AttributeIgnoreMask = KMemoryAttribute_DontCareMask | KMemoryAttribute_IpcLocked | KMemoryAttribute_DeviceShared;
+                return this->memory_state == s && this->perm == p && (this->attribute | AttributeIgnoreMask) == (a | AttributeIgnoreMask);
+            }
+
+            constexpr bool HasSameProperties(const KMemoryBlock &rhs) const {
+                MESOSPHERE_ASSERT_THIS();
+
+                return this->memory_state     == rhs.memory_state   &&
+                       this->perm             == rhs.perm           &&
+                       this->original_perm    == rhs.original_perm  &&
+                       this->attribute        == rhs.attribute      &&
+                       this->ipc_lock_count   == rhs.ipc_lock_count &&
+                       this->device_use_count == rhs.device_use_count;
+            }
+
+            constexpr bool Contains(KProcessAddress addr) const {
+                MESOSPHERE_ASSERT_THIS();
+
+                return this->GetAddress() <= addr && addr <= this->GetEndAddress();
+            }
+
+            constexpr void Add(size_t np) {
+                MESOSPHERE_ASSERT_THIS();
+                MESOSPHERE_ASSERT(np > 0);
+                MESOSPHERE_ASSERT(this->GetAddress() + np * PageSize - 1 < this->GetEndAddress() + np * PageSize - 1);
+
+                this->num_pages += np;
+            }
+
+            constexpr void Update(KMemoryState s, KMemoryPermission p, KMemoryAttribute a) {
+                MESOSPHERE_ASSERT_THIS();
+                MESOSPHERE_ASSERT(this->original_perm == KMemoryPermission_None);
+                MESOSPHERE_ASSERT((this->attribute & KMemoryAttribute_IpcLocked) == 0);
+
+                this->memory_state = s;
+                this->perm         = p;
+                this->attribute    = static_cast<KMemoryAttribute>(a | (this->attribute & (KMemoryAttribute_IpcLocked | KMemoryAttribute_DeviceShared)));
+            }
+
+            constexpr void Split(KMemoryBlock *block, KProcessAddress addr) {
+                MESOSPHERE_ASSERT_THIS();
+                MESOSPHERE_ASSERT(this->GetAddress() < addr);
+                MESOSPHERE_ASSERT(this->Contains(addr));
+                MESOSPHERE_ASSERT(util::IsAligned(GetInteger(addr), PageSize));
+
+                block->address          = this->address;
+                block->num_pages        = (addr - this->GetAddress()) / PageSize;
+                block->memory_state     = this->memory_state;
+                block->ipc_lock_count   = this->ipc_lock_count;
+                block->device_use_count = this->device_use_count;
+                block->perm             = this->perm;
+                block->original_perm    = this->original_perm;
+                block->attribute        = this->attribute;
+
+                this->address = addr;
+                this->num_pages -= block->num_pages;
+            }
     };
+    static_assert(std::is_trivially_destructible<KMemoryBlock>::value);
 
 }
