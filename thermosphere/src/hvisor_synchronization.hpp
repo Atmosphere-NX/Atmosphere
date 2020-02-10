@@ -27,7 +27,7 @@ namespace ams::hvisor {
         private:
             u32 m_val = 0;
         public:
-            Spinlock() = default;
+            constexpr Spinlock() = default;
             void lock();
             void unlock() noexcept;
     };
@@ -38,7 +38,7 @@ namespace ams::hvisor {
         private:
             u32 m_val = 0;
         public:
-            Barrier() = default;
+            constexpr Barrier() = default;
             void Join();
 
             constexpr void Reset(u32 val)
@@ -55,7 +55,7 @@ namespace ams::hvisor {
             u32 m_tag = 0;
             u32 m_count = 0;
         public:
-            RecursiveSpinlock() = default;
+            constexpr RecursiveSpinlock() = default;
             void lock();
             void unlock() noexcept;
     };

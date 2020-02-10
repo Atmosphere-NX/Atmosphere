@@ -63,9 +63,10 @@ namespace ams::hvisor::cpu {
 
         // Watchpoints only
         enum LoadStoreControl {
-            Load         = 1,
-            Store        = 2,
-            LoadStore    = 3,
+            NotAWatchpoint  = 0,
+            Load            = 1,
+            Store           = 2,
+            LoadStore       = 3,
         };
 
         // bas only 4 bits for breakpoints, other bits res0.
