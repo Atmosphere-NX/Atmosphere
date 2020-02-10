@@ -20,6 +20,7 @@
 #include <mesosphere/kern_k_page_group.hpp>
 #include <mesosphere/kern_k_memory_manager.hpp>
 #include <mesosphere/kern_k_memory_layout.hpp>
+#include <mesosphere/kern_k_memory_block_manager.hpp>
 
 namespace ams::kern {
 
@@ -54,7 +55,7 @@ namespace ams::kern {
             mutable KLightLock general_lock;
             mutable KLightLock map_physical_memory_lock;
             KPageTableImpl impl;
-            /* TODO KMemoryBlockManager memory_block_manager; */
+            KMemoryBlockManager memory_block_manager;
             u32 allocate_option;
             u32 address_space_size;
             bool is_kernel;
@@ -72,7 +73,7 @@ namespace ams::kern {
                 address_space_start(), address_space_end(), heap_region_start(), heap_region_end(), current_heap_end(),
                 alias_region_start(), alias_region_end(), stack_region_start(), stack_region_end(), kernel_map_region_start(),
                 kernel_map_region_end(), alias_code_region_start(), alias_code_region_end(), code_region_start(), code_region_end(),
-                max_heap_size(), max_physical_memory_size(), general_lock(), map_physical_memory_lock(), impl(), /* TODO: memory_block_manager(), */
+                max_heap_size(), max_physical_memory_size(), general_lock(), map_physical_memory_lock(), impl(), memory_block_manager(),
                 allocate_option(), address_space_size(), is_kernel(), enable_aslr(), memory_block_slab_manager(), block_info_manager(),
                 cached_physical_linear_region(), cached_physical_non_kernel_dram_region(), cached_virtual_managed_pool_dram_region(),
                 heap_fill_value(), ipc_fill_value(), stack_fill_value()

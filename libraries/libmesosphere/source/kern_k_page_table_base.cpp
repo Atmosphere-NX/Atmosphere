@@ -58,13 +58,13 @@ namespace ams::kern {
         this->impl.InitializeForKernel(table, start, end);
 
         /* Initialize our memory block manager. */
-        MESOSPHERE_TODO("R_TRY(this->memory_block_manager.Initialize(this->address_space_start, this->address_space_end, this->GetMemoryBlockSlabManager()));");
+        return this->memory_block_manager.Initialize(this->address_space_start, this->address_space_end, this->memory_block_slab_manager);
 
         return ResultSuccess();
     }
 
     void KPageTableBase::Finalize() {
-        MESOSPHERE_TODO("this->memory_block_manager.Finalize(this->GetMemoryBlockSlabManager());");
+        this->memory_block_manager.Finalize(this->memory_block_slab_manager);
         MESOSPHERE_TODO("cpu::InvalidateEntireInstructionCache();");
     }
 }

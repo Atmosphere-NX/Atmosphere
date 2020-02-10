@@ -52,6 +52,12 @@ namespace ams::kern {
 #define MESOSPHERE_ASSERT_THIS()
 #endif
 
+#ifdef MESOSPHERE_BUILD_FOR_AUDITING
+#define MESOSPHERE_AUDIT(expr) MESOSPHERE_ASSERT(expr)
+#else
+#define MESOSPHERE_AUDIT(expr) do { static_cast<void>(expr); } while (0)
+#endif
+
 #define MESOSPHERE_TODO(arg) ({ constexpr const char *__mesosphere_todo = arg; MESOSPHERE_PANIC("TODO (%s): %s", __PRETTY_FUNCTION__, __mesosphere_todo); })
 #define MESOSPHERE_TODO_IMPLEMENT() MESOSPHERE_TODO("Implement")
 

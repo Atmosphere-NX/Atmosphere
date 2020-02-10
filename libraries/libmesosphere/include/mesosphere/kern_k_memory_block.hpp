@@ -177,10 +177,52 @@ namespace ams::kern {
             KMemoryPermission original_perm;
             KMemoryAttribute attribute;
         public:
+            static constexpr ALWAYS_INLINE int Compare(const KMemoryBlock &lhs, const KMemoryBlock &rhs) {
+                if (lhs.GetAddress() < rhs.GetAddress()) {
+                    return -1;
+                } else if (lhs.GetAddress() <= rhs.GetLastAddress()) {
+                    return 0;
+                } else {
+                    return 1;
+                }
+            }
+        public:
+            constexpr KProcessAddress GetAddress() const {
+                return this->address;
+            }
+
+            constexpr size_t GetNumPages() const {
+                return this->num_pages;
+            }
+
+            constexpr size_t GetSize() const {
+                return this->GetNumPages() * PageSize;
+            }
+
+            constexpr KProcessAddress GetEndAddress() const {
+                return this->GetAddress() + this->GetSize();
+            }
+
+            constexpr KProcessAddress GetLastAddress() const {
+                return this->GetEndAddress() - 1;
+            }
+        public:
             constexpr KMemoryBlock()
                 : address(), num_pages(), memory_state(KMemoryState_None), ipc_lock_count(), device_use_count(), perm(), original_perm(), attribute()
             {
                 /* ... */
+            }
+
+            constexpr void Initialize(KProcessAddress addr, size_t np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr) {
+                MESOSPHERE_ASSERT_THIS();
+                this->address           = addr;
+                this->num_pages         = np;
+                this->memory_state      = ms;
+                this->ipc_lock_count    = 0;
+                this->device_use_count  = 0;
+                this->perm              = p;
+                this->original_perm     = KMemoryPermission_None;
+                this->attribute         = attr;
             }
     };
 
