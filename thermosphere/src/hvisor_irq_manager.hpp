@@ -18,7 +18,6 @@
 
 #include "hvisor_gicv2.hpp"
 #include "hvisor_synchronization.hpp"
-#include "cpu/hvisor_cpu_sysreg_general.hpp"
 #include "memory_map.h"
 
 #include "exceptions.h" // TODO
@@ -91,25 +90,6 @@ namespace ams::hvisor {
             static void GenerateSgiForAllOthers(ThermosphereSgi id)
             {
                 gicd->sgir = GicV2Distributor::ForwardToAllOthers << 24 | id;
-            }
-
-            static u64 MaskIrq()
-            {
-                u64 daif = THERMOSPHERE_GET_SYSREG(daif);
-                THERMOSPHERE_SET_SYSREG_IMM(daifset, BIT(1));
-                return daif;
-            }
-
-            static u64 UnmaskIrq()
-            {
-                u64 daif = THERMOSPHERE_GET_SYSREG(daif);
-                THERMOSPHERE_SET_SYSREG_IMM(daifclr, BIT(1));
-                return daif;
-            }
-
-            static void RestoreInterruptFlags(u64 flags)
-            {
-                THERMOSPHERE_SET_SYSREG(daif, flags);
             }
 
             static IrqManager &GetInstance() { return instance; }

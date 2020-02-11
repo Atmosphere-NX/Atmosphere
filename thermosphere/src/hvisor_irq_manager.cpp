@@ -17,7 +17,7 @@
 #include <mutex>
 
 #include "hvisor_irq_manager.hpp"
-
+#include "cpu/hvisor_cpu_interrupt_mask_guard.hpp"
 #include "platform/interrupt_config.h"
 #include "core_ctx.h"
 #include "guest_timers.h"
@@ -159,8 +159,8 @@ namespace ams::hvisor {
 
     void IrqManager::Initialize()
     {
-        u64 flags = MaskIrq();
-        m_lock.lock();
+        cpu::InterruptMaskGuard mg{};
+        std::scoped_lock lk{m_lock};
 
         InitializeGic();
         for (u32 i = 0; i < MaxSgi; i++) {
@@ -170,27 +170,22 @@ namespace ams::hvisor {
         DoConfigureInterrupt(GIC_IRQID_MAINTENANCE, hostPriority, true);
 
         vgicInit();
-
-        m_lock.unlock();
-        RestoreInterruptFlags(flags);
     }
 
     void IrqManager::ConfigureInterrupt(u32 id, u8 prio, bool isLevelSensitive)
     {
-        u64 flags = MaskIrq();
-        m_lock.lock();
+        cpu::InterruptMaskGuard mg{};
+        std::scoped_lock lk{m_lock};
+
         DoConfigureInterrupt(id, prio, isLevelSensitive);
-        m_lock.unlock();
-        RestoreInterruptFlags(flags);
     }
 
     void IrqManager::SetInterruptAffinity(u32 id, u8 affinity)
     {
-        u64 flags = MaskIrq();
-        m_lock.lock();
+        cpu::InterruptMaskGuard mg{};
+        std::scoped_lock lk{m_lock};
+
         DoSetInterruptAffinity(id, affinity);
-        m_lock.unlock();
-        RestoreInterruptFlags(flags);
     }
 
     void IrqManager::HandleInterrupt(ExceptionStackFrame *frame)
