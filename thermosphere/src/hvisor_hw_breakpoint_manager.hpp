@@ -21,13 +21,9 @@
 namespace ams::hvisor {
 
     class HwBreakpointManager final : public HwStopPointManager {
+        SINGLETON(HwBreakpointManager);
         protected:
             virtual bool FindPredicate(const cpu::DebugRegisterPair &pair, uintptr_t addr, size_t, cpu::DebugRegisterPair::LoadStoreControl) const;
-
-        private:
-            static HwBreakpointManager instance;
-        public:
-            static HwBreakpointManager &GetInstance() { return instance; }
 
         public:
             virtual void ReloadOnAllCores() const;

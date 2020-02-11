@@ -24,8 +24,7 @@
 namespace ams::hvisor {
 
     class SwBreakpointManager {
-        NON_COPYABLE(SwBreakpointManager);
-        NON_MOVEABLE(SwBreakpointManager);
+        SINGLETON(SwBreakpointManager);
         private:
             struct Breakpoint {
                 uintptr_t address;
@@ -35,8 +34,6 @@ namespace ams::hvisor {
                 bool applied;
             };
 
-        private:
-            static SwBreakpointManager instance;
         private:
             mutable RecursiveSpinlock m_lock{};
             std::atomic<bool> m_triedToApplyOrRevertBreakpoint{};
@@ -54,9 +51,6 @@ namespace ams::hvisor {
             // TODO apply, revert handler
             bool Apply(size_t id);
             bool Revert(size_t id);
-
-        public:
-            static SwBreakpointManager &GetInstance() { return instance; }
 
         public:
             int Add(uintptr_t addr, bool persistent);

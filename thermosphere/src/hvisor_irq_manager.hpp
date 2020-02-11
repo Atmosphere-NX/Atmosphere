@@ -25,11 +25,9 @@
 namespace ams::hvisor {
 
     class IrqManager final {
-        NON_COPYABLE(IrqManager);
-        NON_MOVEABLE(IrqManager);
+        SINGLETON(IrqManager);
         friend class VirtualGic;
         private:
-            static IrqManager instance;
             static constexpr u8 hostPriority = 0;
             static constexpr u8 guestPriority = 1;
 
@@ -91,8 +89,6 @@ namespace ams::hvisor {
             {
                 gicd->sgir = GicV2Distributor::ForwardToAllOthers << 24 | id;
             }
-
-            static IrqManager &GetInstance() { return instance; }
 
             static void HandleInterrupt(ExceptionStackFrame *frame);
 

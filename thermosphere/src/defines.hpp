@@ -26,3 +26,11 @@
 
 #include "preprocessor.h"
 #include "debug_log.h"
+
+#define SINGLETON(cl) \
+    NON_COPYABLE(cl);\
+    NON_MOVEABLE(cl);\
+    private:\
+        static cl instance;\
+    public:\
+        static cl &GetInstance() { return instance; }

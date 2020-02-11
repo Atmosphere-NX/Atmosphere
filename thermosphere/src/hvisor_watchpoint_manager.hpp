@@ -21,13 +21,9 @@
 namespace ams::hvisor {
 
     class WatchpointManager final : public HwStopPointManager {
+        SINGLETON(WatchpointManager);
         protected:
             virtual bool FindPredicate(const cpu::DebugRegisterPair &pair, uintptr_t addr, size_t size, cpu::DebugRegisterPair::LoadStoreControl direction) const;
-
-        private:
-            static WatchpointManager instance;
-        public:
-            static WatchpointManager &GetInstance() { return instance; }
 
         public:
             virtual void ReloadOnAllCores() const;
