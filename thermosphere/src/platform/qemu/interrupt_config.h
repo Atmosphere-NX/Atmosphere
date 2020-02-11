@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include "../../gicv2.h"
-
 #define MEMORY_MAP_PA_GICD              0x08000000ull
 #define MEMORY_MAP_PA_GICC              0x08010000ull
 #define MEMORY_MAP_PA_GICH              0x08030000ull
@@ -31,8 +29,8 @@
 #define GIC_IRQID_NS_PHYS_TIMER         30
 
 
-#define GIC_IRQID_NS_VIRT_HYP_TIMER     GIC_IRQID_SPURIOUS // SBSA: 28. Unimplemented
-#define GIC_IRQID_SEC_PHYS_HYP_TIMER    GIC_IRQID_SPURIOUS // SBSA: 20. Unimplemented
-#define GIC_IRQID_SEC_VIRT_HYP_TIMER    GIC_IRQID_SPURIOUS // SBSA: 19. Unimplemented
+#define GIC_IRQID_NS_VIRT_HYP_TIMER     1023 // SBSA: 28. Unimplemented
+#define GIC_IRQID_SEC_PHYS_HYP_TIMER    1023 // SBSA: 20. Unimplemented
+#define GIC_IRQID_SEC_VIRT_HYP_TIMER    1023 // SBSA: 19. Unimplemented
 
 #define GIC_IRQID_UART                  (32 + 1)

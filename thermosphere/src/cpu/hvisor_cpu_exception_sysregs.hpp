@@ -25,7 +25,7 @@ namespace ams::hvisor::cpu {
     // FIXME GCC 10
 
     struct ExceptionSyndromeRegister {
-        enum ExceptionClass {
+        enum ExceptionClass : u32 {
             Uncategorized = 0x0,
             WFxTrap = 0x1,
             CP15RTTrap = 0x3,

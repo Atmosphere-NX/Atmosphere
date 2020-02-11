@@ -26,7 +26,7 @@ namespace ams::hvisor::cpu {
     struct DebugRegisterPair {
         // For breakpoints only
         /// BT[3:1] or res0. BT[0]/WT[0] is "is linked"
-        enum BreakpointType {
+        enum BreakpointType : u32 {
             AddressMatch = 0,
             VheContextIdMatch = 1,
             ContextIdMatch = 3,
@@ -40,7 +40,7 @@ namespace ams::hvisor::cpu {
         // Refer to "Table D2-9 Summary of breakpoint HMC, SSC, and PMC encodings"
 
         /// Security State Control
-        enum SecurityStateControl {
+        enum SecurityStateControl : u32 {
             Both                  = 0,
             NonSecure             = 1,
             Secure                = 2,
@@ -48,13 +48,13 @@ namespace ams::hvisor::cpu {
         };
 
         /// Higher Mode Control
-        enum HigherModeControl {
+        enum HigherModeControl : u32 {
             LowerEl   = 0,
             HigherEl  = 1,
         };
 
         /// Privilege Mode Control (called PAC for watchpoints)
-        enum PrivilegeModeControl {
+        enum PrivilegeModeControl : u32 {
             NeitherEl1Nor0    = 0,
             El1               = 1,
             El0               = 2,
@@ -62,7 +62,7 @@ namespace ams::hvisor::cpu {
         };
 
         // Watchpoints only
-        enum LoadStoreControl {
+        enum LoadStoreControl : u32 {
             NotAWatchpoint  = 0,
             Load            = 1,
             Store           = 2,
