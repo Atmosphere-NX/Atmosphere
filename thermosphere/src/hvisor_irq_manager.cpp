@@ -151,9 +151,9 @@ namespace ams::hvisor {
         ClearInterruptPending(id);
         if (id >= 32) {
             SetInterruptMode(id, isLevelSensitive);
-            DoSetInterruptAffinity(id, 0xFF); // all possible processors
+            SetInterruptTargets(id, 0xFF); // all possible processors
         }
-        SetInterruptShiftedPriority(id, prio << m_priorityShift);
+        SetInterruptPriority(id, prio);
         SetInterruptEnabled(id);
     }
 
@@ -185,7 +185,7 @@ namespace ams::hvisor {
         cpu::InterruptMaskGuard mg{};
         std::scoped_lock lk{m_lock};
 
-        DoSetInterruptAffinity(id, affinity);
+        SetInterruptTargets(id, affinity);
     }
 
     void IrqManager::HandleInterrupt(ExceptionStackFrame *frame)

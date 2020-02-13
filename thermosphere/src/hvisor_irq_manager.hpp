@@ -37,11 +37,12 @@ namespace ams::hvisor {
 
             static bool IsGuestInterrupt(u32 id);
 
+            static u32 GetTypeRegister()                                { return gicd->typer; }
             static void SetInterruptEnabled(u32 id)                     { gicd->isenabler[id / 32] = BIT(id % 32); }
             static void ClearInterruptEnabled(u32 id)                   { gicd->icenabler[id / 32] = BIT(id % 32); }
             static void ClearInterruptPending(u32 id)                   { gicd->icpendr[id / 32] = BIT(id % 32); }
             static void SetInterruptShiftedPriority(u32 id, u8 prio)    { gicd->ipriorityr[id] = prio; }
-            static void DoSetInterruptAffinity(u32 id, u8 targetList)   { gicd->itargetsr[id] = targetList; }
+            static void SetInterruptTargets(u32 id, u8 targetList)      { gicd->itargetsr[id] = targetList; }
             static bool IsInterruptLevelSensitive(u32 id)
             {
                 return ((gicd->icfgr[id / 16] >> GicV2Distributor::GetCfgrShift(id)) & 2) != 0;
@@ -50,7 +51,7 @@ namespace ams::hvisor {
             {
                 u32 cfgw = gicd->icfgr[id / 16];
                 cfgw &= ~(2 << GicV2Distributor::GetCfgrShift(id));
-                cfgw |= (isLevelSensitive ? 2 : 0) << GicV2Distributor::GetCfgrShift(id);
+                cfgw |= (!isLevelSensitive ? 2 : 0) << GicV2Distributor::GetCfgrShift(id);
                 gicd->icfgr[id / 16] = cfgw;
             }
 
@@ -67,6 +68,8 @@ namespace ams::hvisor {
             u8 m_numListRegisters = 0;
 
         private:
+            void SetInterruptPriority(u32 id, u8 prio) { SetInterruptShiftedPriority(id, prio << m_priorityShift); }
+
             void InitializeGic();
             void DoConfigureInterrupt(u32 id, u8 prio, bool isLevelSensitive);
 

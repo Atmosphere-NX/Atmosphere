@@ -34,3 +34,8 @@
         static cl instance;\
     public:\
         static cl &GetInstance() { return instance; }
+
+//FIXME
+#ifndef ENSURE
+#define ENSURE(...)
+#endif
