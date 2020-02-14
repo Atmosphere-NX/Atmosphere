@@ -42,18 +42,34 @@ namespace ams::util {
             static constexpr int MinimumInitIterations   = 8;
             static constexpr int NumDiscardedInitOutputs = 8;
 
-            constexpr inline u32 XorByShifted27(u32 value) {
+            static constexpr inline u32 XorByShifted27(u32 value) {
                 return value ^ (value >> 27);
             }
 
-            constexpr inline u32 XorByShifted30(u32 value) {
+            static constexpr inline u32 XorByShifted30(u32 value) {
                 return value ^ (value >> 30);
             }
         private:
             State state;
         private:
             /* Internal API. */
-            void FinalizeInitialization();
+            void FinalizeInitialization()  {
+                const u32 state0 = this->state.data[0] & TopBitmask;
+                const u32 state1 = this->state.data[1];
+                const u32 state2 = this->state.data[2];
+                const u32 state3 = this->state.data[3];
+
+                if (state0 == 0 && state1 == 0 && state2 == 0 && state3 == 0) {
+                    this->state.data[0] = 'T';
+                    this->state.data[1] = 'I';
+                    this->state.data[2] = 'N';
+                    this->state.data[3] = 'Y';
+                }
+
+                for (int i = 0; i < NumDiscardedInitOutputs; i++) {
+                    this->GenerateRandomU32();
+                }
+            }
 
             u32 GenerateRandomU24() { return (this->GenerateRandomU32() >> 8); }
 

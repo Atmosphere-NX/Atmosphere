@@ -24,9 +24,11 @@ namespace ams::kern {
         bool g_call_smc_on_panic;
 
         /* Global variables for randomness. */
-        /* Incredibly, N really does use std:: randomness... */
+        /* Nintendo uses std::mt19937_t for randomness. */
+        /* To save space (and because mt19337_t isn't secure anyway), */
+        /* We will use TinyMT. */
         bool         g_initialized_random_generator;
-        std::mt19937 g_random_generator;
+        util::TinyMT g_random_generator;
         KSpinLock    g_random_lock;
 
         ALWAYS_INLINE size_t GetRealMemorySizeForInit() {
@@ -71,6 +73,27 @@ namespace ams::kern {
             u64 value;
             smc::init::GenerateRandomBytes(&value, sizeof(value));
             return value;
+        }
+
+        ALWAYS_INLINE u64 GenerateRandomU64FromGenerator() {
+            return g_random_generator.GenerateRandomU64();
+        }
+
+        template<typename F>
+        ALWAYS_INLINE u64 GenerateUniformRange(u64 min, u64 max, F f) {
+            /* Handle the case where the difference is too large to represent. */
+            if (max == std::numeric_limits<u64>::max() && min == std::numeric_limits<u64>::min()) {
+                return f();
+            }
+
+            /* Iterate until we get a value in range. */
+            const u64 range_size    = ((max + 1) - min);
+            const u64 effective_max = (std::numeric_limits<u64>::max() / range_size) * range_size;
+            while (true) {
+                if (const u64 rnd = f(); rnd < effective_max) {
+                    return min + (rnd % range_size);
+                }
+            }
         }
 
         ALWAYS_INLINE u64 GetConfigU64(smc::ConfigItem which) {
@@ -168,13 +191,7 @@ namespace ams::kern {
     }
 
     u64 KSystemControl::Init::GenerateRandomRange(u64 min, u64 max) {
-        const u64 range_size    = ((max + 1) - min);
-        const u64 effective_max = (std::numeric_limits<u64>::max() / range_size) * range_size;
-        while (true) {
-            if (const u64 rnd = GenerateRandomU64ForInit(); rnd < effective_max) {
-                return min + (rnd % range_size);
-            }
-        }
+        return GenerateUniformRange(min, max, GenerateRandomU64ForInit);
     }
 
     /* System Initialization. */
@@ -250,11 +267,11 @@ namespace ams::kern {
         if (AMS_UNLIKELY(!g_initialized_random_generator)) {
             u64 seed;
             GenerateRandomBytes(&seed, sizeof(seed));
-            g_random_generator.seed(seed);
+            g_random_generator.Initialize(reinterpret_cast<u32*>(&seed), sizeof(seed) / sizeof(u32));
             g_initialized_random_generator = true;
         }
 
-        return (std::uniform_int_distribution<u64>(min, max))(g_random_generator);
+        return GenerateUniformRange(min, max, GenerateRandomU64FromGenerator);
     }
 
     void KSystemControl::StopSystem() {
