@@ -48,7 +48,7 @@ namespace ams::kern::arm64 {
             if (entry.handler != nullptr) {
                 /* Set manual clear needed if relevant. */
                 if (entry.manually_cleared) {
-                    this->interrupt_controller.Disable(irq);
+                    this->interrupt_controller.SetPriorityLevel(irq, KInterruptController::PriorityLevel_Low);
                     entry.needs_clear = true;
                 }
 
@@ -77,6 +77,9 @@ namespace ams::kern::arm64 {
         } else {
             MESOSPHERE_LOG("Invalid interrupt %d\n", irq);
         }
+
+        /* Acknowledge the interrupt. */
+        this->interrupt_controller.EndOfInterrupt(raw_irq);
 
         /* If we found no task, then we don't need to reschedule. */
         if (task == nullptr) {

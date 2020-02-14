@@ -259,8 +259,10 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
 
     /* If we don't, wait for an interrupt and check again. */
     wfi
+
     msr    daifclr, #2
     msr    daifset, #2
+
     b      12b
 
 13: /* We need scheduling again! */

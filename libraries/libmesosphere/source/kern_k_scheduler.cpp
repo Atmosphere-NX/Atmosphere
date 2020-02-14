@@ -255,6 +255,9 @@ namespace ams::kern {
             MESOSPHERE_TODO("KProcess::Switch");
         }
 
+        /* Set the new thread. */
+        SetCurrentThread(next_thread);
+
         /* Set the new Thread Local region. */
         cpu::SwitchThreadLocalRegion(GetInteger(next_thread->GetThreadLocalRegionAddress()));
     }

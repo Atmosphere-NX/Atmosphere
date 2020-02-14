@@ -264,7 +264,12 @@ namespace ams::kern {
             }
         private:
             void Suspend();
+            ALWAYS_INLINE void AddWaiterImpl(KThread *thread);
+            ALWAYS_INLINE void RemoveWaiterImpl(KThread *thread);
+            ALWAYS_INLINE static void RestorePriority(KThread *thread);
         public:
+            constexpr u64 GetId() const { return this->thread_id; }
+
             constexpr KThreadContext *GetContext() { return std::addressof(this->thread_context); }
             constexpr const KThreadContext *GetContext() const { return std::addressof(this->thread_context); }
             constexpr const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
@@ -277,6 +282,8 @@ namespace ams::kern {
             constexpr s32 GetActiveCore() const { return this->core_id; }
             constexpr void SetActiveCore(s32 core) { this->core_id = core; }
             constexpr s32 GetPriority() const { return this->priority; }
+            constexpr void SetPriority(s32 prio) { this->priority = prio; }
+            constexpr s32 GetBasePriority() const { return this->base_priority; }
 
             constexpr QueueEntry &GetPriorityQueueEntry(s32 core) { return this->per_core_priority_queue_entry[core]; }
             constexpr const QueueEntry &GetPriorityQueueEntry(s32 core) const { return this->per_core_priority_queue_entry[core]; }
@@ -285,7 +292,20 @@ namespace ams::kern {
             constexpr const QueueEntry &GetSleepingQueueEntry() const { return this->sleeping_queue_entry; }
             constexpr void SetSleepingQueue(KThreadQueue *q) { this->sleeping_queue = q; }
 
+            constexpr void /* TODO */ *GetConditionVariable() const { return this->cond_var_tree; }
+
             constexpr s32 GetNumKernelWaiters() const { return this->num_kernel_waiters; }
+
+            void AddWaiter(KThread *thread);
+            void RemoveWaiter(KThread *thread);
+            KThread *RemoveWaiterByKey(s32 *out_num_waiters, KProcessAddress key);
+
+            constexpr KProcessAddress GetAddressKey() const { return this->arbiter_key; }
+            constexpr void SetAddressKey(KProcessAddress key) { this->arbiter_key = key; }
+            constexpr void SetLockOwner(KThread *owner) { this->lock_owner = owner; }
+            constexpr KThread *GetLockOwner() const { return this->lock_owner; }
+
+            bool HasWaiters() const { return !this->waiter_list.empty(); }
 
             constexpr s64 GetLastScheduledTick() const { return this->last_scheduled_tick; }
             constexpr void SetLastScheduledTick(s64 tick) { this->last_scheduled_tick = tick; }
@@ -307,6 +327,13 @@ namespace ams::kern {
             constexpr bool IsSuspended() const { return this->GetSuspendFlags() != 0; }
             void RequestSuspend(SuspendType type);
             void TrySuspend();
+            void Continue();
+
+            void ContinueIfHasKernelWaiters() {
+                if (this->GetNumKernelWaiters() > 0) {
+                    this->Continue();
+                }
+            }
 
             Result SetPriorityToIdle();
 

@@ -19,6 +19,11 @@ namespace ams::kern {
 
     namespace {
 
+        constexpr bool IsKernelAddressKey(KProcessAddress key) {
+            const uintptr_t key_uptr = GetInteger(key);
+            return KernelVirtualAddressSpaceBase <= key_uptr && key_uptr <= KernelVirtualAddressSpaceLast;
+        }
+
         void CleanupKernelStack(uintptr_t stack_top) {
             const uintptr_t stack_bottom = stack_top - PageSize;
 
@@ -300,6 +305,153 @@ namespace ams::kern {
 
         /* Note the state change in scheduler. */
         KScheduler::OnThreadStateChanged(this, old_state);
+    }
+
+    void KThread::Continue() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Clear our suspend flags in state. */
+        const auto old_state = this->thread_state;
+        this->thread_state = static_cast<ThreadState>(old_state & ThreadState_Mask);
+
+        /* Note the state change in scheduler. */
+        KScheduler::OnThreadStateChanged(this, old_state);
+    }
+
+    void KThread::AddWaiterImpl(KThread *thread) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Find the right spot to insert the waiter. */
+        auto it = this->waiter_list.begin();
+        while (it != this->waiter_list.end()) {
+            if (it->GetPriority() > thread->GetPriority()) {
+                break;
+            }
+            it++;
+        }
+
+        /* Keep track of how many kernel waiters we have. */
+        if (IsKernelAddressKey(thread->GetAddressKey())) {
+            MESOSPHERE_ABORT_UNLESS((this->num_kernel_waiters++) >= 0);
+        }
+
+        /* Insert the waiter. */
+        this->waiter_list.insert(it, *thread);
+        thread->SetLockOwner(this);
+    }
+
+    void KThread::RemoveWaiterImpl(KThread *thread) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Keep track of how many kernel waiters we have. */
+        if (IsKernelAddressKey(thread->GetAddressKey())) {
+            MESOSPHERE_ABORT_UNLESS((this->num_kernel_waiters--) > 0);
+        }
+
+        /* Remove the waiter. */
+        this->waiter_list.erase(this->waiter_list.iterator_to(*thread));
+        thread->SetLockOwner(nullptr);
+    }
+
+    void KThread::RestorePriority(KThread *thread) {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        while (true) {
+            /* We want to inherit priority where possible. */
+            s32 new_priority = thread->GetBasePriority();
+            if (thread->HasWaiters()) {
+                new_priority = std::min(new_priority, thread->waiter_list.front().GetPriority());
+            }
+
+            /* If the priority we would inherit is not different from ours, don't do anything. */
+            if (new_priority == thread->GetPriority()) {
+                return;
+            }
+
+            /* Ensure we don't violate condition variable red black tree invariants. */
+            if (auto *cond_var = thread->GetConditionVariable(); cond_var != nullptr) {
+                MESOSPHERE_TODO("Remove from condvar tree");
+            }
+
+            /* Change the priority. */
+            const s32 old_priority = thread->GetPriority();
+            thread->SetPriority(new_priority);
+
+            /* Restore the condition variable, if relevant. */
+            if (auto *cond_var = thread->GetConditionVariable(); cond_var != nullptr) {
+                MESOSPHERE_TODO("Re-insert into condvar tree");
+            }
+
+            /* Update the scheduler. */
+            KScheduler::OnThreadPriorityChanged(thread, old_priority);
+
+            /* Keep the lock owner up to date. */
+            KThread *lock_owner = thread->GetLockOwner();
+            if (lock_owner == nullptr) {
+                return;
+            }
+
+            /* Update the thread in the lock owner's sorted list, and continue inheriting. */
+            lock_owner->RemoveWaiterImpl(thread);
+            lock_owner->AddWaiterImpl(thread);
+            thread = lock_owner;
+        }
+    }
+
+    void KThread::AddWaiter(KThread *thread) {
+        MESOSPHERE_ASSERT_THIS();
+        this->AddWaiterImpl(thread);
+        RestorePriority(this);
+    }
+
+    void KThread::RemoveWaiter(KThread *thread) {
+        MESOSPHERE_ASSERT_THIS();
+        this->RemoveWaiterImpl(thread);
+        RestorePriority(this);
+    }
+
+    KThread *KThread::RemoveWaiterByKey(s32 *out_num_waiters, KProcessAddress key) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        s32 num_waiters = 0;
+        KThread *next_lock_owner = nullptr;
+        auto it = this->waiter_list.begin();
+        while (it != this->waiter_list.end()) {
+            if (it->GetAddressKey() == key) {
+                KThread *thread = std::addressof(*it);
+
+                /* Keep track of how many kernel waiters we have. */
+                if (IsKernelAddressKey(thread->GetAddressKey())) {
+                    MESOSPHERE_ABORT_UNLESS((this->num_kernel_waiters--) > 0);
+                }
+                it = this->waiter_list.erase(it);
+
+                /* Update the next lock owner. */
+                if (next_lock_owner == nullptr) {
+                    next_lock_owner = thread;
+                    next_lock_owner->SetLockOwner(nullptr);
+                } else {
+                    next_lock_owner->AddWaiterImpl(thread);
+                }
+                num_waiters++;
+            } else {
+                it++;
+            }
+        }
+
+        /* Do priority updates, if we have a next owner. */
+        if (next_lock_owner) {
+            RestorePriority(this);
+            RestorePriority(next_lock_owner);
+        }
+
+        /* Return output. */
+        *out_num_waiters = num_waiters;
+        return next_lock_owner;
     }
 
     Result KThread::Run() {

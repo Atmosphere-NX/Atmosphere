@@ -209,6 +209,10 @@ namespace ams::kern::arm64 {
                 this->gicd->sgir = GicDistributor::SgirTargetListFilter_Others | irq;
             }
 
+            void EndOfInterrupt(u32 irq) const {
+                this->gicc->eoir = irq;
+            }
+
             /* TODO: Implement more KInterruptController functionality. */
         public:
             static constexpr ALWAYS_INLINE bool IsSoftware(s32 id) {
