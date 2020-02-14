@@ -99,7 +99,7 @@ namespace ams::kern {
         });
 
         /* Initialize cpu interrupt threads. */
-        MESOSPHERE_TODO("cpu::InitializeInterruptThreads(core_id);");
+        cpu::InitializeInterruptThreads(core_id);
 
         /* Initialize the DPC manager. */
         KDpcManager::Initialize();

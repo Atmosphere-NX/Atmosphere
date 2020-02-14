@@ -23,19 +23,196 @@ namespace ams::kern::arm64::cpu {
 
     namespace {
 
+        /* Nintendo registers a handler for a SGI on thread termination, but does not handle anything. */
+        /* This is sufficient, because post-interrupt scheduling is all they really intend to occur. */
+        class KThreadTerminationInterruptHandler : public KInterruptHandler {
+            public:
+                constexpr KThreadTerminationInterruptHandler() : KInterruptHandler() { /* ... */ }
+
+                virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    return nullptr;
+                }
+        };
+
+        class KPerformanceCounterInterruptHandler : public KInterruptHandler {
+            private:
+                static inline KLightLock s_lock;
+            private:
+                u64 counter;
+                s32 which;
+                bool done;
+            public:
+                constexpr KPerformanceCounterInterruptHandler() : KInterruptHandler(), counter(), which(), done() { /* ... */ }
+
+                static KLightLock &GetLock() { return s_lock; }
+
+                void Setup(s32 w) {
+                    this->done = false;
+                    this->which = w;
+                }
+
+                void Wait() {
+                    while (!this->done) {
+                        __asm__ __volatile__("yield");
+                    }
+                }
+
+                u64 GetCounter() const { return this->counter; }
+
+                /* Nintendo misuses this per their own API, but it's functional. */
+                virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    if (this->which < 0) {
+                        this->counter = cpu::GetCycleCounter();
+                    } else {
+                        this->counter = cpu::GetPerformanceCounter(this->which);
+                    }
+                    DataMemoryBarrier();
+                    this->done = true;
+                    return nullptr;
+                }
+        };
+
+        class KCacheHelperInterruptHandler : public KInterruptHandler {
+            private:
+                static constexpr s32 ThreadPriority = 8;
+            public:
+                enum class Operation {
+                    Idle,
+                    InvalidateInstructionCache,
+                    StoreDataCache,
+                    FlushDataCache,
+                };
+            private:
+                KLightLock lock;
+                KLightLock cv_lock;
+                KLightConditionVariable cv;
+                std::atomic<u64> target_cores;
+                volatile Operation operation;
+            private:
+                static void ThreadFunction(uintptr_t _this) {
+                    reinterpret_cast<KCacheHelperInterruptHandler *>(_this)->ThreadFunctionImpl();
+                }
+
+                void ThreadFunctionImpl() {
+                    const s32 core_id = GetCurrentCoreId();
+                    while (true) {
+                        /* Wait for a request to come in. */
+                        {
+                            KScopedLightLock lk(this->cv_lock);
+                            while ((this->target_cores & (1ul << core_id)) == 0) {
+                                this->cv.Wait(std::addressof(this->cv_lock));
+                            }
+                        }
+
+                        /* Process the request. */
+                        this->ProcessOperation();
+
+                        /* Broadcast, if there's nothing pending. */
+                        {
+                            KScopedLightLock lk(this->cv_lock);
+                            if (this->target_cores == 0) {
+                                this->cv.Broadcast();
+                            }
+                        }
+                    }
+                }
+
+                void ProcessOperation();
+            public:
+                constexpr KCacheHelperInterruptHandler() : KInterruptHandler(), lock(), cv_lock(), cv(), target_cores(), operation(Operation::Idle) { /* ... */ }
+
+                void Initialize(s32 core_id) {
+                    /* Reserve a thread from the system limit. */
+                    MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_ThreadCountMax, 1));
+
+                    /* Create a new thread. */
+                    KThread *new_thread = KThread::Create();
+                    MESOSPHERE_ABORT_UNLESS(new_thread != nullptr);
+                    MESOSPHERE_R_ABORT_UNLESS(KThread::InitializeKernelThread(new_thread, ThreadFunction, reinterpret_cast<uintptr_t>(this), ThreadPriority, core_id));
+
+                    /* Register the new thread. */
+                    KThread::Register(new_thread);
+
+                    /* Run the thread. */
+                    new_thread->Run();
+                }
+
+                virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    this->ProcessOperation();
+                    return nullptr;
+                }
+
+                void RequestOperation(Operation op) {
+                    KScopedLightLock lk(this->lock);
+                    MESOSPHERE_ABORT_UNLESS(this->operation == Operation::Idle);
+                    /* Send and wait for acknowledgement of request. */
+                    {
+                        KScopedLightLock cv_lk(this->cv_lock);
+                        MESOSPHERE_ABORT_UNLESS(this->target_cores == 0);
+
+                        /* Set operation. */
+                        this->operation = op;
+
+                        /* Create core masks for us to use. */
+                        constexpr u64 AllCoresMask = (1ul << cpu::NumCores) - 1ul;
+                        const u64 other_cores_mask = AllCoresMask & ~(1ul << GetCurrentCoreId());
+
+                        if ((op == Operation::InvalidateInstructionCache) || (Kernel::GetState() == Kernel::State::Initializing)) {
+                            /* For certain operations, we want to send an interrupt. */
+                            this->target_cores = other_cores_mask;
+                            DataSynchronizationBarrier();
+                            const u64 target_mask = this->target_cores;
+                            DataSynchronizationBarrier();
+                            Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_CacheOperation, target_mask);
+                            this->ProcessOperation();
+                            while (this->target_cores != 0) {
+                                __asm__ __volatile__("yield");
+                            }
+                        } else {
+                            /* Request all cores. */
+                            this->target_cores = AllCoresMask;
+
+                            /* Use the condvar. */
+                            this->cv.Broadcast();
+                            while (this->target_cores != 0) {
+                                this->cv.Wait(std::addressof(this->cv_lock));
+                            }
+                        }
+                    }
+                    /* Go idle again. */
+                    this->operation = Operation::Idle;
+                }
+        };
+
+        /* Instances of the interrupt handlers. */
+        KThreadTerminationInterruptHandler  g_thread_termination_handler;
+        KCacheHelperInterruptHandler        g_cache_operation_handler;
+        KPerformanceCounterInterruptHandler g_performance_counter_handler[cpu::NumCores];
+
         /* Expose this as a global, for asm to use. */
         s32 g_all_core_sync_count;
 
-        void FlushEntireDataCacheImpl(int level) {
+        template<bool Init, typename F>
+        ALWAYS_INLINE void PerformCacheOperationBySetWayImpl(int level, F f) {
             /* Used in multiple locations. */
             const u64 level_sel_value = static_cast<u64>(level << 1);
 
-            /* Set selection register. */
-            cpu::SetCsselrEl1(level_sel_value);
-            cpu::InstructionMemoryBarrier();
+            u64 ccsidr_value;
+            if constexpr (Init) {
+                /* During init, we can just set the selection register directly. */
+                cpu::SetCsselrEl1(level_sel_value);
+                cpu::InstructionMemoryBarrier();
+                ccsidr_value = cpu::GetCcsidrEl1();
+            } else {
+                /* After init, we need to care about interrupts. */
+                KScopedInterruptDisable di;
+                cpu::SetCsselrEl1(level_sel_value);
+                cpu::InstructionMemoryBarrier();
+                ccsidr_value = cpu::GetCcsidrEl1();
+            }
 
             /* Get cache size id info. */
-            CacheSizeIdRegisterAccessor ccsidr_el1;
+            CacheSizeIdRegisterAccessor ccsidr_el1(ccsidr_value);
             const int num_sets  = ccsidr_el1.GetNumberOfSets();
             const int num_ways  = ccsidr_el1.GetAssociativity();
             const int line_size = ccsidr_el1.GetLineSize();
@@ -47,9 +224,55 @@ namespace ams::kern::arm64::cpu {
                 for (int set = 0; set <= num_sets; set++) {
                     const u64 way_value  = static_cast<u64>(way) << way_shift;
                     const u64 set_value  = static_cast<u64>(set) << set_shift;
-                    const u64 cisw_value = way_value | set_value | level_sel_value;
-                    __asm__ __volatile__("dc cisw, %0" ::"r"(cisw_value) : "memory");
+                    f(way_value | set_value | level_sel_value);
                 }
+            }
+        }
+
+        ALWAYS_INLINE void FlushDataCacheLineBySetWayImpl(const u64 sw_value) {
+            __asm__ __volatile__("dc cisw, %[v]" :: [v]"r"(sw_value) : "memory");
+        }
+
+        ALWAYS_INLINE void StoreDataCacheLineBySetWayImpl(const u64 sw_value) {
+            __asm__ __volatile__("dc csw, %[v]" :: [v]"r"(sw_value) : "memory");
+        }
+
+        template<bool Init, typename F>
+        ALWAYS_INLINE void PerformCacheOperationBySetWayShared(F f) {
+            CacheLineIdRegisterAccessor clidr_el1;
+            const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency();
+            const int levels_of_unification = clidr_el1.GetLevelsOfUnification();
+
+            for (int level = levels_of_coherency; level >= levels_of_unification; level--) {
+                PerformCacheOperationBySetWayImpl<Init>(level, f);
+            }
+        }
+
+        template<bool Init, typename F>
+        ALWAYS_INLINE void PerformCacheOperationBySetWayLocal(F f) {
+            CacheLineIdRegisterAccessor clidr_el1;
+            const int levels_of_unification = clidr_el1.GetLevelsOfUnification();
+
+            for (int level = levels_of_unification - 1; level >= 0; level--) {
+                PerformCacheOperationBySetWayImpl<Init>(level, f);
+            }
+        }
+
+        void KCacheHelperInterruptHandler::ProcessOperation() {
+            switch (this->operation) {
+                case Operation::Idle:
+                    break;
+                case Operation::InvalidateInstructionCache:
+                    InstructionMemoryBarrier();
+                    break;
+                case Operation::StoreDataCache:
+                    PerformCacheOperationBySetWayLocal<false>(StoreDataCacheLineBySetWayImpl);
+                    DataSynchronizationBarrier();
+                    break;
+                case Operation::FlushDataCache:
+                    PerformCacheOperationBySetWayLocal<false>(FlushDataCacheLineBySetWayImpl);
+                    DataSynchronizationBarrier();
+                    break;
             }
         }
 
@@ -63,26 +286,27 @@ namespace ams::kern::arm64::cpu {
 
     }
 
-    void FlushEntireDataCacheShared() {
-        CacheLineIdRegisterAccessor clidr_el1;
-        const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency();
-        const int levels_of_unification = clidr_el1.GetLevelsOfUnification();
-
-        for (int level = levels_of_coherency; level >= levels_of_unification; level--) {
-            FlushEntireDataCacheImpl(level);
-        }
+    void FlushEntireDataCacheSharedForInit() {
+        return PerformCacheOperationBySetWayShared<true>(FlushDataCacheLineBySetWayImpl);
     }
 
-    void FlushEntireDataCacheLocal() {
-        CacheLineIdRegisterAccessor clidr_el1;
-        const int levels_of_unification = clidr_el1.GetLevelsOfUnification();
-
-        for (int level = levels_of_unification - 1; level >= 0; level--) {
-            FlushEntireDataCacheImpl(level);
-        }
+    void FlushEntireDataCacheLocalForInit() {
+        return PerformCacheOperationBySetWayLocal<true>(FlushDataCacheLineBySetWayImpl);
     }
 
-    NOINLINE void SynchronizeAllCores() {
+    void InitializeInterruptThreads(s32 core_id) {
+        /* Initialize the cache operation handler. */
+        g_cache_operation_handler.Initialize(core_id);
+
+        /* Bind all handlers to the relevant interrupts. */
+        Kernel::GetInterruptManager().BindHandler(std::addressof(g_cache_operation_handler),              KInterruptName_CacheOperation,     core_id, KInterruptController::PriorityLevel_High,      false, false);
+        Kernel::GetInterruptManager().BindHandler(std::addressof(g_thread_termination_handler),           KInterruptName_ThreadTerminate,    core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
+
+        if (KTargetSystem::IsUserPmuAccessEnabled()) { SetPmUserEnrEl0(1ul); }
+        Kernel::GetInterruptManager().BindHandler(std::addressof(g_performance_counter_handler[core_id]), KInterruptName_PerformanceCounter, core_id, KInterruptController::PriorityLevel_Timer,     false, false);
+    }
+
+    void SynchronizeAllCores() {
         SynchronizeAllCoresImpl(&g_all_core_sync_count, static_cast<s32>(cpu::NumCores));
     }
 

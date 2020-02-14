@@ -50,7 +50,7 @@ namespace ams::kern::arm64 {
         InitializeGlobalTimer();
 
         /* Bind the interrupt task for this core. */
-        Kernel::GetInterruptManager().BindHandler(GetHardwareTimerInterruptTask(core_id), KInterruptName_HardwareTimerEl1, core_id, KInterruptController::PriorityLevel_Timer, true, true);
+        Kernel::GetInterruptManager().BindHandler(GetHardwareTimerInterruptTask(core_id), KInterruptName_NonSecurePhysicalTimer, core_id, KInterruptController::PriorityLevel_Timer, true, true);
     }
 
     void KHardwareTimer::Finalize() {
@@ -74,7 +74,7 @@ namespace ams::kern::arm64 {
         }
 
         /* Clear the timer interrupt. */
-        Kernel::GetInterruptManager().ClearInterrupt(KInterruptName_HardwareTimerEl1, GetCurrentCoreId());
+        Kernel::GetInterruptManager().ClearInterrupt(KInterruptName_NonSecurePhysicalTimer, GetCurrentCoreId());
     }
 
 }

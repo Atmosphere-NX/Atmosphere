@@ -22,15 +22,19 @@ namespace ams::kern::arm64::cpu {
 #if defined(ATMOSPHERE_CPU_ARM_CORTEX_A57) || defined(ATMOSPHERE_CPU_ARM_CORTEX_A53)
     constexpr inline size_t InstructionCacheLineSize = 0x40;
     constexpr inline size_t DataCacheLineSize        = 0x40;
+    constexpr inline size_t NumPerformanceCounters   = 6;
 #else
     #error "Unknown CPU for cache line sizes"
 #endif
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_SWITCH)
-    static constexpr size_t NumCores = 4;
+    constexpr inline size_t NumCores = 4;
 #else
     #error "Unknown Board for cpu::NumCores"
 #endif
+
+    /* Initialization. */
+    NOINLINE void InitializeInterruptThreads(s32 core_id);
 
     /* Helpers for managing memory state. */
     ALWAYS_INLINE void DataSynchronizationBarrier() {
@@ -63,6 +67,40 @@ namespace ams::kern::arm64::cpu {
         SetTtbr0El1(ttbr);
         ContextIdRegisterAccessor(0).SetProcId(proc_id).Store();
         InstructionMemoryBarrier();
+    }
+
+    /* Performance counter helpers. */
+    ALWAYS_INLINE u64 GetCycleCounter() {
+        return cpu::GetPmcCntrEl0();
+    }
+
+    ALWAYS_INLINE u32 GetPerformanceCounter(s32 n) {
+        u64 counter = 0;
+        if (n < static_cast<s32>(NumPerformanceCounters)) {
+            switch (n) {
+                case 0:
+                    counter = cpu::GetPmevCntr0El0();
+                    break;
+                case 1:
+                    counter = cpu::GetPmevCntr1El0();
+                    break;
+                case 2:
+                    counter = cpu::GetPmevCntr2El0();
+                    break;
+                case 3:
+                    counter = cpu::GetPmevCntr3El0();
+                    break;
+                case 4:
+                    counter = cpu::GetPmevCntr4El0();
+                    break;
+                case 5:
+                    counter = cpu::GetPmevCntr5El0();
+                    break;
+                default:
+                    break;
+            }
+        }
+        return static_cast<u32>(counter);
     }
 
     /* Helper for address access. */
@@ -115,8 +153,8 @@ namespace ams::kern::arm64::cpu {
 
     /* Cache management helpers. */
     void ClearPageToZeroImpl(void *);
-    void FlushEntireDataCacheShared();
-    void FlushEntireDataCacheLocal();
+    void FlushEntireDataCacheSharedForInit();
+    void FlushEntireDataCacheLocalForInit();
 
     ALWAYS_INLINE void ClearPageToZero(void *page) {
         MESOSPHERE_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(page), PageSize));

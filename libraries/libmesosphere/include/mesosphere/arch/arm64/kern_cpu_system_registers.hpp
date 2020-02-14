@@ -52,6 +52,7 @@ namespace ams::kern::arm64::cpu {
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CpuEctlrEl1, s3_1_c15_c2_1)
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CsselrEl1, csselr_el1)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CcsidrEl1, ccsidr_el1)
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(OslarEl1, oslar_el1)
 
@@ -60,6 +61,15 @@ namespace ams::kern::arm64::cpu {
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(EsrEl1, esr_el1)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Afsr0El1, afsr0_el1)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Afsr1El1, afsr1_el1)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmUserEnrEl0, pmuserenr_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmcCntrEl0,   pmccntr_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr0El0, pmevcntr0_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr1El0, pmevcntr1_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr2El0, pmevcntr2_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr3El0, pmevcntr3_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr4El0, pmevcntr4_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr5El0, pmevcntr5_el0)
 
     #define FOR_I_IN_0_TO_15(HANDLER, ...)                                                                              \
         HANDLER(0,  ## __VA_ARGS__) HANDLER(1,  ## __VA_ARGS__) HANDLER(2,  ## __VA_ARGS__) HANDLER(3,  ## __VA_ARGS__) \

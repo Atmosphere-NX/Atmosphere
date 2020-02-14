@@ -53,15 +53,15 @@ namespace ams::kern::init::loader {
 
         void EnsureEntireDataCacheFlushed() {
             /* Flush shared cache. */
-            cpu::FlushEntireDataCacheShared();
+            cpu::FlushEntireDataCacheSharedForInit();
             cpu::DataSynchronizationBarrier();
 
             /* Flush local cache. */
-            cpu::FlushEntireDataCacheLocal();
+            cpu::FlushEntireDataCacheLocalForInit();
             cpu::DataSynchronizationBarrier();
 
             /* Flush shared cache. */
-            cpu::FlushEntireDataCacheShared();
+            cpu::FlushEntireDataCacheSharedForInit();
             cpu::DataSynchronizationBarrier();
 
             /* Invalidate entire instruction cache. */
