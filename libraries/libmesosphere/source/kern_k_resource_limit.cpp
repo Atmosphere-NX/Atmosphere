@@ -17,6 +17,12 @@
 
 namespace ams::kern {
 
+    namespace {
+
+        constexpr s64 DefaultTimeout = ams::svc::Tick(TimeSpan::FromSeconds(10));
+
+    }
+
     void KResourceLimit::Initialize() {
         /* This should be unnecessary for us, because our constructor will clear all fields. */
         /* The following is analagous to what Nintendo's implementation (no constexpr constructor) would do, though. */
@@ -91,8 +97,7 @@ namespace ams::kern {
     }
 
     bool KResourceLimit::Reserve(ams::svc::LimitableResource which, s64 value) {
-        /* TODO: constexpr definition for this default timeout (it's 10 seconds) */
-        return this->Reserve(which, value, KHardwareTimer::GetTick() + 192'000'000);
+        return this->Reserve(which, value, KHardwareTimer::GetTick() + DefaultTimeout);
     }
 
     bool KResourceLimit::Reserve(ams::svc::LimitableResource which, s64 value, s64 timeout) {

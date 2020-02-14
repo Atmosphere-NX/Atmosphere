@@ -2,7 +2,7 @@
  * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
+ * under the terms and conditions of the GNU General Public License
  * version 2, as published by the Free Software Foundation.
  *
  * This program is distributed in the hope it will be useful, but WITHOUT
@@ -14,11 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours/svc/svc_types_common.hpp>
 
-#include "svc_common.hpp"
-#include "svc_tick.hpp"
-#include "svc_types_common.hpp"
-#include "svc_types_base.hpp"
-#include "svc_types_dd.hpp"
-#include "svc_types_dmnt.hpp"
-#include "svc_types_priv.hpp"
+namespace ams::svc::board::nintendo_switch {
+
+    constexpr inline const s64 TicksPerSecond = 19'200'000;
+
+}

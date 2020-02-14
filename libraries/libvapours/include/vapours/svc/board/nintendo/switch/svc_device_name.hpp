@@ -16,7 +16,7 @@
 #pragma once
 #include <vapours/svc/svc_types_common.hpp>
 
-namespace ams::svc {
+namespace ams::svc::board::nintendo_switch {
 
     enum DeviceName {
         DeviceName_Afi        = 0,

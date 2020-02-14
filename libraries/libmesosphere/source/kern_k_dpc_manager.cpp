@@ -79,7 +79,7 @@ namespace ams::kern {
 
         /* Convenience definitions. */
         constexpr s32 DpcManagerThreadPriority = 3;
-        constexpr s64 DpcManagerTimeout = 192'000ll; /* TODO: Constexpr conversion from 10ms */
+        constexpr s64 DpcManagerTimeout = ams::svc::Tick(TimeSpan::FromMilliSeconds(10));
 
         /* Globals. */
         s64 g_preemption_priorities[cpu::NumCores];

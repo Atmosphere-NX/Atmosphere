@@ -38,7 +38,7 @@ namespace ams::svc {
     R_DEFINE_ERROR_RESULT(OutOfResource,                103);
     R_DEFINE_ERROR_RESULT(OutOfMemory,                  104);
     R_DEFINE_ERROR_RESULT(OutOfHandles,                 105);
-    R_DEFINE_ERROR_RESULT(InvalidCurrentMemoryState,    106);
+    R_DEFINE_ERROR_RESULT(InvalidCurrentMemory,         106);
 
     R_DEFINE_ERROR_RESULT(InvalidNewMemoryPermissions,  108);
 

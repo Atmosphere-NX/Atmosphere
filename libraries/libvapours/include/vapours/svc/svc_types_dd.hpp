@@ -15,16 +15,8 @@
  */
 #pragma once
 #include "svc_types_common.hpp"
-
-#ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
-
-    #include "board/nintendo/switch/svc_device_name.hpp"
-
-#else
-
-    #error "Unknown board for svc::DeviceName"
-
-#endif
+#include "svc_select_hardware_constants.hpp"
+#include "svc_select_device_name.hpp"
 
 namespace ams::svc {
 

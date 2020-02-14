@@ -13,12 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 
+#pragma once
 #include "svc_common.hpp"
-#include "svc_tick.hpp"
-#include "svc_types_common.hpp"
-#include "svc_types_base.hpp"
-#include "svc_types_dd.hpp"
-#include "svc_types_dmnt.hpp"
-#include "svc_types_priv.hpp"
+
+#if defined(ATMOSPHERE_BOARD_NINTENDO_SWITCH)
+
+    #include "board/nintendo/switch/svc_hardware_constants.hpp"
+    namespace ams::svc {
+        using namespace ams::svc::board::nintendo_switch;
+    }
+
+#else
+
+    #error "Unknown board for svc::DeviceName"
+
+#endif
