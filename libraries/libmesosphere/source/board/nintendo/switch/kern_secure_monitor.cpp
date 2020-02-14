@@ -116,7 +116,7 @@ namespace ams::kern::smc {
         void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item) {
             SecureMonitorArguments args = { FunctionId_GetConfig, static_cast<u32>(config_item) };
             CallPrivilegedSecureMonitorFunctionForInit(args);
-            MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
+            MESOSPHERE_INIT_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
             for (size_t i = 0; i < num_qwords && i < 7; i++) {
                 out[i] = args.x[1 + i];
             }
@@ -125,10 +125,10 @@ namespace ams::kern::smc {
         void GenerateRandomBytes(void *dst, size_t size) {
             /* Call SmcGenerateRandomBytes() */
             SecureMonitorArguments args = { FunctionId_GenerateRandomBytes, size };
-            MESOSPHERE_ABORT_UNLESS(size <= sizeof(args) - sizeof(args.x[0]));
+            MESOSPHERE_INIT_ABORT_UNLESS(size <= sizeof(args) - sizeof(args.x[0]));
 
             CallPrivilegedSecureMonitorFunctionForInit(args);
-            MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
+            MESOSPHERE_INIT_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
 
             /* Copy output. */
             std::memcpy(dst, &args.x[1], size);

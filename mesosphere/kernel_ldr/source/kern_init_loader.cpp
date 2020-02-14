@@ -218,7 +218,6 @@ namespace ams::kern::init::loader {
 
     }
 
-
     uintptr_t Main(uintptr_t base_address, KernelLayout *layout, uintptr_t ini_base_address) {
         /* Relocate the kernel to the correct physical base address. */
         /* Base address and layout are passed by reference and modified. */
@@ -235,12 +234,12 @@ namespace ams::kern::init::loader {
         const uintptr_t rw_offset      = layout->rw_offset;
         /* UNUSED: const uintptr_t rw_end_offset  = layout->rw_end_offset; */
         const uintptr_t bss_end_offset = layout->bss_end_offset;
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(rx_offset,      0x1000));
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(rx_end_offset,  0x1000));
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(ro_offset,      0x1000));
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(ro_end_offset,  0x1000));
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(rw_offset,      0x1000));
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(bss_end_offset, 0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_offset,      0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_end_offset,  0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_offset,      0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_end_offset,  0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rw_offset,      0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(bss_end_offset, 0x1000));
         const uintptr_t bss_offset            = layout->bss_offset;
         const uintptr_t ini_load_offset       = layout->ini_load_offset;
         const uintptr_t dynamic_offset        = layout->dynamic_offset;

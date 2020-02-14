@@ -17,6 +17,10 @@
 
 namespace ams::kern {
 
+    bool KScheduler::s_scheduler_update_needed;
+    KScheduler::LockType KScheduler::s_scheduler_lock;
+    KSchedulerPriorityQueue KScheduler::s_priority_queue;
+
     namespace {
 
         class KSchedulerInterruptTask : public KInterruptTask {

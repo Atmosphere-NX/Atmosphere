@@ -173,7 +173,21 @@ namespace ams::kern {
             s8                              priority_inheritance_count;
             bool                            resource_limit_release_hint;
         public:
-            explicit KThread() /* TODO: : ? */ { MESOSPHERE_ASSERT_THIS(); }
+            constexpr KThread() :
+                thread_context(), affinity_mask(), thread_id(), cpu_time(), synced_object(), waiting_lock(),
+                condvar_key(), entrypoint(), arbiter_key(), parent(), kernel_stack_top(), light_ipc_data(),
+                tls_address(), tls_heap_address(), activity_pause_lock(), sync_object_buffer(), schedule_count(),
+                last_scheduled_tick(), per_core_priority_queue_entry(), sleeping_queue_entry(), sleeping_queue(), waiter_list_node(),
+                condvar_arbiter_tree_node(), process_list_node(), waiter_list(), paused_waiter_list(), lock_owner(),
+                cond_var_tree(), debug_params(), arbiter_value(), suspend_request_flags(), suspend_allowed_flags(),
+                wait_result(ResultSuccess()), debug_exception_result(ResultSuccess()), priority(), core_id(), base_priority(),
+                ideal_core_id(), num_kernel_waiters(), original_affinity_mask(), original_ideal_core_id(), num_core_migration_disables(),
+                thread_state(), termination_requested(), ipc_cancelled(), wait_cancelled(), cancellable(),
+                registered(), signaled(), initialized(), debug_attached(), priority_inheritance_count(),
+                resource_limit_release_hint()
+            {
+                /* ... */
+            }
             virtual ~KThread() { /* ... */ }
             /* TODO: Is a constexpr KThread() possible? */
 

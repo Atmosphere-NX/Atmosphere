@@ -260,7 +260,7 @@ namespace ams::kern {
     void KSystemControl::StopSystem() {
         if (g_call_smc_on_panic) {
             /* Display a panic screen via secure monitor. */
-            smc::Panic(0xF00);
+            /* TODO: Enable in release: smc::Panic(0xF00); */
         }
         while (true) { /* ... */ }
     }

@@ -50,9 +50,9 @@ namespace ams::kern {
         private:
             friend class KScopedSchedulerLock;
             friend class KScopedSchedulerLockAndSleep;
-            static inline bool s_scheduler_update_needed;
-            static inline LockType s_scheduler_lock;
-            static inline KSchedulerPriorityQueue s_priority_queue;
+            static bool s_scheduler_update_needed;
+            static LockType s_scheduler_lock;
+            static KSchedulerPriorityQueue s_priority_queue;
         private:
             SchedulingState state;
             bool is_active;

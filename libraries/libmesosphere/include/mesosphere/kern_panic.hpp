@@ -42,8 +42,8 @@ namespace ams::kern {
 #define MESOSPHERE_ASSERT_IMPL(expr, ...) do { static_cast<void>(expr); } while (0)
 #endif
 
-#define MESOSPHERE_ASSERT(expr)   MESOSPHERE_ASSERT_IMPL(expr, "Assertion failed: %s", #expr)
-#define MESOSPHERE_R_ASSERT(expr) MESOSPHERE_ASSERT_IMPL(R_SUCCEEDED(expr), "Result assertion failed: %s", #expr)
+#define MESOSPHERE_ASSERT(expr)   MESOSPHERE_ASSERT_IMPL(expr, "Assertion failed: %s\n", #expr)
+#define MESOSPHERE_R_ASSERT(expr) MESOSPHERE_ASSERT_IMPL(R_SUCCEEDED(expr), "Result assertion failed: %s\n", #expr)
 #define MESOSPHERE_UNREACHABLE_DEFAULT_CASE() default: MESOSPHERE_PANIC("Unreachable default case entered")
 
 #ifdef MESOSPHERE_ENABLE_THIS_ASSERT
@@ -58,10 +58,10 @@ namespace ams::kern {
 #define MESOSPHERE_AUDIT(expr) do { static_cast<void>(expr); } while (0)
 #endif
 
-#define MESOSPHERE_TODO(arg) ({ constexpr const char *__mesosphere_todo = arg; MESOSPHERE_PANIC("TODO (%s): %s", __PRETTY_FUNCTION__, __mesosphere_todo); })
+#define MESOSPHERE_TODO(arg) ({ constexpr const char *__mesosphere_todo = arg; MESOSPHERE_PANIC("TODO (%s): %s\n", __PRETTY_FUNCTION__, __mesosphere_todo); })
 #define MESOSPHERE_TODO_IMPLEMENT() MESOSPHERE_TODO("Implement")
 
-#define MESOSPHERE_ABORT() MESOSPHERE_PANIC("Abort()");
+#define MESOSPHERE_ABORT() MESOSPHERE_PANIC("Abort()\n");
 #define MESOSPHERE_INIT_ABORT() do { /* ... */ } while (true)
 
 #define MESOSPHERE_ABORT_UNLESS(expr)               \
@@ -80,10 +80,10 @@ namespace ams::kern {
         }                                           \
     })
 
-#define MESOSPHERE_R_ABORT_UNLESS(expr)                                                                                                          \
-    ({                                                                                                                                           \
-        const ::ams::Result _tmp_meso_r_abort_res = static_cast<::ams::Result>((expr));                                                          \
-        if (AMS_UNLIKELY((R_FAILED(_tmp_meso_r_abort_res)))) {                                                                                   \
-            MESOSPHERE_PANIC("Result Abort(): %s 2%03d-%04d", #expr, _tmp_meso_r_abort_res.GetModule(), _tmp_meso_r_abort_res.GetDescription()); \
-        }                                                                                                                                        \
+#define MESOSPHERE_R_ABORT_UNLESS(expr)                                                                                                            \
+    ({                                                                                                                                             \
+        const ::ams::Result _tmp_meso_r_abort_res = static_cast<::ams::Result>((expr));                                                            \
+        if (AMS_UNLIKELY((R_FAILED(_tmp_meso_r_abort_res)))) {                                                                                     \
+            MESOSPHERE_PANIC("Result Abort(): %s 2%03d-%04d\n", #expr, _tmp_meso_r_abort_res.GetModule(), _tmp_meso_r_abort_res.GetDescription()); \
+        }                                                                                                                                          \
     })

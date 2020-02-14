@@ -22,11 +22,17 @@ def main(argc, argv):
     assert (kernel_end >= len(kernel))
 
     embedded_ini = b''
+    try:
+        with open('ini.bin', 'rb') as f:
+            embedded_ini = f.read()
+    except:
+        pass
     embedded_ini_offset = align_up(kernel_end, 0x1000) + 0x1000
-    embedded_ini_end = embedded_ini_offset + 0 # TODO: Create and embed an INI, eventually.
+    embedded_ini_end = embedded_ini_offset + len(embedded_ini) # TODO: Create and embed an INI, eventually.
 
     kernel_ldr_offset = align_up(embedded_ini_end, 0x1000) + 0x1000
     kernel_ldr_end    = kernel_ldr_offset + len(kernel_ldr)
+    mesosphere_end    = align_up(kernel_ldr_end, 0x1000)
 
     with open('mesosphere.bin', 'wb') as f:
         f.write(kernel[:kernel_metadata_offset + 4])
@@ -37,7 +43,8 @@ def main(argc, argv):
         f.seek(embedded_ini_end)
         f.seek(kernel_ldr_offset)
         f.write(kernel_ldr)
-        f.seek(kernel_ldr_end)
+        f.seek(mesosphere_end)
+        f.write(b'\x00'*0x1000)
     return 0
 
 

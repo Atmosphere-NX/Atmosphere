@@ -62,8 +62,6 @@ namespace ams::kern {
             static constexpr size_t BlockInfoSlabHeapSize              = 4000;
         private:
             static State s_state;
-            static KThread s_main_threads[cpu::NumCores];
-            static KThread s_idle_threads[cpu::NumCores];
             static KResourceLimit s_system_resource_limit;
             static KMemoryManager s_memory_manager;
             static KPageTableManager s_page_table_manager;
@@ -87,13 +85,8 @@ namespace ams::kern {
             static ALWAYS_INLINE State GetState() { return s_state; }
             static ALWAYS_INLINE void SetState(State state) { s_state = state; }
 
-            static ALWAYS_INLINE KThread &GetMainThread(s32 core_id) {
-                return s_main_threads[core_id];
-            }
-
-            static ALWAYS_INLINE KThread &GetIdleThread(s32 core_id) {
-                return s_idle_threads[core_id];
-            }
+            static KThread &GetMainThread(s32 core_id);
+            static KThread &GetIdleThread(s32 core_id);
 
             static ALWAYS_INLINE KScheduler &GetScheduler() {
                 return GetCoreLocalContext().scheduler;

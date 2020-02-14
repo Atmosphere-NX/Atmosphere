@@ -17,18 +17,6 @@
 
 namespace ams::kern {
 
-    /* Declare kernel data members in kernel TU. */
-    Kernel::State           Kernel::s_state = Kernel::State::Invalid;
-    KThread                 Kernel::s_main_threads[cpu::NumCores];
-    KThread                 Kernel::s_idle_threads[cpu::NumCores];
-    KResourceLimit          Kernel::s_system_resource_limit;
-    KMemoryManager          Kernel::s_memory_manager;
-    KPageTableManager       Kernel::s_page_table_manager;
-    KMemoryBlockSlabManager Kernel::s_app_memory_block_manager;
-    KMemoryBlockSlabManager Kernel::s_sys_memory_block_manager;
-    KBlockInfoManager       Kernel::s_block_info_manager;
-    KSupervisorPageTable    Kernel::s_supervisor_page_table;
-
     namespace {
 
         template<typename T>

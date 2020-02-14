@@ -28,6 +28,8 @@ namespace ams::kern {
 
             UartRegister_LSR = 5,
 
+            UartRegister_IRSA_CSR = 8,
+
             UartRegister_DLL = 0,
             UartRegister_DLH = 1,
         };
@@ -71,8 +73,9 @@ namespace ams::kern {
         /* Disable UART interrupts. */
         WriteUartRegister(UartRegister_IER, 0x00);
 
-        /* Configure the FIFOO to be enabled and clear receive. */
+        /* Configure the FIFO to be enabled and clear receive. */
         WriteUartRegister(UartRegister_FCR, 0x03);
+        WriteUartRegister(UartRegister_IRSA_CSR, 0x02);
         ReadUartRegister(UartRegister_FCR);
 
         return true;

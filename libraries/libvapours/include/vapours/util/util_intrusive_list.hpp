@@ -405,7 +405,7 @@ namespace ams::util {
                 return Traits::GetParent(node);
             }
         public:
-            IntrusiveList() : impl() { /* ... */ }
+            constexpr IntrusiveList() : impl() { /* ... */ }
 
             /* Iterator accessors. */
             iterator begin() {

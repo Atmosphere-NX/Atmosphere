@@ -181,7 +181,6 @@ namespace ams::kern::arm64 {
 
     Result KPageTable::MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-        MESOSPHERE_LOG("KPageTable::MapContiguous(%016lx, %016lx, %zu)\n", GetInteger(virt_addr), GetInteger(phys_addr), num_pages);
 
         /* Cache initial addresses for use on cleanup. */
         const KProcessAddress  orig_virt_addr = virt_addr;

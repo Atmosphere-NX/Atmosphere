@@ -73,6 +73,7 @@ _start:
     /* Call ams::kern::init::loader::Main(uintptr_t, ams::kern::init::KernelLayout *, uintptr_t) */
     ldp x0, x1, [sp, #0x00]
     ldr x2,     [sp, #0x10]
+
     bl _ZN3ams4kern4init6loader4MainEmPNS1_12KernelLayoutEm
     str x0, [sp, #0x00]
 
