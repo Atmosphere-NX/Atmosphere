@@ -40,7 +40,9 @@ namespace ams::hvisor {
             static u32 GetTypeRegister()                                { return gicd->typer; }
             static void SetInterruptEnabled(u32 id)                     { gicd->isenabler[id / 32] = BIT(id % 32); }
             static void ClearInterruptEnabled(u32 id)                   { gicd->icenabler[id / 32] = BIT(id % 32); }
+            static bool IsInterruptPending(u32 id)                      { return (gicd->ispendr[id / 32] & BIT(id % 32)) != 0;}
             static void ClearInterruptPending(u32 id)                   { gicd->icpendr[id / 32] = BIT(id % 32); }
+            static void ClearInterruptActive(u32 id)                    { gicd->icactiver[id / 32] = BIT(id % 32); }
             static void SetInterruptShiftedPriority(u32 id, u8 prio)    { gicd->ipriorityr[id] = prio; }
             static void SetInterruptTargets(u32 id, u8 targetList)      { gicd->itargetsr[id] = targetList; }
             static bool IsInterruptLevelSensitive(u32 id)

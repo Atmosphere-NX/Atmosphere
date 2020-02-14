@@ -161,8 +161,6 @@ namespace ams::hvisor {
                         using difference_type = ptrdiff_t;
                         using iterator = Iterator<false>;
                         using const_iterator = Iterator<true>;
-                        using reverse_iterator = std::reverse_iterator<iterator>;
-                        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
                         constexpr void Initialize(VirqState *storage) { m_storage = storage; }
 
@@ -181,24 +179,47 @@ namespace ams::hvisor {
                         constexpr iterator begin() { return iterator{m_first, m_storage}; }
                         constexpr iterator end() { return iterator{&m_storage[virqListEndIndex], m_storage}; }
 
-                        constexpr const_reverse_iterator crbegin() const {
-                            return const_reverse_iterator{const_iterator{m_last, m_storage}};
-                        }
-                        constexpr const_reverse_iterator crend() const { return const_reverse_iterator{cend()}; }
-
-                        constexpr const_reverse_iterator rbegin() const { return crbegin(); }
-                        constexpr const_reverse_iterator rend() const { return crend(); }
-
-                        constexpr reverse_iterator rbegin() { return reverse_iterator{iterator{m_first, m_storage}}; }
-                        constexpr reverse_iterator rend() { return reverse_iterator{end()}; }
-
-
                         iterator insert(iterator pos, VirqState &elem);
                         iterator insert(VirqState &elem);
 
-                        iterator erase(iterator startPos, iterator endPos);
+                        constexpr iterator erase(iterator startPos, iterator endPos)
+                        {
+                            VirqState &prev = m_storage[startPos->listPrev];
+                            VirqState &next = *endPos;
+                            u32 nextPos = GetStateIndex(*endPos);
 
-                        iterator erase(iterator pos) { return erase(pos, std::next(pos)); }
+                            ENSURE(startPos->IsQueued());
+                            if (startPos->listPrev != virqListEndIndex) {
+                                prev.listNext = nextPos;
+                            } else {
+                                m_first = &next;
+                            }
+
+                            if (nextPos != virqListEndIndex) {
+                                next.listPrev = startPos->listPrev;
+                            } else {
+                                m_last = &prev;
+                            }
+
+                            for (iterator it = startPos; it != endPos; ++it) {
+                                it->listPrev = it->listNext = virqListInvalidIndex;
+                            }
+                        }
+
+                        constexpr iterator erase(iterator pos) { return erase(pos, std::next(pos)); }
+                        constexpr iterator erase(VirqState &pos) { return erase(iterator{&pos, m_storage}); }
+
+                        template<typename Pred>
+                        void erase_if(Pred p)
+                        {
+                            for (iterator it = begin(); l = end(); i != l) {
+                                if(p(*it)) {
+                                    it = erase(it);
+                                } else {
+                                    ++it;
+                                }
+                            }
+                        }
             };
 
 
@@ -225,7 +246,6 @@ namespace ams::hvisor {
                 bool m_distributorEnabled = false;
 
             private:
-
                 constexpr VirqState &GetVirqState(u32 coreId, u32 id)
                 {
                     if (id >= 32) {
@@ -253,12 +273,12 @@ namespace ams::hvisor {
                     }
                 }
 
-                u32 vgicGetDistributorControlRegister(void)
+                u32 GetDistributorControlRegister(void)
                 {
                     return m_distributorEnabled ? 1 : 0;
                 }
 
-                u32 vgicGetDistributorTypeRegister(void)
+                u32 GetDistributorTypeRegister(void)
                 {
                     // See above comment.
                     // Therefore, LSPI = 0, SecurityExtn = 0, rest = from physical distributor
@@ -308,6 +328,18 @@ namespace ams::hvisor {
                 void SetInterruptConfigBits(u32 id, u32 config);
                 void SetSgiPendingState(u32 id, u32 coreId, u32 srcCoreId);
                 void SendSgi(u32 id, GicV2Distributor::SgirTargetListFilter filter, u32 coreList);
+
+                void ResampleVirqLevel(VirqState &state);
+                void CleanupPendingQueue();
+                size_t ChoosePendingInterrupts(VirqState *chosen[], size_t maxNum);
+
+                void UpdateState();
+
+            public:
+                static bool ValidateGicdRegisterAccess(size_t offset, size_t sz);
+            public:
+                void WriteGicdRegister(u32 val, size_t offset, size_t sz);
+                u32 ReadGicdRegister(size_t offset, size_t sz);
 
     };
 }

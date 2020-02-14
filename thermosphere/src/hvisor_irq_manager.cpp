@@ -67,11 +67,10 @@ namespace ams::hvisor {
     bool IrqManager::IsGuestInterrupt(u32 id)
     {
         // We don't care about the interrupts we don't use
+        // Special interrupts id (eg. spurious interrupt id 1023) are also reserved to us
+        // because the virtual interface hw itself will generate it for the guest.
 
-        bool ret = true;
-        ret = ret && id != GIC_IRQID_MAINTENANCE;
-        ret = ret && id != GIC_IRQID_NS_PHYS_HYP_TIMER;
-
+        bool ret = id <= GicV2Distributor::maxIrqId && id != GIC_IRQID_MAINTENANCE && id != GIC_IRQID_NS_PHYS_HYP_TIMER;
         ret = ret && transportInterfaceFindByIrqId(id) == NULL;
         return ret;
     }

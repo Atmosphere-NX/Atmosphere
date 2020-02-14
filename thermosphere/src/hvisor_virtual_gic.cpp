@@ -14,7 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <mutex>
 #include "hvisor_virtual_gic.hpp"
+
+#define GICDOFF(field)          (offsetof(GicV2Distributor, field))
 
 namespace ams::hvisor {
 
@@ -70,29 +73,6 @@ namespace ams::hvisor {
             }),
             elem
         );
-    }
-
-    VirtualGic::VirqQueue::iterator VirtualGic::VirqQueue::erase(VirtualGic::VirqQueue::iterator startPos, VirtualGic::VirqQueue::iterator endPos)
-    {
-        VirqState &prev = m_storage[startPos->listPrev];
-        VirqState &next = *endPos;
-        u32 nextPos = GetStateIndex(*endPos);
-
-        if (startPos->listPrev != virqListEndIndex) {
-            prev.listNext = nextPos;
-        } else {
-            m_first = &next;
-        }
-
-        if (nextPos != virqListEndIndex) {
-            next.listPrev = startPos->listPrev;
-        } else {
-            m_last = &prev;
-        }
-
-        for (auto it = startPos; it != endPos; ++it) {
-            it->listPrev = it->listNext = virqListInvalidIndex;
-        }
     }
 
     void VirtualGic::SetInterruptEnabledState(u32 id)
@@ -243,6 +223,263 @@ namespace ams::hvisor {
         for (u32 dstCore: util::BitsOf{coreList}) {
             SetSgiPendingState(id, dstCore, currentCoreCtx->coreId);
         }
+    }
 
+    bool VirtualGic::ValidateGicdRegisterAccess(size_t offset, size_t sz)
+    {
+        // ipriorityr, itargetsr, *pendsgir are byte-accessible
+        // Report a fault on accessing fields for 
+        if (
+            !(offset >= GICDOFF(ipriorityr) && offset < GICDOFF(ipriorityr) + GicV2Distributor::maxIrqId) &&
+            !(offset >= GICDOFF(itargetsr)  && offset < GICDOFF(itargetsr) + GicV2Distributor::maxIrqId) &&
+            !(offset >= GICDOFF(cpendsgir)  && offset < GICDOFF(cpendsgir) + 16) &&
+            !(offset >= GICDOFF(spendsgir)  && offset < GICDOFF(spendsgir) + 16)
+        ) {
+            return (offset & 3) == 0 && sz == 4;
+        } else {
+            return sz == 1 || (sz == 4 && ((offset & 3) != 0));
+        }
+    }
+
+    void VirtualGic::WriteGicdRegister(u32 val, size_t offset, size_t sz)
+    {
+        static constexpr auto maxIrqId = GicV2Distributor::maxIrqId;
+        std::scoped_lock lk{IrqManager::GetInstance().m_lock};
+
+        switch (offset) {
+            case GICDOFF(typer):
+            case GICDOFF(iidr):
+            case GICDOFF(icpidr2):
+            case GICDOFF(itargetsr) ... GICDOFF(itargetsr) + 31:
+                // Write ignored (read-only registers)
+                break;
+            case GICDOFF(icfgr) ... GICDOFF(icfgr) + 31/4:
+                // Write ignored because of an implementation-defined choice
+                break;
+            case GICDOFF(igroupr) ... GICDOFF(igroupr) + maxIrqId/8:
+                // Write ignored because we don't implement Group 1 here
+                break;
+            case GICDOFF(ispendr) ... GICDOFF(ispendr) + maxIrqId/8:
+            case GICDOFF(icpendr) ... GICDOFF(icpendr) + maxIrqId/8:
+            case GICDOFF(isactiver) ... GICDOFF(isactiver) + maxIrqId/8:
+            case GICDOFF(icactiver) ... GICDOFF(icactiver) + maxIrqId/8:
+            case GICDOFF(cpendsgir) ... GICDOFF(cpendsgir) + 15:
+            case GICDOFF(spendsgir) ... GICDOFF(spendsgir) + 15:
+                // Write ignored, not implemented (at least not yet, TODO)
+                break;
+
+            case GICDOFF(ctlr): {
+                SetDistributorControlRegister(val);
+                break;
+            }
+
+            case GICDOFF(isenabler) ... GICDOFF(isenabler) + maxIrqId/8: {
+                u32 base = 8 * static_cast<u32>(offset - GICDOFF(isenabler));
+                for(u32 pos: util::BitsOf{val}) {
+                    SetInterruptEnabledState(base + pos);
+                }
+                break;
+            }
+            case GICDOFF(icenabler) ... GICDOFF(icenabler) + maxIrqId/8: {
+                u32 base = 8 * static_cast<u32>(offset - GICDOFF(icenabler));
+                for(u32 pos: util::BitsOf{val}) {
+                    SetInterruptEnabledState(base + pos);
+                }
+                break;
+            }
+
+            case GICDOFF(ipriorityr) ... GICDOFF(ipriorityr) + maxIrqId: {
+                u32 base = static_cast<u32>(offset - GICDOFF(ipriorityr));
+                for (u32 i = 0; i < static_cast<u32>(sz); i++) {
+                    SetInterruptPriorityByte(base + i, static_cast<u8>(val));
+                    val >>= 8;
+                }
+                break;
+            }
+
+            case GICDOFF(itargetsr) + 32 ... GICDOFF(itargetsr) + maxIrqId: {
+                u32 base = static_cast<u32>(offset - GICDOFF(itargetsr));
+                for (u32 i = 0; i < static_cast<u32>(sz); i++) {
+                    SetInterruptTargets(base + i, static_cast<u8>(val));
+                    val >>= 8;
+                }
+                break;
+            }
+
+            case GICDOFF(icfgr) + 32/4 ... GICDOFF(icfgr) + maxIrqId/4: {
+                u32 base = 4 * static_cast<u32>(offset & 0xFF);
+                for (u32 i = 0; i < 16; i++) {
+                    SetInterruptConfigBits(base + i, val & 3);
+                    val >>= 2;
+                }
+                break;
+            }
+
+            case GICDOFF(sgir): {
+                SendSgi(val & 0xF, static_cast<GicV2Distributor::SgirTargetListFilter>((val >> 24) & 3), (val >> 16) & 0xFF);
+                break;
+            }
+
+            default:
+                DEBUG("Write to GICD reserved/implementation-defined register offset=0x%03lx value=0x%08lx", offset, val);
+                break;
+        }
+
+        UpdateState();
+    }
+
+
+    u32 VirtualGic::ReadGicdRegister(size_t offset, size_t sz)
+    {
+        static constexpr auto maxIrqId = GicV2Distributor::maxIrqId;
+        std::scoped_lock lk{IrqManager::GetInstance().m_lock};
+
+        //DEBUG("gicd read off 0x%03llx sz %lx\n", offset, sz);
+        u32 val = 0;
+
+        switch (offset) {
+            case GICDOFF(icfgr) ... GICDOFF(icfgr) + 31/4:
+                // RAZ because of an implementation-defined choice
+                break;
+            case GICDOFF(igroupr) ... GICDOFF(igroupr) + maxIrqId/8:
+                // RAZ because we don't implement Group 1 here
+                break;
+            case GICDOFF(ispendr) ... GICDOFF(ispendr) + maxIrqId/8:
+            case GICDOFF(icpendr) ... GICDOFF(icpendr) + maxIrqId/8:
+            case GICDOFF(isactiver) ... GICDOFF(isactiver) + maxIrqId/8:
+            case GICDOFF(icactiver) ... GICDOFF(icactiver) + maxIrqId/8:
+            case GICDOFF(cpendsgir) ... GICDOFF(cpendsgir) + 15:
+            case GICDOFF(spendsgir) ... GICDOFF(spendsgir) + 15:
+                // RAZ, not implemented (at least not yet, TODO)
+                break;
+
+            case GICDOFF(ctlr): {
+                val = GetDistributorControlRegister();
+                break;
+            }
+            case GICDOFF(typer): {
+                val = GetDistributorTypeRegister();
+                break;
+            }
+            case GICDOFF(iidr): {
+                val = GetDistributorImplementerIdentificationRegister();
+                break;
+            }
+
+            case GICDOFF(isenabler) ... GICDOFF(isenabler) + maxIrqId/8:
+            case GICDOFF(icenabler) ... GICDOFF(icenabler) + maxIrqId/8: {
+                u32 base = 8 * static_cast<u32>(offset & 0x7F);
+                for (u32 i = 0; i < 32; i++) {
+                    val |= GetInterruptEnabledState(base + i) ? BIT(i) : 0;
+                }
+                break;
+            }
+
+            case GICDOFF(ipriorityr) ... GICDOFF(ipriorityr) + maxIrqId: {
+                u32 base = static_cast<u32>(offset - GICDOFF(ipriorityr));
+                for (u32 i = 0; i < sz; i++) {
+                    val |= GetInterruptPriorityByte(base + i) << (8 * i);
+                }
+                break;
+            }
+
+            case GICDOFF(itargetsr) ... GICDOFF(itargetsr) + maxIrqId: {
+                u32 base = static_cast<u32>(offset - GICDOFF(itargetsr));
+                for (u32 i = 0; i < sz; i++) {
+                    val |= GetInterruptTargets(base + i) << (8 * i);
+                }
+                break;
+            }
+
+            case GICDOFF(icfgr) + 32/4 ... GICDOFF(icfgr) + maxIrqId/4: {
+                u32 base = 4 * static_cast<u32>(offset & 0xFF);
+                for (u32 i = 0; i < 16; i++) {
+                    val |= GetInterruptConfigBits(base + i) << (2 * i);
+                }
+                break;
+            }
+
+            case GICDOFF(sgir):
+                // Write-only register
+                DEBUG("Read from write-only register GCID_SGIR\n");
+                break;
+
+            case GICDOFF(icpidr2): {
+                val = GetPeripheralId2Register();
+                break;
+            }
+
+            default:
+                DEBUG("Read from GICD reserved/implementation-defined register offset=0x%03lx\n", offset);
+                break;
+        }
+
+        UpdateState();
+        return val;
+    }
+
+    void VirtualGic::ResampleVirqLevel(VirtualGic::VirqState &state)
+    {
+        /*
+            For hardware interrupts, we have kept the interrupt active on the physical GICD
+            For level-sensitive interrupts, we need to check if they're also still physically pending (resampling).
+            If not, there's nothing to service anymore, and therefore we have to deactivate them, so that
+            we're notified when they become pending again.
+         */
+
+        if (!state.levelSensitive || !state.IsPending()) {
+            // Nothing to do for edge-triggered interrupts and non-pending interrupts
+            return;
+        }
+
+        u32 irqId = state.irqId;
+
+        // Can't do anything for level-sensitive PPIs from other cores either
+        if (irqId < 32 && state.coreId != currentCoreCtx->coreId) {
+            return;
+        }
+
+        bool lineLevel = IrqManager::IsInterruptPending(irqId);
+        if (!lineLevel) {
+            IrqManager::ClearInterruptActive(irqId);
+            state.ClearPendingLine();
+        }
+    }
+
+    void VirtualGic::CleanupPendingQueue()
+    {
+        // SGIs are pruned elsewhere
+
+        // Resample line level for level-sensitive interrupts
+        for (VirqState &state: m_virqPendingQueue) {
+            ResampleVirqLevel(state);
+        }
+
+        // Cleanup the list
+        m_virqPendingQueue.erase_if([](const VirqState &state) { return !state.IsPending(); });
+    }
+
+    size_t VirtualGic::ChoosePendingInterrupts(VirtualGic::VirqState *chosen[], size_t maxNum)
+    {
+        size_t numChosen = 0;
+        auto pred = [](const VirqState &state) {
+            if (state.irqId < 32 && state.coreId != currentCoreCtx->coreId) {
+                // We can't handle SGIs/PPIs of other cores.
+                return false;
+            }
+
+            return state.enabled  && (state.irqId < 32 || (state.targetList & BIT(currentCoreCtx->coreId)) != 0);
+        };
+
+        for (VirqState &state: m_virqPendingQueue) {
+            if (pred(state)) {
+                chosen[numChosen++] = &state;
+            }
+        }
+
+        for (size_t i = 0; i < numChosen; i++) {
+            chosen[i]->handled = true;
+            m_virqPendingQueue.erase(*chosen[i]);
+        }
     }
 }
